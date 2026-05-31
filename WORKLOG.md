@@ -12,6 +12,27 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-05-31 — Kim + Opus 4.8 — SA3 MEDIUM LatCH heads: train all features
+
+Training 19 LatCH heads for the SA3 medium grid (SAME-L 256x4096) on the beat-aligned
+`latents_sa3` (5400 crops + `.TIMESERIES.npz` companions). Trainer adapted (commit
+7247df6): `target_source=npz`, bf16 autocast, `--standardize`. Recipe: adamw 3e-4,
+adaln_zero, bf16, standardize, smooth_l1, bs32, 20 ep, save-best-only → `latch_weights_sa3_medium/`.
+
+- **bf16 autocast is a 6.4x throughput lever** on RDNA4 at T=4096 (fp32 12 → bf16 77
+  items/s, bs32). fp32 is pathologically slow for this head. Sweet spot bs32/bf16 =
+  77 items/s / 8.3 GB (bs64 → 16.3 GB, too close). ~70s/epoch → ~23min/head → ~7h total.
+- **Standardize is essential** here: rms_energy_bass target mean −21.9 dB / std 14.5 —
+  un-normalized loss would be swamped by the offset (LATCH_RESULTS §18).
+- Features (19): rms_energy×4, spectral×4, onset_envelope (+drums/bass/other/vocals),
+  rms_{drums,bass,other,vocals}, relative_position, hpcp. **Skipped beat_activation /
+  downbeat_activation** (§9: beat = dead control). hpcp trains 12-ch smooth_l1 (no cosine
+  in this trainer — refine later).
+- TunableOp OFF (avoids first-shape tune stall; bf16 default heuristic is fine). No
+  `--compile` (state_dict `_orig_mod.` prefix + per-head warmup not worth it here).
+- Per-stem onset/rms heads are the novel medium-grid contribution; relative_position is
+  the new structural-position control. Launched 18:08; ETA ~01:00.
+
 ## 2026-05-31 — Kim + Opus 4.8 — torch.compile benchmark (full optimization ladder)
 
 Same 50-step LatCH-guided gen, eager vs `torch.compile` (default mode, DiT only — the
