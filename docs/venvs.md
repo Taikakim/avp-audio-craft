@@ -30,8 +30,17 @@ absolute python path. See MASTER §3 for the per-task quick table.
 - Applied via **`setdefault`** before `import torch` → **shell exports win.** A terminal
   that `source`d the deleted old `rocm_env.sh` silently pins wrong tunings/profile. First
   thing to check when tunings look wrong: `env | grep -iE 'tunableop|miopen|triton_cache'`.
-- Tunings cache: **`~/pytorch-tunings-7.2.3`** (torch 2.10). The `-7.2.2` dir is for torch
-  2.9.1 and **fails** TunableOp's `PT_VERSION` validator under 2.10.
+- Tunings caches are **torch/ROCm-version-specific** (TunableOp's validator rejects
+  cross-version entries, so they MUST stay separate):
+  - **`~/pytorch-tunings-7.2.3`** — prod stack (torch 2.10 / ROCm 7.2.3). Canonical;
+    accumulates via the training profile (TUNING=1). Has `tunableop_results0.csv` +
+    `miopen/` + `triton_cache/` + `inductor_cache/`.
+  - **`~/pytorch-tunings-7.14`** — experimental stack (torch 2.12 / ROCm 7.14, the
+    `sa3-rocm7.13-test` venv + CK flash-attn). Persistent home for that stack; same
+    substructure. Point `PYTORCH_TUNABLEOP_FILENAME` / `TRITON_CACHE_DIR` /
+    `MIOPEN_CUSTOM_CACHE_DIR` / `MIOPEN_USER_DB_PATH` here when running on 2.12.
+  - `~/pytorch-tunings-7.2.2` is for torch 2.9.1 and **fails** the `PT_VERSION` validator
+    under 2.10 — stale.
 - Profiles: inference `MIOPEN_FIND_MODE=2`; training `=6` — **but mode 6 crashes the SA3
   medium DiT** (use 2 there; see lessons-learned).
 

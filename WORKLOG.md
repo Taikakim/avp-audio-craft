@@ -12,6 +12,32 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-05-31 — Kim + Opus 4.8 — Attention benchmark, TunableOp ON (corrects the gap)
+
+Rerun of the backend matrix below with **TunableOp ON** + persistent per-venv tunings
+(`~/pytorch-tunings-7.14` for the 2.12 stack — NEW, mirrors the 7.2.3 layout; canonical
+`~/pytorch-tunings-7.2.3` for prod 2.10). Confirms the TunableOp-off caveat was material.
+
+| backend | venv | wall OFF | wall ON | TunableOp speedup |
+|---|---|---|---|---|
+| CK flash    | test/2.12 | 14.48 s | 14.18 s | 1.02× (negligible) |
+| SDPA        | test/2.12 | 20.07 s | 19.75 s | 1.02× |
+| Triton flash| prod/2.10 | 51.72 s | **27.73 s** | **1.87×** |
+| SDPA        | prod/2.10 | 56.80 s | **32.78 s** | **1.73×** |
+
+- **TunableOp is ~1.8× on the prod 2.10 stack, ~1.0× on 7.14** — 7.14's default hipBLASLt
+  heuristic is already near-tuned (only 46 GEMM shapes cached vs prod's 210 KB).
+- **Corrected fair CK-vs-Triton = 1.96×** (was 3.57× off): stack 1.66× × kernel 1.18×.
+  The off run had nearly DOUBLED the apparent advantage by handicapping prod's tuned cache.
+- **CK flash = 1.39× over SDPA, identical on/off** (flash kernels are orthogonal to GEMM
+  tuning). Clean, real win. Triton = 1.18× over its SDPA.
+- Net: 7.14 stack ~1.66× faster even fully-tuned (worth migrating, not the 2.8× off-run
+  implied); CK is the better flash kernel; the stack upgrade is the bigger lever.
+- math/none reference crashed both venvs (forced SDPBackend.MATH faults the GPU at T=1292;
+  no coredump cascade — handler failed cleanly). Non-essential. Next: torch.compile bench.
+- Persistent 7.14 tunings now at `~/pytorch-tunings-7.14/tunableop_results0.csv`. See
+  `docs/venvs.md` for the per-stack tunings-dir mapping.
+
 ## 2026-05-31 — Kim + Opus 4.8 — Attention backend benchmark: CK vs Triton vs SDPA vs math
 
 Head-to-head: one 50-step LatCH-guided SA3 generation (small-music-base, the only trained
