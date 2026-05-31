@@ -19,7 +19,7 @@ separate forks that this repo clones and sets up.
 
 ```bash
 # 1. clone the meta-repo
-git clone git@github.com:Taikakim/SAO.git ~/Projects/SAO
+git clone git@github.com:Taikakim/avp-audio-craft.git ~/Projects/SAO
 cd ~/Projects/SAO
 
 # 2. run the orchestrator — clones the 3 forks, sets up each venv per its own

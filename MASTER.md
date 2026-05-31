@@ -126,3 +126,13 @@ batch mode OOMs WavLM at ~8 GB on 16 GB).
 Reverse-chronological, append-only: **`WORKLOG.md`** (sibling of this file). Read it at
 session start if you're picking up cross-project work; append an entry when you finish
 something that another agent would want to know.
+
+## 7. Install layer
+
+This repo (`Taikakim/avp-audio-craft`) is the **meta-repo + install
+orchestrator**. `./install.sh` clones the three forks (`projects.toml` lists
+them) and runs each one's own `install.sh`. Each per-repo install script is
+standalone — you can clone just one fork and run its `./install.sh` without
+needing this meta-repo. See `README.md` for the standard new-machine flow and
+`docs/flash-attn-ck-rdna4.md` for the RDNA4 / ROCm 7.14 / CK flash-attn recipe
+that the SA3 install uses.
