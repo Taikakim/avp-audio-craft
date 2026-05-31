@@ -12,6 +12,32 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-05-31 — Kim + Opus 4.8 — torch.compile benchmark (full optimization ladder)
+
+Same 50-step LatCH-guided gen, eager vs `torch.compile` (default mode, DiT only — the
+sampler calls it no_grad), TunableOp ON throughout, Inductor graphs persisted to the
+per-stack `inductor_cache`. All 8 clean, outputs match eager.
+
+| stack | backend | eager | compiled | compile speedup |
+|---|---|---|---|---|
+| 2.12/7.14 | CK flash     | 14.26 s | **12.99 s** | 1.10× |
+| 2.12/7.14 | SDPA         | 19.72 s | 18.63 s | 1.06× |
+| 2.10/7.2.3| Triton flash | 27.73 s | **16.15 s** | **1.72×** |
+| 2.10/7.2.3| SDPA         | 32.84 s | 21.33 s | **1.54×** |
+
+- **Same pattern as TunableOp: compile transforms the 2.10 stack (1.5–1.7×), barely
+  moves 7.14 (1.06–1.10×).** All the optimization headroom is on the old stack.
+- **Full ladder (prod Triton): 51.72 → 27.73 (+TunableOp) → 16.15 (+compile) = 3.20×.**
+- **Fully-optimized CK vs Triton = 1.24×** (16.15/12.99), down from raw 3.57× → 1.96×
+  (TunableOp) → 1.24× (TunableOp+compile). The big early gap was optimized-new-vs-
+  unoptimized-old; with both fully optimized the 7.14/CK edge is modest.
+- **Which lever wins depends on stack:** on 2.10, compile > backend (compiled-SDPA 21.33
+  beats eager-Triton-flash 27.73); on 2.12, flash > compile (eager-CK 14.26 beats
+  compiled-SDPA 18.63).
+- **Best per stack:** 2.12 = CK+compile 12.99 s (3.85 st/s, fastest overall); 2.10 =
+  Triton+compile 16.15 s (3.10 st/s). Compile cost ~28–44 s one-time (persisted); VRAM
+  slightly lower compiled. Free lever noted: `set_float32_matmul_precision('high')` (fp32).
+
 ## 2026-05-31 — Kim + Opus 4.8 — Attention benchmark, TunableOp ON (corrects the gap)
 
 Rerun of the backend matrix below with **TunableOp ON** + persistent per-venv tunings
