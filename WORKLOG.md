@@ -12,6 +12,62 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-05-31 — Kim + Opus 4.8 — Attention backend benchmark: CK vs Triton vs SDPA vs math
+
+Head-to-head: one 50-step LatCH-guided SA3 generation (small-music-base, the only trained
+SA3 head = rms_energy_bass ep10), T=1292 (120 s), fp32, rho=mu=8, n_iter=6. TunableOp OFF,
+warmup discarded, median of 2 timed. Harness `/tmp/bench_latch_attn.py`, runner
+`/tmp/run_bench_matrix.sh`, raw `/tmp/bench_results.txt`. All 6 outputs match (out_mean
+−0.0152) → every backend numerically correct.
+
+| backend | venv/torch | 50-step wall | steps/s | vs same-venv SDPA |
+|---|---|---|---|---|
+| CK flash    | test / 2.12+rocm7.14 | 14.48 s | 3.45 | **1.39×** |
+| SDPA        | test / 2.12 | 20.07 s | 2.49 | 1.00 (anchor) |
+| math (none) | test / 2.12 | 19.00 s | 2.63 | 1.06× |
+| Triton flash| prod / 2.10+rocm7.2.3 | 51.72 s | 0.97 | **1.10×** |
+| SDPA        | prod / 2.10 | 56.80 s | 0.88 | 1.00 (anchor) |
+| math (none) | prod / 2.10 | 63.66 s | 0.79 | 0.89× |
+
+- **CK vs Triton end-to-end = 3.57×.** Decomposed via the SDPA anchors: **stack
+  (2.12/7.14 vs 2.10/7.2.3) = 2.83×** (dominant); **flash kernel (CK uplift 1.39 vs
+  Triton 1.10) = 1.26×**. CK is the more effective flash backend AND it's on the faster stack.
+- **CAVEAT — TunableOp OFF inflates the cross-stack gap.** The within-venv flash ratios
+  (1.39×, 1.10×) are clean; the 2.83× stack gap is partly artifact (prod 2.10 normally uses
+  its tuned GEMM cache). A TunableOp-on rerun is needed for realistic cross-stack absolutes.
+- **Lower bound:** small-music-base, not medium. CK's uplift should be larger on the medium
+  DiT at T=4096. VRAM: flash/SDPA 3.31 GB, math +0.4 GB (O(T²) attention matrix).
+- **Takeaways:** (1) CK flash is a real ~1.4× over SDPA on its native stack — worth adopting.
+  (2) The bigger prize is the 7.14 stack itself (~2.8×) — prioritise migrating prod SA3
+  (.venv, torch 2.10) to the 7.14/official-CK path once CK is fully trusted.
+
+## 2026-05-31 — Kim + Opus 4.7 — TheRock 7.14 + CK flash-attn for RDNA4: VALIDATED
+
+Follow-up to the 4.8 entry below ("CK-FA build status: BUILT, NOT YET VALIDATED"). Validation
+done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-env.md`.
+
+- **flash-attn 2.8.4 CK build** for gfx1201/WMMA SUCCEEDED after two surgical patches on
+  `ROCm/flash-attention` branch `rdna_fmha_gfx1100_gfx1201` (its `csrc/flash_attn_ck/` glue is
+  older than its CK pin `08792e0`). Pulled `mha_bwd.cpp` + `mha_varlen_bwd.cpp` + `flash_common.hpp`
+  from sibling branch `rocking/update_ck` (commit `d81a98630` "Add sink_ptr/d_sink_ptr to
+  fmha_bwd_args"). Originals saved as `*.orig` in the checkout.
+- **Verified end-to-end on `~/Projects/SAO/sa3-rocm7.13-test/.venv`** (torch 2.12.0+rocm7.14.0a,
+  triton 3.7.0+rocm, gfx1201/RX 9070 XT 16 GB):
+  - **varlen smoke** — `flash_attn_varlen_func` finite, max abs diff vs SDPA = **2.89e-04**
+  - **SA3 small-music-base generation** — warmup **88 s** (TunableOp+MIOpen tune from scratch),
+    cached **0.23 s** (~380× speedup); output fp16 finite, shape (1,2,264600)
+  - **LatCH 1-step train with `FusionOpt(normuon, sf)`** — warmup 4.4 s, cached **21 ms**
+  - **torch.compile + inductor on LatCH head** — eager 3.18 ms → compiled **2.04 ms** (1.56×),
+    max abs diff = 2.4e-07
+- **Critical runtime knob**: set `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` BEFORE `import flash_attn`
+  — the Python wrapper auto-routes to aiter on HIP and aiter isn't installed in this test venv.
+- **Tunings**: isolated to `~/Projects/SAO/sa3-rocm7.13-test/tunings/` so the 2.10/7.2.3 cache at
+  `~/pytorch-tunings-7.2.3` is untouched (2.12 validator rejects 2.10 entries and TUNING=1 would
+  otherwise overwrite). After warmup, TunableOp validator passes cleanly on the isolated cache
+  (PT_VERSION=2.12.0, gfx1201, ROCBLAS_VERSION=5.5.0.62d3a262 all match).
+- **Implication for the prod SA3 venv**: when ready to migrate the main `.venv` (torch 2.10/ROCm
+  7.2.3) to the ROCm 7.14 / official-CK path for RDNA4, this is the known-working recipe.
+
 ## 2026-05-31 — Kim + Opus 4.8 — SA3 LoRA data pipeline + master docs
 
 - **SA3 training dataset COMPLETE + ready.** `/run/media/kim/Lehto/latents_sa3/`:
