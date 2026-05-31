@@ -14,8 +14,24 @@ durable facts into `MASTER.md`. Conventions:
 
 ## 2026-05-31 — Kim + Opus 4.8 — SA3 LoRA data pipeline + master docs
 
-- **Created `MASTER.md` + this `WORKLOG.md`.** Wired `@import` into the 3 project
-  CLAUDE.mds (created one for stable-audio-tools, which had none).
+- **SA3 training dataset COMPLETE + ready.** `/run/media/kim/Lehto/latents_sa3/`:
+  **5400 beat-aligned crops, T=4096, 0 failures**, 13 GB. Each crop = `.npy`
+  (256×4096 fp16) + `.json` (full source `.INFO` + §3.5 prompt + crop offsets +
+  rel_pos) + `.TIMESERIES.npz` (21 fields: 20 MIR @ resampled-to-4096 + the new
+  `relative_position_ts` ramp). Next: SA3 LoRA retrain against this (rank 16
+  dora-rows bf16 `--compile`, `MIOPEN_FIND_MODE=2`).
+- **GPU coordination note:** the encode held ~14 GB VRAM (SAME-L + 380 s fp16
+  activations) → hard-blocked the parallel **CK-FA validation** instance (needs
+  VRAM for SA3 medium + FA). Encode finished ~`<time>`; VRAM released to 1.5 GB.
+  **CK-FA build status: BUILT, NOT YET VALIDATED** — `flash_attn-2.8.4-cp313`
+  compiled from source in `SAO/sa3-rocm7.13-test/` on a SEPARATE experimental
+  stack (`amd-torch 2.12.0+rocm7.14.0a`, gfx1201 device wheels), NOT the prod
+  7.2.3 stack. Numerical validation (scripts 02–05) pending on the other instance.
+- **Created the docs layer:** `MASTER.md`, this `WORKLOG.md`, `ARCHITECTURE.md`,
+  and `docs/{venvs,commands,latch,training-findings,lessons-learned,todos}.md`.
+  Wired `@import MASTER.md` into the 3 project CLAUDE.mds (created one for
+  stable-audio-tools, which had none). `git init`'d `SAO/` to version just these
+  coordination docs (`.gitignore` ignores all nested repos/artifacts).
 - **SA3 pre-encode, take 2 (beat-aligned, fixed T=4096).** First take used
   `pre_encode_dataset.py` default `--sample_size` (285 s, single random window/track)
   → cache thrash + lost ~38 % of each track. Pivoted to beat-aligned chunking:

@@ -10,6 +10,12 @@ ran, built, or learned this session.
 > fact learned while working in `mir/` is invisible to an agent working in
 > `stable-audio-3/`. This file is the shared layer. (2026-05-31)
 
+**Detailed docs** (this file is the summary; depth lives in `docs/`):
+`ARCHITECTURE.md` (1-page map) · `docs/venvs.md` (venvs + CK flash-attn build) ·
+`docs/commands.md` · `docs/latch.md` · `docs/training-findings.md`
+(**recipes, params, why latents are T=4096**) · `docs/lessons-learned.md` · `docs/todos.md`.
+The authoritative LatCH experiment log is `stable-audio-tools/LATCH_RESULTS.txt`.
+
 ---
 
 ## 1. Project map
