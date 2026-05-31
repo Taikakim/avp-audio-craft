@@ -12,6 +12,24 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-05-31 — Kim + Opus 4.8 — SA3 is a SEMANTIC latent (SAME): decodability map
+
+Ridge decodability probe over all 19 latents_sa3 features (`/tmp/ridge_probe.py`,
+clean latent, track-disjoint, §1 method) — run BEFORE auditioning to skip dead heads.
+Full ranking + the SAME explanation now in `docs/latch.md`. Headlines:
+- **SA3 VAE = SAME** (Semantically-Aligned Music autoEncoder): deterministic transformer
+  AE, 256-d @ 10.76 Hz, trained for semantic structure (chroma+ILD regression, T5Gemma
+  contrastive) + diffusion-alignment, not faithful low-level acoustics.
+- **`rms_energy_bass` DEAD (0.10)** despite being the SAO flagship (corr 0.965) — the VAE
+  change (acoustic conv → semantic SAME) silently rewrote the controllable-feature menu.
+- **STRONG:** spectral_flux/flatness/skewness (0.6-0.9), onset_envelope(+drums) 0.56,
+  rms_drums 0.54, hpcp 0.48. **DEAD:** band-RMS, relative_position, vocals.
+- **relative_position dead** (local 0.03, global-pooled 0.08, flux sanity 0.98) — drop the
+  GUI position slider. Whole-track property the local latent can't carry; target ill-posed.
+- Better-fit control for semantic latents: SAME's built-in chroma+ILD readouts, text-aligned
+  latent steering (needs a learned text→latent bridge — critic, not CLIP-shared space),
+  LatCH only for the decodable temporal features. Next: latent-direction edit test.
+
 ## 2026-05-31 — Kim + Opus 4.8 — SA3 MEDIUM LatCH heads: train all features
 
 Training 19 LatCH heads for the SA3 medium grid (SAME-L 256x4096) on the beat-aligned

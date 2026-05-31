@@ -57,3 +57,44 @@ per stem), spectral (flatness/flux/skew/kurtosis), HPCP (12-ch). Producer:
 
 beat-activations head (waveform-diff confirmed not a usable control); `beat_weighted`
 smoothing (worse than plain gaussian); scaling dim past 256. (LATCH_RESULTS §9, §2, §3/§22.)
+
+## SA3 medium = a SEMANTIC latent (SAME) → the controllable menu MOVED (2026-05-31)
+
+SA3's autoencoder is **SAME (Semantically-Aligned Music autoEncoder)** — a transformer AE
+(patching + Transformer-Resampling-Blocks, differential attention + RoPE), **deterministic**
+(soft-norm bottleneck, not variational — closer to a Representation Autoencoder), 4096×
+downsampling → 256-dim @ 10.76 Hz, frozen during diffusion training. SAME-S (108M, small),
+**SAME-L (852M, medium/large = our latents)**. Trained with 5 losses: multi-res STFT recon,
+relativistic GAN, **diffusion-alignment** (jointly-trained DiT pushes latent geometry to be
+diffusion-smooth → also makes LatCH/TFG gradients well-behaved), **semantic regression**
+(linear chroma + ILD heads — chroma is literally supervised in), **contrastive alignment**
+(critic on latent↔audio↔**T5Gemma-text** triplet → latent organized around text-describable
+content). Paper §2.1, `stable-audio-3/`.
+
+**Consequence:** the latent is semantic + recon-faithful + diffusion-smooth, NOT a linear
+image of low-level acoustics. So LatCH decodes well for semantic/high-level features and
+fails for low-level ones the compression discards. **Ridge decodability probe** (clean
+latent, track-disjoint, §1 method; `/tmp/ridge_probe.py`), test R² over the 19 latents_sa3
+features:
+
+  STRONG : spectral_flux 0.90, spectral_flatness 0.78, spectral_skewness 0.61,
+           onset_envelope_drums 0.57, onset_envelope 0.56, rms_drums 0.54
+  viable : hpcp 0.48 (SAME supervises chroma → that's why), spectral_kurtosis 0.33
+  weak   : rms_other/bass 0.21-0.24, rms_energy_air/mid 0.15-0.16, onset_other/bass 0.14
+  DEAD   : rms_energy_bass 0.10, rms_energy_body 0.08, relative_position 0.03,
+           onset_envelope_vocals -0.04, rms_vocals -0.08
+
+**Headline shifts vs SAO:**
+- `rms_energy_bass` was the SAO FLAGSHIP (corr 0.965) but is DEAD on SAME (0.10) — SAO's
+  acoustic conv-VAE linearly exposed band energy; SAME buries it for semantics. The
+  per-band-RMS heads are mostly gone; per-STEM (drums) + spectral + harmony are the menu.
+- **relative_position is dead** (local probe 0.03, global-pooled 0.08, sanity flux 0.98) —
+  position is a whole-track narrative property the local latent can't carry, and the target
+  is ill-posed from content. Don't ship the GUI position slider.
+
+**Better-fit control directions for a semantic latent** (vs hand-crafted MIR heads):
+(1) target only the decodable semantic features; (2) use SAME's built-in chroma + **ILD**
+(stereo-image!) linear readouts directly; (3) **text-aligned latent steering** (CLIP-style
+direction pushes — but SAME aligns via a critic, not a shared linear space, so needs a
+learned text→latent bridge); (4) division of labour: text for "what", LatCH for "when/how-
+much over time" of the decodable temporal features.
