@@ -1,0 +1,9 @@
+# This repo ONLY tracks the cross-project coordination docs. Everything else in
+# SAO/ is either its own git repo (stable-audio-3, stable-audio-tools, torchcodec,
+# sa3-rocm7.13-test) or large build artifacts (my_wheels). Ignore all, then
+# whitelist the coordination files so a stray `git add .` can never recurse into
+# the nested repos or stage gigabytes of checkpoints/latents/venvs.
+*
+!.gitignore
+!MASTER.md
+!WORKLOG.md
