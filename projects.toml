@@ -1,0 +1,40 @@
+# projects.toml — declarative repo list for ./install.sh
+#
+# Add a repo by appending a [[repos]] table. The orchestrator clones each into
+# `path` (relative to this file or absolute), then runs `./install.sh` inside
+# the clone if `setup_script` is set. On re-run, the orchestrator does
+# `git pull --ff-only` instead of re-cloning.
+#
+# Fields:
+#   name         display name (also `--only <name>` filter)
+#   url          git URL (SSH preferred; HTTPS works too)
+#   path         where to clone — relative to SAO/ or absolute
+#   branch       which branch to check out (default: main)
+#   setup_script script to run inside the clone after pulling (default: ./install.sh)
+#   skip_setup   if true, just clone and stop (no setup invoked)
+
+[[repos]]
+name = "mir"
+url = "git@github.com:Taikakim/mir-feature-extraction.git"
+# mir lives OUTSIDE SAO/ (matches Kim's current layout, and mir is sibling-ish
+# rather than nested). Adjust if you prefer it under SAO/.
+path = "../mir"
+branch = "main"
+setup_script = "./install.sh"
+
+[[repos]]
+name = "stable-audio-3"
+# PRECONDITION: fork `Stability-AI/stable-audio-3` to `Taikakim/stable-audio-3`
+# on GitHub and push your local branches (notably `latch-sa3-phase1`). This URL
+# assumes that fork name; change if you fork under a different name.
+url = "git@github.com:Taikakim/stable-audio-3.git"
+path = "stable-audio-3"
+branch = "latch-sa3-phase1"
+setup_script = "./install.sh"
+
+[[repos]]
+name = "stable-audio-tools"
+url = "git@github.com:Taikakim/audio-tools-avp.git"
+path = "stable-audio-tools"
+branch = "main"
+setup_script = "./install.sh"

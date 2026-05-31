@@ -5,7 +5,10 @@
 # while nested repos stay ignored and are never recursed into.
 /*
 !/.gitignore
+!/README.md
 !/MASTER.md
 !/WORKLOG.md
 !/ARCHITECTURE.md
 !/docs/
+!/projects.toml
+!/install.sh
