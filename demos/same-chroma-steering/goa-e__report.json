@@ -1,0 +1,96 @@
+{
+  "args": {
+    "heads": "/home/kim/Projects/mir-same-chroma/sc_run/chroma_heads_real.npz",
+    "model": "medium-base",
+    "test": "goa-e",
+    "melody_weights": null,
+    "bass_root": null,
+    "prompt": "melodic goa trance, hypnotic arpeggiated lead, driving rolling bassline",
+    "duration": 20.0,
+    "steps": 50,
+    "cfg": 7.0,
+    "seed": 1234,
+    "mu": 0.5,
+    "gamma": 0.3,
+    "n_iter": 8,
+    "frac": 0.3,
+    "mu_schedule": "const",
+    "band_weights": [
+      1.0,
+      1.0,
+      0.3
+    ],
+    "raw_grad": false,
+    "log_every": 2,
+    "out_dir": "/home/kim/Projects/mir-same-chroma/sc_run/review_demos"
+  },
+  "target": "bass locked to E ('root5'), melody E phrygian",
+  "bands": [
+    "bass_oct1",
+    "mid_oct5",
+    "treble_oct9"
+  ],
+  "baseline": {
+    "alignment": [
+      0.3006516993045807,
+      0.7431994080543518,
+      0.6902189254760742
+    ],
+    "top_pitch_classes": [
+      [
+        "D",
+        6.15
+      ],
+      [
+        "A",
+        6.09
+      ],
+      [
+        "F#",
+        4.24
+      ],
+      [
+        "C",
+        4.2
+      ],
+      [
+        "G",
+        4.15
+      ]
+    ]
+  },
+  "steered": {
+    "alignment": [
+      0.516808032989502,
+      0.7779958844184875,
+      0.6683379411697388
+    ],
+    "top_pitch_classes": [
+      [
+        "E",
+        7.27
+      ],
+      [
+        "B",
+        6.14
+      ],
+      [
+        "D",
+        5.8
+      ],
+      [
+        "G#",
+        4.88
+      ],
+      [
+        "G",
+        4.66
+      ]
+    ]
+  },
+  "alignment_delta": [
+    0.2162,
+    0.0348,
+    -0.0219
+  ]
+}
