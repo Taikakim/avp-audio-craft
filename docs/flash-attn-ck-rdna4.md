@@ -203,6 +203,32 @@ grep -c "sink_ptr" csrc/flash_attn_ck/mha_varlen_bwd.cpp  # should print 2
 If/when ROCm merges `rocking/update_ck` into the rdna branch this step goes
 away. Track the rdna branch tip or watch for a release tag.
 
+### 5b. Patch the Python autograd backward (TRAINING only)
+
+The rdna branch adds a 13th forward arg (`layout`) to `flash_attn.FlashAttnFunc`
+but leaves its `backward` returning only **12** gradients → **forward works, but any
+backprop through `flash_attn_func` dies** with:
+
+```
+RuntimeError: function FlashAttnFuncBackward returned an incorrect number of gradients (expected 13, got 12)
+```
+
+You won't hit this on **inference** or **forward-only training** (e.g. fitting a
+LatCH *head* on encoded latents — the DiT runs forward-only). You WILL hit it
+training anything that backprops through the DiT's flash attention (LoRA / control
+adapter). Fix = one `None` in `flash_attn/flash_attn_interface.py`,
+`FlashAttnFunc.backward`:
+
+```python
+# return dq, dk, dv, None, None, None, None, None, None, None, None, None        # 12 (broken)
+  return dq, dk, dv, None, None, None, None, None, None, None, None, None, None  # 13 (q,k,v + 10 non-tensor args)
+```
+
+`FlashAttnVarlenFunc` is already correct (17/17). Patch BOTH the **source** checkout
+(survives a rebuild) and the installed `site-packages` copy (no rebuild needed — the
+`.so` is unchanged). Verified 2026-06-18: `sa3_control` adapter training runs
+end-to-end on 7.14 with CK flash after this patch.
+
 ---
 
 ## 6. Install build prerequisites (PyPI, into the venv)

@@ -31,8 +31,12 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
 - **`SAO/stable-audio-3/`** — SA3 medium model (1.5 B DiT), LoRA finetune, SA3
   LatCH (phase 1). The bigger/newer generation. **Kept upstream-syncable** — tooling
   lives in `audio-tools-avp`, only SA3-side interface code (LatCH, ROCm) here.
-- **`SAO/sa3-rocm7.13-test/`** — experimental: native **CK (Composable Kernel)
-  flash-attn** build for RDNA4. Separate ROCm 7.14-preview stack. See `docs/venvs.md`.
+- **`SAO/sa3-rocm7.13-test/`** — the **ROCm 7.14 / CK flash-attn stack** (torch
+  2.12+rocm7.14, `.venv` + `flash-attention` rdna branch built with CK kernels for
+  gfx1201). CK FA validated for `sa3_control` **training** (2026-06-18) after the
+  backward grad-count patch. Enable per `docs/flash-attn-ck-rdna4.md`
+  (`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` + §5b patch). The 2× vs Triton FA2 is
+  still to be pilot-measured. See also `docs/venvs.md`.
 - **`SAO/torchcodec/`**, **`SAO/my_wheels/`** — custom torch+ROCm wheel/codec builds.
 
 ## Data (both drives removable; see MASTER §2 for the full table)
@@ -65,6 +69,10 @@ it's the "check what we already have" index any instance reads first.
 - **LatCH heads + guidance** — `stable-audio-tools` (`LATCH_RESULTS.txt`);
   `stable-audio-3/stable_audio_3/inference/latch_guided.py`.
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
+- **CK flash-attn (RDNA4 / ROCm 7.14, faster than Triton FA2)** — built in
+  `SAO/sa3-rocm7.13-test/` (its `.venv` + `flash-attention` rdna branch). Use
+  `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import flash_attn`; for TRAINING
+  apply the one-line backward grad-count patch. Recipe + patch: `docs/flash-attn-ck-rdna4.md`.
 
 ## Doc map
 
