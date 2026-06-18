@@ -12,6 +12,30 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-06-18 — Kim + Opus 4.8 — InfiniteAudio FIFO prototype for SA3 (written+reviewed, UNTESTED); forage-dj vs mir beatmatch
+
+Ported InfiniteAudio (arXiv:2506.03020) long-form / FIFO "diagonal denoising" to SA3 on
+branch `latch-sa3-phase1`. Files: `docs/INFINITE_AUDIO_FIFO.md`,
+`stable_audio_3/inference/fifo_infinite.py`, `scripts/fifo_infinite_smoke.py`.
+- **Finding:** SA3's DiT only accepts a *scalar-per-batch* timestep (`dit.py:239`, folded
+  into adaLN global cond). True FIFO needs *per-frame* σ `(B,T)` → requires model surgery
+  and is **out-of-distribution** (untrained). Not a sampler swap. Live config (small-music-base):
+  patch_size=1, timestep_cond_type=global, global_cond_type=adaLN, num_memory_tokens=64,
+  downsampling_ratio=4096.
+- Surgery = guarded monkeypatch making adaLN per-token (3 injection points, delegates the
+  long methods; scalar path byte-identical). CFG done manually (2 cfg=1.0 passes) since the
+  DiT's internal CFG assumes scalar sigma.
+- **Status: NOT run (GPU was busy).** Adversarial-review workflow (5 lenses, 38 agents)
+  found 18 issues — all fixed. Core surgery (delegation, shapes, signs) verified correct.
+  First validation: `fifo_infinite_smoke.py --parity` (gate on REL err <5e-3; ROCm GEMM
+  floor ~1e-3..1e-2 abs). Biggest expected failure = **rotary positional drift**. Fallback
+  if too OOD: sliding-window inpaint-continuation (no surgery). Details: [[infinite-audio-fifo-sa3]].
+- **forage-dj** (cloned to `/home/kim/Projects/forage-dj`): its "long-form" is just
+  generate-fixed-tracks (≤47–60s) + DJ equal-power crossfade (`src/foragedj/mixer.py`) —
+  **nothing reusable** for continuous diffusion. And mir's `scripts/latent_server.py`
+  `beatmatch_crossfade_to_wav` (downbeat-grid tempo match via `.DOWNBEATS`, phase-lock,
+  latent-space crossfade) is **strictly more advanced** than forage-dj's fader — no port up.
+
 ## 2026-06-18 — Kim + Opus 4.8 — SA3 generative source separation: FlowEdit works, true inversion is cfg-fragile
 
 Built two text-prompted separators on SA3 `medium-base` (rectified flow), both in
