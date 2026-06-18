@@ -67,6 +67,12 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 
 > ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems` **no longer exist**.
 
+> 🚀 **Fast local mirror (non-removable):** a complete copy of `latents_sa3` —
+> `/home/kim/Projects/latents_sa3` (13 G; 5401 `.npy` + 5400 `.json` + 5400
+> `.TIMESERIES.npz`, `(1,256,4096)` fp16) — lives on the NVMe. Prefer it over the
+> Lehto path for throughput-bound work (SA3 LoRA, pre-encode, FIFO seeding); Lehto
+> stays the canonical/authoritative copy. (2026-06-19)
+
 ---
 
 ## 3. Venv-per-task (the #1 source of wasted time)
