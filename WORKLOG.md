@@ -45,6 +45,17 @@ its outputs followed the prompt but had **no tie to the input**.
   reference stems.
 - Full discography (real-music test corpus) downloaded to `/home/kim/Projects/discography_flac`
   (`aavepyora-2017-discography` FLAC subtree, 284 tracks).
+- **Update — η faithfulness controller added to `sa3_zerosep_rf.py`** (fixes RF-Solver's
+  "clean but far from input"). On the re-denoise, pull predicted-clean `z0 = x − t·v`
+  toward the encoded mixture: `z0 ← (1−η)·z0 + η·x0_src` for `t ≥ τ` (τ=0.3), rebuild
+  `v = (x − z0)/t`. **First tried the RF-Inversion `(anchor−x)/(1−t)` field — wrong sign +
+  blows up at t→1 under SA3's descending-t Euler** (centroids exploded, near-silent); the
+  z0-anchor (the SA3 mean-guidance form from `latch_guided`/`steer_chroma`) is stable.
+  η-sweep env-corr↗input (Acid Alien lead 400 s) — **a clean monotone dial:** bass
+  0.10→0.72→0.92→0.97, lead 0.09→0.90→0.97→0.97 across η = 0/0.3/0.5/0.7. **η≈0.3–0.5 =
+  separation sweet spot** (anchored but still prompt-shaped); η≈0.7 over-anchors → its
+  centroid hits the full-mix centroid = just rebuilding the mix. Committed to SA3 fork
+  `latch-sa3-phase1`.
 
 ## 2026-06-01 — Kim + Opus 4.8 — SA3 DoRA finetune staged + a GPU-wedge lesson (cost the run)
 

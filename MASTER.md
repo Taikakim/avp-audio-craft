@@ -103,6 +103,19 @@ Profiles: inference = `MIOPEN_FIND_MODE=2`; training = `MIOPEN_FIND_MODE=6` —
 (`mir/src/timbral/audiobox_aesthetics.py`, run with **mir** venv; single-file mode —
 batch mode OOMs WavLM at ~8 GB on 16 GB).
 
+**Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
+`medium-base` (rectified flow). Two scripts in `stable-audio-3/scripts/`:
+`sa3_flowsep.py` = inversion-free **FlowEdit/AUDEDIT** (difference-velocity field,
+robust to high cfg, naturally anchored — the published SOTA-on-SA3 path);
+`sa3_zerosep_rf.py` = true **RF-Solver** flow-inversion (Taylor reverse-Euler;
+near-transparent, round-trip rel-err 0.23) + an **η faithfulness controller** (pull
+predicted-clean `z0` toward the encoded mixture by η∈[0,1] for steps t≥τ; η=0
+clean-but-untethered, **η≈0.3–0.5 = the separation sweet spot**, η≈0.7 rebuilds the
+mix). Both are generative re-synthesis, **not masking** → for clean drum/bass stems use
+mir Demucs/BS-RoFormer; the generative niche is **open-vocab** ("isolate the acid lead").
+The old `mir-same-chroma/.../sa3_zerosep_lite.py` was plain SDEdit (no input tie — don't
+use). Details: `WORKLOG.md` 2026-06-18.
+
 ---
 
 ## 5. Known cross-project gotchas (the stuff that bites)
@@ -123,6 +136,12 @@ batch mode OOMs WavLM at ~8 GB on 16 GB).
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²
   predicts per-head control. `latch_guided.head_loss` now supports `smooth_l1`/`huber`/`l1`
   (was mse/bce_logits only — smooth_l1-trained heads previously raised `Unknown loss_type`). *(2026-06-01)*
+- **SA3 generative separation/editing must use a `-base` checkpoint** (post-trained =
+  stochastic ping-pong, non-invertible, cfg inert). **Invert at cfg≈1** — high cfg ruins
+  recoverability. The RF-Inversion `(anchor−x)/(1−t)` controller has the **wrong sign and
+  blows up at t→1 under SA3's descending-t Euler**; use the stable **z0-anchor**
+  (mean-guidance) form instead. `env-corr↗mix` is a faithfulness proxy only for the
+  **dominant** source — on a full arrangement every isolated source scores low. *(2026-06-18)*
 
 ---
 
