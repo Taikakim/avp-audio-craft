@@ -155,6 +155,12 @@ use). Details: `WORKLOG.md` 2026-06-18.
   blows up at t→1 under SA3's descending-t Euler**; use the stable **z0-anchor**
   (mean-guidance) form instead. `env-corr↗mix` is a faithfulness proxy only for the
   **dominant** source — on a full arrangement every isolated source scores low. *(2026-06-18)*
+- **Audio file writers CLIP fp16 / out-of-range float.** `torchaudio.save` (especially the
+  new **torchcodec** backend) and most WAV writers expect samples in **[-1, 1]**; feeding
+  **fp16** or SA3's raw **>1.0 peaks** clips/distorts (this bit the riffer auditions). Always
+  **float32 → peak-normalize (or clamp) → int16 PCM** before writing — the SA gradio GUI fix
+  (`stable_audio_tools/interface/gradio.py`). In `avp_sa3`, use the shared helper
+  `sa3_control.audio_io.save_audio()` (never `torchaudio.save(x.float().cpu(), …)` raw). *(2026-06-19)*
 
 ---
 
