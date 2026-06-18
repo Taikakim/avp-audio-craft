@@ -10,6 +10,13 @@ ran, built, or learned this session.
 > fact learned while working in `mir/` is invisible to an agent working in
 > `stable-audio-3/`. This file is the shared layer. (2026-05-31)
 
+> **Before building anything, check what already exists.** `ARCHITECTURE.md` (sibling)
+> is the **reuse index** — tools and plumbing already built across the three repos —
+> kept current as a standing task. We keep rediscovering things already in place (e.g.
+> a working **bungee** time-stretch binding + comparison GUI in `mir/`). Grep the repos
+> and read `ARCHITECTURE.md` before writing new code; each sub-component also carries its
+> own `ARCHITECTURE.md` + `CLAUDE.md`.
+
 **Detailed docs** (this file is the summary; depth lives in `docs/`):
 `ARCHITECTURE.md` (1-page map) · `docs/venvs.md` (venvs + CK flash-attn build) ·
 `docs/commands.md` · `docs/latch.md` · `docs/training-findings.md`

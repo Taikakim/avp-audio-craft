@@ -24,8 +24,13 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
 - **`SAO/stable-audio-tools/`** — the "audio-tools-AVP" fork. **LatCH heads**
   (training-free guidance), **FusionOpt**, SAO-Small training/finetune, audition
   renders. The LatCH research hub; `LATCH_RESULTS.txt` is its lab notebook.
+  Also hosts **`avp_sa3/`** — SA3 tooling (runs on the SA3 .venv, **no SA3-fork
+  changes**): `sa3_control/` (control-adapter training on `latents_sa3` + timeseries
+  = the similarity riffer) and `scripts/` (`sa3_flowsep`/`sa3_zerosep_rf` generative
+  separation, `stem_score`). See `avp_sa3/ARCHITECTURE.md`.
 - **`SAO/stable-audio-3/`** — SA3 medium model (1.5 B DiT), LoRA finetune, SA3
-  LatCH (phase 1). The bigger/newer generation.
+  LatCH (phase 1). The bigger/newer generation. **Kept upstream-syncable** — tooling
+  lives in `audio-tools-avp`, only SA3-side interface code (LatCH, ROCm) here.
 - **`SAO/sa3-rocm7.13-test/`** — experimental: native **CK (Composable Kernel)
   flash-attn** build for RDNA4. Separate ROCm 7.14-preview stack. See `docs/venvs.md`.
 - **`SAO/torchcodec/`**, **`SAO/my_wheels/`** — custom torch+ROCm wheel/codec builds.
@@ -36,6 +41,26 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
   (full tracks + stems + grids), `goa_crops` (older 11.9 s crops).
 - **Lehto** (`/run/media/kim/Lehto`) — derived. `latents` (SAO-Small 64-d),
   `latents_sa3` (SA3 256-d, T=4096), `timeseries` (100 Hz whole-track), `latents_stems`.
+
+## Reusable plumbing — check here before building
+
+Already built across the repos; **reuse, don't rebuild.** Keep this list current —
+it's the "check what we already have" index any instance reads first.
+
+- **bungee time-stretch / pitch-shift** — `bungee_python` 0.2.1 binding built in
+  `mir/pitch_venv` (py3.14) from `mir/repos/bungee`; A/B comparison GUI
+  `mir/pitch_shifter_gui.py` (bungee · rubberband · pedalboard · sox).
+  `from bungee_python import bungee; bungee.Bungee(sr, ch).time_stretch / .pitch_shift`.
+- **MIR features + 100 Hz whole-track timeseries** — `mir/`; window consumer
+  `stable-audio-tools/scripts/whole_track_target_source.py`.
+- **pre-encoded SA3 latents + grid-aligned controls** — `Lehto/latents_sa3`
+  (`.npy`+`.json`+`.TIMESERIES.npz`, 21 fields @ T=4096); loader
+  `stable-audio-tools/avp_sa3/sa3_control/dataset.py`.
+- **SA3 generative separation / riffer + stem scoring** —
+  `stable-audio-tools/avp_sa3/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`).
+- **LatCH heads + guidance** — `stable-audio-tools` (`LATCH_RESULTS.txt`);
+  `stable-audio-3/stable_audio_3/inference/latch_guided.py`.
+- **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
 
 ## Doc map
 
