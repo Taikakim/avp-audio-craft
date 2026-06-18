@@ -118,6 +118,11 @@ batch mode OOMs WavLM at ~8 GB on 16 GB).
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
+- **SA3-medium LatCH guidance needs gain ≈ 48–96**, not the SAO-Small default of 8 (SAME-L's
+  256-d latent is ~10× less gain-sensitive). At gain 8 heads steer the right way with ~2%
+  authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²
+  predicts per-head control. `latch_guided.head_loss` now supports `smooth_l1`/`huber`/`l1`
+  (was mse/bce_logits only — smooth_l1-trained heads previously raised `Unknown loss_type`). *(2026-06-01)*
 
 ---
 

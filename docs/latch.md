@@ -55,7 +55,9 @@ per stem), spectral (flatness/flux/skew/kurtosis), HPCP (12-ch). Producer:
 
 ## Known dead ends (don't retry)
 
-beat-activations head (waveform-diff confirmed not a usable control); `beat_weighted`
+beat-activations head **on SAO-Small/SA1** (waveform-diff confirmed not a usable control)
+— but this is **latent-specific, NOT a universal dead end**: on SA3 SAME, `beat_activation`
+probes STRONG (R²=0.62, 2026-06-01), so it's a live candidate there; `beat_weighted`
 smoothing (worse than plain gaussian); scaling dim past 256. (LATCH_RESULTS §9, §2, §3/§22.)
 
 ## SA3 medium = a SEMANTIC latent (SAME) → the controllable menu MOVED (2026-05-31)
@@ -74,12 +76,14 @@ content). Paper §2.1, `stable-audio-3/`.
 **Consequence:** the latent is semantic + recon-faithful + diffusion-smooth, NOT a linear
 image of low-level acoustics. So LatCH decodes well for semantic/high-level features and
 fails for low-level ones the compression discards. **Ridge decodability probe** (clean
-latent, track-disjoint, §1 method; `/tmp/ridge_probe.py`), test R² over the 19 latents_sa3
-features:
+latent, track-disjoint, §1 method; `/tmp/ridge_probe.py`), test R² over all 21 latents_sa3
+features (N=400, SEED=0):
 
-  STRONG : spectral_flux 0.90, spectral_flatness 0.78, spectral_skewness 0.61,
-           onset_envelope_drums 0.57, onset_envelope 0.56, rms_drums 0.54
-  viable : hpcp 0.48 (SAME supervises chroma → that's why), spectral_kurtosis 0.33
+  STRONG : spectral_flux 0.90, spectral_flatness 0.78, beat_activation 0.62,
+           spectral_skewness 0.61, onset_envelope_drums 0.57, onset_envelope 0.56,
+           rms_drums 0.54
+  viable : hpcp 0.48 (SAME supervises chroma → that's why), spectral_kurtosis 0.33,
+           downbeat_activation 0.31
   weak   : rms_other/bass 0.21-0.24, rms_energy_air/mid 0.15-0.16, onset_other/bass 0.14
   DEAD   : rms_energy_bass 0.10, rms_energy_body 0.08, relative_position 0.03,
            onset_envelope_vocals -0.04, rms_vocals -0.08
@@ -91,6 +95,13 @@ features:
 - **relative_position is dead** (local probe 0.03, global-pooled 0.08, sanity flux 0.98) —
   position is a whole-track narrative property the local latent can't carry, and the target
   is ill-posed from content. Don't ship the GUI position slider.
+- **`beat_activation` is STRONG on SAME (0.62), reversing the SAO-Small "beat dead" call**
+  (§9 — different latent). SAME's contrastive/semantic training apparently encodes metrical
+  structure linearly (likely riding partly on the same drum-transient signal as
+  onset_drums 0.57 / rms_drums 0.54); downbeat viable (0.31). Both are now **live control
+  candidates** — decodability predicts controllability (2026-06-01 gain sweep) — pending a
+  closed-loop verify, with the caveat that a sparse spike-train target may steer differently
+  than a smooth feature.
 
 **Better-fit control directions for a semantic latent** (vs hand-crafted MIR heads):
 (1) target only the decodable semantic features; (2) use SAME's built-in chroma + **ILD**
