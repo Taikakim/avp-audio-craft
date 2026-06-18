@@ -12,6 +12,111 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-06-18 — Kim + Opus 4.8 — SA3 generative source separation: FlowEdit works, true inversion is cfg-fragile
+
+Built two text-prompted separators on SA3 `medium-base` (rectified flow), both in
+`stable-audio-3/scripts/`. Context: the old `mir-same-chroma/scripts/sa3_zerosep_lite.py`
+was plain **SDEdit** (init_audio+init_noise_level → one linear noise blend), which is why
+its outputs followed the prompt but had **no tie to the input**.
+- **`sa3_flowsep.py`** — inversion-FREE FlowEdit/AUDEDIT (arXiv:2412.08629 / 2606.15149).
+  Keeps z_edit=x0, integrates the difference field `v(z_tar,target) − v(z_src,source)` along
+  SA3's schedule, skipping the high-noise head (`--n-max`). Monkeypatches
+  `sampling.sample_discrete_euler` for one `generate()` call (reuses cond/varlen/decode);
+  builds source+target cond via `conditioner`+`get_conditioning_inputs`. cfg_src 3.5 /
+  cfg_tar 13.5, n_max 33. **Robust to high cfg** (shared noise cancels) → stays anchored.
+- **`sa3_zerosep_rf.py`** — true RF-Solver inversion (arXiv:2411.04746): reverse-Euler +
+  2nd-order Taylor invert x0→noise at cfg=1, round-trip gate, then prompt-swapped re-denoise
+  (cfg swept off the shared inversion). Inversion is **near-transparent** (eps std 1.006,
+  latent round-trip rel err **0.229**, reconstruction env-corr **0.967**). But separation is
+  **cfg-fragile**: cfg 8 collapsed (env-corr 0.05–0.11, prompt-prior dominates); sweet spot
+  ~cfg 2 (0.10–0.28).
+- **A/B (Acid Alien 400–410 s, env-corr ↗ mix):** FlowEdit lead/bass/drums 0.90/0.32/0.18
+  vs RF best ~0.28/0.13/0.21. FlowEdit anchors better; RF gives cleaner instrument timbre
+  (RF bass centroid 931 Hz vs FlowEdit 3030 Hz) but re-imagines more.
+- **Takeaways:** (1) real ZeroSep = edit-friendly **DDPM** inversion, does NOT port to flow
+  matching — the flow analogue is RF/ODE inversion, or (better here) inversion-free FlowEdit.
+  (2) Must use a **-base** checkpoint (post-trained = stochastic ping-pong, cfg inert).
+  (3) **cfg≈1 for inversion** — high cfg ruins recoverability (MusRec); asymmetric cfg
+  (low invert / bounded regen) is mandatory. (4) Both are generative re-synthesis, **not
+  masking** → not clean stems; for clean drums/bass use mir Demucs/BS-RoFormer. Generative
+  value = **open-vocab** extraction ("isolate the acid lead"). (5) **env-corr ↗ mix is only a
+  faithfulness proxy for the DOMINANT source** — on a full-arrangement window all isolated
+  sources score low (each is only a part of the mix); honest non-dominant eval needs
+  reference stems.
+- Full discography (real-music test corpus) downloaded to `/home/kim/Projects/discography_flac`
+  (`aavepyora-2017-discography` FLAC subtree, 284 tracks).
+
+## 2026-06-01 — Kim + Opus 4.8 — SA3 DoRA finetune staged + a GPU-wedge lesson (cost the run)
+
+DoRA dim-128 (`dora-rows`) finetune of SA3 `medium-base` on a 300-track / 607-crop subset
+(`/run/media/kim/Lehto/latents_sa3_lora300`, symlinks). `scripts/train_lora.py` extended
+(backward-compat) with `--epochs`, `--accumulate_grad_batches`, `--gradient_clip_val`,
+`--checkpoint_every_epochs` — `DiffusionCondTrainingWrapper` uses **automatic** optimization,
+so Lightning grad-accum is live. Launch staged: `/tmp/launch_dora.sh` (rank128, 30 ep, eff
+batch 128 = micro 1 × accum 128, ckpt/5ep, `--no_demos`). Fits 12–13 GB at T=4096.
+- **First run trained fine** (~2 s/microbatch at T=4096, loss decreasing, CSV-logged).
+- **LESSONS (these cost the run):**
+  1. Lightning's tqdm is **SILENT in a non-TTY** — the progress signal is the CSV at
+     `lightning_logs/version_N/metrics.csv` (read the **newest** version dir — a relaunch makes
+     a new one). Don't kill a working run to "fix monitoring."
+  2. **Repeatedly hard-killing a multi-GB GPU process WEDGES the HIP runtime** — every
+     subsequent run loads the model (12 GB, GPU 99%) but hangs on a stuck kernel
+     (`futex_do_wait`, no optimizer step) even with the *identical config that just worked*.
+     GPU returns to clean-idle between runs but won't train. Recovery = `sudo rocm-smi
+     --gpureset -d 0` (needs sudo; unavailable unattended) or reboot.
+  3. Setting `MIOPEN_FIND_MODE` in env also froze a run (mir CLAUDE.md warns this).
+- TODO after GPU reset/reboot: `bash /tmp/launch_dora.sh`. Full T=4096 ≈ 9 h for 30 ep; add
+  `--duration 100` (T≈1076) to fit a session. Then the FusionOpt-vs-AdamW comparison.
+
+## 2026-06-01 — Kim + Opus 4.8 — probed the 2 un-probed timeseries fields: beat is NOT dead
+
+Ran the ridge decodability probe over ALL 21 latents_sa3 timeseries fields (was 19; the only
+gap was `beat_activation` + `downbeat_activation`, skipped on the SAO-Small §9 "beat = dead
+control" assumption). `/tmp/ridge_probe.py` (N=400, SEED=0, track-disjoint) →
+`/tmp/sa3_autotests/ridge_probe_all.log`. The 19 prior features reproduced exactly.
+- **`beat_activation` = R² 0.62 → STRONG** (3rd overall, above skewness/onset_drums/rms_drums).
+  The SAO-Small "beat dead" verdict was LATENT-SPECIFIC (acoustic conv-VAE); it does NOT carry
+  to SAME — SAME's contrastive/semantic training encodes metrical structure linearly. Fixed
+  `docs/latch.md` (it listed beat as a documented don't-retry dead end).
+- **`downbeat_activation` = R² 0.31 → viable.**
+- New live control candidates for SA3-medium, still UNTRAINED: beat_activation (0.62),
+  onset_envelope_drums (0.57), rms_drums (0.54), hpcp (0.48), downbeat_activation (0.31).
+  Caveat: beat/downbeat are sparse spike-trains — decodability is real, but a closed-loop
+  verify is needed to confirm they steer (a spike target may behave unlike a smooth feature).
+
+## 2026-06-01 — Kim + Opus 4.8 — SA3 medium heads ARE controllable (gain was ~10× too low)
+
+Closed-loop verify + latent-steering + gain sweep of the trained SA3-medium heads on
+`medium-base`. Scripts: `scripts/latch/verify_medium_heads.py` (committed),
+`/tmp/gain_sweep_flux.py`, `/tmp/latent_edit_steer.py`. Logs in `/tmp/sa3_autotests/`.
+
+- **CODE FIX (landed):** `stable_audio_3/inference/latch_guided.py` `head_loss()` only knew
+  `mse`/`bce_logits` → raised `Unknown loss_type: 'smooth_l1'`. EVERY smooth_l1-trained head
+  was silently un-guidable. Added `smooth_l1`/`huber`/`l1`. Any `--standardize` smooth_l1 head
+  now guides.
+- **GAIN FINDING (the headline):** default `rho=mu=8` gives near-zero authority (4σ request →
+  ~2% measured Δflux; `corr=1.0` is a MIRAGE — rank-corr rewards direction not magnitude).
+  Flux spread scales ~LINEARLY with gain: g8→0.78, g24→2.62, g48→5.43, g96→10.52, mono +
+  in-distribution throughout (no degradation at g96; real crops span flux 12–96).
+  **→ SA3-medium operating gain ≈ 48–96 (~6–12× the SAO-Small default of 8). It was low gain,
+  NOT weak heads.** Window (0,1) marginally beats (0.4,1.0); gain is the dominant lever.
+- **Confirmed per-head @ gain 64, ±1.5σ, same-noise (`verify_medium_heads.py --gain 64`):**
+  flux 27.3→33.5 (Δ6.2, ±10%), flatness 0.26→0.33 (Δ0.07, ±12%), skewness 1.93→2.18 (Δ0.25,
+  ±6%), onset_envelope 0.85→0.89 (Δ0.04, ±2.5%) — all monotonic. **Controllability tracks the
+  decodability probe R² exactly** (flux .90 > flatness .78 > skewness .61 > onset .56): the
+  ridge probe is a validated end-to-end predictor of head authority. onset is decodability-
+  limited (near the controllable floor — more gain won't buy much).
+- **Steering (direct latent edit, no diffusion):** shift clean SAME-L latent along the ridge
+  flux-direction β by `k·σ_proj`, decode. **+β raises flux cleanly/monotonically 5/5 crops
+  (12→34, ~3×); −β is content-limited** (works where flux headroom exists, reverses into
+  artifact-noise on already-low-flux crops). A training-free "flux/brightness up" knob for the
+  decodable features, complementary to the heads.
+- **Ops lessons (unattended runs):** (1) `pkill -f "pat"` self-matches the shell running it
+  when "pat" is in its own argv → kills itself; never pkill from a script that contains the
+  pattern string. (2) a `pgrep`-string wait loop hung overnight on orphaned persistent
+  DataLoader workers that kept matching after the main proc exited — don't gate auto-runs on
+  pgrep; use the trainer's own exit / a checkpoint sentinel.
+
 ## 2026-05-31 — Kim + Opus 4.8 — SA3 is a SEMANTIC latent (SAME): decodability map
 
 Ridge decodability probe over all 19 latents_sa3 features (`/tmp/ridge_probe.py`,
