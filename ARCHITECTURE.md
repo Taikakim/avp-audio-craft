@@ -57,7 +57,11 @@ it's the "check what we already have" index any instance reads first.
   (`.npy`+`.json`+`.TIMESERIES.npz`, 21 fields @ T=4096); loader
   `stable-audio-tools/avp_sa3/sa3_control/dataset.py`.
 - **SA3 generative separation / riffer + stem scoring** —
-  `stable-audio-tools/avp_sa3/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`).
+  `stable-audio-tools/avp_sa3/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`)
+  + control-adapter trainer `avp_sa3/sa3_control/`.
+- **Inference recipes** (validated technique + param sets: separation / riffer / steering /
+  guidance / eval) — `stable-audio-tools/avp_sa3/recipes/inference_recipes.yaml`. Check here
+  before re-tuning; consumed by the CLI tools and (planned) the mir explorer's recipe picker.
 - **LatCH heads + guidance** — `stable-audio-tools` (`LATCH_RESULTS.txt`);
   `stable-audio-3/stable_audio_3/inference/latch_guided.py`.
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
