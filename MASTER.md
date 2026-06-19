@@ -155,6 +155,15 @@ use). Details: `WORKLOG.md` 2026-06-18.
   blows up at t→1 under SA3's descending-t Euler**; use the stable **z0-anchor**
   (mean-guidance) form instead. `env-corr↗mix` is a faithfulness proxy only for the
   **dominant** source — on a full arrangement every isolated source scores low. *(2026-06-18)*
+- **SA3 LatCH head families differ — load via the canonical loader, never hardcode arch.**
+  The same-l production heads are `stable-audio-3/latch_weights_sa3_medium/latch_sa3_<feat>_best.pt`
+  (14 heads: `adaln_zero`, `standardized`, **depth 4**). The sibling `latch_weights_sa3/` holds
+  epoch-numbered snapshots (`_ep<N>.pt`, simpler `concat` keys, **no `_best.pt`**). Constructing
+  `LatCH(dim=256, depth=6, num_heads=8, default t_injection)` silently fails to load the medium
+  heads (state-dict mismatch). Use `stable_audio_3.models.latch.load_latch_from_checkpoint(path,
+  device)` — it auto-detects in/out channels, dim, depth, num_heads, t_injection and attaches
+  `std_mean`/`std_std` as `head.metadata`. The SA3 latent explorer player defaults to the
+  `_medium` dir for this reason. *(2026-06-19)*
 - **Audio file writers CLIP fp16 / out-of-range float.** `torchaudio.save` (especially the
   new **torchcodec** backend) and most WAV writers expect samples in **[-1, 1]**; feeding
   **fp16** or SA3's raw **>1.0 peaks** clips/distorts (this bit the riffer auditions). Always

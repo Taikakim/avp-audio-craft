@@ -67,7 +67,16 @@ it's the "check what we already have" index any instance reads first.
   guidance / eval) — `stable-audio-tools/avp_sa3/recipes/inference_recipes.yaml`. Check here
   before re-tuning; consumed by the CLI tools and (planned) the mir explorer's recipe picker.
 - **LatCH heads + guidance** — `stable-audio-tools` (`LATCH_RESULTS.txt`);
-  `stable-audio-3/stable_audio_3/inference/latch_guided.py`.
+  `stable-audio-3/stable_audio_3/inference/latch_guided.py`. Load any head with
+  `stable_audio_3.models.latch.load_latch_from_checkpoint(path, device)` — it
+  auto-detects dim/depth/num_heads/t_injection (handles both head families); the
+  **same-l production heads are `stable-audio-3/latch_weights_sa3_medium/*_best.pt`**
+  (adaln_zero, standardized, depth 4). Don't hardcode the architecture.
+- **SA3 latent explorer (viewer + decode/mix/steer player)** — `mir/plots/explorer_sa3/`
+  (Dash viewer, mir venv) + `mir/scripts/latent_server_sa3.py` (SAME-L decode player,
+  SA3 venv, port 7892; `/decode /source /mix /steer`). GPU-validated. Reviews SAME-L
+  encoder quality on `latents_sa3` + latent-space DJ mixing + LatCH-head auditioning.
+  See `mir/plots/explorer_sa3/README.md`. (mir branch `sa3-latent-explorer`.)
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
 - **CK flash-attn (RDNA4 / ROCm 7.14, faster than Triton FA2)** — built in
   `SAO/sa3-rocm7.13-test/` (its `.venv` + `flash-attention` rdna branch). Use
