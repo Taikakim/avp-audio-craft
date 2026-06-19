@@ -10,6 +10,22 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-19 — Opus 4.8 — SA3 riffer validated; pivoting to attribute-branch control
+- **`avp_sa3/sa3_control/` riffer** (decoupled cross-attn adapter on SA3 medium-base) works,
+  but only **reference-specific at lr1e-4** (peaks step~6000, then "elbow"-declines); **heavier
+  LR mode-collapses** (lr1e-3 collapsed by step6000). Metric lesson: **chroma corr can't see
+  collapse — use cross-reference AUDIO diff**; RF loss is a non-metric (flat for both). Gain knob
+  ~1–2 clean, >4 artifacts (SA3-medium needs gain>1, the LatCH lesson).
+- **Save audio via `soundfile` PCM_16**, never `torchaudio.save` — torchcodec is absent on the
+  7.14 venv (ImportError) and clips fp16 where present. (`sa3_control.audio_io.save_audio`; MASTER §5.)
+- Running overnight: 200-track LR×optimizer bracket (AdamW / FusionOpt SF-NorMuon / SF-AdamW;
+  FusionOpt OOMs at crop2048 no-checkpoint → run at crop1024). Borrowed `--timestep-sampler`
+  (log_snr) + the short-crop lever from **dada-bots/underfit** (cloned to `Projects/underfit`).
+- **NEXT MILESTONE (decided): attribute branches** = explicit time-varying MIR-feature control of
+  SA3 — the actual differentiator (leverages the mir pipeline; nobody else can). Design:
+  `avp_sa3/sa3_control/ATTRIBUTE_BRANCHES.md`. Eval is *measurable* (decode→re-extract→correlate).
+  Align with `mir/plots/explorer_sa3/` (same data; its LatCH `/steer` = the training-free twin).
+
 ---
 
 ## 2026-06-19 — Kim + Opus 4.8 — SA3 latent explorer (viewer + decode/mix/steer player), GPU-validated
