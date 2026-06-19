@@ -12,6 +12,53 @@ durable facts into `MASTER.md`. Conventions:
 
 ---
 
+## 2026-06-19 — Kim + Opus 4.8 — SA3 latent explorer (viewer + decode/mix/steer player), GPU-validated
+
+Built an SA3-only latent viewer + player on **mir branch `sa3-latent-explorer`** (the old 64-d
+Small explorer/player stay on other branches as a reference, untouched). Purpose: review SAME-L
+encoder quality on `latents_sa3` + latent-space DJ mixing + LatCH-head auditioning.
+- **Two processes:** Dash viewer `mir/plots/explorer_sa3/` (mir venv, port 8051, reads
+  `.json`/`.TIMESERIES.npz` sidecars directly — sidecars are the only feature source) ⇄ HTTP ⇄
+  player `mir/scripts/latent_server_sa3.py` (SA3 venv, port 7892, owns SAME-L VAE + LatCH heads).
+  Config `mir/latent_player_sa3.ini`. Spec/plan in `mir/docs/superpowers/{specs,plans}/2026-06-19-*`.
+- **GPU-validated** on the RX 9070 XT: `/decode` (380.4 s chunked reconstruction), `/mix`
+  (slerp latent interp of two crops → decode), `/meta`, `/status`. `/source` (original-audio A/B
+  slice) works only with **Mantu mounted** (source_path lives there) — correct 500 otherwise.
+- **`/steer` fix worth reusing:** the hardcoded `LatCH(dim=256,depth=6,num_heads=8)` couldn't load
+  the production same-l heads (`latch_weights_sa3_medium`, depth 4 / adaln_zero / standardized).
+  Now loads via `stable_audio_3.models.latch.load_latch_from_checkpoint` (auto-detects arch);
+  default `latch_weights_dir` → `latch_weights_sa3_medium` (the dir with `_best.pt`). 14 heads
+  list; steering changes the audio (gain ≈48–96, MASTER §5). See MASTER §5 head-family gotcha.
+- Built via subagent-driven TDD: 9 tasks, per-task + whole-branch review, 24/24 non-GPU tests.
+
+## 2026-06-19 — Kim + Opus 4.8 — SA3 long-form render (sliding-window + crossfade) implemented & reviewed; GPU validation pending
+
+Built the **offline long-form generation** feature on SA3 (branch `latch-sa3-phase1`,
+commits `5f6f808..796a76d`, 14 commits, pushed to `fork`). This is the productionised
+successor to the FIFO prototype: instead of one OOD FIFO stream (which drifts/collapses
+after ~18 s), it renders **overlapping windows, each latent-clamped to the previous tail
+via SA3 inpainting, stitched with slerp crossfades** — drift-free by construction.
+- Files: `stable_audio_3/inference/longform.py` (PromptSchedule, slerp+CrossfadeStitcher,
+  DriftMonitor, ChunkGenerator seam + InpaintContinuationGenerator + SDEditReanchor,
+  LongFormRenderer), `scripts/longform_render.py` (CLI: prompt or `t:prompt|...` schedule),
+  `tests/test_longform.py`. Docs: `docs/workflows/longform.md`,
+  spec/plan under `docs/superpowers/`.
+- **Swappable `ChunkGenerator` seam:** Approach A (inpaint-continuation) ships now;
+  Approach C (`BoundedFifoGenerator`, the FIFO surgery) drops in behind the same interface
+  after a finetune. `SDEditReanchor` built (latent audio2audio re-noise→denoise) but reserved
+  for opt-in transition morph / C's drift refresh.
+- Built via subagent-driven-development (fresh implementer+reviewer per task, 2-stage gates).
+  Reviews caught & fixed real bugs: slerp endpoint imprecision, an `n==0` transition crash,
+  a `parse_schedule` colon-prompt crash, and (final whole-feature review) **missing [-1,1]
+  output clamp** (MASTER.md §5 clip gotcha), **single-shot decode OOM** (now `chunked=True`),
+  NaN-retry/fail-fast + a drift canary, and **transition windows were clamping to the OLD
+  prompt's tail** (fixed → fresh chunk on transitions).
+- **Status: CPU 18/18 green, ruff clean. GPU render NOT yet runtime-validated** — dev box
+  VRAM held by a control-head training run. GPU-gated tests now skip cleanly on low VRAM.
+  Merge deferred until outputs verified. Validate when free: `uv run pytest
+  tests/test_longform.py -v` + a 2-min CLI render (acceptance = flat `drift_log` rms).
+  Recovery map: `stable-audio-3/.git/sdd/progress.md`. Details: [[infinite-audio-fifo-sa3]].
+
 ## 2026-06-18 — Kim + Opus 4.8 — InfiniteAudio FIFO prototype for SA3 (written+reviewed, UNTESTED); forage-dj vs mir beatmatch
 
 Ported InfiniteAudio (arXiv:2506.03020) long-form / FIFO "diagonal denoising" to SA3 on
