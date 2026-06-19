@@ -77,6 +77,11 @@ it's the "check what we already have" index any instance reads first.
   SA3 venv, port 7892; `/decode /source /mix /steer`). GPU-validated. Reviews SAME-L
   encoder quality on `latents_sa3` + latent-space DJ mixing + LatCH-head auditioning.
   See `mir/plots/explorer_sa3/README.md`. (mir branch `sa3-latent-explorer`.)
+- **SAME → ONNX for AMD inference (ORT + MIGraphX)** — `stable-audio-3/scripts/export_same_onnx.py`
+  (fixed-chunk export of the SAME decoder/encoder; CPU-validated cos≈0.9999) +
+  `decode_onnx.py` (host chunk-loop runner, MIGraphX>ROCm>CPU). Low-VRAM decode that runs
+  without the torch stack / alongside training. Gotchas (FlexAttention, opset 18) +
+  how-to: `stable-audio-3/docs/onnx-amd-inference.md`. GPU/seam test pending.
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
 - **CK flash-attn (RDNA4 / ROCm 7.14, faster than Triton FA2)** — built in
   `SAO/sa3-rocm7.13-test/` (its `.venv` + `flash-attention` rdna branch). Use

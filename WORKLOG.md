@@ -10,6 +10,27 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-20 — Kim + Opus 4.8 — SAME→ONNX export for AMD inference (decoder+encoder CPU-validated)
+
+Exported the SAME-L autoencoder to ONNX for low-VRAM AMD inference via ORT + MIGraphX (a
+decode path that runs without the torch stack / alongside a training job). Tooling in
+`stable-audio-3/scripts/`: `export_same_onnx.py` (export+validate) + `decode_onnx.py` (host
+chunk-loop runner). Doc: `stable-audio-3/docs/onnx-amd-inference.md`. Commit `3e5a9eb` (branch
+`latch-sa3-phase1`). CPU validation (ORT vs torch): **decoder L128 cos=0.99998, encoder L128
+cos=0.999996** (mean|Δ| ~5e-4 / ~9e-3; the encoder's larger abs Δ is just latents' wider range
+— judge by cos/relative, not an audio-calibrated threshold).
+- **Key: don't export varlen.** SAME folds the sequence length-dependently; export the
+  *fixed chunk* (`decode` on `[1,256,L]`) and loop+overlap-add on the host (port of
+  `AudioAutoencoder.decode_audio(chunked=True)` — `decode_onnx.py` does this).
+- **Two gotchas (now in MASTER §5):** flash-off alone routes to **FlexAttention** (unexportable
+  HOP, dies on `bitwise_and`) → also set `transformer.flex_attention_available=False;
+  flex_attention_compiled=None` for math-equivalent masked-SDPA; and **opset ≥ 18** (17 emits an
+  invalid `Split(num_outputs)`). `onnxscript`/`onnxruntime` install is additive (no torch/numpy bump).
+- **Pending (needs GPU):** MIGraphX-EP run + the overlap-add **seam** test (`decode_onnx.py
+  --compare-torch` to set `--overlap` ≥ receptive field). FP16 target; INT8 a stretch on MIGraphX.
+- Context: cgisky `stable-audio-3-rs` (cloned to `Projects/stable-audio-3-rs`) proves SAME ONNX/MNN
+  export works (CUDA/Windows); our path is ONNX + ORT-MIGraphX on AMD instead.
+
 ## 2026-06-19 — Opus 4.8 — SA3 riffer validated; pivoting to attribute-branch control
 - **`avp_sa3/sa3_control/` riffer** (decoupled cross-attn adapter on SA3 medium-base) works,
   but only **reference-specific at lr1e-4** (peaks step~6000, then "elbow"-declines); **heavier

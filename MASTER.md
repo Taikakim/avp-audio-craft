@@ -170,6 +170,17 @@ use). Details: `WORKLOG.md` 2026-06-18.
   **float32 → peak-normalize (or clamp) → int16 PCM** before writing — the SA gradio GUI fix
   (`stable_audio_tools/interface/gradio.py`). In `avp_sa3`, use the shared helper
   `sa3_control.audio_io.save_audio()` (never `torchaudio.save(x.float().cpu(), …)` raw). *(2026-06-19)*
+- **Exporting SAME/SA3 to ONNX — two non-obvious blockers.** (1) `SA3_DISABLE_FLASH_ATTN=1`
+  is necessary but NOT sufficient: with flash off, SAME's sliding-window layers fall to
+  **FlexAttention** (a torch.compile HOP the ONNX dynamo exporter can't translate — dies on
+  the mask_mod `bitwise_and` graph output). Also set
+  `transformer.flex_attention_available=False; transformer.flex_attention_compiled=None`
+  → math-equivalent masked-SDPA, exports clean. (2) **opset ≥ 18** (requesting 17 emits an
+  invalid `Split(num_outputs)` ORT rejects). Export the **fixed-chunk** unit (`decode` on
+  `[1,256,L]`) and loop on the host — never a dynamic-T graph (SAME folds length-dependently).
+  Validated CPU: decoder/encoder L128 cos≈0.9999. `onnxscript`/`onnxruntime` install is
+  additive (doesn't bump the ROCm torch/numpy). Tooling: `stable-audio-3/scripts/export_same_onnx.py`
+  + `decode_onnx.py`; details `stable-audio-3/docs/onnx-amd-inference.md`. *(2026-06-20)*
 
 ---
 
