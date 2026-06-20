@@ -56,7 +56,12 @@ cos=0.999996** (mean|Δ| ~5e-4 / ~9e-3; the encoder's larger abs Δ is just late
   1.23.2 build** (`migraphx_save/load_compiled_model` + `_model_name`/`_model_path` all rejected →
   silent CPU fallback; `decode_onnx.py` now detects that & retries on the bare GPU EP). Real
   mitigation: **a long-lived server compiles once at boot** (the latent_server pattern) → per-request
-  cost is nil; or a newer ORT-ROCm build with cache options. Seam test (multi-chunk) still TODO.
+  cost is nil; or a newer ORT-ROCm build with cache options.
+- **Seam test PASSES** (overlap=16, 512-latent/4-chunk): torch chunked≈unchunked (cos=1.000004) →
+  overlap≥receptive field; ONNX-chunked vs torch-UNCHUNKED **cos=0.999997**, per-boundary local
+  max|Δ| (1.5–3.5e-4) = same order as elsewhere → **no seam**. Stitch is EP-independent (run on CPU,
+  no GPU contention with the riffer bracket) so it also covers MIGraphX (per-chunk cos=0.999998).
+  → **full ONNX-on-AMD decode path verified end-to-end.**
 - Context: cgisky `stable-audio-3-rs` (cloned to `Projects/stable-audio-3-rs`) proves SAME ONNX/MNN
   export works (CUDA/Windows); our path is ONNX + ORT-MIGraphX on AMD instead.
 
