@@ -62,6 +62,12 @@ cos=0.999996** (mean|Δ| ~5e-4 / ~9e-3; the encoder's larger abs Δ is just late
   max|Δ| (1.5–3.5e-4) = same order as elsewhere → **no seam**. Stitch is EP-independent (run on CPU,
   no GPU contention with the riffer bracket) so it also covers MIGraphX (per-chunk cos=0.999998).
   → **full ONNX-on-AMD decode path verified end-to-end.**
+- **Wired into the explorer:** `mir/scripts/latent_server_onnx.py` (mir branch `sa3-latent-explorer`,
+  commit c854edc) — low-VRAM ONNX decode player (~2 GB GPU, MIGraphX, runs alongside training),
+  endpoint-compatible with the torch `latent_server_sa3.py` (/status /crops /meta /decode /mix
+  /source; /steer→501, stays on the torch player). Compiles the ONNX once at boot. Viewer targets
+  it via `SA3_PLAYER_PORT=7893` (`player_client` now env-configurable). CPU-smoke-tested
+  (decode/mix/status serve); GPU path is the same session with `--provider migraphx`.
 - Context: cgisky `stable-audio-3-rs` (cloned to `Projects/stable-audio-3-rs`) proves SAME ONNX/MNN
   export works (CUDA/Windows); our path is ONNX + ORT-MIGraphX on AMD instead.
 
