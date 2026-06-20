@@ -10,6 +10,23 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-20 — Opus 4.8 — Attribute branch VALIDATED: onset-density head steers output (corr +0.90); riffer = variation-not-transfer
+
+- **THE pivot result:** an explicit **onset-density** scalar head steers SA3 output onset density at
+  **corr +0.90** (gain 1): requested sparse→dense → measured 4.3→8.3 onsets/sec; gain 0 flat 7.2
+  (control off); gain 2/4 overdrive into incoherence. **Explicit conditioning works where the opaque
+  riffer reference failed (MERIT ≈ 0)** → riffer's failure was the opaque signal, not the plumbing.
+  Code: `avp_sa3/sa3_control/` — `ScalarAttributeEncoder` (FiLM tokens), `--control-mode scalar`,
+  dataset per-crop `.json` scalar, `onset_eval.py` (re-extract density via librosa). Heads at
+  `Lehto/sa3_control_runs/onset_density_400trk_crop1024/`. Smoke gotcha: `--smoke` forces fp32 →
+  OOMs 16 GB; real runs are bf16. Next: time-varying onset_envelope_ts curve, then **compose heads**
+  (riffer + onset, independent gains) — the endgame.
+- **Riffer reframed (not dead):** comprehensive MERIT (480 clips, all models, gains 0.1→8) = the
+  opaque riffer does NOT transfer mel/rhy/tim; high gain → distortion. BUT it's a real
+  **reference-conditioned variation** instrument (kick-in threshold ~gain 0.6; narrow real *timbre*
+  transfer only at the most-trained ckpt). Retrained full-effect at 400trk/lr1e-4 (12 ckpts) to test
+  if more-data/lower-LR smooths the effect.
+
 ## 2026-06-20 — Opus 4.8 — Riffer LR/optimizer bracket + MERIT eval wired; 3 ref repos mined
 
 - **Optimizer bracket** (200 tracks, `avp_sa3`): AdamW (2e-4/4e-4/6e-4+warmup, crop2048) vs
