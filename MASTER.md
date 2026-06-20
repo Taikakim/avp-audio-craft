@@ -180,7 +180,13 @@ use). Details: `WORKLOG.md` 2026-06-18.
   `[1,256,L]`) and loop on the host — never a dynamic-T graph (SAME folds length-dependently).
   Validated CPU: decoder/encoder L128 cos≈0.9999. `onnxscript`/`onnxruntime` install is
   additive (doesn't bump the ROCm torch/numpy). Tooling: `stable-audio-3/scripts/export_same_onnx.py`
-  + `decode_onnx.py`; details `stable-audio-3/docs/onnx-amd-inference.md`. *(2026-06-20)*
+  + `decode_onnx.py`; details `stable-audio-3/docs/onnx-amd-inference.md`. **GPU-verified**: the
+  decoder runs 100% on the MIGraphX EP (no CPU fallback), cos=0.999998 vs torch, RTF ~39×. The
+  MIGraphX EP is only in the **mir venv** (`onnxruntime_migraphx`); the SA3 venv's `onnxruntime`
+  is CPU-only. **Catch: a ~9-min MIGraphX AOT compile per session** (CPU-bound; not tuning or chunk
+  size). ORT compiled-model caching is **not exposed** in this `onnxruntime_migraphx` 1.23.2 build
+  (save/load options rejected → silent CPU fallback). Mitigate by **compiling once in a long-lived
+  server** (the latent_server pattern) or a newer ORT-ROCm build. *(2026-06-20)*
 
 ---
 

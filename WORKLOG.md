@@ -45,8 +45,18 @@ cos=0.999996** (mean|Δ| ~5e-4 / ~9e-3; the encoder's larger abs Δ is just late
   HOP, dies on `bitwise_and`) → also set `transformer.flex_attention_available=False;
   flex_attention_compiled=None` for math-equivalent masked-SDPA; and **opset ≥ 18** (17 emits an
   invalid `Split(num_outputs)`). `onnxscript`/`onnxruntime` install is additive (no torch/numpy bump).
-- **Pending (needs GPU):** MIGraphX-EP run + the overlap-add **seam** test (`decode_onnx.py
-  --compare-torch` to set `--overlap` ≥ receptive field). FP16 target; INT8 a stretch on MIGraphX.
+- **GPU-VERIFIED (2026-06-20, RX 9070 XT, mir venv `onnxruntime_migraphx` 1.23.2):** the SAME
+  decoder runs **100% on the MIGraphX EP, zero CPU fallback** (`--report-placement`), numerically
+  identical to torch (**cos=0.999998**, max|Δ|=2.8e-4), at **RTF ~39×** post-compile. → **ONNX
+  inference on AMD is verified.** The SA3 venv's own `onnxruntime` (1.27) is CPU-only — run the
+  GPU EP from the mir venv or `uv pip install onnxruntime-rocm`.
+- **THE catch: ~9-min MIGraphX AOT compile per session** (CPU-bound — NOT exhaustive-tune [tried
+  off] nor chunk size [same at L32 vs L128]; the masked-SDPA fallback expands into many attention
+  ops MIGraphX chews on). **ORT compiled-model caching is NOT exposed in this `onnxruntime_migraphx`
+  1.23.2 build** (`migraphx_save/load_compiled_model` + `_model_name`/`_model_path` all rejected →
+  silent CPU fallback; `decode_onnx.py` now detects that & retries on the bare GPU EP). Real
+  mitigation: **a long-lived server compiles once at boot** (the latent_server pattern) → per-request
+  cost is nil; or a newer ORT-ROCm build with cache options. Seam test (multi-chunk) still TODO.
 - Context: cgisky `stable-audio-3-rs` (cloned to `Projects/stable-audio-3-rs`) proves SAME ONNX/MNN
   export works (CUDA/Windows); our path is ONNX + ORT-MIGraphX on AMD instead.
 
