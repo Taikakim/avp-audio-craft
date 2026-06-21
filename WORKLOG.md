@@ -10,6 +10,24 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-21 — Opus 4.8 — Long-form SA3 generation MERGED — GPU-validated, drift-free
+
+- **MERGED to `Taikakim/stable-audio-3` main** (PR #1, merge commit `378b0a6`; 17 commits preserved:
+  spec → plan → TDD tasks → review fixes → doc). Sliding-window **inpaint-continuation + crossfade** —
+  render longer than SA3's native window, drift-free by construction (every window a fresh in-distribution
+  generation latent-clamped to the previous tail).
+- **GPU-validated** (`small-music-base`): 18/18 CPU tests + 2 GPU generation tests pass; 2-min render
+  `drift_log` RMS **flat [1.03, 0.95, 0.75, 0.83, 1.04]** — no collapse. The earlier **FIFO/diagonal-denoising
+  prototype** (`fifo_infinite.py`) cratered to **~0.03 at ~18 s** → sliding-window beats per-frame FIFO on the
+  untrained model.
+- **Finding:** SA3 inpaint **SOFT-conditions** the prefix (clamp-region mean-abs err **~0.064**), NOT a hard
+  clamp → the `continuation_join` slerp seam blend is load-bearing.
+- Self-contained (no `fifo_infinite` dependency). Files: `stable_audio_3/inference/longform.py`,
+  `scripts/longform_render.py`, `tests/test_longform.py`, `docs/workflows/longform.md`. FIFO kept as the
+  future **Approach-C** engine behind the swappable `ChunkGenerator` seam. Built via superpowers
+  subagent-driven-development (TDD + per-task + whole-feature review). CLI: `uv run python
+  scripts/longform_render.py --prompt "..." --duration 120 --window-sec 30 --overlap-sec 5 -o out.wav`.
+
 ## 2026-06-20 — Opus 4.8 — Attribute branch VALIDATED: onset-density head steers output (corr +0.90); riffer = variation-not-transfer
 
 - **THE pivot result:** an explicit **onset-density** scalar head steers SA3 output onset density at
