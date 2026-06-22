@@ -10,6 +10,50 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-22 — Opus 4.8 — Audiobox-aesthetics as an SA3 reward: confirmed on medium-base (240 samples)
+
+- **Question:** is Audiobox CU (Content Usefulness) a good steering reward for SA3 (toward the FK-steering
+  recipe `avp_sa3/recipes/inference_recipes.yaml` `fk-steering-cu`)? Ran best-of-N (rung 1 of the ladder)
+  on **medium-base, 240 samples / 10 genres**, scored all 4 axes (mir `audiobox_aesthetics.py`).
+- **CU ≈ PQ (robust):** within-prompt CU↔PQ **+0.87** across every genre (+0.66..+0.95). "Usefulness" is
+  essentially a **production-quality** signal, not a distinct reusability axis.
+- **No quality/complexity tradeoff:** PQ↔PC **+0.25** (genre-dependent −0.36..+0.71). The **−0.26 seen on
+  n=8 small-base did NOT replicate** — it was small-sample noise. Higher complexity doesn't cost quality.
+- **The orthogonal lever is complexity/enjoyment:** CE↔PC **+0.62** (busier = more enjoyable, within genre);
+  **PC reads arrangement density** (ambient/piano ~2.5 vs lo-fi/house ~5.6). All 4 axes +corr within-prompt
+  → a weighted **hybrid won't fight itself**. CE has the widest meaningful headroom — best single "good music" reward.
+- **Reward choice is NOT moot despite correlation:** BoN argmax differs (CU-winner ≠ PQ 8/10 prompts, ≠ PC
+  10/10) — the top sample under each reward differs even when axes correlate.
+- **Ops facts (reusable):** medium-base loads 12.7 s (flash_attn 2.8.4), **~9.7 GB VRAM loaded** → can't
+  coexist with Audiobox (~8 GB) → score sequentially. **TunableOp cache does NOT persist across processes**
+  (`apply_profile`-after-import warning is real): first gen of a (batch,dur) shape tunes ~7 min, then
+  **2.24 s/sample** steady-state — so do a whole run in ONE process. 240 samples in 16.2 m.
+- **Next:** FK particle loop still unbuilt; if pursued, target CE or a PC-with-PQ-floor hybrid, not CU. Recipe
+  updated to BoN-tested (`avp/main` 0d7cfdd).
+
+## 2026-06-22 — Opus 4.8 — Branch consolidation + AudEdit findings doc; Gradio_Lab parked (pre-SA3)
+
+- **Repo roles clarified** (now durable in `MASTER.md` §1 "Separation of concerns"): mir = features +
+  the latent-explorer-becoming-a-tool; AVP = model-agnostic *what* of control; SA3 = thin fork = the
+  *how* to interface with the SA3 model, changed only for components upstream lacks.
+- **Consolidated to main + pruned branches** (relief for branch sprawl): mir `main` ← merged
+  `sa3-latent-explorer` (incl. whole-track-timeseries) + `same-chroma` (SAME chroma extractor +
+  `gen_same_chroma_ts.py`), pushed `Taikakim/mir-feature-extraction`. Deleted **8 local + 6 remote**
+  stale branches (all proven merged). `.gitignore` now excludes wheels/`data/`/`renders/`/`*.pt` sweeps
+  across mir + AVP. SA3 left as-is (its `latch-sa3-phase1` is 54-ahead/28-behind fork-main → needs a
+  careful reconcile, not a sweep).
+- **AudEdit (2606.15149) finding landed** in AVP `docs/book/findings/2026-06-22-audedit-into-our-control-stack.md`
+  (+ Sourcebook cross-link), pushed `avp/main`. Verdict: complement-not-substitute; `sa3_flowsep.py` is
+  already a near-faithful Algorithm 1; highest-leverage next is a cheap **entanglement probe**, not the
+  data-engine. Codec caveat: paper SAME=32-ch vs our SAME-L=256-ch.
+- **`avp/Gradio_Lab` NOT merged — parked.** It's **pre-SA3** work (Kim's Stability-AI gradio UI tweaks:
+  model loading, dual-model **bracketing**, presets). 4 months stale; AVP's `interfaces/diffusion_cond.py`
+  has since diverged (LatCH/sigma), so it's a genuine **manual reconciliation** (overlapping CFG-slider
+  edits; unify `generate_cond`'s `*sampler_selections` varargs vs `latch_*` kwargs + the flat Gradio
+  inputs list) that **needs a GUI launch-test** → blocked by the busy GPU. `gradio.py` itself merges
+  clean (main never touched it). Do it as a focused launch-testable session later; drop `claude.log`,
+  keep main's `CLAUDE.md`/`README.md`/`train.py`.
+
 ## 2026-06-21 — Opus 4.8 — Long-form SA3 generation MERGED — GPU-validated, drift-free
 
 - **MERGED to `Taikakim/stable-audio-3` main** (PR #1, merge commit `378b0a6`; 17 commits preserved:
