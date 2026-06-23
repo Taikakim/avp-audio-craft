@@ -41,6 +41,19 @@ Supporting (no canonical venv of note): `SAO/sa3-rocm7.13-test` (FA/ROCm 7.13 bu
 **Three Python versions (3.10 / 3.12 / 3.13) → the venvs cannot be merged.** Always
 invoke a venv by **absolute path** in commands; never assume `python` is the right one.
 
+**Separation of concerns (the north star for where code goes).** *(2026-06-22)*
+- **mir** = the *what to measure* (features, audio I/O, timeseries) **+ the latent-explorer**, which is
+  becoming its own standalone tool.
+- **stable-audio-tools (AVP)** = the *what* of controlling Stable Audio, **model-agnostic** — control
+  methods, LatCH head architecture + training, FusionOpt, recipes, the book/Sourcebook, eval.
+- **stable-audio-3** = the *how* to interface with the **SA3 model specifically** — a **thin fork over
+  Stability-AI upstream**, changed **only when the model interface needs components upstream doesn't
+  provide** (training/inference glue, guidance integration, TensorRT/MLX/ONNX export, FIFO streaming).
+- Corollary: the **LatCH head class is duplicated** (`stable_audio_3/models/latch.py` *and*
+  `stable_audio_tools/models/latch.py`) and has **diverged** — the clean fix is a thin dependency-light
+  shared package (`latch-core`) pip-installed into all three venvs, **not** relocating code. Blocked by
+  the 3-venv wall (no cross-venv import) → deferred until a launch-testable session frees the GPU.
+
 ---
 
 ## 2. Canonical data paths
@@ -129,9 +142,36 @@ mir Demucs/BS-RoFormer; the generative niche is **open-vocab** ("isolate the aci
 The old `mir-same-chroma/.../sa3_zerosep_lite.py` was plain SDEdit (no input tie — don't
 use). Details: `WORKLOG.md` 2026-06-18.
 
+**Checkpoint trajectory stats — STANDING PRACTICE (collect every run).** *(2026-06-22)*
+After **every** training run finishes, record its weight-space trajectory to the shared
+library `SAO/checkpoint-stats/` (see its README). Tool:
+`avp_sa3/sa3_control/checkpoint_trajectory_stats.py --ckpt-dir <run> --label <lr…> --out-dir
+SAO/checkpoint-stats` (CPU-only). It logs learning velocity ‖ΔW‖, distance-from-init/final,
+path-efficiency (net/path: low ⇒ wandering → averaging/EMA helps), the centroid (soup-center)
+checkpoint, and per-layer movement. We don't know what the layers *do* yet — collect anyway;
+the trajectory shape is cheap and one day we'll need it. Companion: **model-soups**
+(`avp_sa3/sa3_control/make_soup_profiles.py`, weight-averaged checkpoints under
+`Lehto/sa3_control_runs/soups/`) test post-hoc whether averaging beats the best single
+late checkpoint. Working hypothesis: flat RF loss ⇒ the head finds the control direction then
+**drifts** (not classic overfit, not a stuck minimum); the fix is **EMA/averaging (damping) +
+early-stop**, not merely a lower LR.
+
 ---
 
 ## 5. Known cross-project gotchas (the stuff that bites)
+
+- **Flash-Attention is BUILT but INACTIVE by default — `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`
+  to switch it on, and do it EVERYWHERE (30–100% faster).** *(2026-06-23)* The torch-2.10/2.12 ROCm
+  venvs (`sat-venv`, `stable-audio-3/.venv`, `sa3-rocm7.13-test`) ship a **CK-backend
+  `flash_attn 2.8.4`** built for RDNA4/gfx1201. But the wrapper auto-routes to the `aiter` Triton-AMD
+  path unless this env var is set **before `import torch`/`flash_attn`** (shell `export`, or
+  `os.environ["FLASH_ATTENTION_TRITON_AMD_ENABLE"]="FALSE"` at the very top of the script). Symptom of
+  forgetting it: `No module named 'aiter'` + `flash_attn not installed, disabling Flash Attention` →
+  SDPA/flex fallback, **30–100% slower** — so set it for *every* train and inference run. The §5b
+  backward patch (`FlashAttnFunc.backward` → 13 grads) is applied, so FA **training** (adapter/LoRA
+  backprop through the DiT) is safe (verified on our exact stack). Build recipe + verify:
+  **`SAO/docs/flash-attn-ck-rdna4.md`**. *(`aiter` present in `stable-audio-3/.venv` only → there the
+  env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test` it switches SDPA→CK.)*
 
 - **`MIOPEN_FIND_MODE=6` CRASHES SA3 medium's DiT** (MIOpen `std::vector` assertion /
   coredump). Use `MIOPEN_FIND_MODE=2` for SA3 medium training. Mode 6 is fine for the
