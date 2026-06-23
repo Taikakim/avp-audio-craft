@@ -173,6 +173,21 @@ early-stop**, not merely a lower LR.
   **`SAO/docs/flash-attn-ck-rdna4.md`**. *(`aiter` present in `stable-audio-3/.venv` only → there the
   env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test` it switches SDPA→CK.)*
 
+- **SA3 control-adapter training freezing at step 0 on a shared box = environment, not a code bug — five
+  fixes, all baked into `stable-audio-tools/avp_sa3/run_control_train.sh`.** *(2026-06-23)* A first-step hang
+  (two signatures: CPU pegged / GPU idle, or CPU+GPU busy / no log line) traced to three things stacking when
+  training shares the GPU/box with another ROCm job (e.g. the ONNX-export instance):
+  (1) **Lehto I/O contention** — the dataloader's cold random reads off the removable drive crawl (~2 MB/s);
+  use the **NVMe latents mirror** `/home/kim/Projects/latents_sa3`, never `Lehto/latents_sa3`.
+  (2) **Thread oversubscription** — `OMP`/`MKL`/`OPENBLAS`/`NUMEXPR` unset ⇒ 24 threads/process × N processes
+  thrash the 24 cores; cap all to **4**.
+  (3) **GEMM/conv auto-tuning freezes** — TunableOp pointed at the `pytorch-tunings-7.14` cache hangs on
+  torch-2.12/RDNA4 (kernel-selection path trips when the validator *passes*), and MIOpen find-mode search can
+  freeze; set **`PYTORCH_TUNABLEOP_ENABLED=0` + `MIOPEN_FIND_MODE=2`** (with CK FA, GEMM tuning is marginal
+  anyway). And: the **first step is a one-time kernel compile** (several min, CPU+GPU busy, *no log line*) —
+  normal, **don't kill it** for ~10 min. (AdamW vs FusionOpt throughput is ~equal, both GPU-bound on the DiT,
+  ~3 it/s.)
+
 - **`MIOPEN_FIND_MODE=6` CRASHES SA3 medium's DiT** (MIOpen `std::vector` assertion /
   coredump). Use `MIOPEN_FIND_MODE=2` for SA3 medium training. Mode 6 is fine for the
   tiny LatCH heads. *(2026-05-31)*
