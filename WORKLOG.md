@@ -46,7 +46,15 @@ text→audio path now runs on ORT+MIGraphX. Tooling in `stable-audio-3/scripts/`
   structured audio. **DiT-only RTF ≈7.8×.** Ladder exported L∈{256,512,1024,2048,4096}.
 - **Gotchas (MASTER §5):** t5gemma `b-b-ul2` (gated) — HF **Xet stalls**, fetch via `HF_HUB_DISABLE_XET=1`
   / `curl -C-`. **Don't co-resident fp32 DiT (~5.8GB)+decoder on 16GB** → VRAM saturates, decoder compile
-  thrashes (31min vs 9min). Use fp16 (`migraphx_fp16_enable`) or separate processes/servers.
+  thrashes (31min vs 9min).
+- **Follow-up (same session): batch=2 + fp16 export, bench + gen-server, + a VRAM correction.**
+  `export_dit_onnx.py --batch 2` (one DiT call/step CFG, cos 1.0) + `--fp16`. `bench_dit_onnx.py`
+  (ONNX-vs-torch gen benchmark, fairness-reviewed) + `latent_server_dit_onnx.py` (low-VRAM gen server).
+  **CORRECTION to the VRAM fix:** `migraphx_fp16_enable` (runtime fp16 EP) does NOT help co-residency —
+  it loads the fp32 weights then quantizes at init, so DiT+decoder **OOMs harder** (HIP OOM, measured).
+  The real fix is **fp16-EXPORTED onnx files** (DiT 2.9GB + decoder 0.9GB load directly) or separate
+  processes. fp16 DiT export needs `convert_float_to_float16_model_path` + external-data save (>2GB).
+  Bench + full GPU gen are **GPU-gated** (a `sa3_control/train.py` run holds ~9.6GB; ~6GB free).
 
 ## 2026-06-23 — Opus 4.8 — Curated-reference reward viable; SAME-L steerability map measured (rhythm is the weak axis)
 

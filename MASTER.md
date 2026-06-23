@@ -234,12 +234,15 @@ early-stop**, not merely a lower LR.
   (inpaint_mask + masked_input); for text-to-audio it's zeros but the DiT **projects it with a bias** →
   `None ≠ zeros` (cos 0.98). Feed zeros[1,257,T]. (2) DiT can't be chunked (full-seq attention) → a
   **ladder of fixed lengths** (256/512/1024/2048/4096), one compile/rung. (3) static **batch=1** export
-  → CFG = 2 calls/step (batch=2 export halves it). (4) **Don't co-resident fp32 DiT (~5.8GB) + fp32
-  decoder on 16GB** — VRAM saturates, decoder compile thrashes (31min vs 9min); use fp16
-  (`migraphx_fp16_enable`) or separate processes. (5) t5gemma `b-b-ul2` is **gated** + downloaded on
-  demand; HF **Xet protocol stalls** → `HF_HUB_DISABLE_XET=1` or `curl -C-`. **Validated:** DiT MIGraphX
+  → CFG = 2 calls/step (batch=2 export halves it, cos 1.0). (4) **Don't co-resident fp32 DiT (~5.8GB) +
+  fp32 decoder on 16GB** — VRAM saturates, decoder compile thrashes (31min vs 9min). **The fix is
+  fp16-EXPORTED onnx files** (`export_dit_onnx.py --fp16` / onnxconverter; fp16 weights load directly
+  as ~2.9GB DiT + ~0.9GB decoder), NOT the `migraphx_fp16_enable` EP option — that loads the fp32
+  weights and quantizes at init, so co-residency **OOMs harder** (HIP OOM, measured). >2GB fp16 models
+  need `save_as_external_data`. Or use separate processes. (5) t5gemma `b-b-ul2` is **gated** + downloaded
+  on demand; HF **Xet protocol stalls** → `HF_HUB_DISABLE_XET=1` or `curl -C-`. **Validated:** DiT MIGraphX
   cos=1.0 100%-on-EP 191ms/call; full real-prompt gen ONNX-vs-torch z0 cos=0.9999; DiT-only RTF ≈7.8×.
-  Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond}.py`. *(2026-06-23)*
+  Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond,bench_dit_onnx,latent_server_dit_onnx}.py`. *(2026-06-23)*
 
 ---
 
