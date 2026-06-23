@@ -4,6 +4,12 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Export the *control-adapted* DiT to ONNX** (not just the base DiT, which is done —
+      GPU-verified ~7.8× RTF, `stable-audio-3/scripts/export_dit_onnx.py`). Our control
+      eval/inference needs the adapters (`to_k`/`to_v`/`to_out` + conditioner) fused into the
+      graph; the current export is base-only, so it can't run control heads. Doing it brings the
+      ~7.8× DiT speedup to *control* inference — big for deployment + large eval sweeps. Builds
+      directly on the base export. (2026-06-24)
 - [ ] **SA3 LoRA retrain** on the new `latents_sa3` (5400 T=4096 beat-aligned crops). Caches
       warm. rank 16 dora-rows bf16 `--compile`, `MIOPEN_FIND_MODE=2`. Decide step budget +
       `--demo_every ≥1500`. Watch that step time drops to ~2-3 s now T is fixed.
