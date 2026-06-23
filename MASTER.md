@@ -156,6 +156,22 @@ late checkpoint. Working hypothesis: flat RF loss ⇒ the head finds the control
 **drifts** (not classic overfit, not a stuck minimum); the fix is **EMA/averaging (damping) +
 early-stop**, not merely a lower LR.
 
+**Comprehensive per-run logging — STANDING REQUIREMENT (the paradigm is unsettled, you can't backfill).**
+*(2026-06-24)* Every control-head training run must emit the **full tiered telemetry**
+(`avp_sa3/sa3_control/telemetry.py`, wired into `train.py`, → wandb): per-layer weight/grad norms +
+distance-from-init, weight/grad histograms, the live **weight-space trajectory** (velocity / path-length /
+net-disp / path-efficiency), and optimizer internals (FusionOpt per-component gains). Loss/gnorm are
+near-useless here (RF loss is blind to control) — the **trajectory and per-layer signals are the real
+diagnostics**, and they already paid off in-flight (caught a velocity re-acceleration at the ep6–8 collapse
+zone, then confirmed it was a one-checkpoint blip). The forward reason to log *everything on every run*:
+comparing the **per-layer activity fingerprint across features** (onset/rhythm vs chroma vs timbre vs
+dynamics) yields a **`DiT-block × feature` controllability map** — which DiT block each control is most
+steerable at — but that cross-run analysis is only reconstructable if the per-layer signal was recorded on
+*every* run. Don't trim logging to save space; it's cheap and the value emerges later. Pairs with the
+post-hoc checkpoint-trajectory-stats above (in-flight view + saved-checkpoint view). Reading guide for the
+trajectory/per-layer panels lives in the session notes; the short version: `dist_init` (not `whist`) reveals
+movement on large-init layers (K/V learn as much as the zero-init `to_out` gate — the histogram hides it).
+
 ---
 
 ## 5. Known cross-project gotchas (the stuff that bites)
