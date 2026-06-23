@@ -1,0 +1,11 @@
+[traj] START ma 22.6.2026 10.55.52 +0300
+[traj] lr2e5: 40 checkpoints, steps 5400..216000
+[traj] wrote /home/kim/Projects/SAO/checkpoint-stats/lr2e5_trajectory.json (+ .md)
+[traj] wrote lr2e5_trajectory.png
+[traj] lr8e5: 10 checkpoints, steps 5400..54000
+[traj] wrote /home/kim/Projects/SAO/checkpoint-stats/lr8e5_trajectory.json (+ .md)
+[traj] wrote lr8e5_trajectory.png
+[traj] lr1e4: 5 checkpoints, steps 1000..5000
+[traj] wrote /home/kim/Projects/SAO/checkpoint-stats/lr1e4_trajectory.json (+ .md)
+[traj] wrote lr1e4_trajectory.png
+[traj] DONE ma 22.6.2026 10.57.39 +0300

@@ -12,3 +12,6 @@
 !/docs/
 !/projects.toml
 !/install.sh
+
+# checkpoint-stats is a tracked library (per MASTER §5), not throwaway output
+!checkpoint-stats/
