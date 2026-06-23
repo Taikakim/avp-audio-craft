@@ -227,6 +227,19 @@ early-stop**, not merely a lower LR.
   size). ORT compiled-model caching is **not exposed** in this `onnxruntime_migraphx` 1.23.2 build
   (save/load options rejected → silent CPU fallback). Mitigate by **compiling once in a long-lived
   server** (the latent_server pattern) or a newer ORT-ROCm build. *(2026-06-20)*
+- **SA3 DiT → ONNX (text→audio on AMD) — extra gotchas beyond the AE.** Export
+  `DiffusionTransformer._forward` (CFG-free core), DiT-only load from the cached safetensors (no
+  T5-Gemma; text precached). Sampler + CFG on the host (CFG → velocity space `v=v_unc+cfg·(v_cond−v_unc)`).
+  (1) **`local_add_cond` MUST be fed, not omitted:** medium-base's DiT takes a 257-ch local_add_cond
+  (inpaint_mask + masked_input); for text-to-audio it's zeros but the DiT **projects it with a bias** →
+  `None ≠ zeros` (cos 0.98). Feed zeros[1,257,T]. (2) DiT can't be chunked (full-seq attention) → a
+  **ladder of fixed lengths** (256/512/1024/2048/4096), one compile/rung. (3) static **batch=1** export
+  → CFG = 2 calls/step (batch=2 export halves it). (4) **Don't co-resident fp32 DiT (~5.8GB) + fp32
+  decoder on 16GB** — VRAM saturates, decoder compile thrashes (31min vs 9min); use fp16
+  (`migraphx_fp16_enable`) or separate processes. (5) t5gemma `b-b-ul2` is **gated** + downloaded on
+  demand; HF **Xet protocol stalls** → `HF_HUB_DISABLE_XET=1` or `curl -C-`. **Validated:** DiT MIGraphX
+  cos=1.0 100%-on-EP 191ms/call; full real-prompt gen ONNX-vs-torch z0 cos=0.9999; DiT-only RTF ≈7.8×.
+  Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond}.py`. *(2026-06-23)*
 
 ---
 
