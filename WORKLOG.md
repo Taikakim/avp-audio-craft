@@ -10,6 +10,24 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-24 — Opus 4.8 — Beat + downbeat LatCH heads trained; train_latch.py now emits full wandb telemetry
+
+- **Rhythm trio complete.** Trained **beat_activation** (loss 0.31→0.17) and **downbeat_activation** (0.24→0.18)
+  LatCH heads — same recipe as the onset head (adaln_zero/d4/4.9M, standardized, smooth_l1, adamw, 12 ep) on
+  `latents_sa3`. All three persisted at `cu_reward_renders/analysis/rhythm_heads/`.
+- **Wired full telemetry into `train_latch.py`** (it had NONE → unmet standing requirement): `--wandb` adds
+  per-step `TrainTelemetry` (per-layer norms / dist-init / weight-space trajectory / histograms) to **wandb
+  project `sa3-latch`** (+ `--wandb-project/--run-name/--log-every/--layer-every`). Fork `latch-sa3-phase1` 70fda5d.
+- **Gotcha (reusable):** `avp_sa3.sa3_control.telemetry.TrainTelemetry` wants the wandb **MODULE** (`wb.Histogram`/
+  `wb.log`), NOT the `wandb.init()` **run** object — passing the run crashes at step 0 (`'Run' has no attribute
+  'Histogram'`). Match `sa3_control/train.py`: `import wandb as wb; wb.init(...); TrainTelemetry(mod, wb, ...)`.
+  Cross-repo: train_latch (sa3 repo) imports telemetry from the SAT repo via a sys.path insert (telemetry is
+  torch-only → imports clean). wandb authed via ~/.netrc here.
+- **Next:** steering-verify beat/downbeat (needs a beat-strength extractor — librosa pulse-clarity proxy or
+  cross-venv madmom, à la the Audiobox pattern; `verify_latch.py` is rms-only, the onset verifier in `analysis/`
+  is the 1-feature template), then **compose** onset+beat+downbeat (+ chroma/RMS) — the multi-head endgame. On
+  LUMI this telemetry feeds the **DiT-block × feature controllability map** at full-catalog scale.
+
 ## 2026-06-23 — Opus 4.8 — Onset LatCH head STEERS generation (corr 0.986) — working rhythm control, no MERT
 
 - **Capstone of the rhythm thread.** Trained an **onset LatCH head** (`scripts/latch/train_latch.py --feature
