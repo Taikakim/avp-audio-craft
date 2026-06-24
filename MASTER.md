@@ -272,7 +272,11 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   weights and quantizes at init, so co-residency **OOMs harder** (HIP OOM, measured). >2GB fp16 models
   need `save_as_external_data`. Or use separate processes. (5) t5gemma `b-b-ul2` is **gated** + downloaded
   on demand; HF **Xet protocol stalls** → `HF_HUB_DISABLE_XET=1` or `curl -C-`. **Validated:** DiT MIGraphX
-  cos=1.0 100%-on-EP 191ms/call; full real-prompt gen ONNX-vs-torch z0 cos=0.9999; DiT-only RTF ≈7.8×.
+  cos=1.0 100%-on-EP (191ms/call fp32, 144ms fp16); full real-prompt gen ONNX-vs-torch z0 cos=0.9999.
+  **Benchmark verdict (the port is a VRAM/deployment win, NOT speed):** torch eager cuda-fp16 DiT loop
+  **0.707s (44ms/call, RTF 33.6×)** vs ONNX-fp16 MIGraphX **2.314s (144ms/call, RTF 10.3×)** → eager torch
+  is **~3.3× faster** (MIGraphX doesn't beat torch's rocBLAS/MIOpen kernels). ONNX buys **3.8GB resident +
+  zero torch dependency** (coexists with training), same quality (z0 cos 0.9993). Use ONNX for low-VRAM, torch for speed.
   Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond,bench_dit_onnx,latent_server_dit_onnx}.py`. *(2026-06-23)*
 
 ---
