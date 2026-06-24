@@ -26,7 +26,10 @@ durable facts into `MASTER.md`. Conventions:
 - **STEERING RESULT (2026-06-24): beat/downbeat DON'T steer — trainability ≠ steerability.** Verified cross-venv
   with madmom (the extractor they were trained on): **constant target** → output beat-activation flat
   (0.0227→0.0223, slightly wrong way); **time-varying pulse target** (90/120/150 BPM, gain 96, no-BPM prompt) →
-  output **≈ baseline** (wav |Δ|~1%, tempo 161.5 unchanged) — the guidance **barely moved the latent**. Onset
+  output **≈ baseline** (wav |Δ|~1%, tempo 161.5 unchanged) — the guidance **barely moved the latent**.
+  CONFOUND RULED OUT: beat/downbeat are **soft** (madmom probs) but the 100→10.767 Hz resample **compresses**
+  them to **~0.21 max** (not ~1.0); the first pulse used peak 0.8 (+11σ OOD) → re-ran at in-dist peak 0.20 (=max),
+  **still a no-op** → not a target-amplitude artifact. Onset
   (same code/gain) clearly moves it. **Diagnosis:** training-free latent guidance steers **dense amount** features
   (onset/RMS/brightness — strong dense gradient) but is a **no-op on sparse structural/detector** features
   (beat/downbeat placement — the head reads them but the per-frame gradient can't reorganise global structure).
