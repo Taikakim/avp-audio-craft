@@ -23,10 +23,19 @@ durable facts into `MASTER.md`. Conventions:
   'Histogram'`). Match `sa3_control/train.py`: `import wandb as wb; wb.init(...); TrainTelemetry(mod, wb, ...)`.
   Cross-repo: train_latch (sa3 repo) imports telemetry from the SAT repo via a sys.path insert (telemetry is
   torch-only → imports clean). wandb authed via ~/.netrc here.
-- **Next:** steering-verify beat/downbeat (needs a beat-strength extractor — librosa pulse-clarity proxy or
-  cross-venv madmom, à la the Audiobox pattern; `verify_latch.py` is rms-only, the onset verifier in `analysis/`
-  is the 1-feature template), then **compose** onset+beat+downbeat (+ chroma/RMS) — the multi-head endgame. On
-  LUMI this telemetry feeds the **DiT-block × feature controllability map** at full-catalog scale.
+- **STEERING RESULT (2026-06-24): beat/downbeat DON'T steer — trainability ≠ steerability.** Verified cross-venv
+  with madmom (the extractor they were trained on): **constant target** → output beat-activation flat
+  (0.0227→0.0223, slightly wrong way); **time-varying pulse target** (90/120/150 BPM, gain 96, no-BPM prompt) →
+  output **≈ baseline** (wav |Δ|~1%, tempo 161.5 unchanged) — the guidance **barely moved the latent**. Onset
+  (same code/gain) clearly moves it. **Diagnosis:** training-free latent guidance steers **dense amount** features
+  (onset/RMS/brightness — strong dense gradient) but is a **no-op on sparse structural/detector** features
+  (beat/downbeat placement — the head reads them but the per-frame gradient can't reorganise global structure).
+  → **onset DENSITY is the steerable rhythm axis**; rhythm **structure** needs **trained beat-grid conditioning**
+  (Music-ControlNet/MuseControlLite, Sourcebook Ch8/Ch11), not head guidance. Doc §8, `avp/main` a2f6dfe; null
+  artifacts in `cu_reward_renders/analysis/beat_steer_null/`.
+- **Next (multi-head + LUMI):** compose the *steerable* heads — onset + chroma + RMS — at independent gains; the
+  controllability-map endgame is on LUMI (full-feature head sweep with this telemetry → DiT-block × feature map).
+  Beat-grid *conditioning* (trained, not guidance) is its own track if rhythm structure matters.
 
 ## 2026-06-23 — Opus 4.8 — Onset LatCH head STEERS generation (corr 0.986) — working rhythm control, no MERT
 
