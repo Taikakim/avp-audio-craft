@@ -80,10 +80,14 @@ it's the "check what we already have" index any instance reads first.
 - **SA3 → ONNX for AMD inference (ORT + MIGraphX)** — full text→audio on AMD. AE:
   `stable-audio-3/scripts/export_same_onnx.py` (SAME decoder/encoder, fixed-chunk) + `decode_onnx.py`
   (host chunk-loop runner) + `latent_server_onnx.py` (low-VRAM decode player). **DiT:**
-  `export_dit_onnx.py` (DiffusionTransformer._forward, length ladder) + `dit_onnx_infer.py` (host
-  rectified-flow sampler) + `precache_dit_cond.py` (prompt→cond npz). GPU-VERIFIED: decoder cos=0.999998
-  RTF~39×, DiT cos=1.0 100%-on-EP, full real-prompt gen ONNX-vs-torch z0 cos=0.9999. Gotchas
-  (FlexAttention, opset 18, DiT local_add_cond, fp32-DiT+decoder VRAM): `stable-audio-3/docs/onnx-amd-inference.md`.
+  `export_dit_onnx.py` (DiffusionTransformer._forward, length ladder, `--batch 2`/`--fp16`) +
+  `dit_onnx_infer.py` (host rectified-flow sampler) + `precache_dit_cond.py` (prompt→cond npz) +
+  `bench_dit_onnx.py` (ONNX-vs-torch benchmark) + `latent_server_dit_onnx.py` (low-VRAM gen server).
+  GPU-VERIFIED: decoder cos=0.999998 RTF~39×, DiT cos=1.0 100%-on-EP, full real-prompt gen z0 cos=0.9999.
+  **Benchmark verdict: a VRAM/deployment win, NOT speed** — eager torch ~3.3× faster per DiT call (0.707 s
+  vs 2.314 s loop); ONNX buys 3.8 GB + zero torch dep (use ONNX for low-VRAM coexistence, torch for speed).
+  Gotchas (FlexAttention, opset 18, DiT local_add_cond, fp16-EXPORTED-files not the EP flag):
+  `stable-audio-3/docs/onnx-amd-inference.md`; findings writeup `stable-audio-tools/docs/book/findings/2026-06-24-sa3-onnx-on-amd-vram-not-speed.md`.
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
 - **CK flash-attn (RDNA4 / ROCm 7.14, faster than Triton FA2)** — built in
   `SAO/sa3-rocm7.13-test/` (its `.venv` + `flash-attention` rdna branch). Use
