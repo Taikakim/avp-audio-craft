@@ -10,6 +10,27 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-25 — Opus 4.8 — CHROMA STEERS — first content control; completes the 3-way control taxonomy
+
+- **Chroma steers (conclusive).** Trained an `other`-stem chroma LatCH head (temporal adaln_zero/d4, **cosine** loss,
+  SAME `(3,128,T)`→384-ch; readout cos **0.89** temporal vs **0.14** linear — the §6 pattern again). A/B all-C vs
+  all-F# + gain sweep, **re-measured with `same_chroma`**: separation grows monotonically (g64 +0.004 → g2048
+  +0.053) and at **gain ~1536–2048 each palette makes its requested pitch class DOMINANT** in the decoded audio
+  (C-steer→C, F#-steer→F#). The make-or-break (handoff §7) = **YES**. (g64 "MOVED:True" was a degenerate noise
+  verdict — corrected by the sweep, house rule.)
+- **The 3-way taxonomy (capstone):** **amount/density** (onset, RMS) steers at *moderate* gain (48–96);
+  **content/pitch** (chroma) steers at *high* gain (~1536–2048); **structure/timing** (beat/downbeat) **doesn't**
+  steer. Validates §8's dense-vs-sparse **and** the handoff's chroma-regularised-latent hypothesis.
+- **Stem chroma data:** `compute_same_chroma` (mir-same-chroma, pure numpy/scipy) on each crop's `other`+`bass`
+  stem window → `Lehto/latents_sa3_stem_chroma/` `(3,128,4096)` fp16, 4907/5400 (Lehto then full). The **right**
+  chroma target (NOT the essentia `hpcp_ts`, wrong recipe → garbage).
+- **Infra (committed):** `train_latch.py` `--target-source chroma` + `--loss cosine` (`fork` 5a32d1b);
+  `latch_guided.py` cosine in the single-guide sampler (644c23c). Head + A/B wavs in `cu_reward_renders/analysis/`.
+  Doc: AVP `findings/2026-06-25-chroma-steers-…`, `avp/main` eb28481.
+- **Caveats / next:** needs very high gain (~20–40× onset); dominant-but-modest magnitude (req class ~0.11 vs
+  0.083 chance, a *lean* not a *lock*); coherence at g2048 by-ear (sweet spot likely ~1536). Next: per-band
+  bass-lock + melody-palette (handoff two-group UX), full_mix-vs-stem target compare, then LUMI scale.
+
 ## 2026-06-24 — Opus 4.8 — Beat + downbeat LatCH heads trained; train_latch.py now emits full wandb telemetry
 
 - **Rhythm trio complete.** Trained **beat_activation** (loss 0.31→0.17) and **downbeat_activation** (0.24→0.18)
