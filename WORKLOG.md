@@ -23,8 +23,13 @@ durable facts into `MASTER.md`. Conventions:
   11→11.15 onsets/sec** (monotonic, calibrated; same prompt/seed, librosa). 
 - **How:** cond pass feeds `enc((target−mean)/std)`, uncond pass feeds zeros (the trained null) — control rides
   CFG, exactly like `sa3_control/onset_eval.py`. The scalar→tokens FiLM is a 5-line numpy port saved as a
-  `.cond.npz` (no torch at runtime). Adapter is length-agnostic (any ladder rung). GPU-verify pending a free
-  GPU (same VRAM story as the plain DiT → fp16-export for low VRAM). Doc: `stable-audio-3/docs/onnx-amd-inference.md`.
+  `.cond.npz` (no torch at runtime). Adapter is length-agnostic (any ladder rung).
+- **GPU-VERIFIED (MIGraphX, 2026-06-27):** control-DiT MIGraphX vs CPU **cos=1.000000, 100% on-EP, 294ms/call**
+  (vs plain DiT 144ms — the 24 adapters add ~50%); on-GPU steering onset **3→5.00, 11→11.19** onsets/sec,
+  **~4s/8-step gen** (matches CPU). **⚠ fp16-export of the control-DiT is broken** (`convert_..._model_path`
+  emits an invalid graph — a `ConstantOfShape` from the adapter PE lands fp16 where fp32 is expected; path
+  converter has no op_block_list). Runs **fp32 (6.3GB)** — fits a *free* card but not alongside training. Fix:
+  host-side PE + `position_encoding=False`, or post-patch the node. Doc: `stable-audio-3/docs/onnx-amd-inference.md`.
 
 ## 2026-06-25 — Opus 4.8 — CHROMA STEERS — first content control; completes the 3-way control taxonomy
 

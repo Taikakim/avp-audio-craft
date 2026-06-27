@@ -312,7 +312,11 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   conditioner, exports) + `dit_control_onnx_infer.py` (cond pass = `enc((target−mean)/std)`, uncond = zeros =
   trained null → control rides CFG; scalar→tokens FiLM is a numpy port in a `.cond.npz`, no runtime torch).
   Validated CPU: ONNX vs controlled-torch **cos=1.0**, end-to-end onset 3→4.88 / 11→11.15 onsets/sec. The
-  adapter's module-global is threaded as explicit forward inputs so it traces through torch.export. *(2026-06-27)*
+  adapter's module-global is threaded as explicit forward inputs so it traces through torch.export.
+  **GPU-VERIFIED (MIGraphX):** cos=1.0 vs CPU, 100% on-EP, 294ms/call (vs plain 144ms), on-GPU steering
+  3→5.00/11→11.19, ~4s/gen. ⚠ **fp16-export of the control-DiT is broken** (ConstantOfShape from the adapter
+  PE → invalid fp16 graph; path converter lacks op_block_list) → runs fp32 (6.3GB, fits a *free* card, not
+  alongside training); fix = host-side PE + `position_encoding=False`. *(2026-06-27)*
 
 ---
 
