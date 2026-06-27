@@ -83,6 +83,9 @@ it's the "check what we already have" index any instance reads first.
   `export_dit_onnx.py` (DiffusionTransformer._forward, length ladder, `--batch 2`/`--fp16`) +
   `dit_onnx_infer.py` (host rectified-flow sampler) + `precache_dit_cond.py` (prompt→cond npz) +
   `bench_dit_onnx.py` (ONNX-vs-torch benchmark) + `latent_server_dit_onnx.py` (low-VRAM gen server).
+  **Control adapters → ONNX:** `export_dit_control_onnx.py` bakes a trained `sa3_control` adapter (scalar
+  control, e.g. onset-density) into the DiT graph (control_tokens+gain inputs) + `dit_control_onnx_infer.py`
+  (steered gen) — forward-only (no autograd); cos=1.0 vs torch, onset 3→4.88/11→11.15 onsets/sec end-to-end.
   GPU-VERIFIED: decoder cos=0.999998 RTF~39×, DiT cos=1.0 100%-on-EP, full real-prompt gen z0 cos=0.9999.
   **Benchmark verdict: a VRAM/deployment win, NOT speed** — eager torch ~3.3× faster per DiT call (0.707 s
   vs 2.314 s loop); ONNX buys 3.8 GB + zero torch dep (use ONNX for low-VRAM coexistence, torch for speed).

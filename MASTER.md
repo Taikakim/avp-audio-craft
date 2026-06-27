@@ -278,6 +278,14 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   is **~3.3× faster** (MIGraphX doesn't beat torch's rocBLAS/MIOpen kernels). ONNX buys **3.8GB resident +
   zero torch dependency** (coexists with training), same quality (z0 cos 0.9993). Use ONNX for low-VRAM, torch for speed.
   Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond,bench_dit_onnx,latent_server_dit_onnx}.py`. *(2026-06-23)*
+- **`sa3_control` control adapters bake into the DiT ONNX (steering on the low-VRAM path).** A trained
+  adapter (decoupled cross-attn per block + scalar FiLM conditioner) is a pure **forward** mod (no
+  autograd/guidance, unlike a LatCH guidance head) → it folds into the DiT graph with `control_tokens[1,16,768]`
+  + `gain` as extra inputs. `export_dit_control_onnx.py` (wraps the 24 cross-attns, loads `adapter.{i}` +
+  conditioner, exports) + `dit_control_onnx_infer.py` (cond pass = `enc((target−mean)/std)`, uncond = zeros =
+  trained null → control rides CFG; scalar→tokens FiLM is a numpy port in a `.cond.npz`, no runtime torch).
+  Validated CPU: ONNX vs controlled-torch **cos=1.0**, end-to-end onset 3→4.88 / 11→11.15 onsets/sec. The
+  adapter's module-global is threaded as explicit forward inputs so it traces through torch.export. *(2026-06-27)*
 
 ---
 

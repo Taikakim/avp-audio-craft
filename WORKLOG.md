@@ -10,6 +10,22 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-27 — Kim + Opus 4.8 — Control adapters bake into the DiT ONNX — onset steering on the low-VRAM path
+
+- **A trained `sa3_control` control-adapter now runs as part of the ONNX DiT inference graph.** The adapter
+  (decoupled cross-attn per DiT block + a scalar FiLM conditioner — `onset_FUSION_lr2e5_40epoch/soup_exppeak.pt`,
+  field=onset_density) is a pure **forward** mod (no autograd/guidance), so it folds into the graph as two
+  extra inputs: `control_tokens[1,16,768]` + `gain`. Tooling: `stable-audio-3/scripts/export_dit_control_onnx.py`
+  + `dit_control_onnx_infer.py` (commit 6e46ec5, branch latch-sa3-phase1).
+- **Validated (CPU):** ONNX vs controlled-torch **cos=1.000000** (adapter faithfully in the graph; threaded
+  the adapter's module-global as explicit forward inputs → traces clean through torch.export), and differs
+  from the plain DiT. **End-to-end steering works:** 8-step gen, requested onset density **3→measured 4.88,
+  11→11.15 onsets/sec** (monotonic, calibrated; same prompt/seed, librosa). 
+- **How:** cond pass feeds `enc((target−mean)/std)`, uncond pass feeds zeros (the trained null) — control rides
+  CFG, exactly like `sa3_control/onset_eval.py`. The scalar→tokens FiLM is a 5-line numpy port saved as a
+  `.cond.npz` (no torch at runtime). Adapter is length-agnostic (any ladder rung). GPU-verify pending a free
+  GPU (same VRAM story as the plain DiT → fp16-export for low VRAM). Doc: `stable-audio-3/docs/onnx-amd-inference.md`.
+
 ## 2026-06-25 — Opus 4.8 — CHROMA STEERS — first content control; completes the 3-way control taxonomy
 
 - **Chroma steers (conclusive).** Trained an `other`-stem chroma LatCH head (temporal adaln_zero/d4, **cosine** loss,
