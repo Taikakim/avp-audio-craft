@@ -144,8 +144,17 @@ Related renderers: `multi_eval.py` (multiprompt grid → `eval_mp/`), `pq_score.
 `onset_eval.html` auto-reads *every* `onset_eval.json` under `sa3_control_runs/` (browsable
 control-response sweeps, **same-playhead cell playback** — switching cells keeps the position,
 re-click stops); `disentangle.html` = the opb page (control + tempo-shortcut + groove, per
-epoch/gain); `mp.html` = multiprompt board; `traj.html` = metric trajectories. Clips encode to
-128–192 k mp3 to keep the Pages repo small.
+epoch/gain); `mp.html` = multiprompt board; `traj.html` = metric trajectories. Online clips encode to **AAC `.m4a` @ 128 k** (smaller than mp3, universal incl iOS/Safari;
+opus is smaller still but drops pre-2023 Apple) to keep the Pages repo small — and only a
+*representative* checkpoint selection goes online, not every dir.
+
+**REQUIRED — eval provenance sidecar (`run_meta.json`).** Every eval dir MUST carry a
+`run_meta.json` next to its clips. `onset_eval.py` writes it: the ckpt's training `args`
+(lr / optimizer / steps / scalar_field / crop / encoded_dir), the `scalar_norm`, the eval params
+(prompt/gains/densities/seed/cfg), and a `--notes` string for the run's **logic/purpose**. The eval
+GUI renders it as a **per-checkpoint info box** (which run, what params, why it was trained); **future
+inference UIs read the same file** for provenance. Any renderer emitting eval clips must write this
+sidecar; the GUI generators read it (falling back to the dir name for legacy dirs that predate it).
 
 **Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
 `medium-base` (rectified flow). Two scripts in `stable-audio-3/scripts/`:
