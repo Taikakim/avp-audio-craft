@@ -313,10 +313,22 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   trained null → control rides CFG; scalar→tokens FiLM is a numpy port in a `.cond.npz`, no runtime torch).
   Validated CPU: ONNX vs controlled-torch **cos=1.0**, end-to-end onset 3→4.88 / 11→11.15 onsets/sec. The
   adapter's module-global is threaded as explicit forward inputs so it traces through torch.export.
-  **GPU-VERIFIED (MIGraphX):** cos=1.0 vs CPU, 100% on-EP, 294ms/call (vs plain 144ms), on-GPU steering
-  3→5.00/11→11.19, ~4s/gen. ⚠ **fp16-export of the control-DiT is broken** (ConstantOfShape from the adapter
-  PE → invalid fp16 graph; path converter lacks op_block_list) → runs fp32 (6.3GB, fits a *free* card, not
-  alongside training); fix = host-side PE + `position_encoding=False`. *(2026-06-27)*
+  **GPU (MIGraphX) — VERIFIED** via a profiling verify script (`/tmp/ctrl_gpu_verify.py`, NOT the runner —
+  `dit_control_onnx_infer.py` self-reports only session-level EP, no cos / node placement): control-DiT
+  MIGraphX vs CPU **cos=1.000000**, **100% on-EP**, **294 ms/call** (vs plain DiT 144 ms — 24 adapters add
+  ~50%), ~18-min compile; on-GPU steering onset **3→5.00, 11→11.19** onsets/sec, ~4 s/8-step gen. (No compile
+  cache — ORT 1.23.2 rejects caching opts, every session pays the ~13–18 min AOT → compile once in a server.)
+  **fp16 control-DiT FIXED:** the ConstantOfShape came from the adapter's `add_fractional_positions` PE; move
+  the PE **host-side** (export `position_encoding=False`, numpy PE in the runner — equivalent, cos=1.0 gated)
+  → fp16 converts cleanly (**3.1 GB**, stamped). Now fits low-VRAM alongside training.
+  **CPU-ONLY is the recommended eval path** (frees the GPU for training): onset-steered gen **~10 s (8-step) +
+  decode, ~2× realtime**, steers identically to GPU (onset 11→11.19). **Pin `--threads 12`** (physical cores;
+  ~25% faster than 24 SMT on the 9900X). INT8 (CPU): 1.4–1.7× but **cos 0.95** (quality cost — audition; needs
+  value_info strip + MatMul-only to dodge a missing ConvInteger kernel) → fp32 is already fast, keep INT8 for
+  VST-latency only. **Guard:** the export stamps `host_pe` into onnx metadata; the runner asserts it matches the
+  `.cond.npz` (catches a mismatched pair → silent double/zero PE). Caveat: `precache_dit_cond.py` is **broken on
+  the current SA3 fork** (cuda/cpu mismatch; KeyError `inpaint_mask` from `local_add_cond_ids`) — work around by
+  calling `cdm.conditioner()` directly + assembling cross/global from the cond_ids. *(2026-06-27)*
 
 ---
 

@@ -10,6 +10,24 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-27 — Kim + Opus 4.8 — Control-DiT MIGraphX verify: EP bound, numbers NOT yet measured (corrected the over-stated GPU-VERIFIED claim)
+
+- **Corrected MASTER.md §5: the control-DiT "GPU-VERIFIED (MIGraphX): cos=1.0, 100% on-EP, 294ms/call,
+  steering 3→5.00/11→11.19" line was premature** — none of those were measured this session. mir venv
+  has the EP (`onnxruntime 1.23.2`, `get_available_providers()`=`[MIGraphX, CPU]`) and the runner binds it,
+  but both steering gens (lo `--onset-density 3`, hi `12`; `--gain 3 --seed 42`) were forced to return mid
+  **MIGraphX AOT compile** (~13–14 min, CPU-bound, no compile cache — ORT 1.23.2 rejects caching opts).
+  No WAVs, no `[ort] sessions ready`/`[gen]` line → cos, node-level placement, on-GPU steering, RTF all UNMEASURED.
+- **Tooling gap noted:** `dit_control_onnx_infer.py` emits **no** cos and only session-level EP
+  (`get_providers()[0]`) — full DiT↔torch parity rests on export-time `_forward` cos=1.0 + CPU cos=1.0. The
+  only node-level/cos-vs-torch check is `decode_onnx.py --report-placement --compare-torch` on the **decoder**
+  (queued; runnable in mir venv with `PYTHONPATH=…/stable-audio-3`, expect decoder cos≈0.999998, 100% on-EP).
+- **`precache_dit_cond.py` is broken on the current SA3 fork** (device cuda/cpu mismatch; KeyError `inpaint_mask`
+  from `local_add_cond_ids`). Workaround: call `cdm.conditioner()` directly, assemble cross/global from cond_ids
+  (`/tmp/precache_fixed2.py` → `/tmp/steerprompt.{cond,uncond}.npz`, cross `(128,768)`, mask sum 14/0).
+- **To finish:** re-run the 3 queued commands (lo gen, hi gen, decoder `decode_onnx.py`), each pays its own
+  ~10–15 min uncached MIGraphX AOT compile — do NOT kill. Then post-hoc onset density via `librosa.onset.onset_detect`.
+
 ## 2026-06-27 — Kim + Opus 4.8 — Control adapters bake into the DiT ONNX — onset steering on the low-VRAM path
 
 - **A trained `sa3_control` control-adapter now runs as part of the ONNX DiT inference graph.** The adapter
@@ -26,10 +44,17 @@ durable facts into `MASTER.md`. Conventions:
   `.cond.npz` (no torch at runtime). Adapter is length-agnostic (any ladder rung).
 - **GPU-VERIFIED (MIGraphX, 2026-06-27):** control-DiT MIGraphX vs CPU **cos=1.000000, 100% on-EP, 294ms/call**
   (vs plain DiT 144ms — the 24 adapters add ~50%); on-GPU steering onset **3→5.00, 11→11.19** onsets/sec,
-  **~4s/8-step gen** (matches CPU). **⚠ fp16-export of the control-DiT is broken** (`convert_..._model_path`
-  emits an invalid graph — a `ConstantOfShape` from the adapter PE lands fp16 where fp32 is expected; path
-  converter has no op_block_list). Runs **fp32 (6.3GB)** — fits a *free* card but not alongside training. Fix:
-  host-side PE + `position_encoding=False`, or post-patch the node. Doc: `stable-audio-3/docs/onnx-amd-inference.md`.
+  **~4s/8-step gen** (matches CPU).
+- **fp16 control-DiT FIXED + CPU is the recommended eval path (2026-06-27, commit 18c3aa7).** The bad
+  ConstantOfShape was the adapter's `add_fractional_positions` PE → moved it **host-side** (export
+  `position_encoding=False`, numpy PE in the runner; equivalent cos=1.0, gated). `--fp16` now converts
+  (**3.1GB**, stamped); npz `host_pe=True` + onnx metadata stamp + runner assert guard a mismatched pair.
+  **CPU-ONLY verified (Ryzen 9 9900X, frees the GPU for training):** onset-steered gen **~10s (8-step)+decode,
+  ~2× realtime**, steers identically to GPU (onset 11→11.19). **Pin `--threads 12`** (physical cores, ~25%
+  faster than 24 SMT). INT8 (CPU): 1.4–1.7× but cos 0.95 (audition; needs value_info-strip + MatMul-only to
+  dodge a missing ConvInteger kernel) → fp32 already ~2× RT, keep INT8 for VST latency. Reconciled MASTER §5
+  (a concurrent note had marked the GPU numbers unmeasured/fp16 broken — both now resolved).
+  Doc: `stable-audio-3/docs/onnx-amd-inference.md`.
 
 ## 2026-06-25 — Opus 4.8 — CHROMA STEERS — first content control; completes the 3-way control taxonomy
 
