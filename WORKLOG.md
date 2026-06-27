@@ -10,6 +10,39 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-27 — Kim + Sonnet 4.6 — fp16 control-DiT GPU measured; CPU eval math; shared gen-core tooling
+
+- **fp16 control-DiT on MIGraphX (RX 9070 XT) — first end-to-end session-ready measurement.** AOT compile:
+  **2391 s (DiT) / 2438 s (decoder)** — ~40 min each (longer than fp32 ~18 min because the host-PE graph
+  change adds ops MIGraphX must compile). Per DiT call: **169 ms** (fp32: 294 ms; ~43% faster). Cos vs CPU:
+  **0.9999** (fp16 floor). 100% on-EP. Fills the one remaining open cell from the 2026-06-27 GPU-VERIFIED
+  record.
+- **CPU control path calibrated.** Session-ready ~10 s (no compile), **674 ms/call**. 30-clip 8-step
+  eval grid (CFG = 16 calls/clip): **~5.4 min CPU vs ~42 min GPU** (compile-dominated). **CPU is the
+  correct default for control-evals, not a low-VRAM fallback** — GPU only wins for a long-lived resident
+  process (VST) where the AOT compile amortises over hundreds of clips.
+- **Compile-cache: confirmed missing EP feature.** `onnxruntime_migraphx` 1.23.2 does NOT plumb
+  MIGraphX's compiled-program save/load API through the EP — `migraphx_save/load_compiled_model`
+  options are REJECTED, ORT silently falls back to CPU. Not a config gap; not exposed in this build.
+  See `stable-audio-3/scripts/decode_onnx.py:_augment_migraphx` + retry guard (line 241). Ways out:
+  newer ORT-ROCm build, long-lived resident server, or the CPU path.
+- **New tooling (verified on disk):**
+  - `stable-audio-3/scripts/sa3_control_onnx.py` — shared numpy/ORT gen-core (`generate_z0`,
+    `make_control_tokens`, `resolve_host_pe`).
+  - `avp_sa3/sa3_control/train.py --export-onnx-on-finish` (default True, `--export-onnx-frames`
+    default 256) — shells out to `export_dit_control_onnx.py --fp16` on training finish, writing
+    `riffer_final.pt → dit_medium-base_L256_ctrl.onnx` + `.cond.npz` into the run dir; non-fatal.
+- `stable-audio-3/scripts/control_eval_server.py` — **all-CPU** long-lived file-drop eval server
+  (resident T5-Gemma + ONNX DiT/decoder, CPU EP `--threads 12`; queue at `SAO/control_eval_queue`;
+  atomic claim/publish; frames derived from the DiT graph) and `scripts/submit_control_job.py`
+  (stdlib-only cross-venv submitter). **End-to-end verified 2026-06-27 (CPU):** boot ~16 s, 8-step job
+  ≈20 s total; steering through the server path onset 3→5.17, 11→10.43 onsets/s (librosa); shared-core
+  z0 bit-exact (max|Δ|=0) vs the pre-refactor CLI. Also fixed: the refactor relocated
+  `add_fractional_positions_np` to `sa3_control_onnx.py`, so `export_dit_control_onnx.py`'s import was
+  repointed there (it had broken otherwise — and the training hook shells out to it).
+- Docs updated: `stable-audio-3/docs/onnx-amd-inference.md` (fp16 GPU numbers, compile-cache note,
+  eval math, tooling section), `SAO/MASTER.md §5` (reconciled control-DiT row).
+
 ## 2026-06-27 — Kim + Opus 4.8 — Control-DiT MIGraphX verify: EP bound, numbers NOT yet measured (corrected the over-stated GPU-VERIFIED claim)
 
 - **Corrected MASTER.md §5: the control-DiT "GPU-VERIFIED (MIGraphX): cos=1.0, 100% on-EP, 294ms/call,

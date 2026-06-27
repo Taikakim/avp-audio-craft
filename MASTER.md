@@ -321,14 +321,30 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   **fp16 control-DiT FIXED:** the ConstantOfShape came from the adapter's `add_fractional_positions` PE; move
   the PE **host-side** (export `position_encoding=False`, numpy PE in the runner — equivalent, cos=1.0 gated)
   → fp16 converts cleanly (**3.1 GB**, stamped). Now fits low-VRAM alongside training.
+  **fp16 GPU measured (2026-06-27):** 169 ms/call (fp32: 294 ms; ~43% faster), cos=0.9999 vs CPU, AOT compile
+  2391 s (DiT) / 2438 s (decoder) — ~40 min each. **Compile-cache is a missing EP feature** (not config):
+  `migraphx_save/load_compiled_model` rejected by ORT 1.23.2, silently falls back to CPU
+  (`decode_onnx.py:_augment_migraphx` + retry guard). Ways out: newer ORT-ROCm build, resident server, or CPU.
   **CPU-ONLY is the recommended eval path** (frees the GPU for training): onset-steered gen **~10 s (8-step) +
   decode, ~2× realtime**, steers identically to GPU (onset 11→11.19). **Pin `--threads 12`** (physical cores;
   ~25% faster than 24 SMT on the 9900X). INT8 (CPU): 1.4–1.7× but **cos 0.95** (quality cost — audition; needs
   value_info strip + MatMul-only to dodge a missing ConvInteger kernel) → fp32 is already fast, keep INT8 for
-  VST-latency only. **Guard:** the export stamps `host_pe` into onnx metadata; the runner asserts it matches the
+  VST-latency only. **Eval math (2026-06-27):** 30-clip 8-step control grid = ~5.4 min CPU (no compile;
+  30×16×674 ms) vs ~42 min GPU (2391 s compile + 1.4 min DiT); **CPU is the correct default for
+  control-evals**, not a low-VRAM fallback — GPU only wins for resident VST where compile amortises.
+  **Guard:** the export stamps `host_pe` into onnx metadata; the runner asserts it matches the
   `.cond.npz` (catches a mismatched pair → silent double/zero PE). Caveat: `precache_dit_cond.py` is **broken on
   the current SA3 fork** (cuda/cpu mismatch; KeyError `inpaint_mask` from `local_add_cond_ids`) — work around by
-  calling `cdm.conditioner()` directly + assembling cross/global from the cond_ids. *(2026-06-27)*
+  calling `cdm.conditioner()` directly + assembling cross/global from the cond_ids.
+  **New tooling (2026-06-27):** `stable-audio-3/scripts/sa3_control_onnx.py` — shared numpy/ORT gen-core
+  (`generate_z0`/`make_control_tokens`/`resolve_host_pe`). `avp_sa3/sa3_control/train.py
+  --export-onnx-on-finish` (default True, `--export-onnx-frames` default 256) auto-exports `riffer_final.pt`
+  → fp16 ONNX + `.cond.npz` into the run dir on training finish; non-fatal. `scripts/control_eval_server.py`
+  + `submit_control_job.py` — **all-CPU** long-lived file-drop eval server (resident T5-Gemma + ONNX
+  DiT/decoder; queue `SAO/control_eval_queue`; atomic claim/publish; frames derived from the DiT graph)
+  + stdlib-only cross-venv submitter. **End-to-end verified 2026-06-27 (CPU):** boot ~16 s, 8-step job
+  ≈20 s; steering through the server path onset 3→5.17, 11→10.43 onsets/s; shared-core z0 bit-exact vs
+  the pre-refactor CLI. Never touches the GPU. *(2026-06-27)*
 
 ---
 
