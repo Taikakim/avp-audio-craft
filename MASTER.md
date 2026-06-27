@@ -129,6 +129,24 @@ Profiles: inference = `MIOPEN_FIND_MODE=2`; training = `MIOPEN_FIND_MODE=6` —
 (`mir/src/timbral/audiobox_aesthetics.py`, run with **mir** venv; single-file mode —
 batch mode OOMs WavLM at ~8 GB on 16 GB).
 
+**Control-response eval specs (the canonical control grid).** `avp_sa3/sa3_control/onset_eval.py
+<ckpt> --gains … --densities …` is the control-response evaluator: renders a **gain × density
+grid** (defaults gains {0.5,1,2,3,6,8,12} × densities {2,4,6,8,10,15,20}, `--duration 20`), measures
+output onset-density per clip, and writes **`onset_eval.json`** — a list of `{gain, requested,
+measured}` plus the **per-gain correlation** (the control-authority number). It **auto-detects the
+ckpt's `scalar_field`**, so the *same* tool works for `onset_density` and `onset_per_beat`. Output dir
+convention: `sa3_control_runs/onset_eval_<run>_<step>/` (one grid per checkpoint; per-step sweeps =
+the authority-vs-training curve). **Caveat: it does NOT measure BPM** — for the `onset_per_beat`
+*tempo-shortcut* (the disentanglement metric) you must add a BPM pass (essentia, **mir venv**).
+Related renderers: `multi_eval.py` (multiprompt grid → `eval_mp/`), `pq_score.py` /
+`aggregate_audiobox_eval.py` (Audiobox). **Eval-site GUIs** (`~/riffer-evals/`, Pages repo
+`Taikakim/riffer-evals`, built by `~/build_*.py` generators using the **mir venv** for measurement):
+`onset_eval.html` auto-reads *every* `onset_eval.json` under `sa3_control_runs/` (browsable
+control-response sweeps, **same-playhead cell playback** — switching cells keeps the position,
+re-click stops); `disentangle.html` = the opb page (control + tempo-shortcut + groove, per
+epoch/gain); `mp.html` = multiprompt board; `traj.html` = metric trajectories. Clips encode to
+128–192 k mp3 to keep the Pages repo small.
+
 **Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
 `medium-base` (rectified flow). Two scripts in `stable-audio-3/scripts/`:
 `sa3_flowsep.py` = inversion-free **FlowEdit/AUDEDIT** (difference-velocity field,
