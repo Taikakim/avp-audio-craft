@@ -10,6 +10,32 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-28 — Kim + Opus 4.8 — CPU LatCH-guidance eval path (commit 020b6c3)
+
+- **New scripts** in `stable-audio-3/scripts/` (branch `latch-sa3-phase1`): `sa3_latch_onnx.py`
+  (`generate_z0_latch_guided` — two-stage variance+mean Selective-TFG, APG CFG, LogSNR schedule);
+  `latch_eval_server.py` + `submit_latch_job.py` (file-drop server, queue `SAO/latch_eval_queue`;
+  `--prompts` one verbatim prompt per flag occurrence — no comma-split, musical prompts contain commas);
+  `latch_validate.py` (CPU/GPU z0-cosine harness).
+- **Why LatCH runs CPU-only.** LatCH guidance is a **gradient** method: the plain DiT runs
+  forward-only on ORT CPU EP (numpy), and guidance is applied via torch autograd through the
+  ~5-7M-param LatCH head only. The head never bakes into the ONNX graph (unlike control adapters).
+  Head autograd on a tiny model is cheap; DiT never needs autograd → CPU-feasible.
+- **APG CFG** (`sa3_latch_onnx.apg_cfg_velocity`) faithfully ports `dit.py::apg_project`
+  (orthogonal projection, lines 339-341) — cos=1.0/max|d|=0 vs the shipped projection.
+- **Device gotcha #1 (both eval servers).** Load the T5-Gemma conditioner via
+  `make_text_cond.load_conditioner` which calls `StableAudioModel.from_pretrained(device="cpu",
+  model_half=False)` — 1.4 B weights stay on CPU (GPU mem delta: −3 MB vs old cuda load). Do NOT
+  set `HIP_VISIBLE_DEVICES=""`: `flash_attn`/`aiter` probes a Triton driver at import time;
+  zero visible devices → immediate crash. Fix verified in both `latch_eval_server.py` and
+  `control_eval_server.py`.
+- **GPU z0-cos ≥ 0.999 NOT yet run** (`latch_validate.py --run-gpu` deferred). Needs the card
+  free AND a shared init latent — CPU `torch.randn(seed)` ≠ CUDA `torch.randn(seed)` by RNG
+  device; seed-matching alone won't hit the bar. The harness must inject one init latent into
+  both paths.
+- Gain: `rho=mu=64.0` default is conservative; **operating point ≈512 for energy heads** (see
+  entry below). Do not cite 48–96 or 128 as the working range.
+
 ## 2026-06-28 — Kim + Opus 4.8 — SA3 LatCH head sweep: operating gain ~512, energy heads only
 
 - Swept all 14 SA3-medium LatCH **guidance** heads (`stable-audio-3/latch_weights_sa3_medium/`) ×

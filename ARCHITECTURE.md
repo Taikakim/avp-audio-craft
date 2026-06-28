@@ -91,6 +91,21 @@ it's the "check what we already have" index any instance reads first.
   vs 2.314 s loop); ONNX buys 3.8 GB + zero torch dep (use ONNX for low-VRAM coexistence, torch for speed).
   Gotchas (FlexAttention, opset 18, DiT local_add_cond, fp16-EXPORTED-files not the EP flag):
   `stable-audio-3/docs/onnx-amd-inference.md`; findings writeup `stable-audio-tools/docs/book/findings/2026-06-24-sa3-onnx-on-amd-vram-not-speed.md`.
+- **CPU control-adapter eval path (the default, GPU-freeing)** — shared numpy/ORT gen-core
+  `stable-audio-3/scripts/sa3_control_onnx.py` (`generate_z0`/`make_control_tokens`/`resolve_host_pe`) +
+  long-lived all-CPU file-drop server `control_eval_server.py` (resident T5-Gemma + ONNX DiT/decoder,
+  queue `SAO/control_eval_queue`) + stdlib-only cross-venv `submit_control_job.py`. 8-step grid ≈5.4 min
+  CPU (pin `--threads 12`) vs ~42 min GPU-with-compile → CPU is the correct default, not a fallback.
+  Eval *measurement* (BPM/onset) still runs in the mir venv. See MASTER §5.
+- **CPU LatCH-guidance eval path (2026-06-28)** — gradient sibling of the control eval server.
+  `stable-audio-3/scripts/sa3_latch_onnx.py` (`generate_z0_latch_guided`; two-stage variance+mean
+  Selective-TFG, APG CFG ports `dit.py::apg_project`, LogSNR schedule); `latch_eval_server.py`
+  (long-lived all-CPU file-drop server, queue `SAO/latch_eval_queue`); `submit_latch_job.py`
+  (stdlib submitter; `--prompts` one prompt per flag, no comma-split); `latch_validate.py` (CPU/GPU
+  cosine harness; GPU half `--run-gpu` deferred). Unlike control adapters, LatCH guidance applies
+  torch autograd through the ~5-7M-param head only — DiT stays pure ORT numpy, no ONNX graph mod.
+  **Device gotcha (shared with `control_eval_server.py`):** use `make_text_cond.load_conditioner`
+  (`device="cpu"`) — keep GPU *visible* (do NOT set `HIP_VISIBLE_DEVICES=""`). See MASTER §5.
 - **Audiobox aesthetics scorer** — `mir/src/timbral/audiobox_aesthetics.py` (mir venv, single-file).
 - **CK flash-attn (RDNA4 / ROCm 7.14, faster than Triton FA2)** — built in
   `SAO/sa3-rocm7.13-test/` (its `.venv` + `flash-attention` rdna branch). Use
