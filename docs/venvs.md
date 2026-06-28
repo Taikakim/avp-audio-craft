@@ -46,6 +46,19 @@ absolute python path. See MASTER §3 for the per-task quick table.
 
 ## flash-attn on ROCm — current reality
 
+> **UPDATE (2026-06-23): native CK flash-attn is now BUILT, VALIDATED, and the recommended
+> path on all three torch-2.10/2.12 ROCm venvs** (`sat-venv`, `stable-audio-3/.venv`,
+> `sa3-rocm7.13-test`), which ship a **CK-backend `flash_attn 2.8.4`** for RDNA4/gfx1201
+> (30–100% faster than the Triton-AMD path). It is **INACTIVE by default** — the wrapper
+> auto-routes to the `aiter` Triton path unless you
+> `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` **before `import torch`/`flash_attn`**
+> (forgetting it → `No module named 'aiter'` + "flash_attn not installed" → SDPA/Triton
+> fallback). Set it for *every* train and inference run. mir's own rocm-7.2 venv stays on
+> Triton FA2 (`TRUE`) until the unified rocm-7.13 venv. The CK-vs-Triton "production path"
+> framing and the "BUILT, NOT YET VALIDATED" status below are **superseded** — kept for
+> troubleshooting context. Full recipe + verify: **`SAO/docs/flash-attn-ck-rdna4.md`** (and
+> MASTER §5).
+
 **Production path (works today):** flash-attn delegates to the **Triton-AMD backend via
 `aiter`** (no compiled `.so`). SA3 uses the **varlen** path only when a padding mask is
 present. The `v2.8.4.1-cktile` checkout is the consistent one installed in SA3's venv;

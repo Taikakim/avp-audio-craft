@@ -6,6 +6,11 @@ trajectory here. We don't (yet) know what individual layers/dimensions *do* — 
 layers keep changing) is cheap to collect, comparable across runs, and one day we'll
 want it. Collect it by default; interpret later.
 
+This is the **saved-checkpoint (post-hoc) view**. Its in-flight counterpart is the
+per-run tiered telemetry (`avp_sa3/sa3_control/telemetry.py`, wired into `train.py` →
+wandb), which logs the live weight-space trajectory + per-layer norms during training.
+Both are standing requirements on every control-head run — collect both.
+
 ## How to add a run
 
 ```

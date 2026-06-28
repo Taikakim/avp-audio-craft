@@ -58,7 +58,10 @@ training is a deferred Phase-2 option if short-form inference disappoints. See `
 - Model: `medium-base`. LoRA: `--rank 16 --adapter_type dora-rows --lora_alpha 16`
   (DoRA-rows is the trainer default; ~21.6 M trainable / 2.3 B frozen).
 - `--base_precision bf16`, `--batch_size 1`, `--lr 1e-4`, `--compile`.
-- Data: `--encoded_dir /run/media/kim/Lehto/latents_sa3` (T=4096 beat-aligned crops).
+- Data: `--encoded_dir /home/kim/Projects/latents_sa3` (T=4096 beat-aligned crops; the
+  **NVMe mirror**). Train off the NVMe, **never `Lehto/latents_sa3`** — cold random reads
+  off the removable Lehto drive crawl (~2 MB/s) and are a known step-0 freeze cause
+  (MASTER §5). Lehto stays the canonical/authoritative copy.
 - ROCm env: **`MIOPEN_FIND_MODE=2`** (mode 6 crashes the SA3 DiT — see lessons-learned),
   `PYTORCH_TUNABLEOP_ENABLED=1 TUNING=1`, warm caches at `~/pytorch-tunings-7.2.3`.
 - Trainer flags added this session: `--compile`, `--no_demos` (demos = 3 cfg × 50 ODE

@@ -4,12 +4,14 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
-- [ ] **Export the *control-adapted* DiT to ONNX** (not just the base DiT, which is done —
-      GPU-verified ~7.8× RTF, `stable-audio-3/scripts/export_dit_onnx.py`). Our control
-      eval/inference needs the adapters (`to_k`/`to_v`/`to_out` + conditioner) fused into the
-      graph; the current export is base-only, so it can't run control heads. Doing it brings the
-      ~7.8× DiT speedup to *control* inference — big for deployment + large eval sweeps. Builds
-      directly on the base export. (2026-06-24)
+- [x] **Export the *control-adapted* DiT to ONNX** — DONE (2026-06-27). Adapters
+      (`to_k`/`to_v`/`to_out` + conditioner) fold into the DiT graph as forward inputs:
+      `stable-audio-3/scripts/export_dit_control_onnx.py` + `dit_control_onnx_infer.py`,
+      fp16 fixed (PE moved host-side, 3.1 GB), GPU MIGraphX cos=1.0/100%-on-EP. The all-CPU
+      eval path is now canonical: `sa3_control_onnx.py` (shared gen-core) +
+      `control_eval_server.py` + `submit_control_job.py` (file-drop queue
+      `SAO/control_eval_queue`) — 8-step grid ≈5.4 min CPU vs ~42 min GPU-with-compile, so
+      CPU is the default eval path, not a fallback. (MASTER §5; move to WORKLOG.)
 - [ ] **SA3 LoRA retrain** on the new `latents_sa3` (5400 T=4096 beat-aligned crops). Caches
       warm. rank 16 dora-rows bf16 `--compile`, `MIOPEN_FIND_MODE=2`. Decide step budget +
       `--demo_every ≥1500`. Watch that step time drops to ~2-3 s now T is fixed.
