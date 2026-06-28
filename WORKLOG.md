@@ -10,6 +10,42 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-28 — Kim + Opus 4.8 — SA3 LatCH head sweep: operating gain ~512, energy heads only
+
+- Swept all 14 SA3-medium LatCH **guidance** heads (`stable-audio-3/latch_weights_sa3_medium/`) ×
+  {low,mid,high} = `std_mean`±2σ × 3 prompts; measured MERT + Audiobox CE + target-feature follow.
+  **Operating gain ≈512, ~10× the documented 48–96** — gain 128 is a dead zone (<1 dB feature move,
+  MERT Δ ~0.001). Gain ladder 128→1024 is monotonic (MERT Δ + spread grow ~40–47×).
+- At gain 512 (CE holds): **STRONG** `rms_energy_bass` (+5.1 dB), `rms_energy_mid` (+6.0); **moderate**
+  `rms_energy_body`/`spectral_skewness`/`rms_energy_air`; **dead at any weight** beat/downbeat/onset
+  activations, `hpcp`, `spectral_kurtosis` (perturb CE without steering). Refines MASTER §5 gain note.
+- Eval gotcha: use the **mid** MERT layer for energy/timbre heads — upper layer (melody/harmony) is blind
+  to a bass-RMS change and mislabels the two best heads "dead". Recipe: `gen_one.py::gen_guided` →
+  `sample_flow_euler_multi_latch_guided(rho=mu=gain, gamma=0.3, n_iter=4)`, fp32; ~7 s/clip after a
+  one-time ~340 s flex-attn autotune (guidance backprop forces FlexAttention, not CK flash-attn).
+- Artifacts: Mantu `latch_sweep/{clips (g128), clips_g512, ladder}` + pipeline (`sweep_driver`,
+  `gen_one`, `measure_sweep`, `analyze_sweep`); page **riffer-evals `latch_sweep.html`** (commit 574453e,
+  gain-response section + tiered leaderboard + 30-clip AAC subset online).
+
+## 2026-06-28 — Kim + Opus 4.8 — steered-longform glitch root-caused (over-steer); SA3 steering models packaged for Kevin's VST
+
+- **Glitchy `steered_longform` output root-caused: over-steering, not the longform machinery.** The
+  `/home/kim/steered_runs/opb_*.wav` files (made with the OLD fixed `--gain 6`) collapse because effective
+  drive = `gain × z × adapter`; at density 14 (`scalar_norm` [4.64,2.16] → +4.3σ) × gain 6 ≈ 29× the trained
+  per-token influence → off-manifold, energy craters, broadband distortion. Evidence: RMS dips exactly where
+  the density schedule peaks (both triangular & descending); glitches uniform across `t mod 25s` (NOT at window
+  seams); only ~3% of strong jumps touch clipped samples (so not the `clamp(-1,1)` write either). A/B on GPU
+  (60s, 16 steps): fixed gain6 → 4355 strong glitches + RMS collapse; **`--ridge` → 169 (26×↓), no collapse**;
+  `--ridge` + capped range (`--lo 3.5 --hi 8`) → 29 (150×↓). Fix already coded (`density_schedule.ridge_gain`,
+  gain-per-density [0.7,3.0]); the old files just predate it. UI lesson: never expose a raw fixed gain slider.
+- **Steering-model handoff package for Kevin Griffing (gary4juce/gary4local VST) at `/home/kim/sa3-kim-steering/`**
+  (+ `.tar`, 720M, 34 files). Two mechanisms, separate docs (`docs/01–04`): `control_adapters/` (density:
+  onset_density + onset_per_beat, stripped to inference-only `state`, validated end-to-end from the packaged
+  code — 3/7/11 → 4.88/8.12/9.25 onsets/s) and `latch_guidance/` (14 LatCH heads incl hpcp=chroma + the 3 SA3
+  modules + `reference/model.py.kim` for the `generate(latch_configs=...)` branch; PyTorch-only, won't run on
+  his GGML/MLX). Documented caveats: fork-Attention attr diff, CFG `[cond,uncond=zeros]`, n_tokens cap 16, fp32
+  for LatCH, rho/mu≈64 for medium. Base DiT/AE excluded (he ships it).
+
 ## 2026-06-27 — Kim + Sonnet 4.6 — fp16 control-DiT GPU measured; CPU eval math; shared gen-core tooling
 
 - **fp16 control-DiT on MIGraphX (RX 9070 XT) — first end-to-end session-ready measurement.** AOT compile:

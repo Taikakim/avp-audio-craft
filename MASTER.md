@@ -247,6 +247,14 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²
   predicts per-head control. `latch_guided.head_loss` now supports `smooth_l1`/`huber`/`l1`
   (was mse/bce_logits only — smooth_l1-trained heads previously raised `Unknown loss_type`). *(2026-06-01)*
+  **UPDATE 2026-06-28 — the systematic 14-head sweep puts the operating gain at ≈512 for the energy
+  heads (~10× higher than the 48–96 above; gain 128 is a dead zone).** At 512 (CE holds): `rms_energy_bass`
+  +5.1 dB / `rms_energy_mid` +6.0 dB steer **strongly**; `rms_energy_body`/`spectral_skewness`/`rms_energy_air`
+  **moderate**; the **activation heads** (beat/downbeat/onset), `hpcp`, `spectral_kurtosis` are **dead at any
+  weight** (perturb CE without steering). Ladder 128→1024 is monotonic (~40–47× MERT-Δ growth). Eval with the
+  **mid** MERT layer for energy/timbre heads — the upper layer is melody/harmony and blind to a bass-RMS change
+  (it mislabeled the two best heads "dead" on the first pass). See mir memory `sa3-latch-head-sweep`, WORKLOG
+  2026-06-28, riffer-evals `latch_sweep.html`.
 - **SA3 generative separation/editing must use a `-base` checkpoint** (post-trained =
   stochastic ping-pong, non-invertible, cfg inert). **Invert at cfg≈1** — high cfg ruins
   recoverability. The RF-Inversion `(anchor−x)/(1−t)` controller has the **wrong sign and
