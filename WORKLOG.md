@@ -10,6 +10,25 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-29 — Kim + Opus 4.8 — EMA(+grad-accum) REVERSES the skewness "ceiling": ~3× control, head was damping-limited
+
+- Follow-up to the LR/batch sweep (which concluded "architecture-limited"): EMA 0.999 at the best settings
+  (adamw lr 3e-4 bs32) × {20ep, 40ep, 80ep, grad-accum2 = eff-batch-64}. **All four EMA heads BEAT the
+  original** (gain 512): MERTmid Δ ema_ga2 0.0271 / ema40 0.0248 / ema20 0.0237 / ema80 0.0197 vs
+  **original 0.0086** (~2.3–3.1×); skew-follow +2.4 vs +1.6; CE equal/better. **So the prior
+  "architecture/target-limited ceiling" was WRONG — the head was DAMPING-limited.** EMA averaging (the
+  MASTER §4 drift-fix) unlocks the control the optimizer sweep couldn't.
+- Mechanism: best head (ema_ga2) moved the LEAST from init (54% of orig ΔW); worst (ema80, 80ep) moved the
+  MOST (190%) → it's the AVERAGING, not displacement, that buys control; >40ep lets late drift leak into the
+  average + erodes it. Sweet spot: **EMA + grad-accum2 + ~20ep**. The high EMA train loss (0.6 vs 0.053) was
+  the decay-0.999 EMA-lag reporting artifact, NOT undertraining (weights moved ≥ orig).
+- **New default control-head recipe: EMA(+grad-accum)/early-stop.** Ship `ema_ga2` (best steering+CE), `ema40`
+  backup. `train_latch.py` now has `--ema` + `--grad-accum`. Heads `stable-audio-3/latch_weights_ema_sweep/`;
+  eval `latch_sweep/skew_ema_results.json`.
+- **SUPERSEDES the prior-day "spectral_skewness optimizer tuning done / don't run larger-batch" line** — that
+  was LR/batch *without* averaging; with EMA it's a clear win. TODO: `latch_sweep.html` still says
+  architecture-limited — correct it.
+
 ## 2026-06-29 — Kim + Opus 4.8 — CK flash-attn validated on the new torch-2.14/ROCm-7.15 multi-arch venv
 
 - Distributability test of the `docs/flash-attn-ck-rdna4.md` recipe on the bleeding-edge AMD multi-arch
