@@ -10,6 +10,21 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-29 — Kim + Opus 4.8 — CK flash-attn validated on the new torch-2.14/ROCm-7.15 multi-arch venv
+
+- Distributability test of the `docs/flash-attn-ck-rdna4.md` recipe on the bleeding-edge AMD multi-arch
+  stack **PASSES**: `flash_attn 2.8.4` builds + imports + computes on `SAO/.venv`
+  (`torch 2.14.0a0+rocm7.15.0a`, gfx1201, py3.13); §9 varlen cos vs SDPA = **3.18e-4**. §5 glue patch
+  still applies on the branch's latest-develop CK (helpers + sink_ptr present).
+- **One delta from the recipe: use `MAX_JOBS=4`, not 6.** At `-j6` (12 clang) the heavy `fmha_bwd_d128`
+  kernels exhaust system RAM → a clang is OOM-killed → "subcommand failed" near 2390/2397. The
+  `mha_fwd_kvcache` *warning* and the `urllib 404` (setup.py no-prebuilt fallback) are red herrings
+  (recipe §10). `-j4` finishes clean. Install with `FLASH_ATTENTION_FORCE_BUILD=TRUE` to skip the 404.
+- Venv install path (the documented `torch[device-gfx1201]` multi-arch flow) works: base `torch` +
+  `amd-torch-device-gfx1201` + `rocm-sdk-*` + `triton 3.8.0`. **torchaudio 2.11 on this venv delegates
+  I/O to torchcodec** (not installed) — `torchaudio.load/save` need torchcodec; separate from FA.
+- TODO: fold the `-j4` note into `docs/flash-attn-ck-rdna4.md` §7.
+
 ## 2026-06-29 — Kim + Opus 4.8 — spectral_skewness LatCH LR/batch sweep: no win; head is architecture-limited
 
 - Swept `spectral_skewness` (the best spectral head) over training config: LR 2×/4×/8× @ bs32 + batch
