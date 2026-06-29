@@ -24,6 +24,11 @@ ran, built, or learned this session.
 `docs/inference-servers.md` (**all-CPU eval/inference servers + queue concurrency**).
 The authoritative LatCH experiment log is `stable-audio-tools/LATCH_RESULTS.txt`.
 
+**When starting a new task — or whenever you're missing knowledge needed to make a
+decision — also check the Superpowers docs under `docs/superpowers/` (design **specs**
++ implementation **plans**) alongside the `docs/` findings above. The decision or
+context you need is often already written down there; read before re-deriving.**
+
 ---
 
 ## 1. Project map

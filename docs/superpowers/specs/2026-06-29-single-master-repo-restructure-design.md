@@ -11,17 +11,21 @@ already holds the coordination docs (`MASTER.md`/`WORKLOG.md`/`ARCHITECTURE.md`)
 `.gitignore` already ignores the nested fork checkouts (allowlist style). Tooling
 moves in via `git filter-repo` (history preserved); the forks are then thinned by
 `git rm`-ing the moved files. One py3.13 venv (`SAO/.venv`, torch 2.14 / ROCm 7.15)
-already serves both stacks (see `docs/consolidated-venv-setup.md`).
+already serves both stacks — validated end-to-end, including a real SA3 DoRA *training*
+run on native CK flash-attn, not just inference (see `docs/consolidated-venv-setup.md`).
 
 **Tech stack:** git + git-filter-repo; uv (editable installs under
 `constraints-rocm-stack.txt`); Python 3.13.
 
 ## Global Constraints
 
-- **No physical moves while the SA3 training run is active.** `train_lora.py`
-  (PID 640022, `sa3-goa-dora-47s`, 8 epochs) runs from `stable-audio-3/scripts/` and
-  imports `stable_audio_3` from the checkout. Every move/rm phase is GATED on that
-  run finishing. Only Phase 0 (create skeleton, no moves) may run before then.
+- **No physical moves while the SA3 training run is active.** The gating run is
+  **`sa3-goa-dora-47s-b4`** (batch-4 beat-aware DoRA, ~4.5 h, running from **`SAO/.venv`
+  on CK flash-attn**) — NOT the stopped `sa3-goa-dora-47s` / PID 640022. It runs
+  `train_lora.py` from `stable-audio-3/scripts/` and imports `stable_audio_3` from the
+  fork checkout, so Phases 1-4 are GATED until it finishes; Phase 0 (skeleton, no moves)
+  is safe now. Liveness: `ps -eo cmd | grep '[t]rain_lora.py'` +
+  `stable-audio-3/dora_goa_47s_b4.log`.
 - **Never touch torch/ROCm stack or CK flash-attn** — all installs go through
   `uv pip install -c constraints-rocm-stack.txt`; never `uv sync`.
 - **Preserve git history** of moved tooling (`git filter-repo`), not a flat copy.
@@ -78,7 +82,12 @@ SAO/  (avp-audio-craft = master/lab repo, allowlist .gitignore)
   `inference/latch_guided.py` + `latch_targets.py`, ROCm env `rocm_env.py`, attn/APG
   patches in `models/dit.py`/`transformer.py`), the local ROCm wheels, and **upstream
   scripts**: `train_lora.py`, `pre_encode_dataset.py`, `precache_dit_cond.py`,
-  `scripts/__init__.py`.
+  `scripts/__init__.py`. **Two more OURS package deltas (2026-06-29 DoRA session) that
+  thinning must keep, like the latch/dit patches:** `stable_audio_3/data/dataset.py`
+  (`PreEncodedDataset(beat_aware_crop=…)` + `_get_downbeat_starts` — downbeat-aligned
+  crop from per-latent `.TIMESERIES.npz`) and `stable_audio_3/training/diffusion.py`
+  (`on_save_checkpoint` preserving `optimizer_states/lr_schedulers/epoch/global_step` —
+  resumable, LoRA-scale).
 - **stable-audio-tools:** the `stable_audio_tools/` package edits (LatCH, `rocm_env.py`,
   FA backward patch), `train_latch`/dataset only if they import from the package — they
   don't (verified: they import `stable_audio_tools.*` as a library), so they move.
@@ -102,8 +111,9 @@ SAO/  (avp-audio-craft = master/lab repo, allowlist .gitignore)
    and commit ("tooling moved to avp-audio-craft master repo"); push.
 5. **Doc-path sweep:** update every reference from `stable-audio-3/scripts/…` and
    `stable-audio-tools/avp_sa3/…` to the new `onnx/`/`control/`/`latch/`/`eval/` paths —
-   in `MASTER.md`, `ARCHITECTURE.md`, `docs/*`, the per-repo `CLAUDE.md` files, and the
-   recipe docs. (This also fixes the cross-repo notes written earlier.)
+   in `MASTER.md`, `ARCHITECTURE.md`, `docs/*` (notably `docs/inference-servers.md`,
+   committed `015b610`, which references `stable-audio-3/scripts/…`), the per-repo
+   `CLAUDE.md` files, and the recipe docs. (This also fixes the cross-repo notes written earlier.)
 
 ## Phasing (all phases except 0 GATED on training-run completion)
 
@@ -134,40 +144,20 @@ SAO/  (avp-audio-craft = master/lab repo, allowlist .gitignore)
 - **Re-point any absolute paths** in scripts/docs that hardcode `stable-audio-3/scripts/…`.
 - The dora training run's eval tooling (`eval_dora_*`) moves in Phase 1/4 — run those
   evals against the current run *before* Phase 1, or from the new path after.
+- **Cross-dir import on the move:** `eval_dora_quality.py` (→ `eval/`) imports `MERTEmbedder`
+  from `avp_sa3/sa3_control/mert_selector.py` (→ `control/`). Fix that import (or hoist the
+  embedder to a shared location) in Phase 1/2; the per-phase smoke catches it. (`eval_dora_cpu.py`
+  ↔ `eval_dora_quality.py` clip-naming is already mutually compatible.)
+- **`eval/` spans TWO venvs — add a per-script venv header:** `eval_dora_cpu.py` runs in
+  `SAO/.venv` (SA3 CPU render); `eval_dora_quality.py` runs in the **mir venv** (Audiobox + MERT).
+  The "single venv serves both stacks" premise holds for SA3+SAT only — **mir stays the
+  measurement venv**, so `eval/` must not be assumed single-venv.
 
-## Addenda — notes from the active DoRA/CK-FA session (2026-06-29)
+## Provenance
 
-From the session that built `eval_dora_*`, the beat-aware crop, and full-state checkpointing —
-fold these in:
-
-1. **The gating run changed — update the Global Constraint.** The run gating Phases 1-4 is now
-   **`sa3-goa-dora-47s-b4`** (batch-4, beat-aware, **running from `SAO/.venv` on CK flash-attn**,
-   ~4.5 h), NOT `sa3-goa-dora-47s` / PID 640022 (that was stopped and relaunched). Same gating
-   logic — it still runs `train_lora.py` from `stable-audio-3/scripts/` and imports `stable_audio_3`
-   from the fork checkout, so Phase 1+ stay gated until it finishes. Liveness:
-   `ps -eo cmd | grep '[t]rain_lora.py'` and `stable-audio-3/dora_goa_47s_b4.log`.
-
-2. **TWO new fork-staying package deltas this session — add to "Stays in the forks":**
-   - `stable_audio_3/data/dataset.py` — `PreEncodedDataset(beat_aware_crop=…)` + `_get_downbeat_starts`
-     (downbeat-aligned crop from the per-latent `.TIMESERIES.npz`).
-   - `stable_audio_3/training/diffusion.py` — `on_save_checkpoint` now preserves
-     `optimizer_states/lr_schedulers/epoch/global_step` (resumable, LoRA-scale).
-   Both are OURS, not upstream — thinning must keep them like the latch/dit patches.
-
-3. **Cross-dir import to fix on the move:** `eval_dora_quality.py` (→ `eval/`) imports `MERTEmbedder`
-   from `avp_sa3/sa3_control/mert_selector.py` (→ `control/`) — becomes a cross-dir import. The
-   per-phase smoke catches it, but plan the import fix (or a shared embedder location) in Phase 1/2.
-   (`eval_dora_cpu.py` ↔ `eval_dora_quality.py` clip-naming is already mutually compatible.)
-
-4. **eval/ spans two venvs — document per-script:** `eval_dora_cpu.py` runs in **`SAO/.venv`**
-   (SA3 stack, CPU torch render); `eval_dora_quality.py` runs in the **mir venv** (Audiobox + MERT).
-   "Single venv serves both stacks" holds for SA3+SAT, but **mir stays the measurement venv** — add a
-   per-script venv header so eval/ isn't assumed single-venv.
-
-5. **New doc to path-sweep:** `SAO/docs/inference-servers.md` (committed `015b610`) references
-   `stable-audio-3/scripts/…` paths → include it in the Phase 4 doc sweep.
-
-6. **Single-venv premise validated end-to-end:** this session ran a real **SA3 DoRA *training*** run
-   (medium-base, beat-aware, batch 4) from **`SAO/.venv` (torch 2.14/ROCm 7.15) on native CK
-   flash-attn** with no incompatibility — confirms the consolidated venv carries the full SA3 training
-   path, not just inference.
+The 6 notes from the active DoRA/CK-FA session (committed `d78a7ed`) have been folded into
+the sections above: gating run → Global Constraints; the two new package deltas
+(`data/dataset.py` beat-aware crop, `training/diffusion.py` full-state checkpointing) →
+Stays in the forks; the `mert_selector` cross-dir import and the two-venv `eval/` →
+Risks; `inference-servers.md` → Migration mechanics §5 doc sweep; training-validated
+single-venv → Architecture.

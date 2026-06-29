@@ -22,3 +22,7 @@
 !/latch/
 !/eval/
 !/constraints-rocm-stack.txt
+
+# Never track Python bytecode under the now-tracked tooling dirs (smoke tests create it)
+__pycache__/
+*.pyc
