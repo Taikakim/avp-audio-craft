@@ -2,6 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ STATUS — 2026-06-29 evening (reality has moved past this plan; read before acting):**
+> The copy stage was executed and **merged to `main` (`046f2aa`) as the byte-faithful HARDCODED snapshot.** Since then, **another instance rewired the SAO/ copies in the working tree** — a `sao-tooling` `pyproject.toml` finder + hack-deletion across ~18 files (`control/ eval/ latch/ onnx/`) — so the on-disk copies now **run from `SAO/`** and are NO LONGER a stale snapshot. That rewire is **uncommitted WIP owned by that instance — do not touch, revert, or commit it.**
+> - **DO NOT re-run the `cp`/`rsync` copy steps (Tasks 2–4).** They would overwrite the rewired files with the hardcoded fork versions and silently revert the rewire. The copy is done; treat those steps as historical.
+> - **`pyproject.toml` (the finder) is currently gitignored** — the `.gitignore` allowlist lacks `!/pyproject.toml`, so `/*` swallows it. It must be allowlisted before the finder can be tracked (a decision for the rewire/cutover instance).
+> - The corrected cutover guidance is in **Cutover strategy & ordering** below (reconcile the fork fix INTO the existing rewire — do NOT blind re-snapshot over it).
+
 **Goal:** Duplicate (copy, not move) all first-party tooling into the `SAO/` master repo under `onnx/ control/ latch/ eval/`, make the copies self-consistent and smoke-clean, while leaving both fork checkouts 100% intact.
 
 **Architecture:** Pure additive copy into the existing `SAO` (`avp-audio-craft`) repo. Files are `cp`'d from the forks; nothing is `git rm`'d or `git mv`'d from the forks. The forks remain the working source (and the historical record + fallback). Each component keeps the same-directory relative imports it has today, so it runs from its new dir exactly as it ran from the fork. One genuinely cross-directory import (`eval/ → control/`) is rewired in the copy.
@@ -330,16 +336,17 @@ Expected: push succeeds to the `avp-audio-craft` remote (branch `master-repo-cop
 
 ## Cutover strategy & ordering (notes for the cutover instance — do at ep8)
 
-Folded in from a second reviewer (2026-06-29). These reframe the deferred work above:
+Folded in from two reviewers (2026-06-29), corrected to current state:
 
-1. **Forks stay the runnable source until cutover — that is *why* deferral is correct, not a limitation.** The live DoRA run reads the fork originals (`train_lora.py` + the `stable_audio_3` package), and other instances are still committing to the forks (the ONNX WIP we saw as `M`/`??`). Rewiring the copies now would diverge them from still-evolving originals (instantly stale) and create a half-migrated limbo. Do **one tested rewire pass at cutover**, never piecemeal now.
+1. **Fork originals stay the runnable source; the SA3 fork-side hardcoded-path fix is owned by another instance — leave the fork originals alone.** The live DoRA reads them (`train_lora.py` + the `stable_audio_3` package), and the `eval_dora_*` still live in the fork. My guardrails kept the fork checkouts intact, which tonight's resume depends on.
 
-2. **The ~20-file rewire is mostly DELETION, not repointing.** Once `stable_audio_3` / `stable_audio_tools` / `avp_sa3` are proper installed packages (via the master `pyproject.toml` editable installs), the `sys.path.append(...)` and `parent.parent` bootstraps become **unnecessary** — *delete* them rather than repoint them to new absolute paths. So the cutover strategy is the tractable, robust trio:
-   - **delete** the path-bootstrap hacks (they resolve via normal imports once installed),
-   - **fix the shebangs** (`#!.../stable-audio-3/.venv/bin/python` → `SAO/.venv`),
-   - **fix the one `mert_selector` cross-dir import** (`eval/ → control/`).
-   This replaces "rewrite 20 hardcoded paths" with "delete bootstraps + 2 small fixes." Order the master `pyproject.toml` editable installs BEFORE the deletions so imports resolve as the hacks come out.
+2. **The SAO/ copies were ALREADY rewired this session — they are NOT a stale snapshot anymore.** Another instance added a `sao-tooling` `pyproject.toml` finder + did hack-deletion across ~18 files (`control/ eval/ latch/ onnx/`); the copies now run from `SAO/`. The rewire strategy was the right one: the editable-install **finder makes the `sys.path.append(...)`/`parent.parent` bootstraps unnecessary**, so they were *deleted* (not repointed) + shebangs fixed (`→ SAO/.venv`) + the one `mert_selector` cross-dir import fixed. **This rewire is uncommitted WIP owned by that instance — do not touch/revert/commit it; do not re-run the `cp`/`rsync` copy steps (they would clobber it).** Note: the finder `pyproject.toml` is currently gitignored — add `!/pyproject.toml` to track it.
 
 3. **Two `train_latch.py` — do not conflate.** `latch/train_latch.py` (SAT-native) carries `--ema`/`--grad-accum`; `onnx/latch/train_latch.py` is the SA3 LatCH variant that MASTER §1 already flags as a duplication. Different files, different stacks — cutover keeps them distinct; the eventual latch-core dedup is a **separate later job**, not part of cutover.
 
-4. **Ordering at ep8:** finish DoRA → run the post-DoRA eval (render + Audiobox + distance-to-Goa) **from the fork originals first** (the `eval_dora_*` still live there) → *then* cutover (move + rewire-by-deletion + thin). Eval-before-thin is already in the spec addenda; the delete-hacks strategy (#2) and the two-`train_latch` note (#3) are the new bits.
+4. **At cutover: reconcile the fork fix INTO the existing rewire — do NOT blind re-snapshot over it.** A re-copy/rsync would silently revert the rewire. Two agreed-upon options (the two instances must pick one so cutover doesn't clobber):
+   - **(a)** treat the rewire as the live `SAO/` state — layer the fork-fixed files *under* the finder, keeping the rewire; or
+   - **(b)** accept the rewire as a "run today" stopgap that a clean re-snapshot legitimately supersedes — the finder + structural map carry forward as the template.
+   The **`sao-tooling` finder is the keep-regardless piece** — it solves the import structure independent of any fork fix.
+
+5. **Ordering at ep8:** finish DoRA → run the post-DoRA eval (render + Audiobox + distance-to-Goa) **from the fork originals first** (the `eval_dora_*` still live there; if the fork-side path fix lands before ep8, run the eval *after* it, against the corrected fork) → *then* cutover (reconcile fork fix into the rewire per #4 + thin the forks). Eval-before-thin is already in the spec addenda.
