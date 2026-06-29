@@ -156,6 +156,12 @@ GUI renders it as a **per-checkpoint info box** (which run, what params, why it 
 inference UIs read the same file** for provenance. Any renderer emitting eval clips must write this
 sidecar; the GUI generators read it (falling back to the dir name for legacy dirs that predate it).
 
+**REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
+results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
+listening. Every eval page in `~/riffer-evals/` (existing and future) must render its clip grid as
+playable cells with same-playhead behaviour (switching cells keeps the playhead position; re-click stops).
+A section without playable clips ships as a stub only. *(Gap exposed by `latch_sweep.html`'s EMA section.)*
+
 **Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
 `medium-base` (rectified flow). Two scripts in `stable-audio-3/scripts/`:
 `sa3_flowsep.py` = inversion-free **FlowEdit/AUDEDIT** (difference-velocity field,
@@ -179,9 +185,13 @@ checkpoint, and per-layer movement. We don't know what the layers *do* yet — c
 the trajectory shape is cheap and one day we'll need it. Companion: **model-soups**
 (`avp_sa3/sa3_control/make_soup_profiles.py`, weight-averaged checkpoints under
 `Lehto/sa3_control_runs/soups/`) test post-hoc whether averaging beats the best single
-late checkpoint. Working hypothesis: flat RF loss ⇒ the head finds the control direction then
-**drifts** (not classic overfit, not a stuck minimum); the fix is **EMA/averaging (damping) +
-early-stop**, not merely a lower LR.
+late checkpoint. **Confirmed 2026-06-29 on `spectral_skewness`** (was "working hypothesis"): flat RF loss ⇒ the head
+finds the control direction then **drifts** (not classic overfit, not a stuck minimum); the fix is
+**EMA/averaging (damping) + early-stop**, not merely a lower LR. EMA 0.999 + grad-accum2 (eff-batch
+64, AdamW lr 3e-4 bs32) → MERTmid Δ 0.0271 vs original 0.0086 (~3.1×); all four EMA variants beat
+the non-EMA original; best checkpoint moved the **least** from init (54% of original ΔW) — it's the
+averaging, not displacement. **New default recipe: EMA + grad-accum + early-stop (~20 ep); ship
+`ema_ga2`.** `train_latch.py` now has `--ema` + `--grad-accum`. WORKLOG 2026-06-29.
 
 **Comprehensive per-run logging — STANDING REQUIREMENT (the paradigm is unsettled, you can't backfill).**
 *(2026-06-24)* Every control-head training run must emit the **full tiered telemetry**
@@ -255,6 +265,8 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   **mid** MERT layer for energy/timbre heads — the upper layer is melody/harmony and blind to a bass-RMS change
   (it mislabeled the two best heads "dead" on the first pass). See mir memory `sa3-latch-head-sweep`, WORKLOG
   2026-06-28, riffer-evals `latch_sweep.html`.
+  **Follow-up 2026-06-29:** `spectral_skewness` was EMA-re-trained and reversed the "architecture-limited"
+  conclusion — the ceiling was damping-limited. See §4 trajectory-stats note + WORKLOG 2026-06-29.
 - **SA3 generative separation/editing must use a `-base` checkpoint** (post-trained =
   stochastic ping-pong, non-invertible, cfg inert). **Invert at cfg≈1** — high cfg ruins
   recoverability. The RF-Inversion `(anchor−x)/(1−t)` controller has the **wrong sign and
