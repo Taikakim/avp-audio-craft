@@ -10,6 +10,26 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-06-29 — Kim + Opus 4.8 — spectral_skewness LatCH LR/batch sweep: no win; head is architecture-limited
+
+- Swept `spectral_skewness` (the best spectral head) over training config: LR 2×/4×/8× @ bs32 + batch
+  0.5×/0.25×/single @ 2× LR (6 runs, AdamW) vs the original (lr 3e-4/bs32/20ep). Eval at gain 512
+  (MERT-mid Δ + skewness-follow + Audiobox CE). **No config beats the original** (best ties: lr4x 0.0082 ≈
+  orig 0.0083); smaller batch clearly worst; 8× LR over-cooks; lr2x_bs32 marginally best feature-follow
+  (+1.68) but noise-level. Train loss is blind (spans only 0.0530–0.0554 across all configs).
+- Per-layer analysis (CPU; checkpoints + wandb `kim-ake/sa3-latch`): **the winner moved the LEAST** —
+  dist-from-init orig 30 < lr2x_bs32 48 < … < lr2x_bs1 229 (7.6× span). All configs diverged from the
+  original's low-movement basin and never returned; K/V do move (0.6→3.4× init, MASTER §4 confirmed). The
+  **drift hypothesis broke** (lr4x moved a lot yet tied; bs1 moved most yet mid-pack; bs16/bs8 logged only
+  1–2 telemetry rows → undiagnosable + partly eval noise).
+- **Conclusion: spectral_skewness control is architecture/target-limited, not optimizer-limited — optimizer
+  tuning for this head is DONE.** Do NOT run lower-LR/larger-batch (it would move *less* → tie at extra cost).
+  Levers instead: EMA/late-soup (small upside), a different head architecture/target, or the energy heads
+  (rms_energy_bass/mid steer 2–10× harder).
+- Artifacts: Mantu `latch_sweep/` (`latch_weights_sweep/skew_*`, `skew_eval_clips/`, `skew_sweep_results.json`,
+  `skew_layer_analysis.md`, `skew_layer_heatmap.png`); section added to riffer-evals `latch_sweep.html`.
+  Trainer `stable-audio-3/scripts/latch/train_latch.py` has no grad-accum flag (would need a ~10-line add).
+
 ## 2026-06-28 — Kim + Opus 4.8 — CPU LatCH-guidance eval path (commit 020b6c3)
 
 - **New scripts** in `stable-audio-3/scripts/` (branch `latch-sa3-phase1`): `sa3_latch_onnx.py`
