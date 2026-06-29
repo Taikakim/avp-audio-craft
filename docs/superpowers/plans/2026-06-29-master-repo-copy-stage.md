@@ -327,3 +327,19 @@ Expected: push succeeds to the `avp-audio-craft` remote (branch `master-repo-cop
   - **Fork-relative `parent.parent` bootstraps** — `latch/train_latch.py:35` (→ `stable_audio_tools/rocm_env.py`), `onnx/latch/train_latch.py:41` (the *separate SA3 variant* → `stable_audio_3/rocm_env.py`), `onnx/make_text_cond.py:30` (`HERE=…parent.parent  # stable-audio-3/`).
   - At cutover, resolve these from the **installed packages** (e.g. `rocm_env.py` via `importlib.util.find_spec("stable_audio_{tools,3}")` WITHOUT importing the package, to keep env-application before torch import) and from relative `SAO/` layout, then re-validate at runtime.
   - **Two distinct `train_latch.py`** exist by design: `latch/train_latch.py` (SAT-native) and `onnx/latch/train_latch.py` (SA3 LatCH variant). Keep both; do not dedupe.
+
+## Cutover strategy & ordering (notes for the cutover instance — do at ep8)
+
+Folded in from a second reviewer (2026-06-29). These reframe the deferred work above:
+
+1. **Forks stay the runnable source until cutover — that is *why* deferral is correct, not a limitation.** The live DoRA run reads the fork originals (`train_lora.py` + the `stable_audio_3` package), and other instances are still committing to the forks (the ONNX WIP we saw as `M`/`??`). Rewiring the copies now would diverge them from still-evolving originals (instantly stale) and create a half-migrated limbo. Do **one tested rewire pass at cutover**, never piecemeal now.
+
+2. **The ~20-file rewire is mostly DELETION, not repointing.** Once `stable_audio_3` / `stable_audio_tools` / `avp_sa3` are proper installed packages (via the master `pyproject.toml` editable installs), the `sys.path.append(...)` and `parent.parent` bootstraps become **unnecessary** — *delete* them rather than repoint them to new absolute paths. So the cutover strategy is the tractable, robust trio:
+   - **delete** the path-bootstrap hacks (they resolve via normal imports once installed),
+   - **fix the shebangs** (`#!.../stable-audio-3/.venv/bin/python` → `SAO/.venv`),
+   - **fix the one `mert_selector` cross-dir import** (`eval/ → control/`).
+   This replaces "rewrite 20 hardcoded paths" with "delete bootstraps + 2 small fixes." Order the master `pyproject.toml` editable installs BEFORE the deletions so imports resolve as the hacks come out.
+
+3. **Two `train_latch.py` — do not conflate.** `latch/train_latch.py` (SAT-native) carries `--ema`/`--grad-accum`; `onnx/latch/train_latch.py` is the SA3 LatCH variant that MASTER §1 already flags as a duplication. Different files, different stacks — cutover keeps them distinct; the eventual latch-core dedup is a **separate later job**, not part of cutover.
+
+4. **Ordering at ep8:** finish DoRA → run the post-DoRA eval (render + Audiobox + distance-to-Goa) **from the fork originals first** (the `eval_dora_*` still live there) → *then* cutover (move + rewire-by-deletion + thin). Eval-before-thin is already in the spec addenda; the delete-hacks strategy (#2) and the two-`train_latch` note (#3) are the new bits.
