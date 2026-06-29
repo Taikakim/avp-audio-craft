@@ -1,0 +1,32 @@
+# constraints-rocm-stack.txt — protect the TheRock multi-arch ROCm stack in SAO/.venv
+#
+# Pin the exact torch/ROCm stack already installed in SAO/.venv so that any
+#   uv pip install -c constraints-rocm-stack.txt ...
+# can NEVER silently replace it — not with a PyPI CUDA build, not with a fork's
+# pinned version (e.g. stable-audio-3 pins torch==2.10.0, which would downgrade).
+#
+# A constraint only *caps* a package IF something requests it; it does not force
+# an install. Because these versions are already present, constrained installs
+# resolve to "already satisfied" and leave the stack untouched.
+#
+# Captured 2026-06-29 from SAO/.venv (torch 2.14 / ROCm 7.15 / gfx1201, py3.13).
+# Re-capture after any torch nightly bump:
+#   .venv/bin/python -c "import importlib.metadata as m; \
+#     [print(f'{p}=={m.version(p)}') for p in \
+#      ('torch','torchvision','torchaudio','triton','numpy','pillow')]"
+
+torch==2.14.0a0+rocm7.15.0a20260628
+torchvision==0.29.0a0+rocm7.15.0a20260628
+torchaudio==2.11.0+rocm7.15.0a20260628
+triton==3.8.0+git43422b04.rocm7.15.0a20260628
+numpy==2.4.4
+pillow==12.2.0
+
+# Bundled ROCm runtime (don't let anything pull a different SDK build)
+amd-torch-device-gfx1201==2.14.0a0+rocm7.15.0a20260628
+rocm-sdk-core==7.15.0a20260628
+
+# setuptools 81+ removed pkg_resources, which clip-anytorch -> k_diffusion import.
+# Keep <81 or SAT's generation/sampling path breaks (ModuleNotFoundError: pkg_resources).
+setuptools<81
+

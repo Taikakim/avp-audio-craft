@@ -15,3 +15,10 @@
 
 # checkpoint-stats is a tracked library (per MASTER §5), not throwaway output
 !checkpoint-stats/
+
+# Master-repo tooling (copied from the forks; see docs/superpowers/plans/2026-06-29-master-repo-copy-stage.md)
+!/onnx/
+!/control/
+!/latch/
+!/eval/
+!/constraints-rocm-stack.txt
