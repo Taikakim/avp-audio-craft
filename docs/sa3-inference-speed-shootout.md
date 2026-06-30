@@ -31,8 +31,8 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
 |---|---|---|---|---|---|---|
 | 1A | Torch-GPU · base | **1.8 s** (16-step/47 s) | **26×** | **M** | `stable-audio-3/.venv` | Warm. 1st clip 90 s = one-time kernel compile (excluded). CK flash-attn (`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`). The speed king. |
 | 1B | Torch-GPU · +DoRA r128 | **4.1 s** (16-step/47 s) | **11.5×** | **M** | `stable-audio-3/.venv` | ckpt `…r128-adamw/…step=10800.ckpt`. ~2.3× slower than base: DoRA-rows recomputes `W' = mag·V/‖V‖` over **229 parametrized DiT Linears** every forward (load+attach, not merged). |
-| 1C | Torch-GPU · +LATCH | ~7 s (fp32) | 6.7× | R | `stable-audio-3/.venv` | WORKLOG 2026-06-28. Guidance backprop forces **FlexAttention (not CK-FA)** + a one-time **~340 s flex-attn autotune** (excluded). `rho=mu` gain ≈512 for energy heads. |
-| 1D | Torch-GPU · +control adapter | ~2–3 s **(est.)** | ~9× | est. | `stable-audio-3/.venv` | Not separately benchmarked as full-gen torch-GPU. Adapter = forward-only cross-attn add (24 blocks); on torch GPU the add is cheap → ≈ base ×1.2–1.5. (On MIGraphX the 24 adapters cost +50%/call.) |
+| 1C | Torch-GPU · +LATCH | **0.81 s** (8-step/20 s, fp16) | **24.8×** | **M** | `stable-audio-3/.venv` | **Remeasured 2026-07-01: ≈ base.** Default `generate(latch_configs=…)` runs **fp16 + CK flash-attn, 62.9 ms/call, 0 flex calls** (DiT fwd is under `no_grad` → only the fp32 head needs grad). The old "~7 s / 6.7× / flex-attn" was the **fp32 verify path** (`model_half=False`) — ~8× slower, used only by `verify_latch.py`/`verify_medium_heads.py` for fidelity. fp16 steers correctly (~½ the authority of fp32, recover with higher gain). `rho=mu` gain ≈512. |
+| 1D | Torch-GPU · +control adapter | **0.82 s** (8-step/20 s) | **24.3×** | **M** | `stable-audio-3/.venv` | **Measured 2026-07-01: 85.8 ms/call = base ×1.10** (ckpt `onset_FUSION_lr8e5_1p2ep`). Forward-only cross-attn add (24 blocks) is cheap on torch GPU. The earlier ~4 s / RTF 6× was the **ONNX-MIGraphX** path (169 ms/call) misread as "GPU". |
 | 2A | Torch-CPU · base | ~85 s (16-step) | 0.55× | R | `stable-audio-3/.venv` (`SA3_DISABLE_FLASH_ATTN=1`, math-SDPA, 12 thr) | `eval_dora_cpu.py --device cpu`. AVX512, physical-core pin. |
 | 2B | Torch-CPU · +DoRA | ~85–110 s | ~0.5× | R | as 2A | DoRA W' recompute adds CPU cost on top of base; same script `--ckpt`. |
 | 2C | Torch-CPU · +LATCH | **N/A → 4C** | — | — | — | Pure-torch-CPU full DiT is impractical; the LATCH eval path **deliberately** runs DiT fwd on ORT-CPU + torch autograd on the tiny head → that's cell **4C**. |
@@ -46,9 +46,10 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
 | 4C | ONNX-CPU-EP · +LATCH | ~15–25 s (16-step) | ~2× | R | `stable-audio-3` (`sa3_latch_onnx.py` / `latch_eval_server.py`) | DiT fwd on ORT-CPU + torch autograd on the ~5–7 M-param head only. THE latch eval path (commit 020b6c3). 8-step ≈ control + head-backprop overhead. |
 | 4D | ONNX-CPU-EP · +control | ~10 s (8-step) | ~2.4× | R | `control_eval_server.py` / `dit_control_onnx_infer.py` | WORKLOG 2026-06-27. **674 ms/call**, CFG=16 calls/clip. 30-clip 8-step grid ≈ **5.4 min on CPU-EP** vs ~42 min on **MIGraphX-GPU** (~40 min of which is one-time AOT compile, ~1.4 min actual gen) → CPU-EP wins a *one-off* ONNX grid, but **torch-GPU does it in ~2–3 min** and is the real fastest. |
 
-**Measured this session (M):** 1A, 1B (torch-GPU base & +DoRA-r128, 16-step/47 s, warm median).
-**Reused (R) from MASTER §5 / WORKLOG:** 1C, 2A, 2B, 3A, 3D, 4A, 4C, 4D.
-**Estimated:** 1D. **Flagged N/A:** 2C, 2D (→ use 4C/4D), 3B, 4B (DoRA merge+re-export), 3C (autograd ∉ EP).
+**Measured (M):** 1A, 1B (16-step/47 s); **1C, 1D remeasured 2026-07-01** (8-step/20 s, warm median) — these two
+correct the earlier mis-attributed numbers (1C was the fp32 verify path, 1D was the ONNX-MIGraphX path).
+**Reused (R) from MASTER §5 / WORKLOG:** 2A, 2B, 3A, 3D, 4A, 4C, 4D.
+**Flagged N/A:** 2C, 2D (→ use 4C/4D), 3B, 4B (DoRA merge+re-export), 3C (autograd ∉ EP).
 
 ## Headline takeaways
 
@@ -75,7 +76,15 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
    over 229 parametrized Linears, not the rank. **DoRA on any ONNX backend is N/A** — a weight edit needs a
    per-adapter static merge + full re-export + a fresh ~15-min AOT compile, so adapters can't ride the ONNX
    path the way the (forward-only) FiLM control adapter does. Net rule: **DoRA → torch only; FiLM control →
-   torch *or* ONNX; LATCH → torch-GPU (flex-attn) or ONNX-CPU (autograd head), never ONNX-GPU.**
+   torch *or* ONNX; LATCH → torch-GPU (fp16, CK flash-attn) or ONNX-CPU (autograd head), never ONNX-GPU.**
+
+5. **The adapters are NOT slow on GPU — the earlier "small GPU-vs-CPU gap" was a measurement artifact, now corrected.**
+   Both LATCH (fp16/CK-FA, **0.81 s**) and control (**0.82 s**) run at **≈ base speed on torch-GPU (RTF ~24×)**, so their
+   GPU edge over the CPU eval paths is **~10–12×, same as base** — not the ~3× the first pass implied. That ~3× came from
+   benchmarking the *wrong GPU backend*: LATCH's fp32 verify path (~8× slow) and control's ONNX-MIGraphX path (169 ms/call).
+   **No code optimisation to apply** — fp16 + CK-FA is already the default in `generate()`; the slow numbers lived only in
+   fidelity-check scripts (`verify_latch.py`, `verify_medium_heads.py`, intentionally fp32). One usable lever: run LATCH
+   *evals* in fp16 (not the fp32 verify default) → **~8× faster**, still steers, recover ~½ the authority via higher gain.
 
 ## Reproduce the measured cells
 

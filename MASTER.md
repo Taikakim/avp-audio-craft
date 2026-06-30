@@ -135,7 +135,7 @@ Profiles: inference = `MIOPEN_FIND_MODE=2`; training = `MIOPEN_FIND_MODE=6` —
 (`mir/src/timbral/audiobox_aesthetics.py`, run with **mir** venv; single-file mode —
 batch mode OOMs WavLM at ~8 GB on 16 GB).
 
-**Control-response eval specs (the canonical control grid).** `avp_sa3/sa3_control/onset_eval.py
+**Control-response eval specs (the canonical control grid).** `control/sa3_control/onset_eval.py
 <ckpt> --gains … --densities …` is the control-response evaluator: renders a **gain × density
 grid** (defaults gains {0.5,1,2,3,6,8,12} × densities {2,4,6,8,10,15,20}, `--duration 20`), measures
 output onset-density per clip, and writes **`onset_eval.json`** — a list of `{gain, requested,
@@ -169,7 +169,7 @@ playable cells with same-playhead behaviour (switching cells keeps the playhead 
 A section without playable clips ships as a stub only. *(Gap exposed by `latch_sweep.html`'s EMA section.)*
 
 **Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
-`medium-base` (rectified flow). Two scripts in `stable-audio-3/scripts/`:
+`medium-base` (rectified flow). Two scripts in `control/scripts/`:
 `sa3_flowsep.py` = inversion-free **FlowEdit/AUDEDIT** (difference-velocity field,
 robust to high cfg, naturally anchored — the published SOTA-on-SA3 path);
 `sa3_zerosep_rf.py` = true **RF-Solver** flow-inversion (Taylor reverse-Euler;
@@ -184,12 +184,12 @@ use). Details: `WORKLOG.md` 2026-06-18.
 **Checkpoint trajectory stats — STANDING PRACTICE (collect every run).** *(2026-06-22)*
 After **every** training run finishes, record its weight-space trajectory to the shared
 library `SAO/checkpoint-stats/` (see its README). Tool:
-`avp_sa3/sa3_control/checkpoint_trajectory_stats.py --ckpt-dir <run> --label <lr…> --out-dir
+`control/sa3_control/checkpoint_trajectory_stats.py --ckpt-dir <run> --label <lr…> --out-dir
 SAO/checkpoint-stats` (CPU-only). It logs learning velocity ‖ΔW‖, distance-from-init/final,
 path-efficiency (net/path: low ⇒ wandering → averaging/EMA helps), the centroid (soup-center)
 checkpoint, and per-layer movement. We don't know what the layers *do* yet — collect anyway;
 the trajectory shape is cheap and one day we'll need it. Companion: **model-soups**
-(`avp_sa3/sa3_control/make_soup_profiles.py`, weight-averaged checkpoints under
+(`control/sa3_control/make_soup_profiles.py`, weight-averaged checkpoints under
 `Lehto/sa3_control_runs/soups/`) test post-hoc whether averaging beats the best single
 late checkpoint. **Confirmed 2026-06-29 on `spectral_skewness`** (was "working hypothesis"): flat RF loss ⇒ the head
 finds the control direction then **drifts** (not classic overfit, not a stuck minimum); the fix is
@@ -201,7 +201,7 @@ averaging, not displacement. **New default recipe: EMA + grad-accum + early-stop
 
 **Comprehensive per-run logging — STANDING REQUIREMENT (the paradigm is unsettled, you can't backfill).**
 *(2026-06-24)* Every control-head training run must emit the **full tiered telemetry**
-(`avp_sa3/sa3_control/telemetry.py`, wired into `train.py`, → wandb): per-layer weight/grad norms +
+(`control/sa3_control/telemetry.py`, wired into `train.py`, → wandb): per-layer weight/grad norms +
 distance-from-init, weight/grad histograms, the live **weight-space trajectory** (velocity / path-length /
 net-disp / path-efficiency), and optimizer internals (FusionOpt per-component gains). Loss/gnorm are
 near-useless here (RF loss is blind to control) — the **trajectory and per-layer signals are the real
@@ -233,7 +233,7 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test` it switches SDPA→CK.)*
 
 - **SA3 control-adapter training freezing at step 0 on a shared box = environment, not a code bug — five
-  fixes, all baked into `stable-audio-tools/avp_sa3/run_control_train.sh`.** *(2026-06-23)* A first-step hang
+  fixes, all baked into `control/run_control_train.sh`.** *(2026-06-23)* A first-step hang
   (two signatures: CPU pegged / GPU idle, or CPU+GPU busy / no log line) traced to three things stacking when
   training shares the GPU/box with another ROCm job (e.g. the ONNX-export instance):
   (1) **Lehto I/O contention** — the dataloader's cold random reads off the removable drive crawl (~2 MB/s);
@@ -253,8 +253,15 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
 - **batch=1 + SA3 variable-length training thrashes the GEMM/Triton kernel cache** —
   every track's unique sequence length T is a new kernel shape. Fix: fixed **T=4096**
   beat-aligned crops (`latents_sa3`). *(2026-05-31)*
-- **TFG / LatCH guidance must run fp32 on SA3** — fp16 (model_half default) clashes
-  with backprop grad dtypes.
+- **TFG / LatCH guidance: the DiT forward can stay fp16 (CK flash-attn); only the head needs fp32.**
+  *(Corrected 2026-07-01 — the blanket "must run fp32" below was stale.)* In the current
+  `stable_audio_3/inference/latch_guided.py` the DiT forward is under `torch.no_grad()`, so autograd
+  flows **only through the ~5–7 M-param head** (fp32) + the `x.detach().float()` leaf — never the DiT.
+  So the default `generate(latch_configs=…)` runs **fp16 + CK-FA at ≈ base speed (0.81 s/clip, RTF 24.8×)**
+  and steers correctly (fp16 keeps ~½ the authority of fp32 → recover with higher gain). The old fp32 path
+  (`model_half=False`) is ~8× slower and now only used by the `verify_*` fidelity scripts. Original note,
+  kept for context: ~~"must run fp32 on SA3 — fp16 (model_half default) clashes with backprop grad dtypes"~~
+  was true of an earlier guidance loop that backpropped through the DiT.
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
@@ -292,7 +299,7 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   new **torchcodec** backend) and most WAV writers expect samples in **[-1, 1]**; feeding
   **fp16** or SA3's raw **>1.0 peaks** clips/distorts (this bit the riffer auditions). Always
   **float32 → peak-normalize (or clamp) → int16 PCM** before writing — the SA gradio GUI fix
-  (`stable_audio_tools/interface/gradio.py`). In `avp_sa3`, use the shared helper
+  (`stable_audio_tools/interface/gradio.py`). In `control/`, use the shared helper
   `sa3_control.audio_io.save_audio()` (never `torchaudio.save(x.float().cpu(), …)` raw). *(2026-06-19)*
 - **Exporting SAME/SA3 to ONNX — two non-obvious blockers.** (1) `SA3_DISABLE_FLASH_ATTN=1`
   is necessary but NOT sufficient: with flash off, SAME's sliding-window layers fall to
@@ -303,8 +310,8 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   invalid `Split(num_outputs)` ORT rejects). Export the **fixed-chunk** unit (`decode` on
   `[1,256,L]`) and loop on the host — never a dynamic-T graph (SAME folds length-dependently).
   Validated CPU: decoder/encoder L128 cos≈0.9999. `onnxscript`/`onnxruntime` install is
-  additive (doesn't bump the ROCm torch/numpy). Tooling: `stable-audio-3/scripts/export_same_onnx.py`
-  + `decode_onnx.py`; details `stable-audio-3/docs/onnx-amd-inference.md`. **GPU-verified**: the
+  additive (doesn't bump the ROCm torch/numpy). Tooling: `onnx/export_same_onnx.py`
+  + `onnx/decode_onnx.py`; details `stable-audio-3/docs/onnx-amd-inference.md`. **GPU-verified**: the
   decoder runs 100% on the MIGraphX EP (no CPU fallback), cos=0.999998 vs torch, RTF ~39×. The
   MIGraphX EP is only in the **mir venv** (`onnxruntime_migraphx`); the SA3 venv's `onnxruntime`
   is CPU-only. **Catch: a ~9-min MIGraphX AOT compile per session** (CPU-bound; not tuning or chunk
@@ -330,7 +337,7 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   **0.707s (44ms/call, RTF 33.6×)** vs ONNX-fp16 MIGraphX **2.314s (144ms/call, RTF 10.3×)** → eager torch
   is **~3.3× faster** (MIGraphX doesn't beat torch's rocBLAS/MIOpen kernels). ONNX buys **3.8GB resident +
   zero torch dependency** (coexists with training), same quality (z0 cos 0.9993). Use ONNX for low-VRAM, torch for speed.
-  Tooling `stable-audio-3/scripts/{export_dit_onnx,dit_onnx_infer,precache_dit_cond,bench_dit_onnx,latent_server_dit_onnx}.py`. *(2026-06-23)*
+  Tooling `onnx/{export_dit_onnx,dit_onnx_infer,bench_dit_onnx,latent_server_dit_onnx}.py` + upstream `stable-audio-3/scripts/precache_dit_cond.py`. *(2026-06-23)*
 - **`sa3_control` control adapters bake into the DiT ONNX (steering on the low-VRAM path).** A trained
   adapter (decoupled cross-attn per block + scalar FiLM conditioner) is a pure **forward** mod (no
   autograd/guidance, unlike a LatCH guidance head) → it folds into the DiT graph with `control_tokens[1,16,768]`
@@ -362,8 +369,8 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   `.cond.npz` (catches a mismatched pair → silent double/zero PE). Caveat: `precache_dit_cond.py` is **broken on
   the current SA3 fork** (cuda/cpu mismatch; KeyError `inpaint_mask` from `local_add_cond_ids`) — work around by
   calling `cdm.conditioner()` directly + assembling cross/global from the cond_ids.
-  **New tooling (2026-06-27):** `stable-audio-3/scripts/sa3_control_onnx.py` — shared numpy/ORT gen-core
-  (`generate_z0`/`make_control_tokens`/`resolve_host_pe`). `avp_sa3/sa3_control/train.py
+  **New tooling (2026-06-27):** `onnx/sa3_control_onnx.py` — shared numpy/ORT gen-core
+  (`generate_z0`/`make_control_tokens`/`resolve_host_pe`). `control/sa3_control/train.py
   --export-onnx-on-finish` (default True, `--export-onnx-frames` default 256) auto-exports `riffer_final.pt`
   → fp16 ONNX + `.cond.npz` into the run dir on training finish; non-fatal. `scripts/control_eval_server.py`
   + `submit_control_job.py` — **all-CPU** long-lived file-drop eval server (resident T5-Gemma + ONNX
@@ -371,7 +378,7 @@ movement on large-init layers (K/V learn as much as the zero-init `to_out` gate 
   + stdlib-only cross-venv submitter. **End-to-end verified 2026-06-27 (CPU):** boot ~16 s, 8-step job
   ≈20 s; steering through the server path onset 3→5.17, 11→10.43 onsets/s; shared-core z0 bit-exact vs
   the pre-refactor CLI. Never touches the GPU. *(2026-06-27)*
-- **CPU LatCH-guidance eval path — gradient sibling of the control eval server (commit 020b6c3, `latch-sa3-phase1`).** Unlike control adapters (pure forward mod, bake into the ONNX), LatCH guidance is a gradient method: the plain DiT runs forward-only on ORT CPU EP (numpy), and each step applies torch autograd through the ~5-7M-param LatCH head only — the head never enters the ONNX graph, DiT needs no autograd → CPU-feasible. New scripts in `stable-audio-3/scripts/`: `sa3_latch_onnx.py` (`generate_z0_latch_guided` — two-stage variance+mean Selective-TFG, APG CFG faithfully ports `dit.py::apg_project` orthogonal projection, LogSNR schedule rate=0/anchor=−6.2/end=2.0); `latch_eval_server.py` + `submit_latch_job.py` (file-drop server, queue `SAO/latch_eval_queue`; `--prompts` one verbatim prompt per flag, no comma-split); `latch_validate.py` (CPU/GPU z0-cosine harness; GPU half `--run-gpu` **DEFERRED** — needs free card + shared init latent: CPU `torch.randn(seed)` ≠ CUDA `torch.randn(seed)` by RNG device). **Gain:** `rho=mu=64.0` default is conservative; operating gain is **≈512 for energy heads** (see bullet above — NOT 48–96, NOT 128). **Device gotcha (both eval servers):** load the conditioner with `StableAudioModel.from_pretrained(device="cpu", model_half=False)` via `make_text_cond.load_conditioner` — 1.4 B weights stay on CPU, no VRAM spike. Do NOT set `HIP_VISIBLE_DEVICES=""`: `flash_attn`/`aiter` probes a Triton driver at import time; zero visible devices → crash. Fix in both `latch_eval_server.py` and `control_eval_server.py`. *(2026-06-28)*
+- **CPU LatCH-guidance eval path — gradient sibling of the control eval server (commit 020b6c3, `latch-sa3-phase1`).** Unlike control adapters (pure forward mod, bake into the ONNX), LatCH guidance is a gradient method: the plain DiT runs forward-only on ORT CPU EP (numpy), and each step applies torch autograd through the ~5-7M-param LatCH head only — the head never enters the ONNX graph, DiT needs no autograd → CPU-feasible. New scripts in `onnx/`: `sa3_latch_onnx.py` (`generate_z0_latch_guided` — two-stage variance+mean Selective-TFG, APG CFG faithfully ports `dit.py::apg_project` orthogonal projection, LogSNR schedule rate=0/anchor=−6.2/end=2.0); `latch_eval_server.py` + `submit_latch_job.py` (file-drop server, queue `SAO/latch_eval_queue`; `--prompts` one verbatim prompt per flag, no comma-split); `latch_validate.py` (CPU/GPU z0-cosine harness; GPU half `--run-gpu` **DEFERRED** — needs free card + shared init latent: CPU `torch.randn(seed)` ≠ CUDA `torch.randn(seed)` by RNG device). **Gain:** `rho=mu=64.0` default is conservative; operating gain is **≈512 for energy heads** (see bullet above — NOT 48–96, NOT 128). **Device gotcha (both eval servers):** load the conditioner with `StableAudioModel.from_pretrained(device="cpu", model_half=False)` via `make_text_cond.load_conditioner` — 1.4 B weights stay on CPU, no VRAM spike. Do NOT set `HIP_VISIBLE_DEVICES=""`: `flash_attn`/`aiter` probes a Triton driver at import time; zero visible devices → crash. Fix in both `latch_eval_server.py` and `control_eval_server.py`. *(2026-06-28)*
 
 ---
 
