@@ -44,7 +44,7 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
 | 4A | ONNX-CPU-EP · base | ~20 s (16-step) | ~2.4× | R | mir or `.venv` (CPU ORT) | Plain DiT fwd on ORT CPU EP, numpy host loop. Derived from control-CPU 674 ms/call (base slightly less); ~10 s/8-step → ~20 s/16-step + decode. |
 | 4B | ONNX-CPU-EP · +DoRA | **N/A** | — | — | — | Same merge+re-export blocker as 3B. |
 | 4C | ONNX-CPU-EP · +LATCH | ~15–25 s (16-step) | ~2× | R | `stable-audio-3` (`sa3_latch_onnx.py` / `latch_eval_server.py`) | DiT fwd on ORT-CPU + torch autograd on the ~5–7 M-param head only. THE latch eval path (commit 020b6c3). 8-step ≈ control + head-backprop overhead. |
-| 4D | ONNX-CPU-EP · +control | ~10 s (8-step) | ~2.4× | R | `control_eval_server.py` / `dit_control_onnx_infer.py` | WORKLOG 2026-06-27. **674 ms/call**, CFG=16 calls/clip. 30-clip 8-step grid ≈ **5.4 min CPU** vs ~42 min GPU (compile-dominated) → **CPU is the default for control-evals**. |
+| 4D | ONNX-CPU-EP · +control | ~10 s (8-step) | ~2.4× | R | `control_eval_server.py` / `dit_control_onnx_infer.py` | WORKLOG 2026-06-27. **674 ms/call**, CFG=16 calls/clip. 30-clip 8-step grid ≈ **5.4 min on CPU-EP** vs ~42 min on **MIGraphX-GPU** (~40 min of which is one-time AOT compile, ~1.4 min actual gen) → CPU-EP wins a *one-off* ONNX grid, but **torch-GPU does it in ~2–3 min** and is the real fastest. |
 
 **Measured this session (M):** 1A, 1B (torch-GPU base & +DoRA-r128, 16-step/47 s, warm median).
 **Reused (R) from MASTER §5 / WORKLOG:** 1C, 2A, 2B, 3A, 3D, 4A, 4C, 4D.
@@ -61,11 +61,15 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
    it in throughput **and** a ~9–18 min AOT compile every session (ORT 1.23.2 has no compile-cache). Use ONNX
    only when VRAM is the constraint or for a resident VST that amortizes the compile.
 
-3. **CPU-AVX512 is viable for control/LATCH evals, not for bulk torch generation.** Pure torch-CPU base is
-   ~85 s/clip (RTF 0.55× — sub-realtime). But the **ONNX-CPU control & LATCH eval paths run ~2× realtime**
-   (~10 s/8-step) and **free the GPU for training** — a 30-clip control grid is **~5.4 min on CPU vs ~42 min
-   on GPU** (GPU is compile-dominated). For control-response evals, **CPU is the correct default**, not a
-   fallback.
+3. **CPU-AVX512 is viable for control/LATCH evals *when the GPU is busy*, not for bulk torch generation.** Pure
+   torch-CPU base is ~85 s/clip (RTF 0.55× — sub-realtime). But the **ONNX-CPU control & LATCH eval paths run
+   ~2× realtime** (~10 s/8-step) and **free the GPU for training**. ⚠️ The "CPU wins" figure needs its caveat:
+   a one-off 30-clip control grid is **~5.4 min on ONNX-CPU-EP vs ~42 min on ONNX-MIGraphX-GPU** — but that GPU
+   "42 min" is **~40 min of one-time AOT compile + only ~1.4 min of actual generation**, NOT a slow GPU. The
+   real ordering is **torch-GPU (~2–3 min, no compile — fastest) > ONNX-CPU-EP (~5 min) > one-off
+   ONNX-MIGraphX-GPU (compile-bound)**. So CPU-EP is the right default only when the GPU is occupied (training)
+   or for a single throwaway ONNX eval; a **resident** GPU ONNX server amortizes the compile and wins on
+   throughput. None of these numbers is "vs CPU" — every RTF is vs realtime.
 
 4. **DoRA roughly halves torch-GPU throughput (1.8 → 4.1 s/clip);** the cost is the per-forward `W'` recompute
    over 229 parametrized Linears, not the rank. **DoRA on any ONNX backend is N/A** — a weight edit needs a
