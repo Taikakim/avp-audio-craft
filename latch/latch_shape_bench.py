@@ -12,21 +12,17 @@ TunableOp is pointed at a throwaway CSV so it doesn't race/pollute the shared
 tuned kernels (the first warmup steps absorb the per-shape tuning sweep).
 """
 import os
-import sys
 import time
-import importlib.util
 
 os.environ.setdefault("PYTORCH_TUNABLEOP_FILENAME", "/tmp/latch_bench_tunings.csv")
-_re = "/home/kim/Projects/SAO/stable-audio-tools/stable_audio_tools/rocm_env.py"
-_spec = importlib.util.spec_from_file_location("re_", _re)
-_m = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_m)
-_m.apply_profile("training", verbose=False)
+# stable_audio_tools is editable-installed in SAO/.venv.
+from stable_audio_tools.rocm_env import apply_profile
+apply_profile("training", verbose=False)
 
 import torch
 import torch.nn as nn
 
-sys.path.append("/home/kim/Projects/SAO/stable-audio-tools/scripts")
+# latch_model.py is this script's sibling (SAO/latch/), on sys.path[0] when run directly.
 from latch_model import LatCH
 
 DEV = "cuda"

@@ -18,8 +18,8 @@ import torch
 from stable_audio_3 import StableAudioModel
 from stable_audio_3.inference.latch_guided import sample_flow_euler_latch_guided
 from stable_audio_3.inference.sampling import build_schedule
-from scripts.latch.latch_model import LatCH
-from scripts.latch.latch_targets import build_target
+from latch.latch_model import LatCH
+from latch.latch_targets import build_target
 
 
 def load_head(ckpt_path, device):

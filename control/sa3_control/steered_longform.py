@@ -39,14 +39,16 @@ def _parse_prompt_arc(arg):
     """Parse the ``'0:A|t:B'`` arc format -> ``[(0.0,'A'),(t,'B')]``; a single
     prompt (no leading ``float:`` on every segment) -> the bare string.
 
-    Reuses ``parse_schedule`` from ``stable-audio-3/scripts/longform_render.py``
+    Reuses ``parse_schedule`` from ``eval/longform_render.py``
     (the spec's canonical parser). If that script path is unavailable it falls back
     to the byte-identical ``sa3_control.chroma_guided_generator.parse_progression``.
     Colon-safe: ``'120bpm: deep techno'`` stays a single prompt.
     """
     try:
         import importlib.util
-        p = "/home/kim/Projects/SAO/stable-audio-3/scripts/longform_render.py"
+        from pathlib import Path
+        # canonical parser now lives at SAO/eval/longform_render.py (copied from the fork)
+        p = str(Path(__file__).resolve().parents[2] / "eval" / "longform_render.py")
         spec = importlib.util.spec_from_file_location("_longform_render_arc", p)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -65,7 +67,7 @@ class BestOfNGenerator:
 
         <mert_python> -m sa3_control.mert_selector job.json scores.json
 
-    with ``PYTHONPATH=<avp_sa3>:<mir/src>`` so the subprocess can import both
+    with ``PYTHONPATH=<control>:<mir/src>`` so the subprocess can import both
     ``sa3_control.mert_selector`` (MERT-v1-330M) AND ``timbral.audiobox_aesthetics``
     (Audiobox CE). The job/scores JSON contract is the seam (see the longform design
     spec, Part 4 §5.2). It keeps the argmax-reward candidate's LATENTS and threads its
@@ -94,7 +96,7 @@ class BestOfNGenerator:
         self.mert_python = mert_python
         if avp_sa3_path is None:
             from pathlib import Path
-            avp_sa3_path = str(Path(__file__).resolve().parents[1])  # .../avp_sa3
+            avp_sa3_path = str(Path(__file__).resolve().parents[1])  # .../control (var name is legacy)
         self.avp_sa3_path = avp_sa3_path
         self.mir_path = mir_path
         self.workdir = workdir or tempfile.mkdtemp(prefix="bestofn_")

@@ -66,7 +66,7 @@ import numpy as np
 # Reuse the *validated* sampler math + decoder chunk-loop, single-sourced so the
 # rectified-flow schedule, the cond/uncond npz layout, and the overlap-add stitch
 # can't drift from what we verified.
-_SCRIPTS_DIR = Path("/home/kim/Projects/SAO/stable-audio-3/scripts")
+_SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
 from decode_onnx import decode_chunked_onnx, pick_providers  # noqa: E402
 from dit_onnx_infer import schedule, load_cond, SR, LATENT_DIM, DS  # noqa: E402

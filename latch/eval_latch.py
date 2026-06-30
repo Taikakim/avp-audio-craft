@@ -42,11 +42,10 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # ROCm env BEFORE torch
+    # ROCm env BEFORE torch — stable_audio_tools is editable-installed in SAO/.venv.
     import os
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "stable_audio_tools"))
-    import rocm_env
-    rocm_env.apply_profile("inference")
+    from stable_audio_tools.rocm_env import apply_profile
+    apply_profile("inference")
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from latch_dataset import LatCHDataset

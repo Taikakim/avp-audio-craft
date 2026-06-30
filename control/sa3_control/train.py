@@ -6,8 +6,9 @@ loss, conditioning each step on a DIFFERENT crop of the same track (the riffer p
 from LatentControlDataset). Control tokens are injected via the ContextVar around our
 own DiT forward (cfg_scale=1.0 -> no CFG batch-doubling).
 
-Run with the SA3 .venv:
-    PYTORCH_TUNABLEOP_ENABLED=0 /home/kim/Projects/SAO/stable-audio-3/.venv/bin/python \
+Run with the consolidated SAO/.venv (CK flash-attn; set the flag before import):
+    PYTORCH_TUNABLEOP_ENABLED=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE \
+        /home/kim/Projects/SAO/.venv/bin/python \
         -m sa3_control.train --encoded_dir /run/media/kim/Lehto/latents_sa3 --smoke
 """
 
@@ -114,8 +115,11 @@ def export_control_onnx_on_finish(ckpt_path, save_dir, frames, field):
     (the SA3 .venv the trainer already uses, which has the exporter's deps). Returns the
     subprocess returncode; never raises (check=False). `field` is informational only."""
     out_path = os.path.join(save_dir, f"dit_medium-base_L{frames}_ctrl.onnx")
+    _exporter = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "onnx", "export_dit_control_onnx.py")  # SAO/onnx/export_dit_control_onnx.py
     cmd = [sys.executable,
-           "/home/kim/Projects/SAO/stable-audio-3/scripts/export_dit_control_onnx.py",
+           _exporter,
            "--ckpt", ckpt_path, "--model", "medium-base", "--frames", str(frames),
            "--text-seq", "128", "--fp16", "--out", out_path]
     env = {**os.environ, "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
@@ -268,7 +272,7 @@ def main():
         print(f"[resume] warm-started adapter+conditioner from {args.resume}", flush=True)
 
     if args.optimizer in ("fusion", "sfadamw", "fusion_nm", "fusion_full"):
-        sys.path.append("/home/kim/Projects/SAO/stable-audio-tools")
+        # stable_audio_tools is editable-installed in SAO/.venv; no path hack needed.
         from stable_audio_tools.training.fusion_opt import FusionOpt
         from stable_audio_tools.training.fusion_groups import build_fusion_param_groups
         trainable_mod = torch.nn.ModuleList([w.adapter for w in wrappers] + [cond_enc])

@@ -3,8 +3,8 @@
 Practical how-to for the **all-CPU** SA3 eval/inference servers, for any Claude
 instance (or human) that needs to render eval clips without touching the GPU.
 Everything below is verified against the scripts in
-`stable-audio-3/scripts/`. Cross-context: `MASTER.md` §5 (ONNX/CPU-eval gotchas),
-`stable-audio-3/docs/onnx-amd-inference.md` (the ONNX export pipeline).
+`onnx/` (the eval servers) and `eval/` (the DoRA harness). Cross-context: `MASTER.md` §5
+(ONNX/CPU-eval gotchas), `stable-audio-3/docs/onnx-amd-inference.md` (the ONNX export pipeline).
 
 There are **two file-drop queue servers** (control-adapter, LatCH-guidance), **one
 GPU/MIGraphX HTTP server** (plain text→audio), and **one torch-CPU CLI harness**
@@ -17,8 +17,8 @@ GPU/MIGraphX HTTP server** (plain text→audio), and **one torch-CPU CLI harness
 | **plain text→audio**, low-VRAM on the GPU | `latent_server_dit_onnx.py` | ONNX, **MIGraphX GPU EP** | HTTP (`/generate`) |
 | a **DoRA finetune** of the base model | `eval_dora_cpu.py` (+ `eval_dora_quality.py`) | **torch-CPU** (weight edit, NOT ONNX) | CLI, not a server |
 
-**Venv for all of them:** `/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python`
-(the SA3 venv; py 3.13, torch 2.10 ROCm). Exception: the DoRA *quality scorer*
+**Venv for all of them:** `/home/kim/Projects/SAO/.venv/bin/python`
+(the consolidated venv; py 3.13, torch 2.14 ROCm 7.15). Exception: the DoRA *quality scorer*
 `eval_dora_quality.py` runs in the **mir venv** `/home/kim/Projects/mir/mir/bin/python`
 (needs Audiobox + MERT). The two **submitters** are stdlib-only and run in *any*
 python.

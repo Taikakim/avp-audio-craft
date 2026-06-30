@@ -44,11 +44,8 @@ import torch.nn as nn
 sys.path.insert(0, str(Path(__file__).parent))
 from export_dit_onnx import force_exportable_attention, load_dit_only, LATENT_DIM  # noqa: E402
 
-# sa3_control lives in the avp_sa3 package (stable-audio-tools); its adapter/conditioner
-# core only needs torch, so it imports fine in the SA3 venv with the path added.
-AVP = "/home/kim/Projects/SAO/stable-audio-tools/avp_sa3"
-if AVP not in sys.path:
-    sys.path.insert(0, AVP)
+# sa3_control is the copied control package (SAO/control/sa3_control), exposed by the
+# SAO editable finder (pyproject.toml -> uv pip install -e .) as a bare top-level name.
 from sa3_control.adapters import ControlledCrossAttention, _ACTIVE  # noqa: E402
 from sa3_control.inject import find_cross_attn  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402

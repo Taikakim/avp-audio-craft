@@ -1,4 +1,4 @@
-#!/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python
+#!/home/kim/Projects/SAO/.venv/bin/python
 """latch_eval_server.py — long-lived, ALL-CPU LatCH-GUIDED eval render server over the
 PLAIN SA3 DiT ONNX, driven by a FILE-DROP queue (no HTTP).
 

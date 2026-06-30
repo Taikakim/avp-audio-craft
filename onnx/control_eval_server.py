@@ -1,4 +1,4 @@
-#!/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python
+#!/home/kim/Projects/SAO/.venv/bin/python
 """control_eval_server.py — long-lived, ALL-CPU control-eval render server for the
 SA3 control-DiT, driven by a FILE-DROP queue (no HTTP).
 

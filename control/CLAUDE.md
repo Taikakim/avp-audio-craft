@@ -1,4 +1,4 @@
-# CLAUDE.md — avp_sa3 (SA3 tooling)
+# CLAUDE.md — control/ (SA3 control tooling)
 
 @/home/kim/Projects/SAO/MASTER.md
 
@@ -18,8 +18,8 @@ training-free generative separation / riffer + scoring (`scripts/`). Full map in
 `ARCHITECTURE.md` (this folder).
 
 ## Venvs (invoke by absolute path)
-- Anything importing `stable_audio_3`: **SA3 `.venv` (3.13)**
-  `/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python`, with
+- Anything importing `stable_audio_3`: **consolidated `SAO/.venv` (3.13)**
+  `/home/kim/Projects/SAO/.venv/bin/python`, with
   `PYTORCH_TUNABLEOP_ENABLED=0` and
   `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` (set **before** `import torch` to
   activate the CK flash-attn build — 30–100% faster; forgetting it →
@@ -29,9 +29,10 @@ training-free generative separation / riffer + scoring (`scripts/`). Full map in
   `/home/kim/Projects/mir/mir/bin/python`.
 
 ## Placement rule
-Tooling lives **here** (`audio-tools-avp`). The **SA3 fork stays upstream-syncable** —
-only genuine SA3-side interface code (LatCH, ROCm env) belongs there. The control
-adapter needs **no** SA3-fork changes (it wraps `Attention` at runtime).
+Tooling lives **here** (the `SAO/` master repo, under `control/`). The **SA3 and SAT
+forks stay upstream-syncable** — only genuine package-side code (LatCH, ROCm env)
+belongs there. The control adapter needs **no** SA3-fork changes (it wraps `Attention`
+at runtime).
 
 ## Gotchas
 - **Saving audio — never write raw model output.** File writers (esp. the new

@@ -38,7 +38,7 @@ def _apply_rocm_training_profile():
     """
     import importlib.util as _ilu
     from pathlib import Path as _Path
-    _re = _Path(__file__).resolve().parent.parent.parent / "stable_audio_3" / "rocm_env.py"
+    _re = _Path(__file__).resolve().parent.parent.parent / "stable-audio-3" / "stable_audio_3" / "rocm_env.py"
     if not _re.exists():
         return
     _spec = _ilu.spec_from_file_location("_sa3_rocm_env", _re)
@@ -56,8 +56,8 @@ import torch  # noqa: E402
 import torch.nn.functional as F  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
-from scripts.latch.latch_dataset import LatCHDataset, collate_varlen  # noqa: E402
-from scripts.latch.latch_model import LatCH  # noqa: E402
+from latch.latch_dataset import LatCHDataset, collate_varlen  # noqa: E402
+from latch.latch_model import LatCH  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ def train(args):
 
     # --- Full tiered telemetry -> wandb. STANDING REQUIREMENT (SAO/MASTER.md): every
     #     control-head run logs per-layer norms / dist-from-init / weight-space trajectory
-    #     via avp_sa3's TrainTelemetry (RF loss is blind to control; the per-layer + trajectory
+    #     via control/sa3_control's TrainTelemetry (RF loss is blind to control; the per-layer + trajectory
     #     signals are the real diagnostics, and the cross-run fingerprint builds the
     #     DiT-block x feature controllability map — only reconstructable if logged every run). ---
     import time as _time
@@ -251,12 +251,8 @@ def train(args):
     step = 0
     _t_prev = _time.perf_counter()
     if args.wandb:
-        import sys as _sys
-        _sat = "/home/kim/Projects/SAO/stable-audio-tools"
-        if _sat not in _sys.path:
-            _sys.path.insert(0, _sat)
         import wandb as wb        # telemetry.py expects the wandb MODULE (wb.log / wb.Histogram), not the run
-        from avp_sa3.sa3_control.telemetry import TrainTelemetry
+        from sa3_control.telemetry import TrainTelemetry
         run_name = args.run_name or f"latch_{args.feature}_{args.t_injection}_d{args.depth}_{args.optimizer}"
         wb.init(project=args.wandb_project, name=run_name, config=vars(args))
         telem = TrainTelemetry(model, wb, scalar_every=args.log_every, layer_every=args.layer_every)
@@ -446,7 +442,7 @@ if __name__ == "__main__":
                    help="TemporalShapeLoss: linear warmup of lambda_deriv/lambda_multi from "
                         "0 over N steps. 0 = constant from step 1.")
     p.add_argument("--wandb", action="store_true",
-                   help="log full tiered telemetry (avp_sa3/sa3_control/telemetry.py) to wandb — "
+                   help="log full tiered telemetry (control/sa3_control/telemetry.py) to wandb — "
                         "STANDING REQUIREMENT per SAO/MASTER.md for every control-head run")
     p.add_argument("--wandb-project", default="sa3-latch")
     p.add_argument("--run-name", default=None)

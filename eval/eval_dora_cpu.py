@@ -1,4 +1,4 @@
-#!/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python
+#!/home/kim/Projects/SAO/.venv/bin/python
 """eval_dora_cpu.py — ALL-CPU audition-render harness for the SA3 DoRA finetune.
 
 Auditions DoRA checkpoints from scripts/train_lora.py (adapter_type=dora-rows,
@@ -65,7 +65,7 @@ import torch
 
 # --- audio writer: prefer the shared no-clip helper, fall back to an identical copy
 try:
-    sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-tools/avp_sa3")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "control"))  # SAO/control
     from sa3_control.audio_io import save_audio  # float32->peak-norm->clamp->PCM16
 except Exception:  # pragma: no cover - keep the harness self-contained
     import soundfile as sf

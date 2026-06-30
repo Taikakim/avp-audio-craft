@@ -6,7 +6,7 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 - [x] **Export the *control-adapted* DiT to ONNX** — DONE (2026-06-27). Adapters
       (`to_k`/`to_v`/`to_out` + conditioner) fold into the DiT graph as forward inputs:
-      `stable-audio-3/scripts/export_dit_control_onnx.py` + `dit_control_onnx_infer.py`,
+      `onnx/export_dit_control_onnx.py` + `onnx/dit_control_onnx_infer.py`,
       fp16 fixed (PE moved host-side, 3.1 GB), GPU MIGraphX cos=1.0/100%-on-EP. The all-CPU
       eval path is now canonical: `sa3_control_onnx.py` (shared gen-core) +
       `control_eval_server.py` + `submit_control_job.py` (file-drop queue

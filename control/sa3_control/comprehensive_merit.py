@@ -15,7 +15,9 @@ import glob
 import csv
 import json
 
-sys.path.append("/home/kim/Projects/SAO/stable-audio-tools/avp_sa3")
+# sa3_control is the copied control package one level up; add SAO/control so a bare
+# `from sa3_control...` resolves even when run as a loose script (no editable install).
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import soundfile as sf
 import torch
 from sa3_control.merit_eval import MeritScorer, FACTORS

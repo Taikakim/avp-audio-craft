@@ -30,13 +30,9 @@ def _apply_amd_env():
             os.makedirs(os.path.dirname(tf), exist_ok=True)
         print(f"[amd] applied {len(amd)} env vars from {cfg_path} (amd: section)")
     else:
-        import importlib.util as _ilu
-        from pathlib import Path as _Path
-        _re = _Path(__file__).resolve().parent.parent / "stable_audio_tools" / "rocm_env.py"
-        _spec = _ilu.spec_from_file_location("_sat_rocm_env", _re)
-        _m = _ilu.module_from_spec(_spec)
-        _spec.loader.exec_module(_m)
-        _m.apply_profile("training")
+        # stable_audio_tools is editable-installed in SAO/.venv.
+        from stable_audio_tools.rocm_env import apply_profile
+        apply_profile("training")
 
 _apply_amd_env()
 

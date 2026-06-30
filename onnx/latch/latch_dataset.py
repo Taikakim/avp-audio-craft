@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from scripts.latch.latch_targets import resample_target
+from latch.latch_targets import resample_target
 
 
 def _open_default_db():

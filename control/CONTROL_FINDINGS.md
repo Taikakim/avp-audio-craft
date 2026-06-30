@@ -1,6 +1,6 @@
 # SA3 Control — Findings (full list)
 
-A neutral, complete list of the components surfaced by the cross-domain control-methods sweep — for you to judge relevance. No ranking, no roadmap. Each entry: what it is · domain · maturity · the SA3-relevant note · source. Maturity = (validated) [demonstrated, often in a sibling/related setting] · (plausible) [reasoned adaptation, untested for us] · (speculative) [no direct precedent]. The prioritized view with a suggested order lives in the companion `avp_sa3/RESEARCH_RADAR.md`.
+A neutral, complete list of the components surfaced by the cross-domain control-methods sweep — for you to judge relevance. No ranking, no roadmap. Each entry: what it is · domain · maturity · the SA3-relevant note · source. Maturity = (validated) [demonstrated, often in a sibling/related setting] · (plausible) [reasoned adaptation, untested for us] · (speculative) [no direct precedent]. The prioritized view with a suggested order lives in the companion `control/RESEARCH_RADAR.md`.
 
 **Provenance:** 55 candidates found across 8 web-search lanes; 46 kept after re-fetch verification (9 dropped as unverifiable or judged non-transferable). Several entries cite very recent (2026) papers found via live search — spot-check arXiv IDs before relying on them. SA3 recurring constraints noted per entry: guidance/backprop must be **fp32**; latents are **1D temporal** (spatial-mask tricks become temporal windowing); **descending-t Euler**; **rectified flow**, not DDPM.
 

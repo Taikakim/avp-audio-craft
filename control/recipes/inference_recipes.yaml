@@ -2,12 +2,12 @@
 #
 # Each recipe is a reusable config: a named technique with the VALIDATED defaults we
 # found, the tool that runs it, the venv, and when to reach for it. Consumers:
-#   - CLI tools in avp_sa3/scripts/ (separation, riffer) read these as starting params.
+#   - CLI tools in control/scripts/ (separation, riffer) read these as starting params.
 #   - The mir latent feature explorer (mir/plots/explorer, port 7895) — its Viewer tab
 #     can surface these as selectable recipes (steering recipes apply in-app via ridge
 #     directions; script recipes hand off to the SA3 .venv CLI).
 #
-# venv keys:  sa3 = /home/kim/Projects/SAO/stable-audio-3/.venv/bin/python (3.13, torch ROCm)
+# venv keys:  sa3 = /home/kim/Projects/SAO/.venv/bin/python (3.13, consolidated; torch ROCm + CK FA, FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE)
 #             mir = /home/kim/Projects/mir/mir/bin/python (3.12, librosa/essentia)
 #             sat = /home/kim/Projects/SAO/stable-audio-tools/sat-venv/bin/python (3.10)
 # Add a recipe: copy a block, set validated params, cite the source (WORKLOG/LATCH_RESULTS).
@@ -18,7 +18,7 @@ recipes:
   - id: flowsep-anchored
     title: Generative source separation (FlowEdit/AUDEDIT + fidelity anchor)
     kind: separation
-    tool: avp_sa3/scripts/sa3_flowsep.py
+    tool: control/scripts/sa3_flowsep.py
     venv: sa3
     model: medium-base
     when: >
@@ -44,7 +44,7 @@ recipes:
   - id: zerosep-rf-eta
     title: RF-Solver flow-inversion separation (η z0-anchor dial)
     kind: separation
-    tool: avp_sa3/scripts/sa3_zerosep_rf.py
+    tool: control/scripts/sa3_zerosep_rf.py
     venv: sa3
     model: medium-base
     when: >
@@ -64,12 +64,12 @@ recipes:
   - id: riffer-audio-ref
     title: Similarity riffer (audio-reference control adapter)
     kind: riffer
-    tool: avp_sa3/sa3_control/generate.py
+    tool: control/sa3_control/generate.py
     venv: sa3
     model: medium-base
     when: >
       Generate new material that riffs on a reference track's style/content. Needs a
-      trained adapter checkpoint (avp_sa3/sa3_control/train.py / launch_riffer.sh).
+      trained adapter checkpoint (control/sa3_control/train.py / eval/launch_riffer.sh).
     params:
       adapter: null             # path to riffer_*.pt
       reference: null           # audio file to riff on
@@ -154,7 +154,7 @@ recipes:
       (4) But the BoN argmax DIFFERS by reward (CU-winner != PQ-winner 8/10 prompts, != PC-winner 10/10):
       correlated axes still pick different best samples, so the reward choice is NOT moot. Within-prompt
       headroom: PC/CE ~1.4, PQ ~1.0, CU ~0.8 (CE/PC have the most room to steer).
-    tool: "(to build) avp_sa3/scripts/sa3_fk_steer.py — particle wrapper around the SA3 sampler"
+    tool: "(to build) control/scripts/sa3_fk_steer.py — particle wrapper around the SA3 sampler"
     venv: sa3                    # install `audiobox-aesthetics` into .venv to avoid the mir cross-venv hop
     model: medium-base           # FK steers ANY model (uses the model's own transition kernel as proposal)
     when: >
@@ -188,7 +188,7 @@ recipes:
   - id: stem-score
     title: Ground-truth bracketing (score outputs vs reference stems)
     kind: eval
-    tool: avp_sa3/scripts/stem_score.py
+    tool: control/scripts/stem_score.py
     venv: mir
     when: "Pick separation/riffer params objectively against real project stems."
     params:

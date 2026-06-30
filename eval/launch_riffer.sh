@@ -1,31 +1,23 @@
 #!/usr/bin/env bash
 # Train the SA3 audio-reference (riffer) control adapter on pre-encoded latents.
 #
-#   bash avp_sa3/launch_riffer.sh                 # default: bf16, crop 2048, 20k steps
-#   CROP=4096 STEPS=40000 bash avp_sa3/launch_riffer.sh
+#   bash eval/launch_riffer.sh                 # default: bf16, crop 2048, 20k steps
+#   CROP=4096 STEPS=40000 bash eval/launch_riffer.sh
 #
 # Perf notes (this box / ROCm):
 #  - bf16 base + adapters (the supported ROCm path). TunableOp OFF — negligible on 7.14.
-#  - Counting on native CK (Composable Kernel) flash-attn (~2x over Triton FA2) when run
-#    on the ROCm 7.14 / CK stack (SAO/docs/flash-attn-ck-rdna4.md). On the prod 7.2.3
-#    stack it falls back to Triton FA2 (FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE).
+#  - Runs from the consolidated SAO/.venv, whose flash_attn 2.8.4 IS the native CK
+#    (Composable Kernel) build — validated end-to-end incl. a DoRA training run on CK FA
+#    (docs/consolidated-venv-setup.md, docs/flash-attn-ck-rdna4.md). The CK path requires
+#    FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE (else it routes to the absent aiter-Triton).
 #  - Do NOT set MIOPEN_FIND_MODE=6 — it crashes SA3-medium's DiT (mode 2 is fine).
 #  - DiT gradient checkpointing stays ON; our module-global control-token holder survives it.
 #  - Only ~4.8% of params train (the adapters + ref conditioner); the 2.3B base is frozen.
 set -u
-cd /home/kim/Projects/SAO/stable-audio-tools/avp_sa3 || exit 1
+cd /home/kim/Projects/SAO || exit 1                  # editable sao_tooling resolves sa3_control here
 
-# STACK=714 -> ROCm 7.14 / CK flash-attn (validated, ~27% faster end-to-end; needs the
-#              backward grad-count patch, docs/flash-attn-ck-rdna4.md §5b).
-# STACK=723 -> prod ROCm 7.2.3 / Triton FA2 (the safe default).
-STACK="${STACK:-714}"
-if [ "$STACK" = "714" ]; then
-  PY=/home/kim/Projects/SAO/sa3-rocm7.13-test/.venv/bin/python
-  export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE     # use CK kernels, not aiter-Triton
-else
-  PY=/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python
-  export FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
-fi
+PY=/home/kim/Projects/SAO/.venv/bin/python
+export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE       # CK kernels, not aiter-Triton (see header)
 export PYTORCH_TUNABLEOP_ENABLED=0                    # negligible on 7.14
 
 SAVE_DIR="${SAVE_DIR:-/run/media/kim/Lehto/sa3_control_runs/riffer}"
@@ -38,7 +30,7 @@ if [ "${WANDB:-1}" != "0" ]; then
   export WANDB_DIR="$SAVE_DIR"                         # not under the repo where it could shadow imports
 fi
 
-"$PY" sa3_control/train.py \
+"$PY" -m sa3_control.train \
   --encoded_dir /run/media/kim/Lehto/latents_sa3 \
   --model medium-base --precision bf16 \
   --crop-frames "${CROP:-2048}" --batch "${BATCH:-1}" \

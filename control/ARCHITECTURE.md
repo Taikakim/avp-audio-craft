@@ -1,9 +1,10 @@
-# avp_sa3 — SA3 tooling (ARCHITECTURE)
+# control/ — SA3 control tooling (ARCHITECTURE)
 
 Tooling for working with **Stable Audio 3 `medium-base`** on this system. Lives in
-the `audio-tools-avp` repo; runs with the **SA3 `.venv` (3.13)** where
-`stable_audio_3` is installed. Requires **no changes to the SA3 fork** — everything
-wraps SA3 at runtime, so `Taikakim/stable-audio-3` stays upstream-syncable.
+the `SAO/` master repo (under `control/`); runs with the consolidated **`SAO/.venv`
+(3.13)** where `stable_audio_3` is editable-installed. Requires **no changes to the
+SA3 fork** — everything wraps SA3 at runtime, so `Taikakim/stable-audio-3` stays
+upstream-syncable.
 
 > **Reuse the plumbing.** Before building, read the SAO-level map
 > `/home/kim/Projects/SAO/ARCHITECTURE.md` (the cross-repo reuse index) and this file.
@@ -76,16 +77,16 @@ and **NOT loss** (noise-dominated — flat for working *and* collapsed). Gain ~1
 
 ## Run
 ```bash
-SA3=/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python
-MIR=/home/kim/Projects/mir/mir/bin/python
-PYTORCH_TUNABLEOP_ENABLED=0 $SA3 avp_sa3/scripts/sa3_flowsep.py -i mix.wav ...
-$MIR avp_sa3/scripts/stem_score.py --role drums --stems-dir <stems> ...
+SA3=/home/kim/Projects/SAO/.venv/bin/python          # consolidated venv (editable stable_audio_3)
+MIR=/home/kim/Projects/mir/mir/bin/python            # measurement venv (librosa/MERT/Audiobox)
+PYTORCH_TUNABLEOP_ENABLED=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE $SA3 control/scripts/sa3_flowsep.py -i mix.wav ...
+$MIR control/scripts/stem_score.py --role drums --stems-dir <stems> ...
 ```
 
-## [2026-06-28] CPU eval servers in stable-audio-3/scripts/ — cross-repo note (stable-audio-3 agent)
+## [2026-06-28] CPU eval servers in onnx/ — cross-repo note (stable-audio-3 agent)
 
 File-drop eval servers that complement the `sa3_control/` training pipeline. Scripts live in
-`stable-audio-3/scripts/`, run with the SA3 `.venv`:
+`onnx/`, run with `SAO/.venv`:
 
 - **`control_eval_server.py`** + **`submit_control_job.py`** — long-lived all-CPU control-adapter
   ONNX eval server; queue `SAO/control_eval_queue`.

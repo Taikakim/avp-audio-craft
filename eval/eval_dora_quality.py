@@ -57,12 +57,15 @@ from pathlib import Path
 import numpy as np
 
 # --- repo seams ---------------------------------------------------------------
-AVP_SA3 = "/home/kim/Projects/SAO/stable-audio-tools/avp_sa3"
+# This scorer runs in the MIR venv (Audiobox + MERT live there), which does NOT have
+# the SAO editable finder — so add SAO/control (the copied sa3_control package) and
+# mir/src to the path directly, relative to this file (SAO/eval/eval_dora_quality.py).
+CONTROL_ROOT = str(Path(__file__).resolve().parents[1] / "control")
 MIR_SRC = "/home/kim/Projects/mir/src"
 DEFAULT_GOA_ROOT = "/run/media/kim/Mantu/ai-music/Goa_Separated"
 DEFAULT_CACHE_DIR = str(Path.home() / ".cache" / "sa3_dora_eval")
 
-for _p in (AVP_SA3, MIR_SRC):
+for _p in (CONTROL_ROOT, MIR_SRC):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

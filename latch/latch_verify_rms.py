@@ -24,7 +24,6 @@ from pathlib import Path
 import numpy as np
 import torch
 
-sys.path.insert(0, "scripts")
 sys.path.insert(0, "/home/kim/Projects/mir/src")
 
 from stable_audio_tools.models.factory import create_model_from_config

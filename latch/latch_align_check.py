@@ -12,7 +12,6 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, "scripts")
 sys.path.insert(0, "/home/kim/Projects/mir/src")
 
 from core.timeseries_db import TimeseriesDB, DEFAULT_DB_PATH  # noqa: E402

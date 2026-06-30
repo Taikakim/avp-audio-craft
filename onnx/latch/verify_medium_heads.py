@@ -12,8 +12,8 @@ OOM doesn't sink the rest. Robust for unattended auto-run.
 import argparse, sys, traceback
 import numpy as np, torch
 
-sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3")
-sys.path.insert(0, "/home/kim/Projects/mir/src")
+sys.path.insert(0, "/home/kim/Projects/mir/src")  # mir extractor (core.*) — real external dep
+# stable_audio_3 is the editable-installed fork package (SAO/.venv); no path hack needed.
 from stable_audio_3 import StableAudioModel
 from stable_audio_3.inference.latch_guided import sample_flow_euler_latch_guided
 from stable_audio_3.inference.sampling import build_schedule

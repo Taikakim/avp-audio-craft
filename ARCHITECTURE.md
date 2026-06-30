@@ -21,16 +21,18 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
 - **`mir/`** (`/home/kim/Projects/mir`) — extracts MIR features → `.INFO` sidecars,
   beat/downbeat/onset grids, whole-track 100 Hz timeseries, Audiobox aesthetics.
   The "what does this audio contain" engine. Feeds everything downstream.
-- **`SAO/stable-audio-tools/`** — the "audio-tools-AVP" fork. **LatCH heads**
-  (training-free guidance), **FusionOpt**, SAO-Small training/finetune, audition
-  renders. The LatCH research hub; `LATCH_RESULTS.txt` is its lab notebook.
-  Also hosts **`avp_sa3/`** — SA3 tooling (runs on the SA3 .venv, **no SA3-fork
-  changes**): `sa3_control/` (control-adapter training on `latents_sa3` + timeseries
-  = the similarity riffer) and `scripts/` (`sa3_flowsep`/`sa3_zerosep_rf` generative
-  separation, `stem_score`). See `avp_sa3/ARCHITECTURE.md`.
+- **`SAO/stable-audio-tools/`** — the "audio-tools-AVP" **thin fork** (editable;
+  `stable_audio_tools` package deltas only): **LatCH heads** (training-free guidance),
+  **FusionOpt**, `rocm_env`, the FA backward patch. `LATCH_RESULTS.txt` is the LatCH lab
+  notebook. The first-party *tooling* that imports it now lives in the master repo:
+  LatCH head training + auditions in **`latch/`** (`train_latch`, dataset/model, probes),
+  and SA3 control-adapter tooling in **`control/`** (`sa3_control/` riffer trainer on
+  `latents_sa3` + timeseries; `scripts/` `sa3_flowsep`/`sa3_zerosep_rf` generative
+  separation, `stem_score`). See `control/ARCHITECTURE.md`.
 - **`SAO/stable-audio-3/`** — SA3 medium model (1.5 B DiT), LoRA finetune, SA3
-  LatCH (phase 1). The bigger/newer generation. **Kept upstream-syncable** — tooling
-  lives in `audio-tools-avp`, only SA3-side interface code (LatCH, ROCm) here.
+  LatCH (phase 1). The bigger/newer generation. **Kept upstream-syncable thin fork** —
+  tooling moved to the master repo (`onnx/`, `control/`, `eval/`, `latch/`); only
+  SA3-side package code (LatCH, ROCm, attn/APG patches) stays here.
 - **`SAO/sa3-rocm7.13-test/`** — the **ROCm 7.14 / CK flash-attn stack** (torch
   2.12+rocm7.14, `.venv` + `flash-attention` rdna branch built with CK kernels for
   gfx1201). CK FA validated for `sa3_control` **training** (2026-06-18) after the
@@ -59,12 +61,12 @@ it's the "check what we already have" index any instance reads first.
   `stable-audio-tools/scripts/whole_track_target_source.py`.
 - **pre-encoded SA3 latents + grid-aligned controls** — `Lehto/latents_sa3`
   (`.npy`+`.json`+`.TIMESERIES.npz`, 21 fields @ T=4096); loader
-  `stable-audio-tools/avp_sa3/sa3_control/dataset.py`.
+  `control/sa3_control/dataset.py`.
 - **SA3 generative separation / riffer + stem scoring** —
-  `stable-audio-tools/avp_sa3/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`)
-  + control-adapter trainer `avp_sa3/sa3_control/`.
+  `control/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`)
+  + control-adapter trainer `control/sa3_control/`.
 - **Inference recipes** (validated technique + param sets: separation / riffer / steering /
-  guidance / eval) — `stable-audio-tools/avp_sa3/recipes/inference_recipes.yaml`. Check here
+  guidance / eval) — `control/recipes/inference_recipes.yaml`. Check here
   before re-tuning; consumed by the CLI tools and (planned) the mir explorer's recipe picker.
 - **LatCH heads + guidance** — `stable-audio-tools` (`LATCH_RESULTS.txt`);
   `stable-audio-3/stable_audio_3/inference/latch_guided.py`. Load any head with
@@ -77,9 +79,9 @@ it's the "check what we already have" index any instance reads first.
   SA3 venv, port 7892; `/decode /source /mix /steer`). GPU-validated. Reviews SAME-L
   encoder quality on `latents_sa3` + latent-space DJ mixing + LatCH-head auditioning.
   See `mir/plots/explorer_sa3/README.md`. (mir branch `sa3-latent-explorer`.)
-- **SA3 → ONNX for AMD inference (ORT + MIGraphX)** — full text→audio on AMD. AE:
-  `stable-audio-3/scripts/export_same_onnx.py` (SAME decoder/encoder, fixed-chunk) + `decode_onnx.py`
-  (host chunk-loop runner) + `latent_server_onnx.py` (low-VRAM decode player). **DiT:**
+- **SA3 → ONNX for AMD inference (ORT + MIGraphX)** — full text→audio on AMD; all in `onnx/`.
+  AE: `onnx/export_same_onnx.py` (SAME decoder/encoder, fixed-chunk) + `decode_onnx.py`
+  (host chunk-loop runner / low-VRAM decode). **DiT:**
   `export_dit_onnx.py` (DiffusionTransformer._forward, length ladder, `--batch 2`/`--fp16`) +
   `dit_onnx_infer.py` (host rectified-flow sampler) + `precache_dit_cond.py` (prompt→cond npz) +
   `bench_dit_onnx.py` (ONNX-vs-torch benchmark) + `latent_server_dit_onnx.py` (low-VRAM gen server).
@@ -92,13 +94,13 @@ it's the "check what we already have" index any instance reads first.
   Gotchas (FlexAttention, opset 18, DiT local_add_cond, fp16-EXPORTED-files not the EP flag):
   `stable-audio-3/docs/onnx-amd-inference.md`; findings writeup `stable-audio-tools/docs/book/findings/2026-06-24-sa3-onnx-on-amd-vram-not-speed.md`.
 - **CPU control-adapter eval path (the default, GPU-freeing)** — shared numpy/ORT gen-core
-  `stable-audio-3/scripts/sa3_control_onnx.py` (`generate_z0`/`make_control_tokens`/`resolve_host_pe`) +
+  `onnx/sa3_control_onnx.py` (`generate_z0`/`make_control_tokens`/`resolve_host_pe`) +
   long-lived all-CPU file-drop server `control_eval_server.py` (resident T5-Gemma + ONNX DiT/decoder,
   queue `SAO/control_eval_queue`) + stdlib-only cross-venv `submit_control_job.py`. 8-step grid ≈5.4 min
   CPU (pin `--threads 12`) vs ~42 min GPU-with-compile → CPU is the correct default, not a fallback.
   Eval *measurement* (BPM/onset) still runs in the mir venv. See MASTER §5.
 - **CPU LatCH-guidance eval path (2026-06-28)** — gradient sibling of the control eval server.
-  `stable-audio-3/scripts/sa3_latch_onnx.py` (`generate_z0_latch_guided`; two-stage variance+mean
+  `onnx/sa3_latch_onnx.py` (`generate_z0_latch_guided`; two-stage variance+mean
   Selective-TFG, APG CFG ports `dit.py::apg_project`, LogSNR schedule); `latch_eval_server.py`
   (long-lived all-CPU file-drop server, queue `SAO/latch_eval_queue`); `submit_latch_job.py`
   (stdlib submitter; `--prompts` one prompt per flag, no comma-split); `latch_validate.py` (CPU/GPU

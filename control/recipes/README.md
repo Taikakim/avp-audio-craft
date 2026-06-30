@@ -14,7 +14,7 @@ the tools and the explorer read.
 - id: flowsep-anchored          # stable key
   title: ...                    # human label
   kind: separation|riffer|steering|guidance|eval
-  tool: avp_sa3/scripts/...     # entry point (path or model call)
+  tool: control/scripts/...     # entry point (path or model call)
   venv: sa3|mir|sat             # which interpreter (see top of the yaml)
   model: medium-base
   when: >                       # the one-line "use this for ..."
@@ -30,7 +30,7 @@ separation (`flowsep-anchored`, `zerosep-rf-eta`) · riffer (`riffer-audio-ref`,
 
 ## Consumers
 
-- **CLI tools** (`avp_sa3/scripts/*`, `sa3_control/generate.py`): use the `params` as
+- **CLI tools** (`control/scripts/*`, `sa3_control/generate.py`): use the `params` as
   starting defaults — the script flags mirror the recipe keys.
 - **Latent feature explorer** (`mir/plots/explorer`, port 7895): the Viewer tab already
   applies *steering* recipes in-app (ridge directions, `z += strength·σ·β`). The
