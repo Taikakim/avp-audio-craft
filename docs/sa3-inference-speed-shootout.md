@@ -33,7 +33,7 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
 | 1B | Torch-GPU · +DoRA r128 | **4.1 s** (16-step/47 s) | **11.5×** | **M** | `stable-audio-3/.venv` | ckpt `…r128-adamw/…step=10800.ckpt`. ~2.3× slower than base: DoRA-rows recomputes `W' = mag·V/‖V‖` over **229 parametrized DiT Linears** every forward (load+attach, not merged). |
 | 1C | Torch-GPU · +LATCH | **0.81 s** (8-step/20 s, fp16) | **24.8×** | **M** | `stable-audio-3/.venv` | **Remeasured 2026-07-01: ≈ base.** Default `generate(latch_configs=…)` runs **fp16 + CK flash-attn, 62.9 ms/call, 0 flex calls** (DiT fwd is under `no_grad` → only the fp32 head needs grad). The old "~7 s / 6.7× / flex-attn" was the **fp32 verify path** (`model_half=False`) — ~8× slower, used only by `verify_latch.py`/`verify_medium_heads.py` for fidelity. fp16 steers correctly (~½ the authority of fp32, recover with higher gain). `rho=mu` gain ≈512. |
 | 1D | Torch-GPU · +control adapter | **0.82 s** (8-step/20 s) | **24.3×** | **M** | `stable-audio-3/.venv` | **Measured 2026-07-01: 85.8 ms/call = base ×1.10** (ckpt `onset_FUSION_lr8e5_1p2ep`). Forward-only cross-attn add (24 blocks) is cheap on torch GPU. The earlier ~4 s / RTF 6× was the **ONNX-MIGraphX** path (169 ms/call) misread as "GPU". |
-| 2A | Torch-CPU · base | ~85 s (16-step) | 0.55× | R | `stable-audio-3/.venv` (`SA3_DISABLE_FLASH_ATTN=1`, math-SDPA, 12 thr) | `eval_dora_cpu.py --device cpu`. AVX512, physical-core pin. |
+| 2A | Torch-CPU · base | **20.2 s** (8-step/T256/24 s, gen-only) | **1.18×** | **M** | `stable-audio-3/.venv` (`SA3_DISABLE_FLASH_ATTN=1`, math-SDPA, 12 thr) | **Remeasured 2026-07-01:** DiT loop 15.6 s + decode 4.6 s. (Old ~85 s was a 16-step/T512/47 s *full* render.) **RAM floor 10.5 GB**, load-transient 18.9 GB. |
 | 2B | Torch-CPU · +DoRA | ~85–110 s | ~0.5× | R | as 2A | DoRA W' recompute adds CPU cost on top of base; same script `--ckpt`. |
 | 2C | Torch-CPU · +LATCH | **N/A → 4C** | — | — | — | Pure-torch-CPU full DiT is impractical; the LATCH eval path **deliberately** runs DiT fwd on ORT-CPU + torch autograd on the tiny head → that's cell **4C**. |
 | 2D | Torch-CPU · +control | **N/A → 4D** | — | — | — | Superseded by the baked-control ONNX-CPU path (**4D**); no reason to run the adapter in pure torch-CPU. |
@@ -41,7 +41,7 @@ Cells: **s/clip · RTF · source** where source = **M** measured this session, *
 | 3B | ONNX-MIGraphX · +DoRA | **N/A** | — | — | — | DoRA is a **weight edit**, not a forward add → each adapter needs a static merge + full re-export + ~15-min AOT recompile. Not built; infeasible per-adapter. |
 | 3C | ONNX-MIGraphX · +LATCH | **N/A** | — | — | — | LATCH guidance needs **torch autograd through the head**; the MIGraphX-EP graph isn't differentiable. The head can't bake in (gradient method) → no GPU-ONNX path. |
 | 3D | ONNX-MIGraphX · +control | ~4 s (8-step/L256) | ~6× | R | **mir venv** | WORKLOG 2026-06-27. Control-DiT **169 ms/call fp16** (294 ms fp32) — 24 baked adapters add ~50% over plain DiT's 144 ms. cos=1.0 vs CPU, 100% on-EP. ~13–18 min AOT compile/session (excluded). |
-| 4A | ONNX-CPU-EP · base | ~20 s (16-step) | ~2.4× | R | mir or `.venv` (CPU ORT) | Plain DiT fwd on ORT CPU EP, numpy host loop. Derived from control-CPU 674 ms/call (base slightly less); ~10 s/8-step → ~20 s/16-step + decode. |
+| 4A | ONNX-CPU-EP · base | **15.35 s** (8-step/T256/24 s, gen-only) | **1.55×** | **M** | `stable-audio-3/.venv` (onnxruntime 1.27 CPU EP, 12 thr) | **Remeasured 2026-07-01: 1.32× faster than torch-CPU** (DiT loop **1.70×** faster — MLAS AVX512 + graph fusion; decode 1.34× *slower* — ORT chunked overlap-recompute). 575 ms/DiT-call. **RAM floor 8.4 GB** (2.1 GB < torch). **Use fp32 — fp16 is a LOSS on CPU EP** (no fp16 kernels → up-converts to fp32 at load: slower, no RAM win). |
 | 4B | ONNX-CPU-EP · +DoRA | **N/A** | — | — | — | Same merge+re-export blocker as 3B. |
 | 4C | ONNX-CPU-EP · +LATCH | ~15–25 s (16-step) | ~2× | R | `stable-audio-3` (`sa3_latch_onnx.py` / `latch_eval_server.py`) | DiT fwd on ORT-CPU + torch autograd on the ~5–7 M-param head only. THE latch eval path (commit 020b6c3). 8-step ≈ control + head-backprop overhead. |
 | 4D | ONNX-CPU-EP · +control | ~10 s (8-step) | ~2.4× | R | `control_eval_server.py` / `dit_control_onnx_infer.py` | WORKLOG 2026-06-27. **674 ms/call**, CFG=16 calls/clip. 30-clip 8-step grid ≈ **5.4 min on CPU-EP** vs ~42 min on **MIGraphX-GPU** (~40 min of which is one-time AOT compile, ~1.4 min actual gen) → CPU-EP wins a *one-off* ONNX grid, but **torch-GPU does it in ~2–3 min** and is the real fastest. |
@@ -85,6 +85,16 @@ correct the earlier mis-attributed numbers (1C was the fp32 verify path, 1D was 
    **No code optimisation to apply** — fp16 + CK-FA is already the default in `generate()`; the slow numbers lived only in
    fidelity-check scripts (`verify_latch.py`, `verify_medium_heads.py`, intentionally fp32). One usable lever: run LATCH
    *evals* in fp16 (not the fp32 verify default) → **~8× faster**, still steers, recover ~½ the authority via higher gain.
+
+6. **ONNX-CPU vs Torch-CPU (same basis, 8-step/T256, measured 2026-07-01): ONNX ~1.3× faster and ~2 GB lighter.**
+   Gen **15.35 s (RTF 1.55×)** vs **20.2 s (RTF 1.18×)**. The DiT loop is **1.7× faster** on ONNX (MLAS AVX512 + fused
+   const-folded graph vs torch-eager math-SDPA), while *decode* is 1.3× **slower** on ONNX (its chunked decoder recomputes
+   the 16-frame overlap) — net win to ONNX since the DiT dominates. RAM floor **8.4 vs 10.5 GB**: the 2.1 GB is **not** the
+   DiT/decoder (identical fp32 weights in both) — it's torch's unused AE **encoder** (1.7 GB dead weight for text→audio) +
+   libtorch/autograd (~0.4 GB), both absent in ONNX. **fp16 ONNX is a LOSS on CPU** (CPU EP has no fp16 kernels → up-converts
+   to fp32 at load: slower *and* no RAM saving) — fp16 helps only the MIGraphX **GPU** EP. **Footprint caveat:** these floors
+   are with **precached text** — the T5-Gemma encoder is NOT resident in the gen path (in-model conditioner ≈ 0.2 M params).
+   Encoding a prompt **live** (the eval-server path) adds T5-Gemma (~5.6 GB fp32) to **both** backends equally.
 
 ## Reproduce the measured cells
 
