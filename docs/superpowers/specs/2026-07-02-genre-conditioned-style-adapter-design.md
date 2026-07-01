@@ -53,8 +53,11 @@ matches what the model is trained on:
 - **Static (track-level, broadcast to every window):**
   - **Genre vector** — a **fixed vocabulary** of the K most-prevalent electronic
     discogs-400 genres (Goa Trance / Psy-Trance / Progressive Trance / Trance / Hard Trance
-    / Ambient / Dark Ambient / Downtempo …; K chosen empirically from the corpus
-    distribution). **Raw softmax probabilities** for the K genres **+ an
+    / Ambient / Dark Ambient / Downtempo …). **The vocabulary is chosen from the
+    corpus:** a genre is included only if **≥ 303 crops** carry it as a significant label
+    (min-support threshold, so every fingerprint dimension is well-populated); the exact
+    significance rule (top-k rank or probability threshold) is fixed in the first plan
+    step. **Raw softmax probabilities** for the K genres **+ an
     `other = 1 − Σ(selected)` bucket** → a proper simplex with *no renormalization
     distortion*. (A track that is 0.3 goa with the rest spread over acoustic genres reads
     `[goa 0.3, …, other 0.7]` = correctly *weakly* goa, not 100 %.) Fixed vocab (not
@@ -148,7 +151,9 @@ energy heads.
 - **Genre-head accuracy on the corpus:** a 10-track sanity check that the discogs head
   actually separates known 90s-goa from modern-psy (the year dim reduces reliance on this,
   but confirm it isn't noise).
-- **K (genre-vocab size):** choose empirically from the corpus genre distribution.
+- **K (genre-vocab size):** determined by the corpus — include a genre only if **≥ 303
+  crops** carry it (min-support). The first plan step computes the discogs-400 distribution
+  over the corpus and fixes the vocabulary + the significance rule.
 - **Window-scalar fix must not regress existing heads:** re-run a small onset control-eval
   after.
 - **Drive:** use the NVMe latents mirror, not Lehto (throughput + mount reliability).
