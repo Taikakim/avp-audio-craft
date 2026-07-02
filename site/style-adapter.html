@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Style Adapter — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="edg3.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="index.html">index</a>
+    <a href="dialogue.html">dialogue</a>
+    <a href="index.html#constructs">constructs</a>
+    <a href="artifacts.html">artifacts</a>
+    <a href="reference.html">reference</a>
+    <span class="status">research · in training</span>
+  </nav>
+</header>
+
+<h1>Style Adapter</h1>
+<p class="lede">Teaching Stable Audio 3 a <em>sound</em> — the specific world of goa and
+melodic-goa — without a text prompt and without retraining the model. A small conditioning
+adapter that <strong>listens to the music</strong> and steers a frozen model toward its style.</p>
+
+<h2><span class="mark">§</span> The problem</h2>
+<p>The text prompt is the wrong handle for this music. The available captions are noisy
+metadata — unreliable genre tags that sprawl from house to acid techno, and nothing that
+describes how a track actually <em>sounds</em>. Teaching style by fine-tuning the model's
+weights through that broken text bottleneck drifts the model toward generic modern output and
+costs audio quality along the way.</p>
+
+<h2><span class="mark">§</span> The idea</h2>
+<p>Leave the base model frozen. Condition it instead on an <strong>audio-derived style
+fingerprint</strong> — what the music is, not what a tag claims: a genre profile, its era, its
+groove. A lightweight forward-modification adapter folds that fingerprint in as an always-on
+bias, so the style rides <em>underneath</em> the prompt instead of fighting it — and it's immune
+to the metadata noise.</p>
+
+<h2><span class="mark">§</span> The lead we're following</h2>
+<p>This isn't a guess. Sibling adapters that steer the same model on <em>musical features</em>
+rather than text already produced <strong>better goa than the weight-finetune did — despite not
+being style models at all.</strong> Forward-modification on audio, driven by a consistent
+audio-derived signal, is the right vehicle. This project makes that explicit and pushes it as far
+as it will go.</p>
+
+<h2><span class="mark">§</span> Status</h2>
+<p>In training. A three-variant benchmark decides how deep into the model the fingerprint should
+reach — the principle being the <em>lightest</em> touch that still captures the style. <span
+class="dim">Research in progress; numbers when they've earned it.</span></p>
+
+<h2><span class="mark">§</span> Interested?</h2>
+<p class="dim">This is private research, not a release. If it's useful to what you're doing, we'd
+rather have the conversation than hand over a repository — reach the studio via
+<a href="index.html">aavepyora.online</a>.</p>
+
+<footer class="colophon">
+  <span>aavepyora.online</span><span>·</span>
+  <span>research · in training</span><span>·</span>
+  <span>Stable Audio 3</span>
+  <span style="margin-left:auto"><span class="edge">▮</span> the sound, not the label</span>
+</footer>
+
+</div>
+</body>
+</html>

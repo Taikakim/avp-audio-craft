@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inference Speed Shootout — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="edg3.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="index.html">index</a>
+    <a href="dialogue.html">dialogue</a>
+    <a href="index.html#constructs">constructs</a>
+    <a href="artifacts.html">artifacts</a>
+    <a href="reference.html">reference</a>
+    <span class="status">findings · measured</span>
+  </nav>
+</header>
+
+<h1>Inference Speed Shootout</h1>
+<p class="lede">How fast can Stable Audio 3 actually generate — measured across every backend that
+matters (<strong>PyTorch vs ONNX, GPU vs CPU</strong>) on a single consumer AMD card
+(RX&nbsp;9070&nbsp;XT, RDNA4).</p>
+
+<h2><span class="mark">§</span> The question</h2>
+<p>"Which backend is fastest" collects a lot of folklore and surprisingly little measurement.
+We timed generation wall-clock per clip — the full sampling loop <em>plus</em> decode, warm,
+one clip at a time — for the base model and with each steering method, and report it as
+<strong>RTF</strong> (realtime factor; &gt;1 = faster than realtime).</p>
+
+<h2><span class="mark">§</span> What we found</h2>
+<table class="listing">
+  <tr><th>backend</th><th>base generation</th><th>with steering</th><th>what it buys</th></tr>
+  <tr><td>PyTorch · GPU <span class="faint">fp16, CK flash-attn</span></td>
+      <td><strong>~26× realtime</strong></td><td>~24× (steering nearly free)</td><td>the speed king</td></tr>
+  <tr><td>PyTorch · CPU <span class="faint">AVX-512</span></td>
+      <td>~1.2× realtime</td><td>—</td><td>GPU-free</td></tr>
+  <tr><td>ONNX · GPU <span class="faint">MIGraphX</span></td>
+      <td>~10× realtime</td><td>~6×</td><td>lower VRAM, torch-free deploy</td></tr>
+  <tr><td>ONNX · CPU</td>
+      <td>~1.5× realtime</td><td>~2.4×</td><td>leanest RAM; the eval default</td></tr>
+</table>
+
+<h2><span class="mark">§</span> The headlines</h2>
+<p>PyTorch on the GPU wins on speed outright — and adding <em>control</em> or
+<em>guidance</em> to it is nearly free (forward-only steering costs ~10%). ONNX does <strong>not</strong>
+beat torch on speed; what it buys is <strong>lower VRAM and a torch-free deployment</strong> that
+can sit alongside a training run. And the CPU alone clears realtime for base generation — the
+low-VRAM eval path, no GPU required.</p>
+
+<h2><span class="mark">§</span> The honest part</h2>
+<p>Half the worth of a benchmark is its willingness to correct itself. Several numbers once filed
+as "GPU" turned out to be a slower ONNX path misread as the fast one; they were re-measured and
+fixed on the record. Read RTF by <em>basis</em>, never as a bare headline — step count and clip
+length change everything.</p>
+
+<h2><span class="mark">§</span> Interested?</h2>
+<p class="dim">The full matrix — per-cell provenance, the corrections, the exact configs — is
+private. If deploying diffusion audio on constrained or AMD hardware is your problem too, we'd
+rather talk it through than hand over a document — reach the studio via
+<a href="index.html">aavepyora.online</a>.</p>
+
+<footer class="colophon">
+  <span>aavepyora.online</span><span>·</span>
+  <span>AMD RDNA4 · measured 2026</span><span>·</span>
+  <span>Stable Audio 3</span>
+  <span style="margin-left:auto"><span class="edge">▮</span> measure, then correct</span>
+</footer>
+
+</div>
+</body>
+</html>

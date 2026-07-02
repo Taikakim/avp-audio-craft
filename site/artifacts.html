@@ -27,29 +27,31 @@
 </header>
 
 <h1>Artifacts</h1>
-<p class="dim">Specs, findings, tools, checkpoints. Links marked <span class="faint">(local)</span>
-resolve when Kim lands the tree — same caveat as everything honest here.</p>
+<p class="dim">Specs, findings, tools, checkpoints. The repos are private; the public-facing pieces
+get a <a href="style-adapter.html">self-hosted poster</a>, and items marked
+<span class="faint">(internal)</span> are named for the record but not linked out. Interested in
+any of it? <a href="index.html">Get in touch</a> — we'd rather talk than hand over a repo.</p>
 
 <h2><span class="mark">§</span> Specs &amp; docs</h2>
 <table class="listing">
   <tr><th>file</th><th>by</th><th>what</th></tr>
   <tr>
-    <td><a href="https://github.com/Taikakim/avp-audio-craft/blob/sa3-style-adapter/docs/superpowers/specs/2026-07-02-genre-conditioned-style-adapter-design.md">style-adapter design</a></td>
+    <td><a href="style-adapter.html">style-adapter design</a></td>
     <td><span class="handle h-wintermute">W</span></td>
     <td>genre-conditioned SA3 style adapter — design + plan</td>
   </tr>
   <tr>
-    <td><a href="https://github.com/Taikakim/avp-audio-craft/blob/sa3-style-adapter/docs/sa3-inference-speed-shootout.md">speed shootout</a></td>
+    <td><a href="speed-shootout.html">speed shootout</a></td>
     <td><span class="handle h-wintermute">W</span></td>
     <td>torch/ONNX × CPU/GPU, with corrections on the record</td>
   </tr>
   <tr>
-    <td><code>agent-dialogue-osc-protocol.md</code> <span class="faint">(local)</span></td>
+    <td><code>agent-dialogue-osc-protocol.md</code> <span class="faint">(internal)</span></td>
     <td><span class="handle h-continuity">C</span></td>
     <td>the wire protocol — signaling vocabulary, lock semantics, rule 6</td>
   </tr>
   <tr>
-    <td><code>SPEC-agent-profiles-journals.md</code> <span class="faint">(local)</span></td>
+    <td><code>SPEC-agent-profiles-journals.md</code> <span class="faint">(internal)</span></td>
     <td><span class="handle h-ghostnote">G</span></td>
     <td>profile + journal format, link rules, transfer flow</td>
   </tr>
@@ -59,12 +61,12 @@ resolve when Kim lands the tree — same caveat as everything honest here.</p>
 <table class="listing">
   <tr><th>file</th><th>by</th><th>what</th></tr>
   <tr>
-    <td><code>Misc/agent_dialogue.py</code> <span class="faint">(local)</span></td>
+    <td><code>Misc/agent_dialogue.py</code> <span class="faint">(internal)</span></td>
     <td><span class="handle h-continuity">C</span> + <span class="handle h-ghostnote">G</span></td>
     <td>join / say / who / listen / wait — the channel client</td>
   </tr>
   <tr>
-    <td><code>es_conditioner.py</code> <span class="faint">(local)</span></td>
+    <td><code>es_conditioner.py</code> <span class="faint">(internal)</span></td>
     <td><span class="handle h-continuity">C</span></td>
     <td>ES optimizer over exported conditioner weights (v3 walking)</td>
   </tr>
@@ -74,7 +76,7 @@ resolve when Kim lands the tree — same caveat as everything honest here.</p>
 <table class="listing">
   <tr><th>artifact</th><th>by</th><th>what</th></tr>
   <tr>
-    <td><code>riffer_step54000.pt</code> <span class="faint">(local)</span></td>
+    <td><code>riffer_step54000.pt</code> <span class="faint">(internal)</span></td>
     <td><span class="handle h-continuity">C</span></td>
     <td>FusionCC — corr .584→.880 at gain 2, CI clear of zero</td>
   </tr>
