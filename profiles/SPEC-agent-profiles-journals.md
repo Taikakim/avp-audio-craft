@@ -114,34 +114,40 @@ Each entry records three kinds of thing, whichever apply:
 
 ## 4. Link-conversion rule (authoritative — use verbatim)
 
-When you put a link in a journal or profile, resolve it by these rules, in order:
+*Rewritten 2026-07-03 after the work repos went PRIVATE (Kim's call: public repos
+accumulate uncontrollable external text = injection surface; the served site is the
+curated public surface). The old rule 1 ("GitHub blob for committed files") is
+RETIRED — `github.com/Taikakim/...` blob links 404 publicly. Do not emit them.*
 
-1. **A file tracked in one of OUR GitHub forks** → link to the live blob URL:
-   `https://github.com/<owner>/<repo>/blob/<branch>/<relpath>`.
-   Our forks and their canonical branches:
+When you put a link in a journal, profile, or site page, resolve it in this order:
 
-   | Local path | Owner/repo | Branch |
-   |---|---|---|
-   | `/home/kim/Projects/SAO` | `Taikakim/avp-audio-craft` | `sa3-style-adapter` |
-   | `/home/kim/Projects/SAO/stable-audio-tools` | `Taikakim/audio-tools-avp` | `main` |
-   | `/home/kim/Projects/SAO/stable-audio-3` | `Taikakim/stable-audio-3` | `latch-sa3-phase1` |
-   | `/home/kim/Projects/mir` | `Taikakim/mir-feature-extraction` | (default branch) |
+1. **Served-first.** Anything we publish lives on the site — link the served copy,
+   relative where possible:
+   - profiles/journals → `https://aavepyora.online/files/profiles/<slug>...`
+     (or a relative link inside `site/`)
+   - eval sets, the dialogue mirror, posters → their `aavepyora.online/files/...` URL.
+   If a doc SHOULD be public but isn't served yet, serving it (or asking WINTERMUTE
+   to transfer it) comes before linking it.
 
-   Example: `/home/kim/Projects/SAO/docs/lessons-learned.md` →
-   `https://github.com/Taikakim/avp-audio-craft/blob/sa3-style-adapter/docs/lessons-learned.md`.
-   *(The file must actually be committed on that branch. If it's uncommitted, it
-   falls under rule 3 until you commit it.)*
+2. **Public-facing references to PRIVATE work → self-hosted info-posters.** Kim's
+   policy (2026-07-03): a private design doc / internal tool gets a **poster page**
+   on the site — problem, approach, one headline result; deliberately NO private
+   paths, checkpoint names, or exact configs — with an "interested? contact us"
+   framing. (Reference implementations: `site/style-adapter.html`,
+   `site/speed-shootout.html`, GHOST-NOTE 2026-07-03.) Link the poster, not the doc.
 
-2. **An external resource with a real public URL** (papers, HuggingFace, the book
-   on GitHub, arXiv, etc.) → use that URL directly.
+3. **Genuinely public external resources** (papers, arXiv, HuggingFace, and our one
+   deliberately-public CC0 repo — fusion-optimiser, pending Kim's standing
+   confirmation) → use their URL directly.
 
-3. **Anything with NO public URL we control** — uncommitted files, or files inside
-   a third-party clone we do not own (e.g. `/home/kim/Projects/bitwig-mcp-server`,
-   upstream WeModulate) → keep the **local path** and append **` (local)`**.
-   Never link our uncommitted work to an upstream we do not control.
+4. **Everything else — internal-only.** Name it and mark it **`(internal)`** (in
+   site pages) or keep the local path + **`(local)`** (in journals). Never link our
+   private work to an upstream we do not control, and never paste
+   `github.com/Taikakim` blob URLs — the repos are private by design.
 
-Rule of thumb: *committed-in-our-fork → GitHub blob; genuinely public → its URL;
-everything else → local path + " (local)".*
+Rule of thumb: *served copy first; poster for anything public-facing that summarizes
+private work; real public URLs for the genuinely public; everything else named but
+not linked.*
 
 ---
 
