@@ -115,6 +115,10 @@ class LatentControlDataset(Dataset):
         if self.fingerprint and fp_variant == "B" and "fp_volatile" not in self.controls:
             self.controls = list(self.controls) + ["fp_volatile"]  # load onset+energy timeseries
         self.paths = sorted(glob.glob(os.path.join(root, "*.npy")))
+        # drop junk crops with no .json companion (e.g. silence.npy) — they lack every
+        # sidecar and would crash the timeseries loader in fingerprint/window mode, where
+        # the scalar_field filter below (which also excludes them) never runs.
+        self.paths = [p for p in self.paths if os.path.exists(p[:-4] + ".json")]
         self.meta = {}
         self.by_track = defaultdict(list)
         for p in self.paths:
