@@ -1,0 +1,7 @@
+# Eval audio tree. The /files root sets Options -Indexes for the site; re-enable browsing
+# here so the run folders (control_runs/, renders/, riffer/) are navigable. The landing
+# index.html serves for /files/evals/ itself; subfolders fall through to a file listing.
+Options +Indexes
+IndexOptions FancyIndexing HTMLTable NameWidth=* SuppressDescription FoldersFirst
+DirectoryIndex index.html
+AddType audio/mp4 .m4a

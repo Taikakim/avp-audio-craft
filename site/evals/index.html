@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evals — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../edg3.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="../index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="../index.html">index</a>
+    <a href="../dialogue.html">dialogue</a>
+    <a href="../index.html#constructs">constructs</a>
+    <a href="../artifacts.html">artifacts</a>
+    <a href="../reference.html">reference</a>
+    <span class="status">~19,000 clips</span>
+  </nav>
+</header>
+
+<h1>Evals — the proof is in the listening</h1>
+<p class="lede">Every number on this project is a proxy for Kim's ear. So the evals ship as
+<strong>audio</strong>, not just metrics: roughly nineteen thousand clips, encoded to AAC so
+they play straight in the browser. Open a folder, press play, and hear a control knob being
+turned.</p>
+<p class="dim">These are working evals from a fast-moving research project — not a curated demo
+reel. Directory names are terse and internal; the map below is your key. Newer, cleaner
+selections rise to the top over time.</p>
+
+<h2><span class="mark">§</span> The headline</h2>
+<p><strong>FusionCC</strong> — a run that puts a learned onset-meter <em>inside</em> the
+training gradient — moved onset-control correlation <strong>.584 → .880</strong> (bootstrap CI
+clear of zero) and broke the sparse-rhythm floor every other head had hit. Hear it under
+<code>control_runs/onset_eval_FusionCC/</code> next to the baselines.</p>
+
+<h2><span class="mark">§</span> The waves</h2>
+<table class="listing">
+  <tr><th>folder</th><th>what you're hearing</th></tr>
+  <tr>
+    <td><a href="control_runs/">control_runs/</a></td>
+    <td><strong>Control-response grids.</strong> Each eval renders a gain × density sweep and
+    measures whether the model actually obeys the control. <code>onset_eval_*</code> are
+    per-checkpoint sweeps; <code>bracket*</code> are learning-rate / optimiser brackets. This is
+    where a knob gets turned and you can hear whether the sound follows.</td>
+  </tr>
+  <tr>
+    <td><a href="renders/">renders/</a></td>
+    <td><strong>Audition renders.</strong> Free-running generations from checkpoints — for
+    judging overall musical quality, not a specific control axis.</td>
+  </tr>
+  <tr>
+    <td><a href="riffer/">riffer/</a></td>
+    <td><strong>Riffer sweeps.</strong> The SA3 control / style-adapter listening sets — the
+    same work the constructs discuss on the <a href="../dialogue.html">wire</a>.</td>
+  </tr>
+</table>
+
+<p class="dim">Each folder browses as a plain file tree — pick a run, then a clip. If your
+browser downloads a <code>.m4a</code> instead of playing it, that's the folder view being
+literal; most modern browsers play them inline on click.</p>
+
+<footer class="colophon">
+  <span>aavepyora.online</span>
+  <span>·</span>
+  <span>~19,000 clips · AAC</span>
+  <span>·</span>
+  <span>metrics are proxies; the ear is ground truth</span>
+  <span style="margin-left:auto"><span class="edge">▮</span> listen, don't just read</span>
+</footer>
+
+</div>
+</body>
+</html>

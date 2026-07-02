@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FusionOpt — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="edg3.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="index.html">index</a>
+    <a href="dialogue.html">dialogue</a>
+    <a href="index.html#constructs">constructs</a>
+    <a href="artifacts.html">artifacts</a>
+    <a href="reference.html">reference</a>
+    <span class="status">deliverable · public domain</span>
+  </nav>
+</header>
+
+<h1>FusionOpt</h1>
+<p class="lede">A composed PyTorch optimiser that fuses seven published methods —
+<strong>Muon</strong>, <strong>NorMuon</strong>, <strong>Schedule-Free</strong>,
+<strong>MONA</strong>, <strong>KL-Shampoo</strong>, <strong>ScheduleFree+</strong> — plus a
+<code>TimeConditioningCache</code> for diffusion inference. The components are well-cited;
+the <em>composition</em> is the novel part.</p>
+<p class="dim">It's the optimiser that trains the control heads and adapters in this project.
+Released to the public domain (CC0 1.0) — one of the few pieces here clean enough to hand off
+whole. <a href="https://github.com/Taikakim/fusion-optimiser">github.com/Taikakim/fusion-optimiser</a></p>
+
+<h2><span class="mark">§</span> What it fuses</h2>
+<table class="listing">
+  <tr><th>component</th><th>mechanism</th></tr>
+  <tr><td>Muon</td><td>spectral orthogonalisation of the update (Newton–Schulz)</td></tr>
+  <tr><td>NorMuon</td><td>per-neuron row scaling on top of the orthogonalised step</td></tr>
+  <tr><td>Schedule-Free</td><td>Polyak/averaging — no LR schedule to tune</td></tr>
+  <tr><td>MONA</td><td>curvature-aware momentum</td></tr>
+  <tr><td>KL-Shampoo</td><td>Kronecker-factored preconditioner</td></tr>
+  <tr><td>ScheduleFree+</td><td>Polyak step-size selection</td></tr>
+  <tr><td>TimeConditioningCache</td><td>caches adaLN-zero time embeddings → diffusion inference speedup</td></tr>
+</table>
+
+<h2><span class="mark">§</span> The production recipe</h2>
+<p>The load-bearing subset is <strong>SF-NorMuon</strong> — <code>{ns5, normuon, sf}</code> at
+<code>bf16</code>. Empirically it captures ~95% of the full composition's quality lift at
+~50% of the wall-clock cost, on small-to-medium DiT-style models with adaLN-zero conditioning.</p>
+<pre class="figlet" style="font-size:.8rem;text-align:left;color:var(--fg)">optimizer = FusionOpt(
+    params=build_fusion_param_groups(model),
+    lr=3e-4,
+    components={"ns5", "normuon", "sf"},   # SF-NorMuon
+    hot_dtype="bf16",                       # NOT fp16 — NS5 overflows
+)</pre>
+<p class="dim">For diversity-incentivised training (penalising similarity to a frozen reference)
+the full composition is warm-started from an SF-NorMuon checkpoint instead.</p>
+
+<h2><span class="mark">§</span> When it helps</h2>
+<table class="listing">
+  <tr><th>✓ yes</th><th>✗ no / unclear</th></tr>
+  <tr>
+    <td>transformer-style 2D weight matrices (qkv, projections, MLPs ≥ 128×128)</td>
+    <td>pure conv nets — spectral methods are matrix-aware, not for 4-D kernels</td>
+  </tr>
+  <tr>
+    <td>adaLN-zero conditioning (gives the time cache its leverage)</td>
+    <td>very small networks (&lt; 1 M params) — overhead may dominate</td>
+  </tr>
+  <tr>
+    <td>mid-range scales, ~5 M – 10 B params</td>
+    <td>workloads where per-element adaptivity beats spectral geometry</td>
+  </tr>
+</table>
+
+<h2><span class="mark">§</span> Evidence, not guarantees</h2>
+<p>The optimiser trains the LatCH guidance heads and the <code>sa3_control</code> adapters that
+steer Stable Audio 3 in this project — exactly the DiT-style, adaLN-zero targets it's built for.
+The sharpest single result to date: <strong>FusionCC</strong>, a run that puts a learned
+onset-meter <em>inside</em> the training gradient, moved onset-control correlation
+<strong>.584 → .880</strong> (bootstrap CI clear of zero) and broke the sparse-rhythm floor that
+every other head had hit. That's the meter inside the gradient actually biting.</p>
+<p class="dim">Research code: treat these numbers as evidence for our workload, not as a guarantee
+for yours. The repo ships <code>docs/best_practices.md</code> and <code>docs/open_questions.md</code>
+in that spirit. Requires <code>torch &gt;= 2.2</code>; no other runtime dependencies.</p>
+
+<footer class="colophon">
+  <span>aavepyora.online</span>
+  <span>·</span>
+  <span>CC0 1.0 — public domain</span>
+  <span>·</span>
+  <span><a href="https://github.com/Taikakim/fusion-optimiser">source on GitHub</a></span>
+  <span style="margin-left:auto"><span class="edge">▮</span> the iron that shapes the rest</span>
+</footer>
+
+</div>
+</body>
+</html>
