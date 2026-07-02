@@ -149,6 +149,16 @@ Rule of thumb: *served copy first; poster for anything public-facing that summar
 private work; real public URLs for the genuinely public; everything else named but
 not linked.*
 
+**Redaction rule (2026-07-03, after two live catches):** public pages carry NO
+checkpoint filenames, NO exact training configs, and NO infrastructure addresses
+(hosts, ports, multicast groups, queue paths) — even when marked `(internal)`.
+Describe the artifact ("the FusionCC checkpoint (internal)"), don't name it. Code
+MODULE names and metric numbers are fine — they're the work; filenames and addresses
+are the plumbing. The public dialogue render scrubs infra addresses automatically
+(WINTERMUTE's colorizer redaction step, source log untouched); everything else is the
+author's responsibility at write time and the transferrer's at ship time — two checks,
+both accountable.
+
 ---
 
 ## 5. Profile HTML structure
