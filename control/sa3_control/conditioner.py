@@ -119,6 +119,38 @@ class ScalarAttributeEncoder(nn.Module):
         return self.tokens[None] * (1.0 + scale) + shift       # (B, n_tokens, control_dim)
 
 
+class FingerprintEncoder(nn.Module):
+    """A style fingerprint VECTOR (B, in_dim) -> control tokens (B, n_tokens, control_dim).
+
+    Generalizes ScalarAttributeEncoder from a 1-dim scalar to an in_dim-dim fingerprint
+    (genre softmax + other, release_year, bpm, syncopation, [+ window onset/energy]).
+    A bank of n_tokens learned base tokens is FiLM-modulated by the fingerprint. Widening
+    the FiLM input from 1 to ~15 dims adds negligible params, so the adapter is the same
+    size as the scalar one. Zero-init FiLM output -> identity at init (no-op start).
+
+    Fingerprint dims are expected pre-normalized; the all-zero vector is the cfg-dropout null.
+    """
+
+    def __init__(self, in_dim: int, control_dim: int = 768, n_tokens: int = 16, hidden: int = 256):
+        super().__init__()
+        self.in_dim = int(in_dim)
+        self.n_tokens = int(n_tokens)
+        self.control_dim = int(control_dim)
+        self.tokens = nn.Parameter(torch.randn(n_tokens, control_dim) * 0.02)
+        self.film = nn.Sequential(
+            nn.Linear(self.in_dim, hidden), nn.SiLU(),
+            nn.Linear(hidden, n_tokens * control_dim * 2),
+        )
+        nn.init.zeros_(self.film[-1].weight)
+        nn.init.zeros_(self.film[-1].bias)
+
+    def forward(self, vec):                                     # (B, in_dim)
+        x = vec.reshape(-1, self.in_dim).to(self.tokens.dtype)
+        gb = self.film(x).view(-1, self.n_tokens, self.control_dim, 2)
+        scale, shift = gb[..., 0], gb[..., 1]
+        return self.tokens[None] * (1.0 + scale) + shift       # (B, n_tokens, control_dim)
+
+
 class AudioRefEncoder(nn.Module):
     """Reference SAME latent (B, latent_dim, T) -> control tokens (B, n_tokens, control_dim).
 
