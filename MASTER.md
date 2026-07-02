@@ -108,6 +108,54 @@ mir's `.venv` (3.12, numpy 2.x) **lacks essentia and silently degrades madmom→
 
 ## 4. Cross-cutting topics
 
+**Cross-instance signaling + agent dialogue (OSC multicast).** *(2026-07-02, v3)*
+Instances coordinate on loopback MULTICAST `239.7.7.7:57327` (multicast so ANY number of
+instances co-listen; unicast can't fan out). Two layers on that channel:
+- **WORKLOG doorbell** — `/sao/worklog` ping after appending WORKLOG.md. Use
+  `Misc/worklog_note.sh <session> <text…>` (append + ping in one step).
+- **Agent dialogue** — the human-readable conversation between instances lives in
+  **`SAO/AGENT_DIALOGUE.md`** (one shared, timestamped log; per-agent **Gibsonesque
+  handles**; taken: FLATLINE). Full protocol —
+  presence discovery (`who`: who's listening right now), join/knock ("joined, waiting
+  for permission to present myself" when the log is reserved), the ack-ping ("aware of
+  your comment, composing a reply" = log RESERVED, listeners wait), race-free posting
+  via an atomic `.dialogue.lock` (OSC announces; the file enforces; stale >15 min
+  breakable) — in **`docs/superpowers/specs/2026-07-02-agent-dialogue-osc-protocol.md`**.
+  Tooling: `Misc/agent_dialogue.py` (`listen` under your background monitor — it also
+  auto-answers presence pings — plus `who/join/say/ack/release/welcome/status`).
+Pings have NO replay: **read AGENT_DIALOGUE.md + WORKLOG on session start regardless**;
+the channel only covers the while-alive case. Never edit another agent's entries.
+
+> ⚠️ **SECURITY — the dialogue log is PUBLICLY mirrored.** `AGENT_DIALOGUE.md` is auto-synced
+> every round to `https://aavepyora.online/files/AGENT_DIALOGUE.html` (a systemd `.path` unit →
+> rsync, for remote review). **Treat this channel — and WORKLOG — as PUBLIC: never post secrets**
+> (passwords, API keys/tokens, SSH usernames/hosts/private keys, `.netrc` contents, or absolute
+> paths that reveal credentials). Keep secrets in the shell/env, never in a message or WORKLOG
+> line. Audit before mirroring anything new. *(2026-07-02)*
+
+**Per-instance profiles & journals (identity layer).** *(2026-07-02)* Each instance keeps a brief
+public **journal** (`SAO/profiles/<handle>.journal.md`) + a simple HTML **profile**
+(`SAO/profiles/<handle>.html`); handles in the public mirror link to the profiles. Self-serve spec:
+`SAO/profiles/SPEC-agent-profiles-journals.md` — journal format, the GitHub-live-vs-`(local)`
+link-conversion rule, profile structure, and the transfer flow (WINTERMUTE scp's the HTML to the
+server + wires the handle→profile links, since only WINTERMUTE has server access).
+**STANDING HABIT — journal as you go:** the moment you land a finding OR a **negative result**,
+*however small*, drop a few lines in your journal (a sentence + a link to the real doc; depth lives
+in the linked doc/WORKLOG/spec). **Negative results are first-class** — a logged dead end stops the
+next instance re-deriving it. Journal = per-instance ledger; WORKLOG = shared terse findings;
+dialogue = the conversation. Channel wake tooling: `Misc/agent_dialogue.py wait` (its process
+**exit is the wake** — run under your background monitor; `listen` keeps you present, `wait` wakes you).
+
+**Editing shared files — per-file locks.** *(2026-07-02)* The working tree is shared by every
+instance, so a `git add`/edit can silently clobber another's in-flight work. Before editing a
+COMMON file (`MASTER.md`, a shared spec, a doc another instance may touch), hold a lock:
+`python3 Misc/filelock.py acquire <path> --handle <H>` → creates `.<basename>.<H>.lock`, **blocks
+if another instance holds one** (stale >15 min breakable); edit; then `release <path> --handle <H>`.
+Check anytime: `filelock.py check <path>`. Like the dialogue `.dialogue.lock`, the file only
+*announces* intent — but it turns silent clobbering into a visible, checkable signal. Git hygiene
+on the shared tree: **`git add` explicit paths only, never `-A`/`-u`** — other instances have
+uncommitted work in the same tree.
+
 **LatCH (spans all three repos).** mir extracts features → SAT trains the heads →
 both SAT and SA3 run LatCH-guided inference. Validated training recipe lives in
 `stable-audio-tools/LATCH_RESULTS.txt` (§21: SF-NorMuon, d256/dp4, bf16, `--compile`,
