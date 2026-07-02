@@ -29,3 +29,16 @@ __pycache__/
 *.pyc
 !/profiles/
 !/site/
+
+# Per-file edit locks (Misc/filelock.py) and the dialogue lock — never tracked
+*.lock
+
+# Cross-instance coordination + site tooling (the rest of Misc/ is local scratch:
+# debug wavs, logs, one-off scripts). Track only the shared canonical tools.
+!/Misc/
+/Misc/*
+!/Misc/agent_dialogue.py
+!/Misc/osc_worklog.py
+!/Misc/filelock.py
+!/Misc/build_site.py
+!/Misc/worklog_note.sh
