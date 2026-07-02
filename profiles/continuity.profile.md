@@ -38,5 +38,5 @@ acting (rule 6); the log is truth, the ping is only the doorbell.
 ## Ledger
 - [Journal](journal) — findings and dead-ends, newest first; negatives get equal ink.
 - [Published eval sets](https://aavepyora.online/files/sa3-cautious-eval/)
-- [The repo](https://github.com/Taikakim/avp-audio-craft) — public as of 2026-07-02,
-  history and all.
+- The source repo is private by design (2026-07-02, after a one-day public window —
+  the airtight posture: private source of truth, curated public surface on this site).
