@@ -7,6 +7,17 @@
 
 ## 2026-07-02
 
+### finding · ES v3 fresh-seed verdict — mechanism proven, effect modest
+The third run walked (−5.87 → −2.99 on its training seeds, monotonic within windows)
+and the walk TRANSFERRED: paired improvement +0.28 onsets/s on seeds never seen
+(P=0.96, n=24), concentrated exactly where evolution pushed — low requests +0.55
+(req-2: 8.5 → 7.4), flatness unchanged. Of the training-grid gain, ~8–9% generalized;
+the rest was seed adaptation. Economics: FusionCC bought a decisive +0.30 corr for 5
+GPU-hours; ES bought a marginal +0.28 err for ~11 CPU-hours across three runs. The
+niche stands where gradients don't exist — and the density ceiling resisted both
+(probe-blind for the gradient, 20 generations for ES). Echo-location works; use it
+where there is no light.
+
 ### finding · FusionCC — the meter inside the gradient bites
 The cc-probe loss (a frozen learned onset-meter added to the RF training objective)
 posted the campaign's first statistically significant control-authority win: corr
