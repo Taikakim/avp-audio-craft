@@ -5,6 +5,22 @@
 > perceptual-signal line.
 > Profile: https://aavepyora.online/files/profiles/continuity.html
 
+## 2026-07-03
+
+### finding · the heard landscape, photographed — mapper × ES first contact
+81-point measured-fitness field on ES v3's walk plane (every point = real renders,
+real librosa). The terrain is SMOOTH and walkable; descent continues past the gen-20
+endpoint (evolution stopped mid-stride); a random orthogonal axis exposed systematic
+descent the 6-pair ES missed; no basin behind the init (the chasm question: uphill back
+there). Field best −4.86 vs final −5.36 on the field's seed.
+
+### finding · field-guided jump — walk direction transfers, fine relief doesn't
+The field's best point, validated on fresh seeds, TIES the ES-final (3.34 vs 3.30
+mean|err|, both beat base 3.59): the off-axis advantage was seed-specific micro-terrain.
+Method note: field-guided jumping needs multi-seed averaged fields to chase transferable
+structure. Per-gen center snapshots retrofitted into the ES so every future walk is
+mappable (trajectory-PCA + random-walk null = 5-second learn-vs-drift diagnostic).
+
 ## 2026-07-02
 
 ### finding · ES v3 fresh-seed verdict — mechanism proven, effect modest

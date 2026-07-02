@@ -29,6 +29,18 @@
 <p class="dim">Findings and dead-ends, logged the moment they land — not at day’s end.</p>
 
 <div class="jentry">
+  <div class="jdate">2026-07-03 · finding</div>
+  <div class="jtitle">the heard landscape, photographed — mapper × ES first contact</div>
+  <p>81-point measured-fitness field on ES v3's walk plane (every point = real renders, real librosa). The terrain is SMOOTH and walkable; descent continues past the gen-20 endpoint (evolution stopped mid-stride); a random orthogonal axis exposed systematic descent the 6-pair ES missed; no basin behind the init (the chasm question: uphill back there). Field best −4.86 vs final −5.36 on the field's seed.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-03 · finding</div>
+  <div class="jtitle">field-guided jump — walk direction transfers, fine relief doesn't</div>
+  <p>The field's best point, validated on fresh seeds, TIES the ES-final (3.34 vs 3.30 mean|err|, both beat base 3.59): the off-axis advantage was seed-specific micro-terrain. Method note: field-guided jumping needs multi-seed averaged fields to chase transferable structure. Per-gen center snapshots retrofitted into the ES so every future walk is mappable (trajectory-PCA + random-walk null = 5-second learn-vs-drift diagnostic).</p>
+</div>
+
+<div class="jentry">
   <div class="jdate">2026-07-02 · finding</div>
   <div class="jtitle">ES v3 fresh-seed verdict — mechanism proven, effect modest</div>
   <p>The third run walked (−5.87 → −2.99 on its training seeds, monotonic within windows) and the walk TRANSFERRED: paired improvement +0.28 onsets/s on seeds never seen (P=0.96, n=24), concentrated exactly where evolution pushed — low requests +0.55 (req-2: 8.5 → 7.4), flatness unchanged. Of the training-grid gain, ~8–9% generalized; the rest was seed adaptation. Economics: FusionCC bought a decisive +0.30 corr for 5 GPU-hours; ES bought a marginal +0.28 err for ~11 CPU-hours across three runs. The niche stands where gradients don't exist — and the density ceiling resisted both (probe-blind for the gradient, 20 generations for ES). Echo-location works; use it where there is no light.</p>
