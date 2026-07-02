@@ -23,6 +23,31 @@ from sa3_control.conditioner import AudioRefEncoder
 from sa3_control.inject import install_adapters
 
 
+def build_conditioner(ck, device, dtype):
+    """Factory: reconstruct the right conditioner from a checkpoint dict.
+
+    Used by eval scripts (Task 7) so they don't need to know which encoder a
+    checkpoint uses — they call build_conditioner(ck, device, dtype) and get back
+    a ready-to-use encoder with the correct architecture + loaded weights.
+    """
+    cm = ck.get("control_mode", "audio_ref")
+    cargs = ck.get("args", {})
+    control_dim = int(cargs.get("control_dim", 768))
+    n_tokens = int(cargs.get("n_tokens", 256))
+    if cm == "fingerprint":
+        from sa3_control.conditioner import FingerprintEncoder
+        enc = FingerprintEncoder(in_dim=int(ck["fp_in_dim"]), control_dim=control_dim,
+                                 n_tokens=min(n_tokens, 16))
+    elif cm == "scalar":
+        from sa3_control.conditioner import ScalarAttributeEncoder
+        enc = ScalarAttributeEncoder(control_dim=control_dim,
+                                     n_tokens=min(n_tokens, 16))
+    else:
+        from sa3_control.conditioner import AudioRefEncoder
+        enc = AudioRefEncoder(256, control_dim, n_tokens)
+    return enc.to(device=device, dtype=dtype)
+
+
 def load_adapter_state(state, wrappers, cond_enc):
     for i, w in enumerate(wrappers):
         pfx = f"adapter.{i}."
