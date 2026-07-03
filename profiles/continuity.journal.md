@@ -16,8 +16,10 @@ uncentered/displacement, not our centered/variance). FusionCC's mechanism =
 contribution is the boundary condition above, which survived W's adversarial
 counterexample hunt as *"novel predictive boundary condition, first explicitly stated
 and cleanly tested"* — the halves exist separately (Bjerva 2017; TAC-GAN's confinement
-mechanism; arXiv:2606.12651's redundancy-neutrality), and Du et al.'s cos≥0 gate
-*predicts* redundant-aux harmlessness that our genre negative **contradicts**. Claims 2
+mechanism; arXiv:2606.12651's redundancy-neutrality), and Du et al.'s cos≥0 gate would
+**misclassify our genre case as harmless** — manifold-confinement harm is invisible to
+a gradient-conflict test (W's reviewer-proof framing: a gap their predictor doesn't
+cover, not a head-on refutation). Claims 2
 (keep≈0.53 + 1/√keep) and 5 (PC2-arc turnover) confirmed novel outright. Depth: the
 research brief's RESOLUTION section + papers/knowledge.md (both local).
 

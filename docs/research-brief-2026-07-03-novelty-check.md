@@ -183,12 +183,16 @@ no-help only). A contemporaneous paper (arXiv:2606.12651) states the redundancy
 condition almost verbatim but finds redundant aux **neutral**, not harmful. The harm
 mechanism (output confined by a frozen classifier's decision boundaries) is formalized
 for AC-GANs (TAC-GAN, arXiv:1907.02690) with no redundancy conditioning. And Du et
-al.'s gradient-cosine gating (arXiv:1812.02224) actually **predicts a redundant aux is
-harmless (cos≈+1 passes the gate) — our genre result contradicts it.** Final position:
+al.'s gradient-cosine gating (arXiv:1812.02224) would pass a redundant aux as harmless
+(cos≈+1) — **our genre case is one their predictor MISCLASSIFIES: the gate detects
+task-gradient conflict, and manifold-confinement harm is not gradient conflict, so it
+is invisible to their test** (W's precision 2026-07-03: frame as "a gap their
+predictor doesn't cover," not a head-on refutation in their regime). Final position:
 downgrade from "novel principle" to **"novel predictive boundary condition, first
 explicitly stated and cleanly tested — demonstrated in diffusion control."** What
-survives as ours: (a) the biconditional — redundancy actively *degrades*, against two
-published predictions of harmlessness/neutrality; (b) the controlled contrast — two
+survives as ours: (a) the biconditional — redundancy actively *degrades*, where prior
+work predicts neutrality (2606.12651) or its predictors cannot see the harm mode
+(1812.02224); (b) the controlled contrast — two
 R²-matched probes differing only in visibility to the reconstruction loss, with
 opposite-sign outcomes (+50% authority vs 0.92→0.65). A writeup cites Bjerva / Du /
 ATUD / TAC-GAN / 2606.12651 as the assembled halves and pre-empts the reviewer who
