@@ -94,17 +94,19 @@ def head(title, depth):
             f'<p class="over">VIBE ON THE EDG3 · EVALS</p>')
 
 def desc_for(name, kind):
-    """description for a run/set — prefer its self-describing _meta.json sidecar (redacted),
-    else run_purposes.json, else a parsed hint. Everything returned is public-safe."""
-    meta = f"{STAGING}/{kind}/{name}/_meta.json"
-    if os.path.exists(meta):
-        try:
-            m = json.load(open(meta))
-            purpose = m.get("purpose") or m.get("notes") or ""
-            extra = " · ".join(f"{kk}={m[kk]}" for kk in ("optimizer","lr","scalar_field") if m.get(kk))
-            return redact(purpose).strip(), redact(extra)
-        except Exception:
-            pass
+    """description for a run/set — prefer its self-describing sidecar (_meta.json or the
+    run_meta.json convention onset_eval.py writes; redacted), else run_purposes.json, else
+    a parsed hint. Everything returned is public-safe."""
+    for fname in ("_meta.json", "run_meta.json"):
+        meta = f"{STAGING}/{kind}/{name}/{fname}"
+        if os.path.exists(meta):
+            try:
+                m = json.load(open(meta))
+                purpose = m.get("purpose") or m.get("notes") or ""
+                extra = " · ".join(f"{kk}={m[kk]}" for kk in ("optimizer","lr","scalar_field") if m.get(kk))
+                return redact(purpose).strip(), redact(extra)
+            except Exception:
+                pass
     for k, v in PURP.items():
         if k == "_doc" or not isinstance(v, dict):
             continue
@@ -161,9 +163,17 @@ def build_landing(control, renders):
     doc += ('<h1>Evals</h1><p class="lede">Listening results — what the control heads, adapters, and '
             'renders actually sound like. Each folder is a same-playhead player, not a dump.</p>')
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
-    doc += ('<p class="dim">The measured, annotated grids live in the riffer-evals pages '
-            '(control-authority, DoRA auditions, LatCH sweep, chroma steer, disentangle) — same-playhead, '
-            'with per-run info boxes.</p>')
+    doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')
+    _riffer = [("riffer/onset_eval.html", "onset control-authority"),
+               ("riffer/disentangle.html", "disentanglement"),
+               ("riffer/dora_results.html", "DoRA auditions"),
+               ("riffer/chroma_steer.html", "chroma steer"),
+               ("riffer/gain_knee.html", "gain knee"),
+               ("riffer/mp.html", "multiprompt"),
+               ("riffer/traj.html", "trajectories"),
+               ("riffer/latch_sweep.html", "LatCH head sweep")]
+    for _href, _lbl in _riffer:
+        doc += f'<div class="run"><div class="name"><a href="{_href}">{_lbl}</a></div></div>'
     for lbl, kind, items in (("Control runs","control_runs",control),("Renders","renders",renders)):
         doc += f'<h2><span class="mark">§</span> {lbl} <span class="faint">({len(items)})</span></h2>'
         for name, label, purpose, n in items:
@@ -184,6 +194,8 @@ def main():
         if not os.path.isdir(base):
             continue
         for name in sorted(os.listdir(base)):
+            if name.startswith("."):   # skip hidden dirs (.venv etc.)
+                continue
             d = f"{base}/{name}"
             if not os.path.isdir(d):
                 continue

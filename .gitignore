@@ -42,5 +42,11 @@ __pycache__/
 !/Misc/filelock.py
 !/Misc/build_site.py
 !/Misc/build_evals.py
+!/Misc/build_dms.py
 !/Misc/worklog_note.sh
+
+# DM logs (tracked — private repo, private content; NOT publicly mirrored by default)
+!/*.*.log
+# OSC event queue (ephemeral, not tracked)
+/.osc-queue.jsonl
 
