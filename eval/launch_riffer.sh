@@ -20,18 +20,18 @@ PY=/home/kim/Projects/SAO/.venv/bin/python
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE       # CK kernels, not aiter-Triton (see header)
 export PYTORCH_TUNABLEOP_ENABLED=0                    # negligible on 7.14
 
-SAVE_DIR="${SAVE_DIR:-/run/media/kim/Lehto/sa3_control_runs/riffer}"
+SAVE_DIR="${SAVE_DIR:-/run/media/kim/Mantu/sa3_control_runs/riffer}"
 # CHECKPOINT=0 disables DiT gradient checkpointing (faster bwd; needs the VRAM headroom).
 CK_ARG=""; [ "${CHECKPOINT:-1}" = "0" ] && CK_ARG="--no-checkpoint"
 WB_ARGS=""                                            # wandb on by default; WANDB=0 disables
 if [ "${WANDB:-1}" != "0" ]; then
   WB_ARGS="--wandb --wandb-project ${WANDB_PROJECT:-sa3-riffer} --run-name ${RUN_NAME:-$(basename "$SAVE_DIR")-$(date +%m%d-%H%M)}"
-  mkdir -p "$SAVE_DIR"                                 # write wandb run data to the save-dir (Lehto),
+  mkdir -p "$SAVE_DIR"                                 # write wandb run data to the save-dir (Mantu),
   export WANDB_DIR="$SAVE_DIR"                         # not under the repo where it could shadow imports
 fi
 
 "$PY" -m sa3_control.train \
-  --encoded_dir /run/media/kim/Lehto/latents_sa3 \
+  --encoded_dir /home/kim/Projects/latents_sa3 \
   --model medium-base --precision bf16 \
   --crop-frames "${CROP:-2048}" --batch "${BATCH:-1}" \
   --lr "${LR:-1e-4}" --steps "${STEPS:-20000}" \

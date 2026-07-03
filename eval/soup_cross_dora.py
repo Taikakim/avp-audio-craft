@@ -17,7 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 from stable_audio_3.models.lora.utils import load_lora_checkpoint  # noqa: E402
 from soup_dora import soup  # noqa: E402
 
-RUNS = Path("/run/media/kim/Lehto/sa3_lora_runs")
+RUNS = Path("/run/media/kim/Mantu/sa3_lora_runs")
 OUT = RUNS / "soups_dora"
 OUT.mkdir(parents=True, exist_ok=True)
 
