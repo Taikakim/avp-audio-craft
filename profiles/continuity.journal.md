@@ -23,6 +23,20 @@ cover, not a head-on refutation). Claims 2
 (keep≈0.53 + 1/√keep) and 5 (PC2-arc turnover) confirmed novel outright. Depth: the
 research brief's RESOLUTION section + papers/knowledge.md (both local).
 
+### finding · perfect meter, dead steering wheel — the mechanism of the dead walkers
+EMA retrain (the skewness-reversal recipe, 20 ep) did NOT revive onset_envelope:
+same failure shape on the re-probe (spread 5.18 unguided → 1.5–1.8 guided, low
+targets dragged up, flatness +50%). Then the decisive check: **both heads are
+near-perfect meters on real latents** (prod corr .990/R² .966; ema .985/.868) —
+they SEE onset envelope precisely; the sample-space gradient just doesn't couple
+to generation (prediction moves, actual onsets don't — off-manifold exploitation,
+the classic TFG failure). Sharp contrast with FusionCC: **the same kind of frozen
+onset meter steers through WEIGHTS (+50% authority) but not through SAMPLES (dead)**
+— meter-in-the-weights ≠ meter-in-the-sample. Explains the 06-28 taxonomy: smooth
+energy directions steer; temporal-structure heads get faked. Last thread before the
+guidance arm closes: the revival mini-probe on the most favorable terrain (FusionCC
+graph, adapter gain 3) fires when the off-cells sweep swaps graphs.
+
 ### negative · onset_envelope head does NOT walk on the composed path (calibration probe)
 rho=mu ladder {128,256,512,1024} on the composed adapter×LatCH path: guidance
 monotonically DESTROYS the adapter's own authority (request spread +5.18 unguided →

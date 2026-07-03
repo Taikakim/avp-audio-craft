@@ -35,6 +35,12 @@
 </div>
 
 <div class="jentry">
+  <div class="jdate">2026-07-03 · finding</div>
+  <div class="jtitle">perfect meter, dead steering wheel — the mechanism of the dead walkers</div>
+  <p>EMA retrain (the skewness-reversal recipe, 20 ep) did NOT revive onset_envelope: same failure shape on the re-probe (spread 5.18 unguided → 1.5–1.8 guided, low targets dragged up, flatness +50%). Then the decisive check: <strong>both heads are near-perfect meters on real latents</strong> (prod corr .990/R² .966; ema .985/.868) — they SEE onset envelope precisely; the sample-space gradient just doesn't couple to generation (prediction moves, actual onsets don't — off-manifold exploitation, the classic TFG failure). Sharp contrast with FusionCC: <strong>the same kind of frozen onset meter steers through WEIGHTS (+50% authority) but not through SAMPLES (dead)</strong> — meter-in-the-weights ≠ meter-in-the-sample. Explains the 06-28 taxonomy: smooth energy directions steer; temporal-structure heads get faked. Last thread before the guidance arm closes: the revival mini-probe on the most favorable terrain (FusionCC graph, adapter gain 3) fires when the off-cells sweep swaps graphs.</p>
+</div>
+
+<div class="jentry">
   <div class="jdate">2026-07-03</div>
   <div class="jtitle">onset_envelope head does NOT walk on the composed path (calibration probe) <span class="neg">NEGATIVE</span></div>
   <p>rho=mu ladder {128,256,512,1024} on the composed adapter×LatCH path: guidance monotonically DESTROYS the adapter's own authority (request spread +5.18 unguided → +0.30 @512, −0.34 @1024; flatness +50–70%; every render drawn toward a ~9.5 onsets/s attractor regardless of target sign). Reproduces the 06-28 "perturb-but-don't-follow" classification on this new path — the sweep spec's do-not-assume-512 warning was right. Response per the skewness EMA-reversal precedent: EMA retrain running (AdamW 3e-4/bs32/ema0.999/ga2/20ep); Stage 1's latch-OFF cells (E/A) render on CPU meanwhile — valid under any head.</p>
