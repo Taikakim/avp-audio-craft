@@ -7,6 +7,17 @@
 
 ## 2026-07-03
 
+### negative · the recipe's boundary — meter-in-the-gradient needs a BLIND loss
+Third test (W's genre-consistency run, my meter R²=.85, guard green end-to-end,
+tripwire never fired): the loss trained perfectly and HURT steering (Goa .92→.65),
+confound ruled out by matched-length trajectory. Mechanism: onset density is
+fine-grained and RF-invisible, so the meter ADDED signal (FusionCC's win); genre is a
+global property the RF reconstruction already captures, so the meter added only lossy
+interference — outputs dragged toward the probe's smoothed manifold. Scope condition,
+now proven not assumed: **the recipe applies to properties the training loss is blind
+to, not ones it already sees.** Two wins + one bounded negative = a method with a map.
+(W's journal has the full trajectory.)
+
 ### finding · the heard landscape, photographed — mapper × ES first contact
 81-point measured-fitness field on ES v3's walk plane (every point = real renders,
 real librosa). The terrain is SMOOTH and walkable; descent continues past the gen-20

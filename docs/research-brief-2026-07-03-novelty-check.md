@@ -58,6 +58,20 @@ has anyone trained a diffusion CONTROL ADAPTER with a frozen latent-space attrib
 regressor applied to the one-step denoised estimate, as a consistency (not reward)
 term?
 
+**Scope condition (added after a third experiment, 2026-07-03):** we transferred the
+same recipe to a GENRE-conditioning adapter (12-dim fingerprint; frozen latent-space
+genre meter, held-out R²=0.85; held-out-dimension guard against probe-hacking, which
+never fired). Training was stable but STEERING DEGRADED (genre-response 0.92→0.65),
+with over-training ruled out via matched-length checkpoints. Mechanism: genre is a
+global property the rectified-flow reconstruction already captures, so the meter added
+no new information — only interference toward the probe's smoothed manifold. The
+method's applicability condition is therefore: the supervised property must be one the
+base training loss is BLIND to (fine-grained temporal structure like onset density),
+not one it already reconstructs (global timbral identity). Please also check whether
+this boundary condition — consistency losses helping exactly when the property is
+invisible to the reconstruction objective, harming when redundant with it — has been
+stated in the literature.
+
 ## Claim 2 — Orthogonalized (Muon/Newton-Schulz) updates destroy per-coordinate gradient sign structure; consequences for "cautious" masking
 
 Finding: with a Muon-family optimizer (Newton-Schulz orthogonalization of the momentum
