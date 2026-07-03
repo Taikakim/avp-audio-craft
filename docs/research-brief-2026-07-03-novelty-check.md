@@ -174,9 +174,25 @@ et al., "Heeding the Inner Voice", arXiv:2507.02321) for the all-timestep extens
 What remains ours: the **blind-vs-redundant boundary condition** (onset win + genre
 negative with mechanism), which the ControlNet++ line does not state — it operates
 under the implicit assumption that consistency feedback is universally beneficial.
-Negative-existence check (is the boundary stated *anywhere*, incl. auxiliary-task /
-negative-transfer / KD / perceptual-loss literature) — adversarial sweep run
-2026-07-03, result to be appended below.
+Negative-existence check (adversarial sweep across auxiliary-task / negative-transfer /
+KD / perceptual-loss / RLHF / AC-GAN literature, landed 2026-07-03 16:12): **no paper
+states the biconditional as a predictive law, but both halves exist separately.** The
+helps-where-blind half is standard perceptual-loss folklore (Johnson 2016 onward), and
+Bjerva 2017 predicts MTL aux benefit information-theoretically (a cousin — help vs
+no-help only). A contemporaneous paper (arXiv:2606.12651) states the redundancy
+condition almost verbatim but finds redundant aux **neutral**, not harmful. The harm
+mechanism (output confined by a frozen classifier's decision boundaries) is formalized
+for AC-GANs (TAC-GAN, arXiv:1907.02690) with no redundancy conditioning. And Du et
+al.'s gradient-cosine gating (arXiv:1812.02224) actually **predicts a redundant aux is
+harmless (cos≈+1 passes the gate) — our genre result contradicts it.** Final position:
+downgrade from "novel principle" to **"novel predictive boundary condition, first
+explicitly stated and cleanly tested — demonstrated in diffusion control."** What
+survives as ours: (a) the biconditional — redundancy actively *degrades*, against two
+published predictions of harmlessness/neutrality; (b) the controlled contrast — two
+R²-matched probes differing only in visibility to the reconstruction loss, with
+opposite-sign outcomes (+50% authority vs 0.92→0.65). A writeup cites Bjerva / Du /
+ATUD / TAC-GAN / 2606.12651 as the assembled halves and pre-empts the reviewer who
+knows any one of them.
 
 **Claim 2 — CONFIRMED NOVEL, and stronger than the report suggests.** No formal
 treatment of the sign-agreement statistic (keep≈0.53 after NS5) or the 1/keep norm
