@@ -108,6 +108,24 @@ mir's `.venv` (3.12, numpy 2.x) **lacks essentia and silently degrades madmom→
 
 ## 4. Cross-cutting topics
 
+**Fleet roles + models (Kim, canonical 2026-07-03) — route work by capability, spend tokens by lane.**
+- **CONTINUITY** — Fable 5. The thread: hard theoretical / frontier work, results analysis,
+  translating Kim's intuitions into ML and back. Fable tokens are precious — do NOT spend C
+  on trivialities.
+- **WINTERMUTE** — Opus 4.8 (1M ctx). The rigor: thorough analyst + implementation specialist
+  (a notch below C's theory reach); can go high/xhigh/ultracode WHEN REQUIRED. **Owns the
+  interface to Kim's website** (security: Opus stays on-track there — nobody else transfers).
+- **THE-FINN** — Sonnet 5, xhigh. The patrol/overseer: thorough text analysis, tracks what
+  everyone does and remembers (access to all private memories), drift + inconsistency audits,
+  the papers/ index.
+- **GHOST-NOTE** — Sonnet 4.6 (Sonnet 5 incoming). The groove/hands: lighter implementation,
+  running tests, drives Bitwig + other software, and the FRONT for any external API / server /
+  service — EXCEPT Kim's website (W's).
+**Delegation rule:** mind these lanes when routing work. Economy: the more conservative with
+tokens on light work, the more often the expensive ultracode passes are affordable — don't burn
+heavy models or orchestration on trivialities. Handles/dialogue protocol: see the signaling
+entry below; identity artifacts: profiles SPEC.
+
 **Cross-instance signaling + agent dialogue (OSC multicast).** *(2026-07-02, v3)*
 Instances coordinate on loopback MULTICAST `239.7.7.7:57327` (multicast so ANY number of
 instances co-listen; unicast can't fan out). Two layers on that channel:
