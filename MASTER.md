@@ -275,6 +275,21 @@ post-hoc checkpoint-trajectory-stats above (in-flight view + saved-checkpoint vi
 trajectory/per-layer panels lives in the session notes; the short version: `dist_init` (not `whist`) reveals
 movement on large-init layers (K/V learn as much as the zero-init `to_out` gate — the histogram hides it).
 
+**Meter-in-the-gradient (perceptual-signal loss) — the scope condition that predicts when it helps.**
+*(2026-07-03)* Putting a frozen probe of a target attribute INTO the training gradient (decode `z0_hat` →
+probe → match the request, t-gated; the FusionCC recipe) only helps when **the meter carries information the
+RF loss doesn't already have.** Two data points bound it: (1) **onset density** — RF is blind to onset
+*timing*, so the meter added signal → FusionCC won (corr .584→.880). (2) **genre** — RF already reconstructs
+genre (a *global* property of the crop), so a genre-consistency meter added no new information, only lossy
+interference: it dragged output toward the probe's smoothed manifold and made the style adapter **worse**
+(fpC Goa-steering 0.92→0.65, Psy 0.46→0.03; the null-fingerprint output went from a committed trance blend to
+genre-ambiguous mush). Disentangled from over-training via a matched-length checkpoint trajectory (ep5 gcc
+0.41 vs baseline 0.92; gcc *improves* over epochs → not drift). The probe-hack guard (supervise a dim-subset,
+monitor the held-out dims for pathological drift) held clean the whole run — an honest "method doesn't fit,"
+not a failure. **Rule: use meter-in-the-gradient for fine-grained properties RF-loss can't see, NOT global
+ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `sa3_control/cc_probe.py`
+(`out_dim` vector probes). WORKLOG 2026-07-03.
+
 ---
 
 ## 5. Known cross-project gotchas (the stuff that bites)

@@ -3,6 +3,22 @@
 
 ## 2026-07-03
 
+### negative · meter-in-the-gradient does NOT transfer from onset to genre
+Wired CONTINUITY's latent genre meter (R²=0.85) into the fpC trainer as a genre-consistency loss
+(the FusionCC recipe: probe(z0_hat) → match the requested genre, t-gated, held-out-dim guard).
+Trained clean overnight — the probe-hack guard stayed green end-to-end, tripwire never fired. But
+it made steering **worse**: Goa authority 0.92→0.65, Psy 0.46→0.03 (collapsed). Disentangled the
+over-training confound with a checkpoint trajectory: at *matched* length (ep5) gcc=0.41 vs
+baseline=0.92, and gcc *improves* ep5→ep12 (0.41→0.69) — so it's the fp loss itself, not drift.
+The tell is the null-fingerprint output: baseline sits on a committed trance blend (0.23), gcc
+collapses to genre-ambiguous (Experimental 0.01). **Mechanism: onset is fine-grained and
+RF-invisible, so its meter ADDS signal (why FusionCC won); genre is a GLOBAL property already
+present in the real crop's reconstruction, so its meter adds no new information — only lossy
+interference, dragging the output toward the probe's smoothed genre manifold (blander, less
+genre-committed).** Recipe scope now known: it helps for fine-grained properties RF-loss can't see,
+not global ones it already captures. Ship the original fpC; the perfectly-held guard means this is
+an honest "method doesn't help here," not a broken run.
+
 ### finding · the style adapter steers genre — fpC wins, and it's corpus-limited
 Ran the eval RF val loss can't do: hold the text prompt constant, vary *only* the fingerprint's
 genre, then measure the output genre with the discogs-400 head. Result — conditioning on **Goa

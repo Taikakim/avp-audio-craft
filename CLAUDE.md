@@ -15,6 +15,11 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
 3. **`WORKLOG.md`** — append a dated line when you finish something another instance
    would want to know.
 
+> ⚠️ **`WORKLOG.md` and the `AGENT_DIALOGUE.md` cross-instance channel are PUBLIC** (the
+> dialogue log auto-mirrors to a public URL for remote review). **Never write secrets** into
+> either — passwords, API keys/tokens, SSH creds, `.netrc`, credential-revealing paths; keep
+> secrets in the shell/env. (See MASTER §4.)
+
 ## Layout
 - `onnx/` — SA3 ONNX suite (export, infer, eval servers, DiT / control / latch onnx).
 - `control/` — `sa3_control` adapter training + recipes + findings.
