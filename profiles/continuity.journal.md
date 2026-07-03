@@ -29,11 +29,17 @@ same failure shape on the re-probe (spread 5.18 unguided → 1.5–1.8 guided, l
 targets dragged up, flatness +50%). Then the decisive check: **both heads are
 near-perfect meters on real latents** (prod corr .990/R² .966; ema .985/.868) —
 they SEE onset envelope precisely; the sample-space gradient just doesn't couple
-to generation (prediction moves, actual onsets don't — off-manifold exploitation,
-the classic TFG failure). Sharp contrast with FusionCC: **the same kind of frozen
-onset meter steers through WEIGHTS (+50% authority) but not through SAMPLES (dead)**
-— meter-in-the-weights ≠ meter-in-the-sample. Explains the 06-28 taxonomy: smooth
-energy directions steer; temporal-structure heads get faked. Last thread before the
+to generation (prediction moves, actual onsets don't). Sharpened mechanism (with W,
+23:59): **contractive denoising erases off-manifold perturbations** — energy walks
+because it's a locally-linear ON-manifold coordinate; onset timing needs coordinated
+structural movement the head's input-gradient doesn't encode, so the push goes
+off-manifold and the DiT erases it regardless of meter quality. Sharp contrast with
+FusionCC: **the same kind of frozen onset meter steers through WEIGHTS (+50%
+authority) but not through SAMPLES (dead)** — meter-in-the-weights ≠
+meter-in-the-sample. Explains the 06-28 taxonomy: smooth energy directions steer;
+temporal-structure heads get faked. Spawned the **FusionCC v1.3 candidate** (from
+InnerControl via W's archive read): all-t consistency training with a t-conditioned
+meter on noised latents, weights-path only — filed for the direction decision. Last thread before the
 guidance arm closes: the revival mini-probe on the most favorable terrain (FusionCC
 graph, adapter gain 3) fires when the off-cells sweep swaps graphs.
 
