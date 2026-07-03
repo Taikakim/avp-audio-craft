@@ -21,7 +21,11 @@ import os, glob, json, html, shutil, re
 
 HOME = os.path.expanduser("~")
 STAGING = f"{HOME}/.cache/evals_aac"
-OUT = "/home/kim/Projects/SAO/site/evals"
+# Write the players + landing INTO the staging, colocated with the clips, so
+# WINTERMUTE's existing rsync of ~/.cache/evals_aac -> /files/evals brings them
+# live automatically. index.html/evals.css are additive; clips are never touched.
+# Run AFTER the transcode (or fold into that pipeline) so a rebuild doesn't clobber.
+OUT = STAGING
 PURP = {}
 try:
     PURP = json.load(open(f"{HOME}/riffer-evals/run_purposes.json"))
