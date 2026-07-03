@@ -45,7 +45,7 @@ A flat/uninformative loss means the optimizer keeps nudging the weights in direc
 don't change the loss but *erode* control — i.e. **drift in an under-determined landscape**,
 not classic overfitting and not a sharp minimum. The trajectory metrics here are how we
 tell drift (velocity stays high, path efficiency low) from convergence (velocity → 0), and
-the model-soups (`/run/media/kim/Lehto/sa3_control_runs/soups/`) are the post-hoc test of
+the model-soups (`/run/media/kim/Mantu/sa3_control_runs/soups/`) are the post-hoc test of
 whether averaging recovers a better, flatter point than any single late checkpoint. If it
 does, the recipe lesson is **EMA / weight-averaging (damping), not just a lower LR**.
 

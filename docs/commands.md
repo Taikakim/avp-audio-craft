@@ -39,7 +39,7 @@ export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE   # activate native CK flash-attn
 $PY $SA3/scripts/pre_encode_dataset.py --model same-l --data_dir DIR --output_path OUT --model_half
 # Beat-aligned T=4096 dataset (the real one): manifest then encode
 $PY /tmp/sa3_beat_manifest.py            # → /tmp/sa3_crop_manifest.csv (drops <380s)
-$PY /tmp/sa3_encode_from_manifest.py     # → /run/media/kim/Lehto/latents_sa3/ (.npy/.json/.TIMESERIES.npz)
+$PY /tmp/sa3_encode_from_manifest.py     # → /home/kim/Projects/latents_sa3/ (.npy/.json/.TIMESERIES.npz — NVMe is now the sole copy, Lehto/latents_sa3 was removed 2026-07-03)
 # LoRA finetune (MIOPEN_FIND_MODE=2 — mode 6 crashes the DiT!)
 # Read latents from the NVMe mirror, not Lehto (removable drive starves the dataloader — MASTER §5).
 MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1 \

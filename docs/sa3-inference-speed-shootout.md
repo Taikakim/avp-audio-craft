@@ -104,7 +104,7 @@ cd /home/kim/Projects/SAO/stable-audio-3
 .venv/bin/python scripts/eval_dora_cpu.py --base --device cuda --steps 16 --duration 47 --out-dir /tmp/sh/base
 # 1B torch-GPU +DoRA r128
 .venv/bin/python scripts/eval_dora_cpu.py --device cuda --steps 16 --duration 47 \
-  --ckpt /run/media/kim/Lehto/sa3_lora_runs/sa3-goa-dora-47s-r128-adamw/dq0egegi/checkpoints/epoch=7-step=10800.ckpt \
+  --ckpt /run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-adamw/dq0egegi/checkpoints/epoch=7-step=10800.ckpt \
   --out-dir /tmp/sh/dora
 # (warm = drop the first clip, which pays the one-time kernel compile)
 ```

@@ -59,9 +59,9 @@ it's the "check what we already have" index any instance reads first.
   `from bungee_python import bungee; bungee.Bungee(sr, ch).time_stretch / .pitch_shift`.
 - **MIR features + 100 Hz whole-track timeseries** — `mir/`; window consumer
   `stable-audio-tools/scripts/whole_track_target_source.py`.
-- **pre-encoded SA3 latents + grid-aligned controls** — `Lehto/latents_sa3`
-  (`.npy`+`.json`+`.TIMESERIES.npz`, 21 fields @ T=4096); loader
-  `control/sa3_control/dataset.py`.
+- **pre-encoded SA3 latents + grid-aligned controls** — `/home/kim/Projects/latents_sa3`
+  (NVMe, sole copy since 2026-07-03) (`.npy`+`.json`+`.TIMESERIES.npz`, 21 fields @
+  T=4096); loader `control/sa3_control/dataset.py`.
 - **SA3 generative separation / riffer + stem scoring** —
   `control/scripts/` (`sa3_flowsep`, `sa3_zerosep_rf`, `stem_score`)
   + control-adapter trainer `control/sa3_control/`.

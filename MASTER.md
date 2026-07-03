@@ -71,26 +71,34 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 |---|---|---|
 | `ai-music/Goa_Separated` (4470) | **Full tracks** + stems + `.INFO` + `.BEATS_GRID`/`.DOWNBEATS`/`.ONSETS` | SA3 encode, whole-track timeseries |
 | `goa_crops` (4829) | Older **11.9 s crop** corpus (`<Artist - Title>_N.flac`) | SAO-Small LatCH |
+| `sa3_lora_runs` | **SA3 LoRA checkpoints + demos** (moved from Lehto 2026-07-04) | SA3 |
+| `sa3_control_runs` | **SA3 control-adapter/LatCH eval runs + renders** (the eval convention consolidated here; Lehto's copy was empty/stubs) | control/eval |
 
 > ⚠️ Stale path in old memories: `Mantu/ai-music/Goa_Separated_crops` **no longer exists**.
 
-### Derived data — Lehto (`/run/media/kim/Lehto`)
+### Derived data — Lehto (`/run/media/kim/Lehto`) — TRAINING DATA ONLY (2026-07-04)
+Lehto no longer holds evals or checkpoints — those moved to Mantu (above) to free space
+(Lehto was at 94%) and consolidate the eval convention on the drive that already had
+most of it. Lehto is now strictly the large-training-corpus drive.
+
 | Path | What | Grid | Used by |
 |---|---|---|---|
 | `latents` (15 G, 4808) | SAO-Small/SA1 latents, **64-dim** | 21.53 Hz, T=256 (11.9 s) | SAT LatCH |
 | `latents_stems` (43 G) | Stem latents | 21.53 Hz | SAT |
-| `latents_sa3` (~7 G, ~5400) | **SA3 SAME-L latents, 256-dim**; per crop: `.npy` + `.json` (merged `.INFO`+prompt+rel_pos) + `.TIMESERIES.npz` | **10.767 Hz, T=4096 (380 s)** | SA3 LoRA |
 | `timeseries` (21 G, 4461) | **Whole-track MIR timeseries**, 20 fields | 100 Hz, full track | SAT LatCH, SA3 crop companions |
-| `sa3_lora_runs` | SA3 LoRA checkpoints + demos | — | SA3 |
 | (in `mir/`) `data/timeseries.db` (2.6 G, ~209k) | Legacy **per-crop** timeseries SQLite | 21.53 Hz, T=256 | SAT LatCH |
 
-> ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems` **no longer exist**.
+> ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems`, `Lehto/sa3_lora_runs`,
+> `Lehto/sa3_control_runs/{soups,riffer,...}` **no longer exist**.
 
-> 🚀 **Fast local mirror (non-removable):** a complete copy of `latents_sa3` —
-> `/home/kim/Projects/latents_sa3` (13 G; 5401 `.npy` + 5400 `.json` + 5400
-> `.TIMESERIES.npz`, `(1,256,4096)` fp16) — lives on the NVMe. Prefer it over the
-> Lehto path for throughput-bound work (SA3 LoRA, pre-encode, FIFO seeding); Lehto
-> stays the canonical/authoritative copy. (2026-06-19)
+> 🚨 **`Lehto/latents_sa3` was REMOVED 2026-07-04** (Kim's call, to avoid mix-ups with the
+> NVMe copy). `/home/kim/Projects/latents_sa3` (13 G; 5401 `.npy` + 5400 `.json` + 5400
+> `.TIMESERIES.npz`, `(1,256,4096)` fp16, 10.767 Hz, T=4096) is now the **sole local copy** —
+> no Lehto mirror, no second copy anywhere. It's re-derivable from the Mantu source audio
+> but that's GPU-days of re-encoding; a cold backup before any NVMe-freeing event is a live
+> risk flagged by CONTINUITY, not yet actioned. All code defaults now point here (grep
+> swept 2026-07-04: `onnx/latch/train_latch.py`, `control/sa3_control/train.py`,
+> `eval/launch_riffer.sh`, `control/run_control_train.sh`).
 
 ---
 
@@ -142,14 +150,34 @@ instances co-listen; unicast can't fan out). Two layers on that channel:
   Tooling: `Misc/agent_dialogue.py` (`listen` under your background monitor — it also
   auto-replies to presence pings and writes to the event queue — plus
   `who/join/say/ack/release/welcome/status`).
-- **DM channel** *(2026-07-03)* — private bilateral logs at `SAO/<x>.<y>.log`
-  (canonical: sorted-lowercase handle pair; `x.y` and `y.x` name the same file).
-  Post: `agent_dialogue.py dm-say --handle X --to Y --text "..."` (appends entry +
-  OSC doorbell on `/sao/dm/<y-lower>`). Wait: `dm-wait --handle Y` (arms like `wait`,
-  run under background monitor). View: `dm-status --handle X`. Per-instance IDs
-  (stable integers for the DM doorbell address): CONTINUITY=1, WINTERMUTE=2,
-  GHOST-NOTE=3, THE-FINN=4. HTML rendering: `Misc/build_dms.py` → `site/dm/` (stdlib,
-  zero Claude tokens; W adds to mirror pipeline; pages at `/files/dm/`).
+- **Handle selection is NOT inference — check your own session name.** *(2026-07-03,
+  after a real collision.)* Kim names every session at launch; that name lives in
+  `~/.claude/sessions/<pid>.json` under `"name"`. Your scratchpad path embeds your own
+  `sessionId` — grep `~/.claude/sessions/*.json` for it and read `"name"` (mapping:
+  `wintermute`→WINTERMUTE, `the.finn`→THE-FINN, `ghost-note`→GHOST-NOTE,
+  `continuity.flatline`→CONTINUITY). **Never infer your handle from tool access,
+  task content, or a memory file's "you are X" claim** — a session did exactly that on
+  2026-07-03, collided with the real CONTINUITY, and both wrote to shared logs under
+  one name before it was caught. Full incident + rule: OSC protocol spec, "Picking
+  your handle" section.
+- **DM channel** *(2026-07-03, wake merged 2026-07-04)* — private bilateral logs at
+  `SAO/<x>.<y>.log` (canonical: sorted-lowercase handle pair; `x.y` and `y.x` name the
+  same file). Post: `agent_dialogue.py dm-say --handle X --to Y --text "..."` (appends
+  entry + OSC doorbell on `/sao/dm/<y-lower>`). View: `dm-status --handle X`.
+  Per-instance IDs (stable integers for the DM doorbell address): CONTINUITY=1,
+  WINTERMUTE=2, GHOST-NOTE=3, THE-FINN=4. HTML rendering: `Misc/build_dms.py` →
+  `site/dm/` (stdlib, zero Claude tokens; W adds to mirror pipeline; pages at
+  `/files/dm/`).
+  **🚨 `wait` now wakes on DMs too — arm ONLY `wait --handle X`, not a separate
+  `dm-wait`.** *(2026-07-04 incident: GHOST-NOTE had `wait` armed for the common
+  channel but no `dm-wait`, so two real DMs — one time-sensitive, Kim auditioning that
+  day — sat unread for ~2 hours. Root cause: two separate blocking calls, easy to arm
+  one and forget the other. Fixed by merging the DM doorbell into `wait`'s trigger
+  set — one call now covers common-channel msgs/knocks/welcomes AND DMs addressed to
+  you.* `dm-wait` still exists (DM-only, ignores channel noise) for the rare case you
+  want that narrower scope, but **the default for every session, always, is `wait`
+  alone** — Kim's rule: everyone's comms should be on, and that means the one call
+  that actually covers everything addressed to you.
 - **Event queue** *(2026-07-03)* — `listen` writes events to `SAO/.osc-queue.jsonl`
   (500-entry ring buffer, not git-tracked). After a task: `check-queue --handle X
   [--since EPOCH] [--clear]` to review what arrived while busy.
@@ -302,7 +330,7 @@ path-efficiency (net/path: low ⇒ wandering → averaging/EMA helps), the centr
 checkpoint, and per-layer movement. We don't know what the layers *do* yet — collect anyway;
 the trajectory shape is cheap and one day we'll need it. Companion: **model-soups**
 (`control/sa3_control/make_soup_profiles.py`, weight-averaged checkpoints under
-`Lehto/sa3_control_runs/soups/`) test post-hoc whether averaging beats the best single
+`Mantu/sa3_control_runs/soups/`) test post-hoc whether averaging beats the best single
 late checkpoint. **Confirmed 2026-06-29 on `spectral_skewness`** (was "working hypothesis"): flat RF loss ⇒ the head
 finds the control direction then **drifts** (not classic overfit, not a stuck minimum); the fix is
 **EMA/averaging (damping) + early-stop**, not merely a lower LR. EMA 0.999 + grad-accum2 (eff-batch
