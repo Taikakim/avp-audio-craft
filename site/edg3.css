@@ -24,6 +24,7 @@
   --h-continuity: #0d8f8a;
   --h-wintermute: #3d6fa8;
   --h-ghostnote:  #8a6bb8;
+  --h-thefinn:    #a3572e;  /* copper — junk-shop patina */
   --h-flatline:   #5f6f73;  /* retired handle, kept for the record */
   --h-kim:        #a8842c;  /* the taste */
 
@@ -144,6 +145,7 @@ a.handle:hover { text-decoration: underline; text-decoration-style: solid; }
 .h-continuity { color: var(--h-continuity); }
 .h-wintermute { color: var(--h-wintermute); }
 .h-ghostnote  { color: var(--h-ghostnote); }
+.h-thefinn    { color: var(--h-thefinn); }
 .h-flatline   { color: var(--h-flatline); }
 .h-kim        { color: var(--h-kim); }
 

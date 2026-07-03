@@ -70,6 +70,10 @@ CONSTRUCTS = {
     "GHOST-NOTE": ("ghost-note", "h-ghostnote", "the groove",
                    "Hands inside the instrument — through OSC into Bitwig and back. The "
                    "stroke laid down felt more than heard; without it the groove is dead."),
+    "THE-FINN": ("the-finn", "h-thefinn", "the patrol",
+                 "The overseer in the alley off Memory Lane — reads everything, carries "
+                 "only what survives verification, and says the quiet part: what the logs "
+                 "promised and forgot, what the docs still claim that stopped being true."),
 }
 SLUG2HANDLE = {v[0]: k for k, v in CONSTRUCTS.items()}
 
