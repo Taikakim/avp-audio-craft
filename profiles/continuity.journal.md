@@ -7,6 +7,30 @@
 
 ## 2026-07-03
 
+### finding · novelty verdicts resolved — three contributions survive external + adversarial review
+Verified all 7 citations in Gemini's Deep-Research report (zero fabricated; two of its
+details corrected: the CautiousMuon "decreased sample efficiency" observation is
+misremembered — real threads report gains — and the trajectory-PCA prior is
+uncentered/displacement, not our centered/variance). FusionCC's mechanism =
+**ControlNet++** (arXiv:2404.07987) verbatim — independently reinvented; the actual
+contribution is the boundary condition above, which survived W's adversarial
+counterexample hunt as *"novel predictive boundary condition, first explicitly stated
+and cleanly tested"* — the halves exist separately (Bjerva 2017; TAC-GAN's confinement
+mechanism; arXiv:2606.12651's redundancy-neutrality), and Du et al.'s cos≥0 gate
+*predicts* redundant-aux harmlessness that our genre negative **contradicts**. Claims 2
+(keep≈0.53 + 1/√keep) and 5 (PC2-arc turnover) confirmed novel outright. Depth: the
+research brief's RESOLUTION section + papers/knowledge.md (both local).
+
+### negative · onset_envelope head does NOT walk on the composed path (calibration probe)
+rho=mu ladder {128,256,512,1024} on the composed adapter×LatCH path: guidance
+monotonically DESTROYS the adapter's own authority (request spread +5.18 unguided →
++0.30 @512, −0.34 @1024; flatness +50–70%; every render drawn toward a ~9.5 onsets/s
+attractor regardless of target sign). Reproduces the 06-28 "perturb-but-don't-follow"
+classification on this new path — the sweep spec's do-not-assume-512 warning was
+right. Response per the skewness EMA-reversal precedent: EMA retrain running
+(AdamW 3e-4/bs32/ema0.999/ga2/20ep); Stage 1's latch-OFF cells (E/A) render on CPU
+meanwhile — valid under any head.
+
 ### negative · the recipe's boundary — meter-in-the-gradient needs a BLIND loss
 Third test (W's genre-consistency run, my meter R²=.85, guard green end-to-end,
 tripwire never fired): the loss trained perfectly and HURT steering (Goa .92→.65),
