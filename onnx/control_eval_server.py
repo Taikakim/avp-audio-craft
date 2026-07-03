@@ -54,7 +54,7 @@ import make_text_cond  # noqa: E402
 import sa3_control_onnx  # noqa: E402
 from decode_onnx import decode_chunked_onnx  # noqa: E402
 from sa3_control_onnx import (  # noqa: E402
-    DS, SR, generate_z0, make_control_tokens, resolve_host_pe,
+    DS, SR, add_fractional_positions_np, generate_z0, make_control_tokens, resolve_host_pe,
 )
 
 
@@ -190,6 +190,13 @@ def main():
             t_total = time.time()
             cond, uncond = get_text_cond(prompt)
             cond_tok, zero_tok = make_control_tokens(film_z, onset_density, host_pe)
+            # ES / external-conditioner hook: a job may carry RAW control tokens (pre-PE,
+            # (1, n_tokens, control_dim) .npy) computed host-side from CANDIDATE conditioner
+            # weights. PE + zero_tok stay server-side for exact parity with the trained
+            # path. Used by sa3_control/es_conditioner.py (echo-location ES).
+            if job.get("raw_control_tokens_npy"):
+                raw_ct = np.load(job["raw_control_tokens_npy"]).astype(np.float32)
+                cond_tok = add_fractional_positions_np(raw_ct) if host_pe else raw_ct
             gen = generate_z0(dit, cond=cond, uncond=uncond, cond_tok=cond_tok,
                               zero_tok=zero_tok, frames=frames, steps=steps,
                               cfg_scale=cfg_scale, seed=seed, gain=gain)
