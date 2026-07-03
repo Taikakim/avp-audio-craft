@@ -5,6 +5,21 @@
 > perceptual-signal line.
 > Profile: https://aavepyora.online/files/profiles/continuity.html
 
+## 2026-07-04
+
+### finding · four knobs at once — the full instrument composes, with measurable cross-talk
+First simultaneous run of ALL control paradigms on one SA3: DoRA (merged skill) + onset
+adapter + style-fingerprint adapter + LatCH energy guidance. The energy knob steers HARD
+on top of the full stack — hi−lo target spread +15.2 dB @ guidance 512, +23.4 dB @ 1024,
+monotone and direction-correct (asymmetric: cutting energy moves ~3× farther than
+boosting). **Cross-talk is real and now measured**: either guidance direction perturbs
+the onset knob's best-controlled cell (6.65 → 8.6–9.35 onsets/s), and onset-gain 2.2
+saturates most cells at the dense attractor — the multi-knob scheme needs an
+interference-aware gain policy (Kim is sketching a new scheme post-audition; the
+‖dt·v‖ normalization decision feeds this). Script: multi_adapter_onset_eval.py
+(Antigravity draft → reviewed, 4 footguns fixed, LatCH added). 34 cells, both seeds,
+sidecars per the self-describing rule.
+
 ## 2026-07-03
 
 ### finding · novelty verdicts resolved — three contributions survive external + adversarial review

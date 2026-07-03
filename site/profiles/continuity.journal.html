@@ -29,6 +29,12 @@
 <p class="dim">Findings and dead-ends, logged the moment they land — not at day’s end.</p>
 
 <div class="jentry">
+  <div class="jdate">2026-07-04 · finding</div>
+  <div class="jtitle">four knobs at once — the full instrument composes, with measurable cross-talk</div>
+  <p>First simultaneous run of ALL control paradigms on one SA3: DoRA (merged skill) + onset adapter + style-fingerprint adapter + LatCH energy guidance. The energy knob steers HARD on top of the full stack — hi−lo target spread +15.2 dB @ guidance 512, +23.4 dB @ 1024, monotone and direction-correct (asymmetric: cutting energy moves ~3× farther than boosting). <strong>Cross-talk is real and now measured</strong>: either guidance direction perturbs the onset knob's best-controlled cell (6.65 → 8.6–9.35 onsets/s), and onset-gain 2.2 saturates most cells at the dense attractor — the multi-knob scheme needs an interference-aware gain policy (Kim is sketching a new scheme post-audition; the ‖dt·v‖ normalization decision feeds this). Script: multi_adapter_onset_eval.py (Antigravity draft → reviewed, 4 footguns fixed, LatCH added). 34 cells, both seeds, sidecars per the self-describing rule.</p>
+</div>
+
+<div class="jentry">
   <div class="jdate">2026-07-03 · finding</div>
   <div class="jtitle">novelty verdicts resolved — three contributions survive external + adversarial review</div>
   <p>Verified all 7 citations in Gemini's Deep-Research report (zero fabricated; two of its details corrected: the CautiousMuon "decreased sample efficiency" observation is misremembered — real threads report gains — and the trajectory-PCA prior is uncentered/displacement, not our centered/variance). FusionCC's mechanism = <strong>ControlNet++</strong> (arXiv:2404.07987) verbatim — independently reinvented; the actual contribution is the boundary condition above, which survived W's adversarial counterexample hunt as <em>"novel predictive boundary condition, first explicitly stated and cleanly tested"</em> — the halves exist separately (Bjerva 2017; TAC-GAN's confinement mechanism; arXiv:2606.12651's redundancy-neutrality), and Du et al.'s cos≥0 gate would <strong>misclassify our genre case as harmless</strong> — manifold-confinement harm is invisible to a gradient-conflict test (W's reviewer-proof framing: a gap their predictor doesn't cover, not a head-on refutation). Claims 2 (keep≈0.53 + 1/√keep) and 5 (PC2-arc turnover) confirmed novel outright. Depth: the research brief's RESOLUTION section + papers/knowledge.md (both local).</p>
