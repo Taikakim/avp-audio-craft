@@ -153,3 +153,57 @@ prompts/seeds with paired bootstrap statistics; negative results above (cautious
 two ES failures) were retained deliberately. We are NOT claiming the general ideas
 (reward finetuning, cautious optimizers, ES, loss landscapes) are new — the question
 is whether these five *specific* methods/findings have been published.
+
+---
+
+## RESOLUTION — Deep-Research verdict + independent citation verification (2026-07-03)
+
+The brief above was evaluated by Gemini Deep Research; every load-bearing citation in
+its report was then independently verified (all seven real, none fabricated; two
+details in the report itself corrected below). Standing record:
+
+**Claim 1 — mechanism is PRIOR ART; the scope condition is the contribution.**
+*ControlNet++* (Li et al., arXiv:2404.07987, ECCV 2024) is mechanism-identical to
+FusionCC, verified against the paper text: "Inspired by CycleGAN… directly optimize
+the cycle consistency loss"; disturbs inputs with noise and uses the **single-step
+denoised estimate** (their Eq. 7 ≡ our `rf_z0_hat`), frozen discriminative reward
+model, MSE for continuous conditions, trains only the adapter. FusionCC is therefore
+a *domain transfer* (image spatial controls → audio-latent temporal attributes), not
+a new method — cite ControlNet++ as the direct ancestor, and *InnerControl* (Straßer
+et al., "Heeding the Inner Voice", arXiv:2507.02321) for the all-timestep extension.
+What remains ours: the **blind-vs-redundant boundary condition** (onset win + genre
+negative with mechanism), which the ControlNet++ line does not state — it operates
+under the implicit assumption that consistency feedback is universally beneficial.
+Negative-existence check (is the boundary stated *anywhere*, incl. auxiliary-task /
+negative-transfer / KD / perceptual-loss literature) — adversarial sweep run
+2026-07-03, result to be appended below.
+
+**Claim 2 — CONFIRMED NOVEL, and stronger than the report suggests.** No formal
+treatment of the sign-agreement statistic (keep≈0.53 after NS5) or the 1/keep norm
+inflation exists. The report's claim that speedrun contributors observed "decreased
+sample efficiency" is **misremembered** — the real discussions (C-Optim PR #11,
+parameter-golf PR #1381) report *gains* and address only the before/after-NS mask
+placement dilemma; modded-nanogpt's cautious work is weight-decay-only (*Cautious
+Weight Decay*, arXiv:2510.12402). Nobody reported our failure mechanism.
+
+**Claim 3 — moderate.** ESSA (arXiv:2507.04453) is the closest line (ES on LoRA
+adapters at LLM scale, forward-only; note it evolves SVD singular values, not raw
+weights). The per-coordinate-vs-global step-normalization failure analysis at 37k
+dims is unpublished in context, but derivative in spirit.
+
+**Claim 4 — meaningful.** Reward-surface visualization exists (*Cliff Diving*,
+arXiv:2205.07015, ICML 2022 — training-free planes over policy params); the heard
+(externally-measured) fitness field over a *conditioner* + the field-guided jump +
+the walk-transfers/relief-doesn't seed decomposition are unpublished.
+
+**Claim 5 — CONFIRMED NOVEL, with one correction to the report.** The trajectory-PCA
+prior it cites is real (arXiv:2602.23696, "backbone" drift) but differs materially:
+that work is **uncentered** PCA capturing 60–80% of *displacement*, framed as
+optimizer-induced. Ours is **centered** PCA (88% variance about the mean — a stronger
+planarity statement), and the finding is the *PC2-arc turnover ↔ perceptual-control
+regime change invisible to the loss*, which no trajectory-geometry work links.
+
+**Net writeup targets, in strength order:** (1) the CautiousMuon diagnosis; (2) the
+PC2-turnover early-stopping proxy; (3) the consistency-loss boundary condition
+(positioned against ControlNet++/InnerControl). All three share one thesis: *the
+training loss cannot see what matters; instrument the geometry and the output.*
