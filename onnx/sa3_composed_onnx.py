@@ -27,6 +27,46 @@ from sa3_latch_onnx import latch_schedule, make_criterion, apg_cfg_velocity  # n
 from sa3_control_onnx import LATENT_DIM, LOCAL_ADD_DIM  # noqa: E402
 
 
+def build_latch_guides(latch_spec: dict, frames: int, load_head=None, head_cache=None):
+    """Job-dict -> (guides, rho, mu, provenance) adapter for the composed eval path.
+
+    latch_spec (the job's "latch" object): head_ckpt + target_raw required;
+    optional weight (1.0), loss_type (head metadata), rho/mu (512.0 — the
+    onset_envelope operating point, to be confirmed by the calibration probe),
+    start_pct/end_pct (sampler defaults). target_raw is in RAW feature units;
+    standardization to the head's output space happens here via make_latch_target.
+    load_head is injectable for tests; head_cache (dict) makes repeat jobs free.
+    """
+    from sa3_latch_onnx import load_latch_head, make_latch_target
+
+    load_head = load_head or load_latch_head
+    ckpt = latch_spec["head_ckpt"]
+    if head_cache is not None and ckpt in head_cache:
+        head, metadata = head_cache[ckpt]
+    else:
+        head, metadata = load_head(ckpt)
+        if head_cache is not None:
+            head_cache[ckpt] = (head, metadata)
+
+    raw = float(latch_spec["target_raw"])
+    target = make_latch_target(raw, metadata, frames)
+    loss_type = latch_spec.get("loss_type") or (
+        metadata.get("loss_type", "mse") if hasattr(metadata, "get") else "mse")
+    guide = {"head": head, "target": target, "weight": float(latch_spec.get("weight", 1.0)),
+             "loss_type": loss_type,
+             "huber_beta": (metadata.get("huber_beta") or 1.0) if hasattr(metadata, "get") else 1.0}
+    for k in ("start_pct", "end_pct"):
+        if k in latch_spec:
+            guide[k] = float(latch_spec[k])
+
+    rho = float(latch_spec.get("rho", 512.0))
+    mu = float(latch_spec.get("mu", 512.0))
+    prov = {"head_ckpt": str(ckpt), "target_raw": raw,
+            "target_std": float(target.flatten()[0]), "rho": rho, "mu": mu,
+            "weight": guide["weight"], "loss_type": loss_type}
+    return [guide], rho, mu, prov
+
+
 def generate_z0_control_latch_guided(
     dit_session,
     *,

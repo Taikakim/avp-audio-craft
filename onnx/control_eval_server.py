@@ -27,6 +27,13 @@ A claimed job is published ATOMICALLY: wav + result.json are written to `.tmp`
 siblings and os.replace'd into place, and only THEN is `<job_id>.done` touched — so a
 submitter that sees `.done` is guaranteed both files are complete.
 
+Composed mode (adapter x LatCH, the "easier terrain" sweep): a job may carry a
+"latch" object — {"head_ckpt", "target_raw", optional rho/mu (512) / weight /
+loss_type / start_pct / end_pct} — routing the render through
+sa3_composed_onnx.generate_z0_control_latch_guided (per-step torch-autograd head
+guidance on the control-DiT forward). target_raw is RAW feature units; the server
+standardizes via the head's metadata. Heads are cached per checkpoint path.
+
 Usage (CPU EP; MIGraphX absent in the SA3 venv is EXPECTED — CPU is the target):
     cd /home/kim/Projects/SAO/stable-audio-3 && \
     .venv/bin/python scripts/control_eval_server.py \
@@ -56,6 +63,7 @@ from decode_onnx import decode_chunked_onnx  # noqa: E402
 from sa3_control_onnx import (  # noqa: E402
     DS, SR, add_fractional_positions_np, generate_z0, make_control_tokens, resolve_host_pe,
 )
+from sa3_composed_onnx import build_latch_guides, generate_z0_control_latch_guided  # noqa: E402
 
 
 def _frames_from_dit(dit_session) -> int:
@@ -136,9 +144,11 @@ def main():
     print(f"[serve] queue={qroot}  ready — polling every {args.poll}s", flush=True)
 
     # Per-(prompt, seconds, seq) text cond/uncond cache: build_text_cond runs T5-Gemma,
-    # so reuse across jobs that share a prompt.
+    # so reuse across jobs that share a prompt. LatCH guidance heads (composed jobs)
+    # cache by checkpoint path the same way.
     SEQ = 128
     text_cache: dict = {}
+    head_cache: dict = {}
 
     def get_text_cond(prompt: str):
         key = (prompt, seconds, SEQ)
@@ -197,9 +207,22 @@ def main():
             if job.get("raw_control_tokens_npy"):
                 raw_ct = np.load(job["raw_control_tokens_npy"]).astype(np.float32)
                 cond_tok = add_fractional_positions_np(raw_ct) if host_pe else raw_ct
-            gen = generate_z0(dit, cond=cond, uncond=uncond, cond_tok=cond_tok,
-                              zero_tok=zero_tok, frames=frames, steps=steps,
-                              cfg_scale=cfg_scale, seed=seed, gain=gain)
+            # Composed mode (control adapter x LatCH guidance): a job carrying a
+            # "latch" object routes through the guided sampler — same schedule/CFG/
+            # RNG as generate_z0's parent, plus per-step head guidance. Spec:
+            # docs/superpowers/specs/2026-07-03-composed-control-latch-sweep.md
+            latch_prov = None
+            if job.get("latch"):
+                guides, rho, mu, latch_prov = build_latch_guides(
+                    job["latch"], frames, head_cache=head_cache)
+                gen = generate_z0_control_latch_guided(
+                    dit, cond=cond, uncond=uncond, cond_tok=cond_tok,
+                    zero_tok=zero_tok, gain=gain, guides=guides, frames=frames,
+                    steps=steps, cfg_scale=cfg_scale, seed=seed, rho=rho, mu=mu)
+            else:
+                gen = generate_z0(dit, cond=cond, uncond=uncond, cond_tok=cond_tok,
+                                  zero_tok=zero_tok, frames=frames, steps=steps,
+                                  cfg_scale=cfg_scale, seed=seed, gain=gain)
             z0 = gen["z0"]
 
             t_dec = time.time()
@@ -234,6 +257,8 @@ def main():
                 },
                 "paths": {"wav": str(wav_path), "result": str(outbox / f"{job_id}.result.json")},
             }
+            if latch_prov:
+                result["latch"] = latch_prov
             res_tmp = outbox / f"{job_id}.result.json.tmp"
             res_tmp.write_text(json.dumps(result, indent=2))
 
