@@ -231,6 +231,13 @@ the run came from; (3) the **checkpoint's id + location** when the ckpt lives el
 step / path). Write it **when you create the output, not later** — a dir of bare `.wav`/`.m4a` with no
 sidecar is a dead end no one, human or instance, can revive. The presentation UIs and `run_purposes.json`
 both read it, so provenance written once is legible everywhere.
+**Sidecar vs public pages — the redaction seam.** The sidecar deliberately carries ckpt filenames,
+exact configs, and local paths — that is its job, and sidecars stay LOCAL. Anything **served publicly**
+(eval landings, players, posters) follows the redaction rule (profiles SPEC §4, 2026-07-03): **no
+checkpoint filenames, no exact training configs, no infrastructure addresses on public pages** — the
+presentation layer describes ("the FusionCC checkpoint (internal)"), never names. Generators reading
+sidecars into public HTML (`build_evals.py`, GUI builders) must redact at render time; metric numbers
+and module names are fine.
 
 **REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
 results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
