@@ -223,6 +223,14 @@ opus is smaller still but drops pre-2023 Apple) to keep the Pages repo small —
 GUI renders it as a **per-checkpoint info box** (which run, what params, why it was trained); **future
 inference UIs read the same file** for provenance. Any renderer emitting eval clips must write this
 sidecar; the GUI generators read it (falling back to the dir name for legacy dirs that predate it).
+**Extended — self-describing outputs.** *(2026-07-03, Kim: manual tracking no longer scales.)* The rule
+now covers **every** eval / render / audition / test output dir, not just `onset_eval`. Beside the
+params, the sidecar (or a `README`/`_meta.json`) must also carry: (1) a one-sentence **purpose** — what
+the test the files belong to is *for*; (2) **paths to the related files** — the config, script, or spec
+the run came from; (3) the **checkpoint's id + location** when the ckpt lives elsewhere (which run /
+step / path). Write it **when you create the output, not later** — a dir of bare `.wav`/`.m4a` with no
+sidecar is a dead end no one, human or instance, can revive. The presentation UIs and `run_purposes.json`
+both read it, so provenance written once is legible everywhere.
 
 **REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
 results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
