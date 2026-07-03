@@ -57,11 +57,15 @@ matches what the model is trained on:
     corpus:** a genre is included only if **≥ 303 crops** carry it as a significant label
     (min-support threshold, so every fingerprint dimension is well-populated); the exact
     significance rule (top-k rank or probability threshold) is fixed in the first plan
-    step. **Raw softmax probabilities** for the K genres **+ an
-    `other = 1 − Σ(selected)` bucket** → a proper simplex with *no renormalization
-    distortion*. (A track that is 0.3 goa with the rest spread over acoustic genres reads
-    `[goa 0.3, …, other 0.7]` = correctly *weakly* goa, not 100 %.) Fixed vocab (not
-    per-track top-5) keeps the FiLM dimensions stable.
+    step. **CORRECTION (2026-07-02, verified against the actual model):** the discogs-400
+    head is **multi-label (sigmoid), NOT softmax** — each genre is an *independent* confidence
+    in [0,1] (a real crop reads Goa 0.61 **and** Psy 0.75; the K values sum to >1). So we use
+    the **K raw multi-label confidences** directly as the genre dims. This is *richer* than a
+    simplex and **moots the normalization worry entirely**: a weakly-goa track simply gets a
+    low goa confidence — no renormalization, no distortion, so the whole reason for the `other`
+    bucket evaporates. The originally-planned **`other = 1 − Σ` bucket is vestigial** (Σ>1 →
+    clamps to 0) — a harmless constant-0 dim the FiLM encoder ignores, kept only to avoid a
+    re-scan. Fixed vocab (not per-track top-k) keeps the FiLM dimensions stable.
   - **release_year** — normalized (e.g. `(year − 1990) / 30`). Included so era/production
     (90s goa vs modern melodic goa) is a dial, removing the need to differentiate by ear.
 - **Stable style traits (track-level):** **BPM, syncopation** (optionally

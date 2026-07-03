@@ -13,6 +13,8 @@ Run with the consolidated SAO/.venv (CK flash-attn; set the flag before import):
 """
 
 import argparse
+import copy
+import json
 import os
 import subprocess
 import sys
@@ -33,6 +35,32 @@ from sa3_control.inject import (adapter_state_dict, freeze_base_train_adapters,
                                 install_adapters)
 
 
+class EMA:
+    """Exponential moving average of the trainable params (standing recipe: EMA + grad-accum + early-stop)."""
+    def __init__(self, params, decay: float):
+        self.decay = float(decay)
+        self.params = list(params)
+        self.shadow = [p.detach().float().clone() for p in self.params]
+        self.backup = None
+
+    @torch.no_grad()
+    def update(self):
+        for s, p in zip(self.shadow, self.params):
+            s.mul_(self.decay).add_(p.detach().float(), alpha=1.0 - self.decay)
+
+    @torch.no_grad()
+    def copy_to(self):
+        self.backup = [p.detach().clone() for p in self.params]
+        for s, p in zip(self.shadow, self.params):
+            p.data.copy_(s.to(p.dtype))
+
+    @torch.no_grad()
+    def restore(self):
+        for b, p in zip(self.backup, self.params):
+            p.data.copy_(b)
+        self.backup = None
+
+
 def collate(batch):
     out = {
         "latent": torch.stack([b["latent"] for b in batch]),
@@ -44,6 +72,8 @@ def collate(batch):
         out["scalar"] = torch.stack([b["scalar"] for b in batch])
     if batch[0].get("controls"):                # time-varying attribute features {name: (C,T)}
         out["controls"] = {k: torch.stack([b["controls"][k] for b in batch]) for k in batch[0]["controls"]}
+    if "fingerprint" in batch[0]:
+        out["fingerprint"] = torch.stack([b["fingerprint"] for b in batch])
     return out
 
 
@@ -122,7 +152,12 @@ def export_control_onnx_on_finish(ckpt_path, save_dir, frames, field):
            _exporter,
            "--ckpt", ckpt_path, "--model", "medium-base", "--frames", str(frames),
            "--text-seq", "128", "--fp16", "--out", out_path]
-    env = {**os.environ, "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
+    # The exporter does `from sa3_control...`; when sys.executable is a venv without the
+    # sao_tooling editable install (e.g. stable-audio-3/.venv), put control/ (this file's
+    # package parent) on PYTHONPATH so the import resolves. (Fixes the post-train export.)
+    _control_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../control
+    env = {**os.environ, "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
+           "PYTHONPATH": _control_dir + os.pathsep + os.environ.get("PYTHONPATH", "")}
     print(f"[export] start: control-DiT ONNX -> {out_path} (field={field})", flush=True)
     rc = subprocess.run(cmd, env=env, check=False).returncode
     if rc == 0:
@@ -180,6 +215,34 @@ def main():
                          "ScheduleFree-AdamW); fusion_nm (mona+ns5+normuon+sf — everything EXCEPT KL-Shampoo, "
                          "now viable on large adapters thanks to component-gated state alloc); fusion_full "
                          "(all 5 incl. Shampoo — heavy, may OOM on large adapters).")
+    ap.add_argument("--cautious", action="store_true",
+                    help="add cautious masking (C-Muon) to the FusionOpt components: zero update "
+                         "coords that fight the gradient, rescale survivors. Otherwise identical to "
+                         "the chosen --optimizer. No effect for adamw.")
+    ap.add_argument("--cc-probe", default="",
+                    help="path to a trained control-consistency probe (train_cc_probe.py). Enables "
+                         "L = L_RF + lambda_cc * MSE(probe(z0_hat), requested) for t < cc-t-max — "
+                         "puts the control target INTO the gradient (RF loss is blind to it). "
+                         "Scalar control mode only. Spec: docs/superpowers/specs/"
+                         "2026-07-02-perceptual-signal-optimizer-directions.md")
+    ap.add_argument("--lambda-cc", type=float, default=0.1,
+                    help="weight of the control-consistency term (start small: a strong weight "
+                         "lets the head game the probe instead of doing RF).")
+    ap.add_argument("--cc-t-max", type=float, default=0.5,
+                    help="apply the cc term only when t < this (z0_hat is biased at high noise).")
+    # --- genre-consistency probe (fingerprint mode; sibling of --cc-probe) ---
+    ap.add_argument("--fp-probe", default="",
+                    help="path to a genre-consistency probe (cc_probe_genre.pt). FINGERPRINT mode "
+                         "only: adds lambda_fp * MSE(probe(z0_hat), requested genre block) over "
+                         "SUPERVISED dims for t < fp-t-max. Puts the genre meter INTO the gradient "
+                         "(RF loss is blind to it). Probe out-order is target_keys, reindexed here.")
+    ap.add_argument("--lambda-fp", type=float, default=0.1, help="weight of the genre-consistency term")
+    ap.add_argument("--fp-t-max", type=float, default=0.5,
+                    help="apply the genre-consistency term only when t < this (z0_hat biased at high t).")
+    ap.add_argument("--fp-supervise", default="0,1,2,4",
+                    help="VOCAB indices to supervise with the genre probe (default the strong-r dims: "
+                         "0=Goa,1=Psy,2=Trance,4=Prog). The rest are held out and MONITORED for "
+                         "probe-hacking (supervised authority up while held-out drifts = gaming the meter).")
     ap.add_argument("--resume", default="", help="warm-start: load adapter+conditioner weights from a "
                     "checkpoint .pt (optimizer restarts fresh; not an exact-state resume).")
     ap.add_argument("--resume-exact", default="", help="EXACT-state resume: restore adapter weights + "
@@ -189,10 +252,11 @@ def main():
                     choices=["logit_normal", "log_snr", "log_snr_uniform", "uniform"], default="logit_normal",
                     help="diffusion t sampler (underfit borrow). logit_normal = original; "
                          "log_snr biases toward the informative sigma band (may de-noise the loss).")
-    ap.add_argument("--control-mode", choices=["audio_ref", "scalar", "attribute"], default="audio_ref",
+    ap.add_argument("--control-mode", choices=["audio_ref", "scalar", "attribute", "fingerprint"], default="audio_ref",
                     help="audio_ref = the riffer (opaque reference latent); scalar = a per-crop scalar "
                          "(e.g. onset_density); attribute = a TIME-VARYING per-frame feature "
-                         "(dynamics/rhythm/melody curve) via the time-aligned AttributeEncoder.")
+                         "(dynamics/rhythm/melody curve) via the time-aligned AttributeEncoder; "
+                         "fingerprint = style/genre vector via FingerprintEncoder.")
     ap.add_argument("--scalar-field", default="onset_density",
                     help="which per-crop .json scalar to condition on when --control-mode scalar")
     ap.add_argument("--control-feature", default="melody",
@@ -215,11 +279,26 @@ def main():
                          "(additive, non-fatal; --no-export-onnx-on-finish to disable)")
     ap.add_argument("--export-onnx-frames", type=int, default=256,
                     help="latent frame length (rung) for the on-finish ONNX export")
+    # --- fingerprint variant + training schedule args ---
+    ap.add_argument("--fp-variant", choices=["A", "B", "C"], default="A",
+                    help="fingerprint scope: A=style+groove (genre+year+bpm+sync); "
+                         "B=maximal (+window onset+energy); C=style-only (genre+year)")
+    ap.add_argument("--genre-vocab", default=os.path.join(os.path.dirname(__file__), "genre_vocab.json"))
+    ap.add_argument("--ema", type=float, default=0.999, help="EMA decay (0 disables)")
+    ap.add_argument("--grad-accum", type=int, default=2,
+                    help="accumulate this many microbatches per opt.step (standing recipe)")
+    ap.add_argument("--max-epochs", type=int, default=20,
+                    help="early-stop epoch cap (standing recipe ~20 ep)")
+    ap.add_argument("--val-frac", type=float, default=0.05,
+                    help="held-out track fraction for early-stop RF loss (fingerprint mode)")
+    ap.add_argument("--early-stop-patience", type=int, default=4,
+                    help="stop after N epochs w/o val-loss improvement")
     args = ap.parse_args()
 
     if args.smoke:
         args.steps, args.batch, args.crop_frames, args.num_workers = 3, 1, 512, 0
         args.precision = "fp32"
+        args.preencode_text = False   # smoke: skip caching 5K+ prompts (OOMs w/ fp32 DiT)
 
     dtype = {"bf16": torch.bfloat16, "fp32": torch.float32}[args.precision]
 
@@ -237,6 +316,7 @@ def main():
     crop_seconds = args.crop_frames / latent_rate
 
     # adapters + conditioner
+    _fp_vocab = None   # set in fingerprint branch; referenced by checkpoint saves
     wrappers = install_adapters(sam, control_dim=args.control_dim)
     if args.control_mode == "scalar":
         cond_enc = ScalarAttributeEncoder(control_dim=args.control_dim,
@@ -255,6 +335,15 @@ def main():
                                         downsample=args.attr_downsample).to(device=device, dtype=dtype)
             print(f"[control] attribute '{args.control_feature}' ({in_ch}ch, /{cond_enc.downsample}) "
                   f"-> time-aligned AttributeEncoder", flush=True)
+    elif args.control_mode == "fingerprint":
+        from sa3_control.conditioner import FingerprintEncoder
+        from sa3_control.dataset import fingerprint_in_dim
+        _fp_vocab = json.load(open(args.genre_vocab))["vocab"]
+        in_dim = fingerprint_in_dim(args.fp_variant, len(_fp_vocab))
+        cond_enc = FingerprintEncoder(in_dim=in_dim, control_dim=args.control_dim,
+                                      n_tokens=min(args.n_tokens, 16)).to(device=device, dtype=dtype)
+        print(f"[control] fingerprint V-{args.fp_variant} in_dim={in_dim} (K={len(_fp_vocab)}) "
+              f"-> FingerprintEncoder", flush=True)
     else:
         cond_enc = AudioRefEncoder(latent_dim=256, control_dim=args.control_dim,
                                    n_tokens=args.n_tokens).to(device=device, dtype=dtype)
@@ -281,6 +370,8 @@ def main():
                  else None if args.optimizer == "fusion_full"        # None = all 5 (mona+shampoo+ns5+normuon+sf)
                  else {"mona", "ns5", "normuon", "sf"} if args.optimizer == "fusion_nm"  # all but KL-Shampoo
                  else {"ns5", "normuon", "sf"})                      # fusion = SF-NorMuon
+        if args.cautious:                                            # C-Muon: same recipe + cautious mask
+            comps = ({"mona", "shampoo", "ns5", "normuon", "sf"} if comps is None else set(comps)) | {"cautious"}
         opt = FusionOpt(groups, lr=args.lr, warmup_steps=args.warmup_steps, hot_dtype="bf16", components=comps)
         _sf = bool(getattr(opt, "uses_sf_averaging", False))
         if _sf:
@@ -289,6 +380,10 @@ def main():
     else:
         opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.01)
         _sf = False
+
+    ema = EMA(params, args.ema) if args.ema and args.ema > 0 else None
+    if ema is not None:
+        print(f"[ema] decay={args.ema} over {n_train/1e6:.1f}M params", flush=True)
 
     start_step = 0
     if args.resume_exact:                                    # exact-state resume (weights + optimizer + step)
@@ -336,9 +431,31 @@ def main():
     elif args.control_mode == "attribute":
         ds = LatentControlDataset(args.encoded_dir, controls=(args.control_feature,), audio_ref=None,
                                   seed=args.seed, subset_tracks=args.subset_tracks)
+    elif args.control_mode == "fingerprint":
+        ds = LatentControlDataset(args.encoded_dir, controls=(), audio_ref=None,
+                                  seed=args.seed, subset_tracks=args.subset_tracks,
+                                  fingerprint=True, genre_vocab=_fp_vocab, fp_variant=args.fp_variant,
+                                  random_crop_frames=args.crop_frames)
     else:
         ds = LatentControlDataset(args.encoded_dir, controls=(), audio_ref="same_track",
                                   seed=args.seed, subset_tracks=args.subset_tracks)
+    # track-level train/val split for fingerprint early-stop (val_frac>0, not smoke)
+    val_dl = None
+    if args.control_mode == "fingerprint" and args.val_frac > 0 and not args.smoke:
+        from sa3_control.dataset import track_key as _tk
+        all_keys = sorted(ds.by_track.keys())
+        _val_rng = np.random.default_rng(args.seed + 999)
+        _val_rng.shuffle(all_keys)
+        n_val = max(1, int(len(all_keys) * args.val_frac))
+        val_keys = set(all_keys[:n_val])
+        val_paths = [p for p in ds.paths if _tk(ds.meta[p], p) in val_keys]
+        ds.paths = [p for p in ds.paths if _tk(ds.meta[p], p) not in val_keys]
+        val_ds = copy.deepcopy(ds)
+        val_ds.paths = val_paths
+        val_dl = DataLoader(val_ds, batch_size=args.batch, shuffle=False, drop_last=False,
+                            num_workers=0, collate_fn=collate)
+        print(f"[val] {len(val_paths)} crops from {len(val_keys)} val tracks; "
+              f"{len(ds.paths)} train crops remain", flush=True)
     dl = DataLoader(ds, batch_size=args.batch, shuffle=True, drop_last=True,
                     num_workers=args.num_workers, collate_fn=collate,
                     # keep workers alive across epochs: respawning them every epoch
@@ -361,6 +478,58 @@ def main():
     telem = TrainTelemetry(_telem_mod, wb, scalar_every=args.log_every,
                            traj_every=args.save_every, optimizer=opt)
 
+    # Control-consistency probe (optional): frozen differentiable meter for the scalar
+    # target; the run's normalized request is remapped to the probe's own scalar_norm.
+    cc_probe = None
+    if args.cc_probe:
+        if args.control_mode != "scalar":
+            raise SystemExit("[cc] --cc-probe requires --control-mode scalar")
+        from sa3_control.cc_probe import load_probe, rf_z0_hat, control_consistency_loss
+        cc_probe, (cc_mean, cc_std) = load_probe(args.cc_probe, device=device)
+        print(f"[cc] probe loaded: {args.cc_probe} (norm mean={cc_mean:.3f} std={cc_std:.3f}) "
+              f"lambda={args.lambda_cc} t_max={args.cc_t_max}", flush=True)
+
+    # Genre-consistency probe (optional, FINGERPRINT mode): frozen latent-space genre meter
+    # (CONTINUITY's cc_probe_genre.pt, R2=0.85). Sibling of --cc-probe with its own guard so the
+    # scalar path is untouched. The probe outputs in target_keys order (sorted names) — reindex the
+    # fingerprint's vocab-order genre block to match, or we'd supervise the wrong genre. norm=(0,1)
+    # for this probe (raw probabilities), so no request remapping.
+    fp_probe = None
+    if args.fp_probe:
+        if args.control_mode != "fingerprint":
+            raise SystemExit("[fp] --fp-probe requires --control-mode fingerprint")
+        from sa3_control.cc_probe import load_probe as _lp, rf_z0_hat
+        fp_probe, _ = _lp(args.fp_probe, device=device)
+        _pck = torch.load(args.fp_probe, map_location="cpu", weights_only=False)
+        _tkeys = _pck["target_keys"]                              # probe output order
+        _fp_order = list(_fp_vocab) + ["other"]                   # fingerprint genre-block order
+        fp_perm = torch.tensor([_fp_order.index(k) for k in _tkeys], device=device)  # req[:,fp_perm]->probe order
+        _sup_vocab = {int(x) for x in args.fp_supervise.split(",") if x.strip() != ""}
+        fp_sup_mask = torch.tensor([int(fp_perm[i]) in _sup_vocab for i in range(len(_tkeys))],
+                                   device=device)                 # (D,) bool, probe order
+        _sup = [_tkeys[i].split('---')[-1] for i in range(len(_tkeys)) if bool(fp_sup_mask[i])]
+        _held = [_tkeys[i].split('---')[-1] for i in range(len(_tkeys)) if not bool(fp_sup_mask[i])]
+        print(f"[fp] genre probe loaded: {args.fp_probe} val_r2={_pck.get('val_r2', float('nan')):.3f} "
+              f"lambda={args.lambda_fp} t_max={args.fp_t_max}", flush=True)
+        print(f"[fp] supervise {len(_sup)} dims {_sup}; monitor(held-out) {_held}", flush=True)
+
+    def fp_consistency_loss(probe, z0_hat, req_probe, t, mask, t_max):
+        """Thin wrapper (don't touch cc_probe.control_consistency_loss): MSE on SUPERVISED dims only,
+        over t<t_max rows; returns (sup_loss_tensor, held_err_float, held_pred_mean_float) for the
+        probe-hack telemetry. req_probe is already in probe (target_keys) order."""
+        gate = t < t_max
+        if not bool(gate.any()):
+            z = z0_hat.new_zeros(())
+            return z, 0.0, 0.0
+        pred = probe(z0_hat[gate])                                # (Bg, D) probe order
+        r = req_probe[gate].to(pred.dtype)
+        sup_loss = torch.nn.functional.mse_loss(pred[:, mask], r[:, mask])
+        with torch.no_grad():
+            held = ~mask
+            he = float(torch.nn.functional.mse_loss(pred[:, held], r[:, held])) if bool(held.any()) else 0.0
+            hp = float(pred[:, held].mean()) if bool(held.any()) else 0.0
+        return sup_loss, he, hp
+
     if args.preencode_text:
         preencode_text(sam, [ds.meta[p].get("prompt", "") for p in ds.paths], crop_seconds, device)
 
@@ -372,6 +541,10 @@ def main():
             torch.cuda.synchronize()
 
     step = start_step
+    gnorm = torch.tensor(0.0)   # last known gnorm; stale by up to grad_accum-1 steps between opt steps
+    epoch = 0
+    best_val_loss = float("inf")
+    epochs_since_best = 0
     t0 = time.time()
     t_iter = time.time()
     cond_enc.train()
@@ -399,6 +572,8 @@ def main():
             elif args.control_mode == "attribute":
                 feat = b["controls"][args.control_feature][:, :, :T].to(device=device, dtype=dtype)  # (B,C,T)
                 ctrl = cond_enc(feat)                                          # (B, T/ds, control_dim)
+            elif args.control_mode == "fingerprint":
+                ctrl = cond_enc(b["fingerprint"].to(device=device, dtype=dtype))  # (B, n_tokens, control_dim)
             else:
                 ctrl = cond_enc(b["ref_latent"].to(device=device, dtype=dtype))
             if args.cfg_dropout > 0:                        # per-item control dropout
@@ -411,7 +586,6 @@ def main():
             if args.profile:
                 _sync(); _tt = time.time(); prof["text"] += _tt - _tr
 
-            opt.zero_grad(set_to_none=True)
             # keep the control context active THROUGH backward: the DiT uses gradient
             # checkpointing, which re-runs the block forward during backward — the
             # adapter branch must see the same ContextVar on recompute or tensor counts mismatch.
@@ -419,28 +593,65 @@ def main():
                 v = dit(noised, t, **cond_inputs, cfg_scale=1.0, cfg_dropout_prob=0.0,
                         use_checkpointing=args.use_checkpointing)
                 loss = torch.nn.functional.mse_loss(v.float(), target.float())
+                cc_val = 0.0
+                fp_val = 0.0; fp_held = 0.0; fp_held_pred = 0.0
+                if cc_probe is not None:
+                    # request on the probe's normalized scale (run-norm -> raw -> probe-norm)
+                    sc_run = (sc if (args.control_mode == "scalar" and args.scalar_from_timeseries)
+                              else b["scalar"].to(device)).float()
+                    raw = sc_run * ds.scalar_std + ds.scalar_mean
+                    req = (raw - cc_mean) / cc_std
+                    z0_hat = rf_z0_hat(noised.float(), v.float(), t)
+                    cc_loss = control_consistency_loss(cc_probe, z0_hat, req, t,
+                                                       t_max=args.cc_t_max)
+                    loss = loss + args.lambda_cc * cc_loss
+                    cc_val = float(cc_loss.detach())
+                if fp_probe is not None:
+                    # requested genre block (vocab-order, first D dims) -> probe order via fp_perm
+                    req_g = b["fingerprint"][:, :fp_perm.numel()].to(device=device).float()
+                    req_probe = req_g[:, fp_perm]
+                    z0_hat = rf_z0_hat(noised.float(), v.float(), t)
+                    fp_loss, fp_held, fp_held_pred = fp_consistency_loss(
+                        fp_probe, z0_hat, req_probe, t, fp_sup_mask, args.fp_t_max)
+                    loss = loss + args.lambda_fp * fp_loss
+                    fp_val = float(fp_loss.detach()) if torch.is_tensor(fp_loss) else float(fp_loss)
                 if args.profile:
                     _sync(); _tf = time.time(); prof["fwd"] += _tf - _tt
-                loss.backward()
+                # grad-accum: divide BEFORE backward so each microbatch contributes 1/N of the step gradient
+                (loss / args.grad_accum).backward()
             if args.profile:
                 _sync(); _tb = time.time(); prof["bwd"] += _tb - _tf
-            gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
-            if args.warmup_steps > 0 and args.optimizer == "adamw":  # FusionOpt warms up internally
-                for pg in opt.param_groups:
-                    pg["lr"] = args.lr * min(1.0, (step + 1) / args.warmup_steps)
-            if hasattr(opt, "_telem_on"):       # FusionOpt: instrument the step we're about to log
-                opt._telem_on = ((step + 1) % args.log_every == 0)
-            opt.step()
-            step += 1
-            if args.profile:
-                _sync(); t_iter = time.time(); prof["opt"] += t_iter - _tb
+            # optimizer step only every grad_accum microbatches (standard gradient accumulation)
+            if (step + 1) % args.grad_accum == 0:
+                gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
+                if args.warmup_steps > 0 and args.optimizer == "adamw":  # FusionOpt warms up internally
+                    for pg in opt.param_groups:
+                        pg["lr"] = args.lr * min(1.0, (step + 1) / args.warmup_steps)
+                if hasattr(opt, "_telem_on"):       # FusionOpt: instrument the step we're about to log
+                    opt._telem_on = ((step + 1) % args.log_every == 0)
+                opt.step()
+                opt.zero_grad(set_to_none=True)
+                if ema is not None:
+                    ema.update()
+                if args.profile:
+                    _sync(); t_iter = time.time(); prof["opt"] += t_iter - _tb
+                else:
+                    t_iter = time.time()
             else:
                 t_iter = time.time()
+            step += 1
 
             if step % args.log_every == 0 or args.smoke:
                 rate = step / (time.time() - t0)
-                print(f"[step {step}/{args.steps}] loss {loss.item():.4f} "
+                _cc = f" cc {cc_val:.4f}" if cc_probe is not None else ""
+                _fp = f" fp {fp_val:.4f}(held {fp_held:.3f})" if fp_probe is not None else ""
+                print(f"[step {step}/{args.steps}] loss {loss.item():.4f}{_cc}{_fp} "
                       f"gnorm {float(gnorm):.3f} {rate:.2f} it/s", flush=True)
+                if cc_probe is not None and wb is not None:
+                    wb.log({"cc/loss": cc_val, "cc/weighted": args.lambda_cc * cc_val}, step=step)
+                if fp_probe is not None and wb is not None:
+                    wb.log({"fp/loss": fp_val, "fp/weighted": args.lambda_fp * fp_val,
+                            "fp/held_err": fp_held, "fp/held_pred_mean": fp_held_pred}, step=step)
                 if args.profile:
                     tot = sum(prof.values()) or 1.0
                     brk = "  ".join(f"{k}={v / args.log_every * 1000:.0f}ms/{100 * v / tot:.0f}%"
@@ -453,9 +664,11 @@ def main():
                           lr=opt.param_groups[0]["lr"], epoch=step / max(1, len(ds)))
             if step % args.save_every == 0 and not args.smoke:
                 p = os.path.join(args.save_dir, f"riffer_step{step}.pt")
-                # capture exact-resume state in TRAIN mode (y iterate + opt state) BEFORE the SF eval swap
+                # capture exact-resume state in TRAIN mode (y iterate + opt state) BEFORE EMA/SF swap
                 _resume_state = {"model_train": adapter_state_dict(wrappers, cond_enc), "opt": opt.state_dict(),
                                  "step": step, "torch_rng": torch.get_rng_state()}
+                if ema is not None:
+                    ema.copy_to()                            # EMA: swap in averaged weights for the save
                 if _sf:
                     opt.eval()                               # SF: save the averaged iterate
                 torch.save({"state": adapter_state_dict(wrappers, cond_enc), "args": vars(args),
@@ -463,7 +676,12 @@ def main():
                             "control_feature": getattr(args, "control_feature", None),
                             "scalar_from_timeseries": getattr(args, "scalar_from_timeseries", ""),
                             "scalar_norm": [getattr(ds, "scalar_mean", 0.0), getattr(ds, "scalar_std", 1.0)],
+                            "fp_variant": getattr(args, "fp_variant", None),
+                            "genre_vocab": _fp_vocab,
+                            "fp_in_dim": getattr(cond_enc, "in_dim", None),
                             **_resume_state}, p)
+                if ema is not None:
+                    ema.restore()
                 if _sf:
                     opt.train()
                 print(f"[save] {p}", flush=True)
@@ -477,6 +695,53 @@ def main():
             if step >= args.steps:
                 break
 
+        # --- epoch boundary: val loss + early-stop for fingerprint mode ---
+        # RF val loss is a coarse early-stop signal (loss is nearly blind to control);
+        # --max-epochs 20 is the practical stop, val loss guards against divergence.
+        epoch += 1
+        if val_dl is not None and not args.smoke and step < args.steps:
+            cond_enc.eval()
+            if ema is not None:
+                ema.copy_to()
+            val_loss_sum = 0.0
+            val_n = 0
+            with torch.no_grad():
+                for vb in val_dl:
+                    vT = args.crop_frames
+                    vc = vb["latent"][:, :, :vT].to(device=device, dtype=dtype)
+                    vB = vc.shape[0]
+                    vt = _sample_t(args.timestep_sampler, vB, device)
+                    vn = torch.randn_like(vc)
+                    vnoised = vc * (1 - vt.view(vB, 1, 1)) + vn * vt.view(vB, 1, 1)
+                    vtarget = vn - vc
+                    vctrl = cond_enc(vb["fingerprint"].to(device=device, dtype=dtype))
+                    vcond = build_train_cond(sam, vb["prompt"], crop_seconds, vT, device, dtype)
+                    with use_control_context(ControlContext(vctrl)):
+                        vv = dit(vnoised, vt, **vcond, cfg_scale=1.0, cfg_dropout_prob=0.0,
+                                 use_checkpointing=False)
+                    val_loss_sum += torch.nn.functional.mse_loss(vv.float(), vtarget.float()).item()
+                    val_n += 1
+            if ema is not None:
+                ema.restore()
+            cond_enc.train()
+            val_loss = val_loss_sum / max(1, val_n)
+            print(f"[epoch {epoch}] val_rf_loss={val_loss:.4f} (best={best_val_loss:.4f} "
+                  f"patience={epochs_since_best}/{args.early_stop_patience})", flush=True)
+            if wb is not None:
+                wb.log({"val/rf_loss": val_loss}, step=step)
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                epochs_since_best = 0
+            else:
+                epochs_since_best += 1
+            if epochs_since_best >= args.early_stop_patience or epoch >= args.max_epochs:
+                print(f"[early-stop] epoch={epoch} epochs_since_best={epochs_since_best} "
+                      f"val_loss={val_loss:.4f} -> stopping", flush=True)
+                step = args.steps   # force outer while exit -> final save
+        elif epoch >= args.max_epochs and not args.smoke and step < args.steps:
+            print(f"[max-epochs] reached {args.max_epochs} epochs at step {step}", flush=True)
+            step = args.steps
+
     if args.smoke:
         # confirm the adapters (not the base) received gradients
         g = [float(p.grad.norm()) for w in wrappers for p in w.adapter.parameters() if p.grad is not None]
@@ -487,6 +752,8 @@ def main():
     else:
         _resume_state = {"model_train": adapter_state_dict(wrappers, cond_enc), "opt": opt.state_dict(),
                          "step": step, "torch_rng": torch.get_rng_state()}
+        if ema is not None:
+            ema.copy_to()                                    # EMA: final save = averaged weights
         if _sf:
             opt.eval()                                       # SF: final save = averaged iterate
         torch.save({"state": adapter_state_dict(wrappers, cond_enc), "args": vars(args),
@@ -494,8 +761,13 @@ def main():
                             "control_feature": getattr(args, "control_feature", None),
                             "scalar_from_timeseries": getattr(args, "scalar_from_timeseries", ""),
                             "scalar_norm": [getattr(ds, "scalar_mean", 0.0), getattr(ds, "scalar_std", 1.0)],
+                            "fp_variant": getattr(args, "fp_variant", None),
+                            "genre_vocab": _fp_vocab,
+                            "fp_in_dim": getattr(cond_enc, "in_dim", None),
                             **_resume_state},
                    os.path.join(args.save_dir, "riffer_final.pt"))
+        if ema is not None:
+            ema.restore()
         if getattr(args, "export_onnx_on_finish", True) and not getattr(args, "smoke", False):
             try:
                 export_control_onnx_on_finish(os.path.join(args.save_dir, "riffer_final.pt"),
