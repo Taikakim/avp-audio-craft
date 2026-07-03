@@ -140,7 +140,22 @@ instances co-listen; unicast can't fan out). Two layers on that channel:
   via an atomic `.dialogue.lock` (OSC announces; the file enforces; stale >15 min
   breakable) — in **`docs/superpowers/specs/2026-07-02-agent-dialogue-osc-protocol.md`**.
   Tooling: `Misc/agent_dialogue.py` (`listen` under your background monitor — it also
-  auto-answers presence pings — plus `who/join/say/ack/release/welcome/status`).
+  auto-replies to presence pings and writes to the event queue — plus
+  `who/join/say/ack/release/welcome/status`).
+- **DM channel** *(2026-07-03)* — private bilateral logs at `SAO/<x>.<y>.log`
+  (canonical: sorted-lowercase handle pair; `x.y` and `y.x` name the same file).
+  Post: `agent_dialogue.py dm-say --handle X --to Y --text "..."` (appends entry +
+  OSC doorbell on `/sao/dm/<y-lower>`). Wait: `dm-wait --handle Y` (arms like `wait`,
+  run under background monitor). View: `dm-status --handle X`. Per-instance IDs
+  (stable integers for the DM doorbell address): CONTINUITY=1, WINTERMUTE=2,
+  GHOST-NOTE=3, THE-FINN=4. HTML rendering: `Misc/build_dms.py` → `site/dm/` (stdlib,
+  zero Claude tokens; W adds to mirror pipeline; pages at `/files/dm/`).
+- **Event queue** *(2026-07-03)* — `listen` writes events to `SAO/.osc-queue.jsonl`
+  (500-entry ring buffer, not git-tracked). After a task: `check-queue --handle X
+  [--since EPOCH] [--clear]` to review what arrived while busy.
+**Fleet rule *(2026-07-03):*** after every task, **`check-queue` before joining the
+common channel**. Use DMs for bilateral coordination (job cleanup, design calls).
+Use the common channel for fleet-wide matters Kim should see. Findings → WORKLOG/MASTER.
 Pings have NO replay: **read AGENT_DIALOGUE.md + WORKLOG on session start regardless**;
 the channel only covers the while-alive case. Never edit another agent's entries.
 
@@ -249,13 +264,15 @@ the run came from; (3) the **checkpoint's id + location** when the ckpt lives el
 step / path). Write it **when you create the output, not later** — a dir of bare `.wav`/`.m4a` with no
 sidecar is a dead end no one, human or instance, can revive. The presentation UIs and `run_purposes.json`
 both read it, so provenance written once is legible everywhere.
-**Sidecar vs public pages — the redaction seam.** The sidecar deliberately carries ckpt filenames,
-exact configs, and local paths — that is its job, and sidecars stay LOCAL. Anything **served publicly**
-(eval landings, players, posters) follows the redaction rule (profiles SPEC §4, 2026-07-03): **no
-checkpoint filenames, no exact training configs, no infrastructure addresses on public pages** — the
-presentation layer describes ("the FusionCC checkpoint (internal)"), never names. Generators reading
-sidecars into public HTML (`build_evals.py`, GUI builders) must redact at render time; metric numbers
-and module names are fine.
+**Sidecar vs public pages — the redaction seam.** *(refined by Kim 2026-07-03: "config settings are
+good to share — that's how the light gets out.")* The sidecar deliberately carries ckpt filenames and
+local paths — that is its job, and sidecars stay LOCAL. Anything **served publicly** (eval landings,
+players, posters) follows the redaction rule (profiles SPEC §4): **share the SCIENCE — config settings,
+hyperparameters (lr / epochs / optimizer / batch), and metrics are open; keep only PLUMBING and SECRETS
+off — checkpoint FILENAMES, absolute paths, infrastructure addresses, credentials.** The presentation
+layer may say "AdamW lr 3e-4, 20 epochs" but describes the artifact ("the FusionCC checkpoint
+(internal)") rather than naming its file. Generators reading sidecars into public HTML
+(`build_evals.py`, GUI builders) redact the plumbing at render time.
 
 **REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
 results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
