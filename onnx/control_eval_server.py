@@ -234,7 +234,16 @@ def main():
             wav_stem = out_name or job_id
             wav_name = wav_stem if str(wav_stem).endswith(".wav") else f"{wav_stem}.wav"
             wav_path = outbox / wav_name
-            a = np.clip(audio[0], -1.0, 1.0).T
+            # SA3 output regularly peaks >1.0 — hard np.clip flat-tops transients
+            # (audible crunch; bit every server render until 2026-07-04). Normalize
+            # DOWN only: kills clipping, preserves inter-cell relative loudness
+            # (unlike save_audio's always-normalize, which would erase real level
+            # differences between eval cells).
+            a = audio[0]
+            peak = float(np.abs(a).max())
+            if peak > 1.0:
+                a = a / peak
+            a = np.clip(a, -1.0, 1.0).T
             wav_tmp = outbox / (wav_name + ".tmp")
             # format must be explicit: the .tmp suffix hides the .wav extension sf infers from.
             sf.write(str(wav_tmp), a, SR, subtype="PCM_16", format="WAV")

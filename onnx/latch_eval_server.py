@@ -233,7 +233,13 @@ def main():
 
                     wav_name = f"{job_id}_{feature}_{p_idx}_{tag}.wav"
                     wav_tmp = outbox / (wav_name + ".tmp")
-                    a = np.clip(audio[0], -1.0, 1.0).T
+                    # normalize DOWN only (peak>1.0): SA3 peaks over full scale and
+                    # hard np.clip flat-tops transients — see control_eval_server.py.
+                    a = audio[0]
+                    peak = float(np.abs(a).max())
+                    if peak > 1.0:
+                        a = a / peak
+                    a = np.clip(a, -1.0, 1.0).T
                     # format must be explicit: the .tmp suffix hides the .wav extension sf infers.
                     sf.write(str(wav_tmp), a, SR, subtype="PCM_16", format="WAV")
                     os.replace(wav_tmp, outbox / wav_name)
