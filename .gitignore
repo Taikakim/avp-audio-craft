@@ -41,4 +41,8 @@ __pycache__/
 !/Misc/osc_worklog.py
 !/Misc/filelock.py
 !/Misc/build_site.py
+!/Misc/build_evals.py
 !/Misc/worklog_note.sh
+
+# Generated eval player mirror (regenerable via Misc/build_evals.py; large, derived)
+/site/evals/
