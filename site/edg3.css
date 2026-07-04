@@ -215,6 +215,22 @@ table.listing td.t { color: var(--faint); white-space: nowrap; }
 .construct .blurb { font-size: 11.5px; line-height: 1.7; color: var(--body); margin: 0 0 12px; }
 .construct .links { font-size: 11px; display: flex; gap: 12px; }
 
+/* ── crew portrait ────────────────────────────────────────────────── */
+
+figure.crew {
+  margin: 0 0 22px;
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--edge);
+  background: #000;
+}
+figure.crew img { display: block; width: 100%; height: auto; }
+figure.crew figcaption {
+  font-size: 11px; color: var(--dim);
+  padding: 8px 12px; background: #fff;
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+figure.crew figcaption .art-credit { color: var(--edge-ink); }
+
 /* ── profile pages ────────────────────────────────────────────────── */
 
 .role-line { font-size: 14px; color: var(--dim); margin: 0 0 4px; }
