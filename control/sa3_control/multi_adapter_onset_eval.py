@@ -228,6 +228,11 @@ def main():
                     help="comma list of rho=mu guidance strengths; 0 = guidance off for that cell")
     ap.add_argument("--latch-weight", type=float, default=1.0)
     ap.add_argument("--notes", default="", help="run purpose for run_meta.json")
+    ap.add_argument("--glitch", default=None,
+                    help="JSON Condition kwargs (stable-audio-3/scripts/weight_mutations.py) "
+                         "applied to the base DiT BEFORE DoRA/adapters attach — the "
+                         "'guidance on a glitched model' experiment. Fully reproducible "
+                         "from the recipe (mutation_seed).")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -243,6 +248,17 @@ def main():
     sam = StableAudioModel.from_pretrained("medium-base", device=device)
     md = next(sam.model.model.parameters()).dtype
     sr = sam.model.sample_rate
+
+    glitch_recipe = None
+    if args.glitch:
+        import stable_audio_3 as _sa3_pkg
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(_sa3_pkg.__file__))), "scripts"))
+        from weight_mutations import Condition, apply_condition
+        glitch_recipe = json.loads(args.glitch)
+        gsum = apply_condition(sam.dit, Condition(**glitch_recipe))
+        print(f"[glitch] {glitch_recipe['name']}: {gsum['params_touched']} params, "
+              f"blocks {gsum['blocks_touched'][:6]}..", flush=True)
 
     print(f"[init] loading DoRA (parametrized): {args.dora_ckpt}", flush=True)
     sam.load_lora([args.dora_ckpt])
@@ -350,6 +366,7 @@ def main():
                             "style": args.style_ckpt,
                             "latch_head": args.latch_head or None},
             "reference_latent": args.reference_latent,
+            "glitch": glitch_recipe,
             "style_fingerprint": fp_vec,
             "eval": {"prompt": args.prompt, "seed": args.seed, "steps": args.steps,
                      "cfg": args.cfg, "duration": args.duration,
