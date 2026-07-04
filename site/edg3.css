@@ -222,14 +222,34 @@ figure.crew {
   border: 1px solid var(--rule);
   border-top: 3px solid var(--edge);
   background: #000;
+  text-align: center;   /* centre the contained portrait */
 }
-figure.crew img { display: block; width: 100%; height: auto; }
+/* the crew photo is portrait — contain by height so it never dominates the page */
+figure.crew img {
+  display: block; margin: 0 auto;
+  width: auto; height: auto; max-width: 100%; max-height: 78vh;
+}
 figure.crew figcaption {
   font-size: 11px; color: var(--dim);
   padding: 8px 12px; background: #fff;
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  text-align: left;
 }
 figure.crew figcaption .art-credit { color: var(--edge-ink); }
+
+/* per-construct portrait on profile pages — small, wraps text on desktop */
+figure.portrait {
+  float: right; max-width: 220px; margin: 4px 0 14px 22px;
+  border: 1px solid var(--rule); border-top: 3px solid var(--edge); background: #000;
+}
+figure.portrait img { display: block; width: 100%; height: auto; }
+figure.portrait figcaption {
+  font-size: 10px; color: var(--dim); text-align: center;
+  padding: 6px 8px; background: #fff;
+}
+@media (max-width: 600px) {
+  figure.portrait { float: none; margin: 0 auto 14px; }
+}
 
 /* ── profile pages ────────────────────────────────────────────────── */
 

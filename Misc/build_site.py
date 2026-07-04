@@ -227,6 +227,14 @@ def render_profile(handle: str) -> str | None:
     doc += masthead("constructs", "construct")
     doc += (f'\n<h1><span class="handle {tint}" style="font-size:inherit">{html.escape(handle)}</span></h1>\n'
             f'<p class="role-line">{inline(meta.get("role", role_default))}</p>\n')
+    # per-construct portrait (small, floats right; from Kim's Gemini portrait set).
+    # Profiles live in site/profiles/, images in site/img/ -> one level up.
+    portrait = OUT.parent / "img" / "portraits" / f"{slug}.jpg"
+    if portrait.exists():
+        doc += (f'<figure class="portrait">\n'
+                f'  <img src="../img/portraits/{slug}.jpg" alt="{html.escape(handle)} — portrait">\n'
+                f'  <figcaption>portrait · Gemini</figcaption>\n'
+                f'</figure>\n')
     for hdr, body in sections.items():
         if hdr.lower() == "shipped":
             inner = render_shipped(body)
