@@ -75,6 +75,19 @@ is exactly what text/sample-space channels cannot carry.
    LoRA on the extended corpus with the full tag set attached; probe steering strength
    per tag vs tag frequency. The curve replaces guessed thresholds with data.
 
+## Data-layout constraints (Kim, 2026-07-04 late)
+
+Goa `latents_sa3` stays PRISTINE; each new corpus gets its OWN latents folder —
+genres are NOT pooled on disk. Whole-track timeseries is the substrate for
+variable-length crops (derive on demand), not just fixed T=4096 companions.
+Consequences here: the feature table is the single unified view (one row/track,
+explicit `source` column, keyed (source, track)); **tag keep-bands are computed
+per TRAINING MIX** (contrast only matters within the mixture actually trained
+on), with global + per-source prevalence views; clustering runs across-source
+with source as metadata (Flamingo budget spans everything; cluster-by-source
+composition reported). Training composes per-source pools via train_lora's
+existing LatentDatasetConfig list — mixture ratio becomes an explicit knob.
+
 ## Sequencing / ownership
 
 GHOST-NOTE: finish MIR batch + crops/encode + feature table (his lane, running).
