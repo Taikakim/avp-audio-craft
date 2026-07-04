@@ -74,6 +74,14 @@ is exactly what text/sample-space channels cannot carry.
 7. **Threshold-calibration probe (CONTINUITY, before the big run)** — quick throwaway
    LoRA on the extended corpus with the full tag set attached; probe steering strength
    per tag vs tag frequency. The curve replaces guessed thresholds with data.
+   **Kim's hypothesis to test first-class: within goa, YEAR steers strongest.**
+   Probe design: same prompt, sweep the year lane, measure production-feature
+   movement (spectral centroid/rolloff, stereo width, transient sharpness by era).
+   Consequences already adopted: the year FiLM lane is priority one among numeric
+   lanes; era goes EARLY in the T1 template; and `retro` is defined as a STYLISTIC
+   tag (sound palette), not a chronological one — a modern old-school-style track
+   is `retro` + late year, which is exactly how the model untangles the
+   retro~energetic~era confound.
 
 ## Data-layout constraints (Kim, 2026-07-04 late)
 

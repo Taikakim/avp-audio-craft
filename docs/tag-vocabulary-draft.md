@@ -1,4 +1,6 @@
-# Mood tag vocabulary — draft for Kim's veto (goa corpus, 2676 tracks)
+# Mood tag vocabulary — APPROVED (goa corpus, 2676 tracks)
+
+*Kim delegated the veto 2026-07-05 ("i trust your opinion here") — vocabulary as proposed. His steering hypothesis, folded into the plan: within goa, RELEASE YEAR will steer strongest.*
 
 *2026-07-05, CONTINUITY. From W's feature table (adaptive per-tag P75 attach
 threshold on nonzero probs). Goa-only numbers; bands recompute per training mix
