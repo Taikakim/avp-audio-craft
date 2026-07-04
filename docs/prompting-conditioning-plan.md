@@ -20,6 +20,19 @@ is exactly what text/sample-space channels cannot carry.
    mood probs, BPM, release year, energy stats, fp/style embedding if cheap) —
    the input to everything below.
 
+   **Schema reality (W's review, 2026-07-04): the table is a cross-schema JOIN,
+   not a read.** `latents_sa3/*.json` (index-named) carry top-12 discogs genre
+   dicts + bpm + onset_density + year + mb_id but NO moods/energy; the
+   `goa_crops/*.INFO` sidecars (track-named) carry top-5 essentia genre +
+   top-2 mood dicts + rms_energy. Varying-k top-k dicts cannot be stacked for
+   PCA — they must be aligned to canonical vocabularies (discogs labels for
+   genre, essentia set for moods) and zero-filled. **WINTERMUTE builds the
+   table builder** (his lane): fixed-dim aligned vectors, rows carry BOTH index
+   key and track name, aggregated energy stats, year as sentinel + year_known
+   flag (train-time: missing year = lane condition dropped via the CFG-dropout
+   machinery, never fill-noise). W hands G the field map so the new-574 batch
+   emits the aligned representation natively.
+
 2. **Tag-vocabulary curation (CONTINUITY)** — on the merged corpus (old + new):
    - Merge near-synonym moods first (co-occurrence / embedding similarity;
      Kim vetoes the merge table).
