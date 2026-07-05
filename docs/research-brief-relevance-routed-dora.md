@@ -69,8 +69,38 @@ rigor check.
 5. Concept/mechanism **localization + editing in diffusion** (locate-then-edit
    analogues) usable to pick adaptation sites.
 
-## Second-opinion asks (Wintermute)
-- What in the two-axis proposal are we about to REINVENT? (never-reinvent lane)
-- Is the DoRA-direction-onto-on-manifold-subspace idea sound or naive?
-- Rigor on the measurement step: gradient-norm vs Fisher vs our keep_frac — which
-  actually predicts "relevant to steer this target," not just "high-magnitude"?
+## REVISION after W's rigor review (docs/rigor-review-relevance-routed-dora.md)
+W's read reshapes this — the naive parts above are superseded:
+
+1. **Measurement (load-bearing fix):** gradient-norm / Fisher of the RF loss measure
+   RECONSTRUCTION-relevance, which is DEAF to control attributes — re-walking our own
+   proven RF-deafness trap. REPLACE with a **target-conditioned probe-gradient**
+   `∂(probe_X)/∂W` (FusionCC repurposed as a *localizer*: decode z0_hat → frozen
+   attribute probe → backprop), **contrasted against a null** to kill the magnitude
+   confound. Of my three proposed metrics, only **keep_frac/sonar** is measured under
+   the control objective → the only one that tracks steering; use it, not RF-Fisher.
+2. **DoRA-direction-onto-manifold = category error** (weight-space direction ≠
+   latent-space manifold). Salvage only as: regularize the adapter's OUTPUT off-manifold
+   component in PER-LAYER activation space — and gate it behind a pre-check (train one
+   adapter unconstrained, measure output off-manifold energy; if ≈0 the idea is moot,
+   since erased directions already get ~0 gradient). Separate speculative track.
+3. **Novelty honestly scoped:** Axis-1 spatial routing is ~80% AdaLoRA + surgical-
+   finetuning + Fisher — use AdaLoRA as the backbone/baseline, don't ship a weaker
+   static version. The genuine fresh claim is **Axis-2 target-conditioned noise-band
+   reweighting** (eDiff-I/Min-SNR/P2 exist but are unconditional/generic).
+
+## THE MVP (do this first — W's recommendation, adopted)
+**Axis-2 target→noise-band loss reweighting**, ~1-line change: train an era-DoRA with
+the diffusion loss weighted toward LOW-noise timesteps vs a uniform-loss control;
+measure era-adherence + seed-variance with the spectral-balance/centroid meter (from
+the eval-grid work) to catch "cheating." Cheap, falsifiable, and it directly tests
+Kim's era=low-noise hypothesis this week. Ship the smallest target-conditioned
+intervention that beats plain DoRA+AdaLoRA before building the two-axis apparatus.
+
+## Genuine gaps for Finn's survey (refined by W)
+1. Any **target/objective-conditioned PEFT allocation** (importance defined by the
+   downstream CONTROL attribute, not the pretraining loss)?
+2. **Target-conditioned timestep/noise-band** reweighting for a SPECIFIC attribute
+   (beyond generic Min-SNR/P2, beyond eDiff-I's unconditional expert bands)?
+3. **Probe-gradient / concept-localization** for choosing diffusion adaptation sites
+   (locate-then-edit analogues that use an attribute probe, not Fisher).
