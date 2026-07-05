@@ -236,6 +236,11 @@ figure.crew figcaption {
   text-align: left;
 }
 figure.crew figcaption .art-credit { color: var(--edge-ink); }
+/* phones: scale the tall portrait down so it reads as a hero, not a screen-filler
+   (it centres on the black frame; the page clearly continues below the fold) */
+@media (max-width: 600px) {
+  figure.crew img { max-height: 60vh; }
+}
 
 /* per-construct portrait on profile pages — small, wraps text on desktop */
 figure.portrait {
