@@ -24,7 +24,7 @@ STAGING = f"{HOME}/.cache/evals_aac"
 MANTU = "/run/media/kim/Mantu"
 # where a control_runs/<name> folder's REAL source lives (staging is a redacted+
 # transcoded copy whose mtimes are all transcode-day, not run-day)
-SOURCE_DIRS = [f"{MANTU}/sa3_control_runs", f"{MANTU}/sa3_lora_runs"]
+SOURCE_DIRS = [f"{MANTU}/sa3_control_runs", f"{MANTU}/sa3_control_runs/composed_sweep", f"{MANTU}/sa3_lora_runs"]
 # Write the players + landing INTO the staging, colocated with the clips, so
 # WINTERMUTE's existing rsync of ~/.cache/evals_aac -> /files/evals brings them
 # live automatically. index.html/evals.css are additive; clips are never touched.
@@ -288,6 +288,8 @@ def category(name, kind):
         if "zerosep" in n: return "zero-shot separation"
         if "cross" in n:  return "cross-prompt renders"
         if "audition" in n: return "audition renders"
+        if "weight_garden" in n: return "weight-mutation renders"
+        if "glitchheal" in n: return "glitch-heal renders"
         return "renders"
     if n == "_demos":       return "demo clips"
     if "collapse" in n:     return "collapse test"
@@ -295,6 +297,9 @@ def category(name, kind):
     if n.startswith("bracket"): return "bracket sweep"
     if n.startswith("cmp"): return "comparison"
     if n.startswith("onset"): return "onset control"
+    if "multihead_bracket" in n: return "multihead bracket sweep"
+    if "multihead_glitch" in n: return "weight-mutation x control stack"
+    if n.startswith("composed_sweep") or n in ("e_fusion_v2", "a_cc_v2", "e_fusion", "a_cc"): return "composed control sweep"
     return "control run"
 
 def write_folder(kind, name, label, purpose, clips, date_str="", verdict=None):
@@ -389,6 +394,10 @@ def main():
             subtitle = ""
         write_folder(kind, name, label, desc or subtitle, clips, date_str, verdict)
         out[kind].append((name, label, desc, len(clips), date_str, subtitle, verdict))
+    # order runs newest-first within each category (Kim's request). date_str is
+    # "%Y-%m-%d %H:%M" -> lexicographic sort == chronological; undated ("") sorts last.
+    for _k in out:
+        out[_k].sort(key=lambda it: it[4], reverse=True)
     build_landing(out["control_runs"], out["renders"])
     print(f"control_runs: {len(out['control_runs'])} playable folders")
     print(f"renders:      {len(out['renders'])} playable folders")
