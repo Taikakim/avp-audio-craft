@@ -231,3 +231,14 @@ Blending two seeds' per-block DiT activations (staggered by layer) does NOT cros
 
 ### tool · on-manifold beat-aligned bridge experiments (audio-space)
 `onnx/beat_bridge.py` (mid-sample two beat-rich same-BPM latents, downbeat phase-align via frame*ds, 8/16-bar crossfade in a ~1min arrangement, audio2audio-refine the seam pasted back) + `onnx/bridge_crossfade.py` (inpaint bridge + audio2audio refine). REUSE-SUPERSEDED: prefer the latent-space longform CrossfadeStitcher / SDEditReanchor over these (sigma 0.4-0.6, blended prompt, best-of-N).
+
+## 2026-07-06 — warm-start resume for old-format LoRA ckpts [tool]
+Old ckpts (pre on_save_checkpoint fix) lack `pytorch-lightning_version`/`loops`, so
+`trainer.fit(ckpt_path=...)` raises KeyError — but they DO carry `optimizer_states`
+(FusionOpt: full Schedule-Free z/x iterates, m, A, per-param) + `lr_schedulers`.
+Fix: `stable-audio-3/scripts/warm_start.py` (`load_optimizer_state` + `OptimizerWarmStart`
+callback at on_train_start) wired as `train_lora.py --warm_start_ckpt` — weights via the
+existing `load_lora_checkpoint`, optimizer state via the callback. Equivalent to a true
+resume except epoch/step numbering restarts (`--epochs` = ADDITIONAL count). Also: a
+training OOM with only ~7GB allocated on the 16GB card means EXTERNAL VRAM pressure, not
+capacity — gate launches on `rocm-smi` used-VRAM (see `Misc/run_continued_goa.sh`).
