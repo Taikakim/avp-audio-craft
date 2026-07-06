@@ -4,6 +4,22 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Rank-16 Fusion comparison rerun with the improved dataset stack** (Kim 2026-07-07,
+      from the dora_results audition): same recipe as `sa3-goa-dora-47s-b4-cont/x20b3ygb`
+      (the Hall-of-Fame run) but with everything we've built since: tiered captions
+      (T1 era-fronted / T2 Granite / T3 raw via `--caption-sidecar`), curated tag vocab,
+      `--track_type_prob 0.5`, multi-source weighting. Direct A/B against the HoF ckpt.
+- [ ] **Big-rank damping experiment** (Kim's rank-128 "pawn my head" hypothesis: r64 ≤ r16,
+      r128 degrades in-dataset goa into diffuse/impact-less while out-of-dataset prompts
+      survive): try (a) LR scaled by rank — rsLoRA-style `alpha ∝ sqrt(rank)` or lr×~0.35
+      for r128-vs-r16, (b) grad accumulation, (c) EMA over adapter weights (our proven
+      drift fix from the LatCH ES work). Context: `docs/checkpoint-hall-of-fame.md`.
+- [ ] **Novelty-gated update weighting** (Kim's idea, same audition): down-weight updates
+      for material the model already renders well, let "remote areas grow" — cheapest
+      testable form is per-crop focal-style loss reweighting by an EMA of that crop's own
+      RF loss (low loss = familiar = down-weight). Folded into
+      `docs/research-brief-relevance-routed-dora.md` (UPDATE 2026-07-07) as the data-axis
+      sibling of the two existing axes.
 - [x] **Export the *control-adapted* DiT to ONNX** — DONE (2026-06-27). Adapters
       (`to_k`/`to_v`/`to_out` + conditioner) fold into the DiT graph as forward inputs:
       `onnx/export_dit_control_onnx.py` + `onnx/dit_control_onnx_infer.py`,

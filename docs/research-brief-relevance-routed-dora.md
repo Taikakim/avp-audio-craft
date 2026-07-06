@@ -115,6 +115,26 @@ External evidence landed on both sides of this brief:
    categorical concepts. A trained era-DoRA must beat a CAA era-vector at layers ~12/13
    to justify its training cost — add as a baseline arm to the MVP.
 
+## UPDATE 2026-07-07 — Kim's third axis, from the dora_results audition
+Kim, listening to the rank sweep: "I'm not sure if we could bump down the gradient
+update multipliers for stuff already close to what the model does, to try to squeeze
+smaller pinpoint changes there, but let the remote areas grow?" — i.e. **novelty-gated
+update weighting**, a DATA-axis sibling of Axis-1 (where in the network) and Axis-2
+(which noise band): *which examples* get how much update.
+- Cheapest testable form: per-crop **focal-style loss reweighting** — keep an EMA of each
+  crop's RF loss across epochs; low-loss (familiar) crops get down-weighted, high-loss
+  (remote) crops keep full gradient. ~20 lines in the training wrapper, no new probes.
+- Supporting evidence from the same audition: prompt+seed pairs close to base wander
+  after ~2 epochs while remote pairs (p1 s42) were still improving at the last ckpt —
+  exactly the asymmetry this axis would exploit.
+- Prior-art check for FINN: focal loss (Lin 2017) is per-sample by *difficulty*;
+  Min-SNR/P2 are per-timestep; is there published per-sample loss weighting by
+  model-FAMILIARITY (EMA of own loss) in diffusion fine-tuning? Suspect near-empty.
+- Related but distinct: the rank-128 degradation (in-dataset goa diffuses while
+  out-of-dataset prompts survive) suggests big ranks OVERWRITE familiar territory —
+  novelty gating and rank-scaled LR (rsLoRA α∝√r) attack the same failure from the
+  data and parameter sides respectively. See docs/todos.md "Big-rank damping".
+
 ## Genuine gaps for Finn's survey (refined by W)
 1. Any **target/objective-conditioned PEFT allocation** (importance defined by the
    downstream CONTROL attribute, not the pretraining loss)?

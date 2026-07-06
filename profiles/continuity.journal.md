@@ -290,3 +290,17 @@ why the goa layering improves with epochs. (3) evr3x (3x LR) = "collages of disj
 things, the same thing as with images" — the known too-hot-LR failure mode, cross-modal.
 Follow-ups running: evr3x at strength 0.33, 2048-frame latent-crossfade longforms
 (512-frame slerp mid-render, per arm), LatCH-vs-FiLM-vs-both density grid (d3/d7).
+
+## 2026-07-07 — dora_results rank-sweep audition (Kim's full listening pass, on record)
+Depth in `docs/checkpoint-hall-of-fame.md` (new file, entry #1: x20b3ygb_epoch3-step5400,
+r16 fusion ~ep6 overall — "cleanest sound, sounds not diffusing in the spectral image").
+Generalizable findings: (1) post-~ep2 the close-to-base prompt+seeds DRIFT around the best
+solution while remote pairs still improve at last ckpt — the drift finding again, now by
+ear, and the asymmetry motivates Kim's NOVELTY-GATED UPDATE idea (down-weight familiar
+material, let remote areas grow; brief UPDATE 2026-07-07 + todos). (2) rank ladder INVERTS:
+r64 not better than r16, r128-fusion degrades IN-DATASET goa into diffuse/impact-less while
+out-of-dataset prompts survive — Kim "pawns his head" big ranks need damping/regularisation
+(todos: rsLoRA-style lr/alpha scaling + grad-accum + adapter-EMA). (3) AdamW-r128 refuses
+the new style entirely (goa -> "happy synth music"), same AdamW inertia as the FiLM era;
+cross-optimizer soups ~= fusion-only (AdamW does no work). (4) soups lose to raw ckpts.
+Also: docs/todos.md DOES exist (Kim thought not) — new items added at top.
