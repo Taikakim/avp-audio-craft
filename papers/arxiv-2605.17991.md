@@ -51,3 +51,16 @@ Control adapters/LatCH numeric lanes, era axis, meter-in-the-gradient scope law,
 target-conditioned reweighting, activation-steering on SA3, layer×feature maps — the report
 explicitly EXCLUDES inference-time/global/time-varying control ("can be included by
 fine-tuning after release", i.e. our whole lane).
+
+## Addenda from the repo guides (docs/guides/prompting.md + model-overview.md, 2026-07-06)
+- **LoRA portability:** "LoRAs are trained on the base checkpoint. Once trained, they can
+  be applied to the post-trained model and will work as expected" — untested by us; if it
+  holds, audition renders move to 8-step ping-pong (no CFG) at ~6-10x less compute.
+- **Full AudioSparx tag language:** `Genre:` (repeatable), `Instruments:`, `Format: Duo`,
+  `TrackType: Instrument` (stems) / `SFX` — field identifiers present ~50% in training, so
+  bare and prefixed forms both work; field-prefixed T1 variant = another caption axis.
+- **init_noise_level sweet spots** (their numbers): timbre transfer 0.4-0.5, style
+  transfer 0.6 — independently converges with our longform sigma_peak 0.4-0.6 finding.
+  Their feature-stripping order: rising noise removes melody/rhythm first, timbre last.
+- Guide discrepancies (paper is authoritative): overview claims SAME-S 266M / SAME-L 1.7B /
+  medium ~4.75min; paper says 108M / 852M / 6m20s (T=4096 @10.767Hz = 6m20s confirms paper).

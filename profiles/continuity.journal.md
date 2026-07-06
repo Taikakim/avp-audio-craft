@@ -270,3 +270,12 @@ caption/eval prompt of ours despite the paper's strong recommendation — added
 `caption_tools.make_caption_sampler(track_type_prob=)` + `train_lora --track_type_prob`
 (0.5 mirrors base training); `interface/reprompt.py` had the prefixes defined but unused.
 (5) 64 memory embeddings = an SA3-only patching/steering site for the localization sweep.
+
+## 2026-07-06 — SA3 repo-guide addenda (prompting.md + model-overview.md)
+Three usables past the papers: (1) base-trained LoRAs officially apply to the POST-TRAINED
+checkpoint — untested by us, would cut audition renders ~6-10x (8-step ping-pong, no CFG);
+test next GPU window. (2) AudioSparx tag language: repeatable `Genre:`, `Instruments:`,
+`Format:`, `TrackType: Instrument/SFX` — field-prefixed T1 variant is a cheap caption axis.
+(3) Their init_noise_level sweet spots (0.4-0.5 timbre, 0.6 style) independently match our
+longform sigma_peak 0.4-0.6. Guide param counts/durations contradict the paper — paper wins.
+Details: papers/arxiv-2605.17991.md addenda §.
