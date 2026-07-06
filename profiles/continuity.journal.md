@@ -254,3 +254,19 @@ DoRA must beat; (3) THE CAVEAT — localizing weight-space sliders to the bottle
 to functional layers. Brief updated (docs/research-brief-relevance-routed-dora.md UPDATE §),
 knowledge.md row added. Era axis, numeric lanes, self-attn/MLP maps, timestep dim untouched
 by the paper — still ours.
+
+## 2026-07-06 — SAME + SA3 tech reports re-read against current knowledge (Kim's call)
+Full deep-reads: `papers/arxiv-2605.18613.md` (SAME) + `papers/arxiv-2605.17991.md` (SA3).
+Highest-value deltas: (1) SAME latents have semantics TRAINED IN (flow-matching alignment
+loss + single-1x1-conv chroma/ILD regressors + contrastive text alignment) and the decoder
+is noise-robust by construction — explains latent-slerp/LatCH-probe success AND weakens
+naive TADA bottleneck transfer (SAO's acoustics-only VAE ≠ SAME; localize SA3 fresh; the
+layer-14 discriminator tap hints mid-stack anyway). (2) Base model t-sampling truncated at
+0.075 → final ~7.5% of denoising is UNTRAINED extrapolation — mechanism for Kim's
+"controls attack crispness" + a principled disable-late threshold. (3) Timestep shift is
+LENGTH-DEPENDENT (mu 0.5->1.15): noise-band-targeted training must use shifted t'.
+(4) [fix] TrackType prefix ("TrackType: Music, VocalType: Instrumental, ") was in NO
+caption/eval prompt of ours despite the paper's strong recommendation — added
+`caption_tools.make_caption_sampler(track_type_prob=)` + `train_lora --track_type_prob`
+(0.5 mirrors base training); `interface/reprompt.py` had the prefixes defined but unused.
+(5) 64 memory embeddings = an SA3-only patching/steering site for the localization sweep.
