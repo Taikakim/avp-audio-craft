@@ -206,3 +206,28 @@ keep_frac telemetry into FusionOpt (TDD); train.py auto-export fix; the same-pla
 A/B and audition page builders. The Lion question that started it all: "what's the
 defining characteristic, and can we combine it with our Fusion Optimiser?" — answered
 over two days with one significant win, four honest postmortems, and a protocol.
+
+### 2026-07-04 — weight garden: the mutation that never was
+Kim heard that all of Antigravity's weight-mutation renders "sound exactly the same" — they were. The DiT transformer stores its blocks as `layers.N`; the draft filtered module names for `"blocks."`, matched nothing, and silently mutated zero tensors. Checkpoint probe: all 8 saved 4.6 GB .pts bit-identical (0/997 keys differ); wav deltas were GPU nondeterminism (~0.006 RMS). Two lessons made structural: (1) mutation code must FAIL LOUD when its target filter matches nothing (`collect_targets` now raises); (2) unseeded artistic mutations are worthless — if you can't recreate the model state that made the sound you loved, it's a slot machine, not an instrument. Rewrite: `stable-audio-3/scripts/weight_mutations.py` (pure, 33 tests) + `mutate_weights.py` CLI — mutation-seeded recipes (~50 bytes) replace checkpoints, baseline A/B, attn/mlp/norm targeting (attn≈time/structure, mlp≈timbre — hypothesis to verify by ear), early-vs-late decay, SVD spectral tilt, Game-of-Life generations rendered as an evolution series.
+
+## 2026-07-05
+
+### tool · tiered caption system + multi-source train_lora
+Built `stable-audio-3/scripts/caption_tools.py` (era-fronted T1 templates, tiered T1/T2/T3 sampler via PreEncodedDataset custom_metadata_fn, 25 tests) + `stable-audio-3/scripts/train_lora.py` (--caption-sidecar / --source_weights / --resume_ckpt). Sidecar captions keep pristine latents pristine. Full-corpus clustering (5 feature tables label-aligned, 3-block whitened k-means -> 36 clusters); stratified Flamingo budget `mir/data/feature_tables/flamingo_budget.json`. Plan `docs/prompting-conditioning-plan.md`.
+
+### tool · layer x feature encodability-map scaffold
+`latch/probe_layer_feature_map.py` (+ test) — which DiT layer's per-frame activations encode which audio feature (the target-conditioned localizer W's rigor review calls for). CPU-tested; GPU activation extraction is a documented deferred interface. Features are free from `*.TIMESERIES.npz` (21 per-frame fields @ 4096 = latent grid).
+
+### note · torch 2.14 alpha is SLOWER than torch 2.10+CK for SA3 training
+Measured 2.2-2.6 s/step in `SAO/.venv` (torch 2.14 / ROCm 7.15) vs ~1.5 s/step in `stable-audio-3/.venv` (torch 2.10, now with G's from-source CK). CPU inference needs `SA3_DISABLE_FLASH_ATTN=1` (flash-attn has no CPU backend). Never `HIP_VISIBLE_DEVICES=""`.
+
+## 2026-07-06
+
+### reuse · longform generation ALREADY IS the crossfade/transition solution (SDEdit) — a night lost re-deriving it
+The longform generator is built on SDEdit (Meng 2021): sliding-window inpaint-continuation clamped to the previous tail's latents (drift-free) + latent-space slerp crossfade + SDEdit reanchor (audio2audio partial-noise, sigma_peak 0.4-0.6 sweet spot) + best-of-N MERT/Audiobox scoring. Fully implemented + 20 tests: `stable-audio-3/stable_audio_3/inference/longform.py` (CrossfadeStitcher, SDEditReanchor, InpaintContinuationGenerator, LongFormRenderer, DriftMonitor); spec `stable-audio-3/docs/superpowers/specs/2026-06-19-longform-sdedit-reanchor-crossfade-design.md`; steered/best-of-N `control/sa3_control/steered_longform.py`; latent beat-match `mir/scripts/latent_server.py` + `mir/scripts/latent_crossfader.py`. LESSON: this is the case that motivated the DISCOVERY PHASE gate — a full night went to re-inventing it in audio space.
+
+### RULED OUT · layer-activation crossfade between two seeds — off-manifold artifacts
+Blending two seeds' per-block DiT activations (staggered by layer) does NOT crossfade them: the latent state carries the seed identity independently of the activations, so it saturates, and the blended velocity field is off-manifold -> spectral artifacts (Kim's ear confirmed; the dead-walker lesson wearing a new hat). `onnx/steered_layer_crossfade.py` (+ test). Use the on-manifold path (inpaint / SDEdit) instead.
+
+### tool · on-manifold beat-aligned bridge experiments (audio-space)
+`onnx/beat_bridge.py` (mid-sample two beat-rich same-BPM latents, downbeat phase-align via frame*ds, 8/16-bar crossfade in a ~1min arrangement, audio2audio-refine the seam pasted back) + `onnx/bridge_crossfade.py` (inpaint bridge + audio2audio refine). REUSE-SUPERSEDED: prefer the latent-space longform CrossfadeStitcher / SDEditReanchor over these (sigma 0.4-0.6, blended prompt, best-of-N).

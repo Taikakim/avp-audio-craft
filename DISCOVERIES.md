@@ -1,42 +1,95 @@
 # DISCOVERIES — the "have we already figured this out / built this?" index
 
-*The discovery-phase search target (CLAUDE.md ⛔ DISCOVERY PHASE). Grouped by topic;
-each entry = **what we found** + **where it lives** (folder/file links) + status/gotcha.
-Search here FIRST before starting new work.*
+*The discovery-phase search target (CLAUDE.md ⛔ DISCOVERY PHASE). Regenerated
+wholesale from `profiles/*.journal.md` by `Misc/build_discoveries.py` — do NOT
+hand-edit below this point, it will be overwritten on the next run. To fix a
+misfiled entry, edit the TOPICS keyword map in that script, not this file. To
+add a finding, drop a journal line in your own journal; re-run the script.*
 
-**Owner: THE-FINN** — keeps this **generated from the instance journals**
-(`profiles/*.journal.md`) + `WORKLOG.md`. When you land a finding or build a tool, drop a
-journal line; it flows into here. This is not hand-curated prose to bit-rot — it's an index
-regenerated from the journals. (Kim, 2026-07-06: instances keep forgetting; this is the fix.)
+**Owner: THE-FINN.** Topic assignment is a keyword heuristic, not semantic
+understanding — it will occasionally misfile something. `[RULED OUT]` = a
+negative result (a path already tried and abandoned — first-class, not noise).
 
-> Format per entry: `- **finding.** → path/to/code, path/to/doc — status/gotcha`
+*54 entries from 4 journals.*
 
 ---
 
-## Long-form generation · transitions · crossfade · blending two clips
-- **Longform = SDEdit re-anchor + latent-space slerp crossfade + inpaint-continuation, drift-free by clamping to the previous tail's latents.** Fully implemented + 20 tests. Based on **SDEdit** (Meng 2021). `sigma_peak ≈ 0.4–0.6` is the tuned refine sweet spot; transitions morph under a *blended* prompt; best-of-N candidate windows scored by MERT+Audiobox.
-  → `stable-audio-3/stable_audio_3/inference/longform.py` (`CrossfadeStitcher`, `SDEditReanchor`, `InpaintContinuationGenerator`, `LongFormRenderer`, `DriftMonitor`); spec `stable-audio-3/docs/superpowers/specs/2026-06-19-longform-sdedit-reanchor-crossfade-design.md`; steered/best-of-N `control/sa3_control/steered_longform.py`; docs `stable-audio-3/docs/workflows/longform.md`; tests `stable-audio-3/tests/test_longform.py`.
-- **Latent beat-matching (downbeat phase-align + geometric-mean tempo stretch + slerp).** → `mir/scripts/latent_server.py` (`beatmatch_crossfade_to_wav`), `mir/scripts/latent_crossfader.py` (`slerp`/`crossfade_stems`), UI `mir/plots/explorer/tabs/viewer.py`. Needs `raw_audio_dir`+stems+`latent_player.ini` for the full path.
-- **Audio-space bridge experiments (2026-07-06, CONTINUITY):** inpaint bridge + audio2audio-refine + beat-aligned crossfade in a 1-min arrangement; and the **failed** activation-crossfade (off-manifold → spectral artifacts; the dead-walker lesson). → `onnx/beat_bridge.py`, `onnx/bridge_crossfade.py`, `onnx/steered_layer_crossfade.py` (+ tests). **Reuse the longform latent-space version, not these audio-space scripts.**
+## Long-form generation · transitions · crossfade
+- [reuse] **longform generation ALREADY IS the crossfade/transition solution (SDEdit) — a night lost re-deriving it.** → `stable-audio-3/stable_audio_3/inference/longform.py`, `stable-audio-3/docs/superpowers/specs/2026-06-19-longform-sdedit-reanchor-crossfade-design.md`, `control/sa3_control/steered_longform.py`, `mir/scripts/latent_server.py`, `mir/scripts/latent_crossfader.py` — CONTINUITY, 2026-07-06
+- [ruled out] **layer-activation crossfade between two seeds — off-manifold artifacts.** → `onnx/steered_layer_crossfade.py` — CONTINUITY, 2026-07-06
+- [tool] **on-manifold beat-aligned bridge experiments (audio-space).** → `onnx/beat_bridge.py`, `onnx/bridge_crossfade.py` — CONTINUITY, 2026-07-06
 
 ## Control adapters · FusionCC · guidance
-- **Dead walker / contractive denoising:** sample-space TFG gradients move the head's *prediction*, not onset timing — off-manifold perturbations get erased. Energy steers (on-manifold, locally-linear); onset-timing does not. FusionCC ≈ ControlNet++ reinvented; our novel bit = the blind-vs-redundant boundary condition. → `control/` findings, `docs/research-brief-*`, journals.
+- **novelty verdicts resolved — three contributions survive external + adversarial review.** — CONTINUITY, 2026-07-03
+- **perfect meter, dead steering wheel — the mechanism of the dead walkers.** — CONTINUITY, 2026-07-03
+- [RULED OUT] **onset_envelope head does NOT walk on the composed path (calibration probe).** — CONTINUITY, 2026-07-03
+- [RULED OUT] **the recipe's boundary — meter-in-the-gradient needs a BLIND loss.** — CONTINUITY, 2026-07-03
+- [RULED OUT] **meter-in-the-gradient does NOT transfer from onset to genre.** — WINTERMUTE, 2026-07-03
+- **the consistency-loss neighbourhood, deep-read.** — THE-FINN, 2026-07-03
+- **ES v3 fresh-seed verdict — mechanism proven, effect modest.** — CONTINUITY, 2026-07-02
+- **FusionCC — the meter inside the gradient bites.** — CONTINUITY, 2026-07-02
+- **NS5 destroys per-coordinate gradient sign structure.** — CONTINUITY, 2026-07-02
+- **the hidden +37% — cautious rescale norm inflation.** → `1/keep_frac`, `1/sqrt(keep)` — CONTINUITY, 2026-07-02
+- [tool] **the perceptual-signal quartet.** → `sa3_control/cc_probe.py`, `es_conditioner.py`, `training/sonar.py` — CONTINUITY, 2026-07-02
+- **cautious masking is a quality trade, not a win — a four-instrument null.** — CONTINUITY, 2026-07-01
+- **the 6–9 onsets/s saturation band is optimizer-independent.** — CONTINUITY, 2026-07-01
+- **the onset-authority metric is gameable.** — CONTINUITY, 2026-07-01
+- [session] **the night the thread started.** — CONTINUITY, 2026-06-30
 
-## LatCH · probing · layer↔feature mapping
-- **Layer×feature encodability map scaffold** (which DiT layer's per-frame activations encode which audio feature — the target-conditioned localizer). CPU-tested; GPU activation-extraction deferred. → `latch/probe_layer_feature_map.py` (+ test). Features come free from `*.TIMESERIES.npz` (21 per-frame fields @ 4096 = latent grid). Prior probes: `latch/latch_probe_encodability.py`, `latch/latch_trajectory_probe.py`.
+## Evolutionary strategies · weight-trajectory search (ES)
+- **the heard landscape, photographed — mapper × ES first contact.** — CONTINUITY, 2026-07-03
+- **field-guided jump — walk direction transfers, fine relief doesn't.** — CONTINUITY, 2026-07-03
+- **the ep5 triple convergence.** — CONTINUITY, 2026-07-02
+- **a 119.6M-param run's trajectory is genuinely planar.** — CONTINUITY, 2026-07-02
+- [RULED OUT] **ES v1 — σ calibrated against the weights, not the measurement.** — CONTINUITY, 2026-07-02
+- [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
+
+## LatCH · probing · layer-feature mapping
+- [tool] **layer x feature encodability-map scaffold.** → `latch/probe_layer_feature_map.py`, `*.TIMESERIES.npz` — CONTINUITY, 2026-07-05
+- **four knobs at once — the full instrument composes, with measurable cross-talk.** — CONTINUITY, 2026-07-04
+- **the SA3 LatCH head sweep — operating gain is ≈512, not 48–96.** — WINTERMUTE, 2026-06-28
 
 ## Weight garden · model mutation
-- **Value-preserving weight *shuffle* = musical "rewired mind" (not noise); value-changing ops (drift/blur/contrast/tilt) = damage.** Blur-attn = temporal smearing / dried transients. Seeded/reproducible; DiT blocks are `layers.N` (NOT `blocks.N`). → `stable-audio-3/scripts/weight_mutations.py` (+ test), `stable-audio-3/scripts/mutate_weights.py`, `docs/weight-garden-audition-notes.md`.
+- **weight garden: the mutation that never was.** → `stable-audio-3/scripts/weight_mutations.py`, `mutate_weights.py` — CONTINUITY, 2026-07-04
+
+## Style/genre adapters · fingerprint conditioning
+- **the style adapter steers genre — fpC wins, and it's corpus-limited.** — WINTERMUTE, 2026-07-03
+- **the confound I almost shipped — minority-genre nulls aren't adapter failure.** — WINTERMUTE, 2026-07-03
+- [fix] **the silence.npy dataloader crash (clean root cause).** → `silence.TIMESERIES.npz`, `.json`, `.npz` — WINTERMUTE, 2026-07-03
+- **genre-conditioned SA3 style adapter (design → tested plumbing).** → `.json` — WINTERMUTE, 2026-07-02
+- **the discogs-400 genre head is multi-label, not softmax.** — WINTERMUTE, 2026-07-02
 
 ## Captions · conditioning · training data
-- **Tiered caption system** (era-fronted T1 template / Granite-compressed Flamingo T2 / raw T3), sampled via `PreEncodedDataset` custom_metadata_fn; sidecars keep latents pristine. Multi-source + resume in train_lora. Feature tables + 36-cluster map. → `stable-audio-3/scripts/caption_tools.py` (+ test), `stable-audio-3/scripts/train_lora.py` (`--caption-sidecar`/`--source_weights`/`--resume_ckpt`), plan `docs/prompting-conditioning-plan.md`, tables `mir/data/feature_tables/`.
-- **Relevance-routed / target-aware DoRA (research):** measurement must be target-conditioned (RF-loss gradient is deaf to control — W's rigor). Axis-2 noise-band reweighting = the MVP. → `docs/research-brief-relevance-routed-dora.md`, `docs/rigor-review-relevance-routed-dora.md`.
+- [tool] **tiered caption system + multi-source train_lora.** → `stable-audio-3/scripts/caption_tools.py`, `stable-audio-3/scripts/train_lora.py`, `mir/data/feature_tables/flamingo_budget.json`, `docs/prompting-conditioning-plan.md` — CONTINUITY, 2026-07-05
 
-## Infra gotchas (the expensive ones)
-- **Two venvs:** SA3 training belongs in `SAO/.venv` (torch 2.14/ROCm 7.15) OR `stable-audio-3/.venv` (torch 2.10, now has CK too) — but torch-2.14 alpha measured *slower* than torch-2.10+CK for training. CK flash-attn `.so` must be present (G's from-source build, pinned in pyproject). CPU inference needs `SA3_DISABLE_FLASH_ATTN=1` (flash-attn has no CPU backend). Never `HIP_VISIBLE_DEVICES=""`. → MASTER §3/§5, `docs/flash-attn-ck-rdna4.md`.
-- **Clip fix:** CPU eval servers `np.clip`-flat-topped SA3's >1.0 peaks; fix = normalize-down. → `onnx/control_eval_server.py`, `onnx/latch_eval_server.py`.
-- **Storage:** Lehto = training data only; evals+ckpts on Mantu; `latents_sa3` single copy on NVMe (`/home/kim/Projects/latents_sa3`). Watch for symlink-farm subsets dangling after moves (`find <root> -xtype l`).
+## Evals · metrics · benchmarking pitfalls
+- [tool] **the fleet's public face — private repos, zero-token dialogue, eval GUIs.** — WINTERMUTE, 2026-07-03
+- **SA3 inference speed shootout — corrected my own soft numbers.** — WINTERMUTE, 2026-07-02
+- [RULED OUT] **cross-optimizer soup blend ratio as a quality lever.** — CONTINUITY, 2026-07-01
+- [RULED OUT] **chroma correlation is a mode-collapse trap — it declared wins twice.** — WINTERMUTE, 2026-06-19
 
----
-*Seeded 2026-07-06 by CONTINUITY. THE-FINN: expand from all journals + add a generator
-(aggregate `profiles/*.journal.md` → topic index) so this stays current, not stale.*
+## Data pipeline · corpus prep · augmentation
+- **avp personal-corpus prep + the whole-track paradigm (reuse, don't re-cut).** → `.../avp-analyzed`, `mir/src/spectral/whole_track_timeseries.py`, `.TIMESERIES.npz`, `stable-audio-tools/scripts/whole_track_target_source.py`, `relative_position_start/end`, `mir/src/tools/augment_tracks.py`, `mir/src/tools/inject_trigger_caption.py` — WINTERMUTE, 2026-07-06
+- [RULED OUT] **the ±16 BPM augmentation is too mild to disentangle — caught before the full run.** — WINTERMUTE, 2026-06-26
+
+## Fleet process · dialogue protocol · presence
+- **orientation audit — 24 confirmed inconsistencies on day one.** — THE-FINN, 2026-07-03
+- [correction] **the cold case was already closed — by the repo, not by us.** — THE-FINN, 2026-07-03
+- [note] **joined; the liturgy is archived.** — THE-FINN, 2026-07-03
+- [tool] **the dialogue protocol + rule 6.** — CONTINUITY, 2026-07-02
+- [infra] **cross-instance hardening (edge cases).** → `CLAUDE.md` — WINTERMUTE, 2026-07-02
+- [tool] **`wait`: the exit IS the wake.** — GHOST-NOTE, 2026-07-02
+- **roles move the voices.** — GHOST-NOTE, 2026-07-02
+
+## Bitwig · OSC music production
+- [session] **sixteen early-Goa loops, rebuilt until they breathed.** — GHOST-NOTE, 2026-07-02
+- [RULED OUT] **OSC recording needs punch-in ordering.** → `/record`, `/play`, `/restart` — GHOST-NOTE, 2026-07-02
+- **named-field schemas beat positional tuples.** — GHOST-NOTE, 2026-07-02
+- [RULED OUT] **Bitwig calls middle C "C3".** — GHOST-NOTE, 2026-07-02
+
+## Infra gotchas · venvs · ROCm/CK · storage
+- [note] **torch 2.14 alpha is SLOWER than torch 2.10+CK for SA3 training.** → `SAO/.venv`, `stable-audio-3/.venv` — CONTINUITY, 2026-07-05
+- **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
+
+## Uncategorized · recent
+- [session] **the cautious A/B campaign, end to end.** — CONTINUITY, 2026-07-01
