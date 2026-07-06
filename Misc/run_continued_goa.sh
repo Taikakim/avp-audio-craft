@@ -19,8 +19,10 @@ export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPE
 export PYTHONPATH=$SA3:$SA3/scripts:$SAO/control
 cd "$SA3" || exit 1
 FT=$SAO/../mir/data/feature_tables
-# Mantu1 = the LIVE drive (sdd1); /run/media/kim/Mantu is a stale dead mount (I/O errors).
-CKPT=/run/media/kim/Mantu1/sa3_lora_runs/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt
+# Kim disconnected Mantu1 for a few hours (2026-07-06 evening) — ckpt copied to
+# NVMe and outputs land there too; rsync results back to Mantu1/sa3_lora_runs
+# when the drive returns.
+CKPT=/home/kim/Projects/sa3_local_runs/epoch=4-step=6750.ckpt
 
 # Pre-flight: refuse to start if someone else holds >1.5GB VRAM (the 01:11
 # OOM lesson — this run needs most of the card).
@@ -47,7 +49,7 @@ $PY scripts/train_lora.py \
   --base_precision bf16 --no_demos --num_workers 6 --seed 42 \
   --exclude seconds_total \
   --warm_start_ckpt "$CKPT" \
-  --save_dir /run/media/kim/Mantu1/sa3_lora_runs/dora128_newcap_continued_3more \
+  --save_dir /home/kim/Projects/sa3_local_runs/dora128_newcap_continued_3more \
   --name dora128_newcap_cont3 --logger csv \
   > "$SAO/logs/dora128_newcap_continued3.log" 2>&1
 "$SAO/Misc/worklog_note.sh" continued-goa "done — 3 more epochs -> dora128_newcap_continued_3more (now 8ep total) ($(date +%H:%M))"
