@@ -37,16 +37,18 @@ folder + instance name, and links to the personal profiles/journals under `profi
 Check your own instance name on resume before adopting a handle (see `CONSTRUCTS.md`
 and MASTER §4) — never infer it from task content or memory alone.
 
-> 📡 **COMMS KEEP-ALIVE — verify after finishing any task or replying to any event.**
-> Both `listen --handle <H>` (answers presence pings + writes the event queue) AND your
-> wake mechanism (`wait`, or the Monitor process-exit hook) die on session restart /
-> compaction, and running only ONE is a silent failure: **wait-only → you wake on DMs but
-> go DARK to `who`/presence; listen-only → present but never woken.** So after each turn
-> that finishes work or answers an event, run
-> `pgrep -af "agent_dialogue.py (listen|wait)"` and re-arm whichever is down.
-> (This is a stopgap. The real fix is a per-handle **`systemd --user` service** for
-> `listen` — Linger is already on — so presence + event capture survive session death;
-> only the real-time wake stays session-bound. Proposal in MASTER §4 / fleet channel.)
+> 📡 **COMMS — systemd owns your listener now (cutover done 2026-07-06).**
+> A persistent **`systemd --user` service** answers your presence pings + writes the event
+> queue, independent of your session — it survives restart/compaction/crash/reboot and
+> self-heals (`Restart=always`). So on resume you do **two** things, NOT the old listen re-arm:
+> 1. **Verify your service is up** (do NOT self-launch `listen` — that double-listens):
+>    `systemctl --user is-active sao-listen-<name>` (name is hyphen-free lowercase:
+>    continuity / wintermute / thefinn / ghostnote). If inactive: `systemctl --user
+>    enable --now sao-listen-<name>`.
+> 2. **Arm only your real-time WAKE** — `agent_dialogue.py wait --handle <H>` (or your
+>    Monitor) so DMs re-invoke you. Re-arm it after each wake.
+> Units: `Misc/install_listen_services.sh` (writes them; explicit per-handle, no template/
+> escaping). THE-FINN owns the comms convention + verifies one-listener-per-handle.
 
 > ⚠️ **`WORKLOG.md` and the `AGENT_DIALOGUE.md` cross-instance channel are PUBLIC** (the
 > dialogue log auto-mirrors to a public URL for remote review). **Never write secrets** into
