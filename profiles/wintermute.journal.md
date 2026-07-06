@@ -114,3 +114,48 @@ still scores chroma ≈0.9 against any Goa reference, because they share keys. T
 cannot see mode collapse. The fix is a **cross-reference audio difference** — generate with ref A vs
 ref B (same seed/prompt), RMS-diff the outputs; low diff = collapsed. The most expensive kind of wrong
 is the metric that agrees with you.
+
+## 2026-07-06 — avp personal-corpus prep + the whole-track paradigm (reuse, don't re-cut)
+
+Prepping Kim's own music (Aavepyörä/Summamutikka) as a LoRA/DoRA conditioning corpus on the
+UUID drive (`.../avp-analyzed`). Key paradigm correction worth writing down so nobody re-cuts
+short crops again: **for SA3 LoRA/DoRA training we do NOT pre-cut fixed crops.** Store
+**full-length latents + whole-track 100 Hz timeseries**, and sample a random beat-aligned
+window per step — the consumer slices `[start,end]` and resamples to the latent's `n_frames`,
+so any training length works.
+- Producer: `mir/src/spectral/whole_track_timeseries.py` (100 Hz `.TIMESERIES.npz`, per-stem too).
+- Consumer/slicer: `stable-audio-tools/scripts/whole_track_target_source.py`
+  (`WholeTrackTargetSource.get(key, feature, start, end, n_frames)` → `resample_axis0`).
+- Encode unit = **4096-frame (≈380 s) crops at begin/mid/end**, ~2/track, overlapping for tracks
+  under 8192 frames (verified against `latents_sa3` companion `relative_position_start/end`).
+- I mistakenly ran the OLD 11.9 s crop pipeline first (config default) — deleted those; separation
+  + augmentation were paradigm-independent so they were reused, not wasted.
+
+Tools built (reusable):
+- `mir/src/tools/augment_tracks.py` — **Bungee** pitch/tempo augmenter (129× RT), runs under
+  **mir/.venv** (bungee_python lives there, NOT mir/bin/python). Spec: pitch ±1/±2 st; tempo
+  ±5/±10 % rounded to integer BPM **capped at 155**, deduped; augments the **4 stems too**
+  (bungee-shift the clean stems — faster + higher quality than re-separating), per-variant track
+  folders; ProcessPool parallel, resumable.
+- `mir/src/tools/inject_trigger_caption.py` — writes the aavepyora/aavepyörä trigger caption
+  (deterministic per track) in place of Flamingo, for the personal-style LoRA.
+
+Negative-result lessons: (1) orphan-pruning an analyzed corpus by matching **only `.flac`** source
+files wrongly trashed folders for `.wav`-source keepers (3 of mine) — match **all audio extensions**.
+(2) `pgrep -f 'script.py'` inside a shell whose own command line contains that string self-matches —
+use `ps | grep '[s]cript'`. Reversible-delete (move to trash dir) caught the .flac bug harmlessly.
+
+## 2026-07-07 — the recurring render-clipping bug, quantified (Kim: "we fix this every second day")
+
+Ran mir's saturation/clipping calc (`mir/src/spectral/saturation.py` + a peak/clip-fraction
+pass) over all 791 SA3 eval renders from the last 48h (`Mantu1/sa3_lora_runs`). Verdict:
+**74% have clipped samples, 77% peak at exactly 0 dBFS** — the raw SA3 output (>1.0 peaks)
+is being CLAMPED to [-1,1] on write, not peak-normalized. Worst 3.6% of samples clipped
+(psy prompt, newcap5/evr3x arms). **Root cause is INCONSISTENCY, not a universal miss:**
+`newcap8_promptstyle_longform` is clean (−0.5 dB headroom, 0% clip) while density_control /
+promptstyle / bracket clip 67–100%. So the peak-normalize fix EXISTS and works — it's just
+not applied in every render script. Each new render script re-introduces a raw/clamped save →
+that's the "every second day" recurrence. **Durable fix: route EVERY SA3 render/save through
+`sa3_control.audio_io.save_audio()` (peak-normalize), or add a written-file assert (no sample
+> target ceiling ~ −1 dB).** Not a one-off re-render — a centralization/guard problem.
+Audit script: scratchpad/clip_audit.py. See [[avp-corpus-overnight]] for the parallel MIR work.

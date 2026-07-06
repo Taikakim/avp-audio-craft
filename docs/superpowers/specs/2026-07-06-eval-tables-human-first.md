@@ -128,3 +128,20 @@ CE/CU/PC/PQ (+ any measured features), sortable, colour-graded, dual-pane to com
 - **Row identity when a combo exists in one checkpoint but not the other** (ragged sweeps) — proposal:
   show the row in both, blank the missing side; keep alignment. Confirm.
 - **Which pane drives sort** when both are visible — proposal: whichever header was last clicked.
+
+## 12. Layout + provenance requirements (Kim, 2026-07-07)
+
+- **Use the full viewport width for table/compare views.** The reading-column `.wrap`
+  (max-width 900 px) is for prose; the **dual-pane compare and sortable tables must NOT be
+  confined to it** — on a wide monitor (e.g. 2560 px) two panes crammed into 900 px are
+  unreadable. The compare container (`.tc-wrap`) breaks out full-bleed to `min(2200px,94vw)`,
+  centered (implemented 2026-07-07 in `eval_grid.TABLE_CSS`). Any future table view inherits
+  this — do not re-confine the tables to the prose column.
+- **Selecting a checkpoint MUST display its training parameters.** The per-pane checkpoint
+  dropdown, on selection, shows that checkpoint's **training hyperparameters** (lr, epochs/steps,
+  optimizer, batch size, LoRA/DoRA rank, crop length, scalar_field if any) in the provenance
+  box — sourced from the run's training `args` (`run_meta.json` / training-args sidecar),
+  **redacted per §4**: hyperparameters and config are open (that IS the science being compared);
+  checkpoint FILENAMES and absolute PATHS stay off. This is the whole point of a checkpoint
+  comparison — the human is choosing *between training recipes*, so the recipe must be visible
+  next to the audio, not just an opaque arm label.

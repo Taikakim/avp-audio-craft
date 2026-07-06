@@ -26,6 +26,12 @@ approach**, run this search and say what you found:
 2. `grep` the instance **journals** (`profiles/*.journal.md`) and **`WORKLOG.md`** for your
    keywords — the journals hold findings (incl. negative results) before they reach the index.
 3. `ARCHITECTURE.md` (tooling reuse) + `papers/knowledge.md` (never-reinvent paper index).
+4. **For any eval / eval-page / eval-UI / audition-deployment work**, read the eval-tables spec
+   **`docs/superpowers/specs/2026-07-06-eval-tables-human-first.md`** FIRST — it's the running
+   source of truth for the eval UI (layout/full-width tables, dual-pane compare, per-checkpoint
+   training-params display, same-playhead, redaction rules). Kim's feedback keeps accreting there;
+   check it so requirements already agreed (e.g. show training params on checkpoint select, tables
+   use full viewport width) aren't re-lost.
 
 Only build once this comes up empty. If you find prior work, **reuse it or state explicitly
 why you're not**. If you did new work, drop a journal line so THE-FINN can fold it into
