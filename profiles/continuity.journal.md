@@ -330,3 +330,11 @@ on. (2) FiLM gain, canonical-by-ear: "gain 6 never worked" — flat 1.75 chosen 
 (1 too little, 2 often too much at the top; ridge caveat: low densities take up to ~3,
 >8 onsets/s needs <2 -> ~1.5). density grid re-rendering as newcap8_density_control_g175
 (film+both at 1.75/0.875; latch clips hardlinked over, rho unaffected).
+
+## 2026-07-07 — FiLM "broken" diagnosis: overdrive, not wiring [fix verified]
+Kim heard the gain-6 density grid's FiLM clips as pure glitches. A/B verified: the SAME
+harness code path at gain 1.75 steers correctly (request d7 -> measured 7.45; proven
+multi_eval path: 7.65). So FusionCC ckpt healthy, harness wiring correct, gain 6 ≈ 3.5x
+past the working point = glitch regime. Confirms the gain_knee sigma/knee story from the
+control side. LatCH beat_grid impulse retest: d3≈d7 by ear (Kim) — leaning negative,
+consistent with the 14-head sweep; heads are hyperparameter-particular (rho/mu/schedule).
