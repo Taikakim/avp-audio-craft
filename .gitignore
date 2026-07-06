@@ -30,6 +30,11 @@ __pycache__/
 !/profiles/
 !/site/
 
+# Paper knowledge: track the never-reinvent index + per-paper abstracts (shared
+# findings, previously single-copy local); the PDFs themselves stay untracked (large)
+!/papers/
+/papers/*.pdf
+
 # Per-file edit locks (Misc/filelock.py) and the dialogue lock — never tracked
 *.lock
 

@@ -242,3 +242,15 @@ existing `load_lora_checkpoint`, optimizer state via the callback. Equivalent to
 resume except epoch/step numbering restarts (`--epochs` = ADDITIONAL count). Also: a
 training OOM with only ~7GB allocated on the 16GB card means EXTERNAL VRAM pressure, not
 capacity — gate launches on `rocm-smi` used-VRAM (see `Misc/run_continued_goa.sh`).
+
+## 2026-07-06 — TADA! deep-read: the semantic bottleneck is real, and it cuts both ways
+arXiv:2602.11910 (papers/arxiv-2602.11910.md): activation patching finds cross-attn layers
+{12,13}/24 in Stable Audio Open (SA3's closest kin) causally controlling ~ALL high-level
+musical concepts. Three uses: (1) their patching protocol = the causal localizer our
+relevance-routed-DoRA Axis-1 needed (cross-check vs `latch/probe_layer_feature_map.py`);
+(2) training-free localized CAA steering = a new control lane + the baseline any concept-
+DoRA must beat; (3) THE CAVEAT — localizing weight-space sliders to the bottleneck HURT
+(−21% AUC, −75% smoothness): route rank softly by importance, never hard-confine adapters
+to functional layers. Brief updated (docs/research-brief-relevance-routed-dora.md UPDATE §),
+knowledge.md row added. Era axis, numeric lanes, self-attn/MLP maps, timestep dim untouched
+by the paper — still ours.

@@ -97,6 +97,24 @@ the eval-grid work) to catch "cheating." Cheap, falsifiable, and it directly tes
 Kim's era=low-noise hypothesis this week. Ship the smallest target-conditioned
 intervention that beats plain DoRA+AdaLoRA before building the two-axis apparatus.
 
+## UPDATE 2026-07-06 — TADA! (arXiv:2602.11910, deep-read, papers/arxiv-2602.11910.md)
+External evidence landed on both sides of this brief:
+1. **Premise confirmed causally:** activation patching finds a *semantic bottleneck* —
+   cross-attn layers {12,13} of 24 in **Stable Audio Open** (closest architecture to SA3)
+   control ~all high-level musical concepts. Sparse-layer relevance is real, and their
+   patching protocol (counterfactual prompt pairs → patch K/V per layer → similarity-gain
+   impact score) is a better *causal* localizer than probe-R² alone — adopt as the
+   measurement for Axis-1, cross-checked against our encodability map.
+2. **⚠️ Direct warning for Axis-1 routing:** localizing *weight-space* concept sliders
+   (LoRA-family) to the functional layers **hurt them** (−21% AUC, −75% smoothness),
+   while localizing *activation* steering helped (+46–49%). Weight adapters add new
+   mechanisms rather than reusing intrinsic ones — so route RANK by measured importance,
+   but do NOT hard-confine the adapter to the bottleneck layers. Soft allocation
+   (AdaLoRA-style) over hard masking.
+3. **Cheaper baseline to beat:** localized CAA steering is training-free and SOTA for
+   categorical concepts. A trained era-DoRA must beat a CAA era-vector at layers ~12/13
+   to justify its training cost — add as a baseline arm to the MVP.
+
 ## Genuine gaps for Finn's survey (refined by W)
 1. Any **target/objective-conditioned PEFT allocation** (importance defined by the
    downstream CONTROL attribute, not the pretraining loss)?
