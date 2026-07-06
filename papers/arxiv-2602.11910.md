@@ -19,6 +19,10 @@ all nine concepts; ablating everything *except* those layers ≈ no concept gain
 bottleneck, causally verified).
 
 **2. Steering (the "how"):** h′ = h + α·v_c at the functional layers only.
+*(Scope correction 2026-07-07, caught by FINN's sourcebook revisit: the steering
+benchmark below ran on **Ace-Step**, not Stable Audio Open — SAO appears only in the
+localization experiment. Steering-method rankings are one further model-transfer away
+from SA3 than this abstract originally implied.)*
 v_c built by **CAA** (mean paired-run activation difference, time-averaged), **AUSteer**
 (sparse sign-agreement top-s dims), or **TopK SAE** trained on cross-attn activations
 (steer = sum of top-scoring decoder columns). Benchmarked against prompt-level (PCI,
