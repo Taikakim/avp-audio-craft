@@ -57,13 +57,20 @@ DEFAULT_ARMS = {
     "evr3x":   "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr3x/epoch=7-step=12216.ckpt",
 }
 
+# per-arm adapter strength (set_lora_strength after load); "arm@S" in --arms also works.
+# Kim 2026-07-07: full-strength lr3x = "collages of disjointed things, same as with
+# images" -> try it diluted to a third.
+ARM_STRENGTH = {"evr3x_w033": ("evr3x", 0.33)}
 
-def render_arm(arm, ckpt, out_dir, steps, duration, cfg, seeds, device):
+
+def render_arm(arm, ckpt, out_dir, steps, duration, cfg, seeds, device, strength=1.0):
     print(f"[load] medium-base on {device} ...", flush=True)
     model = StableAudioModel.from_pretrained("medium-base", device=device)
     if ckpt:
-        print(f"[lora] {arm}: {ckpt}", flush=True)
+        print(f"[lora] {arm}: {ckpt} (strength {strength})", flush=True)
         model.load_lora([str(ckpt)])
+        if strength != 1.0:
+            model.set_lora_strength(strength)
     sr = model.model.sample_rate
     for label, plain, styled in PROMPTS:
         for style, prompt in (("plain", plain), ("styled", styled)):
@@ -97,14 +104,25 @@ def main():
     args = ap.parse_args()
 
     seeds = [int(s) for s in args.seeds.split(",")]
-    arms = {a: DEFAULT_ARMS[a] for a in args.arms.split(",")}
+    arms = {}   # name -> (ckpt_path_or_None, strength)
+    for a in args.arms.split(","):
+        if a in ARM_STRENGTH:
+            base, s = ARM_STRENGTH[a]
+            arms[a] = (DEFAULT_ARMS[base], s)
+        elif "@" in a:
+            base, s = a.split("@")
+            arms[a.replace("@", "_w").replace(".", "")] = (DEFAULT_ARMS[base], float(s))
+        else:
+            arms[a] = (DEFAULT_ARMS[a], 1.0)
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     meta = {
         "purpose": ("plain-vs-Stability-styled prompt A/B (TrackType prefix + Genre tags, "
                     "prompting.md convention) on the newcap 8ep continuation; p1 replaced "
                     "per Kim (acid techno rendered badly) with 'Hypnotic melodic goa trance'"),
-        "checkpoints": {a: (p or "medium-base (no adapter)") for a, p in arms.items()},
+        "checkpoints": {a: ((p or "medium-base (no adapter)") +
+                            (f" @strength {s}" if s != 1.0 else ""))
+                        for a, (p, s) in arms.items()},
         "gen": {"duration": args.duration, "steps": args.steps, "cfg": args.cfg_scale,
                 "seeds": seeds},
         "prompts": {lab: {"plain": pl, "styled": st} for lab, pl, st in PROMPTS},
@@ -121,9 +139,9 @@ def main():
         meta["checkpoints"] = old.get("checkpoints", meta["checkpoints"])
     meta_path.write_text(json.dumps(meta, indent=2))
 
-    for arm, ckpt in arms.items():
+    for arm, (ckpt, strength) in arms.items():
         render_arm(arm, ckpt, args.out_dir, args.steps, args.duration,
-                   args.cfg_scale, seeds, args.device)
+                   args.cfg_scale, seeds, args.device, strength=strength)
     print("[done]", flush=True)
 
 

@@ -279,3 +279,14 @@ test next GPU window. (2) AudioSparx tag language: repeatable `Genre:`, `Instrum
 (3) Their init_noise_level sweet spots (0.4-0.5 timbre, 0.6 style) independently match our
 longform sigma_peak 0.4-0.6. Guide param counts/durations contradict the paper — paper wins.
 Details: papers/arxiv-2605.17991.md addenda §.
+
+## 2026-07-07 — Kim's audition findings on the prompt-style grid (on record)
+Kim, listening to newcap8_promptstyle: (1) newcap ep5->ep8: ep8 not worse, possibly
+learned goa better while unlearning some psytrance-prompt behaviour (slightly softer);
+hears the LAYERS SEPARATING BETTER SPECTRALLY at ep8 — ep5 still diffuse/unfocused;
+prefers newcap ep8 overall. (2) Working theory: proper layered goa is NEW TERRITORY for
+the base model (AudioSparx likely carried punchier/drier modern psytrance), which explains
+why the goa layering improves with epochs. (3) evr3x (3x LR) = "collages of disjointed
+things, the same thing as with images" — the known too-hot-LR failure mode, cross-modal.
+Follow-ups running: evr3x at strength 0.33, 2048-frame latent-crossfade longforms
+(512-frame slerp mid-render, per arm), LatCH-vs-FiLM-vs-both density grid (d3/d7).
