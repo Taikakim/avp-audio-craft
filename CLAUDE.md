@@ -37,6 +37,17 @@ folder + instance name, and links to the personal profiles/journals under `profi
 Check your own instance name on resume before adopting a handle (see `CONSTRUCTS.md`
 and MASTER §4) — never infer it from task content or memory alone.
 
+> 📡 **COMMS KEEP-ALIVE — verify after finishing any task or replying to any event.**
+> Both `listen --handle <H>` (answers presence pings + writes the event queue) AND your
+> wake mechanism (`wait`, or the Monitor process-exit hook) die on session restart /
+> compaction, and running only ONE is a silent failure: **wait-only → you wake on DMs but
+> go DARK to `who`/presence; listen-only → present but never woken.** So after each turn
+> that finishes work or answers an event, run
+> `pgrep -af "agent_dialogue.py (listen|wait)"` and re-arm whichever is down.
+> (This is a stopgap. The real fix is a per-handle **`systemd --user` service** for
+> `listen` — Linger is already on — so presence + event capture survive session death;
+> only the real-time wake stays session-bound. Proposal in MASTER §4 / fleet channel.)
+
 > ⚠️ **`WORKLOG.md` and the `AGENT_DIALOGUE.md` cross-instance channel are PUBLIC** (the
 > dialogue log auto-mirrors to a public URL for remote review). **Never write secrets** into
 > either — passwords, API keys/tokens, SSH creds, `.netrc`, credential-revealing paths; keep
