@@ -4,6 +4,18 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Outro/empty-space cheating in onset-density training** (Kim 2026-07-07, gain_knee
+      audition): the model can hit a low density request by rendering an outro/track-ending
+      with empty space — the scalar target counts silence. Fixes to try: (a) compute the
+      training scalar over ACTIVE frames only (RMS-gated onset density), (b) downweight or
+      exclude end-of-track crops (high `relative_position_end` + low-RMS tail), (c) eval
+      side: measure density over the active region only so the cheat stops scoring.
+- [ ] **Re-render the density-control grid at calibrated FiLM gains** (~1.5-2.75, or the
+      ridge schedule): the 2026-07-07 432-clip grid used gain 6 (steered_longform default),
+      but the gain_knee audition puts the style-flip knee at ~1.4-1.5 for the June adapter —
+      if the new grid sounds style-flipped rather than density-modulated, gain was too hot.
+      Verify where FusionCC's knee sits (it may differ) before re-rendering.
+
 - [ ] **Rank-16 Fusion comparison rerun with the improved dataset stack** (Kim 2026-07-07,
       from the dora_results audition): same recipe as `sa3-goa-dora-47s-b4-cont/x20b3ygb`
       (the Hall-of-Fame run) but with everything we've built since: tiered captions

@@ -304,3 +304,19 @@ out-of-dataset prompts survive — Kim "pawns his head" big ranks need damping/r
 the new style entirely (goa -> "happy synth music"), same AdamW inertia as the FiLM era;
 cross-optimizer soups ~= fusion-only (AdamW does no work). (4) soups lose to raw ckpts.
 Also: docs/todos.md DOES exist (Kim thought not) — new items added at top.
+
+## 2026-07-07 — gain_knee audition decoded: the bimodality is a sigma story
+Kim's ear on the old (2026-06-24, pre-run_meta — ckpt UNRECORDED, the exact anonymous-dump
+failure the sidecar rule now prevents) FiLM gain sweep (g1.1-1.9 x d1-12, seed 777):
+two-state attractor with a consistent style-flip knee at g~1.4-1.5 across densities; a real
+control gradient ONLY near d5-d8. Explanation that fits: the density request is standardized
+by scalar_norm (mean 7.219, std 1.424) -> d1=-4.4sigma, d3=-3sigma, d12=+3.4sigma — requests
+beyond ~±2sigma are far OUTSIDE the trained conditioning distribution, so the adapter tokens
+stop meaning "density" and act as a generic steering vector; the knee is where gain lets them
+overpower the text conditioning -> basin flip, then saturation (identical outputs above).
+Within-distribution requests get genuine control — the 6-9 onsets/s saturation band finding,
+now confirmed by ear. Double-time creep at d9+ = the known tempo-shortcut. NEW TRAINING IDEA
+from Kim on record: the model cheats low density via outros/empty endings -> RMS-gate the
+training scalar / downweight end-of-track crops (todos). ⚠️ Flagged: tonight's 432-clip
+density grid used FiLM gain 6 — beyond the June adapter's knee; if it sounds style-flipped,
+re-render at ~1.5-2.75 after locating FusionCC's own knee.
