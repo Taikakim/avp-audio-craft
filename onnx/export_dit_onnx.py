@@ -59,11 +59,19 @@ def force_exportable_attention() -> None:
     T.flex_attention_compiled = None
 
 
-def load_dit_only(model_name: str, device: str):
+def load_dit_only(model_name: str, device: str, lora_ckpt: str | None = None,
+                   lora_strength: float = 1.0):
     """Build ONLY the DiffusionTransformer from the cached config + weights —
     NO T5-Gemma / conditioners (text is precached, so they're not in the runtime
     path and t5gemma may not even be downloaded). Returns (DiffusionTransformer,
-    diffusion_config_dict)."""
+    diffusion_config_dict).
+
+    lora_ckpt: optional path to a train_lora.py Lightning checkpoint. The
+    checkpoint's LoRA/DoRA state dict keys are saved relative to DiTWrapper
+    (e.g. 'model.to_timestep_embed...'), matching this wrapper's own
+    state_dict() convention exactly (NOT the full ConditionedDiffusionModelWrapper's
+    'model.model.'/'model.conditioner.' split) -- so the adapter is applied to
+    `wrapper` directly, merged, and only then is `.model` extracted for export."""
     import glob
     import json
     from safetensors.torch import load_file
@@ -90,6 +98,18 @@ def load_dit_only(model_name: str, device: str):
     if missing:
         print(f"[load] {len(missing)} missing keys (e.g. {missing[:2]}) — check config match")
     wrapper.eval().to(device)
+
+    if lora_ckpt:
+        from stable_audio_3.models.lora.loader import load_and_apply_loras
+        from stable_audio_3.models.lora.model import merge_lora, set_lora_strength
+        print(f"[lora] loading + merging {lora_ckpt} onto the DiT wrapper "
+              f"(strength={lora_strength}) ...")
+        load_and_apply_loras(wrapper, [lora_ckpt], model_type="dit_only")
+        if lora_strength != 1.0:
+            set_lora_strength(wrapper, lora_strength)
+        merge_lora(wrapper)
+        print("[lora] merged — parametrizations removed, weights baked in")
+
     return wrapper.model, diff_cfg          # .model is the DiffusionTransformer
 
 
@@ -117,6 +137,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", default="medium-base")
+    ap.add_argument("--lora-ckpt", type=str, default=None,
+                    help="optional train_lora.py .ckpt to merge into the DiT before export "
+                         "(LoRA/DoRA only -- the checkpoint must carry no conditioner-side keys)")
+    ap.add_argument("--lora-strength", type=float, default=1.0,
+                    help="scale the adapter delta before merging (1.0 = as-trained; "
+                         "e.g. 0.8/1.4 to probe weaker/stronger-than-trained effect)")
     ap.add_argument("--frames", type=int, required=True,
                     help="fixed latent length T (ladder rung: 256/512/1024/2048/4096)")
     ap.add_argument("--text-seq", type=int, default=128,
@@ -135,7 +161,8 @@ def main():
 
     force_exportable_attention()
     print(f"[load] DiffusionTransformer only (no T5-Gemma) for {args.model!r} on {args.device} ...")
-    dit, diff_cfg = load_dit_only(args.model, args.device)
+    dit, diff_cfg = load_dit_only(args.model, args.device, lora_ckpt=args.lora_ckpt,
+                                   lora_strength=args.lora_strength)
     dit = dit.eval().float().requires_grad_(False)
     force_exportable_attention()
     for m in dit.modules():
@@ -170,7 +197,9 @@ def main():
     print(f"[torch] -> {tuple(ref.shape)} in {time.time() - t0:.1f}s")
 
     bsuf = f"_b{B}" if B != 1 else ""
-    out = args.out or Path(f"dit_{args.model}_L{T}{bsuf}.onnx")
+    ssuf = f"_s{args.lora_strength:g}" if (args.lora_ckpt and args.lora_strength != 1.0) else ""
+    lsuf = f"_lora-{Path(args.lora_ckpt).parent.name}{ssuf}" if args.lora_ckpt else ""
+    out = args.out or Path(f"dit_{args.model}_L{T}{bsuf}{lsuf}.onnx")
     print(f"[onnx] exporting opset {args.opset} -> {out}")
     t0 = time.time()
     with torch.no_grad():

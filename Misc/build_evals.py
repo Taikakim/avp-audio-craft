@@ -17,14 +17,37 @@ folders — clips untouched) and every folder becomes a player instead of a dump
 Same-playhead behaviour (MASTER §4): click a cell to play from the shared playhead;
 switching cells keeps the position; re-click stops.
 """
-import os, glob, json, html, shutil, re
+import os, glob, json, html, shutil, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import eval_grid
 
 HOME = os.path.expanduser("~")
 STAGING = f"{HOME}/.cache/evals_aac"
-MANTU = "/run/media/kim/Mantu"
+
+def _resolve_mantu():
+    """The removable drive can remount under a different udisks2 id after a drop
+    (Mantu -> Mantu1, etc. — MASTER §2's 'if a path 404s, the drive is unmounted,
+    not gone', now also true of the mount NAME). Probe candidates in order, pick
+    the first that's actually readable (an I/O-erroring stale mount entry can
+    still exist as a directory, so os.path.isdir alone isn't enough)."""
+    for cand in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1"):
+        try:
+            os.listdir(cand)
+            return cand
+        except OSError:
+            continue
+    return "/run/media/kim/Mantu"  # nothing readable; keep the canonical name so errors are legible
+
+MANTU = _resolve_mantu()
 # where a control_runs/<name> folder's REAL source lives (staging is a redacted+
 # transcoded copy whose mtimes are all transcode-day, not run-day)
 SOURCE_DIRS = [f"{MANTU}/sa3_control_runs", f"{MANTU}/sa3_control_runs/composed_sweep", f"{MANTU}/sa3_lora_runs"]
+SA3 = f"{HOME}/Projects/SAO/stable-audio-3"
+# where a renders/<name> folder's REAL source lives (raw wavs + pq_scores.json/
+# quality_eval.json; the staging copy under STAGING/renders/<name> only has the
+# transcoded .m4a clips, no metrics json)
+RENDERS_SOURCE_DIRS = [f"{SA3}/renders_dora", f"{SA3}/renders_dora2", f"{SA3}/renders_soups",
+                       f"{SA3}/renders_dora_caut", f"{SA3}/renders_soups_caut"]
 # Write the players + landing INTO the staging, colocated with the clips, so
 # WINTERMUTE's existing rsync of ~/.cache/evals_aac -> /files/evals brings them
 # live automatically. index.html/evals.css are additive; clips are never touched.
@@ -46,6 +69,15 @@ def redact(s):
     s = _ABS.sub('…', str(s)); s = _CKPT.sub('[checkpoint]', s)
     s = _ADDR.sub('[addr]', s); s = _VENV.sub('[venv]', s)
     return s
+
+# The 8 curated riffer-evals pages linked from the landing's "Curated players"
+# section. Their source of truth is ~/riffer-evals/ (a separate git repo, built
+# by its own ~/build_*.py generators) -- main() copies them + sync_riffer_clips()
+# below into OUT/riffer/ on every run so the landing's relative links actually
+# resolve, both locally (file://) and once WINTERMUTE rsyncs OUT to the server.
+RIFFER_HTML = ["onset_eval.html", "disentangle.html", "dora_results.html",
+               "chroma_steer.html", "gain_knee.html", "mp.html", "traj.html",
+               "latch_sweep.html"]
 
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
 --dim:#7a8a8e;--faint:#9aa7a9;--rule:#c9d2d0;--rule-light:#e2e6e2;--edge:#0f9e99;--edge-ink:#0c807c;
@@ -82,11 +114,18 @@ PLAYER_JS = """<audio id="pl"></audio><script>
 let cur=null,ph=0;const a=document.getElementById('pl');
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}});
+function seekAndPlay(pos){
+ // seeking as soon as loadedmetadata fires can land on a not-yet-buffered part
+ // of the compressed stream and glitch right at playback start (Kim, 2026-07-07)
+ const go=()=>{try{a.currentTime=Math.min(pos,(a.duration||1e9)-0.05)}catch(e){}a.play()};
+ if(a.readyState>=3){go();return}
+ let done=false;const fire=()=>{if(done)return;done=true;go()};
+ a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
 function play(el){const s=el.dataset.src;
  if(cur===el){a.pause();el.classList.remove('playing');cur=null;return}
  if(cur)cur.classList.remove('playing');
- a.src=s;a.addEventListener('loadedmetadata',function h(){a.currentTime=Math.min(ph,(a.duration||ph));a.removeEventListener('loadedmetadata',h)});
- a.play();cur=el;el.classList.add('playing')}
+ a.pause();a.src=s;seekAndPlay(ph);
+ cur=el;el.classList.add('playing')}
 </script>"""
 
 def head(title, depth):
@@ -119,10 +158,47 @@ def real_date(kind, name):
                         pass
                 if times:
                     return min(times)
+    if kind == "renders":
+        d = find_renders_source_dir(name)
+        if d:
+            times = []
+            for f in glob.glob(f"{d}/**/*", recursive=True):
+                if os.path.basename(f) in ("run_meta.json", "_meta.json", "pq_scores.json", "quality_eval.json"):
+                    continue
+                try:
+                    times.append(os.path.getmtime(f))
+                except OSError:
+                    pass
+            if times:
+                return min(times)
     try:
         return os.path.getmtime(f"{STAGING}/{kind}/{name}")
     except OSError:
         return None
+
+RENDERS_SOURCE_ROOTS = [f"{MANTU}/sa3_lora_runs"]  # root+name join, like SOURCE_DIRS -- new
+# sa3_lora_runs-hosted render sets (e.g. newcap8_promptstyle) resolve here without
+# needing a new hardcoded entry per eval.
+
+def find_renders_source_dir(name):
+    """RENDERS_SOURCE_DIRS entry whose basename matches name, else a
+    RENDERS_SOURCE_ROOTS/<name> join, else None."""
+    for d in RENDERS_SOURCE_DIRS:
+        if os.path.basename(d.rstrip("/")) == name and os.path.isdir(d):
+            return d
+    for root in RENDERS_SOURCE_ROOTS:
+        d = f"{root}/{name}"
+        if os.path.isdir(d):
+            return d
+    return None
+
+def find_source_dir(name):
+    """First SOURCE_DIRS/<name> that exists on Mantu, or None."""
+    for root in SOURCE_DIRS:
+        d = f"{root}/{name}"
+        if os.path.isdir(d):
+            return d
+    return None
 
 def fmt_date(ts):
     if ts is None:
@@ -302,6 +378,162 @@ def category(name, kind):
     if n.startswith("composed_sweep") or n in ("e_fusion_v2", "a_cc_v2", "e_fusion", "a_cc"): return "composed control sweep"
     return "control run"
 
+def write_grid_folder(kind, name, label, purpose, date_str, source_dir):
+    """Rich gain x density grid renderer (eval_grid.py) for onset_eval.json-bearing
+    dirs — restores build_onset_eval_page.py's layout, generalized. See
+    docs/superpowers/specs/2026-07-05-eval-grid-rich-renderer.md."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    staged_stems = {os.path.splitext(f)[0] for f in os.listdir(staged_dir) if f.endswith(".m4a")}
+
+    def clip_lookup(stem):
+        return f"{stem}.m4a" if stem in staged_stems else None
+
+    records = eval_grid.load_grid_data(source_dir, clip_lookup)
+    if not records:
+        return False
+
+    head_html = head(f"{html.escape(label)} — evals", depth=2)
+    head_html += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+                  '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    footer_html = '<footer>aavepyora.online · evals · same-playhead · gain x density grid</footer></div></body></html>'
+    doc = eval_grid.render_grid_page(
+        head_html=head_html, css_extra=eval_grid.GRID_CSS, title=label, label=label,
+        purpose=redact(purpose), date_str=date_str, records=records, footer_html=footer_html,
+    )
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
+def write_table_folder(kind, name, label, purpose, date_str, source_dir):
+    """Human-first sortable table + dual-checkpoint compare (eval_grid.py) for
+    DoRA-audition dirs (pq_scores.json rows carrying a `checkpoint` key). See
+    docs/superpowers/specs/2026-07-06-eval-tables-human-first.md."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    staged_stems = {os.path.relpath(os.path.splitext(f)[0], staged_dir)
+                    for f in glob.glob(f"{staged_dir}/**/*.m4a", recursive=True)}
+
+    def clip_lookup(stem):
+        return f"{stem}.m4a" if stem in staged_stems else None
+
+    records = eval_grid.load_dora_data(source_dir, clip_lookup)
+    if not records:
+        return False
+
+    head_html = head(f"{html.escape(label)} — evals", depth=2)
+    head_html += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+                  '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    footer_html = '<footer>aavepyora.online · evals · same-playhead · sortable table + checkpoint compare</footer></div></body></html>'
+    doc = eval_grid.render_table_compare_page(
+        head_html=head_html, title=label, label=label,
+        purpose=redact(purpose), date_str=date_str, records=records, footer_html=footer_html,
+    )
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
+def write_style_compare_folder(kind, name, label, purpose, date_str, source_dir):
+    """Dual-pane arm compare with plain-vs-styled columns side by side
+    (pq_scores.json rows carrying `prompt_key`/`style`). See eval_grid.py's
+    load_promptstyle_data()/render_style_compare_page()."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    staged_stems = {os.path.relpath(os.path.splitext(f)[0], staged_dir)
+                    for f in glob.glob(f"{staged_dir}/**/*.m4a", recursive=True)}
+
+    def clip_lookup(stem):
+        return f"{stem}.m4a" if stem in staged_stems else None
+
+    records = eval_grid.load_promptstyle_data(source_dir, clip_lookup)
+    if not records:
+        return False
+
+    head_html = head(f"{html.escape(label)} — evals", depth=2)
+    head_html += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+                  '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    footer_html = '<footer>aavepyora.online · evals · same-playhead · plain-vs-styled arm compare</footer></div></body></html>'
+    doc = eval_grid.render_style_compare_page(
+        head_html=head_html, title=label, label=label,
+        purpose=redact(purpose), date_str=date_str, records=records, footer_html=footer_html,
+    )
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
+def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_names):
+    """Aggregate many INDEPENDENT gain x density grids (e.g. dozens of separately-
+    linked 'onset control N' runs) into one dropdown-browsable audit page (Kim,
+    2026-07-07: dozens of individual landing links is "messy AF"). Each member's
+    clips stay in its own existing staged folder -- this writes a NEW sibling
+    folder (`name`) whose index.html references them via relative ../<member>/
+    paths, so nothing about the per-member folders needs to move."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    os.makedirs(staged_dir, exist_ok=True)
+    all_records = []
+    for member in member_names:
+        source_dir = find_source_dir(member)
+        if not source_dir or not os.path.exists(f"{source_dir}/onset_eval.json"):
+            continue
+        member_dir = f"{OUT}/{kind}/{member}"
+        staged_stems = {os.path.relpath(os.path.splitext(f)[0], member_dir)
+                        for f in glob.glob(f"{member_dir}/**/*.m4a", recursive=True)}
+
+        def clip_lookup(stem, _member=member, _stems=staged_stems):
+            return f"../{_member}/{stem}.m4a" if stem in _stems else None
+
+        records = eval_grid.load_grid_data(source_dir, clip_lookup)
+        if records:
+            all_records.extend(records)
+    if not all_records:
+        return False
+
+    head_html = head(f"{html.escape(label)} — evals", depth=2)
+    head_html += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+                  '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    footer_html = '<footer>aavepyora.online · evals · same-playhead · multi-checkpoint audit</footer></div></body></html>'
+    doc = eval_grid.render_checkpoint_audit_page(
+        head_html=head_html, title=label, label=label,
+        purpose=redact(purpose), date_str=date_str, records=all_records, footer_html=footer_html,
+    )
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
+def write_misc_bundle_folder(kind, name, label, purpose, date_str, entries):
+    """Index page for the leftover uncurated runs that don't share a common
+    schema (audition/multiprompt/trajectory/soup/pilot/bracket/etc -- too
+    heterogeneous for one shared table). Each member keeps its OWN
+    individually-generated player page (written earlier in pass 2, exactly
+    like any other folder -- some of these are large multi-epoch telemetry
+    sweeps with thousands of clips, far too many to inline onto one page).
+    This page is just a compact table-of-contents linking to them, so the
+    landing page collapses dozens of links into one without forcing
+    thousands of clips onto a single page. entries: list of
+    (member_name, label, desc, n_clips, date_str, subtitle, verdict)."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    os.makedirs(staged_dir, exist_ok=True)
+    doc = head(f"{html.escape(label)} — evals", depth=2)
+    doc += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+            '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    doc += f'<h1>{html.escape(label)}</h1>'
+    if date_str:
+        doc += f'<p class="faint">{html.escape(date_str)}</p>'
+    if purpose:
+        doc += f'<p class="lede">{html.escape(purpose)}</p>'
+    doc += (f'<p class="faint">{len(entries)} uncurated runs, each linked to its own player below '
+            '(bracket sweeps, pilots, audition/multiprompt variants, and a few large multi-epoch '
+            'telemetry sweeps -- too structurally different from each other, and in some cases too '
+            'large, to fold onto one shared page)</p>')
+    for member_name, m_label, m_desc, n_clips, m_date, m_subtitle, m_verdict in sorted(
+            entries, key=lambda e: e[4], reverse=True):
+        doc += (f'<div class="run"><div class="name"><a href="../{html.escape(member_name)}/index.html">'
+                f'{html.escape(m_label)}</a></div>')
+        if m_date:
+            doc += f'<div class="when">{html.escape(m_date)}</div>'
+        subtitle = m_subtitle or m_desc
+        if subtitle:
+            doc += f'<div class="desc">{html.escape(subtitle)}</div>'
+        if m_verdict:
+            doc += f'<div class="verdict">{html.escape(m_verdict)}</div>'
+        doc += f'<div class="meta">{n_clips} clips</div></div>'
+    doc += '<footer>aavepyora.online · evals · same-playhead · uncurated-run index</footer></div></body></html>'
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
 def write_folder(kind, name, label, purpose, clips, date_str="", verdict=None):
     doc = head(f"{html.escape(label)} — evals", depth=2)
     doc += ('<p class="nav"><a href="../../index.html">← all evals</a>'
@@ -329,16 +561,16 @@ def build_landing(control, renders):
             '<a href="https://aavepyora.online/files/AGENT_DIALOGUE.html">dialogue</a></p>')
     doc += ('<h1>Evals</h1><p class="lede">Listening results — what the control heads, adapters, and '
             'renders actually sound like. Each folder is a same-playhead player, not a dump.</p>')
+    doc += ('<p class="faint">Bookmark this page: '
+            '<a href="https://aavepyora.online/files/evals/">aavepyora.online/files/evals/</a> — '
+            'the canonical, always-current entry point for the listening review.</p>')
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
     doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')
-    _riffer = [("riffer/onset_eval.html", "onset control-authority"),
-               ("riffer/disentangle.html", "disentanglement"),
-               ("riffer/dora_results.html", "DoRA auditions"),
-               ("riffer/chroma_steer.html", "chroma steer"),
-               ("riffer/gain_knee.html", "gain knee"),
-               ("riffer/mp.html", "multiprompt"),
-               ("riffer/traj.html", "trajectories"),
-               ("riffer/latch_sweep.html", "LatCH head sweep")]
+    _riffer_labels = {"onset_eval.html": "onset control-authority", "disentangle.html": "disentanglement",
+                       "dora_results.html": "DoRA auditions", "chroma_steer.html": "chroma steer",
+                       "gain_knee.html": "gain knee", "mp.html": "multiprompt", "traj.html": "trajectories",
+                       "latch_sweep.html": "LatCH head sweep"}
+    _riffer = [(f"riffer/{f}", _riffer_labels[f]) for f in RIFFER_HTML]
     for _href, _lbl in _riffer:
         doc += f'<div class="run"><div class="name"><a href="{_href}">{_lbl}</a></div></div>'
     for lbl, kind, items in (("Control runs","control_runs",control),("Renders","renders",renders)):
@@ -356,9 +588,42 @@ def build_landing(control, renders):
     doc += '<footer>aavepyora.online · evals · generated by Misc/build_evals.py</footer></div></body></html>'
     open(f"{OUT}/index.html","w").write(doc)
 
+def sync_riffer_pages():
+    """Copy the curated riffer-evals HTML pages (+ their clip dirs) into
+    OUT/riffer/ so the landing's "Curated players" links actually resolve.
+    build_evals.py only ever WROTE these links, never synced the pages
+    themselves -- they lived solely in ~/riffer-evals/, so file:// browsing of
+    the staging mirror 404'd on every curated player (Kim, 2026-07-06)."""
+    src_root = f"{HOME}/riffer-evals"
+    dst_root = f"{OUT}/riffer"
+    if not os.path.isdir(src_root):
+        return
+    os.makedirs(dst_root, exist_ok=True)
+    copied = 0
+    for fname in RIFFER_HTML:
+        src = f"{src_root}/{fname}"
+        if os.path.isfile(src):
+            shutil.copy2(src, f"{dst_root}/{fname}")
+            copied += 1
+    # clip dirs referenced by the html (clips*/...) -- copy2 tree, skip if the
+    # destination already has the exact same file count (cheap staleness check,
+    # avoids re-copying gigabytes of audio on every rebuild).
+    for entry in os.listdir(src_root):
+        if not entry.startswith("clips"):
+            continue
+        src = f"{src_root}/{entry}"
+        dst = f"{dst_root}/{entry}"
+        if not os.path.isdir(src):
+            continue
+        if os.path.isdir(dst) and len(os.listdir(dst)) == len(os.listdir(src)):
+            continue
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+    print(f"riffer:       {copied}/{len(RIFFER_HTML)} curated pages synced from {src_root}")
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    open(f"{OUT}/evals.css","w").write(CSS)
+    open(f"{OUT}/evals.css","w").write(CSS + eval_grid.GRID_CSS + eval_grid.TABLE_CSS + eval_grid.STYLE_CSS + eval_grid.AUDIT_CSS)
+    sync_riffer_pages()
     # pass 1: gather every folder (+ loose demos) with its purpose
     gathered = []  # (kind, name, purpose, clips)
     for kind in ("control_runs", "renders"):
@@ -378,10 +643,34 @@ def main():
         loose = sorted(os.path.basename(c) for c in glob.glob(f"{base}/*.m4a"))
         if loose:
             gathered.append((kind, "_demos", "loose top-level demo clips", [f"../{c}" for c in loose]))
+    # pass 1.5: split off uncurated control_runs entries for aggregation (Kim,
+    # 2026-07-07: dozens of individually-linked "onset control N" links is
+    # "messy AF" -- fold every uncurated control_runs folder into exactly two
+    # pages instead: a rich multi-checkpoint audit for the real gain x density
+    # grids, and a simple bundle for the structurally-different leftovers).
+    # A folder only gets pulled into aggregation if desc_for() found NOTHING
+    # for it -- anything with a real curated purpose keeps its own page/link.
+    normal, audit_members, misc_members = [], [], []
+    for kind, name, purpose, clips in gathered:
+        if kind == "control_runs" and not purpose and name != "_demos":
+            source_dir = find_source_dir(name)
+            if source_dir and os.path.exists(f"{source_dir}/onset_eval.json"):
+                audit_members.append(name)
+                continue
+            misc_members.append((kind, name, purpose, clips))
+            continue
+        normal.append((kind, name, purpose, clips))
+    misc_keys = {(k, n) for k, n, p, c in misc_members}
+
     # pass 2: FRIENDLY labels — the description, else category + per-category index. Never the raw
     # folder name (which embeds lr/optimizer/epoch configs). Kim's ruling, WINTERMUTE's leak-catch.
-    counters, out = {}, {"control_runs": [], "renders": []}
-    for kind, name, purpose, clips in gathered:
+    # misc_members are routed through this SAME loop (own real page written for
+    # each, same grid/table/style/flat fallback as any other folder -- some are
+    # large multi-epoch telemetry sweeps, too big to inline into a bundle page)
+    # but their landing-entry goes to misc_meta instead of out[kind], since the
+    # bundle page is their only top-level link.
+    counters, out, misc_meta = {}, {"control_runs": [], "renders": []}, []
+    for kind, name, purpose, clips in normal + misc_members:
         cat = category(name, kind)
         if purpose:
             label = purpose if len(purpose) <= 60 else purpose[:57].rstrip() + "…"
@@ -392,8 +681,48 @@ def main():
         date_str, subtitle, verdict = enrich(kind, name, desc, cat)
         if subtitle == label:   # don't repeat the title verbatim as its own subtitle
             subtitle = ""
-        write_folder(kind, name, label, desc or subtitle, clips, date_str, verdict)
-        out[kind].append((name, label, desc, len(clips), date_str, subtitle, verdict))
+        source_dir = find_source_dir(name) if kind == "control_runs" else find_renders_source_dir(name)
+        is_grid = source_dir and os.path.exists(f"{source_dir}/onset_eval.json")
+        wrote_grid = is_grid and write_grid_folder(kind, name, label, desc or subtitle, date_str, source_dir)
+        # table+compare (DoRA auditions, checkpoint x prompt x seed) — tried when the
+        # dir isn't a gain/density grid; falls through to the flat player if the source
+        # has no checkpoint-tagged pq_scores.json (not every renders/ dir is a DoRA audition).
+        wrote_table = (not wrote_grid) and source_dir and write_table_folder(
+            kind, name, label, desc or subtitle, date_str, source_dir)
+        # style-compare (plain-vs-styled prompt A/B, pq_scores.json rows with prompt_key/style)
+        wrote_style = (not wrote_grid) and (not wrote_table) and source_dir and write_style_compare_folder(
+            kind, name, label, desc or subtitle, date_str, source_dir)
+        if not wrote_grid and not wrote_table and not wrote_style:
+            write_folder(kind, name, label, desc or subtitle, clips, date_str, verdict)
+        entry = (name, label, desc, len(clips), date_str, subtitle, verdict)
+        if (kind, name) in misc_keys:
+            misc_meta.append(entry)
+        else:
+            out[kind].append(entry)
+
+    # the two aggregated pages, each exactly one landing entry regardless of
+    # how many folders they fold in.
+    if audit_members:
+        name = "_onset_control_audit"
+        label = "Onset-control checkpoint audit (all runs)"
+        purpose = (f"Every uncurated onset-density control-adapter run in one place — "
+                   f"{len(audit_members)} checkpoints, pick one from the dropdown, sort any "
+                   f"column, same-playhead. Was {len(audit_members)} separate landing links; "
+                   f"now one.")
+        n_clips = sum(len(c) for k, n, p, c in gathered if n in audit_members)
+        if write_checkpoint_audit_folder("control_runs", name, label, purpose, "", audit_members):
+            out["control_runs"].append((name, label, purpose, n_clips, "", "", ""))
+    if misc_meta:
+        name = "_misc_uncurated_runs"
+        label = "Other uncurated control runs (bracket sweeps, pilots, etc.)"
+        purpose = (f"{len(misc_meta)} uncurated runs too structurally different from each "
+                   f"other for one shared table (bracket sweeps, pilot experiments, audition/"
+                   f"multiprompt variants, and a few large multi-epoch telemetry sweeps) — "
+                   f"each keeps its own player; this page is just an index.")
+        n_clips = sum(e[3] for e in misc_meta)
+        if write_misc_bundle_folder("control_runs", name, label, purpose, "", misc_meta):
+            out["control_runs"].append((name, label, purpose, n_clips, "", "", ""))
+
     # order runs newest-first within each category (Kim's request). date_str is
     # "%Y-%m-%d %H:%M" -> lexicographic sort == chronological; undated ("") sorts last.
     for _k in out:

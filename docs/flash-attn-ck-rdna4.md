@@ -274,7 +274,67 @@ Key flags:
 Build time: there are **~2400 CK kernel files** to compile. On a Ryzen 9 9900X
 at `MAX_JOBS=6` expect **70–90 min**. Ninja is incremental — if you kill the
 build (Ctrl-C the parent `uv pip install`), already-compiled `.o` files stay in
-`build/temp.linux-*-cpython-*/build/` and the next run picks up where it left off.
+`build/temp.linux-*-cpython-*/build/` and the next run picks up where it left off
+(confirmed 2026-07-05: killed mid-build to bump `MAX_JOBS` 6→7, `.o` count on disk
+matched the last-printed ninja step exactly, zero recompiled files on restart).
+
+### 7b. Package as a reusable wheel + pin it (do this, not a bare install)
+
+A bare `uv pip install .` only affects the venv you ran it in — the next `uv sync`
+(this project's own, or a fresh clone) has no idea the CK build exists and will
+happily fetch the plain PyPI `flash-attn` (no `.so`, Triton/aiter fallback only),
+silently eating the whole point of this doc. **This is exactly what happened on
+2026-07-05**: an earlier from-source CK build (validated 2026-06-29) was pruned by
+a routine `uv sync`, and nobody noticed until DoRA training paced 3h/epoch on the
+Triton fallback instead of the CK path.
+
+Build a wheel instead of installing directly, so it survives:
+
+```bash
+GPU_ARCHS=gfx1201 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE MAX_JOBS=6 \
+  uv build --python $PY --no-build-isolation --wheel --out-dir /home/kim/Projects/SAO/my_wheels .
+```
+
+(`uv pip wheel` is **not** a real uv subcommand — `uv`'s `pip` compat layer only has
+`install`/`uninstall`/`compile`/`sync`/etc; `uv build --wheel` is the equivalent.)
+
+Install it, then **pin it in `pyproject.toml`** the same way this repo already pins
+its ROCm torch wheels (`[tool.uv.sources]`):
+
+```toml
+[project]
+dependencies = [
+    ...
+    "flash-attn==2.8.4",
+]
+
+[tool.uv.sources]
+flash-attn = { path = "../my_wheels/flash_attn-2.8.4-cp313-cp313-linux_x86_64.whl" }
+```
+
+```bash
+uv pip install --python $PY --no-deps --force-reinstall \
+  /home/kim/Projects/SAO/my_wheels/flash_attn-2.8.4-cp313-cp313-linux_x86_64.whl
+```
+
+**Honest scope**: this wheel is ABI-tied to the exact torch build it was compiled
+against (`torch.__version__` including the git hash, e.g.
+`2.10.0+rocm7.2.3.git1a270074`). It is *reusable* for reinstalls/venv rebuilds
+against **that same torch** — but **must be rebuilt** the moment torch moves (a
+patch release, a `uv sync` that bumps the torch wheel, a new venv on different
+ROCm). Two stale CK wheels from an earlier torch (2026-05-31 and 2026-06-29
+builds) were tried against the current torch on 2026-07-05 and both failed with
+`undefined symbol: c10::cuda::CUDACachingAllocator::allocator` — an ABI mismatch,
+not a config problem. **Do not trust a `my_wheels/flash_attn-*.whl` across a torch
+version bump** — check `torch.__version__` matches what's recorded here before
+reusing instead of rebuilding.
+
+**Runtime note (2026-07-05):** `import flash_attn_2_cuda` standalone (before
+`torch`) raises `ImportError: libc10.so: cannot open shared object file` — this is
+*not* a broken build, just normal shared-library resolution order. `import torch`
+first (which every real call site does — `flash_attn`'s own `__init__.py` imports
+torch before the C extension) resolves it with no `LD_LIBRARY_PATH` needed. Only a
+standalone `python -c "import flash_attn_2_cuda"` sees the missing-libc10 error.
 
 ---
 
