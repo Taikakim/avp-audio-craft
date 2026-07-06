@@ -1,0 +1,20 @@
+# Per-handle SAO fleet listener as a systemd --user service (Linger=yes already set).
+# Decouples presence + event-capture from the ephemeral Claude session: this survives
+# session restart / compaction / crash / reboot, so a handle never "goes dark" and DMs
+# always land in the queue. The Claude session then only arms its real-time WAKE
+# (wait / Monitor) — presence is no longer its job.
+#   install: cp Misc/sao-listen@.service ~/.config/systemd/user/
+#   enable : systemctl --user enable --now sao-listen@continuity   (etc. per handle)
+#   status : systemctl --user status 'sao-listen@*'
+[Unit]
+Description=SAO fleet listener — %I
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/kim/Projects/SAO/Misc/agent_dialogue.py listen --handle %I --queue-file /home/kim/Projects/SAO/.osc-queue.jsonl
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
