@@ -52,6 +52,9 @@ DEFAULT_ARMS = {
     "base":    None,
     "newcap5": "/run/media/kim/Mantu1/sa3_lora_runs/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt",
     "newcap8": "/home/kim/Projects/sa3_local_runs/dora128_newcap_continued_3more/epoch=2-step=4050.ckpt",
+    # the everything-corpus 8ep LR pair (normal vs 3x) — Kim's LR-sweep comparison
+    "evr1x":   "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
+    "evr3x":   "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr3x/epoch=7-step=12216.ckpt",
 }
 
 
@@ -109,7 +112,14 @@ def main():
                     "SAO/papers/arxiv-2605.17991.md (TrackType recommendation)",
                     "stable-audio-3/docs/guides/prompting.md"],
     }
-    (args.out_dir / "run_meta.json").write_text(json.dumps(meta, indent=2))
+    # merge with an existing sidecar so multi-pass renders (extra --arms into the
+    # same dir) accumulate checkpoints instead of clobbering the record
+    meta_path = args.out_dir / "run_meta.json"
+    if meta_path.exists():
+        old = json.loads(meta_path.read_text())
+        old.get("checkpoints", {}).update(meta["checkpoints"])
+        meta["checkpoints"] = old.get("checkpoints", meta["checkpoints"])
+    meta_path.write_text(json.dumps(meta, indent=2))
 
     for arm, ckpt in arms.items():
         render_arm(arm, ckpt, args.out_dir, args.steps, args.duration,
