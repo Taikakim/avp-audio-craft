@@ -87,7 +87,9 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 # default = 1234) so these renders are directly comparable to the control evals.
 PROMPTS = [
     "aggressive upbeat goa trance",
-    "energetic acid techno, 130 BPM, driving analog bassline, crisp drum machine",
+    # p1 was "energetic acid techno, 130 BPM, ..." — Kim 2026-07-06: consistently bad
+    # renders (prompt or seed); replaced with an in-corpus style.
+    "Hypnotic melodic goa trance",
     "psytrance, 140 bpm",
 ]
 
