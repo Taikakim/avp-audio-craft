@@ -48,7 +48,10 @@ LATCH_HEAD = ("/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/"
 FILM_CKPT = ("/run/media/kim/Mantu1/sa3_control_runs/"
              "onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt")
 LATCH_GAIN = 512.0
-FILM_GAIN = 6.0
+# Kim 2026-07-07 (gain_knee + first grid): "gain 6 never worked" — flat 1.75 chosen
+# (1 too little, 2 often too much at the upper end; ridge says low densities take up
+# to 3, >8 onsets/s needs <2, closer to 1.5).
+FILM_GAIN = 1.75
 DENSITIES = (3.0, 7.0)
 
 
@@ -60,7 +63,12 @@ def main():
     ap.add_argument("--duration", type=float, default=47.0)
     ap.add_argument("--cfg-scale", type=float, default=6.0)
     ap.add_argument("--seeds", default="1234,4242")
+    ap.add_argument("--film-gain", type=float, default=FILM_GAIN)
+    ap.add_argument("--conditions", default="latch,film,both",
+                    help="which control conditions to render")
     args = ap.parse_args()
+    film_gain = args.film_gain
+    conds = args.conditions.split(",")
 
     seeds = [int(s) for s in args.seeds.split(",")]
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +84,7 @@ def main():
                     "(beat_grid impulse target) vs FusionCC FiLM adapter vs both-at-half, "
                     "densities 3 and 7 onsets/sec"),
         "control": {"latch_head": LATCH_HEAD, "latch_gain_rho_mu": LATCH_GAIN,
-                    "film_ckpt": FILM_CKPT, "film_gain": FILM_GAIN,
+                    "film_ckpt": FILM_CKPT, "film_gain": film_gain,
                     "densities": list(DENSITIES),
                     "half_weight_rule": "both condition: film gain/2 + latch rho,mu/2"},
         "gen": {"duration": args.duration, "steps": args.steps, "cfg": args.cfg_scale,
@@ -124,7 +132,7 @@ def main():
                 for seed in seeds:
                     for d in DENSITIES:
                         dn = int(d)
-                        for cond in (f"latch_d{dn}", f"film_d{dn}", f"both_d{dn}"):
+                        for cond in (f"{c}_d{dn}" for c in conds):
                             out = args.out_dir / f"{arm}__{label}_{style}_s{seed}__{cond}.wav"
                             if out.exists():
                                 print(f"[skip] {out.name}", flush=True)
@@ -137,11 +145,11 @@ def main():
                                 lc, hp = latch_cfg(d, 1.0)
                                 audio = sam.generate(latch_configs=lc, latch_hparams=hp, **kw)
                             elif cond.startswith("film"):
-                                with film_ctx(d, FILM_GAIN):
+                                with film_ctx(d, film_gain):
                                     audio = sam.generate(**kw)
                             else:  # both at half
                                 lc, hp = latch_cfg(d, 0.5)
-                                with film_ctx(d, FILM_GAIN / 2):
+                                with film_ctx(d, film_gain / 2):
                                     audio = sam.generate(latch_configs=lc,
                                                          latch_hparams=hp, **kw)
                             save_audio(out, audio[0], sr, normalize=True)

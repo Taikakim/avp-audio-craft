@@ -320,3 +320,13 @@ from Kim on record: the model cheats low density via outros/empty endings -> RMS
 training scalar / downweight end-of-track crops (todos). ⚠️ Flagged: tonight's 432-clip
 density grid used FiLM gain 6 — beyond the June adapter's knee; if it sounds style-flipped,
 re-render at ~1.5-2.75 after locating FusionCC's own knee.
+
+## 2026-07-07 — newcaption_ab verdict + FiLM gain calibration (Kim)
+(1) newcaption_ab era-word A/B: INCONCLUSIVE by ear. Kim's direction: RELEASE YEAR should
+be a conditioning of its own — i.e. the scalar year-FiLM lane already planned in
+docs/prompting-conditioning-plan.md is now the mandated path; era WORDS in prompts are
+learnable if literally present (they were — era-fronted T1), but not the mechanism to rely
+on. (2) FiLM gain, canonical-by-ear: "gain 6 never worked" — flat 1.75 chosen for grids
+(1 too little, 2 often too much at the top; ridge caveat: low densities take up to ~3,
+>8 onsets/s needs <2 -> ~1.5). density grid re-rendering as newcap8_density_control_g175
+(film+both at 1.75/0.875; latch clips hardlinked over, rho unaffected).
