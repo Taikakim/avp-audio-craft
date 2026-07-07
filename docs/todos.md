@@ -4,6 +4,14 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **avp DoRA run WITH the augmentations** (Kim 2026-07-07): tonight's avp runs
+      (r16 / r128adj / familiarity) train on the 2393 full-mix original crops only —
+      rerun including G's Bungee augmentation variants (pitch ±1/2, tempo ±5/10%,
+      ~1035 crops, parent-ratio downbeats, same trigger captions) once they're
+      confirmed landed in `latents_avp` (as of 07-07 morning the dir holds originals
+      only — check G's encode delta status first). Clean comparison arm vs tonight's
+      originals-only r16: does augmentation variety help a small personal corpus?
+
 - [ ] **Outro/empty-space cheating in onset-density training** (Kim 2026-07-07, gain_knee
       audition): the model can hit a low density request by rendering an outro/track-ending
       with empty space — the scalar target counts silence. Fixes to try: (a) compute the
