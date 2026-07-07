@@ -15,6 +15,7 @@
 !/DISCOVERIES.md
 !/projects.toml
 !/install.sh
+!/lumi/
 
 # checkpoint-stats is a tracked library (per MASTER §5), not throwaway output
 !checkpoint-stats/

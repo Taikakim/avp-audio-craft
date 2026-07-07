@@ -1,0 +1,46 @@
+# sa3-env.yml — cotainr conda env for the SA3 LatCH / DoRA training container on LUMI-G.
+#
+# Build (on a LUMI login node, once access lands):
+#   module load LUMI cotainr
+#   cotainr build sa3-train.sif \
+#     --base-image=/appl/local/containers/sif-images/lumi-rocm-6.2.4.sif \
+#     --conda-env=sa3-env.yml
+#
+# ⚠️ VERSION SEAM (the one decision to make on the machine, not here):
+#   torch must match the BASE IMAGE's ROCm userspace. The pip index below assumes a
+#   rocm6.2 base; if LUMI's current image is 6.0/6.1/6.3, change BOTH the base-image
+#   AND the --index-url to the matching /whl/rocmX.Y. Do NOT reuse our local custom
+#   2.10/7.2 wheels — they are gfx1201 builds; LUMI is gfx90a and official wheels
+#   support it natively. (Plan §Phase-1.)
+#
+# flash-attn: intentionally ABSENT. Our CK wheel is gfx1201-only. First runs go SDPA
+# (works, slower); if profiling says we need FA, use LUMI's AI container images that
+# ship a gfx90a FA2, or rebuild CK with GPU_ARCHS=gfx90a inside the container.
+name: sa3-train
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - --index-url https://download.pytorch.org/whl/rocm6.2
+      - --extra-index-url https://pypi.org/simple
+      - torch>=2.4,<2.6
+      - torchaudio
+      # --- shared training deps (LatCH head + DoRA) ---
+      - numpy<2.4          # numba/librosa seam, same pin as local
+      - einops
+      - safetensors
+      - soundfile
+      - tqdm
+      - wandb              # WANDB_MODE=offline on compute nodes; sync from login node
+      - tensorboard
+      # --- SA3 model stack (train_lora.py / stable_audio_3 package) ---
+      - transformers>=4.44 # T5-Gemma conditioner — weights PRE-STAGED to /project (air-gapped)
+      - sentencepiece
+      - accelerate
+      - huggingface_hub
+      # --- audio/data utilities used by the dataloaders ---
+      - librosa
+      - pyloudnorm
+      - pedalboard
