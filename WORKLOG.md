@@ -1135,3 +1135,31 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
   leak-scanned clean, dora16 JS-harness-verified (both pane defaults confirmed programmatically). Handed
   to WINTERMUTE for sync.
 - 2026-07-07 ~15:45 (CONTINUITY): CHROMA-MORPH TRANSITIONS SHIPPED — real-track A->B transitions (Kaikki-Alla/Angelic Particles/Vapausvoima cycle) with bungee beatmatch (B follows A; KA+AP both 147.7bpm, VV 139.7 stretched), 512/1024-frame latent slerp crossfades, graded a2a refine at nl .35/.42/.5/.55, and the PROVEN 06-25 stem-chroma LatCH head (cosine, gain 2048) morphing measured A-chroma->B-chroma across the window; plain refs for every config -> 48 clips, Mantu1/sa3_lora_runs/chroma_morph_transitions. Infra: model.generate now takes latch target_raw (per-frame measured targets) + guided-path init_latents (a2a UNDER LatCH guidance — new capability). Also: 3-track full a2a ladders at Kim's rates; CONSTRUCTS.md channel etiquette; generate() 120s sample_size clamp fixed everywhere.
+- [2026-07-07 15:52] (GHOST-NOTE) chroma_morph_transitions page shipped — CONTINUITY's first-application test
+  of a2a-under-LatCH-guidance (chroma-morph steering: stem-chroma head morphs A-chroma->B-chroma across the
+  window). 48 clips: 3 real-track pairs (kaikki2angelic/angelic2vapaus/vapaus2kaikki) x 2 windows (512f/48s,
+  1024f/95s) x 4 noise levels (0.35-0.55) x chroma/plain. New write_chroma_morph_folder nests exactly as asked
+  ("grouped pair -> window -> nl with chroma/plain adjacent"): one §-section per pair (order taken from
+  run_meta.json's declared pairs list, not alphabetical), one h3 per window, one table per window with nl rows
+  and chroma/plain adjacent columns. Added a small h3 CSS rule (none existed before). Leak-scanned clean, JS
+  syntax-checked. Purpose: this is the listening test for whether chroma-morph transitions beat plain on Kim's
+  dissonance complaint — if so it becomes a standard tool. Handed to WINTERMUTE for sync.
+- [2026-07-07 16:35] (GHOST-NOTE) Waveform popup player shipped (eval-tables spec §13, Kim's UI ask). Any clip
+  ≥20s now gets a floating "〰" toggle (bottom-center bar) that opens a modal: rendered waveform (client-side
+  fetch+decodeAudioData->min/max peaks->canvas, cached per URL for the session, no build-time sidecars),
+  click/tap-to-seek, Space/←/→/Esc keyboard, phone-capable (full-width modal, 44px targets) with the design
+  center on desktop (min(1400px,90vw) modal, 160px waveform). Decode-failure falls back to a plain seekable
+  range input so the popup still seeks without the picture. Implemented as ONE shared module (WAVEFORM_CSS +
+  WAVEFORM_JS in build_evals.py) injected via head() on EVERY page regardless of which renderer built it —
+  works by patching window.Audio (catches every `new Audio()` the ~8 different eval_grid.py templates create)
+  and separately scanning literal `<audio id="pl"/"lfpl">` DOM elements on DOMContentLoaded (the flat/longform/
+  transitions/a2a/chroma-morph pattern) — so it drives whichever audio object a page is ALREADY playing rather
+  than forking a second one, preserving the same-playhead convention through the popup exactly as the spec
+  requires. Zero changes needed to any of the ~10 existing per-template play() implementations. Verified in a
+  real node harness (not just a syntax check): bar+toggle correctly show only when duration>=20s and stay
+  hidden under threshold, modal opens/closes, waveform decode path renders to canvas, decode-failure fallback
+  path independently verified by breaking AudioContext availability. Leak-scanned clean across every page kind
+  (grid/table/style/audit/density/composed/epoch-progress/flat/longform/transitions/a2a/chroma-morph). Riffer-
+  evals curated generators intentionally NOT touched yet -- spec explicitly calls that a follow-up, not now.
+  Handed to WINTERMUTE for sync.
+- 2026-07-07 ~16:30 (CONTINUITY): PURE chroma transitions shipped (chroma_transitions_pure, 12 clips): originals intact outside the window, bridge inpaint-generated under chroma-morph guidance, plain controls. First 48-clip batch relabeled the 'refine' VARIANT (whole-composite a2a x nl -- Kim: hyper interesting, a DJ-tool primitive for the mir/plots viewer's lowkey DJ ambitions). Day's transition family complete.
