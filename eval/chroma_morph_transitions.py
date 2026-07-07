@@ -156,6 +156,10 @@ def main():
                     help="B's entry point as a fraction of its length")
     ap.add_argument("--pairs", default=None,
                     help="comma list like kaikki:angelic to override the default cycle")
+    ap.add_argument("--seam-nl", type=float, default=0.35,
+                    help="inpaint mode: peak depth of the 512-frame sine a2a masks centred "
+                         "on the inpaint region's entry/exit seams (Kim: smooth the abrupt "
+                         "512f bridges in and out); 0 disables")
     ap.add_argument("--tempo-mode", choices=("ramp", "follow"), default="ramp",
                     help="ramp = B matched to A's tempo AT the transition, bending to its "
                          "NATIVE tempo by window end (DJ pitch-bend, default); "
@@ -329,6 +333,45 @@ def main():
                         if hi_n + f <= n:
                             outy[:, hi_n:hi_n + f] = y[:, hi_n:hi_n + f] * (1 - r) + ref[:, hi_n:hi_n + f] * r
                         y = outy
+                        if args.seam_nl > 0:
+                            # Kim's seam smoothing: two 512-frame sine-depth a2a masks
+                            # centred on the inpaint entry/exit seams (release schedule)
+                            seam_w = 512
+                            Tz2 = int(np.ceil(y.shape[1] / sr * FPS))
+                            dshape = torch.zeros(Tz2)
+                            for centre in (int(w_lo * FPS), int(w_hi * FPS)):
+                                lo2 = max(centre - seam_w // 2, 0)
+                                hi2 = min(centre + seam_w // 2, Tz2)
+                                bump = torch.sin(torch.linspace(0, torch.pi, hi2 - lo2))
+                                dshape[lo2:hi2] = torch.maximum(dshape[lo2:hi2], bump)
+                            pre2 = model.model.pretransform
+                            pp = next(pre2.parameters())
+                            with torch.inference_mode():
+                                z_ref2 = pre2.encode(torch.tensor(y, device=pp.device,
+                                                                  dtype=pp.dtype).unsqueeze(0)).float().cpu()
+                            torch.manual_seed(2424)
+                            eps2 = torch.randn_like(z_ref2)
+                            depth2 = (dshape * args.seam_nl).view(1, 1, -1)
+
+                            def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
+                                x, tt = d["x"], float(d["t"][0])
+                                nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
+                                hold = (_d[..., :nn] < tt)
+                                ref_t = ((1 - tt) * _z[..., :nn] + tt * _e[..., :nn]).to(x.device, x.dtype)
+                                x[..., :nn].copy_(torch.where(hold.to(x.device), ref_t, x[..., :nn]))
+
+                            kw2 = dict(prompt=args.prompt, duration=y.shape[1] / sr,
+                                       steps=args.steps, cfg_scale=args.cfg_scale,
+                                       seed=1234, batch_size=1,
+                                       sample_size=int((y.shape[1] / sr + 8) * sr),
+                                       init_audio=(sr, torch.tensor(y)),
+                                       init_noise_level=args.seam_nl, callback=cb2)
+                            if chroma_on:
+                                kw2["latch_configs"] = [{"model_path": CHROMA_HEAD,
+                                                         "target_raw": target,
+                                                         "weight": 1.0, "end_pct": 0.6}]
+                                kw2["latch_hparams"] = {"rho": CHROMA_GAIN, "mu": CHROMA_GAIN}
+                            y = model.generate(**kw2)[0].float().cpu().numpy()
                     save_audio(out, torch.tensor(y), sr, normalize=True)
                     print(f"[clip] {out.name}  {time.time()-t0:5.1f}s", flush=True)
     print("[done]", flush=True)
