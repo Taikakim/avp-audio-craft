@@ -159,3 +159,11 @@ that's the "every second day" recurrence. **Durable fix: route EVERY SA3 render/
 `sa3_control.audio_io.save_audio()` (peak-normalize), or add a written-file assert (no sample
 > target ceiling ~ −1 dB).** Not a one-off re-render — a centralization/guard problem.
 Audit script: scratchpad/clip_audit.py. See [[avp-corpus-overnight]] for the parallel MIR work.
+
+**2026-07-07 — first Kim-validated usable transition.** Kim on `chroma_morph_barsnap`
+`kaikki2angelic__w1025_nl42_chroma`: *"a completely useable transition."* Recorded in the
+run's `run_meta.json` findings (alongside the earlier negative: slerp-midpoint @ nl .55
+= identity-losing drone). Operating point that worked: bar-snapped window ~1025, nl 0.42,
+chroma-morph ON. The chroma/plain A/B and the nl bracket did their job — the method
+(bungee beatmatch + latent slerp + graded a2a refine + stem-chroma LatCH morph) is now
+listener-validated, not just metric-validated. C's method, G's pages, my deploys.
