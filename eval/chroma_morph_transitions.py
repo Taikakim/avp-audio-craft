@@ -52,12 +52,23 @@ TRACKS = {
     "kaikki":  "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Kaikki-Alla.flac",
     "angelic": "/run/media/kim/Mantu1/ai-music/Goa Dataset/0934. Hallucinogen - Angelic Particles (Remastered 2024).flac",
     "vapaus":  "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Vapausvoima.flac",
+    # 2026-07-07 evening set (Kim): in-dataset goa + the acid-rock experiment
+    "phreaky": "/run/media/kim/Mantu1/ai-music/Goa Dataset/0818. Phreaky - Techno Prisioners (Rework 2022).flac",
+    "heron":   "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/ai-music2/Playlists/Acid Rock/14. Heron Oblivion - Beneath Fields.m4a",
 }
-PAIRS = [("kaikki", "angelic"), ("angelic", "vapaus"), ("vapaus", "kaikki")]
+PAIRS = [("phreaky", "angelic"), ("angelic", "heron"), ("heron", "phreaky")]
 
 
 def load(track):
-    a, sr = sf.read(track, dtype="float32", always_2d=True)
+    try:
+        a, sr = sf.read(track, dtype="float32", always_2d=True)
+    except Exception:
+        # m4a etc: decode via ffmpeg to 44.1k stereo wav
+        with tempfile.TemporaryDirectory() as td:
+            wav = f"{td}/dec.wav"
+            subprocess.run(["ffmpeg", "-v", "error", "-i", track, "-ar", "44100",
+                            "-ac", "2", wav], check=True)
+            a, sr = sf.read(wav, dtype="float32", always_2d=True)
     return a.T, sr  # (C, N)
 
 
