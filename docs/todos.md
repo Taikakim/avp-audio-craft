@@ -4,6 +4,14 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Transitions round 2** (Kim 2026-07-07, first round sounded weak/noisy even
+      pre-transition — possibly seeds, possibly the LENGTH effect: 2-min segments get
+      the timestep shift pushed toward high noise): arms hof(x20b3ygb ep3-5400) /
+      newcap8 / evr1x(ep3-6108) / newstack(ep3-5400), aggr prompt, seeds 1234+42,
+      totals 512 AND 1024 frames (xfade = total/4), v1/v2/v3. transition_lab.py is
+      parametrized + arms registered; run in the first GPU gap (post-chain ~18:30)
+      or CPU when the newstack eval frees it. QUEUED — executes automatically.
+
 - [ ] **avp DoRA run WITH the augmentations** (Kim 2026-07-07): tonight's avp runs
       (r16 / r128adj / familiarity) train on the 2393 full-mix original crops only —
       rerun including G's Bungee augmentation variants (pitch ±1/2, tempo ±5/10%,
