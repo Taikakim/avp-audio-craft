@@ -404,7 +404,7 @@ systemd presence + the self-re-arming wake loop-monitor, piloting on CONTINUITY)
 ## 2026-07-07 — chroma-morph transitions: Kim's strongest verdict on record
 "The chroma steered versions rock so hard, this is honestly one of the coolest things
 I've heard in my nearly 30 years of music." Reference: chroma_morph_transitions/
-kaikki2angelic__w1024_nl35_chroma.wav — kicks in sync, "transformation practically
+kaikki2angelic__w1024_nl42_chroma.wav (CORRECTED from nl35, which "gallops a bit") — kicks in sync, "transformation practically
 seamless". The stack that did it: bungee beatmatch + latent slerp + whole-composite a2a
 @0.35 + stem-chroma LatCH head (cosine, gain 2048) morphing measured A->B chroma.
 Known defect: half-beat kick offsets on some clips (librosa BEAT-grid anchoring, not
