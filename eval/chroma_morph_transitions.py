@@ -87,15 +87,21 @@ np.save({dst!r}, out)
         return np.load(dst).T  # back to (C, N)
 
 
-def beat_near(a, sr, target_sec):
+def downbeat_near(a, sr, target_sec):
+    """Nearest DOWNBEAT (bar start): librosa beats, phase = strongest mean onset
+    energy among the 4 candidate phases (Kim: snap to positions divisible by 4)."""
     import librosa
-    lo = max(0, int((target_sec - 20) * sr))
-    ex = a[:, lo:lo + int(40 * sr)].mean(0)
+    lo = max(0, int((target_sec - 30) * sr))
+    ex = a[:, lo:lo + int(60 * sr)].mean(0)
     _, beats = librosa.beat.beat_track(y=ex, sr=sr, units="time")
-    if len(beats) == 0:
+    if len(beats) < 8:
         return target_sec
-    beats = beats + lo / sr
-    return float(beats[np.argmin(np.abs(beats - target_sec))])
+    env = librosa.onset.onset_strength(y=ex, sr=sr)
+    et = librosa.times_like(env, sr=sr)
+    strength = np.interp(beats, et, env)
+    phase = int(np.argmax([strength[p::4].mean() for p in range(4)]))
+    downs = beats[phase::4] + lo / sr
+    return float(downs[np.argmin(np.abs(downs - target_sec))])
 
 
 def encode(model, audio, sr):
@@ -118,10 +124,12 @@ def main():
     ap.add_argument("--prompt", default="aggressive upbeat goa trance")
     ap.add_argument("--no-chroma-ref", action="store_true",
                     help="ALSO render a chroma-guidance-OFF reference per config")
-    ap.add_argument("--mode", choices=("refine", "inpaint"), default="refine",
+    ap.add_argument("--mode", choices=("refine", "inpaint", "sinesweep"), default="refine",
                     help="refine = whole-composite a2a at each nl (the 07-07 first batch); "
                          "inpaint = PURE transition: original audio outside the window, "
-                         "chroma-guided inpaint generation of the bridge (no nl dimension)")
+                         "chroma-guided inpaint generation of the bridge (no nl dimension); "
+                         "sinesweep = Kim's per-frame DEPTH sweep: a2a strength 0 at window "
+                         "edges -> nl (peak) at centre -> 0, via a release-schedule callback")
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     wins = [int(x) for x in args.windows.split(",")]
@@ -159,19 +167,26 @@ def main():
         print(f"[{a_key}->{b_key}] tempo A={ta:.1f} B={tb:.1f} bungee speed={speed:.4f}", flush=True)
         Bs = bungee_stretch(B, sr, speed) if abs(speed - 1.0) > 0.005 else B
 
-        # segments: A tail ending on beat at ~62% of A; B from beat at ~40%
-        a_end = beat_near(A, sr, 0.62 * A.shape[1] / sr)
-        b_start = beat_near(Bs, sr, 0.40 * Bs.shape[1] / sr)
+        # segments anchored on DOWNBEATS (bar starts)
+        a_end = downbeat_near(A, sr, 0.62 * A.shape[1] / sr)
+        b_start0 = downbeat_near(Bs, sr, 0.40 * Bs.shape[1] / sr)
+        bar_sec = 4 * 60.0 / ta   # A's bar length; B is stretched to A's tempo
         A_seg = A[:, int((a_end - args.seg_sec) * sr):int(a_end * sr)]
-        B_seg = Bs[:, int(b_start * sr):int((b_start + args.seg_sec) * sr)]
 
         zA = encode(model, A_seg, sr)
-        zB = encode(model, B_seg, sr)
-        # chroma of each segment (384, T_latent-aligned)
         cA = compute_same_chroma(A_seg.T, sr).reshape(384, -1)   # (3,128,T) -> (384,T)
-        cB = compute_same_chroma(B_seg.T, sr).reshape(384, -1)
 
-        for W in wins:
+        for W_req in wins:
+            # quantize the window to WHOLE BARS; compensate the sub-frame residual
+            # by shifting B's cut so kicks align exactly inside the blend
+            bars = max(1, round((W_req / FPS) / bar_sec))
+            W = int(round(bars * bar_sec * FPS))
+            residual = W / FPS - bars * bar_sec          # seconds, |r| < 1 frame
+            b_start = b_start0 + residual
+            B_seg = Bs[:, int(b_start * sr):int((b_start + args.seg_sec) * sr)]
+            zB = encode(model, B_seg, sr)
+            cB = compute_same_chroma(B_seg.T, sr).reshape(384, -1)
+            print(f"  [win] req {W_req}f -> {W}f = {bars} bars (residual {residual*1000:+.1f}ms)", flush=True)
             # composite: zA + slerp window + zB
             t = torch.linspace(0, 1, W, device=zA.device, dtype=torch.float32).view(1, 1, -1)
             mid = slerp(zA[..., -W:].float(), zB[..., :W].float(), t).to(zA.dtype)
@@ -187,7 +202,13 @@ def main():
 
             dur = Tz / FPS
             audio_ref = None  # decode lazily only if needed
-            if args.mode == "inpaint":
+            if args.mode == "sinesweep":
+                # per-frame depth: 0 outside the window, sine bump peaking at nl
+                Wlo, Whi = zA.shape[-1] - W, zA.shape[-1]
+                depth_shape = torch.zeros(Tz)
+                depth_shape[Wlo:Whi] = torch.sin(torch.linspace(0, torch.pi, W))
+                nls_eff = nls
+            elif args.mode == "inpaint":
                 nls_eff = [None]
                 # window bounds in the composite (frames -> seconds)
                 w_lo = (zA.shape[-1] - W) / FPS
@@ -214,6 +235,25 @@ def main():
                         kw["inpaint_audio"] = (sr, audio_ref.float())
                         kw["inpaint_mask_start_seconds"] = w_lo
                         kw["inpaint_mask_end_seconds"] = w_hi
+                    elif args.mode == "sinesweep":
+                        # start at peak depth; frames stay clamped to the reference
+                        # trajectory until global t falls to their own sine depth
+                        kw["init_audio"] = (sr, audio_ref.float())
+                        kw["init_noise_level"] = nl
+                        z_ref = z.float().cpu()
+                        torch.manual_seed(4242)
+                        eps_ref = torch.randn_like(z_ref)
+                        depth = (depth_shape * nl).view(1, 1, -1)
+
+                        def cb(d, _z=z_ref, _e=eps_ref, _d=depth):
+                            x, tt = d["x"], float(d["t"][0])
+                            n = min(x.shape[-1], _z.shape[-1])
+                            hold = (_d[..., :n] < tt)  # not yet released
+                            ref_t = ((1 - tt) * _z[..., :n] + tt * _e[..., :n]).to(x.device, x.dtype)
+                            xs = x[..., :n]
+                            x[..., :n].copy_(torch.where(hold.to(x.device), ref_t, xs))
+
+                        kw["callback"] = cb
                     else:
                         kw["init_audio"] = (sr, audio_ref.float())
                         kw["init_noise_level"] = nl
