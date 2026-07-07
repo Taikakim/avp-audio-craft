@@ -15,6 +15,23 @@ needed on day 1 are the project number and the base-image ROCm version.*
 | `sbatch/dora_run.sbatch` | **Campaign B**: parameterized DoRA runs (`--export=ALL,ENC=…,RANK=…`). One GCD each; brackets = a for-loop of sbatch calls. |
 | `pack_data.sh` | Local staging: tarballs of `latents_sa3` + `latents_avp` (doubles as the overdue cold backup) + git-archive code snapshots + this dir. |
 
+## Day-0: from passport to first job (the human steps, in order)
+
+1. **Identity**: MyAccessID (EuroHPC's identity broker) — login via your home org or eIDAS;
+   for a private person that's the national e-ID/passport-verified route. One-time.
+2. **Project**: when the B&D application is approved, the project invite arrives through the
+   EuroHPC Federation Platform → accept ToS → note `project_465NNNNN`.
+3. **SSH key**: upload your PUBLIC key in MyAccessID/portal profile. Propagation to LUMI is
+   **not instant** (up to ~an hour). MFA per portal instructions.
+4. **Login**: `ssh -i ~/.ssh/<key> <username>@lumi.csc.fi` (username assigned by the portal,
+   not your email). You land on a login node — internet, no GPUs, shared: build/stage here,
+   never compute.
+5. **Hello world** (`sbatch/hello_world.sbatch` — needs nothing of ours):
+   `sbatch --account=project_465NNNNN sbatch/hello_world.sbatch` → `squeue --me` →
+   `cat hello-*.out` should end with "HELLO LUMI, the stack is alive". That proves
+   account + queue + GCD + torch in one 10-minute job.
+6. Then the Day-1 checklist below (container build, weights, data, parity).
+
 ## Day-1 checklist (when the project number arrives)
 
 1. `sed -i s/project_465XXXXX/project_465NNNNN/` across this dir (or export `SA3_PROJECT`).
