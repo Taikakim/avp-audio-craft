@@ -69,19 +69,36 @@ def tempo_of(a, sr):
     return float(np.atleast_1d(t)[0])
 
 
-def bungee_stretch(audio, sr, speed):
-    """Stretch via bungee in the mir venv (B follows A: speed = tempoA/tempoB inverse)."""
+def bungee_stretch(audio, sr, speed, ramp_to=None, ramp_out_sec=0.0):
+    """Time-stretch via bungee (streaming, mir venv). speed applies from the start;
+    if ramp_to is given, speed ramps linearly (in tempo domain) from `speed` to
+    `ramp_to` over the first `ramp_out_sec` seconds of OUTPUT — the DJ pitch-bend:
+    matched at the transition, native afterwards."""
     with tempfile.TemporaryDirectory() as td:
         src, dst = f"{td}/in.npy", f"{td}/out.npy"
         np.save(src, audio.T)  # (N, C) for bungee
         code = f"""
 import numpy as np
 from bungee_python import bungee as B
-d = np.load({src!r})
-st = B.Bungee(sample_rate={sr}, channels=d.shape[1])
-st.set_speed({speed})
-out = np.asarray(st.process(d.astype(np.float32)), dtype=np.float32)
-np.save({dst!r}, out)
+d = np.load({src!r}).astype(np.float32)
+sr = {sr}
+st = B.Bungee(sample_rate=sr, channels=d.shape[1])
+speed0, ramp_to, ramp_out = {speed}, {ramp_to if ramp_to is not None else 'None'}, {ramp_out_sec}
+chunk = int(0.25 * sr)
+outs, out_sec = [], 0.0
+for lo in range(0, d.shape[0], chunk):
+    if ramp_to is None or out_sec >= ramp_out:
+        sp = speed0 if ramp_to is None else ramp_to
+    else:
+        f = out_sec / ramp_out
+        sp = speed0 + f * (ramp_to - speed0)
+    st.set_speed(float(sp))
+    y = np.asarray(st.process(d[lo:lo + chunk]), dtype=np.float32)
+    if y.ndim == 1:
+        y = y.reshape(-1, d.shape[1])
+    outs.append(y)
+    out_sec += y.shape[0] / sr
+np.save({dst!r}, np.concatenate(outs, axis=0))
 """
         subprocess.run([MIR_VENV_PY, "-c", code], check=True, capture_output=True)
         return np.load(dst).T  # back to (C, N)
@@ -122,6 +139,10 @@ def main():
     ap.add_argument("--steps", type=int, default=24)
     ap.add_argument("--cfg-scale", type=float, default=6.0)
     ap.add_argument("--prompt", default="aggressive upbeat goa trance")
+    ap.add_argument("--tempo-mode", choices=("ramp", "follow"), default="ramp",
+                    help="ramp = B matched to A's tempo AT the transition, bending to its "
+                         "NATIVE tempo by window end (DJ pitch-bend, default); "
+                         "follow = B stays at A's tempo throughout (the first batch's behaviour)")
     ap.add_argument("--no-chroma-ref", action="store_true",
                     help="ALSO render a chroma-guidance-OFF reference per config")
     ap.add_argument("--mode", choices=("refine", "inpaint", "sinesweep"), default="refine",
@@ -164,13 +185,13 @@ def main():
         speed = ta / tb            # playback speed multiplies tempo: tb*speed = ta
         while speed > 1.35: speed /= 2
         while speed < 0.74: speed *= 2
-        print(f"[{a_key}->{b_key}] tempo A={ta:.1f} B={tb:.1f} bungee speed={speed:.4f}", flush=True)
-        Bs = bungee_stretch(B, sr, speed) if abs(speed - 1.0) > 0.005 else B
+        print(f"[{a_key}->{b_key}] tempo A={ta:.1f} B={tb:.1f} match speed={speed:.4f} "
+              f"mode={args.tempo_mode}", flush=True)
 
-        # segments anchored on DOWNBEATS (bar starts)
+        # segments anchored on DOWNBEATS (bar starts); B anchored on the RAW track
         a_end = downbeat_near(A, sr, 0.62 * A.shape[1] / sr)
-        b_start0 = downbeat_near(Bs, sr, 0.40 * Bs.shape[1] / sr)
-        bar_sec = 4 * 60.0 / ta   # A's bar length; B is stretched to A's tempo
+        b_start0 = downbeat_near(B, sr, 0.40 * B.shape[1] / sr)
+        bar_sec = 4 * 60.0 / ta   # A's bar length (B is matched to it at the window)
         A_seg = A[:, int((a_end - args.seg_sec) * sr):int(a_end * sr)]
 
         zA = encode(model, A_seg, sr)
@@ -182,8 +203,17 @@ def main():
             bars = max(1, round((W_req / FPS) / bar_sec))
             W = int(round(bars * bar_sec * FPS))
             residual = W / FPS - bars * bar_sec          # seconds, |r| < 1 frame
-            b_start = b_start0 + residual
-            B_seg = Bs[:, int(b_start * sr):int((b_start + args.seg_sec) * sr)]
+            cut = b_start0 + residual
+            raw_seg = B[:, int(cut * sr):int((cut + args.seg_sec * 1.5) * sr)]
+            if abs(speed - 1.0) > 0.005:
+                # ramp: matched to A's tempo at the window, bending to NATIVE by
+                # window end (DJ pitch-bend); follow: matched throughout
+                ramp_to = 1.0 if args.tempo_mode == "ramp" else None
+                Bseg_s = bungee_stretch(raw_seg, sr, speed,
+                                        ramp_to=ramp_to, ramp_out_sec=W / FPS)
+            else:
+                Bseg_s = raw_seg
+            B_seg = Bseg_s[:, :int(args.seg_sec * sr)]
             zB = encode(model, B_seg, sr)
             cB = compute_same_chroma(B_seg.T, sr).reshape(384, -1)
             print(f"  [win] req {W_req}f -> {W}f = {bars} bars (residual {residual*1000:+.1f}ms)", flush=True)
