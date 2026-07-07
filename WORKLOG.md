@@ -1043,3 +1043,95 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
 - 2026-07-07 ~01:30 (CONTINUITY): KIM'S AUDITION FOLLOW-UPS ALL RENDERED — (1) evr3x@0.33 arm (12 clips into newcap8_promptstyle); (2) newcap8_promptstyle_longform: 12x 3:10 renders, 2048 frames with a 512-frame latent slerp crossfade mid-render (longform CrossfadeStitcher; dtype gotcha: slerp's fp32 ramp vs fp16 decoder — cast before decode); (3) newcap8_density_control: 432/432 clips, onset LatCH (beat_grid impulse target, rho=mu=512 — retests the "onset heads dead" verdict with impulse targets) vs FusionCC FiLM (gain 6) vs both-at-half, d3/d7, full grid. New docs: checkpoint-hall-of-fame.md (entry 1: x20b3ygb ep3-5400 r16 fusion), todos additions (r16 rerun w/ new dataset stack, big-rank damping, novelty-gated updates). W asked to re-sync mirror; G's UI scope extended. New tools: eval/{longform_crossfade_eval,density_control_eval}.py.
 - 2026-07-07 (GHOST-NOTE): fixed two real issues Kim hit on the live control_runs/A_cc_v2 page. (1) READABILITY: the sortable table (added 2026-07-06 for control grids) was missing a `seed` column -- rows sharing the same prompt (and near-identical gain/density after sorting) looked like unexplained duplicates because the ONE thing distinguishing them wasn't shown at all. Added `seed` to `TABLE_COLS` in `eval_grid.py`'s `GRID_JS_TEMPLATE`, and clarified the page's descriptive text explicitly: "ONE checkpoint (this page is a single trained adapter) · rows vary by prompt/seed/gain/density -- not by checkpoint" (Kim's exact question -- "different checkpoints? seeds?" -- is now answered on the page itself). (2) PLAYBACK GLITCH: "the sound tends to cut up right after hitting play on a row" -- root cause: all three play() implementations (grid heatmap, DoRA table+compare, prompt-style compare) seeked to the shared playhead position as soon as `loadedmetadata`/`readyState>=1` (HAVE_METADATA) fired, which is too early for a compressed AAC stream served progressively -- seeking into a not-yet-buffered position produces an audible stutter right at playback start. Replaced all three copies with a shared `seekAndPlay()` helper that waits for `readyState>=3` (HAVE_FUTURE_DATA) or the `canplay` event (whichever fires first, with a 1.2s fallback timer so a slow/odd network state can't hang playback), plus an explicit `audio.pause()` before reassigning `.src` on every click (defensive, avoids any in-flight-seek/decode overlap when switching clips). Verified in the stubbed-DOM node harness (headers include seed, row click registers the canplay listener instead of seeking immediately, no throws) and leak-scanned clean. Same fix applies automatically to every other page using these three templates (renders_dora, newcap8_promptstyle, all composed_sweep grids) since they share the same JS templates.
 - 2026-07-07 (GHOST-NOTE): aggregated the "dozens of onset control N links" mess on the evals landing (Kim: "that's messy AF"). `control_runs` landing entries went from 104 -> 14 (12 curated + 2 new). Surveyed the 90 generic-labeled ("onset control N"/"bracket sweep N"/etc) entries first via a research agent rather than guessing at the split: 80 onset-control, 6 control-run, 4 bracket sweep, 1 collapse test, 1 comparison; only 64/80 onset-control dirs actually have an `onset_eval.json` gain x density grid, the rest are heterogeneous (auditions/multiprompt/trajectory/soup/pilot/bracket). Built TWO new pages instead of forcing everything into one: (1) `_onset_control_audit` -- `eval_grid.py`'s new `render_checkpoint_audit_page()`/`AUDIT_JS_TEMPLATE`, a single dropdown over all 64 independent checkpoints + one sortable table for whichever is selected (not a dual-pane compare -- these are unrelated experiments with different sweep ranges, a synced row identity across them would be a mostly-blank union table); 2941 records total. (2) `_misc_uncurated_runs` for the remaining 28 structurally-different runs. **First design was wrong and caught before shipping**: my initial `write_misc_bundle_folder()` inlined every member's clips as `<span class="cell">` elements onto one flat page -- rebuilt and found via `grep -c 'class="cell"'` that this was 12237 cells on one page, not the "~28 small pilots" I assumed; several "misc" runs are actually large multi-epoch training-telemetry sweeps (`onset_AdamW_lr7.5e-5_randomcrop_20ep` alone is 2640 clips). Redesigned: misc runs now still get routed through the exact same grid/table/style/flat writer logic as any normal folder (so each keeps its own correctly-sized real page, e.g. the 2640-clip run gets its own flat player), and `_misc_uncurated_runs` became a lightweight table-of-contents linking to each member's page (`../<name>/index.html`) with date/subtitle/verdict/clip-count -- zero inlined clips on the index itself, verified. Also fixed the shared `PLAYER_JS` seek-glitch (same `readyState>=3`/`canplay` fix as the grid/table/style templates, applied here too since flat-player pages use it). Verified the audit page's JS in the stubbed-DOM node harness (64 options render, sortable table builds, no throws) and leak-scanned both new pages clean (0 absolute paths / checkpoint filenames / addrs). Handed to WINTERMUTE for deploy.
+- [2026-07-07 03:23] (night-0707) g175 grid done; starting transition_lab (03:23)
+- [2026-07-07 03:23] (night-0707) transition_lab done (exit 1) -> newcap8_transitions (03:23)
+- [2026-07-07 03:24] (night-0707) familiarity smoke FAIL (exit 0) -> stage D will be skipped (03:24)
+- [2026-07-07 03:24] (overnight-0707) A START — goa r16 fusion, new dataset stack (tiered captions + TrackType 0.5), 8ep (03:24)
+- [2026-07-07 04:19] (overnight-0707) A done -> dora16_goa_newstack_8ep (exit 1) (04:19)
+- [2026-07-07 04:19] (overnight-0707) B START — avp r16 dora-rows fusion lr2e-4 8ep (trigger prompts, full-mix crops) (04:19)
+- [2026-07-07 04:19] (overnight-0707) B done -> dora16_avp_8ep (exit 0) (04:19)
+- [2026-07-07 04:19] (overnight-0707) C START — avp r128 ADJUSTED (alpha 45 = rsLoRA alpha/sqrt(r) matched to r16) 8ep (04:19)
+- [2026-07-07 04:21] (night-0707) g175 grid done; starting transition_lab (04:21)
+- [2026-07-07 04:22] (night-0707) g175 grid done; starting transition_lab (04:22)
+- [2026-07-07 04:23] (night-0707) transition_lab done (exit 0) -> newcap8_transitions (04:23)
+- [2026-07-07 04:24] (night-0707) familiarity smoke PASS -> stage D armed (04:24)
+- [2026-07-07 04:24] (overnight-0707) A START — goa r16 fusion, new dataset stack (tiered captions + TrackType 0.5), 8ep (04:24)
+- [2026-07-07 04:40] (GHOST-NOTE) RENDERS_REFIXED batch shipped: 4 new/rebuilt eval pages + a global bug fix, ready for W's sync.
+  (1) newcap8_promptstyle rebuilt with the evr3x_w033 arm (72 clips) — fixed load_promptstyle_data() to backfill
+  clips staged ahead of pq_scores.json scoring (parses filenames directly, shows unscored rows as "·" rather
+  than silently dropping the whole arm) — a real gap, not just this one arm; will recur whenever clips land
+  before Audiobox scoring catches up. (2) newcap8_promptstyle_longform: real arm x seed-order table replacing
+  the flat-grid fallback, with a "jump to crossfade" shortcut (computed from window_frames/total_frames at the
+  SA3 10.767 Hz grid — confirmed exact against transitions' run_meta.json window_frames [768,1280], which
+  matches my derived ~71.3s-118.9s almost exactly). (3) newcap8_density_control_g175: new grid UI (432 clips,
+  arm dropdown + sortable table over prompt/style/seed/condition/density) + the control-authority column Kim
+  asked for — wrote eval/measure_density_control_onsets.py (librosa onset_detect, same approach as
+  sa3_control/multi_eval.py) and ran it over all 432 clips (mir venv, CPU-only, ~2min). (4) newcap8_transitions
+  (6 clips, landed from the overnight transition_lab loop mid-session) — same table pattern as longform,
+  transcoded the 6 wavs myself since they hadn't hit staging yet. (5) findings/status annotations: wired
+  run_purposes.json's human-authored findings/status into eval_grid.py (provenance_html(), new PROVENANCE_CSS)
+  and threaded through every render_*_page + write_folder call site — HISTORICAL/SUPERSEDED runs now get an
+  auto-linked banner (verified: newcaption_ab correctly links to newcap8_promptstyle, old newcap8_density_control
+  links to _g175), "current" runs get no banner, findings render as a "what we learned" box. Scope note: this
+  only covers build_evals.py's own pipeline (control_runs/renders folders) — gain_knee.html and dora_results.html
+  are separate riffer-evals curated pages with their own generators (build_dora_results_page.py; couldn't find
+  gain_knee's), not wired up. Caught + fixed along the way: a PRE-EXISTING bug present in every write_*_folder
+  call site (including my own new ones, since I'd copied the existing pattern) — head() was called with an
+  already-html.escape()'d label, double-escaping any apostrophe/entity into garbage like "seeds&amp;#x27; segments"
+  in every page title with a possessive in its name. One-line fix x8 call sites, verified zero remaining
+  double-escapes site-wide. All new/changed pages leak-scanned clean (0 abs paths/ckpt filenames/addresses) and
+  JS-verified via the node stubbed-DOM harness (density-control: 6-arm dropdown, 72-row table, no throws).
+  Handed to WINTERMUTE for leak-scan + rsync + landing links.
+- [2026-07-07 04:45] (GHOST-NOTE) findings/status extended to the two riffer-evals curated pages CONTINUITY
+  cleared: dora_results.html (has a real generator, ~/build_dora_results_page.py — added a findings-box, ran
+  it, all 276 AAC clips reused/cached so it was a fast regen) and gain_knee.html (confirmed NO generator exists,
+  static HTML from the pre-run_meta era — hand-edited directly per CONTINUITY's explicit go-ahead, added its
+  HISTORICAL banner auto-linking to newcap8_density_control_g175 + a findings box, matching its own dark-theme
+  CSS since it doesn't share evals.css). Both leak-scanned clean, re-synced via build_evals.py's
+  sync_riffer_pages(). This closes the findings/status task completely — all 7 dirs CONTINUITY named now carry it.
+- [2026-07-07 09:12] (overnight-0707) A done -> dora16_goa_newstack_8ep (exit 0) (09:12)
+- [2026-07-07 09:12] (overnight-0707) B START — avp r16 dora-rows fusion lr2e-4 8ep (trigger prompts, full-mix crops) (09:12)
+- [2026-07-07 10:15] (GHOST-NOTE) Two more Kim asks (via CONTINUITY, after he went looking and hit gaps):
+  (1) composed_sweep now has ONE findable page: A_cc/A_cc_v2/E_fusion/E_fusion_v2 (control-DiT adapter +/-
+  LatCH, 162 clips each = 648 total) previously only existed as 2 of the 4 members individually staged
+  (A_cc_v2/E_fusion_v2) each surfacing under a generic auto-derived label ("Stage 1 cell E re-render...")
+  that never said "composed sweep" anywhere — unfindable by name, which is why Kim couldn't find it. Staged
+  the missing A_cc/E_fusion (324 clips, transcoded from Mantu1, wasn't done before). Since these 4 stages are
+  DIRECTLY comparable (unlike the unrelated onset-control-audit runs), built a new dropdown+FULL-grid-heatmap
+  page (eval_grid.render_composed_sweep_page/COMPOSED_JS_TEMPLATE) rather than reusing the audit page's
+  flat-table-only view — Kim explicitly wants "the full grid treatment (gain x density cells + corr coloring)",
+  which needed a new renderer combining the checkpoint-audit's dropdown with the single-run grid page's
+  heatmap/corr/toggle logic. Purpose text flags E_fusion_v2 as Kim's rated favorite. (2) Landing page gained
+  a flat "All runs, newest first" section (33 entries, both categories merged, sorted by date only) above the
+  existing Control-runs/Renders category split — Kim: "the front page does not make it easy to find runs
+  simply in order of creation." Both verified: composed_sweep JS-harness-checked (163-row table, no throws),
+  both leak-scanned clean. control_runs landing count went 14->13 (net: -2 individual entries +1 aggregate).
+- [2026-07-07 11:28] (overnight-0707) B done -> dora16_avp_8ep (exit 0) (11:28)
+- [2026-07-07 11:28] (overnight-0707) C START — avp r128 ADJUSTED (alpha 45 = rsLoRA alpha/sqrt(r) matched to r16) 8ep (11:28)
+- [2026-07-07 13:47] (overnight-0707) B done (chain truncated after B per Kim; C+D -> TODO/LUMI-G) (13:47)
+- [2026-07-07 14:08] (overnight-0707) transitions r2 done on GPU; finishing C's last epoch (14:08)
+- [2026-07-07 14:30] (overnight-0707) C FINISHED — dora128adj_avp_8ep_final (8/8 epochs, warm-started from ep6) (14:30)
+- [2026-07-07 15:05] (GHOST-NOTE) 3 more eval pages, all new models CONTINUITY flagged today:
+  (1) dora16_goa_newstack_8ep — Kim's headline A/B (new caption stack vs the old HoF best). 30 unscored
+  clips (9 newstack epoch ckpts + HoF x20b3ygb ep3-5400) x 3 prompts, no pq_scores.json yet. New renderer
+  (eval_grid.render_epoch_progress_page/load_epoch_progress_data, write_epoch_progress_folder) — dual-pane
+  like the DoRA compare but without the CE/CU/PC/PQ columns (would've all been empty "·"), pane A defaults
+  to the LAST epoch, pane B auto-detects + pins to the HoF checkpoint from run_meta.json's checkpoints dict
+  (matched by "hof" key + a distinctive tag fragment appearing in its value string) — verified both defaults
+  land correctly (epoch7 / x20b3ygb). Source lived in a renders_cpu/ subfolder of the run dir (not the top
+  level) — added a small RENDERS_SOURCE_ALIASES dict so the staged/landing name stays the descriptive run
+  name instead of the generic "renders_cpu". (2) a2a_kaikkialla — full-track (7:39) a2a noise ladder of
+  Kim's own Kaikki-Alla through two adapters (evr1x/newstack), nl 0.2-0.7. Combined the two per-adapter
+  source dirs into ONE row=nl x col=adapter table (write_a2a_ladder_folder) via the same cross-folder
+  relative-clip pattern as composed_sweep, diverting the two individual dirs out of the landing (same
+  "one findable page, not two+one" precedent). Confirmed via mtimes the re-rendered (120s-clamp-fixed)
+  clips were the ones staged, not stale ones. (3) newcap8_transitions_r2 — extended write_transitions_folder
+  (built for r1) to group by LENGTH first (512f/1024f) then arm, since Kim's r2 hypothesis is whether a
+  shorter total length fixes a weak-kick/noisy character. The transition-window fix generalizes cleanly:
+  the crossfade sits at a FIXED FRACTIONAL position (37.5%-62.5%) regardless of total length — verified this
+  ratio is identical across r1 (768/2048, 1280/2048) and r2's documented 1024-frame variant (384/1024,
+  640/1024) — so per-length windows are computed as frac*that_length's_own_frame_count, not the literal
+  frame numbers (which would be nonsensical applied to the 512f variant, since 640>512). All three
+  leak-scanned clean, dora16 JS-harness-verified (both pane defaults confirmed programmatically). Handed
+  to WINTERMUTE for sync.
+- 2026-07-07 ~15:45 (CONTINUITY): CHROMA-MORPH TRANSITIONS SHIPPED — real-track A->B transitions (Kaikki-Alla/Angelic Particles/Vapausvoima cycle) with bungee beatmatch (B follows A; KA+AP both 147.7bpm, VV 139.7 stretched), 512/1024-frame latent slerp crossfades, graded a2a refine at nl .35/.42/.5/.55, and the PROVEN 06-25 stem-chroma LatCH head (cosine, gain 2048) morphing measured A-chroma->B-chroma across the window; plain refs for every config -> 48 clips, Mantu1/sa3_lora_runs/chroma_morph_transitions. Infra: model.generate now takes latch target_raw (per-frame measured targets) + guided-path init_latents (a2a UNDER LatCH guidance — new capability). Also: 3-track full a2a ladders at Kim's rates; CONSTRUCTS.md channel etiquette; generate() 120s sample_size clamp fixed everywhere.
