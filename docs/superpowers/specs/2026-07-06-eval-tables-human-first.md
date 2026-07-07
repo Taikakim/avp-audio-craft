@@ -145,3 +145,30 @@ CE/CU/PC/PQ (+ any measured features), sortable, colour-graded, dual-pane to com
   checkpoint FILENAMES and absolute PATHS stay off. This is the whole point of a checkpoint
   comparison — the human is choosing *between training recipes*, so the recipe must be visible
   next to the audio, not just an opaque arm label.
+
+## 13. Waveform popup player for long clips (Kim, 2026-07-07)
+
+- **Requirement**: any clip **longer than 20 s** gets, next to its normal cell button, a small
+  waveform-player affordance (`〰` icon button). Clicking it opens a **popup (modal overlay)
+  player**: rendered waveform of the clip with a moving playhead, where **clicking/tapping a
+  position on the waveform seeks directly to it**. Purpose: long-form and a2a/transition clips
+  (2–8 min) where "jump to the relevant place" is the whole review action.
+- **Popup, not inline**: grids stay dense; the modal is a single shared element per page,
+  repopulated per clip. Dismiss = ✕ button / click-outside / Esc. Audio keeps playing through
+  the SAME `<audio>` element the cell uses, so the **same-playhead convention (§ MASTER) is
+  preserved** — opening the popup neither restarts nor forks playback; closing it doesn't stop it.
+- **Waveform source**: client-side, lazy — on first open per clip, `fetch` the m4a →
+  `AudioContext.decodeAudioData` → compute ~1000–2000 min/max peak pairs → draw to `<canvas>`
+  → cache peaks per URL for the session. No build-time sidecars (the deploy excludes `*.json`,
+  and precomputing would couple the transcode step to the UI). Show a "decoding…" shimmer while
+  computing; on decode failure (old Safari/AAC quirk) fall back to a seekable progress bar —
+  the popup must still seek even without the picture.
+- **Layout**: desktop (the 2K main case) — modal ~`min(1400px, 90vw)` wide, waveform ~160 px
+  tall, time ruler beneath, clip label + provenance line above. Phone — full-width modal,
+  waveform ~96 px, touch `pointerdown` seeks; buttons ≥44 px tap targets. Keyboard: Space
+  play/pause, ←/→ ±5 s, Esc close.
+- **Threshold detection**: client-side from `audio.duration` on `loadedmetadata` (≥20 s shows
+  the button) — no generator-side duration bookkeeping needed, works for every page including
+  already-built ones once the shared JS ships.
+- **Where**: shared JS/CSS in `build_evals.py` (all its pages inherit); the riffer-evals
+  curated generators (`~/build_*.py`) adopt the same snippet as follow-up.
