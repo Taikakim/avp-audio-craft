@@ -348,3 +348,18 @@ kneed at 1.4 — calibrate per checkpoint, never reuse a gain). LatCH onset_enve
 negative NOW TWICE by ear ("curiously bad", d3~d7 identical) — activation-head family stays
 dead for steering. [gap] composed_sweep never had an eval page; front page lacks a
 chronological index — both with G now.
+
+## 2026-07-07 — a2a noise-ladder ear calibration (Kim) + the 120s generate() trap
+[gotcha] `StableAudioModel.generate(sample_size=5292032 DEFAULT)` silently CLAMPS every
+request to 120s via _adapt_sample_size — callers must pass sample_size explicitly for
+long renders (fixed in eval/{a2a_fulltrack,transition_lab}.py with _budget(); my zero-pad
+masked it = the no-silent-caps sin, now raises). Last night's 190s v1_inpaint clips were
+120s-truncated (missing B-side context) — part of the weak-transition verdict explained.
+[finding] Kim's ladder calibration (valid on the un-truncated first 120s): change becomes
+audible from nl 0.3 ("0.3 onward is texture" — parallels his image-SDEdit experience,
+cross-modal consistency); 0.4 ≈ similar; 0.5 very different but recognizable, with MASSIVE
+spacious droning pads/atmospheres appearing in the background — Kim's hypothesis: the
+model's default FILL for regions where content is demanded but unconstrained (rhymes with
+gain_knee d8 "more pad-ish sounds added" + the outro-cheat family: under-constraint gets
+papered over with atmosphere); 0.6 ≈ full-on regeneration. Matches prompting.md's bands
+(0.4-0.5 timbre transfer, 0.6 style) ON OUR FINE-TUNES.
