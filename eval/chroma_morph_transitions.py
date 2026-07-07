@@ -118,6 +118,10 @@ def main():
     ap.add_argument("--prompt", default="aggressive upbeat goa trance")
     ap.add_argument("--no-chroma-ref", action="store_true",
                     help="ALSO render a chroma-guidance-OFF reference per config")
+    ap.add_argument("--mode", choices=("refine", "inpaint"), default="refine",
+                    help="refine = whole-composite a2a at each nl (the 07-07 first batch); "
+                         "inpaint = PURE transition: original audio outside the window, "
+                         "chroma-guided inpaint generation of the bridge (no nl dimension)")
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     wins = [int(x) for x in args.windows.split(",")]
@@ -183,10 +187,18 @@ def main():
 
             dur = Tz / FPS
             audio_ref = None  # decode lazily only if needed
-            for nl in nls:
+            if args.mode == "inpaint":
+                nls_eff = [None]
+                # window bounds in the composite (frames -> seconds)
+                w_lo = (zA.shape[-1] - W) / FPS
+                w_hi = zA.shape[-1] / FPS
+            else:
+                nls_eff = nls
+            for nl in nls_eff:
                 for chroma_on in ([True, False] if args.no_chroma_ref else [True]):
                     tag = "chroma" if chroma_on else "plain"
-                    out = args.out_dir / f"{a_key}2{b_key}__w{W}_nl{int(nl*100):02d}_{tag}.wav"
+                    nl_tag = "inpaint" if nl is None else f"nl{int(nl*100):02d}"
+                    out = args.out_dir / f"{a_key}2{b_key}__w{W}_{nl_tag}_{tag}.wav"
                     if out.exists():
                         print(f"[skip] {out.name}", flush=True)
                         continue
@@ -197,15 +209,37 @@ def main():
                             audio_ref = pre.decode(z.to(next(pre.parameters()).dtype))[0]
                     kw = dict(prompt=args.prompt, duration=dur, steps=args.steps,
                               cfg_scale=args.cfg_scale, seed=1234, batch_size=1,
-                              sample_size=int((dur + 8) * sr),
-                              init_audio=(sr, audio_ref.float()), init_noise_level=nl)
+                              sample_size=int((dur + 8) * sr))
+                    if nl is None:  # pure-transition inpaint of the window
+                        kw["inpaint_audio"] = (sr, audio_ref.float())
+                        kw["inpaint_mask_start_seconds"] = w_lo
+                        kw["inpaint_mask_end_seconds"] = w_hi
+                    else:
+                        kw["init_audio"] = (sr, audio_ref.float())
+                        kw["init_noise_level"] = nl
                     if chroma_on:
                         kw["latch_configs"] = [{"model_path": CHROMA_HEAD,
                                                 "target_raw": target,
                                                 "weight": 1.0, "end_pct": 0.6}]
                         kw["latch_hparams"] = {"rho": CHROMA_GAIN, "mu": CHROMA_GAIN}
                     outa = model.generate(**kw)
-                    save_audio(out, outa[0], sr, normalize=True)
+                    y = outa[0].float().cpu().numpy()
+                    if nl is None:
+                        # splice ORIGINAL audio back outside the window (1s fades)
+                        ref = audio_ref.float().cpu().numpy()
+                        n = min(y.shape[1], ref.shape[1])
+                        y, ref = y[:, :n], ref[:, :n]
+                        lo_n, hi_n = int(w_lo * sr), min(int(w_hi * sr), n)
+                        f = int(1.0 * sr)
+                        outy = ref.copy()
+                        outy[:, lo_n:hi_n] = y[:, lo_n:hi_n]
+                        r = np.linspace(0, 1, f, dtype=np.float32)
+                        if lo_n - f >= 0:
+                            outy[:, lo_n - f:lo_n] = ref[:, lo_n - f:lo_n] * (1 - r) + y[:, lo_n - f:lo_n] * r
+                        if hi_n + f <= n:
+                            outy[:, hi_n:hi_n + f] = y[:, hi_n:hi_n + f] * (1 - r) + ref[:, hi_n:hi_n + f] * r
+                        y = outy
+                    save_audio(out, torch.tensor(y), sr, normalize=True)
                     print(f"[clip] {out.name}  {time.time()-t0:5.1f}s", flush=True)
     print("[done]", flush=True)
 
