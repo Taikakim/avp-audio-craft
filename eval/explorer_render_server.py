@@ -666,6 +666,23 @@ def _a2a_mix_impl(req):
             residual = 0.0
         seg = max(seg, 1.6 * W / FPS)
         ws_sec = max(0.0, trans_lo)
+        if quantize_bars:
+            # bar-grid coincidence (cmt.main 257-272 guarantee, generalized): B's
+            # downbeat anchor sits at composite 0 and A's at composite `seg`. The
+            # script got A/B grid coincidence for free (window = last W frames of
+            # A_seg, both anchors ON the window edges); here the window is
+            # user-placed, so BOTH the window start and seg must be whole bars or
+            # the grids sit `seg mod bar` + `ws mod bar` apart inside the blend.
+            ws_q = max(0.0, round(ws_sec / bar_sec) * bar_sec)
+            if abs(ws_q - ws_sec) > 0.02:
+                warnings.append(f"window start snapped {ws_sec:.2f}s -> {ws_q:.2f}s "
+                                f"(A/B bar-grid coincidence)")
+            ws_sec = ws_q
+            seg_q = math.ceil(seg / bar_sec - 1e-9) * bar_sec
+            if abs(seg_q - seg) > 0.02:
+                warnings.append(f"seg grown {seg:.2f}s -> {seg_q:.2f}s (whole bars, "
+                                f"A anchor on the composite bar grid)")
+            seg = seg_q
         if ws_sec + W / FPS > seg:
             ws_sec = max(0.0, seg - W / FPS)
             warnings.append(f"transition window shifted to start {ws_sec:.1f}s to fit seg")
@@ -685,9 +702,13 @@ def _a2a_mix_impl(req):
             A_seg = np.concatenate([pad, A_seg], axis=1)
             warnings.append(f"A front-padded {pad.shape[1]/SR:.1f}s")
 
-        # cut + bungee-stretch B (cmt.main 272-282; cut on the RAW track, residual
-        # shifts the cut so kicks align inside the blend; then stretch the cut)
-        cut = b_start + residual
+        # cut + bungee-stretch B (cmt.main 272-282; cut on the RAW track, shifted
+        # so kicks align inside the blend; then stretch the cut). The script folds
+        # the WINDOW residual because its anchors sit on the two window edges (W
+        # frames apart); here A's anchor is at composite `seg` and B's at 0, so the
+        # grid-coincidence fold is seg's off-grid remainder (0 when quantized above).
+        seg_resid = seg - round(seg / bar_sec) * bar_sec
+        cut = b_start + seg_resid
         src = B[:, int(cut * SR):int((cut + seg * 1.5) * SR)]
         if tempo_match and abs(speed - 1.0) > 0.0005:
             if tempo_mode == "ramp" and ws_sec > 0.05:
@@ -743,8 +764,8 @@ def _a2a_mix_impl(req):
             pad = np.zeros((B_seg.shape[0], target_n - B_seg.shape[1]), dtype=B_seg.dtype)
             B_seg = np.concatenate([B_seg, pad], axis=1)
             warnings.append(f"B end-padded {pad.shape[1]/SR:.1f}s")
-        if abs(residual) > 0.02:
-            warnings.append(f"bar-quantize residual {residual*1000:+.0f}ms folded into B cut")
+        if abs(seg_resid) > 0.02:
+            warnings.append(f"bar-grid remainder {seg_resid*1000:+.0f}ms folded into B cut")
         stages["beatmatch"] = time.time() - ts
 
         # 7. encode + composite: both sides share the composite timeline; slerp
@@ -849,7 +870,11 @@ def _a2a_mix_impl(req):
         save_audio(bridge_path, torch.tensor(y), SR, normalize=True)
 
         # 11. pure-basis splice (cmt.main 394-419; offB generalizes to 0 because
-        # B_seg shares the composite timeline here)
+        # B_seg shares the composite timeline here). FAITHFUL to the script incl.
+        # its f2 (0.5 s) B-side shift: origB = B_seg[hi_n - offB - f2:] means the
+        # fade and everything after the window play original-B 0.5 s late relative
+        # to the composite grid — the ear-ranked proven renders include that shift,
+        # so we reproduce it rather than the grid-aligned variant.
         if mode == "sinesweep" and pure_basis:
             S = seam_inpaint / FPS if seam_inpaint > 0 else 0.0
             lo_n = int(max(ws_sec - S / 2, 0) * SR)
@@ -863,10 +888,13 @@ def _a2a_mix_impl(req):
                 out_full[:, n0 - f2:n0] = (A_seg[:, n0 - f2:n0] * (1 - rmp)
                                            + y[:, n0 - f2:n0] * rmp)
             m2 = min(y.shape[1], B_seg.shape[1])
-            if hi_n + f2 <= m2:
+            if f2 <= hi_n and hi_n + f2 <= m2:
                 out_full[:, hi_n:hi_n + f2] = (y[:, hi_n:hi_n + f2] * (1 - rmp)
-                                               + B_seg[:, hi_n:hi_n + f2] * rmp)
-                out_full[:, hi_n + f2:m2] = B_seg[:, hi_n + f2:m2]
+                                               + B_seg[:, hi_n - f2:hi_n] * rmp)
+                out_full[:, hi_n + f2:m2] = B_seg[:, hi_n:m2 - f2]
+            else:
+                warnings.append("pure-basis B splice skipped (window too close to "
+                                "composite start/end)")
             y = out_full
 
         # inpaint mode: original-audio splice-back with 1s fades (cmt.main 420-434)
