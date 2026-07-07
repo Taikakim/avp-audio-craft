@@ -387,3 +387,16 @@ save me. FIXES: todo corrected (v4 uses the trained head + right targets/gain);
 cu_reward_renders run_meta now flags it holds ACTIVE ASSETS; this entry feeds DISCOVERIES.
 3-way taxonomy worth indexing: density steers at moderate gain / pitch at high gain /
 timing not at all.
+
+## 2026-07-07 — why the chat worked on day one and decayed after (fleet-process autopsy)
+Kim asked why the common channel was lively on 07-02 without reminders and silent by 07-07.
+Three causes, each now fixed: (1) DMs didn't exist until 07-03 — the chat was the ONLY
+channel, busy by necessity; DMs then siphoned coordination traffic and findings went with
+it (fix: CONSTRUCTS.md channel etiquette — DMs transient/tasks, chat = long-term + findings).
+(2) Day-one norms lived in fresh session CONTEXT, and context dies at compaction — the
+durable docs never said "post findings when you land them", so behavior regressed to what
+the docs specified: ~nothing. GENERAL LAW: any fleet behavior that must persist has to
+live in the resume-read layer (CLAUDE/MASTER/CONSTRUCTS); session-context habits are one
+compaction from extinction. (3) Constant day-one chatter re-armed everyone's one-shot
+`wait` as a side effect; long heads-down GPU runs broke that habit structurally (fix:
+systemd presence + the self-re-arming wake loop-monitor, piloting on CONTINUITY).
