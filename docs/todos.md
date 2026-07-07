@@ -11,7 +11,11 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       meter from existing TIMESERIES (source-vs-output onset+band-RMS correlation,
       excess-sustained-energy = pad-fill signature — Kim's "envelope timings stay
       close to the example", zero new models); (c) RT60/depth deltas as eval columns
-      + best-of-N rerank penalty in longform; (d) later: LatCH head on RT60/depth
+      + best-of-N rerank penalty in longform — W's meter finding 2026-07-07: RT60
+      SATURATES at ~1.1s (Loellmann ceiling, 24% of tracks peg; prob collapses with
+      it) exactly where pad-fill is strongest -> DEPTH-primary (clean 49-69 spread),
+      RT60 secondary/dry-side-only; heavy-tail rerank needs a longer-range estimator
+      or the envelope meter carries it; (d) later: LatCH head on RT60/depth
       (energy-family scalar = the steerable kind). NOT a training-loss meter (scope
       law: RF already reconstructs reverb; the failure is generation-time).
 
