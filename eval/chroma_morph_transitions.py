@@ -72,7 +72,12 @@ def tempo_of(a, sr, around_sec=None):
     _, beats = librosa.beat.beat_track(y=ex, sr=sr, units="time")
     if len(beats) < 16:
         return 140.0
-    return float(60.0 / np.median(np.diff(beats)))
+    t = float(60.0 / np.median(np.diff(beats)))
+    # fold octave/subdivision locks (x2, /2, x1.5, /1.5 = the 2/3 lock) into the
+    # plausible goa band — the tracker regularly locks onto 2/3 subdivisions
+    cands = [t * f for f in (1.0, 2.0, 0.5, 1.5, 2.0 / 3.0, 3.0, 1.0 / 3.0)]
+    inband = [c for c in cands if 110.0 <= c <= 185.0]
+    return min(inband, key=lambda c: abs(c - 145.0)) if inband else t
 
 
 def bungee_stretch(audio, sr, speed, ramp_to=None, ramp_out_sec=0.0):
@@ -198,8 +203,8 @@ def main():
         ta = tempo_of(A, sr, around_sec=args.a_frac * A.shape[1] / sr)
         tb = tempo_of(B, sr, around_sec=args.b_frac * B.shape[1] / sr)
         speed = ta / tb            # playback speed multiplies tempo: tb*speed = ta
-        while speed > 1.35: speed /= 2
-        while speed < 0.74: speed *= 2
+        if not (0.85 <= speed <= 1.18):
+            print(f"  [warn] match ratio {speed:.3f} outside sane band — check tempo folds", flush=True)
         print(f"[{a_key}->{b_key}] tempo A={ta:.1f} B={tb:.1f} match speed={speed:.4f} "
               f"mode={args.tempo_mode}", flush=True)
 
