@@ -33,10 +33,20 @@ OVERLAP = 10.0
 
 def a2a(model, audio, sr, nl, prompt, seed, steps, cfg):
     a = torch.tensor(audio)
-    out = model.generate(prompt=prompt, duration=audio.shape[1] / sr, steps=steps,
+    dur = audio.shape[1] / sr
+    # generate()'s sample_size PARAMETER defaults to 5292032 (= 120.0 s) and the
+    # duration-adaptive sizing clamps to it — callers must pass the real budget
+    # or every long request silently truncates to 2 minutes (bit us 2026-07-07).
+    ds = model.model.pretransform.downsampling_ratio
+    budget = int(np.ceil((dur + 8.0) * sr / ds)) * ds
+    out = model.generate(prompt=prompt, duration=dur, steps=steps,
                          cfg_scale=cfg, seed=seed, batch_size=1,
+                         sample_size=budget,
                          init_audio=(sr, a), init_noise_level=nl)
-    return out[0].float().cpu().numpy()
+    y = out[0].float().cpu().numpy()
+    if y.shape[1] < audio.shape[1] * 0.98:           # fail LOUD, never pad silence
+        raise RuntimeError(f"a2a output {y.shape[1]/sr:.1f}s << requested {dur:.1f}s")
+    return y
 
 
 def main():
@@ -92,8 +102,6 @@ def main():
             chunk = audio[:, int(lo * sr):int(hi * sr)]
             y = a2a(model, chunk, sr, nl, args.prompt, args.seed,
                     args.steps, args.cfg_scale)[:, :chunk.shape[1]]
-            if y.shape[1] < chunk.shape[1]:
-                y = np.pad(y, ((0, 0), (0, chunk.shape[1] - y.shape[1])))
             pieces.append(y)
         if len(pieces) == 1:
             full = pieces[0]

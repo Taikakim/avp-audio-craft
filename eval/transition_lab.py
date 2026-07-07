@@ -49,9 +49,19 @@ EXTRA_ARMS = {
 }
 
 
+
+def _budget(model, dur_sec):
+    """generate()'s sample_size param defaults to 120s and CLAMPS the request —
+    pass the real budget for anything longer (the 2026-07-07 truncation bug)."""
+    sr = model.model.sample_rate
+    ds = model.model.pretransform.downsampling_ratio
+    return int((dur_sec + 8.0) * sr / ds + 1) * ds
+
+
 def gen_latents(model, seed, steps, cfg, seg):
     z = model.generate(prompt=PROMPT, duration=seg / FPS, steps=steps, cfg_scale=cfg,
-                       seed=seed, batch_size=1, return_latents=True)
+                       seed=seed, batch_size=1, return_latents=True,
+                       sample_size=_budget(model, seg / FPS))
     return z[..., :seg]
 
 
@@ -136,6 +146,7 @@ def sinemask_refine(model, audio_np, sr, nl, lo_f, hi_f, steps, cfg, seed):
 
     out = model.generate(prompt=PROMPT, duration=audio_np.shape[1] / sr,
                          steps=steps, cfg_scale=cfg, seed=seed, batch_size=1,
+                         sample_size=_budget(model, audio_np.shape[1] / sr),
                          init_audio=(sr, a[0]), init_noise_level=nl, callback=cb)
     return out[0]
 
@@ -190,6 +201,7 @@ def main():
         hard_audio = decode(model, z_hard)
         out = model.generate(prompt=PROMPT, duration=TOTAL / FPS, steps=args.steps,
                              cfg_scale=args.cfg_scale, seed=s1, batch_size=1,
+                             sample_size=_budget(model, TOTAL / FPS),
                              inpaint_audio=(sr, hard_audio),
                              inpaint_mask_start_seconds=WIN[0] / FPS,
                              inpaint_mask_end_seconds=WIN[1] / FPS)
