@@ -122,6 +122,8 @@ def main():
     args.out_dir.mkdir(parents=True, exist_ok=True)
     wins = [int(x) for x in args.windows.split(",")]
     nls = [float(x) for x in args.noise_levels.split(",")]
+    # segments must comfortably contain the largest crossfade window
+    args.seg_sec = max(args.seg_sec, 1.6 * max(wins) / FPS)
 
     meta = {"purpose": ("real-track transitions with CHROMA-MORPH steering: bungee "
                         "beatmatch (B follows A), latent slerp crossfade, graded a2a "
