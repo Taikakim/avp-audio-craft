@@ -400,3 +400,17 @@ live in the resume-read layer (CLAUDE/MASTER/CONSTRUCTS); session-context habits
 compaction from extinction. (3) Constant day-one chatter re-armed everyone's one-shot
 `wait` as a side effect; long heads-down GPU runs broke that habit structurally (fix:
 systemd presence + the self-re-arming wake loop-monitor, piloting on CONTINUITY).
+
+## 2026-07-07 — chroma-morph transitions: Kim's strongest verdict on record
+"The chroma steered versions rock so hard, this is honestly one of the coolest things
+I've heard in my nearly 30 years of music." Reference: chroma_morph_transitions/
+kaikki2angelic__w1024_nl35_chroma.wav — kicks in sync, "transformation practically
+seamless". The stack that did it: bungee beatmatch + latent slerp + whole-composite a2a
+@0.35 + stem-chroma LatCH head (cosine, gain 2048) morphing measured A->B chroma.
+Known defect: half-beat kick offsets on some clips (librosa BEAT-grid anchoring, not
+BAR anchoring) -> fix: downbeat snap (.DOWNBEATS sidecars / every-4th-beat fallback).
+Also Kim's v3 sinemask CLARIFIED: he meant a per-frame a2a DEPTH sweep (0 -> max at
+window centre -> 0, sine), not my static-blend clamp — implementable as a RELEASE
+SCHEDULE in the euler callback (frame released from its reference when global t falls
+below its sine depth) = fake per-frame sigma with a global loop. The per-moment sigma
+field, for real this time.
