@@ -1213,3 +1213,31 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
   applied to both chroma writer functions. All 4 actual pairs now render correctly. Leak-scanned clean.
   Handed to WINTERMUTE.
 - 2026-07-07 ~18:20 (CONTINUITY): RECIPE3 TRANSITIONS SHIPPED (Kim's spec end-to-end): pure-original basis (no a2a on the tracks), full bungee follow-match (B locked to A's BPM), downbeat snap + ONSET-CONCURRENCE fine-align (xcorr, corrections up to ±801ms — handles fills/risers), chroma-morphed latent slerp with sine noising peak 0.4 at midpoint, + seam-inpaint addenda (128/256/512-frame strips on both crossfade seams). Trackset phreaky/angelic/heron (incl. the acid-rock experiment). 48 clips -> transitions3_{sweep,seam128_256,seam512}. Under-constraint attractor doctrine recorded (3rd sighting; avoid: depth<=0.4 + aligned superposition + real-content basis). Day's ear-validations: refine-hybrid 'completely useable' (kaikki2angelic w1025 nl42 chroma), sync layer 'generally good beatmatching' (plain clips).
+- [2026-07-07 18:50] (GHOST-NOTE) transitions3 seam-sweep page shipped — Kim's newest recipe (pure-original
+  basis, follow beatmatch, onset-concurrence fine-align up to +/-801ms, chroma slerp + sine noising peak 0.4,
+  optional seam-inpaint addendum at 128/256/512 frames). 48 clips across 3 separate Mantu dirs
+  (transitions3_sweep/seam128_256/seam512) merged into ONE staged folder (filenames unique across all 3, no
+  collision risk) since they're logically one dataset. New write_transitions3_folder: per-pair sections, each
+  a table with seam-size as colspan column groups (no-seam/128/256/512) reading left-to-right per CONTINUITY's
+  ask, chroma/plain adjacent within each, rows = window (short/long per pair's own bar-snapped frame count).
+  Caught + fixed a real routing collision while building this: write_chroma_morph_folder's regex (nl-based, no
+  seam token) is a strict SUBSET of transitions3's (seam optional) -- it was matching just the no-seam 12-of-48
+  clips and claiming the folder FIRST in the try-chain, silently dropping the other 36 seam-tagged clips into
+  an incomplete page. Reordered transitions3's writer to try first (it's the more general regex), but that
+  created the mirror-image bug: it would then wrongly claim chroma_morph_transitions/chroma_morph_barsnap
+  themselves (regex still matches their seamless filenames). Fixed with a positive guard: transitions3's writer
+  now checks the data actually HAS seam variety before claiming the folder, falling through to chroma_morph
+  otherwise -- verified both directions post-fix (transitions3 gets its full 8-column layout, the two sibling
+  nl-only dirs still render with the plain 3-column chroma_morph table, unaffected by the reorder). Wrote a
+  proper distinguishing title/purpose for the merged page (the source dirs only carried identical generic
+  boilerplate purpose text) and protected it from being clobbered on a future re-transcode. Leak-scanned clean,
+  JS syntax-checked. Handed to WINTERMUTE.
+- [2026-07-07 22:05] (impl-1, explorer work order) SA3 EXPLORER RENDER SERVER shipped: `eval/explorer_render_server.py`
+  — FastAPI on :8056, medium-base resident, endpoints /info /status /audio /generate /a2a_track /a2a_mix /decode.
+  All render semantics lifted (imported, not re-derived) from chroma_morph_transitions.py (sinesweep release-callback,
+  seam-inpaint, pure-basis splice, bungee beatmatch, downbeat snap, fine-align, chroma-morph target) +
+  a2a_fulltrack.py (sample_size budget, >378s two-window crossfade) + density_control_eval.py (FiLM install +
+  ControlContext). DoRA registry (hof/newstack/evr1x) with reload-per-change; LatCH registry scanned at boot
+  (14 medium heads @512 + chroma_other @2048); server-side gain normalization rho=mu=g0, weight=gain/g0.
+  Import-tested under SAO/.venv; GUI side (mir explorer_sa3 Inference/A2A tabs) talks to it per the work order.
+- 2026-07-07 ~19:20 (CONTINUITY): LATENT-EXPLORER MEGABUILD shipped (ultracode, 10 agents): mir/plots explorer_sa3 + Inference tab + A2A-mix tab (waveform overlay, free offsets/snap-to-grid, off-centre transition range, sine noise schedule, seam-inpaint, dual prompts, harmonic steering default ON) + shared LatCH/FiLM/DoRA steering panel, over a new model-resident render server (SAO/eval/explorer_render_server.py, FastAPI :8056). Verified headless 5-tab boot + GPU end-to-end. Adversarial verify found an off-by-0.5s B-side splice bug in the PROVEN chroma_morph_transitions pure-basis path (today's pure renders carry it; server reproduces faithfully, documented). mir commits 854bb7f+372b075 (sa3-latent-explorer), SAO e5da447+fixes.

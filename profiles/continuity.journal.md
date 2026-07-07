@@ -424,3 +424,18 @@ default fill = spacious pads/drone. THREE independent sightings today: a2a ladde
 appearing = the region was under-constrained; fixes are structural (alignment so
 superposition stays coherent, depth <=~0.4, real content as basis) — and detection is the
 pad-fill stack (depth-primary timbral deltas + envelope meter, W's baselines running).
+
+## 2026-07-07 — latent-explorer megabuild (ultracode) + a bug found in my own proven script
+Workflow (10 agents): mir explorer gains an INFERENCE tab (full native-UI option set),
+an A2A MIX tab (waveform overlay, free clip offsets, snap-to-grid from A's BPM,
+OFF-CENTRE transition range, noising + sine schedule + seam-inpaint + dual prompts,
+harmonic steering default ON), and a shared LatCH/FiLM/DoRA steering panel (gain
+defaults 512 energy / 2048 chroma / FiLM 1-3) — thin Dash tabs over a new model-resident
+FastAPI render server (SAO/eval/explorer_render_server.py, port 8056, SA3 venv;
+/info /generate /a2a_track /a2a_mix /decode). Verified: 5-tab headless boot, 34 callbacks
+0 id mismatches, server end-to-end GPU smoke. [finding] The adversarial semantics
+verifier caught a real bug in MY chroma_morph_transitions.py pure-basis splice: original-B
+plays 0.5s LATE after the window (off-by-f2) — meaning today's chroma_transitions_pure
+renders carry that quirk; the server reproduces it FAITHFULLY (documented) since the
+ear-ranked renders include it. Fix-properly is a knob for later. Also generalized+verified
+the bar-grid fold for off-centre windows (phase error 0.00s).
