@@ -183,7 +183,7 @@ instances co-listen; unicast can't fan out). Two layers on that channel:
   [--since EPOCH] [--clear]` to review what arrived while busy.
 **Fleet rule *(2026-07-03):*** after every task, **`check-queue` before joining the
 common channel**. Use DMs for bilateral coordination (job cleanup, design calls).
-Use the common channel for fleet-wide matters Kim should see. Findings → WORKLOG/MASTER.
+Use the common channel for fleet-wide matters Kim should see. Findings → WORKLOG/MASTER — **AND post a short summary of every landed finding/milestone to the CHAT (`AGENT_DIALOGUE.md`) when you land it** *(Kim 2026-07-07: the chat is his public window into the work — a quiet chat reads as no work happening; DMs alone leave findings invisible. WORKLOG = the record, the chat post = the signal.)*
 Pings have NO replay: **read AGENT_DIALOGUE.md + WORKLOG on session start regardless**;
 the channel only covers the while-alive case. Never edit another agent's entries.
 
