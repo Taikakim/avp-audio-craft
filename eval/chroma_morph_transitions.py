@@ -385,6 +385,32 @@ def main():
                                                      "weight": 1.0, "end_pct": 0.6}]
                             kw3["latch_hparams"] = {"rho": CHROMA_GAIN, "mu": CHROMA_GAIN}
                         y = model.generate(**kw3)[0].float().cpu().numpy()
+                    if args.mode == "sinesweep":
+                        # PURE BASIS (Kim): original audio outside the transition
+                        # (+seam strips) — no a2a/codec touch on the tracks themselves
+                        S = args.seam_inpaint / FPS if args.seam_inpaint > 0 else 0.0
+                        w_lo_s = (zA.shape[-1] - W) / FPS
+                        w_hi_s = zA.shape[-1] / FPS
+                        lo_n = int(max(w_lo_s - S / 2, 0) * sr)
+                        hi_n = int(min((w_hi_s + S / 2) * sr, y.shape[1] * 1.0))
+                        f2 = int(0.5 * sr)
+                        rmp = np.linspace(0, 1, f2, dtype=np.float32)
+                        origA = A_seg[:, :lo_n + f2]
+                        # B's original timeline in the composite starts at (TA - W)
+                        offB = int((zA.shape[-1] - W) / FPS * sr)
+                        origB = B_seg[:, hi_n - offB - f2:]
+                        out_full = y.copy()
+                        n0 = min(lo_n, origA.shape[1], out_full.shape[1])
+                        out_full[:, :n0 - f2] = origA[:, :n0 - f2]
+                        out_full[:, n0 - f2:n0] = (origA[:, n0 - f2:n0] * (1 - rmp)
+                                                   + y[:, n0 - f2:n0] * rmp)
+                        tailN = out_full.shape[1] - hi_n
+                        ba = origB[:, f2:f2 + tailN]
+                        m2 = min(ba.shape[1], tailN)
+                        out_full[:, hi_n:hi_n + f2] = (y[:, hi_n:hi_n + f2] * (1 - rmp)
+                                                       + origB[:, :f2][:, :f2] * rmp)
+                        out_full[:, hi_n + f2:hi_n + f2 + m2 - f2] = ba[:, :m2 - f2]
+                        y = out_full
                     if nl is None:
                         # splice ORIGINAL audio back outside the window (1s fades)
                         ref = audio_ref.float().cpu().numpy()
