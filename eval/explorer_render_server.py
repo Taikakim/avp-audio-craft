@@ -56,6 +56,7 @@ from sa3_control.generate import load_adapter_state  # noqa: E402
 from harmonic.same_chroma import compute_same_chroma  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
+from stable_audio_3.inference.sampling import build_schedule  # noqa: E402
 from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 from stable_audio_3.models import transformer as _sa3_tf  # noqa: E402
 
@@ -73,6 +74,10 @@ DORA_REGISTRY = {
 FILM_DEFAULT_CKPT = ("/run/media/kim/Mantu1/sa3_control_runs/"
                      "onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")
 FILM_DEFAULT_GAIN = 1.75
+
+CKPT_SCAN_ROOT = Path("/run/media/kim/Mantu1/sa3_lora_runs")
+CKPT_JOURNAL_PATH = Path("/tmp/sa3_explorer_ckpt_journal.json")
+CKPT_JOURNAL_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------- globals
 ARGS = None
@@ -131,6 +136,21 @@ def require_path(p, what):
         hint = " — is Mantu1 mounted?" if str(pp).startswith("/run/media/") else ""
         raise FileNotFoundError(f"{what} not found: {pp}{hint}")
     return str(pp)
+
+
+def resolve_cfg_interval(req):
+    """(lo, hi) tuple in native SIGMA semantics — the DiT gates CFG on
+    cfg_interval[0] <= sigma <= cfg_interval[1] (dit.py), NOT on step index.
+    Accepts cfg_interval=[lo,hi] or cfg_interval_min/cfg_interval_max."""
+    ci = req.get("cfg_interval")
+    if ci is not None:
+        lo, hi = float(ci[0]), float(ci[1])
+    else:
+        lo = _f(req, "cfg_interval_min", 0.0)
+        hi = _f(req, "cfg_interval_max", 1.0)
+    if not (0.0 <= lo <= hi <= 1.0):
+        raise ValueError(f"cfg_interval ({lo}, {hi}) must satisfy 0 <= lo <= hi <= 1")
+    return (lo, hi)
 
 
 def resolve_seed(seed):
@@ -412,6 +432,97 @@ def status():
             "log_tail": list(LOG_RING)[-20:]}
 
 
+def _scan_ckpts(root: Path):
+    """Recursive *.ckpt / *.safetensors scan. Entries carry mtime+size so the
+    GUI (and a future incremental pass) can detect staleness cheaply."""
+    entries = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for fn in filenames:
+            if not (fn.endswith(".ckpt") or fn.endswith(".safetensors")):
+                continue
+            p = Path(dirpath) / fn
+            try:
+                st = p.stat()
+            except OSError:
+                continue                        # racing deletion / unreadable
+            entries.append({"path": str(p),
+                            "name": str(p.relative_to(root)),
+                            "mtime": st.st_mtime,
+                            "size": st.st_size,
+                            "kind": "safetensors" if fn.endswith(".safetensors") else "ckpt"})
+    entries.sort(key=lambda e: e["mtime"], reverse=True)
+    return entries
+
+
+@app.get("/ckpts")
+def ckpts(rescan: int = 0, root: str = None):
+    """Checkpoint journal for the GUI picker. Cached in a json journal
+    (/tmp/sa3_explorer_ckpt_journal.json, keyed by root); rescan=1 re-walks."""
+    rootp = Path(root) if root else CKPT_SCAN_ROOT
+    key = str(rootp)
+    with CKPT_JOURNAL_LOCK:
+        journal = {}
+        if CKPT_JOURNAL_PATH.exists():
+            try:
+                journal = json.loads(CKPT_JOURNAL_PATH.read_text())
+            except (OSError, json.JSONDecodeError):
+                journal = {}
+        cached = journal.get("roots", {}).get(key)
+        if cached is not None and not rescan:
+            return {"ok": True, "root": key, "cached": True,
+                    "scanned_at": cached["scanned_at"],
+                    "count": len(cached["entries"]), "entries": cached["entries"]}
+        if not rootp.is_dir():
+            hint = " — is Mantu1 mounted?" if key.startswith("/run/media/") else ""
+            resp = {"ok": False, "root": key, "error": f"scan root not found: {key}{hint}"}
+            if cached is not None:              # unmounted drive: serve stale journal
+                resp.update(ok=True, cached=True, stale=True,
+                            scanned_at=cached["scanned_at"],
+                            count=len(cached["entries"]), entries=cached["entries"])
+                return resp
+            return JSONResponse(resp, status_code=404)
+        t0 = time.time()
+        entries = _scan_ckpts(rootp)
+        scanned_at = time.time()
+        journal.setdefault("roots", {})[key] = {"scanned_at": scanned_at, "entries": entries}
+        tmp = CKPT_JOURNAL_PATH.with_suffix(".json.tmp")
+        try:
+            tmp.write_text(json.dumps(journal))
+            tmp.replace(CKPT_JOURNAL_PATH)      # atomic — concurrent readers see old or new
+        except OSError as e:
+            log(f"[ckpts] journal write failed: {e}")
+        log(f"[ckpts] scanned {key}: {len(entries)} ckpts in {scanned_at - t0:.1f}s")
+        return {"ok": True, "root": key, "cached": False, "scanned_at": scanned_at,
+                "count": len(entries), "entries": entries}
+
+
+@app.get("/schedule")
+def schedule(steps: int = 24, duration: float = 47.0, shift: int = 1,
+             sigma_max: float = 1.0):
+    """Real sigma schedule for the GUI chart — same build_schedule call the run
+    makes: dist_shift is length-dependent, seq_len = ceil(duration*SR/DS) exactly
+    as compute_effective_seq_len_from_conditioning derives it from seconds_total
+    (generate() sets use_effective_length_for_schedule=True). shift=0 -> linear.
+    For a2a previews pass sigma_max=init_noise_level (schedule truncates there)."""
+    m = MODEL
+    if m is None:
+        return JSONResponse({"error": "model not loaded (rebuild in progress?)"},
+                            status_code=503)
+    steps = max(1, int(steps))
+    latent_len = max(1, math.ceil(float(duration) * SR / DS))
+    sched = build_schedule(steps=steps, sigma_max=float(sigma_max),
+                           dist_shift=m.model.sampling_dist_shift if shift else None,
+                           fallback_seq_len=latent_len,
+                           include_endpoint=True, device="cpu")
+    if sched.dim() == 2:
+        sched = sched[0]
+    sigmas = [float(s) for s in sched]
+    return {"ok": True, "steps": steps, "duration": float(duration),
+            "sigma_max": float(sigma_max), "dist_shift": bool(shift),
+            "latent_len": latent_len, "sigmas": sigmas}
+
+
 @app.get("/audio/{job_id}/{filename}")
 def audio(job_id: str, filename: str):
     if any(("/" in s or ".." in s) for s in (job_id, filename)):
@@ -481,6 +592,9 @@ def _generate_impl(req):
                   seed=seed, batch_size=batch,
                   sample_size=budget_for(duration),
                   apg_scale=_f(req, "apg_scale", 1.0),
+                  # tuple rides **sampler_kwargs -> sampler extra_args -> DiT forward
+                  # (latch path: explicit passthrough in model.py _latch_guided_generate)
+                  cfg_interval=resolve_cfg_interval(req),
                   duration_padding_sec=_f(req, "duration_padding_sec", 6.0),
                   callback=make_log_cb(steps))
         if req.get("negative_prompt"):
@@ -611,6 +725,8 @@ def _a2a_mix_impl(req):
     whole = req.get("whole_track")
     steps = _i(req, "steps", 24)
     cfg = _f(req, "cfg_scale", 6.0)
+    apg = _f(req, "apg_scale", 1.0)
+    cfg_interval = resolve_cfg_interval(req)
     seed = resolve_seed(_i(req, "seed", -1))
     warnings = []
 
@@ -809,6 +925,7 @@ def _a2a_mix_impl(req):
         ts = time.time()
         film_req = req.get("film")
         kw = dict(prompt=prompt, duration=dur, steps=steps, cfg_scale=cfg,
+                  apg_scale=apg, cfg_interval=cfg_interval,
                   seed=seed, batch_size=1, sample_size=budget_for(dur))
         apply_latch(kw, latch_cfgs, latch_hp)
         if mode == "inpaint":                    # cmt.main 342-345
@@ -854,7 +971,8 @@ def _a2a_mix_impl(req):
             ends = [ws_sec + S / 2, min(we_sec + S / 2, y.shape[1] / SR)]
             log(f"  [pass] seam-inpaint {seam_inpaint}f strips")
             kw3 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
-                       cfg_scale=cfg, seed=seed, batch_size=1,
+                       cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
+                       seed=seed, batch_size=1,
                        sample_size=budget_for(y.shape[1] / SR),
                        inpaint_audio=(SR, torch.tensor(y)),
                        inpaint_mask_start_seconds=starts,
@@ -940,7 +1058,8 @@ def _a2a_mix_impl(req):
                     x[..., :nn].copy_(torch.where(hold.to(x.device), ref_t, x[..., :nn]))
 
                 kw2 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
-                           cfg_scale=cfg, seed=seed, batch_size=1,
+                           cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
+                           seed=seed, batch_size=1,
                            sample_size=budget_for(y.shape[1] / SR),
                            init_audio=(SR, torch.tensor(y)),
                            init_noise_level=seam_nl,
@@ -958,6 +1077,7 @@ def _a2a_mix_impl(req):
             log(f"  [pass] whole-track a2a nl={wt_nl:.2f}")
             dur2 = y.shape[1] / SR
             kw4 = dict(prompt=wt_prompt, duration=dur2, steps=steps, cfg_scale=cfg,
+                       apg_scale=apg, cfg_interval=cfg_interval,
                        seed=seed, batch_size=1, sample_size=budget_for(dur2),
                        init_audio=(SR, torch.tensor(y)), init_noise_level=wt_nl,
                        callback=make_log_cb(steps))
