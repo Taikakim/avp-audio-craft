@@ -4,6 +4,17 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Pad-fill detection stack** (Kim 2026-07-07, from the a2a ladder droning-pads
+      observation): (a) timbral extractor runs w/ `dev_output=True` — reverb returns
+      (mean_RT60, probability) CONTINUOUS, not the true/false; + timbral_depth — over
+      goa/avp/avp-aug corpora for baselines (W's lane, DM'd); (b) envelope-fidelity
+      meter from existing TIMESERIES (source-vs-output onset+band-RMS correlation,
+      excess-sustained-energy = pad-fill signature — Kim's "envelope timings stay
+      close to the example", zero new models); (c) RT60/depth deltas as eval columns
+      + best-of-N rerank penalty in longform; (d) later: LatCH head on RT60/depth
+      (energy-family scalar = the steerable kind). NOT a training-loss meter (scope
+      law: RF already reconstructs reverb; the failure is generation-time).
+
 - [ ] **avp r128-adjusted + familiarity runs (chain stages C+D, postponed 2026-07-07)**:
       C = avp r128 dora-rows fusion, alpha 45 (rsLoRA sqrt-scaling), lr 2e-4, 8ep,
       grad-accum 2 — NB: actually ran to epoch 6/8 before Kim's reprioritization (ckpts in dora128adj_avp_8ep, warm-startable for the last 2 eps via --warm_start_ckpt); D = avp r16 + `--familiarity_beta 1.0` (smoke-tested, gate PASSED,
