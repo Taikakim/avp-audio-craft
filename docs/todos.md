@@ -4,6 +4,14 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **avp r128-adjusted + familiarity runs (chain stages C+D, postponed 2026-07-07)**:
+      C = avp r128 dora-rows fusion, alpha 45 (rsLoRA sqrt-scaling), lr 2e-4, 8ep,
+      grad-accum 2; D = avp r16 + `--familiarity_beta 1.0` (smoke-tested, gate PASSED,
+      implementation ready). Both fully specced in `Misc/run_overnight_20260707.sh`
+      (stages C/D). Candidate for **LUMI-G** if Kim's setup lands (MI250X/ROCm — our
+      stack should port; venv + CK flash-attn story needs checking there), else the
+      next local GPU night.
+
 - [ ] **Transitions round 2** (Kim 2026-07-07, first round sounded weak/noisy even
       pre-transition — possibly seeds, possibly the LENGTH effect: 2-min segments get
       the timestep shift pushed toward high noise): arms hof(x20b3ygb ep3-5400) /
