@@ -373,3 +373,17 @@ t=0; RF velocity ≈ constant near data; post-trained ends on direct x̂0). Cris
 mechanism survives weakened (under-trained polish regime). Cheap finisher experiments
 queued as ideas: dense-tail schedule / micro-SDEdit nl 0.05-0.1. Details:
 papers/arxiv-2605.17991.md CORRECTION §.
+
+## 2026-07-07 — [process failure, on me] chroma steering was already CONCLUSIVE and I missed it
+Kim surfaced riffer/chroma_steer.html after I declared chroma-conditioning "code-only,
+data never generated". WRONG: WORKLOG 2026-06-25 has the full result — trained stem-chroma
+LatCH head (latch_sa3_chroma_other_best.pt, cosine, temporal readout 0.89), all-C/all-F#
+gain sweep, pitch class DOMINANT at gain ~1536-2048; same_chroma sidecars exist
+(Lehto/latents_sa3_stem_chroma 4907/5400); essentia hpcp_ts = garbage recipe (my proposed
+tier-1 would have used it!). ROOT CAUSE: my discovery-phase grep covered control/ + run
+dirs but NOT WORKLOG (gate step 2 says grep WORKLOG — I skipped it); the finding was also
+never journaled by its author session → absent from DISCOVERIES, so the index couldn't
+save me. FIXES: todo corrected (v4 uses the trained head + right targets/gain);
+cu_reward_renders run_meta now flags it holds ACTIVE ASSETS; this entry feeds DISCOVERIES.
+3-way taxonomy worth indexing: density steers at moderate gain / pitch at high gain /
+timing not at all.
