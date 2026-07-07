@@ -86,13 +86,18 @@ def beatmatch_crossfade(a, b, sr, fade_sec=16.0):
     # a's first beat inside the fade
     ba = beats_a[beats_a >= fade_start / sr]
     anchor_a = float(ba[0]) if len(ba) else fade_start / sr
-    # b's nearest beat to its own start-of-use point (~24 s in)
-    b_use = 24.0
+    # b's beat near its start-of-use point — 25% in, capped at 24 s (short
+    # segments: the old fixed 24 s left less material than the fade needed)
+    b_dur = b_st.shape[1] / sr
+    b_use = min(24.0, 0.25 * b_dur)
     bb = beats_bs[beats_bs >= b_use]
     anchor_b = float(bb[0]) if len(bb) else b_use
     # b enters so that anchor_b lands exactly on anchor_a
     b_offset = int(anchor_b * sr) - int((anchor_a - fade_start / sr) * sr)
     b_cut = b_st[:, max(b_offset, 0):]
+    if b_cut.shape[1] < fade_n:                      # clamp fade to material
+        fade_n = b_cut.shape[1]
+        fade_start = a_end - fade_n
 
     t = np.linspace(0, np.pi / 2, fade_n, dtype=np.float32)
     fo, fi = np.cos(t), np.sin(t)                    # equal power
