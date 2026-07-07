@@ -363,3 +363,13 @@ model's default FILL for regions where content is demanded but unconstrained (rh
 gain_knee d8 "more pad-ish sounds added" + the outro-cheat family: under-constraint gets
 papered over with atmosphere); 0.6 ≈ full-on regeneration. Matches prompting.md's bands
 (0.4-0.5 timbre transfer, 0.6 style) ON OUR FINE-TUNES.
+
+## 2026-07-07 — [correction] the t=0.075 "untrained tail" claim was wrong in detail
+Kim asked whether base outputs are "unfinished" (contain residual noise) — NO, and
+checking the code corrected my own paper note: `truncated_logistic_normal_rescaled`
+truncates at 0.075 then RESCALES support back to [0,1] — near-clean timesteps ARE
+trained, just with thin density. No residual noise in outputs (samplers integrate to
+t=0; RF velocity ≈ constant near data; post-trained ends on direct x̂0). Crispness-late
+mechanism survives weakened (under-trained polish regime). Cheap finisher experiments
+queued as ideas: dense-tail schedule / micro-SDEdit nl 0.05-0.1. Details:
+papers/arxiv-2605.17991.md CORRECTION §.

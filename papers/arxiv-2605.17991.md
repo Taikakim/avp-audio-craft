@@ -64,3 +64,18 @@ fine-tuning after release", i.e. our whole lane).
   Their feature-stripping order: rising noise removes melody/rhythm first, timbre last.
 - Guide discrepancies (paper is authoritative): overview claims SAME-S 266M / SAME-L 1.7B /
   medium ~4.75min; paper says 108M / 852M / 6m20s (T=4096 @10.767Hz = 6m20s confirms paper).
+
+## CORRECTION 2026-07-07 (code-verified, supersedes the t=0.075 claim above)
+The "timestep sampling truncated at t=0.075 → final ~7.5% of denoising is untrained
+extrapolation" claim is WRONG in one important detail. The actual sampler
+(`truncated_logistic_normal_rescaled`, sampling.py) truncates the logit-normal at
+0.075 and then RESCALES the support back to [0,1] (then flips) — so the model DOES
+train across the full t range including near-clean; the truncation reshapes the
+DENSITY, not the support. Honest version: the finishing regime is trained-but-
+UNDER-trained (thin mass near t=0). Consequences: (1) outputs contain NO residual
+noise — samplers integrate to t=0 and RF velocity extrapolates smoothly; post-trained
+ckpts end on a direct x̂0 prediction anyway; (2) the crispness-late mechanism survives
+in weakened form (thin practice at the polish regime → soft transients plausible,
+controls-off-late still supported); (3) cheap experiments: denser step schedule near
+t=0, or a micro-SDEdit finisher pass (nl 0.05-0.1) — inference speed is not a
+constraint for musician tools (Kim).
