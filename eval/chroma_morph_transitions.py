@@ -215,10 +215,16 @@ def main():
     # segments must comfortably contain the largest crossfade window
     args.seg_sec = max(args.seg_sec, 1.6 * max(wins) / FPS)
 
-    meta = {"purpose": ("real-track transitions with CHROMA-MORPH steering: bungee "
-                        "beatmatch (B follows A), latent slerp crossfade, graded a2a "
-                        "refine at the listed noise levels with the proven stem-chroma "
-                        "LatCH head morphing A-chroma->B-chroma across the window"),
+    mode_desc = {
+        "refine": "whole-composite a2a at each nl (remix-hybrid transition)",
+        "inpaint": "PURE transition: originals intact, bridge inpaint-generated",
+        "sinesweep": ("recipe3: pure-original basis, follow beatmatch, onset-concurrence "
+                      "fine-align, chroma slerp + sine noising (peak at listed nl)"
+                      + (f", seam-inpaint {args.seam_inpaint}f strips" if args.seam_inpaint else "")),
+    }[args.mode]
+    meta = {"purpose": (f"real-track chroma-morph transitions [{args.mode}] — {mode_desc}; "
+                        f"tempo-mode {args.tempo_mode}, stem-chroma LatCH head gain {CHROMA_GAIN:g}"),
+            "mode": args.mode,
             "pairs": PAIRS, "tracks": TRACKS,
             "gen": {"windows": wins, "noise_levels": nls, "seg_sec": args.seg_sec,
                     "steps": args.steps, "cfg": args.cfg_scale,
