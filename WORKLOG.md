@@ -1163,3 +1163,53 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
   evals curated generators intentionally NOT touched yet -- spec explicitly calls that a follow-up, not now.
   Handed to WINTERMUTE for sync.
 - 2026-07-07 ~16:30 (CONTINUITY): PURE chroma transitions shipped (chroma_transitions_pure, 12 clips): originals intact outside the window, bridge inpaint-generated under chroma-morph guidance, plain controls. First 48-clip batch relabeled the 'refine' VARIANT (whole-composite a2a x nl -- Kim: hyper interesting, a DJ-tool primitive for the mir/plots viewer's lowkey DJ ambitions). Day's transition family complete.
+- [2026-07-07 16:40] (GHOST-NOTE) chroma_transitions_pure page shipped — the last of today's transition family
+  (pure / refine-hybrid=chroma_morph_transitions / r2-length-test=newcap8_transitions_r2). 12 clips: 3 pairs x
+  2 windows x chroma/plain, NO noise-level axis (unlike chroma_morph_transitions) — original A/B audio is
+  bit-intact outside the window, only the bridge is inpaint-generated. New write_chroma_pure_folder (couldn't
+  reuse write_chroma_morph_folder directly — the two schemas aren't a strict superset/subset: pure has a
+  {method} token and no nl, morph has nl and no method — genuinely different filename grammars, not just a
+  missing dimension), same pair/window section nesting, single chroma/plain row per window since there's no
+  nl to index by. Pair order pulled from run_meta's declared list same as the sibling page. Leak-scanned clean,
+  JS syntax-checked. Handed to WINTERMUTE.
+- [2026-07-07 16:55] (GHOST-NOTE) Closed 3 gaps CONTINUITY flagged + shipped the waveform-shading enhancement:
+  (1) a2a_angelic_evr1x + a2a_vapausvoima_evr1x (never got an explicit page ping) now have pages, and
+  a2a_kaikkialla_evr1x's growth from 6->9 rungs (added .35/.42/.55) is picked up automatically -- generalized
+  the a2a diversion from a hardcoded 2-name list to a pattern match (a2a_<track>_<adapter>, grouped by track),
+  since new tracks keep arriving and a hardcoded list means rediscovering this gap every time. Per-track label
+  now pulled from run_meta's "track" field rather than a hand-written string per track. Caught + fixed a real
+  display bug while verifying: nl values were formatted to 1 decimal (nl/100:.1f), so 0.30/0.35 both showed as
+  "0.3" and 0.42/0.40 both as "0.4" -- silently collapsed two distinct rows to identical-looking labels. Fixed
+  to .2f. (2) chroma_transitions_pure's run_meta now carries an explicit human-authored "title" (CONTINUITY's
+  correction: it's a bonus variant, not a Kim ask, humbler label) -- added a title_for() helper so main()
+  prefers an explicit title over the truncated-purpose fallback wherever a run_meta provides one; landing
+  confirmed showing the corrected title. (3) Waveform popup gained window-shading (CONTINUITY's "worth
+  including if cheap" follow-up to spec §13): pages that already compute a transition/crossfade window
+  (transitions r1/r2, longform) tag their play cells with data-wfstart/data-wfend; a capture-phase click
+  listener in the shared WAVEFORM_JS tracks the most recently played clip's window (cleared on any other
+  clip's play, so it doesn't linger stale) and the popup shades that region on the waveform canvas -- turns
+  "scrub to find the transition" into "look at the shaded band." Verified via the node harness: click
+  delegation captures the window data, shading paint call runs without throwing alongside the existing
+  bar/waveform-render assertions. All new/changed pages leak-scanned clean.
+- [2026-07-07 18:20] (GHOST-NOTE) chroma_morph_barsnap page shipped (79 clips, bar-snapped windows w508/w512/
+  w1032) — the batch Kim's first "completely useable transition" verdict (kaikki2angelic w1025 nl42 chroma)
+  came from. Same nl-based schema as chroma_morph_transitions so the existing write_chroma_morph_folder
+  handled it via routing with zero new writer code. This dir surfaced two real bugs while building it: (1)
+  its own run_meta.json self-marks OBSOLETE/superseded-by-transitions3 with real findings, but findings_status_for()
+  only ever read the separate run_purposes.json registry — a dir's own self-describing sidecar couldn't
+  carry its own verdict. Fixed: now checks the dir's own staged run_meta.json FIRST (self-describing-sidecar
+  convention), falls back to run_purposes.json only if the dir doesn't have its own findings/status. Also
+  handles findings-as-a-list (this run_meta accumulated dated observations as an array, not a string) by
+  joining. (2) The status-banner auto-link mechanism did a naive substring search — "mp" (registered as the
+  multiprompt curated page's key) matched mid-word inside "ramp" and "tempo" in this dir's status text,
+  producing garbage inline links. Fixed provenance_html() in eval_grid.py to require word-boundary matches.
+  Verified the fix doesn't break the existing legitimate auto-link (newcaption_ab -> newcap8_promptstyle
+  still links correctly). Also fixed a pair-ordering bug this mixed-batch data would have triggered: the
+  declared-pairs-from-run_meta preference logic required ALL declared pairs present or fell back to pure
+  alphabetical, silently DROPPING any undeclared pair not in that all-or-nothing check — this batch mixes an
+  old kaikki-pair set with the newer phreaky/angelic/heron set, so it would have shown only 0 or all-4
+  depending on which pairs were declared vs present. Fixed to preserve declared order for pairs that ARE
+  present, appending any extra undeclared pairs after (alphabetical) rather than an all-or-nothing choice —
+  applied to both chroma writer functions. All 4 actual pairs now render correctly. Leak-scanned clean.
+  Handed to WINTERMUTE.
+- 2026-07-07 ~18:20 (CONTINUITY): RECIPE3 TRANSITIONS SHIPPED (Kim's spec end-to-end): pure-original basis (no a2a on the tracks), full bungee follow-match (B locked to A's BPM), downbeat snap + ONSET-CONCURRENCE fine-align (xcorr, corrections up to ±801ms — handles fills/risers), chroma-morphed latent slerp with sine noising peak 0.4 at midpoint, + seam-inpaint addenda (128/256/512-frame strips on both crossfade seams). Trackset phreaky/angelic/heron (incl. the acid-rock experiment). 48 clips -> transitions3_{sweep,seam128_256,seam512}. Under-constraint attractor doctrine recorded (3rd sighting; avoid: depth<=0.4 + aligned superposition + real-content basis). Day's ear-validations: refine-hybrid 'completely useable' (kaikki2angelic w1025 nl42 chroma), sync layer 'generally good beatmatching' (plain clips).
