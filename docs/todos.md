@@ -4,6 +4,18 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Style-specialized adversarial post-training on LUMI-G** (Kim 2026-07-07,
+      feasibility confirmed): start from the RELEASED post-trained medium (skips
+      distillation), generator updates at ADAPTER scale (DoRA), discriminator = base
+      ckpt + fresh conv head, relativistic + contrastive losses per paper eqs 6-11,
+      DROP the latent-CLAP loss (not released; single-style trigger prompts lower the
+      need) or use decoded LAION-CLAP as a monitor only. Small-data GAN risk mitigated
+      by: pretrained both nets + augmentation variants + short run + eval-stack
+      collapse watch. Memory ~40GB (fits half an MI250X); compute ~1-few node-days at
+      10-20k steps. REAL COST = implementing the APT loop (~days, paper eqs are
+      complete). Would give a punchy 8-step no-CFG model in Kim's/goa style — the
+      "trained finisher" for our fine-tunes.
+
 - [ ] **Training-free rhythm/pitch preservation for a2a** (Kim 2026-07-07), three tiers:
       (a) FEASIBLE NOW — per-step K-candidate selection in ping-pong sampling, scored in
       LATENT space by LatCH heads (onset_envelope/HPCP predicted from the noisy latent)
