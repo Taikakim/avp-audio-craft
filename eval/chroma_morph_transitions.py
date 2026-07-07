@@ -143,6 +143,25 @@ def downbeat_near(a, sr, target_sec):
     return float(downs[np.argmin(np.abs(downs - target_sec))])
 
 
+def fine_align_shift(A_seg, B_seg, sr, span_sec, max_shift_sec):
+    """Kim's downbeat-concurrence alignment: cross-correlate onset envelopes of
+    A's tail and B's head over the blend span; return B shift (sec) maximizing
+    concurrence, constrained to +/- max_shift."""
+    import librosa
+    hop = 512
+    span = int(span_sec * sr)
+    oa = librosa.onset.onset_strength(y=A_seg[:, -span:].mean(0), sr=sr, hop_length=hop)
+    ob = librosa.onset.onset_strength(y=B_seg[:, :span].mean(0), sr=sr, hop_length=hop)
+    n = min(len(oa), len(ob))
+    oa, ob = oa[:n] - oa[:n].mean(), ob[:n] - ob[:n].mean()
+    max_lag = int(max_shift_sec * sr / hop)
+    lags = list(range(-max_lag, max_lag + 1))
+    scores = [float(np.dot(oa[max(0, -l):n - max(0, l)], ob[max(0, l):n - max(0, -l)]))
+              for l in lags]
+    best = lags[int(np.argmax(scores))]
+    return best * hop / sr   # positive => delay B
+
+
 def encode(model, audio, sr):
     pre = model.model.pretransform
     p = next(pre.parameters())
@@ -167,6 +186,12 @@ def main():
                     help="B's entry point as a fraction of its length")
     ap.add_argument("--pairs", default=None,
                     help="comma list like kaikki:angelic to override the default cycle")
+    ap.add_argument("--seam-inpaint", type=int, default=0,
+                    help="sinesweep mode: inpaint strips of this many frames centred on "
+                         "the crossfade START and END seams after the sweep (Kim's addenda; "
+                         "128/256/512)")
+    ap.add_argument("--fine-align", action="store_true", default=True,
+                    help="onset-concurrence xcorr alignment of B within +/- half bar")
     ap.add_argument("--seam-nl", type=float, default=0.35,
                     help="inpaint mode: peak depth of the 512-frame sine a2a masks centred "
                          "on the inpaint region's entry/exit seams (Kim: smooth the abrupt "
@@ -249,6 +274,16 @@ def main():
             else:
                 Bseg_s = raw_seg
             B_seg = Bseg_s[:, :int(args.seg_sec * sr)]
+            if args.fine_align:
+                sh = fine_align_shift(A_seg, B_seg, sr,
+                                      span_sec=W / FPS, max_shift_sec=bar_sec / 2)
+                if abs(sh) > 0.004:
+                    print(f"  [align] B shifted {sh*1000:+.0f}ms (onset concurrence)", flush=True)
+                    if sh < 0:
+                        B_seg = Bseg_s[:, int(-sh*sr):int(-sh*sr) + int(args.seg_sec * sr)]
+                    else:
+                        pad = np.zeros((B_seg.shape[0], int(sh * sr)), dtype=B_seg.dtype)
+                        B_seg = np.concatenate([pad, B_seg], axis=1)[:, :int(args.seg_sec * sr)]
             zB = encode(model, B_seg, sr)
             cB = compute_same_chroma(B_seg.T, sr).reshape(384, -1)
             print(f"  [win] req {W_req}f -> {W}f = {bars} bars (residual {residual*1000:+.1f}ms)", flush=True)
@@ -284,6 +319,8 @@ def main():
                 for chroma_on in ([True, False] if args.no_chroma_ref else [True]):
                     tag = "chroma" if chroma_on else "plain"
                     nl_tag = "inpaint" if nl is None else f"nl{int(nl*100):02d}"
+                    if args.mode == "sinesweep" and args.seam_inpaint > 0:
+                        nl_tag += f"_seam{args.seam_inpaint}"
                     out = args.out_dir / f"{a_key}2{b_key}__w{W}_{nl_tag}_{tag}.wav"
                     if out.exists():
                         print(f"[skip] {out.name}", flush=True)
@@ -329,6 +366,25 @@ def main():
                         kw["latch_hparams"] = {"rho": CHROMA_GAIN, "mu": CHROMA_GAIN}
                     outa = model.generate(**kw)
                     y = outa[0].float().cpu().numpy()
+                    if args.mode == "sinesweep" and args.seam_inpaint > 0:
+                        S = args.seam_inpaint / FPS   # strip length in seconds
+                        w_lo_s = (zA.shape[-1] - W) / FPS
+                        w_hi_s = zA.shape[-1] / FPS
+                        starts = [max(w_lo_s - S / 2, 0), w_hi_s - S / 2]
+                        ends = [w_lo_s + S / 2, min(w_hi_s + S / 2, y.shape[1] / sr)]
+                        kw3 = dict(prompt=args.prompt, duration=y.shape[1] / sr,
+                                   steps=args.steps, cfg_scale=args.cfg_scale,
+                                   seed=1234, batch_size=1,
+                                   sample_size=int((y.shape[1] / sr + 8) * sr),
+                                   inpaint_audio=(sr, torch.tensor(y)),
+                                   inpaint_mask_start_seconds=starts,
+                                   inpaint_mask_end_seconds=ends)
+                        if chroma_on:
+                            kw3["latch_configs"] = [{"model_path": CHROMA_HEAD,
+                                                     "target_raw": target,
+                                                     "weight": 1.0, "end_pct": 0.6}]
+                            kw3["latch_hparams"] = {"rho": CHROMA_GAIN, "mu": CHROMA_GAIN}
+                        y = model.generate(**kw3)[0].float().cpu().numpy()
                     if nl is None:
                         # splice ORIGINAL audio back outside the window (1s fades)
                         ref = audio_ref.float().cpu().numpy()
