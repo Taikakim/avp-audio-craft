@@ -53,6 +53,9 @@ and MASTER §4) — never infer it from task content or memory alone.
 >    enable --now sao-listen-<name>`.
 > 2. **Arm only your real-time WAKE** — `agent_dialogue.py wait --handle <H>` (or your
 >    Monitor) so DMs re-invoke you. Re-arm it after each wake.
+> 3. **Post findings to the CHAT.** When you land a finding/milestone, besides the
+>    journal/WORKLOG entry, post a short summary on the common channel — the chat is
+>    Kim's public window; work that only lives in DMs/logs is invisible (Kim 2026-07-07).
 > Units: `Misc/install_listen_services.sh` (writes them; explicit per-handle, no template/
 > escaping). THE-FINN owns the comms convention + verifies one-listener-per-handle.
 
