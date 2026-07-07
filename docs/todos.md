@@ -4,6 +4,17 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Chroma-morph transitions** (Kim 2026-07-07, from renders_beatbridge2: crossfade
+      OK but B's authoritative opening melody = harmonic dissonance through the blend):
+      steer harmony across the transition window with a time-varying chroma target
+      (A's measured tail chroma -> B's head chroma). TWO TIERS: (a) TODAY — HPCP LatCH
+      head guidance (12-bin; hpcp_ts already in every TIMESERIES; steered_longform's
+      chroma machinery adapts, target = measured blend instead of chord names) as a
+      transition_lab v4; (b) PROPER — the d384 SAME-chroma conditioner
+      (sa3_control/conditioner.py, 3 octave-bands x 128, voicing-aware, time-aligned
+      tokens) is CODE-ONLY: no trained adapter, and its `same_chroma_ts` training data
+      was never generated (dataset.py "data-gen TODO") -> data-gen (mir) + adapter run.
+
 - [ ] **Style-specialized adversarial post-training on LUMI-G** (Kim 2026-07-07,
       feasibility confirmed): start from the RELEASED post-trained medium (skips
       distillation), generator updates at ADAPTER scale (DoRA), discriminator = base
