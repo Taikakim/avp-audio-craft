@@ -338,3 +338,13 @@ multi_eval path: 7.65). So FusionCC ckpt healthy, harness wiring correct, gain 6
 past the working point = glitch regime. Confirms the gain_knee sigma/knee story from the
 control side. LatCH beat_grid impulse retest: d3≈d7 by ear (Kim) — leaning negative,
 consistent with the 14-head sweep; heads are hyperparameter-particular (rho/mu/schedule).
+
+## 2026-07-07 — the ear-approved density control is PLAIN-Fusion FiLM, not FusionCC, not LatCH
+Kim went looking for the control clips he remembered as great: composed_sweep/E_fusion_v2.
+Its run_meta: `latch: null`, adapter = onset_Fusion_lr1e-4_randomcrop (PLAIN Fusion, not
+FusionCC), corr .79-.88 at gains 1-3. So the reference density-control recipe by ear =
+plain-Fusion FiLM with per-ckpt gain calibration (this one tolerates g3; the June adapter
+kneed at 1.4 — calibrate per checkpoint, never reuse a gain). LatCH onset_envelope+beat_grid
+negative NOW TWICE by ear ("curiously bad", d3~d7 identical) — activation-head family stays
+dead for steering. [gap] composed_sweep never had an eval page; front page lacks a
+chronological index — both with G now.
