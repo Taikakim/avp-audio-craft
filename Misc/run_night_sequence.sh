@@ -30,7 +30,7 @@ timeout 1800 $PY scripts/train_lora.py \
   --model medium-base --encoded_dir /home/kim/Projects/latents_avp \
   --adapter_type dora-rows --rank 16 --lora_alpha 16 \
   --optimizer fusion --lr 2e-4 --steps 12 --batch_size 4 --duration 47 \
-  --beat-aware-crop --familiarity_beta 1.0 \
+  --beat-aware-crop --familiarity_beta 1.0 --log_every 1 \
   --base_precision bf16 --no_demos --num_workers 4 --seed 42 \
   --save_dir /tmp/claude-1000/fam_smoke --name fam_smoke --logger csv \
   > "$SAO/logs/familiarity_smoke.log" 2>&1

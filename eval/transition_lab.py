@@ -66,6 +66,12 @@ def beatmatch_crossfade(a, b, sr, fade_sec=16.0):
     tb, beats_b = librosa.beat.beat_track(y=bm, sr=sr, units="time")
     ta, tb = float(np.atleast_1d(ta)[0]), float(np.atleast_1d(tb)[0])
     rate = tb / ta if ta > 0 and tb > 0 else 1.0   # stretch b by this to match a
+    # librosa tempo octave errors: fold the ratio back toward 1 (goa tempos are close)
+    while rate > 1.35:
+        rate /= 2
+    while rate < 0.74:
+        rate *= 2
+    print(f"[v2] tempo A={ta:.1f} B={tb:.1f} -> stretch rate {rate:.4f}", flush=True)
     b_st = np.stack([librosa.effects.time_stretch(ch, rate=rate) for ch in b])
     _, beats_bs = librosa.beat.beat_track(y=b_st.mean(0), sr=sr, units="time")
 
@@ -113,10 +119,11 @@ def sinemask_refine(model, audio_np, sr, nl, lo_f, hi_f, steps, cfg, seed):
 
     def cb(d):
         x, t = d["x"], d["t"]                        # live tensor, per-batch t
+        n = min(x.shape[-1], z_ref.shape[-1], m.shape[-1])  # generate may pad/crop
         tt = t.view(-1, 1, 1).to(torch.float32)
-        ref_t = (1 - tt) * z_ref.float() + tt * eps_ref.float()
-        blend = (m * x.float() + (1 - m) * ref_t).to(x.dtype)
-        x.copy_(blend)
+        ref_t = (1 - tt) * z_ref[..., :n].float() + tt * eps_ref[..., :n].float()
+        blend = (m[..., :n] * x[..., :n].float() + (1 - m[..., :n]) * ref_t).to(x.dtype)
+        x[..., :n].copy_(blend)
 
     out = model.generate(prompt=PROMPT, duration=audio_np.shape[1] / sr,
                          steps=steps, cfg_scale=cfg, seed=seed, batch_size=1,
@@ -176,14 +183,32 @@ def main():
                    torch.tensor(v2), sr, normalize=True)
         print(f"[v2] {arm} stretch={rate:.4f} anchor={anchor:.1f}s", flush=True)
 
-        # --- v3: sine-masked graded refine of v2 ------------------------------
-        # transition centre in v2 = end-of-A fade region; window = fade ±16s
-        fade_c = (a_np.shape[1] - int(8.0 * sr)) / sr
-        lo_f, hi_f = int((fade_c - 24) * FPS), int((fade_c + 24) * FPS)
-        v3 = sinemask_refine(model, v2, sr, args.sinemask_nl, lo_f, hi_f,
-                             args.steps, args.cfg_scale, s1)
-        save_audio(args.out_dir / f"{arm}__v3_sinemask.wav", v3, sr, normalize=True)
-        print(f"[v3] {arm} window {lo_f}-{hi_f}f  total {time.time()-t0:.0f}s", flush=True)
+        # --- v3: sine-masked graded refine of a SEGMENT around the transition,
+        # spliced back into v2 (avoids long-audio latent-length mismatches; the
+        # mask is 0 at segment edges so the splice joins near-identical content)
+        fade_c = (a_np.shape[1] - int(8.0 * sr)) / sr   # centre of the v2 fade
+        v2_len_s = v2.shape[1] / sr
+        lo_s, hi_s = max(fade_c - 48, 0.0), min(fade_c + 48, v2_len_s)
+        lo_n, hi_n = int(lo_s * sr), int(hi_s * sr)
+        seg = v2[:, lo_n:hi_n]
+        centre = fade_c - lo_s
+        lo_f = max(int((centre - 24) * FPS), 0)
+        hi_f = int((centre + 24) * FPS)
+        refined = sinemask_refine(model, seg, sr, args.sinemask_nl, lo_f, hi_f,
+                                  args.steps, args.cfg_scale, s1)
+        r = refined.float().cpu().numpy()[:, :seg.shape[1]]
+        if r.shape[1] < seg.shape[1]:                    # pad from original tail
+            r = np.concatenate([r, seg[:, r.shape[1]:]], axis=1)
+        # 1 s safety crossfades at the splice edges
+        f = int(1.0 * sr)
+        ramp = np.linspace(0, 1, f, dtype=np.float32)
+        r[:, :f] = seg[:, :f] * (1 - ramp) + r[:, :f] * ramp
+        r[:, -f:] = r[:, -f:] * (1 - ramp) + seg[:, -f:] * ramp
+        v3 = v2.copy()
+        v3[:, lo_n:hi_n] = r
+        save_audio(args.out_dir / f"{arm}__v3_sinemask.wav",
+                   torch.tensor(v3), sr, normalize=True)
+        print(f"[v3] {arm} seg {lo_s:.0f}-{hi_s:.0f}s  total {time.time()-t0:.0f}s", flush=True)
 
         del model
         torch.cuda.empty_cache()
