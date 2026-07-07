@@ -414,3 +414,13 @@ window centre -> 0, sine), not my static-blend clamp — implementable as a RELE
 SCHEDULE in the euler callback (frame released from its reference when global t falls
 below its sine depth) = fake per-frame sigma with a global loop. The per-moment sigma
 field, for real this time.
+
+## 2026-07-07 — the under-constraint attractor, third sighting (now doctrine)
+Kim, on a stale refine clip (slerp midpoint + nl.55): "actual noise... translated to some
+kind of airy constant drone; both tracks lose identity". Mechanism: structureless latent
+content (deep slerp between different tracks) + high renoise -> the model renders its
+default fill = spacious pads/drone. THREE independent sightings today: a2a ladders @0.5
+(droning pads over Kim's track), gain_knee d8 (pad-stacking), this. DOCTRINE: airy drone
+appearing = the region was under-constrained; fixes are structural (alignment so
+superposition stays coherent, depth <=~0.4, real content as basis) — and detection is the
+pad-fill stack (depth-primary timbral deltas + envelope meter, W's baselines running).
