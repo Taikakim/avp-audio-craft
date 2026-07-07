@@ -4,6 +4,18 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Training-free rhythm/pitch preservation for a2a** (Kim 2026-07-07), three tiers:
+      (a) FEASIBLE NOW — per-step K-candidate selection in ping-pong sampling, scored in
+      LATENT space by LatCH heads (onset_envelope/HPCP predicted from the noisy latent)
+      against the SOURCE's envelopes; selection sidesteps the dead-gradient problem AND
+      the decode cost; stop after ~50% of denoising (structure locks mid-trajectory);
+      MERT stays as the final whole-clip reranker (longform best-of-N harness exists).
+      (b) MERT gradient guidance through SAME-decode — heavy, LUMI-class.
+      (c) ACTIVATION PRESERVATION — cache the source pass's activations at the layers
+      where rhythm/pitch live, clamp/blend toward them for the first 50% of steps;
+      needs the layer×feature map extraction (pending) + TADA-style localization —
+      the strongest motivation yet to finish that work.
+
 - [ ] **Pad-fill detection stack** (Kim 2026-07-07, from the a2a ladder droning-pads
       observation): (a) timbral extractor runs w/ `dev_output=True` — reverb returns
       (mean_RT60, probability) CONTINUOUS, not the true/false; + timbral_depth — over
