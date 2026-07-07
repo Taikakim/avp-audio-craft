@@ -291,7 +291,13 @@ the test the files belong to is *for*; (2) **paths to the related files** — th
 the run came from; (3) the **checkpoint's id + location** when the ckpt lives elsewhere (which run /
 step / path). Write it **when you create the output, not later** — a dir of bare `.wav`/`.m4a` with no
 sidecar is a dead end no one, human or instance, can revive. The presentation UIs and `run_purposes.json`
-both read it, so provenance written once is legible everywhere.
+both read it, so provenance written once is legible everywhere. **Two additions
+(Kim 2026-07-07): (1) eval/render outputs NEVER live in the SAO tree — they go to the
+eval drive (`Mantu1/sa3_lora_runs` / `sa3_control_runs`); SAO carries code and docs only.
+(2) The sidecar's purpose field states WHAT the eval tests and WHY — and when analysis or
+Kim's listening produces a verdict, that finding goes into the PERSISTENT record (the
+sidecar `findings` field + journal → DISCOVERIES; a finding that lives only in chat is
+considered lost).**
 **Sidecar vs public pages — the redaction seam.** *(refined by Kim 2026-07-03: "config settings are
 good to share — that's how the light gets out.")* The sidecar deliberately carries ckpt filenames and
 local paths — that is its job, and sidecars stay LOCAL. Anything **served publicly** (eval landings,
