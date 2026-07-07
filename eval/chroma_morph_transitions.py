@@ -61,12 +61,18 @@ def load(track):
     return a.T, sr  # (C, N)
 
 
-def tempo_of(a, sr):
+def tempo_of(a, sr, around_sec=None):
+    """Precise tempo: median inter-beat interval over a 60s excerpt (librosa's
+    reported tempo value is too coarse — 0.3 BPM error = ~100ms grid drift over
+    a 47s blend = audible gallop even with bar-snapped entries)."""
     import librosa
-    mid = a.shape[1] // 2
-    ex = a[:, max(0, mid - 30 * sr):mid + 30 * sr].mean(0)
-    t, _ = librosa.beat.beat_track(y=ex, sr=sr, units="time")
-    return float(np.atleast_1d(t)[0])
+    c = int(around_sec * sr) if around_sec is not None else a.shape[1] // 2
+    lo = max(0, c - 30 * sr)
+    ex = a[:, lo:lo + 60 * sr].mean(0)
+    _, beats = librosa.beat.beat_track(y=ex, sr=sr, units="time")
+    if len(beats) < 16:
+        return 140.0
+    return float(60.0 / np.median(np.diff(beats)))
 
 
 def bungee_stretch(audio, sr, speed, ramp_to=None, ramp_out_sec=0.0):
@@ -139,6 +145,12 @@ def main():
     ap.add_argument("--steps", type=int, default=24)
     ap.add_argument("--cfg-scale", type=float, default=6.0)
     ap.add_argument("--prompt", default="aggressive upbeat goa trance")
+    ap.add_argument("--a-frac", type=float, default=0.62,
+                    help="A's transition point as a fraction of its length (segment ENDS here)")
+    ap.add_argument("--b-frac", type=float, default=0.40,
+                    help="B's entry point as a fraction of its length")
+    ap.add_argument("--pairs", default=None,
+                    help="comma list like kaikki:angelic to override the default cycle")
     ap.add_argument("--tempo-mode", choices=("ramp", "follow"), default="ramp",
                     help="ramp = B matched to A's tempo AT the transition, bending to its "
                          "NATIVE tempo by window end (DJ pitch-bend, default); "
@@ -177,11 +189,14 @@ def main():
 
     audio_cache = {k: load(p) for k, p in TRACKS.items()}
 
-    for a_key, b_key in PAIRS:
+    pairs = ([tuple(p.split(":")) for p in args.pairs.split(",")] if args.pairs else PAIRS)
+    for a_key, b_key in pairs:
         A, sra = audio_cache[a_key]
         B, srb = audio_cache[b_key]
         assert sra == sr and srb == sr
-        ta, tb = tempo_of(A, sr), tempo_of(B, sr)
+        # measure tempo AT the material actually used
+        ta = tempo_of(A, sr, around_sec=args.a_frac * A.shape[1] / sr)
+        tb = tempo_of(B, sr, around_sec=args.b_frac * B.shape[1] / sr)
         speed = ta / tb            # playback speed multiplies tempo: tb*speed = ta
         while speed > 1.35: speed /= 2
         while speed < 0.74: speed *= 2
@@ -189,8 +204,8 @@ def main():
               f"mode={args.tempo_mode}", flush=True)
 
         # segments anchored on DOWNBEATS (bar starts); B anchored on the RAW track
-        a_end = downbeat_near(A, sr, 0.62 * A.shape[1] / sr)
-        b_start0 = downbeat_near(B, sr, 0.40 * B.shape[1] / sr)
+        a_end = downbeat_near(A, sr, max(args.a_frac * A.shape[1] / sr, args.seg_sec))
+        b_start0 = downbeat_near(B, sr, args.b_frac * B.shape[1] / sr)
         bar_sec = 4 * 60.0 / ta   # A's bar length (B is matched to it at the window)
         A_seg = A[:, int((a_end - args.seg_sec) * sr):int(a_end * sr)]
 
@@ -205,7 +220,7 @@ def main():
             residual = W / FPS - bars * bar_sec          # seconds, |r| < 1 frame
             cut = b_start0 + residual
             raw_seg = B[:, int(cut * sr):int((cut + args.seg_sec * 1.5) * sr)]
-            if abs(speed - 1.0) > 0.005:
+            if abs(speed - 1.0) > 0.0005:
                 # ramp: matched to A's tempo at the window, bending to NATIVE by
                 # window end (DJ pitch-bend); follow: matched throughout
                 ramp_to = 1.0 if args.tempo_mode == "ramp" else None
