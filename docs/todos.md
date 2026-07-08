@@ -4,7 +4,7 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
-- [ ] **Chroma-morph transitions** (Kim 2026-07-07; CORRECTED after Kim surfaced
+- [x] **Chroma-morph transitions** (Kim 2026-07-07; CORRECTED after Kim surfaced — DONE 07-07/08 (chroma head + morph targets shipped through transitions3 + explorer a2a tab)
       riffer/chroma_steer.html — the tooling already exists, WORKLOG 2026-06-25):
       steer harmony across the transition window with a time-varying chroma target
       (A's measured tail chroma -> B's head chroma). USE THE TRAINED STEM-CHROMA HEAD
@@ -62,7 +62,7 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       stack should port; venv + CK flash-attn story needs checking there), else the
       next local GPU night.
 
-- [ ] **Transitions round 2** (Kim 2026-07-07, first round sounded weak/noisy even
+- [x] **Transitions round 2** (Kim 2026-07-07, first round sounded weak/noisy even — DONE 07-07 (newcap8_transitions_r2 + superseded by transitions3 recipe)
       pre-transition — possibly seeds, possibly the LENGTH effect: 2-min segments get
       the timestep shift pushed toward high noise): arms hof(x20b3ygb ep3-5400) /
       newcap8 / evr1x(ep3-6108) / newstack(ep3-5400), aggr prompt, seeds 1234+42,
@@ -84,13 +84,13 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       training scalar over ACTIVE frames only (RMS-gated onset density), (b) downweight or
       exclude end-of-track crops (high `relative_position_end` + low-RMS tail), (c) eval
       side: measure density over the active region only so the cheat stops scoring.
-- [ ] **Re-render the density-control grid at calibrated FiLM gains** (~1.5-2.75, or the
+- [x] **Re-render the density-control grid at calibrated FiLM gains** (~1.5-2.75, or the — DONE 07-07 (newcap8_density_control_g175, FiLM verified steering)
       ridge schedule): the 2026-07-07 432-clip grid used gain 6 (steered_longform default),
       but the gain_knee audition puts the style-flip knee at ~1.4-1.5 for the June adapter —
       if the new grid sounds style-flipped rather than density-modulated, gain was too hot.
       Verify where FusionCC's knee sits (it may differ) before re-rendering.
 
-- [ ] **Rank-16 Fusion comparison rerun with the improved dataset stack** (Kim 2026-07-07,
+- [x] **Rank-16 Fusion comparison rerun with the improved dataset stack** (Kim 2026-07-07, — DONE 07-07 (dora16_goa_newstack_8ep + A-vs-HoF board)
       from the dora_results audition): same recipe as `sa3-goa-dora-47s-b4-cont/x20b3ygb`
       (the Hall-of-Fame run) but with everything we've built since: tiered captions
       (T1 era-fronted / T2 Granite / T3 raw via `--caption-sidecar`), curated tag vocab,
@@ -114,7 +114,7 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       `control_eval_server.py` + `submit_control_job.py` (file-drop queue
       `SAO/control_eval_queue`) — 8-step grid ≈5.4 min CPU vs ~42 min GPU-with-compile, so
       CPU is the default eval path, not a fallback. (MASTER §5; move to WORKLOG.)
-- [ ] **SA3 LoRA retrain** on the new `latents_sa3` (5400 T=4096 beat-aligned crops). Caches
+- [x] **SA3 LoRA retrain** on the new `latents_sa3` (5400 T=4096 beat-aligned crops). Caches — DONE (superseded by the dora sweep + newstack runs)
       warm. rank 16 dora-rows bf16 `--compile`, `MIOPEN_FIND_MODE=2`. Decide step budget +
       `--demo_every ≥1500`. Watch that step time drops to ~2-3 s now T is fixed.
 - [ ] **Validate the CK flash-attn build** (`sa3-rocm7.13-test`, scripts 02-05): numerical
