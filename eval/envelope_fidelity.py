@@ -77,12 +77,33 @@ def measure(source, output, sr, region=None):
     pad_fill_frac = float(fill.mean())
     pad_fill_db = float(20 * np.log10(excess[fill]).mean()) if fill.any() else 0.0
 
+    # v2 — SUSTAINED-FLOOR DELTA (pads layered BEHIND active content; v1's
+    # quiet-zone detector can't see them on a busy track). Per band, the "floor"
+    # is a rolling low-percentile of the RMS envelope (~3 s windows): the
+    # sustained bed under the transients. A positive output-vs-source floor
+    # delta = added drones/pads regardless of how busy the source is.
+    win = max(8, int(3.0 * sr / HOP))
+    floor_delta = {}
+    from numpy.lib.stride_tricks import sliding_window_view
+    for i, (name, _, _) in enumerate(BANDS):
+        es, eo = eb_s[i][:m], eb_o[i][:m]
+        if len(es) <= win:
+            floor_delta[name] = 0.0
+            continue
+        fs = np.percentile(sliding_window_view(es, win), 20, axis=1)
+        fo = np.percentile(sliding_window_view(eo, win), 20, axis=1)
+        floor_delta[name] = float(np.median(20 * np.log10((fo + 1e-9) / (fs + 1e-9))))
+    hi_bands = [floor_delta[b] for b in ("body", "mid", "air")]
+    pad_floor_db = float(np.mean([max(0.0, d) for d in hi_bands]))
+
     return {
         "onset_corr": _corr(on_s, on_o),
         "band_corr": band_corr,
         "band_corr_mean": float(np.mean(list(band_corr.values()))),
         "pad_fill_frac": pad_fill_frac,
         "pad_fill_db": pad_fill_db,
+        "floor_delta_db": floor_delta,
+        "pad_floor_db": pad_floor_db,
         "frames": int(m),
     }
 
