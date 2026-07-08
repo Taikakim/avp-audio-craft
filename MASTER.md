@@ -423,6 +423,17 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   (`model_half=False`) is ~8× slower and now only used by the `verify_*` fidelity scripts. Original note,
   kept for context: ~~"must run fp32 on SA3 — fp16 (model_half default) clashes with backprop grad dtypes"~~
   was true of an earlier guidance loop that backpropped through the DiT.
+- **Training "14x slower / hung" on SA3 medium = check `--duration` FIRST.** *(2026-07-08,
+  cost ~3h + a needless GPU reset.)* `train_lora.py --duration` defaults to **380 s (T=4096)**;
+  every production DoRA run uses **`--duration 47 --beat-aware-crop`** (T≈506). Omitting it =
+  8× sequence, ~65× attention cost in the checkpointed backward → ~45 s/step crawl that
+  py-spy shows as autograd grinding in `unpack_hook`→`recompute_fn`, plus near-OOM pressure
+  that can wedge. **Always diff a new launch against the reference run's FULL arg list**
+  (recover it from the run's log header or the session transcript — run dirs should carry it
+  in a sidecar). Related cleanup rule: **kill the whole process group** (`pgrep -f` all PIDs or
+  setsid + group kill), not just the main PID — orphaned Lightning dataloader workers keep GPU
+  contexts alive, block bus resets, and masquerade as a "wedged card" (three failed relaunches
+  before diagnosis).
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
