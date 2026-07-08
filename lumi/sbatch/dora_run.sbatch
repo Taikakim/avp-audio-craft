@@ -24,6 +24,11 @@
 #    the stretch-artifact tail (r16_familiarity was the WORST arm, all glitchy+diffuse).
 #  * RANK mitigates: r128/r256 tolerate the instability far better than r16 (r128adj 86%
 #    clip-stable vs r16 ~50%) — higher rank is a partial workaround if augs can't be fixed.
+#  * LAUNCH-ARG TRAP (cost hours locally 2026-07-08): train_lora --duration DEFAULTS TO
+#    380s (T=4096) — omit it and you get 8x sequence => ~45s/step, indistinguishable from a
+#    hung card. ALWAYS pass --duration 47 (wired below). Lesson: diff the FULL arg list
+#    against a known-good reference run before launching; and kill process GROUPS, not the
+#    main PID — orphaned dataloader workers hold KFD contexts through a GPU reset.
 #  * BUG: train_lora.py --source_weights is a SILENT NO-OP (parsed into `weights` at
 #    line ~134, no sampler consumes it). Do NOT rely on it for per-source mixing until
 #    fixed; use corpus composition (latents_avp_aug10) instead.
@@ -53,6 +58,10 @@ EPOCHS=${EPOCHS:-8}        # set EPOCHS=0 to hand the run length to STEPS (avp r
 STEPS=${STEPS:-3000}       # step cap; only active when EPOCHS=0 (trainer semantics)
 CKPT_EVERY=${CKPT_EVERY:-300}  # step-based checkpoint cadence (compare-first workflow)
 LR=${LR:-1e-4}
+DUR=${DUR:-47}            # CRITICAL: train_lora --duration DEFAULTS TO 380s (T=4096) — 8x
+                         # the intended 47s crop => ~65x attention in checkpointed backward
+                         # => ~45s/step (looks like a hung card). ALWAYS pass 47. (2026-07-08)
+CLIP=${CLIP:-1.0}        # gradient_clip_val (trainer default 0=off); DoRA stability
 NAME=${NAME:-dora_r${RANK}_${ENC}}
 
 CONTAINER=/project/${SA3_PROJECT}/sa3-train.sif
@@ -67,6 +76,7 @@ srun singularity exec \
       --encoded_dir ${SA3_DATA}/${ENC} \
       --rank ${RANK} --lr ${LR} --epochs ${EPOCHS} --steps ${STEPS} \
       --checkpoint_every ${CKPT_EVERY} \
+      --duration ${DUR} --gradient_clip_val ${CLIP} \
       --batch_size 32 --beat-aware-crop \
       --save_dir ${SA3_RUNS}/${NAME} \
       --name ${NAME} \
