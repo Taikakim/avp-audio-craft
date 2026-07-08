@@ -51,6 +51,7 @@ __pycache__/
 !/Misc/build_site.py
 !/Misc/build_evals.py
 !/Misc/latent_dim_feature_xcorr.py
+!/Misc/latent_noise_fragility.py
 !/Misc/build_dms.py
 !/Misc/worklog_note.sh
 
