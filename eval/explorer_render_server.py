@@ -57,6 +57,7 @@ from harmonic.same_chroma import compute_same_chroma  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 from stable_audio_3.inference.sampling import build_schedule  # noqa: E402
+from stable_audio_3.inference.distribution_shift import FluxDistributionShift  # noqa: E402
 from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 from stable_audio_3.models import transformer as _sa3_tf  # noqa: E402
 
@@ -151,6 +152,32 @@ def resolve_cfg_interval(req):
     if not (0.0 <= lo <= hi <= 1.0):
         raise ValueError(f"cfg_interval ({lo}, {hi}) must satisfy 0 <= lo <= hi <= 1")
     return (lo, hi)
+
+
+def resolve_dist_shift(req):
+    """GUI `dist_shift: float|null` -> schedule-warp override for generate().
+    A float builds a constant-alpha FluxDistributionShift (Self-Flow convention,
+    t_shifted = a*t / (1 + (a-1)*t); a=1 -> linear). None/absent/"" -> None,
+    which lets generate()/build_schedule fall back to the model's
+    sampling_dist_shift (the GUI's 'model default')."""
+    v = req.get("dist_shift")
+    if v is None or v == "":
+        return None
+    a = float(v)
+    if a <= 0:
+        raise ValueError(f"dist_shift must be > 0 (got {a})")
+    return FluxDistributionShift(alpha_min=a, alpha_max=a)
+
+
+def resolve_dora_req(req):
+    """Fold the GUI ckpt picker's TOP-LEVEL `ckpt_path` into the dora request
+    dict consumed by _resolve_dora (an explicit dora.ckpt_path still wins)."""
+    dora_req = req.get("dora")
+    top = req.get("ckpt_path")
+    if top:
+        dora_req = dict(dora_req or {})
+        dora_req.setdefault("ckpt_path", str(top))
+    return dora_req
 
 
 def resolve_seed(seed):
@@ -472,14 +499,14 @@ def ckpts(rescan: int = 0, root: str = None):
         if cached is not None and not rescan:
             return {"ok": True, "root": key, "cached": True,
                     "scanned_at": cached["scanned_at"],
-                    "count": len(cached["entries"]), "entries": cached["entries"]}
+                    "count": len(cached["entries"]), "ckpts": cached["entries"]}
         if not rootp.is_dir():
             hint = " — is Mantu1 mounted?" if key.startswith("/run/media/") else ""
             resp = {"ok": False, "root": key, "error": f"scan root not found: {key}{hint}"}
             if cached is not None:              # unmounted drive: serve stale journal
                 resp.update(ok=True, cached=True, stale=True,
                             scanned_at=cached["scanned_at"],
-                            count=len(cached["entries"]), entries=cached["entries"])
+                            count=len(cached["entries"]), ckpts=cached["entries"])
                 return resp
             return JSONResponse(resp, status_code=404)
         t0 = time.time()
@@ -494,32 +521,56 @@ def ckpts(rescan: int = 0, root: str = None):
             log(f"[ckpts] journal write failed: {e}")
         log(f"[ckpts] scanned {key}: {len(entries)} ckpts in {scanned_at - t0:.1f}s")
         return {"ok": True, "root": key, "cached": False, "scanned_at": scanned_at,
-                "count": len(entries), "entries": entries}
+                "count": len(entries), "ckpts": entries}
 
 
-@app.get("/schedule")
-def schedule(steps: int = 24, duration: float = 47.0, shift: int = 1,
-             sigma_max: float = 1.0):
+@app.api_route("/schedule", methods=["GET", "POST"])
+async def schedule(request: Request):
     """Real sigma schedule for the GUI chart — same build_schedule call the run
     makes: dist_shift is length-dependent, seq_len = ceil(duration*SR/DS) exactly
     as compute_effective_seq_len_from_conditioning derives it from seconds_total
-    (generate() sets use_effective_length_for_schedule=True). shift=0 -> linear.
-    For a2a previews pass sigma_max=init_noise_level (schedule truncates there)."""
+    (generate() sets use_effective_length_for_schedule=True).
+
+    POST JSON (the render_client contract): {"steps": int, "duration": float,
+    "dist_shift": float|null (null/absent = model default; float = constant-alpha
+    Flux shift, matching resolve_dist_shift on /generate), "sigma_max": float}.
+    GET keeps the same keys as query params, plus the legacy shift=0 flag
+    (-> linear, no warp). For a2a previews pass sigma_max=init_noise_level
+    (schedule truncates there)."""
+    if request.method == "POST":
+        try:
+            req = json.loads((await request.body()) or b"{}")
+        except Exception as e:
+            return JSONResponse({"error": f"bad JSON body: {e}"}, status_code=400)
+    else:
+        req = dict(request.query_params)
     m = MODEL
     if m is None:
         return JSONResponse({"error": "model not loaded (rebuild in progress?)"},
                             status_code=503)
-    steps = max(1, int(steps))
-    latent_len = max(1, math.ceil(float(duration) * SR / DS))
-    sched = build_schedule(steps=steps, sigma_max=float(sigma_max),
-                           dist_shift=m.model.sampling_dist_shift if shift else None,
+    try:
+        steps = max(1, _i(req, "steps", 24))
+        duration = _f(req, "duration", 47.0)
+        sigma_max = _f(req, "sigma_max", 1.0)
+        if str(req.get("shift", "1")) in ("0", "false", "False"):  # legacy GET flag
+            ds_obj, ds_echo = None, "linear"
+        else:
+            ds_obj = resolve_dist_shift(req)
+            ds_echo = "model" if ds_obj is None else float(req["dist_shift"])
+            if ds_obj is None:
+                ds_obj = m.model.sampling_dist_shift
+    except (TypeError, ValueError) as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    latent_len = max(1, math.ceil(duration * SR / DS))
+    sched = build_schedule(steps=steps, sigma_max=sigma_max,
+                           dist_shift=ds_obj,
                            fallback_seq_len=latent_len,
                            include_endpoint=True, device="cpu")
     if sched.dim() == 2:
         sched = sched[0]
     sigmas = [float(s) for s in sched]
-    return {"ok": True, "steps": steps, "duration": float(duration),
-            "sigma_max": float(sigma_max), "dist_shift": bool(shift),
+    return {"ok": True, "steps": steps, "duration": duration,
+            "sigma_max": sigma_max, "dist_shift": ds_echo,
             "latent_len": latent_len, "sigmas": sigmas}
 
 
@@ -584,7 +635,7 @@ def _generate_impl(req):
         stages = {}
         job_id, jd = new_job("gen")
         log(f"[gen {job_id}] '{prompt[:60]}' dur={duration:g}s steps={steps}")
-        rebuilt = prepare_model(req.get("dora"), req.get("film"))
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
         # kw-dict lifted from density_control_eval.py:141-155 + schedule extras
@@ -595,6 +646,8 @@ def _generate_impl(req):
                   # tuple rides **sampler_kwargs -> sampler extra_args -> DiT forward
                   # (latch path: explicit passthrough in model.py _latch_guided_generate)
                   cfg_interval=resolve_cfg_interval(req),
+                  # None -> generate() falls back to model.sampling_dist_shift
+                  dist_shift=resolve_dist_shift(req),
                   duration_padding_sec=_f(req, "duration_padding_sec", 6.0),
                   callback=make_log_cb(steps))
         if req.get("negative_prompt"):
@@ -618,13 +671,17 @@ def _generate_impl(req):
 
 
 # ---------------------------------------------------------------- /a2a_track
-def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film_req):
-    """a2a_fulltrack.py:34-49 inlined (its signature is too narrow for latch/film)."""
+def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film_req,
+              apg_scale=1.0, cfg_interval=(0.0, 1.0), dist_shift=None):
+    """a2a_fulltrack.py:34-49 inlined (its signature is too narrow for latch/film).
+    apg_scale/cfg_interval/dist_shift mirror the /generate kwargs (same
+    generate() plumbing: cfg_interval rides **sampler_kwargs to the DiT gate)."""
     a = torch.tensor(audio_np)
     dur = audio_np.shape[1] / SR
     kw = dict(prompt=prompt, duration=dur, steps=steps, cfg_scale=cfg, seed=seed,
               batch_size=1, sample_size=budget_for(dur),
               init_audio=(SR, a), init_noise_level=nl,
+              apg_scale=apg_scale, cfg_interval=cfg_interval, dist_shift=dist_shift,
               callback=make_log_cb(steps))
     apply_latch(kw, latch_cfgs, latch_hp)
     with film_context(film_req):
@@ -644,13 +701,16 @@ def _a2a_track_impl(req):
     nls = [float(x) for x in nls]
     steps = _i(req, "steps", 24)
     cfg = _f(req, "cfg_scale", 6.0)
+    apg = _f(req, "apg_scale", 1.0)
+    cfg_interval = resolve_cfg_interval(req)
+    dist_shift = resolve_dist_shift(req)
     seed = resolve_seed(_i(req, "seed", -1))
     with GPU_LOCK:
         t0 = time.time()
         stages = {}
         job_id, jd = new_job("a2atrack")
         log(f"[a2a_track {job_id}] {Path(audio_path).name} nls={nls}")
-        rebuilt = prepare_model(req.get("dora"), req.get("film"))
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
         audio = load_audio(audio_path)
@@ -670,7 +730,9 @@ def _a2a_track_impl(req):
             for lo, hi in wins:
                 chunk = audio[:, int(lo * SR):int(hi * SR)]
                 y = _a2a_pass(chunk, nl, prompt, seed, steps, cfg,
-                              latch_cfgs, latch_hp, req.get("film"))[:, :chunk.shape[1]]
+                              latch_cfgs, latch_hp, req.get("film"),
+                              apg_scale=apg, cfg_interval=cfg_interval,
+                              dist_shift=dist_shift)[:, :chunk.shape[1]]
                 pieces.append(y)
             if len(pieces) == 1:
                 full = pieces[0]
@@ -735,7 +797,7 @@ def _a2a_mix_impl(req):
         stages = {}
         job_id, jd = new_job("a2amix")
         log(f"[a2a_mix {job_id}] {Path(a_path).name} -> {Path(b_path).name} mode={mode}")
-        rebuilt = prepare_model(req.get("dora"), req.get("film"),
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
                                 default_dora="evr1x")    # op default per design
         stages["prepare"] = time.time() - t0
 
