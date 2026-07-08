@@ -96,6 +96,17 @@ def measure(source, output, sr, region=None):
     hi_bands = [floor_delta[b] for b in ("body", "mid", "air")]
     pad_floor_db = float(np.mean([max(0.0, d) for d in hi_bands]))
 
+    # scale-free variant: FLOOR-TO-PEAK ratio delta per band — pads raise the
+    # sustained floor RELATIVE to the track's own transients, independent of
+    # overall density/mastering differences between source and render.
+    ratio_delta = {}
+    for i, (name, _, _) in enumerate(BANDS):
+        es, eo = eb_s[i][:m], eb_o[i][:m]
+        rs = np.percentile(es, 20) / (np.percentile(es, 95) + 1e-9)
+        ro = np.percentile(eo, 20) / (np.percentile(eo, 95) + 1e-9)
+        ratio_delta[name] = float(20 * np.log10((ro + 1e-9) / (rs + 1e-9)))
+    pad_ratio_db = float(np.mean([max(0.0, ratio_delta[b]) for b in ("body", "mid", "air")]))
+
     return {
         "onset_corr": _corr(on_s, on_o),
         "band_corr": band_corr,
@@ -104,6 +115,8 @@ def measure(source, output, sr, region=None):
         "pad_fill_db": pad_fill_db,
         "floor_delta_db": floor_delta,
         "pad_floor_db": pad_floor_db,
+        "floor_peak_ratio_delta_db": ratio_delta,
+        "pad_ratio_db": pad_ratio_db,
         "frames": int(m),
     }
 
