@@ -162,3 +162,12 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       (timeseries, encoders, train_latch/train_lora flags). Decide what to commit where.
 - [ ] Push branches that are local-only (`mir/whole-track-timeseries`, etc.) if you want
       off-machine backup.
+
+- **LUMI: FULL FINETUNE of SA3-medium on Kim's corpus** (Kim 2026-07-09, priority when
+  LUMI online): "for out-of-knowledge styles that's the only way to get the information
+  in" (his image-world experience; the avp adapter arms' mush supports it — adapter
+  capacity + frozen text pathway can't absorb a genuinely OOD style). Design notes:
+  MI250X fits 1.4B full-FT easily; use the FIXED caption stack (Flamingo tiers + bpm
+  disambiguation), per-alias data splits (Summamutikka goa-coherent vs Aavepyörä
+  eclectic), low-LR + early ckpt ladder (the phase-window lesson transfers), and the
+  underfit one-style-per-dataset doctrine. W owns LUMI scaffolding — encode when specing.
