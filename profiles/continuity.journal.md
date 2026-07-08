@@ -488,3 +488,8 @@ Kim's ear session recorded in avp_board run_meta. Collage-after-knee = 3x-lr sig
 2e-4 even at r16 on this corpus. Standing change: 3000-step comparison runs (ckpt/300)
 before any long training. --source_weights is a NO-OP in train_lora (no sampler) — trap.
 Familiarity-weighting amplifies aug artifacts (worst arm, W's meter + Kim's ear agree).
+
+## 2026-07-08 — transitions3 verdicts: seams out, shorter windows in
+Kim: seam-inpaint adds nothing; w1024 too long; w512 best (machinery artifacts scale with
+window length). transitions4 queued: 256/128-frame windows, no seams. Negative result worth
+keeping: the seam-inpaint idea (2 batches of renders) is now a documented dead end.
