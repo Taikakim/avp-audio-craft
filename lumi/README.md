@@ -63,3 +63,11 @@ needed on day 1 are the project number and the base-image ROCm version.*
   profiling, not a blocker.
 - **MIOPEN_FIND_MODE=2, TunableOp off** for first runs (mode-6 killed SA3-medium's DiT
   locally; tuning caches are per-arch and can't be carried over).
+- **avp-DoRA lessons (local bracket, 2026-07-08)** — full block in the `dora_run.sbatch`
+  header; the short version: step-cap ~3000 + ckpt/300 + compare-first (quality knee is
+  ep4-6, collages past it); aug policy = **10% sample not 88%** (aug-heavy corpus under one
+  caption → tempo-multimodal conditioning → audible tempo mode-hopping, confirmed by Kim's
+  ear + two independent meters); **never novelty/familiarity-weight an aug-heavy corpus**
+  (over-samples the stretch-artifact tail — worst arm); higher rank (r128/r256) tolerates it
+  far better than r16; and `train_lora.py --source_weights` is a **silent NO-OP** — control
+  source mixing via corpus composition, not that flag.

@@ -3,10 +3,32 @@
 # Parameterized via --export so one script serves the whole bracket, e.g.:
 #
 #   sbatch --export=ALL,ENC=latents_sa3,RANK=16,EPOCHS=8,NAME=dora16_goa dora_run.sbatch
-#   sbatch --export=ALL,ENC=latents_avp,RANK=16,EPOCHS=8,NAME=dora16_avp dora_run.sbatch
-#   sbatch --export=ALL,ENC=latents_avp,RANK=128,LR=5e-5,NAME=dora128_avp dora_run.sbatch
+#   # avp step-capped recipe (see LESSONS below) — EPOCHS=0 hands control to STEPS:
+#   sbatch --export=ALL,ENC=latents_avp_aug10,RANK=128,LR=1e-4,EPOCHS=0,STEPS=3000,NAME=dora128_avp_aug10 dora_run.sbatch
+#   sbatch --export=ALL,ENC=latents_avp_aug10,RANK=256,LR=7e-5,EPOCHS=0,STEPS=3000,NAME=dora256_avp_aug10 dora_run.sbatch
 #
 # LR/rank brackets = a one-line for-loop over sbatch calls; each lands on its own GCD.
+#
+# ── avp-DoRA LESSONS (local bracket, 2026-07-08 — bake these into every avp run) ──
+#  * STEP CAP: the quality knee is ep4-6; runs collage/drift past it ("disjointed
+#    pieces copied and pasted" = the 3x-lr signature). Cap at ~3000 steps, ckpt every
+#    300, COMPARE EARLY CKPTS FIRST, extend only if earned. (EPOCHS=0 => STEPS governs;
+#    the trainer sets max_steps=-1 whenever --epochs is truthy, so EPOCHS must be 0.)
+#  * AUG POLICY: 10% random sample, NOT 88%. An aug-heavy corpus (each track held at 7
+#    tempo/pitch variants under ONE caption) makes the trigger token condition a
+#    TEMPO-MULTIMODAL distribution -> sampling mode-hops mid-clip = audible tempo
+#    instability (goa-locked 100% > real-avp 80% > r16-adapter ~50% clip-stability;
+#    Kim's ear + two independent meters agree). Fix: per-crop bpm captioning, or drop
+#    tempo augs, or keep augs to a 10% tail. latents_avp_aug10 = 288 orig + 32 augs.
+#  * NEVER novelty/familiarity-weighting on an aug-heavy corpus: it over-samples exactly
+#    the stretch-artifact tail (r16_familiarity was the WORST arm, all glitchy+diffuse).
+#  * RANK mitigates: r128/r256 tolerate the instability far better than r16 (r128adj 86%
+#    clip-stable vs r16 ~50%) — higher rank is a partial workaround if augs can't be fixed.
+#  * BUG: train_lora.py --source_weights is a SILENT NO-OP (parsed into `weights` at
+#    line ~134, no sampler consumes it). Do NOT rely on it for per-source mixing until
+#    fixed; use corpus composition (latents_avp_aug10) instead.
+# ──────────────────────────────────────────────────────────────────────────────────
+#
 # NOTE (air-gap): SA3 medium-base weights + T5-Gemma must be PRE-STAGED under
 # ${SA3_MODELS} (HF_HOME points there, HF_HUB_OFFLINE=1) — first dry-run the model load
 # on a login node (which has internet) to populate the cache, then it's frozen.
@@ -27,7 +49,9 @@ source /project/${SA3_PROJECT:-project_465XXXXX}/lumi/env_lumi.sh
 
 ENC=${ENC:-latents_sa3}
 RANK=${RANK:-16}
-EPOCHS=${EPOCHS:-8}
+EPOCHS=${EPOCHS:-8}        # set EPOCHS=0 to hand the run length to STEPS (avp recipe)
+STEPS=${STEPS:-3000}       # step cap; only active when EPOCHS=0 (trainer semantics)
+CKPT_EVERY=${CKPT_EVERY:-300}  # step-based checkpoint cadence (compare-first workflow)
 LR=${LR:-1e-4}
 NAME=${NAME:-dora_r${RANK}_${ENC}}
 
@@ -41,7 +65,8 @@ srun singularity exec \
       --adapter_type dora \
       --model medium-base \
       --encoded_dir ${SA3_DATA}/${ENC} \
-      --rank ${RANK} --lr ${LR} --epochs ${EPOCHS} \
+      --rank ${RANK} --lr ${LR} --epochs ${EPOCHS} --steps ${STEPS} \
+      --checkpoint_every ${CKPT_EVERY} \
       --batch_size 32 --beat-aware-crop \
       --save_dir ${SA3_RUNS}/${NAME} \
       --name ${NAME} \
