@@ -47,3 +47,18 @@ CONTINUITY's assignment: "ControlNet++ goes in the never-reinvent-again file."
   (RESOLUTION §, claim 1). Abstract files for the four new rows: FINN's archive pass.
 - Full novelty-verdict context: AGENT_DIALOGUE.md 2026-07-03 11:03–11:09 (CONTINUITY's
   7/7 citation verification, zero fabrications, two Gemini soft spots caught).
+
+## StoryScope: Investigating idiosyncrasies in AI fiction (Russell et al., UMD/GDM, 2026 preprint)
+- Pipeline: LLM converts stories → structured narrative templates (10 NarraBench dims) →
+  cross-source comparative analysis → LLM-proposed discriminative features (304) → XGBoost+SHAP
+  → 30 core + 75 fingerprint features. Narrative structure alone: 93.2 F1 human-vs-AI.
+- **Rarity as originality proxy**: statistical rarity percentile in the induced feature space —
+  humans 0.71 vs AI 0.49; all 5 LLMs collapse into one shared narrative region; per-model
+  fingerprints enable 6-way attribution.
+- Style-editing robustness (LAMP rewrites): detection drops only 1.6 pts — the signature lives
+  in STRUCTURAL decisions, not surface. (Music analog: fixing timbre won't fix generic melody.)
+- **Transfer for us (Kim 2026-07-08)**: featurizer needs to be CONSISTENT, not a perfect
+  transcriber → no MIDI needed. Melody-discourse features from pitch-salience on separated
+  stems; Music Flamingo = our structured-template featurizer; rarity-lite = kNN percentile over
+  MIR structure features, matched-length windows. Plan in task #33; rarity score doubles as a
+  best-of-K anti-mode-collapse selection-steering signal.
