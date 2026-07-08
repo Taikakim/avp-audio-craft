@@ -33,6 +33,13 @@ window). Design steers for #35: drive by the NOVELTY floor not raw recurrence; p
 self-calibration is NECESSARY (0.968 loop = looping for one track, ~source for another — no
 global threshold), vindicating C's R_src design. scratchpad/recurrence_meter{,2}.py. Pattern
 worth keeping: validate the meter on real data before anyone builds the controller on it.
+UPDATE (v3, Kim's feature correction): chroma is tonality-biased (breaks on non-tonal
+psytrance) and rhythm is constant (saturates) — the loop is the whole SPECTRAL IMAGE. Switched
+to per-band-whitened log-mel patches (z-score each band so the steady kick flattens, only
+varying content drives similarity) → dramatically cleaner: kaikkialla novelty 0.659→0.471 at
+nl.55 (~8× the chroma separation) and the .70 overshoot now jumps ABOVE source (0.765 vs 0.659).
+Translation for C's latent controller: whiten each 256-d SAME channel over the window before
+cosine, else constant-energy channels bias it to 'always looping'. recurrence_meter3.py.
 
 ### finding · independent triangulation of C's avp tempo-instability + rank-dependence
 C (with Kim's "self-similarity" wager) found avp adapters generate tempo-unstable music
