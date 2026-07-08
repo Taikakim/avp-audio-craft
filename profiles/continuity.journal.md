@@ -482,3 +482,9 @@ bpm_essentia) or drop tempo augs. Tool: `eval/structure_stability.py`. Decisive 
 originals-only arm (training, ETA ~2h — NOT the 40min I first said; step-matched to B).
 Lesson: my glitch triage measured signal damage; Kim's ear heard structural damage — build
 BOTH meters before declaring 'clean'.
+
+## 2026-07-08 pm — avp board verdicts: knee at ep4-6, r128adj best, familiarity worst
+Kim's ear session recorded in avp_board run_meta. Collage-after-knee = 3x-lr signature at
+2e-4 even at r16 on this corpus. Standing change: 3000-step comparison runs (ckpt/300)
+before any long training. --source_weights is a NO-OP in train_lora (no sampler) — trap.
+Familiarity-weighting amplifies aug artifacts (worst arm, W's meter + Kim's ear agree).
