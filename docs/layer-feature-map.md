@@ -62,3 +62,13 @@ high noise).
 | rms_energy_air | 0.27 | 0.31 (L22) | 0.19 |
 | rms_energy_bass | 0.13 | 0.27 (L22) | 0.17 |
 | rms_energy_mid | 0.15 | 0.16 (L3) | 0.01 |
+
+## Follow-up: noise-invariance sweep (W, 2026-07-08)
+
+`docs/layer-feature-noise-invariance.md` composes this map with a matched-noise input
+sweep and sharpens the mechanism: the noised LATENT collapses uniformly (all features
+→ R²≈0 by σ0.8), but the DiT **rebuilds beat noise-invariantly** (R² 0.80 at L14 at
+every sigma — synthesized from conditioning + coarse periodicity) while **abandoning**
+hpcp and rms_mid (barely rebuilt, fading with noise). The a2a recipe implication:
+rhythm transfers at any noising level for free; harmony must be re-supplied externally
+(chroma guidance) past mid-band.
