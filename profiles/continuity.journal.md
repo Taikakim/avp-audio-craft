@@ -471,3 +471,14 @@ input xcorr); beat/downbeat/onset EMERGE mid-stack (downbeat 0.16→0.44 @L13–
 rhythm heads on block-13 activations; layer-restricted adapters. Depth doc:
 `docs/layer-feature-map.md`. Negative-ish: rms_energy_mid is the least-represented feature
 anywhere in the stack (peak R² 0.19) — ties to the mid-band attractor.
+
+## 2026-07-08 — avp 'glitchy/disjointed' SOLVED-pending-A/B: tempo mode-hopping from undisambiguated augs
+Kim rejected my caption-collapse theory (single-prompt finetunes are standard — he's right)
+and wagered structure/self-similarity. Meter agrees: avp renders wander 6–28 bpm within a
+clip; real avp tracks + goa renders lock at IQR 0.0 on every clip. Key stable, signal clean —
+it's the PULSE. Corpus holds 7 tempo/pitch variants per track under one caption → tempo-
+multimodal conditioning → mode-hopping mid-clip. Fix: bpm in captions (sidecars have
+bpm_essentia) or drop tempo augs. Tool: `eval/structure_stability.py`. Decisive test =
+originals-only arm (training, ETA ~2h — NOT the 40min I first said; step-matched to B).
+Lesson: my glitch triage measured signal damage; Kim's ear heard structural damage — build
+BOTH meters before declaring 'clean'.
