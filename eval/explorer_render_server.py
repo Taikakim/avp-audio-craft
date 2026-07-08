@@ -54,7 +54,10 @@ from sa3_control.inject import install_adapters  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402
 from sa3_control.generate import load_adapter_state  # noqa: E402
 from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3/scripts")
+from weight_mutations import Condition, apply_condition  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
+from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 from stable_audio_3.inference.sampling import build_schedule  # noqa: E402
 from stable_audio_3.inference.distribution_shift import FluxDistributionShift  # noqa: E402
@@ -331,16 +334,33 @@ def _install_film(ckpt):
     FILM_LOADED = str(ckpt)
 
 
-def prepare_model(dora_req, film_req, default_dora="none"):
-    """DoRA/FiLM state machine. Returns True if the model was rebuilt."""
-    global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE
+LOADED_MUT = None
+
+
+def resolve_mutate(req):
+    """req["mutate"] -> normalized mutation dict or None. Weight-garden shuffle:
+    the one value-preserving databending op that proved musical (WORKLOG 07-04)."""
+    m = req.get("mutate") or {}
+    if not m.get("enabled"):
+        return None
+    return {"amount": float(m.get("amount", 0.25)),
+            "target": str(m.get("target", "attn")),
+            "seed": int(m.get("seed", 1234)),
+            "decay_rate": float(m.get("decay_rate", 0.5)),
+            "decay_direction": str(m.get("decay_direction", "late"))}
+
+
+def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
+    """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
+    global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
+    mut_key = json.dumps(mutate_req, sort_keys=True) if mutate_req else None
     key, ckpt, strength = _resolve_dora(dora_req, default_dora)
     film_ckpt = None
     if film_req:
         film_ckpt = require_path(film_req.get("ckpt") or FILM_DEFAULT_CKPT, "FiLM checkpoint")
     # reload-per-change is the proven density_control_eval pattern; a FiLM ckpt
     # swap also forces a rebuild (install_adapters must not stack wrappers)
-    rebuild = (MODEL is None or key != LOADED_DORA
+    rebuild = (MODEL is None or key != LOADED_DORA or mut_key != LOADED_MUT
                or (film_ckpt is not None and FILM_LOADED not in (None, film_ckpt)))
     if rebuild:
         if ckpt:
@@ -351,9 +371,22 @@ def prepare_model(dora_req, film_req, default_dora="none"):
         gc.collect()
         torch.cuda.empty_cache()
         MODEL = StableAudioModel.from_pretrained(ARGS.model, device=ARGS.device)
+        if mutate_req:
+            # weight-garden shuffle on the frozen base DiT, BEFORE adapter attach
+            # (train_lora --glitch order). Reset = rebuild without mutate.
+            cond = Condition(name="ui_shuffle",
+                             ops=[{"op": "shuffle", "amount": mutate_req["amount"]}],
+                             target=mutate_req["target"],
+                             decay_rate=mutate_req["decay_rate"],
+                             decay_direction=mutate_req["decay_direction"],
+                             mutation_seed=mutate_req["seed"])
+            summary = apply_condition(MODEL.dit, cond)
+            log(f"[mutate] shuffle amount={mutate_req['amount']} target={mutate_req['target']} "
+                f"seed={mutate_req['seed']} -> {summary}")
         if ckpt:
             MODEL.load_lora([str(ckpt)])
         LOADED_DORA, LOADED_STRENGTH = key, 1.0
+        LOADED_MUT = mut_key
     if ckpt and strength != LOADED_STRENGTH:
         MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
         LOADED_STRENGTH = strength
@@ -635,7 +668,8 @@ def _generate_impl(req):
         stages = {}
         job_id, jd = new_job("gen")
         log(f"[gen {job_id}] '{prompt[:60]}' dur={duration:g}s steps={steps}")
-        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"))
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
+                                mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
         # kw-dict lifted from density_control_eval.py:141-155 + schedule extras
@@ -671,8 +705,61 @@ def _generate_impl(req):
 
 
 # ---------------------------------------------------------------- /a2a_track
+_PRESERVE_HEAD_CACHE = {}
+
+
+def make_preserve_hook(req, chunk_np, steps):
+    """Kim's inference-time selection steering: at each ping-pong renoise, draw K
+    candidates and keep the one whose LatCH-head prediction best matches the
+    SOURCE's envelope — training-free rhythm preservation (selection, no grads).
+    Active for the first `until` fraction of steps (structure locks early)."""
+    p = req.get("preserve") or {}
+    if not p.get("enabled"):
+        return None
+    import librosa
+    head_name = p.get("head", "onset_envelope")
+    entry = HEADS.get(head_name)
+    if entry is None:
+        raise ValueError(f"unknown preserve head {head_name!r}")
+    if head_name not in _PRESERVE_HEAD_CACHE:
+        _PRESERVE_HEAD_CACHE[head_name] = load_latch_from_checkpoint(
+            entry["path"], device=ARGS.device)
+    head = _PRESERVE_HEAD_CACHE[head_name]
+    meta = getattr(head, "metadata", {}) or {}
+    fps_lat = SR / 4096.0
+    T = int(np.ceil(chunk_np.shape[1] / SR * fps_lat))
+    env = librosa.onset.onset_strength(y=chunk_np.mean(0), sr=SR, hop_length=512)
+    env_t = np.interp(np.linspace(0, len(env) - 1, T), np.arange(len(env)), env)
+    if meta.get("standardized"):
+        env_t = (env_t - float(meta.get("std_mean", 0.0))) / (float(meta.get("std_std", 1.0)) or 1.0)
+    target = torch.tensor(env_t, dtype=torch.float32, device=ARGS.device)
+    target = target.view(1, 1, -1).expand(1, head.out_channels, -1).contiguous()
+    K = max(2, int(p.get("k", 4)))
+    until = float(p.get("until", 0.5))
+
+    def hook(denoised, t_next, x, i):
+        if i >= until * steps:
+            return None                        # free-running tail
+        tn = float(t_next if t_next.dim() == 0 else t_next.reshape(-1)[0])
+        if tn <= 0:
+            return None
+        t_vec = torch.full((x.shape[0],), tn, device=x.device, dtype=torch.float32)
+        best, best_score = None, None
+        for _ in range(K):
+            cand = (1 - t_next) * denoised + t_next * torch.randn_like(x)
+            pred = head(cand.float(), t_vec)
+            n = min(pred.shape[-1], target.shape[-1])
+            score = -torch.mean((pred[..., :n] - target[..., :n]) ** 2).item()
+            if best_score is None or score > best_score:
+                best, best_score = cand, score
+        return best
+
+    return hook
+
+
 def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film_req,
-              apg_scale=1.0, cfg_interval=(0.0, 1.0), dist_shift=None):
+              apg_scale=1.0, cfg_interval=(0.0, 1.0), dist_shift=None,
+              renoise_hook=None, sampler_type=None):
     """a2a_fulltrack.py:34-49 inlined (its signature is too narrow for latch/film).
     apg_scale/cfg_interval/dist_shift mirror the /generate kwargs (same
     generate() plumbing: cfg_interval rides **sampler_kwargs to the DiT gate)."""
@@ -683,6 +770,11 @@ def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film
               init_audio=(SR, a), init_noise_level=nl,
               apg_scale=apg_scale, cfg_interval=cfg_interval, dist_shift=dist_shift,
               callback=make_log_cb(steps))
+    if renoise_hook is not None:
+        kw["renoise_hook"] = renoise_hook
+        kw["sampler_type"] = sampler_type or "pingpong"   # selection needs stochasticity
+    elif sampler_type:
+        kw["sampler_type"] = sampler_type
     apply_latch(kw, latch_cfgs, latch_hp)
     with film_context(film_req):
         out = MODEL.generate(**kw)
@@ -710,7 +802,8 @@ def _a2a_track_impl(req):
         stages = {}
         job_id, jd = new_job("a2atrack")
         log(f"[a2a_track {job_id}] {Path(audio_path).name} nls={nls}")
-        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"))
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
+                                mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
         audio = load_audio(audio_path)
@@ -729,10 +822,12 @@ def _a2a_track_impl(req):
             pieces = []
             for lo, hi in wins:
                 chunk = audio[:, int(lo * SR):int(hi * SR)]
+                hook = make_preserve_hook(req, chunk, steps)
                 y = _a2a_pass(chunk, nl, prompt, seed, steps, cfg,
                               latch_cfgs, latch_hp, req.get("film"),
                               apg_scale=apg, cfg_interval=cfg_interval,
-                              dist_shift=dist_shift)[:, :chunk.shape[1]]
+                              dist_shift=dist_shift,
+                              renoise_hook=hook)[:, :chunk.shape[1]]
                 pieces.append(y)
             if len(pieces) == 1:
                 full = pieces[0]
@@ -798,7 +893,8 @@ def _a2a_mix_impl(req):
         job_id, jd = new_job("a2amix")
         log(f"[a2a_mix {job_id}] {Path(a_path).name} -> {Path(b_path).name} mode={mode}")
         rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
-                                default_dora="evr1x")    # op default per design
+                                default_dora="evr1x",    # op default per design
+                                mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
 
         # 1. load
