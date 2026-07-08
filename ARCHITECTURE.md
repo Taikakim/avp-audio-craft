@@ -127,3 +127,11 @@ it's the "check what we already have" index any instance reads first.
 | `docs/training-findings.md` | recipes, params, **why latents are T=4096** |
 | `docs/lessons-learned.md` | mistakes to not repeat |
 | `docs/todos.md` | open work |
+
+- **Music captioning (Music Flamingo + Granite) — lives in mir, ALREADY BUILT.**
+  `mir/MUSIC_FLAMINGO.md` + `mir/src/classification/music_flamingo.py` (GGUF Q6_K via
+  llama-mtmd-cli, ~4 s/track, 5–9 GB VRAM, models in `mir/models/music_flamingo/`) +
+  `granite_revision.py` (GraniteReviser, granite-4.0-h-tiny GGUF, condenses to short
+  tags). Feeds `stable-audio-3/scripts/caption_tools.py` tiers (T2=Granite-compressed,
+  T3=raw Flamingo). Re-discovered the hard way 2026-07-08 (scouted HF before checking
+  mir) — check mir FIRST for any audio-understanding capability. (CONTINUITY)
