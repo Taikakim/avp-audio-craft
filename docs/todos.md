@@ -79,8 +79,12 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       rerun including G's Bungee augmentation variants (pitch ±1/2, tempo ±5/10%,
       ~1035 crops, parent-ratio downbeats, same trigger captions) once they're
       confirmed landed in `latents_avp` (as of 07-07 morning the dir holds originals
-      only — check G's encode delta status first). Clean comparison arm vs tonight's
-      originals-only r16: does augmentation variety help a small personal corpus?
+      only — check G's encode delta status first). CORRECTED 2026-07-08 (G's manifest
+      re-read): latents_avp ALREADY contains the augs — 288 originals + 2105 aug crops
+      (tempo ±5/±10, pitch ±1/±2). Every avp DoRA so far trained 88% on stretched/shifted
+      audio. The MISSING arm is ORIGINALS-ONLY (288 crops) — train it as the clean
+      comparison; prime suspect for Kim's 'glitchy/disjointed' avp verdict (adapter may
+      have learned stretch/shift artifact texture as the house sound).
       PLUS (Kim 2026-07-08, weird-prompt finding): current avp prompts are ONE
       trigger word in two spellings — zero compositional handles; the rerun should
       sample trigger + descriptive tiers (caption-sampler infra) so the adapter
