@@ -46,10 +46,19 @@ external ever forces variation, so the loop persists indefinitely.
 
 Closed-loop nl control driven by a repetition meter, calibrated by the source itself:
 
-- **Meter (latent-domain, no decode needed):** recurrence rate over a rolling window
-  of latent frames (cosine self-similarity of 256-d SAME frames; optionally through
-  the chroma regressor to be harmony-aware). Compute the same curve for the SOURCE
-  latent once up front.
+- **Meter (latent-domain, no decode needed) — v3 per W's validation (2026-07-08):**
+  patch-level (≈4 s) self-similarity with **per-channel whitening** (z-score each of
+  the 256 SAME channels over the rolling window BEFORE cosine, so constant-energy
+  content — the steady kick — goes flat and only VARYING content drives similarity).
+  Kim's correction was decisive: naive frame-cosine saturates (0.99 on everything),
+  chroma is tonality-biased, rhythm is constant — the loop is the whole SPECTRAL
+  IMAGE repeating; whitened log-mel validated it on the real ladders (~8x the chroma
+  separation; the nl-.70 overshoot regime shows as novelty ABOVE source, so the
+  controller correctly disengages there). Drive the hysteresis by the NOVELTY-FLOOR
+  signal (1 − max patch-sim to preceding 8–40 s), not raw recurrence. Trigger band
+  nl .55–.60 confirmed by two independent meters. Compute the source curve once up
+  front. Validated meter: W's scratchpad/recurrence_meter3.py → landing as the #33
+  recurrence feature (W owns).
 - **Threshold from the source:** `R_src_max` (or p95) — the repetitiveness the
   original never exceeded. Per-track self-calibration, no global constant.
 - **Control law (Schmitt trigger / hysteresis):**
