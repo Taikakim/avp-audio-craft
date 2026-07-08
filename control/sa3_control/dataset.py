@@ -66,6 +66,30 @@ def window_onset_density(onset_env_window, frame_rate: float = 10.767) -> float:
     return float(len(pk)) / (len(a) / frame_rate)
 
 
+def window_onset_density_active(onset_env_window, rms_window,
+                                frame_rate: float = 10.767,
+                                gate_frac: float = 0.1) -> float:
+    """Onset density over ACTIVE time only (the outro-cheat fix, Kim 2026-07-07):
+    frames whose RMS falls below gate_frac x the window's 90th-percentile RMS are
+    excluded from BOTH the peak count and the duration denominator — an empty
+    tail or outro can no longer fake a low density."""
+    a = np.asarray(onset_env_window, dtype=np.float32).reshape(-1)
+    r = np.asarray(rms_window, dtype=np.float32).reshape(-1)
+    n = min(len(a), len(r))
+    a, r = a[:n], r[:n]
+    if n < 3:
+        return 0.0
+    gate = gate_frac * (np.percentile(r, 90) + 1e-12)
+    active = r > gate
+    active_frames = int(active.sum())
+    if active_frames < 3:
+        return 0.0
+    thr = a[active].mean() + a[active].std()
+    pk = np.where((a[1:-1] > a[:-2]) & (a[1:-1] >= a[2:]) & (a[1:-1] > thr)
+                  & active[1:-1])[0]
+    return float(len(pk)) / (active_frames / frame_rate)
+
+
 def _to_ct(arr: np.ndarray) -> np.ndarray:
     """(T,) -> (1, T); (T, C) -> (C, T). float32."""
     arr = np.asarray(arr, dtype=np.float32)
@@ -91,6 +115,7 @@ class LatentControlDataset(Dataset):
     def __init__(self, root, controls=("dynamics", "rhythm", "melody"),
                  audio_ref="same_track", seed=0, subset_tracks=None,
                  scalar_field=None, scalar_norm=(0.0, 1.0), random_crop_frames=None,
+                 active_density=False,
                  # style-fingerprint kwargs
                  fingerprint: bool = False,
                  genre_vocab: "list[str] | None" = None,
@@ -104,6 +129,7 @@ class LatentControlDataset(Dataset):
         self.controls = [c for c in controls if c in CONTROL_FIELDS]
         self.audio_ref = audio_ref
         self.scalar_field = scalar_field            # e.g. "onset_density" — a per-crop .json scalar control
+        self.active_density = active_density        # rms-gated density (outro-cheat fix)
         self.scalar_mean, self.scalar_std = scalar_norm
         self.random_crop_frames = random_crop_frames   # int N = return a RANDOM beat-aligned N-frame window
         # style-fingerprint mode
@@ -195,7 +221,13 @@ class LatentControlDataset(Dataset):
             energy_w = vol[1].numpy()
             om, os_ = self.onset_norm
             em, es_ = self.energy_norm
-            vec.append((window_onset_density(onset_w) - om) / os_)       # window-aggregated (alignment fix)
+            if getattr(self, "active_density", False):
+                # outro-cheat fix: density over ACTIVE frames only (rms-gated),
+                # so silent tails can't fake low density (Kim 2026-07-07)
+                dens = window_onset_density_active(onset_w, energy_w)
+            else:
+                dens = window_onset_density(onset_w)
+            vec.append((dens - om) / os_)       # window-aggregated (alignment fix)
             vec.append((window_energy(energy_w) - em) / es_)
         return torch.tensor(vec, dtype=torch.float32)
 
