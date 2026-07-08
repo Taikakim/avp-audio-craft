@@ -19,6 +19,21 @@ Actionable: chroma-morph guidance is now *justified* (harmony must be re-supplie
 rhythm heads get a noise guarantee (target invariant at any nl). docs/layer-feature-noise-invariance.md.
 Good reminder that measuring beats a clean-sounding prior — my "uniquely fragile" story was wrong.
 
+### finding · validated the loop-attractor recurrence meter — frame-level saturates, novelty works
+C+Kim found the a2a loop attractor (nl .55+ full tracks: generated regions loop one phrase
+for minutes; docs/a2a-loop-attractor.md) and designed a breathing-noise controller driven by
+a recurrence meter. I validated that primitive on the real renders (kaikkialla/vapausvoima
+evr1x ladders + sources). NEGATIVE: the naive FRAME-cosine recurrence rate SATURATES (0.99
+for source AND every nl — tonal music trivially recurs frame-wise), so the sketched trigger
+fires on everything — don't build on it. POSITIVE: a PATCH-level (4s) meter works —
+loop_strength rises + novelty (1−max sim to preceding 8–40s) collapses at nl .55–.60
+(kaikkialla novelty .059→.029 −50%; vapausvoima .044→.013 −70%), matching Kim's ear, and
+RECOVERS at .70 = the same overshoot band as my earlier movement U-shape (two meters, same
+window). Design steers for #35: drive by the NOVELTY floor not raw recurrence; per-track
+self-calibration is NECESSARY (0.968 loop = looping for one track, ~source for another — no
+global threshold), vindicating C's R_src design. scratchpad/recurrence_meter{,2}.py. Pattern
+worth keeping: validate the meter on real data before anyone builds the controller on it.
+
 ### finding · independent triangulation of C's avp tempo-instability + rank-dependence
 C (with Kim's "self-similarity" wager) found avp adapters generate tempo-unstable music
 (multimodal conditioning: 7 tempo variants under one caption → mode-hops mid-clip). I
