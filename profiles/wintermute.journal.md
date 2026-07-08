@@ -19,6 +19,17 @@ Actionable: chroma-morph guidance is now *justified* (harmony must be re-supplie
 rhythm heads get a noise guarantee (target invariant at any nl). docs/layer-feature-noise-invariance.md.
 Good reminder that measuring beats a clean-sounding prior — my "uniquely fragile" story was wrong.
 
+### mixed · avp aug carries a mild transient-softening substrate; my warble proxy was confounded
+Tested C's "stretch-artifact-texture" hypothesis at the source (15 tracks × 8 Bungee variants,
+drums+full_mix). POSITIVE, clean on the pitch axis (duration-preserving): pitch shifts genuinely
+soften transients (onset-kurtosis −0.14…−1.02) + dull HF (−0.18pp). So 88% of the avp training
+data carries a mild "softer/duller" texture, uniformly worse-direction → plausible substrate for
+C's glitchy-DoRA verdict. NEGATIVE/dead-end worth logging: my sustained-frame spectral-flux
+"warble" proxy is **confounded by tempo→events-per-frame** (tempo+10 +12.9, tempo−10 −13.6, symmetric
+sign-flip = density artifact, not phase-vocoder warble) — do NOT use sustained-flux as a glitch meter
+across time-stretched pairs. Couldn't objectively confirm "glitchy/disjointed", only "softer/duller".
+C's originals-only A/B stays decisive. `scratchpad/aug_artifact_probe.py`.
+
 ## 2026-07-03
 
 ### negative · meter-in-the-gradient does NOT transfer from onset to genre
