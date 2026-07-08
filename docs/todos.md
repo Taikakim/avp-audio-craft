@@ -81,6 +81,10 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       confirmed landed in `latents_avp` (as of 07-07 morning the dir holds originals
       only — check G's encode delta status first). Clean comparison arm vs tonight's
       originals-only r16: does augmentation variety help a small personal corpus?
+      PLUS (Kim 2026-07-08, weird-prompt finding): current avp prompts are ONE
+      trigger word in two spellings — zero compositional handles; the rerun should
+      sample trigger + descriptive tiers (caption-sampler infra) so the adapter
+      learns to compose with English prompts.
 
 - [ ] **Outro/empty-space cheating in onset-density training** (Kim 2026-07-07, gain_knee
       audition): the model can hit a low density request by rendering an outro/track-ending
