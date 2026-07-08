@@ -448,3 +448,16 @@ pads-in-silence; Kim's droning pads are layered UNDER active content on a full-o
 (no quiet zones) -> v2 design: per-band sustained-floor delta. Also overnight: stage D
 launched (avp r16 + familiarity_beta 1.0, 8ep) — the last arm of the chain, testing
 Kim's novelty-gating on his own music; TODO hygiene (5 done items marked).
+
+## 2026-07-08 — night shift ledger (Kim asleep, autonomous)
+[tool] PAD DETECTOR CALIBRATED in 3 iterations against Kim's ear: v1 pads-in-silence
+(missed — no quiet zones on a full-on track), v2 sustained-floor delta (direction right,
+absolute sign wrong — Kim's master denser than any render), v3 FLOOR-TO-PEAK RATIO delta
+= the one: nl35 0.09dB vs nl50 +1.72dB in body/mid/air exactly. Suite complete with W's
+depth-percentile baselines (p95 65.6 goa / 63.3 avp; RT60 dry-side-only) + his
+melodic-movement ladder (U-shape: tonal movement -20% at nl .40-.55, overshoot +30-50%
+at .70 = posterior-averaging regime, retro-explains chroma-steered transitions winning).
+[fix] OUTRO CHEAT closed at the dataset tier: window_onset_density_active (rms-gated
+peaks AND duration), active_density flag, 109/109 tests.
+Queue: D training (avp familiarity) -> G aug encode -> layer x feature extraction ->
+mid-band recovery experiment (interval-CFG x chroma, W co-scoring).
