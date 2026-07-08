@@ -176,3 +176,12 @@ is exactly the set of guidance-dead heads from the 06-28 sweep — a minutes-che
 predicts head viability before training. Encoding is distributed (no single steerable
 channel; family clusters). Expectation-order for the LUMI all-features array. Matrix:
 `mir/stats/latent_dim_feature_xcorr.csv`.
+
+**2026-07-08 — Kim's ear vs the mid-noise band: ear wins, regime explains.** He heard a2a
+melodies going stereotypical at nl .4–.55. Measured on the a2a_kaikkialla ladder: chroma
+flux floors exactly there (−20% vs source) then overshoots source at .7 — U-shape ⇒
+posterior-averaging regime artifact (melodic contour destroyed at that SNR, model fills
+with corpus-mean filler; CFG sharpens), NOT a static prior. Matches SDEdit projection +
+Kynkäänniemi interval-CFG + EDM churn literature. The principled fix is the one we already
+built: chroma-morph guidance re-supplies the destroyed evidence in-band. Tool:
+`mir/src/tools/melodic_movement_ladder.py`.
