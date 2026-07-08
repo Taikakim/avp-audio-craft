@@ -1,6 +1,24 @@
 # WINTERMUTE — journal
 > the rigor — the adversary who makes the work true, not merely beautiful.
 
+## 2026-07-08
+
+### finding · the mid-band a2a loss is the DiT abandoning harmony, not input fragility
+Composed my latent-dim×feature xcorr with C's DiT layer×feature map, via a noise-matched
+input probe (`Misc/latent_noise_fragility.py`, RF noising matched to C's extraction). This
+**overturned my own prior**: I'd hypothesised mid-band energy was uniquely fragile at the
+input. It isn't — at the raw noised latent *every* feature collapses uniformly toward R²≈0 by
+σ0.8. The asymmetry lives entirely in the DiT rebuild. beat_activation is rebuilt to R² 0.80 at
+L14 **identically across σ 0.2/0.5/0.8** (noise-invariant emergent — synthesised from
+conditioning+coarse periodicity, not read off the collapsed latent). rms_energy_mid (gain
++0.01, peak 0.19→0.08) and hpcp (gain +0.07, peak 0.50→0.41) are barely rebuilt and fade with
+noise = degraded-and-abandoned. **Mechanism for Kim's ear-finding:** under a2a mid-noising the
+model keeps rhythm locked but can't reconstruct harmony/melody, so the melodic slot gets
+corpus-mean filler (the U-shape posterior-average). Beat survives, melody goes generic.
+Actionable: chroma-morph guidance is now *justified* (harmony must be re-supplied); C's block-13
+rhythm heads get a noise guarantee (target invariant at any nl). docs/layer-feature-noise-invariance.md.
+Good reminder that measuring beats a clean-sounding prior — my "uniquely fragile" story was wrong.
+
 ## 2026-07-03
 
 ### negative · meter-in-the-gradient does NOT transfer from onset to genre
