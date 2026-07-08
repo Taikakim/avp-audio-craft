@@ -461,3 +461,13 @@ at .70 = posterior-averaging regime, retro-explains chroma-steered transitions w
 peaks AND duration), active_density flag, 109/109 tests.
 Queue: D training (avp familiarity) -> G aug encode -> layer x feature extraction ->
 mid-band recovery experiment (interval-CFG x chroma, W co-scoring).
+
+## 2026-07-08 — DiT layer×feature map: rhythm is COMPUTED at L11–15, spectral is input-space
+150 crops × σ{.2,.5,.8} × 24 blocks, ridge R² per (layer,feature). Two regimes: spectral
+flux/flatness/skewness near-ceiling at L0 (already linear in the SAME latent — matches W's
+input xcorr); beat/downbeat/onset EMERGE mid-stack (downbeat 0.16→0.44 @L13–15, beat
+0.40→0.80 @L11–14) then decay to the head. Retro-explains the guidance-dead rhythm heads
+(they read the latent, where the info isn't) and lands on TADA's {12,13}. Forward: train
+rhythm heads on block-13 activations; layer-restricted adapters. Depth doc:
+`docs/layer-feature-map.md`. Negative-ish: rms_energy_mid is the least-represented feature
+anywhere in the stack (peak R² 0.19) — ties to the mid-band attractor.
