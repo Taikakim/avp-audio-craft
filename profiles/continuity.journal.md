@@ -439,3 +439,12 @@ plays 0.5s LATE after the window (off-by-f2) — meaning today's chroma_transiti
 renders carry that quirk; the server reproduces it FAITHFULLY (documented) since the
 ear-ranked renders include it. Fix-properly is a knob for later. Also generalized+verified
 the bar-grid fold for off-centre windows (phase error 0.00s).
+
+## 2026-07-08 — envelope meter shipped + calibrated; pad-fill v1 limitation found honestly
+eval/envelope_fidelity.py (4 tests): onset-corr + per-band RMS-corr + pad-fill score.
+First real calibration against Kim's ear on the Kaikki a2a ladder: fidelity axes track
+his ordering exactly (nl35 .97/.95 vs nl50 .93/.84). LIMITATION: pad-fill v1 detects
+pads-in-silence; Kim's droning pads are layered UNDER active content on a full-on track
+(no quiet zones) -> v2 design: per-band sustained-floor delta. Also overnight: stage D
+launched (avp r16 + familiarity_beta 1.0, 8ep) — the last arm of the chain, testing
+Kim's novelty-gating on his own music; TODO hygiene (5 done items marked).

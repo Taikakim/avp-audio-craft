@@ -43,7 +43,11 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       observation): (a) timbral extractor runs w/ `dev_output=True` — reverb returns
       (mean_RT60, probability) CONTINUOUS, not the true/false; + timbral_depth — over
       goa/avp/avp-aug corpora for baselines (W's lane, DM'd); (b) envelope-fidelity
-      meter from existing TIMESERIES (source-vs-output onset+band-RMS correlation,
+      meter — SHIPPED 07-08 (eval/envelope_fidelity.py, 4 tests; first calibration:
+      fidelity axes track Kim's ear exactly, nl35 onset .97/bands .95 vs nl50
+      .93/.84) BUT the pad-fill detector v1 only catches pads-in-SILENCE; Kim's
+      pads are LAYERED BEHIND active content -> v2 = per-band sustained-floor
+      delta (slow-envelope floor of output vs source, no quiet-zone dependency) (source-vs-output onset+band-RMS correlation,
       excess-sustained-energy = pad-fill signature — Kim's "envelope timings stay
       close to the example", zero new models); (c) RT60/depth deltas as eval columns
       + best-of-N rerank penalty in longform — W's meter finding 2026-07-07: RT60
