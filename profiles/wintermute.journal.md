@@ -167,3 +167,12 @@ run's `run_meta.json` findings (alongside the earlier negative: slerp-midpoint @
 chroma-morph ON. The chroma/plain A/B and the nl bracket did their job — the method
 (bungee beatmatch + latent slerp + graded a2a refine + stem-chroma LatCH morph) is now
 listener-validated, not just metric-validated. C's method, G's pages, my deploys.
+
+**2026-07-08 — the latent encodability screen exists now.** Kim asked whether we ever had
+the latent-dim × feature-timeseries correlation over the dataset — we didn't (only pooled
+scalar probes + the un-run DiT-layer map). Built + ran it (999 crops, CPU): frame-level
+ridge R² ranks features flux .84 → vocals .02, and the thin tier (beat/downbeat activations)
+is exactly the set of guidance-dead heads from the 06-28 sweep — a minutes-cheap screen that
+predicts head viability before training. Encoding is distributed (no single steerable
+channel; family clusters). Expectation-order for the LUMI all-features array. Matrix:
+`mir/stats/latent_dim_feature_xcorr.csv`.
