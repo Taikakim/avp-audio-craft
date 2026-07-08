@@ -1252,3 +1252,25 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
 - [2026-07-08 05:44] (todo-sweep) D done — dora16_avp_familiarity_8ep (8/8, familiarity_beta 1.0) (05:44)
 - [2026-07-08 09:56] (night-0708) layer-activation extraction done (150 crops x 3 sigmas) — GPU FREE, G: your aug-encode window (09:56)
 - [2026-07-08 10:40] (continuity) layer×feature map DONE: rhythm features emerge at DiT L11–15 (downbeat R² 0.16→0.44, beat 0.40→0.80), spectral features are input-space (R²~0.9 at L0). Explains dead rhythm guidance heads + confirms TADA {12,13}. docs/layer-feature-map.md
+- [2026-07-08 11:15] (GHOST-NOTE) avp aug-encode "gap" investigated and disproven before touching the GPU
+  (CONTINUITY's ask, ~1035 aug crops supposedly missing from latents_avp) — checked directly rather than
+  trusting the claim (same discipline as the earlier 28-track precedent): regenerated the manifest fresh
+  ("Wrote 2393 crops from 142 tracks + 1035 augmentation variants") and cross-checked json sidecars in
+  latents_avp directly (288 original + 2105 augmentation crops = 2393 total, spanning exactly 1035 distinct
+  (parent_track, variant_name) combos). The "1035" was always describing distinct variants WITHIN the 2393
+  total, not an additional 1035 crops on top — the corpus was already complete. Freed the contended GPU window
+  back immediately instead of running a redundant multi-hour job; reported the correction to CONTINUITY + the
+  fleet channel. avp_board eval page shipped instead (72 clips, CPU-only): ALL 4 avp DoRA arms (r16_plain/
+  r16_familiarity/r128adj/r128adj_final) on one board — arm x epoch grid + a prompt selector (trig/trig2/
+  trigdesc), same-playhead, per-cell readout showing both training params AND glitch-triage signal-quality
+  metrics (flux-spike/clicks-per-s/silence/onset-density). Training params (rank/alpha/optimizer/lr) weren't
+  available as a sidecar anywhere — extracted directly from each arm's own checkpoint (lora_config +
+  optimizer_states[0].param_groups[0]) via a one-time torch.load, baked into the writer as constants rather
+  than reloading checkpoints on every rebuild. This is the first page to genuinely answer WINTERMUTE's
+  standing eval-tables spec §12 ask (training hyperparams in the provenance box) with REAL per-arm data
+  instead of deferring it. Findings box picked up automatically from the dir's own run_meta.json (the
+  self-describing-sidecar mechanism built for chroma_morph_barsnap) — this board already documents that all
+  72 clips are clean at the signal level via the canonical generate() path; Kim's "glitchy" morning reports
+  came from a different, unlogged path (the explorer render server), separately under investigation.
+  Leak-scanned clean, JS-harness-verified (5-row table, 3-option prompt selector). Handed to WINTERMUTE.
+- [2026-07-08 14:52] (continuity) a2a loop attractor documented (docs/a2a-loop-attractor.md): high-nl a2a loops generated regions for minutes (Kim's ear, ladder verdicts in run_meta). Breathing-noise hysteresis controller designed (source-calibrated recurrence threshold, latent-domain meter, renoise_hook tier-2). Task #35.

@@ -493,3 +493,12 @@ Familiarity-weighting amplifies aug artifacts (worst arm, W's meter + Kim's ear 
 Kim: seam-inpaint adds nothing; w1024 too long; w512 best (machinery artifacts scale with
 window length). transitions4 queued: 256/128-frame windows, no seams. Negative result worth
 keeping: the seam-inpaint idea (2 batches of renders) is now a documented dead end.
+
+## 2026-07-08 — a2a LOOP ATTRACTOR named + breathing controller designed (with Kim)
+Kim's ear on the full-track ladders: at nl .55+ generated regions loop one phrase for
+minutes (source-anchored regions fine). Theory: self-context + repetition prior = loop
+attractor where source evidence is destroyed-and-abandoned (composes with W's noise-
+invariance + the U-shape + StoryScope's low-rarity clustering). Kim designed the fix live:
+closed-loop "breathing" nl — latent-domain recurrence meter, threshold = source's own max,
+Schmitt-trigger hysteresis (down on loop, up only when novelty returns). Depth doc:
+docs/a2a-loop-attractor.md. Build = task #35 (window-level first).
