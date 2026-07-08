@@ -10,20 +10,25 @@
 # LR/rank brackets = a one-line for-loop over sbatch calls; each lands on its own GCD.
 #
 # ── avp-DoRA LESSONS (local bracket, 2026-07-08 — bake these into every avp run) ──
-#  * STEP CAP: the quality knee is ep4-6; runs collage/drift past it ("disjointed
-#    pieces copied and pasted" = the 3x-lr signature). Cap at ~3000 steps, ckpt every
-#    300, COMPARE EARLY CKPTS FIRST, extend only if earned. (EPOCHS=0 => STEPS governs;
-#    the trainer sets max_steps=-1 whenever --epochs is truthy, so EPOCHS must be 0.)
-#  * AUG POLICY: 10% random sample, NOT 88%. An aug-heavy corpus (each track held at 7
-#    tempo/pitch variants under ONE caption) makes the trigger token condition a
-#    TEMPO-MULTIMODAL distribution -> sampling mode-hops mid-clip = audible tempo
-#    instability (goa-locked 100% > real-avp 80% > r16-adapter ~50% clip-stability;
-#    Kim's ear + two independent meters agree). Fix: per-crop bpm captioning, or drop
-#    tempo augs, or keep augs to a 10% tail. latents_avp_aug10 = 288 orig + 32 augs.
-#  * NEVER novelty/familiarity-weighting on an aug-heavy corpus: it over-samples exactly
-#    the stretch-artifact tail (r16_familiarity was the WORST arm, all glitchy+diffuse).
-#  * RANK mitigates: r128/r256 tolerate the instability far better than r16 (r128adj 86%
-#    clip-stable vs r16 ~50%) — higher rank is a partial workaround if augs can't be fixed.
+#  * TEMPO INSTABILITY IS OPTIMIZATION-PHASE-DRIVEN, not data-driven (revised 2026-07-08
+#    after the D' originals-only arm: the NO-AUG arm was the LEAST stable overall, 38% —
+#    refuting the earlier "aug tempo-multimodality" theory). Each config has a STABILITY
+#    WINDOW in training: r16 @ lr2e-4 locks perfectly ~steps 1152-1440 (9/9 IQR=0), is
+#    undertrained-unstable before, and destabilizes/collages after ~1700 ("disjointed
+#    pieces copied+pasted" = Kim's 3x-lr signature, ep4-6 = 1200-1800 steps). SO: ckpt
+#    every 300, COMPARE CKPTS ACROSS THE WHOLE RUN and pick the stability window — do NOT
+#    just take the last ckpt, and do NOT assume more steps = better. Cap ~3000, extend only
+#    if earned. (EPOCHS=0 => STEPS governs; trainer sets max_steps=-1 when --epochs truthy.)
+#  * RANK/LR set WHERE the window sits: higher rank + lower LR push it later/wider (r128adj
+#    86% clip-stable vs r16 ~50%; r128 @ lr1e-4 predicted to knee much later or never).
+#    Prefer r128/r256 at lr ~1e-4/7e-5 over r16 @ lr2e-4 for a forgiving window.
+#  * AUG POLICY: augs are LARGELY EXONERATED ON TEMPO (above). Keep a ~10% sample
+#    (latents_avp_aug10 = 288 orig + 32 augs) mainly to bound the Bungee TIMBRE artifact —
+#    pitch-shifts measurably soften transients + dull HF (W's source probe); NOT because
+#    88% augs cause tempo drift. Do NOT over-index on the aug axis for tempo problems.
+#  * FAMILIARITY/novelty-weighting: r16_familiarity was the worst arm, but with the
+#    phase theory its cause is now UNCLEAR (LR-phase vs aug-tail) — treat as unproven and
+#    avoid until an isolated test separates it; do not assume the aug-tail mechanism.
 #  * LAUNCH-ARG TRAP (cost hours locally 2026-07-08): train_lora --duration DEFAULTS TO
 #    380s (T=4096) — omit it and you get 8x sequence => ~45s/step, indistinguishable from a
 #    hung card. ALWAYS pass --duration 47 (wired below). Lesson: diff the FULL arg list

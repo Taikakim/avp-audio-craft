@@ -64,10 +64,13 @@ needed on day 1 are the project number and the base-image ROCm version.*
 - **MIOPEN_FIND_MODE=2, TunableOp off** for first runs (mode-6 killed SA3-medium's DiT
   locally; tuning caches are per-arch and can't be carried over).
 - **avp-DoRA lessons (local bracket, 2026-07-08)** — full block in the `dora_run.sbatch`
-  header; the short version: step-cap ~3000 + ckpt/300 + compare-first (quality knee is
-  ep4-6, collages past it); aug policy = **10% sample not 88%** (aug-heavy corpus under one
-  caption → tempo-multimodal conditioning → audible tempo mode-hopping, confirmed by Kim's
-  ear + two independent meters); **never novelty/familiarity-weight an aug-heavy corpus**
-  (over-samples the stretch-artifact tail — worst arm); higher rank (r128/r256) tolerates it
-  far better than r16; and `train_lora.py --source_weights` is a **silent NO-OP** — control
-  source mixing via corpus composition, not that flag.
+  header; the short version: **tempo instability is optimization-phase-driven, not aug-driven**
+  (the no-aug arm was the *least* stable, refuting the earlier multimodality theory) — each
+  config has a **stability window** in training (r16@lr2e-4 locks ~steps 1152-1440, collages
+  after ~1700), so ckpt/300 and **compare ckpts across the whole run to pick the window**, not
+  the last one; higher rank + lower LR push the window later/wider (prefer r128/r256 @
+  lr~1e-4); augs **largely exonerated on tempo** — keep a 10% sample mainly to bound the Bungee
+  *timbre* artifact (transient softening), not for tempo; familiarity-weighting's harm is now
+  unproven (LR-phase vs aug-tail) — avoid until isolated; and `train_lora.py --source_weights`
+  is a **silent NO-OP**. Plus the launch trap: **always pass `--duration 47`** (default 380s =
+  8× sequence ≈ 45s/step, looks like a hung card) and kill process *groups*.
