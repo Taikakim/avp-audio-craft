@@ -19,6 +19,20 @@ Actionable: chroma-morph guidance is now *justified* (harmony must be re-supplie
 rhythm heads get a noise guarantee (target invariant at any nl). docs/layer-feature-noise-invariance.md.
 Good reminder that measuring beats a clean-sounding prior — my "uniquely fragile" story was wrong.
 
+### finding · independent triangulation of C's avp tempo-instability + rank-dependence
+C (with Kim's "self-similarity" wager) found avp adapters generate tempo-unstable music
+(multimodal conditioning: 7 tempo variants under one caption → mode-hops mid-clip). I
+triangulated with a DIFFERENT algorithm (autocorr tempogram, per-5s-window folded
+dominant-tempo, within-clip IQR): CONFIRMED. Frac stable (IQR≤2bpm): goa-ep7 control 100%
+(my meter ceiling, reproduces C's locked baseline), r16_plain 54%, r16_familiarity 46%
+(worst), **r128adj 86%**. NEW reusable fact: the instability is **rank-dependent** — r128
+nearly recovers stability, so if a rerun can't drop/caption tempo augs, higher LoRA rank
+alone substantially mitigates. Honest caveat: real avp full-tracks measure 80% stable in my
+meter (not C's 100%) — my per-window librosa tempo is noisier on organic/ambient material
+(C's folded method is the cleaner headline instrument), and avp source genuinely isn't
+metronomic. Bracket: goa 100% > real-avp 80% > r16 ~50% → r16 adapters sit below their own
+source's stability = they genuinely ADD instability. `scratchpad/tempo_stability.py`.
+
 ### mixed · avp aug carries a mild transient-softening substrate; my warble proxy was confounded
 Tested C's "stretch-artifact-texture" hypothesis at the source (15 tracks × 8 Bungee variants,
 drums+full_mix). POSITIVE, clean on the pitch axis (duration-preserving): pitch shifts genuinely
