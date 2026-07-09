@@ -62,3 +62,19 @@ CONTINUITY's assignment: "ControlNet++ goes in the never-reinvent-again file."
   stems; Music Flamingo = our structured-template featurizer; rarity-lite = kNN percentile over
   MIR structure features, matched-length windows. Plan in task #33; rarity score doubles as a
   best-of-K anti-mode-collapse selection-steering signal.
+
+## Underfit memo — CFG dynamics during LoRA training (Kim 2026-07-09, important)
+- **CFG optimum MOVES with training stage.** Early ('getting it'): high CFG (~7) demos light up
+  first — style on a coherent prompt. Past the elbow: CFG=7 OVER-COOKS (artifacted/over-saturated),
+  and LOW CFG (~1) becomes cleanest. If CFG=1 good & CFG=7 bad => LoRA has internalised the style,
+  no longer needs prompt-classifier guidance.
+- **Conditional→unconditional crossover.** Later, even EMPTY-prompt demos sound like the style =
+  the model ABSORBED the dataset (a diagnostic for memorisation).
+- **Don't fear a memorised checkpoint.** Overfitting only hurts if chasing creative variation. A
+  memorised ckpt is still useful: weaken LoRA strength at inference, AND a2a/style-transfer hits
+  HARDER with a memorised model (strong style signal pulls input decisively into the training dist).
+- **IMPLICATION FOR OUR AVP WORK:** we rendered EVERYTHING at fixed cfg ~5. Our late-epoch
+  'thin/over-sharp/hissy/breathy' renders may be CFG=7-style over-cooking at a stage that wants
+  low CFG. Late ckpts should be re-rendered at cfg 1-2. And the 'overtrained' late ckpts may be
+  EXCELLENT for a2a even where they're bad for txt2audio. (ARC-distilled demos lag base RF by a few
+  k steps but end cleaner.)
