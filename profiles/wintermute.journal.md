@@ -180,7 +180,9 @@ cannot see mode collapse. The fix is a **cross-reference audio difference** — 
 ref B (same seed/prompt), RMS-diff the outputs; low diff = collapsed. The most expensive kind of wrong
 is the metric that agrees with you.
 
-## 2026-07-06 — avp personal-corpus prep + the whole-track paradigm (reuse, don't re-cut)
+## 2026-07-06
+
+### finding · avp personal-corpus prep + the whole-track paradigm (reuse, don't re-cut)
 
 Prepping Kim's own music (Aavepyörä/Summamutikka) as a LoRA/DoRA conditioning corpus on the
 UUID drive (`.../avp-analyzed`). Key paradigm correction worth writing down so nobody re-cuts
@@ -205,12 +207,16 @@ Tools built (reusable):
 - `mir/src/tools/inject_trigger_caption.py` — writes the aavepyora/aavepyörä trigger caption
   (deterministic per track) in place of Flamingo, for the personal-style LoRA.
 
-Negative-result lessons: (1) orphan-pruning an analyzed corpus by matching **only `.flac`** source
+### negative · corpus-pruning + pgrep self-match lessons
+
+(1) orphan-pruning an analyzed corpus by matching **only `.flac`** source
 files wrongly trashed folders for `.wav`-source keepers (3 of mine) — match **all audio extensions**.
 (2) `pgrep -f 'script.py'` inside a shell whose own command line contains that string self-matches —
 use `ps | grep '[s]cript'`. Reversible-delete (move to trash dir) caught the .flac bug harmlessly.
 
-## 2026-07-07 — the recurring render-clipping bug, quantified (Kim: "we fix this every second day")
+## 2026-07-07
+
+### finding · the recurring render-clipping bug, quantified (Kim: "we fix this every second day")
 
 Ran mir's saturation/clipping calc (`mir/src/spectral/saturation.py` + a peak/clip-fraction
 pass) over all 791 SA3 eval renders from the last 48h (`Mantu1/sa3_lora_runs`). Verdict:
@@ -225,7 +231,9 @@ that's the "every second day" recurrence. **Durable fix: route EVERY SA3 render/
 > target ceiling ~ −1 dB).** Not a one-off re-render — a centralization/guard problem.
 Audit script: scratchpad/clip_audit.py. See [[avp-corpus-overnight]] for the parallel MIR work.
 
-**2026-07-07 — first Kim-validated usable transition.** Kim on `chroma_morph_barsnap`
+### finding · first Kim-validated usable transition
+
+Kim on `chroma_morph_barsnap`
 `kaikki2angelic__w1025_nl42_chroma`: *"a completely useable transition."* Recorded in the
 run's `run_meta.json` findings (alongside the earlier negative: slerp-midpoint @ nl .55
 = identity-losing drone). Operating point that worked: bar-snapped window ~1025, nl 0.42,
@@ -233,7 +241,11 @@ chroma-morph ON. The chroma/plain A/B and the nl bracket did their job — the m
 (bungee beatmatch + latent slerp + graded a2a refine + stem-chroma LatCH morph) is now
 listener-validated, not just metric-validated. C's method, G's pages, my deploys.
 
-**2026-07-08 — the latent encodability screen exists now.** Kim asked whether we ever had
+## 2026-07-08
+
+### finding · the latent encodability screen exists now
+
+Kim asked whether we ever had
 the latent-dim × feature-timeseries correlation over the dataset — we didn't (only pooled
 scalar probes + the un-run DiT-layer map). Built + ran it (999 crops, CPU): frame-level
 ridge R² ranks features flux .84 → vocals .02, and the thin tier (beat/downbeat activations)
@@ -242,7 +254,9 @@ predicts head viability before training. Encoding is distributed (no single stee
 channel; family clusters). Expectation-order for the LUMI all-features array. Matrix:
 `mir/stats/latent_dim_feature_xcorr.csv`.
 
-**2026-07-08 — Kim's ear vs the mid-noise band: ear wins, regime explains.** He heard a2a
+### finding · Kim's ear vs the mid-noise band — ear wins, regime explains
+
+He heard a2a
 melodies going stereotypical at nl .4–.55. Measured on the a2a_kaikkialla ladder: chroma
 flux floors exactly there (−20% vs source) then overshoots source at .7 — U-shape ⇒
 posterior-averaging regime artifact (melodic contour destroyed at that SNR, model fills
@@ -250,3 +264,48 @@ with corpus-mean filler; CFG sharpens), NOT a static prior. Matches SDEdit proje
 Kynkäänniemi interval-CFG + EDM churn literature. The principled fix is the one we already
 built: chroma-morph guidance re-supplies the destroyed evidence in-band. Tool:
 `mir/src/tools/melodic_movement_ladder.py`.
+
+## 2026-07-09
+
+### finding · tempo_iqr meter — LR-window hypothesis confirmed by the predictive test
+
+tempo_iqr meter (mir/src/tools/tempo_iqr.py) run on the fresh arm-G + r16-fine ladders. Arm G (r128@lr1e-4) is flat tempo-stable across the whole 3000-step run (never collapses), vs r16@lr2e-4's narrow window. Meter independently reproduces C's ep31 notch (ep31-34 = narrow stable island, resolving the spike-vs-plateau Q). Tool fix: rank ckpts by MEAN iqr, not median (median floors at 0 on mostly-stable ladders). Feeds C's ship-checkpoint picker. WORKLOG 2026-07-09.
+
+### finding · pending-D reanalyze complete; subprocess-isolation was the right call
+
+All 1346 avp
+augmentation variants now carry the full CPU MIR feature set (rms bands / spectral / chroma+key / bpm /
+onsets / syncopation / timbral / per-stem), measured not derived — augs change signal non-analytically
+(transient softening, HF dulling). Two in-process architectures failed first: a ProcessPool poisons on one
+madmom **segfault** (BrokenProcessPool), and `as_completed` **hangs forever** on one worker stuck in an
+untimed madmom step (a silent 3-hour stall). The fix that held: `subprocess.run` per variant with a hard
+600s timeout — a stuck child gets SIGKILLed, a crash surfaces as a return code, the ThreadPool driver is
+never poisoned. 0 quarantined, ~10h. The 255 bpm-canary flags are **madmom metrical ambiguity, not
+transform errors** (69% cluster at clean 2×/1.5× ratios; the canary doesn't octave-fold the compare so it
+over-reports). Tool: `mir/src/tools/reanalyze_variants.py`. Phase-2 GPU features (audiobox + essentia)
+deferred to a card-free window.
+
+### finding · LUMI is EFP-WebUI-submitted, NOT raw sbatch (the finding that saves three failed attempts)
+
+Our LUMI-G allocation is accessed through the EuroHPC Federation Platform. Jobs submit ONLY
+through the web platform (`workflows.my-eurohpc.eu`) — the SSH login's default account is `default_no_jobs`
+(MaxSubmit=0) precisely because direct Slurm submission is deliberately disabled. I burned three `sbatch`
+attempts (AssocMaxSubmitJobLimit → Invalid account/partition combination) before Kim's hunch ("do jobs have
+to be configured in the WebUI?") + the quickstart doc confirmed it. The `sbatch/*.sbatch` script BODIES
+still carry over — they get registered as EFP *Job Scripts* and launched via *Workflows*, with
+partition/account/resources set in the WebUI (dropdowns), not by `sbatch`. Partition is `standard-g` ONLY
+(whole-node-exclusive billing caveat). SSH stays useful for data staging / container build / fetching
+results. Bundle + access-model block documented in `SAO/lumi/README.md`. Blocked on Kim reporting the
+Create-Jobscript form layout so I can shape the hello-world job for the WebUI abstraction.
+
+### finding · avp own-music dataset-release spec drafted
+
+Kim wants to publish his own CC music as a
+distributable SA3 dataset (latents + all timeseries + creator captions) by model-release time. Brainstormed
+to a spec with a governing **invertibility rule**: release representations in inverse proportion to
+reconstructability — full-mix audio (his licensed work) OK; hand-crafted MIR timeseries (non-invertible) OK
+for all stems; neural embeddings (partially invertible) → clean subset only; SA3 latents (decoder-invertible
+= audio-equivalent) reproduce-only, never over sample-library-contaminated stems. Canonical build =
+clean-room regen on LUMI from the original waves (fits Kim's "document everything from scratch" ethos, now
+affordable on the 5000 GCD-h). Spec:
+`mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md`. Awaiting Kim's review.

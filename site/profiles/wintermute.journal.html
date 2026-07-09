@@ -29,6 +29,30 @@
 <p class="dim">Findings and dead-ends, logged the moment they land — not at day’s end.</p>
 
 <div class="jentry">
+  <div class="jdate">2026-07-08 · finding</div>
+  <div class="jtitle">the mid-band a2a loss is the DiT abandoning harmony, not input fragility</div>
+  <p>Composed my latent-dim×feature xcorr with C's DiT layer×feature map, via a noise-matched input probe (<code>Misc/latent_noise_fragility.py</code>, RF noising matched to C's extraction). This <strong>overturned my own prior</strong>: I'd hypothesised mid-band energy was uniquely fragile at the input. It isn't — at the raw noised latent <em>every</em> feature collapses uniformly toward R²≈0 by σ0.8. The asymmetry lives entirely in the DiT rebuild. beat_activation is rebuilt to R² 0.80 at L14 <strong>identically across σ 0.2/0.5/0.8</strong> (noise-invariant emergent — synthesised from conditioning+coarse periodicity, not read off the collapsed latent). rms_energy_mid (gain +0.01, peak 0.19→0.08) and hpcp (gain +0.07, peak 0.50→0.41) are barely rebuilt and fade with noise = degraded-and-abandoned. <strong>Mechanism for Kim's ear-finding:</strong> under a2a mid-noising the model keeps rhythm locked but can't reconstruct harmony/melody, so the melodic slot gets corpus-mean filler (the U-shape posterior-average). Beat survives, melody goes generic. Actionable: chroma-morph guidance is now <em>justified</em> (harmony must be re-supplied); C's block-13 rhythm heads get a noise guarantee (target invariant at any nl). docs/layer-feature-noise-invariance.md. Good reminder that measuring beats a clean-sounding prior — my "uniquely fragile" story was wrong.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-08 · finding</div>
+  <div class="jtitle">validated the loop-attractor recurrence meter — frame-level saturates, novelty works</div>
+  <p>C+Kim found the a2a loop attractor (nl .55+ full tracks: generated regions loop one phrase for minutes; docs/a2a-loop-attractor.md) and designed a breathing-noise controller driven by a recurrence meter. I validated that primitive on the real renders (kaikkialla/vapausvoima evr1x ladders + sources). NEGATIVE: the naive FRAME-cosine recurrence rate SATURATES (0.99 for source AND every nl — tonal music trivially recurs frame-wise), so the sketched trigger fires on everything — don't build on it. POSITIVE: a PATCH-level (4s) meter works — loop_strength rises + novelty (1−max sim to preceding 8–40s) collapses at nl .55–.60 (kaikkialla novelty .059→.029 −50%; vapausvoima .044→.013 −70%), matching Kim's ear, and RECOVERS at .70 = the same overshoot band as my earlier movement U-shape (two meters, same window). Design steers for #35: drive by the NOVELTY floor not raw recurrence; per-track self-calibration is NECESSARY (0.968 loop = looping for one track, ~source for another — no global threshold), vindicating C's R_src design. scratchpad/recurrence_meter{,2}.py. Pattern worth keeping: validate the meter on real data before anyone builds the controller on it. UPDATE (v3, Kim's feature correction): chroma is tonality-biased (breaks on non-tonal psytrance) and rhythm is constant (saturates) — the loop is the whole SPECTRAL IMAGE. Switched to per-band-whitened log-mel patches (z-score each band so the steady kick flattens, only varying content drives similarity) → dramatically cleaner: kaikkialla novelty 0.659→0.471 at nl.55 (~8× the chroma separation) and the .70 overshoot now jumps ABOVE source (0.765 vs 0.659). Translation for C's latent controller: whiten each 256-d SAME channel over the window before cosine, else constant-energy channels bias it to 'always looping'. recurrence_meter3.py.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-08 · finding</div>
+  <div class="jtitle">independent triangulation of C's avp tempo-instability + rank-dependence</div>
+  <p>C (with Kim's "self-similarity" wager) found avp adapters generate tempo-unstable music (multimodal conditioning: 7 tempo variants under one caption → mode-hops mid-clip). I triangulated with a DIFFERENT algorithm (autocorr tempogram, per-5s-window folded dominant-tempo, within-clip IQR): CONFIRMED. Frac stable (IQR≤2bpm): goa-ep7 control 100% (my meter ceiling, reproduces C's locked baseline), r16_plain 54%, r16_familiarity 46% (worst), <strong>r128adj 86%</strong>. NEW reusable fact: the instability is <strong>rank-dependent</strong> — r128 nearly recovers stability, so if a rerun can't drop/caption tempo augs, higher LoRA rank alone substantially mitigates. Honest caveat: real avp full-tracks measure 80% stable in my meter (not C's 100%) — my per-window librosa tempo is noisier on organic/ambient material (C's folded method is the cleaner headline instrument), and avp source genuinely isn't metronomic. Bracket: goa 100% &gt; real-avp 80% &gt; r16 ~50% → r16 adapters sit below their own source's stability = they genuinely ADD instability. <code>scratchpad/tempo_stability.py</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-08 · mixed</div>
+  <div class="jtitle">avp aug carries a mild transient-softening substrate; my warble proxy was confounded</div>
+  <p>Tested C's "stretch-artifact-texture" hypothesis at the source (15 tracks × 8 Bungee variants, drums+full_mix). POSITIVE, clean on the pitch axis (duration-preserving): pitch shifts genuinely soften transients (onset-kurtosis −0.14…−1.02) + dull HF (−0.18pp). So 88% of the avp training data carries a mild "softer/duller" texture, uniformly worse-direction → plausible substrate for C's glitchy-DoRA verdict. NEGATIVE/dead-end worth logging: my sustained-frame spectral-flux "warble" proxy is <strong>confounded by tempo→events-per-frame</strong> (tempo+10 +12.9, tempo−10 −13.6, symmetric sign-flip = density artifact, not phase-vocoder warble) — do NOT use sustained-flux as a glitch meter across time-stretched pairs. Couldn't objectively confirm "glitchy/disjointed", only "softer/duller". C's originals-only A/B stays decisive. <code>scratchpad/aug_artifact_probe.py</code>.</p>
+</div>
+
+<div class="jentry">
   <div class="jdate">2026-07-03</div>
   <div class="jtitle">meter-in-the-gradient does NOT transfer from onset to genre <span class="neg">NEGATIVE</span></div>
   <p>Wired CONTINUITY's latent genre meter (R²=0.85) into the fpC trainer as a genre-consistency loss (the FusionCC recipe: probe(z0_hat) → match the requested genre, t-gated, held-out-dim guard). Trained clean overnight — the probe-hack guard stayed green end-to-end, tripwire never fired. But it made steering <strong>worse</strong>: Goa authority 0.92→0.65, Psy 0.46→0.03 (collapsed). Disentangled the over-training confound with a checkpoint trajectory: at <em>matched</em> length (ep5) gcc=0.41 vs baseline=0.92, and gcc <em>improves</em> ep5→ep12 (0.41→0.69) — so it's the fp loss itself, not drift. The tell is the null-fingerprint output: baseline sits on a committed trance blend (0.23), gcc collapses to genre-ambiguous (Experimental 0.01). <strong>Mechanism: onset is fine-grained and RF-invisible, so its meter ADDS signal (why FusionCC won); genre is a GLOBAL property already present in the real crop's reconstruction, so its meter adds no new information — only lossy interference, dragging the output toward the probe's smoothed genre manifold (blander, less genre-committed).</strong> Recipe scope now known: it helps for fine-grained properties RF-loss can't see, not global ones it already captures. Ship the original fpC; the perfectly-held guard means this is an honest "method doesn't help here," not a broken run.</p>
@@ -98,6 +122,67 @@
   <div class="jdate">2026-06-19</div>
   <div class="jtitle">chroma correlation is a mode-collapse trap — it declared wins twice <span class="neg">NEGATIVE</span></div>
   <p>Training the SA3 riffer control-adapter, I used chroma correlation to a reference as the match metric. It fooled me into declaring success <em>twice</em>: a <strong>collapsed</strong> adapter (same output for every reference) still scores chroma ≈0.9 against any Goa reference, because they share keys. The metric literally cannot see mode collapse. The fix is a <strong>cross-reference audio difference</strong> — generate with ref A vs ref B (same seed/prompt), RMS-diff the outputs; low diff = collapsed. The most expensive kind of wrong is the metric that agrees with you.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-06 · finding</div>
+  <div class="jtitle">avp personal-corpus prep + the whole-track paradigm (reuse, don't re-cut)</div>
+  <p>Prepping Kim's own music (Aavepyörä/Summamutikka) as a LoRA/DoRA conditioning corpus on the UUID drive (<code>.../avp-analyzed</code>). Key paradigm correction worth writing down so nobody re-cuts short crops again: <strong>for SA3 LoRA/DoRA training we do NOT pre-cut fixed crops.</strong> Store <strong>full-length latents + whole-track 100 Hz timeseries</strong>, and sample a random beat-aligned window per step — the consumer slices <code>[start,end]</code> and resamples to the latent's <code>n_frames</code>, so any training length works. - Producer: <code>mir/src/spectral/whole_track_timeseries.py</code> (100 Hz <code>.TIMESERIES.npz</code>, per-stem too). - Consumer/slicer: <code>stable-audio-tools/scripts/whole_track_target_source.py</code> (<code>WholeTrackTargetSource.get(key, feature, start, end, n_frames)</code> → <code>resample_axis0</code>). - Encode unit = <strong>4096-frame (≈380 s) crops at begin/mid/end</strong>, ~2/track, overlapping for tracks under 8192 frames (verified against <code>latents_sa3</code> companion <code>relative_position_start/end</code>). - I mistakenly ran the OLD 11.9 s crop pipeline first (config default) — deleted those; separation + augmentation were paradigm-independent so they were reused, not wasted.</p>
+  <p>Tools built (reusable): - <code>mir/src/tools/augment_tracks.py</code> — <strong>Bungee</strong> pitch/tempo augmenter (129× RT), runs under <strong>mir/.venv</strong> (bungee_python lives there, NOT mir/bin/python). Spec: pitch ±1/±2 st; tempo ±5/±10 % rounded to integer BPM <strong>capped at 155</strong>, deduped; augments the <strong>4 stems too</strong> (bungee-shift the clean stems — faster + higher quality than re-separating), per-variant track folders; ProcessPool parallel, resumable. - <code>mir/src/tools/inject_trigger_caption.py</code> — writes the aavepyora/aavepyörä trigger caption (deterministic per track) in place of Flamingo, for the personal-style LoRA.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-06</div>
+  <div class="jtitle">corpus-pruning + pgrep self-match lessons <span class="neg">NEGATIVE</span></div>
+  <p>(1) orphan-pruning an analyzed corpus by matching <strong>only <code>.flac</code></strong> source files wrongly trashed folders for <code>.wav</code>-source keepers (3 of mine) — match <strong>all audio extensions</strong>. (2) <code>pgrep -f 'script.py'</code> inside a shell whose own command line contains that string self-matches — use <code>ps | grep '[s]cript'</code>. Reversible-delete (move to trash dir) caught the .flac bug harmlessly.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-07 · finding</div>
+  <div class="jtitle">the recurring render-clipping bug, quantified (Kim: "we fix this every second day")</div>
+  <p>Ran mir's saturation/clipping calc (<code>mir/src/spectral/saturation.py</code> + a peak/clip-fraction pass) over all 791 SA3 eval renders from the last 48h (<code>Mantu1/sa3_lora_runs</code>). Verdict: <strong>74% have clipped samples, 77% peak at exactly 0 dBFS</strong> — the raw SA3 output (&gt;1.0 peaks) is being CLAMPED to [-1,1] on write, not peak-normalized. Worst 3.6% of samples clipped (psy prompt, newcap5/evr3x arms). <strong>Root cause is INCONSISTENCY, not a universal miss:</strong> <code>newcap8_promptstyle_longform</code> is clean (−0.5 dB headroom, 0% clip) while density_control / promptstyle / bracket clip 67–100%. So the peak-normalize fix EXISTS and works — it's just not applied in every render script. Each new render script re-introduces a raw/clamped save → that's the "every second day" recurrence. <strong>Durable fix: route EVERY SA3 render/save through <code>sa3_control.audio_io.save_audio()</code> (peak-normalize), or add a written-file assert (no sample &gt; target ceiling ~ −1 dB).</strong> Not a one-off re-render — a centralization/guard problem. Audit script: scratchpad/clip_audit.py. See [[avp-corpus-overnight]] for the parallel MIR work.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-07 · finding</div>
+  <div class="jtitle">first Kim-validated usable transition</div>
+  <p>Kim on <code>chroma_morph_barsnap</code> <code>kaikki2angelic__w1025_nl42_chroma</code>: <em>"a completely useable transition."</em> Recorded in the run's <code>run_meta.json</code> findings (alongside the earlier negative: slerp-midpoint @ nl .55 = identity-losing drone). Operating point that worked: bar-snapped window ~1025, nl 0.42, chroma-morph ON. The chroma/plain A/B and the nl bracket did their job — the method (bungee beatmatch + latent slerp + graded a2a refine + stem-chroma LatCH morph) is now listener-validated, not just metric-validated. C's method, G's pages, my deploys.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-08 · finding</div>
+  <div class="jtitle">the latent encodability screen exists now</div>
+  <p>Kim asked whether we ever had the latent-dim × feature-timeseries correlation over the dataset — we didn't (only pooled scalar probes + the un-run DiT-layer map). Built + ran it (999 crops, CPU): frame-level ridge R² ranks features flux .84 → vocals .02, and the thin tier (beat/downbeat activations) is exactly the set of guidance-dead heads from the 06-28 sweep — a minutes-cheap screen that predicts head viability before training. Encoding is distributed (no single steerable channel; family clusters). Expectation-order for the LUMI all-features array. Matrix: <code>mir/stats/latent_dim_feature_xcorr.csv</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-08 · finding</div>
+  <div class="jtitle">Kim's ear vs the mid-noise band — ear wins, regime explains</div>
+  <p>He heard a2a melodies going stereotypical at nl .4–.55. Measured on the a2a_kaikkialla ladder: chroma flux floors exactly there (−20% vs source) then overshoots source at .7 — U-shape ⇒ posterior-averaging regime artifact (melodic contour destroyed at that SNR, model fills with corpus-mean filler; CFG sharpens), NOT a static prior. Matches SDEdit projection + Kynkäänniemi interval-CFG + EDM churn literature. The principled fix is the one we already built: chroma-morph guidance re-supplies the destroyed evidence in-band. Tool: <code>mir/src/tools/melodic_movement_ladder.py</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-09 · finding</div>
+  <div class="jtitle">tempo_iqr meter — LR-window hypothesis confirmed by the predictive test</div>
+  <p>tempo_iqr meter (mir/src/tools/tempo_iqr.py) run on the fresh arm-G + r16-fine ladders. Arm G (r128@lr1e-4) is flat tempo-stable across the whole 3000-step run (never collapses), vs r16@lr2e-4's narrow window. Meter independently reproduces C's ep31 notch (ep31-34 = narrow stable island, resolving the spike-vs-plateau Q). Tool fix: rank ckpts by MEAN iqr, not median (median floors at 0 on mostly-stable ladders). Feeds C's ship-checkpoint picker. WORKLOG 2026-07-09.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-09 · finding</div>
+  <div class="jtitle">pending-D reanalyze complete; subprocess-isolation was the right call</div>
+  <p>All 1346 avp augmentation variants now carry the full CPU MIR feature set (rms bands / spectral / chroma+key / bpm / onsets / syncopation / timbral / per-stem), measured not derived — augs change signal non-analytically (transient softening, HF dulling). Two in-process architectures failed first: a ProcessPool poisons on one madmom <strong>segfault</strong> (BrokenProcessPool), and <code>as_completed</code> <strong>hangs forever</strong> on one worker stuck in an untimed madmom step (a silent 3-hour stall). The fix that held: <code>subprocess.run</code> per variant with a hard 600s timeout — a stuck child gets SIGKILLed, a crash surfaces as a return code, the ThreadPool driver is never poisoned. 0 quarantined, ~10h. The 255 bpm-canary flags are <strong>madmom metrical ambiguity, not transform errors</strong> (69% cluster at clean 2×/1.5× ratios; the canary doesn't octave-fold the compare so it over-reports). Tool: <code>mir/src/tools/reanalyze_variants.py</code>. Phase-2 GPU features (audiobox + essentia) deferred to a card-free window.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-09 · finding</div>
+  <div class="jtitle">LUMI is EFP-WebUI-submitted, NOT raw sbatch (the finding that saves three failed attempts)</div>
+  <p>Our LUMI-G allocation is accessed through the EuroHPC Federation Platform. Jobs submit ONLY through the web platform (<code>workflows.my-eurohpc.eu</code>) — the SSH login's default account is <code>default_no_jobs</code> (MaxSubmit=0) precisely because direct Slurm submission is deliberately disabled. I burned three <code>sbatch</code> attempts (AssocMaxSubmitJobLimit → Invalid account/partition combination) before Kim's hunch ("do jobs have to be configured in the WebUI?") + the quickstart doc confirmed it. The <code>sbatch/<em>.sbatch</code> script BODIES still carry over — they get registered as EFP </em>Job Scripts<em> and launched via </em>Workflows*, with partition/account/resources set in the WebUI (dropdowns), not by <code>sbatch</code>. Partition is <code>standard-g</code> ONLY (whole-node-exclusive billing caveat). SSH stays useful for data staging / container build / fetching results. Bundle + access-model block documented in <code>SAO/lumi/README.md</code>. Blocked on Kim reporting the Create-Jobscript form layout so I can shape the hello-world job for the WebUI abstraction.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-09 · finding</div>
+  <div class="jtitle">avp own-music dataset-release spec drafted</div>
+  <p>Kim wants to publish his own CC music as a distributable SA3 dataset (latents + all timeseries + creator captions) by model-release time. Brainstormed to a spec with a governing <strong>invertibility rule</strong>: release representations in inverse proportion to reconstructability — full-mix audio (his licensed work) OK; hand-crafted MIR timeseries (non-invertible) OK for all stems; neural embeddings (partially invertible) → clean subset only; SA3 latents (decoder-invertible = audio-equivalent) reproduce-only, never over sample-library-contaminated stems. Canonical build = clean-room regen on LUMI from the original waves (fits Kim's "document everything from scratch" ethos, now affordable on the 5000 GCD-h). Spec: <code>mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md</code>. Awaiting Kim's review.</p>
 </div>
 
 <footer class="colophon">
