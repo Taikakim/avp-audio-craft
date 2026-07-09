@@ -517,3 +517,6 @@ Mechanism: early = conditioning not yet collapsed, so the descriptive kimlong PR
 late = collapsed -> thin generic. Kim confirms prompts affect output more at good ckpts. => EARLY-STOP.
 Meter/ear DIVERGENCE: CE peaked ep31 but Kim likes ep2-6 -> picker needs a PUNCH term. Comb-filter is
 NOT the augs (originals run = no augs). HoF: s909 ep13_fine/ep27, s1234 ep2/ep6_fine.
+
+## 2026-07-09 — avp full analysis v2: ep7-island real, armG spectrally healthy, freeform NEGATIVE
+790-clip battery. (1) ep5-9 is a GENUINE second island, spectrally healthier than ep31 (CE 6.51 @ep8, tempo-locked, centroid 3155 healthy) — MATCHES Kim's ear (his HoF was early). ep31 = narrow mild spike amid ringing. (2) arm G (r128 lr1e-4) escapes BOTH tempo AND spectral collapse — centroid stays healthy 300-3000 steps = broadly shippable recipe. (3) FREEFORM negative: single descriptive caption does NOT fix collapse (ratio 0.22 vs trigger 0.92) — collapse is single-caption-ness, not the token. Tiered (diverse) captions = the real test (r64 runs). (4) sweet spot ~900-1200 steps for avp regardless of rank; goa in-dist 9x later. Punch not captured by centroid -> picker needs punch term.
