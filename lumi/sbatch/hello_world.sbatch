@@ -4,11 +4,12 @@
 # own stock PyTorch image. Proves: account works, queue works, a GCD is visible,
 # torch does a matmul on it. Everything else builds on this.
 #
-#   sbatch --account=project_465NNNNN hello_world.sbatch
+#   sbatch --account=project_465003186 hello_world.sbatch
 #   squeue --me            # watch it queue/run
 #   cat hello-*.out        # the proof
 #
-#SBATCH --partition=dev-g
+#SBATCH --account=project_465003186
+#SBATCH --partition=standard-g
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=1

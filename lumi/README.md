@@ -1,8 +1,50 @@
 # LUMI-G bundle — ready-to-run scaffolding for the LatCH + DoRA campaigns
 
 *2026-07-07, WINTERMUTE. Companion to `docs/lumi-transition-plan.md` (read that first for
-the why; this dir is the how). Everything here is prepared BEFORE access — the only edits
-needed on day 1 are the project number and the base-image ROCm version.*
+the why; this dir is the how). Prepared before access; **access granted 2026-07-09**.*
+
+## Allocation — EHPC-AIF-2026PG01-756 · "Diffusion model creative steerability for musical AI"
+
+- **LUMI project:** `project_465003186` (LUMI-G) · **user:** `akekim` · login via the EuroHPC
+  Federation Platform (EFP): `akekim@efp.lumi.csc.fi` (cert-based, ~10 h validity — regenerate the cert).
+- **Budget (from `lumi-workspaces` 2026-07-09):** **5000 GPU(GCD)-hours** (0 used), 1000 CPU-Khours,
+  20000 storage-TBhours; storage 134 days to removal (~26% of project time elapsed). 5000 GCD-h is a
+  real allocation — the campaigns are cheap, and the **clean-room dataset regen is now affordable**
+  (not just a stretch): full goa (4470) fits with margin, avp (~313) is trivial. Still estimate the
+  encode GCD-h before the big run, but budget is no longer the binding constraint (calendar is).
+- **Storage tiers:** `/project/project_465003186` **50 GiB** (code + models, permanent) ·
+  `/scratch/project_465003186` **50 TiB** (data + runs) · `/flash/project_465003186` **2 TiB** NVMe
+  (hot data during a run). Big latents/tarballs → scratch; models/HF cache → project (watch the 50 GiB).
+- **Hardware:** MI250X (gfx90a), 2 GCDs/module, **64 GB/GCD**, 8 GCDs + 64-core EPYC per node →
+  1 GCD/run + 7 cores/GCD (already set in `env_lumi.sh`). Stock images top out at **ROCm 6.2.4 /
+  torch 2.7.1** (`lumi-pytorch-rocm-6.2.4-python-3.12-pytorch-v2.7.1.sif`) — SIF base, not 6.3.4.
+- **Partition (from `sacctmgr` 2026-07-09):** the project is associated with **`standard-g` ONLY**
+  — NOT dev-g/small-g (submitting there → `default_no_jobs` assoc, MaxSubmit=0 → `AssocMaxSubmitJobLimit`).
+  All sbatch scripts use `--partition=standard-g` (MaxSubmit 210). **⚠️ Billing caveat:** standard-g is
+  typically **whole-node-exclusive** (a 1-GCD job may bill all 8 GCDs). Fine for the hello test; before
+  the campaigns, **either pack 8 GCDs/job or verify partial billing** — else single-GCD runs cost 8×.
+- **Compliance (account-sharing ToU, LUMI MOTD 2026-07-09):** no third-party service or agent runs
+  *under* this account; no server/tunnel exposed. Division of labour: **WINTERMUTE prepares locally,
+  Kim executes on LUMI.**
+
+*Project-number wiring is DONE (`project_465003186` sed across the bundle 2026-07-09). The one
+remaining prep edit is the base-image ROCm version in `sa3-env.yml` — see Day-1 step 2.*
+
+> ## 🚨 ACCESS MODEL — EFP is WebUI-submitted, NOT raw `sbatch` (2026-07-09)
+> This project is accessed via the **EuroHPC Federation Platform (EFP)**. **Jobs are submitted
+> ONLY through the web platform `https://workflows.my-eurohpc.eu`**, never via terminal `sbatch`
+> — the SSH default account is `default_no_jobs` (MaxSubmit=0) precisely because direct Slurm
+> submission is disabled. Confirmed against `docs.my-eurohpc.eu/workflows/quickstart` + three failed
+> `sbatch` attempts (AssocMaxSubmitJobLimit → Invalid account/partition combination).
+> **WebUI flow:** Data Management → *Job Scripts* (Create Jobscript) **or** *Containers* (Create
+> Container) → *Workflows* → Create Workflow (name · cluster · **Partition** dropdown → `standard-g`
+> · dataset staging · advanced) → *Create Workflow Execution*.
+> **What this means for the bundle:** the `sbatch/*.sbatch` **script bodies** (the `srun singularity
+> exec … python …` command + resources) still carry over, but they are **registered as EFP Job
+> Scripts and launched via Workflows**, with partition/account/resources set in the workflow config
+> (dropdowns) rather than executed by `sbatch`. SSH stays useful for data staging (`/scratch`),
+> container build/upload, and fetching results. The Day-0/Day-1 `sbatch …` lines below are the
+> *direct-LUMI* path and DO NOT apply on EFP — treat them as the logic to port into the WebUI.
 
 ## Contents
 
@@ -20,21 +62,21 @@ needed on day 1 are the project number and the base-image ROCm version.*
 1. **Identity**: MyAccessID (EuroHPC's identity broker) — login via your home org or eIDAS;
    for a private person that's the national e-ID/passport-verified route. One-time.
 2. **Project**: when the B&D application is approved, the project invite arrives through the
-   EuroHPC Federation Platform → accept ToS → note `project_465NNNNN`.
+   EuroHPC Federation Platform → accept ToS → note the LUMI number (ours: `project_465003186`).
 3. **SSH key**: upload your PUBLIC key in MyAccessID/portal profile. Propagation to LUMI is
    **not instant** (up to ~an hour). MFA per portal instructions.
 4. **Login**: `ssh -i ~/.ssh/<key> <username>@lumi.csc.fi` (username assigned by the portal,
    not your email). You land on a login node — internet, no GPUs, shared: build/stage here,
    never compute.
 5. **Hello world** (`sbatch/hello_world.sbatch` — needs nothing of ours):
-   `sbatch --account=project_465NNNNN sbatch/hello_world.sbatch` → `squeue --me` →
+   `sbatch --account=project_465003186 sbatch/hello_world.sbatch` → `squeue --me` →
    `cat hello-*.out` should end with "HELLO LUMI, the stack is alive". That proves
    account + queue + GCD + torch in one 10-minute job.
 6. Then the Day-1 checklist below (container build, weights, data, parity).
 
 ## Day-1 checklist (when the project number arrives)
 
-1. `sed -i s/project_465XXXXX/project_465NNNNN/` across this dir (or export `SA3_PROJECT`).
+1. ~~sed the project number~~ **DONE** — `project_465003186` is wired across the bundle.
 2. Pick the base image: `ls /appl/local/containers/sif-images/` → copy (don't symlink) the
    newest `lumi-rocm-*` → set the matching `--index-url` rocm version in `sa3-env.yml` →
    `cotainr build`.

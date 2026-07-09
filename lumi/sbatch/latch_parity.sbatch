@@ -4,8 +4,8 @@
 # that loads and steers like the local run before any GPU-hours go to the campaign.
 # Local reference to beat: rms_energy_bass, EMA+ga2 recipe (WORKLOG 2026-06-29).
 #
-#SBATCH --account=project_465XXXXX
-#SBATCH --partition=dev-g
+#SBATCH --account=project_465003186
+#SBATCH --partition=standard-g
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=1
@@ -16,7 +16,7 @@
 #SBATCH --output=%x-%j.out
 
 set -euo pipefail
-source /project/${SA3_PROJECT:-project_465XXXXX}/lumi/env_lumi.sh
+source /project/${SA3_PROJECT:-project_465003186}/lumi/env_lumi.sh
 
 CONTAINER=/project/${SA3_PROJECT}/sa3-train.sif
 REPO=/project/${SA3_PROJECT}/stable-audio-3          # git clone, code lives on /project

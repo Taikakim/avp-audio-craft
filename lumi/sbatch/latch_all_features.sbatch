@@ -13,8 +13,8 @@
 # the cross-feature per-layer fingerprint (DiT-block × feature controllability map) is only
 # reconstructable if every run logged everything. Sync after: `wandb sync` on a login node.
 #
-#SBATCH --account=project_465XXXXX
-#SBATCH --partition=small-g
+#SBATCH --account=project_465003186
+#SBATCH --partition=standard-g
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=1
@@ -25,7 +25,7 @@
 #SBATCH --output=%x-%A_%a.out
 
 set -euo pipefail
-source /project/${SA3_PROJECT:-project_465XXXXX}/lumi/env_lumi.sh
+source /project/${SA3_PROJECT:-project_465003186}/lumi/env_lumi.sh
 
 # The 20 whole-track timeseries fields (latents_sa3 *.TIMESERIES.npz, 2026-07 grid).
 # relative_position_ts intentionally excluded — position ramp, not a controllable target.

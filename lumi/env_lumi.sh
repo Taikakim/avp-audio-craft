@@ -5,7 +5,7 @@
 # FA build decides), no TunableOp cache (per-arch; regenerate on LUMI if ever enabled).
 
 # --- project (fill in when the allocation lands) ---
-export SA3_PROJECT="${SA3_PROJECT:-project_465XXXXX}"
+export SA3_PROJECT="${SA3_PROJECT:-project_465003186}"
 export SA3_DATA="/project/${SA3_PROJECT}/data"        # latents_sa3 / latents_avp / captions live here
 export SA3_RUNS="/scratch/${SA3_PROJECT}/runs"        # active run outputs (scratch is auto-purged!)
 export SA3_MODELS="/project/${SA3_PROJECT}/models"    # pre-staged HF weights (T5-Gemma, SA3 base)

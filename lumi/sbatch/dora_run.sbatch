@@ -43,8 +43,8 @@
 # ${SA3_MODELS} (HF_HOME points there, HF_HUB_OFFLINE=1) — first dry-run the model load
 # on a login node (which has internet) to populate the cache, then it's frozen.
 #
-#SBATCH --account=project_465XXXXX
-#SBATCH --partition=small-g
+#SBATCH --account=project_465003186
+#SBATCH --partition=standard-g
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=1
@@ -55,7 +55,7 @@
 #SBATCH --output=%x-%j.out
 
 set -euo pipefail
-source /project/${SA3_PROJECT:-project_465XXXXX}/lumi/env_lumi.sh
+source /project/${SA3_PROJECT:-project_465003186}/lumi/env_lumi.sh
 
 ENC=${ENC:-latents_sa3}
 RANK=${RANK:-16}
