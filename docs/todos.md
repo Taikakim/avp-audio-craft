@@ -179,3 +179,8 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   the conditioning-collapse cure. Filename tag __st10 / __st06. Applies to the
   caption-tier arm renders + all subsequent boards. Sidecar:
   Mantu/sa3_lora_runs/_conventions/avp_board_render.json.
+
+- **arm H (r256 DoRA) DOES NOT FIT on 16GB — LUMI-only (2026-07-09).** Tried FusionOpt
+  batch4/2/1 (all OOM — Shampoo preconditioners ~1536x1536 per layer) and AdamW batch2
+  (wedged at startup, 0 steps, held VRAM). Max local adapter rank = 128 (arm G ran fine).
+  r256+ is a LUMI experiment. Do NOT re-attempt locally.
