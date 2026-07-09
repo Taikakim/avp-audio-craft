@@ -171,3 +171,11 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   disambiguation), per-alias data splits (Summamutikka goa-coherent vs Aavepyörä
   eclectic), low-LR + early ckpt ladder (the phase-window lesson transfers), and the
   underfit one-style-per-dataset doctrine. W owns LUMI scaffolding — encode when specing.
+
+- **avp board render convention (Kim 2026-07-09):** every future avp board render does
+  BOTH DoRA strength 1.0 AND 0.6 — `model.set_lora_strength(0.6)` is a live knob (no
+  reload; LoRA is unmerged parametrization), so it's ~free. At reduced strength the
+  collapsed attractor pulls less and the prompt/base-prior cooperate = direct test of
+  the conditioning-collapse cure. Filename tag __st10 / __st06. Applies to the
+  caption-tier arm renders + all subsequent boards. Sidecar:
+  Mantu/sa3_lora_runs/_conventions/avp_board_render.json.
