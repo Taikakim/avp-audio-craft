@@ -510,3 +510,10 @@ the clean odometer; (2) tempo instability = U-shaped, ep31 notch (0.52bpm locked
 conditioning collapse = immediate+persistent. ep31 best = tempo-notch + spectral-richness peak
 pre-collapse. Audiobox CE peaks at ep31 (d=0.99) AND is a seed-VARIANCE min (neighbors flaky,
 ep31 robust). Ship-picker: CE-max + tempo_iqr-min + pre-ZCR-drop. ANALYSIS/degradation_report.md.
+
+## 2026-07-09 — avp kimlong deep-listen: EARLY epochs win (prompt still drives before collapse)
+Kim's favourite avp outputs are EARLY (s1234 ep2 punch+dorian bassline, ep6_fine winner, ep0-6 run).
+Mechanism: early = conditioning not yet collapsed, so the descriptive kimlong PROMPT drives punch+style;
+late = collapsed -> thin generic. Kim confirms prompts affect output more at good ckpts. => EARLY-STOP.
+Meter/ear DIVERGENCE: CE peaked ep31 but Kim likes ep2-6 -> picker needs a PUNCH term. Comb-filter is
+NOT the augs (originals run = no augs). HoF: s909 ep13_fine/ep27, s1234 ep2/ep6_fine.
