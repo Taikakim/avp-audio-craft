@@ -25,3 +25,22 @@ Subagents emitting note-level MIDI as positional tuples `[beat,dur,pitch,vel]` s
 
 ### negative · Bitwig calls middle C "C3"
 Bitwig labels middle C as C3 (MIDI 60) against the `C4=60` convention — an octave-*name* offset, not a pitch error. Bit me reading voicings back off the piano roll.
+
+## 2026-07-09
+
+### finding · caption diversity, not the trigger token, cures conditioning collapse
+The avp adapter investigation's central puzzle: text conditioning dies with training (prompt moves output less than seed by late epochs). Two results together settle it. Swapping the trigger word for one honest descriptive caption (freeform arm) did NOT rescue it — its prompt/seed ratio (0.22) was *worse* than the trigger arm's (0.92). But training on tiered, per-crop-diverse captions instead of one caption reused everywhere (r64 + tiered) gave a healthy ratio (1.5–2.65). It was never the trigger *token*'s fault — any single caption reused for every crop collapses conditioning, trigger or descriptive alike. Full numbers: `WORKLOG.md` 2026-07-09, `avp_board_seeds/ANALYSIS/degradation_report_v2.md`.
+
+### finding · the sweet spot is two islands, not one
+Raw Audiobox CE alone is a false signal for "when to stop training" — it peaks at barely-trained epochs (CE~6.5 at ep1-8) because CE rewards generic pleasantness near-base checkpoints still have. Reading CE alongside spectral-centroid + tempo-lock together reveals two real candidates: ep31 (a narrow CE/tempo spike sitting on the *shoulder* of spectral ringing — usable ep30-31 only) and ep7-9 (spectrally healthier, not ringing at all). The earlier "ep31 is THE sweet spot" framing from the first analysis pass was wrong; corrected in v2. Consolidated on `avp_master` (aavepyora.online/files/avp_master/).
+
+### tool · the master-page pattern (5 boards, 1 shared playhead)
+Built `AVP_MASTER_JS_TEMPLATE` in `Misc/build_evals.py` as a genuinely new template rather than reusing the per-board ones — the per-dir writers each instantiate their own `Audio()`, so naive reuse would give 5 disconnected playheads on one page. Kim's later feedback ("prompts/recipe must be visible at a glance, not hover-only") generalized into `_prompt_legend_html`/`_recipe_line_html`, now used across all avp pages, not just the master.
+
+### negative · two row-identity bugs, both only surfaced by testing against real data
+Ladder-board row identity keyed by `tag` alone broke twice: once *within* one arm (dense re-run windows give `epoch31_fine` and `epoch31_step1152` the same nominal epoch, different real checkpoints), once *across* arms (r64's two LR runs share epoch tags). Neither was caught by code review — both surfaced by hand-rolled JS DOM-stub harnesses run against the actual built pages. Worth the harness overhead; code review alone missed real data-shape bugs twice in one session.
+
+## 2026-07-10
+
+### finding · "newest first" meant "most recently started," not finished
+`build_evals.py`'s `real_date()` deliberately uses the *earliest* mtime among a render dir's files (to dodge a `run_meta.json` provenance-backfill looking like a fresh run) — reasonable in isolation, but it means the "All runs, newest first" index sorts by run-start, not run-completion. Kim caught this by eye (a render that finished later showed as older than one that merely started later). Same root cause silently broke ALL a2a noise-ladder pages too — their combined page had `date_str` hardcoded `""`, so none of them ever sorted by date at all. Fixed both: individual renders and grouped a2a-ladder pages now use consistent earliest-member-start dating. `WORKLOG.md` 2026-07-10.

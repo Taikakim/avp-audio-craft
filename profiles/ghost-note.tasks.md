@@ -1,0 +1,132 @@
+# GHOST-NOTE — task log
+
+> Terse, information-rich record of every experiment/research run/task worth tracking.
+> Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
+> relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
+
+**Historical section below (2026-05-25 through 2026-07-09) compiled by THE-FINN from
+GHOST-NOTE's session transcript on 2026-07-09, as the one-time backfill for the new
+convention — see §3a. Going forward, append your own lines as you finish tasks.**
+
+- [2026-07-10 01:15] Fixed evals index staleness: "newest first" sorted by run-START mtime not last-updated, missing CONTINUITY's a2a_memo_test entirely (name collided with the a2a-ladder auto-router, silently dropped); staged it + fixed avp_cfg_sweep's missing run_meta.json (was showing generic "renders 1")
+- [2026-07-10 00:58] Marked riffer-evals/dora_results.html SUPERSEDED (status-banner + avp_master link) per Kim's ask — early Goa-in-distribution DoRA rank ladder, not the current picture
+- [2026-07-09 14:55] Finalized avp_master findings with CONTINUITY's real analysis numbers — revised ep31-only framing to two sweet-spot islands, reconciled freeform/r64 results into one "caption diversity, not trigger token" story
+- [2026-07-09 13:07] Shipped avp_board_r64 and avp_cfg_sweep eval pages; fixed 2 real bugs in shared ladder-parsing code (bare epoch tags, cross-arm row collisions)
+- [2026-07-09 10:12] Addressed Kim's UI feedback: made prompt text + recipe params always-visible static content across 6 avp eval pages, published live
+- [2026-07-09 08:58] Built avp_master page merging 5 render dirs (freeform, armG, goa_everything_board, r64, cfg_sweep) with a generalized ladder-board parser; JS harness caught a real strength-parsing bug on live data
+- [2026-07-09 01:06] Migrated mir's dataset.json cache to DataStore/JSONL format (dataset.jsonl + meta sidecar) across all 3 real files, incl. a 631MB/202,745-entry file; round-trip + grep-searchability verified
+- [2026-07-08 21:10] Recorded finding: avp adapters' text conditioning progressively collapses with training — prompt matters half as much as seed by epoch 63 (per MFCC-distance analysis)
+- [2026-07-08 20:49] Shipped avp_board_seeds (168 clips, checkpoint x prompt grid + seed selector) testing prompt-vocabulary cooperation and seed-stability
+- [2026-07-08 19:47] Diagnosed a full machine crash/reboot (uptime ~3min); confirmed no data corruption, GPU healthy; Mantu/Mantu1 mountpoint naming was just a stale artifact
+- [2026-07-08 15:23] Extended avp_board to 5 arms/96 clips with new r16_originals aug-theory control run — augmentations largely exonerated on tempo instability
+- [2026-07-08 11:29] Re-rendered transitions3 eval page with Kim's listening verdict: seam-inpaint doesn't help, 512-frame windows beat 1024-frame
+- [2026-07-08 08:34] Researched Music Flamingo / IBM Granite for avp captioning; clarified "Granite" = IBM Granite text LLM not Granite Speech; flagged Music Flamingo VRAM risk on 16GB card
+- [2026-07-08 07:57] Disproved CONTINUITY's "missing aug-encode" claim with direct evidence (corpus already complete), avoided wasted GPU time; shipped avp_board (4 DoRA arms, training params + glitch-triage readout)
+- [2026-07-07 19:14] Noted a real off-by-0.5s B-splice bug in chroma_transitions_pure's underlying audio (content bug, flagged for re-render)
+- [2026-07-07 15:38] Fixed a chroma-pair silent-drop bug and a status-banner auto-link mid-word bug ("mp" matching inside "ramp"/"tempo"); shipped chroma_morph_barsnap (79 clips) and transitions3 (48 clips merged from 3 Mantu dirs), fixing a writer-routing regex collision
+- [2026-07-07 13:50] Closed 3 eval-page gaps (a2a_angelic, a2a_vapausvoima, a2a_kaikkialla rung growth) via pattern-match generalization; shipped waveform window-shading
+- [2026-07-07 13:28] Shipped chroma_morph_transitions (48 clips) and chroma_transitions_pure (12 clips); built shared waveform-popup player across all 66 eval pages — Kim called the chroma-morph transitions "one of the coolest things I've heard in nearly 30 years of music"
+- [2026-07-07 12:35] Audited own 2 DM logs after DM-mirroring went public; found 8 old messages with plain paths (no secrets) — confirmed acceptable under secrets-only bar; WINTERMUTE shipped render-time path masking
+- [2026-07-07 12:00] Shipped dora16_goa_newstack_8ep (epoch-progression dual-pane A/B vs Hall-of-Fame), a2a_kaikkialla (noise-ladder table), newcap8_transitions_r2
+- [2026-07-07 07:10] Built composed_sweep dropdown+heatmap aggregate eval page and "all runs, newest first" landing-page index
+- [2026-07-07 01:34] Extended newcap8_promptstyle to 72 clips (new evr3x_w033 arm), built newcap8_density_control_g175 (432-clip librosa onset-density pass) and newcap8_transitions pages; fixed a pre-existing double-HTML-escape bug across all eval pages
+- [2026-07-06 23:36] Fixed missing seed column + playback-seek-before-buffered glitch across eval-page JS templates; built onset-control checkpoint-audit aggregation (64 grids via dropdown) replacing dozens of stray links, after catching a 12,237-clip page-inlining scale bug
+- [2026-07-06 21:20] Confirmed 28 "missing" avp tracks were genuinely too short for the crop window (not a bug); built newcap8_promptstyle dual-pane plain-vs-styled prompt eval UI (60 clips)
+- [2026-07-06 21:07] Cleaned up 4 stale Monitor/tail-f processes after auditing missed DMs from a `wait` outage
+- [2026-07-06 15:55] Built avp corpus latent-encode pipeline; found+fixed a 48kHz-vs-44.1kHz resampler bug affecting 233/1177 source files; completed 2233 crops (2393 total), 0 failures after fix
+- [2026-07-06 08:19] Found/fixed own listener-reliability gap (self-filtered from fleet `who`); added `listen` alongside `wait` for genuine discoverability
+- [2026-07-06 06:19] Found a genuine rhythmic-density ceiling: onset rate flat at ~9.3/sec regardless of gain at 140bpm psytrance — a 16th-note ceiling, not a measurement bug, verified via raw re-run of onset detection
+- [2026-07-06 05:42] Fixed build_evals.py bug where curated riffer/*.html pages were linked but never actually copied into the staging mirror (broken on the served site too)
+- [2026-07-06 00:54] Classified 983 stems across 40 tracks into 9 categories (manifests+symlinks+downmixes, non-destructive), refined against real vocabulary, fixed an underscore-handling bug
+- [2026-07-06 00:39] Diagnosed a Mantu mount I/O hiccup (auto-remounted as Mantu1) that had silently degraded composed_sweep eval pages to flat fallback; rebuilt and confirmed restored
+- [2026-07-06 00:12] Built human-first eval tables (sortable table + dual-checkpoint compare view) for renders_dora (17 checkpoints x 3 prompts)
+- [2026-07-05 22:36] Pivoted DoRA weight/length sweep from slow CPU/ONNX path to native GPU torch generation (live LoRA-strength swap); generated + staged all 72 clips
+- [2026-07-05 21:46] Wrote docs/canonical-eval-spec.md; locked 24-vs-48-step verdict (24 sufficient); merged DoRA weights + exported 12 ONNX variants (T=256/512/1024/4096 x 3 strengths), all cos=1.000000
+- [2026-07-05 14:29] Rebuilt CK flash-attn for gfx1201 from scratch in production venv (fresh clone + 3 glue-file patches from rocking/update_ck, ~2.5h build); precision validated, pinned in pyproject.toml, live training job unaffected
+- [2026-07-05 11:42] Diagnosed CK flash-attn broken on stable-audio-3/.venv (a `uv sync` had silently reverted to plain pip flash-attn); 2 cached wheels both ABI-mismatched, determined full rebuild required
+- [2026-07-05 09:14] Extended pq_score.py with a spectral_balance cheat-detector metric; built shared eval_grid.py sortable-grid module (CE/PC/PQ badges, ranked view), verified via browser accessibility tree
+- [2026-07-05 08:45] Found/fixed own `wait` reliability gap (died silently, 3 unread DMs); staged priority ingestion (newcaption_ab)
+- [2026-07-05 01:59] Completed MIR pipeline (organize/separate/analyze/timeseries) on 4 new datasets (574 tracks: prog_psytechno 255, organic_dance 42, chill 131, prog_trance 146); found+reported a real master_pipeline.py stage-completion bug; encoded 710 SAME-L crops (5 skipped for genuine source corruption)
+- [2026-07-04 14:26] Batch-ingested 6 render sets (E_fusion_v2, A_cc_v2, weight_garden_tour/explore1, glitchheal_ab, multihead_glitch) into eval site
+- [2026-07-03 23:06] Found and fixed a comms gap: `wait` didn't cover DMs separately from the common channel; merged DM-wake into main `wait`, propagated fleet-wide
+- [2026-07-03 21:11] Storage reorg: migrated 62GB of LoRA checkpoints Lehto->Mantu (byte-exact verified), fixed hardcoded Lehto/sa3_control_runs paths across 3 repos, rewrote MASTER §2 data-path table
+- [2026-07-03 20:57] Caught and corrected own handle-identity error (had been operating as CONTINUITY without checking); established fleet rule to verify session identity via ~/.claude/sessions/*.json before speaking
+- [2026-07-03 15:30] Replaced config-name labels with friendly human-readable descriptions across eval pages, per second round of fleet leak-scan hardening
+- [2026-07-03 14:52] Built eval-presentation system: 106 same-playhead player pages (95 control-run folders + 11 render sets) generated directly into AAC staging; codified MASTER §4 eval-provenance convention (purpose+paths+checkpoint required at creation); added redaction pass scrubbing paths/checkpoint names/addresses
+- [2026-07-02 23:22] Swept public site for dead GitHub-blob links, replaced with self-hosted info-posters (style-adapter.html, speed-shootout.html) withholding internal detail; caught/fixed a leaked checkpoint filename
+- [2026-07-02 14:56] Built Misc/build_site.py generator (non-destructive; renders each construct's markdown sources into "The Ledger" styled pages), adopted fleet-wide
+- [2026-07-02 12:19] Added standing "journal as you go" habit to MASTER §4 (log every finding/negative result immediately)
+- [2026-07-02 12:10] Built `wait` wake-on-message subcommand for agent_dialogue.py (blocks on OSC socket until next event), adopted fleet-wide replacing polling
+- [2026-07-02 10:35] Joined SAO fleet dialogue as GHOST-NOTE persona; established dialogue SPEC (handles honor-system, verify-first rule)
+- [2026-06-30 19:13] Regenerated all 16 Goa/trance lead melodies with a named-field schema (eliminating tuple-order ambiguity) — 32 files total for A/B comparison
+- [2026-06-30 07:40] Ran 33-agent workflow (concept panel + 16 composers + 16 critics) generating 16 style-consistent Goa/trance MIDI variations from Kim's reference loop; caught and fixed a tuple-ordering bug (3 different [beat/pitch/dur/vel] permutations) via a diatonic-detection normalizer
+- [2026-06-30 07:05] Built deterministic MIDI render engine faithfully reconstructing Kim's 8-bar/132bpm/A-Dorian reference Goa loop (7 parts), validated against compact-spec expansion
+- [2026-06-30 01:11] Analyzed Kim's reference Goa/trance MIDI structure in depth (8-bar loop, 7 parts: chords/ostinato/wail/303/kit/bass)
+- [2026-06-29 22:36] Generated syncopated Ibiza lead MIDI (36 notes, suspensions) after fixing OSC play->punch-record ordering for Bitwig recording
+- [2026-06-29 20:10] Recorded 4-bar A Dorian chord progression into Bitwig via OSC/MIDI automation script
+- [2026-06-29 18:55] Set up bitwig-mcp-server venv reusing SA3's local ROCm torch wheels (avoided pulling PyPI CUDA torch)
+- [2026-06-28 15:31] Reconciled git divergence across SA3/SAT forks after concurrent multi-instance work; merged avp/main cleanly into SAT, pushed both to personal forks only (never upstream)
+- [2026-06-28 09:07] Diagnosed longform steering glitches as over-steering from a fixed `--gain 6` (8.5x over the recommended per-density ridge_gain curve); GPU A/B confirmed the ridge-gain fix cuts glitches 26x-150x with RMS staying flat instead of cratering
+- [2026-06-28 01:24] Assembled + validated "Kevin" handoff package (sa3-kim-steering, 720MB/34 files: density control + LatCH guidance docs, stripped checkpoint) end-to-end (density 3->7->11 = 4.88->8.12->9.25 onsets/sec, monotonic)
+- [2026-06-25 06:19] Diagnosed why chroma steering needs gain~1000 not ~1 (cosine-loss gradient scales as 1/||pred||, unnormalized vs SA3's z0 range); implemented a normalized-guidance-step option
+- [2026-06-25 04:10] Disentanglement test: Goa-trained chroma control generalizes cleanly to out-of-domain guitar prompt (0/8->8/8 C-dominant, bigger swing than in-domain); CLAP scoring shows style doesn't bend toward Goa
+- [2026-06-25 03:43] Built + published chroma_steer.html gallery (64 clips: 2 prompts x 8 seeds x 4 gains) to Taikakim/riffer-evals GitHub Pages
+- [2026-06-25 00:05] Chroma steering gain sweep: null at gain 64-256, crosses into clear pitch dominance at gain 1536-2048 (separation 0.107) — completes 3-way control taxonomy (amount/density=moderate gain, content/pitch=high gain, structure/timing=doesn't steer)
+- [2026-06-24 23:45] Trained "other"-stem chroma LatCH head (cosine loss 0.106, cos~0.89 — reads chroma far better than linear readout's 0.14)
+- [2026-06-24 23:24] Extracted SAME-compatible stem chroma (5400 crops, other+bass) via compute_same_chroma; built chroma training infra in train_latch.py (cosine loss)
+- [2026-06-24 18:01] Steering test on beat/downbeat heads: clean negative result — constant target flat, time-varying pulse target (even at correct in-distribution amplitude) also a no-op — trainable but NOT steerable via latent guidance (dense-vs-sparse-signal boundary finding)
+- [2026-06-24 15:29] Trained beat_activation + downbeat_activation LatCH heads (loss 0.31->0.17, 0.24->0.18); wired full wandb telemetry into train_latch.py (fixed a module-vs-run-object bug)
+- [2026-06-23 17:44] Trained onset LatCH head (production temporal-transformer arch, 4.9M params) on onset_envelope feature; steering test PASSED (correlation 0.986, monotonic); A/B renders at gain 48/96 confirmed onset density controllable both directions from baseline
+- [2026-06-23 16:45] Nonlinear rhythm-head experiment (linear/MLP/1D-CNN) confirmed the existing LatCH temporal-transformer architecture, not a per-frame-probe limitation, is the right tool for rhythm
+- [2026-06-23 15:34] MERT-vs-SAME-L rhythm comparison: MERT layers 1-6 read rhythm far better than the bare SAME-L latent (beat 0.36->0.83, onset 0.33->0.71, downbeat 0.17->0.39); spectral flux/chroma tie or favor SAME-L
+- [2026-06-22 22:11] Ran SAME-L per-frame steerability probe (ridge regression): spectral flux/flatness R^2=0.88/0.80 (easy), chroma 0.42, downbeat 0.16 (hardest) — rhythm structure weakly exposed in bare latent
+- [2026-06-22 21:30] Validated MERT-based reward target: curated 48-track reference set cleanly separable from generic AI output (AUC 0.999, 1-NN purity 0.97)
+- [2026-06-22 20:56] Built sortable clip browser (240+8 clips, cu_reward_renders/index.html); found genre bias in Audiobox CU/PQ/CE scores disqualifying them as blind maximization targets
+- [2026-06-22 16:39] Ran 240-sample (10 genres x 24) medium-base BoN validation of Audiobox-CU-as-reward — confirmed CU-PQ collinearity (+0.87) robust across genres, correcting an earlier small-base claim
+- [2026-06-22 15:22] Best-of-N-on-Content-Usefulness validated at small scale: CU varies (spread 0.62) but CU~=Production Quality (r=0.95), not an orthogonal reusability axis
+- [2026-06-21 21:52] Added FK-steering-CU (Feynman-Kac particle steering w/ Audiobox reward) recipe to avp_sa3/recipes/inference_recipes.yaml, marked PROPOSED
+- [2026-06-20 23:03] Merged PR #1 (17 commits) shipping the long-form generation feature into Taikakim/stable-audio-3 main
+- [2026-06-20 09:29] GPU-validated long-form feature: soft-clamp finding (SA3 inpaint conditions rather than hard-clamps prefix); 2-min acceptance render passed with flat drift_log RMS vs FIFO's collapse to ~0.03
+- [2026-06-20 01:15] Ran deep-research sweep on transferable diffusion-guidance techniques (55 candidates -> 46 verified), published RESEARCH_RADAR.md + neutral CONTROL_FINDINGS.md list
+- [2026-06-20 00:59] Ran concision pass on the SA3 field-guide book (44.7k -> 35.7k words, 20% cut) and pushed the leaner edition
+- [2026-06-20 00:27] Added cross-repo README pipeline sections (mir -> audio-tools-avp -> stable-audio-3) to all 3 repos' main branches
+- [2026-06-19 23:29] Wrote, polished (16-editor pass), and published "Hands Inside the Instrument" — a 16-chapter Hopkin-style book on SA3 architecture — to audio-tools-avp docs/book/
+- [2026-06-19 08:27] Documented + pushed the long-form workflow doc and project memory for the sliding-window feature
+- [2026-06-19 08:08] Executed a 9-task subagent-driven plan for a long-form sliding-window renderer (PromptSchedule, slerp/CrossfadeStitcher, DriftMonitor, ChunkGenerator, LongFormRenderer, InpaintContinuationGenerator, SDEditReanchor, CLI) — 18 CPU tests green; caught+fixed slerp endpoint-exactness bug, an n==0 crossfade crash, and a parse_schedule crash on "120bpm:"-style prompts; final adversarial review found & fixed 17 issues
+- [2026-06-19 07:00] Wrote implementation plan for sliding-window inpaint-continuation + crossfade long-form renderer (chosen over pure FIFO)
+- [2026-06-18 22:56] Ran a larger 24s FIFO test: tempo locked at 123bpm for ~18s then collapsed (tail RMS 0.029, hiss) — reproducible drift/collapse finding
+- [2026-06-18 22:46] GPU-validated FIFO parity smoke test: 192 forwards/~7s, decoded output finite, tempo held 136-140bpm across 8 segments with no drift in a short clip
+- [2026-06-18 21:44] Added durable architecture doc block to mir/ARCHITECTURE.md documenting the Viewer app's entry point, two-process startup, and steering pipeline
+- [2026-06-18 20:56] Implemented + adversarially reviewed a FIFO frame-staggering prototype for SA3 (spec + fifo_infinite.py); 5-lens review found 18 issues, all addressed; compile+lint clean (GPU unavailable to test live)
+- [2026-06-18 20:22] Assessed InfiniteAudio FIFO frame-staggering port to SA3: architecturally incompatible without model surgery (DiT only accepts a scalar-per-batch timestep); investigated forage-dj's long-form approach as a contrast (fixed-length gen + playback-layer stitching, not true extension)
+- [2026-06-18 05:00] Confirmed overnight CK flash-attn build for gfx1201 completed successfully (all 2397 files) in the test venv
+- [2026-05-31 22:35] Clarified "strong heads" terminology (measurable/probe-strong LatCH heads: spectral_flux, spectral_flatness, spectral_skewness, onset_envelope)
+- [2026-05-31 22:26] Researched SA3 latent/chroma mechanics: chroma is an inductive-bias training signal via a contrastive-triplet (latent/wavelet/text) alignment loss on SAME, not a dedicated latent channel; confirmed LoRA fine-tuning never retrains the frozen SAME autoencoder
+- [2026-05-31 18:14] Forked stable-audio-3 to Taikakim/stable-audio-3 and pushed all 4 SAO repos to personal forks (never upstream)
+- [2026-05-31 17:02] Scaffolded SAO meta-repo (install.sh orchestrator + per-repo install.sh for SA3/SAT/mir)
+- [2026-05-31 13:20] Wrote docs/flash-attn-ck-rdna4.md (~14KB guide) documenting the full CK-for-gfx1201 build recipe
+- [2026-05-31 13:14] Completed and validated the full ROCm/CK setup recipe end to end (TheRock 7.14 torch, CK flash-attn, SA3/SAT editable install)
+- [2026-05-31 11:21] SA3+SAT editable install with runtime deps via PyPI --no-deps (protecting ROCm torch/triton stack); everything imports cleanly, flash_attn funcs callable
+- [2026-05-31 11:18] CK flash-attn build for gfx1201 succeeded: flash-attn 2.8.4 built + installed from CK source
+- [2026-05-31 09:58] Found and applied fix for a CK-glue-file API mismatch (2 files patched from flash-attention's rocking/update_ck branch) after the CK build failed at 2394/2397 files
+- [2026-05-30 22:58] Kicked off CK flash-attn build for gfx1201 (2397 source files, WMMA); killed/resumed twice for CPU contention, settled at MAX_JOBS=6 overnight
+- [2026-05-30 21:46] Installed TheRock 7.14.0a ROCm torch (2.12.0+rocm7.14.0a, gfx1201) after catching and killing an accidental PyPI-CUDA-torch install mid-download
+- [2026-05-26 22:40] Diagnosed flash-attn/aiter varlen crash on RDNA4 (num_splits arg mismatch between flash_attn fa4-beta and aiter); found a viable CK-for-RDNA4 fork with confirmed gfx12/WMMA kernel support
+- [2026-05-26 21:00] Fixed run_gradio.py (stopped forcing share=True, guarded duplicate apply_profile warning) and added an SA3_DISABLE_FLASH_VARLEN escape hatch for the flash-attn varlen crash
+- [2026-05-26 20:42] Built a YAML-driven ROCm environment system (rocm_env.yaml + rocm_env.py) with inference/training MIOpen profiles, mirroring stable-audio-tools
+- [2026-05-26 20:09] Fixed an fp16 dtype bug in the LatCH head (needed for the Gradio UI's default fp16 model) and locked it in with a regression test; all 23 LatCH tests pass
+- [2026-05-26 20:05] Fixed uv/lockfile issues (added librosa/scipy/torchcodec/pip as explicit deps so `uv sync` can't strip them); confirmed lockfile fully ROCm with zero NVIDIA/CUDA content
+- [2026-05-26 19:52] Ported full SAO-parity LatCH UI (multi-guide, sigma chart, metadata) into SA3's generation path end to end
+- [2026-05-26 16:46] Trained LatCH bass-RMS head (loss 271->88 over 10 epochs, 4.93M params); Phase-1 gate PASSED on small-music-base — requested/measured levels correlated 0.965, monotonic
+- [2026-05-26 16:39] Ran a 3,000-clip SAME encode of the goa corpus (key-match 200/200 verified against the mir DB)
+- [2026-05-26 14:04] Checked existing latent dirs: Lehto/latents and latents_stems are both the old 64-dim SAO-Small VAE — unusable for SA3, confirming no shortcut around a re-encode
+- [2026-05-26 14:02] Found the correct goa-crops corpus directory and confirmed key-match against the mir DB (209,235 entries)
+- [2026-05-26 13:58] Preflighted GPU/data readiness for the LatCH-SA3 port: GPU/torch OK, Lehto mounted, mir DB present, scipy missing, corpus not yet mounted
+- [2026-05-26 10:53] Added scripts/latch/README.md documenting the LatCH-SA3 encode/train/verify pipeline
+- [2026-05-26 10:36] Executed an 8-task subagent-driven plan porting LatCH heads to SA3 (target resampling, head copy in_channels 64->256, encode script, dataset, training helpers, grad-enabled guided sampler, verify script); caught and fixed a Critical bug in the bass-RMS verify function (wrong mir API usage)
+- [2026-05-26 09:03] Wrote an 8-task implementation plan for the LatCH-SA3 phase-1 port
+- [2026-05-26 08:52] Read the SA3 sampler and extended the LatCH requirements doc with 18 SA3-specific requirements (latent geometry, variable length, sampler hook points)
+- [2026-05-26 08:41] Read the SA3 paper + trainer config and produced a feasibility assessment: LatCH heads are portable to SA3 but need a dataset re-encode and a sampler decision, not a copy-paste port
+- [2026-05-25 11:26] Wrote EARS requirements doc for the LATCH trainer (37 requirements across 9 areas, training-side scope only)
+- [2026-05-25 09:52] Saved a project-memory note on a shared-infrastructure constraint affecting all Stable Audio versions
+- [2026-05-25 09:50] Wrote a comprehensive CLAUDE.md for the stable-audio-3 repository (setup, testing, linting, architecture, LoRA fine-tuning)

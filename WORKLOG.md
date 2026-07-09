@@ -10,6 +10,201 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — a2a_angelic_r64tiered_lr1e4 ladder page + a2a-group date bug
+
+- CONTINUITY's ask (Kim-directed GPU render): page 2 new a2a full-track noise ladders —
+  `a2a_angelic_r64tiered_lr1e4_ep7`/`_ep5` (r64-tiered avp adapter, ep7 vs ep5, nl 0.4-0.9 x 6,
+  Hallucinogen - Angelic Particles). Same filename/run_meta convention as the existing
+  `a2a_angelic_evr1x` ladder, so no new writer needed — staged both dirs verbatim
+  (`Misc/build_evals.py`'s `A2A_LADDER_RE` groups same-track dirs automatically), rebuilt.
+  Produces `a2a_angelic_r64tiered_lr1e4` with ep5/ep7 as columns, nl as rows, same-playhead.
+- Found + fixed a real bug while verifying: `write_a2a_ladder_folder` callers hardcoded
+  `date_str=""` for EVERY a2a ladder page (all 3 pre-existing ones: angelic/kaikkialla/
+  vapausvoima), so they never sorted by real date at all — always sank to the bottom of
+  "All runs, newest first" regardless of actual recency, the same class of bug as the
+  earlier real_date()-is-start-not-finish issue. Fixed: compute `date_str` from the
+  earliest member's `real_date()`, same definition used everywhere else in the file. All
+  4 a2a ladder pages (3 existing + 1 new) now show correct dates; new one correctly ranks
+  #1 (started 2026-07-10 02:00, most recent thing in the index).
+- Leak-scan clean on all 4 pages touched. Local cache only. Handed to WINTERMUTE for
+  publish (staging + the code fix both need to ride together since the fix changes how
+  ALL a2a ladder pages sort).
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — evals index: fixed stale "newest" + staged a missing UI
+
+- Kim's question: the local evals index (`~/.cache/evals_aac/index.html`) showed avp_cfg_sweep
+  (2026-07-09 15:29) as the "latest experiment" — suspicious, since there was clearly later
+  activity. Root cause confirmed: `real_date()` in `Misc/build_evals.py` reports the EARLIEST
+  mtime among a render dir's own files (deliberately, per its docstring, to dodge a later
+  `run_meta.json` provenance-backfill looking like a fresh run) — so "newest first" actually
+  means "most recently STARTED," not "most recently finished/updated." avp_cfg_sweep started
+  15:29 but kept receiving clips to 17:45; genuinely newer work (CONTINUITY's a2a_memo_test,
+  finished 17:51) wasn't in the index at all.
+- Second question: "do all of today's evals/renders have a UI?" — NO. Found `a2a_memo_test`
+  (Mantu `sa3_lora_runs/a2a_memo_test`, CONTINUITY's 3-clip a2a memorized-checkpoint-at-low-CFG
+  test, explicitly "FOR KIM'S EAR") sitting as raw .wav + FINDINGS.md with zero player. Staged it
+  (transcoded to AAC, wrote the missing `run_meta.json` sidecar from FINDINGS.md) and let
+  `build_evals.py` generate its page via the generic `write_folder()` fallback. Landing name is
+  `memo_ckpt_a2a_test`, not `a2a_memo_test` — the real name collides with `A2A_LADDER_RE`
+  (`^a2a_(track)_(adapter)$`, meant for the per-track noise-level ladder family) and got silently
+  swallowed with no page written; added a `RENDERS_SOURCE_ALIASES` entry so `real_date()` still
+  attributes it to the true Mantu source dir (17:47) instead of today's transcode day.
+- Also found + fixed: avp_cfg_sweep's own staged copy was missing its `run_meta.json` (present
+  on Mantu, never copied over) — it was showing the generic unhelpful "renders 1" label. Copied
+  it in; now reads "CFG sweep x training-stage (Underfit CFG-dynamics test)".
+  Rebuilt the local index (`python3 Misc/build_evals.py`, stdlib-only, no venv needed) — it now
+  correctly ranks `memo_ckpt_a2a_test` (17:47) above `avp_cfg_sweep` (15:29). Leak-scan clean on
+  both new/changed pages. Noted but NOT fixed (pre-existing, unrelated to this session): the
+  index still leaks bare ckpt-dir names in two hrefs — `dora128_everything_8ep_lr1x_ep7_sweep`
+  and `..._steps_diag` — flagging for WINTERMUTE's ship-time scan, not touched since out of scope
+  of what was asked. This is all LOCAL CACHE ONLY (`~/.cache/evals_aac/`) — nothing pushed/published.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — dora_results.html marked SUPERSEDED
+
+- Kim's ask: `dora_results.html` (rank-16/64/128 DoRA-on-Goa ladder) sits at the very front of the
+  riffer-evals landing page (index.html) and reads as current — it isn't; the later avp adapter
+  investigation (avp_master) supersedes its findings. Rather than aggregating everything onto one
+  page (would get messy), just fixed the preamble: added a `<div class=status-banner>` (CSS class
+  was already defined, unused) right under the `<h1>`, flagging it as the first DoRA rank-ladder
+  pass (Goa in-distribution, 2026-07-07 audition) and linking to the avp_master page for the
+  current picture. Source: `~/build_dora_results_page.py` (mir venv), writes `~/riffer-evals/
+  dora_results.html`; synced the `~/.cache/evals_aac/riffer/` mirror copy too. Leak-scan clean.
+  Not pushed (riffer-evals is a public GH Pages repo, `git@github.com:Taikakim/riffer-evals` —
+  publish is WINTERMUTE's lane); staged locally for the next publish pass.
+
+## 2026-07-09 — Kim + Sonnet 5 (GHOST-NOTE) — avp_master findings finalized (degradation_report_v2 + CFG_ANALYSIS)
+
+- CONTINUITY's promised final ANALYSIS numbers landed (`avp_board_seeds/ANALYSIS/degradation_report_v2.md`
+  + `avp_cfg_sweep/CFG_ANALYSIS.md`) — rewrote `avp_master`'s findings header entirely, replacing the
+  earlier dialogue-summary placeholder. Two corrections worth flagging (not just additions):
+  (1) the v2 report REVISES the earlier "ep31 is THE sweet spot" framing — raw Audiobox CE peaks at
+  barely-trained epochs (a CE-as-generic-pleasantness artifact), and reading CE alongside spectral-
+  centroid band + tempo-lock reveals TWO candidate islands: ep31 (narrow, on the ringing shoulder) and
+  ep7-9 (spectrally healthier, best point ep8). (2) the freeform arm's finding and the r64-tiered-caption
+  finding looked contradictory read separately (freeform: single descriptive caption did NOT fix
+  conditioning collapse, ratio 0.22 vs trigger's 0.92; r64+tiered: DID fix it, ratio 1.5-2.65) but are
+  actually the same result from two angles — it was never the trigger TOKEN's fault, any single caption
+  reused everywhere collapses conditioning; caption DIVERSITY is the real lever. Wrote both up accurately
+  rather than picking the flattering half.
+- Extended `sweet_epoch` (Python `write_avp_ladder_folder`/`write_avp_seeds_folder`) and `SWEET_EPOCHS`
+  (JS, both `AVP_LADDER_JS_TEMPLATE` and the master's `renderLadderSection`) from a single int to a list,
+  to mark both islands. Hit a second real bug doing this: the marking condition required `kind==='step'`
+  (deliberately, to avoid marking the incomplete 3-prompt `_fine` subset row over the full 7-prompt `_step`
+  row when both exist at the same epoch) — but epoch 8 has NO `_step` variant at all, only `_fine`, so it
+  never got marked. Fixed by marking the BEST-available kind per (arm, epoch) — rows are already sorted
+  step-before-fine-before-warm, so "first match per epoch" is correct without hardcoding a kind. New
+  Audiobox-CE step-invariance finding also added (sweet spot clusters ~900-1200 steps across rank 16/128,
+  independent of rank — but NOT corpus-invariant, GOA in-distribution peaks ~9x later).
+- Re-verified with the harness suite (updated the seeds/master harnesses' sweet-row assertions from
+  single-row to two-row) — all 4 harnesses (seeds standalone, master, r64, cfg_sweep) pass, no regressions.
+  Leak-scanned clean across all 8 avp pages. Handed to WINTERMUTE; C's incoming write-up (a2a
+  memorized-ckpt-at-low-CFG test) will want one more pass when it lands.
+
+## 2026-07-09 — Kim + Sonnet 5 (GHOST-NOTE) — 2 new avp pages: r64 LR-bracket board + CFG x stage sweep
+
+- CONTINUITY's page ask (Kim's active audition targets): `avp_board_r64` (384 clips — rank-64
+  midway recipe + tiered Flamingo/Granite captions, 2 LR arms x 12 epochs x 4 prompts x 2 seeds x
+  2 DoRA strengths) and `avp_cfg_sweep` (40/50 clips so far — the Underfit-memo CFG-dynamics test:
+  a hand-picked cross-arm training-stage sequence x 5 cfg values x kimlong/empty-prompt toggle,
+  the empty-prompt column being the "absorption" diagnostic).
+- `avp_board_r64` exposed two real gaps in the ladder machinery built for `avp_master` this
+  session: (1) its filenames have a BARE `epoch00` tag with no `_step`/`_fine`/`_warm` suffix at
+  all — `LADDER_STEM_RE`'s suffix group was mandatory; made it optional, defaulting to `kind="step"`.
+  (2) row identity was keyed by `tag` ALONE — fine for every prior board (single arm, or "base" vs
+  the ladder arm never sharing a tag), but r64 has TWO real arms (`r64_lr2e4`/`r64_lr1e4`) that
+  legitimately share the same `epoch00..epoch11` tags — this would have silently collided/dropped
+  half the board. Fixed by keying on `(arm, tag)` everywhere (JS row map + byKey + the Python
+  `n_rows` count, which had the same latent bug — caught by rebuilding and seeing "12 checkpoints"
+  instead of the expected 24, not by code review) and prefixing the row label with the arm name
+  whenever more than one non-"base" arm is present. Regression-tested against every existing
+  single-arm board (seeds/armG/freeform/goa_everything/master) — unaffected.
+- `avp_cfg_sweep` is a genuinely new page shape (`write_avp_cfg_sweep_folder` +
+  `AVP_CFG_SWEEP_JS_TEMPLATE`): stage-rows (explicit hand-authored order — early/mid/sweet/late/
+  armG, NOT alphabetical or epoch-numeric) x cfg-columns, with a 2-button prompt toggle instead of
+  a dropdown (only 2 values, and Kim's "visible not hover" rule already covered by showing the
+  active toggle state + the full checkpoint-recipe legend statically). The 5th stage (`armG_ep5`)
+  isn't rendered yet — the page correctly shows only the 4 present stages and will pick up the 5th
+  on the next rebuild with no code change.
+- Both verified with hand-rolled JS DOM-stub harnesses on the real built pages (multi-arm
+  collision + toggle re-render behavior specifically exercised, not just "does it parse"),
+  leak-scanned clean across all 8 avp pages now live (added `epoch=N-step` and `dora64` to the
+  scan pattern). Handed to WINTERMUTE.
+
+## 2026-07-09 — Kim + Sonnet 5 (GHOST-NOTE) — avp master/board pages: always-visible prompts + recipe
+
+- Kim's UI feedback (relayed by CONTINUITY): prompt text and recipe params must be VISIBLE at a
+  glance while auditioning, not hidden behind hover tooltips or click-to-reveal. Added
+  `_prompt_legend_html()` (prompt-key → full text, always-rendered `<ul>`) and
+  `_recipe_line_html()` (arm/rank/lr/optimizer/DoRA-strength/corpus, one line) to
+  `Misc/build_evals.py`; wired into `write_avp_ladder_folder`, `write_avp_board_folder`, and every
+  section of `write_avp_master_folder` — applies to the master page AND all 5 per-board pages.
+  New `AVP_PROMPT_TEXT` canonical dict (trig/trig2/upbeat/goa1/goa2/psy/freeform/goa) fills in for
+  boards without their own `run_meta.json` prompts sidecar; a board's own sidecar always wins.
+  `trigdesc`/freeform's `goa` prompt honestly labeled "exact wording not recorded" rather than
+  guessed — same standard as the goa_everything_board provenance question earlier this session.
+  New CSS `.prompt-legend` (`eval_grid.py`). Re-verified with the same JS harnesses (master +
+  standalone avp_board_seeds) — all pass; leak-scanned clean (0 hits) across all 6 avp pages.
+
+## 2026-07-09 — Kim + Sonnet 5 (GHOST-NOTE) — avp adapter investigation MASTER page (`avp_master`)
+
+- Kim's ask via CONTINUITY DM: one consolidated page for the whole avp investigation. Built
+  `Misc/build_evals.py`'s `write_avp_master_folder()` — 5 sections (arm x epoch grid + 4
+  ckpt-ladder boards: avp_board_seeds/armG/freeform/goa_everything_board) on ONE page with a
+  SINGLE shared playhead across all sections (a genuinely new template, `AVP_MASTER_JS_TEMPLATE`
+  — the per-dir writers each instantiate their own `Audio()`, so simple reuse would have given 5
+  independent playheads). Findings header embeds the three-process degradation story (spectral
+  collapse/ZCR, tempo U-notch at ep31, conditioning collapse), the trigger speech-prior finding,
+  Arm G's flat tempo-stability, and the aug-theory verdict; ep31's plain-ladder row is highlighted
+  (`.tc-sweet` CSS, `eval_grid.py`).
+- Generalized the ckpt-ladder parsing (`LADDER_STEM_RE`/`_parse_ladder_records`,
+  `write_avp_ladder_folder`) to handle the FULL grammar CONTINUITY flagged: `{arm}__epoch{E}
+  (_step{S}|_fine|_warm{W})__{prompt}__s{seed}[__st{strength}].wav`. Row identity is the full TAG,
+  not epoch alone — avp_board_seeds' dense re-run window has BOTH `epoch31_fine` and
+  `epoch31_step1152` (two distinct checkpoints sharing an epoch number); keying by epoch alone
+  would have silently dropped half the dense-window data. `write_avp_seeds_folder` (previously
+  hand-rolled, and STALE — its old regex didn't match `_fine`/`_warm`/`base__` tags at all, so the
+  live page was silently stuck at the original 168-clip prompting-probe render while Mantu's copy
+  had grown to 466) is now a thin wrapper over the shared parser.
+- **Bug found + fixed via the JS test harness** (not by inspection): a board with exactly ONE
+  distinct DoRA-strength value mixed with un-tagged records (avp_board_seeds has 15 stray
+  `__st10`-suffixed duplicate renders alongside their un-suffixed twins at the same
+  tag/prompt/seed — leftover duplication, not a deliberate sweep) made the default `strength`
+  variable non-null while 451/466 records had `strength=None` — every lookup mismatched and the
+  WHOLE table rendered blank. Fixed by normalizing `strength` to `None` across a board whenever
+  fewer than 2 distinct non-null values are present (only a genuine 2+-value sweep, like armG's/
+  freeform's 1.0/0.6, gets a strength selector at all).
+- Staged 3 previously-untranscoded render dirs (avp_board_armG 60 clips, avp_board_freeform 144,
+  goa_everything_board 24) to AAC 128k + wrote their `run_meta.json` sidecars (training params
+  read directly from checkpoint `lora_config`/optimizer `param_groups` via `torch.load`).
+  goa_everything_board's provenance (lr1x vs lr3x — identical step counts, no sidecar/script on
+  disk to disambiguate) resolved via WINTERMUTE→CONTINUITY: `dora128_everything_8ep_lr1x` (2e-4),
+  confirmed from the render script, not inferred — did not guess on a provenance page.
+- Verified with a hand-rolled Node DOM-stub harness on the REAL built page (not synthetic data) —
+  caught the strength bug this way; also confirms the shared-playhead behavior (clicking a cell in
+  one section un-marks the previous section's cell, single `curKey`). Leak-scanned clean (0 hits)
+  after also fixing a bare checkpoint-directory-name mention — `dora16_avp_originals_64ep` — in
+  freeform's `purpose` text that `redact()`'s path/extension/IP patterns don't cover (a real gap:
+  `redact()` doesn't catch bare directory-name-shaped tokens in prose, only literal paths/
+  extensions/addresses — worth a pattern addition later, not fixed here since the practical
+  mitigation was rewriting the one offending sentence).
+- Handed to WINTERMUTE for leak-scan/transfer. Findings will get one more re-render once
+  CONTINUITY's `avp_board_seeds/ANALYSIS/degradation_report.md` (promised ~11:48, still pending as
+  of this entry) lands with final numbers to replace the dialogue-summary version currently embedded.
+
+## 2026-07-09 — Kim + Sonnet 5 (GHOST-NOTE) — dataset.json → dataset.jsonl migration (mir)
+
+- `mir/src/core/data_store.py`'s `DataStore` now reads/writes `dataset.jsonl` (one `{"_key": ..., <features>}`
+  record per line, grep/jq-streamable) + a `dataset.meta.json` sidecar (generated_at/root/count), replacing the
+  old single-line `dataset.json` dict that couldn't be searched. `bootstrap()`/`load()`/`flush()` all updated;
+  call sites (`pipeline.py`, `master_pipeline.py`, `crops/pipeline.py`) needed no logic change (they already go
+  through `DataStore`), just one direct path construction in `pipeline.py` (`dataset.json` → `dataset.jsonl`).
+- New `mir/scripts/migrate_dataset_json_to_jsonl.py` — converts a directory's old `dataset.json` in place,
+  verifies (reload + entry-for-entry diff) before renaming the original to `dataset.json.bak` (never deletes).
+- Ran it on all 3 known `dataset.json` files (Mantu): `ai-music/organic dance` (0 entries), `ai-music/Goa_Separated`
+  (4461), `goa_crops` (202,745 entries, 661 MB → migrated + verified in 30s). All `.bak` originals kept for now.
+- No other repo touches this file (`stable-audio-tools`'s `dataset.json` hits are unrelated training-dataset
+  configs, not this artefact).
+
 ## 2026-06-29 — Kim + Opus 4.8 — EMA(+grad-accum) REVERSES the skewness "ceiling": ~3× control, head was damping-limited
 
 - Follow-up to the LR/batch sweep (which concluded "architecture-limited"): EMA 0.999 at the best settings
@@ -1274,3 +1469,31 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
   came from a different, unlogged path (the explorer render server), separately under investigation.
   Leak-scanned clean, JS-harness-verified (5-row table, 3-option prompt selector). Handed to WINTERMUTE.
 - [2026-07-08 14:52] (continuity) a2a loop attractor documented (docs/a2a-loop-attractor.md): high-nl a2a loops generated regions for minutes (Kim's ear, ladder verdicts in run_meta). Breathing-noise hysteresis controller designed (source-calibrated recurrence threshold, latent-domain meter, renoise_hook tier-2). Task #35.
+- [2026-07-08 17:56] (GHOST-NOTE) avp_board extended with the 5th arm (r16_originals / "D'", the aug-theory
+  control run Kim asked about) — 96 clips now (was 72), grid + prompt selector unchanged, just gained a row.
+  Found it by checking directly (mtime-sorted the render dirs) rather than asking Kim to clarify which
+  "latest results" he meant — the 24 new r16_originals clips had landed directly inside avp_board/ itself
+  (same naming convention as the other 4 arms), so this was the same page needing a re-render + arm addition,
+  not a new page. Added r16_originals to AVP_BOARD_ARMS + AVP_BOARD_PARAMS (rank 16/alpha 16/dora-rows/lr 2e-4/
+  Fusion, same as r16_plain, distinguished by corpus: originals-only, zero augmentations — the direct test of
+  whether augs cause the tempo instability). run_meta.json's findings now carry the full arm-add note + the
+  AUG-THEORY VERDICT (augs largely exonerated on tempo — it's optimization-phase-driven, not data-multimodality;
+  r16 has a stability window ~1200-1500 steps regardless of aug presence). glitch_triage.json is stale for the
+  new arm (only covers the original 72) — the new cells' click-readout gracefully shows no metrics rather than
+  breaking. Verified JS-harness clean (6-row table incl. the new arm), leak-scanned clean. Handed to WINTERMUTE.
+- [2026-07-08 23:50] (GHOST-NOTE) avp_board_seeds page shipped (168 clips) — Kim's prompting-issue probe:
+  does the r16_originals adapter (trained on one-word captions) cooperate with base-model vocabulary at all,
+  and is it seed-stable? New write_avp_seeds_folder, same board family as write_avp_board_folder (shares
+  filename grammar: {arm}__epoch{E}_step{S}__{prompt}[__s{seed}]) but transposed per CONTINUITY's ask:
+  ckpt-rows x prompt-columns with a SEED selector (avp_board has arm-rows x epoch-columns with a PROMPT
+  selector — same shape, different axis swapped to the selector role). 7 prompts (trig/trig2/upbeat/kimlong/
+  goa1/goa2/psy) in their run_meta-declared order, 3 seeds, 8 epochs. Prompt column headers show the short key
+  with the full prompt text as a hover tooltip + in the click-readout (kimlong is Kim's full T3-style detailed
+  prompt, several sentences — too long for a header). Reused AVP_BOARD_PARAMS for the training-params line in
+  the readout since it's the same r16_originals arm as avp_board. Leak-scanned clean, JS-harness-verified
+  (9-row table = 8 epochs + header, 3-option seed selector). This is a re-render — the original render (163
+  clips) was lost to the crash/reboot's orphaned-mountpoint trap; CONTINUITY confirmed the drive is now
+  correctly mounted as /run/media/kim/Mantu (not Mantu1 — that name never really existed, a stale mountpoint
+  artifact from the pre-crash boot). Handed to WINTERMUTE.
+- [2026-07-09 11:42] (WINTERMUTE) tempo_iqr meter on fresh ladders CONFIRMS LR-window hypothesis: arm G (r128@lr1e-4) flat tempo-stable across full 3000-step run (mean iqr 0.94, max 5.67, never collapses) vs r16@lr2e-4 narrow window (locked ~1152-1440, collapsed >1700). r16 fine ladder reproduces C's U-shape + ep31 notch independently; ep31-34 = narrow stable island (not single spike). Tool: mir/src/tools/tempo_iqr.py (clip-dir -> tempo_iqr; rank ckpts by ckpt_tempo_iqr_MEAN not median -- median floors at 0 on stable ladders). Feeds C's ship_checkpoint_picker.py.
+- [2026-07-09 17:50] (WINTERMUTE) pending-D reanalyze COMPLETE: 1346/1346 avp aug variants have full CPU MIR features (src/tools/reanalyze_variants.py, subprocess-isolated after in-process pool hung twice -- madmom segfault then silent 3h hang; subprocess.run per-variant w/ 600s timeout + retry-passes = 0 quarantined). 255 bpm-canary flags = madmom metrical ambiguity (2x/1.5x clusters), not transform errors; data sound. Phase 2 (audiobox+essentia GPU features) deferred to card-free window.
