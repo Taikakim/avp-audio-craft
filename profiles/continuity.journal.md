@@ -502,3 +502,11 @@ invariance + the U-shape + StoryScope's low-rarity clustering). Kim designed the
 closed-loop "breathing" nl — latent-domain recurrence meter, threshold = source's own max,
 Schmitt-trigger hysteresis (down on loop, up only when novelty returns). Depth doc:
 docs/a2a-loop-attractor.md. Build = task #35 (window-level first).
+
+## 2026-07-09 — avp degradation = THREE separable processes (meter-bag analysis)
+Delegated full meter sweep (217 clips x 26 feats: Audiobox+MERT+structure+librosa). The
+mush/collage is NOT one disease: (1) spectral collapse = monotonic overtraining, ZCR r=-0.90
+the clean odometer; (2) tempo instability = U-shaped, ep31 notch (0.52bpm locked); (3)
+conditioning collapse = immediate+persistent. ep31 best = tempo-notch + spectral-richness peak
+pre-collapse. Audiobox CE peaks at ep31 (d=0.99) AND is a seed-VARIANCE min (neighbors flaky,
+ep31 robust). Ship-picker: CE-max + tempo_iqr-min + pre-ZCR-drop. ANALYSIS/degradation_report.md.
