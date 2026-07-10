@@ -59,6 +59,9 @@ invoke a venv by **absolute path** in commands; never assume `python` is the rig
   `stable_audio_tools/models/latch.py`) and has **diverged** — the clean fix is a thin dependency-light
   shared package (`latch-core`) pip-installed into all three venvs, **not** relocating code. Blocked by
   the 3-venv wall (no cross-venv import) → deferred until a launch-testable session frees the GPU.
+  **Also on the latch-core unification list (2026-07-10):** `chroma_losses.py` — canonical in
+  `SAO/control/sa3_control/`, deliberately VENDORED into `stable_audio_3/inference/` for the T2
+  chroma-guided sampler (same self-contained-fork rationale as latch.py; keep in sync).
 
 ---
 
