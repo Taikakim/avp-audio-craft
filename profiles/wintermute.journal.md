@@ -331,6 +331,18 @@ scalar heads are probe-quality, not guidance-ready (depth/booming retrains defer
 Board: `renders/hardness_bracket_2026-07-10` (hear the buzz). The quality gates paid for
 themselves on their first run.
 
+**CORRECTION, same evening — the flatness hypothesis is FALSIFIED.** Implemented the
+pooled-mean loss (`scalar_pooled`, committed) and re-bracketed: near-identical CE/PQ
+damage at every gain including 512 (19/20 cells fail; the lone pass is noise). Pooling
+explicitly permits temporal variation, so the constant-target-flatness story is dead.
+Revised suspects: (1) **degenerate Jacobian** — a head trained on constant per-frame
+targets learns near-identical frame mappings, so any loss through it pushes spatially
+uniformly regardless of the loss's shape; (2) **shortcut feature** — corpus hardness may
+correlate with distortion, making the head's steepest-ascent direction *be* distortion.
+Both testable: retrain on windowed timbral `_ts` (time-varying targets), and
+spectral-diff steered-vs-base. Two wrong hypotheses killed in one evening at ~10 min
+each — the quality-gate directive is cheap science.
+
 ### negative · hardness steer at gain 512 — the meter moved, the audio broke (quality-gate lesson)
 
 Kim's ear on my steer-verification clips: **both steered outputs are perceptually ruined**
