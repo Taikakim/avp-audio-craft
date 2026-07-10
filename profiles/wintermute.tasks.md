@@ -8,6 +8,7 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+- [2026-07-10 20:20] #48 DONE: 384d SAME-chroma guidance head trained (cosine .0175 ≈ .98 cossim from noised latents — decodable-by-construction confirmed); targets = linear readout einsum on clean latents (5401 npz, CPU minutes); 4 launch attempts — harness bg-task reaping kills long jobs ~5-7min, run-inside-Monitor is the fix; handed to C for the T2 head-swap.
 - [2026-07-10 18:55] #49 bracket: DECISIVE negative w/ mechanism — all gains 32-256 fail CE/PQ (gain-independent) while direction correct; constant-target temporal flatness = the buzz; fix = pooled-mean loss (folded into C's T2 seam); scalar heads probe-only until then; board live.
 - [2026-07-10 15:35] NEGATIVE (Kim ear): hardness gain-512 steer clips broken (buzz) despite near-target meter — quality-gate lesson (CE/PQ/ZCR mandatory in steer evals); annotated everywhere. Player wedge fixed in 16 files (ph reset + seek guard). memo_ckpt page found 404 (link-only audit miss), shipping.
 - [2026-07-10 15:05] "Everything online" pass (Kim): layer_map A/B baselines (48), hardness_steer_smoke (3, +durable Mantu copy w/ run_meta), rarity_gen_set (450, 148MB) — transcoded, player-paged via build_evals, scanned, shipped, 200-verified; evals landing now 55 players, zero recent sets offline.
