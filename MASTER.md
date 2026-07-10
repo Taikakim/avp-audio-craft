@@ -308,6 +308,15 @@ layer may say "AdamW lr 3e-4, 20 epochs" but describes the artifact ("the Fusion
 (internal)") rather than naming its file. Generators reading sidecars into public HTML
 (`build_evals.py`, GUI builders) redact the plumbing at render time.
 
+**Commercial-music rights policy — three tiers (Kim, 2026-07-10, on the a2a Angelic-Particles
+escalation).** (1) **Eval CLIPS derived from commercial tracks** (a2a re-renders, transition
+tests, source-name labels) **are OK to serve publicly** — same norm as DJ mixes online; no
+holds needed on a2a ladder pages for rights reasons. (2) **Model WEIGHTS trained on commercial
+music are NEVER published** — goa-corpus checkpoints/adapters stay private regardless of
+quality. (3) **Publishable models come from legal datasets compiled later**, once parameters/
+recipes are validated on the research corpus — a task of its own (first instance: the avp
+own-music CC dataset spec, `mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md`).
+
 **REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
 results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
 listening. Every eval page in `~/riffer-evals/` (existing and future) must render its clip grid as
