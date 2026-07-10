@@ -35,8 +35,9 @@ CE_GATE = 0.75   # max allowed CE drop vs baseline before the cell is disqualifi
 PQ_GATE = 0.75
 
 
-def clip_name(kind, gain=None, seed=None):
-    return f"base_s{seed}.wav" if kind == "base" else f"{kind}_g{int(gain)}_s{seed}.wav"
+def clip_name(kind, gain=None, seed=None, pooled=False):
+    tag = "p" if pooled else ""
+    return f"base_s{seed}.wav" if kind == "base" else f"{kind}_g{int(gain)}{tag}_s{seed}.wav"
 
 
 def mode_gen():
@@ -72,17 +73,32 @@ def mode_gen():
         if not (OUT_DIR / name).exists():
             save(gen(seed=seed), name)
             n += 1
+        pooled = "--pooled" in sys.argv
+        gains = GAINS + (512.0,) if pooled else GAINS  # 512 = the broken-at-constant A/B point
         for kind, val in TARGETS.items():
-            for gain in GAINS:
-                name = clip_name(kind, gain, seed)
+            for gain in gains:
+                name = clip_name(kind, gain, seed, pooled=pooled)
                 if (OUT_DIR / name).exists():
                     continue
-                save(gen([{"model_path": CKPT, "kind": "constant",
-                           "value": val, "weight": gain}], seed=seed), name)
+                cfg = {"model_path": CKPT, "kind": "constant", "value": val, "weight": gain}
+                if pooled:
+                    # the constant-target-flatness fix: pooled-mean loss via the
+                    # cfg loss_type override (model.py 2026-07-10)
+                    cfg["loss_type"] = "scalar_pooled"
+                save(gen([cfg], seed=seed), name)
                 n += 1
                 print(f"[bracket] {name}", flush=True)
 
-    (OUT_DIR / "run_meta.json").write_text(json.dumps({
+    # MERGE with any existing sidecar -- findings/verdict written by later passes
+    # must survive a gen re-run (learned the hard way: --pooled clobbered them)
+    existing = {}
+    mp = OUT_DIR / "run_meta.json"
+    if mp.exists():
+        try:
+            existing = json.loads(mp.read_text())
+        except Exception:
+            pass
+    (OUT_DIR / "run_meta.json").write_text(json.dumps({**existing, **{
         "purpose": ("Hardness-head gain re-bracket WITH quality gates (CE/PQ/ZCR) after the "
                     "gain-512 negative (meter moved, audio broke -- 'concrete slab'/'dentist's "
                     "drill'). Finds the operating gain where steer holds AND quality survives."),
@@ -93,7 +109,7 @@ def mode_gen():
         "params": {"prompt": PROMPT, "seeds": list(SEEDS), "gains": list(GAINS),
                    "targets": TARGETS, "duration": 12.0, "steps": 8, "cfg": 6.0,
                    "rho": 64, "mu": 64, "ce_gate": CE_GATE, "pq_gate": PQ_GATE},
-    }, indent=2))
+    }}, indent=2))
     print(f"[bracket] gen done, {n} new clips -> {OUT_DIR}", flush=True)
 
 
@@ -124,8 +140,9 @@ def mode_measure():
         if not base:
             continue
         for kind in TARGETS:
-            for gain in GAINS:
-                k = f"{kind}_g{int(gain)}_s{seed}"
+            for gain in GAINS + (512.0,):
+              for tag in ("", "p"):
+                k = f"{kind}_g{int(gain)}{tag}_s{seed}"
                 r = rows.get(k)
                 if not r:
                     continue
