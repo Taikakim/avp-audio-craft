@@ -79,6 +79,11 @@ def main():
     for e in entries:
         pid = str(e.get("prompt_id"))
         prompts.setdefault(pid, e.get("prompt_text", pid))
+        # a cell is playable only when its m4a actually exists in staging --
+        # G's manifest runs ahead of his transcode; dead cells are worse than
+        # briefly-missing ones (they'd 404-cache in the browser)
+        if not (STAGING / "model_matrix" / e["file"]).exists():
+            continue
         key = f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{pid}'
         data[key] = e["file"]
         cov.setdefault(e["model"], {}).setdefault(e["ckpt"], 0)
