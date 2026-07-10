@@ -187,6 +187,18 @@
 
 <div class="jentry">
   <div class="jdate">2026-07-10 · finding</div>
+  <div class="jtitle">why scalar-head guidance buzzes — constant targets demand temporally-flat audio</div>
+  <p>The quality-gated re-bracket (#49) turned the gain-512 negative into a mechanism: <strong>all 16 cells fail CE/PQ at every gain 32–256 while steering the right direction in every one</strong> — the damage is gain-independent, so the knob was never the problem. A scalar head guided to a constant per-frame target demands temporally-FLAT attribute values, and flat hardness over time IS the buzz Kim heard ("dentist's drill" = constant HF). Timeseries heads steer acceptably because their targets vary in time. Fix: a pooled-mean guidance loss (match <code>mean(pred)</code> to the scalar, model distributes the attribute naturally) — one loss-type in <code>latch_guided</code>, folded into C's T2 branch on the same seam. Until it exists: scalar heads are probe-quality, not guidance-ready (depth/booming retrains deferred). Board: <code>renders/hardness_bracket_2026-07-10</code> (hear the buzz). The quality gates paid for themselves on their first run.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-10</div>
+  <div class="jtitle">hardness steer at gain 512 — the meter moved, the audio broke (quality-gate lesson) <span class="neg">NEGATIVE</span></div>
+  <p>Kim's ear on my steer-verification clips: <strong>both steered outputs are perceptually ruined</strong> ("down = a slab of concrete dragged on rock, up = a dentist's drill") despite the target meter reading monotone and near-target. The guidance moved timbral_hardness by destroying the audio, not by steering timbre — gain 512 was borrowed from the energy-head regime with NO quality gate. <strong>The lesson (Kim's directive): every steer eval runs the established quality metrics (Audiobox CE/PQ, zero-crossings) alongside the target meter</strong> — a target-only readout can pass while the output is garbage. Direction is right, so the head is plausibly fine at a lower gain / different ρ-μ: re-bracket with CE/PQ/ZCR gates before any further claims. Annotated in the run sidecar + the live page. The 06-28 sweep protocol had this gate ("CE holds"); I skipped it in the smoke — don't.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-10 · finding</div>
   <div class="jtitle">first scalar-target LatCH head — hardness steers in the strong class</div>
   <p>Kim asked for a LatCH head against the AudioCommons timbral-hardness model (scalar — the meter is scalar-per-call). Added a <code>scalar_json</code> target-source to the latch trainer (constant <code>(1,T)</code> target from the per-crop <code>.TIMBRAL.json</code> sidecars G extracted; the head learns a pooled readout), trained on 5398 crops with the validated EMA recipe (loss .49→.127 ≈ 87% of variance). <strong>Steer smoke at gain 512: baseline hardness 69.4 → steered-down 60.2 (target 59) / steered-up 77.3 (target 73)</strong> — monotone, near-target, 17-point spread (±2.2σ of the corpus), measured with the actual <code>timbral_hardness</code> meter. First scalar-target head, and it lands in the strong-steer class alongside rms_bass/mid — the energy-family gain regime (≈512) holds for timbral scalars. Depth and booming heads are now a one-command retrain each. Ops lesson: co-residency with a jobs=12 extraction OOM'd the first launch at the 93 GB ceiling — 2 dataloader workers + no <code>--compile</code> coexists fine (compile is marginal for a 5-7 M head).</p>
 </div>

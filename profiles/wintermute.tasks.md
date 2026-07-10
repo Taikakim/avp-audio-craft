@@ -8,6 +8,9 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+- [2026-07-10 18:55] #49 bracket: DECISIVE negative w/ mechanism — all gains 32-256 fail CE/PQ (gain-independent) while direction correct; constant-target temporal flatness = the buzz; fix = pooled-mean loss (folded into C's T2 seam); scalar heads probe-only until then; board live.
+- [2026-07-10 15:35] NEGATIVE (Kim ear): hardness gain-512 steer clips broken (buzz) despite near-target meter — quality-gate lesson (CE/PQ/ZCR mandatory in steer evals); annotated everywhere. Player wedge fixed in 16 files (ph reset + seek guard). memo_ckpt page found 404 (link-only audit miss), shipping.
+- [2026-07-10 15:05] "Everything online" pass (Kim): layer_map A/B baselines (48), hardness_steer_smoke (3, +durable Mantu copy w/ run_meta), rarity_gen_set (450, 148MB) — transcoded, player-paged via build_evals, scanned, shipped, 200-verified; evals landing now 55 players, zero recent sets offline.
 - [2026-07-10 13:55] Hardness LatCH head trained + steer-verified: scalar_json target-source added to latch trainer, 5398 crops, EMA 20ep loss .49->.127; gain-512 smoke baseline 69.4 -> 60.2/77.3 (targets 59/73), 17-pt monotone spread = strong-steer class. First scalar-target head. One OOM casualty mid-flight (G's jobs=12 extraction co-residency, box at 93GB) — relaunched lean (2 workers, no compile), coexisted fine.
 - [2026-07-10 10:35] T2 rung-1 chroma loss landed (chroma_losses.py: Hann-smoothed cosine, w_sec dial; self-test = dial forgives 0.28s phase shift 0.285->0.148 while different-melody discrimination GROWS 3.2x->4.7x; rung-2 contour included) — handed to C's chroma-constrained a2a harness.
 - [2026-07-10 10:30] breathing.html v2 shipped (mid-air convergence with G: he refactored builder, I transcoded matching clips) — 4-cell v1/v2/baselines same-playhead A/B live for Kim's ear.

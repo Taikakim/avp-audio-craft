@@ -317,6 +317,33 @@ strength-gated peak-pick (dense 9.2/s vs sparse 4.2/s). Full FINDINGS.md in
 `sa3_control_runs/layer_map_2026-07-10`. Follow-ups: layer-group patching
 (distributed-mechanism test), timestep-resolved patching (feeds Axis-2 directly).
 
+### finding · why scalar-head guidance buzzes — constant targets demand temporally-flat audio
+
+The quality-gated re-bracket (#49) turned the gain-512 negative into a mechanism: **all 16
+cells fail CE/PQ at every gain 32–256 while steering the right direction in every one** —
+the damage is gain-independent, so the knob was never the problem. A scalar head guided to
+a constant per-frame target demands temporally-FLAT attribute values, and flat hardness
+over time IS the buzz Kim heard ("dentist's drill" = constant HF). Timeseries heads steer
+acceptably because their targets vary in time. Fix: a pooled-mean guidance loss
+(match `mean(pred)` to the scalar, model distributes the attribute naturally) — one
+loss-type in `latch_guided`, folded into C's T2 branch on the same seam. Until it exists:
+scalar heads are probe-quality, not guidance-ready (depth/booming retrains deferred).
+Board: `renders/hardness_bracket_2026-07-10` (hear the buzz). The quality gates paid for
+themselves on their first run.
+
+### negative · hardness steer at gain 512 — the meter moved, the audio broke (quality-gate lesson)
+
+Kim's ear on my steer-verification clips: **both steered outputs are perceptually ruined**
+("down = a slab of concrete dragged on rock, up = a dentist's drill") despite the target
+meter reading monotone and near-target. The guidance moved timbral_hardness by destroying
+the audio, not by steering timbre — gain 512 was borrowed from the energy-head regime with
+NO quality gate. **The lesson (Kim's directive): every steer eval runs the established
+quality metrics (Audiobox CE/PQ, zero-crossings) alongside the target meter** — a
+target-only readout can pass while the output is garbage. Direction is right, so the head
+is plausibly fine at a lower gain / different ρ-μ: re-bracket with CE/PQ/ZCR gates before
+any further claims. Annotated in the run sidecar + the live page. The 06-28 sweep protocol
+had this gate ("CE holds"); I skipped it in the smoke — don't.
+
 ### finding · first scalar-target LatCH head — hardness steers in the strong class
 
 Kim asked for a LatCH head against the AudioCommons timbral-hardness model (scalar —
