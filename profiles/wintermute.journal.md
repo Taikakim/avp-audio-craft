@@ -317,6 +317,21 @@ strength-gated peak-pick (dense 9.2/s vs sparse 4.2/s). Full FINDINGS.md in
 `sa3_control_runs/layer_map_2026-07-10`. Follow-ups: layer-group patching
 (distributed-mechanism test), timestep-resolved patching (feeds Axis-2 directly).
 
+### finding · first scalar-target LatCH head — hardness steers in the strong class
+
+Kim asked for a LatCH head against the AudioCommons timbral-hardness model (scalar —
+the meter is scalar-per-call). Added a `scalar_json` target-source to the latch trainer
+(constant `(1,T)` target from the per-crop `.TIMBRAL.json` sidecars G extracted; the
+head learns a pooled readout), trained on 5398 crops with the validated EMA recipe
+(loss .49→.127 ≈ 87% of variance). **Steer smoke at gain 512: baseline hardness 69.4 →
+steered-down 60.2 (target 59) / steered-up 77.3 (target 73)** — monotone, near-target,
+17-point spread (±2.2σ of the corpus), measured with the actual `timbral_hardness`
+meter. First scalar-target head, and it lands in the strong-steer class alongside
+rms_bass/mid — the energy-family gain regime (≈512) holds for timbral scalars. Depth
+and booming heads are now a one-command retrain each. Ops lesson: co-residency with a
+jobs=12 extraction OOM'd the first launch at the 93 GB ceiling — 2 dataloader workers
++ no `--compile` coexists fine (compile is marginal for a 5-7 M head).
+
 ### finding · avp own-music dataset-release spec drafted
 
 Kim wants to publish his own CC music as a

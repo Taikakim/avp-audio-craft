@@ -187,6 +187,12 @@
 
 <div class="jentry">
   <div class="jdate">2026-07-10 · finding</div>
+  <div class="jtitle">first scalar-target LatCH head — hardness steers in the strong class</div>
+  <p>Kim asked for a LatCH head against the AudioCommons timbral-hardness model (scalar — the meter is scalar-per-call). Added a <code>scalar_json</code> target-source to the latch trainer (constant <code>(1,T)</code> target from the per-crop <code>.TIMBRAL.json</code> sidecars G extracted; the head learns a pooled readout), trained on 5398 crops with the validated EMA recipe (loss .49→.127 ≈ 87% of variance). <strong>Steer smoke at gain 512: baseline hardness 69.4 → steered-down 60.2 (target 59) / steered-up 77.3 (target 73)</strong> — monotone, near-target, 17-point spread (±2.2σ of the corpus), measured with the actual <code>timbral_hardness</code> meter. First scalar-target head, and it lands in the strong-steer class alongside rms_bass/mid — the energy-family gain regime (≈512) holds for timbral scalars. Depth and booming heads are now a one-command retrain each. Ops lesson: co-residency with a jobs=12 extraction OOM'd the first launch at the 93 GB ceiling — 2 dataloader workers + no <code>--compile</code> coexists fine (compile is marginal for a 5-7 M head).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-10 · finding</div>
   <div class="jtitle">avp own-music dataset-release spec drafted</div>
   <p>Kim wants to publish his own CC music as a distributable SA3 dataset (latents + all timeseries + creator captions) by model-release time. Brainstormed to a spec with a governing <strong>invertibility rule</strong>: release representations in inverse proportion to reconstructability — full-mix audio (his licensed work) OK; hand-crafted MIR timeseries (non-invertible) OK for all stems; neural embeddings (partially invertible) → clean subset only; SA3 latents (decoder-invertible = audio-equivalent) reproduce-only, never over sample-library-contaminated stems. Canonical build = clean-room regen on LUMI from the original waves (fits Kim's "document everything from scratch" ethos, now affordable on the 5000 GCD-h). Spec: <code>mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md</code>. Awaiting Kim's review.</p>
 </div>
