@@ -78,7 +78,7 @@ function info(hi){const h=D.heads[hi],m=h.meta;document.getElementById('info').i
 function col(m){const t=Math.max(0,Math.min(1,m/14));return`hsl(${Math.round(t*130)},45%,22%)`;}
 function play(id,f,lbl,hi){if(!f)return;if(cur===id){au.pause();cur=null;mark();document.getElementById('np').textContent='stopped';return;}
  const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();document.getElementById('np').textContent='▶ '+lbl;info(hi);
- au.src=f;const go=()=>{try{au.currentTime=Math.min(pos,(au.duration||1e9)-0.05);}catch(e){}au.play();};
+ au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 let h='';D.heads.forEach((hd,hi)=>{
  h+=`<h2 onclick="info(${hi})" style=cursor:pointer>${hd.label} <span class=muted style=font-weight:400>— corr/gain `+hd.gains.map(g=>`g${g} <b style=color:#7cf>${hd.corr[g]==null?'·':hd.corr[g]}</b>`).join('  ')+`</span></h2>`;

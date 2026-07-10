@@ -333,11 +333,14 @@ function paint(peaks){
 PLAYER_JS = """<audio id="pl"></audio><script>
 let cur=null,ph=0;const a=document.getElementById('pl');
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
-a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}});
+a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0});
 function seekAndPlay(pos){
  // seeking as soon as loadedmetadata fires can land on a not-yet-buffered part
  // of the compressed stream and glitch right at playback start (Kim, 2026-07-07)
- const go=()=>{try{a.currentTime=Math.min(pos,(a.duration||1e9)-0.05)}catch(e){}a.play()};
+ // NB: 'ended' resets ph=0 AND we clamp defensively below — a carried playhead at/past
+ // the new clip's end used to seek every clip to its last 50ms: one blip, then silence
+ // for every further click (Kim, 2026-07-10, reproduced on Win10 + Linux).
+ const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
@@ -1138,7 +1141,7 @@ function markPlaying(key) {
   document.querySelectorAll('.eg-cell').forEach(el => el.classList.toggle('playing', el.dataset.key === key && key !== null));
 }
 function seekAndPlay(a, pos) {
-  const go = () => { try { a.currentTime = Math.min(pos, (a.duration || 1e9) - 0.05); } catch (e) {} a.play(); };
+  const go = () => { try { a.currentTime = ((a.duration && pos > a.duration - 1) ? 0 : Math.min(pos, (a.duration || 1e9) - 0.05)); } catch (e) {} a.play(); };
   if (a.readyState >= 3) { go(); return; }
   let done = false;
   const fire = () => { if (done) return; done = true; go(); };
@@ -1350,7 +1353,7 @@ function markPlaying(key) {
   document.querySelectorAll('.eg-cell').forEach(el => el.classList.toggle('playing', el.dataset.key === key && key !== null));
 }
 function seekAndPlay(a, pos) {
-  const go = () => { try { a.currentTime = Math.min(pos, (a.duration || 1e9) - 0.05); } catch (e) {} a.play(); };
+  const go = () => { try { a.currentTime = ((a.duration && pos > a.duration - 1) ? 0 : Math.min(pos, (a.duration || 1e9) - 0.05)); } catch (e) {} a.play(); };
   if (a.readyState >= 3) { go(); return; }
   let done = false;
   const fire = () => { if (done) return; done = true; go(); };
@@ -1551,7 +1554,7 @@ function markPlaying(key) {
   document.querySelectorAll('.eg-cell').forEach(el => el.classList.toggle('playing', el.dataset.key === key && key !== null));
 }
 function seekAndPlay(a, pos) {
-  const go = () => { try { a.currentTime = Math.min(pos, (a.duration || 1e9) - 0.05); } catch (e) {} a.play(); };
+  const go = () => { try { a.currentTime = ((a.duration && pos > a.duration - 1) ? 0 : Math.min(pos, (a.duration || 1e9) - 0.05)); } catch (e) {} a.play(); };
   if (a.readyState >= 3) { go(); return; }
   let done = false;
   const fire = () => { if (done) return; done = true; go(); };
@@ -1730,7 +1733,7 @@ function markPlaying(key) {
   document.querySelectorAll('.eg-cell').forEach(el => el.classList.toggle('playing', el.dataset.key === key && key !== null));
 }
 function seekAndPlay(a, pos) {
-  const go = () => { try { a.currentTime = Math.min(pos, (a.duration || 1e9) - 0.05); } catch (e) {} a.play(); };
+  const go = () => { try { a.currentTime = ((a.duration && pos > a.duration - 1) ? 0 : Math.min(pos, (a.duration || 1e9) - 0.05)); } catch (e) {} a.play(); };
   if (a.readyState >= 3) { go(); return; }
   let done = false;
   const fire = () => { if (done) return; done = true; go(); };
@@ -2181,7 +2184,7 @@ let cur=null,ph=0;const a=document.getElementById('lfpl');
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}});
 function seekAndPlay(pos){
- const go=()=>{try{a.currentTime=Math.min(pos,(a.duration||1e9)-0.05)}catch(e){}a.play()};
+ const go=()=>{try{a.currentTime=((a.duration&&pos>a.duration-1)?0:Math.min(pos,(a.duration||1e9)-0.05))}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
@@ -2254,7 +2257,7 @@ let cur=null,ph=0;const a=document.getElementById('lfpl');
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}});
 function seekAndPlay(pos){
- const go=()=>{try{a.currentTime=Math.min(pos,(a.duration||1e9)-0.05)}catch(e){}a.play()};
+ const go=()=>{try{a.currentTime=((a.duration&&pos>a.duration-1)?0:Math.min(pos,(a.duration||1e9)-0.05))}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}

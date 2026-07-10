@@ -139,7 +139,7 @@ function play(id,f,lbl,vi){
   if(cur===id){au.pause();cur=null;mark();document.getElementById('np').textContent='stopped';return;}
   const pos=(cur!==null&&!au.paused)?au.currentTime:0;
   cur=id;mark();document.getElementById('np').textContent='▶ '+lbl;showInfo(vi);
-  au.src=f;const go=()=>{try{au.currentTime=Math.min(pos,(au.duration||1e9)-0.05);}catch(e){}au.play();};
+  au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};
   if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 let h='';
 D.variants.forEach((v,vi)=>{
