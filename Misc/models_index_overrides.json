@@ -1,0 +1,7 @@
+{
+  "_doc": "Per-model corrections for build_model_index.py: {\"<run label>\": {\"add_links\": [href], \"remove_links\": [href], \"recipe\": str, \"note\": str}}. Anyone may edit; rebuild + reship after.",
+  "latch_sa3_hardness": {
+    "add_links": ["renders/hardness_bracket_2026-07-10/index.html"],
+    "note": "probe-quality only — guidance fails quality gates at all gains (two-stage negative, see bracket page)"
+  }
+}

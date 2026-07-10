@@ -87,11 +87,20 @@ RIFFER_HTML = ["onset_eval.html", "disentangle.html", "dora_results.html",
                "chroma_steer.html", "gain_knee.html", "mp.html", "traj.html",
                "latch_sweep.html", "breathing.html", "rarity.html"]
 
+
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
 --dim:#7a8a8e;--faint:#9aa7a9;--rule:#c9d2d0;--rule-light:#e2e6e2;--edge:#0f9e99;--edge-ink:#0c807c;
 --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
-*{box-sizing:border-box}html{background:var(--paper)}
-body{margin:0;color:var(--body);font-family:var(--mono);font-size:13px;line-height:1.7}
+*{box-sizing:border-box}html{background:var(--paper);overflow-x:hidden}
+/* overflow-x:hidden on html+body (Kim, 2026-07-10): if ANY content on the page is
+   wider than the viewport, mobile browsers expand the layout viewport to fit it,
+   and the waveform popup's position:fixed;left:50% centering (below) then centers
+   against that expanded width instead of the visible screen -- the popup appears
+   shifted off to the side. Clipping horizontal overflow at the body level is the
+   fix; wide inner elements (tables) still need their own overflow-x:auto wrapper
+   to stay reachable, this just stops them from blowing out the whole page. */
+body{margin:0;color:var(--body);font-family:var(--mono);font-size:13px;line-height:1.7;
+max-width:100vw;overflow-x:hidden}
 .wrap{max-width:900px;margin:0 auto;padding:34px 28px 72px}
 a{color:var(--edge-ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 a:hover{text-decoration-style:solid}
@@ -830,6 +839,74 @@ def write_a2a_ladder_folder(kind, name, label, purpose, date_str, member_names,
     doc += '</table>' + PLAYER_JS
     doc += '<footer>aavepyora.online · evals · same-playhead · full-track noise ladder</footer></div></body></html>'
     os.makedirs(staged_dir, exist_ok=True)
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
+def write_memo_a2a_folder(kind, name, label, purpose, date_str, clips,
+                           findings=None, status=None, known_pages=None):
+    """Row=noise-level, column=checkpoint/cfg variant table for the a2a
+    memorized-checkpoint hypothesis test (CONTINUITY, 2026-07-09/10): does an
+    overtrained late checkpoint make a BETTER a2a/style-transfer tool at low CFG?
+    Single staged folder (not sibling dirs like write_a2a_ladder_folder), clips
+    named <variant>__a2a_nl<NN>.m4a. Includes the spec-§14 plain-language
+    explainer block (Kim, 2026-07-10: every eval page also serves a "what does
+    this teach" audience, not just the listening tool + technical-recipe ones)."""
+    staged_dir = f"{OUT}/{kind}/{name}"
+    stem_re = re.compile(r"^(?P<variant>[a-z0-9]+_cfg\d+)__a2a_nl(?P<nl>\d+)$")
+    variants, by_nl = [], {}  # variant order preserved by first sight; nl -> {variant: filename}
+    for f in sorted(os.listdir(staged_dir)) if os.path.isdir(staged_dir) else []:
+        if not f.endswith(".m4a"):
+            continue
+        m = stem_re.match(f[:-4])
+        if not m:
+            continue
+        v, nl = m["variant"], int(m["nl"])
+        if v not in variants:
+            variants.append(v)
+        by_nl.setdefault(nl, {})[v] = f
+    if not by_nl:
+        return False
+
+    doc = head(f"{label} — evals", depth=2)
+    doc += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+            '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    doc += f'<h1>{html.escape(label)}</h1>'
+    if date_str:
+        doc += f'<p class="faint">{html.escape(date_str)}</p>'
+    if purpose:
+        doc += f'<p class="lede">{html.escape(purpose)}</p>'
+    doc += (
+        '<div class="findings-box"><span class="lbl">What this tests</span>'
+        'The Underfit-memo prediction: a checkpoint that reads "overtrained" for plain '
+        'text-to-audio (it has absorbed a strong style prior) should actually be the '
+        '<b>best</b> tool for audio-to-audio / style-transfer, run at <b>low CFG</b> — '
+        'low CFG lets that absorbed style dominate over the prompt, pulling the input '
+        'track decisively into the trained style. This page compares a late/memorized '
+        'checkpoint (ep63) against an early one (ep7), each re-rendering the same '
+        'source track at increasing <code>init_noise_level</code> (nl) — higher nl = '
+        'more of the model\'s own style, less of the original recording. Listen for '
+        'where the source stops being recognizable and starts sounding like the model, '
+        'and whether the late checkpoint gets there more gracefully than the early one.</div>'
+    )
+    doc += eval_grid.provenance_html(findings, status, known_pages)
+    doc += (f'<p class="faint">{len(by_nl)} noise levels x {len(variants)} checkpoint/cfg variants · '
+            'same source track, same playhead across every cell — switching rows/columns keeps '
+            'position, so you can hear the SAME moment in the track at every setting</p>')
+    doc += '<table class="tc-table"><tr><th>noise level</th>'
+    for v in variants:
+        doc += f'<th>{html.escape(v)}</th>'
+    doc += '</tr>'
+    for nl in sorted(by_nl):
+        doc += f'<tr><td>{nl/100:.2f}</td>'
+        for v in variants:
+            f = by_nl[nl].get(v)
+            if f:
+                doc += f'<td class="cell tc-play" data-src="{html.escape(f)}" onclick="play(this)">▶</td>'
+            else:
+                doc += '<td class="tc-blank">·</td>'
+        doc += '</tr>'
+    doc += '</table>' + PLAYER_JS
+    doc += '<footer>aavepyora.online · evals · same-playhead · memorized-checkpoint a2a test</footer></div></body></html>'
     open(f"{staged_dir}/index.html", "w").write(doc)
     return True
 
@@ -2426,6 +2503,50 @@ def write_folder(kind, name, label, purpose, clips, date_str="", verdict=None,
     os.makedirs(od, exist_ok=True)
     open(f"{od}/index.html","w").write(doc)
 
+# Kim (2026-07-10, via CONTINUITY design, routed to this file since it's actively
+# edited here): the flat "All runs" list reads as "a wall of links" -- classify by
+# category (curated on top, then by kind) instead of one undifferentiated list.
+# Order matters: first matching category wins, so more-specific patterns (rarity,
+# LatCH) are checked before the broad "control / FiLM" catch-all.
+# Taglines: eval-tables spec §14 (Kim, same session) -- every landing category
+# needs a plain-language one-liner (the "learning resource" audience, not just
+# the eval-tool/technical-resource ones the per-page prompt legends already serve).
+LANDING_CATEGORIES = [
+    ("DoRA / avp", re.compile(r"^(avp_|renders_dora|renders_soups|soup|goa_everything)"),
+     "Fine-tuning SA3 on a personal/style corpus (DoRA adapters) — rank/LR/caption "
+     "sweeps, checkpoint ladders, model-soup averaging."),
+    # memo_ckpt_a2a_test is deliberately NOT prefixed "a2a_" (that would collide
+    # with A2A_LADDER_RE's sibling-folder auto-grouping, a different mechanism --
+    # see RENDERS_SOURCE_ALIASES) -- "_a2a_" substring catches it here too.
+    ("a2a & transitions", re.compile(r"(^a2a_|_a2a_|^breathing_|^promptarc_|^dual_lora_|^transitions)"),
+     "Audio-to-audio: re-rendering an existing track through the model at varying "
+     "noise levels, and stitching/crossfading between generated sections."),
+    ("LatCH", re.compile(r"(^latch|_latch)"),
+     "Latent-Controlled Heads — small trained probes that steer a specific attribute "
+     "(bass energy, onset density, chroma...) during generation, tested for whether "
+     "they actually move the output the way they're asked."),
+    ("rarity", re.compile(r"^rarity"),
+     "How unusual/distinctive a generation is relative to a reference corpus — does "
+     "an adapter produce genuinely novel content, or just restyle the same average?"),
+    ("long-form", re.compile(r"^longform"),
+     "Generating audio well past the model's native window — sliding-window "
+     "continuation, drift checks, seam quality."),
+    ("control / FiLM", re.compile(
+        r"^(onset_eval|gain_knee|opb|fusion|es_conditioner|collapse|disentangle|"
+        r"flow.*sep|zerosep|renders_cross|targeted)"),
+     "Conditioning adapters that steer a scalar control (onset density, gain) "
+     "independent of the text prompt — authority, disentanglement from tempo/genre, "
+     "and failure-mode sweeps."),
+]
+
+
+def categorize_eval(name):
+    for label, pattern, _tagline in LANDING_CATEGORIES:
+        if pattern.search(name):
+            return label
+    return "other"
+
+
 def build_landing(control, renders):
     doc = head("Evals — Vibe on The Edg3", depth=0)
     doc += ('<p class="nav"><a href="https://aavepyora.online/files/">← the studio</a>'
@@ -2435,6 +2556,8 @@ def build_landing(control, renders):
     doc += ('<p class="faint">Bookmark this page: '
             '<a href="https://aavepyora.online/files/evals/">aavepyora.online/files/evals/</a> — '
             'the canonical, always-current entry point for the listening review.</p>')
+    doc += ('<p class="dim">📇 <a href="models.html"><b>Models index</b></a> — every trained '
+            'model and which tests exercised it (the awareness page; barely-tested flagged).</p>')
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
     doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')
     _riffer_labels = {"onset_eval.html": "onset control-authority", "disentangle.html": "disentanglement",
@@ -2446,26 +2569,30 @@ def build_landing(control, renders):
         doc += f'<div class="run"><div class="name"><a href="{_href}">{_lbl}</a></div></div>'
 
     # Kim, 2026-07-07: "the front page does not make it easy to find runs simply
-    # in order of creation" -- the category split below is useful for browsing
-    # by kind, but doesn't answer "what's newest across everything." One flat
-    # chronological list, both categories merged, undated entries pushed last.
+    # in order of creation" -- fixed then with one flat chronological list. Kim,
+    # 2026-07-10 (via CONTINUITY design): that flat list grew into "a wall of
+    # links" as the count climbed -- classify into categories instead (curated
+    # stays on top, above), newest-first WITHIN each category. Replaces the old
+    # flat "All runs" list AND the separate Control-runs/Renders kind-split below
+    # (both were just cruder groupings of the same items -- three overlapping
+    # listings of 56 things was the opposite of "easy to find").
     all_items = ([("control_runs", it) for it in control] + [("renders", it) for it in renders])
-    all_items.sort(key=lambda ki: ki[1][4], reverse=True)
-    doc += f'<h2><span class="mark">§</span> All runs, newest first <span class="faint">({len(all_items)})</span></h2>'
-    for kind, (name, label, purpose, n, date_str, subtitle, verdict) in all_items:
-        doc += (f'<div class="run"><div class="name"><a href="{kind}/{html.escape(name)}/index.html">'
-                f'{html.escape(label)}</a> <span class="faint">({kind.replace("_"," ")})</span></div>')
-        if date_str:
-            doc += f'<div class="when">{html.escape(date_str)}</div>'
-        if subtitle:
-            doc += f'<div class="desc">{html.escape(subtitle)}</div>'
-        doc += f'<div class="meta">{n} clips</div></div>'
-
-    for lbl, kind, items in (("Control runs","control_runs",control),("Renders","renders",renders)):
-        doc += f'<h2><span class="mark">§</span> {lbl} <span class="faint">({len(items)})</span></h2>'
-        for name, label, purpose, n, date_str, subtitle, verdict in items:
+    by_category = {}
+    for kind, item in all_items:
+        by_category.setdefault(categorize_eval(item[0]), []).append((kind, item))
+    category_order = [c for c, _p, _t in LANDING_CATEGORIES] + ["other"]
+    category_tagline = {c: t for c, _p, t in LANDING_CATEGORIES}
+    for cat in category_order:
+        items = by_category.get(cat)
+        if not items:
+            continue
+        items.sort(key=lambda ki: ki[1][4], reverse=True)
+        doc += f'<h2><span class="mark">§</span> {html.escape(cat)} <span class="faint">({len(items)})</span></h2>'
+        if category_tagline.get(cat):
+            doc += f'<p class="dim">{html.escape(category_tagline[cat])}</p>'
+        for kind, (name, label, purpose, n, date_str, subtitle, verdict) in items:
             doc += (f'<div class="run"><div class="name"><a href="{kind}/{html.escape(name)}/index.html">'
-                    f'{html.escape(label)}</a></div>')
+                    f'{html.escape(label)}</a> <span class="faint">({kind.replace("_"," ")})</span></div>')
             if date_str:
                 doc += f'<div class="when">{html.escape(date_str)}</div>'
             if subtitle:
@@ -2683,9 +2810,17 @@ def main():
             (not wrote_seeds) and (not wrote_ladder) and name == "avp_cfg_sweep" and \
             write_avp_cfg_sweep_folder(kind, name, label, desc or subtitle, date_str,
                                         findings, status, known_pages)
+        # memorized-checkpoint a2a test (nl x variant, see write_memo_a2a_folder)
+        # -- tried by name, same rationale as the other one-off writers above.
+        wrote_memo = (not wrote_grid) and (not wrote_table) and (not wrote_style) and \
+            (not wrote_density) and (not wrote_longform) and (not wrote_transitions) and (not wrote_epoch) and \
+            (not wrote_t3) and (not wrote_chroma) and (not wrote_chroma_pure) and (not wrote_avp) and \
+            (not wrote_seeds) and (not wrote_ladder) and (not wrote_cfgsweep) and name == "memo_ckpt_a2a_test" and \
+            write_memo_a2a_folder(kind, name, label, desc or subtitle, date_str, clips,
+                                   findings, status, known_pages)
         if not (wrote_grid or wrote_table or wrote_style or wrote_density or wrote_longform
                 or wrote_transitions or wrote_epoch or wrote_t3 or wrote_chroma or wrote_chroma_pure
-                or wrote_avp or wrote_seeds or wrote_ladder or wrote_cfgsweep):
+                or wrote_avp or wrote_seeds or wrote_ladder or wrote_cfgsweep or wrote_memo):
             write_folder(kind, name, label, desc or subtitle, clips, date_str, verdict, findings, status, known_pages)
         entry = (name, label, desc, len(clips), date_str, subtitle, verdict)
         if (kind, name) in misc_keys:
