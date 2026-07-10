@@ -85,7 +85,7 @@ LONGFORM_XFADE_START = (2048 / _LF_HZ - LONGFORM_XFADE_LEN) / 2
 
 RIFFER_HTML = ["onset_eval.html", "disentangle.html", "dora_results.html",
                "chroma_steer.html", "gain_knee.html", "mp.html", "traj.html",
-               "latch_sweep.html"]
+               "latch_sweep.html", "breathing.html"]
 
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
 --dim:#7a8a8e;--faint:#9aa7a9;--rule:#c9d2d0;--rule-light:#e2e6e2;--edge:#0f9e99;--edge-ink:#0c807c;
@@ -2437,7 +2437,7 @@ def build_landing(control, renders):
     _riffer_labels = {"onset_eval.html": "onset control-authority", "disentangle.html": "disentanglement",
                        "dora_results.html": "DoRA auditions", "chroma_steer.html": "chroma steer",
                        "gain_knee.html": "gain knee", "mp.html": "multiprompt", "traj.html": "trajectories",
-                       "latch_sweep.html": "LatCH head sweep"}
+                       "latch_sweep.html": "LatCH head sweep", "breathing.html": "breathing-noise controller"}
     _riffer = [(f"riffer/{f}", _riffer_labels[f]) for f in RIFFER_HTML]
     for _href, _lbl in _riffer:
         doc += f'<div class="run"><div class="name"><a href="{_href}">{_lbl}</a></div></div>'
