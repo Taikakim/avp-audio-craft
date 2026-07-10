@@ -298,6 +298,25 @@ partition/account/resources set in the WebUI (dropdowns), not by `sbatch`. Parti
 results. Bundle + access-model block documented in `SAO/lumi/README.md`. Blocked on Kim reporting the
 Create-Jobscript form layout so I can shape the hello-world job for the WebUI abstraction.
 
+## 2026-07-10
+
+### finding · the layer map exists — acoustic attributes live LATE, in self_attn+ff, NOT cross_attn
+
+Ran the Axis-1 causal localizer on SA3 medium-base (`control/sa3_control/layer_patch_map.py`):
+TADA-style activation patching extended past cross-attention to all three module types,
+scored by target-aware MIR meters, 1728 cells (4 acoustic concepts × 3 prompt-pairs ×
+2 seeds × 24 blocks × 3 modules), ~40 min GPU. **All four attributes (onset density,
+bass weight, brightness, noisiness) localize to blocks ~16–23 via self_attn and ff;
+cross_attn medians are 0.00 at every layer** — the opposite shape from TADA's
+cross-attn-12/13 bottleneck (categorical semantics ≠ acoustic realization). Rhythm
+engages self_attn earlier (12–19) than timbre — temporal attribute, temporal-mixing
+module. Routing implication: acoustic-control DoRA rank → late self_attn+ff as a SOFT
+AdaLoRA prior (TADA's −21% hard-mask warning). Methods lesson: plain librosa
+onset_detect over-fires ~3× on textured drones — the validated meter is p95-normalized
+strength-gated peak-pick (dense 9.2/s vs sparse 4.2/s). Full FINDINGS.md in
+`sa3_control_runs/layer_map_2026-07-10`. Follow-ups: layer-group patching
+(distributed-mechanism test), timestep-resolved patching (feeds Axis-2 directly).
+
 ### finding · avp own-music dataset-release spec drafted
 
 Kim wants to publish his own CC music as a
