@@ -115,7 +115,36 @@ def main():
 
     payload = {"models": meta, "data": data, "prompts": prompts,
                "cfgs": list(CFGS), "strengths": list(STRENGTHS)}
-    doc.append(f'<script>const MM = {json.dumps(payload)};</script>')
+    # manifest_live.jsonl = only entries whose m4a exists in staging (my sync loop
+    # ships it beside the clips). The page fetches it at LOAD TIME and rebuilds MM
+    # client-side -> the served board self-updates on every data rsync, no html
+    # rebuild (Kim 2026-07-11: "UI reads JSON manifests automatically"). The
+    # embedded snapshot below is the fallback for plain file:// (Chrome blocks
+    # file fetch) and for fetch failures.
+    live_lines = [json.dumps({**e}) for e in entries
+                  if (STAGING / "model_matrix" / e["file"]).exists()]
+    (STAGING / "model_matrix" / "manifest_live.jsonl").write_text("\n".join(live_lines))
+    doc.append(f'<script>let MM = {json.dumps(payload)};</script>')
+    doc.append("""<script>
+async function refreshMM(){
+ try{
+  const r = await fetch('model_matrix/manifest_live.jsonl', {cache:'no-store'});
+  if(!r.ok) return;
+  const txt = await r.text();
+  const data={}, prompts={}, cov={};
+  for(const ln of txt.split('\\n')){ if(!ln.trim()) continue;
+   let e; try{e=JSON.parse(ln)}catch(_){continue}
+   const pid=String(e.prompt_id); if(!(pid in prompts)) prompts[pid]=e.prompt_text||pid;
+   data[e.model+'|'+e.ckpt+'|'+e.cfg+'|'+e.strength+'|'+pid]=e.file;
+   (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; }
+  MM.data=data; MM.prompts=prompts;
+  for(const m of Object.keys(MM.models)) MM.models[m].ckpts=Object.keys(cov[m]||{}).sort();
+  render();
+ }catch(_){/* file:// or offline -> embedded snapshot stands */}
+}
+setInterval(refreshMM, 90000);  // live page self-updates every 90 s
+window.addEventListener('load', refreshMM);
+</script>""")
     doc.append('<div id=cols></div>')
 
     doc.append("""<audio id="pl"></audio><script>
