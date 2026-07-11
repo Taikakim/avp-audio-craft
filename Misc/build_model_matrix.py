@@ -58,8 +58,8 @@ select{width:100%;background:#1b1b20;color:#dde;border:1px solid #333;border-rad
 padding:4px;margin:2px 0;font-size:12px}
 option.lit{color:#7f7}option.unlit{color:#777}
 .recipe{font-size:11px;color:#9ab;line-height:1.45;margin:6px 0;border-left:2px solid #368;
-padding-left:7px;min-height:52px}
-.tdata{font-size:11px;color:#a98;line-height:1.4;margin:4px 0}
+padding-left:7px;height:120px;overflow-y:auto}
+.tdata{font-size:11px;color:#a98;line-height:1.4;margin:4px 0;height:34px;overflow-y:auto}
 .pgrid{margin:8px 0}.plabel{font-size:11px;color:#8a9;margin:8px 0 2px;white-space:nowrap;
 overflow:hidden;text-overflow:ellipsis}
 table.mini{border-collapse:collapse;width:100%}
@@ -192,6 +192,11 @@ function render(){
    h+='<div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
+     // skip prompts this model/ckpt has zero coverage for — otherwise an
+     // AVP-only prompt renders an all-empty 3x3 grid on every goa model,
+     // which reads as the blank-cell bug Kim just flagged (2026-07-12).
+     const anyCell=MM.cfgs.some(cf=>MM.strengths.some(w=>(st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid) in MM.data));
+     if(!anyCell)continue;
      h+='<div class=plabel title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+'</div>';
      h+='<table class=mini><tr><th></th>';
      for(const w of MM.strengths)h+='<th>w'+w+'</th>';h+='</tr>';
