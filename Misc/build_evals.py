@@ -2531,6 +2531,10 @@ LANDING_CATEGORIES = [
     ("long-form", re.compile(r"^longform"),
      "Generating audio well past the model's native window — sliding-window "
      "continuation, drift checks, seam quality."),
+    ("mechanism / interpretability", re.compile(r"^(layer_map|hardness|concept_steer)"),
+     "How the model works inside, and using that map to steer it: causal layer "
+     "maps (which DiT blocks carry each attribute), training-free concept steering, "
+     "and the timbral-attribute bracket sweeps."),
     ("control / FiLM", re.compile(
         r"^(onset_eval|gain_knee|opb|fusion|es_conditioner|collapse|disentangle|"
         r"flow.*sep|zerosep|renders_cross|targeted)"),
@@ -2556,8 +2560,41 @@ def build_landing(control, renders):
     doc += ('<p class="faint">Bookmark this page: '
             '<a href="https://aavepyora.online/files/evals/">aavepyora.online/files/evals/</a> — '
             'the canonical, always-current entry point for the listening review.</p>')
+    # Kim, 2026-07-11: the big cross-model matrix (the "giant table") had no entry
+    # point on the landing -- he couldn't find it. Hero it at the very top, above
+    # the models index, since it's the current headline build.
+    doc += ('<div style="border:2px solid #0f9e99;background:#0d2422;padding:15px 20px;'
+            'margin:16px 0;border-radius:7px">'
+            '<a href="model_matrix.html" style="font-size:19px;color:#4fe3dd;'
+            'text-decoration:none;font-weight:700">&#127899; Model Matrix — the big '
+            'cross-model listening table &rarr;</a>'
+            '<div style="color:#a9cfcc;font-size:12.5px;margin-top:6px;line-height:1.5">'
+            'Every trained model in one place: pick the <b>model</b> (column dropdown) and '
+            '<b>checkpoint</b> (row dropdown), sweep <b>CFG &times; adapter-strength</b>, '
+            'same-playhead A/B. Checkpoints with rarity renders done are lit up. '
+            '<i>In active build &mdash; rendering across all models now.</i></div></div>')
     doc += ('<p class="dim">📇 <a href="models.html"><b>Models index</b></a> — every trained '
             'model and which tests exercised it (the awareness page; barely-tested flagged).</p>')
+    # Kim, 2026-07-12: "I have great trouble finding the new evals" — the categorized
+    # list buries recent work in "other". A hand-curated "Recently added" strip at the
+    # top surfaces the newest important pages directly (maintain this list as work lands).
+    _highlights = [
+        ("renders/layer_map_2026-07-10/index.html", "Layer map + steering payoff",
+         "Which DiT blocks causally carry each attribute — and training-free concept "
+         "steering at those blocks (three-way convergence + the α-ladder A/B)."),
+        ("riffer/breathing.html", "a2a transitions — the collection",
+         "Every audio-to-audio transition variant: breathing-noise controller, "
+         "prompt-arc noise ladders, per-layer interleave."),
+    ]
+    doc += ('<div style="border:1px solid #2a4a48;background:#0c1c1b;padding:12px 18px;'
+            'margin:14px 0;border-radius:7px">'
+            '<div style="color:#7ed;font-size:11px;letter-spacing:.1em;text-transform:uppercase;'
+            'margin-bottom:6px">Recently added</div>')
+    for _href, _t, _d in _highlights:
+        doc += (f'<div style="margin:6px 0"><a href="{_href}" style="color:#4fe3dd;font-weight:600;'
+                f'text-decoration:none">{html.escape(_t)} &rarr;</a>'
+                f'<div style="color:#9ab;font-size:12px;line-height:1.45">{html.escape(_d)}</div></div>')
+    doc += '</div>'
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
     doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')
     _riffer_labels = {"onset_eval.html": "onset control-authority", "disentangle.html": "disentanglement",
