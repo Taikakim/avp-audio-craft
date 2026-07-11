@@ -158,18 +158,31 @@ window.addEventListener('load', refreshMM);
     doc.append('<div id=cols></div>')
 
     doc.append("""<audio id="pl"></audio><script>
-let cur=null,ph=0;const a=document.getElementById('pl');
+let cur=null,ph=0,curCoord=null;const a=document.getElementById('pl');
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
-a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0});
+a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0;curCoord=null});
 function seekAndPlay(pos){
  const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
 function play(el){const f=el.dataset.src;if(!f)return;
- if(cur===el){a.pause();el.classList.remove('playing');cur=null;return}
+ if(cur===el){a.pause();el.classList.remove('playing');cur=null;curCoord=null;return}
  if(cur)cur.classList.remove('playing');
- a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing')}
+ a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
+ curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid}}
+// After any re-render (checkpoint/model switch OR the 90s auto-refresh) re-bind the
+// playing state to the SAME (column,cfg,strength,prompt) cell. If that cell now points
+// at a different file (i.e. the checkpoint changed), switch to it and CONTINUE from the
+// same playhead — A/B the same moment across checkpoints (Kim 2026-07-12).
+function reattach(){
+ if(!curCoord)return;
+ const q='.cell.have[data-col="'+curCoord.col+'"][data-cf="'+curCoord.cf+'"][data-w="'+curCoord.w+'"][data-pid="'+CSS.escape(curCoord.pid)+'"]';
+ const el=document.querySelector(q);
+ if(!el){cur=null;return}                       // analogous cell gone -> leave audio as-is
+ cur=el;el.classList.add('playing');
+ if(!a.src.endsWith('/'+el.dataset.src)){       // different clip => checkpoint switched
+  a.pause();a.src='model_matrix/'+el.dataset.src;seekAndPlay(ph)}}
 const labels=Object.keys(MM.models);
 function ckptsFor(m){return MM.models[m]?MM.models[m].ckpts:[]}
 function render(){
@@ -203,12 +216,12 @@ function render(){
      for(const cf of MM.cfgs){h+='<tr><th>cfg'+cf+'</th>';
       for(const w of MM.strengths){
        const key=st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid;const f=MM.data[key];
-       h+=f?'<td class="cell have" data-src="'+f+'" onclick="play(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
+       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
       h+='</tr>'}
      h+='</table>'}
     h+='</div>'}
   }
-  div.innerHTML=h;wrap.appendChild(div)}}
+  div.innerHTML=h;wrap.appendChild(div)}reattach()}
 const colState=[{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null}];
 render();
 </script>""")
