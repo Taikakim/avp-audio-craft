@@ -36,6 +36,16 @@ OUT = STAGING / "model_matrix.html"
 CFGS = (1, 7, 16)
 STRENGTHS = (0.6, 1.0, 1.5)
 
+
+def jsnum(x):
+    """Stringify a number the way JS String(Number) does -- drop a trailing .0
+    (1.0->"1", 16.0->"16") but keep real fractions (0.6->"0.6"). The manifest
+    stores cfg/strength as floats; the embedded-snapshot data keys must match the
+    JS-side lookup keys (built from JSON-parsed numbers), or every cell on the
+    file:// page misses (Kim 2026-07-11: local board cells had no audio)."""
+    f = float(x)
+    return str(int(f)) if f == int(f) else repr(f)
+
 CSS = """
 body{font:13px system-ui;margin:14px;background:#101012;color:#e0e0e0}
 h1{font-size:17px;margin:0 0 4px}a{color:#7cf}
@@ -84,7 +94,7 @@ def main():
         # briefly-missing ones (they'd 404-cache in the browser)
         if not (STAGING / "model_matrix" / e["file"]).exists():
             continue
-        key = f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{pid}'
+        key = f'{e["model"]}|{e["ckpt"]}|{jsnum(e["cfg"])}|{jsnum(e["strength"])}|{pid}'
         data[key] = e["file"]
         cov.setdefault(e["model"], {}).setdefault(e["ckpt"], 0)
         cov[e["model"]][e["ckpt"]] += 1
