@@ -41,6 +41,22 @@ STEER_BLURB = {
     "mt_relaxing": "relaxed / calm",
     "onset_density": "onset density (events/sec)",
 }
+# Plain-language "what you should hear" per feature — the listening verdict, so the
+# page is evaluable by ear, not just by the metric string (Kim 2026-07-12: "how should
+# I evaluate? many of these are just buzzes"). (result, works?) → verdict tag drives color.
+STEER_LISTEN = {
+    "mt_dark": ("WORKS", "α+2 should sound clearly <b>darker / gloomier</b> than the α0 "
+                "baseline while staying musical — this is the strong win (dark-score 19× at +2). "
+                "α−2 should feel a touch brighter."),
+    "mt_uplifting": ("PARTIAL", "Asymmetric: <b>α+2 does NOT sound more uplifting</b> — it just "
+                     "degrades. Only the anti-direction moves (α−2 flatter/darker). A half-result."),
+    "mt_relaxing": ("DEAD", "The honest negative: <b>α+2 sounds basically the SAME as α0</b> — no "
+                    "calm shift, even though the probe said this concept was highly separable "
+                    "(AUC .889). Probe-separable ≠ steerable. Listening confirms it."),
+    "onset_density": ("PARTIAL", "α+2 should sound <b>busier — ~20% more note/hit events</b> — than "
+                      "α0, still coherent. This is a scalar (density), not a mood."),
+}
+_VERDICT_COLOR = {"WORKS": "#5d9", "PARTIAL": "#ca7", "DEAD": "#a66"}
 
 MODULES = ("self_attn", "cross_attn", "ff")
 MOD_COLOR = {"self_attn": "#5cf", "cross_attn": "#f76", "ff": "#7d6"}
@@ -122,14 +138,18 @@ def steer_section():
     """Phase-3 steering payoff: playable alpha-ladder A/B per feature, same playhead."""
     out = []
     out.append('<h2>The payoff — training-free concept steering at the mapped layers</h2>')
-    out.append('<div class=how>This page localizes <i>where</i> each concept lives. The test '
-               'of a causal map is whether you can <b>use</b> it: extract a diff-in-means '
-               'direction for a concept, add it back in at exactly those bottleneck blocks '
-               '(conditional branch only — the deep-research CFG rule), and listen. No training, '
-               'same seed / prompt / cfg as the α=0 baseline. Each row is an <b>α ladder</b>: '
-               '<b>α=0</b> baseline, <b>±2</b> the operating point, <b>±6</b> deliberately past '
-               'the trust region (the report predicts this breaks — it does, audibly). Negative α '
-               '= the anti-concept. All cells share one playhead, so A/B is the same moment.</div>')
+    out.append('<div class="how" style="border-left:3px solid #5d9;padding-left:10px">'
+               '<b>How to evaluate this — the 10-second version:</b><br>'
+               'For each concept below, play <b>α 0</b> (the plain baseline) then <b>α +2</b> '
+               '(steered). <b>The only question: does α +2 move the sound toward the concept</b> '
+               '(darker, busier…) <b>while still sounding like music?</b> The <b>listen-for</b> line '
+               'tells you what a win sounds like, and the badge (<span style="color:#5d9">WORKS</span> / '
+               '<span style="color:#ca7">PARTIAL</span> / <span style="color:#a66">DEAD</span>) is the '
+               'verdict — so you know whether to expect a real shift before you click.<br>'
+               '<b style="color:#a66">Ignore the two grey "α ±6 — past safe range" clips for quality.</b> '
+               'Those are deliberately pushed way past the working strength; they are <i>supposed</i> to '
+               'collapse into buzz/noise, and that they do is the point — it confirms the safe-range limit '
+               'the theory predicts. They are not failures to judge; they are the guardrail.</div>')
     any_clip = False
     for feat in STEER_FEATURES:
         meta_p = STEER_SRC / feat / "run_meta.json"
@@ -140,29 +160,47 @@ def steer_section():
         hv = meta.get("held_out_validation", {})
         auc = hv.get("min_auc_across_sigma")
         result = meta.get("result") or meta.get("measured_delta") or ""
-        anchor = (f'held-out AUC {auc:.3f}@L{hv.get("layer")}' if auc else '')
-        if result:
-            anchor = (anchor + ' · ' if anchor else '') + str(result)
-        out.append(f'<h2 style="font-size:13px;color:#cde">{html.escape(feat)} '
-                   f'<span style="color:#889;font-weight:normal">— {html.escape(STEER_BLURB.get(feat, ""))} · '
-                   f'inject @ blocks {html.escape(str(layers))}</span></h2>')
-        if anchor:
-            out.append(f'<div class=tip>{html.escape(anchor)}</div>')
+        verdict, listen = STEER_LISTEN.get(feat, ("", ""))
+        vcol = _VERDICT_COLOR.get(verdict, "#889")
+        badge = (f'<span style="background:{vcol};color:#111;border-radius:4px;padding:1px 7px;'
+                 f'font-size:11px;font-weight:700;margin-left:8px">{verdict}</span>' if verdict else '')
+        out.append(f'<h2 style="font-size:14px;color:#cde;margin-top:18px">{html.escape(feat)} '
+                   f'<span style="color:#889;font-weight:normal;font-size:12px">— '
+                   f'{html.escape(STEER_BLURB.get(feat, ""))}</span>{badge}</h2>')
+        if listen:
+            out.append(f'<div class=tip style="color:#cdd"><b>listen for:</b> {listen}</div>')
+        # evaluable clips first (baseline, steer-toward, steer-away), prominently
+        primary = [("a0", "α 0", "plain baseline"),
+                   ("a+2.0", "α +2 →", "steered TOWARD the concept"),
+                   ("a-2.0", "α −2", "steered away (anti-concept)")]
         cells = []
-        for a, lbl, sub in (("a-6.0", "α −6", "past trust region"),
-                            ("a-2.0", "α −2", "anti-concept"),
-                            ("a0", "α 0", "baseline"),
-                            ("a+2.0", "α +2", "operating point"),
-                            ("a+6.0", "α +6", "past trust region")):
+        for a, lbl, sub in primary:
             src = f"steer/{feat}_{a}.m4a"
             if not (OUT.parent / src).exists():
                 continue
             any_clip = True
-            hot = ' style="border-color:#5d9"' if a == "a+2.0" else (
-                  ' style="border-color:#a55"' if a in ("a+6.0", "a-6.0") else '')
+            hot = ' style="border-color:#5d9;border-width:2px"' if a == "a+2.0" else ''
             cells.append(f'<div class=abcell{hot} data-src="{src}" onclick="play(this)">'
                          f'<b>{html.escape(lbl)}</b><span class=sub>{html.escape(sub)}</span></div>')
         out.append('<div class=abrow>' + "".join(cells) + '</div>')
+        # deliberately-broken breach clips, muted + labeled (not a quality test)
+        breach = []
+        for a, lbl in (("a-6.0", "α −6"), ("a+6.0", "α +6")):
+            src = f"steer/{feat}_{a}.m4a"
+            if not (OUT.parent / src).exists():
+                continue
+            breach.append(f'<div class=abcell data-src="{src}" onclick="play(this)" '
+                          f'style="opacity:.5;border-color:#533;min-width:110px">'
+                          f'<b style="color:#a66">{html.escape(lbl)}</b>'
+                          f'<span class=sub>expected buzz</span></div>')
+        if breach:
+            out.append('<div class=abrow style="margin-top:2px"><span class=pairlbl '
+                       'style="color:#a66;min-width:150px">past safe range (guardrail, not a test):</span>'
+                       + "".join(breach) + '</div>')
+        if result:
+            out.append(f'<div class=tip style="color:#8a9;font-size:11px">measured: {html.escape(str(result))}'
+                       + (f' · held-out AUC {auc:.3f}@L{hv.get("layer")}' if auc else '')
+                       + f' · inject @ blocks {html.escape(str(layers))}</div>')
     return "".join(out) if any_clip else ""
 
 
