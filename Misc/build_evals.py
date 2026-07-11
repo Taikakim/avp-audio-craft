@@ -2359,10 +2359,15 @@ def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_n
     staged_dir = f"{OUT}/{kind}/{name}"
     os.makedirs(staged_dir, exist_ok=True)
     all_records = []
+    member_dates = {}  # checkpoint name -> mtime, for the date-fallback dropdown order (spec §15)
     for member in member_names:
         source_dir = find_source_dir(member)
         if not source_dir or not os.path.exists(f"{source_dir}/onset_eval.json"):
             continue
+        try:
+            member_dates[member] = os.path.getmtime(f"{source_dir}/onset_eval.json")
+        except OSError:
+            pass
         member_dir = f"{OUT}/{kind}/{member}"
         staged_stems = {os.path.relpath(os.path.splitext(f)[0], member_dir)
                         for f in glob.glob(f"{member_dir}/**/*.m4a", recursive=True)}
@@ -2383,6 +2388,7 @@ def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_n
     doc = eval_grid.render_checkpoint_audit_page(
         head_html=head_html, title=label, label=label,
         purpose=redact(purpose), date_str=date_str, records=all_records, footer_html=footer_html,
+        checkpoint_dates=member_dates,
     )
     open(f"{staged_dir}/index.html", "w").write(doc)
     return True
@@ -2551,6 +2557,13 @@ def categorize_eval(name):
     return "other"
 
 
+# Kim, 2026-07-12 (eval-tables spec §15): "_onset_control_audit"/"_misc_uncurated_runs"
+# collect dozens of runs each -- they were landing at the BOTTOM of their category
+# (empty date_str sorts last) despite outranking any single run's page. Any future
+# "collects many runs" aggregation page gets added here too.
+AGGREGATION_PAGE_NAMES = {"_onset_control_audit", "_misc_uncurated_runs"}
+
+
 def build_landing(control, renders):
     doc = head("Evals — Vibe on The Edg3", depth=0)
     doc += ('<p class="nav"><a href="https://aavepyora.online/files/">← the studio</a>'
@@ -2624,6 +2637,9 @@ def build_landing(control, renders):
         if not items:
             continue
         items.sort(key=lambda ki: ki[1][4], reverse=True)
+        # aggregation pages float to the top of their section (spec §15) -- stable
+        # sort, so date-descending order is preserved within each of the two groups.
+        items.sort(key=lambda ki: ki[1][0] not in AGGREGATION_PAGE_NAMES)
         doc += f'<h2><span class="mark">§</span> {html.escape(cat)} <span class="faint">({len(items)})</span></h2>'
         if category_tagline.get(cat):
             doc += f'<p class="dim">{html.escape(category_tagline[cat])}</p>'
