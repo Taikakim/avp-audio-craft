@@ -1,7 +1,225 @@
 {
-  "_doc": "Per-model corrections for build_model_index.py: {\"<run label>\": {\"add_links\": [href], \"remove_links\": [href], \"recipe\": str, \"note\": str}}. Anyone may edit; rebuild + reship after.",
+  "_doc": "Per-model corrections for build_model_index.py: {\"<run label>\": {\"add_links\": [href], \"remove_links\": [href], \"recipe\": str, \"note\": str}}. \"note\" doubles as the one-sentence evaluation shown on the page (Kim's ask, 2026-07-11) — absence of a note shows as \"not yet evaluated\". Anyone may edit; rebuild + reship after.",
+  "latch_sa3_spectral_flux": {
+    "note": "Highly decodable in the ridge probe (R²=0.90, the strongest of any feature) but not covered by the 14-head steering sweep — steerability unconfirmed."
+  },
+  "riffer_200trk_2e-4_adamw": {
+    "note": "Part of the June-19 LR/optimizer bracket — reference-tracking peaks hard around step 6000 then elbow-declines; this is the recipe that set that baseline."
+  },
+  "latch_sa3_downbeat_activation": {
+    "note": "Dead at any weight — clean negative result, trainable but not steerable via latent guidance."
+  },
+  "latch_sa3_onset_envelope_drums": {
+    "note": "Per-stem onset target, decodable (R²=0.57 in the ridge probe) but not individually covered by the 14-head steering sweep — likely dead by analogy to the general onset_envelope head, unconfirmed."
+  },
+  "onset_FusionCC_lr1e-4_randomcrop": {
+    "note": "Best onset head — the campaign's first significant win: corr/gain g2 .584→.880 (P=.99), tracking mid-range densities beautifully (req 5/6/7 → meas 6.0/6.8/7.6 vs baseline's overshoot)."
+  },
+  "onset_AdamW_lr7.5e-5": {
+    "note": "AdamW baseline, lower LR — part of the optimizer bracket; no distinct standalone verdict beyond the bracket's overall Fusion-wins conclusion."
+  },
+  "onset_AdamW_lr7.5e-5_continuous": {
+    "note": "Continuous (no-segmentation) AdamW run, first-crop — finished clean at step 54000/10 checkpoints after an early dateutil-crash fix; later shown to have a much narrower control range than the random-crop variants it was compared against."
+  },
+  "soups_dora": {
+    "note": "Best DoRA soup overall is r128f_expasc (exponential-ascending blend) — base run Fréchet distance 0.0750, the baseline winner in the cautious A/B."
+  },
+  "dora16_glitchheal_5ep_2xlr": {
+    "note": "Weight-mutation \"healing\" experiment — a 5-epoch LoRA trained on a glitched base neither heals nor compensates; the adapter simply dominates (~5x more shift than the glitch itself), and the glitch survives underneath as an accent."
+  },
+  "onset_Fusion_lr1e-4_randomcrop": {
+    "note": "The FusionCC baseline (\"E_fusion\") — corr/gain g1 .582, g2 .657, g3 .793; solid but superseded by the CC-loss variant above."
+  },
+  "riffer_20pct_2048_nockpt": {
+    "note": "First riffer concept test — loss barely moved (−0.05 vs a 0.168 noise floor); the adapter learned almost nothing at lr1e-4."
+  },
+  "dora16_avp_familiarity_8ep": {
+    "note": "Novelty-gating (familiarity_beta) mechanism verified working end-to-end (weight spread 0.87-1.13 after the ep-1 warmup, loss 0.726) — musical-quality impact not yet separately assessed."
+  },
+  "soups": {
+    "note": "12 weight-averaged blends of the 40-epoch Fusion onset run (ascending/descending/peak/sine/triangle schedules) — no single blend has a standout recorded verdict beyond exppeak/expasc being the ones referenced elsewhere as reasonable picks."
+  },
+  "onset_Fusion_lr1e-4_randomcrop_20ep": {
+    "note": "20-epoch Fusion companion to the AdamW 20ep multiprompt render — that render's headline finding (more epochs narrows control range) was specifically about the AdamW variant; no separate Fusion-specific verdict recorded."
+  },
+  "onset_FUSION_lr1e4_5000_FIXED": {
+    "note": "Became the E_fusion_v2 checkpoint used in the composed_sweep replication of the FusionCC advantage (Goa-only, 1e-4/5000 steps)."
+  },
+  "latch_sa3_hpcp": {
+    "note": "Dead at any weight in the 14-head sweep (chroma-adjacent target) — superseded by the dedicated same_chroma head's approach."
+  },
+  "dora128_47s_newcaptions_5ep": {
+    "note": "First tiered-caption A/B (5 epochs) — the new caption system made outputs noticeably more consistent (tighter range) than the old baked-in prompts; an initial \"era-steering\" read was retracted as seed noise at n=2 seeds."
+  },
+  "dora128adj_avp_8ep": {
+    "note": "Rank-128-adjusted AVP arm — completed via a warm-started continuation from an accidental partial run; later confirmed among the more tempo-stable ranks (86% stable) in WINTERMUTE's tempo-IQR triangulation."
+  },
+  "dora256_avp_aug10_lr7e5": {
+    "note": "\"Arm H\" (rank 256) — ruled out after repeated OOM/hang failures on the 16GB card across 4 attempts; this is the lone surviving checkpoint from a run that never completed. Max viable local rank stays 128."
+  },
+  "onset_density_FULL_3000c_crop1024": {
+    "note": "Full-dataset result after the crop-skip fix — corr +0.92, wider range (3.6→9.1), but gain sweep shows non-monotonic collapse past gain 3 (overtraining elbow at ~2000 steps/lr2e-4)."
+  },
+  "onset_Fusion_opb_lr1.5e-4_30ep": {
+    "note": "opb head at +50% LR, extended to 30 epochs — control authority plateaued by epoch 15 (+0.964, same as epoch 25); the extra 15 epochs bought nothing."
+  },
+  "dora16_avp_originals_64ep": {
+    "note": "\"D'\" — the aug-theory control arm (originals only, no augmentation). Turned out to be the LEAST tempo-stable arm (38% locked), refuting data-multimodality as the tempo-instability driver; instability is optimization-phase/LR-window-driven instead."
+  },
+  "style_fpA_adamw": {
+    "note": "Style+groove fingerprint (15-dim) — decisively outperformed by the simpler fpC variant in a direct A/B; not the shipped head."
+  },
+  "onset_density_400trk_crop1024": {
+    "note": "Original scalar onset-density head — steers output onset density at corr +0.90 (gain 1): sparse→dense = 4.3→8.3 onsets/sec."
+  },
+  "dora128adj_avp_8ep_final": {
+    "note": "The finished 8/8-epoch rank-128-adjusted AVP run (warm-started from epoch 6) — see dora128adj_avp_8ep for its tempo-stability verdict."
+  },
+  "dora16_avp_originals_earlyeps": {
+    "note": "One of the fine epoch-window renders that fed the ep7-9 vs. ep31 dual-sweet-spot analysis (ep31 = narrow, ringing-adjacent island; ep7-9 later found spectrally healthier)."
+  },
+  "riffer_200trk_4e-4_adamw": {
+    "note": "Higher-LR bracket variant — heavier LR pushed the adapter toward the mode-collapse regime the bracket was designed to detect."
+  },
+  "riffer_20pct_2048_lr1e3": {
+    "note": "10x-LR follow-up — outputs were nearly identical across different references (0.3% diff): a mode-collapse mirage, not real reference-tracking."
+  },
+  "onset_FUSION_lr8e5_1p2ep": {
+    "note": "Quick higher-LR FusionOpt probe — no distinct standalone quality verdict recorded."
+  },
+  "onset_AdamW_lr7.5e-5_randomcrop": {
+    "note": "Random-crop AdamW baseline — random-crop dramatically widened the onset-density control range vs the earlier first-crop runs (this is one of the two runs that established that)."
+  },
+  "onset_density_FULL_3000b_crop1024": {
+    "note": "Second full-dataset retrain attempt — crashed again on the same junk-crop issue; superseded by the _c variant."
+  },
+  "riffer_200trk_2e-4_fusion": {
+    "note": "FusionOpt variant in the LR/optimizer bracket — no distinct standalone verdict beyond the bracket's overall lr1e-4-is-the-sweet-spot finding."
+  },
+  "onset_Fusion_opb_10ep": {
+    "note": "First onset-per-beat (BPM-normalized) head — the tempo-shortcut is dead (corr −0.09 vs the raw onset_density baseline's +0.7 to +0.9), and control is still functional."
+  },
+  "riffer_200trk_2e-4_sfadamw": {
+    "note": "Optimizer-variant in the LR/optimizer bracket — no distinct standalone verdict beyond the bracket's overall lr1e-4-is-the-sweet-spot finding."
+  },
+  "latch_sa3_rms_energy_bass": {
+    "note": "Strong steerer — +5.1 dB at gain 512 in the 14-head sweep."
+  },
+  "latch_sa3_rms_energy_mid": {
+    "note": "Strong steerer — +6.0 dB at gain 512, the best of the 14 heads."
+  },
+  "latch_sa3_onset_envelope": {
+    "note": "Dead at any weight in the 14-head sweep (activation-type target — the dense-vs-sparse-signal boundary finding)."
+  },
+  "dora16_goa_newstack_8ep": {
+    "note": "New caption-stack vs. old Hall-of-Fame checkpoint, epoch-by-epoch A/B rendered (30 clips) for Kim's direct listening — no recorded verdict yet on which stack won."
+  },
+  "onset_AdamW_lr1e-4": {
+    "note": "AdamW baseline in the optimizer bracket — superseded by the FusionCC/FusionOpt runs, which won the corr/gain comparison."
+  },
+  "onset_AdamW_lr7.5e-5_randomcrop_20ep": {
+    "note": "Random-crop AdamW at 20 epochs — part of the random-crop control-range study; superseded as a recipe by the Fusion+random-crop runs, which had a cleaner training trajectory."
+  },
+  "onset_FusionCaut_lr1e-4_randomcrop": {
+    "note": "Cautious-masking variant — a quality TRADE not a win (drier/cleaner separation, muted highs, smears when pushed); over-trains past ep5. Palette option with early-stop, not the default."
+  },
+  "riffer_200trk_5e-5_fusion": {
+    "note": "Lowest-LR FusionOpt variant in the bracket — no distinct standalone verdict recorded."
+  },
+  "dora64_avp_tiered_lr2e4": {
+    "note": "r64 tiered-caption arm (2e-4) — tiered/diverse captions DID fix conditioning collapse where freeform failed (prompt/seed ratio 1.5-2.65 vs freeform's 0.22); later superseded as the leading recipe by the prompt-arc finding."
+  },
+  "latch_sa3_beat_activation": {
+    "note": "Dead at any weight — clean negative result, trainable but not steerable via latent guidance."
+  },
+  "style_fpC_genrecc": {
+    "note": "Don't use — the genre-consistency loss variant HURT steering vs plain fpC (Goa 0.92→0.65, Psy 0.46→0.03); meter-in-the-gradient added interference, not signal."
+  },
+  "dora128_everything_8ep_lr3x": {
+    "note": "One of two full-corpus 8-epoch DoRA runs (6e-4) that fed the later avp analysis boards — no distinct standalone listening verdict recorded for this run vs its lr1x sibling."
+  },
+  "dora128_everything_8ep_lr1x": {
+    "note": "One of two full-corpus 8-epoch DoRA runs (2e-4) that fed the later avp analysis boards — no distinct standalone listening verdict recorded for this run vs its lr3x sibling."
+  },
+  "dora16_avp_freeform_8ep": {
+    "note": "Freeform-caption arm — a single descriptive caption did NOT fix conditioning collapse (prompt/seed ratio 0.22, same as the trigger-token baseline's 0.92); showed caption diversity, not caption quality, is what matters."
+  },
+  "dora16_avp_8ep": {
+    "note": "Early AVP DoRA arm (rank 16) — completed cleanly overnight; superseded as the tempo/quality reference by the later rank/LR comparison arms (r128adj, arm G)."
+  },
+  "style_fpC_adamw": {
+    "note": "Ship this — best genre steering of the style heads (Goa confidence 0.92, Psy 0.46)."
+  },
+  "_probe_b4": {
+    "note": "Infra-only batch-size probe (not a trained content model) — used to pick a safe training batch size."
+  },
+  "latch_sa3_rms_energy_air": {
+    "note": "Moderate steerer in the 14-head gain-512 sweep."
+  },
+  "riffer_bf16test": {
+    "note": "Precision/infra smoke test only (bf16 training path) — no steering evaluation."
+  },
+  "latch_sa3_spectral_flatness": {
+    "note": "Highly decodable in the ridge probe (R²=0.78) but not covered by the 14-head steering sweep — steerability unconfirmed."
+  },
+  "soups_vibe": {
+    "note": "Cross-optimizer soups (AdamW × Fusion blends) — the cross_25A75F blend was the standout, topping tracking accuracy while keeping control range."
+  },
+  "latch_sa3_same_chroma": {
+    "note": "Trained + validated as highly decodable (~0.98 cossim predicting chroma from noised latents) — guided-generation use (the actual steering test) not yet run."
+  },
+  "dora128adj_avp_aug10_lr1e4": {
+    "note": "\"Arm G\" — tempo-stable across its ENTIRE 3000-step run (mean IQR 0.94, never collapses), the strongest confirmation of the lower-LR/higher-rank stability hypothesis."
+  },
+  "latch_sa3_spectral_skewness": {
+    "note": "Moderate steerer; an early \"architecture-limited\" verdict was reversed after retraining with EMA — the ceiling was damping-limited, not capacity-limited."
+  },
+  "latch_sa3_spectral_kurtosis": {
+    "note": "Dead at any weight in the 14-head sweep — perturbs CE without actually steering."
+  },
   "latch_sa3_hardness": {
-    "add_links": ["renders/hardness_bracket_2026-07-10/index.html"],
-    "note": "probe-quality only — guidance fails quality gates at all gains (two-stage negative, see bracket page)"
+    "add_links": [
+      "renders/hardness_bracket_2026-07-10/index.html"
+    ],
+    "note": "Guidance steers monotonically in the right direction (69.4→60.2/77.3 vs 59/73 targets) but fails audio-quality gates at all gains tested — a two-stage negative overall."
+  },
+  "onset_FUSION_lr8e5_10epoch": {
+    "note": "Higher-LR FusionOpt variant, 10 epochs — no distinct standalone quality verdict recorded beyond the general optimizer-bracket findings."
+  },
+  "latch_sa3_rms_drums": {
+    "note": "Trained in the same batch as the other energy heads but not individually covered by the 14-head steering-sweep verdict — not yet confirmed strong or dead."
+  },
+  "_probe_b2": {
+    "note": "Infra-only batch-size probe (not a trained content model) — used to pick a safe training batch size."
+  },
+  "dora64_avp_tiered_lr1e4": {
+    "note": "r64 tiered-caption arm (1e-4) — same caption-diversity-fixes-collapse result as its lr2e4 sibling; part of the recipe validation (r64 + tiered captions + early-stop ~ep7-9)."
+  },
+  "dora16_avp_originals_densewin": {
+    "note": "One of the fine epoch-window renders that fed the ep7-9 vs. ep31 dual-sweet-spot analysis — see dora128adj_avp_aug10_lr1e4 / the degradation-report findings for the consolidated verdict."
+  },
+  "latch_sa3_rms_energy_body": {
+    "note": "Moderate steerer in the 14-head gain-512 sweep."
+  },
+  "soups_dora_caut": {
+    "note": "Soups of the diverged cautious-masking run — only the ep0–2-derived blends (expasc/expdesc/goodearly) are healthy; treat as palette options, not defaults."
+  },
+  "dora128_newcap_continued_3more": {
+    "note": "3-epoch warm-started continuation of the newcaptions run (loss 0.766→0.747), producing the \"ep7-equivalent\" newcaptions checkpoint referenced in later caption-system comparisons."
+  },
+  "riffer_400trk_lr1e-4_crop1024": {
+    "note": "Retrained at more data / lower effective LR to test whether that smooths the riffer effect — reference-specific tracking confirmed, same lr1e-4 peak-then-elbow shape as the 200trk bracket."
+  },
+  "onset_density_FULL_3000_crop1024": {
+    "note": "Full-dataset retrain attempt — crashed at step ~2000 on a junk silence.npy crop; superseded by the _c variant after the dataset fix."
+  },
+  "dora16_avp_originals_win7": {
+    "note": "One of the fine epoch-window renders that fed the ep7-9 vs. ep31 dual-sweet-spot analysis — see dora128adj_avp_aug10_lr1e4 / the degradation-report findings for the consolidated verdict."
+  },
+  "onset_FUSION_lr2e5_40epoch": {
+    "note": "The ONNX reference head — monotonic, calibrated steering (density 3→4.88, 11→11.15 onsets/sec); soup_exppeak.pt from this run is baked into the shipped ONNX DiT control graph."
+  },
+  "riffer_200trk_6e-4_adamw_wu": {
+    "note": "Highest-LR bracket variant (with warmup) — same bracket that established heavier LR mode-collapses outputs across references."
   }
 }
