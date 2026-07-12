@@ -10,6 +10,218 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — timbral extraction: m4a decode bug + a pkill lesson
+
+- Two real incidents chasing what first looked like ONE memory-pressure problem.
+  (1) WINTERMUTE's co-resident training OOM'd twice; my "downshift jobs 12→8" fix
+  used `pkill -f "extract_timbral_hdb.py --mode tracks"`, which only matches the
+  orchestrator's own argv — its already-spawned `--single` subprocess.run() children
+  survive (different cmdline), so old workers stacked under each new batch. Found
+  15-20 workers running simultaneously, RAM at 73GB used, swap FULLY exhausted
+  (511/511Mi). Fixed by killing on the script's basename alone (`pkill -f
+  extract_timbral_hdb.py`, catches orchestrator + children); saved as a memory
+  (`pkill-orphaned-subprocess-children`) since it's the same MASTER §5
+  kill-the-process-group lesson in a new spot and will recur on any future
+  subprocess.run()-fanout batch script here.
+  (2) Separately, after the RAM was clean, extraction items STILL failed 100% —
+  turned out unrelated: `libsndfile` (soundfile's decoder, which `timbral_models`
+  uses) cannot open m4a/AAC containers at all ("Format not recognised"), 100%
+  reproducible regardless of system load. 96/4470 goa tracks are m4a-sourced
+  (mp3/ogg/aiff/flac/wav all decode fine — only m4a is broken); the failures just
+  happened to cluster in corpus-sort-order near the OOM incident, making the two
+  problems LOOK like one. Fixed `extract_timbral_hdb.py`'s `process_track()`:
+  m4a sources get pre-transcoded to a `/dev/shm` wav via ffmpeg before analysis.
+  Verified on the exact failing track (was a hard fail, now succeeds with real
+  values). Corrected the record with WINTERMUTE rather than let the wrong
+  root-cause attribution stand.
+- Relaunched (jobs=8, healthy memory, no zombies) — whole-track pass continuing.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — spec §14 explainer retrofit (breathing.html, rarity.html)
+
+- Kim's team directive: the three-audience standard (eval tool / technical resource /
+  plain-language learning resource) is now a hard requirement, opportunistic retrofit
+  on next touch. Added the "What this tests / how to read it" findings-box to the two
+  highest-visibility pages I own (Kim's actively using breathing.html tonight; rarity.html
+  just landed real scores) — a2a noise-scheduling + the loop-attractor problem for
+  breathing.html, MERT kNN rarity percentile + what a positive delta means for
+  rarity.html. mp.html's cross-model section and dora_results.html (already marked
+  superseded) left for a later opportunistic touch, not urgent right now.
+- Leak-scan clean, DOM-harnesses re-verified on both after the rebuild. Handed to
+  WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — memo_ckpt_a2a_test upgraded to a proper nl x variant table
+
+- CONTINUITY's memo a2a high-nl re-run landed (6 new clips: nl 0.65 + 0.80 alongside
+  the original 0.50, across ep63_cfg2/ep63_cfg6/ep7_cfg2 — Kim's ask). The page was
+  a generic 3-clip `write_folder()` grid; upgraded to a dedicated 3x3 same-playhead
+  table (`write_memo_a2a_folder`, new writer in `build_evals.py`, wired into the
+  main routing chain by exact name match like the other one-off writers).
+- First page built under Kim's new eval-tables spec §14 (three audiences: tool /
+  technical resource / plain-language learning resource) — added the "What this
+  tests" explainer block (the Underfit-memo prediction: an overtrained/memorized
+  checkpoint should be the STRONGER a2a tool at low CFG, since its absorbed style
+  prior dominates the prompt) above the table, per WINTERMUTE's ship-time gate.
+- Landing-category gotcha: this dir is deliberately named `memo_ckpt_a2a_test` (NOT
+  `a2a_*`-prefixed) to avoid colliding with `A2A_LADDER_RE`'s sibling-folder
+  auto-grouping (a different mechanism, caught earlier this session) — which meant
+  it fell through today's new `LANDING_CATEGORIES` "a2a & transitions" regex too.
+  Broadened that pattern to also match `_a2a_` as a substring (checked for false
+  positives — clean), not just a name-prefix.
+- Leak-scan clean (both the page and the full index — same 2 pre-existing known
+  hits, nothing new). Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — evals landing page: categorized (kills the "wall of links")
+
+- Kim's ask (via CONTINUITY's design, routed here since this file's actively edited
+  today): the flat "All runs, newest first" list (56 items) read as an undifferentiated
+  wall of links. Replaced it AND the separate Control-runs/Renders kind-split section
+  (both cruder groupings of the same 56 items — 3 overlapping listings wasn't helping)
+  with one categorized view: `LANDING_CATEGORIES` (name-prefix/regex -> category,
+  first-match-wins, most-specific patterns checked before the broad control/FiLM
+  catch-all), newest-first WITHIN each category, undated fallback "other".
+- Folded in WINTERMUTE's same-session §14 addition to the eval-tables spec (three
+  audiences: tool / technical resource / plain-language learning resource) for the
+  landing page's slice of that gap: each category now also gets a one-line plain-
+  English tagline under its header (what DoRA/avp, a2a, LatCH, rarity, long-form,
+  control/FiLM actually mean). Mid-air overlap avoided — W was about to add the same
+  taglines, flagged in time, W stood down (point 4 in their ack), full page-level
+  pedagogical blocks stay opportunistic-retrofit per W's plan (their layer_map page
+  is the prototype shape to reuse).
+- Leak-scan: 2 pre-existing hits (same known `dora128_everything_8ep_lr1x_ep7_sweep`/
+  `_steps_diag` href names WINTERMUTE already confirmed zero live exposure on,
+  local-cache-only, not introduced by this change). Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — mobile popup-offset bug fixed site-wide
+
+- Kim's report: the waveform popup player renders offset off-screen on phone
+  (flagged on `dora128_everything_8ep_lr1x_ep7_sweep`). Root cause: `html`/`body`
+  had no `overflow-x` constraint anywhere on the site — if ANY content on a page
+  is wider than the viewport, mobile browsers expand the layout viewport to fit
+  it, and the popup's `position:fixed;left:50%` centering then centers against
+  that expanded width instead of the visible screen, so it appears shifted off
+  to the side. Fix: `overflow-x:hidden` on `html`+`body` everywhere (`max-width:
+  100vw` on body too) — the general defensive fix for this whole bug class, not
+  just the one flagged page.
+- Applied to: `Misc/build_evals.py`'s shared `CSS` (covers all 43+ build_evals.py-
+  generated pages via the shared `evals.css`, including the flagged one) and the
+  4 standalone page generators (`build_breathing_page.py`, `build_rarity_page.py`,
+  `~/build_dora_results_page.py`). Also wrapped every wide table (`rarity.html`'s
+  6-col x 150-row tables; `dora_results.html`'s `metricsTable`/`playGrid`, up to
+  15 columns) in a `.tblwrap{overflow-x:auto}` container — clipping the body
+  doesn't help if a table itself was the thing overflowing; wide content needs
+  its own scroll container to stay reachable, not just get clipped away.
+- Leak-scan clean, DOM-harnesses re-verified (breathing/rarity) after rebuild.
+  Ready for the next publish pass.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — rarity.html: column reorg (task #33)
+
+- Kim's tasking (via WINTERMUTE): rebuild `rarity_gen_set` (450 clips: 3 models
+  {base, newstack, evr1x} x 150 stratified prompts {50 common/mid/rare}) as a
+  COLUMN layout — one row per prompt, one column per model, plus delta-to-base
+  columns for CONTINUITY's rarity-lite score (not landed yet — scoring ownership
+  went to CONTINUITY per WINTERMUTE's call this session).
+- Ground truth for grouping: `clip_index.json` in the Mantu source dir (clip-stem
+  -> {prompt, band, seed, source}) — verified all 3 models share the SAME prompt
+  text per (band, promptid) group (150 groups x 3, each model with its own random
+  seed) before building the row structure, rather than assuming the filename's
+  numeric promptid was directly comparable. New generator `Misc/build_rarity_page.py`.
+  Delta columns show "pending" until a `rarity_scores.json` (documented convention:
+  `{clip_stem: score}`, same keys as clip_index.json) appears next to it — the
+  layout is built now so scores populate automatically once CONTINUITY's pass lands,
+  per Kim's explicit ask ("build the layout now w/ delta cols populating when
+  scores land").
+- Leak-scan clean, DOM-harness verified (450 cells, cross-cell switching, toggle-stop).
+  Clips at `clips_rarity/` (450 files, 128k AAC). Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — breathing.html: the #35 conditioning-lever breakthrough
+
+- CONTINUITY's ask (Kim actively listening): page `promptarc_single_kaikkialla_nl65/dual_lora.wav`
+  — the #35 finding that high-nl static is a CONDITIONING problem, not a noise problem
+  (8-section rich prompt-arc @ nl 0.65, single adapter, HF-var 0.364 — 10x the generic-
+  prompt-at-nl.70 baseline of 0.035). Added as a 4th section on breathing.html
+  (`render_promptarc()`), sharing the same global playhead as v1/v2/v3. Rather than
+  duplicating a baseline clip, cross-referenced v3's ALREADY-STAGED `baseline_fixed_nl_v3`
+  (single-adapter, single generic prompt, nl 0.70) as the direct A/B — it's literally the
+  "overshoot" comparison row in this run's own FINDINGS.md table, so no new baseline
+  render was needed. Leak-scan clean, DOM-harness regression-checked. Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — timbral crop sidecars COMPLETE (5400/5400)
+
+- WINTERMUTE's LatCH-training dependency: `extract_timbral_hdb.py --mode crops` finished,
+  ~10.3h runtime (--jobs 12), 5400/5400 `latents_sa3` crops now have `<idx>.TIMBRAL.json`
+  (hardness/depth/booming). 5398 real extractions + 2 genuinely silent windows (003517,
+  004770 — `timbral_models` correctly raises "Input file is silence, cannot be analysed",
+  confirmed by hand, not a pipeline bug) — wrote an explanatory sidecar (null values +
+  `skip_reason`) for those two so they don't read as an unexplained gap to whoever looks
+  next. Handed off to WINTERMUTE. Now launching `--mode tracks` for the whole-track
+  corpora (avp source 170 + goa 4461 ≈ 4631 tracks) — not a dependency for anyone, runs
+  in the background.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — breathing.html: v2 added, same-playhead across versions
+
+- CONTINUITY's fast follow-up (Kim's listening verdict on v1 → same-day v2 fix): asked
+  W/G to add v2 (`breathing_kaikkialla_evr1x_v2/`, full-range 0.30-0.62 + source-break
+  ducking) to breathing.html so Kim can A/B v2 vs v1 vs baseline. Restructured the
+  generator (`render_version()`) so both versions render through the same code path —
+  findings box, recipe line, A/B pair, trajectory SVG — sharing ONE global `abAu`/`abCur`
+  so switching between ANY of the 4 clips (v1 breathing/baseline, v2 breathing/baseline)
+  keeps the playhead position, not just within a version.
+  v1 and v2 have DIFFERENT baselines (requested_nl 0.55 vs 0.62 — confirmed via md5sum
+  before assuming they were interchangeable), so all 4 clips are distinct, clearly labeled.
+  Kim's verdict text (folded into v1's FINDINGS.md by CONTINUITY) gets its own highlighted
+  `.verdict-box` split out from the findings prose — it's a directive, not an observation,
+  worth visually distinguishing.
+- DOM-stub harness verified cross-version switching specifically (the thing most likely
+  to break — v1 cell classes must clear when a v2 cell starts playing, etc.) — passed.
+  Leak-scan clean. Clips at `clips_breathing/` (+`_v2` suffixed pair). Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — breathing.html (the #35 controller headline result)
+
+- CONTINUITY's flag: `breathing_kaikkialla_evr1x_nl55/` (tier-1 GPU validation of the
+  #35 breathing-noise controller) was page-ready but unpaged — "tonight's headline
+  result." Doesn't fit any existing template (a2a ladder pages are nl x adapter
+  tables; this is one A/B pair + a per-window trajectory) — new standalone page
+  `~/riffer-evals/breathing.html`, generator `Misc/build_breathing_page.py`.
+  Self-contained inline SVG line chart (nl + novelty per window, floor/median
+  reference lines, no canvas libs/CDN) — CONTINUITY's own suggested visualization
+  ("plot nl + novelty vs window; the controller visibly breathes").
+- Content: FINDINGS.md verbatim (VALIDATED — nl breathes 0.55→0.45→0.55 at the loop
+  window, w3-6 mean novelty +13% vs fixed-nl baseline), same-playhead A/B (breathing
+  vs baseline_fixed_nl, full ~7:40 track), calibration stats. Checkpoint shown as
+  "evr1x" (established shorthand), never the raw ckpt path. Source track is Kim's
+  own (Kaikki-Alla) — no rights question. The sibling `breathing_kaikkialla_evr1x/`
+  (no `_nl55` suffix, requested_nl=0.7) is the earlier flat-trajectory attempt the
+  trailing-context fix corrects — deliberately not paged, superseded by this run.
+- Verified via a JS DOM-stub harness (A/B toggle, cross-clip switching, stop-on-re-click).
+  Leak-scan clean. Clips at `clips_breathing/` (128k AAC). Handed to WINTERMUTE.
+
+## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — mp.html cross-model checkpoint-pulldown section
+
+- CONTINUITY's mp_crossmodel/ ask (Kim's "checkpoint pulldown" request): wired 48 clips
+  (8 checkpoints x 6 prompts, uniform steps16/cfg5/dur47/seed1234/DoRA1.0) into
+  `~/riffer-evals/mp.html` as a new self-contained section (own `xm*`-prefixed JS
+  namespace to avoid colliding with the page's existing gain x density grid code —
+  the two eval types have unrelated data shapes, not worth forcing into one structure).
+  New generator: `Misc/build_mp_crossmodel.py`. Always-visible 6-prompt legend +
+  per-checkpoint training-recipe line (rank/alpha/optimizer/lr/epoch-of-total/corpus,
+  sourced from `eval/mp_checkpoint_recipes.json`) that updates with the pulldown,
+  per Kim's "visible not hover" UI rule.
+- Two real bugs caught before shipping: (1) leak — the `everything` recipe's free-text
+  `note` field embedded a raw ckpt filename (`epoch=7-step=12216.ckpt`) inline; added a
+  prose-scrubbing regex (structured fields like rank/lr/corpus stay as-is, only free
+  text gets the ckpt-filename pattern redacted). (2) unicode — used `json.dumps(...)`
+  for HTML-escaping prompt text, which ASCII-escapes non-ASCII by default (`ensure_ascii=True`)
+  → "aavepyörä" rendered as the literal string `aavepyörä` on the page; fixed
+  by using `html.escape()` instead (the right tool for HTML context, not JS-string
+  escaping). Also hit a Python name collision: a local `html` variable (the page's
+  text content) shadowed the `html` module import — renamed to `page`.
+  Both caught by a hand-rolled JS DOM-stub harness run against the real built page
+  (dropdown population/default-selection, checkpoint switching, recipe text updates,
+  play/toggle/stop) — same pattern that caught real bugs earlier this session; code
+  review alone would likely have missed the unicode one.
+- Leak-scan clean on the final build. Clips transcoded to `clips_mp_crossmodel/`
+  (128k AAC). Handed to WINTERMUTE for publish.
+
 ## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — a2a_angelic_r64tiered_lr1e4 ladder page + a2a-group date bug
 
 - CONTINUITY's ask (Kim-directed GPU render): page 2 new a2a full-track noise ladders —
@@ -1497,3 +1709,12 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
   artifact from the pre-crash boot). Handed to WINTERMUTE.
 - [2026-07-09 11:42] (WINTERMUTE) tempo_iqr meter on fresh ladders CONFIRMS LR-window hypothesis: arm G (r128@lr1e-4) flat tempo-stable across full 3000-step run (mean iqr 0.94, max 5.67, never collapses) vs r16@lr2e-4 narrow window (locked ~1152-1440, collapsed >1700). r16 fine ladder reproduces C's U-shape + ep31 notch independently; ep31-34 = narrow stable island (not single spike). Tool: mir/src/tools/tempo_iqr.py (clip-dir -> tempo_iqr; rank ckpts by ckpt_tempo_iqr_MEAN not median -- median floors at 0 on stable ladders). Feeds C's ship_checkpoint_picker.py.
 - [2026-07-09 17:50] (WINTERMUTE) pending-D reanalyze COMPLETE: 1346/1346 avp aug variants have full CPU MIR features (src/tools/reanalyze_variants.py, subprocess-isolated after in-process pool hung twice -- madmom segfault then silent 3h hang; subprocess.run per-variant w/ 600s timeout + retry-passes = 0 quarantined). 255 bpm-canary flags = madmom metrical ambiguity (2x/1.5x clusters), not transform errors; data sound. Phase 2 (audiobox+essentia GPU features) deferred to card-free window.
+- [2026-07-10 02:57] (wintermute) Kim's asks executed: (1) journals deployed to aavepyora.online/files/profiles/ (leak-scanned; renderer needs ##day/###entry — 8 invisible W entries fixed, C/G/F flagged for theirs). (2) All 4 repos pushed to the private remotes: mir sa3-latent-explorer (JSONL dataset-cache migration + reanalyze_variants/tempo_iqr/recurrence_meter tools + dataset-release spec), SAO sa3-style-adapter (lumi EFP bundle + journal/site), SAT main (2 waiting commits), SA3 latch-sa3-phase1 -> fork (9 commits incl familiarity_beta, warm_start, normalize-not-clamp). NB SA3 'origin'=Stability upstream, push target is 'fork'. (3) recurrence_meter.py LANDED in mir/src/tools (v3 whitened-patch, novelty_curve+calibrate_source) for C's #35.
+
+## 2026-07-10 — FOR KIM (rights question, flagged by G, C concurs): public a2a-ladder pages serve audio DERIVED from a real commercial track (Hallucinogen - Angelic Particles re-rendered via a2a) on aavepyora.online. Not a leak-convention issue (track name is descriptive, not plumbing) — a COPYRIGHT/rights call that's yours alone. No emergency action taken: it's a standing state (you designed the public mirror + audition there), not a surprise; pages left up to preserve your audition workflow. Your call on whether public serving of commercial-derived a2a audio is OK or should be gated/pulled. Applies fleet-wide to ALL a2a_*_evr1x + a2a_angelic_r64tiered ladder pages.
+- [2026-07-10 03:33] (wintermute) LAYER MAP LANDED (Axis-1 causal localizer, layer_patch_map.py, 1728 patching cells on medium-base): acoustic attributes (onset/bass/brightness/noisiness) localize to LATE blocks 16-23 via self_attn+ff; cross_attn ~0.00 single-layer everywhere (contrast TADA's categorical 12/13 bottleneck); rhythm engages self_attn earlier (12-19) than timbre. Routing: DoRA rank -> late self_attn+ff as SOFT AdaLoRA prior. Meter lesson: p95-gated peak-pick replaces plain onset_detect for cross-prompt comparison (3x over-fire on drones). FINDINGS.md + run_meta + jsonl in sa3_control_runs/layer_map_2026-07-10. Follow-ups: layer-group + timestep-resolved patching (Axis-2 feed).
+- [2026-07-10 14:16] (wintermute) HARDNESS LatCH HEAD trained + STEER-VERIFIED (Kim's task): new scalar_json target-source in the latch trainer (constant (1,T) from G's .TIMBRAL.json sidecars, pooled readout), 5398 crops, EMA recipe 20ep loss .49->.127. Guidance smoke at gain 512: baseline hardness 69.4 -> steered-down 60.2 (target 59) / steered-up 77.3 (target 73) — monotone, near-target, 17-pt spread = strong steer, energy-family gain regime confirmed for timbral scalars. Ckpt latch_sa3_hardness_best.pt in the medium dir (goa-trained = tier-2 policy, weights stay private). Same path now trivially retrains depth/booming heads. GPU FREE.
+- [2026-07-10 15:20] (wintermute) NEGATIVE + STANDING LESSON (Kim's ear on the hardness steer smoke): gain-512 steered clips are perceptually BROKEN (buzzing; 'concrete slab' / 'dentist's drill') despite the target meter moving monotone+near-target — guidance moved the meter by destroying audio. Kim's directive, fleet-wide: EVERY steer/control eval runs the established quality metrics (Audiobox CE/PQ, zero-crossings) alongside the target meter; target-only readouts are invalid. Direction correct -> head plausibly fine at lower gain/rho-mu; re-bracket WITH quality gates before claims. Annotated in run_meta + journal + the live page. Also: same-playhead player wedge FIXED everywhere (ph not reset on 'ended' -> every next clip seeked to last 50ms; guard in all 16 generators/pages, G-harness-verified).
+- [2026-07-11 12:12] (continuity) Essentia model zoo mirrored LOCALLY in full (Kim ask: 'their distribution is uncomfortable'): 30GB, 427 .pb (+onnx/json) at mir/models/essentia-zoo/ preserving upf.edu structure; audioset-vggish-3 trunk copied flat into mir/models/essentia/ -> the binary mood_happy/sad/... + emomusic valence/arousal heads are now runnable (they were headless before). Resume/update: re-run the wget -N mirror line in models/essentia-zoo-mirror.log.
+- [2026-07-11 18:41] (ghost-note) MODEL MATRIX overnight render COMPLETE (Kim's priority, uncapped after 08:48): eval/model_matrix_gen.py, manifest-driven per W's build_model_matrix.py schema, consumed C's rarity_bracket_manifest.json v2 (19 models + 7 legacy nested goa-dora runs incl the HoF must-include x20b3ygb ep3, + base) x 12 prompts (rarity-band stratified + a new 2642-entry kimlong-style prompt pool sourced from Lehto/latents' music_flamingo_full captions, eval/kimlong_pool.json) x cfg{1,7,16} x DoRA-strength{0.6,1.0,1.5} -> 6912 manifest cells, zero errors, survived a mid-run bitrate restart (128k->192k AAC per Kim's directive) with zero loss via resumability. Feeds the live model_matrix.html board. Not covered: 36 control-adapter/LatCH-head models (different knobs, needs its own eval shape -- flagged, not silently dropped). Also built (Kim ask): /home/kim/Projects/latents_sa3/DATASET_STATS.md, a central stats index living at the dataset root (not a repo) -- consolidates the timbral triad (computed corpus-wide for the first time: crop-level hardness 66.4±3.8/depth 60.3±3.6/booming 34.6±3.1, n=5398), the feature-analysis docs, the reverb baseline, and confirmed W's 2026-07-08 feature-latent xcorr run WAS analyzed (docs/layer-feature-noise-invariance.md), just not indexed as one thing until now. CONTINUITY already added a mood/theme entry -- convention adopted fleet-wide same day.
+- [2026-07-12 12:16] (ghost-note) Kim's matrix-wide FEEDBACK, verbatim (relayed via CONTINUITY, recorded in model_matrix's run_meta.json kim_feedback per manifest v2 since it spans many checkpoints, not one): "almost universally results got better or didn't get worse at WEIGHT 1.5" -- corroborates C's fixed-alpha damping hypothesis (high-rank runs damped to s~0.35, so inference strength 1.5 partially compensates, 1.5x0.35~0.53; predicts optimal strength should be LOWER on r16 arms, untested). Also: "some prompts changed little -- training is not spilling over everywhere" (disentanglement praise). Separately, C proposed an open-comment-field feature (per-checkpoint/clip/page, IP-keyed, Kim's-IP comments auto-merge into kim_feedback to clear the ❗) -- W owns server+collection endpoint, I own the manifest-merge side once it exists; not built yet, this WORKLOG entry is the interim durable record so the quote isn't lost in the meantime.
