@@ -1,0 +1,49 @@
+{
+  "_comment": "KAQ — Kim's Asked Questions. THE-FINN owns the content going forward (add entries as Kim asks recurring questions + their settled answers). WINTERMUTE owns the page build (build_kaq.py -> kaq.html). Each entry: section, q, a (HTML ok), links [{text,href}]. Keep answers to the SETTLED conclusion, link to depth. Newest-relevant first within a section.",
+  "sections": [
+    {
+      "title": "Models & training",
+      "entries": [
+        {"q": "Which rank is the good option — 16 or 128?",
+         "a": "<b>128.</b> Rank-16 adapters are consistently harsher (more high-freq energy + zero-crossing distortion) and lower quality (CE/PQ), and glitch ~6× worse when the DoRA weight is pushed to 1.5. Rank-128 (and 64) hold their quality. Three independent metric axes agree.",
+         "links": [{"text": "stats page", "href": "stats.html"}]},
+        {"q": "What about training length — how many epochs?",
+         "a": "For rank-128, the quality sweet spot is <b>early (ep0–4)</b>. More epochs overtrain (CE/PQ fall), fastest at high learning rate (lr3x craters CE 5.81→4.82 by ep7). The exception is <b>augmentation</b> — the aug10 run keeps improving out to ep74. So: more epochs ≠ more quality unless you augment.",
+         "links": [{"text": "stats page (training-length curves)", "href": "stats.html"}]},
+        {"q": "Did we do the 0.5× LR model?",
+         "a": "The everything-corpus sweep had only lr1x (2e-4) and lr3x (6e-4) — <b>no low end</b>, until 2026-07-12 when the 0.5× (lr 1e-4) run was launched to fill it. Motivated by the training-length finding: since lr3x overtrains, a halved LR should train slower/more stably and support longer training + longer crops.",
+         "links": []},
+        {"q": "Can we train on longer clips with rank 128?",
+         "a": "Likely yes at <b>batch 1</b>. Doubling crop duration ~quadruples attention memory, but dropping batch 4→1 roughly offsets it (break-even VRAM), so rank-128 longer crops should fit. Needs a quick smoke test to confirm before a full run.",
+         "links": []}
+      ]
+    },
+    {
+      "title": "Finding things on the site",
+      "entries": [
+        {"q": "Where are the evals / the new stuff? I can't find them.",
+         "a": "Start at the <a href=index.html>evals landing</a>. The big cross-model board is the <b>Model Matrix</b> hero at the top; below it the <b>Models index</b>, the <b>Statistics</b> page, and a <b>Recently added</b> strip. Everything else is in named sections (DoRA/avp, a2a &amp; transitions, LatCH, mechanism/interpretability, control/FiLM), newest-first.",
+         "links": [{"text": "landing", "href": "index.html"}, {"text": "model matrix", "href": "model_matrix.html"}]}
+      ]
+    },
+    {
+      "title": "Metrics & how to read a page",
+      "entries": [
+        {"q": "What metrics do we use / trust?",
+         "a": "Our established set: <b>Audiobox CE/PQ/CU/PC</b> (aesthetic quality, 1–10), <b>zero-crossing rate</b> + <b>hf_ratio</b> (&gt;5 kHz energy = harshness/distortion), <b>p95-gated onset density</b> (the honest onset meter — plain onset-detect over-fires ~3× on drones), spectral centroid/flatness/flux, BPM. All 14 are in the per-clip metrics DB over every eval clip.",
+         "links": [{"text": "statistics", "href": "stats.html"}]},
+        {"q": "How should I evaluate a steering page — many clips are just buzz?",
+         "a": "Play the <b>α 0</b> baseline then <b>α +2</b> (the operating point): does +2 move toward the concept while staying musical? The <b>α ±6</b> clips are <i>deliberately</i> past the safe range — they're supposed to buzz (it confirms the trust-region limit), so ignore them for quality.",
+         "links": [{"text": "layer map + steering", "href": "renders/layer_map_2026-07-10/index.html"}]}
+      ]
+    },
+    {
+      "title": "Infra / GPU",
+      "entries": [
+        {"q": "Can we batch metrics on the GPU since clips are the same length?",
+         "a": "Only <b>Audiobox CE/PQ</b> is a GPU/neural metric, and on our card batching gives ~no speedup (WavLM saturates per clip, ~1.5s/clip either way — though steady-state throughput is much better than a cold start). Every other metric is CPU (librosa/essentia) and parallelizes across cores instead.",
+         "links": []}
+      ]
+    }
+  ]
+}
