@@ -2613,6 +2613,8 @@ def build_landing(control, renders):
             '<i>In active build &mdash; rendering across all models now.</i></div></div>')
     doc += ('<p class="dim">📇 <a href="models.html"><b>Models index</b></a> — every trained '
             'model and which tests exercised it (the awareness page; barely-tested flagged).</p>')
+    doc += ('<p class="dim">📊 <a href="stats.html"><b>Statistics</b></a> — the whole zoo measured '
+            '(31k clips × 14 metrics): rank 128 vs 16, the training-length sweet spot, CE/PQ leaderboard.</p>')
     # Kim, 2026-07-12: "I have great trouble finding the new evals" — the categorized
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).

@@ -122,6 +122,12 @@ def main():
                f'moment. Recipes + training data under each header — this page doubles as the record of '
                f'how each model was made. Coverage now: <b>{n_models_lit}/{len(models)} models have '
                f'renders</b>{" — awaiting the overnight run" if not entries else ""}.</div>')
+    doc.append('<div class=how style="border-left:3px solid #5d9;padding-left:10px"><b>What the numbers say '
+               '(see <a href="stats.html">Statistics</a>):</b> <b>rank 128 is the good option</b> — rank-16 '
+               'adapters are harsher and lower CE/PQ, and glitch ~6× worse at DoRA weight 1.5. On <b>training '
+               'length</b>: for rank-128 the quality sweet spot is <b>early (ep0–4)</b>; more epochs overtrain '
+               '(CE/PQ fall), fastest at high LR — unless you <b>augment</b> (the aug10 run keeps improving to '
+               'ep74). So when auditioning, prefer the early checkpoints of the un-augmented rank-128 runs.</div>')
 
     payload = {"models": meta, "data": data, "prompts": prompts,
                "cfgs": list(CFGS), "strengths": list(STRENGTHS)}
