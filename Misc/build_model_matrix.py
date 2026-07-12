@@ -108,6 +108,24 @@ def main():
             "note": ov.get("note", ""), "ckpts": sorted(cov.get(m["label"], {}).keys()),
         }
 
+    # per-(model,ckpt) GOOD-FRACTION from clip_metrics.db — operationalizes Kim's
+    # "verdicts should be distributional, not good/bad" (2026-07-12): fraction of a
+    # checkpoint's rendered cells with CE >= 6.0 (an interpretable enjoyment bar;
+    # calibratable once Kim's in-place ratings flow). gf["model|ckpt"] = [pct, n].
+    gf = {}
+    _dbp = Path("/home/kim/Projects/SAO/eval/clip_metrics.db")
+    if _dbp.exists():
+        import sqlite3
+        _con = sqlite3.connect(_dbp)
+        _agg = {}
+        for _p, _ce in _con.execute("SELECT path, ce FROM metrics WHERE path LIKE '%/model_matrix/%' AND ce IS NOT NULL"):
+            _b = _p.split("/model_matrix/")[-1].split("__")
+            if len(_b) < 2:
+                continue
+            _agg.setdefault(f"{_b[0]}|{_b[1]}", []).append(_ce)
+        for _k, _v in _agg.items():
+            gf[_k] = [round(100 * sum(1 for x in _v if x >= 6.0) / len(_v)), len(_v)]
+
     n_models_lit = sum(1 for v in cov.values() if v)
     doc = [f"<!doctype html><html><head><meta charset=utf-8><title>Model matrix</title><style>{CSS}</style></head><body>"]
     doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell</b> <span id=pos></span>'
@@ -130,7 +148,7 @@ def main():
                'ep74). So when auditioning, prefer the early checkpoints of the un-augmented rank-128 runs.</div>')
 
     payload = {"models": meta, "data": data, "prompts": prompts,
-               "cfgs": list(CFGS), "strengths": list(STRENGTHS)}
+               "cfgs": list(CFGS), "strengths": list(STRENGTHS), "gf": gf}
     # manifest_live.jsonl = only entries whose m4a exists in staging (my sync loop
     # ships it beside the clips). The page fetches it at LOAD TIME and rebuilds MM
     # client-side -> the served board self-updates on every data rsync, no html
@@ -209,6 +227,9 @@ function render(){
       (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
    h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
    h+='<div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
+   if(st.ckpt&&MM.gf){const g=MM.gf[st.model+'|'+st.ckpt];
+    if(g){const pct=g[0],col=pct>=60?'#5d9':(pct>=40?'#ca7':'#a66');
+     h+='<div class=cov style="color:'+col+'" title="fraction of this checkpoint\\'s cells with Audiobox CE>=6.0 — a distributional verdict, not good/bad (Kim 2026-07-12)">&#9733; good-fraction '+pct+'% <span style="color:#778">('+g[1]+' cells, CE&ge;6)</span></div>'}}
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
      // skip prompts this model/ckpt has zero coverage for — otherwise an

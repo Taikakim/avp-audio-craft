@@ -13,6 +13,9 @@
         {"q": "Did we do the 0.5× LR model?",
          "a": "The everything-corpus sweep had only lr1x (2e-4) and lr3x (6e-4) — <b>no low end</b>, until 2026-07-12 when the 0.5× (lr 1e-4) run was launched to fill it. Motivated by the training-length finding: since lr3x overtrains, a halved LR should train slower/more stably and support longer training + longer crops.",
          "links": []},
+        {"q": "What DoRA weight (inference strength) should I use — 1.0 or 1.5?",
+         "a": "By ear across the matrix (Kim, 2026-07-12): <b>weight 1.5 is almost universally as-good-or-better</b>, and <b>training is disentangled</b> — some prompts change little, so the adapter isn't spilling over everywhere. (Hypothesis being tested: high-rank runs are damped to ~s0.35 at train time, so inference strength 1.5 partially compensates → optimal strength should be <i>lower</i> on rank-16 arms.)",
+         "links": [{"text": "model matrix", "href": "model_matrix.html"}]},
         {"q": "Can we train on longer clips with rank 128?",
          "a": "Likely yes at <b>batch 1</b>. Doubling crop duration ~quadruples attention memory, but dropping batch 4→1 roughly offsets it (break-even VRAM), so rank-128 longer crops should fit. Needs a quick smoke test to confirm before a full run.",
          "links": []}
