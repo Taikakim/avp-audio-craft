@@ -1644,6 +1644,7 @@ AUDIT_JS_TEMPLATE = r"""
 (function(){
 const D = __DATA__;
 const CHECKPOINTS = __CHECKPOINTS__;  // [tag, ...] sorted
+const AUDITED = __AUDITED__;  // tag -> bool (manifest v2 kim_feedback check, spec §16)
 const COLS = [
   { key: 'prompt', label: 'prompt', get: r => r.prompt, kind: 'str' },
   { key: 'seed', label: 'seed', get: r => r.seed, kind: 'num' },
@@ -1707,7 +1708,7 @@ function render() {
   const select = document.createElement('select');
   CHECKPOINTS.forEach(tag => {
     const opt = document.createElement('option');
-    opt.value = tag; opt.textContent = tag;
+    opt.value = tag; opt.textContent = (AUDITED[tag] ? '' : '❗ ') + tag;
     if (tag === checkpoint) opt.selected = true;
     select.appendChild(opt);
   });
@@ -1810,20 +1811,25 @@ def order_checkpoints(names, dates=None, preference=ONSET_CHECKPOINT_PREFERENCE)
 
 def render_checkpoint_audit_page(*, head_html: str, title: str, label: str, purpose: str,
                                   date_str: str, records: list[dict], footer_html: str,
-                                  checkpoint_dates: dict = None) -> str:
+                                  checkpoint_dates: dict = None, checkpoint_audited: dict = None) -> str:
     """Single-pane multi-checkpoint browser: one dropdown over every checkpoint
     (independent experiments, e.g. many onset-control training runs), one
     sortable table for whichever is selected. records: concatenation of
-    load_grid_data() calls across many source dirs, one call per checkpoint."""
+    load_grid_data() calls across many source dirs, one call per checkpoint.
+    checkpoint_audited: name -> bool, manifest v2 kim_feedback check (spec §16) --
+    unaudited checkpoints get a red-exclamation prefix in the dropdown."""
     checkpoints = order_checkpoints({r["checkpoint"] for r in records}, checkpoint_dates)
+    checkpoint_audited = checkpoint_audited or {}
     n_scored = sum(1 for r in records if r["CE"] is not None)
+    n_unaudited = sum(1 for c in checkpoints if not checkpoint_audited.get(c))
     doc = head_html
     doc += f'<h1>{html.escape(label)}</h1>'
     if date_str:
         doc += f'<p class="faint">{html.escape(date_str)}</p>'
     if purpose:
         doc += f'<p class="lede">{html.escape(purpose)}</p>'
-    doc += (f'<p class="faint">{len(checkpoints)} checkpoints (independent runs) · {len(records)} clips total '
+    doc += (f'<p class="faint">{len(checkpoints)} checkpoints (independent runs, '
+            f'<span style="color:#e33">{n_unaudited} unaudited ❗</span>) · {len(records)} clips total '
             f'({n_scored} quality-scored) · pick a checkpoint, click a column header to sort · '
             'click ▶ to play (shared playhead) · colour = min→max within the shown checkpoint only '
             '(NOT comparable across checkpoints -- different runs, different sweep ranges)</p>')
@@ -1832,6 +1838,7 @@ def render_checkpoint_audit_page(*, head_html: str, title: str, label: str, purp
     js = (AUDIT_JS_TEMPLATE
           .replace("__DATA__", json.dumps(records))
           .replace("__CHECKPOINTS__", json.dumps(checkpoints))
+          .replace("__AUDITED__", json.dumps(checkpoint_audited))
           .replace("__WRAP_ID__", "'aud-wrap'")
           .replace("__INFO_ID__", "'aud-info'"))
     doc += f'<script>{js}</script>'

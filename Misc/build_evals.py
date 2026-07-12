@@ -120,6 +120,7 @@ code{background:var(--paper-dim);border:1px solid var(--rule-light);padding:1px 
 .run .desc{font-size:11.5px;color:var(--body);margin:3px 0 4px}
 .run .verdict{font-size:11.5px;color:var(--edge-ink);margin:0 0 6px}
 .run .meta{font-size:11px;color:var(--faint)}
+.unaudited{color:#e33;font-size:12px;cursor:help}
 .grid{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
 .cell{font-family:var(--mono);font-size:11px;color:var(--body);background:var(--paper-dim);
 border:1px solid var(--rule);padding:6px 10px;cursor:pointer;border-radius:2px}
@@ -443,6 +444,28 @@ def find_source_dir(name):
         if os.path.isdir(d):
             return d
     return None
+
+def has_kim_feedback(kind, name):
+    """Manifest v2 audited-check (Kim DIRECT 2026-07-12, MASTER §4 / eval-tables
+    spec §16): a run_meta.json with a non-empty kim_feedback field is audited;
+    anything else gets a red exclamation mark on every page it appears on.
+    Derived from the manifest at build time -- never hand-toggled."""
+    source_dir = find_source_dir(name) if kind == "control_runs" else find_renders_source_dir(name)
+    if not source_dir:
+        return False
+    meta_path = f"{source_dir}/run_meta.json"
+    if not os.path.exists(meta_path):
+        return False
+    try:
+        meta = json.load(open(meta_path))
+    except Exception:
+        return False
+    return bool(meta.get("kim_feedback"))
+
+
+UNAUDITED_MARK = ('<span class="unaudited" title="unaudited -- no kim_feedback in the manifest yet">'
+                   '&#10071;</span>')
+
 
 def fmt_date(ts):
     if ts is None:
@@ -2360,6 +2383,7 @@ def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_n
     os.makedirs(staged_dir, exist_ok=True)
     all_records = []
     member_dates = {}  # checkpoint name -> mtime, for the date-fallback dropdown order (spec §15)
+    member_audited = {}  # checkpoint name -> has kim_feedback (manifest v2, spec §16)
     for member in member_names:
         source_dir = find_source_dir(member)
         if not source_dir or not os.path.exists(f"{source_dir}/onset_eval.json"):
@@ -2368,6 +2392,7 @@ def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_n
             member_dates[member] = os.path.getmtime(f"{source_dir}/onset_eval.json")
         except OSError:
             pass
+        member_audited[member] = has_kim_feedback(kind, member)
         member_dir = f"{OUT}/{kind}/{member}"
         staged_stems = {os.path.relpath(os.path.splitext(f)[0], member_dir)
                         for f in glob.glob(f"{member_dir}/**/*.m4a", recursive=True)}
@@ -2388,7 +2413,7 @@ def write_checkpoint_audit_folder(kind, name, label, purpose, date_str, member_n
     doc = eval_grid.render_checkpoint_audit_page(
         head_html=head_html, title=label, label=label,
         purpose=redact(purpose), date_str=date_str, records=all_records, footer_html=footer_html,
-        checkpoint_dates=member_dates,
+        checkpoint_dates=member_dates, checkpoint_audited=member_audited,
     )
     open(f"{staged_dir}/index.html", "w").write(doc)
     return True
@@ -2644,8 +2669,9 @@ def build_landing(control, renders):
         if category_tagline.get(cat):
             doc += f'<p class="dim">{html.escape(category_tagline[cat])}</p>'
         for kind, (name, label, purpose, n, date_str, subtitle, verdict) in items:
+            mark = "" if has_kim_feedback(kind, name) else f" {UNAUDITED_MARK}"
             doc += (f'<div class="run"><div class="name"><a href="{kind}/{html.escape(name)}/index.html">'
-                    f'{html.escape(label)}</a> <span class="faint">({kind.replace("_"," ")})</span></div>')
+                    f'{html.escape(label)}</a>{mark} <span class="faint">({kind.replace("_"," ")})</span></div>')
             if date_str:
                 doc += f'<div class="when">{html.escape(date_str)}</div>'
             if subtitle:
