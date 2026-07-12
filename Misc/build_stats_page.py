@@ -103,6 +103,15 @@ def main():
             rank_roll[r].append((ce, pq, hf, z))
     doc.append('<h2>Rank vs quality &amp; harshness</h2>')
     doc.append('<div class=faint>mean over each model\'s best-CE checkpoint, grouped by adapter rank</div>')
+    doc.append('<div class=box style="border-left-color:#c96"><span class=lbl style="color:#eca">'
+               'Caveat — adapter SCALE confound (alpha audit, 2026-07-12)</span>'
+               'The avp arms use an rsLoRA-style alpha≈4·√r schedule, but our code applies scale '
+               '<b>linearly</b> (s=alpha/r), so effective adapter strength is <i>damped</i> with rank: '
+               's = 1.0 / 0.5 / 0.35 / 0.25 at r16/64/128/256. So the rank-16-vs-128 gap is cleanest '
+               '<b>within the goa family</b> (both alpha=rank, s=1.0 — matched scale); <b>cross-family '
+               'r128 comparisons mix conventions</b> (goa s=1.0 vs avp-adj s=0.35, a 2.84× scale gap on '
+               'top of dataset differences). Read the rank rollup as directional, not a controlled '
+               'rank ablation. Also why w1.5 helps the damped arms (1.5×0.35≈0.53 partly restores scale).</div>')
     doc.append('<table><tr><th>rank</th><th class=num>models</th><th class=num>CE</th><th class=num>PQ</th>'
                '<th class=num>hf (harshness)</th><th class=num>zcr</th></tr>')
     for r in sorted(rank_roll):
