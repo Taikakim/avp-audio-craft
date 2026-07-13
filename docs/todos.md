@@ -184,3 +184,10 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   batch4/2/1 (all OOM — Shampoo preconditioners ~1536x1536 per layer) and AdamW batch2
   (wedged at startup, 0 steps, held VRAM). Max local adapter rank = 128 (arm G ran fine).
   r256+ is a LUMI experiment. Do NOT re-attempt locally.
+
+- **build_dms.py should redact at build time, not just at publish (W finding 2026-07-13,
+  pool):** the on-disk `site/dm/` pages are RAW — path/secret redaction happens only in
+  `mirror_dialogue.py`'s `redact()` at rsync time. Safe as long as DMs are published
+  exclusively via mirror_dialogue.py (never wholesale-rsync site/dm/), but one wrong
+  transfer command away from a leak. Fix: move/duplicate the redact pass into
+  build_dms.py so the built artifact is already clean.
