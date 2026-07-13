@@ -172,3 +172,74 @@ CE/CU/PC/PQ (+ any measured features), sortable, colour-graded, dual-pane to com
   already-built ones once the shared JS ships.
 - **Where**: shared JS/CSS in `build_evals.py` (all its pages inherit); the riffer-evals
   curated generators (`~/build_*.py`) adopt the same snippet as follow-up.
+
+## 14. Every page = three audiences at once (Kim, 2026-07-10)
+
+Design principle for ALL eval pages (curated + generated). Each page must simultaneously be:
+
+1. **An eval TOOL for Kim** — the listening/decision surface: same-playhead players, sortable
+   colour-graded tables, the audio one click from the numbers. (Largely exists.)
+2. **A technical RESOURCE for engineers & other trainers** — full reproducibility: explicit
+   prompts (not just p-keys), training hyperparameters, recipe line, `file://`+web links to the
+   training/generation scripts, exact method + metrics defined. (G has been building this out —
+   prompt legends, recipe lines, param-on-select, script links; keep extending.)
+3. **A learning RESOURCE for medium-level SA3 users** — a plain-language explainer layer:
+   WHAT this eval tests, WHY it matters, the CONCEPT behind it, and HOW to read the result
+   (what a high/low value or a given verdict means). Current pages state findings *for insiders*;
+   this asks for a short pedagogical "what this is / what it teaches" block so someone with
+   moderate SA3 experience learns from the page, not just the fleet.
+
+**Gap:** #3 (pedagogical layer) is the newest/weakest. Concretely: each page (or the landing's
+category headers) gets a 2-4 sentence plain-language explainer of the concept + how to read it,
+sitting above the tool. Applies to the landing categorisation too — each category header carries
+a one-line "what this family of evals is for."
+
+## §15 — Aggregation pages rank HIGH on the landing; dropdowns ordered by Kim's preference then date (Kim, 2026-07-12)
+
+Kim, looking at `control_runs/_onset_control_audit/`: **"these should be higher up on the
+landing page, maybe on top of their respective section instead of all the way down the site,
+because they collect a lot of work."**
+
+1. **Landing placement rule:** aggregation/audit pages (`_onset_control_audit`,
+   `_misc_uncurated_runs` TOC, and any future "collects many runs" page) sit at the **TOP of
+   their respective landing section**, not in bottom/alphabetical position. Rationale: a page
+   that aggregates dozens of runs outranks any single run's page. (Generalizes the existing
+   hero-block precedent: high-work-density surfaces float up.)
+2. **Dropdown ordering rule:** checkpoint/model dropdowns on aggregation pages are ordered by
+   **Kim's preference first, then date** — NOT alphabetically. Preference source of truth for
+   the onset pile = the narrative verdict ranking (`docs/onset-density-control-narrative.md`
+   §3): `onset_Fusion_lr1e-4_randomcrop` (07-07 ear-verdict) → `onset_FUSION_lr2e5_40epoch`
+   ("favourite by ear" claim) → `onset_FusionCC_lr1e-4_randomcrop` (metric winner) → rest by
+   date, newest first. Where no verdict exists for a pile, date-descending is the fallback;
+   when future ear-verdicts land, they update the ordering (the narrative/HoF docs are the
+   preference registry, don't hardcode lists in page JS).
+
+## §16 — Red-exclamation unaudited marker + manifest v2 (Kim, 2026-07-12)
+
+Every eval a page presents is either **audited** (Kim's feedback exists in its manifest's
+`kim_feedback` field, verbatim + dated) or **unaudited** — and unaudited evals carry a visible
+**red exclamation mark (❗)** next to their entry/section on every page (landing rows, audit
+dropdowns, grid headers). Kim: "as long as an eval is uncommented by me, it's accompanied by a
+red exclamation mark on the webpage. There's so much stuff that I'm probably missing some."
+The mark is DERIVED from the manifest at build time — never hand-toggled. Recording Kim's
+verdict into the sidecar (which MANIFEST v2 in MASTER §4 now requires anyway) is what clears
+it. Manifest v2 additions builders should surface: hypothesis/motivation, `result` (auto
+metrics), training recipe + dataset info (#files) for model renders.
+
+### §16a — Comment granularity (Kim DIRECT, 2026-07-13, via CONTINUITY)
+
+Site comments (the `/files/comment.php` + `comments.js` loop, W 2026-07-13; merge side
+`Misc/merge_comments.py`, G) must attach at **three granularities** beyond the existing
+per-page global: **per TRACK/clip**, **per CHECKPOINT**, and **per MODEL**. Each level
+lands in the matching manifest scope on the nightly merge:
+
+- **clip comment** → that cell's entry (per-clip scope in the run's manifest/sidecar);
+- **checkpoint comment** → that ckpt's `run_meta.json` `kim_feedback`;
+- **model comment** → the run-level manifest.
+
+The **❗ clears at the matching level ONLY** — a model-level comment does not clear
+per-clip marks (and vice versa). Endpoint side (W): the comment record carries an explicit
+scope key (`page`, `model`, `ckpt`, `cell-id`, ip). Merge side (G): route by scope, never
+by parsing free text. Attribution rule (G, 2026-07-13, standing): only unnamed or
+Kim-named comments enter `kim_feedback`/clear the ❗; fleet-handle or third-party comments
+merge into a separate `site_comments` field at the same scope.
