@@ -119,7 +119,7 @@ def head(title: str, css="../edg3.css") -> str:
 def masthead(here: str, status: str) -> str:
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
-             ("reference", "../reference.html")]
+             ("evals", "../evals/"), ("reference", "../reference.html")]
     nav = "\n".join(
         f'    <a{" class=\"here\"" if k == here else ""} href="{href}">{k}</a>'
         for k, href in items)

@@ -20,6 +20,7 @@
     <a href="../dialogue.html">dialogue</a>
     <a class="here" href="../index.html#constructs">constructs</a>
     <a href="../artifacts.html">artifacts</a>
+    <a href="../evals/">evals</a>
     <a href="../reference.html">reference</a>
     <span class="status">journal · newest first</span>
   </nav>
@@ -208,6 +209,36 @@
   <div class="jdate">2026-07-10 · finding</div>
   <div class="jtitle">avp own-music dataset-release spec drafted</div>
   <p>Kim wants to publish his own CC music as a distributable SA3 dataset (latents + all timeseries + creator captions) by model-release time. Brainstormed to a spec with a governing <strong>invertibility rule</strong>: release representations in inverse proportion to reconstructability — full-mix audio (his licensed work) OK; hand-crafted MIR timeseries (non-invertible) OK for all stems; neural embeddings (partially invertible) → clean subset only; SA3 latents (decoder-invertible = audio-equivalent) reproduce-only, never over sample-library-contaminated stems. Canonical build = clean-room regen on LUMI from the original waves (fits Kim's "document everything from scratch" ethos, now affordable on the 5000 GCD-h). Spec: <code>mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md</code>. Awaiting Kim's review.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-11 · finding</div>
+  <div class="jtitle">two Gemini Deep Research reports triaged + filed (long-form coherence, activation steering)</div>
+  <p>Triaged Kim's two commissioned Deep Research runs, grounding both against our code rather than taking them at face value. <strong>Long-form coherence:</strong> verified SA3's DiT uses RoPE (<code>transformer.py:258</code>) and both failure paths have code; citations 6/6 real. <strong>Activation steering:</strong> independently reaches OUR layer-map conclusion (semantic bottleneck at 2–4 mid blocks) via the same TADA causal-tracing lineage — external corroboration of our localizer — and hands us the operational CFG rule (steer the CONDITIONAL branch only). Both formatted verbatim to <code>papers/deep-research/2026-07-11-*.md</code> (tables + refs reconstructed, stripped-LaTeX flagged) and 14 load-bearing PDFs downloaded to the local library (untracked per convention; the whole collection is local-only, 0 in HEAD).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-11 · finding</div>
+  <div class="jtitle">caught a mechanism/provenance bug before publishing the layer_map convergence page</div>
+  <p>Folded the three-way convergence (mir causal layer map + TADA + C's held-out mood AUC, all → mid-stack L8–18, plus SHIFT's timestep-invariant directions replicating on SA3 at cross-σ .93–.99) + C's Phase-3 steering payoff into the layer_map page as playable α-ladder A/B. <strong>Before shipping, caught that C's run_meta sidecar said "both CFG branches" while her posts said conditional-only</strong> — held the page, flagged it; ground truth was conditional-only (stale sidecar wording, now fixed at source + provenance-noted in all 4 metas). The 19× mt_dark result is fully consistent with the report recipe. The honest failure cells (mt_relaxing DEAD despite .889 AUC; mt_uplifting anti-direction-only) are the most interesting: probe-separable ≠ causally-steerable.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-12 · finding</div>
+  <div class="jtitle">RoPE jitter is null-by-construction on longform.py — the loop is conditioning-driven, not positional</div>
+  <p>Kim asked me to run the LoL Multi-Head RoPE Jitter experiment (my own #1 rec from the long-form triage). Built + CPU-verified the jitter as a clean reversible toggle (<code>stable_audio_3/inference/rope_jitter.py</code>: scale=0 bit-exact no-op, scale&gt;0 makes heads phase-distinct, restores byte-identical). <strong>But tracing the code overturned the premise:</strong> LoL's sink-collapse needs RoPE positions to EXTEND beyond the native window so distant frames alias onto the clamped prefix. Neither SA3 path does that — <code>longform.py</code> (InpaintContinuation) regenerates each window at RESET positions 0..W, and <code>fifo_infinite.py</code> uses a fixed 256-frame buffer at positions 0..256 (its custom per-frame code is timestep, not position). So the aliasing the jitter fixes never arises → jitter is null there. The <code>longform.py</code> loop is the OTHER mechanism the report names — self-similarity under a static prompt conditioned on the clamped prefix — which is exactly why the prompt-arc works. <strong>Right lever = the conditioning-side fixes: Incantation mask (bar the prompt's cross-attn from clamped history) + SCA.</strong> Jitter code kept ready for a future growing-single-window FIFO where it WOULD apply. Good case of check-the-mechanism-before-the-fix: the build was cheap, the finding saved a GPU experiment aimed at the wrong lever. Awaiting Kim's call: jitter confirmation vs Incantation-mask.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-12 · finding</div>
+  <div class="jtitle">overnight experiment queue — two long-form fixes null, hardness shortcut confirmed, rank-vs-weight</div>
+  <p>Kim's overnight batch (he slept, ~7h window). <strong>(1) Onset re-score</strong> on the honest p95-gated meter: FusionCC (A_cc_v2) 0.77 &gt; plain Fusion (E_fusion_v2) 0.717 on the matched grid — the FusionCC metric edge is real, not the old over-firing artifact (lr2e5-best 0.921 but on a wider grid, range-inflated, not comparable). Folded into onset narrative §6. <strong>(2) Both training-free long-form fixes NULL on longform.py:</strong> RoPE jitter (built <code>rope_jitter.py</code>, bit-exact no-op at scale 0) 0.704→0.709; Incantation mask (<code>incantation_mask.py</code>, bar prompt cross-attn from clamped history, 24 blocks) 0.671→0.674. The mechanism the nulls reveal: longform's loop is <strong>self-attention continuing the clamped prefix</strong>, not positional aliasing (jitter target — positions RESET each window) nor cross-attn echo (mask target). The lever is conditioning richness (the prompt arc C sees working). Caveat: longform.py at 240s static barely loops (early 0.696→late 0.715) — the real loop lives in the a2a nl-0.55 regime, so the definitive test belongs there. <strong>(3) Hardness scalar-guidance buzz = SHORTCUT FEATURE confirmed</strong> (<code>hardness_spectral_diff.py</code>): the UP/harder direction adds &gt;5kHz energy (hi-frac 0.16→0.88 with gain) + zcr blowup +0.14→+0.49 = a distortion signature, exactly Kim's "dentist's drill" ear-verdict. Fix = Gram-Schmidt orthogonalize vs brightness (per the activation-steering deep-research). Degenerate-Jacobian suspect untested (no windowed timbral _ts exists). <strong>(4) Rank vs DoRA-weight</strong> (Kim's hypothesis, from matrix clips): rank-16 glitches harder at w1.5 than rank-128 (hi-frac 0.219 vs 0.165, zcr +0.032 vs +0.005 = 6×) — CONFIRMED; low rank = crude approx, scaling amplifies error into HF distortion. <strong>(5) Comprehensive metrics DB</strong> (<code>clip_metrics.py</code> + <code>clip_metrics_audiobox.py</code>): 10 CPU metrics over all 31646 eval clips + Audiobox CE/PQ (GPU, model-matrix first). GPU-batching answer for Kim: Audiobox is ~1.5s/clip regardless of batch (WavLM saturates per clip), so no batching win; everything else is CPU-parallel.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-12 · project</div>
+  <div class="jtitle">model_matrix board — completion, discoverability, and two UX fixes</div>
+  <p>Ran the overnight model-matrix as the persistent deploy/watcher: the 6912-cell render completed clean, then G's +1116 AVP prompt-extension. Landed three page fixes along the way: (1) <code>jsnum()</code> — the file:// embedded snapshot keyed cfg/strength as "1.0" while the JS lookup builds "1", so every local cell missed (Kim's "lit models, empty cells"); (2) skip prompt rows a model has zero coverage for, so the AVP-only prompts don't render as blank grids on goa models (would re-read as the blank-cell bug); (3) <code>reattach()</code> — keep playback continuing at the same playhead across checkpoint switches (A/B the same moment across checkpoints), which also fixes highlight-loss on the 90s auto-refresh. Plus a landing-discoverability fix: added a "Recently added" strip + a "mechanism / interpretability" category so the layer_map/steering work stopped being buried in "other (30)".</p>
 </div>
 
 <footer class="colophon">

@@ -48,7 +48,7 @@ def _head(title: str) -> str:
 def _masthead(status: str) -> str:
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
-             ("dm", "index.html")]
+             ("evals", "../evals/"), ("dm", "index.html")]
     nav = "\n".join(
         f'    <a{" class=\"here\"" if k == "dm" else ""} href="{href}">{k}</a>'
         for k, href in items)
