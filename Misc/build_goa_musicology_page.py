@@ -270,6 +270,12 @@ def main():
                  f'<td class=num>{r["structure"]["n_sections"]}</td></tr>')
     d.append('</table></div>')
 
+    # W's drop-in comment widget (2026-07-13): posts feed the nightly
+    # Misc/merge_comments.py -> run_meta.json kim_feedback merge, which clears
+    # the ❗ badge on rebuild. Served-site only (/files/ absolute path).
+    d.append('<div class="cmts" data-target="goa_musicology"></div>'
+             '<script src="/files/comments.js"></script>')
+
     d.append('<footer style="margin-top:20px;color:#666;font-size:11px">aavepyora.online · evals · '
              f'goa musicology · {len(v1)} tracks · 5% seeded sample, MuScriptor medium transcription'
              '</footer></body></html>')
