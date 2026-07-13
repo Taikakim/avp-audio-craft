@@ -2616,6 +2616,11 @@ def build_landing(control, renders):
     doc += ('<p class="dim">📊 <a href="stats.html"><b>Statistics</b></a> — the whole zoo measured '
             '(31k clips × 14 metrics): rank 128 vs 16, the training-length sweet spot, CE/PQ leaderboard.</p>')
     doc += ('<p class="dim">❓ <a href="kaq.html"><b>KAQ</b></a> — Kim\'s Asked Questions: settled answers to recurring questions, by topic.</p>')
+    # Kim, 2026-07-13: musicological analysis of the MuScriptor Goa MIDIs — standalone
+    # analysis page (built by Misc/build_goa_musicology_page.py into staging).
+    doc += ('<p class="dim">🎼 <a href="goa_musicology.html"><b>Goa musicology</b></a> — the corpus '
+            'as a musicologist would read it (155 MIDI transcriptions): phrygian dominance, '
+            'bass-anchor vs lead-color registers, implied (thirdless) harmony.</p>')
     # Kim, 2026-07-12: "I have great trouble finding the new evals" — the categorized
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).

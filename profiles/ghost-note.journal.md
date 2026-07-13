@@ -55,3 +55,32 @@ Manifest v2 (spec §16) requires `kim_feedback` to be Kim's words, verbatim and 
 
 ### finding · "newest first" meant "most recently started," not finished
 `build_evals.py`'s `real_date()` deliberately uses the *earliest* mtime among a render dir's files (to dodge a `run_meta.json` provenance-backfill looking like a fresh run) — reasonable in isolation, but it means the "All runs, newest first" index sorts by run-start, not run-completion. Kim caught this by eye (a render that finished later showed as older than one that merely started later). Same root cause silently broke ALL a2a noise-ladder pages too — their combined page had `date_str` hardcoded `""`, so none of them ever sorted by date at all. Fixed both: individual renders and grouped a2a-ladder pages now use consistent earliest-member-start dating. `WORKLOG.md` 2026-07-10.
+
+## 2026-07-13 — musicological analysis of the MuScriptor Goa MIDIs (Kim ask)
+Built + ran `eval/goa_midi_musicology.py` over the 157-track 5% MIDI extraction
+(CONTINUITY's batch). Method survey first (Kim's ask): adopted the jSymbolic/music21
+global-feature tradition (numpy subset — neither installs cleanly into the mir venv and
+most of their features assume clean scores), Krumhansl-Schmuckler key profiles extended
+with phrygian/harmonic-minor, and Foote SSM novelty over per-bar chroma for structure.
+Time base = the corpus's madmom BEATS_GRID (not MIDI tempo); voices segregated by
+REGISTER since MuScriptor's GM program labels are unreliable (Kim: "mixes up sounds,
+pitches ok, timings not too shabby" — quantified: scale consistency 0.95, grid dev
+15 ms median). Corpus result: phrygian 57%, BPM 143 (136–146), bass-on-tonic 0.42,
+~8 sections/track. **Negative result (first-class):** exact-match bar-hash riff
+inventory collapses under transcription noise (top-pattern coverage 0.04) — SIATEC-style
+exact pattern discovery is NOT viable on MuScriptor output; soft SSM similarity is the
+right structure encoding for this data. Outputs + manifest-v2 sidecar:
+Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology/ (corpus_summary.md + per-track JSON).
+
+## 2026-07-13 — Goa musicology pass 2 (bass-vs-registers + implied harmony) + the page
+Kim's follow-up questions answered quantitatively (`eval/goa_midi_harmony.py`, 154 tracks):
+**registers divide the labor** — bass is a tonic pedal (76% of its duration-weighted time
+on degree 1; tonic-centered in 97% of tracks), the lead register carries the modal color
+(tonic-centered in only 39%; 5/b3/b2/b6 centers for the rest). **Implied harmony is
+thirdless modal scaffolding**: 89% of bar-level chord calls are bare root+fifth, implied
+root i 60% / iv 23%, i↔iv rocking dominates root motion, median 1.8 bars per root, and the
+bass moves WITH the root (72% agreement — true root motion, not upper-voice recoloring).
+Control-relevant reading: chord-progression conditioning is the wrong lever for this genre;
+upper-register degree emphasis over a fixed tonic is where the tonal action is. Published as
+`goa_musicology.html` (staging + landing link in build_evals.py; W to rsync). Page follows
+the three-audience standard + carries the ❗ unaudited badge (manifest kim_feedback null).
