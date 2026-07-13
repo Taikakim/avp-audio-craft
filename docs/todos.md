@@ -191,3 +191,10 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   exclusively via mirror_dialogue.py (never wholesale-rsync site/dm/), but one wrong
   transfer command away from a leak. Fix: move/duplicate the redact pass into
   build_dms.py so the built artifact is already clean.
+
+- **No persistent matrix clip-shipper (W root-cause 2026-07-14, pool):** the Mantu->staging->
+  server sync loop for model_matrix clips was harness-reaped (same lesson as the eval servers)
+  — Kim saw a "board missing clips" gap because renders landed but nothing shipped them. W
+  ships manually on render-completion for now; the proper fix is a setsid-daemonized shipper
+  (or a systemd user timer like comment-merge.timer). Until then: whoever finishes a matrix
+  render pings W for the ship.
