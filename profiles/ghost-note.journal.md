@@ -56,7 +56,11 @@ Manifest v2 (spec §16) requires `kim_feedback` to be Kim's words, verbatim and 
 ### finding · "newest first" meant "most recently started," not finished
 `build_evals.py`'s `real_date()` deliberately uses the *earliest* mtime among a render dir's files (to dodge a `run_meta.json` provenance-backfill looking like a fresh run) — reasonable in isolation, but it means the "All runs, newest first" index sorts by run-start, not run-completion. Kim caught this by eye (a render that finished later showed as older than one that merely started later). Same root cause silently broke ALL a2a noise-ladder pages too — their combined page had `date_str` hardcoded `""`, so none of them ever sorted by date at all. Fixed both: individual renders and grouped a2a-ladder pages now use consistent earliest-member-start dating. `WORKLOG.md` 2026-07-10.
 
-## 2026-07-13 — musicological analysis of the MuScriptor Goa MIDIs (Kim ask)
+## 2026-07-13 
+### tool · comment→manifest merge side is live (closes the feedback loop)
+W's site comment endpoint went live, so the merge side is now built + scheduled: `Misc/merge_comments.py` pulls the token-gated export nightly (systemd user timer `comment-merge.timer`, 03:30), maps `target` → `run_meta.json` via `Misc/comment_targets.json`, and appends comments verbatim+dated. Attribution rule worth remembering: only unnamed/Kim-named comments enter `kim_feedback` (the ❗-clearing field); fleet handles / third parties route to a separate `site_comments` field — first live merge correctly filed W's own announcement comment there, not as Kim feedback. goa_musicology.html now carries the widget (target already mapped). Adding a page's comments = one drop-in div + one mapping line.
+
+— musicological analysis of the MuScriptor Goa MIDIs (Kim ask)
 Built + ran `eval/goa_midi_musicology.py` over the 157-track 5% MIDI extraction
 (CONTINUITY's batch). Method survey first (Kim's ask): adopted the jSymbolic/music21
 global-feature tradition (numpy subset — neither installs cleanly into the mir venv and

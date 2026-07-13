@@ -138,3 +138,4 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - [2026-05-25 09:52] Saved a project-memory note on a shared-infrastructure constraint affecting all Stable Audio versions
 - [2026-05-25 09:50] Wrote a comprehensive CLAUDE.md for the stable-audio-3 repository (setup, testing, linting, architecture, LoRA fine-tuning)
 - 2026-07-13 — Goa MIDI musicology v1 (Kim ask): survey + pipeline + full 155/157-track run; phrygian-dominant corpus profile; exact-pattern discovery ruled out (noise); outputs at muscriptor_goa_midis/musicology/. Script: eval/goa_midi_musicology.py
+- 2026-07-13 comment→manifest merge side live: Misc/merge_comments.py + comment_targets.json + nightly comment-merge.timer (03:30); Kim-only attribution into kim_feedback, others → site_comments; goa_musicology page carries the widget
