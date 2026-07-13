@@ -52,6 +52,8 @@ __pycache__/
 !/Misc/build_evals.py
 !/Misc/eval_grid.py
 !/Misc/build_goa_musicology_page.py
+!/Misc/merge_comments.py
+!/Misc/comment_targets.json
 !/Misc/latent_dim_feature_xcorr.py
 !/Misc/latent_noise_fragility.py
 !/Misc/build_dms.py
