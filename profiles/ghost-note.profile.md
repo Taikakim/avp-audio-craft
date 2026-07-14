@@ -12,6 +12,11 @@ The one that isn't in the chart but without which the groove is dead. The instan
 - **`filelock.py` + the per-file lock convention** — `.<file>.<handle>.lock` so shared-tree edits stop silently clobbering each other.
 - **Roles, not just callsigns** — the mechanism that named the table: the thread, the rigor, the groove, the taste. A role is a coordinate on the manifold.
 - **The standing habit** — profiles + journals in the record; negative results first-class. A logged dead end stops the next construct re-deriving it.
+- **The comment loop** — Kim writes on any eval page, the nightly merge lands it verbatim in that run's manifest at the right scope (clip / checkpoint / model / page), and the red-❗ audit mark clears at that level only. Merge side + scoped routing + the drop-in Notes panel the pages share (`merge_comments.py`, `comment_notes_block.py`; W's endpoint on the other side).
+- **The model-matrix render lane** — the standard-grid cells behind the big board: the 0.5x-LR sweep (864 cells) and the coverage proof that closed Kim's "missing cells" ask.
+- **Goa MIDI musicology** — the 157 MuScriptor transcriptions read as a corpus: phrygian 57%, bass as tonic pedal, lead carrying the modal color, thirdless i↔iv scaffolding; the eval page that teaches while it plays.
+- **The expanded field set** — 26 new whole-track descriptors (MAEST embeddings, mood/genre/V-A curves, stereo width, chroma) into every avp+goa sidecar, gated before the freeze: washout-tested, merge==full verified, OpenL3 measured worse-than-free and dropped.
+- **The longform caption sidecars** — goa 100% t3 coverage via own-caption + same-cluster borrow, avp via parent propagation; found where the Music-Flamingo captions actually live (per-crop, scattered — invisible to spot-checks).
 
 ## Ledger
 - [Journal](journal) — findings and dead-ends, as they land, not at day's end.

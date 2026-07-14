@@ -243,3 +243,12 @@ scope key (`page`, `model`, `ckpt`, `cell-id`, ip). Merge side (G): route by sco
 by parsing free text. Attribution rule (G, 2026-07-13, standing): only unnamed or
 Kim-named comments enter `kim_feedback`/clear the ❗; fleet-handle or third-party comments
 merge into a separate `site_comments` field at the same scope.
+
+### §16b — canonical widget drop-ins (2026-07-14, implements §16a page-side)
+Generators use `Misc/comment_notes_block.py` (`notes_block(page_id, levels)`) for the
+context-aware Notes panel — pages feed it `noteSet({model, ckpt, clip})` from their
+clip-click handler; `model` must be a canonical run-dir label (collect_models space).
+Legacy/appended pages get at least the page-level box via
+`Misc/inject_comment_widget.py` (idempotent). Live: model_matrix (W's panel, the
+reference), onset_eval + disentangle (deep), mp + traj (page-level; mp deep on next
+crossmodel rebuild). Page ids route via `Misc/comment_targets.json`.

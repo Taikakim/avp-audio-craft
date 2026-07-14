@@ -88,3 +88,37 @@ Control-relevant reading: chord-progression conditioning is the wrong lever for 
 upper-register degree emphasis over a fixed tonic is where the tonal action is. Published as
 `goa_musicology.html` (staging + landing link in build_evals.py; W to rsync). Page follows
 the three-audience standard + carries the ❗ unaudited badge (manifest kim_feedback null).
+
+## 2026-07-14 — Expanded-Essentia corpus sweep: extractors built, pilot gated, avp leg launched
+Kim's ask (via F, field list confirmed by C): 27 new time-series fields into every .TIMESERIES.npz.
+New module `mir/src/spectral/whole_track_expanded.py` (native-rate fields + `field_rates` meta) +
+`--add-fields` incremental mode in `whole_track_timeseries.py`. Pilot (20 avp tracks): ~45 s/track,
++3.7 MB/track. Gates: (a) MAEST washout PASSES (top-1 57.4% vs raw-mel 48.6%, a2a full-track
+renders vs sources); (c) equivalence PASSES (legacy bitwise-identical, merge==full). Gate (b)
+card-blocked behind dora128_lr0.5x_cont5 training; render pair queued.
+**Negative results:** (1) this essentia build's NNLSChroma NNLS-solver path returns all-zero
+semitone/chroma — use `useNNLS=False` linear mapping (same tuned log-freq frontend, works);
+(2) OpenL3 music-mel128 FAILED the washout criterion (44.6% < mel baseline 48.6%) — MAEST is
+the production-invariant embedding on our renders, OpenL3 kept only as C decides; (3) the OpenL3
+.pb graph is batchless and can't be fed via TensorflowPredict pool tensors — ONNX CPU EP instead;
+(4) np.savez appends .npz to tmp filenames → atomic-write tmp must END in .npz (pilot bug, fixed).
+avp sweep (1404 files) running detached, goa (5035, Lehto +~18 GB) after. The 574 numbered npz on
+Lehto belong to the other genre corpora (Chill Dataset etc.) — out of asked scope, same command
+extends them later.
+- 2026-07-14 (cont.): avp leg COMPLETE — 1516/1516 uniform 26-field set (OpenL3 dropped per C's
+  gate verdict mid-flight; only 1 file needed in-place fixup). Neat mechanism note: the chunked
+  fresh-pool design means a live module patch (the MAEST short-clip guard) takes effect on the
+  NEXT pool respawn — the run self-healed without a restart. goa leg (4461 tracks) in flight.
+- 2026-07-14 (eve): longform caption sidecars delivered (Kim via C's DM, LUMI campaign caption
+  arm; SAO 2131a36). goa 100% t3 (330 first-class / 2625 own / 2445 cluster-borrowed), avp 93.4%
+  (parent-propagation to aug crops). FOUND: music_flamingo_full lives per-crop in Lehto/latents
+  jsons, only some crops of some tracks — invisible to spot-checks; kimlong_pool.json is its
+  track-level extraction. NEGATIVE: 110/273 flamingo-budget goa tracks were never actually MF-
+  captioned (selection ran ahead of the captioning pass); avp has 157 crops from never-captioned
+  parents. Builder: eval/build_longform_sidecars.py.
+- 2026-07-14 (night): comment widget on the four eval-site pages (Kim: build once, drop
+  everywhere; SAO 1cd30f6). Shared generator block Misc/comment_notes_block.py (context-aware
+  Notes panel, W's matrix panel as reference), deep-wired into onset_eval + disentangle;
+  mp/traj page-level via new idempotent Misc/inject_comment_widget.py (mp's appender refuses
+  re-runs — deep scope rides its next rebuild, hook already in the builder). Pages staged for
+  W's rsync; CORS-for-GitHub-Pages question DM'd to W.
