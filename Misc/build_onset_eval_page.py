@@ -1,6 +1,9 @@
-import os, re, glob, json, subprocess
+import os, re, glob, json, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from comment_notes_block import notes_block
 
 R="/run/media/kim/Mantu/sa3_control_runs"; REPO=os.path.expanduser("~/riffer-evals")
 CD=f"{REPO}/clips_onset_eval"; AAC=f"{REPO}/clips_online_aac"
@@ -98,9 +101,12 @@ table{border-collapse:collapse;font-size:11px;margin:2px 0}td,th{border:1px soli
 th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;color:#9ab}.c{cursor:pointer;font-variant-numeric:tabular-nums}
 .c:hover{outline:1px solid #7cf}.play{outline:2px solid #5d5 !important}.corr{color:#7cf}.no{color:#555;cursor:default}
 input{background:#1c1c22;color:#ddd;border:1px solid #2a2a30;padding:3px 7px;margin-left:10px}a{color:#7cf}.muted{color:#666}
+#explain{background:#1a140c;border-top:1px solid #433;border-bottom:1px solid #433;border-left:3px solid #d90;padding:8px 12px;font-size:12px;color:#dcd}#explain b{color:#fc6}
 </style></head><body>
 <div id=hdr><div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> &nbsp;·&nbsp; <span class=muted>switching cells keeps the playhead; re-click stops · <span class=on>green = in online selection</span></span>
 <input id=flt placeholder="filter: lr2e5, lowgain, FULL…" oninput="filt()"> <button id=tgl onclick="toggleView()" style="background:#1c2c1c;color:#9ec;border:1px solid #2a3a2a;padding:3px 8px;cursor:pointer;margin-left:6px">↕ sort all clips by output density</button></div>
+<div id=explain><b>What this tests:</b> control-response sweeps for the SA3 onset-density adapter — each cell plays a clip generated at a requested onset density (column) and guidance gain (row); the number shown is the <i>measured</i> onset count in the output, and "corr/gain" is how well measured tracked requested at that gain across the sweep.
+<br><b>&#9888; Early test — known confound:</b> this data predates the discovery that raising the density target also raises the model's tempo (BPM) — a "tempo shortcut" the adapter had learned instead of genuine per-beat onset control (BPM correlated +0.7 to +0.91 with requested density on more-trained checkpoints). So higher "measured" counts here partly reflect the model speeding up, not purely denser hits at a fixed tempo. Later runs fixed this by retargeting the head to onset-<i>per-beat</i> (BPM-normalized), which killed the tempo-shortcut correlation (dropped to ~&minus;0.09) while keeping control functional — treat this page as the pre-fix baseline, not the corrected picture.</div>
 <div id=info>tap any cell or run header for its provenance (run · optimizer · lr · scalar · epochs · purpose)</div></div>
 <div id=wrap></div><div id=sorted style="display:none;padding:12px"></div>
 <script>const D=__DATA__;let sortedView=false;
@@ -112,6 +118,7 @@ function showInfo(di){const m=D.dirs[di].meta;const ib=document.getElementById('
  ib.style.display='block';ib.innerHTML=`<b>${m.run||m.group}</b> &nbsp; ${m.optimizer||''} ${m.lr?('· lr '+m.lr):''} ${m.scalar_field?('· '+m.scalar_field):''} ${m.epochs?('· '+m.epochs+'ep'):''} ${m.step?('· step '+m.step):''} ${m.online?'<span class=on>· ONLINE</span>':''}<div class=p>${m.purpose||''}</div>`;}
 function cell(id,f,lbl,di){
   if(!f){return;}
+  if(window.noteSet)noteSet({model:D.dirs[di].name,ckpt:'',clip:f.split('/').pop()});   // re-scope the Notes panel
   if(cur===id){au.pause();cur=null;mark();document.getElementById('np').textContent='stopped';return;}
   const pos=(cur!==null&&!au.paused)?au.currentTime:0;
   cur=id;mark();document.getElementById('np').textContent='▶ '+lbl;showInfo(di);
@@ -130,7 +137,15 @@ D.dirs.forEach((d,di)=>{
 document.getElementById('wrap').innerHTML=h;
 function toggleView(){sortedView=!sortedView;document.getElementById('wrap').style.display=sortedView?'none':'';const s=document.getElementById('sorted');s.style.display=sortedView?'block':'none';document.getElementById('tgl').textContent=sortedView?'↕ show grids':'↕ sort all clips by output density';if(sortedView&&!s.dataset.built){let h='<div class=glabel>all '+D.flat.length+' online clips, highest output density first &mdash; click ▶ to play (same-playhead switching works here too)</div><table><tr><th>#</th><th>out</th><th>run</th><th>gain</th><th>req</th><th>▶</th></tr>';D.flat.forEach((c,i)=>{const id="s"+i;h+=`<tr><td class=muted>${i+1}</td><td style="background:${col(c.m)};font-variant-numeric:tabular-nums">${c.m}</td><td>${c.lab}</td><td>g${c.g}</td><td>${c.q}</td><td class=c id="${id}" onclick="cell('${id}','${c.f}','${c.lab} g${c.g} d${c.q} → ${c.m}',${c.di})">▶</td></tr>`;});s.innerHTML=h+'</table>';s.dataset.built='1';}}
 function filt(){const v=document.getElementById('flt').value.toLowerCase();document.querySelectorAll('.sec').forEach(s=>{s.style.display=s.dataset.k.includes(v)?'':'none';});}
-</script></body></html>"""
+</script>
+__NOTES__
+</body></html>"""
+# comment widget (Kim: build once, drop everywhere) — "model" = the onset_eval_* dir
+# (a real run dir under sa3_control_runs, so the merge routes clip/run comments into
+# that eval's own run_meta.json / comments_clips.json)
+T = T.replace("__NOTES__", notes_block(
+    "onset_eval",
+    levels=[("clip", "this clip"), ("model", "this eval run"), ("page", "whole page")]))
 open(f"{REPO}/onset_eval.html","w").write(T.replace("__DATA__",DATA))
 gc={}; oc=0
 for d in dirs: gc[d['group']]=gc.get(d['group'],0)+1; oc+=1 if d['online'] else 0
