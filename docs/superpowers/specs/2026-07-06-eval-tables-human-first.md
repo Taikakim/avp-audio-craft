@@ -252,3 +252,11 @@ Legacy/appended pages get at least the page-level box via
 `Misc/inject_comment_widget.py` (idempotent). Live: model_matrix (W's panel, the
 reference), onset_eval + disentangle (deep), mp + traj (page-level; mp deep on next
 crossmodel rebuild). Page ids route via `Misc/comment_targets.json`.
+
+### §16c — WRITE-ONLY amendment (Kim direct, 2026-07-15; supersedes §16/§16a merge legs)
+The widget is write-only fleet-wide: no instance reads comments by any path (injection
+surface — MASTER §4). The nightly merge (merge_comments.py) is RETIRED and guarded;
+Kim reviews the store server-side and relays verdicts in chat, and kim_feedback /
+ckpt_feedback fields are written from those relays only. The ❗ derivation from the
+manifest fields is unchanged. Page-side drop-ins (§16b) stay as-is — comments.js was
+redeployed write-only, no page edits needed.

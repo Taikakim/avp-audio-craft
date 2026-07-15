@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# RETIRED 2026-07-15 (Kim direct, via W): the comment widget is WRITE-ONLY fleet-wide —
+# public unauthenticated text is an injection surface, so NO instance reads comments by
+# any path (MASTER §4). Kim reviews the server-side store himself and relays verdicts in
+# chat; kim_feedback/ckpt_feedback are written from those relays only. The systemd timer
+# (comment-merge.timer) is disabled. This guard makes an accidental manual run a no-op.
+import sys
+sys.exit("merge_comments.py RETIRED 2026-07-15 — write-only comment contract (MASTER §4); do not ingest the export.")
+
 """merge_comments.py — pull site comments into eval manifests (manifest v2).
 
 The merge side of the comment loop (W's endpoint /files/comment.php, 2026-07-13):
