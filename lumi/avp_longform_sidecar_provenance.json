@@ -700,14 +700,14 @@
 "caption_stem": "000122"
 },
 "000140": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyora - Goddess Guerilla - Zarjaz Beats!",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000141": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyora - Goddess Guerilla - Zarjaz Beats!",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000142": {
 "tier": "own",
@@ -1080,94 +1080,94 @@
 "caption_stem": "000198"
 },
 "000216": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000217": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000218": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000219": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000220": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000221": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000222": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000223": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000224": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000225": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000226": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000227": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000228": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000229": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000230": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000231": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000232": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000233": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Ajatukset ja Asiat",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000234": {
 "tier": "own",
@@ -1260,184 +1260,184 @@
 "caption_stem": "000234"
 },
 "000252": {
-"tier": null,
+"tier": "own",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000253": {
-"tier": null,
+"tier": "own",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000253"
 },
 "000254": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000255": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000256": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000257": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000258": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000259": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000260": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000261": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000262": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000263": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000264": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000265": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000266": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000267": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000268": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000269": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Korento",
-"caption_stem": null
+"caption_stem": "000252"
 },
 "000270": {
-"tier": null,
+"tier": "own",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000271": {
-"tier": null,
+"tier": "own",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000271"
 },
 "000272": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000273": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000274": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000275": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000276": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000277": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000278": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000279": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000280": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000281": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000282": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000283": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000284": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000285": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000286": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000287": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Aarnimaa - Syyskansan tarinoita",
-"caption_stem": null
+"caption_stem": "000270"
 },
 "000288": {
 "tier": "own",
@@ -2050,94 +2050,94 @@
 "caption_stem": "000392"
 },
 "000410": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000411": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000412": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000413": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000414": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000415": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000416": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000417": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000418": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000419": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000420": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000421": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000422": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000423": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000424": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000425": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000426": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000427": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Cosmium",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000428": {
 "tier": "own",
@@ -2650,14 +2650,14 @@
 "caption_stem": "000512"
 },
 "000530": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Elektro Fluoro Punx -Manifiesto Futu",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000531": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Elektro Fluoro Punx -Manifiesto Futu",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000532": {
 "tier": "own",
@@ -3650,24 +3650,24 @@
 "caption_stem": "000712"
 },
 "000730": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Survival of The Free 2016",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000731": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Survival of The Free 2016",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000732": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Survival of The Free 2016",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000733": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Survival of The Free 2016",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000734": {
 "tier": "own",
@@ -3850,14 +3850,14 @@
 "caption_stem": "000752"
 },
 "000770": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Tiibetin siivekkäät! salagroove. - Banaanialkio",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000771": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Tiibetin siivekkäät! salagroove. - Banaanialkio",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000772": {
 "tier": "own",
@@ -4490,19 +4490,19 @@
 "caption_stem": "000880"
 },
 "000898": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Ötökkämanifesti - Suvetar (tuli maasta-mix)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000899": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Ötökkämanifesti - Suvetar (tuli maasta-mix)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000900": {
-"tier": null,
+"tier": "parent",
 "parent_track": "Aavepyörä - Ötökkämanifesti - Suvetar (tuli maasta-mix)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "000901": {
 "tier": "own",
@@ -6765,24 +6765,24 @@
 "caption_stem": "001335"
 },
 "001353": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - katso kukkaa cd1- Nemesis the Warlock (malleus maleficarum mix 2012 remaster)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001354": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - katso kukkaa cd1- Nemesis the Warlock (malleus maleficarum mix 2012 remaster)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001355": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - katso kukkaa cd1- Nemesis the Warlock (malleus maleficarum mix 2012 remaster)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001356": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - katso kukkaa cd1- Nemesis the Warlock (malleus maleficarum mix 2012 remaster)",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001357": {
 "tier": "own",
@@ -7955,94 +7955,94 @@
 "caption_stem": "001573"
 },
 "001591": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001592": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001592"
 },
 "001593": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001594": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001595": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001596": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001597": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001598": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001599": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001600": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001601": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001602": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001603": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001604": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001605": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001606": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001607": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001608": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Beyond The Veil of Sleep",
-"caption_stem": null
+"caption_stem": "001591"
 },
 "001609": {
 "tier": "own",
@@ -8745,124 +8745,124 @@
 "caption_stem": "001731"
 },
 "001749": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001750": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001750"
 },
 "001751": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001752": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001753": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001754": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001755": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001756": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001757": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001758": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001759": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001760": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001761": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001762": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001763": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001764": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001765": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001766": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyora - kotiin haltiakansan luo- Uin läpi avaruuden tähtien",
-"caption_stem": null
+"caption_stem": "001749"
 },
 "001767": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyörä - commodore shiva",
-"caption_stem": null
+"caption_stem": "001767"
 },
 "001768": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyörä - commodore shiva",
-"caption_stem": null
+"caption_stem": "001768"
 },
 "001769": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko - bonus - cave crew theme -rmx",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001770": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko - bonus - cave crew theme -rmx",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001771": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko - bonus - cave crew theme -rmx",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001772": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko - bonus - cave crew theme -rmx",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001773": {
 "tier": "own",
@@ -9405,94 +9405,94 @@
 "caption_stem": "001863"
 },
 "001881": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001882": {
-"tier": null,
+"tier": "own",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001882"
 },
 "001883": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001884": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001885": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001886": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001887": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001888": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001889": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001890": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001891": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001892": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001893": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001894": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001895": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001896": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001897": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001898": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - hengen aurinko -hengen aurinko",
-"caption_stem": null
+"caption_stem": "001881"
 },
 "001899": {
 "tier": "own",
@@ -9765,14 +9765,14 @@
 "caption_stem": "001937"
 },
 "001953": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - ia ia - beyond koiraukko",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001954": {
-"tier": null,
+"tier": "parent",
 "parent_track": "aavepyörä - ia ia - beyond koiraukko",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "001955": {
 "tier": "own",
@@ -10355,14 +10355,14 @@
 "caption_stem": "002070"
 },
 "002071": {
-"tier": null,
+"tier": "own",
 "parent_track": "pirates of fox bay",
-"caption_stem": null
+"caption_stem": "002071"
 },
 "002072": {
-"tier": null,
+"tier": "own",
 "parent_track": "pirates of fox bay",
-"caption_stem": null
+"caption_stem": "002072"
 },
 "002073": {
 "tier": "own",
@@ -10635,24 +10635,24 @@
 "caption_stem": "002109"
 },
 "002127": {
-"tier": null,
+"tier": "parent",
 "parent_track": "summamutikka - taii kayka - Hörinäpörinä",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "002128": {
-"tier": null,
+"tier": "parent",
 "parent_track": "summamutikka - taii kayka - Hörinäpörinä",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "002129": {
-"tier": null,
+"tier": "parent",
 "parent_track": "summamutikka - taii kayka - Hörinäpörinä",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "002130": {
-"tier": null,
+"tier": "parent",
 "parent_track": "summamutikka - taii kayka - Hörinäpörinä",
-"caption_stem": null
+"caption_stem": "INFO"
 },
 "002131": {
 "tier": "own",
@@ -11963,5 +11963,10 @@
 "tier": "own",
 "parent_track": "until the lasers of this world blaze no more",
 "caption_stem": "002392"
+},
+"captions_tiered": {
+"tier": null,
+"parent_track": "",
+"caption_stem": null
 }
 }

@@ -121,6 +121,29 @@ def build_goa():
     return out, prov, dict(counts)
 
 
+AVP_ROOT = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed"
+
+
+def _avp_info_caption(parent: str):
+    """Fallback caption source: the parent track's .INFO Music-Flamingo fields.
+    Needed for parents whose latents_avp crops are ALL aug-variants (no original
+    crop stems exist, so the granite pass's crop-keyed sidecar can't carry them
+    — the 2026-07-15 MF fill wrote their captions into the INFOs directly)."""
+    d = os.path.join(AVP_ROOT, parent)
+    if not os.path.isdir(d):
+        return None
+    for f in sorted(os.listdir(d)):
+        if f.endswith(".INFO"):
+            try:
+                info = json.load(open(os.path.join(d, f)))
+            except Exception:
+                return None
+            t3 = info.get("music_flamingo_genre_mood") or info.get("music_flamingo_full")
+            if t3:
+                return {"t2": info.get("granite_t2"), "t3": t3, "from": "INFO"}
+    return None
+
+
 def build_avp():
     tiers = json.load(open(os.path.join(LATENTS_AVP, "captions_tiered.json")))
     # parent track -> a captioned entry (t3 present)
@@ -134,6 +157,11 @@ def build_avp():
         if parent and tiers[stem].get("t3") and parent not in parent_caps:
             parent_caps[parent] = {"t2": tiers[stem].get("t2"),
                                    "t3": tiers[stem]["t3"], "from": stem}
+    # INFO-fallback for parents with no captioned crop entry
+    for parent in {p for p in parent_of.values() if p and p not in parent_caps}:
+        cap = _avp_info_caption(parent)
+        if cap:
+            parent_caps[parent] = cap
     out, prov = {}, {}
     counts = defaultdict(int)
     for stem in sorted(tiers.keys()):
