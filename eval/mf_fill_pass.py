@@ -104,7 +104,12 @@ def main() -> int:
         return 2
 
     from classification.music_flamingo import MusicFlamingoGGUF
-    mf = MusicFlamingoGGUF(model="Q6_K", gpu_layers=99, trim_frac=0.6)
+    # context_size 16384 = the avp_pipeline.yaml value the July pass ran with.
+    # The class default (2048) makes llama-mtmd-cli die with 'failed to eval
+    # chunk 3 / Unable to eval prompt' on full-length tracks — the audio tokens
+    # alone overflow the window (2026-07-15 night-run failure, all 111 tracks).
+    mf = MusicFlamingoGGUF(model="Q6_K", gpu_layers=99, trim_frac=0.6,
+                           context_size=16384)
 
     jobs = ([("goa", GOA_ROOT, t, ("full",)) for t in goa]
             + [("avp", AVP_ROOT, t, ("full", "genre_mood")) for t in avp])
