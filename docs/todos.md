@@ -198,3 +198,13 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   ships manually on render-completion for now; the proper fix is a setsid-daemonized shipper
   (or a systemd user timer like comment-merge.timer). Until then: whoever finishes a matrix
   render pings W for the ship.
+
+- [POOL, G] (2026-07-15, C's gate-(b) follow-ups) Width T-sweep: stereo-width LEVEL vs context
+  length (T=512/1024/2048/4096, few seeds, base model) — if width narrows monotonically with T
+  that's a clean law and width graduates to a standard metric. Card-gap filler. Companion:
+  2-3 more seeds on the 4096 single-shot/windowed pair to firm the n=1 level gap.
+  Tooling ready: eval/width_metric.py (merges width stats into run_meta.width_metrics;
+  same meter as the corpus sidecars, so numbers are band-comparable).
+- [POOL, W] (2026-07-15, from gate (b)) model.py: generate()'s sample_size default (5292032)
+  silently clamps ALL durations to 120 s and the CLI --duration >380 falls back to the default —
+  loud warning at minimum, ideally honor duration up to model max (C endorsed; cost G two renders).
