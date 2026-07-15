@@ -4,5 +4,6 @@
  "onset_eval": "/run/media/kim/Mantu/sa3_control_runs/_pages/onset_eval/run_meta.json",
  "disentangle": "/run/media/kim/Mantu/sa3_control_runs/onset_Fusion_opb_lr1.5e-4_30ep/run_meta.json",
  "mp": "/run/media/kim/Mantu/sa3_control_runs/_pages/mp/run_meta.json",
- "traj": "/run/media/kim/Mantu/sa3_control_runs/_pages/traj/run_meta.json"
+ "traj": "/run/media/kim/Mantu/sa3_control_runs/_pages/traj/run_meta.json",
+ "listening_e0": "/run/media/kim/Mantu/sa3_control_runs/_pages/listening_e0/run_meta.json"
 }
