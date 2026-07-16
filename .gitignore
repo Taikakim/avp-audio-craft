@@ -58,6 +58,7 @@ __pycache__/
 !/Misc/inject_comment_widget.py
 !/Misc/build_disentangle.py
 !/Misc/build_mp_crossmodel.py
+!/Misc/build_e1_pilot_page.py
 !/Misc/latent_dim_feature_xcorr.py
 !/Misc/latent_noise_fragility.py
 !/Misc/build_dms.py
