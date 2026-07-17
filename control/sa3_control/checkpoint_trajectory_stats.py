@@ -42,28 +42,40 @@ def main():
     ap.add_argument("--label", required=True)
     ap.add_argument("--epoch-steps", type=int, default=5400)
     ap.add_argument("--out-dir", default="/home/kim/Projects/SAO/checkpoint-stats")
+    ap.add_argument("--glob", default="riffer_step*.pt",
+                    help="ckpt filename glob; Lightning DoRA runs use 'epoch=*-step=*.ckpt'")
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
 
-    paths = glob.glob(os.path.join(args.ckpt_dir, "riffer_step*.pt"))
-    paths = sorted(paths, key=lambda p: int(re.search(r"step(\d+)", p).group(1)))
+    paths = glob.glob(os.path.join(args.ckpt_dir, args.glob))
+    paths = sorted(paths, key=lambda p: int(re.search(r"step=?(\d+)", p).group(1)))
     if not paths:
         print(f"[traj] no checkpoints in {args.ckpt_dir}")
         return
-    steps = [int(re.search(r"step(\d+)", p).group(1)) for p in paths]
+    steps = [int(re.search(r"step=?(\d+)", p).group(1)) for p in paths]
     print(f"[traj] {args.label}: {len(paths)} checkpoints, steps {steps[0]}..{steps[-1]}", flush=True)
 
+    def load_state(path):
+        d = torch.load(path, map_location="cpu", weights_only=False)
+        if "state" in d:
+            return d["state"]
+        # Lightning checkpoint: adapter params only (lora/dora) — the base model
+        # is frozen and identical across ckpts, so trajectory = adapter trajectory
+        sd = d.get("state_dict", d)
+        ad = {k: v for k, v in sd.items()
+              if torch.is_tensor(v) and ("lora" in k.lower() or "dora" in k.lower())}
+        return ad if ad else {k: v for k, v in sd.items() if torch.is_tensor(v)}
+
     # anchors
-    W0 = flat(torch.load(paths[0], map_location="cpu", weights_only=False)["state"])
-    Wlast = flat(torch.load(paths[-1], map_location="cpu", weights_only=False)["state"])
-    keys = [k for k, v in torch.load(paths[0], map_location="cpu", weights_only=False)["state"].items()
-            if torch.is_tensor(v)]
+    W0 = flat(load_state(paths[0]))
+    Wlast = flat(load_state(paths[-1]))
+    keys = [k for k, v in load_state(paths[0]).items() if torch.is_tensor(v)]
     centroid = torch.zeros_like(W0)
 
     rows, prev, prev_dir, layer_prev = [], None, None, None
     flats = []
     for p, step in zip(paths, steps):
-        st = torch.load(p, map_location="cpu", weights_only=False)["state"]
+        st = load_state(p)
         fw = flat(st)
         flats.append(fw)
         centroid += fw / len(paths)
