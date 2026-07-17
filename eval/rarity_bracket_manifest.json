@@ -221,26 +221,47 @@
   "fp32cmp_avp_t4096_bs1_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=2393.ckpt"
+    "epoch=0-step=2393.ckpt",
+    "epoch=1-step=4786.ckpt",
+    "epoch=2-step=7179.ckpt",
+    "epoch=3-step=9572.ckpt",
+    "epoch=4-step=11965.ckpt",
+    "epoch=5-step=14358.ckpt",
+    "epoch=6-step=16751.ckpt",
+    "epoch=7-step=19144.ckpt"
    ],
    "witness": [],
-   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=598.ckpt"
+    "epoch=0-step=598.ckpt",
+    "epoch=1-step=1196.ckpt",
+    "epoch=2-step=1794.ckpt",
+    "epoch=3-step=2392.ckpt",
+    "epoch=4-step=2990.ckpt",
+    "epoch=5-step=3588.ckpt",
+    "epoch=6-step=4186.ckpt",
+    "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr5e5": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=598.ckpt"
+    "epoch=0-step=598.ckpt",
+    "epoch=1-step=1196.ckpt",
+    "epoch=2-step=1794.ckpt",
+    "epoch=3-step=2392.ckpt",
+    "epoch=4-step=2990.ckpt",
+    "epoch=5-step=3588.ckpt",
+    "epoch=6-step=4186.ckpt",
+    "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t512_bs8_lr1e4": {
    "tier": "full",
@@ -255,7 +276,66 @@
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
-   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t512_bs8_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=675.ckpt",
+    "epoch=1-step=1350.ckpt",
+    "epoch=2-step=2025.ckpt",
+    "epoch=3-step=2700.ckpt",
+    "epoch=4-step=3375.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI precision-campaign arm (fp32/bf16 twin; Kim direct 2026-07-18). GHOST-NOTE entry, C owns judgment."
+  },
+  "bf16cmp_avp_t512_bs8_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=299.ckpt",
+    "epoch=1-step=598.ckpt",
+    "epoch=2-step=897.ckpt",
+    "epoch=3-step=1196.ckpt",
+    "epoch=4-step=1495.ckpt",
+    "epoch=5-step=1794.ckpt",
+    "epoch=6-step=2093.ckpt",
+    "epoch=7-step=2392.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI precision-campaign arm (fp32/bf16 twin; Kim direct 2026-07-18). GHOST-NOTE entry, C owns judgment."
+  },
+  "bf16cmp_goa_t512_bs8_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=675.ckpt",
+    "epoch=1-step=1350.ckpt",
+    "epoch=2-step=2025.ckpt",
+    "epoch=3-step=2700.ckpt",
+    "epoch=4-step=3375.ckpt",
+    "epoch=5-step=4050.ckpt",
+    "epoch=6-step=4725.ckpt",
+    "epoch=7-step=5400.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI precision-campaign arm (fp32/bf16 twin; Kim direct 2026-07-18). GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t4096_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=5400.ckpt",
+    "epoch=1-step=10800.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t4096_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1350.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
   }
  },
  "legacy_goa_dora_nested": {
