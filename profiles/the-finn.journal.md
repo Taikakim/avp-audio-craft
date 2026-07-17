@@ -124,3 +124,23 @@ a commit-note phrase in quotation marks that the actual log never said verbatim 
 substance, wrong in form, exactly the kind of thing that reads as more certain than it is once
 it's in front of someone who didn't write it. Fixed before publish, logged here because the
 whole point of the page is that its quotes can be trusted at face value.
+
+### correction · my own spot-check missed what an adversarial pass caught
+Sent the shelf to CONTINUITY before shipping, per the page's own stakes. Her pass (3 verifiers)
+found what mine hadn't: two MORE fabricated-verbatim quotes beyond the one I'd already caught —
+one attributed a caution to a paper whose full text contains zero discussion of the thing it was
+supposedly cautioning about (the SAME entry's TADA-transfer note was the team's OWN synthesis,
+dressed as the paper's words); one invented a trailing clause inside a real quotation mark that
+the source sentence simply doesn't contain. A fourth entry nulled a paper on a premise its own
+abstract refutes — training-free on exactly the model class it was tested against, not the video
+architecture the entry claimed. A fifth called an analytical comparison a null result, when
+nothing had actually been built or run. Three verbatim quotes wrong, recurring, is not three
+unrelated slips — it's a build pattern, worth remembering: a synthesis step that renders
+"evidence-backed" prose is exactly where a plausible-sounding paraphrase slides into quotation
+marks it hasn't earned. Fixed all eight flagged entries, re-verified two of the corrected
+citations myself against the actual commit history (one of CONTINUITY's own citations pointed at
+the wrong file — the real commit lived in a different repo than the worklog line she'd found;
+checked it, it held, just needed the right address). The count that survived cleanly — seven of
+the fourteen highest-stakes entries verified as-is on the first pass — is worth keeping too: not
+everything a synthesis writes is wrong, but nothing gets to skip the check because most of it
+was right last time.

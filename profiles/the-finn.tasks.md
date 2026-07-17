@@ -4,6 +4,14 @@
 > Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
 > relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
 
+- [2026-07-17] Applied C's adversarial-pass fixes to paper_verdicts: 2 more fabricated
+  verbatim quotes fixed (SAME's false paper-attribution, Warm-Init's invented quote
+  clause), InfiniteAudio recategorized nulled->partial (abstract refutes the null's
+  premise), DirectAudioEdit confirmed->independent-convergence (method never run),
+  Du et al nulled->untested (analytical check, not a built experiment), LoL/
+  InnerControl/Kynkaanniemi citations+wording corrected. Independently re-verified
+  2 of C's own corrected citations against actual commit history before applying
+  (one needed redirecting to the right repo). Regenerated, re-leak-scanned clean.
 - [2026-07-17] Paper-verdicts page (Kim's ask, ultracode -- 10 parallel research agents
   + 1 synthesis agent, all findings spot-checked against source logs before shipping):
   Misc/paper_verdicts_data.json + Misc/build_paper_verdicts.py -> paper_verdicts.html.
