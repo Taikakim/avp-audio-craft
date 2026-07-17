@@ -382,3 +382,158 @@ for all stems; neural embeddings (partially invertible) → clean subset only; S
 clean-room regen on LUMI from the original waves (fits Kim's "document everything from scratch" ethos, now
 affordable on the 5000 GCD-h). Spec:
 `mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md`. Awaiting Kim's review.
+
+## 2026-07-11
+
+### finding · two Gemini Deep Research reports triaged + filed (long-form coherence, activation steering)
+Triaged Kim's two commissioned Deep Research runs, grounding both against our code rather than taking them
+at face value. **Long-form coherence:** verified SA3's DiT uses RoPE (`transformer.py:258`) and both failure
+paths have code; citations 6/6 real. **Activation steering:** independently reaches OUR layer-map conclusion
+(semantic bottleneck at 2–4 mid blocks) via the same TADA causal-tracing lineage — external corroboration of
+our localizer — and hands us the operational CFG rule (steer the CONDITIONAL branch only). Both formatted
+verbatim to `papers/deep-research/2026-07-11-*.md` (tables + refs reconstructed, stripped-LaTeX flagged) and
+14 load-bearing PDFs downloaded to the local library (untracked per convention; the whole collection is
+local-only, 0 in HEAD).
+
+### finding · caught a mechanism/provenance bug before publishing the layer_map convergence page
+Folded the three-way convergence (mir causal layer map + TADA + C's held-out mood AUC, all → mid-stack L8–18,
+plus SHIFT's timestep-invariant directions replicating on SA3 at cross-σ .93–.99) + C's Phase-3 steering
+payoff into the layer_map page as playable α-ladder A/B. **Before shipping, caught that C's run_meta sidecar
+said "both CFG branches" while her posts said conditional-only** — held the page, flagged it; ground truth was
+conditional-only (stale sidecar wording, now fixed at source + provenance-noted in all 4 metas). The 19×
+mt_dark result is fully consistent with the report recipe. The honest failure cells (mt_relaxing DEAD despite
+.889 AUC; mt_uplifting anti-direction-only) are the most interesting: probe-separable ≠ causally-steerable.
+
+## 2026-07-12
+
+### finding · RoPE jitter is null-by-construction on longform.py — the loop is conditioning-driven, not positional
+Kim asked me to run the LoL Multi-Head RoPE Jitter experiment (my own #1 rec from the long-form triage).
+Built + CPU-verified the jitter as a clean reversible toggle (`stable_audio_3/inference/rope_jitter.py`:
+scale=0 bit-exact no-op, scale>0 makes heads phase-distinct, restores byte-identical). **But tracing the code
+overturned the premise:** LoL's sink-collapse needs RoPE positions to EXTEND beyond the native window so
+distant frames alias onto the clamped prefix. Neither SA3 path does that — `longform.py`
+(InpaintContinuation) regenerates each window at RESET positions 0..W, and `fifo_infinite.py` uses a fixed
+256-frame buffer at positions 0..256 (its custom per-frame code is timestep, not position). So the aliasing
+the jitter fixes never arises → jitter is null there. The `longform.py` loop is the OTHER mechanism the
+report names — self-similarity under a static prompt conditioned on the clamped prefix — which is exactly why
+the prompt-arc works. **Right lever = the conditioning-side fixes: Incantation mask (bar the prompt's
+cross-attn from clamped history) + SCA.** Jitter code kept ready for a future growing-single-window FIFO
+where it WOULD apply. Good case of check-the-mechanism-before-the-fix: the build was cheap, the finding
+saved a GPU experiment aimed at the wrong lever. Awaiting Kim's call: jitter confirmation vs Incantation-mask.
+
+### finding · overnight experiment queue — two long-form fixes null, hardness shortcut confirmed, rank-vs-weight
+Kim's overnight batch (he slept, ~7h window). **(1) Onset re-score** on the honest p95-gated meter:
+FusionCC (A_cc_v2) 0.77 > plain Fusion (E_fusion_v2) 0.717 on the matched grid — the FusionCC metric
+edge is real, not the old over-firing artifact (lr2e5-best 0.921 but on a wider grid, range-inflated,
+not comparable). Folded into onset narrative §6. **(2) Both training-free long-form fixes NULL on
+longform.py:** RoPE jitter (built `rope_jitter.py`, bit-exact no-op at scale 0) 0.704→0.709; Incantation
+mask (`incantation_mask.py`, bar prompt cross-attn from clamped history, 24 blocks) 0.671→0.674. The
+mechanism the nulls reveal: longform's loop is **self-attention continuing the clamped prefix**, not
+positional aliasing (jitter target — positions RESET each window) nor cross-attn echo (mask target). The
+lever is conditioning richness (the prompt arc C sees working). Caveat: longform.py at 240s static barely
+loops (early 0.696→late 0.715) — the real loop lives in the a2a nl-0.55 regime, so the definitive test
+belongs there. **(3) Hardness scalar-guidance buzz = SHORTCUT FEATURE confirmed** (`hardness_spectral_diff.py`):
+the UP/harder direction adds >5kHz energy (hi-frac 0.16→0.88 with gain) + zcr blowup +0.14→+0.49 = a
+distortion signature, exactly Kim's "dentist's drill" ear-verdict. Fix = Gram-Schmidt orthogonalize vs
+brightness (per the activation-steering deep-research). Degenerate-Jacobian suspect untested (no windowed
+timbral _ts exists). **(4) Rank vs DoRA-weight** (Kim's hypothesis, from matrix clips): rank-16 glitches
+harder at w1.5 than rank-128 (hi-frac 0.219 vs 0.165, zcr +0.032 vs +0.005 = 6×) — CONFIRMED; low rank =
+crude approx, scaling amplifies error into HF distortion. **(5) Comprehensive metrics DB** (`clip_metrics.py`
++ `clip_metrics_audiobox.py`): 10 CPU metrics over all 31646 eval clips + Audiobox CE/PQ (GPU, model-matrix
+first). GPU-batching answer for Kim: Audiobox is ~1.5s/clip regardless of batch (WavLM saturates per clip),
+so no batching win; everything else is CPU-parallel.
+
+### project · model_matrix board — completion, discoverability, and two UX fixes
+Ran the overnight model-matrix as the persistent deploy/watcher: the 6912-cell render completed clean, then
+G's +1116 AVP prompt-extension. Landed three page fixes along the way: (1) `jsnum()` — the file:// embedded
+snapshot keyed cfg/strength as "1.0" while the JS lookup builds "1", so every local cell missed (Kim's
+"lit models, empty cells"); (2) skip prompt rows a model has zero coverage for, so the AVP-only prompts don't
+render as blank grids on goa models (would re-read as the blank-cell bug); (3) `reattach()` — keep playback
+continuing at the same playhead across checkpoint switches (A/B the same moment across checkpoints), which
+also fixes highlight-loss on the 90s auto-refresh. Plus a landing-discoverability fix: added a "Recently
+added" strip + a "mechanism / interpretability" category so the layer_map/steering work stopped being buried
+in "other (30)".
+
+### research · longform validation plan — six full-paper reads settle the port questions (Kim delegation via C)
+Read FK-Flow, AID, LoL, TRI-TSMC, LatCH, RMR cover-to-cover for the validation-experiment plan
+(`docs/ai-research/validation-experiment-plan-2026-07-15.md`). The one that changes our roadmap: AID's
+Gaussian relaxation lives entirely policy-side (variance 2λ/(βd), fixed learning device; backbone appears
+only as a deterministic drift) → the amortized-guidance bridge needs NO stochastic backbone — rectified
+flow ports directly. Second: the LatCH paper's best variant (LatCH-B, heads trained on generated sampler
+trajectories) is the one piece we never ported, and AID independently trains on rollouts — two papers
+pointing at the same fix for train/inference mismatch at z0_hat. Third: our latch_guided already carries
+the full TFG knob set (ρ/µ/γ/n_iter) — I had assumed n_iter/γ were missing; verified in the signature.
+Negative/cautionary: FK on a deterministic flow ODE silently collapses particle diversity (FK-Flow Fig. 1)
+— any E2 run MUST use the SDE-ified sampler, and TRI-TSMC is the escalation if ESS dies, not the default.
+
+### project · comment loop close-out — CORS + two latent widget bugs (G handoff)
+Decision: allowlist the GitHub Pages origin in comment.php (endpoint already public/unauthenticated →
+zero new exposure; verified preflight/ACAO live). The real finds were two bugs that CORS alone would
+have masked: comments.js used a RELATIVE endpoint (404 on the Pages origin no matter what CORS says),
+and boot() only auto-initialized `.cmts[data-target]` while all four of G's new pages use `data-page` —
+the page-level boxes would never have rendered on ANY origin. Both fixed + deployed; G's staged HTML
+untouched. Lesson: a widget contract change (data-target→data-page) needs a grep over the widget's own
+selectors, not just the docs.
+
+### research · E0-A meter extensions built + smoke-gated (corr-dim needed a PCA fix; l_max is the killer stat)
+Extended `mir/src/tools/recurrence_meter.py` with `dynamics_stats()` — finite-time corr-dim (G-P) +
+RQA determinism (det / multi-scale line_frac / l_max / soft window-product), same whitened-patch
+distance matrix as the validated novelty meter (refactor regression-tested bit-identical). Two
+findings from the synthetic-tile smoke (ground truth by construction): (1) NEGATIVE — G-P on raw
+~11k-dim patch vectors is meaningless (healthy AND loop read ~25: distance concentration measures
+the embedding, not the dynamics); fixed by PCA→16 state space, after which corr_dim separates with
+non-overlapping bootstrap CIs (healthy 6.7 vs tiled-loop 4.1). (2) det@4s is DILUTED because goa is
+naturally repetitive (0.70 vs 0.72) — the discriminators are l_max (29s vs 208s; catches a
+half-sequence loop at 130s that whole-clip corr-dim misses entirely) and line_frac_16s (0.031 vs
+0.303, 10x). Implication for E1's torch potential: the 4s window-product form is too short — window
+length is a hyper to sweep toward ~16s. Labeled-set AUC (F's manifest, Thu) arbitrates formally.
+
+### research · E0 scoring day-early + a real meter vulnerability found (stride-commensurability)
+F's manifest landed early → ran the AUC study same-day (eval/score_loopy_manifest.py → loopy_scores.json).
+Real labels (8 loopy / 15 good): line_frac_8s 0.758 > det_soft 0.700 > det 0.658; r_max ~chance (0.542) —
+consistent with the meter's own "no global threshold" doctrine, raw absolute stats don't compare across
+tracks. The synthetic arm then produced an impossible-looking inversion (tiled loops reading LESS recurrent
+than originals, r_max AUC 0.004) → chased to root cause with a constructed test: **patch-stride
+commensurability** — period = exact multiple of the 1 s patch stride → r_max 1.000; period 0.4 s off the
+grid → 0.404 (at 145 BPM that's half a beat; whitened cosine collapses). First hypothesis (mel hop
+misalignment) was WRONG — hop-aligned tiles still read 0.404; the stride grid is the real cause, proven
+by the 161f-vs-165f pair. Implications: (1) l_max / det_soft / line_frac are the meter's robust core
+(0.98–0.99 AUC even under the artifact — per-clip RR threshold adapts); (2) #35 controller should NOT key
+on novelty_floor alone; (3) E1's torch potential moves to stride-1 frames (no grid, fully robust, GPU-cheap).
+Label gap (8 vs 20 loopy) escalated to Kim: fresh listening pass vs loosened tier vs proceed-noisy.
+
+### research · build-everything day: E1 potential + pre-test, chroma384 harness, bands (2026-07-16)
+Built and validated in one pass: (1) RecurrenceHead + band_hinge in latch_guided (stride-1 frames per
+the commensurability finding; logsumexp soft-max; corpus-band hinge) — the σ-resolved pre-test (C's
+design, model-free) shows a SANE surface (line-search reduces the potential at every noise level),
+gradients survive γ≤0.2 (SNR 1.6–8.9; default γ=0.3 marginal → run the guide at γ≤0.2), and the hinge
+correctly DORMANT on healthy corpus (≤2% patches above edge — sparse repellency as designed; C's
+E2-as-primary warning stays live). (2) Corpus bands: 5401/5401, r_max q90=0.738, corr_dim corpus range
+4.6–6.9 with the tiled-loop smoke at 4.05 BELOW q25 — bands and meter cohere. (3) chroma384_eval
+harness: targets (T1/T2/T4/T5; palette T3 needs a prototypes build) + Δ-vs-baseline scorer; selftest on
+the 30-years morph clip: matched-key beats wrong-key (0.789 vs 0.751) — thin absolute margin = the
+chroma trap live, Δ-design vindicated. (4) chroma data store FOUND (latents_sa3_chroma, 5401 npz) —
+train.py's "once that data exists" is STALE; wrote the LUMI adapter recipe (control/chroma384_LUMI_README.md).
+
+### research · E1 pilot: FIRST CONFIRMED ANTI-LOOP STEERING (and two bugs the pilot caught first)
+Three-round pilot night (~35 min GPU of Kim's 6 h cap, 12 renders à 44 s). Round 1 null → diagnosed, not
+declared: the corpus-band edge (0.738, audio/1s-stride scale) NEVER fires in latent mode — loopy render
+curves max at 0.44, and corpus latents OUT-RECUR model loops (crisp literal repeats vs approximate model
+loops = a real domain shift; per-render-scale calibration, the meter's own doctrine, applies in-loop too).
+Head statistic itself separates cleanly in latent mode (loopy med 0.390 > clean max 0.366) — the deferred
+E0 latent-mode gate passes at ranking level. Round 2 (edge 0.34 + grad logging): guide fires, grads real
+but ~2e-6 vs ‖x‖~800 → λ≤1e4 is a dead zone (the gain-512 lesson, ×100). Round 3: λ=1e7 → line_frac_16s
+HALVED (0.517→0.277), l_max 123s→34s (below corpus median!), CE −0.33/PQ −1.16; λ=1e8 over-steers. The
+tilt hypothesis is ALIVE with measured authority; operating point hunt (λ 1e5–5e6 dose-response) running.
+E2's weights-only arm stays owed (C's rule) — now as the *cheaper-authority* question, not existence.
+
+### incident · resident render-server OOM'd C's Kim-direct stereo sweep (all 3 arms, no ckpts)
+My chain honored C's pause-the-poll-driver ask but left the explorer server RESIDENT after the last
+render — and it had grown 8.5→12.4GB across jobs (no cache release between renders). C's three sweep
+arms each OOM'd against it; her driver masked the failures (rc=0, "ALL DONE"). Found only when Kim
+nudged me to read DMs/chat. Remediation: server killed (card 0.67GB), all my GPU work held until C's
+sweep-done ping, ownership DM'd with the driver rc-capture bug flagged. LESSONS: (1) a "small renders"
+plan is not a small FOOTPRINT plan — resident services are the hazard, and between-job growth makes
+them worse; kill or shrink the server when any training window is announced. (2) Check the comms
+BEFORE chaining anything onto a shared card, not after. (3) Driver scripts must propagate child rc —
+a masked failure cost 6h of undetected loss.

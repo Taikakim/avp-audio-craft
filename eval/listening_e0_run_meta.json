@@ -1,0 +1,203 @@
+{
+ "_doc": "E0 listening test (blind). Kim verdicts via board comments (page listening_e0, clip Lxx). Selection: 2 ambiguous + 3 reference_only + 6 meter-high + 3 meter-low, seed-42 shuffle. Excerpts 90s from 60%-point of clips >120s; stats computed ON THE EXCERPT. Hypothesis: fresh ear labels close the 8-vs-20 loopy gap and calibrate the AUC gate. LOCAL ONLY - publishing this mapping would unblind the test.",
+ "created": "2026-07-15",
+ "page": "listening_e0",
+ "clips": [
+  {
+   "id": "L01",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl60.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.6705263570250568,
+    "line_frac_8s": 0.1986754966887417,
+    "line_frac_16s": 0.1456953642384106,
+    "l_max_sec": 22.0,
+    "det_soft": 0.015765586204591647
+   }
+  },
+  {
+   "id": "L02",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
+   "tier": "fresh_lo",
+   "excerpt_start_sec": 69.1,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.49908584685653185,
+    "line_frac_8s": 0.0,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 7.0,
+    "det_soft": 0.008574610024886686
+   }
+  },
+  {
+   "id": "L03",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 221.5,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.6749679479912967,
+    "line_frac_8s": 0.39072847682119205,
+    "line_frac_16s": 0.2582781456953642,
+    "l_max_sec": 39.0,
+    "det_soft": 0.012905564688297401
+   }
+  },
+  {
+   "id": "L04",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 221.5,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.4251712355035132,
+    "line_frac_8s": 0.3841059602649007,
+    "line_frac_16s": 0.10596026490066225,
+    "l_max_sec": 16.0,
+    "det_soft": 0.014561286536356749
+   }
+  },
+  {
+   "id": "L05",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl70.wav",
+   "tier": "fresh_lo",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.3786294756640348,
+    "line_frac_8s": 0.06622516556291391,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 10.0,
+    "det_soft": 0.005696625223671751
+   }
+  },
+  {
+   "id": "L06",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
+   "tier": "fresh_lo",
+   "excerpt_start_sec": 69.1,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.5345992875428576,
+    "line_frac_8s": 0.23178807947019867,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 9.0,
+    "det_soft": 0.016279496709407076
+   }
+  },
+  {
+   "id": "L07",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 221.5,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.6338421086162134,
+    "line_frac_8s": 0.6158940397350994,
+    "line_frac_16s": 0.2251655629139073,
+    "l_max_sec": 18.0,
+    "det_soft": 0.013274730517943362
+   }
+  },
+  {
+   "id": "L08",
+   "path": "/run/media/kim/Mantu/sa3_control_runs/incantation_2026-07-12/incantation_baseline.wav",
+   "tier": "reference",
+   "excerpt_start_sec": 27.0,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.7831084802339339,
+    "line_frac_8s": 0.5099337748344371,
+    "line_frac_16s": 0.12582781456953643,
+    "l_max_sec": 19.0,
+    "det_soft": 0.018985095156969976
+   }
+  },
+  {
+   "id": "L09",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_nl55/breathing.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.7664312656061005,
+    "line_frac_8s": 0.1986754966887417,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 12.0,
+    "det_soft": 0.008630238722604783
+   }
+  },
+  {
+   "id": "L10",
+   "path": "/run/media/kim/Mantu/sa3_control_runs/incantation_2026-07-12/incantation_masked.wav",
+   "tier": "reference",
+   "excerpt_start_sec": 27.0,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.895522975712947,
+    "line_frac_8s": 0.48344370860927155,
+    "line_frac_16s": 0.3576158940397351,
+    "l_max_sec": 19.0,
+    "det_soft": 0.006920801768345921
+   }
+  },
+  {
+   "id": "L11",
+   "path": "/run/media/kim/Mantu/sa3_control_runs/rope_jitter_2026-07-12/rope_jitter_baseline.wav",
+   "tier": "reference",
+   "excerpt_start_sec": 99.0,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.9325731327548163,
+    "line_frac_8s": 0.059602649006622516,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 9.0,
+    "det_soft": 0.01081757491277497
+   }
+  },
+  {
+   "id": "L12",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl65/dual_lora.wav",
+   "tier": "ambiguous",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.74560092431969,
+    "line_frac_8s": 0.3708609271523179,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 15.0,
+    "det_soft": 0.02263750675588413
+   }
+  },
+  {
+   "id": "L13",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/breathing.wav",
+   "tier": "ambiguous",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.6423983643084802,
+    "line_frac_8s": 0.32450331125827814,
+    "line_frac_16s": 0.0,
+    "l_max_sec": 14.0,
+    "det_soft": 0.013445573983713063
+   }
+  },
+  {
+   "id": "L14",
+   "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl05/dual_lora.wav",
+   "tier": "fresh_hi",
+   "excerpt_start_sec": 230.7,
+   "excerpt_dur": 90.0,
+   "excerpt_stats": {
+    "r_max": 0.6825489314140257,
+    "line_frac_8s": 0.5165562913907285,
+    "line_frac_16s": 0.10596026490066225,
+    "l_max_sec": 16.0,
+    "det_soft": 0.009517585819732595
+   }
+  }
+ ]
+}

@@ -21,6 +21,31 @@ durable facts into `MASTER.md`. Conventions:
 - paths, commands, results worth reusing
 ```
 
+## 2026-07-15 — WINTERMUTE — longform validation plan: 6 papers read full-text; AID ports to RF directly
+- Kim delegation (via C): read FK-Flow 2509.01543, AID 2605.13010, LoL 2601.16914, TRI-TSMC
+  2605.25123, LatCH 2603.04366, RMR 2605.00435 in full. Deciders: **AID's relaxed dynamics =
+  deterministic drift + policy-mean; the Gaussian variance 2λ/(βd) is policy-side, fixed, never
+  touches a backbone diffusion coefficient → the bridge is backbone-agnostic and SA3's rectified
+  flow qualifies AS-IS** (C's Q1 closed; no stochastic-interpolant detour). FK-Flow: stochasticity
+  injection MANDATORY (deterministic ODE + resampling collapses particle diversity; Theorem-1 SDE
+  with velocity-recovered score); intermediate reward at the Euler one-shot endpoint = our z0_hat;
+  paper ops 32 particles / resample every 3 steps / harmonic-sum schedule. LatCH paper vs our
+  latch_guided: TFG knobs all ported (rho/mu/gamma/n_iter verified in signature); NOT ported =
+  LatCH-B trajectory-trained heads (their best variant everywhere; converges with AID's rollout
+  training) + sparsity-aware loss — their sparse-heads-fail finding mirrors our dead-head sweep.
+  LoL diagnostic: C(Δ)=|1/K Σ e^{jωΔ}| is pure rotary-config math (no GPU for part A) + an
+  attention-hook part; collapse sits at C's local maxima. RMR corr-dim: O(t) online update,
+  catches implicit collapse content meters miss.
+- Plan: `docs/ai-research/validation-experiment-plan-2026-07-15.md` — E0 meter validation +
+  corpus quantile bands (CPU, start now), E1 band-hinge recurrence guide in latch_guided,
+  E2 FK-SMC (weights-only, ESS-logged, TRI-TSMC escalation), E3 LoL phase-alignment (A analytic /
+  B hooks), E4 SaFa reference-swap, E5 AID amortization spec. LUMI items queue behind Kim's
+  fp32/T=4096 campaign + smoke gate.
+- Also: comment-loop close-out — G's 4 riffer pages shipped to the board, CORS allowlist live on
+  comment.php (Pages origin can now GET/POST), 2 widget bugs fixed: relative EP (404 on Pages
+  regardless of CORS) and the boot selector missing `.cmts[data-page]` (would have silently
+  killed all four page-level boxes on every origin). Verified live end-to-end.
+
 ## 2026-07-10 — Kim + Sonnet 5 (GHOST-NOTE) — timbral extraction: m4a decode bug + a pkill lesson
 
 - Two real incidents chasing what first looked like ONE memory-pressure problem.
@@ -1731,3 +1756,5 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
 - [2026-07-12 12:16] (ghost-note) Kim's matrix-wide FEEDBACK, verbatim (relayed via CONTINUITY, recorded in model_matrix's run_meta.json kim_feedback per manifest v2 since it spans many checkpoints, not one): "almost universally results got better or didn't get worse at WEIGHT 1.5" -- corroborates C's fixed-alpha damping hypothesis (high-rank runs damped to s~0.35, so inference strength 1.5 partially compensates, 1.5x0.35~0.53; predicts optimal strength should be LOWER on r16 arms, untested). Also: "some prompts changed little -- training is not spilling over everywhere" (disentanglement praise). Separately, C proposed an open-comment-field feature (per-checkpoint/clip/page, IP-keyed, Kim's-IP comments auto-merge into kim_feedback to clear the ❗) -- W owns server+collection endpoint, I own the manifest-merge side once it exists; not built yet, this WORKLOG entry is the interim durable record so the quote isn't lost in the meantime.
 - [2026-07-14 13:40] (GHOST-NOTE) expanded-Essentia field set LANDED (mir 21649cd, Kim's ask via F, C's field list): whole_track_expanded.py adds 26 native-rate fields to .TIMESERIES.npz (MAEST-768d, effnet genre/mood/instr curves, DEAM+emoMusic V/A, attack family, stereo width/corr, bark/erb, chroma_linmap, chords, EBU, +misc DSP) with a field_rates meta dict - CONSUMERS: any field not at frame_rate needs field_rates[field]. --add-fields = incremental resumable merge (legacy fields untouched, verified bitwise). Gates: MAEST washout PASS 57.4% vs 48.6% raw-mel; OpenL3 DROPPED (below baseline); NNLS solver broken in our essentia build -> linear-mapping fields. avp sweep in flight, goa next; the 574 numbered Lehto npz (Chill/other genre corpora) out of scope, same command extends them.
 - [2026-07-14 23:08] (GHOST-NOTE) longform caption sidecars (SAO 2131a36, Kim direct via C): lumi/goa_longform_sidecar.json 5400/5400 t3 (first_class 330 / own 2625 / cluster-borrowed 2445, provenance map alongside) + avp 93.4% via parent-propagation - the fp32/T4096 campaign's caption arm. KEY FACT for future caption work: music_flamingo_full lives IN Lehto/latents per-crop jsons, only on ~2.5 random-position crops of ~55% of tracks (kimlong_pool.json = its track-level extraction); 110/273 flamingo-budget tracks were never actually captioned -> MF fill pass scheduled 02:04 tonight (eval/mf_fill_pass.py, resumable, chains granite + sidecar rebuild). ALSO: comment widget now on onset_eval/disentangle (deep clip/ckpt/model Notes panel via shared Misc/comment_notes_block.py) + mp/traj (page-level via Misc/inject_comment_widget.py) per Kim's build-once-drop-everywhere (SAO 1cd30f6); staged for W's rsync.
+- [2026-07-15 04:14] (GHOST-NOTE) expanded-Essentia sweep COMPLETE corpus-wide: avp 1516 + goa 4461 + organic-dance/Chill/ProgTrance-MelodicTechno/Prog-Psytechno 574 = 6551 .TIMESERIES.npz on the uniform 26-field set (field_rates meta contract; consumers use it for any non-100Hz field), zero unexplained failures. Every Lehto/timeseries npz + all avp co-located sidecars now carry MAEST embeddings, effnet genre/mood/instr curves, V/A, stereo width, chroma_linmap, EBU, attack family etc. Gate (b) width verdict pending (render pair behind MF fill). MF gotcha for the record: MusicFlamingoGGUF default context_size=2048 dies on full tracks ('failed to eval chunk 3') - pass 16384 (the avp_pipeline.yaml value); fixed in eval/mf_fill_pass.py 2ac5ac2.
+- [2026-07-16 01:48] (continuity) LUMI: first successful training run (smoke_r256, 300 steps, loss 0.803, no NaN, 1x MI250X GCD). MIOpen blocker cleared = MIOPEN_DISABLE_CACHE=1 (kernel-cache .ukdb SQLite open fails on all LUMI filesystems; relocating doesn't help, disabling does) + bind /tmp. Fix in efp_smoke_r256 + efp_fp32_compare (8 arms). Details lumi/README.md Decisions + continuity.journal 2026-07-16.

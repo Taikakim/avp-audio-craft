@@ -1,7 +1,7 @@
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
 FastAPI on :8056 (SAO/.venv). Holds medium-base resident on the GPU; endpoints
-/info /status /audio /generate /a2a_track /a2a_mix /decode. All render logic is
+/info /status /audio /generate /a2a_track /a2a_mix /longform /decode /bend. All render logic is
 lifted from the proven eval scripts (imported, not re-derived):
   - chroma_morph_transitions.py: load/tempo_of/bungee_stretch/downbeat_near/
     fine_align_shift/encode + the sinesweep release-callback, seam-inpaint,
@@ -53,15 +53,16 @@ from sa3_control.adapters import ControlContext, use_control_context  # noqa: E4
 from sa3_control.inject import install_adapters  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402
 from sa3_control.generate import load_adapter_state  # noqa: E402
+from sa3_control.steered_longform import _parse_prompt_arc  # noqa: E402  (arc grammar '0:A|45:B')
 from harmonic.same_chroma import compute_same_chroma  # noqa: E402
 sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3/scripts")
 from weight_mutations import Condition, apply_condition  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
-from stable_audio_3.inference.longform import slerp  # noqa: E402
+from stable_audio_3.inference.longform import (  # noqa: E402
+    InpaintContinuationGenerator, LongFormRenderer, PromptSchedule, slerp)
 from stable_audio_3.inference.sampling import build_schedule  # noqa: E402
 from stable_audio_3.inference.distribution_shift import FluxDistributionShift  # noqa: E402
-from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 from stable_audio_3.models import transformer as _sa3_tf  # noqa: E402
 
 # ---------------------------------------------------------------- constants
@@ -69,17 +70,27 @@ FPS = cmt.FPS                      # 44100 / 4096 ≈ 10.7666 latent frames/sec
 MAX_DURATION_SEC = 378.0
 MEDIUM_HEAD_DIR = Path("/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium")
 
+# The eval drive is removable; udisks mounts it as Mantu OR Mantu1 depending on
+# mount order. Hardcoding either breaks DoRA loading when it flips (C bug 2026-07-13).
+# Resolve to whichever mount actually holds sa3_lora_runs.
+def _mantu_root():
+    for d in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1"):
+        if Path(d, "sa3_lora_runs").is_dir():
+            return d
+    return "/run/media/kim/Mantu"
+_MANTU = _mantu_root()
+
 DORA_REGISTRY = {
     "none": None,
-    "hof": "/run/media/kim/Mantu1/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
-    "newstack": "/run/media/kim/Mantu1/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
-    "evr1x": "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
+    "hof": f"{_MANTU}/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
+    "newstack": f"{_MANTU}/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
+    "evr1x": f"{_MANTU}/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
 }
-FILM_DEFAULT_CKPT = ("/run/media/kim/Mantu1/sa3_control_runs/"
+FILM_DEFAULT_CKPT = (f"{_MANTU}/sa3_control_runs/"
                      "onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")
 FILM_DEFAULT_GAIN = 1.75
 
-CKPT_SCAN_ROOT = Path("/run/media/kim/Mantu1/sa3_lora_runs")
+CKPT_SCAN_ROOT = Path(f"{_MANTU}/sa3_lora_runs")
 CKPT_JOURNAL_PATH = Path("/tmp/sa3_explorer_ckpt_journal.json")
 CKPT_JOURNAL_LOCK = threading.Lock()
 
@@ -158,14 +169,18 @@ def resolve_cfg_interval(req):
 
 
 def resolve_dist_shift(req):
-    """GUI `dist_shift: float|null` -> schedule-warp override for generate().
-    A float builds a constant-alpha FluxDistributionShift (Self-Flow convention,
-    t_shifted = a*t / (1 + (a-1)*t); a=1 -> linear). None/absent/"" -> None,
-    which lets generate()/build_schedule fall back to the model's
+    """GUI `dist_shift: float|"default"|"flux"|null` -> schedule-warp override
+    for generate(). A float builds a constant-alpha FluxDistributionShift
+    (Self-Flow convention, t_shifted = a*t / (1 + (a-1)*t); a=1 -> linear).
+    "flux" -> the stock length-dependent FluxDistributionShift(), exactly as
+    breathing_v2_blockbuild.py:88-91 passes it. None/absent/""/"default" ->
+    None, which lets generate()/build_schedule fall back to the model's
     sampling_dist_shift (the GUI's 'model default')."""
     v = req.get("dist_shift")
-    if v is None or v == "":
+    if v is None or v in ("", "default"):
         return None
+    if v == "flux":
+        return FluxDistributionShift()
     a = float(v)
     if a <= 0:
         raise ValueError(f"dist_shift must be > 0 (got {a})")
@@ -337,22 +352,52 @@ def _install_film(ckpt):
 LOADED_MUT = None
 
 
+MUTATE_OPS = ("drift", "shuffle", "blur", "contrast", "tilt", "life")
+
+
 def resolve_mutate(req):
-    """req["mutate"] -> normalized mutation dict or None. Weight-garden shuffle:
-    the one value-preserving databending op that proved musical (WORKLOG 07-04)."""
+    """req["mutate"] -> normalized mutation dict or None. Weight-garden ops
+    (weight_mutations.py): shuffle is the value-preserving op that proved
+    musical (WORKLOG 07-04); the other five (drift/blur/contrast/tilt/life)
+    pass through since 07-13 (parity-audit item 4). 'life' also takes an
+    optional quantile (alive threshold, default 0.75)."""
     m = req.get("mutate") or {}
     if not m.get("enabled"):
         return None
-    return {"amount": float(m.get("amount", 0.25)),
-            "target": str(m.get("target", "attn")),
-            "seed": int(m.get("seed", 1234)),
-            "decay_rate": float(m.get("decay_rate", 0.5)),
-            "decay_direction": str(m.get("decay_direction", "late"))}
+    op = str(m.get("op", "shuffle"))
+    if op not in MUTATE_OPS:
+        raise ValueError(f"unknown mutate op {op!r} (have {MUTATE_OPS})")
+    out = {"op": op,
+           "amount": float(m.get("amount", 0.25)),
+           "target": str(m.get("target", "attn")),
+           "seed": int(m.get("seed", 1234)),
+           "decay_rate": float(m.get("decay_rate", 0.5)),
+           "decay_direction": str(m.get("decay_direction", "late"))}
+    if op == "life":
+        out["quantile"] = float(m.get("quantile", 0.75))
+    return out
+
+
+CURRENT_LORA_INTERVAL = (0.0, 1.0)
+
+
+def with_lora_interval(kw):
+    """Attach per-request LoRA sigma-interval gating (Kim 2026-07-12; native
+    sigma semantics, dit.py:466 — e.g. (0.25, 1.0) = adapter OFF for the final
+    low-noise detail steps). No-op at the (0,1) default or with no adapter."""
+    if LOADED_DORA not in (None, "none") and CURRENT_LORA_INTERVAL != (0.0, 1.0):
+        kw.setdefault("lora_configs", [{"lora_index": 0,
+                                        "interval": CURRENT_LORA_INTERVAL}])
+    return kw
 
 
 def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
+    global CURRENT_LORA_INTERVAL
+    CURRENT_LORA_INTERVAL = (
+        _f(dora_req or {}, "interval_min", 0.0),
+        _f(dora_req or {}, "interval_max", 1.0))
     mut_key = json.dumps(mutate_req, sort_keys=True) if mutate_req else None
     key, ckpt, strength = _resolve_dora(dora_req, default_dora)
     film_ckpt = None
@@ -372,16 +417,20 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         torch.cuda.empty_cache()
         MODEL = StableAudioModel.from_pretrained(ARGS.model, device=ARGS.device)
         if mutate_req:
-            # weight-garden shuffle on the frozen base DiT, BEFORE adapter attach
+            # weight-garden mutation on the frozen base DiT, BEFORE adapter attach
             # (train_lora --glitch order). Reset = rebuild without mutate.
-            cond = Condition(name="ui_shuffle",
-                             ops=[{"op": "shuffle", "amount": mutate_req["amount"]}],
+            mop = mutate_req.get("op", "shuffle")
+            op_spec = {"op": mop, "amount": mutate_req["amount"]}
+            if mop == "life":
+                op_spec["quantile"] = mutate_req.get("quantile", 0.75)
+            cond = Condition(name=f"ui_{mop}",
+                             ops=[op_spec],
                              target=mutate_req["target"],
                              decay_rate=mutate_req["decay_rate"],
                              decay_direction=mutate_req["decay_direction"],
                              mutation_seed=mutate_req["seed"])
             summary = apply_condition(MODEL.dit, cond)
-            log(f"[mutate] shuffle amount={mutate_req['amount']} target={mutate_req['target']} "
+            log(f"[mutate] {mop} amount={mutate_req['amount']} target={mutate_req['target']} "
                 f"seed={mutate_req['seed']} -> {summary}")
         if ckpt:
             MODEL.load_lora([str(ckpt)])
@@ -419,6 +468,15 @@ def resolve_latch(latch_list, req, extra_first=None):
     if extra_first is not None:
         slots.append(extra_first)
     for s in latch_list or []:
+        if s.get("builtin"):
+            # Parameterless builtin guides (E1 recurrence potential, 2026-07-16):
+            # no checkpoint — resolved inside model.py's _latch_guided_generate.
+            gain = _f(s, "gain", 1e6)
+            cfg = {"builtin": str(s["builtin"]), "value": _f(s, "value", 0.34),
+                   "start_pct": _f(s, "start_pct", 0.3), "end_pct": _f(s, "end_pct", 0.8),
+                   "huber_beta": _f(s, "huber_beta", 0.05)}
+            slots.append((cfg, gain))
+            continue
         head = s.get("head")
         path = s.get("path")
         entry = None
@@ -442,12 +500,19 @@ def resolve_latch(latch_list, req, extra_first=None):
                "value": _f(s, "value", (entry or {}).get("value_default", -30.0)),
                "start_pct": _f(s, "start_pct", 0.0),
                "end_pct": _f(s, "end_pct", 0.6)}
+        # full hyperparam pass-through (Kim 2026-07-12; parity-audit item 1 —
+        # these were silently dropped before): per-slot loss shaping.
+        if s.get("loss_type"):
+            cfg["loss_type"] = str(s["loss_type"])   # mse/smooth_l1/cosine/scalar_pooled/chroma_rung1/2
+        if s.get("w_sec") is not None:
+            cfg["w_sec"] = _f(s, "w_sec", 1.0)
         slots.append((cfg, gain))
     if not slots:
         return None, None
     g0 = float(slots[0][1]) or 1.0
     configs = [{**cfg, "weight": float(gain) / g0} for cfg, gain in slots]
-    hparams = {"rho": g0, "mu": g0,
+    # rho/mu accept explicit overrides; default stays tied to slot-1 gain
+    hparams = {"rho": _f(req, "rho", g0), "mu": _f(req, "mu", g0),
                "gamma": _f(req, "gamma", 0.3), "n_iter": _i(req, "n_iter", 4)}
     return configs, hparams
 
@@ -589,9 +654,13 @@ async def schedule(request: Request):
             ds_obj, ds_echo = None, "linear"
         else:
             ds_obj = resolve_dist_shift(req)
-            ds_echo = "model" if ds_obj is None else float(req["dist_shift"])
             if ds_obj is None:
+                ds_echo = "model"
                 ds_obj = m.model.sampling_dist_shift
+            elif req.get("dist_shift") == "flux":
+                ds_echo = "flux"
+            else:
+                ds_echo = float(req["dist_shift"])
     except (TypeError, ValueError) as e:
         return JSONResponse({"error": str(e)}, status_code=400)
     latent_len = max(1, math.ceil(duration * SR / DS))
@@ -646,9 +715,19 @@ async def a2a_mix_ep(request: Request):
     return await _run(_a2a_mix_impl, request)
 
 
+@app.post("/longform")
+async def longform_ep(request: Request):
+    return await _run(_longform_impl, request)
+
+
 @app.post("/decode")
 async def decode_ep(request: Request):
     return await _run(_decode_impl, request)
+
+
+@app.post("/bend")
+async def bend_ep(request: Request):
+    return await _run(_bend_impl, request)
 
 
 # ---------------------------------------------------------------- /generate
@@ -691,7 +770,7 @@ def _generate_impl(req):
         apply_latch(kw, latch_cfgs, latch_hp)
         tg = time.time()
         with film_context(req.get("film")):
-            out = MODEL.generate(**kw)
+            out = MODEL.generate(**with_lora_interval(kw))
         stages["generate"] = time.time() - tg
         check_output_length(out, duration, "generate")
         files = []
@@ -777,7 +856,7 @@ def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film
         kw["sampler_type"] = sampler_type
     apply_latch(kw, latch_cfgs, latch_hp)
     with film_context(film_req):
-        out = MODEL.generate(**kw)
+        out = MODEL.generate(**with_lora_interval(kw))
     y = out[0].float().cpu().numpy()
     if y.shape[1] < audio_np.shape[1] * 0.98:    # fail LOUD, never pad silence
         raise RuntimeError(f"a2a output {y.shape[1]/SR:.1f}s << requested {dur:.1f}s")
@@ -849,6 +928,138 @@ def _a2a_track_impl(req):
                               meta, req, rebuilt)
 
 
+# ---------------------------------------------------------------- /longform (parity audit 3b)
+def _arc_prompt_at(arc, t_sec):
+    """Last arc entry with start <= t_sec. arc = _parse_prompt_arc output:
+    a bare string (single prompt) or [(t_sec, prompt), ...] sorted-by-construction."""
+    if isinstance(arc, str):
+        return arc
+    prompt = arc[0][1]
+    for start, p in arc:
+        if t_sec >= float(start):
+            prompt = p
+    return prompt
+
+
+def _longform_impl(req):
+    """Prompt-ARC rendering. schedule = '0:promptA|45:promptB|...' — the
+    steered_longform.py arc grammar (its _parse_prompt_arc, imported; colon-safe,
+    a single prompt stays a bare string). Two paths:
+      - audio_path given: /a2a_track-style window loop over the source, prompt
+        selected per window from the arc (breathing_v2_blockbuild.py pattern);
+        full dora/film/latch/preserve/dist_shift support rides _a2a_pass.
+      - no audio_path: text-to-audio longform via the proven LongFormRenderer +
+        InpaintContinuationGenerator (inference/longform.py — the machinery a
+        night was once lost re-inventing); FiLM applies via context. LatCH is
+        NOT reachable on this path (sample_diffusion seam) — warned, not dropped
+        silently."""
+    schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()
+    if not schedule_arg:
+        raise ValueError("schedule is required ('0:promptA|45:promptB|...' arc grammar)")
+    arc = _parse_prompt_arc(schedule_arg)
+    arc_echo = arc if isinstance(arc, list) else [(0.0, arc)]
+    steps = _i(req, "steps", 24)
+    cfg = _f(req, "cfg_scale", 6.0)
+    seed = resolve_seed(_i(req, "seed", -1))
+    audio_path = req.get("audio_path")
+    window_sec = _f(req, "window_sec", 30.0)
+    overlap_sec = _f(req, "overlap_sec", 5.0)
+    xfade_sec = _f(req, "xfade_sec", 4.0)
+    if not (0.0 < overlap_sec < window_sec):
+        raise ValueError(f"need 0 < overlap_sec ({overlap_sec}) < window_sec ({window_sec})")
+    with GPU_LOCK:
+        t0 = time.time()
+        stages = {}
+        warnings = []
+        job_id, jd = new_job("longform")
+        log(f"[longform {job_id}] {len(arc_echo)} arc entries, "
+            f"{'a2a ' + Path(audio_path).name if audio_path else 't2a'}")
+        rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
+                                mutate_req=resolve_mutate(req))
+        stages["prepare"] = time.time() - t0
+        latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
+        if audio_path:
+            # a2a arc: window loop like /a2a_track, prompt per window from the arc
+            audio_path = require_path(audio_path, "audio_path")
+            nl = _f(req, "noise_level", 0.4)
+            apg = _f(req, "apg_scale", 1.0)
+            cfg_interval = resolve_cfg_interval(req)
+            dist_shift = resolve_dist_shift(req)
+            audio = load_audio(audio_path)
+            total_sec = audio.shape[1] / SR
+            win = min(window_sec, a2a_mod.MAX_SEC)
+            hop = win - overlap_sec
+            wins, lo = [], 0.0
+            while True:
+                hi = lo + win
+                if hi >= total_sec:
+                    wins.append((lo, total_sec))
+                    break
+                wins.append((lo, hi))
+                lo += hop
+            n_ov = int(overlap_sec * SR)
+            full = None
+            prompts_used = []
+            for k, (lo, hi) in enumerate(wins):
+                tw = time.time()
+                pr = _arc_prompt_at(arc, lo)
+                prompts_used.append({"t_sec": round(lo, 2), "prompt": pr})
+                chunk = audio[:, int(lo * SR):int(hi * SR)]
+                hook = make_preserve_hook(req, chunk, steps)
+                log(f"  [w{k:02d}] {lo:.1f}-{hi:.1f}s '{pr[:50]}'")
+                y = _a2a_pass(chunk, nl, pr, seed + k, steps, cfg,
+                              latch_cfgs, latch_hp, req.get("film"),
+                              apg_scale=apg, cfg_interval=cfg_interval,
+                              dist_shift=dist_shift,
+                              renoise_hook=hook)[:, :chunk.shape[1]]
+                if full is None:
+                    full = y
+                else:                            # equal-power cos/sin join (a2a_track)
+                    n = min(n_ov, full.shape[1], y.shape[1])
+                    tt = np.linspace(0, np.pi / 2, n, dtype=np.float32)
+                    join = full[:, -n:] * np.cos(tt) + y[:, :n] * np.sin(tt)
+                    full = np.concatenate([full[:, :-n], join, y[:, n:]], axis=1)
+                stages[f"w{k:02d}"] = time.time() - tw
+            out = torch.tensor(full)
+            meta = {"op": "longform", "mode": "a2a",
+                    "duration_sec": round(total_sec, 1),
+                    "windows": [[round(a, 2), round(b, 2)] for a, b in wins],
+                    "noise_level": nl, "arc": prompts_used}
+        else:
+            duration = _f(req, "duration", 120.0)
+            if latch_cfgs:
+                warnings.append("latch ignored on the t2a longform path "
+                                "(sample_diffusion seam has no latch hook)")
+            sched = PromptSchedule(arc, crossfade_sec=xfade_sec)
+            fr = lambda s: max(1, int(round(s * FPS)))  # noqa: E731  (steered_longform)
+            gen = InpaintContinuationGenerator(MODEL, steps=steps, cfg_scale=cfg)
+            renderer = LongFormRenderer(gen, channels=MODEL.model.io_channels, fps=FPS,
+                                        window_frames=fr(window_sec),
+                                        overlap_frames=fr(overlap_sec))
+            ts = time.time()
+            with film_context(req.get("film")):
+                lat = renderer.render_latents(sched, total_frames=fr(duration),
+                                              base_seed=seed)
+            stages["render"] = time.time() - ts
+            ts = time.time()
+            pre = MODEL.model.pretransform
+            with torch.inference_mode():
+                audio_t = pre.decode(lat.to(next(pre.parameters()).dtype),
+                                     chunked=True, chunk_size=128, overlap=32)
+            out = audio_t.squeeze(0).float().cpu()
+            stages["decode"] = time.time() - ts
+            check_output_length(out, duration, "longform")
+            meta = {"op": "longform", "mode": "t2a", "duration_sec": duration,
+                    "window_sec": window_sec, "overlap_sec": overlap_sec,
+                    "xfade_sec": xfade_sec, "arc": arc_echo,
+                    "drift_log": renderer.drift_log}
+        p = jd / "out_00.wav"
+        save_audio(p, out, SR, normalize=True)
+        log(f"[longform {job_id}] done {time.time()-t0:.1f}s")
+        return build_response(job_id, jd, [p], seed, t0, stages, warnings,
+                              meta, req, rebuilt)
+
+
 # ---------------------------------------------------------------- /a2a_mix
 def _pad_chroma(c, T):
     return c[:, :T] if c.shape[1] >= T else np.pad(c, ((0, 0), (0, T - c.shape[1])), mode="edge")
@@ -884,7 +1095,22 @@ def _a2a_mix_impl(req):
     cfg = _f(req, "cfg_scale", 6.0)
     apg = _f(req, "apg_scale", 1.0)
     cfg_interval = resolve_cfg_interval(req)
+    dist_shift = resolve_dist_shift(req)
     seed = resolve_seed(_i(req, "seed", -1))
+    film_req = req.get("film")
+    # crossfade-lab knobs (parity-audit 3c / item 6, Kim 2026-07-12)
+    interp = (req.get("interp") or "slerp").lower()
+    if interp not in ("slerp", "lerp"):
+        raise ValueError(f"unknown interp {interp!r} (slerp|lerp)")
+    construction = (req.get("construction") or "model").lower()
+    if construction not in ("model", "latent_xfade", "audio_xfade"):
+        raise ValueError(f"unknown construction {construction!r} "
+                         "(model | latent_xfade = decoded composite, no model pass | "
+                         "audio_xfade = transition_lab v2 equal-power audio baseline)")
+    if construction != "model":
+        chroma_on = False                        # guidance target feeds model passes only
+    eps_seed = _i(req, "eps_seed", 4242)         # sinesweep graded-clamp eps
+    seam_eps_seed = _i(req, "seam_eps_seed", 2424)  # inpaint seam-nl eps
     warnings = []
 
     with GPU_LOCK:
@@ -1042,21 +1268,35 @@ def _a2a_mix_impl(req):
             warnings.append(f"bar-grid remainder {seg_resid*1000:+.0f}ms folded into B cut")
         stages["beatmatch"] = time.time() - ts
 
-        # 7. encode + composite: both sides share the composite timeline; slerp
-        # over [ws,we] (generalization of cmt.main 297-299)
+        # 7. encode + composite: both sides share the composite timeline;
+        # slerp/lerp over [ws,we] (generalization of cmt.main 297-299).
+        # construction=audio_xfade never enters the latent domain (transition_lab
+        # v2 no-model baseline: equal-power cos/sin crossfade in audio).
         ts = time.time()
-        zA = cmt.encode(MODEL, A_seg, SR)
-        zB = cmt.encode(MODEL, B_seg, SR)
-        Tz = min(zA.shape[-1], zB.shape[-1])
-        if we > Tz:
-            shift = we - Tz
-            ws, we = ws - shift, Tz
-            ws_sec, we_sec = ws / FPS, we / FPS
-            warnings.append(f"window nudged {shift} frames left to fit latent grid")
-        t = torch.linspace(0, 1, W, device=zA.device, dtype=torch.float32).view(1, 1, -1)
-        mid = slerp(zA[..., ws:we].float(), zB[..., ws:we].float(), t).to(zA.dtype)
-        z = torch.cat([zA[..., :ws], mid, zB[..., we:Tz]], dim=-1)
-        dur = Tz / FPS
+        if construction == "audio_xfade":
+            n0, n1 = int(ws_sec * SR), min(int(we_sec * SR), target_n)
+            tt = np.linspace(0, np.pi / 2, max(n1 - n0, 1), dtype=np.float32)
+            y = A_seg.copy()
+            y[:, n0:n1] = A_seg[:, n0:n1] * np.cos(tt) + B_seg[:, n0:n1] * np.sin(tt)
+            y[:, n1:] = B_seg[:, n1:]
+            dur = y.shape[1] / SR
+        else:
+            zA = cmt.encode(MODEL, A_seg, SR)
+            zB = cmt.encode(MODEL, B_seg, SR)
+            Tz = min(zA.shape[-1], zB.shape[-1])
+            if we > Tz:
+                shift = we - Tz
+                ws, we = ws - shift, Tz
+                ws_sec, we_sec = ws / FPS, we / FPS
+                warnings.append(f"window nudged {shift} frames left to fit latent grid")
+            t = torch.linspace(0, 1, W, device=zA.device, dtype=torch.float32).view(1, 1, -1)
+            if interp == "lerp":
+                mid = ((1 - t) * zA[..., ws:we].float()
+                       + t * zB[..., ws:we].float()).to(zA.dtype)
+            else:
+                mid = slerp(zA[..., ws:we].float(), zB[..., ws:we].float(), t).to(zA.dtype)
+            z = torch.cat([zA[..., :ws], mid, zB[..., we:Tz]], dim=-1)
+            dur = Tz / FPS
 
         # 8. chroma-morph target (cmt.main 302-307) — appended to EVERY pass
         target = None
@@ -1073,56 +1313,64 @@ def _a2a_mix_impl(req):
                  if chroma_on else None)
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req, extra_first=extra)
 
-        # decode composite reference once
+        # decode composite reference once (model + latent_xfade; audio_xfade
+        # already holds y in the audio domain)
         pre = MODEL.model.pretransform
-        with torch.inference_mode():
-            audio_ref = pre.decode(z.to(next(pre.parameters()).dtype))[0]
+        if construction != "audio_xfade":
+            with torch.inference_mode():
+                audio_ref = pre.decode(z.to(next(pre.parameters()).dtype))[0]
         stages["encode_composite"] = time.time() - ts
 
-        # 9. mode pass
+        # 9. mode pass (construction 'model' only; latent_xfade = the decoded
+        # composite verbatim — the pure latent-crossfade arm, no model pass)
         ts = time.time()
-        film_req = req.get("film")
-        kw = dict(prompt=prompt, duration=dur, steps=steps, cfg_scale=cfg,
-                  apg_scale=apg, cfg_interval=cfg_interval,
-                  seed=seed, batch_size=1, sample_size=budget_for(dur))
-        apply_latch(kw, latch_cfgs, latch_hp)
-        if mode == "inpaint":                    # cmt.main 342-345
-            kw["inpaint_audio"] = (SR, audio_ref.float())
-            kw["inpaint_mask_start_seconds"] = ws_sec
-            kw["inpaint_mask_end_seconds"] = we_sec
-            kw["callback"] = make_log_cb(steps)
-        elif mode == "sinesweep":                # cmt.main 311-315 + 349-364, EXACT
-            kw["init_audio"] = (SR, audio_ref.float())
-            kw["init_noise_level"] = nl
-            depth_shape = torch.zeros(Tz)
-            depth_shape[ws:we] = torch.sin(torch.linspace(0, torch.pi, W))
-            z_ref = z.float().cpu()
-            torch.manual_seed(4242)
-            eps_ref = torch.randn_like(z_ref)
-            depth = (depth_shape * nl).view(1, 1, -1)
+        if construction == "latent_xfade":
+            y = audio_ref.float().cpu().numpy()
+            log(f"  [pass] latent_xfade ({interp}) — no model pass")
+        elif construction == "audio_xfade":
+            log("  [pass] audio_xfade — no model pass")
+        else:
+            kw = dict(prompt=prompt, duration=dur, steps=steps, cfg_scale=cfg,
+                      apg_scale=apg, cfg_interval=cfg_interval, dist_shift=dist_shift,
+                      seed=seed, batch_size=1, sample_size=budget_for(dur))
+            apply_latch(kw, latch_cfgs, latch_hp)
+            if mode == "inpaint":                # cmt.main 342-345
+                kw["inpaint_audio"] = (SR, audio_ref.float())
+                kw["inpaint_mask_start_seconds"] = ws_sec
+                kw["inpaint_mask_end_seconds"] = we_sec
+                kw["callback"] = make_log_cb(steps)
+            elif mode == "sinesweep":            # cmt.main 311-315 + 349-364, EXACT
+                kw["init_audio"] = (SR, audio_ref.float())
+                kw["init_noise_level"] = nl
+                depth_shape = torch.zeros(Tz)
+                depth_shape[ws:we] = torch.sin(torch.linspace(0, torch.pi, W))
+                z_ref = z.float().cpu()
+                torch.manual_seed(eps_seed)      # graded-clamp eps (was fixed 4242)
+                eps_ref = torch.randn_like(z_ref)
+                depth = (depth_shape * nl).view(1, 1, -1)
 
-            def cb(d, _z=z_ref, _e=eps_ref, _d=depth):
-                x, tt = d["x"], float(d["t"][0])
-                n = min(x.shape[-1], _z.shape[-1])
-                hold = (_d[..., :n] < tt)        # not yet released
-                ref_t = ((1 - tt) * _z[..., :n] + tt * _e[..., :n]).to(x.device, x.dtype)
-                xs = x[..., :n]
-                x[..., :n].copy_(torch.where(hold.to(x.device), ref_t, xs))
+                def cb(d, _z=z_ref, _e=eps_ref, _d=depth):
+                    x, tt = d["x"], float(d["t"][0])
+                    n = min(x.shape[-1], _z.shape[-1])
+                    hold = (_d[..., :n] < tt)    # not yet released
+                    ref_t = ((1 - tt) * _z[..., :n] + tt * _e[..., :n]).to(x.device, x.dtype)
+                    xs = x[..., :n]
+                    x[..., :n].copy_(torch.where(hold.to(x.device), ref_t, xs))
 
-            kw["callback"] = make_log_cb(steps, extra=cb)
-        else:                                    # refine: whole composite a2a
-            kw["init_audio"] = (SR, audio_ref.float())
-            kw["init_noise_level"] = nl
-            kw["callback"] = make_log_cb(steps)
-        log(f"  [pass] {mode} dur={dur:.1f}s window {ws_sec:.1f}-{we_sec:.1f}s "
-            f"({W}f{f' = {bars} bars' if bars else ''})")
-        with film_context(film_req):
-            y = MODEL.generate(**kw)[0].float().cpu().numpy()
-        check_output_length(y, dur, mode)
+                kw["callback"] = make_log_cb(steps, extra=cb)
+            else:                                # refine: whole composite a2a
+                kw["init_audio"] = (SR, audio_ref.float())
+                kw["init_noise_level"] = nl
+                kw["callback"] = make_log_cb(steps)
+            log(f"  [pass] {mode} dur={dur:.1f}s window {ws_sec:.1f}-{we_sec:.1f}s "
+                f"({W}f{f' = {bars} bars' if bars else ''})")
+            with film_context(film_req):
+                y = MODEL.generate(**with_lora_interval(kw))[0].float().cpu().numpy()
+            check_output_length(y, dur, mode)
         stages["main_pass"] = time.time() - ts
 
-        # 10. seam-inpaint strips (sinesweep only; cmt.main 375-393)
-        if mode == "sinesweep" and seam_inpaint > 0:
+        # 10. seam-inpaint strips (model-construction sinesweep only; cmt.main 375-393)
+        if construction == "model" and mode == "sinesweep" and seam_inpaint > 0:
             ts = time.time()
             S = seam_inpaint / FPS
             starts = [max(ws_sec - S / 2, 0), we_sec - S / 2]
@@ -1130,7 +1378,7 @@ def _a2a_mix_impl(req):
             log(f"  [pass] seam-inpaint {seam_inpaint}f strips")
             kw3 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
                        cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                       seed=seed, batch_size=1,
+                       dist_shift=dist_shift, seed=seed, batch_size=1,
                        sample_size=budget_for(y.shape[1] / SR),
                        inpaint_audio=(SR, torch.tensor(y)),
                        inpaint_mask_start_seconds=starts,
@@ -1138,7 +1386,7 @@ def _a2a_mix_impl(req):
                        callback=make_log_cb(steps))
             apply_latch(kw3, latch_cfgs, latch_hp)
             with film_context(film_req):
-                y = MODEL.generate(**kw3)[0].float().cpu().numpy()
+                y = MODEL.generate(**with_lora_interval(kw3))[0].float().cpu().numpy()
             stages["seam_inpaint"] = time.time() - ts
 
         # out_bridge.wav = pre-splice render, always saved (exploration tool)
@@ -1151,7 +1399,7 @@ def _a2a_mix_impl(req):
         # fade and everything after the window play original-B 0.5 s late relative
         # to the composite grid — the ear-ranked proven renders include that shift,
         # so we reproduce it rather than the grid-aligned variant.
-        if mode == "sinesweep" and pure_basis:
+        if construction == "model" and mode == "sinesweep" and pure_basis:
             S = seam_inpaint / FPS if seam_inpaint > 0 else 0.0
             lo_n = int(max(ws_sec - S / 2, 0) * SR)
             hi_n = int(min((we_sec + S / 2) * SR, y.shape[1]))
@@ -1174,7 +1422,7 @@ def _a2a_mix_impl(req):
             y = out_full
 
         # inpaint mode: original-audio splice-back with 1s fades (cmt.main 420-434)
-        if mode == "inpaint":
+        if construction == "model" and mode == "inpaint":
             ref = audio_ref.float().cpu().numpy()
             n = min(y.shape[1], ref.shape[1])
             y, ref = y[:, :n], ref[:, :n]
@@ -1204,7 +1452,7 @@ def _a2a_mix_impl(req):
                 with torch.inference_mode():
                     z_ref2 = pre.encode(torch.tensor(y, device=pp.device,
                                                      dtype=pp.dtype).unsqueeze(0)).float().cpu()
-                torch.manual_seed(2424)
+                torch.manual_seed(seam_eps_seed)  # seam-nl eps (was fixed 2424)
                 eps2 = torch.randn_like(z_ref2)
                 depth2 = (dshape * seam_nl).view(1, 1, -1)
 
@@ -1217,14 +1465,14 @@ def _a2a_mix_impl(req):
 
                 kw2 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
                            cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                           seed=seed, batch_size=1,
+                           dist_shift=dist_shift, seed=seed, batch_size=1,
                            sample_size=budget_for(y.shape[1] / SR),
                            init_audio=(SR, torch.tensor(y)),
                            init_noise_level=seam_nl,
                            callback=make_log_cb(steps, extra=cb2))
                 apply_latch(kw2, latch_cfgs, latch_hp)
                 with film_context(film_req):
-                    y = MODEL.generate(**kw2)[0].float().cpu().numpy()
+                    y = MODEL.generate(**with_lora_interval(kw2))[0].float().cpu().numpy()
                 stages["seam_nl"] = time.time() - ts
 
         # 12. optional whole-track a2a pass over the composite
@@ -1235,13 +1483,13 @@ def _a2a_mix_impl(req):
             log(f"  [pass] whole-track a2a nl={wt_nl:.2f}")
             dur2 = y.shape[1] / SR
             kw4 = dict(prompt=wt_prompt, duration=dur2, steps=steps, cfg_scale=cfg,
-                       apg_scale=apg, cfg_interval=cfg_interval,
+                       apg_scale=apg, cfg_interval=cfg_interval, dist_shift=dist_shift,
                        seed=seed, batch_size=1, sample_size=budget_for(dur2),
                        init_audio=(SR, torch.tensor(y)), init_noise_level=wt_nl,
                        callback=make_log_cb(steps))
             apply_latch(kw4, latch_cfgs, latch_hp)
             with film_context(film_req):
-                y = MODEL.generate(**kw4)[0].float().cpu().numpy()
+                y = MODEL.generate(**with_lora_interval(kw4))[0].float().cpu().numpy()
             check_output_length(y, dur2, "whole_track")
             stages["whole_track"] = time.time() - ts
 
@@ -1250,6 +1498,8 @@ def _a2a_mix_impl(req):
         log(f"[a2a_mix {job_id}] done {time.time()-t0:.1f}s")
 
         meta = {"op": "a2a_mix", "mode": mode,
+                "construction": construction, "interp": interp,
+                "eps_seed": eps_seed, "seam_eps_seed": seam_eps_seed,
                 "tempo_a": round(ta, 2), "tempo_b": round(tb, 2) if tb else None,
                 "speed": round(speed, 4),
                 "align_shift_ms": round(align_shift * 1000, 1),
@@ -1302,6 +1552,71 @@ def _decode_impl(req):
         meta = {"op": "decode", "latent_shape": list(arr.shape),
                 "duration_sec": round(a.shape[1] / SR, 2)}
         return build_response(job_id, jd, [out], None, t0, {}, [], meta, req, False)
+
+
+# ---------------------------------------------------------------- /bend (parity audit 3d)
+def _bend_impl(req):
+    """Latent data-bending: resolve the source latent exactly like /decode
+    (latent_path | crop_id under latent_dir), apply eval/latent_bend.py ops
+    (module written in parallel — imported lazily and guarded; contract:
+    apply_bends(latent, ops, seed) on a (1,C,T) float32 CPU tensor), then the
+    same chunked decode + sidecar trim + normalized save as _decode_impl."""
+    try:
+        import latent_bend  # noqa: PLC0415  (eval/ already on sys.path; lazy so boot never depends on it)
+    except ImportError as e:
+        raise RuntimeError(f"latent_bend module not available yet ({e}) — "
+                           "being written in parallel; retry once it lands")
+    ops = req.get("ops")
+    if not isinstance(ops, list) or not ops:
+        raise ValueError("ops must be a non-empty list of bend-op dicts "
+                         "(weight_mutations-style: [{'op': ..., 'amount': ...}, ...])")
+    seed = resolve_seed(_i(req, "seed", -1))
+    latent_dir = Path(req.get("latent_dir") or "/home/kim/Projects/latents_sa3")
+    crop_id = req.get("crop_id")
+    latent_path = req.get("latent_path")
+    sidecar = None
+    if latent_path:
+        path = require_path(latent_path, "latent_path")
+    elif crop_id:
+        path = require_path(latent_dir / f"{crop_id}.npy", f"crop {crop_id}")
+        sj = latent_dir / f"{crop_id}.json"
+        if sj.exists():
+            sidecar = json.loads(sj.read_text())
+    else:
+        raise ValueError("need latent_path or crop_id")
+    arr = np.load(path).astype(np.float32)
+    if arr.ndim == 2:
+        arr = arr[None]
+    with GPU_LOCK:
+        t0 = time.time()
+        stages = {}
+        job_id, jd = new_job("bend")
+        log(f"[bend {job_id}] {Path(path).name} shape={tuple(arr.shape)} "
+            f"ops={[o.get('op') for o in ops]} seed={seed}")
+        ts = time.time()
+        z = torch.from_numpy(arr)                # (1,C,T) float32, CPU
+        z = latent_bend.apply_bends(z, ops, seed)
+        if not torch.isfinite(z).all():
+            raise RuntimeError("bend produced non-finite latents — refusing to decode")
+        stages["bend"] = time.time() - ts
+        ts = time.time()
+        pre = MODEL.model.pretransform
+        p = next(pre.parameters())
+        with torch.inference_mode():
+            audio = pre.decode(z.to(device=p.device, dtype=p.dtype),
+                               chunked=True, chunk_size=128, overlap=32)
+        a = audio.squeeze(0).float().cpu()
+        if sidecar is not None:
+            n_content = int(sum(sidecar.get("padding_mask") or [])) or arr.shape[-1]
+            samples = n_content * DS
+            if 0 < samples < a.shape[1]:
+                a = a[:, :samples]
+        stages["decode"] = time.time() - ts
+        out = jd / "out_00.wav"
+        save_audio(out, a, SR, normalize=True)
+        meta = {"op": "bend", "ops": ops, "latent_shape": list(arr.shape),
+                "duration_sec": round(a.shape[1] / SR, 2)}
+        return build_response(job_id, jd, [out], seed, t0, stages, [], meta, req, False)
 
 
 # ---------------------------------------------------------------- boot

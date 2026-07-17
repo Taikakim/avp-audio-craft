@@ -191,6 +191,7 @@ function seekAndPlay(pos){
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
 function play(el){const f=el.dataset.src;if(!f)return;
+ if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
  if(cur===el){a.pause();el.classList.remove('playing');cur=null;curCoord=null;return}
  if(cur)cur.classList.remove('playing');
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
@@ -232,11 +233,14 @@ function render(){
      h+='<div class=cov style="color:'+col+'" title="fraction of this checkpoint\\'s cells with Audiobox CE>=6.0 — a distributional verdict, not good/bad (Kim 2026-07-12)">&#9733; good-fraction '+pct+'% <span style="color:#778">('+g[1]+' cells, CE&ge;6)</span></div>'}}
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
-     // skip prompts this model/ckpt has zero coverage for — otherwise an
-     // AVP-only prompt renders an all-empty 3x3 grid on every goa model,
-     // which reads as the blank-cell bug Kim just flagged (2026-07-12).
+     // Zero coverage at the CURRENT cfg/w settings: GREY the prompt out with a hint
+     // instead of HIDING it — hiding the non-bracket prompts at bracket-only settings
+     // reads as data loss (Kim 2026-07-13). The prompt IS in the manifest; it just has
+     // no clips rendered at these settings. (Supersedes the 07-12 empty-grid hide.)
      const anyCell=MM.cfgs.some(cf=>MM.strengths.some(w=>(st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid) in MM.data));
-     if(!anyCell)continue;
+     if(!anyCell){
+      h+='<div class=plabel style="opacity:.4" title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+' <span style="color:#a66;font-style:italic">· no clips at these settings</span></div>';
+      continue;}
      h+='<div class=plabel title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+'</div>';
      h+='<table class=mini><tr><th></th>';
      for(const w of MM.strengths)h+='<th>w'+w+'</th>';h+='</tr>';
@@ -251,6 +255,54 @@ function render(){
   div.innerHTML=h;wrap.appendChild(div)}reattach()}
 const colState=[{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null}];
 render();
+</script>""")
+    # Feedback widgets (WINTERMUTE 2026-07-13/14): page-level box + a context-aware Notes
+    # panel that re-scopes to the clicked clip / its checkpoint / its model (Kim: build the
+    # granularity into the UI, "build once drop everywhere"). Both -> /files/comment.php via
+    # comments.js. The Notes panel lives OUTSIDE #cols so the 90s auto-refresh (render())
+    # never wipes a half-typed note. Scope routing is G's merge (clip>ckpt>model>page); the
+    # red-! derives from the unified record so it's cross-page consistent even though each
+    # page's inline list is scoped to its own page id.
+    doc.append('<div class="cmts" data-target="model_matrix" style="max-width:1000px"></div>'
+               '<script src="/files/comments.js"></script>')
+    doc.append("""
+<style>
+.notes{max-width:1000px;margin:14px 0;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
+.notes-hd{font-size:12px;color:#9cf;margin-bottom:6px}.notes-scope{color:#7ed}.notes-hint{color:#667;font-style:italic}
+.notes-lvl{display:flex;gap:14px;margin-bottom:8px;font-size:12px;color:#bbb}.notes-lvl label{cursor:pointer}
+</style>
+<div class="notes">
+ <div class="notes-hd">Notes &mdash; <span id="nscope" class="notes-hint">click a clip cell above to comment on it</span></div>
+ <div class="notes-lvl">
+  <label><input type="radio" name="nlvl" value="clip" checked> this clip</label>
+  <label><input type="radio" name="nlvl" value="ckpt"> checkpoint</label>
+  <label><input type="radio" name="nlvl" value="model"> model</label>
+ </div>
+ <div id="notebox" class="cmts"></div>
+</div>
+<script>
+let noteCtx=null;
+function setNoteScope(){
+ const box=document.getElementById('notebox');const sc=document.getElementById('nscope');
+ if(!noteCtx||!noteCtx.model){sc.textContent='click a clip cell above to comment on it';sc.className='notes-hint';box.innerHTML='';return;}
+ const lvl=(document.querySelector('input[name=nlvl]:checked')||{}).value||'clip';
+ box.dataset.page='model_matrix';
+ box.dataset.model=noteCtx.model;
+ box.dataset.ckpt=(lvl==='model')?'':(noteCtx.ckpt||'');
+ box.dataset.clip=(lvl==='clip')?(noteCtx.clip||''):'';
+ sc.className='notes-scope';
+ sc.textContent = lvl==='model'?noteCtx.model
+   : lvl==='ckpt'?(noteCtx.model+' \\u25b8 '+noteCtx.ckpt)
+   : (noteCtx.model+' \\u25b8 '+noteCtx.ckpt+' \\u25b8 '+(noteCtx.clip||'').replace(/\\.m4a$/,''));
+ if(window.CommentWidget)CommentWidget.init(box);
+}
+function noteFromCell(el){
+ const col=el.dataset.col;const st=(typeof colState!=='undefined')?colState[col]:null;
+ if(!st||!st.model||!st.ckpt)return;
+ noteCtx={model:st.model,ckpt:st.ckpt,clip:el.dataset.src};
+ setNoteScope();
+}
+document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
 </script>""")
     doc.append("<footer style='margin-top:18px;color:#666;font-size:11px'>aavepyora.online · evals · model matrix</footer></body></html>")
     OUT.write_text("".join(doc))

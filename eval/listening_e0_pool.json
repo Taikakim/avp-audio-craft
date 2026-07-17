@@ -1,0 +1,326 @@
+[
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl40.wav",
+  "dur": 444.1,
+  "r_max": 0.979787151578726,
+  "line_frac_8s": 0.7116413916146298,
+  "line_frac_16s": 0.52007136485281,
+  "l_max_sec": 61.0,
+  "det_soft": 0.008546037627036028
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl50.wav",
+  "dur": 444.1,
+  "r_max": 0.9802694016885316,
+  "line_frac_8s": 0.7789919714540589,
+  "line_frac_16s": 0.6462979482604817,
+  "l_max_sec": 70.0,
+  "det_soft": 0.008539545173850612
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl60.wav",
+  "dur": 444.1,
+  "r_max": 1.0000000000000007,
+  "line_frac_8s": 0.8512488849241748,
+  "line_frac_16s": 0.6891168599464763,
+  "l_max_sec": 92.0,
+  "det_soft": 0.010769281182730628
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl70.wav",
+  "dur": 444.1,
+  "r_max": 0.9999999999999997,
+  "line_frac_8s": 0.8695361284567351,
+  "line_frac_16s": 0.7526761819803747,
+  "l_max_sec": 112.0,
+  "det_soft": 0.009275136983982003
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl80.wav",
+  "dur": 444.1,
+  "r_max": 1.000000000000001,
+  "line_frac_8s": 0.9422390722569135,
+  "line_frac_16s": 0.8398751115075825,
+  "l_max_sec": 104.0,
+  "det_soft": 0.006954913937476276
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep5/a2a_nl90.wav",
+  "dur": 444.1,
+  "r_max": 1.0000000000000007,
+  "line_frac_8s": 0.8097680642283676,
+  "line_frac_16s": 0.6639161462979483,
+  "l_max_sec": 102.0,
+  "det_soft": 0.009162443150455857
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl40.wav",
+  "dur": 444.1,
+  "r_max": 0.980316605857982,
+  "line_frac_8s": 0.7062890276538805,
+  "line_frac_16s": 0.5336752899197146,
+  "l_max_sec": 61.0,
+  "det_soft": 0.008587786720578926
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl50.wav",
+  "dur": 444.1,
+  "r_max": 0.9864351162384295,
+  "line_frac_8s": 0.7805530776092774,
+  "line_frac_16s": 0.6668153434433541,
+  "l_max_sec": 68.0,
+  "det_soft": 0.008688943241153062
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl60.wav",
+  "dur": 444.1,
+  "r_max": 1.0,
+  "line_frac_8s": 0.8349687778768956,
+  "line_frac_16s": 0.7036128456735058,
+  "l_max_sec": 118.0,
+  "det_soft": 0.011041996472834107
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl70.wav",
+  "dur": 444.1,
+  "r_max": 1.0,
+  "line_frac_8s": 0.8719892952720785,
+  "line_frac_16s": 0.7415254237288136,
+  "l_max_sec": 101.0,
+  "det_soft": 0.008003758247717345
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl80.wav",
+  "dur": 444.1,
+  "r_max": 1.0,
+  "line_frac_8s": 0.8316235504014273,
+  "line_frac_16s": 0.7317127564674398,
+  "l_max_sec": 103.0,
+  "det_soft": 0.008907669706085966
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_angelic_r64tiered_lr1e4_ep7/a2a_nl90.wav",
+  "dur": 444.1,
+  "r_max": 1.0,
+  "line_frac_8s": 0.9185994647636039,
+  "line_frac_16s": 0.782114183764496,
+  "l_max_sec": 93.0,
+  "det_soft": 0.009453362893550834
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl20.wav",
+  "dur": 459.4,
+  "r_max": 0.7941924127925233,
+  "line_frac_8s": 0.5249584026622296,
+  "line_frac_16s": 0.24771214642262895,
+  "l_max_sec": 66.0,
+  "det_soft": 0.012438007032626361
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl30.wav",
+  "dur": 459.4,
+  "r_max": 0.839013998843261,
+  "line_frac_8s": 0.5438851913477537,
+  "line_frac_16s": 0.2435524126455907,
+  "l_max_sec": 64.0,
+  "det_soft": 0.01235593516223566
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl40.wav",
+  "dur": 459.4,
+  "r_max": 0.8698158925681048,
+  "line_frac_8s": 0.5680116472545758,
+  "line_frac_16s": 0.3498336106489185,
+  "l_max_sec": 67.0,
+  "det_soft": 0.010745242930007191
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl50.wav",
+  "dur": 459.4,
+  "r_max": 0.8981290643320461,
+  "line_frac_8s": 0.6349833610648918,
+  "line_frac_16s": 0.4972961730449251,
+  "l_max_sec": 89.0,
+  "det_soft": 0.009723089208058044
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl60.wav",
+  "dur": 459.4,
+  "r_max": 0.92835627462431,
+  "line_frac_8s": 0.7387687188019967,
+  "line_frac_16s": 0.516846921797005,
+  "l_max_sec": 123.0,
+  "det_soft": 0.01331482686446029
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/a2a_kaikkialla_newstack/a2a_nl70.wav",
+  "dur": 459.4,
+  "r_max": 0.8150291851799155,
+  "line_frac_8s": 0.3689683860232945,
+  "line_frac_16s": 0.19113976705490848,
+  "l_max_sec": 49.0,
+  "det_soft": 0.015849773497663967
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x/baseline_fixed_nl.wav",
+  "dur": 459.4,
+  "r_max": 0.7531918345163671,
+  "line_frac_8s": 0.6335274542429284,
+  "line_frac_16s": 0.3261231281198003,
+  "l_max_sec": 44.0,
+  "det_soft": 0.01691398927043355
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x/breathing.wav",
+  "dur": 459.4,
+  "r_max": 0.7531918345163671,
+  "line_frac_8s": 0.6335274542429284,
+  "line_frac_16s": 0.3261231281198003,
+  "l_max_sec": 44.0,
+  "det_soft": 0.01691398927043355
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_nl55/breathing.wav",
+  "dur": 459.4,
+  "r_max": 0.9044150053481832,
+  "line_frac_8s": 0.8049084858569051,
+  "line_frac_16s": 0.6152246256239601,
+  "l_max_sec": 75.0,
+  "det_soft": 0.012644932525698123
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/baseline_fixed_nl.wav",
+  "dur": 459.4,
+  "r_max": 0.8696574424117602,
+  "line_frac_8s": 0.742928452579035,
+  "line_frac_16s": 0.5557404326123128,
+  "l_max_sec": 73.0,
+  "det_soft": 0.01593522964220838
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v2/breathing.wav",
+  "dur": 459.4,
+  "r_max": 0.8920166497404798,
+  "line_frac_8s": 0.7190099833610649,
+  "line_frac_16s": 0.5422212978369384,
+  "l_max_sec": 77.0,
+  "det_soft": 0.015873271898600338
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/breathing_kaikkialla_evr1x_v3/breathing.wav",
+  "dur": 459.4,
+  "r_max": 0.7762962006368085,
+  "line_frac_8s": 0.49625623960066556,
+  "line_frac_16s": 0.15994176372712146,
+  "l_max_sec": 68.0,
+  "det_soft": 0.01166265421427833
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/dual_lora_promptarc_kaikkialla/dual_lora.wav",
+  "dur": 459.4,
+  "r_max": 0.9294473034999997,
+  "line_frac_8s": 0.7333610648918469,
+  "line_frac_16s": 0.4307404326123128,
+  "l_max_sec": 52.0,
+  "det_soft": 0.016112989148801847
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/layered_lora_promptarc_nl75/staggered.wav",
+  "dur": 459.4,
+  "r_max": 0.8894587989421681,
+  "line_frac_8s": 0.5357737104825291,
+  "line_frac_16s": 0.2576955074875208,
+  "l_max_sec": 77.0,
+  "det_soft": 0.018232050455318193
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl05/dual_lora.wav",
+  "dur": 459.4,
+  "r_max": 0.898070389736867,
+  "line_frac_8s": 0.7997088186356073,
+  "line_frac_16s": 0.6786605657237936,
+  "l_max_sec": 79.0,
+  "det_soft": 0.013574467780564637
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl06/dual_lora.wav",
+  "dur": 459.4,
+  "r_max": 0.9178558188817276,
+  "line_frac_8s": 0.6988352745424293,
+  "line_frac_16s": 0.5557404326123128,
+  "l_max_sec": 97.0,
+  "det_soft": 0.01728965170120492
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/promptarc_single_kaikkialla_nl45/dual_lora.wav",
+  "dur": 459.4,
+  "r_max": 0.8823294766774501,
+  "line_frac_8s": 0.7616472545757071,
+  "line_frac_16s": 0.6607737104825291,
+  "l_max_sec": 75.0,
+  "det_soft": 0.01127661027081285
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/base__aggr_xfade_s1234to4242.wav",
+  "dur": 190.2,
+  "r_max": 0.845036676702554,
+  "line_frac_8s": 0.5558441558441558,
+  "line_frac_16s": 0.32857142857142857,
+  "l_max_sec": 44.0,
+  "det_soft": 0.013551885238995918
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/base__aggr_xfade_s4242to1234.wav",
+  "dur": 190.2,
+  "r_max": 0.8999763849665003,
+  "line_frac_8s": 0.6662337662337663,
+  "line_frac_16s": 0.43376623376623374,
+  "l_max_sec": 44.0,
+  "det_soft": 0.014452230732989464
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s1234to4242.wav",
+  "dur": 190.2,
+  "r_max": 0.563612423666943,
+  "line_frac_8s": 0.17792207792207793,
+  "line_frac_16s": 0.053246753246753244,
+  "l_max_sec": 41.0,
+  "det_soft": 0.01375021423390541
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/newcap8_promptstyle_longform/evr1x__aggr_xfade_s4242to1234.wav",
+  "dur": 190.2,
+  "r_max": 0.6778352589700507,
+  "line_frac_8s": 0.21948051948051947,
+  "line_frac_16s": 0.0,
+  "l_max_sec": 15.0,
+  "det_soft": 0.01204648777856102
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl35_chroma.wav",
+  "dur": 209.2,
+  "r_max": 0.7697600548973126,
+  "line_frac_8s": 0.5410885805763074,
+  "line_frac_16s": 0.2006403415154749,
+  "l_max_sec": 28.0,
+  "det_soft": 0.01640012366249335
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl35_plain.wav",
+  "dur": 209.2,
+  "r_max": 0.7681293209069835,
+  "line_frac_8s": 0.5538954108858057,
+  "line_frac_16s": 0.2006403415154749,
+  "l_max_sec": 28.0,
+  "det_soft": 0.016440167817188697
+ },
+ {
+  "path": "/run/media/kim/Mantu/sa3_lora_runs/chroma_morph_transitions/angelic2vapaus__w1024_nl42_chroma.wav",
+  "dur": 209.2,
+  "r_max": 0.830636129633832,
+  "line_frac_8s": 0.5880469583778015,
+  "line_frac_16s": 0.2209178228388474,
+  "l_max_sec": 28.0,
+  "det_soft": 0.01769475891935387
+ }
+]
