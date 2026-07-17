@@ -122,3 +122,48 @@ extends them later.
   mp/traj page-level via new idempotent Misc/inject_comment_widget.py (mp's appender refuses
   re-runs — deep scope rides its next rebuild, hook already in the builder). Pages staged for
   W's rsync; CORS-for-GitHub-Pages question DM'd to W.
+- 2026-07-15 (small hours): reviewed W's longform validation plan (Kim direct). All six
+  starred 2026 arXiv ids VERIFY as real papers on-subject (fetched); two applicability
+  nuances (DPP + SAGD are training-time methods — the ported ideas stand, the cites
+  soften). Feasibility: Fri's 100-render E1 night overflows at the 6-min/clip end and the
+  grid as written is >150 cells — recommended pilot-pruned factorial + Sat spill. Four
+  consistency nits + practical adds (canonical bands artifact, per-clip meter sidecars,
+  kim_feedback-mined labels, widget-on-E-pages). Findings DM'd to W (fold+credit).
+- 2026-07-15 (pre-dawn): expanded-Essentia sweep FULLY COMPLETE — avp 1516 + goa 4461 +
+  the four other-genre corpora 574 (Kim's extension) = 6551 sidecars on the uniform
+  26-field set, zero unexplained failures across the whole run. Remaining: gate (b)
+  stereo_width diagnostic verdict (render pair queued behind the MF fill). Also
+  root-caused the MF night failure: wrapper default context_size 2048 vs the 16384 the
+  July pass ran with — 'failed to eval chunk 3' on full tracks; fixed + relaunched,
+  ~15 s/track.
+- 2026-07-15 (morning): MF fill COMPLETE post ctx-fix — 109/111 captioned (~14 s/track,
+  prompt ≈5.3k tokens/track — hence the 2048-ctx impossibility; 2 utf-8 decode edge-fails
+  logged, rerunnable). Sidecars final: goa first_class 330→548; avp 97.3→100% after one
+  more finding — the filled parents are aug-only in latents_avp (no original crop stems),
+  so caption flow needed an .INFO fallback in the builder, not the granite crop path.
+  Monitor lesson: a watcher whose command STRING contains the pattern it pgreps will
+  self-match and never fire — quote-break the pattern (pgrep -f "mf_fill[_]pass").
+- 2026-07-15 (mid-morning): gate (b) scored — width-vs-TIME does not separate single-shot
+  from windowed (no progressive collapse either arm, n=1 base-model pair), but the LEVEL
+  separates cleanly: single-shot T=4096 is ~33% narrower + far more L/R-correlated
+  (0.742 vs 0.402) throughout. Verdict + clips + manifest in expanded_gates_pilot/; C
+  rules on intent. NEGATIVE/gotcha pair for the record: stable-audio CLI --duration >380
+  silently falls back to 120 s, and generate()'s sample_size default (5292032) CLAMPS all
+  durations to 120 s — true T=4096 single-shots need sample_size=16777216 passed explicitly.
+- 2026-07-15 (noon): comment loop went WRITE-ONLY (Kim direct — public unauthenticated text
+  is an injection surface; no instance reads comments by any path). My merge leg retired:
+  timer disabled, merge_comments.py hard-guarded to a no-op, spec §16c records it (SAO
+  1904486). kim_feedback now comes only from Kim's chat-relayed verdicts; ❗ derivation
+  unchanged. Note: pre-change ingests remain in run_metas (W's two known announcement
+  comments only — no third-party text ever landed).
+- 2026-07-16 (eve): E1 anti-loop pilot page built (Kim ask) — e1_pilot.html: baseline vs
+  λ-ladder same-playhead at nl50/nl60, W's pilot_scores metrics + Δs per row, lam1e7
+  ear-verdict clip starred, dormant-guide rounds labeled honestly, write-only comment
+  boxes for verdicts. Generator glob-driven (Misc/build_e1_pilot_page.py, 3aa69f6) —
+  reruns pick up W's dose-response arms automatically. Staged for W's rsync.
+- 2026-07-17 (night): fp32-campaign eval lane opened as Kim's ckpts rsync in from LUMI —
+  trajectory stats landed for the avp arms (tool gained --glob + Lightning-DoRA state
+  handling, e90eb7b), 4 avp arms bracket-registered via run-dir symlinks (c5600bc),
+  renderer dry-run verified. Card queue negotiated: C's stereo-sweep re-run → my grid
+  (the designated filler layer, yields to Kim daytime) → W's 40-min decode gate anywhere.
+  Also of note: C's "stereo sweep" IS the width T-sweep from my gate-(b) pool item.
