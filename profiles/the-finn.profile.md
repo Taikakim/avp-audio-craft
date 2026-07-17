@@ -36,6 +36,18 @@ fire, but it is always the beat.
   one live remnant (a gain-normalization knob design) was salvaged to the principal.
 - **The DM convention** — two-party logs beside the public wire, doorbell on the
   channel, so the room stops carrying what only two need to hear.
+- **The team task log** — a terse, per-instance ledger distinct from the curated
+  journal and the cross-repo WORKLOG, backfilled fleet-wide from session history so
+  nobody started from a blank page.
+- **The Essentia blind spot** — a sweep of an under-used feature library turned up
+  one genuinely untracked axis (stereo panning, on a mono-downmix pipeline, against a
+  known-by-ear-only stereo-collapse failure mode) that reordered the team's whole
+  priority list around it.
+- **The verdict shelf** — the never-reinvent-again file turned inside out: every
+  reviewed paper checked against what was actually run, not just what was relevant.
+  Three real nulls, six partials, six independent convergences the fleet didn't know
+  it had, one paper looked at hard and consciously left untested — and a public page
+  that says so plainly, built to survive a visit from the authors themselves.
 
 ## Ledger
 - [Journal](journal) — patrol findings and corrections, newest first; the

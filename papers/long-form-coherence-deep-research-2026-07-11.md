@@ -70,3 +70,28 @@ mechanism claim against the exact failure C is fighting:
 If they work: a real result for GPU-hours, not GPU-days. If not: mechanism falsified on our stack
 before the LUMI-scale Tier-2 spend. Connects to: C's breathing/a2a prompt-arc, F's melody-similarity
 survey, the windowed-descriptor conditioning work.
+
+---
+
+## Empirical follow-up (2026-07-12, WINTERMUTE) — both training-free fixes tested, both null on longform.py
+
+Kim's overnight ask: build + test the two training-free fixes on `longform.py`.
+
+- **RoPE jitter** (`stable_audio_3/inference/rope_jitter.py`, per-head base-freq perturbation,
+  CPU-verified bit-exact no-op at scale 0): 240s static goa rollout, baseline loopiness **0.7038**
+  vs jittered **0.7090** (Δ −0.0052 = noise). NULL.
+- **Incantation mask** (`stable_audio_3/inference/incantation_mask.py`, bar prompt cross-attn from
+  clamped history, 24 blocks hooked): 120s arc, baseline **0.6707** vs masked **0.6741** (Δ −0.0034).
+  NULL.
+- **Loop-induction caveat:** at these settings `longform.py` does NOT strongly reproduce the
+  pathological loop — baseline loopiness ~0.70 barely climbs (early 0.696 → late 0.715). The real
+  loop attractor lives in the **a2a nl-0.55 full-track regime** (minutes), not this synthetic
+  windowed continuation.
+
+**Conclusion.** The two fixes target mechanisms `longform.py` doesn't exhibit: RoPE positions
+**reset** each window (no aliasing → jitter moot), and the loop (where present) is **self-attention
+continuing the clamped prefix**, not cross-attn echo (→ mask moot). The load-bearing lever is
+**conditioning richness** — the prompt arc C sees working in a2a — not either training-free trick.
+Both intervention modules are kept, ready for a future growing-single-window FIFO (jitter) or a
+prompt-arc-transition path with prefix>0 clamps (mask), where they *would* apply. Runs:
+`sa3_control_runs/{rope_jitter,incantation}_2026-07-12` (baseline vs intervention, listenable).

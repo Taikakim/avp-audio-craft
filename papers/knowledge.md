@@ -48,7 +48,7 @@ CONTINUITY's assignment: "ControlNet++ goes in the never-reinvent-again file."
 - Full novelty-verdict context: AGENT_DIALOGUE.md 2026-07-03 11:03–11:09 (CONTINUITY's
   7/7 citation verification, zero fabrications, two Gemini soft spots caught).
 
-## StoryScope: Investigating idiosyncrasies in AI fiction (Russell et al., UMD/GDM, 2026 preprint)
+## StoryScope: Investigating idiosyncrasies in AI fiction (Russell et al., UMD/GDM, arXiv:2604.03136)
 - Pipeline: LLM converts stories → structured narrative templates (10 NarraBench dims) →
   cross-source comparative analysis → LLM-proposed discriminative features (304) → XGBoost+SHAP
   → 30 core + 75 fingerprint features. Narrative structure alone: 93.2 F1 human-vs-AI.
@@ -78,3 +78,51 @@ CONTINUITY's assignment: "ControlNet++ goes in the never-reinvent-again file."
   low CFG. Late ckpts should be re-rendered at cfg 1-2. And the 'overtrained' late ckpts may be
   EXCELLENT for a2a even where they're bad for txt2audio. (ARC-distilled demos lag base RF by a few
   k steps but end cleaner.)
+
+## Longform-continuation starred-ID verification (THE-FINN, 2026-07-15, for W's validation-experiment-plan §6)
+All 6 checked against the archive FIRST (none pre-existing), then fetched — all REAL. Only
+SRMC + DPP-window gate near-term code (E1/E2); rest are pool per W's ask.
+**Overlap note:** G independently verified the same 6 (DM 01:56, before W separately asked me
+04:02 — a real coordination gap, not a design intent) as part of a broader plan-review; G's read
+adds one nuance I missed from the abstracts alone — DPP and SAGD are both TRAINING-time
+mechanisms in their source papers (DPP-GRPO reward at RL-training time; SAGD's anisotropic
+noise is a training-time forward-process design), so neither is an inference-time precedent
+verbatim — folded into both entries below. G also flagged a 7th starred id in §6 I wasn't asked
+about and didn't fetch: **Music Boomerang, arXiv:2507.04864 — unverified, needs a pass.**
+- **SRMC — Score-Repellent Monte Carlo** (Hu, Chen, Kim, Choi, Han, Eun; arXiv:2604.22948).
+  Running average of past score evaluations tilts the target via exp(−α·θᵀs); normalization-free
+  drop-in wrapper for any base sampler; joint CLT + O(1/α) variance reduction; O(d) constant
+  memory. Claims in the tangential-refinements doc match well. Caveat already logged there:
+  the exactness theorem assumes a *fixed stationary target under ergodic time-averaging* — a
+  finite-horizon generative rollout breaks that premise; construction transfers, the theorem
+  doesn't verbatim (CONTINUITY's open sub-question).
+- **DPP-window** — actually **"Diverse Video Generation with Determinantal Point
+  Process-Guided Policy Optimization"** (Kazimi, Dunlop, Yanardag; arXiv:2511.20647). Real,
+  and the core mechanism (DPP-based diversity reward penalizing redundant generations, "DPP-GRPO")
+  is confirmed — but the abstract does NOT confirm the specific windowed/log-det-Gram-matrix
+  formulation the refinements doc attributes to it. **G's sharper catch: it's DPP+GRPO at
+  TRAINING time (a reward during RL fine-tuning), not an inference-time log-det hinge** — the
+  DPP-for-diversity idea transfers, but the paper is not itself a precedent for the inference-time
+  arm; soften the citation accordingly, keep the arm on its own merits.
+- **Explicit-Critic Guidance** (Liang, Zhang, Yang; arXiv:2605.27736). Strong match: the
+  diffusion model serves as its own timestep-conditioned value function, trained via
+  trajectory-level PPO, aligning to non-differentiable objectives — exactly the derivative-free
+  fit the refinements doc wants for a hard-to-differentiate recurrence statistic.
+- **SemanticAudio** (Dai, Zhang, He, Li, Li, Wu, Guo, Kong; arXiv:2601.21402). Real, matches
+  "RF + continuous-latent" — two-stage flow matching (semantic planner + acoustic synthesizer),
+  audio generation/editing in a continuous semantic latent space, training-free text-guided
+  editing via velocity-field differences.
+- **SAGD — Spectrally Anisotropic Gaussian Diffusion**, real title: "Learning What Matters:
+  Steering Diffusion via Spectrally Anisotropic Forward Noise" (Scimeca, Jiralerspong,
+  Earnshaw, Hartford, Bengio; arXiv:2510.09660). Matches well — frequency-diagonal forward
+  covariance, band-pass/power-law weighting, score relation derived. **Caveat: validated on
+  vision datasets only**, and per G's read, designs the forward (noising) process at TRAINING
+  time — using it at sampling-time-only, on a frozen model never trained with anisotropic
+  noise, is the ported idea, not what the paper demonstrates. No audio precedent either, same
+  transfer-risk pattern as the rest of this
+  literature.
+- **FMRG — Flow Map Reward Guidance**, real title: "How to Guide Your Flow: Few-Step Alignment
+  via Flow Map Reward Guidance" (Huang, Lin, Shah, Nair, Boffi; arXiv:2604.27147, code
+  confirmed at github.com/jrrhuang/fmrg). Training-free, deterministic-optimal-control framing,
+  strong results at ~3 NFEs — core framing matches; the specific "exact lookahead to the clean
+  endpoint via a distilled flow map" detail isn't confirmable from the abstract alone.

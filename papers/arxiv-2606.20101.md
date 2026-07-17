@@ -1,0 +1,18 @@
+# Hybrid Diffusion Transformer for Instruction-Guided Audio Editing via Rectified Flow (2606.20101) — light pass
+
+Gao, Zhu, Chen, Wang, Zhang, Li, Guillemaut, Wang (mostly Univ. of Surrey/CVSSP; co-authors also at Beijing Univ. of Posts & Telecom, Ocean Univ. of China, and China Agricultural Univ.), 2026.
+PDF: `2606.20101v2-Hybrid Diffusion Transformer for Instruction-Guided Audio Editing via Rectified Flow.pdf`.
+A mel-spectrogram-domain instruction-editing DiT with a coarse-to-fine joint/cross-attention design and a rectified-flow objective SAO already has, wrapped around a synthetic add/remove/replace data recipe worth stealing.
+
+## What it contains
+- Two-stage hybrid DiT for instruction-guided audio editing (add/remove/replace): a low-resolution stage runs full joint self-attention over downsampled audio tokens concatenated with (full-length) text tokens for cheap coarse semantic alignment (DSJA-MMDiT blocks, 2 of them); a high-resolution stage alternates those same joint-attention blocks with AdaLN-Zero cross-attention DiT blocks (AZCA-DiT, updates only audio tokens) across 4 groups for efficient local-detail refinement.
+- Standard rectified-flow training (near-linear x_t interpolation between noise and target latent, velocity MSE loss), with source-audio conditioning done by channel-concatenating the unedited source latent onto the noisy target latent, plus a combined AdaLN-Zero global condition (timestep + pooled Flan-T5 instruction + pooled source-audio feature).
+- Operates on log-mel spectrograms through a frozen VAE and a BigVGAN vocoder — NOT a waveform latent. Standard (non-differential) softmax attention throughout.
+- Synthetic data recipe: mix two AudioCaps/AudioSet clips at a fixed ratio (α=0.5: X+A, X+B), derive Add/Remove/Replace instruction-triplets procedurally from the known constituent captions/labels, CLAP-filter for consistency. Yields ~183 hours across two constructed subsets (AudioCapsSubset, AudioSetCapsSubset).
+- Beats AudioEditor/Zero-Shot/AUDIT/RFM-Editing baselines on FD/FAD/KL across both benchmark subsets, and additionally on LSD on the AudioCaps-based benchmark (LSD on the AudioSet-based benchmark is only competitive, not best). It's ~2-20x faster at inference (5.07s vs 11-102s/edit) with a small model (78.6M trainable params — smaller than AUDIT's 859.5M, though slightly larger than RFM-Editing's 70.1M).
+
+## What this means for us
+- Hard-filtered out architecturally: mel+vocoder pipeline (AudioLDM/Tango lineage), not SAME's waveform latent — the model itself is not portable.
+- The paper's central architectural pitch (alternate joint-attention and cross-attention blocks across resolutions to dodge joint-attention's quadratic cost) is moot for SA3 twice over: SA3 already avoids full joint self-attention for text by using cross-attention exclusively, and any joint/cross-attention transplant would first need re-derivation under SA3's signed/differential attention, which this paper never engages with.
+- Rectified-flow formulation and source-latent channel-concat conditioning are things SAO already has equivalents of (Longform's SDEdit re-anchor/inpaint conditioning, LatCH's control heads) — this doesn't add new information there.
+- The one piece worth banking, decoupled from everything else: the procedural add/remove/replace data-synthesis recipe (mix two clips at known ratio -> derive instruction/target triples for free from known constituents, CLAP-filtered) is architecture-agnostic and could cheaply generate supervised instruction-editing data for a SAME-latent instruction-edit head, if SAO pursues one. That is the only actionable takeaway; everything else stays SAO's own to build.

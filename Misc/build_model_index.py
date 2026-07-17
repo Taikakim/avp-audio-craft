@@ -197,7 +197,7 @@ tr:hover td{background:#16161a}
                      ('<span class=bare>barely tested</span>' if len(m["links"]) <= 1 else '')
             links = " ".join(f'<a href="{html.escape(h)}">{html.escape(d)}</a>'
                              for h, d in m["links"]) or '<span style="color:#a55">none found</span>'
-            recipe = f'<div class=recipe>{html.escape(str(m["recipe"])[:160])}</div>' if m["recipe"] else ''
+            recipe = f'<div class=recipe>{html.escape(str(m["recipe"]))}</div>' if m["recipe"] else ''
             created = datetime.datetime.fromtimestamp(m["mtime"]).strftime("%Y-%m-%d")
             doc.append(f'<tr><td><b>{html.escape(m["label"])}</b>{badges}{recipe}</td>'
                        f'<td class=n>{created}<div class=n>{m["n_ckpts"]} ckpt(s)</div></td>'

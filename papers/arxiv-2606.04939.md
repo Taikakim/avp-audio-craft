@@ -1,0 +1,20 @@
+# UAT: Unified Audio-Text Diffusion for Audio Generation, Editing, and Captioning (2606.04939) — light pass
+
+Wang, Yang, Tian, Jia, Zhao, Zhou, Han, Liu, Zhou, Tu, Qin (Nankai/Tencent/SJTU/HKUST/Noiz AI), 3 Jun 2026.
+PDF: `2606.04939v1-UAT_ Unified Audio-Text Diffusion for Audio Generation, Editing, and Captioning.pdf`.
+A dual-stream DiT that makes the text-conditioning stream an active, co-updated peer of the audio latent stream, so the same diffusion backbone does generation, SDEdit editing, and (via masked discrete text diffusion) captioning — architecturally interesting, but control-method-wise it's just SDEdit + CFG on someone else's backbone.
+
+## What it contains
+- Extends AudioX (Stable Audio DiT architecture, 24 blocks, dim 1536) with a second text-token stream; per DiT block, audio conditions on current text state and text conditions on the just-updated audio state (mutual, layer-wise, not a static cross-attn KV).
+- Audio side: cosine-schedule velocity-prediction diffusion (z_t=cos(πt/2)z0+sin(πt/2)ε; predict v=αε−σz0) — a trig-schedule v-parameterization, not SA3's linear-interpolation rectified flow.
+- Text side: masked discrete diffusion (random masking probability (1−ε)τ per token, reconstruct at masked positions) with a small refiner + vocab head on top of the final text states.
+- Captioning is inference-time "inversion": initialize caption as all-[MASK], iteratively unmask conditioned on the frozen audio latent — i.e., audio captioning done as a diffusion process instead of AR decoding.
+- Editing = vanilla SDEdit (noise source latent to t0, redenoise under new prompt/CFG=7.0); nothing novel in the editing mechanism itself.
+- Results: beats Unified-IO 2 and Audio-Omni broadly across generation, editing, and captioning, and beats UniAudio 2.0 clearly on generation — but on captioning specifically, UniAudio 2.0 actually outperforms UAT on CIDEr, SPICE, SPIDEr, and FENSE (UAT only leads on SBERT-SIM); the paper itself frames this as a balance-of-capabilities trade-off ("more balanced unified audio-text model") rather than a win. UAT still trails the best specialized single-task models (e.g., Audio Flamingo 3 on captioning, AudioX/Tango2 on some generation metrics like CLAP) — a "jack of three trades, master of none" unified model.
+- Ablations show a real trade-off: deeper/more-capable text branch → better captioning (SPIDEr), worse audio generation FAD (text branch perturbs the pretrained audio denoising pathway).
+
+## What this means for us
+- Both hard filters are effectively failed or only partially passed: audio latent is continuous/waveform-VAE-derived (filter 2 OK, though it's AudioX's VAE not SAME), but the diffusion parameterization is a cosine/EDM-style schedule, not SA3's straight-line rectified flow (filter 1 fails as shipped — needs re-derivation, and the pretrained backbone itself, AudioX/Stable Audio Open, is by the paper's own ablation a *weaker* prior than what SA3 already has).
+- The editing recipe is exactly SAO's already-shipped SDEdit re-anchor (Longform); the guidance recipe is plain CFG at fixed scale — no new technique in either, both already covered in the book.
+- The one idea with any conceptual transfer value — an actively co-updated (rather than frozen cross-attention) conditioning stream, used here to make captioning possible as diffusion-in-reverse — sits outside SAO's current mandate (control/adaptation of SA3 as a generator), since SAO has no existing captioning/understanding thread and this paper contributes nothing to guidance, attention exploitation, adapters, or control vectors, which is where SAO's actual open work lives (LatCH, FusionCC, DoRA/LoRA, weight garden, relevance-routed DoRA).
+- Recommend: file as landscape awareness only (unified diffusion-centric gen+caption is a live research direction and modestly outperforms one hybrid MLLM+diffusion unified baseline), not an action item — nothing here should move SAO's roadmap, and no new entry is needed in the control-methods sourcebook.

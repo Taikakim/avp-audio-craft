@@ -34,9 +34,11 @@ __pycache__/
 !/site/
 
 # Paper knowledge: track the never-reinvent index + per-paper abstracts (shared
-# findings, previously single-copy local); the PDFs themselves stay untracked (large)
+# findings, previously single-copy local); the PDFs themselves stay untracked (large),
+# including the low-relevance-triage subfolder (gap found + fixed 2026-07-17: the old
+# rule only matched papers/*.pdf, not subdirectories)
 !/papers/
-/papers/*.pdf
+/papers/**/*.pdf
 
 # Per-file edit locks (Misc/filelock.py) and the dialogue lock — never tracked
 *.lock
@@ -63,6 +65,8 @@ __pycache__/
 !/Misc/latent_noise_fragility.py
 !/Misc/build_dms.py
 !/Misc/worklog_note.sh
+!/Misc/build_paper_verdicts.py
+!/Misc/paper_verdicts_data.json
 
 # DM logs (tracked — private repo, private content; NOT publicly mirrored by default)
 !/*.*.log

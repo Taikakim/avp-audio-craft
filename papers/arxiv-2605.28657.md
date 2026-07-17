@@ -1,0 +1,20 @@
+# DEMON: Diffusion Engine for Musical Orchestrated Noise (2605.28657v1) — light pass
+
+Ryan Fosdick (Daydream), May 2026.
+PDF: `2605.28657v1.DEMON- Diffusion Engine for Musical Orchestrated Noise.pdf`.
+Not a control-method paper — a streaming-systems paper showing a DiT+flow-matching music model can be turned into a live-playable instrument at 12+ generations/sec, which is a delivery-vehicle idea, not new control content.
+
+## What it contains
+- Adapts StreamDiffusion's ring-buffer streaming architecture (image domain) to ACE-Step 1.5, a DiT-based flow-matching music model on a 25Hz, 64-channel latent from an 'Oobleck VAE' (same lineage/name as Stable Audio's autoencoder family).
+- Per-slot heterogeneous denoise scheduling: each in-flight generation (a _Slot) owns its own timestep schedule baked at admission, so a live denoise-strength change propagates without wiping the ring buffer's in-flight queue (vs. StreamDiffusion's global prepare() reset, which discards everything). Measured: 100% completion rate under a continuous slider sweep vs 1.7% for the global-reset baseline.
+- Shared mutable per-step state: per-frame control curves are read fresh at every solver step (not baked at submission), giving 1-tick onset with progressive convergence — applied to a framewise SDE source-blending re-noise step (per-frame anchor-to-source vs anchor-to-prediction blend) and an x0-target morph (per-frame blend of x0 prediction toward a precomputed target latent, e.g. a cover-variant).
+- Windowed VAE decode: exploits the Oobleck VAE's empirically measured ~333ms receptive field to decode only the playback window with overlap margins, giving sample-identical output at 8x lower latency than full decode.
+- TensorRT mixed-precision engines (fp16 attention/MLP, fp32 AdaLN/RMSNorm to prevent 24-layer compounding precision loss) plus runtime LoRA refit (IRefitter API) reach 81ms/tick at depth 8 (12.3 decoder completions/sec on an RTX 5090), validated across three GPU generations.
+- A four-class taxonomy of parameter-change propagation (per-request/frozen, migrated-schedule, per-step shared-mutable, model-weight), each with a measured onset/convergence latency signature — a vocabulary for reasoning about live-control responsiveness in any streaming-diffusion pipeline.
+- Explicitly non-claims: does not improve base generation quality (CLAP/FAD checks show the SDE/windowed-decode machinery is quality-neutral), does not add musical-content control (no note/chord/downbeat placement), and has no listening-test/MOS evidence — all claims are objective/latency-based.
+
+## What this means for us
+- Does not touch SA3's actual control representations (LatCH, FusionCC, chroma/onset heads, DoRA/LoRA style adapters, differential-attention-safe routing) — nothing here confirms, refutes, or extends that work.
+- The framewise SDE source-blending step is a continuous, per-frame generalization of the SDEdit re-anchor already shipped in Longform (stable_audio_3/inference/longform.py); Longform does whole-segment SDEdit + latent slerp crossfade, not a live, per-frame, mid-generation-adjustable curve — this paper is a concrete demonstration that the latter is buildable and fast enough to be musically interactive on a fast few-step DiT.
+- Reads as a plausible delivery vehicle, not a competitor, for SAO's control work: if SAO ever pursues a real-time/live-performable SA3 instrument, the ring-buffer per-slot scheduling + shared-mutable-per-step-state + windowed-VAE-decode pattern is architecture SAO could adapt fairly directly (SA3 is architecturally closer to this paper's target than most of the book's other sources — same rectified-flow family, and ACE-Step's Oobleck VAE is explicitly the same waveform-VAE lineage as SAME).
+- Recommend logging as a light entry in knowledge.md under "delivery/infrastructure ideas" rather than under any control-method chapter of the book; no action needed unless/until a live-performance-instrument project is greenlit, at which point this is the paper to pull back out.

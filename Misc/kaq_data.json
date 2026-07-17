@@ -4,6 +4,15 @@
     {
       "title": "Models & training",
       "entries": [
+        {"q": "Why do long-form generations fall into loops, and does SaFa (or another join method) fix it?",
+         "a": "<b>SaFa's win is real but narrow.</b> At the segment join, both SaFa (frame-swap) and slerp suppress the seam energy-collapse — specifically <b>HF-variance</b>, to ~0.82× (not overall RMS) — but neither moves <b>loopiness itself</b> (0.680 for both, identical). Looping is orthogonal to the join method: joins fix seams, loopiness is global. After this plus two earlier nulls (RoPE-jitter, Incantation), the working lever for reducing loops remains <b>conditioning richness</b> (a prompt-arc, hand-written or eventually auto-derived) — not the join mechanism.",
+         "links": []},
+        {"q": "Why train on longer context (94s / 188s) when clips have always been ~47s?",
+         "a": "The model has never seen training context beyond ~47s — the working hypothesis (2026-07-13) is that this is plausibly <i>the</i> reason long-form coherence degrades at window scale. Two new arms: <b>T=1024</b> (95s, local) and <b>T=2048</b> (190s, LUMI), both goa/lr1e-4/r128, evaluated via loopiness + the matrix bracket. Complements the separate ARC-Forcing line (context length vs. drift recovery).",
+         "links": []},
+        {"q": "Why did training crop lengths change to T=1024/2048 instead of the old ~T=506?",
+         "a": "T=506 (47s) was an accident of specifying crop length in <b>seconds</b> (47s × 10.7666 fps) — it tiles badly on RDNA (ragged GEMM/CK-flash-attn tiles). New standard (2026-07-13): crop lengths in <b>frames, multiples of 256</b> — 512 (47.6s), 1024 (95.1s), 2048 (190.2s). The same rule now applies to eval-render durations too.",
+         "links": []},
         {"q": "Which rank is the good option — 16 or 128?",
          "a": "<b>128.</b> Rank-16 adapters are consistently harsher (more high-freq energy + zero-crossing distortion) and lower quality (CE/PQ), and glitch ~6× worse when the DoRA weight is pushed to 1.5. Rank-128 (and 64) hold their quality. Three independent metric axes agree.",
          "links": [{"text": "stats page", "href": "stats.html"}]},
@@ -24,6 +33,9 @@
     {
       "title": "Finding things on the site",
       "entries": [
+        {"q": "Can I leave feedback directly on a clip, checkpoint, or model instead of just the whole page?",
+         "a": "Yes, as of 2026-07-13. Eval pages (currently the model matrix + the goa musicology page) carry a comment box, and feedback can attach at the <b>page</b>, <b>model</b>, <b>checkpoint</b>, or <b>clip</b> level. Each level clears the red-! unaudited mark only at that same level — a page comment doesn't clear a clip's mark, etc. A nightly job merges comments into the run's metadata automatically.",
+         "links": [{"text": "model matrix", "href": "model_matrix.html"}, {"text": "goa musicology", "href": "goa_musicology.html"}]},
         {"q": "Where are the evals / the new stuff? I can't find them.",
          "a": "Start at the <a href=index.html>evals landing</a>. The big cross-model board is the <b>Model Matrix</b> hero at the top; below it the <b>Models index</b>, the <b>Statistics</b> page, and a <b>Recently added</b> strip. Everything else is in named sections (DoRA/avp, a2a &amp; transitions, LatCH, mechanism/interpretability, control/FiLM), newest-first.",
          "links": [{"text": "landing", "href": "index.html"}, {"text": "model matrix", "href": "model_matrix.html"}]}
@@ -32,6 +44,9 @@
     {
       "title": "Metrics & how to read a page",
       "entries": [
+        {"q": "The model matrix looks like it's missing prompts compared to before — did we lose data?",
+         "a": "No — the manifest was always intact (every model ≥12 prompts, 18 prompt ids total). At bracket-only settings (cfg 15/24, weight 2.0, non-standard intervals) the matrix used to <b>hide</b> prompts with zero coverage there, which read as data loss. Fixed (2026-07-13): those prompts now <b>grey out</b> with a '· no clips at these settings' hint instead of disappearing.",
+         "links": [{"text": "model matrix", "href": "model_matrix.html"}]},
         {"q": "What metrics do we use / trust?",
          "a": "Our established set: <b>Audiobox CE/PQ/CU/PC</b> (aesthetic quality, 1–10), <b>zero-crossing rate</b> + <b>hf_ratio</b> (&gt;5 kHz energy = harshness/distortion), <b>p95-gated onset density</b> (the honest onset meter — plain onset-detect over-fires ~3× on drones), spectral centroid/flatness/flux, BPM. All 14 are in the per-clip metrics DB over every eval clip.",
          "links": [{"text": "statistics", "href": "stats.html"}]},
@@ -43,8 +58,19 @@
     {
       "title": "Infra / GPU",
       "entries": [
+        {"q": "Where do long training runs happen now — local or LUMI?",
+         "a": "Policy as of 2026-07-13 (Kim direct): <b>long runs move to LUMI</b> from here on. The local card stays for renders, evals, and short jobs; both new long-context arms (T=1024 and T=2048) are packaged as LUMI sbatch jobs rather than launched locally.",
+         "links": []},
         {"q": "Can we batch metrics on the GPU since clips are the same length?",
          "a": "Only <b>Audiobox CE/PQ</b> is a GPU/neural metric, and on our card batching gives ~no speedup (WavLM saturates per clip, ~1.5s/clip either way — though steady-state throughput is much better than a cold start). Every other metric is CPU (librosa/essentia) and parallelizes across cores instead.",
+         "links": []}
+      ]
+    },
+    {
+      "title": "Team process",
+      "entries": [
+        {"q": "Is everyone tracking open experiment ideas in one shared place?",
+         "a": "As of 2026-07-13, yes, by directive: every open experiment idea goes into <code>docs/todos.md</code>'s IDEAS-POOL section (one line, effort estimate, lane, prerequisites), and idle instances pick from that pool rather than inventing work or letting ideas sit only in chat or personal task lists.",
          "links": []}
       ]
     }
