@@ -71,7 +71,11 @@ def main():
     con.execute("PRAGMA journal_mode=WAL")
     ensure_cols(con)
     done = {r[0] for r in con.execute("SELECT path FROM metrics WHERE ce IS NOT NULL")}
-    clips = [c for c in enumerate_clips(args.roots.split(",")) if c not in done]
+    # skip clips >60s: WavLM OOMs on multi-minute audio, and one aesthetic score over
+    # an 8-min a2a/longform clip is not meaningful (Audiobox is designed for ~10-30s).
+    # dur is already in the DB from the CPU pass.
+    too_long = {r[0] for r in con.execute("SELECT path FROM metrics WHERE dur > 60")}
+    clips = [c for c in enumerate_clips(args.roots.split(",")) if c not in done and c not in too_long]
     print(f"audiobox: {len(clips)} clips to score (batch {args.batch})", flush=True)
     if not clips:
         return

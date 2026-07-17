@@ -109,7 +109,8 @@ def main():
                 rate = n / (time.time() - t0)
                 print(f"  {n}/{len(todo)} ({rate:.1f}/s, ETA {int((len(todo)-n)/max(rate,1e-6)/60)}min)", flush=True)
         if batch:
-            con.executemany(f"INSERT OR REPLACE INTO metrics VALUES ({','.join('?' * (len(COLS)+1))})", batch)
+            con.executemany(f"INSERT INTO metrics (path,{','.join(COLS)}) VALUES ({','.join('?'*(len(COLS)+1))}) "
+                            f"ON CONFLICT(path) DO UPDATE SET {', '.join(f'{c}=excluded.{c}' for c in COLS)}", batch)
             con.commit()
     total = con.execute("SELECT COUNT(*) FROM metrics").fetchone()[0]
     print(f"DONE: {n} scored this run, {total} total in {DB} ({time.time()-t0:.0f}s)", flush=True)
