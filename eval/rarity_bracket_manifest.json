@@ -1,0 +1,331 @@
+{
+ "_purpose": "CONTINUITY's C-lane deliverable for the overnight rarity board (Kim 2026-07-11 brief, item 2): the checkpoint-BRACKETING JUDGMENT across every trained model. Default bracket = {ep0/1, mid, last}; OVERRIDDEN per model from our findings (HoF + journals + WORKLOG) so the 9-render-per-ckpt matrix (CFG{1,7,16}xstrength{0.6,1.0,1.5}) does not burn GPU on known-dead epochs. G maps picks->render jobs; W's model_matrix.html lights up ckpts with renders done.",
+ "_consumes": "rarity_gen.py matrix (G owns) + model_matrix.html column/row dropdowns (W owns)",
+ "_sources": [
+  "docs/checkpoint-hall-of-fame.md",
+  "profiles/*.journal.md",
+  "WORKLOG.md",
+  "avp_board_seeds/ANALYSIS/degradation_report_v2.md"
+ ],
+ "_default_rule": "ep0_or_ep1 + ep_mid + ep_last unless a finding names a winner or a dead zone",
+ "_tiers": {
+  "full": "healthy across the run OR a headline comparison -> render even 3-pick bracket",
+  "early": "finding says EARLY epochs win / collapse late -> weight picks early, 1 late witness",
+  "minimal": "weak/negative-leaning model -> 2 picks just for board completeness",
+  "negative": "known-bad result -> 1-2 picks to SHOW the failure, do not sweep deep",
+  "single": "only one usable/existing ckpt"
+ },
+ "models": {
+  "dora64_avp_tiered_lr2e4": {
+   "tier": "single",
+   "picks": [
+    "epoch=0-step=36.ckpt"
+   ],
+   "witness": [
+    "epoch=1-step=72.ckpt"
+   ],
+   "skip": "epoch>=2 (all dead)",
+   "reason": "HoF (2026-07-10): ep0 is the SINGLE usable checkpoint, caught right at the edge of breakdown ('vertical movement + pitches, solid beat'). 2e-4 overshoots the sweet spot by ep0; every later epoch useless even as an effect. ep1 optional as the cliff witness."
+  },
+  "dora64_avp_tiered_lr1e4": {
+   "tier": "early",
+   "picks": [
+    "epoch=0-step=36.ckpt",
+    "epoch=3-step=144.ckpt",
+    "epoch=7-step=288.ckpt"
+   ],
+   "reason": "HoF: ep3-7 all usable (esp ep7 s7 kimlong). lr1e-4 is UNDER-cooked (never reaches the sweet spot 2e-4 hits at ep0). The usable band is ep3-7; ep0 as the pre-learning anchor."
+  },
+  "dora16_avp_8ep": {
+   "tier": "early",
+   "picks": [
+    "epoch=0-step=299.ckpt",
+    "epoch=2-step=897.ckpt",
+    "epoch=6-step=2093.ckpt"
+   ],
+   "reason": "avp board verdict: knee at ep4-6; kimlong deep-listen: EARLY epochs win (s1234 ep2 punch+dorian, ep6_fine winner). Conditioning collapses late; ep2/ep6 are Kim's early favourites, ep0 anchor."
+  },
+  "dora16_avp_freeform_8ep": {
+   "tier": "negative",
+   "picks": [
+    "epoch=7-step=288.ckpt",
+    "epoch=31-step=1152.ckpt"
+   ],
+   "reason": "NEGATIVE result (analysis v2): single descriptive caption does NOT fix conditioning collapse (prompt/seed ratio 0.22, WORSE than the trigger arm's 0.92). It was never the trigger token's fault -- any single caption reused per crop collapses conditioning. 2 picks just to show the failure on the board; do not sweep deep."
+  },
+  "dora16_avp_familiarity_8ep": {
+   "tier": "minimal",
+   "picks": [
+    "epoch=0-step=299.ckpt",
+    "epoch=4-step=1495.ckpt"
+   ],
+   "reason": "avp board verdict: 'familiarity worst' of the arms. Minimal bracket for completeness."
+  },
+  "dora128adj_avp_aug10_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=300.ckpt",
+    "epoch=37-step=1500.ckpt",
+    "epoch=74-step=3000.ckpt"
+   ],
+   "reason": "arm G = the BROADLY SHIPPABLE recipe (analysis v2 + tempo_iqr, W): r128@lr1e-4 escapes BOTH tempo AND spectral collapse, centroid stays healthy 300-3000 steps, flat tempo-stable across the whole run (mean iqr 0.94, never collapses). Any epoch valid -> full even early/mid/last bracket."
+  },
+  "dora128adj_avp_8ep": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=299.ckpt",
+    "epoch=3-step=1196.ckpt",
+    "epoch=6-step=2093.ckpt"
+   ],
+   "reason": "r128adj = 'best' of the avp board arms (2026-07-08 verdict). Pre-final run; even bracket."
+  },
+  "dora128adj_avp_8ep_final": {
+   "tier": "single",
+   "picks": [
+    "epoch=0-step=299.ckpt"
+   ],
+   "reason": "The warm-started FINAL (from dora128adj ep6). Only one ckpt exists; it IS the deliverable of this run."
+  },
+  "dora128_everything_8ep_lr1x": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1527.ckpt",
+    "epoch=4-step=7635.ckpt",
+    "epoch=7-step=12216.ckpt"
+   ],
+   "reason": "ep7 is the CANONICAL sweep checkpoint (the 72-clip weight x length sweep + steps-24 lock-in all used everything_8ep_lr1x ep7). Established-good last epoch; ep0/ep4 for the trajectory."
+  },
+  "dora128_everything_8ep_lr3x": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1527.ckpt",
+    "epoch=4-step=7635.ckpt",
+    "epoch=7-step=12216.ckpt"
+   ],
+   "reason": "3x-LR twin of lr1x -- render the matching bracket so the board shows the LR effect at equal epochs (likely overcooked late; the comparison is the point)."
+  },
+  "dora16_goa_newstack_8ep": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1350.ckpt",
+    "epoch=3-step=5400.ckpt",
+    "epoch=7-step=10800.ckpt"
+   ],
+   "reason": "Kim's HEADLINE A/B: new caption stack vs the old HoF best (x20b3ygb). Full bracket. NB ep3-step5400 mirrors the HoF pick's step count -- natural comparison point. (skip the epoch=0-step=1350-v1 duplicate.)"
+  },
+  "dora128_47s_newcaptions_5ep": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1350.ckpt",
+    "epoch=2-step=4050.ckpt",
+    "epoch=4-step=6750.ckpt"
+   ],
+   "reason": "newcaptions base run (5ep). Kim's newcap listen preferred later (ep8-equiv via the continuation); this base's last (ep4) is the tip before warm-start."
+  },
+  "dora128_47s_cont_from5": {
+   "tier": "full",
+   "root": "/home/kim/Projects/sa3_local_runs",
+   "picks": [
+    "epoch=0-step=1350.ckpt",
+    "epoch=2-step=4050.ckpt",
+    "epoch=4-step=6750.ckpt"
+   ],
+   "reason": "Kim's direct ask (2026-07-12, WINTERMUTE): 'continue from ep5, until I think of something else' -- fresh warm-start from newcaptions_5ep's LAST ckpt (NOT the older continued_3more branch), 5 more epochs, checkpoint-every-epoch. Local ckpt tags are 0-4 but this is CONTINUATION epoch 6-10 of the lineage (5ep base + 5 more). Trained straight to local NVMe (/home/kim/Projects/sa3_local_runs/), not Mantu -- hence the root override. Even bracket: ep0(=total ep6, anchor), ep2(=total ep8, Kim's REMEMBERED preference for this lineage per the newcaptions_5ep entry above), ep4(=total ep10, the tip). Completed 2026-07-12 09:03, no prior render/eval existed for it (found by GHOST-NOTE on Kim's direct ask 'do we have the clips/section for last night's continuation' -- answer was no, closing the gap now)."
+  },
+  "dora128_newcap_continued_3more": {
+   "tier": "early",
+   "picks": [
+    "epoch=0-step=1350.ckpt",
+    "epoch=2-step=4050.ckpt"
+   ],
+   "reason": "3 continued epochs warm-started from newcaptions ep4 (=> ~ep7-8 overall). Kim: 'prefers newcap ep8 overall' -> the continuation TIP (ep2 here) is the wanted checkpoint. (dora128_newcap_continued_8ep dir is EMPTY -> skip it.)"
+  },
+  "dora16_avp_originals_earlyeps": {
+   "tier": "early",
+   "picks": [
+    "epoch=0-step=36.ckpt",
+    "epoch=2-step=108.ckpt",
+    "epoch=4-step=180.ckpt"
+   ],
+   "reason": "'originals' = no augs; the deep-listen finding 'early epochs win' lives on the originals runs. This run only spans ep0-4 by design (all early) -> take the spread."
+  },
+  "dora16_avp_originals_win7": {
+   "tier": "early",
+   "picks": [
+    "epoch=0-step=36.ckpt",
+    "epoch=2-step=108.ckpt",
+    "epoch=6-step=252.ckpt"
+   ],
+   "reason": "originals, early-win: Kim HoF s1234 ep2, ep6_fine winner. ep2/ep6 = the favourites, ep0 anchor. (ep10 late = collapse, omitted.)"
+  },
+  "dora16_avp_originals_densewin": {
+   "tier": "early",
+   "picks": [
+    "epoch=2-step=108.ckpt",
+    "epoch=6-step=252.ckpt",
+    "epoch=10-step=396.ckpt"
+   ],
+   "reason": "dense re-run window (has the *_fine variants Kim HoF'd: s1234 ep2/ep6_fine). ep2/ep6 winners + ep10 as the one late witness."
+  },
+  "dora16_avp_originals_64ep": {
+   "tier": "early",
+   "picks": [
+    "epoch=7-step=288.ckpt",
+    "epoch=15-step=576.ckpt",
+    "epoch=31-step=1152.ckpt"
+   ],
+   "reason": "longer originals ladder (save-every-8ep). early-win => weight early (first 3 saves); Kim HoF s909 ep13_fine/ep27 fall near ep15/ep31 saves. Later saves (ep47-63) = post-collapse, omitted."
+  },
+  "dora16_glitchheal_5ep_2xlr": {
+   "tier": "negative",
+   "picks": [
+    "epoch=0-step=5.ckpt",
+    "epoch=4-step=25.ckpt"
+   ],
+   "reason": "NEGATIVE (CONTINUITY 2026-07-04): the heal adapter OVERWRITES rather than heals -- at 2xLR its own learned voice dominates, glitch becomes a minor accent; final adapter near-identical on clean vs glitched base. 2 picks to show start-vs-end."
+  },
+  "dora256_avp_aug10_lr7e5": {
+   "tier": "single",
+   "picks": [
+    "epoch=3-step=300.ckpt"
+   ],
+   "reason": "r256 DoRA does not fit locally (4 attempts, LUMI-only per todos). This single ep3 ckpt is all that exists on-disk; include it as the r256 data point."
+  },
+  "dora128_everything_8ep_lr0.5x": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1527.ckpt",
+    "epoch=1-step=3054.ckpt",
+    "epoch=2-step=4581.ckpt",
+    "epoch=3-step=6108.ckpt",
+    "epoch=4-step=7635.ckpt",
+    "epoch=5-step=9162.ckpt",
+    "epoch=6-step=10689.ckpt",
+    "epoch=7-step=12216.ckpt"
+   ],
+   "witness": [],
+   "reason": "KIM DIRECT 2026-07-13 (via CONTINUITY): the 0.5x-LR everything sweep was saved but never rendered - render ALL 8 ckpts on the standard grid (top of the missing-cells list). Entry added by GHOST-NOTE; C owns bracket judgment, full-tier per Kim's ask."
+  },
+  "dora128_everything_8ep_lr0.5x_cont5": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=1527.ckpt",
+    "epoch=1-step=3054.ckpt",
+    "epoch=2-step=4581.ckpt",
+    "epoch=3-step=6108.ckpt",
+    "epoch=4-step=7635.ckpt"
+   ],
+   "witness": [],
+   "reason": "KIM DIRECT 2026-07-14 (via WINTERMUTE): 5-epoch continuation of dora128_everything_8ep_lr0.5x via warm-start (adapter weights + FusionOpt SF state restored from epoch=7). These 5 ckpts = training epochs 9-13; render ALL 5 on the standard grid so the length trajectory reads contiguously against the original 8-epoch 0.5x run. Full-tier per the length-comparison purpose; C owns final bracket judgment."
+  },
+  "fp32cmp_avp_t4096_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=2393.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=598.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=598.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+  },
+  "fp32cmp_avp_t512_bs8_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=299.ckpt",
+    "epoch=1-step=598.ckpt",
+    "epoch=2-step=897.ckpt",
+    "epoch=3-step=1196.ckpt",
+    "epoch=4-step=1495.ckpt",
+    "epoch=5-step=1794.ckpt",
+    "epoch=6-step=2093.ckpt",
+    "epoch=7-step=2392.ckpt"
+   ],
+   "witness": [],
+   "reason": "fp32/T4096 LUMI comparison campaign arms (Kim direct 2026-07-17: normal evals + analytics on arriving ckpts). Entry added by GHOST-NOTE; run dirs are symlinks sa3_lora_runs/<label> -> fp32_compare drive. C owns bracket judgment."
+  }
+ },
+ "legacy_goa_dora_nested": {
+  "_note": "Older goa runs store ckpts in nested <runid>/checkpoints/ (paths below are relative to sa3_lora_runs/). Enumeration descended; picks concrete + finding-gated.",
+  "sa3-goa-dora-47s-b4-cont": {
+   "runid": "x20b3ygb",
+   "tier": "full_MUSTINCLUDE",
+   "picks": [
+    "x20b3ygb/checkpoints/epoch=0-step=1350.ckpt",
+    "x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
+    "x20b3ygb/checkpoints/epoch=4-step=6750.ckpt"
+   ],
+   "hof_pick": "x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
+   "reason": "HoF ENTRY 1 (Kim's overall favourite of the dora_results board): r16 dora-rows Fusion, 'cleanest sound, sounds not diffusing in the spectral image'. ep3-step5400 MUST appear on the board; ep0 anchor + ep4 late witness (learning continued to last ckpt for far-from-base pairs)."
+  },
+  "sa3-goa-dora-47s-r128-fusion": {
+   "runid": "mqe3ne49",
+   "tier": "negative_degrade",
+   "picks": [
+    "mqe3ne49/checkpoints/epoch=0-step=1350.ckpt",
+    "mqe3ne49/checkpoints/epoch=2-step=4050.ckpt",
+    "mqe3ne49/checkpoints/epoch=4-step=6750.ckpt"
+   ],
+   "reason": "r128 Fusion WORSE: in-dataset goa degrades to 'diffuse and impact-less' after ~step5400 (s1234) / ~2700 (s42). ep0/ep2 healthy + ep4 as the post-5400 degradation witness. Evidence for big-rank-needs-regularization; don't sweep ep5-7 (deep in the diffuse zone)."
+  },
+  "sa3-goa-dora-47s-r64": {
+   "runid": "i8nygj4y",
+   "tier": "minimal",
+   "picks": [
+    "i8nygj4y/checkpoints/epoch=0-step=1350.ckpt",
+    "i8nygj4y/checkpoints/epoch=3-step=5400.ckpt",
+    "i8nygj4y/checkpoints/epoch=7-step=10800.ckpt"
+   ],
+   "reason": "r64 surprisingly NOT better than r16 (HoF audition); genres drift, same-series ckpts sound quite different from each other. Even 3-pick spread to show the drift."
+  },
+  "sa3-goa-dora-47s-r128-adamw": {
+   "runid": "dq0egegi",
+   "tier": "negative",
+   "picks": [
+    "dq0egegi/checkpoints/epoch=0-step=1350.ckpt",
+    "dq0egegi/checkpoints/epoch=7-step=10800.ckpt"
+   ],
+   "reason": "AdamW won't learn the new style at our settings (p0 falls back to 'happy synth music' by step 10800; same AdamW style-inertia as the FiLM adapter). ep0 vs ep7 shows it never departs base. Fusion learns where AdamW refuses."
+  },
+  "sa3-goa-dora-47s-r128-fusion-caut": {
+   "runid": "qy50uilf",
+   "tier": "negative_diverge",
+   "picks": [
+    "sa3-goa-dora-47s-r128-fusion-caut/qy50uilf/checkpoints/epoch=0-step=1350.ckpt",
+    "sa3-goa-dora-47s-r128-fusion-caut/qy50uilf/checkpoints/epoch=2-step=4050.ckpt"
+   ],
+   "skip": "epoch>=3 (all LoRA tensors NaN)",
+   "reason": "DoRA r128 CAUTIOUS A/B DIVERGED (fusion-night 2026-07-02): all LoRA tensors NaN between ep2->ep3 (apply_cautious inflated update norm by ~1/sqrt(keep)=1.37x at NS5's keep~0.53 masks => hidden +37% effective spectral LR). ONLY ep0-2 are healthy (ep0-2 were competitive, frechet 0.0785). DO NOT render ep3-7 -- corrupt weights. NB the dir has a DOUBLED nesting: sa3-goa-dora-47s-r128-fusion-caut/qy50uilf/."
+  },
+  "sa3-goa-dora-47s-b4": {
+   "runid": "vjnnndnu",
+   "tier": "minimal",
+   "picks": [
+    "vjnnndnu/checkpoints/epoch=0-step=1350.ckpt",
+    "vjnnndnu/checkpoints/epoch=2-step=4050.ckpt"
+   ],
+   "reason": "Precursor to b4-cont (the HoF run continued FROM this). Only ep0-2 saved. 2 picks as the pre-continuation baseline."
+  },
+  "sa3-goa-dora-47s": {
+   "runid": "2ankrkoh",
+   "tier": "single",
+   "picks": [
+    "2ankrkoh/checkpoints/epoch=0-step=5400.ckpt"
+   ],
+   "reason": "Earliest goa-47s base run; single ckpt (ep0-step5400). Include as the origin data point of the goa-dora lineage."
+  }
+ }
+}
