@@ -378,7 +378,10 @@
    "picks": [
     "epoch=0-step=675.ckpt",
     "epoch=1-step=1350.ckpt",
-    "epoch=2-step=2025.ckpt"
+    "epoch=2-step=2025.ckpt",
+    "epoch=3-step=2700.ckpt",
+    "epoch=4-step=3375.ckpt",
+    "epoch=5-step=4050.ckpt"
    ],
    "witness": [],
    "reason": "task-50 T=2048-trained longctx arm, first ckpts 2026-07-18. GHOST-NOTE entry, C owns judgment."
