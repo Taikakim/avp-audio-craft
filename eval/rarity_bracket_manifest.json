@@ -285,7 +285,8 @@
     "epoch=1-step=1350.ckpt",
     "epoch=2-step=2025.ckpt",
     "epoch=3-step=2700.ckpt",
-    "epoch=4-step=3375.ckpt"
+    "epoch=4-step=3375.ckpt",
+    "epoch=5-step=4050.ckpt"
    ],
    "witness": [],
    "reason": "fp32 goa t512 arm \u2014 SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
@@ -336,7 +337,8 @@
    "picks": [
     "epoch=0-step=1350.ckpt",
     "epoch=1-step=2700.ckpt",
-    "epoch=2-step=4050.ckpt"
+    "epoch=2-step=4050.ckpt",
+    "epoch=3-step=5400.ckpt"
    ],
    "witness": [],
    "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
