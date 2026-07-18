@@ -297,7 +297,9 @@
           "id": "2605.31295",
           "title": "Latent Space Disentanglement via Activation Steering for Symbolic Music",
           "link": "https://arxiv.org/abs/2605.31295",
-          "claim": "Activation steering can disentangle and control musical attributes (e.g. style, texture) in a symbolic (MIDI) generative model's latent/activation space. The team's actual MIDI work (musicological transcription/analysis) never cites or engages this paper &mdash; unrelated methods despite overlapping domain."
+          "claim": "Activation steering can disentangle and control musical attributes in a symbolic (MIDI) generative model's latent/activation space, using Gram-Schmidt orthogonalization to move correlated attributes on interference-free axes.",
+          "verdict": "untested",
+          "explanation": "The team's MIDI/musicology work does not engage this paper, but its AUDIO activation-steering research does: the 2026-07-11 activation-steering deep-research brief cites it by arXiv id and adopts its Gram-Schmidt orthogonalization idea as the prescribed fix for composing entangled continuous steering directions (tempo/brightness/reverb) on the audio DiT. That orthogonalization is a recognized-but-unimplemented follow-up, gated on the team's steering still being at the single-attribute stage -- so the paper is a cross-domain idea source that's been read and filed for later, not run."
         },
         {
           "id": "2506.07634",

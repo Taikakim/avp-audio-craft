@@ -4,6 +4,22 @@
 > Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
 > relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
 
+- [2026-07-18] Paper GAP audit (Kim's ask, ultracode — 11 deep-read finders + 26
+  adversarial verifiers + synth, all Opus/high): docs/paper-gap-audit-2026-07-18.md.
+  Different question from the verdict page — not "did it replicate" but "what did we
+  MISS / apply only in PART / apply WRONG". 26 candidate gaps, 20 survived adversarial
+  verify (3 confirmed, 17 narrowed, 6 refuted incl. my own seeded InfiniteAudio
+  buffer-zone lead — honestly did not survive). 3 CONFIRMED actionable, all on
+  live infra, all cheap, all spot-checked by me against actual code before relaying:
+  (1) TADA alignment-preservation AUC steering eval [MISSED/HIGH] — our 19x "dark"
+  steering is a single Essentia point with no preservation axis to tell real steering
+  from off-manifold distortion; (2) Kynkaanniemi interval-CFG [PARTIAL/MED] — native
+  but ships OFF (cfg_interval=(0,1) verified dit.py:363), never A/B'd, narrowing also
+  skips compute (verified the gate fall-through at dit.py:479->628); (3) DirectAudioEdit
+  weak->strong target-CFG ramp [MISSED/MED] — flowsep uses constant cfg_tar (verified),
+  a principled replacement for the hand-rolled anchor_eta dial. Verifiers narrowed most
+  "missed" items to already-known-deferred TODOs — flagged a stale-line cleanup pass on
+  paper_verdicts_data.json as follow-up.
 - [2026-07-17] Applied C's adversarial-pass fixes to paper_verdicts: 2 more fabricated
   verbatim quotes fixed (SAME's false paper-attribution, Warm-Init's invented quote
   clause), InfiniteAudio recategorized nulled->partial (abstract refutes the null's

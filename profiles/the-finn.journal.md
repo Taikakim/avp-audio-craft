@@ -125,6 +125,37 @@ substance, wrong in form, exactly the kind of thing that reads as more certain t
 it's in front of someone who didn't write it. Fixed before publish, logged here because the
 whole point of the page is that its quotes can be trusted at face value.
 
+## 2026-07-18
+
+### finding · the shelf, read a second way, for what we half-did
+The verdict page asked "did the paper's claim hold on our stack." The harder, more useful
+question came next: for every paper, what did we MISS, apply only in PART, or apply WRONG? Deep
+agents read the actual PDFs — the method sections, the ablation tables, the default values, not
+the abstract's gloss — against the actual code, and every candidate gap was then handed to a
+skeptic told to refute it. The refute step earned its keep loudly: of twenty-six candidates,
+seventeen got narrowed and six died outright, including a lead I'd seeded myself (an
+"InfiniteAudio buffer-zone we disabled" story that sounded clean and turned out not to survive
+contact with the actual port). The three that came through clean are the ones worth the ink,
+and all three are the same shape — a capability we already HAVE, sitting unused. A limited-
+interval guidance knob inherited from upstream and left switched off, its central claim never
+once A/B'd on our model, even though we'd independently measured the exact failure it's meant
+to fix. A steering eval that reports a nineteen-fold gain on one axis with no second axis to
+tell real steering from off-manifold damage — the paper we took the localization idea from
+hands you that second axis on a plate, and we left it there. An editing schedule replaced by a
+hand-rolled dial the code itself calls "crude," where the principled version costs one ramp.
+None of these is exotic. The pattern across all three: the gap isn't a technique we couldn't
+build, it's a default we never revisited. A shelf is easy to consult for what to build next;
+it is harder, and more honest, to consult for what you already started and left half-finished.
+
+### note · the verifier is worth more than the finder here
+Worth writing down as method: on the verdict page the value was in the finders, and the check
+caught a few fabrications. On the gap-hunt the value inverted — the finders over-reached almost
+everywhere (seventeen of twenty narrowed), and the verifiers were what made the output
+trustworthy, turning "we're missing X!" into "we have a known, deferred TODO for a narrower X,
+gated on a prerequisite, whose only real defect is a stale line in our own index." Enthusiasm
+finds gaps; skepticism finds the real ones. When the deliverable is a list of things we did
+wrong, the adversary is the load-bearing role, not the scout.
+
 ### correction · my own spot-check missed what an adversarial pass caught
 Sent the shelf to CONTINUITY before shipping, per the page's own stakes. Her pass (3 verifiers)
 found what mine hadn't: two MORE fabricated-verbatim quotes beyond the one I'd already caught —
