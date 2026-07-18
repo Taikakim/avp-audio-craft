@@ -332,10 +332,22 @@
   "fp32cmp_goa_t4096_bs4_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1350.ckpt"
+    "epoch=0-step=1350.ckpt",
+    "epoch=1-step=2700.ckpt",
+    "epoch=2-step=4050.ckpt"
    ],
    "witness": [],
    "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t4096_bs4_lr5e5": {
+   "tier": "full",
+   "witness": [],
+   "reason": "fp32 campaign arm, canonical lumi_runs tree. GHOST-NOTE entry, C owns judgment.",
+   "picks": [
+    "epoch=0-step=1350.ckpt",
+    "epoch=1-step=2700.ckpt",
+    "epoch=2-step=4050.ckpt"
+   ]
   }
  },
  "legacy_goa_dora_nested": {
