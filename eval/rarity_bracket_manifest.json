@@ -387,6 +387,15 @@
    ],
    "witness": [],
    "reason": "task-50 T=2048-trained longctx arm, first ckpts 2026-07-18. GHOST-NOTE entry, C owns judgment."
+  },
+  "smoke_r256_a256_lr1e4_f512_bs8": {
+   "tier": "full",
+   "picks": [
+    "epoch=2-step=100.ckpt",
+    "epoch=5-step=200.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI pipeline smoke run (r256 a256) \u2014 rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
   }
  },
  "legacy_goa_dora_nested": {
