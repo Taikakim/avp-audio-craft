@@ -353,13 +353,18 @@
    "picks": [
     "epoch=0-step=1350.ckpt",
     "epoch=1-step=2700.ckpt",
-    "epoch=2-step=4050.ckpt"
+    "epoch=2-step=4050.ckpt",
+    "epoch=3-step=5400.ckpt",
+    "epoch=4-step=6750.ckpt"
    ]
   },
   "longctx_t1024_r128": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=337.ckpt"
+    "epoch=0-step=337.ckpt",
+    "epoch=1-step=674.ckpt",
+    "epoch=2-step=1011.ckpt",
+    "epoch=3-step=1348.ckpt"
    ],
    "witness": [],
    "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) \u2014 FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
