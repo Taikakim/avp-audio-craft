@@ -364,7 +364,11 @@
     "epoch=0-step=337.ckpt",
     "epoch=1-step=674.ckpt",
     "epoch=2-step=1011.ckpt",
-    "epoch=3-step=1348.ckpt"
+    "epoch=3-step=1348.ckpt",
+    "epoch=4-step=1685.ckpt",
+    "epoch=5-step=2022.ckpt",
+    "epoch=6-step=2359.ckpt",
+    "epoch=7-step=2696.ckpt"
    ],
    "witness": [],
    "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) \u2014 FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
