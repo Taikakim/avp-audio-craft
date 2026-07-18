@@ -288,7 +288,7 @@
     "epoch=4-step=3375.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI precision-campaign arm (fp32/bf16 twin; Kim direct 2026-07-18). GHOST-NOTE entry, C owns judgment."
+   "reason": "fp32 goa t512 arm \u2014 SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
   },
   "bf16cmp_avp_t512_bs8_lr1e4": {
    "tier": "full",
@@ -324,7 +324,9 @@
    "tier": "full",
    "picks": [
     "epoch=0-step=5400.ckpt",
-    "epoch=1-step=10800.ckpt"
+    "epoch=1-step=10800.ckpt",
+    "epoch=2-step=16200.ckpt",
+    "epoch=3-step=21600.ckpt"
    ],
    "witness": [],
    "reason": "fp32/T4096 LUMI campaign arm, canonical source lumi_runs/runs/fp32_compare (repointed 2026-07-18 after the second rsync superseded the first partial copy). GHOST-NOTE entry, C owns judgment."
