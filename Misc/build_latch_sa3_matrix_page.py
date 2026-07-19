@@ -83,7 +83,7 @@ th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;c
 .steers{color:#5d9}.weak{color:#e88}.nomeasure{color:#667;font-style:italic}
 .sec{margin:14px 0;padding:10px 12px;border:1px solid #26262c;border-radius:6px;background:#131316}
 </style></head><body>
-<div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> <span class=muted>· switching keeps the playhead · re-click stops</span></div>
+<div id=bar>&#9654; <b id=np>hover a cell to preview, click to pin</b> <span id=pos class=muted></span> <span id=ld class=muted style="color:#fa5"></span> <span class=muted>· switching keeps the playhead · loops until stopped</span></div>
 <div id=wrap>
 <h1>LatCH steering hyperparameter sweep — SA3 medium</h1>
 <div id=explain><b>What this tests:</b> every scalar LatCH guidance head (the fixed, no-adapter steering heads — beat/rhythm activations, RMS energy bands, spectral shape, hardness) swept across a gain ladder [64, 128, 512, 2048, 8192] chosen to <i>show</i> the documented response, not hide it: gain 128 is a known dead zone, the energy-family heads operate around 512-2048. Each cell's number is the <b>achieved</b> feature value measured on the render (mean over the clip, same extractor used to build the head's training target); Δ is achieved minus the requested target. A head that "steers" pulls Δ toward zero as gain rises; "weak/dead" means it barely moves the needle at any weight tested here — a real finding about that head's usability, not a bug.
@@ -92,20 +92,26 @@ th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;c
 <audio id=au_el></audio>
 <script>const D=__DATA__;
 const au=document.getElementById('au_el'),npx=document.getElementById('np');let cur=null;
+au.loop=true;
 au.addEventListener('timeupdate',()=>{document.getElementById('pos').textContent=cur?('· '+au.currentTime.toFixed(1)+'s'):'';});
-au.addEventListener('ended',()=>{cur=null;mark();});
+au.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…';});
+au.addEventListener('playing',()=>{document.getElementById('ld').textContent='';});
 function mark(){document.querySelectorAll('.c.play').forEach(e=>e.classList.remove('play'));if(cur){const e=document.getElementById(cur);if(e)e.classList.add('play');}}
-function play(id,f,l,head,gain,clip){
+function startClip(id,f,l,head,gain,clip){
  if(window.noteSet)noteSet({model:'latch_sa3_sweep_20260719',ckpt:head,clip:clip});
- if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';return;}
  const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();npx.textContent='▶ '+l;
+ document.getElementById('ld').textContent='loading…';
  au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
+function play(id,f,l,head,gain,clip){
+ if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}
+ startClip(id,f,l,head,gain,clip);}
+function hoverPlay(id,f,l,head,gain,clip){if(cur===id)return;startClip(id,f,l,head,gain,clip);}
 function col(d,scale){if(d==null)return'#1a1a1f';const t=Math.max(0,Math.min(1,Math.abs(d)/scale));return`hsl(${Math.round((1-t)*120)},45%,22%)`;}
 let h='';
 h+='<div class=sec><h2>baseline (no guidance)</h2><table><tr><th>prompt</th><th>▶</th></tr>';
 Object.entries(D.baselines).forEach(([pid,b])=>{const id='base_'+pid;
- h+=`<tr><td>${pid}: ${b.prompt.slice(0,50)}</td><td class=c id="${id}" onclick="play('${id}','${b.f}','baseline ${pid}','baseline',0,'${b.clip}')">▶</td></tr>`;});
+ h+=`<tr><td>${pid}: ${b.prompt.slice(0,50)}</td><td class=c id="${id}" onclick="play('${id}','${b.f}','baseline ${pid}','baseline',0,'${b.clip}')" onmouseenter="hoverPlay('${id}','${b.f}','baseline ${pid}','baseline',0,'${b.clip}')">▶</td></tr>`;});
 h+='</table></div>';
 D.heads.forEach(hd=>{
  const scale=Math.abs(hd.target||1)*0.6+1e-6;
@@ -116,7 +122,7 @@ D.heads.forEach(hd=>{
   h+=`<tr><td>${r.gain}</td><td>${r.prompt_id}</td>`+
    `<td style="background:${col(r.delta,scale)}">${r.measured!=null?r.measured.toFixed(3):'·'}</td>`+
    `<td>${r.delta!=null?r.delta.toFixed(3):(r.note||'·')}</td>`+
-   `<td class=c id="${id}" onclick="play('${id}','${r.f}','${hd.head} g${r.gain} ${r.prompt_id}','${hd.head}','${r.gain}','${r.clip}')">▶</td></tr>`;});
+   `<td class=c id="${id}" onclick="play('${id}','${r.f}','${hd.head} g${r.gain} ${r.prompt_id}','${hd.head}','${r.gain}','${r.clip}')" onmouseenter="hoverPlay('${id}','${r.f}','${hd.head} g${r.gain} ${r.prompt_id}','${hd.head}','${r.gain}','${r.clip}')">▶</td></tr>`;});
  h+='</table></div>';
 });
 document.getElementById('out').innerHTML=h;

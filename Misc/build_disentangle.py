@@ -79,7 +79,7 @@ body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0;max-width:115
 table{border-collapse:collapse;font-size:12px;margin:5px 0}td,th{border:1px solid #2a2a30;padding:4px 9px;text-align:center}
 th{background:#1c1c22}td:first-child,th:first-child{text-align:left;color:#bbb}.c{cursor:pointer;font-variant-numeric:tabular-nums}.c:hover{outline:2px solid #7cf}.play{outline:2px solid #5d5 !important}.sub{color:#888;font-size:11px}
 </style></head><body>
-<div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> <span class=muted>· switching keeps the playhead, re-click stops</span></div>
+<div id=bar>&#9654; <b id=np>hover a cell to preview, click to pin</b> <span id=pos class=muted></span> <span id=ld class=muted style="color:#fa5"></span> <span class=muted>· switching keeps the playhead · loops until stopped</span></div>
 <div id=wrap>
 <h1>onset_per_beat &mdash; tempo-shortcut disentanglement</h1>
 <div id=info></div>
@@ -89,10 +89,14 @@ th{background:#1c1c22}td:first-child,th:first-child{text-align:left;color:#bbb}.
 <audio id=au_el></audio>
 <script>const D=__DATA__;
 const au=document.getElementById('au_el'),npx=document.getElementById('np');let cur=null;
+au.loop=true;
 au.addEventListener('timeupdate',()=>{document.getElementById('pos').textContent=cur?('· '+au.currentTime.toFixed(1)+'s'):'';});
-au.addEventListener('ended',()=>{cur=null;mark();});
+au.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…';});
+au.addEventListener('playing',()=>{document.getElementById('ld').textContent='';});
 function mark(){document.querySelectorAll('.c.play').forEach(e=>e.classList.remove('play'));if(cur){const e=document.getElementById(cur);if(e)e.classList.add('play');}}
-function play(id,f,l){if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';return;}const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();npx.textContent='▶ '+l;au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
+function startClip(id,f,l){const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();npx.textContent='▶ '+l;document.getElementById('ld').textContent='loading…';au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
+function play(id,f,l){if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}startClip(id,f,l);}
+function hoverPlay(id,f,l){if(cur===id)return;startClip(id,f,l);}
 function noteCk(ep,f){if(window.noteSet)noteSet({model:'__RUN__',ckpt:'ep'+ep,clip:f.split('/').pop()});}
 const M=D.meta;document.getElementById('info').innerHTML=`<b>${M.run}</b> · ${M.optimizer} · lr ${M.lr} · ${M.scalar_field} · ${M.epochs}ep<div class=p>${M.purpose}</div>`;
 function gcol(g){let t=Math.max(0,Math.min(1,(g-0.5)/0.45));return`hsl(${Math.round(t*120)},45%,23%)`;}
@@ -104,7 +108,7 @@ for(const s of D.srcs){
  h+='<table><tr><th>gain</th><th>control&nbsp;corr</th><th>tempo-shortcut</th><th>groove</th><th>out range</th></tr>';
  for(const g of s.gains){const a=s.agg[g];h+=`<tr><td>${g}</td><td style="background:${ccol(a.ctrl)}">${a.ctrl}</td><td style="background:${tcol(a.tempo)}">${a.tempo}</td><td style="background:${gcol(a.groove)}">${a.groove}</td><td>${a.omin}–${a.omax}</td></tr>`;}
  h+='</table><table><tr><th>g＼req</th>'+s.reqs.map(q=>`<th>${q}</th>`).join('')+'</tr>';
- for(const g of s.gains){h+=`<tr><td>g${g}</td>`+s.reqs.map(q=>{const c=s.cells[g+'|'+q];if(!c)return'<td>·</td>';const id=`e${s.ep}_${g}_${q}`.replace(/[^A-Za-z0-9_]/g,'');return`<td class=c id="${id}" style="background:${gcol(c.g)}" onclick="noteCk('${s.ep}','${c.f}');play('${id}','${c.f}','ep${s.ep} g${g} req${q} → ${c.m}, ${c.b}bpm, groove ${c.g}')">${c.m}</td>`;}).join('')+'</tr>';}
+ for(const g of s.gains){h+=`<tr><td>g${g}</td>`+s.reqs.map(q=>{const c=s.cells[g+'|'+q];if(!c)return'<td>·</td>';const id=`e${s.ep}_${g}_${q}`.replace(/[^A-Za-z0-9_]/g,'');const lbl=`ep${s.ep} g${g} req${q} → ${c.m}, ${c.b}bpm, groove ${c.g}`;return`<td class=c id="${id}" style="background:${gcol(c.g)}" onclick="noteCk('${s.ep}','${c.f}');play('${id}','${c.f}','${lbl}')" onmouseenter="noteCk('${s.ep}','${c.f}');hoverPlay('${id}','${c.f}','${lbl}')">${c.m}</td>`;}).join('')+'</tr>';}
  h+='</table>';
 }
 document.getElementById('out').innerHTML=h;

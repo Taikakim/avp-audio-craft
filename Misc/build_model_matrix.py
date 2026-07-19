@@ -34,7 +34,11 @@ STAGING = Path.home() / ".cache/evals_aac"
 MANIFEST = STAGING / "model_matrix" / "manifest.jsonl"
 OUT = STAGING / "model_matrix.html"
 CFGS = (1, 7, 16)
-STRENGTHS = (0.6, 1.0, 1.5)
+# union of the legacy axis (0.6/1.0/1.5, pre-2026-07-20) and the current one
+# (1.0/1.5/2.0, Kim 2026-07-20: drop 0.6 from new renders, add 2.0) -- keeps
+# old 0.6 cells visible (their columns just render empty on new checkpoints)
+# rather than dropping them off the grid.
+STRENGTHS = (0.6, 1.0, 1.5, 2.0)
 
 
 def jsnum(x):
@@ -85,6 +89,10 @@ def main():
     # coverage + data maps
     prompts = {}
     data = {}          # "model|ckpt|cfg|w|pid" -> file
+    native = {}        # "model|ckpt" -> {file, duration, prompt_text} (native-training-length cell;
+                        # NOT in `data` -- duration isn't part of the cfg/w/pid key, so a native clip
+                        # sharing (cfg,w,pid) with a standard 20s cell would silently collide/overwrite
+                        # (GHOST-NOTE 2026-07-20, caught before ship)
     cov = {}           # model -> {ckpt: n_clips}
     for e in entries:
         pid = str(e.get("prompt_id"))
@@ -93,6 +101,10 @@ def main():
         # G's manifest runs ahead of his transcode; dead cells are worse than
         # briefly-missing ones (they'd 404-cache in the browser)
         if not (STAGING / "model_matrix" / e["file"]).exists():
+            continue
+        if e.get("duration_mode") == "native":
+            native[f'{e["model"]}|{e["ckpt"]}'] = {
+                "file": e["file"], "duration": e.get("duration"), "prompt_text": e.get("prompt_text", pid)}
             continue
         key = f'{e["model"]}|{e["ckpt"]}|{jsnum(e["cfg"])}|{jsnum(e["strength"])}|{pid}'
         data[key] = e["file"]
@@ -128,15 +140,19 @@ def main():
 
     n_models_lit = sum(1 for v in cov.values() if v)
     doc = [f"<!doctype html><html><head><meta charset=utf-8><title>Model matrix</title><style>{CSS}</style></head><body>"]
-    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell</b> <span id=pos></span>'
-               ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; re-click stops</span></div>')
+    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, hover a cell to preview / click to pin</b> <span id=pos></span>'
+               ' <span id=ld style="color:#fa5"></span>'
+               ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops</span></div>')
     doc.append('<h1>Model matrix — every trained model × checkpoint × cfg × strength, side by side</h1>'
                '<a href=index.html>← evals</a> · <a href=models.html>models index</a>')
     doc.append(f'<div class=how><b>What this is:</b> the listening matrix over the whole model zoo. '
                f'Each of the 4 columns is a preset: pick a MODEL, then a CHECKPOINT (green = rendered, '
                f'grey = not yet). Below, each prompt shows a 3×3 grid — rows cfg 1/7/16 (how hard the '
-               f'prompt steers), columns DoRA strength 0.6/1.0/1.5 (how strongly the adapter is applied; '
-               f'n/a for base). All cells share ONE playhead, so switching mid-play A/Bs the exact same '
+               f'prompt steers), columns DoRA strength 0.6-2.0 (how strongly the adapter is applied; '
+               f'n/a for base; 0.6 is a legacy value kept for older checkpoints, 2.0 added 2026-07-20). '
+               f"A native-training-length cell (the checkpoint's actual trained context, not the fixed "
+               f'20s grid) appears per checkpoint when known -- look for duration_mode "native" cells. '
+               f'All cells share ONE playhead, so switching mid-play A/Bs the exact same '
                f'moment. Recipes + training data under each header — this page doubles as the record of '
                f'how each model was made. Coverage now: <b>{n_models_lit}/{len(models)} models have '
                f'renders</b>{" — awaiting the overnight run" if not entries else ""}.</div>')
@@ -147,7 +163,7 @@ def main():
                '(CE/PQ fall), fastest at high LR — unless you <b>augment</b> (the aug10 run keeps improving to '
                'ep74). So when auditioning, prefer the early checkpoints of the un-augmented rank-128 runs.</div>')
 
-    payload = {"models": meta, "data": data, "prompts": prompts,
+    payload = {"models": meta, "data": data, "native": native, "prompts": prompts,
                "cfgs": list(CFGS), "strengths": list(STRENGTHS), "gf": gf}
     # manifest_live.jsonl = only entries whose m4a exists in staging (my sync loop
     # ships it beside the clips). The page fetches it at LOAD TIME and rebuilds MM
@@ -165,13 +181,15 @@ async function refreshMM(){
   const r = await fetch('model_matrix/manifest_live.jsonl', {cache:'no-store'});
   if(!r.ok) return;
   const txt = await r.text();
-  const data={}, prompts={}, cov={};
+  const data={}, native={}, prompts={}, cov={};
   for(const ln of txt.split('\\n')){ if(!ln.trim()) continue;
    let e; try{e=JSON.parse(ln)}catch(_){continue}
    const pid=String(e.prompt_id); if(!(pid in prompts)) prompts[pid]=e.prompt_text||pid;
+   if(e.duration_mode==='native'){native[e.model+'|'+e.ckpt]={file:e.file,duration:e.duration,prompt_text:e.prompt_text||pid};
+    (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; continue}
    data[e.model+'|'+e.ckpt+'|'+e.cfg+'|'+e.strength+'|'+pid]=e.file;
    (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; }
-  MM.data=data; MM.prompts=prompts;
+  MM.data=data; MM.native=native; MM.prompts=prompts;
   for(const m of Object.keys(MM.models)) MM.models[m].ckpts=Object.keys(cov[m]||{}).sort();
   render();
  }catch(_){/* file:// or offline -> embedded snapshot stands */}
@@ -183,19 +201,29 @@ window.addEventListener('load', refreshMM);
 
     doc.append("""<audio id="pl"></audio><script>
 let cur=null,ph=0,curCoord=null;const a=document.getElementById('pl');
+a.loop=true;
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0;curCoord=null});
+a.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…'});
+a.addEventListener('playing',()=>{document.getElementById('ld').textContent=''});
 function seekAndPlay(pos){
  const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
-function play(el){const f=el.dataset.src;if(!f)return;
- if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
- if(cur===el){a.pause();el.classList.remove('playing');cur=null;curCoord=null;return}
- if(cur)cur.classList.remove('playing');
+function startCell(el,f){
+ document.getElementById('ld').textContent='loading…';
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
  curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid}}
+function play(el){const f=el.dataset.src;if(!f)return;
+ if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
+ if(cur===el){a.pause();el.classList.remove('playing');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
+ if(cur)cur.classList.remove('playing');
+ startCell(el,f)}
+function hoverPlay(el){const f=el.dataset.src;if(!f||cur===el)return;
+ if(window.noteFromCell)noteFromCell(el);
+ if(cur)cur.classList.remove('playing');
+ startCell(el,f)}
 // After any re-render (checkpoint/model switch OR the 90s auto-refresh) re-bind the
 // playing state to the SAME (column,cfg,strength,prompt) cell. If that cell now points
 // at a different file (i.e. the checkpoint changed), switch to it and CONTINUE from the
@@ -231,6 +259,11 @@ function render(){
    if(st.ckpt&&MM.gf){const g=MM.gf[st.model+'|'+st.ckpt];
     if(g){const pct=g[0],col=pct>=60?'#5d9':(pct>=40?'#ca7':'#a66');
      h+='<div class=cov style="color:'+col+'" title="fraction of this checkpoint\\'s cells with Audiobox CE>=6.0 — a distributional verdict, not good/bad (Kim 2026-07-12)">&#9733; good-fraction '+pct+'% <span style="color:#778">('+g[1]+' cells, CE&ge;6)</span></div>'}}
+   if(st.ckpt&&MM.native){const nv=MM.native[st.model+'|'+st.ckpt];
+    if(nv){h+='<div class=cov><span class="cell have" style="display:inline-block;width:auto;padding:1px 6px" '+
+     'data-src="'+nv.file+'" data-col="'+c+'" data-cf="native" data-w="native" data-pid="native" '+
+     'onclick="play(this)" onmouseenter="hoverPlay(this)">&#9654;</span> native length ('+nv.duration+'s, '+
+     'the size this checkpoint was trained on — vs the fixed 20s grid above/below)</div>'}}
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
      // Zero coverage at the CURRENT cfg/w settings: GREY the prompt out with a hint
@@ -247,7 +280,7 @@ function render(){
      for(const cf of MM.cfgs){h+='<tr><th>cfg'+cf+'</th>';
       for(const w of MM.strengths){
        const key=st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid;const f=MM.data[key];
-       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
+       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)" onmouseenter="hoverPlay(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
       h+='</tr>'}
      h+='</table>'}
     h+='</div>'}

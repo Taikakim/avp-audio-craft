@@ -39,11 +39,37 @@ RARITY_CLIP_INDEX = RUNS / "rarity_gen_set/clip_index.json"
 STAGING = Path.home() / ".cache/evals_aac/model_matrix"
 MANIFEST = STAGING / "manifest.jsonl"
 RENDER_DIR = RUNS / "model_matrix"
+OVERRIDES_PATH = ROOT / "Misc/models_index_overrides.json"
+MODELS_OVERRIDES = json.load(open(OVERRIDES_PATH)) if OVERRIDES_PATH.exists() else {}
 
 CFGS = (1.0, 7.0, 16.0)
-STRENGTHS = (0.6, 1.0, 1.5)
+# Kim direct 2026-07-20: drop 0.6 from NEW renders (most models don't need it; speeds
+# the grid up), add 2.0 (1.5 is well-handled by many models, worth seeing past it).
+# Existing 0.6 cells in the manifest are NOT deleted -- they just stop growing.
+STRENGTHS = (1.0, 1.5, 2.0)
+STRENGTHS_LEGACY = (0.6, 1.0, 1.5)  # the old axis, kept for reference / any tooling that reads it
 STEPS = 24
 DURATION = 20.0
+
+# Native-training-length audition cells (Kim ask 2026-07-20: "we should also have
+# versions on the size the model is trained on" -- the standard grid above is a fixed
+# 20s for every model regardless of what T it trained at, which is right for
+# apples-to-apples cross-model comparison but hides how a checkpoint sounds at ITS OWN
+# intended context length; the LUMI campaign alone now spans T=512..4096 (47.6s..380.4s).
+# ADDITIVE, not a replacement: one extra small audition per (model,ckpt) at native T,
+# not a full 108-cell re-sweep at every length (T=4096 clips cost ~8x a 20s render --
+# a full native-T grid would be prohibitively expensive and isn't what was asked for).
+FPS = 44100 / 4096  # = 10.7666 Hz, the canonical SA3-medium latent frame rate
+NATIVE_LEN_CFG = 7.0
+NATIVE_LEN_STRENGTH = 1.0
+
+
+def native_len_seconds(label: str) -> float | None:
+    """Trained context length in seconds for `label`, if known (from the recipe
+    override's 'T=<frames>' text) -- else None (skip the native-length cell)."""
+    doc = MODELS_OVERRIDES.get(label.removesuffix("_repr"), {})
+    m = re.search(r"T=(\d+)", doc.get("recipe", "")) if isinstance(doc, dict) else None
+    return round(int(m.group(1)) / FPS, 2) if m else None
 
 # additive prompt extension for the AVP-only models (Kim direct via CONTINUITY,
 # 2026-07-11 18:55) -- canonical texts pulled from Misc/build_evals.py's
@@ -137,17 +163,21 @@ def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, onl
     return jobs
 
 
-def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS):
-    # steps suffix ONLY when non-default (24) so existing 24-step files + their resume
-    # keys are byte-identical; a 48/64-step pass lands as a sibling (__st48) not an overwrite.
+def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS, duration=DURATION):
+    # steps/duration suffixes ONLY when non-default so existing files + their resume
+    # keys are byte-identical; a different steps/duration pass lands as a sibling
+    # (__st48 / __dNNN), never an overwrite.
     st = f"__st{steps}" if steps != STEPS else ""
-    return f"{label}__{ckpt}__cfg{int(cfg)}__w{int(round(strength * 100)):03d}__{pid}__s{seed}{st}.wav"
+    du = f"__d{int(round(duration))}" if duration != DURATION else ""
+    return f"{label}__{ckpt}__cfg{int(cfg)}__w{int(round(strength * 100)):03d}__{pid}__s{seed}{st}{du}.wav"
 
 
 def manifest_key(e):
-    # legacy entries predate the "steps" field -> default to STEPS(24), which is also
-    # what a default render produces, so resume stays consistent across the schema bump.
-    return f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{e["prompt_id"]}|st{e.get("steps", STEPS)}'
+    # legacy entries predate the "steps"/"duration" fields -> default to STEPS(24)/
+    # DURATION(20s), which is also what a default render produces, so resume stays
+    # consistent across the schema bump.
+    return (f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{e["prompt_id"]}|'
+           f'st{e.get("steps", STEPS)}|d{e.get("duration", DURATION)}')
 
 
 def load_existing_keys():
@@ -270,7 +300,7 @@ def main():
         for prompt in prompts:
             for cfg in cfgs:
                 for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}'
+                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
                     if key not in existing:
                         need_any = True
         if not need_any:
@@ -316,7 +346,7 @@ def main():
                     break
                 base_m4a_name = None
                 for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}'
+                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
                     wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps)
                     m4a_name = wav_name.replace(".wav", ".m4a")
                     if key not in existing:
@@ -359,13 +389,53 @@ def main():
                     for w in STRENGTHS:
                         if w in strengths_to_render:
                             continue
-                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}'
+                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
                         if key in existing:
                             continue
                         append_manifest({"model": label, "ckpt": tag, "cfg": cfg, "strength": w,
                                          "prompt_id": prompt["id"], "prompt_text": prompt["text"],
                                          "seed": prompt["seed"], "steps": steps, "file": base_m4a_name})
                         existing.add(key)
+
+        # native-training-length audition cell (additive; see NATIVE_LEN_* above) --
+        # one prompt, one setting, at whatever T this checkpoint actually trained on.
+        native_dur = native_len_seconds(label)
+        if native_dur is not None and prompts:
+            np_ = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
+            nw = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
+            nkey = f'{label}|{tag}|{NATIVE_LEN_CFG}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
+            if nkey not in existing:
+                if ckpt_path and not is_fullft:
+                    try:
+                        model.set_lora_strength(nw)
+                    except Exception:
+                        pass
+                nwav_name = clip_name(label, tag, NATIVE_LEN_CFG, nw, np_["id"], np_["seed"],
+                                      steps, duration=native_dur)
+                nwav_path = RENDER_DIR / nwav_name
+                if not nwav_path.exists():
+                    t0 = time.time()
+                    z0 = model.generate(prompt=np_["text"], duration=native_dur, steps=steps,
+                                        cfg_scale=NATIVE_LEN_CFG, seed=int(np_["seed"]),
+                                        batch_size=1, return_latents=True)
+                    if save_latents:
+                        np.save(nwav_path.with_suffix(".z0.npy"),
+                               z0.detach().to(torch.float16).cpu().numpy())
+                    with torch.no_grad():
+                        naudio = model.same.decode(z0.to(decode_dtype))
+                    naudio = naudio.to(torch.float32)[:, :, :int(native_dur * sr)]
+                    save_audio(nwav_path, naudio[0].cpu(), sr, normalize=True)
+                    print(f"  [{label}/{tag} NATIVE-LEN {native_dur}s cfg{NATIVE_LEN_CFG} "
+                         f"w{nw} {np_['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
+                nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
+                if not nm4a_path.exists():
+                    transcode(nwav_path, nm4a_path)
+                append_manifest({"model": label, "ckpt": tag, "cfg": NATIVE_LEN_CFG, "strength": nw,
+                                 "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
+                                 "steps": steps, "duration": native_dur, "duration_mode": "native",
+                                 "file": nm4a_path.name})
+                existing.add(nkey)
+
         del model
         torch.cuda.empty_cache()
         if stopped:

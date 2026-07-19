@@ -94,7 +94,7 @@ th{background:#1c1c22;color:#aaa}td:first-child{text-align:left}
 .c{cursor:pointer}.c:hover{outline:2px solid #7cf}.play{outline:2px solid #5d5 !important}
 .hero{outline:2px solid #d90}.dorm{color:#667}
 </style></head><body>
-<div id=bar>&#9654; <b id=np>click a row's ▶ to play</b> <span id=pos class=muted></span> <span class=muted>· switching keeps the playhead · re-click stops</span></div>
+<div id=bar>&#9654; <b id=np>hover a row's ▶ to preview, click to pin</b> <span id=pos class=muted></span> <span id=ld class=muted style="color:#fa5"></span> <span class=muted>· switching keeps the playhead · loops until stopped</span></div>
 <div id=wrap>
 <h1>E1 pilot — anti-loop steering (recurrence band-hinge guide)</h1>
 <div id=explain><b>What this tests:</b> long a2a re-renders of a full track tend to fall into a <b>loop attractor</b> — the model finds a phrase and repeats it. This pilot steers sampling away from self-repetition with a gradient guide on a recurrence statistic (penalized only above a "too repetitive" edge), at increasing guide strength λ.
@@ -105,15 +105,21 @@ th{background:#1c1c22;color:#aaa}td:first-child{text-align:left}
 <audio id=au_el></audio>
 <script>const C=__DATA__;
 const au=document.getElementById('au_el'),npx=document.getElementById('np');let cur=null;
+au.loop=true;
 au.addEventListener('timeupdate',()=>{document.getElementById('pos').textContent=cur?('· '+au.currentTime.toFixed(1)+'s'):'';});
-au.addEventListener('ended',()=>{cur=null;mark();});
+au.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…';});
+au.addEventListener('playing',()=>{document.getElementById('ld').textContent='';});
 function mark(){document.querySelectorAll('.c.play').forEach(e=>e.classList.remove('play'));if(cur){const e=document.getElementById(cur);if(e)e.classList.add('play');}}
-function play(id,f,l,clip){
+function startClip(id,f,l,clip){
  if(window.noteSet)noteSet({model:'e1_pilot_20260716',ckpt:'',clip:clip});
- if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';return;}
  const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();npx.textContent='▶ '+l;
+ document.getElementById('ld').textContent='loading…';
  au.src=f;const go=()=>{try{au.currentTime=((au.duration&&pos>au.duration-1)?0:Math.min(pos,(au.duration||1e9)-0.05));}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
+function play(id,f,l,clip){
+ if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}
+ startClip(id,f,l,clip);}
+function hoverPlay(id,f,l,clip){if(cur===id)return;startClip(id,f,l,clip);}
 function col(v){if(v==null)return'#1a1a1f';const t=Math.max(0,Math.min(1,v/0.75));return`hsl(${Math.round((1-t)*120)},45%,22%)`;}
 let h='';
 for(const nl of [60,50]){
@@ -126,7 +132,7 @@ for(const nl of [60,50]){
   h+=`<tr${hero?' class=hero':''}><td>${hero?'⭐ ':''}${name}</td><td>${c.lamv===0?'—':c.lam}</td>`+
    `<td style="background:${col(c.line_frac_16s)}">${c.line_frac_16s??'·'}</td><td>${c.d_line_frac_16s??'·'}</td>`+
    `<td>${c.l_max_sec??'·'}</td><td>${c.d_l_max_sec??'·'}</td><td>${c.r_max??'·'}</td>`+
-   `<td class=c id="${id}" onclick="play('${id}','${c.f}','nl${nl} ${c.lamv===0?'baseline':'λ'+c.lam}','${c.clip}')">▶</td></tr>`;});
+   `<td class=c id="${id}" onclick="play('${id}','${c.f}','nl${nl} ${c.lamv===0?'baseline':'λ'+c.lam}','${c.clip}')" onmouseenter="hoverPlay('${id}','${c.f}','nl${nl} ${c.lamv===0?'baseline':'λ'+c.lam}','${c.clip}')">▶</td></tr>`;});
  h+='</table>';
 }
 document.getElementById('out').innerHTML=h;
