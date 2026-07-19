@@ -92,6 +92,52 @@ Both non-baseline arms OOM'd on launch (2026-07-17 and again 2026-07-18); `stere
 
 ---
 
+## Additions — THE-FINN, 2026-07-19 (the pending-Kim-verdict blind spot)
+
+*Kim asked whether I had anything to add. I do — a class this audit's method
+systematically under-detects. A 6-source code/git/log sweep finds threads by what
+**exists** (a null field, an uncommitted file, an unlabeled render). But a thread
+that is "someone asked Kim for an ear-verdict and it never came back" shows up only
+as an **absence** — no artifact to grep. Reading the dialogue for questions-put-to-Kim
+that got no answer is the complementary sweep. Both below are now directly actionable
+since Kim is back tonight.*
+
+**🔴 HIGH — the formal E0 meter-validation AUC gate is still blocked on Kim's E0
+listening-test verdicts, which never came back.** WINTERMUTE built `listening_e0.html`
+(14 blind excerpts) on 07-15 specifically to close the E0 label gap (my manifest came
+in 8 loopy / 15 good, short of the ≥20/≥20 target — I escalated the gap to Kim: fresh
+ears vs loosen-tier vs proceed-noisy). W's plan: "when they land I pull the export,
+extend the manifest, re-run the AUC gate," and "Kim's listening verdicts still gate the
+formal E0 AUC" (chat 07-15/07-16). No later record shows the verdicts landing, the
+label-gap decision being made, or the AUC re-run. The comment system went write-only
+07-15, so those verdicts route only through Kim's chat relay — which never happened.
+Consequence: the loopiness-meter validation that W said "gates everything downstream"
+in the longform program is still open. (The E1 *pilot* progressed independently —
+guided-vs-unguided same-seed deltas are confound-immune — but the formal meter gate is
+not the pilot.) **→ Ask Kim for the E0 verdicts now; make the label-gap call
+(fresh-ears-came / loosen-tier / proceed-noisy); re-run the AUC.**
+
+**🟡 — section-conditioning adapter training is HELD on a Kim boundary-arbitration that
+never happened.** WINTERMUTE, 07-17: corpus-wide section labels shipped, but boundary
+validation vs MuScriptor's MIDI sections FAILED (F@3s ~0.13; the two lenses segment
+different structure), so "Kim's ears arbitrate this evening (`eval/section_spotcheck.md`,
+5 tracks); **adapter training HOLDS until then**." Two evenings later, no arbitration is
+on record and the adapter is still held. **→ Kim spot-checks the 5 tracks (energy/
+arrangement segmentation vs riff-novelty) and rules, or the section-adapter stays
+blocked indefinitely.**
+
+**🟡 — the E0 labeled set's regime confound was flagged with a fix that isn't confirmed
+done.** Same 07-16 thread: the E0 AUC set mixes T=4096 (mostly loopy labels) and w1024
+(several good labels) renders; W's own note, "quality differs so much across regimes
+that cross-regime metric comparison is risky → **stratify by regime**." No record shows
+the stratification was applied before the AUC read. Ties into the HIGH item above — the
+gate is both label-gapped *and* regime-confounded, and neither fix is confirmed. **→ Fold
+the stratify-by-regime step into the AUC re-run.**
+
+*(All three folded into `docs/open-threads.md`. Method note for the next audit: run a
+dedicated "questions put to Kim, no answer on record" pass — it catches what the artifact
+sweep can't.)*
+
 ## Resolved on inspection (found by a sweep, but already closed — no action needed)
 - `explorer_render_server` DORA_REGISTRY Mantu/Mantu1 mount bug — **already fixed in code** (dual-mount probe is live in `explorer_render_server.py`).
 - `paper_verdicts.html` — **shipped**, live 200, leak-scan clean (THE-FINN's log confirms).

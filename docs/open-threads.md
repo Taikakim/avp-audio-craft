@@ -47,6 +47,11 @@ here is the *current* state; the audit doc is the snapshot.
   - **SCHEDULED 2026-07-19 (Kim direct)** — gap-audit win #2, the Kynkäänniemi interval-CFG A/B, graduates to run **when a card frees** (C's lane; brief + the sigma=t≠EDM-sigma porting caveat DM'd to C; may ride the E1 grid per W's offer). TADA preservation-AUC eval (#1, HIGH) + DirectAudioEdit target-CFG ramp (#3) remain parked leads.
 - **OPEN 🟢** EMA-retrain of 7 LatCH heads — checkpoints exist (ema20/ema40), "did EMA help" never measured; tracked in the digest so it doesn't age out. *(Not F-owned; flagging.)*
 
+### Added by THE-FINN 2026-07-19 (pending-Kim-verdict class — G's artifact sweep under-detects these)
+- **OPEN 🔴 (W/Kim)** Formal E0 meter-validation AUC gate blocked on Kim's E0 listening-test verdicts (listening_e0.html, 07-15) that never came back; label-gap decision (fresh-ears/loosen/proceed-noisy) never made; AUC never re-run. W said it "gates everything downstream." → ask Kim now.
+- **OPEN 🟡 (Kim)** Section-conditioning adapter training HELD on Kim's boundary arbitration (07-17, `eval/section_spotcheck.md`, 5 tracks) — never arbitrated, adapter blocked 2+ evenings. → Kim rules.
+- **OPEN 🟡 (C/W)** E0 labeled set regime-confound (T=4096 vs w1024 mix); fix "stratify by regime" flagged 07-16, not confirmed applied. → fold into the AUC re-run above.
+
 ### Kim / Unowned
 - **PARKED 🟢** CSC data-movement/Allas guidelines doc (F, 07-18) — no confirmation Kim has read it / changed the backup plan.
 - **OPEN 🟡** `models.html`/`model_matrix.html` no per-family grouping despite 85+ models — navigation pain, no owner. *(Ties to the FiLM/LatCH page-split thread F proposed 07-12; G's `latch_sa3_matrix.html` is the LatCH half.)*
