@@ -396,6 +396,67 @@
    ],
    "witness": [],
    "reason": "LUMI pipeline smoke run (r256 a256) \u2014 rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_avp_t4096_bs1_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=11965.ckpt",
+    "epoch=7-step=19144.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=2990.ckpt",
+    "epoch=7-step=4784.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=2990.ckpt",
+    "epoch=7-step=4784.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_avp_t512_bs8_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=1495.ckpt",
+    "epoch=7-step=2392.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t4096_bs1_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=27000.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fp32cmp_goa_t4096_bs4_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=4-step=6750.ckpt",
+    "epoch=7-step=10800.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "bf16cmp_avp_t512_bs8_lr1e4_repr": {
+   "tier": "full",
+   "picks": [
+    "epoch=0-step=299.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   }
  },
  "legacy_goa_dora_nested": {
