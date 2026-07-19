@@ -147,3 +147,4 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - 2026-07-15: expanded-Essentia sweep complete corpus-wide (6551 files incl. genre extension); MF ctx-2048 bug root-caused + fixed (2ac5ac2); task #59 closed.
 - 2026-07-16: E1 anti-loop pilot eval page (Kim ask) — baseline-vs-λ-ladder same-playhead surface, lam1e7 hero row, glob-driven generator (3aa69f6).
 - 2026-07-17: fp32-campaign eval prep — trajectory stats (avp arms), bracket entries + symlinks, card-queue slot negotiated; renders queued behind C's sweep.
+- 2026-07-19: LatCH SA3 gain sweep built+run+measured (task #63) — refutes onset_envelope/spectral_kurtosis "dead" verdict on direct measurement; MASTER SS5 updated (51f47c6).

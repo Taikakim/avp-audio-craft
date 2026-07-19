@@ -167,3 +167,11 @@ extends them later.
   renderer dry-run verified. Card queue negotiated: C's stereo-sweep re-run → my grid
   (the designated filler layer, yields to Kim daytime) → W's 40-min decode gate anywhere.
   Also of note: C's "stereo sweep" IS the width T-sweep from my gate-(b) pool item.
+- 2026-07-19: LatCH SA3 steering sweep board complete (Kim ask, task #63). Built the LatCH
+  half of "big DoRA-page for FiLM/LatCH" (FiLM already had onset_eval.html). REAL FINDING,
+  refines MASTER SS5's 06-28 gain sweep: direct raw-feature measurement (same extractor as
+  training targets, not the old MERT-proxy) refutes "dead at any weight" for onset_envelope
+  and spectral_kurtosis — both steer clearly; only beat/downbeat activation are genuinely
+  dead. No continuous head plateaus by gain 512 either — all keep climbing to 8192, no
+  ceiling found in-range. Tooling: eval/latch_sa3_sweep_{render,measure}.py,
+  Misc/build_latch_sa3_matrix_page.py. Board: latch_sa3_matrix.html, staged for W.
