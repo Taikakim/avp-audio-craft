@@ -85,6 +85,21 @@ EXTRA_PROMPTS = {
 }
 EXTRA_SEED = 1234  # matches the established avp-board seed convention
 
+# rb_bracket_0/kl_bracket_0 (Kim 2026-07-20: "these clips should exist for all models") --
+# text+seed copied VERBATIM from eval/interval_schedule_bracket.py's PROMPTS, which only
+# ever rendered these two for its own 2-checkpoint sweep. Those clips landed in this same
+# shared manifest.jsonl, so the ids already show up as board rows -- just empty for every
+# other model. Own dict (not folded into EXTRA_PROMPTS) so each keeps ITS OWN seed instead
+# of collapsing onto EXTRA_SEED, matching the clips that already exist for those 2 ckpts
+# (manifest_key doesn't include seed, so this doesn't create duplicate/orphaned cells --
+# it just means new renders reuse the same seed as the originals).
+BRACKET_PROMPTS = [
+    {"id": "rb_bracket_0", "text": "2020s goa trance, melodic mood, 148 bpm", "seed": 1102008041},
+    {"id": "kl_bracket_0", "text": ("This track is a high-energy Psytrance piece that blends driving "
+                                     "trance rhythms with the hypnotic, acid-inflected textures typical "
+                                     "of the genre."), "seed": 1000},
+]
+
 
 def ckpt_tag(fname):
     m = re.search(r"epoch=(\d+)", fname)
@@ -245,6 +260,7 @@ def main():
 
     if args.extra_prompts:
         prompts = [{"id": pid, "text": text, "seed": EXTRA_SEED} for pid, text in EXTRA_PROMPTS.items()]
+        prompts += BRACKET_PROMPTS
     else:
         prompts = build_prompts(args.n_per_band, args.n_kimlong)
     if args.only_prompts:
