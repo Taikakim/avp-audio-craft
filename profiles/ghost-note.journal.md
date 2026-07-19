@@ -217,3 +217,34 @@ and spectral_kurtosis — both steer clearly; only beat/downbeat activation are 
 dead. No continuous head plateaus by gain 512 either — all keep climbing to 8192, no
 ceiling found in-range. Tooling: eval/latch_sa3_sweep_{render,measure}.py,
 Misc/build_latch_sa3_matrix_page.py. Board: latch_sa3_matrix.html, staged for W.
+
+## 2026-07-20
+
+### finding · eval boards always rendered at a fixed 20s, regardless of trained T
+Kim's ask: every eval board renders the same fixed duration no matter what context
+length the checkpoint was actually trained on (T=512/1024/2048/4096 campaign arms all
+got the same 20s clip). Fixed additively in model_matrix_gen.py — one extra
+native-training-length cell per checkpoint, duration read off the "T=<frames>" text
+already embedded in models_index_overrides.json recipe strings (FPS=10.7666, the
+canonical SA3-medium latent rate). Caught a real bug in my own design before shipping:
+the native cell reuses cfg7/w1.0 — both are STANDARD grid coordinates — so with the
+page's old (model,ckpt,cfg,w,prompt) cell key (no duration), a native clip would
+silently collide with and overwrite a normal 20s cell at the same coordinates.
+Fixed on the page side (build_model_matrix.py): native entries split into their own
+`native{}` map keyed model|ckpt, rendered as a one-cell audition line per checkpoint
+rather than folded into the cfg×strength grid.
+
+### tool · hover-to-preview + loop + loading indicator, shared player pages
+Kim ask, same message. Every page using the shared single-`<audio>`-element player
+(model_matrix, layer_map, disentangle, e1_pilot, latch_sa3_matrix) now: loops each
+clip until stopped (`a.loop=true`), plays on hover (not just click — click still
+pins/toggles-stop), and shows a "loading…" indicator wired to the audio element's
+`waiting`/`playing` events rather than guessed timeouts. build_model_matrix.py is
+WINTERMUTE's actively-maintained file — patched it directly (proven pattern, 4 prior
+applications) but DM'd him the exact diff + the STRENGTHS-axis and duration_mode
+schema changes so nothing surprises his next edit. build_evals.py still needs the
+same pass — too many near-duplicate player blocks across sub-pages to blind-patch
+safely without knowing the file well; left as W's / a follow-up.
+Also: Kim's mid-turn addendum dropped DoRA weight 0.6 from new renders (add 2.0 —
+"many models seem to handle 1.5 well enough"); old 0.6 cells kept, page's STRENGTHS
+axis is now the union so legacy columns stay visible. Commit: d93adcd.
