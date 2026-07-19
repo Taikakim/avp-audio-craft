@@ -336,11 +336,11 @@
   "training_data": "latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)"
  },
  "longctx_t1024_r128": {
-  "recipe": "LUMI precision/context campaign: DoRA-rows r128 α128 (s=1), bf16 training, T=1024 latent-frame crops (95.1s), batch None, lr 1e-4, medium-base, 8 epochs, FusionOpt. Task-50 long-context arm — tests the training-length-mismatch fix (local recipe trains T~506, inference runs up to 8×).",
+  "recipe": "LUMI precision/context campaign: DoRA-rows r128 α128 (s=1), bf16 training, T=1024 latent-frame crops (95.1s), batch 16 (sbatch documented default, not log-confirmed), lr 1e-4, medium-base, 8 epochs, FusionOpt. Task-50 long-context arm — tests the training-length-mismatch fix (local recipe trains T~506, inference runs up to 8×).",
   "training_data": "latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)"
  },
  "longctx_t2048_r128": {
-  "recipe": "LUMI precision/context campaign: DoRA-rows r128 α128 (s=1), bf16 training, T=2048 latent-frame crops (190.2s), batch None, lr 1e-4, medium-base, 8 epochs, FusionOpt. Task-50 long-context arm, the longer rung.",
+  "recipe": "LUMI precision/context campaign: DoRA-rows r128 α128 (s=1), bf16 training, T=2048 latent-frame crops (190.2s), batch 8 (sbatch documented default, not log-confirmed), lr 1e-4, medium-base, 8 epochs, FusionOpt. Task-50 long-context arm, the longer rung.",
   "training_data": "latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)"
  },
  "smoke_r256_a256_lr1e4_f512_bs8": {
