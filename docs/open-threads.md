@@ -44,6 +44,7 @@ here is the *current* state; the audit doc is the snapshot.
 ### THE-FINN
 - **RESOLVED 2026-07-19** ~~Daily digest never built~~ → `profiles/daily/` established + backfilled 07-16→07-19 (commit 1eec873); per-day going forward.
 - **RESOLVED 2026-07-19** ~~Gap-audit 3 wins "no pickup"~~ → CONTINUITY acked them 07-18 03:53 (holding for Kim's return, cards saturated) — acked+parked, not dropped.
+  - **SCHEDULED 2026-07-19 (Kim direct)** — gap-audit win #2, the Kynkäänniemi interval-CFG A/B, graduates to run **when a card frees** (C's lane; brief + the sigma=t≠EDM-sigma porting caveat DM'd to C; may ride the E1 grid per W's offer). TADA preservation-AUC eval (#1, HIGH) + DirectAudioEdit target-CFG ramp (#3) remain parked leads.
 - **OPEN 🟢** EMA-retrain of 7 LatCH heads — checkpoints exist (ema20/ema40), "did EMA help" never measured; tracked in the digest so it doesn't age out. *(Not F-owned; flagging.)*
 
 ### Kim / Unowned
