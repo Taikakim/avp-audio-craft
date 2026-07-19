@@ -44,14 +44,18 @@ CSC's `data/Allas/introduction/` describes exactly the service shape for this:
 - **Billing:** 1.05 Storage Billing-Units per TiB-hour, no separate transfer/API fees — cheap
   relative to the GCD-hour budget concerns that dominate the compute side.
 
-**Needs verification before relying on this:** the fetched page does **not** confirm whether
-Allas is the same service as (or a sibling to) the **"LUMI-O"** object storage our own
-`lumi-transition-plan.md` already names for the big latent transfer, nor whether Allas is
-reachable from LUMI's air-gapped compute nodes at all (only login-node/internet access is
-confirmed in the fetched text, and even that's described mainly via Puhti/Mahti, LUMI is only
-"mentioned in navigation" on that page). **Action: check LUMI's own docs (not this CSC page)
-for whether `LUMI-O` and `Allas` are the same object-storage backend under two names**, before
-building a backup pipeline around either name assuming they're interchangeable.
+**RESOLVED 2026-07-19 (WINTERMUTE, checked LUMI's own docs):** Allas and LUMI-O are
+**SEPARATE** services with separate identities — LUMI-O is the Ceph/S3 endpoint at
+`lumidata.eu` (credentials from `auth.lumidata.eu` / the `lumio-conf` tool, project-scoped,
+auto-creates `lumi-<proj>-private`/`-public` rclone remotes); CSC Allas is a different Ceph/S3
+endpoint at `a3s.fi` with separate CSC-project auth. Both are Ceph/S3 under the hood but a
+LUMI-O token does **not** authenticate to Allas — not interchangeable. **Conclusion for the
+`latents_sa3` cold-backup: use LUMI-O, not Allas** — Kim already holds LUMI project
+`465003186`, `pack_data.sh` already assumes LUMI-O, and no separate CSC/Allas allocation is
+needed. Remaining step is Kim-only (an instance can't do it): generate the LUMI-O token at
+`auth.lumidata.eu` (web login), after which `pack_data.sh` → `rclone copy` to the
+`lumi-465003186-private` bucket is scriptable. So the earlier "consider Allas" framing in §2
+above is superseded — the answer is LUMI-O.
 
 ---
 
@@ -89,8 +93,8 @@ is ever preferred over (or alongside) a third-party host.
 
 ## 4. Open items — needs verification before relying on this in production
 
-1. **Allas vs. LUMI-O**: same service, sibling services, or unrelated? Check LUMI's own docs.
-2. **Allas reachability from LUMI compute nodes** (which are air-gapped per `lumi-transition-plan.md`) — the fetched CSC page only confirms login-node/internet access, mainly framed around Puhti/Mahti.
+1. ~~**Allas vs. LUMI-O**: same service, sibling services, or unrelated?~~ **RESOLVED 2026-07-19 (W):** separate services (lumidata.eu vs a3s.fi), not interchangeable — use LUMI-O for our backup. See §2.
+2. **Allas reachability from LUMI compute nodes** — moot for our purpose now that LUMI-O (not Allas) is the chosen backend; LUMI-O is reachable from anywhere over the internet, and backup runs from the login node / a local box anyway, not compute nodes.
 3. **Roihu vs. LUMI/EFP SSH cert lifetimes** — confirmed as two different systems/cert schemes above; don't let a 24h-vs-10h discrepancy read as a bug in either.
 4. **Whether Fairdata/IDA are viable for a CSC-hosted AVP release** — only referenced in passing on the dataset-sources page, not investigated in depth here; a genuine follow-up if a CSC-hosted release is ever preferred over a third-party host (e.g. Hugging Face, Zenodo).
 

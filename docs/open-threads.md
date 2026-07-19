@@ -34,7 +34,8 @@ here is the *current* state; the audit doc is the snapshot.
 
 ### WINTERMUTE
 - **OPEN 🟡** `model.py` silent duration/sample_size clamp — pooled 07-15, endorsed, still no warning; cost G two renders during gate (b).
-- **OPEN 🟡** CSC Allas vs LUMI-O identity unverified — blocks the cold-backup pipeline for the single-copy `latents_sa3` (live single-point-of-failure).
+- **RESOLVED 2026-07-19 (W)** ~~CSC Allas vs LUMI-O identity unverified~~ → W checked LUMI's own docs: **SEPARATE** services (LUMI-O = lumidata.eu; Allas = a3s.fi; both Ceph/S3, not interchangeable). Use **LUMI-O** (Kim already has LUMI project 465003186; `pack_data.sh` already assumes it).
+- **PARKED 🟡 (Kim)** `latents_sa3` cold-backup — now unblocked except one Kim-only step: generate the LUMI-O token at auth.lumidata.eu (web login, not doable by an instance); then `pack_data.sh` → `rclone copy` to `lumi-465003186-private` is scriptable. Single-point-of-failure risk stands until it runs.
 - **PARKED 🟡** E1 λ=1e7 "alive vs damaged" ear-verdict — needs Kim's ears.
 - **OPEN 🟢** `breathing_v2`/`breathing_v2_flux` rendered 07-12/13, original question (escape-kick amplitude) never written up.
 - **OPEN 🟢** `schedule_ladder` — "9/9 rendered, sent to Kim 07-13" but the Flux-vs-LogSNR-authority hypothesis never answered; `kim_feedback` null.
