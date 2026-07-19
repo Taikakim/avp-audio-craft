@@ -71,14 +71,11 @@ Both non-baseline arms OOM'd on launch (2026-07-17 and again 2026-07-18); `stere
 
 ## THE-FINN
 
-**🟡 THE-FINN's daily fleet digest — pattern breaks after 07-15**, no digest posts found 07-16 through 07-19 despite the convention being established earlier in the week.
-→ Low-stakes, but worth a note since it's exactly the kind of gap this audit exists to catch, and F owns this lane.
+**~~🟡 THE-FINN's daily fleet digest~~ — CLOSED 2026-07-19 by THE-FINN.** Correction on the finding: it hadn't "broken," it was never built — Kim assigned `profiles/daily/` on 07-12 and the dir didn't exist. Fixed: dir established, 07-16→07-19 backfilled from live chat (`1eec873`), README points at this doc for the 07-12→07-15 window so the two audits compound rather than reset. THE-FINN is now posting per-day as each closes.
 
-**🟢 [manual-verify] EMA retrain of 7 medium/dead LatCH heads (beat/downbeat/hpcp/onset_envelope/rms_air/rms_body/spectral_kurtosis) — checkpoints now exist (14 dirs, ema20+ema40 each) but "did EMA help" was never measured/reported.** Actively tracked in dialogue as in-progress (not abandoned), just missing its closing comparison.
-→ One eval pass once the retrain settles — likely already on someone's list, flagging so it doesn't get forgotten once the checkpoints are just sitting there.
+**🟢 [manual-verify] EMA retrain of 7 medium/dead LatCH heads — "did EMA help" still unmeasured.** THE-FINN confirms: not his to own, but he'll track it in the daily digest so it doesn't age out once the retrain settles.
 
-**🟢 THE-FINN's paper-gap-audit's 3 confirmed cheap wins (TADA alignment-preservation AUC, Kynkaanniemi interval-CFG, DirectAudioEdit weak→strong CFG ramp) — DM'd to CONTINUITY 07-18, no confirmation of pickup found.**
-→ CONTINUITY acks or schedules; two of these (interval-CFG) already have a natural home in the E1 grid per WINTERMUTE's own note.
+**~~🟢 THE-FINN's paper-gap-audit 3 wins — "no confirmation of pickup"~~ — RESOLVED 2026-07-19 by THE-FINN.** CONTINUITY did ack them (her DM 07-18 03:53: "the 3 confirmed are good leads, TADA preservation-AUC is the HIGH one") and independently converged on the Kynkaanniemi gap in her own verdict-page pass. She's holding them for Kim's return since cards are saturated — ack'd + parked, not dropped.
 
 ---
 
@@ -91,7 +88,7 @@ Both non-baseline arms OOM'd on launch (2026-07-17 and again 2026-07-18); `stere
 
 **🟡 `models.html`/`model_matrix.html` — no per-family grouping despite growing to 85+ models**, several dialogue mentions of it becoming hard to navigate, no one has picked up the reorg.
 
-**🟢 A prior fleet-wide dropped-thread audit was apparently mentioned once (found by the code sweep) with no clear owner or result** — possibly this same kind of exercise attempted before and not finished; worth checking with THE-FINN whether this duplicates earlier work once he's back, so findings compound rather than reset.
+**~~🟢 A prior fleet-wide dropped-thread audit~~ — IDENTIFIED 2026-07-19 by THE-FINN.** It's his own 2026-07-03 orientation audit (24 estate-wide inconsistencies, all routed) — same genre (patrol) but a different window (day-one estate state vs this doc's 07-12→07-19 dropped threads), so the two compound rather than duplicate. THE-FINN has proposed a persistent OPEN-THREADS ledger (his to own, as patrol) folding both audits' still-open items so future audits don't reset to zero each time — endorsed.
 
 ---
 
