@@ -499,6 +499,23 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   2026-06-28, riffer-evals `latch_sweep.html`.
   **Follow-up 2026-06-29:** `spectral_skewness` was EMA-re-trained and reversed the "architecture-limited"
   conclusion — the ceiling was damping-limited. See §4 trajectory-stats note + WORKLOG 2026-06-29.
+  **Follow-up 2026-07-19 (GHOST-NOTE) — wider ladder [64,128,512,2048,8192], DIRECT raw-feature
+  measurement (not MERT-Δ) using the same extractor each head's training target was built from.**
+  CONFIRMS beat_activation/downbeat_activation flat at every gain tested — genuinely dead. **REFUTES
+  "dead at any weight" for `onset_envelope` and `spectral_kurtosis`** — both move clearly and
+  monotonically on direct measurement (kurtosis 4.4→136 vs target 798, onset_envelope 0.7→2.5 vs
+  target 2.1); likely the MERT-embedding proxy used for the 06-28 verdict is insensitive to these
+  two features specifically, not that the heads lack authority — direct-feature measurement is the
+  more literal ground truth here. Also: **no continuous-feature head plateaus by gain=512** as the
+  06-28 note implies — `rms_energy_bass/body/mid/air`, `hardness`, `spectral_flatness/flux/skewness`
+  all keep moving monotonically toward target through 8192 with no ceiling in this range (bass:
+  -35dB@64 → -7dB@8192, vs target -0.13dB). No literal non-monotonic dip AT gain 128 either — it
+  sits on the same monotonic curve as 64→512, an early/slow point, not a valley; the "128 dead zone"
+  framing likely compared it against the older 48–96 default range, not this wider ladder. Net:
+  **only the two rhythmic activation heads (beat/downbeat) are dead — every continuous-feature head
+  has real, unsaturated steering authority at least to 8192.** Board: `latch_sa3_matrix.html`
+  (14-head x gain-ladder listening page, requested-vs-measured per cell); tooling
+  `eval/latch_sa3_sweep_{render,measure}.py` + `Misc/build_latch_sa3_matrix_page.py`.
 - **SA3 generative separation/editing must use a `-base` checkpoint** (post-trained =
   stochastic ping-pong, non-invertible, cfg inert). **Invert at cfg≈1** — high cfg ruins
   recoverability. The RF-Inversion `(anchor−x)/(1−t)` controller has the **wrong sign and
