@@ -248,3 +248,20 @@ safely without knowing the file well; left as W's / a follow-up.
 Also: Kim's mid-turn addendum dropped DoRA weight 0.6 from new renders (add 2.0 —
 "many models seem to handle 1.5 well enough"); old 0.6 cells kept, page's STRENGTHS
 axis is now the union so legacy columns stay visible. Commit: d93adcd.
+
+### negative · hover-autoplay was the wrong read of "hover player"
+Kim's actual ask ("the hover player which shows a notification when it's
+loading a sound") did NOT mean "play audio on mouseover" — direct correction
+same day: "the cells should not autoplay on hover, this makes things quite
+uncomfortable. And I can't see the hovering player." Two separate misses:
+(1) auto-starting audio just from cursor transit across a dense grid is
+invasive, not a preview affordance; (2) the loading indicator I built lived
+only in a sticky header far from the cell being hovered — invisible in
+practice on a wide multi-column board. Reverted hover-triggered playback
+entirely (click-only again, hover back to a plain CSS outline) and moved the
+loading signal onto the cell itself (an amber `.loading` outline class,
+mirroring the existing green `.playing` one, driven by the audio element's
+waiting/playing events) across all 5 pages. Commit: 4e96c3c. Lesson: "shows a
+notification" was about visibility of feedback, not about hover as a trigger
+— should have asked rather than inferring both a new trigger AND its
+feedback mechanism from one ambiguous sentence.
