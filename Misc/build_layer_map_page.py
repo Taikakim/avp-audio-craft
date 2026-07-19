@@ -85,6 +85,7 @@ border-bottom:1px solid #2a2a30;font-size:13px}#np{color:#cde}#pos{color:#888}
 .abcell{background:#18181b;border:1px solid #2a2a2e;border-radius:6px;padding:7px 12px;
 cursor:pointer;min-width:150px}
 .abcell:hover{outline:1px solid #7cf}.abcell.playing{outline:2px solid #5d5 !important}
+.abcell.loading{outline:2px solid #fa5 !important}
 .abcell b{color:#9ec;display:block;font-size:12px}
 .abcell .sub{color:#889;font-size:10.5px}
 svg{background:#0e0e10;border:1px solid #2a2a30;border-radius:6px;margin:4px 0}
@@ -97,23 +98,20 @@ let cur=null,ph=0;const a=document.getElementById('pl');
 a.loop=true;
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0});
-a.addEventListener('waiting',()=>{const l=document.getElementById('ld');if(l)l.textContent='loading…'});
-a.addEventListener('playing',()=>{const l=document.getElementById('ld');if(l)l.textContent=''});
+a.addEventListener('waiting',()=>{const l=document.getElementById('ld');if(l)l.textContent='loading…';if(cur)cur.classList.add('loading')});
+a.addEventListener('playing',()=>{const l=document.getElementById('ld');if(l)l.textContent='';if(cur)cur.classList.remove('loading')});
 function seekAndPlay(pos){
  const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
 function startCell(el,s){
- const l=document.getElementById('ld');if(l)l.textContent='loading…';
+ const l=document.getElementById('ld');if(l)l.textContent='loading…';el.classList.add('loading');
  a.pause();a.src=s;seekAndPlay(ph);
  cur=el;el.classList.add('playing')}
 function play(el){const s=el.dataset.src;
- if(cur===el){a.pause();el.classList.remove('playing');cur=null;const l=document.getElementById('ld');if(l)l.textContent='';return}
- if(cur)cur.classList.remove('playing');
- startCell(el,s)}
-function hoverPlay(el){const s=el.dataset.src;if(!s||cur===el)return;
- if(cur)cur.classList.remove('playing');
+ if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;const l=document.getElementById('ld');if(l)l.textContent='';return}
+ if(cur)cur.classList.remove('playing','loading');
  startCell(el,s)}
 </script>"""
 
@@ -189,7 +187,7 @@ def steer_section():
                 continue
             any_clip = True
             hot = ' style="border-color:#5d9;border-width:2px"' if a == "a+2.0" else ''
-            cells.append(f'<div class=abcell{hot} data-src="{src}" onclick="play(this)" onmouseenter="hoverPlay(this)">'
+            cells.append(f'<div class=abcell{hot} data-src="{src}" onclick="play(this)">'
                          f'<b>{html.escape(lbl)}</b><span class=sub>{html.escape(sub)}</span></div>')
         out.append('<div class=abrow>' + "".join(cells) + '</div>')
         # deliberately-broken breach clips, muted + labeled (not a quality test)
@@ -198,7 +196,7 @@ def steer_section():
             src = f"steer/{feat}_{a}.m4a"
             if not (OUT.parent / src).exists():
                 continue
-            breach.append(f'<div class=abcell data-src="{src}" onclick="play(this)" onmouseenter="hoverPlay(this)" '
+            breach.append(f'<div class=abcell data-src="{src}" onclick="play(this)" '
                           f'style="opacity:.5;border-color:#533;min-width:110px">'
                           f'<b style="color:#a66">{html.escape(lbl)}</b>'
                           f'<span class=sub>expected buzz</span></div>')
@@ -242,9 +240,9 @@ def main():
 
     doc = [f"<!doctype html><html><head><meta charset=utf-8>"
            f"<title>Layer map — which DiT blocks carry each attribute</title><style>{CSS}</style></head><body>"]
-    doc.append('<div id=hdr>&#9654; <b id=np>hover a clip to preview, click to pin</b> <span id=pos></span>'
+    doc.append('<div id=hdr>&#9654; <b id=np>click a clip to play</b> <span id=pos></span>'
                ' <span id=ld style="color:#fa5"></span>'
-               ' &nbsp;·&nbsp; <span style="color:#888">switching keeps the playhead; loops until stopped; re-click stops</span></div>')
+               ' &nbsp;·&nbsp; <span style="color:#888">switching keeps the playhead; loops until stopped; re-click stops; amber outline = loading</span></div>')
     doc.append('<h1>Layer map — which DiT blocks causally carry each acoustic attribute</h1>'
                '<a href=../../index.html>← evals</a>')
     doc.append('<div class=how><b>How to read this page:</b> the RESULT of this run is the '
@@ -291,9 +289,9 @@ def main():
             b_f = f"{c}_p{p}_s{s}_B.m4a"
             doc.append('<div class=abrow>'
                        f'<span class=pairlbl>pair {p} · seed {s}</span>'
-                       f'<div class=abcell data-src="{a_f}" onclick="play(this)" onmouseenter="hoverPlay(this)"><b>A — concept</b>'
+                       f'<div class=abcell data-src="{a_f}" onclick="play(this)"><b>A — concept</b>'
                        f'<span class=sub>{html.escape(CONCEPT_BLURB[c][0].split(" vs ")[0])}</span></div>'
-                       f'<div class=abcell data-src="{b_f}" onclick="play(this)" onmouseenter="hoverPlay(this)"><b>B — counterfactual</b>'
+                       f'<div class=abcell data-src="{b_f}" onclick="play(this)"><b>B — counterfactual</b>'
                        f'<span class=sub>{html.escape(CONCEPT_BLURB[c][0].split(" vs ")[1])}</span></div>'
                        '</div>')
     doc.append(PLAYER_JS)

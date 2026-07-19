@@ -71,6 +71,7 @@ table.mini{border-collapse:collapse;width:100%}
 .cell{cursor:pointer;background:#191920}.cell:hover{outline:1px solid #7cf}
 .cell.have{background:#1d2b1f;color:#9f9}.cell.miss{color:#555;cursor:default}
 .cell.playing{outline:2px solid #5d5 !important}
+.cell.loading{outline:2px solid #fa5 !important}
 .cov{font-size:11px;color:#7a7;margin:2px 0}
 """
 
@@ -140,9 +141,9 @@ def main():
 
     n_models_lit = sum(1 for v in cov.values() if v)
     doc = [f"<!doctype html><html><head><meta charset=utf-8><title>Model matrix</title><style>{CSS}</style></head><body>"]
-    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, hover a cell to preview / click to pin</b> <span id=pos></span>'
+    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell to play</b> <span id=pos></span>'
                ' <span id=ld style="color:#fa5"></span>'
-               ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops</span></div>')
+               ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops; amber outline = loading</span></div>')
     doc.append('<h1>Model matrix — every trained model × checkpoint × cfg × strength, side by side</h1>'
                '<a href=index.html>← evals</a> · <a href=models.html>models index</a>')
     doc.append(f'<div class=how><b>What this is:</b> the listening matrix over the whole model zoo. '
@@ -204,25 +205,21 @@ let cur=null,ph=0,curCoord=null;const a=document.getElementById('pl');
 a.loop=true;
 a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0;curCoord=null});
-a.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…'});
-a.addEventListener('playing',()=>{document.getElementById('ld').textContent=''});
+a.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…';if(cur)cur.classList.add('loading')});
+a.addEventListener('playing',()=>{document.getElementById('ld').textContent='';if(cur)cur.classList.remove('loading')});
 function seekAndPlay(pos){
  const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
  let done=false;const fire=()=>{if(done)return;done=true;go()};
  a.addEventListener('canplay',fire,{once:true});setTimeout(fire,1200)}
 function startCell(el,f){
- document.getElementById('ld').textContent='loading…';
+ document.getElementById('ld').textContent='loading…';el.classList.add('loading');
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
  curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid}}
 function play(el){const f=el.dataset.src;if(!f)return;
  if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
- if(cur===el){a.pause();el.classList.remove('playing');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
- if(cur)cur.classList.remove('playing');
- startCell(el,f)}
-function hoverPlay(el){const f=el.dataset.src;if(!f||cur===el)return;
- if(window.noteFromCell)noteFromCell(el);
- if(cur)cur.classList.remove('playing');
+ if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
+ if(cur)cur.classList.remove('playing','loading');
  startCell(el,f)}
 // After any re-render (checkpoint/model switch OR the 90s auto-refresh) re-bind the
 // playing state to the SAME (column,cfg,strength,prompt) cell. If that cell now points
@@ -262,7 +259,7 @@ function render(){
    if(st.ckpt&&MM.native){const nv=MM.native[st.model+'|'+st.ckpt];
     if(nv){h+='<div class=cov><span class="cell have" style="display:inline-block;width:auto;padding:1px 6px" '+
      'data-src="'+nv.file+'" data-col="'+c+'" data-cf="native" data-w="native" data-pid="native" '+
-     'onclick="play(this)" onmouseenter="hoverPlay(this)">&#9654;</span> native length ('+nv.duration+'s, '+
+     'onclick="play(this)">&#9654;</span> native length ('+nv.duration+'s, '+
      'the size this checkpoint was trained on — vs the fixed 20s grid above/below)</div>'}}
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
@@ -280,7 +277,7 @@ function render(){
      for(const cf of MM.cfgs){h+='<tr><th>cfg'+cf+'</th>';
       for(const w of MM.strengths){
        const key=st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid;const f=MM.data[key];
-       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)" onmouseenter="hoverPlay(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
+       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
       h+='</tr>'}
      h+='</table>'}
     h+='</div>'}
