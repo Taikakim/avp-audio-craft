@@ -56,6 +56,12 @@ h1{font-size:17px;margin:0 0 4px}a{color:#7cf}
 .how{color:#cba;font-size:12px;line-height:1.5;margin:6px 0 12px;max-width:1150px}
 #hdr{position:sticky;top:0;z-index:9;background:#16181c;padding:7px 12px;margin:-14px -14px 12px;
 border-bottom:1px solid #2a2a30;font-size:13px}#np{color:#cde}#pos{color:#888}
+#trans{display:none;align-items:center;gap:8px;margin-left:12px;vertical-align:middle}
+#trans.on{display:inline-flex}
+#pp{background:none;border:0;color:#7cf;cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+#seek{width:240px;max-width:36vw;accent-color:#7cf;cursor:pointer;height:4px}
+#tm{color:#9ab;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+#dl{color:#7cf;text-decoration:none;font-size:16px;padding:0 4px;line-height:1}#dl:hover{color:#adf}
 #cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:start}
 .col{background:#141417;border:1px solid #242428;border-radius:8px;padding:10px}
 select{width:100%;background:#1b1b20;color:#dde;border:1px solid #333;border-radius:4px;
@@ -141,7 +147,11 @@ def main():
 
     n_models_lit = sum(1 for v in cov.values() if v)
     doc = [f"<!doctype html><html><head><meta charset=utf-8><title>Model matrix</title><style>{CSS}</style></head><body>"]
-    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell to play</b> <span id=pos></span>'
+    doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell to play</b>'
+               '<span id=trans><button id=pp title="play / pause">&#9208;</button>'
+               '<input type=range id=seek min=0 max=1000 value=0 step=1 title="playhead — drag to seek">'
+               '<span id=tm>0:00&#8239;/&#8239;0:00</span>'
+               '<a id=dl href="#" download title="download the track playing now">&#8681;</a></span>'
                ' <span id=ld style="color:#fa5"></span>'
                ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops; amber outline = loading</span></div>')
     doc.append('<h1>Model matrix — every trained model × checkpoint × cfg × strength, side by side</h1>'
@@ -207,6 +217,17 @@ a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0;curCoord=null});
 a.addEventListener('waiting',()=>{document.getElementById('ld').textContent='loading…';if(cur)cur.classList.add('loading')});
 a.addEventListener('playing',()=>{document.getElementById('ld').textContent='';if(cur)cur.classList.remove('loading')});
+// transport: play/pause + seekable playhead + time readout + download link (Kim 2026-07-20)
+const pp=document.getElementById('pp'),seek=document.getElementById('seek'),tm=document.getElementById('tm'),dl=document.getElementById('dl'),trans=document.getElementById('trans');
+const fmt=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
+let seeking=false;
+pp.addEventListener('click',()=>{if(a.paused){if(a.src)a.play()}else a.pause()});
+a.addEventListener('play',()=>pp.innerHTML='&#9208;');
+a.addEventListener('pause',()=>pp.innerHTML='&#9654;');
+a.addEventListener('timeupdate',()=>{if(seeking||!a.duration)return;seek.value=Math.round(a.currentTime/a.duration*1000);tm.textContent=fmt(a.currentTime)+' / '+fmt(a.duration)});
+a.addEventListener('durationchange',()=>{if(a.duration)tm.textContent=fmt(a.currentTime)+' / '+fmt(a.duration)});
+seek.addEventListener('input',()=>{seeking=true;if(a.duration)tm.textContent=fmt(seek.value/1000*a.duration)+' / '+fmt(a.duration)});
+seek.addEventListener('change',()=>{if(a.duration){a.currentTime=seek.value/1000*a.duration;ph=a.currentTime}seeking=false});
 function seekAndPlay(pos){
  const go=()=>{try{const d=a.duration||1e9;a.currentTime=(pos>d-1)?0:Math.min(pos,d-0.05)}catch(e){}a.play()};
  if(a.readyState>=3){go();return}
@@ -215,6 +236,7 @@ function seekAndPlay(pos){
 function startCell(el,f){
  document.getElementById('ld').textContent='loading…';el.classList.add('loading');
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
+ dl.href='model_matrix/'+f;dl.setAttribute('download',f);trans.classList.add('on');
  curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid}}
 function play(el){const f=el.dataset.src;if(!f)return;
  if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
