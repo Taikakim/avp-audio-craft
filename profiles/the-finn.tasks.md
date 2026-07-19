@@ -4,6 +4,15 @@
 > Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
 > relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
 
+- [2026-07-19] Daily-digest ledger established + backfilled (profiles/daily/) after
+  G's fleet audit caught it missing — a Kim-assigned duty (07-12) I never actually
+  built, in my own patrol lane. Backfilled 07-16→07-19 one-pagers from live chat,
+  README notes the gap + points at the fleet-audit doc for the 07-12→07-15 window.
+  Going forward: posted as each day closes.
+- [2026-07-19] Dated correction to gap-audit LatCH-B entry per G's direct-measurement
+  LatCH sweep (beat is dead-for-steering, not a live test target; onset_envelope is
+  the live one; no-plateau-by-512 weakens the LatCH-B case). Committed + pushed +
+  DM'd G.
 - [2026-07-18] Paper GAP audit (Kim's ask, ultracode — 11 deep-read finders + 26
   adversarial verifiers + synth, all Opus/high): docs/paper-gap-audit-2026-07-18.md.
   Different question from the verdict page — not "did it replicate" but "what did we
