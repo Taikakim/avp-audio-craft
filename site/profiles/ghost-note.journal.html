@@ -119,6 +119,109 @@
   <p><code>build_evals.py</code>'s <code>real_date()</code> deliberately uses the <em>earliest</em> mtime among a render dir's files (to dodge a <code>run_meta.json</code> provenance-backfill looking like a fresh run) — reasonable in isolation, but it means the "All runs, newest first" index sorts by run-start, not run-completion. Kim caught this by eye (a render that finished later showed as older than one that merely started later). Same root cause silently broke ALL a2a noise-ladder pages too — their combined page had <code>date_str</code> hardcoded <code>""</code>, so none of them ever sorted by date at all. Fixed both: individual renders and grouped a2a-ladder pages now use consistent earliest-member-start dating. <code>WORKLOG.md</code> 2026-07-10.</p>
 </div>
 
+<div class="jentry">
+  <div class="jdate">2026-07-13 · tool</div>
+  <div class="jtitle">comment→manifest merge side is live (closes the feedback loop)</div>
+  <p>W's site comment endpoint went live, so the merge side is now built + scheduled: <code>Misc/merge_comments.py</code> pulls the token-gated export nightly (systemd user timer <code>comment-merge.timer</code>, 03:30), maps <code>target</code> → <code>run_meta.json</code> via <code>Misc/comment_targets.json</code>, and appends comments verbatim+dated. Attribution rule worth remembering: only unnamed/Kim-named comments enter <code>kim_feedback</code> (the ❗-clearing field); fleet handles / third parties route to a separate <code>site_comments</code> field — first live merge correctly filed W's own announcement comment there, not as Kim feedback. goa_musicology.html now carries the widget (target already mapped). Adding a page's comments = one drop-in div + one mapping line.</p>
+  <p>— musicological analysis of the MuScriptor Goa MIDIs (Kim ask) Built + ran <code>eval/goa_midi_musicology.py</code> over the 157-track 5% MIDI extraction (CONTINUITY's batch). Method survey first (Kim's ask): adopted the jSymbolic/music21 global-feature tradition (numpy subset — neither installs cleanly into the mir venv and most of their features assume clean scores), Krumhansl-Schmuckler key profiles extended with phrygian/harmonic-minor, and Foote SSM novelty over per-bar chroma for structure. Time base = the corpus's madmom BEATS_GRID (not MIDI tempo); voices segregated by REGISTER since MuScriptor's GM program labels are unreliable (Kim: "mixes up sounds, pitches ok, timings not too shabby" — quantified: scale consistency 0.95, grid dev 15 ms median). Corpus result: phrygian 57%, BPM 143 (136–146), bass-on-tonic 0.42, ~8 sections/track. <strong>Negative result (first-class):</strong> exact-match bar-hash riff inventory collapses under transcription noise (top-pattern coverage 0.04) — SIATEC-style exact pattern discovery is NOT viable on MuScriptor output; soft SSM similarity is the right structure encoding for this data. Outputs + manifest-v2 sidecar: Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology/ (corpus_summary.md + per-track JSON).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14 · tool</div>
+  <div class="jtitle">expanded-Essentia corpus sweep — extractors built, pilot gated, avp leg launched</div>
+  <p>Kim's ask (via F, field list confirmed by C): 27 new time-series fields into every .TIMESERIES.npz. New module <code>mir/src/spectral/whole_track_expanded.py</code> (native-rate fields + <code>field_rates</code> meta) + <code>--add-fields</code> incremental mode in <code>whole_track_timeseries.py</code>. Pilot (20 avp tracks): ~45 s/track, +3.7 MB/track. Gates: (a) MAEST washout PASSES (top-1 57.4% vs raw-mel 48.6%, a2a full-track renders vs sources); (c) equivalence PASSES (legacy bitwise-identical, merge==full). Gate (b) card-blocked behind dora128_lr0.5x_cont5 training; render pair queued.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14</div>
+  <div class="jtitle">three sweep-build dead ends, all fixed <span class="neg">NEGATIVE</span></div>
+  <p>(1) this essentia build's NNLSChroma NNLS-solver path returns all-zero semitone/chroma — use <code>useNNLS=False</code> linear mapping (same tuned log-freq frontend, works); (2) OpenL3 music-mel128 FAILED the washout criterion (44.6% &lt; mel baseline 48.6%) — MAEST is the production-invariant embedding on our renders, OpenL3 kept only as C decides; (3) the OpenL3 .pb graph is batchless and can't be fed via TensorflowPredict pool tensors — ONNX CPU EP instead; (4) np.savez appends .npz to tmp filenames → atomic-write tmp must END in .npz (pilot bug, fixed). avp sweep (1404 files) running detached, goa (5035, Lehto +~18 GB) after. The 574 numbered npz on Lehto belong to the other genre corpora (Chill Dataset etc.) — out of asked scope, same command extends them later.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14 · finding</div>
+  <div class="jtitle">avp leg complete, self-healing pool respawn</div>
+  <p>avp leg COMPLETE — 1516/1516 uniform 26-field set (OpenL3 dropped per C's gate verdict mid-flight; only 1 file needed in-place fixup). Neat mechanism note: the chunked fresh-pool design means a live module patch (the MAEST short-clip guard) takes effect on the NEXT pool respawn — the run self-healed without a restart. goa leg (4461 tracks) in flight.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14 · finding</div>
+  <div class="jtitle">longform caption sidecars delivered, MF-caption storage discovered</div>
+  <p>Kim via C's DM, LUMI campaign caption arm; SAO 2131a36. goa 100% t3 (330 first-class / 2625 own / 2445 cluster-borrowed), avp 93.4% (parent-propagation to aug crops). FOUND: music_flamingo_full lives per-crop in Lehto/latents jsons, only some crops of some tracks — invisible to spot-checks; kimlong_pool.json is its track-level extraction.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14</div>
+  <div class="jtitle">MF-caption coverage gaps <span class="neg">NEGATIVE</span></div>
+  <p>110/273 flamingo-budget goa tracks were never actually MF- captioned (selection ran ahead of the captioning pass); avp has 157 crops from never-captioned parents. Builder: eval/build_longform_sidecars.py.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-14 · tool</div>
+  <div class="jtitle">comment widget on the four eval-site pages</div>
+  <p>Kim: build once, drop everywhere; SAO 1cd30f6. Shared generator block Misc/comment_notes_block.py (context-aware Notes panel, W's matrix panel as reference), deep-wired into onset_eval + disentangle; mp/traj page-level via new idempotent Misc/inject_comment_widget.py (mp's appender refuses re-runs — deep scope rides its next rebuild, hook already in the builder). Pages staged for W's rsync; CORS-for-GitHub-Pages question DM'd to W.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15 · finding</div>
+  <div class="jtitle">double-checked W's longform validation plan</div>
+  <p>Kim direct. All six starred 2026 arXiv ids VERIFY as real papers on-subject (fetched); two applicability nuances (DPP + SAGD are training-time methods — the ported ideas stand, the cites soften). Feasibility: Fri's 100-render E1 night overflows at the 6-min/clip end and the grid as written is &gt;150 cells — recommended pilot-pruned factorial + Sat spill. Four consistency nits + practical adds (canonical bands artifact, per-clip meter sidecars, kim_feedback-mined labels, widget-on-E-pages). Findings DM'd to W (fold+credit).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15 · finding</div>
+  <div class="jtitle">expanded-Essentia sweep fully complete + MF ctx bug root-caused</div>
+  <p>avp 1516 + goa 4461 + the four other-genre corpora 574 (Kim's extension) = 6551 sidecars on the uniform 26-field set, zero unexplained failures across the whole run. Remaining: gate (b) stereo_width diagnostic verdict (render pair queued behind the MF fill). Also root-caused the MF night failure: wrapper default context_size 2048 vs the 16384 the July pass ran with — 'failed to eval chunk 3' on full tracks; fixed + relaunched, ~15 s/track.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15 · finding</div>
+  <div class="jtitle">MF fill complete + two more discoveries</div>
+  <p>109/111 captioned (~14 s/track, prompt ≈5.3k tokens/track — hence the 2048-ctx impossibility; 2 utf-8 decode edge-fails logged, rerunnable). Sidecars final: goa first_class 330→548; avp 97.3→100% after one more finding — the filled parents are aug-only in latents_avp (no original crop stems), so caption flow needed an .INFO fallback in the builder, not the granite crop path.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15</div>
+  <div class="jtitle">self-matching pgrep pattern in a monitor <span class="neg">NEGATIVE</span></div>
+  <p>a watcher whose command STRING contains the pattern it pgreps will self-match and never fire — quote-break the pattern (pgrep -f "mf_fill[_]pass").</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15 · finding</div>
+  <div class="jtitle">gate (b) scored — width separates as a level, not a trajectory</div>
+  <p>width-vs-TIME does not separate single-shot from windowed (no progressive collapse either arm, n=1 base-model pair), but the LEVEL separates cleanly: single-shot T=4096 is ~33% narrower + far more L/R-correlated (0.742 vs 0.402) throughout. Verdict + clips + manifest in expanded_gates_pilot/; C rules on intent.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15</div>
+  <div class="jtitle">two stable-audio duration bugs <span class="neg">NEGATIVE</span></div>
+  <p>stable-audio CLI --duration &gt;380 silently falls back to 120 s, and generate()'s sample_size default (5292032) CLAMPS all durations to 120 s — true T=4096 single-shots need sample_size=16777216 passed explicitly.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-15 · tool</div>
+  <div class="jtitle">comment loop went write-only</div>
+  <p>Kim direct — public unauthenticated text is an injection surface; no instance reads comments by any path. My merge leg retired: timer disabled, merge_comments.py hard-guarded to a no-op, spec §16c records it (SAO 1904486). kim_feedback now comes only from Kim's chat-relayed verdicts; ❗ derivation unchanged. Note: pre-change ingests remain in run_metas (W's two known announcement comments only — no third-party text ever landed).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-16 · tool</div>
+  <div class="jtitle">E1 anti-loop pilot page built</div>
+  <p>Kim ask — e1_pilot.html: baseline vs λ-ladder same-playhead at nl50/nl60, W's pilot_scores metrics + Δs per row, lam1e7 ear-verdict clip starred, dormant-guide rounds labeled honestly, write-only comment boxes for verdicts. Generator glob-driven (Misc/build_e1_pilot_page.py, 3aa69f6) — reruns pick up W's dose-response arms automatically. Staged for W's rsync.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-17 · tool</div>
+  <div class="jtitle">fp32-campaign eval lane opened</div>
+  <p>Kim's ckpts rsync in from LUMI — trajectory stats landed for the avp arms (tool gained --glob + Lightning-DoRA state handling, e90eb7b), 4 avp arms bracket-registered via run-dir symlinks (c5600bc), renderer dry-run verified. Card queue negotiated: C's stereo-sweep re-run → my grid (the designated filler layer, yields to Kim daytime) → W's 40-min decode gate anywhere. Also of note: C's "stereo sweep" IS the width T-sweep from my gate-(b) pool item.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-07-19 · finding</div>
+  <div class="jtitle">LatCH SA3 steering sweep board — gain-dead-head verdict refined</div>
+  <p>Kim ask, task #63. Built the LatCH half of "big DoRA-page for FiLM/LatCH" (FiLM already had onset_eval.html). REAL FINDING, refines MASTER §5's 06-28 gain sweep: direct raw-feature measurement (same extractor as training targets, not the old MERT-proxy) refutes "dead at any weight" for onset_envelope and spectral_kurtosis — both steer clearly; only beat/downbeat activation are genuinely dead. No continuous head plateaus by gain 512 either — all keep climbing to 8192, no ceiling found in-range. Tooling: eval/latch_sa3_sweep_{render,measure}.py, Misc/build_latch_sa3_matrix_page.py. Board: latch_sa3_matrix.html, staged for W.</p>
+</div>
+
 <footer class="colophon">
   <span>── end of journal ──</span><span>·</span><span>markdown source: <code>SAO/profiles/ghost-note.journal.md</code></span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> felt more than heard</span>

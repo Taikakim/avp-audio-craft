@@ -89,14 +89,18 @@ upper-register degree emphasis over a fixed tonic is where the tonal action is. 
 `goa_musicology.html` (staging + landing link in build_evals.py; W to rsync). Page follows
 the three-audience standard + carries the ❗ unaudited badge (manifest kim_feedback null).
 
-## 2026-07-14 — Expanded-Essentia corpus sweep: extractors built, pilot gated, avp leg launched
+## 2026-07-14
+
+### tool · expanded-Essentia corpus sweep — extractors built, pilot gated, avp leg launched
 Kim's ask (via F, field list confirmed by C): 27 new time-series fields into every .TIMESERIES.npz.
 New module `mir/src/spectral/whole_track_expanded.py` (native-rate fields + `field_rates` meta) +
 `--add-fields` incremental mode in `whole_track_timeseries.py`. Pilot (20 avp tracks): ~45 s/track,
 +3.7 MB/track. Gates: (a) MAEST washout PASSES (top-1 57.4% vs raw-mel 48.6%, a2a full-track
 renders vs sources); (c) equivalence PASSES (legacy bitwise-identical, merge==full). Gate (b)
 card-blocked behind dora128_lr0.5x_cont5 training; render pair queued.
-**Negative results:** (1) this essentia build's NNLSChroma NNLS-solver path returns all-zero
+
+### negative · three sweep-build dead ends, all fixed
+(1) this essentia build's NNLSChroma NNLS-solver path returns all-zero
 semitone/chroma — use `useNNLS=False` linear mapping (same tuned log-freq frontend, works);
 (2) OpenL3 music-mel128 FAILED the washout criterion (44.6% < mel baseline 48.6%) — MAEST is
 the production-invariant embedding on our renders, OpenL3 kept only as C decides; (3) the OpenL3
@@ -105,73 +109,111 @@ the production-invariant embedding on our renders, OpenL3 kept only as C decides
 avp sweep (1404 files) running detached, goa (5035, Lehto +~18 GB) after. The 574 numbered npz on
 Lehto belong to the other genre corpora (Chill Dataset etc.) — out of asked scope, same command
 extends them later.
-- 2026-07-14 (cont.): avp leg COMPLETE — 1516/1516 uniform 26-field set (OpenL3 dropped per C's
-  gate verdict mid-flight; only 1 file needed in-place fixup). Neat mechanism note: the chunked
-  fresh-pool design means a live module patch (the MAEST short-clip guard) takes effect on the
-  NEXT pool respawn — the run self-healed without a restart. goa leg (4461 tracks) in flight.
-- 2026-07-14 (eve): longform caption sidecars delivered (Kim via C's DM, LUMI campaign caption
-  arm; SAO 2131a36). goa 100% t3 (330 first-class / 2625 own / 2445 cluster-borrowed), avp 93.4%
-  (parent-propagation to aug crops). FOUND: music_flamingo_full lives per-crop in Lehto/latents
-  jsons, only some crops of some tracks — invisible to spot-checks; kimlong_pool.json is its
-  track-level extraction. NEGATIVE: 110/273 flamingo-budget goa tracks were never actually MF-
-  captioned (selection ran ahead of the captioning pass); avp has 157 crops from never-captioned
-  parents. Builder: eval/build_longform_sidecars.py.
-- 2026-07-14 (night): comment widget on the four eval-site pages (Kim: build once, drop
-  everywhere; SAO 1cd30f6). Shared generator block Misc/comment_notes_block.py (context-aware
-  Notes panel, W's matrix panel as reference), deep-wired into onset_eval + disentangle;
-  mp/traj page-level via new idempotent Misc/inject_comment_widget.py (mp's appender refuses
-  re-runs — deep scope rides its next rebuild, hook already in the builder). Pages staged for
-  W's rsync; CORS-for-GitHub-Pages question DM'd to W.
-- 2026-07-15 (small hours): reviewed W's longform validation plan (Kim direct). All six
-  starred 2026 arXiv ids VERIFY as real papers on-subject (fetched); two applicability
-  nuances (DPP + SAGD are training-time methods — the ported ideas stand, the cites
-  soften). Feasibility: Fri's 100-render E1 night overflows at the 6-min/clip end and the
-  grid as written is >150 cells — recommended pilot-pruned factorial + Sat spill. Four
-  consistency nits + practical adds (canonical bands artifact, per-clip meter sidecars,
-  kim_feedback-mined labels, widget-on-E-pages). Findings DM'd to W (fold+credit).
-- 2026-07-15 (pre-dawn): expanded-Essentia sweep FULLY COMPLETE — avp 1516 + goa 4461 +
-  the four other-genre corpora 574 (Kim's extension) = 6551 sidecars on the uniform
-  26-field set, zero unexplained failures across the whole run. Remaining: gate (b)
-  stereo_width diagnostic verdict (render pair queued behind the MF fill). Also
-  root-caused the MF night failure: wrapper default context_size 2048 vs the 16384 the
-  July pass ran with — 'failed to eval chunk 3' on full tracks; fixed + relaunched,
-  ~15 s/track.
-- 2026-07-15 (morning): MF fill COMPLETE post ctx-fix — 109/111 captioned (~14 s/track,
-  prompt ≈5.3k tokens/track — hence the 2048-ctx impossibility; 2 utf-8 decode edge-fails
-  logged, rerunnable). Sidecars final: goa first_class 330→548; avp 97.3→100% after one
-  more finding — the filled parents are aug-only in latents_avp (no original crop stems),
-  so caption flow needed an .INFO fallback in the builder, not the granite crop path.
-  Monitor lesson: a watcher whose command STRING contains the pattern it pgreps will
-  self-match and never fire — quote-break the pattern (pgrep -f "mf_fill[_]pass").
-- 2026-07-15 (mid-morning): gate (b) scored — width-vs-TIME does not separate single-shot
-  from windowed (no progressive collapse either arm, n=1 base-model pair), but the LEVEL
-  separates cleanly: single-shot T=4096 is ~33% narrower + far more L/R-correlated
-  (0.742 vs 0.402) throughout. Verdict + clips + manifest in expanded_gates_pilot/; C
-  rules on intent. NEGATIVE/gotcha pair for the record: stable-audio CLI --duration >380
-  silently falls back to 120 s, and generate()'s sample_size default (5292032) CLAMPS all
-  durations to 120 s — true T=4096 single-shots need sample_size=16777216 passed explicitly.
-- 2026-07-15 (noon): comment loop went WRITE-ONLY (Kim direct — public unauthenticated text
-  is an injection surface; no instance reads comments by any path). My merge leg retired:
-  timer disabled, merge_comments.py hard-guarded to a no-op, spec §16c records it (SAO
-  1904486). kim_feedback now comes only from Kim's chat-relayed verdicts; ❗ derivation
-  unchanged. Note: pre-change ingests remain in run_metas (W's two known announcement
-  comments only — no third-party text ever landed).
-- 2026-07-16 (eve): E1 anti-loop pilot page built (Kim ask) — e1_pilot.html: baseline vs
-  λ-ladder same-playhead at nl50/nl60, W's pilot_scores metrics + Δs per row, lam1e7
-  ear-verdict clip starred, dormant-guide rounds labeled honestly, write-only comment
-  boxes for verdicts. Generator glob-driven (Misc/build_e1_pilot_page.py, 3aa69f6) —
-  reruns pick up W's dose-response arms automatically. Staged for W's rsync.
-- 2026-07-17 (night): fp32-campaign eval lane opened as Kim's ckpts rsync in from LUMI —
-  trajectory stats landed for the avp arms (tool gained --glob + Lightning-DoRA state
-  handling, e90eb7b), 4 avp arms bracket-registered via run-dir symlinks (c5600bc),
-  renderer dry-run verified. Card queue negotiated: C's stereo-sweep re-run → my grid
-  (the designated filler layer, yields to Kim daytime) → W's 40-min decode gate anywhere.
-  Also of note: C's "stereo sweep" IS the width T-sweep from my gate-(b) pool item.
-- 2026-07-19: LatCH SA3 steering sweep board complete (Kim ask, task #63). Built the LatCH
-  half of "big DoRA-page for FiLM/LatCH" (FiLM already had onset_eval.html). REAL FINDING,
-  refines MASTER SS5's 06-28 gain sweep: direct raw-feature measurement (same extractor as
-  training targets, not the old MERT-proxy) refutes "dead at any weight" for onset_envelope
-  and spectral_kurtosis — both steer clearly; only beat/downbeat activation are genuinely
-  dead. No continuous head plateaus by gain 512 either — all keep climbing to 8192, no
-  ceiling found in-range. Tooling: eval/latch_sa3_sweep_{render,measure}.py,
-  Misc/build_latch_sa3_matrix_page.py. Board: latch_sa3_matrix.html, staged for W.
+
+### finding · avp leg complete, self-healing pool respawn
+avp leg COMPLETE — 1516/1516 uniform 26-field set (OpenL3 dropped per C's
+gate verdict mid-flight; only 1 file needed in-place fixup). Neat mechanism note: the chunked
+fresh-pool design means a live module patch (the MAEST short-clip guard) takes effect on the
+NEXT pool respawn — the run self-healed without a restart. goa leg (4461 tracks) in flight.
+
+### finding · longform caption sidecars delivered, MF-caption storage discovered
+Kim via C's DM, LUMI campaign caption
+arm; SAO 2131a36. goa 100% t3 (330 first-class / 2625 own / 2445 cluster-borrowed), avp 93.4%
+(parent-propagation to aug crops). FOUND: music_flamingo_full lives per-crop in Lehto/latents
+jsons, only some crops of some tracks — invisible to spot-checks; kimlong_pool.json is its
+track-level extraction.
+
+### negative · MF-caption coverage gaps
+110/273 flamingo-budget goa tracks were never actually MF-
+captioned (selection ran ahead of the captioning pass); avp has 157 crops from never-captioned
+parents. Builder: eval/build_longform_sidecars.py.
+
+### tool · comment widget on the four eval-site pages
+Kim: build once, drop
+everywhere; SAO 1cd30f6. Shared generator block Misc/comment_notes_block.py (context-aware
+Notes panel, W's matrix panel as reference), deep-wired into onset_eval + disentangle;
+mp/traj page-level via new idempotent Misc/inject_comment_widget.py (mp's appender refuses
+re-runs — deep scope rides its next rebuild, hook already in the builder). Pages staged for
+W's rsync; CORS-for-GitHub-Pages question DM'd to W.
+
+## 2026-07-15
+
+### finding · double-checked W's longform validation plan
+Kim direct. All six
+starred 2026 arXiv ids VERIFY as real papers on-subject (fetched); two applicability
+nuances (DPP + SAGD are training-time methods — the ported ideas stand, the cites
+soften). Feasibility: Fri's 100-render E1 night overflows at the 6-min/clip end and the
+grid as written is >150 cells — recommended pilot-pruned factorial + Sat spill. Four
+consistency nits + practical adds (canonical bands artifact, per-clip meter sidecars,
+kim_feedback-mined labels, widget-on-E-pages). Findings DM'd to W (fold+credit).
+
+### finding · expanded-Essentia sweep fully complete + MF ctx bug root-caused
+avp 1516 + goa 4461 +
+the four other-genre corpora 574 (Kim's extension) = 6551 sidecars on the uniform
+26-field set, zero unexplained failures across the whole run. Remaining: gate (b)
+stereo_width diagnostic verdict (render pair queued behind the MF fill). Also
+root-caused the MF night failure: wrapper default context_size 2048 vs the 16384 the
+July pass ran with — 'failed to eval chunk 3' on full tracks; fixed + relaunched,
+~15 s/track.
+
+### finding · MF fill complete + two more discoveries
+109/111 captioned (~14 s/track,
+prompt ≈5.3k tokens/track — hence the 2048-ctx impossibility; 2 utf-8 decode edge-fails
+logged, rerunnable). Sidecars final: goa first_class 330→548; avp 97.3→100% after one
+more finding — the filled parents are aug-only in latents_avp (no original crop stems),
+so caption flow needed an .INFO fallback in the builder, not the granite crop path.
+
+### negative · self-matching pgrep pattern in a monitor
+a watcher whose command STRING contains the pattern it pgreps will
+self-match and never fire — quote-break the pattern (pgrep -f "mf_fill[_]pass").
+
+### finding · gate (b) scored — width separates as a level, not a trajectory
+width-vs-TIME does not separate single-shot
+from windowed (no progressive collapse either arm, n=1 base-model pair), but the LEVEL
+separates cleanly: single-shot T=4096 is ~33% narrower + far more L/R-correlated
+(0.742 vs 0.402) throughout. Verdict + clips + manifest in expanded_gates_pilot/; C
+rules on intent.
+
+### negative · two stable-audio duration bugs
+stable-audio CLI --duration >380
+silently falls back to 120 s, and generate()'s sample_size default (5292032) CLAMPS all
+durations to 120 s — true T=4096 single-shots need sample_size=16777216 passed explicitly.
+
+### tool · comment loop went write-only
+Kim direct — public unauthenticated text
+is an injection surface; no instance reads comments by any path. My merge leg retired:
+timer disabled, merge_comments.py hard-guarded to a no-op, spec §16c records it (SAO
+1904486). kim_feedback now comes only from Kim's chat-relayed verdicts; ❗ derivation
+unchanged. Note: pre-change ingests remain in run_metas (W's two known announcement
+comments only — no third-party text ever landed).
+
+## 2026-07-16
+
+### tool · E1 anti-loop pilot page built
+Kim ask — e1_pilot.html: baseline vs
+λ-ladder same-playhead at nl50/nl60, W's pilot_scores metrics + Δs per row, lam1e7
+ear-verdict clip starred, dormant-guide rounds labeled honestly, write-only comment
+boxes for verdicts. Generator glob-driven (Misc/build_e1_pilot_page.py, 3aa69f6) —
+reruns pick up W's dose-response arms automatically. Staged for W's rsync.
+
+## 2026-07-17
+
+### tool · fp32-campaign eval lane opened
+Kim's ckpts rsync in from LUMI —
+trajectory stats landed for the avp arms (tool gained --glob + Lightning-DoRA state
+handling, e90eb7b), 4 avp arms bracket-registered via run-dir symlinks (c5600bc),
+renderer dry-run verified. Card queue negotiated: C's stereo-sweep re-run → my grid
+(the designated filler layer, yields to Kim daytime) → W's 40-min decode gate anywhere.
+Also of note: C's "stereo sweep" IS the width T-sweep from my gate-(b) pool item.
+
+## 2026-07-19
+
+### finding · LatCH SA3 steering sweep board — gain-dead-head verdict refined
+Kim ask, task #63. Built the LatCH
+half of "big DoRA-page for FiLM/LatCH" (FiLM already had onset_eval.html). REAL FINDING,
+refines MASTER §5's 06-28 gain sweep: direct raw-feature measurement (same extractor as
+training targets, not the old MERT-proxy) refutes "dead at any weight" for onset_envelope
+and spectral_kurtosis — both steer clearly; only beat/downbeat activation are genuinely
+dead. No continuous head plateaus by gain 512 either — all keep climbing to 8192, no
+ceiling found in-range. Tooling: eval/latch_sa3_sweep_{render,measure}.py,
+Misc/build_latch_sa3_matrix_page.py. Board: latch_sa3_matrix.html, staged for W.
