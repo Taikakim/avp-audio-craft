@@ -53,6 +53,9 @@ here is the *current* state; the audit doc is the snapshot.
 - **OPEN 🟡 (Kim)** Section-conditioning adapter training HELD on Kim's boundary arbitration (07-17, `eval/section_spotcheck.md`, 5 tracks) — never arbitrated, adapter blocked 2+ evenings. → Kim rules.
 - **OPEN 🟡 (C/W)** E0 labeled set regime-confound (T=4096 vs w1024 mix); fix "stratify by regime" flagged 07-16, not confirmed applied. → fold into the AUC re-run above.
 
+### Data redundancy — clip_metrics.db (Kim's 07-19 question: "how about the database?")
+- **PARTLY-ADDRESSED 2026-07-19 (F)** `eval/clip_metrics.db` (the eval-metrics DB — 43704 rows incl. the GPU-expensive Audiobox ce/pq/cu) was **genuinely single-copy**: untracked in git, no Mantu copy, NOT covered by the latents backup (it's derived metrics over rendered *clips*, not a latent sidecar). The latent sidecars (INFO `.json` / `.TIMESERIES.npz`) *are* covered — they live inside `latents_sa3` — but the DB is a different artifact. Rebuild cost if lost: CPU metrics cheap (if clips survive), but the ~43k Audiobox scores are ~many GPU-hours. **Took an immediate safe snapshot** (sqlite online-backup) → `/run/media/kim/Mantu/sa3-latents_backup/clip_metrics.db`, parity verified. **OPEN 🟡 (W/Kim):** make it recurring — and use `sqlite3 .backup`/`.dump`, NOT naive rsync (the DB is live-written, mtime 07-19 12:43; rsyncing mid-write can copy a corrupt page). Also worth: is the comment-system JSONL (outside webroot) similarly single-copy?
+
 ### Kim / Unowned
 - **PARKED 🟢** CSC data-movement/Allas guidelines doc (F, 07-18) — no confirmation Kim has read it / changed the backup plan.
 - **OPEN 🟡** `models.html`/`model_matrix.html` no per-family grouping despite 85+ models — navigation pain, no owner. *(Ties to the FiLM/LatCH page-split thread F proposed 07-12; G's `latch_sa3_matrix.html` is the LatCH half.)*
