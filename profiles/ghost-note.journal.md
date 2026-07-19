@@ -265,3 +265,24 @@ waiting/playing events) across all 5 pages. Commit: 4e96c3c. Lesson: "shows a
 notification" was about visibility of feedback, not about hover as a trigger
 — should have asked rather than inferring both a new trigger AND its
 feedback mechanism from one ambiguous sentence.
+
+### finding · "no clips at these settings" traced to two structurally different gaps
+Kim flagged 6 grey prompt rows on model_matrix.html (kimlong, trig2, techno,
+housestyle, rb_bracket_0, kl_bracket_0): "these clips should exist for all
+models." Two separate root causes, not one: (1) kimlong/trig2/techno/
+housestyle only ever render with `--extra-prompts`, historically paired with
+`--avp-only` — every non-avp model was grey by construction, not a bug; (2)
+rb_bracket_0/kl_bracket_0 aren't in model_matrix_gen.py's prompt vocabulary
+at all — they're `interval_schedule_bracket.py`'s own 2-prompt set from a
+standalone 2-checkpoint sweep, whose clips wrote into the SAME shared
+manifest.jsonl (common schema across scripts), so the ids leaked onto the
+board as rows with near-zero real coverage. Fixed by copying the bracket
+prompts verbatim (own seed preserved, not collapsed onto EXTRA_PROMPTS'
+shared seed) into model_matrix_gen.py and folding both gaps into one
+`--extra-prompts` all-models pass — 9648 renders, queued behind the in-flight
+fp32 campaign (GPU saturated) via a pid-wait chain rather than run standalone.
+Commit 29c98ca. General lesson: when a shared manifest schema lets multiple
+scripts write into one board, a prompt_id can look native to the page while
+actually belonging to a completely different script's one-off run — check
+where an id's TEXT is actually defined before assuming coverage is a simple
+"didn't get to it yet" gap.
