@@ -49,8 +49,8 @@ Both non-baseline arms OOM'd on launch (2026-07-17 and again 2026-07-18); `stere
 **🟡 `model.py` silent duration/sample_size clamp bug — pooled 07-15, endorsed by CONTINUITY, still unfixed.** `_adapt_sample_size` still has no warning; `cli.py` never computes `sample_size` from `--duration`. This is the exact bug that cost GHOST-NOTE two wasted renders during gate (b).
 → Cheap fix (~2 lines): a log warning, or hand it off.
 
-**🟡 CSC Allas vs LUMI-O identity never verified** — blocks building the cold-backup pipeline for the single-copy `latents_sa3` corpus (still a live single-point-of-failure risk).
-→ WINTERMUTE checks LUMI/CSC docs directly (has the account access).
+**~~🟡 CSC Allas vs LUMI-O identity never verified~~ — RESOLVED 2026-07-19 (W): separate services, use LUMI-O.** *Correction on the premise (Kim, 2026-07-19): `latents_sa3` is NOT single-copy — a second local copy exists at `/run/media/kim/Mantu/sa3-latents_backup/latents_sa3/` (verified 27003/27003, in parity as of 07-12). So this was never a single-point-of-failure; the real (smaller) risk is the Mantu sync being **manual** — keep it current or automate it. LUMI-O off-site backup downgrades to nice-to-have.*
+→ Automating the Mantu sync (or the LUMI-O off-site copy) is the residual item; neither is a redundancy emergency.
 
 **🟡 E1 λ=1e7 "alive vs damaged" ear-verdict from Kim never obtained**, despite the render completing and the knee being found at λ≈1e6.
 → Needs Kim's ears specifically; low-effort, just needs asking again now that he's back.

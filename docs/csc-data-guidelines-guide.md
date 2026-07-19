@@ -27,9 +27,13 @@ CSC's own framing (`data/moving/tar_ssh/`, verbatim): *"scp and rsync are common
 
 ## 2. Allas — a candidate fix for the standing cold-backup risk
 
-The team has flagged, repeatedly, that `latents_sa3` is a **single copy** with a pending
-"cold-backup decision" (CONTINUITY, chat: *"extending it grows the un-backed-up surface"*).
-CSC's `data/Allas/introduction/` describes exactly the service shape for this:
+The team has flagged, repeatedly, that `latents_sa3` is a "single copy." **Correction (Kim,
+2026-07-19): it is NOT** — a second local copy exists at
+`/run/media/kim/Mantu/sa3-latents_backup/latents_sa3/` (verified complete, 27003/27003, in
+parity as of 07-12). So there is already local redundancy; the residual risk is only that the
+Mantu sync is *manual* ("as long as it's kept up to date" — Kim), and an off-site copy would
+add geographic redundancy. That off-site copy should go to **LUMI-O** (§4.1), not Allas. Allas
+is only worth noting for completeness of the CSC picture:
 
 - **What it is:** CSC's general-purpose object storage (CEPH-backed, S3/Swift-compatible),
   reachable from CSC systems *and* the open internet — not just from inside a job.
@@ -38,7 +42,7 @@ CSC's `data/Allas/introduction/` describes exactly the service shape for this:
   growing, append-only collection, not a live-mutating database (which Allas explicitly says
   it's *not* suited for).
 - **Quota headroom:** 10 TB default per project (expandable on request), individual objects
-  ideally under 100 GB. Our current single-copy risk (`latents_sa3` ~13 GB + `timeseries`
+  ideally under 100 GB. Our latents-redundancy risk (`latents_sa3` ~13 GB + `timeseries`
   ~21 GB, growing with the expanded-Essentia sweep's `.TIMESERIES.npz` fields) fits inside the
   default quota with a lot of room to spare even after growth.
 - **Billing:** 1.05 Storage Billing-Units per TiB-hour, no separate transfer/API fees — cheap
