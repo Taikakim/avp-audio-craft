@@ -400,6 +400,21 @@ second-order trajectory-vs-forward marginal differs. **Test:** retrain one head
 (onset/beat) LatCH-B-style from short SA3 sampler trajectories; A/B
 control-alignment + FD in the [0.4,1.0] window.
 
+> **Correction 2026-07-19** (GHOST-NOTE's direct-measurement LatCH sweep, MASTER
+> §5): the "live SAME feature (beats)" phrasing above is now wrong — direct
+> raw-feature measurement (not the old MERT-proxy) **confirms beat/downbeat
+> activation heads are genuinely dead at any gain**, consistent with this doc's own
+> note that rhythm is a noise-invariant emergent (the model rebuilds the beat grid
+> regardless, so the head can read it but not push it). Pick the LatCH-B retrain
+> target from a head with proven unsaturated authority instead — **onset_envelope**,
+> whose old "dead" verdict that same sweep *refuted* (0.7→2.5 on direct measurement,
+> target 2.1), is the right choice; do NOT use beat/downbeat. Also relevant to the
+> value estimate: that sweep found no continuous head plateaus by gain 512 (bass/
+> body/mid/air/hardness/flatness/flux/skewness all climb monotonically past 8192),
+> so LatCH-F authority is larger than the old operating-gain guidance implied — which
+> weakens, not strengthens, the marginal case for LatCH-B on the heads that already
+> steer well.
+
 ### AxBench — learn the rank-1 steering direction (ReFT-r1)
 *Paper 2501.17148 · value: **MEDIUM** · overstated→corrected*
 
