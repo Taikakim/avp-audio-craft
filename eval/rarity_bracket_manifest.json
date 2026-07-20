@@ -291,7 +291,7 @@
     "epoch=7-step=5400.ckpt"
    ],
    "witness": [],
-   "reason": "fp32 goa t512 arm \u2014 SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
+   "reason": "fp32 goa t512 arm — SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
   },
   "bf16cmp_avp_t512_bs8_lr1e4": {
    "tier": "full",
@@ -371,7 +371,7 @@
     "epoch=7-step=2696.ckpt"
    ],
    "witness": [],
-   "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) \u2014 FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
+   "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) — FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
   },
   "longctx_t2048_r128": {
    "tier": "full",
@@ -395,7 +395,7 @@
     "epoch=5-step=200.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI pipeline smoke run (r256 a256) \u2014 rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI pipeline smoke run (r256 a256) — rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs1_lr1e4_repr": {
    "tier": "full",
@@ -403,7 +403,7 @@
     "epoch=7-step=19144.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr1e4_repr": {
    "tier": "full",
@@ -412,7 +412,7 @@
     "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr5e5_repr": {
    "tier": "full",
@@ -421,7 +421,7 @@
     "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t512_bs8_lr1e4_repr": {
    "tier": "full",
@@ -430,7 +430,7 @@
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_goa_t4096_bs1_lr1e4_repr": {
    "tier": "full",
@@ -441,7 +441,7 @@
     "epoch=3-step=21600.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_goa_t4096_bs4_lr1e4_repr": {
    "tier": "full",
@@ -453,7 +453,7 @@
     "epoch=4-step=6750.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "bf16cmp_avp_t512_bs8_lr1e4_repr": {
    "tier": "full",
@@ -461,7 +461,47 @@
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=256 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=512 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=1024 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=2048 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=4096 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
   }
  },
  "legacy_goa_dora_nested": {

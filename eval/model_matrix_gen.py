@@ -283,7 +283,8 @@ def main():
                       only_labels=only_labels, only_ckpts=only_ckpts)
     n_cells = 0
     for label, ckpt_path, _tag in jobs:
-        n_cells += len(prompts) * len(cfgs) * (1 if ckpt_path is None else len(STRENGTHS))
+        n_cells += len(prompts) * len(cfgs) * (
+            1 if (ckpt_path is None or label.startswith("fullft_")) else len(STRENGTHS))
     print(f"[model_matrix] {len(jobs)} (model,ckpt) jobs x {len(prompts)} prompts -> "
           f"{n_cells} manifest cells ({n_cells - sum(len(prompts) * len(cfgs) * 2 for l, c, t in jobs if c is None)} "
           f"actual renders, base cells triple-counted for the grid)")

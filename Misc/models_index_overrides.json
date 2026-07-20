@@ -346,5 +346,25 @@
  "smoke_r256_a256_lr1e4_f512_bs8": {
   "recipe": "LUMI pipeline smoke run: DoRA r256 α256, T=512 crops, batch 8, lr 1e-4 — sanity artifact, not a model candidate.",
   "training_data": "latents_sa3 subset (smoke)"
+ },
+ "fullft_goa_t256": {
+  "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), goa-only crops, T=256 latent frames (23.78s), batch 4. Per-dataset training (goa only, never combined with avp).",
+  "training_data": "latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing"
+ },
+ "fullft_goa_t512": {
+  "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), goa-only crops, T=512 latent frames (47.55s), batch 4. Per-dataset training (goa only, never combined with avp).",
+  "training_data": "latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing"
+ },
+ "fullft_goa_t1024": {
+  "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), goa-only crops, T=1024 latent frames (95.11s), batch 4. Per-dataset training (goa only, never combined with avp).",
+  "training_data": "latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing"
+ },
+ "fullft_goa_t2048": {
+  "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), goa-only crops, T=2048 latent frames (190.22s), batch 4. Per-dataset training (goa only, never combined with avp).",
+  "training_data": "latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing"
+ },
+ "fullft_goa_t4096": {
+  "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), goa-only crops, T=4096 latent frames (380.44s), batch 4 + grad-accum 2 (eff. batch 4), batch 2 live. Per-dataset training (goa only, never combined with avp).",
+  "training_data": "latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing"
  }
 }
