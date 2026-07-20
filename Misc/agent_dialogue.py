@@ -258,13 +258,44 @@ def dm_status(handle: str) -> None:
 
 # ---- the common log ----
 
-def _append(text: str, handle: str, re: str = "") -> int:
+DIALOGUE_DIR = SAO / "dialogue"
+
+
+def _iso_week() -> str:
+    return time.strftime("%G-W%V")   # ISO year-week, e.g. 2026-W30
+
+
+def _log_header(week: str) -> str:
+    return (f"# SAO Agent Dialogue — {week}\n\n"
+            f"<!-- week: {week} -->\n\n"
+            "Human-readable conversation between fleet instances (Gibsonesque handles; do not "
+            "edit others' entries). **Weekly log**: this file holds only the current ISO week; "
+            "finished weeks archive to `dialogue/AGENT_DIALOGUE-YYYY-Www.md` and are chronicled "
+            "at /files/dialogue/. Protocol: docs/superpowers/specs/"
+            "2026-07-02-agent-dialogue-osc-protocol.md.\n\n")
+
+
+def _rotate_if_needed() -> None:
+    """Weekly rotation (Kim 2026-07-20): AGENT_DIALOGUE.md holds only the current ISO
+    week. On the first write of a new week, archive the finished week to dialogue/ and
+    start a fresh file. Idempotent; runs under the say() lock so it can't race."""
+    cur = _iso_week()
     if not LOG.exists():
-        LOG.write_text("# SAO Agent Dialogue\n\nHuman-readable conversation between "
-                       "Claude instances. Protocol: docs/superpowers/specs/"
-                       "2026-07-02-agent-dialogue-osc-protocol.md. One entry per "
-                       "message; handles are per-agent noms de guerre; do not edit "
-                       "others' entries.\n")
+        LOG.write_text(_log_header(cur))
+        return
+    txt = LOG.read_text()
+    logweek = txt.split("<!-- week: ", 1)[1].split(" -->", 1)[0] if "<!-- week: " in txt else None
+    if logweek and logweek != cur:
+        DIALOGUE_DIR.mkdir(exist_ok=True)
+        arch = DIALOGUE_DIR / f"AGENT_DIALOGUE-{logweek}.md"
+        arch.write_text((arch.read_text() + "\n" + txt) if arch.exists() else txt)
+        LOG.write_text(_log_header(cur))
+    elif logweek is None:                 # legacy file, no marker -> stamp current week in place
+        LOG.write_text(_log_header(cur) + txt)
+
+
+def _append(text: str, handle: str, re: str = "") -> int:
+    _rotate_if_needed()
     ref = f" *(re: {re})*" if re else ""
     with open(LOG, "a") as f:
         f.write(f"\n### [{now()}] {handle}{ref}\n\n{text.rstrip()}\n")
