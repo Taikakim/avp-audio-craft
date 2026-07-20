@@ -45,6 +45,12 @@ with ThreadPoolExecutor(max_workers=8) as ex:
     list(ex.map(lambda j: enc(*j), jobs))
 print(f"encoded {len(jobs)} clips")
 
+# disintegration gate (C's mandatory control-head screen, 2026-07-20): usable-gain
+# ceiling per head + per-cell disintegrated flag, joined by the {head}__g{gain}__{pid} stem.
+_gp = os.path.join(os.path.dirname(__file__), "..", "eval", "control_head_disintegration.json")
+GATE = json.load(open(_gp)) if os.path.exists(_gp) else {"cells": {}, "result": {}}
+gate_cells, gate_result = GATE.get("cells", {}), GATE.get("result", {})
+
 by_head = {}
 baselines = {}
 for c in manifest["cells"]:
@@ -58,6 +64,12 @@ for c in manifest["cells"]:
 heads_out = []
 for head, rows in sorted(by_head.items()):
     rows.sort(key=lambda r: (r["gain"], r["prompt_id"]))
+    for r in rows:                                  # join C's disintegration gate
+        gc = gate_cells.get(f"{head}__g{int(r['gain'])}__{r['prompt_id']}", {})
+        r["disint"] = gc.get("disintegrated", False)
+        r["dreasons"] = "; ".join(gc.get("hard_reasons", []))
+    ceiling = {pid: gate_result.get(head, {}).get(pid, {}).get("usable_max_gain")
+               for pid in sorted({r["prompt_id"] for r in rows})}
     gains = sorted({r["gain"] for r in rows})
     # verdict: does |delta| shrink as gain rises, relative to the unguided baseline offset?
     target = rows[0].get("target")
@@ -68,7 +80,8 @@ for head, rows in sorted(by_head.items()):
         "steers" if min(measured_deltas) < 0.5 * (sum(base_deltas) / max(len(base_deltas), 1) or 1e9)
         else "weak/dead")
     heads_out.append({"head": head, "target": target, "rows": rows, "gains": gains,
-                      "verdict": verdict, "measurable": rows[0].get("measurable", True)})
+                      "verdict": verdict, "ceiling": ceiling,
+                      "measurable": rows[0].get("measurable", True)})
 
 DATA = json.dumps({"heads": heads_out, "baselines": baselines, "meta": meta})
 
@@ -81,6 +94,7 @@ table{border-collapse:collapse;font-size:12px;margin:4px 0}td,th{border:1px soli
 th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;color:#9ab}
 .c{cursor:pointer;font-variant-numeric:tabular-nums}.c:hover{outline:2px solid #7cf}.play{outline:2px solid #5d5 !important}.loading{outline:2px solid #fa5 !important}
 .steers{color:#5d9}.weak{color:#e88}.nomeasure{color:#667;font-style:italic}
+tr.disint td{background:#2a1414}tr.disint .g{color:#e77}.warn{color:#e66;cursor:help}.ceil{color:#e0a030}td.c.disint{outline:1px solid #a44}
 .sec{margin:14px 0;padding:10px 12px;border:1px solid #26262c;border-radius:6px;background:#131316}
 </style></head><body>
 <div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> <span id=ld class=muted style="color:#fa5"></span> <span class=muted>· switching keeps the playhead · loops until stopped · amber outline = loading</span></div>
@@ -116,10 +130,12 @@ h+='</table></div>';
 D.heads.forEach(hd=>{
  const scale=Math.abs(hd.target||1)*0.6+1e-6;
  h+=`<div class=sec><h2>${hd.head}</h2><div class=muted>target ${hd.target!=null?hd.target.toFixed(3):'—'} · `+
-    `<span class="${hd.verdict==='steers'?'steers':(hd.verdict==='weak/dead'?'weak':'nomeasure')}">${hd.verdict}</span></div>`;
+    `<span class="${hd.verdict==='steers'?'steers':(hd.verdict==='weak/dead'?'weak':'nomeasure')}">${hd.verdict}</span>`+
+    ` · <span class=ceil title="disintegration gate: highest clean gain before the head buzzes/damages the output">usable-gain ceiling ${Object.entries(hd.ceiling||{}).map(([p,g])=>p+'&nbsp;&le;&nbsp;'+(g==null?'?':'g'+g)).join(' · ')}</span></div>`;
  h+='<table><tr><th>gain</th><th>prompt</th><th>measured</th><th>Δ</th><th>▶</th></tr>';
- hd.rows.forEach((r,i)=>{const id=`${hd.head}_${i}`;
-  h+=`<tr><td>${r.gain}</td><td>${r.prompt_id}</td>`+
+ hd.rows.forEach((r,i)=>{const id=`${hd.head}_${i}`;const dz=r.disint?' disint':'';
+  const warn=r.disint?`<span class=warn title="disintegrated — ${(r.dreasons||'').replace(/"/g,'&quot;')}">&#9888;</span> `:'';
+  h+=`<tr class="${dz.trim()}"><td class=g>${warn}${r.gain}</td><td>${r.prompt_id}</td>`+
    `<td style="background:${col(r.delta,scale)}">${r.measured!=null?r.measured.toFixed(3):'·'}</td>`+
    `<td>${r.delta!=null?r.delta.toFixed(3):(r.note||'·')}</td>`+
    `<td class=c id="${id}" onclick="play('${id}','${r.f}','${hd.head} g${r.gain} ${r.prompt_id}','${hd.head}','${r.gain}','${r.clip}')">▶</td></tr>`;});
