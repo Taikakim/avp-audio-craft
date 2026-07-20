@@ -19,7 +19,7 @@
   "dora64_avp_tiered_lr2e4": {
    "tier": "single",
    "picks": [
-    "epoch=0-step=36.ckpt"
+    "epoch=0-step=36.weights.ckpt"
    ],
    "witness": [
     "epoch=1-step=72.ckpt"
@@ -30,42 +30,42 @@
   "dora64_avp_tiered_lr1e4": {
    "tier": "early",
    "picks": [
-    "epoch=0-step=36.ckpt",
-    "epoch=3-step=144.ckpt",
-    "epoch=7-step=288.ckpt"
+    "epoch=0-step=36.weights.ckpt",
+    "epoch=3-step=144.weights.ckpt",
+    "epoch=7-step=288.weights.ckpt"
    ],
    "reason": "HoF: ep3-7 all usable (esp ep7 s7 kimlong). lr1e-4 is UNDER-cooked (never reaches the sweet spot 2e-4 hits at ep0). The usable band is ep3-7; ep0 as the pre-learning anchor."
   },
   "dora16_avp_8ep": {
    "tier": "early",
    "picks": [
-    "epoch=0-step=299.ckpt",
-    "epoch=2-step=897.ckpt",
-    "epoch=6-step=2093.ckpt"
+    "epoch=0-step=299.weights.ckpt",
+    "epoch=2-step=897.weights.ckpt",
+    "epoch=6-step=2093.weights.ckpt"
    ],
    "reason": "avp board verdict: knee at ep4-6; kimlong deep-listen: EARLY epochs win (s1234 ep2 punch+dorian, ep6_fine winner). Conditioning collapses late; ep2/ep6 are Kim's early favourites, ep0 anchor."
   },
   "dora16_avp_freeform_8ep": {
    "tier": "negative",
    "picks": [
-    "epoch=7-step=288.ckpt",
-    "epoch=31-step=1152.ckpt"
+    "epoch=7-step=288.weights.ckpt",
+    "epoch=31-step=1152.weights.ckpt"
    ],
    "reason": "NEGATIVE result (analysis v2): single descriptive caption does NOT fix conditioning collapse (prompt/seed ratio 0.22, WORSE than the trigger arm's 0.92). It was never the trigger token's fault -- any single caption reused per crop collapses conditioning. 2 picks just to show the failure on the board; do not sweep deep."
   },
   "dora16_avp_familiarity_8ep": {
    "tier": "minimal",
    "picks": [
-    "epoch=0-step=299.ckpt",
-    "epoch=4-step=1495.ckpt"
+    "epoch=0-step=299.weights.ckpt",
+    "epoch=4-step=1495.weights.ckpt"
    ],
    "reason": "avp board verdict: 'familiarity worst' of the arms. Minimal bracket for completeness."
   },
   "dora128adj_avp_aug10_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=7-step=300.ckpt",
-    "epoch=37-step=1500.ckpt",
+    "epoch=7-step=300.weights.ckpt",
+    "epoch=37-step=1500.weights.ckpt",
     "epoch=74-step=3000.ckpt"
    ],
    "reason": "arm G = the BROADLY SHIPPABLE recipe (analysis v2 + tempo_iqr, W): r128@lr1e-4 escapes BOTH tempo AND spectral collapse, centroid stays healthy 300-3000 steps, flat tempo-stable across the whole run (mean iqr 0.94, never collapses). Any epoch valid -> full even early/mid/last bracket."
@@ -73,8 +73,8 @@
   "dora128adj_avp_8ep": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=299.ckpt",
-    "epoch=3-step=1196.ckpt",
+    "epoch=0-step=299.weights.ckpt",
+    "epoch=3-step=1196.weights.ckpt",
     "epoch=6-step=2093.ckpt"
    ],
    "reason": "r128adj = 'best' of the avp board arms (2026-07-08 verdict). Pre-final run; even bracket."
@@ -89,8 +89,8 @@
   "dora128_everything_8ep_lr1x": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1527.ckpt",
-    "epoch=4-step=7635.ckpt",
+    "epoch=0-step=1527.weights.ckpt",
+    "epoch=4-step=7635.weights.ckpt",
     "epoch=7-step=12216.ckpt"
    ],
    "reason": "ep7 is the CANONICAL sweep checkpoint (the 72-clip weight x length sweep + steps-24 lock-in all used everything_8ep_lr1x ep7). Established-good last epoch; ep0/ep4 for the trajectory."
@@ -98,8 +98,8 @@
   "dora128_everything_8ep_lr3x": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1527.ckpt",
-    "epoch=4-step=7635.ckpt",
+    "epoch=0-step=1527.weights.ckpt",
+    "epoch=4-step=7635.weights.ckpt",
     "epoch=7-step=12216.ckpt"
    ],
    "reason": "3x-LR twin of lr1x -- render the matching bracket so the board shows the LR effect at equal epochs (likely overcooked late; the comparison is the point)."
@@ -107,8 +107,8 @@
   "dora16_goa_newstack_8ep": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1350.ckpt",
-    "epoch=3-step=5400.ckpt",
+    "epoch=0-step=1350.weights.ckpt",
+    "epoch=3-step=5400.weights.ckpt",
     "epoch=7-step=10800.ckpt"
    ],
    "reason": "Kim's HEADLINE A/B: new caption stack vs the old HoF best (x20b3ygb). Full bracket. NB ep3-step5400 mirrors the HoF pick's step count -- natural comparison point. (skip the epoch=0-step=1350-v1 duplicate.)"
@@ -116,8 +116,8 @@
   "dora128_47s_newcaptions_5ep": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1350.ckpt",
-    "epoch=2-step=4050.ckpt",
+    "epoch=0-step=1350.weights.ckpt",
+    "epoch=2-step=4050.weights.ckpt",
     "epoch=4-step=6750.ckpt"
    ],
    "reason": "newcaptions base run (5ep). Kim's newcap listen preferred later (ep8-equiv via the continuation); this base's last (ep4) is the tip before warm-start."
@@ -135,7 +135,7 @@
   "dora128_newcap_continued_3more": {
    "tier": "early",
    "picks": [
-    "epoch=0-step=1350.ckpt",
+    "epoch=0-step=1350.weights.ckpt",
     "epoch=2-step=4050.ckpt"
    ],
    "reason": "3 continued epochs warm-started from newcaptions ep4 (=> ~ep7-8 overall). Kim: 'prefers newcap ep8 overall' -> the continuation TIP (ep2 here) is the wanted checkpoint. (dora128_newcap_continued_8ep dir is EMPTY -> skip it.)"
@@ -143,8 +143,8 @@
   "dora16_avp_originals_earlyeps": {
    "tier": "early",
    "picks": [
-    "epoch=0-step=36.ckpt",
-    "epoch=2-step=108.ckpt",
+    "epoch=0-step=36.weights.ckpt",
+    "epoch=2-step=108.weights.ckpt",
     "epoch=4-step=180.ckpt"
    ],
    "reason": "'originals' = no augs; the deep-listen finding 'early epochs win' lives on the originals runs. This run only spans ep0-4 by design (all early) -> take the spread."
@@ -152,17 +152,17 @@
   "dora16_avp_originals_win7": {
    "tier": "early",
    "picks": [
-    "epoch=0-step=36.ckpt",
-    "epoch=2-step=108.ckpt",
-    "epoch=6-step=252.ckpt"
+    "epoch=0-step=36.weights.ckpt",
+    "epoch=2-step=108.weights.ckpt",
+    "epoch=6-step=252.weights.ckpt"
    ],
    "reason": "originals, early-win: Kim HoF s1234 ep2, ep6_fine winner. ep2/ep6 = the favourites, ep0 anchor. (ep10 late = collapse, omitted.)"
   },
   "dora16_avp_originals_densewin": {
    "tier": "early",
    "picks": [
-    "epoch=2-step=108.ckpt",
-    "epoch=6-step=252.ckpt",
+    "epoch=2-step=108.weights.ckpt",
+    "epoch=6-step=252.weights.ckpt",
     "epoch=10-step=396.ckpt"
    ],
    "reason": "dense re-run window (has the *_fine variants Kim HoF'd: s1234 ep2/ep6_fine). ep2/ep6 winners + ep10 as the one late witness."
@@ -170,16 +170,16 @@
   "dora16_avp_originals_64ep": {
    "tier": "early",
    "picks": [
-    "epoch=7-step=288.ckpt",
-    "epoch=15-step=576.ckpt",
-    "epoch=31-step=1152.ckpt"
+    "epoch=7-step=288.weights.ckpt",
+    "epoch=15-step=576.weights.ckpt",
+    "epoch=31-step=1152.weights.ckpt"
    ],
    "reason": "longer originals ladder (save-every-8ep). early-win => weight early (first 3 saves); Kim HoF s909 ep13_fine/ep27 fall near ep15/ep31 saves. Later saves (ep47-63) = post-collapse, omitted."
   },
   "dora16_glitchheal_5ep_2xlr": {
    "tier": "negative",
    "picks": [
-    "epoch=0-step=5.ckpt",
+    "epoch=0-step=5.weights.ckpt",
     "epoch=4-step=25.ckpt"
    ],
    "reason": "NEGATIVE (CONTINUITY 2026-07-04): the heal adapter OVERWRITES rather than heals -- at 2xLR its own learned voice dominates, glitch becomes a minor accent; final adapter near-identical on clean vs glitched base. 2 picks to show start-vs-end."
@@ -194,13 +194,13 @@
   "dora128_everything_8ep_lr0.5x": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1527.ckpt",
-    "epoch=1-step=3054.ckpt",
-    "epoch=2-step=4581.ckpt",
-    "epoch=3-step=6108.ckpt",
-    "epoch=4-step=7635.ckpt",
-    "epoch=5-step=9162.ckpt",
-    "epoch=6-step=10689.ckpt",
+    "epoch=0-step=1527.weights.ckpt",
+    "epoch=1-step=3054.weights.ckpt",
+    "epoch=2-step=4581.weights.ckpt",
+    "epoch=3-step=6108.weights.ckpt",
+    "epoch=4-step=7635.weights.ckpt",
+    "epoch=5-step=9162.weights.ckpt",
+    "epoch=6-step=10689.weights.ckpt",
     "epoch=7-step=12216.ckpt"
    ],
    "witness": [],
@@ -209,10 +209,10 @@
   "dora128_everything_8ep_lr0.5x_cont5": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1527.ckpt",
-    "epoch=1-step=3054.ckpt",
-    "epoch=2-step=4581.ckpt",
-    "epoch=3-step=6108.ckpt",
+    "epoch=0-step=1527.weights.ckpt",
+    "epoch=1-step=3054.weights.ckpt",
+    "epoch=2-step=4581.weights.ckpt",
+    "epoch=3-step=6108.weights.ckpt",
     "epoch=4-step=7635.ckpt"
    ],
    "witness": [],
@@ -296,13 +296,13 @@
   "bf16cmp_avp_t512_bs8_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=299.ckpt",
-    "epoch=1-step=598.ckpt",
-    "epoch=2-step=897.ckpt",
-    "epoch=3-step=1196.ckpt",
-    "epoch=4-step=1495.ckpt",
-    "epoch=5-step=1794.ckpt",
-    "epoch=6-step=2093.ckpt",
+    "epoch=0-step=299.weights.ckpt",
+    "epoch=1-step=598.weights.ckpt",
+    "epoch=2-step=897.weights.ckpt",
+    "epoch=3-step=1196.weights.ckpt",
+    "epoch=4-step=1495.weights.ckpt",
+    "epoch=5-step=1794.weights.ckpt",
+    "epoch=6-step=2093.weights.ckpt",
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
@@ -311,13 +311,13 @@
   "bf16cmp_goa_t512_bs8_lr1e4": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=675.ckpt",
-    "epoch=1-step=1350.ckpt",
-    "epoch=2-step=2025.ckpt",
-    "epoch=3-step=2700.ckpt",
-    "epoch=4-step=3375.ckpt",
-    "epoch=5-step=4050.ckpt",
-    "epoch=6-step=4725.ckpt",
+    "epoch=0-step=675.weights.ckpt",
+    "epoch=1-step=1350.weights.ckpt",
+    "epoch=2-step=2025.weights.ckpt",
+    "epoch=3-step=2700.weights.ckpt",
+    "epoch=4-step=3375.weights.ckpt",
+    "epoch=5-step=4050.weights.ckpt",
+    "epoch=6-step=4725.weights.ckpt",
     "epoch=7-step=5400.ckpt"
    ],
    "witness": [],
@@ -400,7 +400,6 @@
   "fp32cmp_avp_t4096_bs1_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=4-step=11965.ckpt",
     "epoch=7-step=19144.ckpt"
    ],
    "witness": [],
@@ -453,7 +452,7 @@
   "bf16cmp_avp_t512_bs8_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=299.ckpt"
+    "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
    "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
