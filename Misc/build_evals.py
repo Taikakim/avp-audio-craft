@@ -340,10 +340,26 @@ function paint(peaks){
 })();
 </script>"""
 
-PLAYER_JS = """<audio id="pl"></audio><script>
+PLAYER_JS = """<audio id="pl"></audio>
+<div id="xport"><button id="xpp" title="play / pause">&#9208;</button><span id="xnp"></span><input type="range" id="xseek" min="0" max="1000" value="0" title="playhead — drag to seek"><span id="xtm">0:00 / 0:00</span><a id="xdl" href="#" download title="download this clip">&#8681;</a></div>
+<style>#xport{position:fixed;left:0;right:0;bottom:0;z-index:99;display:none;align-items:center;gap:10px;background:#16181c;border-top:1px solid #2a2a30;padding:8px 14px;font:13px 'IBM Plex Mono',monospace;color:#dbe}
+#xpp{background:none;border:0;color:#7cf;cursor:pointer;font-size:15px;line-height:1}
+#xnp{color:#9be;max-width:32vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#xseek{flex:1;accent-color:#7cf;cursor:pointer;height:4px}
+#xtm{color:#9ab;font-variant-numeric:tabular-nums;white-space:nowrap}
+#xdl{color:#7cf;text-decoration:none;font-size:17px}#xdl:hover{color:#adf}</style><script>
 let cur=null,ph=0;const a=document.getElementById('pl');
-a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime});
+const xport=document.getElementById('xport'),xpp=document.getElementById('xpp'),xnp=document.getElementById('xnp'),
+      xseek=document.getElementById('xseek'),xtm=document.getElementById('xtm'),xdl=document.getElementById('xdl');
+const xfmt=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
+let xseeking=false;
+a.addEventListener('timeupdate',()=>{if(!a.paused)ph=a.currentTime; if(!xseeking&&a.duration){xseek.value=Math.round(a.currentTime/a.duration*1000);xtm.textContent=xfmt(a.currentTime)+' / '+xfmt(a.duration)}});
+a.addEventListener('durationchange',()=>{if(a.duration)xtm.textContent=xfmt(a.currentTime)+' / '+xfmt(a.duration)});
+a.addEventListener('play',()=>xpp.innerHTML='&#9208;');a.addEventListener('pause',()=>xpp.innerHTML='&#9654;');
 a.addEventListener('ended',()=>{if(cur){cur.classList.remove('playing');cur=null}ph=0});
+xpp.addEventListener('click',()=>{if(a.paused){if(a.src)a.play()}else a.pause()});
+xseek.addEventListener('input',()=>{xseeking=true;if(a.duration)xtm.textContent=xfmt(xseek.value/1000*a.duration)+' / '+xfmt(a.duration)});
+xseek.addEventListener('change',()=>{if(a.duration){a.currentTime=xseek.value/1000*a.duration;ph=a.currentTime}xseeking=false});
 function seekAndPlay(pos){
  // seeking as soon as loadedmetadata fires can land on a not-yet-buffered part
  // of the compressed stream and glitch right at playback start (Kim, 2026-07-07)
@@ -358,7 +374,8 @@ function play(el){const s=el.dataset.src;
  if(cur===el){a.pause();el.classList.remove('playing');cur=null;return}
  if(cur)cur.classList.remove('playing');
  a.pause();a.src=s;seekAndPlay(ph);
- cur=el;el.classList.add('playing')}
+ cur=el;el.classList.add('playing');
+ const nm=s.split('/').pop();xport.style.display='flex';xdl.href=s;xdl.setAttribute('download',nm);xnp.textContent=nm}
 </script>"""
 
 def head(title, depth):
