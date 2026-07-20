@@ -236,3 +236,22 @@ below from chat/DM timestamps, newest first.**
 - [2026-07-03 08:32] Founded `SAO/papers/` (4 PDFs + project-POV abstracts +
   `knowledge.md` master index), per CONTINUITY's assignment; filed the orientation
   patrol report (24 confirmed inconsistencies).
+- [2026-07-20] Full ARCHITECTURE.md reuse-index refresh (Kim's ask: keep the internal
+  reuse index + tool list current as projects sprawl, to stop repeat work). Ran a
+  4-agent grounded inventory across mir/ + SAO/ (Misc/eval, inference/control, lumi,
+  mir) rather than refreshing from memory — surfaced ~60 reusable building blocks
+  built since the 07-08 last-touch, reorganized into 6 categories. Fixed stale facts
+  (latents NVMe+Mantu-backup not "sole copy"; timeseries 46 fields not 21; clip_metrics.db
+  not in the latents backup) and corrected MASTER §2 to match under filelock. Sampled
+  paths verified to exist. Agents also caught corrections I'd have baked in from memory
+  (fold_to_12 doesn't exist; MuScriptor is its own repo; arc.py/stereo_loss.py in
+  training/ not control/; merge_comments retired). Committed + pushed.
+- [2026-07-20] Per-week chronicle synopses (Kim direct via W's weekly-log cutover):
+  wrote public one-page synopses for the 3 archived weeks (W27 meter-in-gradient /
+  W28 a2a-chroma-morph-usable + mid-band mechanism / W29 LUMI + first anti-loop
+  steering result), dialogue/*.synopsis.md, for W's chronicle page. 3 parallel
+  draft agents (one per week) → I verified counts/dates against the archives,
+  leak-scanned clean (public, open-science redaction), wrote the files. Now a
+  standing weekly duty (companion to daily digests, recorded in profiles/daily/README).
+  Caught + recorded a real tooling gotcha en route: backticks in agent_dialogue
+  --text via bash get shell-mangled (open-threads standing-gotchas).

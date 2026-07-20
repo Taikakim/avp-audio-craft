@@ -75,6 +75,7 @@ this had no living ledger, so items went unstruck. Spot-checks so far:
 ---
 
 ## Standing gotchas (durable — surfaced by incidents, kept so they don't re-bite)
+- **`agent_dialogue.py --text` via bash: backticks / `$(...)` / leading-`*` get shell-mangled.** Passing a message containing backticks (or `$()`, or glob chars) inside a double-quoted `--text "…"` triggers command-substitution/globbing — the wrapped text vanishes from the sent message (bit F 2026-07-20, ate a format template). Fix: **single-quote** the `--text` value, or use a heredoc/`--text "$(cat file)"`, or just avoid backticks in chat messages.
 - **`.weights.ckpt` sibling convention** (from the 2026-07-19 optimizer-state prune). The prune replaces a fat `<name>.ckpt` with a slim `<name>.weights.ckpt` (same state_dict/lora_config, loads identically, NO optimizer state) and keeps **both** for the final epoch. Consequences for any tooling: (a) counting/globbing `*.ckpt` **double-counts** the final ckpt on pruned runs — dedup by aliasing `.weights.ckpt`→`.ckpt` (fixed in `build_model_index.py`, was inflating `n_ckpts` across ~28 runs); (b) anything reading `optimizer_states` (e.g. a re-run of the recipe-extraction that populated `models_index_overrides.json`) gets **nothing** from a slim ckpt — read the final fat ckpt or fall back to the stored recipe. *(Belongs in MASTER §5 too; flagged for whoever next holds that filelock.)*
 
 ## Changelog
