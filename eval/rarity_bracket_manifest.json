@@ -502,6 +502,46 @@
    ],
    "witness": [],
    "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, goa-only crops, T=4096 latent frames -- ckpt every epoch but only epoch=7 (final) currently synced to Mantu (selective sync, Location B). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=4784.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=256 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=4784.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=512 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=4784.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=1024 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=4784.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=2048 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+  },
+  "fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "epoch=7-step=4784.weights.ckpt"
+   ],
+   "witness": [],
+   "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=4096 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
   }
  },
  "legacy_goa_dora_nested": {
