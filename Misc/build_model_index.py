@@ -60,7 +60,13 @@ def collect_models():
             ckpts = [f for f in os.listdir(d) if f.endswith(CKPT_EXT)]
             if not ckpts:
                 continue
-            models.append({"label": d.name, "family": family, "n_ckpts": len(ckpts),
+            # The optimizer-state prune (2026-07-19) replaces a fat `<name>.ckpt`
+            # with a slim `<name>.weights.ckpt`, but keeps BOTH for the final epoch —
+            # so count DISTINCT checkpoints, aliasing `.weights.ckpt` onto `.ckpt`,
+            # else every pruned run double-counts its final ckpt.
+            canon = {(f[:-len(".weights.ckpt")] + ".ckpt") if f.endswith(".weights.ckpt") else f
+                     for f in ckpts}
+            models.append({"label": d.name, "family": family, "n_ckpts": len(canon),
                            "mtime": d.stat().st_mtime})
     if LATCH.exists():
         for f in sorted(LATCH.glob("*_best.pt")):
