@@ -2642,6 +2642,15 @@ def build_landing(control, renders):
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).
     _highlights = [
+        ("onset_narrative.html", "Onset-density control — the story + audition",
+         "The FusionCC-vs-plain-Fusion verdict (0.77 vs 0.717) laid out plainly, with a "
+         "density×gain A/B grid so you can run the head-to-head audition yourself."),
+        ("latch_sa3_matrix.html", "SA3 LatCH head × gain matrix",
+         "All 14 SA3-medium guidance heads across the gain ladder — requested vs measured "
+         "per cell; which heads steer, which are dead."),
+        ("e1_pilot.html", "E1 anti-loop pilot",
+         "The recurrence-guided de-looping ladder — baseline vs λ, per-clip loop metrics, "
+         "the λ=1e7 alive-or-damaged verdict clip."),
         ("renders/layer_map_2026-07-10/index.html", "Layer map + steering payoff",
          "Which DiT blocks causally carry each attribute — and training-free concept "
          "steering at those blocks (three-way convergence + the α-ladder A/B)."),
