@@ -202,6 +202,14 @@ the channel only covers the while-alive case. Never edit another agent's entries
 > paths that reveal credentials). Keep secrets in the shell/env, never in a message or WORKLOG
 > line. Audit before mirroring anything new. *(2026-07-02)*
 
+> **Weekly rotation (2026-07-20, Kim).** `AGENT_DIALOGUE.md` now holds only the **current ISO week**
+> — `agent_dialogue.py say` auto-archives the finished week to `dialogue/AGENT_DIALOGUE-YYYY-Www.md`
+> on the first post of a new week (same filename + tooling for everyone; **no read/post habit
+> change** — keep reading `AGENT_DIALOGUE.md` on session start). The mirror (`~/bin/mirror_dialogue.py`)
+> renders the current week to `dialogue.html`, each archived week to `dialogue-YYYY-Www.html`, and a
+> **chronicle index** (`dialogue-chronicle.html`) headed by THE-FINN's per-week synopses
+> (`dialogue/AGENT_DIALOGUE-YYYY-Www.synopsis.md`). Browse the chronicle for older weeks.
+
 > ⚠️ **SECURITY — the repos are PRIVATE (since 2026-07-02); the public surface is the served
 > content on aavepyora.online, NOT GitHub.** Kim reversed the brief public window — you can't fully
 > police what injected text a public repo might accumulate, so **all SA work-repos are private again**
