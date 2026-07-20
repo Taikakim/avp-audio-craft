@@ -286,3 +286,26 @@ scripts write into one board, a prompt_id can look native to the page while
 actually belonging to a completely different script's one-off run — check
 where an id's TEXT is actually defined before assuming coverage is a simple
 "didn't get to it yet" gap.
+
+### finding · a routine arrival check caught the overnight prune silently breaking 62 bracket picks
+While surveying LUMI arrivals I noticed the just-launched 6-prompt fill pass
+logging `[skip-missing]` — traced it to `lumi/prune_optimizer_states.py`
+(Kim's "prune the optimiser states from every checkpoint except the last"),
+which ran overnight (CONTINUITY's "the prune runs" mention was this) and
+deleted every non-final fat `.ckpt` across most arms, replacing it with a
+slim `<name>.weights.ckpt` (same `state_dict` key, verified against
+`load_lora_checkpoint()` — loads identically, just no optimizer state). 62
+`eval/rarity_bracket_manifest.json` picks across 23 arms silently stopped
+resolving. Redirected 60 to their `.weights.ckpt` sibling; 2 turned out to be
+unrelated pre-existing wrong registrations (`_repr` entries anticipating
+epochs that never actually landed at their Mantu-selective-sync target) —
+corrected to match what's really on disk. Commit 6d31ba9, WORKLOG'd
+(cross-cutting — anything reading bracket picks, not just this renderer, was
+exposed). **Process note:** first pass wrote the fix with `json.dump(...,
+indent=2)`, which reformatted the ENTIRE file (528/1057 lines diffed) because
+the original used 1-space indent — caught before committing, redid with
+`indent=1` to get a 125-line diff matching the actual 62-pick change. Worth
+remembering generally: rewriting a hand-formatted JSON/config file via a
+generic serializer can silently turn a small fix into unreviewable noise —
+check `git diff --stat` before committing any programmatic edit to a file
+you didn't author from scratch.
