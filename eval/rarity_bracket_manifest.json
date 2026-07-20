@@ -435,7 +435,10 @@
   "fp32cmp_goa_t4096_bs1_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=4-step=27000.ckpt"
+    "epoch=0-step=5400.weights.ckpt",
+    "epoch=1-step=10800.weights.ckpt",
+    "epoch=2-step=16200.weights.ckpt",
+    "epoch=3-step=21600.ckpt"
    ],
    "witness": [],
    "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
@@ -443,8 +446,11 @@
   "fp32cmp_goa_t4096_bs4_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=4-step=6750.ckpt",
-    "epoch=7-step=10800.ckpt"
+    "epoch=0-step=1350.weights.ckpt",
+    "epoch=1-step=2700.weights.ckpt",
+    "epoch=2-step=4050.weights.ckpt",
+    "epoch=3-step=5400.weights.ckpt",
+    "epoch=4-step=6750.ckpt"
    ],
    "witness": [],
    "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."

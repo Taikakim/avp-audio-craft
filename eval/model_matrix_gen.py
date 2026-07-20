@@ -165,6 +165,17 @@ def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, onl
         d = Path(spec["root"]) / label if "root" in spec else RUNS / label
         for fname in spec["picks"]:
             p = d / fname
+            if not p.exists() and fname.endswith(".ckpt") and not fname.endswith(".weights.ckpt"):
+                # lumi/prune_optimizer_states.py (Kim 2026-07-19) keeps advancing through
+                # the LUMI runs tree, arm by arm, deleting each non-final fat .ckpt and
+                # replacing it with a slim <name>.weights.ckpt (same state_dict/lora_config,
+                # loads identically -- see WORKLOG 2026-07-20). It's an ONGOING background
+                # process, not a one-time event, so hand-patching the bracket manifest's
+                # picks every time it advances further doesn't scale -- fall back here
+                # instead, transparently, so re-pruning never needs a manifest edit again.
+                wp = d / (fname[:-5] + ".weights.ckpt")
+                if wp.exists():
+                    p = wp
             if not p.exists():
                 print(f"[skip-missing] {label}/{fname}")
                 continue
