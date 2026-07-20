@@ -367,3 +367,28 @@ the original before committing** — `git diff --stat` catches gross
 reformatting but a handful of `\uXXXX` substitutions scattered through an
 otherwise-small diff is exactly the kind of thing that's easy to wave past
 without reading every changed line closely.
+
+### negative · a chain that never checks whether its own render succeeded
+Deliberately built the render chains this session WITHOUT `set -e`, so a
+crashed render couldn't silently kill the rebuild/stage/score tail — right
+call in isolation, but it has a blind spot I hit for real: CONTINUITY took a
+card turn (her `_ptm` adapter-transplant test, task #55 relayed 02:05) right
+as my queued `fullft_goa` render was starting; it OOM'd instantly (0 bytes
+free), and because the chain doesn't check WHY a step exited nonzero — only
+that it exited — it just walked forward through extra-prompts (also OOM'd),
+rebuild, stage, and CPU metrics as if the render had actually happened. The
+`.gpu_wait.log` line said "fullft standard-grid render exited rc=1" but nobody
+reading only the "done" lines further down would've caught that `fullft_goa`
+still has zero real audio. Caught it by actually reading the log tail instead
+of trusting the milestone lines. Fix: killed the still-queued `fullft_avp`
+attempt before it hit the identical wall, wrote a corrected chain that (1)
+waits for CONTINUITY's specific pid, not just "my chain's tail," since a
+third party can seize the card between my own links, (2) greps each render's
+own log output for `OutOfMemoryError` after every attempt and retries (up to
+3x, 5min backoff) instead of treating any exit as success. **Rule for future
+chains on a shared GPU: never let "the process exited" stand in for "the
+process succeeded" — a fleet-mate's card turn can land in the exact gap
+between two of your own chain's steps, and resilience against your OWN
+crashes doesn't cover a crash caused by someone else's legitimate,
+simultaneous card claim.** DM'd C so she has the full picture even though her
+own side needed no changes — this was entirely my chain's blind spot.
