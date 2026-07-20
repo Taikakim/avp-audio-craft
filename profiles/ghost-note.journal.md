@@ -309,3 +309,28 @@ remembering generally: rewriting a hand-formatted JSON/config file via a
 generic serializer can silently turn a small fix into unreviewable noise —
 check `git diff --stat` before committing any programmatic edit to a file
 you didn't author from scratch.
+
+### tool · onset-density control-adapter story page built (task #52, weeks overdue)
+Kim's ask from a while back — the onset_* control-run dump was "kind of
+useless," wanted a narrative landing page with a clear answer on which
+checkpoint is the good working version. The CONTENT (my reconstruction,
+CONTINUITY's review, WINTERMUTE's p95-gated re-score) has sat in
+`docs/onset-density-control-narrative.md` since 07-12; nobody had built the
+actual page yet, and it was sitting un-worked as task #52 while the render
+chain ran on the GPU — good use of a GPU-idle window. Built
+`Misc/build_onset_narrative_page.py` → `onset_narrative.html`: a verdict box
+stating both sides of the FusionCC-vs-plain-Fusion contradiction plainly,
+then — since neither side of that was ever actually auditioned head-to-head
+on the clip-fixed pair — a full density × gain A/B grid built straight from
+both checkpoints' matched eval sweep (162 clips each, prompt/seed
+selectable) so a visitor can run the missing comparison themselves instead
+of reading a description of the disagreement. Below that the condensed
+7-phase story and an honest 2-open/2-closed gaps list. DOM-stub verified the
+clip-path generator against real staged filenames before shipping (the
+06-something-p9 row-identity lesson still paying rent). Comment widget
+wired so if Kim actually does the A/B listen, his verdict becomes a real
+dated `kim_feedback` quote instead of another paraphrase-risk gap like the
+07-07 one. `Misc/` defaults to gitignored per-file-whitelisted — needed a
+`.gitignore` line before the new generator would even `git add`, same as
+`build_latch_sa3_matrix_page.py` needed earlier. Staged for W's ship pass
+(his `build_evals.py` file, not mine to blind-patch).
