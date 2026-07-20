@@ -88,20 +88,25 @@ most of it. Lehto is now strictly the large-training-corpus drive.
 |---|---|---|---|
 | `latents` (15 G, 4808) | SAO-Small/SA1 latents, **64-dim** | 21.53 Hz, T=256 (11.9 s) | SAT LatCH |
 | `latents_stems` (43 G) | Stem latents | 21.53 Hz | SAT |
-| `timeseries` (21 G, 4461) | **Whole-track MIR timeseries**, 20 fields | 100 Hz, full track | SAT LatCH, SA3 crop companions |
+| `timeseries` (37 G, 4461) | **Whole-track MIR timeseries** — **46 fields** now = **20 legacy** (100 Hz) + **26 expanded** (expanded-Essentia sweep 07-14/15: MAEST 768-d embeddings, sliding-window genre/mood/instrument, DEAM/emoMusic arousal-valence, attack-transient family, stereo width/corr, Bark/ERB bands, chroma_linmap (NNLS), chords, EBU-R128, dyn-complexity). Expanded fields land at **NATIVE per-field rates (0.2–100 Hz)**, not 100 Hz — consumers MUST read the sidecar's `field_rates`/`fields`/`expanded_version` meta. Producer `mir/src/spectral/whole_track_expanded.py`; incremental backfill via `whole_track_timeseries.py --add-fields`. Corpus-wide (avp 1516 + goa 4461 + genre corpora 574). *(OpenL3 was extracted then DROPPED 07-14 per C's retrieval gate — not in the frozen set.)* | native per-field | SAT LatCH, SA3 crop companions |
 | (in `mir/`) `data/timeseries.db` (2.6 G, ~209k) | Legacy **per-crop** timeseries SQLite | 21.53 Hz, T=256 | SAT LatCH |
 
 > ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems`, `Lehto/sa3_lora_runs`,
 > `Lehto/sa3_control_runs/{soups,riffer,...}` **no longer exist**.
 
 > 🚨 **`Lehto/latents_sa3` was REMOVED 2026-07-04** (Kim's call, to avoid mix-ups with the
-> NVMe copy). `/home/kim/Projects/latents_sa3` (13 G; 5401 `.npy` + 5400 `.json` + 5400
-> `.TIMESERIES.npz`, `(1,256,4096)` fp16, 10.767 Hz, T=4096) is now the **sole local copy** —
-> no Lehto mirror, no second copy anywhere. It's re-derivable from the Mantu source audio
-> but that's GPU-days of re-encoding; a cold backup before any NVMe-freeing event is a live
-> risk flagged by CONTINUITY, not yet actioned. All code defaults now point here (grep
-> swept 2026-07-04: `onnx/latch/train_latch.py`, `control/sa3_control/train.py`,
-> `eval/launch_riffer.sh`, `control/run_control_train.sh`).
+> NVMe copy). `/home/kim/Projects/latents_sa3` (14 G; 5401 `.npy` + 5400 `.json` + 5400
+> `.TIMESERIES.npz`, `(1,256,4096)` fp16, 10.767 Hz, T=4096) is the live working copy.
+> **Correction 2026-07-20 (Kim + F, verified):** it is NOT the "sole copy" the old text
+> claimed — a **second local copy** exists at `/run/media/kim/Mantu/sa3-latents_backup/latents_sa3/`
+> (verified 27003/27003 files, in parity as of 07-12). So there IS local redundancy. The
+> residual risk is **currency**: the Mantu sync is *manual* (G synced it 07-14, "was 5402
+> behind"; no cron/systemd automates it) — "keep it up to date" (Kim). An off-site copy
+> (**LUMI-O**, not Allas — see `docs/csc-data-guidelines-guide.md`) is a nice-to-have,
+> blocked only on Kim generating the auth.lumidata.eu token. All code defaults point at the
+> NVMe copy (grep-swept 2026-07-04). *(Separate artifact NOT covered by this backup:
+> `eval/clip_metrics.db` — the eval-metrics DB was itself single-copy; F snapshotted it to
+> Mantu 2026-07-19, recurring backup still TODO — see `docs/open-threads.md`.)*
 
 ---
 
@@ -326,6 +331,23 @@ verdict in the sidecar is what clears it. (Kim: "there's so much stuff that I'm 
 missing some" — the ❗ is the is-this-audited-yet signal.) Page-side implementation: the
 `build_evals.py`/`eval_grid.py` generators (G/W); manifest-side: every instance, at
 output-creation time. Also spec'd in eval-tables spec §16.
+
+**DISINTEGRATION GATE — MANDATORY for every control-head eval (Kim DIRECT, 2026-07-20).** No
+control-head result — LatCH / onset-FusionCC / chroma / FiLM / DoRA-control, anything that steers —
+may claim "this head works / here is its usable range / it steers feature X" without first passing
+every steered clip through the disintegration gate **against its own unsteered (gain-0/no-target)
+baseline**. The reason: a head that renders **static buzz still moves the feature meter** (noise =
+high flatness/ZCR/flux/HF), so a feature-authority number alone scores buzz as "working" — Kim heard
+buzz on heads the authority pipeline tagged working. Two independent failure modes need two screens:
+**dead** (authority≈0, passes the gate) and **buzz/disintegration** (large baseline drift, can score
+high authority) — a usable head must pass BOTH. The gate bounds drift-from-baseline on: whitening
+(flatness), **hf-blowout (hf_ratio — the buzz signature the first bracket gate missed)**, noise
+(zcr), beat-loss (rhythmic), and **CE-drift (|ΔCE|>1.5 — "CE/whitening must not drift from the
+unsteered output too much")**. Runner (reusable, no re-render, reads `clip_metrics.db`):
+`eval/control_head_disintegration_eval.py --pattern <clip-family>`. Full spec + thresholds +
+apply-in-a-new-eval steps: `docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md`.
+Still a DSP screen, not the ear — thresholds recalibrate against Kim's GUI verdicts once labelled;
+eval PAGES must surface the gate's usable-ceiling so no one auditions a disintegrated clip as "working."
 
 **Sidecar vs public pages — the redaction seam.** *(refined by Kim 2026-07-03: "config settings are
 good to share — that's how the light gets out.")* The sidecar deliberately carries ckpt filenames and
