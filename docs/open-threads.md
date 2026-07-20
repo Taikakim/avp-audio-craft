@@ -74,5 +74,9 @@ this had no living ledger, so items went unstruck. Spot-checks so far:
 
 ---
 
+## Standing gotchas (durable — surfaced by incidents, kept so they don't re-bite)
+- **`.weights.ckpt` sibling convention** (from the 2026-07-19 optimizer-state prune). The prune replaces a fat `<name>.ckpt` with a slim `<name>.weights.ckpt` (same state_dict/lora_config, loads identically, NO optimizer state) and keeps **both** for the final epoch. Consequences for any tooling: (a) counting/globbing `*.ckpt` **double-counts** the final ckpt on pruned runs — dedup by aliasing `.weights.ckpt`→`.ckpt` (fixed in `build_model_index.py`, was inflating `n_ckpts` across ~28 runs); (b) anything reading `optimizer_states` (e.g. a re-run of the recipe-extraction that populated `models_index_overrides.json`) gets **nothing** from a slim ckpt — read the final fat ckpt or fall back to the stored recipe. *(Belongs in MASTER §5 too; flagged for whoever next holds that filelock.)*
+
 ## Changelog
+- **2026-07-20** — prune fallout: fixed `build_model_index.py` `.ckpt` double-count (28 pruned runs); recorded the `.weights.ckpt` standing gotcha; snapshotted `clip_metrics.db` (single-copy) to Mantu; corrected the "single-copy latents" premise (second Mantu copy exists).
 - **2026-07-19** — established; folded the fleet audit + orientation audit; resolved 2 F-items + 2 orientation items (1 verified-already-fixed, 1 fixed this pass); opened the orientation-reconciliation task.
