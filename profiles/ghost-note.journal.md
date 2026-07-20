@@ -334,3 +334,36 @@ dated `kim_feedback` quote instead of another paraphrase-risk gap like the
 `.gitignore` line before the new generator would even `git add`, same as
 `build_latch_sa3_matrix_page.py` needed earlier. Staged for W's ship pass
 (his `build_evals.py` file, not mine to blind-patch).
+
+### tool · fullft (full-finetune) checkpoints registered + evals queued
+Kim: full finetunes now available, queue evals for them too. Found 5
+`fullft_goa_t{256,512,1024,2048,4096}` arms landed (epoch=7 of 8, already
+pruned to `.weights.ckpt`) in the Mantu selective sync — avp fullft arms
+haven't landed yet, flagged to Kim rather than assumed. Symlinked +
+bracket-registered + added `models_index_overrides.json` entries with the
+real sbatch recipe (whole-1.4B-DiT `--full-finetune`, bf16, FusionOpt lr
+1e-4, 8ep) including `T=<frames>` text so the native-length audition cell
+picks these up automatically, no extra work. Caught + fixed a real
+cell-count bug in the same file while there: the dry-run estimate didn't
+account for `is_fullft` forcing a single strength (same as the existing
+`ckpt_path is None` base-model case already did) — was overcounting fullft
+arms 3x in the printed stats, functionally harmless but misleading to
+anyone reading the log. Queued the render behind the current chain
+(campaign catch-up → 6-prompt mop-up → this) rather than launch a
+competing GPU job.
+
+### negative · `json.dump` default `ensure_ascii=True` corrupted two earlier commits
+Caught while re-touching `rarity_bracket_manifest.json` for the fullft
+entries: my two prior fixes to this file (6d31ba9, 803cb11) used
+`json.dump(b, f, indent=1)` without `ensure_ascii=False` — the *indent*
+match I'd been careful about didn't cover this, and every em-dash in the
+file's existing "reason" strings got silently rewritten as a `\uXXXX`
+escape. Re-serialized to restore the literal characters; used
+`ensure_ascii=False` from the start on the `models_index_overrides.json`
+edit so it didn't repeat there. Compounds the earlier indent lesson (SS
+2026-07-20 above) into a fuller rule: **any programmatic edit to a
+hand-formatted file needs BOTH the indent AND the encoding checked against
+the original before committing** — `git diff --stat` catches gross
+reformatting but a handful of `\uXXXX` substitutions scattered through an
+otherwise-small diff is exactly the kind of thing that's easy to wave past
+without reading every changed line closely.
