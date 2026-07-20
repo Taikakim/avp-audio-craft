@@ -2560,13 +2560,13 @@ def write_folder(kind, name, label, purpose, clips, date_str="", verdict=None,
 # needs a plain-language one-liner (the "learning resource" audience, not just
 # the eval-tool/technical-resource ones the per-page prompt legends already serve).
 LANDING_CATEGORIES = [
-    ("DoRA / avp", re.compile(r"^(avp_|renders_dora|renders_soups|soup|goa_everything)"),
+    ("DoRA / avp", re.compile(r"^(avp_|dora|newcap|renders_dora|renders_soups|soup|goa_everything)"),
      "Fine-tuning SA3 on a personal/style corpus (DoRA adapters) — rank/LR/caption "
      "sweeps, checkpoint ladders, model-soup averaging."),
     # memo_ckpt_a2a_test is deliberately NOT prefixed "a2a_" (that would collide
     # with A2A_LADDER_RE's sibling-folder auto-grouping, a different mechanism --
     # see RENDERS_SOURCE_ALIASES) -- "_a2a_" substring catches it here too.
-    ("a2a & transitions", re.compile(r"(^a2a_|_a2a_|^breathing_|^promptarc_|^dual_lora_|^transitions)"),
+    ("a2a & transitions", re.compile(r"(^a2a_|_a2a_|^breathing_|^promptarc_|^dual_lora_|^transitions|^chroma_morph|^chroma_transitions)"),
      "Audio-to-audio: re-rendering an existing track through the model at varying "
      "noise levels, and stitching/crossfading between generated sections."),
     ("LatCH", re.compile(r"(^latch|_latch)"),
@@ -2579,13 +2579,13 @@ LANDING_CATEGORIES = [
     ("long-form", re.compile(r"^longform"),
      "Generating audio well past the model's native window — sliding-window "
      "continuation, drift checks, seam quality."),
-    ("mechanism / interpretability", re.compile(r"^(layer_map|hardness|concept_steer)"),
+    ("mechanism / interpretability", re.compile(r"^(layer_map|hardness|concept_steer|bracket|ablate)"),
      "How the model works inside, and using that map to steer it: causal layer "
      "maps (which DiT blocks carry each attribute), training-free concept steering, "
      "and the timbral-attribute bracket sweeps."),
     ("control / FiLM", re.compile(
-        r"^(onset_eval|gain_knee|opb|fusion|es_conditioner|collapse|disentangle|"
-        r"flow.*sep|zerosep|renders_cross|targeted)"),
+        r"^(onset|gain_knee|opb|fusion|E_fusion|A_cc|es_conditioner|collapse|disentangle|"
+        r"flow.*sep|zerosep|renders_cross|targeted|density_control)"),
      "Conditioning adapters that steer a scalar control (onset density, gain) "
      "independent of the text prompt — authority, disentanglement from tempo/genre, "
      "and failure-mode sweeps."),
@@ -2686,33 +2686,27 @@ def build_landing(control, renders):
     # (both were just cruder groupings of the same items -- three overlapping
     # listings of 56 things was the opposite of "easy to find").
     all_items = ([("control_runs", it) for it in control] + [("renders", it) for it in renders])
-    by_category = {}
-    for kind, item in all_items:
-        by_category.setdefault(categorize_eval(item[0]), []).append((kind, item))
-    category_order = [c for c, _p, _t in LANDING_CATEGORIES] + ["other"]
-    category_tagline = {c: t for c, _p, t in LANDING_CATEGORIES}
-    for cat in category_order:
-        items = by_category.get(cat)
-        if not items:
-            continue
-        items.sort(key=lambda ki: ki[1][4], reverse=True)
-        # aggregation pages float to the top of their section (spec §15) -- stable
-        # sort, so date-descending order is preserved within each of the two groups.
-        items.sort(key=lambda ki: ki[1][0] not in AGGREGATION_PAGE_NAMES)
-        doc += f'<h2><span class="mark">§</span> {html.escape(cat)} <span class="faint">({len(items)})</span></h2>'
-        if category_tagline.get(cat):
-            doc += f'<p class="dim">{html.escape(category_tagline[cat])}</p>'
-        for kind, (name, label, purpose, n, date_str, subtitle, verdict) in items:
-            mark = "" if has_kim_feedback(kind, name) else f" {UNAUDITED_MARK}"
-            doc += (f'<div class="run"><div class="name"><a href="{kind}/{html.escape(name)}/index.html">'
-                    f'{html.escape(label)}</a>{mark} <span class="faint">({kind.replace("_"," ")})</span></div>')
-            if date_str:
-                doc += f'<div class="when">{html.escape(date_str)}</div>'
-            if subtitle:
-                doc += f'<div class="desc">{html.escape(subtitle)}</div>'
-            if verdict:
-                doc += f'<div class="verdict">{html.escape(verdict)}</div>'
-            doc += f'<div class="meta">{n} clips</div></div>'
+    # Kim, 2026-07-20: the per-category grouping buried newly-arriving evals ("hard to
+    # keep track of arriving new ones"). Replace it with ONE flat list in order of
+    # creation (newest first), the category as a bracket tag after each title -- so a
+    # new eval is always visible at the very top.
+    def _cat_tag(nm):
+        c = categorize_eval(nm)
+        return c.split(" / ")[0].split(" & ")[0]  # "DoRA / avp"->"DoRA", "a2a & transitions"->"a2a"
+    all_items.sort(key=lambda ki: ki[1][4] or "", reverse=True)  # newest-first by date_str
+    doc += (f'<h2><span class="mark">§</span> All evals '
+            f'<span class="faint">({len(all_items)}, newest first)</span></h2>')
+    doc += ('<p class="dim">Every run in order of creation, newest at the top; the '
+            '<b>(category)</b> is in brackets after each title.</p>')
+    for kind, (name, label, purpose, n, date_str, subtitle, verdict) in all_items:
+        mark = "" if has_kim_feedback(kind, name) else f" {UNAUDITED_MARK}"
+        when = f' <span class="faint">· {html.escape(date_str)}</span>' if date_str else ""
+        doc += (f'<div class="run"><div class="name"><a href="{kind}/{html.escape(name)}/index.html">'
+                f'{html.escape(label)}</a> <span class="faint">({html.escape(_cat_tag(name))})</span>'
+                f'{mark}{when}</div>')
+        if subtitle:
+            doc += f'<div class="desc">{html.escape(subtitle)}</div>'
+        doc += '</div>'
     doc += '<footer>aavepyora.online · evals · generated by Misc/build_evals.py</footer></div></body></html>'
     open(f"{OUT}/index.html","w").write(doc)
 
