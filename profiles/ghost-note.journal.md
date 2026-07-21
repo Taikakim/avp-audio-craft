@@ -392,3 +392,71 @@ between two of your own chain's steps, and resilience against your OWN
 crashes doesn't cover a crash caused by someone else's legitimate,
 simultaneous card claim.** DM'd C so she has the full picture even though her
 own side needed no changes — this was entirely my chain's blind spot.
+
+## 2026-07-21
+
+### finding · two GPU crashes, a real fleet-wide fix, and the fix itself had a bug
+Kim's card crashed the display TWICE in one night — first needing a logout/
+login, then (after resuming GPU work) a HARD REBOOT with VRAM maxed. Root
+cause both times: multiple instances hitting the GPU concurrently with only
+DM-courtesy for mutual exclusion. Proposed reusing the existing
+`Misc/filelock.py` (already fleet-standard for shared file edits) as a
+cross-instance `.gpu.lock` mutex — zero new tooling, just a new virtual
+target. THE-FINN caught a load-bearing hole in that proposal before anyone
+adopted it: the 15-min mtime stale-break (tuned for quick file edits) would
+auto-steal the lock mid-render from any job running longer than 15
+minutes — exactly the multi-hour renders that caused both crashes. He landed
+a `--pid-aware` mode (break iff the recorded PID is dead, never on age
+alone). **Then I found a second bug in HIS fix within minutes of real use**:
+`acquire` recorded `os.getpid()` — the PID of the transient `filelock.py
+acquire` CLI call itself, which exits the instant it writes the lock file —
+not the long-running shell that actually holds the resource. My own
+just-acquired lock read back as `DEAD→reclaimable` seconds after acquiring
+it. He fixed it same-session with a `--pid $$` override (caller supplies the
+persistent holder's PID) plus a safer default (record the invoking shell's
+PID via getppid, not the transient CLI's own). Whole arc — bug found, fixed,
+independently re-broken by real usage, re-fixed — took under 20 minutes with
+three instances coordinating live on the dialogue channel. Canonical usage
+now in MASTER §5: `filelock.py acquire /home/kim/Projects/SAO/.gpu.lock
+--handle <H> --pid-aware --pid $$` before GPU work, `release` after.
+Companion rule (WINTERMUTE, still interim until Kim's iGPU-compositor move):
+the mutex only stops job-vs-job, not job-vs-DISPLAY — a solo T≥2048 native
+render can still starve the compositor alone, so the local-render LUMI-
+routing guard (see below) has to stay in force regardless of the mutex.
+
+### finding · fullft renders were silently 0%-failing all session, caught by not trusting my own chain's "done"
+Root cause of the SECOND crash (not just contention): a `T=4096` fullft
+native-length cell rendering locally — exactly the "long-sequence attention
+VRAM starves the compositor" gotcha MASTER §5 already documented for
+T≥2048. Someone (uncommitted at the time, credited "Kim direct 2026-07-21"
+in-code) had already patched a guard for it before I even finished
+diagnosing — found it mid-response, verified it works (t2048/t4096 fullft
+arms render 54 cells vs 56 for the shorter arms, the gap being the correctly
+-skipped native cell), flagged it was still uncommitted so it wouldn't be
+lost on another restart, committed it.
+
+Separately, and worse: my mutex-coordinated retry chain reported fullft
+"complete" — but the manifest had ZERO fullft entries. My `run_with_retry`
+only greped for `OutOfMemoryError` (the failure mode I'd just been burned
+by), so it missed a completely different failure: fullft checkpoints prefix
+DiT params `diffusion.model.model.X`, but the loader only ever stripped a
+bare `model.` prefix — 0.0% coverage, W's fail-loud assertion fired every
+single time (4 attempts, all mislabeled "succeeded"). This is the SAME
+class of bug as the earlier "chain doesn't check WHY a step failed" lesson
+(SS above) — I wrote a narrower fix for the specific failure I'd just seen
+instead of a general one, and got bitten by the next failure mode down the
+list. Fixed properly this time: try both prefixes, keep whichever actually
+resolves against the target's real parameter names (verified 100% coverage
+on a real checkpoint in isolation BEFORE relaunching anything), and widened
+the retry check to grep for `Traceback|AssertionError` too, PLUS require
+the manifest to have actually grown (a negative check alone — "no error
+seen" — isn't the same as "positive evidence of the intended writes"). Then
+independently re-verified the real completion myself rather than trusting
+the chain's own final log line: grep-counted manifest entries, listed
+actual files on disk in both the render dir and the served staging dir,
+confirmed the GPU lock released cleanly. All checked out this time. General
+rule, sharpened from tonight: **a chain's "succeeded" line is a claim, not
+evidence — verify by an independent, positive check (does the expected
+output actually exist) before repeating the claim to Kim or the fleet,
+every time, no matter how many bugs you've already fixed in the same
+session.**
