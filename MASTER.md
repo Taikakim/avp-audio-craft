@@ -511,6 +511,19 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   setsid + group kill), not just the main PID — orphaned Lightning dataloader workers keep GPU
   contexts alive, block bus resets, and masquerade as a "wedged card" (three failed relaunches
   before diagnosis).
+- **Never render native-length EVAL cells (T≥2048, ~188–380 s) locally on the 16 GB display
+  card — route them to LUMI.** *(2026-07-21, cost: a full desktop GPU crash + Kim logout.)*
+  A native-length model-matrix render overlapping another job's VRAM (the `_ptm` card-turn +
+  a render chain, ~02:35) OOM-pressured the card until **plasmashell's GL context corrupted**
+  and looped submitting a faulting command buffer → `amdgpu ring gfx_0.0.0 timeout` every ~2 s,
+  self-sustaining even with zero compute running (visible screen glitching). **The card was
+  never damaged** — every `ring reset succeeded` / `device wedged, but no recovery needed`;
+  the fix was a **compositor restart** (`systemctl --user restart plasma-plasmashell.service`,
+  or a logout — recreates the GL context), **not a reboot**. Root lesson: long-sequence
+  attention VRAM at T≥2048 has no headroom left on a 16 GB card that is also driving the
+  display. **Native-length evals go to LUMI (headless 64 GB GCD); local renders keep only the
+  20 s grid cells + local-model T512 (~47 s) native cells.** The eval renderer carries a hard
+  guard that refuses local native renders at T≥2048 so this cannot recur.
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
