@@ -545,7 +545,12 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   "is-the-card-free" is inspectable. **Pairs with — does NOT replace — the
   native-render→LUMI rule above:** the mutex stops job-vs-job; the LUMI rule stops
   job-vs-display (plasmashell holds VRAM permanently and can't take the lock, so a solo
-  T≥2048 render can still max the card).
+  T≥2048 render can still max the card). **ADOPTED policy (Kim direct, 2026-07-21):** the
+  lockfile is the interim GPU-coordination mechanism fleet-wide; the compositor→iGPU move
+  (route the desktop to the Ryzen 9900X's integrated GPU → dedicate the RX 9070 XT to
+  compute → closes Mode-B / job-vs-display entirely) is deferred to a later session. **Until
+  the iGPU move lands, Mode B is NOT hardware-fixed — keep the native-render→LUMI rule STRICT
+  (no local T≥2048), because the mutex cannot stop a solo big render from OOM-ing the display.**
 - **Gate/waiter scripts — two "false-success" traps that report idle/done when neither is
   true (both bit one render-collision OOM 2026-07-21).** (1) **`pgrep -f 'a\|b'` matches
   NOTHING** — `pgrep -f` uses ERE (like `grep -E`), so `\|` is a *literal* pipe, not
