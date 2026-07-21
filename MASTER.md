@@ -530,17 +530,14 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   only DM-courtesy — or VRAM-gating, which has a race window (two gates pass in the same
   poll tick before either loads → both load → OOM) — for mutual exclusion crashed the box
   twice. Convention, **every instance, before ANY GPU work**:
-  `python3 Misc/filelock.py acquire SAO/.gpu.lock --handle <H> --pid-aware`, and **release
-  after**. `--pid-aware` breaks a foreign lock **iff its PID is dead** (a crashed/rebooted
+  `python3 Misc/filelock.py acquire /home/kim/Projects/SAO/.gpu.lock --handle <H> --pid-aware --pid $$`,
+  and **release after**. `--pid-aware` breaks a foreign lock **iff its PID is dead** (a crashed/rebooted
   holder reclaims instantly) but **never steals a live job at any age** (unlike the default
   15-min mtime break, which would auto-steal a multi-hour render mid-run — the exact
-  concurrency that crashed us). **⚠️ KNOWN BUG (2026-07-21, G): the current `acquire` writes
-  the transient `filelock.py` CLI pid (that process exits immediately), NOT the long-running
-  shell holder's — so a `--pid-aware` check reports even a just-acquired live lock as
-  dead-reclaimable and steals it (the race, one layer down). FIX PENDING (F: caller-supplied
-  `--pid $$` from the wrapping shell). Until it lands, do NOT rely on the pid-liveness
-  auto-break — coordinate GPU manually (announce before, don't trust the lock's break) and
-  hold `--pid-aware` adoption in chain scripts.** **Everyone MUST lock the identical canonical
+  concurrency that crashed us). **Pass the holder's persistent pid with `--pid $$`** — the
+  transient `filelock.py` CLI process exits immediately, so `acquire` records the pid you
+  hand it (or, if `--pid` is omitted, `getppid()` = the invoking shell), never its own dead
+  pid (a bug G caught in live use + F fixed 2026-07-21, before anyone relied on it). **Everyone MUST lock the identical canonical
   *absolute* path `/home/kim/Projects/SAO/.gpu.lock`** — a cwd-relative `SAO/.gpu.lock`
   invoked from a different directory resolves elsewhere, so two instances would lock
   different files and the mutex silently does nothing.
