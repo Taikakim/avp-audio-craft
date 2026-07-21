@@ -72,15 +72,15 @@ Distinct from §4's gradient meters and much cheaper: every N steps, decode a co
 
 **Distribution:** matched-cos spans 0.005 → 0.51. The bottom cluster (≈0.005–0.015, at the far-control floor) is dominated by **cfg 1.0 / w 0.6** cells — the weakest-steering settings drift semantically toward generic/noise (a finding in itself, and a natural home for an in-eval degeneration flag). The top (~0.50) is dora128/dora64 ep0. **Verdict: the degeneration-detector use is validated; the fine-ranking use is not (and should not be attempted).** CSV: `clap_proto.csv` (this session's scratch).
 
-## 6. Rollout (proposed, for Kim's ordering)
+## 6. Rollout (order set by Kim 2026-07-22 — train-side monitor promoted to first)
 
-1. **CLAP degeneration flag — eval side** — land a `clap` column over model_matrix + control evals; on the boards, flag cells whose CLAP-vs-prompt falls toward the far-control floor (a genre-collapse / drone-noise marker), paired with the DSP disintegration gate. *(prototype done; scale is a CPU pass, no GPU-lock)*
-2. **CLAP degeneration monitor — train side (§4b)** — wire the periodic decode→CLAP-vs-prompt curve into the training telemetry as an early-warning / early-stop / checkpoint-select signal. *(cheap; the highest-leverage use per Kim — catches the "finds direction then drifts" collapse the RF loss is blind to)*
+1. **CLAP degeneration monitor — train side (§4b)** — wire the periodic decode→CLAP-vs-prompt curve into the training telemetry as an early-warning / early-stop / checkpoint-select signal. *(the highest-leverage use per Kim — catches the "finds direction then drifts" collapse the RF loss is blind to; Kim promoted this ahead of the eval-side flag)*
+2. **CLAP degeneration flag — eval side** — land a `clap` column over model_matrix + control evals; on the boards, flag cells whose CLAP-vs-prompt falls toward the far-control floor (a genre-collapse / drone-noise marker), paired with the DSP disintegration gate. *(prototype done; scale is a CPU pass, no GPU-lock)*
 3. **auraloss fidelity score** — wire MR-STFT/SI-SDR reference scoring into `stem_score.py`'s path + a2a/separation/distillation checks. *(vendored code already present)*
 4. **CLAP-in-the-gradient, one cheap head (§4)** — pick a fine-grained spectral/stereo target, decode-per-iter, matched-length trajectory vs a no-meter baseline, disintegration-gated. *(the decode-per-iter experiment Kim greenlit)*
-5. **FD/KL realism, corpus-level** — only when a writeup needs SA-paper-comparable numbers; budget the OpenL3-on-ROCm port (or PaSST-KL first, it's torch).
+5. **FD/KL realism, corpus-level** — Kim asked (2026-07-22) how hard a ROCm jury-rig is and whether anyone's already done it → under research; findings + a ranked recommendation append here. Likely first cut = a torch-native / CLAP-embedding FAD (ROCm-friendly) or PaSST-KL (torch), with FDopenl3-proper deferred if the OpenL3-on-ROCm/TF cost is real.
 
-## 7. Open questions for Kim
-- **CLAP checkpoint:** prototype uses the general 630k. Upgrade to the **music_audioset (HTSAT-base)** checkpoint for the production pass? (better on music, needs a manual download — the auto-id table stops at the general ones).
-- **Rollout order** — is §6 the right sequence, or pull the decode-per-iter head experiment (step 3) earlier since it's the highest-upside / most novel?
-- **FD/KL** — worth the OpenL3-on-ROCm cost now, or defer entirely until a paper needs it (PaSST-KL as the cheaper first cut)?
+## 7. Decisions (Kim 2026-07-22)
+- **CLAP checkpoint: UPGRADE** → adopting laion's **music_audioset (HTSAT-base)** checkpoint (`lukewys/laion_clap :: music_audioset_epoch_15_esc_90.14.pt`), A/B'd against the general 630k on the §5 validation before it becomes the default. `clap_score.py --music-ckpt <path>` already loads it.
+- **Rollout order: train-side degeneration monitor FIRST** (was #2 → now #1); eval-side flag second.
+- **FD/KL: research the ROCm jury-rig cost + prior art first**, then decide (§6 step 5). PaSST-KL / CLAP-FAD are the likely ROCm-native first cuts; FDopenl3-proper deferred if OpenL3-on-ROCm is as painful as feared.
