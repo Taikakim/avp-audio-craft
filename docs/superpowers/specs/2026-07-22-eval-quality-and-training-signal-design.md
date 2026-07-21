@@ -31,8 +31,16 @@ The two external repos map cleanly onto the three missing axes, and — cruciall
 ### 2b. Fidelity — auraloss MR-STFT / SI-SDR / Sum-Difference-STFT  *(Apache-2.0, ALREADY vendored)*
 `stable-audio-tools/training/losses/auraloss.py` is already in-tree (used at weight 0.1 as the VAE reconstruction loss). Reference-based waveform-domain similarity where a ground truth exists: **a2a re-render vs source, generative-separation fidelity, FlowEdit anchoring, ONNX-decoder distillation validation.** `SumAndDifferenceSTFTLoss` is the stereo variant — relevant since SA3 is stereo and we track stereo width/corr. Deterministic and cheap; a complement to CLAP/FAD, not a replacement. (The pip `auraloss` package is NOT installed in any venv; only the VAE-training path needs it. The vendored copy covers in-tree use.)
 
-### 2c. Realism — FDopenl3 / KLpasst  *(from stable-audio-metrics; corpus-level)*
-Distributional distance between a checkpoint's output set and a real-music reference set. One number per checkpoint → "which LoRA / training-length is distributionally closest to real Goa/avp," and — the strategic value — **numbers comparable to the published Stable Audio papers** (for the Sourcebook/writeup). Caveats: reference-set-based (compute reference stats once), aggregate (not per-cell), and **OpenL3 is TensorFlow + CUDA 11.8 → real ROCm porting friction**; KLpasst (PaSST) is torch and easier. Lower priority, tied to a writeup, not day-to-day auditioning. NB: we dropped OpenL3 as a *conditioning feature* (C's retrieval gate) — orthogonal to using it as an FD *eval* embedding.
+### 2c. Realism — FAD / KL  *(corpus-level; ROCm path settled by research 2026-07-22)*
+Distributional distance between a checkpoint's output set and a real-music reference set. One number per checkpoint → "which LoRA / training-length is distributionally closest to real Goa/avp," and — the strategic value — **numbers comparable to the published Stable Audio papers** (for the Sourcebook/writeup). Reference-set-based (compute reference stats once), aggregate (not per-cell).
+
+**ROCm feasibility (was flagged as the OpenL3/TF/CUDA blocker — research says it's a non-issue):**
+- **FDopenl3-proper is the ONLY awkward metric — substitute it, don't port it.** Upstream OpenL3 is TF+kapre (CUDA-11.8 friction); a pure-torch `torchopenl3` exists (MAE <1e-3 vs TF) but is unmaintained (2021, pre-torch-2.10). Not worth babysitting for one metric.
+- **The whole modern FAD ecosystem is pure-PyTorch** and runs on our ROCm torch (or CPU on the 9900X) unchanged — no NVIDIA/CUDA deps. **`gudgud96/frechet-audio-distance`** (`pip install frechet-audio-distance`) does **CLAP-FAD** directly, at CLAP's native 48 kHz, **reusing the same laion_clap we just stood up.** For *music* the perceptual-correlation literature (Microsoft "Adapting FAD" 2311.01616; ETH ICASSP-2025) rates **CLAP-Music-FAD and MERT-FAD** as first-class and rates the original **VGGish-FAD as poorly correlated (<0.1)** — so CLAP-Music-FAD is arguably a *better* realism number than FDopenl3 for our domain, and it's ROCm-native today.
+- **KLpasst** = `hear21passt` (pure torch), matches Stability/MusicGen `KL_PaSST` (32 kHz) exactly; pair with `audioldm_eval`'s KL harness rather than hand-rolling the divergence.
+- Optional robustness: a second FAD backend (PANNs or MERT via `microsoft/fadtk`) — FAD is embedding-sensitive, so always report *which* embedding and never compare FAD across embeddings.
+
+NB: we dropped OpenL3 as a *conditioning feature* (C's retrieval gate); using CLAP/PANNs/MERT for FAD sidesteps that debate entirely.
 
 ## 3. Eval-time integration
 
@@ -78,7 +86,11 @@ Distinct from §4's gradient meters and much cheaper: every N steps, decode a co
 2. **CLAP degeneration flag — eval side** — land a `clap` column over model_matrix + control evals; on the boards, flag cells whose CLAP-vs-prompt falls toward the far-control floor (a genre-collapse / drone-noise marker), paired with the DSP disintegration gate. *(prototype done; scale is a CPU pass, no GPU-lock)*
 3. **auraloss fidelity score** — wire MR-STFT/SI-SDR reference scoring into `stem_score.py`'s path + a2a/separation/distillation checks. *(vendored code already present)*
 4. **CLAP-in-the-gradient, one cheap head (§4)** — pick a fine-grained spectral/stereo target, decode-per-iter, matched-length trajectory vs a no-meter baseline, disintegration-gated. *(the decode-per-iter experiment Kim greenlit)*
-5. **FD/KL realism, corpus-level** — Kim asked (2026-07-22) how hard a ROCm jury-rig is and whether anyone's already done it → under research; findings + a ranked recommendation append here. Likely first cut = a torch-native / CLAP-embedding FAD (ROCm-friendly) or PaSST-KL (torch), with FDopenl3-proper deferred if the OpenL3-on-ROCm/TF cost is real.
+5. **Realism, corpus-level — ROCm path settled (research 2026-07-22): not a jury-rig, it's `pip install`.**
+   - (a) **CLAP-Music-FAD via `gudgud96/frechet-audio-distance`** — pure torch, ROCm-native, reuses our laion_clap, 48 kHz, literature-endorsed for music. The primary realism number. *Lowest effort, do first.*
+   - (b) **PaSST-KL via `hear21passt`** — pure torch, matches Stability/MusicGen `KL_PaSST` exactly (32 kHz). *Low effort.*
+   - (c) optional: a second FAD backend (PANNs/MERT via `microsoft/fadtk`/`audioldm_eval`) for embedding-robustness.
+   - (d) **FDopenl3-proper: substitute, do NOT port** — only worth it to reproduce a *published* FDopenl3 number; CLAP-Music-FAD is a better music metric and ROCm-native today.
 
 ## 7. Decisions (Kim 2026-07-22)
 - **CLAP checkpoint: UPGRADE** → adopting laion's **music_audioset (HTSAT-base)** checkpoint (`lukewys/laion_clap :: music_audioset_epoch_15_esc_90.14.pt`), A/B'd against the general 630k on the §5 validation before it becomes the default. `clap_score.py --music-ckpt <path>` already loads it.
