@@ -534,8 +534,10 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   after**. `--pid-aware` breaks a foreign lock **iff its PID is dead** (a crashed/rebooted
   holder reclaims instantly) but **never steals a live job at any age** (unlike the default
   15-min mtime break, which would auto-steal a multi-hour render mid-run — the exact
-  concurrency that crashed us). **Everyone MUST lock the identical canonical path
-  `SAO/.gpu.lock`** or two instances lock different files and the mutex does nothing.
+  concurrency that crashed us). **Everyone MUST lock the identical canonical
+  *absolute* path `/home/kim/Projects/SAO/.gpu.lock`** — a cwd-relative `SAO/.gpu.lock`
+  invoked from a different directory resolves elsewhere, so two instances would lock
+  different files and the mutex silently does nothing.
   `filelock.py check SAO/.gpu.lock` prints the holder + ALIVE/DEAD-reclaimable, so
   "is-the-card-free" is inspectable. **Pairs with — does NOT replace — the
   native-render→LUMI rule above:** the mutex stops job-vs-job; the LUMI rule stops
