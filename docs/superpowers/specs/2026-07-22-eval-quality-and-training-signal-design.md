@@ -1,0 +1,86 @@
+# Eval Quality Suite & Training-Signal Design
+
+**Status:** DRAFT for Kim's review (WINTERMUTE, 2026-07-22)
+**Origin:** Kim's "is `Stability-AI/stable-audio-metrics` / `csteinmetz1/auraloss` useful to us?" call,
+plus his directive: *"we should have an eval spec for assessing quality and using during training too… training LATCH and FiLM heads is cheap, decode per iter is not impossible if that creates a better model, since eventually the training only needs to be run once."*
+
+## 1. The gap
+
+`eval/clip_metrics.db` (columns: `path,dur,rms,crest,zcr,onset_p95,centroid,flatness,flux,hf_ratio,bpm,ce,pq,cu,pc`) already covers three of the five axes a generated clip can be judged on:
+
+| Axis | Question | What we have |
+|---|---|---|
+| **Quality** | Does it sound good? | Audiobox `ce/pq/cu/pc` (per-clip) |
+| **Authority** | Did the requested control move? | feature deltas / direct-feature measurement (per-clip) |
+| **Integrity** | Is it intact (not buzz/dead)? | disintegration gate — flatness/hf_ratio/zcr/beat/CE-drift ([spec](2026-07-20-control-head-disintegration-gate.md)) |
+| **Adherence** | Does it match its *prompt*? | **— nothing —** |
+| **Fidelity** | Does it match a *ground-truth target*? | **— ad hoc only** (`stem_score.py`) |
+| **Realism** | Is the output *distribution* like real music? | **— nothing systematic** |
+
+The two external repos map cleanly onto the three missing axes, and — crucially — the two *differentiable* ones (Adherence, Fidelity) can also be used **inside the training gradient**, not only after the fact. That dual role is the reason this is one spec, not a metrics changelog.
+
+## 2. Metric taxonomy (source-mapped)
+
+### 2a. Adherence / **degeneration detection** — CLAP score  *(from stable-audio-metrics; laion_clap, pure torch → ROCm-ok)*
+`cos(text_embedding(prompt), audio_embedding(clip))`. Per-clip, needs no reference set. Every model_matrix / eval cell already carries `prompt_text`, so it is a drop-in column.
+
+**The primary use is a degeneration detector, not a fine-grained quality ranker (Kim, 2026-07-22).** "If we prompt for psytrance, it should not sound like drones or noise." CLAP's measured discrimination profile (§5) is *exactly* shaped for this: it barely separates near-synonym prompts (psytrance-A vs psytrance-B, matched 0.263 vs in-set-mismatch 0.232 — margin ~0.03) but *massively* separates genre-vs-noise/other (matched 0.263 vs far-control 0.005 — margin 0.257). So it is a poor intra-genre judge and an excellent **"has this run collapsed out of its requested genre into drone/noise/mush"** alarm. A healthy psytrance clip sits ~0.26 vs its prompt; a degenerated one falls toward the ~0.00–0.05 floor — a large, monotone, monitorable drop. This is the **semantic complement to the DSP disintegration gate**: the DSP gate ([spec](2026-07-20-control-head-disintegration-gate.md)) catches *buzz* (flatness/hf/zcr) and *dead* (authority≈0); CLAP catches the third failure mode — output that stays DSP-plausible but has **semantically drifted** off the prompt.
+
+**Corollary caveat:** because intra-set ranking is weak, CLAP must NOT be read as "cell A is more psytrance than cell B." Use the *absolute score and its drop*, not fine ranking among near-synonyms.
+
+### 2b. Fidelity — auraloss MR-STFT / SI-SDR / Sum-Difference-STFT  *(Apache-2.0, ALREADY vendored)*
+`stable-audio-tools/training/losses/auraloss.py` is already in-tree (used at weight 0.1 as the VAE reconstruction loss). Reference-based waveform-domain similarity where a ground truth exists: **a2a re-render vs source, generative-separation fidelity, FlowEdit anchoring, ONNX-decoder distillation validation.** `SumAndDifferenceSTFTLoss` is the stereo variant — relevant since SA3 is stereo and we track stereo width/corr. Deterministic and cheap; a complement to CLAP/FAD, not a replacement. (The pip `auraloss` package is NOT installed in any venv; only the VAE-training path needs it. The vendored copy covers in-tree use.)
+
+### 2c. Realism — FDopenl3 / KLpasst  *(from stable-audio-metrics; corpus-level)*
+Distributional distance between a checkpoint's output set and a real-music reference set. One number per checkpoint → "which LoRA / training-length is distributionally closest to real Goa/avp," and — the strategic value — **numbers comparable to the published Stable Audio papers** (for the Sourcebook/writeup). Caveats: reference-set-based (compute reference stats once), aggregate (not per-cell), and **OpenL3 is TensorFlow + CUDA 11.8 → real ROCm porting friction**; KLpasst (PaSST) is torch and easier. Lower priority, tied to a writeup, not day-to-day auditioning. NB: we dropped OpenL3 as a *conditioning feature* (C's retrieval gate) — orthogonal to using it as an FD *eval* embedding.
+
+## 3. Eval-time integration
+
+- **Per-clip metrics (CLAP, auraloss-fidelity where a target exists)** → new `clip_metrics.db` columns (`clap`, `mrstft_fid`…), same UPDATE-by-path pattern as the Audiobox pass. Surfaced on the eval boards beside ce/pq/cu/pc.
+- **Corpus metrics (FD/KL)** → a per-checkpoint table (`realism(model,ckpt) → {fd, kl, n}`), surfaced in the model_matrix header block (already shows good-fraction), NOT per cell.
+- All follow the disintegration-gate discipline: a metric that moves is not proof of quality — CLAP can be high on a well-produced clip that ignores the *specific* prompt, so adherence is reported **alongside** integrity + quality, never as a sole verdict.
+
+## 4. Train-time integration (Kim's decode-per-iter reframe)
+
+The RF loss is blind to many perceptual attributes (it is an MSE in latent velocity space). The **meter-in-the-gradient** pattern (decode `z0_hat` → frozen probe → match request, t-gated) puts a perceptual signal INTO the gradient. Its scope condition is settled ([perceptual-signal spec](2026-07-02-perceptual-signal-optimizer-directions.md), MASTER §4): **it helps only for fine-grained properties the RF loss cannot already see** (onset timing: yes; global genre: no — the meter just drags output toward the probe manifold and hurts).
+
+**Kim's reframe changes the cost side, not the scope side.** A LatCH head (~5–7 M params) or a FiLM conditioner is cheap; a VAE decode per step is affordable *because the run happens once and buys a permanently better head.* So decode-per-iter is a first-class option for the cheap heads, where it was previously dismissed on cost. Candidate train-time meters, gated by the scope condition:
+
+| Meter | Differentiable? | Good train-time target | Avoid for |
+|---|---|---|---|
+| **auraloss MR-STFT / mel-STFT** | yes | fine spectral *texture* control | broad timbre (RF sees it) |
+| **auraloss SumDiff-STFT** | yes | stereo-field control head | mono targets |
+| **CLAP text-consistency** | yes (CLAP is torch) | prompt/style *adherence* nudge | global genre (the genre negative) |
+
+**Guards (mandatory, from the perceptual-signal spec):** supervise a dim-subset, monitor held-out dims for pathological drift (the probe-hack guard); t-gate the meter (only late, low-t steps where `z0_hat` is meaningful); keep the RF loss dominant (meter is a small-weight auxiliary). Any train-time meter run must emit the standard tiered telemetry so the per-layer fingerprint is comparable across features.
+
+### 4b. CLAP as a train-time degeneration MONITOR (not a gradient term)
+Distinct from §4's gradient meters and much cheaper: every N steps, decode a couple of fixed-prompt sample latents → CLAP-vs-that-prompt, and log it. RF loss is blind to control *and* nearly flat, so it cannot tell you a run has started emitting drone/noise — but a **falling CLAP-vs-prompt curve says exactly that**. This operationalizes the standing "the head finds the control direction then **drifts**" finding (MASTER §4, the EMA/early-stop result): CLAP-vs-prompt is the missing early-warning signal for that drift, and its **turn-down is a principled early-stop / checkpoint-select trigger** (stop, or pick the pre-drift checkpoint, when CLAP-vs-prompt rolls over). It also gives the checkpoint-ladder view: across epochs the curve should hold; the epoch it falls off is the collapse point. Because it needs only a few decodes at a coarse cadence, it is affordable on *any* run, not just the cheap heads — a good default to wire into the telemetry alongside the trajectory panels.
+
+## 5. Prototype result (CLAP, this session)
+
+`eval/clap_score.py` (sat-venv, laion_clap 630k+audioset non-fusion, CPU). Builds the sampled-clip × unique-prompt cosine matrix + a fixed far-control set. Two torch-2.6/transformers compat shims baked in (weights_only=False + strict=False load, both for the trusted official checkpoint). **300 stratified model_matrix clips:**
+
+| Quantity | Value | Reading |
+|---|---|---|
+| matched cos (own genre prompt) | **0.263 ± 0.115** | healthy adherence band |
+| in-set mismatch (other genre prompts) | 0.232 | near-synonyms cluster → intra-set ranking weak |
+| **far-control cos** (violin / podcast / ocean / metal) | **0.005** | genre-vs-other floor ≈ 0 |
+| **margin vs far (headline)** | **0.257** | CLAP strongly tracks genre-vs-non-genre |
+| true prompt beats ALL far controls | **71.3 %** | adherence hit-rate |
+| in-set retrieval top-1 / top-3 | 19.0 % / 38.7 % | above 8.3 % chance but weak (expected) |
+
+**Distribution:** matched-cos spans 0.005 → 0.51. The bottom cluster (≈0.005–0.015, at the far-control floor) is dominated by **cfg 1.0 / w 0.6** cells — the weakest-steering settings drift semantically toward generic/noise (a finding in itself, and a natural home for an in-eval degeneration flag). The top (~0.50) is dora128/dora64 ep0. **Verdict: the degeneration-detector use is validated; the fine-ranking use is not (and should not be attempted).** CSV: `clap_proto.csv` (this session's scratch).
+
+## 6. Rollout (proposed, for Kim's ordering)
+
+1. **CLAP degeneration flag — eval side** — land a `clap` column over model_matrix + control evals; on the boards, flag cells whose CLAP-vs-prompt falls toward the far-control floor (a genre-collapse / drone-noise marker), paired with the DSP disintegration gate. *(prototype done; scale is a CPU pass, no GPU-lock)*
+2. **CLAP degeneration monitor — train side (§4b)** — wire the periodic decode→CLAP-vs-prompt curve into the training telemetry as an early-warning / early-stop / checkpoint-select signal. *(cheap; the highest-leverage use per Kim — catches the "finds direction then drifts" collapse the RF loss is blind to)*
+3. **auraloss fidelity score** — wire MR-STFT/SI-SDR reference scoring into `stem_score.py`'s path + a2a/separation/distillation checks. *(vendored code already present)*
+4. **CLAP-in-the-gradient, one cheap head (§4)** — pick a fine-grained spectral/stereo target, decode-per-iter, matched-length trajectory vs a no-meter baseline, disintegration-gated. *(the decode-per-iter experiment Kim greenlit)*
+5. **FD/KL realism, corpus-level** — only when a writeup needs SA-paper-comparable numbers; budget the OpenL3-on-ROCm port (or PaSST-KL first, it's torch).
+
+## 7. Open questions for Kim
+- **CLAP checkpoint:** prototype uses the general 630k. Upgrade to the **music_audioset (HTSAT-base)** checkpoint for the production pass? (better on music, needs a manual download — the auto-id table stops at the general ones).
+- **Rollout order** — is §6 the right sequence, or pull the decode-per-iter head experiment (step 3) earlier since it's the highest-upside / most novel?
+- **FD/KL** — worth the OpenL3-on-ROCm cost now, or defer entirely until a paper needs it (PaSST-KL as the cheaper first cut)?

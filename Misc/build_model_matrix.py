@@ -79,6 +79,11 @@ table.mini{border-collapse:collapse;width:100%}
 .cell.playing{outline:2px solid #5d5 !important}
 .cell.loading{outline:2px solid #fa5 !important}
 .cov{font-size:11px;color:#7a7;margin:2px 0}
+/* fixed-height meta block: recipe(120)+tdata(34) are already fixed, so pinning the
+   variable tail (family / good-fraction / native-cell) makes the whole header a
+   constant height -> the prompt grid starts at the same Y in every column, so the
+   same prompt lands on the same horizontal line across models (Kim 2026-07-22) */
+.covwrap{height:84px;overflow-y:auto}
 """
 
 
@@ -117,6 +122,17 @@ def main():
         data[key] = e["file"]
         cov.setdefault(e["model"], {}).setdefault(e["ckpt"], 0)
         cov[e["model"]][e["ckpt"]] += 1
+
+    # labels that exist ONLY in the manifest get a synthetic entry so they still
+    # appear in the dropdowns -- e.g. the *_ptm rows (same adapter file rendered on
+    # the POST-TRAINED medium instead of medium-base, Kim 2026-07-21): a different
+    # base model, not a different run, so there is no run dir to collect.
+    known = {m["label"] for m in models}
+    for lab in sorted({e["model"] for e in entries} - known):
+        models.append({"label": lab,
+                       "family": ("post-trained medium (base-trained adapter transplant)"
+                                  if lab.endswith("_ptm") else "manifest-only"),
+                       "n_ckpts": 0})
 
     meta = {}
     for m in models:
@@ -274,7 +290,7 @@ function render(){
    h+='<div class=recipe><b>recipe:</b> '+(info.recipe||'—')+(st.ckpt?('<br><b>checkpoint:</b> '+st.ckpt):'')+
       (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
    h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
-   h+='<div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
+   h+='<div class=covwrap><div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
    if(st.ckpt&&MM.gf){const g=MM.gf[st.model+'|'+st.ckpt];
     if(g){const pct=g[0],col=pct>=60?'#5d9':(pct>=40?'#ca7':'#a66');
      h+='<div class=cov style="color:'+col+'" title="fraction of this checkpoint\\'s cells with Audiobox CE>=6.0 — a distributional verdict, not good/bad (Kim 2026-07-12)">&#9733; good-fraction '+pct+'% <span style="color:#778">('+g[1]+' cells, CE&ge;6)</span></div>'}}
@@ -283,17 +299,18 @@ function render(){
      'data-src="'+nv.file+'" data-col="'+c+'" data-cf="native" data-w="native" data-pid="native" '+
      'onclick="play(this)">&#9654;</span> native length ('+nv.duration+'s, '+
      'the size this checkpoint was trained on — vs the fixed 20s grid above/below)</div>'}}
+   h+='</div>';  // .covwrap — fixed height so the pgrid starts at the same Y in every column
    if(st.ckpt){h+='<div class=pgrid>';
     for(const pid of Object.keys(MM.prompts)){
-     // Zero coverage at the CURRENT cfg/w settings: GREY the prompt out with a hint
-     // instead of HIDING it — hiding the non-bracket prompts at bracket-only settings
-     // reads as data loss (Kim 2026-07-13). The prompt IS in the manifest; it just has
-     // no clips rendered at these settings. (Supersedes the 07-12 empty-grid hide.)
+     // Zero coverage at the CURRENT cfg/w settings: GREY the prompt's LABEL with a hint
+     // instead of HIDING it — hiding non-bracket prompts at bracket-only settings reads
+     // as data loss (Kim 2026-07-13). ALWAYS render the full (all-miss) table too, so a
+     // prompt occupies the SAME height in every column and the same prompt lands on the
+     // same horizontal line across models (Kim 2026-07-22 alignment fix; supersedes the
+     // 07-13 label-only path that made empty rows shorter than populated ones).
      const anyCell=MM.cfgs.some(cf=>MM.strengths.some(w=>(st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid) in MM.data));
-     if(!anyCell){
-      h+='<div class=plabel style="opacity:.4" title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+' <span style="color:#a66;font-style:italic">· no clips at these settings</span></div>';
-      continue;}
-     h+='<div class=plabel title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+'</div>';
+     const hint=anyCell?'':' <span style="color:#a66;font-style:italic">· no clips at these settings</span>';
+     h+='<div class=plabel'+(anyCell?'':' style="opacity:.4"')+' title="'+MM.prompts[pid].replace(/"/g,'&quot;')+'">'+pid+' — '+MM.prompts[pid].slice(0,60)+hint+'</div>';
      h+='<table class=mini><tr><th></th>';
      for(const w of MM.strengths)h+='<th>w'+w+'</th>';h+='</tr>';
      for(const cf of MM.cfgs){h+='<tr><th>cfg'+cf+'</th>';
