@@ -524,6 +524,20 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   display. **Native-length evals go to LUMI (headless 64 GB GCD); local renders keep only the
   20 s grid cells + local-model T512 (~47 s) native cells.** The eval renderer carries a hard
   guard that refuses local native renders at T≥2048 so this cannot recur.
+- **Gate/waiter scripts — two "false-success" traps that report idle/done when neither is
+  true (both bit one render-collision OOM 2026-07-21).** (1) **`pgrep -f 'a\|b'` matches
+  NOTHING** — `pgrep -f` uses ERE (like `grep -E`), so `\|` is a *literal* pipe, not
+  alternation; a "no matching process ⇒ card is clear" gate then insta-passes and fires a
+  render into a still-busy card → two SA3 loads → HIP OOM. Use a bare `pgrep -f 'a|b'`,
+  separate `pgrep` calls, or — most robust — gate on **measured free VRAM**
+  (`rocm-smi --showmeminfo vram`, launch only when free > ~9 GiB sustained) instead of a
+  process name. (2) **`echo "$(date): rc=$?"` logs `rc=0` on a crashed process** — the
+  `$(date)` command substitution runs first and resets `$?` to *its* exit (0) before `$?`
+  expands, so the real exit code is lost and a failed job reports success. Capture `rc=$?`
+  on its OWN line immediately after the command (or `${PIPESTATUS[0]}` right after a pipe),
+  before any other command/substitution. Same family as the LUMI HQ "count output files,
+  not sbatch rc" trap: always verify the *artifact* (cells rendered / files present), never
+  trust a self-reported rc alone.
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
