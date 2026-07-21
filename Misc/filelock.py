@@ -25,10 +25,17 @@ hours (a multi-hour train/render would have its lock stolen at 15 min → two jo
 GPU at once, which hard-crashed the box twice on 2026-07-21). With `--pid-aware`, a foreign
 lock is broken **iff its recorded PID is not alive** — so a crashed/rebooted holder is
 reclaimed instantly (dead PID), while a live long-running job is NEVER stolen no matter its
-age. Every lock already records `pid=`; this just consults it. (Edge: a PID reused by an
-unrelated process after a crash could read as held — rare, visible in `check`, manually
-breakable.) Usage for a GPU mutex:
-  filelock.py acquire /path/.gpu.lock --handle H --pid-aware && <gpu work> ; filelock.py release /path/.gpu.lock --handle H
+age. (Edge: a PID reused by an unrelated process after a crash could read as held — rare,
+visible in `check`, manually breakable.)
+
+**🚨 The recorded PID must be the LONG-LIVED holder, not this CLI process.** `filelock.py
+acquire` is a short-lived process that exits the instant it writes the lock — so recording
+its own `os.getpid()` would leave a PID that is ALREADY DEAD while the real job runs, and
+any pid-aware checker would instantly reclaim the lock (the exact race, one layer down —
+caught by GHOST-NOTE 2026-07-21 before adoption). So: with `--pid-aware`, the recorded PID
+defaults to the **invoking shell** (`os.getppid()`), and you can set it explicitly with
+`--pid $$` from the wrapping script. Usage for a GPU mutex from a chain script:
+  python3 filelock.py acquire /path/.gpu.lock --handle H --pid-aware --pid $$  &&  <gpu work>  ;  python3 filelock.py release /path/.gpu.lock --handle H
 """
 from __future__ import annotations
 
@@ -76,8 +83,13 @@ def _foreign_locks(target: str, handle: str):
     return out
 
 
-def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = False) -> int:
+def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = False,
+            pid: int | None = None) -> int:
     mine = _lock_path(target, handle)
+    # The PID written into the lock must outlive this CLI process. Explicit --pid wins;
+    # else for a pid-aware (long-held) lock default to the INVOKING SHELL (getppid), not
+    # this transient acquire process (getpid) — recording getpid would read DEAD instantly.
+    rec_pid = pid if pid is not None else (os.getppid() if pid_aware else os.getpid())
     t0 = time.time()
     while True:
         foreign = _foreign_locks(target, handle)
@@ -104,8 +116,8 @@ def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = F
                 print(f"[filelock] {handle} already holds {mine.name}")
                 return 0
             with os.fdopen(fd, "w") as fh:
-                fh.write(f"{handle} pid={os.getpid()} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            print(f"[filelock] {handle} acquired {mine.name}")
+                fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            print(f"[filelock] {handle} acquired {mine.name} (pid={rec_pid})")
             return 0
         if time.time() - t0 > timeout:
             held = ", ".join(w for w, _, _ in foreign)
@@ -152,11 +164,15 @@ def main() -> int:
     ap.add_argument("--pid-aware", action="store_true",
                     help="break a foreign lock iff its PID is dead (for long-held mutexes "
                          "like a GPU .gpu.lock), instead of the 15-min mtime stale-break")
+    ap.add_argument("--pid", type=int, default=None,
+                    help="PID to record as the holder (pass $$ from the wrapping shell). "
+                         "Default with --pid-aware = the invoking shell (getppid), NOT this "
+                         "transient CLI process")
     a = ap.parse_args()
     if a.mode != "check" and not a.handle:
         sys.exit("--handle required")
     if a.mode == "acquire":
-        return acquire(a.path, a.handle, a.timeout, pid_aware=a.pid_aware)
+        return acquire(a.path, a.handle, a.timeout, pid_aware=a.pid_aware, pid=a.pid)
     if a.mode == "release":
         return release(a.path, a.handle)
     return check(a.path)
