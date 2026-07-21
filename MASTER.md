@@ -524,6 +524,23 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   display. **Native-length evals go to LUMI (headless 64 GB GCD); local renders keep only the
   20 s grid cells + local-model T512 (~47 s) native cells.** The eval renderer carries a hard
   guard that refuses local native renders at T≥2048 so this cannot recur.
+- **Concurrent GPU jobs across instances = OOM/crash — serialize with the `SAO/.gpu.lock`
+  mutex (`filelock.py --pid-aware`).** *(2026-07-21, after TWO crashes in one night, the
+  2nd a hard reboot.)* Multiple instances rendering/training on the single 16 GB card with
+  only DM-courtesy — or VRAM-gating, which has a race window (two gates pass in the same
+  poll tick before either loads → both load → OOM) — for mutual exclusion crashed the box
+  twice. Convention, **every instance, before ANY GPU work**:
+  `python3 Misc/filelock.py acquire SAO/.gpu.lock --handle <H> --pid-aware`, and **release
+  after**. `--pid-aware` breaks a foreign lock **iff its PID is dead** (a crashed/rebooted
+  holder reclaims instantly) but **never steals a live job at any age** (unlike the default
+  15-min mtime break, which would auto-steal a multi-hour render mid-run — the exact
+  concurrency that crashed us). **Everyone MUST lock the identical canonical path
+  `SAO/.gpu.lock`** or two instances lock different files and the mutex does nothing.
+  `filelock.py check SAO/.gpu.lock` prints the holder + ALIVE/DEAD-reclaimable, so
+  "is-the-card-free" is inspectable. **Pairs with — does NOT replace — the
+  native-render→LUMI rule above:** the mutex stops job-vs-job; the LUMI rule stops
+  job-vs-display (plasmashell holds VRAM permanently and can't take the lock, so a solo
+  T≥2048 render can still max the card).
 - **Gate/waiter scripts — two "false-success" traps that report idle/done when neither is
   true (both bit one render-collision OOM 2026-07-21).** (1) **`pgrep -f 'a\|b'` matches
   NOTHING** — `pgrep -f` uses ERE (like `grep -E`), so `\|` is a *literal* pipe, not
