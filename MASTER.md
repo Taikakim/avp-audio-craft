@@ -534,7 +534,13 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   after**. `--pid-aware` breaks a foreign lock **iff its PID is dead** (a crashed/rebooted
   holder reclaims instantly) but **never steals a live job at any age** (unlike the default
   15-min mtime break, which would auto-steal a multi-hour render mid-run — the exact
-  concurrency that crashed us). **Everyone MUST lock the identical canonical
+  concurrency that crashed us). **⚠️ KNOWN BUG (2026-07-21, G): the current `acquire` writes
+  the transient `filelock.py` CLI pid (that process exits immediately), NOT the long-running
+  shell holder's — so a `--pid-aware` check reports even a just-acquired live lock as
+  dead-reclaimable and steals it (the race, one layer down). FIX PENDING (F: caller-supplied
+  `--pid $$` from the wrapping shell). Until it lands, do NOT rely on the pid-liveness
+  auto-break — coordinate GPU manually (announce before, don't trust the lock's break) and
+  hold `--pid-aware` adoption in chain scripts.** **Everyone MUST lock the identical canonical
   *absolute* path `/home/kim/Projects/SAO/.gpu.lock`** — a cwd-relative `SAO/.gpu.lock`
   invoked from a different directory resolves elsewhere, so two instances would lock
   different files and the mutex silently does nothing.
