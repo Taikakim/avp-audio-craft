@@ -67,7 +67,9 @@ NATIVE_LEN_STRENGTH = 1.0
 def native_len_seconds(label: str) -> float | None:
     """Trained context length in seconds for `label`, if known (from the recipe
     override's 'T=<frames>' text) -- else None (skip the native-length cell)."""
-    doc = MODELS_OVERRIDES.get(label.removesuffix("_repr"), {})
+    for suf in ("_ptm", "_repr"):
+        label = label.removesuffix(suf)
+    doc = MODELS_OVERRIDES.get(label, {})
     m = re.search(r"T=(\d+)", doc.get("recipe", "")) if isinstance(doc, dict) else None
     return round(int(m.group(1)) / FPS, 2) if m else None
 
@@ -248,6 +250,12 @@ def main():
     ap.add_argument("--base-full", action="store_true",
                      help="render ONLY medium-base across the full prompt list x cfg axis "
                           "(completes the base row; strength n/a)")
+    ap.add_argument("--pt-medium", action="store_true",
+                     help="load the POST-TRAINED 'medium' (rf_denoiser / ping-pong) instead of "
+                          "medium-base and suffix every label with '_ptm' -- tests base-trained "
+                          "adapters on the post-trained model (Kim 2026-07-21, Discord/Dadabots/"
+                          "Zach-Stability claim). Combine with --steps 8 --only-cfgs 1 for the "
+                          "PT-native config; cfg>1 reportedly 'cooks' PT output.")
     ap.add_argument("--only-labels", default=None,
                      help="comma-separated model labels to render (guided subset)")
     ap.add_argument("--only-ckpts", default=None,
@@ -281,6 +289,10 @@ def main():
         prompts = prompts[:args.limit]
     jobs = build_jobs(args.only, args.avp_only, base_full=args.base_full,
                       only_labels=only_labels, only_ckpts=only_ckpts)
+    if args.pt_medium:
+        # distinct labels => distinct page rows, so PT-medium cells sit NEXT TO the
+        # medium-base rows of the same adapter instead of overwriting their cells
+        jobs = [(f"{label}_ptm", ckpt_path, tag) for label, ckpt_path, tag in jobs]
     n_cells = 0
     for label, ckpt_path, _tag in jobs:
         n_cells += len(prompts) * len(cfgs) * (
@@ -335,7 +347,8 @@ def main():
             print(f"[skip-all] {label}/{tag}")
             continue
 
-        model = StableAudioModel.from_pretrained("medium-base", device="cuda")
+        model = StableAudioModel.from_pretrained(
+            "medium" if args.pt_medium else "medium-base", device="cuda")
         sr = model.model.sample_rate
         if ckpt_path and is_fullft:
             # whole-model checkpoint: load the full state dict over the base DiT.
@@ -343,10 +356,19 @@ def main():
             # onto base weights would fake a result (W's guard, 2026-07-18).
             import torch as _t
             _ck = _t.load(str(ckpt_path), map_location="cpu", weights_only=False)
-            _sd = _ck.get("state_dict", _ck)
-            _sd = { (k[len("model."):] if k.startswith("model.") else k): v
-                    for k, v in _sd.items() }
+            _sd_raw = _ck.get("state_dict", _ck)
             _tgt = model.model.model  # the ConditionedDiffusionModelWrapper's DiT side
+            _tgt_keys = set(dict(_tgt.named_parameters())) | set(dict(_tgt.named_buffers()))
+            # real LUMI full-finetune checkpoints prefix DiT params "diffusion.model.model.X"
+            # (the target module itself expects a leading "model." -> strip "diffusion.model."
+            # to land on "model.X"); the bare "model." this was originally written against
+            # never matches those checkpoints and silently 0%-covers -- caught 2026-07-21 when
+            # a retry loop that only checked for OOM mislabeled 4 straight AssertionErrors as
+            # "succeeded". Try both prefixes, keep whichever actually matches the target.
+            _sd = max(
+                ({(k[len(_pfx):] if k.startswith(_pfx) else k): v for k, v in _sd_raw.items()}
+                 for _pfx in ("diffusion.model.", "model.")),
+                key=lambda sd: sum(1 for k in sd if k in _tgt_keys))
             _missing, _unexpected = _tgt.load_state_dict(
                 { k: v.to(next(_tgt.parameters()).dtype) for k, v in _sd.items()
                   if k in dict(_tgt.named_parameters()) or k in dict(_tgt.named_buffers()) },
@@ -427,7 +449,15 @@ def main():
 
         # native-training-length audition cell (additive; see NATIVE_LEN_* above) --
         # one prompt, one setting, at whatever T this checkpoint actually trained on.
+        # T>=2048 natives are BANNED locally (Kim direct 2026-07-21: a fullft native
+        # render's long-sequence attention VRAM starved the compositor -> display
+        # crash, forced logout). Those cells render on LUMI (64GB headless GCDs) via
+        # lumi/render_native_cells.py + W's ingest. SA3_ALLOW_LONG_NATIVE=1 overrides.
         native_dur = native_len_seconds(label)
+        if (native_dur is not None and native_dur * FPS >= 2048
+                and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1"):
+            print(f"[native-skip] {label}/{tag} T~{native_dur*FPS:.0f} >= 2048 -> LUMI lane")
+            native_dur = None
         if native_dur is not None and prompts:
             np_ = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
             nw = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
