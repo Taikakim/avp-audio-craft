@@ -95,6 +95,14 @@ Distinct from §4's gradient meters and much cheaper: every N steps, decode a co
 
 **Decision (data-driven, not ear): the general 630k is the default degeneration checkpoint** — bigger genre-vs-noise margin, cleaner near-zero floor, and *higher* sensitivity to output well-formedness (d=1.00 vs 0.59: it drops harder on degenerate output, which is exactly the detector's job). The music_audioset checkpoint compresses the cosine scale and is NOT an upgrade here; kept available via `clap_score.py --music-ckpt` for future music-specific tasks. What still needs **Kim's ear** is only the *threshold* (which absolute CLAP value = "degenerate") — tee up the lowest-CLAP clips (~3.6% sit below 0.10) for him to confirm they are the drone/noise ones. CSVs this session: `clap_gen500.csv` / `clap_mus500.csv` (scratch).
 
+## 5b. Full-corpus scan result (31,639 cells, general 630k, 2026-07-22)
+Ran the whole model_matrix (`eval/clap_degen_model_matrix.csv`; summary `eval/clap_degen_summary.md`, ear-calibration ladder `eval/clap_degen_audition.csv`). **The scan independently reproduces the fleet's established quality ordering — semantically, via genre-collapse rate:**
+- **rank-16 adapters collapse out-of-genre ~40%** (worst dora16_avp_originals 64ep ep7: 44.8% of cells CLAP<0.10) vs **rank-128 ~3%** (sa3-goa-dora-47s-r128) → confirms "rank-128 good / rank-16 harsh" on a new axis.
+- **cfg1 is the degeneration zone** (0.20–0.25) vs cfg7–16 healthy (0.31–0.39); **DoRA w2.0 degrades at every cfg** (over-applied adapter → off-genre). Sweet spot cfg7–16 × w0.6–1.0.
+- Overtraining shows: dora16_avp_originals at 64ep is the single worst.
+
+So CLAP-degeneration is validated as **both a quality proxy that agrees with CE/PQ+ear AND a per-cell genre-collapse flag.** Corpus percentiles p01/p05/p50/p95 = −0.061/0.023/0.324/0.489; 11.7% of cells sit below 0.10 (candidate-degenerate; threshold TBD by Kim's ear via the audition ladder).
+
 ## 6. Rollout (order set by Kim 2026-07-22 — train-side monitor promoted to first)
 
 1. **CLAP degeneration monitor — train side (§4b)** — wire the periodic decode→CLAP-vs-prompt curve into the training telemetry as an early-warning / early-stop / checkpoint-select signal. *(the highest-leverage use per Kim — catches the "finds direction then drifts" collapse the RF loss is blind to; Kim promoted this ahead of the eval-side flag)*
