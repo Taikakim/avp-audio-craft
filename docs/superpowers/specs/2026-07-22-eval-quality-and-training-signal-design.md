@@ -42,6 +42,9 @@ Distributional distance between a checkpoint's output set and a real-music refer
 
 NB: we dropped OpenL3 as a *conditioning feature* (C's retrieval gate); using CLAP/PANNs/MERT for FAD sidesteps that debate entirely.
 
+## 2d. Metric BLIND SPOTS — what this stack cannot see (standing guardrail)
+*(THE-FINN patrol flag, 2026-07-22, after a near-miss: a "fp32 ≈ bf16" metrics finding read as contradicting Kim's by-ear "fp32 > bf16" — they were different axes.)* The CLAP + clip_metrics + Audiobox stack measures **genre-adherence (CLAP), DSP-buzz/whitening (zcr/flatness/hf_ratio), broad production quality (Audiobox CE/PQ/CU/PC), rhythm/onset, dynamics.** It does **NOT** capture: **fine fidelity / stereo separation / high-end noise character** (the axis Kim judges by ear), micro-timing feel/groove nuance, mix balance between stems, or musical "taste." **Rule: never retire a training arm or declare a recipe dominant on a metric that does not measure the axis in question.** When a metrics finding touches an axis Kim has an ear-verdict on, state the axis explicitly and defer the cross-axis call to his ear. The metrics narrow the search and catch degeneration; they do not replace the listen.
+
 ## 3. Eval-time integration
 
 - **Per-clip metrics (CLAP, auraloss-fidelity where a target exists)** → new `clip_metrics.db` columns (`clap`, `mrstft_fid`…), same UPDATE-by-path pattern as the Audiobox pass. Surfaced on the eval boards beside ce/pq/cu/pc.
