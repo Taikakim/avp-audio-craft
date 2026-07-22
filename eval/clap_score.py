@@ -73,6 +73,11 @@ def main():
                          "omitted => general 630k+audioset non-fusion (HTSAT-tiny, auto-download)")
     ap.add_argument("--out", type=Path, default=Path("/tmp/clap_proto.csv"))
     ap.add_argument("--write-db", action="store_true", help="land a `clap` column in clip_metrics.db")
+    ap.add_argument("--include-native", action="store_true",
+                    help="also score duration_mode=native cells (long clips) -- off by default")
+    ap.add_argument("--append", action="store_true",
+                    help="incremental: skip files already in --out and APPEND new rows (for metering "
+                         "a fresh LUMI batch without a 48-min full rescan)")
     a = ap.parse_args()
 
     import numpy as np
@@ -81,8 +86,15 @@ def main():
     import laion_clap
 
     entries = [json.loads(l) for l in a.manifest.read_text().splitlines() if l.strip()]
-    entries = [e for e in entries if e.get("duration_mode") != "native"]  # natives quarantined
+    if not a.include_native:
+        entries = [e for e in entries if e.get("duration_mode") != "native"]
     entries = [e for e in entries if (a.clips_dir / e["file"]).exists()]
+    already = set()
+    if a.append and a.out.exists():
+        import csv as _csv
+        already = {r["file"] for r in _csv.DictReader(a.out.open())}
+        entries = [e for e in entries if e["file"] not in already]
+        print(f"[clap] append mode: {len(already)} already scored, {len(entries)} new to score")
     if not entries:
         sys.exit(f"[clap] no clips found under {a.clips_dir} from {a.manifest}")
     entries = stratified_sample(entries, a.sample)
@@ -114,8 +126,13 @@ def main():
     model.eval()
 
     def embed_text(txts):
+        # laion_clap's text encoder errors on a single-item list (batch-shape bug) --
+        # duplicate then slice back when only one prompt (e.g. a native-only batch)
+        single = len(txts) == 1
+        q = txts + txts if single else txts
         with torch.no_grad():
-            return model.get_text_embedding(txts, use_tensor=True).float().cpu().numpy()
+            e = model.get_text_embedding(q, use_tensor=True).float().cpu().numpy()
+        return e[:1] if single else e
 
     def embed_audio(path):
         wav, _ = librosa.load(str(path), sr=48000, mono=True)
@@ -164,9 +181,16 @@ def main():
         if (n + 1) % 25 == 0:
             print(f"[clap] {n+1}/{len(entries)}  running matched={np.mean(matched):.3f} margin_far={np.mean(matched)-np.mean(far):.3f}")
 
-    with a.out.open("w", newline="") as f:
+    if not rows:
+        print("[clap] nothing new to score.")
+        return
+    append = a.append and a.out.exists()
+    with a.out.open("a" if append else "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        w.writeheader(); w.writerows(rows)
+        if not append:
+            w.writeheader()
+        w.writerows(rows)
+    print(f"[clap] {'appended' if append else 'wrote'} {len(rows)} rows -> {a.out}")
 
     matched, mism, far, ranks, beats_far = map(np.array, (matched, mism, far, ranks, beats_far))
     top1 = float((ranks == 1).mean()); top3 = float((ranks <= 3).mean())
