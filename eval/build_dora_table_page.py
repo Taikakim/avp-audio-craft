@@ -21,7 +21,7 @@ OUT = ROOT / "dora_table.html"
 
 # column groups + per-metric direction (+1 = higher is better/green, -1 = lower is better)
 HP = ["model", "ckpt", "arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T",
-      "batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps", "n_cells"]
+      "batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps", "train_N", "n_cells"]
 METRICS = {"clap_matched": +1, "clap_margin_far": +1, "ce": +1, "pq": +1, "cu": +1, "pc": +1,
            "zcr": -1, "flatness": -1, "flux": +1, "hf_ratio": -1, "bpm": 0,
            "onset_p95": +1, "centroid": 0, "crest": -1, "rms": +1}
@@ -46,6 +46,7 @@ DESC = {
     "aug": "Augmentation multiplier (pitch/stretch). 0 = none. aug10 is the cleanest single win (helps every axis).",
     "epoch": "This checkpoint's training epoch. Overtraining collapses UN-augmented runs by ~ep15; aug10 climbs to ep74 (corpus best).",
     "steps": "Total training optimizer steps at this checkpoint (steps/epoch × epoch, from the recipe's recorded step count). Blank where not recorded.",
+    "train_N": "Training-set size = # latent crops. Anchored to the known encoded_dir (aug10=320, originals=288, everything=6111, goa=5401, avp=2393); variant runs estimated from steps/epoch×batch. LOW N = overfit-risk (a small set drilled hard can top CLAP by memorizing the prompt space).",
     "n_cells": "Number of rendered cells averaged into this row.",
     "clap_matched": "↑ CLAP cosine(audio, its OWN prompt) = genre/prompt ADHERENCE. Low = output drifted off-genre (degeneration).",
     "clap_margin_far": "↑ CLAP gap between the true prompt and out-of-genre control prompts. Higher = more decisively on-genre.",

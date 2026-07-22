@@ -160,11 +160,31 @@ def main():
     # per-cell epoch from ckpt
     df["epoch"] = df["ckpt"].str.extract(r"ep(\d+)").astype(float)
     df["steps"] = (df["steps_per_epoch"].astype(float) * df["epoch"]).round()
+
+    # train_N = training-set size (# latent crops). Anchored to the known encoded_dir counts
+    # where the label maps; else estimated from steps_per_epoch × batch≈4 (DoRA default). The
+    # small ones (aug10=320, originals=288) are the overfit-risk runs Kim flagged.
+    DIR_N = {"aug10": 320, "everything": 6111, "originals": 288, "summamutikka": 78, "aavepyora": 194}
+
+    def train_n(model, spe):
+        m = str(model).lower()
+        for k, n in DIR_N.items():
+            if k in m:
+                return n
+        if "goa" in m or "longctx" in m:
+            return 5401                                  # latents_sa3 (goa corpus)
+        if any(k in m for k in ("fp32cmp_avp", "bf16cmp_avp", "fullft_avp")):
+            return 2393                                  # latents_avp (full avp crops)
+        if spe == spe and spe:                           # variant/unknown -> steps/epoch × batch≈4
+            return int(round(spe * 4))
+        return None
+
+    df["train_N"] = [train_n(m, s) for m, s in zip(df["model"], df["steps_per_epoch"])]
     df["is_repr"] = df["model"].str.endswith("_repr")
 
     # tidy column order
     hp_cols = ["arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T", "duration_s",
-               "batch", "lr", "optimizer", "dataset", "aug", "base_target", "epoch", "steps"]
+               "batch", "lr", "optimizer", "dataset", "aug", "base_target", "epoch", "steps", "train_N"]
     ctrl_cols = ["cfg", "strength"]
     metric_cols = ["clap_matched", "clap_margin_far", "retrieval_rank", "beats_all_far",
                    "ce", "pq", "cu", "pc", "zcr", "flatness", "flux", "hf_ratio", "bpm",
