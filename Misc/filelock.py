@@ -112,8 +112,16 @@ def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = F
             try:
                 fd = os.open(mine, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
-                os.utime(mine, None)                      # refresh our own lock
-                print(f"[filelock] {handle} already holds {mine.name}")
+                # We (this handle) already have a lock file. REWRITE it with the current
+                # rec_pid — do NOT just utime. A PREVIOUS holder-process of this handle may
+                # have died leaving its now-DEAD pid in the file; under --pid-aware a stale
+                # dead pid makes any checker reclaim a lock we are actively re-holding =
+                # steals a live job (the pid-aware race one layer down, caught by C
+                # 2026-07-22 when a re-acquire kept the dead pid and got pid-aware-broken
+                # mid-encode). Writing refreshes mtime too, so mtime-mode is unaffected.
+                with open(mine, "w") as fh:
+                    fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                print(f"[filelock] {handle} re-holds {mine.name} (pid refreshed → {rec_pid})")
                 return 0
             with os.fdopen(fd, "w") as fh:
                 fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
