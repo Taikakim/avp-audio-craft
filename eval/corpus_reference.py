@@ -27,7 +27,8 @@ import numpy as np
 LT = Path("/run/media/kim/Lehto/timeseries")
 AVP = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed")
 OUT = Path("/home/kim/Projects/SAO/eval/corpus_reference.json")
-SCALAR = ["stereo_width_ts", "stereo_corr_ts", "dissonance_ts", "inharmonicity_ts"]
+SCALAR = ["stereo_width_ts", "stereo_corr_ts", "dissonance_ts", "inharmonicity_ts",
+          "spectral_flatness_ts", "spectral_flux_ts", "pitch_salience_ts"]
 MOODJSON = Path("/home/kim/Projects/mir/models/essentia/mtg_jamendo_moodtheme-discogs-effnet-1.json")
 
 

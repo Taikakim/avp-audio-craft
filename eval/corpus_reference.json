@@ -83,6 +83,21 @@
    "std": 0.01385,
    "n": 1500
   },
+  "spectral_flatness": {
+   "mean": 0.19133,
+   "std": 0.09882,
+   "n": 1500
+  },
+  "spectral_flux": {
+   "mean": 67.31928,
+   "std": 19.72384,
+   "n": 1500
+  },
+  "pitch_salience": {
+   "mean": 0.45665,
+   "std": 0.06487,
+   "n": 1500
+  },
   "mood_mean": [
    0.0144,
    0.0045,
@@ -173,6 +188,21 @@
   "inharmonicity": {
    "mean": 0.04326,
    "std": 0.0137,
+   "n": 1500
+  },
+  "spectral_flatness": {
+   "mean": 0.20463,
+   "std": 0.07631,
+   "n": 1500
+  },
+  "spectral_flux": {
+   "mean": 43.18789,
+   "std": 10.68227,
+   "n": 1500
+  },
+  "pitch_salience": {
+   "mean": 0.458,
+   "std": 0.05604,
    "n": 1500
   },
   "mood_mean": [
