@@ -47,9 +47,15 @@ def gini(x):
 
 def measure(path, es, algos):
     w, spec, speaks, diss, pitch, hpeaks, inharm, scx = algos
-    audio = es.MonoLoader(filename=str(path), sampleRate=SR)()
-    if audio.size < 4096:
+    # STEREO load (Kim's "sound separation" is a stereo-field axis mono analysis throws away)
+    st, sr, *_ = es.AudioLoader(filename=str(path))()
+    if st.shape[0] < 4096:
         return None
+    L, R = st[:, 0].astype(np.float64), st[:, 1].astype(np.float64)
+    mid, side = (L + R) / 2.0, (L - R) / 2.0
+    stereo_corr = float(np.corrcoef(L, R)[0, 1]) if (L.std() > 0 and R.std() > 0) else 1.0
+    stereo_width = float(np.sqrt(np.mean(side ** 2)) / (np.sqrt(np.mean(mid ** 2)) + 1e-9))
+    audio = mid.astype(np.float32)
     ttn, gi, cr, ds, ih, cx = [], [], [], [], [], []
     flux_series, prev = [], None
     for frame in es.FrameGenerator(audio, frameSize=2048, hopSize=1024, startFromZero=True):
@@ -74,10 +80,17 @@ def measure(path, es, algos):
         prev = s
     med = lambda a: float(np.median(a)) if a else float("nan")
     fl = np.asarray(flux_series) if flux_series else np.array([0.0])
+    cxa = np.asarray(cx) if cx else np.array([0.0])
+    # frame-level filling: p90 complexity + fraction of frames above the clip's own median
+    # complexity by >50% (localized "papering over gaps" that a median washes out)
+    filled_frac = float(np.mean(cxa > 1.5 * (np.median(cxa) + 1e-9))) if cx else float("nan")
     return {
         "tonal_to_noise": med(ttn), "spectral_gini": med(gi), "spectral_crest": med(cr),
         "dissonance": med(ds), "inharmonicity": med(ih), "spectral_complexity": med(cx),
+        "spectral_complexity_p90": float(np.percentile(cxa, 90)) if cx else float("nan"),
+        "filled_frac": filled_frac,
         "flux_cv": float(fl.std() / (fl.mean() + 1e-12)),
+        "stereo_corr": stereo_corr, "stereo_width": stereo_width,
     }
 
 
@@ -128,7 +141,8 @@ def main():
 
     cols = ["file", "model", "ckpt", "cfg", "strength", "clap_matched", "tonal_to_noise",
             "spectral_gini", "spectral_crest", "dissonance", "inharmonicity",
-            "spectral_complexity", "flux_cv"]
+            "spectral_complexity", "spectral_complexity_p90", "filled_frac", "flux_cv",
+            "stereo_corr", "stereo_width"]
     with a.out.open("w", newline="") as f:
         wr = csv.DictWriter(f, fieldnames=cols)
         wr.writeheader()
