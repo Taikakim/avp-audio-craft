@@ -78,7 +78,22 @@ Distinct from §4's gradient meters and much cheaper: every N steps, decode a co
 | true prompt beats ALL far controls | **71.3 %** | adherence hit-rate |
 | in-set retrieval top-1 / top-3 | 19.0 % / 38.7 % | above 8.3 % chance but weak (expected) |
 
-**Distribution:** matched-cos spans 0.005 → 0.51. The bottom cluster (≈0.005–0.015, at the far-control floor) is dominated by **cfg 1.0 / w 0.6** cells — the weakest-steering settings drift semantically toward generic/noise (a finding in itself, and a natural home for an in-eval degeneration flag). The top (~0.50) is dora128/dora64 ep0. **Verdict: the degeneration-detector use is validated; the fine-ranking use is not (and should not be attempted).** CSV: `clap_proto.csv` (this session's scratch).
+**Verdict: the degeneration-detector use is validated; the fine-ranking use is not (and should not be attempted).**
+
+**Sampling-bias correction (2026-07-22):** the first `stratified_sample` keyed on (model, prompt) only → drew 96% cfg1/w0.6 (first in manifest order), which depressed matched-cos and faked a "weak-steering degenerates" signal off 12 strong cells. Fixed to key on (model, prompt, cfg, strength). On the corrected **balanced 500-clip** sample the numbers are cleaner and the general checkpoint is clearly the better detector.
+
+**Checkpoint A/B — general 630k vs music_audioset (HTSAT-base), balanced 500:**
+
+| (balanced 500) | general 630k | music_audioset |
+|---|---|---|
+| matched cos | **0.352** | 0.293 |
+| far-control floor | **−0.017** | +0.043 |
+| margin vs far | **0.369** | 0.251 |
+| **steering separation d** (strong-vs-weak, = well-formedness sensitivity) | **1.00** | 0.59 |
+| dynamic range p05–p95 | **0.155–0.499** | 0.115–0.442 |
+| beats-all-far hit-rate | 93.6% | 94.8% |
+
+**Decision (data-driven, not ear): the general 630k is the default degeneration checkpoint** — bigger genre-vs-noise margin, cleaner near-zero floor, and *higher* sensitivity to output well-formedness (d=1.00 vs 0.59: it drops harder on degenerate output, which is exactly the detector's job). The music_audioset checkpoint compresses the cosine scale and is NOT an upgrade here; kept available via `clap_score.py --music-ckpt` for future music-specific tasks. What still needs **Kim's ear** is only the *threshold* (which absolute CLAP value = "degenerate") — tee up the lowest-CLAP clips (~3.6% sit below 0.10) for him to confirm they are the drone/noise ones. CSVs this session: `clap_gen500.csv` / `clap_mus500.csv` (scratch).
 
 ## 6. Rollout (order set by Kim 2026-07-22 — train-side monitor promoted to first)
 
@@ -93,6 +108,6 @@ Distinct from §4's gradient meters and much cheaper: every N steps, decode a co
    - (d) **FDopenl3-proper: substitute, do NOT port** — only worth it to reproduce a *published* FDopenl3 number; CLAP-Music-FAD is a better music metric and ROCm-native today.
 
 ## 7. Decisions (Kim 2026-07-22)
-- **CLAP checkpoint: UPGRADE** → adopting laion's **music_audioset (HTSAT-base)** checkpoint (`lukewys/laion_clap :: music_audioset_epoch_15_esc_90.14.pt`), A/B'd against the general 630k on the §5 validation before it becomes the default. `clap_score.py --music-ckpt <path>` already loads it.
+- **CLAP checkpoint: A/B'd → KEEP GENERAL 630k** (2026-07-22). Downloaded + tested the music_audioset (HTSAT-base) checkpoint per Kim; on the corrected balanced sample the general 630k is the *better* degeneration detector (§5: margin 0.369 vs 0.251, steering-separation d=1.00 vs 0.59, cleaner floor). Music kept available via `--music-ckpt` but is not the default. *(Note re Kim's `clap-htsat-fused` link: that's the general-domain HF transformers fused model — not music-specialized; the music_audioset .pt above is the music one, and it still lost the A/B.)*
 - **Rollout order: train-side degeneration monitor FIRST** (was #2 → now #1); eval-side flag second.
 - **FD/KL: research the ROCm jury-rig cost + prior art first**, then decide (§6 step 5). PaSST-KL / CLAP-FAD are the likely ROCm-native first cuts; FDopenl3-proper deferred if OpenL3-on-ROCm is as painful as feared.

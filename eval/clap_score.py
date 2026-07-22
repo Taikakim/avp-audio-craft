@@ -37,13 +37,16 @@ DB = Path("/home/kim/Projects/SAO/eval/clip_metrics.db")
 
 
 def stratified_sample(entries, n):
-    """Even-ish spread across (model, prompt_id) so the validation isn't dominated by
-    one over-rendered model. Deterministic (index-ordered, no RNG) so reruns match."""
+    """Even-ish spread across (model, prompt_id, cfg, strength) so the validation isn't
+    dominated by one over-rendered model OR one cfg/strength setting (an earlier
+    (model,prompt)-only key drew 96% cfg1/w0.6 because that's first in manifest order,
+    biasing the degeneration read). Deterministic (index-ordered, no RNG) so reruns match."""
     if n <= 0 or n >= len(entries):
         return entries
     by = {}
     for e in entries:
-        by.setdefault((e["model"], str(e.get("prompt_id"))), []).append(e)
+        key = (e["model"], str(e.get("prompt_id")), str(e.get("cfg")), str(e.get("strength")))
+        by.setdefault(key, []).append(e)
     groups = list(by.values())
     out, i = [], 0
     while len(out) < n:
