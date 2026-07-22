@@ -1,0 +1,40 @@
+{
+ "goa": {
+  "boundaries_per_min": {
+   "mean": 1.082,
+   "std": 0.501
+  },
+  "recall": {
+   "mean": 0.073,
+   "std": 0.046
+  },
+  "loop_score": {
+   "mean": 0.039,
+   "std": 0.02
+  },
+  "mean_ssm": {
+   "mean": 0.013,
+   "std": 0.001
+  },
+  "n": 400
+ },
+ "avp": {
+  "boundaries_per_min": {
+   "mean": 1.038,
+   "std": 0.495
+  },
+  "recall": {
+   "mean": 0.063,
+   "std": 0.034
+  },
+  "loop_score": {
+   "mean": 0.037,
+   "std": 0.019
+  },
+  "mean_ssm": {
+   "mean": 0.013,
+   "std": 0.001
+  },
+  "n": 400
+ }
+}
