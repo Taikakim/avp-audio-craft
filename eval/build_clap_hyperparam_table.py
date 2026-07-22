@@ -118,6 +118,11 @@ def parse_recipe(recipe, label):
     ma = re.search(r"aug(\d+)", lab)
     d["aug"] = int(ma.group(1)) if ma else 0
     d["base_target"] = "ptm" if (lab.endswith("_ptm") or "post-trained" in r) else "base"
+
+    # training steps: the recipe records "epoch M/step S (this ckpt)" -> steps/epoch = S/M,
+    # then steps(ckpt) = steps_per_epoch × that ckpt's epoch (computed per-row in main).
+    mse = re.search(r"epoch (\d+)\s*/\s*step (\d+)", r)
+    d["steps_per_epoch"] = (int(mse.group(2)) / int(mse.group(1))) if (mse and int(mse.group(1)) > 0) else np.nan
     return d
 
 
@@ -154,11 +159,12 @@ def main():
 
     # per-cell epoch from ckpt
     df["epoch"] = df["ckpt"].str.extract(r"ep(\d+)").astype(float)
+    df["steps"] = (df["steps_per_epoch"].astype(float) * df["epoch"]).round()
     df["is_repr"] = df["model"].str.endswith("_repr")
 
     # tidy column order
     hp_cols = ["arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T", "duration_s",
-               "batch", "lr", "optimizer", "dataset", "aug", "base_target", "epoch"]
+               "batch", "lr", "optimizer", "dataset", "aug", "base_target", "epoch", "steps"]
     ctrl_cols = ["cfg", "strength"]
     metric_cols = ["clap_matched", "clap_margin_far", "retrieval_rank", "beats_all_far",
                    "ce", "pq", "cu", "pc", "zcr", "flatness", "flux", "hf_ratio", "bpm",

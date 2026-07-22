@@ -21,13 +21,48 @@ OUT = ROOT / "dora_table.html"
 
 # column groups + per-metric direction (+1 = higher is better/green, -1 = lower is better)
 HP = ["model", "ckpt", "arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T",
-      "batch", "lr", "optimizer", "dataset", "aug", "epoch", "n_cells"]
+      "batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps", "n_cells"]
 METRICS = {"clap_matched": +1, "clap_margin_far": +1, "ce": +1, "pq": +1, "cu": +1, "pc": +1,
            "zcr": -1, "flatness": -1, "flux": +1, "hf_ratio": -1, "bpm": 0,
            "onset_p95": +1, "centroid": 0, "crest": -1, "rms": +1}
 NICE = {"clap_matched": "CLAP", "clap_margin_far": "CLAP·mgn", "alpha_over_rank": "α/rank",
         "frames_T": "T", "onset_p95": "onset", "hf_ratio": "hf", "flatness": "flat",
         "precision": "prec", "optimizer": "opt"}
+
+# hover tooltips per column (native title=). ↑ = higher is better, ↓ = lower is better.
+DESC = {
+    "model": "Training run label (the recipe). Each row aggregates that run's cfg×strength×prompt cells.",
+    "ckpt": "Checkpoint = the training epoch snapshot rendered (ep<N>).",
+    "arch": "Adapter type: dora (DoRA rows) · fullft (whole DiT fine-tuned) · base (no adapter).",
+    "rank": "DoRA/LoRA rank = adapter capacity. r16 harsh/worst; ≥64 plateaus; 128 = safe default.",
+    "alpha": "DoRA alpha = adapter scaling. With α<rank the adapter is applied more gently.",
+    "alpha_over_rank": "alpha ÷ rank (effective scale). <1 = 'adjusted' (adj) — beats the standard α=rank.",
+    "precision": "Training precision: fp32 or bf16. ≈equal for genre-adherence & buzz; fp32's edge is fidelity (ear-only).",
+    "frames_T": "Latent context length in frames (T). ×0.0928 s = seconds. Optimum ~1024; T4096 (long) is worse.",
+    "batch": "Training batch size. Marginal 'bigger better' is a confound; at matched context small batch is cleaner.",
+    "lr": "Learning rate. Flat 1e-4↔2e-4; cliffs (collapses) at 6e-4.",
+    "optimizer": "Optimizer: FusionOpt or AdamW.",
+    "dataset": "Training corpus: goa (psytrance) · avp (Kim's own music) · mixed.",
+    "aug": "Augmentation multiplier (pitch/stretch). 0 = none. aug10 is the cleanest single win (helps every axis).",
+    "epoch": "This checkpoint's training epoch. Overtraining collapses UN-augmented runs by ~ep15; aug10 climbs to ep74 (corpus best).",
+    "steps": "Total training optimizer steps at this checkpoint (steps/epoch × epoch, from the recipe's recorded step count). Blank where not recorded.",
+    "n_cells": "Number of rendered cells averaged into this row.",
+    "clap_matched": "↑ CLAP cosine(audio, its OWN prompt) = genre/prompt ADHERENCE. Low = output drifted off-genre (degeneration).",
+    "clap_margin_far": "↑ CLAP gap between the true prompt and out-of-genre control prompts. Higher = more decisively on-genre.",
+    "ce": "↑ Audiobox Content Enjoyment (learned subjective 'is it enjoyable'). ~scale 1–10.",
+    "pq": "↑ Audiobox Production Quality (learned 'how well produced'). Nearly collinear with CU.",
+    "cu": "↑ Audiobox Content Usefulness (learned). Nearly collinear with PQ.",
+    "pc": "Audiobox Production Complexity (learned). Neutral — more/less complex, not better/worse.",
+    "zcr": "↓ Zero-crossing rate = noise/brightness proxy. High = noisier/buzzier.",
+    "flatness": "↓ Spectral flatness (Wiener entropy) = noise-like vs tonal. High = whitened/noisy (buzz).",
+    "flux": "↑ Spectral flux = frame-to-frame spectral change (dynamism). Low = static/drone-like.",
+    "hf_ratio": "↓ Fraction of spectral energy above 6 kHz = HF-blowout / static-buzz signature. High = harsh.",
+    "bpm": "Estimated tempo (BPM). Informational — uncorrelated with quality.",
+    "onset_p95": "↑ 95th-pct onset strength = rhythmic density / attack presence. Higher = busier/punchier.",
+    "centroid": "Spectral centroid = brightness (Hz). Neutral.",
+    "crest": "↓ Crest factor (peak÷RMS). High = peaky/transient; low = more sustained/filled. Genre-adherent output trends lower.",
+    "rms": "↑ RMS energy = overall loudness/fullness.",
+}
 
 
 def main():
@@ -58,7 +93,7 @@ def main():
                    "mood_top": (b.get("mood_top10") or [])[:6]}
 
     payload = {"cols": cols, "rows": data, "metrics": METRICS, "hp": HP,
-               "nice": NICE, "base": base}
+               "nice": NICE, "base": base, "desc": DESC}
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
     print(f"wrote {OUT}  ({len(rows)} rows, {len(cols)} cols)")
@@ -83,8 +118,9 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
 </style></head><body>
 <h1>DoRA hyperparameter × metric table</h1>
 <p class=sub>Every trained model × checkpoint (each row aggregates its cfg×strength×prompt cells).
-Click a header to sort; each metric column is a heat-map (green = better direction, red = worse).
-Filter below. Hyperparameters parsed from the checkpoint recipes.</p>
+<b>Hover any column header for its definition</b>; click to sort. Each metric column is a
+heat-map (green = better direction, red = worse). Filter below. Hyperparameters parsed from the
+checkpoint recipes.</p>
 <div class=base id=base></div>
 <div class=ctl>
  <label>dataset <select id=fds><option value="">all</option><option>goa</option><option>avp</option><option>mixed</option></select></label>
@@ -96,7 +132,7 @@ Filter below. Hyperparameters parsed from the checkpoint recipes.</p>
 <div class=wrap><table id=t><thead><tr id=hrow></tr></thead><tbody id=body></tbody></table></div>
 <script>
 const D=__DATA__;
-const {cols,rows,metrics,nice,base}=D;
+const {cols,rows,metrics,nice,base,desc}=D;
 const nfmt=(c,v)=>{if(v==null||v==='')return '';if(typeof v!=='number')return v;
  if(['lr'].includes(c))return v.toExponential(1);
  if(['rank','alpha','frames_T','batch','aug','epoch','n_cells','bpm'].includes(c))return v%1?v.toFixed(1):v.toFixed(0);
@@ -111,6 +147,7 @@ let sortCol='clap_matched',sortDir=-1;
 function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
  for(const c of cols){const th=document.createElement('th');const isTxt=typeof rows[0][c]!=='number';
   th.className=(isTxt?'txt ':'')+(c===sortCol?'sorted':'');th.textContent=nice[c]||c;
+  th.title=(desc[c]||c)+'  ·  click to sort';
   if(c===sortCol)th.innerHTML+=' <span class=arrow>'+(sortDir<0?'▼':'▲')+'</span>';
   th.onclick=()=>{if(sortCol===c)sortDir*=-1;else{sortCol=c;sortDir=(c in metrics&&metrics[c]>=0)||typeof rows[0][c]!=='number'?-1:-1;}render();};
   tr.appendChild(th);}}
