@@ -76,3 +76,4 @@ __pycache__/
 /.osc-queue.jsonl
 
 eval/clap_degen_model_matrix.csv
+eval/clap_full_table.csv
