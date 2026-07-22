@@ -89,9 +89,14 @@ Marginal shows bs16 best (0.329) — but bs16 **is** the T1024 run, so that's th
 CONTROLLED (fp32cmp T4096, lr1e-4): bs1 CLAP 0.294 / hf **0.024** vs bs4 0.287 / hf 0.053. **At matched
 context, small batch is cleaner, not worse.** Do not read "bigger batch better" from the marginal.
 
-### precision — fp32 buys almost nothing over bf16
-Marginal: CLAP 0.296 both; fp32 CE 6.07 vs bf16 5.76 (a small quality bump), identical adherence and
-buzz. **The expensive fp32 training is not justified by these metrics** — bf16 is essentially as good.
+### precision — fp32 doesn't buy genre-adherence or lower buzz (but a DIFFERENT axis is Kim's ear's)
+Marginal: CLAP 0.296 both; fp32 CE 6.07 vs bf16 5.76 (a small Audiobox-CE bump), identical adherence and
+buzz. **On the axes measured here — genre-adherence and DSP-buzz — fp32 ≈ bf16.** ⚠️ This does NOT
+contradict Kim's 2026-07-20 by-ear "fp32 > bf16" (WORKLOG 07-20 02:32): he judged **fidelity — sound
+separation, less noisy high-end** — which CLAP and clip_metrics explicitly do NOT capture (THE-FINN
+patrol flag, 2026-07-22). So the honest statement is "fp32 doesn't buy adherence or lower buzz," NOT
+"fp32 buys nothing." **The fp32-campaign go/kill still hangs on Kim's ear on the fidelity axis — this
+finding retires one axis, not the arm.**
 
 ### optimizer — AdamW ≥ FusionOpt in this cut (flag, not conclusion)
 AdamW CLAP 0.328 / CE 6.22 vs FusionOpt 0.292 / CE 5.93. BUT AdamW n=882 (a few specific runs, heavily
@@ -108,7 +113,7 @@ vs 0.108). So post-training pulls output toward genre at a fidelity cost — dir
 1. **Semantic (CLAP) and DSP-buzz degeneration are independent** (r≈0.01–0.22) → both screens are needed; neither substitutes.
 2. **PQ and CU are 0.96-collinear** → one is redundant; report PQ (or CU), CE, and PC.
 3. **α < rank beats α = rank** on adherence AND quality — an unused recipe lever.
-4. **fp32 ≈ bf16** for output quality — the fp32 campaign's cost isn't buying quality (it may still matter for training stability, untested here).
+4. **fp32 ≈ bf16 on the axes measured here (adherence + buzz)** — but these do NOT capture the fidelity/high-end-noise axis Kim judged by ear on 07-20 ("fp32 > bf16"). Both true, different axes; the fp32 go/kill stays his ear's call (THE-FINN patrol flag).
 5. **lr is flat 1e-4↔2e-4 and cliffs at 6e-4** (controlled) — the usable LR band is wider than "1e-4 only," but 3× is a wall.
 6. **Overtraining is conditional on augmentation** — un-aug collapses by ep15; aug10 improves to ep74 (best in corpus).
 7. **Small batch is cleaner at long context** (controlled) — opposite of the naive marginal.
