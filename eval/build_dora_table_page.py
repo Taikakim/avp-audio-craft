@@ -8,16 +8,47 @@ training baselines). Emits a single self-contained HTML (no external deps): clic
 sort, every numeric column is a direction-aware heatmap, filter by dataset/rank, and a pinned
 DATASET-BASELINE strip so drift-from-source is readable (the stereo-narrowing answer).
 
-OUT: eval/dora_table.html
+OUT: eval/dora_table.html (canonical, committed) -- ALSO copied to STAGING (Kim
+2026-07-23: the landing-page link should open a local file, not round-trip to the
+live site) so it rides the normal STAGING->live sync alongside every other eval page.
 """
 import csv
 import json
+import shutil
 from pathlib import Path
 
 ROOT = Path("/home/kim/Projects/SAO/eval")
 AGG = ROOT / "clap_dora_aggregate.csv"
 REF = ROOT / "corpus_reference.json"
 OUT = ROOT / "dora_table.html"
+MANIFEST = Path.home() / ".cache/evals_aac/model_matrix/manifest_live.jsonl"
+
+
+def _jsnum(x):
+    f = float(x)
+    return str(int(f)) if f == int(f) else repr(f)
+
+
+def cell_fallback():
+    """Embedded cell-index so the picker works on file:// (browsers block fetch there).
+    Keys match the page's cellKey(model,ckpt,pid,cfg,w) String-concat format exactly."""
+    if not MANIFEST.exists():
+        return None
+    idx, prompts, cfgs, ws = {}, {}, set(), set()
+    for ln in MANIFEST.read_text().splitlines():
+        if not ln.strip():
+            continue
+        try:
+            e = json.loads(ln)
+        except Exception:
+            continue
+        cf, w = _jsnum(e["cfg"]), _jsnum(e["strength"])
+        idx[f'{e["model"]}{e["ckpt"]}{e["prompt_id"]}{cf}{w}'] = e["file"]
+        prompts.setdefault(str(e["prompt_id"]), e.get("prompt_text", ""))
+        cfgs.add(cf); ws.add(w)
+    return {"idx": idx, "prompts": prompts,
+            "cfgs": sorted(cfgs, key=float), "ws": sorted(ws, key=float)}
+STAGING_COPY = Path.home() / ".cache/evals_aac/dora_table.html"
 
 # column groups + per-metric direction (+1 = higher is better/green, -1 = lower is better)
 HP = ["model", "ckpt", "arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T",
@@ -124,10 +155,12 @@ def main():
                    "mood_top": (b.get("mood_top10") or [])[:6]}
 
     payload = {"cols": cols, "rows": data, "metrics": METRICS, "hp": HP,
-               "nice": NICE, "base": base, "desc": DESC, "struct": struct_file}
+               "nice": NICE, "base": base, "desc": DESC, "struct": struct_file,
+               "cf": cell_fallback()}   # embedded cell-index so the picker works on file://
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
-    print(f"wrote {OUT}  ({len(rows)} rows, {len(cols)} cols)")
+    shutil.copy2(OUT, STAGING_COPY)
+    print(f"wrote {OUT}  ({len(rows)} rows, {len(cols)} cols)  + staged copy at {STAGING_COPY}")
 
 
 _PAGE = r"""<!doctype html><html><head><meta charset=utf-8><title>DoRA hyperparameter × metric table</title>
@@ -235,6 +268,10 @@ function render(){
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
 let cellIndex=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+// clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
+// copy lives beside its model_matrix/ and ssm/ dirs -> no 'evals/' prefix.
+const CB=location.protocol==='file:'?'model_matrix/':'evals/model_matrix/';
+const SB=location.protocol==='file:'?'ssm/':'evals/ssm/';
 const pl=document.getElementById('pl');pl.loop=true;
 function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 function currentSel(){return {pid:pprompt.value,cfg:parseFloat(pcfg.value),w:parseFloat(pstrength.value)}}
@@ -265,7 +302,7 @@ function playRow(tr){
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
  curLabel=tr.dataset.model+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
- pl.pause();pl.src='evals/model_matrix/'+f;pl.currentTime=0;pl.play();
+ pl.pause();pl.src=CB+f;pl.currentTime=0;pl.play();
  showSSM(f);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
@@ -276,7 +313,7 @@ function showSSM(f){
  if(!st){panel.style.display='none';return;}
  ro.innerHTML='<b>structure</b> · recall '+(st.recall??'?')+' · sections/min '+(st.boundaries_per_min??'?')+' · loop '+(st.loop_score??'?');
  img.onerror=()=>{img.style.display='none'};img.onload=()=>{img.style.display='block'};
- img.style.display='none';img.src='evals/ssm/'+f.replace(/\.m4a$/,'.png');
+ img.style.display='none';img.src=SB+f.replace(/\.m4a$/,'.png');
  panel.style.display='block';}
 document.getElementById('body').addEventListener('click',e=>{
  const tr=e.target.closest('tr');if(!tr||!tr.dataset.model)return;playRow(tr);});
@@ -294,26 +331,37 @@ pl.addEventListener('timeupdate',()=>{if(seeking||!pl.duration)return;pseek.valu
 pl.addEventListener('durationchange',()=>{if(pl.duration)ptm.textContent=fmtT(pl.currentTime)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('input',()=>{seeking=true;if(pl.duration)ptm.textContent=fmtT(pseek.value/1000*pl.duration)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('change',()=>{if(pl.duration)pl.currentTime=pseek.value/1000*pl.duration;seeking=false;});
+function fillPicker(promptTxt,cfgSet,wSet){
+ for(const [pid,txt] of [...promptTxt].sort((a,b)=>a[0].localeCompare(b[0]))){
+  const t=txt||pid;const o=new Option(t.length>44?t.slice(0,44)+'…':t,pid);o.title=t;pprompt.add(o);}
+ [...cfgSet].sort((a,b)=>a-b).forEach(v=>pcfg.add(new Option('cfg '+v,v)));
+ [...wSet].sort((a,b)=>a-b).forEach(v=>pstrength.add(new Option('w '+v,v)));
+ if(cfgSet.has(7))pcfg.value='7';           // Kim's worked example default
+ if(wSet.has(1))pstrength.value='1';
+ markAvailability();}
 async function loadManifest(){
  cellIndex=new Map();
  const promptTxt=new Map(),cfgSet=new Set(),wSet=new Set();
  try{
   const r=await fetch('evals/model_matrix/manifest_live.jsonl',{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
   const txt=await r.text();
   for(const line of txt.split('\n')){
    if(!line.trim())continue;let e;try{e=JSON.parse(line)}catch(_){continue}
    cellIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);
    if(!promptTxt.has(e.prompt_id))promptTxt.set(e.prompt_id,e.prompt_text);
    cfgSet.add(e.cfg);wSet.add(e.strength);}
- }catch(err){plabel.textContent='clip index failed to load: '+err;return;}
- for(const [pid,txt] of [...promptTxt].sort((a,b)=>a[0].localeCompare(b[0]))){
-  const o=new Option(txt.length>44?txt.slice(0,44)+'…':txt,pid);o.title=txt;pprompt.add(o);}
- [...cfgSet].sort((a,b)=>a-b).forEach(v=>pcfg.add(new Option('cfg '+v,v)));
- [...wSet].sort((a,b)=>a-b).forEach(v=>pstrength.add(new Option('w '+v,v)));
- if(cfgSet.has(7))pcfg.value='7';           // Kim's worked example default
- if(wSet.has(1))pstrength.value='1';
- plabel.textContent='click a model row to play';
- markAvailability();}
+  fillPicker(promptTxt,cfgSet,wSet);
+  plabel.textContent='click a model row to play';return;
+ }catch(err){/* file:// blocks fetch, or offline -> embedded snapshot below */}
+ const cf=(typeof D!=='undefined')?D.cf:null;
+ if(cf&&cf.idx){
+  for(const k in cf.idx)cellIndex.set(k,cf.idx[k]);       // keys already in cellKey format
+  for(const pid in cf.prompts)promptTxt.set(pid,cf.prompts[pid]);
+  cf.cfgs.forEach(v=>cfgSet.add(parseFloat(v)));cf.ws.forEach(v=>wSet.add(parseFloat(v)));
+  fillPicker(promptTxt,cfgSet,wSet);
+  plabel.textContent='offline snapshot — click a row to play';
+ }else{plabel.textContent='clip index unavailable — open the served page for playback';}}
 // filters
 for(const id of ['fds','frank','farch'])document.getElementById(id);
 [...new Set(rows.map(r=>r.rank).filter(v=>v!=null))].sort((a,b)=>a-b).forEach(v=>frank.add(new Option(v,v)));
