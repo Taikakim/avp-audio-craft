@@ -36,6 +36,21 @@ caught by GHOST-NOTE 2026-07-21 before adoption). So: with `--pid-aware`, the re
 defaults to the **invoking shell** (`os.getppid()`), and you can set it explicitly with
 `--pid $$` from the wrapping script. Usage for a GPU mutex from a chain script:
   python3 filelock.py acquire /path/.gpu.lock --handle H --pid-aware --pid $$  &&  <gpu work>  ;  python3 filelock.py release /path/.gpu.lock --handle H
+
+**Caller-usage caveat — `$$` is NOT always the persistent holder (GHOST-NOTE, 2026-07-23).**
+`--pid $$` only records a good pid if `$$` resolves to a LONG-LIVED process. Under a
+parenthesized-group background launch — `( ... ) &` — `$$` inside the group can expand to a
+SHORT-LIVED nested-subshell pid that dies immediately, leaving a dead pid in the lock so any
+pid-aware checker reclaims a job that is still running (bit G in live use; caught in ~15s via
+`check`). This is a caller gotcha, not a code bug — filelock cannot know which of the caller's
+processes is meant to persist. Safe patterns:
+  • Prefer having the LONG-LIVED worker itself hold the lock (then its own pid is meaningful).
+  • Acquire-then-background: after launching, grab the real worker pid (`pgrep -f <script>`)
+    and RE-RUN `acquire ... --pid-aware --pid <REALPID>` — the already-holds path REWRITES the
+    recorded pid (see the re-acquire refresh above), so this canonically corrects it with NO
+    hand-editing of the lock file.
+  • Always `check` right after acquire; if it shows DEAD→reclaimable on a live job, re-acquire
+    with the real pid as above.
 """
 from __future__ import annotations
 
