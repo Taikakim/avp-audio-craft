@@ -290,6 +290,26 @@ function markPlaying(){
 function stopPlaying(){pl.pause();playingKey=playingModel=playingCkpt=null;
  plabel.className='';plabel.textContent='click a model row to play';
  document.getElementById('ssmpanel').style.display='none';markPlaying();}
+// SAME-PLAYHEAD A/B (Kim 2026-07-23): switching checkpoint (row) or setting (picker) mid-play
+// resumes the new clip at the SAME position, so you compare the identical moment. `ph` is the
+// shared playhead; seekAndPlay loads the new src then seeks to `ph` once it can play.
+let ph=0;
+function seekAndPlay(pos){
+ const go=()=>{try{const d=pl.duration||1e9;pl.currentTime=(pos>d-0.5)?0:Math.min(pos,d-0.05);}catch(e){}pl.play();};
+ if(pl.readyState>=2){go();return;}
+ let done=false;const fire=()=>{if(done)return;done=true;go();};
+ pl.addEventListener('loadedmetadata',fire,{once:true});setTimeout(fire,1500);}
+// re-resolve the CURRENTLY-playing model at a changed picker setting, continue from ph
+function repickCurrent(){
+ markAvailability();
+ if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
+ const {pid,cfg,w}=currentSel();
+ const key=cellKey(playingModel,playingCkpt,pid,cfg,w);
+ const f=cellIndex.get(key);
+ if(!f||key===playingKey)return;                      // no clip at new setting -> keep playing
+ playingKey=key;curLabel=playingModel+' '+playingCkpt+' × '+pid+' cfg'+cfg+' w'+w;
+ plabel.className='playing';plabel.textContent='▶ '+curLabel;
+ pl.pause();pl.src=CB+f;seekAndPlay(ph);showSSM(f);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
@@ -304,7 +324,7 @@ function playRow(tr){
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
  curLabel=tr.dataset.model+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
- pl.pause();pl.src=CB+f;pl.currentTime=0;pl.play();
+ pl.pause();pl.src=CB+f;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(f);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
@@ -319,7 +339,7 @@ function showSSM(f){
  panel.style.display='block';}
 document.getElementById('body').addEventListener('click',e=>{
  const tr=e.target.closest('tr');if(!tr||!tr.dataset.model)return;playRow(tr);});
-['pprompt','pcfg','pstrength'].forEach(id=>document.getElementById(id).onchange=markAvailability);
+['pprompt','pcfg','pstrength'].forEach(id=>document.getElementById(id).onchange=repickCurrent);
 // transport: play/pause + seek + time, matching model_matrix.html's player
 const fmtT=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
 let seeking=false;
@@ -329,10 +349,10 @@ pl.addEventListener('pause',()=>pp.innerHTML='&#9654;');
 pl.addEventListener('waiting',()=>{document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.add('rowloading'));});
 pl.addEventListener('playing',()=>{document.querySelectorAll('#body tr.rowloading').forEach(x=>x.classList.remove('rowloading'));
  if(playingKey){plabel.className='playing';plabel.textContent='▶ '+curLabel;}});
-pl.addEventListener('timeupdate',()=>{if(seeking||!pl.duration)return;pseek.value=Math.round(pl.currentTime/pl.duration*1000);ptm.textContent=fmtT(pl.currentTime)+' / '+fmtT(pl.duration);});
+pl.addEventListener('timeupdate',()=>{if(!pl.paused&&!seeking)ph=pl.currentTime;if(seeking||!pl.duration)return;pseek.value=Math.round(pl.currentTime/pl.duration*1000);ptm.textContent=fmtT(pl.currentTime)+' / '+fmtT(pl.duration);});
 pl.addEventListener('durationchange',()=>{if(pl.duration)ptm.textContent=fmtT(pl.currentTime)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('input',()=>{seeking=true;if(pl.duration)ptm.textContent=fmtT(pseek.value/1000*pl.duration)+' / '+fmtT(pl.duration);});
-pseek.addEventListener('change',()=>{if(pl.duration)pl.currentTime=pseek.value/1000*pl.duration;seeking=false;});
+pseek.addEventListener('change',()=>{if(pl.duration){pl.currentTime=pseek.value/1000*pl.duration;ph=pl.currentTime;}seeking=false;});
 function fillPicker(promptTxt,cfgSet,wSet){
  for(const [pid,txt] of [...promptTxt].sort((a,b)=>a[0].localeCompare(b[0]))){
   const t=txt||pid;const o=new Option(t.length>44?t.slice(0,44)+'…':t,pid);o.title=t;pprompt.add(o);}
