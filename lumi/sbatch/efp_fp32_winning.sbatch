@@ -134,7 +134,29 @@ train() {
 }
 
 echo "[arm ${ARM}] TRAIN ${DSTAG} T=${T} BS=${BS} alpha=${ALPHA} ${PREC} -> ${RUN}"
-if train 2>&1 | tee ${RUN}/train.log; then echo "[arm ${ARM}] DONE"; else echo "[arm ${ARM}] FAILED — see ${RUN}/train.log (siblings unaffected)"; fi
+if train 2>&1 | tee ${RUN}/train.log; then
+  echo "[arm ${ARM}] TRAIN DONE"
+  # ── EVAL RENDER (STANDING DIRECTIVE, Kim 2026-07-23): every LUMI training run generates its
+  # own eval-prompt grid after finishing, per spec (model_matrix_gen: full 18-prompt x cfg{1,7,16}
+  # x strength{1,1.5,2} 20s grid). Fixes the coverage gap that left native runs at 1 prompt.
+  # Rendered at 20s (cheap) even for native-trained arms; LAST + a MIDPOINT checkpoint.
+  SNAP=${CODE}/lumi/matrix_prompts_snapshot.json
+  ROUT=${SCRATCH}/renders/matrix_cells; mkdir -p "${ROUT}"
+  mapfile -t CKS < <(ls ${RUN}/epoch=*.ckpt 2>/dev/null | sort -V)
+  if [ ${#CKS[@]} -gt 0 ]; then
+    SEL=("${CKS[$(( ${#CKS[@]} - 1 ))]}")                                  # last
+    [ ${#CKS[@]} -gt 3 ] && SEL+=("${CKS[$(( ${#CKS[@]} / 2 ))]}")         # + midpoint
+    for CK in "${SEL[@]}"; do
+      EP=$(basename "${CK}" | grep -oE "epoch=[0-9]+" | grep -oE "[0-9]+")
+      echo "[arm ${ARM}] EVAL RENDER ${NAME} ep${EP} (full 18-prompt grid)"
+      python ${CODE}/lumi/render_matrix_cells.py --label ${NAME} --tag ep${EP} \
+        --ckpt "${CK}" --prompts ${SNAP} --out ${ROUT} \
+        || echo "[arm ${ARM}] eval render ep${EP} failed (non-fatal)"
+    done
+  fi
+else
+  echo "[arm ${ARM}] TRAIN FAILED — see ${RUN}/train.log (siblings unaffected)"
+fi
 '
 echo "[winning] all arms finished:" && ls -la "${RUNROOT}"
 # SUCCESS = each arm dir has epoch checkpoints; VERIFY by counting ckpts, never the sbatch rc.
