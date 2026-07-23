@@ -79,6 +79,23 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 
 > ⚠️ Stale path in old memories: `Mantu/ai-music/Goa_Separated_crops` **no longer exists**.
 
+### LUMI training/render pulls — CANONICAL TARGET = the UUID drive (2026-07-23, Kim)
+**`/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/` is the canonical LUMI
+rsync/grab target** — all `rsync`/`scp` pulls of LUMI `runs/` + `renders/` land here (structure
+mirrors scratch: `lumi_runs/runs/<run>/<arm>/…`, `lumi_runs/renders/…`). **Why here, not Mantu:**
+this drive has ~1.5 T free (62%); Mantu is at ~90% (383 G) and is the source-audio + `sa3_lora_runs`
+drive — raw LUMI pulls would tip it over. `Mantu/lumi_runs` was an early **partial** grab (50 G,
+a strict information-subset of the UUID copy — its only "unique" files were fullft `epoch=7
+.weights.ckpt` slims, which are the optimizer-stripped projection of UUID's fat `epoch=7 .ckpt`);
+consolidated onto UUID + reclaimed 2026-07-23.
+- **Redundancy caveat:** the UUID drive is ALSO removable/single-copy. The **keep-set** (terminal
+  fats + slims) is what needs a 2nd copy — slims are small enough to mirror to Mantu; the fat
+  full-model sets (fullft ~314 G) are the **LUMI-O off-site** candidate (blocked on Kim's
+  auth.lumidata.eu token). LUMI scratch is the de-facto 2nd copy only until it's purged.
+- **Fat = live resume point** (not archival): models start sounding good ~ep5–7 so these runs train
+  further (per the ckpt-prune skill). Terminal-fat convention reads **ep9** for the `fp32_frames`
+  family, **ep7** elsewhere. Pull fat only for the terminal epoch, slims elsewhere.
+
 ### Derived data — Lehto (`/run/media/kim/Lehto`) — TRAINING DATA ONLY (2026-07-04)
 Lehto no longer holds evals or checkpoints — those moved to Mantu (above) to free space
 (Lehto was at 94%) and consolidate the eval convention on the drive that already had
@@ -565,6 +582,13 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   before any other command/substitution. Same family as the LUMI HQ "count output files,
   not sbatch rc" trap: always verify the *artifact* (cells rendered / files present), never
   trust a self-reported rc alone.
+- **Never export BOTH `ROCR_VISIBLE_DEVICES` and `HIP_VISIBLE_DEVICES` for GCD pinning** —
+  they STACK: ROCR filters the device list first (worker sees 1 GPU, renumbered to index 0),
+  then HIP indexes INTO that filtered list, so `HIP_VISIBLE_DEVICES=N` with N>0 → "No HIP
+  GPUs are available". Cost: 7/8 HQ workers GPU-less on the first native-cells run
+  (2026-07-21, job 20068082 — 4/100+ cells rendered). LUMI GCD pinning = `ROCR_VISIBLE_DEVICES=$SLURM_PROCID`
+  ALONE (the proven muscriptor block). Local single-card is different: there you must not set
+  `HIP_VISIBLE_DEVICES=""` either (flash_attn import crash, see §5 eval-server bullet).
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
