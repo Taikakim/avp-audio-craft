@@ -106,8 +106,10 @@ function render(){
 let cellIndex=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
 // copy lives beside its model_matrix/ and ssm/ dirs -> no 'evals/' prefix.
-const CB=location.protocol==='file:'?'model_matrix/':'evals/model_matrix/';
-const SB=location.protocol==='file:'?'ssm/':'evals/ssm/';
+// the page lives at /files/evals/dora_table.html (served) and ~/evals_aac/dora_table.html
+// (local) -- in BOTH, the clips + ssm are siblings, so a plain relative base works everywhere.
+const CB='model_matrix/';
+const SB='ssm/';
 const pl=document.getElementById('pl');pl.loop=true;
 function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 function currentSel(){return {pid:pprompt.value,cfg:parseFloat(pcfg.value),w:parseFloat(pstrength.value)}}
@@ -201,7 +203,7 @@ async function loadManifest(){
  cellIndex=new Map();
  const promptTxt=new Map(),cfgSet=new Set(),wSet=new Set();
  try{
-  const r=await fetch('evals/model_matrix/manifest_live.jsonl',{cache:'no-store'});
+  const r=await fetch('model_matrix/manifest_live.jsonl',{cache:'no-store'});
   if(!r.ok)throw new Error('HTTP '+r.status);
   const txt=await r.text();
   for(const line of txt.split('\n')){
