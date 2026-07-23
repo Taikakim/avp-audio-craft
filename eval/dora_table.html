@@ -51,6 +51,7 @@ checkpoint recipes.</p>
  <button id=pp title="play/pause">&#9654;</button>
  <input type=range id=pseek min=0 max=1000 value=0>
  <span id=ptm style=color:#9a9>0:00 / 0:00</span>
+ <a id=pdl href="#" download title="download the clip playing now" style="display:none;color:#7ed;text-decoration:none;font-size:16px;padding:0 4px">&#8681;</a>
  <span id=plabel>loading clip index…</span>
 </div>
 <div class=wrap><table id=t><thead><tr id=hrow></tr></thead><tbody id=body></tbody></table></div>
@@ -122,7 +123,7 @@ function markPlaying(){
   if(tr.dataset.model===playingModel&&tr.dataset.ckpt===playingCkpt)tr.classList.add('playing');});}
 function stopPlaying(){pl.pause();playingKey=playingModel=playingCkpt=null;
  plabel.className='';plabel.textContent='click a model row to play';
- document.getElementById('ssmpanel').style.display='none';markPlaying();}
+ document.getElementById('ssmpanel').style.display='none';document.getElementById('pdl').style.display='none';markPlaying();}
 // SAME-PLAYHEAD A/B (Kim 2026-07-23): switching checkpoint (row) or setting (picker) mid-play
 // resumes the new clip at the SAME position, so you compare the identical moment. `ph` is the
 // shared playhead; seekAndPlay loads the new src then seeks to `ph` once it can play.
@@ -142,7 +143,7 @@ function repickCurrent(){
  if(!f||key===playingKey)return;                      // no clip at new setting -> keep playing
  playingKey=key;curLabel=playingModel+' '+playingCkpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
- pl.pause();pl.src=CB+f;seekAndPlay(ph);showSSM(f);markPlaying();}
+ pl.pause();pl.src=CB+f;seekAndPlay(ph);showSSM(f);setDL(f);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
@@ -158,7 +159,7 @@ function playRow(tr){
  curLabel=tr.dataset.model+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
  pl.pause();pl.src=CB+f;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
- showSSM(f);
+ showSSM(f);setDL(f);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
 // (W 2026-07-22). Non-native clips have no entry in D.struct -> panel stays hidden.
@@ -170,6 +171,8 @@ function showSSM(f){
  img.onerror=()=>{img.style.display='none'};img.onload=()=>{img.style.display='block'};
  img.style.display='none';img.src=SB+f.replace(/\.m4a$/,'.png');
  panel.style.display='block';}
+// download button: point it at the clip playing now (Kim 2026-07-23, for grabbing good evals)
+function setDL(f){const a=document.getElementById('pdl');a.href=CB+f;a.setAttribute('download',f);a.style.display='inline';}
 document.getElementById('body').addEventListener('click',e=>{
  const tr=e.target.closest('tr');if(!tr||!tr.dataset.model)return;playRow(tr);});
 ['pprompt','pcfg','pstrength'].forEach(id=>document.getElementById(id).onchange=repickCurrent);
