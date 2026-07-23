@@ -43,7 +43,9 @@ def cell_fallback():
         except Exception:
             continue
         cf, w = _jsnum(e["cfg"]), _jsnum(e["strength"])
-        idx[f'{e["model"]}{e["ckpt"]}{e["prompt_id"]}{cf}{w}'] = e["file"]
+        # SEP must match the page's cellKey(): m+'\x01'+c+'\x01'+pid+'\x01'+cfg+'\x01'+w
+        # (G uses \x01 SOH as a collision-safe separator; a plain concat never matches it).
+        idx["\x01".join([e["model"], e["ckpt"], str(e["prompt_id"]), cf, w])] = e["file"]
         prompts.setdefault(str(e["prompt_id"]), e.get("prompt_text", ""))
         cfgs.add(cf); ws.add(w)
     return {"idx": idx, "prompts": prompts,
