@@ -15,6 +15,18 @@ bills whole nodes.**
 > §1's HyperQueue-as-submission-workaround framing is void, though HQ's short-task-packing
 > rationale and the Lustre section still stand. The addendum says exactly what changes.
 
+> **⭐ STANDING DIRECTIVE — every LUMI training run creates its OWN full evals, on LUMI, as
+> part of the run** (Kim, re-affirmed 2026-07-24). A run is **not "done" until its eval suite
+> exists**: render + score on LUMI so each checkpoint lands audit-ready and comparable, and
+> nothing waits on the scarce local card. Build the eval stage into the run's workflow (the
+> same HQ/sbatch pipeline this guide describes — queue the eval renders behind the training
+> task), don't leave it as a manual local afterthought. **"Full evals" =** the correct family
+> in `docs/canonical-eval-spec.md` (§1 control-adapter gain×density grid **or** §2 plain-DoRA
+> prompt/seed/strength/length sweep — not interchangeable) **+** the MANDATORY
+> `eval/control_head_disintegration_eval.py` gate for any control-adapter checkpoint **+** the
+> semantic columns (`eval/mood_drift.py` retention + `eval/clap_score.py` genre-hold). Full
+> text + which-family-when: the ⭐ block atop `docs/canonical-eval-spec.md`.
+
 ---
 
 ## 1. Direct answer to the core problem
