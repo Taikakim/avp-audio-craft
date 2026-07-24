@@ -1,24 +1,25 @@
 #!/bin/bash
 # efp_adamw_bf16_sweep.sbatch — AdamW / bf16 lr×batch sweep (Kim direct, 2026-07-24,
 # prompted by Zach@StabilityAI: "worth an A/B with AdamW"). The AdamW counterpart to the
-# FusionOpt fp32_compare campaign — SAME adapter recipe (dora-rows r128/a128, T=4096
-# native, medium-base), only the OPTIMIZER changes (fusion→adamw) and precision is bf16.
+# FusionOpt runs — SAME adapter recipe (dora-rows r128/a128, T=512 beat-aware crops,
+# medium-base), only the OPTIMIZER changes (fusion→adamw) and precision is bf16.
 # One standard-g node, 8 GCDs, 8 single-GCD arms driven by SLURM_PROCID.
 #
-# WHY: (1) is AdamW competitive with FusionOpt on the DoRA control recipe, and does it
-# "drag less dataset sound" (Kim's obs — AdamW more benign, Fusion denser/more memorization)?
-# (2) an AdamW lr sweep {½×,1×,2×} of the 1e-4 working point, both datasets, to find the
-# AdamW operating lr. Reads against fp32_compare (Fusion) arm-for-arm on ds/bs/T.
+# WHY (Kim: "just test AdamW vs Fusion"): (1) is AdamW competitive with FusionOpt on the
+# DoRA control recipe, and does it "drag less dataset sound" (Kim's obs — AdamW more benign,
+# Fusion denser/more memorization)? (2) an AdamW lr sweep {½×,1×,2×} of the 1e-4 working
+# point, both datasets, to find the AdamW operating lr. T=512 (compromise: long-T's universal
+# benefit is unproven). The Fusion side of the A/B at T512/bf16 = the existing bf16_twin run
+# (Fusion bf16 T512 bs8 lr1e-4); the nearest AdamW arm here is arm 0/1 (bs4 lr1e-4).
 #
-# ARMS (all: dora-rows r128 a128, T=4096 native, AdamW wd=0.01 betas[0.9,0.95], bf16, 10 ep):
+# ARMS (all: dora-rows r128 a128, T=512 beat-aware, AdamW wd=0.01 betas[0.9,0.95], bf16, 10 ep):
 #   0: avp  bs4  lr 1e-4     (working point, avp)          4: avp  bs4  lr 2e-4   (2×, avp)
 #   1: goa  bs4  lr 1e-4     (working point, goa)          5: goa  bs4  lr 2e-4   (2×, goa)
 #   2: avp  bs1  lr 1e-4     (batch-1, avp)                6: avp  bs4  lr 5e-5   (½×, avp)
 #   3: goa  bs1  lr 1e-4     (batch-1, goa)                7: goa  bs4  lr 5e-5   (½×, goa)
 #   => 4× avp + 4× goa. lr sweep {5e-5,1e-4,2e-4} at bs4 + a bs1 point at 1e-4.
 #
-# MEMORY: bf16 halves fp32's activation cost, so bs4 @ T=4096 fits comfortably on 64 GB/GCD
-# (fp32 bs4 was the borderline 63–71 GB coin-flip; bf16 bs4 ≈ 30–36 GB). No batch probe.
+# MEMORY: T=512 bf16 is cheap (≈47.6 s crops) — bs4/bs1 fit trivially on 64 GB/GCD. No probe.
 # bf16 uses NATIVE attention — no fp32 SDPA probe / SA3_SDPA_CAST_BF16 island needed.
 #
 # PREREQ: latents_avp.tar.gz + latents_sa3.tar.gz + SIF + models + code already on ${SCRATCH}
@@ -86,7 +87,7 @@ case ${ARM} in
   7) DS=latents_sa3; BS=4; LR=5e-5 ;;
   *) echo "[arm ${ARM}] no assignment"; exit 0 ;;
 esac
-T=4096
+T=512
 DSTAG=$([ "${DS}" = latents_avp ] && echo avp || echo goa)
 LRTAG=$(echo ${LR} | tr -d ".-")
 NAME=adamw_${DSTAG}_t${T}_bs${BS}_lr${LRTAG}
@@ -103,7 +104,7 @@ fi
 cat > "${RUN}/run_meta.json" <<META
 {
  "hypothesis": "AdamW-vs-FusionOpt A/B on the DoRA control recipe (Zach@StabilityAI suggested it): is AdamW competitive, and does it drag less dataset sound than Fusion? Plus an AdamW lr sweep {5e-5,1e-4,2e-4} at bs4 to find the AdamW operating lr.",
- "arm": ${ARM}, "dataset": "${DSTAG}", "frames_T": ${T}, "batch_size": ${BS},
+ "arm": ${ARM}, "dataset": "${DSTAG}", "frames_T": ${T}, "beat_aware_crop": true, "batch_size": ${BS},
  "optimizer": "adamw", "adamw": "wd=0.01 betas[0.9,0.95]", "lr": "${LR}",
  "precision": "bf16", "adapter": "dora-rows r128 a128", "model": "medium-base", "epochs": 10,
  "compare_against": "runs/fp32_compare (FusionOpt fp32, same ds/bs/T arms)",
@@ -122,7 +123,7 @@ train() {
     --optimizer adamw \
     --base_precision bf16 \
     --lr ${LR} --batch_size ${BS} \
-    --frames ${T} \
+    --frames ${T} --beat-aware-crop \
     --epochs 10 --checkpoint_every_epochs 1 \
     --num_workers 6 --seed 1 --no_demos --logger csv \
     --name ${NAME} "${sc_args[@]}"
@@ -153,5 +154,6 @@ fi
 '
 echo "[adamw] all arms finished:" && ls -la "${RUNROOT}"
 # SUCCESS = count ckpts per arm dir (NEVER the sbatch rc): each ${RUNROOT}/adamw_*/ should
-# carry ~10 epoch ckpts + a run_meta.json + matrix_cells renders. Compare vs runs/fp32_compare
-# (Fusion) arm-for-arm on dataset/bs; the lr sweep (arms 0/4/6 avp, 1/5/7 goa) gives the AdamW curve.
+# carry ~10 epoch ckpts + a run_meta.json + matrix_cells renders. A/B: arm 0/1 (AdamW bf16
+# T512 bs4 lr1e-4) reads against runs/bf16_twin (Fusion bf16 T512 bs8 lr1e-4) — nearest single-
+# variable optimizer comparison (bs 4 vs 8); the lr sweep (arms 0/4/6 avp, 1/5/7 goa) gives the AdamW curve.
