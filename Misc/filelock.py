@@ -127,11 +127,27 @@ def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = F
             try:
                 fd = os.open(mine, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
-                # We (this handle) already have a lock file. REWRITE it with the current
-                # rec_pid — do NOT just utime. A PREVIOUS holder-process of this handle may
-                # have died leaving its now-DEAD pid in the file; under --pid-aware a stale
-                # dead pid makes any checker reclaim a lock we are actively re-holding =
-                # steals a live job (the pid-aware race one layer down, caught by C
+                # SAME-HANDLE CONCURRENCY TRIPWIRE (GHOST-NOTE catch, 2026-07-24). A handle's
+                # lock means "one holder"; _foreign_locks ignores our own handle, so a 2nd/3rd
+                # acquire under the SAME handle silently succeeds — the mutex does NOT serialize
+                # concurrent chains launched under one identity (G ran 3 GHOST-NOTE render chains
+                # → ~50 min of GPU collisions → a real OOM). Can't fully fix in-tool (one lock
+                # file can't track N holders), but WARN loudly when the existing lock is held by a
+                # LIVE, DIFFERENT process — that distinguishes a true collision from the legit
+                # dead-pid re-acquire refresh (dead prior pid → no warn) and the idempotent
+                # same-pid re-hold (equal → no warn). Real fix is a DISTINCT --handle per chain.
+                prior = _read_pid(mine)
+                if prior is not None and prior != rec_pid and _pid_alive(prior):
+                    sys.stderr.write(
+                        f"[filelock] ⚠ CONCURRENCY WARNING: {Path(target).name} already held by a "
+                        f"LIVE different process under handle '{handle}' (pid={prior}); this mutex "
+                        f"does NOT serialize same-handle holders — you may be running >1 concurrent "
+                        f"job under one identity. Use a DISTINCT --handle per concurrent chain "
+                        f"(e.g. {handle}-a / {handle}-b), as continuity-headb does.\n")
+                # REWRITE with the current rec_pid — do NOT just utime. A PREVIOUS holder-process
+                # of this handle may have died leaving its now-DEAD pid in the file; under
+                # --pid-aware a stale dead pid makes any checker reclaim a lock we are actively
+                # re-holding = steals a live job (the pid-aware race one layer down, caught by C
                 # 2026-07-22 when a re-acquire kept the dead pid and got pid-aware-broken
                 # mid-encode). Writing refreshes mtime too, so mtime-mode is unaffected.
                 with open(mine, "w") as fh:
