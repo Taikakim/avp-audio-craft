@@ -53,7 +53,10 @@ CODE=${PROJ}/code
 ROUT=${SCRATCH}/renders/native_cells
 
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
-export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/lumi/vendor
+export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/lumi/vendor:${CODE}/control
+# ^ control/ is REQUIRED: render_matrix_cells imports sa3_control.audio_io. Eval-render jobs
+# died on ModuleNotFoundError: sa3_control when it was missing (LUMI job 20190736). The renderer
+# now also self-adds ../control, but keep it here as belt-and-suspenders.
 export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
 export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
 export MIOPEN_USER_DB_PATH=/tmp/miopen-${ARM} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-${ARM}
