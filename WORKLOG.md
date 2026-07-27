@@ -1825,3 +1825,22 @@ done; recipe + numbers below. Full recipe in SA3 auto-memory `rocm-flash-attn-en
 - [2026-07-24 11:33] (continuity) xft SVD-extracted adapters (fullft->LoRA/DoRA r16/64/128) glitch = NOT a bug. Extractor correct (reconstruct W_eff cos 0.99 vs W_fullft from saved tensors). Root cause FUNDAMENTAL RANK: full-DiT fine-tune delta is high-rank in ATTENTION — r128 captures only 40% of cross_attn.to_out / 60% to_qkv / 68% to_out energy (vs 92-96% convs). Imbalance (fully-adapted convs feeding half-adapted attn) breaks residual balance -> glitch. DoRA can't fix (magnitude exact, direction still truncated: dora_relerr==lora_relerr==0.13). Kim's hypothesis (FT-extract beats trained DoRA at matched rank) = NO: trained low-rank DoRA finds a COHERENT solution, truncated full-FT delta is an INCOHERENT PARTIAL update. Distillation path closed at low rank; use fullft directly or TRAIN a DoRA. Diagnostic: eval/../scratchpad/diag_xft.py; extractor eval/extract_svd_adapters.py is fine.
 - [2026-07-24 12:23] (continuity) xft distillation TAIL CONFIRMED (fullft_goa_t256 full SV spectrum, 229 modules): the fullft delta is NEAR-FULL-RANK. Median rank for 0.9 energy: mlp/proj 1110 (0.72xdim), attn_qkv 937 (0.61x), attn_out 747 (0.49x) — dim=1536. Whole-model uniform-rank energy: r128=26%, r512=65%, r1024=89.5%. No usable adapter rank exists (r1024=67% of full dim is not an adapter). MLP absorbed the most high-rank change = where domain knowledge lives. This is the quantitative why-Flux-but-not-here: a working Flux concept/style LoRA-extract has r90<<dim (low-rank shift); this fp32 domain fullft has r90~0.5-0.72xdim = exactly what a LoRA cannot hold, which is why fullft was needed. Distillation closed at any sane rank; use fullft directly or TRAIN a DoRA. Spectrum: scratchpad/spectrum_xft.py.
 - [2026-07-24 21:34] (continuity) AdamW vs FusionOpt weight-space (matched r128 a128 dora-rows, T512 lr1e4, goa/avp x bs1/4): the two optimizers land NEARLY-ORTHOGONAL solutions -- direction cos 0.07-0.17 across all 4 configs -- and Fusion moves ~2x farther (adamw = 0.42-0.53x fusion magnitude). So FusionOpt is NOT 'AdamW better-conditioned toward the same place'; it finds a fundamentally different basin. cos 0.1 is ~140x above random => a small (~10%) shared direction = the robust style signal both agree on; the other ~90% is optimizer-idiosyncratic. Precision (adamw bf16 vs fusion fp32) can't explain it: bf16-vs-fp32 at matched OPT was cos ~0.45, not 0.1 -> this is an optimizer effect. Net: the OPTIMIZER is the single largest source of directional variance in the adaptation, bigger than bs/lr/seed. Which basin sounds better = audio/eval question (board). Scripts: scratchpad/adamw_vs_fusion.py.
+
+## 2026-07-27 — WINTERMUTE: winning fp32 family fully metered on the eval board
+Kim: "run stats on everything unmetered" + "metrics on the wav versions". Metered
+59,190 LOSSLESS wav (Mantu/model_matrix, CPU DSP — no AAC artifacts in flatness/hf_ratio/
+centroid) + CLAP prompt-adherence (18,289 new, sat-venv) + Audiobox ce/pq/cu/pc (18,440,
+mir-venv) into clip_metrics.db. Winning family (8 arms: goa/avp × fp32/bf16 × a45/a128 ×
+T512/T1024 × aug10) went from ZERO metrics → 2,867 fully-metered cells. Rebuilt
+clap_dora_aggregate.csv + dora_table.html (committed 3af1b59).
+Findings (DSP+CLAP+Audiobox, one axis — the ear still decides style-identity):
+- all arms uncollapsed/healthy (crest 5–6.5, no drone/whitening/buzz)
+- avp corpus > goa on ce/pq (~6.5 vs ~5.7)
+- fp32 ≈ bf16 (fp32 a hair better on avp) → bf16 is a near-free compute saving
+- a45 ≥ a128 (a45 clearly better on goa, wash on avp) → supports the a45<rank default
+- T1024 ≈ T512 on quality but better prompt-adherence + dynamics
+- aug10 best adherence (0.321) but most compressed
+Two fixes: clip_metrics.py --base/--ext (meter wav) + coalesce join (67364c9, wav DSP
+wins, m4a Audiobox preserved); Audiobox sorts by DB dur not re-decode m4a (a2aa317,
+killed ~20min idle-GPU-under-lock). Live-server board still needs model_matrix audio
+uploaded (G's ingest lane); Kim's local board is complete.
