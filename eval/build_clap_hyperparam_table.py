@@ -147,10 +147,24 @@ def main():
         "SELECT path, dur, rms, crest, zcr, onset_p95, centroid, flatness, flux, hf_ratio, bpm, ce, pq, cu, pc "
         "FROM metrics WHERE path LIKE '%/model_matrix/%'", con)
     con.close()
+    # A cell is ONE logical clip regardless of container. Meter rows may key as .wav
+    # (lossless Mantu source, Kim 2026-07-27 "run the metrics on the wav versions" — no AAC
+    # artifacts in flatness/hf_ratio/centroid) OR .m4a (staged). Different metric FAMILIES can
+    # live on different container rows: the CPU-DSP pass now meters wav, while Audiobox
+    # (ce/pq/cu/pc) keys to the staged m4a. So COALESCE per stem, not a whole-row pick — sort so
+    # the wav row is last, then groupby.last() (which SKIPS NaN) takes the wav value for every
+    # column the wav row has, and falls back to the m4a value where wav is null (e.g. Audiobox
+    # ce that only exists on the m4a row). A naive drop_duplicates(keep=wav-row) would silently
+    # drop those Audiobox scores.
     met["file"] = met["path"].str.split("/model_matrix/").str[-1]
-    met = met.drop(columns=["path"]).drop_duplicates("file")
+    met["stem"] = met["file"].str.replace(r"\.(wav|m4a|mp3|flac|ogg)$", "", regex=True)
+    met = (met.drop(columns=["path"])
+              .sort_values("file")                 # 'X.m4a' < 'X.wav' → wav LAST → wav wins per col
+              .drop(columns=["file"])
+              .groupby("stem", as_index=False).last())
+    clap["stem"] = clap["file"].str.replace(r"\.(wav|m4a|mp3|flac|ogg)$", "", regex=True)
 
-    df = clap.merge(met, on="file", how="left")
+    df = clap.merge(met, on="stem", how="left").drop(columns=["stem"])
 
     # per-model hyperparams
     hp = {m: parse_recipe(resolve_recipe(m, ov), m) for m in df["model"].unique()}

@@ -65,11 +65,11 @@ def clip_metrics(path):
         return path, None
 
 
-def enumerate_clips(roots):
+def enumerate_clips(roots, base=STAGE, ext="m4a"):
     paths = []
     for r in roots:
-        paths += glob.glob(f"{STAGE}/{r}/**/*.m4a", recursive=True)
-        paths += glob.glob(f"{STAGE}/{r}/*.m4a")
+        paths += glob.glob(f"{base}/{r}/**/*.{ext}", recursive=True)
+        paths += glob.glob(f"{base}/{r}/*.{ext}")
     return sorted(set(paths))
 
 
@@ -77,6 +77,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--roots", default="model_matrix,control_runs,renders,riffer")
+    ap.add_argument("--base", default=STAGE,
+                    help="base dir the roots live under (default the AAC staging dir)")
+    ap.add_argument("--ext", default="m4a",
+                    help="clip extension to meter — 'wav' to meter the LOSSLESS source "
+                         "(no AAC artifacts in flatness/hf_ratio/etc.) instead of staged m4a")
     args = ap.parse_args()
 
     os.makedirs(os.path.dirname(DB), exist_ok=True)
@@ -88,7 +93,7 @@ def main():
     # (ce set, dur NULL) still needs the CPU pass. Named-column upsert preserves ce/pq.
     done = {r[0] for r in con.execute("SELECT path FROM metrics WHERE dur IS NOT NULL")}
 
-    clips = enumerate_clips(args.roots.split(","))
+    clips = enumerate_clips(args.roots.split(","), args.base, args.ext)
     todo = [c for c in clips if c not in done]
     print(f"clips total {len(clips)}, already done {len(done)}, to do {len(todo)}", flush=True)
     if not todo:
