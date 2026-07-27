@@ -460,3 +460,75 @@ evidence — verify by an independent, positive check (does the expected
 output actually exist) before repeating the claim to Kim or the fleet,
 every time, no matter how many bugs you've already fixed in the same
 session.**
+
+## 2026-07-25
+
+### tool · SVD-extracted LoRA/DoRA adapters from the full-finetune checkpoints (task #71)
+Kim: the fullft checkpoints should also be turned back into LoRA/DoRA adapters
+for cheaper deployment/comparison. Built `eval/extract_svd_adapters.py`:
+`deltaW = W_fullft - W_base`, truncated `torch.linalg.svd`, sign-canonicalized
+via the same `_canonicalize_svd_signs` the training-side LoRA code already
+uses (reuse, not reinvention), `B=U[:,:r]*sqrt(S[:r])`, `A=sqrt(S[:r])[:,None]
+*Vh[:r]`; DoRA variant additionally stores `magnitude=row_norm(W_fullft)` — the
+TARGET's own norms, not the base's, matching the real DoRA forward
+(`W_eff=magnitude*(W0+scaling*B@A)/||...||_row`). Namespace mapping had to be
+verified empirically rather than assumed: DiT side strips `diffusion.model.`
+→ prepends `model.`; conditioner side strips `diffusion.conditioner.` only
+(NOT also prepending `conditioners.` — the naive double-prefix guess was
+wrong, caught before running the full batch). Ran the full 60-adapter batch
+(ranks {16,64,128} × {lora,dora} × {avp,goa}, 5 target labels each) — 100%
+coverage every adapter, verified for real via `model.load_lora([path])` +
+`generate()`, not just a key-count check.
+
+Kim: "there's so many, maybe just do one prompt first for each" — reprioritized
+to breadth over depth: a one-prompt preview across all 60 first (fast, catches
+any per-adapter breakage early), then the full cfg×strength×prompt grid.
+Two-phase render script (`xft_render_v2.sh`, since deleted with the scratchpad
+on restart): phase A = one prompt from the extra-prompts pool across all 60
+labels; phase B = full remaining grid per label, resumable via the shared
+manifest's dedup keys. Finished clean: 9621 cells, 60/60 labels covered, zero
+FAILED lines. A same-session coverage re-check flagged `xftdora128_
+fullft_goa_t512` as "missing entirely" (59/60) — traced to a bug in my OWN
+verification script (`open(...).read().split(',')` leaving the file's
+trailing newline attached to the last CSV label, so the set comparison never
+matched), not a real gap; re-verified with `.strip()`'d labels post-restart →
+genuinely 60/60. Same lesson as 2026-07-21's "a chain's success line is a
+claim, not evidence" — cuts both ways: an alarm from your OWN checker is
+ALSO a claim needing verification, not an automatic truth.
+
+### tool · fp32frames (16 arms) + winning-campaign ep10/ep15 fully rendered (tasks #72, #73)
+Found the `fp32frames_{avp,goa}_t{512,1024,2048,4096}_bs{1,4}_lr1e4` family
+(16 arms, terminal epoch) completely unregistered and unevaluated — registered
++ rendered the standard grid for all 16, confirmed clean via the render log
+(all arms "done" with board rebuilds, zero FAILED) AND independently via
+manifest cell counts. Separately, as ep10/ep15 checkpoints for the 8 winning
+fp32-campaign labels arrived from LUMI, registered them dynamically (didn't
+know exact filenames until they landed) and rendered standard-grid +
+pt-medium native cells for both epochs across all 8 labels — confirmed
+complete post-restart via manifest ckpt-tag counts (ep10/ep15/ep19 all at
+~162-164 cells per label, matching the terminal epoch's own count).
+
+### negative · same-handle GPU-mutex collision defeats the lock silently (task #74)
+Running multiple concurrent render chains under the SAME `--handle` string
+defeats `Misc/filelock.py`'s mutex entirely — it treats any lock recorded
+under a handle you're currently using as "already mine" and lets a second,
+genuinely-different chain proceed as if it held the lock, so two chains ran
+on the GPU at once with zero warning. Fix: one distinct handle per concurrent
+chain (`GHOST-NOTE-xft`, `GHOST-NOTE-fp32f`, `GHOST-NOTE-winep`), matching the
+pattern CONTINUITY was already using (`continuity-headb`) — should have
+copied that convention from the start instead of reusing my own bare handle
+across chains. Flagged to the fleet since this is a real gap in the
+filelock.py contract, not specific to this session's chains.
+
+### note · background render chains die silently across a box restart, resumability absorbed it
+The box restarted mid-session (Chrome PIDs low/fresh, `/tmp` scratchpad wiped,
+all three long-lived watcher/render background processes gone with no
+error). Cost nothing beyond a status-check hiccup because every render chain
+this session was designed around the shared manifest's dedup-key
+resumability — nothing had to be re-launched from scratch, coverage checks
+against the persistent `manifest.jsonl` + `rarity_bracket_manifest.json`
+(both survive a restart; `/tmp` scratchpad does not) confirmed all three
+chains (#71 xft, #72 fp32frames, #73 winning ep10/15) had actually finished
+before the restart killed their processes. Reinforces: never trust an
+ephemeral scratchpad log as the source of truth for "is this done" — check
+the real persistent artifact.
