@@ -83,9 +83,16 @@ def main():
     # priority order: model_matrix first (the main listening surface Kim audits), then
     # riffer/control/renders; same-length clips adjacent. Resumable, so an incomplete
     # overnight run still covers the most valuable set first.
+    # dur for the same-length grouping comes from the DB (the CPU pass already computed it) —
+    # NOT dur_bucket(), which re-decodes each .m4a via librosa/audioread (libsndfile can't read
+    # AAC headers) and left the GPU IDLE under the lock for ~20 min re-deriving known durations.
+    dur_map = {r[0]: r[1] for r in con.execute("SELECT path, dur FROM metrics WHERE dur IS NOT NULL")}
     def prio(c):
         root = c.split("/evals_aac/")[-1].split("/")[0]
-        return (ROOT_PRIORITY.get(root, 9), dur_bucket(c))
+        d = dur_map.get(c)
+        if d is None:
+            d = dur_bucket(c)          # rare fallback: clip not yet CPU-metered
+        return (ROOT_PRIORITY.get(root, 9), d)
     clips.sort(key=prio)
 
     def score_batch(batch):
