@@ -2642,6 +2642,15 @@ def build_landing(control, renders):
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).
     _highlights = [
+        ("headb_bracket.html", "Head B melody-conditioning bracket — hand it the hook",
+         "CONTINUITY's melody-contour FiLM adapter: 8 checkpoints × cfg{1,7,16} × "
+         "gain{1.0,1.5}, 4 corpus-motif-conditioned renders + 4 null controls per cell. "
+         "Adoption vs null floor + disintegration gate, per cell, same-playhead."),
+        ("dora_table.html", "DoRA hyperparameter × metric table — now with a cell player",
+         "Sortable, colour-coded table over every trained model × checkpoint (hyperparams + "
+         "CLAP/Audiobox/DSP). New: pick a prompt × CFG × weight cell up top, then click any "
+         "model row to hear that exact cell (dims rows that were never rendered at the "
+         "current pick)."),
         ("onset_narrative.html", "Onset-density control — the story + audition",
          "The FusionCC-vs-plain-Fusion verdict (0.77 vs 0.717) laid out plainly, with a "
          "density×gain A/B grid so you can run the head-to-head audition yourself."),
