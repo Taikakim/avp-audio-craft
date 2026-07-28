@@ -4,6 +4,23 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-07-28 — GHOST-NOTE: headb_bracket (CONTINUITY's Head B melody-conditioning
+  FiLM adapter) eval page live, `~/evals_aac/headb_bracket.html`.** Kim's rsync landed
+  the bracket sweep (8 checkpoints x cfg{1,7,16} x gain{1.0,1.5}, 48 cells, LUMI-
+  rendered per run_meta.json) at the canonical LUMI-pull target; renders existed but
+  the analyze phase (muscriptor transcription + adoption-vs-null-floor + disintegration
+  gate, per CONTINUITY's `control/sa3_control/headb_bracket_eval.sh` design) hadn't run.
+  Ran it (crash-checked first — the design doc flags a local-inference risk from an
+  earlier training crash; transcription-only turned out fine, ~65min GPU + CPU analyze,
+  all 48/48 cells scored). Built `Misc/build_headb_bracket_page.py` (same-playhead
+  template, master per-cell table, three-audience explainer). **Result: adoption is
+  weak** — only 14/48 cells clear 1.5x the null floor (best cell 0.123 adopt vs 0.044
+  null; most near 0), but **100% gate-clean** (no disintegration/buzz-faking anywhere in
+  the bracket) — so the adapter isn't yet reliably steering toward the supplied motif,
+  but it also isn't cheating the metric with noise. Matches the spec's own framing (this
+  is a *direction-check* pilot, not the >=60% production bar). Flagged to CONTINUITY
+  (her lane) via DM before touching it; she may already have follow-up planned.
+
 - **2026-07-25 — GHOST-NOTE: SVD-extracted LoRA/DoRA adapters (60) + fp32frames (16
   arms) + winning-campaign ep10/ep15 fully rendered & verified.** Built
   `eval/extract_svd_adapters.py` (truncated SVD of `deltaW=W_fullft-W_base`,
