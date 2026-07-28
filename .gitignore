@@ -63,6 +63,7 @@ __pycache__/
 !/Misc/build_e1_pilot_page.py
 !/Misc/build_latch_sa3_matrix_page.py
 !/Misc/build_onset_narrative_page.py
+!/Misc/build_headb_bracket_page.py
 !/Misc/latent_dim_feature_xcorr.py
 !/Misc/latent_noise_fragility.py
 !/Misc/build_dms.py
