@@ -2647,10 +2647,11 @@ def build_landing(control, renders):
          "(r1024/67% of dim for 90% energy), so SVD-truncated adapters are glitch. "
          "Energy-capture + per-class r90 tables, plus a matched-rank A/B (xft-extracted "
          "vs a trained straight DoRA) so you can hear the contrast."),
-        ("headb_bracket.html", "Head B melody-conditioning bracket — hand it the hook",
-         "CONTINUITY's melody-contour FiLM adapter: 8 checkpoints × cfg{1,7,16} × "
-         "gain{1.0,1.5}, 4 corpus-motif-conditioned renders + 4 null controls per cell. "
-         "Adoption vs null floor + disintegration gate, per cell, same-playhead."),
+        ("headb_bracket.html", "Head B melody-conditioning bracket — steers at cfg16 only",
+         "CONTINUITY's melody-contour FiLM adapter, verdict in: soft-steers toward the "
+         "requested motif at cfg16 only (inert at cfg1, weak at cfg7), strengthening "
+         "with training, gates 4/4 clean everywhere. 8 checkpoints × cfg{1,7,16} × "
+         "gain{1.0,1.5}, same-playhead, cfg-robust own-vs-wrong confusion metric."),
         ("dora_table.html", "DoRA hyperparameter × metric table — now with a cell player",
          "Sortable, colour-coded table over every trained model × checkpoint (hyperparams + "
          "CLAP/Audiobox/DSP). New: pick a prompt × CFG × weight cell up top, then click any "
