@@ -2642,6 +2642,11 @@ def build_landing(control, renders):
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).
     _highlights = [
+        ("xft_distillation.html", "Does a full fine-tune distill to an adapter? — NO",
+         "CONTINUITY's SV-spectrum finding: full-DiT fine-tune deltas are near-full-rank "
+         "(r1024/67% of dim for 90% energy), so SVD-truncated adapters are glitch. "
+         "Energy-capture + per-class r90 tables, plus a matched-rank A/B (xft-extracted "
+         "vs a trained straight DoRA) so you can hear the contrast."),
         ("headb_bracket.html", "Head B melody-conditioning bracket — hand it the hook",
          "CONTINUITY's melody-contour FiLM adapter: 8 checkpoints × cfg{1,7,16} × "
          "gain{1.0,1.5}, 4 corpus-motif-conditioned renders + 4 null controls per cell. "
