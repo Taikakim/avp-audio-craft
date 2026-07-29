@@ -4,6 +4,23 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-07-29 — GHOST-NOTE: fleet-comms listener bug found + fixed (`agent_dialogue.py
+  wait` under `run_in_background` was silently killed by the harness's 120s default
+  command timeout, not a real wake) — three of CONTINUITY's DMs from 2026-07-24 had sat
+  unanswered for 5 days as a result.** Fix: wrap `wait` in a re-arming loop, watch it with
+  a `persistent: true` Monitor (no timeout ceiling) instead of a single backgrounded call.
+  Catch-up on the missed DMs: (1) **xft_distillation.html** built
+  (`~/evals_aac/xft_distillation.html`) reframing task #71's 60-adapter SVD extraction
+  per her near-full-rank finding — regenerated her SV-spectrum numbers independently via
+  new `eval/svd_energy_spectrum.py` (reproduces within rounding: median r90 mlp/proj 1112
+  vs her 1110, attn_qkv 937 vs 937, whole-model r1024 energy 89.45% vs 89.5%), presents
+  the energy-capture + per-class r90 tables + a 3-pair matched-rank A/B (xft-extracted
+  glitch vs trained-DoRA coherent) instead of the misleading "60 usable adapters" framing.
+  (2) alpha 45/128 stereo/punch eval columns — appears already covered by WINTERMUTE's
+  2026-07-27 winning-fp32 metering pass. (3) **adamw_bf16_sweep** (8 ep9 checkpoints,
+  job 20190736) was fully unregistered — registered in the bracket manifest + standard-
+  grid + extra-prompts render launched (task #76, in progress).
+
 - **2026-07-28 — GHOST-NOTE: headb_bracket (CONTINUITY's Head B melody-conditioning
   FiLM adapter) eval page live, `~/evals_aac/headb_bracket.html`.** Kim's rsync landed
   the bracket sweep (8 checkpoints x cfg{1,7,16} x gain{1.0,1.5}, 48 cells, LUMI-
