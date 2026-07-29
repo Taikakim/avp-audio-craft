@@ -4,6 +4,19 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-07-29 — GHOST-NOTE + WINTERMUTE: adamw_bf16_sweep fully landed (task #76,
+  CONTINUITY's 2026-07-24 ask).** 8 arms (goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5},
+  ep9 terminal) registered + rendered (1296 cells, standard grid + extra prompts), then
+  metered end-to-end (DSP via clip_metrics.py, Audiobox ce/pq/cu/pc, CLAP prompt-adherence
+  via WINTERMUTE's catch-up pass — coordinated live over DM, no duplicate GPU work). Both
+  master boards (dora_table.html, model_matrix.html) rebuilt off the same
+  clap_dora_aggregate.csv so adamw sits alongside its matched fp32frames Fusion siblings —
+  the A/B Kim/CONTINUITY wanted is the shared-board comparison, not a separate page.
+  Deferred, flagged rather than silently dropped: mood_drift (needs a separate
+  mood_timeseries.py summary-CSV step CONTINUITY didn't ask for explicitly) and the
+  disintegration gate (designed for control-head steering runs; applicability to a plain
+  optimizer-comparison fine-tune is ambiguous, not run without a call on that).
+
 - **2026-07-29 — GHOST-NOTE: model_matrix render-to-staging sync gap — 11,285 rendered
   clips existed only on the Mantu render drive, never copied to the served
   `~/.cache/evals_aac/model_matrix/` staging dir, so they were silently unplayable on
