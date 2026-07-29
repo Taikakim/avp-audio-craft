@@ -435,25 +435,22 @@
   "fp32cmp_goa_t4096_bs1_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=5400.weights.ckpt",
-    "epoch=1-step=10800.weights.ckpt",
-    "epoch=2-step=16200.weights.ckpt",
-    "epoch=3-step=21600.ckpt"
+    "epoch=4-step=27000.weights.ckpt",
+    "epoch=5-step=32400.weights.ckpt",
+    "epoch=6-step=37800.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "REPRESENTATIVE LATE EPOCHS of the same run as fp32cmp_goa_t4096_bs1_lr1e4 (same disk dir via symlink; cmp row = early epochs ep0-3). Run TERMINATED AT EPOCH 6 (no ep7 exists on scratch — fat ep6 = terminal; verified vs $SCRATCH 2026-07-21). Old picks were degenerate duplicates of the cmp row (late epochs weren't pulled yet); fixed after Kim's 2026-07-21 repr rsync. CONTINUITY."
   },
   "fp32cmp_goa_t4096_bs4_lr1e4_repr": {
    "tier": "full",
    "picks": [
-    "epoch=0-step=1350.weights.ckpt",
-    "epoch=1-step=2700.weights.ckpt",
-    "epoch=2-step=4050.weights.ckpt",
-    "epoch=3-step=5400.weights.ckpt",
-    "epoch=4-step=6750.ckpt"
+    "epoch=5-step=8100.weights.ckpt",
+    "epoch=6-step=9450.weights.ckpt",
+    "epoch=7-step=10800.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "REPRESENTATIVE LATE EPOCHS of the same run as fp32cmp_goa_t4096_bs4_lr1e4 (same disk dir via symlink; cmp row = early epochs ep0-4). Old picks were degenerate duplicates of the cmp row; fixed after Kim's 2026-07-21 repr rsync (ep5-7 pulled). CONTINUITY."
   },
   "bf16cmp_avp_t512_bs8_lr1e4_repr": {
    "tier": "full",
@@ -542,6 +539,850 @@
    ],
    "witness": [],
    "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=4096 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+  },
+  "winning_avp_t1024_a45_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=11960.ckpt",
+    "epoch=10-step=6578.ckpt",
+    "epoch=15-step=9568.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_avp_t512_a128_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=5980.ckpt",
+    "epoch=10-step=3289.ckpt",
+    "epoch=15-step=4784.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_avp_t512_a45_bf16": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=5980.ckpt",
+    "epoch=10-step=3289.ckpt",
+    "epoch=15-step=4784.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_avp_t512_a45_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=5980.ckpt",
+    "epoch=10-step=3289.ckpt",
+    "epoch=15-step=4784.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_avpaug10_t512_a45_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=800.ckpt",
+    "epoch=10-step=440.ckpt",
+    "epoch=15-step=640.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_goa_t512_a128_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=13500.ckpt",
+    "epoch=10-step=7425.ckpt",
+    "epoch=15-step=10800.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_goa_t512_a45_bf16": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=13500.ckpt",
+    "epoch=10-step=7425.ckpt",
+    "epoch=15-step=10800.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "winning_goa_t512_a45_fp32": {
+   "tier": "full",
+   "picks": [
+    "epoch=19-step=13500.ckpt",
+    "epoch=10-step=7425.ckpt",
+    "epoch=15-step=10800.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+  },
+  "xftlora16_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_avp_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_avp_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_avp_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_avp_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_avp_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_goa_t1024": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_goa_t2048": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_goa_t256": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_goa_t4096": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora16_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora16_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora64_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora64_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftlora128_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "xftdora128_fullft_goa_t512": {
+   "tier": "full",
+   "picks": [
+    "adapter.safetensors"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/xft_extracted",
+   "reason": "SVD-extracted LoRA/DoRA from the fullft (whole-DiT) terminal-epoch checkpoint (Kim/CONTINUITY 2026-07-23/24, task #71): deltaW=W_fullft-W_base truncated-SVD'd to this rank, DoRA variant adds magnitude=row_norm(W_fullft). Tests Kim's hypothesis that FT-extracted adapters beat straight-trained DoRAs at matched rank (fp32+fullft is 'just better, period' -- does that transfer down to a small adapter?). 100% key coverage verified (DiT+conditioner), load_lora() round-trip + real generation verified before batch registration."
+  },
+  "fp32frames_avp_t1024_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=23930.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t1024_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t2048_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=23930.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t2048_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t4096_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=23930.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t4096_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t512_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=23930.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_avp_t512_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t1024_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=54000.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t1024_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t2048_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=54000.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t2048_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t4096_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=6-step=37800.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t4096_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=8-step=12150.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t512_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=54000.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "fp32frames_goa_t512_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.weights.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_frames",
+   "reason": "fp32 frame-LENGTH sweep (Kim direct 2026-07-21, lumi/sbatch/efp_fp32_frames.sbatch): dora-rows r128, FusionOpt, fp32 attention, beat-aware crops T<4096. 'Does the fp32 benefit hold up at longer training context?' Registered 2026-07-24 after Kim asked whether these were evaluated -- they weren't (0/16 in bracket manifest). Terminal epoch only per Kim's standing pref; goa_t4096 bs1/bs4 stopped at ep6/ep8 (short of the ep9 the rest reached), flagged separately."
+  },
+  "adamw_avp_t512_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=23930.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_avp_t512_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_avp_t512_bs4_lr2e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_avp_t512_bs4_lr5e5": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=5980.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_goa_t512_bs1_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=54000.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_goa_t512_bs4_lr1e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_goa_t512_bs4_lr2e4": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "adamw_goa_t512_bs4_lr5e5": {
+   "tier": "full",
+   "picks": [
+    "epoch=9-step=13500.ckpt"
+   ],
+   "witness": [],
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
+   "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
   }
  },
  "legacy_goa_dora_nested": {
