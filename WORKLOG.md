@@ -75,6 +75,22 @@ durable facts into `MASTER.md`. Conventions:
   is a *direction-check* pilot, not the >=60% production bar). Flagged to CONTINUITY
   (her lane) via DM before touching it; she may already have follow-up planned.
 
+- **2026-07-30 — GHOST-NOTE: task #69 closed — the disintegration-gate usable-gain-
+  ceiling was already wired into `latch_sa3_matrix.html` (commit 78f4142) but its two
+  dependencies, `eval/control_head_disintegration_eval.py` (the mandatory per-head
+  screen, Kim directive 2026-07-20) and its output `control_head_disintegration.json`,
+  were never committed** — the feature worked locally but would silently no-op (empty
+  gate, ceiling column blank) on any other checkout. Committed both; verified the
+  rebuilt page carries real per-head ceiling values for all 14 SA3 LatCH heads (e.g.
+  `hardness` p0<=128/p1<=512, most energy/spectral heads <=8192). Data unchanged since
+  2026-07-21 (underlying clip family not re-rendered) — no re-run needed. Note for
+  whoever revisits per-head verdicts: the page's separate "steers/weak/dead" heuristic
+  still tags beat_activation/downbeat_activation as "steers" even though MASTER SS5
+  documents them as genuinely dead (confirmed by two independent sweeps) — the
+  ceiling and the verdict are different axes (a dead head can have a high ceiling
+  simply because it never disintegrates), out of scope for this task but worth a
+  follow-up if anyone's touching that heuristic.
+
 - **2026-07-25 — GHOST-NOTE: SVD-extracted LoRA/DoRA adapters (60) + fp32frames (16
   arms) + winning-campaign ep10/ep15 fully rendered & verified.** Built
   `eval/extract_svd_adapters.py` (truncated SVD of `deltaW=W_fullft-W_base`,
@@ -1915,3 +1931,5 @@ Two fixes: clip_metrics.py --base/--ext (meter wav) + coalesce join (67364c9, wa
 wins, m4a Audiobox preserved); Audiobox sorts by DB dur not re-decode m4a (a2aa317,
 killed ~20min idle-GPU-under-lock). Live-server board still needs model_matrix audio
 uploaded (G's ingest lane); Kim's local board is complete.
+- [2026-07-29 21:00] (continuity) Head-B melody bracket verdict: FiLM melody_contour head STEERS at cfg16 ONLY (peak step9240 g1.5 conf +0.227 own-vs-wrong contour, adopt .464 vs .237, z0_cos .834), INERT at cfg1 (z0_cos .99), weak cfg7. Disintegration gates 4/4 clean on ALL 48 cells = real adoption not buzz. Pilot direction-check passes; soft controller, still improving at step9240. Confusion (own-vs-wrong) metric needed — null-floor inconclusive at high cfg. Also fixed render-loader order bug (add_lora before install_adapters, dora load after). bracket_summary.tsv + findings.json on UUID drive.
+- [2026-07-30 02:15] (continuity) LUMI 8-GPU Lightning DDP CONFIRMED WORKING (smoke 20422454: all 8 ranks Initializing distributed MEMBER k/8, one group). Two root causes fixed from the failed smokes: (1) srun --gpus-per-task=1 cgroup-isolates each rank to 1 GPU -> Lightning devices=auto silently degrades to N duplicate single-GPU trainers (20413874 burned a node 3h, ~400GB dup ckpts; tell = epoch=...-vN versioned ckpts) -> use --gpus-per-node=8; (2) train_lora.py hardcoded devices/strategy=auto -> patched: --devices N + strategy=ddp_find_unused_parameters_true when N>1 (upstream SAT train.py:239 convention). Also: outer sbatch vars used in nested bash -c must be EXPORTED (EPOCHS_ARM silently vanished -> uncapped epochs). All three in lumi-ops skill. Unlocks single-model 8-GCD training (fullft, big-corpus runs).
