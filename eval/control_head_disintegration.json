@@ -1,0 +1,1505 @@
+{
+ "purpose": "MANDATORY disintegration gate for control-head evals (Kim directive 2026-07-20)",
+ "spec": "docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md",
+ "pattern": "latch_sa3_sweep",
+ "gains": [
+  64,
+  128,
+  512,
+  2048,
+  8192
+ ],
+ "thresholds": {
+  "flatness_ratio": 2.5,
+  "flatness_abs": 0.05,
+  "hf_ratio_ratio": 2.0,
+  "hf_ratio_abs": 0.05,
+  "zcr_ratio": 1.6,
+  "zcr_abs": 0.15,
+  "onset_collapse": 0.4,
+  "bpm_break": 20.0,
+  "ce_drift": 1.5,
+  "centroid_ratio_hi": 1.5,
+  "centroid_ratio_lo": 0.6
+ },
+ "baseline": "same-prompt gain-0 unsteered clip",
+ "hard_flags": [
+  "whitening",
+  "hf-blowout",
+  "noise-zcr",
+  "beat-loss(rhythmic)",
+  "ce-drift"
+ ],
+ "caveat": "tightened DSP screen, NOT ear-verified \u2014 'clean' = not-obviously-disintegrated, not musically good. Recalibrate thresholds against Kim's GUI verdicts.",
+ "result": {
+  "beat_activation": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "downbeat_activation": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "hardness": {
+   "p0": {
+    "usable_max_gain": 128,
+    "failure": {
+     "gain": 512,
+     "reasons": [
+      "hf-blowout(hf 0.032->0.094)",
+      "noise-zcr(0.101->0.168)"
+     ],
+     "corroborating": []
+    }
+   },
+   "p1": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "whitening(flat 0.002->0.061)",
+      "hf-blowout(hf 0.008->0.050)",
+      "noise-zcr(0.061->0.156)"
+     ],
+     "corroborating": [
+      "centroid\u00d72.56"
+     ]
+    }
+   }
+  },
+  "onset_envelope": {
+   "p0": {
+    "usable_max_gain": 2048,
+    "failure": {
+     "gain": 8192,
+     "reasons": [
+      "ce-drift(7.00->4.73, \u0394-2.27)"
+     ],
+     "corroborating": []
+    }
+   },
+   "p1": {
+    "usable_max_gain": 2048,
+    "failure": {
+     "gain": 8192,
+     "reasons": [
+      "hf-blowout(hf 0.008->0.053)"
+     ],
+     "corroborating": [
+      "centroid\u00d72.31"
+     ]
+    }
+   }
+  },
+  "onset_envelope_drums": {
+   "p0": {
+    "usable_max_gain": 2048,
+    "failure": {
+     "gain": 8192,
+     "reasons": [
+      "ce-drift(7.00->4.61, \u0394-2.40)"
+     ],
+     "corroborating": []
+    }
+   },
+   "p1": {
+    "usable_max_gain": 2048,
+    "failure": {
+     "gain": 8192,
+     "reasons": [
+      "hf-blowout(hf 0.008->0.091)"
+     ],
+     "corroborating": [
+      "centroid\u00d72.52"
+     ]
+    }
+   }
+  },
+  "rms_drums": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_air": {
+   "p0": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "hf-blowout(hf 0.032->0.072)"
+     ],
+     "corroborating": []
+    }
+   },
+   "p1": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "hf-blowout(hf 0.008->0.122)",
+      "noise-zcr(0.061->0.199)"
+     ],
+     "corroborating": [
+      "centroid\u00d72.94"
+     ]
+    }
+   }
+  },
+  "rms_energy_bass": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_body": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_mid": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_flatness": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 128,
+    "failure": {
+     "gain": 512,
+     "reasons": [
+      "hf-blowout(hf 0.008->0.079)"
+     ],
+     "corroborating": [
+      "centroid\u00d72.68"
+     ]
+    }
+   }
+  },
+  "spectral_flux": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_kurtosis": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_skewness": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  }
+ },
+ "cells": {
+  "beat_activation__g64__p0": {
+   "head": "beat_activation",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g128__p0": {
+   "head": "beat_activation",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g512__p0": {
+   "head": "beat_activation",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g2048__p0": {
+   "head": "beat_activation",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g8192__p0": {
+   "head": "beat_activation",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g64__p1": {
+   "head": "beat_activation",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g128__p1": {
+   "head": "beat_activation",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g512__p1": {
+   "head": "beat_activation",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g2048__p1": {
+   "head": "beat_activation",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "beat_activation__g8192__p1": {
+   "head": "beat_activation",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g64__p0": {
+   "head": "downbeat_activation",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g128__p0": {
+   "head": "downbeat_activation",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g512__p0": {
+   "head": "downbeat_activation",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g2048__p0": {
+   "head": "downbeat_activation",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g8192__p0": {
+   "head": "downbeat_activation",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g64__p1": {
+   "head": "downbeat_activation",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g128__p1": {
+   "head": "downbeat_activation",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g512__p1": {
+   "head": "downbeat_activation",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g2048__p1": {
+   "head": "downbeat_activation",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "downbeat_activation__g8192__p1": {
+   "head": "downbeat_activation",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g64__p0": {
+   "head": "hardness",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g128__p0": {
+   "head": "hardness",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g512__p0": {
+   "head": "hardness",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.032->0.094)",
+    "noise-zcr(0.101->0.168)"
+   ],
+   "corroborating": []
+  },
+  "hardness__g2048__p0": {
+   "head": "hardness",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.032->0.112)",
+    "noise-zcr(0.101->0.175)"
+   ],
+   "corroborating": []
+  },
+  "hardness__g8192__p0": {
+   "head": "hardness",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.032->0.086)"
+   ],
+   "corroborating": []
+  },
+  "hardness__g64__p1": {
+   "head": "hardness",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g128__p1": {
+   "head": "hardness",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g512__p1": {
+   "head": "hardness",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "hardness__g2048__p1": {
+   "head": "hardness",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "whitening(flat 0.002->0.061)",
+    "hf-blowout(hf 0.008->0.050)",
+    "noise-zcr(0.061->0.156)"
+   ],
+   "corroborating": [
+    "centroid\u00d72.56"
+   ]
+  },
+  "hardness__g8192__p1": {
+   "head": "hardness",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "whitening(flat 0.002->0.125)",
+    "hf-blowout(hf 0.008->0.347)",
+    "noise-zcr(0.061->0.352)",
+    "ce-drift(3.88->1.65, \u0394-2.24)"
+   ],
+   "corroborating": [
+    "centroid\u00d74.12"
+   ]
+  },
+  "onset_envelope__g64__p0": {
+   "head": "onset_envelope",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g128__p0": {
+   "head": "onset_envelope",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g512__p0": {
+   "head": "onset_envelope",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g2048__p0": {
+   "head": "onset_envelope",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g8192__p0": {
+   "head": "onset_envelope",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "ce-drift(7.00->4.73, \u0394-2.27)"
+   ],
+   "corroborating": []
+  },
+  "onset_envelope__g64__p1": {
+   "head": "onset_envelope",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g128__p1": {
+   "head": "onset_envelope",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope__g512__p1": {
+   "head": "onset_envelope",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.58"
+   ]
+  },
+  "onset_envelope__g2048__p1": {
+   "head": "onset_envelope",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.66"
+   ]
+  },
+  "onset_envelope__g8192__p1": {
+   "head": "onset_envelope",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.053)"
+   ],
+   "corroborating": [
+    "centroid\u00d72.31"
+   ]
+  },
+  "onset_envelope_drums__g64__p0": {
+   "head": "onset_envelope_drums",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g128__p0": {
+   "head": "onset_envelope_drums",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g512__p0": {
+   "head": "onset_envelope_drums",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g2048__p0": {
+   "head": "onset_envelope_drums",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g8192__p0": {
+   "head": "onset_envelope_drums",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "ce-drift(7.00->4.61, \u0394-2.40)"
+   ],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g64__p1": {
+   "head": "onset_envelope_drums",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g128__p1": {
+   "head": "onset_envelope_drums",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "onset_envelope_drums__g512__p1": {
+   "head": "onset_envelope_drums",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.56"
+   ]
+  },
+  "onset_envelope_drums__g2048__p1": {
+   "head": "onset_envelope_drums",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d72.12"
+   ]
+  },
+  "onset_envelope_drums__g8192__p1": {
+   "head": "onset_envelope_drums",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.091)"
+   ],
+   "corroborating": [
+    "centroid\u00d72.52"
+   ]
+  },
+  "rms_drums__g64__p0": {
+   "head": "rms_drums",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g128__p0": {
+   "head": "rms_drums",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g512__p0": {
+   "head": "rms_drums",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g2048__p0": {
+   "head": "rms_drums",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g8192__p0": {
+   "head": "rms_drums",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g64__p1": {
+   "head": "rms_drums",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g128__p1": {
+   "head": "rms_drums",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g512__p1": {
+   "head": "rms_drums",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_drums__g2048__p1": {
+   "head": "rms_drums",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.50"
+   ]
+  },
+  "rms_drums__g8192__p1": {
+   "head": "rms_drums",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.86"
+   ]
+  },
+  "rms_energy_air__g64__p0": {
+   "head": "rms_energy_air",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_air__g128__p0": {
+   "head": "rms_energy_air",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_air__g512__p0": {
+   "head": "rms_energy_air",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_air__g2048__p0": {
+   "head": "rms_energy_air",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.032->0.072)"
+   ],
+   "corroborating": []
+  },
+  "rms_energy_air__g8192__p0": {
+   "head": "rms_energy_air",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.032->0.077)",
+    "noise-zcr(0.101->0.192)"
+   ],
+   "corroborating": []
+  },
+  "rms_energy_air__g64__p1": {
+   "head": "rms_energy_air",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_air__g128__p1": {
+   "head": "rms_energy_air",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_air__g512__p1": {
+   "head": "rms_energy_air",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d71.73"
+   ]
+  },
+  "rms_energy_air__g2048__p1": {
+   "head": "rms_energy_air",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.122)",
+    "noise-zcr(0.061->0.199)"
+   ],
+   "corroborating": [
+    "centroid\u00d72.94"
+   ]
+  },
+  "rms_energy_air__g8192__p1": {
+   "head": "rms_energy_air",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.197)",
+    "noise-zcr(0.061->0.254)"
+   ],
+   "corroborating": [
+    "centroid\u00d73.36"
+   ]
+  },
+  "rms_energy_bass__g64__p0": {
+   "head": "rms_energy_bass",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g128__p0": {
+   "head": "rms_energy_bass",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g512__p0": {
+   "head": "rms_energy_bass",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g2048__p0": {
+   "head": "rms_energy_bass",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g8192__p0": {
+   "head": "rms_energy_bass",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g64__p1": {
+   "head": "rms_energy_bass",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g128__p1": {
+   "head": "rms_energy_bass",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g512__p1": {
+   "head": "rms_energy_bass",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g2048__p1": {
+   "head": "rms_energy_bass",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_bass__g8192__p1": {
+   "head": "rms_energy_bass",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d70.35"
+   ]
+  },
+  "rms_energy_body__g64__p0": {
+   "head": "rms_energy_body",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g128__p0": {
+   "head": "rms_energy_body",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g512__p0": {
+   "head": "rms_energy_body",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g2048__p0": {
+   "head": "rms_energy_body",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g8192__p0": {
+   "head": "rms_energy_body",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g64__p1": {
+   "head": "rms_energy_body",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g128__p1": {
+   "head": "rms_energy_body",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g512__p1": {
+   "head": "rms_energy_body",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g2048__p1": {
+   "head": "rms_energy_body",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_body__g8192__p1": {
+   "head": "rms_energy_body",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g64__p0": {
+   "head": "rms_energy_mid",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g128__p0": {
+   "head": "rms_energy_mid",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g512__p0": {
+   "head": "rms_energy_mid",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g2048__p0": {
+   "head": "rms_energy_mid",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g8192__p0": {
+   "head": "rms_energy_mid",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g64__p1": {
+   "head": "rms_energy_mid",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g128__p1": {
+   "head": "rms_energy_mid",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g512__p1": {
+   "head": "rms_energy_mid",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g2048__p1": {
+   "head": "rms_energy_mid",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "rms_energy_mid__g8192__p1": {
+   "head": "rms_energy_mid",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g64__p0": {
+   "head": "spectral_flatness",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g128__p0": {
+   "head": "spectral_flatness",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g512__p0": {
+   "head": "spectral_flatness",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g2048__p0": {
+   "head": "spectral_flatness",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g8192__p0": {
+   "head": "spectral_flatness",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g64__p1": {
+   "head": "spectral_flatness",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g128__p1": {
+   "head": "spectral_flatness",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flatness__g512__p1": {
+   "head": "spectral_flatness",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.079)"
+   ],
+   "corroborating": [
+    "centroid\u00d72.68"
+   ]
+  },
+  "spectral_flatness__g2048__p1": {
+   "head": "spectral_flatness",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "hf-blowout(hf 0.008->0.181)",
+    "noise-zcr(0.061->0.184)"
+   ],
+   "corroborating": [
+    "centroid\u00d73.37"
+   ]
+  },
+  "spectral_flatness__g8192__p1": {
+   "head": "spectral_flatness",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": true,
+   "hard_reasons": [
+    "whitening(flat 0.002->0.101)",
+    "hf-blowout(hf 0.008->0.833)",
+    "noise-zcr(0.061->0.648)"
+   ],
+   "corroborating": [
+    "centroid\u00d75.83"
+   ]
+  },
+  "spectral_flux__g64__p0": {
+   "head": "spectral_flux",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g128__p0": {
+   "head": "spectral_flux",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g512__p0": {
+   "head": "spectral_flux",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g2048__p0": {
+   "head": "spectral_flux",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g8192__p0": {
+   "head": "spectral_flux",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g64__p1": {
+   "head": "spectral_flux",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g128__p1": {
+   "head": "spectral_flux",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g512__p1": {
+   "head": "spectral_flux",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g2048__p1": {
+   "head": "spectral_flux",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_flux__g8192__p1": {
+   "head": "spectral_flux",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g64__p0": {
+   "head": "spectral_kurtosis",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g128__p0": {
+   "head": "spectral_kurtosis",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g512__p0": {
+   "head": "spectral_kurtosis",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g2048__p0": {
+   "head": "spectral_kurtosis",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g8192__p0": {
+   "head": "spectral_kurtosis",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g64__p1": {
+   "head": "spectral_kurtosis",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g128__p1": {
+   "head": "spectral_kurtosis",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g512__p1": {
+   "head": "spectral_kurtosis",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g2048__p1": {
+   "head": "spectral_kurtosis",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_kurtosis__g8192__p1": {
+   "head": "spectral_kurtosis",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g64__p0": {
+   "head": "spectral_skewness",
+   "gain": 64,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g128__p0": {
+   "head": "spectral_skewness",
+   "gain": 128,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g512__p0": {
+   "head": "spectral_skewness",
+   "gain": 512,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g2048__p0": {
+   "head": "spectral_skewness",
+   "gain": 2048,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d70.45"
+   ]
+  },
+  "spectral_skewness__g8192__p0": {
+   "head": "spectral_skewness",
+   "gain": 8192,
+   "prompt": "p0",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": [
+    "centroid\u00d70.51"
+   ]
+  },
+  "spectral_skewness__g64__p1": {
+   "head": "spectral_skewness",
+   "gain": 64,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g128__p1": {
+   "head": "spectral_skewness",
+   "gain": 128,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g512__p1": {
+   "head": "spectral_skewness",
+   "gain": 512,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g2048__p1": {
+   "head": "spectral_skewness",
+   "gain": 2048,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  },
+  "spectral_skewness__g8192__p1": {
+   "head": "spectral_skewness",
+   "gain": 8192,
+   "prompt": "p1",
+   "disintegrated": false,
+   "hard_reasons": [],
+   "corroborating": []
+  }
+ },
+ "flips_vs_old_gate": [
+  {
+   "head": "onset_envelope",
+   "prompt": "p0",
+   "old_usable": 8192,
+   "new_usable": 2048,
+   "now_fails": [
+    "ce-drift(7.00->4.73, \u0394-2.27)"
+   ]
+  },
+  {
+   "head": "onset_envelope",
+   "prompt": "p1",
+   "old_usable": 8192,
+   "new_usable": 2048,
+   "now_fails": [
+    "hf-blowout(hf 0.008->0.053)"
+   ]
+  },
+  {
+   "head": "onset_envelope_drums",
+   "prompt": "p0",
+   "old_usable": 8192,
+   "new_usable": 2048,
+   "now_fails": [
+    "ce-drift(7.00->4.61, \u0394-2.40)"
+   ]
+  },
+  {
+   "head": "onset_envelope_drums",
+   "prompt": "p1",
+   "old_usable": 8192,
+   "new_usable": 2048,
+   "now_fails": [
+    "hf-blowout(hf 0.008->0.091)"
+   ]
+  },
+  {
+   "head": "rms_energy_air",
+   "prompt": "p0",
+   "old_usable": 2048,
+   "new_usable": 512,
+   "now_fails": [
+    "hf-blowout(hf 0.032->0.072)"
+   ]
+  },
+  {
+   "head": "spectral_flatness",
+   "prompt": "p1",
+   "old_usable": 512,
+   "new_usable": 128,
+   "now_fails": [
+    "hf-blowout(hf 0.008->0.079)"
+   ]
+  }
+ ]
+}
