@@ -4,6 +4,30 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-07-29 — GHOST-NOTE: model_matrix render-to-staging sync gap — 11,285 rendered
+  clips existed only on the Mantu render drive, never copied to the served
+  `~/.cache/evals_aac/model_matrix/` staging dir, so they were silently unplayable on
+  every board despite showing up as "covered" in `manifest.jsonl`.** `model_matrix_gen.py`'s
+  `transcode()` only ever writes the `.m4a` into `RENDER_DIR` (Mantu) — there is no
+  built-in copy into `STAGING` (the `.cache/evals_aac` tree the pages actually serve
+  from; confirmed via inode check that `~/evals_aac/model_matrix` and
+  `~/.cache/evals_aac/model_matrix` ARE the same directory, but neither is the same
+  filesystem as Mantu). Caught only because `clip_metrics.py`'s CPU pass reported
+  "0 to do" against a glob of the staging dir right after a render I'd just watched
+  finish — the manifest said the cells existed, the disk said otherwise. **This means
+  every coverage check this session that trusted `manifest.jsonl` counts alone (tasks
+  #66/#68/#70/#71/#72/#73/#76 and likely earlier fleet renders too) verified render+
+  manifest completion but NOT actual served playability** — same class of gap as the
+  2026-07-21 "chain's success line is a claim, not evidence" lesson, one level deeper
+  (the manifest write itself isn't evidence the clip is reachable). Fixed this session's
+  gap via `rsync --files-from` (11,285 files, ~62k total now in staging, verified 0
+  remaining via `comm`). **No dedicated sync tool exists for the general case** —
+  `eval/ingest_native_cells.py` only handles the LUMI-native-cell reroute path. Until a
+  render pipeline fix lands (either `transcode()` writes both locations, or a standing
+  sync step gets added to every render chain), **any local `model_matrix_gen.py` render
+  needs an explicit staging-sync step before its clips are actually listenable** — flagged
+  to the fleet; whoever owns `build_model_matrix.py`/the renderer should decide the fix.
+
 - **2026-07-29 — GHOST-NOTE: fleet-comms listener bug found + fixed (`agent_dialogue.py
   wait` under `run_in_background` was silently killed by the harness's 120s default
   command timeout, not a real wake) — three of CONTINUITY's DMs from 2026-07-24 had sat
