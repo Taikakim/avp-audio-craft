@@ -386,5 +386,350 @@
  "fullft_avp_t4096": {
   "recipe": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole 1.4B DiT unfrozen (--full-finetune), bf16, FusionOpt lr 1e-4, 8 epochs (this checkpoint = epoch 7, final), avp-only crops, T=4096 latent frames (380.44s), batch 4 + grad-accum 2 (eff. batch 4), batch 2 live. Per-dataset training (avp only, never combined with goa).",
   "training_data": "latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing"
+ },
+ "fp32cmp_goa_t4096_bs4_lr1e4_ptm": {
+  "recipe": "SAME adapter file as fp32cmp_goa_t4096_bs4_lr1e4 (DoRA-rows r128 α128, fp32, T=4096, bs4, lr 1e-4, trained on medium-BASE) -- here applied to the POST-TRAINED medium (rf_denoiser / ping-pong sampler) at its native config: steps 8, cfg 1. Tests the Discord/Dadabots claim (+ Zach@Stability's layer argument: adapters concentrate in the middle 'knowledge' layers, ARC post-training rewrites the last decoder layers, so they compose) that base-trained L/DoRAs transfer to the post-trained model. Compare against the medium-base rows of the same label.",
+  "training_data": "latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)",
+  "note": "cfg7 cells exist for ep4 only: the 'cfg cooks the PT output' probe. 8-step renders are ~3x faster than the 24-step base grid."
+ },
+ "base_ptm": {
+  "recipe": "stabilityai stable-audio-3-medium POST-TRAINED (ARC few-step), NO adapter -- steps 8, cfg 1 (native). The control row for the *_ptm adapter rows: if an adapter-on-PT row sounds like THIS row, the adapter is not expressing on the post-trained model.",
+  "training_data": "n/a (base post-trained model)"
+ },
+ "winning_avp_t512_a128_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=128 (standard, alpha=rank), precision=fp32, corpus=avp.",
+  "training_data": "latents_avp -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_avp_t512_a45_bf16": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj, alpha<rank), precision=bf16, corpus=avp.",
+  "training_data": "latents_avp -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_avp_t512_a45_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj, alpha<rank), precision=fp32, corpus=avp.",
+  "training_data": "latents_avp -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_avpaug10_t512_a45_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj, alpha<rank), precision=fp32, corpus=avp+aug10.",
+  "training_data": "latents_avp -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_goa_t512_a128_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=128 (standard, alpha=rank), precision=fp32, corpus=goa.",
+  "training_data": "latents_sa3 -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_goa_t512_a45_bf16": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj, alpha<rank), precision=bf16, corpus=goa.",
+  "training_data": "latents_sa3 -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_goa_t512_a45_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=512 latent frames (47.55s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj, alpha<rank), precision=fp32, corpus=goa.",
+  "training_data": "latents_sa3 -- LUMI-side per-epoch checkpointing"
+ },
+ "winning_avp_t1024_a45_fp32": {
+  "recipe": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-22/24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T=1024 latent frames (95.11s), beat-aware crops, 20 epochs, full-corpus augmented training. alpha=45 (adj), precision=fp32, corpus=avp.",
+  "training_data": "latents_avp -- LUMI-side per-epoch checkpointing"
+ },
+ "adamw_avp_t512_bs1_lr1e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 1, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=1e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 1e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 1, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "avp corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_avp_t512_bs4_lr1e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=1e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 1e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "avp corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_avp_t512_bs4_lr2e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 2e-4, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=2e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 2e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "avp corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_avp_t512_bs4_lr5e5": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 5e-5, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=5e-5 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 5e-5 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "avp corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_goa_t512_bs1_lr1e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 1, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=1e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 1e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 1, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "goa corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_goa_t512_bs4_lr1e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=1e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 1e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "goa corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_goa_t512_bs4_lr2e4": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 2e-4, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=2e-4 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 2e-4 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "goa corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
+ },
+ "adamw_goa_t512_bs4_lr5e5": {
+  "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 5e-5, batch 4, T512 (47.6s).",
+  "family": "adamw_bf16_sweep",
+  "why": "AdamW and FusionOpt were found to land in nearly-orthogonal weight-space basins (dir cos ~0.1, Fusion moves ~2x farther for the same steps -- CONTINUITY's weight-space read, WORKLOG 2026-07-24) -- so the weight delta alone proves the optimizers are DIFFERENT, not which is BETTER. This sweep answers that with metrics: same DoRA-rows r128 arch/rank/target-modules/corpus as the fp32frames family, only the optimizer (AdamW vs FusionOpt) and precision (bf16 vs fp32) differ, so any metric gap traces to the optimizer/precision choice, not a confound.",
+  "recipe": {
+   "base_model": "SA3 medium (SAME latent, 10.77 Hz)",
+   "method": "DoRA (dora-rows)",
+   "rank_alpha": "rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict",
+   "optimizer": "AdamW, betas=(0.9,0.95), weight_decay=0.01, eps=1e-8, lr=5e-5 -- verified from checkpoint optimizer_states param_groups",
+   "lr_schedule": "constant, peak lr 5e-5 (checkpoint lr_schedulers list is empty -- no scheduler)",
+   "precision": "bf16",
+   "context_len": "T=512 frames, 47.55s (10.7666 fps)",
+   "batch_seed": "batch 4, seed not recorded in checkpoint",
+   "steps": "epoch 5 and epoch 9 (terminal) both metered; avg_loss not recorded at these ckpts",
+   "corpus": "goa corpus (generic name; scale redacted per spec)",
+   "objective": "rectified-flow, standard SA3 DoRA training loss (no auxiliary control loss)",
+   "extras": "dora-rows adapter_type, dropout=0.0"
+  },
+  "compare_against": [
+   {
+    "target": "fp32frames_<corpus>_t512_bs<N>_lr1e4",
+    "axis": "optimizer (AdamW here vs FusionOpt) + precision (bf16 vs fp32) -- the matched-config Fusion sibling, same rank/corpus/T/bs/lr"
+   },
+   {
+    "target": "family:adamw_bf16_sweep",
+    "axis": "learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself"
+   }
+  ],
+  "verdict": "Ep5->ep9 CE mostly improves with more training as expected, but adamw_goa_t512_bs1_lr1e4 shows a striking CLAP collapse (0.261->-0.008 matched-cos) alongside a CE drop from ep5->ep9 -- looks like a possible degeneration case, flagged for a listen, not yet confirmed by ear. No A/B-vs-Fusion verdict yet -- metrics landed on both boards (dora_table.html/model_matrix.html) 2026-07-29/30 but the side-by-side listening comparison Kim/CONTINUITY asked for has not been done.",
+  "provenance": {
+   "created": "2026-07-24",
+   "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
+   "commit": "db9a6bb",
+   "run_script": "(INTERNAL)",
+   "checkpoint": "(INTERNAL)"
+  },
+  "status": "done"
  }
 }
