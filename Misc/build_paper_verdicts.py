@@ -82,6 +82,17 @@ FILE_LINKS = {
     "ghost-note.journal.md": "profiles/ghost-note.journal.html",
     "profiles/the-finn.journal.md": "profiles/the-finn.journal.html",
     "the-finn.journal.md": "profiles/the-finn.journal.html",
+    # internal docs served redacted via Misc/publish_docs.py (Kim 2026-07-30: serve knowledge.md
+    # + docs/*.md, skip WORKLOG). Served names flatten to docs/<basename>.html.
+    "papers/knowledge.md": "docs/knowledge.html",
+    "knowledge.md": "docs/knowledge.html",
+    "docs/latch.md": "docs/latch.html",
+    "docs/layer-feature-map.md": "docs/layer-feature-map.html",
+    "docs/onset-density-control-narrative.md": "docs/onset-density-control-narrative.html",
+    "docs/findings-2026-07-02-perceptual-signal-night.md": "docs/findings-2026-07-02-perceptual-signal-night.html",
+    "docs/research-brief-2026-07-03-novelty-check.md": "docs/research-brief-2026-07-03-novelty-check.html",
+    "docs/ai-research/gemini-report2-assessment-2026-07-15.md": "docs/gemini-report2-assessment-2026-07-15.html",
+    "docs/ai-research/validation-experiment-plan-2026-07-15.md": "docs/validation-experiment-plan-2026-07-15.html",
 }
 # One alternation, longest key first -> re.sub consumes each span once, left-to-right, so a
 # path-qualified name ("profiles/x.journal.md") wins over its bare tail ("x.journal.md") and no
