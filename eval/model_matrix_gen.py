@@ -70,7 +70,16 @@ def native_len_seconds(label: str) -> float | None:
     for suf in ("_ptm", "_repr"):
         label = label.removesuffix(suf)
     doc = MODELS_OVERRIDES.get(label, {})
-    m = re.search(r"T=(\d+)", doc.get("recipe", "")) if isinstance(doc, dict) else None
+    if not isinstance(doc, dict):
+        return None
+    # recipe may be a legacy STRING or a commentary-schema DICT (2026-07-30 THE-FINN);
+    # the 'T=<frames>' text can live in either, or in recipe_legacy_str after a dict
+    # upgrade preserved the original string there. Normalize all sources to one blob.
+    r = doc.get("recipe")
+    blob = r if isinstance(r, str) else (json.dumps(r) if isinstance(r, dict) else "")
+    if doc.get("recipe_legacy_str"):
+        blob += " " + doc["recipe_legacy_str"]
+    m = re.search(r"T=(\d+)", blob)
     return round(int(m.group(1)) / FPS, 2) if m else None
 
 # additive prompt extension for the AVP-only models (Kim direct via CONTINUITY,
@@ -264,6 +273,23 @@ def main():
                      help="comma-separated prompt ids to render (guided subset)")
     ap.add_argument("--only-cfgs", default=None,
                      help="comma-separated cfg values to render (guided subset, e.g. 7)")
+    ap.add_argument("--only-strengths", default=None,
+                     help="comma-separated strength values to render, OVERRIDING the normal "
+                          "adapter sweep (STRENGTHS) and skipping the base-row cross-strength "
+                          "mirror -- for a fixed-strength pass like --pt-medium, where the PT "
+                          "model glitches away from one known-good (cfg,strength). fullft/base "
+                          "rows are already forced to (1.0,); intersecting with a strength they "
+                          "don't have renders nothing for that row, not an error.")
+    ap.add_argument("--duration-seconds", type=float, default=None,
+                     help="override the STANDARD grid's render duration (default 20s), in "
+                          "seconds -- e.g. 95.11=T1024, 190.22=T2048 -- for extrapolation tests "
+                          "(rendering a model beyond the context length it was trained at). "
+                          "Frames (duration*FPS) must be a multiple of 256. T>=2048 frames is "
+                          "BLOCKED from local rendering -- same VRAM/display-crash precedent as "
+                          "native cells (MASTER.md sec 5) -- set SA3_ALLOW_LONG_NATIVE=1 to "
+                          "override, or route to LUMI instead. Lands as a __dNNN manifest "
+                          "cell (distinct key from the default-duration grid, never overwrites "
+                          "it), landing on the SAME rows in dora_table.html/model_matrix.html.")
     ap.add_argument("--limit", type=int, default=None,
                      help="cap number of prompts after filtering (smoke tests)")
     ap.add_argument("--time-budget-hours", type=float, default=None,
@@ -276,6 +302,36 @@ def main():
     only_labels = set(s for s in args.only_labels.split(",") if s) if args.only_labels else None
     only_ckpts = set(s for s in args.only_ckpts.split(",") if s) if args.only_ckpts else None
     cfgs = tuple(float(s) for s in args.only_cfgs.split(",") if s) if args.only_cfgs else CFGS
+    only_strengths = (tuple(float(s) for s in args.only_strengths.split(",") if s)
+                      if args.only_strengths else None)
+    # NATIVE_LEN_CFG (7.0) is the general-purpose native-cell cfg, but it's HARDCODED
+    # into every native-length render regardless of --only-cfgs -- meaning a --pt-medium
+    # run's native cell would render at cfg7 even though cfg1 is the only PT-native
+    # config (cfg>1 "cooks" the PT-medium base). Caught 2026-07-24 before it produced a
+    # glitchy native cell; override to 1.0 specifically for --pt-medium runs.
+    native_cfg = 1.0 if args.pt_medium else NATIVE_LEN_CFG
+
+    # explicit duration override for the STANDARD grid (Kim 2026-07-24: T1024/T2048
+    # extrapolation tests on T512-trained arms). duration=... alone would NOT actually
+    # change the generated latent window -- sample_size does that (duration only sets
+    # seconds_total + the final trim) -- same bug CONTINUITY caught on LUMI's native-cell
+    # path (2026-07-22, all "native" cells silently rendered at the 120s default window
+    # regardless of filename). Mirrors the native-cell fix: explicit sample_size=frames*4096.
+    duration = DURATION
+    duration_sample_size = None
+    if args.duration_seconds is not None:
+        dur_frames = int(round(args.duration_seconds * FPS))
+        if dur_frames % 256 != 0:
+            raise SystemExit(f"--duration-seconds {args.duration_seconds} -> {dur_frames} "
+                             f"frames, must be a multiple of 256 (e.g. 47.55=T512, "
+                             f"95.11=T1024, 190.22=T2048)")
+        if dur_frames >= 2048 and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1":
+            raise SystemExit(f"[model_matrix] --duration-seconds {args.duration_seconds}s -> "
+                             f"{dur_frames} frames >= 2048: BLOCKED from local rendering -- "
+                             f"same VRAM/display-crash precedent as native cells (MASTER.md "
+                             f"sec 5). Set SA3_ALLOW_LONG_NATIVE=1 to override, or route to LUMI.")
+        duration = args.duration_seconds
+        duration_sample_size = dur_frames * 4096
 
     if args.extra_prompts:
         prompts = [{"id": pid, "text": text, "seed": EXTRA_SEED} for pid, text in EXTRA_PROMPTS.items()]
@@ -295,8 +351,10 @@ def main():
         jobs = [(f"{label}_ptm", ckpt_path, tag) for label, ckpt_path, tag in jobs]
     n_cells = 0
     for label, ckpt_path, _tag in jobs:
-        n_cells += len(prompts) * len(cfgs) * (
-            1 if (ckpt_path is None or label.startswith("fullft_")) else len(STRENGTHS))
+        _sw = (1.0,) if (ckpt_path is None or label.startswith("fullft_")) else STRENGTHS
+        if only_strengths is not None:
+            _sw = tuple(w for w in _sw if w in only_strengths)
+        n_cells += len(prompts) * len(cfgs) * len(_sw)
     print(f"[model_matrix] {len(jobs)} (model,ckpt) jobs x {len(prompts)} prompts -> "
           f"{n_cells} manifest cells ({n_cells - sum(len(prompts) * len(cfgs) * 2 for l, c, t in jobs if c is None)} "
           f"actual renders, base cells triple-counted for the grid)")
@@ -335,14 +393,30 @@ def main():
         # fullft arms are whole-model fine-tunes: no adapter, no strength sweep —
         # the w axis collapses to 1.0 (W's loader recommendation 2026-07-18)
         strengths_to_render = (1.0,) if (ckpt_path is None or is_fullft) else STRENGTHS
+        if only_strengths is not None:
+            strengths_to_render = tuple(w for w in strengths_to_render if w in only_strengths)
         # skip the whole (model,ckpt) load if every cell is already done
         need_any = False
         for prompt in prompts:
             for cfg in cfgs:
                 for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
+                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
                     if key not in existing:
                         need_any = True
+        # the skip-all key set above covers STANDARD cells only — a label whose standard
+        # grid is complete would skip its NATIVE cell forever (bit the 6 fullft T<2048
+        # labels after the 2026-07-22 native quarantine). Mirror the native block's key.
+        if not need_any:
+            nd = native_len_seconds(label)
+            if (nd is not None and nd * FPS >= 2048
+                    and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1"):
+                nd = None
+            if nd is not None and prompts:
+                np_chk = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
+                nw_chk = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
+                nkey = f'{label}|{tag}|{native_cfg}|{nw_chk}|{np_chk["id"]}|st{steps}|d{nd}'
+                if nkey not in existing:
+                    need_any = True
         if not need_any:
             print(f"[skip-all] {label}/{tag}")
             continue
@@ -396,8 +470,9 @@ def main():
                     break
                 base_m4a_name = None
                 for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
-                    wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps)
+                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                    wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
+                                         duration=duration)
                     m4a_name = wav_name.replace(".wav", ".m4a")
                     if key not in existing:
                         if ckpt_path:
@@ -410,9 +485,9 @@ def main():
                             t0 = time.time()
                             # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
                             # the model's internal peak-normalize + truncation, so we do both here.
-                            z0 = model.generate(prompt=prompt["text"], duration=DURATION, steps=steps,
+                            z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
                                                 cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
-                                                return_latents=True)
+                                                return_latents=True, sample_size=duration_sample_size)
                             if save_latents:
                                 # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
                                 np.save(wav_path.with_suffix(".z0.npy"),
@@ -421,7 +496,7 @@ def main():
                                 audio = model.same.decode(z0.to(decode_dtype))
                             # truncate to the requested duration (the model would have, pre-decode),
                             # then save_audio peak-normalizes -> matches the old internal-decode path.
-                            audio = audio.to(torch.float32)[:, :, :int(DURATION * sr)]
+                            audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
                             save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
                             print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
                         m4a_path = RENDER_DIR / m4a_name
@@ -433,13 +508,16 @@ def main():
                         existing.add(key)
                     if base_m4a_name is None:
                         base_m4a_name = m4a_name
-                if ckpt_path is None:
+                if ckpt_path is None and only_strengths is None:
                     # base: strength n/a -- mirror the one render across the other strength
-                    # cells so the grid lights up without 3x-redundant compute
+                    # cells so the grid lights up without 3x-redundant compute. Skipped under
+                    # --only-strengths: the caller asked for an exact strength set (e.g. the
+                    # PT-medium cfg7/w1-only pass) and synthetic mirror cells would misrepresent
+                    # coverage at strengths that were never actually requested.
                     for w in STRENGTHS:
                         if w in strengths_to_render:
                             continue
-                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{DURATION}'
+                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
                         if key in existing:
                             continue
                         append_manifest({"model": label, "ckpt": tag, "cfg": cfg, "strength": w,
@@ -461,21 +539,29 @@ def main():
         if native_dur is not None and prompts:
             np_ = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
             nw = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
-            nkey = f'{label}|{tag}|{NATIVE_LEN_CFG}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
+            nkey = f'{label}|{tag}|{native_cfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
             if nkey not in existing:
                 if ckpt_path and not is_fullft:
                     try:
                         model.set_lora_strength(nw)
                     except Exception:
                         pass
-                nwav_name = clip_name(label, tag, NATIVE_LEN_CFG, nw, np_["id"], np_["seed"],
+                nwav_name = clip_name(label, tag, native_cfg, nw, np_["id"], np_["seed"],
                                       steps, duration=native_dur)
                 nwav_path = RENDER_DIR / nwav_name
                 if not nwav_path.exists():
                     t0 = time.time()
+                    # sample_size = the model's TRAINED window, not the 120s default:
+                    # generate()'s `duration` only sets seconds_total + trim; without
+                    # sample_size every "native" cell actually ran at a 1292-frame
+                    # (120s) context (caught on LUMI 2026-07-22, same bug both places).
+                    native_frames = int(round(native_dur * FPS))
+                    assert native_frames % 256 == 0, (label, native_frames)
                     z0 = model.generate(prompt=np_["text"], duration=native_dur, steps=steps,
-                                        cfg_scale=NATIVE_LEN_CFG, seed=int(np_["seed"]),
-                                        batch_size=1, return_latents=True)
+                                        cfg_scale=native_cfg, seed=int(np_["seed"]),
+                                        batch_size=1, return_latents=True,
+                                        sample_size=native_frames * 4096)
+                    assert z0.shape[-1] == native_frames, (z0.shape, native_frames)
                     if save_latents:
                         np.save(nwav_path.with_suffix(".z0.npy"),
                                z0.detach().to(torch.float16).cpu().numpy())
@@ -483,12 +569,12 @@ def main():
                         naudio = model.same.decode(z0.to(decode_dtype))
                     naudio = naudio.to(torch.float32)[:, :, :int(native_dur * sr)]
                     save_audio(nwav_path, naudio[0].cpu(), sr, normalize=True)
-                    print(f"  [{label}/{tag} NATIVE-LEN {native_dur}s cfg{NATIVE_LEN_CFG} "
+                    print(f"  [{label}/{tag} NATIVE-LEN {native_dur}s cfg{native_cfg} "
                          f"w{nw} {np_['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
                 nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
                 if not nm4a_path.exists():
                     transcode(nwav_path, nm4a_path)
-                append_manifest({"model": label, "ckpt": tag, "cfg": NATIVE_LEN_CFG, "strength": nw,
+                append_manifest({"model": label, "ckpt": tag, "cfg": native_cfg, "strength": nw,
                                  "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
                                  "steps": steps, "duration": native_dur, "duration_mode": "native",
                                  "file": nm4a_path.name})
