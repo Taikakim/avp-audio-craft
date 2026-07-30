@@ -30,10 +30,36 @@ Run: python3 Misc/build_paper_verdicts.py  (then rsync paper_verdicts.html)
 """
 import html
 import json
+import re
 from pathlib import Path
 
 DATA = Path(__file__).parent / "paper_verdicts_data.json"
 OUT = Path.home() / ".cache/evals_aac/paper_verdicts.html"
+
+# Redaction seam (public page): the science stays — configs, hyperparams, metrics, paper
+# claims — but corpus NAMES, absolute paths, drive labels, checkpoint filenames, and infra
+# addresses never ship. THE-FINN/CONTINUITY author the content JSON in the clear; this
+# generator scrubs plumbing at render time (same pattern as the dialogue/blog mirrors), so
+# a source row mentioning the corpus by name can't leak onto aavepyora. `corpus` reads
+# cleanly in prose ("relevant to the corpus curation plan").
+_SCRUB = [
+    (re.compile(r"\bgoa[_.\s-]?archive\w*", re.I), "corpus"),
+    (re.compile(r"\b(?:goa[.\s_-]*)?psy[.\s_-]*trance[.\s_-]*collection\w*", re.I), "corpus"),
+    (re.compile(r"/home/[a-z_][\w-]*(?:/[^\s\"'<>()]*)?", re.I), "[path]"),
+    (re.compile(r"/run/media/[^\s\"'<>()]+"), "[path]"),
+    (re.compile(r"\b(?:Mantu|Lehto)\b"), "[drive]"),
+    (re.compile(r"\bepoch=\d+[^\s\"'<]*\.ckpt\b"), "[ckpt]"),
+]
+# Hard-leak patterns the finished page must NOT contain (refuse-to-write gate, belt +
+# suspenders after the scrub above).
+_LEAK_GATE = re.compile(
+    r"goa[_.\s-]?archive|/home/[a-z]|/run/media/|\bMantu\b|\bLehto\b|epoch=\d+[^\s\"'<]*\.ckpt", re.I)
+
+
+def scrub(doc: str) -> str:
+    for rx, repl in _SCRUB:
+        doc = rx.sub(repl, doc)
+    return doc
 
 CSS = """
 body{font:13px system-ui;margin:16px;background:#101012;color:#e0e0e0;max-width:960px}
@@ -169,10 +195,16 @@ def main():
                 "aavepyora.online &middot; evals &middot; paper verdicts</footer>"
                 "</body></html>")
 
+    page = scrub("".join(doc))
+    leak = _LEAK_GATE.search(page)
+    if leak:
+        raise SystemExit(
+            f"REFUSING to write: leak survived scrub near {page[max(0, leak.start()-40):leak.end()+40]!r}")
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text("".join(doc))
+    OUT.write_text(page)
     print(f"wrote {OUT}: {len(secs)} sections, {total} papers "
-          f"({summary_bits})")
+          f"({summary_bits}) — leak-gate clean")
 
 
 if __name__ == "__main__":

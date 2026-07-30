@@ -102,6 +102,40 @@ def paras(lines: list[str]) -> str:
     return "\n  ".join(out)
 
 
+# ── redaction seam (public render) ──────────────────────────────────────────
+# The profile/journal pages are PUBLIC (aavepyora.online/files/profiles/). The markdown
+# sources keep the full record — drive labels, absolute paths, corpus names — but the
+# rendered HTML must not carry that plumbing. This mirrors the SAME mask set the dialogue
+# and blog mirrors apply (mirror_dialogue.redact); duplicated here rather than imported
+# because mirror_dialogue imports THIS module (bs) for its chrome — importing back would be
+# circular. Keep the two mask lists in sync (or, later, promote redact() to the shared lower
+# layer and have the mirrors import it from here). Only PLUMBING is scrubbed — configs,
+# hyperparams, metrics, and generic methodology (e.g. a "<name>.weights.ckpt" convention)
+# stay: that's the science, and it's meant to be shared.
+_T = r"(?:/[^\s\"'<>()\[\]]*)?"  # an OPTIONAL /path tail (bare roots caught too)
+_REDACT = [
+    (re.compile(r"/run/media" + _T), "[path]"),
+    (re.compile(r"/home/[A-Za-z0-9._-]+" + _T), "[path]"),
+    (re.compile(r"(?<!\w)~/[^\s\"'<>()\[\]]*"), "[path]"),
+    (re.compile(r"(?<!\w)/(?:scratch|project|flash|mnt|data)" + _T), "[path]"),
+    (re.compile(r"\b(?:Mantu1|Mantu|Lehto)\b:?" + _T), "[path]"),
+    (re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b"), "[drive]"),
+    (re.compile(r"\bgoa[_.\s-]?archive\w*", re.I), "[corpus]"),
+    (re.compile(r"\b(?:goa[.\s_-]*)?psy[.\s_-]*trance[.\s_-]*collection\w*", re.I), "[corpus]"),
+    (re.compile(r"\b(?:\d{4,}|\d[\d.,]*\s*(?:[kKmM]|thousand|million))\s+"
+                r"(tracks?|captions?|clips?|files?|jsons?|stems?|crops?|samples?|songs?)\b", re.I),
+     r"[N] \1"),
+    (re.compile(r"239\.7\.7\.7:57327"), "the loopback multicast group"),
+    (re.compile(r"239\.7\.7\.7"), "the multicast group"),
+]
+
+
+def redact(doc: str) -> str:
+    for rx, repl in _REDACT:
+        doc = rx.sub(repl, doc)
+    return doc
+
+
 # ── chrome ──────────────────────────────────────────────────────────────────
 
 FONT = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
@@ -120,7 +154,8 @@ def masthead(here: str, status: str) -> str:
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
              ("blog", "../blog/"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
-             ("evals", "../evals/"), ("reference", "../reference.html")]
+             ("evals", "../evals/"), ("papers", "../evals/paper_verdicts.html"),
+             ("reference", "../reference.html")]
     nav = "\n".join(
         f'    <a{" class=\"here\"" if k == here else ""} href="{href}">{k}</a>'
         for k, href in items)
@@ -186,7 +221,7 @@ def render_journal(handle: str) -> str | None:
     doc += colophon(["── end of journal ──",
                      f"markdown source: <code>SAO/profiles/{slug}.journal.md</code>"],
                     "felt more than heard")
-    return doc
+    return redact(doc)
 
 
 def render_profile(handle: str) -> str | None:
@@ -247,7 +282,7 @@ def render_profile(handle: str) -> str | None:
     tag = meta.get("tagline", "SAO fleet · Gibson-verse")
     doc += colophon([tag, f'handle since {meta.get("since", "2026-07-02")}'],
                     "transient, but real in the work")
-    return doc
+    return redact(doc)
 
 
 def main() -> int:
