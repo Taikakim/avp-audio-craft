@@ -29,6 +29,49 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from build_model_index import collect_models, OVERRIDES  # noqa: E402
+from build_site import redact  # noqa: E402  (shared redaction; one-way dep, no cycle)
+
+# Commentary-JSON schema fields that ship to the PUBLIC payload (docs/experiment-commentary-spec.md).
+# provenance.run_script / provenance.checkpoint are INTERNAL and deliberately absent here — see
+# _public_commentary(). Present only on backfilled entries; legacy entries carry none of these.
+_COMMENTARY_FIELDS = ("one_liner", "family", "why", "recipe", "compare_against", "verdict", "status")
+# Distinctly-new fields that mark an entry as a backfilled commentary (vs a legacy
+# {recipe:str, training_data, note} entry). recipe/family also exist in legacy form, so they
+# can't be the trigger — a bare legacy recipe STRING renders via the old inline path, not the
+# commentary block. A structured (dict) recipe also marks the new schema.
+_COMMENTARY_TRIGGERS = ("one_liner", "why", "compare_against", "verdict", "status")
+_PROV_PUBLIC = ("created", "by", "commit")  # public-safe provenance keys; run_script/checkpoint dropped
+
+
+def _redact_deep(v):
+    """redact() every string in a str / dict / list, recursively. The model-matrix payload is
+    embedded in public HTML, so this runs on everything that ships (same leak class closed on
+    the profile path 2026-07-30). Non-str scalars pass through."""
+    if isinstance(v, str):
+        return redact(v)
+    if isinstance(v, dict):
+        return {k: _redact_deep(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_redact_deep(x) for x in v]
+    return v
+
+
+def _public_commentary(ov):
+    """Build the public commentary block from an overrides entry: redact all strings, keep only
+    public-safe provenance (drop the INTERNAL run_script/checkpoint paths). Returns None for a
+    legacy entry that carries none of the new fields."""
+    is_new = any(k in ov for k in _COMMENTARY_TRIGGERS) or isinstance(ov.get("recipe"), dict)
+    if not is_new:
+        return None  # legacy entry (bare recipe string / provenance only) — no commentary block
+    present = {k: ov[k] for k in _COMMENTARY_FIELDS if k in ov}
+    prov = ov.get("provenance")
+    out = {k: _redact_deep(v) for k, v in present.items()}
+    if isinstance(prov, dict):
+        pub = {k: _redact_deep(prov[k]) for k in _PROV_PUBLIC if k in prov}
+        if pub:
+            out["provenance"] = pub
+    return out or None
+
 
 STAGING = Path.home() / ".cache/evals_aac"
 MANIFEST = STAGING / "model_matrix" / "manifest.jsonl"
@@ -70,6 +113,18 @@ option.lit{color:#7f7}option.unlit{color:#777}
 .recipe{font-size:11px;color:#9ab;line-height:1.45;margin:6px 0;border-left:2px solid #368;
 padding-left:7px;height:120px;overflow-y:auto}
 .tdata{font-size:11px;color:#a98;line-height:1.4;margin:4px 0;height:34px;overflow-y:auto}
+/* commentary block (docs/experiment-commentary-spec.md) — fixed-height + scroll like recipe/tdata
+   so it doesn't break the constant-header-height -> aligned-prompt-grid invariant below. NOTE:
+   columns WITH commentary are taller than legacy columns during backfill; once every entry carries
+   commentary this is uniform again. Final cross-column-alignment polish (reserve the slot in every
+   column, or a different placement) is deferred to real-data + Kim's eye. */
+.cmt{font-size:11px;line-height:1.5;margin:6px 0;border-left:2px solid #5a4;padding-left:7px;
+height:150px;overflow-y:auto}
+.cmt-one{color:#cde;font-weight:600;margin-bottom:3px}
+.cmt-row{color:#9ba;margin:3px 0}.cmt-row b{color:#8ac}
+.cmt-rec{margin:2px 0 2px 14px;padding:0;color:#9ab}.cmt-rec li{margin:1px 0}
+.cmt-ax{color:#7a8;font-style:italic}
+.cmt-status{color:#778;font-size:10px;text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
 .pgrid{margin:8px 0}.plabel{font-size:11px;color:#8a9;margin:8px 0 2px;white-space:nowrap;
 overflow:hidden;text-overflow:ellipsis}
 table.mini{border-collapse:collapse;width:100%}
@@ -137,11 +192,21 @@ def main():
     meta = {}
     for m in models:
         ov = overrides.get(m["label"], {})
+        # Top-level recipe stays a STRING (legacy JS renders info.recipe inline). The new schema
+        # makes recipe a nested object -> that structured form ships under commentary.recipe and
+        # renders in the commentary block; the inline string is blanked so it never shows
+        # "[object Object]". redact() the public strings (labels-only convention is no longer
+        # enough now the schema carries provenance + scale).
+        _recipe = ov.get("recipe", "")
         meta[m["label"]] = {
             "family": m["family"], "n_ckpts": m["n_ckpts"],
-            "recipe": ov.get("recipe", ""), "training_data": ov.get("training_data", ""),
-            "note": ov.get("note", ""), "ckpts": sorted(cov.get(m["label"], {}).keys()),
+            "recipe": redact(_recipe) if isinstance(_recipe, str) else "",
+            "training_data": redact(ov.get("training_data", "")),
+            "note": redact(ov.get("note", "")), "ckpts": sorted(cov.get(m["label"], {}).keys()),
         }
+        commentary = _public_commentary(ov)
+        if commentary:
+            meta[m["label"]]["commentary"] = commentary
 
     # per-(model,ckpt) GOOD-FRACTION from clip_metrics.db — operationalizes Kim's
     # "verdicts should be distributional, not good/bad" (2026-07-12): fraction of a
@@ -290,6 +355,16 @@ function render(){
    h+='<div class=recipe><b>recipe:</b> '+(info.recipe||'—')+(st.ckpt?('<br><b>checkpoint:</b> '+st.ckpt):'')+
       (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
    h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
+   if(info.commentary){const cm=info.commentary;h+='<div class=cmt>';
+    if(cm.one_liner)h+='<div class=cmt-one>'+cm.one_liner+'</div>';
+    if(cm.why)h+='<div class=cmt-row><b>why:</b> '+cm.why+'</div>';
+    if(cm.recipe&&typeof cm.recipe==="object"){h+='<div class=cmt-row><b>recipe:</b><ul class=cmt-rec>';
+     for(const k in cm.recipe){if(cm.recipe[k])h+='<li><b>'+k+':</b> '+cm.recipe[k]+'</li>';}h+='</ul></div>';}
+    if(cm.compare_against&&cm.compare_against.length){h+='<div class=cmt-row><b>compare vs:</b> '+
+     cm.compare_against.map(function(c){return c.target+' <span class=cmt-ax>('+(c.axis||'')+')</span>';}).join(', ')+'</div>';}
+    if(cm.verdict)h+='<div class=cmt-row><b>verdict:</b> '+cm.verdict+'</div>';
+    if(cm.status)h+='<div class=cmt-status>'+cm.status+'</div>';
+    h+='</div>';}
    h+='<div class=covwrap><div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
    if(st.ckpt&&MM.gf){const g=MM.gf[st.model+'|'+st.ckpt];
     if(g){const pct=g[0],col=pct>=60?'#5d9':(pct>=40?'#ca7':'#a66');
