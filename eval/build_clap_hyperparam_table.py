@@ -50,9 +50,55 @@ def _num(s):
         return np.nan
 
 
+def _recipe_to_text(recipe):
+    """Flatten a recipe into one lowercased text blob the regex parser below can read,
+    regardless of which schema produced it: a bare legacy string, THE-FINN's mechanical
+    extractor dict (lora_config.rank/alpha, optimizer.lr/weight_decay, epoch/global_step --
+    Misc/extract_recipes.py, 2026-07-30), or the commentary-spec dict (flat descriptive
+    strings under base_model/method/rank_alpha/optimizer/... -- docs/experiment-commentary-
+    spec.md). Both dict shapes coexist in models_index_overrides.json now; this is the single
+    place that reconciles them so parse_recipe's regexes never see a dict directly (the
+    AttributeError this replaces: 'dict' object has no attribute 'lower', GHOST-NOTE 2026-07-30
+    while rebuilding the aggregate after the fp32frames/fp32cmp commentary backfill)."""
+    if isinstance(recipe, str):
+        return recipe
+    if not isinstance(recipe, dict):
+        return ""
+    parts = []
+    lc = recipe.get("lora_config")
+    if isinstance(lc, dict):
+        if lc.get("rank") is not None:
+            parts.append(f"rank {lc['rank']}")
+        if lc.get("alpha") is not None:
+            parts.append(f"alpha {lc['alpha']}")
+    opt = recipe.get("optimizer")
+    if isinstance(opt, dict):
+        if opt.get("lr") is not None:
+            parts.append(f"lr {opt['lr']}")
+        parts.append("fusionopt" if "beta_p" in opt or "mu" in opt or "gamma_min" in opt else "")
+    ep, gs = recipe.get("epoch"), recipe.get("global_step")
+    if ep is not None and gs is not None:
+        parts.append(f"epoch {ep} / step {gs}")
+    # everything else (method/precision/context_len/optimizer-as-string/rank_alpha-as-string/
+    # kind/provenance) -- just fold every string leaf in, recursively, so the existing regexes
+    # still get a shot at whatever free text is there (e.g. my adamw entries' "rank 128, alpha
+    # 128 ... " already reads as a normal sentence the regexes below already handle).
+    def leaves(v):
+        if isinstance(v, str):
+            parts.append(v)
+        elif isinstance(v, dict):
+            for x in v.values():
+                leaves(x)
+        elif isinstance(v, list):
+            for x in v:
+                leaves(x)
+    leaves(recipe)
+    return " ".join(p for p in parts if p)
+
+
 def parse_recipe(recipe, label):
     """Return a dict of structured hyperparams. recipe (authoritative) first, label fallback."""
-    r = (recipe or "").lower()
+    r = _recipe_to_text(recipe).lower()
     lab = label.lower()
     d = {}
 
@@ -68,7 +114,7 @@ def parse_recipe(recipe, label):
     m = re.search(r"rank (\d+)", r) or re.search(r"\br(\d+)\b", r)
     d["rank"] = int(m.group(1)) if m else (int(re.search(r"dora(\d+)", lab).group(1)) if re.search(r"dora(\d+)", lab)
                                            else (int(re.search(r"[_-]r(\d+)", lab).group(1)) if re.search(r"[_-]r(\d+)", lab) else np.nan))
-    m = re.search(r"alpha (\d+)", r) or re.search(r"α(\d+)", recipe or "")
+    m = re.search(r"alpha (\d+)", r) or re.search(r"α(\d+)", r)
     d["alpha"] = int(m.group(1)) if m else np.nan
     d["alpha_over_rank"] = (d["alpha"] / d["rank"]) if (d.get("alpha") and d.get("rank")) else np.nan
 
