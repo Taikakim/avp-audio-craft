@@ -249,7 +249,7 @@ def main():
     metric_cols = ["clap_matched", "clap_margin_far", "retrieval_rank", "beats_all_far",
                    "ce", "pq", "cu", "pc", "zcr", "flatness", "flux", "hf_ratio", "bpm",
                    "onset_p95", "centroid", "crest", "rms", "dur"]
-    keep = ["model", "ckpt", "prompt_id", "is_repr"] + hp_cols + ctrl_cols + [c for c in metric_cols if c in df]
+    keep = ["model", "ckpt", "prompt_id", "is_repr", "file"] + hp_cols + ctrl_cols + [c for c in metric_cols if c in df]
     out = df[keep].copy()
     out.to_csv(ROOT / "eval/clap_full_table.csv", index=False)
     print(f"[table] wrote clap_full_table.csv  ({len(out)} cells, {len(keep)} cols)")
