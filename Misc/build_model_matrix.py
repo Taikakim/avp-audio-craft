@@ -118,9 +118,10 @@ padding-left:7px;height:120px;overflow-y:auto}
    columns WITH commentary are taller than legacy columns during backfill; once every entry carries
    commentary this is uniform again. Final cross-column-alignment polish (reserve the slot in every
    column, or a different placement) is deferred to real-data + Kim's eye. */
-.cmt{font-size:11px;line-height:1.5;margin:6px 0;border-left:2px solid #5a4;padding-left:7px;
-height:150px;overflow-y:auto}
-.cmt-one{color:#cde;font-weight:600;margin-bottom:3px}
+.cmt{font-size:11px;line-height:1.5;margin:6px 0;border-left:2px solid #5a4;padding-left:7px}
+summary.cmt-one{cursor:pointer;color:#cde;font-weight:600;list-style-position:outside}
+summary.cmt-one:hover{color:#eef}
+.cmt-body{margin-top:4px;max-height:340px;overflow-y:auto}
 .cmt-row{color:#9ba;margin:3px 0}.cmt-row b{color:#8ac}
 .cmt-rec{margin:2px 0 2px 14px;padding:0;color:#9ab}.cmt-rec li{margin:1px 0}
 .cmt-ax{color:#7a8;font-style:italic}
@@ -352,19 +353,29 @@ function render(){
    for(const k of cks)h+='<option class=lit value="'+k+'"'+(st.ckpt===k?' selected':'')+'>'+k+' ●</option>';
    if(!cks.length)h+='<option disabled>(none rendered yet)</option>';
    h+='</select>';
-   h+='<div class=recipe><b>recipe:</b> '+(info.recipe||'—')+(st.ckpt?('<br><b>checkpoint:</b> '+st.ckpt):'')+
-      (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
-   h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
-   if(info.commentary){const cm=info.commentary;h+='<div class=cmt>';
-    if(cm.one_liner)h+='<div class=cmt-one>'+cm.one_liner+'</div>';
+   const cm=info.commentary;
+   if(cm){
+    // Schema entry: collapsed-by-default <details>. At rest only the one_liner summary shows
+    // (compact, uniform height -> preserves the constant-header / aligned-prompt-grid invariant,
+    // Kim 2026-07-22); the reader clicks to expand to full height. The empty legacy recipe/tdata
+    // labels are folded IN here (G eyeball 2026-07-30: don't show two empty labels above a real box).
+    h+='<details class=cmt><summary class=cmt-one>'+(cm.one_liner||'commentary')+'</summary><div class=cmt-body>';
     if(cm.why)h+='<div class=cmt-row><b>why:</b> '+cm.why+'</div>';
     if(cm.recipe&&typeof cm.recipe==="object"){h+='<div class=cmt-row><b>recipe:</b><ul class=cmt-rec>';
      for(const k in cm.recipe){if(cm.recipe[k])h+='<li><b>'+k+':</b> '+cm.recipe[k]+'</li>';}h+='</ul></div>';}
+    else if(info.recipe)h+='<div class=cmt-row><b>recipe:</b> '+info.recipe+'</div>';
+    if(info.training_data)h+='<div class=cmt-row><b>training data:</b> '+info.training_data+'</div>';
     if(cm.compare_against&&cm.compare_against.length){h+='<div class=cmt-row><b>compare vs:</b> '+
      cm.compare_against.map(function(c){return c.target+' <span class=cmt-ax>('+(c.axis||'')+')</span>';}).join(', ')+'</div>';}
     if(cm.verdict)h+='<div class=cmt-row><b>verdict:</b> '+cm.verdict+'</div>';
+    if(st.ckpt)h+='<div class=cmt-row><b>checkpoint:</b> '+st.ckpt+'</div>';
     if(cm.status)h+='<div class=cmt-status>'+cm.status+'</div>';
-    h+='</div>';}
+    h+='</div></details>';
+   }else{
+    h+='<div class=recipe><b>recipe:</b> '+(info.recipe||'—')+(st.ckpt?('<br><b>checkpoint:</b> '+st.ckpt):'')+
+       (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
+    h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
+   }
    h+='<div class=covwrap><div class=cov>'+info.family+' · '+cks.length+' ckpt(s) rendered</div>';
    if(st.ckpt&&MM.gf){const g=MM.gf[st.model+'|'+st.ckpt];
     if(g){const pct=g[0],col=pct>=60?'#5d9':(pct>=40?'#ca7':'#a66');
