@@ -330,7 +330,8 @@ function startCell(el,f){
  document.getElementById('ld').textContent='loading…';el.classList.add('loading');
  a.pause();a.src='model_matrix/'+f;seekAndPlay(ph);cur=el;el.classList.add('playing');
  dl.href='model_matrix/'+f;dl.setAttribute('download',f);trans.classList.add('on');
- curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid}}
+ curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid};
+ if(window.metricsFromCell)metricsFromCell(el);}
 function play(el){const f=el.dataset.src;if(!f)return;
  if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
  if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
@@ -470,6 +471,175 @@ function noteFromCell(el){
 }
 document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
 </script>""")
+    # ── Per-clip METRICS feature (Kim 2026-07-30; data = G's clip_scores.json, directions =
+    # F's metric_meta). Panel lives OUTSIDE #cols so the 90s auto-refresh never wipes it.
+    # (1) preload button warms the 4 selected columns' clips; (2) a metrics grid = the playing
+    # clip's scores + its equivalents (same cfg/w/prompt) across the 4 columns; (3) a popup =
+    # ALL board-wide equivalents ranked by a chosen metric; (4) a HYBRID column, min-max
+    # normalized PER METRIC across the comparison set, direction-adjusted (lower-better inverted),
+    # weighted by user sliders. Scores fetched lazily on first play (14.7 MB / 3.2 MB gzip).
+    doc.append("""
+<style>
+.mpanel{max-width:1000px;margin:14px 0;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;
+  background:#141418;font:13px system-ui;color:#e0e0e0}
+.mpanel-hd{font-size:12px;color:#9cf;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mp-scope{color:#7ed}.mp-hint{color:#667;font-style:italic}
+.mp-btn{background:#1d2733;color:#9cf;border:1px solid #356;border-radius:4px;padding:2px 9px;
+  font-size:11.5px;cursor:pointer}.mp-btn:hover{background:#24303e}.mp-btn:disabled{opacity:.5;cursor:default}
+table.mtab{border-collapse:collapse;width:100%;font-size:11px;margin:2px 0}
+.mtab th,.mtab td{border:1px solid #26262c;padding:2px 5px;text-align:center;white-space:nowrap}
+.mtab th{color:#8a9;font-weight:500}.mtab td.mlab{text-align:left;color:#cde;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.mtab tr.mplaying td{background:#1d2b1f}.mtab td.mhy{font-weight:600;color:#cde}
+.mp-weights{margin:9px 0 2px;display:flex;flex-wrap:wrap;gap:9px 14px;font-size:11px;color:#9ab;align-items:center}
+.mp-w{display:flex;align-items:center;gap:4px}.mp-w input{width:74px;accent-color:#7cf}
+.mp-w .mp-wl{cursor:help}.mp-w .mp-wv{color:#7cf;width:14px;display:inline-block}
+.mp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:flex-start;justify-content:center}
+.mp-overlay.on{display:flex}
+.mp-modal{background:#16181c;border:1px solid #333;border-radius:8px;margin-top:5vh;max-height:86vh;width:min(880px,94vw);
+  overflow:auto;padding:14px 16px}
+.mp-modal h3{font-size:14px;margin:0 0 3px;color:#cde}.mp-modal .mp-sub{color:#899;font-size:12px;margin-bottom:8px}
+.mp-close{float:right;cursor:pointer;color:#9cf;font-size:16px;border:0;background:none}
+.mp-rank{color:#678}.mp-play{cursor:pointer;color:#7cf}.mp-selrow td{background:#1d2b1f}
+</style>
+<div class="mpanel" id="mpanel">
+ <div class="mpanel-hd">Per-clip metrics &mdash;
+  <span id="mscope" class="mp-hint">click a clip cell above to score it against its siblings</span>
+  <button class="mp-btn" id="mpre" onclick="preload4()" title="fetch the 4 selected columns' clips into browser cache so switching cells is instant">preload columns</button>
+  <button class="mp-btn" id="mpop" onclick="openEquiv()" style="display:none">compare all versions &#9656;</button>
+ </div>
+ <div id="mgrid"></div>
+ <div id="mweights" class="mp-weights"></div>
+</div>
+<div class="mp-overlay" id="moverlay" onclick="if(event.target===this)closeEquiv()">
+ <div class="mp-modal">
+  <button class="mp-close" onclick="closeEquiv()">&times;</button>
+  <h3 id="mpop-title">All versions</h3>
+  <div class="mp-sub">Every rendered clip at this cfg / strength / prompt across the whole zoo, ranked.
+   Sort: <select id="mpop-sort" onchange="renderEquiv()"></select> &nbsp; click &#9654; to play any of them.</div>
+  <div id="mpop-body"></div>
+ </div>
+</div>
+<script>
+let MSC=null,byFile=null,byEquiv=null,MMETA=null,mLoading=false,mWeights={},mCurEl=null;
+const SCORE_SHORT={clap_matched:'CLAP',clap_margin_far:'mrg',beats_all_far:'beat',retrieval_rank:'rank',
+ ce:'CE',pq:'PQ',cu:'CU',flatness:'flat',crest:'crest'};
+async function loadScores(){
+ if(MSC||mLoading)return MSC; mLoading=true;
+ try{
+  const r=await fetch('model_matrix/clip_scores.json',{cache:'force-cache'});
+  const j=await r.json(); MMETA=j.metric_meta; const cols=j.columns;
+  byFile=new Map(); byEquiv=new Map();
+  for(const row of j.clips){const o={}; for(let i=0;i<cols.length;i++)o[cols[i]]=row[i];
+   byFile.set(o.file,o);
+   const ek=o.cfg+'|'+o.strength+'|'+o.prompt_id;
+   let arr=byEquiv.get(ek); if(!arr){arr=[];byEquiv.set(ek,arr);} arr.push(o);}
+  MSC=j;
+  for(const m in MMETA) mWeights[m]=(MMETA[m].category==='score')?1:0;
+  buildWeightUI();
+ }catch(e){console.log('[metrics] scores load failed',e);}
+ mLoading=false; return MSC;
+}
+function hybridMetrics(){return Object.keys(MMETA).filter(m=>mWeights[m]>0&&MMETA[m].direction);}
+function normFn(clips,m){
+ const dir=MMETA[m].direction,vals=clips.map(c=>c[m]).filter(v=>v!=null&&!isNaN(v));
+ if(!vals.length)return()=>null; const lo=Math.min(...vals),hi=Math.max(...vals);
+ return c=>{let v=c[m]; if(v==null||isNaN(v))return null; let n=(hi>lo)?(v-lo)/(hi-lo):0.5; return dir==='lower'?1-n:n;};}
+function hybridScores(clips){
+ const ms=hybridMetrics(),norms={}; for(const m of ms)norms[m]=normFn(clips,m);
+ const out=new Map();
+ for(const c of clips){let s=0,w=0; for(const m of ms){const n=norms[m](c); if(n!=null){s+=mWeights[m]*n;w+=mWeights[m];}} out.set(c,w?s/w:null);}
+ return out;}
+function heat(n){if(n==null)return'';const h=Math.round(n*120);return'style="color:hsl('+h+',60%,68%)"';}
+function fmtv(v){if(v==null||isNaN(v))return'&middot;';return Math.abs(v)>=100?v.toFixed(0):Math.abs(v)>=1?v.toFixed(2):v.toFixed(3);}
+function buildWeightUI(){
+ const box=document.getElementById('mweights'); if(!MMETA){box.innerHTML='';return;}
+ const ms=Object.keys(MMETA).filter(m=>MMETA[m].direction);  // scorable = has a direction
+ let h='<b style="color:#8a9">hybrid weights:</b>';
+ for(const m of ms){const md=MMETA[m];
+  h+='<span class=mp-w><span class=mp-wl title="'+md.label+' ('+md.direction+'-is-better)">'+(SCORE_SHORT[m]||m)+'</span>'
+    +'<input type=range min=0 max=3 step=0.5 value="'+(mWeights[m]||0)+'" oninput="setW(\\''+m+'\\',this.value)">'
+    +'<span class=mp-wv id="wv-'+m+'">'+(mWeights[m]||0)+'</span></span>';}
+ box.innerHTML=h;}
+function setW(m,v){mWeights[m]=parseFloat(v);const el=document.getElementById('wv-'+m);if(el)el.textContent=v;
+ renderMetrics(); if(document.getElementById('moverlay').classList.contains('on'))renderEquiv();}
+function eqKeyOf(el){return el.dataset.cf+'|'+el.dataset.w+'|'+el.dataset.pid;}
+function clipAt(model,ckpt,cf,w,pid){const f=MM.data[model+'|'+ckpt+'|'+cf+'|'+w+'|'+pid];return f?(byFile&&byFile.get(f)):null;}
+async function metricsFromCell(el){
+ if(!el||el.dataset.cf==='native'){return;} mCurEl=el; await loadScores(); renderMetrics();}
+function renderMetrics(){
+ const el=mCurEl,sc=document.getElementById('mscope'),grid=document.getElementById('mgrid'),pop=document.getElementById('mpop');
+ if(!el||!byFile||el.dataset.cf==='native'){return;}
+ const cf=el.dataset.cf,w=el.dataset.w,pid=el.dataset.pid,pcol=el.dataset.col;
+ sc.className='mp-scope'; sc.textContent='cfg'+cf+' · w'+w+' · '+pid+'  (playing column '+(+pcol+1)+')';
+ const rows=[];
+ for(let c=0;c<4;c++){const st=colState[c]; if(!st.model||!st.ckpt){rows.push(null);continue;}
+  rows.push({col:c,st,o:clipAt(st.model,st.ckpt,cf,w,pid)});}
+ const present=rows.filter(r=>r&&r.o).map(r=>r.o);
+ const metrics=Object.keys(MMETA).filter(m=>MMETA[m].category==='score');
+ const norms={}; for(const m of metrics)norms[m]=normFn(present,m);
+ const hy=hybridScores(present);
+ let h='<table class=mtab><tr><th class=mlab>column</th>';
+ for(const m of metrics)h+='<th title="'+MMETA[m].label+'">'+(SCORE_SHORT[m]||m)+'</th>';
+ h+='<th title="min-max normalized per metric across the visible set, direction-adjusted, weighted">HYBRID</th></tr>';
+ for(const r of rows){
+  if(!r||!r.st.model){h+='<tr><td class=mlab style="opacity:.4">(empty column)</td><td colspan="'+(metrics.length+1)+'"></td></tr>';continue;}
+  const playing=(''+r.col===''+pcol);
+  h+='<tr class="'+(playing?'mplaying':'')+'"><td class=mlab title="'+r.st.model+' ▸ '+r.st.ckpt+'">'+(playing?'&#9654; ':'')+r.st.model+' <span style="color:#678">'+r.st.ckpt+'</span></td>';
+  if(!r.o){h+='<td colspan="'+(metrics.length+1)+'" style="color:#556">no clip at these settings</td></tr>';continue;}
+  for(const m of metrics)h+='<td '+heat(norms[m](r.o))+'>'+fmtv(r.o[m])+'</td>';
+  const hs=hy.get(r.o); h+='<td class=mhy '+heat(hs)+'>'+(hs==null?'&middot;':(hs*100).toFixed(0))+'</td></tr>';}
+ h+='</table>';
+ grid.innerHTML=h; pop.style.display='';}
+// ── board-wide equivalents popup ────────────────────────────────────────────
+function openEquiv(){if(!mCurEl||!byEquiv)return; document.getElementById('moverlay').classList.add('on');
+ const sel=document.getElementById('mpop-sort');
+ if(!sel.options.length){let o='<option value="__hy">HYBRID</option>';
+  for(const m in MMETA)if(MMETA[m].direction)o+='<option value="'+m+'">'+MMETA[m].label+'</option>';
+  sel.innerHTML=o;}
+ renderEquiv();}
+function closeEquiv(){document.getElementById('moverlay').classList.remove('on');}
+function renderEquiv(){
+ const el=mCurEl; if(!el)return; const ek=eqKeyOf(el);
+ const clips=(byEquiv.get(ek)||[]).slice();
+ document.getElementById('mpop-title').textContent='All versions · cfg'+el.dataset.cf+' · w'+el.dataset.w+' · '+el.dataset.pid+' ('+clips.length+')';
+ const sortm=document.getElementById('mpop-sort').value;
+ const hy=hybridScores(clips);
+ const val=(sortm==='__hy')?(c=>hy.get(c)):(c=>{const d=MMETA[sortm].direction;const v=c[sortm];return v==null?null:(d==='lower'?-v:v);});
+ clips.sort((a,b)=>{const va=val(a),vb=val(b);if(va==null)return 1;if(vb==null)return -1;return vb-va;});
+ const show=['ce','pq','cu','clap_matched','retrieval_rank','flatness'];
+ let h='<table class=mtab><tr><th class=mp-rank>#</th><th class=mlab>model ▸ ckpt</th>';
+ for(const m of show)h+='<th title="'+MMETA[m].label+'">'+(SCORE_SHORT[m]||m)+'</th>';
+ h+='<th>HYBRID</th><th></th></tr>';
+ const curf=mCurEl.dataset.src;
+ clips.forEach((c,i)=>{const isc=(c.file===curf);
+  h+='<tr class="'+(isc?'mp-selrow':'')+'"><td class=mp-rank>'+(i+1)+'</td><td class=mlab title="'+c.model+' ▸ '+c.ckpt+'">'+c.model+' <span style="color:#678">'+c.ckpt+'</span></td>';
+  for(const m of show)h+='<td>'+fmtv(c[m])+'</td>';
+  const hs=hy.get(c); h+='<td class=mhy>'+(hs==null?'&middot;':(hs*100).toFixed(0))+'</td>';
+  h+='<td class=mp-play onclick="playFile(\\''+c.file+'\\')" title="play this one">&#9654;</td></tr>';});
+ document.getElementById('mpop-body').innerHTML='<table class=mtab>'+h.slice(h.indexOf('<tr>'))+'</table>';}
+// play an arbitrary clip by filename (may be outside the 4 selected columns)
+function playFile(f){
+ if(typeof a==='undefined')return;
+ if(cur){cur.classList.remove('playing','loading');} cur=null;
+ a.pause(); a.src='model_matrix/'+f; seekAndPlay(ph);
+ document.getElementById('dl').href='model_matrix/'+f; document.getElementById('dl').setAttribute('download',f);
+ document.getElementById('trans').classList.add('on');}
+// ── preload the 4 selected columns' clips ───────────────────────────────────
+async function preload4(){
+ const btn=document.getElementById('mpre'); const files=new Set();
+ for(let c=0;c<4;c++){const st=colState[c]; if(!st.model||!st.ckpt)continue;
+  const pfx=st.model+'|'+st.ckpt+'|';
+  for(const k in MM.data)if(k.startsWith(pfx))files.add(MM.data[k]);
+  const nv=MM.native&&MM.native[st.model+'|'+st.ckpt]; if(nv)files.add(nv.file);}
+ const list=[...files]; if(!list.length){btn.textContent='no clips to preload';return;}
+ btn.disabled=true; let done=0;
+ const batch=6;
+ for(let i=0;i<list.length;i+=batch){
+  await Promise.all(list.slice(i,i+batch).map(f=>fetch('model_matrix/'+f,{cache:'force-cache'}).catch(()=>{})));
+  done=Math.min(i+batch,list.length); btn.textContent='preloading '+done+'/'+list.length;}
+ btn.textContent='preloaded '+list.length+' ✓'; btn.disabled=false;}
+</script>
+""")
     doc.append("<footer style='margin-top:18px;color:#666;font-size:11px'>aavepyora.online · evals · model matrix</footer></body></html>")
     OUT.write_text("".join(doc))
     print(f"wrote {OUT}: {len(models)} models, {len(entries)} clips in manifest, {len(prompts)} prompts")
