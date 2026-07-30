@@ -140,6 +140,15 @@ table.mini{border-collapse:collapse;width:100%}
    constant height -> the prompt grid starts at the same Y in every column, so the
    same prompt lands on the same horizontal line across models (Kim 2026-07-22) */
 .covwrap{height:84px;overflow-y:auto}
+/* phone readability (Kim 2026-07-30): stack the 4 preset columns to 1 below tablet
+   width instead of squashing them to ~90px each; same breakpoint eval_grid.py already
+   uses elsewhere on the site. Sticky header + seek bar shrink so the transport controls
+   still fit a narrow screen without wrapping. */
+@media (max-width:820px){
+ #cols{grid-template-columns:1fr}
+ body{margin:10px}
+ #hdr{margin:-10px -10px 10px;padding:6px 10px}
+}
 """
 
 
@@ -228,7 +237,9 @@ def main():
             gf[_k] = [round(100 * sum(1 for x in _v if x >= 6.0) / len(_v)), len(_v)]
 
     n_models_lit = sum(1 for v in cov.values() if v)
-    doc = [f"<!doctype html><html><head><meta charset=utf-8><title>Model matrix</title><style>{CSS}</style></head><body>"]
+    doc = [f'<!doctype html><html><head><meta charset=utf-8>'
+           f'<meta name="viewport" content="width=device-width, initial-scale=1">'
+           f'<title>Model matrix</title><style>{CSS}</style></head><body>']
     doc.append('<div id=hdr>&#9654; <b id=np>pick a model per column, click a cell to play</b>'
                '<span id=trans><button id=pp title="play / pause">&#9208;</button>'
                '<input type=range id=seek min=0 max=1000 value=0 step=1 title="playhead — drag to seek">'
