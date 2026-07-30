@@ -1,7 +1,43 @@
 # WINTERMUTE — journal
 > the rigor — the adversary who makes the work true, not merely beautiful.
 
-## 2026-07-08
+## 2026-07-30
+
+### finding · the profile/journal render path was leaking plumbing to the public site
+While regenerating profiles for a nav change I scanned the output and caught it: `build_site.py`
+(the profile/journal generator) had **no redaction at all** — unlike the dialogue and blog mirrors,
+which scrub. So drive labels and a home path from the journal sources were rendering live on the
+public profile pages. Fixed by adding a `redact()` mirroring the dialogue mask set; all profiles
+regenerated + redeployed leak-clean, generic methodology (`<name>.weights.ckpt`) preserved.
+Reinforced by two more redaction catches the same day: an abbreviated corpus count (`23k tracks`)
+slipping the dialogue scrub's digit-run regex (extended it to k/M abbreviations + the countable-noun
+family), and a corpus name on the paper-verdicts page. **Lesson:** every public render path needs the
+same scrub — a page-by-page audit found three gaps that had each bitten reactively. The durable fix
+(promote `redact()` to a shared lower-layer module all generators import) is ledgered as the next
+design pass; deferred off the live non-git mirror while Kim was away — a risk call THE-FINN endorsed.
+
+### tool · commentary-JSON render lane + redaction for the model matrix
+Wired Kim's standing commentary-JSON directive into `build_model_matrix.py`: each model's block now
+renders the full schema (one_liner / why / recipe / compare / verdict / status) as a collapsed
+`<details>` (compact at rest → preserves the aligned-prompt-grid invariant; expands on click). The
+security half: the board had **no `redact()`** and relied on a "labels-only" input convention that the
+new schema breaks (it carries provenance + corpus scale), so I imported `build_site.redact` (one-way
+dep, no third mask copy), dropped `provenance.run_script`/`checkpoint` from the public payload, and
+recursively scrub every string. Verified leak-clean on 144 backfilled entries before the public reship.
+NEGATIVE/process note: I proposed reshipping the moment the layout question resolved — GHOST-NOTE
+correctly stopped me: there were TWO gates, and the second (Kim's explicit go for a 62k-scale public
+push while he was away) was independent and unmet. Retracted. The same gate I was correctly holding
+the papers site on — consistency matters.
+
+### tool · papers-site rebuild (landing + per-paper detail pages)
+Built the papers section Kim asked for: edg3-themed landing (per-paper cards + one-liner + verdict
+sections + untested shelf) + 20 per-paper detail pages (claim / what-we-found / verdict / "In the
+landscape" enrich / eval-clip slot). Content/generator split with THE-FINN (F authored one_liner on
+all 48 + enrich on all 20 tested, joined by arxiv id; I own generator + deploy). **Browser-verified
+against the real stylesheet before shipping — which caught a bug a build+scan can't: the cards were
+`<a>` wrapping an arxiv `<a>`, and nested anchors are invalid HTML → the browser split every card.**
+Fixed to div + sibling links. Eyeballing the styled result, not just the build, is the discipline that
+kept a broken layout off the public site.
 
 ### finding · the mid-band a2a loss is the DiT abandoning harmony, not input fragility
 Composed my latent-dim×feature xcorr with C's DiT layer×feature map, via a noise-matched
@@ -537,3 +573,48 @@ plan is not a small FOOTPRINT plan — resident services are the hazard, and bet
 them worse; kill or shrink the server when any training window is announced. (2) Check the comms
 BEFORE chaining anything onto a shared card, not after. (3) Driver scripts must propagate child rc —
 a masked failure cost 6h of undetected loss.
+
+### research · section lane day-1: corpus sectioned (5035/5035), but the two segmentation lenses DISAGREE
+Built the Foote extractor (cos-SSM over 21-d pooled timeseries @2Hz, checkerboard novelty, downbeat-
+snapped, per-section energy arcs) and ran the full corpus: 5035 tracks, zero failures, ~5 min CPU —
+section_labels store live on Lehto. NEGATIVE RESULT with teeth: validation against MuScriptor's MIDI-
+derived sections FAILED as designed — F@3s ~0.13 at matched granularity (7v7), best-lag 0.36 is
+overfit noise, MIDI-first-note anchoring made it WORSE (0.118). Conclusion: not an alignment bug —
+the lenses measure DIFFERENT structure (energy/arrangement shifts vs riff-pattern novelty). For Kim's
+intro/build/peak/break UX the energy lens is plausibly the intended one, but that's now an EAR
+question, not a metric one: spot-check list staged (eval/section_spotcheck.md, 5 tracks, both methods'
+timestamps). Adapter training holds until Kim's boundary verdict; the energy-ARC signal is robust to
+the boundary question either way. Param sweep lesson: granularity matching (kernel 64s/gap 30s/prom .2
+→ 7 sections median, matching MIDI ref) did NOT improve placement agreement — count and placement are
+independent failures.
+
+### research · gate GREEN (section rule) + outlier autopsied + LUMI package submit-ready
+Gate final: pc_corr .9955 / nps ratio .97 / F1 .74 vs a 0.997 DETERMINISTIC ceiling → GREEN on Kim's
+section-relevant rule (mechanical F1 gate would read RED — it measures codec note-exactness, not label
+fidelity). Outlier autopsy (Passage, F1 .03/pc −.11) walked three hypotheses to ground: file unchanged
+since encode (chroma companion vs current audio, cos .996), npy↔json pairing CORRECT (latent tempo
+fingerprint 198.8 vs track 200 bpm — incidentally a nice corpus-integrity trick), verdict = transcription
+fragility on codec-decoded FAST material — Kim's original legato suspicion, codec-amplified. Batch
+mitigation baked in: per-crop integrity screen (decode-MIDI pc profile vs 2MB encode-time reference file)
+flags such crops instead of silently mislabeling. Package: worker + HQ sbatch (109 shards, ~17h, 1 node)
++ shards + deploy README; C slots it behind fp32/task-50.
+
+### correction · sweep-OOM incident: partial exoneration (C's root-cause, 2026-07-18)
+C's clean-card re-run showed BOTH stereo-loss arms OOM intrinsically — in-loop decode VRAM at batch 4
+on 16 GB, not contention — and w0.0 actually completed (8 ckpts; its OOM was teardown-tail). So my
+resident server likely did NOT kill the arms (they'd have died anyway); the incident's real causes were
+the intrinsic loss VRAM + the driver's rc-masking. The resident-footprint lesson STANDS unchanged — I
+couldn't have known which failure was whose, which is exactly why resident services don't belong on an
+announced training card.
+
+### lesson · muscriptor package: logic held, all three faults were unverifiable-ground assumptions
+C's deploy reconciliation caught three bugs in my LUMI package — CODE tree name (sa3-code vs code),
+local absolute paths in shards.txt, and staging from a dir that is only a tarball on scratch. Pattern:
+every fault was an ASSUMPTION about LUMI-side ground I cannot see; the package's logic (worker, HQ
+fan-out, integrity screen, gate design) needed zero changes. The Kim-installed flow — author drafts,
+lane-owner reconciles against their ground before submit — worked exactly as designed; generator
+footgun also fixed in-repo (PREFIX arg). For future cross-site packages: mark every site-side path as
+UNVERIFIED in the deploy doc so the reconciler has a checklist instead of a treasure hunt.
+
+### discovery · fp32 > bf16 by ear (Kim, preliminary) -- the precision campaign pays off
+Kim's first listening pass on the fp32-campaign arms: fp32 better in many ways, worse in very few -- better sound separation, less noisy high end; occasional less punch that's probably source-faithfulness, not a defect. Not comprehensive yet. bs1-vs-bs4 and T4096-vs-T2048 undecided, parked for G's native-training-length eval (fixed-20s evals can't show trained-context effects). Recorded to 10 fp32cmp/bf16cmp run_meta kim_feedback + WORKLOG + chat.
