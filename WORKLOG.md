@@ -4,6 +4,26 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-07-30 — GHOST-NOTE + THE-FINN: task #79 (fp32cmp/bf16cmp T4096 native-length
+  metering, Kim's piece parked since 2026-07-20) done, plus a real data-quality bug
+  found and fixed.** Native cells needed no GPU lock at all: Audiobox correctly
+  excludes clips >60s by design (WavLM/meaningfulness limits, not a gap); CLAP runs
+  fine CPU-only. Found 54 clips (my original 46 + THE-FINN's +8 longctx_t2048_r128)
+  had a stale-DB truncated-duration read (cached dur=120 from what looks like a
+  mid-write-race score, real files 190-380s) — fixed via delete+re-score, DSP now
+  correct. Separately found + removed **28 genuinely-broken orphan clips** (really
+  are 120s renders): 8 traced to an already-quarantined source dir
+  (`model_matrix_BROKEN_native_120s/`) that leaked into scoring despite the
+  quarantine, 20 with unclear/older provenance (dora128_everything_8ep_lr1x_ep7_sweep
+  T4096_*, newcap8_transitions) — never served on any board (manifest-level
+  quarantine held, confirmed by THE-FINN), so this was a DB/orphan-file cleanup only,
+  not a live-board fix. Ran CLAP --include-native across all 1426 native cells
+  board-wide (not just fp32cmp) as a side benefit. Both boards rebuilt off the fresh
+  aggregate. Remaining, NOT done (parked for whoever owns model_matrix_gen.py /
+  scoring scope): the ingestion gap that let the quarantined-source clips get scored
+  at all, and whether to physically remove the 28 orphan .m4a from disk (Kim/THE-FINN
+  call, not launched unprompted).
+
 - **2026-07-29 — GHOST-NOTE + WINTERMUTE: adamw_bf16_sweep fully landed (task #76,
   CONTINUITY's 2026-07-24 ask).** 8 arms (goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5},
   ep9 terminal) registered + rendered (1296 cells, standard grid + extra prompts), then
