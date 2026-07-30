@@ -8,6 +8,9 @@ batches on the 16GB card (CLAUDE.md), so we start at --batch 8 and HALVE on OOM 
 Resumable: skips clips that already have a CE score.
 
 Run (mir venv, GPU): mir/bin/python control/sa3_control/clip_metrics_audiobox.py [--batch 8]
+    [--pattern <substr>] (scope a catch-up pass to one campaign; the board-wide missing-ce
+    backlog grows continuously as new campaigns land, so an unscoped run can pull in tens of
+    thousands of unrelated clips -- GHOST-NOTE 2026-07-30, task #83)
 """
 import argparse
 import glob
@@ -34,11 +37,13 @@ def ensure_cols(con):
     con.commit()
 
 
-def enumerate_clips(roots):
+def enumerate_clips(roots, pattern=None):
     paths = []
     for r in roots:
         paths += glob.glob(f"{STAGE}/{r}/**/*.m4a", recursive=True)
         paths += glob.glob(f"{STAGE}/{r}/*.m4a")
+    if pattern:
+        paths = [p for p in paths if pattern in p]
     return sorted(set(paths))
 
 
@@ -59,6 +64,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--roots", default="model_matrix,control_runs,renders,riffer")
+    ap.add_argument("--pattern", default=None,
+                    help="substring filter on clip path -- scope a catch-up pass to one "
+                         "campaign instead of the whole board's missing-ce backlog")
     args = ap.parse_args()
 
     sys.path.insert(0, "/home/kim/Projects/mir/src")
@@ -75,7 +83,7 @@ def main():
     # an 8-min a2a/longform clip is not meaningful (Audiobox is designed for ~10-30s).
     # dur is already in the DB from the CPU pass.
     too_long = {r[0] for r in con.execute("SELECT path FROM metrics WHERE dur > 60")}
-    clips = [c for c in enumerate_clips(args.roots.split(",")) if c not in done and c not in too_long]
+    clips = [c for c in enumerate_clips(args.roots.split(","), args.pattern) if c not in done and c not in too_long]
     print(f"audiobox: {len(clips)} clips to score (batch {args.batch})", flush=True)
     if not clips:
         return
