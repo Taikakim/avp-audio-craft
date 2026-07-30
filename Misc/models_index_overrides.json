@@ -461,8 +461,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_avp_t512_bs1_lr1e4"
   },
   "status": "done"
  },
@@ -499,8 +499,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_avp_t512_bs4_lr1e4"
   },
   "status": "done"
  },
@@ -537,8 +537,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_avp_t512_bs4_lr2e4"
   },
   "status": "done"
  },
@@ -575,8 +575,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_avp_t512_bs4_lr5e5"
   },
   "status": "done"
  },
@@ -613,8 +613,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_goa_t512_bs1_lr1e4"
   },
   "status": "done"
  },
@@ -651,8 +651,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_goa_t512_bs4_lr1e4"
   },
   "status": "done"
  },
@@ -689,8 +689,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_goa_t512_bs4_lr2e4"
   },
   "status": "done"
  },
@@ -727,8 +727,8 @@
    "created": "2026-07-24",
    "by": "CONTINUITY (LUMI training, job 20190736) + GHOST-NOTE (render/meter, 2026-07-29/30)",
    "commit": "db9a6bb",
-   "run_script": "(INTERNAL)",
-   "checkpoint": "(INTERNAL)"
+   "run_script": "LUMI job 20190736, sbatch not on GHOST-NOTE's side -- ask CONTINUITY",
+   "checkpoint": "manifest:adamw_goa_t512_bs4_lr5e5"
   },
   "status": "done"
  }
