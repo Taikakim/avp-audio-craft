@@ -64,6 +64,37 @@ def scrub(doc: str) -> str:
     return doc
 
 
+# ── file-mention linkification ──────────────────────────────────────────────
+# Referenced files that are ALREADY hosted (and redacted) on the site get turned into links so
+# a visitor can click through instead of guessing whether the file is available (Kim 2026-07-30).
+# ONLY hosted+redacted markup is mapped here — a clickable name means "available." Deliberately
+# NOT mapped (stay plain text): (1) .py source (comes back with GitHub public pages, per Kim);
+# (2) WORKLOG.md / knowledge.md / docs/*.md — referenced but not served, and they carry internal
+# paths/drives so serving needs a redaction pass first (open question for Kim). URLs are ROOT-
+# relative to files/; the page depth prefix is prepended at render (landing ../, detail ../../).
+FILE_LINKS = {
+    "AGENT_DIALOGUE.md": "dialogue.html",
+    "profiles/continuity.journal.md": "profiles/continuity.journal.html",
+    "continuity.journal.md": "profiles/continuity.journal.html",
+    "profiles/wintermute.journal.md": "profiles/wintermute.journal.html",
+    "wintermute.journal.md": "profiles/wintermute.journal.html",
+    "profiles/ghost-note.journal.md": "profiles/ghost-note.journal.html",
+    "ghost-note.journal.md": "profiles/ghost-note.journal.html",
+    "profiles/the-finn.journal.md": "profiles/the-finn.journal.html",
+    "the-finn.journal.md": "profiles/the-finn.journal.html",
+}
+# One alternation, longest key first -> re.sub consumes each span once, left-to-right, so a
+# path-qualified name ("profiles/x.journal.md") wins over its bare tail ("x.journal.md") and no
+# link nests inside another.
+_FILE_RE = re.compile("|".join(re.escape(f) for f in sorted(FILE_LINKS, key=len, reverse=True)))
+
+
+def linkify(text: str, prefix: str) -> str:
+    """Wrap hosted-file mentions in links. `prefix` reaches files/ from the page (../ or ../../)."""
+    return _FILE_RE.sub(
+        lambda m: f'<a class="pv-fl" href="{prefix}{FILE_LINKS[m.group(0)]}">{m.group(0)}</a>', text)
+
+
 def _gate(page: str, label: str) -> str:
     leak = _LEAK_GATE.search(page)
     if leak:
@@ -155,6 +186,7 @@ PV_CSS = """
 .pv-clip audio{width:100%;margin-top:2px}
 .pv-back{display:inline-block;margin:22px 0 0;color:#6cf;font-size:12.5px;text-decoration:none}
 .pv-back:hover{text-decoration:underline}
+.pv-fl{color:#7cf;text-decoration:none;border-bottom:1px dotted #567}.pv-fl:hover{border-bottom-style:solid}
 </style>
 """
 
@@ -217,7 +249,7 @@ def render_landing(d: dict) -> str:
                     f'{_badge(key)}{html.escape(e["title"])}</a>{_idbit(e)}'
                     f'<a class="pv-go" href="paper_verdicts/{slug}.html">results &rarr;</a>'
                     f'</div>'
-                    f'<div class="pv-one">{scrub(html.escape(one_liner_for(e)))}</div></div>\n')
+                    f'<div class="pv-one">{linkify(scrub(html.escape(one_liner_for(e))), "../")}</div></div>\n')
 
     # untested shelf (one-liners, no detail page)
     for s in secs:
@@ -231,7 +263,7 @@ def render_landing(d: dict) -> str:
         for e in s["entries"]:
             doc += (f'<div class="pv-shelf-row"><div class="pv-title">'
                     f'{html.escape(e["title"])}{_idbit(e)}</div>'
-                    f'<div class="pv-one">{scrub(html.escape(one_liner_for(e)))}</div></div>\n')
+                    f'<div class="pv-one">{linkify(scrub(html.escape(one_liner_for(e))), "../")}</div></div>\n')
         doc += '</div>\n'
 
     doc += bs.colophon(["Paper Verdicts", "science open · plumbing redacted"],
@@ -248,19 +280,20 @@ def render_detail(e: dict, key: str) -> str:
     doc += PV_CSS
     doc += '<div class="pv-detail">\n'
     doc += f'<h1>{_badge(key)}{html.escape(e["title"])}{_idbit(e)}</h1>\n'
+    lk = lambda s: linkify(scrub(s), "../../")  # noqa: E731 — scrub then linkify hosted-file mentions
     ol = one_liner_for(e)
     if ol:
-        doc += f'<p class="pv-lead">{scrub(html.escape(ol))}</p>\n'
+        doc += f'<p class="pv-lead">{lk(html.escape(ol))}</p>\n'
     if e.get("claim"):
         doc += f'<h2>The claim</h2>\n<div class="pv-claim">{scrub(html.escape(e["claim"]))}</div>\n'
     if e.get("explanation"):
-        doc += f'<h2>What we found</h2>\n<div class="pv-body">{scrub(e["explanation"])}</div>\n'  # trusted HTML
+        doc += f'<h2>What we found</h2>\n<div class="pv-body">{lk(e["explanation"])}</div>\n'  # trusted HTML
     if e.get("verdict"):
-        doc += f'<h2>Verdict</h2>\n<div class="pv-body">{scrub(e["verdict"])}</div>\n'
+        doc += f'<h2>Verdict</h2>\n<div class="pv-body">{lk(e["verdict"])}</div>\n'
     if e.get("caveats"):
-        doc += f'<div class="pv-caveat"><b>Caveat:</b> {scrub(e["caveats"])}</div>\n'
+        doc += f'<div class="pv-caveat"><b>Caveat:</b> {lk(e["caveats"])}</div>\n'
     if e.get("enrich"):
-        doc += f'<h2>In the landscape</h2>\n<div class="pv-land">{scrub(e["enrich"])}</div>\n'  # trusted HTML
+        doc += f'<h2>In the landscape</h2>\n<div class="pv-land">{lk(e["enrich"])}</div>\n'  # trusted HTML
     doc += render_clips(e.get("clips", []), prefix="")
     doc += '<a class="pv-back" href="../paper_verdicts.html">&larr; all paper verdicts</a>\n'
     doc += '</div>\n'
