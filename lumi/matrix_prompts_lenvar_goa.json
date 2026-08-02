@@ -1,0 +1,14 @@
+{
+ "prompts": [
+  {
+   "id": "goa_organic",
+   "seed": 2026,
+   "text": "This track is a high-energy psychedelic 90s goatrance piece that blends the driving pulse of classic Goa trance with organic and crisp sound of analog synthesizers. It sits at 143 BPM in a 4/4 time signature and is rooted in F minor. Instrumentation & production: The arrangement is built around a relentless four-on-the-floor kick and a thick, side-chain-compressed synth bass that anchors the low end, together with moody pads and distorted roland tb303-style acid riffs and resonant filtered saw wave legato synth lead with a rubbery portamento"
+  }
+ ],
+ "cfgs": [
+  1,
+  7,
+  16
+ ]
+}

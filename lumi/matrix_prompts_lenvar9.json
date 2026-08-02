@@ -1,0 +1,54 @@
+{
+ "prompts": [
+  {
+   "id": "kimlong",
+   "text": "bittersweet synth music with influences from goa trance and 80s retro videogame music, dorian scale, BPM 138, steady 90s trance beat, punchy bright kick, 16th octave bass runs, tight snares every second beat",
+   "seed": 1234
+  },
+  {
+   "id": "techno",
+   "text": "techno music",
+   "seed": 1234
+  },
+  {
+   "id": "kl_0",
+   "text": "This track is an instrumental Psytrance piece that blends classic Goa-style melodic arpeggios with modern, high-fidelity production. It sits at 150 BPM in 4/4 time and is rooted in F minor, though the harmonic content is intentionally sparse, focusing instead on evolving textures and driving rhythmic momentum.",
+   "seed": 1000
+  },
+  {
+   "id": "rb_bracket_0",
+   "text": "2020s goa trance, melodic mood, 148 bpm",
+   "seed": 1102008041
+  },
+  {
+   "id": "rb_common_1",
+   "text": "mid 90s goa trance, melodic space mood, 140 bpm",
+   "seed": 225176290
+  },
+  {
+   "id": "rb_common_2",
+   "text": "mid 90s goa trance, 148 bpm",
+   "seed": 544354203
+  },
+  {
+   "id": "rb_rare_7",
+   "text": "2010s psy-trance, progressive trance, 136 bpm",
+   "seed": 16488276
+  },
+  {
+   "id": "rb_rare_8",
+   "text": "mid 90s goa trance, techno, space dark mood, 140 bpm",
+   "seed": 278158216
+  },
+  {
+   "id": "goa_organic",
+   "seed": 2026,
+   "text": "This track is a high-energy psychedelic 90s goatrance piece that blends the driving pulse of classic Goa trance with organic and crisp sound of analog synthesizers. It sits at 143 BPM in a 4/4 time signature and is rooted in F minor. Instrumentation & production: The arrangement is built around a relentless four-on-the-floor kick and a thick, side-chain-compressed synth bass that anchors the low end, together with moody pads and distorted roland tb303-style acid riffs and resonant filtered saw wave legato synth lead with a rubbery portamento"
+  }
+ ],
+ "cfgs": [
+  1,
+  7,
+  16
+ ]
+}

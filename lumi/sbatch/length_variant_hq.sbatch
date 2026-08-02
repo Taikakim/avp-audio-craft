@@ -1,0 +1,133 @@
+#!/bin/bash
+# length_variant_hq.sbatch — LUMI leg of the 2026-08-02 length-variant eval run. Fans out the
+# 220 render tasks (55 LUMI-resident terminal checkpoints x 4 passes: native / goa_organic-20s /
+# ptm-native / ptm-20s) across ONE standard-g node's 8 GCDs via HyperQueue, HQ draining as workers
+# free. This is CSC's >20-short-single-node-tasks case (throughput guide §1) — same pattern as
+# lumi/sbatch/ctrl_matrix_hq.sbatch, adapted for RENDER (no latent staging; LUMI-staged models
+# offline). Spec: docs/superpowers/specs/2026-08-02-eval-native-ptm-length-render-design.md.
+#
+# PATTERN SOURCES (reuse, not reinvent):
+#   - ctrl_matrix_hq.sbatch                     — the HQ fan-out this is copied from (server + 8
+#     ROCR-pinned workers + submit-loop + drain), incl. the ROCR-ONLY GCD-pinning fix.
+#   - lumi/render_matrix_cells.py               — the per-(label,ckpt) render worker each task runs.
+#   - lumi/length_variant_tasks.txt             — the task list (gen_length_variant_tasks.py, local).
+#   - lumi/matrix_prompts_lenvar9.json / _goa.json — the 9-prompt (manifest-sourced) + goa-only snaps.
+#
+# GCD PINNING: srun launches 8 tasks (one per GCD); each exports ROCR_VISIBLE_DEVICES=$SLURM_PROCID
+# ALONE before `hq worker start` — never also HIP_VISIBLE_DEVICES (they stack: HIP indexes into the
+# ROCR-filtered 1-GPU list -> index N>0 = No-HIP-GPUs; 7/8 workers dead, 2026-07-21 job 20068082).
+#
+# VERIFY BY ARTIFACT COUNT, NOT sbatch rc: after the drain, count .wav/.mmline.json under RENDER_OUT
+# (the guide's "count outputs, not the return code" rule) before trusting completion.
+#
+# INGEST (local, after): eval/ingest_native_cells.py pulls RENDER_OUT back, transcodes + appends the
+# manifest; then rebuild dora_table/model_matrix. The 8 kept prompts' 20s stay LOCAL (rendered on
+# 7.2.3) — LUMI only emits the genuinely-new cells, so no cross-backend duplication of existing 20s.
+#
+#SBATCH --account=project_465003186
+#SBATCH --partition=standard-g
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=8
+#SBATCH --ntasks-per-node=8
+#SBATCH --cpus-per-task=7
+#SBATCH --mem=0
+#SBATCH --time=24:00:00
+#SBATCH --job-name=sa3_lenvar_hq
+#SBATCH --output=%x-%j.out
+
+set -euo pipefail
+PROJ=/project/project_465003186
+SCRATCH=/scratch/project_465003186
+CODE=${PROJ}/code
+SIF=${PROJ}/containers/sa3.sif
+MODELS=${PROJ}/models
+RENDER_OUT=${SCRATCH}/renders/length_variant
+TASKLIST=${CODE}/lumi/length_variant_tasks.txt
+LOGDIR=${RENDER_OUT}/hq_logs
+mkdir -p "${RENDER_OUT}" "${LOGDIR}"
+
+# ── HyperQueue binary: prefer the CSC module, honour an HQ_BIN override, else fail loud ──────
+if [ -n "${HQ_BIN:-}" ]; then
+  echo "[lenvar] using HQ_BIN override: ${HQ_BIN}"
+else
+  module use /appl/local/csc/modulefiles || true
+  module load hyperqueue || true
+  HQ_BIN=$(command -v hq || true)
+fi
+if [ -z "${HQ_BIN:-}" ]; then
+  echo "[lenvar] FATAL: no hq binary (module load hyperqueue failed and HQ_BIN unset)." 1>&2
+  echo "[lenvar] drop a static hq at ${CODE}/lumi/bin/hq and re-run with HQ_BIN=that path." 1>&2
+  exit 1
+fi
+echo "[lenvar] hq: ${HQ_BIN} ($(${HQ_BIN} --version 2>/dev/null || echo version-unknown))"
+
+# ── task list must be present (generated locally + committed; NOT generated on LUMI, since the
+#    LUMI<->local ckpt mapping + manifest-sourced prompts are derived on the local side) ─────
+if [ ! -s "${TASKLIST}" ]; then
+  echo "[lenvar] FATAL: ${TASKLIST} absent/empty -- run lumi/gen_length_variant_tasks.py locally and sync it." 1>&2
+  exit 1
+fi
+NTASKS=$(grep -cve '^[[:space:]]*$' "${TASKLIST}")
+echo "[lenvar] ${NTASKS} render tasks in ${TASKLIST}"
+
+# sanity: the prompt snapshots + worker must be present in the code tree
+for f in "${CODE}/lumi/render_matrix_cells.py" "${CODE}/lumi/matrix_prompts_lenvar9.json" \
+         "${CODE}/lumi/matrix_prompts_lenvar_goa.json"; do
+  [ -s "$f" ] || { echo "[lenvar] FATAL: missing ${f}" 1>&2; exit 1; }
+done
+
+# ── HyperQueue server ───────────────────────────────────────────────────────────────────────
+export HQ_SERVER_DIR="${RENDER_OUT}/hq-server/${SLURM_JOB_ID}"
+mkdir -p "${HQ_SERVER_DIR}"
+"${HQ_BIN}" server start &
+until "${HQ_BIN}" job list &> /dev/null; do sleep 1; done
+echo "[lenvar] hq server up (HQ_SERVER_DIR=${HQ_SERVER_DIR})"
+
+# ── 8 workers, one per GCD. ROCR_VISIBLE_DEVICES=$SLURM_PROCID ALONE (see header) ───────────
+srun --overlap --cpu-bind=none --mpi=none bash -c '
+  export ROCR_VISIBLE_DEVICES=$SLURM_PROCID
+  '"${HQ_BIN}"' worker start --manager slurm --on-server-lost finish-running --cpus=7
+' &
+"${HQ_BIN}" worker wait "${SLURM_NTASKS}"
+echo "[lenvar] ${SLURM_NTASKS} workers registered"
+
+# ── submit all render tasks. One HQ task per line; each sets its own MIOpen DB under /tmp ────
+# Double-quoted body so fixed paths interpolate now; \$HQ_TASK_ID stays literal for HQ. Task
+# lines are apostrophe/backtick-free (generator emits plain flags), so injecting one is quote-safe.
+i=0
+while IFS= read -r CMD; do
+  case "${CMD}" in ""|\#*) continue ;; esac
+  i=$((i+1))
+  "${HQ_BIN}" submit \
+    --name="lenvar_${i}" \
+    --cpus=7 \
+    --stdout="${LOGDIR}/j%{JOB_ID}-t%{TASK_ID}.out" \
+    --stderr="${LOGDIR}/j%{JOB_ID}-t%{TASK_ID}.err" \
+    -- singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c "
+      set -euo pipefail
+      export HF_HOME=${MODELS} HF_HUB_OFFLINE=1
+      export PYTHONPATH=${CODE}/control:${CODE}/stable-audio-3:${CODE}/lumi/vendor
+      export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
+      export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
+      export MIOPEN_USER_DB_PATH=/tmp/miopen-\$HQ_TASK_ID MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-\$HQ_TASK_ID
+      export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
+      rm -rf \$MIOPEN_USER_DB_PATH; mkdir -p \$MIOPEN_USER_DB_PATH
+      cd ${CODE}/stable-audio-3
+      echo [lenvar task \$HQ_TASK_ID] GCD ROCR=\$ROCR_VISIBLE_DEVICES
+      ${CMD}
+    "
+done < "${TASKLIST}"
+echo "[lenvar] submitted ${i} tasks; draining across ${SLURM_NTASKS} GCDs"
+
+# ── wait for the queue to drain, then tear down ─────────────────────────────────────────────
+"${HQ_BIN}" job wait all || true   # task failures must not kill the tail under set -e
+echo "[lenvar] all jobs finished:"
+"${HQ_BIN}" job list --all || true
+"${HQ_BIN}" worker stop all || true
+"${HQ_BIN}" server stop || true
+
+# ── verify by ARTIFACT count, not rc (guide rule) ───────────────────────────────────────────
+NW=$(find "${RENDER_OUT}" -maxdepth 1 -name '*.wav' 2>/dev/null | wc -l)
+NM=$(find "${RENDER_OUT}" -maxdepth 1 -name '*.mmline.json' 2>/dev/null | wc -l)
+echo "[lenvar] DONE. artifacts under ${RENDER_OUT}: ${NW} wav / ${NM} mmline.json ; logs ${LOGDIR}/"
+echo "[lenvar] NEXT (local): eval/ingest_native_cells.py to pull + transcode + append manifest, then rebuild the boards."
