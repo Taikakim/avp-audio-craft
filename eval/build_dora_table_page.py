@@ -271,7 +271,7 @@ function render(){
 // -- only ever entries whose m4a actually exists), so "no clip" here means truly not
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
-let cellIndex=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+let cellIndex=null,cellsByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
 // copy lives beside its model_matrix/ and ssm/ dirs -> no 'evals/' prefix.
 // the page lives at /files/evals/dora_table.html (served) and ~/evals_aac/dora_table.html
@@ -286,14 +286,41 @@ function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 // keyed on "<model>_ptm" instead of "<model>" -- same rows, a different underlying render.
 function modelKey(m){return m+(pptm.checked?'_ptm':'')}
 function currentSel(){return {pid:pprompt.value,cfg:parseFloat(pcfg.value),w:parseFloat(pstrength.value)}}
-function applyPtmLock(){
- pcfg.disabled=pstrength.disabled=pptm.checked;
- if(pptm.checked){pcfg.value='1';pstrength.value='1';}}
+// pptm is now a pure VIEW toggle (base render vs post-trained render). It no longer
+// force-locks cfg/weight: graceful cell resolution (below) auto-picks the cfg/w a given
+// model actually rendered, so the picker stays free and the manual "know to lock cfg=1"
+// step is gone (Kim 2026-08-02: kill the manual-matching fragility).
+function applyPtmLock(){}
+// GRACEFUL CELL RESOLUTION (Kim 2026-08-02): the global cfg/weight/prompt picker can request
+// a combo a given (model,ckpt) never rendered (e.g. the _ptm winning variants are cfg1-ONLY)
+// -> a dead 'no clip rendered' cell. Resolve any miss to the NEAREST available cell for that
+// model: exact -> same-prompt nearest cfg/w -> any prompt nearest cfg/w -> the sibling view
+// (base<->_ptm) if the selected view has nothing at all. So a click always plays SOMETHING
+// when the model has any clip, and the label marks non-exact hits.
+function mcGroup(mkey,ckpt){                     // -> {arr,mkey} of cells for a model-ckpt, or null
+ if(!cellsByMC)return null;
+ let arr=cellsByMC.get(mkey+'\x01'+ckpt);
+ if(arr&&arr.length)return {arr,mkey};
+ const sib=mkey.endsWith('_ptm')?mkey.slice(0,-4):mkey+'_ptm';   // last resort: cross the view toggle
+ arr=cellsByMC.get(sib+'\x01'+ckpt);
+ return (arr&&arr.length)?{arr,mkey:sib}:null;}
+function resolveCell(mkey,ckpt,pid,cfg,w){
+ const g=mcGroup(mkey,ckpt);if(!g)return null;
+ let e=g.arr.find(c=>c.pid===pid&&c.cfg===cfg&&c.w===w);
+ if(e)return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,exact:true};
+ const sp=g.arr.filter(c=>c.pid===pid);           // prefer the requested prompt; else any prompt
+ const pool=(sp.length?sp:g.arr).slice()
+   .sort((a,b)=>(Math.abs(a.cfg-cfg)-Math.abs(b.cfg-cfg))||(Math.abs(a.w-w)-Math.abs(b.w-w)));
+ e=pool[0];return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,exact:false};}
+// dim rows that have NO clip at the selected PROMPT (with graceful-resolve, cfg/w mismatch
+// no longer means "unplayable" -- only a missing prompt is a meaningful "nothing here" signal).
 function markAvailability(){
- if(!cellIndex)return;
- const {pid,cfg,w}=currentSel();
+ if(!cellsByMC)return;
+ const {pid}=currentSel();
  document.querySelectorAll('#body tr').forEach(tr=>{
-  tr.classList.toggle('nomatch',!cellIndex.has(cellKey(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w)));});}
+  const g=mcGroup(modelKey(tr.dataset.model),tr.dataset.ckpt);
+  const hasPrompt=g&&g.arr.some(c=>c.pid===pid);
+  tr.classList.toggle('nomatch',!hasPrompt);});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
  if(!playingModel)return;
@@ -316,28 +343,30 @@ function repickCurrent(){
  markAvailability();
  if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
  const {pid,cfg,w}=currentSel();
- const key=cellKey(modelKey(playingModel),playingCkpt,pid,cfg,w);
- const f=cellIndex.get(key);
- if(!f||key===playingKey)return;                      // no clip at new setting -> keep playing
- playingKey=key;curLabel=modelKey(playingModel)+' '+playingCkpt+' × '+pid+' cfg'+cfg+' w'+w;
+ const hit=resolveCell(modelKey(playingModel),playingCkpt,pid,cfg,w);
+ if(!hit)return;                                      // model has no clip at all -> keep playing
+ const key=cellKey(hit.mkey,playingCkpt,hit.pid,hit.cfg,hit.w);
+ if(key===playingKey)return;                          // already on the resolved clip
+ playingKey=key;
+ curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest');
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
- pl.pause();pl.src=CB+f;seekAndPlay(ph);showSSM(f);setDL(f);markPlaying();}
+ pl.pause();pl.src=CB+hit.file;seekAndPlay(ph);showSSM(hit.file);setDL(hit.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
- const key=cellKey(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
- const f=cellIndex.get(key);
- if(!f){
+ const hit=resolveCell(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
+ if(!hit){               // truly no clip for this model-ckpt in EITHER view -> genuine dead row
   tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
   plabel.className='nomatch';
-  plabel.textContent='no clip rendered for '+modelKey(tr.dataset.model)+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
+  plabel.textContent='no clip rendered for '+modelKey(tr.dataset.model)+' '+tr.dataset.ckpt;
   return;}
+ const key=cellKey(hit.mkey,tr.dataset.ckpt,hit.pid,hit.cfg,hit.w);
  if(playingKey===key){stopPlaying();return;}
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
- curLabel=modelKey(tr.dataset.model)+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
+ curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest');
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
- pl.pause();pl.src=CB+f;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
- showSSM(f);setDL(f);
+ pl.pause();pl.src=CB+hit.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
+ showSSM(hit.file);setDL(hit.file);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
 // (W 2026-07-22). Non-native clips have no entry in D.struct -> panel stays hidden.
@@ -369,6 +398,13 @@ pl.addEventListener('durationchange',()=>{if(pl.duration)ptm.textContent=fmtT(pl
 pseek.addEventListener('input',()=>{seeking=true;if(pl.duration)ptm.textContent=fmtT(pseek.value/1000*pl.duration)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('change',()=>{if(pl.duration){pl.currentTime=pseek.value/1000*pl.duration;ph=pl.currentTime;}seeking=false;});
 function fillPicker(promptTxt,cfgSet,wSet){
+ // per-MODEL availability: group every clip by (model,ckpt) so graceful-resolve can find the
+ // nearest cell a given model actually rendered (Kim 2026-08-02). Same source of truth as the
+ // picker -- built once from the manifest/snapshot cellIndex, covers both load paths.
+ cellsByMC=new Map();
+ if(cellIndex)for(const [k,f] of cellIndex){const p=k.split('\x01');const g=p[0]+'\x01'+p[1];
+  let a=cellsByMC.get(g);if(!a){a=[];cellsByMC.set(g,a);}
+  a.push({pid:p[2],cfg:parseFloat(p[3]),w:parseFloat(p[4]),file:f});}
  // per-prompt coverage = # distinct (model,ckpt) with any clip at that prompt, from the clip index
  // (Kim 2026-08-02: default to the WIDEST-coverage prompt so the opening view greys the fewest rows).
  const cov={};
