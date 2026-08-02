@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02
 **Author:** WINTERMUTE (Kim-directed)
-**Status:** design (awaiting Kim sign-off on one open item, §11)
+**Status:** LOCKED (all decisions signed off by Kim, 2026-08-02) — ready to build
 **Scope:** the SA3 model-matrix / dora_table eval boards + the `model_matrix_gen.py` render pass that feeds them.
 
 ---
@@ -84,7 +84,7 @@ the board dropdown** (already shipped, commit 76a53a6); not rendered here.
 |---|---|---|---|---|---|
 | **20s** | medium | full grid | all (existing) | 8 kept (existing) + `goa_organic` @terminal | none (default) |
 | **native** | medium | full grid | **terminal only** | all 9 | `__d<native_s>` |
-| **ptm** | post-trained | **cfg1 / w1 only** | all ckpts (20 s) | all 9 | `_ptm` on label |
+| **ptm** | post-trained | **cfg1 / w1 only** | **terminal only** | all 9 | `_ptm` on label |
 | **ptm+native** | post-trained | **cfg1 / w1 only** | **terminal only** | all 9 | `_ptm` + `__d<native_s>` |
 
 **Why these scopes** (Kim's calls):
@@ -185,28 +185,33 @@ Local native renders are capped at **T ≤ 1024** (≤ 95 s); anything larger is
   existing same-playhead A/B applies across variant switches too (switch native↔20s keeps position).
 - dora_table's existing `pptm` checkbox is superseded by this generalized `ptm` toggle.
 
-## 11. Open item (needs Kim sign-off)
+## 11. Resolved decisions
 
-- **ptm checkpoint scope.** This spec assumes **ptm-20s at cfg1/w1 across all checkpoints** (cheap,
-  20 s) so the ptm switch works on every epoch's cfg1/w1 cell, and **ptm-native at cfg1/w1 terminal
-  only** (matching native). Alternative: confine ptm entirely to the terminal checkpoint. Confirm.
+- **ptm checkpoint scope → terminal only** (Kim, 2026-08-02). Both ptm-20s and ptm-native render at
+  the terminal checkpoint, cfg1/w1, all 9 prompts. The `ptm` board checkbox is therefore available
+  only on the terminal-checkpoint row (greyed elsewhere), same as `native`.
 
 ## 12. Volume / disk estimate (final scopes)
 
 - native @ terminal: 92 models × 9 prompts × 3 cfg × 4 w = **9,936 native renders ≈ ~19 GB**
-  (T-weighted; the 17 T4096 terminals at ~6 MB/clip dominate).
-- ptm-20s @ cfg1/w1 (61 ptm-capable models, all ckpts) ≈ ~2 k renders (tiny, 20 s).
-- ptm-native @ cfg1/w1 terminal (61 models × 9) ≈ 549 native renders.
-- `goa_organic` @ terminal, all variants ≈ ~2.3 k renders.
-- **Total ≈ ~15 k renders / ~22 GB** — contained. (Existing corpus 63 k cells / ~16 GB untouched.)
+  (T-weighted; the 17 T4096 terminals at ~6 MB/clip dominate), minus the 361 already rendered.
+- `goa_organic` 20 s @ terminal: 92 × 12 = 1,104 (the 8 kept prompts' 20 s already exist, skipped).
+- ptm-20s @ terminal cfg1/w1 (61 ptm-capable models × 9 prompts) = 549.
+- ptm-native @ terminal cfg1/w1 (61 × 9) = 549.
+- leaked-native cleanup (winning_goa cfg7 → proper 20 s) ≈ a few hundred.
+- **Total ≈ ~12 k new renders / ~20 GB** — contained. (Existing 62 k cells / 241 GB store untouched;
+  resume skips everything already present.)
 
 ## 13. Task breakdown
 
 1. **Partition script** — enumerate `build_jobs()`, resolve LUMI vs local per checkpoint, flag any
    local-only × T≥2048, emit `render_jobs_lumi.jsonl` + `render_jobs_local.jsonl`.
-2. **`model_matrix_gen.py` extension** — restrict the prompt set to the 9 (add `goa_organic`);
-   native from single-cell → full grid @ terminal; ptm cfg1/w1 (20 s all-ckpt + native terminal);
-   keep the resume/skip + `__d`/`_ptm` naming; add the on-disk existence guard (§7).
+2. **`model_matrix_gen.py` extension (additive flags — do NOT change existing defaults).** New opt-in
+   mode (e.g. `--length-variant-run`) that: restricts the prompt set to the 9 (adds `goa_organic`,
+   seed 2026); renders native as a full cfg×w grid @ terminal (vs today's single cfg7/w1 cell);
+   renders ptm @ terminal cfg1/w1 (20 s + native); keeps the resume/skip + `__d`/`_ptm` naming; adds
+   the on-disk existence guard (§7). Dry-run mode prints the enumerated job list + skip counts without
+   rendering, so the matrix is verifiable before any GPU time.
 3. **LUMI 8-GCD submit** (G's harness lane) — hand off `render_jobs_lumi.jsonl` + the pinning note.
 4. **Local overnight pass** — `render_jobs_local.jsonl` on the desktop card, T≤1024 native cap.
 5. **Board variant checkboxes** (WINTERMUTE) — native/ptm toggles + context-aware disable, deriving
