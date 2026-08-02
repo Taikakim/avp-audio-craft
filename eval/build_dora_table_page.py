@@ -215,6 +215,7 @@ checkpoint recipes.</p>
  <label>prompt <select id=pprompt></select></label>
  <label>cfg <select id=pcfg></select></label>
  <label>weight <select id=pstrength></select></label>
+ <label title="the post-trained (rf_denoiser/ping-pong) base model instead of medium-base, with this row's own adapter applied. Only rendered at cfg1/w1/8-step (its PT-native config) -- higher cfg 'cooks' the output, so checking this forces+locks cfg/weight."><input type=checkbox id=pptm> post-trained</label>
  <button id=pp title="play/pause">&#9654;</button>
  <input type=range id=pseek min=0 max=1000 value=0>
  <span id=ptm style=color:#9a9>0:00 / 0:00</span>
@@ -279,12 +280,20 @@ const CB='model_matrix/';
 const SB='ssm/';
 const pl=document.getElementById('pl');pl.loop=true;
 function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
+// post-trained toggle (Kim 2026-07-23, corrected 2026-07-23 later same day: cfg7 was
+// wrong, PT-native is cfg1/8-step): the PT-medium base only rendered at cfg1/w1 (it
+// glitches elsewhere), so checking it forces+locks those two selects and every lookup is
+// keyed on "<model>_ptm" instead of "<model>" -- same rows, a different underlying render.
+function modelKey(m){return m+(pptm.checked?'_ptm':'')}
 function currentSel(){return {pid:pprompt.value,cfg:parseFloat(pcfg.value),w:parseFloat(pstrength.value)}}
+function applyPtmLock(){
+ pcfg.disabled=pstrength.disabled=pptm.checked;
+ if(pptm.checked){pcfg.value='1';pstrength.value='1';}}
 function markAvailability(){
  if(!cellIndex)return;
  const {pid,cfg,w}=currentSel();
  document.querySelectorAll('#body tr').forEach(tr=>{
-  tr.classList.toggle('nomatch',!cellIndex.has(cellKey(tr.dataset.model,tr.dataset.ckpt,pid,cfg,w)));});}
+  tr.classList.toggle('nomatch',!cellIndex.has(cellKey(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w)));});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
  if(!playingModel)return;
@@ -307,25 +316,25 @@ function repickCurrent(){
  markAvailability();
  if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
  const {pid,cfg,w}=currentSel();
- const key=cellKey(playingModel,playingCkpt,pid,cfg,w);
+ const key=cellKey(modelKey(playingModel),playingCkpt,pid,cfg,w);
  const f=cellIndex.get(key);
  if(!f||key===playingKey)return;                      // no clip at new setting -> keep playing
- playingKey=key;curLabel=playingModel+' '+playingCkpt+' × '+pid+' cfg'+cfg+' w'+w;
+ playingKey=key;curLabel=modelKey(playingModel)+' '+playingCkpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
  pl.pause();pl.src=CB+f;seekAndPlay(ph);showSSM(f);setDL(f);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
- const key=cellKey(tr.dataset.model,tr.dataset.ckpt,pid,cfg,w);
+ const key=cellKey(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
  const f=cellIndex.get(key);
  if(!f){
   tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
   plabel.className='nomatch';
-  plabel.textContent='no clip rendered for '+tr.dataset.model+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
+  plabel.textContent='no clip rendered for '+modelKey(tr.dataset.model)+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
   return;}
  if(playingKey===key){stopPlaying();return;}
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
- curLabel=tr.dataset.model+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
+ curLabel=modelKey(tr.dataset.model)+' '+tr.dataset.ckpt+' × '+pid+' cfg'+cfg+' w'+w;
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
  pl.pause();pl.src=CB+f;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(f);setDL(f);
@@ -345,6 +354,7 @@ function setDL(f){const a=document.getElementById('pdl');a.href=CB+f;a.setAttrib
 document.getElementById('body').addEventListener('click',e=>{
  const tr=e.target.closest('tr');if(!tr||!tr.dataset.model)return;playRow(tr);});
 ['pprompt','pcfg','pstrength'].forEach(id=>document.getElementById(id).onchange=repickCurrent);
+pptm.addEventListener('change',()=>{applyPtmLock();repickCurrent();});
 // transport: play/pause + seek + time, matching model_matrix.html's player
 const fmtT=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
 let seeking=false;
@@ -359,8 +369,14 @@ pl.addEventListener('durationchange',()=>{if(pl.duration)ptm.textContent=fmtT(pl
 pseek.addEventListener('input',()=>{seeking=true;if(pl.duration)ptm.textContent=fmtT(pseek.value/1000*pl.duration)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('change',()=>{if(pl.duration){pl.currentTime=pseek.value/1000*pl.duration;ph=pl.currentTime;}seeking=false;});
 function fillPicker(promptTxt,cfgSet,wSet){
+ // per-prompt coverage = # distinct (model,ckpt) with any clip at that prompt, from the clip index
+ // (Kim 2026-08-02: default to the WIDEST-coverage prompt so the opening view greys the fewest rows).
+ const cov={};
+ if(cellIndex)for(const k of cellIndex.keys()){const p=k.split('\x01');(cov[p[2]]=cov[p[2]]||new Set()).add(p[0]+'\x01'+p[1]);}
  for(const [pid,txt] of [...promptTxt].sort((a,b)=>a[0].localeCompare(b[0]))){
-  const t=txt||pid;const o=new Option(t.length>44?t.slice(0,44)+'…':t,pid);o.title=t;pprompt.add(o);}
+  const t=txt||pid;const o=new Option(t,pid);o.title=t;pprompt.add(o);}   // full prompt text (Kim: show full)
+ let best=null,bn=-1;for(const pid in cov)if(cov[pid].size>bn){bn=cov[pid].size;best=pid;}
+ if(best!=null)pprompt.value=best;                                        // default = widest coverage
  [...cfgSet].sort((a,b)=>a-b).forEach(v=>pcfg.add(new Option('cfg '+v,v)));
  [...wSet].sort((a,b)=>a-b).forEach(v=>pstrength.add(new Option('w '+v,v)));
  if(cfgSet.has(7))pcfg.value='7';           // Kim's worked example default
