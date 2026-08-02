@@ -29,6 +29,13 @@ def _jsnum(x):
     return str(int(f)) if f == int(f) else repr(f)
 
 
+# Model-label prefixes hidden from the board entirely -- borked runs that only add noise.
+# Applied to BOTH the metric rows (main) AND this embedded cell-index, so hidden models leave
+# no row to select and no clip in the file:// index. The live-fetch path guards on the same
+# list in JS (const HIDE). xft* = the borked fullft xftdora*/xftlora* families (Kim 2026-08-02).
+HIDE_MODEL_PREFIXES = ("xft",)
+
+
 def cell_fallback():
     """Embedded cell-index so the picker works on file:// (browsers block fetch there).
     Keys match the page's cellKey(model,ckpt,pid,cfg,w) String-concat format exactly."""
@@ -41,6 +48,8 @@ def cell_fallback():
         try:
             e = json.loads(ln)
         except Exception:
+            continue
+        if str(e.get("model", "")).startswith(HIDE_MODEL_PREFIXES):
             continue
         cf, w = _jsnum(e["cfg"]), _jsnum(e["strength"])
         # SEP must match the page's cellKey(): m+'\x01'+c+'\x01'+pid+'\x01'+cfg+'\x01'+w
@@ -108,6 +117,8 @@ DESC = {
 
 def main():
     rows = list(csv.DictReader(AGG.open()))
+    # Hide borked model families (see HIDE_MODEL_PREFIXES): they vanish from the table entirely.
+    rows = [r for r in rows if not r.get("model", "").startswith(HIDE_MODEL_PREFIXES)]
     ref = json.loads(REF.read_text())
     cols = HP + [c for c in METRICS if c in rows[0] or c in STRUCT_COLS]
 
@@ -158,6 +169,7 @@ def main():
 
     payload = {"cols": cols, "rows": data, "metrics": METRICS, "hp": HP,
                "nice": NICE, "base": base, "desc": DESC, "struct": struct_file,
+               "hide": list(HIDE_MODEL_PREFIXES),   # JS guards the live-fetch index on these
                "cf": cell_fallback()}   # embedded cell-index so the picker works on file://
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
@@ -272,6 +284,8 @@ function render(){
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
 let cellIndex=null,cellsByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+const HIDE=(D.hide||[]);                 // hidden model-label prefixes (borked families)
+const isHidden=m=>HIDE.some(p=>String(m).startsWith(p));
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
 // copy lives beside its model_matrix/ and ssm/ dirs -> no 'evals/' prefix.
 // the page lives at /files/evals/dora_table.html (served) and ~/evals_aac/dora_table.html
@@ -427,6 +441,7 @@ async function loadManifest(){
   const txt=await r.text();
   for(const line of txt.split('\n')){
    if(!line.trim())continue;let e;try{e=JSON.parse(line)}catch(_){continue}
+   if(isHidden(e.model))continue;   // keep hidden families out of the client index too
    cellIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);
    if(!promptTxt.has(e.prompt_id))promptTxt.set(e.prompt_id,e.prompt_text);
    cfgSet.add(e.cfg);wSet.add(e.strength);}
