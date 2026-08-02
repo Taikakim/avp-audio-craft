@@ -202,6 +202,37 @@ Local native renders are capped at **T ≤ 1024** (≤ 95 s); anything larger is
 - **Total ≈ ~12 k new renders / ~20 GB** — contained. (Existing 62 k cells / 241 GB store untouched;
   resume skips everything already present.)
 
+## 12b. Renderer invocations (implemented, commit ebc9850 — dry-run verified)
+
+`model_matrix_gen.py` gained additive flags (defaults untouched): `--all-prompts` /
+`--prompts-from-manifest`, `--terminal-only`, `--native-grid`, `--require-file`; new prompt
+`goa_organic` (seed 2026); `_existing_manifest()` fallback so resume never mis-reads an empty cache.
+
+**PRE-RUN (mandatory): restore the STAGING manifest.** `MANIFEST` = `~/.cache/evals_aac/model_matrix/
+manifest.jsonl` is an *ephemeral cache* (cleaned this session). Before any run:
+`cp ~/evals_aac/model_matrix/manifest.jsonl ~/.cache/evals_aac/model_matrix/manifest.jsonl`
+(the durable 63,033-line mirror). Without it, resume + prompt-sourcing read empty → re-render of all
+~60k clips. `_existing_manifest()` falls back to the durable copy for READS, but WRITES still target
+STAGING, so restore keeps appends on the complete file.
+
+`PROMPTS="kimlong,techno,kl_0,rb_bracket_0,rb_common_1,rb_common_2,rb_rare_7,rb_rare_8,goa_organic"`
+
+- **Medium 20s+native (terminal):**
+  `--prompts-from-manifest --only-prompts $PROMPTS --terminal-only --native-grid --require-file`
+  (the 20s grid for the 8 kept prompts is already on disk → skipped; this fills native@terminal +
+  goa_organic 20s@terminal. Add `--only-cfgs`/`--only-labels` to shard local vs LUMI.)
+- **ptm 20s+native (terminal, cfg1/w1):**
+  `--pt-medium --only-cfgs 1 --only-strengths 1.0 --prompts-from-manifest --only-prompts $PROMPTS
+  --terminal-only --native-grid --require-file --steps 8` (ptm-native @ cfg1/w1; `--steps 8` = the
+  PT-native config). Dry-run: 152 terminal `_ptm` jobs × 9 prompts.
+- **Split local vs LUMI** via `--only-labels` from the partition script (§8); T≥2048 native auto-routes
+  to LUMI (native-skip) unless `SA3_ALLOW_LONG_NATIVE=1`.
+
+**Open (minor, Kim):** `kl_0` has TWO texts in the manifest — 3002 clips *"instrumental Psytrance…"*
+vs 720 *"high-energy… modern techno"* (pool drifted mid-corpus). `--prompts-from-manifest` uses the
+majority (*instrumental*), matching ~80% of existing kl_0. Confirm that's the canonical one, or swap
+kl_0 for a single-text prompt.
+
 ## 13. Task breakdown
 
 1. **Partition script** — enumerate `build_jobs()`, resolve LUMI vs local per checkpoint, flag any
