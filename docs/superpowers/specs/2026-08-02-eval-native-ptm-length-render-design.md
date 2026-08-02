@@ -116,6 +116,22 @@ existing fields** — `base = "ptm" if model.endswith("_ptm") else "medium"`, `l
 duration != 20 else "20s"` — so **no manifest schema change is required**. (The board strips the
 `_ptm` suffix to group a base model and its ptm sibling under one row/coordinate.)
 
+## 6b. Canonical existing-clip store
+
+**`/run/media/kim/Mantu/sa3_lora_runs/model_matrix`** (241 GB, flat dir) is the source of truth for
+existing clips and the render output dir (`RUNS` in `model_matrix_gen.py`). Composition (2026-08-02,
+`find`-verified — the `ls *.m4a` glob overflows on this dir, giving false zeros):
+- 61,670 `.m4a` (board clips): 7,794 ptm (`_ptm__`), **361 already native-marked (`__d`)**
+- 61,569 `.wav` (source renders that transcode to m4a)
+- 50,985 `.npy` (saved z0 latent per clip)
+
+Matches the manifest (61,670 m4a vs 62,625 cells; ~955 gap = the task #71 manifest-vs-playability
+drift). The `__d` native marker is already in live use (e.g. `…_t4096…__d380.m4a` = a 380 s T4096
+native), so new full-grid natives slot in beside the existing 361. **Cleanup item:** the leaked
+`winning_goa_*` cfg7 natives are the *un-marked* exception (47 s content under a 20 s-style name, no
+`__d`) — re-render those specific cells as proper 20 s (the real 20 s clip lands; the native version
+re-renders separately as `__d47`), so the collision is retired.
+
 ## 7. Idempotency / existing-file check (required)
 
 The driver already skips cells present in the manifest via `manifest_key` (which includes duration).
