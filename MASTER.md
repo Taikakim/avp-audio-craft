@@ -133,9 +133,20 @@ most of it. Lehto is now strictly the large-training-corpus drive.
 |---|---|
 | MIR feature extraction, Audiobox scoring, whole-track timeseries | `/home/kim/Projects/mir/mir/bin/python` |
 | LatCH head training (SAO-Small), FusionOpt, audition renders | `/home/kim/Projects/SAO/stable-audio-tools/sat-venv/bin/python` |
-| SA3 inference, SA3 LoRA finetune, SA3 pre-encode | `/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python` |
+| SA3 inference / render / LoRA finetune / pre-encode — **FAST (default)** | `/home/kim/Projects/SAO/.venv/bin/python` (ROCm **7.14**, native CK FA2) |
+| SA3 same, **stable/reference** (7.2.3, what the existing eval corpus was rendered on) | `/home/kim/Projects/SAO/stable-audio-3/.venv/bin/python` (torch 2.10 / ROCm 7.2.3) |
 
 mir's `.venv` (3.12, numpy 2.x) **lacks essentia and silently degrades madmom→librosa** — do not use it; use `mir/bin/python`.
+
+> **SA3 fast venv — ROCm 7.14, 100–200% faster than 7.2.3 (Kim, 2026-08-02).** `SAO/.venv` (py3.13)
+> runs torch `2.14.0a0`/torchaudio `2.11.0` (rocm7.15-alpha wheels) on **HIP runtime 7.14.60850** (the
+> ROCm 7.14 release) with a **source-built native-CK `flash_attn 2.8.4`** (`flash_attn_2_cuda` loads).
+> Kim clocks it **1–2× faster** than the 7.2.3 stack — it is now the default for SA3 inference/render.
+> Activate CK with `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import torch` (no `aiter`
+> here → the flag switches SDPA→CK). `stable_audio_3` + render deps import cleanly. **Consistency
+> caveat:** the existing 61k eval clips were rendered on 7.2.3, so a *same-config* A/B across the two
+> backends carries a small render-stack confound; keep the 7.2.3 `.venv` as the stable reference when
+> exact parity with the old corpus matters. numpy is 2.4.x here (fine for SA3; unrelated to mir's <2.4 pin).
 
 ---
 
@@ -476,7 +487,10 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
   backward patch (`FlashAttnFunc.backward` → 13 grads) is applied, so FA **training** (adapter/LoRA
   backprop through the DiT) is safe (verified on our exact stack). Build recipe + verify:
   **`SAO/docs/flash-attn-ck-rdna4.md`**. *(`aiter` present in `stable-audio-3/.venv` only → there the
-  env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test` it switches SDPA→CK.)*
+  env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test`/`SAO/.venv` it switches SDPA→CK.)*
+  **UPDATE 2026-08-02 — the ROCm 7.14 venv `SAO/.venv` (HIP 7.14.60850, torch 2.14.0a0, native-CK
+  `flash_attn 2.8.4`) is 100–200% faster than the 7.2.3 stack (Kim), and is now the SA3 render/inference
+  default (§3). Same `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` rule applies (no `aiter` → SDPA→CK).**
 
 - **SA3 control-adapter training freezing at step 0 on a shared box = environment, not a code bug — five
   fixes, all baked into `control/run_control_train.sh`.** *(2026-06-23)* A first-step hang
