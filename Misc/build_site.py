@@ -127,6 +127,11 @@ _REDACT = [
      r"[N] \1"),
     (re.compile(r"239\.7\.7\.7:57327"), "the loopback multicast group"),
     (re.compile(r"239\.7\.7\.7"), "the multicast group"),
+    # SSH logins / emails / infra hostnames -- never on a public surface (MASTER §4).
+    # 2026-08-02, W: mirror_dialogue.redact() had no user@host pattern -> a crafted LUMI
+    # ssh command leaked live on /files/dm/; same gap closed here for profiles/journals.
+    (re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b"), "[login]"),   # user@host / email
+    (re.compile(r"\b[\w-]+(?:\.[\w-]+)*\.csc\.fi\b"), "[host]"),    # CSC/LUMI infra FQDN
 ]
 
 
