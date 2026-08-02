@@ -39,6 +39,20 @@ RARITY_CLIP_INDEX = RUNS / "rarity_gen_set/clip_index.json"
 STAGING = Path.home() / ".cache/evals_aac/model_matrix"
 MANIFEST = STAGING / "manifest.jsonl"
 RENDER_DIR = RUNS / "model_matrix"
+
+
+def _existing_manifest():
+    """The manifest to READ for resume + prompt-sourcing. STAGING is ~/.cache (a cache dir,
+    subject to cleaning) -- a missing STAGING manifest must NEVER read as 'nothing rendered'
+    or a resume would re-do all ~60k clips. Fall back to the durable ~/evals_aac mirror.
+    (Writes still go to MANIFEST; restore STAGING from the durable copy before a run so new
+    appends land on the complete manifest -- see the length-variant spec's pre-run step.)"""
+    for p in (MANIFEST,
+              Path.home() / "evals_aac/model_matrix/manifest.jsonl",
+              Path.home() / "evals_aac/model_matrix/manifest_live.jsonl"):
+        if p.exists() and p.stat().st_size > 0:
+            return p
+    return MANIFEST
 OVERRIDES_PATH = ROOT / "Misc/models_index_overrides.json"
 MODELS_OVERRIDES = json.load(open(OVERRIDES_PATH)) if OVERRIDES_PATH.exists() else {}
 
@@ -111,6 +125,20 @@ BRACKET_PROMPTS = [
                                      "of the genre."), "seed": 1000},
 ]
 
+# Prompts introduced by the 2026-08-02 length-variant run (Kim). Own dict so build_prompts()
+# and the extra/bracket sets stay untouched; surfaced only under --all-prompts. goa_organic =
+# the new detailed 90s-goatrance description (spec 2026-08-02-eval-native-ptm-length-render-design).
+NEW_PROMPTS = [
+    {"id": "goa_organic", "seed": 2026, "text": (
+        "This track is a high-energy psychedelic 90s goatrance piece that blends the driving pulse "
+        "of classic Goa trance with organic and crisp sound of analog synthesizers. It sits at 143 "
+        "BPM in a 4/4 time signature and is rooted in F minor. Instrumentation & production: The "
+        "arrangement is built around a relentless four-on-the-floor kick and a thick, "
+        "side-chain-compressed synth bass that anchors the low end, together with moody pads and "
+        "distorted roland tb303-style acid riffs and resonant filtered saw wave legato synth lead "
+        "with a rubbery portamento")},
+]
+
 
 def ckpt_tag(fname):
     m = re.search(r"epoch=(\d+)", fname)
@@ -138,6 +166,38 @@ def build_prompts(n_per_band=3, n_kimlong=3):
         for i, p in enumerate(pool[:n_kimlong]):
             prompts.append({"id": f"kl_{i}", "text": p["prompt"], "seed": 1000 + i})
     return prompts
+
+
+def prompts_from_manifest(only_ids, fallback):
+    """Return [{id,text,seed}] for `only_ids`, sourcing text+seed from the EXISTING manifest —
+    the exact prompt already-rendered clips used — so length/ptm variants of a prompt_id stay
+    IDENTICAL to its 20s clips (the pool drifted: kl_0's pool text no longer matches the clips
+    on disk, 2026-08-02). Ids absent from the manifest fall back to `fallback` (e.g. NEW_PROMPTS,
+    for goa_organic). Majority (text,seed) per id wins, so pre-drift originals dominate."""
+    from collections import Counter
+    counts = {}
+    mf = _existing_manifest()
+    if mf.exists():
+        for ln in mf.read_text().splitlines():
+            if not ln.strip():
+                continue
+            try:
+                e = json.loads(ln)
+            except Exception:
+                continue
+            pid = str(e.get("prompt_id"))
+            counts.setdefault(pid, Counter())[(e.get("prompt_text", ""), e.get("seed"))] += 1
+    fb = {p["id"]: p for p in fallback}
+    out = []
+    for pid in only_ids:
+        if pid in counts:
+            (text, seed), _ = counts[pid].most_common(1)[0]
+            out.append({"id": pid, "text": text, "seed": int(seed) if seed is not None else 0})
+        elif pid in fb:
+            out.append(fb[pid])
+        else:
+            print(f"[prompt-missing] {pid}: not in manifest, not in fallback -- skipped")
+    return out
 
 
 def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, only_ckpts=None):
@@ -218,10 +278,11 @@ def manifest_key(e):
 
 
 def load_existing_keys():
-    if not MANIFEST.exists():
+    mf = _existing_manifest()
+    if not mf.exists():
         return set()
     keys = set()
-    for ln in MANIFEST.read_text().splitlines():
+    for ln in mf.read_text().splitlines():
         try:
             keys.add(manifest_key(json.loads(ln)))
         except Exception:
@@ -249,6 +310,29 @@ def main():
     ap.add_argument("--extra-prompts", action="store_true",
                      help="use EXTRA_PROMPTS (kimlong/trig2/techno/housestyle) instead of the "
                           "rarity-band+pool sample -- additive extension pass")
+    ap.add_argument("--all-prompts", action="store_true",
+                     help="UNION every prompt source (rarity+pool build_prompts + EXTRA_PROMPTS + "
+                          "BRACKET_PROMPTS + NEW_PROMPTS incl. goa_organic), deduped by id, so "
+                          "--only-prompts can select across all of them (the length-variant 9-set). "
+                          "Overrides --extra-prompts.")
+    ap.add_argument("--prompts-from-manifest", action="store_true",
+                     help="source the --only-prompts ids' text+seed from the EXISTING manifest (the "
+                          "exact prompt already-rendered clips used) instead of the drifted pool, so "
+                          "length/ptm variants stay identical to their 20s clips. Ids not in the "
+                          "manifest fall back to NEW_PROMPTS (goa_organic). Requires --only-prompts.")
+    ap.add_argument("--terminal-only", action="store_true",
+                     help="per model label, keep ONLY its highest-epoch checkpoint (the terminal "
+                          "audition point) -- for the native/ptm length-variant passes.")
+    ap.add_argument("--native-grid", action="store_true",
+                     help="render the native-length cell as a FULL prompt x cfg x strength grid "
+                          "(vs the default single cfg7/w1 audition cell). Duration is each model's "
+                          "own trained T (native_len_seconds); the active --only-cfgs/--only-strengths "
+                          "bound the grid (e.g. --only-cfgs 1 --only-strengths 1.0 for the ptm pass). "
+                          "Combine with --terminal-only; T>=2048 still routes to LUMI.")
+    ap.add_argument("--require-file", action="store_true",
+                     help="treat a cell as done only when its manifest key AND its .m4a on disk both "
+                          "exist -- re-renders/re-transcodes manifest-known cells whose clip is "
+                          "missing (closes the manifest-vs-playability drift, task #71).")
     ap.add_argument("--avp-only", action="store_true",
                      help="restrict jobs to AVP-dataset own-music models (excludes 'everything' "
                           "mixed-corpus runs and base)")
@@ -333,7 +417,23 @@ def main():
         duration = args.duration_seconds
         duration_sample_size = dur_frames * 4096
 
-    if args.extra_prompts:
+    if args.prompts_from_manifest:
+        if not args.only_prompts:
+            raise SystemExit("--prompts-from-manifest requires --only-prompts <id,...>")
+        want_ids = [s for s in args.only_prompts.split(",") if s]
+        prompts = prompts_from_manifest(want_ids, NEW_PROMPTS)
+    elif args.all_prompts:
+        # union of every source, deduped by id (first occurrence wins) so --only-prompts can
+        # select the length-variant 9-set across sources that are otherwise mutually exclusive.
+        merged, seen_pid = [], set()
+        for src in (build_prompts(args.n_per_band, args.n_kimlong),
+                    [{"id": pid, "text": t, "seed": EXTRA_SEED} for pid, t in EXTRA_PROMPTS.items()],
+                    BRACKET_PROMPTS, NEW_PROMPTS):
+            for p in src:
+                if p["id"] not in seen_pid:
+                    merged.append(p); seen_pid.add(p["id"])
+        prompts = merged
+    elif args.extra_prompts:
         prompts = [{"id": pid, "text": text, "seed": EXTRA_SEED} for pid, text in EXTRA_PROMPTS.items()]
         prompts += BRACKET_PROMPTS
     else:
@@ -349,6 +449,19 @@ def main():
         # distinct labels => distinct page rows, so PT-medium cells sit NEXT TO the
         # medium-base rows of the same adapter instead of overwriting their cells
         jobs = [(f"{label}_ptm", ckpt_path, tag) for label, ckpt_path, tag in jobs]
+    if args.terminal_only:
+        # per label, keep only the highest-epoch checkpoint (the terminal audition point).
+        # tag epoch = trailing integer of the tag ("ep15" -> 15); tags without one (e.g.
+        # "base") sort as -1 and are kept as their label's sole job.
+        def _ep(tag):
+            m = re.search(r"(\d+)$", tag)
+            return int(m.group(1)) if m else -1
+        best = {}
+        for j in jobs:
+            lbl = j[0]
+            if lbl not in best or _ep(j[2]) > _ep(best[lbl][2]):
+                best[lbl] = j
+        jobs = list(best.values())
     n_cells = 0
     for label, ckpt_path, _tag in jobs:
         _sw = (1.0,) if (ckpt_path is None or label.startswith("fullft_")) else STRENGTHS
@@ -412,11 +525,18 @@ def main():
                     and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1"):
                 nd = None
             if nd is not None and prompts:
-                np_chk = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
-                nw_chk = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
-                nkey = f'{label}|{tag}|{native_cfg}|{nw_chk}|{np_chk["id"]}|st{steps}|d{nd}'
-                if nkey not in existing:
-                    need_any = True
+                if args.native_grid:
+                    for pr in prompts:
+                        for c in cfgs:
+                            for w in strengths_to_render:
+                                if f'{label}|{tag}|{c}|{w}|{pr["id"]}|st{steps}|d{nd}' not in existing:
+                                    need_any = True
+                else:
+                    np_chk = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
+                    nw_chk = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
+                    nkey = f'{label}|{tag}|{native_cfg}|{nw_chk}|{np_chk["id"]}|st{steps}|d{nd}'
+                    if nkey not in existing:
+                        need_any = True
         if not need_any:
             print(f"[skip-all] {label}/{tag}")
             continue
@@ -474,7 +594,7 @@ def main():
                     wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
                                          duration=duration)
                     m4a_name = wav_name.replace(".wav", ".m4a")
-                    if key not in existing:
+                    if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
                         if ckpt_path:
                             try:
                                 model.set_lora_strength(w)
@@ -537,17 +657,33 @@ def main():
             print(f"[native-skip] {label}/{tag} T~{native_dur*FPS:.0f} >= 2048 -> LUMI lane")
             native_dur = None
         if native_dur is not None and prompts:
-            np_ = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
-            nw = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
-            nkey = f'{label}|{tag}|{native_cfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
-            if nkey not in existing:
+            native_frames = int(round(native_dur * FPS))
+            assert native_frames % 256 == 0, (label, native_frames)
+            # Default: ONE audition cell (native_cfg/w1, one prompt). --native-grid: the FULL
+            # prompt x cfg x strength grid at this model's trained T (bounded by --only-cfgs/
+            # --only-strengths; e.g. cfg1/w1 for the ptm pass). native_cfg's cfg7->cfg1 pt_medium
+            # override applies to the single-cell default; the grid uses each loop's own cfg.
+            if args.native_grid:
+                native_cells = [(pr, c, w) for pr in prompts for c in cfgs for w in strengths_to_render]
+            else:
+                np0 = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
+                nw0 = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
+                native_cells = [(np0, native_cfg, nw0)]
+            for np_, ncfg, nw in native_cells:
+                if over_budget():
+                    stopped = True
+                    break
+                nkey = f'{label}|{tag}|{ncfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
+                nwav_name = clip_name(label, tag, ncfg, nw, np_["id"], np_["seed"],
+                                      steps, duration=native_dur)
+                nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
+                if nkey in existing and not (args.require_file and not nm4a_path.exists()):
+                    continue
                 if ckpt_path and not is_fullft:
                     try:
                         model.set_lora_strength(nw)
                     except Exception:
                         pass
-                nwav_name = clip_name(label, tag, native_cfg, nw, np_["id"], np_["seed"],
-                                      steps, duration=native_dur)
                 nwav_path = RENDER_DIR / nwav_name
                 if not nwav_path.exists():
                     t0 = time.time()
@@ -555,10 +691,8 @@ def main():
                     # generate()'s `duration` only sets seconds_total + trim; without
                     # sample_size every "native" cell actually ran at a 1292-frame
                     # (120s) context (caught on LUMI 2026-07-22, same bug both places).
-                    native_frames = int(round(native_dur * FPS))
-                    assert native_frames % 256 == 0, (label, native_frames)
                     z0 = model.generate(prompt=np_["text"], duration=native_dur, steps=steps,
-                                        cfg_scale=native_cfg, seed=int(np_["seed"]),
+                                        cfg_scale=float(ncfg), seed=int(np_["seed"]),
                                         batch_size=1, return_latents=True,
                                         sample_size=native_frames * 4096)
                     assert z0.shape[-1] == native_frames, (z0.shape, native_frames)
@@ -569,12 +703,11 @@ def main():
                         naudio = model.same.decode(z0.to(decode_dtype))
                     naudio = naudio.to(torch.float32)[:, :, :int(native_dur * sr)]
                     save_audio(nwav_path, naudio[0].cpu(), sr, normalize=True)
-                    print(f"  [{label}/{tag} NATIVE-LEN {native_dur}s cfg{native_cfg} "
+                    print(f"  [{label}/{tag} NATIVE {native_dur}s cfg{ncfg} "
                          f"w{nw} {np_['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
-                nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
                 if not nm4a_path.exists():
                     transcode(nwav_path, nm4a_path)
-                append_manifest({"model": label, "ckpt": tag, "cfg": native_cfg, "strength": nw,
+                append_manifest({"model": label, "ckpt": tag, "cfg": ncfg, "strength": nw,
                                  "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
                                  "steps": steps, "duration": native_dur, "duration_mode": "native",
                                  "file": nm4a_path.name})
