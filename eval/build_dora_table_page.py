@@ -170,6 +170,7 @@ def main():
     payload = {"cols": cols, "rows": data, "metrics": METRICS, "hp": HP,
                "nice": NICE, "base": base, "desc": DESC, "struct": struct_file,
                "hide": list(HIDE_MODEL_PREFIXES),   # JS guards the live-fetch index on these
+               "hidecfg": [15, 24],   # non-standard cfgs (2 stray models) -- dropdown clutter, hidden
                "cf": cell_fallback()}   # embedded cell-index so the picker works on file://
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
@@ -427,7 +428,8 @@ function fillPicker(promptTxt,cfgSet,wSet){
   const t=txt||pid;const o=new Option(t,pid);o.title=t;pprompt.add(o);}   // full prompt text (Kim: show full)
  let best=null,bn=-1;for(const pid in cov)if(cov[pid].size>bn){bn=cov[pid].size;best=pid;}
  if(best!=null)pprompt.value=best;                                        // default = widest coverage
- [...cfgSet].sort((a,b)=>a-b).forEach(v=>pcfg.add(new Option('cfg '+v,v)));
+ const HIDECFG=new Set(D.hidecfg||[]);   // non-standard cfgs kept out of the dropdown (clutter)
+ [...cfgSet].filter(v=>!HIDECFG.has(v)).sort((a,b)=>a-b).forEach(v=>pcfg.add(new Option('cfg '+v,v)));
  [...wSet].sort((a,b)=>a-b).forEach(v=>pstrength.add(new Option('w '+v,v)));
  if(cfgSet.has(7))pcfg.value='7';           // Kim's worked example default
  if(wSet.has(1))pstrength.value='1';
