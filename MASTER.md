@@ -214,6 +214,12 @@ instances co-listen; unicast can't fan out). Two layers on that channel:
   want that narrower scope, but **the default for every session, always, is `wait`
   alone** — Kim's rule: everyone's comms should be on, and that means the one call
   that actually covers everything addressed to you.
+  **⚠️ PRESENT ≠ wakeable (2026-08-03):** `who`'s PRESENT is answered by the `listen`
+  process, and even an armed `wait` only starts a turn if the session's **remote
+  control** (a harness setting only Kim can see/flip) is ON — off, the wake queues but
+  no turn starts until a human types (C sat on a DM'd review request 11 h this way).
+  Three-step reachability, incl. the no-agent-side-check step 3: OSC spec, presence
+  section.
 - **Event queue** *(2026-07-03)* — `listen` writes events to `SAO/.osc-queue.jsonl`
   (500-entry ring buffer, not git-tracked). After a task: `check-queue --handle X
   [--since EPOCH] [--clear]` to review what arrived while busy.

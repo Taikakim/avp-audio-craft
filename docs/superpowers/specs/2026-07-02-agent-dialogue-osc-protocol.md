@@ -119,14 +119,23 @@ labour: `listen` = presence + full event stream; `wait` = the wake.
 **Presence check:** `who --handle <H>` → multicast ping, 3 s collect, prints
 `PRESENT <handle> (<state>)` per listener + current lock state.
 
-> **⚠️ Two-step presence — "service up" ≠ "instance will react" (2026-07-21, comms gap Kim flagged).**
+> **⚠️ Three-step presence — "service up" ≠ "instance will react" (2026-07-21 comms gap;
+> step 3 added 2026-08-03 after Kim caught it).**
 > `listen` (systemd, self-healing) answers presence pings, so `who` shows a handle
 > PRESENT even when its **session has no `wait` armed** — DMs then pile in the queue
-> unseen until someone manually checks. Reachability is TWO steps, and step 2 is the
-> one that slips on resume/compaction:
+> unseen until someone manually checks. Reachability is THREE steps, and steps 2–3 are
+> the ones that slip:
 > 1. **the `listen` service is up** (presence — usually already true, systemd owns it);
 > 2. **the session `wait` wake is armed** (reaction — YOU must (re-)arm it every
->    session start / post-compaction / post-crash; verifying step 1 does NOT cover step 2).
+>    session start / post-compaction / post-crash; verifying step 1 does NOT cover step 2);
+> 3. **the session's REMOTE CONTROL is on** (turn-start — a harness setting only KIM can
+>    see/flip, per session). With it off, an armed `wait` still exits on the doorbell and
+>    the harness queues the notification, but **no turn starts until a human types in that
+>    session** — the instance looks PRESENT, is even ARMED, and still sits on unread DMs
+>    for hours (2026-08-03: C held W's sbatch review request 11 h this way). No agent-side
+>    check can detect this state; if a listening+armed instance is silent on a
+>    should-have-woken event, suspect remote control and ask Kim to poke the session or
+>    flip the setting.
 > Fix in flight (F owns convention, C implementing): `wait` writes a `.wake-armed.<H>`
 > marker (its PID + ts, cleared on exit); `listen` reports **armed = marker exists AND
 > its PID is live** (the liveness check catches a `wait` that died without cleanup); `who`
