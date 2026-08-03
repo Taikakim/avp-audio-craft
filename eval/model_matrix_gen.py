@@ -78,9 +78,21 @@ NATIVE_LEN_CFG = 7.0
 NATIVE_LEN_STRENGTH = 1.0
 
 
+# label -> trained frames, populated from --native-frames-file (the render_jobs_*.txt
+# tsv partition_render_jobs.py writes: label \t tag \t T<frames> \t ckpt). Authoritative
+# over the recipe-text scrape below -- the 2026-08-03 overnight run silently skipped
+# native cells for 30/37 local labels because their override recipes are dicts (or
+# absent) with no 'T=' text; the jobs file had the correct T for every label all along.
+NATIVE_FRAMES_MAP: dict[str, int] = {}
+
+
 def native_len_seconds(label: str) -> float | None:
-    """Trained context length in seconds for `label`, if known (from the recipe
-    override's 'T=<frames>' text) -- else None (skip the native-length cell)."""
+    """Trained context length in seconds for `label`, if known (from
+    --native-frames-file first, else the recipe override's 'T=<frames>' text) --
+    else None (native-length cell skipped, logged at the render site)."""
+    for cand in (label, label.removesuffix("_ptm"), label.removesuffix("_ptm").removesuffix("_repr")):
+        if cand in NATIVE_FRAMES_MAP:
+            return round(NATIVE_FRAMES_MAP[cand] / FPS, 2)
     for suf in ("_ptm", "_repr"):
         label = label.removesuffix(suf)
     doc = MODELS_OVERRIDES.get(label, {})
@@ -374,12 +386,26 @@ def main():
                           "override, or route to LUMI instead. Lands as a __dNNN manifest "
                           "cell (distinct key from the default-duration grid, never overwrites "
                           "it), landing on the SAME rows in dora_table.html/model_matrix.html.")
+    ap.add_argument("--native-frames-file", type=str, default=None,
+                     help="tsv from partition_render_jobs.py (label \\t tag \\t T<frames> \\t ckpt) "
+                          "giving each label's trained frames -- authoritative source for the "
+                          "native-cell length, overriding the recipe-override 'T=' text scrape "
+                          "(which is absent for the dora/sa3-goa families and silently skipped "
+                          "their native cells on the 2026-08-03 run).")
     ap.add_argument("--limit", type=int, default=None,
                      help="cap number of prompts after filtering (smoke tests)")
     ap.add_argument("--time-budget-hours", type=float, default=None,
                      help="stop cleanly after this many wall-clock hours (finishes current clip, "
                           "flushes manifest; resumable via the skip-if-exists cells)")
     args = ap.parse_args()
+
+    if args.native_frames_file:
+        for ln in Path(args.native_frames_file).read_text().splitlines():
+            parts = ln.strip().split("\t")
+            if len(parts) >= 3 and parts[2].startswith("T") and parts[2][1:].isdigit():
+                NATIVE_FRAMES_MAP[parts[0]] = int(parts[2][1:])
+        print(f"[model_matrix] native frames map: {len(NATIVE_FRAMES_MAP)} labels "
+              f"from {args.native_frames_file}")
 
     steps = args.steps
     save_latents = not args.no_save_latents
@@ -652,6 +678,11 @@ def main():
         # crash, forced logout). Those cells render on LUMI (64GB headless GCDs) via
         # lumi/render_native_cells.py + W's ingest. SA3_ALLOW_LONG_NATIVE=1 overrides.
         native_dur = native_len_seconds(label)
+        if native_dur is None:
+            # no-silent-caps: this skip cost the 2026-08-03 run 30/37 labels' native
+            # cells with zero log evidence. Say what was dropped and how to fix it.
+            print(f"[native-skip] {label}/{tag} native T UNKNOWN (no --native-frames-file "
+                  f"entry, no 'T=' in recipe override) -> native cell(s) not rendered")
         if (native_dur is not None and native_dur * FPS >= 2048
                 and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1"):
             print(f"[native-skip] {label}/{tag} T~{native_dur*FPS:.0f} >= 2048 -> LUMI lane")

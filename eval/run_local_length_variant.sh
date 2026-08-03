@@ -24,13 +24,35 @@ export OMP_NUM_THREADS=8 MKL_NUM_THREADS=8
 echo "[local] restoring STAGING manifest from durable mirror (resume source)"
 cp -u ~/evals_aac/model_matrix/manifest.jsonl ~/.cache/evals_aac/model_matrix/manifest.jsonl 2>/dev/null || true
 
-echo "[local] pre-downloading model weights to HF cache (no lock; ~6GB x2, one-time)"
+echo "[local] pre-downloading medium-base (required for medium/native pass; public)"
 if ! $PY -c "
 from huggingface_hub import hf_hub_download
-for repo in ['stabilityai/stable-audio-3-medium-base','stabilityai/stable-audio-3-medium']:
-    hf_hub_download(repo,'model_config.json'); hf_hub_download(repo,'model.safetensors')
-print('[local] models cached')"; then
-  echo '[local] !! model pre-download failed (gated/network?) -- aborting before the lock'; exit 1
+hf_hub_download('stabilityai/stable-audio-3-medium-base','model_config.json')
+hf_hub_download('stabilityai/stable-audio-3-medium-base','model.safetensors')
+print('[local] medium-base cached')"; then
+  echo '[local] !! medium-base download failed -- aborting before the lock'; exit 1
+fi
+# medium (ptm base + the SHARED t5gemma conditioner both passes need). Retry-with-timeout:
+# hf_hub_download RESUMES the .incomplete blob, and HF_HUB_DOWNLOAD_TIMEOUT bounds a dead socket
+# (a silent stall hung the pull at 2.8/6GB with no timeout, 2026-08-03).
+PTM_OK=0
+export HF_HUB_DOWNLOAD_TIMEOUT=30
+for attempt in 1 2 3 4 5 6 7 8; do
+  echo "[local] pre-downloading medium (attempt ${attempt}) ..."
+  if $PY -c "
+from huggingface_hub import hf_hub_download
+for f in ('model_config.json','model.safetensors','t5gemma-b-b-ul2/config.json','t5gemma-b-b-ul2/tokenizer_config.json'):
+    hf_hub_download('stabilityai/stable-audio-3-medium', f)
+print('[local] medium cached')"; then
+    PTM_OK=1; break
+  fi
+  echo "[local] medium download attempt ${attempt} stalled/failed -- resuming in 5s"
+  sleep 5
+done
+if [ "$PTM_OK" != "1" ]; then
+  echo '[local] !! medium unavailable after 8 attempts. Both passes need its t5gemma conditioner,'
+  echo '[local]    so the render CANNOT proceed. Check HF auth (huggingface-cli login) + network, then re-run.'
+  exit 1
 fi
 
 echo "[local] acquiring GPU lock"
@@ -46,11 +68,18 @@ echo "[local] smoke OK"
 
 echo "[local] === MEDIUM pass: native full-grid + goa_organic 20s @ terminal ($LOCAL) ==="
 $PY model_matrix_gen.py --prompts-from-manifest --only-prompts "$PROMPTS" \
-    --terminal-only --native-grid --require-file --only-labels "$LOCAL"
+    --terminal-only --native-grid --require-file --only-labels "$LOCAL" \
+    --native-frames-file render_jobs_local.txt
 
-echo "[local] === PTM pass: post-trained base, cfg1/w1, 8-step, native @ terminal ==="
-$PY model_matrix_gen.py --pt-medium --only-cfgs 1 --only-strengths 1.0 --steps 8 \
-    --prompts-from-manifest --only-prompts "$PROMPTS" \
-    --terminal-only --native-grid --require-file --only-labels "$LOCAL"
-
-echo "[local] DONE (medium + ptm). Manifest appended; run the board rebuild + ingest next."
+if [ "$PTM_OK" = "1" ]; then
+  echo "[local] === PTM pass: post-trained base, cfg1/w1, 8-step, native @ terminal ==="
+  $PY model_matrix_gen.py --pt-medium --only-cfgs 1 --only-strengths 1.0 --steps 8 \
+      --prompts-from-manifest --only-prompts "$PROMPTS" \
+      --terminal-only --native-grid --require-file --only-labels "$LOCAL" \
+      --native-frames-file render_jobs_local.txt
+  echo "[local] DONE (medium + ptm)."
+else
+  echo "[local] PTM pass SKIPPED (medium model not authenticated). Medium/native pass complete;"
+  echo "[local] re-run this script after 'huggingface-cli login' to fill the ptm cells (resumable)."
+fi
+echo "[local] Manifest appended; run the board rebuild + ingest next."
