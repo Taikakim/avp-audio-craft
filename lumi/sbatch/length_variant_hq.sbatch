@@ -39,12 +39,30 @@ set -euo pipefail
 PROJ=/project/project_465003186
 SCRATCH=/scratch/project_465003186
 CODE=${PROJ}/code
-SIF=${PROJ}/containers/sa3.sif
+# multitorch (ROCm7+FA2) per C's review 2026-08-04: sa3.sif (ROCm 6.2) + MIOPEN_FIND_MODE=2
+# is the exact combo that hung this session on gfx90a's find-fallback, and native T2048/T4096
+# conv shapes are unproven on it; multitorch is proven for our renders (melody-wall tails)
+# and faster. MTSIF/RENDER_VENV overridable.
+SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
+VENV=${RENDER_VENV:-${SCRATCH}/sa3_train_venv_mt}
 MODELS=${PROJ}/models
 RENDER_OUT=${SCRATCH}/renders/length_variant
 TASKLIST=${CODE}/lumi/length_variant_tasks.txt
 LOGDIR=${RENDER_OUT}/hq_logs
 mkdir -p "${RENDER_OUT}" "${LOGDIR}"
+
+[ -n "${SIF}" ] || { echo "[lenvar] FATAL: no lumi-multitorch-full under /appl/local/laifs/containers/ -- pass MTSIF=" 1>&2; exit 1; }
+[ -f "${VENV}/bin/activate" ] || { echo "[lenvar] FATAL: ${VENV} missing -- run lumi/build_train_venv_mt.sh on uan, or pass RENDER_VENV=" 1>&2; exit 1; }
+echo "[lenvar] image=${SIF} venv=${VENV}"
+
+# fail-loud model staging check (C's review note 2): every task loads medium-base, the two
+# ptm passes load medium -- if either isn't staged offline in PROJ/models all 220 tasks die
+# at load, 24h allocation wasted. Mirrors goa_caption's pre-drain check.
+for repo in stable-audio-3-medium-base stable-audio-3-medium; do
+  ls -d "${MODELS}/hub/models--stabilityai--${repo}/snapshots/"*/ >/dev/null 2>&1 \
+    || { echo "[lenvar] FATAL: ${repo} not staged under ${MODELS}/hub (HF_HUB_OFFLINE=1 would fail all tasks)" 1>&2; exit 1; }
+done
+echo "[lenvar] models staged: medium-base + medium OK"
 
 # ── HyperQueue binary: prefer the CSC module, honour an HQ_BIN override, else fail loud ──────
 if [ -n "${HQ_BIN:-}" ]; then
@@ -105,13 +123,17 @@ while IFS= read -r CMD; do
     --stderr="${LOGDIR}/j%{JOB_ID}-t%{TASK_ID}.err" \
     -- singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c "
       set -euo pipefail
+      source ${VENV}/bin/activate
       export HF_HOME=${MODELS} HF_HUB_OFFLINE=1
-      export PYTHONPATH=${CODE}/control:${CODE}/stable-audio-3:${CODE}/lumi/vendor
-      export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
-      export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
+      # venv site-packages FIRST so our pins beat the image's /opt/venv (lr_equiv_grid_mt pattern)
+      export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor\${PYTHONPATH:+:\$PYTHONPATH}
+      # multitorch env per the proven lr_equiv_grid_mt block: NO MIOPEN_FIND_MODE=2 (the
+      # sa3.sif/gfx90a find-fallback hang), NO MIOPEN_DISABLE_CACHE; per-task caches only.
+      export PYTORCH_TUNABLEOP_ENABLED=0
       export MIOPEN_USER_DB_PATH=/tmp/miopen-\$HQ_TASK_ID MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-\$HQ_TASK_ID
+      export TRITON_CACHE_DIR=/tmp/triton-\$HQ_TASK_ID
       export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
-      rm -rf \$MIOPEN_USER_DB_PATH; mkdir -p \$MIOPEN_USER_DB_PATH
+      rm -rf \$MIOPEN_USER_DB_PATH \$TRITON_CACHE_DIR; mkdir -p \$MIOPEN_USER_DB_PATH \$TRITON_CACHE_DIR
       cd ${CODE}/stable-audio-3
       echo [lenvar task \$HQ_TASK_ID] GCD ROCR=\$ROCR_VISIBLE_DEVICES
       ${CMD}
