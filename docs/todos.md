@@ -12,11 +12,25 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **LUMI training runs must auto-render our standard clip grid on finish** (Kim's standing
+      directive, resurfaced 2026-08-05 after the aug8 clip gap turned out to be exactly this —
+      verified the plan was NEVER actually implemented for the DoRA/fullFT training path: grepped
+      `scripts/train_lora.py`, zero post-training render/subprocess hook. The only precedent is
+      `control/sa3_control/train.py --export-onnx-on-finish` (MASTER §5, 2026-06-27) — and that's
+      ONNX export, not a clip render. Every LUMI training run currently needs a SEPARATE,
+      manually-submitted render job (checked `lumi/sbatch/*.sbatch` — no `--dependency=afterok`
+      chaining anywhere), which is exactly how runs like `aug8_train_ddp` end up with checkpoints
+      and zero clips for weeks. Fix: either (a) an sbatch `--dependency=afterok:$TRAIN_JOBID` render
+      job auto-submitted at the end of the training sbatch, or (b) a finish-hook subprocess call in
+      `train_lora.py` itself (mirroring the control-adapter pattern) that launches the standard-grid
+      renderer on the terminal checkpoint. Owner TBD — natural fit for whoever's touching
+      `aug8_train_ddp`'s sbatch next (C owns that lane) since it's the run that surfaced the gap.
+      GHOST-NOTE, docs/todos.md.)
 - [x] **Chroma-morph transitions** (Kim 2026-07-07; CORRECTED after Kim surfaced — DONE 07-07/08 (chroma head + morph targets shipped through transitions3 + explorer a2a tab)
       riffer/chroma_steer.html — the tooling already exists, WORKLOG 2026-06-25):
       steer harmony across the transition window with a time-varying chroma target
       (A's measured tail chroma -> B's head chroma). USE THE TRAINED STEM-CHROMA HEAD
-      `latch_sa3_chroma_other_best.pt` (now Mantu1/sa3_lora_runs/cu_reward_renders/
+      `latch_sa3_chroma_other_best.pt` (now Mantu/sa3_lora_runs/cu_reward_renders/
       analysis/chroma_heads/ — promote to a weights dir), cosine loss, gain ~1536-2048
       (the proven pitch-steering band); targets from `compute_same_chroma` sidecars
       (Lehto/latents_sa3_stem_chroma, 4907/5400) or computed on the fly (mir-same-chroma,
