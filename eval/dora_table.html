@@ -29,6 +29,10 @@ tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{back
 tbody tr.rowloading td.model::after{content:' ⋯';color:#fc6}
 @keyframes flashno{0%,100%{background:transparent}50%{background:#4a1f1f}}
 tbody tr.flash td{animation:flashno .35s ease 2}
+/* Notes panel (moved from model_matrix 2026-08-04) -- widget CSS itself ships in comments.js */
+.notes{max-width:1000px;margin:14px 8px;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
+.notes-hd{font-size:12px;color:#9cf;margin-bottom:6px}.notes-scope{color:#7ed}.notes-hint{color:#667;font-style:italic}
+.notes-lvl{display:flex;gap:14px;margin-bottom:8px;font-size:12px;color:#bbb}.notes-lvl label{cursor:pointer}
 </style></head><body>
 <h1>DoRA hyperparameter × metric table</h1>
 <p class=sub>Every trained model × checkpoint (each row aggregates its cfg×strength×prompt cells).
@@ -58,6 +62,19 @@ checkpoint recipes.</p>
  <span id=plabel>loading clip index…</span>
 </div>
 <div class=wrap><table id=t><thead><tr id=hrow></tr></thead><tbody id=body></tbody></table></div>
+<!-- NOTES (moved here from model_matrix, Kim 2026-08-04: this is the table he actually auditions
+     from, and public visitors were never going to leave notes on the matrix). WRITE-ONLY widget
+     -- posts to comment.php, nothing is ever read back or displayed (injection boundary, MASTER
+     section 4). Lives outside <table> so render() rebuilding #body can't wipe a half-typed note. -->
+<div class="notes">
+ <div class="notes-hd">Notes &mdash; <span id="nscope" class="notes-hint">click a model row to play, then comment on it</span></div>
+ <div class="notes-lvl">
+  <label><input type="radio" name="nlvl" value="clip"> this clip</label>
+  <label><input type="radio" name="nlvl" value="ckpt"> checkpoint</label>
+  <label><input type="radio" name="nlvl" value="model" checked> model</label>
+ </div>
+ <div id="notebox" class="cmts"></div>
+</div>
 <audio id=pl></audio>
 <div id=ssmpanel style="display:none;position:fixed;right:12px;bottom:12px;background:#15161b;border:1px solid #2a2c34;border-radius:8px;padding:8px;z-index:20;box-shadow:0 4px 18px #000a">
  <div id=structreadout style="font-size:11px;color:#9cf;margin-bottom:4px;max-width:210px"></div>
@@ -220,7 +237,8 @@ function repickCurrent(){
  playingKey=key;
  curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
- pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);markPlaying();}
+ pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);
+ noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
@@ -238,6 +256,7 @@ function playRow(tr){
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(sw.file);setDL(sw.file);
+ noteFromPlay(playingModel,playingCkpt,sw.file);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
 // (W 2026-07-22). Non-native clips have no entry in D.struct -> panel stays hidden.
@@ -353,6 +372,27 @@ bh+='<span class=hi>Stereo narrowing is a MODEL artifact:</span> goa training st
 bh+='<br><b>goa</b>: stereo_corr '+base.goa.stereo_corr+' · dissonance '+base.goa.dissonance+' · inharm '+base.goa.inharmonicity+' · moods '+(base.goa.mood_top||[]).slice(0,5).join(', ');
 bh+='<br><b>avp</b>: stereo_corr '+base.avp.stereo_corr+' · dissonance '+base.avp.dissonance+' · inharm '+base.avp.inharmonicity+' · moods '+(base.avp.mood_top||[]).slice(0,5).join(', ');
 document.getElementById('base').innerHTML=bh;
+// NOTES scope -- follows whatever row you're auditioning (playRow/repickCurrent call this).
+// WRITE-ONLY: CommentWidget POSTs to comment.php and never reads or renders anything back.
+let noteCtx=null,noteKey='';
+function setNoteScope(){
+ const box=document.getElementById('notebox'),sc=document.getElementById('nscope');
+ if(!noteCtx||!noteCtx.model){sc.textContent='click a model row to play, then comment on it';
+  sc.className='notes-hint';box.innerHTML='';noteKey='';return;}
+ const lvl=(document.querySelector('input[name=nlvl]:checked')||{}).value||'model';
+ const ck=(lvl==='model')?'':(noteCtx.ckpt||''),cl=(lvl==='clip')?(noteCtx.clip||''):'';
+ sc.className='notes-scope';
+ sc.textContent = lvl==='model'?noteCtx.model
+   : lvl==='ckpt'?(noteCtx.model+' ▸ '+noteCtx.ckpt)
+   : (noteCtx.model+' ▸ '+noteCtx.ckpt+' ▸ '+(noteCtx.clip||'').replace(/\.m4a$/,''));
+ // re-init ONLY on a real scope change: init() rewrites the box, which would eat a half-typed
+ // note every time the picker or the playhead moved the resolved clip under you.
+ const key=lvl+'|'+noteCtx.model+'|'+ck+'|'+cl; if(key===noteKey)return; noteKey=key;
+ box.dataset.page='dora_table';box.dataset.model=noteCtx.model;box.dataset.ckpt=ck;box.dataset.clip=cl;
+ if(window.CommentWidget)CommentWidget.init(box);}
+function noteFromPlay(model,ckpt,file){noteCtx={model:model,ckpt:ckpt,clip:file};setNoteScope();}
+document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
 render();
 loadManifest();
-</script></body></html>
+</script>
+<script src="/files/comments.js"></script></body></html>

@@ -360,7 +360,6 @@ function effSrc(el){
  const st=colState[el.dataset.col];if(!st||!st.model||!st.ckpt)return f;
  return MM.ngrid[st.model+'|'+st.ckpt+'|'+el.dataset.cf+'|'+el.dataset.w+'|'+el.dataset.pid]||f;}
 function play(el){const f=effSrc(el);if(!el.dataset.src)return;
- if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
  if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
  if(cur)cur.classList.remove('playing','loading');
  startCell(el,f)}
@@ -457,54 +456,11 @@ function render(){
 const colState=[{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null}];
 render();
 </script>""")
-    # Feedback widgets (WINTERMUTE 2026-07-13/14): page-level box + a context-aware Notes
-    # panel that re-scopes to the clicked clip / its checkpoint / its model (Kim: build the
-    # granularity into the UI, "build once drop everywhere"). Both -> /files/comment.php via
-    # comments.js. The Notes panel lives OUTSIDE #cols so the 90s auto-refresh (render())
-    # never wipes a half-typed note. Scope routing is G's merge (clip>ckpt>model>page); the
-    # red-! derives from the unified record so it's cross-page consistent even though each
-    # page's inline list is scoped to its own page id.
-    doc.append('<div class="cmts" data-target="model_matrix" style="max-width:1000px"></div>'
-               '<script src="/files/comments.js"></script>')
-    doc.append("""
-<style>
-.notes{max-width:1000px;margin:14px 0;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
-.notes-hd{font-size:12px;color:#9cf;margin-bottom:6px}.notes-scope{color:#7ed}.notes-hint{color:#667;font-style:italic}
-.notes-lvl{display:flex;gap:14px;margin-bottom:8px;font-size:12px;color:#bbb}.notes-lvl label{cursor:pointer}
-</style>
-<div class="notes">
- <div class="notes-hd">Notes &mdash; <span id="nscope" class="notes-hint">click a clip cell above to comment on it</span></div>
- <div class="notes-lvl">
-  <label><input type="radio" name="nlvl" value="clip" checked> this clip</label>
-  <label><input type="radio" name="nlvl" value="ckpt"> checkpoint</label>
-  <label><input type="radio" name="nlvl" value="model"> model</label>
- </div>
- <div id="notebox" class="cmts"></div>
-</div>
-<script>
-let noteCtx=null;
-function setNoteScope(){
- const box=document.getElementById('notebox');const sc=document.getElementById('nscope');
- if(!noteCtx||!noteCtx.model){sc.textContent='click a clip cell above to comment on it';sc.className='notes-hint';box.innerHTML='';return;}
- const lvl=(document.querySelector('input[name=nlvl]:checked')||{}).value||'clip';
- box.dataset.page='model_matrix';
- box.dataset.model=noteCtx.model;
- box.dataset.ckpt=(lvl==='model')?'':(noteCtx.ckpt||'');
- box.dataset.clip=(lvl==='clip')?(noteCtx.clip||''):'';
- sc.className='notes-scope';
- sc.textContent = lvl==='model'?noteCtx.model
-   : lvl==='ckpt'?(noteCtx.model+' \\u25b8 '+noteCtx.ckpt)
-   : (noteCtx.model+' \\u25b8 '+noteCtx.ckpt+' \\u25b8 '+(noteCtx.clip||'').replace(/\\.m4a$/,''));
- if(window.CommentWidget)CommentWidget.init(box);
-}
-function noteFromCell(el){
- const col=el.dataset.col;const st=(typeof colState!=='undefined')?colState[col]:null;
- if(!st||!st.model||!st.ckpt)return;
- noteCtx={model:st.model,ckpt:st.ckpt,clip:el.dataset.src};
- setNoteScope();
-}
-document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
-</script>""")
+    # Notes widget REMOVED 2026-08-04 (Kim): both the page-level box and the context-aware
+    # panel moved to dora_table.html, the table he actually auditions from. Public visitors
+    # were never going to leave notes on the matrix, so one comment surface -- on the page
+    # where listening happens -- beats two. Widget + write-only boundary unchanged; see
+    # eval/build_dora_table_page.py ("NOTES scope") and web/comments.js.
     # ── Per-clip METRICS feature (Kim 2026-07-30; data = G's clip_scores.json, directions =
     # F's metric_meta). Panel lives OUTSIDE #cols so the 90s auto-refresh never wipes it.
     # (1) preload button warms the 4 selected columns' clips; (2) a metrics grid = the playing

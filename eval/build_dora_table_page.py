@@ -12,8 +12,10 @@ OUT: eval/dora_table.html (canonical, committed) -- ALSO copied to STAGING (Kim
 2026-07-23: the landing-page link should open a local file, not round-trip to the
 live site) so it rides the normal STAGING->live sync alongside every other eval page.
 """
+import argparse
 import csv
 import json
+import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -22,7 +24,42 @@ ROOT = Path("/home/kim/Projects/SAO/eval")
 AGG = ROOT / "clap_dora_aggregate.csv"
 REF = ROOT / "corpus_reference.json"
 OUT = ROOT / "dora_table.html"
+OUT_PUBLIC = ROOT / "dora_table_public.html"
 MANIFEST = Path.home() / ".cache/evals_aac/model_matrix/manifest_live.jsonl"
+
+# ---------------------------------------------------------------------------
+# PUBLIC-SNAPSHOT redaction (Kim 2026-08-04): --public emits a path-redacted dora_table_public.html
+# for hosting on aavepyora.online. The page already uses only RELATIVE clip/ssm bases (model_matrix/,
+# ssm/) and carries no absolute paths today, so this is mostly a fail-closed VERIFICATION -- but the
+# same MASTER §4 rule (no absolute paths / infra addresses / secrets on public pages) is enforced so
+# a future data change that leaks a path is caught at build time. The ?set= filter, table, and
+# cell-picker are untouched, so ?set=NAME still loads only that set's models on the hosted page.
+_REDACTIONS = [
+    ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs", "the eval drive"),
+    ("/run/media/kim/Mantu/lumi_runs", "the Mantu backup drive"),
+]
+_REDACT_RE = [
+    (re.compile(r"/run/media/kim/[^\s\"'<>)]*"), "(local drive)"),
+    (re.compile(r"/scratch/project_465003186[^\s\"'<>)]*"), "LUMI scratch"),
+    (re.compile(r"/project/project_465003186[^\s\"'<>)]*"), "LUMI project"),
+]
+_RESIDUAL = [r"/run/media", r"/home/kim", r"/scratch/project", r"/project/project",
+             r"dreamhost", r"dh_4txyt6", r"akekim", r"efp\.lumi", r"csc\.fi", r"id_EFP"]
+
+
+def redact_public(s):
+    """Redact absolute local/infra paths from an HTML string, then assert nothing sensitive
+    survives (fail closed). Returns the redacted string; raises SystemExit on a residual hit."""
+    for a, b in _REDACTIONS:
+        s = s.replace(a, b)
+    for rx, repl in _REDACT_RE:
+        s = rx.sub(repl, s)
+    s = s.replace("/home/kim/Projects/SAO/", "")
+    s = re.sub(r"/home/kim[^\s\"'<>)]*", "(local path)", s)
+    hits = [p for p in _RESIDUAL if re.search(p, s)]
+    if hits:
+        raise SystemExit(f"REDACTION FAILED (fail closed) -- residual sensitive tokens: {hits}")
+    return s
 
 
 def _jsnum(x):
@@ -158,7 +195,7 @@ def derive_model_sets(models):
     return ordered
 
 
-def main():
+def main(public=False):
     rows = list(csv.DictReader(AGG.open()))
     # Hide borked model families (see HIDE_MODEL_PREFIXES): they vanish from the table entirely.
     rows = [r for r in rows if not r.get("model", "").startswith(HIDE_MODEL_PREFIXES)]
@@ -227,6 +264,12 @@ def main():
     shutil.copy2(OUT, STAGING_COPY)
     print(f"wrote {OUT}  ({len(rows)} rows, {len(cols)} cols)  + staged copy at {STAGING_COPY}")
 
+    if public:
+        phtml = redact_public(html)
+        OUT_PUBLIC.write_text(phtml)
+        print(f"wrote {OUT_PUBLIC}  ({len(phtml)} bytes)  [public: paths redacted / verified, "
+              f"?set= filter + cell-picker intact]")
+
 
 _PAGE = r"""<!doctype html><html><head><meta charset=utf-8><title>DoRA hyperparameter × metric table</title>
 <style>
@@ -259,6 +302,10 @@ tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{back
 tbody tr.rowloading td.model::after{content:' ⋯';color:#fc6}
 @keyframes flashno{0%,100%{background:transparent}50%{background:#4a1f1f}}
 tbody tr.flash td{animation:flashno .35s ease 2}
+/* Notes panel (moved from model_matrix 2026-08-04) -- widget CSS itself ships in comments.js */
+.notes{max-width:1000px;margin:14px 8px;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
+.notes-hd{font-size:12px;color:#9cf;margin-bottom:6px}.notes-scope{color:#7ed}.notes-hint{color:#667;font-style:italic}
+.notes-lvl{display:flex;gap:14px;margin-bottom:8px;font-size:12px;color:#bbb}.notes-lvl label{cursor:pointer}
 </style></head><body>
 <h1>DoRA hyperparameter × metric table</h1>
 <p class=sub>Every trained model × checkpoint (each row aggregates its cfg×strength×prompt cells).
@@ -288,6 +335,19 @@ checkpoint recipes.</p>
  <span id=plabel>loading clip index…</span>
 </div>
 <div class=wrap><table id=t><thead><tr id=hrow></tr></thead><tbody id=body></tbody></table></div>
+<!-- NOTES (moved here from model_matrix, Kim 2026-08-04: this is the table he actually auditions
+     from, and public visitors were never going to leave notes on the matrix). WRITE-ONLY widget
+     -- posts to comment.php, nothing is ever read back or displayed (injection boundary, MASTER
+     section 4). Lives outside <table> so render() rebuilding #body can't wipe a half-typed note. -->
+<div class="notes">
+ <div class="notes-hd">Notes &mdash; <span id="nscope" class="notes-hint">click a model row to play, then comment on it</span></div>
+ <div class="notes-lvl">
+  <label><input type="radio" name="nlvl" value="clip"> this clip</label>
+  <label><input type="radio" name="nlvl" value="ckpt"> checkpoint</label>
+  <label><input type="radio" name="nlvl" value="model" checked> model</label>
+ </div>
+ <div id="notebox" class="cmts"></div>
+</div>
 <audio id=pl></audio>
 <div id=ssmpanel style="display:none;position:fixed;right:12px;bottom:12px;background:#15161b;border:1px solid #2a2c34;border-radius:8px;padding:8px;z-index:20;box-shadow:0 4px 18px #000a">
  <div id=structreadout style="font-size:11px;color:#9cf;margin-bottom:4px;max-width:210px"></div>
@@ -450,7 +510,8 @@ function repickCurrent(){
  playingKey=key;
  curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
- pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);markPlaying();}
+ pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);
+ noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
@@ -468,6 +529,7 @@ function playRow(tr){
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(sw.file);setDL(sw.file);
+ noteFromPlay(playingModel,playingCkpt,sw.file);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
 // (W 2026-07-22). Non-native clips have no entry in D.struct -> panel stays hidden.
@@ -583,10 +645,36 @@ bh+='<span class=hi>Stereo narrowing is a MODEL artifact:</span> goa training st
 bh+='<br><b>goa</b>: stereo_corr '+base.goa.stereo_corr+' · dissonance '+base.goa.dissonance+' · inharm '+base.goa.inharmonicity+' · moods '+(base.goa.mood_top||[]).slice(0,5).join(', ');
 bh+='<br><b>avp</b>: stereo_corr '+base.avp.stereo_corr+' · dissonance '+base.avp.dissonance+' · inharm '+base.avp.inharmonicity+' · moods '+(base.avp.mood_top||[]).slice(0,5).join(', ');
 document.getElementById('base').innerHTML=bh;
+// NOTES scope -- follows whatever row you're auditioning (playRow/repickCurrent call this).
+// WRITE-ONLY: CommentWidget POSTs to comment.php and never reads or renders anything back.
+let noteCtx=null,noteKey='';
+function setNoteScope(){
+ const box=document.getElementById('notebox'),sc=document.getElementById('nscope');
+ if(!noteCtx||!noteCtx.model){sc.textContent='click a model row to play, then comment on it';
+  sc.className='notes-hint';box.innerHTML='';noteKey='';return;}
+ const lvl=(document.querySelector('input[name=nlvl]:checked')||{}).value||'model';
+ const ck=(lvl==='model')?'':(noteCtx.ckpt||''),cl=(lvl==='clip')?(noteCtx.clip||''):'';
+ sc.className='notes-scope';
+ sc.textContent = lvl==='model'?noteCtx.model
+   : lvl==='ckpt'?(noteCtx.model+' ▸ '+noteCtx.ckpt)
+   : (noteCtx.model+' ▸ '+noteCtx.ckpt+' ▸ '+(noteCtx.clip||'').replace(/\.m4a$/,''));
+ // re-init ONLY on a real scope change: init() rewrites the box, which would eat a half-typed
+ // note every time the picker or the playhead moved the resolved clip under you.
+ const key=lvl+'|'+noteCtx.model+'|'+ck+'|'+cl; if(key===noteKey)return; noteKey=key;
+ box.dataset.page='dora_table';box.dataset.model=noteCtx.model;box.dataset.ckpt=ck;box.dataset.clip=cl;
+ if(window.CommentWidget)CommentWidget.init(box);}
+function noteFromPlay(model,ckpt,file){noteCtx={model:model,ckpt:ckpt,clip:file};setNoteScope();}
+document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
 render();
 loadManifest();
-</script></body></html>"""
+</script>
+<script src="/files/comments.js"></script></body></html>"""
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser(description="Build the DoRA hyperparameter x metric web page.")
+    ap.add_argument("--public", action="store_true",
+                    help="ALSO emit a path-redacted dora_table_public.html for hosting on "
+                         "aavepyora.online (default eval/dora_table.html + staged copy unchanged).")
+    args = ap.parse_args()
+    main(public=args.public)
