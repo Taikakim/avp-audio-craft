@@ -25,6 +25,7 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
 #pseek{width:140px}
 tbody tr{cursor:pointer}
 tbody tr.nomatch{opacity:.35}
+tbody tr.approx{opacity:.72}   /* plays a nearest-match clip, NOT dead -- see markAvailability */
 tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{background:#1c3c2c !important;color:#9fe}
 tbody tr.rowloading td.model::after{content:' ⋯';color:#fc6}
 @keyframes flashno{0%,100%{background:transparent}50%{background:#4a1f1f}}
@@ -200,13 +201,24 @@ function nativeSwap(hit,ckpt){
  return nf?{file:nf,tag:' ·native',nkey:'\x01N'}:{file:hit.file,tag:' ·20s',nkey:''};}
 // dim rows that have NO clip at the selected PROMPT (with graceful-resolve, cfg/w mismatch
 // no longer means "unplayable" -- only a missing prompt is a meaningful "nothing here" signal).
+// Availability must mirror what CLICKING actually does (Kim 2026-08-05: "clickables still missing
+// for many models"). This used to dim any row lacking the SELECTED prompt -- but resolveCell falls
+// back across prompts, so those rows played fine and merely looked dead: on every prompt except the
+// default, 147 of 583 rows greyed out with clips sitting right there. Three honest states now:
+//   exact   -> normal        (has a clip at this prompt)
+//   approx  -> lightly dimmed (plays the nearest cell instead; label says ·nearest)
+//   nomatch -> heavily dimmed (nothing anywhere -- genuinely dead)
 function markAvailability(){
  if(!cellsByMC)return;
  const {pid}=currentSel();
  document.querySelectorAll('#body tr').forEach(tr=>{
   const g=mcGroup(modelKey(tr.dataset.model),tr.dataset.ckpt);
-  const hasPrompt=g&&g.arr.some(c=>c.pid===pid);
-  tr.classList.toggle('nomatch',!hasPrompt);});}
+  const any=!!(g&&g.arr.length);
+  const hasPrompt=any&&g.arr.some(c=>c.pid===pid);
+  tr.classList.toggle('nomatch',!any);
+  tr.classList.toggle('approx',any&&!hasPrompt);
+  tr.title=any?(hasPrompt?'':'no clip at this prompt — clicking plays the nearest available cell')
+              :'no clip rendered for this model/checkpoint at any setting';});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
  if(!playingModel)return;
