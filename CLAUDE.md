@@ -27,6 +27,11 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    cross-cutting, profile **Shipped** list when it's a milestone (that one goes stale
    silently — Kim caught it), and any spec/doc the result changed. Full checklist:
    `profiles/SPEC-agent-profiles-journals.md` §9.
+6. **`KIM-TASKLIST.md`** — the team-maintained running tasklist **for Kim** (Kim 2026-08-05): the
+   single place the fleet surfaces what needs him — decisions, his ears, reviews, submits — so
+   sprawling work across four agents doesn't get forgotten. **When work lands that needs Kim, ADD an
+   item; when it's resolved, MOVE it to Recently-done with a date.** Filelock before editing; keep it
+   short and current. (This is the "master task-list" the post-task protocol in §5 refers to.)
 
 ## ⛔ DISCOVERY PHASE — MANDATORY before any non-trivial task (do NOT skip)
 We keep re-deriving work that already exists — e.g. a full night was lost re-inventing
@@ -101,3 +106,15 @@ MIR feature extraction / Audiobox / MERT → `mir/bin/python`; SA3 / SAT / conso
 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import torch`). Invoke venvs by
 absolute path; never assume `python` is the right one. Never `HIP_VISIBLE_DEVICES=""`
 (flash_attn/aiter probes a Triton driver at import → crash).
+
+## Audio augmentation — bungee ONLY, never sox (Kim direct, 2026-08-04)
+**`sox` degrades audio badly — do not use it for anything, ever** (not as a torchaudio backend, not
+via `sox_effects`, not as a "quick" resampler). For any **pitch-shift / time-stretch / speed** work —
+augmentation included — **bungee is the default and only tool**: `bungee_python` 0.2.1 (built in
+`mir/pitch_venv` from `mir/repos/bungee`; API `bungee.Bungee(sr, ch).time_stretch/.pitch_shift`), LUMI
+goa augmentation via `lumi/augment_goa_bungee.py`. Also avoid torchaudio/librosa phase-vocoder pitch as
+a substitute — bungee is the quality bar. Our code is currently **sox-free** (verified 2026-08-04); keep
+it that way. *(Caveat: `stable-audio-3/scripts/audio_augment.py`'s optional pitch/time path is
+default-OFF and still lazy-loads torchaudio transforms — inert today; if ever enabled, wire it to bungee
+first.)* Related audio-I/O gotcha (MASTER §5): the multitorch/torchaudio-2.x load/save path needs
+**torchcodec** (or an ffmpeg loader) — a separate dependency issue, not a quality one.
