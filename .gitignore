@@ -13,6 +13,10 @@
 !/docs/
 !/CONSTRUCTS.md
 !/DISCOVERIES.md
+# doc-oversight 2026-08-05: track model_index (the kept-up-to-date model roster) + the renamed
+# FAQ (a Q&A archive that must survive context compaction) — both were untracked/local-only.
+!/model_index.md
+!/WHAT-KIM-WANTED-TO-KNOW.md
 !/projects.toml
 !/install.sh
 !/lumi/
@@ -107,3 +111,7 @@ eval/clip_metrics.db
 *.onnx
 *.pkl
 *.db
+
+# model_index generator + its legacy snapshot (doc-oversight 2026-08-05)
+!/Misc/build_model_index_page.py
+!/Misc/model_index_legacy.md

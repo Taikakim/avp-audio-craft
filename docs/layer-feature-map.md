@@ -4,7 +4,7 @@
 DiT blocks hooked, 96 frames/crop, ridge R² per (layer, feature) against the crop's
 TIMESERIES companions. Extraction: `latch/extract_layer_activations.py`; analysis:
 `latch/run_layer_feature_map.py`; results JSON:
-`Mantu1/sa3_lora_runs/layer_activations_base/layer_feature_map.json`.)*
+`Mantu/sa3_lora_runs/layer_activations_base/layer_feature_map.json`.)*
 
 ## The two regimes
 

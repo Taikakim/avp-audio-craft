@@ -4,7 +4,7 @@ Meta-repo for the **mir + Stable Audio** pipeline. This is *just* the
 coordination layer (docs, install orchestrator). The actual code lives in three
 separate forks that this repo clones and sets up.
 
-- `mir/` — MIR feature extraction, whole-track timeseries (My framework for extracting various acoustic and descriptive audio features from audio in order to enrich audio metadata for AI training`)
+- `mir/` — MIR feature extraction, whole-track timeseries (acoustic + descriptive audio-feature extraction to enrich audio metadata for AI training)
 - `stable-audio-tools/` — LatCH heads, FusionOpt, audition renders (Kim's
   `audio-tools-AVP` fork)
 - `stable-audio-3/` — SA3 medium, LoRA fine-tune, SA3 LatCH (Kim's fork of
