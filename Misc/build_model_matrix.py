@@ -261,6 +261,16 @@ def main():
                '(e.g. 47.5s for T512 models) instead of the 20s comparison clip, where one exists '
                '(terminal checkpoints) -- cells without one keep their 20s clip.">'
                '<input type=checkbox id=mnative> native</label>'
+               ' <button id=mspread onclick="spreadCkpts()" title="fill all four columns with an '
+               'evenly-spaced sample of the selected model&#39;s checkpoints (first, last, and two '
+               'between) -- the useful default for an unscored model, where there are no metrics to '
+               'rank checkpoints by and coverage of the training trajectory is what you want."'
+               ' style="background:#23252c;border:1px solid #3a3d48;color:#cde;border-radius:4px;'
+               'padding:2px 8px;cursor:pointer">spread ckpts</button>'
+               ' <button id=mshare onclick="copyShareLink()" title="copy a link to THIS exact '
+               'four-column selection -- the address bar already carries it, this just copies it."'
+               ' style="background:#23252c;border:1px solid #3a3d48;color:#cde;border-radius:4px;'
+               'padding:2px 8px;cursor:pointer">copy link</button>'
                ' <span id=ld style="color:#fa5"></span>'
                ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops; amber outline = loading</span></div>')
     doc.append('<h1>Model matrix — every trained model × checkpoint × cfg × strength, side by side</h1>'
@@ -452,8 +462,51 @@ function render(){
      h+='</table>'}
     h+='</div>'}
   }
-  div.innerHTML=h;wrap.appendChild(div)}reattach()}
+  div.innerHTML=h;wrap.appendChild(div)}reattach();
+ if(window.syncURL)syncURL();}   // every column change re-renders -> URL always shareable
 const colState=[{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null}];
+// ── SHAREABLE SELECTION VIA THE ADDRESS BAR (Kim 2026-08-05) ────────────────────────────────
+// The 4-column selection + native toggle live in the URL hash, so any configuration can be
+// copied out of the address bar and sent to someone else (or bookmarked). Hash, not query:
+// it never round-trips to the server and survives the static host untouched.
+// Format: #c=<model>~<ckpt>|<model>~<ckpt>|...  &nat=1
+function syncURL(){
+ const parts=colState.map(s=>s.model?(encodeURIComponent(s.model)+'~'+encodeURIComponent(s.ckpt||'')):'');
+ let h='c='+parts.join('|');
+ const nb=document.getElementById('mnative'); if(nb&&nb.checked)h+='&nat=1';
+ // replaceState, not assignment: writing location.hash would push a history entry per click
+ // and turn Back into an undo-one-column crawl.
+ try{history.replaceState(null,'','#'+h);}catch(e){}}
+function applyURL(){
+ const h=(location.hash||'').replace(/^#/,''); if(!h)return false;
+ const q={}; h.split('&').forEach(kv=>{const i=kv.indexOf('=');if(i>0)q[kv.slice(0,i)]=kv.slice(i+1);});
+ if(q.c){q.c.split('|').forEach((seg,i)=>{
+   if(i>3||!seg)return; const [m,k]=seg.split('~');
+   colState[i].model=decodeURIComponent(m||'')||null;
+   colState[i].ckpt=decodeURIComponent(k||'')||null;});}
+ if(q.nat==='1'){const nb=document.getElementById('mnative'); if(nb)nb.checked=true;}
+ return !!q.c;}
+// EVEN CHECKPOINT SPREAD (Kim 2026-08-05: "in a lack of the scores ... an evenly sampled
+// selection of checkpoints"). Unscored models have no metrics to rank their checkpoints by,
+// so the useful default is coverage: first, last, and evenly-spaced middles across the run,
+// which is what you want when judging a training trajectory by ear.
+function spreadCkpts(){
+ const m=(colState.find(s=>s.model)||{}).model; if(!m)return;
+ const cks=((MM.models[m]||{}).ckpts)||[]; if(!cks.length)return;
+ for(let c=0;c<4;c++){
+  colState[c].model=m;
+  colState[c].ckpt=cks.length===1?cks[0]
+    :cks[Math.round(c*(cks.length-1)/3)];}   // c=0 -> first, c=3 -> last, 1/2 evenly between
+ render();}
+function copyShareLink(){
+ syncURL();
+ const u=location.href;
+ const done=()=>{const b=document.getElementById('mshare');if(b){const t=b.textContent;b.textContent='copied ✓';setTimeout(()=>b.textContent=t,1400);}};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,done);
+ else{const ta=document.createElement('textarea');ta.value=u;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');}catch(e){} ta.remove(); done();}}
+window.addEventListener('hashchange',()=>{if(applyURL())render();});
+applyURL();
 render();
 </script>""")
     # Notes widget REMOVED 2026-08-04 (Kim): both the page-level box and the context-aware
