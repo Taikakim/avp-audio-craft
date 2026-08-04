@@ -130,7 +130,13 @@ function modelKey(m){return m+(pptm.checked?'_ptm':'')}
 function currentSel(){return {pid:pprompt.value,
  cfg:pptm.checked?1:parseFloat(pcfg.value),
  w:pptm.checked?1:parseFloat(pstrength.value)}}
-function applyPtmLock(){}
+// the "lock" half of the tooltip's forces+locks: grey the two selects out while ptm is
+// checked, so a control that no longer affects playback READS as locked rather than broken.
+// Deliberately disabled-only -- no value write -- to keep the no-DOM-write rule above intact
+// (disabled selects retain .value, so unchecking restores the prior selection untouched).
+function applyPtmLock(){const on=pptm.checked;pcfg.disabled=on;pstrength.disabled=on;
+ const t=on?'pinned to cfg1 / w1 while post-trained is checked':'';
+ pcfg.title=t;pstrength.title=t;}
 // GRACEFUL CELL RESOLUTION (Kim 2026-08-02): the global cfg/weight/prompt picker can request
 // a combo a given (model,ckpt) never rendered (e.g. the _ptm winning variants are cfg1-ONLY)
 // -> a dead 'no clip rendered' cell. Resolve any miss to the NEAREST available cell for that
@@ -270,6 +276,8 @@ function fillPicker(promptTxt,cfgSet,wSet){
  [...wSet].sort((a,b)=>a-b).forEach(v=>pstrength.add(new Option('w '+v,v)));
  if(cfgSet.has(7))pcfg.value='7';           // Kim's worked example default
  if(wSet.has(1))pstrength.value='1';
+ applyPtmLock();  // the page never restores ptm itself, but browsers re-check the box from their
+                  // own form-state cache on F5/back-nav -- without this the lock would be missing
  markAvailability();}
 async function loadManifest(){
  cellIndex=new Map();nativeIndex=new Map();
