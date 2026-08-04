@@ -116,6 +116,7 @@ class LatentControlDataset(Dataset):
                  audio_ref="same_track", seed=0, subset_tracks=None,
                  scalar_field=None, scalar_norm=(0.0, 1.0), random_crop_frames=None,
                  active_density=False,
+                 dual_scalar: bool = False,
                  # style-fingerprint kwargs
                  fingerprint: bool = False,
                  genre_vocab: "list[str] | None" = None,
@@ -124,27 +125,64 @@ class LatentControlDataset(Dataset):
                  bpm_norm=(140.0, 20.0),
                  sync_norm=(0.5, 0.25),
                  onset_norm=(0.0, 1.0),
-                 energy_norm=(0.0, 1.0)):
+                 energy_norm=(0.0, 1.0),
+                 # melody-contour conditioning (Head B): sidecar dir of per-crop
+                 # <stem>.melody8.npy int8 (4096,) class streams (prep_melody_conditioning.py).
+                 # Set -> items carry "melody_cls" (T,) int64; crops without a stream are dropped.
+                 melody_dir=None,
+                 # metrical-position conditioning (E3): sidecar dir of per-crop
+                 # <stem>.metrical.npy int8 (5, 4096) tree-position streams (rows =
+                 # subdiv/beat/bar/phrase/coverage) + <stem>.metrical_conf.npy float16 (4096,).
+                 # Set -> items carry "metrical_cls" (5, T) int64 + "metrical_conf" (T,) float32.
+                 # UNLIKE melody_dir, crops WITHOUT a sidecar are KEPT, not dropped — they get the
+                 # all-zero null token (coverage=0), the zero-condition dropout design
+                 # (docs/superpowers/specs/2026-07-31-metrical-tree-pe-design.md §2).
+                 metrical_dir=None):
         self.root = root
+        self.melody_dir = melody_dir
+        self.metrical_dir = metrical_dir
         self.controls = [c for c in controls if c in CONTROL_FIELDS]
         self.audio_ref = audio_ref
         self.scalar_field = scalar_field            # e.g. "onset_density" — a per-crop .json scalar control
         self.active_density = active_density        # rms-gated density (outro-cheat fix)
         self.scalar_mean, self.scalar_std = scalar_norm
+        self.dual_scalar = bool(dual_scalar)        # emit [standardize(feature), standardize(bpm_madmom)] per crop
         self.random_crop_frames = random_crop_frames   # int N = return a RANDOM beat-aligned N-frame window
         # style-fingerprint mode
         self.fingerprint = bool(fingerprint)
         self.genre_vocab = list(genre_vocab) if genre_vocab else []
         self.fp_variant = fp_variant
         self.year_norm, self.bpm_norm = year_norm, bpm_norm
+        # dual_scalar's bpm (feature 2) standardization: defaults to bpm_norm, overwritten by the
+        # trainer with corpus (mean,std) computed the same way the scalar path computes its stats.
+        self.bpm_mean, self.bpm_std = bpm_norm
         self.sync_norm, self.onset_norm, self.energy_norm = sync_norm, onset_norm, energy_norm
         if self.fingerprint and fp_variant == "B" and "fp_volatile" not in self.controls:
             self.controls = list(self.controls) + ["fp_volatile"]  # load onset+energy timeseries
-        self.paths = sorted(glob.glob(os.path.join(root, "*.npy")))
+        # multi-root: accept a single dir (str/Path) OR a list of dirs — glob each and
+        # concatenate the FULL-PATH lists. Because every item carries its own absolute path,
+        # this sidesteps the 000000.* stem COLLISION between corpora (goa + avp). Single-dir
+        # behaviour is byte-identical (one sorted glob over the one root).
+        _roots = list(root) if isinstance(root, (list, tuple)) else [root]
+        self.paths = []
+        for _r in _roots:
+            self.paths.extend(sorted(glob.glob(os.path.join(str(_r), "*.npy"))))
         # drop junk crops with no .json companion (e.g. silence.npy) — they lack every
         # sidecar and would crash the timeseries loader in fingerprint/window mode, where
         # the scalar_field filter below (which also excludes them) never runs.
         self.paths = [p for p in self.paths if os.path.exists(p[:-4] + ".json")]
+        if self.melody_dir is not None:         # melody mode: keep only crops with a class stream
+            before = len(self.paths)            # (BEFORE subset_tracks, so a subset fraction is
+            self.paths = [p for p in self.paths # relative to melody-covered tracks, not all 5.4k)
+                          if os.path.exists(self._melody_path(p))]
+            print(f"[dataset] melody_dir: {len(self.paths)}/{before} crops have a "
+                  f".melody8.npy stream", flush=True)
+        if self.metrical_dir is not None:       # metrical mode: NO filtering — uncovered crops
+            n_cov = sum(1 for p in self.paths   # already carry the all-zero null (coverage=0),
+                        if os.path.exists(self._metrical_path(p)))  # which IS the training null
+            print(f"[dataset] metrical_dir: {n_cov}/{len(self.paths)} crops have a "
+                  f".metrical.npy sidecar (rest train as the all-zero null — kept, not dropped)",
+                  flush=True)
         self.meta = {}
         self.by_track = defaultdict(list)
         for p in self.paths:
@@ -164,10 +202,24 @@ class LatentControlDataset(Dataset):
             self.paths = [p for p in self.paths if scalar_field in self.meta.get(p, {})]
             if len(self.paths) < before:
                 print(f"[dataset] dropped {before - len(self.paths)} crops missing '{scalar_field}'", flush=True)
+        if self.dual_scalar:                        # feature 2 = bpm_madmom; the avp augmentation crops
+            before = len(self.paths)                # deliberately omit it (WORKLOG 2026-07-06) -> skip them
+            self.paths = [p for p in self.paths if "bpm_madmom" in self.meta.get(p, {})]
+            dropped = before - len(self.paths)
+            if dropped:
+                print(f"[dataset] dual_scalar: dropped {dropped}/{before} crops missing 'bpm_madmom'", flush=True)
         self._rng = np.random.default_rng(seed)
 
     def __len__(self):
         return len(self.paths)
+
+    def _melody_path(self, latent_path: str) -> str:
+        stem = os.path.basename(latent_path)[:-4]
+        return os.path.join(str(self.melody_dir), stem + ".melody8.npy")
+
+    def _metrical_path(self, latent_path: str) -> str:
+        stem = os.path.basename(latent_path)[:-4]
+        return os.path.join(str(self.metrical_dir), stem + ".metrical.npy")
 
     def _load_controls(self, stem: str) -> dict:
         if not self.controls:                       # scalar/no-timeseries mode: don't touch the npz
@@ -231,6 +283,21 @@ class LatentControlDataset(Dataset):
             vec.append((window_energy(energy_w) - em) / es_)
         return torch.tensor(vec, dtype=torch.float32)
 
+    def _build_dual_scalar(self, m: dict) -> torch.Tensor:
+        """Stripped 2-dim sibling of _build_fingerprint: [standardize(feature), standardize(bpm_madmom)].
+
+        Feature 1 = the per-crop .json `scalar_field` (e.g. onset_density); feature 2 = the track-level
+        bpm_madmom. Both are pre-standardized with the corpus (mean,std) pairs (`scalar_norm` for the
+        feature, `bpm_mean/bpm_std` for bpm) so 0 == corpus mean == the cfg-dropout null. Conditioning on
+        BOTH stops the adapter cheating a feature target by shifting tempo. Used only for the json-scalar
+        path; the scalar-from-timeseries path assembles the window-mean feature in the training loop and
+        combines it with `dual_bpm` (below).
+        """
+        raw_f = float(m.get(self.scalar_field, self.scalar_mean))
+        std_f = (raw_f - self.scalar_mean) / (self.scalar_std + 1e-9)
+        std_bpm = (float(m.get("bpm_madmom", self.bpm_mean)) - self.bpm_mean) / (self.bpm_std + 1e-9)
+        return torch.tensor([std_f, std_bpm], dtype=torch.float32)
+
     def _beat_aligned_start(self, stem: str, t_total: int) -> int:
         """Random window start snapped to a beat (peak of beat_activation_ts); plain-random fallback.
         Gives crop variety across epochs so training stops seeing only the first window of each track."""
@@ -258,10 +325,30 @@ class LatentControlDataset(Dataset):
         while lat.ndim > 2 and lat.shape[0] == 1:   # squeeze stray batch dims, e.g. (1,256,4096) -> (256,4096)
             lat = lat[0]
         controls = self._load_controls(stem)
+        melody_cls = None
+        if self.melody_dir is not None:            # (4096,) int8 contour classes, latent-frame grid
+            melody_cls = np.load(self._melody_path(p)).astype(np.int64)
+        metrical_cls = None
+        metrical_conf = None
+        if self.metrical_dir is not None:          # (5, 4096) int8 tree classes + (4096,) conf
+            mp = self._metrical_path(p)
+            if os.path.exists(mp):
+                metrical_cls = np.load(mp).astype(np.int64)
+                cp = mp[:-len(".metrical.npy")] + ".metrical_conf.npy"
+                metrical_conf = (np.load(cp).astype(np.float32) if os.path.exists(cp)
+                                 else np.zeros(metrical_cls.shape[-1], dtype=np.float32))
+            else:                                  # missing sidecar = uncovered: the all-zero null
+                metrical_cls = np.zeros((5, lat.shape[-1]), dtype=np.int64)
+                metrical_conf = np.zeros(lat.shape[-1], dtype=np.float32)
         if self.random_crop_frames and lat.shape[-1] > self.random_crop_frames:  # beat-aligned random window
             s = self._beat_aligned_start(stem, lat.shape[-1]); tw = self.random_crop_frames
             lat = np.ascontiguousarray(lat[:, s:s + tw])
             controls = {k: v[:, s:s + tw].contiguous() for k, v in controls.items()}
+            if melody_cls is not None:
+                melody_cls = np.ascontiguousarray(melody_cls[s:s + tw])
+            if metrical_cls is not None:
+                metrical_cls = np.ascontiguousarray(metrical_cls[:, s:s + tw])
+                metrical_conf = np.ascontiguousarray(metrical_conf[s:s + tw])
         item = {
             "latent": torch.from_numpy(lat),                             # (256, 4096) or (256, crop) if random
             "prompt": m.get("prompt", ""),
@@ -269,6 +356,11 @@ class LatentControlDataset(Dataset):
             "stem": os.path.basename(stem),
             "seconds_total": float(m.get("seconds_total", 0.0)),
         }
+        if melody_cls is not None:
+            item["melody_cls"] = torch.from_numpy(melody_cls)            # (T,) int64
+        if metrical_cls is not None:
+            item["metrical_cls"] = torch.from_numpy(metrical_cls)        # (5, T) int64
+            item["metrical_conf"] = torch.from_numpy(metrical_conf)      # (T,) float32
         if self.audio_ref == "same_track":
             item["ref_latent"] = self._pick_reference(p)
         if self.fingerprint:
@@ -276,6 +368,12 @@ class LatentControlDataset(Dataset):
         if self.scalar_field is not None:           # normalised per-crop scalar control (e.g. onset_density)
             raw = float(m.get(self.scalar_field, self.scalar_mean))
             item["scalar"] = torch.tensor((raw - self.scalar_mean) / (self.scalar_std + 1e-9), dtype=torch.float32)
+        if self.dual_scalar:                        # 2-vector {feature, bpm_madmom}, both standardized
+            if self.scalar_field is not None:       # json-scalar feature path -> full (2,) vector here
+                item["dual_scalar"] = self._build_dual_scalar(m)
+            else:                                   # timeseries-window-mean path -> feature assembled in the
+                std_bpm = (float(m.get("bpm_madmom", self.bpm_mean)) - self.bpm_mean) / (self.bpm_std + 1e-9)
+                item["dual_bpm"] = torch.tensor(std_bpm, dtype=torch.float32)  # loop; provide std bpm only
         pm = m.get("padding_mask")
         if pm is not None:
             item["padding_mask"] = torch.tensor(np.asarray(pm, dtype=np.float32))

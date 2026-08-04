@@ -86,3 +86,23 @@ training is a deferred Phase-2 option if short-form inference disappoints. See `
 
 Don't compare `val_median` across runs with different `--standardize` / `huber_beta` —
 convert to **raw MAE** first (§18 caught a "347 % regression" that was a unit artifact).
+
+## fp32 vs bf16 precision (Kim's ear, 2026-07-20 — PRELIMINARY)
+The fp32/T=4096 campaign arms (#52) sound BETTER than their matched bf16 twins by ear (Kim's
+listening verdict, relayed by W): cleaner sound separation, less noisy high end, better in many
+ways; worse in very few (occasional less punch — likely source-faithfulness, not a real loss). The
+`bf16_twin` was built precisely as the matched-precision control (avp/goa T512 bs8 lr1e4, same recipe,
+bf16 vs fp32) to de-confound the precision axis from everything else in the 8-arm fp32 campaign, so
+this is a clean precision read, not a confound. NOT yet a comprehensive audit. STILL OPEN (parked for
+G's native-training-length eval cells, since fixed-20s evals can't show trained-context differences):
+bs1-vs-bs4 and T4096-vs-T2048. Recorded to the 10 fp32cmp/bf16cmp run_meta kim_feedback + WORKLOG
+(W, 2026-07-20). Precision-story lane; pairs with the checkpoint-trajectory practice (MASTER §4).
+
+## 2026-07-23 — Kim's listening verdicts (policy-setting)
+- **fp32 + fullft fine-tunes are just better, period** (vs bf16 / adapter-only). Rank helps.
+- **15 epochs is the NEW DEFAULT training goal** — models "just about start to sound fine
+  after ep5, and often 7 is the first really good one" (prior 8-ep runs were stopping at
+  the threshold of good). All 8-ep-era verdicts should be re-read with this in mind.
+- Augmentation SEEMS to help → aug×10 campaign drafted (docs/superpowers/specs/
+  2026-07-23-aug10-15ep-campaign.md); fullft→extracted-adapter comparison assigned to G
+  (extraction at r16/64/128 may beat straight-trained DoRAs — Kim's hypothesis).

@@ -1,0 +1,7 @@
+/home/kim/Projects/SAO/stable-audio-3/stable_audio_3/__init__.py:5: UserWarning: rocm_env.apply_profile('inference') ran after torch import; allocator, TunableOp, and MIOpen settings may be ignored.
+  _apply_rocm_profile("inference")
+[model_matrix] 1 (model,ckpt) jobs x 12 prompts -> 36 manifest cells (-36 actual renders, base cells triple-counted for the grid)
+[model_matrix] steps=24 save_latents=True base_full=True time_budget=1.0h
+[model_matrix] 10659 cells already in manifest, resuming
+[skip-all] base/base
+[model_matrix] done

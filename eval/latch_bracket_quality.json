@@ -1,0 +1,186 @@
+{
+ "purpose": "usable weight range per LatCH head (mask 0-100), quality-gated on GHOST-NOTE's latch_sa3_sweep",
+ "gate_spec": "whitening(flatness)+noise(zcr)+beat-loss(onset&bpm, rhythmic only); CE<4.0 corroborates",
+ "baseline": "gain-0 clip per prompt",
+ "gains": [
+  0,
+  64,
+  128,
+  512,
+  2048,
+  8192
+ ],
+ "prompts": {
+  "p0": "aggressive upbeat goa trance (rhythmic)",
+  "p1": "mid 90s ambient (non-rhythmic)"
+ },
+ "result": {
+  "beat_activation": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "downbeat_activation": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "hardness": {
+   "p0": {
+    "usable_max_gain": 128,
+    "failure": {
+     "gain": 512,
+     "reasons": [
+      "noise-zcr(0.101->0.168)"
+     ]
+    }
+   },
+   "p1": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "whitening(flatness 0.002->0.061)",
+      "noise-zcr(0.061->0.156)",
+      "CE<4.0(2.87)"
+     ]
+    }
+   }
+  },
+  "onset_envelope": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "onset_envelope_drums": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_drums": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_air": {
+   "p0": {
+    "usable_max_gain": 2048,
+    "failure": {
+     "gain": 8192,
+     "reasons": [
+      "noise-zcr(0.101->0.192)"
+     ]
+    }
+   },
+   "p1": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "noise-zcr(0.061->0.199)"
+     ]
+    }
+   }
+  },
+  "rms_energy_bass": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_body": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "rms_energy_mid": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_flatness": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 512,
+    "failure": {
+     "gain": 2048,
+     "reasons": [
+      "noise-zcr(0.061->0.184)"
+     ]
+    }
+   }
+  },
+  "spectral_flux": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_kurtosis": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  },
+  "spectral_skewness": {
+   "p0": {
+    "usable_max_gain": 8192,
+    "failure": null
+   },
+   "p1": {
+    "usable_max_gain": 8192,
+    "failure": null
+   }
+  }
+ }
+}

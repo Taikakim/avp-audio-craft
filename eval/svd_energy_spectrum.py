@@ -61,6 +61,10 @@ def module_spectrum(base_w, fullft_w):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--parent", default="fullft_goa_t256")
+    ap.add_argument("--out", default=None,
+                    help="output json path (default: eval/svd_energy_spectrum.json — the "
+                         "reference-arm file the xft board reads; per-arm sweeps should pass "
+                         "eval/svd_energy_spectrum_<parent>.json)")
     args = ap.parse_args()
 
     fullft = _fullft_labels()
@@ -108,7 +112,7 @@ def main():
     out = {"parent": args.parent, "ckpt": str(ckpt_path), "n_modules": len(per_module),
            "class_summary": class_summary, "whole_model_uniform_rank_energy": whole_model,
            "per_module_r90": {m: v["r90"] for m, v in per_module.items()}}
-    out_path = Path(__file__).resolve().parent / "svd_energy_spectrum.json"
+    out_path = Path(args.out) if args.out else Path(__file__).resolve().parent / "svd_energy_spectrum.json"
     out_path.write_text(json.dumps(out, indent=1))
     print(f"[spectrum] wrote {out_path}")
     print("class summary:", json.dumps(class_summary, indent=1))

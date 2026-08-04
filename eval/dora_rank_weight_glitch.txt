@@ -1,0 +1,20 @@
+dora16_avp_8ep                           16 144             0.106    +0.0072
+dora16_avp_familiarity_8ep               16  96             0.135    +0.0060
+dora16_avp_freeform_8ep                  16  96             0.201    +0.0272
+dora16_avp_originals_64ep                16 144             0.184    +0.0150
+dora16_avp_originals_densewin            16 144             0.233    +0.0238
+dora16_avp_originals_earlyeps            16 144             0.349    +0.0798
+dora16_avp_originals_win7                16 144             0.283    +0.0555
+dora16_glitchheal_5ep_2xlr               16  72             0.272    -0.0002
+dora16_goa_newstack_8ep                  16 108             0.204    +0.0742
+dora128_47s_newcaptions_5ep             128 108             0.200    +0.0113
+dora128_everything_8ep_lr1x             128 108             0.190    +0.0071
+dora128_everything_8ep_lr3x             128 108             0.177    +0.0244
+dora128_newcap_continued_3more          128  72             0.152    -0.0055
+dora128adj_avp_8ep                      128 144             0.152    -0.0025
+dora128adj_avp_8ep_final                128  48             0.131    +0.0048
+dora128adj_avp_aug10_lr1e4              128 144             0.155    -0.0034
+  rank- 16: hi_frac 0.219  zcr_delta +0.0320  (n_models=9)
+  rank-128: hi_frac 0.165  zcr_delta +0.0052  (n_models=7)
+VERDICT: rank-16 hi_frac 0.219 vs rank-128 0.165 (zcr +0.0320 vs +0.0052).
+  Kim's hypothesis (higher rank tolerates w1.5 better) SUPPORTED on the spectral-glitch axis.

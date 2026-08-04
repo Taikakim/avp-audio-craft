@@ -7,6 +7,15 @@ the why; this dir is the how). Prepared before access; **access granted 2026-07-
 
 - **LUMI project:** `project_465003186` (LUMI-G) · **user:** `akekim` · login via the EuroHPC
   Federation Platform (EFP): `akekim@efp.lumi.csc.fi` (cert-based, ~10 h validity — regenerate the cert).
+  **⚠️ SSH gotcha (2026-07-14): 'Permission denied (publickey)' has TWO causes — check the cert
+  first: `ssh-keygen -L -f ~/.ssh/id_efp.lumi.csc.fi-cert.pub | grep Valid`. (a) cert EXPIRED
+  (~10 h validity → expires daily): download a fresh cert from the WebUI's SSH access section and
+  overwrite `~/.ssh/id_efp.lumi.csc.fi-cert.pub` — key + ssh config stay unchanged. (b) cert
+  valid but WebUI session stale: log in at workflows.my-eurohpc.eu again and SSH starts working.
+  Also: the cert file name (`id_efp.lumi.csc.fi-cert.pub`) doesn't match the key (`id_EFP`), so
+  ssh needs the `Host efp.lumi.csc.fi` block in `~/.ssh/config` (User/IdentityFile/CertificateFile
+  — added 2026-07-14) or explicit -i/-o CertificateFile flags. Long rsync uploads: use
+  `--partial` — a mid-transfer cert death resumes instead of restarting.**
 - **Budget (from `lumi-workspaces` 2026-07-09):** **5000 GPU(GCD)-hours** (0 used), 1000 CPU-Khours,
   20000 storage-TBhours; storage 134 days to removal (~26% of project time elapsed). 5000 GCD-h is a
   real allocation — the campaigns are cheap, and the **clean-room dataset regen is now affordable**
@@ -55,6 +64,10 @@ remaining prep edit is the base-image ROCm version in `sa3-env.yml` — see Day-
 | `sbatch/latch_parity.sbatch` | Phase-5 step 1: one head (`rms_energy_bass`), 1 GCD, dev-g. Gate everything on this. |
 | `sbatch/latch_all_features.sbatch` | **Campaign A**: job array, one LatCH head per feature × the full trick stack (EMA 0.999, grad-accum 2, ~20 ep early-stop, standardize, save-best-only). `sbatch --array=0-19`. |
 | `sbatch/dora_run.sbatch` | **Campaign B**: parameterized DoRA runs (`--export=ALL,ENC=…,RANK=…`). One GCD each; brackets = a for-loop of sbatch calls. |
+| `sbatch/arc_rollout.sbatch` | **ARC-Forcing** (task #46) step 1: build the self-rollout dataset (`eval/arc_rollout_dataset.py`) — re-render contexts through the model so training sees its OWN drift. Writes `.npz` + `manifest.json`. |
+| `sbatch/arc_train.sbatch` | **ARC-Forcing** step 2: `train_lora.py --arc-data` on the rollout dir (rank 128, alpha 128, lr 1e-4). Clamps the drifted context via the inpaint keys; loss on the free region. |
+| `sbatch/longctx_t1024.sbatch` | **Task #50** goa long-context arm, `--frames 1024` (95.108 s); LoRA r128/α128, lr 1e-4, 8 ep. |
+| `sbatch/longctx_t2048.sbatch` | **Task #50** goa long-context arm, `--frames 2048` (190.216 s); **LUMI-only** (local 16 GB can't hold it). Same recipe. |
 | `pack_data.sh` | Local staging: tarballs of `latents_sa3` + `latents_avp` (doubles as the overdue cold backup) + git-archive code snapshots + this dir. |
 
 ## Day-0: from passport to first job (the human steps, in order)
@@ -88,6 +101,31 @@ remaining prep edit is the base-image ROCm version in `sa3-env.yml` — see Day-
    gain ≈512 on the energy family).
 6. Only then: `sbatch --array=0-19 sbatch/latch_all_features.sbatch` and the DoRA brackets.
 
+## Run order — ARC-Forcing (task #46) + long-context arms (task #50)
+
+*(EFP note: these are the `srun singularity exec …` bodies to port into WebUI Job Scripts +
+Workflows, same as the rest of the bundle — see the ACCESS MODEL banner above. Partition/
+account/resources go in the workflow config; the `--export=ALL,KEY=VAL` knobs map to the
+workflow's env/parameter fields.)*
+
+- **ARC-Forcing is a 2-step PIPELINE — rollout BEFORE train (hard dependency):**
+  1. `arc_rollout.sbatch` builds the self-rollout dataset into `OUT` (default
+     `/scratch/<proj>/runs/arc_rollout_ds`). Pre-stage the `LORA_CKPT` whose drift you want
+     captured under `/project` (omit for base-model drift).
+  2. `arc_train.sbatch` reads that SAME dir via `ARC_DS` — **set `ARC_DS` to the rollout's
+     `OUT`**. Since `/scratch` auto-purges, keep both inside one retention window, or copy the
+     dataset to `/project/<proj>/data/` and point `ARC_DS` there.
+  - On EFP, chain them as two workflow executions (rollout → train) or gate the train on the
+    rollout's completion; do not launch train until the rollout's `manifest.json` exists.
+- **The long-context arms (`longctx_t1024`, `longctx_t2048`) are INDEPENDENT** — of each other
+  and of the ARC jobs. Submit any/all concurrently (each takes one GCD). No ordering.
+- **First-batch check for the longctx arms:** confirm the trainer logs the exact crop length
+  (T=1024 / T=2048, not ±1) before letting a run go the night — the `--frames` path exists to
+  dodge the seconds→ds-ratio rounding (MASTER §5, Kim DIRECT 2026-07-13).
+- **Compare-across-run, don't take the last ckpt:** every training arm checkpoints per epoch
+  (`--checkpoint_every_epochs 1`); pick the stability window across the run (dora_run header +
+  MASTER §4). `--no_demos` is set on all four (skip the ~10-min inpaint-demo callback).
+
 ## Decisions encoded here (so nobody re-derives them)
 
 - **Trainer = the `--ema`/`--grad-accum` lineage** (`stable-audio-3/scripts/latch/train_latch.py`
@@ -105,6 +143,21 @@ remaining prep edit is the base-image ROCm version in `sa3-env.yml` — see Day-
   profiling, not a blocker.
 - **MIOPEN_FIND_MODE=2, TunableOp off** for first runs (mode-6 killed SA3-medium's DiT
   locally; tuning caches are per-arch and can't be carried over).
+- **`MIOPEN_DISABLE_CACHE=1` — MANDATORY on LUMI, else training dies at the first conv.**
+  *(first successful smoke, 2026-07-16 — cost 5 debug iterations.)* MIOpen's user kernel-cache
+  is a SQLite file (`/…/gfx90a6e.ukdb`); its open fails with
+  `Cannot open database file … → miopenStatusInternalError` at `dit.py preprocess_conv`
+  **on every filesystem** (`/scratch`, `/flash` — both Lustre; and the container's baked-in
+  `nodev /tmp`). Relocating the cache does NOT fix it (plain rollback-journal SQLite opens
+  fine at those paths, so it's MIOpen's own SQLite open, not the FS). The fix is to **disable
+  the on-disk kernel cache** — MIOpen then never opens the `.ukdb`; kernels recompile once per
+  job (a few min on step 1, in-process cache holds after). Also **bind `/tmp`** into the
+  container (`singularity exec --bind …,/tmp`) and point `MIOPEN_USER_DB_PATH`/
+  `MIOPEN_CUSTOM_CACHE_DIR` at a job-scoped `/tmp/miopen-$SLURM_JOB_ID` as belt-and-suspenders.
+  Live in both `lumi/sbatch/efp_smoke_r256.sbatch` and `efp_fp32_compare.sbatch`. Still-open
+  question (post-mortem): whether our cotainr-from-plain-ROCm container simply lacks the gfx90a
+  system perf-DB (forcing the write path) — if so a proper cache is recoverable later for the
+  kernel-recompile speedup; not a blocker.
 - **avp-DoRA lessons (local bracket, 2026-07-08)** — full block in the `dora_run.sbatch`
   header; the short version: **tempo instability is optimization-phase-driven, not aug-driven**
   (the no-aug arm was the *least* stable, refuting the earlier multimodality theory) — each

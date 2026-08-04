@@ -29,7 +29,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from sa3_control.adapters import ControlContext, use_control_context
-from sa3_control.conditioner import AudioRefEncoder, ScalarAttributeEncoder, AttributeEncoder
+from sa3_control.conditioner import (AudioRefEncoder, ScalarAttributeEncoder, AttributeEncoder,
+                                     MelodyContourEncoder, MetricalEncoder)
 from sa3_control.dataset import LatentControlDataset, CONTROL_FIELDS, CONTROL_DIMS
 from sa3_control.inject import (adapter_state_dict, freeze_base_train_adapters,
                                 install_adapters)
@@ -70,6 +71,15 @@ def collate(batch):
         out["ref_latent"] = torch.stack([b["ref_latent"] for b in batch])
     if "scalar" in batch[0]:
         out["scalar"] = torch.stack([b["scalar"] for b in batch])
+    if "melody_cls" in batch[0]:                    # (B, T) int64 contour classes (Head B)
+        out["melody_cls"] = torch.stack([b["melody_cls"] for b in batch])
+    if "metrical_cls" in batch[0]:                  # (B, 5, T) int64 tree classes + (B, T) conf (E3)
+        out["metrical_cls"] = torch.stack([b["metrical_cls"] for b in batch])
+        out["metrical_conf"] = torch.stack([b["metrical_conf"] for b in batch])
+    if "dual_scalar" in batch[0]:                   # (B, 2) {feature, bpm} — json-scalar dual path
+        out["dual_scalar"] = torch.stack([b["dual_scalar"] for b in batch])
+    if "dual_bpm" in batch[0]:                      # (B,) std bpm — ts-window dual path (feature assembled in loop)
+        out["dual_bpm"] = torch.stack([b["dual_bpm"] for b in batch])
     if batch[0].get("controls"):                # time-varying attribute features {name: (C,T)}
         out["controls"] = {k: torch.stack([b["controls"][k] for b in batch]) for k in batch[0]["controls"]}
     if "fingerprint" in batch[0]:
@@ -169,8 +179,21 @@ def export_control_onnx_on_finish(ckpt_path, save_dir, frames, field):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("--encoded_dir", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--encoded_dir", default="/home/kim/Projects/latents_sa3",
+                    help="pre-encoded latent dir; ALSO accepts a comma-separated list of dirs "
+                         "(goa,avp) for a combined multi-root dataset (full-path lists concatenated, "
+                         "so the 000000.* stem collision between corpora is sidestepped).")
+    ap.add_argument("--encoded-dirs", nargs="+", default=None,
+                    help="explicit multi-root form of --encoded_dir: one or more latent dirs "
+                         "(space-separated). Overrides --encoded_dir when given.")
     ap.add_argument("--model", default="medium-base")
+    ap.add_argument("--adapter-layers", default="",
+                    help="restrict TRAINING to these cross-attn tap indices, e.g. '8-15' or "
+                         "'13,14,15' (default: all 24). Adapters are still INSTALLED at every "
+                         "layer and saved 24-indexed (untrained ones stay zero-init = exact "
+                         "no-op, so checkpoints load in every existing eval tool unchanged). "
+                         "Motivated by the 2026-07-21 single-tap ablation: L14 alone ~= full "
+                         "adapter authority, cleaner spectrum (ablate_layers2 run).")
     ap.add_argument("--steps", type=int, default=20000)
     ap.add_argument("--batch", type=int, default=1)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -252,11 +275,50 @@ def main():
                     choices=["logit_normal", "log_snr", "log_snr_uniform", "uniform"], default="logit_normal",
                     help="diffusion t sampler (underfit borrow). logit_normal = original; "
                          "log_snr biases toward the informative sigma band (may de-noise the loss).")
-    ap.add_argument("--control-mode", choices=["audio_ref", "scalar", "attribute", "fingerprint"], default="audio_ref",
+    ap.add_argument("--control-mode",
+                    choices=["audio_ref", "scalar", "attribute", "fingerprint", "dual_scalar",
+                             "melody_contour", "metrical_position"],
+                    default="audio_ref",
                     help="audio_ref = the riffer (opaque reference latent); scalar = a per-crop scalar "
                          "(e.g. onset_density); attribute = a TIME-VARYING per-frame feature "
                          "(dynamics/rhythm/melody curve) via the time-aligned AttributeEncoder; "
-                         "fingerprint = style/genre vector via FingerprintEncoder.")
+                         "fingerprint = style/genre vector via FingerprintEncoder; "
+                         "dual_scalar = joint {feature, bpm_madmom} 2-vector via FingerprintEncoder(in_dim=2) "
+                         "— conditions on the feature AND tempo so the adapter can't cheat the feature by "
+                         "shifting bpm; "
+                         "melody_contour = Head B (spec 2026-07-22-melodic-latch-film §2): per-frame "
+                         "folded contour class stream (prep_melody_conditioning sidecars) via "
+                         "MelodyContourEncoder — teacher-forced (crop, its own lead stream) pairs; "
+                         "metrical_position = E3 (spec 2026-07-31-metrical-tree-pe-design.md): "
+                         "4-level metrical tree (subdiv/beat/bar/phrase) hard-class streams + "
+                         "coverage, via MetricalEncoder.")
+    # --- melody_contour (Head B) args ---
+    ap.add_argument("--melody-dir", default="/home/kim/Projects/latents_sa3_melody",
+                    help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
+    ap.add_argument("--melody-dropout", type=float, default=0.1,
+                    help="melody_contour mode: per-item probability of zeroing the MELODY control "
+                         "tokens, drawn INDEPENDENTLY of text dropout (--cfg-dropout doubles as the "
+                         "TEXT cfg_dropout_prob in this mode) — the StemGen multi-source-CFG POOL "
+                         "item (docs/todos.md '[POOL, C] 2026-07-22 StemGen 2312.08723'): independent "
+                         "draws expose all four {text, melody} on/off states so per-source guidance "
+                         "scales are calibratable at inference.")
+    # --- metrical_position (E3) args ---
+    ap.add_argument("--metrical-dir", default="/home/kim/Projects/latents_sa3_metrical",
+                    help="sidecar dir of <stem>.metrical.npy (5,4096) tree-position streams + "
+                         "<stem>.metrical_conf.npy confidences (metrical_position mode)")
+    ap.add_argument("--metrical-dropout", type=float, default=0.15,
+                    help="metrical_position mode: per-item probability of zeroing the metrical "
+                         "condition to the null token during training (all 5 class rows + conf -> 0, "
+                         "AT THE INPUT — the null IS the all-zero input, design doc §2), drawn "
+                         "INDEPENDENTLY of text cfg dropout (--cfg-dropout doubles as the TEXT "
+                         "cfg_dropout_prob in this mode): independent draws expose all four "
+                         "{text, metrical} on/off states for per-source guidance at inference.")
+    ap.add_argument("--dora-rank", type=int, default=0,
+                    help="also train a fresh dora-rows adapter of this rank on the DiT Linears/Conv1ds "
+                         "(0 = off). The Head B pilot recipe: r128 dora-rows learns the corpus idiom "
+                         "jointly while the cross-attn adapters learn the melody conditioning.")
+    ap.add_argument("--dora-alpha", type=float, default=None,
+                    help="dora alpha (default = rank, the s=1 convention per the alpha audit)")
     ap.add_argument("--scalar-field", default="onset_density",
                     help="which per-crop .json scalar to condition on when --control-mode scalar")
     ap.add_argument("--control-feature", default="melody",
@@ -302,6 +364,17 @@ def main():
 
     dtype = {"bf16": torch.bfloat16, "fp32": torch.float32}[args.precision]
 
+    # Resolve the (possibly multi-root) encoded latent dir. --encoded-dirs (list) wins; else split
+    # --encoded_dir on commas. Returns a str for a single dir (byte-identical single-root path) or a
+    # list for several — LatentControlDataset accepts either.
+    if args.encoded_dirs:
+        encoded_dir = args.encoded_dirs if len(args.encoded_dirs) > 1 else args.encoded_dirs[0]
+    else:
+        _parts = [s for s in args.encoded_dir.split(",") if s]
+        encoded_dir = _parts if len(_parts) > 1 else args.encoded_dir
+    if isinstance(encoded_dir, list):
+        print(f"[data] multi-root dataset: {len(encoded_dir)} corpora {encoded_dir}", flush=True)
+
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -315,6 +388,31 @@ def main():
     latent_rate = float(sam.model.sample_rate) / float(sam.model.pretransform.downsampling_ratio)
     crop_seconds = args.crop_frames / latent_rate
 
+    # optional joint dora-rows on the DiT (Head B pilot recipe). MUST run BEFORE
+    # install_adapters, so the control-adapter Linears are NOT parametrized — dora
+    # covers the base DiT only. Conditioner (T5-Gemma) deliberately excluded: its
+    # output is pre-encoded/cached per prompt, so parametrizing it would silently
+    # train against a stale cache.
+    _lora_params = []
+    if args.dora_rank > 0:
+        from functools import partial
+        from stable_audio_3.models.lora import (add_lora, get_lora_params,
+                                                LoRAParametrization)
+        _alpha = args.dora_alpha if args.dora_alpha is not None else float(args.dora_rank)
+        _lcfg = {
+            torch.nn.Linear: {"weight": partial(LoRAParametrization.from_linear,
+                                                rank=args.dora_rank, lora_alpha=_alpha,
+                                                adapter_type="dora-rows")},
+            torch.nn.Conv1d: {"weight": partial(LoRAParametrization.from_conv1d,
+                                                rank=args.dora_rank, lora_alpha=_alpha,
+                                                adapter_type="dora-rows")},
+        }
+        add_lora(dit, _lcfg)
+        _lora_params = list(get_lora_params(dit))
+        n_lora = sum(p.numel() for p in _lora_params)
+        print(f"[dora] fresh dora-rows r={args.dora_rank} alpha={_alpha:g} on the DiT: "
+              f"{len(_lora_params)} tensors, {n_lora/1e6:.1f}M params (joint-trained)", flush=True)
+
     # adapters + conditioner
     _fp_vocab = None   # set in fingerprint branch; referenced by checkpoint saves
     wrappers = install_adapters(sam, control_dim=args.control_dim)
@@ -322,6 +420,12 @@ def main():
         cond_enc = ScalarAttributeEncoder(control_dim=args.control_dim,
                                           n_tokens=min(args.n_tokens, 16)).to(device=device, dtype=dtype)
         print(f"[control] scalar attribute '{args.scalar_field}' -> ScalarAttributeEncoder", flush=True)
+    elif args.control_mode == "dual_scalar":
+        from sa3_control.conditioner import FingerprintEncoder
+        cond_enc = FingerprintEncoder(in_dim=2, control_dim=args.control_dim,
+                                      n_tokens=min(args.n_tokens, 16)).to(device=device, dtype=dtype)
+        _feat1 = args.scalar_from_timeseries or args.scalar_field
+        print(f"[control] dual_scalar {{{_feat1}, bpm_madmom}} in_dim=2 -> FingerprintEncoder", flush=True)
     elif args.control_mode == "attribute":
         in_ch = CONTROL_DIMS[args.control_feature]
         if args.control_feature == "chroma384":                # chroma-aware (pitch-circular, 3 bands)
@@ -335,6 +439,17 @@ def main():
                                         downsample=args.attr_downsample).to(device=device, dtype=dtype)
             print(f"[control] attribute '{args.control_feature}' ({in_ch}ch, /{cond_enc.downsample}) "
                   f"-> time-aligned AttributeEncoder", flush=True)
+    elif args.control_mode == "melody_contour":
+        cond_enc = MelodyContourEncoder(control_dim=args.control_dim).to(device=device, dtype=dtype)
+        print(f"[control] melody_contour (Head B): Embedding(9, {args.control_dim}) per-frame "
+              f"lookup, melody-dropout {args.melody_dropout} (independent of text "
+              f"cfg-dropout {args.cfg_dropout})", flush=True)
+    elif args.control_mode == "metrical_position":
+        cond_enc = MetricalEncoder(control_dim=args.control_dim).to(device=device, dtype=dtype)
+        print(f"[control] metrical_position (E3): 4-level tree embeddings "
+              f"({'/'.join(str(n) for n in cond_enc.level_sizes)}) + (coverage,conf) -> "
+              f"MetricalEncoder, metrical-dropout {args.metrical_dropout} (independent of text "
+              f"cfg-dropout {args.cfg_dropout})", flush=True)
     elif args.control_mode == "fingerprint":
         from sa3_control.conditioner import FingerprintEncoder
         from sa3_control.dataset import fingerprint_in_dim
@@ -350,11 +465,33 @@ def main():
     if dtype != torch.float32:
         for w in wrappers:
             w.adapter.to(dtype)
-    params = freeze_base_train_adapters(sam, wrappers, extra_trainable=[cond_enc])
+    # optional layer restriction: unfreeze only the selected taps' adapters. The rest stay
+    # frozen at zero-init (= exact no-op at inference); saves keep the full 24-index keying.
+    if args.adapter_layers:
+        sel = set()
+        for part in args.adapter_layers.split(","):
+            part = part.strip()
+            if "-" in part:
+                lo, hi = part.split("-")
+                sel.update(range(int(lo), int(hi) + 1))
+            elif part:
+                sel.add(int(part))
+        bad = sel - set(range(len(wrappers)))
+        assert not bad, f"--adapter-layers out of range {sorted(bad)} (have {len(wrappers)} taps)"
+        train_wrappers = [wrappers[i] for i in sorted(sel)]
+        print(f"[adapters] LAYER-RESTRICTED training: taps {sorted(sel)} "
+              f"({len(train_wrappers)}/{len(wrappers)})", flush=True)
+    else:
+        train_wrappers = wrappers
+    params = freeze_base_train_adapters(sam, train_wrappers, extra_trainable=[cond_enc])
+    if _lora_params:                    # re-enable the dora params (freeze above swept them)
+        for p in _lora_params:
+            p.requires_grad_(True)
+        params = params + _lora_params
     n_train = sum(p.numel() for p in params)
     n_base = sum(p.numel() for p in sam.model.parameters())
-    print(f"[adapters] wrapped {len(wrappers)} cross-attn; trainable {n_train/1e6:.1f}M "
-          f"of {n_base/1e6:.0f}M base ({100*n_train/n_base:.2f}%)", flush=True)
+    print(f"[adapters] wrapped {len(wrappers)} cross-attn ({len(train_wrappers)} trainable); "
+          f"trainable {n_train/1e6:.1f}M of {n_base/1e6:.0f}M base ({100*n_train/n_base:.2f}%)", flush=True)
     if args.resume:                                          # warm-start (weights only; optimizer fresh)
         from sa3_control.generate import load_adapter_state
         load_adapter_state(torch.load(args.resume, map_location="cpu")["state"], wrappers, cond_enc)
@@ -400,44 +537,83 @@ def main():
         print(f"[resume-exact] restored weights+optimizer+step from {args.resume_exact} "
               f"@ step {start_step} -> continues to {args.steps}", flush=True)
 
-    if args.control_mode == "scalar" and args.scalar_from_timeseries:
-        # scalar = window-mean of a timeseries feature over the trained crop [:T] (crop-correct).
-        sf = args.scalar_from_timeseries
-        ds = LatentControlDataset(args.encoded_dir, controls=(sf,), audio_ref=None,
-                                  seed=args.seed, subset_tracks=args.subset_tracks)
-        T0 = args.crop_frames
+    def _corpus_scalar_stats(ds, field):
+        """Corpus (mean,std) of a per-crop .json scalar, computed the same way the scalar path does."""
+        vals = np.array([m[field] for m in ds.meta.values() if field in m], dtype=np.float32)
+        return float(vals.mean()), float(vals.std())
+
+    def _corpus_ts_window_stats(ds, ts_field, T0):
+        """Corpus (mean,std) of the window-mean of a timeseries feature over [:T0] (crop-correct)."""
         samp = ds.paths[:: max(1, len(ds.paths) // 600)][:600]    # ~600-crop sample for stats
         wm = []
         for p in samp:
             try:
                 z = np.load(p[:-4] + ".TIMESERIES.npz")
-                arr = np.concatenate([z[f][None] if z[f].ndim == 1 else z[f].T for f in CONTROL_FIELDS[sf]], 0)
+                arr = np.concatenate([z[f][None] if z[f].ndim == 1 else z[f].T for f in CONTROL_FIELDS[ts_field]], 0)
                 wm.append(float(arr[:, :T0].mean()))
             except Exception:
                 pass
         wm = np.array(wm, dtype=np.float32)
-        ds.scalar_mean, ds.scalar_std = float(wm.mean()), float(wm.std() + 1e-8)
-        print(f"[control] scalar from '{sf}' window-mean over [:{T0}]: mean {ds.scalar_mean:.4f} "
-              f"std {ds.scalar_std:.4f} (n={len(wm)}); crop-correct", flush=True)
+        return float(wm.mean()), float(wm.std() + 1e-8), len(wm)
+
+    if args.control_mode == "scalar" and args.scalar_from_timeseries:
+        # scalar = window-mean of a timeseries feature over the trained crop [:T] (crop-correct).
+        sf = args.scalar_from_timeseries
+        ds = LatentControlDataset(encoded_dir, controls=(sf,), audio_ref=None,
+                                  seed=args.seed, subset_tracks=args.subset_tracks)
+        ds.scalar_mean, ds.scalar_std, _nwm = _corpus_ts_window_stats(ds, sf, args.crop_frames)
+        print(f"[control] scalar from '{sf}' window-mean over [:{args.crop_frames}]: mean {ds.scalar_mean:.4f} "
+              f"std {ds.scalar_std:.4f} (n={_nwm}); crop-correct", flush=True)
     elif args.control_mode == "scalar":
-        ds = LatentControlDataset(args.encoded_dir, controls=(), audio_ref=None,
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
                                   seed=args.seed, subset_tracks=args.subset_tracks,
                                   scalar_field=args.scalar_field,
                                   random_crop_frames=(args.crop_frames if args.random_crop else None))
-        vals = np.array([m[args.scalar_field] for m in ds.meta.values() if args.scalar_field in m], dtype=np.float32)
-        ds.scalar_mean, ds.scalar_std = float(vals.mean()), float(vals.std())
+        ds.scalar_mean, ds.scalar_std = _corpus_scalar_stats(ds, args.scalar_field)
         print(f"[control] {args.scalar_field}: mean {ds.scalar_mean:.3f} std {ds.scalar_std:.3f} "
-              f"(n={len(vals)}); standardized at train time", flush=True)
+              f"standardized at train time", flush=True)
+    elif args.control_mode == "dual_scalar":
+        # Joint {feature, bpm_madmom}. Feature 1 = scalar_from_timeseries window-mean (crop-correct) OR the
+        # json scalar_field; feature 2 = bpm_madmom. Both standardized with corpus (mean,std) pairs saved
+        # into the checkpoint (scalar_norm + bpm_norm). Crops lacking bpm_madmom are skipped in the dataset.
+        sf_ts = args.scalar_from_timeseries
+        if sf_ts:
+            ds = LatentControlDataset(encoded_dir, controls=(sf_ts,), audio_ref=None,
+                                      seed=args.seed, subset_tracks=args.subset_tracks,
+                                      dual_scalar=True,
+                                      random_crop_frames=(args.crop_frames if args.random_crop else None))
+            ds.scalar_mean, ds.scalar_std, _nwm = _corpus_ts_window_stats(ds, sf_ts, args.crop_frames)
+            _feat1_desc = f"'{sf_ts}' window-mean over [:{args.crop_frames}] (n={_nwm})"
+        else:
+            ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
+                                      seed=args.seed, subset_tracks=args.subset_tracks,
+                                      scalar_field=args.scalar_field, dual_scalar=True,
+                                      random_crop_frames=(args.crop_frames if args.random_crop else None))
+            ds.scalar_mean, ds.scalar_std = _corpus_scalar_stats(ds, args.scalar_field)
+            _feat1_desc = f"'{args.scalar_field}' json scalar"
+        ds.bpm_mean, ds.bpm_std = _corpus_scalar_stats(ds, "bpm_madmom")   # feature 2, same corpus method
+        print(f"[control] dual_scalar feature1 {_feat1_desc}: mean {ds.scalar_mean:.4f} std {ds.scalar_std:.4f}; "
+              f"feature2 bpm_madmom: mean {ds.bpm_mean:.3f} std {ds.bpm_std:.3f}; both standardized", flush=True)
     elif args.control_mode == "attribute":
-        ds = LatentControlDataset(args.encoded_dir, controls=(args.control_feature,), audio_ref=None,
+        ds = LatentControlDataset(encoded_dir, controls=(args.control_feature,), audio_ref=None,
                                   seed=args.seed, subset_tracks=args.subset_tracks)
+    elif args.control_mode == "melody_contour":
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
+                                  seed=args.seed, subset_tracks=args.subset_tracks,
+                                  melody_dir=args.melody_dir,
+                                  random_crop_frames=(args.crop_frames if args.random_crop else None))
+    elif args.control_mode == "metrical_position":
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
+                                  seed=args.seed, subset_tracks=args.subset_tracks,
+                                  metrical_dir=args.metrical_dir,
+                                  random_crop_frames=(args.crop_frames if args.random_crop else None))
     elif args.control_mode == "fingerprint":
-        ds = LatentControlDataset(args.encoded_dir, controls=(), audio_ref=None,
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
                                   seed=args.seed, subset_tracks=args.subset_tracks,
                                   fingerprint=True, genre_vocab=_fp_vocab, fp_variant=args.fp_variant,
                                   random_crop_frames=args.crop_frames)
     else:
-        ds = LatentControlDataset(args.encoded_dir, controls=(), audio_ref="same_track",
+        ds = LatentControlDataset(encoded_dir, controls=(), audio_ref="same_track",
                                   seed=args.seed, subset_tracks=args.subset_tracks)
     # track-level train/val split for fingerprint early-stop (val_frac>0, not smoke)
     val_dl = None
@@ -534,6 +710,22 @@ def main():
         preencode_text(sam, [ds.meta[p].get("prompt", "") for p in ds.paths], crop_seconds, device)
 
     os.makedirs(args.save_dir, exist_ok=True)
+
+    def _extra_ckpt_fields():
+        """melody_contour/metrical_position/dora additions to the checkpoint dict. Call INSIDE the EMA-swapped
+        region so lora_state (read from module state) captures the averaged weights, like
+        the adapter state does."""
+        d = {"melody_dir": getattr(args, "melody_dir", None),
+             "melody_dropout": getattr(args, "melody_dropout", None),
+             "metrical_dir": getattr(args, "metrical_dir", None),
+             "metrical_dropout": getattr(args, "metrical_dropout", None),
+             "dora_rank": int(getattr(args, "dora_rank", 0) or 0),
+             "dora_alpha": getattr(args, "dora_alpha", None)}
+        if d["dora_rank"] > 0:
+            from stable_audio_3.models.lora import get_lora_state_dict
+            d["lora_state"] = {k: v.detach().cpu() for k, v in get_lora_state_dict(dit).items()}
+        return d
+
     prof = {"data": 0.0, "text": 0.0, "ref": 0.0, "fwd": 0.0, "bwd": 0.0, "opt": 0.0}
 
     def _sync():
@@ -569,15 +761,51 @@ def main():
                 ctrl = cond_enc(sc)
             elif args.control_mode == "scalar":
                 ctrl = cond_enc(b["scalar"].to(device=device, dtype=dtype))    # (B, n_tokens, control_dim)
+            elif args.control_mode == "dual_scalar":
+                if args.scalar_from_timeseries:                                # feature1 = crop-correct window-mean
+                    feat = b["controls"][args.scalar_from_timeseries][:, :, :T]
+                    raw = feat.to(device=device, dtype=torch.float32).mean(dim=(1, 2))      # (B,)
+                    std_f = (raw - ds.scalar_mean) / ds.scalar_std                          # (B,)
+                    std_bpm = b["dual_bpm"].to(device=device, dtype=torch.float32)          # (B,) pre-standardized
+                    vec = torch.stack([std_f, std_bpm], dim=1).to(dtype)                    # (B, 2)
+                else:
+                    vec = b["dual_scalar"].to(device=device, dtype=dtype)                   # (B, 2)
+                ctrl = cond_enc(vec)                                          # (B, n_tokens, control_dim)
             elif args.control_mode == "attribute":
                 feat = b["controls"][args.control_feature][:, :, :T].to(device=device, dtype=dtype)  # (B,C,T)
                 ctrl = cond_enc(feat)                                          # (B, T/ds, control_dim)
             elif args.control_mode == "fingerprint":
                 ctrl = cond_enc(b["fingerprint"].to(device=device, dtype=dtype))  # (B, n_tokens, control_dim)
+            elif args.control_mode == "melody_contour":
+                ctrl = cond_enc(b["melody_cls"][:, :T].to(device=device))         # (B, T, control_dim)
+            elif args.control_mode == "metrical_position":
+                m_cls = b["metrical_cls"][:, :, :T].to(device=device)             # (B, 5, T) int64
+                m_conf = b["metrical_conf"][:, :T].to(device=device)              # (B, T) float32
+                # per-item metrical dropout AT THE INPUT (not the encoded tokens): the null
+                # token IS the all-zero input (5 class rows + coverage + conf all 0), so
+                # dropping = feeding exactly what uncovered crops / un-sidecarred inference
+                # prompts carry (zero-condition dropout, design doc §2). Drawn independently
+                # of text dropout, like --melody-dropout.
+                if args.metrical_dropout > 0:
+                    m_drop = torch.rand(m_cls.shape[0], device=device) < args.metrical_dropout
+                    m_cls = m_cls.masked_fill(m_drop.view(-1, 1, 1), 0)
+                    m_conf = m_conf.masked_fill(m_drop.view(-1, 1), 0.0)
+                ctrl = cond_enc(m_cls, m_conf)                                    # (B, T, control_dim)
             else:
                 ctrl = cond_enc(b["ref_latent"].to(device=device, dtype=dtype))
-            if args.cfg_dropout > 0:                        # per-item control dropout
-                drop = (torch.rand(B, device=device) < args.cfg_dropout).view(B, 1, 1)
+            # per-item control-token dropout. melody_contour: the melody stream has its OWN
+            # independent dropout prob (--melody-dropout) while --cfg-dropout is repurposed as
+            # the TEXT cfg_dropout_prob (passed to the DiT below) — the StemGen multi-source
+            # POOL item (docs/todos.md 2026-07-22): independent draws cover all 4 joint states.
+            # metrical_position: same text-dropout repurposing, but the metrical stream was
+            # already dropped at the INPUT above (null token, not zeroed tokens) -> no token drop.
+            _ctrl_drop_p = (args.melody_dropout if args.control_mode == "melody_contour"
+                            else 0.0 if args.control_mode == "metrical_position"
+                            else args.cfg_dropout)
+            _text_drop_p = (args.cfg_dropout
+                            if args.control_mode in ("melody_contour", "metrical_position") else 0.0)
+            if _ctrl_drop_p > 0:
+                drop = (torch.rand(B, device=device) < _ctrl_drop_p).view(B, 1, 1)
                 ctrl = ctrl.masked_fill(drop, 0.0)
             if args.profile:
                 _sync(); _tr = time.time(); prof["ref"] += _tr - _tm
@@ -590,7 +818,7 @@ def main():
             # checkpointing, which re-runs the block forward during backward — the
             # adapter branch must see the same ContextVar on recompute or tensor counts mismatch.
             with use_control_context(ControlContext(ctrl)):
-                v = dit(noised, t, **cond_inputs, cfg_scale=1.0, cfg_dropout_prob=0.0,
+                v = dit(noised, t, **cond_inputs, cfg_scale=1.0, cfg_dropout_prob=_text_drop_p,
                         use_checkpointing=args.use_checkpointing)
                 loss = torch.nn.functional.mse_loss(v.float(), target.float())
                 cc_val = 0.0
@@ -676,9 +904,11 @@ def main():
                             "control_feature": getattr(args, "control_feature", None),
                             "scalar_from_timeseries": getattr(args, "scalar_from_timeseries", ""),
                             "scalar_norm": [getattr(ds, "scalar_mean", 0.0), getattr(ds, "scalar_std", 1.0)],
+                            "bpm_norm": [getattr(ds, "bpm_mean", 0.0), getattr(ds, "bpm_std", 1.0)],
                             "fp_variant": getattr(args, "fp_variant", None),
                             "genre_vocab": _fp_vocab,
                             "fp_in_dim": getattr(cond_enc, "in_dim", None),
+                            **_extra_ckpt_fields(),
                             **_resume_state}, p)
                 if ema is not None:
                     ema.restore()
@@ -761,9 +991,11 @@ def main():
                             "control_feature": getattr(args, "control_feature", None),
                             "scalar_from_timeseries": getattr(args, "scalar_from_timeseries", ""),
                             "scalar_norm": [getattr(ds, "scalar_mean", 0.0), getattr(ds, "scalar_std", 1.0)],
+                            "bpm_norm": [getattr(ds, "bpm_mean", 0.0), getattr(ds, "bpm_std", 1.0)],
                             "fp_variant": getattr(args, "fp_variant", None),
                             "genre_vocab": _fp_vocab,
                             "fp_in_dim": getattr(cond_enc, "in_dim", None),
+                            **_extra_ckpt_fields(),
                             **_resume_state},
                    os.path.join(args.save_dir, "riffer_final.pt"))
         if ema is not None:

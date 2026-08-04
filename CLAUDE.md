@@ -14,6 +14,19 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    built** (e.g. a working bungee time-stretch + eval servers + ONNX suite).
 3. **`WORKLOG.md`** — append a dated line when you finish something another instance
    would want to know.
+4. **`profiles/<handle-lower>.tasks.md`** — your personal task log (added 2026-07-09,
+   Kim's ask). Lower bar and terser than the journal or WORKLOG: append a line after
+   finishing **any** experiment/research run/task that holds information, even if it's
+   not yet a "finding" and not cross-repo relevant. Skip pure inconsequential busywork
+   (moved a file) unless the act itself matters. **Exact inclusion criteria are left to
+   the team's discretion for now** — see `profiles/SPEC-agent-profiles-journals.md`
+   §3a, refine as you see fit and flag disagreements on the chat.
+5. **POST-TASK UPDATE PROTOCOL (Kim direct 2026-07-14): a non-routine task is not DONE
+   until the update set has run** — chat post (last), personal journal entry (detailed,
+   negatives included), personal task-log line, master task-list status, WORKLOG if
+   cross-cutting, profile **Shipped** list when it's a milestone (that one goes stale
+   silently — Kim caught it), and any spec/doc the result changed. Full checklist:
+   `profiles/SPEC-agent-profiles-journals.md` §9.
 
 ## ⛔ DISCOVERY PHASE — MANDATORY before any non-trivial task (do NOT skip)
 We keep re-deriving work that already exists — e.g. a full night was lost re-inventing
@@ -32,6 +45,14 @@ approach**, run this search and say what you found:
    training-params display, same-playhead, redaction rules). Kim's feedback keeps accreting there;
    check it so requirements already agreed (e.g. show training params on checkpoint select, tables
    use full viewport width) aren't re-lost.
+   **THREE-AUDIENCE STANDARD (Kim, 2026-07-10, spec §14 — applies to EVERY eval page, curated or
+   generated):** each page must simultaneously be (1) an eval TOOL for Kim (same-playhead listening
+   surface), (2) a technical RESOURCE for engineers/trainers (explicit prompts + training params +
+   recipe + `file://`/web links to the training/generation scripts = full reproducibility), and
+   (3) a LEARNING resource for medium-SA3 users (a short plain-language "what this tests / why / how
+   to read the result" explainer block ABOVE the tool; landing categories carry a one-line "what
+   this family is for"). #3 is the current gap. **APPEND your existing eval pages with the explainer
+   whenever their builder runs.** W's ship-time check gates on the explainer block being present.
 
 Only build once this comes up empty. If you find prior work, **reuse it or state explicitly
 why you're not**. If you did new work, drop a journal line so THE-FINN can fold it into

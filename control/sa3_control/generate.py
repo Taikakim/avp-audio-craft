@@ -42,6 +42,9 @@ def build_conditioner(ck, device, dtype):
         from sa3_control.conditioner import ScalarAttributeEncoder
         enc = ScalarAttributeEncoder(control_dim=control_dim,
                                      n_tokens=min(n_tokens, 16))
+    elif cm == "melody_contour":
+        from sa3_control.conditioner import MelodyContourEncoder
+        enc = MelodyContourEncoder(control_dim=control_dim)
     else:
         from sa3_control.conditioner import AudioRefEncoder
         enc = AudioRefEncoder(256, control_dim, n_tokens)

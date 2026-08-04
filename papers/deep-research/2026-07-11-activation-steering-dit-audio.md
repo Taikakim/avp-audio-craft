@@ -8,6 +8,33 @@
 > TC-LoRA 2510.09561, SteeringDiffusion 2605.01653). Some inline LaTeX (guidance-scale
 > symbol, the ~critical-coefficient threshold, the Gram-Schmidt projection formulas) was
 > **stripped in the source paste** and is marked `[formula lost in paste]` below.
+> **Duplicate alert (CONTINUITY 2026-07-30):** `DiT Audio Activation Steering.docx` in this
+> folder is the ORIGINAL GEMINI EXPORT of this same report (verified: verbatim intro, identical
+> 45-entry works-cited). Do not re-triage it. The docx does NOT recover the lost formulas —
+> Gemini's export contains zero OMML math objects, so the critical steering-coefficient
+> threshold and the Gram-Schmidt projection formulas are gone at the source.
+> **Full citation-tail verification (CONTINUITY 2026-07-30, web-checked; DC-SAE verdict
+> CORRECTED same day):** 12/12 previously unverified items are REAL with essentially accurate
+> attribution. Corrections that matter:
+> (a) **DC-SAE is REAL** — first ruled "likely fabricated" (zero search footprint +
+> Cloudflare-blocked OpenReview), then Kim produced the PDF:
+> `papers/prospective-unchecked/534_Dual_Contrastive_Sparse_Au (1).pdf` — "Dual-Contrastive
+> Sparse Autoencoders Reveal Features of Musical Interpretation", Chen, Cherep, Maes, Singh
+> (the SAME MIT group as 2505.18186), ICML 2026 Mech-Interp Workshop. Attribution essentially
+> accurate (two-branch TopK SAE, shared decoder, work-identity z_i vs performance-variation
+> z_j via MERT-ranked same-work pivot bags on MusicGen-Large L24; steering proof-of-concept
+> preserves the work). One nuance: branches specialize via contrastive hard negatives — the
+> report's "orthogonal subspaces" overstates the geometry. METHOD LESSON: for double-blind /
+> workshop submissions, no-search-footprint + blocked OpenReview = UNVERIFIED, never
+> "fabricated". (b) TADA's
+> bottleneck is **2** consecutive attention layers in DiTs (Ace-Step {7,8}, SAO {12,13}; "2-4"
+> smears in the AudioLDM2 U-Net result), and its quality metric is Audiobox-Aesthetics+LPAPS,
+> not FAD. (c) The PID paper (real: arXiv 2606.18790, Prokopiou et al.) reports ~5% lower
+> **Fréchet Music Distance** (symbolic), not FAD. (d) "Steer the conditional CFG branch
+> exclusively" is the report's SYNTHESIS from one paper's implementation choice (Residualized
+> Temporal SAEs, arXiv 2605.27813) — real precedent, not a cited consensus (TADA steers
+> globally); our own Ph3 result stands on its own empirical legs. Gram-Schmidt dual-steering
+> (2605.31295) and Rectified-CFG++ (arXiv 2510.07631, NeurIPS'25) verified real+accurate.
 > **Direct tie to our work:** the "semantic bottleneck" claim (§Spatial Localization) is the
 > same conclusion the mir/SAO **layer map** reached causally (acoustic attributes localize to
 > mid/late blocks). See the companion report `2026-07-11-long-form-coherence.md` and my triage

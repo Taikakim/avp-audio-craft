@@ -1,0 +1,80 @@
+[reverb] manifest=eval/goa_subset.jsonl total=1116 already_done=0 to_process=1116 workers=10
+[reverb] 50/1116 ok=50 err=0 2.14 clip/s
+[reverb] 100/1116 ok=100 err=0 2.16 clip/s
+Note: Illegal Audio-MPEG-Header 0x00000000 at offset 11487207.
+Note: Trying to resync...
+Note: Skipped 1024 bytes in input.
+[src/libmpg123/parse.c:wetwork():1349] error: Giving up resync after 1024 bytes - your stream is not nice... (maybe increasing resync limit could help).
+[reverb] 150/1116 ok=150 err=0 2.27 clip/s
+[reverb] 200/1116 ok=200 err=0 2.33 clip/s
+[reverb] 250/1116 ok=250 err=0 2.34 clip/s
+[reverb] 300/1116 ok=300 err=0 2.35 clip/s
+[reverb] 350/1116 ok=350 err=0 2.36 clip/s
+/home/kim/Projects/mir/mir/lib/python3.12/site-packages/scipy/signal/_spectral_py.py:2041: RuntimeWarning: invalid value encountered in divide
+  Cxy = np.abs(Pxy)**2 / Pxx / Pyy
+/home/kim/Projects/SAO/eval/stereo_phase_meter.py:130: RuntimeWarning: Mean of empty slice
+  return ([float(x) for x in np.nanmean(arr, axis=0)],
+/home/kim/Projects/mir/mir/lib/python3.12/site-packages/numpy/lib/nanfunctions.py:1879: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+[reverb] 400/1116 ok=400 err=0 2.45 clip/s
+[src/libmpg123/layer3.c:INT123_do_layer3():1844] error: dequantization failed!
+Note: Illegal Audio-MPEG-Header 0xef55b6f1 at offset 2547169.
+Note: Trying to resync...
+Note: Skipped 129 bytes in input.
+[reverb] 450/1116 ok=450 err=0 2.50 clip/s
+[reverb] 500/1116 ok=500 err=0 2.50 clip/s
+[reverb] 550/1116 ok=550 err=0 2.52 clip/s
+[reverb] 600/1116 ok=600 err=0 2.50 clip/s
+Note: Illegal Audio-MPEG-Header 0x2035fffb at offset 13640563.
+Note: Trying to resync...
+Note: Skipped 2 bytes in input.
+Note: Illegal Audio-MPEG-Header 0x9264d980 at offset 13640983.
+Note: Trying to resync...
+Note: Skipped 299 bytes in input.
+[reverb] 650/1116 ok=650 err=0 2.49 clip/s
+Note: Illegal Audio-MPEG-Header 0x00000000 at offset 8361270.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+[reverb] 700/1116 ok=700 err=0 2.48 clip/s
+[src/libmpg123/layer3.c:INT123_do_layer3():1844] error: dequantization failed!
+Note: Illegal Audio-MPEG-Header 0xe1859419 at offset 4939739.
+Note: Trying to resync...
+Note: Skipped 411 bytes in input.
+Note: Illegal Audio-MPEG-Header 0x53464f4d at offset 11087214.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+[reverb] 750/1116 ok=750 err=0 2.49 clip/s
+[src/libmpg123/layer3.c:INT123_do_layer3():1804] error: dequantization failed!
+Note: Illegal Audio-MPEG-Header 0x00000000 at offset 2625423.
+Note: Trying to resync...
+Note: Skipped 417 bytes in input.
+[reverb] 800/1116 ok=800 err=0 2.49 clip/s
+Note: Illegal Audio-MPEG-Header 0x4c595249 at offset 13846626.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+Note: Illegal Audio-MPEG-Header 0x80b8fffb at offset 3162209.
+Note: Trying to resync...
+Note: Skipped 2 bytes in input.
+Note: Illegal Audio-MPEG-Header 0x90648d00 at offset 3162628.
+Note: Trying to resync...
+Note: Skipped 415 bytes in input.
+[src/libmpg123/layer3.c:INT123_do_layer3():1804] error: dequantization failed!
+[src/libmpg123/layer3.c:INT123_do_layer3():1804] error: dequantization failed!
+[reverb] 850/1116 ok=850 err=0 2.48 clip/s
+[reverb] 900/1116 ok=900 err=0 2.46 clip/s
+Note: Illegal Audio-MPEG-Header 0x4c595249 at offset 12540295.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+[reverb] 950/1116 ok=950 err=0 2.46 clip/s
+[reverb] 1000/1116 ok=1000 err=0 2.47 clip/s
+[src/libmpg123/layer3.c:INT123_do_layer3():1804] error: dequantization failed!
+[reverb] 1050/1116 ok=1050 err=0 2.47 clip/s
+Note: Illegal Audio-MPEG-Header 0x4c595249 at offset 10175570.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+[reverb] 1100/1116 ok=1100 err=0 2.48 clip/s
+Note: Illegal Audio-MPEG-Header 0x4c595249 at offset 17197198.
+Note: Trying to resync...
+Note: Hit end of (available) data during resync.
+[reverb] 1116/1116 ok=1116 err=0 2.49 clip/s
+[reverb] done: 1116 ok, 0 err in 448.7s (0.40s/clip wall) -> eval/reverb_goa.jsonl

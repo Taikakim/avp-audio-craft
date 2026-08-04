@@ -49,14 +49,25 @@ to the metadata noise.</p>
 <h2><span class="mark">§</span> The lead we're following</h2>
 <p>This isn't a guess. Sibling adapters that steer the same model on <em>musical features</em>
 rather than text already produced <strong>better goa than the weight-finetune did — despite not
-being style models at all.</strong> Forward-modification on audio, driven by a consistent
-audio-derived signal, is the right vehicle. This project makes that explicit and pushes it as far
-as it will go.</p>
+being style models at all.</strong> Since then a melodic sibling of this adapter has gone
+further: a conditioner <strong>co-trained with a lightweight adapter on the frozen base
+model</strong> measurably bends the output toward a requested contour in a controlled sweep —
+a soft effect, strongest under firm guidance, but a real one.
+Forward-modification on audio, driven by a consistent audio-derived signal, is the right vehicle.
+This project makes that explicit and pushes it as far as it will go.</p>
 
 <h2><span class="mark">§</span> Status</h2>
-<p>In training. A three-variant benchmark decides how deep into the model the fingerprint should
-reach — the principle being the <em>lightest</em> touch that still captures the style. <span
-class="dim">Research in progress; numbers when they've earned it.</span></p>
+<p><strong>First direction-check passed (July 2026).</strong> The read-versus-steer question that
+motivates the whole approach now has an answer: the structure we want to condition on is
+genuinely present in the model and robust across instruments, but <em>reading</em> it back
+plateaued well short of usable across every probe we tried — so we condition on it rather than
+decode it, and the sibling result above shows that path works. Crucially, the shift survives an
+<em>automated</em> buzz-detector that rejects any "steering" which merely degrades the audio into
+noise, so it's real control, not damage dressed up as movement.
+The style adapter's own benchmark — how <em>deep</em> into the model the fingerprint should reach,
+the lightest touch that still captures the style — is where the work is now. <span class="dim">
+Numbers when they've earned it; the bar is a controlled A/B the ear signs off on, not a single
+metric.</span></p>
 
 <h2><span class="mark">§</span> Interested?</h2>
 <p class="dim">This is private research, not a release. If it's useful to what you're doing, we'd

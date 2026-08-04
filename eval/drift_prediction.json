@@ -1,0 +1,173 @@
+{
+ "n_heads": 11,
+ "spearman_R2_vs_authority": 0.4,
+ "pearson_R2_vs_authority": 0.565,
+ "loo_threshold_accuracy": 0.273,
+ "authority_median_split": 0.0898,
+ "finding": "W's encodability screen (ridge R2) is a MODERATE, rank-positive predictor of LatCH steer authority (Spearman +0.40) and correctly places the DEAD tier at the bottom (downbeat/beat_activation = lowest R2 AND lowest authority), corroborating his 2026-07-04 eyeball. But it is NOT a clean single-threshold gate (LOO acc 0.27): the linear ridge screen has a TRANSIENT/ONSET blind spot (onset_envelope: low R2 0.33 yet high authority 0.11 \u2014 a false-negative), and authority also depends on feature headroom the screen can't see. Secondary (n=4, hypothesis-grade): EMA damping rescues the LOW-R2 alive heads (onset/body/kurtosis all ema40) and is a WASH on the highest-R2 head (rms_energy_air) \u2014 so the screen's low-mid tier maps to 'use EMA', not 'dead'.",
+ "actionable_map": {
+  "high_R2 (>~0.5, non-transient)": "train normally \u2014 steers well",
+  "low_mid_R2 (~0.3-0.5, alive)": "alive but weak -> EMA(0.999)+early-stop is the lever",
+  "very_low_R2 (<~0.2, non-transient)": "likely guidance-dead (downbeat) \u2014 screen predicts before training",
+  "transient/onset features": "SCREEN BLIND SPOT \u2014 linear R2 underrates; measure authority directly"
+ },
+ "ema_cross_R2_ascending": [
+  {
+   "head": "onset_envelope",
+   "R2": 0.326,
+   "ema_verdict": "ema40"
+  },
+  {
+   "head": "rms_energy_body",
+   "R2": 0.383,
+   "ema_verdict": "ema40"
+  },
+  {
+   "head": "spectral_kurtosis",
+   "R2": 0.415,
+   "ema_verdict": "ema40"
+  },
+  {
+   "head": "rms_energy_air",
+   "R2": 0.543,
+   "ema_verdict": "wash"
+  }
+ ],
+ "rows": [
+  {
+   "head": "spectral_flux",
+   "feature": "spectral_flux_ts",
+   "R2": 0.843,
+   "authority": 0.0898
+  },
+  {
+   "head": "spectral_flatness",
+   "feature": "spectral_flatness_ts",
+   "R2": 0.764,
+   "authority": 0.1391
+  },
+  {
+   "head": "spectral_skewness",
+   "feature": "spectral_skewness_ts",
+   "R2": 0.61,
+   "authority": 0.1029
+  },
+  {
+   "head": "rms_energy_air",
+   "feature": "rms_energy_air_ts",
+   "R2": 0.543,
+   "authority": 0.0604
+  },
+  {
+   "head": "rms_energy_mid",
+   "feature": "rms_energy_mid_ts",
+   "R2": 0.463,
+   "authority": 0.0698
+  },
+  {
+   "head": "rms_energy_bass",
+   "feature": "rms_energy_bass_ts",
+   "R2": 0.451,
+   "authority": 0.1202
+  },
+  {
+   "head": "spectral_kurtosis",
+   "feature": "spectral_kurtosis_ts",
+   "R2": 0.415,
+   "authority": 0.09
+  },
+  {
+   "head": "rms_energy_body",
+   "feature": "rms_energy_body_ts",
+   "R2": 0.383,
+   "authority": 0.0752
+  },
+  {
+   "head": "beat_activation",
+   "feature": "beat_activation_ts",
+   "R2": 0.33,
+   "authority": 0.031
+  },
+  {
+   "head": "onset_envelope",
+   "feature": "onset_envelope_ts",
+   "R2": 0.326,
+   "authority": 0.1128
+  },
+  {
+   "head": "downbeat_activation",
+   "feature": "downbeat_activation_ts",
+   "R2": 0.184,
+   "authority": 0.0249
+  }
+ ],
+ "authority_by_prompt": {
+  "beat_activation/p0": 0.01,
+  "beat_activation/p1": 0.052,
+  "downbeat_activation/p0": 0.007,
+  "downbeat_activation/p1": 0.0428,
+  "hardness/p0": 0.0104,
+  "hardness/p1": 0.0377,
+  "onset_envelope/p0": 0.0543,
+  "onset_envelope/p1": 0.1713,
+  "rms_energy_air/p0": 0.0227,
+  "rms_energy_air/p1": 0.0982,
+  "rms_energy_bass/p0": 0.0538,
+  "rms_energy_bass/p1": 0.1867,
+  "rms_energy_body/p0": 0.0851,
+  "rms_energy_body/p1": 0.0653,
+  "rms_energy_mid/p0": 0.0717,
+  "rms_energy_mid/p1": 0.0679,
+  "spectral_flatness/p0": 0.0486,
+  "spectral_flatness/p1": 0.2296,
+  "spectral_flux/p0": 0.0615,
+  "spectral_flux/p1": 0.1182,
+  "spectral_kurtosis/p0": 0.1124,
+  "spectral_kurtosis/p1": 0.0676,
+  "spectral_skewness/p0": 0.1904,
+  "spectral_skewness/p1": 0.0153
+ },
+ "ema_cohort_variants": {
+  "beat_activation": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "downbeat_activation": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "hpcp": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "onset_envelope": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "rms_energy_air": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "rms_energy_body": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ],
+  "spectral_kurtosis": [
+   "ema20",
+   "ema40",
+   "shipped"
+  ]
+ },
+ "excluded": {
+  "hardness": "composite head, no single latent-feature R2",
+  "onset_envelope_drums/rms_drums": "measured=None (need drum stem the mix lacks)"
+ },
+ "predictor_source": "mir/stats/latent_dim_feature_xcorr.csv (W's encodability screen)",
+ "outcome_source": "latch_sa3_sweep_20260719/scores.json (G's rendered ladder, measured)"
+}

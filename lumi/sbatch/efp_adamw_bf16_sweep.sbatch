@@ -73,7 +73,8 @@ export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/lumi/vendor
 export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
 export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
 export MIOPEN_USER_DB_PATH=/tmp/miopen-${ARM} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-${ARM}
-rm -rf "${MIOPEN_USER_DB_PATH}"; mkdir -p "${MIOPEN_USER_DB_PATH}"
+export TRITON_CACHE_DIR=/tmp/triton-${ARM}   # keep torch.compile cache OFF ~/.triton (home inode quota killer)
+rm -rf "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"; mkdir -p "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"
 
 # ── arm table: DS BS LR ──
 case ${ARM} in

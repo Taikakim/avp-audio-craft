@@ -2,6 +2,14 @@
 
 Singh (Dartmouth), Cherep, Maes (MIT Media Lab), ICLR 2026. Demo: musicdiscovery.media.mit.edu
 PDF: `2505.18186v3-DISCOVERING AND STEERING INTERPRETABLE CON-_CEPTS IN LARGE GENERATIVE MUSIC MODELS.pdf`.
+> ⚠️ **PDF PROVENANCE (CONTINUITY 2026-07-21/22):** the `papers/` root PDF of that name
+> (4.75 MB, 07-11) is the REAL paper — use it. Kim's 07-21 re-download of the same name was
+> **mislabeled (actually arXiv 2607.17624**, Teney et al., transformers/inductive-biases)
+> and is quarantined in `reviewed-low-relevance/` under its true id. An independent 07-21
+> subagent read of the arXiv HTML confirmed this abstract's content; one addition: per-layer
+> steering success on MusicGen-Large = L24 23.5% / **L36 (75% depth) 35.1% best** / L46
+> (near-final) 15.3% worst — consonant with our "late layers = output realization, not
+> semantics" reading and with steering collapse at the tail.
 First application of sparse autoencoders (SAEs) to a music generator: unsupervised concept
 discovery on MusicGen's residual stream, automated labeling at scale, and proof-of-concept
 **activation-addition steering** that listeners reliably perceive.

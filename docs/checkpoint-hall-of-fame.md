@@ -31,3 +31,24 @@ The observations that surrounded the pick — kept because they generalize:
   cross-optimizer soups nearly identical to Fusion-only — AdamW contributes ~nothing.
 - **s42 vs s1234**: different but "same, nothing conceptually new" — possibly the model
   shuffling existing material for styles the training set lacks (modern psytrance).
+
+## 2026-07-10 — avp r64-tiered (dora64_avp_tiered) — Kim's ear
+
+**HoF pick — `dora64_avp_tiered_lr2e4 · epoch00 · trig · s1234 · DoRA 1.0`**
+(`avp_board_r64/r64_lr2e4__epoch00__trig__s1234__st10.wav`). Kim: "wonderful — the
+disjointed collage-patch stuff is in the *layers* but the beat is solid. Vertical
+movement and pitches, unlike the many clips that home on the interval parts of songs
+(just kickbass + percussion + noises)." It's caught *just* at the edge of breakdown.
+**Every later lr2e-4 epoch is useless even as an abstract effect** — the 2e-4 recipe
+breaks down immediately (ep0 is the single usable checkpoint, right at the cliff).
+
+**Good — `dora64_avp_tiered_lr1e4 · ep3–7`** (esp. `ep7 · s7 · DoRA 1.0 · kimlong`).
+The whole ep3–7 range is usable. lr1e-4 is *under*-cooked by contrast — Kim: it "could
+use ~+20% LR bump" to land the sweet spot where 2e-4 sits at ep0.
+
+**Recipe read:** the two LR brackets straddle the sweet spot — lr2e-4 overshoots it by
+ep0, lr1e-4 hasn't reached it by ep7. Target = ~lr1.2e-4 (or 2e-4 with far fewer steps /
+a decay). Confirms the early-stop + low-ish-LR direction; the usable window for r64-tiered
+is very early (ep0 at 2e-4, ep3–7 at 1e-4). "Vertical movement + pitches, solid beat" is
+the quality axis the meters miss (the interval-homing failure = the conditioning/energy
+collapse; solid-beat-with-moving-layers = what we want).

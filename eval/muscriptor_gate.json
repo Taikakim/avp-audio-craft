@@ -1,0 +1,121 @@
+{
+ "summary": {
+  "n": 12,
+  "median_f1_decode": 0.738,
+  "median_f1_origcrop_ceiling": 0.997,
+  "f1_gap": 0.259,
+  "median_pc_decode": 0.9955,
+  "pc_gap": 0.004,
+  "verdict": "RED"
+ },
+ "rows": [
+  {
+   "track": "Bic - Vermillion",
+   "decode_f1": 0.767,
+   "decode_nps_ratio": 1.003,
+   "decode_pc_corr": 0.999,
+   "origcrop_f1": 0.999,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "Blue Planet Corporation - Lubianka (Original Mix)",
+   "decode_f1": 0.721,
+   "decode_nps_ratio": 0.984,
+   "decode_pc_corr": 0.994,
+   "origcrop_f1": 0.996,
+   "origcrop_nps_ratio": 1.003,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "Blue Planet Corporation - Passage (The Call Of Mix)",
+   "decode_f1": 0.026,
+   "decode_nps_ratio": 0.974,
+   "decode_pc_corr": -0.114,
+   "origcrop_f1": 1.0,
+   "origcrop_nps_ratio": 1.0,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "Blue Planet Corporation - Roma",
+   "decode_f1": 0.74,
+   "decode_nps_ratio": 0.924,
+   "decode_pc_corr": 0.996,
+   "origcrop_f1": 0.998,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "CPU - On Air (Original Mix)",
+   "decode_f1": 0.598,
+   "decode_nps_ratio": 0.953,
+   "decode_pc_corr": 0.998,
+   "origcrop_f1": 0.623,
+   "origcrop_nps_ratio": 1.006,
+   "origcrop_pc_corr": 0.998
+  },
+  {
+   "track": "California Sunshine - Last Feeling",
+   "decode_f1": 0.785,
+   "decode_nps_ratio": 0.999,
+   "decode_pc_corr": 0.999,
+   "origcrop_f1": 0.996,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "California Sunshine - Minas Revenge",
+   "decode_f1": 0.764,
+   "decode_nps_ratio": 1.029,
+   "decode_pc_corr": 0.998,
+   "origcrop_f1": 0.999,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "California Sunshine - Porcupine",
+   "decode_f1": 0.601,
+   "decode_nps_ratio": 0.914,
+   "decode_pc_corr": 0.969,
+   "origcrop_f1": 0.993,
+   "origcrop_nps_ratio": 0.995,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "California Sunshine - The Only One",
+   "decode_f1": 0.82,
+   "decode_nps_ratio": 0.974,
+   "decode_pc_corr": 1.0,
+   "origcrop_f1": 0.999,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "California Sunshine - War of Genes",
+   "decode_f1": 0.736,
+   "decode_nps_ratio": 0.971,
+   "decode_pc_corr": 0.974,
+   "origcrop_f1": 0.986,
+   "origcrop_nps_ratio": 1.025,
+   "origcrop_pc_corr": 0.999
+  },
+  {
+   "track": "California Sunshine, Electric Universe - Immortality",
+   "decode_f1": 0.637,
+   "decode_nps_ratio": 1.091,
+   "decode_pc_corr": 0.995,
+   "origcrop_f1": 1.0,
+   "origcrop_nps_ratio": 0.999,
+   "origcrop_pc_corr": 1.0
+  },
+  {
+   "track": "Captain Black - Implode Impulse",
+   "decode_f1": 0.757,
+   "decode_nps_ratio": 0.913,
+   "decode_pc_corr": 0.991,
+   "origcrop_f1": 0.996,
+   "origcrop_nps_ratio": 0.998,
+   "origcrop_pc_corr": 1.0
+  }
+ ]
+}

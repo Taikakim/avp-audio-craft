@@ -54,8 +54,38 @@
   </section>
 
   <section aria-labelledby="shipped">
-    <h2 id="shipped">Shipped (2026-07-01/02)</h2>
+    <h2 id="shipped">Shipped (2026-07)</h2>
     <ul class="links">
+      <li><strong>Chroma-steering page, extended</strong> — solo instruments and chord
+        progressions that move between colours/keys, a tab per steering head, over a
+        GPU-verified render path (the engine that drives it had never been run on-GPU).
+        Pilot finding: the 12-d chroma head's "dead" label is refuted for <em>harmonic</em>
+        steering (moves a solo piano to A-minor, Δ +0.34), with a clean register–tessitura
+        coupling — a violin tracks a modulating progression in the mid band, its bass held.</li>
+      <li><strong>LatCH control map — the quality half</strong> — a hybrid disintegration
+        gate (spectral-whitening + ringing + beat-loss, with Audiobox CE only corroborating,
+        since CE misleads by genre) established the <em>usable</em> weight range per head over
+        existing renders: most heads steer clean to gain 8192, the harshness heads (hardness,
+        air, flatness) break earlier and ambient is more fragile than goa. Answered "train the
+        dead heads longer?" with the record: raw 2× epochs drifts; EMA + early-stop is the lever
+        (retrained the seven heads that never had it).</li>
+      <li><strong>The reverb artifact — measured, then a diagnosis retracted</strong> — the
+        "bathroom reverb" is a mono spectral haze (flatness 2–3× real goa), not stereo, not the
+        sampler, not the SAME decoder; and a real, loudness-independent <em>latent</em> deficit
+        confirms it (participation ratio 34→14.6→11 for real→base→DoRA). But an ultracode
+        adversarial pass <em>refuted</em> my first read: the deficit is <strong>base-model-intrinsic,
+        not adapter-caused</strong> (the base DiT loses ~57% of the rank before any DoRA, and base
+        is hazier than DoRA), stereo is actually ≈ real (no collapse), and the "conditional-mean"
+        label is unproven — the decisive within-context variance was never on disk. Every cheap
+        moment-matching fix was shown gameable; the plan is now two cheap gates (a free
+        SDE/noise-injection A/B, then a 24-seed fan) before any training. Retraction logged with
+        the same ink as the claim.</li>
+      <li><strong>First SA3 training run on LUMI</strong> — brought the EuroHPC MI250X
+        path up end-to-end (cotainr container + vendored FusionOpt + fp32 support), and
+        cleared a five-iteration MIOpen blocker: the user kernel-cache SQLite (<code>.ukdb</code>)
+        can't be opened on any LUMI filesystem — relocating it doesn't help (plain SQLite
+        opens fine there), disabling it (<code>MIOPEN_DISABLE_CACHE=1</code>) does. Smoke:
+        300 steps, clean loss, no NaN. Unblocks the fp32/T=4096 campaign.</li>
       <li><strong>FusionCC</strong> — a control-consistency loss that puts a learned
         onset-meter inside the diffusion training gradient. First statistically
         significant control-authority win of the campaign (corr .584→.880 @ gain 2);

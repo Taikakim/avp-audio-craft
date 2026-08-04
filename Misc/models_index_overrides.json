@@ -2020,7 +2020,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_avp_t512_a45_fp32",
+    "axis": "alpha damping — this arm is the a128 control isolating the 'adj' benefit"
+   }
+  ]
  },
  "winning_avp_t512_a45_bf16": {
   "recipe": {
@@ -2057,7 +2063,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_avp_t512_a45_fp32",
+    "axis": "precision — bf16 control on the identical winning recipe"
+   }
+  ]
  },
  "winning_avp_t512_a45_fp32": {
   "recipe": {
@@ -2094,7 +2106,29 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_avp_t512_a128_fp32",
+    "axis": "alpha damping (a45 'adj' vs a128 s=1) — the flagship's headline lever"
+   },
+   {
+    "target": "winning_avp_t512_a45_bf16",
+    "axis": "precision (fp32 vs bf16) at fixed winning recipe"
+   },
+   {
+    "target": "winning_avp_t1024_a45_fp32",
+    "axis": "training context length (T512 vs T1024)"
+   },
+   {
+    "target": "winning_avpaug10_t512_a45_fp32",
+    "axis": "augmentation (plain full corpus vs aug10)"
+   },
+   {
+    "target": "winning_goa_t512_a45_fp32",
+    "axis": "corpus generality (avp vs goa, identical recipe)"
+   }
+  ]
  },
  "winning_avpaug10_t512_a45_fp32": {
   "recipe": {
@@ -2131,7 +2165,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_avp_t512_a45_fp32",
+    "axis": "augmentation / small-set rescue (aug10 vs plain full corpus)"
+   }
+  ]
  },
  "winning_goa_t512_a128_fp32": {
   "recipe": {
@@ -2168,7 +2208,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_goa_t512_a45_fp32",
+    "axis": "alpha damping (goa control)"
+   }
+  ]
  },
  "winning_goa_t512_a45_bf16": {
   "recipe": {
@@ -2205,7 +2251,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_goa_t512_a45_fp32",
+    "axis": "precision (goa control)"
+   }
+  ]
  },
  "winning_goa_t512_a45_fp32": {
   "recipe": {
@@ -2242,7 +2294,21 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_goa_t512_a128_fp32",
+    "axis": "alpha damping (a45 vs a128)"
+   },
+   {
+    "target": "winning_goa_t512_a45_bf16",
+    "axis": "precision (fp32 vs bf16)"
+   },
+   {
+    "target": "winning_avp_t512_a45_fp32",
+    "axis": "corpus generality (goa vs avp)"
+   }
+  ]
  },
  "winning_avp_t1024_a45_fp32": {
   "recipe": {
@@ -2279,7 +2345,13 @@
   "status": "in-progress",
   "provenance": {
    "commentary_by": "CONTINUITY 2026-07-30 (winning-recipe rationale, per F routing)"
-  }
+  },
+  "compare_against": [
+   {
+    "target": "winning_avp_t512_a45_fp32",
+    "axis": "training context length (T1024 vs T512, the analysis' proposed optimum)"
+   }
+  ]
  },
  "adamw_avp_t512_bs1_lr1e4": {
   "one_liner": "AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 1, T512 (47.6s).",

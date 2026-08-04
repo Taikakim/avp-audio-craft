@@ -1,0 +1,137 @@
+﻿Numerical Precision Requirements for Sub-Dominant Signal Representation and Learning in Diffusion Transformers
+1. System Architecture and the Sub-Dominant Signal Paradox
+The deployment of large-scale rectified-flow diffusion transformers (DiTs) has revolutionized generative modeling. However, the internal optimization dynamics of these networks reveal profound vulnerabilities when dealing with highly anisotropic latent spaces. The system under analysis—a 1.4-billion parameter DiT operating as the core of Stable Audio 3 (medium)—functions within the latent space of a frozen SAME autoencoder characterized by a 256-dimensional latent space at 10.77 Hz, achieving a 4096× compression ratio1. Within this mathematically dense environment, the signal corresponding to musical "melody" manifests as an extreme sub-dominant feature. Empirical measurements demonstrate that this melody subspace is distributed across approximately 15 dimensions, holding a mere 9.3% of the total corpus variance, which represents a 1.6× enrichment over random noise1.
+The fundamental complexity of this system lies in its severe anisotropy. The latent covariance is 786× anisotropic, resulting in 188 of the 256 eigendirections residing strictly below the unit flow-target noise floor1. The participation ratio is exceedingly low, sitting at approximately 37/2561. Because the master weights, gradients, optimizer states, and explicit normalizations are maintained in 32-bit floating-point (fp32) precision, while the computationally intensive attention core operates dynamically in 16-bit precision (casting fp32 to fp16 for query-key and attention-value matrix multiplications via a Flash Attention kernel), a critical representational gap emerges1.
+The central paradox is that standard numerical precision paradigms—such as fp16 and bfloat16 (bf16)—are inherently optimized to preserve the dominant modes of a distribution. When a precision-sensitive delta (  ) resides beneath the standard measurement and operational noise floor, standard mixed-precision training mechanisms actively suppress or irreversibly round away the information necessary to represent and learn the signal. Resolving this requires an exhaustive evaluation of forward representation fidelity, gradient noise during weight updates, the unique confounds of interconnected low-precision attention networks, and the implementation of differential testing to observe below-floor phenomena.
+2. The Analytical Theory of Spectral Bias in Diffusion Learning
+To accurately define the numerical precision required to learn a sub-dominant signal, one must first understand the temporal dynamics of how diffusion models converge on anisotropic data. Recent analytical frameworks provide exact solutions for the gradient-flow dynamics of linear and convolutional denoisers, exposing a fundamental limitation in distribution learning known as spectral bias2.
+By leveraging a Gaussian-equivalence principle, researchers have integrated the probability-flow ordinary differential equation (ODE) to yield analytic expressions for the generated distribution throughout training3. These theoretical models expose a universal inverse-variance spectral law. The time required for an eigenmode or Fourier mode to match its target variance scales inversely with its eigenvalue, formulated as   3.
+This inverse-variance scaling dictates that high-variance, coarse structures within the data distribution are mastered by the neural network orders of magnitude earlier than low-variance, fine-grained details2. In the context of the 1.4B DiT, the 15-dimensional melody subspace resides strictly within the low-variance regime. Because the training objective fundamentally under-weights these directions, the gradient signal corresponding to the melody remains infinitesimally small for the vast majority of the training lifecycle. The deviation on any given eigenmode    decays at a rate dependent on   , meaning non-resolved dimensions learn at an exceptionally slow pace6.
+The implication for mixed-precision training is severe. Because the gradients driving the learning of the melody subspace are mathematically constrained to be small by the    law, they are acutely vulnerable to truncation. If the precision floor of the weight update or the forward representation clips these diminutive values to zero, the model will suffer from early-stop artifacts, completely failing to capture the sub-dominant signal regardless of extended compute time3.
+3. Forward Representation Fidelity and Information-Theoretic Bounds
+The first major inquiry is whether the fp16 or bf16 forward precision can preserve the physical magnitude of "one note" in latent space, measurable as the   latent-per-single-note. Assessing this requires moving beyond standard tensor-wide Signal-to-Quantization-Noise Ratio (SQNR) and applying Rate-Distortion (RD) theory adapted for highly anisotropic Gaussian vectors.
+3.1 Rate-Distortion Theory and Reverse Water-Filling
+Information theory dictates that the optimal compression of a vector Gaussian source under a sum-distortion criterion follows the classical reverse water-filling principle8. The rate-distortion function establishes an absolute lower bound on the number of bits required to represent a signal at a given fidelity.
+Under reverse water-filling, a global distortion threshold    is calculated based on the available bit budget. For a source covariance matrix with eigenvalues   , the distortion allocated to the   -th component is defined as   9. Crucially, for any eigen-component where the variance   , the rate-distortion optimization allocates exactly zero bits to that dimension, relying entirely on the mean of the distribution and treating the variation as expendable noise9.
+When hardware executes fp16 or bf16 quantization uniformly across a highly anisotropic 256-dimensional tensor where 188 dimensions fall below the flow-target noise floor, the hardware is inadvertently executing a localized form of reverse water-filling1. The precision bits are monopolized by the dominant spatial and structural frequencies. Because the 15-dimensional melody subspace holds only 9.3% of the variance, a standard fp16 forward pass operates with a quantization noise floor that likely swallows these specific dimensions.
+3.2 Information Geometry and Directional SQNR
+To accurately measure forward representation capability, standard Euclidean SQNR must be discarded in favor of directional sensitivity metrics. Standard quantization metrics treat quantization errors as isotropic perturbations, failing to capture the geometric relationship between the loss function's sensitivity and the direction of the error12.
+Recent advancements in information geometry, specifically the Riemannian Sensitivity-Aware Vector Quantization (RSAVQ) framework, model the parameter space of the neural network as a Riemannian manifold possessing non-uniform curvature13. This curvature is precisely described by the Fisher Information Matrix (FIM)13. RSAVQ introduces Error Direction Sensitivity Guidance (EDSG), a methodology that leverages the FIM-induced Riemannian metric to project quantization errors away from highly sensitive areas13.
+By projecting the quantization error onto the negative natural gradient direction, researchers can accurately assess how perturbations along specific axes affect the global loss12. For the DiT in question, calculating the per-tensor SQNR is insufficient. The fp16 quantization noise vector must be projected directly onto the known Singular Value Decomposition (SVD) melody eigenbasis. If the resulting error vector exhibits high cosine similarity with the melody subspace, the forward fp16 precision is actively destructive to the sub-dominant signal.
+4. Gradient Noise, Optimizer States, and Weight Learning
+While forward representation ensures the signal exists, the crux of the sub-dominant signal challenge is a dynamic training issue: ensuring the gradient signal that trains the melody subspace exceeds the rounding noise during the optimizer's weight update.
+4.1 The Threat of Gradient Underflow in Mixed Precision
+Mixed Precision Training (MPT) standardizes the practice of maintaining master weights in fp32 while computing activations and gradients in fp16 or bf16 to maximize throughput and minimize memory footprint17. Because gradients naturally exhibit small magnitudes, storing them in fp16 frequently induces severe underflow—the smallest representable positive normal value in fp16 is approximately   17. MPT combats this via loss scaling, dynamically multiplying the loss by a factor    to shift the gradient distribution into the representable fp16 range, and scaling the updates back down before applying them to the fp32 master weights17.
+However, loss scaling relies on a single global scalar   . The    spectral bias dictates an extreme divergence in gradient magnitudes across the network's eigen-directions3. If the global loss scale is tuned to perfectly capture the dominant gradients without inducing fp16 overflow (which occurs above 65,504), the resulting multiplier may remain entirely insufficient to elevate the infinitesimally small melody-direction gradients above the    underflow threshold.
+4.2 Deterministic Rounding vs. Stochastic Rounding
+Even if the gradient survives the backward pass, the parameter update step presents a catastrophic bottleneck. When applying a highly compressed gradient to a relatively large master weight, the disparity in magnitude forces the addition operation into a regime where the precision limits of the floating-point mantissa truncate the update19.
+Standard floating-point operations default to "round-to-nearest" (NR) logic. If a weight update    is significantly smaller than the weight   , the operation yields   , effectively discarding the gradient and causing training stagnation19. For a low-variance signal like the melody subspace, this deterministic truncation permanently stalls learning.
+The rigorous mathematical solution is Stochastic Rounding (SR). SR replaces the biased nearest-neighbor approach with a probabilistic operator defined as:
+  
+
+Where    represents the resolution of the floating-point format at the magnitude of   19. Crucially, SR is an unbiased estimator, ensuring that the expected value of the quantized update equals the true continuous update:   19. By converting truncation into a probabilistic bit-flip, SR allows sub-dominant gradients to accumulate over thousands of iterations. Extensive empirical studies on large language models and diffusion systems demonstrate that employing SR exclusively during the parameter update step (e.g., via torch.stochastic_rounding in a custom AdamW implementation) recovers the convergence properties of pure fp32 training while maintaining the speed and memory benefits of bf1620. For the DiT architecture, modifying the fp32 optimizer to perform SR during the addition of the gradient is theoretically required to bridge the learning deficit.
+5. Interconnected Network Confounds: Flash Attention Mechanics
+The DiT is a highly interconnected network where localized precision errors do not remain isolated; they compound non-linearly. The utilization of the Flash Attention kernel introduces a uniquely destructive numerical confound directly tied to low-precision arithmetic.
+5.1 Biased Rounding in Tiled Softmax
+Flash Attention achieves remarkable I/O efficiency by partitioning the    attention score matrix    into hardware-cache-resident tiles23. To avoid materializing the full matrix in High Bandwidth Memory (HBM), the algorithm utilizes an online, numerically stable softmax computation. It maintains running statistics—specifically the running maximum    and the sum of exponentials   —re-scaling previously accumulated outputs as new local maximums are encountered24.
+Recent mechanistic analyses of low-precision transformer failures (Qiu et al., 2025/2026) have isolated a catastrophic numerical instability within this exact online softmax routine26. When operating in bf16 or fp16, the restricted mantissa (7 bits for bf16, 10 bits for fp16) struggles with tied values. When a row of the attention score matrix contains multiple identical maximum values, the standard floating-point addition experiences a "sticky-bit" rounding phenomenon23. This results in the unnormalized outputs yielding exact    entries, introducing a systematic, strictly positive rounding bias28.
+5.2 Low-Rank Collapse and Spectral Norm Explosion
+This strictly positive rounding bias does not manifest as random Gaussian noise. Because attention mechanisms naturally develop similar, low-rank representations across different tokens and steps, the biased rounding errors act as coefficients that multiply these low-rank representations27.
+This creates a vicious cycle of error accumulation26. The strictly positive bias continuously compounds in a dominant direction during the forward pass. During backpropagation, this highly structured error corrupts the weight updates, causing the spectral norm of the critical attention layers to artificially inflate, eventually culminating in a sudden and catastrophic loss divergence28.
+For a sub-dominant signal like the 15-dimensional melody subspace, this phenomenon is lethal. The spectral norm explosion in the dominant, low-rank directions acts as overwhelming numerical noise, completely obliterating the already-fragile gradient signal associated with the melody. To mitigate this, state-of-the-art kernels employ a "safe softmax" or dynamic maximum adjustment, which dynamically adjusts the normalization factor only when a row contains multiple identical maximum values, thereby breaking the biased rounding cycle26. Evaluating whether the currently deployed Flash Attention kernel utilizes this specific mitigation is paramount.
+6. Below-Floor Detection via Differential Signal Injection
+When evaluating a precision-sensitive delta that is smaller than the operational measurement noise floor, naïve forward differencing between representations is mathematically blind. Standard evaluation metrics cannot resolve sub-dominant changes. To surface this signal, the system requires a structured evaluation protocol rooted in software verification, specifically metamorphic testing and differential injection32.
+By leveraging the pre-existing synthetic-MIDI battery, which provides frame-locked patterns and controlled single-note deviants (e.g., a lone fifth-jump that is frame-detectable at   ), a rigorous differential testing framework can be established1.
+The protocol dictates the following sequential analysis:
+1. Controlled Perturbation: Generate a baseline latent    and a perturbed latent    containing the exact sub-dominant signal injection.
+2. Unbiased Baseline Generation: Execute the forward pass for both latents using a strictly controlled fp32 architecture (disabling all low-precision kernels, utilizing standard PyTorch fp32 attention). Calculate the precise continuous output difference   .
+3. Low-Precision Execution: Execute the identical forward pass utilizing the production environment (fp16/bf16 Flash Attention). Calculate the low-precision difference   .
+4. Subspace Projection Analysis: Crucially, one must not evaluate the scalar mean squared error between these outputs. Instead, project both    and    strictly onto the 15-dimensional melody SVD eigenbasis1.
+5. Cosine Similarity Evaluation: Compute the directional cosine similarity between the two projected vectors. If the similarity degrades significantly from   , it serves as mathematical proof that the sub-dominant signal is being actively destroyed by the forward precision architecture, bypassing the below-floor measurement limitations.
+7. Assessment and Ranking of Candidate Methodologies
+Based on the theoretical and empirical analyses detailed above, the seven candidate method families proposed for evaluating the numerical precision requirements of the DiT are systematically ranked. The ranking formula prioritizes the method's theoretical validity for sub-dominant, highly anisotropic signals against the tractability of implementation given the system's existing infrastructure.
+
+
+Rank
+	Method Family
+	Analytical Utility
+	Tractability
+	Overall Assessment & Theoretical Rationale
+	1
+	Mixed-Precision Training Sensitivity (Stochastic Rounding)
+	Critical
+	High
+	The theoretical foundation proves that spectral bias (  ) forces the melody gradient into a microscopically small regime3. Implementing torch.stochastic_rounding exclusively during the optimizer's parameter update is the only mathematically proven method to prevent deterministic truncation of these gradients. It requires minimal architectural refactoring19.
+	2
+	Controlled-Signal-Injection / Differential Testing
+	Critical
+	High
+	Given that the sub-dominant    resides below standard noise floors, global metrics will fail. Utilizing the existing synthetic-MIDI battery to perform A/B forward passes (fp32 vs. fp16), and projecting the differential strictly onto the known melody eigenbasis, provides an immediate, empirically flawless evaluation of forward precision fidelity without requiring abstract theoretical modeling1.
+	3
+	Diffusion-Specific Precision (Spectral Bias Modeling)
+	High
+	Moderate
+	Integrating the analytical frameworks from recent diffusion literature (e.g., inverse-variance spectral scaling) transitions the problem from a vague "model capacity" issue into a rigorous numerical bounds problem3. While theoretically vital, it serves more as diagnostic proof than an active computational intervention.
+	4
+	Information-Theoretic Directional Sensitivity (FIM / RSAVQ)
+	Moderate
+	Moderate
+	Information geometry frameworks that project quantization noise onto negative natural gradients (using the Fisher Information Matrix) are highly theoretically aligned with the anisotropic problem12. However, computing the FIM across a 1.4B parameter network dynamically is computationally restrictive compared to direct differential testing.
+	5
+	Gradient-Noise / Critical-Precision Scaling
+	Moderate
+	Low
+	Evaluating gradient noise scales dynamically offers insight into signal-to-noise ratios, but defining a "critical precision" threshold dynamically for a shifting 15-dimensional subspace is mathematically dense and computationally prohibitive during active training.
+	6
+	Hessian/Fisher Mixed-Precision (HAWQ / Q-BERT)
+	Low
+	Moderate
+	Methodologies like HAWQ evaluate the trace or maximal eigenvalues of the Hessian to assign layer-wise bit-widths33. This granularity is entirely insufficient. The melody signal requires intra-layer, directional precision, rendering layer-average sensitivities theoretically blind to the sub-dominant subspace.
+	7
+	SQNR per Tensor / Rate-Distortion
+	Low
+	High
+	Standard Euclidean SQNR and classical Rate-Distortion reverse water-filling algorithms are actively hostile to this architecture. By definition, they optimize for the dominant variance, mathematically guaranteeing the allocation of zero bits to the low-variance melody subspace8. Utilizing them as a metric will yield catastrophic false positives regarding model health.
+	8. Conclusion and Strategic Implementation Directives
+The challenge of representing and learning a 15-dimensional sub-dominant signal holding 9.3% variance within a 786× anisotropic latent space cannot be solved by applying global, tensor-wide precision modifications. The inverse-variance spectral law mathematically guarantees that the gradient signal required to learn this subspace will remain microscopically small, rendering it highly susceptible to the truncation limits of standard bf16/fp16 arithmetic. Furthermore, the reliance on low-precision Flash Attention introduces a structured, strictly positive rounding bias that inflates the spectral norm in dominant directions, further drowning out the sub-dominant signal.
+To resolve these interconnected precision failures, the following structured interventions must be prioritized:
+   1. Isolate Forward Representation Destruction: Utilize the differential signal injection protocol. Execute the synthetic-MIDI battery using both strict fp32 PyTorch attention and the production fp16 Flash Attention. Project the    outputs onto the known melody eigenbasis. If cosine similarity degrades, the forward representation is actively suppressing the signal.
+   2. Mitigate Attention Kernel Bias: If the forward pass is destructive, audit the Flash Attention implementation for sticky-bit rounding vulnerabilities. Deploy "safe softmax" algorithmic variants that dynamically adjust normalization factors during row-maximum ties, breaking the low-rank error accumulation cycle.
+   3. Deploy Stochastic Rounding for Parameter Updates: To solve the gradient under-investment issue dictated by the spectral bias, immediately replace the standard deterministic parameter update logic in the optimizer. Implement a custom PyTorch optimizer utilizing torch.stochastic_rounding during the master weight update phase. This transforms gradient truncation into an unbiased probabilistic distribution, ensuring the accumulation of the sub-dominant signal over successive training steps.
+Standard automated precision tools are engineered to preserve dominant variance. Recognizing that these tools are fundamentally misaligned with the topological reality of the melody subspace allows the engineering architecture to pivot toward these targeted, mathematically rigorous interventions.
+Works cited
+      1. 2026-08-04-precision-requirement-melody-signal-brief.md
+      2. Cengiz Pehlevan | alphaXiv, https://www.alphaxiv.org/@cengiz-pehlevan
+      3. An Analytical Theory of Spectral Bias in the Learning Dynamics of Diffusion Models - arXiv, https://arxiv.org/html/2503.03206v3
+      4. An Analytical Theory of Spectral Bias in the Learning Dynamics of Diffusion Models - arXiv, https://arxiv.org/abs/2503.03206
+      5. An Analytical Theory of Spectral Bias in the Learning Dynamics of Diffusion Models - OpenReview, https://openreview.net/pdf/de2dc9df6e0abe3ad829c7ce209b93b41a443f5f.pdf
+      6. An Analytical Theory of Power Law Spectral Bias in the Learning Dynamics of Diffusion Models - arXiv, https://arxiv.org/pdf/2503.03206
+      7. An Analytical Theory of Power Law Spectral Bias in the Learning Dynamics of Diffusion Models - arXiv, https://arxiv.org/html/2503.03206v1
+      8. On the Gaussian-Quadratic Rate-Distortion Function for Vector Sources with Individual Distortion Constraints - arXiv, https://arxiv.org/html/2607.09545v1
+      9. On the Gaussian-Quadratic Rate-Distortion Function for Vector Sources with Individual Distortion Constraints - arXiv, https://arxiv.org/pdf/2607.09545
+      10. Anomaly Detection Challenges in Monitoring Applications, https://amsdottorato.unibo.it/id/eprint/12200/1/Dissertation_Enttsel.pdf
+      11. Source Coding and Compression - Fraunhofer Heinrich-Hertz-Institut, https://iphome.hhi.de/schwarz/assets/pdfs/SourceCoding.pdf
+      12. RSAVQ: Riemannian Sensitivity-Aware Vector Quantization for Large Language Models, https://arxiv.org/html/2510.01240v1
+      13. RSAVQ: Riemannian Sensitivity-Aware Vector Quantization for Large Language Models, https://neurips.cc/virtual/2025/poster/119625
+      14. RSAVQ: Riemannian Sensitivity-Aware Vector Quantization for, https://www.alphaxiv.org/overview/2510.01240v1
+      15. [2510.01240] RSAVQ: Riemannian Sensitivity-Aware Vector Quantization for Large Language Models - arXiv, https://arxiv.org/abs/2510.01240
+      16. KBVQ-MoE: KLT-guided SVD with Bias-Corrected Vector Quantization for MoE Large Language Models - ResearchGate, https://www.researchgate.net/publication/400741501_KBVQ-MoE_KLT-guided_SVD_with_Bias-Corrected_Vector_Quantization_for_MoE_Large_Language_Models
+      17. Reducing Underflow in Mixed Precision Training by Gradient Scaling - IJCAI, https://www.ijcai.org/proceedings/2020/0404.pdf
+      18. Low-Precision Training of Large Language Models: Methods, Challenges, and Opportunities - arXiv, https://arxiv.org/html/2505.01043
+      19. arXiv:2502.20566v1 [cs.LG] 27 Feb 2025, https://arxiv.org/pdf/2502.20566
+      20. lodestone-rock/torchastic: stochastic bfloat16 based optimizer library - GitHub, https://github.com/lodestone-rock/torchastic
+      21. Stochastic Rounding for LLM Training: Theory and Practice - GitHub, https://raw.githubusercontent.com/mlresearch/v258/main/assets/ozkara25b/ozkara25b.pdf
+      22. Stochastic rounding in bfloat16 · Issue #120376 · pytorch/pytorch - GitHub, https://github.com/pytorch/pytorch/issues/120376
+      23. Flash Attention: Efficient Triton Implementation - Emergent Mind, https://www.emergentmind.com/topics/flash-attention-triton
+      24. Primers • FlashAttention - Aman's AI Journal, https://aman.ai/primers/ai/flashattention/
+      25. The free lunch of flash attention | by Jaideep Ray | Better ML - Medium, https://medium.com/better-ml/the-free-lunch-of-flash-attention-036b0040dee2
+      26. Why Low-Precision Transformer Training Fails: An Analysis on Flash Attention, https://openreview.net/forum?id=0jHyEKHDyx
+      27. Why Low-Precision Transformer Training Fails: An Analysis on Flash Attention - arXiv, https://arxiv.org/html/2510.04212v1
+      28. Flash Attention in Low-Precision Settings - Emergent Mind, https://www.emergentmind.com/topics/flash-attention-in-low-precision-settings
+      29. Jagged Flash Attention - Emergent Mind, https://www.emergentmind.com/topics/jagged-flash-attention
+      30. WHY LOW-PRECISION TRANSFORMER TRAINING FAILS: AN ANALYSIS ON FLASH ATTENTION - OpenReview, https://openreview.net/pdf/3a44b0a0acc79b38b8a9e1abab024efcc95a430d.pdf
+      31. Why Low-Precision Transformer Training Fails: An Analysis on Flash Attention - arXiv, https://arxiv.org/html/2510.04212v3
+      32. NOETHER: A Constructive Framework for Metamorphic Pattern Discovery from Operator Algebras - arXiv, https://arxiv.org/html/2605.17390
+      33. Hardware-Aware Efficient Deep Learning - EECS at Berkeley, https://www2.eecs.berkeley.edu/Pubs/TechRpts/2022/Archive/EECS-2022-231.pdf
+      34. Copyright Undertaking - PolyU Electronic Theses, https://theses.lib.polyu.edu.hk/bitstream/200/13522/3/7973.pdf
+      35. Edge-MPQ: Layer-Wise Mixed-Precision Quantization With Tightly Integrated Versatile Inference Units for Edge Computing, https://www.computer.org/csdl/journal/tc/2024/11/10633877/1ZlBglVrtZK

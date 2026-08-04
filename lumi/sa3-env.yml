@@ -3,7 +3,7 @@
 # Build (on a LUMI login node, once access lands):
 #   module load LUMI cotainr
 #   cotainr build sa3-train.sif \
-#     --base-image=/appl/local/containers/sif-images/lumi-rocm-6.2.4.sif \
+#     --base-image=/appl/local/containers/sif-images/lumi-rocm-rocm-6.2.4.sif \
 #     --conda-env=sa3-env.yml
 #
 # ⚠️ VERSION SEAM (the one decision to make on the machine, not here):
@@ -26,8 +26,17 @@ dependencies:
       - --index-url https://download.pytorch.org/whl/rocm6.2
       - --extra-index-url https://pypi.org/simple
       - torch>=2.4,<2.6
-      - torchaudio
+      - torchaudio>=2.4,<2.6   # PIN REQUIRED: unpinned resolves CUDA build from pypi extra-index (libcudart.so.13 crash, LUMI 2026-07-14)
       # --- shared training deps (LatCH head + DoRA) ---
+      - pytorch-lightning>=2.4,<3   # train_lora is a Lightning trainer (missed in v1/v2 — smoke 2026-07-14 died on import)
+      - dill               # data/dataset.py caption-sampler closures
+      - matplotlib         # training/diffusion.py -> interface/aeiou.py (spectrogram images), module-level
+      - pillow             # interface/aeiou.py PIL, module-level
+      # ^ v4 additions from the TRANSITIVE import-closure scan (2026-07-15) of
+      # scripts/train_lora.py — module-level set is now closed. Function-local extras
+      # (only if their code path is used): stable_audio_tools+deps for --optimizer
+      # fusion (W's longctx recipe!), bitsandbytes/deepspeed for 8bit/ds optimizers,
+      # pandas/plotly/umap for analysis callbacks. Guarded-optional: flash_attn, scipy.
       - numpy<2.4          # numba/librosa seam, same pin as local
       - einops
       - safetensors

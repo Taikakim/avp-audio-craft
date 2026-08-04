@@ -1,0 +1,363 @@
+{
+  "aggregate": {
+    "n": 20,
+    "flat_in_median": 4.9700036372549905e-05,
+    "flat_out_median": 8.651030778556748e-05,
+    "flat_delta_median": 3.1119385051075814e-05,
+    "flat_ratio_median": 1.6983232023795645,
+    "flat_in_mean": 5.863856078583146e-05,
+    "flat_out_mean": 0.00019066248972285076,
+    "coh_in_median": 0.4332805498117451,
+    "coh_out_median": 0.40903790474342866,
+    "coh_delta_median": -0.015096529584986557,
+    "model_load_sec": 12.4,
+    "per_clip_sec_median": 0.58,
+    "gen_flatness_reference": [
+      0.016,
+      0.024
+    ]
+  },
+  "verdict": "DECODER IS CLEAN: output flatness stays near the dry input and far below the gen haze band. The haze must originate in the DiT latent target (generation/adapter), NOT the autoencoder decoder.",
+  "rows": [
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Dimension 5 - Deep Space 5D/full_mix.mp3",
+      "name": "Dimension 5 - Deep Space 5D",
+      "flat_in": 1.3418943749978503e-05,
+      "flat_out": 2.2191767605092463e-05,
+      "flat_delta": 8.77282385511396e-06,
+      "flat_ratio": 1.6537639895363616,
+      "coh_in": 0.06690636781932262,
+      "coh_out": 0.0717991768034439,
+      "coh_delta": 0.004892808984121283,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 38.88
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/AZukx - Earth Chakra/full_mix.flac",
+      "name": "AZukx - Earth Chakra",
+      "flat_in": 2.1435634902398543e-05,
+      "flat_out": 1.827684095629138e-05,
+      "flat_delta": -3.158793946107164e-06,
+      "flat_ratio": 0.8526381507649274,
+      "coh_in": 0.6422616613993516,
+      "coh_out": 0.5776947731065449,
+      "coh_delta": -0.06456688829280666,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/The Muses Rapt - Silver Dust/full_mix.flac",
+      "name": "The Muses Rapt - Silver Dust",
+      "flat_in": 2.1912423699787796e-05,
+      "flat_out": 1.7002525742122337e-05,
+      "flat_delta": -4.909897957665459e-06,
+      "flat_ratio": 0.7759308234969995,
+      "coh_in": 0.0485011663468612,
+      "coh_out": 0.049831888827364085,
+      "coh_delta": 0.001330722480502887,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/X - Dream - Try to Save Your Song/full_mix.mp3",
+      "name": "X - Dream - Try to Save Your Song",
+      "flat_in": 3.730057251039373e-05,
+      "flat_out": 0.00015682606038291903,
+      "flat_delta": 0.0001195254878725253,
+      "flat_ratio": 4.204387375953341,
+      "coh_in": 0.38916844148560675,
+      "coh_out": 0.30353592279654756,
+      "coh_delta": -0.08563251868905919,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.58
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Mac Mavis - Unlucky/full_mix.flac",
+      "name": "Mac Mavis - Unlucky",
+      "flat_in": 3.942078228908401e-05,
+      "flat_out": 2.9892149804568254e-05,
+      "flat_delta": -9.528632484515754e-06,
+      "flat_ratio": 0.7582840144337181,
+      "coh_in": 0.6180998659535755,
+      "coh_out": 0.48482939195926317,
+      "coh_delta": -0.1332704739943123,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Juno Reactor - Navras/full_mix.mp3",
+      "name": "Juno Reactor - Navras",
+      "flat_in": 3.9628664929159456e-05,
+      "flat_out": 0.00014174618660529845,
+      "flat_delta": 0.000102117521676139,
+      "flat_ratio": 3.57685991394929,
+      "coh_in": 0.7936805033044512,
+      "coh_out": 0.7885610955902271,
+      "coh_delta": -0.0051194077142240335,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.58
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Om - Human Love/full_mix.mp3",
+      "name": "Om - Human Love",
+      "flat_in": 4.6655778684773156e-05,
+      "flat_out": 0.00011401120429507713,
+      "flat_delta": 6.735542561030398e-05,
+      "flat_ratio": 2.443667324078317,
+      "coh_in": 0.2560009570763953,
+      "coh_out": 0.1676360444742127,
+      "coh_delta": -0.0883649126021826,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.58
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Nervasystem, aether - Technicolour (Lost & Found)/full_mix.flac",
+      "name": "Nervasystem, aether - Technicolour (Lost & Found)",
+      "flat_in": 4.809205685687663e-05,
+      "flat_out": 8.38188019506262e-05,
+      "flat_delta": 3.5726745093749574e-05,
+      "flat_ratio": 1.7428824152227673,
+      "coh_in": 0.7582535920906704,
+      "coh_out": 0.728623872813777,
+      "coh_delta": -0.029629719276893396,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.58
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Vibrasphere - San Pedro (First Edit 1999)/full_mix.flac",
+      "name": "Vibrasphere - San Pedro (First Edit 1999)",
+      "flat_in": 4.8609018666149906e-05,
+      "flat_out": 7.372071461054616e-05,
+      "flat_delta": 2.5111695944396252e-05,
+      "flat_ratio": 1.5166056653037872,
+      "coh_in": 0.7393161968656757,
+      "coh_out": 0.6660842854482314,
+      "coh_delta": -0.07323191141744434,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Creative Alienation - The Quest of Psyborg/full_mix.flac",
+      "name": "Creative Alienation - The Quest of Psyborg",
+      "flat_in": 5.021450480751651e-05,
+      "flat_out": 6.721220603307303e-05,
+      "flat_delta": 1.6997701225556516e-05,
+      "flat_ratio": 1.3385017925041922,
+      "coh_in": 0.535510398034256,
+      "coh_out": 0.5260396312620089,
+      "coh_delta": -0.009470766772247119,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Imperial Project - SCROOP V2/full_mix.mp3",
+      "name": "Imperial Project - SCROOP V2",
+      "flat_in": 4.91855679375833e-05,
+      "flat_out": 0.0014344427853414633,
+      "flat_delta": 0.00138525721740388,
+      "flat_ratio": 29.163895352349737,
+      "coh_in": 0.36348731721814,
+      "coh_out": 0.3614054437466999,
+      "coh_delta": -0.0020818734714400655,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Element Over Nature - Outland 9027/full_mix.ogg",
+      "name": "Element Over Nature - Outland 9027",
+      "flat_in": 6.268978861210671e-05,
+      "flat_out": 8.920181362050876e-05,
+      "flat_delta": 2.6512025008402053e-05,
+      "flat_ratio": 1.42290816690318,
+      "coh_in": 0.19795122476672472,
+      "coh_out": 0.16129585653559467,
+      "coh_delta": -0.03665536823113005,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.59
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/The Muses Rapt - Dream Catcher/full_mix.flac",
+      "name": "The Muses Rapt - Dream Catcher",
+      "flat_in": 6.340799159141748e-05,
+      "flat_out": 5.6930428226937816e-05,
+      "flat_delta": -6.4775633644796656e-06,
+      "flat_ratio": 0.8978430935951689,
+      "coh_in": 0.7264626313255023,
+      "coh_out": 0.8555578975888829,
+      "coh_delta": 0.12909526626338064,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Sheyba - Into the 4th Dimension/full_mix.mp3",
+      "name": "Sheyba - Into the 4th Dimension",
+      "flat_in": 7.339292505049271e-05,
+      "flat_out": 0.0003452724832779814,
+      "flat_delta": 0.0002718795582274887,
+      "flat_ratio": 4.704438177603678,
+      "coh_in": 0.26300676910722454,
+      "coh_out": 0.26942268254279345,
+      "coh_delta": 0.00641591343556891,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/The Infinity Project - Blue Aura/full_mix.flac",
+      "name": "The Infinity Project - Blue Aura",
+      "flat_in": 7.614344296540327e-05,
+      "flat_out": 6.772256237865749e-05,
+      "flat_delta": -8.420880586745778e-06,
+      "flat_ratio": 0.8894076607492051,
+      "coh_in": 0.5392639526098457,
+      "coh_out": 0.5118239006107803,
+      "coh_delta": -0.027440051999065407,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.57
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Indoor - Shiva/full_mix.ogg",
+      "name": "Indoor - Shiva",
+      "flat_in": 8.085048642222525e-05,
+      "flat_out": 0.00016027951897028113,
+      "flat_delta": 7.942903254805587e-05,
+      "flat_ratio": 1.9824187098990993,
+      "coh_in": 0.5629049892378795,
+      "coh_out": 0.6024409276352249,
+      "coh_delta": 0.03953593839734548,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.59
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Electric Universe - Virtual Landscape/full_mix.m4a",
+      "name": "Electric Universe - Virtual Landscape",
+      "flat_in": 9.412287916851371e-05,
+      "flat_out": 0.0002463034559077551,
+      "flat_delta": 0.00015218057673924138,
+      "flat_ratio": 2.616828718657818,
+      "coh_in": 0.2861744604976115,
+      "coh_out": 0.2877171352773993,
+      "coh_delta": 0.001542674779787756,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 1.36
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Third Eye - Heaven Transmission/full_mix.flac",
+      "name": "Third Eye - Heaven Transmission",
+      "flat_in": 9.906517178558757e-05,
+      "flat_out": 7.83037077224753e-05,
+      "flat_delta": -2.076146406311228e-05,
+      "flat_ratio": 0.7904261964187203,
+      "coh_in": 0.2807331306237246,
+      "coh_out": 0.18667929436404704,
+      "coh_delta": -0.09405383625967759,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.62
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Yahel - Last Man in the Universe/full_mix.mp3",
+      "name": "Yahel - Last Man in the Universe",
+      "flat_in": 9.984591006402138e-05,
+      "flat_out": 0.00033266520332425614,
+      "flat_delta": 0.00023281929326023478,
+      "flat_ratio": 3.331785946757005,
+      "coh_in": 0.4773926581378834,
+      "coh_out": 0.4566703657401574,
+      "coh_delta": -0.020722292397725994,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.66
+    },
+    {
+      "path": "/run/media/kim/Mantu/ai-music/Goa_Separated/Ingredient X - Cyclone 7/full_mix.mp3",
+      "name": "Ingredient X - Cyclone 7",
+      "flat_in": 0.00010737867102315955,
+      "flat_out": 0.0002774293777010847,
+      "flat_delta": 0.00017005070667792515,
+      "flat_ratio": 2.5836543931298426,
+      "coh_in": 0.1568916640606546,
+      "coh_out": 0.15444576093821072,
+      "coh_delta": -0.0024459031224438876,
+      "lat_shape": [
+        1,
+        256,
+        215
+      ],
+      "sec": 0.63
+    }
+  ]
+}

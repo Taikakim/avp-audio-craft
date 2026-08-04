@@ -1,0 +1,1095 @@
+{
+ "summary": {
+  "n": 155,
+  "f3_median": 0.176,
+  "f3_mean": 0.1992,
+  "f1bar_median": 0.105
+ },
+ "rows": [
+  {
+   "track": "Bic - Vermillion",
+   "n_ref": 6,
+   "n_hyp": 17,
+   "f3": 0.435,
+   "f1bar": 0.435
+  },
+  {
+   "track": "Blue Planet Corporation - Lubianka (Original Mix)",
+   "n_ref": 17,
+   "n_hyp": 30,
+   "f3": 0.17,
+   "f1bar": 0.17
+  },
+  {
+   "track": "Blue Planet Corporation - Passage (The Call Of Mix)",
+   "n_ref": 5,
+   "n_hyp": 20,
+   "f3": 0.08,
+   "f1bar": 0.08
+  },
+  {
+   "track": "Blue Planet Corporation - Roma",
+   "n_ref": 5,
+   "n_hyp": 19,
+   "f3": 0.167,
+   "f1bar": 0.0
+  },
+  {
+   "track": "CPU - On Air (Original Mix)",
+   "n_ref": 8,
+   "n_hyp": 16,
+   "f3": 0.167,
+   "f1bar": 0.167
+  },
+  {
+   "track": "California Sunshine - Last Feeling",
+   "n_ref": 9,
+   "n_hyp": 17,
+   "f3": 0.077,
+   "f1bar": 0.077
+  },
+  {
+   "track": "California Sunshine - Minas Revenge",
+   "n_ref": 11,
+   "n_hyp": 20,
+   "f3": 0.323,
+   "f1bar": 0.065
+  },
+  {
+   "track": "California Sunshine - Porcupine",
+   "n_ref": 12,
+   "n_hyp": 20,
+   "f3": 0.062,
+   "f1bar": 0.0
+  },
+  {
+   "track": "California Sunshine - The Only One",
+   "n_ref": 12,
+   "n_hyp": 27,
+   "f3": 0.41,
+   "f1bar": 0.41
+  },
+  {
+   "track": "California Sunshine - War of Genes",
+   "n_ref": 9,
+   "n_hyp": 22,
+   "f3": 0.258,
+   "f1bar": 0.258
+  },
+  {
+   "track": "California Sunshine, Electric Universe - Immortality",
+   "n_ref": 11,
+   "n_hyp": 26,
+   "f3": 0.108,
+   "f1bar": 0.108
+  },
+  {
+   "track": "Captain Black - Implode Impulse",
+   "n_ref": 8,
+   "n_hyp": 14,
+   "f3": 0.364,
+   "f1bar": 0.364
+  },
+  {
+   "track": "Celtic Cross - Jade Garden",
+   "n_ref": 15,
+   "n_hyp": 21,
+   "f3": 0.222,
+   "f1bar": 0.056
+  },
+  {
+   "track": "Celtic Cross - Shwazz",
+   "n_ref": 8,
+   "n_hyp": 19,
+   "f3": 0.148,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Celtic Cross - Stargate Avalon",
+   "n_ref": 1,
+   "n_hyp": 3,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Chakra, Edi Mis - X - File (Original Mix)",
+   "n_ref": 4,
+   "n_hyp": 24,
+   "f3": 0.143,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Cosmosis - Flatliners",
+   "n_ref": 6,
+   "n_hyp": 16,
+   "f3": 0.273,
+   "f1bar": 0.273
+  },
+  {
+   "track": "Cosmosis - The Cave of Medusa (2)",
+   "n_ref": 8,
+   "n_hyp": 19,
+   "f3": 0.222,
+   "f1bar": 0.222
+  },
+  {
+   "track": "Creative Alienation - Psyborg Spiritual Spice",
+   "n_ref": 7,
+   "n_hyp": 24,
+   "f3": 0.194,
+   "f1bar": 0.065
+  },
+  {
+   "track": "Creative Alienation - Rebel Methalienation",
+   "n_ref": 9,
+   "n_hyp": 25,
+   "f3": 0.294,
+   "f1bar": 0.235
+  },
+  {
+   "track": "Deviant Electronics - Algae Rhythm",
+   "n_ref": 5,
+   "n_hyp": 23,
+   "f3": 0.071,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Deviant Electronics - Automatum (2019 Remastered Version)",
+   "n_ref": 8,
+   "n_hyp": 24,
+   "f3": 0.125,
+   "f1bar": 0.125
+  },
+  {
+   "track": "Dixie Boys - Rockin' Storm",
+   "n_ref": 7,
+   "n_hyp": 25,
+   "f3": 0.125,
+   "f1bar": 0.125
+  },
+  {
+   "track": "Doof - Balashwaar Baksheesh",
+   "n_ref": 11,
+   "n_hyp": 34,
+   "f3": 0.089,
+   "f1bar": 0.089
+  },
+  {
+   "track": "E - Mantra - Shamanistic Rituals",
+   "n_ref": 5,
+   "n_hyp": 29,
+   "f3": 0.118,
+   "f1bar": 0.059
+  },
+  {
+   "track": "ETNICA - Z - Plane Sunrise",
+   "n_ref": 13,
+   "n_hyp": 28,
+   "f3": 0.537,
+   "f1bar": 0.537
+  },
+  {
+   "track": "Eat Static - Area 51 (Nucleonic Mix) [2021 Remaster]",
+   "n_ref": 7,
+   "n_hyp": 24,
+   "f3": 0.065,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Eat Static - Collider Scope",
+   "n_ref": 7,
+   "n_hyp": 19,
+   "f3": 0.308,
+   "f1bar": 0.154
+  },
+  {
+   "track": "Eat Static - Dragon's Breath",
+   "n_ref": 4,
+   "n_hyp": 20,
+   "f3": 0.167,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Eat Static - Purple Squirt Jam (Live at The Trinity Hall, Bristol, 1 November 1997)",
+   "n_ref": 4,
+   "n_hyp": 24,
+   "f3": 0.071,
+   "f1bar": 0.071
+  },
+  {
+   "track": "Eat Static - Warp Spasm",
+   "n_ref": 7,
+   "n_hyp": 14,
+   "f3": 0.286,
+   "f1bar": 0.19
+  },
+  {
+   "track": "Electric Universe - Rain",
+   "n_ref": 8,
+   "n_hyp": 19,
+   "f3": 0.37,
+   "f1bar": 0.148
+  },
+  {
+   "track": "Electric Universe, ESP, Space Tribe - Electric Space Phenomenon (Original Mix)",
+   "n_ref": 6,
+   "n_hyp": 22,
+   "f3": 0.071,
+   "f1bar": 0.071
+  },
+  {
+   "track": "Eleusyn, Artifact303 - Solar Flares (Remastered)",
+   "n_ref": 12,
+   "n_hyp": 19,
+   "f3": 0.194,
+   "f1bar": 0.065
+  },
+  {
+   "track": "Filteria - Bring Everything But Whistles",
+   "n_ref": 11,
+   "n_hyp": 25,
+   "f3": 0.222,
+   "f1bar": 0.222
+  },
+  {
+   "track": "Fractal Glider - Prism",
+   "n_ref": 8,
+   "n_hyp": 20,
+   "f3": 0.214,
+   "f1bar": 0.143
+  },
+  {
+   "track": "Fractal Glider - Sohoax",
+   "n_ref": 13,
+   "n_hyp": 26,
+   "f3": 0.205,
+   "f1bar": 0.154
+  },
+  {
+   "track": "Future Prophecy - Indra",
+   "n_ref": 7,
+   "n_hyp": 19,
+   "f3": 0.308,
+   "f1bar": 0.077
+  },
+  {
+   "track": "Gene Joke - Brain Drain",
+   "n_ref": 8,
+   "n_hyp": 21,
+   "f3": 0.207,
+   "f1bar": 0.207
+  },
+  {
+   "track": "Goasia - Orbital Saturation (Original Mix)",
+   "n_ref": 3,
+   "n_hyp": 25,
+   "f3": 0.143,
+   "f1bar": 0.143
+  },
+  {
+   "track": "Green Nuns of the Revolution - Atomic Armadillo (The Fluffening)",
+   "n_ref": 17,
+   "n_hyp": 38,
+   "f3": 0.255,
+   "f1bar": 0.255
+  },
+  {
+   "track": "Green Nuns of the Revolution - Rock Bitch",
+   "n_ref": 7,
+   "n_hyp": 20,
+   "f3": 0.222,
+   "f1bar": 0.222
+  },
+  {
+   "track": "Hallucinogen - Horrorgram",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.167,
+   "f1bar": 0.167
+  },
+  {
+   "track": "Hallucinogen - Orphic Thrench (Remastered 2024)",
+   "n_ref": 6,
+   "n_hyp": 14,
+   "f3": 0.4,
+   "f1bar": 0.1
+  },
+  {
+   "track": "Har - el - Sleepwalker",
+   "n_ref": 5,
+   "n_hyp": 24,
+   "f3": 0.276,
+   "f1bar": 0.069
+  },
+  {
+   "track": "Har - el, Dardasman - Purification",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.333,
+   "f1bar": 0.333
+  },
+  {
+   "track": "Hypnotic Signal - Psychotria Viridis",
+   "n_ref": 10,
+   "n_hyp": 16,
+   "f3": 0.154,
+   "f1bar": 0.154
+  },
+  {
+   "track": "Indoor - Amora (Rework 2022)",
+   "n_ref": 6,
+   "n_hyp": 14,
+   "f3": 0.1,
+   "f1bar": 0.1
+  },
+  {
+   "track": "Indoor - Nlgf (Rework 2022)",
+   "n_ref": 7,
+   "n_hyp": 20,
+   "f3": 0.37,
+   "f1bar": 0.222
+  },
+  {
+   "track": "InnerZone - Heavens Gate",
+   "n_ref": 6,
+   "n_hyp": 19,
+   "f3": 0.4,
+   "f1bar": 0.24
+  },
+  {
+   "track": "Juno Reactor - Labyrinth",
+   "n_ref": 5,
+   "n_hyp": 17,
+   "f3": 0.273,
+   "f1bar": 0.273
+  },
+  {
+   "track": "K.U.R.O. - Perfect Rainbow",
+   "n_ref": 8,
+   "n_hyp": 22,
+   "f3": 0.4,
+   "f1bar": 0.333
+  },
+  {
+   "track": "Koxbox - Searching For Psychoactive Herbs",
+   "n_ref": 14,
+   "n_hyp": 29,
+   "f3": 0.093,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Laughing Buddha - Karma",
+   "n_ref": 9,
+   "n_hyp": 19,
+   "f3": 0.143,
+   "f1bar": 0.143
+  },
+  {
+   "track": "Lumen - No.8",
+   "n_ref": 6,
+   "n_hyp": 19,
+   "f3": 0.16,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Lumukanda - R U Advanced",
+   "n_ref": 4,
+   "n_hyp": 18,
+   "f3": 0.091,
+   "f1bar": 0.091
+  },
+  {
+   "track": "MFG - Desert Sun (Original)",
+   "n_ref": 7,
+   "n_hyp": 23,
+   "f3": 0.067,
+   "f1bar": 0.067
+  },
+  {
+   "track": "MFG - Experience",
+   "n_ref": 7,
+   "n_hyp": 22,
+   "f3": 0.345,
+   "f1bar": 0.069
+  },
+  {
+   "track": "MFG - Hypnotized",
+   "n_ref": 6,
+   "n_hyp": 21,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "MFG - Magnetic Activity (96 remix)",
+   "n_ref": 12,
+   "n_hyp": 24,
+   "f3": 0.5,
+   "f1bar": 0.222
+  },
+  {
+   "track": "MFG - Metamorphosis",
+   "n_ref": 11,
+   "n_hyp": 25,
+   "f3": 0.278,
+   "f1bar": 0.111
+  },
+  {
+   "track": "MFG - New Kind of World Intro (Original Mix)",
+   "n_ref": 6,
+   "n_hyp": 11,
+   "f3": 0.471,
+   "f1bar": 0.118
+  },
+  {
+   "track": "MFG - Peaceful Relaxation (2)",
+   "n_ref": 5,
+   "n_hyp": 19,
+   "f3": 0.167,
+   "f1bar": 0.167
+  },
+  {
+   "track": "MFG - Project Genesis",
+   "n_ref": 11,
+   "n_hyp": 20,
+   "f3": 0.387,
+   "f1bar": 0.129
+  },
+  {
+   "track": "Man With No Name - Adrenosphere",
+   "n_ref": 4,
+   "n_hyp": 12,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Man With No Name - Cosmic Echoes",
+   "n_ref": 4,
+   "n_hyp": 21,
+   "f3": 0.08,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Man With No Name - Deliverance",
+   "n_ref": 7,
+   "n_hyp": 21,
+   "f3": 0.357,
+   "f1bar": 0.071
+  },
+  {
+   "track": "Man With No Name - Subterfuge",
+   "n_ref": 4,
+   "n_hyp": 15,
+   "f3": 0.105,
+   "f1bar": 0.105
+  },
+  {
+   "track": "Manmademan - Kraton 3",
+   "n_ref": 2,
+   "n_hyp": 18,
+   "f3": 0.1,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Manmademan - The Great Seat",
+   "n_ref": 8,
+   "n_hyp": 21,
+   "f3": 0.483,
+   "f1bar": 0.138
+  },
+  {
+   "track": "Masa - Super G",
+   "n_ref": 10,
+   "n_hyp": 26,
+   "f3": 0.167,
+   "f1bar": 0.167
+  },
+  {
+   "track": "Mindfield - Greenworm (20th Century Pox Mix)",
+   "n_ref": 5,
+   "n_hyp": 22,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Mindfield - Sphynx (Green Nuns remix)",
+   "n_ref": 4,
+   "n_hyp": 16,
+   "f3": 0.1,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Moonweed - Journey Inside",
+   "n_ref": 7,
+   "n_hyp": 10,
+   "f3": 0.118,
+   "f1bar": 0.118
+  },
+  {
+   "track": "Morphem - Love is an Ocean",
+   "n_ref": 10,
+   "n_hyp": 22,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Morphic Resonance - Theater Of The Eye",
+   "n_ref": 11,
+   "n_hyp": 30,
+   "f3": 0.049,
+   "f1bar": 0.049
+  },
+  {
+   "track": "Nervasystem - Snaafu (Original Mix)",
+   "n_ref": 9,
+   "n_hyp": 18,
+   "f3": 0.148,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Nervasystem, aether - Arouser",
+   "n_ref": 14,
+   "n_hyp": 20,
+   "f3": 0.235,
+   "f1bar": 0.118
+  },
+  {
+   "track": "Nervasystem, aether - Technicolour (Lost & Found) (2)",
+   "n_ref": 6,
+   "n_hyp": 17,
+   "f3": 0.174,
+   "f1bar": 0.0
+  },
+  {
+   "track": "OriOn - Funkadelic",
+   "n_ref": 4,
+   "n_hyp": 20,
+   "f3": 0.25,
+   "f1bar": 0.25
+  },
+  {
+   "track": "OriOn - The 8th",
+   "n_ref": 7,
+   "n_hyp": 25,
+   "f3": 0.188,
+   "f1bar": 0.188
+  },
+  {
+   "track": "Orichalcum & The Deviant - S.T.C.",
+   "n_ref": 9,
+   "n_hyp": 28,
+   "f3": 0.27,
+   "f1bar": 0.27
+  },
+  {
+   "track": "Outer Active - Aesophagus Fables",
+   "n_ref": 3,
+   "n_hyp": 16,
+   "f3": 0.105,
+   "f1bar": 0.105
+  },
+  {
+   "track": "Phlat Phase - Pearly Gate Crasher",
+   "n_ref": 4,
+   "n_hyp": 21,
+   "f3": 0.24,
+   "f1bar": 0.24
+  },
+  {
+   "track": "Phreaky - The Second Moon (Original Mix)",
+   "n_ref": 4,
+   "n_hyp": 19,
+   "f3": 0.174,
+   "f1bar": 0.087
+  },
+  {
+   "track": "Phreaky - Tornado",
+   "n_ref": 9,
+   "n_hyp": 21,
+   "f3": 0.2,
+   "f1bar": 0.067
+  },
+  {
+   "track": "Pleiadians - Magnetic Fields",
+   "n_ref": 12,
+   "n_hyp": 30,
+   "f3": 0.095,
+   "f1bar": 0.048
+  },
+  {
+   "track": "Prometheus - Rhythm, Circuit, Echo",
+   "n_ref": 9,
+   "n_hyp": 21,
+   "f3": 0.267,
+   "f1bar": 0.2
+  },
+  {
+   "track": "Psy - H Project - Crystal Worlds",
+   "n_ref": 11,
+   "n_hyp": 23,
+   "f3": 0.235,
+   "f1bar": 0.235
+  },
+  {
+   "track": "Psychopod - Stop the Carnage",
+   "n_ref": 6,
+   "n_hyp": 28,
+   "f3": 0.118,
+   "f1bar": 0.118
+  },
+  {
+   "track": "Psyfi - Pukka",
+   "n_ref": 7,
+   "n_hyp": 14,
+   "f3": 0.19,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Quirk - Congnative Dissident",
+   "n_ref": 8,
+   "n_hyp": 21,
+   "f3": 0.207,
+   "f1bar": 0.207
+  },
+  {
+   "track": "Radical Distortion - The Dreamer (2)",
+   "n_ref": 8,
+   "n_hyp": 20,
+   "f3": 0.214,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Rhythmystec - Plasmatik (Original Mix)",
+   "n_ref": 3,
+   "n_hyp": 21,
+   "f3": 0.167,
+   "f1bar": 0.167
+  },
+  {
+   "track": "Rip Van Hippy - Song of the Sea Pandas (Ubar Tmar Remix)",
+   "n_ref": 4,
+   "n_hyp": 18,
+   "f3": 0.091,
+   "f1bar": 0.091
+  },
+  {
+   "track": "S.U.N. Project - Sexdrugs & Acidtrance II",
+   "n_ref": 8,
+   "n_hyp": 23,
+   "f3": 0.258,
+   "f1bar": 0.194
+  },
+  {
+   "track": "S.U.N. Project - Spaceships & Spacepeople",
+   "n_ref": 4,
+   "n_hyp": 19,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "S.U.N. Project - T.O.T.C.",
+   "n_ref": 5,
+   "n_hyp": 17,
+   "f3": 0.182,
+   "f1bar": 0.182
+  },
+  {
+   "track": "Saafi Brothers - 2046 (The Irresistible Force Remix)",
+   "n_ref": 15,
+   "n_hyp": 21,
+   "f3": 0.333,
+   "f1bar": 0.167
+  },
+  {
+   "track": "Saafi Brothers - Internal Code Error 930 (Jammin' Unit Remix)",
+   "n_ref": 5,
+   "n_hyp": 11,
+   "f3": 0.5,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Saafi Brothers - Internal Code Error 930 (PsyTechProject Remix)",
+   "n_ref": 13,
+   "n_hyp": 18,
+   "f3": 0.258,
+   "f1bar": 0.065
+  },
+  {
+   "track": "Saafi Brothers - Sweet Sirenes (Braincell Remix)",
+   "n_ref": 10,
+   "n_hyp": 16,
+   "f3": 0.308,
+   "f1bar": 0.308
+  },
+  {
+   "track": "SanDmaN - Layla",
+   "n_ref": 12,
+   "n_hyp": 26,
+   "f3": 0.105,
+   "f1bar": 0.105
+  },
+  {
+   "track": "SanDmaN - Nostradamus (The Prophecy Remix)",
+   "n_ref": 7,
+   "n_hyp": 23,
+   "f3": 0.133,
+   "f1bar": 0.133
+  },
+  {
+   "track": "Sas, Ban & Tony - Xtra Terresticle",
+   "n_ref": 2,
+   "n_hyp": 32,
+   "f3": 0.118,
+   "f1bar": 0.059
+  },
+  {
+   "track": "Shakta - Lepton Head, Part III",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.083,
+   "f1bar": 0.083
+  },
+  {
+   "track": "Shakta - Lepton Heads",
+   "n_ref": 7,
+   "n_hyp": 17,
+   "f3": 0.417,
+   "f1bar": 0.417
+  },
+  {
+   "track": "Shaolin Wooden Men - Back On The Radio, Joe",
+   "n_ref": 10,
+   "n_hyp": 26,
+   "f3": 0.278,
+   "f1bar": 0.278
+  },
+  {
+   "track": "Shaolin Wooden Men - Rainy Taxi",
+   "n_ref": 3,
+   "n_hyp": 11,
+   "f3": 0.143,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Shpongle - Nothing Is Something Worth Doing",
+   "n_ref": 9,
+   "n_hyp": 17,
+   "f3": 0.154,
+   "f1bar": 0.077
+  },
+  {
+   "track": "Shpongle - Rumours of Vapours",
+   "n_ref": 11,
+   "n_hyp": 26,
+   "f3": 0.324,
+   "f1bar": 0.162
+  },
+  {
+   "track": "Shpongle - Vapour Rumours",
+   "n_ref": 10,
+   "n_hyp": 29,
+   "f3": 0.103,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Shpongle, Eat Static - Strange Planet (Shpongle Static Mix Live)",
+   "n_ref": 11,
+   "n_hyp": 22,
+   "f3": 0.182,
+   "f1bar": 0.182
+  },
+  {
+   "track": "Skarma - Naltayada (Original Mix)",
+   "n_ref": 4,
+   "n_hyp": 15,
+   "f3": 0.211,
+   "f1bar": 0.105
+  },
+  {
+   "track": "Slinky Nuns - Shitty Stick (Better Than a Poke in the Eye With A)",
+   "n_ref": 6,
+   "n_hyp": 21,
+   "f3": 0.222,
+   "f1bar": 0.222
+  },
+  {
+   "track": "Sonic Sufi - Neuro Tribe",
+   "n_ref": 7,
+   "n_hyp": 17,
+   "f3": 0.083,
+   "f1bar": 0.083
+  },
+  {
+   "track": "Sonic Sufi - Yamanotenoia",
+   "n_ref": 3,
+   "n_hyp": 18,
+   "f3": 0.286,
+   "f1bar": 0.19
+  },
+  {
+   "track": "Sorrowmurk - La Puerta",
+   "n_ref": 5,
+   "n_hyp": 16,
+   "f3": 0.095,
+   "f1bar": 0.095
+  },
+  {
+   "track": "Sourmash - The Blessing",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.167,
+   "f1bar": 0.083
+  },
+  {
+   "track": "Space Tribe - Don't Believe the Truth (Original Mix)",
+   "n_ref": 7,
+   "n_hyp": 18,
+   "f3": 0.08,
+   "f1bar": 0.08
+  },
+  {
+   "track": "Space Tribe - Taking a Risk",
+   "n_ref": 4,
+   "n_hyp": 24,
+   "f3": 0.071,
+   "f1bar": 0.071
+  },
+  {
+   "track": "Space Tribe - The Flower of Life (Original Mix)",
+   "n_ref": 7,
+   "n_hyp": 24,
+   "f3": 0.387,
+   "f1bar": 0.065
+  },
+  {
+   "track": "Space Tribe - Unusual Phenomenon (Original Mix)",
+   "n_ref": 8,
+   "n_hyp": 22,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Space Tribe - Waking Dreams (Original Mix)",
+   "n_ref": 6,
+   "n_hyp": 17,
+   "f3": 0.174,
+   "f1bar": 0.174
+  },
+  {
+   "track": "Sri Hari - Manasa Deha Geha",
+   "n_ref": 8,
+   "n_hyp": 21,
+   "f3": 0.138,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Subcouds - Subclouds",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.25,
+   "f1bar": 0.25
+  },
+  {
+   "track": "Sun Project - Dance of the Witches",
+   "n_ref": 6,
+   "n_hyp": 20,
+   "f3": 0.231,
+   "f1bar": 0.154
+  },
+  {
+   "track": "Sun Project - Drosophila",
+   "n_ref": 3,
+   "n_hyp": 22,
+   "f3": 0.08,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Sun Project - Going with the Flow",
+   "n_ref": 6,
+   "n_hyp": 15,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Sundog - Touch the Sun",
+   "n_ref": 9,
+   "n_hyp": 13,
+   "f3": 0.091,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Synchro - Cyberphunk",
+   "n_ref": 3,
+   "n_hyp": 12,
+   "f3": 0.267,
+   "f1bar": 0.267
+  },
+  {
+   "track": "TV Rock & Hook n Sling feat. Rudy - Diamonds in the Sky",
+   "n_ref": 4,
+   "n_hyp": 10,
+   "f3": 0.429,
+   "f1bar": 0.429
+  },
+  {
+   "track": "Talamasca - The Fifth Revelation (Original Mix)",
+   "n_ref": 8,
+   "n_hyp": 19,
+   "f3": 0.296,
+   "f1bar": 0.296
+  },
+  {
+   "track": "Talpa - Till We Meet Again (Original Mix)",
+   "n_ref": 8,
+   "n_hyp": 19,
+   "f3": 0.074,
+   "f1bar": 0.074
+  },
+  {
+   "track": "Tau Factor - Subliminator",
+   "n_ref": 5,
+   "n_hyp": 11,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Testeagles - Like No Other (Psy - Harmonics Mix)",
+   "n_ref": 9,
+   "n_hyp": 14,
+   "f3": 0.348,
+   "f1bar": 0.348
+  },
+  {
+   "track": "The Infinity Project - Freedom From the Flesh",
+   "n_ref": 6,
+   "n_hyp": 20,
+   "f3": 0.231,
+   "f1bar": 0.077
+  },
+  {
+   "track": "The Infinity Project - Hyperspaced",
+   "n_ref": 5,
+   "n_hyp": 18,
+   "f3": 0.087,
+   "f1bar": 0.087
+  },
+  {
+   "track": "The Pleiadians - Alcyone",
+   "n_ref": 11,
+   "n_hyp": 18,
+   "f3": 0.276,
+   "f1bar": 0.276
+  },
+  {
+   "track": "The Visitors - Never Know",
+   "n_ref": 8,
+   "n_hyp": 23,
+   "f3": 0.065,
+   "f1bar": 0.065
+  },
+  {
+   "track": "Third Eye - Morphic Resonance",
+   "n_ref": 5,
+   "n_hyp": 14,
+   "f3": 0.0,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Third Eye - New Life (12 Mix)",
+   "n_ref": 6,
+   "n_hyp": 18,
+   "f3": 0.417,
+   "f1bar": 0.167
+  },
+  {
+   "track": "Total Eclipse - Aliens",
+   "n_ref": 7,
+   "n_hyp": 13,
+   "f3": 0.5,
+   "f1bar": 0.4
+  },
+  {
+   "track": "Total Eclipse - Yeti 1 Part 3 - The Revelation (Original Mix)",
+   "n_ref": 10,
+   "n_hyp": 19,
+   "f3": 0.138,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Track Dogs - Only Human",
+   "n_ref": 12,
+   "n_hyp": 27,
+   "f3": 0.103,
+   "f1bar": 0.103
+  },
+  {
+   "track": "Transwave - Rezwalker (Black Thunder remix)",
+   "n_ref": 8,
+   "n_hyp": 23,
+   "f3": 0.194,
+   "f1bar": 0.194
+  },
+  {
+   "track": "Triquetra - Fluorescence Resonance",
+   "n_ref": 8,
+   "n_hyp": 17,
+   "f3": 0.4,
+   "f1bar": 0.4
+  },
+  {
+   "track": "Vibrasphere - Elephant (2021 Remastered)",
+   "n_ref": 13,
+   "n_hyp": 16,
+   "f3": 0.207,
+   "f1bar": 0.138
+  },
+  {
+   "track": "Vibrasphere - Late Winter Storms",
+   "n_ref": 10,
+   "n_hyp": 18,
+   "f3": 0.071,
+   "f1bar": 0.0
+  },
+  {
+   "track": "Virtuart - Nacht und BoulesQuies (2)",
+   "n_ref": 4,
+   "n_hyp": 24,
+   "f3": 0.071,
+   "f1bar": 0.071
+  },
+  {
+   "track": "Virtuart, Mael - Neverending Party (Original Mix)",
+   "n_ref": 8,
+   "n_hyp": 26,
+   "f3": 0.176,
+   "f1bar": 0.176
+  },
+  {
+   "track": "Voice of Cod - Go Downtown",
+   "n_ref": 15,
+   "n_hyp": 23,
+   "f3": 0.263,
+   "f1bar": 0.105
+  },
+  {
+   "track": "Z to A - Next Stop Oblivion (remix)",
+   "n_ref": 9,
+   "n_hyp": 17,
+   "f3": 0.154,
+   "f1bar": 0.154
+  },
+  {
+   "track": "Zen Paradox - Terramuta",
+   "n_ref": 3,
+   "n_hyp": 5,
+   "f3": 0.25,
+   "f1bar": 0.25
+  },
+  {
+   "track": "iNsuRge - Speculator (Into the Abcess Remix)",
+   "n_ref": 4,
+   "n_hyp": 14,
+   "f3": 0.222,
+   "f1bar": 0.222
+  }
+ ]
+}

@@ -8,6 +8,7 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+- [2026-07-17 autonomous] Gate GREEN (section rule); outlier = fast-material codec fragility (pairing verified via tempo fingerprint); LUMI package submit-ready (109 shards + integrity screen); section corpus 5035/5035 + lens-disagreement negative result + Kim spot-check staged.
 - [2026-07-16 night] E1 pilot 3 rounds: edge-scale bug found+fixed (latent domain shift), authority CONFIRMED at lam=1e7 (lf16 halved, l_max 123->34s, CE -0.33/PQ -1.16), refinement lam-grid launched; 12 renders, 44s each.
 - [2026-07-16 ~15:00] Build-everything: RecurrenceHead+band_hinge landed in latch_guided (pre-test: surface sane, γ≤0.2, hinge sparse-dormant); corpus bands 5401/5401; chroma384_eval harness + selftest OK; chroma store found; LUMI adapter recipe written.
 - [2026-07-16 ~12:30] Chroma-384 lane opened (Kim): inventory verified (morph a2a = 384-head-steered; FiLM leg untrained), 12-TET fold/expand round-trip validated (cos .9993), eval spec written (target-SHAPE as primary axis), corpus-bands pass launched (E0-D).

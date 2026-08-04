@@ -1,0 +1,102 @@
+{
+ "prompts": [
+  {
+   "id": "rb_common_0",
+   "text": "2020s goa trance, melodic mood, 148 bpm",
+   "seed": 786795416
+  },
+  {
+   "id": "rb_common_1",
+   "text": "mid 90s goa trance, melodic space mood, 140 bpm",
+   "seed": 225176290
+  },
+  {
+   "id": "rb_common_2",
+   "text": "mid 90s goa trance, 148 bpm",
+   "seed": 544354203
+  },
+  {
+   "id": "rb_mid_3",
+   "text": "2010s techno, tech trance, space mood, 142 bpm",
+   "seed": 92101475
+  },
+  {
+   "id": "rb_mid_4",
+   "text": "mid 90s psy-trance, goa trance, 142 bpm",
+   "seed": 1331736365
+  },
+  {
+   "id": "rb_mid_5",
+   "text": "2020s goa trance, melodic space mood, 144 bpm",
+   "seed": 232172918
+  },
+  {
+   "id": "rb_rare_6",
+   "text": "mid 90s techno, house, 130 bpm",
+   "seed": 564875484
+  },
+  {
+   "id": "rb_rare_7",
+   "text": "2010s psy-trance, progressive trance, 136 bpm",
+   "seed": 16488276
+  },
+  {
+   "id": "rb_rare_8",
+   "text": "mid 90s goa trance, techno, space dark mood, 140 bpm",
+   "seed": 278158216
+  },
+  {
+   "id": "kl_0",
+   "text": "This track is an instrumental Psytrance piece that blends classic Goa-style melodic arpeggios with modern, high-fidelity production. It sits at 150 BPM in 4/4 time and is rooted in F minor, though the harmonic content is intentionally sparse, focusing instead on evolving textures and driving rhythmic momentum.",
+   "seed": 1000
+  },
+  {
+   "id": "kl_1",
+   "text": "This track is an instrumental jazz-fusion piece that blends funk-driven grooves with a subtle disco-house aesthetic. It sits at 125 BPM in C major, and its polished, high-fidelity production emphasizes a wide stereo image and clean separation of each instrument.",
+   "seed": 1001
+  },
+  {
+   "id": "kl_2",
+   "text": "This track is an intense Psytrance piece, rooted in the Goa Trance sub-genre and blending classic psychedelic trance aesthetics with a modern, high-energy production style. It runs at \u2248142.86 BPM in a 4/4 time signature and is centered in F minor.",
+   "seed": 1002
+  },
+  {
+   "id": "kimlong",
+   "text": "bittersweet synth music with influences from goa trance and 80s retro videogame music, dorian scale, BPM 138, steady 90s trance beat, punchy bright kick, 16th octave bass runs, tight snares every second beat",
+   "seed": 1234
+  },
+  {
+   "id": "trig2",
+   "text": "aavepyora",
+   "seed": 1234
+  },
+  {
+   "id": "techno",
+   "text": "techno music",
+   "seed": 1234
+  },
+  {
+   "id": "housestyle",
+   "text": "bittersweet eclectic house, aavepyora style",
+   "seed": 1234
+  },
+  {
+   "id": "rb_bracket_0",
+   "text": "2020s goa trance, melodic mood, 148 bpm",
+   "seed": 1102008041
+  },
+  {
+   "id": "kl_bracket_0",
+   "text": "This track is a high-energy Psytrance piece that blends driving trance rhythms with the hypnotic, acid-inflected textures typical of the genre.",
+   "seed": 1000
+  }
+ ],
+ "cfgs": [
+  1.0,
+  7.0,
+  16.0
+ ],
+ "steps": 24,
+ "duration": 20.0,
+ "note": "snapshot of the exact local grid axes (ids/texts/seeds) for LUMI-side rendering, 2026-07-21"
+}

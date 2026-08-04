@@ -79,3 +79,21 @@ __pycache__/
 
 eval/clap_degen_model_matrix.csv
 eval/clap_full_table.csv
+
+# --- large generated artifacts / binaries — never commit (F consolidation 2026-08-04) ---
+onnx/exports/
+eval/musicology/
+eval/clip_metrics.db
+.*.log
+*.npz
+*.npy
+*.m4a
+*.wav
+*.flac
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.db

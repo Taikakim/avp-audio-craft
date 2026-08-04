@@ -1,0 +1,8 @@
+[reverb] manifest=eval/st48_manifest.jsonl total=275 already_done=0 to_process=275 workers=10
+[reverb] 50/275 ok=50 err=0 5.07 clip/s
+[reverb] 100/275 ok=100 err=0 5.41 clip/s
+[reverb] 150/275 ok=150 err=0 5.56 clip/s
+[reverb] 200/275 ok=200 err=0 5.60 clip/s
+[reverb] 250/275 ok=250 err=0 5.61 clip/s
+[reverb] 275/275 ok=275 err=0 5.67 clip/s
+[reverb] done: 275 ok, 0 err in 48.5s (0.18s/clip wall) -> eval/reverb_st48.jsonl

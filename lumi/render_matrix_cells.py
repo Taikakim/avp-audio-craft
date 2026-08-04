@@ -18,8 +18,15 @@ Idempotent per cell. Run (in SIF, one GCD):
 """
 import argparse
 import json
+import os
+import sys
 import time
 from pathlib import Path
+
+# self-add control/ so `from sa3_control.audio_io import save_audio` works regardless of the
+# caller's PYTHONPATH (job 20190736 lost all its eval renders to ModuleNotFoundError:
+# sa3_control — every eval-render sbatch had stable-audio-3:lumi/vendor but not control/).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "control"))
 
 STEPS, DURATION = 24, 20.0
 FPS = 44100 / 4096  # = 10.7666 Hz, the canonical SA3-medium latent frame rate

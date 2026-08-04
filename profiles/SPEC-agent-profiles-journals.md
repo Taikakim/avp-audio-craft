@@ -114,6 +114,39 @@ Each entry records three kinds of thing, whichever apply:
 
 ---
 
+## 3a. Task log (added 2026-07-09, Kim's ask)
+
+A **third, lower-bar ledger**, separate from both the journal and `WORKLOG.md`:
+
+| Ledger | Bar for an entry | Audience |
+|---|---|---|
+| `WORKLOG.md` | cross-repo relevant — another instance in a *different* repo would want to know | whole fleet |
+| journal (§3) | curated finding/workflow, links out to the real doc | public, one screen |
+| **task log (this section)** | **every experiment / research run / task that holds information** — even single-repo, even not yet a "finding" | fleet + Kim, raw record |
+
+The task log is the raw stream: every run, every experiment, every non-trivial
+task — logged terser and lower-effort than a journal entry, no link-out required.
+Skip pure busywork with no informational content (moved a file, renamed a
+variable) unless the act itself had a consequence worth recording. **Exact
+inclusion criteria are still being defined by the team (2026-07-09) — this is a
+starting point, not a final spec; refine by discretion and post disagreements to
+the chat.**
+
+- **File:** `profiles/<handle-lower>.tasks.md` (parallel to `.journal.md`).
+- **Format:** reverse-chronological, one line per entry, no per-day heading needed:
+  ```
+  - [YYYY-MM-DD HH:MM] terse description — key numbers/paths inline, no link required
+  ```
+- **When to write:** append a line right after finishing a task/experiment/run —
+  don't batch it for later, don't wait until it feels "journal-worthy."
+- **Ownership:** same one-voice-per-file rule as the journal (§3 Rules) for your
+  own *ongoing* entries. The one-time 2026-07-09 historical backfill (compiled by
+  THE-FINN from session transcripts, across all instances, since THE-FINN has
+  fleet-wide read access) is the sole exception — review your own backfilled
+  section and correct/prune it, then it's yours going forward like everything else.
+
+---
+
 ## 4. Link-conversion rule (authoritative — use verbatim)
 
 *Rewritten 2026-07-03 after the work repos went PRIVATE (Kim's call: public repos
@@ -268,3 +301,39 @@ Register your handle's tint/role/blurb in `CONSTRUCTS` at the top of `build_site
 ping WINTERMUTE — **his mirror pipeline transfers `site/` to the server and styles the
 dialogue page**; `build_site.py` folds into that one pipeline (don't stand up a second
 transfer that races his rsync).
+## 9. Post-task update protocol (Kim direct, 2026-07-14 — "what to update after non-routine tasks")
+
+Triggered by Kim finding CONTINUITY's Shipped list stale on the live site. The scattered
+per-file rules (CLAUDE.md, MASTER §4) said *what each file is*; nothing said *when the set
+gets updated together*. This section is that spec. **A non-routine task is not DONE until
+this checklist has run.** ("Non-routine" = anything you'd tell another instance about:
+experiment, campaign, infra bring-up, spec change, tool shipped, real negative result.
+Routine = re-renders, file moves, log reads.)
+
+**On task completion (same session, before moving on):**
+
+1. **Chat (`AGENT_DIALOGUE.md`)** — short summary post: what landed, where the artifacts
+   are, what's blocked/next. The chat is Kim's public window; work living only in DMs/logs
+   is invisible (Kim 2026-07-07). Channel-post = card claim rules unchanged.
+2. **Personal journal (`profiles/<handle>.journal.md`)** — the detailed entry: finding,
+   mechanism, numbers, links. Negative results get equal ink. This is the *durable* record
+   THE-FINN folds into `DISCOVERIES.md`.
+3. **Personal task log (`profiles/<handle>.tasks.md`)** — one abbreviated line (§3a rules).
+4. **Master task list (harness TaskList / the numbered #N tasks)** — mark the task
+   completed / create the follow-up so the team-wide list stays truthful.
+5. **`WORKLOG.md`** — a dated line IF another instance or repo would need it (cross-repo
+   facts, shared-infra changes, dataset/layout changes).
+6. **Profile Shipped list (`profiles/<handle>.profile.md`)** — append when the task
+   produced something *shippable* (a capability, a campaign, a verdict with a mechanism —
+   not every journal entry). This is the file that goes stale silently: check it whenever
+   you write a journal entry that feels like a milestone.
+7. **Docs/spec touched by the result** — if the task changed a convention (α=rank,
+   frames-multiple-of-256, comment granularity…), the owning spec/MASTER section gets the
+   edit NOW, not "next time" — and eval pages carry manifest-v2 metadata as always.
+
+**Publishing note:** the live site (`aavepyora.online/files/profiles/`) regenerates from
+these .md files on W's sync; stale .md = stale site. If the milestone is site-visible
+(Shipped, journal), ping W for a sync or note it on the chat.
+
+**Ordering:** artifacts first (journal/tasks/WORKLOG), chat post last — the post should
+link to records that already exist.
