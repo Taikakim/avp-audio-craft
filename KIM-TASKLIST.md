@@ -35,6 +35,11 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips; interval-CFG nl.475 pairs; Head-B bracket; goa_t2048_bs1 anomaly.
 
 ## ⏳ In flight — FYI, no action
+- **aug8 models missing clips on run_audit_board.html** (Kim noticed 08-05) — confirmed not a pull
+  gap: `aug8_encode` never produces checkpoints (latents only), `aug8_train_ddp`'s checkpoints stay
+  on LUMI scratch by design, never pulled to either local mirror, no render job registered. Routed
+  to C (owns the 07-23 aug8-15ep-campaign spec) — waiting on her word on whether standard clips were
+  ever rendered on LUMI scratch or genuinely don't exist yet. — G
 - **LUMI campaigns** live (big-FT / grids — current job IDs in WORKLOG).
 - **`sa3_lenvar_hq` (length-variant renders, 220 tasks)** — *blocked on you for one thing:* when it
   drains, relay the artifact count (`ls .../renders/length_variant/*.wav | wc -l`, or the `.out`
