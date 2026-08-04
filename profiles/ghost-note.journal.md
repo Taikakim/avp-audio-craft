@@ -532,3 +532,51 @@ chains (#71 xft, #72 fp32frames, #73 winning ep10/15) had actually finished
 before the restart killed their processes. Reinforces: never trust an
 ephemeral scratchpad log as the source of truth for "is this done" — check
 the real persistent artifact.
+
+## 2026-08-02
+
+### finding · goa_archive statistics + clustering (task #85, Kim direct)
+Verified the 23,232-track goa_archive MIR pass complete (66.34h, ok=23227
+fail=1) and re-ran CONTINUITY's `goa_archive_curate.py` unmodified — output
+byte-identical to the existing `clusters_summary.json`, confirming the
+earlier "index may be partial" run had already reflected the final index
+(8061 unique / 8383 duplicate_dropped / 2220 master_variant / 4557
+duplicate_best; 4515 multi-track clusters, largest=32; 6230 overlap with the
+existing Goa_Separated corpus).
+
+Gap found: the "usual statistics" tool (`mir/src/tools/statistical_analysis.py`)
+expects flat `.INFO` scalar files (one JSON per crop); the archive's real
+output is per-frame time-series npz (`whole_track_expanded.py`'s format,
+20+ fields at native per-field rates, some 2D: chroma, VA, effnet
+probability vectors). No existing per-track scalar-reduction consumer for
+this format — checked, none found. Wrote `mir/src/tools/goa_archive_stats_export.py`
+(new, ~190 lines) to bridge it: mean+std for 1D scalar-rate fields,
+entropy+L2-norm for pooled chroma, separate valence/arousal per VA model
+(DEAM, emoMusic — kept distinct, not averaged), argmax-class+prob for the
+three effnet classifiers (genre400/moodtheme/instrument, class names from
+the model JSONs not raw indices), 768-d MAEST embedding explicitly EXCLUDED
+(not a scalar, already used properly elsewhere via cosine clustering).
+Documented as a first-cut aggregation, not authoritative — flagged to
+CONTINUITY (owns the field design) before running at scale, no blocking
+objection, proceeded. Ran clean at full scale: 23231/23231 ok, 0 skip, 0
+failures.
+
+`statistical_analysis.py` then ran unmodified over the export and produced
+real output (34 features, 30 numeric + 4 categorical): genre distribution
+sanity-checks as expected for this corpus (60% Goa Trance, 14% Techno, 7%
+Ambient/Trance — 115 unique classes but heavily concentrated); mood mostly
+melodic/energetic/space; instrument classifier collapses to "synthesizer"
+for 98% of tracks (effnet's instrument model is a poor fit for
+synth-dominated electronic music — a caveat on that one feature, not a data
+bug). Correlation pass flagged 12 pairs at |r|≥0.6 — mostly expected
+redundancy (loudness momentary/shortterm r=0.983, DEAM valence/arousal
+r=0.949, chroma entropy/norm r=-0.897) rather than new information.
+
+**Docs-truth gap, not yet flagged to the fleet formally:**
+`STATISTICAL_ANALYSIS_MANUAL.md` documents flags (`--feature-select`,
+`--per-track`, `--pca`, `--vif`, `--cluster`, `--mi`, `--build-db`,
+`--scatter`, `--quadrant`, top/key/bottom queries) that do not exist in the
+actual script — real CLI is just `path [-o] [-v] [-c] [--corr-threshold]
+[-l]`. Worth a docs-truth-auditor pass on that file.
+
+Output: `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/{info/,stats.json}`.

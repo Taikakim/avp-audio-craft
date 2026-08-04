@@ -1,0 +1,162 @@
+{
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep0": {
+    "n_beats": 42,
+    "n_onsets": 111,
+    "ibi_cv": 0.01809581671681049,
+    "bpm_est": 124.99999999999989,
+    "syncopation": 0.7161815166473389,
+    "on_beat_ratio": 0.2882882882882883,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 0
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep1": {
+    "n_beats": 42,
+    "n_onsets": 103,
+    "ibi_cv": 0.015523748927084219,
+    "bpm_est": 125.00000000000011,
+    "syncopation": 0.62213134765625,
+    "on_beat_ratio": 0.33980582524271846,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 1
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep2": {
+    "n_beats": 41,
+    "n_onsets": 128,
+    "ibi_cv": 0.022579307367440515,
+    "bpm_est": 125.00000000000036,
+    "syncopation": 0.6729425191879272,
+    "on_beat_ratio": 0.3046875,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 2
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep3": {
+    "n_beats": 42,
+    "n_onsets": 108,
+    "ibi_cv": 0.01329243353783312,
+    "bpm_est": 125.0,
+    "syncopation": 0.6117979288101196,
+    "on_beat_ratio": 0.35185185185185186,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 3
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep4": {
+    "n_beats": 43,
+    "n_onsets": 126,
+    "ibi_cv": 0.014541712710103929,
+    "bpm_est": 125.00000000000036,
+    "syncopation": 0.6455463171005249,
+    "on_beat_ratio": 0.31746031746031744,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 4
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep5": {
+    "n_beats": 42,
+    "n_onsets": 123,
+    "ibi_cv": 0.013174597516578724,
+    "bpm_est": 125.00000000000036,
+    "syncopation": 0.6834484338760376,
+    "on_beat_ratio": 0.3170731707317073,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 5
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep6": {
+    "n_beats": 42,
+    "n_onsets": 119,
+    "ibi_cv": 0.016774797162867842,
+    "bpm_est": 125.00000000000036,
+    "syncopation": 0.6616924405097961,
+    "on_beat_ratio": 0.29411764705882354,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 6
+  },
+  "fp32cmp_avp_t4096_bs4_lr1e4__ep7": {
+    "n_beats": 42,
+    "n_onsets": 102,
+    "ibi_cv": 0.0186745341167929,
+    "bpm_est": 127.65957446808493,
+    "syncopation": 0.6847487092018127,
+    "on_beat_ratio": 0.3431372549019608,
+    "arm": "fp32cmp_avp_t4096_bs4_lr1e4",
+    "ep": 7
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep0": {
+    "n_beats": 41,
+    "n_onsets": 100,
+    "ibi_cv": 0.03089488222745069,
+    "bpm_est": 125.0,
+    "syncopation": 0.6844184398651123,
+    "on_beat_ratio": 0.3,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 0
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep1": {
+    "n_beats": 41,
+    "n_onsets": 119,
+    "ibi_cv": 0.035620394480507696,
+    "bpm_est": 124.99999999999989,
+    "syncopation": 0.7015325427055359,
+    "on_beat_ratio": 0.2857142857142857,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 1
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep2": {
+    "n_beats": 43,
+    "n_onsets": 96,
+    "ibi_cv": 0.015067279791784998,
+    "bpm_est": 125.00000000000006,
+    "syncopation": 0.6014717817306519,
+    "on_beat_ratio": 0.375,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 2
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep3": {
+    "n_beats": 43,
+    "n_onsets": 101,
+    "ibi_cv": 0.013603855660985625,
+    "bpm_est": 125.00000000000011,
+    "syncopation": 0.6477984189987183,
+    "on_beat_ratio": 0.3564356435643564,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 3
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep4": {
+    "n_beats": 42,
+    "n_onsets": 99,
+    "ibi_cv": 0.012460181602202516,
+    "bpm_est": 125.00000000000003,
+    "syncopation": 0.5751358866691589,
+    "on_beat_ratio": 0.3838383838383838,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 4
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep5": {
+    "n_beats": 42,
+    "n_onsets": 146,
+    "ibi_cv": 0.016980248258514602,
+    "bpm_est": 125.00000000000003,
+    "syncopation": 0.7264000773429871,
+    "on_beat_ratio": 0.2671232876712329,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 5
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep6": {
+    "n_beats": 42,
+    "n_onsets": 148,
+    "ibi_cv": 0.013292433537832427,
+    "bpm_est": 125.00000000000003,
+    "syncopation": 0.6874780654907227,
+    "on_beat_ratio": 0.27702702702702703,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 6
+  },
+  "fp32cmp_avp_t4096_bs4_lr5e5__ep7": {
+    "n_beats": 42,
+    "n_onsets": 116,
+    "ibi_cv": 0.025932917741919793,
+    "bpm_est": 127.65957446808493,
+    "syncopation": 0.7062116861343384,
+    "on_beat_ratio": 0.3275862068965517,
+    "arm": "fp32cmp_avp_t4096_bs4_lr5e5",
+    "ep": 7
+  }
+}
