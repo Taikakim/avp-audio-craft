@@ -16,7 +16,7 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
       riffer/chroma_steer.html — the tooling already exists, WORKLOG 2026-06-25):
       steer harmony across the transition window with a time-varying chroma target
       (A's measured tail chroma -> B's head chroma). USE THE TRAINED STEM-CHROMA HEAD
-      `latch_sa3_chroma_other_best.pt` (now Mantu1/sa3_lora_runs/cu_reward_renders/
+      `latch_sa3_chroma_other_best.pt` (now Mantu/sa3_lora_runs/cu_reward_renders/
       analysis/chroma_heads/ — promote to a weights dir), cosine loss, gain ~1536-2048
       (the proven pitch-steering band); targets from `compute_same_chroma` sidecars
       (Lehto/latents_sa3_stem_chroma, 4907/5400) or computed on the fly (mir-same-chroma,

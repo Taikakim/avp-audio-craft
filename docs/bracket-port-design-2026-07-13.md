@@ -322,7 +322,7 @@ Base (op `generate`, as `_build_payload` returns it today):
   "negative_prompt": "", "duration": 47.0, "batch_size": 1,
   "duration_padding_sec": 6.0, "steps": 24, "cfg_scale": 6.0, "seed": -1,
   "cfg_interval": [0.0, 1.0], "apg_scale": 1.0,
-  "ckpt_path": "/run/media/kim/Mantu1/sa3_lora_runs/…/last.safetensors",
+  "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/…/last.safetensors",
   "latch": [{"head": "onset_envelope", "kind": "beat_grid", "value": 140.0,
              "gain": 512.0, "start_pct": 0.0, "end_pct": 0.6}],
   "film": null,

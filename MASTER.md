@@ -73,7 +73,7 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 | Path | What | Used by |
 |---|---|---|
 | `ai-music/Goa_Separated` (4470) | **Full tracks** + stems + `.INFO` + `.BEATS_GRID`/`.DOWNBEATS`/`.ONSETS` | SA3 encode, whole-track timeseries |
-| `goa_crops` (4829) | Older **11.9 s crop** corpus (`<Artist - Title>_N.flac`) | SAO-Small LatCH |
+| ~~`goa_crops`~~ | **Removed from Mantu (verified 2026-08-05)** — older 11.9 s crop corpus (`<Artist - Title>_N.flac`); fed the legacy SAO-Small LatCH, superseded by the whole-track set | — (legacy) |
 | `sa3_lora_runs` | **SA3 LoRA checkpoints + demos** (moved from Lehto 2026-07-04) | SA3 |
 | `sa3_control_runs` | **SA3 control-adapter/LatCH eval runs + renders** (the eval convention consolidated here; Lehto's copy was empty/stubs) | control/eval |
 
@@ -321,7 +321,7 @@ batch mode OOMs WavLM at ~8 GB on 16 GB).
 
 **Control-response eval specs (the canonical control grid).** `control/sa3_control/onset_eval.py
 <ckpt> --gains … --densities …` is the control-response evaluator: renders a **gain × density
-grid** (defaults gains {0.5,1,2,3,6,8,12} × densities {2,4,6,8,10,15,20}, `--duration 20`), measures
+grid** (defaults gains {0,1,2,4} × densities {2,4,6,8,10}, `--duration 20`), measures
 output onset-density per clip, and writes **`onset_eval.json`** — a list of `{gain, requested,
 measured}` plus the **per-gain correlation** (the control-authority number). It **auto-detects the
 ckpt's `scalar_field`**, so the *same* tool works for `onset_density` and `onset_per_beat`. Output dir
@@ -354,7 +354,7 @@ step / path). Write it **when you create the output, not later** — a dir of ba
 sidecar is a dead end no one, human or instance, can revive. The presentation UIs and `run_purposes.json`
 both read it, so provenance written once is legible everywhere. **Two additions
 (Kim 2026-07-07): (1) eval/render outputs NEVER live in the SAO tree — they go to the
-eval drive (`Mantu1/sa3_lora_runs` / `sa3_control_runs`); SAO carries code and docs only.
+eval drive (`Mantu/sa3_lora_runs` / `sa3_control_runs`); SAO carries code and docs only.
 (2) The sidecar's purpose field states WHAT the eval tests and WHY — and when analysis or
 Kim's listening produces a verdict, that finding goes into the PERSISTENT record (the
 sidecar `findings` field + journal → DISCOVERIES; a finding that lives only in chat is

@@ -7,7 +7,7 @@ verbatim reason. Never prune without Kim's word; supersede with a note instead.
 
 | # | Checkpoint | Path | Why (Kim's ear) | Added |
 |---|---|---|---|---|
-| 1 | `x20b3ygb_epoch3-step5400` — rank-16 dora-rows **Fusion**, goa corpus (b4-cont run, ≈ep6 overall) | `Mantu1/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt` | Overall favourite of the dora_results board: "cleanest sound with sounds not diffusing in the spectral image"; best of the p1 s42 clips ("good clarity, sense of space"); clearest of the s1234 clips (with a caveat: slight electro-like kick/bass distortion typical of this prompt+seed when training starts traversing toward another style) | 2026-07-07 |
+| 1 | `x20b3ygb_epoch3-step5400` — rank-16 dora-rows **Fusion**, goa corpus (b4-cont run, ≈ep6 overall) | `Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt` | Overall favourite of the dora_results board: "cleanest sound with sounds not diffusing in the spectral image"; best of the p1 s42 clips ("good clarity, sense of space"); clearest of the s1234 clips (with a caveat: slight electro-like kick/bass distortion typical of this prompt+seed when training starts traversing toward another style) | 2026-07-07 |
 
 ## Audition context for entry 1 (dora_results.html, 2026-07-07)
 
