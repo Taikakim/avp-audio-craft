@@ -13,6 +13,20 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **Merge PR #1** — doc-oversight doc review → `main`, when you're happy: https://github.com/Taikakim/avp-audio-craft/pull/1
 - **same-chroma-steering-demos** — 1 commit stranded off `main`; merge it, or keep it a demos branch? (C to action)
 - **Dev-branch rename** — `sa3-style-adapter` is a misnomer now ("far past a style adapter"); rename / restructure around `main` whenever you want. No rush.
+- **SSH to the desktop — half-done, needs you at the desk** (08-04/05). `sshd` is enabled + starts on
+  boot, firewall open, and password login from the laptop is verified working on the home LAN. Still
+  yours: install the key (`scp` the laptop pubkey → `authorized_keys`), then harden
+  (`PasswordAuthentication no`) — *only after* key login works, or you lock yourself out. Both are
+  sudo/interactive, so they can't be done for you.
+- **Tailscale — yes or no?** Decides whether ssh works from *outside* the home LAN (it doesn't today:
+  on a hotspot the laptop can't reach the desktop at all). ~10 min at the desk, both machines, no
+  router changes, no exposed port. Also the prerequisite for the item below.
+- **Do you want a local-only notes path I can actually read?** The Notes widget now lives on
+  `dora_table` (moved off the matrix 08-04, your call). It is **write-only by design** — public
+  endpoint, so your notes land in your offline review file and no instance may read them, meaning
+  your ear-verdicts still reach `run_meta.kim_feedback` only when you relay them in chat. A
+  local-only twin (private network, nothing public can write to it) would let me ingest verdicts
+  straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits; aug8 redo-vs-aug3 (encode profile unmeasured, parked).
 
 ## 👂 Ear queue (needs Kim's ears)
@@ -22,6 +36,10 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ⏳ In flight — FYI, no action
 - **LUMI campaigns** live (big-FT / grids — current job IDs in WORKLOG).
+- **`sa3_lenvar_hq` (length-variant renders, 220 tasks)** — *blocked on you for one thing:* when it
+  drains, relay the artifact count (`ls .../renders/length_variant/*.wav | wc -l`, or the `.out`
+  tail). Agents can't reach LUMI. Everything downstream is built + deployed — the clips ingest and
+  the boards fill the remaining 55 models' native/ptm cells with no further code changes. — W
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
