@@ -41,7 +41,7 @@ def cell_fallback():
     Keys match the page's cellKey(model,ckpt,pid,cfg,w) String-concat format exactly."""
     if not MANIFEST.exists():
         return None
-    idx, prompts, cfgs, ws = {}, {}, set(), set()
+    idx, nidx, prompts, cfgs, ws = {}, {}, {}, set(), set()
     for ln in MANIFEST.read_text().splitlines():
         if not ln.strip():
             continue
@@ -54,10 +54,18 @@ def cell_fallback():
         cf, w = _jsnum(e["cfg"]), _jsnum(e["strength"])
         # SEP must match the page's cellKey(): m+'\x01'+c+'\x01'+pid+'\x01'+cfg+'\x01'+w
         # (G uses \x01 SOH as a collision-safe separator; a plain concat never matches it).
-        idx["\x01".join([e["model"], e["ckpt"], str(e["prompt_id"]), cf, w])] = e["file"]
+        key = "\x01".join([e["model"], e["ckpt"], str(e["prompt_id"]), cf, w])
+        # native-length renders (duration_mode=native, __dNNN files) live in a PARALLEL index:
+        # same 5-tuple key as their 20s twin, selected by the 'native length' checkbox. Keeping
+        # them out of idx also fixes a real clobber -- the 5-tuple key has no duration dimension,
+        # so a shared index would let whichever entry came last in the manifest win.
+        if e.get("duration_mode") == "native":
+            nidx[key] = e["file"]
+        else:
+            idx[key] = e["file"]
+            cfgs.add(cf); ws.add(w)
         prompts.setdefault(str(e["prompt_id"]), e.get("prompt_text", ""))
-        cfgs.add(cf); ws.add(w)
-    return {"idx": idx, "prompts": prompts,
+    return {"idx": idx, "nidx": nidx, "prompts": prompts,
             "cfgs": sorted(cfgs, key=float), "ws": sorted(ws, key=float)}
 STAGING_COPY = Path.home() / ".cache/evals_aac/dora_table.html"
 
@@ -229,6 +237,7 @@ checkpoint recipes.</p>
  <label>cfg <select id=pcfg></select></label>
  <label>weight <select id=pstrength></select></label>
  <label title="the post-trained (rf_denoiser/ping-pong) base model instead of medium-base, with this row's own adapter applied. Only rendered at cfg1/w1/8-step (its PT-native config) -- higher cfg 'cooks' the output, so checking this forces+locks cfg/weight."><input type=checkbox id=pptm> post-trained</label>
+ <label title="play the native-training-length render (e.g. 47.5s for T512 models) instead of the 20s comparison cell. Native grids exist at TERMINAL checkpoints only -- other rows fall back to their 20s clip, marked ·20s in the label. Combines with post-trained (ptm+native)."><input type=checkbox id=pnative> native length</label>
  <button id=pp title="play/pause">&#9654;</button>
  <input type=range id=pseek min=0 max=1000 value=0>
  <span id=ptm style=color:#9a9>0:00 / 0:00</span>
@@ -284,7 +293,7 @@ function render(){
 // -- only ever entries whose m4a actually exists), so "no clip" here means truly not
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
-let cellIndex=null,cellsByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+let cellIndex=null,nativeIndex=null,cellsByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
 const HIDE=(D.hide||[]);                 // hidden model-label prefixes (borked families)
 const isHidden=m=>HIDE.some(p=>String(m).startsWith(p));
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
@@ -300,11 +309,15 @@ function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 // glitches elsewhere), so checking it forces+locks those two selects and every lookup is
 // keyed on "<model>_ptm" instead of "<model>" -- same rows, a different underlying render.
 function modelKey(m){return m+(pptm.checked?'_ptm':'')}
-function currentSel(){return {pid:pprompt.value,cfg:parseFloat(pcfg.value),w:parseFloat(pstrength.value)}}
-// pptm is now a pure VIEW toggle (base render vs post-trained render). It no longer
-// force-locks cfg/weight: graceful cell resolution (below) auto-picks the cfg/w a given
-// model actually rendered, so the picker stays free and the manual "know to lock cfg=1"
-// step is gone (Kim 2026-08-02: kill the manual-matching fragility).
+// ptm playback is PINNED to cfg1/w1 (Kim 2026-08-02, reversed same-day): higher cfg/weight
+// ptm renders are universally broken/glitchy -- some model families (e.g. fp32cmp) DID render
+// a fuller ptm grid, but nobody should ever audition those cells, so resolution ignores the
+// picker's cfg/weight while checked rather than trusting per-model availability. The picker's
+// OWN select values are untouched (no DOM write) so unchecking reveals whatever was selected
+// before, unchanged -- only the resolved cfg/w is pinned, not the visible controls.
+function currentSel(){return {pid:pprompt.value,
+ cfg:pptm.checked?1:parseFloat(pcfg.value),
+ w:pptm.checked?1:parseFloat(pstrength.value)}}
 function applyPtmLock(){}
 // GRACEFUL CELL RESOLUTION (Kim 2026-08-02): the global cfg/weight/prompt picker can request
 // a combo a given (model,ckpt) never rendered (e.g. the _ptm winning variants are cfg1-ONLY)
@@ -327,6 +340,15 @@ function resolveCell(mkey,ckpt,pid,cfg,w){
  const pool=(sp.length?sp:g.arr).slice()
    .sort((a,b)=>(Math.abs(a.cfg-cfg)-Math.abs(b.cfg-cfg))||(Math.abs(a.w-w)-Math.abs(b.w-w)));
  e=pool[0];return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,exact:false};}
+// NATIVE-LENGTH overlay (Kim 2026-08-02 spec): resolution always runs over the 20s universe
+// (the densest grid); when the checkbox is on, swap in the native-length twin of the RESOLVED
+// cell if one exists (terminal checkpoints only), else keep the 20s clip and say so. Returns
+// {file,tag,nkey} -- nkey feeds playingKey so toggling the box mid-play re-resolves the src.
+function nativeSwap(hit,ckpt){
+ const base={file:hit.file,tag:'',nkey:''};
+ if(!pnative.checked||!nativeIndex)return base;
+ const nf=nativeIndex.get(cellKey(hit.mkey,ckpt,hit.pid,hit.cfg,hit.w));
+ return nf?{file:nf,tag:' ·native',nkey:'\x01N'}:{file:hit.file,tag:' ·20s',nkey:''};}
 // dim rows that have NO clip at the selected PROMPT (with graceful-resolve, cfg/w mismatch
 // no longer means "unplayable" -- only a missing prompt is a meaningful "nothing here" signal).
 function markAvailability(){
@@ -360,12 +382,13 @@ function repickCurrent(){
  const {pid,cfg,w}=currentSel();
  const hit=resolveCell(modelKey(playingModel),playingCkpt,pid,cfg,w);
  if(!hit)return;                                      // model has no clip at all -> keep playing
- const key=cellKey(hit.mkey,playingCkpt,hit.pid,hit.cfg,hit.w);
+ const sw=nativeSwap(hit,playingCkpt);
+ const key=cellKey(hit.mkey,playingCkpt,hit.pid,hit.cfg,hit.w)+sw.nkey;
  if(key===playingKey)return;                          // already on the resolved clip
  playingKey=key;
- curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest');
+ curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
- pl.pause();pl.src=CB+hit.file;seekAndPlay(ph);showSSM(hit.file);setDL(hit.file);markPlaying();}
+ pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
  const {pid,cfg,w}=currentSel();
@@ -375,13 +398,14 @@ function playRow(tr){
   plabel.className='nomatch';
   plabel.textContent='no clip rendered for '+modelKey(tr.dataset.model)+' '+tr.dataset.ckpt;
   return;}
- const key=cellKey(hit.mkey,tr.dataset.ckpt,hit.pid,hit.cfg,hit.w);
+ const sw=nativeSwap(hit,tr.dataset.ckpt);
+ const key=cellKey(hit.mkey,tr.dataset.ckpt,hit.pid,hit.cfg,hit.w)+sw.nkey;
  if(playingKey===key){stopPlaying();return;}
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
- curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest');
+ curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
- pl.pause();pl.src=CB+hit.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
- showSSM(hit.file);setDL(hit.file);
+ pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
+ showSSM(sw.file);setDL(sw.file);
  markPlaying();}
 // STRUCTURE panel: on a NATIVE clip, show its recurrence-SSM image + the 3 structure metrics
 // (W 2026-07-22). Non-native clips have no entry in D.struct -> panel stays hidden.
@@ -399,6 +423,7 @@ document.getElementById('body').addEventListener('click',e=>{
  const tr=e.target.closest('tr');if(!tr||!tr.dataset.model)return;playRow(tr);});
 ['pprompt','pcfg','pstrength'].forEach(id=>document.getElementById(id).onchange=repickCurrent);
 pptm.addEventListener('change',()=>{applyPtmLock();repickCurrent();});
+pnative.addEventListener('change',repickCurrent);
 // transport: play/pause + seek + time, matching model_matrix.html's player
 const fmtT=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
 let seeking=false;
@@ -435,7 +460,7 @@ function fillPicker(promptTxt,cfgSet,wSet){
  if(wSet.has(1))pstrength.value='1';
  markAvailability();}
 async function loadManifest(){
- cellIndex=new Map();
+ cellIndex=new Map();nativeIndex=new Map();
  const promptTxt=new Map(),cfgSet=new Set(),wSet=new Set();
  try{
   const r=await fetch('model_matrix/manifest_live.jsonl',{cache:'no-store'});
@@ -444,8 +469,11 @@ async function loadManifest(){
   for(const line of txt.split('\n')){
    if(!line.trim())continue;let e;try{e=JSON.parse(line)}catch(_){continue}
    if(isHidden(e.model))continue;   // keep hidden families out of the client index too
-   cellIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);
    if(!promptTxt.has(e.prompt_id))promptTxt.set(e.prompt_id,e.prompt_text);
+   // native-length renders go to the parallel index (same 5-tuple key as the 20s twin --
+   // sharing cellIndex would clobber whichever entry the manifest lists first)
+   if(e.duration_mode==='native'){nativeIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);continue;}
+   cellIndex.set(cellKey(e.model,e.ckpt,e.prompt_id,e.cfg,e.strength),e.file);
    cfgSet.add(e.cfg);wSet.add(e.strength);}
   fillPicker(promptTxt,cfgSet,wSet);
   plabel.textContent='click a model row to play';return;
@@ -453,6 +481,7 @@ async function loadManifest(){
  const cf=(typeof D!=='undefined')?D.cf:null;
  if(cf&&cf.idx){
   for(const k in cf.idx)cellIndex.set(k,cf.idx[k]);       // keys already in cellKey format
+  for(const k in (cf.nidx||{}))nativeIndex.set(k,cf.nidx[k]);
   for(const pid in cf.prompts)promptTxt.set(pid,cf.prompts[pid]);
   cf.cfgs.forEach(v=>cfgSet.add(parseFloat(v)));cf.ws.forEach(v=>wSet.add(parseFloat(v)));
   fillPicker(promptTxt,cfgSet,wSet);

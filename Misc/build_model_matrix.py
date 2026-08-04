@@ -170,6 +170,12 @@ def main():
                         # NOT in `data` -- duration isn't part of the cfg/w/pid key, so a native clip
                         # sharing (cfg,w,pid) with a standard 20s cell would silently collide/overwrite
                         # (GHOST-NOTE 2026-07-20, caught before ship)
+    ngrid = {}         # "model|ckpt|cfg|w|pid" -> file: the FULL native grid (2026-08-02 length-
+                        # variant run renders native at every cfg/w/prompt of a terminal ckpt).
+                        # `native` keeps ONE representative per ckpt for the audition line --
+                        # preference-picked (kl_* prompt, cfg 7, w 1) instead of last-manifest-
+                        # line-wins, which under full grids was effectively random.
+    nscore = {}
     cov = {}           # model -> {ckpt: n_clips}
     for e in entries:
         pid = str(e.get("prompt_id"))
@@ -180,8 +186,14 @@ def main():
         if not (STAGING / "model_matrix" / e["file"]).exists():
             continue
         if e.get("duration_mode") == "native":
-            native[f'{e["model"]}|{e["ckpt"]}'] = {
-                "file": e["file"], "duration": e.get("duration"), "prompt_text": e.get("prompt_text", pid)}
+            mk = f'{e["model"]}|{e["ckpt"]}'
+            ngrid[f'{mk}|{jsnum(e["cfg"])}|{jsnum(e["strength"])}|{pid}'] = e["file"]
+            score = (2 if pid.startswith("kl_") else 0) \
+                  + (1 if float(e["cfg"]) == 7 else 0) + (1 if float(e["strength"]) == 1 else 0)
+            if score >= nscore.get(mk, -1):
+                nscore[mk] = score
+                native[mk] = {"file": e["file"], "duration": e.get("duration"),
+                              "prompt_text": e.get("prompt_text", pid)}
             continue
         key = f'{e["model"]}|{e["ckpt"]}|{jsnum(e["cfg"])}|{jsnum(e["strength"])}|{pid}'
         data[key] = e["file"]
@@ -245,6 +257,10 @@ def main():
                '<input type=range id=seek min=0 max=1000 value=0 step=1 title="playhead — drag to seek">'
                '<span id=tm>0:00&#8239;/&#8239;0:00</span>'
                '<a id=dl href="#" download title="download the track playing now">&#8681;</a></span>'
+               ' <label style="color:#8b8" title="play each cell&#39;s native-training-length render '
+               '(e.g. 47.5s for T512 models) instead of the 20s comparison clip, where one exists '
+               '(terminal checkpoints) -- cells without one keep their 20s clip.">'
+               '<input type=checkbox id=mnative> native</label>'
                ' <span id=ld style="color:#fa5"></span>'
                ' &nbsp;·&nbsp; <span style="color:#888">same playhead across every cell; loops until stopped; re-click stops; amber outline = loading</span></div>')
     doc.append('<h1>Model matrix — every trained model × checkpoint × cfg × strength, side by side</h1>'
@@ -267,7 +283,7 @@ def main():
                '(CE/PQ fall), fastest at high LR — unless you <b>augment</b> (the aug10 run keeps improving to '
                'ep74). So when auditioning, prefer the early checkpoints of the un-augmented rank-128 runs.</div>')
 
-    payload = {"models": meta, "data": data, "native": native, "prompts": prompts,
+    payload = {"models": meta, "data": data, "native": native, "ngrid": ngrid, "prompts": prompts,
                "cfgs": list(CFGS), "strengths": list(STRENGTHS), "gf": gf}
     # manifest_live.jsonl = only entries whose m4a exists in staging (my sync loop
     # ships it beside the clips). The page fetches it at LOAD TIME and rebuilds MM
@@ -285,15 +301,18 @@ async function refreshMM(){
   const r = await fetch('model_matrix/manifest_live.jsonl', {cache:'no-store'});
   if(!r.ok) return;
   const txt = await r.text();
-  const data={}, native={}, prompts={}, cov={};
+  const data={}, native={}, ngrid={}, nscore={}, prompts={}, cov={};
   for(const ln of txt.split('\\n')){ if(!ln.trim()) continue;
    let e; try{e=JSON.parse(ln)}catch(_){continue}
    const pid=String(e.prompt_id); if(!(pid in prompts)) prompts[pid]=e.prompt_text||pid;
-   if(e.duration_mode==='native'){native[e.model+'|'+e.ckpt]={file:e.file,duration:e.duration,prompt_text:e.prompt_text||pid};
+   if(e.duration_mode==='native'){const mk=e.model+'|'+e.ckpt;
+    ngrid[mk+'|'+e.cfg+'|'+e.strength+'|'+pid]=e.file;
+    const sc=(pid.startsWith('kl_')?2:0)+(e.cfg==7?1:0)+(e.strength==1?1:0);
+    if(sc>=(nscore[mk]??-1)){nscore[mk]=sc;native[mk]={file:e.file,duration:e.duration,prompt_text:e.prompt_text||pid};}
     (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; continue}
    data[e.model+'|'+e.ckpt+'|'+e.cfg+'|'+e.strength+'|'+pid]=e.file;
    (cov[e.model]=cov[e.model]||{})[e.ckpt]=1; }
-  MM.data=data; MM.native=native; MM.prompts=prompts;
+  MM.data=data; MM.native=native; MM.ngrid=ngrid; MM.prompts=prompts;
   for(const m of Object.keys(MM.models)) MM.models[m].ckpts=Object.keys(cov[m]||{}).sort();
   render();
  }catch(_){/* file:// or offline -> embedded snapshot stands */}
@@ -332,7 +351,15 @@ function startCell(el,f){
  dl.href='model_matrix/'+f;dl.setAttribute('download',f);trans.classList.add('on');
  curCoord={col:el.dataset.col,cf:el.dataset.cf,w:el.dataset.w,pid:el.dataset.pid};
  if(window.metricsFromCell)metricsFromCell(el);}
-function play(el){const f=el.dataset.src;if(!f)return;
+// native-length overlay (Kim 2026-08-02 spec): with the header checkbox on, a cell click
+// plays its native-training-length twin from MM.ngrid when one exists (terminal ckpts),
+// else the 20s clip. The single per-ckpt audition line (data-cf="native") is untouched.
+function effSrc(el){
+ const f=el.dataset.src;
+ if(!window.mnative||!mnative.checked||!MM.ngrid||el.dataset.cf==='native')return f;
+ const st=colState[el.dataset.col];if(!st||!st.model||!st.ckpt)return f;
+ return MM.ngrid[st.model+'|'+st.ckpt+'|'+el.dataset.cf+'|'+el.dataset.w+'|'+el.dataset.pid]||f;}
+function play(el){const f=effSrc(el);if(!el.dataset.src)return;
  if(window.noteFromCell)noteFromCell(el);   // re-scope the Notes panel to this clip
  if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
  if(cur)cur.classList.remove('playing','loading');
@@ -347,8 +374,15 @@ function reattach(){
  const el=document.querySelector(q);
  if(!el){cur=null;return}                       // analogous cell gone -> leave audio as-is
  cur=el;el.classList.add('playing');
- if(!a.src.endsWith('/'+el.dataset.src)){       // different clip => checkpoint switched
-  a.pause();a.src='model_matrix/'+el.dataset.src;seekAndPlay(ph)}}
+ const ef=effSrc(el);
+ if(!a.src.endsWith('/'+ef)){               // different clip => checkpoint (or native toggle) switched
+  a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph)}}
+// toggling native mid-play swaps the current cell's clip in place, same playhead
+window.addEventListener('load',()=>{const nb=document.getElementById('mnative');
+ if(nb)nb.addEventListener('change',()=>{
+  if(!cur)return;const ef=effSrc(cur);
+  if(!a.src.endsWith('/'+ef)){a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph);
+   dl.href='model_matrix/'+ef;dl.setAttribute('download',ef);}});});
 const labels=Object.keys(MM.models);
 function ckptsFor(m){return MM.models[m]?MM.models[m].ckpts:[]}
 function render(){
