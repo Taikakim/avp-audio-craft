@@ -48,6 +48,9 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+- **08-05** — audit-board audio fixed (Kim: "awfully many missing auditable clips"). Clips were
+  never missing: already live under `/files/evals/`, but `/files/audit/` had no `model_matrix/`
+  sibling and the page's clip base is relative. Fixed with symlinks, no re-upload. — W
 - **08-05** — doc-oversight first pass (PR #1); DISCOVERIES regenerated 54→201; fleet skills committed; this tasklist stood up.
 - **08-04** — repo consolidated to GitHub (`main` + `sa3-style-adapter` synced, 104 GB artifacts gitignored); E1a x0-equiv arms shipped + scored (weak/inconclusive); board clip-resolution fixed.
 
