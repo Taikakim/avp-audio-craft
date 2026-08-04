@@ -16,6 +16,9 @@
 !/projects.toml
 !/install.sh
 !/lumi/
+# Kim's team-maintained tasklist (Kim 2026-08-05) — tracked so it persists across context
+# compaction and all four agents keep it current.
+!/KIM-TASKLIST.md
 
 # checkpoint-stats is a tracked library (per MASTER §5), not throwaway output
 !checkpoint-stats/
