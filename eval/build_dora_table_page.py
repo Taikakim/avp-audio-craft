@@ -15,6 +15,7 @@ live site) so it rides the normal STAGING->live sync alongside every other eval 
 import csv
 import json
 import shutil
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path("/home/kim/Projects/SAO/eval")
@@ -123,10 +124,50 @@ DESC = {
 }
 
 
+# ---------------------------------------------------------------------------
+# CAMPAIGN FAMILIES (Kim 2026-08-04: serve arbitrary model SETS; default "all").
+# family(label) = the leading campaign token before the config suffix. In practice every
+# label is "<family>_<dataset>_<config-ish tokens...>", so the first '_'-delimited token IS
+# the campaign stem (adamw / bf16cmp / fp32cmp / fp32frames / dora16 / dora128 / dora128adj /
+# dora256 / dora64 / fullft / longctx / winning / smoke / base). avp+goa variants collapse into
+# one family (adamw_avp* and adamw_goa* are both "adamw"); _ptm post-trained variants stay in
+# their base family (post-trained-medium is a variant, not a separate campaign) because '_ptm'
+# is a trailing config token, not the leading one. Two carve-outs:
+#   - the older goa DoRA-47s campaign is hyphen-delimited (sa3-goa-dora-47s-b4-cont, ...) so its
+#     first '_' token varies; collapse the whole prefix to one family.
+#   - dora128_everything_* is the "everything"-dataset (6111-crop) campaign, kept SEPARATE from
+#     the dora128_47s/newcap runs per the family list, so 'everything' overrides the dora128 stem.
+def family(label):
+    if label.startswith("sa3-goa-dora-47s"):
+        return "sa3-goa-dora-47s"
+    if "everything" in label:
+        return "everything"
+    return label.split("_")[0]
+
+
+def derive_model_sets(models):
+    """{set_name: [model_labels]} over the VISIBLE (post-HIDE) models. 'all' first, then each
+    campaign family. Returns the dict in the canonical order used to seed the dropdown too:
+    'all', then families by size desc (ties broken by name)."""
+    fam = defaultdict(list)
+    for m in models:
+        fam[family(m)].append(m)
+    ordered = {"all": list(models)}
+    for f in sorted(fam, key=lambda k: (-len(fam[k]), k)):
+        ordered[f] = sorted(fam[f])
+    return ordered
+
+
 def main():
     rows = list(csv.DictReader(AGG.open()))
     # Hide borked model families (see HIDE_MODEL_PREFIXES): they vanish from the table entirely.
     rows = [r for r in rows if not r.get("model", "").startswith(HIDE_MODEL_PREFIXES)]
+    # MODEL_SETS derived from the VISIBLE models only (hidden families have no rows to select).
+    model_labels = sorted({r["model"] for r in rows})
+    model_sets = derive_model_sets(model_labels)
+    print("MODEL_SETS (name -> count):")
+    for name, members in model_sets.items():
+        print(f"  {name:22s} {len(members)}")
     ref = json.loads(REF.read_text())
     cols = HP + [c for c in METRICS if c in rows[0] or c in STRUCT_COLS]
 
@@ -179,6 +220,7 @@ def main():
                "nice": NICE, "base": base, "desc": DESC, "struct": struct_file,
                "hide": list(HIDE_MODEL_PREFIXES),   # JS guards the live-fetch index on these
                "hidecfg": [15, 24],   # non-standard cfgs (2 stray models) -- dropdown clutter, hidden
+               "model_sets": model_sets,   # {set_name:[labels]} campaign families for the ?set= filter
                "cf": cell_fallback()}   # embedded cell-index so the picker works on file://
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
@@ -225,6 +267,7 @@ heat-map (green = better direction, red = worse). Filter below. Hyperparameters 
 checkpoint recipes.</p>
 <div class=base id=base></div>
 <div class=ctl>
+ <label>model set <select id=modelset title="campaign family (or 'all'). Filters BOTH the metric rows and the audio picker to this set; updates the URL (?set=) so the filtered view is shareable."></select></label>
  <label>dataset <select id=fds><option value="">all</option><option>goa</option><option>avp</option><option>mixed</option></select></label>
  <label>rank <select id=frank><option value="">all</option></select></label>
  <label>arch <select id=farch><option value="">all</option></select></label>
@@ -254,6 +297,19 @@ checkpoint recipes.</p>
 <script>
 const D=__DATA__;
 const {cols,rows,metrics,nice,base,desc}=D;
+// ---- MODEL SETS (Kim 2026-08-04): serve arbitrary campaign families; default "all".
+// URL wins: ?set=<family> (a MODEL_SETS key) > ?models=<comma list of labels> > default all.
+// memberSet=null means "all" (no filtering). inSet() gates BOTH the metric rows (render) and the
+// cell-picker index (buildCellsByMC / coverage), so the table and the audio picker show the same set.
+const MODEL_SETS=D.model_sets||{all:rows.map(r=>r.model)};
+let activeSet='all',memberSet=null;
+(function initSet(){
+ const q=new URLSearchParams(location.search);
+ const s=q.get('set'),ms=q.get('models');
+ if(s&&MODEL_SETS[s]){activeSet=s;memberSet=new Set(MODEL_SETS[s]);}
+ else if(ms){activeSet='';memberSet=new Set(ms.split(',').map(x=>x.trim()).filter(Boolean));}
+})();
+const inSet=m=>!memberSet||memberSet.has(m);
 const nfmt=(c,v)=>{if(v==null||v==='')return '';if(typeof v!=='number')return v;
  if(['lr'].includes(c))return v.toExponential(1);
  if(['rank','alpha','frames_T','batch','aug','epoch','n_cells','bpm'].includes(c))return v%1?v.toFixed(1):v.toFixed(0);
@@ -274,7 +330,7 @@ function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
   tr.appendChild(th);}}
 function render(){
  const ds=fds.value,rk=frank.value,ar=farch.value,tx=ftext.value.toLowerCase();
- let rs=rows.filter(r=>(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
+ let rs=rows.filter(r=>inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
  rs.sort((a,b)=>{let x=a[sortCol],y=b[sortCol];if(x==null)return 1;if(y==null)return -1;
   if(typeof x==='number')return (x-y)*sortDir;return String(x).localeCompare(String(y))*sortDir;});
  const body=document.getElementById('body');body.innerHTML='';
@@ -443,18 +499,23 @@ pl.addEventListener('timeupdate',()=>{if(!pl.paused&&!seeking)ph=pl.currentTime;
 pl.addEventListener('durationchange',()=>{if(pl.duration)ptm.textContent=fmtT(pl.currentTime)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('input',()=>{seeking=true;if(pl.duration)ptm.textContent=fmtT(pseek.value/1000*pl.duration)+' / '+fmtT(pl.duration);});
 pseek.addEventListener('change',()=>{if(pl.duration){pl.currentTime=pseek.value/1000*pl.duration;ph=pl.currentTime;}seeking=false;});
-function fillPicker(promptTxt,cfgSet,wSet){
- // per-MODEL availability: group every clip by (model,ckpt) so graceful-resolve can find the
- // nearest cell a given model actually rendered (Kim 2026-08-02). Same source of truth as the
- // picker -- built once from the manifest/snapshot cellIndex, covers both load paths.
+// per-MODEL availability: group every clip by (model,ckpt) so graceful-resolve can find the
+// nearest cell a given model actually rendered (Kim 2026-08-02). RESTRICTED to member models
+// (Kim 2026-08-04) so the picker index shows only the active set. Rebuilt on set change.
+function buildCellsByMC(){
  cellsByMC=new Map();
- if(cellIndex)for(const [k,f] of cellIndex){const p=k.split('\x01');const g=p[0]+'\x01'+p[1];
+ if(cellIndex)for(const [k,f] of cellIndex){const p=k.split('\x01');
+  if(!inSet(p[0]))continue;                 // keep the picker index to the active set
+  const g=p[0]+'\x01'+p[1];
   let a=cellsByMC.get(g);if(!a){a=[];cellsByMC.set(g,a);}
-  a.push({pid:p[2],cfg:parseFloat(p[3]),w:parseFloat(p[4]),file:f});}
+  a.push({pid:p[2],cfg:parseFloat(p[3]),w:parseFloat(p[4]),file:f});}}
+function fillPicker(promptTxt,cfgSet,wSet){
+ // Same source of truth as the picker -- built from the manifest/snapshot cellIndex, both paths.
+ buildCellsByMC();
  // per-prompt coverage = # distinct (model,ckpt) with any clip at that prompt, from the clip index
  // (Kim 2026-08-02: default to the WIDEST-coverage prompt so the opening view greys the fewest rows).
  const cov={};
- if(cellIndex)for(const k of cellIndex.keys()){const p=k.split('\x01');(cov[p[2]]=cov[p[2]]||new Set()).add(p[0]+'\x01'+p[1]);}
+ if(cellIndex)for(const k of cellIndex.keys()){const p=k.split('\x01');if(!inSet(p[0]))continue;(cov[p[2]]=cov[p[2]]||new Set()).add(p[0]+'\x01'+p[1]);}
  for(const [pid,txt] of [...promptTxt].sort((a,b)=>a[0].localeCompare(b[0]))){
   const t=txt||pid;const o=new Option(t,pid);o.title=t;pprompt.add(o);}   // full prompt text (Kim: show full)
  let best=null,bn=-1;for(const pid in cov)if(cov[pid].size>bn){bn=cov[pid].size;best=pid;}
@@ -495,6 +556,21 @@ async function loadManifest(){
   fillPicker(promptTxt,cfgSet,wSet);
   plabel.textContent='offline snapshot — click a row to play';
  }else{plabel.textContent='clip index unavailable — open the served page for playback';}}
+// model-set dropdown: 'all' first, then families in MODEL_SETS' own order (built size-desc).
+for(const name of Object.keys(MODEL_SETS)){
+ const o=new Option(name==='all'?'all ('+MODEL_SETS.all.length+')':name+' ('+MODEL_SETS[name].length+')',name);
+ modelset.add(o);}
+if(activeSet&&MODEL_SETS[activeSet])modelset.value=activeSet;   // '' (custom ?models=) selects nothing
+// switch sets: re-filter table + picker index + availability, and make the view shareable via ?set=.
+function applySet(name){
+ activeSet=name;
+ memberSet=(name==='all'||!MODEL_SETS[name])?null:new Set(MODEL_SETS[name]);
+ buildCellsByMC();render();markAvailability();
+ const u=new URL(location);
+ if(name==='all')u.searchParams.delete('set');else u.searchParams.set('set',name);
+ u.searchParams.delete('models');   // an explicit dropdown pick supersedes any ?models= list
+ history.replaceState(null,'',u);}
+modelset.onchange=()=>applySet(modelset.value);
 // filters
 for(const id of ['fds','frank','farch'])document.getElementById(id);
 [...new Set(rows.map(r=>r.rank).filter(v=>v!=null))].sort((a,b)=>a-b).forEach(v=>frank.add(new Option(v,v)));
