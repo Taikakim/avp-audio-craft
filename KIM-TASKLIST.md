@@ -30,7 +30,11 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits; aug8 redo-vs-aug3 (encode profile unmeasured, parked).
 
 ## 👂 Ear queue (needs Kim's ears)
-- **melody-wall: subloss_k2 vs baseline** top cells — the 08-04 metric came back weak/inconclusive; your ears settle it.
+- **melody-wall: subloss_k2 vs baseline** top cells — the 08-04 metric came back weak/inconclusive; your
+  ears settle it. NOW SCORED (W 08-05): at matched cfg7/w1, k2 is the WEAKEST of its own family on
+  every axis — CLAP .338 vs k5 .351 / k12 .353, worst retrieval rank, lowest CE, highest hf_ratio.
+  Quality+adherence say k2 costs more than it gives; neither metric is a MELODY metric, so the
+  melody question is still yours.
 - **E3 metrical-position bracket pairs** — phrase-return gain (real 0.0091 vs shuffled 0.0009); does it *sound* like structure?
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips; interval-CFG nl.475 pairs; Head-B bracket; goa_t2048_bs1 anomaly.
 
@@ -48,6 +52,7 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+- **08-05** — scored the 7 unscored arms (x0eq/subloss/lreq, 2808 clips: DSP+Audiobox+CLAP); their DoRA rows + audit-board links now live (links 8→14 of 22 runs). — W
 - **08-05** — audit-board audio fixed (Kim: "awfully many missing auditable clips"). Clips were
   never missing: already live under `/files/evals/`, but `/files/audit/` had no `model_matrix/`
   sibling and the page's clip base is relative. Fixed with symlinks, no re-upload. — W
