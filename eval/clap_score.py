@@ -83,7 +83,17 @@ def main():
     import numpy as np
     import librosa
     import torch
-    import laion_clap
+    # laion_clap parses sys.argv AT IMPORT (its training CLI runs at module scope), so any flag
+    # of ours that it doesn't recognise makes the import die with argparse rc=2 -- it prints
+    # laion_clap's own usage, which reads like OUR arg is wrong. Hide argv across the import.
+    # (Bit a scoped catch-up run 2026-08-05; only shows up when flags are passed, which is why
+    # default-arg invocations never tripped it.)
+    _argv = sys.argv[:]
+    sys.argv = [_argv[0]]
+    try:
+        import laion_clap
+    finally:
+        sys.argv = _argv
 
     entries = [json.loads(l) for l in a.manifest.read_text().splitlines() if l.strip()]
     if not a.include_native:
@@ -125,20 +135,37 @@ def main():
         model.model.load_state_dict = _orig_lsd
     model.eval()
 
+    # laion_clap's API changed under us: the build in SAO/.venv (rebuilt 2026-08-02 for ROCm 7.14)
+    # has get_text_embedding(x, tokenizer) with NO use_tensor kwarg, and returns numpy. Older
+    # builds took use_tensor=True and returned a torch tensor. Call one way, fall back to the
+    # other, and normalise the result -- so this scores identically on either version.
+    def _emb(fn, **kw):
+        try:
+            out = fn(use_tensor=True, **kw)
+        except TypeError:
+            # This build also wants NUMPY input where the old one took a torch tensor
+            # (it calls .astype internally) -- convert on the fallback path too.
+            kw = {k: (v.detach().cpu().numpy() if hasattr(v, "detach") else v)
+                  for k, v in kw.items()}
+            out = fn(**kw)
+        if hasattr(out, "detach"):
+            out = out.float().cpu().numpy()
+        return np.asarray(out, dtype=np.float32)
+
     def embed_text(txts):
         # laion_clap's text encoder errors on a single-item list (batch-shape bug) --
         # duplicate then slice back when only one prompt (e.g. a native-only batch)
         single = len(txts) == 1
         q = txts + txts if single else txts
         with torch.no_grad():
-            e = model.get_text_embedding(q, use_tensor=True).float().cpu().numpy()
+            e = _emb(model.get_text_embedding, x=q)
         return e[:1] if single else e
 
     def embed_audio(path):
         wav, _ = librosa.load(str(path), sr=48000, mono=True)
         with torch.no_grad():
             t = torch.from_numpy(wav).float().unsqueeze(0)
-            return model.get_audio_embedding_from_data(x=t, use_tensor=True).float().cpu().numpy()[0]
+            return _emb(model.get_audio_embedding_from_data, x=t)[0]
 
     # FAR controls: deliberately out-of-genre prompts. The in-set prompts are all
     # near-synonym electronic-music descriptions (they cluster in CLAP text-space), so

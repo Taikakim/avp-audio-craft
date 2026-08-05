@@ -17,7 +17,43 @@ Usage:  /home/kim/Projects/SAO/.venv/bin/python eval/build_run_audit_board.py
 Output: /run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/RUN_AUDIT_BOARD.html
 CPU only; no torch, no GPU. Safe to re-run any time.
 """
-import os, re, json, glob, html, datetime, sys, csv
+import os, re, json, glob, html, datetime, sys, csv, argparse
+
+# ---------------------------------------------------------------------------
+# PUBLIC-SNAPSHOT redaction (Kim 2026-08-04): --public emits a second, path-redacted copy of
+# the board so it can be hosted on aavepyora.online. Strips absolute local/infra paths per the
+# MASTER §4 public-page rule (no absolute paths, no infra addresses, no secrets), then FAILS
+# CLOSED if any known-sensitive token survives. The default (private) build never calls this.
+DORA_BASE_URL_DEFAULT = "https://aavepyora.online/files/audit/dora_table.html"
+
+# ordered (specific -> general); applied to the FINAL HTML string
+_REDACTIONS = [
+    ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs", "the eval drive"),
+    ("/run/media/kim/Mantu/lumi_runs", "the Mantu backup drive"),
+]
+_REDACT_RE = [
+    (re.compile(r"/run/media/kim/[^\s\"'<>)]*"), "(local drive)"),
+    (re.compile(r"/scratch/project_465003186[^\s\"'<>)]*"), "LUMI scratch"),
+    (re.compile(r"/project/project_465003186[^\s\"'<>)]*"), "LUMI project"),
+]
+# residual tripwires -- if ANY of these survive redaction, refuse to write the public copy
+_RESIDUAL = [r"/run/media", r"/home/kim", r"/scratch/project", r"/project/project",
+             r"dreamhost", r"dh_4txyt6", r"akekim", r"efp\.lumi", r"csc\.fi", r"id_EFP"]
+
+
+def redact_public(s):
+    """Redact absolute local/infra paths from an HTML string, then assert nothing sensitive
+    survives (fail closed). Returns the redacted string; raises SystemExit on a residual hit."""
+    for a, b in _REDACTIONS:
+        s = s.replace(a, b)
+    for rx, repl in _REDACT_RE:
+        s = rx.sub(repl, s)
+    s = s.replace("/home/kim/Projects/SAO/", "")            # repo-root prefix -> empty
+    s = re.sub(r"/home/kim[^\s\"'<>)]*", "(local path)", s)  # any other /home/kim... -> (local path)
+    hits = [p for p in _RESIDUAL if re.search(p, s)]
+    if hits:
+        raise SystemExit(f"REDACTION FAILED (fail closed) -- residual sensitive tokens: {hits}")
+    return s
 
 # ---------------------------------------------------------------------------
 # DoRA-rows cross-link (Kim 2026-08-04): each run that maps to a campaign FAMILY in the
@@ -52,16 +88,26 @@ RUN_TO_SET = {
     "fullft":             "fullft",
     "longctx_t1024_r128": "longctx",
     "longctx_t2048_r128": "longctx",
+    # melody-wall families (added 2026-08-05 once they had DoRA-table rows -- they were scored
+    # that night: DSP + Audiobox + CLAP, which is what created the sets they point at. Before
+    # scoring these legitimately showed "—", since derive_model_sets only sees models with rows).
+    "x0equiv_grid":         "x0eq",
+    "x0equiv_grid_mt":      "x0eq",
+    "subspace_loss_grid":   "subloss",
+    "subspace_loss_grid_mt": "subloss",
+    "lr_equiv_grid":        "lreq",
+    "lr_equiv_grid_mt":     "lreq",
 }
 
-def dora_link(run):
+def dora_link(run, page_base=None):
     """A 'DoRA rows ▸' link to the family-filtered table, or an em-dash when the run maps to no
-    (existing, non-empty) family set."""
+    (existing, non-empty) family set. `page_base` overrides the link target (default = the local
+    file:// DORA_PAGE); the public build passes the HOSTED dora_table URL instead."""
     s = RUN_TO_SET.get(run)
     if not s or not MODEL_SETS.get(s):
         return '<span class="n">&mdash;</span>'
     n = len(MODEL_SETS[s])
-    href = f"{DORA_PAGE}?set={s}"
+    href = f"{page_base or DORA_PAGE}?set={s}"
     return (f'<a class="dora" href="{esc(href)}" '
             f'title="open the DoRA-rows table filtered to the {esc(s)} set ({n} models)">'
             f'DoRA rows &#9656;</a>')
@@ -348,8 +394,12 @@ def esc(x):
 def yn(b, yes="yes", no="no"):
     return (f'<span class="y">{yes}</span>' if b else f'<span class="n">{no}</span>')
 
-def render_html(rows, rend_sets, anal_dirs, left_audit, left_pull, no_prov):
+def render_html(rows, rend_sets, anal_dirs, left_audit, left_pull, no_prov,
+                public=False, dora_base=None):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    tracker_label = ("internal ops tracker &middot; public snapshot (paths redacted)"
+                     if public else "internal ops tracker")
+    dora_page_base = dora_base if public else None
     total = len(rows)
     n_aud = sum(1 for r in rows if r["audited"])
     n_unaud = sum(1 for r in rows if not r["audited"] and r["gt"]["kind"]=="training" and not r["gt"].get("disposable"))
@@ -400,7 +450,7 @@ a.dora:hover{{text-decoration:underline}}
 footer{{margin-top:26px;color:#8a929c;font-size:11.5px}}
 </style>
 <div class="wrap">
-<h1>SA3 LUMI Run Audit Board <span class="kind">internal ops tracker</span></h1>
+<h1>SA3 LUMI Run Audit Board <span class="kind">{tracker_label}</span></h1>
 <div class="sub">Reconciles LUMI /scratch ground-truth vs the two local mirrors (UUID canonical, Mantu subset) vs render/audit state. Generated {now} by <code>eval/build_run_audit_board.py</code> &mdash; re-run any time.</div>
 
 <div class="legend">
@@ -452,7 +502,7 @@ footer{{margin-top:26px;color:#8a929c;font-size:11.5px}}
                  f'<td>{ckcell}</td>'
                  f'<td>{esc(r["rendered"]) or "<span class=\'n\'>&mdash;</span>"}</td>'
                  f'<td>{esc(r["analyzed"]) or "<span class=\'n\'>&mdash;</span>"}</td>'
-                 f'<td>{dora_link(run)}</td>'
+                 f'<td>{dora_link(run, dora_page_base)}</td>'
                  f'<td>{aud_cell}</td>'
                  f'<td class="desc">{esc(gt["desc"])}</td>'
                  "</tr>")
@@ -511,7 +561,18 @@ footer{{margin-top:26px;color:#8a929c;font-size:11.5px}}
     return "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" + P[0] + "</head><body>" + "".join(P[1:]) + "</body></html>"
 
 def main():
+    ap = argparse.ArgumentParser(description="Build the SA3 LUMI run-audit board.")
+    ap.add_argument("--public", action="store_true",
+                    help="ALSO emit a path-redacted RUN_AUDIT_BOARD_public.html for hosting on "
+                         "aavepyora.online (private default output is unchanged).")
+    ap.add_argument("--dora-base-url", default=DORA_BASE_URL_DEFAULT,
+                    help="hosted dora_table URL the public board's DoRA-rows links point at "
+                         f"(default: {DORA_BASE_URL_DEFAULT}).")
+    args = ap.parse_args()
+
     rows, rend_sets, anal_dirs, la, lp, npv = build()
+
+    # ---- private (default) build -- byte-identical to pre-change output
     doc = render_html(rows, rend_sets, anal_dirs, la, lp, npv)
     with open(OUT_HTML, "w") as f:
         f.write(doc)
@@ -520,6 +581,17 @@ def main():
     print(f"LEFT TO AUDIT ({len(la)}): {[r for r,_ in la]}")
     print(f"LEFT TO PULL  ({len(lp)}): {[r for r,_ in lp]}")
     print(f"NO PROVENANCE ({len(npv)}): {[r for r,_ in npv]}")
+
+    # ---- public build (opt-in) -- redacted copy + hosted DoRA links
+    if args.public:
+        pdoc = render_html(rows, rend_sets, anal_dirs, la, lp, npv,
+                           public=True, dora_base=args.dora_base_url)
+        pdoc = redact_public(pdoc)
+        pub_path = os.path.join(os.path.dirname(OUT_HTML), "RUN_AUDIT_BOARD_public.html")
+        with open(pub_path, "w") as f:
+            f.write(pdoc)
+        print(f"wrote {pub_path} ({len(pdoc)} bytes)  [public: paths redacted, "
+              f"DoRA links -> {args.dora_base_url}?set=...]")
 
 if __name__ == "__main__":
     main()
