@@ -201,6 +201,8 @@ PREFIX_TO_RUN = [
     ("bf16cmp_",    "bf16_twin"),
     ("winning_",    "fp32_winning"),
     ("adamw_",      "adamw_bf16_sweep"),
+    ("fullft_aug8ddp_", "aug8_train_ddp"),   # must precede the generic fullft_ entry below
+    ("dora_aug8ddp_",   "aug8_train_ddp"),
     ("fullft_",     "fullft"),
     ("longctx_t1024", "longctx_t1024_r128"),
     ("longctx_t2048", "longctx_t2048_r128"),
