@@ -331,6 +331,32 @@ ANALYSIS_TO_RUNS = {
 # ---------------------------------------------------------------------------
 # Build rows
 # ---------------------------------------------------------------------------
+def run_created(run):
+    """Creation date of a run = the EARLIEST checkpoint mtime under its dir, falling back to the
+    dir's own mtime (Kim 2026-08-07: the board should carry models by date of creation).
+    The LUMI pulls were rsync -a, so these mtimes are the real on-cluster times, not pull times --
+    verified against four runs spanning 07-16..08-04, all distinct. Runs never pulled locally have
+    no date and sort last."""
+    best = None
+    for root in (UUID_RUNS, MANTU_ROOT):
+        d = os.path.join(root, run)
+        if not os.path.isdir(d):
+            continue
+        for pat in ("*.ckpt", "*.safetensors"):
+            for f in glob.glob(os.path.join(d, "**", pat), recursive=True):
+                try:
+                    m = os.path.getmtime(f)
+                except OSError:
+                    continue
+                best = m if best is None else min(best, m)
+        if best is None:                       # no checkpoints (encode/render jobs) -> dir mtime
+            try:
+                best = os.path.getmtime(d)
+            except OSError:
+                pass
+    return best
+
+
 def build():
     check_mounts()
     rend_sets, rend_per_run = scan_renders()
@@ -384,7 +410,10 @@ def build():
             audited=audited,
             audited_verdicts=u["meta_kim"] + m["meta_kim"],
             missing_prov=missing_prov,
+            created=run_created(run),
         ))
+    # newest first -- an audit board is read for what still needs ears, which is recent work.
+    rows.sort(key=lambda r: (r['created'] is not None, r['created'] or 0), reverse=True)
     return rows, rend_sets, anal_dirs, left_to_audit, left_to_pull, no_provenance
 
 # ---------------------------------------------------------------------------
@@ -471,7 +500,7 @@ footer{{margin-top:26px;color:#8a929c;font-size:11.5px}}
     # ---- main table
     P.append('<h2>Reconciliation table</h2><div class="tblwrap"><table>')
     P.append("<tr><th>Run</th><th>Task</th><th>Kind</th><th>on-LUMI</th><th>UUID</th><th>Mantu</th>"
-             "<th>ckpts</th><th>Rendered</th><th>Analyzed</th><th>DoRA</th><th>Audited</th><th>What it is</th></tr>")
+             "<th>created</th><th>ckpts</th><th>Rendered</th><th>Analyzed</th><th>DoRA</th><th>Audited</th><th>What it is</th></tr>")
     for r in rows:
         gt = r["gt"]; run = r["run"]
         needs_ears = gt["kind"] == "training" and not gt.get("disposable")
@@ -501,6 +530,7 @@ footer{{margin-top:26px;color:#8a929c;font-size:11.5px}}
                  f'<td>{yn(True)}</td>'
                  f'<td>{uuid_cell}</td>'
                  f'<td>{mantu_cell}</td>'
+                 f'<td class="mono">{datetime.datetime.fromtimestamp(r["created"]).strftime("%Y-%m-%d") if r["created"] else "<span class='n'>&mdash;</span>"}</td>'
                  f'<td>{ckcell}</td>'
                  f'<td>{esc(r["rendered"]) or "<span class=\'n\'>&mdash;</span>"}</td>'
                  f'<td>{esc(r["analyzed"]) or "<span class=\'n\'>&mdash;</span>"}</td>'
