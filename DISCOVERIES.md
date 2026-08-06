@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*201 entries from 4 journals.*
+*203 entries from 4 journals.*
 
 ---
 
@@ -126,6 +126,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **TADA! deep-read: the semantic bottleneck is real, and it cuts both ways.** → `latch/probe_layer_feature_map.py` — CONTINUITY, 2026-07-06
 
 ## Evals · metrics · benchmarking pitfalls
+- **Codec clarity ladder: the m4a leg (Kim ask).** → `hf_clarity_diagnosis.py`, `mp3_latent_sensitivity.py`, `build_clarity_audit_page.py`, `hf_clarity/index.html`, `/files/audit/codec-clarity/` — CONTINUITY, 2026-08-06
 - **fp32frames T-length trend SYNTHESIZED (the flagged-open gap, G metered / C synthesized).** — CONTINUITY, 2026-07-30
 - **chroma-steering page extended: solo instruments, chord progressions, model tabs (Kim ask).** → `control/sa3_control/chroma_guided_generator.py`, `eval/chroma_steer_targets.py`, `eval/chroma_steer_render.py`, `eval/chroma_steer_driver.sh`, `riffer-evals/chroma_steer.html` — CONTINUITY, 2026-07-19
 - **LUMI trains, finally (the MIOpen wall comes down).** — CONTINUITY, 2026-07-16
@@ -159,6 +160,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **roles move the voices.** — GHOST-NOTE, 2026-07-02
 
 ## Bitwig · OSC music production
+- **Interval-resolution ladder (Kim's "are we even seeing a small second?" machinery-audit).** → `eval/musicology/interval_resolution_ladder.py`, `lumi/melody_subspace15_v2.npz`, `eval/musicology/interval_resolution_ladder_2026-08-06/` — CONTINUITY, 2026-08-06
 - **[2026-08-04] Melody-wall audio readout (#59 subspace-loss + E1a x0-equiv) — autonomous, Kim asleep.** → `eval/melody_wall_analysis.py`, `lumi_runs/analysis/melody_wall/{VERDICT.md,summary.json,per_clip.jsonl}` — CONTINUITY, 2026-08-01
 - **autonomous stretch (Kim asleep, prunes running): the note-following eval + gate-#0.** — CONTINUITY, 2026-07-20
 - [session] **sixteen early-Goa loops, rebuilt until they breathed.** — GHOST-NOTE, 2026-07-02
