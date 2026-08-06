@@ -103,6 +103,23 @@ this had no living ledger, so items went unstruck. Spot-checks so far:
   would have put a 2nd 44 GB on shared hosting and forked the two copies on every future render.
   Corollary: **an instance handing another a destructive-scale command has not thereby verified it** —
   the lane owner verifies, and here that cost three curls.
+- **Mirror-vs-host reconcile: read the ITEMIZE FLAGS, never a raw file-count diff** (WINTERMUTE,
+  2026-08-06, when the ≤14-day publish rule landed). A bulk page regeneration restamps hundreds of
+  byte-identical files, so "out of sync" wildly overstates the real gap. On the first pass: 102 pages
+  looked ≤14d stale — **87 were timestamp-only**, real work was 13. Same for audio: 5,693 clips looked
+  out of sync, **5,110 were timestamp-only (1.65 GB of pure churn)**, 583 genuinely missing. Split with
+  `rsync -rvzn --itemize-changes`: `+++` = missing (publish), `s` in the flags = content differs
+  (publish), time-only = **skip**. Two more traps from the same session: (a) `rsync … 2>/dev/null`
+  makes a CONNECTION FAILURE look identical to "no differences" — never silence stderr on a diff you
+  intend to trust; (b) a page can ship while its audio never has — `headb_bracket.html` was about to go
+  live with all 384 of its clips absent, so verify a SAMPLE OVER HTTP, not file counts (see the two
+  entries above — this is the same family, third variation).
+- **Leak-scan regex: a bare `\.ckpt` produces phantom leaks** (W + C, 2026-08-06, independently, twice
+  in one day). JS property accesses (`dataset.ckpt`, `noteCtx.ckpt`, `c.ckpt`) match it and read as
+  checkpoint filenames. The discriminating set is **path anchors** (`/run/media`, `/home/kim`,
+  `/scratch`, `Mantu`) **+ the step tag** (`epoch=\d+-step=`) **+ `\.weights\.ckpt`** — never a bare
+  property. A real leak found this way: a page embedding a whole provenance JSON when it rendered only
+  two of its keys; fix at BUILD time (embed the two keys) rather than scrubbing the artifact.
 - **`clip_metrics.db` carries DUAL DSP-source rows for the winning family** (F, 2026-07-28/29). The same winning clip is metered twice under DIFFERENT paths: the lossless-**WAV** source (`/run/media/kim/Mantu/…wav`, W's pass — AAC-artifact-free, **canonical**) and the staged **`.m4a`** (`evals_aac/model_matrix/…m4a`, F's fill of the previously DSP-blank staged rows). Different paths → both rows coexist (named-column upsert, no clobber), but (a) a consumer pooling DSP across paths **double-counts**, and (b) m4a systematically rolls off >5 kHz so `hf_ratio`/`flatness`/`flux` read a few % low. **Prefer the WAV DSP; dedup by clip identity (basename sans ext).** Split-by-location caveat: the WAV rows have DSP-only (no Audiobox); the staged-m4a rows have DSP **+** Audiobox `ce/pq/cu/pc` — so per clip the two metric halves live on different paths. The board's winning-family view (W, WAV-clean) is the one to trust.
 
 - **Public dialogue/DM mirror redaction only SHORTENED paths — did NOT scrub corpus scale/drive-labels** (leak caught by F, fixed by W, 2026-07-30). `~/bin/mirror_dialogue.py`'s `redact()` rewrote `/run/media/kim/Mantu/…` → `Mantu:/…` (prefix-shorten only), so drive labels + `~/` paths still shipped, and it had NO rule for corpus provenance/scale — so C's goa-archive wire post went **live on the public site** (aavepyora.online/files/dialogue.html) exposing `goa_archive_extracted`, the track count, drive labels, and `~/.cache/evals_aac/…` paths (exactly the mass-download-reference class Kim said keep off public surfaces). `build_site.py` explicitly **LEAVES dialogue.html ALONE** — the mirror is a separate script and was the only redaction layer. Fixed: `redact()` now strips whole local paths + drive labels + the UUID drive to `[path]`/`[drive]` and scrubs corpus provenance/scale (`goa_archive`→`[corpus]`, `NNNNN tracks`→`[N] tracks`, collection titles); verified clean across current + all 4 week-archives + synopses + `/files/dm/`. **Standing rule: any public mirror of the wire/DMs/WORKLOG MUST scrub corpus scale + provenance + drive labels + whole paths, not just shorten prefixes** — and re-verify by raw-curling every live page, not just the newest. WORKLOG confirmed to have NO public surface (F, 2026-07-30: absent from `site/`, unreferenced by build/mirror, live `/files/WORKLOG.*` = 404).
