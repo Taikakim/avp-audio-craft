@@ -7,6 +7,13 @@ with a date. Keep it short and current; a stale tasklist is worse than none. Fil
 editing (`python3 Misc/filelock.py acquire KIM-TASKLIST.md --handle <you> --timeout 30`). THE-FINN
 patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
+> **🔗 LINK EVERY ACTIONABLE (Kim, 2026-08-06).** If an item points at something Kim can open —
+> renders, an audit set, a page, a PR — **give it a live link**, called the way the boards call it.
+> DoRA/matrix families → `dora_table.html?set=<family>`; a single checkpoint → `?models=<label>`;
+> standalone audits/PRs → their own URL. Base: `https://aavepyora.online/files/evals/dora_table.html`
+> (valid `set` keys come from the live MODEL_SETS — e.g. subloss, fp32frames, lreq, longctx, winning,
+> fullft, everything). Only leave an item link-less when nothing is hosted yet — then say so.
+
 ---
 
 ## 🔴 Decisions waiting on Kim
@@ -34,16 +41,44 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   ears settle it. NOW SCORED (W 08-05): at matched cfg7/w1, k2 is the WEAKEST of its own family on
   every axis — CLAP .338 vs k5 .351 / k12 .353, worst retrieval rank, lowest CE, highest hf_ratio.
   Quality+adherence say k2 costs more than it gives; neither metric is a MELODY metric, so the
-  melody question is still yours.
-- **E3 metrical-position bracket pairs** — phrase-return gain (real 0.0091 vs shuffled 0.0009); does it *sound* like structure?
-- *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips; interval-CFG nl.475 pairs; Head-B bracket; goa_t2048_bs1 anomaly.
+  melody question is still yours. → [▶ subloss family](https://aavepyora.online/files/evals/dora_table.html?set=subloss) · [baseline (lreq)](https://aavepyora.online/files/evals/dora_table.html?set=lreq)
+- **Codec clarity ladder — SAME vs MP3 vs m4a** (C, 08-06). New audit page with a hold-the-moment/
+  switch-codec player. The numbers say the m4a serving step is transparent and the SAME codec owns all
+  the HF-clarity loss (air env_corr SAME 0.544 vs codecs 0.96-0.997) — but that's a *measured* verdict;
+  **your ears on SAME vs m4a_192 vs original settle whether it matches what you hear.**
+  `run_meta.kim_feedback` is null until you relay a verdict. → [▶ codec-clarity audit](https://aavepyora.online/files/audit/codec-clarity/) *(live once W's rsync lands; 404 until then)*
+- **E3 metrical-position bracket pairs** — phrase-return gain (real 0.0091 vs shuffled 0.0009); does it *sound* like structure? *(clips local — not hosted yet; C to stage a page)*
+- *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips *(not hosted)*; interval-CFG nl.475 pairs *(not hosted — `eval/musicology/interval_cfg_2026-07-23/` local)*; Head-B bracket *(staged `~/.cache/evals_aac/headb_bracket/`, not yet published)*; goa_t2048_bs1 anomaly → [▶ that checkpoint](https://aavepyora.online/files/evals/dora_table.html?models=fp32frames_goa_t2048_bs1_lr1e4) · [fp32frames family](https://aavepyora.online/files/evals/dora_table.html?set=fp32frames).
 
 ## ⏳ In flight — FYI, no action
-- **aug8 models missing clips on run_audit_board.html** (Kim noticed 08-05) — confirmed not a pull
-  gap: `aug8_encode` never produces checkpoints (latents only), `aug8_train_ddp`'s checkpoints stay
-  on LUMI scratch by design, never pulled to either local mirror, no render job registered. Routed
-  to C (owns the 07-23 aug8-15ep-campaign spec) — waiting on her word on whether standard clips were
-  ever rendered on LUMI scratch or genuinely don't exist yet. — G
+- **aug8 render pipeline: sbatch written + synced to LUMI, pipeline locked, waiting on clips
+  to actually land** (Kim 2026-08-05/06). Confirmed not a pull gap: no auto-render hook ever
+  existed for this lane (also true of the whole DoRA/fullFT training path — flagged as a
+  standing gap in `docs/todos.md`), and CONTINUITY confirmed no manual render pass was ever
+  run either. New `lumi/sbatch/aug8_train_ddp_render.sbatch` (8 real arms, skips smoke arms,
+  per-arm graceful skip if a ckpt isn't there yet) rsynced to
+  `/project/project_465003186/code/lumi/sbatch/` 08-06 — needs a `sbatch` submit from
+  whoever's next on LUMI (C most likely, she owns the aug8_train_ddp lane). **Once clips land
+  locally**, Kim's ask (08-06) is the full standard pipeline, same as every other matrix_cells
+  campaign (precedent: adamw_bf16_sweep, 07-29): (1) `eval/ingest_matrix_cells.py` (transcode
+  + stage — writes straight into the now-symlinked served tree, the old two-staging-dir trap
+  is fixed); (2) `control/sa3_control/clip_metrics.py` (mir venv, CPU DSP metrics); (3)
+  `control/sa3_control/clip_metrics_audiobox.py` (mir venv, GPU, Audiobox CE/PQ/CU/PC); (4)
+  `eval/clap_score.py` (prompt-adherence); (5) rebuild BOTH `eval/build_dora_table_page.py`
+  (dora rows) and the model-matrix board off the shared aggregate so aug8 sits next to its
+  fp32frames/adamw siblings for the A/B. Disintegration gate not applicable (plain DoRA/
+  fullFT finetune, no control adapter — same call as adamw). Not hosted yet, nothing to link.
+  — G
+- **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
+  your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
+  noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
+  (`lumi/melody_subspace15_selective_v3.npz`). We DO see a small second before the weight update
+  (clean-note AND in-mix = 12.7× codec noise) — #59 was weak because the *loss had no lever*, not
+  because melody's invisible. A/B sbatch ready: `lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`
+  (K∈{2,5,12} on v3, identical recipe → compares directly to the run subloss_goa_k{2,5,12} v2 arms +
+  lreq K=1). **To run** (from KIMRETURNNOTES rsync pattern): ship code (incl. the v3 npz + sbatch) →
+  `sbatch /project/project_465003186/code/lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`. Verdicts:
+  `eval/musicology/{interval_resolution_ladder,inmix_floor,melody_selective_subspace}_2026-08-06/VERDICT.md`.
 - **LUMI campaigns** live (big-FT / grids — current job IDs in WORKLOG).
 - **`sa3_lenvar_hq` (length-variant renders, 220 tasks)** — *blocked on you for one thing:* when it
   drains, relay the artifact count (`ls .../renders/length_variant/*.wav | wc -l`, or the `.out`
