@@ -161,10 +161,19 @@ footer{{color:#6b727a;font-size:.8em;margin-top:2.5em;max-width:900px}}
 our audition-serving AAC/<b>m4a</b> — in units a producer knows. n = {n} Goa full-mix clips, 8&nbsp;s each, mono.</p>
 
 <div class="explain">
-<p><b>What this tests.</b> Every clip you audition has been through a lossy codec twice: once when
-the model's <b>SAME</b> autoencoder compresses audio into its latent and decodes it back, and again
-when we transcode the render to <b>m4a/AAC</b> for the web. This page measures how much high-frequency
-<i>detail</i> each step throws away, and compares it to MP3 at bitrates producers recognise.</p>
+<p><b>What this tests.</b> On our normal eval boards a clip has been through a lossy codec twice:
+once when the model's <b>SAME</b> autoencoder compresses audio into its latent and decodes it back,
+and again when the render is transcoded to <b>m4a/AAC</b> for the web. This page separates those two
+steps and measures how much high-frequency <i>detail</i> each one throws away, against MP3 at
+bitrates producers recognise.</p>
+<p><b>Nothing on THIS page is served lossily.</b> That would defeat the test — a common m4a layer
+over every version would mask the very differences being compared. Each version here is decoded once
+(so the codec's damage is baked into the samples) and then delivered as <b>lossless FLAC</b>, which
+is bit-exact PCM, not a second encode. The reference is bit-identical to the source track, verified.
+It is the only honest way to audition a codec ladder in a browser: the alternative — shipping each
+version in its own native format — would put the browser's decoder, and each format's encoder
+delay/padding, between you and the comparison, which would also break the sample alignment the
+<b>Δ</b> buttons depend on.</p>
 <p><b>How to read it.</b> The headline is <b>air-band env&nbsp;corr</b> (8–16&nbsp;kHz): how faithfully
 the fine temporal detail — shimmer, cymbal air, transient sparkle — survives. <b>1.0 = perfect,
 &lt;&lt;1 = smeared into a wash.</b> Compare each row to the MP3 anchors: if SAME sits below MP3&nbsp;128k,
@@ -272,7 +281,8 @@ document.querySelectorAll('.player').forEach(P=>{{
   }}
 
   function stopSources(){{
-    if(srcs) srcs.forEach(s=>{{ try{{s.stop();}}catch(e){{}} }});
+    if(srcs) srcs.forEach(s=>{{ try{{s.stop();}}catch(e){{}} try{{s.disconnect();}}catch(e){{}} }});
+    if(gains) gains.forEach(g=>{{ try{{g.disconnect();}}catch(e){{}} }});
     srcs=null; gains=null;
   }}
 
@@ -317,12 +327,19 @@ document.querySelectorAll('.player').forEach(P=>{{
     active=b; diffOn=false; applyGains();
   }}
 
+  // Every click gets an epoch. Pausing bumps it, so a start that is still waiting on the decode
+  // is superseded instead of firing afterwards -- that stale start was audio you could not stop
+  // (Kim 2026-08-07: "when I stop one of the shorter clips, some content keeps playing").
+  let epoch=0;
   pp.onclick=async()=>{{
+    const mine=++epoch;
     try{{
+      if(playing){{ offset=pos(); playing=false; pp.textContent='▶'; stopSources(); return; }}
       await load();
+      if(mine!==epoch) return;                       // superseded while decoding
       if(ctx.state==='suspended') await ctx.resume();
-      if(playing){{ offset=pos(); playing=false; pp.textContent='▶'; stopSources(); }}
-      else startAt(offset>=dur-0.05?0:offset);
+      if(mine!==epoch) return;
+      startAt(offset>=dur-0.05?0:offset);
     }}catch(e){{ now.textContent='audio failed to load'; console.error(e); }}
   }};
   btns.forEach(b=>b.onclick=()=>solo(b));          // switching never touches transport
