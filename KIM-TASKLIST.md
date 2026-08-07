@@ -37,6 +37,14 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits; aug8 redo-vs-aug3 (encode profile unmeasured, parked).
 
 ## 👂 Ear queue (needs Kim's ears)
+- **codec-clarity: does the −8 dB SAME residual sound as bad as it measures?** (deployed 08-07,
+  https://aavepyora.online/files/audit/codec-clarity/). New: beat-synced 2-min looping clips from the
+  60–70% point, stereo, + a **Δ button per codec** that plays only what that codec threw away.
+  THE QUESTION: on the two Ayahuasca clips SAME measures −8.7/−7.9 dB — *worse than MP3 128k*, vs
+  −31.9 dB on the old 8 s excerpts. If that's audible, the page's headline ("m4a serving is
+  transparent, SAME is ~all the loss") is understated, because the 8 s leg samples a fixed 60 s
+  offset = usually the sparsest passage. Your ears decide whether the broadband residual is
+  something you hear or something masked. — W
 - **melody-wall: subloss_k2 vs baseline** top cells — the 08-04 metric came back weak/inconclusive; your
   ears settle it. NOW SCORED (W 08-05): at matched cfg7/w1, k2 is the WEAKEST of its own family on
   every axis — CLAP .338 vs k5 .351 / k12 .353, worst retrieval rank, lowest CE, highest hf_ratio.
