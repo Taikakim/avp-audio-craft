@@ -10,9 +10,9 @@
 # have reported "free" and stomped it (the 07-21-class concurrent-GPU crash). So:
 #   1. rocm-smi --showpids is GROUND TRUTH and is checked FIRST — a lockfile is a claim,
 #      occupied VRAM is a fact.
-#   2. /tmp/gpu.lock is the foreign instance's channel: honour it, and MIRROR ours into it so
-#      they can see us.
-#   3. SAO/.gpu.lock stays the fleet's own mutex (pid-aware).
+#   2. The /tmp/gpu.lock foreign channel and our SAO/.gpu.lock mutex are BOTH handled by
+#      filelock.py (it mirrors + refuses on a live foreign holder). This script does not touch
+#      the mirror -- what it adds is the rocm-smi gate, which filelock deliberately does not do.
 set -u
 ACTION="${1:-}"; HANDLE="${2:-WINTERMUTE}"; MYPID="${3:-$$}"
 SAO=/home/kim/Projects/SAO
@@ -38,25 +38,15 @@ case "$ACTION" in
       echo "[gpu_guard] refusing to start (rocm-smi is ground truth, lockfiles are only claims)"
       exit 1
     done
-    if [ -e "$FOREIGN" ]; then
-      fpid=$(cat "$FOREIGN" 2>/dev/null | tr -dc '0-9')
-      if [ -n "$fpid" ] && ! kill -0 "$fpid" 2>/dev/null; then
-        echo "[gpu_guard] /tmp/gpu.lock held by DEAD pid $fpid — reclaiming"; rm -f "$FOREIGN"
-      else
-        echo "[gpu_guard] BUSY: /tmp/gpu.lock present (pid ${fpid:-unknown})"; exit 1
-      fi
-    fi
+    # /tmp/gpu.lock is filelock.py's job since 2026-08-07 (C, Kim-directed): it refuses on a live
+    # foreign holder, writes the mirror on acquire and clears it on release, in ITS format
+    # (HANDLE pid=N ts=...). This script must NOT touch the file -- writing a bare pid here would
+    # break filelock's own "clear only if it's ours" parse and strand a stale lock blocking everyone.
     python3 "$SAO/Misc/filelock.py" acquire "$OURS" --handle "$HANDLE" --pid-aware --pid "$MYPID" || exit 1
-    echo "$MYPID" > "$FOREIGN" 2>/dev/null || echo "[gpu_guard] WARN: could not mirror to $FOREIGN"
-    echo "[gpu_guard] acquired (ours + mirrored to $FOREIGN, pid $MYPID)"
+    echo "[gpu_guard] acquired (filelock owns the $FOREIGN mirror)"
     ;;
   release)
-    if [ -e "$FOREIGN" ] && [ "$(cat "$FOREIGN" 2>/dev/null | tr -dc '0-9')" = "$MYPID" ]; then
-      rm -f "$FOREIGN"
-    elif [ -e "$FOREIGN" ]; then
-      echo "[gpu_guard] NOT removing $FOREIGN — it is not ours"
-    fi
-    python3 "$SAO/Misc/filelock.py" release "$OURS" --handle "$HANDLE"
+    python3 "$SAO/Misc/filelock.py" release "$OURS" --handle "$HANDLE"   # also clears the mirror
     echo "[gpu_guard] released"
     ;;
   *)
