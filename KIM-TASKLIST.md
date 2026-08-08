@@ -34,7 +34,17 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   your ear-verdicts still reach `run_meta.kim_feedback` only when you relay them in chat. A
   local-only twin (private network, nothing public can write to it) would let me ingest verdicts
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
-- *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits; aug8 redo-vs-aug3 (encode profile unmeasured, parked).
+- **aug8: is it worth the GPU-hours before the project allocation purges?** (C, 08-08 —
+  closes the old "confirm still-open or close" carry from 07-31.) Root cause now confirmed:
+  `aug8_train_ddp`'s 8 real arms (fullft/dora × goa/avp × fp32/bf16) never trained — only the
+  two mechanics smoke arms ever ran, which is why there are no clips. Submitting them for real
+  is a straightforward `ARMS=` launch — but C is deliberately NOT auto-submitting: the LUMI
+  project allocation is expiring (purge in ~weeks), #68 big-FT is already grinding ~11h/epoch
+  and won't finish 40ep before purge, and the box is contended. 8 more training arms compete
+  directly with #68 on a shrinking budget. Your call: still worth it (the aug8-vs-aug3
+  augmentation question, parked since 07-31), or let #68 have the remaining hours? The render
+  sbatch is ready as-is the moment any real arm checkpoints — no code blocker either way.
+- *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
 
 ## 👂 Ear queue (needs Kim's ears)
 - **codec-clarity: does the −8 dB SAME residual sound as bad as it measures?** (deployed 08-07,
@@ -59,18 +69,6 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips *(not hosted)*; interval-CFG nl.475 pairs *(not hosted — `eval/musicology/interval_cfg_2026-07-23/` local)*; Head-B bracket *(staged `~/.cache/evals_aac/headb_bracket/`, not yet published)*; goa_t2048_bs1 anomaly → [▶ that checkpoint](https://aavepyora.online/files/evals/dora_table.html?models=fp32frames_goa_t2048_bs1_lr1e4) · [fp32frames family](https://aavepyora.online/files/evals/dora_table.html?set=fp32frames).
 
 ## ⏳ In flight — FYI, no action
-- **aug8: root cause found (08-08) — training itself never ran, not a render/pull problem.**
-  `ls .../runs/aug8_train_ddp/` on LUMI scratch (Kim ran it) shows ONLY `aug8ddp_ddp_smoke` /
-  `aug8ddp_ddp_smoke_dora` — none of the 8 real arms (fullft/dora × goa/avp × fp32/bf16) have
-  ever trained. My render sbatch (`lumi/sbatch/aug8_train_ddp_render.sbatch`, already synced +
-  ran as job 20792735) worked correctly — it gracefully skipped all 8 because there was
-  genuinely nothing to render, not because of a path bug. (Separately fixed a cosmetic bug in
-  that same job: its summary line's `ls glob | wc -l` reported sbatch-level FAILED on a
-  legitimately-empty match under pipefail — harmless, now uses `find`.) **Not blocked on you** —
-  back in C's lane: `aug8_train_ddp.sbatch` needs an actual `ARMS=` submit for the 8 real arm
-  names (listed in its header). Once real checkpoints exist, my render sbatch + the standard
-  metering pipeline (ingest → clip_metrics DSP → Audiobox → CLAP → rebuild dora_table+
-  model_matrix, precedent: adamw_bf16_sweep) run as already planned. — G
 - **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
   your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
   noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
