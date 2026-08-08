@@ -120,7 +120,11 @@ python ${CODE}/lumi/render_matrix_cells.py --label ${LABEL} --tag ep${EP} \
 echo "[arm ${ARM}] ${LABEL} render pass done"
 '
 echo "[aug8-render] all arms finished. cells written to ${SCRATCH}/renders/matrix_cells:"
-ls ${SCRATCH}/renders/matrix_cells/fullft_aug8ddp_*.wav ${SCRATCH}/renders/matrix_cells/dora_aug8ddp_*.wav 2>/dev/null | wc -l
+# ls on a no-match glob exits 2 even though wc -l (reading the empty stdin) exits 0 --
+# under pipefail that made a fully-successful run (0 real arms trained -> 0 cells, exactly
+# as designed) report sbatch state FAILED/exit 2 (job 20792735). find never errors on zero
+# matches, so it can't trip this.
+find ${SCRATCH}/renders/matrix_cells/ -maxdepth 1 \( -name 'fullft_aug8ddp_*.wav' -o -name 'dora_aug8ddp_*.wav' \) 2>/dev/null | wc -l
 # SUCCESS = up to 8 arms x 54 cells = 432 aug8ddp *.wav cells (fewer per arm that was
 # never trained / has no ckpt yet -- read the per-arm skip lines above, never just the
 # sbatch rc). Kim pulls the renders dir; standard ingest (transcode + manifest append +
