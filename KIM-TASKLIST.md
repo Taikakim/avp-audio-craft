@@ -59,24 +59,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips *(not hosted)*; interval-CFG nl.475 pairs *(not hosted — `eval/musicology/interval_cfg_2026-07-23/` local)*; Head-B bracket *(staged `~/.cache/evals_aac/headb_bracket/`, not yet published)*; goa_t2048_bs1 anomaly → [▶ that checkpoint](https://aavepyora.online/files/evals/dora_table.html?models=fp32frames_goa_t2048_bs1_lr1e4) · [fp32frames family](https://aavepyora.online/files/evals/dora_table.html?set=fp32frames).
 
 ## ⏳ In flight — FYI, no action
-- **aug8 render pipeline: sbatch written + synced to LUMI, pipeline locked, waiting on clips
-  to actually land** (Kim 2026-08-05/06). Confirmed not a pull gap: no auto-render hook ever
-  existed for this lane (also true of the whole DoRA/fullFT training path — flagged as a
-  standing gap in `docs/todos.md`), and CONTINUITY confirmed no manual render pass was ever
-  run either. New `lumi/sbatch/aug8_train_ddp_render.sbatch` (8 real arms, skips smoke arms,
-  per-arm graceful skip if a ckpt isn't there yet) rsynced to
-  `/project/project_465003186/code/lumi/sbatch/` 08-06 — needs a `sbatch` submit from
-  whoever's next on LUMI (C most likely, she owns the aug8_train_ddp lane). **Once clips land
-  locally**, Kim's ask (08-06) is the full standard pipeline, same as every other matrix_cells
-  campaign (precedent: adamw_bf16_sweep, 07-29): (1) `eval/ingest_matrix_cells.py` (transcode
-  + stage — writes straight into the now-symlinked served tree, the old two-staging-dir trap
-  is fixed); (2) `control/sa3_control/clip_metrics.py` (mir venv, CPU DSP metrics); (3)
-  `control/sa3_control/clip_metrics_audiobox.py` (mir venv, GPU, Audiobox CE/PQ/CU/PC); (4)
-  `eval/clap_score.py` (prompt-adherence); (5) rebuild BOTH `eval/build_dora_table_page.py`
-  (dora rows) and the model-matrix board off the shared aggregate so aug8 sits next to its
-  fp32frames/adamw siblings for the A/B. Disintegration gate not applicable (plain DoRA/
-  fullFT finetune, no control adapter — same call as adamw). Not hosted yet, nothing to link.
-  — G
+- **aug8: root cause found (08-08) — training itself never ran, not a render/pull problem.**
+  `ls .../runs/aug8_train_ddp/` on LUMI scratch (Kim ran it) shows ONLY `aug8ddp_ddp_smoke` /
+  `aug8ddp_ddp_smoke_dora` — none of the 8 real arms (fullft/dora × goa/avp × fp32/bf16) have
+  ever trained. My render sbatch (`lumi/sbatch/aug8_train_ddp_render.sbatch`, already synced +
+  ran as job 20792735) worked correctly — it gracefully skipped all 8 because there was
+  genuinely nothing to render, not because of a path bug. (Separately fixed a cosmetic bug in
+  that same job: its summary line's `ls glob | wc -l` reported sbatch-level FAILED on a
+  legitimately-empty match under pipefail — harmless, now uses `find`.) **Not blocked on you** —
+  back in C's lane: `aug8_train_ddp.sbatch` needs an actual `ARMS=` submit for the 8 real arm
+  names (listed in its header). Once real checkpoints exist, my render sbatch + the standard
+  metering pipeline (ingest → clip_metrics DSP → Audiobox → CLAP → rebuild dora_table+
+  model_matrix, precedent: adamw_bf16_sweep) run as already planned. — G
 - **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
   your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
   noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
