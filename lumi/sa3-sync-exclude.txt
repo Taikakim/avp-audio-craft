@@ -1,0 +1,39 @@
+# rsync exclude list for syncing stable-audio-3 -> LUMI /project (W 2026-08-09).
+# Use with:  rsync -av --exclude-from=lumi/sa3-sync-exclude.txt stable-audio-3/ <lumi>:.../stable-audio-3/
+#
+# WHY: the 08-09 sync pushed 16.5 GB of ONNX weights, 615 MB of demo wavs and the wandb dir into
+# /project, none of which can be used there. The ONNX export exists for the LOCAL 16 GB card: it
+# frees ~3.8 GB resident and removes the torch dependency, at the cost of being ~3.3x SLOWER than
+# torch eager (measured: 0.707 s vs 2.314 s for the same DiT loop, MASTER §5). LUMI GCDs have
+# 64 GB and no VRAM pressure, so the trade is pure loss there — and the MIGraphX execution
+# provider isn't even installed in the SA3 venv (it lives in mir's). Locally there are SEVEN
+# .onnx.data files totalling ~38.5 GB; only three had landed when this list was written, so most
+# of the damage is still avoidable.
+
+# --- ONNX exports: local-low-VRAM artefacts, slower and unusable on LUMI
+*.onnx
+*.onnx.data
+*.cond.npz
+*.uncond.npz
+
+# --- demo/eval audio: regenerate on the node, never ship 205 MB wavs over the wire
+demo_cfg_*.wav
+*.wav
+renders_*/
+flowsep_results/
+zerosep_rf_results/
+
+# --- local experiment logs + telemetry (wandb also syncs to the cloud independently)
+wandb/
+*.log
+
+# --- papers and page snapshots: reading material, not compute inputs
+*.pdf
+*.html
+Stable Audio 3/
+
+# --- editor/backup cruft
+*~
+*.orig
+__pycache__/
+.venv/
