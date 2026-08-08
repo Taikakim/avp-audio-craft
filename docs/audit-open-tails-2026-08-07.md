@@ -8,19 +8,53 @@ Nothing was changed. All file:line cites are against the current tree.
 `KIM-TASKLIST.md` catch most parked work. The real risk is three narrow classes:
 1. **Untracked one-mention tails** — floated once in a journal/consult, entered no ledger.
 2. **Spec-only campaigns** — fully designed, pre-registered in some cases, zero build.
-3. **One systemic root-cause** (no post-training auto-render hook) that keeps manufacturing
-   the "checkpoint exists, no clips, ear-gated forever" backlog.
+3. **One systemic root-cause** (no post-training auto-render *pipeline* — see §0) that keeps
+   manufacturing the "checkpoint exists, no clips, ear-gated forever" backlog.
+
+> **Fleet-reviewed 2026-08-08** (WINTERMUTE, GHOST-NOTE, CONTINUITY). Corrections folded below;
+> the review materially sharpened §0 (it's *three* gaps, not one, and it's owned not unowned),
+> re-verified aug8 to true state, and closed A1. **Standing principle adopted from the review
+> (W):** *an audit line must cite a CHECK, not a colleague* — the same family as
+> "manifest-count ≠ playability", "lockfile ≠ GPU-state", "HTTP-200 ≠ clips-present". This audit
+> itself produced three worked examples in one thread (aug8 state was different from what each of
+> three of us relayed; one filesystem check settled it).
 
 ---
 
-## 0. The single highest-leverage finding — fix this and a chunk of the backlog unblocks
+## 0. The single highest-leverage finding — a post-training PIPELINE (three gaps in series)
 
-**No post-training auto-render hook exists.** `train_lora.py` has ZERO post-training render
-step (grep-confirmed). Kim's standing directive is that training runs auto-render the standard
-clip grid. Because they don't, runs like `aug8_train_ddp` sit with checkpoints and **no clips
-for weeks**, which is *why* so much of the ear-queue below is blocked. `docs/todos.md:15-28`
-(resurfaced 2026-08-05). Recurring root cause, still unowned. **Building this one hook
-retroactively unblocks the ear-gated items in §4.**
+**`train_lora.py` has ZERO post-training render step** (grep-confirmed), despite Kim's standing
+directive that runs auto-render the standard clip grid. **Corrected by the review — it is NOT one
+hook and NOT unowned:**
+
+- **Ownership (G + C):** CONTINUITY claimed the render hook in an 08-05 DM ("belongs next to my
+  aug8/train sbatch work"). It is **designed-not-built + C-owned**, not unowned. The risk was never
+  "nobody will build it" — it's that it sat designed-not-built while runs piled up. C's per-run
+  render sbatches (`precision_ladder_render`, `fullft_bigset_render`, aug8's) are stopgaps; the
+  *unified* train-finish hook is the unbuilt piece.
+- **It's THREE gaps in series, not one (W):** a checkpoint is auditable only when all three complete,
+  each gated on **the artifact existing, not the exit code**:
+  - **(a) RENDER** — the missing `train_lora.py` hook. **C owns.**
+  - **(b) SCORE** — meter + CLAP + `clip_metrics` rows. W's evidence: 5,532 clips sat rendered-and-
+    served for *weeks* with zero CLAP rows → no DoRA-table rows → the board honestly showed em-dashes.
+    **That was Kim's "clickables missing for many models" — never a board bug.** **W owns.**
+  - **(c) PUBLISH/SYNC** — manifest + deploy + **verify-over-HTTP**. Separately, pages went live whose
+    audio was never synced (headb_bracket was one command from shipping with all 384 clips absent);
+    44 GB of clips once sat under a sibling base while a board 404'd. **W owns** (exposed as one
+    callable step the hook invokes).
+- **Why build only (a) is a trap:** it just reshapes the backlog from "checkpoint with no clips" to
+  "clips nobody can score or rank" — the exact state W spent 08-05/06 digging out of.
+
+**Live instance = aug8** (verified, per the cite-a-check principle): render DONE on LUMI
+(`job 20792735`, Kim-submitted 08-07, completed, real non-smoke ckpts); **pull-to-local completing
+08-08** (W checked the mirror directly this morning: not yet landed; G/C then confirmed the rsync
+finished and are reconciling a file-count anomaly). Once local, G runs the (b)+(c) chain
+(`ingest_matrix_cells` → `clip_metrics` DSP → `clip_metrics_audiobox` [mind `gpu_guard.sh`] →
+`clap_score` → rebuild `dora_table`+`model_matrix` → W deploy). The general pipeline and the aug8
+instance are the same shape. `docs/todos.md:15-28`, `KIM-TASKLIST:37`.
+
+**Building this pipeline retroactively unblocks the ear-gated items in §4.** (Highest-leverage item
+in the audit; C-owned and ready to build — awaiting Kim's priority call vs. the other in-flight work.)
 
 ---
 
@@ -28,9 +62,9 @@ retroactively unblocks the ear-gated items in §4.**
 
 | # | Item | Source | Judgment |
 |---|------|--------|----------|
-| A1 | **STATISTICAL_ANALYSIS_MANUAL.md documents CLI flags that don't exist** (`--feature-select/--per-track/--pca/--vif/--cluster/--mi/--build-db/--scatter/--quadrant`; real CLI is only `path [-o][-v][-c][--corr-threshold][-l]`). G said "not yet flagged to the fleet formally," then never flagged it. | `ghost-note.journal.md:575-580` (08-02) | **Still-open.** docs-truth pass needed. |
+| A1 | **STATISTICAL_ANALYSIS_MANUAL.md documents CLI flags that don't exist** (`--feature-select/--per-track/--pca/--vif/--cluster/--mi/--build-db/--scatter/--quadrant`; real CLI is only `path [-o][-v][-c][--corr-threshold][-l]`). G said "not yet flagged to the fleet formally," then never flagged it. | `ghost-note.journal.md:575-580` (08-02) | ✅ **FIXED 08-08 (G):** truth-banner added to `mir/src/tools/STATISTICAL_ANALYSIS_MANUAL.md` listing the real 5-flag CLI (grep-verified vs `add_argument`), rest marked ASPIRATIONAL (not a full rewrite). mir-same-chroma duplicate left for its own owner. |
 | A2 | Promised **adversarial/literature-grounded analysis of the EMA-vs-early-stop recipe** "once the soups finish" — soups queued, writeup never surfaced. | `WHAT-KIM-WANTED-TO-KNOW.md:106-107` | Probably-abandoned; confirm. |
-| A3 | **The 2026-08-04 melody-precision consult's next-actions** never closed: (1) step-0 kernel-accumulation / optimizer-master-weight precision code-read ("10-min, do before Gemini brief returns"); (2) the fp32-residual-stream A/B arm W insisted must run before any "precision doesn't matter" call; (3) C's Gemini brief on sub-dominant-signal precision. | `AGENT_DIALOGUE.md:14-46` | **Still-open**; the harness + brief have no visible landing. |
+| A3 | **The 2026-08-04 melody-precision consult's next-actions** never closed (C-confirmed all *parked*, none dead, none done off-record): (1) step-0 kernel/optimizer precision code-read — **asserted-not-verified** (C answered from knowledge that every SA3 config stores activations in half precision; not an actual code-read); (2) the **fp32-residual-stream A/B arm** — designed but build-HELD, never run; **the decisive test for the fp32/bf16 audible gap** (W+C agree), GPU-gated (foreign-GPU cycling + purge); (3) C's Gemini brief on sub-dominant-signal precision; (4) **[added by W] C's 08-04 `fp32cmp`-vs-`bf16cmp` weight-diff probe** — tool exists (`eval/precision_weight_diff.py`), launched ("launching it now"), **no verdict ever landed** — the one that settles real-basin-vs-noise on the audible gap. *(Ownership note: the Qiu multiple-maxima check + W's sign-coherence capture probe are **W's/consult-side**, never C-greenlit — not C's to close.)* | `AGENT_DIALOGUE.md:14-46` | **Still-open.** Net: fp32/bf16 gap is NOT metric-settled; the fp32-residual arm is the open decisive piece. |
 | A4 | **Explorer steering-contract v2** — "Payload smoke-tested. Server restart pending to activate." Built-but-maybe-never-activated (23→35 states, sigma-interval DoRA knobs). | `continuity.tasks.md:176` (07-12) | Stale — verify activation. |
 | A5 | **Drift-prediction analysis** — "TODO: THE-FINN fold into DISCOVERIES once confirmed." Gated on a not-yet-confirmed result. | `continuity.tasks.md:192` (07-20) | Probably died on the condition. |
 
@@ -100,7 +134,7 @@ retroactively unblocks the ear-gated items in §4.**
 - **E0 meter-validation AUC gate** — blocked on Kim's E0 listening verdicts (07-15) that never came back; "gates
   everything downstream." Plus the E0 regime-confound stratify-fix. `open-threads.md:52,54`. 🔴
 - **Section-conditioning adapter** — HELD on Kim's boundary arbitration, blocked 2+ evenings, never arbitrated.
-  `open-threads.md:53`, `eval/section_spotcheck.md`.
+  `open-threads.md:53`, `eval/section_spotcheck.md`. **(C-confirmed 08-08: still Kim-gated, no movement.)**
 - **E3 metrical-position FiLM** — trained + meter-positive, awaiting "does it *sound* like structure?"; clips local, not hosted. `WORKLOG.md:1990`.
 - **28 truncated 120s native renders** — exclude/re-render DECISION PENDING KIM; plus the quarantine-doesn't-gate-ingestion
   code fix (a BROKEN dir got scored). `open-threads.md:127`, `WORKLOG.md:43-46`.
@@ -122,7 +156,7 @@ retroactively unblocks the ear-gated items in §4.**
 - **Precision ladder** (fp32/bf16-mixed/fp16-mixed, T256) — job 20682678 "all 3 arms training" `WORKLOG.md:2006`; no verdict on record (may have closed off-log).
 - **Layer-restricted control adapters L8-15** — single-tap L14 ≈ full onset adapter, but HF-blowout hardening was an
   amputation artifact; next levers (gain ladder, HF-drift penalty) not started. `WORKLOG.md:1934`, `open-threads.md:66`.
-- **Interval-CFG mid-band (#26)** — partial lift; FAD never run, W co-score + Kim's ear on nl.475 never landed. `continuity.journal.md:1172-1173`.
+- **Interval-CFG mid-band (#26)** — partial lift; FAD never run, W co-score + Kim's ear on nl.475 never landed. `continuity.journal.md:1172-1173`. **(C-confirmed 08-08: still open, parked not dead; W had no record of the co-score ask.)**
 - **Melody-wall subloss (#59)** — near-null; needs the lead-isolated **MuScriptor-MIDI contour metric (never built)** + Kim's ears. `WORKLOG.md:1998`.
 - **G2b sub-frame phase branch REOPENED** with measured foundation, but no PhaseSpin/complex-pair construct built afterward. `continuity.journal.md:1298-1301`.
 - **Width-T-sweep** (stereo-width vs T) — confirmed NOT a dup of the stereo-loss sweep; `eval/width_metric.py` ready, never run. `open-threads.md:32`.
@@ -150,6 +184,9 @@ drives; absence of an in-repo output trace strongly suggests non-use but can't *
 2. reality-structured / metrical-tree-PE spec probes — `eval/e1_pretest_error_spectrum.py`, `e3_structure_bracket.py`,
    `phase_invariance_probe.py`, `phase_recoverability_probe.py`, `phase_accuracy_hires.py`. No committed output, no refs. If those tiers never launched, this cluster is dead.
 3. precision diagnostics — `eval/precision_weight_diff.py`, `update_disappearance_test.py`, `profile_phm.py`.
+   **Correction (C, 08-08): `precision_weight_diff.py` is NOT orphaned** — it's a real tool, *launched* 08-04, but
+   **no verdict ever landed** (see A3). So: reclassify from "orphaned" to "ran, result never published" — a
+   different and arguably worse failure (the decisive fp32/bf16 basin question is one un-published run away).
 4. A/B analyzers with committed render companions but no output — `eval/safa_ab.py` (#27), `steer_orthogonal_ab_analyze.py` (#58),
    `interval_cfg_ab_analyze.py` (#26), `gain_ladder_layer_restricted.py` (#56), `concept_axis_geometry.py`, `structure_ssm.py`.
 5. `control/sa3_control/dora_weight_glitch.py`, `hardness_gain_bracket.py` — 07 diagnostics, no output/refs.
@@ -184,8 +221,10 @@ drives; absence of an in-repo output trace strongly suggests non-use but can't *
 
 ## Suggested triage order
 
-1. **Build the post-training auto-render hook (§0)** — highest leverage; retroactively unblocks the §4 ear-queue.
-2. **The five untracked one-mention tails (§1, A1-A5)** — none are in any ledger, highest loss-risk.
+1. **Build the post-training render→score→publish PIPELINE (§0)** — highest leverage; retroactively unblocks the
+   §4 ear-queue. C owns (a) render, W owns (b) score + (c) publish/verify. Awaiting Kim's priority call. aug8 is
+   the live instance (pull completing 08-08).
+2. **The untracked one-mention tails (§1)** — A1 ✅ done (G); A2–A5 still none-in-any-ledger, highest loss-risk.
 3. **The 5 ASK-KIM kill/keep rulings (§3)** — minutes to clear, unblock 07-22 debt.
 4. **Reconcile the ledger contradictions (§7)** and the two "confirm/close" tags nobody actioned (KIM-TASKLIST:37,51).
 5. **Pick from the spec-only shelf (§2)** — the HF-clarity plan and subspace-v3 A/B are the two whose premises are already confirmed.
