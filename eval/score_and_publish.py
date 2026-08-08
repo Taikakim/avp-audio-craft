@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""score_and_publish.py — legs (b) and (c) of the post-training pipeline, as ONE callable.
+
+Kim 2026-08-09, from the open-tails audit (docs/audit-open-tails-2026-08-07.md §0 as revised).
+The audit's finding was "train_lora.py has no auto-render hook"; the correction was that a
+checkpoint only becomes AUDITABLE when three things complete in series:
+
+    (a) RENDER   -> clips exist                (train_lora.py hook — not this script)
+    (b) SCORE    -> clips have metric rows     -> they can be ranked, they get table rows
+    (c) PUBLISH  -> clips are on the host      -> Kim can actually hear them
+
+Build only (a) and the backlog changes shape from "checkpoint with no clips" into "clips nobody
+can see or rank" — the state 5,532 clips across 7 models sat in for weeks, which surfaced as
+"the DoRA rows are missing for many models" and was never a board bug. This script is (b)+(c),
+so the render hook can finish the job with one call.
+
+    eval/score_and_publish.py --pattern winning_goa      # scope is REQUIRED, see below
+    eval/score_and_publish.py --pattern aug8 --src /path/to/pulled/renders
+    eval/score_and_publish.py --pattern x0eq --no-publish        # local only
+    eval/score_and_publish.py --pattern x0eq --dry-run           # plan + preflight, no writes
+
+DESIGN RULES, each one paid for by a specific failure this session:
+
+  * EVERY STEP IS GATED ON ITS ARTIFACT, NEVER ON AN EXIT CODE. Both scoring runs that
+    produced good data this week exited nonzero (rc=134 SIGABRT, rc=139 SIGSEGV) in ROCm
+    teardown AFTER writing everything; conversely `rc=$?` after a pipe reports the last
+    stage's status, and `rsync ... 2>/dev/null` makes a connection failure look identical to
+    "nothing to do". So we check rows-in-db, models-in-aggregate, bytes-on-host.
+  * --pattern IS MANDATORY. An unscoped Audiobox pass pulls in the board-wide missing-ce
+    backlog (59k clips at last count) instead of the campaign you just trained.
+  * GPU WORK GOES THROUGH gpu_guard.sh. rocm-smi is ground truth; a foreign instance shares
+    this box and does not reliably write /tmp/gpu.lock.
+  * PUBLISH READS rsync --itemize FLAGS. A bulk page regen restamps hundreds of byte-identical
+    files; on the last reconcile 87 of 102 "stale" pages and 5,110 of 5,693 "stale" clips were
+    mtime-only. Uploading those is pure churn.
+  * LEAK-SCAN AT SHIP TIME, and verify over HTTP by SAMPLING ACTUAL CLIPS — a page can go live
+    with all of its audio missing (headb_bracket was one command away from exactly that).
+"""
+import argparse
+import json
+import os
+import random
+import re
+import shlex
+import sqlite3
+import subprocess
+import sys
+import urllib.request
+from pathlib import Path
+
+SAO = Path("/home/kim/Projects/SAO")
+STAGE = Path("/home/kim/evals_aac")
+MATRIX = STAGE / "model_matrix"
+MANIFEST = MATRIX / "manifest_live.jsonl"
+DB = SAO / "eval/clip_metrics.db"
+AGG = SAO / "eval/clap_dora_aggregate.csv"
+CLAP_SCAN = SAO / "eval/clap_degen_model_matrix.csv"
+GUARD = SAO / "Misc/gpu_guard.sh"
+MIR_PY = "/home/kim/Projects/mir/mir/bin/python"      # Audiobox must run in mir's venv
+SAO_PY = str(SAO / ".venv/bin/python")
+HOST = "dh_4txyt6@iad1-shared-b8-25.dreamhost.com"
+HOST_EVALS = "/home/dh_4txyt6/aavepyora.online/files/evals/"
+PUBLIC = "https://aavepyora.online/files/evals/"
+SSH = "ssh -o BatchMode=yes -i /home/kim/.ssh/id_ed25519"
+# plumbing that must never reach a public page (science/hyperparams are fine, see spec §4).
+# Anchored patterns only: a bare \.ckpt matches JS property accesses like noteCtx.ckpt and
+# produced two phantom "leaks" in one day.
+LOCAL_ONLY = re.compile(r"(^|/)(run_meta|_meta)\.json$|\.commentary\.json$|/longclips\.json$")
+LEAK_RE = re.compile(r"/home/kim|/run/media|/scratch/|Mantu|epoch=\d+-step=|\.weights\.ckpt"
+                     r"|dh_4txyt6|dreamhost|akekim|\.ssh/")
+
+
+class Step:
+    def __init__(self, name):
+        self.name, self.ok, self.detail = name, False, ""
+
+    def done(self, ok, detail=""):
+        self.ok, self.detail = ok, detail
+        print(f"  [{'OK ' if ok else 'FAIL'}] {self.name}: {detail}", flush=True)
+        return self          # legs return the Step, not a bool
+
+
+def run(cmd, **kw):
+    """Run and return (rc, stdout+stderr). We never trust rc alone -- callers gate on artifacts."""
+    p = subprocess.run(cmd, shell=isinstance(cmd, str), capture_output=True, text=True, **kw)
+    return p.returncode, (p.stdout or "") + (p.stderr or "")
+
+
+def db_counts(pattern):
+    """(rows, with_ce, with_clap) for clips whose path matches the pattern."""
+    if not DB.exists():
+        return 0, 0, 0
+    con = sqlite3.connect(DB)
+    like = f"%{pattern}%"
+    q = lambda w: con.execute(f"SELECT COUNT(*) FROM metrics WHERE path LIKE ?{w}", (like,)).fetchone()[0]
+    try:
+        return q(""), q(" AND ce IS NOT NULL"), q(" AND clap IS NOT NULL")
+    finally:
+        con.close()
+
+
+def manifest_models(pattern):
+    if not MANIFEST.exists():
+        return []
+    out = set()
+    for ln in MANIFEST.read_text().splitlines():
+        if ln.strip() and pattern in ln:
+            try:
+                out.add(json.loads(ln)["model"])
+            except Exception:
+                pass
+    return sorted(out)
+
+
+def scoped_manifest(pattern, dest):
+    """A manifest containing only this campaign's non-native cells, for a scoped CLAP pass."""
+    keep = [l for l in MANIFEST.read_text().splitlines()
+            if l.strip() and pattern in l and '"duration_mode": "native"' not in l]
+    dest.write_text("\n".join(keep) + "\n")
+    return len(keep)
+
+
+def http_len(url):
+    try:
+        req = urllib.request.Request(url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=45) as r:
+            return r.status, int(r.headers.get("content-length") or 0)
+    except Exception as e:
+        return 0, f"{e}"
+
+
+# ---------------------------------------------------------------- legs
+
+def leg_ingest(pattern, src, dry) -> Step:
+    s = Step("ingest rendered clips")
+    if not src:
+        return s.done(True, "skipped (no --src; clips assumed already staged)")
+    before = len(manifest_models(pattern))
+    if dry:
+        return s.done(True, f"DRY: would ingest from {src}")
+    rc, out = run([SAO_PY, str(SAO / "eval/ingest_matrix_cells.py"), "--src", str(src),
+                   "--only-prefix", pattern])
+    after = manifest_models(pattern)
+    # gate on the manifest, not rc
+    return s.done(bool(after), f"{before} -> {len(after)} models in manifest"
+                  + ("" if after else f" | rc={rc} {out[-200:]}"))
+
+
+def leg_dsp(pattern, dry) -> Step:
+    s = Step("DSP metering (CPU)")
+    if dry:
+        return s.done(True, "DRY: skipped")
+    run([SAO_PY, str(SAO / "control/sa3_control/clip_metrics.py"),
+         "--roots", "model_matrix", "--workers", "12"])
+    rows, _, _ = db_counts(pattern)
+    return s.done(rows > 0, f"{rows} rows in clip_metrics.db for '{pattern}'")
+
+
+def leg_gpu(pattern, dry) -> Step:
+    """Audiobox + CLAP, both scoped, both under the GPU mutex."""
+    s = Step("Audiobox + CLAP (GPU)")
+    if dry:
+        return s.done(True, "DRY: skipped")
+    rc, out = run(f'{shlex.quote(str(GUARD))} acquire WINTERMUTE $$')
+    if rc != 0:
+        return s.done(False, f"GPU busy, refusing to start -- {out.strip()[:120]}")
+    try:
+        run([MIR_PY, str(SAO / "control/sa3_control/clip_metrics_audiobox.py"),
+             "--roots", "model_matrix", "--pattern", pattern, "--batch", "8"])
+        tmp = Path("/tmp") / f"clapscope_{pattern.replace('/', '_')}.jsonl"
+        n = scoped_manifest(pattern, tmp)
+        env = dict(os.environ, FLASH_ATTENTION_TRITON_AMD_ENABLE="FALSE")
+        run([SAO_PY, str(SAO / "eval/clap_score.py"), "--manifest", str(tmp),
+             "--clips-dir", str(MATRIX), "--sample", "0", "--device", "cuda",
+             "--write-db", "--append", "--out", str(CLAP_SCAN)], env=env)
+    finally:
+        run(f'{shlex.quote(str(GUARD))} release WINTERMUTE $$')
+    rows, ce, clap = db_counts(pattern)
+    return s.done(ce > 0 and clap > 0, f"{rows} rows | ce {ce} | clap {clap}"
+                  " (nonzero rc from ROCm teardown is expected and ignored)")
+
+
+def leg_tables(pattern, dry) -> Step:
+    s = Step("rebuild aggregate + boards")
+    if dry:
+        return s.done(True, "DRY: skipped")
+    run([SAO_PY, str(SAO / "eval/build_clap_hyperparam_table.py")])
+    run([SAO_PY, str(SAO / "eval/build_dora_table_page.py")])
+    run(["python3", str(SAO / "Misc/build_model_matrix.py")])
+    agg = AGG.read_text() if AGG.exists() else ""
+    models = manifest_models(pattern)
+    in_agg = [m for m in models if m in agg]
+    dora = (SAO / "eval/dora_table.html")
+    in_page = [m for m in models if dora.exists() and m in dora.read_text()]
+    ok = bool(models) and bool(in_agg) and bool(in_page)
+    return s.done(ok, f"{len(in_agg)}/{len(models)} models in aggregate, "
+                      f"{len(in_page)}/{len(models)} rendered into dora_table")
+
+
+def leg_publish(pattern, dry) -> Step:
+    s = Step("publish + verify over HTTP")
+    # 1. what genuinely differs -- read itemize flags, never a raw file list
+    cmd = (f"rsync -rvzn --itemize-changes --include='*/' --include='*.html' --include='*.json' "
+           f"--include='*.m4a' --include='*.flac' --exclude='*' -e {shlex.quote(SSH)} "
+           f"{shlex.quote(str(STAGE) + '/')} {shlex.quote(HOST + ':' + HOST_EVALS)}")
+    rc, out = run(cmd)                       # stderr NOT silenced: a failure must not look empty
+    if rc != 0:
+        return s.done(False, f"diff failed rc={rc}: {out.strip().splitlines()[-1][:120] if out.strip() else 'no output'}")
+    new, changed, timeonly = [], [], 0
+    for ln in out.splitlines():
+        if not ln.startswith("<f"):
+            continue
+        flags, _, name = ln.partition(" ")
+        name = name.strip()
+        if "+++" in flags:
+            new.append(name)
+        elif "s" in flags[3:]:
+            changed.append(name)
+        else:
+            timeonly += 1
+    todo = [f for f in new + changed if not LOCAL_ONLY.search(f)]
+    held = len(new) + len(changed) - len(todo)
+    if not todo:
+        return s.done(True, f"host already current ({timeonly} timestamp-only, "
+                            f"{held} local-only sidecars withheld)")
+    # 2. leak-scan every text artefact before it leaves the box
+    leaks = []
+    for f in todo:
+        p = STAGE / f
+        if p.suffix in (".html", ".json") and p.exists():
+            hits = LEAK_RE.findall(p.read_text(errors="ignore"))
+            if hits:
+                leaks.append(f"{f} -> {sorted(set(hits))[:3]}")
+    if leaks:
+        return s.done(False, f"LEAK, refusing to publish: {leaks[:3]}")
+    if dry:
+        return s.done(True, f"DRY: would push {len(new)} new + {len(changed)} changed "
+                            f"({timeonly} mtime-only, {held} local-only sidecars withheld)")
+    # 3. push exactly that list
+    lst = Path("/tmp") / f"publish_{pattern.replace('/', '_')}.txt"
+    lst.write_text("\n".join(todo) + "\n")
+    rc, out = run(f"rsync -az --chmod=F644 --files-from={shlex.quote(str(lst))} "
+                  f"-e {shlex.quote(SSH)} {shlex.quote(str(STAGE) + '/')} "
+                  f"{shlex.quote(HOST + ':' + HOST_EVALS)}")
+    if rc != 0:
+        return s.done(False, f"rsync rc={rc}: {out.strip()[-160:]}")
+    # 4. verify the ARTIFACT: sample real files and compare bytes, not status codes alone
+    random.seed(11)
+    sample = random.sample(todo, min(4, len(todo)))
+    bad = []
+    for f in sample:
+        st, ln = http_len(PUBLIC + f)
+        local = (STAGE / f).stat().st_size
+        if st != 200 or ln != local:
+            bad.append(f"{f} (http {st}, {ln} vs {local})")
+    return s.done(not bad, f"pushed {len(new)} new + {len(changed)} changed, "
+                           f"{timeonly} mtime-only + {held} sidecars withheld; sampled {len(sample)} verified"
+                  + (f" | MISMATCH {bad}" if bad else ""))
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Score and publish a campaign's clips (legs b+c).")
+    ap.add_argument("--pattern", required=True,
+                    help="campaign/model substring. REQUIRED: an unscoped pass drags in the "
+                         "board-wide metering backlog instead of what you just trained.")
+    ap.add_argument("--src", type=Path, help="ingest freshly rendered/pulled clips from here first")
+    ap.add_argument("--skip-gpu", action="store_true", help="DSP + tables only (no Audiobox/CLAP)")
+    ap.add_argument("--no-publish", action="store_true", help="stop after the tables (local only)")
+    ap.add_argument("--dry-run", action="store_true", help="preflight + plan, write nothing")
+    a = ap.parse_args()
+
+    print(f"[score+publish] pattern={a.pattern!r} dry={a.dry_run}", flush=True)
+    if not MANIFEST.exists():
+        sys.exit(f"[fatal] no manifest at {MANIFEST} -- is the eval drive mounted?")
+
+    steps = [leg_ingest(a.pattern, a.src, a.dry_run), leg_dsp(a.pattern, a.dry_run)]
+    if not a.skip_gpu:
+        steps.append(leg_gpu(a.pattern, a.dry_run))
+    steps.append(leg_tables(a.pattern, a.dry_run))
+    if not a.no_publish:
+        steps.append(leg_publish(a.pattern, a.dry_run))
+
+    failed = [s.name for s in steps if not s.ok]
+    print(f"\n[score+publish] {len(steps)-len(failed)}/{len(steps)} steps passed their artifact gate")
+    if failed:
+        print(f"[score+publish] FAILED: {failed}")
+    sys.exit(1 if failed else 0)
+
+
+if __name__ == "__main__":
+    main()
