@@ -47,7 +47,7 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${RENDER_VENV:-${SCRATCH}/sa3_train_venv_mt}
 MODELS=${PROJ}/models
 RENDER_OUT=${SCRATCH}/renders/length_variant
-TASKLIST=${CODE}/lumi/length_variant_tasks.txt
+TASKLIST=${TASKLIST:-${CODE}/lumi/length_variant_tasks.txt}   # override for a ptm-only re-run
 LOGDIR=${RENDER_OUT}/hq_logs
 mkdir -p "${RENDER_OUT}" "${LOGDIR}"
 
@@ -58,11 +58,30 @@ echo "[lenvar] image=${SIF} venv=${VENV}"
 # fail-loud model staging check (C's review note 2): every task loads medium-base, the two
 # ptm passes load medium -- if either isn't staged offline in PROJ/models all 220 tasks die
 # at load, 24h allocation wasted. Mirrors goa_caption's pre-drain check.
-for repo in stable-audio-3-medium-base stable-audio-3-medium; do
-  ls -d "${MODELS}/hub/models--stabilityai--${repo}/snapshots/"*/ >/dev/null 2>&1 \
-    || { echo "[lenvar] FATAL: ${repo} not staged under ${MODELS}/hub (HF_HUB_OFFLINE=1 would fail all tasks)" 1>&2; exit 1; }
-done
-echo "[lenvar] models staged: medium-base + medium OK"
+# 2026-08-09 (W): the ORIGINAL form of this check tested that a snapshots/ DIRECTORY existed.
+# It passed on a 1.2 GB PARTIAL cache of stable-audio-3-medium whose config file was absent,
+# so all 110 ptm tasks of job 20663606 died at load while the job reported COMPLETED and the
+# summary line printed "DONE. 5336 wav". Existence is not usability. This now RESOLVES
+# each model the way the worker does -- hf_hub_download of the actual config, local files only --
+# so a partial cache fails here, in seconds, instead of after a 2.5 h allocation.
+singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c "
+  export HF_HOME=${MODELS} HF_HUB_CACHE=${MODELS}/hub HF_HUB_OFFLINE=1
+  python - <<'PREFLIGHT'
+import sys
+sys.path.insert(0, '${CODE}/stable-audio-3')
+from stable_audio_3.model_configs import all_models
+need = ['medium-base'] + (['medium'] if '--pt-medium' in open('${TASKLIST}').read() else [])
+for name in need:
+    cfg = all_models[name]
+    try:
+        cfg.resolve()
+    except Exception as e:
+        print(f'[lenvar] FATAL: {name} ({cfg.repo_id}) does not resolve from the offline cache: '
+              f'{type(e).__name__}: {e}', file=sys.stderr)
+        sys.exit(1)
+    print(f'[lenvar] preflight OK: {name} resolves offline')
+PREFLIGHT
+" || { echo "[lenvar] FATAL: model preflight failed -- fix the cache before burning an allocation" 1>&2; exit 1; }
 
 # ── HyperQueue binary: prefer the CSC module, honour an HQ_BIN override, else fail loud ──────
 if [ -n "${HQ_BIN:-}" ]; then
@@ -152,4 +171,10 @@ echo "[lenvar] all jobs finished:"
 NW=$(find "${RENDER_OUT}" -maxdepth 1 -name '*.wav' 2>/dev/null | wc -l)
 NM=$(find "${RENDER_OUT}" -maxdepth 1 -name '*.mmline.json' 2>/dev/null | wc -l)
 echo "[lenvar] DONE. artifacts under ${RENDER_OUT}: ${NW} wav / ${NM} mmline.json ; logs ${LOGDIR}/"
+# Assert against the TASK LIST, not against whatever happens to be on disk: a job that renders
+# 80% of its cells exits COMPLETED and its own summary line looks identical to a finished run.
+singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c \
+  "python ${CODE}/lumi/check_render_complete.py --tasks ${TASKLIST} --out ${RENDER_OUT} --code ${CODE}"
+CHECK_RC=$?
 echo "[lenvar] NEXT (local): eval/ingest_native_cells.py to pull + transcode + append manifest, then rebuild the boards."
+[ "$CHECK_RC" -eq 0 ] || { echo "[lenvar] INCOMPLETE -- see the per-label shortfall above; do NOT treat this run as done" 1>&2; exit 1; }
