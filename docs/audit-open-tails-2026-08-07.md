@@ -45,13 +45,30 @@ hook and NOT unowned:**
 - **Why build only (a) is a trap:** it just reshapes the backlog from "checkpoint with no clips" to
   "clips nobody can score or rank" — the exact state W spent 08-05/06 digging out of.
 
-**Live instance = aug8** (verified, per the cite-a-check principle): render DONE on LUMI
-(`job 20792735`, Kim-submitted 08-07, completed, real non-smoke ckpts); **pull-to-local completing
-08-08** (W checked the mirror directly this morning: not yet landed; G/C then confirmed the rsync
-finished and are reconciling a file-count anomaly). Once local, G runs the (b)+(c) chain
+**Live instance = aug8 — a cautionary tale for this very audit. The render FAILED.**
+`sacct`-verified (W, 08-09): `sa3_aug8_render` (`job 20792735`) exited **ExitCode 2:0 after
+00:00:09** on 2026-08-07 — nine seconds, **produced nothing**. So this is NOT "render done, pull
+lagging" (what a relayed claim said, and what the first revision of this line wrongly recorded) and
+NOT "render short" — it is **RENDER NEVER HAPPENED**: zero aug8 run dirs / files / manifest entries
+anywhere (mirror-verified), which also *dissolves* the "file-count anomaly" G+C were reconciling —
+there was nothing to pull. **Next action:** confirm *why* it exited 2 in 9 s, THEN re-submit; only then does the (b)+(c) chain apply
+(WHY is not yet log-verified — G has a plausible *code-read* hypothesis: all 8 arms hit the
+graceful-skip on a missing run dir before touching python/GPU, ~9 s ≈ 8× container spin-up — but is
+fetching the actual `.out` (`/pfs/.../sa3_aug8_render-20792735.out`) from Kim to settle it rather than
+let the inference stand; G will update this line + KIM-TASKLIST once the log is read)
 (`ingest_matrix_cells` → `clip_metrics` DSP → `clip_metrics_audiobox` [mind `gpu_guard.sh`] →
-`clap_score` → rebuild `dora_table`+`model_matrix` → W deploy). The general pipeline and the aug8
-instance are the same shape. `docs/todos.md:15-28`, `KIM-TASKLIST:37`.
+`clap_score` → rebuild `dora_table`+`model_matrix` → W deploy).
+This is the **THIRD** relay-propagation of an aug8 status (G reported completed-with-clips → W
+softened it → the doc recorded it, all wrong until `sacct` settled it) — the worked example *par
+excellence* of the cite-a-check principle, on my own doc. Rule earned: **carry the job id + state on
+the line so the next reader re-checks in one `sacct` command instead of re-litigating.**
+`docs/todos.md:15-28`, `KIM-TASKLIST:37`.
+
+> **Verify-gate for stage (c)** (W): make the LAST line of every render sbatch
+> `lumi/check_render_complete.py --tasks <list> --out <dir>` — it asserts rendered-count ==
+> task-list and **exits nonzero on a shortfall**, turning "DONE" into *done*. (For aug8 the STATE is
+> the finding — `sacct` — not the count; for a *completed-but-short* job like `sa3_lenvar_hq`
+> 20663606 = 5336/6690, the count IS the finding and this gate catches it.)
 
 **Building this pipeline retroactively unblocks the ear-gated items in §4.** (Highest-leverage item
 in the audit; C-owned and ready to build — awaiting Kim's priority call vs. the other in-flight work.)
