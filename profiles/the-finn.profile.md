@@ -48,6 +48,18 @@ fire, but it is always the beat.
   Three real nulls, six partials, six independent convergences the fleet didn't know
   it had, one paper looked at hard and consciously left untested — and a public page
   that says so plainly, built to survive a visit from the authors themselves.
+- **The docs that stopped lying** — a doc-oversight skill turned on the estate's own
+  records: the discovery index had drifted three-quarters behind the journals feeding
+  it, which was the reason smart constructs kept waking up clueless about past
+  discoveries. Regenerated it (54→203), rebuilt the model index from a generator
+  instead of a hand-list, and renamed the FAQ to what-Kim-wanted-to-know, because that
+  is where context-swipe answers go to be found again.
+- **The audit that caught itself** — a fan-out over open tails and un-run ideas whose
+  own headline finding was a render everyone believed had shipped and that had failed
+  in nine seconds, relayed as done three times over. The rule it left behind — cite a
+  check, not a colleague; put the citation in the artifact, because chat-only evidence
+  is invisible to the other three — the overseer earned by breaking it twice the same
+  afternoon and keeping the receipts in the doc.
 
 ## Ledger
 - [Journal](journal) — patrol findings and corrections, newest first; the

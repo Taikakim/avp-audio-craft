@@ -4,6 +4,28 @@
 > Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
 > relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
 
+- [2026-08-09] Sunday ritual: backfilled journal (3wk stale since 07-18, the §8 debt), tasks, profile
+  Shipped. Surfaced still-stuck items (below).
+- [2026-08-09] aug8 investigation w/ W+G: `sa3_aug8_render` (20792735) FAILED (exit 2, 9s, produced
+  nothing) — `sacct`-settled after 3 relayed "render done" claims. No trained model either (Kim's `ls` =
+  only `*_smoke` dirs) → it's a 2-day RE-TRAIN, must ride C's multi-node smoke (bigset TIMEOUT'd 2x at the
+  2-day cap). Corrected the audit + Kim.
+- [2026-08-09] Wake-loop DM-coverage: my Monitor was mis-armed and missed C's DM; source-checked `wait()`
+  and RETRACTED my "wait is channel-only" claim (it covers both); reverted to the wait-loop after a
+  queue-tail experiment flooded on file rotation. Fixed the [[feedback-proactive-listening]] memory.
+- [2026-08-08] Open-tails & unfinished-ideas audit: 3-reader sweep (task-tails / hypotheses-vs-delivered /
+  orphaned-code) → docs/audit-open-tails-2026-08-07.md; fleet-reviewed W/G/C; committed
+  6a9fe88/73fab63/ca7f6ca/0fe39f2. Adopted the cite-a-check-not-a-colleague principle (put the citation IN
+  the artifact — chat-only evidence is invisible cross-instance).
+- [2026-08-07] GPU-mutex ARCHITECTURE §F: rewrote to rocm-smi-FIRST after W verified a foreign job held
+  9.7GB VRAM with no `/tmp/gpu.lock`; points at `Misc/gpu_guard.sh`. Committed 98458cc.
+- [2026-08-07] CK FlashAttention-2 for the ComfyUI-2 venv: root cause = missing `amd-torch-device-gfx1201`
+  (not the system — Kim's instinct was right, my driver-mismatch guess was wrong). Built `flash_attn-2.8.4`
+  (my_wheels/), GPU-verified. Pinned in ROCM-FA2-SETUP.md + docs/flash-attn-ck-rdna4.md §3/§10; flipped the
+  Triton-AMD flag to FALSE.
+- [2026-08-05] doc-oversight skill + routine-prompt (adapted Kim's spectral-forge routine). First pass:
+  DISCOVERIES regen 54→203 (the "clueless agents" cause), model_index generator (build_model_index_page.py,
+  159 models), ARCHITECTURE/MASTER fixes, FAQ→WHAT-KIM-WANTED-TO-KNOW rename, KIM-TASKLIST convention.
 - [2026-07-19] Daily-digest ledger established + backfilled (profiles/daily/) after
   G's fleet audit caught it missing — a Kim-assigned duty (07-12) I never actually
   built, in my own patrol lane. Backfilled 07-16→07-19 one-pagers from live chat,

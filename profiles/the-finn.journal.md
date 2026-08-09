@@ -175,3 +175,49 @@ checked it, it held, just needed the right address). The count that survived cle
 the fourteen highest-stakes entries verified as-is on the first pass — is worth keeping too: not
 everything a synthesis writes is wrong, but nothing gets to skip the check because most of it
 was right last time.
+
+## 2026-08-05
+
+### finding · doc-oversight skill + first pass — DISCOVERIES was 74% stale (the "clueless agents" cause)
+Adapted an old Claude-Code routine of Kim's (a spectral-forge doc-review task) into a `doc-oversight`
+skill + cloud-routine-prompt pair (three audits: consistency/truth via docs-truth-auditor, readability/bloat,
+agent-facing; SAO drift hotspots; redaction/filelock/commit-on-word guardrails). First pass found the real
+rot: DISCOVERIES.md carried ~54 of ~201 live discoveries — regenerated via `build_discoveries.py` from the
+journals (54→201→203). That staleness is almost certainly why smart agents "felt clueless about past
+discoveries": the mandatory-first-search index had fallen three-quarters behind the journals feeding it.
+model_index.md was ~24 of 159 models; built `Misc/build_model_index_page.py` (generator from
+manifest_live.jsonl + overrides, 140 verdicts preserved) + a legacy snapshot. Renamed FAQ.md →
+WHAT-KIM-WANTED-TO-KNOW.md (Kim: info gets lost in context swipes). Stood up KIM-TASKLIST.md as the
+team-maintained Kim-facing tasklist (CLAUDE.md item 6). Lesson: a generated index is only as live as the
+journals feeding it — the lever is prompt journaling, which is exactly what this Sunday-ritual backfill fixes.
+
+## 2026-08-07
+
+### finding · CK FlashAttention-2 for the ComfyUI venv — the two `[device-gfx1201]` extras
+Kim's ComfyUI-2 venv (RDNA4/gfx1201, rocm7.14) threw `hipErrorInvalidImage` on every torch GPU op. My first
+diagnosis (system driver/COV mismatch) was WRONG — Kim's instinct ("we already got this exact AMD release with
+FA2 working in another venv") was right. Root cause: the venv had `rocm[device-gfx1201]` (ROCm SDK libs) but was
+MISSING `amd-torch-device-gfx1201` (torch's compiled GPU kernels) — two DIFFERENT `[device-gfx1201]` extras.
+Without the torch one you get the runtime but no kernels → `hipErrorInvalidImage` on even
+`torch.randn(device='cuda')`. Fix: `pip install "torch[device-gfx1201]==2.12.0+rocm7.14.0"` (no torch change,
+no FA2 rebuild). Built CK `flash_attn-2.8.4` from source against that torch (`my_wheels/`), GPU-verified
+(varlen_fwd finite, max-abs-diff vs SDPA 2.9e-4). Pinned in ROCM-FA2-SETUP.md, documented in
+docs/flash-attn-ck-rdna4.md §3/§10. pip-vs-uv for ComfyUI: keep pip (ComfyUI-Manager pip-installs plugin deps;
+`uv sync` would prune the from-source FA2 wheel unless pinned as a `tool.uv.sources` path).
+
+## 2026-08-09
+
+### finding · open-tails audit + cite-a-check (earned the hard way, on my own doc)
+Ran a 3-reader sweep (task-tails / hypotheses-vs-delivered / orphaned code) → docs/audit-open-tails-2026-08-07.md,
+fleet-reviewed by W/G/C. Headline corrected in review: the "no post-training auto-render hook" is not one hook
+and not unowned — it's a THREE-stage pipeline (render[C] → score[W] → publish/verify[W]) and C claimed the render
+hook 08-05. The audit's own worked example became the aug8 saga: `sa3_aug8_render` (20792735) was relayed as
+"render done" three times (G→W→doc) but had FAILED (exit 2, 9 s, produced nothing; `sacct`-settled) — and there
+was never even a trained model (Kim's own `ls` showed only `*_smoke` dirs), so aug8 is a 2-day RE-TRAIN that
+times out on 8 GPUs (bigset TIMEOUT'd twice) unless it rides C's multi-node smoke. Standing principle adopted
+(W): an audit line must cite a CHECK, not a colleague — put the citation IN the artifact, because chat-only
+evidence is invisible to the other three instances. I hit the anti-pattern myself in one afternoon — asserted
+"wait is channel-only" from a command string not the source; relayed a stale tasklist state from memory; relayed
+C's storage account to Kim as a "correction" that W's quota receipts refuted — kept all as the honest worked
+examples. Also fixed a real wake-coverage bug (my Monitor was mis-armed; `wait` already covers channel+DM per the
+source) and surfaced C's DM-siloed production-gap metric confound for durable capture.

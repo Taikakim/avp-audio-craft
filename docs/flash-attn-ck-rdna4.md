@@ -104,6 +104,22 @@ uv pip install --python $PY \
 > Confirm what's installed with `uv pip list | grep -iE 'torch|triton|nvidia'` —
 > there should be **zero** `nvidia-*` packages.
 
+> ⚠️ **The `[device-gfx1201]` extra is load-bearing — and two different packages share the name.**
+> `torch[device-gfx1201]` pulls **`amd-torch-device-gfx1201`** (+ `amd-torch-device-gfx12-0`) — torch's
+> compiled GPU kernels. Omit it and you get the ROCm runtime but **no torch kernels**, so *every* GPU
+> op — even `torch.randn(device='cuda')` — dies with **`hipErrorInvalidImage` / "device kernel image is
+> invalid."** It looks exactly like a driver/system problem and is NOT one (verified 2026-08-07: a
+> ComfyUI venv had `rocm-sdk-device-gfx1201` but was missing `amd-torch-device-gfx1201`; a known-good
+> venv on the same card ran fine — the only difference was that package). **Do not confuse the two
+> extras:** `rocm[device-gfx1201]` = the ROCm *SDK* libs (`rocm-sdk-device-gfx1201`); `torch[device-gfx1201]`
+> = the *torch kernels* (`amd-torch-device-gfx1201`). Same extra name, different base package —
+> installing one does NOT install the other. **Fix for a torch that's already installed** (no rebuild,
+> torch version unchanged): `pip install --index-url <index> "torch[device-gfx1201]==<exact torch ver>"`
+> — it adds only the `amd-torch-device-*` packages. **Index note:** clean *release* builds like
+> `2.12.0+rocm7.14.0` (no date suffix) come from the AMD **release** channel
+> `https://repo.amd.com/rocm/whl-multi-arch/`; the nightly index `rocm.nightlies.amd.com/whl-multi-arch/`
+> only carries dated `…a<YYYYMMDD>` builds. The device package must match the torch build **exactly**.
+
 What you'll get (as of 2026-05-31):
 
 | Package | Version |
@@ -422,6 +438,7 @@ single-digit ms once kernels are cached.
 | `nvidia-cublas` in `uv pip list` | Used `--extra-index-url https://pypi.org/simple/` with TheRock index, uv picked PyPI CUDA torch | Reinstall with only `--index-url` to the rocm-nightlies multi-arch URL |
 | `triton 3.5.1` after a `uv pip install` | flash-attn build pulled PyPI triton because you forgot `--no-deps` | `uv pip install --index-url <rocm> --force-reinstall triton` |
 | `ModuleNotFoundError: aiter` at `import flash_attn` | Forgot `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`; wrapper auto-routed to Triton-AMD path | Set the env var BEFORE `import flash_attn` |
+| `hipErrorInvalidImage` / "device kernel image is invalid" on **any** torch GPU op (even `torch.randn(device='cuda')`) | torch installed WITHOUT the `[device-gfx1201]` extra → `amd-torch-device-gfx1201` (torch's GPU kernels) missing; ROCm runtime present but no kernels. NOT a driver/FA problem (see §3 note). | `pip install --index-url https://repo.amd.com/rocm/whl-multi-arch/ "torch[device-gfx1201]==<exact ver>"`. Remember `rocm[device-gfx1201]` (SDK libs) ≠ `torch[device-gfx1201]` (torch kernels). |
 | `error: type 'float' cannot be narrowed to 'ck_tile::index_t'` at ~2390/2397 | The §5 glue patches were skipped or partial | Run §5 again; verify with the `grep -c sink_ptr` checks |
 | `error: no member named 'is_gfx1x_arch' in namespace 'flash'` | Same skew, different file — the `flash_common.hpp` patch is missing | Run the `flash_common.hpp` part of §5; also regenerate `flash_common_hip.hpp` |
 | `urllib.error.HTTPError: HTTP Error 404` after a real compile error | Downstream noise from uv looking up build info | Ignore — fix the real `error:` lines higher in the log |
