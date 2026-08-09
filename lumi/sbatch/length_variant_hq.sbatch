@@ -45,7 +45,10 @@ CODE=${PROJ}/code
 # and faster. MTSIF/RENDER_VENV overridable.
 SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
 VENV=${RENDER_VENV:-${SCRATCH}/sa3_train_venv_mt}
-MODELS=${PROJ}/models
+# 2026-08-09: the HF cache MOVED to /scratch -- /project (50 GB, for compiled software per LUMI
+# docs) hit 124.9% of quota holding 29 GB of model weights. Honour HF_HOME if the caller exports
+# it, else default to the new scratch location; override with MODELS= for a one-off.
+MODELS=${MODELS:-${HF_HOME:-${SCRATCH}/models}}
 RENDER_OUT=${SCRATCH}/renders/length_variant
 TASKLIST=${TASKLIST:-${CODE}/lumi/length_variant_tasks.txt}   # override for a ptm-only re-run
 LOGDIR=${RENDER_OUT}/hq_logs
