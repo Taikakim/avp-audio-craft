@@ -149,6 +149,13 @@ LUMI_RUNS = {
     "fullft": dict(task="#68", kind="training",
         desc="Earlier full-finetune batch -- all DiT weights trainable, T256..4096, avp/goa.",
         rendered="matrix_cells"),
+    "fullft_bigset": dict(task="#68/#90", kind="training",
+        desc="Big goa_archive live-encode full-finetune (job sa3_fullft_bigset, launched 08-04) -- "
+             "curated 12523-track keep-set via --data_dir + relpath-keyed caption sidecar (#90), "
+             "8-GCD DDP, EMA. Timed out twice at the 2-day walltime (20687866, 20784494), "
+             "resumed each time. Registered 08-09 -- was never tracked here despite training since "
+             "08-04 (found while confirming aug8 gap); untracked entirely until now.",
+        rendered="matrix_cells"),
     "fullft_cells_hq": dict(task="#57", kind="render_job", ckpts_lumi_only=True,
         desc="Native-cell HQ RENDER job (fullft models) -> native_cells. No own ckpts.",
         rendered="native_cells"),
@@ -203,6 +210,7 @@ PREFIX_TO_RUN = [
     ("adamw_",      "adamw_bf16_sweep"),
     ("fullft_aug8ddp_", "aug8_train_ddp"),   # must precede the generic fullft_ entry below
     ("dora_aug8ddp_",   "aug8_train_ddp"),
+    ("fullft_bigset", "fullft_bigset"),      # also must precede the generic fullft_ entry
     ("fullft_",     "fullft"),
     ("longctx_t1024", "longctx_t1024_r128"),
     ("longctx_t2048", "longctx_t2048_r128"),
