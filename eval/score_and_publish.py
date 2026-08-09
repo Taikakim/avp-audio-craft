@@ -66,7 +66,13 @@ SSH = "ssh -o BatchMode=yes -i /home/kim/.ssh/id_ed25519"
 # Anchored patterns only: a bare \.ckpt matches JS property accesses like noteCtx.ckpt and
 # produced two phantom "leaks" in one day.
 LOCAL_ONLY = re.compile(r"(^|/)(run_meta|_meta)\.json$|\.commentary\.json$|/longclips\.json$")
-LEAK_RE = re.compile(r"/home/kim|/run/media|/scratch/|Mantu|epoch=\d+-step=|\.weights\.ckpt"
+# A FILENAME, not a bare extension: requiring a filename character immediately before the
+# extension keeps 'epoch=7-step=10800.weights.ckpt' matching while letting PROSE through --
+# model_matrix legitimately says 'PRUNED (slim .weights.ckpt - no optimizer state)', which is
+# science (why the field is empty), not plumbing. Third phantom-leak of 2026-08-09: a bare
+# \.ckpt also matches JS property accesses (dataset.ckpt). Anchor, or the gate cries wolf and
+# blocks every publish.
+LEAK_RE = re.compile(r"/home/kim|/run/media|/scratch/|Mantu|epoch=\d+-step=|[\w=-]\.weights\.ckpt"
                      r"|dh_4txyt6|dreamhost|akekim|\.ssh/")
 
 
