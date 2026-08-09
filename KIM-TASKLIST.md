@@ -35,20 +35,21 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   local-only twin (private network, nothing public can write to it) would let me ingest verdicts
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
 - **aug8: is it worth the GPU-hours before the project allocation purges?** (C, 08-08 —
-  closes the old "confirm still-open or close" carry from 07-31.) Root cause now confirmed:
-  `aug8_train_ddp`'s 8 real arms (fullft/dora × goa/avp × fp32/bf16) never trained — only the
-  two mechanics smoke arms ever ran, which is why there are no clips. **State, cite-checkable:**
-  the render itself also FAILED — `sa3_aug8_render` job `20792735`, ExitCode 2:0, 9s, 08-07,
-  produced nothing (W caught this 08-09; my "just a cosmetic pipefail bug" read was code-only,
-  unverified against the real `.out` — checking the actual log now, will correct if wrong).
-  Doesn't change the underlying blocker either way: no real training arms exist yet to render.
-  Submitting them for real
-  is a straightforward `ARMS=` launch — but C is deliberately NOT auto-submitting: the LUMI
-  project allocation is expiring (purge in ~weeks), #68 big-FT is already grinding ~11h/epoch
-  and won't finish 40ep before purge, and the box is contended. 8 more training arms compete
-  directly with #68 on a shrinking budget. Your call: still worth it (the aug8-vs-aug3
-  augmentation question, parked since 07-31), or let #68 have the remaining hours? The render
-  sbatch is ready as-is the moment any real arm checkpoints — no code blocker either way.
+  closes the old "confirm still-open or close" carry from 07-31.) Root cause **settled** (Kim's
+  own `ls /scratch/.../runs/aug8_train_ddp/`, 08-08: only the two `*_smoke` dirs exist) — the 8
+  real arms (fullft/dora × goa/avp × fp32/bf16) never trained, which is why there are no clips.
+  This is a **RE-TRAIN, not a re-render** (~2-day allocation, not a quick sbatch). *(Separately,
+  `sa3_aug8_render` job `20792735` also FAILED — ExitCode 2:0, 9s, 08-07 — mechanism still
+  unverified pending the `.out` log, but doesn't change the re-train conclusion either way.)*
+  **W's cost-risk catch, 08-09 — read before submitting anything:** `sa3_fullft_bigset` has
+  TIMEOUT-ed twice at exactly the 2-day walltime (`20687866` ended 08-06, `20784494` ended
+  08-08). A naive 2-day aug8 submit has an empirically ~0% completion rate on this queue right
+  now. Whoever picks this up needs checkpoint-resume or a segmented submission FIRST, or it just
+  times out a third time. Budget context: **42% of the 5000 GPU-hour allocation already used,
+  77% of project time elapsed.** Your call: still worth ~2 days of a shrinking budget on the
+  aug8-vs-aug3 augmentation question (parked since 07-31), given #68 is already competing for
+  the same hours and has failed to finish twice itself? The render sbatch is ready the moment
+  any real arm actually checkpoints — no code blocker on that side.
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
 
 ## 👂 Ear queue (needs Kim's ears)
