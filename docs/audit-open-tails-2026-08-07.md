@@ -16,8 +16,13 @@ Nothing was changed. All file:line cites are against the current tree.
 > re-verified aug8 to true state, and closed A1. **Standing principle adopted from the review
 > (W):** *an audit line must cite a CHECK, not a colleague* — the same family as
 > "manifest-count ≠ playability", "lockfile ≠ GPU-state", "HTTP-200 ≠ clips-present". This audit
-> itself produced three worked examples in one thread (aug8 state was different from what each of
-> three of us relayed; one filesystem check settled it).
+> itself produced several worked examples in one thread (aug8 status was relayed wrong three times —
+> and even the overseer slipped twice, asserting "wait is channel-only" from a command string and a
+> tasklist state from memory — until `sacct`/`ls`/source settled each). **Corollary (W):** evidence
+> pasted into ONE instance's conversation is invisible to the other three, so a properly-verified fact
+> can read as *uncited* to everyone who wasn't in that room — the fix is to put the CITATION IN THE
+> ARTIFACT (`verified by ls of runs/aug8_train_ddp — only *_smoke dirs, 2026-08-08`), checkable by
+> anyone without having been there. A finding that lives only in chat is lost.
 
 ---
 
@@ -51,11 +56,23 @@ hook and NOT unowned:**
 lagging" (what a relayed claim said, and what the first revision of this line wrongly recorded) and
 NOT "render short" — it is **RENDER NEVER HAPPENED**: zero aug8 run dirs / files / manifest entries
 anywhere (mirror-verified), which also *dissolves* the "file-count anomaly" G+C were reconciling —
-there was nothing to pull. **Next action:** confirm *why* it exited 2 in 9 s, THEN re-submit; only then does the (b)+(c) chain apply
-(WHY is not yet log-verified — G has a plausible *code-read* hypothesis: all 8 arms hit the
-graceful-skip on a missing run dir before touching python/GPU, ~9 s ≈ 8× container spin-up — but is
-fetching the actual `.out` (`/pfs/.../sa3_aug8_render-20792735.out`) from Kim to settle it rather than
-let the inference stand; G will update this line + KIM-TASKLIST once the log is read)
+there was nothing to pull. **Cost: this is a RE-TRAIN, not a re-render — settled 08-08, cited.** Two separate questions: (1) do real
+`aug8_train_ddp` checkpoints exist on scratch? (2) why did 20792735 exit 2 in 9 s? **(1) is SETTLED by
+Kim's own pasted terminal output (08-08):** `ls /scratch/project_465003186/runs/aug8_train_ddp/` returned
+only `aug8ddp_ddp_smoke` + `aug8ddp_ddp_smoke_dora` — **only smoke runs, no real trained arms** (cite:
+`ls runs/aug8_train_ddp/` → only `*_smoke` dirs, 2026-08-08). So there
+was never anything to render (a re-render is moot), and the item is a **RE-TRAIN: a 2-day allocation, and
+training walltime is the scarce resource** — `sa3_fullft_bigset` has already TIMEOUT'd twice at the 2-day
+cap (jobs 20687866 08-06 + 20784494 08-08, both 2-00:00:xx elapsed). **⚠️ So a naive 2-day aug8 submit has
+an empirically ~0% completion rate on this queue** — whoever picks it up must plan **checkpoint-resume or
+a segmented submission FIRST**, else it burns 2 days of a budget already 42% used / 77% of project-time
+elapsed to produce another TIMEOUT. G's earlier "ckpts on scratch" (08-05, relayed from a hardcoded
+audit-board annotation) and "had real ckpts" (08-08, relayed from C) were the uncited ones; the current
+"no real arms trained" is the one with Kim's `ls` behind it. A fresh `ls -d /scratch/.../runs/aug8*` is
+worth running only as a **freshness check** (catch any change since 08-08), not as new evidence. **(2) is
+still open** — G's `.out` (`/pfs/.../sa3_aug8_render-20792735.out`) settles the WHY (his code-read
+graceful-skip hypothesis, ~9 s ≈ 8× container spin-up), but it does not change the cost. G will update this
+line + KIM-TASKLIST once the log lands.
 (`ingest_matrix_cells` → `clip_metrics` DSP → `clip_metrics_audiobox` [mind `gpu_guard.sh`] →
 `clap_score` → rebuild `dora_table`+`model_matrix` → W deploy).
 This is the **THIRD** relay-propagation of an aug8 status (G reported completed-with-clips → W
