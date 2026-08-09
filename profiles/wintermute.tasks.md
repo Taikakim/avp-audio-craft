@@ -341,3 +341,40 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - [2026-05-26 10:54] Confirmed SA3 medium config: sample_rate=44100, downsampling_ratio=4096 → 10.767Hz (vs SAO-Small 21.533Hz); chose 100Hz as canonical extraction rate.
 - [2026-05-26 10:09] Found madmom's RNN beat/downbeat detectors already compute continuous 100fps soft probabilities that get discarded after peak-picking (`beat_grid.py:84`); created and pushed branch `whole-track-timeseries`.
 - [2026-05-26 09:57] Read producer/DB code for whole-track timeseries spec; found `extract_timeseries()` already resolution-agnostic, confirming whole-track storage beats per-crop approach.
+
+## 2026-08-09 (Sunday ritual — list was stale since 07-17)
+
+### done since 07-17
+- [x] Length-variant eval: spec, renderer flags, LUMI package, board wiring (native/ptm checkboxes,
+      parallel native index fixing the 5-tuple clobber). Render ran; **incomplete, see stuck**.
+- [x] Scored the 7 unscored arms (x0eq/subloss/lreq): DSP + Audiobox + CLAP, 2808 clips.
+      Aggregate 206→213 models; audit-board DoRA links 8→14 of 22. `1a6b3ba`
+- [x] `clap_score.py` runs again — laion_clap's API moved under us when SAO/.venv was rebuilt for
+      ROCm 7.14 (argv parsed at import; `use_tensor` gone; wants numpy not tensors). Version-tolerant.
+- [x] Audit-board audio fixed with 3 symlinks, not a 44 GB re-upload.
+- [x] `Misc/gpu_guard.sh` — rocm-smi-first GPU gate (then collapsed to delegate all locking to
+      filelock after the format collision). `2284917`, `dd2ac69`
+- [x] codec-clarity: Web Audio sample-locked player + Δ null test + beat-synced 2-min looping
+      clips; stop-race and the false "served via m4a" intro both fixed. Deployed + verified.
+- [x] `eval/score_and_publish.py` — legs (b)+(c) of the post-training pipeline as one callable,
+      every step gated on its artifact rather than an exit code. `2e021c3`
+- [x] LUMI: storage triage (/project 124.9% → 32.3%), `sa3-sync-exclude.txt`, ops conventions
+      (single-line commands; sacct for state, artifacts for truth), lenvar preflight + completion
+      assertion. `90418de`, `65d5613`, `2cd9681`, `73a1cce`
+- [x] Papers: Qiu & Yao 2510.04212 deep-read, two corrections to the report-level note. `5fbcdcb`
+
+### stuck / waiting on someone
+- [ ] **lenvar ptm re-run** — 990 cells missing; cause found (partial HF cache) and fixed; needs
+      Kim to sync `lumi/`, filter the 110 ptm tasks, resubmit. Then ingest is one
+      `score_and_publish.py --pattern` call.
+- [ ] **W32 blog** — reviewed, leak-clean, publish-ready EXCEPT the "allocation expires in ~2 weeks"
+      line. Only figure I can source says 104 days / 77% of project time / 42% GPU hours used.
+      Waiting on Kim for the real allocation end date; it also underpins the multi-node priority.
+- [ ] **codec-clarity verdict** — page live, waiting on Kim's ears (does −8 dB SAME *sound* as bad
+      as it measures?).
+- [ ] **C's fp32cmp-vs-bf16cmp weight-diff probe** — launched 08-04, no result on record (audit A3).
+      Asked once on-channel; not chasing further.
+
+### next when unblocked
+- [ ] Wire `score_and_publish.py` into the render hook once C's train_lora.py side lands (my (b)+(c)).
+- [ ] #61 disintegration-ceiling on control-head pages; #64 spectral-drift spec; #78 optimizer bracket.

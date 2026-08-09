@@ -618,3 +618,64 @@ UNVERIFIED in the deploy doc so the reconciler has a checklist instead of a trea
 
 ### discovery · fp32 > bf16 by ear (Kim, preliminary) -- the precision campaign pays off
 Kim's first listening pass on the fp32-campaign arms: fp32 better in many ways, worse in very few -- better sound separation, less noisy high end; occasional less punch that's probably source-faithfulness, not a defect. Not comprehensive yet. bs1-vs-bs4 and T4096-vs-T2048 undecided, parked for G's native-training-length eval (fixed-20s evals can't show trained-context effects). Recorded to 10 fp32cmp/bf16cmp run_meta kim_feedback + WORKLOG + chat.
+
+### 2026-08-04→09 · the week the false-clears got a name
+
+Five separate incidents this week shared one shape: **a check that returned good news without
+having measured the thing it claimed to measure.** Writing them together because individually
+each looked like a one-off, and the pattern is the actual finding.
+
+- **"Missing clickables" was never a board bug.** 5,532 clips across 7 models were rendered and
+  served for weeks with zero CLAP and zero `clip_metrics` rows, so they had no table rows and the
+  audit board honestly showed em-dashes. Scored them (DSP + Audiobox + CLAP, GPU legs scoped —
+  unscoped drags in the 59k-clip backlog), aggregate 206→213 models, board DoRA links 8→14 of 22.
+- **44 GB of "missing" audio was one directory over.** The audit board 404'd every clip; the
+  proposed fix was a 44 GB re-upload. The payload was already served under a sibling base — the
+  page's clip base is *relative*, so each copy resolves beside itself. Fixed with three symlinks,
+  zero bytes transferred. From a browser, "never uploaded" and "in the next directory" are
+  indistinguishable.
+- **A guard that passed on a partial cache.** `sa3_lenvar_hq` exited COMPLETED having produced
+  5,336 of the 6,690 cells its task list specified; all 110 ptm tasks died instantly because the
+  post-trained model was cached at 1.2 GB of its real 9.23 GB and LUMI compute nodes have no
+  internet. The preflight *for exactly this* already existed — it tested that a `snapshots/`
+  **directory** existed, which the partial cache had. Existence is not usability. It now resolves
+  each model through the loader's own path; added `check_render_complete.py` so a job can't print
+  DONE while 20% short.
+- **An empty rsync diff that was a connection failure.** I silenced stderr on a mirror diff and
+  read the empty output as "host is current". Also: 87 of 102 "stale" pages and 5,110 of 5,693
+  "stale" clips turned out to be timestamp-only — reading `--itemize` flags instead of a file list
+  is the difference between a 13-file publish and a 1.65 GB churn.
+- **A lockfile that wasn't the GPU.** `/tmp/gpu.lock` absent while a foreign job held 9.7 GB of
+  VRAM. `rocm-smi` is ground truth; a lockfile is a claim. `Misc/gpu_guard.sh`.
+
+**Negative result worth keeping:** my own fix for that last one was briefly *worse* than the bug.
+`gpu_guard` wrote `/tmp/gpu.lock` as a bare pid while C's `filelock` mirror writes
+`HANDLE pid=N ts=...` and parses it back — run together, my format clobbered theirs, their
+clear-only-if-ours check would stop recognising the file, and the lock would strand *permanently*,
+blocking every instance. Collapsed to: filelock owns both locks, the guard only does the
+`rocm-smi` gate.
+
+**The cross-session corollary**, which I think is the more important half: evidence pasted into
+one instance's conversation is invisible to the other three. Three of us relayed a wrong aug8
+status for two days (render "done" → "short" → actually **FAILED, exit 2, 9 seconds, produced
+nothing**), and separately C recorded a real over-quota event as a "stale reading" because the
+three `lumi-workspaces` readings that fell in response to two deletions were in my room, not
+theirs. A verified fact that lives only in chat is *uncitable*. Put the citation in the artifact.
+
+### 2026-08-04→09 · codec-clarity: a null test, and where SAME actually hurts
+
+Rebuilt the clarity page's player on Web Audio: every variant of a clip decodes into one
+AudioContext and all sources start from a single `start()` timestamp, so switching only ramps gain
+and the A/B is sample-locked by construction. Parallel `<audio>` elements would *not* have worked —
+independent clocks drift. Added a **Δ button per codec**: reference at +1 plus codec at −1 sums to
+exactly that codec's error signal (+18 dB, equal across variants so residual loudness stays
+comparable). It's only a real null test because the variants are sample-aligned on disk
+(identical length, zero lag, xcorr ≥ 0.9997) — **preserve that if the audio is ever regenerated.**
+
+Then, per Kim, beat-synced 2-minute stereo clips from the 60–70% point via mir's `.DOWNBEATS`
+grids, both ends snapping to downbeats so the loop closes musically. **Finding:** SAME's residual
+is ~20 dB worse on dense mid-track material (−8.7 / −7.9 dB) than on the sparse 60 s-offset 8 s
+excerpts (−31.9 dB) — worst-in-ladder on 2 of 3 clips, below MP3 128k. Verified it wasn't my
+chunker: chunked and single-pass give an identical −10.0 dB, mono-summing −10.4. So the published
+8 s leg samples the *kindest* passage of each track and understates the damage. C folded the
+caveat into VERDICT.md; the air-band `env_corr` conclusion is untouched (different quantity).
