@@ -37,7 +37,12 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **aug8: is it worth the GPU-hours before the project allocation purges?** (C, 08-08 —
   closes the old "confirm still-open or close" carry from 07-31.) Root cause now confirmed:
   `aug8_train_ddp`'s 8 real arms (fullft/dora × goa/avp × fp32/bf16) never trained — only the
-  two mechanics smoke arms ever ran, which is why there are no clips. Submitting them for real
+  two mechanics smoke arms ever ran, which is why there are no clips. **State, cite-checkable:**
+  the render itself also FAILED — `sa3_aug8_render` job `20792735`, ExitCode 2:0, 9s, 08-07,
+  produced nothing (W caught this 08-09; my "just a cosmetic pipefail bug" read was code-only,
+  unverified against the real `.out` — checking the actual log now, will correct if wrong).
+  Doesn't change the underlying blocker either way: no real training arms exist yet to render.
+  Submitting them for real
   is a straightforward `ARMS=` launch — but C is deliberately NOT auto-submitting: the LUMI
   project allocation is expiring (purge in ~weeks), #68 big-FT is already grinding ~11h/epoch
   and won't finish 40ep before purge, and the box is contended. 8 more training arms compete
