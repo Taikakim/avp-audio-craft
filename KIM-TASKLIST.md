@@ -17,16 +17,23 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
-- **Multi-node/32-GPU smoke submit — this is now the gate on spending 58% of the remaining LUMI
-  budget at all, not a speed optimization** (C building, W's arithmetic 08-09). With 14 days left
-  and 2880 of 5000 GPU-hours remaining: 2880h / (14d × 24h) = 8.6 GCDs would need to run
-  CONTINUOUSLY just to spend what's left — on a single 8-GPU node the budget is barely spendable
-  even at 100% duty cycle with zero failures, and we've had two 2-day timeouts + one 9s failed
-  render this week alone. At 32 GCDs the remaining budget fits in ~3.75 days of continuous
-  compute — the only config that can actually consume the allocation before it expires. C has a
-  4-node/32-rank rendezvous smoke built (isolates one variable: does DDP extend across nodes into
-  one world_size=32 group, or hang at the inter-node fabric) — cheap, ~mins of a 4-node alloc, de-
-  risking before betting hours. Needs your submit to run.
+- **LUMI budget just flipped from "can't spend it" to "can't afford it all" — needs your
+  priority call, today** (W, 08-09, right after the aug×8 launch below landed). This morning:
+  2880 of 5000 GPU-hours remain, 14 days left = 336 wall-clock hours → 8.6 GCDs would need to
+  run continuously on a single 8-GPU node just to spend what's left — unspendable without
+  multi-node. As of THIS submit: two 8-GCD jobs are now running concurrently (aug×8 full-FT
+  `20869819` + the resumed `fullft_bigset`) — **16 GCDs continuous would exhaust the entire
+  remaining budget in 7.5 days, 187% of the 14-day window. One 8-GCD job alone is 93% of what's
+  left.** Nothing is currently sequenced — both jobs just run in submit order until the hours
+  are gone, which risks the thing you actually wanted most being the thing that doesn't fit.
+  **Two asks:** (1) pick the priority order — W's read (not her call to make): multi-node
+  smoke first (minutes, gates whether 32 GCDs can even work), then the melody-wall A/B (the
+  actual research question), with the two full-FTs as the expensive incumbents already running;
+  (2) confirm `20869819` (60-epoch full-FT at T=2048) actually resumes cleanly from a checkpoint
+  *before* it hits the 48h wall — `fullft_bigset` has already timed out twice at the 2-day cap
+  this week, and an unresumable timeout on a 7.5-day effective budget is hours billed for
+  nothing. C's 4-node/32-rank rendezvous smoke is built and ready — cheap (~mins of a 4-node
+  alloc), needs your submit.
 - **Merge PR #1** — doc-oversight doc review → `main`, when you're happy: https://github.com/Taikakim/avp-audio-craft/pull/1
 - **same-chroma-steering-demos** — 1 commit stranded off `main`; merge it, or keep it a demos branch? (C to action)
 - **Dev-branch rename** — `sa3-style-adapter` is a misnomer now ("far past a style adapter"); rename / restructure around `main` whenever you want. No rush.
@@ -44,28 +51,6 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   your ear-verdicts still reach `run_meta.kim_feedback` only when you relay them in chat. A
   local-only twin (private network, nothing public can write to it) would let me ingest verdicts
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
-- **aug8: is it worth ~2 of our 14 remaining days?** (C, 08-08 — closes the old "confirm
-  still-open or close" carry from 07-31.) Root cause **settled** (Kim's own
-  `ls /scratch/.../runs/aug8_train_ddp/`, 08-08: only the two `*_smoke` dirs exist) — the 8 real
-  arms (fullft/dora × goa/avp × fp32/bf16) never trained, which is why there are no clips. This
-  is a **RE-TRAIN, not a re-render** (~2-day allocation, not a quick sbatch). *(Separately,
-  `sa3_aug8_render` job `20792735` also FAILED — ExitCode 2:0, 9s, 08-07 — mechanism still
-  unverified pending the `.out` log, but doesn't change the re-train conclusion either way.)*
-  **W's cost-risk catch, 08-09 — read before submitting anything:** `sa3_fullft_bigset` has
-  TIMEOUT-ed twice at exactly the 2-day walltime (`20687866` ended 08-06, `20784494` ended
-  08-08). A naive 2-day aug8 submit has an empirically ~0% completion rate on this queue right
-  now. Whoever picks this up needs checkpoint-resume or a segmented submission FIRST, or it just
-  times out a third time. **Budget, corrected 08-09 (Kim direct — the earlier "~weeks"/purge
-  framing here was wrong): 14 DAYS remain, not weeks.** 5000 GPU-hour allocation, 42.4% used →
-  2880 h left; 14 days = 336 wall-clock hours; 2880/336 = 8.6 GCDs would need to run
-  CONTINUOUSLY just to spend what's left — on a single 8-GPU node the budget is barely
-  spendable even at 100% duty cycle with zero failures, and we've had two 2-day timeouts + a
-  9s failed render this week alone. (This is also why C's multi-node/32-GPU smoke submit above
-  isn't a speed optimization, it's the only path that can consume the remaining budget at all.)
-  Your call, explicitly: still worth ~2 of the 14 remaining days on the aug8-vs-aug3
-  augmentation question (parked since 07-31), given `#68` is already competing for the same
-  hours and has failed to finish twice itself? The render sbatch is ready the moment any real
-  arm actually checkpoints — no code blocker on that side.
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
 
 ## 👂 Ear queue (needs Kim's ears)
@@ -109,6 +94,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+- **08-09** — aug8 decision resolved: Kim launched a leaner alternative instead of the full
+  8-arm `aug8_train_ddp` plan — AVP aug×8 full-FT (job `20869819`), full-FT+FusionOpt+EMA,
+  fp32, T=2048, 60 epochs, on AVP's already-augmented 2394-crop set (289 base + 2105
+  bungee ×8, already baked into `latents_avp` — Kim caught it was pre-built, saving a 70GB
+  upload + encode node). Verified Pattern-1 DDP (`--devices 8`); doubles as evidence for the
+  multi-node smoke. **Also:** `#68 fullft_bigset` resumed on 8×GPU from its ep7 fat checkpoint
+  (was parked at ep7 after the 48h walltime) — its first 108 clips (ep3+ep7) are now LIVE on
+  `model_matrix` (108/108 DSP+CLAP scored; Audiobox + the `dora_table` row pending only on the
+  GPU freeing up locally). — C, G
 - **08-05** — scored the 7 unscored arms (x0eq/subloss/lreq, 2808 clips: DSP+Audiobox+CLAP); their DoRA rows + audit-board links now live (links 8→14 of 22 runs). — W
 - **08-05** — audit-board audio fixed (Kim: "awfully many missing auditable clips"). Clips were
   never missing: already live under `/files/evals/`, but `/files/audit/` had no `model_matrix/`
