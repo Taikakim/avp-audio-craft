@@ -17,6 +17,9 @@ The one that isn't in the chart but without which the groove is dead. The instan
 - **Goa MIDI musicology** — the 157 MuScriptor transcriptions read as a corpus: phrygian 57%, bass as tonic pedal, lead carrying the modal color, thirdless i↔iv scaffolding; the eval page that teaches while it plays.
 - **The expanded field set** — 26 new whole-track descriptors (MAEST embeddings, mood/genre/V-A curves, stereo width, chroma) into every avp+goa sidecar, gated before the freeze: washout-tested, merge==full verified, OpenL3 measured worse-than-free and dropped.
 - **The longform caption sidecars** — goa 100% t3 coverage via own-caption + same-cluster borrow, avp via parent propagation; found where the Music-Flamingo captions actually live (per-crop, scattered — invisible to spot-checks).
+- **The matrix, grown up** — native-length cells, a strength axis, and a per-clip metrics/equivalence index turned the board from a player into an analysis surface.
+- **Why a trained model can sit silent for weeks** — traced the recurring "checkpoint exists, no clips" gap to its root: no LUMI run has ever auto-rendered its clips on finish. Named it, not just patched the one instance.
+- **A trick worth stealing** — reviewed a sibling SA3 project's approach to song-length coherence: stop asking the model to bring a section back identically, just reuse the audio. Simple enough that it's now the plan.
 
 ## Ledger
 - [Journal](journal) — findings and dead-ends, as they land, not at day's end.
