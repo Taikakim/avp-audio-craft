@@ -76,6 +76,21 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips *(not hosted)*; interval-CFG nl.475 pairs *(not hosted — `eval/musicology/interval_cfg_2026-07-23/` local)*; Head-B bracket *(staged `~/.cache/evals_aac/headb_bracket/`, not yet published)*; goa_t2048_bs1 anomaly → [▶ that checkpoint](https://aavepyora.online/files/evals/dora_table.html?models=fp32frames_goa_t2048_bs1_lr1e4) · [fp32frames family](https://aavepyora.online/files/evals/dora_table.html?set=fp32frames).
 
 ## ⏳ In flight — FYI, no action
+- **fullft_bigset drone (08-10) — root-caused, fix training now, one gotcha to watch when it
+  relaunches for real.** C root-caused the spectral-drone in full-FT training (FusionOpt
+  spectral weight-decay 0.01 too weak for the NS5/Muon orthogonalized update, adapters stay
+  bounded so it's full-FT-only): latent output scale runs away over epochs (std 0.7→1.3→5.6→
+  literal inf). G measured it directly on `fullft_bigset`'s 108 live clips — 59/108 corrupted
+  (non-finite/std>2), essentially ALL of ep7, clean only at ep3 cfg1/cfg7 (36 clips) + partial
+  ep3 cfg16. W is labeling the 59 bad clips (not pulling — they're now evidence of the bug);
+  clean/bad per-clip list handed off. **Fix (spectral_wd 0.1 + grad-clip 1.0) is training now**
+  as an A/B, job `20940322`, fresh-from-base (not resumed from any drone-era checkpoint — even
+  ep3 is considered tainted). Confirmed inf-resume was NOT still burning GPU hours (only
+  `20940322` was in Kim's squeue). **Watch for when the real production relaunch happens:**
+  `fullft_bigset.sbatch` auto-resumes from the newest fat checkpoint in its run dir — reusing
+  the same dir would silently resume from the ep7-inf checkpoint and reproduce the drone. Needs
+  a fresh run dir / new run tag, or the drone-era fats cleared first. G will check this before
+  ingesting/rendering any future `fullft_bigset` batch.
 - **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
   your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
   noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
