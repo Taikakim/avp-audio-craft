@@ -410,7 +410,7 @@ function render(){
 // -- only ever entries whose m4a actually exists), so "no clip" here means truly not
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
-let cellIndex=null,nativeIndex=null,cellsByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+let cellIndex=null,nativeIndex=null,cellsByMC=null,nativeByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
 const HIDE=(D.hide||[]);                 // hidden model-label prefixes (borked families)
 const isHidden=m=>HIDE.some(p=>String(m).startsWith(p));
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
@@ -448,26 +448,38 @@ function applyPtmLock(){const on=pptm.checked;pcfg.disabled=on;pstrength.disable
 // model: exact -> same-prompt nearest cfg/w -> any prompt nearest cfg/w -> the sibling view
 // (base<->_ptm) if the selected view has nothing at all. So a click always plays SOMETHING
 // when the model has any clip, and the label marks non-exact hits.
-function mcGroup(mkey,ckpt){                     // -> {arr,mkey} of cells for a model-ckpt, or null
+// NATIVE-ONLY FALLBACK (G's diagnosis, 2026-08-09): 97 of 723 model-ckpt groups -- every non-terminal
+// checkpoint of the fp32frames/fullft/fp32cmp families -- were rendered ONLY at native length, never on
+// the 20s grid. Resolution ran over the 20s universe alone, so those rows found nothing and reported
+// "no clip rendered" while 705 playable native clips sat in the parallel index. The native overlay
+// could not save them either: it swaps the twin of an ALREADY-RESOLVED hit, so a miss in the 20s grid
+// failed before native was ever consulted. Fallback order keeps the variant honest: own 20s -> own
+// native -> sibling 20s -> sibling native, so we never cross base<->_ptm while the active variant has
+// any clip at all (the property F verified on 2026-08-04).
+function mcGroup(mkey,ckpt){          // -> {arr,mkey,native} of cells for a model-ckpt, or null
  if(!cellsByMC)return null;
- let arr=cellsByMC.get(mkey+'\x01'+ckpt);
- if(arr&&arr.length)return {arr,mkey};
  const sib=mkey.endsWith('_ptm')?mkey.slice(0,-4):mkey+'_ptm';   // last resort: cross the view toggle
- arr=cellsByMC.get(sib+'\x01'+ckpt);
- return (arr&&arr.length)?{arr,mkey:sib}:null;}
+ for(const [k,nat] of [[mkey,false],[mkey,true],[sib,false],[sib,true]]){
+  const src=nat?nativeByMC:cellsByMC;
+  const arr=src&&src.get(k+'\x01'+ckpt);
+  if(arr&&arr.length)return {arr,mkey:k,native:nat};}
+ return null;}
 function resolveCell(mkey,ckpt,pid,cfg,w){
  const g=mcGroup(mkey,ckpt);if(!g)return null;
  let e=g.arr.find(c=>c.pid===pid&&c.cfg===cfg&&c.w===w);
- if(e)return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,exact:true};
+ if(e)return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,native:g.native,exact:true};
  const sp=g.arr.filter(c=>c.pid===pid);           // prefer the requested prompt; else any prompt
  const pool=(sp.length?sp:g.arr).slice()
    .sort((a,b)=>(Math.abs(a.cfg-cfg)-Math.abs(b.cfg-cfg))||(Math.abs(a.w-w)-Math.abs(b.w-w)));
- e=pool[0];return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,exact:false};}
+ e=pool[0];return {file:e.file,pid:e.pid,cfg:e.cfg,w:e.w,mkey:g.mkey,native:g.native,exact:false};}
 // NATIVE-LENGTH overlay (Kim 2026-08-02 spec): resolution always runs over the 20s universe
 // (the densest grid); when the checkbox is on, swap in the native-length twin of the RESOLVED
 // cell if one exists (terminal checkpoints only), else keep the 20s clip and say so. Returns
 // {file,tag,nkey} -- nkey feeds playingKey so toggling the box mid-play re-resolves the src.
 function nativeSwap(hit,ckpt){
+ // already a native-only cell (no 20s twin exists to swap to, either way the box is set) --
+ // label it ·native so the long clip is never mistaken for the 20s grid render.
+ if(hit.native)return {file:hit.file,tag:' ·native',nkey:'\x01N'};
  const base={file:hit.file,tag:'',nkey:''};
  if(!pnative.checked||!nativeIndex)return base;
  const nf=nativeIndex.get(cellKey(hit.mkey,ckpt,hit.pid,hit.cfg,hit.w));
@@ -490,7 +502,9 @@ function markAvailability(){
   const hasPrompt=any&&g.arr.some(c=>c.pid===pid);
   tr.classList.toggle('nomatch',!any);
   tr.classList.toggle('approx',any&&!hasPrompt);
-  tr.title=any?(hasPrompt?'':'no clip at this prompt — clicking plays the nearest available cell')
+  const nat=any&&g.native?'native-length only — no 20s grid render for this checkpoint':'';
+  tr.title=any?[nat,hasPrompt?'':'no clip at this prompt — clicking plays the nearest available cell']
+                 .filter(Boolean).join(' · ')
               :'no clip rendered for this model/checkpoint at any setting';});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
@@ -576,13 +590,17 @@ pseek.addEventListener('change',()=>{if(pl.duration){pl.currentTime=pseek.value/
 // per-MODEL availability: group every clip by (model,ckpt) so graceful-resolve can find the
 // nearest cell a given model actually rendered (Kim 2026-08-02). RESTRICTED to member models
 // (Kim 2026-08-04) so the picker index shows only the active set. Rebuilt on set change.
-function buildCellsByMC(){
- cellsByMC=new Map();
- if(cellIndex)for(const [k,f] of cellIndex){const p=k.split('\x01');
+// Both universes get a group map: the 20s grid drives resolution, and the native index is the
+// FALLBACK for model-ckpts that only ever rendered native (G 2026-08-09 -- see mcGroup).
+function groupByMC(idx){
+ const m=new Map();
+ if(idx)for(const [k,f] of idx){const p=k.split('\x01');
   if(!inSet(p[0]))continue;                 // keep the picker index to the active set
   const g=p[0]+'\x01'+p[1];
-  let a=cellsByMC.get(g);if(!a){a=[];cellsByMC.set(g,a);}
-  a.push({pid:p[2],cfg:parseFloat(p[3]),w:parseFloat(p[4]),file:f});}}
+  let a=m.get(g);if(!a){a=[];m.set(g,a);}
+  a.push({pid:p[2],cfg:parseFloat(p[3]),w:parseFloat(p[4]),file:f});}
+ return m;}
+function buildCellsByMC(){cellsByMC=groupByMC(cellIndex);nativeByMC=groupByMC(nativeIndex);}
 function fillPicker(promptTxt,cfgSet,wSet){
  // Same source of truth as the picker -- built from the manifest/snapshot cellIndex, both paths.
  buildCellsByMC();
