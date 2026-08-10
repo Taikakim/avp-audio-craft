@@ -129,7 +129,7 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 | `ARCHITECTURE.md` (this) | 1-page what's-where |
 | `MASTER.md` | cross-cutting facts always loaded into every session |
 | `WORKLOG.md` | append-only session log |
-| **`docs/superpowers/specs/`** | **design specs — the running source-of-truth per subsystem** (eval-tables human-first, agent-dialogue **comms protocol**, control-head disintegration gate, eval-quality/training-signal, metrical-tree PE, reality-structured experiments, …). No per-spec index yet → a NEW spec MUST get a one-line pointer here or in the relevant §A–F entry (discoverability rule, CLAUDE.md §5). |
+| **`docs/superpowers/specs/`** | **design specs — the running source-of-truth per subsystem** (eval-tables human-first, agent-dialogue **comms protocol**, control-head disintegration gate, eval-quality/training-signal, metrical-tree PE, reality-structured experiments, **full-FT regularization A/B — AGC + output-std penalty vs weight-decay, `2026-08-10-fullft-regularization-ab.md`** (the follow-up to the full-FT latent-scale-runaway/drone fix; targeted regularizers that bound the runaway without dulling detail), …). No per-spec index yet → a NEW spec MUST get a one-line pointer here or in the relevant §A–F entry (discoverability rule, CLAUDE.md §5). |
 | `docs/venvs.md` | the venvs + the CK-flash-attn build |
 | `docs/commands.md` | the commands that actually get run |
 | `docs/latch.md` | what LatCH is + how heads are trained |
@@ -141,6 +141,7 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 | `docs/research-synopsis-longform-continuation.md` + `docs/paper-gap-audit-2026-07-18.md` | longform loop-attractor theory + what we've under-applied from the papers |
 | `docs/lumi-transition-plan.md` · `docs/lumi-throughput-workflow-guide.md` · `docs/csc-data-guidelines-guide.md` · `lumi/README.md` | LUMI: bring-up, throughput/HyperQueue, data-movement/LUMI-O backup, the bundle |
 | `docs/fleet-audit-2026-07-19.md` | last dropped-thread audit (folded into open-threads) |
+| **`docs/cost-log.md`** | **standing GPU-hours / encode-price / VRAM / bungee-augmentation cost log** — real measured numbers, one entry per pass, template included (Kim's ask, 2026-08-10) |
 | `profiles/daily/` | daily digests (one page/day, Kim's catch-up) |
 | `papers/knowledge.md` | the *external* prior-art reuse index (companion to this) |
 
