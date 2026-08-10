@@ -137,8 +137,11 @@ export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 # single-process Lightning (avoid the shared SLURM DDP rendezvous port — 8 arms would collide)
 export SLURM_JOB_NAME=bash MASTER_ADDR=127.0.0.1 MASTER_PORT=$((29500 + '"${GCD}"'))
 # offline wandb: no compute-node internet, no credential on LUMI -- WANDB_DIR keeps the run
-# files inside this arm'"'"'s own $SCRATCH run dir so they pull home with the checkpoints
-export WANDB_MODE=offline WANDB_DIR='"${RUN}"'
+# files inside this arm'"'"'s own $SCRATCH run dir so they pull home with the checkpoints.
+# WANDB_PROJECT (C, 2026-08-10 patch to train_lora.py): groups all 8 arms under ONE wandb
+# project (arm label becomes the per-arm run name) so they overlay on one A/B dashboard --
+# without it each arm lands in its own separate project (train_lora'"'"'s prior default).
+export WANDB_MODE=offline WANDB_DIR='"${RUN}"' WANDB_PROJECT=fullft_reg_ab
 # live-encode: 6 workers x big decoded audio tensors -> raise the open-file limit (file_system sharing)
 ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
