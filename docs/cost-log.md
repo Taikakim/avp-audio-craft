@@ -135,3 +135,37 @@ and ~11.4 GB extra VRAM on *every* training run that uses it, in exchange for un
 variety (never repeating the same 8 fixed variants). Whether that trade is worth it is a
 modeling-quality question (does live variety measurably help), not a pure cost question — this
 entry only prices the "worth it" question's cost side.
+
+---
+
+## Decision: live-augment vs offline pre-encode, by context length (C, 2026-08-10)
+
+Theory read on the encode-price entry above, extending the measured numbers into a rule for
+the `#68`/`#69` relaunch's data strategy.
+
+**The scaling is super-linear in T, closer to T^1.8 than a clean T²**: from the measured
+T512→T4096 points (0.577s → 25.011s, a **43.3× cost increase for 8× the tokens**, not 4× —
+correcting the token ratio makes the fit `ln(43.3)/ln(8) ≈ 1.81`, i.e. roughly `T^1.81`, not
+literally quadratic, but still dominated by attention's cost rather than anything linear).
+
+**Extrapolating to T2048** (the actual production full-FT length, not directly measured — T4096
+batched already OOM'd this 16GB card, so this is a projection, not a bench result): single-crop
+encode ≈ `0.577s × (2048/512)^1.81 ≈ 7.1s`; at batch_size=4, assuming the ~0%-speedup-from-
+batching pattern measured at T512 holds (unverified at T2048 — worth confirming directly before
+relying on this number for a walltime budget) → **~28s/step of pure encode overhead**, an order
+of magnitude worse than T512's 2.33s/step.
+
+**Rule:** live-augment's per-step tax is tolerable at short T (≤512, matches the reg A/B) but
+**explodes at the long context lengths the production full-FTs actually train at**. So:
+- **Short-T reg/ablation experiments** (like the current `fullft_reg_ab` A/B): live `--augment`
+  is fine, the tax is small and the per-step variety is real.
+- **Long-context production full-FTs (T2048, `#68`/`#69` relaunch)**: **offline bungee×8
+  pre-encode wins decisively** — a one-time ~38h+ encode cost (bungee-timing entry above)
+  amortized across every future run at that length, vs. a super-linear-in-T tax paid on every
+  step of every run, forever.
+- **Middle path, not yet built**: cheap *latent-space* augmentation on already-pre-encoded
+  latents (small gain/scale jitter, latent noise, mixup) — gets some per-step variety without
+  ever touching SAME again. Worth prototyping if the fixed aug×8 set turns out to be
+  meaningfully worse than live variety on the short-T experiments.
+
+**Concrete recommendation: do NOT live-augment the T2048 `#68`/`#69` relaunch — pre-encode.**
