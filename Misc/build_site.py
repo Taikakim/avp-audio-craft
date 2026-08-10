@@ -114,11 +114,16 @@ def paras(lines: list[str]) -> str:
 # stay: that's the science, and it's meant to be shared.
 _T = r"(?:/[^\s\"'<>()\[\]]*)?"  # an OPTIONAL /path tail (bare roots caught too)
 _REDACT = [
+    # kept in sync with mirror_dialogue.PATH_MASKS/CORPUS_MASKS (2026-08-11): checkpoint
+    # FILENAMES are plumbing, and the bare Goa_Separated corpus name escaped every earlier
+    # mask because it appears without a path prefix. Found while leak-scanning WORKLOG.md.
+    (re.compile(r"\bepoch=\d+-step=\d+(?:\.\w+)*"), "[ckpt]"),
+    (re.compile(r"\bGoa[_.\s-]?Separated\w*", re.I), "[corpus]"),
     (re.compile(r"/run/media" + _T), "[path]"),
     (re.compile(r"/home/[A-Za-z0-9._-]+" + _T), "[path]"),
     (re.compile(r"(?<!\w)~/[^\s\"'<>()\[\]]*"), "[path]"),
     (re.compile(r"(?<!\w)/(?:scratch|project|flash|mnt|data)" + _T), "[path]"),
-    (re.compile(r"\b(?:Mantu1|Mantu|Lehto)\b:?" + _T), "[path]"),
+    (re.compile(r"\b(?:Mantu1|Mantu|Lehto)\b:?" + _T, re.I), "[path]"),
     (re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b"), "[drive]"),
     (re.compile(r"\bgoa[_.\s-]?archive\w*", re.I), "[corpus]"),
     (re.compile(r"\b(?:goa[.\s_-]*)?psy[.\s_-]*trance[.\s_-]*collection\w*", re.I), "[corpus]"),
@@ -157,7 +162,7 @@ def head(title: str, css="../edg3.css") -> str:
 
 def masthead(here: str, status: str) -> str:
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
-             ("dm", "../dm/"), ("blog", "../blog/"),
+             ("dm", "../dm/"), ("blog", "../blog/"), ("worklog", "../worklog.html"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
              ("evals", "../evals/"), ("papers", "../evals/paper_verdicts.html"),
              ("reference", "../reference.html")]

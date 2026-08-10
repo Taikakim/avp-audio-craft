@@ -92,11 +92,18 @@ REDACTIONS = [
 # "/home/kim" or "/run/media" are caught too, and following prose is never eaten).
 _T = r"(?:/[^\s\"'<>()\[\]]*)?"
 PATH_MASKS = [
+    # Checkpoint FILENAMES are plumbing and never go public (MASTER §4: share the science --
+    # lr, optimizer, epochs, metrics -- describe the artifact, don't name its file). Masked
+    # here rather than per-page because a step-name can appear in any prose: the instance that
+    # wrote a WORKLOG entry ABOUT scrubbing a leaked ckpt name quoted the name while doing it.
+    (re.compile(r"\bepoch=\d+-step=\d+(?:\.\w+)*"), "[ckpt]"),
     (re.compile(r"/run/media" + _T), "[path]"),                          # any /run/media[/…]
     (re.compile(r"/home/[A-Za-z0-9._-]+" + _T), "[path]"),               # /home/user[/…] (bare too)
     (re.compile(r"(?<!\w)~/[^\s\"'<>()\[\]]*"), "[path]"),               # ~/… (incl. after file://)
     (re.compile(r"(?<!\w)/(?:scratch|project|flash|mnt|data)" + _T), "[path]"),
-    (re.compile(r"\b(?:Mantu1|Mantu|Lehto)\b:?" + _T), "[path]"),        # drive labels (+ any tail)
+    # case-INsensitive: an uppercase MANTU appears as a code identifier in prose, and a drive
+    # label is plumbing whichever case it is written in (2026-08-11 WORKLOG scan).
+    (re.compile(r"\b(?:Mantu1|Mantu|Lehto)\b:?" + _T, re.I), "[path]"),  # drive labels (+ any tail)
     (re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b"), "[drive]"),
 ]
 
@@ -106,6 +113,10 @@ PATH_MASKS = [
 _SCALE_NOUN = r"(tracks?|captions?|clips?|files?|jsons?|stems?|crops?|samples?|songs?)"
 CORPUS_MASKS = [
     (re.compile(r"\bgoa[_.\s-]?archive\w*", re.I), "[corpus]"),
+    # The separated-stems corpus dir. Survived every earlier mask because it only ever
+    # appeared as a bare NAME, not under a masked path prefix (found 2026-08-11 while
+    # leak-scanning WORKLOG.md for publication).
+    (re.compile(r"\bGoa[_.\s-]?Separated\w*", re.I), "[corpus]"),
     (re.compile(r"\b(?:goa[.\s_-]*)?psy[.\s_-]*trance[.\s_-]*collection\w*", re.I), "[corpus]"),
     # Numeric corpus scale before a countable noun. Fires only on LARGE magnitudes:
     # a bare 4+ digit run ("23232 tracks") OR any number with a k/M/thousand/million
@@ -320,13 +331,39 @@ def _synopsis(week: str) -> str:
     return p.read_text().strip() if p.exists() else ""
 
 
-def _push(doc: str, name: str) -> None:
+def _push(doc: str, name: str, tries: int = 3) -> None:
+    """Upload one page, and do not lie about whether it landed.
+
+    This ran with check=False and discarded rsync's exit code, so a failed upload was
+    indistinguishable from a good one -- the run still printed "dialogue: ... → /files/".
+    That matters here more than most places: a silent failure means the PUBLIC log quietly
+    stops matching the real one, and nobody finds out until someone reads a stale page.
+
+    The failure is real and routine, not hypothetical: this mirror opens one SSH connection
+    per page (dialogue + 6 archived weeks + chronicle + 9 DM pages + worklog = 18), and the
+    host resets some of them -- an rsync rc=255 "connection unexpectedly closed" showed up in
+    the very run that added the worklog page. So: retry a few times, then say so loudly.
+    (The blog publisher hit the identical wall on 2026-08-10 and was fixed by batching into
+    one connection; that shape would suit this mirror too, but batching changes what gets
+    written where, so it is a deliberate follow-up rather than a change smuggled into a
+    publish.)
+    """
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as tf:
         tf.write(doc)
         tmp = tf.name
-    subprocess.run(["rsync", "-az", "--chmod=F644", "-e", f"ssh -o BatchMode=yes -i {KEY}",
-                    tmp, f"{HOST}:{DEST_DIR}/{name}"], check=False)
-    Path(tmp).unlink(missing_ok=True)
+    try:
+        for attempt in range(1, tries + 1):
+            r = subprocess.run(
+                ["rsync", "-az", "--chmod=F644", "-e", f"ssh -o BatchMode=yes -i {KEY}",
+                 tmp, f"{HOST}:{DEST_DIR}/{name}"], capture_output=True, text=True)
+            if r.returncode == 0:
+                return
+            print(f"  [push] {name}: rsync rc={r.returncode} (attempt {attempt}/{tries}) "
+                  f"{r.stderr.strip().splitlines()[-1:] or ''}", flush=True)
+        print(f"  [push] FAILED to publish {name} after {tries} attempts -- "
+              f"the live page is now STALE", flush=True)
+    finally:
+        Path(tmp).unlink(missing_ok=True)
 
 
 def build_chronicle(weeks) -> str:
@@ -346,6 +383,68 @@ def build_chronicle(weeks) -> str:
                 f'  <div class="body">{body}</div>\n</article>\n')
     doc += bs.colophon(["── chronicle ──"], "weekly log")
     return doc
+
+
+def build_worklog() -> str:
+    """Render WORKLOG.md as a public page (Kim 2026-08-11: "this should also be online").
+
+    The WORKLOG is the fleet's shared findings ledger -- terse, dated, append-only -- and
+    MASTER has always classed it as public-by-policy. It had never actually been SERVED,
+    though, so publishing it is a real disclosure step, not a formality: a leak scan of the
+    2012-line file found 91 drive references, 10 absolute home paths, 6 checkpoint filenames
+    and 7 corpus names. redact() now takes all of them to zero (two masks were added for this:
+    epoch=N-step=N checkpoint filenames, and the bare Goa_Separated corpus name, which had
+    always escaped because it appeared without a path prefix).
+
+    Markdown here is deliberately minimal -- headings, bullets, inline code -- because the
+    WORKLOG is written as plain prose with `##` date headers. Anything fancier would guess.
+    """
+    src = (SAO / "WORKLOG.md").read_text()
+    doc = bs.head("WORKLOG — Vibe on The Edg3", css="edg3.css")
+    n_days = len(re.findall(r"^##\s+", src, re.M))
+    doc += bs.masthead("worklog", f"{n_days} entries").replace("../", "")
+    doc += ('\n<h1>WORKLOG</h1>\n<p class="dim">Shared findings ledger across the three '
+            'repos — what was run, built, or learned, newest first. Written for the next '
+            'instance to pick up, not as a narrative; paths, checkpoint filenames and corpus '
+            'names are masked on this public render.</p>\n')
+    body, in_ul = [], False
+    for line in src.splitlines():
+        s = line.rstrip()
+        h = re.match(r"^(#{1,4})\s+(.*)$", s)
+        if h:
+            if in_ul:
+                body.append("</ul>"); in_ul = False
+            lvl = min(len(h.group(1)) + 1, 4)          # page already owns <h1>
+            body.append(f"<h{lvl}>{bs.inline(html.escape(h.group(2)))}</h{lvl}>")
+        elif re.match(r"^\s*[-*]\s+", s):
+            if not in_ul:
+                body.append('<ul class="wl">'); in_ul = True
+            body.append(f"<li>{bs.inline(html.escape(re.sub(r'^\s*[-*]\s+', '', s)))}</li>")
+        elif not s.strip():
+            if in_ul:
+                body.append("</ul>"); in_ul = False
+        else:
+            if in_ul:
+                body.append("</ul>"); in_ul = False
+            body.append(f"<p>{bs.inline(html.escape(s))}</p>")
+    if in_ul:
+        body.append("</ul>")
+    doc += "\n".join(body)
+    doc += bs.colophon([f"{n_days} entries", "append-only"], "shared findings ledger")
+    doc += "\n</div></body></html>"
+    return redact(doc)
+
+
+def mirror_worklog() -> str:
+    doc = build_worklog()
+    # fail closed: never ship a WORKLOG render that still carries plumbing
+    bad = {p for p in ("/home/", "/run/media", "dreamhost", ".ssh/") if p in doc}
+    bad |= {m for m in re.findall(r"epoch=\d+-step=\d+", doc)}
+    if bad:
+        return f"worklog: REFUSED, leak survived redact(): {sorted(bad)[:4]}"
+    (SAO / "site" / "worklog.html").write_text(doc)
+    _push(doc, "worklog.html")
+    return f"worklog: {len(doc)} B → /files/worklog.html"
 
 
 def main() -> int:
@@ -369,6 +468,7 @@ def main() -> int:
     _push(redact(build_chronicle(weeks_meta)), "dialogue-chronicle.html")
     print(f"dialogue: current {cur_week} + {len(sources) - 1} archived weeks + chronicle → /files/")
     print(sync_dms())
+    print(mirror_worklog())
     return 0
 
 
