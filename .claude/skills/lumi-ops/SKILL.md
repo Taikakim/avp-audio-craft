@@ -436,15 +436,13 @@ Most of it confirms current practice; four items are new and worth acting on.
   — `HF_HOME`, etc.). Keep it that way for the wandb wiring (task below): API key via env
   (`WANDB_API_KEY` exported, or `wandb login` against a pre-staged `~/.netrc`-style credential
   file), never `--api-key` on a command line.
-- **Auto-requeue can silently truncate logs — none of our 54 sbatch scripts guard against it.**
-  SLURM resubmits a failed job under the *same* job ID by default; without `--open-mode=append`
-  the new attempt's `.out` can overwrite/truncate the failed attempt's log, and without
-  `--no-requeue` a transient node fault silently re-runs the whole job instead of surfacing the
-  failure. Given how many "state lies" incidents we've chased this week (aug8, the pipefail
-  false-FAILED, sacct vs squeue), this is worth adding to the sbatch template set:
-  `#SBATCH --no-requeue` (or `--requeue` deliberately, if that's ever actually wanted) +
-  `#SBATCH --open-mode=append`. Not yet done — flagging for whoever next edits the shared
-  templates (`efp_fp32_compare.sbatch` etc.) rather than mass-editing 54 files unprompted.
+- **Auto-requeue — CORRECTED by Kim's direct operational experience (2026-08-10): not actually
+  live on this cluster/project.** The generic SLURM docs describe same-job-ID auto-requeue on a
+  failed job as a possible default; Kim's read from running dozens of jobs here is that failed
+  jobs on `project_465003186` just fail, no silent duplicate-run behavior observed. Downgrading
+  this from "real gap, add `--no-requeue` to the templates" to: **not an active risk here**,
+  don't spend effort retrofitting 54 sbatch scripts for it. `--open-mode=append` remains cheap,
+  harmless insurance if anyone's touching a template anyway, but it's no longer a flagged gap.
 
 Confirms current practice needs no change:
 - **cotainr-built Singularity containers is the officially recommended path** (LUMI explicitly
