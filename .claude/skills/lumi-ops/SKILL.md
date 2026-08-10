@@ -443,6 +443,8 @@ Most of it confirms current practice; four items are new and worth acting on.
   this from "real gap, add `--no-requeue` to the templates" to: **not an active risk here**,
   don't spend effort retrofitting 54 sbatch scripts for it. `--open-mode=append` remains cheap,
   harmless insurance if anyone's touching a template anyway, but it's no longer a flagged gap.
+  **C confirmed from two real incidents**: the OOM crash (`20869819`) and the shm-exhaustion
+  crash (`20687866`) both failed and stayed failed — no requeue duplication in either case.
 
 Confirms current practice needs no change:
 - **cotainr-built Singularity containers is the officially recommended path** (LUMI explicitly
@@ -461,13 +463,15 @@ Confirms current practice needs no change:
   optimized for large sequential I/O not many-small-files) — matches why we stage hot datasets to
   `$FLASH` for the duration of a job rather than reading crops directly off `$SCRATCH`.
 
-New, not yet applied — low urgency, real win if we hit I/O contention again:
-- **Lustre striping for our many-small-latent-file directories**: `lfs setstripe --stripe-count 1
-  --stripe-size 1m <dir>` is the recommended tuning for a file-per-process read pattern (exactly
-  our per-crop `.npy`/`.json` latent directories) — large stripe counts on small files add MDS
-  overhead for no bandwidth gain. If the project was created after May 2026, LUMI-P's default
-  Progressive File Layout may already apply this automatically for files <256 MB (unconfirmed for
-  `project_465003186` specifically) — check before manually striping.
+Checked against real practice, mostly moot for us (C, 08-10):
+- **Lustre striping** (`lfs setstripe --stripe-count 1 --stripe-size 1m <dir>`) is the textbook-
+  correct tuning for a file-per-process many-small-files read pattern, which our per-crop latent
+  dirs are — **but it doesn't apply to how we actually train**: latents are tarred once, extracted
+  to `$FLASH` (node-local NVMe) at job start, and the per-crop random reads during training hit
+  `$FLASH`, not Lustre. The only Lustre read is the single big sequential tar pull. Striping would
+  only pay off if a future job ever reads latents directly off `$SCRATCH` without the `$FLASH`
+  staging step — conditional, not an active win, don't spend effort on it under the current
+  pipeline.
 
 ## Wandb: offline-on-LUMI → sync-at-home (G, 2026-08-10)
 
