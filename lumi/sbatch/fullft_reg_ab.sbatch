@@ -144,6 +144,10 @@ export MIOPEN_USER_DB_PATH=/tmp/miopen-'"${GCD}"' MIOPEN_CUSTOM_CACHE_DIR=/tmp/m
 export TRITON_CACHE_DIR=/tmp/triton-'"${GCD}"' PYTORCH_TUNABLEOP_ENABLED=0
 rm -rf /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'; mkdir -p /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
+# 20954346'"'"'s clip-arm OOM message named PYTORCH_ALLOC_CONF (no HIP_ prefix) as the fix, not
+# the var above -- set both names defensively in case this torch build reads the newer unified
+# one and silently ignored the ROCm-specific name (unconfirmed root cause, cheap to cover).
+export PYTORCH_ALLOC_CONF=expandable_segments:True
 # single-process Lightning (avoid the shared SLURM DDP rendezvous port — 8 arms would collide)
 export SLURM_JOB_NAME=bash MASTER_ADDR=127.0.0.1 MASTER_PORT=$((29500 + '"${GCD}"'))
 # offline wandb: no compute-node internet, no credential on LUMI -- WANDB_DIR keeps the run
