@@ -975,6 +975,70 @@ def write_memo_a2a_folder(kind, name, label, purpose, date_str, clips,
     open(f"{staged_dir}/index.html", "w").write(doc)
     return True
 
+def write_rarity_gen_set_folder(kind, name, label, purpose, date_str, clips,
+                                 findings=None, status=None, known_pages=None):
+    """Row=item id, column=model comparison table for the rarity gen set (Kim,
+    2026-08-11: the flat model-then-band-then-id grid buried same-prompt clips
+    ~150 cells apart, "not even evident what I'm comparing"). Clips are named
+    <model>__<band>__<id>__s<seed>.m4a — id is the shared comparison key across
+    models within a band (same underlying prompt, different per-model seed)."""
+    stem_re = re.compile(r"^(?P<model>[a-z0-9]+)__(?P<band>common|mid|rare)__(?P<id>\d+)__s(?P<seed>\d+)$")
+    models_seen, by_band = [], {}  # band -> {id: {model: filename}}
+    for c in clips:
+        if not c.endswith(".m4a"):
+            continue
+        m = stem_re.match(os.path.splitext(c)[0])
+        if not m:
+            continue
+        model, band, iid = m["model"], m["band"], m["id"]
+        if model not in models_seen:
+            models_seen.append(model)
+        by_band.setdefault(band, {}).setdefault(iid, {})[model] = c
+    if not by_band:
+        return False
+
+    MODEL_ORDER = ["base", "evr1x", "newstack"]
+    models = [m for m in MODEL_ORDER if m in models_seen] + [m for m in models_seen if m not in MODEL_ORDER]
+    BAND_ORDER = ["common", "mid", "rare"]
+    bands = [b for b in BAND_ORDER if b in by_band] + [b for b in by_band if b not in BAND_ORDER]
+
+    doc = head(f"{label} — evals", depth=2)
+    doc += ('<p class="nav"><a href="../../index.html">← all evals</a>'
+            '<a href="https://aavepyora.online/files/">the studio</a></p>')
+    doc += f'<h1>{html.escape(label)}</h1>'
+    if date_str:
+        doc += f'<p class="faint">{html.escape(date_str)}</p>'
+    if purpose:
+        doc += f'<p class="lede">{html.escape(purpose)}</p>'
+    doc += eval_grid.provenance_html(findings, status, known_pages)
+    n_clips = sum(len(row) for rows in by_band.values() for row in rows.values())
+    doc += (f'<p class="faint">{n_clips} clips · {len(models)} models × {len(bands)} rarity bands · '
+            'same row id = same underlying prompt across models (each model used its own seed) · '
+            'click to play (shared playhead; switching keeps position; re-click stops)</p>')
+    for band in bands:
+        rows = by_band[band]
+        doc += f'<h2>{html.escape(band)}</h2>'
+        doc += '<table class="tc-table"><tr><th>id</th>'
+        for m in models:
+            doc += f'<th>{html.escape(m)}</th>'
+        doc += '</tr>'
+        for iid in sorted(rows, key=int):
+            doc += f'<tr><td>{html.escape(iid)}</td>'
+            for m in models:
+                f = rows[iid].get(m)
+                if f:
+                    doc += f'<td class="cell tc-play" data-src="{html.escape(f)}" onclick="play(this)">▶</td>'
+                else:
+                    doc += '<td class="tc-blank">·</td>'
+            doc += '</tr>'
+        doc += '</table>'
+    doc += PLAYER_JS
+    doc += '<footer>aavepyora.online · evals · same-playhead · rarity gen set, model compare</footer></div></body></html>'
+    staged_dir = f"{OUT}/{kind}/{name}"
+    os.makedirs(staged_dir, exist_ok=True)
+    open(f"{staged_dir}/index.html", "w").write(doc)
+    return True
+
 def write_chroma_morph_folder(kind, name, label, purpose, date_str, clips, source_dir,
                                findings=None, status=None, known_pages=None):
     """Real-track transition compare with chroma-morph LatCH steering vs a plain
@@ -2965,9 +3029,18 @@ def main():
             (not wrote_seeds) and (not wrote_ladder) and (not wrote_cfgsweep) and name == "memo_ckpt_a2a_test" and \
             write_memo_a2a_folder(kind, name, label, desc or subtitle, date_str, clips,
                                    findings, status, known_pages)
+        # rarity gen set: id x model compare table (see write_rarity_gen_set_folder) --
+        # tried by name, same rationale as the other one-off writers above (Kim, 2026-08-11:
+        # the flat grid buried same-prompt clips ~150 cells apart across models).
+        wrote_rarity = (not wrote_grid) and (not wrote_table) and (not wrote_style) and \
+            (not wrote_density) and (not wrote_longform) and (not wrote_transitions) and (not wrote_epoch) and \
+            (not wrote_t3) and (not wrote_chroma) and (not wrote_chroma_pure) and (not wrote_avp) and \
+            (not wrote_seeds) and (not wrote_ladder) and (not wrote_cfgsweep) and (not wrote_memo) and \
+            name == "rarity_gen_set" and write_rarity_gen_set_folder(
+                kind, name, label, desc or subtitle, date_str, clips, findings, status, known_pages)
         if not (wrote_grid or wrote_table or wrote_style or wrote_density or wrote_longform
                 or wrote_transitions or wrote_epoch or wrote_t3 or wrote_chroma or wrote_chroma_pure
-                or wrote_avp or wrote_seeds or wrote_ladder or wrote_cfgsweep or wrote_memo):
+                or wrote_avp or wrote_seeds or wrote_ladder or wrote_cfgsweep or wrote_memo or wrote_rarity):
             write_folder(kind, name, label, desc or subtitle, clips, date_str, verdict, findings, status, known_pages)
         entry = (name, label, desc, len(clips), date_str, subtitle, verdict)
         if (kind, name) in misc_keys:
