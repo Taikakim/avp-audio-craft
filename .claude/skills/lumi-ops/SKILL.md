@@ -5,6 +5,11 @@ description: Use when working with LUMI/EuroHPC — checking or submitting jobs,
 
 # LUMI operations (project_465003186)
 
+> **OWNERSHIP (Kim direct, 2026-08-10): daily LUMI runs move to GHOST-NOTE (G).** Routine
+> submit/monitor/pull/render ops are G's lane now (token economy — CONTINUITY stays on heavy
+> theory). C/W still craft sbatch/theory-heavy configs; G drives the daily submit→check→pull loop
+> and keeps this SKILL current on new issues. This doc is the shared source of truth for both.
+
 ## Access model — the #1 rule
 
 **Agents never run ssh/scp/rsync to LUMI themselves.** Kim's key (`~/.ssh/id_EFP`) has an
@@ -104,15 +109,71 @@ alongside the fork:** `cp stable-audio-tools/stable_audio_tools/training/{fusion
 lumi/vendor/stable_audio_tools/training/` then rsync that dir up. (Leave the vendored `__init__.py` —
 it's a curated subset; the full SAT one pulls unvendored modules.)
 
+## Live-encode + multi-arm training gotchas (multitorch image — all bit #68/ladder 2026-08-04/05)
+Five things bit the first `--data_dir` live-encode + fan-out launches; each recurs on ANY such job.
+
+1. **torchaudio has NO torchcodec on the multitorch image → `torchaudio.load` dies.** torchaudio 2.10+rocm7
+   delegates load/save to `torchcodec` (absent), and the `backend=` arg is **ignored** (torchcodec-only). So
+   any `--data_dir` job that decodes raw mp3/flac crashes at first load; `--encoded_dir` (pre-encoded `.npy`)
+   never hits it (no audio decode). **Fix (in-tree): the ffmpeg-subprocess loader in `dataset.py:load_file`**
+   (ffmpeg 6.1.1 IS on the image → decode via ffmpeg when torchcodec missing). Do NOT `pip install torchcodec`
+   blind — it's ABI-locked to torch + libav, fragile on rocm7 (our history needed source builds; `SAO/torchcodec`).
+2. **N independent 1-GCD arms in one SLURM job collide on the DDP port (`EADDRINUSE`).** Lightning derives ONE
+   rendezvous port from the shared `SLURM_JOB_ID` → every arm grabs the same one, arm 0 wins, the rest die at
+   `TCPStore`. **Fix, per-arm in the container env block: `export SLURM_JOB_NAME=bash`** (→ PL
+   `SLURMEnvironment.detect()` returns False → single-process `LightningEnvironment`, no shared port) **+ distinct
+   `MASTER_PORT=$((29500+GCD))`** as backup. (First ladder run: only the fp32 arm survived without this.)
+3. **A systemic failure surfaces as `RecursionError`, not the real error.** SA3's `LocalDataset.__getitem__`
+   recursively retries `self[random_idx]` on load/reject failure — so a bad decoder OR a caption-key mismatch
+   flooding `__reject__` recurses thousands deep → a 40k-line `RecursionError` that BURIES the root cause.
+   **Read the FIRST traceback, not the recursion tail** (`ln=$(grep -n Traceback log|head -1|cut -d: -f1); sed -n
+   "$ln,+40p" log`). We bounded the retry (cap 100 → clean raise) so future gaps fail loud.
+4. **Live-encode caption sidecar = relpath-key contract; VERIFY layout before the run.** `--data_dir` +
+   `--caption_sidecar` uses `make_data_dir_caption_fn`, keyed by `relpath` **relative to `--data_dir`**, and
+   **rejects-on-miss** — a key mismatch silently drops EVERY caption (→ the reject-flood recursion above). Keys
+   must match the on-disk layout under `BIGSET_DIR` (the corpus ROOT). Confirm with a definitive **per-path** test
+   `ls "$BIGSET_DIR/<one exact sidecar rel key>"` — NOT a broad `find` (Lustre metadata made `find -maxdepth3 -name`
+   miss dirs that per-path `ls` resolved). `LocalDataset` reads `${data_dir}/filelist.txt` (entries joined w/ data_dir).
+
+5. **8-GCD DDP + live-encode exhausts `/dev/shm` → `unable to allocate shared memory(shm) … Resource
+   temporarily unavailable (11)`.** With `--ntasks-per-node=8` and `--num_workers 6`, that's **48 DataLoader
+   workers on one node** passing big decoded-audio tensors through the node's `/dev/shm` (PyTorch's default
+   `file_descriptor` sharing). It exhausts mid-training and the run dies (crashed `fullft_bigset` #68 20687866
+   after 1 ckpt, 2026-08-06; the SMOKE at `--steps 40` was too short to fill shm, so this slipped past it). The
+   `--encoded_dir` ladder arms never hit it (no live decode, fewer ranks). **Fix (in-tree): `train_lora.py` sets
+   `torch.multiprocessing.set_sharing_strategy("file_system")`** (shares via `/tmp` files, which the container
+   binds, not `/dev/shm`) **+ raise `ulimit -n` in the sbatch before the python call** (file_system opens one fd
+   per shared tensor). NB smoke-mode won't catch shm exhaustion — it's a slow fill; watch for it on the first
+   real multi-hour DDP live-encode run.
+
+**Standing rule — SMOKE every new live-encode/DDP config first** (`SMOKE=1` → `--steps 40`), then check the .out:
+`Found N files` (filelist resolved), steps progressing (captions attaching — a reject-flood would raise), all GCDs
+active, **0 `Couldn't load file`**, no OOM. The smoke caught all four above before the ~1-day node run.
+
 ## Paths (always literal — `$SCRATCH` etc. are NOT set in login shells)
 
 | what | path |
 |---|---|
 | code tree (mirror of SAO) | `/project/project_465003186/code` — NOT the stray top-level `/project/.../lumi` |
-| container / models | `/project/.../containers/sa3.sif`, `/project/.../models` |
+| container / models | `/project/.../containers/sa3.sif`; **`/project/.../models` is a SYMLINK → `/scratch/.../models`** (the real 38G HF hub cache lives on /scratch — see storage note below) |
 | runs, renders, latent tarballs | `/scratch/project_465003186/{runs,renders,latents_*.tar.gz}` |
 | node-local staging (in-job only) | `/flash/project_465003186` |
 | local pull targets | `Mantu/lumi_runs/...` and the `9a410a1d-…` drive (`lumi_runs/runs/...`) — **land pulls where the existing `sa3_lora_runs` symlinks already resolve**; check `readlink` before inventing a new dir |
+
+## Storage / quota — `/project` is TINY (50G) and code-only; models live on /scratch (2026-08-09)
+- **`/projappl` (`/project`) hard quota ≈ 50–54G.** It holds only `code/` (~2G) + `containers/` (~15G).
+  The HF model cache is **NOT** on /project — `/project/.../models` is a **symlink → `/scratch/.../models`**
+  (~38G: `hub/models--stabilityai--{stable-audio-3-medium,-base,SAME-L}`, MuScriptor, music-flamingo, granite).
+- **`du -sh /project/.../models/` LIES** — the trailing slash follows the symlink into /scratch and reports
+  38G as if it were on /project, which makes /project look wildly over quota. Use `du -sh --exclude=models`
+  or `readlink` the path first. The real /project usage is ~18G.
+- **`lumi-ldap-projectinfo` block-quota % can be STALE/CACHED** (showed 124.9% / 62G when the live
+  `lumi-quota` + `du` said 18G). Confirm with live `lumi-quota` and `du` before "freeing" anything.
+- **NEVER `rm`/recreate the `/project/.../models` symlink blind.** If it's ever broken, repoint it at the
+  real cache: `ln -s /scratch/project_465003186/models /project/project_465003186/models`. All sbatches use
+  `MODELS=${PROJ}/models; export HF_HOME=${MODELS} HF_HUB_OFFLINE=1`, so a wrong/empty target = instant
+  model-not-found on every job. (Cost me a scare 2026-08-09: rm'd the symlink, repointed it at an empty
+  /flash dir; the /scratch cache was safe, repoint fixed it.)
 
 ## Job scripts — start from the proven skeletons, never from scratch
 
@@ -144,6 +205,42 @@ it's a curated subset; the full SAT one pulls unvendored modules.)
   no "Initializing distributed"/world-size lines; ~400 GB of duplicate ckpts before caught).
   Also no ROCR pinning for DDP — every rank must see all 8 GCDs; Lightning binds via
   SLURM_LOCALID. Per-GCD independent arms keep `--gpus-per-task=1` + ROCR as before.
+- **⚠️ CORRECTION (2026-08-09, multitorch image) — the "Pattern 1" recipe above OOMs on
+  multitorch; use "Pattern 2" instead.** On `lumi-multitorch-full`, `train_lora.py`'s
+  `load_model` does `model.to("cuda")` (=`cuda:0`) at line ~130 **before** Lightning
+  assigns per-rank devices. With Pattern 1 (all 8 GCDs visible, `--devices 8`, no
+  `--gpus-per-task`) **all 8 ranks load the model onto GPU 0 → HIP OOM** in ~3 min (job
+  20869819: "GPU 0 … 0 bytes free", 8×~7 GiB piled on one card). **The working recipe on
+  multitorch is Pattern 2 — EXACTLY what #68 fullft_bigset uses (8h+ clean):**
+  `srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7` + train_lora with **NO
+  `--devices`** — cgroup-pins each rank to its own GCD (so `model.to("cuda")` lands on the
+  rank's own card), and Lightning's SLURMEnvironment forms the world_size=8 group from
+  SLURM_NTASKS. #68 trains fine with **no `-vN` ckpts**, so on multitorch Pattern 2 forms a
+  REAL coordinated group (the "Pattern 2 = N duplicate trainers" warning above was sa3.sif
+  smoke 20413874; it does NOT hold on multitorch). **Rule: on multitorch, DDP = Pattern 2
+  (`--gpus-per-task=1`, no `--devices`).** Multi-node extends it: `--nodes=N
+  --ntasks-per-node=8 --gpus-per-task=1`, still no `--devices` (SLURMEnvironment derives
+  world=N*8 + MASTER_ADDR from node 0). Templates fixed: `fullft_avp_aug.sbatch`,
+  `multinode_ddp_smoke.sbatch`.
+- **🔴 FULL-FT LATENT-SCALE RUNAWAY → SPECTRAL DRONE (2026-08-10, CONTINUITY). Do NOT re-chase
+  DDP / live-encode / the decoder for this symptom.** Every multitorch FULL-finetune (#68
+  `fullft_bigset`, `precision_ladder` — all FusionOpt) decoded to broadband spectral drone on
+  every prompt+cfg. Root cause is NOT DDP (formed one group), NOT live-encode (the pre-encoded
+  ladder droned too), NOT the decoder (known-good latents decode fine): the model's **latent
+  OUTPUT scale runs away during training**. Measured from the saved `z0.npy` (local analysis, no
+  GPU needed): global latent std **0.7 (good) → 1.3 (ep3) → 5.6 (ep7)**; #channels with std>2.0:
+  **0 → ~4 → 166 of 256**; cfg16 inflates first (early-warning canary). Mechanism: FusionOpt's
+  **`spectral_wd` defaults to 0.01** (`fusion_groups.py`), which is **too weak for the NS5/Muon
+  orthogonalized update** (its step-norm is grad-magnitude-independent, so decay must be ~10×
+  AdamW's) → weight norms, hence latent scale, grow unbounded. Adapters stay bounded (frozen base +
+  tiny delta) → this is a **full-FT-only** failure. **FIX: pass `--weight_decay 0.1
+  --gradient_clip_val 1.0`** to the full-FT (routes to `param_groups.spectral_wd`; the FusionOpt
+  *constructor* `weight_decay` is OVERRIDDEN by the per-group value, so setting it there is a
+  no-op — the group knob is the only one that works). **DIAGNOSE ANY future drone by loading the
+  `z0.npy` and checking global std vs ~1.0 BEFORE suspecting anything else.** Deterministic
+  mechanism test: `stable-audio-tools/tests/test_fusion_weight_decay.py`. A/B in flight (job
+  20940322): `lumi/sbatch/fullft_wd_ab.sbatch`. NOTE this means #68/#69 as trained are dead — they
+  must be relaunched with the fix once the A/B confirms.
 - `hq job wait all || true` — under `set -e`, one failed task otherwise kills the script before
   the merge/success-check tail runs.
 - HQ log names `j%{JOB_ID}-t%{TASK_ID}.*` — each `hq submit` is its own job, so `task-%{TASK_ID}`
@@ -264,6 +361,13 @@ a node spin-up.
   listing shows exactly what exists remotely (e.g. "did this run reach ep7?").
 - A fat `epoch=N.ckpt` (vs slim `.weights.ckpt`) marks a run's **terminal** epoch; pull fat only
   for the last epoch (Kim's standing rule), slims elsewhere.
+- **ALL rendered cells → ALWAYS pulled local, NO EXCEPTION (Kim direct 2026-08-07).** Every
+  `renders/matrix_cells/*.wav` on LUMI scratch must be mirrored to the UUID drive
+  `lumi_runs/renders/matrix_cells/`. `rsync -av --partial <scratch>/renders/matrix_cells/ <local>/`
+  is incremental — re-run it freely; do it after EVERY render job and definitely before the purge
+  ([[lumi-project-purge-deadline]]). Cells feed the board + every audio metric (hook_melodic_ratio,
+  melody_wall, clip_metrics); a cell left only on scratch is a lost audition. Distinct from the ckpt
+  rule above — ckpts are last-fat-only, **cells are ALL**.
 
 ## Job-launch failure modes (2026-08-02 saga — all four bit in one session)
 
@@ -308,6 +412,64 @@ this order; the real error is almost never in the sacct state.
 Sanity after any relaunch: a job that stays **R for >10 min** (past the ~4-min crash band) is
 NOT automatically training — check `train.log` **mtime is advancing** (mode #5 stays R while
 frozen). Only advancing mtime + loss lines = real training.
+
+## Official LUMI docs review (G, 2026-08-10 — Kim's reading list on the ownership handoff)
+
+Reviewed docs.lumi-supercomputer.eu's install/storage/runjobs sections against our actual setup.
+Most of it confirms current practice; four items are new and worth acting on.
+
+- **NO BACKUPS, ANYWHERE, EVER — not a LUMI service.** Every storage tier (`/users`, `/project`,
+  `/scratch`, `/flash`) has **zero backup**. After a project allocation ends, data stays
+  **read-only for 90 days**, then is **permanently deleted**. This is the concrete deadline behind
+  the "14 days left" budget conversation this week: whatever we want to keep past the project's
+  end (final checkpoints, key renders, the melody-subspace artifacts, anything not already mirrored
+  to Mantu/the UUID drive) needs an explicit pull plan, not an assumption that LUMI is safe storage
+  even briefly after the project closes. Worth a standing checklist item once the end date is known.
+- **Quotas, confirmed with real numbers** (was previously reconstructed from a stale-reading
+  dispute, see the 08-09 WINTERMUTE/CONTINUITY exchange): home 20 GB/100k inodes; `/project` 50 GB
+  (→500 GB) / 100k inodes, billed 1×; `/scratch` 50 TB (→500 TB) / 2M inodes, billed 1×; `/flash`
+  2 TB (→100 TB) / 1M inodes, billed **3×** (matches our `--mem=0`/`$FLASH` node-local-staging-only
+  convention — never park anything long-lived there).
+- **CLI ARGUMENTS ARE VISIBLE TO OTHER USERS on shared LUMI nodes** (via `squeue`/`sacct`'s full
+  submit command, and directly to anyone else on the same node). Audited our 54 `lumi/sbatch/*`
+  scripts: **clean, zero CLI-passed secrets found** (everything sensitive already rides env vars
+  — `HF_HOME`, etc.). Keep it that way for the wandb wiring (task below): API key via env
+  (`WANDB_API_KEY` exported, or `wandb login` against a pre-staged `~/.netrc`-style credential
+  file), never `--api-key` on a command line.
+- **Auto-requeue can silently truncate logs — none of our 54 sbatch scripts guard against it.**
+  SLURM resubmits a failed job under the *same* job ID by default; without `--open-mode=append`
+  the new attempt's `.out` can overwrite/truncate the failed attempt's log, and without
+  `--no-requeue` a transient node fault silently re-runs the whole job instead of surfacing the
+  failure. Given how many "state lies" incidents we've chased this week (aug8, the pipefail
+  false-FAILED, sacct vs squeue), this is worth adding to the sbatch template set:
+  `#SBATCH --no-requeue` (or `--requeue` deliberately, if that's ever actually wanted) +
+  `#SBATCH --open-mode=append`. Not yet done — flagging for whoever next edits the shared
+  templates (`efp_fp32_compare.sbatch` etc.) rather than mass-editing 54 files unprompted.
+
+Confirms current practice needs no change:
+- **cotainr-built Singularity containers is the officially recommended path** (LUMI explicitly
+  discourages direct conda/pip on any LUMI filesystem — "tens to hundreds of thousands of small
+  files" strains Lustre metadata servers exactly the way our venv-overlay-inside-a-SIF pattern
+  avoids). The **container-wrapper tool is explicitly NOT recommended for conda/pip management**
+  (it wraps single binaries transparently; bulk package installs still want a rebuilt container) —
+  so no reason to adopt it for anything we currently do with venv overlays.
+- **56 usable cores per LUMI-G node, not 64** (low-noise mode reserves 1 + disables 1 per L3
+  region) — explains, after the fact, why `--cpus-per-task=7 × 8 GCDs = 56` in our sbatch
+  templates already lands exactly on the real ceiling.
+- Official Python/MPI guidance is `srun singularity exec $CONTAINER python3 ...` (never
+  `mpirun`/`mpiexec` under a container) — matches our `srun --ntasks=N ... singularity exec`
+  pattern throughout `lumi/sbatch/`.
+- LUMI-F (flash, 8 PB / 1740 GB/s aggregate) vs LUMI-P (20 PB ×4 / 240 GB/s each, spinning disk,
+  optimized for large sequential I/O not many-small-files) — matches why we stage hot datasets to
+  `$FLASH` for the duration of a job rather than reading crops directly off `$SCRATCH`.
+
+New, not yet applied — low urgency, real win if we hit I/O contention again:
+- **Lustre striping for our many-small-latent-file directories**: `lfs setstripe --stripe-count 1
+  --stripe-size 1m <dir>` is the recommended tuning for a file-per-process read pattern (exactly
+  our per-crop `.npy`/`.json` latent directories) — large stripe counts on small files add MDS
+  overhead for no bandwidth gain. If the project was created after May 2026, LUMI-P's default
+  Progressive File Layout may already apply this automatically for files <256 MB (unconfirmed for
+  `project_465003186` specifically) — check before manually striping.
 
 ## Deeper docs
 
