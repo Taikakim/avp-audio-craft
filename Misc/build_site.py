@@ -204,7 +204,24 @@ def render_journal(handle: str) -> str | None:
     for day, dbody in split_sections(text, "##"):
         if day.startswith("#"):
             continue
-        for htitle, ebody in split_sections("\n".join(dbody), "###"):
+        subs = list(split_sections("\n".join(dbody), "###"))
+        # SINGLE-LEVEL entry: a `## DATE — title` heading with body directly under it and no
+        # `### ` sub-entries. Older entries are two-level (`## DAY` + `### title`); both render.
+        # Without this fallback a single-level entry is SILENTLY DROPPED (bit the journal 2026-08:
+        # every entry after 08-04 vanished). Split the day header on the first em/en/hyphen dash
+        # into (date, title); if there's no dash, use the whole header as the title.
+        if not subs:
+            body = "\n".join(dbody).strip()
+            if not body:
+                continue
+            m = re.match(r'^(\S+(?:\s+\(cont\.\))?)\s+[—–-]\s+(.+)$', day.strip())
+            date_part, title = (m.group(1), m.group(2)) if m else (day.strip(), day.strip())
+            entries.append(
+                f'<div class="jentry">\n  <div class="jdate">{html.escape(date_part)}</div>\n'
+                f'  <div class="jtitle">{inline(title)}</div>\n'
+                f'  {paras(dbody)}\n</div>')
+            continue
+        for htitle, ebody in subs:
             cat, _, title = htitle.partition("·") if "·" in htitle else ("", "", htitle)
             cat, title = cat.strip(), title.strip()
             neg = cat.lower() in ("negative", "dead-end", "dead end")
