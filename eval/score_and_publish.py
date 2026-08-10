@@ -152,6 +152,82 @@ def leg_ingest(pattern, src, dry) -> Step:
                   + ("" if after else f" | rc={rc} {out[-200:]}"))
 
 
+# Roots holding the rendered latents, keyed by the same stem as the clip: <stem>.z0.npy.
+Z0_ROOTS = [Path("/run/media/kim/Mantu/sa3_lora_runs/model_matrix"),
+            Path("/run/media/kim/Mantu/sa3_control_runs/model_matrix")]
+Z0_STD_MAX = 2.0          # healthy global latent std is ~1.0; the drone runs away 1.3 -> 5.6 -> inf
+
+
+def leg_sanity(pattern, dry, skip) -> Step:
+    """Refuse to score or publish audio decoded from blown-up latents.
+
+    WHY THIS EXISTS: on 2026-08-10 a full run of this tool returned 4/4 GREEN on
+    fullft_bigset -- 108 clips staged, 108 DSP rows, 108 CLAP scores -- while 59 of those
+    108 clips had decoded from non-finite latents and were spectrally destroyed. Every step
+    verified its own artifact and not one asked whether the audio was sane, so green meant
+    COMPLETE, never GOOD. Worse than shipping nothing: a fully-scored row over corrupt audio
+    reads as a training-recipe result, and someone then has to un-learn it.
+
+    The check is CONTINUITY's own first diagnostic for the spectral drone -- load z0.npy,
+    compare global std against ~1.0 -- applied per clip before anything downstream runs.
+
+    Unverifiable is NOT the same as clean: if no latent is found for any clip the step FAILS
+    rather than passing quietly. --skip-sanity is the deliberate escape hatch, so bypassing
+    is a choice someone typed rather than a silence they never saw.
+    """
+    s = Step("latent sanity (z0 std)")
+    if skip:
+        return s.done(True, "SKIPPED by --skip-sanity (nothing was checked)")
+    if dry:
+        return s.done(True, "DRY: skipped")
+    try:
+        import numpy as np
+    except ImportError:
+        return s.done(False, "numpy unavailable -- cannot verify, refusing to call it clean")
+
+    clips = [e["file"] for e in (json.loads(l) for l in
+             MANIFEST.read_text().splitlines() if l.strip())
+             if e.get("model", "").startswith(pattern)]
+    if not clips:
+        return s.done(True, f"no staged clips match '{pattern}'")
+
+    def verdict(name):
+        stem = name.rsplit(".", 1)[0]
+        for root in Z0_ROOTS:
+            p = root / f"{stem}.z0.npy"
+            if p.exists():
+                z = np.load(p, mmap_mode="r")
+                a = np.asarray(z, dtype=np.float64)
+                if not np.isfinite(a).all():
+                    return {"file": name, "std": None, "bad": True, "why": "non-finite"}
+                sd = float(a.std())
+                return {"file": name, "std": sd, "bad": sd > Z0_STD_MAX,
+                        "why": f"std {sd:.2f} > {Z0_STD_MAX}" if sd > Z0_STD_MAX else ""}
+        return None                                     # no latent on disk for this clip
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex:
+        results = list(ex.map(verdict, clips))
+    checked = [r for r in results if r]
+    bad = [r for r in checked if r["bad"]]
+    if not checked:
+        return s.done(False, f"0 of {len(clips)} clips have a z0.npy under {Z0_ROOTS[0].parent} "
+                             f"-- cannot verify, refusing to call it clean (--skip-sanity to override)")
+    if bad:
+        side = MATRIX / f"{pattern}.latent_sanity.json"
+        side.write_text(json.dumps(
+            {"artifact": f"{pattern} latent-sanity audit",
+             "criterion": f"bad = non-finite OR global z0 std > {Z0_STD_MAX} (healthy ~1.0)",
+             "summary": {"clips": len(clips), "checked": len(checked), "bad": len(bad)},
+             "clips": sorted(checked, key=lambda r: r["file"])}, indent=1))
+        return s.done(False, f"{len(bad)}/{len(checked)} clips decoded from blown-up latents "
+                             f"-- per-clip verdict written to {side.name}; NOT scoring or "
+                             f"publishing corrupt audio")
+    return s.done(True, f"{len(checked)}/{len(clips)} clips verified sane"
+                  + (f" ({len(clips)-len(checked)} had no latent on disk)"
+                     if len(checked) < len(clips) else ""))
+
+
 def leg_dsp(pattern, dry) -> Step:
     s = Step("DSP metering (CPU)")
     if dry:
@@ -273,13 +349,23 @@ def main():
     ap.add_argument("--skip-gpu", action="store_true", help="DSP + tables only (no Audiobox/CLAP)")
     ap.add_argument("--no-publish", action="store_true", help="stop after the tables (local only)")
     ap.add_argument("--dry-run", action="store_true", help="preflight + plan, write nothing")
+    ap.add_argument("--skip-sanity", action="store_true",
+                    help="bypass the latent-sanity gate (deliberate override; the gate is "
+                         "what stops corrupt audio being scored and published as if it were good)")
     a = ap.parse_args()
 
     print(f"[score+publish] pattern={a.pattern!r} dry={a.dry_run}", flush=True)
     if not MANIFEST.exists():
         sys.exit(f"[fatal] no manifest at {MANIFEST} -- is the eval drive mounted?")
 
-    steps = [leg_ingest(a.pattern, a.src, a.dry_run), leg_dsp(a.pattern, a.dry_run)]
+    steps = [leg_ingest(a.pattern, a.src, a.dry_run),
+             leg_sanity(a.pattern, a.dry_run, a.skip_sanity)]
+    if not steps[-1].ok:                       # corrupt or unverifiable -> stop before scoring
+        print(f"\n[score+publish] halted at '{steps[-1].name}' -- nothing scored, nothing published")
+        for st in steps:
+            print(f"  [{'OK ' if st.ok else 'FAIL'}] {st.name}: {st.detail}")
+        sys.exit(1)
+    steps.append(leg_dsp(a.pattern, a.dry_run))
     if not a.skip_gpu:
         steps.append(leg_gpu(a.pattern, a.dry_run))
     steps.append(leg_tables(a.pattern, a.dry_run))
