@@ -3,10 +3,13 @@
 
 MANIFEST v2 (Kim direct, 2026-07-12) requires every eval manifest to carry `kim_feedback`,
 "appended verbatim and dated, when given", and the eval pages mark an eval with a red ❗
-until that field exists. The mechanism was built and then never fed: on 2026-08-11 a sweep
-of the render dirs found 29 manifests and ZERO with kim_feedback. Every eval on the site was
-flagged unaudited, including ones Kim had listened to in detail — because his verdicts lived
-in chat, and chat is not the record.
+until that field exists. It was being fed only sporadically and by hand: of 162 manifests on
+the eval drive, 21 carried a verdict, and of the 28 in the staging tree that feeds the pages,
+NONE did. (An earlier version of this note said "29 manifests and ZERO" — that was measured
+on the staging tree alone and stated as if it covered everything. Corrected 2026-08-11; the
+sampling error is the same one this file exists to guard against.) The effect was that evals
+Kim had listened to in detail still displayed as unaudited, because his verdicts lived in
+chat, and chat is not the record.
 
 Kim now keeps them in SAO/EVAL_NOTES.txt as he works through the backlog. This reads that
 file and files each verdict into the matching run dir.
@@ -72,6 +75,27 @@ def dedupe(entries):
     return out
 
 
+def _builder_dir(name, kind):
+    """The dir build_evals.py reads for this page, or None. Imported lazily so this tool
+    still works if the page builder is unavailable."""
+    try:
+        import importlib.util, sys as _s
+        spec = importlib.util.spec_from_file_location("_be", SAO / "Misc/build_evals.py")
+        be = importlib.util.module_from_spec(spec)
+        argv, _s.argv = _s.argv, ["build_evals"]
+        try:
+            spec.loader.exec_module(be)
+        except SystemExit:
+            pass
+        finally:
+            _s.argv = argv
+        f = be.find_source_dir if kind == "control_runs" else be.find_renders_source_dir
+        d = f(name)
+        return Path(d) if d else None
+    except Exception:
+        return None
+
+
 def targets(name):
     """Run dirs this note applies to. A note may name a family whose dirs are per-epoch
     (a2a_angelic_r64tiered_lr1e4 -> ..._ep5, ..._ep7), so a prefix match is intentional."""
@@ -84,6 +108,14 @@ def targets(name):
             hits.append(exact)
             continue
         hits += [d for d in sorted(root.glob(f"{name}*")) if (d / "run_meta.json").exists()]
+    # ALSO write where the PAGE BUILDER reads. build_evals resolves a page name to its
+    # canonical source dir, and that name is not always the same string: memo_ckpt_a2a_test
+    # resolves to a2a_memo_test on the eval drive. Filing the verdict only under the name in
+    # the notes leaves the page still showing the unaudited mark, because the builder looked
+    # somewhere else. Reuse its resolver rather than re-deriving the mapping -- one authority.
+    for resolved in (_builder_dir(name, "renders"), _builder_dir(name, "control_runs")):
+        if resolved and resolved not in hits and (resolved / "run_meta.json").exists():
+            hits.append(resolved)
     return hits
 
 

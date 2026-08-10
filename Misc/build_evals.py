@@ -467,17 +467,42 @@ def has_kim_feedback(kind, name):
     spec §16): a run_meta.json with a non-empty kim_feedback field is audited;
     anything else gets a red exclamation mark on every page it appears on.
     Derived from the manifest at build time -- never hand-toggled."""
+    for meta_path in _kim_feedback_candidates(kind, name):
+        try:
+            if json.load(open(meta_path)).get("kim_feedback"):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _kim_feedback_candidates(kind, name):
+    """Every manifest that could carry this page's verdict, most authoritative first.
+
+    Checking ONLY the canonical source dir made the mark lie for two whole classes of page
+    (found 2026-08-11, when Kim's backlog verdicts were first filed):
+
+      * STAGING-ONLY pages -- a page-only folder under evals_aac with no dir on the eval
+        drive resolves to no source dir at all, so it could never clear the mark no matter
+        how carefully it was audited.
+      * AGGREGATE pages -- a2a_angelic_r64tiered_lr1e4 is an index over its own _ep5/_ep7
+        siblings and holds no manifest itself; the verdict lives on the siblings it indexes.
+
+    A marker that cannot ever go green for a page is worse than no marker: it trains the
+    reader to ignore it, and then it fails to flag the runs that really are unaudited.
+    """
     source_dir = find_source_dir(name) if kind == "control_runs" else find_renders_source_dir(name)
-    if not source_dir:
-        return False
-    meta_path = f"{source_dir}/run_meta.json"
-    if not os.path.exists(meta_path):
-        return False
-    try:
-        meta = json.load(open(meta_path))
-    except Exception:
-        return False
-    return bool(meta.get("kim_feedback"))
+    if source_dir:
+        yield f"{source_dir}/run_meta.json"
+    yield f"{STAGING}/{kind}/{name}/run_meta.json"
+    # Sibling variants, NARROWLY: only <name>_ep<digits>. A loose <name>_* glob marks
+    # unrelated runs as audited by prefix accident -- 'a2a_angelic' inherited the verdict of
+    # 'a2a_angelic_r64tiered_lr1e4_ep5', and 'a2a_kaikkialla' inherited 'a2a_kaikkialla_newstack'.
+    # A marker that wrongly reads AUDITED is far worse than one that wrongly reads unaudited:
+    # the first hides work that still needs Kim's ears, the second merely nags.
+    for root in [f"{STAGING}/{kind}"] + SOURCE_DIRS:
+        for sib in sorted(glob.glob(f"{root}/{name}_ep[0-9]*/run_meta.json")):
+            yield sib
 
 
 UNAUDITED_MARK = ('<span class="unaudited" title="unaudited -- no kim_feedback in the manifest yet">'
