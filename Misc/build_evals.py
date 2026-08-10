@@ -1009,7 +1009,14 @@ def write_rarity_gen_set_folder(kind, name, label, purpose, date_str, clips,
     if date_str:
         doc += f'<p class="faint">{html.escape(date_str)}</p>'
     if purpose:
-        doc += f'<p class="lede">{html.escape(purpose)}</p>'
+        # the purpose text names the companion scored board by its relative path
+        # (../../riffer/rarity.html) -- was plain escaped text, unclickable (Kim,
+        # 2026-08-11). Turn that exact substring into a real link; escape first so
+        # nothing else in the purpose text is treated as markup.
+        purpose_html = html.escape(purpose)
+        rel = "../../riffer/rarity.html"
+        purpose_html = purpose_html.replace(rel, f'<a href="{rel}">{rel}</a>')
+        doc += f'<p class="lede">{purpose_html}</p>'
     doc += eval_grid.provenance_html(findings, status, known_pages)
     n_clips = sum(len(row) for rows in by_band.values() for row in rows.values())
     doc += (f'<p class="faint">{n_clips} clips · {len(models)} models × {len(bands)} rarity bands · '
