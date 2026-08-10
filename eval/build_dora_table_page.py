@@ -476,6 +476,15 @@ function resolveCell(mkey,ckpt,pid,cfg,w){
 // (the densest grid); when the checkbox is on, swap in the native-length twin of the RESOLVED
 // cell if one exists (terminal checkpoints only), else keep the 20s clip and say so. Returns
 // {file,tag,nkey} -- nkey feeds playingKey so toggling the box mid-play re-resolves the src.
+// The swap used to demand an EXACT (prompt,cfg,weight) native twin of the resolved 20s cell.
+// Native renders exist at only a sparse subset of the grid -- 3 cfgs x 3 weights x a handful
+// of prompts -- so only 3451 of 65002 cells (5.3%) had an exact twin, and for everything else
+// ticking the box could do nothing but add a '·20s' label. That is what "the native length
+// button does not seem to do much" was (Kim, 2026-08-11). So resolve INSIDE the native
+// universe the same way we resolve inside the 20s one: nearest cell for that model-ckpt,
+// same prompt preferred. Reach goes from 5.3% of cells to every cell whose model-ckpt has any
+// native render at all -- 29310 of 65002 (45.1%), i.e. 25859 more cells where the button does
+// something. Rows whose model never got a native render still say ·20s, honestly.
 function nativeSwap(hit,ckpt){
  // already a native-only cell (no 20s twin exists to swap to, either way the box is set) --
  // label it ·native so the long clip is never mistaken for the 20s grid render.
@@ -483,7 +492,14 @@ function nativeSwap(hit,ckpt){
  const base={file:hit.file,tag:'',nkey:''};
  if(!pnative.checked||!nativeIndex)return base;
  const nf=nativeIndex.get(cellKey(hit.mkey,ckpt,hit.pid,hit.cfg,hit.w));
- return nf?{file:nf,tag:' ·native',nkey:'\x01N'}:{file:hit.file,tag:' ·20s',nkey:''};}
+ if(nf)return {file:nf,tag:' ·native',nkey:'\x01N'};
+ const g=nativeByMC&&nativeByMC.get(hit.mkey+'\x01'+ckpt);      // nearest native for this model-ckpt
+ if(g&&g.length){
+  const sp=g.filter(c=>c.pid===hit.pid);                        // same prompt if it has one
+  const e=(sp.length?sp:g).slice().sort((a,b)=>
+    (Math.abs(a.cfg-hit.cfg)-Math.abs(b.cfg-hit.cfg))||(Math.abs(a.w-hit.w)-Math.abs(b.w-hit.w)))[0];
+  return {file:e.file,tag:' ·native·nearest',nkey:'\x01N'+e.pid+e.cfg+e.w};}
+ return {file:hit.file,tag:' ·20s',nkey:''};}
 // dim rows that have NO clip at the selected PROMPT (with graceful-resolve, cfg/w mismatch
 // no longer means "unplayable" -- only a missing prompt is a meaningful "nothing here" signal).
 // Availability must mirror what CLICKING actually does (Kim 2026-08-05: "clickables still missing
