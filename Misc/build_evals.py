@@ -469,10 +469,42 @@ def has_kim_feedback(kind, name):
     Derived from the manifest at build time -- never hand-toggled."""
     for meta_path in _kim_feedback_candidates(kind, name):
         try:
-            if json.load(open(meta_path)).get("kim_feedback"):
-                return True
+            meta = json.load(open(meta_path))
         except Exception:
             continue
+        if meta.get("kim_feedback") or _kim_verdict_elsewhere(meta):
+            return True
+    return False
+
+
+# Kim's verdicts predate the kim_feedback field. Many were written into `findings` or `status`
+# instead -- transitions3's findings literally open "KIM LISTENING VERDICTS 2026-07-08" and its
+# status reads "AUDITIONED - seams add nothing per Kim's ear". Checking only one field name
+# flagged those pages unaudited and sent him back to re-listen to work he had already done
+# (Kim, 2026-08-11: "only those pages be marked for evaluation which really haven't been").
+#
+# The phrase list is deliberately SHORT and explicit. A loose "mentions Kim" test is wrong in
+# the dangerous direction: avp_master's findings say "this needs Kim's ear to confirm", which
+# means NOT audited, and a naive match would have turned it green. Hence the negation guard --
+# a marker near "needs/awaiting/pending Kim" does not count.
+_VERDICT_RE = re.compile(
+    r"KIM\s+LISTENING\s+VERDICT|KIM\s+VERDICT|\bAUDITIONED\b|per Kim'?s ear|Kim'?s verdict"
+    r"|Kim (?:says|heard|listened|rated|graded)", re.I)
+_VERDICT_NEGATED_RE = re.compile(
+    r"(needs|awaiting|pending|wants|requires|to be confirmed by)\s+(kim|his ear|kim'?s ear)", re.I)
+
+
+def _kim_verdict_elsewhere(meta):
+    """True if a human listening verdict is recorded outside the kim_feedback field."""
+    for key in ("findings", "verdict", "status", "result", "notes"):
+        val = meta.get(key)
+        if not val:
+            continue
+        text = val if isinstance(val, str) else json.dumps(val, ensure_ascii=False)
+        for m in _VERDICT_RE.finditer(text):
+            if _VERDICT_NEGATED_RE.search(text[max(0, m.start() - 80):m.end() + 40]):
+                continue
+            return True
     return False
 
 
