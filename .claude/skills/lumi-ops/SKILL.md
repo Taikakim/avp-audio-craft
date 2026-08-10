@@ -471,6 +471,27 @@ New, not yet applied — low urgency, real win if we hit I/O contention again:
   Progressive File Layout may already apply this automatically for files <256 MB (unconfirmed for
   `project_465003186` specifically) — check before manually striping.
 
+## Wandb: offline-on-LUMI → sync-at-home (G, 2026-08-10)
+
+`train_lora.py --logger wandb` is already wired (`WandbLogger(project=args.name)`, no CLI
+API-key flag — good, matches the CLI-args-are-visible-to-others rule above). Compute nodes have
+no internet, so:
+
+1. **On LUMI, every training arm exports `WANDB_MODE=offline` and a `WANDB_DIR` pointing inside
+   its own `$SCRATCH` run dir** (never `$FLASH` — that's node-local/ephemeral). Zero network
+   calls, zero credential ever touches LUMI. Pattern: `lumi/sbatch/fullft_reg_ab.sbatch`
+   (`LOGGER=${LOGGER:-wandb}`, override-able back to `csv` for non-wandb reuse).
+2. **Pull the run dir home** the normal way (rsync `$SCRATCH/runs/<run>/` → local mirror) — the
+   wandb files ride along inside `<run_dir>/wandb/offline-run-*`.
+3. **Sync locally**, where we already have a wandb login and real internet:
+   `wandb sync <pulled_run_dir>/wandb/offline-run-*` (once per arm/run dir). This uploads the
+   offline run to the actual wandb.ai project; from then on it's a normal synced run, visible
+   on the site same as any other.
+4. Not yet verified: whether LUMI **login** nodes (as opposed to compute nodes) have outbound
+   internet, which would let `wandb sync` run there directly and skip step 3's local step. Untested
+   — the offline→local-sync path above works regardless, so it wasn't a blocker; worth checking
+   if syncing 8-arm batches locally becomes a bottleneck.
+
 ## Deeper docs
 
 `lumi/README.md` (bring-up, cert/EFP details) · `docs/lumi-throughput-workflow-guide.md`
