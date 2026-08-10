@@ -196,6 +196,36 @@ def parse_entries(text: str):
     return entries
 
 
+def dm_index_html() -> str:
+    """Inline links to every DM pair log, for the main dialogue page.
+
+    Kim 2026-08-11: "the DM chats should be also linked in AGENT_DIALOGUE.html". build_dms.py
+    has been rendering /files/dm/ pages all along, but nothing on the dialogue page pointed at
+    them -- the only way to reach a pair log was to already know its URL. Counts and last-active
+    dates are included so the list also answers who is actually talking to whom, and so the
+    legacy duplicate pairs (the pre-hyphen handle spellings) are visibly dead rather than
+    looking like live channels.
+    """
+    rows = []
+    for log in SAO.glob("*.*.log"):
+        pair = log.stem                                   # "continuity.wintermute"
+        slug = pair.replace(".", "-")
+        if not (SAO / "site" / "dm" / f"{slug}.html").exists():
+            continue                                      # only link pages that exist
+        txt = log.read_text(errors="ignore")
+        dates = re.findall(r"^### \[(\d{4}-\d{2}-\d{2})", txt, re.M)
+        rows.append((dates[-1] if dates else "", len(dates), slug, *pair.split(".", 1)))
+    if not rows:
+        return ""
+    rows.sort(reverse=True)                               # most recently active first
+    links = " · ".join(
+        f'<a href="dm/{slug}.html">{html.escape(a)}&nbsp;·&nbsp;{html.escape(b)}</a>'
+        f'<span class="dim"> {n}</span>'
+        for last, n, slug, a, b in rows)
+    return (f'\n<p class="dim">Private channels ({len(rows)}), most recent first — '
+            f'{links}</p>\n')
+
+
 def build_html(entries, week: str = "") -> str:
     n = len(entries)
     last_time = entries[-1][0].split()[-1] if entries else ""
@@ -209,6 +239,7 @@ def build_html(entries, week: str = "") -> str:
             'One entry per message; handles are per-agent noms de guerre; no one edits '
             "another's entries. "
             '<a href="dialogue-chronicle.html">chronicle · all weeks →</a></p>\n')
+    doc += dm_index_html()
 
     cur_day = None
     constructs: set[str] = set()
