@@ -238,6 +238,17 @@ OOM, no `Couldn't load` — **before** betting node-hours. It catches most of th
   (and still burns a queue slot + node spin-up). Build the tarball from the working tree
   (`tar --exclude='.git' --exclude='__pycache__' …`), and **before submitting, verify the shipped
   file actually contains your patch** (`grep` the flag on the remote copy).
+- **⚠️ Grep your code for HARDCODED LOCAL ABSOLUTE PATHS before shipping — a perfect sbatch can't
+  save code that hardcodes your laptop's paths.** The single sneakiest failure: your job runs fine
+  locally and imports/opens nothing on the cluster, because the Python has
+  `sys.path.insert(0, '/home/you/project')` or a subprocess call to `/home/you/project/tool.py`.
+  On LUMI the code lives at `/scratch/<proj>/…`, so those paths silently don't exist and the import
+  or subprocess fails deep in the job — while the sbatch itself looks flawless. **Derive paths from
+  the file's own location, never hardcode:** `ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
+  then `sys.path.insert(0, ROOT)`. Pre-flight check before every ship:
+  `grep -rn "/home/" your_code/ --include='*.py'` — every hit is a portability bug. (This one cost a
+  real cross-project debugging session: the sbatch followed every rule below and still failed because
+  `eval_point.py` hardcoded `/home/<user>/project` in three places.)
 - **Sync the whole interdependent file set**, not just the entrypoint. Shipping 2 of 3 files a
   feature spans yields a `TypeError: … unexpected keyword` a few minutes in. Check matching mtimes.
 - **`rsync ≥ 3.4` removed multi-path remote args** — one quoted remote string with two paths gives

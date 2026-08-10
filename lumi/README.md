@@ -39,7 +39,17 @@ the why; this dir is the how). Prepared before access; **access granted 2026-07-
 *Project-number wiring is DONE (`project_465003186` sed across the bundle 2026-07-09). The one
 remaining prep edit is the base-image ROCm version in `sa3-env.yml` — see Day-1 step 2.*
 
-> ## 🚨 ACCESS MODEL — EFP is WebUI-submitted, NOT raw `sbatch` (2026-07-09)
+> ## ⛔ SUPERSEDED 2026-08-11 — DIRECT `sbatch` IS THE ACCESS MODEL NOW
+> **The WebUI-only claim below is STALE and misled an outside agent (film_grain collab, 2026-08-11)
+> into looking for a "sbatch GUI".** The whole fleet submits with plain `sbatch` over SSH — this
+> session alone ran 20940322, 20961123, and dozens more that way (Kim direct 2026-08-11: "I'm
+> submitting directly with the `sbatch` command"). The `default_no_jobs`/`MaxSubmit=0` state that
+> the 2026-07-09 note diagnosed no longer holds (the account now has a real `project_465003186`
+> association). **Access model: craft single-line commands, Kim runs `sbatch <script>` over SSH
+> (`akekim@efp.lumi.csc.fi`, cert ~10 h). The WebUI is only for cert refresh, not job submission.**
+> The historical WebUI flow is kept below for the record; do NOT follow it for submission.
+>
+> ## 🚨 ~~ACCESS MODEL — EFP is WebUI-submitted, NOT raw `sbatch`~~ (2026-07-09 — SUPERSEDED, see above)
 > This project is accessed via the **EuroHPC Federation Platform (EFP)**. **Jobs are submitted
 > ONLY through the web platform `https://workflows.my-eurohpc.eu`**, never via terminal `sbatch`
 > — the SSH default account is `default_no_jobs` (MaxSubmit=0) precisely because direct Slurm
