@@ -65,6 +65,9 @@ __pycache__/
 !/Misc/osc_worklog.py
 !/Misc/filelock.py
 !/Misc/build_site.py
+!/Misc/publish_blog.py
+!/Misc/mirror_dialogue.py
+!/Misc/mirror_agent_dialogue.sh
 !/Misc/build_evals.py
 !/Misc/eval_grid.py
 !/Misc/build_goa_musicology_page.py
