@@ -99,25 +99,35 @@ fi
 grep -q -- "--augment" "${CODE}/stable-audio-3/scripts/train_lora.py" || { echo "[reg-ab] FATAL: train_lora missing --augment (code refresh)"; exit 1; }
 grep -q -- "--grad-clip-mode" "${CODE}/stable-audio-3/scripts/train_lora.py" || { echo "[reg-ab] FATAL: train_lora missing --grad-clip-mode / --output-std-penalty (code refresh)"; exit 1; }
 
-# ── arm spec: "LABEL  WEIGHT_DECAY  EXTRA_FLAGS..." — all --optimizer fusion. --weight_decay routes to
-#    spectral_wd (the 2D DiT matrices where the runaway lives). EXTRA carries the limiter + output-reg.
-#    (spec §Arms: anchor/reg_only/clip/clip_reg/agc/agc_reg/wd/wd_agc_reg) ──
+# ── arm spec: "LABEL  OPTIMIZER  LR  WEIGHT_DECAY  EXTRA_FLAGS..." — per-arm optimizer + LR so a
+#    FAIRLY-TUNED AdamW arm can sit alongside the fusion arms. For fusion, --weight_decay routes to
+#    spectral_wd (the 2D DiT matrices where the runaway lives); for adamw it's the single AdamW group.
+#    EXTRA carries the limiter + output-reg. (spec §Arms + Part-I fair-baseline correction 2026-08-10) ──
 REG="--output-std-penalty ${LOUT} --output-std-t-gate ${TGATE}"
 AGC="--grad-clip-mode agc --agc-lambda ${AGCLAM}"
 CLIP="--gradient_clip_val ${CLIPVAL}"
+# AdamW's optimum LR is HIGHER than Muon's (arXiv 2509.02046 "Fantastic Pretraining Optimizers": prior
+# Muon>AdamW claims came from an UNDER-tuned AdamW; the real 1.4B-scale gap is ~1.1x, not 2x). So the
+# adamw arm must NOT reuse fusion's ${LR}=8e-5 or it's handicapped. Default a fair 2e-4; env-override
+# ADAMW_LR to run the 2-3 point LR bracket that a *proper* fair tune needs (1e-4 / 3e-4 / 6e-4).
+ADAMW_LR=${ADAMW_LR:-2e-4}
 ARM_SPECS=(
-  "anchor      0.01  "
-  "reg_only    0.01  ${REG}"
-  "clip        0.01  ${CLIP}"
-  "clip_reg    0.01  ${CLIP} ${REG}"
-  "agc         0.01  ${AGC}"
-  "agc_reg     0.01  ${AGC} ${REG}"
-  "wd          0.1   "
-  "wd_agc_reg  0.1   ${AGC} ${REG}"
+  "anchor      fusion  ${LR}        0.01  "
+  "reg_only    fusion  ${LR}        0.01  ${REG}"
+  "clip        fusion  ${LR}        0.01  ${CLIP}"
+  "clip_reg    fusion  ${LR}        0.01  ${CLIP} ${REG}"
+  "agc         fusion  ${LR}        0.01  ${AGC}"
+  "agc_reg     fusion  ${LR}        0.01  ${AGC} ${REG}"
+  "wd          fusion  ${LR}        0.1   "
+  "adamw_fair  adamw   ${ADAMW_LR}  0.1   ${CLIP}"
 )
+# NOTE: replaced the low-information 'wd_agc_reg' (everything-on) arm with 'adamw_fair' — a fairly-tuned
+# AdamW full-FT (lr ${ADAMW_LR}, wd 0.1, grad-clip, NO output-std/agc): the Part-I question "does a
+# well-tuned AdamW just train stably at ~1.1x the cost, making the Muon-repair machinery moot?". ONE arm
+# at ONE LR is a START, not a fair tune — resubmit with ADAMW_LR sweep for the real answer.
 
 run_arm () {
-  local GCD=$1 LABEL=$2 WD=$3; shift 3; local EXTRA="$*"
+  local GCD=$1 LABEL=$2 OPT=$3 ALR=$4 WD=$5; shift 5; local EXTRA="$*"
   local NAME=fullft_reg_ab_${LABEL}
   local RUN=${SCRATCH}/runs/fullft_reg_ab/${NAME}
   mkdir -p "${RUN}"
@@ -150,10 +160,10 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --caption_sidecar "'"${BIGSET_SIDECAR}"'" --caption_probs "'"${PROBS}"'" \
     --augment \
     --save_dir "'"${RUN}"'" \
-    --optimizer fusion --weight_decay '"${WD}"' '"${EXTRA}"' \
+    --optimizer '"${OPT}"' --weight_decay '"${WD}"' '"${EXTRA}"' \
     --use-ema --ema-beta 0.9999 \
     --base_precision '"${PREC}"' \
-    --lr '"${LR}"' --batch_size '"${BS}"' \
+    --lr '"${ALR}"' --batch_size '"${BS}"' \
     --frames '"${FRAMES}"' --beat-aware-crop \
     '"${LENARG}"' \
     --num_workers 6 --seed '"${SEED}"' --no_demos --logger '"${LOGGER}"' \
@@ -205,7 +215,7 @@ for f in sorted(glob.glob("'"${ROUT}"'/fullft_reg_ab_*__ep*__cfg16__*.z0.npy")):
     if z.shape[0]!=256 and z.shape[-1]==256: z=z.T
     pc=z.std(axis=1)
     rows[(m.group(1),int(m.group(2)))].append((z.std(), int((pc>2.0).sum())))
-print(f"{\"arm\":14s} {\"ep\":>3s}  {\"global_std\":>10s}  {\"#chan>2.0\":>10s}  (good~1.0 / 0; runaway climbs)")
+print(f"{'arm':14s} {'ep':>3s}  {'global_std':>10s}  {'#chan>2.0':>10s}  (good~1.0 / 0; runaway climbs)")
 for k in sorted(rows):
     v=rows[k]; gs=np.mean([a for a,_ in v]); nh=np.mean([b for _,b in v])
     print(f"{k[0]:14s} {k[1]:>3d}  {gs:>10.3f}  {nh:>10.1f}")
