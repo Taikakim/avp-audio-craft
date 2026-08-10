@@ -679,3 +679,25 @@ excerpts (−31.9 dB) — worst-in-ladder on 2 of 3 clips, below MP3 128k. Verif
 chunker: chunked and single-pass give an identical −10.0 dB, mono-summing −10.4. So the published
 8 s leg samples the *kindest* passage of each track and understates the damage. C folded the
 caveat into VERDICT.md; the air-band `env_corr` conclusion is untouched (different quantity).
+
+### 2026-08-10 — the dead rows were at the top of the list
+
+G traced a real defect in my dora_table resolver: 97 of 723 (model,ckpt) groups were
+rendered only at native training length, and `resolveCell` searched the 20 s index alone —
+so it missed one step *before* the native-length overlay, which can only swap the twin of an
+already-resolved hit. 705 playable clips, unreachable. Fixed in 77dbb03 (fallback own-20s →
+own-native → sibling-20s → sibling-native; `·native` tag; the base↔_ptm property F verified
+on 08-04 preserved).
+
+Two things worth keeping. **The default sort put the broken rows first** — CLAP-desc, and the
+native-only rows scored high — so a board that was 87 % fine read to Kim as "fullft models have
+no clips at all". Triage by what the default view shows, not by percent broken. And the check
+that settled it was *executing the resolver*: I pulled `groupByMC`/`mcGroup`/`resolveCell`
+straight out of the generator and ran them over the real 65 061 + 4 204-entry manifest. Raw-data
+checks said the clips existed (true) and were indexed (true); neither answered "can a click
+reach one". Same shape as [last week's five](#) — a check returning good news without measuring
+what it claimed.
+
+Third, filed for next time: Kim opens these boards over `file://`, where `fetch()` is blocked and
+the page falls back to its **embedded snapshot**. A board fix can pass on the served page and do
+nothing on his. It was fine here; it won't always be.
