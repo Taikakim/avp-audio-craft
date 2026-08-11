@@ -27,6 +27,14 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    cross-cutting, profile **Shipped** list when it's a milestone (that one goes stale
    silently — Kim caught it), and any spec/doc the result changed. Full checklist:
    `profiles/SPEC-agent-profiles-journals.md` §9.
+   **DISCOVERABILITY RULE (Kim direct 2026-08-07): if the task produced a NEW artifact meant to be
+   found/reused later — a spec, tool, dataset, eval page, or doc — it is not DONE until it has a
+   one-line INDEX ENTRY so nobody has to `grep` for it.** Where: tooling → `ARCHITECTURE.md` reuse
+   index (§A–F); specs & docs → `ARCHITECTURE.md` **Doc map** (and the specs live under
+   `docs/superpowers/specs/`); findings → `DISCOVERIES.md`/journal; cross-cutting facts → `MASTER.md`.
+   Cross-link both ways (the index entry AND, where one exists, the subsystem's CLAUDE.md/spec
+   section). Litmus: *if you'd have to grep to find it next month, it isn't registered.* (This rule
+   exists because the fleet-comms spec was grep-only — indexed nowhere obvious — until 2026-08-07.)
 6. **`KIM-TASKLIST.md`** — the team-maintained running tasklist **for Kim** (Kim 2026-08-05): the
    single place the fleet surfaces what needs him — decisions, his ears, reviews, submits — so
    sprawling work across four agents doesn't get forgotten. **When work lands that needs Kim, ADD an
@@ -99,6 +107,39 @@ and MASTER §4) — never infer it from task content or memory alone.
   the SA3 inference **speed shootout**, `flash-attn-ck-rdna4`). Superpowers specs/plans
   under `docs/superpowers/`.
 - `stable-audio-3/`, `stable-audio-tools/` — nested thin forks (package deltas only).
+
+## SA3 / SAME architecture — the basics (MEMORIZE; stop re-deriving them)
+*(Added 2026-08-11 after C forgot the SAME latent carries a native chroma — costly slips come from
+not knowing the substrate. Deep dives: SA3 report `papers/arxiv-2605.17991.md`, SAME
+`papers/arxiv-2605.18613.md`, gutted-features+gotchas `stable-audio-3/CLAUDE.md`, head-families MASTER §5.)*
+
+**SAME = our autoencoder / latent space** (`SAME-L` 852M; `SAME-S` 108M CPU, distilled, decoder-compatible):
+- **Latent = 256 channels, 4096× downsample, 10.766 Hz**, stereo → T1024≈95.1 s, T2048≈190.2 s, T4096≈380 s.
+- **Soft-normalisation bottleneck, NOT a VAE** (per-channel affine + running-std; dual-axis KL-like reg).
+  Decoder is **noise-robust by construction** (Gaussian noise added to latent at decode: 5e-2 train / 1e-3
+  infer) — why slerp / crossfade / latent-bridge decode cleanly and linear probes work.
+- **Semantics are trained IN as LINEAR (1×1-conv) readouts** — not emergent: **(a) 3-band octave chroma
+  = 384-d** — octave centres **1 / 5 / 9**, widths **1.0 / 1.5 / 1.0**, **128 bins each** (oct1≈bass /
+  oct5≈harmony / oct9≈melody); **(b)** interaural level difference (ILD); plus a generative-alignment DiT
+  and a contrastive latent↔wavelet-audio↔T5Gemma-text critic. ⇒ **chroma & text are ≈one linear map away
+  by design** (this is the "Semantically-Aligned" in SAME).
+
+**SA3 DiT = the generator** (`medium` = 1.4B; `medium-base` = un-finetuned base for LoRA/full-FT; ids:
+`medium(-base)`, `small-music(-base)`, `small-sfx(-base)` — there is NO `small-base`):
+- **Rectified flow, v-param:** t∈[0,1], `noised = z0·(1−t) + ε·t`, `target = ε − z0`, so `z0_hat = noised − t·v`.
+  (The factory `"v"` objective is a DIFFERENT thing and CRASHES training — see stable-audio-3/CLAUDE.md.)
+- **Conditioning inlets:** T5-Gemma text via **cross-attention**; **global cond** (`prepend` | `adaLN`);
+  **local_add_cond** (257-ch = inpaint_mask + masked_input, projected *with bias* → feed zeros for t2a, not
+  None); a **native prepend-cond** path (`prepend_cond_dim` / `to_prepend_embed` / `prepend_embeds`).
+  `cross_attn_cond_mask` is intentionally NULLed (flash-attn; the learned pad token substitutes — do NOT re-enable).
+- **Optimizer shape (Zach):** base pretrained **Muon on 2D matrices (QKV/FFN), AdamW on norms/biases**, and
+  Muon was adopted LATE/BRIEF (variable-length phase) → **the base is overwhelmingly AdamW-shaped** (relevant
+  to any full-FT optimizer choice + the drone runaway).
+
+**Control we ALREADY trained (check before building a "new" one):** SA3-medium LatCH heads at
+`stable-audio-3/latch_weights_sa3_medium/latch_sa3_<feat>_best.pt` — including **`same_chroma`** (a head on
+the 384-d 3-band SAME chroma above) and **`hpcp`**, +12 others; load via `load_latch_from_checkpoint`
+(never hardcode arch — MASTER §5). ⇒ a melody/movement conditioner may already exist as a head.
 
 ## Venv-per-task (the #1 time-waster — see MASTER §3)
 MIR feature extraction / Audiobox / MERT → `mir/bin/python`; SA3 / SAT / consolidated
