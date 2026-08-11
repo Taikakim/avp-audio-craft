@@ -97,11 +97,23 @@ Status: IN PROGRESS. Each entry = what the PAPER actually says + what it means f
 2. "I didn't discover Muon until later; we started with AdamW for MOST of pre-training, used Muon once we
    started variable-length training." => **SA3-base is overwhelmingly AdamW-shaped; Muon was a LATE, BRIEF
    finish.** Our full-FT runs Muon from step 0, at length, on AdamW-shaped weights, weak decay → SUSTAINED
-   orthogonalized updates → runaway. SA3 never hit it (short/late Muon). **This makes `adamw_fair` the
-   RECIPE-FAITHFUL PRIMARY, not a control:** AdamW full-FT is the faithful continuation of how the base was
-   built AND has no runaway. The Muon-repair stack is machinery to make a *sustained* Muon full-FT behave —
-   which SA3 itself never did. REVISED RANK: (1) adamw_fair; (2) wd0.1-fusion if we keep Muon; (3)
-   force_scalar-output as a test arm; (4) Hyperball/x0/SFWN elegant tier only if we commit to sustained Muon.
+   orthogonalized updates → runaway. SA3 never hit it (short/late Muon). AdamW full-FT is the faithful
+   continuation of how the base was built AND has no runaway.
+3. (Zach, more) "optimizer work is nebulous — so many HPs to search, hard to tell if a gain is your change or
+   the randomness of a new training run." => METHODOLOGICAL WARNING for our sweep: the RUNAWAY-bounding signal
+   is huge/unambiguous (std ~1 vs inf) — read it confidently. But FINE quality/creativity rankings among the
+   BOUNDED arms are seed-sensitive at n=1/arm on the small AVP set — DON'T over-read single-seed deltas; use
+   Kim's ears + replicate the top 1-2 arms on fresh seeds before declaring a winner (two-stage: sweep→replicate).
+4. (Zach, the REBALANCER) "switched to Muon mostly for VRAM savings on larger models, but also noticed
+   Muon-trained models seemed MORE CREATIVE." => this RE-OPENS the AdamW-vs-Muon call — it is NOT a slam-dunk
+   for AdamW: Muon has (a) smaller optimizer state = VRAM win that matters for SCALING, (b) a qualitative
+   CREATIVITY edge Zach observed — exactly what Kim weights, judging on his own music. So the sweep's real job
+   shifts from "which bounds the runaway" (all the fixed arms will) to **"does fixed-Muon (wd0.1 / hyperball /
+   surgical) sound MORE CREATIVE than well-tuned AdamW on Kim's music?"** — Kim's ears are the arbiter.
+REVISED RANK (post all Zach input): the runaway is solved several ways; the CHOICE among bounded recipes is now
+a CREATIVITY/quality call, not a safety one. adamw_fair = the safe, faithful, no-runaway baseline; fixed-Muon
+(wd0.1, then hyperball/surgical) = genuine contenders that may WIN on creativity + VRAM. Let Kim's ear on the
+AVP cells decide; the latent-std table only screens OUT the unbounded ones. Don't crown a fine winner off one seed.
 
 ## ⭐ EMERGENT HYPOTHESIS (SUPERSEDED by the Zach note above — kept for the record) — from the SA3 report
 SA3-BASE was pretrained with **Muon on QKV/FFN projections, AdamW ELSEWHERE** (papers/arxiv-2605.17991.md:38).
