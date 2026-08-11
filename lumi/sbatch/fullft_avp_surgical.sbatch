@@ -128,6 +128,9 @@ else
   echo "[avp-surgical] arm ${ARM} (${LABEL}) FAILED — see ${RUN}/train.log (siblings unaffected)"
 fi
 '
+# PROBE TAIL is best-effort telemetry — training already succeeded via the srun above; do NOT let
+# a render/table hiccup (or a ckpt-less SMOKE) mark the whole job FAILED. Read the artifact, not the rc.
+set +e
 echo "[avp-surgical] all arms done. Checkpoints:"
 ls -1 ${SCRATCH}/runs/fullft_avp_surgical/*/epoch=*.ckpt 2>/dev/null | grep -v '\.weights\.ckpt$' || true
 
