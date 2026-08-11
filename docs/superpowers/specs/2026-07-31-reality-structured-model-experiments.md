@@ -55,7 +55,7 @@ untested in few-step). **Measurement:** SAME latent covariance eigen-spectrum ov
 220-file corpus sample = **786× anisotropic, 188/256 eigendirections below the velocity
 target's unit noise floor (min λ 0.05)** — per-dim variance misleads (flat, 5.4×). The
 melody subspace sits in the suppressed region. → E1 is measurement-motivated.
-Artifact: journal 2026-07-31; knowledge.md row + papers/arxiv-2605.27102.md (F).
+Artifact: journal 2026-07-31; knowledge.md row + papers/arxiv-2605.27102 - JLT — Clean-Latent (x0) Prediction in Latent Diffusion Transformers.md (F).
 
 ### G2 — Phase recoverability from SAME ✅ RESOLVED: BRANCH CLOSED (2026-07-31)
 **Question:** do SAME latents carry recoverable phase, or is phase entirely the decoder's?
@@ -188,4 +188,4 @@ TIER-2 toys (E5/E6/E7) strictly behind their tier-1 gates.
 ## 5. Record trail
 Journals: continuity 2026-07-30/31 (triage, JLT gate, eigen-measurement) · F's survey doc
 (with C's folded additions: metrical-tree PE = missed-F, x0/JLT = missed-G) ·
-knowledge.md: JLT row + papers/arxiv-2605.27102.md · task #61 (gates) · WORKLOG 07-31.
+knowledge.md: JLT row + papers/arxiv-2605.27102 - JLT — Clean-Latent (x0) Prediction in Latent Diffusion Transformers.md · task #61 (gates) · WORKLOG 07-31.

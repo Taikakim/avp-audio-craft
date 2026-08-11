@@ -285,7 +285,7 @@ training OOM with only ~7GB allocated on the 16GB card means EXTERNAL VRAM press
 capacity — gate launches on `rocm-smi` used-VRAM (see `Misc/run_continued_goa.sh`).
 
 ## 2026-07-06 — TADA! deep-read: the semantic bottleneck is real, and it cuts both ways
-arXiv:2602.11910 (papers/arxiv-2602.11910.md): activation patching finds cross-attn layers
+arXiv:2602.11910 (papers/arxiv-2602.11910 - TADA! Tuning Audio Diffusion Models through Activation Steering.md): activation patching finds cross-attn layers
 {12,13}/24 in Stable Audio Open (SA3's closest kin) causally controlling ~ALL high-level
 musical concepts. Three uses: (1) their patching protocol = the causal localizer our
 relevance-routed-DoRA Axis-1 needed (cross-check vs `latch/probe_layer_feature_map.py`);
@@ -297,7 +297,7 @@ knowledge.md row added. Era axis, numeric lanes, self-attn/MLP maps, timestep di
 by the paper — still ours.
 
 ## 2026-07-06 — SAME + SA3 tech reports re-read against current knowledge (Kim's call)
-Full deep-reads: `papers/arxiv-2605.18613.md` (SAME) + `papers/arxiv-2605.17991.md` (SA3).
+Full deep-reads: `papers/arxiv-2605.18613 - SAME: A Semantically-Aligned Music Autoencoder.md` (SAME) + `papers/arxiv-2605.17991 - Stable Audio 3.md` (SA3).
 Highest-value deltas: (1) SAME latents have semantics TRAINED IN (flow-matching alignment
 loss + single-1x1-conv chroma/ILD regressors + contrastive text alignment) and the decoder
 is noise-robust by construction — explains latent-slerp/LatCH-probe success AND weakens
@@ -319,7 +319,7 @@ test next GPU window. (2) AudioSparx tag language: repeatable `Genre:`, `Instrum
 `Format:`, `TrackType: Instrument/SFX` — field-prefixed T1 variant is a cheap caption axis.
 (3) Their init_noise_level sweet spots (0.4-0.5 timbre, 0.6 style) independently match our
 longform sigma_peak 0.4-0.6. Guide param counts/durations contradict the paper — paper wins.
-Details: papers/arxiv-2605.17991.md addenda §.
+Details: papers/arxiv-2605.17991 - Stable Audio 3.md addenda §.
 
 ## 2026-07-07 — Kim's audition findings on the prompt-style grid (on record)
 Kim, listening to newcap8_promptstyle: (1) newcap ep5->ep8: ep8 not worse, possibly
@@ -413,7 +413,7 @@ trained, just with thin density. No residual noise in outputs (samplers integrat
 t=0; RF velocity ≈ constant near data; post-trained ends on direct x̂0). Crispness-late
 mechanism survives weakened (under-trained polish regime). Cheap finisher experiments
 queued as ideas: dense-tail schedule / micro-SDEdit nl 0.05-0.1. Details:
-papers/arxiv-2605.17991.md CORRECTION §.
+papers/arxiv-2605.17991 - Stable Audio 3.md CORRECTION §.
 
 ## 2026-07-07 — [process failure, on me] chroma steering was already CONCLUSIVE and I missed it
 Kim surfaced riffer/chroma_steer.html after I declared chroma-conditioning "code-only,

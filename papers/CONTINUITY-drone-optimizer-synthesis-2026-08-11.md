@@ -116,7 +116,7 @@ a CREATIVITY/quality call, not a safety one. adamw_fair = the safe, faithful, no
 AVP cells decide; the latent-std table only screens OUT the unbounded ones. Don't crown a fine winner off one seed.
 
 ## ⭐ EMERGENT HYPOTHESIS (SUPERSEDED by the Zach note above — kept for the record) — from the SA3 report
-SA3-BASE was pretrained with **Muon on QKV/FFN projections, AdamW ELSEWHERE** (papers/arxiv-2605.17991.md:38).
+SA3-BASE was pretrained with **Muon on QKV/FFN projections, AdamW ELSEWHERE** (papers/arxiv-2605.17991 - Stable Audio 3.md:38).
 "Elsewhere" = norms, embeddings, AND — critically — the **output projection + AdaLN modulation**. Our
 FusionOpt full-FT routes EVERY 2D matrix with min(shape)≥128 to the Muon/spectral path
 (build_fusion_param_groups) — which SWEEPS THE OUTPUT PROJECTION AND AdaLN INTO MUON, exactly the layers

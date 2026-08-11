@@ -97,7 +97,7 @@ the eval-grid work) to catch "cheating." Cheap, falsifiable, and it directly tes
 Kim's era=low-noise hypothesis this week. Ship the smallest target-conditioned
 intervention that beats plain DoRA+AdaLoRA before building the two-axis apparatus.
 
-## UPDATE 2026-07-06 — TADA! (arXiv:2602.11910, deep-read, papers/arxiv-2602.11910.md)
+## UPDATE 2026-07-06 — TADA! (arXiv:2602.11910, deep-read, papers/arxiv-2602.11910 - TADA! Tuning Audio Diffusion Models through Activation Steering.md)
 External evidence landed on both sides of this brief:
 1. **Premise confirmed causally:** activation patching finds a *semantic bottleneck* —
    cross-attn layers {12,13} of 24 in **Stable Audio Open** (closest architecture to SA3)

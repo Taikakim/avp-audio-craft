@@ -334,7 +334,7 @@ SA3 conditions every DiT block on a single final-layer T5Gemma embedding
 (`conditioners.py:259` `last_hidden_state`, reused for all blocks) — the
 single-layer status quo UNISON's Table 8 improves on (FD 22.71→20.46).
 **Narrower claim:** this is a team-**known, explicitly-deferred** future ablation
-(`papers/arxiv-2605.31530.md:16` calls it "not a gap being missed"), so the
+(`papers/arxiv-2605.31530 - UNISON: A Unified Sound Generation and Editing Framework via Deep LLM Fusion.md:16` calls it "not a gap being missed"), so the
 "missed" type is wrong; the benefit is modest and shown only on UNISON's 7B-Qwen
 double-stream MM-DiT with a param-count/mechanism-confounded baseline; transfer
 to depth-matched injection over T5Gemma's bidirectional-encoder last_hidden_state

@@ -35,7 +35,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [reuse] **longform generation ALREADY IS the crossfade/transition solution (SDEdit) — a night lost re-deriving it.** → `stable-audio-3/stable_audio_3/inference/longform.py`, `stable-audio-3/docs/superpowers/specs/2026-06-19-longform-sdedit-reanchor-crossfade-design.md`, `control/sa3_control/steered_longform.py`, `mir/scripts/latent_server.py`, `mir/scripts/latent_crossfader.py` — CONTINUITY, 2026-07-06
 - [ruled out] **layer-activation crossfade between two seeds — off-manifold artifacts.** → `onnx/steered_layer_crossfade.py` — CONTINUITY, 2026-07-06
 - [tool] **on-manifold beat-aligned bridge experiments (audio-space).** → `onnx/beat_bridge.py`, `onnx/bridge_crossfade.py` — CONTINUITY, 2026-07-06
-- **SAME + SA3 tech reports re-read against current knowledge (Kim's call).** → `papers/arxiv-2605.18613.md`, `papers/arxiv-2605.17991.md`, `interface/reprompt.py` — CONTINUITY, 2026-07-06
+- **SAME + SA3 tech reports re-read against current knowledge (Kim's call).** → `papers/arxiv-2605.18613 - SAME: A Semantically-Aligned Music Autoencoder.md`, `papers/arxiv-2605.17991 - Stable Audio 3.md`, `interface/reprompt.py` — CONTINUITY, 2026-07-06
 
 ## Control adapters · FusionCC · guidance
 - [tool] **onset-density control-adapter story page built (task #52, weeks overdue).** → `docs/onset-density-control-narrative.md`, `Misc/build_onset_narrative_page.py`, `onset_narrative.html`, `Misc/`, `build_latch_sa3_matrix_page.py`, `build_evals.py` — GHOST-NOTE, 2026-07-20
