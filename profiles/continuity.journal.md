@@ -1550,3 +1550,20 @@ band-chroma = copyable genre-generic shape (the overfit vector Zach warned of); 
 residual = track melodic IDENTITY. So condition on whitened chroma, not raw — same insight as melody-subspace
 v3 + equivariant-vs-invariant, now grounded on real audio. Report:
 `eval/musicology/same_chroma_readout_tier2_muscriptor_2026-08-11/`. Melody-conditioning validated end-to-end.
+
+## 2026-08-12
+### [2026-08-12] Morphological-space path: doc reviewed+current, 8-arm sweep sbatch, soft-rank loss prototype (TDD)
+Kim surfaced Kant & Polansky "The Structure of Morphological Space" — read all 57pp; it formalizes the whole
+chroma/movement/invariance thread (contour = shape as equivalence class = transposition/scale-invariant by
+construction; n-ary resolution = the raw↔demeaned↔whitened dial; basis space = L-1 invariant coords; and
+contour distance ≈ angle ≈ **cosine** = differentiable = the ML door; CC = memoryful now-vs-past; embedding =
+hierarchy). Reviewed the external design note (verified every [paper] claim vs the PDF — accurate; corrected
+§3.3/§4.1/§5.2; folded in Version-A): `papers/deep-research/MORPHOLOGICAL_SPACE_DESIGN_NOTE.md`. **Version A**
+(head mix-pred vs stem chromas): kick hypothesis PARTIALLY confirmed (bass +67% rel vs kick-free bassline)
++ training-target circularity (same_chroma head trained on W@z+b full-mix → 'prefers full-mix' by design).
+**Sweep-1 sbatch** `lumi/sbatch/morph_head_sweep.sbatch` (8-arm melody control-head: site/optimizer/capacity/
+target/dropout, FusionOpt-anchored, ROCR-pinned, sa3.sif; smoke 21020302). Morphological arms need code →
+**Sweep-2**. Started it: `control/sa3_control/contour_loss.py` — dependency-free differentiable soft-rank +
+contour-cosine loss (§5.3 core), **TDD 8/8 green**, proves monotone-value invariance (gain/EQ leave loss ~0,
+different contour raises it). NOT wired yet — Route 1 (meter-in-gradient λ-term, my lean) vs Route 2
+(readout-head loss) is Kim's call. Also today: E2 (per-window rank-norm vs corpus-demean) running.

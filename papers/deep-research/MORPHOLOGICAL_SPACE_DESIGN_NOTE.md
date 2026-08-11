@@ -266,6 +266,30 @@ Head architecture untouched, decodability guarantee untouched, and the *objectiv
 
 **Risk** `[inferred]`: soft-rank losses can train unstably on a low-capacity head — the gradient through the ranking is nonlocal and can fight a 1×1 conv's limited expressivity. If it does not converge, fall back to: predict basis coordinates with a small MLP head (2 layers), accepting the loss of the linear-decodability argument, and measure how much R² that costs.
 
+> **PROTOTYPE STATUS (CONTINUITY, 2026-08-12): the loss core is built + tested.**
+> `control/sa3_control/contour_loss.py` — dependency-free differentiable `soft_rank(x, tau, dim)`
+> (pairwise-sigmoid, O(n²), fine for n=12/128) + `contour_cosine_loss(pred, target, tau, dim)`
+> = `1 − cos(soft_rank(pred), soft_rank(target))` centred along the pitch axis. TDD, **8/8 green**
+> (`tests/test_contour_loss.py`): the load-bearing property is proven — a *monotone* transform of
+> the input (gain/EQ/compression = the genre-generic offset that trapped raw chroma cosine) leaves
+> the loss ~0, while a genuinely different contour raises it; plus ordering, τ-sharpening,
+> gradient-flow, batched-dim. Invariance is exact only as τ→0 (finite-τ is approximate; small τ
+> ~0.02–0.1 on unit-ish data suffices).
+>
+> **The one decision left before wiring it in (Kim's call), because sa3_control is a *steering*
+> adapter, not a readout head:** the adapter is trained with **RF-MSE + optional meter-in-gradient
+> terms** (`cc_probe`/`fp`), not a direct feature-prediction loss. So the contour loss plugs in one
+> of two ways —
+> 1. **Meter-in-gradient term** (fits the existing `control_consistency_loss`/`fp_consistency_loss`
+>    family): decode `z0_hat` → predict chroma via the probe → `contour_cosine_loss` to the target,
+>    add `λ·contour` to the RF loss. In-distribution with how onset/genre control already works;
+>    needs a differentiable chroma readout in the loop (the probe provides it).
+> 2. **Readout-head loss** (the note's §5.3 literal form): a *separate* head predicts chroma linearly,
+>    trained with the contour loss — cleaner test of the loss itself, but it's a new head, not the
+>    steering adapter.
+> Route 1 is the smaller change and matches the sovereign onset-control recipe; Route 2 is the purer
+> ablation. I lean **Route 1** (a `--lambda-contour` term) for the first real run. Awaiting the call.
+
 ### 5.4 n-ary resolution is the lock-vs-prefer knob
 
 `[ours]` `SAME_CHROMA_FINDINGS.md` §6 currently specifies "lock vs prefer = per-band guidance gain": bass high (constraint), melody moderate (palette preference), air ~0.3 or 0.
