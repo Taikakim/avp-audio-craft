@@ -436,15 +436,29 @@ Most of it confirms current practice; four items are new and worth acting on.
   — `HF_HOME`, etc.). Keep it that way for the wandb wiring (task below): API key via env
   (`WANDB_API_KEY` exported, or `wandb login` against a pre-staged `~/.netrc`-style credential
   file), never `--api-key` on a command line.
-- **Auto-requeue — CORRECTED by Kim's direct operational experience (2026-08-10): not actually
-  live on this cluster/project.** The generic SLURM docs describe same-job-ID auto-requeue on a
-  failed job as a possible default; Kim's read from running dozens of jobs here is that failed
-  jobs on `project_465003186` just fail, no silent duplicate-run behavior observed. Downgrading
-  this from "real gap, add `--no-requeue` to the templates" to: **not an active risk here**,
-  don't spend effort retrofitting 54 sbatch scripts for it. `--open-mode=append` remains cheap,
-  harmless insurance if anyone's touching a template anyway, but it's no longer a flagged gap.
-  **C confirmed from two real incidents**: the OOM crash (`20869819`) and the shm-exhaustion
-  crash (`20687866`) both failed and stayed failed — no requeue duplication in either case.
+- **Auto-requeue — RECONCILED (2026-08-11) against the official LUMI batch-jobs page + Kim's
+  operational experience: both are correct, they're about different failure modes.** The docs
+  page states plainly: "The LUMI Slurm configuration has automatic requeuing of jobs upon node
+  failure enabled" — same job ID, same-run resubmit, truncated output by default unless
+  `--open-mode=append`. But that trigger is specifically **node hardware failure** (the compute
+  node itself going down/unresponsive), NOT an application-level crash on an otherwise-healthy
+  node. Kim's read ("failed jobs just fail") and C's two confirmed incidents — the OOM crash
+  (`20869819`) and the shm-exhaustion crash (`20687866`), both application-level, neither a node
+  failure — are exactly the case requeue does NOT cover, so all three observations are consistent
+  once the trigger is understood correctly. **Net for us: requeue is a real, live safety net for
+  the failure mode we've never hit (hardware), and inert for the ones we actually hit (OOM,
+  asserts, non-zero exit) — so it's not "not an active risk," it's an active-but-narrow one.**
+  ACTIONABLE gap this reopens: our multi-hour/multi-arm training sbatch scripts (`fullft_reg_ab`,
+  `fullft_avp_regsweep`, `fullft_avp_surgical`, etc.) have none of `--no-requeue` set, none are
+  checkpoint/resume-safe against a fresh from-scratch restart (SUBSET mode does `rm -rf` staging,
+  RUN dirs assume a clean start), and their `--output=%x-%j.out` naming would silently truncate
+  on a genuine node-failure requeue. A rare hardware fault mid-run on an expensive 8-GCD/24h job
+  would currently either restart wastefully from zero or (with truncated output) restart
+  invisibly. Worth adding `--no-requeue` (fail cleanly, let a human/agent decide whether to
+  relaunch) or at minimum `--open-mode=append` to the long training templates — cheap either way.
+  Also confirmed in the same doc read: `--gpus-per-task` is a real, first-class Slurm option (not
+  a made-up flag) — validates C's 2026-08-11 GCD-pinning fix (`srun --ntasks=8 --gpus-per-task=1`)
+  as the documented pattern, not a workaround.
 
 Confirms current practice needs no change:
 - **cotainr-built Singularity containers is the officially recommended path** (LUMI explicitly
