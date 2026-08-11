@@ -203,9 +203,25 @@ def main():
     if a.deploy and written:
         rsh = f"ssh -o BatchMode=yes -i {KEY}"
         subprocess.run(["ssh", "-o", "BatchMode=yes", "-i", KEY, HOST, f"mkdir -p {DEST}/docs"], check=False)
-        subprocess.run(["rsync", "-az", "--chmod=D755,F644", "-e", rsh,
-                        f"{OUT_DIR}/", f"{HOST}:{DEST}/docs/"], check=False)
-        print(f"deployed {len(written)} docs -> {DEST}/docs/")
+        # rc was discarded (check=False), so a FAILED upload printed the same "deployed N docs"
+        # as a good one -- the third instance of that pattern in this tooling (publish_blog and
+        # mirror_dialogue both had it). Retry, then say plainly that the live page is stale.
+        for attempt in range(1, 4):
+            r = subprocess.run(["rsync", "-az", "--chmod=D755,F644", "-e", rsh,
+                                f"{OUT_DIR}/", f"{HOST}:{DEST}/docs/"],
+                               capture_output=True, text=True)
+            if r.returncode == 0:
+                print(f"deployed {len(written)} docs -> {DEST}/docs/")
+                break
+            print(f"  [push] rsync rc={r.returncode} (attempt {attempt}/3) "
+                  f"{(r.stderr.strip().splitlines() or [''])[-1]}", flush=True)
+        else:
+            sys.exit(f"PUSH FAILED after 3 attempts -- /files/docs/ is now STALE")
+    elif written and not a.deploy:
+        # The rendered-vs-deployed distinction has now cost two stale-page incidents in 12h
+        # (2026-08-11 knowledge.md, twice): "done: N docs rendered" reads as published when it
+        # is not. Say so, so the next person does not read a render as a publish.
+        print(f"NOT DEPLOYED -- rendered locally only. Re-run with --deploy to publish.")
     print(f"done: {len(written)} docs rendered")
 
 
