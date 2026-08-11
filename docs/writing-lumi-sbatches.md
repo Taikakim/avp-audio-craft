@@ -188,6 +188,27 @@ to the software). For a single data-parallel model across them:
 - `steps/epoch = dataset_size ÷ (per-GCD_batch × world_size)`. If it's `N×` what you expect,
   that's N duplicate trainers again.
 
+**⚠️ The inverse case — running N INDEPENDENT arms in one allocation (an A/B or sweep, NOT one
+DDP model) — must PREVENT a group from forming.** If you launch N different configs (different
+optimizer/hyperparams) as separate processes in one job and do nothing to isolate them, two things
+bite, and they look like different bugs:
+- **GPU collision → OOM.** N backgrounded `srun … --gpus=1` steps, each *also* setting a manual
+  `ROCR_VISIBLE_DEVICES`, compose two device filters and can land all N arms on **one** card — they
+  OOM each other at a fraction of a single run's real footprint (the tell: an OOM far below the
+  memory a single run needs for its optimizer state alone). Fix: **one** pinning mechanism (see the
+  Pattern-A/B table above), not two stacked.
+- **Rendezvous collision → NCCL deadlock.** The frameworks derive a single distributed rendezvous
+  from `SLURM_JOB_ID`, so the N *independent* arms accidentally join **one** process group and then
+  **hang forever on a collective** (`ALLGATHER`/barrier) — because they're different configs
+  progressing at different speeds, one rank hits the collective and waits out the ~30-min NCCL
+  watchdog timeout, killing the group. The tell: `Watchdog caught collective operation timeout …
+  OpType=ALLGATHER, NumelOut=N`, and a `world_size` = N when you meant N standalone runs. **Fix:
+  force each arm to be a standalone single-process run** — `export SLURM_JOB_NAME=bash` (makes
+  PyTorch-Lightning's SLURM detector return false → single-process `LightningEnvironment`, no shared
+  rendezvous), plus a distinct `MASTER_PORT` per arm as belt-and-braces. Without this, an A/B whose
+  arms *look* like they ran can be silently corrupted, or the deciding arm can die on the timeout
+  and leave you with no verdict.
+
 ---
 
 ## 6. The silent-failure family, and how to defend
