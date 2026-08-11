@@ -38,8 +38,14 @@ RENDER_ROOTS = [Path("/home/kim/evals_aac/renders"),
                 Path("/run/media/kim/Mantu/sa3_lora_runs"),
                 Path("/run/media/kim/Mantu/sa3_control_runs")]
 
-# A section starts at a line that is just a URL or file:// path to an eval index.
-SECTION = re.compile(r"^\s*(?:https?://|file://)\S*/renders/([^/]+)/index\.html\s*$")
+# A section starts at a line whose FIRST token is a URL/file path to an eval index. Trailing
+# text on that line is allowed and ignored: Kim writes companions after the main link, e.g.
+# "file://.../renders/rarity_gen_set/index.html, /home/kim/evals_aac/riffer/rarity.html".
+# The old anchor demanded the URL be alone on the line, so that section did not parse as a
+# section AT ALL -- it was silently swallowed into the body of the section above it, which
+# then re-filed as an "extended" verdict on the wrong run. A parser that fails to recognise a
+# record is worse than one that rejects it: rejection is visible, absorption is not.
+SECTION = re.compile(r"^\s*(?:https?://|file://)\S*?/(?:renders|control_runs)/([^/]+)/index\.html\b")
 
 
 def parse(text: str):
@@ -148,6 +154,28 @@ def main():
             # cheapest test an append-only tool can have, and the one worth always doing.
             if any(body.strip() == _verdict_of(e) for e in entries):
                 skipped += 1
+                continue
+            # SUPERSEDES, not a second verdict. Kim edits EVAL_NOTES.txt in place -- extending
+            # a section, or appending a new one, which also re-bounds the section above it. The
+            # body then differs from what was stored and append-only filing produced a near
+            # duplicate: 22 manifests ended up holding an old verdict AND its longer rewrite.
+            # If a stored verdict is contained in the new text, the new text IS that verdict,
+            # revised -- replace it and keep the original date, so the record shows when he
+            # first said it rather than when the file was last touched.
+            superseded = [e for e in entries if _verdict_of(e) and _verdict_of(e) in body]
+            if superseded:
+                first = superseded[0]
+                entries = [e for e in entries if e not in superseded]
+                entries.append({"date": (first.get("date") if isinstance(first, dict)
+                                         else str(date.today())),
+                                "revised": str(date.today()), "source": a.notes.name,
+                                "verdict": body})
+                m["kim_feedback"] = entries
+                if not a.dry_run:
+                    p.write_text(json.dumps(m, indent=1, ensure_ascii=False))
+                print(f"  [~] {d.parent.name}/{d.name}: verdict EXTENDED "
+                      f"({len(_verdict_of(first))} -> {len(body)} chars)")
+                wrote += 1
                 continue
             entries.append({"date": str(date.today()), "source": a.notes.name,
                             "verdict": body})
