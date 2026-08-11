@@ -144,3 +144,15 @@ breaks.
 - **Landing the result:** the Q5 table maps directly onto our two build paths — (i) a native prepend/cross-attn
   conditioner trained with CFG dropout (Zach's route), and (ii) a lightweight per-frame adapter that regresses
   the descriptor. When the report lands, verify every cited paper from its PDF before it earns an index row.
+- **⭐ We already have a strong concrete instantiation in-house (SAME paper, 2605.18613, §3.3.2).** Our
+  autoencoder was trained with **three octave-band chroma regressors** (octave centres 1/5/9, widths
+  1.0/1.5/1.0, 128 bins each = **384-d**), each a **single 1×1 conv** → chroma is a *linear* readout of the
+  latent, trained in (and reinforced by 3 matching chroma discriminators). This pre-answers much of Q1/Q5 for
+  our specific case: (i) the movement signal is native and in-distribution — conditioning on it is aligned with
+  the latent's own geometry; (ii) the 3 bands are a **register decomposition** — oct1≈bass, oct5≈harmony,
+  oct9≈melody — so "keep the melody / keep the bassline" are separate channels for free; (iii) the
+  transposition-**invariant** reduction is per-band (DFT-magnitude of each 128-bin band) → register-resolved
+  key-invariant movement = the anti-overfit bottleneck; (iv) we can likely **lift the trained 1×1 conv weights**
+  as the extractor, so the LatCH-adapter path is nearly free. The Gemini survey's job is then to (a) place this
+  register-band-chroma choice against the broader movement-encoding literature, and (b) surface *better* or
+  *complementary* invariant/memoryful descriptors we're missing — not to reinvent what SAME already gives us.

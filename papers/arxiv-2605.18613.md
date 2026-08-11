@@ -20,9 +20,19 @@ latents that `latents_sa3` and everything downstream runs on.
   1. **Generative alignment loss** — a 4-layer/768-d flow-matching DiT trained jointly ON
      the latent space, gradients flowing into the encoder → latent geometry pre-shaped
      for diffusion modelling.
-  2. **Semantic regressors** — chroma at octaves 1/5/9 (128 bins) + interaural level
-     difference, each decoded by a SINGLE 1×1 conv → **linear decodability is trained
-     in, not emergent.**
+  2. **Semantic regressors** — **3-band octave chroma, octave centres 1/5/9, widths
+     1.0/1.5/1.0, 128 bins each = 384-d** (targets from an FFT-8192 spectrogram; the SAME
+     octave centres ALSO appear as 3 chroma *discriminators* §3.2.2 → band-chroma pressed in
+     twice) + interaural level difference, each decoded by a SINGLE 1×1 conv → **linear
+     decodability is trained in, not emergent.**
+     ⭐ **Conditioning implication (Kim + C, 2026-08-11):** the register-separated chroma we'd
+     want as a melody/movement conditioner is ALREADY a trained-in LINEAR readout of our latent
+     — oct1≈bass / oct5≈harmony / oct9≈melody. So (a) a LatCH chroma adapter is near-free — lift
+     the SAME 1×1 conv weights directly, no training; (b) a per-band DFT-magnitude of the 128
+     bins gives register-resolved **transposition-INVARIANT** movement = the anti-overfit
+     bottleneck for Zach's melody prepend-cond; (c) it grounds #59's "melody subspace" in the
+     oct-9 regressor's weight rows. Chroma is a property of the clean latent z0 → operates in
+     x0-space (fits #59 / JLT 2605.27102).
   3. **Contrastive latent alignment** — 4-layer critic matches (latent, wavelet audio
      features, T5Gemma text emb) triplets → text semantics pressed into the latent.
   Ablation: these losses are why soft-norm beats VAE at 4096× (MuQEval 3.87 vs 3.19,
