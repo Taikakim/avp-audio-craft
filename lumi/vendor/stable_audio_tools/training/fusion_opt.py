@@ -220,6 +220,17 @@ class FusionOpt(Optimizer):
         # (post-NS5/NorMuon/cautious — pure step-size modulation, orthogonalisation intact);
         # non-transformer params and unlisted layers stay 1.0. None = no-op (default).
         layer_update_weights: "dict | None" = None,
+        # HYPERBALL (arXiv 2606.16899, Alg. 1) — constrain each spectral 2D weight matrix to
+        # the hypersphere of radius R = ‖W0‖_F (captured ONCE, on the first step for that
+        # param). Replaces the DIRECT-to-p step with the Hyperball retraction:
+        #   u_hat   = U / ‖U‖         (normalized spectral update)
+        #   W_tilde = W - gamma_t * R * u_hat
+        #   W       = R * W_tilde / ‖W_tilde‖
+        # Hyperball is its OWN iterate → INCOMPATIBLE with Schedule-Free ('sf'); constructing
+        # with both raises ValueError. Weight decay is IGNORED under hyperball (the norm
+        # constraint replaces it). Applies ONLY in the spectral DIRECT-to-p path; the scalar
+        # path is untouched. Off by default => byte-identical to today.
+        hyperball: bool = False,
     ):
         all_components = {"mona", "shampoo", "ns5", "normuon", "sf", "cautious"}
         if components is None:
@@ -242,6 +253,15 @@ class FusionOpt(Optimizer):
         super().__init__(params, defaults)
 
         self._components = frozenset(components)
+        # HYPERBALL — norm-constrained iterate (arXiv 2606.16899). Its own iterate, so it
+        # cannot coexist with Schedule-Free averaging (both own the update of p/z).
+        self._hyperball = bool(hyperball)
+        if self._hyperball and "sf" in self._components:
+            raise ValueError(
+                "FusionOpt: hyperball=True is incompatible with the 'sf' (Schedule-Free) "
+                "component — Hyperball is its own norm-constrained iterate. Drop 'sf' from "
+                "components (e.g. use ['mona','ns5','normuon']) when enabling hyperball."
+            )
         # per-DiT-layer update-weight schedule ({int layer: float mult}); cache name->mult
         self._layer_update_weights = (
             {int(k): float(v) for k, v in layer_update_weights.items()}
@@ -669,6 +689,20 @@ class FusionOpt(Optimizer):
                 z.mul_(1 - gamma_t * wd).add_(U, alpha=-gamma_t)
                 # x_{t+1} = (1 - 1/t) x_t + (1/t) z_{t+1}
                 x.mul_(1 - 1.0 / t).add_(z, alpha=1.0 / t)
+            elif self._hyperball:
+                # HYPERBALL (arXiv 2606.16899, Alg. 1): constrain W to the hypersphere of
+                # radius R = ‖W0‖_F, captured ONCE (norm of the LOADED weights on the first
+                # step for this param, before applying). Weight decay is IGNORED (the norm
+                # constraint replaces it). u_t == U (the finalized spectral update).
+                #   u_hat   = U / (‖U‖ + eps)
+                #   W_tilde = W - gamma_t * R * u_hat
+                #   W       = R * W_tilde / (‖W_tilde‖ + eps)
+                if "hyperball_R" not in state:
+                    state["hyperball_R"] = p.data.norm()
+                R = state["hyperball_R"]
+                u_hat = U / (U.norm() + 1e-12)
+                W_tilde = p.data - gamma_t * R * u_hat.to(p.dtype)
+                p.data.copy_(R * W_tilde / (W_tilde.norm() + 1e-12))
             else:
                 # No SF averaging: apply WD + step directly to live weights p
                 p.data.mul_(1 - gamma_t * wd).add_(U.to(p.dtype), alpha=-gamma_t)
