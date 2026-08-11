@@ -1328,3 +1328,194 @@ NEGATIVE-ish; not a clear win. CAVEAT: chroma is a harmonic proxy, NOT lead-isol
 capture lead-contour repetition; needs a MuScriptor-MIDI contour metric + Kim's ears on the K2-vs-base
 top cells to settle. Artifacts: `lumi_runs/analysis/melody_wall/{VERDICT.md,summary.json,per_clip.jsonl}`.
 Method note logged: the auto HOOK↑/↓ labels in v1 were miscalibrated (thresholded on %-up); read the deltas.
+
+## 2026-08-06
+### [2026-08-06] Codec clarity ladder: the m4a leg (Kim ask)
+
+Kim asked whether we'd ever put MP3, m4a and the SAME codec on the same audit axis. Discovery
+turned up two prior MP3↔SAME comparisons — `hf_clarity_diagnosis.py` (audio, air/presence-band
+env_corr, Aug 1) and `mp3_latent_sensitivity.py` (latent-Δ, Aug 4) — but **m4a had never been
+benchmarked**; we'd just assumed 192k AAC was transparent for serving. Kim: add m4a at comparable
+bitrates, and can W publish an audit page. Both greenlit.
+
+Extended `hf_clarity_diagnosis.py`: refactored the mp3 roundtrip into a shared `_codec_roundtrip`,
+added `m4a()` (ffmpeg native `-c:a aac` = our exact serving codec) at {128,192,320}, and made it
+export the *aligned, measured* mono audio for the first 4 clips as **lossless FLAC** (so no delivery
+codec masks the artifact on the page). GPU was free; whole run ~a few min.
+
+**Result (air 8-16k env_corr, n=12):** SAME **0.544** ≪ mp3_128 0.973 ≈ m4a_128 0.956 < m4a_192
+0.981 ≈ mp3_320 0.997 ≈ m4a_320 0.981. So the AAC serving step is **transparent** — on par with
+same-bitrate MP3, and our 192k serving rate sits ≈320k-MP3-good. **The entire audible HF-clarity
+deficit is the SAME codec, not the download.** That's a clean exoneration of the pipeline and a
+direct confirmation of the clarity-recovery framing (#62/#65/#66 are aimed at the right thing).
+
+Negatives / caveats worth keeping: (1) ffmpeg's native AAC (no libfdk here) plateaus ~0.98 even at
+320 and bumps crest_ret to ~1.33 — an encoder trait, not a real fidelity gain; a libfdk build would
+likely close the last 0.02 to MP3-320. (2) I earlier told Kim the `rolloff_hz` metric was "buggy" —
+it isn't; ~265-273Hz across *every* row incl. the original is just 85%-**power** rolloff being
+bass-dominated, so it's a non-discriminator for HF. Corrected on the page and in WORKLOG. (3)
+Browser-verify friction: single-threaded `http.server` wedged the renderer on the held-open audio
+connection (ThreadingHTTPServer fixed it), and a `loadedmetadata`-await race + autoplay-gesture
+policy hung `Runtime.evaluate` twice — both harness artifacts, not page bugs; a race-free
+seek-then-switch script confirmed the same-playhead position-hold (3.0s held across SAME→mp3_320).
+
+New page: `build_clarity_audit_page.py` → `hf_clarity/index.html`, three-audience (plain-language
+explainer, colour-graded ladder table, hold-the-moment/switch-codec player). Redaction-scanned
+clean (no abs paths/plumbing; only codec/bitrate science + commercial track titles). DM'd W to
+rsync → `/files/audit/codec-clarity/` (self-contained, sibling-safe — no model_matrix dependency).
+`kim_feedback` still null — his ears are the real verdict; added to KIM-TASKLIST ear queue. Drop for
+THE-FINN to fold into DISCOVERIES: **codec clarity ladder now covers SAME/MP3/m4a; m4a serving =
+transparent, SAME owns the HF loss.**
+
+## 2026-08-06
+### [2026-08-06] Interval-resolution ladder (Kim's "are we even seeing a small second?" machinery-audit)
+
+Kim's sharp question on the melody/subspace work (#59): if the melodic value is small (a small
+second), are we sure we read it right BEFORE the weight update, or is it below our measurement floor?
+Built `eval/musicology/interval_resolution_ladder.py` off the EXISTING v2 pitch atlas (clean single
+notes = best-case ceiling) + the exact #59 loss subspace (`lumi/melody_subspace15_v2.npz` basis15) +
+the mp3-latent codec floor. Controlled design (fix register, vary only interval, 13 registers × 10
+timbres). NB first pass POOLED across register → garbage (dirCos≈0.01, chance detectability even for
+an octave) because pooling conflates interval with the v2 register-nonlinearity; the controlled redo
+is the correct analog of the fifth-jump calibration.
+
+RESULT — flips the premise, finds the real culprit: (1) a minor 2nd is NOT below the floor — ‖Δz‖ =
+**94% of a fifth**, detectable, melFrac 0.096 > codec 0.080 > random 0.059; the codec does not quantize
+pitch coarser than a semitone. (2) **Magnitude SATURATES** — semitone ≈ fifth ≈ octave in ‖Δz‖ (all
+~11, 6% spread): latent distance encodes "a note changed," not "by how much" → contour/step-size is
+NOT legible from displacement magnitude (poisons the whitened-chroma readout that scored #59). (3)
+**The #59 subspace is only ~1.1–1.3× more melodic than codec noise** — upweighting it (weight 5)
+amplifies codec hiss nearly as much as melody = low-SNR intervention; THIS, not a detectability floor,
+is the probable reason #59 came back weak. CAVEAT: clean-note ceiling ≠ in-mix — a buried lead's
+effective displacement is far below 11, could approach the floor → needs an in-mix stem-shift test.
+Next: rebuild the subspace to be melody-SELECTIVE (LDA/CCA vs codec-noise dirs), score melody by
+contour not magnitude. Artifacts: `eval/musicology/interval_resolution_ladder_2026-08-06/`
+{results.json, VERDICT.md, ladder.png}. Bears directly on #59 interpretation + the melody-wall null.
+Drop for THE-FINN/DISCOVERIES: **SAME latent-distance saturates in interval size (semitone≈fifth≈
+octave ‖Δz‖); the #59 melody subspace is only ~1.2× melody-over-codec-noise — reframes the melody-wall
+null from "signal too small" to "metric contour-blind + target subspace low-SNR."**
+
+## 2026-08-06
+### [2026-08-06] in-mix semitone floor test (closes the atlas scope caveat)
+
+The atlas ladder's open caveat: does a semitone survive once the lead is BURIED in a dense mix?
+Built it off Kim's Mantu multitracks (`/run/media/kim/Mantu/Stems/`) — No Doubt "Don't Speak", 5
+LEAF stems (Kim's warning: never sum the group/bus mixes — this song has none), vocal = melody.
+Transposed ONLY the vocal with BUNGEE (+1 st, +7 anchor), reconstructed the mix at one shared gain,
+added an mp3@256 codec-noise arm, SAME-encoded all four (window 86s+23.8s). Scripts:
+`eval/musicology/inmix_stage1_build.py` (mir/pitch_venv) + `inmix_stage2_encode.py` (.venv/GPU).
+
+RESULT — DECISIVE yes: semitone-in-mix frame_delta 12.38 vs codec-noise 0.97 = **12.7× magnitude
+SNR** (~22 dB headroom → the lead would have to drop ~20 dB before its semitone move hit the codec
+floor). So the "buried lead sinks below the floor" worry does NOT materialize at natural mix level.
+Both atlas structural findings HOLD in real material: magnitude saturates (semitone = 0.87× a fifth
+‖Δ‖) and the #59 subspace is only ~1.3× melody-over-codec-noise (melFrac 0.112 vs 0.087). So the
+final answer to Kim: we DO see a small second before the weight update (clean-note AND in-mix); the
+melody-wall/#59 weakness is a contour-blind magnitude metric + a low-SNR target subspace, NOT a
+detectability floor. Caveats: prominent vocal (not deeply buried), whole-phrase transpose, pop proxy
+(no goa multitrack on hand). Artifacts: `eval/musicology/inmix_floor_2026-08-06/`. Next per Kim:
+melody-SELECTIVE subspace rebuild (LDA/CCA vs codec-noise dirs) — the one lever both tests point at.
+
+## 2026-08-06
+### [2026-08-06] melody-SELECTIVE subspace built (whitened CSP) — the #59 lever, fixed
+
+Built `eval/musicology/build_melody_selective_subspace.py`: whitened CSP — signal = atlas interval
+deltas (1-12 st), noise = REAL codec deltas (mp3 latents.npz: 15 goa tracks × 4 bitrates × 256 fr =
+z(mp3)−z(flac)) + timbre deltas; whiten by noise cov (shrinkage γ=0.1), top-15 signal-variance dirs
+in whitened space, orthonormalise. Built on TRAIN timbres/tracks, validated on HELD-OUT.
+RESULT: old v2 subspace SNR (melFrac_melody/melFrac_codecnoise) on held-out = **1.00×** (zero
+selectivity — codec noise projects exactly as much as melody, worse than my ~1.3× estimate); new v3
+= **5.11×** (melody 0.080, codec-noise 0.016 = below random 0.05 → it actively AVOIDS codec dirs).
+The win is noise REJECTION not higher melody capture (melody near-full-rank, no 15-d basis captures
+much — old 0.10/new 0.08/random 0.057). Stays melody-responsive to a minor 2nd (0.065). Output
+drop-in: `lumi/melody_subspace15_selective_v3.npz` (same schema as v2, for --subspace-loss-basis).
+Prototype knobs: γ, k, fold in-mix melody deltas into signal. REAL proof = a training A/B (v3 vs v2
+vs baseline) — needs a LUMI submit; added to KIM-TASKLIST. Full day's melody arc (interval ladder →
+in-mix floor → selective subspace) reframes #59 from "did the loss help?" to "the loss had no lever;
+here's one with 5× the SNR." Artifacts: `eval/musicology/melody_selective_subspace_2026-08-06/`.
+
+## 2026-08-09
+### [2026-08-09] DDP launch on multitorch: Pattern 1 OOMs, Pattern 2 works (negative result, + the day's LUMI work)
+Multi-node scale-up thread (Kim: finish the slow long runs before the ~2-week purge). Built the
+prerequisites — `train_lora.py --num_nodes` hook + a 4-node rendezvous smoke — then the AVP aug×8
+60ep full-FT (task #69). **NEGATIVE RESULT that corrected a doc:** the AVP job (20869819) HIP-OOM'd
+in 3 min at model load — ALL 8 ranks piled onto GPU 0. Root cause: on the multitorch image,
+`train_lora.py::load_model` does `model.to("cuda")`=cuda:0 BEFORE Lightning assigns per-rank devices,
+so "Pattern 1" (all GCDs visible + `--devices 8`, no `--gpus-per-task`) loads 8× the model on one card.
+The lumi-ops "Pattern 1 VERIFIED" note was `sa3.sif` + tiny smokes only — it does NOT hold on multitorch.
+**Fix = Pattern 2** (`--gpus-per-task=1`, NO `--devices`) — cgroup-pins each rank to its own GCD;
+EXACTLY what #68 fullft_bigset runs (8h+ clean, no `-vN` ckpts → so Pattern 2 also forms a REAL
+coordinated group on multitorch, retiring the "N duplicate trainers" worry). Fixed both
+`fullft_avp_aug.sbatch` + `multinode_ddp_smoke.sbatch`; corrected lumi-ops SKILL + added
+`docs/lumi-throughput-workflow-guide.md` §6. AVP resubmitted 20884446. Also today: AVP ×8 set was
+already pre-built (latents_avp = 289 base + 2105 bungee-aug, Kim caught the redundant 70GB upload);
+#68 resumed on 8×GPU from ep7 fat (was parked after 48h walltime); /project over-quota was a stale
+cached reading (models is a symlink to /scratch). (F: fold the multitorch-DDP=Pattern-2 finding into
+DISCOVERIES.)
+
+## 2026-08-10
+### [2026-08-10] Full-FT latent-scale runaway → spectral drone (root cause + fix + tests)
+Kim auditioned #68 `fullft_bigset` and every clip was broadband **spectral drone**, all prompts+cfg.
+Ran systematic-debugging. Ruled OUT, one by one: **DDP** (formed one group, `one-group` no `-vN`),
+**live-encode** (the pre-encoded `precision_ladder` droned identically), **the decoder** (known-good
+latents decode fine; render path has a `cov>0.99` assert so EMA keys loaded). Forked it LOCALLY off
+the pulled `z0.npy` (no GPU): the model emits diverse (low cross-cosine → not mode-collapse) but
+**scale-inflated** latents. Robust ep3-vs-ep7 measurement (N=54 each, large good-baseline): global
+latent std **0.7(good)→1.3(ep3)→5.6(ep7)**; #chan>2.0 **0→~4→166/256**; **cfg16 inflates first**
+(canary). So ep3 is only mildly off (near-healthy at cfg1/7 — corrected my initial "ep3 total drone"
+overread); the blow-up is ep3→ep7 — **vindicates Kim's epoch-count instinct** as the accumulation axis.
+**Root cause:** FusionOpt per-group `spectral_wd` **defaults to 0.01** (`fusion_groups.py`), too weak
+for the NS5/Muon orthogonalized update (step-norm grad-magnitude-independent → needs ~10× AdamW's
+decay). Adapters bounded (frozen base) → full-FT-only. NEGATIVE/gotcha: my first fix set the FusionOpt
+*constructor* `weight_decay` — **inert**, the per-group value overrides it (Kim's "where do we pick the
+WD method?" question caught this); the effective knob is `param_groups.spectral_wd`. Also: #68 did NOT
+run at wd=0 — it ran at 0.01 (builder default), which my CPU test independently shows is too weak.
+Schedule-Free removes the LR *schedule*, not weight decay — orthogonal (Kim asked).
+**Delivered:** deterministic mechanism test `stable-audio-tools/tests/test_fusion_weight_decay.py`
+(wd=0→runaway ‖w‖ 2.4→118, wd=0.1→bounded 34, 0.01 barely helps→99); `train_lora.py --weight_decay`
+wired to `spectral_wd` (+`--gradient_clip_val` already existed); A/B `lumi/sbatch/fullft_wd_ab.sbatch`
+(job 20940322, arms wd0p01/wd0p1/adamw_wd0p1, prints latent-std table). Fix = `--weight_decay 0.1
+--gradient_clip_val 1.0`. #68/#69 as trained are dead → relaunch after A/B confirms. Recorded to
+lumi-ops SKILL + guide §7 + first-diagnostic-is-z0-std rule. Handed daily LUMI ops to GHOST-NOTE (Kim,
+token economy — I stay on heavy theory). Re-reviewed CSC ml-multi tutorial; two deltas noted in the
+smoke sbatch (`lumi-aif-singularity-bindings` module; torchrun-c10d topology). (F: fold the latent-std
+drone-fingerprint + wd-too-weak finding into DISCOVERIES.)
+
+## 2026-08-11
+### [2026-08-11] AVP drone-fix sweep stalled — bf16-mixed fused-fallback, NOT our code (root cause + relaunch)
+Re-scoped AVP full-FT sweeps (regsweep + surgical, the drone-fix arms on Kim's aug×8 set) ran 6.5 h and
+produced **zero checkpoints**, all 16 arms' `train.log` frozen at the same `torch.rms_norm(...)` line.
+systematic-debugging, several false turns worth recording:
+- **Demo red-herring:** first suspected the 380 s demo-callback generation — then found `--no_demos`
+  was already set; the `Demo sample 0-3` lines are a harmless prefetch. Verify-before-fix caught it.
+- **False "dead" call, corrected by evidence:** I told Kim to kill, framing it as hung. Then the
+  on-node `rocm-smi` showed **all 8 GCDs at 78-100 % util / 480 W** — the cards were *computing*, not
+  idle. Combined with batch-mode = no progress bar + wandb-offline (not stdout), a frozen `train.log`
+  is what a *quietly-training* run looks like. The frozen-mtime "hang" inference was wrong; I walked it
+  back. (Lesson: GPU-util snapshot before ever calling a batch job "hung.")
+- **Root cause:** `--base_precision bf16-mixed` keeps norm weights fp32 while autocast feeds bf16 input
+  → `"Mismatch dtype ... Cannot dispatch to fused implementation"` → slow **unfused rms_norm** path.
+  Throughput collapsed enough that no arm reached the ep5 ckpt in 6.5 h. **Clincher:** #68 (bigger —
+  T2048, **fp32**) checkpointed fine on 1 GCD; these (smaller, **bf16-mixed**) didn't → the axis is
+  precision. The plain `adamw_2e4` arm hung identically → **substrate, not the FusionOpt/surgical code.**
+  (Couldn't fully prove slow-vs-wedged post-mortem — lost the live step counter, no wandb-summary/CSV on
+  disk — but both are cured by the same relaunch.)
+- **Fix (committed 30d3119):** `PREC=fp32` (32-true, the mode #68 trained on); `EPOCHS 10 / CKEVERY 2`
+  (auditable ckpt ~ep2, never 6 h with nothing); **step-based timed smoke** (`--steps 150
+  --checkpoint_every 75`) that crosses a ckpt + prints s/step (last smoke told us "runs" not "how
+  fast" — the exact gap that burned the day); per-arm wall-clock echo to `train.log`. `bash -n` +
+  heredoc-python check clean. Timed smoke running.
+### [2026-08-11] Drone/optimizer 12-paper reading recorded+relocated; melody-movement Gemini brief drafted
+Moved the 12 read PDFs out of `papers/prospective-unchecked` into `papers/` root (titled); observations
+in `papers/CONTINUITY-drone-optimizer-synthesis-2026-08-11.md` (per-paper L1-L7 verdict + Zach author
+ground-truth + final locked recommendation: 5-source convergence that output-proj + AdaLN need
+bounded/normal treatment not raw Muon; `adamw_fair` front-runner per Part-I ~1.1×@1.4B; Hyperball
+retrofit-clean; `force_scalar` demoted per Zach's dimensionality rule). Handed F the cluster for
+knowledge.md (paper verdicts index-ready now; empirical "which fix won" annotation waits the re-scoped
+runs). Drafted `docs/gemini-brief-musical-movement-conditioning.md` for Kim (Zach's prepend-cond melody
+idea + CFG dropout; transposition/time-shift-**invariant** movement encodings — contour, PC-DFT/tonal-
+interval magnitudes, self-similarity, scattering; **memoryful** harmonic descriptors where the present
+carries the past — tension/expectation/surprisal/context-key; conditioner-feasibility table). The
+invariance angle is likely the real answer to Zach's overfit caveat: raw chroma is transposition-
+*equivariant* → copyable; DFT-magnitude/contour are *invariant* → a bottleneck that forces movement over
+absolute pitch.
