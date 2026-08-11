@@ -39,7 +39,9 @@ ROUT=${SCRATCH}/renders/matrix_cells
 # T1024 / fp32 / bs4 / 10ep, ckpt every 2. 2026-08-11: PREC fp32 (was bf16-mixed — that kept norm weights
 # fp32 vs bf16 input => "cannot dispatch to fused" => slow fallback: 6.5h / 0 ckpts). fp32=32-true is the
 # proven-throughput mode (#68 full-FT checkpointed on 1 GCD). Timed smoke measures s/step before full launch.
-FRAMES=${FRAMES:-1024}; EPOCHS=${EPOCHS:-10}; CKEVERY=${CKEVERY:-2}; BS=${BS:-4}; SEED=${SEED:-1}; PREC=${PREC:-fp32}
+# BS=2 (was 4): fp32-bs4 OOM'd one 64GB GCD (job 20993180, all 8 arms: ~29GB state + ~36GB fp32
+# activations ≈ 65GB). fp32-bs2 halves activations -> ~47GB, fits (== the bf16-mixed-bs4 budget that ran).
+FRAMES=${FRAMES:-1024}; EPOCHS=${EPOCHS:-10}; CKEVERY=${CKEVERY:-2}; BS=${BS:-2}; SEED=${SEED:-1}; PREC=${PREC:-fp32}
 LR=${LR:-8e-5}; LOGGER=${LOGGER:-wandb}
 LOUT=${LOUT:-0.1}; TGATE=${TGATE:-0.5}; AGCLAM=${AGCLAM:-0.01}; CLIPVAL=${CLIPVAL:-1.0}
 
