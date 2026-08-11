@@ -57,61 +57,76 @@ fi
 NCROP=$(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l)
 echo "[avp-sweep] latents_avp (base+×8): ${NCROP} crops (expect ~2394)  T=${FRAMES} prec=${PREC} ep=${EPOCHS} bs=${BS}"
 
-REG="--output-std-penalty ${LOUT} --output-std-t-gate ${TGATE}"
-AGC="--grad-clip-mode agc --agc-lambda ${AGCLAM}"
-CLIP="--gradient_clip_val ${CLIPVAL}"
-# arm spec: "LABEL  OPTIMIZER  LR  WEIGHT_DECAY  EXTRA_FLAGS..."
-ARM_SPECS=(
-  "anchor      fusion  ${LR}  0.01  "
-  "wd0p1       fusion  ${LR}  0.1   "
-  "wd0p1_agc   fusion  ${LR}  0.1   ${AGC}"
-  "agc         fusion  ${LR}  0.01  ${AGC}"
-  "outstd      fusion  ${LR}  0.01  ${REG}"
-  "adamw_1e4   adamw   1e-4   0.1   ${CLIP}"
-  "adamw_2e4   adamw   2e-4   0.1   ${CLIP}"
-  "adamw_3e4   adamw   3e-4   0.1   ${CLIP}"
-)
-
-run_arm () {
-  local GCD=$1 LABEL=$2 OPT=$3 ALR=$4 WD=$5; shift 5; local EXTRA="$*"
-  local NAME=fullft_avp_regsweep_${LABEL}
-  local RUN=${SCRATCH}/runs/fullft_avp_regsweep/${NAME}
-  mkdir -p "${RUN}"
-  ROCR_VISIBLE_DEVICES=${GCD} srun --exclusive -N1 -n1 --gpus=1 --cpus-per-task=7 \
-    singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
+# ── 8 arms, one distinct GCD each, via ONE srun --ntasks=8 --gpus-per-task=1 ──
+# --gpus-per-task=1 cgroup-pins each of the 8 tasks to a DISTINCT GCD (the verified
+# efp_fp32_compare pattern). NO ROCR_VISIBLE_DEVICES + background-srun mix — that was
+# the bug (all 8 arms landed on the SAME GCD -> 8-way OOM, job 20964697).
+echo "[avp-sweep] launching 8 arms on 8 distinct GCDs (one srun --ntasks=8 --gpus-per-task=1; cgroup-pinned, NO ROCR)${SMOKE:+ [SMOKE: --steps 40]}"
+srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
+  singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -euo pipefail
+ARM=${SLURM_PROCID}
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; FLASH=/flash/project_465003186; CODE=${PROJ}/code
 source '"${VENV}"'/bin/activate
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
 export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor${PYTHONPATH:+:${PYTHONPATH}}
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
-export MIOPEN_USER_DB_PATH=/tmp/miopen-'"${GCD}"' MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-'"${GCD}"'
-export TRITON_CACHE_DIR=/tmp/triton-'"${GCD}"' PYTORCH_TUNABLEOP_ENABLED=0
-rm -rf /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'; mkdir -p /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'
+export MIOPEN_USER_DB_PATH=/tmp/miopen-${ARM} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-${ARM}
+export TRITON_CACHE_DIR=/tmp/triton-${ARM} PYTORCH_TUNABLEOP_ENABLED=0
+rm -rf /tmp/miopen-${ARM} /tmp/triton-${ARM}; mkdir -p /tmp/miopen-${ARM} /tmp/triton-${ARM}
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True PYTORCH_ALLOC_CONF=expandable_segments:True
-export SLURM_JOB_NAME=bash MASTER_ADDR=127.0.0.1 MASTER_PORT=$((29500 + '"${GCD}"'))
-export WANDB_MODE=offline WANDB_DIR='"${RUN}"' WANDB_PROJECT=fullft_avp_regsweep
+# SLURM_JOB_NAME=bash forces Lightning LightningEnvironment (single-process) so the 8
+# DIFFERENT-config tasks do NOT try to form one broken DDP group / collide on the DDP
+# port. NO MASTER_PORT (unneeded once single-process). NO ROCR_VISIBLE_DEVICES anywhere.
+export SLURM_JOB_NAME=bash
+export WANDB_MODE=offline WANDB_PROJECT=fullft_avp_regsweep
 ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
-python ${CODE}/stable-audio-3/scripts/train_lora.py \
+
+# ── config (injected from the outer script; env-overridable there) ──
+FRAMES='"${FRAMES}"'; EPOCHS='"${EPOCHS}"'; CKEVERY='"${CKEVERY}"'; BS='"${BS}"'; SEED='"${SEED}"'; PREC='"${PREC}"'; LOGGER='"${LOGGER}"'; LR='"${LR}"'
+LOUT='"${LOUT}"'; TGATE='"${TGATE}"'; AGCLAM='"${AGCLAM}"'; CLIPVAL='"${CLIPVAL}"'; SMOKE='"${SMOKE:-}"'
+REG="--output-std-penalty ${LOUT} --output-std-t-gate ${TGATE}"
+AGC="--grad-clip-mode agc --agc-lambda ${AGCLAM}"
+CLIP="--gradient_clip_val ${CLIPVAL}"
+
+# ── arm table: ARM=SLURM_PROCID selects (LABEL, OPT, LR, WD, EXTRA) ──
+case ${ARM} in
+  0) LABEL=anchor;    OPT=fusion; ALR=${LR}; WD=0.01; EXTRA="" ;;
+  1) LABEL=wd0p1;     OPT=fusion; ALR=${LR}; WD=0.1;  EXTRA="" ;;
+  2) LABEL=wd0p1_agc; OPT=fusion; ALR=${LR}; WD=0.1;  EXTRA="${AGC}" ;;
+  3) LABEL=agc;       OPT=fusion; ALR=${LR}; WD=0.01; EXTRA="${AGC}" ;;
+  4) LABEL=outstd;    OPT=fusion; ALR=${LR}; WD=0.01; EXTRA="${REG}" ;;
+  5) LABEL=adamw_1e4; OPT=adamw;  ALR=1e-4;  WD=0.1;  EXTRA="${CLIP}" ;;
+  6) LABEL=adamw_2e4; OPT=adamw;  ALR=2e-4;  WD=0.1;  EXTRA="${CLIP}" ;;
+  7) LABEL=adamw_3e4; OPT=adamw;  ALR=3e-4;  WD=0.1;  EXTRA="${CLIP}" ;;
+  *) echo "[avp-sweep] arm ${ARM} unassigned"; exit 0 ;;
+esac
+
+# SMOKE: fast 8-arm placement check (distinct GCDs, no OOM) before the full run.
+if [ -n "${SMOKE}" ]; then RUNARGS="--steps 40"; else RUNARGS="--epochs ${EPOCHS} --checkpoint_every_epochs ${CKEVERY}"; fi
+
+NAME=fullft_avp_regsweep_${LABEL}
+RUN=${SCRATCH}/runs/fullft_avp_regsweep/${NAME}
+mkdir -p "${RUN}"; export WANDB_DIR="${RUN}"
+echo "[avp-sweep] arm ${ARM} -> ${LABEL}: opt=${OPT} lr=${ALR} wd=${WD} extra=[${EXTRA}] runargs=[${RUNARGS}] -> ${RUN}"
+if python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --model medium-base --full-finetune \
     --encoded_dir ${FLASH}/latents_avp \
-    --save_dir "'"${RUN}"'" \
-    --optimizer '"${OPT}"' --weight_decay '"${WD}"' '"${EXTRA}"' \
+    --save_dir "${RUN}" \
+    --optimizer ${OPT} --weight_decay ${WD} ${EXTRA} \
     --use-ema --ema-beta 0.9999 \
-    --base_precision '"${PREC}"' \
-    --lr '"${ALR}"' --batch_size '"${BS}"' \
-    --frames '"${FRAMES}"' --beat-aware-crop \
-    --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
-    --num_workers 6 --seed '"${SEED}"' --no_demos --logger '"${LOGGER}"' \
-    --name '"${NAME}"' 2>&1 | tee -a "'"${RUN}"'"/train.log
-' &
-}
-
-echo "[avp-sweep] launching ${#ARM_SPECS[@]} arms (1 GCD each):"
-gcd=0
-for spec in "${ARM_SPECS[@]}"; do run_arm ${gcd} ${spec}; gcd=$((gcd + 1)); done
-wait
+    --base_precision ${PREC} \
+    --lr ${ALR} --batch_size ${BS} \
+    --frames ${FRAMES} --beat-aware-crop \
+    ${RUNARGS} \
+    --num_workers 6 --seed ${SEED} --no_demos --logger ${LOGGER} \
+    --name ${NAME} 2>&1 | tee -a "${RUN}"/train.log; then
+  echo "[avp-sweep] arm ${ARM} (${LABEL}) DONE"
+else
+  echo "[avp-sweep] arm ${ARM} (${LABEL}) FAILED — see ${RUN}/train.log (siblings unaffected)"
+fi
+'
 echo "[avp-sweep] all arms done. Checkpoints:"
 ls -1 ${SCRATCH}/runs/fullft_avp_regsweep/*/epoch=*.ckpt 2>/dev/null | grep -v '\.weights\.ckpt$' || true
 
