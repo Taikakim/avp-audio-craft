@@ -39,9 +39,11 @@ ROUT=${SCRATCH}/renders/matrix_cells
 # T1024 / fp32 / bs4 / 10ep, ckpt every 2. 2026-08-11: PREC fp32 (was bf16-mixed — that kept norm weights
 # fp32 vs bf16 input => "cannot dispatch to fused" => slow fallback: 6.5h / 0 ckpts). fp32=32-true is the
 # proven-throughput mode (#68 full-FT checkpointed on 1 GCD). Timed smoke measures s/step before full launch.
-# BS=2 (was 4): fp32-bs4 OOM'd one 64GB GCD (job 20993180, all 8 arms: ~29GB state + ~36GB fp32
-# activations ≈ 65GB). fp32-bs2 halves activations -> ~47GB, fits (== the bf16-mixed-bs4 budget that ran).
-FRAMES=${FRAMES:-1024}; EPOCHS=${EPOCHS:-10}; CKEVERY=${CKEVERY:-2}; BS=${BS:-2}; SEED=${SEED:-1}; PREC=${PREC:-fp32}
+# 2026-08-11: fp32-bs4 AND fp32-bs2 BOTH OOM'd one 64GB GCD with the SAME ~7GB-allocated/0-free signature
+# (jobs 20993180, 21004204) — batch-INDEPENDENT, so NOT activation-bound (earlier estimate wrong). Kim:
+# instrument VRAM + drop to T512/bs2 while diagnosing. FRAMES 1024->512 halves activations again; the
+# [gpu-assign] echo + per-arm rocm-smi sampler below decide collision-vs-per-arm-too-big on the next smoke.
+FRAMES=${FRAMES:-512}; EPOCHS=${EPOCHS:-10}; CKEVERY=${CKEVERY:-2}; BS=${BS:-2}; SEED=${SEED:-1}; PREC=${PREC:-fp32}
 LR=${LR:-8e-5}; LOGGER=${LOGGER:-wandb}
 LOUT=${LOUT:-0.1}; TGATE=${TGATE:-0.5}; AGCLAM=${AGCLAM:-0.01}; CLIPVAL=${CLIPVAL:-1.0}
 
@@ -87,6 +89,8 @@ export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True PYTORCH_ALLOC_CONF=expand
 export SLURM_JOB_NAME=bash
 export WANDB_MODE=offline WANDB_PROJECT=fullft_avp_surgical
 ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
+# ── VRAM instrumentation (Kim 2026-08-11): which physical GCD did Slurm give THIS arm? all-same => collision ──
+echo "[gpu-assign] arm=${ARM} STEP_GPUS=${SLURM_STEP_GPUS:-} ORDINAL=${GPU_DEVICE_ORDINAL:-} ROCR=${ROCR_VISIBLE_DEVICES:-} HIP=${HIP_VISIBLE_DEVICES:-} CUDA=${CUDA_VISIBLE_DEVICES:-}"
 
 # ── config (injected from the outer script; env-overridable there) ──
 FRAMES='"${FRAMES}"'; EPOCHS='"${EPOCHS}"'; CKEVERY='"${CKEVERY}"'; BS='"${BS}"'; SEED='"${SEED}"'; PREC='"${PREC}"'; LOGGER='"${LOGGER}"'; LR='"${LR}"'
@@ -114,6 +118,8 @@ if [ -n "${SMOKE}" ]; then RUNARGS="--steps ${SMOKE_STEPS:-150} --checkpoint_eve
 NAME=fullft_avp_surgical_${LABEL}
 RUN=${SCRATCH}/runs/fullft_avp_surgical/${NAME}
 mkdir -p "${RUN}"; export WANDB_DIR="${RUN}"
+# per-arm VRAM curve (native rocm-smi, ~6s cadence, self-limiting ~9min, best-effort) -> where does memory blow up
+( for _i in $(seq 1 90); do echo "=== t=$(date +%s) arm=${ARM} ===" >> "${RUN}/vram_${ARM}.log"; rocm-smi --showmeminfo vram >> "${RUN}/vram_${ARM}.log" 2>&1 || true; sleep 6; done ) &
 echo "[avp-surgical] arm ${ARM} -> ${LABEL}: opt=${OPT} lr=${ALR} wd=${WD} extra=[${EXTRA}] runargs=[${RUNARGS}] -> ${RUN}"
 _T0=${SECONDS}
 if python ${CODE}/stable-audio-3/scripts/train_lora.py \
