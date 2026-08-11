@@ -1519,3 +1519,21 @@ carries the past — tension/expectation/surprisal/context-key; conditioner-feas
 invariance angle is likely the real answer to Zach's overfit caveat: raw chroma is transposition-
 *equivariant* → copyable; DFT-magnitude/contour are *invariant* → a bottleneck that forces movement over
 absolute pitch.
+### [2026-08-11] same_chroma readout VALIDATED on synthetic MIDI-latent pairs (Kim's test) — chroma readable where contour wasn't
+Kim: "we have the synthetic MIDI-latent pairs, can we test on those?" Discovery-phase first (it kept
+paying off today): we don't just have pairs, we have a whole melodic-readout program — `same_chroma` +
+Head-A (interval-contour) heads, the melody-selective subspace v3 (5.1× SNR, #59), spec
+`docs/superpowers/specs/2026-07-22-melodic-latch-film.md`. **Head-A's ceiling was already known-WEAK**
+(macro-F1 0.28 ≈ chance from raw z0, representation-limited → needs DiT taps) — but that's CONTOUR, never
+a SAME target. The gap was scoring the SAME-supervised `same_chroma` (384-d, cosine-loss 0.017) head.
+Ran it (subagent, reused `compute_same_chroma`/`fold_to_12`/`cos12` verbatim; forward at t=0 on 1380
+z0 latents; scored vs audio-GT + MIDI-GT + transposition; 0/1380 failed). **Result: bass/mid cos12
+0.79-0.86 pooled, TIMBRE-INVARIANT (pairwise 0.83-1.0 across 120 GM programs) — categorically beats
+Head-A's contour ceiling.** The morning's "chroma is one linear map away" intuition, now with data:
+chroma (SAME-supervised linear readout) reads from z0; contour (unsupervised, higher-order) does not.
+Caveats (honest): (1) air/treble band pools low HERE but register-content-limited not head-limited
+(0.55-0.99 when treble content exists → melody band needs the real-music Tier-2 test); (2) frame-precise
+argmax on fast sweeps ≈ chance — the SAME extractor's ~186ms window ≈ per-note duration (extractor limit,
+not head; whole-vector chroma stays strong → fine for a windowed conditioner). Report:
+`eval/musicology/same_chroma_readout_2026-08-11/`. NEXT: Tier-2 MuScriptor real-goa (has leads → the
+air/melody-band test). De-risks Zach's prepend-cond (target signal is readable) + grounds #59.
