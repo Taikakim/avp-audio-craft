@@ -47,11 +47,15 @@ the **longform SDEdit crossfade** transition machinery that was already built AN
 (`stable-audio-3/stable_audio_3/inference/longform.py`). This is the #1 recurring failure.
 So the moment a new task/problem appears, and **before writing code or designing an
 approach**, run this search and say what you found:
-1. **`DISCOVERIES.md`** (repo root) — the journal-derived, folder-linked index of "have we
-   already figured this out / built this?", grouped by topic. **Search it first.**
+1. **The two central research logs — READ BOTH (Kim 2026-08-12):** **`DISCOVERIES.md`** (repo
+   root) = OUR findings, the journal-derived, folder-linked index of "have we already figured this
+   out / built this?", grouped by topic; and **`papers/knowledge.md`** = the never-reinvent
+   LITERATURE index (what each paper contains + what stays ours, with cite-verified verdicts).
+   DISCOVERIES = what *we* found; knowledge.md = what the *field* found + our take. **Search both
+   first**, before writing code or designing an approach.
 2. `grep` the instance **journals** (`profiles/*.journal.md`) and **`WORKLOG.md`** for your
    keywords — the journals hold findings (incl. negative results) before they reach the index.
-3. `ARCHITECTURE.md` (tooling reuse) + `papers/knowledge.md` (never-reinvent paper index).
+3. `ARCHITECTURE.md` (tooling reuse — what code/tools already exist). *(papers/knowledge.md moved up to the pair in item 1.)*
 4. **For any eval / eval-page / eval-UI / audition-deployment work**, read the eval-tables spec
    **`docs/superpowers/specs/2026-07-06-eval-tables-human-first.md`** FIRST — it's the running
    source of truth for the eval UI (layout/full-width tables, dual-pane compare, per-checkpoint
