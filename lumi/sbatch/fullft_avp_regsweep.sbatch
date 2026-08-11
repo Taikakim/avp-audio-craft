@@ -67,11 +67,15 @@ echo "[avp-sweep] latents_avp (base+×8): ${NCROP} crops (expect ~2394)  T=${FRA
 # --gpus-per-task=1 cgroup-pins each of the 8 tasks to a DISTINCT GCD (the verified
 # efp_fp32_compare pattern). NO ROCR_VISIBLE_DEVICES + background-srun mix — that was
 # the bug (all 8 arms landed on the SAME GCD -> 8-way OOM, job 20964697).
-echo "[avp-sweep] launching 8 arms on 8 distinct GCDs (one srun --ntasks=8 --gpus-per-task=1; cgroup-pinned, NO ROCR)${SMOKE:+ [SMOKE: --steps 40]}"
-srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
+echo "[avp-sweep] launching 8 arms on 8 distinct GCDs (srun --overlap --cpu-bind=none + ROCR-per-task pin; --gpus-per-task=1 collided all onto GCD0 — jobs 20993180/21004204/21006359)${SMOKE:+ [SMOKE]}"
+srun --overlap --cpu-bind=none --mpi=none --nodes=1 --ntasks=8 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 ARM=${SLURM_PROCID}
+# PIN each task to its own GCD: ROCR_VISIBLE_DEVICES=$SLURM_PROCID ALONE (never +HIP — they STACK ->
+# "No HIP GPUs"). --gpus-per-task=1 instead put ALL 8 arms on GCD0 (gpu-assign showed STEP_GPUS=0 ROCR=0
+# for every arm, jobs 20993180/21004204/21006359). Proven aug8_encode/muscriptor pattern.
+export ROCR_VISIBLE_DEVICES=${ARM}
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; FLASH=/flash/project_465003186; CODE=${PROJ}/code
 source '"${VENV}"'/bin/activate
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
@@ -84,7 +88,7 @@ rm -rf /tmp/miopen-${ARM} /tmp/triton-${ARM}; mkdir -p /tmp/miopen-${ARM} /tmp/t
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True PYTORCH_ALLOC_CONF=expandable_segments:True
 # SLURM_JOB_NAME=bash forces Lightning LightningEnvironment (single-process) so the 8
 # DIFFERENT-config tasks do NOT try to form one broken DDP group / collide on the DDP
-# port. NO MASTER_PORT (unneeded once single-process). NO ROCR_VISIBLE_DEVICES anywhere.
+# port. NO MASTER_PORT (unneeded once single-process). ROCR pins each task (exported above).
 export SLURM_JOB_NAME=bash
 export WANDB_MODE=offline WANDB_PROJECT=fullft_avp_regsweep
 ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
