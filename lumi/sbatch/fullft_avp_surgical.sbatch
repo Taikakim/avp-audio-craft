@@ -36,8 +36,10 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 SNAP=${SNAP:-${CODE}/lumi/matrix_prompts_snapshot.json}
 ROUT=${SCRATCH}/renders/matrix_cells
-# T1024 / bf16-mixed / bs4 / 30ep, ckpt every 5 (captures runaway onset ~ep7-10 AND real AVP learning).
-FRAMES=${FRAMES:-1024}; EPOCHS=${EPOCHS:-30}; CKEVERY=${CKEVERY:-5}; BS=${BS:-4}; SEED=${SEED:-1}; PREC=${PREC:-bf16-mixed}
+# T1024 / fp32 / bs4 / 10ep, ckpt every 2. 2026-08-11: PREC fp32 (was bf16-mixed — that kept norm weights
+# fp32 vs bf16 input => "cannot dispatch to fused" => slow fallback: 6.5h / 0 ckpts). fp32=32-true is the
+# proven-throughput mode (#68 full-FT checkpointed on 1 GCD). Timed smoke measures s/step before full launch.
+FRAMES=${FRAMES:-1024}; EPOCHS=${EPOCHS:-10}; CKEVERY=${CKEVERY:-2}; BS=${BS:-4}; SEED=${SEED:-1}; PREC=${PREC:-fp32}
 LR=${LR:-8e-5}; LOGGER=${LOGGER:-wandb}
 LOUT=${LOUT:-0.1}; TGATE=${TGATE:-0.5}; AGCLAM=${AGCLAM:-0.01}; CLIPVAL=${CLIPVAL:-1.0}
 
@@ -105,12 +107,13 @@ case ${ARM} in
 esac
 
 # SMOKE: fast 8-arm placement check (distinct GCDs, no OOM) before the full run.
-if [ -n "${SMOKE}" ]; then RUNARGS="--steps 40"; else RUNARGS="--epochs ${EPOCHS} --checkpoint_every_epochs ${CKEVERY}"; fi
+if [ -n "${SMOKE}" ]; then RUNARGS="--steps ${SMOKE_STEPS:-150} --checkpoint_every ${SMOKE_CKSTEP:-75}"; else RUNARGS="--epochs ${EPOCHS} --checkpoint_every_epochs ${CKEVERY}"; fi
 
 NAME=fullft_avp_surgical_${LABEL}
 RUN=${SCRATCH}/runs/fullft_avp_surgical/${NAME}
 mkdir -p "${RUN}"; export WANDB_DIR="${RUN}"
 echo "[avp-surgical] arm ${ARM} -> ${LABEL}: opt=${OPT} lr=${ALR} wd=${WD} extra=[${EXTRA}] runargs=[${RUNARGS}] -> ${RUN}"
+_T0=${SECONDS}
 if python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --model medium-base --full-finetune \
     --encoded_dir ${FLASH}/latents_avp \
@@ -123,7 +126,7 @@ if python ${CODE}/stable-audio-3/scripts/train_lora.py \
     ${RUNARGS} \
     --num_workers 6 --seed ${SEED} --no_demos --logger ${LOGGER} \
     --name ${NAME} 2>&1 | tee -a "${RUN}"/train.log; then
-  echo "[avp-surgical] arm ${ARM} (${LABEL}) DONE"
+  echo "[avp-surgical] arm ${ARM} (${LABEL}) DONE — $((SECONDS-_T0))s wall for runargs=[${RUNARGS}]" | tee -a "${RUN}"/train.log
 else
   echo "[avp-surgical] arm ${ARM} (${LABEL}) FAILED — see ${RUN}/train.log (siblings unaffected)"
 fi
