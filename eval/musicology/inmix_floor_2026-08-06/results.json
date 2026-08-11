@@ -1,0 +1,35 @@
+{
+  "purpose": "in-mix semitone floor test (Kim 2026-08-06)",
+  "source": "No Doubt - Don't Speak, 5 leaf stems (no bus), vocal=melody; window 86.0s +23.8s",
+  "refs": {
+    "fifth_calib_isolated": 5.6439,
+    "random_melFrac": 0.0586,
+    "codec_melFrac_mp3_256": 0.0727,
+    "T_frames": 256
+  },
+  "arms": {
+    "min2": {
+      "frame_delta": 12.3759,
+      "frac_of_fifth_calib": 2.1928,
+      "frac_of_fifth_inmix": 0.8693,
+      "melFrac": 0.1121
+    },
+    "fifth": {
+      "frame_delta": 14.2369,
+      "frac_of_fifth_calib": 2.5225,
+      "frac_of_fifth_inmix": 1.0,
+      "melFrac": 0.087
+    },
+    "codecnoise": {
+      "frame_delta": 0.972,
+      "frac_of_fifth_calib": 0.1722,
+      "frac_of_fifth_inmix": 0.0683,
+      "melFrac": 0.0868
+    }
+  },
+  "verdict": {
+    "min2_vs_codecnoise_magnitude_snr": 12.73,
+    "min2_vs_codecnoise_melFrac_snr": 1.29,
+    "inmix_saturation_min2_over_fifth": 0.8693
+  }
+}

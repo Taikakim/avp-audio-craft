@@ -1,0 +1,111 @@
+{
+ "same_fps": 10.7666015625,
+ "bpm_lock_exact": 161.4990234375,
+ "render_notes": "constant patch per render; 44.1kHz; keep >=512-frame (47.56s) tail window for the 32-bar files; name renders <patfile>__<timbre>.wav",
+ "files": [
+  {
+   "desc": "constant 16ths, single pitch E3",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat1_const16_1pitch_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "constant 16ths, single pitch E3",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat1_const16_1pitch_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat2_const16_2pitch_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat2_const16_2pitch_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat3_const16_arp4_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat3_const16_arp4_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat4_rise16_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat4_rise16_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat5_const8_fifthjump_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat5_const8_fifthjump_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bars": 32,
+   "frames": 512,
+   "alignment": "16th==1 frame (frame-locked)",
+   "file": "pat6_pedal_b2trill_bpm161p5_32bars.mid",
+   "bpm": 161.4990234375
+  },
+  {
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bars": 28,
+   "frames": 506.3,
+   "alignment": "16th=1.129 frames (phase-drifting probe)",
+   "file": "pat6_pedal_b2trill_bpm143_28bars.mid",
+   "bpm": 143.0
+  },
+  {
+   "desc": "chromatic 8th sweep C2(65.4Hz)->C8, 73 notes, 2 frames/note",
+   "bars": 9.125,
+   "frames": 146,
+   "alignment": "8th==2 frames",
+   "file": "sweep_chromatic_8ths_C2toC8_bpm161p5.mid",
+   "bpm": 161.4990234375
+  }
+ ]
+}

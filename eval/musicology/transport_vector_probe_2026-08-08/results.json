@@ -1,0 +1,41 @@
+{
+  "purpose": "is SAME latent bandwidth-aligned? (transport-vector baseline, arXiv 2608.03721)",
+  "source": "mp3_latent_sensitivity latents.npz (FLAC vs mp3@320/256/192/128 -> SAME)",
+  "held_out_tracks": 5,
+  "rows": [
+    {
+      "bitrate": "320k",
+      "gap_L2": 0.65,
+      "recovery_transport": -3.2262,
+      "recovery_random_ctrl": -3.4493,
+      "recovery_pertrack_oracle": -0.0439,
+      "transport_vec_norm": 1.051
+    },
+    {
+      "bitrate": "256k",
+      "gap_L2": 1.103,
+      "recovery_transport": -3.0552,
+      "recovery_random_ctrl": -3.3599,
+      "recovery_pertrack_oracle": -0.065,
+      "transport_vec_norm": 1.689
+    },
+    {
+      "bitrate": "192k",
+      "gap_L2": 1.673,
+      "recovery_transport": -1.3933,
+      "recovery_random_ctrl": -1.7541,
+      "recovery_pertrack_oracle": 0.0852,
+      "transport_vec_norm": 2.337
+    },
+    {
+      "bitrate": "128k",
+      "gap_L2": 2.951,
+      "recovery_transport": -0.7938,
+      "recovery_random_ctrl": -1.1579,
+      "recovery_pertrack_oracle": 0.0679,
+      "transport_vec_norm": 3.592
+    }
+  ],
+  "verdict": "NOT bandwidth-aligned \u2014 a single transport vector barely helps (recovery\u2248random); SAME's HF loss is not an arithmetic latent offset \u2192 generative restoration (#62) is justified.",
+  "caveat": "MP3 HF-loss is a PROXY for SAME's own roundtrip HF loss; the SAME-own transport vector needs a GPU encode of original-vs-SAME pairs (decode-verify stage)."
+}

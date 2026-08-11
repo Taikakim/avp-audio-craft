@@ -1,0 +1,272 @@
+{
+  "purpose": "melody-SELECTIVE subspace (whitened CSP) vs #59 variance subspace",
+  "picked": {
+    "gamma": 0.1,
+    "k": 15
+  },
+  "signal": "atlas interval deltas 1-12 st",
+  "noise": "real codec deltas + timbre deltas",
+  "held_out": {
+    "signal_timbres": [
+      7,
+      8,
+      9
+    ],
+    "noise_tracks_n": 5
+  },
+  "sweep": [
+    {
+      "gamma": 0.03,
+      "k": 10,
+      "melFrac_sig": 0.0458,
+      "melFrac_noise": 0.0086,
+      "SNR": 5.33
+    },
+    {
+      "gamma": 0.03,
+      "k": 12,
+      "melFrac_sig": 0.0531,
+      "melFrac_noise": 0.01,
+      "SNR": 5.29
+    },
+    {
+      "gamma": 0.03,
+      "k": 15,
+      "melFrac_sig": 0.0628,
+      "melFrac_noise": 0.0122,
+      "SNR": 5.16
+    },
+    {
+      "gamma": 0.03,
+      "k": 20,
+      "melFrac_sig": 0.0832,
+      "melFrac_noise": 0.0162,
+      "SNR": 5.13
+    },
+    {
+      "gamma": 0.03,
+      "k": 25,
+      "melFrac_sig": 0.1014,
+      "melFrac_noise": 0.0202,
+      "SNR": 5.02
+    },
+    {
+      "gamma": 0.05,
+      "k": 10,
+      "melFrac_sig": 0.0492,
+      "melFrac_noise": 0.0092,
+      "SNR": 5.35
+    },
+    {
+      "gamma": 0.05,
+      "k": 12,
+      "melFrac_sig": 0.0569,
+      "melFrac_noise": 0.0108,
+      "SNR": 5.26
+    },
+    {
+      "gamma": 0.05,
+      "k": 15,
+      "melFrac_sig": 0.0685,
+      "melFrac_noise": 0.0135,
+      "SNR": 5.06
+    },
+    {
+      "gamma": 0.05,
+      "k": 20,
+      "melFrac_sig": 0.09,
+      "melFrac_noise": 0.0176,
+      "SNR": 5.11
+    },
+    {
+      "gamma": 0.05,
+      "k": 25,
+      "melFrac_sig": 0.1094,
+      "melFrac_noise": 0.0219,
+      "SNR": 5.0
+    },
+    {
+      "gamma": 0.1,
+      "k": 10,
+      "melFrac_sig": 0.0566,
+      "melFrac_noise": 0.0106,
+      "SNR": 5.36
+    },
+    {
+      "gamma": 0.1,
+      "k": 12,
+      "melFrac_sig": 0.0661,
+      "melFrac_noise": 0.0127,
+      "SNR": 5.21
+    },
+    {
+      "gamma": 0.1,
+      "k": 15,
+      "melFrac_sig": 0.0804,
+      "melFrac_noise": 0.0157,
+      "SNR": 5.11
+    },
+    {
+      "gamma": 0.1,
+      "k": 20,
+      "melFrac_sig": 0.1026,
+      "melFrac_noise": 0.0201,
+      "SNR": 5.1
+    },
+    {
+      "gamma": 0.1,
+      "k": 25,
+      "melFrac_sig": 0.1238,
+      "melFrac_noise": 0.025,
+      "SNR": 4.94
+    },
+    {
+      "gamma": 0.2,
+      "k": 10,
+      "melFrac_sig": 0.0695,
+      "melFrac_noise": 0.0131,
+      "SNR": 5.3
+    },
+    {
+      "gamma": 0.2,
+      "k": 12,
+      "melFrac_sig": 0.0796,
+      "melFrac_noise": 0.0158,
+      "SNR": 5.03
+    },
+    {
+      "gamma": 0.2,
+      "k": 15,
+      "melFrac_sig": 0.0972,
+      "melFrac_noise": 0.0196,
+      "SNR": 4.97
+    },
+    {
+      "gamma": 0.2,
+      "k": 20,
+      "melFrac_sig": 0.12,
+      "melFrac_noise": 0.0256,
+      "SNR": 4.69
+    },
+    {
+      "gamma": 0.2,
+      "k": 25,
+      "melFrac_sig": 0.1443,
+      "melFrac_noise": 0.0321,
+      "SNR": 4.5
+    },
+    {
+      "gamma": 0.35,
+      "k": 10,
+      "melFrac_sig": 0.0868,
+      "melFrac_noise": 0.0196,
+      "SNR": 4.43
+    },
+    {
+      "gamma": 0.35,
+      "k": 12,
+      "melFrac_sig": 0.0976,
+      "melFrac_noise": 0.0248,
+      "SNR": 3.94
+    },
+    {
+      "gamma": 0.35,
+      "k": 15,
+      "melFrac_sig": 0.1158,
+      "melFrac_noise": 0.0313,
+      "SNR": 3.69
+    },
+    {
+      "gamma": 0.35,
+      "k": 20,
+      "melFrac_sig": 0.1432,
+      "melFrac_noise": 0.0416,
+      "SNR": 3.44
+    },
+    {
+      "gamma": 0.35,
+      "k": 25,
+      "melFrac_sig": 0.1738,
+      "melFrac_noise": 0.0525,
+      "SNR": 3.31
+    },
+    {
+      "gamma": 0.5,
+      "k": 10,
+      "melFrac_sig": 0.1066,
+      "melFrac_noise": 0.04,
+      "SNR": 2.67
+    },
+    {
+      "gamma": 0.5,
+      "k": 12,
+      "melFrac_sig": 0.1219,
+      "melFrac_noise": 0.0465,
+      "SNR": 2.62
+    },
+    {
+      "gamma": 0.5,
+      "k": 15,
+      "melFrac_sig": 0.1424,
+      "melFrac_noise": 0.0574,
+      "SNR": 2.48
+    },
+    {
+      "gamma": 0.5,
+      "k": 20,
+      "melFrac_sig": 0.1761,
+      "melFrac_noise": 0.0773,
+      "SNR": 2.28
+    },
+    {
+      "gamma": 0.5,
+      "k": 25,
+      "melFrac_sig": 0.2126,
+      "melFrac_noise": 0.0961,
+      "SNR": 2.21
+    }
+  ],
+  "validation_test": [
+    {
+      "basis": "old_v2 (variance, #59)",
+      "melFrac_signal_test": 0.1003,
+      "melFrac_codecnoise_test": 0.1005,
+      "SNR_signal_over_noise": 1.0
+    },
+    {
+      "basis": "new_v3 (selective, g=0.1 k=15)",
+      "melFrac_signal_test": 0.0804,
+      "melFrac_codecnoise_test": 0.0157,
+      "SNR_signal_over_noise": 5.11
+    },
+    {
+      "basis": "random",
+      "melFrac_signal_test": 0.057,
+      "melFrac_codecnoise_test": 0.0499,
+      "SNR_signal_over_noise": 1.14
+    }
+  ],
+  "per_interval_melFrac_test": {
+    "1": {
+      "old": 0.0919,
+      "new": 0.0651
+    },
+    "2": {
+      "old": 0.0952,
+      "new": 0.0778
+    },
+    "3": {
+      "old": 0.0996,
+      "new": 0.0808
+    },
+    "7": {
+      "old": 0.098,
+      "new": 0.0825
+    },
+    "12": {
+      "old": 0.0978,
+      "new": 0.0611
+    }
+  },
+  "orthonormal_check": true
+}

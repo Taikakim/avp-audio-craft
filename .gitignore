@@ -99,7 +99,15 @@ eval/clap_full_table.csv
 
 # --- large generated artifacts / binaries — never commit (F consolidation 2026-08-04) ---
 onnx/exports/
-eval/musicology/
+# eval/musicology: bulk data (wav/npy/npz/mid) stays OUT; WRITTEN FINDINGS (.md/.json/.py) get git
+# history so negative results (head_a_ceiling ceiling, the VERDICTs) aren't single-copy/invisible.
+# Pattern > per-file force-add: covers the 11 existing untracked reports AND every future one, and an
+# ignored finding never shows in `git status` so the habit can't catch it. (W's catch, C adopted 2026-08-11.)
+eval/musicology/**
+!eval/musicology/**/
+!eval/musicology/**/*.md
+!eval/musicology/**/*.json
+!eval/musicology/**/*.py
 eval/clip_metrics.db
 .*.log
 *.npz

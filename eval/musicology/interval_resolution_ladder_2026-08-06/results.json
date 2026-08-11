@@ -1,0 +1,137 @@
+{
+  "purpose": "interval-resolution ladder vs codec floor (Kim 2026-08-06)",
+  "source": "stage1 pitch atlas (clean single notes) \u2014 BEST-CASE resolution ceiling",
+  "method": "CONTROLLED: fix register (base pitch), vary only the interval, aggregate over 13 registers x 10 timbres; dir_cos = cross-timbre coherence (fifth-jump in-context ref = 0.275); detect_acc is IN-SAMPLE (upper bound).",
+  "subspace": "lumi/melody_subspace15_v2.npz basis15 (the #59 loss subspace)",
+  "atlas_fifth_abs_norm": 11.276,
+  "incontext_fifth_norm": 5.644,
+  "random_melFrac_baseline": 0.0586,
+  "codec_floor": {
+    "320": {
+      "frac_of_fifth": 0.2224,
+      "melFrac": 0.0802
+    },
+    "256": {
+      "frac_of_fifth": 0.3473,
+      "melFrac": 0.0727
+    },
+    "192": {
+      "frac_of_fifth": 0.4878,
+      "melFrac": 0.099
+    },
+    "128": {
+      "frac_of_fifth": 0.7431,
+      "melFrac": 0.0821
+    }
+  },
+  "rows": [
+    {
+      "k": 1,
+      "name": "minor 2nd",
+      "n_registers": 13,
+      "abs_norm": 10.630495424844517,
+      "abs_norm_sd": 0.49260283987970255,
+      "melFrac": 0.09594917489716902,
+      "melFrac_sd": 0.02435246374766886,
+      "dir_cos": 0.12072219382192156,
+      "detect_acc": 0.9923076923076923,
+      "frac_of_atlas_fifth": 0.9427,
+      "melody_snr_vs_codec": 1.196,
+      "melody_snr_vs_random": 1.638
+    },
+    {
+      "k": 2,
+      "name": "major 2nd (whole tone)",
+      "n_registers": 13,
+      "abs_norm": 11.096635937230284,
+      "abs_norm_sd": 0.46888947348488585,
+      "melFrac": 0.10642475647658203,
+      "melFrac_sd": 0.017689170059361676,
+      "dir_cos": 0.14018723958069362,
+      "detect_acc": 0.9923076923076923,
+      "frac_of_atlas_fifth": 0.9841,
+      "melody_snr_vs_codec": 1.327,
+      "melody_snr_vs_random": 1.816
+    },
+    {
+      "k": 3,
+      "name": "minor 3rd",
+      "n_registers": 13,
+      "abs_norm": 11.191274052788808,
+      "abs_norm_sd": 0.5156576706191187,
+      "melFrac": 0.10790074277359822,
+      "melFrac_sd": 0.02601841458830748,
+      "dir_cos": 0.16157180874648558,
+      "detect_acc": 0.9961538461538461,
+      "frac_of_atlas_fifth": 0.9925,
+      "melody_snr_vs_codec": 1.345,
+      "melody_snr_vs_random": 1.842
+    },
+    {
+      "k": 4,
+      "name": "major 3rd",
+      "n_registers": 13,
+      "abs_norm": 11.239658354820953,
+      "abs_norm_sd": 0.6066645259099192,
+      "melFrac": 0.10527635354426186,
+      "melFrac_sd": 0.017697319994101884,
+      "dir_cos": 0.1465449443514042,
+      "detect_acc": 0.9961538461538461,
+      "frac_of_atlas_fifth": 0.9968,
+      "melody_snr_vs_codec": 1.313,
+      "melody_snr_vs_random": 1.797
+    },
+    {
+      "k": 5,
+      "name": "perfect 4th",
+      "n_registers": 13,
+      "abs_norm": 11.201258881352459,
+      "abs_norm_sd": 0.5482822786285413,
+      "melFrac": 0.10134395087243593,
+      "melFrac_sd": 0.031703781701568616,
+      "dir_cos": 0.13976996416507814,
+      "detect_acc": 0.9923076923076923,
+      "frac_of_atlas_fifth": 0.9934,
+      "melody_snr_vs_codec": 1.264,
+      "melody_snr_vs_random": 1.73
+    },
+    {
+      "k": 7,
+      "name": "perfect 5th",
+      "n_registers": 13,
+      "abs_norm": 11.276227270561943,
+      "abs_norm_sd": 0.772781827799357,
+      "melFrac": 0.09947230229203052,
+      "melFrac_sd": 0.02000730410427814,
+      "dir_cos": 0.1384811367156344,
+      "detect_acc": 0.9923076923076923,
+      "frac_of_atlas_fifth": 1.0,
+      "melody_snr_vs_codec": 1.24,
+      "melody_snr_vs_random": 1.698
+    },
+    {
+      "k": 12,
+      "name": "octave",
+      "n_registers": 13,
+      "abs_norm": 11.03750210072427,
+      "abs_norm_sd": 0.8204116567397389,
+      "melFrac": 0.08818761151118513,
+      "melFrac_sd": 0.016851468547479046,
+      "dir_cos": 0.09576413551840152,
+      "detect_acc": 0.9461538461538462,
+      "frac_of_atlas_fifth": 0.9788,
+      "melody_snr_vs_codec": 1.1,
+      "melody_snr_vs_random": 1.505
+    }
+  ],
+  "headline": {
+    "magnitude_saturation_min2nd_over_fifth": 0.943,
+    "melody_snr_vs_codec_min2nd": 1.1963737518350253,
+    "melody_snr_vs_codec_range": [
+      1.1,
+      1.345
+    ],
+    "detect_acc_min2nd": 0.9923076923076923
+  },
+  "reading": "A minor 2nd is NOT below the noise floor: its latent move is ~94% of a fifth's (magnitude SATURATES \u2014 displacement can't read interval SIZE), it is detectable (in-sample), and its melody-subspace share (0.096) beats codec hiss (0.080) and random (0.059). BUT the melody-subspace SNR over codec noise is only ~1.2x \u2014 the subspace the #59 loss boosts is barely more melodic than noisy, so upweighting it amplifies codec hiss almost as much as melody."
+}

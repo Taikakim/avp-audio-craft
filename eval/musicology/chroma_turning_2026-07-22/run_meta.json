@@ -1,0 +1,57 @@
+{
+  "purpose": "Melody-turning feasibility probe (Kim direct 2026-07-22): impose a per-frame chroma target stream (exact, from frame-locked test MIDIs) through LatCH target_raw guidance \u2014 free-gen melody adoption (arm A) and SDEdit a2a melody TURNING pat1->pat2/pat6 (arm B) vs unguided SDEdit control (arm C).",
+  "hypothesis": "If training-free frame-level chroma steering has real per-frame pitch authority (not just static-key authority), arm B outputs keep the source texture but adopt the target melody: target-adoption high, source-retention low, disintegration gate clean. Bears directly on Head B's role.",
+  "recipe": {
+    "entry": "model.generate(latch_configs target_raw 384-d, rho=mu=gain)",
+    "gains": [
+      1536,
+      2048
+    ],
+    "nls": [
+      0.45,
+      0.6
+    ],
+    "steps": 24,
+    "cfg": 7.0,
+    "duration_sec": 23.777,
+    "n_frames": 256,
+    "loss_type": "cosine",
+    "seeds": [
+      1234,
+      5678
+    ],
+    "source_audio": "/home/kim/Projects/SAO/eval/musicology/test_midis/renders/pat1_const16_1pitch_bpm161p5_32bars__sawlead.wav",
+    "heads": {
+      "same_chroma": "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_same_chroma_best.pt",
+      "chroma_other": "/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/chroma_heads/latch_sa3_chroma_other_best.pt"
+    },
+    "scripts": [
+      "/home/kim/Projects/SAO/eval/musicology/chroma_turning_2026-07-22/chromaturn.py",
+      "/home/kim/Projects/SAO/eval/hook_eval_renders.py"
+    ]
+  },
+  "dataset_info": "no training \u2014 pretrained SA3 medium-base + shipped LatCH chroma heads",
+  "result": {
+    "clips": 35,
+    "gain_extension": {
+      "cells": 9,
+      "gains": [
+        4096,
+        8192
+      ],
+      "verdict": "CLOSED \u2014 dose-response flat to g8192 on 3/4 target-seed combos (adoption == null); single riser (pat6/s5678 0.28-0.34 vs null 0.11) keeps source retention 0.78 = not a turn; first gate failures of the run appear at g4096 (zcr, seed 5678 both targets) and g8192 degrades transcription coverage 0.98->0.82. Quality does NOT survive to 8192 for same_chroma, contra the 07-19 scalar-head finding."
+    },
+    "verdict": "NEGATIVE \u2014 training-free frame-level chroma steering does not turn melodies at gains 1536-2048. Arm B (SDEdit a2a) steered target-adoption equals the unguided control (0.172 vs 0.172 pat2 nl0.6; 0.0 vs 0.0 pat6); arm A free-gen adoption lifts are seed-idiosyncratic, chroma delta <= +0.02. All 26 base clips gate-clean. Head B's bar stands; this probe's frame-locked adoption/retention/gate harness is its acceptance instrument. Details: REPORT.md",
+    "turn_rate_a2a": "0/20 steered a2a cells (incl. extension)",
+    "gate_failures": "2/35 (both g4096 seed 5678, zcr)",
+    "pipeline_validation": "raw pat1 sawlead source: transcription coverage 0.996, pc recovery 1.000"
+  },
+  "kim_feedback": null,
+  "related": [
+    "eval/chroma_steer_render.py",
+    "eval/musicology/test_midis/manifest.json",
+    "docs/todos.md:15 (chroma-morph)",
+    "eval/disintegration_metrics.py"
+  ],
+  "findings": "NEGATIVE \u2014 training-free frame-level chroma steering does not turn melodies at gains 1536-2048. Arm B (SDEdit a2a) steered target-adoption equals the unguided control (0.172 vs 0.172 pat2 nl0.6; 0.0 vs 0.0 pat6); arm A free-gen adoption lifts are seed-idiosyncratic, chroma delta <= +0.02. All 26 base clips gate-clean. Head B's bar stands; this probe's frame-locked adoption/retention/gate harness is its acceptance instrument. Details: REPORT.md GAIN-EXTENSION g4096/g8192 (9 cells): flat dose-response, first gate failures at g4096 \u2014 training-free lane CLOSED at all reachable gains."
+}

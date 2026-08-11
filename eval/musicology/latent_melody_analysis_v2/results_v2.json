@@ -1,0 +1,4150 @@
+{
+ "stage1": {
+  "per_timbre": {
+   "sawlead": {
+    "top20_channels": [
+     102,
+     57,
+     179,
+     84,
+     221,
+     193,
+     41,
+     76,
+     165,
+     43,
+     7,
+     128,
+     53,
+     101,
+     77,
+     154,
+     214,
+     55,
+     54,
+     124
+    ],
+    "top1_r2": 0.4847,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0561,
+    "linearity_top10": [
+     {
+      "ch": 102,
+      "r2_lin": 0.4847,
+      "r2_quad": 0.4942,
+      "r2_octbroken": 0.5115
+     },
+     {
+      "ch": 57,
+      "r2_lin": 0.4537,
+      "r2_quad": 0.4566,
+      "r2_octbroken": 0.4988
+     },
+     {
+      "ch": 179,
+      "r2_lin": 0.441,
+      "r2_quad": 0.4432,
+      "r2_octbroken": 0.4886
+     },
+     {
+      "ch": 84,
+      "r2_lin": 0.4277,
+      "r2_quad": 0.4303,
+      "r2_octbroken": 0.4518
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.4222,
+      "r2_quad": 0.4223,
+      "r2_octbroken": 0.4599
+     },
+     {
+      "ch": 193,
+      "r2_lin": 0.4151,
+      "r2_quad": 0.4175,
+      "r2_octbroken": 0.4415
+     },
+     {
+      "ch": 41,
+      "r2_lin": 0.4006,
+      "r2_quad": 0.4222,
+      "r2_octbroken": 0.4607
+     },
+     {
+      "ch": 76,
+      "r2_lin": 0.362,
+      "r2_quad": 0.3628,
+      "r2_octbroken": 0.3919
+     },
+     {
+      "ch": 165,
+      "r2_lin": 0.3535,
+      "r2_quad": 0.3558,
+      "r2_octbroken": 0.4012
+     },
+     {
+      "ch": 43,
+      "r2_lin": 0.3521,
+      "r2_quad": 0.3853,
+      "r2_octbroken": 0.3975
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.974,
+    "pca_n90": 44
+   },
+   "squarelead": {
+    "top20_channels": [
+     102,
+     154,
+     193,
+     57,
+     221,
+     7,
+     179,
+     199,
+     167,
+     84,
+     78,
+     151,
+     106,
+     37,
+     76,
+     121,
+     128,
+     34,
+     43,
+     55
+    ],
+    "top1_r2": 0.4276,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0435,
+    "linearity_top10": [
+     {
+      "ch": 102,
+      "r2_lin": 0.4276,
+      "r2_quad": 0.4279,
+      "r2_octbroken": 0.5465
+     },
+     {
+      "ch": 154,
+      "r2_lin": 0.4024,
+      "r2_quad": 0.4248,
+      "r2_octbroken": 0.5209
+     },
+     {
+      "ch": 193,
+      "r2_lin": 0.3643,
+      "r2_quad": 0.3737,
+      "r2_octbroken": 0.4265
+     },
+     {
+      "ch": 57,
+      "r2_lin": 0.3515,
+      "r2_quad": 0.4197,
+      "r2_octbroken": 0.5051
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.35,
+      "r2_quad": 0.4424,
+      "r2_octbroken": 0.4581
+     },
+     {
+      "ch": 7,
+      "r2_lin": 0.3472,
+      "r2_quad": 0.3757,
+      "r2_octbroken": 0.4257
+     },
+     {
+      "ch": 179,
+      "r2_lin": 0.3456,
+      "r2_quad": 0.3777,
+      "r2_octbroken": 0.4905
+     },
+     {
+      "ch": 199,
+      "r2_lin": 0.3313,
+      "r2_quad": 0.3348,
+      "r2_octbroken": 0.3815
+     },
+     {
+      "ch": 167,
+      "r2_lin": 0.3209,
+      "r2_quad": 0.3311,
+      "r2_octbroken": 0.3562
+     },
+     {
+      "ch": 84,
+      "r2_lin": 0.3134,
+      "r2_quad": 0.3241,
+      "r2_octbroken": 0.3865
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9552,
+    "pca_n90": 44
+   },
+   "piano": {
+    "top20_channels": [
+     251,
+     118,
+     214,
+     235,
+     206,
+     1,
+     216,
+     200,
+     168,
+     161,
+     249,
+     20,
+     69,
+     195,
+     189,
+     193,
+     3,
+     53,
+     28,
+     228
+    ],
+    "top1_r2": 0.3992,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0423,
+    "linearity_top10": [
+     {
+      "ch": 251,
+      "r2_lin": 0.3992,
+      "r2_quad": 0.4466,
+      "r2_octbroken": 0.4654
+     },
+     {
+      "ch": 118,
+      "r2_lin": 0.3829,
+      "r2_quad": 0.4714,
+      "r2_octbroken": 0.4805
+     },
+     {
+      "ch": 214,
+      "r2_lin": 0.3473,
+      "r2_quad": 0.3668,
+      "r2_octbroken": 0.4083
+     },
+     {
+      "ch": 235,
+      "r2_lin": 0.3432,
+      "r2_quad": 0.3575,
+      "r2_octbroken": 0.3739
+     },
+     {
+      "ch": 206,
+      "r2_lin": 0.3305,
+      "r2_quad": 0.4713,
+      "r2_octbroken": 0.5191
+     },
+     {
+      "ch": 1,
+      "r2_lin": 0.3036,
+      "r2_quad": 0.3461,
+      "r2_octbroken": 0.3576
+     },
+     {
+      "ch": 216,
+      "r2_lin": 0.2971,
+      "r2_quad": 0.2998,
+      "r2_octbroken": 0.3673
+     },
+     {
+      "ch": 200,
+      "r2_lin": 0.2888,
+      "r2_quad": 0.2942,
+      "r2_octbroken": 0.3278
+     },
+     {
+      "ch": 168,
+      "r2_lin": 0.2783,
+      "r2_quad": 0.2791,
+      "r2_octbroken": 0.3229
+     },
+     {
+      "ch": 161,
+      "r2_lin": 0.2778,
+      "r2_quad": 0.2794,
+      "r2_octbroken": 0.3242
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9181,
+    "pca_n90": 40
+   },
+   "strings": {
+    "top20_channels": [
+     33,
+     199,
+     102,
+     16,
+     47,
+     221,
+     112,
+     54,
+     128,
+     195,
+     234,
+     228,
+     41,
+     78,
+     21,
+     53,
+     118,
+     181,
+     150,
+     188
+    ],
+    "top1_r2": 0.3917,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0338,
+    "linearity_top10": [
+     {
+      "ch": 33,
+      "r2_lin": 0.3917,
+      "r2_quad": 0.3962,
+      "r2_octbroken": 0.4788
+     },
+     {
+      "ch": 199,
+      "r2_lin": 0.3228,
+      "r2_quad": 0.3489,
+      "r2_octbroken": 0.4834
+     },
+     {
+      "ch": 102,
+      "r2_lin": 0.2829,
+      "r2_quad": 0.3498,
+      "r2_octbroken": 0.4862
+     },
+     {
+      "ch": 16,
+      "r2_lin": 0.2609,
+      "r2_quad": 0.3146,
+      "r2_octbroken": 0.338
+     },
+     {
+      "ch": 47,
+      "r2_lin": 0.2602,
+      "r2_quad": 0.2702,
+      "r2_octbroken": 0.3853
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.2593,
+      "r2_quad": 0.2599,
+      "r2_octbroken": 0.3992
+     },
+     {
+      "ch": 112,
+      "r2_lin": 0.2547,
+      "r2_quad": 0.4192,
+      "r2_octbroken": 0.4809
+     },
+     {
+      "ch": 54,
+      "r2_lin": 0.251,
+      "r2_quad": 0.2863,
+      "r2_octbroken": 0.3727
+     },
+     {
+      "ch": 128,
+      "r2_lin": 0.2361,
+      "r2_quad": 0.3999,
+      "r2_octbroken": 0.5499
+     },
+     {
+      "ch": 195,
+      "r2_lin": 0.2258,
+      "r2_quad": 0.3931,
+      "r2_octbroken": 0.439
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9242,
+    "pca_n90": 38
+   },
+   "churchorgan": {
+    "top20_channels": [
+     118,
+     127,
+     41,
+     221,
+     26,
+     191,
+     178,
+     203,
+     60,
+     68,
+     53,
+     227,
+     161,
+     78,
+     158,
+     230,
+     225,
+     21,
+     58,
+     50
+    ],
+    "top1_r2": 0.344,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0293,
+    "linearity_top10": [
+     {
+      "ch": 118,
+      "r2_lin": 0.344,
+      "r2_quad": 0.3605,
+      "r2_octbroken": 0.3824
+     },
+     {
+      "ch": 127,
+      "r2_lin": 0.3103,
+      "r2_quad": 0.3145,
+      "r2_octbroken": 0.4144
+     },
+     {
+      "ch": 41,
+      "r2_lin": 0.3065,
+      "r2_quad": 0.3481,
+      "r2_octbroken": 0.4887
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.3001,
+      "r2_quad": 0.3167,
+      "r2_octbroken": 0.4151
+     },
+     {
+      "ch": 26,
+      "r2_lin": 0.2826,
+      "r2_quad": 0.2894,
+      "r2_octbroken": 0.4629
+     },
+     {
+      "ch": 191,
+      "r2_lin": 0.2476,
+      "r2_quad": 0.3593,
+      "r2_octbroken": 0.3693
+     },
+     {
+      "ch": 178,
+      "r2_lin": 0.2399,
+      "r2_quad": 0.2622,
+      "r2_octbroken": 0.3219
+     },
+     {
+      "ch": 203,
+      "r2_lin": 0.2264,
+      "r2_quad": 0.2875,
+      "r2_octbroken": 0.3055
+     },
+     {
+      "ch": 60,
+      "r2_lin": 0.217,
+      "r2_quad": 0.4294,
+      "r2_octbroken": 0.4852
+     },
+     {
+      "ch": 68,
+      "r2_lin": 0.2092,
+      "r2_quad": 0.2308,
+      "r2_octbroken": 0.3108
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.8616,
+    "pca_n90": 37
+   },
+   "epiano": {
+    "top20_channels": [
+     167,
+     37,
+     107,
+     251,
+     76,
+     234,
+     138,
+     243,
+     221,
+     154,
+     48,
+     186,
+     121,
+     128,
+     65,
+     57,
+     124,
+     174,
+     62,
+     226
+    ],
+    "top1_r2": 0.6496,
+    "n_channels_r2_gt_0.5": 5,
+    "median_r2": 0.0632,
+    "linearity_top10": [
+     {
+      "ch": 167,
+      "r2_lin": 0.6496,
+      "r2_quad": 0.6533,
+      "r2_octbroken": 0.6578
+     },
+     {
+      "ch": 37,
+      "r2_lin": 0.5777,
+      "r2_quad": 0.6189,
+      "r2_octbroken": 0.6413
+     },
+     {
+      "ch": 107,
+      "r2_lin": 0.5769,
+      "r2_quad": 0.6003,
+      "r2_octbroken": 0.6302
+     },
+     {
+      "ch": 251,
+      "r2_lin": 0.5484,
+      "r2_quad": 0.5701,
+      "r2_octbroken": 0.612
+     },
+     {
+      "ch": 76,
+      "r2_lin": 0.5036,
+      "r2_quad": 0.5242,
+      "r2_octbroken": 0.5552
+     },
+     {
+      "ch": 234,
+      "r2_lin": 0.4478,
+      "r2_quad": 0.5725,
+      "r2_octbroken": 0.5882
+     },
+     {
+      "ch": 138,
+      "r2_lin": 0.4276,
+      "r2_quad": 0.4286,
+      "r2_octbroken": 0.5119
+     },
+     {
+      "ch": 243,
+      "r2_lin": 0.4185,
+      "r2_quad": 0.4436,
+      "r2_octbroken": 0.4652
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.4137,
+      "r2_quad": 0.5436,
+      "r2_octbroken": 0.5565
+     },
+     {
+      "ch": 154,
+      "r2_lin": 0.4108,
+      "r2_quad": 0.4389,
+      "r2_octbroken": 0.5056
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9672,
+    "pca_n90": 44
+   },
+   "synthbass": {
+    "top20_channels": [
+     53,
+     63,
+     118,
+     199,
+     16,
+     41,
+     102,
+     255,
+     57,
+     228,
+     219,
+     221,
+     252,
+     176,
+     87,
+     43,
+     8,
+     188,
+     22,
+     189
+    ],
+    "top1_r2": 0.3866,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0326,
+    "linearity_top10": [
+     {
+      "ch": 53,
+      "r2_lin": 0.3866,
+      "r2_quad": 0.3866,
+      "r2_octbroken": 0.4335
+     },
+     {
+      "ch": 63,
+      "r2_lin": 0.3766,
+      "r2_quad": 0.3798,
+      "r2_octbroken": 0.4069
+     },
+     {
+      "ch": 118,
+      "r2_lin": 0.3362,
+      "r2_quad": 0.4652,
+      "r2_octbroken": 0.5443
+     },
+     {
+      "ch": 199,
+      "r2_lin": 0.3136,
+      "r2_quad": 0.3137,
+      "r2_octbroken": 0.4601
+     },
+     {
+      "ch": 16,
+      "r2_lin": 0.3045,
+      "r2_quad": 0.3187,
+      "r2_octbroken": 0.3314
+     },
+     {
+      "ch": 41,
+      "r2_lin": 0.2885,
+      "r2_quad": 0.3102,
+      "r2_octbroken": 0.3352
+     },
+     {
+      "ch": 102,
+      "r2_lin": 0.2861,
+      "r2_quad": 0.371,
+      "r2_octbroken": 0.425
+     },
+     {
+      "ch": 255,
+      "r2_lin": 0.2636,
+      "r2_quad": 0.2646,
+      "r2_octbroken": 0.3229
+     },
+     {
+      "ch": 57,
+      "r2_lin": 0.2569,
+      "r2_quad": 0.2599,
+      "r2_octbroken": 0.3217
+     },
+     {
+      "ch": 228,
+      "r2_lin": 0.249,
+      "r2_quad": 0.2555,
+      "r2_octbroken": 0.3076
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.919,
+    "pca_n90": 45
+   },
+   "synthbrass": {
+    "top20_channels": [
+     53,
+     221,
+     124,
+     179,
+     151,
+     203,
+     229,
+     161,
+     54,
+     79,
+     232,
+     101,
+     194,
+     43,
+     178,
+     193,
+     84,
+     107,
+     55,
+     81
+    ],
+    "top1_r2": 0.6374,
+    "n_channels_r2_gt_0.5": 6,
+    "median_r2": 0.0613,
+    "linearity_top10": [
+     {
+      "ch": 53,
+      "r2_lin": 0.6374,
+      "r2_quad": 0.6452,
+      "r2_octbroken": 0.6962
+     },
+     {
+      "ch": 221,
+      "r2_lin": 0.5318,
+      "r2_quad": 0.5645,
+      "r2_octbroken": 0.5867
+     },
+     {
+      "ch": 124,
+      "r2_lin": 0.5292,
+      "r2_quad": 0.5303,
+      "r2_octbroken": 0.5959
+     },
+     {
+      "ch": 179,
+      "r2_lin": 0.5258,
+      "r2_quad": 0.547,
+      "r2_octbroken": 0.6185
+     },
+     {
+      "ch": 151,
+      "r2_lin": 0.5088,
+      "r2_quad": 0.5116,
+      "r2_octbroken": 0.5601
+     },
+     {
+      "ch": 203,
+      "r2_lin": 0.5001,
+      "r2_quad": 0.5108,
+      "r2_octbroken": 0.5793
+     },
+     {
+      "ch": 229,
+      "r2_lin": 0.4858,
+      "r2_quad": 0.5339,
+      "r2_octbroken": 0.5466
+     },
+     {
+      "ch": 161,
+      "r2_lin": 0.4399,
+      "r2_quad": 0.4748,
+      "r2_octbroken": 0.49
+     },
+     {
+      "ch": 54,
+      "r2_lin": 0.4366,
+      "r2_quad": 0.4554,
+      "r2_octbroken": 0.582
+     },
+     {
+      "ch": 79,
+      "r2_lin": 0.4308,
+      "r2_quad": 0.4428,
+      "r2_octbroken": 0.5158
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9705,
+    "pca_n90": 45
+   },
+   "flute": {
+    "top20_channels": [
+     37,
+     107,
+     124,
+     57,
+     251,
+     165,
+     46,
+     138,
+     154,
+     76,
+     7,
+     152,
+     216,
+     194,
+     34,
+     192,
+     240,
+     23,
+     84,
+     92
+    ],
+    "top1_r2": 0.6826,
+    "n_channels_r2_gt_0.5": 15,
+    "median_r2": 0.098,
+    "linearity_top10": [
+     {
+      "ch": 37,
+      "r2_lin": 0.6826,
+      "r2_quad": 0.6968,
+      "r2_octbroken": 0.7117
+     },
+     {
+      "ch": 107,
+      "r2_lin": 0.6521,
+      "r2_quad": 0.6556,
+      "r2_octbroken": 0.6959
+     },
+     {
+      "ch": 124,
+      "r2_lin": 0.6228,
+      "r2_quad": 0.6573,
+      "r2_octbroken": 0.6963
+     },
+     {
+      "ch": 57,
+      "r2_lin": 0.6079,
+      "r2_quad": 0.6948,
+      "r2_octbroken": 0.7161
+     },
+     {
+      "ch": 251,
+      "r2_lin": 0.5984,
+      "r2_quad": 0.6019,
+      "r2_octbroken": 0.6895
+     },
+     {
+      "ch": 165,
+      "r2_lin": 0.5941,
+      "r2_quad": 0.6381,
+      "r2_octbroken": 0.6765
+     },
+     {
+      "ch": 46,
+      "r2_lin": 0.5821,
+      "r2_quad": 0.6003,
+      "r2_octbroken": 0.6428
+     },
+     {
+      "ch": 138,
+      "r2_lin": 0.5814,
+      "r2_quad": 0.6129,
+      "r2_octbroken": 0.7498
+     },
+     {
+      "ch": 154,
+      "r2_lin": 0.5607,
+      "r2_quad": 0.5717,
+      "r2_octbroken": 0.6331
+     },
+     {
+      "ch": 76,
+      "r2_lin": 0.5588,
+      "r2_quad": 0.5754,
+      "r2_octbroken": 0.6116
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.9852,
+    "pca_n90": 36
+   },
+   "vibraphone": {
+    "top20_channels": [
+     167,
+     174,
+     203,
+     10,
+     214,
+     223,
+     33,
+     195,
+     182,
+     41,
+     9,
+     115,
+     121,
+     48,
+     55,
+     179,
+     84,
+     37,
+     232,
+     47
+    ],
+    "top1_r2": 0.3223,
+    "n_channels_r2_gt_0.5": 0,
+    "median_r2": 0.0233,
+    "linearity_top10": [
+     {
+      "ch": 167,
+      "r2_lin": 0.3223,
+      "r2_quad": 0.3246,
+      "r2_octbroken": 0.4308
+     },
+     {
+      "ch": 174,
+      "r2_lin": 0.2568,
+      "r2_quad": 0.2571,
+      "r2_octbroken": 0.3941
+     },
+     {
+      "ch": 203,
+      "r2_lin": 0.2361,
+      "r2_quad": 0.243,
+      "r2_octbroken": 0.4764
+     },
+     {
+      "ch": 10,
+      "r2_lin": 0.232,
+      "r2_quad": 0.2432,
+      "r2_octbroken": 0.4401
+     },
+     {
+      "ch": 214,
+      "r2_lin": 0.2314,
+      "r2_quad": 0.2315,
+      "r2_octbroken": 0.2979
+     },
+     {
+      "ch": 223,
+      "r2_lin": 0.2186,
+      "r2_quad": 0.2258,
+      "r2_octbroken": 0.2979
+     },
+     {
+      "ch": 33,
+      "r2_lin": 0.2043,
+      "r2_quad": 0.2483,
+      "r2_octbroken": 0.479
+     },
+     {
+      "ch": 195,
+      "r2_lin": 0.1988,
+      "r2_quad": 0.205,
+      "r2_octbroken": 0.3191
+     },
+     {
+      "ch": 182,
+      "r2_lin": 0.1764,
+      "r2_quad": 0.2567,
+      "r2_octbroken": 0.278
+     },
+     {
+      "ch": 41,
+      "r2_lin": 0.1742,
+      "r2_quad": 0.2586,
+      "r2_octbroken": 0.5349
+     }
+    ],
+    "ridge_loo_r2_decode_pitch": 0.8193,
+    "pca_n90": 46
+   }
+  },
+  "cross_timbre": {
+   "mean_offdiag_transfer_r2": -0.255,
+   "mean_offdiag_cos_w": 0.382,
+   "pooled_ridge_loo_r2": 0.8009,
+   "leave_one_timbre_out_r2": {
+    "sawlead": 0.712,
+    "squarelead": 0.744,
+    "piano": 0.746,
+    "strings": 0.806,
+    "churchorgan": 0.657,
+    "epiano": 0.741,
+    "synthbass": 0.804,
+    "synthbrass": 0.901,
+    "flute": 0.247,
+    "vibraphone": 0.433
+   },
+   "mean_loto_r2": 0.679,
+   "loto_r2_ci95_boot_timbres": [
+    0.5545,
+    0.7803
+   ],
+   "mean_loto_r2_v1_5timbres_only": 0.733,
+   "transfer_matrix": [
+    [
+     0.999,
+     0.363,
+     -2.258,
+     -1.714,
+     -1.564,
+     -3.307,
+     -3.256,
+     -0.241,
+     -1.181,
+     -2.667
+    ],
+    [
+     0.481,
+     0.998,
+     -0.709,
+     -0.456,
+     -0.268,
+     -0.7,
+     -1.146,
+     0.853,
+     0.583,
+     -0.709
+    ],
+    [
+     0.067,
+     0.01,
+     0.992,
+     0.373,
+     0.251,
+     0.178,
+     0.379,
+     0.599,
+     -1.907,
+     0.036
+    ],
+    [
+     0.658,
+     0.729,
+     0.572,
+     0.993,
+     -0.101,
+     0.502,
+     0.82,
+     0.903,
+     -0.342,
+     0.348
+    ],
+    [
+     0.069,
+     0.476,
+     0.548,
+     0.6,
+     0.99,
+     0.232,
+     0.66,
+     0.793,
+     -0.491,
+     0.276
+    ],
+    [
+     -1.096,
+     -0.12,
+     -0.109,
+     -0.138,
+     -0.59,
+     0.997,
+     0.387,
+     0.492,
+     0.705,
+     0.397
+    ],
+    [
+     -0.081,
+     0.582,
+     0.226,
+     0.411,
+     -1.829,
+     0.648,
+     0.994,
+     0.713,
+     -0.276,
+     0.205
+    ],
+    [
+     0.026,
+     0.812,
+     0.055,
+     0.31,
+     0.308,
+     -0.042,
+     -0.099,
+     0.999,
+     0.664,
+     0.006
+    ],
+    [
+     -0.611,
+     0.22,
+     -0.508,
+     -0.374,
+     -0.355,
+     0.38,
+     -0.454,
+     0.523,
+     0.999,
+     -0.12
+    ],
+    [
+     -10.595,
+     -2.253,
+     -0.043,
+     -0.848,
+     0.228,
+     -0.01,
+     0.657,
+     -0.893,
+     0.164,
+     0.98
+    ]
+   ]
+  },
+  "arp_validation_pat3": {
+   "sawlead": {
+    "pred_mean_by_pos": [
+     46.52,
+     48.83,
+     53.16,
+     58.27
+    ],
+    "corr_with_truth": 0.544
+   },
+   "squarelead": {
+    "pred_mean_by_pos": [
+     22.17,
+     29.28,
+     38.49,
+     43.52
+    ],
+    "corr_with_truth": 0.658
+   },
+   "piano": {
+    "pred_mean_by_pos": [
+     44.57,
+     39.82,
+     44.13,
+     55.1
+    ],
+    "corr_with_truth": 0.679
+   },
+   "strings": {
+    "pred_mean_by_pos": [
+     52.64,
+     49.79,
+     51.98,
+     53.2
+    ],
+    "corr_with_truth": 0.198
+   },
+   "churchorgan": {
+    "pred_mean_by_pos": [
+     62.94,
+     61.21,
+     56.48,
+     58.61
+    ],
+    "corr_with_truth": -0.448
+   },
+   "epiano": {
+    "pred_mean_by_pos": [
+     37.4,
+     46.71,
+     43.92,
+     43.32
+    ],
+    "corr_with_truth": 0.292
+   },
+   "synthbass": {
+    "pred_mean_by_pos": [
+     48.33,
+     48.27,
+     60.86,
+     60.15
+    ],
+    "corr_with_truth": 0.713
+   },
+   "synthbrass": {
+    "pred_mean_by_pos": [
+     24.52,
+     27.8,
+     32.94,
+     41.69
+    ],
+    "corr_with_truth": 0.599
+   },
+   "flute": {
+    "pred_mean_by_pos": [
+     70.44,
+     66.99,
+     60.91,
+     64.52
+    ],
+    "corr_with_truth": -0.63
+   },
+   "vibraphone": {
+    "pred_mean_by_pos": [
+     74.28,
+     62.93,
+     63.31,
+     76.09
+    ],
+    "corr_with_truth": 0.194
+   }
+  }
+ },
+ "stage2": {
+  "acf_locked_lock1": {
+   "pat2_const16_2pitch": {
+    "period_truth": 2,
+    "raw_lags1_8": [
+     -0.153,
+     0.281,
+     -0.23,
+     -0.122,
+     -0.24,
+     0.162,
+     -0.182,
+     0.648
+    ],
+    "hp_lags1_8": [
+     -0.747,
+     0.331,
+     -0.165,
+     0.147,
+     -0.141,
+     0.275,
+     -0.54,
+     0.683
+    ]
+   },
+   "pat3_const16_arp4": {
+    "period_truth": 4,
+    "raw_lags1_8": [
+     -0.033,
+     -0.165,
+     -0.096,
+     0.036,
+     -0.099,
+     -0.174,
+     -0.054,
+     0.69
+    ],
+    "hp_lags1_8": [
+     -0.421,
+     -0.291,
+     0.054,
+     0.314,
+     0.028,
+     -0.263,
+     -0.295,
+     0.735
+    ]
+   }
+  },
+  "interleave": {
+   "n_cells": 140,
+   "slope_mean": 0.924,
+   "slope_ci95_boot_cells": [
+    0.8811,
+    0.9656
+   ],
+   "slope_median": 0.993,
+   "r2_mean": 0.379,
+   "r2_ci95": [
+    0.3423,
+    0.4125
+   ],
+   "per_cell": {
+    "pat2_const16_2pitch__bpm143__sawlead": {
+     "slope": 0.947,
+     "r2": 0.438,
+     "resid_over_scatter": 1.043,
+     "snap_margin": -0.066,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__squarelead": {
+     "slope": 0.962,
+     "r2": 0.181,
+     "resid_over_scatter": 1.09,
+     "snap_margin": 0.131,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__piano": {
+     "slope": 1.062,
+     "r2": 0.559,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.069,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__strings": {
+     "slope": 0.901,
+     "r2": 0.163,
+     "resid_over_scatter": 1.064,
+     "snap_margin": 0.024,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__churchorgan": {
+     "slope": 0.539,
+     "r2": 0.019,
+     "resid_over_scatter": 1.018,
+     "snap_margin": 0.116,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__epiano": {
+     "slope": 1.098,
+     "r2": 0.701,
+     "resid_over_scatter": 1.038,
+     "snap_margin": -0.089,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__synthbass": {
+     "slope": 0.929,
+     "r2": 0.397,
+     "resid_over_scatter": 1.125,
+     "snap_margin": -0.042,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__synthbrass": {
+     "slope": 1.106,
+     "r2": 0.348,
+     "resid_over_scatter": 1.188,
+     "snap_margin": 0.12,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__flute": {
+     "slope": 0.701,
+     "r2": 0.153,
+     "resid_over_scatter": 1.085,
+     "snap_margin": 0.005,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm143__vibraphone": {
+     "slope": 0.857,
+     "r2": 0.321,
+     "resid_over_scatter": 1.246,
+     "snap_margin": -0.042,
+     "n_boundary": 259
+    },
+    "pat2_const16_2pitch__bpm150__sawlead": {
+     "slope": 1.121,
+     "r2": 0.46,
+     "resid_over_scatter": 1.04,
+     "snap_margin": -0.055,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__squarelead": {
+     "slope": 1.045,
+     "r2": 0.238,
+     "resid_over_scatter": 1.07,
+     "snap_margin": 0.019,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__piano": {
+     "slope": 1.035,
+     "r2": 0.434,
+     "resid_over_scatter": 1.059,
+     "snap_margin": -0.05,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__strings": {
+     "slope": 0.702,
+     "r2": 0.123,
+     "resid_over_scatter": 1.059,
+     "snap_margin": 0.022,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__churchorgan": {
+     "slope": 0.342,
+     "r2": 0.032,
+     "resid_over_scatter": 1.043,
+     "snap_margin": 0.016,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__epiano": {
+     "slope": 1.117,
+     "r2": 0.599,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.084,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__synthbass": {
+     "slope": 1.01,
+     "r2": 0.399,
+     "resid_over_scatter": 1.104,
+     "snap_margin": -0.054,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__synthbrass": {
+     "slope": 1.001,
+     "r2": 0.297,
+     "resid_over_scatter": 1.155,
+     "snap_margin": 0.054,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__flute": {
+     "slope": 0.646,
+     "r2": 0.052,
+     "resid_over_scatter": 1.058,
+     "snap_margin": 0.033,
+     "n_boundary": 268
+    },
+    "pat2_const16_2pitch__bpm150__vibraphone": {
+     "slope": 0.841,
+     "r2": 0.232,
+     "resid_over_scatter": 1.251,
+     "snap_margin": -0.018,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm143__sawlead": {
+     "slope": 1.039,
+     "r2": 0.569,
+     "resid_over_scatter": 1.028,
+     "snap_margin": -0.066,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__squarelead": {
+     "slope": 1.059,
+     "r2": 0.55,
+     "resid_over_scatter": 1.024,
+     "snap_margin": -0.08,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__piano": {
+     "slope": 1.019,
+     "r2": 0.323,
+     "resid_over_scatter": 1.046,
+     "snap_margin": -0.01,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__strings": {
+     "slope": 1.3,
+     "r2": 0.285,
+     "resid_over_scatter": 1.041,
+     "snap_margin": 0.02,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__churchorgan": {
+     "slope": 0.356,
+     "r2": 0.018,
+     "resid_over_scatter": 1.011,
+     "snap_margin": 0.059,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__epiano": {
+     "slope": 1.142,
+     "r2": 0.709,
+     "resid_over_scatter": 1.025,
+     "snap_margin": -0.067,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__synthbass": {
+     "slope": 1.101,
+     "r2": 0.567,
+     "resid_over_scatter": 1.085,
+     "snap_margin": -0.064,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__synthbrass": {
+     "slope": 0.942,
+     "r2": 0.305,
+     "resid_over_scatter": 1.087,
+     "snap_margin": -0.032,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__flute": {
+     "slope": 0.862,
+     "r2": 0.135,
+     "resid_over_scatter": 1.043,
+     "snap_margin": 0.008,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm143__vibraphone": {
+     "slope": 1.015,
+     "r2": 0.498,
+     "resid_over_scatter": 1.157,
+     "snap_margin": -0.031,
+     "n_boundary": 259
+    },
+    "pat7_wholetone_rock__bpm150__sawlead": {
+     "slope": 1.113,
+     "r2": 0.561,
+     "resid_over_scatter": 1.035,
+     "snap_margin": -0.057,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__squarelead": {
+     "slope": 1.068,
+     "r2": 0.459,
+     "resid_over_scatter": 1.044,
+     "snap_margin": -0.056,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__piano": {
+     "slope": 0.997,
+     "r2": 0.251,
+     "resid_over_scatter": 1.06,
+     "snap_margin": 0.006,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__strings": {
+     "slope": 0.896,
+     "r2": 0.154,
+     "resid_over_scatter": 1.051,
+     "snap_margin": 0.02,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__churchorgan": {
+     "slope": 0.467,
+     "r2": 0.075,
+     "resid_over_scatter": 1.022,
+     "snap_margin": -0.001,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__epiano": {
+     "slope": 1.051,
+     "r2": 0.614,
+     "resid_over_scatter": 1.046,
+     "snap_margin": -0.074,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__synthbass": {
+     "slope": 0.925,
+     "r2": 0.348,
+     "resid_over_scatter": 1.093,
+     "snap_margin": -0.049,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__synthbrass": {
+     "slope": 0.93,
+     "r2": 0.387,
+     "resid_over_scatter": 1.103,
+     "snap_margin": -0.05,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__flute": {
+     "slope": 0.713,
+     "r2": 0.038,
+     "resid_over_scatter": 1.075,
+     "snap_margin": 0.066,
+     "n_boundary": 268
+    },
+    "pat7_wholetone_rock__bpm150__vibraphone": {
+     "slope": 0.889,
+     "r2": 0.102,
+     "resid_over_scatter": 1.185,
+     "snap_margin": 0.074,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm143__sawlead": {
+     "slope": 0.786,
+     "r2": 0.362,
+     "resid_over_scatter": 1.056,
+     "snap_margin": -0.069,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__squarelead": {
+     "slope": 1.012,
+     "r2": 0.328,
+     "resid_over_scatter": 1.069,
+     "snap_margin": -0.047,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__piano": {
+     "slope": 0.924,
+     "r2": 0.372,
+     "resid_over_scatter": 1.048,
+     "snap_margin": -0.033,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__strings": {
+     "slope": 1.167,
+     "r2": 0.287,
+     "resid_over_scatter": 1.036,
+     "snap_margin": 0.015,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__churchorgan": {
+     "slope": 0.563,
+     "r2": 0.041,
+     "resid_over_scatter": 1.053,
+     "snap_margin": 0.087,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__epiano": {
+     "slope": 1.185,
+     "r2": 0.784,
+     "resid_over_scatter": 1.036,
+     "snap_margin": -0.09,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__synthbass": {
+     "slope": 1.057,
+     "r2": 0.454,
+     "resid_over_scatter": 1.113,
+     "snap_margin": -0.056,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__synthbrass": {
+     "slope": 1.06,
+     "r2": 0.463,
+     "resid_over_scatter": 1.134,
+     "snap_margin": -0.072,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__flute": {
+     "slope": 0.977,
+     "r2": 0.415,
+     "resid_over_scatter": 1.074,
+     "snap_margin": -0.023,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm143__vibraphone": {
+     "slope": 1.126,
+     "r2": 0.797,
+     "resid_over_scatter": 1.258,
+     "snap_margin": -0.135,
+     "n_boundary": 259
+    },
+    "pat8_fifth_ping__bpm150__sawlead": {
+     "slope": 0.977,
+     "r2": 0.434,
+     "resid_over_scatter": 1.04,
+     "snap_margin": -0.086,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__squarelead": {
+     "slope": 1.054,
+     "r2": 0.271,
+     "resid_over_scatter": 1.074,
+     "snap_margin": -0.02,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__piano": {
+     "slope": 0.909,
+     "r2": 0.337,
+     "resid_over_scatter": 1.056,
+     "snap_margin": -0.028,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__strings": {
+     "slope": 1.048,
+     "r2": 0.26,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.005,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__churchorgan": {
+     "slope": 0.161,
+     "r2": 0.006,
+     "resid_over_scatter": 1.059,
+     "snap_margin": 0.036,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__epiano": {
+     "slope": 1.035,
+     "r2": 0.637,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.095,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__synthbass": {
+     "slope": 1.021,
+     "r2": 0.384,
+     "resid_over_scatter": 1.114,
+     "snap_margin": -0.038,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__synthbrass": {
+     "slope": 1.16,
+     "r2": 0.565,
+     "resid_over_scatter": 1.137,
+     "snap_margin": -0.059,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__flute": {
+     "slope": 1.006,
+     "r2": 0.487,
+     "resid_over_scatter": 1.049,
+     "snap_margin": -0.028,
+     "n_boundary": 268
+    },
+    "pat8_fifth_ping__bpm150__vibraphone": {
+     "slope": 1.154,
+     "r2": 0.729,
+     "resid_over_scatter": 1.225,
+     "snap_margin": -0.126,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm143__sawlead": {
+     "slope": 0.936,
+     "r2": 0.48,
+     "resid_over_scatter": 1.032,
+     "snap_margin": -0.082,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__squarelead": {
+     "slope": 1.045,
+     "r2": 0.462,
+     "resid_over_scatter": 1.074,
+     "snap_margin": -0.082,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__piano": {
+     "slope": 0.947,
+     "r2": 0.317,
+     "resid_over_scatter": 1.073,
+     "snap_margin": -0.016,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__strings": {
+     "slope": 0.994,
+     "r2": 0.463,
+     "resid_over_scatter": 1.089,
+     "snap_margin": -0.05,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__churchorgan": {
+     "slope": 0.852,
+     "r2": 0.113,
+     "resid_over_scatter": 1.054,
+     "snap_margin": 0.041,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__epiano": {
+     "slope": 1.097,
+     "r2": 0.416,
+     "resid_over_scatter": 1.049,
+     "snap_margin": -0.006,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__synthbass": {
+     "slope": 0.992,
+     "r2": 0.273,
+     "resid_over_scatter": 1.135,
+     "snap_margin": 0.003,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__synthbrass": {
+     "slope": 0.691,
+     "r2": 0.376,
+     "resid_over_scatter": 1.115,
+     "snap_margin": -0.154,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__flute": {
+     "slope": 1.122,
+     "r2": 0.657,
+     "resid_over_scatter": 1.073,
+     "snap_margin": -0.076,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm143__vibraphone": {
+     "slope": 1.174,
+     "r2": 0.768,
+     "resid_over_scatter": 1.245,
+     "snap_margin": -0.13,
+     "n_boundary": 259
+    },
+    "pat9_octave_bounce__bpm150__sawlead": {
+     "slope": 1.006,
+     "r2": 0.589,
+     "resid_over_scatter": 1.045,
+     "snap_margin": -0.075,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__squarelead": {
+     "slope": 1.076,
+     "r2": 0.405,
+     "resid_over_scatter": 1.073,
+     "snap_margin": -0.074,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__piano": {
+     "slope": 0.696,
+     "r2": 0.188,
+     "resid_over_scatter": 1.058,
+     "snap_margin": -0.019,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__strings": {
+     "slope": 0.813,
+     "r2": 0.386,
+     "resid_over_scatter": 1.118,
+     "snap_margin": -0.043,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__churchorgan": {
+     "slope": 0.8,
+     "r2": 0.224,
+     "resid_over_scatter": 1.117,
+     "snap_margin": -0.03,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__epiano": {
+     "slope": 1.092,
+     "r2": 0.356,
+     "resid_over_scatter": 1.079,
+     "snap_margin": 0.002,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__synthbass": {
+     "slope": 0.999,
+     "r2": 0.266,
+     "resid_over_scatter": 1.155,
+     "snap_margin": -0.008,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__synthbrass": {
+     "slope": 0.84,
+     "r2": 0.542,
+     "resid_over_scatter": 1.109,
+     "snap_margin": -0.147,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__flute": {
+     "slope": 1.236,
+     "r2": 0.764,
+     "resid_over_scatter": 1.058,
+     "snap_margin": -0.077,
+     "n_boundary": 268
+    },
+    "pat9_octave_bounce__bpm150__vibraphone": {
+     "slope": 1.18,
+     "r2": 0.746,
+     "resid_over_scatter": 1.235,
+     "snap_margin": -0.133,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm143__sawlead": {
+     "slope": 0.716,
+     "r2": 0.342,
+     "resid_over_scatter": 1.05,
+     "snap_margin": -0.091,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__squarelead": {
+     "slope": 0.234,
+     "r2": 0.021,
+     "resid_over_scatter": 1.095,
+     "snap_margin": 0.043,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__piano": {
+     "slope": 0.892,
+     "r2": 0.288,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.022,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__strings": {
+     "slope": 1.402,
+     "r2": 0.261,
+     "resid_over_scatter": 1.046,
+     "snap_margin": 0.039,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__churchorgan": {
+     "slope": 0.189,
+     "r2": 0.004,
+     "resid_over_scatter": 1.059,
+     "snap_margin": 0.076,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__epiano": {
+     "slope": 0.994,
+     "r2": 0.553,
+     "resid_over_scatter": 1.053,
+     "snap_margin": -0.094,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__synthbass": {
+     "slope": 0.906,
+     "r2": 0.47,
+     "resid_over_scatter": 1.114,
+     "snap_margin": -0.082,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__synthbrass": {
+     "slope": 0.439,
+     "r2": 0.102,
+     "resid_over_scatter": 1.149,
+     "snap_margin": 0.056,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__flute": {
+     "slope": 1.089,
+     "r2": 0.4,
+     "resid_over_scatter": 1.094,
+     "snap_margin": -0.019,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm143__vibraphone": {
+     "slope": 1.056,
+     "r2": 0.589,
+     "resid_over_scatter": 1.181,
+     "snap_margin": -0.094,
+     "n_boundary": 259
+    },
+    "pat10_fourth_seesaw__bpm150__sawlead": {
+     "slope": 0.845,
+     "r2": 0.477,
+     "resid_over_scatter": 1.042,
+     "snap_margin": -0.096,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__squarelead": {
+     "slope": 0.941,
+     "r2": 0.358,
+     "resid_over_scatter": 1.074,
+     "snap_margin": -0.044,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__piano": {
+     "slope": 0.903,
+     "r2": 0.314,
+     "resid_over_scatter": 1.063,
+     "snap_margin": -0.027,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__strings": {
+     "slope": 1.292,
+     "r2": 0.285,
+     "resid_over_scatter": 1.04,
+     "snap_margin": 0.041,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__churchorgan": {
+     "slope": 0.562,
+     "r2": 0.093,
+     "resid_over_scatter": 1.056,
+     "snap_margin": -0.001,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__epiano": {
+     "slope": 0.884,
+     "r2": 0.453,
+     "resid_over_scatter": 1.082,
+     "snap_margin": -0.107,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__synthbass": {
+     "slope": 0.809,
+     "r2": 0.352,
+     "resid_over_scatter": 1.114,
+     "snap_margin": -0.087,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__synthbrass": {
+     "slope": 1.121,
+     "r2": 0.566,
+     "resid_over_scatter": 1.128,
+     "snap_margin": 0.026,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__flute": {
+     "slope": 0.748,
+     "r2": 0.102,
+     "resid_over_scatter": 1.074,
+     "snap_margin": 0.028,
+     "n_boundary": 268
+    },
+    "pat10_fourth_seesaw__bpm150__vibraphone": {
+     "slope": 1.061,
+     "r2": 0.542,
+     "resid_over_scatter": 1.166,
+     "snap_margin": -0.08,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm143__sawlead": {
+     "slope": 0.668,
+     "r2": 0.091,
+     "resid_over_scatter": 1.038,
+     "snap_margin": 0.078,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__squarelead": {
+     "slope": 1.114,
+     "r2": 0.603,
+     "resid_over_scatter": 1.026,
+     "snap_margin": -0.081,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__piano": {
+     "slope": 1.104,
+     "r2": 0.501,
+     "resid_over_scatter": 1.044,
+     "snap_margin": -0.043,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__strings": {
+     "slope": 0.757,
+     "r2": 0.086,
+     "resid_over_scatter": 1.037,
+     "snap_margin": 0.036,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__churchorgan": {
+     "slope": 0.927,
+     "r2": 0.084,
+     "resid_over_scatter": 1.026,
+     "snap_margin": 0.045,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__epiano": {
+     "slope": 1.02,
+     "r2": 0.57,
+     "resid_over_scatter": 1.021,
+     "snap_margin": -0.053,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__synthbass": {
+     "slope": 1.039,
+     "r2": 0.63,
+     "resid_over_scatter": 1.095,
+     "snap_margin": -0.08,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__synthbrass": {
+     "slope": 0.782,
+     "r2": 0.339,
+     "resid_over_scatter": 1.033,
+     "snap_margin": -0.051,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__flute": {
+     "slope": 0.038,
+     "r2": 0.0,
+     "resid_over_scatter": 1.027,
+     "snap_margin": 0.07,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm143__vibraphone": {
+     "slope": 0.971,
+     "r2": 0.313,
+     "resid_over_scatter": 1.165,
+     "snap_margin": -0.016,
+     "n_boundary": 259
+    },
+    "pat15_pat2_e2__bpm150__sawlead": {
+     "slope": 1.058,
+     "r2": 0.292,
+     "resid_over_scatter": 1.033,
+     "snap_margin": -0.001,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__squarelead": {
+     "slope": 0.923,
+     "r2": 0.354,
+     "resid_over_scatter": 1.072,
+     "snap_margin": -0.063,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__piano": {
+     "slope": 1.048,
+     "r2": 0.385,
+     "resid_over_scatter": 1.095,
+     "snap_margin": -0.038,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__strings": {
+     "slope": 0.632,
+     "r2": 0.043,
+     "resid_over_scatter": 1.054,
+     "snap_margin": 0.081,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__churchorgan": {
+     "slope": 0.641,
+     "r2": 0.052,
+     "resid_over_scatter": 1.031,
+     "snap_margin": 0.054,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__epiano": {
+     "slope": 0.97,
+     "r2": 0.541,
+     "resid_over_scatter": 1.043,
+     "snap_margin": -0.049,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__synthbass": {
+     "slope": 0.928,
+     "r2": 0.338,
+     "resid_over_scatter": 1.087,
+     "snap_margin": -0.043,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__synthbrass": {
+     "slope": 0.955,
+     "r2": 0.432,
+     "resid_over_scatter": 1.058,
+     "snap_margin": -0.055,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__flute": {
+     "slope": 0.208,
+     "r2": 0.003,
+     "resid_over_scatter": 1.051,
+     "snap_margin": 0.031,
+     "n_boundary": 268
+    },
+    "pat15_pat2_e2__bpm150__vibraphone": {
+     "slope": 0.698,
+     "r2": 0.181,
+     "resid_over_scatter": 1.208,
+     "snap_margin": 0.011,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm143__sawlead": {
+     "slope": 1.296,
+     "r2": 0.853,
+     "resid_over_scatter": 1.043,
+     "snap_margin": -0.159,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__squarelead": {
+     "slope": 0.963,
+     "r2": 0.557,
+     "resid_over_scatter": 1.064,
+     "snap_margin": -0.13,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__piano": {
+     "slope": 1.024,
+     "r2": 0.545,
+     "resid_over_scatter": 1.091,
+     "snap_margin": -0.061,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__strings": {
+     "slope": 0.489,
+     "r2": 0.054,
+     "resid_over_scatter": 1.056,
+     "snap_margin": 0.018,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__churchorgan": {
+     "slope": 1.211,
+     "r2": 0.257,
+     "resid_over_scatter": 1.03,
+     "snap_margin": 0.023,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__epiano": {
+     "slope": 1.246,
+     "r2": 0.8,
+     "resid_over_scatter": 1.044,
+     "snap_margin": -0.149,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__synthbass": {
+     "slope": 1.138,
+     "r2": 0.805,
+     "resid_over_scatter": 1.161,
+     "snap_margin": -0.135,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__synthbrass": {
+     "slope": 1.042,
+     "r2": 0.657,
+     "resid_over_scatter": 1.157,
+     "snap_margin": -0.128,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__flute": {
+     "slope": 0.861,
+     "r2": 0.186,
+     "resid_over_scatter": 1.099,
+     "snap_margin": 0.077,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm143__vibraphone": {
+     "slope": 1.086,
+     "r2": 0.618,
+     "resid_over_scatter": 1.223,
+     "snap_margin": -0.085,
+     "n_boundary": 259
+    },
+    "pat16_pat2_e4__bpm150__sawlead": {
+     "slope": 1.249,
+     "r2": 0.801,
+     "resid_over_scatter": 1.061,
+     "snap_margin": -0.164,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__squarelead": {
+     "slope": 0.903,
+     "r2": 0.463,
+     "resid_over_scatter": 1.069,
+     "snap_margin": -0.123,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__piano": {
+     "slope": 0.863,
+     "r2": 0.394,
+     "resid_over_scatter": 1.109,
+     "snap_margin": -0.062,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__strings": {
+     "slope": 0.181,
+     "r2": 0.008,
+     "resid_over_scatter": 1.122,
+     "snap_margin": 0.02,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__churchorgan": {
+     "slope": 1.019,
+     "r2": 0.326,
+     "resid_over_scatter": 1.062,
+     "snap_margin": -0.021,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__epiano": {
+     "slope": 1.239,
+     "r2": 0.794,
+     "resid_over_scatter": 1.068,
+     "snap_margin": -0.139,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__synthbass": {
+     "slope": 1.056,
+     "r2": 0.663,
+     "resid_over_scatter": 1.179,
+     "snap_margin": -0.133,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__synthbrass": {
+     "slope": 0.875,
+     "r2": 0.559,
+     "resid_over_scatter": 1.186,
+     "snap_margin": -0.143,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__flute": {
+     "slope": 1.066,
+     "r2": 0.28,
+     "resid_over_scatter": 1.079,
+     "snap_margin": 0.064,
+     "n_boundary": 268
+    },
+    "pat16_pat2_e4__bpm150__vibraphone": {
+     "slope": 1.132,
+     "r2": 0.752,
+     "resid_over_scatter": 1.216,
+     "snap_margin": -0.077,
+     "n_boundary": 268
+    }
+   },
+   "hp_variant_pat2_143": {
+    "sawlead": {
+     "slope": 0.935,
+     "r2": 0.618,
+     "resid_over_scatter": 1.029,
+     "snap_margin": -0.133,
+     "n_boundary": 259
+    },
+    "squarelead": {
+     "slope": 0.934,
+     "r2": 0.316,
+     "resid_over_scatter": 1.045,
+     "snap_margin": -0.052,
+     "n_boundary": 259
+    },
+    "piano": {
+     "slope": 1.061,
+     "r2": 0.752,
+     "resid_over_scatter": 1.052,
+     "snap_margin": -0.131,
+     "n_boundary": 259
+    },
+    "strings": {
+     "slope": 0.218,
+     "r2": 0.018,
+     "resid_over_scatter": 1.099,
+     "snap_margin": -0.003,
+     "n_boundary": 259
+    },
+    "churchorgan": {
+     "slope": 0.278,
+     "r2": 0.008,
+     "resid_over_scatter": 1.031,
+     "snap_margin": 0.079,
+     "n_boundary": 259
+    },
+    "epiano": {
+     "slope": 1.071,
+     "r2": 0.794,
+     "resid_over_scatter": 1.017,
+     "snap_margin": -0.136,
+     "n_boundary": 259
+    },
+    "synthbass": {
+     "slope": 0.917,
+     "r2": 0.588,
+     "resid_over_scatter": 1.055,
+     "snap_margin": -0.148,
+     "n_boundary": 259
+    },
+    "synthbrass": {
+     "slope": 1.044,
+     "r2": 0.443,
+     "resid_over_scatter": 1.05,
+     "snap_margin": -0.106,
+     "n_boundary": 259
+    },
+    "flute": {
+     "slope": 0.67,
+     "r2": 0.215,
+     "resid_over_scatter": 1.051,
+     "snap_margin": -0.019,
+     "n_boundary": 259
+    },
+    "vibraphone": {
+     "slope": 0.924,
+     "r2": 0.617,
+     "resid_over_scatter": 1.163,
+     "snap_margin": -0.109,
+     "n_boundary": 259
+    }
+   },
+   "slope_by_pattern": {
+    "pat2_const16_2pitch": 0.898,
+    "pat7_wholetone_rock": 0.944,
+    "pat8_fifth_ping": 0.969,
+    "pat9_octave_bounce": 0.979,
+    "pat10_fourth_seesaw": 0.854,
+    "pat15_pat2_e2": 0.824,
+    "pat16_pat2_e4": 0.997
+   },
+   "slope_by_timbre": {
+    "sawlead": 0.983,
+    "squarelead": 0.957,
+    "piano": 0.959,
+    "strings": 0.898,
+    "churchorgan": 0.616,
+    "epiano": 1.084,
+    "synthbass": 0.994,
+    "synthbrass": 0.925,
+    "flute": 0.805,
+    "vibraphone": 1.017
+   }
+  }
+ },
+ "stage3": {
+  "sawlead": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.18,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 34
+  },
+  "squarelead": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.31,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 54
+  },
+  "piano": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.85,
+   "zdist_pedal": 0.99,
+   "n_channels_absd_gt1": 83
+  },
+  "strings": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.64,
+   "zdist_pedal": 0.99,
+   "n_channels_absd_gt1": 78
+  },
+  "churchorgan": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.51,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 78
+  },
+  "epiano": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.7,
+   "zdist_pedal": 0.99,
+   "n_channels_absd_gt1": 81
+  },
+  "synthbass": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.63,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 86
+  },
+  "synthbrass": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.26,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 53
+  },
+  "flute": {
+   "lda_balanced_acc": 0.9297,
+   "zdist_jump": 2.19,
+   "zdist_pedal": 0.99,
+   "n_channels_absd_gt1": 90
+  },
+  "vibraphone": {
+   "lda_balanced_acc": 1.0,
+   "zdist_jump": 1.89,
+   "zdist_pedal": 1.0,
+   "n_channels_absd_gt1": 58
+  },
+  "mean_offdiag_delta_cosine": 0.275,
+  "delta_cosine_ci95_boot_pairs": [
+   0.2441,
+   0.3062
+  ],
+  "min_lda_acc": 0.9297
+ },
+ "stage4": {
+  "frame_averaged_full_19pats": {
+   "frac_pattern": 0.1027,
+   "frac_timbre": 0.5474,
+   "n_ch_pattern_dominant": 0,
+   "n_ch_timbre_dominant": 146
+  },
+  "frame_averaged_v1_6pats": {
+   "frac_pattern": 0.0532,
+   "frac_timbre": 0.6969,
+   "n_ch_pattern_dominant": 0,
+   "n_ch_timbre_dominant": 220
+  },
+  "melody_subspace": {
+   "pca_n90_full": 15,
+   "pca_n90_v1_replica": 15,
+   "n90_ci95_boot_pat_timbre": [
+    9,
+    17
+   ]
+  },
+  "variance_share_renders": {
+   "melody_frac": 0.1279,
+   "timbre_frac": 0.2379,
+   "melody_frac_ci95_jackknife_timbres": [
+    0.0513,
+    0.2045
+   ],
+   "v1_6pats_melody_frac": 0.1156,
+   "v1_replica_6pats_5timbres_melody_frac": 0.1975
+  },
+  "corpus_projection": {
+   "n_files": 55,
+   "k_dims": 15,
+   "melody_frac_mean": 0.0934,
+   "melody_frac_ci95_boot_files": [
+    0.0904,
+    0.0964
+   ],
+   "random_frac_mean": 0.0581,
+   "enrichment_mean": 1.613,
+   "enrichment_ci95_boot_files": [
+    1.5558,
+    1.6755
+   ]
+  }
+ },
+ "stage5": {
+  "traj_cos_same_pattern_mean": 0.271,
+  "traj_cos_same_ci95": [
+   0.2292,
+   0.3104
+  ],
+  "traj_cos_crossed_pattern_mean": 0.003,
+  "cos_lock1_vs_lock2_onset_frames": 0.382,
+  "cos_lock1_vs_lock2_sustain_frames": 0.031,
+  "subspace": {
+   "k1": 15,
+   "k2": 12,
+   "principal_angles_deg_first8": [
+    13.399999618530273,
+    17.899999618530273,
+    18.799999237060547,
+    19.100000381469727,
+    23.700000762939453,
+    26.5,
+    28.799999237060547,
+    33.70000076293945
+   ],
+   "median_principal_angle_deg": 27.7,
+   "lock2_traj_var_captured_by_lock1_basis": 0.756,
+   "captured_by_random_basis": 0.05
+  },
+  "sweep_decoder_cross_tempo_r2": {
+   "lock1_to_lock2": 0.796,
+   "lock2_to_lock1": 0.783
+  }
+ },
+ "stage6": {
+  "pat1_family": {
+   "per_timbre": {
+    "sawlead": {
+     "pred_E2_E3_E4": [
+      38.53,
+      44.64,
+      67.35
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": true,
+     "mae_semitones": 4.06
+    },
+    "squarelead": {
+     "pred_E2_E3_E4": [
+      33.13,
+      29.8,
+      52.3
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 13.59
+    },
+    "piano": {
+     "pred_E2_E3_E4": [
+      48.31,
+      48.18,
+      63.37
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 4.25
+    },
+    "strings": {
+     "pred_E2_E3_E4": [
+      49.43,
+      48.85,
+      78.47
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 9.01
+    },
+    "churchorgan": {
+     "pred_E2_E3_E4": [
+      60.32,
+      72.7,
+      70.01
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 15.67
+    },
+    "epiano": {
+     "pred_E2_E3_E4": [
+      48.21,
+      39.62,
+      50.96
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 11.21
+    },
+    "synthbass": {
+     "pred_E2_E3_E4": [
+      41.67,
+      47.98,
+      69.74
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": true,
+     "mae_semitones": 3.81
+    },
+    "synthbrass": {
+     "pred_E2_E3_E4": [
+      19.39,
+      26.31,
+      49.8
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": true,
+     "mae_semitones": 20.17
+    },
+    "flute": {
+     "pred_E2_E3_E4": [
+      79.98,
+      68.34,
+      73.66
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": false,
+     "mae_semitones": 21.99
+    },
+    "vibraphone": {
+     "pred_E2_E3_E4": [
+      60.47,
+      74.78,
+      85.49
+     ],
+     "truth": [
+      40.0,
+      52.0,
+      64.0
+     ],
+     "order_correct": true,
+     "mae_semitones": 21.58
+    }
+   },
+   "frac_order_correct": 0.4,
+   "mae_semitones_mean": 12.54,
+   "mae_ci95_boot_timbres": [
+    8.0356,
+    16.8415
+   ]
+  },
+  "pat2_family": {
+   "per_timbre": {
+    "sawlead": {
+     "pred_E2_E3_E4": [
+      38.15,
+      45.68,
+      62.97
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 4.56
+    },
+    "squarelead": {
+     "pred_E2_E3_E4": [
+      30.86,
+      27.7,
+      49.46
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": false,
+     "mae_semitones": 17.49
+    },
+    "piano": {
+     "pred_E2_E3_E4": [
+      45.82,
+      38.34,
+      58.39
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": false,
+     "mae_semitones": 8.86
+    },
+    "strings": {
+     "pred_E2_E3_E4": [
+      39.28,
+      48.8,
+      63.2
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 3.07
+    },
+    "churchorgan": {
+     "pred_E2_E3_E4": [
+      47.35,
+      63.39,
+      67.66
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 5.97
+    },
+    "epiano": {
+     "pred_E2_E3_E4": [
+      48.48,
+      41.75,
+      48.28
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": false,
+     "mae_semitones": 11.98
+    },
+    "synthbass": {
+     "pred_E2_E3_E4": [
+      38.93,
+      45.34,
+      65.01
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 3.74
+    },
+    "synthbrass": {
+     "pred_E2_E3_E4": [
+      16.01,
+      26.79,
+      43.98
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 24.57
+    },
+    "flute": {
+     "pred_E2_E3_E4": [
+      77.38,
+      65.39,
+      68.12
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": false,
+     "mae_semitones": 16.79
+    },
+    "vibraphone": {
+     "pred_E2_E3_E4": [
+      60.32,
+      67.21,
+      77.64
+     ],
+     "truth": [
+      41.5,
+      53.5,
+      65.5
+     ],
+     "order_correct": true,
+     "mae_semitones": 14.89
+    }
+   },
+   "frac_order_correct": 0.6,
+   "mae_semitones_mean": 11.19,
+   "mae_ci95_boot_timbres": [
+    7.1822,
+    15.6587
+   ]
+  }
+ },
+ "stage7": {
+  "lock2_per_timbre": {
+   "sawlead": {
+    "gate50": {
+     "norm_onset_frames": 11.7,
+     "norm_second_frames": 10.0,
+     "sustain_over_onset_norm": 0.852
+    },
+    "gate80": {
+     "norm_onset_frames": 11.7,
+     "norm_second_frames": 11.6,
+     "sustain_over_onset_norm": 0.987
+    },
+    "gate100": {
+     "norm_onset_frames": 11.8,
+     "norm_second_frames": 11.6,
+     "sustain_over_onset_norm": 0.987
+    },
+    "lda_50v100_onset_frames": 0.926,
+    "lda_50v100_second_frames": 1.0
+   },
+   "squarelead": {
+    "gate50": {
+     "norm_onset_frames": 12.2,
+     "norm_second_frames": 9.7,
+     "sustain_over_onset_norm": 0.798
+    },
+    "gate80": {
+     "norm_onset_frames": 11.7,
+     "norm_second_frames": 11.5,
+     "sustain_over_onset_norm": 0.979
+    },
+    "gate100": {
+     "norm_onset_frames": 11.7,
+     "norm_second_frames": 11.5,
+     "sustain_over_onset_norm": 0.986
+    },
+    "lda_50v100_onset_frames": 0.893,
+    "lda_50v100_second_frames": 1.0
+   },
+   "piano": {
+    "gate50": {
+     "norm_onset_frames": 9.1,
+     "norm_second_frames": 9.2,
+     "sustain_over_onset_norm": 1.012
+    },
+    "gate80": {
+     "norm_onset_frames": 9.3,
+     "norm_second_frames": 9.6,
+     "sustain_over_onset_norm": 1.031
+    },
+    "gate100": {
+     "norm_onset_frames": 9.4,
+     "norm_second_frames": 9.5,
+     "sustain_over_onset_norm": 1.01
+    },
+    "lda_50v100_onset_frames": 0.922,
+    "lda_50v100_second_frames": 1.0
+   },
+   "strings": {
+    "gate50": {
+     "norm_onset_frames": 9.2,
+     "norm_second_frames": 9.3,
+     "sustain_over_onset_norm": 1.012
+    },
+    "gate80": {
+     "norm_onset_frames": 9.3,
+     "norm_second_frames": 9.4,
+     "sustain_over_onset_norm": 1.014
+    },
+    "gate100": {
+     "norm_onset_frames": 9.5,
+     "norm_second_frames": 9.5,
+     "sustain_over_onset_norm": 0.999
+    },
+    "lda_50v100_onset_frames": 0.893,
+    "lda_50v100_second_frames": 0.824
+   },
+   "churchorgan": {
+    "gate50": {
+     "norm_onset_frames": 10.2,
+     "norm_second_frames": 10.3,
+     "sustain_over_onset_norm": 1.01
+    },
+    "gate80": {
+     "norm_onset_frames": 10.5,
+     "norm_second_frames": 10.8,
+     "sustain_over_onset_norm": 1.022
+    },
+    "gate100": {
+     "norm_onset_frames": 10.8,
+     "norm_second_frames": 10.9,
+     "sustain_over_onset_norm": 1.007
+    },
+    "lda_50v100_onset_frames": 0.984,
+    "lda_50v100_second_frames": 0.99
+   },
+   "epiano": {
+    "gate50": {
+     "norm_onset_frames": 10.5,
+     "norm_second_frames": 9.1,
+     "sustain_over_onset_norm": 0.87
+    },
+    "gate80": {
+     "norm_onset_frames": 10.3,
+     "norm_second_frames": 10.3,
+     "sustain_over_onset_norm": 0.999
+    },
+    "gate100": {
+     "norm_onset_frames": 10.3,
+     "norm_second_frames": 10.2,
+     "sustain_over_onset_norm": 0.995
+    },
+    "lda_50v100_onset_frames": 0.914,
+    "lda_50v100_second_frames": 1.0
+   },
+   "synthbass": {
+    "gate50": {
+     "norm_onset_frames": 10.2,
+     "norm_second_frames": 9.8,
+     "sustain_over_onset_norm": 0.964
+    },
+    "gate80": {
+     "norm_onset_frames": 10.0,
+     "norm_second_frames": 10.7,
+     "sustain_over_onset_norm": 1.069
+    },
+    "gate100": {
+     "norm_onset_frames": 10.0,
+     "norm_second_frames": 10.8,
+     "sustain_over_onset_norm": 1.074
+    },
+    "lda_50v100_onset_frames": 0.914,
+    "lda_50v100_second_frames": 0.98
+   },
+   "synthbrass": {
+    "gate50": {
+     "norm_onset_frames": 13.1,
+     "norm_second_frames": 9.8,
+     "sustain_over_onset_norm": 0.752
+    },
+    "gate80": {
+     "norm_onset_frames": 12.9,
+     "norm_second_frames": 10.9,
+     "sustain_over_onset_norm": 0.847
+    },
+    "gate100": {
+     "norm_onset_frames": 12.7,
+     "norm_second_frames": 11.1,
+     "sustain_over_onset_norm": 0.868
+    },
+    "lda_50v100_onset_frames": 0.928,
+    "lda_50v100_second_frames": 1.0
+   },
+   "flute": {
+    "gate50": {
+     "norm_onset_frames": 8.9,
+     "norm_second_frames": 9.0,
+     "sustain_over_onset_norm": 1.012
+    },
+    "gate80": {
+     "norm_onset_frames": 8.8,
+     "norm_second_frames": 8.9,
+     "sustain_over_onset_norm": 1.013
+    },
+    "gate100": {
+     "norm_onset_frames": 9.0,
+     "norm_second_frames": 8.8,
+     "sustain_over_onset_norm": 0.971
+    },
+    "lda_50v100_onset_frames": 0.998,
+    "lda_50v100_second_frames": 1.0
+   },
+   "vibraphone": {
+    "gate50": {
+     "norm_onset_frames": 9.2,
+     "norm_second_frames": 8.5,
+     "sustain_over_onset_norm": 0.924
+    },
+    "gate80": {
+     "norm_onset_frames": 9.2,
+     "norm_second_frames": 8.6,
+     "sustain_over_onset_norm": 0.928
+    },
+    "gate100": {
+     "norm_onset_frames": 9.3,
+     "norm_second_frames": 8.5,
+     "sustain_over_onset_norm": 0.919
+    },
+    "lda_50v100_onset_frames": 0.998,
+    "lda_50v100_second_frames": 1.0
+   }
+  },
+  "summary": {
+   "sustain_over_onset_norm_gate50_mean": 0.921,
+   "sustain_over_onset_norm_gate100_mean": 0.982,
+   "lda_50v100_onset_mean": 0.937,
+   "lda_50v100_second_mean": 0.979
+  },
+  "lock1_centroid_sep": {
+   "sawlead": {
+    "d_50_100_over_scatter": 0.493,
+    "d_50_80_over_scatter": 0.375,
+    "d_80_100_over_scatter": 0.221
+   },
+   "squarelead": {
+    "d_50_100_over_scatter": 0.426,
+    "d_50_80_over_scatter": 0.323,
+    "d_80_100_over_scatter": 0.164
+   },
+   "piano": {
+    "d_50_100_over_scatter": 0.326,
+    "d_50_80_over_scatter": 0.232,
+    "d_80_100_over_scatter": 0.128
+   },
+   "strings": {
+    "d_50_100_over_scatter": 0.172,
+    "d_50_80_over_scatter": 0.132,
+    "d_80_100_over_scatter": 0.045
+   },
+   "churchorgan": {
+    "d_50_100_over_scatter": 0.238,
+    "d_50_80_over_scatter": 0.144,
+    "d_80_100_over_scatter": 0.099
+   },
+   "epiano": {
+    "d_50_100_over_scatter": 0.522,
+    "d_50_80_over_scatter": 0.408,
+    "d_80_100_over_scatter": 0.229
+   },
+   "synthbass": {
+    "d_50_100_over_scatter": 0.363,
+    "d_50_80_over_scatter": 0.264,
+    "d_80_100_over_scatter": 0.139
+   },
+   "synthbrass": {
+    "d_50_100_over_scatter": 0.316,
+    "d_50_80_over_scatter": 0.215,
+    "d_80_100_over_scatter": 0.138
+   },
+   "flute": {
+    "d_50_100_over_scatter": 0.711,
+    "d_50_80_over_scatter": 0.426,
+    "d_80_100_over_scatter": 0.317
+   },
+   "vibraphone": {
+    "d_50_100_over_scatter": 0.183,
+    "d_50_80_over_scatter": 0.129,
+    "d_80_100_over_scatter": 0.075
+   }
+  }
+ },
+ "stage8": {
+  "silence_ref": {
+   "norm_mean": 9.8,
+   "scatter": 0.2
+  },
+  "per_timbre": {
+   "sawlead": {
+    "norm_note": 11.7,
+    "norm_rest": 8.4,
+    "rest_scatter_over_note_scatter": 0.263,
+    "d_rest_to_silence_over_scatter": 1.43,
+    "d_rest_to_note_over_scatter": 3.85,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "squarelead": {
+    "norm_note": 11.7,
+    "norm_rest": 8.4,
+    "rest_scatter_over_note_scatter": 0.289,
+    "d_rest_to_silence_over_scatter": 1.18,
+    "d_rest_to_note_over_scatter": 3.13,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "piano": {
+    "norm_note": 9.4,
+    "norm_rest": 8.4,
+    "rest_scatter_over_note_scatter": 0.41,
+    "d_rest_to_silence_over_scatter": 1.24,
+    "d_rest_to_note_over_scatter": 2.41,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "strings": {
+    "norm_note": 9.1,
+    "norm_rest": 8.3,
+    "rest_scatter_over_note_scatter": 0.606,
+    "d_rest_to_silence_over_scatter": 1.13,
+    "d_rest_to_note_over_scatter": 1.41,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "churchorgan": {
+    "norm_note": 10.6,
+    "norm_rest": 8.8,
+    "rest_scatter_over_note_scatter": 0.738,
+    "d_rest_to_silence_over_scatter": 1.18,
+    "d_rest_to_note_over_scatter": 1.26,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "epiano": {
+    "norm_note": 10.2,
+    "norm_rest": 8.6,
+    "rest_scatter_over_note_scatter": 0.356,
+    "d_rest_to_silence_over_scatter": 1.15,
+    "d_rest_to_note_over_scatter": 2.37,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "synthbass": {
+    "norm_note": 10.3,
+    "norm_rest": 8.7,
+    "rest_scatter_over_note_scatter": 0.199,
+    "d_rest_to_silence_over_scatter": 1.43,
+    "d_rest_to_note_over_scatter": 4.53,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "synthbrass": {
+    "norm_note": 11.9,
+    "norm_rest": 8.4,
+    "rest_scatter_over_note_scatter": 0.311,
+    "d_rest_to_silence_over_scatter": 1.04,
+    "d_rest_to_note_over_scatter": 2.66,
+    "lda_rest_vs_note_acc": 1.0
+   },
+   "flute": {
+    "norm_note": 8.9,
+    "norm_rest": 8.8,
+    "rest_scatter_over_note_scatter": 0.428,
+    "d_rest_to_silence_over_scatter": 1.15,
+    "d_rest_to_note_over_scatter": 1.72,
+    "lda_rest_vs_note_acc": 0.9484
+   },
+   "vibraphone": {
+    "norm_note": 9.0,
+    "norm_rest": 8.6,
+    "rest_scatter_over_note_scatter": 0.486,
+    "d_rest_to_silence_over_scatter": 1.03,
+    "d_rest_to_note_over_scatter": 1.94,
+    "lda_rest_vs_note_acc": 1.0
+   }
+  },
+  "summary": {
+   "norm_rest_over_note_mean": 0.841,
+   "d_rest_silence_mean": 1.2,
+   "d_rest_note_mean": 2.53,
+   "lda_rest_vs_note_mean": 0.995
+  }
+ },
+ "stage9": {
+  "points": [
+   {
+    "k": 0,
+    "ratio_frames_per_16th": 0.924,
+    "bpm": 174.7824928977,
+    "bars": 34,
+    "frames": 502.656
+   },
+   {
+    "k": 1,
+    "ratio_frames_per_16th": 1.0,
+    "bpm": 161.4990234375,
+    "bars": 32,
+    "frames": 512.0
+   },
+   {
+    "k": 2,
+    "ratio_frames_per_16th": 1.0289380789,
+    "bpm": 156.9569896879,
+    "bars": 31,
+    "frames": 510.3532871284
+   },
+   {
+    "k": 3,
+    "ratio_frames_per_16th": 1.0874071183,
+    "bpm": 148.5175337874,
+    "bars": 29,
+    "frames": 504.556902906
+   },
+   {
+    "k": 4,
+    "ratio_frames_per_16th": 1.1338761578,
+    "bpm": 142.4309192234,
+    "bars": 28,
+    "frames": 507.9765186836
+   },
+   {
+    "k": 5,
+    "ratio_frames_per_16th": 1.1803451972,
+    "bpm": 136.8235528199,
+    "bars": 27,
+    "frames": 509.9091251989
+   },
+   {
+    "k": 6,
+    "ratio_frames_per_16th": 1.2388142367,
+    "bpm": 130.3658116429,
+    "bars": 25,
+    "frames": 495.5256946655
+   },
+   {
+    "k": 7,
+    "ratio_frames_per_16th": 1.2852832761,
+    "bpm": 125.6524740029,
+    "bars": 24,
+    "frames": 493.5487780253
+   },
+   {
+    "k": 8,
+    "ratio_frames_per_16th": 1.3437523156,
+    "bpm": 120.1851126643,
+    "bars": 23,
+    "frames": 494.500852123
+   },
+   {
+    "k": 9,
+    "ratio_frames_per_16th": 1.390221355,
+    "bpm": 116.1678482762,
+    "bars": 23,
+    "frames": 511.6014586383
+   },
+   {
+    "k": 10,
+    "ratio_frames_per_16th": 1.4366903944,
+    "bpm": 112.4104567432,
+    "bars": 22,
+    "frames": 505.7150188427
+   },
+   {
+    "k": 11,
+    "ratio_frames_per_16th": 1.5,
+    "bpm": 107.666015625,
+    "bars": 21,
+    "frames": 504.0
+   },
+   {
+    "k": 12,
+    "ratio_frames_per_16th": 1.5416284733,
+    "bpm": 104.7587186094,
+    "bars": 20,
+    "frames": 493.3211114648
+   },
+   {
+    "k": 13,
+    "ratio_frames_per_16th": 1.5880975128,
+    "bpm": 101.6933923382,
+    "bars": 20,
+    "frames": 508.1912040868
+   },
+   {
+    "k": 14,
+    "ratio_frames_per_16th": 1.6465665522,
+    "bpm": 98.0822932545,
+    "bars": 19,
+    "frames": 500.5562318734
+   },
+   {
+    "k": 15,
+    "ratio_frames_per_16th": 1.6930355917,
+    "bpm": 95.3902116607,
+    "bars": 18,
+    "frames": 487.5942503978
+   },
+   {
+    "k": 16,
+    "ratio_frames_per_16th": 1.7515046311,
+    "bpm": 92.2058786312,
+    "bars": 18,
+    "frames": 504.4333337577
+   },
+   {
+    "k": 17,
+    "ratio_frames_per_16th": 1.7979736705,
+    "bpm": 89.8227966755,
+    "bars": 17,
+    "frames": 489.0488383888
+   },
+   {
+    "k": 18,
+    "ratio_frames_per_16th": 1.84444271,
+    "bpm": 87.5597938405,
+    "bars": 17,
+    "frames": 501.6884171176
+   },
+   {
+    "k": 19,
+    "ratio_frames_per_16th": 1.9029117494,
+    "bpm": 84.8694236532,
+    "bars": 16,
+    "frames": 487.1454078554
+   }
+  ],
+  "curve": [
+   {
+    "k": 0,
+    "bpm": 174.782,
+    "ratio": 0.924,
+    "bars": 34,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.79,
+     "n_jump_frames": 50
+    },
+    "sine_ctl": {
+     "acc_in": 0.546,
+     "acc_cv": 0.3,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 50
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 50
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.699,
+     "acc_cv": 0.477,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 50
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 50
+    },
+    "piano_ctl": {
+     "acc_in": 0.59,
+     "acc_cv": 0.415,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 50
+    }
+   },
+   {
+    "k": 1,
+    "bpm": 161.499,
+    "ratio": 1.0,
+    "bars": 32,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 12.09,
+     "n_jump_frames": 64
+    },
+    "sine_ctl": {
+     "acc_in": 0.547,
+     "acc_cv": 0.508,
+     "zdist_jump": 0.92,
+     "n_jump_frames": 64
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 64
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.56,
+     "acc_cv": 0.385,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 64
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.85,
+     "n_jump_frames": 64
+    },
+    "piano_ctl": {
+     "acc_in": 0.544,
+     "acc_cv": 0.487,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 64
+    }
+   },
+   {
+    "k": 2,
+    "bpm": 156.957,
+    "ratio": 1.02894,
+    "bars": 31,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.81,
+     "n_jump_frames": 52
+    },
+    "sine_ctl": {
+     "acc_in": 0.562,
+     "acc_cv": 0.502,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 52
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 52
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.612,
+     "acc_cv": 0.39,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 52
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.17,
+     "n_jump_frames": 52
+    },
+    "piano_ctl": {
+     "acc_in": 0.58,
+     "acc_cv": 0.37,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 52
+    }
+   },
+   {
+    "k": 3,
+    "bpm": 148.518,
+    "ratio": 1.08741,
+    "bars": 29,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.84,
+     "n_jump_frames": 52
+    },
+    "sine_ctl": {
+     "acc_in": 0.591,
+     "acc_cv": 0.563,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 52
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.13,
+     "n_jump_frames": 52
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.715,
+     "acc_cv": 0.489,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 52
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.21,
+     "n_jump_frames": 52
+    },
+    "piano_ctl": {
+     "acc_in": 0.683,
+     "acc_cv": 0.486,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 52
+    }
+   },
+   {
+    "k": 4,
+    "bpm": 142.431,
+    "ratio": 1.13388,
+    "bars": 28,
+    "sine": {
+     "acc_in": 0.99,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.86,
+     "n_jump_frames": 52
+    },
+    "sine_ctl": {
+     "acc_in": 0.62,
+     "acc_cv": 0.507,
+     "zdist_jump": 1.03,
+     "n_jump_frames": 52
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.12,
+     "n_jump_frames": 52
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.746,
+     "acc_cv": 0.573,
+     "zdist_jump": 1.04,
+     "n_jump_frames": 52
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 52
+    },
+    "piano_ctl": {
+     "acc_in": 0.682,
+     "acc_cv": 0.431,
+     "zdist_jump": 1.03,
+     "n_jump_frames": 52
+    }
+   },
+   {
+    "k": 5,
+    "bpm": 136.824,
+    "ratio": 1.18035,
+    "bars": 27,
+    "sine": {
+     "acc_in": 0.991,
+     "acc_cv": 0.991,
+     "zdist_jump": 1.87,
+     "n_jump_frames": 53
+    },
+    "sine_ctl": {
+     "acc_in": 0.567,
+     "acc_cv": 0.304,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 53
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 53
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.638,
+     "acc_cv": 0.582,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 53
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 53
+    },
+    "piano_ctl": {
+     "acc_in": 0.604,
+     "acc_cv": 0.504,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 53
+    }
+   },
+   {
+    "k": 6,
+    "bpm": 130.366,
+    "ratio": 1.23881,
+    "bars": 25,
+    "sine": {
+     "acc_in": 0.99,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.89,
+     "n_jump_frames": 52
+    },
+    "sine_ctl": {
+     "acc_in": 0.541,
+     "acc_cv": 0.458,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 52
+    },
+    "sawlead": {
+     "acc_in": 0.981,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.12,
+     "n_jump_frames": 52
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.728,
+     "acc_cv": 0.553,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 52
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 52
+    },
+    "piano_ctl": {
+     "acc_in": 0.569,
+     "acc_cv": 0.419,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 52
+    }
+   },
+   {
+    "k": 7,
+    "bpm": 125.652,
+    "ratio": 1.28528,
+    "bars": 24,
+    "sine": {
+     "acc_in": 0.991,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.83,
+     "n_jump_frames": 53
+    },
+    "sine_ctl": {
+     "acc_in": 0.489,
+     "acc_cv": 0.335,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 53
+    },
+    "sawlead": {
+     "acc_in": 0.991,
+     "acc_cv": 0.972,
+     "zdist_jump": 1.13,
+     "n_jump_frames": 53
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.686,
+     "acc_cv": 0.544,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 53
+    },
+    "piano": {
+     "acc_in": 0.991,
+     "acc_cv": 0.953,
+     "zdist_jump": 1.19,
+     "n_jump_frames": 53
+    },
+    "piano_ctl": {
+     "acc_in": 0.573,
+     "acc_cv": 0.461,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 53
+    }
+   },
+   {
+    "k": 8,
+    "bpm": 120.185,
+    "ratio": 1.34375,
+    "bars": 23,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 2.15,
+     "n_jump_frames": 57
+    },
+    "sine_ctl": {
+     "acc_in": 0.612,
+     "acc_cv": 0.575,
+     "zdist_jump": 0.98,
+     "n_jump_frames": 57
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 57
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.738,
+     "acc_cv": 0.684,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 57
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 0.991,
+     "zdist_jump": 1.2,
+     "n_jump_frames": 57
+    },
+    "piano_ctl": {
+     "acc_in": 0.721,
+     "acc_cv": 0.673,
+     "zdist_jump": 1.03,
+     "n_jump_frames": 57
+    }
+   },
+   {
+    "k": 9,
+    "bpm": 116.168,
+    "ratio": 1.39022,
+    "bars": 23,
+    "sine": {
+     "acc_in": 0.973,
+     "acc_cv": 0.973,
+     "zdist_jump": 1.86,
+     "n_jump_frames": 55
+    },
+    "sine_ctl": {
+     "acc_in": 0.557,
+     "acc_cv": 0.214,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 55
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 0.991,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 55
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.607,
+     "acc_cv": 0.451,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 55
+    },
+    "piano": {
+     "acc_in": 0.991,
+     "acc_cv": 0.982,
+     "zdist_jump": 1.16,
+     "n_jump_frames": 55
+    },
+    "piano_ctl": {
+     "acc_in": 0.605,
+     "acc_cv": 0.349,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 55
+    }
+   },
+   {
+    "k": 10,
+    "bpm": 112.41,
+    "ratio": 1.43669,
+    "bars": 22,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.89,
+     "n_jump_frames": 51
+    },
+    "sine_ctl": {
+     "acc_in": 0.61,
+     "acc_cv": 0.334,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 51
+    },
+    "sawlead": {
+     "acc_in": 0.99,
+     "acc_cv": 0.99,
+     "zdist_jump": 1.1,
+     "n_jump_frames": 51
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.766,
+     "acc_cv": 0.602,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 51
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.17,
+     "n_jump_frames": 51
+    },
+    "piano_ctl": {
+     "acc_in": 0.633,
+     "acc_cv": 0.446,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 51
+    }
+   },
+   {
+    "k": 11,
+    "bpm": 107.666,
+    "ratio": 1.5,
+    "bars": 21,
+    "sine": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 4.03,
+     "n_jump_frames": 63
+    },
+    "sine_ctl": {
+     "acc_in": 0.516,
+     "acc_cv": 0.497,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 63
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.14,
+     "n_jump_frames": 63
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.667,
+     "acc_cv": 0.548,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 63
+    },
+    "piano": {
+     "acc_in": 1.0,
+     "acc_cv": 1.0,
+     "zdist_jump": 1.64,
+     "n_jump_frames": 63
+    },
+    "piano_ctl": {
+     "acc_in": 0.511,
+     "acc_cv": 0.317,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 63
+    }
+   },
+   {
+    "k": 12,
+    "bpm": 104.759,
+    "ratio": 1.54163,
+    "bars": 20,
+    "sine": {
+     "acc_in": 0.991,
+     "acc_cv": 0.943,
+     "zdist_jump": 1.96,
+     "n_jump_frames": 53
+    },
+    "sine_ctl": {
+     "acc_in": 0.909,
+     "acc_cv": 0.909,
+     "zdist_jump": 1.22,
+     "n_jump_frames": 53
+    },
+    "sawlead": {
+     "acc_in": 0.991,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 53
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.834,
+     "acc_cv": 0.649,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 53
+    },
+    "piano": {
+     "acc_in": 0.981,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.2,
+     "n_jump_frames": 53
+    },
+    "piano_ctl": {
+     "acc_in": 0.784,
+     "acc_cv": 0.759,
+     "zdist_jump": 1.06,
+     "n_jump_frames": 53
+    }
+   },
+   {
+    "k": 13,
+    "bpm": 101.693,
+    "ratio": 1.5881,
+    "bars": 20,
+    "sine": {
+     "acc_in": 0.973,
+     "acc_cv": 0.955,
+     "zdist_jump": 1.88,
+     "n_jump_frames": 56
+    },
+    "sine_ctl": {
+     "acc_in": 0.522,
+     "acc_cv": 0.385,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 56
+    },
+    "sawlead": {
+     "acc_in": 0.982,
+     "acc_cv": 0.973,
+     "zdist_jump": 1.14,
+     "n_jump_frames": 56
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.628,
+     "acc_cv": 0.459,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 56
+    },
+    "piano": {
+     "acc_in": 0.991,
+     "acc_cv": 0.973,
+     "zdist_jump": 1.16,
+     "n_jump_frames": 56
+    },
+    "piano_ctl": {
+     "acc_in": 0.676,
+     "acc_cv": 0.317,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 56
+    }
+   },
+   {
+    "k": 14,
+    "bpm": 98.082,
+    "ratio": 1.64657,
+    "bars": 19,
+    "sine": {
+     "acc_in": 0.963,
+     "acc_cv": 0.954,
+     "zdist_jump": 1.9,
+     "n_jump_frames": 54
+    },
+    "sine_ctl": {
+     "acc_in": 0.545,
+     "acc_cv": 0.447,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 54
+    },
+    "sawlead": {
+     "acc_in": 0.981,
+     "acc_cv": 0.954,
+     "zdist_jump": 1.14,
+     "n_jump_frames": 54
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.728,
+     "acc_cv": 0.47,
+     "zdist_jump": 1.02,
+     "n_jump_frames": 54
+    },
+    "piano": {
+     "acc_in": 0.991,
+     "acc_cv": 0.944,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 54
+    },
+    "piano_ctl": {
+     "acc_in": 0.649,
+     "acc_cv": 0.523,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 54
+    }
+   },
+   {
+    "k": 15,
+    "bpm": 95.39,
+    "ratio": 1.69304,
+    "bars": 18,
+    "sine": {
+     "acc_in": 0.981,
+     "acc_cv": 0.963,
+     "zdist_jump": 1.92,
+     "n_jump_frames": 54
+    },
+    "sine_ctl": {
+     "acc_in": 0.544,
+     "acc_cv": 0.331,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 54
+    },
+    "sawlead": {
+     "acc_in": 0.981,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.16,
+     "n_jump_frames": 54
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.696,
+     "acc_cv": 0.515,
+     "zdist_jump": 1.04,
+     "n_jump_frames": 54
+    },
+    "piano": {
+     "acc_in": 0.981,
+     "acc_cv": 0.954,
+     "zdist_jump": 1.18,
+     "n_jump_frames": 54
+    },
+    "piano_ctl": {
+     "acc_in": 0.583,
+     "acc_cv": 0.46,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 54
+    }
+   },
+   {
+    "k": 16,
+    "bpm": 92.206,
+    "ratio": 1.7515,
+    "bars": 18,
+    "sine": {
+     "acc_in": 0.914,
+     "acc_cv": 0.914,
+     "zdist_jump": 1.85,
+     "n_jump_frames": 58
+    },
+    "sine_ctl": {
+     "acc_in": 0.559,
+     "acc_cv": 0.417,
+     "zdist_jump": 0.98,
+     "n_jump_frames": 58
+    },
+    "sawlead": {
+     "acc_in": 0.957,
+     "acc_cv": 0.948,
+     "zdist_jump": 1.09,
+     "n_jump_frames": 58
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.726,
+     "acc_cv": 0.594,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 58
+    },
+    "piano": {
+     "acc_in": 0.974,
+     "acc_cv": 0.931,
+     "zdist_jump": 1.15,
+     "n_jump_frames": 58
+    },
+    "piano_ctl": {
+     "acc_in": 0.616,
+     "acc_cv": 0.476,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 58
+    }
+   },
+   {
+    "k": 17,
+    "bpm": 89.823,
+    "ratio": 1.79797,
+    "bars": 17,
+    "sine": {
+     "acc_in": 0.955,
+     "acc_cv": 0.955,
+     "zdist_jump": 1.92,
+     "n_jump_frames": 55
+    },
+    "sine_ctl": {
+     "acc_in": 0.52,
+     "acc_cv": 0.359,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 55
+    },
+    "sawlead": {
+     "acc_in": 0.973,
+     "acc_cv": 0.973,
+     "zdist_jump": 1.11,
+     "n_jump_frames": 55
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.707,
+     "acc_cv": 0.665,
+     "zdist_jump": 1.04,
+     "n_jump_frames": 55
+    },
+    "piano": {
+     "acc_in": 0.982,
+     "acc_cv": 0.964,
+     "zdist_jump": 1.15,
+     "n_jump_frames": 55
+    },
+    "piano_ctl": {
+     "acc_in": 0.625,
+     "acc_cv": 0.556,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 55
+    }
+   },
+   {
+    "k": 18,
+    "bpm": 87.56,
+    "ratio": 1.84444,
+    "bars": 17,
+    "sine": {
+     "acc_in": 0.981,
+     "acc_cv": 0.972,
+     "zdist_jump": 1.94,
+     "n_jump_frames": 53
+    },
+    "sine_ctl": {
+     "acc_in": 0.542,
+     "acc_cv": 0.4,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 53
+    },
+    "sawlead": {
+     "acc_in": 1.0,
+     "acc_cv": 0.991,
+     "zdist_jump": 1.13,
+     "n_jump_frames": 53
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.684,
+     "acc_cv": 0.526,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 53
+    },
+    "piano": {
+     "acc_in": 0.991,
+     "acc_cv": 0.981,
+     "zdist_jump": 1.17,
+     "n_jump_frames": 53
+    },
+    "piano_ctl": {
+     "acc_in": 0.571,
+     "acc_cv": 0.392,
+     "zdist_jump": 0.99,
+     "n_jump_frames": 53
+    }
+   },
+   {
+    "k": 19,
+    "bpm": 84.869,
+    "ratio": 1.90291,
+    "bars": 16,
+    "sine": {
+     "acc_in": 0.946,
+     "acc_cv": 0.946,
+     "zdist_jump": 1.88,
+     "n_jump_frames": 56
+    },
+    "sine_ctl": {
+     "acc_in": 0.528,
+     "acc_cv": 0.466,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 56
+    },
+    "sawlead": {
+     "acc_in": 0.964,
+     "acc_cv": 0.964,
+     "zdist_jump": 1.12,
+     "n_jump_frames": 56
+    },
+    "sawlead_ctl": {
+     "acc_in": 0.731,
+     "acc_cv": 0.591,
+     "zdist_jump": 1.01,
+     "n_jump_frames": 56
+    },
+    "piano": {
+     "acc_in": 0.964,
+     "acc_cv": 0.938,
+     "zdist_jump": 1.16,
+     "n_jump_frames": 56
+    },
+    "piano_ctl": {
+     "acc_in": 0.68,
+     "acc_cv": 0.546,
+     "zdist_jump": 1.0,
+     "n_jump_frames": 56
+    }
+   }
+  ],
+  "sine_direction": {
+   "sine_cos_across_bpms": {
+    "n_bpms": 20,
+    "mean": 0.915,
+    "ci95": [
+     0.9026,
+     0.9264
+    ],
+    "min": 0.416
+   },
+   "sawlead_cos_across_bpms": {
+    "n_bpms": 20,
+    "mean": 0.867,
+    "ci95": [
+     0.8605,
+     0.8723
+    ],
+    "min": 0.679
+   },
+   "piano_cos_across_bpms": {
+    "n_bpms": 20,
+    "mean": 0.771,
+    "ci95": [
+     0.7572,
+     0.7849
+    ],
+    "min": 0.183
+   },
+   "cross_timbre_same_bpm_cos": {
+    "mean": 0.401,
+    "ci95": [
+     0.3606,
+     0.4402
+    ],
+    "n_pairs": 60
+   }
+  },
+  "sine_curve_txt": [
+   "ratio(fr/16th)  bpm      CV-acc  in-acc  zdist   |bar=CV-acc",
+   "0.92400        174.78   1.000   1.000   1.79    |########################################",
+   "1.00000        161.50   1.000   1.000   12.09   |########################################",
+   "1.02894        156.96   0.990   1.000   1.81    |#######################################",
+   "1.08741        148.52   1.000   1.000   1.84    |########################################",
+   "1.13388        142.43   0.990   0.990   1.86    |#######################################",
+   "1.18035        136.82   0.991   0.991   1.87    |#######################################",
+   "1.23881        130.37   0.981   0.990   1.89    |######################################",
+   "1.28528        125.65   0.981   0.991   1.83    |######################################",
+   "1.34375        120.19   1.000   1.000   2.15    |########################################",
+   "1.39022        116.17   0.973   0.973   1.86    |######################################",
+   "1.43669        112.41   1.000   1.000   1.89    |########################################",
+   "1.50000        107.67   1.000   1.000   4.03    |########################################",
+   "1.54163        104.76   0.943   0.991   1.96    |###################################",
+   "1.58810        101.69   0.955   0.973   1.88    |####################################",
+   "1.64657        98.08    0.954   0.963   1.90    |####################################",
+   "1.69304        95.39    0.963   0.981   1.92    |#####################################",
+   "1.75150        92.21    0.914   0.914   1.85    |#################################",
+   "1.79797        89.82    0.955   0.955   1.92    |####################################",
+   "1.84444        87.56    0.972   0.981   1.94    |######################################",
+   "1.90291        84.87    0.946   0.946   1.88    |####################################"
+  ],
+  "trend_sine": {
+   "corr_ratio_vs_cvacc": -0.744,
+   "min_cvacc": 0.914,
+   "min_cvacc_ratio": 1.7515,
+   "mean_cvacc": 0.975
+  },
+  "trend_sawlead": {
+   "corr_ratio_vs_cvacc": -0.594,
+   "min_cvacc": 0.948,
+   "min_cvacc_ratio": 1.7515,
+   "mean_cvacc": 0.983
+  },
+  "trend_piano": {
+   "corr_ratio_vs_cvacc": -0.642,
+   "min_cvacc": 0.931,
+   "min_cvacc_ratio": 1.7515,
+   "mean_cvacc": 0.977
+  }
+ }
+}

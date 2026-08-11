@@ -1,0 +1,3021 @@
+{
+ "same_fps": 10.7666015625,
+ "bpm_lock_exact": 161.4990234375,
+ "bpm_lock2_exact": 80.74951171875,
+ "render_notes": "constant patch per render; 44.1kHz stereo s16; fluidsynth -ni -g 0.5 -r 44100 FluidR3_GM.sf2, program_change injected per timbre at render time; names <midistem>__<timbre>.wav; sine renders are numpy (5ms linear ramps, sample-accurate onsets, no soundfont).",
+ "timbres_gm_program": {
+  "sawlead": 81,
+  "squarelead": 80,
+  "piano": 0,
+  "strings": 48,
+  "churchorgan": 19,
+  "epiano": 4,
+  "synthbass": 38,
+  "synthbrass": 62,
+  "flute": 73,
+  "vibraphone": 11
+ },
+ "v1_timbres": [
+  "sawlead",
+  "squarelead",
+  "piano",
+  "strings",
+  "churchorgan"
+ ],
+ "files": [
+  {
+   "file": "pat1_const16_1pitch_bpm161p5_32bars.mid",
+   "pattern": "pat1_const16_1pitch",
+   "desc": "constant 16ths, single pitch E3",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat1_const16_1pitch_bpm80p75_16bars.mid",
+   "pattern": "pat1_const16_1pitch",
+   "desc": "constant 16ths, single pitch E3",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat1_const16_1pitch_bpm143_28bars.mid",
+   "pattern": "pat1_const16_1pitch",
+   "desc": "constant 16ths, single pitch E3",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat1_const16_1pitch_bpm150_29bars.mid",
+   "pattern": "pat1_const16_1pitch",
+   "desc": "constant 16ths, single pitch E3",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat2_const16_2pitch_bpm161p5_32bars.mid",
+   "pattern": "pat2_const16_2pitch",
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat2_const16_2pitch_bpm80p75_16bars.mid",
+   "pattern": "pat2_const16_2pitch",
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat2_const16_2pitch_bpm143_28bars.mid",
+   "pattern": "pat2_const16_2pitch",
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat2_const16_2pitch_bpm150_29bars.mid",
+   "pattern": "pat2_const16_2pitch",
+   "desc": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat3_const16_arp4_bpm161p5_32bars.mid",
+   "pattern": "pat3_const16_arp4",
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat3_const16_arp4_bpm80p75_16bars.mid",
+   "pattern": "pat3_const16_arp4",
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat3_const16_arp4_bpm143_28bars.mid",
+   "pattern": "pat3_const16_arp4",
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat3_const16_arp4_bpm150_29bars.mid",
+   "pattern": "pat3_const16_arp4",
+   "desc": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat4_rise16_bpm161p5_32bars.mid",
+   "pattern": "pat4_rise16",
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat4_rise16_bpm80p75_16bars.mid",
+   "pattern": "pat4_rise16",
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat4_rise16_bpm143_28bars.mid",
+   "pattern": "pat4_rise16",
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat4_rise16_bpm150_29bars.mid",
+   "pattern": "pat4_rise16",
+   "desc": "rising chromatic 16ths E3..G4, restarts each bar",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat5_const8_fifthjump_bpm161p5_32bars.mid",
+   "pattern": "pat5_const8_fifthjump",
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat5_const8_fifthjump_bpm80p75_16bars.mid",
+   "pattern": "pat5_const8_fifthjump",
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat5_const8_fifthjump_bpm143_28bars.mid",
+   "pattern": "pat5_const8_fifthjump",
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat5_const8_fifthjump_bpm150_29bars.mid",
+   "pattern": "pat5_const8_fifthjump",
+   "desc": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat6_pedal_b2trill_bpm161p5_32bars.mid",
+   "pattern": "pat6_pedal_b2trill",
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat6_pedal_b2trill_bpm80p75_16bars.mid",
+   "pattern": "pat6_pedal_b2trill",
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat6_pedal_b2trill_bpm143_28bars.mid",
+   "pattern": "pat6_pedal_b2trill",
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat6_pedal_b2trill_bpm150_29bars.mid",
+   "pattern": "pat6_pedal_b2trill",
+   "desc": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat7_wholetone_rock_bpm161p5_32bars.mid",
+   "pattern": "pat7_wholetone_rock",
+   "desc": "whole-tone rock: 16ths alternating E3/D3",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat7_wholetone_rock_bpm80p75_16bars.mid",
+   "pattern": "pat7_wholetone_rock",
+   "desc": "whole-tone rock: 16ths alternating E3/D3",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat7_wholetone_rock_bpm143_28bars.mid",
+   "pattern": "pat7_wholetone_rock",
+   "desc": "whole-tone rock: 16ths alternating E3/D3",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat7_wholetone_rock_bpm150_29bars.mid",
+   "pattern": "pat7_wholetone_rock",
+   "desc": "whole-tone rock: 16ths alternating E3/D3",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat8_fifth_ping_bpm161p5_32bars.mid",
+   "pattern": "pat8_fifth_ping",
+   "desc": "fifth ping: 16ths alternating E3/B3",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat8_fifth_ping_bpm80p75_16bars.mid",
+   "pattern": "pat8_fifth_ping",
+   "desc": "fifth ping: 16ths alternating E3/B3",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat8_fifth_ping_bpm143_28bars.mid",
+   "pattern": "pat8_fifth_ping",
+   "desc": "fifth ping: 16ths alternating E3/B3",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat8_fifth_ping_bpm150_29bars.mid",
+   "pattern": "pat8_fifth_ping",
+   "desc": "fifth ping: 16ths alternating E3/B3",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat9_octave_bounce_bpm161p5_32bars.mid",
+   "pattern": "pat9_octave_bounce",
+   "desc": "octave bounce: 16ths alternating E3/E4",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat9_octave_bounce_bpm80p75_16bars.mid",
+   "pattern": "pat9_octave_bounce",
+   "desc": "octave bounce: 16ths alternating E3/E4",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat9_octave_bounce_bpm143_28bars.mid",
+   "pattern": "pat9_octave_bounce",
+   "desc": "octave bounce: 16ths alternating E3/E4",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat9_octave_bounce_bpm150_29bars.mid",
+   "pattern": "pat9_octave_bounce",
+   "desc": "octave bounce: 16ths alternating E3/E4",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat10_fourth_seesaw_bpm161p5_32bars.mid",
+   "pattern": "pat10_fourth_seesaw",
+   "desc": "fourth seesaw: 16ths alternating E3/A3",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat10_fourth_seesaw_bpm80p75_16bars.mid",
+   "pattern": "pat10_fourth_seesaw",
+   "desc": "fourth seesaw: 16ths alternating E3/A3",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat10_fourth_seesaw_bpm143_28bars.mid",
+   "pattern": "pat10_fourth_seesaw",
+   "desc": "fourth seesaw: 16ths alternating E3/A3",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat10_fourth_seesaw_bpm150_29bars.mid",
+   "pattern": "pat10_fourth_seesaw",
+   "desc": "fourth seesaw: 16ths alternating E3/A3",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat11_stepwise_zigzag_bpm161p5_32bars.mid",
+   "pattern": "pat11_stepwise_zigzag",
+   "desc": "stepwise zigzag: 16ths cycling E3-F#3-G3-F#3",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat11_stepwise_zigzag_bpm80p75_16bars.mid",
+   "pattern": "pat11_stepwise_zigzag",
+   "desc": "stepwise zigzag: 16ths cycling E3-F#3-G3-F#3",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat11_stepwise_zigzag_bpm143_28bars.mid",
+   "pattern": "pat11_stepwise_zigzag",
+   "desc": "stepwise zigzag: 16ths cycling E3-F#3-G3-F#3",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat11_stepwise_zigzag_bpm150_29bars.mid",
+   "pattern": "pat11_stepwise_zigzag",
+   "desc": "stepwise zigzag: 16ths cycling E3-F#3-G3-F#3",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat12_phrygian_run_bpm161p5_32bars.mid",
+   "pattern": "pat12_phrygian_run",
+   "desc": "phrygian scalar run: 8 16ths up E-phrygian (E3..E4) then 8 down",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat12_phrygian_run_bpm80p75_16bars.mid",
+   "pattern": "pat12_phrygian_run",
+   "desc": "phrygian scalar run: 8 16ths up E-phrygian (E3..E4) then 8 down",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat12_phrygian_run_bpm143_28bars.mid",
+   "pattern": "pat12_phrygian_run",
+   "desc": "phrygian scalar run: 8 16ths up E-phrygian (E3..E4) then 8 down",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat12_phrygian_run_bpm150_29bars.mid",
+   "pattern": "pat12_phrygian_run",
+   "desc": "phrygian scalar run: 8 16ths up E-phrygian (E3..E4) then 8 down",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat13_pat1_e2_bpm161p5_32bars.mid",
+   "pattern": "pat13_pat1_e2",
+   "desc": "pat1 transposed to E2 (register probe)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat13_pat1_e2_bpm80p75_16bars.mid",
+   "pattern": "pat13_pat1_e2",
+   "desc": "pat1 transposed to E2 (register probe)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat13_pat1_e2_bpm143_28bars.mid",
+   "pattern": "pat13_pat1_e2",
+   "desc": "pat1 transposed to E2 (register probe)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat13_pat1_e2_bpm150_29bars.mid",
+   "pattern": "pat13_pat1_e2",
+   "desc": "pat1 transposed to E2 (register probe)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat14_pat1_e4_bpm161p5_32bars.mid",
+   "pattern": "pat14_pat1_e4",
+   "desc": "pat1 transposed to E4 (register probe)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat14_pat1_e4_bpm80p75_16bars.mid",
+   "pattern": "pat14_pat1_e4",
+   "desc": "pat1 transposed to E4 (register probe)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat14_pat1_e4_bpm143_28bars.mid",
+   "pattern": "pat14_pat1_e4",
+   "desc": "pat1 transposed to E4 (register probe)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat14_pat1_e4_bpm150_29bars.mid",
+   "pattern": "pat14_pat1_e4",
+   "desc": "pat1 transposed to E4 (register probe)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat15_pat2_e2_bpm161p5_32bars.mid",
+   "pattern": "pat15_pat2_e2",
+   "desc": "pat2 transposed to E2: 16ths alternating E2/G2",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat15_pat2_e2_bpm80p75_16bars.mid",
+   "pattern": "pat15_pat2_e2",
+   "desc": "pat2 transposed to E2: 16ths alternating E2/G2",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat15_pat2_e2_bpm143_28bars.mid",
+   "pattern": "pat15_pat2_e2",
+   "desc": "pat2 transposed to E2: 16ths alternating E2/G2",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat15_pat2_e2_bpm150_29bars.mid",
+   "pattern": "pat15_pat2_e2",
+   "desc": "pat2 transposed to E2: 16ths alternating E2/G2",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat16_pat2_e4_bpm161p5_32bars.mid",
+   "pattern": "pat16_pat2_e4",
+   "desc": "pat2 transposed to E4: 16ths alternating E4/G4",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat16_pat2_e4_bpm80p75_16bars.mid",
+   "pattern": "pat16_pat2_e4",
+   "desc": "pat2 transposed to E4: 16ths alternating E4/G4",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat16_pat2_e4_bpm143_28bars.mid",
+   "pattern": "pat16_pat2_e4",
+   "desc": "pat2 transposed to E4: 16ths alternating E4/G4",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat16_pat2_e4_bpm150_29bars.mid",
+   "pattern": "pat16_pat2_e4",
+   "desc": "pat2 transposed to E4: 16ths alternating E4/G4",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat17_pat1_gate50_bpm161p5_32bars.mid",
+   "pattern": "pat17_pat1_gate50",
+   "desc": "pat1 E3 16ths with 50% gate (staccato)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat17_pat1_gate50_bpm80p75_16bars.mid",
+   "pattern": "pat17_pat1_gate50",
+   "desc": "pat1 E3 16ths with 50% gate (staccato)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat17_pat1_gate50_bpm143_28bars.mid",
+   "pattern": "pat17_pat1_gate50",
+   "desc": "pat1 E3 16ths with 50% gate (staccato)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat17_pat1_gate50_bpm150_29bars.mid",
+   "pattern": "pat17_pat1_gate50",
+   "desc": "pat1 E3 16ths with 50% gate (staccato)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat18_pat1_gate100_bpm161p5_32bars.mid",
+   "pattern": "pat18_pat1_gate100",
+   "desc": "pat1 E3 16ths with 100% gate (legato)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat18_pat1_gate100_bpm80p75_16bars.mid",
+   "pattern": "pat18_pat1_gate100",
+   "desc": "pat1 E3 16ths with 100% gate (legato)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat18_pat1_gate100_bpm143_28bars.mid",
+   "pattern": "pat18_pat1_gate100",
+   "desc": "pat1 E3 16ths with 100% gate (legato)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat18_pat1_gate100_bpm150_29bars.mid",
+   "pattern": "pat18_pat1_gate100",
+   "desc": "pat1 E3 16ths with 100% gate (legato)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat19_rest8_beat3_bpm161p5_32bars.mid",
+   "pattern": "pat19_rest8_beat3",
+   "desc": "8th notes E3 with a rest on beat 3 (8th positions 4+5 silent)",
+   "bpm": 161.4990234375,
+   "bars": 32,
+   "frames": 512.0,
+   "alignment": "16th==1 frame (lock 1)"
+  },
+  {
+   "file": "pat19_rest8_beat3_bpm80p75_16bars.mid",
+   "pattern": "pat19_rest8_beat3",
+   "desc": "8th notes E3 with a rest on beat 3 (8th positions 4+5 silent)",
+   "bpm": 80.74951171875,
+   "bars": 16,
+   "frames": 512.0,
+   "alignment": "16th==2 frames (lock 2)"
+  },
+  {
+   "file": "pat19_rest8_beat3_bpm143_28bars.mid",
+   "pattern": "pat19_rest8_beat3",
+   "desc": "8th notes E3 with a rest on beat 3 (8th positions 4+5 silent)",
+   "bpm": 143.0,
+   "bars": 28,
+   "frames": 506.0,
+   "alignment": "16th=1.1294 frames (phase-drift probe)"
+  },
+  {
+   "file": "pat19_rest8_beat3_bpm150_29bars.mid",
+   "pattern": "pat19_rest8_beat3",
+   "desc": "8th notes E3 with a rest on beat 3 (8th positions 4+5 silent)",
+   "bpm": 150.0,
+   "bars": 29,
+   "frames": 499.6,
+   "alignment": "16th=1.0767 frames (phase-drift probe)"
+  }
+ ],
+ "sweeps": [
+  {
+   "file": "sweep_chromatic_8ths_C2toC8_bpm161p5.mid",
+   "bpm": 161.4990234375,
+   "notes": 73,
+   "frames_per_note": 2.0,
+   "frames": 146.0,
+   "desc": "chromatic 8th sweep C2(36)->C8(108), 2 frames/note"
+  },
+  {
+   "file": "sweep_chromatic_8ths_C2toC8_bpm80p75.mid",
+   "bpm": 80.74951171875,
+   "notes": 73,
+   "frames_per_note": 4.0,
+   "frames": 292.0,
+   "desc": "chromatic 8th sweep C2(36)->C8(108), 4 frames/note"
+  }
+ ],
+ "bpm_phase_probe": {
+  "patterns": [
+   "pat1_const16_1pitch",
+   "pat5_const8_fifthjump"
+  ],
+  "timbres": [
+   "sine",
+   "sawlead",
+   "piano"
+  ],
+  "points": [
+   {
+    "k": 0,
+    "ratio_frames_per_16th": 0.924,
+    "bpm": 174.7824928977,
+    "bars": 34,
+    "frames": 502.656
+   },
+   {
+    "k": 1,
+    "ratio_frames_per_16th": 1.0,
+    "bpm": 161.4990234375,
+    "bars": 32,
+    "frames": 512.0
+   },
+   {
+    "k": 2,
+    "ratio_frames_per_16th": 1.0289380789,
+    "bpm": 156.9569896879,
+    "bars": 31,
+    "frames": 510.3532871284
+   },
+   {
+    "k": 3,
+    "ratio_frames_per_16th": 1.0874071183,
+    "bpm": 148.5175337874,
+    "bars": 29,
+    "frames": 504.556902906
+   },
+   {
+    "k": 4,
+    "ratio_frames_per_16th": 1.1338761578,
+    "bpm": 142.4309192234,
+    "bars": 28,
+    "frames": 507.9765186836
+   },
+   {
+    "k": 5,
+    "ratio_frames_per_16th": 1.1803451972,
+    "bpm": 136.8235528199,
+    "bars": 27,
+    "frames": 509.9091251989
+   },
+   {
+    "k": 6,
+    "ratio_frames_per_16th": 1.2388142367,
+    "bpm": 130.3658116429,
+    "bars": 25,
+    "frames": 495.5256946655
+   },
+   {
+    "k": 7,
+    "ratio_frames_per_16th": 1.2852832761,
+    "bpm": 125.6524740029,
+    "bars": 24,
+    "frames": 493.5487780253
+   },
+   {
+    "k": 8,
+    "ratio_frames_per_16th": 1.3437523156,
+    "bpm": 120.1851126643,
+    "bars": 23,
+    "frames": 494.500852123
+   },
+   {
+    "k": 9,
+    "ratio_frames_per_16th": 1.390221355,
+    "bpm": 116.1678482762,
+    "bars": 23,
+    "frames": 511.6014586383
+   },
+   {
+    "k": 10,
+    "ratio_frames_per_16th": 1.4366903944,
+    "bpm": 112.4104567432,
+    "bars": 22,
+    "frames": 505.7150188427
+   },
+   {
+    "k": 11,
+    "ratio_frames_per_16th": 1.5,
+    "bpm": 107.666015625,
+    "bars": 21,
+    "frames": 504.0
+   },
+   {
+    "k": 12,
+    "ratio_frames_per_16th": 1.5416284733,
+    "bpm": 104.7587186094,
+    "bars": 20,
+    "frames": 493.3211114648
+   },
+   {
+    "k": 13,
+    "ratio_frames_per_16th": 1.5880975128,
+    "bpm": 101.6933923382,
+    "bars": 20,
+    "frames": 508.1912040868
+   },
+   {
+    "k": 14,
+    "ratio_frames_per_16th": 1.6465665522,
+    "bpm": 98.0822932545,
+    "bars": 19,
+    "frames": 500.5562318734
+   },
+   {
+    "k": 15,
+    "ratio_frames_per_16th": 1.6930355917,
+    "bpm": 95.3902116607,
+    "bars": 18,
+    "frames": 487.5942503978
+   },
+   {
+    "k": 16,
+    "ratio_frames_per_16th": 1.7515046311,
+    "bpm": 92.2058786312,
+    "bars": 18,
+    "frames": 504.4333337577
+   },
+   {
+    "k": 17,
+    "ratio_frames_per_16th": 1.7979736705,
+    "bpm": 89.8227966755,
+    "bars": 17,
+    "frames": 489.0488383888
+   },
+   {
+    "k": 18,
+    "ratio_frames_per_16th": 1.84444271,
+    "bpm": 87.5597938405,
+    "bars": 17,
+    "frames": 501.6884171176
+   },
+   {
+    "k": 19,
+    "ratio_frames_per_16th": 1.9029117494,
+    "bpm": 84.8694236532,
+    "bars": 16,
+    "frames": 487.1454078554
+   }
+  ],
+  "files": [
+   {
+    "file": "pat1_const16_1pitch_bpm174p782_34bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 0,
+    "bpm": 174.7824928977,
+    "ratio_frames_per_16th": 0.924,
+    "bars": 34,
+    "frames": 502.7
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm174p782_34bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 0,
+    "bpm": 174.7824928977,
+    "ratio_frames_per_16th": 0.924,
+    "bars": 34,
+    "frames": 502.7
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm161p499_32bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 1,
+    "bpm": 161.4990234375,
+    "ratio_frames_per_16th": 1.0,
+    "bars": 32,
+    "frames": 512.0
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm161p499_32bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 1,
+    "bpm": 161.4990234375,
+    "ratio_frames_per_16th": 1.0,
+    "bars": 32,
+    "frames": 512.0
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm156p957_31bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 2,
+    "bpm": 156.9569896879,
+    "ratio_frames_per_16th": 1.0289380789,
+    "bars": 31,
+    "frames": 510.4
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm156p957_31bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 2,
+    "bpm": 156.9569896879,
+    "ratio_frames_per_16th": 1.0289380789,
+    "bars": 31,
+    "frames": 510.4
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm148p518_29bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 3,
+    "bpm": 148.5175337874,
+    "ratio_frames_per_16th": 1.0874071183,
+    "bars": 29,
+    "frames": 504.6
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm148p518_29bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 3,
+    "bpm": 148.5175337874,
+    "ratio_frames_per_16th": 1.0874071183,
+    "bars": 29,
+    "frames": 504.6
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm142p431_28bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 4,
+    "bpm": 142.4309192234,
+    "ratio_frames_per_16th": 1.1338761578,
+    "bars": 28,
+    "frames": 508.0
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm142p431_28bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 4,
+    "bpm": 142.4309192234,
+    "ratio_frames_per_16th": 1.1338761578,
+    "bars": 28,
+    "frames": 508.0
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm136p824_27bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 5,
+    "bpm": 136.8235528199,
+    "ratio_frames_per_16th": 1.1803451972,
+    "bars": 27,
+    "frames": 509.9
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm136p824_27bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 5,
+    "bpm": 136.8235528199,
+    "ratio_frames_per_16th": 1.1803451972,
+    "bars": 27,
+    "frames": 509.9
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm130p366_25bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 6,
+    "bpm": 130.3658116429,
+    "ratio_frames_per_16th": 1.2388142367,
+    "bars": 25,
+    "frames": 495.5
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm130p366_25bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 6,
+    "bpm": 130.3658116429,
+    "ratio_frames_per_16th": 1.2388142367,
+    "bars": 25,
+    "frames": 495.5
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm125p652_24bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 7,
+    "bpm": 125.6524740029,
+    "ratio_frames_per_16th": 1.2852832761,
+    "bars": 24,
+    "frames": 493.5
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm125p652_24bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 7,
+    "bpm": 125.6524740029,
+    "ratio_frames_per_16th": 1.2852832761,
+    "bars": 24,
+    "frames": 493.5
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm120p185_23bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 8,
+    "bpm": 120.1851126643,
+    "ratio_frames_per_16th": 1.3437523156,
+    "bars": 23,
+    "frames": 494.5
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm120p185_23bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 8,
+    "bpm": 120.1851126643,
+    "ratio_frames_per_16th": 1.3437523156,
+    "bars": 23,
+    "frames": 494.5
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm116p168_23bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 9,
+    "bpm": 116.1678482762,
+    "ratio_frames_per_16th": 1.390221355,
+    "bars": 23,
+    "frames": 511.6
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm116p168_23bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 9,
+    "bpm": 116.1678482762,
+    "ratio_frames_per_16th": 1.390221355,
+    "bars": 23,
+    "frames": 511.6
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm112p410_22bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 10,
+    "bpm": 112.4104567432,
+    "ratio_frames_per_16th": 1.4366903944,
+    "bars": 22,
+    "frames": 505.7
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm112p410_22bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 10,
+    "bpm": 112.4104567432,
+    "ratio_frames_per_16th": 1.4366903944,
+    "bars": 22,
+    "frames": 505.7
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm107p666_21bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 11,
+    "bpm": 107.666015625,
+    "ratio_frames_per_16th": 1.5,
+    "bars": 21,
+    "frames": 504.0
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm107p666_21bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 11,
+    "bpm": 107.666015625,
+    "ratio_frames_per_16th": 1.5,
+    "bars": 21,
+    "frames": 504.0
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm104p759_20bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 12,
+    "bpm": 104.7587186094,
+    "ratio_frames_per_16th": 1.5416284733,
+    "bars": 20,
+    "frames": 493.3
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm104p759_20bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 12,
+    "bpm": 104.7587186094,
+    "ratio_frames_per_16th": 1.5416284733,
+    "bars": 20,
+    "frames": 493.3
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm101p693_20bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 13,
+    "bpm": 101.6933923382,
+    "ratio_frames_per_16th": 1.5880975128,
+    "bars": 20,
+    "frames": 508.2
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm101p693_20bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 13,
+    "bpm": 101.6933923382,
+    "ratio_frames_per_16th": 1.5880975128,
+    "bars": 20,
+    "frames": 508.2
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm098p082_19bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 14,
+    "bpm": 98.0822932545,
+    "ratio_frames_per_16th": 1.6465665522,
+    "bars": 19,
+    "frames": 500.6
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm098p082_19bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 14,
+    "bpm": 98.0822932545,
+    "ratio_frames_per_16th": 1.6465665522,
+    "bars": 19,
+    "frames": 500.6
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm095p390_18bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 15,
+    "bpm": 95.3902116607,
+    "ratio_frames_per_16th": 1.6930355917,
+    "bars": 18,
+    "frames": 487.6
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm095p390_18bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 15,
+    "bpm": 95.3902116607,
+    "ratio_frames_per_16th": 1.6930355917,
+    "bars": 18,
+    "frames": 487.6
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm092p206_18bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 16,
+    "bpm": 92.2058786312,
+    "ratio_frames_per_16th": 1.7515046311,
+    "bars": 18,
+    "frames": 504.4
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm092p206_18bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 16,
+    "bpm": 92.2058786312,
+    "ratio_frames_per_16th": 1.7515046311,
+    "bars": 18,
+    "frames": 504.4
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm089p823_17bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 17,
+    "bpm": 89.8227966755,
+    "ratio_frames_per_16th": 1.7979736705,
+    "bars": 17,
+    "frames": 489.0
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm089p823_17bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 17,
+    "bpm": 89.8227966755,
+    "ratio_frames_per_16th": 1.7979736705,
+    "bars": 17,
+    "frames": 489.0
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm087p560_17bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 18,
+    "bpm": 87.5597938405,
+    "ratio_frames_per_16th": 1.84444271,
+    "bars": 17,
+    "frames": 501.7
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm087p560_17bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 18,
+    "bpm": 87.5597938405,
+    "ratio_frames_per_16th": 1.84444271,
+    "bars": 17,
+    "frames": 501.7
+   },
+   {
+    "file": "pat1_const16_1pitch_bpm084p869_16bars.mid",
+    "pattern": "pat1_const16_1pitch",
+    "k": 19,
+    "bpm": 84.8694236532,
+    "ratio_frames_per_16th": 1.9029117494,
+    "bars": 16,
+    "frames": 487.1
+   },
+   {
+    "file": "pat5_const8_fifthjump_bpm084p869_16bars.mid",
+    "pattern": "pat5_const8_fifthjump",
+    "k": 19,
+    "bpm": 84.8694236532,
+    "ratio_frames_per_16th": 1.9029117494,
+    "bars": 16,
+    "frames": 487.1
+   }
+  ]
+ },
+ "patterns": {
+  "pat1_const16_1pitch": "constant 16ths, single pitch E3",
+  "pat2_const16_2pitch": "constant 16ths alternating E3/G3 (corpus minor-3rd seesaw)",
+  "pat3_const16_arp4": "constant 16ths, 4-pitch arp E3-G3-B3-E4",
+  "pat4_rise16": "rising chromatic 16ths E3..G4, restarts each bar",
+  "pat5_const8_fifthjump": "constant 8ths on E3, single fifth-jump to B3 on step 5",
+  "pat6_pedal_b2trill": "16th pedal E3, semitone trill to F3 on last 4 steps (corpus phrygian cell)",
+  "pat7_wholetone_rock": "whole-tone rock: 16ths alternating E3/D3",
+  "pat8_fifth_ping": "fifth ping: 16ths alternating E3/B3",
+  "pat9_octave_bounce": "octave bounce: 16ths alternating E3/E4",
+  "pat10_fourth_seesaw": "fourth seesaw: 16ths alternating E3/A3",
+  "pat11_stepwise_zigzag": "stepwise zigzag: 16ths cycling E3-F#3-G3-F#3",
+  "pat12_phrygian_run": "phrygian scalar run: 8 16ths up E-phrygian (E3..E4) then 8 down",
+  "pat13_pat1_e2": "pat1 transposed to E2 (register probe)",
+  "pat14_pat1_e4": "pat1 transposed to E4 (register probe)",
+  "pat15_pat2_e2": "pat2 transposed to E2: 16ths alternating E2/G2",
+  "pat16_pat2_e4": "pat2 transposed to E4: 16ths alternating E4/G4",
+  "pat17_pat1_gate50": "pat1 E3 16ths with 50% gate (staccato)",
+  "pat18_pat1_gate100": "pat1 E3 16ths with 100% gate (legato)",
+  "pat19_rest8_beat3": "8th notes E3 with a rest on beat 3 (8th positions 4+5 silent)"
+ },
+ "pattern_steps_16ths": {
+  "pat1_const16_1pitch": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    52,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    52,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    52,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    52,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    52,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    52,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    52,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    52,
+    0.8
+   ]
+  ],
+  "pat2_const16_2pitch": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    55,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    55,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    55,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    55,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    55,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    55,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    55,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    55,
+    0.8
+   ]
+  ],
+  "pat3_const16_arp4": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    55,
+    0.8
+   ],
+   [
+    2,
+    1,
+    59,
+    0.8
+   ],
+   [
+    3,
+    1,
+    64,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    55,
+    0.8
+   ],
+   [
+    6,
+    1,
+    59,
+    0.8
+   ],
+   [
+    7,
+    1,
+    64,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    55,
+    0.8
+   ],
+   [
+    10,
+    1,
+    59,
+    0.8
+   ],
+   [
+    11,
+    1,
+    64,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    55,
+    0.8
+   ],
+   [
+    14,
+    1,
+    59,
+    0.8
+   ],
+   [
+    15,
+    1,
+    64,
+    0.8
+   ]
+  ],
+  "pat4_rise16": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    53,
+    0.8
+   ],
+   [
+    2,
+    1,
+    54,
+    0.8
+   ],
+   [
+    3,
+    1,
+    55,
+    0.8
+   ],
+   [
+    4,
+    1,
+    56,
+    0.8
+   ],
+   [
+    5,
+    1,
+    57,
+    0.8
+   ],
+   [
+    6,
+    1,
+    58,
+    0.8
+   ],
+   [
+    7,
+    1,
+    59,
+    0.8
+   ],
+   [
+    8,
+    1,
+    60,
+    0.8
+   ],
+   [
+    9,
+    1,
+    61,
+    0.8
+   ],
+   [
+    10,
+    1,
+    62,
+    0.8
+   ],
+   [
+    11,
+    1,
+    63,
+    0.8
+   ],
+   [
+    12,
+    1,
+    64,
+    0.8
+   ],
+   [
+    13,
+    1,
+    65,
+    0.8
+   ],
+   [
+    14,
+    1,
+    66,
+    0.8
+   ],
+   [
+    15,
+    1,
+    67,
+    0.8
+   ]
+  ],
+  "pat5_const8_fifthjump": [
+   [
+    0,
+    2,
+    52,
+    0.8
+   ],
+   [
+    2,
+    2,
+    52,
+    0.8
+   ],
+   [
+    4,
+    2,
+    52,
+    0.8
+   ],
+   [
+    6,
+    2,
+    52,
+    0.8
+   ],
+   [
+    8,
+    2,
+    59,
+    0.8
+   ],
+   [
+    10,
+    2,
+    52,
+    0.8
+   ],
+   [
+    12,
+    2,
+    52,
+    0.8
+   ],
+   [
+    14,
+    2,
+    52,
+    0.8
+   ]
+  ],
+  "pat6_pedal_b2trill": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    52,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    52,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    52,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    52,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    52,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    52,
+    0.8
+   ],
+   [
+    12,
+    1,
+    53,
+    0.8
+   ],
+   [
+    13,
+    1,
+    53,
+    0.8
+   ],
+   [
+    14,
+    1,
+    53,
+    0.8
+   ],
+   [
+    15,
+    1,
+    53,
+    0.8
+   ]
+  ],
+  "pat7_wholetone_rock": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    50,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    50,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    50,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    50,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    50,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    50,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    50,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    50,
+    0.8
+   ]
+  ],
+  "pat8_fifth_ping": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    59,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    59,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    59,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    59,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    59,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    59,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    59,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    59,
+    0.8
+   ]
+  ],
+  "pat9_octave_bounce": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    64,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    64,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    64,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    64,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    64,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    64,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    64,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    64,
+    0.8
+   ]
+  ],
+  "pat10_fourth_seesaw": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    57,
+    0.8
+   ],
+   [
+    2,
+    1,
+    52,
+    0.8
+   ],
+   [
+    3,
+    1,
+    57,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    57,
+    0.8
+   ],
+   [
+    6,
+    1,
+    52,
+    0.8
+   ],
+   [
+    7,
+    1,
+    57,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    57,
+    0.8
+   ],
+   [
+    10,
+    1,
+    52,
+    0.8
+   ],
+   [
+    11,
+    1,
+    57,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    57,
+    0.8
+   ],
+   [
+    14,
+    1,
+    52,
+    0.8
+   ],
+   [
+    15,
+    1,
+    57,
+    0.8
+   ]
+  ],
+  "pat11_stepwise_zigzag": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    54,
+    0.8
+   ],
+   [
+    2,
+    1,
+    55,
+    0.8
+   ],
+   [
+    3,
+    1,
+    54,
+    0.8
+   ],
+   [
+    4,
+    1,
+    52,
+    0.8
+   ],
+   [
+    5,
+    1,
+    54,
+    0.8
+   ],
+   [
+    6,
+    1,
+    55,
+    0.8
+   ],
+   [
+    7,
+    1,
+    54,
+    0.8
+   ],
+   [
+    8,
+    1,
+    52,
+    0.8
+   ],
+   [
+    9,
+    1,
+    54,
+    0.8
+   ],
+   [
+    10,
+    1,
+    55,
+    0.8
+   ],
+   [
+    11,
+    1,
+    54,
+    0.8
+   ],
+   [
+    12,
+    1,
+    52,
+    0.8
+   ],
+   [
+    13,
+    1,
+    54,
+    0.8
+   ],
+   [
+    14,
+    1,
+    55,
+    0.8
+   ],
+   [
+    15,
+    1,
+    54,
+    0.8
+   ]
+  ],
+  "pat12_phrygian_run": [
+   [
+    0,
+    1,
+    52,
+    0.8
+   ],
+   [
+    1,
+    1,
+    53,
+    0.8
+   ],
+   [
+    2,
+    1,
+    55,
+    0.8
+   ],
+   [
+    3,
+    1,
+    57,
+    0.8
+   ],
+   [
+    4,
+    1,
+    59,
+    0.8
+   ],
+   [
+    5,
+    1,
+    60,
+    0.8
+   ],
+   [
+    6,
+    1,
+    62,
+    0.8
+   ],
+   [
+    7,
+    1,
+    64,
+    0.8
+   ],
+   [
+    8,
+    1,
+    64,
+    0.8
+   ],
+   [
+    9,
+    1,
+    62,
+    0.8
+   ],
+   [
+    10,
+    1,
+    60,
+    0.8
+   ],
+   [
+    11,
+    1,
+    59,
+    0.8
+   ],
+   [
+    12,
+    1,
+    57,
+    0.8
+   ],
+   [
+    13,
+    1,
+    55,
+    0.8
+   ],
+   [
+    14,
+    1,
+    53,
+    0.8
+   ],
+   [
+    15,
+    1,
+    52,
+    0.8
+   ]
+  ],
+  "pat13_pat1_e2": [
+   [
+    0,
+    1,
+    40,
+    0.8
+   ],
+   [
+    1,
+    1,
+    40,
+    0.8
+   ],
+   [
+    2,
+    1,
+    40,
+    0.8
+   ],
+   [
+    3,
+    1,
+    40,
+    0.8
+   ],
+   [
+    4,
+    1,
+    40,
+    0.8
+   ],
+   [
+    5,
+    1,
+    40,
+    0.8
+   ],
+   [
+    6,
+    1,
+    40,
+    0.8
+   ],
+   [
+    7,
+    1,
+    40,
+    0.8
+   ],
+   [
+    8,
+    1,
+    40,
+    0.8
+   ],
+   [
+    9,
+    1,
+    40,
+    0.8
+   ],
+   [
+    10,
+    1,
+    40,
+    0.8
+   ],
+   [
+    11,
+    1,
+    40,
+    0.8
+   ],
+   [
+    12,
+    1,
+    40,
+    0.8
+   ],
+   [
+    13,
+    1,
+    40,
+    0.8
+   ],
+   [
+    14,
+    1,
+    40,
+    0.8
+   ],
+   [
+    15,
+    1,
+    40,
+    0.8
+   ]
+  ],
+  "pat14_pat1_e4": [
+   [
+    0,
+    1,
+    64,
+    0.8
+   ],
+   [
+    1,
+    1,
+    64,
+    0.8
+   ],
+   [
+    2,
+    1,
+    64,
+    0.8
+   ],
+   [
+    3,
+    1,
+    64,
+    0.8
+   ],
+   [
+    4,
+    1,
+    64,
+    0.8
+   ],
+   [
+    5,
+    1,
+    64,
+    0.8
+   ],
+   [
+    6,
+    1,
+    64,
+    0.8
+   ],
+   [
+    7,
+    1,
+    64,
+    0.8
+   ],
+   [
+    8,
+    1,
+    64,
+    0.8
+   ],
+   [
+    9,
+    1,
+    64,
+    0.8
+   ],
+   [
+    10,
+    1,
+    64,
+    0.8
+   ],
+   [
+    11,
+    1,
+    64,
+    0.8
+   ],
+   [
+    12,
+    1,
+    64,
+    0.8
+   ],
+   [
+    13,
+    1,
+    64,
+    0.8
+   ],
+   [
+    14,
+    1,
+    64,
+    0.8
+   ],
+   [
+    15,
+    1,
+    64,
+    0.8
+   ]
+  ],
+  "pat15_pat2_e2": [
+   [
+    0,
+    1,
+    40,
+    0.8
+   ],
+   [
+    1,
+    1,
+    43,
+    0.8
+   ],
+   [
+    2,
+    1,
+    40,
+    0.8
+   ],
+   [
+    3,
+    1,
+    43,
+    0.8
+   ],
+   [
+    4,
+    1,
+    40,
+    0.8
+   ],
+   [
+    5,
+    1,
+    43,
+    0.8
+   ],
+   [
+    6,
+    1,
+    40,
+    0.8
+   ],
+   [
+    7,
+    1,
+    43,
+    0.8
+   ],
+   [
+    8,
+    1,
+    40,
+    0.8
+   ],
+   [
+    9,
+    1,
+    43,
+    0.8
+   ],
+   [
+    10,
+    1,
+    40,
+    0.8
+   ],
+   [
+    11,
+    1,
+    43,
+    0.8
+   ],
+   [
+    12,
+    1,
+    40,
+    0.8
+   ],
+   [
+    13,
+    1,
+    43,
+    0.8
+   ],
+   [
+    14,
+    1,
+    40,
+    0.8
+   ],
+   [
+    15,
+    1,
+    43,
+    0.8
+   ]
+  ],
+  "pat16_pat2_e4": [
+   [
+    0,
+    1,
+    64,
+    0.8
+   ],
+   [
+    1,
+    1,
+    67,
+    0.8
+   ],
+   [
+    2,
+    1,
+    64,
+    0.8
+   ],
+   [
+    3,
+    1,
+    67,
+    0.8
+   ],
+   [
+    4,
+    1,
+    64,
+    0.8
+   ],
+   [
+    5,
+    1,
+    67,
+    0.8
+   ],
+   [
+    6,
+    1,
+    64,
+    0.8
+   ],
+   [
+    7,
+    1,
+    67,
+    0.8
+   ],
+   [
+    8,
+    1,
+    64,
+    0.8
+   ],
+   [
+    9,
+    1,
+    67,
+    0.8
+   ],
+   [
+    10,
+    1,
+    64,
+    0.8
+   ],
+   [
+    11,
+    1,
+    67,
+    0.8
+   ],
+   [
+    12,
+    1,
+    64,
+    0.8
+   ],
+   [
+    13,
+    1,
+    67,
+    0.8
+   ],
+   [
+    14,
+    1,
+    64,
+    0.8
+   ],
+   [
+    15,
+    1,
+    67,
+    0.8
+   ]
+  ],
+  "pat17_pat1_gate50": [
+   [
+    0,
+    1,
+    52,
+    0.5
+   ],
+   [
+    1,
+    1,
+    52,
+    0.5
+   ],
+   [
+    2,
+    1,
+    52,
+    0.5
+   ],
+   [
+    3,
+    1,
+    52,
+    0.5
+   ],
+   [
+    4,
+    1,
+    52,
+    0.5
+   ],
+   [
+    5,
+    1,
+    52,
+    0.5
+   ],
+   [
+    6,
+    1,
+    52,
+    0.5
+   ],
+   [
+    7,
+    1,
+    52,
+    0.5
+   ],
+   [
+    8,
+    1,
+    52,
+    0.5
+   ],
+   [
+    9,
+    1,
+    52,
+    0.5
+   ],
+   [
+    10,
+    1,
+    52,
+    0.5
+   ],
+   [
+    11,
+    1,
+    52,
+    0.5
+   ],
+   [
+    12,
+    1,
+    52,
+    0.5
+   ],
+   [
+    13,
+    1,
+    52,
+    0.5
+   ],
+   [
+    14,
+    1,
+    52,
+    0.5
+   ],
+   [
+    15,
+    1,
+    52,
+    0.5
+   ]
+  ],
+  "pat18_pat1_gate100": [
+   [
+    0,
+    1,
+    52,
+    1.0
+   ],
+   [
+    1,
+    1,
+    52,
+    1.0
+   ],
+   [
+    2,
+    1,
+    52,
+    1.0
+   ],
+   [
+    3,
+    1,
+    52,
+    1.0
+   ],
+   [
+    4,
+    1,
+    52,
+    1.0
+   ],
+   [
+    5,
+    1,
+    52,
+    1.0
+   ],
+   [
+    6,
+    1,
+    52,
+    1.0
+   ],
+   [
+    7,
+    1,
+    52,
+    1.0
+   ],
+   [
+    8,
+    1,
+    52,
+    1.0
+   ],
+   [
+    9,
+    1,
+    52,
+    1.0
+   ],
+   [
+    10,
+    1,
+    52,
+    1.0
+   ],
+   [
+    11,
+    1,
+    52,
+    1.0
+   ],
+   [
+    12,
+    1,
+    52,
+    1.0
+   ],
+   [
+    13,
+    1,
+    52,
+    1.0
+   ],
+   [
+    14,
+    1,
+    52,
+    1.0
+   ],
+   [
+    15,
+    1,
+    52,
+    1.0
+   ]
+  ],
+  "pat19_rest8_beat3": [
+   [
+    0,
+    2,
+    52,
+    0.8
+   ],
+   [
+    2,
+    2,
+    52,
+    0.8
+   ],
+   [
+    4,
+    2,
+    52,
+    0.8
+   ],
+   [
+    6,
+    2,
+    52,
+    0.8
+   ],
+   [
+    12,
+    2,
+    52,
+    0.8
+   ],
+   [
+    14,
+    2,
+    52,
+    0.8
+   ]
+  ]
+ }
+}

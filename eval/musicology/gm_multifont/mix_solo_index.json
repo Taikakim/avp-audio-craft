@@ -1,0 +1,77 @@
+{
+ "lead": [
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "81",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm81__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "81",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm81__CrisisGeneralMidi3.01.wav"
+  },
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "82",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm82__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "82",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm82__CrisisGeneralMidi3.01.wav"
+  },
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "91",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm91__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "91",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm91__CrisisGeneralMidi3.01.wav"
+  },
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "102",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm102__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "102",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_lead__gm102__CrisisGeneralMidi3.01.wav"
+  }
+ ],
+ "bass": [
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "39",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_bass__gm39__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "39",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_bass__gm39__CrisisGeneralMidi3.01.wav"
+  },
+  {
+   "font": "FluidR3_GM.sf2",
+   "gm": "40",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_bass__gm40__FluidR3_GM.wav"
+  },
+  {
+   "font": "CrisisGeneralMidi3.01.sf2",
+   "gm": "40",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_bass__gm40__CrisisGeneralMidi3.01.wav"
+  }
+ ],
+ "drum": [
+  {
+   "name": "Crisis",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_drum__Crisis.wav"
+  },
+  {
+   "name": "DSoundGaming",
+   "wav": "/home/kim/Projects/SAO/eval/musicology/gm_multifont/renders/solo_drum__DSoundGaming.wav"
+  }
+ ],
+ "skips": []
+}

@@ -1,0 +1,833 @@
+{
+ "n_renders": 640,
+ "n_programs": 40,
+ "clustering": {
+  "frame_mean_latent": {
+   "label": "frame_mean_latent",
+   "silhouette_cosine": -0.2257,
+   "within_program_cosine": 0.6597,
+   "cross_program_cosine": 0.5729,
+   "permutation_p": 0.005,
+   "top8_coherent": [
+    {
+     "gm": 90,
+     "name": "Pad 2 (warm)",
+     "within_cos": 0.9353
+    },
+    {
+     "gm": 74,
+     "name": "Flute",
+     "within_cos": 0.8971
+    },
+    {
+     "gm": 102,
+     "name": "FX 6 (goblins)",
+     "within_cos": 0.8932
+    },
+    {
+     "gm": 94,
+     "name": "Pad 6 (metallic)",
+     "within_cos": 0.8562
+    },
+    {
+     "gm": 69,
+     "name": "Oboe",
+     "within_cos": 0.7923
+    },
+    {
+     "gm": 96,
+     "name": "Pad 8 (sweep)",
+     "within_cos": 0.7832
+    },
+    {
+     "gm": 52,
+     "name": "Synth Strings 2",
+     "within_cos": 0.7798
+    },
+    {
+     "gm": 51,
+     "name": "Synth Strings 1",
+     "within_cos": 0.778
+    }
+   ],
+   "bottom8_coherent": [
+    {
+     "gm": 98,
+     "name": "FX 2 (soundtrack)",
+     "within_cos": 0.5499
+    },
+    {
+     "gm": 83,
+     "name": "Lead 3 (calliope)",
+     "within_cos": 0.5254
+    },
+    {
+     "gm": 82,
+     "name": "Lead 2 (sawtooth)",
+     "within_cos": 0.5142
+    },
+    {
+     "gm": 87,
+     "name": "Lead 7 (fifths)",
+     "within_cos": 0.5004
+    },
+    {
+     "gm": 113,
+     "name": "Tinkle Bell",
+     "within_cos": 0.4617
+    },
+    {
+     "gm": 89,
+     "name": "Pad 1 (new age)",
+     "within_cos": 0.4347
+    },
+    {
+     "gm": 99,
+     "name": "FX 3 (crystal)",
+     "within_cos": 0.4231
+    },
+    {
+     "gm": 101,
+     "name": "FX 5 (brightness)",
+     "within_cos": 0.3347
+    }
+   ]
+  },
+  "pitch_decoder_weight": {
+   "label": "pitch_decoder_weight",
+   "silhouette_cosine": -0.0421,
+   "within_program_cosine": 0.2382,
+   "cross_program_cosine": 0.1245,
+   "permutation_p": 0.005,
+   "top8_coherent": [
+    {
+     "gm": 112,
+     "name": "Shanai",
+     "within_cos": 0.5125
+    },
+    {
+     "gm": 81,
+     "name": "Lead 1 (square)",
+     "within_cos": 0.4717
+    },
+    {
+     "gm": 69,
+     "name": "Oboe",
+     "within_cos": 0.4396
+    },
+    {
+     "gm": 83,
+     "name": "Lead 3 (calliope)",
+     "within_cos": 0.392
+    },
+    {
+     "gm": 84,
+     "name": "Lead 4 (chiff)",
+     "within_cos": 0.3917
+    },
+    {
+     "gm": 82,
+     "name": "Lead 2 (sawtooth)",
+     "within_cos": 0.3565
+    },
+    {
+     "gm": 85,
+     "name": "Lead 5 (charang)",
+     "within_cos": 0.3254
+    },
+    {
+     "gm": 108,
+     "name": "Koto",
+     "within_cos": 0.3218
+    }
+   ],
+   "bottom8_coherent": [
+    {
+     "gm": 98,
+     "name": "FX 2 (soundtrack)",
+     "within_cos": 0.1319
+    },
+    {
+     "gm": 90,
+     "name": "Pad 2 (warm)",
+     "within_cos": 0.1249
+    },
+    {
+     "gm": 102,
+     "name": "FX 6 (goblins)",
+     "within_cos": 0.1067
+    },
+    {
+     "gm": 103,
+     "name": "FX 7 (echoes)",
+     "within_cos": 0.1031
+    },
+    {
+     "gm": 96,
+     "name": "Pad 8 (sweep)",
+     "within_cos": 0.1031
+    },
+    {
+     "gm": 97,
+     "name": "FX 1 (rain)",
+     "within_cos": 0.0833
+    },
+    {
+     "gm": 89,
+     "name": "Pad 1 (new age)",
+     "within_cos": 0.0797
+    },
+    {
+     "gm": 93,
+     "name": "Pad 5 (bowed)",
+     "within_cos": 0.0786
+    }
+   ]
+  },
+  "generic_supercluster_replication": {
+   "mean_nearest_other_program_cos": 0.9448,
+   "confusions": [
+    {
+     "gm": 1,
+     "name": "Acoustic Grand Piano",
+     "nearest_other_gm": 95,
+     "nearest_other_name": "Pad 7 (halo)",
+     "cos": 0.9055
+    },
+    {
+     "gm": 3,
+     "name": "Electric Grand Piano",
+     "nearest_other_gm": 85,
+     "nearest_other_name": "Lead 5 (charang)",
+     "cos": 0.9256
+    },
+    {
+     "gm": 30,
+     "name": "Overdriven Guitar",
+     "nearest_other_gm": 31,
+     "nearest_other_name": "Distortion Guitar",
+     "cos": 0.9633
+    },
+    {
+     "gm": 31,
+     "name": "Distortion Guitar",
+     "nearest_other_gm": 30,
+     "nearest_other_name": "Overdriven Guitar",
+     "cos": 0.9633
+    },
+    {
+     "gm": 39,
+     "name": "Synth Bass 1",
+     "nearest_other_gm": 109,
+     "nearest_other_name": "Kalimba",
+     "cos": 0.926
+    },
+    {
+     "gm": 40,
+     "name": "Synth Bass 2",
+     "nearest_other_gm": 100,
+     "nearest_other_name": "FX 4 (atmosphere)",
+     "cos": 0.9163
+    },
+    {
+     "gm": 51,
+     "name": "Synth Strings 1",
+     "nearest_other_gm": 52,
+     "nearest_other_name": "Synth Strings 2",
+     "cos": 0.9799
+    },
+    {
+     "gm": 52,
+     "name": "Synth Strings 2",
+     "nearest_other_gm": 51,
+     "nearest_other_name": "Synth Strings 1",
+     "cos": 0.9799
+    },
+    {
+     "gm": 63,
+     "name": "Synth Brass 1",
+     "nearest_other_gm": 91,
+     "nearest_other_name": "Pad 3 (polysynth)",
+     "cos": 0.9501
+    },
+    {
+     "gm": 69,
+     "name": "Oboe",
+     "nearest_other_gm": 93,
+     "nearest_other_name": "Pad 5 (bowed)",
+     "cos": 0.9517
+    },
+    {
+     "gm": 74,
+     "name": "Flute",
+     "nearest_other_gm": 102,
+     "nearest_other_name": "FX 6 (goblins)",
+     "cos": 0.9874
+    },
+    {
+     "gm": 81,
+     "name": "Lead 1 (square)",
+     "nearest_other_gm": 88,
+     "nearest_other_name": "Lead 8 (bass+lead)",
+     "cos": 0.9301
+    },
+    {
+     "gm": 82,
+     "name": "Lead 2 (sawtooth)",
+     "nearest_other_gm": 87,
+     "nearest_other_name": "Lead 7 (fifths)",
+     "cos": 0.9358
+    },
+    {
+     "gm": 83,
+     "name": "Lead 3 (calliope)",
+     "nearest_other_gm": 84,
+     "nearest_other_name": "Lead 4 (chiff)",
+     "cos": 0.9617
+    },
+    {
+     "gm": 84,
+     "name": "Lead 4 (chiff)",
+     "nearest_other_gm": 83,
+     "nearest_other_name": "Lead 3 (calliope)",
+     "cos": 0.9617
+    },
+    {
+     "gm": 85,
+     "name": "Lead 5 (charang)",
+     "nearest_other_gm": 88,
+     "nearest_other_name": "Lead 8 (bass+lead)",
+     "cos": 0.9372
+    },
+    {
+     "gm": 86,
+     "name": "Lead 6 (voice)",
+     "nearest_other_gm": 52,
+     "nearest_other_name": "Synth Strings 2",
+     "cos": 0.9722
+    },
+    {
+     "gm": 87,
+     "name": "Lead 7 (fifths)",
+     "nearest_other_gm": 91,
+     "nearest_other_name": "Pad 3 (polysynth)",
+     "cos": 0.9429
+    },
+    {
+     "gm": 88,
+     "name": "Lead 8 (bass+lead)",
+     "nearest_other_gm": 85,
+     "nearest_other_name": "Lead 5 (charang)",
+     "cos": 0.9372
+    },
+    {
+     "gm": 89,
+     "name": "Pad 1 (new age)",
+     "nearest_other_gm": 92,
+     "nearest_other_name": "Pad 4 (choir)",
+     "cos": 0.9165
+    },
+    {
+     "gm": 90,
+     "name": "Pad 2 (warm)",
+     "nearest_other_gm": 102,
+     "nearest_other_name": "FX 6 (goblins)",
+     "cos": 0.9939
+    },
+    {
+     "gm": 91,
+     "name": "Pad 3 (polysynth)",
+     "nearest_other_gm": 52,
+     "nearest_other_name": "Synth Strings 2",
+     "cos": 0.9591
+    },
+    {
+     "gm": 92,
+     "name": "Pad 4 (choir)",
+     "nearest_other_gm": 86,
+     "nearest_other_name": "Lead 6 (voice)",
+     "cos": 0.965
+    },
+    {
+     "gm": 93,
+     "name": "Pad 5 (bowed)",
+     "nearest_other_gm": 74,
+     "nearest_other_name": "Flute",
+     "cos": 0.9614
+    },
+    {
+     "gm": 94,
+     "name": "Pad 6 (metallic)",
+     "nearest_other_gm": 90,
+     "nearest_other_name": "Pad 2 (warm)",
+     "cos": 0.9804
+    },
+    {
+     "gm": 95,
+     "name": "Pad 7 (halo)",
+     "nearest_other_gm": 51,
+     "nearest_other_name": "Synth Strings 1",
+     "cos": 0.9701
+    },
+    {
+     "gm": 96,
+     "name": "Pad 8 (sweep)",
+     "nearest_other_gm": 90,
+     "nearest_other_name": "Pad 2 (warm)",
+     "cos": 0.983
+    },
+    {
+     "gm": 97,
+     "name": "FX 1 (rain)",
+     "nearest_other_gm": 86,
+     "nearest_other_name": "Lead 6 (voice)",
+     "cos": 0.9455
+    },
+    {
+     "gm": 98,
+     "name": "FX 2 (soundtrack)",
+     "nearest_other_gm": 95,
+     "nearest_other_name": "Pad 7 (halo)",
+     "cos": 0.9308
+    },
+    {
+     "gm": 99,
+     "name": "FX 3 (crystal)",
+     "nearest_other_gm": 85,
+     "nearest_other_name": "Lead 5 (charang)",
+     "cos": 0.8895
+    },
+    {
+     "gm": 100,
+     "name": "FX 4 (atmosphere)",
+     "nearest_other_gm": 40,
+     "nearest_other_name": "Synth Bass 2",
+     "cos": 0.9163
+    },
+    {
+     "gm": 101,
+     "name": "FX 5 (brightness)",
+     "nearest_other_gm": 89,
+     "nearest_other_name": "Pad 1 (new age)",
+     "cos": 0.8955
+    },
+    {
+     "gm": 102,
+     "name": "FX 6 (goblins)",
+     "nearest_other_gm": 90,
+     "nearest_other_name": "Pad 2 (warm)",
+     "cos": 0.9939
+    },
+    {
+     "gm": 103,
+     "name": "FX 7 (echoes)",
+     "nearest_other_gm": 93,
+     "nearest_other_name": "Pad 5 (bowed)",
+     "cos": 0.932
+    },
+    {
+     "gm": 104,
+     "name": "FX 8 (sci-fi)",
+     "nearest_other_gm": 91,
+     "nearest_other_name": "Pad 3 (polysynth)",
+     "cos": 0.9316
+    },
+    {
+     "gm": 108,
+     "name": "Koto",
+     "nearest_other_gm": 112,
+     "nearest_other_name": "Shanai",
+     "cos": 0.909
+    },
+    {
+     "gm": 109,
+     "name": "Kalimba",
+     "nearest_other_gm": 116,
+     "nearest_other_name": "Woodblock",
+     "cos": 0.9416
+    },
+    {
+     "gm": 112,
+     "name": "Shanai",
+     "nearest_other_gm": 69,
+     "nearest_other_name": "Oboe",
+     "cos": 0.9379
+    },
+    {
+     "gm": 113,
+     "name": "Tinkle Bell",
+     "nearest_other_gm": 108,
+     "nearest_other_name": "Koto",
+     "cos": 0.868
+    },
+    {
+     "gm": 116,
+     "name": "Woodblock",
+     "nearest_other_gm": 109,
+     "nearest_other_name": "Kalimba",
+     "cos": 0.9416
+    }
+   ]
+  }
+ },
+ "interval_decodability": [
+  {
+   "k": 1,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8637,
+   "per_program_dprime_min": 0.739,
+   "per_program_dprime_max": 2.569,
+   "per_program_dprime_mean": 1.465
+  },
+  {
+   "k": 1,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8607,
+   "per_program_dprime_min": 0.811,
+   "per_program_dprime_max": 2.906,
+   "per_program_dprime_mean": 1.467
+  },
+  {
+   "k": 1,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.8523,
+   "per_program_dprime_min": 0.849,
+   "per_program_dprime_max": 2.802,
+   "per_program_dprime_mean": 1.553
+  },
+  {
+   "k": 2,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.885,
+   "per_program_dprime_min": 0.87,
+   "per_program_dprime_max": 3.084,
+   "per_program_dprime_mean": 1.707
+  },
+  {
+   "k": 2,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8885,
+   "per_program_dprime_min": 0.886,
+   "per_program_dprime_max": 2.989,
+   "per_program_dprime_mean": 1.633
+  },
+  {
+   "k": 2,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.8649,
+   "per_program_dprime_min": 0.799,
+   "per_program_dprime_max": 2.408,
+   "per_program_dprime_mean": 1.538
+  },
+  {
+   "k": 3,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8886,
+   "per_program_dprime_min": 0.863,
+   "per_program_dprime_max": 3.118,
+   "per_program_dprime_mean": 1.777
+  },
+  {
+   "k": 3,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8866,
+   "per_program_dprime_min": 0.872,
+   "per_program_dprime_max": 2.82,
+   "per_program_dprime_mean": 1.585
+  },
+  {
+   "k": 3,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.8667,
+   "per_program_dprime_min": 0.892,
+   "per_program_dprime_max": 2.44,
+   "per_program_dprime_mean": 1.55
+  },
+  {
+   "k": 5,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8947,
+   "per_program_dprime_min": 0.798,
+   "per_program_dprime_max": 3.241,
+   "per_program_dprime_mean": 1.71
+  },
+  {
+   "k": 5,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8579,
+   "per_program_dprime_min": 0.871,
+   "per_program_dprime_max": 3.299,
+   "per_program_dprime_mean": 1.664
+  },
+  {
+   "k": 5,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.8586,
+   "per_program_dprime_min": 0.803,
+   "per_program_dprime_max": 2.443,
+   "per_program_dprime_mean": 1.595
+  },
+  {
+   "k": 7,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8683,
+   "per_program_dprime_min": 0.936,
+   "per_program_dprime_max": 2.893,
+   "per_program_dprime_mean": 1.66
+  },
+  {
+   "k": 7,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8535,
+   "per_program_dprime_min": 0.813,
+   "per_program_dprime_max": 2.701,
+   "per_program_dprime_mean": 1.465
+  },
+  {
+   "k": 7,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.875,
+   "per_program_dprime_min": 0.876,
+   "per_program_dprime_max": 2.555,
+   "per_program_dprime_mean": 1.566
+  },
+  {
+   "k": 12,
+   "direction": "up",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.7908,
+   "per_program_dprime_min": 0.81,
+   "per_program_dprime_max": 2.081,
+   "per_program_dprime_mean": 1.38
+  },
+  {
+   "k": 12,
+   "direction": "down",
+   "test": "cell_vs_pedal",
+   "lda_acc_5fold": 0.8217,
+   "per_program_dprime_min": 0.793,
+   "per_program_dprime_max": 1.978,
+   "per_program_dprime_mean": 1.273
+  },
+  {
+   "k": 12,
+   "direction": "up_vs_down",
+   "test": "direction",
+   "lda_acc_5fold": 0.8435,
+   "per_program_dprime_min": 0.997,
+   "per_program_dprime_max": 2.425,
+   "per_program_dprime_mean": 1.473
+  }
+ ],
+ "hysteresis": {
+  "predecessor_13class_balanced_acc": 0.4068,
+  "successor_13class_balanced_acc": 0.3486,
+  "chance": 0.0769,
+  "n_test_frames_predecessor": 17640,
+  "n_test_frames_successor": 17640,
+  "test_fonts": [
+   "CrisisGeneralMidi3.01.sf2",
+   "GMR Basico1.1.sf2",
+   "Just T4.sf2"
+  ],
+  "train_fonts_n": 13,
+  "decay_csv": "hysteresis_decay.csv",
+  "predecessor_decay_patches": [
+   {
+    "recency_frames": 1,
+    "balanced_acc": 0.6661
+   },
+   {
+    "recency_frames": 2,
+    "balanced_acc": 0.6062
+   },
+   {
+    "recency_frames": 3,
+    "balanced_acc": 0.612
+   },
+   {
+    "recency_frames": 4,
+    "balanced_acc": 0.5724
+   },
+   {
+    "recency_frames": 5,
+    "balanced_acc": 0.5443
+   },
+   {
+    "recency_frames": 6,
+    "balanced_acc": 0.5401
+   },
+   {
+    "recency_frames": 7,
+    "balanced_acc": 0.5182
+   },
+   {
+    "recency_frames": 8,
+    "balanced_acc": 0.5224
+   }
+  ],
+  "successor_decay_patches": [
+   {
+    "recency_frames": 2,
+    "balanced_acc": 0.5427
+   },
+   {
+    "recency_frames": 3,
+    "balanced_acc": 0.5531
+   },
+   {
+    "recency_frames": 4,
+    "balanced_acc": 0.5437
+   },
+   {
+    "recency_frames": 5,
+    "balanced_acc": 0.551
+   },
+   {
+    "recency_frames": 6,
+    "balanced_acc": 0.5573
+   },
+   {
+    "recency_frames": 7,
+    "balanced_acc": 0.551
+   },
+   {
+    "recency_frames": 8,
+    "balanced_acc": 0.5698
+   },
+   {
+    "recency_frames": 9,
+    "balanced_acc": 0.5396
+   }
+  ],
+  "sine_predecessor_decay": [
+   {
+    "recency_frames": 1,
+    "cos_dist_from_ref": 0.0009
+   },
+   {
+    "recency_frames": 2,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 3,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 4,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 5,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 6,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 7,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 8,
+    "cos_dist_from_ref": 0.0
+   }
+  ],
+  "sine_successor_decay": [
+   {
+    "recency_frames": 2,
+    "cos_dist_from_ref": 0.0001
+   },
+   {
+    "recency_frames": 3,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 4,
+    "cos_dist_from_ref": 0.0001
+   },
+   {
+    "recency_frames": 5,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 6,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 7,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 8,
+    "cos_dist_from_ref": 0.0
+   },
+   {
+    "recency_frames": 9,
+    "cos_dist_from_ref": 0.0
+   }
+  ],
+  "hysteresis_magnitude_mean_patches": 0.2396,
+  "hysteresis_magnitude_sine": 0.0009,
+  "release_tail_vs_intrinsic_corr": -0.2083
+ },
+ "mix": {
+  "separability": {
+   "lead_retention_r2_ratio_mean": -0.1665,
+   "bass_retention_r2_ratio_mean": 0.0356,
+   "superposition_cos_mean": 0.8847,
+   "superposition_resid_mean": 0.8435,
+   "superposition_cos_by_section_worst5": [
+    {
+     "section": "pivot_up_k1",
+     "cos": 0.8745
+    },
+    {
+     "section": "pivot_up_k12",
+     "cos": 0.8761
+    },
+    {
+     "section": "pivot_down_k3",
+     "cos": 0.8771
+    },
+    {
+     "section": "pivot_up_k3",
+     "cos": 0.8783
+    },
+    {
+     "section": "pivot_down_k1",
+     "cos": 0.8794
+    }
+   ],
+   "n_pairs_analyzed": 32
+  },
+  "voice_confusion": {
+   "lead_decoder_corr_with_true_bass_pitch": -0.1837,
+   "bass_decoder_corr_with_true_lead_pitch": -0.2425
+  },
+  "drum_robustness": {
+   "n_drum_pairs": 8,
+   "lead_r2_mix_no_drum": 0.5152,
+   "lead_r2_mix_with_drum": 0.1073,
+   "lead_r2_lead_plus_drum_only": 0.6689,
+   "kick_frame_latent_delta_mean": 6.6826,
+   "offbeat_hat_frame_latent_delta_mean": 9.2424
+  }
+ }
+}
