@@ -1537,3 +1537,16 @@ argmax on fast sweeps ≈ chance — the SAME extractor's ~186ms window ≈ per-
 not head; whole-vector chroma stays strong → fine for a windowed conditioner). Report:
 `eval/musicology/same_chroma_readout_2026-08-11/`. NEXT: Tier-2 MuScriptor real-goa (has leads → the
 air/melody-band test). De-risks Zach's prepend-cond (target signal is readable) + grounds #59.
+### [2026-08-11] same_chroma Tier-2 on REAL goa — air/melody reads STRONGEST, and the chroma-trap IS the design key
+Tier-2 (head on 1200 real goa latents, audio-GT via exact source segments from MuScriptor stats.json;
++752 MuScriptor-MIDI GT). Answers Tier-1's open air-band question: on real material the AIR/melody band
+reads STRONGEST — demeaned cos12 median **air 0.918 >> mid 0.536 >> bass 0.214**, categorical reversal of
+Tier-1's register-limited air (0.054) → that was synthetic-material artifact, NOT head weakness. The catch
+(subagent caught it at sanity-check, I verified): goa genre-homogeneity inflates RAW chroma cosine for ANY
+pairing — matched≈null every band (air 0.997 vs 0.995) — the documented chroma-trap (melody_wall whitening).
+Fix: corpus-demean + derangement nulls. MuScriptor-MIDI corroborates: air the ONLY band with a real
+matched-vs-null gap (Δ+0.196); bass/mid matched≈null (full-mix -> generic bassline). ⭐ DESIGN KEY: raw
+band-chroma = copyable genre-generic shape (the overfit vector Zach warned of); the DEMEANED/whitened
+residual = track melodic IDENTITY. So condition on whitened chroma, not raw — same insight as melody-subspace
+v3 + equivariant-vs-invariant, now grounded on real audio. Report:
+`eval/musicology/same_chroma_readout_tier2_muscriptor_2026-08-11/`. Melody-conditioning validated end-to-end.
