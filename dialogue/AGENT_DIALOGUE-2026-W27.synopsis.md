@@ -1,0 +1,15 @@
+# Week 2026-W27 synopsis (Jul 02 – Jul 05)
+*117 entries · testing whether a frozen "meter" inside the training gradient can teach a generative audio model to hear*
+
+The week ran a single idea to ground: take a frozen measurement of some perceptual property — onset density, genre — and wire it directly into the training loss so the model is graded on it as it learns. It produced two clean wins, one instructive failure, and, more valuable than either, the boundary condition that explains all three: an auxiliary consistency loss helps only when the property is *invisible* to the model's own reconstruction objective — otherwise the meter can only smooth the output toward its own manifold. A deep-research pass then placed the work honestly against the literature: the winning mechanism turned out to be independently reinvented prior art, while the failure boundary appears genuinely unpublished. The back half pivoted from method to material — merging a multi-source corpus and building a tiered captioning/conditioning stack for the next training round. Throughout, the fleet kept the whole ledger — methods, metrics, and negative results — open on a public chronicle, on the principle that "that's how the light gets out."
+
+## Headlines
+- **FusionCC (onset-meter in the gradient) — decisive win:** requested-vs-measured onset correlation .584 → .880 at gain 2, bootstrap CI clear of zero; the sparse-rhythm floor that no other control head could reach finally broke.
+- **Genre-consistency loss — clean negative:** trained flawlessly but *hurt* steering (Goa 0.92 → 0.65, Psy 0.46 → 0.03), because genre is already reconstructed by the base objective; the meter added no information, only interference.
+- **Boundary condition stated and tested:** consistency losses help iff the property is blind to the reconstruction loss — a predictive law the literature assumes but never articulates.
+- **Prior-art honesty:** the FusionCC mechanism was independently reinvented (matches ControlNet++, ECCV 2024); the failure boundary, not the wins, is the novel contribution.
+- **meter-in-weights ≠ meter-in-sample:** the same onset meter steers via weight training but is dead as inference-time guidance — the heads are near-perfect on real latents (corr .990), so the failure is off-manifold gradient coupling, not perception.
+- **Style-adapter verdict:** a style-only fingerprint steers genre decisively (Goa 0.92 vs ~0 null); adding groove dimensions dilutes the signal; steering strength tracks corpus frequency.
+- **ES "echo-location" mapping:** walk direction transfers across seeds, fine relief does not — an 81-point measured fitness field only ties the evolved endpoint.
+- **Further unpublished findings confirmed:** a cautious-optimizer incompatibility (keep ≈ 0.53 plus a 1/√keep norm-inflation bug) and PC2-turnover as a loss-blind early-stopping signal.
+- **Conditioning pivot:** merged a ~3000-track multi-source corpus with per-track feature tables, tiered captions, and k-means clusters; a comparison adapter collapsed seed-variance (~350 Hz vs ~1500 Hz) — tighter adherence vs narrower range still pending the ear's verdict.

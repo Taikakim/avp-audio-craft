@@ -1,0 +1,249 @@
+####
+https://aavepyora.online/files/evals/renders/layer_map_2026-07-10/index.html
+2026-07-11 18:52
+
+Axis-1 causal localizer: which DiT blocks/modules carry each controllable attribute (TADA-style patching extended to self_attn+ff, scored by target-aware MIR meters). Informs SOFT rank routing for relevance-routed DoRA -- never hard masking (TADA -21% warning).
+
+Kim notes: are we using too large values, many clips degrade to unpleasant noise?
+
+bass weight p0 s1 A - saturated bass drone, very few harmonics, very loud bass
+bass weight p0 s1 B - chimey slightly an/xenharmonic glassy pad, thin
+bass weight p0 s2 A - bass drone, few harmonics, very loud bass
+bass weight p0 s2 B - slightly more breathy than s1 B
+bass weight p1 s1 A - super loud a bit distorted bass
+bass weight p1 s1 B - breathy music box, slightly out of tune/atonal
+bass weight p1 s2 A - sinewavey bass
+bass weight p1 s2 B - breathy music box, slightly out of tune/atonal
+bass weight p2 s1 A - distant mechanical airy bass rumble
+bass weight p2 s1 B - very breathy chimey key melody
+bass weight p2 s2 A - rumbling resonant bass drone
+bass weight p2 s2 B - very chimey flute melody
+
+brightness p0 s1 A - hissy club trance-ish music, not super punchy, has a midrange kick
+brightness p0 s1 B - electric bass drone
+brightness p0 s2 A - rapid 16ths/32ths hihat pattern with some background tonal noises and drones
+brightness p0 s2 B - sparse electric bass drone
+brightness p1 s1 A - very treble rich a bit hissy club trance, more punchy than p0 s1 A
+brightness p1 s1 B - metallic distant atmospheric bass drone
+brightness p1 s2 A - bright club trancey theme drop
+brightness p1 s2 B - electric bass atmosphere
+brightness p2 s1 A - chimey pads, thin
+brightness p2 s1 B - bassy breathy organic pads
+brightness p2 s2 A - tonal airy chimey pad swell, thin
+brightness p2 s2 B - bass drone
+noisiness p0 s1 A - steamy machine noises
+noisiness p0 s1 B - bright but not breathy dreamy sustained fragile rounded synth notes
+noisiness p0 s2 A - same really than p0 s1 A
+noisiness p0 s2 B - similar to p0 s1 B, different melody
+noisiness p1 s1 A - rhythmically gated syncopated noise pattern
+noisiness p1 s1 B - nostalgic piano with room tone, memory of the past
+noisiness p1 s2 A - rhythmically gated noise
+noisiness p1 s2 B - 20s style piano, badly tuned, inconsistent rhythmically
+noisiness p2 s1 A - hollow large noise pipe drone with bass harmonics
+noisiness p2 s1 B - 90s style glassy synth choir sustained chord
+noisiness p2 s2 A - distorted steamy wailing harmonics and overtones
+noisiness p2 s2 B - digital synth wavetable style choir
+
+onset density p0 s1 A - rapidly gated rised with something like a 64th pattern
+onset density p0 s1 B - glassy sustained lone pad
+onset density p0 s2 A - noise pattern, gated, more like a clean 16ths style
+onset density p0 s2 B - dreamy choiry synth sustained stack
+onset density p1 s1 A - hissy bright jazzy dnb drumming
+onset density p1 s1 B - 90s style ambient atmospheric tonal swell
+onset density p1 s2 A - more rounded early 2000s style drum and bass pattern, rapid mathemathical rhythms
+onset density p1 s2 B - laid back digital keys and pads
+onset density p2 s1 A - wooden and tinny percussion run
+onset density p2 s1 B - distant sparse bass impacts
+onset density p2 s2 A - very rapid drumming like congas played darbouka-style
+onset density p2 s2 B - very sparse, just a few, breathy synth notes
+
+mt dark a+2.0 - bright machine bass drone
+mt dark a+6.0 - same, louder
+mt dark a-2.0 - bright distorted bassy drone with rhytmic elements
+mt dark a-6.0 - loud hissy noise drone
+mt dark a0 - damped lp filtered club music
+mt relaxing a+2.0 - grating noisy drone, has bass
+mt relaxing a+6.0 - kind of the same, maybe more pink than white noise-ish, has bass
+mt relaxing a-2.0 - noisu unpleasant hissy noise drone, thin
+mt relaxing a-6.0 - same, more unpleasant
+mt relaxing a0 - smooth, again kind of lowpass filtered clubby music
+mt uplifting a+2.0 - bassy very damped and droney music with pads and sparse bass notes
+mt uplifting a+6.0 - same, without the melodic notes and brighter more like an engine/machine noise
+mt uplifting a-2.0 - very bright noise, burst of spectral artefacts in the end
+mt uplifting a-6.0 - unpleasant drilling noises
+mt uplifting a0 - again kind of ibiza-ish, lowpass filtered mellow club house
+onset density a+2.0 - very hissy drone, very very distant remains of musical content/structure
+onset density a+6.0 - same, more unpleasant and all structure gone
+onset density a-2.0 - very rounded harmonics poor bass drone with some hissy sidebands
+onset density a-6.0 - midrangey and hissy bass drone
+onset density a0 - again the damped club loop
+
+####
+https://aavepyora.online/files/evals/renders/hardness_bracket_2026-07-10/index.html
+
+2026-07-10 20:56
+
+Hardness-head gain re-bracket WITH quality gates (CE/PQ/ZCR) after the gain-512 negative (meter moved, audio broke -- 'concrete slab'/'dentist's drill'). Finds the operating gain where steer holds AND quality survives.
+
+
+Only g32 preserved some semblance of a musical signal, others noise. I think the gains might have just been too large? We should test gains below 32 too, along with any other hyperparameters.
+
+####
+https://aavepyora.online/files/evals/renders/hardness_steer_smoke/index.html
+
+this is already evaluated and even recorded on the page
+
+https://aavepyora.online/files/evals/renders/promptarc_single_kaikkialla_nl65/index.html
+
+SINGLE-adapter (everything/evr1x, constant strength 1.0)…
+2026-07-10 15:07
+
+SINGLE-adapter (everything/evr1x, constant strength 1.0) + 8-section rich prompt-arc @ nl 0.65. Isolates the CONDITIONING lever (no adapter oscillation/blend) at Kim target regime. Proof: rich varying conditioning fixes high-nl static (HF-var 0.364 median vs 0.148 baseline, 10x the generic-prompt@nl.70).
+
+the parts are too different, crossfading between them is ok, except for some galloping here and there. Also, the track is just really bad, basically kind of sub-par material trying to emerge from a droll base sound. An immediate issue is, that the different parts have different kicks etc. But, way too little noising, should be probably between 0.7 and 0.8
+
+####
+file:///home/kim/evals_aac/renders/a2a_angelic_r64tiered_lr1e4/index.html
+
+Full-track a2a noise ladder (0934. Hallucinogen - Angelic Particles (Remastered 2024))
+2026-07-10 02:00
+
+0934. Hallucinogen - Angelic Particles (Remastered 2024), 7:24, re-rendered whole through the adapter(s) at increasing init_noise_level — where does it stop being the song and start being the model.
+
+ep7 is cleaner and more consistent than ep5. 0.7 is where a structure starts to emerge, the ones below it are kind of droning around a constant spectral pad-like signature. 0.8, taken from a random position, plays like a track, but when skipped around, it's evident that the whole song plays just one melody. So maybe the way to do this is allow selectively more variation with the melody dimensions? Or something which would allow the model to pick from believable space around the currently playing melody. The fact that melody lives with the timbre could be helpful maybe in the way that the variations could share the timbre but play different melodies. 0.9 starts to be out of control with the rhythm breaking down, weird melodies (which, well, could maybe feature in a very spuge suomisoundi song)
+
+####
+file:///home/kim/evals_aac/renders/memo_ckpt_a2a_test/index.html
+
+a2a memorized-checkpoint test (does an overtrained late checkpoint make a BETTER a2a/style-transfer tool at low CFG?)
+
+A Goa track (full mix) pulled through the adapter with audio-to-audio at init_noise_level 0.5, comparing a memorized late checkpoint (ep63) at cfg 2 and cfg 6 against an early checkpoint (ep7) at cfg 2 — tests the Underfit-memo prediction that checkpoints reading 'overtrained' for text-to-audio are actually the strongest a2a/style-transfer tools at low CFG (their prompt-independent style prior pulls input audio decisively into the trained style).
+
+ep 63 cfg 2 & 6 sound undistinguishable. ep7 is better, although still the rhythm is completely disintegrating etc, ie the outputs are useless at 0.8. 0.5 sounds very close to original, 0.65 is still not enough change.
+
+####
+file:///home/kim/evals_aac/renders/avp_cfg_sweep/index.html
+
+CFG sweep x training-stage (Underfit CFG-dynamics test)
+2026-07-09 15:29
+
+Kim 2026-07-09 (Underfit memo): CFG optimum MOVES with training stage — early ckpts want high CFG, late/internalised ckpts want LOW CFG (high over-cooks). We rendered everything at fixed cfg 5, so late 'thin/over-sharp' may be cfg-too-high. 5 ckpts across the stage axis (early ep2 / mid ep7 / sweet ep31 / late ep47 / armG ep5) x cfg {1,2,3,5,7} x {kimlong, EMPTY-prompt}. Tests: (a) does low CFG rescue late ckpts? (b) does empty-prompt sound like Kim's style at late ckpts = absorption crossover? (c) per-ckpt CFG optimum.
+
+40 clips, 4 checkpoints (a hand-picked training-stage sequence, not an epoch ladder within one arm) x 5 cfg values · toggle the prompt, click a cell to play (shared playhead)
+
+early_ep2 — r16_originals, early-epoch focused re-render — rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · originals-only corpus (no augs) — the aug-theory control arm (D')
+empty prompt sounds the same (super noisy stuff that could be highly degraded 90s synth black metal)
+kimlong: cfg 1 close to empty, some musical features are appearing anyhow, even recognisable as similar to my style. noise and clutter decreases in a linear way towards cfg 7. cfg 7 is musically ok, kind of not very inspired and a bit of fractal composer vibe, but definitely carries my dna. cfg 5 not bad, richer spectral image with more air and breath. 3 not entirely bad either, more noisy as described.
+
+mid_ep7 — rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · originals-only corpus (no augs) — the aug-theory control arm (D')'
+Never really picks up, even at cfg 7 very noisy
+
+sweet_ep31 — rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · originals-only corpus (no augs) — the aug-theory control arm (D') -
+same kind of clearing story than the first row, just the music is weirded
+
+late_ep47 — rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · originals-only corpus (no augs) — the aug-theory control arm (D')
+instead of getting better degrades towards spectral noise.
+
+
+####
+file:///home/kim/evals_aac/renders/avp_board_r64/index.html
+
+avp r64 midway + TIERED captions, LR bracket (2e-4 vs 1e-4), ep1-12
+2026-07-09 14:38
+
+Kim 2026-07-09: rank-64 midway (r16 glitches / r128 goes soft) + tiered Flamingo/Granite captions (the conditioning-collapse cure) + LR bracket. ep12 ckpt/epoch (early-stop grading; sweet spot ~ep2-6). Tests: does r64 balance glitch-vs-soft, does the tiered caption keep prompt-control (punch + style at more epochs), which LR. Rendered kimlong(his fav)/tstyle/trig/psy x 2 seeds x DoRA 1.0/0.6.
+
+384 clips, 24 checkpoints x 4 prompts x 2 seeds x 2 DoRA strengths · pick a seed / strength, click a cell to play (shared playhead)
+
+Recipe: rank 64 · alpha 32 · dora-rows · Fusion (spectral) · wd 0.01 · tiered Flamingo/Granite captions (conditioning-collapse cure) · LR bracket: 2e-4 (r64_lr2e4 rows) vs 1e-4 (r64_lr1e4 rows)
+
+Seed 7: r64_lr2e4__epoch00__tstyle__s7__st10.m4a "tstyle" ep0 is the only usable clip which plays like a track, teetering on the edge of problems, but that makes it also kind of interesting. has incidental stabs of unrelated musical material also, which is a bit disturbing but sometimes cool. "trig" sounds like an interpretation of some kind of amphetamine breakdown experience a country musician has in a techno club. Ie kind of interesting in the novelty, but falls apart too dangerously (interesting though with the vocal like bits etc) r64_lr1e4 · ep1 lacks the beat etc of lr2e4. For r64_lr2e4 · ep0 "kimlong" and "psy" are ok too, but I can hear them gripping to their sanity by the fingernails at this point. r64_lr1e4 · lr1e4 ep1 "tstyle" is like lr2e4 ep0 but cleaner and less crazy. Almost ok, lots of interesting stuff happening, percussions and kick lack punch. ADHD overdrive again with lots, lots of material happening.By ep2 has degraded to horror noise already. kimlong r64_lr1e4__epoch03__kimlong__s7__st10.m4a ep3-7 are ok, not bad at all. Melodicness decreases towards ep7, ep8 suddenly is very noisy and degraded. ep9 climbed out of the pit and 10 and 11 ok again. Like many clips, stops suddenly, here at 10 seconds already. "psy, 1e-4 every ep is ok. even for psy ep1 of lr2e4 is already weird and broken. seed 1234 not that different. In all of the clips for a given prompt, the same theme starts to push through. I would say just from looking at these that our LR is massively too large, we should use EMA or increase the batch size.
+
+####
+file:///home/kim/evals_aac/renders/goa_everything_board/index.html
+
+goa "everything" r128 — in-distribution BASELINE (for the avp OOD comparison)
+2026-07-09 11:16
+
+In-distribution control for the avp investigation: same r128/dora-rows recipe family trained on the GOA catalogue itself (not the avp personal corpus), so its checkpoint ladder shows what a healthy in-distribution DoRA looks like across epochs — the reference the avp arms' degradation (spectral collapse / tempo instability / conditioning collapse) is measured against. Rendered at goa1/goa2/psy x every checkpoint (ep0-7), DoRA strength 1.0 only.
+
+24 clips, 8 checkpoints x 3 prompts x 1 seeds · pick a seed, click a cell to play (shared playhead)
+
+Recipe: rank 128 · alpha 128 · dora-rows · lr 2e-4 · Fusion (spectral) · trained on the GOA catalogue (in-distribution baseline)
+
+goa 1: earlier eps sound like they are making too large updates, kind of patchwork sound. eps 5 starts to regain sturcutre, 6 is ok-ish, so far everything has strived towards the same melody, but after 6 there's a knee and 7 sounds already very different, still diffuse and noisy
+
+goa 2: hasn't had time to learn what it needs or wants, kind of patchwork confused sound.
+
+psy: every ep is good = probably well understood by the model already, (large?) LR does not seem to hinder, but develops towards some direction which makes sense or not non-sense at least.
+
+
+####
+file:///home/kim/evals_aac/renders/avp_board_armG/index.html
+
+avp ARM G — r128 LOWER-LR (Kim's 'does lower LR move the knee' test)
+2026-07-09 10:59
+
+Kim asked whether the ep4-6 overfit knee seen on avp_board's r128adj arm (lr 2e-4) is an optimization artefact rather than a data/capacity one — arm G repeats the same r128/alpha45 dora-rows recipe on the augmented avp corpus at 10x LOWER LR (1e-4) with the reduced 10%-random-augmentation sample. Rendered at trig/trig2/trigdesc x DoRA strength 1.0 and 0.6, every checkpoint from ep7 to ep74.
+
+60 clips, 10 checkpoints x 3 prompts x 1 seeds x 2 DoRA strengths · pick a seed / strength, click a cell to play (shared playhead)
+
+Recipe: rank 128 · alpha 45 · dora-rows · lr 1e-4 · Fusion (spectral) · aug10 (10% random-augmentation sample)
+
+seed 1234, dora 1.0. Tries to learn hard I think, but it seems that can't get over the fact that both "trig" and "trig 2" sound terrible (noise) on the base model: a layer of noisy clutter never disappears even if on the bottom my style lives and structured music is being created. I would tend to say that r128_lr1e4__epoch74_step3000__trigdesc__s1234__st10.m4a is the best of the lot, ie the latest with of the crop with good descriptions. What we definitely learned here is that the prompts have immense effect on training. I don't know if a full FT could have remedied the terribly noisy sound of the "aavepyörä" triggers.
+
+Also, isn't the description wrong? That's 2x less, not 10x?
+
+
+####
+file:///home/kim/evals_aac/renders/avp_board_freeform/index.html
+
+avp FREEFORM-caption arm (Kim's caption A/B) x prompts x seeds x DoRA 1.0/0.6
+2026-07-09 09:30
+
+Kim 2026-07-09: train the set on ONE honest descriptive caption 'freeform upbeat positive dance music' instead of the speech-noise trigger 'aavepyörä'. ISOLATED A/B vs the r16_originals ladder (avp_board_seeds) — same corpus (288 originals), same recipe, ONLY the caption differs. Tests whether the healthy base prior alone fixes the mush/collage. Rendered at the trained caption + goa/psy (steerability check) x 3 seeds x DoRA strength 1.0 and 0.6 (collapse-pull test). CAVEAT: single caption for a mixed bittersweet/goa catalog may still mush or mislabel — per-alias captions are the refinement if this underperforms.
+
+144 clips, 8 checkpoints x 3 prompts x 3 seeds x 2 DoRA strengths · pick a seed / strength, click a cell to play (shared playhead)
+
+Recipe: rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · single freeform caption (not the trigger word)
+
+seed 7. dora 0.6
+freeform: ep7, everything melts together. ep15 this is music, just with a quite noisy and gritty sound, maybe I'm just now used to our full ft finetunes. ep23, beat has disappeared in the first half,  things melt. ep31 a distant, soft sound, like a party experienced through the walls in the club toilet. musically coherent. ep39, spectrally, things stay apart, but otherwise is like a puzzle put together wrong with jumps and gallops. 47, steady beat is gone in the first half, reappears. Very disjointed and lacks punch, but it's music more than not. ep 55 worse. ep 63, there's hope, but still 4/4 is dead in the beginning, towards the end picks it up, melodies still disjointed but not incredibly much so.
+goa: logic is pretty much the same than "freeform"
+psy: sounds like my music more than psy already at ep 7. until 39 follows the two previous, but here 39 is quite ok. Has punch, apparently having the psytrance in the bottom for a DoRA helps with that? ep 63 is weird, but passes a "weird AI music I wouldn't listen to but now exists" test.
+
+seed 7. dora 1.0
+Freefrm until ep47 nothing to write home about, but this is so far the best of this eval page. Clear spectral image, maybe even a bit too spectral with a slight ring, but the structure is musically very ok. ep39 not good, same for 55. 63 might be going somewhere. for "goa", not too different. "psy" 47 is best. I would render eps 45, 46, 48 and 49 to see if there's a better in either direction.
+
+seed 909 dora 0.6
+Freeform: all models at leat somewhat ok, favourite maybe 15 and then ep39. "goa", eps 7 & 15 ok. none have fallen apart at least. "psy" ep 7&15 good, then 23 has issues. 47, 55 and 63 are all good, 63 maybe my favourite of this column at these settings.
+When weight is raised to 1.0, checkpoints are better, although many have isolated issues in the clips. ep 39 and 63 best of this row. For "goa", eps 7, 15 & 23 th most passable. For "psy" ep49 again the best.
+
+seed 1234 with dora 1.0 along with  23, 47 is the universally best checkpoint. We should see if we can find numerical verification for that in the metrics or the latent dimensions itself.
+
+####
+file:///home/kim/evals_aac/renders/rarity_gen_set/index.html, /home/kim/evals_aac/riffer/rarity.html
+Rarity gen set — RAW CLIPS. The scored columns board (deltas, medians) is riffer/rarity.html
+
+2026-07-09 04:03
+
+>>> SCORED COLUMNS BOARD: ../../riffer/rarity.html (150 prompt-rows x model columns + delta-to-base, medians 0.403/0.522/0.556). THIS page is only the raw clip dir. <<< StoryScope-transfer rarity meter (task #33): 20s clips from goa newstack ep7 / evr1x r128 ep8 / medium-base, prompts lifted from the self-classified goa caption sidecar stratified by caption frequency (50 common / 50 mid / 50 rare), unique seed per clip, steps 24 cfg 6. Scored by rarity-lite (kNN percentile vs matched-length corpus windows). Hypotheses: generations cluster below corpus rarity; output rarity tracks prompt band; adapters vs base differ.
+
+What I can say is that often it can be heard that the clips are from the same seed, ie at least some features or overall structures might resemble each other, but base along with the two of the adapters all have their distinct characters.
+
+file:///home/kim/evals/renders/avp_board_seeds/index.html
+
+avp originals arm x 7 prompts x 3 seeds (Kim's prompting-issue probe)
+2026-07-08 19:52
+
+Kim's 2026-07-08 evening ask after auditioning r16_originals: 3 seeds per prompt, added prompts — bare style ('upbeat dance music'), Kim's long T3-style detailed prompt, and the canonical goa/psytrance eval prompts. Tests his suspicion that avp weirdness is partly a PROMPTING issue (adapter trained on one-word captions; does it cooperate with base-model vocabulary?). Same gen params as avp_board (16 steps cfg 5). NOTE: first render (163 clips) lost to the 2026-07-08 20:12 drive drop + reboot — this is the re-render.
+
+What we learned
+KIM LISTENING VERDICTS 2026-07-09 ~00:00: ep31 universally best; ep63 ~= ep31 slightly less clear; EVERY PROMPT FOR A GIVEN SEED SOUNDS BASICALLY THE SAME (only kimlong differs — degrades to ringing bands after ep31, like FiLM control pushed out of manifold). ep31 good on some seeds, broken on others. Overall: every ckpt = smeared diffuse mush OR collage-like arrhythmic glitchiness; ep31 feels like incidental stability; 'something in this recipe is completely over the rails' — Kim's read: overtraining at too-high LR. · PROMPT-INVARIANCE METER (C, MFCC-centroid, same clips): across-prompt distance / across-seed distance = 1.16 at ep31, 0.47 at ep63 — by ep63 changing the prompt does HALF of what changing the seed does. TEXT CONDITIONING PROGRESSIVELY DIES. Mechanism hypothesis: CROSS-ATTENTION COLLAPSE from single-caption training (identical text K/V every step -> adapter learns text = constant bias; CFG then amplifies a near-zero conditional delta = noise). Predicts: caption-diversity arms (E, Flamingo tiers) fix it; excluding cross-attn modules from the adapter prevents it structurally.
+466 clips, 42 checkpoints x 7 prompts x 3 seeds · pick a seed, click a cell to play (shared playhead)
+
+Recipe: rank 16 · alpha 16 · dora-rows · lr 2e-4 · Fusion (spectral) · originals-only corpus (no augs) — the aug-theory control arm (D')
+
+! evaluated already, moving on.
+
+

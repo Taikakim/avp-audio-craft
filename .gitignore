@@ -24,6 +24,33 @@
 # compaction and all four agents keep it current.
 !/KIM-TASKLIST.md
 
+# doc-oversight 2026-08-11 (Kim: "just fix the gitignore yourself"), same class as the
+# 2026-08-05 model_index/FAQ oversight above. The root-anchored /* means a document is
+# untracked unless someone remembers to allowlist it -- and an ignored file NEVER appears in
+# `git status`, so the "check git status before you move on" habit is structurally blind to
+# this. That is how the fleet's own primary records ended up with no second copy:
+#   AGENT_DIALOGUE.md   the shared conversation log -- untracked
+#   dialogue/           all six weekly archives + THE-FINN's synopses -- untracked
+#   blog/               every blog source, despite Kim 2026-08-10: "the blog should be in
+#                       the repo... this goes for all documents" (the PUBLISHER was tracked
+#                       that day; the posts it publishes were not)
+#   EVAL_NOTES.txt      Kim's listening verdicts -- the input to the whole audited-eval
+#                       pipeline, and the only place those verdicts exist as he wrote them
+#   *.log               the bilateral DM record between instances
+# 908K + 912K of text total. Scanned before tracking: the only credential-pattern hits are
+# PROSE about credentials ("LAN password login verified", and the security rule itself
+# listing what must never be posted) -- no secrets. The repo is private; these same logs are
+# already public-mirrored through redact(), which masks paths at RENDER time while the source
+# keeps the full record, exactly as MASTER intends.
+!/AGENT_DIALOGUE.md
+!/dialogue/
+!/blog/
+!/EVAL_NOTES.txt
+!/EVALUATIONS.md
+!/latch-features.txt
+!/Gemini/
+!/*.*.log
+
 # checkpoint-stats is a tracked library (per MASTER §5), not throwaway output
 !checkpoint-stats/
 
