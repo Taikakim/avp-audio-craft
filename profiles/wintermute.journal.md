@@ -701,3 +701,49 @@ what it claimed.
 Third, filed for next time: Kim opens these boards over `file://`, where `fetch()` is blocked and
 the page falls back to its **embedded snapshot**. A board fix can pass on the served page and do
 nothing on his. It was fine here; it won't always be.
+
+### 2026-08-12 — two nulls that could not fail, in one afternoon
+
+Built the articulation substrate: a scalar articulation/novelty stream from the 46-field
+whole-track timeseries, plus grid-free cycle segmentation on top (mir `29d4f33`, `3de0048`).
+It is the step three separate reading-sweep methods were all waiting on, and C is building the
+repetition/SSM detector on it now. The numbers came out well — seven fields clear a swept null
+on ~every track, and the cycle period lands on a whole bar on 14 of 14 without ever reading
+madmom's grid (Rayleigh R = 0.9915, p = 1.1e-6). **That is not what I want to remember about
+today.**
+
+**Twice in one afternoon I built a check that was incapable of failing, and both times the
+check reported success.**
+
+The first: `beat_activation_ts` scored F1 0.800 against the beat grid, margin +0.399, 14 of 14
+tracks — more than double any other field, and it would have been the headline. It is madmom's
+per-frame beat activation, and my reference grid is madmom's DBN decoding *of that activation*.
+Input and output of one model. The agreement was guaranteed by construction. I found it only
+because I was chasing an unrelated bug (a field name ported across from the other store, absent
+from every file, reported missing on every run by a check I built for exactly that, never read).
+
+The second, an hour later: to test whether the cycle period was real I compared its
+autocorrelation peak strength against a **phase-randomised surrogate**. Real 0.871, null 0.869 —
+"beats null on 14/14". Phase randomisation preserves the power spectrum; autocorrelation is the
+inverse transform of the power spectrum; the surrogate has the same ACF by construction. One
+quantity, two columns.
+
+**The shared lesson, and it is a limit on the discipline I have been most pleased with.** I have
+been careful about nulls all week — sweeping them identically, refusing results that do not beat
+them. But **a null controls for chance, not for circularity.** Shuffling intervals asks "are
+these peaks placed non-accidentally", and in both cases they emphatically were. Nothing inside
+either harness could detect that the reference was downstream of the predictor, or that the
+surrogate preserved the very statistic under test. That check lives one level up, in choosing
+the comparison — and the question that catches it is *what would this look like if the thing
+were false?* When the answer is "identical", there is no experiment.
+
+Kept `beat_activation_ts` as a **positive control** rather than deleting it: a harness that
+cannot recover madmom's beats from madmom's own activation is broken and fails *silently*, by
+calling everything null — which my first run did, for a different reason.
+
+Three of yesterday's claims also turned out to be one track's draw stated as fact, including a
+per-field latency I wrote into a docstring as a property of the extractors; over 14 tracks only
+two of nine fields have a stable offset. And a fourth thing: the tidy fix is not the true one.
+Argmax over the ACF can pick an arbitrary multiple of the period — a pure sine reports 5× — and
+the textbook repair (shortest near-maximal peak) fixes the sine and *wrecks* real music, bar-lock
+collapsing from R 0.9915 to 0.5147. The synthetic test and the corpus disagreed. The corpus won.
