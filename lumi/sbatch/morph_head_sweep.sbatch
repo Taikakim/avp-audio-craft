@@ -50,7 +50,7 @@ ARM=${SLURM_PROCID}
 export ROCR_VISIBLE_DEVICES=${ARM}   # pin THIS task to GCD=ARM (ROCR ALONE; never +HIP -> "No HIP GPUs")
 echo "[gpu-assign] arm=${ARM} ROCR=${ROCR_VISIBLE_DEVICES:-} STEP_GPUS=${SLURM_STEP_GPUS:-}"
 export HF_HUB_OFFLINE=1 HF_HOME='"$PROJ"'/models
-export PYTHONPATH='"$CODE"'/stable-audio-3:'"$CODE"'/control
+export PYTHONPATH='"$CODE"'/stable-audio-3:'"$CODE"'/control:'"$CODE"'/lumi/vendor
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 export MIOPEN_DISABLE_CACHE=1 MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0
 export MIOPEN_USER_DB_PATH=/tmp/miopen-morph-${ARM} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-morph-${ARM}
