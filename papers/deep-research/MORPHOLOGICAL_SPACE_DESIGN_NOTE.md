@@ -212,7 +212,22 @@ Two places where the paper's version is **sharper than ours**, both actionable:
 `[ours]` Corpus-demeaning subtracts **one global mean** estimated from the corpus — a single affine shift, shared across all frames and tracks.
 `[paper] + [inferred]` The genuinely stronger operation is **the ranking itself**: converting each morph to its rank (or basis) coordinates is invariant to **any strictly monotone transform** of the values — this is a property of the *ordinal* representation, not of any subtraction. (Basis-space "zeroing" gives translation invariance and *keeps* the rank magnitudes; the full monotone invariance comes from the rank step. **Correction:** the original attributed the monotone invariance to "zeroing" — it's the ranking's. Practically the recommendation is unchanged.)
 
-`[inferred]` So a **per-window rank-normalise** is strictly stronger than corpus-demean: it survives per-track gain staging, compression, and EQ, none of which a single corpus mean handles. **Prediction: moving from corpus-demean to per-window rank-normalise should help *bass* most**, since bass carries the largest genre-generic magnitude offset. **First evidence is consistent** (§0: the kick-free bass *target* already lifts bass +67 % rel), but the direct test is **E2**. If E2 shows no bass movement, this framing is weaker than claimed and the note should be downgraded.
+`[inferred]` So a **per-window rank-normalise** is strictly stronger than corpus-demean: it survives per-track gain staging, compression, and EQ, none of which a single corpus mean handles. **Prediction: moving from corpus-demean to per-window rank-normalise should help *bass* most**, since bass carries the largest genre-generic magnitude offset. **First evidence is consistent** (§0: the kick-free bass *target* already lifts bass +67 % rel), but the direct test is **E2**.
+
+> **E2 RESULT (2026-08-12) — the hypothesis is REFUTED as stated; §4.1 DOWNGRADED per its own falsifier.**
+> `eval/musicology/same_chroma_E2_perwindow_norm_2026-08-12/`. Per-window rank-normalise inflates the
+> *matched* cos12 dramatically (bass 0.214 → **0.845**), which looks like a win — but the **matched−null gap**
+> (the actual track-*discriminative* signal) **collapses to ~0**: bass +0.223 → **+0.036**, mid +0.577 →
+> +0.041, air +0.926 → +0.054. It is **over-invariant**: it scores a *random-track* pairing (~0.81 on bass)
+> almost as high as the true track (0.845). By the honest gap metric, **corpus-demean stays best on every
+> band**; per-window normalisation *erodes* discrimination (rank-norm catastrophically, z-norm mildly). So
+> "monotone invariance is what we were missing" is **wrong — you can overshoot**.
+> **Salvaged lesson (and it sharpens the path): the n-ary dial has a SWEET SPOT.** Full rank-collapse (n=1)
+> throws away the magnitude that discriminates one track from another; you want *some* invariance (strip the
+> genre baseline), not all. **Caveat:** rank-cosine on a 12-d vector has a high floor (few rank patterns), so
+> part of the gap-collapse is a *metric* artifact — it downgrades rank-norm as a **discrimination metric /
+> target**, but does **not** doom the soft-rank **loss** (gradient use), which should use *intermediate* n,
+> not ternary.
 
 ### 4.2 We should be using the angle explicitly
 
