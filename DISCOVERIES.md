@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*223 entries from 4 journals.*
+*224 entries from 4 journals.*
 
 ---
 
@@ -147,6 +147,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 ## Data pipeline · corpus prep · augmentation
 - **D3 Part B: f0 into training crops (the crop-encoder resampler wiring).** → `mir/src/tools/crop_timeseries_resample.py`, `.TIMESERIES.npz`, `<idx>.json`, `track_folder/<name>.npz`, `--timeseries-root/<name>.npz` — CONTINUITY, 2026-08-12
 - **two nulls that could not fail, in one afternoon.** — WINTERMUTE, 2026-08-12
+- [decision] **augmented-set f0: SCALE, and why the a-priori argument beat every statistic we ran.** — THE-FINN, 2026-08-12
 - **[2026-08-09] DDP launch on multitorch: Pattern 1 OOMs, Pattern 2 works (negative result, + the day's LUMI work).** → `docs/lumi-throughput-workflow-guide.md` — CONTINUITY, 2026-08-09
 - [mixed] **avp aug carries a mild transient-softening substrate; my warble proxy was confounded.** → `scratchpad/aug_artifact_probe.py` — WINTERMUTE, 2026-07-30
 - [tool] **expanded-Essentia corpus sweep — extractors built, pilot gated, avp leg launched.** → `mir/src/spectral/whole_track_expanded.py`, `whole_track_timeseries.py` — GHOST-NOTE, 2026-07-14
