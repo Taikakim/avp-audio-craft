@@ -101,3 +101,51 @@ to get candidate layer periods, and check whether the resulting `d` values form 
 or conflict. One track answers whether there is any metric dissonance in this music to detect at
 all — and if the answer is "none, everything nests at 4/4", that is itself the finding, and
 cheaply obtained.
+
+---
+
+## Addendum — Kim's generalisation (2026-08-12)
+
+Kim asked: *"notes are just numbers. Can't we just replace the discrete note numbers with chroma
+readings or some other descriptor we can derive? Ie even multi-d vectors, or whatever we have at
+hand. The principle should carry?"*
+
+**The principle carries, and more cleanly than the question assumes — because the formalism never
+used note numbers in the first place.** `M_d` is a relation on **timepoints only**: `t M_d t'`
+iff `t' − t = kd`. Pitch content appears nowhere in it. Note identity is used only *implicitly*,
+to decide **which stream articulates which timepoints** — the violin's onsets versus the piano
+left hand's. So there is nothing to substitute: the question is not "what values sit at the
+timepoints" but "**which timepoints does this part mark**".
+
+**That makes the generalisation stronger than a swap.** A "part" need not be an instrument or
+even a stem. *Any descriptor stream defines its own articulation set, hence its own metrical
+layer, hence its own path through the network.* With what mir already stores:
+
+| stream | the "part" it defines | the rhythm it exposes |
+|---|---|---|
+| `onsets_activations_ts` (per stem) | drums / bass / other | rhythmic articulation |
+| `hpcp_ts` (12-d) + `chords` | harmony | **harmonic rhythm** — when the chord changes |
+| `spectral_flux_ts` | timbre | **timbral rhythm** — when the sound changes |
+| `rms_energy_{bass,body,mid,air}_ts` | each band separately | per-band pulse |
+
+Metric dissonance *between these* is a real and musical phenomenon: chords changing every three
+bars over a four-bar drum loop; the air band pulsing in 3 against the kick's 4. Psytrance layers
+periodicity by band as a matter of course, so this is not a hypothetical for our corpus. Multi-d
+vectors (chroma) work the same way — they simply need a change/novelty function first to yield
+articulation points.
+
+**And that last clause is the catch, which is worth stating precisely: it is the same missing
+piece the repetitions paper needs.** 2505.10004 requires a scalar surrogate `v(t)` "capturing
+relative position within the current cycle"; meter networks require an articulation set per part.
+Both reduce to *derive a scalar novelty stream from multivariate features*. **Solve it once and
+both methods unlock** — which raises the value of that one piece of work above either paper
+alone. `spectral_flux_ts` is already a novelty curve, so there is a starting point rather than a
+blank page.
+
+**Two honest difficulties, unchanged by the generalisation:**
+1. `M_d` presumes a *regular* `d`. Feature-derived periods are noisy and drift, so inclusion must
+   become approximate-with-tolerance — the ℚ-versus-ℝ problem noted above, now unavoidable.
+2. Prop 2.5's test (`d₁ = u·d₂`, `u` a positive integer) becomes "ratio ≈ integer", and with noisy
+   estimates near-integer ratios arise **by chance**. A significance test is required or the
+   method will report metric dissonance everywhere. The repetitions paper's δ-condition (its
+   Def 5, added precisely so noise cannot manufacture cycles) is the right shape of answer.
