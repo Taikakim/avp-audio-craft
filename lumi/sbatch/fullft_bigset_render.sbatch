@@ -35,6 +35,7 @@ ROUT=${SCRATCH}/renders/matrix_cells
 CFGS=${CFGS:-1,7,16}
 LABEL=${LABEL:-fullft_bigset}
 NLAST=${NLAST:-1}   # render the newest N fat ckpts (bump to backfill a tail)
+FORCE=${FORCE:-}    # FORCE=1 -> re-render cells even if the .wav exists (changed code/ckpt)
 
 [ -n "${SIF}" ] || { echo "[bigset-render] FATAL: no multitorch image"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[bigset-render] FATAL: ${VENV} missing"; exit 1; }
@@ -62,7 +63,7 @@ for CK in '"${CKPTS[*]}"'; do
   echo "[bigset-render] ep${EP} (EMA) <- ${CK}"
   python ${CODE}/lumi/render_matrix_cells.py \
       --label '"${LABEL}"' --tag ep${EP} \
-      --ckpt "${CK}" --fullft --use-ema \
+      --ckpt "${CK}" --fullft --use-ema '"${FORCE:+--force}"' \
       --prompts '"${SNAP}"' --out '"${ROUT}"' \
       --only-cfgs '"${CFGS}"' --strengths 1.0 \
     || echo "[bigset-render] ep${EP} render FAILED (non-fatal)"

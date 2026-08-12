@@ -62,6 +62,16 @@ def main():
                          "--only-cfgs 1 for the PT-native config (cfg>1 cooks PT output).")
     ap.add_argument("--only-cfgs", default=None,
                     help="comma ints to restrict the cfg axis (e.g. '1' for PT-medium)")
+    ap.add_argument("--use-ema", action="store_true",
+                    help="load the EMA shadow weights (diffusion_ema.ema_model.*) instead of the "
+                         "online weights — REQUIRED for EMA-trained fullft ckpts (precision ladder, "
+                         "#68 big-FT); the online weights are the un-averaged model, not what deploys.")
+    ap.add_argument("--fullft", action="store_true",
+                    help="force the full-finetune load path (whole-model state_dict) regardless of "
+                         "the label prefix — for fullft runs not named 'fullft_*' (e.g. precision_ladder).")
+    ap.add_argument("--force", action="store_true",
+                    help="re-render cells even if the output .wav already exists (default skips them). "
+                         "Use when re-rendering the SAME (label,tag) with changed code/ckpt.")
     a = ap.parse_args()
 
     # native-length mode: derive duration from the target T; assert the 256-multiple invariant.
@@ -86,9 +96,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     todo = [(p, c, w) for p in prompts for c in cfgs for w in strengths
-            if not (out / clip_name(label, a.tag, c, w, p["id"], p["seed"], a.steps, duration)).exists()]
+            if a.force or not (out / clip_name(label, a.tag, c, w, p["id"], p["seed"], a.steps, duration)).exists()]
     if not todo:
-        print(f"[cells] {label}/{a.tag}: all {len(prompts)*len(cfgs)*len(strengths)} cells exist, skip")
+        print(f"[cells] {label}/{a.tag}: all {len(prompts)*len(cfgs)*len(strengths)} cells exist, skip "
+              f"(pass --force to re-render)")
         return
 
     import numpy as np
@@ -99,7 +110,7 @@ def main():
     t0 = time.time()
     model = StableAudioModel.from_pretrained("medium" if a.pt_medium else "medium-base", device="cuda")
     sr = model.model.sample_rate
-    is_fullft = a.label.startswith("fullft_")
+    is_fullft = a.fullft or a.label.startswith("fullft_")
     if a.ckpt != "none" and is_fullft:
         ck = torch.load(a.ckpt, map_location="cpu", weights_only=False)
         sd_raw = ck.get("state_dict", ck)
@@ -109,15 +120,20 @@ def main():
         # leading "model.") -- bare "model." strip 0%-covers them; same bug as
         # model_matrix_gen 2026-07-21 (LUMI job 20094762: all 10 tasks died on the cov
         # assert). Try both prefixes, keep whichever matches the target.
+        # EMA-trained fullft ckpts carry BOTH online (diffusion.model.*) AND the EMA shadow
+        # (diffusion_ema.ema_model.*). --use-ema loads the shadow (what actually deploys);
+        # both cover the target equally, so we must pick EXPLICITLY, not by max-coverage.
+        prefixes = ("diffusion_ema.ema_model.",) if a.use_ema else ("diffusion.model.", "model.")
         sd = max(
             ({(k[len(pfx):] if k.startswith(pfx) else k): v for k, v in sd_raw.items()}
-             for pfx in ("diffusion.model.", "model.")),
+             for pfx in prefixes),
             key=lambda d: sum(1 for k in d if k in want))
         missing, _ = tgt.load_state_dict(
             {k: v.to(next(tgt.parameters()).dtype) for k, v in sd.items() if k in want},
             strict=False)
         cov = 1 - len(missing) / max(1, len(list(tgt.state_dict())))
-        assert cov > 0.99, f"fullft ckpt covers only {cov:.1%} ({len(missing)} missing keys)"
+        assert cov > 0.99, (f"fullft ckpt covers only {cov:.1%} ({len(missing)} missing keys)"
+                            + (" — --use-ema set but no diffusion_ema.ema_model.* keys found?" if a.use_ema else ""))
         del ck, sd_raw, sd
     elif a.ckpt != "none":
         model.load_lora([a.ckpt])
