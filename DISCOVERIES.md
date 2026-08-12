@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*221 entries from 4 journals.*
+*223 entries from 4 journals.*
 
 ---
 
@@ -106,6 +106,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **the discogs-400 genre head is multi-label, not softmax.** — WINTERMUTE, 2026-07-02
 
 ## Captions · conditioning · training data
+- **2026-08-12 (evening) — the melody target, and four broken instruments.** → `whole_track_expanded.py`, `[N/4461]` — WINTERMUTE, 2026-08-12
 - **[2026-08-11] Drone/optimizer 12-paper reading recorded+relocated; melody-movement Gemini brief drafted.** → `papers/prospective-unchecked`, `papers/`, `papers/CONTINUITY-drone-optimizer-synthesis-2026-08-11.md`, `docs/gemini-brief-musical-movement-conditioning.md` — CONTINUITY, 2026-08-11
 - **Stage-1 archive curation built + validated on the partial index.** → `mir/src/tools/goa_archive_curate.py` — CONTINUITY, 2026-07-30
 - **independent triangulation of C's avp tempo-instability + rank-dependence.** → `scratchpad/tempo_stability.py` — WINTERMUTE, 2026-07-30
@@ -144,6 +145,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **chroma correlation is a mode-collapse trap — it declared wins twice.** — WINTERMUTE, 2026-06-19
 
 ## Data pipeline · corpus prep · augmentation
+- **D3 Part B: f0 into training crops (the crop-encoder resampler wiring).** → `mir/src/tools/crop_timeseries_resample.py`, `.TIMESERIES.npz`, `<idx>.json`, `track_folder/<name>.npz`, `--timeseries-root/<name>.npz` — CONTINUITY, 2026-08-12
 - **two nulls that could not fail, in one afternoon.** — WINTERMUTE, 2026-08-12
 - **[2026-08-09] DDP launch on multitorch: Pattern 1 OOMs, Pattern 2 works (negative result, + the day's LUMI work).** → `docs/lumi-throughput-workflow-guide.md` — CONTINUITY, 2026-08-09
 - [mixed] **avp aug carries a mild transient-softening substrate; my warble proxy was confounded.** → `scratchpad/aug_artifact_probe.py` — WINTERMUTE, 2026-07-30
