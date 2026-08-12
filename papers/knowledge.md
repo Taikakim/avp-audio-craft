@@ -277,3 +277,21 @@ C's 5 reads converge on three things we are ALREADY building, and one structural
 3. **Guidance at high gain** is a live SOTA paradigm (**Anatomica**) = our LatCH family-A, and it validates the 1000× gain Zach's team never tried.
 
 **Through-line:** every framework has a **RESOLUTION DIAL with a sweet spot** (n-ary / raw–demean–whiten / sig-depth / orbifold-quotient / Q-and-β) — 5 independent sightings ⇒ structural, not incidental. **Actionable-today ranking:** dissonance/roughness timeseries (Essentia, free) > path-signature movement feature (`signatory`) > PH structure control (heavy, 2nd-wave). Full synthesis went to Kim.
+
+---
+
+## Sweep synthesis — W's 11, cross-paper (2026-08-12)
+
+Emerged only from reading W's eleven together; no single row states it. **Filed here because it is the compiler's job to keep a cross-cut that would otherwise live only in the channel.**
+
+**(1) FOUR papers bottom out in the SAME missing piece — and a fifth supplies it.** Three methods are each blocked on one prerequisite step:
+- `2505.10004` (topology-driven repetitions) needs a **scalar surrogate v(t)** "capturing relative position within the current cycle";
+- **Yust–Popoff meter networks** need an **articulation set per part** (and per Kim's generalisation, any descriptor stream can be a part — but only once you can say *when* it articulates);
+- `2405.04796` (featured-PH) needs a **discretisation**, since its graph nodes are distinct VALUES;
+- `2201.02715` (low-rank structured inference) **ANSWERS it**: an **HSMM over continuous emissions** yields discrete states, durations, and boundaries in one model, made affordable at real state-space sizes.
+
+**Shape:** three analyses blocked on one step + a fourth paper supplying it. That single piece of work — **derive the right discrete/scalar stream from our continuous 46-field timeseries** — gates ALL THREE analyses plus Kim's harmonic-rhythm idea. It is **CPU-only, no GPU, no training**, and `spectral_flux_ts` is already a novelty curve to start from. **W ranks it above any individual head/control we could build this week**, because it is the common prerequisite rather than one more parallel experiment.
+
+**(2) Strongest single control-target find (corrected criterion):** `2006.01033` **dynamical score networks** — tonal regions from graph modularity, with mir's existing **CHORDS** field as its input, yielding **tonal-region-id / centricity / harmonic-mobility** timeseries and controls none of our current axes express (stay-in-key vs modulate, return home, harmonically restless vs static).
+
+**(3) Meta:** THREE of W's eleven were nearly lost to METADATA not content — `2008.07669` arrived mis-titled and is actually **HiPPO** (S4/Mamba ancestor); `1708.09359` nearly skipped as redundant, actually supplies the **witness complex** that makes the other topology methods affordable at corpus scale; and the whole symbolic cluster was dismissed by a wrong criterion. **"In a reading sweep the filenames and the categories are the least reliable part of the corpus."** (Third sighting of the metadata-not-content trap this sweep.)
