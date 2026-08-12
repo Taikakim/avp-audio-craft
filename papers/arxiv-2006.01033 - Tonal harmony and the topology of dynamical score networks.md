@@ -99,3 +99,40 @@ criterion, not claims the author makes.
 straight from the existing `chords` whole-track field, and look at the modularity structure.
 That is a day's work with `MUSICNTWRK`/`networkx` and no GPU, and it answers the corpus
 question — degenerate or not — before anyone designs a head around it.
+
+---
+
+## Downgrade for OUR corpus (2026-08-12, after C's Rohrmeier ladder read)
+
+I filed this as the sweep's strongest control-target find. **That claim has to be qualified, and
+the qualification is genre-specific rather than technical.**
+
+Two independent results landed after this note was written:
+
+1. **Mukherji** (Perspectives of New Music 62/1) — score networks are a *surface/adjacency*
+   model, which cannot capture the non-adjacent relations that constitute tonal-harmonic
+   hierarchy. So its modularity classes give a **grouping, not a parse**. Recorded above as a
+   caveat on interpretation.
+2. **C's read of Rohrmeier 2011/2020** — the hierarchy rung that Mukherji says is required — with
+   an explicit empirical verdict: **goa's harmonic tree is near-degenerate**, making the whole
+   grammar route "over-powered for goa", and confirming Kim's own decomposition that this music's
+   controllable variety lives in **melody, FX and timbre rather than harmony**.
+
+I anticipated the degeneracy in the caveat above — "expect near-degenerate graphs … the
+degeneracy IS a measurement" — but framed it as an open question with an interesting answer
+either way. C's read closes it in the unfavourable direction, from theory rather than
+speculation: goa does not have the harmonic depth for harmonic-structure features to carry much.
+
+**Net position.** The construction is still sound, and tonal-region-id / centricity /
+harmonic-mobility remain computable from the existing `chords` field at trivial cost. But for
+**our** corpus they should now be expected to be **low-variance and weakly informative**, not a
+headline control axis. The honest ranking is:
+
+- **for harmonically-rich material** (tonal, jazz) — a genuine control-target route, and the
+  ladder to build it is now fully read (this → Rohrmeier → 2201.02715 for tractability);
+- **for goa** — worth the one-afternoon degeneracy check I proposed, precisely because a null
+  result is now the *expected* outcome and would cost almost nothing to confirm; but it should
+  not displace the melody/FX/repetition work.
+
+Filed as a downgrade rather than a retraction: nothing about the paper changed, our reason to
+want it did.
