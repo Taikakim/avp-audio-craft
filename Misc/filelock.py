@@ -28,6 +28,20 @@ reclaimed instantly (dead PID), while a live long-running job is NEVER stolen no
 age. (Edge: a PID reused by an unrelated process after a crash could read as held — rare,
 visible in `check`, manually breakable.)
 
+**/tmp/gpu.lock MIRROR (Kim 2026-08-07) — automatic for the `.gpu.lock` target.** A NON-team
+instance shares this box's GPU and honors `/tmp/gpu.lock`, not our team `.gpu.lock`. So when the
+target basename is `.gpu.lock`, `acquire` also (a) REFUSES if `/tmp/gpu.lock` is held by a live
+foreign holder (returns 2 — GPU taken; a dead-pid or our-own leftover is reclaimed), and (b) writes
+`/tmp/gpu.lock` on success; `release` clears it (only if it's ours). `check .gpu.lock` reports the
+mirror. No caller change — `acquire SAO/.gpu.lock --pid-aware --pid $$` just works. `--no-mirror`
+opts out. Ground truth is still `rocm-smi --showpids` — the mirror only catches instances that honor
+the file.
+DIVISION OF RESPONSIBILITY (W 2026-08-07, after a collision): **filelock is the SOLE writer/parser
+of `/tmp/gpu.lock`.** No other tool may write it — a different format (e.g. a bare pid) clobbers the
+`HANDLE pid= ts=` schema, so the ours-only release-clear no longer recognises the file and it strands,
+permanently blocking every instance. Other tools gate on `rocm-smi --showpids` and DELEGATE the lock
+to filelock (W's `gpu_guard.sh` is the ready-made caller: rocm-smi gate + `filelock acquire`).
+
 **🚨 The recorded PID must be the LONG-LIVED holder, not this CLI process.** `filelock.py
 acquire` is a short-lived process that exits the instant it writes the lock — so recording
 its own `os.getpid()` would leave a PID that is ALREADY DEAD while the real job runs, and
@@ -54,10 +68,63 @@ processes is meant to persist. Safe patterns:
 """
 from __future__ import annotations
 
-import argparse, glob, os, re, sys, time
+import argparse, glob, os, re, subprocess, sys, time
 from pathlib import Path
 
 STALE_S = 900  # 15 min — a lock older than this may be broken (mtime mode only)
+
+# GPU mirror (Kim 2026-08-07): a NON-team instance shares this box's GPU and honors
+# /tmp/gpu.lock, NOT our team `.gpu.lock`. So when the GPU mutex (target basename == .gpu.lock)
+# is acquired/released, mirror it to /tmp/gpu.lock too, and REFUSE to acquire if a live foreign
+# holder already holds it. Ground truth is still `rocm-smi --showpids` — this only catches
+# instances that honor the file. Disable with --no-mirror. Only the .gpu.lock target mirrors.
+GPU_MIRROR_PATH = "/tmp/gpu.lock"
+GPU_LOCK_BASENAME = ".gpu.lock"
+
+
+def _is_gpu_target(target: str) -> bool:
+    return Path(target).name == GPU_LOCK_BASENAME
+
+
+def _mirror_holder():
+    """(handle, pid|None) recorded in /tmp/gpu.lock, or None if absent/unreadable."""
+    try:
+        txt = Path(GPU_MIRROR_PATH).read_text()
+    except OSError:
+        return None
+    toks = txt.split()
+    handle = toks[0] if toks else ""
+    m = re.search(r"pid=(\d+)", txt)
+    return (handle, int(m.group(1)) if m else None)
+
+
+def _mirror_write(handle: str, pid) -> None:
+    try:
+        Path(GPU_MIRROR_PATH).write_text(
+            f"{handle} pid={pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    except OSError as e:
+        sys.stderr.write(f"[filelock] WARN: could not write GPU mirror {GPU_MIRROR_PATH}: {e}\n")
+
+
+def _mirror_blocks(handle: str) -> bool:
+    """True = a foreign holder holds /tmp/gpu.lock and we must NOT take the GPU. Reclaims a
+    leftover of OURS or a DEAD foreign holder (returns False). Conservative: an unparseable
+    foreign lock blocks (can't confirm it's dead)."""
+    h = _mirror_holder()
+    if h is None:
+        return False
+    m_handle, m_pid = h
+    if m_handle.lower() == handle.lower():
+        return False                                   # our own leftover — refresh it
+    if m_pid is not None and not _pid_alive(m_pid):
+        sys.stderr.write(f"[filelock] /tmp/gpu.lock had a DEAD foreign holder '{m_handle}' "
+                         f"pid={m_pid} — reclaiming.\n")
+        return False
+    reason = f"pid={m_pid} ALIVE" if m_pid is not None else "unparseable (no pid — can't confirm dead)"
+    sys.stderr.write(f"[filelock] BLOCKED: /tmp/gpu.lock held by NON-team holder '{m_handle}' "
+                     f"({reason}) — GPU is taken, not acquiring. Verify with `rocm-smi --showpids`; "
+                     f"break it by hand only if rocm-smi shows the GPU actually idle.\n")
+    return True
 
 
 def _pid_alive(pid) -> bool:
@@ -99,8 +166,13 @@ def _foreign_locks(target: str, handle: str):
 
 
 def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = False,
-            pid: int | None = None) -> int:
+            pid: int | None = None, no_mirror: bool = False) -> int:
     mine = _lock_path(target, handle)
+    mirror_on = _is_gpu_target(target) and not no_mirror
+    # GPU mirror preflight: a live foreign holder of /tmp/gpu.lock means the GPU is taken —
+    # refuse BEFORE grabbing the team lock (don't announce a hold we can't honor).
+    if mirror_on and _mirror_blocks(handle):
+        return 2
     # The PID written into the lock must outlive this CLI process. Explicit --pid wins;
     # else for a pid-aware (long-held) lock default to the INVOKING SHELL (getppid), not
     # this transient acquire process (getpid) — recording getpid would read DEAD instantly.
@@ -152,10 +224,14 @@ def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = F
                 # mid-encode). Writing refreshes mtime too, so mtime-mode is unaffected.
                 with open(mine, "w") as fh:
                     fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                if mirror_on:
+                    _mirror_write(handle, rec_pid)
                 print(f"[filelock] {handle} re-holds {mine.name} (pid refreshed → {rec_pid})")
                 return 0
             with os.fdopen(fd, "w") as fh:
                 fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            if mirror_on:
+                _mirror_write(handle, rec_pid)
             print(f"[filelock] {handle} acquired {mine.name} (pid={rec_pid})")
             return 0
         if time.time() - t0 > timeout:
@@ -173,11 +249,30 @@ def release(target: str, handle: str) -> int:
         print(f"[filelock] {handle} released {mine.name}")
     except FileNotFoundError:
         print(f"[filelock] {handle} held no lock on {Path(target).name}")
+    # clear our GPU mirror too — but only if /tmp/gpu.lock is OURS (never delete a foreign hold)
+    if _is_gpu_target(target):
+        h = _mirror_holder()
+        if h is not None and h[0].lower() == handle.lower():
+            try:
+                os.unlink(GPU_MIRROR_PATH)
+                print(f"[filelock] {handle} cleared GPU mirror {GPU_MIRROR_PATH}")
+            except OSError:
+                pass
     return 0
 
 
 def check(target: str) -> int:
     p = Path(target)
+    if _is_gpu_target(target):
+        h = _mirror_holder()
+        if h is None:
+            print(f"[filelock] {GPU_MIRROR_PATH}: absent (no team/foreign GPU hold recorded)")
+        else:
+            mh, mpid = h
+            note = (f"pid={mpid} {'ALIVE' if _pid_alive(mpid) else 'DEAD→reclaimable'}"
+                    if mpid is not None else "no pid (unparseable/foreign)")
+            print(f"[filelock] {GPU_MIRROR_PATH}: held by {mh} ({note})")
+        print("[filelock] (GPU ground truth: `rocm-smi --showpids`)")
     locks = glob.glob(str(p.parent / f".{p.name}.*.lock"))
     if not locks:
         print(f"[filelock] {p.name}: unlocked")
@@ -194,9 +289,44 @@ def check(target: str) -> int:
     return 0
 
 
+def hold(target: str, handle: str, cmd: list, **kw) -> int:
+    """acquire -> run cmd -> release, whatever happens. Returns the COMMAND's exit code.
+
+    WHY THIS EXISTS (2026-08-12). In one night the fleet found three independent ways to not
+    hold a lock it believed it held, none of which caused damage -- which is exactly why they
+    survived:
+
+      * WINTERMUTE ran `filelock.py acquire X 2>&1 | tail -1 && <edit>` for EVERY lock of the
+        session. A pipeline's exit status is its LAST command's, so `&&` read tail's 0 and never
+        saw filelock's 2. Every guard that night was decorative. (The same rc-after-a-pipe trap
+        is already documented in MASTER §5 for LUMI gate scripts -- known, written up, and
+        walked into anyway.)
+      * GHOST-NOTE edited a shared page-builder twice with no lock at all -- it simply did not
+        register as a file another instance might touch, in the moment.
+      * THE-FINN's holder process exited without releasing, leaving a stale lock that really
+        did block others.
+
+    A convention that needs three separate acts of discipline per use will be skipped. This
+    makes the correct thing one command with no shell rc-plumbing to get wrong:
+
+        filelock.py hold papers/knowledge.md --handle W -- python3 edit_it.py
+
+    Refuses to run the command at all if the lock is not acquired, and releases in a finally
+    block so a crashing command cannot leave the stale lock that bit F.
+    """
+    rc = acquire(target, handle, **kw)
+    if rc != 0:
+        print(f"[filelock] NOT RUNNING -- lock not acquired (rc={rc})", file=sys.stderr)
+        return rc
+    try:
+        return subprocess.call(cmd)
+    finally:
+        release(target, handle)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["acquire", "release", "check"])
+    ap.add_argument("mode", choices=["acquire", "release", "check", "hold"])
     ap.add_argument("path")
     ap.add_argument("--handle", default=os.environ.get("SAO_HANDLE", ""))
     ap.add_argument("--timeout", type=float, default=60.0)
@@ -207,11 +337,29 @@ def main() -> int:
                     help="PID to record as the holder (pass $$ from the wrapping shell). "
                          "Default with --pid-aware = the invoking shell (getppid), NOT this "
                          "transient CLI process")
-    a = ap.parse_args()
+    ap.add_argument("--no-mirror", action="store_true",
+                    help="disable the /tmp/gpu.lock mirror (only affects the .gpu.lock target; "
+                         "mirror is ON by default so the non-team GPU instance sees our hold)")
+    # Split the wrapped command off BEFORE argparse sees it. argparse.REMAINDER would
+    # swallow --handle into the command (caught by the first test of `hold`), so the literal
+    # "--" separator is honoured manually: everything after it is the command, verbatim.
+    argv = sys.argv[1:]
+    cmd = []
+    if "--" in argv:
+        i = argv.index("--")
+        argv, cmd = argv[:i], argv[i + 1:]
+    a = ap.parse_args(argv)
+    a.cmd = cmd
     if a.mode != "check" and not a.handle:
         sys.exit("--handle required")
     if a.mode == "acquire":
-        return acquire(a.path, a.handle, a.timeout, pid_aware=a.pid_aware, pid=a.pid)
+        return acquire(a.path, a.handle, a.timeout, pid_aware=a.pid_aware, pid=a.pid,
+                       no_mirror=a.no_mirror)
+    if a.mode == "hold":
+        if not a.cmd:
+            sys.exit("hold needs a command: filelock.py hold PATH --handle H -- CMD ...")
+        return hold(a.path, a.handle, a.cmd, timeout=a.timeout, pid_aware=a.pid_aware,
+                    pid=a.pid, no_mirror=a.no_mirror)
     if a.mode == "release":
         return release(a.path, a.handle)
     return check(a.path)
