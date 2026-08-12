@@ -228,15 +228,34 @@ about and didn't fetch: **Music Boomerang, arXiv:2507.04864 — unverified, need
 
 ---
 
-## Triage cluster — Topology-of-music sweep (G, 2026-08-12, 14 papers)
+## Reading-sweep cluster — Symbolic music-theory papers as CONTROL CANDIDATES (G's 14, re-verdicted 2026-08-12)
 
-Downloaded in the interdisciplinary reading-sweep (persistent homology / topological music analysis). **Headline: 11 of 14 are HARD OFF-LANE, 3 are conceptual-cross-reference-only, ZERO directly actionable for SA3.** Recorded here so nobody re-fetches or re-reads them expecting a control-head or feature-extraction mechanism — they are symbolic-score / combinatorial / number-theory music theory with no audio, no ML, and (mostly) no persistent-homology-on-data. Full per-paper mds committed (6857184).
+**CRITERION CORRECTION (Kim direct, 2026-08-12, relayed by W).** The original "off-lane because it doesn't process continuous-latent AUDIO" verdict was the WRONG QUESTION for this whole category. Kim, verbatim: *"the symbolic music papers are exactly what interests us now, when we are planning musical controls, IE we need prediction targets, conditioners, possible new time series."* A symbolic construct does not need to run on audio to be useful to us — **mir extracts the audio side; the paper supplies the definition.** G's FACTS were sound (spot-verified by W); only the "status vs our work" column is rewritten here. Papers NOT re-read — verdicts re-judged against W's three-part test:
+1. Does it define a quantity computable from a rendered clip, even indirectly via mir's existing extractors?
+2. Is that quantity something Kim would ever ASK FOR by ear — "more X"?
+3. Could it be a time series at some rate, or only a whole-piece scalar?
 
-**Hard off-lane (symbolic/combinatorial theory; no audio, no ML, no TDA-on-signal — do not mine for methods):** `10.1080/17459737.2020.1799563` Why Topology (voice-leading in 12-TET pc-space) · `2001.00001` Quantum GestART (image→music sonification metaphor, no results/code) · `2012.04517` Geometric Pitch Estimation (group-theoretic transcription toy, not TDA, unvalidated on dense mixes) · `2204.09744` TMA Framework (symbolic-score musicology tool) · `2204.11139` Intervallic Transition Graphs (Haydn/Mozart/Beethoven stylometry) · `2208.04974` Mathematical Foundations of Complex Tonality (tuning/number theory) · `2502.15849` Composite Hierarchical Structure (MIDI graph-edit + SMT, not topological) · `2505.08752` Configurations/Tessellations/Tone Networks (neo-Riemannian tonnetz) · `2506.13595` PH of Music Network 3 Distances (symbolic TDA methodology) · `2604.19960` Tonnetz/Combinatorial Geometry (Levi graphs of configurations) · `2607.05007` Quantum-Inspired Harmonic Decision (symbolic lead-sheet harmonization).
+Yes to (1)+(2) ⇒ a candidate **CONTROL DIMENSION / PREDICTION-HEAD TARGET / new whole-track-timeseries field** — the exact layer being built now (C's chroma-readout→conditioner, the morph sweep's `melody_contour` control-mode, the attribute branches).
 
-**Conceptual cross-reference only (idea-donors, NOT portable as-is):**
-- `1307.1201` Topology of Musical Data — citable prior for "circle/torus is the ground structure of pitch"; symbolic MIDI, no model.
-- `1602.00739` Towards a Topological Fingerprint of Music — persistent-homology tonal fingerprinting; symbolic-MIDI, whole-piece (NOT time-resolved), not a control mechanism. Nearest to an audio bridge in the batch but still needs a chroma/PH front-end we'd have to build; hold, don't chase.
-- `2602.09891` **Stemphonic** — the one SA3-adjacent paper: SAME architecture family (RF-DiT over an audio VAE, à la Stable Audio Open) but solves parallel synchronized **multi-stem generation from scratch**, a capability SA3 doesn't currently target. Watch as an architecture-family neighbour; not a drone/control lead.
+**PROMOTED — control / target candidates (yes to tests 1+2):**
+- `2204.11139` **Musical Stylistic Analysis — Intervallic Transition Graphs via PH** — defines an intervallic-transition structure + a "stylistic dispersion" measure. Intervals are computable from a pitch/melody track; "more melodic movement / interval variety" is a by-ear ask; timeseries-able. **STRONGEST of the batch — ties directly to the melody-movement / contour thread (C's `contour_loss`).** → candidate control dimension + a topological diversity metric.
+- `1602.00739` **Towards a Topological Fingerprint of Music** — PH tonal fingerprint of a passage; computable from chroma over a window; "tonal complexity/stability" is by-ear; timeseries at window rate. → candidate PH-based tonal-complexity feature/target. (Already flagged a live topology thread with SW1PerS 1307.6188.)
+- `1307.1201` **Topology of Musical Data** — the pitch-class-circle / torus-of-thirds-and-fifths geometry that chroma ALREADY lives on. → foundational geometric prior under chroma-readout and any tonnetz feature; enabler, not a standalone control.
+- `2208.04974` **Mathematical Foundations of Complex Tonality** — consonance/tonality structure; consonance/roughness IS extractable from audio (Sethares lineage → cross-ref C's Sethares assignment). "More consonant / more tension" is a classic by-ear control. → candidate tonal-tension target.
+- `2505.08752` **Configurations, Tessellations & Tone Networks** — neo-Riemannian tonnetz position / harmonic region, reachable via a chroma→tonnetz mapping. → candidate harmonic-region control dimension.
+- `2204.09744` **A Framework for Topological Music Analysis (TMA)** — topological features of tonal structure, derivable via transcription/chroma. → candidate structural prediction target.
+- `2502.15849` **Synthesizing Composite Hierarchical Structure** — hierarchical / segment structure of a piece; audio structure-segmentation already exists in mir. → candidate form/structure target (segment-boundary timeseries).
+- `2506.13595` **Persistent Homology of Music Network, 3 Distances** — methodological: WHICH distance metric to use when computing PH on a music graph. → supports the PH-feature candidates above (a *how*, not a *what*).
 
-**Process note (from W's sweep refinement):** "off-lane" here means checked-and-off-lane — G skimmed each future-work section for our representations before writing the verdict, not title-triaged. If a future task needs topological structure over AUDIO (not symbolic), start from 1602.00739's PH-fingerprint idea + SW1PerS (1307.6188, the actionable TDA lead W deep-read) — those two are the live topology threads; this cluster is closed.
+**LOWER-PRIORITY candidates (yes to test 1, weaker on test 2 / feasibility):**
+- `10.1080/17459737.2020.1799563` **Why Topology** — voice-leading distance / homotopy class; needs multi-voice pitch tracking (hard on dense mixes), but "smoother voice-leading" is a conceivable ask. → speculative voice-leading-smoothness control.
+- `2012.04517` **A Geometric Framework for Pitch Estimation** — IS a pitch extractor; a possible alt/multi-pitch method, though G flagged it unvalidated on dense polyphonic audio. → methodological, low priority vs mir's incumbents.
+- `2604.19960` **Tonnetz Theory / Combinatorial Geometry** — tonnetz-adjacent but pure finite combinatorics (Levi graphs of configurations); no obvious directly-extractable audio quantity. → hold as tonnetz-theory reference only.
+
+**STILL OFF-LANE even under the new criterion (defines no extractable, steerable quantity):**
+- `2001.00001` **Quantum GestART** — image→music sonification metaphor, zero results/code; names no computable musical quantity.
+- `2607.05007` **Quantum-Inspired Harmonic Decision** — a symbolic-generation (chord-harmonization) *method*, not a definition of a quantity to extract and steer.
+
+**Separate axis (unchanged by this criterion):** `2602.09891` **Stemphonic** — RF-DiT-over-audio-VAE, same architecture family as SA3; solves parallel multi-stem GENERATION (a capability, not a control dimension). Architecture-family neighbour to watch; not a control/target lead.
+
+**Meta (W's note):** this is the SECOND time in this sweep that METADATA, not content, misled us — first a wrong filename hid HiPPO, now a wrong relevance criterion hid a whole category. Pairs with the session's "print statements are not evidence" through-line: the triage QUESTION itself has to be the right question, or a sound fact filed under it still yields a wrong verdict. **Next action for the promoted set: which become mir fields / prediction heads is a design call for C + Kim, not a papers-index decision — flagged, not chased.**
