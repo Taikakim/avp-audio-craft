@@ -223,6 +223,38 @@ This lands on the same ℝ × S^k product-manifold structure the earlier geometr
 
 ---
 
+## 4.3 The origin paper (2603.04366) — its chroma/pitch failure is GAIN-explained, not fundamental
+
+`[paper 2603.04366]` The low-resource-guidance paper (Novack … **Evans**; the ORIGIN of "LatCH", on
+Stable Audio Open) found **1-D low-freq controls succeed, sparse high-dim (pitch/chroma) FAIL across all
+methods**, worse at coarser latent rates. It's Zach's own group; taken at face value it cautions this whole
+melody/chroma direction.
+
+`[ours] + [Zach direct 2026-08-12]` **But its pessimism is a gain artifact and is superseded by our own
+results.** (1) It was an **intern project SA abandoned** — Zach: *"weren't planning on taking it much
+further since the initial results on SAO-Small weren't great… awesome to see you're getting some success
+with it here. Feel free to put out the code however you would like."* (2) SAME-L's 256-d latent is **~10×
+less guidance-gain-sensitive** than their SAO-Small VAE; at their modest TFG gains you get the **"2%
+authority mirage"** (near-zero effect, reads as failure), but our **gain-ladder (MASTER §5: operating gain
+≈512, monotonic 128→1024; "dead at gain 8" was a mirage)** steers cleanly — Kim's **"1000× weights"** is the
+reconciliation. *They didn't fail because chroma control is impossible; they failed because they didn't gain it.*
+
+**Two LatCH families in our tree (terminology fork, settled):**
+- **(A) paper-spec GUIDANCE readout heads** — `latch_weights_sa3_medium/` (incl `same_chroma`), trained to
+  2603.04366's spec (LatCH-F/B, noise-conditioned), steer via a test-time distance-gradient. **This is where
+  the high-gain success lives** (the June LatCH work). Tier-1/2's readout numbers are on THIS family.
+- **(B) FiLM CONDITIONING adapters** — `sa3_control` (`melody_contour`), feed the signal IN during training
+  (the `morph_head_sweep`). A **mechanism 2603.04366 never tested**; conditioning is generally stronger for
+  sparse targets (Zach's own prepend-cond is conditioning).
+
+**Corrected stance (C, retracting a momentary over-deference to the paper):** 2603.04366 is a useful account
+of *why* naive low-gain control fails (sparsity/dimensionality) — exactly what the morphological densification
+attacks — but it is **not** a governing prior against the direction: our high-gain guidance results already
+beat its reported failure, and conditioning is a route it never tried. **Still valid from the earlier read:**
+judge the sweep by **control-efficacy + the disintegration gate**, not readout accuracy (readout ≠ control).
+**Publish opportunity:** Zach's explicit blessing → a fusion-optimiser-style CC0 release or short paper on the
+revived+advanced method (gain-ladder + SAME-L + eval apparatus + morphological loss) is on the table.
+
 ## 5. The design
 
 ### 5.1 Two ways to slice the morph — two different products
