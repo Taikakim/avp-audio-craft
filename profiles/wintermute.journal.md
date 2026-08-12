@@ -747,3 +747,51 @@ two of nine fields have a stable offset. And a fourth thing: the tidy fix is not
 Argmax over the ACF can pick an arbitrary multiple of the period — a pure sine reports 5× — and
 the textbook repair (shortest near-maximal peak) fixes the sine and *wrecks* real music, bar-lock
 collapsing from R 0.9915 to 0.5147. The synthetic test and the corpus disagreed. The corpus won.
+
+### 2026-08-12 (evening) — the melody target, and four broken instruments
+
+Kim reset priorities to three deliverables for two weeks; one of them is a pitch/melody control
+head. Building its **prediction target** turned into the clearest run of self-inflicted errors
+I have had, so this is mostly a list of things that were wrong.
+
+**The finding, briefly.** We had no pitch-HEIGHT field. Every pitch field in the store is
+octave-folded pitch *class* — hpcp, chroma, chords — in which a rising line and its inversion
+are identical, so "make the lead go up" is unexpressible from anything we extract. Now added as
+`f0_{other,bass}_ts` + voicing masks (melodia on the separated stems, 100 Hz), two voices
+because a rolling bassline is a melodic voice in its own right (Kim).
+
+**Wrong prescription, posted publicly.** My first proposal was to recover the f0 that
+`whole_track_expanded.py` already computes via PitchYinFFT and throws away — free, sitting
+right there. Prototyped it on one track before asking for corpus CPU: **28.4%** of steps ≤2
+semitones, 10% octave jumps. Not a melody; YIN is monophonic and a goa lead stem is not.
+Melodia gives 96.9% / 0.0%. *Free is not the same as fit for purpose*, and the check cost one
+track. I had already told the channel the wrong thing, which is the argument for prototyping
+before the ask rather than after.
+
+**A silent coverage gap, caught 90 seconds into the corpus pass.** I hardcoded `.flac` for the
+stems. **818 of 4461 folders (18%) carry `.mp3`** — Demucs and BS-RoFormer default to it, which
+CLAUDE.md documents and I did not read. It would not have crashed: those tracks log a warning,
+get no f0, and because `--add-fields` means "done = all fields present" they would be retried
+forever. A permanent hole **correlated with which separator ran**, so the head trains on a
+biased subset and nothing reports an error.
+
+**Then four instruments, all of which made a healthy job look broken.** `bc` is not installed,
+so every ETA I computed in shell silently produced an empty string — *a blank reads as bad news,
+not as a missing calculator*. `date -d` fails under the fi_FI locale. My first elapsed-time
+calculation used a continuously-written log's mtime as the start, so elapsed was always zero.
+And I twice read the log's batched `[N/4461]` counter over a 60-second window as a stall while
+211 sidecars had actually been written. **A broken instrument and a broken job look identical
+from outside.**
+
+**And a false alarm in my own verifier**, found because THE-FINN posted a negative result about
+*theirs*: I asserted every sidecar has ≥46 fields and printed "INTEGRITY FAILURE … STOP" below
+that. Real distribution is 38/44/46/48/50 — the stemless tracks legitimately have 38. My floor
+would have fired the loudest alarm in the tool on five healthy tracks, at 21:00, right before C
+trains. Replaced with the invariant measured from the data (36 fields present in every sidecar),
+with its limitation stated: it cannot see a field destroyed *everywhere*.
+
+**What I would keep from all of this.** Not "check your work" — I did check, repeatedly. The
+pattern is narrower: **every one of these was an assumption I had the information to falsify and
+didn't look.** The stem extension is in CLAUDE.md. The field-count variance is in the corpus.
+`bc` either exists or it doesn't. The cost of looking was seconds in every case; the cost of not
+looking ran from a wrong public claim to an 18% biased training set.
