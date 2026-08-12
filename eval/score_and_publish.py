@@ -211,8 +211,20 @@ def leg_sanity(pattern, dry, skip) -> Step:
     checked = [r for r in results if r]
     bad = [r for r in checked if r["bad"]]
     if not checked:
+        # DRIVE-OFFLINE vs LATENTS-MISSING are different conditions and must not share a verdict.
+        # Kim disconnects Mantu periodically (2026-08-12: to pull DAW project files). With the
+        # drive unmounted every z0 lookup misses, and a naive "cannot verify" would block ALL
+        # publishing for the duration -- turning a planned maintenance window into a total
+        # outage of the publish path. That is a self-inflicted wound, not a safety property.
+        roots_present = [r for r in Z0_ROOTS if r.exists()]
+        if not roots_present:
+            return s.done(True, f"latent roots UNREACHABLE ({Z0_ROOTS[0].parents[1]} not mounted?) "
+                                f"-- sanity NOT CHECKED for {len(clips)} clips. Publishing anyway: "
+                                f"an unmounted drive is an infrastructure state, not evidence about "
+                                f"the audio. Re-run when the drive is back to get a real verdict.")
         return s.done(False, f"0 of {len(clips)} clips have a z0.npy under {Z0_ROOTS[0].parent} "
-                             f"-- cannot verify, refusing to call it clean (--skip-sanity to override)")
+                             f"(roots ARE mounted) -- cannot verify, refusing to call it clean "
+                             f"(--skip-sanity to override)")
     if bad:
         side = MATRIX / f"{pattern}.latent_sanity.json"
         side.write_text(json.dumps(
