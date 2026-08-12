@@ -75,6 +75,23 @@ Only build once this comes up empty. If you find prior work, **reuse it or state
 why you're not**. If you did new work, drop a journal line so THE-FINN can fold it into
 `DISCOVERIES.md` (he owns keeping that index generated from the journals).
 
+### Receiving a scientific paper — protocol (Kim 2026-08-12)
+When a paper arrives (a URL, PDF, citation, or "read this / what do you think of X"):
+1. **Check the papers log FIRST.** Search **`papers/knowledge.md`** (the never-reinvent literature
+   index) + the **`papers/`** folder for an existing analysis note on that *exact* paper (by arXiv
+   id or title). We may already have read it — don't re-read blind, and don't re-fetch a PDF we
+   already have. **If we have no papers log at all, create one** (`papers/knowledge.md`).
+2. **Read our existing commentary before the paper itself.** An existing `arxiv-<id> - <Title>.md`
+   is our project-POV deep-read (its "FOR US / what stays ours" is the fast frame); start there.
+3. **Do NOT assume a paper was thoroughly read just because a note — or an agent — says so.** A
+   "deep-read" tag is a starting FRAME to verify against, **not proof**: past deep-reads have carried
+   wrong verbatim quotes, wrong arXiv ids, and mis-scoped claims. When a claim is load-bearing,
+   re-check it against the PDF yourself — cite-a-check applies to our OWN notes too (C's independent
+   re-verification of the morphological-space paper against the PDF is the model).
+4. New/unread papers land in **`papers/Prospective Unchecked/`**. A real deep-read produces a
+   project-POV **`papers/arxiv-<id> - <Title>.md`** ("what it contains / what stays ours") **+ a
+   `knowledge.md` row**. Naming: `arxiv-<id> - <Full Title>.{md,pdf}`, md and pdf co-located.
+
 **If you are one of the fleet's Claude personae** (CONTINUITY / WINTERMUTE / THE-FINN /
 GHOST-NOTE), also read **`CONSTRUCTS.md`** — the roster of who's who, each one's home
 folder + instance name, and links to the personal profiles/journals under `profiles/`.
