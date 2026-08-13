@@ -425,22 +425,37 @@ function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 // wrong, PT-native is cfg1/8-step): the PT-medium base only rendered at cfg1/w1 (it
 // glitches elsewhere), so checking it forces+locks those two selects and every lookup is
 // keyed on "<model>_ptm" instead of "<model>" -- same rows, a different underlying render.
-function modelKey(m){return m+(pptm.checked?'_ptm':'')}
+// a row is "intrinsically" ptm when ITS OWN label carries the suffix (e.g. a dedicated
+// "..._ptm" model row), as opposed to the checkbox appending it to a normal row's lookup.
+function isPtmModel(m){return String(m).endsWith('_ptm')}
+// guard against double-suffixing: an intrinsically-ptm row plus a checked checkbox used to
+// produce "..._ptm_ptm", which resolves to nothing (Kim 2026-08-13 fix, found while wiring
+// the ptm-row cfg/weight lock below).
+function modelKey(m){return isPtmModel(m)?m:(m+(pptm.checked?'_ptm':''))}
 // ptm playback is PINNED to cfg1/w1 (Kim 2026-08-02, reversed same-day): higher cfg/weight
 // ptm renders are universally broken/glitchy -- some model families (e.g. fp32cmp) DID render
 // a fuller ptm grid, but nobody should ever audition those cells, so resolution ignores the
-// picker's cfg/weight while checked rather than trusting per-model availability. The picker's
-// OWN select values are untouched (no DOM write) so unchecking reveals whatever was selected
-// before, unchanged -- only the resolved cfg/w is pinned, not the visible controls.
-function currentSel(){return {pid:pprompt.value,
- cfg:pptm.checked?1:parseFloat(pcfg.value),
- w:pptm.checked?1:parseFloat(pstrength.value)}}
-// the "lock" half of the tooltip's forces+locks: grey the two selects out while ptm is
-// checked, so a control that no longer affects playback READS as locked rather than broken.
-// Deliberately disabled-only -- no value write -- to keep the no-DOM-write rule above intact
-// (disabled selects retain .value, so unchecking restores the prior selection untouched).
-function applyPtmLock(){const on=pptm.checked;pcfg.disabled=on;pstrength.disabled=on;
- const t=on?'pinned to cfg1 / w1 while post-trained is checked':'';
+// picker's cfg/weight while checked rather than trusting per-model availability.
+// EXTENDED 2026-08-13 (Kim): the pin now covers BOTH the checkbox AND any row whose OWN name
+// already ends in _ptm -- same broken-at-higher-cfg renders, they just got there via the row's
+// own label instead of the toggle. `model` is the row currently being resolved/played, if any.
+function ptmActive(model){return pptm.checked||(model&&isPtmModel(model))}
+function currentSel(model){return {pid:pprompt.value,
+ cfg:ptmActive(model)?1:parseFloat(pcfg.value),
+ w:ptmActive(model)?1:parseFloat(pstrength.value)}}
+// the "lock" half of "forces+locks": grey the two selects out AND set them to 1/1 so the
+// picker visibly shows what is actually playing, not just what resolution silently pins.
+// 2026-08-13 (Kim: "selecting a ptm row automatically changes cfg to 1"): this used to be
+// disabled-only with no value write, specifically to let unchecking the box restore whatever
+// was selected before. Kim's ask is the opposite -- the dropdown should SHOW 1/1, not hide the
+// pin -- so this now writes the value (only if "1" is actually an available option; a corpus
+// that never rendered cfg1 would otherwise get pinned to a value its own dropdown doesn't have).
+// Deactivating just re-enables the controls; it does not attempt to restore a prior selection.
+function applyPtmLock(model){const on=ptmActive(model);
+ pcfg.disabled=on;pstrength.disabled=on;
+ if(on){if([...pcfg.options].some(o=>o.value==='1'))pcfg.value='1';
+        if([...pstrength.options].some(o=>o.value==='1'))pstrength.value='1';}
+ const t=on?'pinned to cfg1 / w1 (post-trained)':'';
  pcfg.title=t;pstrength.title=t;}
 // GRACEFUL CELL RESOLUTION (Kim 2026-08-02): the global cfg/weight/prompt picker can request
 // a combo a given (model,ckpt) never rendered (e.g. the _ptm winning variants are cfg1-ONLY)
@@ -524,9 +539,34 @@ function markAvailability(){
               :'no clip rendered for this model/checkpoint at any setting';});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
+ annotatePromptOptions();
  if(!playingModel)return;
  document.querySelectorAll('#body tr').forEach(tr=>{
   if(tr.dataset.model===playingModel&&tr.dataset.ckpt===playingCkpt)tr.classList.add('playing');});}
+// PROMPT-OPTION AVAILABILITY MARKERS (Kim 2026-08-13): "green N" for prompts with an alternate
+// NATIVE-length render, "blue P" for prompts with an alternate POST-TRAINED render -- for
+// whichever model is currently playing (annotations are per-model; with nothing playing the
+// options just show plain text). A native <option> cannot render two differently-coloured
+// letters within one string -- no inline HTML/spans are permitted inside option text, and
+// per-character CSS colour isn't available even where whole-option colour is -- so this uses
+// a coloured circle glyph directly beside each plain letter (\u{1F7E2}N green, \u{1F535}P
+// blue) as the closest faithful rendering of "green letter N / blue letter P" a plain <select>
+// can actually produce. Recomputed on every markPlaying() call (i.e. on every play/stop/re-pick)
+// so the markers always describe the model actually selected, not a stale one.
+function annotatePromptOptions(){
+ const opts=[...pprompt.options];
+ if(!playingModel||!cellsByMC){opts.forEach(o=>{o.textContent=o.title;});return;}
+ const mk=modelKey(playingModel);
+ const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt);
+ const nPids=new Set(ng?ng.map(c=>c.pid):[]);
+ const sib=isPtmModel(mk)?mk.slice(0,-4):mk+'_ptm';
+ const pg=cellsByMC.get(sib+'\x01'+playingCkpt);
+ const pPids=new Set(pg?pg.map(c=>c.pid):[]);
+ opts.forEach(o=>{
+  let t=o.title;
+  if(nPids.has(o.value))t+=' \u{1F7E2}N';
+  if(pPids.has(o.value))t+=' \u{1F535}P';
+  o.textContent=t;});}
 function stopPlaying(){pl.pause();playingKey=playingModel=playingCkpt=null;
  plabel.className='';plabel.textContent='click a model row to play';
  document.getElementById('ssmpanel').style.display='none';document.getElementById('pdl').style.display='none';markPlaying();}
@@ -543,7 +583,8 @@ function seekAndPlay(pos){
 function repickCurrent(){
  markAvailability();
  if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
- const {pid,cfg,w}=currentSel();
+ applyPtmLock(playingModel);
+ const {pid,cfg,w}=currentSel(playingModel);
  const hit=resolveCell(modelKey(playingModel),playingCkpt,pid,cfg,w);
  if(!hit)return;                                      // model has no clip at all -> keep playing
  const sw=nativeSwap(hit,playingCkpt);
@@ -556,7 +597,9 @@ function repickCurrent(){
  noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
- const {pid,cfg,w}=currentSel();
+ applyPtmLock(tr.dataset.model);        // lock (and visibly pin to 1/1) BEFORE resolving, so a
+                                        // clicked ptm row's own resolution sees the pinned values
+ const {pid,cfg,w}=currentSel(tr.dataset.model);
  const hit=resolveCell(modelKey(tr.dataset.model),tr.dataset.ckpt,pid,cfg,w);
  if(!hit){               // truly no clip for this model-ckpt in EITHER view -> genuine dead row
   tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
