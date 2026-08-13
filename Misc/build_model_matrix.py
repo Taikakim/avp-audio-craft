@@ -134,6 +134,11 @@ table.mini{border-collapse:collapse;width:100%}
 .cell.have{background:#1d2b1f;color:#9f9}.cell.miss{color:#555;cursor:default}
 .cell.playing{outline:2px solid #5d5 !important}
 .cell.loading{outline:2px solid #fa5 !important}
+/* Kim 2026-08-14: dim (not hide -- same "grey with a hint, don't remove" convention as the
+   no-clips-at-these-settings prompt label above) cells lacking the checked alt-render, so the
+   grid itself shows coverage instead of only affecting playback like the native toggle used to. */
+body.filter-native .cell.have.no-nat{opacity:.22}
+body.filter-ptm .cell.have.no-ptm{opacity:.22}
 .cov{font-size:11px;color:#7a7;margin:2px 0}
 /* fixed-height meta block: recipe(120)+tdata(34) are already fixed, so pinning the
    variable tail (family / good-fraction / native-cell) makes the whole header a
@@ -259,8 +264,15 @@ def main():
                '<a id=dl href="#" download title="download the track playing now">&#8681;</a></span>'
                ' <label style="color:#8b8" title="play each cell&#39;s native-training-length render '
                '(e.g. 47.5s for T512 models) instead of the 20s comparison clip, where one exists '
-               '(terminal checkpoints) -- cells without one keep their 20s clip.">'
+               '(terminal checkpoints) -- cells without one keep their 20s clip. Also DIMS cells that '
+               'have no native-length twin, so the grid shows coverage even without clicking through.">'
                '<input type=checkbox id=mnative> native</label>'
+               ' <label style="color:#88b" title="DIMS cells that have no post-trained (rf_denoiser/'
+               'ping-pong base, this column&#39;s adapter applied, cfg1/w1-only) counterpart -- i.e. '
+               'no sibling row named this model+_ptm exists at that cell&#39;s cfg/w/prompt. If the '
+               'selected column IS already a _ptm model, this has nothing to dim against (you&#39;re '
+               'already looking at the post-trained render) and is a no-op, same as unchecking it.">'
+               '<input type=checkbox id=mptm> post-trained</label>'
                ' <button id=mspread onclick="spreadCkpts()" title="fill all four columns with an '
                'evenly-spaced sample of the selected model&#39;s checkpoints (first, last, and two '
                'between) -- the useful default for an unscored model, where there are no metrics to '
@@ -386,12 +398,23 @@ function reattach(){
  const ef=effSrc(el);
  if(!a.src.endsWith('/'+ef)){               // different clip => checkpoint (or native toggle) switched
   a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph)}}
+// Kim 2026-08-14: dim cells lacking the checked alt-render (grid-wide, not a re-render --
+// pure CSS class toggle on <body> so it's instant and doesn't disturb the playing cell's DOM
+// node/reattach()). Called on checkbox change AND after every render()/applyURL(), since
+// setting .checked programmatically (restoring a shared link) does not fire 'change'.
+function syncFilterClasses(){
+ const nb=document.getElementById('mnative'),pb=document.getElementById('mptm');
+ document.body.classList.toggle('filter-native',!!(nb&&nb.checked));
+ document.body.classList.toggle('filter-ptm',!!(pb&&pb.checked));}
 // toggling native mid-play swaps the current cell's clip in place, same playhead
 window.addEventListener('load',()=>{const nb=document.getElementById('mnative');
  if(nb)nb.addEventListener('change',()=>{
+  syncFilterClasses();
   if(!cur)return;const ef=effSrc(cur);
   if(!a.src.endsWith('/'+ef)){a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph);
-   dl.href='model_matrix/'+ef;dl.setAttribute('download',ef);}});});
+   dl.href='model_matrix/'+ef;dl.setAttribute('download',ef);}});
+ const pb=document.getElementById('mptm');
+ if(pb)pb.addEventListener('change',syncFilterClasses);});
 const labels=Object.keys(MM.models);
 function ckptsFor(m){return MM.models[m]?MM.models[m].ckpts:[]}
 function render(){
@@ -442,6 +465,11 @@ function render(){
      'the size this checkpoint was trained on — vs the fixed 20s grid above/below)</div>'}}
    h+='</div>';  // .covwrap — fixed height so the pgrid starts at the same Y in every column
    if(st.ckpt){h+='<div class=pgrid>';
+    // already-a-_ptm column: nothing to dim against for the "post-trained" checkbox --
+    // you're already looking at the post-trained render, same suppression logic as
+    // dora_table's P marker (mislabeling "the base sibling also has this cell" as "missing
+    // post-trained" would be backwards).
+    const ptmSib=st.model.endsWith('_ptm')?null:st.model+'_ptm';
     for(const pid of Object.keys(MM.prompts)){
      // Zero coverage at the CURRENT cfg/w settings: GREY the prompt's LABEL with a hint
      // instead of HIDING it — hiding non-bracket prompts at bracket-only settings reads
@@ -457,12 +485,17 @@ function render(){
      for(const cf of MM.cfgs){h+='<tr><th>cfg'+cf+'</th>';
       for(const w of MM.strengths){
        const key=st.model+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid;const f=MM.data[key];
-       h+=f?'<td class="cell have" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>':'<td class="cell miss">·</td>'}
+       if(f){
+        const hasNat=!!(MM.ngrid&&MM.ngrid[key]);
+        const hasPtm=!ptmSib||!!MM.data[ptmSib+'|'+st.ckpt+'|'+cf+'|'+w+'|'+pid];
+        h+='<td class="cell have'+(hasNat?'':' no-nat')+(hasPtm?'':' no-ptm')+'" data-src="'+f+'" data-col="'+c+'" data-cf="'+cf+'" data-w="'+w+'" data-pid="'+pid+'" onclick="play(this)">&#9654;</td>';
+       }else h+='<td class="cell miss">·</td>'}
       h+='</tr>'}
      h+='</table>'}
     h+='</div>'}
   }
   div.innerHTML=h;wrap.appendChild(div)}reattach();
+ if(window.syncFilterClasses)syncFilterClasses();  // cheap + idempotent; covers any caller that skips the checkbox handlers
  if(window.syncURL)syncURL();}   // every column change re-renders -> URL always shareable
 const colState=[{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null},{model:null,ckpt:null}];
 // ── SHAREABLE SELECTION VIA THE ADDRESS BAR (Kim 2026-08-05) ────────────────────────────────
@@ -474,6 +507,7 @@ function syncURL(){
  const parts=colState.map(s=>s.model?(encodeURIComponent(s.model)+'~'+encodeURIComponent(s.ckpt||'')):'');
  let h='c='+parts.join('|');
  const nb=document.getElementById('mnative'); if(nb&&nb.checked)h+='&nat=1';
+ const pb=document.getElementById('mptm'); if(pb&&pb.checked)h+='&ptm=1';
  // replaceState, not assignment: writing location.hash would push a history entry per click
  // and turn Back into an undo-one-column crawl.
  try{history.replaceState(null,'','#'+h);}catch(e){}}
@@ -485,6 +519,7 @@ function applyURL(){
    colState[i].model=decodeURIComponent(m||'')||null;
    colState[i].ckpt=decodeURIComponent(k||'')||null;});}
  if(q.nat==='1'){const nb=document.getElementById('mnative'); if(nb)nb.checked=true;}
+ if(q.ptm==='1'){const pb=document.getElementById('mptm'); if(pb)pb.checked=true;}
  return !!q.c;}
 // EVEN CHECKPOINT SPREAD (Kim 2026-08-05: "in a lack of the scores ... an evenly sampled
 // selection of checkpoints"). Unscored models have no metrics to rank their checkpoints by,
