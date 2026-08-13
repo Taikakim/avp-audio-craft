@@ -291,7 +291,7 @@
     "epoch=7-step=5400.ckpt"
    ],
    "witness": [],
-   "reason": "fp32 goa t512 arm — SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
+   "reason": "fp32 goa t512 arm \u2014 SOURCE: original fp32_compare dir until the lumi_runs copy reaches all 8 ckpts (grow-only rule after a partial-copy regression 2026-07-18). GHOST-NOTE entry, C owns judgment."
   },
   "bf16cmp_avp_t512_bs8_lr1e4": {
    "tier": "full",
@@ -371,7 +371,7 @@
     "epoch=7-step=2696.ckpt"
    ],
    "witness": [],
-   "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) — FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
+   "reason": "task-50 long-context arm (T=1024-trained r128 DoRA) \u2014 FIRST ckpt landed 2026-07-18; the training-length-mismatch fix arm, regime-comparison flagship. GHOST-NOTE entry, C owns judgment."
   },
   "longctx_t2048_r128": {
    "tier": "full",
@@ -395,7 +395,7 @@
     "epoch=5-step=200.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI pipeline smoke run (r256 a256) — rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI pipeline smoke run (r256 a256) \u2014 rendered for sanity confirmation, not a model candidate. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs1_lr1e4_repr": {
    "tier": "full",
@@ -403,7 +403,7 @@
     "epoch=7-step=19144.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr1e4_repr": {
    "tier": "full",
@@ -412,7 +412,7 @@
     "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t4096_bs4_lr5e5_repr": {
    "tier": "full",
@@ -421,7 +421,7 @@
     "epoch=7-step=4784.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_avp_t512_bs8_lr1e4_repr": {
    "tier": "full",
@@ -430,7 +430,7 @@
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fp32cmp_goa_t4096_bs1_lr1e4_repr": {
    "tier": "full",
@@ -440,7 +440,7 @@
     "epoch=6-step=37800.ckpt"
    ],
    "witness": [],
-   "reason": "REPRESENTATIVE LATE EPOCHS of the same run as fp32cmp_goa_t4096_bs1_lr1e4 (same disk dir via symlink; cmp row = early epochs ep0-3). Run TERMINATED AT EPOCH 6 (no ep7 exists on scratch — fat ep6 = terminal; verified vs $SCRATCH 2026-07-21). Old picks were degenerate duplicates of the cmp row (late epochs weren't pulled yet); fixed after Kim's 2026-07-21 repr rsync. CONTINUITY."
+   "reason": "REPRESENTATIVE LATE EPOCHS of the same run as fp32cmp_goa_t4096_bs1_lr1e4 (same disk dir via symlink; cmp row = early epochs ep0-3). Run TERMINATED AT EPOCH 6 (no ep7 exists on scratch \u2014 fat ep6 = terminal; verified vs $SCRATCH 2026-07-21). Old picks were degenerate duplicates of the cmp row (late epochs weren't pulled yet); fixed after Kim's 2026-07-21 repr rsync. CONTINUITY."
   },
   "fp32cmp_goa_t4096_bs4_lr1e4_repr": {
    "tier": "full",
@@ -458,7 +458,7 @@
     "epoch=7-step=2392.ckpt"
    ],
    "witness": [],
-   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) — 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
+   "reason": "LUMI campaign, REPRESENTATIVE-EPOCH sync (epoch 4 + epoch 7 only, distinct destination Mantu/lumi_runs from the earlier full-pull arm of the same name; transfer still in progress, registering incrementally as checkpoints land) \u2014 2026-07-19/20. GHOST-NOTE entry, C owns judgment."
   },
   "fullft_goa_t256": {
    "tier": "full",
@@ -1383,6 +1383,30 @@
    "witness": [],
    "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/adamw_bf16_sweep",
    "reason": "adamw_bf16_sweep (job 20190736, COMPLETED; CONTINUITY DM 2026-07-24): AdamW vs FusionOpt optimizer basin A/B -- 8 arms goa/avp x t512 x {bs1_lr1e4, bs4_lr1e4/2e4/5e5}, ep9 terminal, bf16. Weight-space read found AdamW and FusionOpt land in nearly-orthogonal basins (dir cos ~0.1, Fusion moves 2x farther) -- metrics decide which is better, not the weights. Registered 2026-07-29 (was 0/8 in bracket manifest for 5 days -- GHOST-NOTE listener gap)."
+  },
+  "subloss_goa_k2": {
+   "tier": "full",
+   "root": "/home/kim/Projects/SAO/.render_root_aliases",
+   "picks": [
+    "epoch=19-step=27000.ckpt"
+   ],
+   "reason": "Kim direct 2026-08-13: T1024 (95.1s) standard-prompt cfg7/w1 pass on the subspace-loss v3sel checkpoints. Registered by WINTERMUTE with the root override (run saved on the UUID LUMI-pull drive, not Mantu) so the tested model_matrix_gen render path (LoRA-vs-fullft detection, GPU decode, transcode, manifest write) handles it instead of a one-off script. Verified: 458/687 tensors are lora_A/lora_B/magnitude -- this IS a DoRA adapter checkpoint, load_lora() is correct, not the fullft state-dict path. Only ep19 exists locally; ep3/7/11/15 exist as prior 20s renders but not as checkpoints here."
+  },
+  "subloss_goa_k5": {
+   "tier": "full",
+   "root": "/home/kim/Projects/SAO/.render_root_aliases",
+   "picks": [
+    "epoch=19-step=27000.ckpt"
+   ],
+   "reason": "Kim direct 2026-08-13: T1024 (95.1s) standard-prompt cfg7/w1 pass on the subspace-loss v3sel checkpoints. Registered by WINTERMUTE with the root override (run saved on the UUID LUMI-pull drive, not Mantu) so the tested model_matrix_gen render path (LoRA-vs-fullft detection, GPU decode, transcode, manifest write) handles it instead of a one-off script. Verified: 458/687 tensors are lora_A/lora_B/magnitude -- this IS a DoRA adapter checkpoint, load_lora() is correct, not the fullft state-dict path. Only ep19 exists locally; ep3/7/11/15 exist as prior 20s renders but not as checkpoints here."
+  },
+  "subloss_goa_k12": {
+   "tier": "full",
+   "root": "/home/kim/Projects/SAO/.render_root_aliases",
+   "picks": [
+    "epoch=19-step=27000.ckpt"
+   ],
+   "reason": "Kim direct 2026-08-13: T1024 (95.1s) standard-prompt cfg7/w1 pass on the subspace-loss v3sel checkpoints. Registered by WINTERMUTE with the root override (run saved on the UUID LUMI-pull drive, not Mantu) so the tested model_matrix_gen render path (LoRA-vs-fullft detection, GPU decode, transcode, manifest write) handles it instead of a one-off script. Verified: 458/687 tensors are lora_A/lora_B/magnitude -- this IS a DoRA adapter checkpoint, load_lora() is correct, not the fullft state-dict path. Only ep19 exists locally; ep3/7/11/15 exist as prior 20s renders but not as checkpoints here."
   }
  },
  "legacy_goa_dora_nested": {
