@@ -559,8 +559,14 @@ function annotatePromptOptions(){
  const mk=modelKey(playingModel);
  const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt);
  const nPids=new Set(ng?ng.map(c=>c.pid):[]);
- const sib=isPtmModel(mk)?mk.slice(0,-4):mk+'_ptm';
- const pg=cellsByMC.get(sib+'\x01'+playingCkpt);
+ // P only makes sense from the non-ptm side ("an alternate POST-TRAINED render exists").
+ // When mk is already ptm-active (an intrinsic _ptm row, or the checkbox forcing the
+ // suffix), there is no alternate post-trained render to offer -- you're already on it --
+ // so the mcGroup-style base<->_ptm swap would instead match the BASE model's cells and
+ // mislabel "the base model also has this prompt" as blue P. Kim, 2026-08-13: P lit up on
+ // nearly every prompt while playing winning_avpaug10_t512_a45_fp32_ptm, because the base
+ // family has near-full grid coverage. Suppress P outright once already ptm-active.
+ const pg=isPtmModel(mk)?null:cellsByMC.get(mk+'_ptm\x01'+playingCkpt);
  const pPids=new Set(pg?pg.map(c=>c.pid):[]);
  opts.forEach(o=>{
   let t=o.title;
