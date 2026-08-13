@@ -565,22 +565,47 @@ function annotateAvailabilityMarkers(){
   axes.forEach(([sel])=>{[...sel.options].forEach(o=>{o.textContent=o.title;});});
   return;}
  const mk=modelKey(playingModel);
- const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt);
- // P only makes sense from the non-ptm side ("an alternate POST-TRAINED render exists").
- // When mk is already ptm-active (an intrinsic _ptm row, or the checkbox forcing the
- // suffix), there is no alternate post-trained render to offer -- you're already on it --
- // so the mcGroup-style base<->_ptm swap would instead match the BASE model's cells and
- // mislabel "the base model also has this value" as blue P. Kim, 2026-08-13: P lit up on
- // nearly every prompt while playing winning_avpaug10_t512_a45_fp32_ptm, because the base
- // family has near-full grid coverage. Suppress P outright once already ptm-active.
- const pg=isPtmModel(mk)?null:cellsByMC.get(mk+'_ptm\x01'+playingCkpt);
+ const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt)||[];
+ // P (and PN below) only make sense from the non-ptm side ("an alternate POST-TRAINED
+ // render exists"). When mk is already ptm-active (an intrinsic _ptm row, or the checkbox
+ // forcing the suffix), there is no alternate post-trained render to offer -- you're
+ // already on it -- so the mcGroup-style base<->_ptm swap would instead match the BASE
+ // model's cells and mislabel "the base model also has this value" as blue P. Kim,
+ // 2026-08-13: P lit up on nearly every prompt while playing
+ // winning_avpaug10_t512_a45_fp32_ptm, because the base family has near-full grid coverage.
+ // Suppress P (and PN) outright once already ptm-active.
+ const isPtm=isPtmModel(mk);
+ const pg=isPtm?[]:cellsByMC.get(mk+'_ptm\x01'+playingCkpt)||[];
+ // PN (Kim 2026-08-13, "in addition ... if there's native ptm clips" -- confirmed we have
+ // them, 464 across the corpus incl. 4 on this exact winning/ptm pair): a render that is
+ // BOTH native-length AND post-trained is a distinct third thing from "N exists somewhere"
+ // plus "P exists somewhere" as two unrelated clips -- it's ONE clip differing from the
+ // current selection on both axes at once. N (nativeByMC keyed on mk) and P (cellsByMC
+ // keyed on mk+'_ptm') can never surface this: neither index is ever consulted with BOTH
+ // the native table AND the _ptm-suffixed key at the same time. That combination --
+ // nativeByMC keyed on mk+'_ptm' -- is exactly the gap. Shown as two adjacent monochrome
+ // circles beside "PN" (no single glyph renders half-green/half-blue in a plain <option>),
+ // additively alongside N/P, not replacing them -- a value can legitimately carry all three
+ // if three distinct clips back each claim.
+ const png=isPtm?[]:nativeByMC&&nativeByMC.get(mk+'_ptm\x01'+playingCkpt)||[];
+ // Kim 2026-08-13, "every dropdown must consider all of the current settings": a value only
+ // counts as an alternate for THIS axis if the render also matches what's currently picked
+ // on the OTHER two axes -- e.g. cfg=4 only lights up green if a native render exists at
+ // cfg=4 for the CURRENTLY selected prompt and w, not at some unrelated prompt/w combo that
+ // happens to share the cfg value. Without this, a huge corpus made every cfg/w option look
+ // available regardless of what else was selected, same failure shape as the original P bug.
+ const cur=currentSel(playingModel);
+ const matchesOthers=(c,field)=>(field==='pid'||c.pid===cur.pid)
+   &&(field==='cfg'||c.cfg===cur.cfg)&&(field==='w'||c.w===cur.w);
  axes.forEach(([sel,field])=>{
-  const nVals=new Set(ng?ng.map(c=>String(c[field])):[]);
-  const pVals=new Set(pg?pg.map(c=>String(c[field])):[]);
+  const nVals=new Set(ng.filter(c=>matchesOthers(c,field)).map(c=>String(c[field])));
+  const pVals=new Set(pg.filter(c=>matchesOthers(c,field)).map(c=>String(c[field])));
+  const pnVals=new Set(png.filter(c=>matchesOthers(c,field)).map(c=>String(c[field])));
   [...sel.options].forEach(o=>{
    let t=o.title;
    if(nVals.has(o.value))t+=' \u{1F7E2}N';
    if(pVals.has(o.value))t+=' \u{1F535}P';
+   if(pnVals.has(o.value))t+=' \u{1F7E2}\u{1F535}PN';
    o.textContent=t;});});}
 function stopPlaying(){pl.pause();playingKey=playingModel=playingCkpt=null;
  plabel.className='';plabel.textContent='click a model row to play';
@@ -597,6 +622,12 @@ function seekAndPlay(pos){
 // re-resolve the CURRENTLY-playing model at a changed picker setting, continue from ph
 function repickCurrent(){
  markAvailability();
+ // Markers depend on ALL THREE current picker values now (matchesOthers, above), not just
+ // (model,ckpt) -- so they must be recomputed on every picker change, including the ones
+ // below that bail out early (paused, no hit, resolves to the clip already playing) and
+ // would otherwise never reach the markPlaying() call at the bottom that used to be the
+ // only thing recomputing them.
+ annotateAvailabilityMarkers();
  if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
  applyPtmLock(playingModel);
  const {pid,cfg,w}=currentSel(playingModel);
