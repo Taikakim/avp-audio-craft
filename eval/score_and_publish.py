@@ -189,7 +189,24 @@ def leg_sanity(pattern, dry, skip) -> Step:
              MANIFEST.read_text().splitlines() if l.strip())
              if e.get("model", "").startswith(pattern)]
     if not clips:
-        return s.done(True, f"no staged clips match '{pattern}'")
+        # "NOTHING TO CHECK" IS NOT "NOTHING IS WRONG". This returned True and let a run
+        # proceed to scoring on 2026-08-13: leg_ingest had just staged 432 dronesweep clips
+        # and appended 432 manifest lines, but the parent's MANIFEST.read_text() here did not
+        # see them yet, so sanity matched zero clips, passed, and DSP + Audiobox then scored
+        # all 432 -- including 177 decoded from blown-up or NaN latents. The gate that exists
+        # precisely to stop that reported OK, for the second time in four days, by a different
+        # route than the first. The same race also made leg_ingest report "0 -> 0 models".
+        #
+        # A pattern with no clips means one of: the ingest has not landed, the pattern is
+        # wrong, or the manifest is stale -- none of which is evidence the audio is sane.
+        # Fail, and say which one it looks like.
+        staged = len(list(MATRIX.glob(f"{pattern}*.m4a")))
+        return s.done(False, f"no manifest clips match '{pattern}' but {staged} {pattern}*.m4a "
+                             f"ARE staged -- the manifest has not caught up (re-run this step) "
+                             f"or the pattern is wrong. Refusing to call unchecked audio sane."
+                      if staged else
+                      f"no staged clips and no manifest clips match '{pattern}' -- nothing to "
+                      f"verify, which is not the same as verified. Check the pattern.")
 
     def verdict(name):
         stem = name.rsplit(".", 1)[0]
@@ -294,8 +311,19 @@ def leg_tables(pattern, dry) -> Step:
 def leg_publish(pattern, dry) -> Step:
     s = Step("publish + verify over HTTP")
     # 1. what genuinely differs -- read itemize flags, never a raw file list
+    #
+    # manifest_live.jsonl NEVER MATCHED '*.json' (rsync/shell globs are literal suffix match --
+    # "jsonl" does not end in "json"), so it silently never appeared in this dry-run diff, never
+    # landed in `todo` below, and never reached step 3's --files-from upload. Found 2026-08-13:
+    # dora_table.html's origin Last-Modified for manifest_live.jsonl was three days stale (Aug
+    # 10) despite this leg reporting success on every publish since -- every dronesweep/subloss
+    # clip on disk was real and correctly staged, but the client-side index that resolves a
+    # click to a file was reading a snapshot from before any of tonight's work existed. The
+    # symptom (rows dimmed grey, clicks producing no audio) looked exactly like a broken
+    # resolver; it was an upload filter silently dropping the one file the resolver reads.
     cmd = (f"rsync -rvzn --itemize-changes --include='*/' --include='*.html' --include='*.json' "
-           f"--include='*.m4a' --include='*.flac' --exclude='*' -e {shlex.quote(SSH)} "
+           f"--include='*.jsonl' --include='*.m4a' --include='*.flac' --exclude='*' "
+           f"-e {shlex.quote(SSH)} "
            f"{shlex.quote(str(STAGE) + '/')} {shlex.quote(HOST + ':' + HOST_EVALS)}")
     rc, out = run(cmd)                       # stderr NOT silenced: a failure must not look empty
     if rc != 0:
