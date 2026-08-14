@@ -50,6 +50,14 @@ VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 # construction, and a stem-keyed sidecar would MISS the __variant aug crops. (If richer
 # tiered captions are wanted later, that's a follow-up needing a __variant-aware key_fn.)
 BS=${BS:-4}; FRAMES=${FRAMES:-2048}; PREC=${PREC:-fp32}; LR=${LR:-8e-5}; EPOCHS=${EPOCHS:-60}; CKEVERY=${CKEVERY:-5}
+# WARMUP_FRAC / GRAD_CLIP_MODE (2026-08-15, Kim direct): both empty by default -> byte-
+# identical to the original recipe (--warmup-steps stays 0, --grad-clip-mode stays "norm"
+# with --gradient_clip_val unset -> disabled). Set WARMUP_FRAC=0.05 GRAD_CLIP_MODE=agc for
+# the EMA+warmup+AGC stabilization recipe (replaces the earlier wd0.1+global-norm-clip
+# combo -- AGC is "the gentler alternative to broad weight decay", train_lora.py's own
+# --grad-clip-mode help).
+WARMUP_FRAC=${WARMUP_FRAC:-}
+GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-}
 RUNTAG=${RUNTAG:-}
 NAME=fullft_avp_aug${RUNTAG:+_${RUNTAG}}
 RUN=${SCRATCH}/runs/${NAME}
@@ -115,6 +123,11 @@ fi
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 RESUME=""; [ -n "${FATCKPT}" ] && { RESUME="--resume_ckpt ${FATCKPT}"; echo "[avp-aug] resuming from ${FATCKPT}"; }
 
+EXTRA_FLAGS=""
+[ -n "'"${WARMUP_FRAC}"'" ] && EXTRA_FLAGS="${EXTRA_FLAGS} --warmup-frac '"${WARMUP_FRAC}"'"
+[ -n "'"${GRAD_CLIP_MODE}"'" ] && EXTRA_FLAGS="${EXTRA_FLAGS} --grad-clip-mode '"${GRAD_CLIP_MODE}"'"
+[ -n "${EXTRA_FLAGS}" ] && echo "[avp-aug] extra flags:${EXTRA_FLAGS}"
+
 echo "[rank ${SLURM_PROCID}/${SLURM_NTASKS}] node=$(hostname) local=${SLURM_LOCALID} TRAIN fullft_avp_aug"
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base --full-finetune \
@@ -126,7 +139,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --lr '"${LR}"' --batch_size '"${BS}"' \
   --frames '"${FRAMES}"' --beat-aware-crop \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
-  ${RESUME} \
+  ${RESUME} ${EXTRA_FLAGS} \
   --num_workers 6 --seed 1 --no_demos --logger csv \
   --name '"${NAME}"' 2>&1 | tee -a '"${RUN}"'/train_rank${SLURM_PROCID}.log
 '
