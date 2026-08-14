@@ -80,7 +80,7 @@ def main():
     # .analyze(), per its own docstring), so DEFAULT_PROMPTS itself stays untouched.
     genre_prompts = None
     if a.genre_hint:
-        genre_prompts = {pt: f"This track is from the '{a.genre_hint}' genre. {DEFAULT_PROMPTS[pt]}"
+        genre_prompts = {pt: f"This track's genre is: {a.genre_hint}. {DEFAULT_PROMPTS[pt]}"
                           for pt in ptypes}
         print(f"[caption] genre-hint mode: '{a.genre_hint}'", flush=True)
 
