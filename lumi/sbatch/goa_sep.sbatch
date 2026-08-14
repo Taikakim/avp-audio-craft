@@ -31,8 +31,8 @@ SCRATCH=/scratch/project_465003186
 CODE=${PROJ}/code
 SIF=${PROJ}/containers/sa3.sif
 VENV=${SCRATCH}/goa_offload_venv
-ARCHIVE=${SCRATCH}/goa_archive
-OUT=${SCRATCH}/goa_archive_stems
+ARCHIVE=${ARCHIVE:-${SCRATCH}/goa_archive}
+OUT=${OUT:-${SCRATCH}/goa_archive_stems}
 MODELD=${PROJ}/models/bs-roformer
 mkdir -p "${OUT}/shards"
 
