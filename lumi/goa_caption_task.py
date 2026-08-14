@@ -48,6 +48,10 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--prompts", default=os.environ.get("PROMPT_TYPES", "full"),
                     help="comma-sep DEFAULT_PROMPTS keys")
+    ap.add_argument("--genre-hint", default=os.environ.get("GENRE_HINT"),
+                    help="known genre to give Music Flamingo as ground truth instead of "
+                         "asking it to guess (e.g. a niche/regional tag it wouldn't infer "
+                         "on its own) -- prepended to each selected prompt's text")
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
     archive = Path(a.archive)
@@ -71,6 +75,14 @@ def main():
     from classification.music_flamingo_transformers import MusicFlamingoTransformers, DEFAULT_PROMPTS
     for pt in ptypes:
         assert pt in DEFAULT_PROMPTS, f"unknown prompt type {pt!r} (have {list(DEFAULT_PROMPTS)})"
+    # genre-hint mode: give the genre as ground truth rather than asking Flamingo to guess
+    # it -- built once per prompt type, passed as `prompt=` (overrides `prompt_type=` in
+    # .analyze(), per its own docstring), so DEFAULT_PROMPTS itself stays untouched.
+    genre_prompts = None
+    if a.genre_hint:
+        genre_prompts = {pt: f"This track is from the '{a.genre_hint}' genre. {DEFAULT_PROMPTS[pt]}"
+                          for pt in ptypes}
+        print(f"[caption] genre-hint mode: '{a.genre_hint}'", flush=True)
 
     use_fa2 = os.environ.get("MF_USE_FA2", "0") == "1"   # multitorch-image experiment:
     # flash_attention_2 is a SEPARATE transformers branch from sdpa — may engage where
@@ -107,7 +119,8 @@ def main():
         try:
             src, truncated = caption_source(p)
             try:
-                caps = {pt: mf.analyze(src, prompt_type=pt) for pt in ptypes}
+                caps = {pt: mf.analyze(src, prompt=genre_prompts[pt] if genre_prompts else None,
+                                        prompt_type=pt) for pt in ptypes}
             finally:
                 # clear on FAIL too — an OOM leaves 20+ GiB of fragmented reservations
                 # that cascade into the NEXT track's failure (probe: rank 5's 2nd OOM
@@ -116,6 +129,7 @@ def main():
             (jdir / f"{key(p)}.json").write_text(json.dumps(
                 {"key": key(p), "rel": str(p.relative_to(archive)), "path": str(p),
                  "captions": caps, "model": "nvidia/music-flamingo-hf bf16",
+                 "genre_hint": a.genre_hint,
                  "truncated_to_s": MAX_SEC if truncated else None,
                  "wall_s": round(time.time() - t0, 1)}))
             n_ok += 1
