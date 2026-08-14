@@ -16,12 +16,14 @@ select,button{font:inherit;color:inherit}
 #playpause{flex:0 0 auto;width:52px;height:52px;border-radius:12px;border:2px solid #3a3d48;
  background:#181820;color:#9ab;font-size:22px;display:flex;align-items:center;justify-content:center}
 #playpause.paused{border-color:#fa5;background:#2a2013;color:#fc9}
-#qsel{flex:1 1 auto;background:#1a1a22;border:1px solid #333844;border-radius:10px;color:#cde;
- padding:10px 12px;font-size:15px;min-height:52px}
-#abrow{display:flex;gap:10px;padding:8px 10px 4px}
+#qdisplay{padding:6px 14px 2px;text-align:center}
+#qprogress{color:#678;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+#qtext{color:#cde;font-size:16px;line-height:1.35;margin-top:2px;min-height:44px}
+#abrow{display:flex;gap:8px;padding:8px 10px 4px}
 .abbtn{flex:1;min-height:76px;border-radius:14px;border:2px solid #3a3d48;background:#181820;
  color:#9ab;font-size:26px;font-weight:700;letter-spacing:.05em}
 .abbtn.chosen{border-color:#5d9;background:#173322;color:#8f8}
+.abbtn-even{font-size:16px;letter-spacing:.03em;color:#89a}
 #status{text-align:center;color:#789;font-size:12px;min-height:16px;padding:2px 0}
 #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:10px}
 .rate-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px;transition:opacity .15s}
@@ -50,16 +52,14 @@ select,button{font:inherit;color:inherit}
 <div id="hdr">
  <select id="lensel"><option>loading…</option></select>
  <button id="playpause" title="pause / resume">&#9208;</button>
- <select id="qsel">
-  <option value="top_end">more precise top end? (less harshness/noise)</option>
-  <option value="spectral_image">more precise spectral image? (less noisy/glitchy)</option>
-  <option value="production">overall better produced sound?</option>
-  <option value="structure">more coherent structure? (flow of phrases/sections)</option>
-  <option value="interesting" selected>more interesting? (creative/unique)</option>
- </select>
+</div>
+<div id="qdisplay">
+ <div id="qprogress"></div>
+ <div id="qtext"></div>
 </div>
 <div id="abrow">
  <button class="abbtn" id="btnA">A</button>
+ <button class="abbtn abbtn-even" id="btnEven">EVEN</button>
  <button class="abbtn" id="btnB">B</button>
 </div>
 <div id="status"></div>
@@ -220,15 +220,36 @@ function buildRow(row,slot){
  }
 }
 buildRow(rowA,'A');buildRow(rowB,'B');
-const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB');
-const qsel=document.getElementById('qsel'),lensel=document.getElementById('lensel');
+const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB'),btnEven=document.getElementById('btnEven');
+const lensel=document.getElementById('lensel');
 const npEl=document.getElementById('nowplaying'),statusEl=document.getElementById('status');
+const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('qprogress');
+
+// Kim 2026-08-15: "obligatory to answer everything" -- cycle through all 5 questions per
+// pair instead of picking one from a dropdown. Each answer is still one tap (still
+// "immediate"), it just automatically advances to the next question rather than the next
+// pair, so every pair now yields data on every dimension instead of whichever one the
+// picker happened to be set to.
+const QUESTIONS=[
+ {id:'top_end',text:'more precise top end? (less harshness/noise)'},
+ {id:'spectral_image',text:'more precise spectral image? (less noisy/glitchy)'},
+ {id:'production',text:'overall better produced sound?'},
+ {id:'structure',text:'more coherent structure? (flow of phrases/sections)'},
+ {id:'interesting',text:'more interesting? (creative/unique)'},
+];
+let qIndex=0;
+function showQuestion(){
+ if(qIndex>=QUESTIONS.length){qTextEl.textContent='all questions answered';qProgEl.textContent='';return;}
+ qTextEl.textContent=QUESTIONS[qIndex].text;
+ qProgEl.textContent='question '+(qIndex+1)+' / '+QUESTIONS.length;
+}
 
 let curPid,curLenKey,curA,curB,roundState;
 function resetRound(){
- roundState={ratedA:false,ratedB:false,abAnswered:false};
+ roundState={ratedA:false,ratedB:false};
+ qIndex=0;showQuestion();
  [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
- btnA.classList.remove('chosen');btnB.classList.remove('chosen');
+ btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
 }
 function updateUI(){
  rowA.classList.toggle('inactive',active!=='A');
@@ -238,7 +259,25 @@ function updateUI(){
  npEl.textContent=active;
 }
 const EP='/files/ratings.php';
-function post(body){fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>{});}
+// Kim 2026-08-15 (the question-cycle change): a round now fires up to 7 POSTs (2 enjoyment +
+// 5 ab) instead of 3, in quick succession by design ("still immediate to answer"). Fired
+// concurrently+fire-and-forget, some raced the server's per-IP rate limit and were silently
+// dropped -- fetch() only rejects on network failure, never on a non-2xx status, so a 429
+// response was indistinguishable from success to the old code. Serialize through one queue
+// (guarantees no two requests race each other) and retry on failure/429 with backoff, so nothing
+// gets lost regardless of how fast the taps come in.
+let postQueue=Promise.resolve();
+function post(body){postQueue=postQueue.then(()=>postOnce(body));}
+async function postOnce(body,attempt){
+ attempt=attempt||0;
+ let r;
+ try{r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+ catch(e){r=null;}
+ if((!r||!r.ok)&&attempt<6){
+  await new Promise(res=>setTimeout(res,250));
+  return postOnce(body,attempt+1);
+ }
+}
 function rateSlot(slot,val,btn){
  const e=slot==='A'?curA:curB;
  const row=slot==='A'?rowA:rowB;
@@ -249,24 +288,29 @@ function rateSlot(slot,val,btn){
  maybeAdvance();
 }
 function chooseAB(choice,btn){
- btnA.classList.remove('chosen');btnB.classList.remove('chosen');
+ if(qIndex>=QUESTIONS.length)return;   // already finished this pair's cycle -- ignore stray taps
+ btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
  btn.classList.add('chosen');
- roundState.abAnswered=true;
- post({type:'ab',question_id:qsel.value,prompt_id:curPid,length:curLenKey,
+ const q=QUESTIONS[qIndex];
+ post({type:'ab',question_id:q.id,prompt_id:curPid,length:curLenKey,
   model_a:curA.model,ckpt_a:curA.ckpt,cfg_a:curA.cfg,w_a:curA.w,file_a:curA.file,
   model_b:curB.model,ckpt_b:curB.ckpt,cfg_b:curB.cfg,w_b:curB.w,file_b:curB.file,choice});
- maybeAdvance();
+ qIndex++;
+ setTimeout(()=>{                       // brief flash of the chosen answer, then the next question
+  btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
+  showQuestion();
+  maybeAdvance();
+ },220);
 }
 btnA.onclick=()=>chooseAB('A',btnA);
+btnEven.onclick=()=>chooseAB('EVEN',btnEven);
 btnB.onclick=()=>chooseAB('B',btnB);
-qsel.value=localStorage.getItem('rate_q')||'interesting';
-qsel.onchange=()=>localStorage.setItem('rate_q',qsel.value);
 
-// Kim 2026-08-14: no manual "next" control -- once both tracks are rated AND the AB
-// question is answered, load a fresh random pair automatically. Random sampling, so
+// Kim 2026-08-14: no manual "next" control -- once both tracks are rated AND every question
+// in the cycle is answered, load a fresh random pair automatically. Random sampling, so
 // there is nothing meaningful for a "next" button to skip past.
 function maybeAdvance(){
- if(roundState.ratedA&&roundState.ratedB&&roundState.abAnswered){
+ if(roundState.ratedA&&roundState.ratedB&&qIndex>=QUESTIONS.length){
   statusEl.textContent='nice — next pair…';
   setTimeout(loadNewPair,550);
  }

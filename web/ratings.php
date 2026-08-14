@@ -5,6 +5,7 @@
 //     a technical-failure flag, not a real score of zero -- keep it out of any mean/median.
 //   POST {type:'ab', question_id, prompt_id, length,
 //         model_a, ckpt_a, cfg_a, w_a, file_a, model_b, ckpt_b, cfg_b, w_b, file_b, choice}
+//     choice: 'A' | 'B' | 'EVEN' (Kim 2026-08-15, "closely matching ones")
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
 //   GET  (anything else)          write_only:true, no data
 //
@@ -37,7 +38,9 @@ $RATE   = $DATA . '/rate';
 $SALTF  = $DATA . '/salt';
 $TOKENF = $DATA . '/export_token';
 $MAX_STR = 200;
-$RATE_SECONDS = 0.5;   // a round fires 3 quick POSTs by hand; short enough not to trip on normal use
+// 2026-08-15: was 0.5 -- a round fires up to 7 POSTs now (2 enjoyment + 5 ab, question-cycle
+// change), and the client retries on 429 anyway, so this only needs to deter genuine flooding.
+$RATE_SECONDS = 0.15;
 
 $QUESTIONS = ['top_end', 'spectral_image', 'production', 'structure', 'interesting'];
 
@@ -120,7 +123,7 @@ if ($method === 'POST') {
         $model_a = clean_str($in['model_a'] ?? '', $MAX_STR); $ckpt_a = clean_str($in['ckpt_a'] ?? '', $MAX_STR);
         $model_b = clean_str($in['model_b'] ?? '', $MAX_STR); $ckpt_b = clean_str($in['ckpt_b'] ?? '', $MAX_STR);
         $file_a = (string)($in['file_a'] ?? ''); $file_b = (string)($in['file_b'] ?? '');
-        if (!in_array($question_id, $QUESTIONS, true) || !in_array($choice, ['A', 'B'], true)
+        if (!in_array($question_id, $QUESTIONS, true) || !in_array($choice, ['A', 'B', 'EVEN'], true)
             || $model_a === '' || $ckpt_a === '' || $model_b === '' || $ckpt_b === '' || $prompt_id === ''
             || !valid_file($file_a) || !valid_file($file_b)
             || !valid_num($in['cfg_a'] ?? null, 0, 100) || !valid_num($in['w_a'] ?? null, 0, 100)
