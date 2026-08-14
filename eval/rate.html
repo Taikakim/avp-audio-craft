@@ -13,6 +13,9 @@ select,button{font:inherit;color:inherit}
 #hdr{display:flex;gap:8px;padding:10px 10px 6px;align-items:center}
 #lensel{flex:0 0 auto;background:#1a1a22;border:1px solid #333844;border-radius:8px;color:#9ab;
  padding:8px 10px;font-size:13px;min-height:40px}
+#playpause{flex:0 0 auto;width:52px;height:52px;border-radius:12px;border:2px solid #3a3d48;
+ background:#181820;color:#9ab;font-size:22px;display:flex;align-items:center;justify-content:center}
+#playpause.paused{border-color:#fa5;background:#2a2013;color:#fc9}
 #qsel{flex:1 1 auto;background:#1a1a22;border:1px solid #333844;border-radius:10px;color:#cde;
  padding:10px 12px;font-size:15px;min-height:52px}
 #abrow{display:flex;gap:10px;padding:8px 10px 4px}
@@ -44,6 +47,7 @@ select,button{font:inherit;color:inherit}
 
 <div id="hdr">
  <select id="lensel"><option>loading…</option></select>
+ <button id="playpause" title="pause / resume">&#9208;</button>
  <select id="qsel">
   <option value="top_end">more precise top end? (less harshness/noise)</option>
   <option value="spectral_image">more precise spectral image? (less noisy/glitchy)</option>
@@ -127,17 +131,31 @@ audioA.loop=true;audioB.loop=true;audioA.preload='auto';audioB.preload='auto';
 let active='A';
 function cur(){return active==='A'?audioA:audioB;}
 function other(){return active==='A'?audioB:audioA;}
+// Kim 2026-08-14: "there should be a way to stop playback" -- a dedicated button rather than
+// overloading the center gesture further (a third hold-still-vs-hold-drag distinction would be
+// easy to mis-trigger one-handed/while driving, which is exactly the context this page is for).
+const ppBtn=document.getElementById('playpause');
+let isPaused=false;
+function setPaused(p){
+ isPaused=p;
+ if(isPaused){cur().pause();}
+ else{const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}
+ ppBtn.innerHTML=isPaused?'&#9654;':'&#9208;';
+ ppBtn.classList.toggle('paused',isPaused);
+}
+ppBtn.onclick=()=>setPaused(!isPaused);
 function setPairAudio(a,b){
  audioA.pause();audioB.pause();
  audioA.src='model_matrix/'+a.file;audioB.src='model_matrix/'+b.file;
  audioA.currentTime=0;audioB.currentTime=0;
  active='A';
- const p=audioA.play();if(p&&p.catch)p.catch(()=>{});
+ setPaused(false);   // a fresh pair always starts playing, regardless of the previous pair's state
 }
 function switchActive(){
  const c=cur(),n=other();
  n.currentTime=c.currentTime;
- c.pause();n.play();
+ c.pause();
+ if(!isPaused){const pr=n.play();if(pr&&pr.catch)pr.catch(()=>{});}
  active=active==='A'?'B':'A';
  updateUI();
 }
@@ -168,7 +186,10 @@ function endGesture(e){
  if(pStart===null)return;
  const elapsed=performance.now()-pStart,dx=Math.abs((e.clientX||pStartX)-pStartX);
  if(!scrubMode&&elapsed<100&&dx<12){switchActive();}
- else if(scrubMode){cur().play();centerEl.classList.remove('scrubbing');}
+ else if(scrubMode){
+  if(!isPaused){const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}   // stay paused if it was deliberate
+  centerEl.classList.remove('scrubbing');
+ }
  pStart=null;scrubMode=false;
 }
 centerEl.addEventListener('pointerup',endGesture);
