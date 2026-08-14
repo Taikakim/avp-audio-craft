@@ -1,6 +1,8 @@
 <?php
 // ratings.php — /files/evals/rate.html's backend (WINTERMUTE, 2026-08-14).
 //   POST {type:'enjoyment', model, ckpt, prompt_id, cfg, w, length, file, rating}
+//     rating: 1-5 = enjoyment; 0 = "so broken it isn't meaningful to rate" (Kim 2026-08-15),
+//     a technical-failure flag, not a real score of zero -- keep it out of any mean/median.
 //   POST {type:'ab', question_id, prompt_id, length,
 //         model_a, ckpt_a, cfg_a, w_a, file_a, model_b, ckpt_b, cfg_b, w_b, file_b, choice}
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
@@ -104,7 +106,7 @@ if ($method === 'POST') {
         $rating = $in['rating'] ?? null;
         if ($model === '' || $ckpt === '' || $prompt_id === '' || !valid_file($file)
             || !valid_num($in['cfg'] ?? null, 0, 100) || !valid_num($in['w'] ?? null, 0, 100)
-            || !in_array($rating, [1, 2, 3, 4, 5], true)) {
+            || !in_array($rating, [0, 1, 2, 3, 4, 5], true)) {
             http_response_code(400); echo json_encode(['error' => 'invalid enjoyment payload']); exit;
         }
         $rec = ['ts' => time(), 'iso' => gmdate('c'), 'ip' => $ih, 'type' => 'enjoyment',
