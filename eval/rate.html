@@ -1,0 +1,274 @@
+<!doctype html><html><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Rate</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{background:#0f0f13;color:#cde;font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ display:flex;flex-direction:column;min-height:100vh;
+ padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+ user-select:none;touch-action:manipulation}
+select,button{font:inherit;color:inherit}
+#hdr{display:flex;gap:8px;padding:10px 10px 6px;align-items:center}
+#lensel{flex:0 0 auto;background:#1a1a22;border:1px solid #333844;border-radius:8px;color:#9ab;
+ padding:8px 10px;font-size:13px;min-height:40px}
+#qsel{flex:1 1 auto;background:#1a1a22;border:1px solid #333844;border-radius:10px;color:#cde;
+ padding:10px 12px;font-size:15px;min-height:52px}
+#abrow{display:flex;gap:10px;padding:8px 10px 4px}
+.abbtn{flex:1;min-height:76px;border-radius:14px;border:2px solid #3a3d48;background:#181820;
+ color:#9ab;font-size:26px;font-weight:700;letter-spacing:.05em}
+.abbtn.chosen{border-color:#5d9;background:#173322;color:#8f8}
+#status{text-align:center;color:#789;font-size:12px;min-height:16px;padding:2px 0}
+#stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:10px}
+.rate-row{display:flex;gap:10px;justify-content:center;width:100%;max-width:420px;transition:opacity .15s}
+.rate-row.inactive{opacity:.28}
+.rate-btn{width:60px;height:60px;border-radius:50%;border:2px solid #3a3d48;background:#181820;
+ color:#9ab;font-size:22px;font-weight:600}
+.rate-btn:disabled{cursor:default}
+.rate-btn.chosen{border-color:#5b9dd9;background:#132a3a;color:#9cf}
+#center{width:150px;height:150px;border-radius:50%;border:3px solid #445;background:radial-gradient(circle at 35% 30%,#2a2a36,#161620);
+ display:flex;align-items:center;justify-content:center;position:relative;touch-action:none}
+#center.scrubbing{border-color:#fa5}
+#nowplaying{position:absolute;top:-26px;color:#789;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+#glyph{font-size:44px;color:#9ab;pointer-events:none}
+#bar{width:120px;height:4px;background:#2a2a34;border-radius:2px;position:absolute;bottom:20px;overflow:hidden}
+#fill{height:100%;background:#5b9dd9;width:0%}
+#hint{color:#556;font-size:11.5px;text-align:center;max-width:280px;line-height:1.5}
+#overlay{position:fixed;inset:0;background:#0f0f13;display:flex;align-items:center;justify-content:center;z-index:10}
+#startbtn{min-height:64px;padding:0 32px;border-radius:14px;border:2px solid #5d9;background:#173322;color:#9f9;font-size:20px;font-weight:600}
+#startbtn:disabled{opacity:.4;border-color:#445;background:#181820;color:#789}
+</style></head><body>
+
+<div id="overlay"><button id="startbtn" disabled>loading…</button></div>
+
+<div id="hdr">
+ <select id="lensel"><option>loading…</option></select>
+ <select id="qsel">
+  <option value="top_end">more precise top end? (less harshness/noise)</option>
+  <option value="spectral_image">more precise spectral image? (less noisy/glitchy)</option>
+  <option value="production">overall better produced sound?</option>
+  <option value="structure">more coherent structure? (flow of phrases/sections)</option>
+  <option value="interesting" selected>more interesting? (creative/unique)</option>
+ </select>
+</div>
+<div id="abrow">
+ <button class="abbtn" id="btnA">A</button>
+ <button class="abbtn" id="btnB">B</button>
+</div>
+<div id="status"></div>
+
+<div id="stage">
+ <div class="rate-row" id="rowA"></div>
+ <div id="center">
+  <div id="nowplaying">A</div>
+  <div id="glyph">&#9654;</div>
+  <div id="bar"><div id="fill"></div></div>
+ </div>
+ <div class="rate-row" id="rowB"></div>
+ <div id="hint">tap the circle to switch tracks (same moment, blind) &middot; hold + drag to scrub</div>
+</div>
+
+<script>
+// ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
+const LENGTH_CLUSTERS=[24,48,95,190,380];
+function lengthBucket(e){
+ if((e.duration_mode||'std')!=='native') return {key:'std',label:'20s (grid)'};
+ const d=parseFloat(e.duration||0);
+ let best=LENGTH_CLUSTERS[0],bd=Infinity;
+ for(const c of LENGTH_CLUSTERS){const diff=Math.abs(d-c);if(diff<bd){bd=diff;best=c;}}
+ return {key:'nat'+best,label:'~'+best+'s (native)'};
+}
+// PTM clips are only ever rendered at cfg1/w1 (Kim 2026-08-14: "obviously for post-trained
+// clips they will be silently falling back to a CFG of one") -- so eligibility is per-model:
+// the global cfg7/w1 for ordinary rows, cfg1/w1 for the model's own _ptm siblings. Both sides
+// still land in the SAME (prompt,length) pool, so a base row and its _ptm sibling can be
+// paired against each other exactly like any other two rows.
+function eligible(e){
+ const isPtm=String(e.model||'').endsWith('_ptm');
+ const cfg=parseFloat(e.cfg),w=parseFloat(e.strength);
+ return isPtm?(cfg===1&&w===1):(cfg===7&&w===1);
+}
+let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+async function loadManifest(){
+ const r=await fetch('model_matrix/manifest_live.jsonl',{cache:'no-store'});
+ const txt=await r.text();
+ const out={};
+ for(const ln of txt.split('\n')){
+  if(!ln.trim())continue;
+  let e;try{e=JSON.parse(ln);}catch(_){continue;}
+  if(!eligible(e))continue;
+  const pid=String(e.prompt_id);
+  const {key,label}=lengthBucket(e);
+  out[key]=out[key]||{label,byPrompt:{}};
+  out[key].byPrompt[pid]=out[key].byPrompt[pid]||new Map();
+  out[key].byPrompt[pid].set(e.model+'|'+e.ckpt,
+   {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file});
+ }
+ pools=out;
+}
+function bucketHasPairs(b){return Object.values(b.byPrompt).some(m=>m.size>=2);}
+function pickPair(bucket){
+ const cands=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
+ if(!cands.length)return null;
+ const [pid,m]=cands[Math.floor(Math.random()*cands.length)];
+ const arr=[...m.values()];
+ let i=Math.floor(Math.random()*arr.length),j;
+ do{j=Math.floor(Math.random()*arr.length);}while(j===i);
+ const pair=[arr[i],arr[j]];
+ if(Math.random()<0.5)pair.reverse();
+ return {pid,a:pair[0],b:pair[1]};
+}
+
+// ── PLAYBACK: two preloaded elements for instant gapless A/B switching (the core repeated
+// gesture here, unlike dora_table/model_matrix's occasional single-swap click) ────────────
+const audioA=new Audio(),audioB=new Audio();
+audioA.loop=true;audioB.loop=true;audioA.preload='auto';audioB.preload='auto';
+let active='A';
+function cur(){return active==='A'?audioA:audioB;}
+function other(){return active==='A'?audioB:audioA;}
+function setPairAudio(a,b){
+ audioA.pause();audioB.pause();
+ audioA.src='model_matrix/'+a.file;audioB.src='model_matrix/'+b.file;
+ audioA.currentTime=0;audioB.currentTime=0;
+ active='A';
+ const p=audioA.play();if(p&&p.catch)p.catch(()=>{});
+}
+function switchActive(){
+ const c=cur(),n=other();
+ n.currentTime=c.currentTime;
+ c.pause();n.play();
+ active=active==='A'?'B':'A';
+ updateUI();
+}
+
+// ── GESTURE: tap(<100ms, <12px movement) = switch; hold+drag = scrub ───────────────────
+const centerEl=document.getElementById('center'),fillEl=document.getElementById('fill');
+let pStart=null,pStartX=0,pStartT=0,scrubMode=false;
+centerEl.addEventListener('pointerdown',e=>{
+ pStart=performance.now();pStartX=e.clientX;scrubMode=false;
+ pStartT=cur().currentTime;
+ centerEl.setPointerCapture(e.pointerId);
+});
+centerEl.addEventListener('pointermove',e=>{
+ if(pStart===null)return;
+ const dx=e.clientX-pStartX,elapsed=performance.now()-pStart;
+ if(!scrubMode&&(elapsed>120||Math.abs(dx)>12)){
+  scrubMode=true;cur().pause();centerEl.classList.add('scrubbing');
+ }
+ if(scrubMode){
+  const c=cur(),dur=c.duration||20;
+  const dt=(dx/window.innerWidth)*dur;
+  const nt=Math.max(0,Math.min(dur-0.05,pStartT+dt));
+  audioA.currentTime=nt;audioB.currentTime=nt;
+  fillEl.style.width=(100*nt/dur)+'%';
+ }
+});
+function endGesture(e){
+ if(pStart===null)return;
+ const elapsed=performance.now()-pStart,dx=Math.abs((e.clientX||pStartX)-pStartX);
+ if(!scrubMode&&elapsed<100&&dx<12){switchActive();}
+ else if(scrubMode){cur().play();centerEl.classList.remove('scrubbing');}
+ pStart=null;scrubMode=false;
+}
+centerEl.addEventListener('pointerup',endGesture);
+centerEl.addEventListener('pointercancel',endGesture);
+[audioA,audioB].forEach(a=>a.addEventListener('timeupdate',()=>{
+ if(a!==cur()||scrubMode)return;
+ const d=a.duration||0;if(d)fillEl.style.width=(100*a.currentTime/d)+'%';
+}));
+
+// ── RATINGS + A/B UI ─────────────────────────────────────────────────────────────────
+const rowA=document.getElementById('rowA'),rowB=document.getElementById('rowB');
+function buildRow(row,slot){
+ for(let i=1;i<=5;i++){
+  const b=document.createElement('button');
+  b.className='rate-btn';b.textContent=i;
+  b.onclick=()=>rateSlot(slot,i,b);
+  row.appendChild(b);
+ }
+}
+buildRow(rowA,'A');buildRow(rowB,'B');
+const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB');
+const qsel=document.getElementById('qsel'),lensel=document.getElementById('lensel');
+const npEl=document.getElementById('nowplaying'),statusEl=document.getElementById('status');
+
+let curPid,curLenKey,curA,curB,roundState;
+function resetRound(){
+ roundState={ratedA:false,ratedB:false,abAnswered:false};
+ [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
+ btnA.classList.remove('chosen');btnB.classList.remove('chosen');
+}
+function updateUI(){
+ rowA.classList.toggle('inactive',active!=='A');
+ rowB.classList.toggle('inactive',active!=='B');
+ [...rowA.children].forEach(b=>b.disabled=active!=='A');
+ [...rowB.children].forEach(b=>b.disabled=active!=='B');
+ npEl.textContent=active;
+}
+const EP='/files/ratings.php';
+function post(body){fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>{});}
+function rateSlot(slot,val,btn){
+ const e=slot==='A'?curA:curB;
+ const row=slot==='A'?rowA:rowB;
+ [...row.children].forEach(b=>b.classList.remove('chosen'));
+ btn.classList.add('chosen');
+ roundState[slot==='A'?'ratedA':'ratedB']=true;
+ post({type:'enjoyment',model:e.model,ckpt:e.ckpt,prompt_id:curPid,cfg:e.cfg,w:e.w,length:curLenKey,file:e.file,rating:val});
+ maybeAdvance();
+}
+function chooseAB(choice,btn){
+ btnA.classList.remove('chosen');btnB.classList.remove('chosen');
+ btn.classList.add('chosen');
+ roundState.abAnswered=true;
+ post({type:'ab',question_id:qsel.value,prompt_id:curPid,length:curLenKey,
+  model_a:curA.model,ckpt_a:curA.ckpt,cfg_a:curA.cfg,w_a:curA.w,file_a:curA.file,
+  model_b:curB.model,ckpt_b:curB.ckpt,cfg_b:curB.cfg,w_b:curB.w,file_b:curB.file,choice});
+ maybeAdvance();
+}
+btnA.onclick=()=>chooseAB('A',btnA);
+btnB.onclick=()=>chooseAB('B',btnB);
+qsel.value=localStorage.getItem('rate_q')||'interesting';
+qsel.onchange=()=>localStorage.setItem('rate_q',qsel.value);
+
+// Kim 2026-08-14: no manual "next" control -- once both tracks are rated AND the AB
+// question is answered, load a fresh random pair automatically. Random sampling, so
+// there is nothing meaningful for a "next" button to skip past.
+function maybeAdvance(){
+ if(roundState.ratedA&&roundState.ratedB&&roundState.abAnswered){
+  statusEl.textContent='nice — next pair…';
+  setTimeout(loadNewPair,550);
+ }
+}
+function loadNewPair(){
+ const bucket=pools[lensel.value];
+ if(!bucket){statusEl.textContent='no data at this length';return;}
+ const picked=pickPair(bucket);
+ if(!picked){statusEl.textContent='no pairs available at this length yet';return;}
+ curPid=picked.pid;curA=picked.a;curB=picked.b;curLenKey=lensel.value;
+ resetRound();
+ setPairAudio(curA,curB);
+ updateUI();
+ statusEl.textContent='';
+}
+lensel.onchange=loadNewPair;
+
+function populateLengthSelect(){
+ const keys=Object.keys(pools).filter(k=>bucketHasPairs(pools[k]));
+ keys.sort((a,b)=>{if(a==='std')return -1;if(b==='std')return 1;return parseInt(a.slice(3))-parseInt(b.slice(3));});
+ lensel.innerHTML='';
+ for(const k of keys){const o=document.createElement('option');o.value=k;o.textContent=pools[k].label;lensel.appendChild(o);}
+}
+
+// ── INIT: manifest loads in the background; playback only ever starts from the real tap
+// on #startbtn, so mobile autoplay policy is satisfied once, and the single persistent
+// audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
+const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
+loadManifest().then(()=>{
+ populateLengthSelect();
+ if(!lensel.options.length){startbtn.textContent='no eligible clips found';return;}
+ startbtn.disabled=false;startbtn.textContent='tap to begin';
+}).catch(()=>{startbtn.textContent='failed to load — reload the page';});
+startbtn.onclick=()=>{overlay.style.display='none';loadNewPair();};
+</script>
+</body></html>
