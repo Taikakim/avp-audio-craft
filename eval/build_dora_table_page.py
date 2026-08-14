@@ -567,15 +567,23 @@ function annotateAvailabilityMarkers(){
  const mk=modelKey(playingModel);
  const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt)||[];
  // P (and PN below) only make sense from the non-ptm side ("an alternate POST-TRAINED
- // render exists"). When mk is already ptm-active (an intrinsic _ptm row, or the checkbox
- // forcing the suffix), there is no alternate post-trained render to offer -- you're
- // already on it -- so the mcGroup-style base<->_ptm swap would instead match the BASE
- // model's cells and mislabel "the base model also has this value" as blue P. Kim,
- // 2026-08-13: P lit up on nearly every prompt while playing
+ // render exists"). When the ROW ITSELF is intrinsically ptm (isPtmModel(playingModel), NOT
+ // isPtmModel(mk)), there is no alternate post-trained render to offer -- you're already on
+ // it with no way back short of clicking a different row -- so the mcGroup-style base<->_ptm
+ // swap would instead match the BASE model's cells and mislabel "the base model also has
+ // this value" as blue P. Kim, 2026-08-13: P lit up on nearly every prompt while playing
  // winning_avpaug10_t512_a45_fp32_ptm, because the base family has near-full grid coverage.
- // Suppress P (and PN) outright once already ptm-active.
- const isPtm=isPtmModel(mk);
- const pg=isPtm?[]:cellsByMC.get(mk+'_ptm\x01'+playingCkpt)||[];
+ // Suppress P (and PN) outright in that case.
+ //
+ // Gating on isPtmModel(mk) instead (mk = modelKey(playingModel), which ALSO gains the _ptm
+ // suffix whenever the pptm CHECKBOX is on) was a second bug Kim caught 2026-08-14: checking
+ // the post-trained box on an ordinary row is a fully reversible toggle -- P had just told you
+ // this exact prompt/cfg/w has a post-trained alternate, you check the box to go look at it,
+ // and P vanishes the instant you do, on the row it was advertising. The sibling lookup itself
+ // must also key off playingModel, not mk -- mk already carries the checkbox's suffix when the
+ // box is checked, so mk+'_ptm' would double-suffix and silently find nothing.
+ const rawPtm=isPtmModel(playingModel);
+ const pg=rawPtm?[]:cellsByMC.get(playingModel+'_ptm\x01'+playingCkpt)||[];
  // PN (Kim 2026-08-13, "in addition ... if there's native ptm clips" -- confirmed we have
  // them, 464 across the corpus incl. 4 on this exact winning/ptm pair): a render that is
  // BOTH native-length AND post-trained is a distinct third thing from "N exists somewhere"
@@ -587,7 +595,7 @@ function annotateAvailabilityMarkers(){
  // circles beside "PN" (no single glyph renders half-green/half-blue in a plain <option>),
  // additively alongside N/P, not replacing them -- a value can legitimately carry all three
  // if three distinct clips back each claim.
- const png=isPtm?[]:nativeByMC&&nativeByMC.get(mk+'_ptm\x01'+playingCkpt)||[];
+ const png=rawPtm?[]:nativeByMC&&nativeByMC.get(playingModel+'_ptm\x01'+playingCkpt)||[];
  // Kim 2026-08-13, "every dropdown must consider all of the current settings": a value only
  // counts as an alternate for THIS axis if the render also matches what's currently picked
  // on the OTHER two axes -- e.g. cfg=4 only lights up green if a native render exists at
