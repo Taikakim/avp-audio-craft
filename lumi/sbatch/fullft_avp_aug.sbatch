@@ -74,7 +74,7 @@ if [ ! -d "${FLASH}/latents_avp" ]; then
 fi
 NCROP=$(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l)
 echo "[avp-aug] latents_avp (base+×8): ${NCROP} crops (expect ~2394)  image=${SIF}"
-echo "[avp-aug] BS=${BS} FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY}"
+echo "[avp-aug] BS=${BS} FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_FRAC=${WARMUP_FRAC:-off} GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-off} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
 
 # ── DDP: Pattern 2 (--gpus-per-task=1) — IDENTICAL to #68's proven multitorch launch.
 #    Each rank is cgroup-pinned to ONE GCD, so model.to("cuda") at load_model (line 130,

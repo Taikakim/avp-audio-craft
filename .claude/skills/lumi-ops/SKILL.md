@@ -336,6 +336,17 @@ own tail. Per-task tracebacks: `<runroot>/hq_logs/j*-t*.err`. Same family: `$(da
 - rc lies BOTH ways: a fully-successful job reports **FAILED** if the script's last command is
   a false `[ cond ] && echo warning` (probe 20422698: 72/72 artifacts perfect, state FAILED).
   End scripts with `if…fi` or an unconditional echo, never a bare conditional.
+- **`VAR=val sbatch script.sh` env-var overrides give ZERO submit-time confirmation they
+  landed** (2026-08-15, Kim: "I'm not sure if all of the arguments got passed" — a fair worry,
+  `Submitted batch job N` tells you nothing about what config it's actually running). The
+  mechanism itself is standard/reliable (sbatch defaults to `--export=ALL`, forwarding its own
+  process env — which the bash prefix-assignment sets — to the job), but there's no built-in
+  echo of it. **Every sbatch MUST echo its fully-resolved config (every overridable var, one
+  line, near the top, before the srun)** so `tail`/`grep` on the `.out` is a real answer, not a
+  guess — `fullft_avp_aug.sbatch`'s `echo "[avp-aug] BS=... WARMUP_FRAC=${WARMUP_FRAC:-off} ..."`
+  is the pattern (note the `:-off`/`:-none` fallback on optional vars — an unset var still prints
+  something, doesn't just vanish from the line). Check it FIRST, before waiting on training
+  progress, whenever an override-heavy submit feels uncertain.
 
 Budget: `lumi-allocations` on LUMI; standard-g bills **whole node × walltime** (8 GCD-h/h).
 
@@ -357,6 +368,14 @@ a node spin-up.
   "No such file or directory". Use ONE source dir + `--include`/`--exclude` filters
   (`--include='<dir>/' --include='epoch=[4-7]-*.ckpt' --exclude='*' --prune-empty-dirs`), or
   separate commands.
+- **Never put a brace-expansion `{a,b}` in an rsync DESTINATION** (2026-08-15). The LOCAL bash
+  shell expands `dest/{scripts,stable_audio_3}/` into TWO separate arguments before rsync ever
+  sees them — and rsync's rule is "every arg except the last is a source." The intended
+  destination silently becomes an extra bogus SOURCE, and the real destination shrinks to just
+  the last brace element. Symptom: `sent N bytes` looks like success, but the file you actually
+  needed (e.g. `train_lora.py`) never lands where you think — a sbatch's own code-freshness
+  guard (`grep -q -- "--flag" .../train_lora.py || FATAL`) is what caught it, not the rsync
+  output itself. Use one rsync command per destination directory, no braces, ever.
 - Conditional pulls: epoch-range include patterns make rsync self-answering — the dry-run
   listing shows exactly what exists remotely (e.g. "did this run reach ep7?").
 - A fat `epoch=N.ckpt` (vs slim `.weights.ckpt`) marks a run's **terminal** epoch; pull fat only
