@@ -50,6 +50,15 @@ VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 # construction, and a stem-keyed sidecar would MISS the __variant aug crops. (If richer
 # tiered captions are wanted later, that's a follow-up needing a __variant-aware key_fn.)
 BS=${BS:-4}; FRAMES=${FRAMES:-2048}; PREC=${PREC:-fp32}; LR=${LR:-8e-5}; EPOCHS=${EPOCHS:-60}; CKEVERY=${CKEVERY:-5}
+# GA (2026-08-15, post-mortem on job 21148122's OOM): --use-ema is hardcoded ON below, and
+# EMA's second full-precision model copy is fixed overhead the ORIGINAL bs4/fp32/T2048
+# default absorbed (proven: WORKLOG "full-FT + fp32 + T2048 + bs4 + FusionOpt + EMA FITS on
+# one 64GB GCD") but an override to BS=8 at bf16/T1024 did NOT, despite looking cheaper on
+# paper (shorter T, half-precision) -- OOM'd in practice, mechanism not fully understood.
+# Default GA=1 (unchanged behavior for anyone not touching BS). When raising the EFFECTIVE
+# batch, prefer BS=2 + GA=<effective/2> over a larger raw BS -- that's the one pattern
+# that's actually survived tonight (the T4096 mixed run, BS=2 GA=2).
+GA=${GA:-1}
 # WARMUP_FRAC / GRAD_CLIP_MODE (2026-08-15, Kim direct): both empty by default -> byte-
 # identical to the original recipe (--warmup-steps stays 0, --grad-clip-mode stays "norm"
 # with --gradient_clip_val unset -> disabled). Set WARMUP_FRAC=0.05 GRAD_CLIP_MODE=agc for
@@ -74,7 +83,7 @@ if [ ! -d "${FLASH}/latents_avp" ]; then
 fi
 NCROP=$(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l)
 echo "[avp-aug] latents_avp (base+×8): ${NCROP} crops (expect ~2394)  image=${SIF}"
-echo "[avp-aug] BS=${BS} FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_FRAC=${WARMUP_FRAC:-off} GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-off} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
+echo "[avp-aug] BS=${BS} GA=${GA} (eff batch $((BS*GA))) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_FRAC=${WARMUP_FRAC:-off} GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-off} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
 
 # ── DDP: Pattern 2 (--gpus-per-task=1) — IDENTICAL to #68's proven multitorch launch.
 #    Each rank is cgroup-pinned to ONE GCD, so model.to("cuda") at load_model (line 130,
@@ -136,7 +145,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --optimizer fusion \
   --use-ema --ema-beta 0.9999 \
   --base_precision '"${PREC}"' \
-  --lr '"${LR}"' --batch_size '"${BS}"' \
+  --lr '"${LR}"' --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --frames '"${FRAMES}"' --beat-aware-crop \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   ${RESUME} ${EXTRA_FLAGS} \

@@ -37,7 +37,12 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 K=${K:-20}
 BASIS_NAME=${BASIS_NAME:-melody_subspace15_selective_v3.npz}
-BS=${BS:-4}; FRAMES=${FRAMES:-1024}; PREC=${PREC:-fp32}; LR=${LR:-1e-4}; EPOCHS=${EPOCHS:-20}; CKEVERY=${CKEVERY:-2}
+BS=${BS:-2}; GA=${GA:-2}; FRAMES=${FRAMES:-1024}; PREC=${PREC:-fp32}; LR=${LR:-1e-4}; EPOCHS=${EPOCHS:-20}; CKEVERY=${CKEVERY:-2}
+# BS/GA changed 2026-08-15 after job 21148584 OOM'd at the original BS=4 (see
+# fullft_avp_aug.sbatch's matching post-mortem comment -- EMA is hardcoded ON below and its
+# memory overhead isn't safely covered by just any batch size that "looks small enough" on
+# paper). BS=2 GA=2 (effective 4, same as before) is the one pattern proven surviving
+# tonight (the T4096 mixed run).
 WARMUP_FRAC=${WARMUP_FRAC:-0.05}
 GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-agc}
 RUNTAG=${RUNTAG:-}
@@ -62,7 +67,7 @@ if [ ! -d "${FLASH}/latents_sa3" ]; then
 fi
 NCROP=$(ls ${FLASH}/latents_sa3/*.npy 2>/dev/null | wc -l)
 echo "[subloss-k20] latents_sa3 (goa): ${NCROP} crops (expect ~5400)  image=${SIF}"
-echo "[subloss-k20] K=${K} BASIS=${BASIS_NAME} BS=${BS} FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_FRAC=${WARMUP_FRAC} GRAD_CLIP_MODE=${GRAD_CLIP_MODE} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
+echo "[subloss-k20] K=${K} BASIS=${BASIS_NAME} BS=${BS} GA=${GA} (eff batch $((BS*GA))) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_FRAC=${WARMUP_FRAC} GRAD_CLIP_MODE=${GRAD_CLIP_MODE} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
 
 srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
@@ -115,7 +120,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --grad-clip-mode '"${GRAD_CLIP_MODE}"' \
   --subspace-loss-basis '"${BASIS}"' --subspace-loss-weight '"${K}"' \
   --base_precision '"${PREC}"' \
-  --lr '"${LR}"' --batch_size '"${BS}"' \
+  --lr '"${LR}"' --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --frames '"${FRAMES}"' --beat-aware-crop \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   ${RESUME} \
