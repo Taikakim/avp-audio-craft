@@ -304,6 +304,7 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
  display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px}
 .pbar b{color:#8cf;white-space:nowrap}
 .pbar label{color:#9a9;white-space:nowrap}
+.pbar label.unavail{opacity:.4}
 .pbar select{max-width:220px}
 #plabel{color:#9a9;flex:1;min-width:180px}
 #plabel.playing{color:#7ed}#plabel.nomatch{color:#f76}
@@ -514,6 +515,18 @@ const isHidden=m=>HIDE.some(p=>String(m).startsWith(p));
 const CB='model_matrix/';
 const SB='ssm/';
 const pl=document.getElementById('pl');pl.loop=true;
+// userPaused (Kim 2026-08-15: "switching away from the post trained by declicking the
+// checkbox does not return to playing the normal clip") -- distinct from pl.paused, which
+// also reads true for a brief async window during every INTERNAL src-swap a picker/checkbox
+// change makes (pl.pause();pl.src=...;seekAndPlay(ph) -- the play() inside seekAndPlay hasn't
+// resolved yet). repickCurrent() used to gate its resolve-and-swap on pl.paused directly: check
+// post-trained, then uncheck it again before that first swap's play() has resolved, and the
+// uncheck's repickCurrent() call reads pl.paused===true (a LEFTOVER from the checked
+// transition's own pause()) and bails out before ever resolving/swapping to the base clip --
+// a race, not a permanent break, which is why it looked like only "switching away" failed.
+// userPaused is set ONLY by the actual play/pause button, so a picker/checkbox change always
+// re-resolves; only a genuine user pause suppresses auto-resume.
+let userPaused=false;
 function cellKey(m,c,pid,cfg,w){return m+''+c+''+pid+''+cfg+''+w}
 // post-trained toggle (Kim 2026-07-23, corrected 2026-07-23 later same day: cfg7 was
 // wrong, PT-native is cfg1/8-step): the PT-medium base only rendered at cfg1/w1 (it
@@ -653,10 +666,18 @@ function markPlaying(){
 // blue letter P" a plain <select> can actually produce. Recomputed on every markPlaying()
 // call (i.e. on every play/stop/re-pick) so the markers always describe the model actually
 // selected, not a stale one.
+// DARKEN pptm/pnative when there's nothing for them to switch TO (Kim 2026-08-15: "darken
+// native/ptm checkbox if none available for clip" -- missing entirely before this; the two
+// checkboxes stayed fully clickable-but-inert with no visual cue, unlike the N/P dropdown
+// markers below which already flag per-option availability).
+function setCheckboxAvail(el,avail){
+ el.disabled=!avail;
+ const lbl=el.closest('label');if(lbl)lbl.classList.toggle('unavail',!avail);}
 function annotateAvailabilityMarkers(){
  const axes=[[pprompt,'pid'],[pcfg,'cfg'],[pstrength,'w']];
  if(!playingModel||!cellsByMC){
   axes.forEach(([sel])=>{[...sel.options].forEach(o=>{o.textContent=o.title;});});
+  setCheckboxAvail(pptm,true);setCheckboxAvail(pnative,true);
   return;}
  const mk=modelKey(playingModel);
  const ng=nativeByMC&&nativeByMC.get(mk+'\x01'+playingCkpt)||[];
@@ -678,6 +699,14 @@ function annotateAvailabilityMarkers(){
  // box is checked, so mk+'_ptm' would double-suffix and silently find nothing.
  const rawPtm=isPtmModel(playingModel);
  const pg=rawPtm?[]:cellsByMC.get(playingModel+'_ptm\x01'+playingCkpt)||[];
+ // Coarser than the per-option N/P markers below (not matchesOthers-filtered to the current
+ // cfg/w/prompt) on purpose: checking either box can itself reveal different cfg/w/prompt
+ // combos (native and ptm grids are sparse), so "any cell at all for this model-ckpt" is the
+ // right question for a checkbox, not "a cell at exactly what's currently selected". ng is
+ // read against mk (the CURRENTLY ACTIVE variant, base or _ptm per pptm's own state), so
+ // native's availability re-derives correctly the instant post-trained is toggled.
+ setCheckboxAvail(pptm,!rawPtm&&pg.length>0);
+ setCheckboxAvail(pnative,ng.length>0);
  // PN (Kim 2026-08-13, "in addition ... if there's native ptm clips" -- confirmed we have
  // them, 464 across the corpus incl. 4 on this exact winning/ptm pair): a render that is
  // BOTH native-length AND post-trained is a distinct third thing from "N exists somewhere"
@@ -709,7 +738,7 @@ function annotateAvailabilityMarkers(){
    if(pVals.has(o.value))t+=' \u{1F535}P';
    if(pnVals.has(o.value))t+=' \u{1F7E2}\u{1F535}PN';
    o.textContent=t;});});}
-function stopPlaying(){pl.pause();playingKey=playingModel=playingCkpt=null;
+function stopPlaying(){pl.pause();userPaused=true;playingKey=playingModel=playingCkpt=null;
  plabel.className='';plabel.textContent='click a model row to play';
  document.getElementById('ssmpanel').style.display='none';document.getElementById('pdl').style.display='none';markPlaying();}
 // SAME-PLAYHEAD A/B (Kim 2026-07-23): switching checkpoint (row) or setting (picker) mid-play
@@ -730,7 +759,7 @@ function repickCurrent(){
  // would otherwise never reach the markPlaying() call at the bottom that used to be the
  // only thing recomputing them.
  annotateAvailabilityMarkers();
- if(!playingModel||pl.paused)return;                 // nothing playing -> just re-dim rows
+ if(!playingModel||userPaused)return;                 // nothing playing / user hit pause -> just re-dim rows
  applyPtmLock(playingModel);
  const {pid,cfg,w}=currentSel(playingModel);
  const hit=resolveCell(modelKey(playingModel),playingCkpt,pid,cfg,w);
@@ -745,6 +774,7 @@ function repickCurrent(){
  noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
 function playRow(tr){
  if(!cellIndex)return;   // manifest still loading -- ignore clicks until the index is ready
+ userPaused=false;       // clicking a row is always "play this" -- clears any earlier pause
  applyPtmLock(tr.dataset.model);        // lock (and visibly pin to 1/1) BEFORE resolving, so a
                                         // clicked ptm row's own resolution sees the pinned values
  const {pid,cfg,w}=currentSel(tr.dataset.model);
@@ -784,7 +814,7 @@ pnative.addEventListener('change',repickCurrent);
 // transport: play/pause + seek + time, matching model_matrix.html's player
 const fmtT=s=>{s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')};
 let seeking=false;
-pp.addEventListener('click',()=>{if(pl.paused){if(pl.src)pl.play()}else pl.pause()});
+pp.addEventListener('click',()=>{if(pl.paused){userPaused=false;if(pl.src)pl.play()}else{userPaused=true;pl.pause()}});
 pl.addEventListener('play',()=>pp.innerHTML='&#9208;');
 pl.addEventListener('pause',()=>pp.innerHTML='&#9654;');
 pl.addEventListener('waiting',()=>{document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.add('rowloading'));});
