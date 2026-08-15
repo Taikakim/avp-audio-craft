@@ -3,7 +3,8 @@
 # named runs on ONE node (8 GCDs, one arm each), open-ended (NO --epochs cap — Kim: "maybe
 # it's interesting to go on past 60, for style transfers overtrained models can be very
 # good... continue from last epoch of each"). Combines THREE previously-separate campaigns
-# that share one deployment (sa3.sif, same MIOpen/env pattern, same latents_avp/latents_sa3):
+# that share one deployment (lumi-multitorch-full — MIGRATED from sa3.sif, see below —
+# same latents_avp/latents_sa3):
 #   arms 0-3: fp32cmp DoRA arms      (precedent: fp32cmp_continue_15e.sbatch, DRAFT/unconfirmed-run)
 #   arms 4-5: winning DoRA arms      (precedent: efp_fp32_winning_continue40.sbatch)
 #   arms 6-7: fullft_t256 full-FT    (precedent: efp_fullft_short.sbatch; NEW this run: EMA+AGC)
@@ -39,14 +40,36 @@
 #     matching the ORIGINAL fullft_t256 recipe's batch=4 exactly -- same optimizer-step
 #     semantics, just split across 2 micro-batches instead of one).
 #
-# ── DEPLOYMENT: sa3.sif (NOT multitorch) -- matches ALL THREE original campaigns' own
-# choice, kept as-is rather than switching containers mid-run (a Lightning ckpt is
-# container-agnostic, but the DiT/MIOpen shape-cache behavior differs across images and
-# these arms already proved their shapes hang-free on sa3.sif across their original epochs
-# -- MIOPEN_FIND_MODE=2's known hang-on-a-cache-gap risk (SKILL.md Containers section) is
-# a per-SHAPE risk, and these exact shapes already have FindDb entries from the original
-# run, so the gap that causes the hang shouldn't exist here. Inherited choice, not
-# re-litigated.
+# ── DEPLOYMENT: MIGRATED to lumi-multitorch-full (2026-08-15, Kim direct) -- these three
+# campaigns were the last ones still on legacy sa3.sif, purely by inherited precedent, not
+# because sa3.sif is actually better for them. sa3.sif's flash-attn wheel targets gfx1201
+# (the desktop RDNA4 card) and CANNOT run on LUMI's gfx90a (MI250X) -- architecturally
+# incompatible, not a missing pip install (docs/lumi-transition-plan.md flagged this exact
+# gap before tonight). lumi-multitorch-full ships a REAL prebuilt gfx90a flash-attn 2.8.4,
+# already proven in production (the caption pipeline, WORKLOG 2026-07-30) and already the
+# deployment every OTHER script this session uses (fullft_avp_aug.sbatch,
+# subloss_goa_k20_fullft.sbatch, fullft_mixed_avp_goa_t4096.sbatch). Verified BEFORE
+# migrating, not assumed: varlen kernels (flash_attn_varlen_func) confirmed importable in
+# sa3_train_venv_mt on LUMI (Kim ran the check, printed 1) -- so this gets both plain FA2 AND
+# varlen for free, no from-scratch CK compile needed (that was the OTHER option in the
+# transition plan, GPU_ARCHS=gfx90a rebuild -- not required since LUMI's own image already
+# has it).
+#
+# RESIDUAL UNVERIFIED RISK: no script this session has yet run --adapter_type dora-rows on
+# multitorch (every prior multitorch script here was --full-finetune) -- arms 0-5 (DoRA) are
+# the first test of that combo. Should just work (stable-audio-3's LoRA/DoRA code is pure
+# PyTorch, no extra deps beyond what full-FT already needs, and PYTHONPATH points at the same
+# ${CODE}/stable-audio-3 regardless of container) but WATCH the first "LoRA config: rank=..."
+# print + first successful step on arms 0-5 rather than assuming zero risk.
+#
+# MIOpen env DROPPED vs the sa3.sif version: MIOPEN_FIND_MODE=2 (the FAST-mode hang-on-a-
+# cache-gap bug is a sa3.sif/ROCm-6.2 MIOpen defect -- multitorch's newer MIOpen doesn't have
+# it, confirmed by every multitorch script tonight running clean without it) and
+# MIOPEN_DISABLE_CACHE=1 (multitorch scripts redirect MIOPEN_USER_DB_PATH/
+# MIOPEN_CUSTOM_CACHE_DIR to a real bound /tmp instead, which avoids the Lustre-SQLite-open
+# failure without disabling caching outright -- same pattern as every other multitorch
+# script). FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ADDED (must be set before `import torch`/
+# `flash_attn` or the wrapper silently routes to the slow Triton-AMD fallback instead of CK).
 #
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
@@ -64,11 +87,14 @@ PROJ=/project/project_465003186
 SCRATCH=/scratch/project_465003186
 FLASH=/flash/project_465003186
 CODE=${PROJ}/code
-SIF=${PROJ}/containers/sa3.sif
+SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
+VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 MODELS=${PROJ}/models
 mkdir -p "${FLASH}"
 
 # ── code-refresh verification (fails loud, before the node spins up) ──
+[ -n "${SIF}" ] || { echo "[continue8] FATAL: no lumi-multitorch-full image"; exit 1; }
+[ -f "${VENV}/bin/activate" ] || { echo "[continue8] FATAL: ${VENV} missing"; exit 1; }
 for FLAG in "--resume_ckpt" "base_precision" "use-ema" "grad-clip-mode"; do
   grep -q -- "${FLAG}" "${CODE}/stable-audio-3/scripts/train_lora.py" \
     || { echo "[continue8] FATAL: train_lora.py missing '${FLAG}' — working-tree code refresh needed (never git archive)"; exit 1; }
@@ -92,14 +118,15 @@ SCRATCH=/scratch/project_465003186
 FLASH=/flash/project_465003186
 CODE=${PROJ}/code
 
+VENV='"${VENV}"'; source ${VENV}/bin/activate
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
-export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor
-export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
-export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
+export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor${PYTHONPATH:+:${PYTHONPATH}}
+export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
 export MIOPEN_USER_DB_PATH=/tmp/miopen-${ARM} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-${ARM}
-export TRITON_CACHE_DIR=/tmp/triton-${ARM}
+export TRITON_CACHE_DIR=/tmp/triton-${ARM} PYTORCH_TUNABLEOP_ENABLED=0
 rm -rf "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"; mkdir -p "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
+ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
 
 # ── arm table — the 8 EXACT named runs Kim asked for ──
 case ${ARM} in
