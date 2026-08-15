@@ -25,7 +25,6 @@
 # both places. Re-submit this same script to keep extending past a walltime timeout
 # (FATCKPT glob below auto-picks up wherever each arm left off — same auto-resume pattern
 # as every other continue script this session).
-EPOCHS_TARGET=${EPOCHS_TARGET:-100000}
 #
 # ── EMA + AGC now added to arms 6-7 ONLY (fullft_t256, Kim direct 2026-08-15) — NOT arms
 # 0-5: EMA is full-finetune ONLY, train_lora.py force-disables it for DoRA/LoRA regardless
@@ -99,6 +98,7 @@ PROJ=/project/project_465003186
 SCRATCH=/scratch/project_465003186
 FLASH=/flash/project_465003186
 CODE=${PROJ}/code
+EPOCHS_TARGET=${EPOCHS_TARGET:-100000}
 SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 MODELS=${PROJ}/models
