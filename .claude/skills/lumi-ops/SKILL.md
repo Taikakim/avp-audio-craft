@@ -52,6 +52,39 @@ var is in the submitting shell's own environment by the time `--export=ALL` read
 parsing involved). Verify by grepping the job's own log for the value it actually printed —
 same "trust the artifact, not the launch command" reflex as everything else in this doc.
 
+**The prefix-env-var fix above doesn't fully solve a SPACE-containing value — a second, separate
+trap lives inside the sbatch script's own `bash -c '...'` quote-splicing (2026-08-15).** The
+common idiom for threading an outer variable into the inner container's single-quoted command —
+`export FOO='"${FOO:-}"'` — correctly protects the value from the SBATCH/shell layer, but if the
+composed line doesn't ALSO wrap the value in literal quotes, the INNER bash word-splits it on
+whitespace when it parses `export FOO=<value with spaces>`. Symptom: `export FOO=a b c` — inner
+bash sees `export` with THREE arguments (`FOO=a`, `b`, `c`), assigns only `FOO=a`, and silently
+tries (harmlessly) to export bare names `b`/`c`. Same genre-hint value, still truncated, this
+time to just the first word, even after the `--export=` fix above. **Real fix: wrap the
+interpolated value in literal quotes in the composed output** — `export FOO="'"${FOO}"'"` (note
+the doubled quote character right after `FOO=`) — verified locally with `bash -c 'export
+FOO="'"${FOO}"'" ; echo "[$FOO]"'` before trusting it on a real job. **More robust than fixing
+the quoting by hand: skip env-vars/`--export=` entirely for any multi-word value and read it from
+a file instead** — `FOO_FILE=/scratch/.../hint.txt` (a plain path, immune to both traps above),
+`FOO=$(cat "${FOO_FILE}")` inside the top-level script (outside any nested quoting), then the
+already-fixed splice pattern threads the now-known-good `$FOO` through safely. This is what
+`goa_caption.sbatch`'s `GENRE_HINT_FILE` does — the file layer sidesteps the whole quoting class
+of bug rather than getting it exactly right by hand.
+
+**Reusing an output directory across two DIFFERENT extraction tools silently zeroes a resumable
+run (2026-08-15).** A tool with skip-if-exists resumability (`_pending()`-style: job is "done" if
+its output path already exists) can't tell the difference between "I already finished this" and
+"something ELSE already wrote a file at this exact path." Ran an ad-hoc converter script into
+`suomisoundi_timeseries/`, then pointed the REAL extractor's `--output-dir` at the same directory
+— every one of 1260 jobs got silently filtered out of the pending queue before ever reaching a
+worker, and because that filtering happens before the done/skipped/failed counters increment, the
+job reports `0 written, 0 skipped, 0 failed` (not even a nonzero skip count) despite `Found 1260
+track folders` printing correctly. Looks like the tool is broken; it's actually working exactly as
+designed against stale data. **Fix: `--overwrite` (or a genuinely fresh output directory) whenever
+two different tools/runs might have touched the same output path.** Same underlying lesson as the
+`--overwrite` flag existing on nearly every batch tool in this codebase — resumability is a feature
+that assumes ONE tool owns that directory, not a safe default across tool changes.
+
 ## Containers — READ THIS FIRST (a full day of debugging came from not knowing it, 2026-08-02)
 
 Which SIF you train in decides whether MIOpen fights you.
