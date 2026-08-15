@@ -2770,6 +2770,12 @@ def build_landing(control, renders):
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).
     _highlights = [
+        ("rate.html", "Blind A/B + enjoyment rating — phone-first",
+         "Same-playhead A/B/EVEN comparison across 5 quality questions (top end, spectral "
+         "image, production, structure, interesting) — must answer all 5 before the next "
+         "pair loads, so every pair yields complete data from the start. Plus a 0-5 "
+         "enjoyment score per clip (0 = technically broken, kept out of any mean/median). "
+         "One-thumb, built for listening on the go."),
         ("xft_distillation.html", "Does a full fine-tune distill to an adapter? — NO",
          "CONTINUITY's SV-spectrum finding: full-DiT fine-tune deltas are near-full-rank "
          "(r1024/67% of dim for 90% energy), so SVD-truncated adapters are glitch. "
