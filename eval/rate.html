@@ -168,11 +168,18 @@ function setPairAudio(a,b){
  active='A';
  setPaused(false);   // a fresh pair always starts playing, regardless of the previous pair's state
 }
+// A deliberate tap always means "let me hear the other one now" -- switching used to
+// respect isPaused and silently reposition which track was "active" without resuming, so a
+// tap while paused looked like nothing happened at all. Kim 2026-08-16: "if the sound is
+// stopped, clicking on the triangle continues playback from where it was on the same clip"
+// -- traced to gesture detection dropping the tap entirely (see endGesture below), and once
+// that's fixed a tap-while-paused needs to actually resume on the NEW track, not stay silent.
 function switchActive(){
  const c=cur(),n=other();
  n.currentTime=c.currentTime;
  c.pause();
- if(!isPaused){const pr=n.play();if(pr&&pr.catch)pr.catch(()=>{});}
+ const pr=n.play();if(pr&&pr.catch)pr.catch(()=>{});
+ isPaused=false;ppBtn.innerHTML='&#9208;';ppBtn.classList.remove('paused');
  active=active==='A'?'B':'A';
  updateUI();
 }
@@ -199,11 +206,20 @@ centerEl.addEventListener('pointermove',e=>{
   fillEl.style.width=(100*nt/dur)+'%';
  }
 });
+// Kim 2026-08-16 ("at least on desktop the user has to click on the triangle to switch,
+// it should be enough to just hit the circle or the triangle"): the old elapsed<100ms gate
+// meant a click that took longer than 100ms to release -- trivially easy with a mouse, since
+// there's no urgency the way a phone tap has -- fell into NEITHER branch (not a tap, since
+// too slow; not a scrub, since scrubMode only ever becomes true via actual pointermove
+// movement) and did nothing at all. Verified live: a 300ms stationary hold-and-release
+// produced zero state change. scrubMode is already the real signal for "did the user drag" --
+// it's set in pointermove the instant real movement/duration crosses the threshold WHILE
+// MOVING, so a release with no movement at all is unambiguously a tap regardless of how long
+// it was held. Dropping the elapsed/dx check here fixes it without weakening scrub detection.
 function endGesture(e){
  if(pStart===null)return;
- const elapsed=performance.now()-pStart,dx=Math.abs((e.clientX||pStartX)-pStartX);
- if(!scrubMode&&elapsed<100&&dx<12){switchActive();}
- else if(scrubMode){
+ if(!scrubMode){switchActive();}
+ else{
   if(!isPaused){const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}   // stay paused if it was deliberate
   centerEl.classList.remove('scrubbing');
  }
@@ -254,7 +270,10 @@ const QUESTIONS=[
 ];
 let qIndex=0;
 function showQuestion(){
- if(qIndex>=QUESTIONS.length){qTextEl.textContent='all questions answered';qProgEl.textContent='';return;}
+ // Kim 2026-08-16: the bare "all questions answered" didn't tell the rater they still need
+ // to score both clips (0-5) before the round advances -- maybeAdvance() gates on ratedA AND
+ // ratedB in addition to the question cycle, so "answered" alone undersold what's left.
+ if(qIndex>=QUESTIONS.length){qTextEl.textContent='All the questions have been answered. Rate the clips to proceed.';qProgEl.textContent='';return;}
  qTextEl.textContent=QUESTIONS[qIndex].text;
  qProgEl.textContent='question '+(qIndex+1)+' / '+QUESTIONS.length;
 }
