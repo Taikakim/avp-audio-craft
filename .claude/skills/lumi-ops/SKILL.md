@@ -29,6 +29,20 @@ his terminal produces `>` continuation prompts and mangles the command. Long pip
 join with `&&`/`;` on one line. If a construct genuinely needs multiple lines (rare),
 write it to a script file and give Kim a one-line `bash <path>` instead.
 
+**`--export=` is comma-delimited — a comma INSIDE a value silently truncates it (2026-08-15).**
+`sbatch --export=ALL,FOO="a, b, c"` looks shell-quoted-safe but isn't: `--export=`'s own
+VAR=value-list parser splits on every comma in the whole argument, including ones inside a
+quoted value, since the quotes only protected the string from the SHELL, not from sbatch's
+internal parsing. Symptom: the value silently truncates at the first comma (`FOO` becomes `"a`
+if that's what the script sees, or an empty/garbage tail) — no error, no warning, just a
+shorter string than intended. Bit a genre-hint value ("suomisoundi, a finnish variant of
+psychedelic trance" → truncated to just "suomisoundi"). **Fix: keep any comma-containing value
+OUT of `--export=` entirely — prefix it as a normal env var instead, and let `--export=ALL`
+inherit it**: `FOO="a, b, c" sbatch --export=ALL,OTHER=val ... script.sbatch` (the prefix-set
+var is in the submitting shell's own environment by the time `--export=ALL` reads it, no comma
+parsing involved). Verify by grepping the job's own log for the value it actually printed —
+same "trust the artifact, not the launch command" reflex as everything else in this doc.
+
 ## Containers — READ THIS FIRST (a full day of debugging came from not knowing it, 2026-08-02)
 
 Which SIF you train in decides whether MIOpen fights you.
