@@ -55,12 +55,17 @@ select,button{font:inherit;color:inherit}
 @keyframes loadspin{to{transform:rotate(360deg)}}
 @keyframes loadflash{0%{border-color:#5d9;opacity:1}50%{border-color:#fff;opacity:1}100%{border-color:#fff;opacity:0}}
 #hint{color:#556;font-size:11.5px;text-align:center;max-width:280px;line-height:1.5}
-#overlay{position:fixed;inset:0;background:#0f0f13;display:flex;align-items:center;justify-content:center;z-index:10}
+#overlay{position:fixed;inset:0;background:#0f0f13;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
 #startbtn{min-height:64px;padding:0 32px;border-radius:14px;border:2px solid #5d9;background:#173322;color:#9f9;font-size:20px;font-weight:600}
 #startbtn:disabled{opacity:.4;border-color:#445;background:#181820;color:#789}
 </style></head><body>
 
-<div id="overlay"><button id="startbtn" disabled>loading…</button></div>
+<div id="overlay">
+ <button id="startbtn" disabled>loading…</button>
+ <p style="color:#556;font-size:11.5px;text-align:center;max-width:260px;margin-top:12px">
+  First load can take a few minutes on a slower connection — it downloads the full track
+  catalog once.</p>
+</div>
 
 <div id="hdr">
  <select id="lensel"><option>loading…</option></select>
