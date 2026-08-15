@@ -272,6 +272,22 @@ still isn't understood, only guessed at.
 - Many short tasks / HQ packing: `lumi/sbatch/native_cells_hq.sbatch` or `fullft_cells_hq.sbatch`
   (post-2026-07-21 fixes) — older templates may still carry the bugs below; diff before reuse.
 
+**Omitting `--epochs` in `train_lora.py` to get "open-ended, no cap" training is a trap
+(2026-08-16, cost a 2h40m node allocation with 6/8 arms doing zero work).** The Trainer
+construction is `max_steps=(-1 if args.epochs else args.steps)` — an omitted `--epochs`
+does NOT mean unlimited, it falls through to `max_steps=args.steps`, and `--steps` defaults
+to **10000**. Every arm gets capped at step 10000 regardless of epoch progress; worse, on a
+**resumed** run any arm whose checkpoint already sits past step 10000 hits that check
+immediately and trains for zero additional steps, silently, for the whole job (looks like a
+normal `COMPLETED 0:0` in `sacct` — no error, no warning in the log). **Fix: pass an
+explicit large `--epochs` (e.g. `100000`) instead of omitting it** — makes `args.epochs`
+truthy (`max_steps=-1`, no step cap) and gives Lightning a concrete `max_epochs` instead of
+`None`, which also sidesteps Lightning's own separate "both `max_epochs` and `max_steps`
+unset → defaults to `max_epochs=1000`" fallback that an omitted `--epochs` would otherwise
+land on ambiguously. **Verify:** after any "open-ended" resume, check that a NEW checkpoint
+epoch actually appears past what was resumed from — a `sacct` `COMPLETED` in under an hour
+on a job meant to run for the full walltime is the tell.
+
 **Non-negotiables in any GPU sbatch** (each cost a real failure):
 - GCD pinning is `export ROCR_VISIBLE_DEVICES=$SLURM_PROCID` **alone**. Adding
   `HIP_VISIBLE_DEVICES` stacks: HIP indexes into the ROCR-filtered 1-GPU list → "No HIP GPUs
