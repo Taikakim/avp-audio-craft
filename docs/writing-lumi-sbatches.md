@@ -173,11 +173,26 @@ to the software). For a single data-parallel model across them:
   rank first, so `cuda:0` *is* the rank's own card. This is image-dependent and has bitten
   real jobs both ways, so **[ADAPT]**: check where your entrypoint calls `.to(cuda)` relative to
   the Lightning device assignment, and smoke-test the launch you chose.
-- **Multi-node** extends Pattern A directly: `--nodes=N --ntasks-per-node=8 --gpus-per-task=1`,
-  still no `--devices`; the framework derives `world_size = N×8` and `MASTER_ADDR` from node 0.
-  If the group hangs at rendezvous, the inter-node fabric env is wrong — check
-  `NCCL_SOCKET_IFNAME` matches the node's Slingshot NICs (`ip -o link | grep hsn` on a compute
-  node), and consider the `torchrun`/c10d launcher.
+- **⚠️ Multi-node does NOT reliably extend Pattern A by just adding `--nodes=N` — verified the
+  hard way (2026-08-15).** The naive extension (`--nodes=N --ntasks-per-node=8
+  --gpus-per-task=1`, still no `--devices`) does not crash or hang — it **silently forms N
+  independent single-node groups instead of one N×8 group**, which is worse than a hang because
+  it looks like it's training. Tell: each rank's framework-level run/logger id (e.g. Lightning's
+  `v_num`) repeats per node instead of being shared cluster-wide — `grep -h 'v_num'
+  */train_rank*.log | sort -u` showing `v_num: 0` on every node-0 rank and `v_num: 1` on every
+  node-1 rank (instead of one value shared by all ranks) is the silent-split signature. Trying to
+  force it by adding `--devices 8 --num_nodes N` fails **louder** instead of fixing it —
+  `MisconfigurationException: You requested gpu: [0..7] But your machine only has: [0]` — because
+  under per-task cgroup pinning every rank's process only ever sees ONE GPU, so `--devices 8` is
+  simply the wrong number to hand the framework in this pattern. **The verified fix path is the
+  `torchrun`/c10d launcher** (`torchrun --nnodes=N --nproc_per_node=8 --rdzv_backend=c10d
+  --rdzv_endpoint=<node0>:<port>` in place of raw `srun` + framework SLURM-env auto-detect — this
+  is CSC's own documented pattern for LUMI multi-node, not something we invented), which was
+  identified but **not yet built/verified** in our stack — treat multi-node as unsolved until it
+  is. If the inter-node fabric itself is the problem (a real hang at rendezvous, not a silent
+  split), check `NCCL_SOCKET_IFNAME` matches the node's Slingshot NICs (`ip -o link | grep hsn`
+  on a compute node) — but confirm you're not looking at the silent-split case first, since that
+  one doesn't hang at all.
 
 **Verify you actually formed ONE coordinated group — do not assume it:**
 - **Un-versioned checkpoints** (a single rank-0 writer). If you see `epoch=…-v1 … -vN` versioned
@@ -244,6 +259,27 @@ Every one of these exits `COMPLETED`. Defend against all of them:
   Fix: `torch.multiprocessing.set_sharing_strategy("file_system")` (shares via `/tmp` files —
   bind `/tmp`) **+ raise `ulimit -n`** in the sbatch. This is a *slow fill* — a short smoke will
   not catch it.
+
+- **EMA (or any technique that holds a second full-precision copy of the model) OOMs at batch
+  sizes that "look small enough" on paper — verified 2026-08-15.** If your training loop keeps
+  an EMA shadow of a full-finetuned model, that is fixed memory overhead **on top of** the
+  training model, independent of batch size or sequence length — a smaller batch or shorter
+  sequence does not shrink it. Two separate EMA+full-finetune jobs OOM'd on plausible-looking
+  configs in one project before this generalized: don't assume the first OOM was a one-off,
+  fix the pattern everywhere the technique is used, not just where it first failed. **The
+  robust fix is `batch_size=2` + gradient accumulation to reach your target effective batch,
+  not a larger raw batch size** — accumulation adds compute time, not a second resident
+  optimizer-adjacent copy, so it's the dimension that's actually free to raise.
+- **A `COMPLETED`/still-running job with an old-looking checkpoint may just be an auto-resume,
+  not real progress (2026-08-15).** If your script auto-resumes from the newest checkpoint in
+  its output dir, and you reuse the same output-dir name across a resubmit after a crash, the
+  "newest checkpoint" you see moments after resubmitting can be a **leftover from the crashed
+  predecessor run**, not new output — check its mtime against the resubmit's actual start time
+  before reading progress into it.
+- **Grepping logs for `nan`/`inf` throws false positives from ordinary words.** Both substrings
+  appear inside common English words that show up in normal log output or generated text —
+  "**inf**erence", "re**inf**orce", etc. A bare `grep -i "nan\|inf"` hit count is not evidence of
+  a real numeric explosion; read the matched lines before concluding anything.
 
 **SMOKE-first discipline.** Run every new config at a tiny step count (e.g. `--steps 40`) and
 read the `.out` for the success markers — files found, steps progressing, all GCDs active, no

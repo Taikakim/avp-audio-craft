@@ -23,6 +23,15 @@ is refused on principle. The working loop:
 
 A double passphrase prompt on scp/rsync is normal, not an error.
 
+**`uan18` (or similar) in Kim's prompt is the LOGIN NODE's own hostname, visible only once
+he's already SSH'd in — it is NOT a resolvable hostname from his local machine (2026-08-15).**
+Any `rsync`/`scp` command targeting LUMI must use `akekim@efp.lumi.csc.fi` and must be run from
+Kim's **local** terminal — never pasted into an already-open LUMI session (`ssh: Could not
+resolve hostname uan18`/`efp.lumi.csc.fi` from inside `uan18` are both real errors from mixing
+up which terminal a command belongs in, not a broken SSH config). If a command you crafted comes
+back with a hostname-resolution error, check whether Kim ran it in the right terminal before
+assuming the command itself is wrong.
+
 **PASTE SPEC (Kim direct 2026-07-23): every command crafted for Kim must be a SINGLE
 LINE.** No backslash continuations, no heredocs, no multi-line loops — pasting those into
 his terminal produces `>` continuation prompts and mangles the command. Long pipelines:
@@ -164,6 +173,41 @@ Five things bit the first `--data_dir` live-encode + fan-out launches; each recu
 `Found N files` (filelist resolved), steps progressing (captions attaching — a reject-flood would raise), all GCDs
 active, **0 `Couldn't load file`**, no OOM. The smoke caught all four above before the ~1-day node run.
 
+## `pre_encode_dataset.py` parallel-shard OOM — UNRESOLVED after 3 fix attempts (2026-08-15)
+
+Running 8 GCD-pinned shards of `pre_encode_dataset.py` on one node (the big-goa preencode,
+`preencode_bigset.sbatch`) has OOM'd **three separate times in a row** (`21073662` →
+`21148858` → `21149732`), each after a different round of fixes. **Do not assume this is
+solved — the root cause is still open.** What's been tried, in order:
+1. **Fix 1 (worker-count):** default `num_workers=min(4, cpu_count())` × 8 parallel shards = up
+   to 32 DataLoader worker processes decoding audio simultaneously through `/dev/shm` on one
+   node → kernel `oom_kill`. Added `torch.multiprocessing.set_sharing_strategy("file_system")`
+   (routes IPC via `/tmp`, not `/dev/shm` — same fix as `train_lora.py`'s live-encode shm bug,
+   §5 above) + an explicit `--num_workers` CLI flag, ran with `--num_workers 1`. **Resubmitted,
+   still OOM'd** (`21148858`) — same kernel oom_kill signature.
+2. **Fix 2 (visibility + duration cap):** the retried job's log showed only ONE truncated line at
+   the point of the kill, because **Python's stdout is block-buffered when piped/redirected** —
+   the real per-file error messages leading up to the OOM were lost, never flushed. Fixed with
+   `python -u` (unbuffered). Separately, hypothesized that `goa_archive`'s "VA - ..." DJ-mix/
+   compilation folders contain very long tracks, and `_ffmpeg_load`'s
+   `subprocess.run(capture_output=True)` buffers the **entire decoded PCM stream** in memory
+   before returning (an 80-min stereo f32 decode ≈ 1.7 GB just for the raw buffer; several
+   shards each landing on one at once is a real node-RAM mechanism) — added a 30-minute decode
+   duration cap to `dataset.py::_ffmpeg_load`. **Resubmitted, still OOM'd** (`21149732`), same
+   truncated-line-at-kill signature, different file/shard. The duration-cap theory has **neither
+   been confirmed nor refuted** — no clear log evidence of duration-cap rejections either way.
+   Manual `ffprobe`/`ffmpeg` CLI tests on the specific reported-failing file (run directly on the
+   login node, no job needed) decoded cleanly in isolation — rules out simple file corruption for
+   that one file, but doesn't explain the OOM under parallel load.
+3. **Not yet tried:** reducing shard parallelism below 8 (fewer simultaneous decodes per node),
+   explicit periodic `/proc/self/status VmRSS` logging per shard to see which one balloons and
+   when, or reconsidering whether ffmpeg buffering is the right theory at all given the lack of
+   confirming log evidence.
+
+**If you pick this up again: don't just resubmit and hope.** Add the RSS-logging instrumentation
+BEFORE another blind resubmit — three OOMs on three different fixes means the actual mechanism
+still isn't understood, only guessed at.
+
 ## Paths (always literal — `$SCRATCH` etc. are NOT set in login shells)
 
 | what | path |
@@ -232,10 +276,25 @@ active, **0 `Couldn't load file`**, no OOM. The smoke caught all four above befo
   SLURM_NTASKS. #68 trains fine with **no `-vN` ckpts**, so on multitorch Pattern 2 forms a
   REAL coordinated group (the "Pattern 2 = N duplicate trainers" warning above was sa3.sif
   smoke 20413874; it does NOT hold on multitorch). **Rule: on multitorch, DDP = Pattern 2
-  (`--gpus-per-task=1`, no `--devices`).** Multi-node extends it: `--nodes=N
-  --ntasks-per-node=8 --gpus-per-task=1`, still no `--devices` (SLURMEnvironment derives
-  world=N*8 + MASTER_ADDR from node 0). Templates fixed: `fullft_avp_aug.sbatch`,
+  (`--gpus-per-task=1`, no `--devices`).** Templates fixed: `fullft_avp_aug.sbatch`,
   `multinode_ddp_smoke.sbatch`.
+- **🔴 CORRECTION (2026-08-15) — "multi-node extends it" above is WRONG. Pattern 2 does NOT
+  scale past one node without extra work; do not retry the naive version.** `--nodes=2
+  --ntasks-per-node=8 --gpus-per-task=1`, no `--devices`, produces **two independent
+  single-node 8-way groups, not one 16-way group** — silent, no crash. Diagnostic: each
+  rank's Lightning logger reports its own `v_num` (`grep -h '\[rank:\|v_num' */train_rank*.log`);
+  a real single group shows one shared `v_num` across every rank, a split shows **`v_num: 0` on
+  node-0 ranks and `v_num: 1` on node-1 ranks** — two independent Trainer instances, each
+  thinking it's the whole job. Adding `--devices 8 --num_nodes ${SLURM_NNODES}` to try to force
+  it does NOT fix this and fails LOUDER instead: `MisconfigurationException: You requested gpu:
+  [0..7] But your machine only has: [0]` — because Pattern 2's cgroup-pinning means every rank's
+  process only ever sees **one** GPU (`torch.cuda.device_count()==1`), so telling Lightning
+  `--devices 8` fails its own validation. **The fix was not built** (dropped for token budget,
+  Kim 2026-08-15) — CSC's own docs (docs.csc.fi/support/tutorials/ml-multi/) prescribe `torchrun
+  --nnodes=N --nproc_per_node=8 --rdzv_backend=c10d --rdzv_endpoint=<node0>:<port>` as the
+  canonical multi-node launcher instead of raw `srun` + SLURMEnvironment auto-detect. **Until
+  someone builds and verifies the torchrun path, treat multi-node SA3 training as unsolved and
+  stick to single-node (8 GCD) runs.**
 - **🔴 FULL-FT LATENT-SCALE RUNAWAY → SPECTRAL DRONE (2026-08-10, CONTINUITY). Do NOT re-chase
   DDP / live-encode / the decoder for this symptom.** Every multitorch FULL-finetune (#68
   `fullft_bigset`, `precision_ladder` — all FusionOpt) decoded to broadband spectral drone on
@@ -255,6 +314,23 @@ active, **0 `Couldn't load file`**, no OOM. The smoke caught all four above befo
   mechanism test: `stable-audio-tools/tests/test_fusion_weight_decay.py`. A/B in flight (job
   20940322): `lumi/sbatch/fullft_wd_ab.sbatch`. NOTE this means #68/#69 as trained are dead — they
   must be relaunched with the fix once the A/B confirms.
+- **🔴 `--use-ema` full-FT OOMs at batch sizes that "look small enough" on paper — the only
+  proven-safe pattern is `batch_size=2` + `accumulate_grad_batches=N`, never a larger raw
+  `--batch_size` (2026-08-15).** EMA holds a **second full-precision copy of the whole trainable
+  model** (`SimpleEMA`/`diffusion_ema.ema_model.*`) alongside the training model — fixed memory
+  overhead that doesn't scale down just because you picked a smaller batch or shorter sequence.
+  Two separate EMA+full-FT jobs OOM'd this way in one night: `21148122` (AVP, T1024, `--batch_size
+  8`, bf16) and, after the first OOM should have been generalized but wasn't, `21148584` (goa K20,
+  T1024, `--batch_size 4` default, fp32) — confirming the failure is systematic to
+  EMA-full-FT-any-nontrivial-batch, not one bad config. The only config that survived a full night
+  of EMA+full-FT runs was `fullft_mixed_avp_goa_t4096.sbatch`'s **`--batch_size 2
+  --accumulate_grad_batches 2`** (effective batch 4, T4096, bf16) — the exact pattern already
+  proven earlier at `efp_fullft_t4096.sbatch`. **Rule: for any full-FT run with `--use-ema`, set
+  `--batch_size 2` and reach your target effective batch via `--accumulate_grad_batches`, never by
+  raising `--batch_size` directly** — even a config that "should" fit (shorter T, lower precision)
+  is not evidence it will, until it's actually run to a checkpoint past the point the OOM'd runs
+  died. `fullft_avp_aug.sbatch` and `subloss_goa_k20_fullft.sbatch` both now default to this
+  pattern (`GA=` var wired to `--accumulate_grad_batches`, echoed in the startup config line).
 - `hq job wait all || true` — under `set -e`, one failed task otherwise kills the script before
   the merge/success-check tail runs.
 - HQ log names `j%{JOB_ID}-t%{TASK_ID}.*` — each `hq submit` is its own job, so `task-%{TASK_ID}`
@@ -362,6 +438,26 @@ own tail. Per-task tracebacks: `<runroot>/hq_logs/j*-t*.err`. Same family: `$(da
   something, doesn't just vanish from the line). Check it FIRST, before waiting on training
   progress, whenever an override-heavy submit feels uncertain.
 
+- **Sanity-checking a job that's still running (2026-08-15) — three checks, not "did it crash".**
+  Kim will periodically ask "has it exploded" for a multi-hour training job; this is the recipe:
+  1. **Checkpoint existence/freshness**: `ls -la <run>/*.ckpt` — but if the RUN dir was reused
+     across a resubmit (same RUNTAG/NAME as a prior OOM'd job), an OLD checkpoint sitting there
+     from BEFORE the resubmit will be auto-resumed and can look like suspiciously fast progress.
+     Compare the ckpt mtime against the job's actual submit/start time before trusting it.
+  2. **NaN/Inf loss — grep, but check the matches, don't trust a hit count.** `grep -Ein "nan|inf"
+     <run>/train_rank0.log` throws false positives: the substrings "inf" and "nan" appear inside
+     ordinary words — **"inference"** (from the ROCm profile warning that's in every log) and
+     **"reinforce"** (a word that shows up in generated captions) both match `inf` with a bare
+     substring grep. Read the matched lines, don't just count them.
+  3. **DDP group health**: `grep -h "\[rank:\|v_num" <run>/train_rank*.log | sort -u` — for a
+     healthy single N-way group you see each rank number (0..N-1) exactly once, no repeats. Rank
+     numbers repeating (e.g. two separate `rank: 0` blocks) is the split-group signature from the
+     multi-node section above. Also cross-check against `epoch=*-v[0-9]*.ckpt` (§ Job scripts
+     above) — duplicate-versioned checkpoints at the SAME step are the other tell of uncoordinated
+     writers, though (confirmed 2026-08-15) they can also occur even with a verified-healthy
+     single group, apparently from the checkpoint callback re-firing — a real but lower-severity
+     wasted-disk issue, not automatically proof of a split.
+
 Budget: `lumi-allocations` on LUMI; standard-g bills **whole node × walltime** (8 GCD-h/h).
 
 ## Code refresh to LUMI — WORKING TREE, never `git archive`
@@ -429,7 +525,13 @@ this order; the real error is almost never in the sacct state.
    This is the per-arm independent-trainer pattern (train_lora falls back to N single-GPU
    trainers under a valid SLURM env).
 
-5. **MIOpen conv-solver HANG on sa3.sif / ROCm 6.2 (job R but frozen, no crash).** After the
+5. **`sbatch: error: Unable to open file <script>` = wrong cwd, not a broken script (2026-08-15).**
+   `sbatch <relative-path>.sbatch` resolves relative to the CURRENT directory — if Kim's shell is
+   sitting in `/scratch/.../renders/lumi` (from a previous `cd`) instead of
+   `/project/.../code`, the same relative path that worked minutes earlier now 404s. Fix: `cd
+   /project/project_465003186/code && sbatch lumi/sbatch/<script>.sbatch` — prefix every submit
+   command with the `cd` so it's cwd-independent, don't assume the shell is still where it was.
+6. **MIOpen conv-solver HANG on sa3.sif / ROCm 6.2 (job R but frozen, no crash).** After the
    fit-loop starts: `MIOpen(HIP): Warning [IsEnoughWorkspace] … Solver <ConvAsmImplicitGemm…Xdlops…>,
    workspace required: 4194304, provided ptr: 0`, then **nothing** — job R, GPU busy, `train.log`
    mtime frozen 30-40+ min. **Root cause (definitive):** the 6.2 MIOpen gfx90a FindDb has a gap for
