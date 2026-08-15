@@ -44,6 +44,8 @@ mkdir -p "${OUT}"
 [ -f "${VENV}/bin/activate" ] || { echo "[preenc] FATAL: ${VENV} missing"; exit 1; }
 [ -d "${BIGSET}" ] || { echo "[preenc] FATAL: ${BIGSET} missing (big goa audio dir)"; exit 1; }
 grep -q -- "--shard" "${CODE}/stable-audio-3/scripts/pre_encode_dataset.py" || { echo "[preenc] FATAL: pre_encode_dataset on LUMI lacks --shard (rsync it)"; exit 1; }
+grep -q -- "--num_workers" "${CODE}/stable-audio-3/scripts/pre_encode_dataset.py" \
+  || { echo "[preenc] FATAL: pre_encode_dataset on LUMI lacks --num_workers (code refresh needed -- job 21073662 OOM'd: 8 GCD-pinned shards x default min(4,cpu_count()) DataLoader workers = up to 32 processes decoding long tracks at once, kernel oom_kill)"; exit 1; }
 echo "[preenc] image=${SIF}  audio=${BIGSET}  out=${OUT}  SS=${SS} (T$((SS/4096)))"
 
 srun --overlap --cpu-bind=none --mpi=none --nodes=1 --ntasks=8 --cpus-per-task=7 \
@@ -65,7 +67,7 @@ ulimit -n 131072 2>/dev/null || true
 echo "[preenc shard ${ARM}] start $(date +%H:%M:%S)"
 python ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
     --model same-l --data_dir '"${BIGSET}"' \
-    --shard ${ARM}/8 --sample_size '"${SS}"' --pad --batch_size 1 \
+    --shard ${ARM}/8 --sample_size '"${SS}"' --pad --batch_size 1 --num_workers 1 \
     --output_path '"${OUT}"' 2>&1 | tail -n +1 | sed "s/^/[shard ${ARM}] /"
 echo "[preenc shard ${ARM}] done $(date +%H:%M:%S)"
 '
