@@ -52,6 +52,18 @@ EPOCHS=${EPOCHS:-8}; CKEVERY=${CKEVERY:-1}
 WARMUP_EPOCHS=${WARMUP_EPOCHS:-0.5}
 WARMUP_FRAC=$(awk -v w="${WARMUP_EPOCHS}" -v e="${EPOCHS}" 'BEGIN{printf "%.6f", w/e}')
 GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-agc}
+# WEIGHT_DECAY (2026-08-15, Kim direct: "the ones we pulled, apparently there's problems"):
+# this script SHIPPED WITHOUT --weight_decay, meaning FusionOpt's spectral_wd defaulted to
+# 0.01 -- the exact value the 2026-08-10 drone-runaway incident diagnosed as too weak for
+# the NS5/Muon orthogonalized update on a full-FT run (MASTER.md/SKILL.md "FULL-FT
+# LATENT-SCALE RUNAWAY" bullet). --grad-clip-mode agc is a DIFFERENT, orthogonal mechanism
+# (per-step gradient magnitude clip) that does nothing to counteract multi-epoch weight-norm
+# creep -- it was never going to fix this. Confirmed via the pulled ep0 z0.npy renders:
+# literal numerical inf at cfg7/cfg16 (cfg1 still mostly sane) -- same CFG-amplified
+# instability shape as the confirmed-corrupted precision_ladder_t256_bf16mixed dronesweep,
+# just caught earlier in the trajectory (ep0 vs its ep9 full collapse). --weight_decay 0.1
+# is the proven fix (routes to spectral_wd, independent of grad-clip-mode -- both apply).
+WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
 RUNTAG=${RUNTAG:-}
 NAME=fullft_mixed_avp_${GOA_DIR}_t4096${RUNTAG:+_${RUNTAG}}
 RUN=${SCRATCH}/runs/${NAME}
@@ -74,7 +86,7 @@ done
 NAVP=$(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l)
 NGOA=$(ls ${FLASH}/${GOA_DIR}/*.npy 2>/dev/null | wc -l)
 echo "[fullft-mixed] latents_avp: ${NAVP} crops, ${GOA_DIR}: ${NGOA} crops (total ~$((NAVP+NGOA)))  image=${SIF}"
-echo "[fullft-mixed] GOA_DIR=${GOA_DIR} BS=${BS} GA=${GA} (eff batch $((BS*GA))) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
+echo "[fullft-mixed] GOA_DIR=${GOA_DIR} BS=${BS} GA=${GA} (eff batch $((BS*GA))) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} WEIGHT_DECAY=${WEIGHT_DECAY} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
 
 srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
@@ -106,6 +118,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --use-ema --ema-beta 0.9999 \
   --warmup-frac '"${WARMUP_FRAC}"' \
   --grad-clip-mode '"${GRAD_CLIP_MODE}"' \
+  --weight_decay '"${WEIGHT_DECAY}"' \
   --base_precision '"${PREC}"' \
   --lr '"${LR}"' --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --frames '"${FRAMES}"' \

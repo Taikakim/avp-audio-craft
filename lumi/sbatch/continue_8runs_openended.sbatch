@@ -181,11 +181,20 @@ case ${FAMILY} in
       "${sc_args[@]}" 2>&1 | tee -a ${RUN}/train_continue_openended.log
     ;;
   fullft)
-    echo "[arm ${ARM}] RESUME ${NAME} full-FT T=${T} BS=2 GA=2 (eff 4) bf16 +EMA+AGC -> ${RUN} (open-ended)"
+    # --weight_decay 0.1 added post-submit (2026-08-15, Kim direct) -- the FIRST version of
+    # this arm shipped without it, defaulting FusionOpt spectral_wd to 0.01 (too weak for
+    # a full-FT run per the 2026-08-10 drone-runaway incident). --grad-clip-mode agc is a
+    # separate, orthogonal mechanism (per-step grad clip) and does nothing to counteract
+    # multi-epoch weight-norm creep -- confirmed via the sibling fullft_mixed_avp_goa_t4096
+    # run pulled ep0 z0.npy renders (literal numerical inf at cfg7/16, same CFG-amplified
+    # instability shape as the confirmed-corrupted precision_ladder_t256_bf16mixed
+    # dronesweep). This arm own progress from job 21155599 first (unfixed) submit should
+    # be checked before trusting its ckpts -- see if it shows the same signature.
+    echo "[arm ${ARM}] RESUME ${NAME} full-FT T=${T} BS=2 GA=2 (eff 4) bf16 +EMA+AGC+WD0.1 -> ${RUN} (open-ended)"
     python ${CODE}/stable-audio-3/scripts/train_lora.py \
       --model medium-base --encoded_dir ${FLASH}/${DS} --save_dir "${RUN}" \
       --full-finetune --optimizer fusion \
-      --use-ema --ema-beta 0.9999 --grad-clip-mode agc \
+      --use-ema --ema-beta 0.9999 --grad-clip-mode agc --weight_decay 0.1 \
       --lr 1e-4 --batch_size 2 --accumulate_grad_batches 2 --frames ${T} --beat-aware-crop \
       --resume_ckpt "${FATCKPT}" --checkpoint_every_epochs 1 \
       --num_workers 6 --seed 1 --no_demos --logger csv --name ${NAME} \
