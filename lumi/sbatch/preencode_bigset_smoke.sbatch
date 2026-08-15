@@ -39,6 +39,11 @@ BIGSET=${BIGSET_DIR:-${SCRATCH}/goa_archive}
 OUT=${OUT:-${SCRATCH}/latents_goa_bigset_smoke}
 SS=${SAMPLE_SIZE:-16777216}          # 2^24 samples = 380.4 s = T4096 latent frames
 SHARD=${SHARD:-0/8}                  # same slice production shard 0 would take
+WORKERS=${WORKERS:-1}                # 0 = in-process, no DataLoader worker subprocess/queue/
+                                      # file_system-sharing-strategy at all -- the isolating test
+                                      # for whether the leak (confirmed worker-only, job 21154320:
+                                      # RSS pid=worker 316GB/62.7%mem vs main pid 2.18GB) needs the
+                                      # multiprocessing path or lives in _ffmpeg_load itself
 mkdir -p "${OUT}"
 
 [ -n "${SIF}" ] || { echo "[preenc-smoke] FATAL: no lumi-multitorch-full image"; exit 1; }
@@ -49,7 +54,7 @@ grep -q -- "_log_rss" "${CODE}/stable-audio-3/scripts/pre_encode_dataset.py" \
   || { echo "[preenc-smoke] FATAL: pre_encode_dataset on LUMI lacks the RSS instrumentation (code refresh needed)"; exit 1; }
 grep -q -- "_log_rss" "${CODE}/stable-audio-3/stable_audio_3/data/dataset.py" \
   || { echo "[preenc-smoke] FATAL: dataset.py on LUMI lacks the RSS instrumentation (code refresh needed)"; exit 1; }
-echo "[preenc-smoke] image=${SIF}  audio=${BIGSET}  out=${OUT}  SS=${SS} (T$((SS/4096)))  SHARD=${SHARD}"
+echo "[preenc-smoke] image=${SIF}  audio=${BIGSET}  out=${OUT}  SS=${SS} (T$((SS/4096)))  SHARD=${SHARD}  WORKERS=${WORKERS}"
 
 srun --overlap --cpu-bind=none --mpi=none --nodes=1 --ntasks=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
@@ -68,7 +73,7 @@ ulimit -n 131072 2>/dev/null || true
 echo "[preenc-smoke] start $(date +%H:%M:%S)"
 python -u ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
     --model same-l --data_dir '"${BIGSET}"' \
-    --shard '"${SHARD}"' --sample_size '"${SS}"' --pad --batch_size 1 --num_workers 1 \
+    --shard '"${SHARD}"' --sample_size '"${SS}"' --pad --batch_size 1 --num_workers '"${WORKERS}"' \
     --output_path '"${OUT}"'
 echo "[preenc-smoke] done $(date +%H:%M:%S)"
 '
