@@ -195,7 +195,14 @@ centerEl.addEventListener('pointerdown',e=>{
 centerEl.addEventListener('pointermove',e=>{
  if(pStart===null)return;
  const dx=e.clientX-pStartX,elapsed=performance.now()-pStart;
- if(!scrubMode&&(elapsed>120||Math.abs(dx)>12)){
+ // Kim 2026-08-16, after the tap-drop fix above made stray movement matter more: "the
+ // scrubbing is activated immediately... because of the mouse moving at all, the clip is
+ // not switched" -- was 120ms, raised to 200ms so a normal mouse click's incidental jitter
+ // (much easier to rack up over more of the gesture than a phone tap ever sees) has more
+ // room before it reads as a deliberate hold. NOTE the OTHER half of this OR, Math.abs(dx)>12,
+ // still triggers scrub INSTANTLY regardless of elapsed if a click's movement alone exceeds
+ // 12px -- if switches are still getting eaten by micro-drags, that's the number to raise next.
+ if(!scrubMode&&(elapsed>200||Math.abs(dx)>12)){
   scrubMode=true;cur().pause();centerEl.classList.add('scrubbing');
  }
  if(scrubMode){
