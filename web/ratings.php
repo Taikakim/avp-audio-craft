@@ -16,7 +16,15 @@
 // free text. No field here can carry an injection payload the way an open comment box could.
 //
 // Security posture otherwise mirrors comment.php: storage outside the webroot, per-IP rate
-// limit, IP hashed+salted (privacy, not raw), append-only JSONL under LOCK_EX.
+// limit, append-only JSONL under LOCK_EX.
+//
+// NO IP ADDRESS IS EVER PERSISTED (2026-08-15, evaluator.html going public: "I record the
+// answers but no IP addresses or any other data" needs to be literally true). ip_hash() is
+// used ONLY to name an ephemeral rate-limit touch-file under $RATE -- that file's mtime is
+// checked and it is never read back as data, never embedded in a stored record, and gets
+// silently overwritten by the next request from the same IP. The salted hash used to exist
+// as an 'ip' field on every $rec below; removed outright rather than merely not-shown, since
+// a field that's stored is data about the rater regardless of whether it's reversible.
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
@@ -101,6 +109,11 @@ if ($method === 'POST') {
     $type = (string)($in['type'] ?? '');
     $prompt_id = clean_str($in['prompt_id'] ?? '', $MAX_STR);
     $length = clean_str($in['length'] ?? '', 20);
+    // Optional page-origin tag (Kim 2026-08-15, evaluator.html going public): lets the
+    // export distinguish public-evaluator responses from internal rate.html ones without
+    // touching anything the rater sees. Free-text-cleaned, not validated against an enum --
+    // an unrecognized value just reads as itself on export, no failure mode either way.
+    $source = clean_str($in['source'] ?? '', 40);
 
     if ($type === 'enjoyment') {
         $model = clean_str($in['model'] ?? '', $MAX_STR);
@@ -112,10 +125,10 @@ if ($method === 'POST') {
             || !in_array($rating, [0, 1, 2, 3, 4, 5], true)) {
             http_response_code(400); echo json_encode(['error' => 'invalid enjoyment payload']); exit;
         }
-        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'ip' => $ih, 'type' => 'enjoyment',
+        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'enjoyment',
                 'model' => $model, 'ckpt' => $ckpt, 'prompt_id' => $prompt_id,
                 'cfg' => (float)$in['cfg'], 'w' => (float)$in['w'], 'length' => $length,
-                'file' => $file, 'rating' => (int)$rating];
+                'file' => $file, 'rating' => (int)$rating, 'source' => $source];
     } elseif ($type === 'ab') {
         global $QUESTIONS;
         $question_id = (string)($in['question_id'] ?? '');
@@ -130,11 +143,11 @@ if ($method === 'POST') {
             || !valid_num($in['cfg_b'] ?? null, 0, 100) || !valid_num($in['w_b'] ?? null, 0, 100)) {
             http_response_code(400); echo json_encode(['error' => 'invalid ab payload']); exit;
         }
-        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'ip' => $ih, 'type' => 'ab',
+        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'ab',
                 'question_id' => $question_id, 'prompt_id' => $prompt_id, 'length' => $length,
                 'model_a' => $model_a, 'ckpt_a' => $ckpt_a, 'cfg_a' => (float)$in['cfg_a'], 'w_a' => (float)$in['w_a'], 'file_a' => $file_a,
                 'model_b' => $model_b, 'ckpt_b' => $ckpt_b, 'cfg_b' => (float)$in['cfg_b'], 'w_b' => (float)$in['w_b'], 'file_b' => $file_b,
-                'choice' => $choice];
+                'choice' => $choice, 'source' => $source];
     } else {
         http_response_code(400); echo json_encode(['error' => 'unknown type']); exit;
     }

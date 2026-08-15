@@ -1,0 +1,400 @@
+<!doctype html><html><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Rate AI Music — Aavepyörä</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{background:#0f0f13;color:#cde;font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ display:flex;flex-direction:column;min-height:100vh;
+ padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+ user-select:none;touch-action:manipulation}
+select,button{font:inherit;color:inherit}
+#hdr{display:flex;gap:8px;padding:10px 10px 6px;align-items:center}
+#lensel{flex:0 0 auto;background:#1a1a22;border:1px solid #333844;border-radius:8px;color:#9ab;
+ padding:8px 10px;font-size:13px;min-height:40px}
+#playpause{flex:0 0 auto;width:52px;height:52px;border-radius:12px;border:2px solid #3a3d48;
+ background:#181820;color:#9ab;font-size:22px;display:flex;align-items:center;justify-content:center}
+#playpause.paused{border-color:#fa5;background:#2a2013;color:#fc9}
+#qdisplay{padding:6px 14px 2px;text-align:center}
+#qprogress{color:#678;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+#qtext{color:#cde;font-size:16px;line-height:1.35;margin-top:2px;min-height:44px}
+#abrow{display:flex;gap:8px;padding:8px 10px 4px}
+.abbtn{flex:1;min-height:76px;border-radius:14px;border:2px solid #3a3d48;background:#181820;
+ color:#9ab;font-size:26px;font-weight:700;letter-spacing:.05em}
+.abbtn.chosen{border-color:#5d9;background:#173322;color:#8f8}
+.abbtn-even{font-size:16px;letter-spacing:.03em;color:#89a}
+#status{text-align:center;color:#789;font-size:12px;min-height:16px;padding:2px 0}
+#stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:10px}
+.rate-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px;transition:opacity .15s}
+.rate-row.inactive{opacity:.28}
+.rate-btn{flex:1 1 0;max-width:60px;aspect-ratio:1;border-radius:50%;border:2px solid #3a3d48;background:#181820;
+ color:#9ab;font-size:22px;font-weight:600}
+.rate-btn:disabled{cursor:default}
+.rate-btn.chosen{border-color:#5b9dd9;background:#132a3a;color:#9cf}
+.rate-btn.broken{border-color:#a44;color:#f77}
+.rate-btn.broken.chosen{border-color:#e55;background:#3a1414;color:#faa}
+#center{width:150px;height:150px;border-radius:50%;border:3px solid #445;background:radial-gradient(circle at 35% 30%,#2a2a36,#161620);
+ display:flex;align-items:center;justify-content:center;position:relative;touch-action:none}
+#center.scrubbing{border-color:#fa5}
+#nowplaying{position:absolute;top:-26px;color:#789;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+#glyph{font-size:44px;color:#9ab;pointer-events:none}
+#bar{width:120px;height:4px;background:#2a2a34;border-radius:2px;position:absolute;bottom:20px;overflow:hidden}
+#fill{height:100%;background:#5b9dd9;width:0%}
+#hint{color:#556;font-size:11.5px;text-align:center;max-width:320px;line-height:1.6}
+#overlay{position:fixed;inset:0;background:#0f0f13;display:flex;flex-direction:column;align-items:center;
+ justify-content:flex-start;z-index:10;overflow-y:auto;padding:28px 20px 40px}
+#intro{max-width:460px;width:100%}
+#intro h1{font-size:21px;margin:0 0 6px;color:#e8eef5}
+#intro p{margin:0 0 14px;color:#9ab;font-size:14px;line-height:1.55}
+#intro .guide{border:1px solid #2a2c34;border-radius:8px;padding:10px 14px;margin:0 0 14px;background:#15161b}
+#intro .guide-hd{color:#7ed;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+#intro .guide-row{display:flex;gap:10px;padding:3px 0;font-size:13px;line-height:1.4}
+#intro .guide-n{flex:0 0 16px;color:#5b9dd9;font-weight:700}
+#intro .guide-n.g0{color:#e55}
+#intro .guide-t{color:#bcd}
+#intro .note{color:#789;font-size:12.5px;line-height:1.55;margin:0 0 12px}
+#intro .note a{color:#4fe3dd;text-decoration:none}
+#intro .note a:hover{text-decoration:underline}
+#startbtn{min-height:64px;padding:0 32px;border-radius:14px;border:2px solid #5d9;background:#173322;color:#9f9;
+ font-size:20px;font-weight:600;margin-top:6px}
+#startbtn:disabled{opacity:.4;border-color:#445;background:#181820;color:#789}
+</style></head><body>
+
+<div id="overlay">
+ <div id="intro">
+  <h1>Rate AI-generated music</h1>
+  <p>Blind, same-playhead A/B comparisons of two clips, plus a quick 0–5 enjoyment score for
+   each. No signup — tap a track to hear it, tap again to switch, then rate.</p>
+  <div class="guide">
+   <div class="guide-hd">Ranking guide</div>
+   <div class="guide-row"><span class="guide-n g0">0</span><span class="guide-t">broken</span></div>
+   <div class="guide-row"><span class="guide-n">1</span><span class="guide-t">glitchy and unusable, but not pure noise</span></div>
+   <div class="guide-row"><span class="guide-n">2</span><span class="guide-t">occasional glitches, boring / unpleasant, but music</span></div>
+   <div class="guide-row"><span class="guide-n">3</span><span class="guide-t">structurally intact, boilerplate music — "sounds like it was made by an AI"</span></div>
+   <div class="guide-row"><span class="guide-n">4</span><span class="guide-t">interesting melodies, very good production — "I'm nodding my head already"</span></div>
+   <div class="guide-row"><span class="guide-n">5</span><span class="guide-t">exceptional — "I listened to this three times already", "I can't believe it's AI"</span></div>
+  </div>
+  <p class="note">These clips come from models fine-tuned <b>only on my own original music</b>,
+   built on <a href="https://stability.ai/stable-audio" target="_blank" rel="noopener">Stable
+   Audio 3</a> (<a href="https://arxiv.org/abs/2605.17991" target="_blank" rel="noopener">paper</a>),
+   which is itself trained on licensed and ethically-sourced data.</p>
+  <p class="note">I record your answers, but not your IP address or any other identifying
+   data. Questions or feedback — reach me on <a
+   href="https://signal.me/#eu/00NAPf7EAdk6zym5PgUzzl5Jws72qThXA-2J779TrvSH88U5S4ZIZ4oexs8N115H"
+   target="_blank" rel="noopener">Signal</a>.</p>
+  <div style="text-align:center"><button id="startbtn" disabled>loading…</button></div>
+ </div>
+</div>
+
+<div id="hdr">
+ <select id="lensel"><option>loading…</option></select>
+ <button id="playpause" title="pause / resume">&#9208;</button>
+</div>
+<div id="qdisplay">
+ <div id="qprogress"></div>
+ <div id="qtext"></div>
+</div>
+<div id="abrow">
+ <button class="abbtn" id="btnA">A</button>
+ <button class="abbtn abbtn-even" id="btnEven">EVEN</button>
+ <button class="abbtn" id="btnB">B</button>
+</div>
+<div id="status"></div>
+
+<div id="stage">
+ <div class="rate-row" id="rowA"></div>
+ <div id="center">
+  <div id="nowplaying">A</div>
+  <div id="glyph">&#9654;</div>
+  <div id="bar"><div id="fill"></div></div>
+ </div>
+ <div class="rate-row" id="rowB"></div>
+ <div id="hint">0 broken · 1 unlistenable · 2 rough · 3 competent AI · 4 great · 5 exceptional
+  &middot; tap the circle to switch tracks (same moment, blind) &middot; hold + drag to scrub</div>
+</div>
+
+<script>
+// evaluator.html — public copy of eval/rate.html (WINTERMUTE, 2026-08-15, Kim: "make a copy
+// of this which I can link on the internet, but only use the avp models"). Mechanically
+// IDENTICAL to rate.html (same gestures, same question cycle, same rating scale) -- the only
+// functional differences are: absolute asset paths (this page is served from a different
+// path than /files/evals/, so 'model_matrix/...' relative paths would 404), the avp-only
+// model gate (scored_models_avp.json instead of scored_models.json), and a 'source' tag on
+// every POST so exported data can tell public responses apart from internal ones. Everything
+// else -- onboarding copy, ranking guide, ethics/privacy notes -- lives in the overlay only;
+// the interactive UI below it is untouched.
+const BASE='/files/evals/';
+const CB=BASE+'model_matrix/';
+
+// ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
+const LENGTH_CLUSTERS=[24,48,95,190,380];
+function lengthBucket(e){
+ if((e.duration_mode||'std')!=='native') return {key:'std',label:'20s (grid)'};
+ const d=parseFloat(e.duration||0);
+ let best=LENGTH_CLUSTERS[0],bd=Infinity;
+ for(const c of LENGTH_CLUSTERS){const diff=Math.abs(d-c);if(diff<bd){bd=diff;best=c;}}
+ return {key:'nat'+best,label:'~'+best+'s (native)'};
+}
+// PTM clips are only ever rendered at cfg1/w1 -- so eligibility is per-model: the global
+// cfg7/w1 for ordinary rows, cfg1/w1 for the model's own _ptm siblings. Both sides still
+// land in the SAME (prompt,length) pool, so a base row and its _ptm sibling can be paired
+// against each other exactly like any other two rows.
+function eligible(e){
+ const isPtm=String(e.model||'').endsWith('_ptm');
+ const cfg=parseFloat(e.cfg),w=parseFloat(e.strength);
+ return isPtm?(cfg===1&&w===1):(cfg===7&&w===1);
+}
+// SCORED gate: manifest_live.jsonl lists every clip that was ever RENDERED, with no regard
+// for whether it passed the latent-sanity gate or which corpus it was trained on.
+// scored_models_avp.json is build_clap_hyperparam_table.py's aggregate, filtered to
+// dataset=='avp' (fine-tuned on Kim's own music only) with the xft* borked family excluded
+// (same HIDE_MODEL_PREFIXES exclusion dora_table.html applies internally -- SVD-extracted
+// runs that "only add noise", not fit for a public page). FAIL CLOSED: if the fetch fails,
+// SCORED stays empty and nothing pools rather than silently widening to every model.
+let SCORED=new Set();
+let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+async function loadManifest(){
+ try{
+  const sr=await fetch(CB+'scored_models_avp.json',{cache:'no-store'});
+  SCORED=new Set(await sr.json());
+ }catch(_){SCORED=new Set();}
+ const r=await fetch(CB+'manifest_live.jsonl',{cache:'no-store'});
+ const txt=await r.text();
+ const out={};
+ for(const ln of txt.split('\n')){
+  if(!ln.trim())continue;
+  let e;try{e=JSON.parse(ln);}catch(_){continue;}
+  if(!eligible(e))continue;
+  if(!SCORED.has(e.model))continue;
+  const pid=String(e.prompt_id);
+  const {key,label}=lengthBucket(e);
+  out[key]=out[key]||{label,byPrompt:{}};
+  out[key].byPrompt[pid]=out[key].byPrompt[pid]||new Map();
+  out[key].byPrompt[pid].set(e.model+'|'+e.ckpt,
+   {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file});
+ }
+ pools=out;
+}
+function bucketHasPairs(b){return Object.values(b.byPrompt).some(m=>m.size>=2);}
+function pickPair(bucket){
+ const cands=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
+ if(!cands.length)return null;
+ const [pid,m]=cands[Math.floor(Math.random()*cands.length)];
+ const arr=[...m.values()];
+ let i=Math.floor(Math.random()*arr.length),j;
+ do{j=Math.floor(Math.random()*arr.length);}while(j===i);
+ const pair=[arr[i],arr[j]];
+ if(Math.random()<0.5)pair.reverse();
+ return {pid,a:pair[0],b:pair[1]};
+}
+
+// ── PLAYBACK: two preloaded elements for instant gapless A/B switching ─────────────────
+const audioA=new Audio(),audioB=new Audio();
+audioA.loop=true;audioB.loop=true;audioA.preload='auto';audioB.preload='auto';
+let active='A';
+function cur(){return active==='A'?audioA:audioB;}
+function other(){return active==='A'?audioB:audioA;}
+const ppBtn=document.getElementById('playpause');
+let isPaused=false;
+function setPaused(p){
+ isPaused=p;
+ if(isPaused){cur().pause();}
+ else{const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}
+ ppBtn.innerHTML=isPaused?'&#9654;':'&#9208;';
+ ppBtn.classList.toggle('paused',isPaused);
+}
+ppBtn.onclick=()=>setPaused(!isPaused);
+function setPairAudio(a,b){
+ audioA.pause();audioB.pause();
+ audioA.src=CB+a.file;audioB.src=CB+b.file;
+ audioA.currentTime=0;audioB.currentTime=0;
+ active='A';
+ setPaused(false);   // a fresh pair always starts playing, regardless of the previous pair's state
+}
+function switchActive(){
+ const c=cur(),n=other();
+ n.currentTime=c.currentTime;
+ c.pause();
+ if(!isPaused){const pr=n.play();if(pr&&pr.catch)pr.catch(()=>{});}
+ active=active==='A'?'B':'A';
+ updateUI();
+}
+
+// ── GESTURE: tap(<100ms, <12px movement) = switch; hold+drag = scrub ───────────────────
+const centerEl=document.getElementById('center'),fillEl=document.getElementById('fill');
+let pStart=null,pStartX=0,pStartT=0,scrubMode=false;
+centerEl.addEventListener('pointerdown',e=>{
+ pStart=performance.now();pStartX=e.clientX;scrubMode=false;
+ pStartT=cur().currentTime;
+ centerEl.setPointerCapture(e.pointerId);
+});
+centerEl.addEventListener('pointermove',e=>{
+ if(pStart===null)return;
+ const dx=e.clientX-pStartX,elapsed=performance.now()-pStart;
+ if(!scrubMode&&(elapsed>120||Math.abs(dx)>12)){
+  scrubMode=true;cur().pause();centerEl.classList.add('scrubbing');
+ }
+ if(scrubMode){
+  const c=cur(),dur=c.duration||20;
+  const dt=(dx/window.innerWidth)*dur;
+  const nt=Math.max(0,Math.min(dur-0.05,pStartT+dt));
+  audioA.currentTime=nt;audioB.currentTime=nt;
+  fillEl.style.width=(100*nt/dur)+'%';
+ }
+});
+function endGesture(e){
+ if(pStart===null)return;
+ const elapsed=performance.now()-pStart,dx=Math.abs((e.clientX||pStartX)-pStartX);
+ if(!scrubMode&&elapsed<100&&dx<12){switchActive();}
+ else if(scrubMode){
+  if(!isPaused){const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}   // stay paused if it was deliberate
+  centerEl.classList.remove('scrubbing');
+ }
+ pStart=null;scrubMode=false;
+}
+centerEl.addEventListener('pointerup',endGesture);
+centerEl.addEventListener('pointercancel',endGesture);
+[audioA,audioB].forEach(a=>a.addEventListener('timeupdate',()=>{
+ if(a!==cur()||scrubMode)return;
+ const d=a.duration||0;if(d)fillEl.style.width=(100*a.currentTime/d)+'%';
+}));
+
+// ── RATINGS + A/B UI ─────────────────────────────────────────────────────────────────
+const rowA=document.getElementById('rowA'),rowB=document.getElementById('rowB');
+function buildRow(row,slot){
+ // A red 0 before 1 -- "so broken that it's not meaningful to rate" (a technical-failure
+ // flag, not a real enjoyment score of zero). Still counts as "rated" for maybeAdvance().
+ const zero=document.createElement('button');
+ zero.className='rate-btn broken';zero.textContent='0';
+ zero.title="so broken it isn't meaningful to rate";
+ zero.onclick=()=>rateSlot(slot,0,zero);
+ row.appendChild(zero);
+ for(let i=1;i<=5;i++){
+  const b=document.createElement('button');
+  b.className='rate-btn';b.textContent=i;
+  b.onclick=()=>rateSlot(slot,i,b);
+  row.appendChild(b);
+ }
+}
+buildRow(rowA,'A');buildRow(rowB,'B');
+const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB'),btnEven=document.getElementById('btnEven');
+const lensel=document.getElementById('lensel');
+const npEl=document.getElementById('nowplaying'),statusEl=document.getElementById('status');
+const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('qprogress');
+
+// Cycle through all 5 questions per pair (obligatory) instead of picking one from a
+// dropdown -- every pair yields data on every dimension.
+const QUESTIONS=[
+ {id:'top_end',text:'more precise top end? (less harshness/noise)'},
+ {id:'spectral_image',text:'more precise spectral image? (less noisy/glitchy)'},
+ {id:'production',text:'overall better produced sound?'},
+ {id:'structure',text:'more coherent structure? (flow of phrases/sections)'},
+ {id:'interesting',text:'more interesting? (creative/unique)'},
+];
+let qIndex=0;
+function showQuestion(){
+ if(qIndex>=QUESTIONS.length){qTextEl.textContent='all questions answered';qProgEl.textContent='';return;}
+ qTextEl.textContent=QUESTIONS[qIndex].text;
+ qProgEl.textContent='question '+(qIndex+1)+' / '+QUESTIONS.length;
+}
+
+let curPid,curLenKey,curA,curB,roundState;
+function resetRound(){
+ roundState={ratedA:false,ratedB:false};
+ qIndex=0;showQuestion();
+ [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
+ btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
+}
+function updateUI(){
+ rowA.classList.toggle('inactive',active!=='A');
+ rowB.classList.toggle('inactive',active!=='B');
+ [...rowA.children].forEach(b=>b.disabled=active!=='A');
+ [...rowB.children].forEach(b=>b.disabled=active!=='B');
+ npEl.textContent=active;
+}
+const EP='/files/ratings.php';
+const SOURCE='public_evaluator';
+// A round fires up to 7 POSTs (2 enjoyment + 5 ab) in quick succession by design. Serialized
+// through one queue (no two requests race each other) and retried on failure/429 with
+// backoff, so nothing gets lost regardless of how fast the taps come in.
+let postQueue=Promise.resolve();
+function post(body){postQueue=postQueue.then(()=>postOnce({...body,source:SOURCE}));}
+async function postOnce(body,attempt){
+ attempt=attempt||0;
+ let r;
+ try{r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+ catch(e){r=null;}
+ if((!r||!r.ok)&&attempt<6){
+  await new Promise(res=>setTimeout(res,250));
+  return postOnce(body,attempt+1);
+ }
+}
+function rateSlot(slot,val,btn){
+ const e=slot==='A'?curA:curB;
+ const row=slot==='A'?rowA:rowB;
+ [...row.children].forEach(b=>b.classList.remove('chosen'));
+ btn.classList.add('chosen');
+ roundState[slot==='A'?'ratedA':'ratedB']=true;
+ post({type:'enjoyment',model:e.model,ckpt:e.ckpt,prompt_id:curPid,cfg:e.cfg,w:e.w,length:curLenKey,file:e.file,rating:val});
+ maybeAdvance();
+}
+function chooseAB(choice,btn){
+ if(qIndex>=QUESTIONS.length)return;   // already finished this pair's cycle -- ignore stray taps
+ btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
+ btn.classList.add('chosen');
+ const q=QUESTIONS[qIndex];
+ post({type:'ab',question_id:q.id,prompt_id:curPid,length:curLenKey,
+  model_a:curA.model,ckpt_a:curA.ckpt,cfg_a:curA.cfg,w_a:curA.w,file_a:curA.file,
+  model_b:curB.model,ckpt_b:curB.ckpt,cfg_b:curB.cfg,w_b:curB.w,file_b:curB.file,choice});
+ qIndex++;
+ setTimeout(()=>{                       // brief flash of the chosen answer, then the next question
+  btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
+  showQuestion();
+  maybeAdvance();
+ },220);
+}
+btnA.onclick=()=>chooseAB('A',btnA);
+btnEven.onclick=()=>chooseAB('EVEN',btnEven);
+btnB.onclick=()=>chooseAB('B',btnB);
+
+// No manual "next" control -- once both tracks are rated AND every question in the cycle
+// is answered, load a fresh random pair automatically.
+function maybeAdvance(){
+ if(roundState.ratedA&&roundState.ratedB&&qIndex>=QUESTIONS.length){
+  statusEl.textContent='nice — next pair…';
+  setTimeout(loadNewPair,550);
+ }
+}
+function loadNewPair(){
+ const bucket=pools[lensel.value];
+ if(!bucket){statusEl.textContent='no data at this length';return;}
+ const picked=pickPair(bucket);
+ if(!picked){statusEl.textContent='no pairs available at this length yet';return;}
+ curPid=picked.pid;curA=picked.a;curB=picked.b;curLenKey=lensel.value;
+ resetRound();
+ setPairAudio(curA,curB);
+ updateUI();
+ statusEl.textContent='';
+}
+lensel.onchange=loadNewPair;
+
+function populateLengthSelect(){
+ const keys=Object.keys(pools).filter(k=>bucketHasPairs(pools[k]));
+ keys.sort((a,b)=>{if(a==='std')return -1;if(b==='std')return 1;return parseInt(a.slice(3))-parseInt(b.slice(3));});
+ lensel.innerHTML='';
+ for(const k of keys){const o=document.createElement('option');o.value=k;o.textContent=pools[k].label;lensel.appendChild(o);}
+}
+
+// ── INIT: manifest loads in the background; playback only ever starts from the real tap
+// on #startbtn, so mobile autoplay policy is satisfied once, and the single persistent
+// audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
+const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
+loadManifest().then(()=>{
+ populateLengthSelect();
+ if(!lensel.options.length){startbtn.textContent='no eligible clips found';return;}
+ startbtn.disabled=false;startbtn.textContent='tap to begin';
+}).catch(()=>{startbtn.textContent='failed to load — reload the page';});
+startbtn.onclick=()=>{overlay.style.display='none';loadNewPair();};
+</script>
+</body></html>

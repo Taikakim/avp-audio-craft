@@ -308,6 +308,21 @@ def main():
     (STAGE_MATRIX / "scored_models.json").write_text(json.dumps(scored))
     print(f"[table] wrote scored_models.json  ({len(scored)} scored models)")
 
+    # scored_models_avp.json (Kim 2026-08-15): the public evaluator.html only surfaces
+    # models fine-tuned on Kim's own music (dataset=='avp') -- "that'll land better with
+    # musicians because of fully ethical process". Also excludes the xft* family: same
+    # HIDE_MODEL_PREFIXES borked-run exclusion build_dora_table_page.py already applies
+    # internally (SVD-extracted, "only add noise") -- 30 of the 98 raw avp models are xft*;
+    # letting those leak onto a public page would undercut exactly the credibility this page
+    # is for.
+    HIDE_PREFIXES_PUBLIC = ("xft",)
+    avp_scored = sorted(
+        aggd[(aggd["dataset"] == "avp") & ~aggd["model"].str.startswith(HIDE_PREFIXES_PUBLIC)]
+        ["model"].unique().tolist())
+    (STAGE_MATRIX / "scored_models_avp.json").write_text(json.dumps(avp_scored))
+    print(f"[table] wrote scored_models_avp.json  ({len(avp_scored)} scored avp models, "
+          f"xft* excluded)")
+
     # ---------- analysis (printed; narrative written separately) ----------
     an = base.copy()
     num_metrics = ["clap_matched", "ce", "pq", "cu", "pc", "zcr", "flatness", "flux",
