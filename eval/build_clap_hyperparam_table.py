@@ -295,6 +295,19 @@ def main():
     print(f"[table] wrote clap_dora_aggregate.csv  ({len(aggd)} model-checkpoints, "
           f"{n_fb} fell back to all-cells mean for lack of cfg7/w1 cells)")
 
+    # scored_models.json (Kim 2026-08-15, "the polluted models can be removed from the
+    # rating"): rate.html pools straight from manifest_live.jsonl with zero regard for
+    # whether a model ever passed the latent-sanity gate -- 3 blown-up-latent dronesweep
+    # models were rateable in a blind A/B alongside real audio. This list is the single
+    # source of "has this model actually been scored" (== has an aggregate row == passed
+    # sanity) that any client-side page can fetch the same way it fetches the manifest.
+    # Staged next to manifest_live.jsonl (not committed to git -- STAGE, not ROOT) so it
+    # rides the same publish path (leg_publish already includes *.json).
+    STAGE_MATRIX = Path.home() / "evals_aac" / "model_matrix"
+    scored = sorted(aggd["model"].unique().tolist())
+    (STAGE_MATRIX / "scored_models.json").write_text(json.dumps(scored))
+    print(f"[table] wrote scored_models.json  ({len(scored)} scored models)")
+
     # ---------- analysis (printed; narrative written separately) ----------
     an = base.copy()
     num_metrics = ["clap_matched", "ce", "pq", "cu", "pc", "zcr", "flatness", "flux",

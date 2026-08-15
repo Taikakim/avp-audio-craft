@@ -95,8 +95,22 @@ function eligible(e){
  const cfg=parseFloat(e.cfg),w=parseFloat(e.strength);
  return isPtm?(cfg===1&&w===1):(cfg===7&&w===1);
 }
+// SCORED gate (Kim 2026-08-15, "the polluted models can be removed from the rating"):
+// manifest_live.jsonl lists every clip that was ever RENDERED, with no regard for whether
+// it passed the latent-sanity gate -- 3 dronesweep models with blown-up latents (a Muon
+// spectral weight-decay bug, 0.01 instead of 0.1) were rateable in a blind A/B right
+// alongside real audio before this fix. scored_models.json is the same aggregate
+// build_clap_hyperparam_table.py writes clap_dora_aggregate.csv from -- a model only
+// appears in it once it has an aggregate row, i.e. passed the cfg7/w1 sanity gate and got
+// scored. FAIL CLOSED: if the fetch fails, SCORED stays empty and nothing pools rather
+// than silently falling back to the unfiltered (unsafe) behaviour.
+let SCORED=new Set();
 let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
 async function loadManifest(){
+ try{
+  const sr=await fetch('model_matrix/scored_models.json',{cache:'no-store'});
+  SCORED=new Set(await sr.json());
+ }catch(_){SCORED=new Set();}
  const r=await fetch('model_matrix/manifest_live.jsonl',{cache:'no-store'});
  const txt=await r.text();
  const out={};
@@ -104,6 +118,7 @@ async function loadManifest(){
   if(!ln.trim())continue;
   let e;try{e=JSON.parse(ln);}catch(_){continue;}
   if(!eligible(e))continue;
+  if(!SCORED.has(e.model))continue;
   const pid=String(e.prompt_id);
   const {key,label}=lengthBucket(e);
   out[key]=out[key]||{label,byPrompt:{}};
