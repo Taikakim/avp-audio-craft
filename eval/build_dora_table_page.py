@@ -139,7 +139,9 @@ DESC = {
     "epoch": "This checkpoint's training epoch. Overtraining collapses UN-augmented runs by ~ep15; aug10 climbs to ep74 (corpus best).",
     "steps": "Total training optimizer steps at this checkpoint (steps/epoch × epoch, from the recipe's recorded step count). Blank where not recorded.",
     "train_N": "Training-set size = # latent crops. Anchored to the known encoded_dir (aug10=320, originals=288, everything=6111, goa=5401, avp=2393); variant runs estimated from steps/epoch×batch. LOW N = overfit-risk (a small set drilled hard can top CLAP by memorizing the prompt space).",
-    "n_cells": "Number of rendered cells averaged into this row.",
+    "n_cells": "Number of rendered cells total (every cfg×strength×prompt). The metric columns "
+               "default to the narrower cfg7/w1 (ptm: cfg1/w1) subset -- check 'all scores' to "
+               "average in all of these instead.",
     "clap_matched": "↑ CLAP cosine(audio, its OWN prompt) = genre/prompt ADHERENCE. Low = output drifted off-genre (degeneration).",
     "clap_margin_far": "↑ CLAP gap between the true prompt and out-of-genre control prompts. Higher = more decisively on-genre.",
     "ce": "↑ Audiobox Content Enjoyment (learned subjective 'is it enjoyable'). ~scale 1–10.",
@@ -207,6 +209,13 @@ def main(public=False):
         print(f"  {name:22s} {len(members)}")
     ref = json.loads(REF.read_text())
     cols = HP + [c for c in METRICS if c in rows[0] or c in STRUCT_COLS]
+    # "all scores" sibling columns (Kim 2026-08-15): clap_dora_aggregate.csv now carries BOTH
+    # the cfg7/w1-filtered default (plain column name, e.g. "clap_matched") and the unfiltered
+    # all-cells mean ("clap_matched_all"). Not part of `cols` (not a separate table column) --
+    # ride along on each row so the page's "all scores" toggle can swap the ACTIVE value without
+    # a rebuild. STRUCT_COLS (recall/boundaries_per_min/loop_score) never had a cfg/w axis to
+    # begin with, so they have no _all sibling.
+    all_cols = [c for c in METRICS if f"{c}_all" in rows[0]]
 
     # numeric coercion + per-column min/max for the heatmap
     def num(v):
@@ -216,9 +225,13 @@ def main(public=False):
             return None
     data = []
     for r in rows:
-        data.append({c: (num(r.get(c)) if c in METRICS or c in
-                         ("rank", "alpha", "alpha_over_rank", "frames_T", "batch", "lr", "aug", "epoch", "n_cells")
-                         else r.get(c, "")) for c in cols})
+        d = {c: (num(r.get(c)) if c in METRICS or c in
+                 ("rank", "alpha", "alpha_over_rank", "frames_T", "batch", "lr", "aug", "epoch", "n_cells")
+                 else r.get(c, "")) for c in cols}
+        for c in all_cols:
+            d[f"{c}_all"] = num(r.get(f"{c}_all"))
+        d["default_is_fallback"] = str(r.get("default_is_fallback", "")).strip().lower() == "true"
+        data.append(d)
 
     # structure metrics (native clips only) -> per (model,ckpt) mean merged into the rows,
     # + a per-FILE lookup for the on-play SSM readout (images at evals/ssm/<stem>.png).
@@ -307,12 +320,25 @@ tbody tr.flash td{animation:flashno .35s ease 2}
 .notes{max-width:1000px;margin:14px 8px;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
 .notes-hd{font-size:12px;color:#9cf;margin-bottom:6px}.notes-scope{color:#7ed}.notes-hint{color:#667;font-style:italic}
 .notes-lvl{display:flex;gap:14px;margin-bottom:8px;font-size:12px;color:#bbb}.notes-lvl label{cursor:pointer}
+/* Weighted-sort (HYBRID) panel -- ported from model_matrix.html's per-clip hybrid-weight
+   sliders (Kim 2026-08-15: "isn't this page supposed to have a multi-parameter weighted
+   sorting mechanism? it used to be on the bottom?"). Same visual language, adapted to score
+   whole rows instead of one clip's siblings. */
+.hybridpanel{max-width:1000px;margin:14px 8px;padding:10px 12px;border:1px solid #2a2a30;border-radius:6px;background:#141418;font:13px system-ui;color:#e0e0e0}
+.hp-hd{font-size:12px;color:#9cf;margin-bottom:8px;line-height:1.5}
+.hp-weights{display:flex;flex-wrap:wrap;gap:9px 14px;font-size:11px;color:#9ab;align-items:center}
+.hw{display:flex;align-items:center;gap:4px}.hw input{width:74px;accent-color:#7cf}
+.hw .hwl{cursor:help}.hw .hwv{color:#7cf;width:14px;display:inline-block}
+th.hyth{color:#8a9}th.hyth.sorted{color:#8cf}td.hytd{font-weight:600;color:#cde}
 </style></head><body>
 <h1>DoRA hyperparameter × metric table</h1>
-<p class=sub>Every trained model × checkpoint (each row aggregates its cfg×strength×prompt cells).
-<b>Hover any column header for its definition</b>; click to sort. Each metric column is a
-heat-map (green = better direction, red = worse). Filter below. Hyperparameters parsed from the
-checkpoint recipes.</p>
+<p class=sub>Every trained model × checkpoint. Each row's metrics default to its <b>cfg7/w1 cells only</b>
+(ptm rows: cfg1/w1, their only native config) &mdash; the real operating point, not diluted by
+off-config renders. Check "all scores" to go back to every rendered cfg×strength×prompt cell
+averaged in. <b>Hover any column header for its definition</b>; click to sort. Each metric column is a
+heat-map (green = better direction, red = worse). The last column, <b>HYBRID</b>, is a weighted
+multi-metric composite &mdash; set its weights in the panel below the table. Filter below.
+Hyperparameters parsed from the checkpoint recipes.</p>
 <div class=base id=base></div>
 <div class=ctl>
  <label>model set <select id=modelset title="campaign family (or 'all'). Filters BOTH the metric rows and the audio picker to this set; updates the URL (?set=) so the filtered view is shareable."></select></label>
@@ -320,6 +346,7 @@ checkpoint recipes.</p>
  <label>rank <select id=frank><option value="">all</option></select></label>
  <label>arch <select id=farch><option value="">all</option></select></label>
  <label>find <input id=ftext placeholder="model substring" size=18></label>
+ <label title="Default scores every metric column to the cfg7/w1 cell mean (ptm rows: cfg1/w1, their only native config) -- the real operating point, not diluted by off-config renders (cfg1/cfg16/w2...). Check this to go back to the old behaviour: every rendered cfg×strength×prompt cell averaged in."><input type=checkbox id=fallscores> all scores <span style="color:#667">(ignore cfg7/w1 default)</span></label>
  <span id=count style=color:#9a9></span>
 </div>
 <div class=pbar>
@@ -336,6 +363,17 @@ checkpoint recipes.</p>
  <span id=plabel>loading clip index…</span>
 </div>
 <div class=wrap><table id=t><thead><tr id=hrow></tr></thead><tbody id=body></tbody></table></div>
+<!-- Weighted sort (ported from model_matrix.html's per-clip hybrid-weight sliders, Kim
+     2026-08-15). The HYBRID column (last, in the table above) is a weighted composite of these
+     sliders: each metric min-max normalized (direction-adjusted) across the rows CURRENTLY
+     SHOWN (respects every filter above, including all-scores), weight 0 = ignored. Click the
+     HYBRID header to sort by it. -->
+<div class="hybridpanel" id="hybridpanel">
+ <div class="hp-hd">Weighted sort &mdash; drag a slider to weight that metric into the <b>HYBRID</b>
+  column (0 = ignored). Normalized per-metric across the rows currently filtered/shown, so the
+  ranking stays meaningful whichever model set or dataset filter is active.</div>
+ <div id="hweights" class="hp-weights"></div>
+</div>
 <!-- NOTES (moved here from model_matrix, Kim 2026-08-04: this is the table he actually auditions
      from, and public visitors were never going to leave notes on the matrix). WRITE-ONLY widget
      -- posts to comment.php, nothing is ever read back or displayed (injection boundary, MASTER
@@ -371,16 +409,57 @@ let activeSet='all',memberSet=null;
  else if(ms){activeSet='';memberSet=new Set(ms.split(',').map(x=>x.trim()).filter(Boolean));}
 })();
 const inSet=m=>!memberSet||memberSet.has(m);
+// ---- cfg7/w1 DEFAULT vs ALL SCORES (Kim 2026-08-15: "many models are dragged down by their
+// w2, cfg1 etc scores unfairly"). Every metric column's default value IS already the cfg7/w1
+// mean (ptm rows: cfg1/w1) -- see build_clap_hyperparam_table.py. The "<metric>_all" sibling on
+// each row is the old unfiltered all-cells mean. mv() is the single place that reads a metric
+// off a row, so heat/sort/hybrid all respect the toggle without a data rebuild.
+let showAll=false;
+function mv(r,c){if(showAll){const av=r[c+'_all'];if(typeof av==='number')return av;}return r[c];}
 const nfmt=(c,v)=>{if(v==null||v==='')return '';if(typeof v!=='number')return v;
  if(['lr'].includes(c))return v.toExponential(1);
  if(['rank','alpha','frames_T','batch','aug','epoch','n_cells','bpm'].includes(c))return v%1?v.toFixed(1):v.toFixed(0);
  return v.toFixed(3);};
-// per-column min/max for heatmap
-const ext={};
-for(const c in metrics){const vs=rows.map(r=>r[c]).filter(v=>typeof v==='number');ext[c]=[Math.min(...vs),Math.max(...vs)];}
+// per-column min/max for heatmap -- recomputed on the all-scores toggle since the active
+// value set changes (computeExt, not a bare const, for that reason).
+let ext={};
+function computeExt(){ext={};for(const c in metrics){const vs=rows.map(r=>mv(r,c)).filter(v=>typeof v==='number');ext[c]=vs.length?[Math.min(...vs),Math.max(...vs)]:[0,1];}}
+computeExt();
 function heat(c,v){if(typeof v!=='number'||!(c in metrics)||metrics[c]===0)return '';
  const [lo,hi]=ext[c];let t=(v-lo)/(hi-lo+1e-9);if(metrics[c]<0)t=1-t;   // direction-aware
  const r=Math.round(200*(1-t)+30*t),g=Math.round(60*(1-t)+180*t);return `background:rgba(${r},${g},70,0.30)`;}
+// ---- WEIGHTED SORT / HYBRID column (ported from model_matrix.html's per-clip hybrid-weight
+// sliders, Kim 2026-08-15: "isn't this page supposed to have a multi-parameter weighted sorting
+// mechanism?"). Same design there: each scorable metric (has a direction in `metrics`) is
+// min-max normalized (direction-adjusted, 1=best) across a comparison set, then combined by
+// user-set slider weights. Here the comparison set is the CURRENTLY FILTERED rows (`rs` in
+// render()), recomputed every render so the ranking stays meaningful under any filter.
+const HYBRID_DEFAULT_ON=new Set(['clap_matched','clap_margin_far','ce','pq','cu','recall']);
+let mWeights={};
+for(const c in metrics)if(metrics[c]!==0)mWeights[c]=HYBRID_DEFAULT_ON.has(c)?1:0;
+function hybridMetrics(){return Object.keys(mWeights).filter(m=>mWeights[m]>0);}
+function normFn(rs,c){
+ const dir=metrics[c],vs=rs.map(r=>mv(r,c)).filter(v=>typeof v==='number');
+ if(!vs.length)return()=>null;
+ const lo=Math.min(...vs),hi=Math.max(...vs);
+ return r=>{const v=mv(r,c);if(typeof v!=='number')return null;
+  const n=(hi>lo)?(v-lo)/(hi-lo):0.5;return dir<0?1-n:n;};}
+function hybridScores(rs){
+ const ms=hybridMetrics(),norms={};for(const m of ms)norms[m]=normFn(rs,m);
+ const out=new Map();
+ for(const r of rs){let s=0,w=0;for(const m of ms){const n=norms[m](r);if(n!=null){s+=mWeights[m]*n;w+=mWeights[m];}}
+  out.set(r,w?s/w:null);}
+ return out;}
+function heatHybrid(n){if(typeof n!=='number')return '';
+ const r=Math.round(200*(1-n)+30*n),g=Math.round(60*(1-n)+180*n);return `background:rgba(${r},${g},70,0.30)`;}
+function buildWeightUI(){
+ const box=document.getElementById('hweights');if(!box)return;let h='';
+ for(const c in mWeights){
+  h+='<span class=hw><span class=hwl title="'+(desc[c]||c)+' ('+(metrics[c]>0?'higher':'lower')+'-is-better)">'+(nice[c]||c)+'</span>'
+    +'<input type=range min=0 max=3 step=0.5 value="'+mWeights[c]+'" oninput="setW(\''+c+'\',this.value)">'
+    +'<span class=hwv id="hwv-'+c+'">'+mWeights[c]+'</span></span>';}
+ box.innerHTML=h;}
+function setW(c,v){mWeights[c]=parseFloat(v);const el=document.getElementById('hwv-'+c);if(el)el.textContent=v;render();}
 let sortCol='clap_matched',sortDir=-1;
 function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
  for(const c of cols){const th=document.createElement('th');const isTxt=typeof rows[0][c]!=='number';
@@ -388,18 +467,33 @@ function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
   th.title=(desc[c]||c)+'  ·  click to sort';
   if(c===sortCol)th.innerHTML+=' <span class=arrow>'+(sortDir<0?'▼':'▲')+'</span>';
   th.onclick=()=>{if(sortCol===c)sortDir*=-1;else{sortCol=c;sortDir=(c in metrics&&metrics[c]>=0)||typeof rows[0][c]!=='number'?-1:-1;}render();};
-  tr.appendChild(th);}}
+  tr.appendChild(th);}
+ const hth=document.createElement('th');
+ hth.className='hyth'+(sortCol==='hybrid'?' sorted':'');hth.textContent='HYBRID';
+ hth.title='Weighted composite of the sliders below the table, min-max normalized (direction-adjusted) across the rows currently shown. Click to sort.';
+ if(sortCol==='hybrid')hth.innerHTML+=' <span class=arrow>'+(sortDir<0?'▼':'▲')+'</span>';
+ hth.onclick=()=>{if(sortCol==='hybrid')sortDir*=-1;else{sortCol='hybrid';sortDir=-1;}render();};
+ tr.appendChild(hth);}
 function render(){
  const ds=fds.value,rk=frank.value,ar=farch.value,tx=ftext.value.toLowerCase();
  let rs=rows.filter(r=>inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
- rs.sort((a,b)=>{let x=a[sortCol],y=b[sortCol];if(x==null)return 1;if(y==null)return -1;
+ const hy=hybridScores(rs);
+ for(const r of rs)r.hybrid=hy.get(r);
+ const val=(r,c)=>c==='hybrid'?r.hybrid:mv(r,c);
+ rs.sort((a,b)=>{let x=val(a,sortCol),y=val(b,sortCol);if(x==null)return 1;if(y==null)return -1;
   if(typeof x==='number')return (x-y)*sortDir;return String(x).localeCompare(String(y))*sortDir;});
  const body=document.getElementById('body');body.innerHTML='';
  for(const r of rs){const tr=document.createElement('tr');
   tr.dataset.model=r.model;tr.dataset.ckpt=r.ckpt;
-  for(const c of cols){const td=document.createElement('td');const v=r[c];
-   if(c==='model')td.className='model';else if(typeof v!=='number')td.className='txt';
-   td.textContent=nfmt(c,v);const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
+  for(const c of cols){const td=document.createElement('td');const v=mv(r,c);
+   if(c==='model'){td.className='model';td.textContent=nfmt(c,v)+(r.default_is_fallback?' †':'');
+    if(r.default_is_fallback)td.title='no cfg7/w1 (ptm rows: cfg1/w1) cells rendered for this model -- showing the all-cells mean instead';}
+   else{if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);}
+   const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
+  const htd=document.createElement('td');htd.className='hytd';
+  htd.textContent=typeof r.hybrid==='number'?(r.hybrid*100).toFixed(0):'·';
+  const hh=heatHybrid(r.hybrid);if(hh)htd.style.cssText=hh;
+  tr.appendChild(htd);
   body.appendChild(tr);}
  hdr();count.textContent=rs.length+' / '+rows.length+' rows';
  markAvailability();markPlaying();}
@@ -784,6 +878,8 @@ for(const id of ['fds','frank','farch'])document.getElementById(id);
 [...new Set(rows.map(r=>r.arch).filter(Boolean))].forEach(v=>farch.add(new Option(v,v)));
 ['fds','frank','farch'].forEach(id=>document.getElementById(id).onchange=render);
 ftext.oninput=render;
+fallscores.onchange=()=>{showAll=fallscores.checked;computeExt();render();};
+buildWeightUI();
 // dataset baseline strip
 let bh='<b>Dataset training baselines</b> (same algorithm as the eval extractors → drift-readable). ';
 bh+='<span class=hi>Stereo narrowing is a MODEL artifact:</span> goa training stereo_corr '+base.goa.stereo_corr+' / avp '+base.avp.stereo_corr+' (wide) vs renders ≈0.88 (narrow). ';

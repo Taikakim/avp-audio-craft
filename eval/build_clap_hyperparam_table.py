@@ -254,13 +254,46 @@ def main():
     out.to_csv(ROOT / "eval/clap_full_table.csv", index=False)
     print(f"[table] wrote clap_full_table.csv  ({len(out)} cells, {len(keep)} cols)")
 
-    # per (model,ckpt) aggregate: hyperparams + mean of metrics (exclude _repr dupes)
+    # per (model,ckpt) aggregate: hyperparams + mean of metrics (exclude _repr dupes).
+    #
+    # DEFAULT vs ALL SCORES (Kim 2026-08-15, dora_table.html: "many models are dragged down by
+    # their w2, cfg1 etc scores unfairly"). This used to mean every rendered cfg x strength x
+    # prompt cell, unfiltered -- a model's displayed score was diluted by its off-operating-point
+    # renders (cfg1, cfg16, w2, ...) exactly as reported. cfg7/w1 is the real operating point for
+    # every family except the post-trained `_ptm` rows, which only ever render cfg1/w1 (PT-native;
+    # see the cfg1-only-by-design note in build_dora_table_page.py). So the DEFAULT columns
+    # (unprefixed, e.g. "clap_matched") are now the cfg7/w1 (or ptm: cfg1/w1) mean, and the
+    # unfiltered mean survives alongside as "<metric>_all" for the page's "all scores" toggle.
+    # A model with genuinely no cfg7/w1 (or ptm cfg1/w1) cells -- e.g. a family that only ever
+    # rendered cfg1 -- falls back to its all-cells mean rather than going blank, flagged via
+    # default_is_fallback so the page can mark it instead of silently passing it off as the same
+    # thing.
     agg_metrics = {c: "mean" for c in metric_cols if c in df}
     base = out[~out["is_repr"]]
-    grp = base.groupby(["model", "ckpt"] + hp_cols, dropna=False)
-    aggd = grp.agg({**agg_metrics, "prompt_id": "count"}).rename(columns={"prompt_id": "n_cells"}).reset_index()
+    group_keys = ["model", "ckpt"] + hp_cols
+
+    grp_all = base.groupby(group_keys, dropna=False)
+    agg_all = (grp_all.agg({**agg_metrics, "prompt_id": "count"})
+               .rename(columns={"prompt_id": "n_cells_all", **{c: f"{c}_all" for c in agg_metrics}})
+               .reset_index())
+
+    is_ptm_row = base["base_target"] == "ptm"
+    dflt_mask = ((~is_ptm_row) & (base["cfg"] == 7) & (base["strength"] == 1)) | \
+                (is_ptm_row & (base["cfg"] == 1) & (base["strength"] == 1))
+    grp_dflt = base[dflt_mask].groupby(group_keys, dropna=False)
+    agg_dflt = (grp_dflt.agg({**agg_metrics, "prompt_id": "count"})
+                .rename(columns={"prompt_id": "n_cells_default"}).reset_index())
+
+    aggd = agg_all.merge(agg_dflt, on=group_keys, how="left")
+    aggd["n_cells_default"] = aggd["n_cells_default"].fillna(0).astype(int)
+    aggd["default_is_fallback"] = aggd["n_cells_default"] == 0
+    for c in agg_metrics:
+        aggd[c] = aggd[c].where(aggd["n_cells_default"] > 0, aggd[f"{c}_all"])
+    aggd = aggd.rename(columns={"n_cells_all": "n_cells"})
     aggd.to_csv(ROOT / "eval/clap_dora_aggregate.csv", index=False)
-    print(f"[table] wrote clap_dora_aggregate.csv  ({len(aggd)} model-checkpoints)")
+    n_fb = int(aggd["default_is_fallback"].sum())
+    print(f"[table] wrote clap_dora_aggregate.csv  ({len(aggd)} model-checkpoints, "
+          f"{n_fb} fell back to all-cells mean for lack of cfg7/w1 cells)")
 
     # ---------- analysis (printed; narrative written separately) ----------
     an = base.copy()
