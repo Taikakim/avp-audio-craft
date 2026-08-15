@@ -35,6 +35,9 @@ MODELS=${PROJ}/models
 VENV=${CAPTION_VENV:-${SCRATCH}/goa_offload_venv}
 ARCHIVE=${ARCHIVE:-${SCRATCH}/goa_archive}
 OUT=${OUT:-${SCRATCH}/goa_archive_captions}
+GENRE_HINT_FILE=${GENRE_HINT_FILE:-}
+GENRE_HINT=""
+[ -n "${GENRE_HINT_FILE}" ] && [ -f "${GENRE_HINT_FILE}" ] && GENRE_HINT=$(cat "${GENRE_HINT_FILE}")
 mkdir -p "${OUT}/shards" "${OUT}/json"
 
 [ -d "${ARCHIVE}" ] || { echo "[goa-cap] FATAL: ${ARCHIVE} missing — archive not rsync'd yet"; exit 1; }
@@ -70,7 +73,7 @@ export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
 export TRITON_CACHE_DIR=/tmp/triton-${R}; rm -rf "${TRITON_CACHE_DIR}"; mkdir -p "${TRITON_CACHE_DIR}"   # keep torch.compile cache OFF ~/.triton (killed this run at 9% via home inode quota)
 export PROMPT_TYPES='"${PROMPT_TYPES:-full}"'
 export MF_USE_FA2='"${MF_USE_FA2:-0}"' CAPTION_MAX_SEC='"${CAPTION_MAX_SEC:-300}"'
-export GENRE_HINT='"${GENRE_HINT:-}"'
+export GENRE_HINT="'"${GENRE_HINT}"'"
 python '"${CODE}"'/lumi/goa_caption_task.py \
   --shard '"${OUT}"'/shards/shard_${R}.txt \
   --archive '"${ARCHIVE}"' --out '"${OUT}"' '"${LIMIT_ARG}"' \
