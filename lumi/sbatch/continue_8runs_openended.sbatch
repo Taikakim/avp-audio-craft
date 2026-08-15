@@ -9,11 +9,23 @@
 #   arms 4-5: winning DoRA arms      (precedent: efp_fp32_winning_continue40.sbatch)
 #   arms 6-7: fullft_t256 full-FT    (precedent: efp_fullft_short.sbatch; NEW this run: EMA+AGC)
 #
-# ── OPEN-ENDED, NOT A FIXED TARGET (Kim direct) ── train_lora.py: `--epochs` defaults to
-# None -> Lightning max_epochs=None -> trains until walltime/manual stop, no capped target.
-# Omitted here on purpose for ALL 8 arms. Re-submit this same script to keep extending past
-# a walltime timeout (FATCKPT glob below auto-picks up wherever each arm left off — same
-# auto-resume pattern as every other continue script this session).
+# ── OPEN-ENDED, NOT A FIXED TARGET (Kim direct) ── CORRECTED 2026-08-16 after job 21161063
+# proved the first version wrong: omitting --epochs does NOT give unlimited training.
+# train_lora.py's Trainer construction is `max_steps=(-1 if args.epochs else args.steps)` --
+# an omitted --epochs falls through to max_steps=args.steps, and --steps DEFAULTS TO 10000.
+# So the first submit capped every arm at step 10000 regardless of epoch progress, and since
+# arms RESUME from wherever they left off, 6 of 8 arms had already passed step 10000 and did
+# ZERO additional training for the full 2h40m job (only fp32cmp_avp_t4096_bs4_lr1e4 and
+# fullft_avp_t256, both resumed below 10000, made real progress before also hitting the cap).
+# FIX: pass an explicit huge --epochs instead of omitting it -- makes args.epochs truthy
+# (-> max_steps=-1, no step cap) AND gives Lightning a concrete max_epochs instead of None
+# (sidesteps Lightning's OWN separate "both max_epochs and max_steps unset -> defaults to
+# 1000" fallback, which omitting --epochs would otherwise land on ambiguously).
+# --epochs 100000 is effectively unlimited for any realistic run while being unambiguous in
+# both places. Re-submit this same script to keep extending past a walltime timeout
+# (FATCKPT glob below auto-picks up wherever each arm left off — same auto-resume pattern
+# as every other continue script this session).
+EPOCHS_TARGET=${EPOCHS_TARGET:-100000}
 #
 # ── EMA + AGC now added to arms 6-7 ONLY (fullft_t256, Kim direct 2026-08-15) — NOT arms
 # 0-5: EMA is full-finetune ONLY, train_lora.py force-disables it for DoRA/LoRA regardless
@@ -154,7 +166,7 @@ RUN=${RUNROOT}/${NAME}
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 [ -n "${FATCKPT}" ] || { echo "[arm ${ARM}] FATAL: no fat epoch=*.ckpt in ${RUN} (pruned to slim-only? resume needs optimizer state)"; exit 1; }
 EP_AT=$(basename "${FATCKPT}" | grep -oE "epoch=[0-9]+" | grep -oE "[0-9]+")
-echo "[arm ${ARM}] ${NAME}: resuming from ${FATCKPT} (epoch=${EP_AT} = $((EP_AT+1)) done) -> OPEN-ENDED (no --epochs cap)"
+echo "[arm ${ARM}] ${NAME}: resuming from ${FATCKPT} (epoch=${EP_AT} = $((EP_AT+1)) done) -> target '"${EPOCHS_TARGET}"' epochs (effectively open-ended)"
 
 # longform sidecar default (CAPTIONS=stored to disable; SIDECAR/PROBS override) — MUST match
 # each arms original recipe for a coherent resume.
@@ -192,7 +204,7 @@ case ${FAMILY} in
       --adapter_type dora-rows --rank 128 --lora_alpha 128 \
       --optimizer fusion --base_precision fp32 \
       --lr ${LR} --batch_size ${BS} --frames ${T} \
-      --resume_ckpt "${FATCKPT}" --checkpoint_every_epochs 1 \
+      --resume_ckpt "${FATCKPT}" --epochs '"${EPOCHS_TARGET}"' --checkpoint_every_epochs 1 \
       --num_workers 6 --seed 1 --no_demos --logger csv --name ${NAME} \
       "${sc_args[@]}" 2>&1 | tee -a ${RUN}/train_continue_openended.log
     ;;
@@ -203,7 +215,7 @@ case ${FAMILY} in
       --adapter_type dora-rows --rank 128 --lora_alpha ${ALPHA} \
       --optimizer fusion --base_precision fp32 \
       --lr 1e-4 --batch_size 8 --frames ${T} --beat-aware-crop \
-      --resume_ckpt "${FATCKPT}" --checkpoint_every_epochs 1 \
+      --resume_ckpt "${FATCKPT}" --epochs '"${EPOCHS_TARGET}"' --checkpoint_every_epochs 1 \
       --num_workers 6 --seed 1 --no_demos --logger csv --name ${NAME} \
       "${sc_args[@]}" 2>&1 | tee -a ${RUN}/train_continue_openended.log
     ;;
@@ -223,7 +235,7 @@ case ${FAMILY} in
       --full-finetune --optimizer fusion \
       --use-ema --ema-beta 0.9999 --grad-clip-mode agc --weight_decay 0.1 \
       --lr 1e-4 --batch_size 2 --accumulate_grad_batches 2 --frames ${T} --beat-aware-crop \
-      --resume_ckpt "${FATCKPT}" --checkpoint_every_epochs 1 \
+      --resume_ckpt "${FATCKPT}" --epochs '"${EPOCHS_TARGET}"' --checkpoint_every_epochs 1 \
       --num_workers 6 --seed 1 --no_demos --logger csv --name ${NAME} \
       "${sc_args[@]}" 2>&1 | tee -a ${RUN}/train_continue_openended.log
     ;;
