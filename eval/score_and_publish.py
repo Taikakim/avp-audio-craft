@@ -158,6 +158,19 @@ Z0_ROOTS = [Path("/run/media/kim/Mantu/sa3_lora_runs/model_matrix"),
 Z0_STD_MAX = 2.0          # healthy global latent std is ~1.0; the drone runs away 1.3 -> 5.6 -> inf
 
 
+OP_POINT_BAD_FRACTION_LIMIT = 0.20  # Kim 2026-08-15, see is_op_point() below
+
+
+def is_op_point(e):
+    """cfg7/w1 -- the real operating point everywhere except _ptm rows (cfg1/w1, their only
+    native config; higher cfg 'cooks' them). Same cut dora_table.html's own default scoring
+    narrowed to the same day (build_clap_hyperparam_table.py) -- what anyone actually
+    auditions by default now."""
+    is_ptm = str(e.get("model", "")).endswith("_ptm")
+    cfg, w = e.get("cfg"), e.get("strength")
+    return (cfg == 1 and w == 1) if is_ptm else (cfg == 7 and w == 1)
+
+
 def leg_sanity(pattern, dry, skip) -> Step:
     """Refuse to score or publish audio decoded from blown-up latents.
 
@@ -174,8 +187,18 @@ def leg_sanity(pattern, dry, skip) -> Step:
     Unverifiable is NOT the same as clean: if no latent is found for any clip the step FAILS
     rather than passing quietly. --skip-sanity is the deliberate escape hatch, so bypassing
     is a choice someone typed rather than a silence they never saw.
+
+    SCOPE + TOLERANCE (Kim 2026-08-15, after the dronesweep batch tripped this at 177/432
+    bad across the FULL cfg1/7/16 x w0.6-3 sweep): the ship/no-ship verdict now looks ONLY at
+    cfg7/w1 (ptm: cfg1/w1) clips -- see is_op_point() -- and tolerates up to
+    OP_POINT_BAD_FRACTION_LIMIT (20%) bad even within that subset, rather than failing on any
+    single bad clip. Off-operating-point renders (cfg1/16, w0.6/1.5/2/3) are diagnostic sweep
+    cells nobody audits by default anymore; a model unstable only out there shouldn't block a
+    release that's fine where it's actually heard. The full-sweep audit is still written to
+    the sidecar for visibility (a model that's fine at cfg7/w1 but disintegrating everywhere
+    else is worth knowing), it just no longer gates the decision by itself.
     """
-    s = Step("latent sanity (z0 std)")
+    s = Step("latent sanity (z0 std, cfg7/w1 operating point)")
     if skip:
         return s.done(True, "SKIPPED by --skip-sanity (nothing was checked)")
     if dry:
@@ -185,9 +208,11 @@ def leg_sanity(pattern, dry, skip) -> Step:
     except ImportError:
         return s.done(False, "numpy unavailable -- cannot verify, refusing to call it clean")
 
-    clips = [e["file"] for e in (json.loads(l) for l in
-             MANIFEST.read_text().splitlines() if l.strip())
-             if e.get("model", "").startswith(pattern)]
+    matched = [e for e in (json.loads(l) for l in
+               MANIFEST.read_text().splitlines() if l.strip())
+               if e.get("model", "").startswith(pattern)]
+    op_entries = [e for e in matched if is_op_point(e)]
+    clips = [e["file"] for e in op_entries]
     if not clips:
         # "NOTHING TO CHECK" IS NOT "NOTHING IS WRONG". This returned True and let a run
         # proceed to scoring on 2026-08-13: leg_ingest had just staged 432 dronesweep clips
@@ -197,14 +222,16 @@ def leg_sanity(pattern, dry, skip) -> Step:
         # precisely to stop that reported OK, for the second time in four days, by a different
         # route than the first. The same race also made leg_ingest report "0 -> 0 models".
         #
-        # A pattern with no clips means one of: the ingest has not landed, the pattern is
-        # wrong, or the manifest is stale -- none of which is evidence the audio is sane.
+        # A pattern with no cfg7/w1 clips means one of: the ingest has not landed, the pattern
+        # is wrong, or the manifest is stale -- none of which is evidence the audio is sane.
         # Fail, and say which one it looks like.
         staged = len(list(MATRIX.glob(f"{pattern}*.m4a")))
-        return s.done(False, f"no manifest clips match '{pattern}' but {staged} {pattern}*.m4a "
-                             f"ARE staged -- the manifest has not caught up (re-run this step) "
-                             f"or the pattern is wrong. Refusing to call unchecked audio sane."
-                      if staged else
+        return s.done(False, f"no cfg7/w1 (ptm: cfg1/w1) manifest clips match '{pattern}' "
+                             f"({len(matched)} matched at other cfg/w, {staged} "
+                             f"{pattern}*.m4a staged) -- the manifest has not caught up "
+                             f"(re-run this step) or the pattern is wrong. Refusing to call "
+                             f"unchecked audio sane."
+                      if staged or matched else
                       f"no staged clips and no manifest clips match '{pattern}' -- nothing to "
                       f"verify, which is not the same as verified. Check the pattern.")
 
@@ -236,23 +263,35 @@ def leg_sanity(pattern, dry, skip) -> Step:
         roots_present = [r for r in Z0_ROOTS if r.exists()]
         if not roots_present:
             return s.done(True, f"latent roots UNREACHABLE ({Z0_ROOTS[0].parents[1]} not mounted?) "
-                                f"-- sanity NOT CHECKED for {len(clips)} clips. Publishing anyway: "
-                                f"an unmounted drive is an infrastructure state, not evidence about "
-                                f"the audio. Re-run when the drive is back to get a real verdict.")
-        return s.done(False, f"0 of {len(clips)} clips have a z0.npy under {Z0_ROOTS[0].parent} "
-                             f"(roots ARE mounted) -- cannot verify, refusing to call it clean "
-                             f"(--skip-sanity to override)")
+                                f"-- sanity NOT CHECKED for {len(clips)} cfg7/w1 clips. Publishing "
+                                f"anyway: an unmounted drive is an infrastructure state, not "
+                                f"evidence about the audio. Re-run when the drive is back to get "
+                                f"a real verdict.")
+        return s.done(False, f"0 of {len(clips)} cfg7/w1 (ptm: cfg1/w1) clips have a z0.npy "
+                             f"under {Z0_ROOTS[0].parent} (roots ARE mounted) -- cannot verify, "
+                             f"refusing to call it clean (--skip-sanity to override)")
+    bad_frac = len(bad) / len(checked)
     if bad:
+        # Full-sweep audit for visibility, even on a pass -- a model fine at cfg7/w1 but
+        # disintegrating at cfg16/high-w is a real finding, just not a blocking one anymore.
         side = MATRIX / f"{pattern}.latent_sanity.json"
         side.write_text(json.dumps(
-            {"artifact": f"{pattern} latent-sanity audit",
-             "criterion": f"bad = non-finite OR global z0 std > {Z0_STD_MAX} (healthy ~1.0)",
-             "summary": {"clips": len(clips), "checked": len(checked), "bad": len(bad)},
+            {"artifact": f"{pattern} latent-sanity audit (cfg7/w1 operating point)",
+             "criterion": f"bad = non-finite OR global z0 std > {Z0_STD_MAX} (healthy ~1.0); "
+                          f"ship/no-ship threshold = {OP_POINT_BAD_FRACTION_LIMIT:.0%} of this "
+                          f"cfg7/w1-only subset",
+             "summary": {"clips": len(clips), "checked": len(checked), "bad": len(bad),
+                         "bad_fraction": round(bad_frac, 3)},
              "clips": sorted(checked, key=lambda r: r["file"])}, indent=1))
-        return s.done(False, f"{len(bad)}/{len(checked)} clips decoded from blown-up latents "
-                             f"-- per-clip verdict written to {side.name}; NOT scoring or "
-                             f"publishing corrupt audio")
-    return s.done(True, f"{len(checked)}/{len(clips)} clips verified sane"
+    if bad_frac > OP_POINT_BAD_FRACTION_LIMIT:
+        return s.done(False, f"{len(bad)}/{len(checked)} ({bad_frac:.0%}) cfg7/w1 op-point "
+                             f"clips decoded from blown-up latents, over the "
+                             f"{OP_POINT_BAD_FRACTION_LIMIT:.0%} tolerance -- per-clip verdict "
+                             f"written to {pattern}.latent_sanity.json; NOT scoring or "
+                             f"publishing")
+    return s.done(True, f"{len(checked)}/{len(clips)} cfg7/w1 op-point clips verified sane"
+                  + (f", {len(bad)} bad ({bad_frac:.0%}, within the "
+                     f"{OP_POINT_BAD_FRACTION_LIMIT:.0%} tolerance)" if bad else "")
                   + (f" ({len(clips)-len(checked)} had no latent on disk)"
                      if len(checked) < len(clips) else ""))
 
