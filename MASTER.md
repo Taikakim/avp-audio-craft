@@ -482,6 +482,20 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
 
 ## 5. Known cross-project gotchas (the stuff that bites)
 
+- **mir venv Audiobox scoring zeroed out 2026-08-16 — system ffmpeg 8→9 upgrade broke
+  torchcodec's SONAME link; fixed in mir, doesn't need re-fixing here.** (G caught it:
+  `libavdevice.so.62: cannot open shared object file`, 0/162 CE scores on a test batch, no
+  partial results — the crash is transitive through torchaudio's load path, not anything
+  `audiobox_aesthetics.py` imports directly.) `score_and_publish.py`'s `leg_gpu()` calls
+  `MIR_PY` for exactly this step. Root cause + fix are documented in `mir/CLAUDE.md` (Known
+  Issues) — short version: no ffmpeg8-compat package exists anywhere, rebuilding torchcodec
+  against ffmpeg9 needs torch≥2.11 (mir has 2.9.1, a much bigger call than this warranted),
+  so `mir/bin/python` is now an `LD_LIBRARY_PATH`-prepending wrapper around a venv-private
+  extraction of the exact ffmpeg8 SONAMEs from the still-cached pacman package. Transparent
+  to every caller (`MIR_PY`, `python3`, `python3.12` all still work identically) — no other
+  repo needs to change anything. Verified: real Audiobox scoring run, 30/30 clips, real
+  non-null CE/PQ in `clip_metrics.db`.
+
 - **Flash-Attention is BUILT but INACTIVE by default — `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`
   to switch it on, and do it EVERYWHERE (30–100% faster).** *(2026-06-23)* The torch-2.10/2.12 ROCm
   venvs (`sat-venv`, `stable-audio-3/.venv`, `sa3-rocm7.13-test`) ship a **CK-backend
