@@ -99,19 +99,24 @@ def main():
     MAX_SEC = float(os.environ.get("CAPTION_MAX_SEC", "300"))
 
     def caption_source(p):
-        """(path_to_analyze, truncated?) — temp-wav truncation for overlong tracks."""
+        """(path_to_analyze, truncated?) — temp-wav truncation for overlong tracks, and
+        an unconditional m4a->wav pass: Music Flamingo's own loader needs torchcodec for
+        m4a (not in this image) even though librosa/audioread reads these files fine
+        (proven by goa_sep_task.py succeeding on the same m4a sources) -- so any m4a is
+        routed through librosa+soundfile regardless of duration, not just overlong ones."""
         import librosa
         try:
             dur = librosa.get_duration(path=str(p))
         except Exception:
             return p, False
-        if dur <= MAX_SEC:
+        is_m4a = p.suffix.lower() == ".m4a"
+        if dur <= MAX_SEC and not is_m4a:
             return p, False
         import soundfile as sf
         y, sr = librosa.load(str(p), sr=None, mono=False, duration=MAX_SEC)
         tmp = Path(tempfile.gettempdir()) / f"cap-trunc-{os.getpid()}.wav"
         sf.write(str(tmp), y.T if y.ndim > 1 else y, int(sr))
-        return tmp, True
+        return tmp, dur > MAX_SEC
 
     n_ok = n_fail = 0
     for k, p in enumerate(todo):
