@@ -35,6 +35,11 @@ SIF=${GRANITE_SIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-m
 GRANITE_MODEL=${GRANITE_MODEL:-ibm-granite/granite-3.3-8b-instruct}
 CAPJSON=${CAPJSON:-${SCRATCH}/goa_archive_captions/json}
 OUT=${OUT:-${SCRATCH}/goa_archive_captions/granite}
+# File-based, not --export=ALL,GRANITE_GENRE_HINT="a, b" -- a comma inside an --export value
+# truncates at the sbatch-parser level, and the naive inner-quote splice below (see
+# GRANITE_MODEL) word-splits on spaces once composed. Read from a file INSIDE the container
+# instead, same fix as GENRE_HINT_FILE in goa_caption.sbatch.
+GRANITE_GENRE_HINT_FILE=${GRANITE_GENRE_HINT_FILE:-}
 mkdir -p "${OUT}/shards"
 
 [ -n "${SIF}" ] || { echo "[granite] FATAL: no lumi-multitorch-full image"; exit 1; }
@@ -66,8 +71,12 @@ export MIOPEN_USER_DB_PATH=/tmp/miopen-${R} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-
 export TRITON_CACHE_DIR=/tmp/triton-${R} PYTORCH_TUNABLEOP_ENABLED=0
 rm -rf /tmp/miopen-${R} /tmp/triton-${R}; mkdir -p /tmp/miopen-${R} /tmp/triton-${R}
 export GRANITE_MODEL='"${GRANITE_MODEL}"'
+GENRE_HINT_VAL=""
+GHF='"${GRANITE_GENRE_HINT_FILE}"'
+[ -n "${GHF}" ] && [ -f "${GHF}" ] && GENRE_HINT_VAL=$(cat "${GHF}")
 python '"${CODE}"'/lumi/goa_granite_task.py \
   --shard '"${OUT}"'/shards/shard_${R}.txt --out '"${OUT}"' '"${LIMIT_ARG}"' \
+  --genre-hint "${GENRE_HINT_VAL}" \
   2>&1 | sed "s/^/[rank ${R}] /"
 '
 NG=$(ls "${OUT}"/*.json 2>/dev/null | wc -l)
