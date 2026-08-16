@@ -447,7 +447,16 @@ on a job meant to run for the full walltime is the tell.
   (2026-07-30: container transformers 4.57.6 won over the venv's 5.x; symptom = the wrong
   `__file__` under /opt/venv). After activate, always
   `export PYTHONPATH=$VENV/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}`, and
-  assert the critical package's `__file__` is NOT under /opt/venv. Related: the READABLE
+  assert the critical package's `__file__` is NOT under /opt/venv.
+  **COROLLARY (2026-08-17, ckpt_dup_delta.sbatch): the OVERLAY VENV DOESN'T HAVE torch (or
+  probably anything heavy) IN ITS OWN site-packages — it relies on `/opt/venv`'s baseline
+  PYTHONPATH (already set by the container, present even with NO manual PYTHONPATH export) for
+  torch via system-site-packages inheritance.** So `export PYTHONPATH=$VENV/lib/.../site-packages`
+  with NO `${PYTHONPATH:+:$PYTHONPATH}` suffix — i.e. REPLACING instead of appending — silently
+  drops `/opt/venv` and produces `ModuleNotFoundError: No module named 'torch'`, not a wrong
+  version. Confirmed via a diagnostic probe comparing `sys.path` with vs without the override.
+  **Never write a bare `export PYTHONPATH=...` after activating this venv — always append.**
+  Related: the READABLE
   AIF images live under `/appl/local/laifs/containers/` — the `easybuild-sif-images/`
   symlinks point into another project's scratch and are NOT world-readable. And
   `is_flash_attn_2_available()` is always False on the GPU-less login node (it checks

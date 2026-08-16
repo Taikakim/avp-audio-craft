@@ -1,15 +1,21 @@
 #!/bin/bash
 # ckpt_dup_delta.sbatch — CONTINUITY 2026-08-17: run ckpt_dup_delta.py as a real sbatch job
-# instead of a bare login-node singularity call. The login-node attempt (run_ckpt_dup_delta.sh)
-# hit `ModuleNotFoundError: No module named 'torch'` even inside `singularity exec` -- torch
-# was missing entirely (not just shadowed by the container's own /opt/venv, which is a
-# DIFFERENT documented gotcha -- SKILL.md's shadow-venv note is about wrong VERSIONS winning,
-# not modules being absent altogether). Most likely cause: /appl/local/laifs/containers/ isn't
-# mounted the same way outside a SLURM allocation. Every OTHER singularity invocation this
-# session has gone through srun inside an sbatch job and worked reliably -- use that proven
-# path instead of debugging login-node-specific mount/namespace quirks. No GPU actually needed
-# for this diff (pure CPU + mmap), but keeping --gpus-per-node=1 for parity with every other
-# proven job template (this project's allocation is GPU-partition only).
+# instead of a bare login-node singularity call (that first attempt, run_ckpt_dup_delta.sh, hit
+# the same ModuleNotFoundError for an unrelated reason -- no SLURM allocation at all outside
+# srun; moot now, see below).
+#
+# ROOT CAUSE OF THE ModuleNotFoundError (confirmed via diag_venv_probe.sbatch, 2026-08-17):
+# this script's own `export PYTHONPATH=${VENV}/lib/python3.12/site-packages` REPLACED PYTHONPATH
+# outright instead of appending to it. The multitorch container ships its OWN /opt/venv with
+# torch already on a baseline PYTHONPATH (confirmed: sys.path shows /opt/venv/lib/python3.12/
+# site-packages present WITHOUT ever setting PYTHONPATH manually) -- the overlay venv relies on
+# that system-site-packages inheritance for torch, it's not reinstalled into the venv's own
+# site-packages. Overwriting PYTHONPATH dropped /opt/venv entirely, leaving only the (torch-less)
+# overlay site-packages. FIX: append, don't replace --
+# `export PYTHONPATH=${VENV}/lib/python3.12/site-packages${PYTHONPATH:+:${PYTHONPATH}}` (the
+# exact form SKILL.md's shadow-venv note prescribes -- I quoted the rule in an earlier commit
+# message but didn't actually write the append syntax; now fixed AND added as its own explicit
+# SKILL.md bullet so it isn't just implied by the shadow-venv paragraph next time).
 #
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
@@ -39,6 +45,6 @@ set -euo pipefail
 CODE='"${CODE}"'
 VENV='"${VENV}"'
 source ${VENV}/bin/activate
-export PYTHONPATH=${VENV}/lib/python3.12/site-packages
+export PYTHONPATH=${VENV}/lib/python3.12/site-packages${PYTHONPATH:+:${PYTHONPATH}}
 python3 ${CODE}/lumi/ckpt_dup_delta.py --run '"${RUN}"'
 '
