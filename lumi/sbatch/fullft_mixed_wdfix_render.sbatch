@@ -48,7 +48,7 @@ set -euo pipefail
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; CODE=${PROJ}/code
 source '"${VENV}"'/bin/activate
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
-export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor${PYTHONPATH:+:${PYTHONPATH}}
+export PYTHONPATH=${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor${PYTHONPATH:+:${PYTHONPATH}}
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
 export MIOPEN_USER_DB_PATH=/tmp/miopen-mwr MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-mwr
