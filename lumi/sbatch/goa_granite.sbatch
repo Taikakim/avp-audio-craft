@@ -33,8 +33,8 @@ CODE=${PROJ}/code
 MODELS=${PROJ}/models
 SIF=${GRANITE_SIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
 GRANITE_MODEL=${GRANITE_MODEL:-ibm-granite/granite-3.3-8b-instruct}
-CAPJSON=${SCRATCH}/goa_archive_captions/json
-OUT=${SCRATCH}/goa_archive_captions/granite
+CAPJSON=${CAPJSON:-${SCRATCH}/goa_archive_captions/json}
+OUT=${OUT:-${SCRATCH}/goa_archive_captions/granite}
 mkdir -p "${OUT}/shards"
 
 [ -n "${SIF}" ] || { echo "[granite] FATAL: no lumi-multitorch-full image"; exit 1; }
