@@ -337,6 +337,12 @@ def leg_tables(pattern, dry) -> Step:
     run([SAO_PY, str(SAO / "eval/build_clap_hyperparam_table.py")])
     run([SAO_PY, str(SAO / "eval/build_dora_table_page.py")])
     run(["python3", str(SAO / "Misc/build_model_matrix.py")])
+    # evaluator.html's own pre-filtered manifest (Kim 2026-08-16, "I can perform periodic
+    # updates then, it does not have to be dynamic") -- must run AFTER build_clap_hyperparam_
+    # table.py, which is what writes scored_models_avp.json this script reads. Non-fatal by
+    # design (matches the rest of this leg): a stale/missing evaluator manifest degrades that
+    # one public page, it doesn't block scoring or publishing everything else.
+    run([SAO_PY, str(SAO / "eval/build_evaluator_manifest.py")])
     agg = AGG.read_text() if AGG.exists() else ""
     models = manifest_models(pattern)
     in_agg = [m for m in models if m in agg]

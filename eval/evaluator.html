@@ -96,11 +96,7 @@ select,button{font:inherit;color:inherit}
    data. Questions or feedback — reach me on <a
    href="https://signal.me/#eu/00NAPf7EAdk6zym5PgUzzl5Jws72qThXA-2J779TrvSH88U5S4ZIZ4oexs8N115H"
    target="_blank" rel="noopener">Signal</a>.</p>
-  <div style="text-align:center">
-   <button id="startbtn" disabled>loading…</button>
-   <p class="note" style="margin-top:10px">First load can take a few minutes on a slower
-    connection — it downloads the full track catalog once. Thanks for your patience!</p>
-  </div>
+  <div style="text-align:center"><button id="startbtn" disabled>loading…</button></div>
  </div>
 </div>
 
@@ -163,28 +159,26 @@ function eligible(e){
  const cfg=parseFloat(e.cfg),w=parseFloat(e.strength);
  return isPtm?(cfg===1&&w===1):(cfg===7&&w===1);
 }
-// SCORED gate: manifest_live.jsonl lists every clip that was ever RENDERED, with no regard
-// for whether it passed the latent-sanity gate or which corpus it was trained on.
-// scored_models_avp.json is build_clap_hyperparam_table.py's aggregate, filtered to
-// dataset=='avp' (fine-tuned on Kim's own music only) with the xft* borked family excluded
-// (same HIDE_MODEL_PREFIXES exclusion dora_table.html applies internally -- SVD-extracted
-// runs that "only add noise", not fit for a public page). FAIL CLOSED: if the fetch fails,
-// SCORED stays empty and nothing pools rather than silently widening to every model.
-let SCORED=new Set();
+// PRE-FILTERED, PERIODICALLY-REBUILT manifest (Kim 2026-08-16: "the splash page load
+// operation can take a long time" -> "I can perform periodic updates then, it does not have
+// to be dynamic"). manifest_live.jsonl is the shared index over the FULL model_matrix corpus
+// -- 24.5MB / ~71,700 lines at last measure -- of which this page ever used only the tiny
+// eligible + avp-scored slice, filtered client-side in every visitor's browser after a
+// multi-megabyte download. eval/build_evaluator_manifest.py now does that filtering ONCE at
+// build time (as part of score_and_publish.py's table-rebuild step -- the same cycle Kim
+// already runs periodically) and writes manifest_avp_evaluator.json: already scoped to
+// dataset=='avp' scored models (xft* excluded) AND already cfg7/w1-eligible-only. Measured
+// 2026-08-16: 24.5MB -> ~1MB, a ~24x cut. No cache:'no-store' here, unlike the live internal
+// boards -- staleness between periodic rebuilds is the accepted tradeoff for a static file
+// the browser can actually cache. eligible() stays as a defense-in-depth re-check, not the
+// primary filter anymore.
 let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
 async function loadManifest(){
- try{
-  const sr=await fetch(CB+'scored_models_avp.json',{cache:'no-store'});
-  SCORED=new Set(await sr.json());
- }catch(_){SCORED=new Set();}
- const r=await fetch(CB+'manifest_live.jsonl',{cache:'no-store'});
- const txt=await r.text();
+ const r=await fetch(CB+'manifest_avp_evaluator.json');
+ const entries=await r.json();
  const out={};
- for(const ln of txt.split('\n')){
-  if(!ln.trim())continue;
-  let e;try{e=JSON.parse(ln);}catch(_){continue;}
+ for(const e of entries){
   if(!eligible(e))continue;
-  if(!SCORED.has(e.model))continue;
   const pid=String(e.prompt_id);
   const {key,label}=lengthBucket(e);
   out[key]=out[key]||{label,byPrompt:{}};
