@@ -50,7 +50,11 @@ $MAX_STR = 200;
 // change), and the client retries on 429 anyway, so this only needs to deter genuine flooding.
 $RATE_SECONDS = 0.15;
 
-$QUESTIONS = ['top_end', 'spectral_image', 'production', 'structure', 'interesting'];
+// 2026-08-16: dropped 'production' ("too ambiguous and overlapping" -- Kim). 'structure' is
+// now conditional client-side (native-length clips only -- a 20s grid clip has no room for
+// phrase/section flow to exist), but still validated the same way here: this whitelist is
+// deliberately not length-aware, it just accepts whichever question_ids the client sends.
+$QUESTIONS = ['top_end', 'spectral_image', 'structure', 'interesting'];
 
 if (!is_dir($DATA)) @mkdir($DATA, 0700, true);
 if (!is_dir($RATE)) @mkdir($RATE, 0700, true);

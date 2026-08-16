@@ -307,25 +307,44 @@ const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('
 // "immediate"), it just automatically advances to the next question rather than the next
 // pair, so every pair now yields data on every dimension instead of whichever one the
 // picker happened to be set to.
+// Kim 2026-08-16, narrowing to what's actually diagnostic: dropped "overall better
+// produced sound?" outright -- "too ambiguous and overlapping" with the other dimensions,
+// not a distinct thing to rate. "top end" reworded to "high frequency detail" (plainer for a
+// non-engineer rater). Spectral image reworded around a concrete, checkable image (do
+// instruments stand out with real timbre, or is it undifferentiated noise) rather than the
+// vaguer "precise/noisy" framing -- Kim: "I'm not even sure what the spectral clarity is a
+// product of" so the question itself needs to point at something checkable by ear even
+// without knowing the underlying cause. structure/flow is nativeOnly (see questionsFor()
+// below) -- a 20s grid clip barely has time for phrase/section structure to exist; Kim: "flow
+// is maybe a metric of attention and long context learning", i.e. only meaningful once a clip
+// is long enough for that to be tested at all. Net technical dimensions this cycle is actually
+// trying to separate: HF quality (top_end), loop/average-collapse resistance welling up as
+// "interesting" over a whole listen, spectral separation (mechanism still unclear -- kept as
+// an open, ear-checkable question rather than a claimed cause), and long-context coherence
+// (structure, native lengths only).
 const QUESTIONS=[
- {id:'top_end',text:'more precise/natural top end? (less harshness/noise)'},
- {id:'spectral_image',text:'more precise spectral image? (less noisy/glitchy)'},
- {id:'production',text:'overall better produced sound?'},
- {id:'structure',text:'more coherent structure? (flow of phrases/sections)'},
+ {id:'top_end',text:'more precise/natural high frequency detail? (less harshness/noise)'},
+ {id:'spectral_image',text:'clearer soundstage? (instruments stand out from each other and have meaningful timbres, instead of poorly defined noises lacking identity)'},
+ {id:'structure',text:'more coherent structure? (flow of phrases/sections)',nativeOnly:true},
  {id:'interesting',text:'more interesting? (creative/unique)'},
 ];
-let qIndex=0;
+// The active question set depends on the length bucket -- computed fresh per pair in
+// resetRound() (curLenKey is already set by then) rather than filtering QUESTIONS inline
+// everywhere qIndex is used.
+function questionsFor(lenKey){return QUESTIONS.filter(q=>!q.nativeOnly||lenKey!=='std');}
+let activeQuestions=QUESTIONS,qIndex=0;
 function showQuestion(){
  // Kim 2026-08-16: the bare "all questions answered" didn't tell the rater they still need
  // to score both clips (0-5) before the round advances -- maybeAdvance() gates on ratedA AND
  // ratedB in addition to the question cycle, so "answered" alone undersold what's left.
- if(qIndex>=QUESTIONS.length){qTextEl.textContent='All the questions have been answered. Rate the clips to proceed.';qProgEl.textContent='';return;}
- qTextEl.textContent=QUESTIONS[qIndex].text;
- qProgEl.textContent='question '+(qIndex+1)+' / '+QUESTIONS.length;
+ if(qIndex>=activeQuestions.length){qTextEl.textContent='All the questions have been answered. Rate the clips to proceed.';qProgEl.textContent='';return;}
+ qTextEl.textContent=activeQuestions[qIndex].text;
+ qProgEl.textContent='question '+(qIndex+1)+' / '+activeQuestions.length;
 }
 
 let curPid,curLenKey,curA,curB,roundState;
 function resetRound(){
+ activeQuestions=questionsFor(curLenKey);
  roundState={ratedA:false,ratedB:false};
  qIndex=0;showQuestion();
  [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
@@ -368,10 +387,10 @@ function rateSlot(slot,val,btn){
  maybeAdvance();
 }
 function chooseAB(choice,btn){
- if(qIndex>=QUESTIONS.length)return;   // already finished this pair's cycle -- ignore stray taps
+ if(qIndex>=activeQuestions.length)return;   // already finished this pair's cycle -- ignore stray taps
  btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
  btn.classList.add('chosen');
- const q=QUESTIONS[qIndex];
+ const q=activeQuestions[qIndex];
  post({type:'ab',question_id:q.id,prompt_id:curPid,length:curLenKey,
   model_a:curA.model,ckpt_a:curA.ckpt,cfg_a:curA.cfg,w_a:curA.w,file_a:curA.file,
   model_b:curB.model,ckpt_b:curB.ckpt,cfg_b:curB.cfg,w_b:curB.w,file_b:curB.file,choice});
@@ -390,7 +409,7 @@ btnB.onclick=()=>chooseAB('B',btnB);
 // in the cycle is answered, load a fresh random pair automatically. Random sampling, so
 // there is nothing meaningful for a "next" button to skip past.
 function maybeAdvance(){
- if(roundState.ratedA&&roundState.ratedB&&qIndex>=QUESTIONS.length){
+ if(roundState.ratedA&&roundState.ratedB&&qIndex>=activeQuestions.length){
   statusEl.textContent='nice — next pair…';
   setTimeout(loadNewPair,550);
  }
