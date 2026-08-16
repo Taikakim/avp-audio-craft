@@ -35,7 +35,13 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    Cross-link both ways (the index entry AND, where one exists, the subsystem's CLAUDE.md/spec
    section). Litmus: *if you'd have to grep to find it next month, it isn't registered.* (This rule
    exists because the fleet-comms spec was grep-only — indexed nowhere obvious — until 2026-08-07.)
-6. **`KIM-TASKLIST.md`** — the team-maintained running tasklist **for Kim** (Kim 2026-08-05): the
+6. **`.claude/skills/lumi-ops/SKILL.md`** — for ANY LUMI/EuroHPC task (sbatch, transfers,
+   diagnosing jobs): the access model (**agents never run ssh/scp/rsync themselves — craft the
+   command, Kim runs it from his LOCAL terminal**), and that **compute/login nodes are
+   air-gapped — no `git pull`, no internet at all**; code reaches LUMI only via
+   `rsync -avR -e "ssh -i ~/.ssh/id_EFP" <path> akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+   (dry-run with `-n` first). Getting this wrong wastes a round-trip every time.
+7. **`KIM-TASKLIST.md`** — the team-maintained running tasklist **for Kim** (Kim 2026-08-05): the
    single place the fleet surfaces what needs him — decisions, his ears, reviews, submits — so
    sprawling work across four agents doesn't get forgotten. **When work lands that needs Kim, ADD an
    item; when it's resolved, MOVE it to Recently-done with a date.** Filelock before editing; keep it
