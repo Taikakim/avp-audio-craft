@@ -80,6 +80,15 @@ with `cotainr`. You rarely need to build one:
     must also `export PYTHONPATH=$VENV/lib/python3.X/site-packages${PYTHONPATH:+:$PYTHONPATH}`,
     or imports silently resolve to the container's versions. Assert a critical package's
     `__file__` is *not* under `/opt/venv`.
+    **That `${PYTHONPATH:+:$PYTHONPATH}` suffix is load-bearing, not decorative (2026-08-17).**
+    A `--system-site-packages` overlay venv never actually installs heavy packages (torch
+    included) into its *own* site-packages — it relies on the image's baseline `PYTHONPATH`
+    (already pointing at `/opt/venv/lib/python3.X/site-packages`, present with **no** manual
+    export at all) for them via system-site-packages inheritance. Writing a bare
+    `export PYTHONPATH=$VENV/lib/python3.X/site-packages` (replacing instead of appending)
+    silently drops `/opt/venv` from the path entirely — symptom is `ModuleNotFoundError: No
+    module named 'torch'`, not a wrong version. Confirmed via a `sys.path` probe comparing
+    with/without the override (`lumi/sbatch/diag_venv_probe.sbatch`).
   - No C-extension pip builds (no compiler in the SIFs — one failing sdist aborts the whole pip
     call); use `--no-deps` for heavy meta-packages and satisfy the import chain manually. A venv
     created inside a SIF has `bin/python` symlinked to the container's python — a *broken* link
