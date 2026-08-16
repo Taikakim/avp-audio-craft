@@ -22,7 +22,7 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=7
 #SBATCH --mem=0
-#SBATCH --time=06:00:00
+#SBATCH --time=03:00:00
 #SBATCH --job-name=sa3_render_c8
 #SBATCH --output=%x-%j.out
 
@@ -35,7 +35,10 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 SNAP=${CODE}/lumi/matrix_prompts_snapshot.json
 ROUT=${SCRATCH}/renders/matrix_cells
-CFGS=${CFGS:-1,7,16}
+# CFG (Kim direct 2026-08-16): cfg=1 is the PT-medium-native config, cfg=7 is for the full
+# (medium-base) model -- none of these 8 arms are --pt-medium (all medium-base, DoRA or
+# full-FT), so cfg=7 alone applies uniformly here. Dropped 1/16 -> 1/3 the cell count.
+CFGS=${CFGS:-7}
 NLAST=${NLAST:-2}
 
 [ -n "${SIF}" ] || { echo "[render-c8] FATAL: no lumi-multitorch-full image"; exit 1; }
