@@ -145,7 +145,7 @@ def leg_ingest(pattern, src, dry) -> Step:
     if dry:
         return s.done(True, f"DRY: would ingest from {src}")
     rc, out = run([SAO_PY, str(SAO / "eval/ingest_matrix_cells.py"), "--src", str(src),
-                   "--only-prefix", pattern])
+                   "--only-prefix", pattern, "--rebuild"])
     after = manifest_models(pattern)
     # gate on the manifest, not rc
     return s.done(bool(after), f"{before} -> {len(after)} models in manifest"
