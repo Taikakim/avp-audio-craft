@@ -65,9 +65,10 @@ rm -rf /tmp/miopen-${ARM} /tmp/triton-${ARM}; mkdir -p /tmp/miopen-${ARM} /tmp/t
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 ulimit -n 131072 2>/dev/null || true
 echo "[preenc shard ${ARM}] start $(date +%H:%M:%S)"
-python ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
+python -u ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
     --model same-l --data_dir '"${BIGSET}"' \
     --shard ${ARM}/8 --sample_size '"${SS}"' --pad --batch_size 1 --num_workers 1 \
+    --no_caption_check \
     --output_path '"${OUT}"' 2>&1 | tail -n +1 | sed "s/^/[shard ${ARM}] /"
 echo "[preenc shard ${ARM}] done $(date +%H:%M:%S)"
 '

@@ -72,6 +72,7 @@ while [ "${FIDX}" -lt "${FINE}" ]; do
   python -u ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
       --model same-l --data_dir '"${BIGSET}"' \
       --shard ${FIDX}/${FINE} --sample_size '"${SS}"' --pad --batch_size 1 --num_workers 1 \
+      --no_caption_check \
       --output_path '"${OUT}"' 2>&1 | sed "s/^/[shard ${FIDX}\/${FINE}] /" \
     || echo "[preenc-fine shard ${FIDX}/${FINE}] FAILED (non-fatal, continuing to next sub-shard)"
   echo "[preenc-fine shard ${FIDX}/${FINE}] done $(date +%H:%M:%S)"

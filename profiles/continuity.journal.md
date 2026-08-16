@@ -1576,3 +1576,164 @@ MID-SWEEP: **Kim-direct criterion correction** (via W): the "off-lane = doesn't 
 SYNTHESIS (the 5 converge on 3 things we build): (1) MOVEMENT-as-feature has two rigorous differentiable low-d encodings — Polansky contour (ordinal/monotone-inv) + path signatures (analytic/reparam-inv/universal-nonlinearity, signatory), SigDiffusions = the generator of movement skeletons to condition on. (2) CONSONANCE has two reconcilable theories — Tymoczko even-division/orbifold-center (pitch-only, cheap, chroma-circle-differentiable) + Sethares spectral-roughness (timbre-aware, Essentia today) → fused harmonic-tension control/eval is the obvious build. (3) high-gain GUIDANCE is live SOTA (Anatomica) = our LatCH family-A; validates the 1000x gain Zach's intern team never tried (reconciles 2603.04366's chroma "failure" as under-scaling). THROUGH-LINE: every framework has a RESOLUTION DIAL with a sweet spot (n-ary / raw-demean-whiten / sig-depth / orbifold-quotient / Q-and-beta) — 5 independent sightings ⇒ structural, not incidental. Actionable-today ranking: dissonance/roughness timeseries (free, Essentia) > path-signature movement feature (signatory) > PH structure control (heavy, 2nd-wave).
 
 Comms hygiene this session (owned on channel): was READ-DEAF (wait fired on traffic, didn't re-arm — W's marker system caught it); edited shared docs unguarded all session; and re-made the double-detach bug once tonight (nohup&+run_in_background → orphan waiter, killed+re-armed clean). Standing fix now: re-arm `wait` every turn as a BARE run_in_background:true call, never nohup/&; use `filelock.py hold PATH --handle C -- CMD` for shared files.
+
+## 2026-08-12 — D3 Part B: f0 into training crops (the crop-encoder resampler wiring)
+
+F teed up Part B of the melody head (Kim asked him to finish D3 where he had the ingredients; the
+head train + calibrate are mine + GPU + Kim's ears). Two pieces, both landed + committed in the
+stable-audio-3 fork:
+
+**1. Wired W's resampler.** `sa3_encode_from_manifest.build_crop_timeseries` applied ONE rate (100 Hz)
++ ONE pool (mean) to every field — correct for the old 20-legacy-envelope store, silently wrong now
+that the store spans 0.2–100 Hz + f0 sentinels + categorical chords (W's three measured bugs). Routed
+it through W's `mir/src/tools/crop_timeseries_resample.py` — **imported, not copied**: W's whole point
+is the pooling rules are properties of the measurement and live in mir. Kept the encoder's disk-load +
+colocated fallback; W's function does the per-field slice/pool. strict=True raises on non-coverage →
+caught as a distinct LOUD per-crop skip (the old path returned None with a misleading "no timeseries").
+TDD'd the WIRING (W already TDD'd the resampler): synthetic mixed-rate store, RED on old code (coarse
+field sliced at 100 Hz → out-of-range → whole crop dropped), GREEN on wired.
+
+**2. --companion-only.** New CPU path: rebuild ONLY the `.TIMESERIES.npz` beside existing `.npy`
+latents from each crop's `<idx>.json` (source_track + timestamps). No model, no audio read, no GPU.
+This is how f0 reaches the 5400 pristine goa crops WITHOUT re-encoding them (F's option b; option a
+would re-do all pristine latents, which the tool explicitly guards). Verified sample: companions
+21→51 fields, f0 region-align corr 0.9996 vs an independent whole-track masked-mean recompute,
+voiced-frac preserved, chords integer-valued, **.npy latents untouched**.
+
+**Negatives / gotchas for the next instance:**
+- The Lehto store has 5035 npz but only **4457 carry f0** — the ~578 numbered-prefix tracks (`001. …`)
+  are NOT goa-backfilled. My first coverage sample (first 400 alphabetical) hit those and read 0 f0;
+  had to check an artist-named track (Etnica) to see f0. Don't conclude "no f0" from a numbered sample.
+- f0 `field_rate` is **None** for non-f0 tracks (registered key, absent array). W's resampler does
+  `float(rates.get(key, default))` → `float(None)` would crash — but it only iterates fields PRESENT
+  as arrays, so a non-f0 track never hits it. Safe, but the None is a latent landmine if anyone ever
+  iterates the rate dict directly.
+- **colocated-precedence edge (untested, flagged):** `find_whole_track_npz` checks the colocated
+  `track_folder/<name>.npz` BEFORE the flat `--timeseries-root/<name>.npz`. companion-only relies on
+  the flat store (where W's f0 lives); a stale colocated .npz beside a goa track would shadow it. Goa
+  uses the flat store so it didn't bite, but if production hits it, force-flat is the fix.
+- Left the `latents_sa3` refuse-guard fronting companion-only → the pristine corpus can't be mutated
+  until Kim picks in-place vs copy. Deliberate; flagged on chat.
+
+Part A (whole-track f0 source) was already green (W + F both verified). Part B (this) unblocks the
+head; still gated on F's crop spot-check before I wire the z→height readout + train.
+
+## 2026-08-14 — D3 melody head wired + goa pilot trained (both voices)
+
+Kim was heading out for the night, asked me to work D3's open tasks while he's away. Checked
+the dialogue thread first (my own 01:14 08-13 note had settled it): goa data is fully green
+(Part A+B both verified twice), sequencing was goa-pilot-first then AVP iteration-2 later, and
+I'd stated the architecture call myself as head owner — LatCH, full-width (the 2026-07-22 SAME
+melody probe already found melody is a ~15-dim DISTRIBUTED subspace with no per-channel pitch
+encoding, so a FiLM/scalar conditioner would be the wrong shape; LatCH's full-width linear
+readout is what the probe's own finding calls for). No new Kim decision was actually blocking
+this — I'd just described it as "confirming arch direction w/ Kim" without following through.
+
+The actual gap: `LatCHDataset`/`collate_varlen`/`train_latch.py` had no way to weight a loss
+by a per-frame confidence — every existing head's `mask` was pure padding. f0's settled loss
+design (masked-mean regression WEIGHTED BY the voiced mask, not thresholded, per W's 01:14
+consensus + my own note) needed that wired in. TDD (5 new/updated tests, RED→GREEN): added an
+optional `voiced_field` to `LatCHDataset`, folded into `collate_varlen`'s `weight` tensor,
+multiplied into `mask` at exactly one line in `train_latch.py`'s loop — zero changes to the
+loss functions themselves, since they already cast mask to `pred.dtype` and a continuous-
+valued mask just acts as a soft weight. Every other head's training is byte-identical (weight
+defaults to all-ones).
+
+Trained both voices on the real production data (`latents_sa3`, 5392 crops, standard head
+config matching the other 14 production heads — dim256/depth4/adaln_zero): f0_other 0.286→
+0.241, f0_bass 0.194→0.178, 3 epochs, both monotonic. Saved into `latch_weights_sa3_medium/`
+alongside the production heads. **This is a pilot, not a verdict** — 3 epochs proves the
+harness end-to-end, nothing more; the disintegration-gate rule means no "works" claim until
+guided-gen eval + Kim's ears. Also flagging for later: `--standardize`'s mean/std are computed
+over the RAW target including the 0.0 Hz unvoiced sentinel (voicing only enters via the loss
+weight, not the standardization stats) — probably fine since the head never gets loss signal
+on those frames, but worth checking if the head misbehaves near the unvoiced boundary.
+
+Next real step is more epochs + an eval pass, then AVP iteration-2 (W's step 1 + F's step 2 are
+both already scoped and unblocked per the 08-13 thread — nobody's run them yet, purely because
+the sequencing said goa-first).
+
+Separately tonight: ran Kim's away-from-keyboard ask for a small local drone-divergence
+isolation ablation (WORKLOG has the full readout). The interesting negative: EMA and all three
+FusionOpt arms OOM on the local 16GB card before the first optimizer step — the two axes most
+implicated in the actual drone fix can't be isolated locally at all, only on LUMI. Also found
+and routed around a real venv bug (`SAO/.venv` missing `librocm-openblas.so.0` +
+`librocprofiler-sdk.so.1` → any multi-worker DataLoader crashes on fork). Kim's doing the LUMI
+side himself tomorrow evening.
+
+## 2026-08-14 (cont'd) — AVP iteration-2 landed; melody head bracket; a real lesson about run_in_background
+
+Kim went to sleep with "keep working, tokens tight, prefer training/bracketing over theory
+since you're Sonnet 5.0" — a clean instruction to switch modes: less reasoning, more running
+things and reporting what happened.
+
+**Bracket, honestly read.** 7 short (5-epoch) LatCH arms on the goa f0_other/f0_bass targets,
+crossing loss type and t_injection. The tempting headline is "concat beats adaln_zero" (0.233
+vs 0.237 on the lead voice) but bass went the other way (adaln 0.172 vs concat 0.174) — both
+gaps under 2%, well inside single-seed 5-epoch noise. Wrote it up as a genuine non-result
+rather than picking the flattering number: no reason yet to move the production default.
+
+**A real infrastructure lesson, expensive to learn.** Tried `run_in_background` for a 40-epoch
+run to get real convergence data without babysitting it. The harness reported "killed" — but
+the underlying process had actually kept training, DETACHED, invisible to me, all the way to
+epoch 39. I didn't know that, so when the harness said "killed" I retried in the foreground —
+a FRESH model, different init, writing to the SAME checkpoint filenames (train_latch.py's
+naming doesn't include --run-name, only --save-dir). The two runs' checkpoints interleaved:
+ep1-6 from the second attempt, ep7-39 from the first, two different random inits stitched
+into one filename sequence that looks like a single training run but isn't. Caught it by
+checking file timestamps before trusting the "long run" data — good thing I checked before
+writing it up as a real convergence curve. Deleted the lot, moved to short (5-epoch) sequential
+FOREGROUND calls with per-arm save-dirs, which behaved predictably every time after that.
+Lesson for the fleet, now in WORKLOG: give every bracket arm its own save-dir, always: and
+trust foreground over background for GPU work on this box until someone roots out why
+background tasks detach instead of dying.
+
+**AVP iteration-2, both steps, actually landed.** This was the part of D3 that's been "scoped
+and ready" since last night's dialogue thread but nobody had spent the CPU on. W's Step 1
+(add f0 to the 170 AVP sources) ran clean in ~5 minutes — much faster than W's own 25-minute
+estimate, probably because only 4 fields were missing this time, not the full expanded set.
+F's Step 2 (the SCALE transform onto all 8 bungee variants per source) didn't exist as code
+yet, so I built it — TDD, numerically checked against real data before trusting a 170-track
+run (pitch ratio measured 1.1234 vs the exact expected 1.1225; tempo value-preservation
+1.0006 vs 1.0), then ran the whole corpus: 1346/1346 variants, 0 failed, matching the corpus's
+own count exactly — a good feeling, closing a loop two other instances had scoped and left
+waiting.
+
+**What's still open, honestly:** the AVP f0 is only at the whole-track level. Nobody has
+pre-encoded AVP to SA3 latents WITH f0 crop companions yet — that's a real next step (mirrors
+what I did for goa's `latents_sa3` companions two nights ago), and it's the thing standing
+between "AVP has f0" and "the head can actually train on AVP." Flagging it plainly rather than
+implying iteration-2 is done, because it isn't.
+
+### [2026-08-17] preencode_bigset's "memory leak" was never a leak -- caption_metadata_fn rejecting 100% of goa_archive
+Ten-day mystery closed by accident, not by more leak-hunting. Tonight I built a 96-way
+fine-grained-shard restart-between-batches workaround for the still-unresolved RSS climb
+(preencode_bigset_finegrained.sbatch — each sub-shard runs as a fresh subprocess so no single
+process's RSS can climb far, regardless of cause). It immediately surfaced a NEW symptom instead:
+`>100 consecutive load/skip retries — Aborting` on nearly every sub-shard. Traced it properly
+(Kim's exact words: "do the files have the txt sidecars they need?" — a question I should have
+asked myself days ago) rather than guessing again: `pre_encode_dataset.py`'s `caption_metadata_fn`
+hard-rejects any file without a matching `.txt`. Checked the local source corpus directly
+(Mantu/ai-music/Goa_Separated, the thing goa_archive mirrors) — 0 `.txt` files across 21,702
+audio files. Every single encode attempt this whole campaign has been rejecting 100% of the
+corpus. The "leak" was glibc's allocator not returning freed large-PCM decode buffers to the OS
+across hundreds of wasted decode-then-reject cycles per shard — a real RSS high-water-mark, not a
+Python-level reference leak. This also explains why the earlier `gc.get_objects()` scan found
+nothing retained (it wasn't a Python leak to find) and why bigger shards showed bigger RSS climbs
+before smaller ones hit the retry-abort instead (more files = more wasted decodes before the
+100%-rejection retry budget ran out).
+
+Fix: `--no_caption_check` flag on `pre_encode_dataset.py`, passing `custom_metadata_fn=None` —
+already the library's own supported no-op path (`dataset.py`: registration is gated on
+`is not None`), not a new code path. Wired into all three preencode sbatch scripts. **Not yet
+verified end-to-end** — resubmitted with the fix but haven't confirmed real (non-silence) latents
+are actually landing on disk. Root cause found, fix shipped, but "actually works" still needs a
+morning check.
+
+**Lesson for me, not just for the log:** ~7 layers of isolation testing (bare decode primitive,
+pipeline stages, full local repro, direct-on-LUMI repro, RSS/leak-scan instrumentation) all
+correctly proved the DECODE path was clean — and it was. The bug wasn't in decode at all; it was
+one level up, in what happened to a successfully-decoded file immediately after. Exhaustively
+testing the mechanism I'd already assumed was broken (decode/multiprocessing) meant I never
+checked the much simpler, much earlier question: does this corpus even have what the metadata
+function requires? Should have checked the data's actual shape before the pipeline's plumbing.

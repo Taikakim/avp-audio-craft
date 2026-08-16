@@ -74,6 +74,7 @@ echo "[preenc-smoke] start $(date +%H:%M:%S)"
 python -u ${CODE}/stable-audio-3/scripts/pre_encode_dataset.py \
     --model same-l --data_dir '"${BIGSET}"' \
     --shard '"${SHARD}"' --sample_size '"${SS}"' --pad --batch_size 1 --num_workers '"${WORKERS}"' \
+    --no_caption_check \
     --output_path '"${OUT}"'
 echo "[preenc-smoke] done $(date +%H:%M:%S)"
 '
