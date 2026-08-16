@@ -33,16 +33,38 @@ REVISIONS = {
 SHORT_TAGS = ["short_genremood", "short_technical", "short_mood"]
 
 def read_mf(d):
-    """Robust: goa_caption_task json schema may vary — take a known key or the longest string."""
+    """Robust: goa_caption_task json schema may vary — take a known key or the longest string.
+    goa_caption_task.py nests the actual caption text under d["captions"][prompt_type] (e.g.
+    d["captions"]["full"]), NOT at the top level -- a prior version of this function checked
+    only top-level keys, found nothing, and fell back to "longest top-level string", which is
+    always d["path"] (the absolute file path). That ran Granite on the file path as if it were
+    the track description for the entire goa big-set corpus (23232/23232, confirmed 2026-08-17)
+    -- Granite parsed real artist/title out of the path and hallucinated plausible-sounding but
+    audio-ungrounded genre-generic boilerplate for everything else. Check the nested dict FIRST."""
+    caps = d.get("captions")
+    if isinstance(caps, dict):
+        for k in ("full", "technical", "genre_mood", "instrumentation", "structure"):
+            v = caps.get(k)
+            if isinstance(v, str) and len(v) > 40:
+                return v
+        cands = [v for v in caps.values() if isinstance(v, str)]
+        if cands:
+            return max(cands, key=len)
     for k in ("full", "music_flamingo_full", "caption", "prompt", "text", "description"):
         v = d.get(k)
         if isinstance(v, str) and len(v) > 40:
             return v
-    cands = [v for v in d.values() if isinstance(v, str)]
+    cands = [v for k, v in d.items() if isinstance(v, str) and k not in ("path", "rel", "key")]
     return max(cands, key=len) if cands else ""
 
-def genre_hint(d):
-    # Known corpus = goa/psytrance. Refine with era if the caption json carries a year.
+def genre_hint(d, override=None):
+    # Known corpus default = goa/psytrance. --genre-hint (or the MF caption json's own
+    # genre_hint field, written by goa_caption_task.py) overrides this for other corpora
+    # (e.g. Suomisoundi) -- without an override this silently mislabels anything non-goa.
+    if override:
+        return override
+    if d.get("genre_hint"):
+        return str(d["genre_hint"])
     parts = ["goa trance / psytrance (NOT generic electronic/EDM/techno)"]
     yr = d.get("year") or d.get("era")
     if yr:
@@ -72,6 +94,10 @@ def main():
     ap.add_argument("--model", default=os.environ.get("GRANITE_MODEL", "ibm-granite/granite-3.3-8b-instruct"))
     ap.add_argument("--n-samples", type=int, default=int(os.environ.get("GRANITE_N", "3")))
     ap.add_argument("--batch", type=int, default=int(os.environ.get("GRANITE_BATCH", "8")))
+    ap.add_argument("--genre-hint", default=os.environ.get("GRANITE_GENRE_HINT"),
+                    help="explicit override; otherwise auto-read from each MF caption json's "
+                         "own genre_hint field (goa_caption_task.py writes it), falling back "
+                         "to the hardcoded goa/psytrance default when neither is present")
     ap.add_argument("--limit", type=int, default=0)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
@@ -100,7 +126,7 @@ def main():
             if not mf:
                 continue
             msgs = [{"role": "system", "content": SYS},
-                    {"role": "user", "content": build_user(mf, genre_hint(d))}]
+                    {"role": "user", "content": build_user(mf, genre_hint(d, a.genre_hint))}]
             txt = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
             items.append((os.path.join(a.out, os.path.basename(p)), txt))
         if not items:
