@@ -161,11 +161,10 @@ Which SIF you train in decides whether MIOpen fights you.
   FA2 REFUSES fp32**, so an fp32-by-design arm (e.g. the rank-256 DoRA arms) cannot have FA2 no
   matter which container it runs in; (b) `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before
   `import torch`, always — SA3 reaches flash-attn through its own attention code, not HF.
-  *(Open, deliberately not asserted here: whether the image's FA is the CK backend or the
-  Triton-AMD one. We set the flag that asks for CK and attention got fast — probe 20431533,
-  fa2=True on 8/8 ranks, killed the 600s quadratic-attention OOMs that eager and sdpa both hit —
-  but nobody has scanned the container's `flash_attn_2_cuda` for its arch/backend the way we did
-  ours, and no agent can ssh to LUMI to do it. Verify before anyone writes "CK" as fact.)*
+  *(CLOSED 2026-08-17, hours after being opened: it IS CK — F has LUMI ssh and scanned the
+  container's `flash_attn_2_cuda` directly. Evidence + the version trap in the "Multitorch image"
+  entry below. Corollary worth keeping: **cluster checks route through THE-FINN**, they do not
+  need to wait on Kim.)*
   Readable path is
   `/appl/local/laifs/containers/`, NOT the `easybuild-sif-images` symlinks (those point into
   another project's non-world-readable scratch).
@@ -486,8 +485,34 @@ on a job meant to run for the full walltime is the tell.
 - **Multitorch image — PROVEN IN PRODUCTION (goa captions, 2026-07-30).** Resolve the
   newest FULL variant with
   `ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif | sort | tail -1`
-  (the `-full-` builds carry flash-attn; verified stack: torch 2.10+rocm7.0, flash_attn
-  2.8.4, python 3.12). FA2 engages on gfx90a via HF
+  (the `-full-` builds carry flash-attn; verified stack: torch 2.10.0+rocm7.0, python 3.12.3,
+  flash_attn **2.8.3** — read from the newest image's own dist-info by F 2026-08-17, inside the
+  container).
+  > 🚨 **THAT VERSION MOVED BACKWARDS UNDER US, AND `sort | tail -1` IS WHY.** FA per image, by
+  > build date: 2025-11-28/12-09 + 2026-01-24 → **2.8.1**; 2026-02-16/02-25 → **2.8.3**;
+  > 2026-03-19/04-15/05-13 → **2.8.4**; **2026-07-31 + 08-07 → 2.8.3** (`+lumi_aif_gfx90a_b664ea0`,
+  > the current newest). So "multitorch ships 2.8.4" was TRUE when recorded (the Mar–May images)
+  > and became FALSE on July 31 without anyone touching our repo. All **41** of our scripts
+  > resolve the image with this identical `sort | tail -1` idiom (F checked the resolver in each,
+  > 41/41 byte-identical), i.e. **newest by date, whatever that happens to be**. GENERALISE PAST
+  > THE DIGIT: this is an **unpinned external dependency wearing the costume of a fixed path** —
+  > LUMI ships whatever is newest, and the swap produces no diff, no warning and no log line on
+  > our side. Nobody has shown 2.8.3-vs-2.8.4 hurts us and this is NOT a claim that it does; the
+  > defensible stake is that **a campaign whose arms straddle 2026-07-31 had its attention backend
+  > change mid-flight, so cross-date A/B comparability is not guaranteed by "same script, same
+  > image glob"** — which is exactly how we compare recipes. FIX (recommended, not yet applied to
+  > the scripts): pin the resolved path in the sbatch header at submit time, or at minimum
+  > `echo` the resolved basename + FA version into the run log so the swap is visible next time
+  > instead of invisible.
+
+  **BACKEND: CK, verified — not inferred from the env var.** F ran the arch/backend scan inside
+  the container 2026-08-17: `/opt/venv/lib/python3.12/site-packages/flash_attn_2_cuda.cpython-312-*.so`
+  (252 MB) carries **9044 gfx90a + 42721 gfx950** code objects (the image targets MI250X **and**
+  MI355X) and **205964 `ck_tile` strings + ~147k composable-kernel symbols**; `flash_attn_2_cuda`
+  imports and exposes `fwd` and `varlen_fwd`. The **Triton path is bundled alongside**
+  (`flash_attn_triton_amd/`, `flash_attn_triton.py`) — which is precisely why
+  `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` is load-bearing: both backends are physically
+  present and the env var picks between them. FA2 engages on gfx90a via HF
   `attn_implementation="flash_attention_2"` + **bf16/fp16 dtype (FA2 refuses fp32)** —
   probe 20431533: fa2=True on all 8 ranks, killed the 600 s-audio quadratic-attention
   OOMs that eager/sdpa-math hit (sdpa on ROCm fell back to the math backend, so the

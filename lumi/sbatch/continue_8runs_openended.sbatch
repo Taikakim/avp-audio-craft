@@ -56,7 +56,7 @@
 # because sa3.sif is actually better for them. sa3.sif's flash-attn wheel targets gfx1201
 # (the desktop RDNA4 card) and CANNOT run on LUMI's gfx90a (MI250X) -- architecturally
 # incompatible, not a missing pip install (docs/lumi-transition-plan.md flagged this exact
-# gap before tonight). lumi-multitorch-full ships a REAL prebuilt gfx90a flash-attn 2.8.4,
+# gap before tonight). lumi-multitorch-full ships a REAL prebuilt gfx90a flash-attn,
 # already proven in production (the caption pipeline, WORKLOG 2026-07-30) and already the
 # deployment every OTHER script this session uses (fullft_avp_aug.sbatch,
 # subloss_goa_k20_fullft.sbatch, fullft_mixed_avp_goa_t4096.sbatch). Verified BEFORE
@@ -64,7 +64,18 @@
 # sa3_train_venv_mt on LUMI (Kim ran the check, printed 1) -- so this gets both plain FA2 AND
 # varlen for free, no from-scratch CK compile needed (that was the OTHER option in the
 # transition plan, GPU_ARCHS=gfx90a rebuild -- not required since LUMI's own image already
-# has it).
+# has it; and note a GPU_ARCHS=gfx90a rebuild of OUR wheel was never possible anyway -- our CK
+# recipe is on the RDNA-only rdna_fmha_gfx1100_gfx1201 branch, no CDNA kernels to compile).
+#
+# BACKEND + VERSION, corrected 2026-08-17 (F, scanned inside the container): the backend IS CK
+# -- 9044 gfx90a + 42721 gfx950 code objects, 205k ck_tile strings -- with the Triton path
+# bundled ALONGSIDE it, which is why FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE is load-bearing:
+# both are present and the env var picks. BUT this block used to say "flash-attn 2.8.4" and
+# that is now WRONG: the newest image (20260807) carries 2.8.3+lumi_aif_gfx90a_b664ea0. It WAS
+# 2.8.4 in the Mar-May builds and moved BACKWARDS on 2026-07-31, while the `sort | tail -1`
+# resolver below silently follows whatever LUMI ships newest -- so a campaign straddling that
+# date changed attention backend mid-flight with no diff and no log line. Do not restate a
+# version here without re-reading the image's dist-info. Full table: lumi-ops SKILL.md.
 #
 # RESIDUAL UNVERIFIED RISK: no script this session has yet run --adapter_type dora-rows on
 # multitorch (every prior multitorch script here was --full-finetune) -- arms 0-5 (DoRA) are
