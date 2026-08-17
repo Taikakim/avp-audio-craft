@@ -355,3 +355,98 @@ The unconfirmed-item discipline in §5 still matters — if HyperQueue survives 
 the sweep-packing use case, the `SLURM_PROCID`-based GCD-binding trick is still our own
 inference, not CSC-documented, and still needs the smoke test before a real campaign relies
 on it.
+
+## 6. DDP (single-model data-parallel) launch — the multitorch OOM gotcha (2026-08-09, CONTINUITY)
+
+This section is about **one model trained data-parallel across the 8 GCDs** (full-FT / big DoRA
+runs), NOT the HyperQueue independent-task packing above. The launch pattern is a real trap on
+the `lumi-multitorch-full` image — it cost job 20869819 (a ~3-min HIP OOM at model load).
+
+**Two candidate patterns (only one works on multitorch):**
+
+- **Pattern 1 — all GCDs visible + `--devices 8`** (`srun --ntasks-per-node=8 --gpus-per-node=8`,
+  NO `--gpus-per-task`; `train_lora.py --devices 8`). **OOMs on multitorch.** `train_lora.py`'s
+  `load_model` calls `model.to("cuda")` (= `cuda:0`) *before* Lightning assigns per-rank devices,
+  so **all 8 ranks load the ~7 GiB model onto GPU 0** → `HIP out of memory … GPU 0 … 0 bytes free`
+  while GPUs 1–7 sit idle. (This pattern was "verified" only on the old `sa3.sif` with tiny smokes;
+  it does not survive a real model load on multitorch.)
+
+- **Pattern 2 — one GCD per task + NO `--devices`** (`srun --nodes=1 --ntasks=8 --gpus-per-task=1
+  --cpus-per-task=7`; `train_lora.py` with **no `--devices` flag**). **This is the working recipe**
+  and is exactly what #68 `fullft_bigset` runs (8h+ clean, no `-vN` ckpts). `--gpus-per-task=1`
+  cgroup-pins each rank to its own GCD, so `model.to("cuda")` lands on that rank's own card;
+  Lightning's `SLURMEnvironment` forms the `world_size=8` group from `SLURM_NTASKS`. The old
+  "`--gpus-per-task=1` → SingleDeviceStrategy → N duplicate trainers" warning was an `sa3.sif`
+  smoke (20413874) and does **not** hold on multitorch — #68 proves Pattern 2 forms a real
+  coordinated group there.
+
+**Rule (multitorch): DDP = Pattern 2 — `--gpus-per-task=1`, no `--devices`, no ROCR pinning.**
+
+**Multi-node** extends Pattern 2 directly: `--nodes=N --ntasks-per-node=8 --gpus-per-task=1`, still
+no `--devices` (SLURMEnvironment derives `world_size = N*8` and `MASTER_ADDR` from node 0; export
+the LUMI Slingshot/RCCL env — `NCCL_SOCKET_IFNAME=hsn0,hsn1,hsn2,hsn3`, `CXI_FORK_SAFE=1`, etc.).
+A `train_lora.py --num_nodes` hook exists for the Lightning-spawns (Pattern 1) style but is not
+needed on the Pattern-2 SLURM-launch path.
+
+**Verify (read the artifact, never the rc):** rank-0 log shows `MEMBER: 1/8` (or `/32`) and
+`initializing distributed`; loss ticks once per global step; **no `epoch=…-vN` ckpts** (versioned
+files = N uncoordinated writers). Templates: `lumi/sbatch/fullft_avp_aug.sbatch` (single-node),
+`lumi/sbatch/multinode_ddp_smoke.sbatch` (4-node rendezvous smoke), `lumi/sbatch/fullft_bigset.sbatch`
+(#68, the reference Pattern-2 launch). Full operational note: lumi-ops SKILL, DDP section.
+
+## 7. Full-FT latent-scale runaway → spectral drone (2026-08-10, CONTINUITY)
+
+Every multitorch **full fine-tune** (#68 `fullft_bigset`, `precision_ladder` — all FusionOpt)
+decoded to broadband **spectral drone** on every prompt+cfg. NOT
+live-encode (the pre-encoded ladder droned too), NOT the decoder (known-good latents decode fine).
+
+> 🔴 **CORRECTION (C, 2026-08-17) — the original text here said "It is NOT DDP (formed one group)".
+> That parenthetical was FALSE for #68 and is struck.** #68 launched with
+> `srun --ntasks=8 --gpus-per-task=1` and no `--devices`, which we now know **silently fails to
+> form a DDP group** — all 8 ranks log `LOCAL_RANK: 0` and train as 8 uncoordinated single-GPU
+> copies (see the Multi-GPU DDP section of `.claude/skills/lumi-ops/SKILL.md`). So #68's specific
+> numbers ARE confounded. **The MECHANISM below is not**, and this is the important part: the
+> runaway was also measured on `precision_ladder`, whose arms run
+> `srun --exclusive -N1 -n1 --gpus=1` with `SLURM_JOB_NAME=bash` set precisely so Lightning does
+> NOT detect SLURM — i.e. each ladder arm is a **single-GPU trainer by construction**, where the
+> DDP bug cannot apply. The ladder droned with the full signature, so weak `spectral_wd` stands as
+> the cause on evidence the bug cannot touch. Lesson for future exclusions: "it's not DDP" needs
+> the `grep -h LOCAL_RANK` check, not an assumption.
+>
+> ✅ **AND THE FIX IS CONFIRMED WORKING (C, 2026-08-17).** The `--weight_decay` full-FT
+> (`fullft_mixed_..._wdfix`) measures at ep7: global z0 std **1.134**, channels with std>2.0
+> **0/256** — versus the runaway's 5.6 and 166/256. Mildly elevated vs the 0.7 ideal, nowhere near
+> blow-up. NOTE this run ALSO had the DDP bug and still sounded droning/thin to Kim, which — with a
+> healthy latent scale — means that audio complaint is a **SEPARATE failure from the scale
+> runaway**, most plausibly the 8-uncoordinated-trainers bug itself. Do not re-diagnose the two as
+> one thing.
+The model's **latent output scale runs away during training**. Measured from the saved `z0.npy`
+(purely local, no GPU): global latent std **0.7 (good) → 1.3 (ep3) → 5.6 (ep7)**; #latent channels
+with std>2.0 **0 → ~4 → 166/256**; **cfg16 inflates first** (early-warning canary). Diverse latents
+(low cross-clip cosine) rule out mode-collapse — it's a scale blow-up.
+
+**Cause:** FusionOpt's per-group `spectral_wd` **defaults to 0.01** (`fusion_groups.py`), too weak
+for the NS5/Muon orthogonalized update (step-norm is grad-magnitude-independent, so decay must be
+~10× AdamW's). Adapters stay bounded (frozen base) → **full-FT-only**. Schedule-Free removes the LR
+*schedule*, NOT weight decay — orthogonal knobs; don't conflate them.
+
+**Fix:** `--weight_decay 0.1 --gradient_clip_val 1.0` on the full-FT. `--weight_decay` routes to
+`param_groups.spectral_wd` (the effective knob); the FusionOpt *constructor* `weight_decay` is
+overridden by the per-group value, so setting it there is a no-op. `scalar_wd` stays 0.0 (never
+decay norms/biases).
+
+**First diagnostic for ANY future drone:** load the `z0.npy` and check global std vs ~1.0 BEFORE
+suspecting DDP/live-encode/decoder. Deterministic mechanism test (CPU, seconds):
+`stable-audio-tools/tests/test_fusion_weight_decay.py`. Confirming A/B on the real model: job
+20940322, `lumi/sbatch/fullft_wd_ab.sbatch` (arms wd0p01 / wd0p1 / adamw_wd0p1). Consequence:
+#68 and #69 (AVP) as trained are dead — relaunch with the fix once the A/B confirms.
+
+### CSC ml-multi tutorial cross-check (re-read 2026-08-10)
+`docs.csc.fi/support/tutorials/ml-multi` confirms our node-shape (7 cores + ~60 GB per GCD; full
+node = `--cpus-per-task=56 --mem=480G` or `--mem=0`) and the "reserve full nodes for multi-node"
+rule. Two deltas vs our Pattern-2 SLURM launch, noted in `multinode_ddp_smoke.sbatch`: (1) CSC wires
+the Slingshot fabric via **`module load lumi-aif-singularity-bindings`** rather than hand-set
+`NCCL_SOCKET_IFNAME`/`CXI_FORK_SAFE` — try it if the OFI provider isn't picked up; (2) their launch
+topology is `srun --ntasks-per-node=1 … torchrun --rdzv_backend=c10d --nproc_per_node=8` (1 task/node,
+torchrun forks 8) — a valid alternative to our srun-8-tasks + Lightning `SLURMEnvironment`. The
+tutorial gives **no** low-level RCCL env (we have more detail there from other LUMI sources).

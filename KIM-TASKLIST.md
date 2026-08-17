@@ -139,20 +139,26 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   the same dir would silently resume from the ep7-inf checkpoint and reproduce the drone. Needs
   a fresh run dir / new run tag, or the drone-era fats cleared first. G will check this before
   ingesting/rendering any future `fullft_bigset` batch.
-  **⚠️ ADDENDUM (C, 08-17) — this diagnosis is now PARTLY IN DOUBT, flagging rather than quietly
-  leaving it.** Today I found that multi-GPU runs on this cluster were **silently not forming DDP at
-  all** — 8 processes each thinking they were alone, no gradient sharing (all ranks logged
-  `LOCAL_RANK: 0`; the "duplicate" checkpoints of one such run were 8 genuinely different models,
-  521/522 tensors differing). Fixed now via CSC's torchrun launch pattern and verified (244
-  steps/epoch vs 1948 = real 8-way sharding). **The problem for the item above:** the runs that the
-  weight-decay drone diagnosis was measured on were multi-GPU, so "8 uncoordinated trainers" is an
-  untested alternative explanation for at least part of what we saw — and the `fullft_avp_regsweep`
-  /`surgical` A/B that was meant to settle it separately stalled on unrelated infra bugs and never
-  produced a verdict. The spectral_wd reasoning may still be correct; it is just no longer
-  *established*. **Not asking you to decide anything now** — recording it so nobody builds on it as
-  settled. The clean re-test is cheap now that DDP works: re-run the A/B on the fixed launch. Every
-  unmigrated multi-GPU script is flagged unverified in ARCHITECTURE.md §E, with a one-line check
-  (`grep -h LOCAL_RANK <log> | sort -u`) that settles any single run.
+  **✅ ADDENDUM v2 (C, 08-17 evening) — RESOLVED, and better than the morning's version. My earlier
+  "PARTLY IN DOUBT" flag was too pessimistic; correcting it rather than leaving the scare in place.**
+  Context: today I found multi-GPU runs here were **silently not forming DDP** — 8 processes each
+  thinking they were alone, no gradient sharing (all ranks logged `LOCAL_RANK: 0`; one such run's
+  "duplicate" checkpoints were 8 genuinely different models, 521/522 tensors differing). Fixed via
+  CSC's torchrun pattern, verified (244 steps/epoch vs 1948 = real 8-way sharding). I then flagged
+  the weight-decay drone diagnosis as possibly confounded. **It is NOT.** Checked the launch shapes:
+  `precision_ladder.sbatch` runs `srun --exclusive -N1 -n1 --gpus=1` per arm and deliberately sets
+  `SLURM_JOB_NAME=bash` so Lightning does NOT detect SLURM — each ladder arm is a **single-GPU
+  trainer by construction**, where the DDP bug cannot apply. The ladder droned with the full runaway
+  signature, so weak `spectral_wd` stands on evidence the bug cannot touch. Only **#68's own
+  numbers** are confounded (it did use the broken `--ntasks=8 --gpus-per-task=1`); the MECHANISM is
+  sound. **And the fix is confirmed working:** the `--weight_decay` full-FT measures at ep7 global
+  z0 std **1.134**, channels with std>2.0 **0/256** (vs the runaway's 5.6 and 166/256).
+  **⚠️ BUT that same run still sounded droning/thin to Kim WITH a healthy latent scale — so that
+  audio complaint is a SEPARATE failure from the scale runaway**, most plausibly the
+  8-uncoordinated-trainers bug itself. Do not re-diagnose the two as one thing. The one measurement
+  that closes it is the z0 std of the wd03 re-run (job 21251551, real DDP) — rendered on LUMI as
+  job 21329730, **pending the pull**. Every unmigrated multi-GPU script stays flagged unverified in
+  ARCHITECTURE.md §E, with the one-line check (`grep -h LOCAL_RANK <log> | sort -u`).
 - **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
   your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
   noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
