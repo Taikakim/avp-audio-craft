@@ -53,6 +53,19 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
 
+- **big-goa bigset is finally pre-encoded (12523/12523) — but needs ONE caption decision before
+  the real mixed run can start** (C, 08-17). The ~10-day "preencode memory leak" was never a leak:
+  `caption_metadata_fn` rejects any audio file without a sibling `.txt`, and `goa_archive` has zero
+  `.txt` files, so every file was rejected after ~100 wasted full-track decodes each. Fixed with
+  `--no_caption_check`; RSS now flat at ~1 GB (was 300+ GB). **The consequence:** those latents have
+  NO captions, and their ids are synthetic (`000000000000`), so the existing
+  `goa_longform_sidecar.json` (keyed by track stem) will not match — training as-is would use empty
+  prompts. Each latent's `.json` does carry the original `path`/`relpath`, so a re-keyed sidecar is a
+  small local build, no code change. **Your call: which caption source should the 12523 tracks use?**
+  the granite pass (job 21255037 / `sa3_goa_granite_v5`, G's lane — is that output the one to use?),
+  the existing Music-Flamingo captions, or the longform sidecar's scheme re-derived. Say which and
+  I will build the sidecar and start the real mixed avp+bigset run.
+
 ## 👂 Ear queue (needs Kim's ears)
 - **codec-clarity: does the −8 dB SAME residual sound as bad as it measures?** (deployed 08-07,
   https://aavepyora.online/files/audit/codec-clarity/). New: beat-synced 2-min looping clips from the
@@ -74,6 +87,17 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   `run_meta.kim_feedback` is null until you relay a verdict. → [▶ codec-clarity audit](https://aavepyora.online/files/audit/codec-clarity/) *(live once W's rsync lands; 404 until then)*
 - **E3 metrical-position bracket pairs** — phrase-return gain (real 0.0091 vs shuffled 0.0009); does it *sound* like structure? *(clips local — not hosted yet; C to stage a page)*
 - *Carried from 07-31 — confirm/close:* gs_kpdark Gram-Schmidt clips *(not hosted)*; interval-CFG nl.475 pairs *(not hosted — `eval/musicology/interval_cfg_2026-07-23/` local)*; Head-B bracket *(staged `~/.cache/evals_aac/headb_bracket/`, not yet published)*; goa_t2048_bs1 anomaly → [▶ that checkpoint](https://aavepyora.online/files/evals/dora_table.html?models=fp32frames_goa_t2048_bs1_lr1e4) · [fp32frames family](https://aavepyora.online/files/evals/dora_table.html?set=fp32frames).
+
+- **`fullft_mixed_..._wd03` (job 21251551) — first TRUSTWORTHY mixed avp+goa full-FT, awaiting a
+  render + your ears** (C, 08-17). Every earlier mixed full-FT was invalid: DDP silently never
+  formed (all 8 ranks reported `LOCAL_RANK: 0`, i.e. 8 uncoordinated single-GPU trainers, no
+  gradient sync — which is why its "duplicate" checkpoints were genuinely different models and why
+  it sounded droning/thin). Fixed via CSC's own torchrun launch pattern (thanks for the
+  `llm-fine-tuning-examples` pointer) + a `set_device(LOCAL_RANK)` fix; verified by 244 steps/epoch
+  vs the broken run's 1948 (= real 8-way data sharding) and zero duplicate checkpoints. 8 epochs at
+  WD 0.03. Render command is queued up in chat — once it lands, this is the run that answers whether
+  the droning was the DDP bug, the weight decay, or both. Minor caveat: it resumed from a 20-step
+  smoke checkpoint in the same dir, so ~1% not-from-scratch.
 
 ## ⏳ In flight — FYI, no action
 - **fullft_bigset drone (08-10) — root-caused, fix training now, one gotcha to watch when it
