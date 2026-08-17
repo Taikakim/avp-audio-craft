@@ -83,7 +83,11 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 **`/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/` is the canonical LUMI
 rsync/grab target** — all `rsync`/`scp` pulls of LUMI `runs/` + `renders/` land here (structure
 mirrors scratch: `lumi_runs/runs/<run>/<arm>/…`, `lumi_runs/renders/…`). **Why here, not Mantu:**
-this drive has ~1.5 T free (62%); Mantu is at ~90% (383 G) and is the source-audio + `sa3_lora_runs`
+this drive has **481 G free (88% used)** — corrected 2026-08-17 (F, measured directly via `df`); the
+old "~1.5 T free (62%)" line predated the 2026-08-17 models-move that landed ~117 G of `sao_models/`
+here (W, commit `d64d21a`), and was already stale before that. **Margin is now tight against the
+fullft ~314 G keep-set below** — verify free space before any large LUMI pull rather than trusting
+this line's number, which will drift again. Mantu is at ~90% (383 G) and is the source-audio + `sa3_lora_runs`
 drive — raw LUMI pulls would tip it over. `Mantu/lumi_runs` was an early **partial** grab (50 G,
 a strict information-subset of the UUID copy — its only "unique" files were fullft `epoch=7
 .weights.ckpt` slims, which are the optimizer-stripped projection of UUID's fat `epoch=7 .ckpt`);
