@@ -8,20 +8,23 @@
 #   arm A (GPUs 0-3): rank=256 alpha=196 lr=1e-4
 #   arm B (GPUs 4-7): rank=256 alpha=128 lr=5e-5
 #
-# GENUINELY NEW PATTERN, NEVER RUN BEFORE IN THIS CODEBASE (flagging plainly, not silently
-# assuming it works): every proven DDP script this session runs ONE srun step spanning all 8
-# GPUs (--devices 8, world_size=8). Splitting one node into TWO independent 4-GPU DDP groups
-# needs each group to see its OWN scoped SLURM_NTASKS=4/SLURM_PROCID=0..3 (Lightning's
-# SLURMEnvironment derives world_size/rank straight from those) -- a single srun --ntasks=8
-# would put both arms in ONE confused 8-way "DDP" group instead of two real 4-way ones (the
-# same class of bug as tonight's missing --devices, just from a different cause). Fix: TWO
-# SEPARATE srun job STEPS, each --ntasks=4, each getting its own correctly-scoped SLURM_NTASKS
-# -- the standard SLURM idiom for packing independent multi-GPU steps onto one allocation.
-# --exclusive on each srun step tells SLURM's step scheduler not to let the two steps'
-# GRES (GPU) allocations overlap, so arm A and arm B land on disjoint GPU sets automatically.
-# Backgrounded (&) + a trailing `wait` so both arms actually run concurrently, not
-# sequentially. UNTESTED end to end -- run SMOKE=1 FIRST and verify both arms actually see 4
-# GPUs each (not 8, not 1) before trusting a full overnight run.
+# ✅ STATUS: VERIFIED WORKING. Smoke job 21330059 (2026-08-17) formed BOTH 4-way DDP groups:
+# `grep -h LOCAL_RANK <log> | sort | uniq -c` gave LOCAL_RANK 0,1,2,3 each exactly TWICE, with
+# CUDA_VISIBLE_DEVICES [0,1,2,3] per group (arm B's ROCR set 4-7 correctly renumbers to logical
+# 0-3), both srun steps COMPLETED 0:0, arms concurrent (each step 4m34s inside a 4m36s job).
+# Full run: job 21330736. See ROUND 3 below for the launch that achieves this; the two blocks
+# immediately following are SUPERSEDED and kept only as a record of the wrong turns.
+#
+# ── ROUND 1 (SUPERSEDED, kept for the record) ── the original reasoning was that splitting one
+# node into TWO independent 4-GPU DDP groups needs each group to see its OWN scoped
+# SLURM_NTASKS=4/SLURM_PROCID=0..3, since Lightning's SLURMEnvironment derives world_size/rank
+# from those, so the plan was TWO separate srun job STEPS each with --ntasks=4 --exclusive,
+# letting SLURM's step scheduler hand each arm a disjoint GPU set. That is NOT what the script
+# does now: the SLURMEnvironment premise is exactly the thing that turned out to be unreliable
+# (see ROUND 3), so per-arm scoping now comes from torchrun, GPU disjointness from an explicit
+# ROCR_VISIBLE_DEVICES, and the steps use --overlap rather than --exclusive. What DID survive
+# from this round: backgrounding each arm with `&` plus a trailing `wait`, so the two arms run
+# concurrently rather than sequentially.
 #
 # EMA (Kim asked for it explicitly): train_lora.py FORCE-DISABLES EMA for DoRA/LoRA adapters
 # regardless of the flag (full-finetune only) -- passing --use-ema here is a harmless no-op,
@@ -37,20 +40,24 @@
 # servers on one node collide on a shared port). Requires train_lora.py's
 # torch.cuda.set_device(LOCAL_RANK) fix (guarded in the preflight below).
 #
-# CORRECTION (2026-08-17): first version passed --devices 4 per arm, reasoning (wrongly) from
-# fullft_mixed_avp_goa_t4096.sbatch's now-also-corrected claim that an explicit --devices was
-# needed for real DDP under --gpus-per-task=1. It's not -- fullft_avp_aug.sbatch (job #68, the
-# actual proven precedent) uses --gpus-per-task=1 with NO --devices flag and documents
-# Lightning's SLURMEnvironment forming the DDP group correctly from SLURM_NTASKS alone.
-# Passing --devices 4 here crashed both arms immediately (job 21245642.1,
+# ── ROUND 2 (SUPERSEDED AND HALF-WRONG -- read the warning) ── this block recorded removing
+# --devices 4 per arm, which HAD crashed both arms outright (job 21245642.1,
 # MisconfigurationException: "You requested gpu: [0,1,2,3] But your machine only has: [0]" --
-# with cgroup-isolated GPUs each process only ever sees ONE device, so --devices N>1 fails
-# outright). REMOVED --devices/--num_nodes below to match #68's proven form. The two-separate-
-# exclusive-srun-steps split (each getting its own scoped SLURM_NTASKS=4) is UNCHANGED and
-# still the part of this script that's genuinely untested -- that's what SMOKE=1 verifies.
+# under cgroup isolation each process only ever sees ONE device, so --devices N>1 always fails).
+# That crash diagnosis is CORRECT and still holds: do not add --devices back.
+# ⚠️ BUT the conclusion drawn from it was WRONG, and it is the precise false belief that cost two
+# node allocations, so it is spelled out rather than deleted: this block claimed
+# fullft_avp_aug.sbatch (job #68) was "the actual proven precedent" showing --gpus-per-task=1 with
+# no --devices lets Lightning's SLURMEnvironment form the DDP group from SLURM_NTASKS alone.
+# IT DOES NOT. That pattern SILENTLY fails to form a group -- every rank logs LOCAL_RANK: 0 and
+# you get N uncoordinated single-GPU trainers writing colliding -vN checkpoints, no crash and no
+# hang. #68's in-file comment was evidence about one job, not a guarantee; it was never verified
+# with the LOCAL_RANK check. Removing --devices was necessary but not sufficient -- ROUND 3 (the
+# torchrun launch) is what actually forms the group.
 #
 # RUN: SMOKE=1 sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch   (bounded ~20 steps/arm, verify
 #      BOTH arms print world_size=4 with 4 distinct local GPUs, no crash/hang, ckpts appear)
+#      — PASSED 2026-08-17 as job 21330059, see STATUS at the top of this header.
 #      then: sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch      (full, open only after SMOKE passes)
 #
 #SBATCH --account=project_465003186
