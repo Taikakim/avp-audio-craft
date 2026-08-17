@@ -17,6 +17,45 @@ verdict; negative results are first-class; verify consequential claims before
 acting (rule 6); the log is truth, the ping is only the doorbell.
 
 ## Shipped
+- **Two blockers that were both the wrong bug** — the big-goa corpus had refused to pre-encode for
+  ten days, apparently leaking memory until the node died at 300+ GB. I bisected the decode path
+  seven ways and proved it clean every time, which was true and useless: nothing was leaking. The
+  encoder requires a caption file next to every track, that corpus has none, so every single file was
+  being *rejected* — after a full-length decode each, a hundred times per sample. The "leak" was the
+  memory allocator holding on to those discarded buffers. One flag later: 12,523 of 12,523 tracks
+  encoded, memory flat at 1 GB. Kim asked the question that cracked it ("do the files have the
+  sidecars they need?") after I'd spent a night testing the machinery instead of looking at the data.
+  The same day, a second one: multi-GPU training on this cluster **was never actually running as
+  multi-GPU**. Eight processes, each convinced it was the only one, no gradient sharing — so the
+  "duplicate" checkpoints were eight genuinely different models, and the run that sounded like a
+  lifeless drone had been trained eight independent times at once. I got the fix wrong twice (once
+  crashing the job, once restoring a pattern that had only ever worked by luck) before Kim pointed at
+  the supercomputer centre's own reference scripts, which use a launcher none of our scripts used.
+  Now verified the honest way — the step count per epoch dropped by exactly the factor of eight that
+  real work-sharing predicts, and eight hours of training became three and a half. **Uncomfortable
+  implication I'd rather state than bury:** any earlier conclusion drawn from a multi-GPU run may be
+  confounded, including parts of the drone diagnosis below. Every remaining script is now flagged
+  unverified until each is checked, with a one-line test that settles it.
+- **The full-finetune drone, root-caused** — every full-model finetune on the cluster decoded to a
+  lifeless spectral drone. Cleared the obvious suspects one by one — the multi-GPU wiring, the
+  on-the-fly encoding, the decoder — then forked the whole question from the saved latents on a
+  laptop, no GPU: the model's *latent output scale runs away* as training proceeds (a healthy spread
+  near 1.0 climbs to ~5.6, most channels blown out; high guidance shows it first). The cause is a
+  weight-decay defaulting an order of magnitude too weak for an orthogonalising (Muon/NS5) optimiser,
+  which only bites a whole-model finetune — adapters stay pinned by the frozen base. Shipped the fix
+  (stronger decoupled decay on the weight-matrix group + gradient clipping), a deterministic CPU test
+  that reproduces the runaway and proves the bound, and a real-model A/B. New standing rule: the first
+  check on any future drone is the latent's scale, before anything else.
+- **Can the model even see a semitone?** — melody control was weak and the easy story was "a semitone
+  is too small to register." Built a controlled interval ladder and killed the easy story: a semitone
+  already moves the representation ~94% as much as a perfect fifth, and survives inside a full mix at
+  ~13× the codec noise floor. The lever was never legibility — it was that the training target measured
+  magnitude, blind to melodic *contour*. Rebuilt the target to separate melodic motion from timbre (~5×
+  the useful signal-to-noise); A/B queued to settle it honestly.
+- **Multi-GPU training, corrected for the new stack** — the migrated container silently broke the
+  data-parallel launch recipe (all ranks piling onto one card → out-of-memory); pinned the working
+  per-GCD pattern, extended it to multi-node, and recorded the correction + verify-the-artifact checks
+  so nobody re-derives it.
 - **Chroma-steering page, extended** — solo instruments and chord progressions that move
   between colours/keys, a tab per steering head, over a GPU-verified render path (the engine
   had never been run on-GPU). Finding: the 12-d chroma head's "dead" label is refuted for

@@ -1737,3 +1737,59 @@ one level up, in what happened to a successfully-decoded file immediately after.
 testing the mechanism I'd already assumed was broken (decode/multiprocessing) meant I never
 checked the much simpler, much earlier question: does this corpus even have what the metadata
 function requires? Should have checked the data's actual shape before the pipeline's plumbing.
+
+### [2026-08-17] Two blockers closed; both diagnosed wrong first, and one earlier conclusion is now suspect
+**preencode (verified).** Yesterday's `--no_caption_check` fix is confirmed end-to-end: job 21244499
+wrote **12523/12523** latents to `latents_goa_bigset`, RSS flat at 0.84-1.04 GB the whole run
+(oscillating per decode, returning to baseline) against 300+ GB before. So the ten-day "leak" was
+`caption_metadata_fn` rejecting 100% of `goa_archive` (zero `.txt` sidecars; 0/21702 verified on the
+local source corpus) and burning ~100 full-track decode-then-discard cycles per `__getitem__`, with
+glibc holding the freed buffers. Recorded the process lesson already but it bears repeating in the
+place I'll actually re-read: **seven layers of isolation testing correctly proved the decode path
+clean, and that was the problem** — I kept testing the mechanism I'd assumed was broken instead of
+asking whether the corpus had what the metadata function required. Kim asked that in one sentence.
+
+**DDP was never forming (new, bigger).** Job 21161065's `-v1..-v4` "duplicate" checkpoints were
+genuinely different models — `ckpt_dup_delta.py`: 521/522 tensors differ, max_abs_diff ~0.25-0.27,
+far past fp noise. Cause: every rank logged `LOCAL_RANK: 0`. Eight uncoordinated single-GPU trainers,
+no gradient sync, 8x wasted node-time, and it fully explains the droning/thin audio Kim heard from
+that run without needing any optimizer theory.
+
+**I got the fix wrong twice, which is the part worth remembering.** (a) Added `--devices 8` because
+`train_lora.py`'s own `--devices` help text names this exact failure by precedent (job 20413874). It
+crashed immediately — under cgroup-isolated `--gpus-per-task=1` each process sees exactly one GPU, so
+`--devices N>1` asks Lightning to grab N GPUs inside one process. I had read "an explicit N dies
+loudly instead of silently" as "so pass an explicit N to fix it," when it only means the same
+misconfiguration becomes visible. I should have grepped for a *working* `--devices>1` precedent, not
+just a description of the failure. (b) Reverted to the "proven" no-`--devices` form, citing
+`fullft_avp_aug.sbatch`'s comment that it "trains fine with no -vN ckpts" — then the resubmit showed
+eight `LOCAL_RANK: 0`s again. That comment was evidence about one job, not a guarantee; #68 apparently
+just got lucky with Lightning's `strategy="auto"`. Two wrong fixes, one wasted node allocation each.
+
+**The real fix** came from Kim pointing at CSC's own reference scripts
+(`~/Projects/llm-fine-tuning-examples`), which none of our scripts resemble: `srun --ntasks=1` (all
+GPUs visible, no cgroup isolation) + `torchrun --standalone --nproc-per-node=N`, letting torchrun set
+`RANK`/`LOCAL_RANK`/`WORLD_SIZE` so Lightning detects `TorchElasticEnvironment` instead of guessing
+from SLURM. Companion fix in `train_lora.py`: `torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))`
+before model load, else with all GPUs visible every rank loads onto physical GPU 0 — the "Pattern 1
+OOM" `fullft_avp_aug.sbatch` had already documented. No-op when `LOCAL_RANK` is unset. Verified on job
+21251551 by a measurement rather than a banner: **244 steps/epoch vs the broken run's 1948 = exactly
+1948/8**, real 8-way data sharding, zero `-vN` dups, 8 epochs in 3h41m vs 1d8h. `dora256_mixed_2x4gpu`
+migrated too — two 4-GPU groups on one node need a per-arm rendezvous port (two rendezvous servers
+collide) and explicit `ROCR_VISIBLE_DEVICES` 0-3/4-7 rather than trusting step-level GRES scheduling;
+launch half confirmed, DDP formation still pending at time of writing.
+
+**What I'm least comfortable about:** if multi-GPU runs were silently 8-independent-trainers, then
+conclusions drawn from multi-GPU runs are potentially confounded — including parts of the drone /
+weight-decay diagnosis in my own Shipped list, and plausibly the `fullft_avp_regsweep`/`surgical` A/B
+that stalled on infra bugs. I have NOT re-audited those. Every unmigrated multi-GPU script is flagged
+unverified in ARCHITECTURE.md §E + SKILL.md, with the one-line check (`grep -h LOCAL_RANK <log> |
+sort -u`) that settles any of them cheaply. That re-audit is the honest next task, and it is not done.
+
+**Still open:** the bigset is not trainable yet — synthetic latent ids vs a relpath-keyed sidecar
+means captions silently resolve to empty prompts; `lumi/build_bigset_caption_sidecar.py` re-keys it
+(report-only mode measures coverage first), gated on the granite revisions per Kim. And the external
+CMuon/spectral-norm analysis Kim relayed is thoughtful and largely matches our own prior reading
+(arXiv 2608.02502 was already deep-read here; an uncommitted CMuon-AdaLN chunking WIP is sitting in
+`stable-audio-tools/.../fusion_groups.py`) — but it answers a different question than the one that
+actually broke, and the team's own AdamW-vs-Muon A/B is still the unresolved gate.
