@@ -67,6 +67,18 @@ list is MASTER §5; this is the explained version.
   Lehto stays the canonical copy.
 - **The encoder default `sample_size` (~285 s) silently crops long tracks** and picks one
   random window — throws away ~38 % of a median track. Use beat-aligned chunking to T=4096.
+- **A hinting mechanism that DEFAULTS TO EMPTY records its own absence — check, don't assume.**
+  `goa_caption_task.py` writes a `genre_hint` field into every caption JSON, and MF genre
+  accuracy tracks it almost perfectly: suomisoundi (real hint) 97.4% goa/psy in its MF-prose
+  tier vs the goa big-set (hint defaulted to empty/None) at 1.2% — MF guessed techno/industrial
+  for a 23,231-track goa corpus with no anchor (W's genre-scan + C's `genre_hint` check,
+  2026-08-18, cost two running LUMI jobs killed mid-flight). **Before trusting any caption
+  tier's genre content, check whether `genre_hint`/`GENRE_HINT_FILE` was actually populated for
+  that corpus** — a capability that exists, defaults off, and silently records its own state is
+  exactly the shape that goes unnoticed for months. A second, richer per-track hint path already
+  exists and was never wired to this captioner: `mir/`'s `pipeline.py:154 _interpolate_genres()`
+  (weighted Essentia genre distribution + ID3 metadata) — `lumi/goa_caption_task.py` is a
+  separate code path that never calls it.
 
 ## Training methodology
 
@@ -94,3 +106,15 @@ list is MASTER §5; this is the explained version.
 - **One GPU, multiple instances.** A long GPU job holds VRAM (the SA3 encode held 14/16 GB)
   and hard-blocks parallel work. Encodes are resumable (skip-existing) → cheap to pause.
   Note GPU-holding jobs in `WORKLOG.md`.
+- **A derivative does not know its source changed.** Sidecars built from captions, captions
+  built from audio, eval aggregates built from manifests — each one silently keeps serving
+  stale content while the upstream looks fresh, because nothing compares build-time-of-derivative
+  against mtime-of-source. Hit twice in two days (2026-08-18): the dora-table page reading a
+  stale `clap_dora_aggregate.csv`, and a goa caption sidecar that kept serving pre-fix Granite
+  text because regenerating the captions never rebuilt the sidecar from them — an audit run
+  against the stale sidecar read as "the fix failed" when the fix had actually worked. **The
+  cheap general fix is printing/checking timestamps at build time**, not per-incident patching:
+  `build_goa_archive_sidecar.py` now prints the newest mtime of each input tier so mixed
+  freshness is visible where it's actionable (commit `83936a1`). Before trusting ANY derived
+  artifact (sidecar, aggregate, index, cache), ask whether it has a build-time-vs-source-mtime
+  check — if not, assume it can be stale and verify by hand.
