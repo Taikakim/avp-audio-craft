@@ -67,6 +67,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   I will build the sidecar and start the real mixed avp+bigset run.
 
 ## 👂 Ear queue (needs Kim's ears)
+- **Rating page: the switching bug is fixed and the two versions are now one — worth 60 seconds
+  of your hands before you share it** (W, 08-17). Your report ("clicking the circle stops
+  responding, needs a scrub to unstick, then works for a while") was NOT the gesture bug I fixed
+  twice before it: switching paused the inactive track, so the browser stopped buffering it, and
+  seconds later the switch landed in a region that track had never downloaded — `play()` stalled
+  on an unbuffered seek. Scrubbing seeks both, which fetched that region: hence "works again for
+  a while". Both tracks now run continuously and switching is a mute flip, so it cannot stall and
+  is instant. **I could not verify by ear** — the automation browser here can't decode the AAC
+  clips — so the audio side is unconfirmed until you tap it. Also: one page now, not two
+  (`?goa=1` = all 234 scored models, without it the 68 avp-only ones the public link serves), A/B
+  letters above/below the circle, and the round-blocked message names which half is missing.
+  → [▶ public (avp-only)](https://aavepyora.online/evaluator/) · [▶ internal (all models)](https://aavepyora.online/evaluator/?goa=1)
 - **codec-clarity: does the −8 dB SAME residual sound as bad as it measures?** (deployed 08-07,
   https://aavepyora.online/files/audit/codec-clarity/). New: beat-synced 2-min looping clips from the
   60–70% point, stereo, + a **Δ button per codec** that plays only what that codec threw away.
@@ -133,6 +145,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+- **08-16** — mir's Audiobox scoring, dead since the system ffmpeg 8→9 upgrade, is fixed (G found
+  it: 0/162 CE scores, no partial results). torchcodec's bundled backend needs the ffmpeg8 SONAMEs
+  pacman removed. All three obvious routes were dead ends — no ffmpeg8-compat package exists
+  anywhere, torchcodec's ffmpeg9 support needs torch≥2.11 (mir pins 2.9.1, verified by a real build
+  attempt on your `/home/kim/Projects/torchcodec` checkout), and a system-wide downgrade+IgnorePkg
+  would rot security patches indefinitely for one venv. Fixed venv-locally instead: the exact old
+  SONAMEs extracted from the still-cached package + `mir/bin/python` turned into a small
+  LD_LIBRARY_PATH wrapper. Zero system or root changes; transparent to every caller. Verified
+  through the real scoring script, 30/30 clips with real CE/PQ. — W
 - **08-09** — aug8 decision resolved: Kim launched a leaner alternative instead of the full
   8-arm `aug8_train_ddp` plan — AVP aug×8 full-FT (job `20869819`), full-FT+FusionOpt+EMA,
   fp32, T=2048, 60 epochs, on AVP's already-augmented 2394-crop set (289 base + 2105

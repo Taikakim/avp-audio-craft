@@ -378,3 +378,40 @@ convention — see §3a. Going forward, append your own lines as you finish task
 ### next when unblocked
 - [ ] Wire `score_and_publish.py` into the render hook once C's train_lora.py side lands (my (b)+(c)).
 - [ ] #61 disintegration-ceiling on control-head pages; #64 spectral-drift spec; #78 optimizer bracket.
+
+## 2026-08-17 (list was stale since 08-09)
+
+### done since 08-09
+- [x] **Rating page merged to one file.** `rate.html` + `evaluator.html` were ~450 lines each
+      differing only in the model pool, and the internal copy had already drifted a version
+      behind. One page now; `?goa=1` selects the full pool. Old URL redirects. `5b6be4a`
+- [x] **The switch stall, root-caused.** Not the gesture bug I fixed twice before it — the
+      inactive `<audio>` sat paused, stopped buffering, and the next switch stalled on an
+      unbuffered seek. Both tracks run continuously now; switching is a mute flip.
+- [x] Gesture: dropped the time-based scrub trigger entirely (movement-only). A/B letters
+      above/below the circle. Round-blocked message names the missing half, both directions.
+- [x] **mir Audiobox scoring restored** (G's find, Kim's direct call to try compiling).
+      ffmpeg 8→9 broke torchcodec's bundled backend. Compile route hit a real wall
+      (torchcodec ≥0.16 needs torch ≥2.11, mir pins 2.9.1); fixed venv-locally with the cached
+      ffmpeg8 SONAMEs + an `LD_LIBRARY_PATH` wrapper around `mir/bin/python`. mir `e644896`,
+      SAO `5e934b6`. Two findings worth keeping: `os.environ` set mid-process does NOT affect
+      `DT_NEEDED` resolution, and `exec` without `-a` silently destroys venv detection.
+- [x] Evaluator UX round (08-16): question set reworked to Kim's dimension audit (`structure`
+      native-only), pre-filtered manifest 24.5 MB → ~1 MB, loading-sweep ring, tap-drop fix.
+      `d225e96` `047b6ee` `e92220c` `c04928b` `53b1428` `1edec50` `198e75d`
+- [x] `score_and_publish`: `--rebuild` on ingest so the sanity gate reads a current manifest.
+      `e1a9639`
+
+### stuck / waiting on someone
+- [ ] **Rating page audio unverified by ear** — the automation browser can't decode the AAC
+      clips (488 KB file never reaches `loadedmetadata`), so the switch fix is verified only
+      through element state. Needs Kim to tap it. In the tasklist ear queue.
+- [ ] *Carried, unverified since 08-09:* **lenvar ptm re-run** (990 cells, fix in place, needs
+      Kim to sync `lumi/` + resubmit); **W32 blog** (leak-clean, blocked on the real allocation
+      end date); **codec-clarity verdict** (page live, waiting on Kim's ears); **C's
+      fp32cmp/bf16cmp weight-diff probe** (asked once on-channel, not chasing).
+
+### next when unblocked
+- [ ] Publish leg rebuild will pick up the eval-index link change to `/evaluator/?goa=1`.
+- [ ] #61 disintegration-ceiling on control-head pages; #64 spectral-drift spec; #78 optimizer
+      bracket — all still unstarted.

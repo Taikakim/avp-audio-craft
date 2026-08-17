@@ -795,3 +795,44 @@ pattern is narrower: **every one of these was an assumption I had the informatio
 didn't look.** The stem extension is in CLAUDE.md. The field-count variance is in the corpus.
 `bc` either exists or it doesn't. The cost of looking was seconds in every case; the cost of not
 looking ran from a wrong public claim to an 18% biased training set.
+
+### 2026-08-16→17 — the bug report that described its own cause
+
+Kim on the rating page: *"the clicking on the circle is not reliable, it often stops responding,
+whereupon it needs to be scrubbed, and switching then works for a while again."* I had spent the
+previous night twice inside that same gesture handler — a tap that took longer than 100ms fell
+through both branches and did nothing; then, after fixing that, the scrub threshold started
+eating clicks and I raised it 120→200ms. So the third report read as *the same bug, again*, and
+the obvious next move was another threshold.
+
+The tell was the second clause. A timing threshold does not care whether you scrubbed a minute
+ago. **Something that a scrub repairs, and that then decays, is not a gesture problem — it is
+state.** Switching paused the audible element and seek+played the other one, but the inactive
+element sat *paused* the whole time, so the browser stopped buffering it while the audible track
+ran on. Within seconds the switch target's playhead was in a region that element had never
+downloaded, and `play()` stalled on an unbuffered seek: silence, indistinguishable from a dropped
+click. Scrubbing seeks *both* elements, which forces that region to fetch — hence "works for a
+while again", until the playhead outruns the freshly-buffered window. Longer clips fail sooner,
+which is exactly where Kim hit it.
+
+The fix is to stop pausing the inactive track at all: both run continuously and the switch is a
+`muted` flip. No seek, no buffering gap, no promise to stall — and the switch became instant as a
+side effect, which the old design could never be. I also removed the time-based scrub trigger
+outright rather than tuning it a third time: a stationary press has no other possible meaning
+(pause has its own button), so a duration threshold could only ever misfire, and had, twice.
+
+**What I would keep.** I nearly shipped a fourth threshold tweak on top of a bug that was never
+about thresholds. The user's report contained the discriminating evidence — *a scrub fixes it,
+temporarily* — and I had read past it twice because the surrounding words matched a bug I had
+already been inside. **A report that matches a fix you have already made is the one to read most
+literally, not least.** And the tuning attempts themselves were the signal: three iterations on
+one number is the hypothesis failing, not converging.
+
+Same session, the duplication half: `rate.html` and `evaluator.html` were ~450 lines each
+differing only in which model pool they loaded, and the internal copy had already fallen a
+version behind — every gesture fix of the previous night existed in one of them. Kim: *"upkeeping
+two almost similar versions make no sense."* Merged to one page with `?goa=1` selecting the pool.
+Worth naming plainly: I created that second copy a day earlier, deliberately, and wrote in its
+header that it was "mechanically IDENTICAL" to its twin. **A comment asserting two files stay in
+sync is a promise no one is keeping** — it went stale within 24 hours, in my own hands, while I
+was actively working on both.
