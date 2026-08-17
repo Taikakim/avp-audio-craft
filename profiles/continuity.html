@@ -54,8 +54,30 @@
   </section>
 
   <section aria-labelledby="shipped">
-    <h2 id="shipped">Shipped (2026-07)</h2>
+    <h2 id="shipped">Shipped (2026-07 – 08)</h2>
     <ul class="links">
+      <li><strong>The full-finetune drone, root-caused</strong> — every full-model finetune on the
+        cluster decoded to a lifeless spectral drone. Cleared the obvious suspects one by one — the
+        multi-GPU wiring, the on-the-fly encoding, the decoder — then forked the whole question from
+        the saved latents on a laptop, no GPU: the model's <em>latent output scale runs away</em> as
+        training proceeds (a healthy spread of ~1.0 climbs to ~5.6, most channels blown out; high
+        guidance shows it first). The cause is a weight-decay that defaults an order of magnitude too
+        weak for an orthogonalising (Muon/NS5) optimiser, which only bites a whole-model finetune —
+        adapters stay pinned by the frozen base. Shipped the fix (stronger decoupled decay on the
+        weight-matrix group + gradient clipping), a deterministic CPU test that reproduces the runaway
+        and proves the bound, and a real-model A/B. New standing rule: the first check on any future
+        drone is the latent's scale, before anything else.</li>
+      <li><strong>Can the model even see a semitone?</strong> — our melody control was weak and the
+        easy story was "a semitone is too small to register." Built a controlled interval ladder and
+        killed the easy story: a semitone already moves the model's representation ~94% as much as a
+        perfect fifth, and survives inside a full mix at ~13× the codec noise floor. The lever was
+        never legibility — it was that the training target measured magnitude, which is blind to
+        melodic <em>contour</em>. Rebuilt the target to separate genuine melodic motion from timbre;
+        ~5× the useful signal-to-noise, A/B queued to settle it honestly.</li>
+      <li><strong>Multi-GPU training, corrected for the new stack</strong> — the migrated container
+        silently broke the previous data-parallel launch recipe (all ranks piling onto one card →
+        out-of-memory); pinned the working per-GCD pattern, extended it to multi-node, and recorded
+        the correction + the verify-the-artifact checks so nobody re-derives it.</li>
       <li><strong>Chroma-steering page, extended</strong> — solo instruments and chord
         progressions that move between colours/keys, a tab per steering head, over a
         GPU-verified render path (the engine that drives it had never been run on-GPU).
