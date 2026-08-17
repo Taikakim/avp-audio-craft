@@ -239,3 +239,53 @@ Three times in one session a green check meant nothing because it compared a qua
 **MY OWN ERROR, corrected by W's simulation:** I read "variants disagree with each other (26.2%) more than with source (22.4%)" as "the signature of independent noise draws". WRONG QUANTITATIVELY — independent draws predict ~39.8% mutual at p=0.224; 26.2% implies deviation correlation ~0.3, i.e. deviations are PARTLY SHARED = a systematic shift-dependent component. **Technique to keep: when two competing models predict different MAGNITUDES and not just different orderings, SIMULATE them and compare against the measurement — do not hand-reason the ordering.** I had flagged my own reading as unable to separate the two hypotheses; it could partly separate them, and the separation pointed away from the conclusion I favoured.
 
 **LABEL-NOISE FLOOR (use these numbers, not the first ones):** melodia self-agreement under an inaudible -80 dBFS perturbation, 7 tracks: **lead 93.7%, bass 86.6%**. Under a pure +0.01 dB GAIN change it is perfectly deterministic (0.0% flips, 100%, both voices) — so it is not simply flaky; the instability is specific to added noise. **CONSEQUENCE FOR THE MELODY HEAD: read per-frame accuracy against ~94% (lead) / ~87% (bass) self-consistency, NOT against 100%, and gate on contour SHAPE rather than per-frame exactness** — otherwise a head already at ceiling reads as mediocre and someone re-tunes a model that was fine. Caveat (W): -80 dBFS is an ABSOLUTE level so quiet passages are perturbed harder; a signal-RELATIVE probe is the correct calibration and has not been run — treat as a first bound.
+
+## 2026-08-17
+
+### lesson · every guard we own fires on WRITE, so nothing can retract what predates it
+W found three raw `.md` journal sources still served from `/files/profiles/` (dated Jul 2-12), bypassing the
+`redact()` he added to build_site.py on 07-30. He found them BY EYE. That is the whole finding: `build_site.redact`,
+`publish_docs.py`'s fail-closed hard-scan, and the page-builder leak gates all gate the WRITE path, so every one of
+them is structurally incapable of retracting an artifact deployed before it existed. Nothing in the fleet sweeps
+backwards. A guard added on day N silently leaves everything from days 1..N-1 exposed, and the guard's own green
+status is honest — it is doing exactly its job on everything it touches. **PATROL RULE: when a guard is ADDED, that
+is the moment to sweep the surface it protects for artifacts that predate it — the guard will never do it for you.**
+I re-verified the live tree read-only (0 `.md`/`.py`/`.sh`/`.log`/`.sbatch` remain), so the class is closed once;
+W's note that this wants to be a PERIODIC audit rather than a one-off is correct and is mine to own. Deferred, not
+dropped — Kim's two-week deliverable directive rules out building the standing version now.
+
+### lesson · over-classing severity costs you the next real finding
+W filed the above as SECURITY. Per Kim's explicit ruling (2026-07-30, recorded in memory): paths, drive labels,
+cluster names and code names are **polish, not secrets**; corpus contents, credentials and infra are the off-limits
+set. What actually escaped was a drive label, so the correct class is tidiness. W took the correction and named the
+cost himself: if everything is SECURITY, the next real one gets the same weight and stops being read. Worth holding
+BOTH halves though — the MECHANISM (a raw source bypassing redaction entirely) fully deserved the flag, because the
+next file through that hole could carry something from the off-limits list. **The mechanism was the finding; the
+drive label was the harmless instance of it.** Severity attaches to what escaped, urgency to what could.
+
+### negative result · the deployed manifest is not a leak (checked, so nobody re-checks)
+W's 08-16 change pre-filtered the evaluator manifest 24.5MB -> ~1MB. I suspected the full index was still public and
+carrying corpus names + scale — squarely on the off-limits list. I sampled the deployed file instead of reasoning
+from its size: it is `model / ckpt / cfg / strength / prompt_text / seed / output filename` — hyperparameters and
+prompts, i.e. exactly the "science stays" class `publish_docs.py` deliberately KEEPS. No paths, no corpus names, no
+credentials. **No leak; my expectation was wrong.** What was real was bandwidth — ~82MB of redundant index, and
+`leg_publish`'s `*.jsonl` include was RE-UPLOADING the dead copy on every publish. W fixed it at the source
+(`--exclude` before the include, since rsync takes the first matching rule) rather than deleting again.
+
+### lesson · a classifier that returns the same verdict for every input has told you nothing
+Auditing C's "every multi-GPU script is UNVERIFIED" (49 scripts) down to the 4 genuinely at risk took three wrong
+classifiers, and the wrong ones all LOOKED like clean results. (1) Counted `SLURM_PROCID` mentions — wrong in BOTH
+directions: `fullft_avp_aug` has 6 refs that are only per-rank MIOPEN/TRITON scratch dirs and log names (pure DDP
+boilerplate), while `precision_ladder`/`fullft_wd_ab` have ZERO refs yet fan out via a bash loop of separate
+`srun -n1 --gpus=1` calls — my label was exactly backwards for that group. **Count-of-mentions is a proxy for usage;
+read the usage.** (2) Grepped `case $SLURM_PROCID` — returned sel=0 for all 21 candidates. A uniform verdict across
+a heterogeneous input set is the tell: the fleet idiom is `ARM=${SLURM_PROCID}` then `case ${ARM}`, and the alias
+hid it. (3) Numeric case-arm table — still false-positived `efp_fp32_frames`, which selects its 16 arms
+ARITHMETICALLY (`LOCAL=$((ARM % 8))`, no `case` at all). Only reading the scripts settled it. What made the final
+list trustworthy was NOT the method: it independently rediscovered both scripts C had found by hand, and added two
+she had not (`fullft_bigset`, `subloss_goa_k20_fullft`). **Corroboration against an independently-derived list is
+worth more than the elegance of the test that produced it.** `fullft_bigset.sbatch` line 13 carried its own author's
+unresolved warning — "VERIFY train_lora drives Lightning DDP" — which C's job-21161065 finding answers with "it did
+not". The warning was right and sat unread for two weeks. Scope discipline that mattered: 34 of the 49 WANT 8
+uncoordinated single-GPU processes (per-rank arm tables, renders, shard jobs) — flagging those would have sent the
+fleet re-running correct work, which is the expensive direction of a false positive.
