@@ -28,10 +28,18 @@ CODE=${PROJ}/code
 MODELS=${PROJ}/models
 SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
-RUN=${SCRATCH}/runs/fullft_mixed_avp_latents_sa3_t4096_wdfix
+# RUN/LABEL are env-overridable (2026-08-17): the wd03 re-run (job 21251551, the FIRST
+# trustworthy one -- real DDP confirmed via LOCAL_RANK 0..7 + zero -vN dup ckpts + 244
+# steps/epoch = 1948/8 proving real data sharding) needs the same render, and the LABEL must
+# differ per run or cells silently overwrite each other on the board (same discipline as
+# fullft_avp_render.sbatch's hard-pin note). Defaults still point at the ORIGINAL ddp-bugged
+# wdfix run so existing invocations are unchanged.
+#   wd03 run:  RUN=${SCRATCH}/runs/fullft_mixed_avp_latents_sa3_t4096_wd03 \
+#              LABEL=fullft_mixed_wd03 NLAST=2 sbatch ...
+RUN=${RUN:-${SCRATCH}/runs/fullft_mixed_avp_latents_sa3_t4096_wdfix}
 SNAP=${CODE}/lumi/matrix_prompts_snapshot.json
 ROUT=${SCRATCH}/renders/matrix_cells
-LABEL=fullft_mixed_wdfix_ddpbug   # flagged in the name -- uncertain provenance, see header
+LABEL=${LABEL:-fullft_mixed_wdfix_ddpbug}   # ddpbug default = uncertain provenance, see header
 NLAST=${NLAST:-1}
 
 [ -n "${SIF}" ] || { echo "[mixedwdfix-render] FATAL: no multitorch image"; exit 1; }

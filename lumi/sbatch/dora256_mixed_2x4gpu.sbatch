@@ -28,6 +28,15 @@
 # not withheld, just doesn't do anything for this adapter type. Flagging so it isn't mistaken
 # for silently working.
 #
+# ── ROUND 3, THE ONE THAT ACTUALLY WORKS (2026-08-17) ── migrated to the CSC/LUMI reference
+# torchrun launch, after job 21251551 PROVED it on the sibling full-FT script: real DDP
+# confirmed by LOCAL_RANK 0..7 (not eight 0s), ZERO -vN duplicate checkpoints, and
+# 244 steps/epoch vs the broken run's 1948 (= 1948/8, i.e. genuine 8-way data sharding), in
+# 3h41m instead of 1d8h. Per arm here: ONE srun --overlap task, explicit ROCR_VISIBLE_DEVICES
+# (0-3 / 4-7), and `torchrun --nproc-per-node=4` with a PER-ARM rdzv port (two rendezvous
+# servers on one node collide on a shared port). Requires train_lora.py's
+# torch.cuda.set_device(LOCAL_RANK) fix (guarded in the preflight below).
+#
 # CORRECTION (2026-08-17): first version passed --devices 4 per arm, reasoning (wrongly) from
 # fullft_mixed_avp_goa_t4096.sbatch's now-also-corrected claim that an explicit --devices was
 # needed for real DDP under --gpus-per-task=1. It's not -- fullft_avp_aug.sbatch (job #68, the
@@ -75,6 +84,8 @@ RUNROOT=${SCRATCH}/runs/dora256_mixed
 
 [ -n "${SIF}" ] || { echo "[dora256] FATAL: no lumi-multitorch-full image"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[dora256] FATAL: ${VENV} missing"; exit 1; }
+grep -q -- 'LOCAL_RANK.*set_device\|set_device.*LOCAL_RANK' "${CODE}/stable-audio-3/scripts/train_lora.py" \
+  || { echo "[dora256] FATAL: train_lora.py missing the LOCAL_RANK set_device fix (code refresh needed -- REQUIRED for torchrun, else all 4 ranks per arm land on the same GPU)"; exit 1; }
 grep -q -- "--warmup-frac" "${CODE}/stable-audio-3/scripts/train_lora.py" \
   || { echo "[dora256] FATAL: train_lora.py missing --warmup-frac (code refresh needed)"; exit 1; }
 [ -f "${SIDECAR}" ] || { echo "[dora256] FATAL: ${SIDECAR} not shipped"; exit 1; }
@@ -90,26 +101,33 @@ done
 echo "[dora256] avp: $(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l) crops  ${GOA_DIR}: $(ls ${FLASH}/${GOA_DIR}/*.npy 2>/dev/null | wc -l) crops  SMOKE=${SMOKE}  image=${SIF}"
 
 run_arm() {
-  local ARM_NAME=$1 RANK=$2 ALPHA=$3 LR=$4
+  local ARM_NAME=$1 RANK=$2 ALPHA=$3 LR=$4 PORT=$5 GPUS=$6
   local RUN=${RUNROOT}/${ARM_NAME}
   mkdir -p "${RUN}"
   local STEP_ARGS="--epochs ${EPOCHS}"
   [ "${SMOKE}" = "1" ] && STEP_ARGS="--steps 20"   # omitting --epochs caps max_steps=--steps (the
-                                                     # trap from tonight's continue8 bug, used
+                                                     # trap from the continue8 bug, used
                                                      # deliberately here for a bounded smoke)
-  srun --nodes=1 --ntasks=4 --gpus-per-task=1 --cpus-per-task=7 --exclusive \
+  # ONE srun task per arm (NOT --ntasks=4 --gpus-per-task=1): torchrun spawns the 4 worker
+  # procs itself. GPU split is EXPLICIT via ROCR_VISIBLE_DEVICES (0-3 / 4-7) rather than
+  # relying on SLURM's step-level GRES scheduler to hand out disjoint sets -- same explicit
+  # pinning approach fullft_avp_dronesweep.sbatch already proved on this cluster, just 4 GPUs
+  # per arm instead of 1. --overlap is REQUIRED for two steps to run concurrently on one
+  # allocation. ROCR_VISIBLE_DEVICES alone, never +HIP_VISIBLE_DEVICES (MASTER §5).
+  srun --overlap --nodes=1 --ntasks=1 --cpus-per-task=28 \
     singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; FLASH=/flash/project_465003186
 CODE=${PROJ}/code
 RUN='"${RUN}"'
 VENV='"${VENV}"'
+export ROCR_VISIBLE_DEVICES='"${GPUS}"'
 source ${VENV}/bin/activate
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
 export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${CODE}/control:${CODE}/lumi/vendor${PYTHONPATH:+:${PYTHONPATH}}
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
-export MIOPEN_USER_DB_PATH=/tmp/miopen-'"${ARM_NAME}"'-${SLURM_PROCID} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-'"${ARM_NAME}"'-${SLURM_PROCID}
-export TRITON_CACHE_DIR=/tmp/triton-'"${ARM_NAME}"'-${SLURM_PROCID} PYTORCH_TUNABLEOP_ENABLED=0
+export MIOPEN_USER_DB_PATH=/tmp/miopen-'"${ARM_NAME}"' MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-'"${ARM_NAME}"'
+export TRITON_CACHE_DIR=/tmp/triton-'"${ARM_NAME}"' PYTORCH_TUNABLEOP_ENABLED=0
 rm -rf "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"; mkdir -p "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
@@ -131,8 +149,10 @@ then export SA3_SDPA_CAST_BF16=0; else export SA3_SDPA_CAST_BF16=1; fi
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 RESUME=""; [ -n "${FATCKPT}" ] && { RESUME="--resume_ckpt ${FATCKPT}"; echo "[dora256/'"${ARM_NAME}"'] resuming from ${FATCKPT}"; }
 
-echo "[dora256/'"${ARM_NAME}"' rank ${SLURM_PROCID}/${SLURM_NTASKS}] node=$(hostname) local=${SLURM_LOCALID}"
-python ${CODE}/stable-audio-3/scripts/train_lora.py \
+echo "[dora256/'"${ARM_NAME}"'] node=$(hostname) ROCR=${ROCR_VISIBLE_DEVICES} torchrun nproc=4 rdzv_port='"${PORT}"'"
+torchrun --nnodes=1 --nproc-per-node=4 \
+  --rdzv-backend=c10d --rdzv-endpoint=localhost:'"${PORT}"' --rdzv-id='"${ARM_NAME}"' \
+  ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base \
   --adapter_type dora-rows --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --encoded_dir ${FLASH}/latents_avp,${FLASH}/'"${GOA_DIR}"' \
@@ -147,13 +167,15 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   '"${STEP_ARGS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   ${RESUME} \
   --num_workers 6 --seed 1 --no_demos --logger csv \
-  --name '"${ARM_NAME}"' 2>&1 | tee -a ${RUN}/train_rank${SLURM_PROCID}.log
-echo "[dora256/'"${ARM_NAME}"' rank ${SLURM_PROCID}] step finished"
+  --name '"${ARM_NAME}"' 2>&1 | tee -a ${RUN}/train.log
+echo "[dora256/'"${ARM_NAME}"'] step finished"
 ' &
 }
 
-run_arm dora256_mixed_a196_lr1e4 256 196 1e-4
-run_arm dora256_mixed_a128_lr5e5 256 128 5e-5
+# distinct rdzv ports: two torchrun rendezvous servers on ONE node collide on a shared port.
+# distinct ROCR sets: explicit 0-3 / 4-7 GPU split, not left to the step scheduler.
+run_arm dora256_mixed_a196_lr1e4 256 196 1e-4 29511 0,1,2,3
+run_arm dora256_mixed_a128_lr5e5 256 128 5e-5 29521 4,5,6,7
 wait
 echo "[dora256] both arms finished (or timed out) -- verify per-arm logs, never trust this script's own rc:"
 for A in dora256_mixed_a196_lr1e4 dora256_mixed_a128_lr5e5; do
