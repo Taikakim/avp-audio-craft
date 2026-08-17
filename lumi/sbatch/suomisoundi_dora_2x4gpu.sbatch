@@ -81,6 +81,19 @@ CKEVERY=${CKEVERY:-5}
 WARMUP_EPOCHS=${WARMUP_EPOCHS:-2}
 WARMUP_FRAC=$(awk -v w="${WARMUP_EPOCHS}" -v e="${EPOCHS}" 'BEGIN{printf "%.6f", w/e}')
 SPECTRAL_WD=${SPECTRAL_WD:-0.03}
+# CAPTION MIX — deliberately NOT the trainer's 0.6/0.3/0.1 default, because that default was
+# tuned for goa, where T1 is built PER TRACK from effnet genre400/moodtheme. Suomisoundi's T1 is a
+# single corpus-wide label: measured over the sidecar, t1 is 1 unique string across all 1260
+# entries ("suomisoundi, an eclectic Finnish sub-genre of psychedelic goa trance", 68 chars),
+# while t2 is 1257/1260 unique (~155 chars) and t3 1257/1260 unique (~1951 chars). So inheriting
+# goa's numbers would hand 60% of every epoch the IDENTICAL prompt and leave the per-track
+# descriptive text — the only thing that teaches prompt-following — with 40% between them.
+# 0.25/0.45/0.30 keeps a real style-anchor share (repeatedly binding the word "suomisoundi" to the
+# corpus sound is worth having, and is what makes it a usable trigger at inference) while giving
+# the majority to text that actually varies per track. Override with CAPTION_PROBS if you want the
+# old behaviour or a pure-anchor run. NOT a measured optimum — a reasoned default; if the r32/r256
+# bracket shows weak prompt adherence, this ratio is the first thing to bracket next.
+CAPTION_PROBS=${CAPTION_PROBS:-0.25,0.45,0.30}
 LR_A=${LR_A:-1e-4}
 LR_B=${LR_B:-3e-5}
 SMOKE=${SMOKE:-0}
@@ -171,7 +184,10 @@ run_arm() {
   "purpose": "Suomisoundi (Kim's own-corpus finetune target) DoRA capacity x LR bracket: does rank 256 buy anything over rank 32 on a 1260-track corpus, and which LR holds. fp32 throughout, T=256 crops.",
   "hypothesis": "At 1260 tracks the corpus may not support rank 256; if r32 matches or beats it, the cheaper adapter is the one to ship. LR 1e-4 vs 3e-5 brackets the drift-vs-underfit axis.",
   "dataset": {"name": "suomisoundi", "latents": "${LAT_DIR}", "n_latents": ${NLAT}, "pre_encoded": true,
-              "caption_sidecar": "$(basename ${SIDECAR})", "caption_tiers": "t1/t2/t3", "augmentation": "none (pre-encoded)"},
+              "caption_sidecar": "$(basename ${SIDECAR})", "caption_tiers": "t1/t2/t3",
+              "caption_probs": "${CAPTION_PROBS}",
+              "caption_note": "t1 is ONE corpus-wide string on all 1260 tracks (not per-track as in goa); t2 1257/1260 unique, t3 1257/1260 unique. Probs shifted off the 0.6/0.3/0.1 default so 60% of samples do not share an identical prompt.",
+              "augmentation": "none (pre-encoded)"},
   "recipe": {"adapter": "dora-rows", "rank": ${RANK}, "alpha": ${ALPHA}, "lr": "${LR}",
              "batch_size": ${BS}, "gpus": 4, "effective_batch": $((BS*4)), "frames": ${FRAMES},
              "precision": "${PREC}", "optimizer": "fusion", "spectral_wd": ${SPECTRAL_WD},
@@ -230,7 +246,7 @@ torchrun --nnodes=1 --nproc-per-node=4 \
   --model medium-base \
   --adapter_type dora-rows --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --encoded_dir ${FLASH}/'"${LAT_DIR}"' \
-  --caption_sidecar '"${SIDECAR}"' \
+  --caption_sidecar '"${SIDECAR}"' --caption_probs '"${CAPTION_PROBS}"' \
   --save_dir "'"${RUN}"'" \
   --optimizer fusion --base_precision '"${PREC}"' \
   --weight_decay '"${SPECTRAL_WD}"' \
