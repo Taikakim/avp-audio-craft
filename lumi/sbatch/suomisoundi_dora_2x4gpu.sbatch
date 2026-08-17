@@ -91,8 +91,11 @@ SPECTRAL_WD=${SPECTRAL_WD:-0.03}
 # 0.25/0.45/0.30 keeps a real style-anchor share (repeatedly binding the word "suomisoundi" to the
 # corpus sound is worth having, and is what makes it a usable trigger at inference) while giving
 # the majority to text that actually varies per track. Override with CAPTION_PROBS if you want the
-# old behaviour or a pure-anchor run. NOT a measured optimum — a reasoned default; if the r32/r256
-# bracket shows weak prompt adherence, this ratio is the first thing to bracket next.
+# old behaviour or a pure-anchor run. Still not a MEASURED optimum, but no longer just my
+# inference either — Kim reviewed the tier statistics and the 25/45/30 split and confirmed it
+# 2026-08-18 ("those values makes sense"). Treat it as the agreed baseline: if the r32/r256 bracket
+# shows weak prompt adherence this ratio is the first thing to bracket, and a change from here is
+# a deliberate experiment against a ratified default, not a correction of a guess.
 CAPTION_PROBS=${CAPTION_PROBS:-0.25,0.45,0.30}
 LR_A=${LR_A:-1e-4}
 LR_B=${LR_B:-3e-5}
