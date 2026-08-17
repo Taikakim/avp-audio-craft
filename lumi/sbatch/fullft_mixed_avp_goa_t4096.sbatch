@@ -25,6 +25,19 @@
 #
 # ── DDP: Pattern 2, IDENTICAL launch to fullft_avp_aug.sbatch / subloss_goa_k20_fullft.sbatch
 #    (both proven tonight, jobs 21148122 / submitted after quoting was verified).
+#    THIS CLAIM WAS FALSE until 2026-08-17: this script never actually passed --devices/
+#    --num_nodes to train_lora.py, so its 8 srun ranks ran as 8 UNCOORDINATED independent
+#    single-GPU trainers (train_lora.py: devices="auto"+strategy="auto" when --devices is
+#    omitted -- the exact failure train_lora.py's own --devices help text names by precedent,
+#    job 20413874). Confirmed via job 21161065's colliding -v1..-v4 checkpoint duplicates
+#    (ckpt_dup_delta.py) and Kim's listening feedback (droning/thin, not what real DDP should
+#    produce). NOW FIXED: --devices 8 --num_nodes 1 added below, matching the siblings this
+#    comment always claimed to match. NOTE the semantics change this brings: BS=2 GA=2 was
+#    tuned for PER-GCD memory fit (T4096 bf16 full-FT tight at batch 4 live) -- that's
+#    unaffected by real DDP (each GPU still only ever holds its own micro-batch), but the
+#    EFFECTIVE GLOBAL batch goes from an accidental 4 (whichever single process "won") to a
+#    real 8×4=32 (gradient-synced across all 8 GPUs) -- a materially different optimization
+#    regime, not just a bugfix. Flagging, not silently changing without saying so.
 #
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
@@ -63,7 +76,15 @@ GRAD_CLIP_MODE=${GRAD_CLIP_MODE:-agc}
 # instability shape as the confirmed-corrupted precision_ladder_t256_bf16mixed dronesweep,
 # just caught earlier in the trajectory (ep0 vs its ep9 full collapse). --weight_decay 0.1
 # is the proven fix (routes to spectral_wd, independent of grad-clip-mode -- both apply).
-WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
+WEIGHT_DECAY=${WEIGHT_DECAY:-0.03}
+# LOWERED from 0.1 (2026-08-17, Kim direct): the 0.1-run's rendered ep7 checkpoint (job
+# 21161065, label fullft_mixed_wdfix_ddpbug) sounded droning/thin -- underfitting, not the
+# earlier inf-blown-latents corruption. 0.1 stopped the numerical runaway but may have been
+# strong enough at only 8 epochs to drag the model back toward base/pretrained character
+# faster than the target style develops. 0.03 is the new default; still >> FusionOpt's own
+# 0.01 default (the value that caused the ORIGINAL drone-runaway), so the anti-runaway
+# protection stays, just less aggressive. UNVERIFIED which value is actually right -- this
+# run is the test.
 RUNTAG=${RUNTAG:-}
 NAME=fullft_mixed_avp_${GOA_DIR}_t4096${RUNTAG:+_${RUNTAG}}
 RUN=${SCRATCH}/runs/${NAME}
@@ -86,7 +107,7 @@ done
 NAVP=$(ls ${FLASH}/latents_avp/*.npy 2>/dev/null | wc -l)
 NGOA=$(ls ${FLASH}/${GOA_DIR}/*.npy 2>/dev/null | wc -l)
 echo "[fullft-mixed] latents_avp: ${NAVP} crops, ${GOA_DIR}: ${NGOA} crops (total ~$((NAVP+NGOA)))  image=${SIF}"
-echo "[fullft-mixed] GOA_DIR=${GOA_DIR} BS=${BS} GA=${GA} (eff batch $((BS*GA))) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} WEIGHT_DECAY=${WEIGHT_DECAY} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
+echo "[fullft-mixed] GOA_DIR=${GOA_DIR} BS=${BS} GA=${GA} (per-GPU $((BS*GA)), GLOBAL eff batch $((BS*GA*8)) across 8 real DDP ranks) FRAMES=${FRAMES} PREC=${PREC} LR=${LR} EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} WEIGHT_DECAY=${WEIGHT_DECAY} RUNTAG=${RUNTAG:-none} NAME=${NAME}"
 
 srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
@@ -111,6 +132,7 @@ RESUME=""; [ -n "${FATCKPT}" ] && { RESUME="--resume_ckpt ${FATCKPT}"; echo "[fu
 echo "[rank ${SLURM_PROCID}/${SLURM_NTASKS}] node=$(hostname) local=${SLURM_LOCALID} TRAIN '"${NAME}"'"
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base --full-finetune \
+  --devices 8 --num_nodes 1 \
   --encoded_dir ${FLASH}/latents_avp,${FLASH}/'"${GOA_DIR}"' \
   --caption_sidecar ,'"${SIDECAR}"' --caption_probs 0,0,1 \
   --save_dir "'"${RUN}"'" \
