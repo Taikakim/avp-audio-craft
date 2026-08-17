@@ -109,10 +109,20 @@ grep -q -- "--warmup-frac" "${CODE}/stable-audio-3/scripts/train_lora.py" \
 mkdir -p "${RUNROOT}" "${FLASH}"
 
 # Stage latents to node-local /flash (Lustre random reads on 1260 small .npy are the slow path).
+# The corpus is ALREADY an extracted directory on /scratch (uploaded with the archive/stems/
+# captions before this script existed), so the directory is the primary path and the .tar.gz the
+# fallback — the other training scripts here assume a tarball because that is how THEIR corpora
+# arrived, which is a per-corpus accident, not a rule.
 if [ ! -d "${FLASH}/${LAT_DIR}" ]; then
-  [ -f "${SCRATCH}/${LAT_DIR}.tar.gz" ] || { echo "[suomi] FATAL: ${SCRATCH}/${LAT_DIR}.tar.gz missing -- transfer it first"; exit 1; }
-  mkdir -p "${FLASH}/${LAT_DIR}"
-  tar -xzf "${SCRATCH}/${LAT_DIR}.tar.gz" -C "${FLASH}/${LAT_DIR}" --strip-components=1
+  if [ -d "${SCRATCH}/${LAT_DIR}" ]; then
+    mkdir -p "${FLASH}/${LAT_DIR}"
+    cp "${SCRATCH}/${LAT_DIR}"/*.npy "${SCRATCH}/${LAT_DIR}"/*.json "${FLASH}/${LAT_DIR}/" 2>/dev/null || true
+  elif [ -f "${SCRATCH}/${LAT_DIR}.tar.gz" ]; then
+    mkdir -p "${FLASH}/${LAT_DIR}"
+    tar -xzf "${SCRATCH}/${LAT_DIR}.tar.gz" -C "${FLASH}/${LAT_DIR}" --strip-components=1
+  else
+    echo "[suomi] FATAL: neither ${SCRATCH}/${LAT_DIR}/ nor ${SCRATCH}/${LAT_DIR}.tar.gz exists"; exit 1
+  fi
 fi
 NLAT=$(ls ${FLASH}/${LAT_DIR}/*.npy 2>/dev/null | wc -l)
 echo "[suomi] ${LAT_DIR}: ${NLAT} .npy staged (1261 expected = 1260 samples + silence.npy)"
