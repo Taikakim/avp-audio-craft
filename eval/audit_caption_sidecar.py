@@ -60,6 +60,48 @@ def album_of(key):
     return "/".join(p[:2]) if len(p) >= 2 else p[0]
 
 
+# ── GENRE CORRECTNESS — the check that GROUNDING CANNOT SEE ─────────────────────────────────────
+# Learned 2026-08-18, hours after this tool certified a sidecar it had no business certifying.
+# Grounding asks "does the tag reflect ITS OWN track's prose". Correctness asks "is the prose TRUE".
+# They are ORTHOGONAL: if Music Flamingo says "Deep House" about a goa track, a perfectly grounded
+# granite tag faithfully inherits that error, and this tool's 19.24x said nothing about it.
+# The cause was measurable and dull: goa's MF run recorded `genre_hint: None` (the mechanism exists
+# and defaults to empty), so MF guessed unanchored -> 1.2% of a goa corpus mentioned goa/psy and
+# 70.8% said techno/industrial/house. Suomisoundi, same script WITH a hint, scored 97.4%.
+# Ranking measured on the same corpus, which is why a tier's PROVENANCE matters more than its polish:
+#     T1 effnet classifier ON THE AUDIO   goa/psy 70.4%
+#     T2 granite (revises the MF text)    goa/psy 48.0%   <- inherits the source error
+#     T3 Music Flamingo prose             goa/psy  1.2%
+# Run BOTH checks. A tier can be perfectly grounded and completely wrong.
+GENRE_VOCAB = {
+    "goa/psy": ("goa", "psytrance", "psy-trance", "psy trance", "psychedelic trance"),
+    "trance": ("trance", "progressive trance", "uplifting trance"),
+    "techno": ("techno", "tech house", "industrial"),
+    "house": ("house", "deep house", "progressive house"),
+    "ambient": ("ambient", "new age", "drone", "downtempo"),
+    "breaks/dnb": ("breakbeat", "drum and bass", "jungle", "breaks"),
+}
+
+
+def genre_profile(d, keys, tier, head_chars=200):
+    """Mention rate per genre family in the first `head_chars` of a tier.
+
+    Scoped to the head because that is where a caption states its genre; scanning the whole prose
+    picks up incidental mentions ("...unlike techno...") and blurs the signal.
+    """
+    n = 0
+    hits = collections.Counter()
+    for k in keys:
+        txt = (d[k].get(tier) or "")[:head_chars].lower()
+        if not txt:
+            continue
+        n += 1
+        for fam, terms in GENRE_VOCAB.items():
+            if any(t in txt for t in terms):
+                hits[fam] += 1
+    return n, hits
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("sidecar")
@@ -68,6 +110,13 @@ def main():
     ap.add_argument("-n", "--sample", type=int, default=600)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--label", default=None)
+    ap.add_argument("--expect-genre", default=None,
+                    help="comma-separated terms the corpus SHOULD be labelled with, e.g. "
+                         "'goa,psytrance'. Reports the per-tier hit rate — the CORRECTNESS check, "
+                         "which grounding cannot see: a tag can faithfully reflect its own track's "
+                         "prose while that prose is wrong about the genre. This is what caught the "
+                         "goa corpus being captioned with genre_hint=None (1.2%% goa vs "
+                         "suomisoundi's 97.4%% WITH a hint).")
     a = ap.parse_args()
     random.seed(a.seed)
 
@@ -142,6 +191,33 @@ def main():
     print(f"most common {a.tag_tier} openings (4 words) — high share = templated:")
     for t, n in op.most_common(4):
         print(f"  {n:6d} ({n/max(1,len(keys)):5.1%})  {t}")
+
+    # ── the second, ORTHOGONAL check ────────────────────────────────────────────────────────────
+    print("\nGENRE PROFILE per tier (first 200 chars) — grounding cannot see this:")
+    print(f"  {'tier':5} {'n':>7}  " + "  ".join(f"{f:>10}" for f in GENRE_VOCAB))
+    for tier in ("t1", a.tag_tier, a.prose_tier):
+        if tier not in {t for k in keys[:50] for t in d[k]}:
+            continue
+        n, hits = genre_profile(d, keys, tier)
+        if not n:
+            continue
+        print(f"  {tier:5} {n:>7}  " + "  ".join(f"{hits[f]/n:>9.1%}" for f in GENRE_VOCAB))
+    if a.expect_genre:
+        want = tuple(w.strip().lower() for w in a.expect_genre.split(",") if w.strip())
+        print(f"\nEXPECTED-GENRE HIT RATE for {list(want)}:")
+        for tier in ("t1", a.tag_tier, a.prose_tier):
+            n = hit = 0
+            for k in keys:
+                txt = (d[k].get(tier) or "")[:200].lower()
+                if not txt:
+                    continue
+                n += 1
+                hit += any(w in txt for w in want)
+            if n:
+                flag = "" if hit / n >= 0.6 else "   <-- LOW: this tier likely mislabels the corpus"
+                print(f"  {tier:5} {hit}/{n} = {hit/n:6.1%}{flag}")
+        print("  (a corpus legitimately containing other genres will not hit 100%; MF WITH a hint "
+              "scored 97.4% on suomisoundi, WITHOUT one scored 1.2% on goa)")
     return 0
 
 
