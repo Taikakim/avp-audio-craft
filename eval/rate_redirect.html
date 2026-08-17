@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset=utf-8>
+<title>Moved — the rating page lives at /evaluator/</title>
+<!-- Deployed to /files/evals/rate.html, replacing the old internal rating page.
+
+     Kim 2026-08-17: "it's better to have one version only, with a parameter passed in the
+     address to activate also the goa clips which are normally disabled. Upkeeping two almost
+     similar versions make no sense." eval/rate.html and eval/evaluator.html had drifted into
+     two copies of the same ~450-line page differing only in which model pool they loaded --
+     and the internal one had already fallen a version behind (its last deploy predated the
+     gesture and question-cycle fixes). The merged page is eval/evaluator.html; ?goa=1 is what
+     the internal audience wants. This stub exists only so old links/bookmarks still land. -->
+<meta http-equiv="refresh" content="0;url=/evaluator/?goa=1">
+<link rel="canonical" href="/evaluator/?goa=1">
+<style>body{background:#0f0f13;color:#9ab;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}
+a{color:#4fe3dd}</style></head>
+<body><div>
+ <p>The rating page moved to <a href="/evaluator/?goa=1">/evaluator/?goa=1</a>.</p>
+ <p style="font-size:13px;color:#667">One page for both audiences now — <code>?goa=1</code> pools
+  every scored model, without it only the avp ones.</p>
+</div></body></html>

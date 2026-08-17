@@ -37,7 +37,14 @@ select,button{font:inherit;color:inherit}
 #center{width:150px;height:150px;border-radius:50%;border:3px solid #445;background:radial-gradient(circle at 35% 30%,#2a2a36,#161620);
  display:flex;align-items:center;justify-content:center;position:relative;touch-action:none}
 #center.scrubbing{border-color:#fa5}
-#nowplaying{position:absolute;top:-26px;color:#789;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+/* Kim 2026-08-17: "a letter B should exist under the circle" -- one label above and one below,
+   lined up with the rating row each one belongs to (rowA above, rowB below), the active one lit.
+   Was a single label on top that just changed its text, which said which track was playing but
+   not which rating row it went with. */
+.np{position:absolute;font-size:13px;font-weight:700;letter-spacing:.1em;color:#394050}
+.np.on{color:#5b9dd9}
+#npA{top:-24px}
+#npB{bottom:-24px}
 #glyph{font-size:44px;color:#9ab;pointer-events:none}
 #bar{width:120px;height:4px;background:#2a2a34;border-radius:2px;position:absolute;bottom:20px;overflow:hidden}
 #fill{height:100%;background:#5b9dd9;width:0%}
@@ -96,6 +103,9 @@ select,button{font:inherit;color:inherit}
    data. Questions or feedback — reach me on <a
    href="https://signal.me/#eu/00NAPf7EAdk6zym5PgUzzl5Jws72qThXA-2J779TrvSH88U5S4ZIZ4oexs8N115H"
    target="_blank" rel="noopener">Signal</a>.</p>
+  <p class="note" id="goabadge" style="display:none;color:#fa5">Internal mode (<code>?goa=1</code>):
+   the pool is <b>every scored model</b>, goa-corpus ones included — not just the avp models the
+   public link serves. First load is slower here; it reads the full manifest.</p>
   <div style="text-align:center"><button id="startbtn" disabled>loading…</button></div>
  </div>
 </div>
@@ -119,27 +129,37 @@ select,button{font:inherit;color:inherit}
  <div class="rate-row" id="rowA"></div>
  <div id="center">
   <div id="loadring"></div>
-  <div id="nowplaying">A</div>
+  <div id="npA" class="np">A</div>
   <div id="glyph">&#9654;</div>
   <div id="bar"><div id="fill"></div></div>
+  <div id="npB" class="np">B</div>
  </div>
  <div class="rate-row" id="rowB"></div>
  <div id="hint">0 broken · 1 unlistenable · 2 rough · 3 competent AI · 4 great · 5 exceptional
-  &middot; tap the circle to switch tracks (same moment, blind) &middot; hold + drag to scrub</div>
+  &middot; tap the circle to switch tracks (same moment, blind) &middot; drag sideways to scrub</div>
 </div>
 
 <script>
-// evaluator.html — public copy of eval/rate.html (WINTERMUTE, 2026-08-15, Kim: "make a copy
-// of this which I can link on the internet, but only use the avp models"). Mechanically
-// IDENTICAL to rate.html (same gestures, same question cycle, same rating scale) -- the only
-// functional differences are: absolute asset paths (this page is served from a different
-// path than /files/evals/, so 'model_matrix/...' relative paths would 404), the avp-only
-// model gate (scored_models_avp.json instead of scored_models.json), and a 'source' tag on
-// every POST so exported data can tell public responses apart from internal ones. Everything
-// else -- onboarding copy, ranking guide, ethics/privacy notes -- lives in the overlay only;
-// the interactive UI below it is untouched.
+// evaluator.html — THE rating page. Was two near-identical files (internal eval/rate.html +
+// this public copy); Kim 2026-08-17: "it's better to have one version only, with a parameter
+// passed in the address to activate also the goa clips which are normally disabled. Upkeeping
+// two almost similar versions make no sense." rate.html is deleted; /files/evals/rate.html now
+// redirects here. The ONLY thing the parameter changes is which model pool is loaded (and the
+// 'source' tag that separates the two in the ratings export) -- gestures, question cycle,
+// rating scale, onboarding copy are one implementation for both audiences now.
+//
+//   /evaluator/            avp-only (default, the public link) -- models fine-tuned on Kim's
+//                          own music, the "fully ethical process" framing that lands with
+//                          musicians. Reads the small pre-built manifest.
+//   /evaluator/?goa=1      every scored model incl. the goa-corpus ones (internal use). Reads
+//                          the full manifest + the scored_models.json sanity gate, ~24x bigger.
+//
+// Asset paths are ABSOLUTE (this page is served from /evaluator/, not /files/evals/, so
+// relative 'model_matrix/...' would 404) -- which is also what lets one file serve both.
 const BASE='/files/evals/';
 const CB=BASE+'model_matrix/';
+const PARAMS=new URLSearchParams(location.search);
+const GOA=PARAMS.has('goa')||PARAMS.has('all');
 
 // ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
 const LENGTH_CLUSTERS=[24,48,95,190,380];
@@ -159,23 +179,55 @@ function eligible(e){
  const cfg=parseFloat(e.cfg),w=parseFloat(e.strength);
  return isPtm?(cfg===1&&w===1):(cfg===7&&w===1);
 }
-// PRE-FILTERED, PERIODICALLY-REBUILT manifest (Kim 2026-08-16: "the splash page load
-// operation can take a long time" -> "I can perform periodic updates then, it does not have
-// to be dynamic"). manifest_live.jsonl is the shared index over the FULL model_matrix corpus
-// -- 24.5MB / ~71,700 lines at last measure -- of which this page ever used only the tiny
-// eligible + avp-scored slice, filtered client-side in every visitor's browser after a
-// multi-megabyte download. eval/build_evaluator_manifest.py now does that filtering ONCE at
-// build time (as part of score_and_publish.py's table-rebuild step -- the same cycle Kim
-// already runs periodically) and writes manifest_avp_evaluator.json: already scoped to
-// dataset=='avp' scored models (xft* excluded) AND already cfg7/w1-eligible-only. Measured
-// 2026-08-16: 24.5MB -> ~1MB, a ~24x cut. No cache:'no-store' here, unlike the live internal
-// boards -- staleness between periodic rebuilds is the accepted tradeoff for a static file
-// the browser can actually cache. eligible() stays as a defense-in-depth re-check, not the
-// primary filter anymore.
+// TWO POOLS, one loader.
+//
+// DEFAULT (avp-only) reads a PRE-FILTERED, PERIODICALLY-REBUILT manifest (Kim 2026-08-16:
+// "the splash page load operation can take a long time" -> "I can perform periodic updates
+// then, it does not have to be dynamic"). manifest_live.jsonl is the shared index over the
+// FULL model_matrix corpus -- 24.5MB / ~71,700 lines at last measure -- of which the public
+// page ever used only the tiny eligible + avp-scored slice, filtered client-side in every
+// visitor's browser after a multi-megabyte download. eval/build_evaluator_manifest.py does
+// that filtering ONCE at build time (inside score_and_publish.py's table-rebuild step -- the
+// same cycle Kim already runs periodically) and writes manifest_avp_evaluator.json: already
+// scoped to dataset=='avp' scored models (xft* excluded) AND already cfg7/w1-eligible-only.
+// Measured 2026-08-16: 24.5MB -> ~1MB, a ~24x cut. No cache:'no-store' -- staleness between
+// periodic rebuilds is the accepted tradeoff for a static file the browser can cache.
+//
+// ?goa=1 reads the full manifest live, gated on scored_models.json (Kim 2026-08-15, "the
+// polluted models can be removed from the rating"): manifest_live.jsonl lists every clip ever
+// RENDERED regardless of whether it passed the latent-sanity gate -- 3 dronesweep models with
+// blown-up latents (Muon spectral weight-decay bug, 0.01 instead of 0.1) were rateable in a
+// blind A/B right alongside real audio before that gate went in. scored_models.json is the
+// same aggregate build_clap_hyperparam_table.py writes clap_dora_aggregate.csv from: a model
+// only appears once it has an aggregate row, i.e. passed cfg7/w1 sanity and got scored. FAILS
+// CLOSED -- a failed fetch leaves the set empty and nothing pools, rather than silently
+// falling back to unfiltered (unsafe) behaviour.
+//
+// eligible() re-checks both paths (defense in depth; it is the primary filter only for ?goa=1).
 let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+async function fetchEntries(){
+ if(!GOA){
+  const r=await fetch(CB+'manifest_avp_evaluator.json');
+  return await r.json();
+ }
+ let scored=new Set();
+ try{
+  const sr=await fetch(CB+'scored_models.json',{cache:'no-store'});
+  scored=new Set(await sr.json());
+ }catch(_){scored=new Set();}
+ const r=await fetch(CB+'manifest_live.jsonl',{cache:'no-store'});
+ const txt=await r.text();
+ const out=[];
+ for(const ln of txt.split('\n')){
+  if(!ln.trim())continue;
+  let e;try{e=JSON.parse(ln);}catch(_){continue;}
+  if(!scored.has(e.model))continue;
+  out.push(e);
+ }
+ return out;
+}
 async function loadManifest(){
- const r=await fetch(CB+'manifest_avp_evaluator.json');
- const entries=await r.json();
+ const entries=await fetchEntries();
  const out={};
  for(const e of entries){
   if(!eligible(e))continue;
@@ -201,18 +253,43 @@ function pickPair(bucket){
  return {pid,a:pair[0],b:pair[1]};
 }
 
-// ── PLAYBACK: two preloaded elements for instant gapless A/B switching ─────────────────
+// ── PLAYBACK: BOTH tracks run at once, the inactive one muted ─────────────────────────
+// Kim 2026-08-17: "the clicking on the circle is not reliable, it often stops responding,
+// whereupon it needs to be scrubbed, and switching then works for a while again."
+//
+// ROOT CAUSE of that exact pattern: switching used to pause() the current element, seek the
+// other one to the same position, and play() it. But the inactive element was PAUSED the whole
+// time -- so the browser stops buffering it, while the audible track keeps advancing. After a
+// few seconds the switch target's playhead lands in a region the paused element never
+// downloaded, so play() stalls on an unbuffered seek and you get silence: "stops responding".
+// Scrubbing forces a seek on BOTH elements, which makes the browser fetch that region for the
+// inactive one too -- so switching works again "for a while", until the playhead outruns that
+// freshly-buffered window. Every detail of the report follows from this, and it gets worse the
+// longer the clip is (native lengths run to 380s), which is where it was reported.
+//
+// FIX: never pause the inactive track. Both play continuously from the same start, and the
+// switch is a `muted` flip -- no seek, no buffering gap, no play() promise to stall, truly
+// instant. `muted` and not `volume`, because iOS Safari ignores volume entirely on media
+// elements. Bandwidth is unchanged (preload='auto' downloaded both regardless); the only new
+// cost is a second decoder, which is nothing next to a switch that silently fails.
+// A drift guard (below) resyncs the incoming track only if the two have slipped audibly apart,
+// so "same moment, blind" still holds without seeking on every single tap.
 const audioA=new Audio(),audioB=new Audio();
 audioA.loop=true;audioB.loop=true;audioA.preload='auto';audioB.preload='auto';
 let active='A';
 function cur(){return active==='A'?audioA:audioB;}
 function other(){return active==='A'?audioB:audioA;}
+function applyMute(){audioA.muted=(active!=='A');audioB.muted=(active!=='B');}
+// play() on an already-playing element is a no-op (resolved promise, no restart), so this is
+// safe to call on every switch/resume without special-casing which one is already running.
+function playBoth(){[audioA,audioB].forEach(a=>{const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});});}
+function pauseBoth(){audioA.pause();audioB.pause();}
 const ppBtn=document.getElementById('playpause');
 let isPaused=false;
 function setPaused(p){
  isPaused=p;
- if(isPaused){cur().pause();resetLoading();}   // a deliberate pause isn't "still waiting"
- else{const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}
+ if(isPaused){pauseBoth();resetLoading();}   // a deliberate pause isn't "still waiting"
+ else{applyMute();playBoth();}
  ppBtn.innerHTML=isPaused?'&#9654;':'&#9208;';
  ppBtn.classList.toggle('paused',isPaused);
 }
@@ -237,7 +314,7 @@ function resetLoading(){loadring.classList.remove('active','flash');}
 });
 function setPairAudio(a,b){
  resetLoading();
- audioA.pause();audioB.pause();
+ pauseBoth();
  audioA.src=CB+a.file;audioB.src=CB+b.file;
  audioA.currentTime=0;audioB.currentTime=0;
  active='A';
@@ -252,34 +329,39 @@ function setPairAudio(a,b){
 function switchActive(){
  resetLoading();   // stale spinner from the OLD active track shouldn't carry over
  const c=cur(),n=other();
- n.currentTime=c.currentTime;
- c.pause();
- const pr=n.play();if(pr&&pr.catch)pr.catch(()=>{});
- isPaused=false;ppBtn.innerHTML='&#9208;';ppBtn.classList.remove('paused');
+ // Two independently-clocked media elements slip apart by a few ms over a long clip, and one
+ // of them may have been paused by a scrub or the pause button. Only seek when the gap is big
+ // enough to hear -- a seek on every tap would reintroduce exactly the buffering stall this
+ // whole scheme exists to avoid.
+ if(n.paused||Math.abs(n.currentTime-c.currentTime)>0.25)n.currentTime=c.currentTime;
  active=active==='A'?'B':'A';
+ applyMute();
+ playBoth();
+ isPaused=false;ppBtn.innerHTML='&#9208;';ppBtn.classList.remove('paused');
  updateUI();
 }
 
-// ── GESTURE: tap(<100ms, <12px movement) = switch; hold+drag = scrub ───────────────────
+// ── GESTURE: tap anywhere on the circle = switch; drag sideways = scrub ────────────────
+const SCRUB_PX=14;   // horizontal travel that turns a press into a scrub
 const centerEl=document.getElementById('center'),fillEl=document.getElementById('fill');
 let pStart=null,pStartX=0,pStartT=0,scrubMode=false;
 centerEl.addEventListener('pointerdown',e=>{
  pStart=performance.now();pStartX=e.clientX;scrubMode=false;
  pStartT=cur().currentTime;
- centerEl.setPointerCapture(e.pointerId);
+ try{centerEl.setPointerCapture(e.pointerId);}catch(_){}   // capture is an optimisation, not a requirement
 });
 centerEl.addEventListener('pointermove',e=>{
  if(pStart===null)return;
- const dx=e.clientX-pStartX,elapsed=performance.now()-pStart;
- // Kim 2026-08-16, after the tap-drop fix above made stray movement matter more: "the
- // scrubbing is activated immediately... because of the mouse moving at all, the clip is
- // not switched" -- was 120ms, raised to 200ms so a normal mouse click's incidental jitter
- // (much easier to rack up over more of the gesture than a phone tap ever sees) has more
- // room before it reads as a deliberate hold. NOTE the OTHER half of this OR, Math.abs(dx)>12,
- // still triggers scrub INSTANTLY regardless of elapsed if a click's movement alone exceeds
- // 12px -- if switches are still getting eaten by micro-drags, that's the number to raise next.
- if(!scrubMode&&(elapsed>200||Math.abs(dx)>12)){
-  scrubMode=true;cur().pause();centerEl.classList.add('scrubbing');
+ const dx=e.clientX-pStartX;
+ // MOVEMENT ONLY -- no elapsed-time trigger any more (was 120ms, then 200ms per Kim
+ // 2026-08-16, still eating clicks at 200). A press that never moves is a tap no matter how
+ // long it is held: there is no third gesture that a long stationary hold could mean (pause
+ // has its own button), so a time threshold could only ever misfire, and it did -- an
+ // unhurried mouse click easily outlasts any threshold short enough to feel responsive.
+ // Distance alone is unambiguous, and 14px is past normal click jitter but well inside a
+ // deliberate drag.
+ if(!scrubMode&&Math.abs(dx)>SCRUB_PX){
+  scrubMode=true;pauseBoth();centerEl.classList.add('scrubbing');
  }
  if(scrubMode){
   const c=cur(),dur=c.duration||20;
@@ -295,21 +377,23 @@ centerEl.addEventListener('pointermove',e=>{
 // there's no urgency the way a phone tap has -- fell into NEITHER branch (not a tap, since
 // too slow; not a scrub, since scrubMode only ever becomes true via actual pointermove
 // movement) and did nothing at all. Verified live: a 300ms stationary hold-and-release
-// produced zero state change. scrubMode is already the real signal for "did the user drag" --
-// it's set in pointermove the instant real movement/duration crosses the threshold WHILE
-// MOVING, so a release with no movement at all is unambiguously a tap regardless of how long
-// it was held. Dropping the elapsed/dx check here fixes it without weakening scrub detection.
+// produced zero state change. scrubMode is the only signal needed: it is set in pointermove
+// when real movement crosses SCRUB_PX, so a release without it is unambiguously a tap.
 function endGesture(e){
  if(pStart===null)return;
  if(!scrubMode){switchActive();}
  else{
-  if(!isPaused){const pr=cur().play();if(pr&&pr.catch)pr.catch(()=>{});}   // stay paused if it was deliberate
+  if(!isPaused){applyMute();playBoth();}   // stay paused if the pause was deliberate
   centerEl.classList.remove('scrubbing');
  }
  pStart=null;scrubMode=false;
 }
 centerEl.addEventListener('pointerup',endGesture);
 centerEl.addEventListener('pointercancel',endGesture);
+// Safety net: if capture is taken away mid-gesture (another element grabs the pointer, the
+// browser cancels it) neither pointerup nor pointercancel is guaranteed to reach us, which
+// would strand both tracks paused with the scrubbing border stuck on.
+centerEl.addEventListener('lostpointercapture',()=>{if(pStart!==null&&scrubMode)endGesture();});
 [audioA,audioB].forEach(a=>a.addEventListener('timeupdate',()=>{
  if(a!==cur()||scrubMode)return;
  const d=a.duration||0;if(d)fillEl.style.width=(100*a.currentTime/d)+'%';
@@ -335,7 +419,8 @@ function buildRow(row,slot){
 buildRow(rowA,'A');buildRow(rowB,'B');
 const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB'),btnEven=document.getElementById('btnEven');
 const lensel=document.getElementById('lensel');
-const npEl=document.getElementById('nowplaying'),statusEl=document.getElementById('status');
+const npAEl=document.getElementById('npA'),npBEl=document.getElementById('npB');
+const statusEl=document.getElementById('status');
 const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('qprogress');
 
 // Cycle through all 5 questions per pair (obligatory) instead of picking one from a
@@ -366,13 +451,24 @@ const QUESTIONS=[
 // everywhere qIndex is used.
 function questionsFor(lenKey){return QUESTIONS.filter(q=>!q.nativeOnly||lenKey!=='std');}
 let activeQuestions=QUESTIONS,qIndex=0;
+// maybeAdvance() gates on ratedA AND ratedB AND the whole question cycle, so a round can be
+// held up by either half -- and whichever half is missing, the page has to say so, or the
+// rater is left tapping at a screen that looks finished. Kim 2026-08-17, naming both
+// directions: questions done -> "the tracks need to be rated"; tracks rated -> "all questions
+// must be answered". The question slot carries the first (there is no question to show there
+// anyway), the status line carries the second (the current question keeps its slot).
 function showQuestion(){
- // Kim 2026-08-16: the bare "all questions answered" didn't tell the rater they still need
- // to score both clips (0-5) before the round advances -- maybeAdvance() gates on ratedA AND
- // ratedB in addition to the question cycle, so "answered" alone undersold what's left.
- if(qIndex>=activeQuestions.length){qTextEl.textContent='All the questions have been answered. Rate the clips to proceed.';qProgEl.textContent='';return;}
- qTextEl.textContent=activeQuestions[qIndex].text;
- qProgEl.textContent='question '+(qIndex+1)+' / '+activeQuestions.length;
+ const qDone=qIndex>=activeQuestions.length;
+ const rDone=!!(roundState&&roundState.ratedA&&roundState.ratedB);
+ if(qDone){
+  qProgEl.textContent='';
+  qTextEl.textContent=rDone?'':'All the questions have been answered, the tracks need to be rated.';
+  statusEl.textContent='';
+ }else{
+  qTextEl.textContent=activeQuestions[qIndex].text;
+  qProgEl.textContent='question '+(qIndex+1)+' / '+activeQuestions.length;
+  statusEl.textContent=rDone?'Both tracks have been rated, all the questions must be answered.':'';
+ }
 }
 
 let curPid,curLenKey,curA,curB,roundState;
@@ -388,10 +484,13 @@ function updateUI(){
  rowB.classList.toggle('inactive',active!=='B');
  [...rowA.children].forEach(b=>b.disabled=active!=='A');
  [...rowB.children].forEach(b=>b.disabled=active!=='B');
- npEl.textContent=active;
+ npAEl.classList.toggle('on',active==='A');
+ npBEl.classList.toggle('on',active==='B');
 }
 const EP='/files/ratings.php';
-const SOURCE='public_evaluator';
+// Tags every record so the export can still separate the two audiences now that they share
+// one page. (Internal rounds were untagged before the merge -- old rows have an empty source.)
+const SOURCE=GOA?'internal_all':'public_evaluator';
 // A round fires up to 7 POSTs (2 enjoyment + 5 ab) in quick succession by design. Serialized
 // through one queue (no two requests race each other) and retried on failure/429 with
 // backoff, so nothing gets lost regardless of how fast the taps come in.
@@ -414,6 +513,7 @@ function rateSlot(slot,val,btn){
  btn.classList.add('chosen');
  roundState[slot==='A'?'ratedA':'ratedB']=true;
  post({type:'enjoyment',model:e.model,ckpt:e.ckpt,prompt_id:curPid,cfg:e.cfg,w:e.w,length:curLenKey,file:e.file,rating:val});
+ showQuestion();   // rating both tracks can be what flips the "what's still missing" message
  maybeAdvance();
 }
 function chooseAB(choice,btn){
@@ -467,6 +567,7 @@ function populateLengthSelect(){
 // on #startbtn, so mobile autoplay policy is satisfied once, and the single persistent
 // audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
 const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
+if(GOA)document.getElementById('goabadge').style.display='block';
 loadManifest().then(()=>{
  populateLengthSelect();
  if(!lensel.options.length){startbtn.textContent='no eligible clips found';return;}
