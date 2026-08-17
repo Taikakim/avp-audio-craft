@@ -112,6 +112,19 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   smoke checkpoint in the same dir, so ~1% not-from-scratch.
 
 ## ⏳ In flight — FYI, no action
+- **Suomisoundi DoRA bracket LAUNCHED 2026-08-18** — jobs **21334184** (rank 32, batch 16) and
+  **21334185** (rank 256, batch 8), 16 GCDs across two nodes, four arms total (each rank × lr
+  1e-4 / 3e-5). fp32, T=256, 60 epochs, FusionOpt + warmup + AdaGC + spectral WD 0.03, alpha=rank.
+  Smoke 21331711 cleared every gate first: real 4-way DDP on both arms (LOCAL_RANK 0-3 twice),
+  captions 1260/1260 resolving, fp32 fused SDPA native, `silence.npy` correctly excluded.
+  **Two things you should know rather than discover later:** (1) the **EMA you asked for is NOT
+  active** — train_lora force-disables it for LoRA/DoRA (full-finetune only); the flag is passed
+  so the run log records the intent, and making it real for adapters is a separate change;
+  (2) I set `--caption_probs 0.25/0.45/0.30` instead of the 0.6/0.3/0.1 default, because
+  Suomisoundi's t1 is ONE identical string across all 1260 tracks (goa's is per-track), so the
+  default would have trained 60% of every epoch on the same prompt. Reasoned, not measured —
+  first thing to bracket if prompt adherence looks weak. Each run dir carries a `run_meta.json`
+  with the full recipe, the tier statistics and both caveats.
 - **Caveat for reading the two-week campaign's results: LUMI swapped the flash-attn build under
   us on 2026-07-31, mid-campaign** (F found it 08-17, verified inside the container; W landed the
   doc fix). All 41 of our sbatch scripts resolve the training image with `sort | tail -1` = newest
