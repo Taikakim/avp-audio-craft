@@ -610,6 +610,23 @@ all 8 arms died in 53 s because the fp32 `train_lora.py` patch is working-tree-o
 the refresh used git archive). Build refresh tarballs from the working tree:
 `tar -czf sa3_code.tar.gz --exclude='.git' --exclude='wandb' --exclude='*.ckpt'
 --exclude='latents*' --exclude='__pycache__' -C <repo> <dirs>` — and BEFORE submitting
+
+> 🚨 **THAT EXCLUDE LIST IS NO LONGER SUFFICIENT — allowlist the dirs instead (2026-08-17).**
+> Run verbatim today it produces a **30+ GB** "code" tarball, because `stable-audio-3/` has since
+> accumulated things no exclude here anticipates: six `dit_*.onnx.data` exports (~5.5 GB EACH),
+> a 1.6 GB torch wheel + a 288 MB triton wheel, 200 MB demo `.wav`s, multi-GB `wandb/` run files,
+> and a full `.venv/`. I watched it pass 11 GB before killing it. Nothing warns you — it is just
+> a very slow tar and then a very slow transfer of mostly junk, into a `/project` with a **50 GB
+> hard quota**. **Ship an allowlist of what LUMI actually imports** (`PYTHONPATH` points at
+> `${CODE}/stable-audio-3`, and the sbatch runs `scripts/train_lora.py`):
+> ```
+> tar -czf sa3_code.tar.gz --exclude='__pycache__' --exclude='.git' -C /home/kim/Projects/SAO stable-audio-3/scripts stable-audio-3/stable_audio_3 lumi control
+> ```
+> **15 MB**, seconds to build, ~2000× smaller. General rule this is an instance of: an
+> exclude-list decays silently as a tree grows around it, an allowlist does not. Verify the
+> tarball carries the patches you need *before* transferring — `tar -xzOf sa3_code.tar.gz
+> stable-audio-3/scripts/train_lora.py | grep -c set_device` (the LOCAL_RANK/torchrun fix) —
+> which is the same read-the-artifact reflex as everything else here, just applied one step earlier.
 any job that depends on a patch, verify the SHIPPED file has it (e.g.
 `grep -c "'fp32'" $CODE/stable-audio-3/scripts/train_lora.py` on LUMI, or parse-test the
 flag in the SIF). A submit that argparse-rejects in seconds still burns a queue slot and
