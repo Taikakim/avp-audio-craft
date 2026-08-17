@@ -85,6 +85,37 @@ two different tools/runs might have touched the same output path.** Same underly
 `--overwrite` flag existing on nearly every batch tool in this codebase — resumability is a feature
 that assumes ONE tool owns that directory, not a safe default across tool changes.
 
+## Multi-GPU DDP — the --gpus-per-task=1 + SLURMEnvironment pattern is UNRELIABLE (2026-08-17)
+
+**Every multi-GPU training script in this repo (`fullft_avp_aug.sbatch` and everything modeled
+on it) uses `srun --ntasks=N --gpus-per-task=1` with NO explicit `--devices`, relying on
+Lightning's `SLURMEnvironment` to auto-detect a real DDP group from `SLURM_NTASKS`/
+`SLURM_PROCID`. This is NOT reliable** — job 21161065 used this exact pattern and silently
+trained as **8 uncoordinated single-GPU copies** (confirmed: every rank's log showed
+`LOCAL_RANK: 0`, not 0..7; `ckpt_dup_delta.py` found the "duplicate" checkpoints had genuinely
+diverged weights, 521/522 tensors differ, not floating-point noise). Adding an explicit
+`--devices 8` does NOT fix this — it crashes instead
+(`MisconfigurationException: You requested gpu: [0..7] But your machine only has: [0]`, since
+`--gpus-per-task=1` cgroup-isolates each process to exactly one visible GPU, and `--devices N>1`
+tries to grab N GPUs from inside a single process).
+
+**Use the CSC/LUMI reference pattern instead** (`~/Projects/llm-fine-tuning-examples` — CSC's own
+fine-tuning examples for LUMI/Mahti/Puhti, Kim pointed at these 2026-08-17; none of them use
+`--gpus-per-task=1` + SLURMEnvironment auto-detect at all):
+`srun --ntasks=1` (ONE task, all GPUs visible, no cgroup isolation) +
+`torchrun --standalone --nnodes=1 --nproc-per-node=N <script> <args>` inside it. torchrun spawns
+and coordinates the N worker processes itself via `RANK`/`LOCAL_RANK`/`WORLD_SIZE` env vars,
+which Lightning auto-detects as `TorchElasticEnvironment` — sidesteps SLURM-environment guessing
+entirely. **Required companion fix**: with all GPUs visible per process (no cgroup remap),
+`torch.device("cuda")` with no index resolves to physical GPU 0 for every rank unless something
+calls `torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))` FIRST — added to `train_lora.py`'s
+`train()` before `load_model()` (no-op when `LOCAL_RANK` is unset, i.e. under the old pattern).
+See `fullft_mixed_avp_goa_t4096.sbatch` for the converted reference script.
+**Verify with `grep -h LOCAL_RANK <log> | sort -u` — want `LOCAL_RANK 0` through `7`, not eight
+`LOCAL_RANK: 0`s** — before trusting ANY multi-GPU run, old pattern or new. The other DDP
+scripts in this repo (`fullft_avp_aug.sbatch`, `aug8_train_ddp.sbatch`, etc.) have NOT been
+migrated yet and should be treated as unverified until they are or until checked this way.
+
 ## Containers — READ THIS FIRST (a full day of debugging came from not knowing it, 2026-08-02)
 
 Which SIF you train in decides whether MIOpen fights you.
