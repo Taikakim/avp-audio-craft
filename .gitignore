@@ -127,6 +127,11 @@ eval/clap_full_table.csv
 
 # --- large generated artifacts / binaries — never commit (F consolidation 2026-08-04) ---
 onnx/exports/
+# ...and the same path as a SYMLINK (2026-08-17): the 66G of exports moved to the
+# models drive and onnx/exports is now a symlink to it. A trailing-slash pattern matches
+# DIRECTORIES only, and git does not follow a symlink to decide -- so the moment the dir
+# became a link it fell out of the ignore and showed up as untracked. Both forms needed.
+onnx/exports
 # eval/musicology: bulk data (wav/npy/npz/mid) stays OUT; WRITTEN FINDINGS (.md/.json/.py) get git
 # history so negative results (head_a_ceiling ceiling, the VERDICTs) aren't single-copy/invisible.
 # Pattern > per-file force-add: covers the 11 existing untracked reports AND every future one, and an
