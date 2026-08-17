@@ -183,7 +183,8 @@ echo "[3src] steps/epoch ≈ $(( (NAVP+NSUO+NGOA) / (BS*8) )) batches per rank; 
 if [ "${MODE}" = "hyperball" ] || [ "${MODE}" = "both" ]; then
   echo "[3src] NOTE --hyperball DROPS Schedule-Free from FusionOpt components and IGNORES weight decay (the ‖W‖=‖W0‖ constraint replaces it) — so WEIGHT_DECAY=${WEIGHT_DECAY} is inert on this arm, and the LR is constant apart from warmup. Expected, not a misconfiguration."
 fi
-echo "[3src] fat ckpt ≈31.4 GB each; at CKEVERY=${CKEVERY} over ${EPOCHS} epochs that is ~$(( EPOCHS / CKEVERY )) fats ≈ $(( (EPOCHS / CKEVERY) * 31 )) GB for THIS arm — check the pull target has room (the UUID drive had 481 GB free on 2026-08-18)"
+echo "[3src] DISK: fat ckpt ≈31.4 GB; at CKEVERY=${CKEVERY} over ${EPOCHS} epochs ≈ $(( EPOCHS / CKEVERY )) fats ≈ $(( (EPOCHS / CKEVERY) * 31 )) GB for THIS arm on /scratch (50 TB quota — fine there)."
+echo "[3src] DISK: but do NOT pull them all — the pull target had 481 GB free (2026-08-18) and 3 arms of fats is ~$(( 3 * (EPOCHS / CKEVERY) * 31 )) GB. Standing rule: run lumi/prune_optimizer_states.py, then pull the TERMINAL fat only (~31 GB/arm) + slims (~4.3 GB each) — that lands ~223 GB for 3 arms, which fits."
 
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 RESUME_ARGS=()
