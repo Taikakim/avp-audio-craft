@@ -367,6 +367,7 @@ set -euo pipefail
 
 PROJ=project_465000000                      # [ADAPT]
 IMG=$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif | sort | tail -1)
+echo "[env] IMG=$(basename "$IMG")"         # KEEP THIS — see the note under the template
 CODE=/project/$PROJ/code                    # [ADAPT] your code tree
 OUT=/scratch/$PROJ/runs/$SLURM_JOB_NAME-$SLURM_JOB_ID
 mkdir -p "$OUT"
@@ -391,6 +392,19 @@ n=$(ls "$OUT"/*.ckpt 2>/dev/null | wc -l)
 if [ "$n" -ge "$EXPECTED_CKPTS" ]; then echo "OK: $n/$EXPECTED_CKPTS checkpoints"; else
   echo "SHORT: $n/$EXPECTED_CKPTS — job is NOT done regardless of SLURM state"; exit 1; fi
 ```
+
+**Why `echo "[env] IMG=…"` is in the template and should stay** *(2026-08-17, F's find, W's edit)*:
+`ls … | sort | tail -1` resolves to **whatever LUMI ships newest**, so it is an unpinned external
+dependency wearing the costume of a fixed path. It has already moved under us once — the image
+rotated on 2026-07-31 and its bundled flash-attn went **backwards, 2.8.4 → 2.8.3** — with no diff,
+no warning and no log line anywhere on our side, because nothing recorded which image a run
+actually got. Nobody has shown that particular change hurts quality, and this is not a claim that
+it does; the point is narrower and it bites at analysis time: **arms trained either side of an
+image rotation cannot be assumed comparable just because they ran "the same script" against "the
+same glob".** One echo makes the swap visible in the run log instead of invisible. It does not fix
+scripts written before today — it stops the next batch inheriting the blind spot. If you need the
+FA version too, `pip show flash-attn` inside the container prints it; the image basename is enough
+to look it up after the fact. Related: `lumi-ops` SKILL.md carries the per-image FA version table.
 
 Note the `${SMOKE:+--steps 40}` — submit once with `SMOKE=1 sbatch script` for the smoke, then
 without it for the real run. And note the last lines: the job grades *itself* on artifact count.
