@@ -366,7 +366,17 @@ def leg_publish(pattern, dry) -> Step:
     # click to a file was reading a snapshot from before any of tonight's work existed. The
     # symptom (rows dimmed grey, clicks producing no audio) looked exactly like a broken
     # resolver; it was an upload filter silently dropping the one file the resolver reads.
+    #
+    # ...and the mirror-image problem, found by THE-FINN's live-tree sweep 2026-08-17: '*.jsonl'
+    # also matched `manifest.jsonl`, the PRE-native-ingest index that only LOCAL generators read
+    # (model_matrix_gen.py, ingest_native_cells.py, Misc/build_model_matrix.py). Not one served
+    # page fetches it -- every one of them reads manifest_live.jsonl -- so it was 24.9MB of
+    # publicly-fetchable dead weight, re-uploaded on every publish, right after the 08-16 change
+    # whose entire point was to stop shipping a 24.5MB index to visitors. Excluded BEFORE the
+    # '*.jsonl' include because rsync takes the FIRST matching rule. It stays in the staging dir
+    # (the local generators need it); it just no longer travels.
     cmd = (f"rsync -rvzn --itemize-changes --include='*/' --include='*.html' --include='*.json' "
+           f"--exclude='manifest.jsonl' --exclude='*.bak_*' --exclude='*.bak-*' "
            f"--include='*.jsonl' --include='*.m4a' --include='*.flac' --exclude='*' "
            f"-e {shlex.quote(SSH)} "
            f"{shlex.quote(str(STAGE) + '/')} {shlex.quote(HOST + ':' + HOST_EVALS)}")
