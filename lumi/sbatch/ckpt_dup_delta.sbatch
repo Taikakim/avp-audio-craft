@@ -24,7 +24,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=7
 #SBATCH --mem=0
-#SBATCH --time=00:30:00
+#SBATCH --time=02:00:00
 #SBATCH --job-name=sa3_ckpt_delta
 #SBATCH --output=%x-%j.out
 
@@ -35,6 +35,10 @@ CODE=${PROJ}/code
 SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 RUN=${RUN:-${SCRATCH}/runs/fullft_mixed_avp_latents_sa3_t4096_wdfix}
+# scoped to the one group that was actually rendered (epoch=7-step=15584, -v4 was the file
+# render_matrix_cells.py picked) -- job 21243996/21244385 both timed out at 30min scanning
+# every duplicate group in the run; one group is cheap, all ~8 groups apparently isn't.
+ONLY_KEY=${ONLY_KEY:-epoch=7-step=15584}
 
 [ -n "${SIF}" ] || { echo "[ckpt-delta] FATAL: no lumi-multitorch-full image"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[ckpt-delta] FATAL: ${VENV} missing"; exit 1; }
@@ -46,5 +50,5 @@ CODE='"${CODE}"'
 VENV='"${VENV}"'
 source ${VENV}/bin/activate
 export PYTHONPATH=${VENV}/lib/python3.12/site-packages${PYTHONPATH:+:${PYTHONPATH}}
-python3 ${CODE}/lumi/ckpt_dup_delta.py --run '"${RUN}"'
+python3 ${CODE}/lumi/ckpt_dup_delta.py --run '"${RUN}"' --only-key '"${ONLY_KEY}"'
 '

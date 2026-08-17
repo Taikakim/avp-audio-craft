@@ -44,12 +44,22 @@ def main():
     ap.add_argument("--prefix", default="diffusion.model.",
                      help="only diff keys starting with this prefix (default: online DiT weights, "
                           "skips optimizer states/EMA shadow to keep it cheap)")
+    ap.add_argument("--only-key", default=None,
+                     help="'epoch=N-step=M' -- scope to just this one duplicate group instead of "
+                          "scanning every group in the run dir (job 21243996/21244385 both timed "
+                          "out at 30min scanning all ~8 groups; one group alone is much cheaper).")
     a = ap.parse_args()
 
     import torch
 
     groups = group_by_epoch_step(a.run)
     dup_groups = {k: v for k, v in groups.items() if len(v) > 1}
+    if a.only_key:
+        dup_groups = {k: v for k, v in dup_groups.items() if k == a.only_key}
+        if not dup_groups:
+            print(f"[dup-delta] no duplicate group matching key={a.only_key!r} "
+                  f"(available: {sorted(groups.keys())})")
+            return
     if not dup_groups:
         print(f"[dup-delta] no duplicate -vN groups found under {a.run}")
         return
