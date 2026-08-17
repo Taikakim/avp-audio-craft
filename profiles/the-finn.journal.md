@@ -289,3 +289,48 @@ unresolved warning — "VERIFY train_lora drives Lightning DDP" — which C's jo
 not". The warning was right and sat unread for two weeks. Scope discipline that mattered: 34 of the 49 WANT 8
 uncoordinated single-GPU processes (per-rank arm tables, renders, shard jobs) — flagging those would have sent the
 fleet re-running correct work, which is the expensive direction of a false positive.
+
+### confirmed · the `fullft_bigset` DDP prediction, closed at runtime by me rather than handed off
+
+Yesterday's audit ended with an honest hedge: a static read of launch shape predicts which scripts *cannot* form
+DDP, not which past runs *did*, so I named the two logs worth pulling and handed the grep to C/G. I then discovered
+I could pull them myself. `/users/akekim/sa3_fullft_bigset-20784494.out` → `8  LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES:
+[0]`, eight of them, zero ranks 1–7. Static prediction and runtime check agree. `subloss_goa_k20_fullft` has no log
+at all — it has never run, which is the good case: the torchrun migration lands before it burns an allocation.
+
+The hedge was still worth stating, and this is the part to keep: **being explicit about what a method cannot show is
+what makes the confirmation mean something.** Had I posted the static read as settled, this grep would have been
+redundant confirmation of a claim already treated as fact, and the two-week-critical script would have looked closed
+when it wasn't. Also logged one inference AS an inference: that job died on shm exhaustion, and 8 independent
+trainers each spawning a full dataloader worker set is a plausible cause that real DDP would not produce — plausible,
+unproven, flagged as such rather than folded into the confirmed finding.
+
+### lesson · a pinned snapshot underneath an unpinned resolver is a claim with an expiry date nobody set
+
+`lumi-ops/SKILL.md` tells you to resolve the training image with `ls -d .../lumi-multitorch-full-*.sif | sort |
+tail -1` and then, **in the same bullet**, states the stack you will get: "torch 2.10+rocm7.0, flash_attn 2.8.4,
+python 3.12". Those two halves cannot both stay true across time — the second is a snapshot of the first's output on
+the day it was written. LUMI's images went 2.8.1 → 2.8.3 → 2.8.4 → **back to 2.8.3** on 2026-07-31, so all 41 of our
+scripts (resolver verified byte-identical in every one, not assumed) silently started getting an older flash-attn
+than the doc promises, with no diff on our side, no warning, and no log line. The fix is not `2.8.4 → 2.8.3`, which
+just re-arms the same trap for the next reader; it is to stop asserting a pinned stack under an unpinned resolver.
+
+Same family as this morning's write-time-guard entry: **nothing in the fleet notices drift it did not cause.** The
+guards only watch new writes; the docs only record the day they were written. What I refused to do is over-class it —
+I do not know that 2.8.3-vs-2.8.4 costs us anything, and said so. The defensible stake is narrower and real: a
+campaign whose arms straddle 07-31 had its attention backend change underneath it, so "same script, same image glob"
+does not buy cross-date A/B comparability, and that is exactly how the two-week deliverable compares recipes.
+
+### lesson · a capability the fleet doesn't know you have gets routed around, twice, in one thread
+
+W could not reach LUMI (`Permission denied (publickey)`) and asked C. C answered the parts he could verify, correctly
+separated belief from evidence on the CK-vs-Triton question — and then escalated the discriminating one-liner to Kim,
+on the stated reasoning that "agents don't run ssh to LUMI, same wall you hit from the other side." That is true of C
+and false of me: `efp.lumi.csc.fi` → uan18, `singularity exec` runs on the login node. I ran the check, plus the arch
+scan, plus the version sweep across all ten images, in about a minute.
+
+Two people's time and one of Kim's interrupts were about to be spent on something already inside my reach, because
+**an asymmetric capability is invisible until you spend it in public.** Nobody was careless; C generalised honestly
+from his own environment, which is the normal and usually-correct move. The correction is mine to make and it is
+standing, not one-off: say plainly that I have cluster access whenever a channel question needs ground truth from
+LUMI, and offer to run it instead of endorsing the escalation. Recorded in memory so it survives a session reload.
