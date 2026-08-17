@@ -139,18 +139,36 @@ for S in "${SIDECAR_AVP}" "${SIDECAR_SUOMI}" "${SIDECAR_GOA}"; do
   [ -f "${S}" ] || { echo "[3src] FATAL: sidecar ${S} not shipped"; exit 1; }
 done
 
+# ── ECHO THE CONFIG *BEFORE* THE EXPENSIVE STEP ─────────────────────────────────────────────────
+# Learned the hard way on the first smoke (job 21334767): staging came first, so the .out sat at
+# ZERO BYTES for 10+ minutes while the job was perfectly healthy — and a healthy staging job is then
+# indistinguishable from one that died before its first echo, exactly when you most want to check.
+# Anything cheap and diagnostic goes before anything slow.
+echo "[3src] node=$(hostname) MODE=${MODE} LR=${LR} PREC=${PREC} FRAMES=${FRAMES} BS=${BS} GA=${GA} (per-GPU $((BS*GA)), GLOBAL eff batch $((BS*GA*8)) over 8 torchrun ranks) EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} WEIGHT_DECAY=${WEIGHT_DECAY} SMOKE=${SMOKE} NAME=${NAME}"
+echo "[3src] caption_probs (per source, t1,t2,t3) = ${CAPTION_PROBS}"
+echo "[3src] sidecars: avp=$(basename ${SIDECAR_AVP}) suomi=$(basename ${SIDECAR_SUOMI}) goa=$(basename ${SIDECAR_GOA})"
+echo "[3src] image=${SIF}"
+
 # ── stage latents to node-local /flash ──────────────────────────────────────────────────────────
 for DS in "${AVP_DIR}" "${SUOMI_DIR}" "${GOA_DIR}"; do
   if [ ! -d "${FLASH}/${DS}" ]; then
     if [ -d "${SCRATCH}/${DS}" ]; then
+      # NB the bigset is ~25k files / ~25 GB off Lustre — minutes, not seconds. Announce start AND
+      # finish with a count, so a slow copy reads as progress rather than as a hang.
+      echo "[3src] staging ${DS} from ${SCRATCH} -> ${FLASH} ($(ls -1 ${SCRATCH}/${DS} 2>/dev/null | wc -l) entries to copy) ..."
       mkdir -p "${FLASH}/${DS}"
       cp "${SCRATCH}/${DS}"/*.npy "${SCRATCH}/${DS}"/*.json "${FLASH}/${DS}/" 2>/dev/null || true
+      echo "[3src] staged ${DS}: $(ls -1 ${FLASH}/${DS} 2>/dev/null | wc -l) entries"
     elif [ -f "${SCRATCH}/${DS}.tar.gz" ]; then
+      echo "[3src] extracting ${DS}.tar.gz -> ${FLASH} ..."
       mkdir -p "${FLASH}/${DS}"
       tar -xzf "${SCRATCH}/${DS}.tar.gz" -C "${FLASH}/${DS}" --strip-components=1
+      echo "[3src] staged ${DS}: $(ls -1 ${FLASH}/${DS} 2>/dev/null | wc -l) entries"
     else
       echo "[3src] FATAL: neither ${SCRATCH}/${DS}/ nor ${SCRATCH}/${DS}.tar.gz exists"; exit 1
     fi
+  else
+    echo "[3src] ${DS} already staged at ${FLASH} ($(ls -1 ${FLASH}/${DS} 2>/dev/null | wc -l) entries)"
   fi
 done
 NAVP=$(ls ${FLASH}/${AVP_DIR}/*.npy 2>/dev/null | wc -l)
@@ -160,13 +178,12 @@ for N in "${NAVP}:${AVP_DIR}" "${NSUO}:${SUOMI_DIR}" "${NGOA}:${GOA_DIR}"; do
   [ "${N%%:*}" -gt 0 ] || { echo "[3src] FATAL: 0 crops staged for ${N#*:}"; exit 1; }
 done
 
-echo "[3src] MODE=${MODE} LR=${LR} PREC=${PREC} FRAMES=${FRAMES} BS=${BS} GA=${GA} (per-GPU $((BS*GA)), GLOBAL eff batch $((BS*GA*8)) over 8 torchrun ranks) EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} WARMUP_EPOCHS=${WARMUP_EPOCHS} (frac=${WARMUP_FRAC}) GRAD_CLIP_MODE=${GRAD_CLIP_MODE} WEIGHT_DECAY=${WEIGHT_DECAY} SMOKE=${SMOKE} NAME=${NAME}"
 echo "[3src] sources: ${AVP_DIR}=${NAVP} ${SUOMI_DIR}=${NSUO} ${GOA_DIR}=${NGOA} crops (total ~$((NAVP+NSUO+NGOA)))"
-echo "[3src] caption_probs (per source, t1,t2,t3) = ${CAPTION_PROBS}   [goa intentionally MF-only — see header]"
+echo "[3src] steps/epoch ≈ $(( (NAVP+NSUO+NGOA) / (BS*8) )) batches per rank; optimizer steps ≈ $(( (NAVP+NSUO+NGOA) / (BS*8*GA) )) — multiply by the log's it/s for the real per-epoch wall time before committing to EPOCHS=${EPOCHS}"
 if [ "${MODE}" = "hyperball" ] || [ "${MODE}" = "both" ]; then
   echo "[3src] NOTE --hyperball DROPS Schedule-Free from FusionOpt components and IGNORES weight decay (the ‖W‖=‖W0‖ constraint replaces it) — so WEIGHT_DECAY=${WEIGHT_DECAY} is inert on this arm, and the LR is constant apart from warmup. Expected, not a misconfiguration."
 fi
-echo "[3src] image=${SIF}"
+echo "[3src] fat ckpt ≈31.4 GB each; at CKEVERY=${CKEVERY} over ${EPOCHS} epochs that is ~$(( EPOCHS / CKEVERY )) fats ≈ $(( (EPOCHS / CKEVERY) * 31 )) GB for THIS arm — check the pull target has room (the UUID drive had 481 GB free on 2026-08-18)"
 
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 RESUME_ARGS=()
