@@ -1793,3 +1793,79 @@ CMuon/spectral-norm analysis Kim relayed is thoughtful and largely matches our o
 (arXiv 2608.02502 was already deep-read here; an uncommitted CMuon-AdaLN chunking WIP is sitting in
 `stable-audio-tools/.../fusion_groups.py`) — but it answers a different question than the one that
 actually broke, and the team's own AdamW-vs-Muon A/B is still the unresolved gate.
+
+### [2026-08-18] The goa collapse had a THIRD cause nobody was looking for: the captions were never hinted
+
+A long night that ended somewhere I did not expect. Three independent causes for the goa full-FT
+collapse are now on the table, and I had only proven two of them.
+
+**1. Verified the two-arm DDP launcher.** Smoke 21330059: `LOCAL_RANK` 0–3 each exactly twice,
+`CUDA_VISIBLE_DEVICES [0,1,2,3]` per group, both srun steps `COMPLETED 0:0`, arms genuinely
+concurrent. So yesterday's torchrun pattern scales to co-tenant arms on one node, not just
+whole-node — needs a per-arm rdzv port, explicit `ROCR_VISIBLE_DEVICES`, and `srun --overlap`.
+W independently confirmed it a third time on the suomisoundi bracket. I also corrected that
+script's own header, which still described the pre-torchrun design AND asserted that
+`fullft_avp_aug.sbatch` *proves* `--gpus-per-task=1` forms DDP. It does not; that was the precise
+false belief that cost two node allocations, so I marked it superseded rather than deleting it.
+
+**2. Retracted my own morning pessimism.** I had flagged the weight-decay drone diagnosis as
+"PARTLY IN DOUBT" because the runs were multi-GPU. Checking the launch shapes killed that:
+`precision_ladder.sbatch` runs `srun --exclusive -N1 -n1 --gpus=1` per arm and deliberately sets
+`SLURM_JOB_NAME=bash` so Lightning does *not* detect SLURM — each arm is a single-GPU trainer by
+construction, where the DDP bug cannot apply, and the ladder droned with the full runaway
+signature. So the mechanism stands on evidence the bug cannot touch; only #68's own numbers are
+confounded. And the fix works: the wd-fixed full-FT measures ep7 z0 std **1.134**, 0/256 channels
+over 2.0, against the runaway's 5.6 and 166/256. **But that same run still sounded droning/thin to
+Kim with a healthy latent scale** — which is what told me a *separate* failure was still in play.
+
+**3. The separate failure: the captions.** W scanned a tier nobody had questioned and found the goa
+MF prose says goa/psy in **1.2%** of tracks and techno/industrial/house in 70.8%. I reproduced it,
+then found the cause, which is duller and worse than "MF is unreliable": `goa_caption_task.py`
+writes a `genre_hint` field into every caption JSON, and all 400 sampled goa files record
+**`None`**. The hint mechanism exists (`--genre-hint`/`GENRE_HINT`, read from `GENRE_HINT_FILE`)
+and **defaults to empty**. Suomisoundi, same script, recorded
+`'suomisoundi, a finnish variant of psychedelic trance'` and scores **97.4%**. Same model, same
+code path, one variable. There is also a richer per-track hinting path in mir
+(`pipeline.py:154 _interpolate_genres()`, weighted Essentia genre distribution + ID3 metadata) that
+`lumi/goa_caption_task.py` never calls — so the genre information existed per-track in the `.INFO`s
+the whole time and simply never reached the captioner. Kim killed the affected runs; re-caption
+running as 21335408, early read **89.1%** goa (and correctly still labelling genuinely non-goa
+tracks as ambient/New Age — the hint anchors without overriding, which is the outcome I was worried
+about with a blunt global hint).
+
+**The negative I most want recorded: my own audit tool certified the contaminated sidecar.** I
+verified granite v5 at 19.24× rare-term recall and called it "better than any caption tier we have"
+— true, and irrelevant to the actual problem. My metric measures **grounding** (does a tag reflect
+*its own track's* prose); the failure was **correctness** (is the prose true). They are orthogonal:
+a perfectly grounded tag faithfully inherits "Deep House" if that is what the source says. My
+"65% genre agreement" line was no defence either — 21% of those agreements are on the generic
+family "trance" alone. Folded the genre check into the tool so the half-check cannot pass review
+again (`edc995c`). The ranking it now prints is the durable lesson — **a tier's provenance predicts
+its correctness better than its polish**: t1 (effnet classifier *on the audio*) 70.4% goa, t2
+(granite, revising MF) 48.0%, t3 (MF prose, richest text) 1.2%.
+
+**Also landed:** EDM2 forced weight norm (`--forced-weight-norm`, 12 tests) — per-output-channel
+direction with a learnable gain on the output projection, genuinely distinct from `--hyperball`'s
+frozen whole-tensor norm, so arms #2/#3 are not a re-run of #1. Per-source `--caption_probs`
+(semicolon syntax, 10 tests) because one global tuple forced the worst corpus's caption quality onto
+all of them. AVP granite coverage 284→2353/2394 (the sidecar keyed on raw `source_track`, but an
+augmented crop's is `"<track>/<variant>"`, so ~88% of AVP was silently training on the t1
+boilerplate). Model-identity IDs (`M-XXXXXX`, assign-once) after finding 75 of 297 board labels are
+synonyms and 7 run dirs answer to two names via symlinks with nothing in the name to say so.
+
+**And a real loss, mine.** Merging the drive trees with a bare `rsync -a`, I overwrote a good 666 MB
+checkpoint with Mantu's **truncated 25.6 MB fragment** (mtime 1970, unloadable). Root cause: I
+declared three runs "pure subsets" from a *filename* match and merged without `--checksum` or a
+backup — the same name-vs-content error Kim had corrected me on an hour earlier about the captions,
+which I fixed there without generalising to the copy I had already launched. Recoverable from LUMI.
+The scan I then wrote found it is the only corrupt file on either drive; its first version flagged
+83 false positives because an absolute "<100 MB is truncated" rule mistakes rank-16 adapters
+(~86 MB) for damage, so the size test is now sibling-relative. `p1-verify` also had to be fixed: it
+compared sizes only, so once I had propagated the corruption it would have cheerfully approved
+deleting the source.
+
+Recurring shape across three of tonight's failures, worth naming: **a derivative does not know its
+source changed.** The sidecar kept serving Aug-4 captions after granite was regenerated; the dora
+table read a stale aggregate; the eval read a stale manifest. Timestamps at build time are the cheap
+general countermeasure — the sidecar builder now prints the newest mtime of each input tier, which
+immediately exposed "T3 2026-08-04, T2 2026-08-17" on its first run.

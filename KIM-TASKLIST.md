@@ -66,6 +66,22 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   the existing Music-Flamingo captions, or the longform sidecar's scheme re-derived. Say which and
   I will build the sidecar and start the real mixed avp+bigset run.
 
+- **Goa captions were never genre-hinted — re-caption running, and it gates the final full-FT arms**
+  (C, 08-18, found by W). The goa Music Flamingo captions record `genre_hint: None` in every sampled
+  file: the hint mechanism exists and defaults to empty, so MF guessed genre unanchored and produced
+  **1.2% goa / 70.8% techno-industrial-house** on a goa corpus. Suomisoundi, same script *with* a
+  hint, is 97.4%. You killed 21330736 + 21334767; re-caption **21335408** is running at **89.1% goa**
+  (~24h, finishes ~02:00 on the 19th), then granite → sidecar rebuild → audit → re-key → the three
+  bounded-norm arms. **Nothing needed from you until it finishes** except the one open decision below.
+  Worth knowing: this is the THIRD independent cause of the goa collapse (after DDP never forming and
+  the FusionOpt weight-decay runaway, both fixed and verified) — so if the new arms still disappoint,
+  the prior should be "there is a fourth", not "the method does not work".
+- **🔴 BUDGET CALL — `lumi-allocations`, before the three arms go.** The re-caption is ~192 GCD-hours
+  on top of W's running bracket, and the three 20-epoch arms are ~1150 more; the last figure on record
+  was 2880 of 5000 hours (08-09, nine days stale), and you want days reserved for the melody adapter.
+  If it is tight, C's recommendation is to drop the **`both`** arm — hyperball and EDM2 answer the
+  question separately and `both` only matters if one clearly wins.
+
 ## 👂 Ear queue (needs Kim's ears)
 - **Rating page: the switching bug is fixed and the two versions are now one — worth 60 seconds
   of your hands before you share it** (W, 08-17). Your report ("clicking the circle stops
