@@ -16,6 +16,63 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
             (goa 4470 + avp own-music)                LatCH heads               steers generation
 ```
 
+## Where things live — the folder & drive map
+
+**Read this before asking "where is X" or spelunking with `find`.** Built from a live
+`ls`/`du` sweep (THE-FINN, 2026-08-18), not memory — if a path here 404s, the drive is
+probably unmounted (all three are removable), not gone; see Data & drives below. Sizes
+are a snapshot and will drift.
+
+### SAO/ top-level (this repo)
+
+| Path | ~Size | What | Detail |
+|---|---|---|---|
+| `stable-audio-tools/`, `stable-audio-3/` | 64G / 16G | the two model thin-forks | Repos § below |
+| `onnx/` | ~0 (symlinked out) | ONNX export/inference suite; large `.onnx.data` exports live on the UUID drive, see Data below | §D |
+| `control/` | 2M | `sa3_control` adapter training + recipes + findings | §B |
+| `latch/` | 524K | LatCH head **training code** (SA3-side) | §B |
+| `eval/` | 14G | scoring/audition/page-gen tooling **+** `eval/musicology/` corpus study (13.5G of it is MIDI/soundfont renders behind small feature-extraction outputs — regeneratable, not source data) | §C |
+| `lumi/` | 68M | sbatch templates + LUMI toolchain scripts (the code that gets rsync'd to the cluster) | §E |
+| `Misc/` | 154M | site builder, model-index tooling, fleet comms protocol (`agent_dialogue.py`), patrol scripts | §C / §F |
+| `docs/` | 1.5M | depth docs + `docs/superpowers/specs/` (the running per-subsystem source of truth) | Doc map below |
+| `papers/` | 781M | external prior-art index (`knowledge.md`) + paper PDFs/POV notes | §F |
+| `profiles/` | 47M | per-agent journals, task logs, daily digests — the comms/patrol record | §F |
+| `dialogue/` | 1.1M | **weekly-archived** `AGENT_DIALOGUE.md` rollups; the LIVE log is `AGENT_DIALOGUE.md` at repo root | §F |
+| `site/` | 4M | BUILT output of `Misc/build_site.py` — public site staging; don't hand-edit, rebuild instead | §F |
+| `web/` | 28K | PHP backend (`comment.php`, `ratings.php`) deployed alongside the public site | §F |
+| `blog/` | 40K | Kim's week-in-review draft posts | — |
+| `latch_weights_ema_onset/` | 377M | ONE specific LatCH head family (onset-envelope EMA variant) — **not** the same set as `stable-audio-3/latch_weights_sa3_medium/` | §B |
+| `checkpoint-stats/` | 6.9M | training-trajectory stats output (`checkpoint_trajectory_stats.py`) | §B |
+| `runs/` | 112K | small **local** (non-LUMI) experiment outputs | — |
+| `my_wheels/` | 82M | built custom torch/ROCm/flash-attn `.whl` files | §D |
+| `torchcodec/` | 419M | custom codec build | §D |
+| `flash-attention/` | 1.3G | the CK flash-attn build **source tree** (gfx1201/RDNA4 branch) that produces `my_wheels/` | §D, `docs/flash-attn-ck-rdna4.md` |
+| `control_eval_queue/` | 225M | CPU control-adapter eval-server queue (`inbox`/`processing`/`outbox`) | §D |
+| `composed_eval_queue/` | 2.7G | composed-render eval-server queue, same inbox/processing/outbox pattern | §D |
+| *(`latch_eval_queue/` — referenced in §D, not currently present)* | — | created **on demand** by `latch_eval_server.py --queue-root` when a job is submitted; absence just means none are queued right now, not a broken path | §D |
+| `renders_pull/` | 1.5G | LUMI renders pulled to desktop for listening/audit (e.g. `dronesweep`) | — |
+| `riffer-evals/` | 822M | **its own git repo** (`github.com:Taikakim/riffer-evals`, separate remote) — public riffer eval site | — |
+| `Gemini/` | 8K | Gemini deep-research handoff notes/templates — see the Gemini-brief convention (feed problem+phenomenology only, never code/files) | — |
+| `music/` | 188K | small reference-audio folder (`goa-ibiza`) | — |
+| `.render_root_aliases/` | — | symlink farm aliasing renamed render-root dirs (e.g. `subloss_goa_k2`) so old paths keep resolving | — |
+| `wandb/` | 1.4M | local W&B run cache | — |
+| `logs/` | 45M | assorted process logs, not curated — ephemeral | — |
+| `.venv/` | 11G | SAO's own default venv — see MASTER §3 for which task uses which venv | MASTER §3 |
+
+**Symlinks at repo root:** `Mantu` → `/run/media/kim/Mantu` (convenience link to the drive,
+see below) · `evals` → `/home/kim/.cache/evals_aac` (AAC-transcoded render cache backing
+the public eval pages — NOT where source renders live).
+
+**Repo-root logs/`.log*` clutter and stray `~`-backup files** (e.g. `.fp32_matrix_render.log*`,
+`EVAL_NOTES.txt~`) are leftover process output, not documentation — ignore unless actively
+debugging the job that made them; periodic cleanup is patrol's job, not yours to chase.
+
+### mir/ (`/home/kim/Projects/mir`, sibling project)
+Has its own `ARCHITECTURE.md` — don't re-derive its internal layout here. Top-level:
+`src/` (the extraction code, §A above documents the pieces we actually call), `data/`,
+`models/` (Music Flamingo GGUF etc.), `plots/` (the SAME latent explorer), `repos/`
+(vendored `bungee` build), `pitch_venv/` (bungee's own venv).
+
 ## Repos (see MASTER §1 for venvs)
 
 - **`mir/`** (`/home/kim/Projects/mir`) — extracts MIR features → `.INFO` sidecars,
@@ -41,7 +98,10 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
   still to be pilot-measured. See also `docs/venvs.md`.
 - **`SAO/torchcodec/`**, **`SAO/my_wheels/`** — custom torch+ROCm wheel/codec builds.
 
-## Data (drives removable; see MASTER §2 for the full table)
+## Data & drives (all removable; see MASTER §2 for the historical detail)
+
+All three drives also hold Kim's non-project files (games, personal media, torrents) —
+not enumerated here, only the project-relevant paths are.
 
 - **NVMe** (`/home/kim/Projects/`) — the live SA3 latents. `latents_sa3` (14 G; 5401
   `.npy`+`.json`+`.TIMESERIES.npz`, 256-d, T=4096, 10.767 Hz) + `latents_avp` (6 G, own-music).
@@ -49,13 +109,49 @@ Brief orientation. Detail lives in `MASTER.md` (cross-cutting facts) and `docs/`
   (verified in parity 07-12; sync is **manual**, keep it current). `Lehto/latents_sa3`
   was removed 07-04 — do not look there.
 - **Mantu** (`/run/media/kim/Mantu`) — source audio + checkpoints + the latents backup.
-  `ai-music/Goa_Separated` (4470 full tracks + stems + grids),
-  `sa3_lora_runs` + `sa3_control_runs` (checkpoints/eval runs, moved off Lehto 07-04).
+  `ai-music/Goa_Separated` (4470 full tracks + stems + grids) · `goa_archive_extracted`
+  (the RAW archive `goa_archive_features`/`goa_archive_captions` were built FROM) ·
+  `sa3_lora_runs` + `sa3_control_runs` (checkpoints/eval runs, moved off Lehto 07-04) ·
+  `sa3-latents_backup` (the NVMe latents mirror, above) · `sa3_mutated_checkpoints`,
+  `latch_sweep`, `lumi_runs` (an early **partial** LUMI grab, superseded — see UUID drive).
 - **Lehto** (`/run/media/kim/Lehto`) — **training data only**. `timeseries` (37 G, the
-  **46-field** whole-track set), `latents` (SA-Small 64-d), `latents_stems`.
+  **46-field** whole-track set), `latents` (SA-Small 64-d), `latents_stems`,
+  `latents_sa3_lora300`, `latents_sa3_stem_chroma`, `sa3-latch-latents`.
+- **UUID drive** (`/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d`) — **canonical
+  target for ALL LUMI content** (Kim 2026-08-17 drive-layout ruling; MASTER §2). 481G
+  free/88% used as of 2026-08-17 — margin is tight, verify before a large pull. Project-relevant
+  top-level paths:
+  - `lumi_runs/` — the canonical rsync/grab target (`runs/`, `renders/`, `analysis/`,
+    `logs/`, the public `RUN_AUDIT_BOARD*.html`/`dora_table_public.html`).
+  - `sao_models/` — **where W's 2026-08-17 models-move landed** (`onnx_exports/`,
+    `sa3_onnx/`, `sat_models/`), symlinked back into the SAO repo at `onnx/exports`,
+    `stable-audio-3/*.onnx*`, `stable-audio-tools/models` respectively — don't `rm -rf`
+    the repo-side path expecting to free space, it's a symlink now.
+  - `goa_archive_features/` — the goa big-set feature index (`index.jsonl`, 23,231 tracks:
+    key/path/loudness/`maest_vec` 768-d) + `npz/<sha1>.npz` fuller sidecars. Feeds
+    `eval/build_goa_archive_sidecar.py`'s caption-text build. Full doc: `docs/goa-archive-buildout-plan.md`.
+  - `goa_archive_captions/`, `suomisoundi_{by_track,captions,features,latents,stems,timeseries}` —
+    per-corpus caption/feature/latent staging for the two active big-set corpora.
+    ⚠️ **`goa_archive_captions/` also exists nested under `lumi_runs/goa_archive_captions/`
+    — two different directories, same name, NOT a symlink** (checked directly, 2026-08-18).
+    The `lumi_runs/` copy has the fresher content (a `granite_pre_v5_backup/` from tonight's
+    fix) — flagging, not resolving; check both before assuming staleness either way.
+  - `Models/`, `comfyui/`, `Heroic_Games/`, `torrents/`, etc. — **not SAO's**, Kim's other uses of the drive.
 - **The eval-metrics DB** `eval/clip_metrics.db` (~43 k clips × 14 metrics incl. GPU-costly
   Audiobox CE/PQ) is NOT a latent sidecar and NOT in the latents backup — snapshotted to
   Mantu 07-19; recurring backup is a TODO (`docs/open-threads.md`).
+
+### LUMI cluster (`akekim@efp.lumi.csc.fi`, project `465003186`) — see `.claude/skills/lumi-ops/SKILL.md`
+- **`/project/project_465003186/code/`** — the rsync'd mirror of this repo's `control/`,
+  `eval/`, `latch/`, `lumi/`, `Misc/`, `mir-src/`, `stable-audio-3/` (plus `job-*/` — ~109
+  leftover per-job dirs, and stray `*.out` logs that accumulate there rather than in `/scratch`).
+  `/project/.../containers/sa3.sif` is the legacy training container.
+- **`/scratch/project_465003186/`** — the actual working set: `goa_archive{,_captions,_features,_stems}`,
+  `suomisoundi_{archive,captions,latents,stems}`, the offload venvs (`goa_offload_venv{,_mt}`,
+  `sa3_train_venv_mt`, `bungee_venv`), `hf_cache`/`hf_offload`, source checkouts (`avp_src`,
+  `goa_src`), and stray `slurm-*.out` from ad-hoc srun probes.
+- Container images: `/appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif`
+  — resolve with `sort | tail -1` (unpinned, drifts — see `docs/writing-lumi-sbatches.md`).
 
 ## Reusable plumbing — the internal reuse index (check here before building)
 

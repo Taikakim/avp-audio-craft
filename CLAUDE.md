@@ -9,9 +9,13 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
 1. **`MASTER.md`** — single source of truth for cross-repo facts (data paths,
    venv-per-task, ROCm/RDNA4 gotchas). Start here for anything spanning repos. Update
    *this* file (not just a local CLAUDE.md) when you learn something cross-cutting.
-2. **`ARCHITECTURE.md`** — the reuse index: what tooling already exists across the
-   repos. **Check it before writing new code — we keep rediscovering things already
-   built** (e.g. a working bungee time-stretch + eval servers + ONNX suite).
+2. **`ARCHITECTURE.md`** — **REQUIRED READING before planning or scoping any non-trivial
+   task**, not just before writing code. It is two things in one file: the reuse index
+   (what tooling already exists — check before rebuilding, e.g. a working bungee
+   time-stretch + eval servers + ONNX suite) AND, since 2026-08-18, the **folder & drive
+   map** — what every top-level SAO dir, data drive, and LUMI cluster path actually holds.
+   Agents keep planning work blind to where the data they need already lives (or where a
+   result should land) — that map exists so you don't have to `find`/`ls`-spelunk or ask.
 3. **`WORKLOG.md`** — append a dated line when you finish something another instance
    would want to know.
 4. **`profiles/<handle-lower>.tasks.md`** — your personal task log (added 2026-07-09,
@@ -61,7 +65,8 @@ approach**, run this search and say what you found:
    first**, before writing code or designing an approach.
 2. `grep` the instance **journals** (`profiles/*.journal.md`) and **`WORKLOG.md`** for your
    keywords — the journals hold findings (incl. negative results) before they reach the index.
-3. `ARCHITECTURE.md` (tooling reuse — what code/tools already exist). *(papers/knowledge.md moved up to the pair in item 1.)*
+3. `ARCHITECTURE.md` (tooling reuse — what code/tools already exist — **and the folder/drive
+   map, §"Where things live"** — where data already lives before you go looking or re-fetch it). *(papers/knowledge.md moved up to the pair in item 1.)*
 4. **For any eval / eval-page / eval-UI / audition-deployment work**, read the eval-tables spec
    **`docs/superpowers/specs/2026-07-06-eval-tables-human-first.md`** FIRST — it's the running
    source of truth for the eval UI (layout/full-width tables, dual-pane compare, per-checkpoint
@@ -126,14 +131,12 @@ and MASTER §4) — never infer it from task content or memory alone.
 > secrets in the shell/env. (See MASTER §4.)
 
 ## Layout
-- `onnx/` — SA3 ONNX suite (export, infer, eval servers, DiT / control / latch onnx).
-- `control/` — `sa3_control` adapter training + recipes + findings.
-- `latch/` — LatCH head training, render / audition, probes.
-- `eval/` — riffer, scoring, audition, DoRA eval + soups (`eval_dora_*`, `soup_*`).
-- `docs/` — depth docs (venvs, commands, latch, training-findings, inference-servers,
-  the SA3 inference **speed shootout**, `flash-attn-ck-rdna4`). Superpowers specs/plans
-  under `docs/superpowers/`.
-- `stable-audio-3/`, `stable-audio-tools/` — nested thin forks (package deltas only).
+**Full folder-by-folder map (every top-level dir, both data drives, LUMI cluster paths):
+`ARCHITECTURE.md` § "Where things live" — do not maintain a second list here, it will
+drift out of sync the way this one did.** Quick orientation only:
+`onnx/` (SA3 ONNX suite), `control/` (`sa3_control` adapter), `latch/` (LatCH head
+training), `eval/` (scoring/audition/DoRA eval), `docs/` (depth docs + superpowers
+specs), `stable-audio-3/`/`stable-audio-tools/` (nested thin forks, package deltas only).
 
 ## SA3 / SAME architecture — the basics (MEMORIZE; stop re-deriving them)
 *(Added 2026-08-11 after C forgot the SAME latent carries a native chroma — costly slips come from
