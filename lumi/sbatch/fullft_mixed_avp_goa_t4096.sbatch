@@ -25,19 +25,23 @@
 #
 # ── DDP: Pattern 2, IDENTICAL launch to fullft_avp_aug.sbatch / subloss_goa_k20_fullft.sbatch
 #    (both proven tonight, jobs 21148122 / submitted after quoting was verified).
-#    THIS CLAIM WAS FALSE until 2026-08-17: this script never actually passed --devices/
-#    --num_nodes to train_lora.py, so its 8 srun ranks ran as 8 UNCOORDINATED independent
-#    single-GPU trainers (train_lora.py: devices="auto"+strategy="auto" when --devices is
-#    omitted -- the exact failure train_lora.py's own --devices help text names by precedent,
-#    job 20413874). Confirmed via job 21161065's colliding -v1..-v4 checkpoint duplicates
-#    (ckpt_dup_delta.py) and Kim's listening feedback (droning/thin, not what real DDP should
-#    produce). NOW FIXED: --devices 8 --num_nodes 1 added below, matching the siblings this
-#    comment always claimed to match. NOTE the semantics change this brings: BS=2 GA=2 was
-#    tuned for PER-GCD memory fit (T4096 bf16 full-FT tight at batch 4 live) -- that's
-#    unaffected by real DDP (each GPU still only ever holds its own micro-batch), but the
-#    EFFECTIVE GLOBAL batch goes from an accidental 4 (whichever single process "won") to a
-#    real 8×4=32 (gradient-synced across all 8 GPUs) -- a materially different optimization
-#    regime, not just a bugfix. Flagging, not silently changing without saying so.
+#    CORRECTION (2026-08-17, 2 rounds): I first claimed the missing --devices flag was the
+#    root cause of job 21161065's colliding -v1..-v4 checkpoints and "fixed" it by ADDING
+#    --devices 8 --num_nodes 1. That was WRONG -- fullft_avp_aug.sbatch (job #68, the actual
+#    proven precedent) uses this EXACT --gpus-per-task=1-with-NO---devices pattern and
+#    explicitly documents "trains fine with no -vN ckpts" (see its own DDP comment block).
+#    Adding --devices 8 here crashed immediately instead (job 21245565,
+#    MisconfigurationException: "You requested gpu: [0..7] But your machine only has: [0]" --
+#    with cgroup-isolated --gpus-per-task=1, each process only ever sees ONE GPU, so an
+#    explicit --devices N>1 asks Lightning to grab N GPUs from inside a single process, which
+#    fails outright). This IS the exact failure train_lora.py's own --devices help text
+#    describes -- but I misread "an explicit N dies loudly instead of silently" as "so add an
+#    explicit N to fix it," when it actually just means the SAME underlying misconfiguration
+#    surfaces differently, not that --devices cures anything here. REVERTED to no --devices
+#    (matching #68 exactly). The TRUE cause of 21161065's divergence (confirmed real via
+#    ckpt_dup_delta.py: 521/522 tensors differ, max_abs_diff ~0.25-0.27 -- genuine divergence,
+#    not noise) is still OPEN -- something about the multi-source --encoded_dir mixing this
+#    script uses (which #68 doesn't) is the next suspect, not yet investigated.
 #
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
@@ -132,7 +136,6 @@ RESUME=""; [ -n "${FATCKPT}" ] && { RESUME="--resume_ckpt ${FATCKPT}"; echo "[fu
 echo "[rank ${SLURM_PROCID}/${SLURM_NTASKS}] node=$(hostname) local=${SLURM_LOCALID} TRAIN '"${NAME}"'"
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base --full-finetune \
-  --devices 8 --num_nodes 1 \
   --encoded_dir ${FLASH}/latents_avp,${FLASH}/'"${GOA_DIR}"' \
   --caption_sidecar ,'"${SIDECAR}"' --caption_probs 0,0,1 \
   --save_dir "'"${RUN}"'" \

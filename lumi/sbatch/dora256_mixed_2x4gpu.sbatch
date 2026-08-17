@@ -28,6 +28,18 @@
 # not withheld, just doesn't do anything for this adapter type. Flagging so it isn't mistaken
 # for silently working.
 #
+# CORRECTION (2026-08-17): first version passed --devices 4 per arm, reasoning (wrongly) from
+# fullft_mixed_avp_goa_t4096.sbatch's now-also-corrected claim that an explicit --devices was
+# needed for real DDP under --gpus-per-task=1. It's not -- fullft_avp_aug.sbatch (job #68, the
+# actual proven precedent) uses --gpus-per-task=1 with NO --devices flag and documents
+# Lightning's SLURMEnvironment forming the DDP group correctly from SLURM_NTASKS alone.
+# Passing --devices 4 here crashed both arms immediately (job 21245642.1,
+# MisconfigurationException: "You requested gpu: [0,1,2,3] But your machine only has: [0]" --
+# with cgroup-isolated GPUs each process only ever sees ONE device, so --devices N>1 fails
+# outright). REMOVED --devices/--num_nodes below to match #68's proven form. The two-separate-
+# exclusive-srun-steps split (each getting its own scoped SLURM_NTASKS=4) is UNCHANGED and
+# still the part of this script that's genuinely untested -- that's what SMOKE=1 verifies.
+#
 # RUN: SMOKE=1 sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch   (bounded ~20 steps/arm, verify
 #      BOTH arms print world_size=4 with 4 distinct local GPUs, no crash/hang, ckpts appear)
 #      then: sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch      (full, open only after SMOKE passes)
@@ -123,7 +135,6 @@ echo "[dora256/'"${ARM_NAME}"' rank ${SLURM_PROCID}/${SLURM_NTASKS}] node=$(host
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base \
   --adapter_type dora-rows --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
-  --devices 4 --num_nodes 1 \
   --encoded_dir ${FLASH}/latents_avp,${FLASH}/'"${GOA_DIR}"' \
   --caption_sidecar ,'"${SIDECAR}"' --caption_probs 0,0,1 \
   --save_dir "'"${RUN}"'" \
