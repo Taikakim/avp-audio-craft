@@ -43,8 +43,18 @@ SAO = Path("/home/kim/Projects/SAO")
 sys.path.insert(0, str(SAO / "stable-audio-3" / "scripts"))
 from caption_tools import build_t1  # noqa: E402
 
-FEATURES = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features")
-CAPTIONS = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/goa_archive_captions")
+# DEFAULTS ONLY — override with --features-dir / --captions-dir. These were hardcoded, which broke
+# the moment we needed a SECOND captions set: the 2026-08-18 re-caption writes to
+# goa_archive_captions_hinted (kept separate so the unhinted set survives as the control), and a
+# hardcoded path cannot read it. Also on the standing no-hardcoded-drive-paths directive (Kim
+# 2026-08-17) — 144 files carry `/run/media/kim/...` literals and 9 point at a drive label that no
+# longer exists, so these get lifted as each file is touched.
+FEATURES = Path(os.environ.get(
+    "GOA_FEATURES_DIR",
+    "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features"))
+CAPTIONS = Path(os.environ.get(
+    "GOA_CAPTIONS_DIR",
+    "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/goa_archive_captions"))
 MODELS_ESSENTIA = Path("/home/kim/Projects/mir/models/essentia")
 
 CLASS_JSON = {
@@ -113,11 +123,39 @@ def _t2_from_granite(entry, rng):
 
 
 def main():
+    # must precede any reference to these names in this scope (argparse defaults read them below)
+    global CAPTIONS, FEATURES
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="cap tracks (smoke test)")
     ap.add_argument("--out", type=Path,
                     default=FEATURES / "goa_archive_caption_sidecar.json")
+    ap.add_argument("--captions-dir", type=Path, default=CAPTIONS,
+                    help="dir holding json/<key>.json (Music Flamingo, -> T3) and granite/<key>.json "
+                         "(-> T2). Point this at goa_archive_captions_hinted for the 2026-08-18 "
+                         "re-caption; the unhinted set is kept alongside as a control. "
+                         f"(default {CAPTIONS})")
+    ap.add_argument("--features-dir", type=Path, default=FEATURES,
+                    help=f"dir holding npz/<key>.npz for the T1 effnet tags (default {FEATURES})")
     args = ap.parse_args()
+    # rebind the module-level paths the body reads, so both the flag and the env var work
+    CAPTIONS, FEATURES = args.captions_dir, args.features_dir
+    print(f"[sidecar] captions <- {CAPTIONS}")
+    print(f"[sidecar] features <- {FEATURES}")
+    for _d, _what in ((CAPTIONS / "json", "T3 Music Flamingo"), (CAPTIONS / "granite", "T2 granite")):
+        if not _d.is_dir():
+            raise SystemExit(f"[sidecar] FATAL: {_what} dir missing: {_d}")
+    # A stale derivative is the trap that cost us a full audit cycle on 2026-08-17: granite was
+    # regenerated but the sidecar was not rebuilt, so the audit re-measured the OLD captions and
+    # reported the contamination as if the fix had failed. Print how fresh the inputs are so a
+    # stale source is visible here rather than three steps downstream.
+    for _d, _label in ((CAPTIONS / "json", "T3"), (CAPTIONS / "granite", "T2")):
+        try:
+            _f = max(_d.iterdir(), key=lambda p: p.stat().st_mtime)
+            import datetime as _dt
+            _ts = _dt.datetime.fromtimestamp(_f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+            print(f"[sidecar] {_label} newest input: {_ts}")
+        except Exception:
+            pass
 
     class_names = _load_class_names()
     print(f"[sidecar] class tables: {list(class_names.keys())}")
