@@ -95,6 +95,20 @@ SIDECAR_GOA=${SIDECAR_GOA:-${CODE}/lumi/goa_longform_sidecar.json}
 #   CAPTION_PROBS to "0,0.9,0.1;0,0.9,0.1;0,0.9,0.1". A missing tier falls back to t1 SILENTLY, so a
 #   wrong mix trains on boilerplate without erroring — re-audit, don't assume.
 CAPTION_PROBS=${CAPTION_PROBS:-0,0.9,0.1;0,0.9,0.1;0,0,1}
+# ✅ THE GRANITE-EVERYWHERE PATH IS NOW VERIFIED (2026-08-18) — use it in preference to the
+# conservative default above. G's granite v5 (job 21255037, read_mf() fix 63546e6) re-audits at
+# rare-term ratio 19.24x vs the pre-fix 1.24x=chance, BEATING suomisoundi's 16.17x; templating
+# collapsed from 28.8% of the corpus sharing one 4-word opening to 3.9%, and all 23231 captions are
+# distinct. Re-keying onto the bigset's synthetic latent ids matched 12523/12523 (100%), ALL via
+# exact relpath with zero fallbacks. So:
+#   GOA_DIR=latents_goa_bigset \
+#   SIDECAR_GOA=/project/project_465003186/code/lumi/goa_bigset_v5_relkeyed_sidecar.json \
+#   CAPTION_PROBS="0,0.9,0.1;0,0.9,0.1;0,0.9,0.1"
+# ⚠️ The DEFAULTS below stay conservative on purpose: they point at GOA_DIR=latents_sa3 with
+# goa_longform_sidecar.json, which has NO entries carrying both t2 AND t3 — it cannot even be
+# audited for grounding, and a missing tier falls back to t1 SILENTLY. So a granite-led tier mix is
+# valid ONLY on the bigset+v5 pairing above, NOT on the default pairing. Audit before flipping any
+# other corpus: python3 eval/audit_caption_sidecar.py <sidecar>
 SOURCE_WEIGHTS=${SOURCE_WEIGHTS:-}   # empty => natural per-crop proportions
 
 case "${MODE}" in
