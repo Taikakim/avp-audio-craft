@@ -112,6 +112,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   smoke checkpoint in the same dir, so ~1% not-from-scratch.
 
 ## ⏳ In flight — FYI, no action
+- **Caveat for reading the two-week campaign's results: LUMI swapped the flash-attn build under
+  us on 2026-07-31, mid-campaign** (F found it 08-17, verified inside the container; W landed the
+  doc fix). All 41 of our sbatch scripts resolve the training image with `sort | tail -1` = newest
+  by date, so LUMI shipping a new image silently changes what we train on — no diff, no warning,
+  no log line on our side. The FA version actually went BACKWARDS: 2.8.4 in the Mar–May images,
+  2.8.3 in the Jul-31 and Aug-07 ones. **Nobody has shown this hurts quality and we are not
+  claiming it does** — the honest stake is narrower: *arms trained either side of Jul 31 had a
+  different attention backend, so a cross-date A/B is not guaranteed comparable just because it
+  was the same script and the same image glob.* Worth knowing when you weigh recipe-vs-recipe
+  results that straddle that date. Cheap fix exists (pin the resolved image path, or echo it +
+  the FA version into each run log) — not applied, since it touches 41 scripts with jobs in
+  flight; C/G's call when convenient.
 - **fullft_bigset drone (08-10) — root-caused, fix training now, one gotcha to watch when it
   relaunches for real.** C root-caused the spectral-drone in full-FT training (FusionOpt
   spectral weight-decay 0.01 too weak for the NS5/Muon orthogonalized update, adapters stay
