@@ -8,9 +8,20 @@
 #    prompts, leave unconditional as it is). And, each runs on 8x GPUs. #1 hyperball, #2 EDM2, #3 both."
 #
 # ONE ARM PER SUBMIT — MODE x LR. Six arms total:
-#   MODE=hyperball LR=3e-5 | MODE=hyperball LR=1e-4     <- #1, ready now
-#   MODE=edm2      LR=3e-5 | MODE=edm2      LR=1e-4     <- #2, needs --forced-weight-norm (see below)
+#   MODE=hyperball LR=3e-5 | MODE=hyperball LR=1e-4     <- #1
+#   MODE=edm2      LR=3e-5 | MODE=edm2      LR=1e-4     <- #2
 #   MODE=both      LR=3e-5 | MODE=both      LR=1e-4     <- #3
+# ALL SIX ARE READY (2026-08-17): --forced-weight-norm landed in stable-audio-3 1d6474c with 12
+# tests. What the two bounds actually differ in, since the arms are only worth running if they are
+# not the same experiment:
+#   hyperball -> whole-tensor ‖W‖_F FROZEN at ‖W0‖_F, optimizer-side, on EVERY spectral matrix.
+#                Output magnitude cannot change at all.
+#   edm2      -> per-output-channel DIRECTION normalised with a LEARNABLE per-channel gain, on the
+#                output projection only (transformer.py:1171). Magnitude can still adapt, but
+#                through one well-conditioned parameter per channel instead of drifting across the
+#                whole matrix. Strictly the weaker, more expressive constraint.
+#   both      -> hyperball on the bulk + per-channel gain control at the output.
+# Both are retrofit-safe (each reproduces the pretrained function at step 0, so no fine-tune spike).
 #
 # WHY THESE TWO BOUNDS AND NOT MORE WARMUP/EMA/AdaGC: warmup, EMA and AdaGC all shape the PATH,
 # none bounds the DESTINATION. Warmup only delays onset (equilibrium norm unchanged); EMA averages a
