@@ -128,10 +128,60 @@ NLAT=$(ls ${FLASH}/${LAT_DIR}/*.npy 2>/dev/null | wc -l)
 echo "[suomi] ${LAT_DIR}: ${NLAT} .npy staged (1261 expected = 1260 samples + silence.npy)"
 [ "${NLAT}" -ge 1000 ] || { echo "[suomi] FATAL: only ${NLAT} latents staged -- refusing to train on a truncated corpus"; exit 1; }
 
+# CAPTION-KEY PREFLIGHT — the one failure here that is SILENT rather than loud.
+# make_caption_sampler's _default_key takes basename-without-extension of info["latent_filename"]
+# and looks it up in the sidecar; on a MISS it returns {} — no reject, no warning, no crash. The
+# run trains happily on EMPTY PROMPTS and you find out from the renders days later. (The live-
+# encode path keys by audio relpath instead, which is exactly the mismatch ARCHITECTURE.md flags
+# between goa's sidecar and this one — copy the wrong convention and this is how it fails.)
+# So: take a real staged latent, resolve its key the same way, and assert the sidecar has it.
+python3 - "${FLASH}/${LAT_DIR}" "${SIDECAR}" <<'PYEOF' || { echo "[suomi] FATAL: caption-key preflight failed -- would have trained on empty prompts"; exit 1; }
+import glob, json, os, sys
+lat_dir, sidecar = sys.argv[1], sys.argv[2]
+names = [p for p in sorted(glob.glob(os.path.join(lat_dir, "*.npy")))
+         if os.path.basename(p) != "silence.npy"]
+if not names:
+    print("[suomi] preflight: no latents found"); raise SystemExit(1)
+table = json.load(open(sidecar))
+keys = [os.path.splitext(os.path.basename(p))[0] for p in names]
+hit = [k for k in keys if k in table]
+print(f"[suomi] caption keys: {len(hit)}/{len(keys)} latents resolve in the sidecar "
+      f"(sidecar has {len(table)} entries; sample key {keys[0]!r})")
+if len(hit) < 0.99 * len(keys):
+    print(f"[suomi] preflight: MISS -- e.g. {[k for k in keys if k not in table][:3]}")
+    raise SystemExit(1)
+tiers = table[hit[0]]
+print(f"[suomi] tiers present on a sample entry: {sorted(t for t in ('t1','t2','t3') if tiers.get(t))}")
+raise SystemExit(0 if tiers.get("t1") else 1)   # t1 is the fallback tier; without it a t2/t3 miss yields ""
+PYEOF
+
 run_arm() {
   local ARM_NAME=$1 LR=$2 PORT=$3 GPUS=$4
   local RUN=${RUNROOT}/${ARM_NAME}
   mkdir -p "${RUN}"
+  # Self-describing output (MASTER §4): what this arm is, why it exists, what it trained on, and
+  # the exact recipe -- written AT CREATION, because a run dir whose provenance lives only in a
+  # chat log is a dead end nobody can revive. `result`/`kim_feedback` stay null until measured
+  # and until Kim has actually listened; the eval pages read that to mark a run UNAUDITED.
+  cat > "${RUN}/run_meta.json" <<META
+{
+  "run": "${ARM_NAME}",
+  "created": "$(date -Iseconds)",
+  "slurm_job": "${SLURM_JOB_ID:-unset}",
+  "purpose": "Suomisoundi (Kim's own-corpus finetune target) DoRA capacity x LR bracket: does rank 256 buy anything over rank 32 on a 1260-track corpus, and which LR holds. fp32 throughout, T=256 crops.",
+  "hypothesis": "At 1260 tracks the corpus may not support rank 256; if r32 matches or beats it, the cheaper adapter is the one to ship. LR 1e-4 vs 3e-5 brackets the drift-vs-underfit axis.",
+  "dataset": {"name": "suomisoundi", "latents": "${LAT_DIR}", "n_latents": ${NLAT}, "pre_encoded": true,
+              "caption_sidecar": "$(basename ${SIDECAR})", "caption_tiers": "t1/t2/t3", "augmentation": "none (pre-encoded)"},
+  "recipe": {"adapter": "dora-rows", "rank": ${RANK}, "alpha": ${ALPHA}, "lr": "${LR}",
+             "batch_size": ${BS}, "gpus": 4, "effective_batch": $((BS*4)), "frames": ${FRAMES},
+             "precision": "${PREC}", "optimizer": "fusion", "spectral_wd": ${SPECTRAL_WD},
+             "grad_clip": "agc", "warmup_epochs": ${WARMUP_EPOCHS}, "epochs": ${EPOCHS}},
+  "known_gaps": ["EMA requested by Kim but NOT active: train_lora.py force-disables it for LoRA/DoRA (full-finetune only). Flag is passed; the log carries the trainer's own ignore notice."],
+  "script": "lumi/sbatch/suomisoundi_dora_2x4gpu.sbatch",
+  "result": null,
+  "kim_feedback": null
+}
+META
   local STEP_ARGS="--epochs ${EPOCHS}"
   # NB: omitting --epochs is NOT "unlimited" -- max_steps falls back to --steps (default 10000),
   # and on a resumed run already past that it trains ZERO steps and exits COMPLETED 0:0.
@@ -199,8 +249,12 @@ echo "[suomi/'"${ARM_NAME}"'] step finished"
 
 # Distinct rdzv ports (two rendezvous servers on one node collide on a shared port) and an
 # explicit disjoint GPU split, rather than trusting the step scheduler to hand out disjoint sets.
-run_arm "suomi_${ARMSET}_lr${LR_A}" "${LR_A}" 29531 0,1,2,3
-run_arm "suomi_${ARMSET}_lr${LR_B}" "${LR_B}" 29541 4,5,6,7
+# Ports are ARMSET-scoped as well as arm-scoped. The two submissions each take a whole 8-GPU
+# node so they cannot land together, but a port scheme that only works because of a scheduling
+# assumption is one node-packing change away from a silent rendezvous collision.
+case "${ARMSET}" in r32) P_A=29531; P_B=29541 ;; r256) P_A=29551; P_B=29561 ;; esac
+run_arm "suomi_${ARMSET}_lr${LR_A}" "${LR_A}" "${P_A}" 0,1,2,3
+run_arm "suomi_${ARMSET}_lr${LR_B}" "${LR_B}" "${P_B}" 4,5,6,7
 wait
 
 echo "[suomi] both arms finished (or timed out) -- verify the ARTIFACTS, never this script's rc:"
