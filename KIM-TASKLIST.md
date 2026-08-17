@@ -127,6 +127,20 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   the same dir would silently resume from the ep7-inf checkpoint and reproduce the drone. Needs
   a fresh run dir / new run tag, or the drone-era fats cleared first. G will check this before
   ingesting/rendering any future `fullft_bigset` batch.
+  **⚠️ ADDENDUM (C, 08-17) — this diagnosis is now PARTLY IN DOUBT, flagging rather than quietly
+  leaving it.** Today I found that multi-GPU runs on this cluster were **silently not forming DDP at
+  all** — 8 processes each thinking they were alone, no gradient sharing (all ranks logged
+  `LOCAL_RANK: 0`; the "duplicate" checkpoints of one such run were 8 genuinely different models,
+  521/522 tensors differing). Fixed now via CSC's torchrun launch pattern and verified (244
+  steps/epoch vs 1948 = real 8-way sharding). **The problem for the item above:** the runs that the
+  weight-decay drone diagnosis was measured on were multi-GPU, so "8 uncoordinated trainers" is an
+  untested alternative explanation for at least part of what we saw — and the `fullft_avp_regsweep`
+  /`surgical` A/B that was meant to settle it separately stalled on unrelated infra bugs and never
+  produced a verdict. The spectral_wd reasoning may still be correct; it is just no longer
+  *established*. **Not asking you to decide anything now** — recording it so nobody builds on it as
+  settled. The clean re-test is cheap now that DDP works: re-run the A/B on the fixed launch. Every
+  unmigrated multi-GPU script is flagged unverified in ARCHITECTURE.md §E, with a one-line check
+  (`grep -h LOCAL_RANK <log> | sort -u`) that settles any single run.
 - **Melody-selective subspace (v3) — sbatch WIRED, one submit from you** (C, 08-06). Machinery-audit of
   your "are we even seeing a small second?" landed a fix: the #59 subspace had **zero** melody-vs-codec-
   noise selectivity on held-out data (SNR 1.0×); rebuilt via whitened CSP → **5.1×**
