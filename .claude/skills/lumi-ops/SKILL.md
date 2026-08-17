@@ -121,7 +121,9 @@ migrated yet and should be treated as unverified until they are or until checked
 Which SIF you train in decides whether MIOpen fights you.
 
 - **`${PROJ}/containers/sa3.sif`** — our cotainr training build, but **ROCm 6.2.4, NO flash-attn**
-  (FA absent by design: our CK wheel is gfx1201/RDNA4-only, no gfx90a FA was built). Its MIOpen's
+  (FA absent by design: **our own** CK wheel is gfx1201/RDNA4-only and we never built a gfx90a
+  one — **the gfx90a FA lives in `lumi-multitorch-full` below**, which is much of why multitorch
+  is the default base). Its MIOpen's
   gfx90a FindDb has **per-shape gaps**, and on a gap `MIOPEN_FIND_MODE=2` (FAST) falls to the
   immediate-mode **AI heuristic**, which mispredicts a workspace-0 `ConvAsmImplicitGemm…Xdlops`
   solver and **hangs the first backward pass forever** (job stays R, GPU busy, `train.log` mtime
@@ -131,13 +133,40 @@ Which SIF you train in decides whether MIOpen fights you.
   (`MIOPEN_USER_DB_PATH=/tmp/…` = FindDb+PerfDb, `MIOPEN_CUSTOM_CACHE_DIR=/tmp/…` = kernel cache;
   else they refill the 100k home inode quota → failure mode #1). To pay the find ONCE, point
   `MIOPEN_USER_DB_PATH` at a persistent per-arm `/scratch` dir and reuse.
+  > *Corrected 2026-08-17 (W, after Kim said "we have a mi250x CK FA build" and the doc flatly
+  > denied it): the clause used to read "no gfx90a FA was built" — true of US, false as written,
+  > because it scans as "none exists" when the official image ships one. That is a sentence
+  > someone plans a training arm around. The first half stands, independently re-verified: every
+  > flash-attn artifact on the desktop — 4 built trees + 4 wheels — carries 4779 gfx1201 code
+  > objects and ZERO gfx90a kernels (scanned in the compiled `.so`, not inferred from filenames).
+  > And **"rebuild ours for gfx90a" is not a path**: our recipe builds from the
+  > `rdna_fmha_gfx1100_gfx1201` branch (`SAO/docs/flash-attn-ck-rdna4.md`), RDNA3/4-only, with no
+  > CDNA kernels to compile. Use the container's.*
 
 - **`/appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif`** — LUMI official
   AI image: **ROCm 7 + prebuilt gfx90a flash-attn** (+ bitsandbytes, vLLM). Newer MIOpen; the 6.2
   find-fallback hang does not occur, and FA2 speeds attention. **Preferred base for training and
   captioning.** Used via a `--system-site-packages` venv overlay on `/scratch` (pattern:
   `lumi/build_offload_venv_mt.sh` for captioning). **PYTHONPATH-prepend is load-bearing** — put the
-  overlay's `site-packages` FIRST or the image's own `/opt/venv` shadows it. Readable path is
+  overlay's `site-packages` FIRST or the image's own `/opt/venv` shadows it. **BOTH halves of that
+  must hold at once, and they read like a contradiction if you meet them separately (C misread it
+  in exactly this direction and lost two jobs to it, 2026-08-17): overlay FIRST, AND
+  `${PYTHONPATH:+:${PYTHONPATH}}` appended on the end** — prepend without the append REPLACES the
+  path and drops the image's own `/opt/venv`, where torch itself lives, since the overlay relies
+  on system-site-packages inheritance. Symptom is `ModuleNotFoundError: No module named 'torch'`
+  (not a wrong version), so it does not look like the shadow-venv gotcha the prepend rule is about.
+  **CONSUMING THE PREBUILT FA — container as-is, never pip-install flash-attn into the overlay**
+  (it arrives by inheritance). Two caveats that have each bitten us: (a) on the HF-model path
+  (captioning, MF) you need `attn_implementation="flash_attention_2"` **plus a bf16/fp16 dtype —
+  FA2 REFUSES fp32**, so an fp32-by-design arm (e.g. the rank-256 DoRA arms) cannot have FA2 no
+  matter which container it runs in; (b) `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before
+  `import torch`, always — SA3 reaches flash-attn through its own attention code, not HF.
+  *(Open, deliberately not asserted here: whether the image's FA is the CK backend or the
+  Triton-AMD one. We set the flag that asks for CK and attention got fast — probe 20431533,
+  fa2=True on 8/8 ranks, killed the 600s quadratic-attention OOMs that eager and sdpa both hit —
+  but nobody has scanned the container's `flash_attn_2_cuda` for its arch/backend the way we did
+  ours, and no agent can ssh to LUMI to do it. Verify before anyone writes "CK" as fact.)*
+  Readable path is
   `/appl/local/laifs/containers/`, NOT the `easybuild-sif-images` symlinks (those point into
   another project's non-world-readable scratch).
 

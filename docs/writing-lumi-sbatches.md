@@ -67,6 +67,14 @@ with `cotainr`. You rarely need to build one:
     DeepSpeed, vLLM**. **This is the no-build FA2 path — never compile flash-attn into your own
     SIF.** Resolve the newest full build:
     `ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif | sort | tail -1`.
+    **Consume it as-is — never `pip install flash-attn` into the overlay venv** (it arrives via
+    `--system-site-packages` inheritance). Two things that decide whether you actually GET FA2:
+    on the HF path you need `attn_implementation="flash_attention_2"` **plus bf16/fp16 — FA2
+    refuses fp32**, so an fp32-by-design arm cannot have it in any container; and
+    `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import torch`. Our own CK wheel is
+    gfx1201/RDNA4-only and cannot be rebuilt for gfx90a (RDNA-only branch) — the container's is
+    the only gfx90a FA we have. Detail + the open CK-vs-Triton question: `lumi-ops` SKILL.md
+    "Containers".
   - Avoid the `easybuild-sif-images/` symlinks — they point into another project's
     non-world-readable scratch.
 - **`singularity exec <IMG>` mounts `/project` and `/scratch` read-only (or not at all) unless
