@@ -95,9 +95,15 @@ def rewrite(text: str, year: int):
         # already precise; only strip a CONTRADICTORY decade if one is also present
         def _strip(m):
             return "" if not states_exact_year(m.group(0), year) else m.group(0)
-        new = DECADE_RE.sub(_strip, text)
-        new = _tidy(new)
-        return new, (1 if new != text else 0)
+        subbed = DECADE_RE.sub(_strip, text)
+        # ONLY tidy when a span was actually removed. _tidy() collapses whitespace runs, and MF
+        # captions are full of double spaces after sentence ends, so tidying unconditionally
+        # reports every such caption as "changed" and rewrites it for nothing. Caught 2026-08-18
+        # when a --report-only run claimed 2076 of 3135 changed against a measured 5.7%
+        # contradiction rate, with five sample diffs showing no visible difference at all.
+        if subbed == text:
+            return text, 0
+        return _tidy(subbed), 1
     new, n = DECADE_RE.subn(str(year), text)
     if n == 0:
         return text, 0
@@ -135,13 +141,30 @@ def correct_decade(text: str, year: int):
             return s
         return true_dec
 
-    new = DECADE_RE.sub(_fix, text)
-    new = re.sub(rf"\b{true_dec}\b(\s*[-–/&,]?\s*\b{true_dec}\b)+", true_dec, new)
-    new = _tidy(new)
-    return new, (1 if new != text else 0)
+    subbed = DECADE_RE.sub(_fix, text)
+    if subbed == text:
+        return text, 0          # no era language touched -> do not tidy, see rewrite() above
+    new = re.sub(rf"\b{true_dec}\b(\s*[-–/&,]?\s*\b{true_dec}\b)+", true_dec, subbed)
+    return _tidy(new), 1
 
 
 HINT_YEAR = re.compile(r"release year: (\d{4})")
+
+
+def _window(s, other, pad=48):
+    """Context window around the FIRST character where s and other diverge.
+
+    Printing s[:110] shows the head of the sentence, and the edit is almost never there -- five
+    sample diffs came back visually identical, which is indistinguishable from a tool that changed
+    nothing. A diff preview has to show the diff."""
+    i = 0
+    for i, (x, y) in enumerate(zip(s, other)):
+        if x != y:
+            break
+    else:
+        i = min(len(s), len(other))
+    lo, hi = max(0, i - pad), min(len(s), i + pad)
+    return ("…" if lo else "") + s[lo:hi] + ("…" if hi < len(s) else "")
 
 
 def _mf_mode(a):
@@ -177,9 +200,11 @@ def _mf_mode(a):
             if n and new != old:
                 caps[tier] = new
                 hit = True
-                if shown < 5:
+                if shown < 6:
                     shown += 1
-                    print(f"  [{tier}] {year}\n        - {old[:110]}\n        + {new[:110]}")
+                    print(f"  [{tier}] {year}")
+                    print(f"        - {_window(old, new)}")
+                    print(f"        + {_window(new, old)}")
         if hit:
             n_changed += 1
             if exact:
