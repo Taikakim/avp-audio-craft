@@ -8,14 +8,22 @@ goa trance" framing, and the artifact would look perfect: right hint, right sour
 caption, wrong era. That is the same failure shape as the whole 2026-08-18 caption episode — the
 number looks clean while the content is wrong — so it gets its own instrument.
 
-THE TEST: bucket captions by the decade stated in their OWN hint, then measure how often era words
-appear in the caption prose per bucket. If the hint is steering, MODERN words concentrate in the
-2010s/2020s buckets and VINTAGE words in the 1990s. If the hint is being ignored, the two vocabularies
-are distributed evenly across decades — a flat table is the null result, and it is the interesting one.
+THE TEST — explicit era CLAIMS, agreement vs contradiction. For each caption we extract every year
+and decade token the prose actually states ("1997", "mid 90s", "2000s", "21st century") and compare
+it against the year the hint gave that same track:
+    AGREE      the stated era matches the metadata decade  -> the hint steered the output
+    CONTRADICT the caption states a DIFFERENT era           -> actively wrong, the thing to hunt
+    SILENT     the caption states no era at all             -> neither, and harmless
+CONTRADICT is the number that matters. It is Kim's constraint made measurable (2026-08-18: "don't use
+2000s for oldschool, and 90s for neo-goa; there are subtle production differences even in new goa
+which the model will learn") — a contradicting caption teaches the model that a 2020 track sounds
+like 1994.
 
-Reports a LIFT per bucket: P(modern words | bucket) / P(modern words | corpus). Lift ~1.0 everywhere
-means no steering. Same convention as audit_caption_sidecar.py's grounding lift, deliberately, so the
-two read the same way.
+WHY NOT AN ERA-VOCABULARY LIFT. That was this tool's first design and it was worthless: MF's stock
+phrasing is "blends classic X with modern Y", so "modern" appeared in 99.4% of captions and "classic"
+in 92.6%. At a 99% base rate there is no headroom to detect anything, and the flat lift table it
+produced was an artifact of the measure, not a finding about the hint. Kept as a secondary panel only
+because a saturated baseline is itself worth seeing; do not draw conclusions from its lifts.
 
 USAGE (LUMI login node, stdlib only, no GPU/container):
   python3 eval/audit_caption_era_grounding.py --captions /scratch/project_465003186/goa_src_captions/json
@@ -33,6 +41,32 @@ VINTAGE = ("90s", "1990s", "classic", "vintage", "retro", "old-school", "oldscho
            "analog", "analogue", "raw", "lo-fi", "tape", "hardware")
 
 YEAR_IN_HINT = re.compile(r"release year: (\d{4})")
+
+# Explicit era claims IN THE CAPTION PROSE. Related to but NOT shared with
+# eval/inject_year_into_captions.py: that module REWRITES decade spans in place, this one
+# RESOLVES them to a comparable decade int ('90s' -> 1990), which it has no need to do.
+BARE_YEAR = re.compile(r"\b(19[6-9]\d|20[0-2]\d)\b(?!s)")
+
+def stated_decades(text: str):
+    """Every decade the caption explicitly claims, as ints (1990, 2000, ...).
+
+    Two-digit tokens are ambiguous by construction: "90s" is 1990s, "00s"/"10s"/"20s" are 2000s/
+    2010s/2020s. Resolved by the convention this corpus actually uses rather than by century math,
+    because '20s' here never means 1920s.
+    """
+    out = set()
+    for m in BARE_YEAR.finditer(text or ""):
+        out.add(int(m.group(0)) // 10 * 10)
+    for m in re.finditer(r"\b'?((?:19|20)?\d)0s\b", text or "", re.IGNORECASE):
+        tok = m.group(1)
+        if len(tok) >= 3:
+            out.add(int(tok) * 10)
+        else:
+            d = int(tok)
+            out.add(1990 if d == 9 else 1980 if d == 8 else 1970 if d == 7 else 2000 + d * 10)
+    if re.search(r"\b21st[-\s]century\b", text or "", re.IGNORECASE):
+        out.add(2000)
+    return out
 
 
 def _rate(texts, words):
@@ -83,6 +117,39 @@ def main():
               "never hit — check genre_hint_source in one of them before reading anything into this.")
         return 1
 
+    # ---- PRIMARY: explicit era claims, agreement vs contradiction -------------------------------
+    print(f"{'decade':>8} {'n':>6} {'agree':>8} {'CONTRADICT':>11} {'silent':>8}")
+    tot = collections.Counter()
+    contra_examples = []
+    for dec in sorted(buckets):
+        c = collections.Counter()
+        for txt in buckets[dec]:
+            st = stated_decades(txt)
+            if not st:
+                c["silent"] += 1
+            elif dec in st:
+                c["agree"] += 1
+            else:
+                c["contra"] += 1
+                if len(contra_examples) < 6:
+                    contra_examples.append((dec, sorted(st), txt[:150]))
+        n = max(1, sum(c.values()))
+        tot.update(c)
+        print(f"{dec:>8} {sum(c.values()):>6} {c['agree']/n:>8.1%} {c['contra']/n:>11.1%} "
+              f"{c['silent']/n:>8.1%}")
+    N = max(1, sum(tot.values()))
+    print(f"\n  TOTAL   agree {tot['agree']/N:.1%}   CONTRADICT {tot['contra']/N:.1%}   "
+          f"silent {tot['silent']/N:.1%}")
+    print("  CONTRADICT is the actionable number: those captions state an era the metadata says is")
+    print("  wrong, and teach the model that eras sound alike. Fix with eval/inject_year_into_captions.py")
+    print("  (which needs the hint map as its year source on this corpus -- paths carry no year).")
+    if contra_examples:
+        print("\n  contradiction examples (metadata decade -> stated):")
+        for dec, st, txt in contra_examples:
+            print(f"    {dec}s -> {st}  {txt}")
+
+    # ---- SECONDARY: era-vocabulary lift. Saturated; see module docstring. -----------------------
+    print("\n--- secondary: era-vocabulary lift (saturated measure, read with care) ---")
     base_m = _rate([t for v in buckets.values() for t in v], MODERN)
     base_v = _rate([t for v in buckets.values() for t in v], VINTAGE)
     print(f"corpus baseline: modern-words {base_m:.1%}   vintage-words {base_v:.1%}\n")
