@@ -64,6 +64,8 @@ GENRE_ALLOW = ("goa", "psy", "trance", "techno", "acid", "ambient", "downtempo",
 # rarity, and stating it would teach the model that goa is a 1960s genre.
 MIN_PLAUSIBLE_YEAR = 1988
 
+AUDIO_EXT = (".mp3", ".flac", ".m4a", ".wav", ".ogg", ".opus", ".aiff", ".aif")
+
 
 def metadata_sentence(info: dict, fields=("year", "genres"), stats=None) -> str:
     """mir's {metadata} substitution, with the tag-genre fallback this corpus needs.
@@ -111,8 +113,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--archive", required=True, type=Path,
                     help="corpus root; keys are sha1 of the audio path RELATIVE to this")
-    ap.add_argument("--audio-name", default="full_mix.flac",
-                    help="the audio file inside each track dir (default full_mix.flac)")
+    ap.add_argument("--audio-name", default=None,
+                    help="exact audio filename inside each track dir. Pins ONE container format; "
+                         "prefer --audio-stem unless you know the corpus is uniform.")
+    ap.add_argument("--audio-stem", default="full_mix",
+                    help="basename WITHOUT extension of the audio in each track dir (default "
+                         "full_mix). Matches any audio extension, which is what this corpus needs: "
+                         "Goa_Separated is 71%% flac, 16%% mp3, 11%% ogg, plus m4a/wav/aiff. Keying "
+                         "on one extension would build a map covering only that slice, and the "
+                         "tracks it missed would fall back to the global hint with no error.")
     ap.add_argument("--info-suffix", default=".INFO")
     ap.add_argument("--fields", default="year,genres",
                     help="which metadata fields to state (year,genres,label). Default omits label "
@@ -137,9 +146,18 @@ def main():
     out, stats = {}, {"with_meta": 0, "none": 0, "no_info": 0}
     years = {}
     for root, _dirs, files in os.walk(a.archive):
-        if a.audio_name not in files:
-            continue
-        audio = Path(root) / a.audio_name
+        if a.audio_name:
+            if a.audio_name not in files:
+                continue
+            name = a.audio_name
+        else:
+            cand = sorted(f for f in files
+                          if os.path.splitext(f)[0] == a.audio_stem
+                          and os.path.splitext(f)[1].lower() in AUDIO_EXT)
+            if not cand:
+                continue
+            name = cand[0]
+        audio = Path(root) / name
         rel = a.rel_prefix + str(audio.relative_to(a.archive))
         key = hashlib.sha1(rel.encode()).hexdigest()
         infos = [f for f in files if f.endswith(a.info_suffix)]

@@ -38,7 +38,7 @@ import argparse
 import os
 from pathlib import Path
 
-AUDIO_EXT = (".mp3", ".flac", ".m4a", ".wav", ".ogg", ".opus")
+AUDIO_EXT = (".mp3", ".flac", ".m4a", ".wav", ".ogg", ".opus", ".aiff", ".aif")
 
 
 def key_for(path: Path, archive: Path) -> str:
@@ -77,6 +77,14 @@ def main():
                          "beside each full_mix, and an extension glob captions the stems as if they "
                          "were tracks (caught 2026-08-18 when a shard run found 2707 'tracks' in a "
                          "2676-track corpus -- the extra 31 were stems from an in-flight upload).")
+    ap.add_argument("--stem", default=None,
+                    help="only shard files whose basename WITHOUT extension is this, e.g. full_mix. "
+                         "Prefer this over --name for stem-separated corpora: --name pins ONE "
+                         "container format, and Goa_Separated is not uniform -- 3150 full_mix.flac "
+                         "but also 722 .mp3, 474 .ogg, 96 .m4a, 10 .wav, 9 .aiff. `--name "
+                         "full_mix.flac` therefore drops 29%% of the corpus and reports a clean "
+                         "count while doing it (caught 2026-08-18, after --name itself was added "
+                         "that morning to fix the opposite problem of shells sweeping in stems).")
     ap.add_argument("--all", action="store_true",
                     help="shard EVERY track, not just uncaptioned ones (default is resume-aware)")
     a = ap.parse_args()
@@ -110,7 +118,11 @@ def main():
     tracks = []
     for root, _dirs, files in os.walk(a.archive):
         for f in files:
-            if a.name:
+            if a.stem:
+                base, ext = os.path.splitext(f)
+                if base == a.stem and ext.lower() in AUDIO_EXT:
+                    tracks.append(Path(root) / f)
+            elif a.name:
                 if f == a.name:
                     tracks.append(Path(root) / f)
             elif f.lower().endswith(AUDIO_EXT):
@@ -133,6 +145,12 @@ def main():
             f"[shards] FATAL: {len(done)} caption json(s) exist in {jdir} but NONE matched a "
             f"computed key — key_for() has drifted from goa_caption_task.py:65. Refusing to shard, "
             f"because this would silently re-caption every track.")
+    if a.stem:
+        # Report the format mix. A stem-matched corpus that is 100% one extension is fine; one that
+        # is not tells you immediately what a --name run would have silently excluded.
+        import collections
+        mix = collections.Counter(t.suffix.lower() for t in tracks)
+        print(f"[shards] formats: {dict(mix.most_common())}")
     print(f"[shards] {len(tracks)} tracks under {a.archive}")
     print(f"[shards] {len(done)} already captioned in {jdir}")
     _emit(todo, sdir, a.shards, a.rate)

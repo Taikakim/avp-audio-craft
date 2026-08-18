@@ -155,8 +155,13 @@ def main():
             dur = librosa.get_duration(path=str(p))
         except Exception:
             return p, False
-        is_m4a = p.suffix.lower() == ".m4a"
-        if dur <= MAX_SEC and not is_m4a:
+        # Route every format we have NOT proven MF's own loader handles through librosa+soundfile,
+        # not just m4a. flac / wav / mp3 are proven at corpus scale (23k mp3 on the big goa set,
+        # 2891 flac in flight 2026-08-18); ogg, opus and aiff are not, and Goa_Separated turns out
+        # to hold 474 ogg + 9 aiff. The transcode costs a load+write per track — far less than
+        # discovering the gap as 483 failures three hours into a job.
+        needs_transcode = p.suffix.lower() in (".m4a", ".ogg", ".opus", ".aiff", ".aif")
+        if dur <= MAX_SEC and not needs_transcode:
             return p, False
         import soundfile as sf
         y, sr = librosa.load(str(p), sr=None, mono=False, duration=MAX_SEC)
