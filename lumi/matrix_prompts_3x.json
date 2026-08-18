@@ -1,0 +1,25 @@
+{
+ "prompts": [
+  {
+   "id": "rb_common_0",
+   "text": "2020s goa trance, melodic mood, 148 bpm",
+   "seed": 786795416
+  },
+  {
+   "id": "rb_common_1",
+   "text": "mid 90s goa trance, melodic space mood, 140 bpm",
+   "seed": 225176290
+  },
+  {
+   "id": "rb_common_2",
+   "text": "mid 90s goa trance, 148 bpm",
+   "seed": 544354203
+  }
+ ],
+ "cfgs": [
+  7
+ ],
+ "steps": 24,
+ "duration": 20.0,
+ "note": "snapshot of the exact local grid axes (ids/texts/seeds) for LUMI-side rendering, 2026-07-21"
+}
