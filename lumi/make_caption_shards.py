@@ -71,6 +71,12 @@ def main():
     ap.add_argument("--rate", type=float, default=115.0,
                     help="measured tracks/hour/GCD, for the wall-time estimate (default 115, "
                          "measured on the 2026-08-18 hinted re-caption)")
+    ap.add_argument("--name", default=None,
+                    help="only shard files with this exact basename, e.g. full_mix.flac. REQUIRED "
+                         "for stem-separated corpora: Goa_Separated has drums/bass/other/vocals "
+                         "beside each full_mix, and an extension glob captions the stems as if they "
+                         "were tracks (caught 2026-08-18 when a shard run found 2707 'tracks' in a "
+                         "2676-track corpus -- the extra 31 were stems from an in-flight upload).")
     ap.add_argument("--all", action="store_true",
                     help="shard EVERY track, not just uncaptioned ones (default is resume-aware)")
     a = ap.parse_args()
@@ -104,7 +110,10 @@ def main():
     tracks = []
     for root, _dirs, files in os.walk(a.archive):
         for f in files:
-            if f.lower().endswith(AUDIO_EXT):
+            if a.name:
+                if f == a.name:
+                    tracks.append(Path(root) / f)
+            elif f.lower().endswith(AUDIO_EXT):
                 tracks.append(Path(root) / f)
     tracks.sort()
     if not tracks:
