@@ -195,11 +195,72 @@ CORPUS: ________  ARTEFACT: ________  BUILT: ________ (mtime)  BY: ________ (scr
 
 ---
 
-## 10. Open
+## 10. Timeseries metadata (whole-track npz)
 
-- **Timeseries metadata** (whole-track npz: field set, native per-field rates, stem-dependent
-  fields, the `--add-fields` backfill asymmetry) needs its own §3 external-reference table.
-  Being audited now; this section lands when that audit reports rather than being guessed at.
+Audited 2026-08-18 across all 5,035 sidecars in the Lehto store. The same failure shapes recur
+here in a different costume, so the gate applies — with these specifics.
+
+**The self-description IS the metadata.** For captions the risk is the text being wrong; for
+timeseries it is `__meta__` disagreeing with the arrays beside it. Both docs instruct consumers
+to trust `__meta__` ("check `field_rates`/`fields`, never assume a field is present"), which
+makes a stale `__meta__` worse than none — a consumer obeying the documented rule reaches the
+wrong answer confidently.
+
+**Gate additions for any npz store:**
+
+1. **`__meta__` must agree with `z.files`.** Assert set-equality between `meta["fields"]` and the
+   arrays actually present. *Live instance:* `avp_f0_augment_transform.py` writes the 4 f0 fields
+   into 1,346 avp augmentation variants without updating `__meta__`, so every one advertises 46
+   fields while holding 50. Consumers filtering on meta drop a melody target that is present.
+2. **Derive every rate; never trust a stated one.** Two stated rates are wrong: `maest_embed_ts`
+   by 2× (known, documented only in `crop_timeseries_resample.py`) and `va_deam_ts`/
+   `va_emomusic_ts` by 3.1% (essentia's VGGish `patchHopSize` default is 93, the code assumes
+   96). **The 3.1% one is the instructive case: it sits UNDER the 5% warn threshold in the
+   consumer's own guard, so "derive and warn on mismatch" silently accepts it** — ~19 s of drift
+   at the tail of a 600 s track. A tolerance band is not a check.
+3. **`field_rates` covers only the 30 expanded fields — the 20 base fields have no entry.** A
+   consumer indexing it for a base field gets a `KeyError` and must fall back to top-level
+   `frame_rate`. Both docs say to read `field_rates` without saying this.
+4. **Length is not co-indexed.** Expanded fields keep native lengths; `f0_*_ts` measures
+   `n_frames + 1` or `+2`, and two nominally-10 Hz loudness fields differ by 26 samples on the
+   same track. Harmless to a rate-derived slicer, fatal to anything assuming all 100 Hz fields
+   share an index.
+5. **Categorical fields must never be mean-pooled.** `chords_idx_ts` is a 24-triad class index
+   (−1 = unknown). Sentinel fields (`f0_*_ts`, 0.0 = unvoiced) need masked pooling. Only
+   `crop_timeseries_resample.py` handles both.
+6. **Absence has three distinguishable states — record which.** For melody:
+   `expanded.f0_source` absent = never run; `null` = ran, no stems; a list = ran, and which
+   voices landed. A single "field missing" boolean cannot express this, and the three have
+   different remedies.
+7. **Coverage claims must name their scope.** "50 fields" is true of 4,455 sidecars, not of the
+   store: 574 genre sidecars have 46 (melody never run), 4 have 38 (no stems), and **2 have 48
+   because madmom's beat+downbeat activations silently failed on a `full_mix.mp3`** — a
+   per-track failure that logs a warning, continues, and appears in no document.
+
+**External references for timeseries** (§3's table, extended):
+
+| claim | external reference | not valid |
+|---|---|---|
+| a field's sample rate | `n_frames / duration` derived from the array itself | the producer's stated `field_rates` |
+| a field is present | `z.files` | `meta["fields"]` |
+| beat/downbeat activations are real | the `.BEATS_GRID`/`.DOWNBEATS` decoded from the same audio | the activation array's existence |
+| f0 is a real melody | the `_voiced_ts` mask fraction | the f0 array's non-zero count |
+| stems contributed | `meta["stems_present"]` **plus** the per-stem fields in `z.files` — they disagree after an `--add-fields` run | either alone |
+
+**Known-wrong consumer:** `SAO/stable-audio-tools/scripts/whole_track_target_source.py` applies
+`meta["frame_rate"]` (100 Hz) to *every* field, though 26 of 30 expanded fields are not at
+100 Hz. It is named as *the* consumer in `mir/CLAUDE.md`. The superseding implementation is
+`mir/src/tools/crop_timeseries_resample.py` (per-field derived rates, masked-mean for sentinels,
+mode-pool for categoricals, strict coverage check), which SA3's encoder already imports and
+which neither doc mentions.
+
+## 11. Open
+
+- Rename one of the two caption audit tools so they stop being confusable.
+- Wire the effnet per-track genre into the captioning hint step, so §3's corollary is
+  structural rather than a thing to remember.
+- Fix the two live timeseries bugs above (meta corruption on avp variants; the VGGish rate),
+  and correct the doc rot the audit found in `mir/CLAUDE.md` and `SAO/MASTER.md`.
 - Rename one of the two audit tools so they stop being confusable.
 - Wire the effnet per-track genre into the captioning hint step, so §3's corollary is
   structural rather than a thing to remember.
