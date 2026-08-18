@@ -50,13 +50,30 @@ ls "${MODELS}"/hub/models--nvidia--music-flamingo-hf/snapshots/*/ >/dev/null 2>&
 LIST=${OUT}/shards/all_tracks.txt
 find "${ARCHIVE}" -type f \( -iname '*.mp3' -o -iname '*.flac' -o -iname '*.m4a' \) | sort > "${LIST}"
 N=$(wc -l < "${LIST}")
-echo "[goa-cap] ${N} tracks; prompts=${PROMPT_TYPES:-full}"
-for R in 0 1 2 3 4 5 6 7; do awk -v r=${R} 'NR % 8 == r' "${LIST}" > "${OUT}/shards/shard_${R}.txt"; done
+# WIDTH: shard count MUST equal the total task count, or tracks are silently never captioned.
+# Derived from SLURM so the two cannot drift (`--nodes=N` alone is enough; NTASKS follows).
+NNODES=${SLURM_NNODES:-1}
+NTASKS=$(( NNODES * 8 ))
+# The job is RESUMABLE by construction -- goa_caption_task.py:67 does
+#   todo = [p for p in tracks if not (jdir/f"{key(p)}.json").exists()]
+# -- so relaunching over a partially-captioned OUT dir picks up only what is missing, and the
+# shard width can CHANGE between runs without redoing work. That is what makes "kill the 1-node
+# job and relaunch wider" safe (2026-08-18: killed at 7481/23232 and relaunched on more nodes).
+DONE=$(ls -1 "${OUT}/json" 2>/dev/null | wc -l)
+echo "[goa-cap] ${N} tracks total, ${DONE} already captioned, $(( N - DONE )) to do"
+echo "[goa-cap] width: ${NNODES} node(s) x 8 = ${NTASKS} shards; prompts=${PROMPT_TYPES:-full}"
+echo "[goa-cap] the work is a FIXED ~$(( (N - DONE) / 115 )) GCD-hours at the measured 115 tracks/h/GCD"
+echo "[goa-cap]   -> wall time is that divided by ${NTASKS}: about $(( ((N - DONE) / 115 + NTASKS - 1) / NTASKS )) h"
+for R in $(seq 0 $(( NTASKS - 1 ))); do awk -v r=${R} -v n=${NTASKS} 'NR % n == r' "${LIST}" > "${OUT}/shards/shard_${R}.txt"; done
 
 LIMIT_ARG=""
 [ "${PROBE:-0}" = "1" ] && LIMIT_ARG="--limit 2" && echo "[goa-cap] PROBE MODE: 2 tracks/rank"
 
-srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
+# NOT a DDP job -- these are NTASKS INDEPENDENT single-GPU captioners with no rendezvous and
+# nothing crossing a node boundary, so the "multi-node is unsolved" warning in lumi-ops does NOT
+# apply here (that is about forming ONE coordinated gradient group). Scaling out is just more
+# shards. Same reasoning W used to run the suomisoundi bracket as separate single-node jobs.
+srun --nodes=${NNODES} --ntasks=${NTASKS} --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 R=${SLURM_PROCID}
