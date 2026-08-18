@@ -197,10 +197,13 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 
 - **LUMI: submit the step-resolution trajectory job tonight (C, 2026-08-18 — your "save every step" ask,
   built and smoke-tested locally).** Two single-line commands from your LOCAL terminal, in SAO/:
-  `rsync -avRn -e "ssh -i ~/.ssh/id_EFP" stable-audio-3/scripts/trajectory_sketch.py stable-audio-3/scripts/train_lora.py lumi/sbatch/traj_sketch_arms.sbatch eval/trajectory_sketch_analyze.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+  `rsync -avRn -e "ssh -i ~/.ssh/id_EFP" stable-audio-3/scripts/trajectory_sketch.py stable-audio-3/scripts/train_lora.py stable-audio-tools/stable_audio_tools/training/fusion_opt.py lumi/vendor/stable_audio_tools/training/fusion_opt.py lumi/sbatch/traj_sketch_arms.sbatch eval/trajectory_sketch_analyze.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+  *(updated 01:10 — now EIGHT arms: + `bs1_fusion_cos` / `bs1_fusion_snr` / `bs1_fusion_cos_snr`, the muon
+  damping tests you asked for; the two fusion_opt.py paths carry the new `--fusion-decay` / `--fusion-snr`
+  code and the sbatch refuses to run without them.)*
   (dry run; then the same without `-n`). Then on LUMI: `cd /project/project_465003186/code && SMOKE=1 sbatch lumi/sbatch/traj_sketch_arms.sbatch`
   (30 steps/arm, ~5 min, exit code is the gate) and if it exits 0: `sbatch lumi/sbatch/traj_sketch_arms.sbatch`.
-  Five 1-GCD arms, 6 h: bs1/accum8/bs8 × AdamW + bs1/bs8 × Fusion, sanity16 recipe on goa; every step
+  Eight 1-GCD arms, 6 h: bs1/accum8/bs8 × AdamW + bs1/bs8 × Fusion + Fusion-bs1 × {cosine, SNR gate, both}, sanity16 recipe on goa; every step
   sketched, ckpt every step to 1000 then every 5 (~65 GB/arm on scratch — you said we have space; delete
   after). Read with `python3 eval/trajectory_sketch_analyze.py /scratch/project_465003186/runs/traj_sketch/<arm>/traj`
   (several dirs at once for cross-run). What it decides: whether the "broken AdamW" signature is BATCH
@@ -212,7 +215,11 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   direction kept — the control that says what the spike does), `03_good_ref_bf16cmp_bs8_ep7`, then
   `04_remove_k1_magreset`, `05_remove_k3`. If 01 is clean and 02 is broken, the shared spike is the
   pathology; if 02 carries the goa and 01 is base-like, the spike IS the learning. Either answer is a
-  finding. Weight-space facts behind it are on the chat/WORKLOG.
+  finding. Weight-space facts behind it are on the chat/WORKLOG. **DSP pre-read (00:40, n=3 each, weak
+  metrics):** removing the top-1 direction restores BRIGHTNESS to the healthy level (centroid 1793→2486 vs
+  healthy 2345; hf>8k 0.080→0.125 vs 0.118) but only partly the PUNCH (crest 3.47→3.95 vs healthy 4.64);
+  spike-only is dull and punchless (2163 / 3.35). Consistent with the shared rank-1 direction being a
+  low-pass/DC-shift and the lost dynamics living in the rest of the walk. Ears decide.
 ## ⏳ In flight — FYI, no action
 - **Melody head (D3): first validated training arms DONE 2026-08-18 20:41 — both voices generalise; EMA
   monotone; lead 0.2036 (EMA, still improving @30), bass 0.1520 (EMA @24). Details in my journal.** — 4 arms,

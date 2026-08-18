@@ -2075,3 +2075,33 @@ Also landed today, earlier: the D3 melody head generalises (first held-out-valid
 training, split by source track: lead 0.245→0.204, bass 0.191→0.152 on 401 unseen tracks; EMA
 monotone in both voices), and every existing `*_best.pt` LatCH head turned out to be
 train-loss-selected — on Kim's list as a decision.
+
+## 2026-08-19 (01:15) — accum8 = bs1; the axis is the optimizer; a prediction recorded before the data
+
+The accum8 AdamW arm (effective batch 8, 2000 optimizer steps) reproduces the bs1 arm in every
+statistic: update autocorrelation 0.9^τ then ~0, gradient window-SNR = 1/w to three digits up to
+w=1024, zero drift, and a STRONGER spike (top-1 0.71 vs 0.58). Batch ×8 changed nothing. The
+two AdamW walks share about half their direction (cross-run cos 0.42–0.58) — the systematic
+rank-1 part. So the healthy-vs-broken split in the archive is the OPTIMIZER, and I think I can
+now say why, quantitatively: with per-step signal fraction s ≲ 5e-4, Adam's per-coordinate
+normalization gives the persistent direction amplitude ~√s per step → signal/noise after N steps
+≈ √(N s) < 1 for any run we do. NS5 gives EVERY direction in the momentum's span unit weight —
+the persistent direction is always in that span, the noise directions rotate — so signal grows
+linearly at 1/√r per step while noise grows as √N: ratio ≈ √(N/r) ≈ 2.3 for one bs8 epoch at
+rank 128 = the healthy runs' path efficiency ~0.7. **Muon is a low-rank consistent-signal
+amplifier**; that is why Fusion drifts and AdamW diffuses on identical data, why Fusion deltas
+are spectrally flat, and why Fusion never stops either (noise directions get unit weight too).
+
+**Prediction, written down at 01:15 before the Fusion-bs1 arm finishes (~02:30):** drift at
+bs1 under Fusion — eff(1024) well above the AR(1) momentum curve (~0.13) and update
+autocorrelation at τ ≥ 100 clearly positive. If it comes back at the AdamW numbers instead, the
+amplifier story is wrong and the archive's Fusion-vs-AdamW split has another cause.
+
+Kim asked for the damping code: FusionOpt now has an in-optimizer decay (cosine/linear/wsd over
+total_steps, after warmup) and an 'snr' component (per-row or per-element |EMA(U)|/RMS(U) gate —
+0.23 on noise, 1 on signal, i.e. Adam's brake grafted onto the spectral step). 10 tests. Wired
+into train_lora and train_latch; three arms (cos / snr / both) added to the LUMI job (eight arms
+now) and chained locally after the Fusion control. Under the amplifier picture the SNR gate has
+a weakness worth stating: after NS5 each row is a mixture of the signal direction and r−1 noise
+directions, so row-SNR ≈ 1/r and the gate may brake everything uniformly at rank 128; cosine is
+the safe brake. We'll see at rank 16 tonight.
