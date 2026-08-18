@@ -4,6 +4,38 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-08-18 (eve) — CONTINUITY: weight-space forensics on the degraded AdamW arms + a step-resolution
+  trajectory recorder; the broken runs are not converging, they are diffusing.** Kim asked for the
+  Base→degraded delta, outlier weights, a repaired model, soups, and — sharpening it himself — deviant
+  EIGENDIRECTIONS rather than scalars. Built `eval/task_vector_gram.py` / `task_vector_spike.py` /
+  `spectral_repair_lora.py` / `soup_ladder.py` (ARCHITECTURE §B) and ran the goa set: 4 AdamW-sweep
+  terminals vs 19 healthy ckpts (bf16cmp/fp32cmp ladders + T4096 fp32). **(1)** bad-good cosine of the
+  DoRA-exact ΔW_eff is 0.03–0.12 while the healthy runs' cos-to-consensus climbs to 0.72 — the sweep did
+  not learn what every healthy run shares. **(2)** bad arms carry 20–30 % of every matrix's delta energy in
+  ONE singular direction (eff-rank ~56/128); every healthy run at every epoch/config is flat (2.1 %,
+  ~118/128). **(3)** that direction is the SAME across the four bad arms (|cos| 0.25 vs chance 0.026,
+  strongest in `ff_in` 0.46 / `out` 0.33), not a global direction, not a channel outlier (PR ~520):
+  a systematic component, strongest at the smallest LR — it does not scale with learning. **Reframing
+  caveat:** the healthy twins were trained with `--optimizer fusion` (NS5 orthogonalisation flattens
+  spectra by construction), the sweep with AdamW; optimizer and batch are confounded in the archive.
+  **(4) Step resolution (Kim: "save every step; there's a compressed way to store movement" → CountSketch
+  callback `stable-audio-3/scripts/trajectory_sketch.py`, reader `eval/trajectory_sketch_analyze.py`).**
+  Local sanity16-recipe LoRA r16 at bs1, 4482 steps: update autocorrelation = **0.9^τ to 3 digits, then
+  exactly 0** (Adam momentum on pure noise); gradient window-SNR = **1/w to 3 digits up to w=1024** (the
+  repeatable gradient component is < 0.1 % of its energy); path efficiency above 1/√w by exactly the
+  AR(1) factor — **zero drift, loss flat** — yet B·A top-1 fraction climbs 0.33→0.56. Mechanism that fits
+  all of it: per-step gradients ≈ δ_t x̄ᵀ (dominated by the mean-activation direction), so `dB = δ_t (A x̄)ᵀ`
+  accumulates rank-1 with a data-fixed input direction (shared across arms) and a random-walking output
+  direction (never settles); Adam preserves it, NS5 destroys it. **Working hypothesis, two decisive arms
+  running (accum8, Fusion-bs1) + LUMI job `lumi/sbatch/traj_sketch_arms.sbatch`:** at these batch sizes
+  nothing converges by drift; a checkpoint is listenable when it is AVERAGED (SF in Fusion, EMA on the
+  melody head, Kim's soups) and AdamW at constant LR without averaging hands you a random point of the
+  walk. Probe ckpts (remove/keep top-1, k3, magnitude reset) written + CPU renders queued
+  (`lumi_runs/analysis/task_vector_gram_goa_2026-08-18/`). Also: **the D3 melody head generalises**
+  (first held-out-validated LatCH training, split BY SOURCE TRACK: lead 0.245→0.204, bass 0.191→0.152 on
+  401 unseen tracks; EMA monotone) — and every existing `*_best.pt` LatCH head was train-loss-selected.
+  **Box note:** `/tmp/suomisoundi_ts_full_extraction.log` is 27 GB in tmpfs (RAM) — whoever owns it, it is
+  why the box has 6 GB free.
 - **2026-08-18 — CONTINUITY: the goa collapse had a THIRD cause — the corpus was captioned with NO
   genre hint at all.** W scanned a tier nobody had questioned: goa's Music Flamingo prose mentions
   goa/psy in **1.2%** of tracks and techno/industrial/house in 70.8%. Root cause is duller and worse

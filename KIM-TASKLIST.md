@@ -181,7 +181,50 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   the droning was the DDP bug, the weight decay, or both. Minor caveat: it resumed from a 20-step
   smoke checkpoint in the same dir, so ~1% not-from-scratch.
 
+- **Every LatCH head we have was selected on TRAINING loss — do we re-validate the 14 production
+  heads?** (C, 2026-08-18.) `train_latch.py` had no held-out set until today: `_best.pt` was
+  whichever epoch fit the training crops hardest. That covers all 14 `*_best.pt` heads (the ones
+  the explorer, the guidance path and the gain ladders all use) plus the f0 melody pilot — none of
+  them has any evidence it predicts its feature on a track it has never seen. **This does NOT mean
+  they don't work**: the gain-ladder work measured real steering authority on several, and steering
+  is a different question from held-out regression. What it means is that "head X converged" was
+  never actually established, and picking between two heads on `avg_loss` was not a comparison.
+  Fixed now (`--val-frac 0.15 --val-group-by source_track`; split must be by track, since every
+  track in `latents_sa3` has ≥2 crops). **Your call**: re-train the production heads with
+  validation (cheap-ish, ~30-45 min each locally, and it would tell us which ones are real), or
+  leave them and only validate new heads from here. I'd do the energy heads at least, since they
+  are the ones with demonstrated authority and so the ones worth trusting precisely.
+
+- **LUMI: submit the step-resolution trajectory job tonight (C, 2026-08-18 — your "save every step" ask,
+  built and smoke-tested locally).** Two single-line commands from your LOCAL terminal, in SAO/:
+  `rsync -avRn -e "ssh -i ~/.ssh/id_EFP" stable-audio-3/scripts/trajectory_sketch.py stable-audio-3/scripts/train_lora.py lumi/sbatch/traj_sketch_arms.sbatch eval/trajectory_sketch_analyze.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+  (dry run; then the same without `-n`). Then on LUMI: `cd /project/project_465003186/code && SMOKE=1 sbatch lumi/sbatch/traj_sketch_arms.sbatch`
+  (30 steps/arm, ~5 min, exit code is the gate) and if it exits 0: `sbatch lumi/sbatch/traj_sketch_arms.sbatch`.
+  Five 1-GCD arms, 6 h: bs1/accum8/bs8 × AdamW + bs1/bs8 × Fusion, sanity16 recipe on goa; every step
+  sketched, ckpt every step to 1000 then every 5 (~65 GB/arm on scratch — you said we have space; delete
+  after). Read with `python3 eval/trajectory_sketch_analyze.py /scratch/project_465003186/runs/traj_sketch/<arm>/traj`
+  (several dirs at once for cross-run). What it decides: whether the "broken AdamW" signature is BATCH
+  (accum8/bs8 drift where bs1 diffuses) or OPTIMIZER (Fusion-bs1 healthy where AdamW-bs1 isn't).
+- **Listen: spectral-repair probes of a broken AdamW arm (C, 2026-08-18).** Four variants of
+  `adamw_goa_t512_bs4_lr1e4` ep9, cfg 7 / W1 / 23.79 s / 3 prompts, rendering on CPU tonight into
+  `lumi_runs/analysis/task_vector_gram_goa_2026-08-18/renders/` (UUID drive): `00_bad_terminal`,
+  `01_remove_k1` (top singular direction of every matrix removed), `02_keep_k1_spike_only` (ONLY that
+  direction kept — the control that says what the spike does), `03_good_ref_bf16cmp_bs8_ep7`, then
+  `04_remove_k1_magreset`, `05_remove_k3`. If 01 is clean and 02 is broken, the shared spike is the
+  pathology; if 02 carries the goa and 01 is base-like, the spike IS the learning. Either answer is a
+  finding. Weight-space facts behind it are on the chat/WORKLOG.
 ## ⏳ In flight — FYI, no action
+- **Melody head (D3): first validated training arms DONE 2026-08-18 20:41 — both voices generalise; EMA
+  monotone; lead 0.2036 (EMA, still improving @30), bass 0.1520 (EMA @24). Details in my journal.** — 4 arms,
+  `{f0_other, f0_bass} × {plain, EMA 0.999}`, 30 epochs each, sequential on the local card (GPU
+  mutex held). Answers three things nothing so far could: does the head generalise to unseen
+  tracks, at which epoch does it turn over, and does EMA damping help. Second axis is EMA rather
+  than concat-vs-adaln on purpose — `spectral_skewness` was once called "architecture-limited"
+  and an EMA re-train reversed that verdict, so architecture is the wrong question to ask first.
+  Read the curves with `latch/summarize_val_arms.py latch/val_arm_logs/`. Nothing needed from you;
+  results will be a chat post. **Not a "works" claim either way** — held-out regression is
+  necessary, not sufficient; steering authority + the disintegration gate + your ears still decide.
+
 - **Suomisoundi DoRA bracket LAUNCHED 2026-08-18** — jobs **21334184** (rank 32, batch 16) and
   **21334185** (rank 256, batch 8), 16 GCDs across two nodes, four arms total (each rank × lr
   1e-4 / 3e-5). fp32, T=256, 60 epochs, FusionOpt + warmup + AdaGC + spectral WD 0.03, alpha=rank.

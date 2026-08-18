@@ -1926,3 +1926,152 @@ release match and Ayahuasca's 1994 *Digital Alchemy* comes back as "XL Recording
 no goa catalogue. Same for years before goa existed (1968, 1979) and ~3.5% of genre tags (black
 metal, k-rap, garage rock). A wrong hint is worse than an absent one here, because it CONTRADICTS
 the corpus hint it composes with, whereas silence falls back to something correct.
+
+## 2026-08-18 (eve) — the melody head's real blocker was the measurement, not the epochs
+
+Kim went off keyboard for ~4h and asked whether there was local melody-head work worth doing
+unattended. My own 08-14 journal said the next step was "more epochs + an eval pass", so I went
+to size a long convergence run — and found that running it would have produced another number
+nobody could trust.
+
+`scripts/latch/train_latch.py` had **no validation path at all**. One dataset, one loader,
+and `--save-best-only` selecting on `avg_loss`, which is the epoch's *training* loss. So
+`_best.pt` has always meant "the epoch that fit the training crops hardest". That applies to
+all 14 production heads, not just my f0 pilot, and it retroactively explains part of why the
+08-14 architecture bracket came back inside noise: it was comparing two training losses at
+5 epochs. The honest reading of the pilot's "0.286→0.241 monotonic" is that it says nothing
+about generalisation either way — not that it's wrong, that it's unmeasured.
+
+The load-bearing part was not adding a val loop but choosing the split. Every one of the 2676
+source tracks in `latents_sa3` contributes ≥2 crops (median 2, max 4) — there is no track with
+a single crop. So a random crop-level split puts a sibling crop of essentially *every* val
+track into train, and for an f0 target those siblings share key, lead patch, and often literal
+repeated loop material. The val loss would have looked excellent and meant nothing. Split is
+therefore by `source_track`, and a crop missing that field is a hard error rather than a quiet
+per-crop fallback — the fallback IS the leak, reintroduced silently. Verified on the real
+corpus: 401 held-out tracks, 811 crops, zero tracks on both sides.
+
+Details worth keeping: validation runs *after* `opt.eval()` and with EMA weights swapped in,
+so we score the weights the epoch would actually save rather than a different set; val noise/t
+are fixed per batch index so an epoch-to-epoch delta is the model and not which t's got drawn;
+and `--standardize` now samples train indices only, since target mean/std over the val crops
+would leak held-out statistics into the output scale. `--val-frac 0` reproduces every prior run
+byte-for-byte, so the 14 existing heads stay reproducible.
+
+**A judgement call I'd defend.** The obvious follow-up was re-running concat-vs-adaln_zero at
+honest length. I didn't. MASTER §4 records `spectral_skewness` being declared
+*architecture-limited* and then an EMA re-train reversing the verdict outright — the ceiling was
+damping. Same file records the standing LatCH recipe as EMA + grad-accum + early-stop, and the
+trajectory work found these heads locate the control direction then drift. Running an
+architecture bracket on an undamped head is therefore a good way to re-derive a known mistake.
+So the four arms vary EMA ({f0_other, f0_bass} × {plain, 0.999}), holding grad-accum at 1 so
+"does averaging help" isn't confounded with "does a bigger effective batch help". Architecture
+becomes askable afterwards, at an epoch budget we'll actually know.
+
+Two smaller things. The driver first had `--num-workers 4`, which my own 08-14 note said would
+crash on fork (`SAO/.venv` ships librocm-openblas.so.0 inside the venv but not on the loader
+path) — I set it to 0, then actually tested it, and the crash does NOT reproduce for this
+script; that note came from a different one. Worth the test, because single-process loading
+costs ~5 min/epoch here. And per-arm save dirs are non-negotiable after 08-14, when two runs
+sharing a save-dir interleaved their epochs into one filename sequence that looked exactly like
+a single training curve.
+
+Arms in flight at 18:20 (30 epochs each, sequential, GPU mutex held). No result yet — and the
+summarizer deliberately flags an arm whose best epoch is its last as STILL-IMPROVING rather
+than letting an under-budgeted run read as a verdict. Machinery: stable-audio-3 83329a8,
+SAO 29f15b9.
+
+## 2026-08-18 (late) — the broken models are not converging, they are diffusing; Kim's eigendirection idea, run to ground
+
+Kim came back with a big one: take the Base→degraded delta, find the outlier weights, build a
+down-weighting map, maybe rebuild a model by masking them out and filling from good models, soup
+the best models — and then, thinking it through himself: per-scalar clipping is the wrong geometry,
+"the true shapes are multidimensional", look for deviant EIGENDIRECTIONS relative to the soup's, and
+can we take eigendirections *between* models of the same dataset. He switched me to Fable for it.
+
+**What I told him, and stand by.** A DiT's function is invariant to rotations inside QKᵀ,
+permutations of MLP units, etc., so "this scalar is an outlier" is not coordinate-free — a gauge
+change moves the outliers around. Anything about a pathology has to live in invariants: inner
+products of task vectors, singular spectra, subspace angles. And it is workable *because* every
+checkpoint is a fine-tune of the same base at small LR — the base fixes the coordinates, the
+exact condition under which task-vector arithmetic and soups work. So: per-scalar outliers for
+DoRA's magnitude vector (per-row, gauge-fixed by construction), spectra for the direction (B·A),
+and PCA over the set of task vectors — the Model Stock picture — for "between models".
+
+**The tooling** (all CPU, all on the DoRA-exact ΔW_eff, all rank-agnostic): `task_vector_gram.py`
+(Gram over any set of same-base ckpts; validated by reproducing `checkpoint_trajectory_stats`' path
+efficiency to three digits from the raw-trainable Gram — I would not have trusted anything it said
+about the bad arms without that), `task_vector_spike.py`, `spectral_repair_lora.py`,
+`soup_ladder.py`. Two operational lessons on the way: the in-RAM design was OOM-killed at 16 GB
+because another instance has the box at 73 GB (a 27 GB log in tmpfs), and mmap views into the
+`.ckpt` zip on the removable drive were 17 s per 6 matrices — a per-model factor cache on the
+NVMe fixed both and is what the later tools read. Also 70 spinning threads at 1300 % CPU until I
+capped BLAS before importing torch; MASTER §5 had warned about exactly this.
+
+**The finding, goa set (4 AdamW-sweep terminals vs 19 healthy checkpoints).** The bad arms share
+almost nothing with the healthy runs (bad-good cos 0.03–0.12; healthy cos-to-consensus reaches
+0.72). They carry 20–30 % of *every matrix's* delta energy in ONE singular direction (effective
+rank ~56 of 128) where every healthy run at every epoch and config is flat (2.1 %, ~118). And that
+direction is the SAME across the four arms — |cos| 0.25 against chance 0.026, strongest in ff_in
+(0.46) and out (0.33) — while not being a global direction and not a channel outlier (participation
+ratio ~520). Strongest at the *smallest* LR: a systematic component that does not scale with
+learning. So Kim's "spike" exists, is shared, and is repairable by projection in the sense of being
+well-posed. Probe checkpoints written (remove top-1, keep ONLY top-1, remove top-3, top-1 + DoRA
+magnitude reset) and CPU renders queued at cfg 7 / W1 — the "keep only the spike" render is the
+control that says what the spike *does*.
+
+**The caveat that reframes it — and I want it recorded plainly because my earlier summary
+elided it:** the healthy `bf16cmp`/`fp32cmp` twins were trained with `--optimizer fusion`, not
+AdamW. NS5/NorMuon orthogonalise every update, which equalises singular values and *amplifies the
+noise directions to the size of the dominant one* — so a flat spectrum under Fusion is amplified
+noise filling the rank, not "learning in all directions", and a spiky spectrum under AdamW is
+Adam preserving the dominant gradient direction (sign of rank-1 is rank-1). Optimizer and batch
+size are confounded in the archive. The Gram result stands as description; its *interpretation*
+waits on the arms that separate the two.
+
+**Step resolution.** Kim: "train a rank 8/16 adapter and save every step for 1,000 or 10,000
+steps and see how the trajectory really is; I bet there's a compressed way to store movement."
+There is, and it is exact for our purposes: every statistic we read off a trajectory is a
+function of the Gram matrix, and a CountSketch preserves every inner product to ~1/√(s·k). Built
+it as a Lightning callback (`stable-audio-3/scripts/trajectory_sketch.py`: update + raw gradient
+sketched per optimizer step, 4096-d, per-tensor norms, a raw coordinate subsample, checkpoints on
+a grid; fixed shared seed so arms compare directly) and a reader with known-answer tests (random
+walk → 1/√w and 0 autocorrelation; straight line → 1 and 1; AR(1) → ρ^τ; noise SNR → 1/w).
+Sketched update norms match true norms to <1 % on the real model.
+
+**First read, and it is unambiguous.** Local sanity16 recipe (LoRA r16, lr 1e-4, T256, AdamW,
+goa), bs1, 4482 steps: update autocorrelation = **0.9^τ to three digits** at every lag, then
+**exactly zero** from τ≈50; gradient window-SNR = **1/w to three digits** all the way to w=1024;
+path efficiency sits above 1/√w by precisely the AR(1) factor √((1+ρ)/(1−ρ)) ≈ 4.4 (w=1024:
+predicted 0.136, measured 0.136); loss 0.820→0.834. **Zero drift.** The updates have exactly the
+correlation structure of Adam's momentum applied to iid noise, and the gradient's repeatable
+component is below 0.1 % of its energy at bs1. And yet the B·A top-1 fraction climbs 0.33→0.56.
+The mechanism that fits all of it: with per-step gradients ≈ δ_t x̄ᵀ — dominated by the mean
+activation direction x̄, the same every step — `dB = G Aᵀ = δ_t (A x̄)ᵀ`, so B accumulates rank-1
+with a data-fixed *input* direction (hence shared across arms, hence the right-space agreement
+0.24) and a random-walking *output* direction that never settles. Adam preserves the structure;
+NS5 destroys it. It also predicts what the AdamW-sweep checkpoints are: a random point of that
+walk, different every epoch, along a fixed input direction. Which is what "sounds broken and
+different each epoch" would be.
+
+**So the working hypothesis** — stated as a hypothesis, with the two decisive arms running
+(bs1×accum8 AdamW, then bs1 Fusion, same seed/data) and the LUMI job written for Kim's evening
+(`lumi/sbatch/traj_sketch_arms.sbatch`: bs1/accum8/bs8 × AdamW + bs1/bs8 × Fusion): at these
+batch sizes nothing converges by drift; what makes a checkpoint listenable is AVERAGING —
+Schedule-Free in Fusion, EMA on the melody head this afternoon (monotone where plain wobbled),
+Kim's soups. AdamW at constant LR without averaging hands you a random point of the walk. Kim's
+soup instinct is the mechanism, not a trick. If the accum8 arm shows drift (SNR plateau > 1/w,
+autocorrelation surviving past the momentum window), batch is the axis; if the Fusion-bs1 arm
+shows the healthy statistics on its saved (averaged) iterates, averaging is.
+
+**Honest limits.** (a) The Gram compares Fusion-good against AdamW-bad; I have not yet seen a
+healthy AdamW run in weight space — the sanity16 matrix on LUMI is that control. (b) The
+0.5 top-1 fraction in the rank-16 local run is not directly comparable to the rank-128 numbers;
+its own control is the accum8/Fusion arms at the same rank. (c) The sketch cannot see a signal
+below ~1e-3 of gradient energy; "no drift" means "none above that floor in 4482 steps". (d) None
+of this says what anything sounds like — the probe renders and Kim's ears do.
+
+Also landed today, earlier: the D3 melody head generalises (first held-out-validated LatCH
+training, split by source track: lead 0.245→0.204, bass 0.191→0.152 on 401 unseen tracks; EMA
+monotone in both voices), and every existing `*_best.pt` LatCH head turned out to be
+train-loss-selected — on Kim's list as a decision.
