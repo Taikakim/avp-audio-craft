@@ -88,21 +88,24 @@ root cause 3 above (derivative doesn't know source changed), one level up the st
   correct*, now including a genre-content scan). **Run both, they check different things.**
   `build_goa_archive_sidecar.py` now takes `--captions-dir`/`--features-dir` explicitly,
   FATALs on a missing dir instead of writing empty, and prints input-tier mtimes.
-- **⚠️ THE BINDING CONSTRAINT IS WALL CLOCK, NOT GPU-HOURS — corrected 2026-08-18 (C, Kim
-  ran `lumi-allocations` directly).** My first pass at this line checked GPU-hours only
-  (2963/5000 used, 2037 remaining — true but not the constraint that matters) and was
-  misleading by omission. The actual allocation output: **92% of PROJECT TIME elapsed,
-  4 DAYS OF COMPUTE LEFT** (94 days until data removal separately — no pressure there,
-  `/scratch` is only 36% full, do NOT prune under time pressure). GPU-hours were never
-  going to be the bottleneck; the serial chain in front of the three bounded-norm arms is:
-  MF re-caption (running, ~17h more) → Granite re-revision (~12-24h) → pull/rebuild/audit/
-  re-key (~2-3h) → the three arms (24-48h) — against a ~Aug-22 deadline, with no slack.
-  **C's recommendation, Kim's call:** skip the Granite stage entirely — T1 (effnet, 70.4%
-  correct) and the hinted T3 (~89% correct) are both already genre-correct and neither is
-  Granite-derived, so training on T1+T3 buys back the 12-24h Granite would cost for
-  phrasing diversity alone. Also: plan for a TRUNCATED run to still be a keepable result
-  (arms checkpoint every 2 epochs) rather than shortening runs defensively to guarantee
-  completion — start earlier, take what lands at the deadline.
+- **RESOLVED, ~10:19: the wall-clock crisis dissolved by WIDENING, not skipping stages.**
+  C's own first read of `lumi-allocations` also missed a number — he read GPU-hours (2037
+  remaining) and separately the "4 days of compute left" prose, and planned around hours,
+  which is what produced the skip-Granite recommendation below (superseded, kept struck
+  through for the record). Kim's correction: ~500-600 GPU-hours/day are actually available
+  and one 8-GCD node only spends 192 — the fleet was underspending by ~3×. Fix was to
+  SPREAD the independent per-track work across many short jobs instead of one long serial
+  one (16 nodes for MF re-caption, 16 for Granite, running concurrently rather than
+  sequentially) — same total GCD-hours billed, ~17h serial → ~1h wide. **Granite is NOT
+  being skipped**; re-verified on real audio this time (per-track BPMs precise to 2dp,
+  varying, e.g. "late-90s goa trance, psytrance, hypnotic, driving, 136.36 bpm" — not the
+  pre-fix "140 bpm on nearly every track" template). On current rates the full chain
+  (caption → Granite → sidecar rebuild → audit both tools → re-key → launch the 3 arms)
+  finishes **today**, not the 19th/20th. The operational lesson (many-small-jobs +
+  pre-sharding + resumable-stage overlap) is committed directly to
+  `.claude/skills/lumi-ops/SKILL.md` (`2c6950f`, C) — not duplicated here.
+  ~~Skip-Granite recommendation, superseded~~: <s>train on T1+hinted-T3 only, skip Granite
+  to save 12-24h wall clock.</s>
 
 ## Routing — Kim's ask
 
