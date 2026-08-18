@@ -48,6 +48,17 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     paths = glob.glob(os.path.join(args.ckpt_dir, args.glob))
+    # DROP -vN DUPLICATES. Lightning writes epoch=E-step=S-v1.ckpt when something writes the same
+    # checkpoint name twice. On the 2026-08-17 DDP-bug runs those are not retries -- they are up to 8
+    # INDEPENDENTLY DIVERGED models (521/522 tensors differ), all at the same step. Left in, they sort
+    # adjacently and the trajectory computes a "velocity" between two different models at zero step
+    # distance, which is meaningless and silently corrupts the run's whole path. A glob cannot express
+    # this exclusion, so it belongs here where every caller gets it.
+    dropped = [p for p in paths if re.search(r"-v\d+\.ckpt$", p)]
+    paths = [p for p in paths if p not in dropped]
+    if dropped:
+        print(f"[traj] skipped {len(dropped)} -vN duplicate ckpt(s) "
+              f"(diverged same-step copies, not trajectory points)", flush=True)
     paths = sorted(paths, key=lambda p: int(re.search(r"step=?(\d+)", p).group(1)))
     if not paths:
         print(f"[traj] no checkpoints in {args.ckpt_dir}")
