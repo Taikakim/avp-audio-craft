@@ -125,6 +125,7 @@ select,button{font:inherit;color:inherit}
  <button class="abbtn" id="btnB">B</button>
 </div>
 <div id="status"></div>
+<div id="coverage" style="text-align:center;color:#678;font-size:11px;letter-spacing:.06em;min-height:14px"></div>
 
 <div id="stage">
  <div class="rate-row" id="rowA"></div>
@@ -213,7 +214,41 @@ function eligible(e){
 //
 // eligible() re-checks both paths (defense in depth; it is the primary filter only for ?goa=1).
 let pools={};
-let MANIFEST_BUILT=null, RECENT_FALLBACK=false;   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+let MANIFEST_BUILT=null, RECENT_FALLBACK=false;
+
+// ── COVERAGE (Kim 2026-08-18: "don't play clips again which have been already evaluated ...
+// eventually every clip in these recent checkpoints has been evaluated") ─────────────────────
+// Two sources, unioned, because they fail in opposite directions. The SERVER list is global —
+// it makes several visitors converge on full coverage instead of all resampling the same
+// popular clips — but it is a snapshot from page load and cannot know what you rated ten
+// seconds ago. LOCALSTORAGE is instant and offline-proof but only knows this browser. Together
+// they mean: never replay something you just rated, and prefer what nobody has rated.
+const RATED_KEY='avp_rated_files_v1';
+let ratedSet=new Set();
+try{ (JSON.parse(localStorage.getItem(RATED_KEY)||'[]')||[]).forEach(f=>ratedSet.add(f)); }catch(_){}
+function markRated(file){
+ if(!file||ratedSet.has(file))return;
+ ratedSet.add(file);
+ // Cap the stored list so a heavy rater cannot fill localStorage; the server list is the
+ // durable record, this is only the fast local one.
+ try{ localStorage.setItem(RATED_KEY, JSON.stringify([...ratedSet].slice(-6000))); }catch(_){}
+ updateCoverage();
+}
+async function loadCoverage(){
+ try{
+  const r=await fetch(EP+'?coverage=1',{cache:'no-store'});
+  const j=await r.json();
+  if(j&&j.rated)j.rated.forEach(f=>ratedSet.add(f));
+ }catch(_){}   // best-effort: coverage steering is an optimisation, never a hard dependency
+}
+let COVERAGE_TOTAL=0;
+function updateCoverage(){
+ const el=document.getElementById('coverage'); if(!el||!COVERAGE_TOTAL)return;
+ let done=0; for(const f of allFiles) if(ratedSet.has(f)) done++;
+ el.textContent=`${done} / ${COVERAGE_TOTAL} clips rated`;
+ el.style.color = done>=COVERAGE_TOTAL ? '#5d9' : '#678';
+}
+let allFiles=new Set();   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
 async function fetchEntries(){
  if(!GOA){
   const r=await fetch(CB+'manifest_avp_evaluator.json');
@@ -254,20 +289,41 @@ async function loadManifest(){
   const {key,label}=lengthBucket(e);
   out[key]=out[key]||{label,byPrompt:{}};
   out[key].byPrompt[pid]=out[key].byPrompt[pid]||new Map();
+  allFiles.add(e.file);
   out[key].byPrompt[pid].set(e.model+'|'+e.ckpt,
    {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file});
  }
  pools=out;
 }
 function bucketHasPairs(b){return Object.values(b.byPrompt).some(m=>m.size>=2);}
+// PREFER UNRATED. Coverage-first sampling: pick from prompts that still hold at least two
+// unrated clips; within a prompt, take unrated entries before rated ones. Falls back cleanly —
+// prompts with one unrated clip pair it against a rated one, and once everything is covered it
+// reverts to plain random so the page never dead-ends. Not a queue: two raters hitting it at
+// once still get useful work, they just stop colliding on the same few clips.
 function pickPair(bucket){
- const cands=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
- if(!cands.length)return null;
+ const entries=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
+ if(!entries.length)return null;
+ const unratedOf=m=>[...m.values()].filter(e=>!ratedSet.has(e.file));
+ let cands=entries.filter(([,m])=>unratedOf(m).length>=2);      // best: a fully-fresh pair
+ let mode='fresh';
+ if(!cands.length){cands=entries.filter(([,m])=>unratedOf(m).length===1); mode='half';}
+ if(!cands.length){cands=entries; mode='covered';}
  const [pid,m]=cands[Math.floor(Math.random()*cands.length)];
- const arr=[...m.values()];
- let i=Math.floor(Math.random()*arr.length),j;
- do{j=Math.floor(Math.random()*arr.length);}while(j===i);
- const pair=[arr[i],arr[j]];
+ const all=[...m.values()], un=unratedOf(m);
+ let pair;
+ if(mode==='fresh'){
+  let i=Math.floor(Math.random()*un.length),j;
+  do{j=Math.floor(Math.random()*un.length);}while(j===i);
+  pair=[un[i],un[j]];
+ }else if(mode==='half'){
+  const rest=all.filter(e=>e.file!==un[0].file);
+  pair=[un[0], rest[Math.floor(Math.random()*rest.length)]];
+ }else{
+  let i=Math.floor(Math.random()*all.length),j;
+  do{j=Math.floor(Math.random()*all.length);}while(j===i);
+  pair=[all[i],all[j]];
+ }
  if(Math.random()<0.5)pair.reverse();
  return {pid,a:pair[0],b:pair[1]};
 }
@@ -536,6 +592,7 @@ function rateSlot(slot,val,btn){
  btn.classList.add('chosen');
  roundState[slot==='A'?'ratedA':'ratedB']=true;
  post({type:'enjoyment',model:e.model,ckpt:e.ckpt,prompt_id:curPid,cfg:e.cfg,w:e.w,length:curLenKey,file:e.file,rating:val});
+ markRated(e.file);   // immediately, not on the next coverage fetch -- this is what stops replays
  showQuestion();   // rating both tracks can be what flips the "what's still missing" message
  maybeAdvance();
 }
@@ -606,7 +663,10 @@ function showPoolBadge(nModels){
     +(MANIFEST_BUILT?'Ages measured when the clip index was last rebuilt, '+MANIFEST_BUILT.replace('T',' ')+'.':'')
     +' Drop <code>?recent</code> from the address for everything.';
 }
-loadManifest().then(()=>{
+loadManifest().then(async()=>{
+ await loadCoverage();          // global rated-set, best-effort, before the first pair is drawn
+ COVERAGE_TOTAL=allFiles.size;
+ updateCoverage();
  populateLengthSelect();
  const nm=new Set(); for(const k in pools) for(const pid in pools[k].byPrompt) for(const e of pools[k].byPrompt[pid].values()) nm.add(e.model);
  showPoolBadge(nm.size);

@@ -96,6 +96,23 @@ if ($method === 'GET') {
         }
         echo json_encode(['ok' => true, 'ratings' => $out]); exit;
     }
+    // COVERAGE (2026-08-18, Kim: "don't play clips again which have been already evaluated ...
+    // eventually every clip in these recent checkpoints has been evaluated"). Returns ONLY the
+    // set of clip FILENAMES that already carry an enjoyment rating -- no ratings, no timestamps,
+    // no source, nothing about who rated what. Filenames are already public (the clips are served
+    // openly), so this exposes nothing new; it just lets the page steer raters toward uncovered
+    // clips instead of resampling at random. Deliberately NOT the export path: that one still
+    // needs the token and returns whole records.
+    if (isset($_GET['coverage'])) {
+        $seen = [];
+        if (is_file($FILE)) {
+            foreach (file($FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
+                $j = json_decode($ln, true);
+                if ($j && ($j['type'] ?? '') === 'enjoyment' && !empty($j['file'])) $seen[$j['file']] = 1;
+            }
+        }
+        echo json_encode(['ok' => true, 'rated' => array_keys($seen), 'n' => count($seen)]); exit;
+    }
     echo json_encode(['ok' => true, 'write_only' => true, 'ratings' => []]); exit;
 }
 
