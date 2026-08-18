@@ -259,6 +259,7 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 | `docs/research-synopsis-longform-continuation.md` + `docs/paper-gap-audit-2026-07-18.md` | longform loop-attractor theory + what we've under-applied from the papers |
 | `docs/lumi-transition-plan.md` · `docs/lumi-throughput-workflow-guide.md` · `docs/csc-data-guidelines-guide.md` · `lumi/README.md` | LUMI: bring-up, throughput/HyperQueue, data-movement/LUMI-O backup, the bundle |
 | `docs/fleet-audit-2026-07-19.md` | last dropped-thread audit (folded into open-threads) |
+| **`docs/goa-captioning-status-2026-08-18.md`** | **consolidated status of the goa big-set captioning saga** (root causes, timeline, who-did-what, what's open) — Kim's ask 2026-08-18 after it got sprawling across chat; the input doc for W's forthcoming canonical metadata-creation spec |
 | **`docs/cost-log.md`** | **standing GPU-hours / encode-price / VRAM / bungee-augmentation cost log** — real measured numbers, one entry per pass, template included (Kim's ask, 2026-08-10) |
 | `profiles/daily/` | daily digests (one page/day, Kim's catch-up) |
 | `papers/knowledge.md` | the *external* prior-art reuse index (companion to this) |
