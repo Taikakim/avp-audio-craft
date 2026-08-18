@@ -141,11 +141,82 @@ def correct_decade(text: str, year: int):
     return new, (1 if new != text else 0)
 
 
+HINT_YEAR = re.compile(r"release year: (\d{4})")
+
+
+def _mf_mode(a):
+    """Rewrite MF caption jsons in place, year taken from each file's own genre_hint.
+
+    Writes ONLY files that changed, and only after a successful rewrite of every tier in that file --
+    a partial write would leave a caption json half-corrected with no record of which half.
+    """
+    files = [e.path for e in os.scandir(a.captions_dir) if e.name.endswith(".json")]
+    n_seen = n_noyear = n_changed = n_exact = 0
+    shown = 0
+    for fp in files:
+        try:
+            d = json.load(open(fp))
+        except Exception:
+            continue
+        n_seen += 1
+        m = HINT_YEAR.search(d.get("genre_hint") or "")
+        if not m:
+            n_noyear += 1
+            continue
+        year = int(m.group(1))
+        caps = d.get("captions") or {}
+        tiers = [a.mf_tier] if a.mf_tier else list(caps)
+        h = int(hashlib.sha1((d.get("key") or os.path.basename(fp)).encode()).hexdigest()[:8], 16)
+        exact = (h / 0xFFFFFFFF) < a.fraction
+        hit = False
+        for tier in tiers:
+            old = caps.get(tier)
+            if not old:
+                continue
+            new, n = rewrite(old, year) if exact else correct_decade(old, year)
+            if n and new != old:
+                caps[tier] = new
+                hit = True
+                if shown < 5:
+                    shown += 1
+                    print(f"  [{tier}] {year}\n        - {old[:110]}\n        + {new[:110]}")
+        if hit:
+            n_changed += 1
+            if exact:
+                n_exact += 1
+            if not a.report_only:
+                d["captions"] = caps
+                d["year_corrected"] = True
+                json.dump(d, open(fp, "w"))
+    print(f"\nMF caption jsons: {n_seen}   without a year in genre_hint: {n_noyear}")
+    print(f"  changed: {n_changed}  (of those, {n_exact} got the EXACT year, the rest had a "
+          f"contradictory decade corrected)")
+    print("  unchanged files already stated no era, or stated the right one -- both are fine.")
+    if a.report_only:
+        print("\n--report-only: nothing written")
+    else:
+        print(f"\n  rewritten IN PLACE under {a.captions_dir}. Re-run "
+              f"eval/audit_caption_era_grounding.py to confirm CONTRADICT dropped.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sidecar", required=True, type=Path)
-    ap.add_argument("--captions", required=True, type=Path,
+    ap.add_argument("--sidecar", type=Path,
+                    help="[sidecar mode] the short-tier sidecar to rewrite")
+    ap.add_argument("--captions", type=Path,
                     help="dir of MF caption jsons; their 'rel' field carries the year")
+    ap.add_argument("--captions-dir", type=Path,
+                    help="[MF mode] rewrite the MF caption jsons THEMSELVES, in place, taking each "
+                         "track's year from its own genre_hint field ('release year: 1996'). "
+                         "For corpora whose PATHS carry no year -- Goa_Separated is Artist - Title, "
+                         "so the rel-path year source this tool was built on finds nothing there. "
+                         "RUN THIS BEFORE THE GRANITE PASS: Granite revises MF prose, so a wrong era "
+                         "in MF propagates into the short tier and into training. Fixing it "
+                         "afterwards means fixing it in two places, and the sidecar is a derivative "
+                         "that does not know its source changed.")
+    ap.add_argument("--mf-tier", default=None,
+                    help="[MF mode] which captions.<key> to rewrite (default: all of them)")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--fraction", type=float, default=0.5,
                     help="share of tracks to rewrite (default 0.5). Deterministic per track, so the "
@@ -155,6 +226,10 @@ def main():
                          "matches how the model is actually prompted)")
     ap.add_argument("--report-only", action="store_true")
     a = ap.parse_args()
+    if a.captions_dir:
+        return _mf_mode(a)
+    if not a.sidecar or not a.captions:
+        ap.error("sidecar mode needs --sidecar and --captions (or use --captions-dir for MF mode)")
     if not a.report_only and not a.out:
         ap.error("--out required unless --report-only")
 
