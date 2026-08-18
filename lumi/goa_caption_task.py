@@ -41,6 +41,22 @@ MIR_SRC = os.environ.get("MIR_SRC", "/project/project_465003186/code/mir-src")
 sys.path.insert(0, MIR_SRC)
 
 
+def compose_hint(base: str, meta: str):
+    """Combine the corpus-level genre hint with a track's own ID3-metadata clause.
+
+    Module level, not a closure, so it is testable without loading Music Flamingo — the composition
+    rule is the whole point of the per-track map and it fails silently when wrong (a caption that
+    asserts the wrong era looks exactly like a caption that asserts the right one).
+
+    Returns (text, source); source is written into every caption json so an audit can tell hinted
+    from unhinted from the artifact alone.
+    """
+    text = " ".join(x for x in (base or "", meta or "") if x)
+    if not text:
+        return None, None
+    return text, ("per_track+global" if meta and base else "per_track" if meta else "global")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shard", required=True)
@@ -52,6 +68,12 @@ def main():
                     help="known genre to give Music Flamingo as ground truth instead of "
                          "asking it to guess (e.g. a niche/regional tag it wouldn't infer "
                          "on its own) -- prepended to each selected prompt's text")
+    ap.add_argument("--genre-hint-map", default=os.environ.get("GENRE_HINT_MAP"),
+                    help="JSON {sha1(relpath): hint} for PER-TRACK hints (build with "
+                         "eval/build_caption_hint_map.py from mir's ID3 metadata). Falls back to "
+                         "--genre-hint per track when a key is absent. A single global hint asserts "
+                         "one era and genre for every track, which is fine for a uniform corpus and "
+                         "wrong for one spanning 1980s-2020s.")
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
     archive = Path(a.archive)
@@ -78,11 +100,35 @@ def main():
     # genre-hint mode: give the genre as ground truth rather than asking Flamingo to guess
     # it -- built once per prompt type, passed as `prompt=` (overrides `prompt_type=` in
     # .analyze(), per its own docstring), so DEFAULT_PROMPTS itself stays untouched.
-    genre_prompts = None
+    hint_map = {}
+    if a.genre_hint_map:
+        try:
+            hint_map = json.load(open(a.genre_hint_map))
+            print(f"[caption] per-track hint map: {len(hint_map)} entries <- {a.genre_hint_map}",
+                  flush=True)
+        except Exception as e:
+            print(f"[caption] FATAL: --genre-hint-map unreadable ({e}). Refusing to fall back to the "
+                  f"global hint silently -- that is how a corpus gets captioned with the wrong era.",
+                  flush=True)
+            raise
     if a.genre_hint:
-        genre_prompts = {pt: f"This track's genre is: {a.genre_hint}. {DEFAULT_PROMPTS[pt]}"
-                          for pt in ptypes}
-        print(f"[caption] genre-hint mode: '{a.genre_hint}'", flush=True)
+        print(f"[caption] fallback hint: '{a.genre_hint}'", flush=True)
+
+    # The two hints COMPOSE, they do not replace each other. --genre-hint is the corpus's genre
+    # family ("goa trance and psytrance"); the map entry is that track's real ID3 metadata (year,
+    # label, tags). Letting the map REPLACE the global hint would silently drop genre grounding for
+    # any track whose metadata has a year but no tags -- reintroducing the exact 1.2%-mention failure
+    # the hint exists to fix, on the subset that looked best covered.
+    base = f"This track's genre is: {a.genre_hint}." if a.genre_hint else ""
+
+    def hint_for(p):
+        return compose_hint(base, hint_map.get(key(p)))
+
+    def prompts_for(p):
+        h, _src = hint_for(p)
+        if not h:
+            return None
+        return {pt: f"{h} {DEFAULT_PROMPTS[pt]}" for pt in ptypes}
 
     use_fa2 = os.environ.get("MF_USE_FA2", "0") == "1"   # multitorch-image experiment:
     # flash_attention_2 is a SEPARATE transformers branch from sdpa — may engage where
@@ -123,6 +169,7 @@ def main():
         t0 = time.time()
         try:
             src, truncated = caption_source(p)
+            genre_prompts = prompts_for(p)
             try:
                 caps = {pt: mf.analyze(src, prompt=genre_prompts[pt] if genre_prompts else None,
                                         prompt_type=pt) for pt in ptypes}
@@ -134,7 +181,7 @@ def main():
             (jdir / f"{key(p)}.json").write_text(json.dumps(
                 {"key": key(p), "rel": str(p.relative_to(archive)), "path": str(p),
                  "captions": caps, "model": "nvidia/music-flamingo-hf bf16",
-                 "genre_hint": a.genre_hint,
+                 "genre_hint": hint_for(p)[0], "genre_hint_source": hint_for(p)[1],
                  "truncated_to_s": MAX_SEC if truncated else None,
                  "wall_s": round(time.time() - t0, 1)}))
             n_ok += 1

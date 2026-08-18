@@ -38,6 +38,15 @@ OUT=${OUT:-${SCRATCH}/goa_archive_captions}
 GENRE_HINT_FILE=${GENRE_HINT_FILE:-}
 GENRE_HINT=""
 [ -n "${GENRE_HINT_FILE}" ] && [ -f "${GENRE_HINT_FILE}" ] && GENRE_HINT=$(cat "${GENRE_HINT_FILE}")
+# PER-TRACK hints (eval/build_caption_hint_map.py): {sha1(relpath): "<ID3 year/label/genres>"}.
+# COMPOSES with GENRE_HINT rather than replacing it -- corpus genre from the string, era and tags
+# from the map. A plain PATH, so it is immune to both --export= quoting traps (comma-split and
+# inner-bash word-split) that mangled GENRE_HINT and forced the file-indirection above.
+# FATAL-if-missing on purpose: a typo'd path would silently fall back to the global hint and caption
+# a 1980s-2020s corpus as if it were one era, which is exactly the failure this map exists to fix
+# and produces no error of its own.
+GENRE_HINT_MAP=${GENRE_HINT_MAP:-}
+[ -z "${GENRE_HINT_MAP}" ] || [ -f "${GENRE_HINT_MAP}" ] || { echo "[goa-cap] FATAL: GENRE_HINT_MAP=${GENRE_HINT_MAP} does not exist"; exit 1; }
 mkdir -p "${OUT}/shards" "${OUT}/json"
 
 [ -d "${ARCHIVE}" ] || { echo "[goa-cap] FATAL: ${ARCHIVE} missing — archive not rsync'd yet"; exit 1; }
@@ -69,6 +78,7 @@ done
 TODO=$(cat $(for R in $(seq 0 $(( NTASKS - 1 ))); do printf "%s/shard_%03d.txt " "${SDIR}" "$(( SHARD_OFFSET + R ))"; done) | wc -l)
 echo "[goa-cap] shards ${SHARD_OFFSET}..$(( SHARD_OFFSET + NTASKS - 1 )) (${NTASKS} GPUs), ${TODO} tracks this job; prompts=${PROMPT_TYPES:-full}"
 echo "[goa-cap] hint file: ${GENRE_HINT_FILE:-<none>} -> '${GENRE_HINT}'"
+echo "[goa-cap] per-track hint map: ${GENRE_HINT_MAP:-<none>}$([ -n "${GENRE_HINT_MAP}" ] && echo " ($(python3 -c "import json,sys;print(len(json.load(open(sys.argv[1]))))" "${GENRE_HINT_MAP}" 2>/dev/null || echo '?') entries)")"
 
 LIMIT_ARG=""
 [ "${PROBE:-0}" = "1" ] && LIMIT_ARG="--limit 2" && echo "[goa-cap] PROBE MODE: 2 tracks/rank"
@@ -95,6 +105,7 @@ export TRITON_CACHE_DIR=/tmp/triton-${R}; rm -rf "${TRITON_CACHE_DIR}"; mkdir -p
 export PROMPT_TYPES='"${PROMPT_TYPES:-full}"'
 export MF_USE_FA2='"${MF_USE_FA2:-0}"' CAPTION_MAX_SEC='"${CAPTION_MAX_SEC:-300}"'
 export GENRE_HINT="'"${GENRE_HINT}"'"
+export GENRE_HINT_MAP="'"${GENRE_HINT_MAP}"'"
 python '"${CODE}"'/lumi/goa_caption_task.py \
   --shard $(printf '"${OUT}"'/shards/shard_%03d.txt $(( '"${SHARD_OFFSET}"' + R ))) \
   --archive '"${ARCHIVE}"' --out '"${OUT}"' '"${LIMIT_ARG}"' \
