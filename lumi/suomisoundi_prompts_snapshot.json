@@ -1,0 +1,30 @@
+{
+  "note": "Prompt grid for auditioning the suomisoundi DoRA arms (WINTERMUTE, 2026-08-18, to Kim's spec via C: 'replace HALF of the usual full-set prompts with ones suitable for suomisoundi'). 9 of the 18 standard matrix prompts are KEPT VERBATIM, ids and seeds included, so those cells are directly comparable against every other model on the board. 9 are replaced with suomisoundi prompts. Same steps/duration as the standard snapshot for the same reason.",
+  "kept_from_standard": "trig2, housestyle, kimlong, techno, rb_common_1, rb_mid_3, rb_rare_6, kl_0, kl_1 -- chosen as CONTROLS rather than favourites: the trigger word, Kim's own two style references, and a spread of genre-distance probes from adjacent (goa, tech trance) to far (techno/house) to out-of-domain (jazz-fusion prose). If the arms have overfitted, kl_1 and rb_rare_6 are where it shows.",
+  "suomisoundi_prompt_design": "Grounded in what the arms were ACTUALLY TRAINED ON, not invented: the t2 tier is 45% of training samples and its tag vocabulary measured over all 1260 tracks is led by hypnotic (1241), suomisoundi (1144), immersive (578), psychedelic (566), arpeggiated leads (469), euphoric (454), trance-inducing (385). BPM median 143, p25 143, p75 150, full range 77-188 -- so 143 is the corpus centre and 128/155 probe the edges. ss_anchor is the t1 string VERBATIM (25% of samples saw exactly it, so it is the strongest single handle we have); ss_trigger tests whether the bare word alone carries the style; ss_prose tests the t3 register (30% of samples). Decades ARE legitimate here unlike goa -- suomisoundi t2 mentions 2000s on 358 tracks and 2020s on 156, so the corpus genuinely spans them.",
+  "cfgs": [7.0, 16.0],
+  "strengths": [0.6, 1.0, 1.5],
+  "steps": 24,
+  "duration": 20.0,
+  "prompts": [
+    {"id": "ss_anchor",   "seed": 2001, "text": "suomisoundi, an eclectic Finnish sub-genre of psychedelic goa trance"},
+    {"id": "ss_trigger",  "seed": 2002, "text": "suomisoundi"},
+    {"id": "ss_core",     "seed": 2003, "text": "suomisoundi, psychedelic, hypnotic, 143 bpm, arpeggiated leads, deep sub-bass, immersive"},
+    {"id": "ss_dark",     "seed": 2004, "text": "suomisoundi, dark, hypnotic, 150 bpm, relentless kick, deep pulsating bass, intense"},
+    {"id": "ss_euphoric", "seed": 2005, "text": "suomisoundi, euphoric, uplifting, 145 bpm, arpeggiated synths, four-on-the-floor kick, trance-inducing"},
+    {"id": "ss_slow",     "seed": 2006, "text": "suomisoundi, atmospheric, hypnotic, 128 bpm, evolving synth pads, deep sub-bass"},
+    {"id": "ss_fast",     "seed": 2007, "text": "suomisoundi, high-energy, trance-inducing, 155 bpm, arpeggiated leads, relentless kick, intense"},
+    {"id": "ss_2000s",    "seed": 2008, "text": "2000s suomisoundi, psychedelic, driving, 147 bpm, pulsating bass, intricate percussion"},
+    {"id": "ss_prose",    "seed": 2009, "text": "This track is a high-energy Finnish psychedelic trance piece, blending classic psytrance drive with a distinctly Nordic, hypnotic aesthetic."},
+
+    {"id": "trig2",       "seed": 1234, "text": "aavepyora"},
+    {"id": "housestyle",  "seed": 1234, "text": "bittersweet eclectic house, aavepyora style"},
+    {"id": "kimlong",     "seed": 1234, "text": "bittersweet synth music with influences from goa trance and 80s retro videogame music"},
+    {"id": "techno",      "seed": 1234, "text": "techno music"},
+    {"id": "rb_common_1", "seed": 225176290, "text": "mid 90s goa trance, melodic space mood, 140 bpm"},
+    {"id": "rb_mid_3",    "seed": 92101475, "text": "2010s techno, tech trance, space mood, 142 bpm"},
+    {"id": "rb_rare_6",   "seed": 564875484, "text": "mid 90s techno, house, 130 bpm"},
+    {"id": "kl_0",        "seed": 1000, "text": "This track is an instrumental Psytrance piece that blends classic Goa-style melodic leads with a driving four-on-the-floor pulse."},
+    {"id": "kl_1",        "seed": 1001, "text": "This track is an instrumental jazz-fusion piece that blends funk-driven grooves with intricate improvisation."}
+  ]
+}
