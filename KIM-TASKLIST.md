@@ -17,6 +17,32 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### ⏱️ WHEN YOU GET A SHELL FROM THE LAPTOP (C, 2026-08-18 evening — read this first)
+State is not as messy as it looked when you left; most of it is queued correctly. One command
+orients you:
+
+    squeue -u $USER -o "%.10i %.20j %.2t %.10M %R"; echo ---; ls -1 /scratch/project_465003186/goa_src_captions/json | wc -l
+
+RUNNING / QUEUED, nothing needed from you:
+  21353159 sanity16 lora · 21353160 sanity16 dora · 21353161 sanity16 biggoa ddp8  (F resubmitted
+    these ungated after the SMOKE=1 gate failed three times; 1-day limits, no dependencies)
+  21353056 trajectory sweep PAR=2 — the one that finally covers avp_dronesweep + suomisoundi
+
+ACTUALLY UNFINISHED, in priority order:
+  1. goa_src caption chain. If 21351425 finished, the corpus is fully captioned (~4461) and the
+     remaining steps are: year pass (`inject_year_into_captions.py --captions-dir`, dry-run first,
+     `cp -a` backup — it rewrites in place), then Granite, then the sidecar. Year BEFORE Granite:
+     Granite revises MF prose and would inherit wrong eras.
+  2. Two long-run epoch sweeps FAILED and nobody chased them: 21342762, 21342763. They are the
+     ladders that tell you which epoch to keep on the runs past ep100 before pruning, so that
+     decision currently has half its evidence.
+  3. The two decisions immediately below (goa arm's key join; avp/avpaug duplicate).
+
+DO NOT trust a job's COMPLETED state as proof it did the work — 21345730 OOM-killed after exactly
+its first batch of 6 runs and still reported COMPLETED, which is why we believed we had trajectory
+stats for the broken arms for most of a day and did not. Check artifact counts against the job's own
+"runs with >=3 checkpoints" line.
+
 - **The `goa` arm of the sanity matrix is BLOCKED on a decision only you can make, and it is the
   arm most likely to be informative** (C, 08-18). The old goa set (`latents_sa3`) has exactly one
   caption sidecar — `goa_longform_sidecar.json` — and W/F established today that **41% of its
