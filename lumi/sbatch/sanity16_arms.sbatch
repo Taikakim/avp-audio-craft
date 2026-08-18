@@ -221,17 +221,40 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
 ' &
 }
 
+# Collect PIDs so each arm's EXIT STATUS is checked individually. A bare `wait` returns the status
+# of the last job only, so this script used to exit 0 even if every arm had crashed -- which makes an
+# `--dependency=afterok` gate on it worthless in BOTH directions: a total failure would look like
+# success and launch the dependents anyway. If this job is being used as a smoke gate, its exit code
+# is the entire point.
+PIDS=(); NAMES=()
 i=0
 for A in "${GOOD[@]}"; do
   echo "[sanity] launching ${A} on GCD ${i}"
   run_arm "${A}" "${i}"
+  PIDS+=($!); NAMES+=("${A}")
   i=$((i+1))
   sleep 5      # stagger model load; 8 simultaneous HF loads off one Lustre dir is a thundering herd
 done
-wait
-echo "[sanity] all ${#GOOD[@]} arm(s) finished"
+
+NFAIL=0
+for k in "${!PIDS[@]}"; do
+  if wait "${PIDS[$k]}"; then
+    echo "[sanity] arm OK      ${NAMES[$k]}"
+  else
+    echo "[sanity] arm FAILED  ${NAMES[$k]} (rc=$?)"
+    NFAIL=$((NFAIL+1))
+  fi
+done
+echo "[sanity] all ${#GOOD[@]} arm(s) finished; ${NFAIL} failed"
 for A in "${GOOD[@]}"; do
   echo "[sanity]   ${A}: $(ls ${RUNROOT}/${A}/*.ckpt 2>/dev/null | wc -l) checkpoint(s)"
 done
+# NB checkpoint COUNT is deliberately not the pass criterion: SMOKE=1 runs 20 steps, which is fewer
+# than CKEVERY=2 epochs, so a perfectly healthy smoke legitimately writes zero checkpoints. Exit
+# status is the criterion.
+if [ "${NFAIL}" -gt 0 ]; then
+  echo "[sanity] EXIT 1 -- ${NFAIL} arm(s) failed. Any --dependency=afterok job will correctly NOT run."
+  exit 1
+fi
 echo "[sanity] NEXT: trajectory stats on these (PAR=2), then soup the centroid -- do NOT judge"
 echo "[sanity]   these by the terminal checkpoint, constant-LR AdamW does not settle."
