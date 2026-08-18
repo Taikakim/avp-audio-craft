@@ -609,6 +609,20 @@ on a job meant to run for the full walltime is the tell.
 
 ## Verification — count artifacts, never trust rc
 
+**START HERE: "the outputs are missing" has FOUR different causes and they need different
+tools. Walk the ladder in order — each step rules out one cause (2026-08-18, after I
+concluded a render "was never submitted" from `squeue` alone, which cannot show that).**
+
+| # | question | command | what a null answer MEANS |
+|---|---|---|---|
+| 1 | did the job ever EXIST? | `sacct -u $USER --starttime <date> --format=JobID,JobName%20,State,Elapsed,ExitCode \| grep -i <name>` | **not submitted at all.** `squeue` CANNOT answer this — it lists only PENDING/RUNNING, so a finished, failed, or never-submitted job all look identical there (i.e. absent). Never conclude "it didn't run" from `squeue`. |
+| 2 | did its INPUTS arrive? | `ls -la <the exact file the script guards on>` | the code/data refresh never landed. A guarded script dies in seconds with a clean FATAL and writes no artifacts — which reads exactly like "the job did nothing". |
+| 3 | what did it SAY? | `ls <submit-cwd>/<jobname>-<id>.out` then read the FIRST traceback, not the tail | job ran; the `.out` names the cause. Missing `.out` usually = submitted from a different cwd (see `WorkDir` below). |
+| 4 | are the ARTIFACTS there? | `ls <outdir>/ \| grep -c '^<label>'` | ran and "succeeded" but produced nothing — the real failure class this whole section is about. |
+
+Steps 1 and 2 are seconds each and rule out the two most common causes. Doing step 4 first —
+"there are no cells, so the render is broken" — sends you debugging a renderer that never ran.
+
 **A COMPLETED / exit-0 sbatch proves nothing about HQ tasks** (failures don't propagate).
 Success = expected-vs-actual output count (`ls <outdir>/*.wav | wc -l`), stated by the job's
 own tail. Per-task tracebacks: `<runroot>/hq_logs/j*-t*.err`. Same family: `$(date)` clobbers
