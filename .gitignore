@@ -159,3 +159,5 @@ eval/clip_metrics.db
 # model_index generator + its legacy snapshot (doc-oversight 2026-08-05)
 !/Misc/build_model_index_page.py
 !/Misc/model_index_legacy.md
+latch/val_arm_logs/
+latch/val_arm_logs_driver.log
