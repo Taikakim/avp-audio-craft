@@ -1869,3 +1869,60 @@ source changed.** The sidecar kept serving Aug-4 captions after granite was rege
 table read a stale aggregate; the eval read a stale manifest. Timestamps at build time are the cheap
 general countermeasure — the sidecar builder now prints the newest mtime of each input tier, which
 immediately exposed "T3 2026-08-04, T2 2026-08-17" on its first run.
+
+## 2026-08-18 (later) — per-track hints, and four ways to be wrong with a clean number
+
+Kim asked why the captioner couldn't use mir's `{metadata}` hint system. It could; nothing had
+wired it. `goa_caption_task.py` accepted one global `--genre-hint` per corpus, which is exactly
+right for the goa big-set — 23,232 tracks, uniformly 1990s — and wrong for Goa_Separated the moment
+you look at the metadata: 2075 / 1056 / 615 / 656 across the 90s / 00s / 10s / 20s. Only 47% of it
+is 90s. A global "90s goa" hint asserts a false era for over half the corpus, and Kim's instruction
+had been explicit that those production differences are the thing the model must keep.
+
+The build was straightforward. What is worth writing down is that I introduced **four** bugs in one
+evening and every one of them had the same signature: **a filter or a measure that is wrong and
+returns a plausible number.** Not a crash, not an exception — a clean count.
+
+1. `--name full_mix.flac`, added that morning to stop shell globs sweeping in stems, dropped 1,311
+   tracks. The corpus is 71% flac, 16% mp3, 11% ogg, plus m4a/wav/aiff. The shard maker printed
+   `2891 total, verified` and the assertion it was verifying was true — every item assigned exactly
+   once. It just wasn't the right set of items. Matching is by STEM now, and it prints the format
+   mix so a non-uniform corpus announces itself.
+2. My first era auditor measured era VOCABULARY and returned lift 1.00 in every decade bucket. I
+   nearly reported that as "the hint is inert". It was saturation: MF's stock phrasing is "blends
+   classic X with modern Y", so "modern" appeared in 99.4% of captions and "classic" in 92.6%. At a
+   99% base rate there is no headroom to detect anything. The counter-evidence was in the same
+   output — a 1980s track captioned "classic 1980s psychedelic rave aesthetics", the hint plainly
+   working — and the measure could not see it. Replaced with explicit era CLAIMS: agree, contradict,
+   silent.
+3. `_tidy()` collapsed whitespace unconditionally, so 2,076 of 3,135 captions counted as "changed"
+   with no era edit at all — MF double-spaces after sentence ends. It would have rewritten two
+   thousand files for whitespace and buried ~500 real corrections among them.
+4. The diff previews printed `s[:110]`. Era language is essentially never in the first 110
+   characters of an MF caption, so five sample diffs printed identical text on both sides. **A diff
+   preview that shows no diff is indistinguishable from a tool that changed nothing.**
+
+Kim caught #4 — "the full prompts are not visible" — and that is what exposed #3, because once the
+window centred on the actual divergence the whitespace collapse became visible. Two of the four were
+found only because a human looked at output I had already read and passed over.
+
+The finding, once the instrument worked: the hint is doing its job, and it is doing it **least well
+exactly where we need it most**. Overall 32.1% agree / 5.7% contradict / 62.2% silent, but the
+gradient is monotonic — 1990s bucket 39.7% agree and 3.8% contradict, 2020s bucket 18.0% and 9.6%.
+Music Flamingo has a default 90s-goa framing. On old tracks it therefore agrees partly *by luck*; on
+modern material it goes silent or asserts the wrong era outright. Neo-goa is the side of the
+distinction Kim asked us to preserve, and it is the weakest bucket in the table. Averages would have
+hidden this completely: 5.7% overall sounds like a rounding error.
+
+Ordering point I nearly got wrong: this has to run BEFORE the Granite pass, not after. Granite
+revises MF prose, so a wrong era propagates into the short tier and into training, and fixing it
+downstream means fixing it twice with a derivative that does not know its source changed — the same
+shape as last night's stale sidecar. `inject_year_into_captions.py` now has a `--captions-dir` mode
+that takes the year from each caption's own `genre_hint`, because unlike the big-set these paths
+(`Artist - Title`) carry no year at all.
+
+One judgement call worth recording: I left LABEL out of the hints by default. mir fills it by fuzzy
+release match and Ayahuasca's 1994 *Digital Alchemy* comes back as "XL Recordings", a UK indie with
+no goa catalogue. Same for years before goa existed (1968, 1979) and ~3.5% of genre tags (black
+metal, k-rap, garage rock). A wrong hint is worse than an absent one here, because it CONTRADICTS
+the corpus hint it composes with, whereas silence falls back to something correct.
