@@ -38,6 +38,16 @@ run — that's the operational takeaway most likely to recur.
 
 1. **Granite revision fed the wrong input** (`read_mf()` reading a path, not caption text) — fixed `63546e6`, re-run as v5, **grounding-verified** (19.24×).
 2. **Music Flamingo captioned goa with no genre hint** — the `--genre-hint`/`GENRE_HINT_FILE` mechanism exists, was used correctly for suomisoundi, and defaulted to empty for goa. This is the one that matters most: ~99% of T3 (raw MF prose) captions do not mention the corpus genre at all. That is not the same as "99% mislabeled" — the archive genuinely contains non-goa material, and the hinted re-caption correctly lands at 89.1%, not 100%. Granite (T2) *faithfully inherits* T3's error since it revises rather than re-derives. **Fix in flight**, job 21335408, ~24h.
+   **Same failure, second axis found later (C, ~15:52):** genre wasn't the only thing MF got
+   wrong without a hint — era/decade is a gradient, not uniform. On `Goa_Separated`
+   (mixed-era, unlike the big-set's uniform 1990s), MF's default 90s-goa framing means it
+   agrees with ground truth 39.7% on 90s tracks but only 18.0% on 2020s ones, monotonically
+   — the exact "neo-goa vs oldschool" distinction Kim wants the model to learn is the
+   weakest-captioned bucket, and an averaged contradiction rate (5.7%) hid the gradient
+   entirely. Per-track hints (`eval/build_caption_hint_map.py`, composing with the existing
+   corpus-level hint rather than replacing it) now ship with 99.0% coverage; 678 era
+   corrections staged before Granite runs on `goa_src` (era must be fixed before Granite
+   revises the prose it inherits, same propagation logic as above).
 3. **A stale-derivative trap, twice** — the caption *sidecar* (the actual training input) doesn't auto-rebuild when its source captions change, so a fix to (1) or (2) does nothing until the sidecar is explicitly rebuilt. Bit G/C's own audit once already (stale Aug-4 sidecar read as if the fix had failed) and is architecturally why "captions look fixed" and "sidecar is fixed" are different claims. `build_goa_archive_sidecar.py` now prints each input tier's newest mtime as a partial mitigation.
 
 ## Kim's question: why wasn't Effnet genre collected for the big set / why wasn't he told it was missing
