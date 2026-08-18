@@ -17,6 +17,22 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+- **The `goa` arm of the sanity matrix is BLOCKED on a decision only you can make, and it is the
+  arm most likely to be informative** (C, 08-18). The old goa set (`latents_sa3`) has exactly one
+  caption sidecar — `goa_longform_sidecar.json` — and W/F established today that **41% of its
+  captions are BORROWED from a same-cluster representative**, i.e. they describe different audio
+  ("Ayahuasca - Propella" carries the caption of "SanDmaN - Bad News"). I made the arm refuse
+  rather than train on it. Replacing it needs the chain year-pass → Granite → sidecar, and the
+  last step needs a **key join that does not exist yet**: the new caption keys are
+  `sha1(relpath of full_mix)` while the sidecar must be keyed to `latents_sa3` filenames. A
+  mismatch there does not error — it rejects every sample and surfaces as a RecursionError
+  thousands of frames deep. **Ask:** do you want that join built (a few hours, and it is the only
+  route to using the mostly-FLAC old goa set), or is the arm droppable?
+- **`avp` and `avpaug` are currently the same dataset** (C, 08-18). `latents_avp` already contains
+  289 base + 2105 augmented latents in one directory, so two of the eight arms you specified will
+  train identically. Harmless — a duplicate arm, not a wrong one — but it costs a GCD and answers
+  nothing. Separable only if the augmented files are distinguishable by filename; nobody has
+  checked. **Ask:** worth a base-only staging dir, or accept the duplicate?
 - **LUMI budget just flipped from "can't spend it" to "can't afford it all" — needs your
   priority call, today** (W, 08-09, right after the aug×8 launch below landed). This morning:
   2880 of 5000 GPU-hours remain, 14 days left = 336 wall-clock hours → 8.6 GCDs would need to
