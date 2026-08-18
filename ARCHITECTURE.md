@@ -204,6 +204,16 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
     badly wrong (tracks dated before goa existed; "black metal" on a goa track; label so unreliable it is
     off by default). A wrong hint CONTRADICTS the global one it composes with, which is worse than silence.
   · **`eval/audit_caption_era_grounding.py`** (C, 2026-08-18) — did the year hint actually STEER the
+  · **`eval/compare_trajectory_stats.py`** (C, 2026-08-18) — many runs' weight trajectories side by
+    side, with convergence flags (RISING-VEL / LOW-EFF / HIGH-EFF / NORM-BLOWUP). Consumes the
+    `*_trajectory.json` that `control/sa3_control/checkpoint_trajectory_stats.py` emits (per-run) and
+    answers the comparative question instead: *do the arms that render broken look different in
+    WEIGHT space from the arms that render fine?* Worth reaching for because it is independent of
+    every audio metric — it cannot be confounded by a saturated measure, a mis-tokenised prompt, or a
+    caption problem, all three of which bit us on 2026-08-18 alone. Empirical healthy band from 19
+    completed runs: velocity ratio vN/v0 0.44-0.55, path efficiency 0.65-0.75, and every one of those
+    19 falls inside it. Pass several dirs; duplicate labels across dirs are reported, not silently
+    overwritten.
     captioner, or is it merely attached? Buckets captions by the decade in their own `genre_hint` and
     measures era-vocabulary lift per bucket. Complements `audit_caption_sidecar.py`: that one asks whether
     a tier reflects its track's MF prose (grounding) and whether the genre is true (correctness); this one
