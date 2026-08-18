@@ -2105,3 +2105,24 @@ now) and chained locally after the Fusion control. Under the amplifier picture t
 a weakness worth stating: after NS5 each row is a mixture of the signal direction and r−1 noise
 directions, so row-SNR ≈ 1/r and the gate may brake everything uniformly at rank 128; cosine is
 the safe brake. We'll see at rank 16 tonight.
+
+## 2026-08-19 (02:00) — prediction confirmed; and the spike is not what I said it was
+
+Fusion-bs1 (5000 steps, same seed/data as AdamW-bs1): gradient window-SNR = 1/w in both — pure
+noise — yet Fusion's update autocorrelation at τ=100/500/1000 is 0.215/0.129/0.081 where AdamW's
+is 0.000, and path efficiency at w=1024 is 0.411 vs 0.132. The optimizer, not the batch, decides
+whether the persistent direction accumulates. Recorded before the data at 01:15; held.
+
+The correction: at rank 16, Fusion's B·A is exactly as spiky as AdamW's (top-1 0.55 vs 0.58,
+eff-rank 7). So the spike is a LoRA-structure effect — every step's dB = δ_t (A x_t)ᵀ shares the
+right factor A·x̄, and B accumulates rank-1 in a fixed input direction under either optimizer —
+and the archive's flat 2% was rank-128 DoRA at bs8. My reading of the Gram result ("the spike is
+the AdamW pathology, remove it") was overreach: what separates broken from healthy is temporal
+coherence — walk vs drift — not the spectrum. The render pre-read had already hinted at this
+(removing the spike restored brightness, not punch). Keeping the correction visible on the chat.
+
+Not over-reading either: Fusion's loss went 0.825→0.875 (AdamW 0.82→0.79). Drift is not yet
+learning; the direction NS5 amplifies could be W's norm-growth runaway. The damping arms and the
+renders decide. Also: three arms in a row segfaulted at process teardown after their last step
+(data intact each time, verified row counts) — something in the recorder's memmap close or the
+ROCm exit path; harmless tonight, worth a look before it bites a run that isn't finished.
