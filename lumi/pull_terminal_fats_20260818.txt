@@ -1,0 +1,54 @@
+# Terminal fat checkpoints to pull from LUMI — selected 2026-08-18 (CONTINUITY, Kim direct).
+# 106 runs have a terminal fat (1319.9 GB). 52 were already local. Of the 54 missing (810.4 GB):
+#   -172.9 GB DROPPED: cfg7/w1 renders measurably corrupted (clip_metrics.db, non-_ptm labels)
+#                      fullft_bigset CE 2.86; dronesweep force_scalar_s1/s2 flatness 0.10/0.086
+#                      vs corpus 0.022, CE -1.0/2.46; dronesweep adamw_fair_s1/s2 CE 2.03/3.30.
+#   -98.6  GB DROPPED: smoke runs, near-zero-step ckpts, and the -v2 duplicate from the
+#                      uncoordinated-trainer era.
+#   =538.9 GB KEPT, 43 files (this list).
+# NOTE _ptm labels were EXCLUDED from the corruption test: _ptm is the same checkpoint
+# re-rendered on medium-base (the base-mismatch control), so for a full-FT a bad _ptm is the
+# expected result, not evidence the checkpoint is bad. 9 of 24 flagged labels were _ptm.
+runs/fullft_wd_ab/fullft_wd_ab_wd0/epoch=5-step=2700.ckpt
+runs/fullft_avp_surgical/fullft_avp_surgical_anchor/fullft_avp_surgical/n3sa7fes/checkpoints/epoch=14-step=8970.ckpt
+runs/fullft_avp_regsweep/fullft_avp_regsweep_anchor/fullft_avp_regsweep/cvya41jr/checkpoints/epoch=14-step=8970.ckpt
+runs/avp_dronesweep/plain_s2/epoch=7-step=4784.ckpt
+runs/avp_dronesweep/plain_s1/epoch=7-step=4784.ckpt
+runs/subloss_goa_k20/epoch=1-step=2700.ckpt
+runs/fullft_mixed_avp_latents_sa3_t4096_wdfix/epoch=7-step=15584-v4.ckpt
+runs/fullft_mixed_avp_latents_sa3_t4096_wd03/epoch=7-step=1952.ckpt
+runs/avp_dronesweep/bf16_plain_s2/epoch=11-step=7176.ckpt
+runs/avp_dronesweep/bf16_plain_s1/epoch=11-step=7176.ckpt
+runs/fullft_wd_ab/fullft_wd_ab_adamw_wd0p1/epoch=5-step=2700.ckpt
+runs/fullft/fullft_goa_t256/epoch=69-step=94500.ckpt
+runs/fullft/fullft_avp_t256/epoch=153-step=90598.ckpt
+runs/fullft/fullft_avp_t256/_unfixed_missing_wd/epoch=11-step=7475.ckpt
+runs/suomisoundi_dora/suomi_r256_lr3e-5/epoch=59-step=2340.ckpt
+runs/suomisoundi_dora/suomi_r256_lr1e-4/epoch=59-step=2340.ckpt
+runs/dora256_mixed/dora256_mixed_a196_lr1e4/epoch=3-step=1481.ckpt
+runs/dora256_mixed/dora256_mixed_a128_lr5e5/epoch=3-step=1481.ckpt
+runs/fp32_winning/winning_goa_t512_a128_fp32/epoch=134-step=91125.ckpt
+runs/fp32_winning/winning_avp_t512_a128_fp32/epoch=228-step=68471.ckpt
+runs/fp32_compare/fp32cmp_goa_t4096_bs4_lr5e5/epoch=14-step=20250.ckpt
+runs/fp32_compare/fp32cmp_goa_t4096_bs4_lr1e4/epoch=27-step=37800.ckpt
+runs/fp32_compare/fp32cmp_goa_t4096_bs1_lr1e4/epoch=21-step=118800.ckpt
+runs/fp32_compare/fp32cmp_avp_t4096_bs4_lr1e4/epoch=49-step=27511.ckpt
+runs/fp32_compare/fp32cmp_avp_t4096_bs1_lr1e4/epoch=35-step=86148.ckpt
+runs/x0equiv_grid_mt/x0eq_sub5_goa/epoch=19-step=27000.ckpt
+runs/x0equiv_grid_mt/x0eq_goa/epoch=19-step=27000.ckpt
+runs/x0equiv_grid/x0eq_sub5_goa/epoch=3-step=5400.ckpt
+runs/x0equiv_grid/x0eq_goa/epoch=3-step=5400.ckpt
+runs/subspace_loss_grid_mt/subloss_goa_k5/epoch=19-step=27000.ckpt
+runs/subspace_loss_grid_mt/subloss_goa_k2/epoch=19-step=27000.ckpt
+runs/subspace_loss_grid_mt/subloss_goa_k12/epoch=19-step=27000.ckpt
+runs/subspace_loss_grid/subloss_goa_k5/epoch=3-step=5400.ckpt
+runs/subspace_loss_grid/subloss_goa_k2/epoch=3-step=5400.ckpt
+runs/subspace_loss_grid/subloss_goa_k12/epoch=3-step=5400.ckpt
+runs/lr_equiv_grid_mt/lreq_goa_lr5e5/epoch=39-step=54000.ckpt
+runs/lr_equiv_grid_mt/lreq_goa_lr2e4/epoch=13-step=18900.ckpt
+runs/lr_equiv_grid_mt/lreq_goa_lr1e4/epoch=19-step=27000.ckpt
+runs/lr_equiv_grid/lreq_goa_lr5e5/epoch=3-step=5400.ckpt
+runs/lr_equiv_grid/lreq_goa_lr2e4/epoch=5-step=8100.ckpt
+runs/lr_equiv_grid/lreq_goa_lr1e4/epoch=3-step=5400.ckpt
+runs/suomisoundi_dora/suomi_r32_lr3e-5/epoch=59-step=1140.ckpt
+runs/suomisoundi_dora/suomi_r32_lr1e-4/epoch=59-step=1140.ckpt
