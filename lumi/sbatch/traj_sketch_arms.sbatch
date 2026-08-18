@@ -3,7 +3,7 @@
 # save every step for 1000 or even 10,000 steps and see how the trajectory really is ... That
 # experiment needs to be done on Lumi."
 #
-# WHAT: five single-GCD arms of the sanity16 recipe (LoRA r16 a16, lr 1e-4, T256, bf16 base, goa
+# WHAT: eight single-GCD arms (five regime arms + three damping arms, see SPEC) of the sanity16 recipe (LoRA r16 a16, lr 1e-4, T256, bf16 base, goa
 # latents_sa3 with its json prompts — the SAME data path the healthy fp32cmp/bf16cmp twins used) that
 # differ only in the two axes the weight-space forensics point at:
 #     bs1_adamw     bs 1                    10 000 steps   the AdamW-sweep regime (path eff at 1/sqrt(n))
@@ -23,7 +23,7 @@
 # The healthy runs were Fusion at bs8; the broken ones AdamW at bs1/bs4. Two axes, confounded in the
 # archive. This job separates them at step resolution.
 #
-# RUN:  sbatch lumi/sbatch/traj_sketch_arms.sbatch            (all five)
+# RUN:  sbatch lumi/sbatch/traj_sketch_arms.sbatch            (all eight)
 #       ARMS="bs1_adamw bs8_fusion" sbatch ...                (subset)
 #       SMOKE=1 sbatch ...                                    (30 steps each, ~5 min, exit code = the gate)
 # READ: eval/trajectory_sketch_analyze.py <run>/traj  (CPU; also cross-run with several dirs)
@@ -50,15 +50,23 @@ VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 SMOKE=${SMOKE:-0}
 RUNROOT=${RUNROOT:-${SCRATCH}/runs/traj_sketch}
 LAT=latents_sa3
-ARMS=${ARMS:-"bs1_adamw accum8_adamw bs8_adamw bs1_fusion bs8_fusion"}
+ARMS=${ARMS:-"bs1_adamw accum8_adamw bs8_adamw bs1_fusion bs8_fusion bs1_fusion_cos bs1_fusion_snr bs1_fusion_cos_snr"}
 
-# arm -> "BS ACCUM OPT STEPS"
+# arm -> "BS ACCUM OPT STEPS EXTRA..."   (EXTRA = the damping flags; C 2026-08-19, Kim's muon damping
+# tests: the magnitude-blind NS5->NorMuon step has no brake, SF only damps a random walk by 1/sqrt(3),
+# wd 0.03 binds with a 3e5-step time constant. Three ways to give it one, same seed/data as bs1_fusion:)
+#   _cos     in-optimizer cosine decay to 0 over the run (the schedule Muon recipes actually use)
+#   _snr     per-neuron SNR gate: step *= |EMA(U)|/RMS(U) (0.23 on noise, 1 on signal — Adam's brake)
+#   _cos_snr both
 declare -A SPEC=(
   [bs1_adamw]="1 1 adamw 10000"
   [accum8_adamw]="1 8 adamw 5000"
   [bs8_adamw]="8 1 adamw 5000"
   [bs1_fusion]="1 1 fusion 10000"
   [bs8_fusion]="8 1 fusion 5000"
+  [bs1_fusion_cos]="1 1 fusion 10000 --fusion-decay cosine"
+  [bs1_fusion_snr]="1 1 fusion 10000 --fusion-snr row"
+  [bs1_fusion_cos_snr]="1 1 fusion 10000 --fusion-decay cosine --fusion-snr row"
 )
 
 [ -n "${SIF}" ] || { echo "[traj] FATAL: no multitorch image"; exit 1; }
@@ -68,6 +76,10 @@ declare -A SPEC=(
   || { echo "[traj] FATAL: scripts/trajectory_sketch.py not on LUMI -- rsync the stable-audio-3 tree"; exit 1; }
 grep -q 'traj_sketch_dir' ${CODE}/stable-audio-3/scripts/train_lora.py \
   || { echo "[traj] FATAL: train_lora.py lacks --traj-sketch-dir -- rsync the stable-audio-3 tree"; exit 1; }
+grep -q 'fusion_snr' ${CODE}/stable-audio-3/scripts/train_lora.py \
+  || { echo "[traj] FATAL: train_lora.py lacks --fusion-decay/--fusion-snr -- rsync the stable-audio-3 tree"; exit 1; }
+grep -q 'def snr_gate' ${CODE}/lumi/vendor/stable_audio_tools/training/fusion_opt.py \
+  || { echo "[traj] FATAL: vendored fusion_opt.py lacks the damping code -- rsync lumi/vendor"; exit 1; }
 if [ "${SMOKE}" != "1" ] && [ "${VENV}" != "" ]; then :; fi
 
 if [ ! -d "${FLASH}/${LAT}" ]; then
@@ -85,17 +97,18 @@ echo "[traj] latents=${NLAT} json=${NJSON} arms: ${ARMS}  smoke=${SMOKE}"
 
 run_arm() {  # run_arm NAME GCD
   local NAME=$1 GCD=$2
-  read -r BS ACC OPT STEPS <<< "${SPEC[$NAME]}"
+  read -r BS ACC OPT STEPS EXTRA <<< "${SPEC[$NAME]}"
+  EXTRA=${EXTRA:-}
   [ "${SMOKE}" = "1" ] && STEPS=30
   local DENSE=1000; [ "${SMOKE}" = "1" ] && DENSE=30
   local RUN="${RUNROOT}/${NAME}"; mkdir -p "${RUN}"
   local PORT=$((29600 + GCD))
-  local OPT_ARGS="--optimizer ${OPT}"
+  local OPT_ARGS="--optimizer ${OPT} ${EXTRA}"
   # fusion on LUMI needs the vendored SAT (lumi/vendor) — on the PYTHONPATH below, same as every fusion job
   cat > "${RUN}/run_meta.json" <<META
 {"run": "traj_sketch_${NAME}", "created": "$(date -Iseconds)", "slurm_job": "${SLURM_JOB_ID:-unset}",
  "purpose": "Step-resolution weight trajectory (Kim 2026-08-18): does constant-LR AdamW at small effective batch random-walk (uncorrelated steps, path efficiency at 1/sqrt(n)) or drift, and is the flat-vs-spiky singular spectrum an optimizer (Fusion NS5) or a batch-size effect?",
- "recipe": {"adapter": "lora", "rank": 16, "alpha": 16, "lr": 1e-4, "optimizer": "${OPT}", "precision": "bf16", "frames": 256, "batch_size": ${BS}, "accumulate_grad_batches": ${ACC}, "effective_batch": $((BS*ACC)), "steps": ${STEPS}},
+ "recipe": {"adapter": "lora", "rank": 16, "alpha": 16, "lr": 1e-4, "optimizer": "${OPT}", "damping": "${EXTRA}", "precision": "bf16", "frames": 256, "batch_size": ${BS}, "accumulate_grad_batches": ${ACC}, "effective_batch": $((BS*ACC)), "steps": ${STEPS}},
  "dataset": {"latents": "${LAT}", "n_latents": ${NLAT}, "captions": "per-crop json prompt (no sidecar), as the healthy fp32cmp/bf16cmp twins"},
  "artifacts": {"trajectory": "${RUN}/traj", "ckpt_dense_until": ${DENSE}, "ckpt_every": 5},
  "recorder": "stable-audio-3/scripts/trajectory_sketch.py", "script": "lumi/sbatch/traj_sketch_arms.sbatch",
