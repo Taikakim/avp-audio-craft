@@ -95,6 +95,12 @@ list is MASTER §5; this is the explained version.
 
 ## Process / coordination
 
+- **Git authorship in this repo is not evidence of who did the work.** Every agent commit
+  shows author "Kim" — it's his `git user.name` on the machine, so `git log --format=%an`
+  cannot distinguish who wrote anything. The only reliable attribution is the
+  `Co-Authored-By` trailer, the `Claude-Session` line, and the chat record. Cost: a
+  status doc attributed a commit to Kim by reading the author field; it was actually C's
+  (C's correction, 2026-08-18). Check the trailer, not the author, before crediting anyone.
 - **Per-project Claude memory is siloed by cwd** — a fact learned in one repo is invisible in
   another. That's why this `docs/` + `MASTER.md` layer exists. Put cross-cutting findings here.
 - **Branch drift.** Trained checkpoints can require model code that only exists on a feature

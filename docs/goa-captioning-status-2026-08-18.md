@@ -25,17 +25,19 @@ run — that's the operational takeaway most likely to recur.
 | 2026-08-04 | goa big-set Music Flamingo + Granite captions built (23,231/23,231, hash-join verified). `fullft_bigset` campaign launches on this caption set. **The Aug-1/2 effnet genre signal is never consulted at this step.** | (historical) |
 | 2026-08-17 ~01:41 | `goa_granite_task.py::read_mf()` bug found: Granite was revising the file PATH, not the nested MF caption text — affected all 23,232 tracks, produced plausible-but-hallucinated template text. Fixed `63546e6`. | G |
 | 2026-08-17 | Granite v5 re-run (job 21255037), 23,232/23,232 content-verified. | G |
-| 2026-08-17 ~20:44 | C's grounding audit (`audit_caption_sidecar.py`) certifies v5 at 19.24× — genuinely fixed **on grounding**, i.e. tags now reflect their own track's MF prose. | C |
-| 2026-08-17 ~21:31 | W's genre-content scan (independent method, first-200-chars of T3) finds the real problem: goa T3 says goa/psy in only **1.2%** of tracks (58% techno, 46% industrial/hard) — and it's live on two running jobs. | W |
-| 2026-08-17 ~21:56 | C confirms: cause is `genre_hint` defaulting to empty in `goa_caption_task.py` (mechanism exists — `--genre-hint`/`GENRE_HINT_FILE` — never populated for goa). Suomisoundi, same script, had a real hint → 97.4% correct. **Kim kills the affected runs directly.** Hinted re-caption launched, job 21335408, writing to a NEW dir (`goa_archive_captions_hinted`) so the unhinted set is preserved as a control. | C, Kim |
-| 2026-08-18 ~01:07 | Kim commits `9e4a78f`: cross-references W's and C's audit tools in ARCHITECTURE.md §C after noticing both were built the same night with near-identical names (`caption_sidecar_audit.py` vs `audit_caption_sidecar.py`). | Kim |
+| 2026-08-17 ~20:44 | **C's grounding audit on the then-LIVE (still Aug-4) sidecar: 1.24× — NOT GROUNDED, indistinguishable from chance.** Run at Kim's explicit ask ("check the big goa set granite reviews for similarity randomly sampling, to make sure Granite got the correct input") — this is the measurement-side confirmation of G's read_mf finding, arrived at independently, neither knowing the other's route. | C |
+| 2026-08-18 ~01:01 | Sidecar REBUILT from v5 Granite (the stale-derivative step — the first audit above had re-measured Aug-4 content while v5 sat unused). | C |
+| 2026-08-18 ~01:04 | Re-audit on the rebuilt sidecar: **19.24× GROUNDED**, beating suomisoundi's 16.17× — genuinely fixed on grounding, i.e. tags now reflect their own track's MF prose. | C |
+| 2026-08-18 ~01:31 | W's genre-content scan (independent method, first-200-chars of T3) finds the real problem: goa T3 says goa/psy in only **1.2%** of tracks (58% techno, 46% industrial/hard) — and it's live on two running jobs. | W |
+| 2026-08-18 ~01:56 | C confirms: cause is `genre_hint` defaulting to empty in `goa_caption_task.py` (mechanism exists — `--genre-hint`/`GENRE_HINT_FILE` — never populated for goa). Suomisoundi, same script, had a real hint → 97.4% correct. **Kim kills the affected runs directly.** Hinted re-caption launched, job 21335408, writing to a NEW dir (`goa_archive_captions_hinted`) so the unhinted set is preserved as a control. | C, Kim |
 | 2026-08-18 ~02:20 | Kim pushes both rebuilt sidecars (suomisoundi, goa) to LUMI scratch. | Kim |
+| 2026-08-18 ~02:55 | **C** commits `9e4a78f`: cross-references W's and C's audit tools in ARCHITECTURE.md §C after noticing both were built the same night with near-identical names (`caption_sidecar_audit.py` vs `audit_caption_sidecar.py`). *(Corrected 2026-08-18 — an earlier draft of this doc attributed this to Kim, reading the git author field, which is misleading here: every agent commit in this repo is authored "Kim" (his git user.name) — it is not evidence of who did the work. See docs/lessons-learned.md § Process/coordination.)* |
 | 2026-08-18 09:46–09:47 | G reports sidecars as local-only/not-yet-pushed (stale info — see below); C corrects with md5 verification (Kim HAD pushed, ~02:20) and re-states the genre-hint root cause for the record, since G's "verified correct" claim was about tier *consistency*, not genre *correctness*. | G, C |
 
 ## Root causes (three, not one — don't conflate them)
 
 1. **Granite revision fed the wrong input** (`read_mf()` reading a path, not caption text) — fixed `63546e6`, re-run as v5, **grounding-verified** (19.24×).
-2. **Music Flamingo captioned goa with no genre hint** — the `--genre-hint`/`GENRE_HINT_FILE` mechanism exists, was used correctly for suomisoundi, and defaulted to empty for goa. This is the one that matters most: it made T3 (raw MF prose) ~99% genre-wrong, and Granite (T2) *faithfully inherits* that error since it revises, not re-derives. **Fix in flight**, job 21335408, ~24h.
+2. **Music Flamingo captioned goa with no genre hint** — the `--genre-hint`/`GENRE_HINT_FILE` mechanism exists, was used correctly for suomisoundi, and defaulted to empty for goa. This is the one that matters most: ~99% of T3 (raw MF prose) captions do not mention the corpus genre at all. That is not the same as "99% mislabeled" — the archive genuinely contains non-goa material, and the hinted re-caption correctly lands at 89.1%, not 100%. Granite (T2) *faithfully inherits* T3's error since it revises rather than re-derives. **Fix in flight**, job 21335408, ~24h.
 3. **A stale-derivative trap, twice** — the caption *sidecar* (the actual training input) doesn't auto-rebuild when its source captions change, so a fix to (1) or (2) does nothing until the sidecar is explicitly rebuilt. Bit G/C's own audit once already (stale Aug-4 sidecar read as if the fix had failed) and is architecturally why "captions look fixed" and "sidecar is fixed" are different claims. `build_goa_archive_sidecar.py` now prints each input tier's newest mtime as a partial mitigation.
 
 ## Kim's question: why wasn't Effnet genre collected for the big set / why wasn't he told it was missing
@@ -86,6 +88,13 @@ root cause 3 above (derivative doesn't know source changed), one level up the st
   correct*, now including a genre-content scan). **Run both, they check different things.**
   `build_goa_archive_sidecar.py` now takes `--captions-dir`/`--features-dir` explicitly,
   FATALs on a missing dir instead of writing empty, and prints input-tier mtimes.
+- **Open, time-sensitive (C's flag): LUMI allocation.** Checked directly (THE-FINN,
+  `lumi-allocations`, data as of 2026-08-18 09:07): **2963/5000 GPU-hours used (59%), 2037
+  remaining.** Re-caption is ~192 GCD-hours; the three bounded-norm arms behind it are
+  ~1150 more (~1342 total) — fits with ~695 hours of margin **on GPU-hours alone**. Not
+  accounted for: Kim's stated wish to reserve days for the melody adapter, which has no
+  hour estimate on record yet. Whether this lands as three arms or two is Kim's call and
+  worth making before the recaption finishes, not after.
 
 ## Routing — Kim's ask
 
