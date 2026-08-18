@@ -88,13 +88,21 @@ root cause 3 above (derivative doesn't know source changed), one level up the st
   correct*, now including a genre-content scan). **Run both, they check different things.**
   `build_goa_archive_sidecar.py` now takes `--captions-dir`/`--features-dir` explicitly,
   FATALs on a missing dir instead of writing empty, and prints input-tier mtimes.
-- **Open, time-sensitive (C's flag): LUMI allocation.** Checked directly (THE-FINN,
-  `lumi-allocations`, data as of 2026-08-18 09:07): **2963/5000 GPU-hours used (59%), 2037
-  remaining.** Re-caption is ~192 GCD-hours; the three bounded-norm arms behind it are
-  ~1150 more (~1342 total) — fits with ~695 hours of margin **on GPU-hours alone**. Not
-  accounted for: Kim's stated wish to reserve days for the melody adapter, which has no
-  hour estimate on record yet. Whether this lands as three arms or two is Kim's call and
-  worth making before the recaption finishes, not after.
+- **⚠️ THE BINDING CONSTRAINT IS WALL CLOCK, NOT GPU-HOURS — corrected 2026-08-18 (C, Kim
+  ran `lumi-allocations` directly).** My first pass at this line checked GPU-hours only
+  (2963/5000 used, 2037 remaining — true but not the constraint that matters) and was
+  misleading by omission. The actual allocation output: **92% of PROJECT TIME elapsed,
+  4 DAYS OF COMPUTE LEFT** (94 days until data removal separately — no pressure there,
+  `/scratch` is only 36% full, do NOT prune under time pressure). GPU-hours were never
+  going to be the bottleneck; the serial chain in front of the three bounded-norm arms is:
+  MF re-caption (running, ~17h more) → Granite re-revision (~12-24h) → pull/rebuild/audit/
+  re-key (~2-3h) → the three arms (24-48h) — against a ~Aug-22 deadline, with no slack.
+  **C's recommendation, Kim's call:** skip the Granite stage entirely — T1 (effnet, 70.4%
+  correct) and the hinted T3 (~89% correct) are both already genre-correct and neither is
+  Granite-derived, so training on T1+T3 buys back the 12-24h Granite would cost for
+  phrasing diversity alone. Also: plan for a TRUNCATED run to still be a keepable result
+  (arms checkpoint every 2 epochs) rather than shortening runs defensively to guarantee
+  completion — start earlier, take what lands at the deadline.
 
 ## Routing — Kim's ask
 
