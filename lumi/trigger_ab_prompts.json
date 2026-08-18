@@ -1,0 +1,34 @@
+{
+  "note": "TRIGGER-WORD A/B (W, 2026-08-18). Two prompts, identical seed, differing only in the spelling of Kim's project name. Training captions carry 'aavepyörä' 4724-7140x and 'aavepyora' 0x, yet every eval we have run used the latter -- so every trigger cell on the board asked a finetuned model for a token it never saw. This is the control that settles whether the finetunes learned it. Run against an AVP model: suomisoundi captions contain the trigger 0 times, so those arms cannot answer it.",
+  "cfgs": [
+    7.0,
+    16.0
+  ],
+  "strengths": [
+    1.0
+  ],
+  "steps": 24,
+  "duration": 20.0,
+  "prompts": [
+    {
+      "id": "trig2",
+      "seed": 1234,
+      "text": "aavepyora"
+    },
+    {
+      "id": "trig2_uml",
+      "seed": 1234,
+      "text": "aavepyörä"
+    },
+    {
+      "id": "housestyle",
+      "seed": 1234,
+      "text": "bittersweet eclectic house, aavepyora style"
+    },
+    {
+      "id": "housestyle_uml",
+      "seed": 1234,
+      "text": "bittersweet eclectic house, aavepyörä style"
+    }
+  ]
+}
