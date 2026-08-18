@@ -21,6 +21,7 @@ the whole point -- it lets evaluator.html drop `cache:'no-store'` and let the br
 HTTP cache do its job, since staleness between periodic rebuilds is an accepted tradeoff here
 (unlike the live internal boards, which need every visit to reflect the latest scoring pass).
 """
+import datetime
 import json
 from pathlib import Path
 
@@ -33,7 +34,19 @@ OUT = STAGE_MATRIX / "manifest_avp_evaluator.json"
 # entry -- dropping prompt_text, seed, and everything else the full manifest carries but this
 # page never touches is most of the size win (prompt_text alone is often longer than every
 # other field on the line combined).
+NOW = datetime.datetime.now().timestamp()
+
 FIELDS = ("model", "ckpt", "cfg", "strength", "file", "prompt_id", "duration_mode", "duration")
+
+# Plus one derived field the full manifest does NOT carry: `age_h`, the clip file's age in hours
+# at build time, rounded. It exists so evaluator.html can offer ?recent=<hours> -- Kim
+# 2026-08-18: "only for checkpoints that we have been pulling in the last, like, forty eight
+# hours ... it's nice for [visitors] not to have to listen to mostly [old] clips". Stored as an
+# AGE rather than an absolute mtime deliberately: the page compares it to a number the visitor
+# typed, so a value that is meaningful without knowing when the manifest was built is the one
+# that cannot be misread. It does go stale between rebuilds -- a manifest built 3 days ago will
+# report everything as 3 days younger than it is -- which is why build_time_iso is written
+# alongside, so a reader can tell how much to distrust it.
 
 
 def is_op_point(e):
@@ -64,9 +77,16 @@ def main():
             continue
         if not is_op_point(e):
             continue
-        out.append({k: e.get(k) for k in FIELDS})
+        row = {k: e.get(k) for k in FIELDS}
+        clip = STAGE_MATRIX / str(e.get("file") or "")
+        try:
+            row["age_h"] = round((NOW - clip.stat().st_mtime) / 3600.0, 1)
+        except OSError:
+            row["age_h"] = None      # clip not staged locally -- ?recent= will exclude it
+        out.append(row)
 
-    OUT.write_text(json.dumps(out))
+    OUT.write_text(json.dumps({"build_time_iso": datetime.datetime.now().isoformat(timespec="seconds"),
+                               "entries": out}))
     size = OUT.stat().st_size
     print(f"[evaluator-manifest] wrote {OUT}  ({len(out)} entries from {len(scored)} avp "
           f"models, {size:,} bytes -- was {MANIFEST.stat().st_size:,} bytes unfiltered)")

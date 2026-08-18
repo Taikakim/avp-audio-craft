@@ -103,6 +103,7 @@ select,button{font:inherit;color:inherit}
    data. Questions or feedback — reach me on <a
    href="https://signal.me/#eu/00NAPf7EAdk6zym5PgUzzl5Jws72qThXA-2J779TrvSH88U5S4ZIZ4oexs8N115H"
    target="_blank" rel="noopener">Signal</a>.</p>
+  <p class="note" id="recentbadge" style="display:none;color:#7ed"></p>
   <p class="note" id="goabadge" style="display:none;color:#fa5">Internal mode (<code>?goa=1</code>):
    the pool is <b>every scored model</b>, goa-corpus ones included — not just the avp models the
    public link serves. First load is slower here; it reads the full manifest.</p>
@@ -160,6 +161,13 @@ const BASE='/files/evals/';
 const CB=BASE+'model_matrix/';
 const PARAMS=new URLSearchParams(location.search);
 const GOA=PARAMS.has('goa')||PARAMS.has('all');
+// ?recent=<hours> -- restrict the pool to clips whose files are younger than N hours at manifest
+// BUILD time (Kim 2026-08-18: show visitors the new checkpoints rather than the whole back
+// catalogue). `?recent` with no value means 48. The age comes from the pre-built manifest's
+// age_h field, so it is only as fresh as the last rebuild -- the overlay says so out loud rather
+// than quietly implying the number is live.
+const RECENT_RAW=PARAMS.get('recent');
+const RECENT=(RECENT_RAW===null)?null:(parseFloat(RECENT_RAW)>0?parseFloat(RECENT_RAW):48);
 
 // ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
 const LENGTH_CLUSTERS=[24,48,95,190,380];
@@ -204,11 +212,22 @@ function eligible(e){
 // falling back to unfiltered (unsafe) behaviour.
 //
 // eligible() re-checks both paths (defense in depth; it is the primary filter only for ?goa=1).
-let pools={};   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+let pools={};
+let MANIFEST_BUILT=null, RECENT_FALLBACK=false;   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
 async function fetchEntries(){
  if(!GOA){
   const r=await fetch(CB+'manifest_avp_evaluator.json');
-  return await r.json();
+  const j=await r.json();
+  // Back-compatible: older builds were a bare array with no age data.
+  const entries=Array.isArray(j)?j:(j.entries||[]);
+  MANIFEST_BUILT=Array.isArray(j)?null:(j.build_time_iso||null);
+  if(RECENT===null)return entries;
+  const fresh=entries.filter(e=>typeof e.age_h==='number'&&e.age_h<=RECENT);
+  // FAIL LOUD, not silently empty: an old manifest has no age_h at all, and quietly serving an
+  // empty pool would read as "no new checkpoints" when it actually means "this build predates
+  // the feature". Fall back to everything and say so.
+  if(!fresh.length){RECENT_FALLBACK=true;return entries;}
+  return fresh;
  }
  let scored=new Set();
  try{
@@ -317,7 +336,11 @@ function setPairAudio(a,b){
  pauseBoth();
  audioA.src=CB+a.file;audioB.src=CB+b.file;
  audioA.currentTime=0;audioB.currentTime=0;
- active='A';
+ // Which side is AUDIBLE first is randomised. Measured 2026-08-18 over 210 decided A/B answers:
+ // A won 60.5% (z=3.04, p~0.002) purely because the player always opened on A, so A got the
+ // first listen. Model->side assignment was already random, so this added noise rather than
+ // favouring any model -- but it is free to remove.
+ active=(Math.random()<0.5)?'A':'B';
  setPaused(false);   // a fresh pair always starts playing, regardless of the previous pair's state
 }
 // A deliberate tap always means "let me hear the other one now" -- switching used to
@@ -568,9 +591,26 @@ function populateLengthSelect(){
 // audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
 const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
 if(GOA)document.getElementById('goabadge').style.display='block';
+// Say which pool is on. A page that silently shows a subset is a page that misleads whoever
+// forgot the URL parameter -- and ?recent's age data is only as fresh as the last manifest
+// rebuild, so the build time is stated rather than implied.
+function showPoolBadge(nModels){
+ const el=document.getElementById('recentbadge'); if(!el)return;
+ if(RECENT===null){el.style.display='none';return;}
+ el.style.display='block';
+ el.innerHTML = RECENT_FALLBACK
+  ? '<b>?recent='+RECENT+'h requested, but this manifest carries no clip ages</b> — it predates the '
+    +'feature. Showing the FULL pool instead of an empty one; rebuild the manifest to filter.'
+  : 'Showing only checkpoints rendered in the last <b>'+RECENT+' hours</b> ('+nModels+' model'
+    +(nModels===1?'':'s')+(nModels===1?', so comparisons are between CHECKPOINTS of that one run rather than between models':'')+'). '
+    +(MANIFEST_BUILT?'Ages measured when the clip index was last rebuilt, '+MANIFEST_BUILT.replace('T',' ')+'.':'')
+    +' Drop <code>?recent</code> from the address for everything.';
+}
 loadManifest().then(()=>{
  populateLengthSelect();
- if(!lensel.options.length){startbtn.textContent='no eligible clips found';return;}
+ const nm=new Set(); for(const k in pools) for(const pid in pools[k].byPrompt) for(const e of pools[k].byPrompt[pid].values()) nm.add(e.model);
+ showPoolBadge(nm.size);
+ if(!lensel.options.length){startbtn.textContent=RECENT!==null?'no clips that recent — try a bigger ?recent=':'no eligible clips found';return;}
  startbtn.disabled=false;startbtn.textContent='tap to begin';
 }).catch(()=>{startbtn.textContent='failed to load — reload the page';});
 startbtn.onclick=()=>{overlay.style.display='none';loadNewPair();};
