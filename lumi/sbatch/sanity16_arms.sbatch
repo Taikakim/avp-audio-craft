@@ -104,6 +104,27 @@ read -ra ARM_LIST <<< "${ARMS}"
 [ -f "${VENV}/bin/activate" ] || { echo "[sanity] FATAL: ${VENV} missing"; exit 1; }
 mkdir -p "${RUNROOT}"
 
+# ── WALL-CLOCK vs WORKLOAD GUARD ────────────────────────────────────────────────────────────────
+# SMOKE=1 is an env-var prefix on the submit line, and a prefix that gets lost in a copy-paste turns
+# a 20-step smoke into a 60-epoch run under whatever --time was meant for the smoke. That happened
+# THREE times on 2026-08-18, and each time the symptom arrived ~40 minutes later as a TIMEOUT, which
+# also silently voids any --dependency=afterok chain hanging off this job. The mismatch is knowable
+# at startup, so it should be fatal at startup.
+TLIM_MIN=$(squeue -h -j "${SLURM_JOB_ID:-0}" -o "%l" 2>/dev/null | awk -F'[-:]' '
+  NF==4 {print $1*1440 + $2*60 + $3; next}     # D-HH:MM:SS
+  NF==3 {print $1*60 + $2; next}               # HH:MM:SS
+  NF==2 {print $1; next}                       # MM:SS
+  {print 0}')
+if [ "${SMOKE}" != "1" ] && [ "${TLIM_MIN:-0}" -gt 0 ] && [ "${TLIM_MIN}" -lt 240 ]; then
+  echo "[sanity] FATAL: EPOCHS=${EPOCHS} but this job's time limit is only ${TLIM_MIN} min."
+  echo "[sanity]   That is a smoke-test time limit on a full-length run -- almost certainly a lost"
+  echo "[sanity]   SMOKE=1 on the submit line. Left alone this would TIMEOUT and, if anything is"
+  echo "[sanity]   chained to it with --dependency=afterok, silently prevent that work from ever"
+  echo "[sanity]   running. Submit with SMOKE=1 for a smoke, or give it --time=24:00:00 for real."
+  echo "[sanity]   Override deliberately with ALLOW_SHORT=1 if you truly want a truncated run."
+  [ "${ALLOW_SHORT:-0}" = "1" ] || exit 1
+fi
+echo "[sanity] time limit: ${TLIM_MIN:-unknown} min   SMOKE=${SMOKE}"
 echo "[sanity] ADAPTER=${ADAPTER} rank=${RANK} alpha=${ALPHA} lr=${LR} T=${FRAMES} bs=${BS} epochs=${EPOCHS}"
 echo "[sanity] optimizer=adamw (stock), no fusion / no spectral-wd / no agc / no fwn / no EMA"
 echo "[sanity] runroot=${RUNROOT}"
