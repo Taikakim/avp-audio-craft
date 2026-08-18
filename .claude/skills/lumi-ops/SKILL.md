@@ -116,6 +116,61 @@ See `fullft_mixed_avp_goa_t4096.sbatch` for the converted reference script.
 scripts in this repo (`fullft_avp_aug.sbatch`, `aug8_train_ddp.sbatch`, etc.) have NOT been
 migrated yet and should be treated as unverified until they are or until checked this way.
 
+## Budget: check WALL CLOCK, not just GPU-hours — and go WIDE (2026-08-18)
+
+**`lumi-allocations` reports GPU-hours; the thing that actually kills you is DAYS.** On 2026-08-18
+the project read **2963/5000 GPU-hours used (2037 remaining) but "4 day(s) of compute left, 92% of
+project time has passed"**. Those two numbers imply completely different strategies, and the whole
+fleet — me included — spent a day optimising the wrong one, arguing about whether three training
+arms "fit the budget" when the hours were never the constraint. **Read the `lumi-allocations` prose
+block, not only the GPU-hours line.** It also prints days-to-data-removal (94 at the time), which is
+a separate clock: compute ending does NOT mean the data disappears, so there is no reason to prune
+or pull under panic once compute stops.
+
+**COROLLARY THAT CHANGES HOW YOU SIZE JOBS: with hours plentiful and days scarce, running narrow is
+the expensive mistake.** ~2000 GPU-hours over 4 days is ~500 GPU-h/day available; ONE 8-GCD node
+spends 192/day. We were underspending by ~3×. Any stage made of INDEPENDENT per-item work is a
+FIXED pile of GCD-hours — spreading it wider costs the same and finishes sooner:
+
+| GCDs | wall time for a fixed 137 GCD-hour pile | billed |
+|---|---|---|
+| 8 (1 node) | 17.1 h | 137 GCD-h |
+| 64 (8 nodes) | 2.1 h | 137 GCD-h |
+| 128 (16 nodes) | 1.1 h | 137 GCD-h |
+
+**MANY SMALL SHORT JOBS BEAT ONE BIG LONG ONE.** Ask for 16 × (1 node, `--time=03:00:00`), not
+1 × (16 nodes, `--time=30:00:00`) — small short jobs backfill almost immediately while a large
+long request waits for nodes to align. Ask for a walltime near the real runtime; an inflated
+`--time` actively hurts scheduling.
+
+**PRE-DISTRIBUTE THE WORK, do not let each job compute its own shards.** Many small jobs each
+running the same sharding logic all derive the SAME shards and process the same items in parallel.
+Make the assignment ONCE, before submitting, as one file list per GPU:
+`lumi/make_caption_shards.py --mode {caption,granite} --shards N` writes `shard_000.txt …`, then
+each job takes `SHARD_OFFSET` and rank *r* reads `shard_$((OFFSET+r)).txt`. Race-free by
+construction and inspectable — read `shard_007.txt` and you know exactly what that GPU will do.
+Converted: `goa_caption.sbatch`, `goa_granite.sbatch` (both FATAL if their shards are missing rather
+than silently self-generating).
+- **The shard maker's done-test MUST match the task's own skip-test exactly.** Captions key on
+  `sha1(path RELATIVE to archive)` (`goa_caption_task.py:65`); granite keys on output BASENAME
+  (`goa_granite_task.py:114`). I wrote the absolute-path version first, it matched nothing, and it
+  would have re-sharded all 23k tracks instead of the 15.7k remaining — no error, just silent
+  rework. The maker now REFUSES if outputs exist and none match a computed key.
+- **Round-robin (`todo[s::N]`), never contiguous blocks** — a contiguous shard is one long album, so
+  per-shard runtime tracks album length and the campaign waits on its unluckiest shard.
+- **Resumable stages can be killed and relaunched WIDER mid-run.** Both stages skip completed work,
+  so re-sharding re-balances only what is LEFT. That is what makes "this is going to take 17 h on
+  one node, kill it and go 16-wide" a safe move (done 2026-08-18 at 7481/23232).
+- **OVERLAP dependent stages instead of serialising them** when the downstream stage is also
+  resumable: granite ran on the captions that already existed while Music Flamingo kept producing
+  more, then a second granite pass swept the remainder. Two passes, same total work, hours saved.
+
+**⚠️ THIS IS NOT THE MULTI-NODE CASE THE DDP SECTION WARNS ABOUT.** That warning is about forming
+ONE coordinated gradient group across nodes. Captioning/revision/pre-encoding are N INDEPENDENT
+single-GPU tasks with no rendezvous and nothing crossing a node boundary — scaling those out is just
+more shards, and `--nodes=N` (or N separate 1-node jobs) is fine. Do not let the DDP warning talk
+you out of parallelising embarrassingly-parallel work.
+
 ## Containers — READ THIS FIRST (a full day of debugging came from not knowing it, 2026-08-02)
 
 Which SIF you train in decides whether MIOpen fights you.
