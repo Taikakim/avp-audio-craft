@@ -76,13 +76,25 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
   Worth knowing: this is the THIRD independent cause of the goa collapse (after DDP never forming and
   the FusionOpt weight-decay runaway, both fixed and verified) — so if the new arms still disappoint,
   the prior should be "there is a fourth", not "the method does not work".
-- **🔴 BUDGET CALL — `lumi-allocations`, before the three arms go.** The re-caption is ~192 GCD-hours
-  on top of W's running bracket, and the three 20-epoch arms are ~1150 more; the last figure on record
-  was 2880 of 5000 hours (08-09, nine days stale), and you want days reserved for the melody adapter.
-  If it is tight, C's recommendation is to drop the **`both`** arm — hyperball and EDM2 answer the
-  question separately and `both` only matters if one clearly wins.
+- **🔴🔴 WALL CLOCK, NOT GPU-HOURS, IS NOW THE BINDING CONSTRAINT — 4 DAYS OF COMPUTE LEFT**
+  (C, 08-18, from your `lumi-allocations`). 92% of project time gone; **2037 GPU-hours REMAIN**
+  (2963/5000 used) but only ~4 days to spend them in. Everything the fleet has been optimising —
+  including my own "should it be three arms or two" — was the wrong variable: the hours fit easily,
+  the SERIAL CHAIN does not. Mine: MF re-caption (~03:00 Aug 19) → granite (~12-24h) → rebuild/audit/
+  re-key (~3h) → three arms (24-48h) ends **Aug 21-22**, against a deadline ~Aug 22. No slack.
+  **DECISION I NEED FROM YOU (buys back 12-24h):** skip the granite stage. After the re-caption, T3
+  is hinted MF at ~89% genre-correct and T1 is the effnet classifier at 70.4% — both genre-correct,
+  neither derived from granite — so the arms can train on T1+T3 (`--caption_probs 0.3,0,0.7`) and
+  start a half-day to a day earlier. Granite adds short-tag phrasing diversity; it is not worth a
+  fifth of the days left. My recommendation: **skip it**, add it to a later run if there is time.
+  Corollary, and it reverses advice I gave you last night: **`CKEVERY=2` means a truncated run is not
+  a wasted run** — do NOT shorten the arms defensively, start them as early as possible and keep
+  whatever lands when compute ends.
+  **AND the storage pressure is OFF:** 94 days until data removal, `/scratch` 36% full (18 of 50 TB).
+  Ignore my earlier push to prune aggressively and pull selectively against a full drive — fats can
+  sit on scratch for weeks while you pull at leisure, which also preserves the earlier checkpoints you
+  said you may want to continue from rather than the possibly-overtrained final ones.
 
-## 👂 Ear queue (needs Kim's ears)
 - **Rating page: the switching bug is fixed and the two versions are now one — worth 60 seconds
   of your hands before you share it** (W, 08-17). Your report ("clicking the circle stops
   responding, needs a scrub to unstick, then works for a while") was NOT the gesture bug I fixed
