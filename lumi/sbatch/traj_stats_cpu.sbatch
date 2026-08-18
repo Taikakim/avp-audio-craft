@@ -98,19 +98,35 @@ export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${
 # no GPU in this job at all; keep torch from probing one
 export ROCR_VISIBLE_DEVICES="" HIP_VISIBLE_DEVICES=""
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4     # per worker, not per node — PAR workers x 4 threads
+# NO xargs -I{} HERE, and no exported function. The first version passed a "|"-delimited record
+# through `xargs -I{} bash -c "run_one {}"` -- and bash parses the un-quoted "|" as a PIPELINE, so
+# `run_one /path | epoch=*.weights.ckpt | 8 | slim | 299` ran nothing at all: 91 runs listed, zero
+# outputs, zero OK/FAILED lines, and no error either. Positional args + a plain batching loop have
+# no quoting surface to get wrong.
 run_one() {
-  IFS="|" read -r d g n k es <<< "$1"
-  L=$(echo "${d}" | sed "s|.*/runs/||; s|/|__|g")
-  echo "[traj] START ${L} (${n} ${k} ckpts)"
-  python ${CODE}/control/sa3_control/checkpoint_trajectory_stats.py \
-      --ckpt-dir "${d}" --glob "${g}" --label "${L}" --out-dir '"${OUTDIR}"' \
-      --epoch-steps "${es}" \
-    && echo "[traj] OK ${L}" || echo "[traj] FAILED ${L} (continuing)"
+  local d="$1" g="$2" n="$3" k="$4" es="$5"
+  local L; L=$(echo "${d}" | sed "s|.*/runs/||; s|/|__|g")
+  echo "[traj] START ${L} (${n} ${k} ckpts, ${es} steps/ep)"
+  if python ${CODE}/control/sa3_control/checkpoint_trajectory_stats.py \
+       --ckpt-dir "${d}" --glob "${g}" --label "${L}" --out-dir "${OUTDIR}" \
+       --epoch-steps "${es}"; then
+    echo "[traj] OK ${L}"
+  else
+    echo "[traj] FAILED ${L} (continuing)"
+  fi
 }
-export -f run_one
-export OUTDIR='"${OUTDIR}"' CODE
-# xargs -P for the pool; -n1 so one run dir per worker
-cat /tmp/traj_work.txt | xargs -d "\n" -n1 -P '"${PAR}"' -I{} bash -c "run_one {}"
+export OUTDIR='"${OUTDIR}"'
+PAR='"${PAR}"'
+i=0
+while IFS="|" read -r d g n k es; do
+  [ -n "${d}" ] || continue
+  run_one "${d}" "${g}" "${n}" "${k}" "${es}" &
+  i=$((i+1))
+  if [ $((i % PAR)) -eq 0 ]; then wait; fi
+done < /tmp/traj_work.txt
+wait
+echo "[traj] all ${i} run(s) dispatched"
+
 '
 echo "[traj] done. outputs:"; ls -la "${OUTDIR}" 2>/dev/null | tail -20
 echo "[traj] VERIFY by artifact count, not rc — per-run failures are caught and logged, not fatal."
