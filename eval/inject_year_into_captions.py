@@ -61,7 +61,12 @@ def _tidy(s: str) -> str:
     """Clean up punctuation left behind when a span is deleted mid-list (", ,", ",,", doubled
     spaces). Removing a phrase from a comma-separated tag list otherwise leaves debris that ends up
     in a training prompt."""
-    s = re.sub(r"\s{2,}", " ", s)
+    # Collapse only whitespace runs that are NOT sentence spacing. Music Flamingo double-spaces
+    # after '.', '!' and '?' throughout, and a blanket \s{2,} rule reformatted every caption it
+    # touched -- 678 files would have had their spacing rewritten as a side effect of an era edit
+    # somewhere else in the string, and the diff previews centred on that whitespace instead of on
+    # the actual correction. Debris from a deleted span is what this is for, not house style.
+    s = re.sub(r"(?<![.!?])\s{2,}", " ", s)
     s = re.sub(r"\s+,", ",", s)
     s = re.sub(r",\s*(?:,\s*)+", ", ", s)
     return s.strip(" ,")
