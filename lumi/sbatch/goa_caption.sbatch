@@ -47,24 +47,28 @@ mkdir -p "${OUT}/shards" "${OUT}/json"
 ls "${MODELS}"/hub/models--nvidia--music-flamingo-hf/snapshots/*/ >/dev/null 2>&1 \
   || { echo "[goa-cap] FATAL: MF weights not in ${MODELS} — run build_offload_venv.sh step 3"; exit 1; }
 
-LIST=${OUT}/shards/all_tracks.txt
-find "${ARCHIVE}" -type f \( -iname '*.mp3' -o -iname '*.flac' -o -iname '*.m4a' \) | sort > "${LIST}"
-N=$(wc -l < "${LIST}")
-# WIDTH: shard count MUST equal the total task count, or tracks are silently never captioned.
-# Derived from SLURM so the two cannot drift (`--nodes=N` alone is enough; NTASKS follows).
-NNODES=${SLURM_NNODES:-1}
-NTASKS=$(( NNODES * 8 ))
-# The job is RESUMABLE by construction -- goa_caption_task.py:67 does
-#   todo = [p for p in tracks if not (jdir/f"{key(p)}.json").exists()]
-# -- so relaunching over a partially-captioned OUT dir picks up only what is missing, and the
-# shard width can CHANGE between runs without redoing work. That is what makes "kill the 1-node
-# job and relaunch wider" safe (2026-08-18: killed at 7481/23232 and relaunched on more nodes).
-DONE=$(ls -1 "${OUT}/json" 2>/dev/null | wc -l)
-echo "[goa-cap] ${N} tracks total, ${DONE} already captioned, $(( N - DONE )) to do"
-echo "[goa-cap] width: ${NNODES} node(s) x 8 = ${NTASKS} shards; prompts=${PROMPT_TYPES:-full}"
-echo "[goa-cap] the work is a FIXED ~$(( (N - DONE) / 115 )) GCD-hours at the measured 115 tracks/h/GCD"
-echo "[goa-cap]   -> wall time is that divided by ${NTASKS}: about $(( ((N - DONE) / 115 + NTASKS - 1) / NTASKS )) h"
-for R in $(seq 0 $(( NTASKS - 1 ))); do awk -v r=${R} -v n=${NTASKS} 'NR % n == r' "${LIST}" > "${OUT}/shards/shard_${R}.txt"; done
+# ── SHARDS ARE PRE-MADE, NOT COMPUTED HERE (2026-08-18) ─────────────────────────────────────────
+# Kim's design: pre-distribute one file list per GPU with lumi/make_caption_shards.py, THEN submit
+# many small jobs. Small jobs backfill far better than one huge allocation, but they cannot each
+# compute their own sharding -- every job would derive the SAME shards and caption the same tracks
+# in parallel. Making the assignment once, up front, is race-free by construction and inspectable:
+# read shard_007.txt and you know exactly what that GPU will do.
+#   python3 lumi/make_caption_shards.py --archive ${SCRATCH}/goa_archive \
+#       --out ${OUT} --shards 64
+#   for O in 0 8 16 24 32 40 48 56; do SHARD_OFFSET=$O sbatch --nodes=1 --time=03:00:00 \
+#       lumi/sbatch/goa_caption.sbatch; done
+# Each job owns shards [SHARD_OFFSET, SHARD_OFFSET + ntasks). Rank r reads shard_$((OFFSET+r)).txt.
+SHARD_OFFSET=${SHARD_OFFSET:-0}
+NTASKS=$(( ${SLURM_NNODES:-1} * 8 ))
+SDIR=${OUT}/shards
+for R in $(seq 0 $(( NTASKS - 1 ))); do
+  G=$(( SHARD_OFFSET + R ))
+  F=$(printf "%s/shard_%03d.txt" "${SDIR}" "${G}")
+  [ -f "${F}" ] || { echo "[goa-cap] FATAL: ${F} missing — run lumi/make_caption_shards.py first (shards are PRE-MADE, this script no longer generates them)"; exit 1; }
+done
+TODO=$(cat $(for R in $(seq 0 $(( NTASKS - 1 ))); do printf "%s/shard_%03d.txt " "${SDIR}" "$(( SHARD_OFFSET + R ))"; done) | wc -l)
+echo "[goa-cap] shards ${SHARD_OFFSET}..$(( SHARD_OFFSET + NTASKS - 1 )) (${NTASKS} GPUs), ${TODO} tracks this job; prompts=${PROMPT_TYPES:-full}"
+echo "[goa-cap] hint file: ${GENRE_HINT_FILE:-<none>} -> '${GENRE_HINT}'"
 
 LIMIT_ARG=""
 [ "${PROBE:-0}" = "1" ] && LIMIT_ARG="--limit 2" && echo "[goa-cap] PROBE MODE: 2 tracks/rank"
@@ -73,7 +77,7 @@ LIMIT_ARG=""
 # nothing crossing a node boundary, so the "multi-node is unsolved" warning in lumi-ops does NOT
 # apply here (that is about forming ONE coordinated gradient group). Scaling out is just more
 # shards. Same reasoning W used to run the suomisoundi bracket as separate single-node jobs.
-srun --nodes=${NNODES} --ntasks=${NTASKS} --gpus-per-task=1 --cpus-per-task=7 \
+srun --nodes=${SLURM_NNODES:-1} --ntasks=${NTASKS} --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 R=${SLURM_PROCID}
@@ -92,10 +96,13 @@ export PROMPT_TYPES='"${PROMPT_TYPES:-full}"'
 export MF_USE_FA2='"${MF_USE_FA2:-0}"' CAPTION_MAX_SEC='"${CAPTION_MAX_SEC:-300}"'
 export GENRE_HINT="'"${GENRE_HINT}"'"
 python '"${CODE}"'/lumi/goa_caption_task.py \
-  --shard '"${OUT}"'/shards/shard_${R}.txt \
+  --shard $(printf '"${OUT}"'/shards/shard_%03d.txt $(( '"${SHARD_OFFSET}"' + R ))) \
   --archive '"${ARCHIVE}"' --out '"${OUT}"' '"${LIMIT_ARG}"' \
   2>&1 | sed "s/^/[rank ${R}] /"
 '
 NJSON=$(ls "${OUT}/json" 2>/dev/null | wc -l)
-echo "[goa-cap] captions=${NJSON}/${N} -> ${OUT}/json"
-# SUCCESS = json count vs ${N}; resumable — re-submit to continue. Never trust rc alone.
+echo "[goa-cap] captions now ${NJSON} total in ${OUT}/json (this job was assigned ${TODO})"
+echo "[goa-cap] remaining across the corpus: re-run lumi/make_caption_shards.py to see, or just"
+echo "[goa-cap]   re-shard + resubmit — it is resume-aware and re-balances only what is left."
+# SUCCESS = the json COUNT rising by ~${TODO}, never the exit code. Resumable: re-shard and
+# re-submit to continue, and the width may change between runs.
