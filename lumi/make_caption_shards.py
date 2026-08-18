@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""make_caption_shards.py — pre-distribute the captioning work as one file list per GPU.
+"""make_caption_shards.py — pre-distribute per-GPU work lists for the caption pipeline.
+
+TWO MODES, because both stages of the pipeline have the same shape (a big pile of independent
+per-track work, resumable, wanting to run as wide as the scheduler allows):
+  --mode caption  items = audio files under --archive; done = out/json/<sha1(relpath)>.json
+  --mode granite  items = MF caption jsons under --captions-json; done = out/<same basename>.json
+Kept as ONE tool on purpose: a second near-identical shard maker is exactly the duplication that
+has bitten this repo twice in 24h (two sidecar re-keyers, two caption auditors).
+
 
 WHY (Kim direct, 2026-08-18): the binding constraint is WALL CLOCK — 4 days of compute left, with
 ~500-600 GPU-hours/day available against the 192 that a single 8-GCD node actually spends. The
@@ -49,9 +57,15 @@ def key_for(path: Path, archive: Path) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--archive", required=True, type=Path, help="corpus root to scan for audio")
+    ap.add_argument("--mode", choices=("caption", "granite"), default="caption",
+                    help="caption: shard AUDIO for Music Flamingo. granite: shard MF CAPTION JSONS "
+                         "for the Granite revision pass.")
+    ap.add_argument("--archive", type=Path, help="[caption] corpus root to scan for audio")
+    ap.add_argument("--captions-json", type=Path,
+                    help="[granite] dir of MF caption jsons to revise (…/json)")
     ap.add_argument("--out", required=True, type=Path,
-                    help="captions dir (expects/creates out/json and out/shards)")
+                    help="[caption] captions dir (uses out/json, writes out/shards). "
+                         "[granite] the GRANITE output dir (writes out/shards)")
     ap.add_argument("--shards", type=int, required=True,
                     help="TOTAL number of shards = total GPUs across every job you will submit")
     ap.add_argument("--rate", type=float, default=115.0,
@@ -61,9 +75,29 @@ def main():
                     help="shard EVERY track, not just uncaptioned ones (default is resume-aware)")
     a = ap.parse_args()
 
-    jdir = a.out / "json"
     sdir = a.out / "shards"
     sdir.mkdir(parents=True, exist_ok=True)
+
+    if a.mode == "granite":
+        if not a.captions_json or not a.captions_json.is_dir():
+            raise SystemExit("[shards] FATAL: --mode granite needs --captions-json <dir of MF jsons>")
+        # Granite's own skip test is basename-based (goa_granite_task.py:114:
+        #   todo = [p for p in paths if not exists(join(out, basename(p)))]), so match it exactly.
+        items = sorted(Path(e.path) for e in os.scandir(a.captions_json)
+                       if e.name.endswith(".json"))
+        done = {e.name for e in os.scandir(a.out) if e.name.endswith(".json")} \
+            if a.out.is_dir() else set()
+        todo = items if a.all else [p for p in items if p.name not in done]
+        print(f"[shards] mode=granite: {len(items)} MF caption jsons under {a.captions_json}")
+        print(f"[shards] {len(done)} already revised in {a.out}")
+        _emit(todo, sdir, a.shards, a.rate)
+        # Granite can only revise captions that EXIST. If the MF pass is still running, this shards
+        # a moving target — say so rather than let someone shard 8k and wonder where the rest went.
+        print(f"[shards] NOTE granite can only cover captions that exist NOW. If the MF pass is "
+              f"still running, re-run this and resubmit when it finishes to pick up the rest.")
+        return 0
+
+    jdir = a.out / "json"
 
     # os.scandir over the tree, not glob — a 23k-file dir defeats shell globbing (ARG_MAX) and
     # `find` has been unreliable on Lustre here; scandir is neither.
@@ -92,29 +126,30 @@ def main():
             f"because this would silently re-caption every track.")
     print(f"[shards] {len(tracks)} tracks under {a.archive}")
     print(f"[shards] {len(done)} already captioned in {jdir}")
-    print(f"[shards] {len(todo)} TO DO -> {a.shards} shards "
-          f"({len(todo) / max(1, a.shards):.0f} tracks each)")
-    if not todo:
-        print("[shards] nothing to do — every track already has a caption json")
-        return 0
+    _emit(todo, sdir, a.shards, a.rate)
+    return 0
 
-    # round-robin, so a shard is never a contiguous run of one album (which would make per-shard
-    # runtime depend on album length rather than averaging out)
+
+def _emit(todo, sdir, shards, rate):
+    """Round-robin the work into `shards` files and report the cost. Round-robin (not contiguous
+    blocks) so a shard is never one long album — otherwise per-shard runtime tracks album length
+    instead of averaging out, and the campaign waits on its unluckiest shard."""
+    if not todo:
+        print("[shards] nothing to do — every item already has an output")
+        return
     written = 0
-    for s in range(a.shards):
-        part = todo[s::a.shards]
+    for s in range(shards):
+        part = todo[s::shards]
         (sdir / f"shard_{s:03d}.txt").write_text("".join(f"{p}\n" for p in part))
         written += len(part)
-    assert written == len(todo), f"shard round-trip lost tracks: {written} != {len(todo)}"
-
-    hours = len(todo) / a.rate / a.shards
-    print(f"[shards] wrote {a.shards} files to {sdir} (shard_000.txt .. shard_{a.shards-1:03d}.txt)")
-    print(f"[shards] every track assigned exactly once ({written} total, verified)")
-    print(f"[shards] at {a.rate:.0f} tracks/h/GCD this is ~{len(todo)/a.rate:.0f} GCD-hours of work")
-    print(f"[shards]   -> ~{hours:.1f} h wall if all {a.shards} run concurrently")
-    print(f"[shards] submit e.g.: for O in {' '.join(str(o) for o in range(0, a.shards, 8))}; "
-          f"do SHARD_OFFSET=$O sbatch --nodes=1 --time=03:00:00 lumi/sbatch/goa_caption.sbatch; done")
-    return 0
+    assert written == len(todo), f"shard round-trip lost items: {written} != {len(todo)}"
+    print(f"[shards] {len(todo)} TO DO -> {shards} shards ({len(todo)/max(1,shards):.0f} each)")
+    print(f"[shards] wrote {shards} files to {sdir} (shard_000.txt .. shard_{shards-1:03d}.txt)")
+    print(f"[shards] every item assigned exactly once ({written} total, verified)")
+    print(f"[shards] at {rate:.0f} items/h/GCD this is ~{len(todo)/rate:.0f} GCD-hours of work")
+    print(f"[shards]   -> ~{len(todo)/rate/shards:.1f} h wall if all {shards} run concurrently")
+    print(f"[shards] submit: for O in {' '.join(str(o) for o in range(0, shards, 8))}; "
+          f"do SHARD_OFFSET=$O sbatch --nodes=1 --time=03:00:00 <the sbatch>; done")
 
 
 if __name__ == "__main__":

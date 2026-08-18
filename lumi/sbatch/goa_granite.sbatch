@@ -48,16 +48,33 @@ MODELDIR="models--$(echo "${GRANITE_MODEL}" | sed 's|/|--|g')"   # HF cache uses
 ls "${MODELS}"/hub/${MODELDIR}/snapshots/*/ >/dev/null 2>&1 \
   || { echo "[granite] FATAL: ${GRANITE_MODEL} not staged in ${MODELS} — run the login-node snapshot_download (header)"; exit 1; }
 
-LIST=${OUT}/shards/all_caps.txt
-find "${CAPJSON}" -type f -name '*.json' | sort > "${LIST}"
-N=$(wc -l < "${LIST}")
-echo "[granite] ${N} MF captions; model=${GRANITE_MODEL}"
-for R in 0 1 2 3 4 5 6 7; do awk -v r=${R} 'NR % 8 == r' "${LIST}" > "${OUT}/shards/shard_${R}.txt"; done
+# ── SHARDS ARE PRE-MADE (2026-08-18, same design as goa_caption.sbatch) ─────────────────────────
+# Wall clock is the binding constraint, not GPU-hours, so this stage runs as wide as the scheduler
+# allows via MANY SMALL JOBS. Small jobs cannot each compute their own sharding (they would all
+# derive the same shards and revise the same tracks), so the assignment is made once, up front:
+#   python3 lumi/make_caption_shards.py --mode granite \
+#       --captions-json ${SCRATCH}/goa_archive_captions_hinted/json \
+#       --out ${SCRATCH}/goa_archive_captions_hinted/granite --shards 128
+#   for O in $(seq 0 8 120); do SHARD_OFFSET=$O sbatch --nodes=1 --time=03:00:00 \
+#       lumi/sbatch/goa_granite.sbatch; done
+# Rank r reads shard_$((SHARD_OFFSET+r)).txt. Resumable: goa_granite_task.py:114 skips inputs whose
+# output basename already exists, so re-sharding and resubmitting only picks up what is left, and
+# the width may change between runs.
+SHARD_OFFSET=${SHARD_OFFSET:-0}
+NTASKS=$(( ${SLURM_NNODES:-1} * 8 ))
+SDIR=${OUT}/shards
+for R in $(seq 0 $(( NTASKS - 1 ))); do
+  F=$(printf "%s/shard_%03d.txt" "${SDIR}" "$(( SHARD_OFFSET + R ))")
+  [ -f "${F}" ] || { echo "[granite] FATAL: ${F} missing — run make_caption_shards.py --mode granite first"; exit 1; }
+done
+TODO=$(cat $(for R in $(seq 0 $(( NTASKS - 1 ))); do printf "%s/shard_%03d.txt " "${SDIR}" "$(( SHARD_OFFSET + R ))"; done) | wc -l)
+echo "[granite] shards ${SHARD_OFFSET}..$(( SHARD_OFFSET + NTASKS - 1 )) (${NTASKS} GPUs), ${TODO} captions to revise"
+echo "[granite] hint file: ${GRANITE_GENRE_HINT_FILE:-<none>}"
 
 LIMIT_ARG=""
 [ "${PROBE:-0}" = "1" ] && LIMIT_ARG="--limit 3" && echo "[granite] PROBE MODE: 3 tracks/rank"
 
-srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
+srun --nodes=${SLURM_NNODES:-1} --ntasks=${NTASKS} --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 R=${SLURM_PROCID}
@@ -75,10 +92,11 @@ GENRE_HINT_VAL=""
 GHF='"${GRANITE_GENRE_HINT_FILE}"'
 [ -n "${GHF}" ] && [ -f "${GHF}" ] && GENRE_HINT_VAL=$(cat "${GHF}")
 python '"${CODE}"'/lumi/goa_granite_task.py \
-  --shard '"${OUT}"'/shards/shard_${R}.txt --out '"${OUT}"' '"${LIMIT_ARG}"' \
+  --shard $(printf '"${OUT}"'/shards/shard_%03d.txt $(( '"${SHARD_OFFSET}"' + R ))) --out '"${OUT}"' '"${LIMIT_ARG}"' \
   --genre-hint "${GENRE_HINT_VAL}" \
   2>&1 | sed "s/^/[rank ${R}] /"
 '
 NG=$(ls "${OUT}"/*.json 2>/dev/null | wc -l)
-echo "[granite] revised=${NG}/${N} -> ${OUT}"
-# SUCCESS = json count vs ${N}; resumable — re-submit to continue. Never trust rc alone.
+echo "[granite] revised now ${NG} total in ${OUT} (this job was assigned ${TODO})"
+# SUCCESS = the json COUNT rising by ~${TODO}, never the exit code. Resumable: re-shard with
+# make_caption_shards.py --mode granite and resubmit to continue; the width may change between runs.
