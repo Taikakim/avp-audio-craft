@@ -208,6 +208,20 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   after). Read with `python3 eval/trajectory_sketch_analyze.py /scratch/project_465003186/runs/traj_sketch/<arm>/traj`
   (several dirs at once for cross-run). What it decides: whether the "broken AdamW" signature is BATCH
   (accum8/bs8 drift where bs1 diffuses) or OPTIMIZER (Fusion-bs1 healthy where AdamW-bs1 isn't).
+- **LUMI, next night — the #59 melody A/B with the new R²(t)-gated arm (C, 2026-08-19; you asked for the code).**
+  The v3 melody-subspace A/B (`lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`, wired since 08-06) now has
+  a 4th arm: K=5 + noise-level gate from the measured melody R²(t) curve (same recipe as arm 1, only the
+  gate differs; the arm measures its own gate on its GCD first if the reference json isn't in the tree).
+  Files: everything is in **one bundle, 106 KB, 11 files, paths relative to `code/`** —
+  `/home/kim/Projects/SAO/traj_sketch_bundle.tgz` (also all pushed to the three GitHub mirrors:
+  `avp-audio-craft` sa3-style-adapter 1b16bdb, `stable-audio-3` latch-sa3-phase1 fc576ea, `audio-tools-avp`
+  main 3b7f82f). On LUMI after upload: `cd /project/project_465003186/code && tar xzvf traj_sketch_bundle.tgz && sbatch lumi/sbatch/subspace_loss_v3sel_grid_mt.sbatch`
+  (4 GCDs on small-g, 40 h; preflight refuses to run if any of the new files is missing) and, if
+  hours allow, `sbatch lumi/sbatch/traj_sketch_arms.sbatch` (8 arms, 6 h; the SNR-gate arms carry the
+  FIXED grad-based gate now). Fallbacks if scp fails again: `scp -O`, `sftp`, or the LUMI web portal's
+  Files upload. **Kill-criterion for the gated arm:** if by ep10 it does not move whitened-chroma
+  recurrence (`eval/melody_wall_analysis.py`) or your ears vs arm 1, the melody-first (SFD) route gets
+  the budget instead.
 - **Listen: spectral-repair probes of a broken AdamW arm (C, 2026-08-18).** Four variants of
   `adamw_goa_t512_bs4_lr1e4` ep9, cfg 7 / W1 / 23.79 s / 3 prompts, rendering on CPU tonight into
   `lumi_runs/analysis/task_vector_gram_goa_2026-08-18/renders/` (UUID drive): `00_bad_terminal`,
