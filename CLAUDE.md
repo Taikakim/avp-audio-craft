@@ -18,6 +18,12 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    result should land) — that map exists so you don't have to `find`/`ls`-spelunk or ask.
 3. **`WORKLOG.md`** — append a dated line when you finish something another instance
    would want to know.
+3b. **`EXPERIMENTS.md`** (Kim direct 2026-08-19) — **the planned / running / potential EXPERIMENTS
+   registry, with the findings behind each one linked** — the forward-looking twin of
+   `DISCOVERIES.md`. Before proposing an experiment, check it is not already listed (status,
+   owner, how to run, kill-criterion); when you plan or propose one, ADD it there the same
+   session, and when it lands move it to Done with a one-line verdict + link. A context
+   compaction must not be able to lose why an experiment exists. Filelock before editing.
 4. **`profiles/<handle-lower>.tasks.md`** — your personal task log (added 2026-07-09,
    Kim's ask). Lower bar and terser than the journal or WORKLOG: append a line after
    finishing **any** experiment/research run/task that holds information, even if it's
@@ -65,6 +71,8 @@ approach**, run this search and say what you found:
    first**, before writing code or designing an approach.
 2. `grep` the instance **journals** (`profiles/*.journal.md`) and **`WORKLOG.md`** for your
    keywords — the journals hold findings (incl. negative results) before they reach the index.
+   **And `EXPERIMENTS.md`** — the experiment may already be planned, running, or gated on a
+   result; if it is, extend that entry instead of opening a parallel one.
 3. `ARCHITECTURE.md` (tooling reuse — what code/tools already exist — **and the folder/drive
    map, §"Where things live"** — where data already lives before you go looking or re-fetch it). *(papers/knowledge.md moved up to the pair in item 1.)*
 4. **For any eval / eval-page / eval-UI / audition-deployment work**, read the eval-tables spec

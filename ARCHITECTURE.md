@@ -277,6 +277,7 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 | `ARCHITECTURE.md` (this) | 1-page what's-where |
 | `MASTER.md` | cross-cutting facts always loaded into every session |
 | `WORKLOG.md` | append-only session log |
+| `EXPERIMENTS.md` | **planned / running / potential experiments registry with the findings behind each** — the forward-looking twin of `DISCOVERIES.md` (Kim 2026-08-19); check before proposing, add when planning, move to Done when landed |
 | **`DAWPROJECT.md`** | parsing Bitwig `.dawproject` exports → **tick-exact ground truth** (note-grids/gate/sections); the **loop-expansion gotcha** (clips loop a short pattern → naive parse undercounts ~2.6×); stem/group naming; tools `eval/musicology/dawp_align.py` + `dawp_to_frames.py` |
 | **`docs/superpowers/specs/`** | **design specs — the running source-of-truth per subsystem** (eval-tables human-first, agent-dialogue **comms protocol**, control-head disintegration gate, eval-quality/training-signal, metrical-tree PE, reality-structured experiments, **full-FT regularization A/B — AGC + output-std penalty vs weight-decay, `2026-08-10-fullft-regularization-ab.md`** (the follow-up to the full-FT latent-scale-runaway/drone fix; targeted regularizers that bound the runaway without dulling detail), …). No per-spec index yet → a NEW spec MUST get a one-line pointer here or in the relevant §A–F entry (discoverability rule, CLAUDE.md §5). |
 | `docs/venvs.md` | the venvs + the CK-flash-attn build |
