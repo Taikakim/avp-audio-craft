@@ -17,7 +17,7 @@
 #SBATCH --account=project_465003186
 #SBATCH --partition=small-g
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=3
+#SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=7
 #SBATCH --mem-per-gpu=60G
@@ -40,6 +40,11 @@ mkdir -p "${RUNROOT}" "${FLASH}"
 [ -f "${VENV}/bin/activate" ] || { echo "[subloss-mt] FATAL: ${VENV} missing — run lumi/build_train_venv_mt.sh on uan18"; exit 1; }
 grep -q -- "--subspace_loss_basis" "${CODE}/stable-audio-3/scripts/train_lora.py" \
   || { echo "[subloss-mt] FATAL: train_lora.py missing --subspace_loss_basis (code refresh needed)"; exit 1; }
+# arm 3 (added 2026-08-19): the R²(t)-GATED subspace term needs the tgate flag + module + measurement tool
+grep -q -- "subspace_loss_tgate" "${CODE}/stable-audio-3/scripts/train_lora.py" \
+  || { echo "[subloss-mt] FATAL: train_lora.py missing --subspace-loss-tgate (rsync stable-audio-3 + eval/melody_r2_vs_t.py)"; exit 1; }
+[ -f "${CODE}/stable-audio-3/stable_audio_3/training/tgate.py" ] || { echo "[subloss-mt] FATAL: tgate.py missing"; exit 1; }
+[ -f "${CODE}/eval/melody_r2_vs_t.py" ] || { echo "[subloss-mt] FATAL: eval/melody_r2_vs_t.py missing"; exit 1; }
 grep -q "subspace_basis" "${CODE}/stable-audio-3/stable_audio_3/training/diffusion.py" \
   || { echo "[subloss-mt] FATAL: training/diffusion.py missing subspace hook (code refresh needed)"; exit 1; }
 [ -f "${CODE}/lumi/melody_subspace15_selective_v3.npz" ] \
@@ -52,7 +57,7 @@ fi
 echo "[subloss-mt] image=${SIF}"
 echo "[subloss-mt] goa latents: $(ls ${FLASH}/latents_sa3/*.npy 2>/dev/null | wc -l)"
 
-srun --nodes=1 --ntasks=3 --gpus-per-task=1 --cpus-per-task=7 \
+srun --nodes=1 --ntasks=4 --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -euo pipefail
 ARM=${SLURM_PROCID}
@@ -74,13 +79,33 @@ export TRITON_CACHE_DIR=/tmp/triton-${ARM}
 rm -rf "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"; mkdir -p "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"
 # NO ROCR export: --gpus-per-task=1 cgroup pins (pattern A)
 
+TGATE_ARGS=""
 case ${ARM} in
   0) K=2 ;;
   1) K=5 ;;
   2) K=12 ;;
+  3) K=5; TGATE=1 ;;     # K=5 + R²(t) gate (C 2026-08-19): same recipe as arm 1, only the gate differs
   *) exit 0 ;;
 esac
 NAME=subloss_v3sel_k${K}
+if [ "${TGATE:-0}" = "1" ]; then
+  NAME=${NAME}_tgate
+  # Gate source: the measured R²(t) curve of the melody subspace under medium-base. Use the
+  # committed reference if the code tree carries it; otherwise MEASURE IT HERE on this GCD first
+  # (~5 min, 48 crops x 19 t) so the arm is self-contained. Mode r2 = weight where melody is
+  # recoverable; the json also carries r2_rest and deficit for later modes.
+  GATE=${CODE}/lumi/melody_r2_vs_t_medium-base.json
+  if [ ! -f "${GATE}" ]; then
+    GATE=${RUNROOT}/${NAME}/melody_r2_vs_t_medium-base.json
+    mkdir -p "${RUNROOT}/${NAME}"
+    [ -f "${GATE}" ] || python ${CODE}/eval/melody_r2_vs_t.py --latents ${FLASH}/latents_sa3 \
+        --basis ${CODE}/lumi/melody_subspace15_selective_v3.npz --n-crops 48 --frames 1024 \
+        --out "${GATE}" 2>&1 | tee ${RUNROOT}/${NAME}/r2_measure.log
+  fi
+  [ -f "${GATE}" ] || { echo "[arm ${ARM}] FATAL: no gate file"; exit 1; }
+  TGATE_ARGS="--subspace-loss-tgate ${GATE} --subspace-loss-tgate-mode r2 --subspace-loss-tgate-floor 0.05"
+  echo "[arm ${ARM}] t-gate: ${GATE}"
+fi
 RUN=${RUNROOT}/${NAME}
 mkdir -p "${RUN}"
 
@@ -93,7 +118,7 @@ cat > "${RUN}/run_meta.json" <<META
  "hypothesis": "Melody-SELECTIVE subspace A/B (C 2026-08-06). Same as the v2 subloss grid but the upweighted 15-dim subspace is now melody-SELECTIVE (whitened CSP: signal=atlas interval deltas, noise=real codec deltas+timbre) instead of top-15 melody-variance. The v2 basis had ~zero melody-vs-codec-noise selectivity on held-out data (SNR 1.0x) so upweighting it boosted codec hiss as much as melody (probable cause of the weak #59); v3 is 5.1x melody-over-codec-noise held-out. Prediction: v3 arms show more within-clip contour repetition (hook axis) at matched/cleaner texture than the v2 subloss_goa_k arms and the lreq K=1 baseline. Container: lumi-multitorch-full ROCm7 FA2.",
  "arm_K": ${K}, "subspace": "melody_subspace15_selective_v3.npz (whitened-CSP melody-selective, 15-dim, held-out SNR 5.1x; A/B vs subloss_goa_k${K} on v2 + lreq K=1)",
  "dataset": "goa (latents_sa3, full 5401)", "adapter": "dora-rows r128 a128",
- "optimizer": "adamw wd0.01", "precision": "bf16", "frames_T": 512, "batch_size": 4,
+ "optimizer": "adamw wd0.01", "precision": "bf16", "frames_T": 512, "batch_size": 4, "tgate": "${TGATE_ARGS:-none}",
  "lr": "1e-4", "epochs": 20, "ckpt_every": 4,
  "baseline": "runs/lr_equiv_grid_mt/lreq_goa_lr1e4 (K=1, byte-identical recipe)",
  "kim_feedback": null
@@ -114,7 +139,7 @@ if python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --base_precision bf16 \
     --lr 1e-4 --batch_size 4 \
     --frames 512 --beat-aware-crop \
-    --subspace-loss-basis ${BASIS} --subspace-loss-weight ${K} \
+    --subspace-loss-basis ${BASIS} --subspace-loss-weight ${K} ${TGATE_ARGS} \
     ${RESUME_FLAG} \
     --epochs 20 --checkpoint_every_epochs 4 \
     --num_workers 6 --seed 1 --no_demos --logger csv \
