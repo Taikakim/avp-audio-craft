@@ -40,8 +40,9 @@ not beat, known worst-case orders; the contribution is the unified forward proof
 - **Rotation matters, and our geometry rotates:** rhythm dominates at high noise, harmony/melody at low
   (our layer×feature R² maps). SA3's latent is a candidate for a ROTATING matrix schedule, not just a fixed
   anisotropic one — a stronger and later claim.
-- **The one thing usable now — the adaptive grid — is for `-base`, many-step sampling only.** Our
-  production is APT-distilled few-step (asymptotics void). RF analogue: equidistribute √(local error growth)
+- **The one thing usable now — the adaptive grid — applies to EVERYTHING we render (Kim's correction,
+  08-19: we train and render on `medium-base` exclusively at 16–50 steps; the APT few-step `medium` is the
+  one we never use). At N=16–32 the discretization term is large, so the gain should be ≥ their 7–16 %.** RF analogue: equidistribute √(local error growth)
   ≈ the curvature of the learned velocity field along the path, estimable from a pilot batch — the
   known "curvature-adaptive step" family (cf. Align Your Steps, Sabour et al. 2024, which optimises grids
   via KL bounds; not re-read here). Expected gain: single-digit-to-mid-teens % discretization error at
