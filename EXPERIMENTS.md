@@ -181,6 +181,11 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
 - Blocks the `goa` sanity arm and any MF-captioned goa training. KIM-TASKLIST.
+- Full root-cause/timeline/who-did-what: `docs/goa-captioning-status-2026-08-18.md` (three root causes:
+  Granite read_mf path-bug fixed+verified, MF genre-blind captioning fixed via hint+widened LUMI jobs,
+  the stale-sidecar-derivative trap hit twice). Status there as of last update: recaption job 21335408
+  running; **not re-verified since — my LUMI access lapsed 2026-08-19 (cert expiry, see memory), so this
+  entry needs a fresh check from whoever has working ssh before being trusted as current.**
 ### F2 — Bounded-norm full-FT arms (`fullft_3src_t512_fp32_bounded.sbatch`, hyperball) — **READY, waits on captions**
 ### F3 — avp/avpaug duplicate split — **GATED on Kim**
 ### F4 — mp3-vs-FLAC latent sensitivity (goa corpus quality / FLAC re-source) — **PLANNED** (memory: goa-corpus-quality).
