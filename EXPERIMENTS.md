@@ -159,6 +159,18 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
   board-wide (their numbers: −7…−16 % discretization error at N=16–64). Pilot-estimate growth along the
   path, √-quantile grid into `build_schedule`; A/B at 16/24/32 steps, PQ + ears. Sharpens, doesn't add melody.
 
+### D7 — Local anisotropic smoothness term on the level-invariant chroma readout (Garain 2608.05696 assessment) — **POTENTIAL, GATED on D2 + a working melody head**
+- From an external assessment Kim relayed (08-19, pre-review flag): the only transferable piece of a
+  math.AP mixed local+nonlocal elliptic paper is the ENERGY DECOMPOSITION. Build only the LOCAL term:
+  per-band circular-pitch norm on the TIV-normalised readout output (raw chroma has no per-frame norm →
+  ‖Δc‖ measures loudness), computed onset mask ρ_t (MIDI + d/dt X[0]), strength = measured R²(t).
+  **Do NOT build the nonlocal term as minimisation — it is the loop attractor as an objective**; the
+  recurrence-MATCHING reformulation = the anti-loop R(z) framing (`inference/recurrence_potential.py`
+  is the existing primitive; A_ts / SSM / CC half-matrix / RQA / persistent H¹ are one object).
+- Overlaps: `control/sa3_control/contour_loss.py` (the n-ary/contour dial), the chroma-loss zoo; the
+  wave operator (D2) on the same planes is the stronger oriented prior — this is its isotropic special case.
+- Experiments if ever: E-A (with/without, air only) is the falsifier. Pointer in papers/Prospective.
+
 ### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
 
