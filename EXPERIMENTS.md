@@ -171,6 +171,22 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
   wave operator (D2) on the same planes is the stronger oriented prior — this is its isotropic special case.
 - Experiments if ever: E-A (with/without, air only) is the falsifier. Pointer in papers/Prospective.
 
+### D8 — Does the melody readout direction ROTATE with noise level? (per-t refit of the linear chroma readout on z_t, per band) — **POTENTIAL (fold into `eval/melody_r2_vs_t.py`)**
+- From an external assessment of Liu & Purohit 2608.04970 (08-19). **Scope correction (C):** the #59
+  preconditioner, the `P_melody` schedule projector, `E(W_c z)` and readout-space guidance all act on
+  x̂₀|t / the target space, where the clean-latent melody basis is fixed by construction — only SALIENCE
+  varies with t, and the R²(t) gate (B2) already handles that. Rotation matters only for things that read
+  z_t DIRECTLY (the LatCH heads, t-injected for exactly this). So: measure it as a fact about the noised
+  marginal — per-t ridge refit of the linear readout, per band, principal angles between row spaces,
+  singular-value floor + conditioning reported — an hour on the R²(t) forward path; the per-σ layer×feature
+  R² maps (`latch/probe_layer_feature_map.py`) are most of it already.
+
+### D9 — Do melody and timbre controls COMMUTE? (Lie-bracket test ↔ SFD's premise) — **POTENTIAL (cheap)**
+- `exp(εv_mel)∘exp(εv_timbre)` vs reverse order with existing steering vectors / adapters; a nonzero bracket
+  + one ordering better = SFD's "semantics lead" premise holds on SA3. Note: circulation/conservativeness
+  tests are trivial for gradient guidance (∇L is conservative by construction) — only meaningful for
+  non-gradient controls (adapters, concept directions, Head-B). After the deliverable work.
+
 ### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
 
