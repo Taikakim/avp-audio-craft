@@ -97,14 +97,27 @@ def main():
     ap.add_argument("--ladder", required=True, help="glob over ONE run's epoch=*.ckpt")
     ap.add_argument("--profiles", default="uniform,expasc,bell_late")
     ap.add_argument("--start-ep", type=int, default=0, help="drop epochs before this")
+    ap.add_argument("--end-ep", type=int, default=None, help="drop epochs after this (window soups)")
     ap.add_argument("--peak-frac", type=float, default=0.75)
     ap.add_argument("--tau", type=float, default=1.5)
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--tag", default=None, help="name for the run in output filenames")
+    ap.add_argument("--weights", default=None,
+                    help="QUALITY-WEIGHTED soup (Kim 2026-08-19: 'a combination of PQ and the crest and "
+                         "whitening values are probably a good way to get the weighing'): a JSON file or "
+                         "inline JSON {\"<epoch>\": weight, ...}; epochs absent or <=0 are dropped; "
+                         "normalised to sum 1; written as profile 'quality'. Build the numbers from "
+                         "clip_metrics.db per rendered epoch (Audiobox PQ, crest factor, spectral flatness).")
     a = ap.parse_args()
 
-    paths = sorted(glob.glob(a.ladder), key=lambda p: int(re.search(r"epoch=(\d+)", p).group(1)))
-    paths = [p for p in paths if int(re.search(r"epoch=(\d+)", p).group(1)) >= a.start_ep]
+    # one file per epoch: a fat .ckpt and its slim .weights.ckpt are the same weights and would be
+    # double-counted; prefer the slim (faster to load)
+    by_ep = {}
+    for p in glob.glob(a.ladder):
+        ep = int(re.search(r"epoch=(\d+)", p).group(1))
+        if ep not in by_ep or (".weights." in p and ".weights." not in by_ep[ep]):
+            by_ep[ep] = p
+    paths = [by_ep[e] for e in sorted(by_ep) if a.start_ep <= e <= (a.end_ep if a.end_ep is not None else 10**9)]
     if len(paths) < 2:
         sys.exit(f"[soup] need >=2 checkpoints, got {len(paths)} for {a.ladder}")
     runs = {_run_of(p) for p in paths}
@@ -112,6 +125,8 @@ def main():
         sys.exit(f"[soup] REFUSING: ladder spans {len(runs)} runs {sorted(runs)}. Factor-wise "
                  f"averaging is only sound within one run (B·A gauge). Cross-run: average ΔW_eff.")
     run = a.tag or runs.pop()
+    if a.start_ep or a.end_ep is not None:
+        run = f"{run}_ep{a.start_ep}-{a.end_ep if a.end_ep is not None else 'end'}"
     eps = [int(re.search(r"epoch=(\d+)", p).group(1)) for p in paths]
     print(f"[soup] {run}: {len(paths)} checkpoints, epochs {eps}", flush=True)
 
@@ -123,8 +138,19 @@ def main():
                     if re.search(r"\.(lora_A|lora_B|magnitude)$", k)})
         cfg = cfg or ck.get("lora_config", {})
     os.makedirs(a.out_dir, exist_ok=True)
-    for prof in [p.strip() for p in a.profiles.split(",") if p.strip()]:
-        w = profile_weights(len(sds), prof, a.peak_frac, a.tau)
+    profiles = [p.strip() for p in a.profiles.split(",") if p.strip()]
+    qw = None
+    if a.weights:
+        raw = json.load(open(a.weights)) if os.path.exists(a.weights) else json.loads(a.weights)
+        raw = {int(k): float(v) for k, v in raw.items()}
+        keep = [i for i, e in enumerate(eps) if raw.get(e, 0.0) > 0]
+        if len(keep) < 2:
+            sys.exit(f"[soup] --weights covers {len(keep)} of the ladder's epochs {eps}; need >=2")
+        tot = sum(raw[eps[i]] for i in keep)
+        qw = [raw[e] / tot if raw.get(e, 0.0) > 0 else 0.0 for e in eps]
+        profiles = ["quality"] + [p for p in profiles if p != "quality"]
+    for prof in profiles:
+        w = qw if prof == "quality" else profile_weights(len(sds), prof, a.peak_frac, a.tau)
         out = soup_state_dicts(sds, w)
         dst = os.path.join(a.out_dir, f"soup_{run}_{prof}.ckpt")
         torch.save({"state_dict": out, "lora_config": cfg, "epoch": -1, "global_step": -1,
