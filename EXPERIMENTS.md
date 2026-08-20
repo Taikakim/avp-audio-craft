@@ -13,6 +13,12 @@ owner of each entry: whoever listed it.*
 needs a submit/GPU slot) · PLANNED (agreed, not built) · POTENTIAL (proposed, not agreed) · GATED (waits
 on a listed result) · DONE/SUPERSEDED.
 
+**Briefing external reviewers/pre-review agents (2 headline experiments lost to this):** the chroma
+readout is a LINEAR `Conv1d(256→128, k=1)` — its Jacobian is the constant `W_c`, so per-point Jacobian
+SVDs and "co-activation graphs" of it are degenerate; SA3 attention is DIFFERENTIAL (two subtracted
+softmaxes ⇒ SIGNED maps — thresholding invalid); 64 learned memory tokens act as global hubs in any
+position graph. State these up front in every external brief.
+
 **Standing methods that shape every entry:** lightweight tests first (Kim) · negative-result autopsy
 before a null is final (Kim) · disintegration gate + Kim's ears on any "works" claim · manifest-v2
 sidecars on every output · THREE-AUDIENCE standard on eval pages.
@@ -186,6 +192,19 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
   + one ordering better = SFD's "semantics lead" premise holds on SA3. Note: circulation/conservativeness
   tests are trivial for gradient guidance (∇L is conservative by construction) — only meaningful for
   non-gradient controls (adapters, concept directions, Head-B). After the deliverable work.
+
+### D10 — Intermittency of melody formation (X1) — **PLANNED (fold into `eval/melody_r2_vs_t.py`)**
+- From the Carbone/Servidio 2607.14796 assessment (08-19): record ‖Δĉ‖ per adjacent denoising step
+  (ĉ = W_c·x̂₀|t) across samples; report kurtosis/tail exponent per band and whether heavy steps cluster
+  in t. HEAVY-TAILED ⇒ melody forms in a few crucial updates ⇒ upgrade the R²(t) gate (B2) from a
+  salience curve to an event-weighted one; GAUSSIAN ⇒ closes the thread cheaply. Same forward loop as
+  the R²(t) measurement — third use of one tool. Afternoon.
+- X2 (pair dispersion) deferred with its fix recorded: measure in READOUT space normalised by the
+  trajectory-wide contraction, else it re-measures the sampler. X3 (interaction topology / forbidden
+  zones: block melody↔timbre channel communication per block) BLOCKED on signed differential attention
+  + the 64 memory-token hubs; the transferable claim is network-science (cite pruning/sparsification,
+  not turbulence). "Phase-transition threshold" in the paper is hedged conjecture over 5 confounded
+  runs — do not let it travel unhedged.
 
 ### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
