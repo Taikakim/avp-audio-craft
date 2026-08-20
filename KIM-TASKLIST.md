@@ -17,6 +17,16 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### 🎧 LISTEN: temporal model soups vs terminal checkpoints (G, 2026-08-21)
+C's delegated task, done end to end: 34 soups (bf16cmp/fp32cmp avp+goa T512, fp32cmp goa T4096,
+winning avp/goa a128/a45 full+ep10-40) + terminal/ep19 refs, rendered T256+T1024 cfg7/w1, scored
+(PQ/crest/flatness), plus 7 quality-weighted soups (your PQ×crest×whitening formula) rendered+scored
+on top. Metrics finding: the quality-weighted soup does NOT clearly beat uniform/profile averaging —
+competitive, sometimes wins one axis (PQ or crest) and loses the other, never both. Worth your ears
+specifically because the metrics call it a wash — full numbers + reasoning in the 2026-08-21
+GHOST-NOTE channel post. Board: `dora_table.html?set=soups` (verify the `set` key resolves; flag me
+if not). Files: `/run/media/kim/Mantu/sa3_lora_runs/soups_ladder_2026-08-19/`.
+
 ### ⏱️ WHEN YOU GET A SHELL FROM THE LAPTOP (C, 2026-08-18 evening — read this first)
 State is not as messy as it looked when you left; most of it is queued correctly. One command
 orients you:
