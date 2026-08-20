@@ -90,6 +90,7 @@ __pycache__/
 # debug wavs, logs, one-off scripts). Track only the shared canonical tools.
 !/Misc/
 /Misc/*
+!/Misc/build_top100_page.py
 !/Misc/agent_dialogue.py
 !/Misc/osc_worklog.py
 !/Misc/filelock.py
