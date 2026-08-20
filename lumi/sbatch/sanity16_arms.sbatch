@@ -235,7 +235,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   '"${ADAPTER_ARG}"' --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --optimizer adamw --lr '"${LR}"' \
   --encoded_dir '"${DIRS_ARG}"' --caption_sidecar '"${SIDE_ARG}"' \
-  --frames '"${FRAMES}"' --batch_size '"${BS}"' --num_workers 4 \
+  --frames '"${FRAMES}"' --batch_size '"${BS}"' --num_workers 4 --no_demos \
   '"${STEP_ARGS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   --save_dir '"${RUN}"' \
   2>&1 | sed "s/^/['"${NAME}"'] /"

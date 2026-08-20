@@ -93,6 +93,14 @@ NJSON=$(ls "${FLASH}/${LAT}"/*.json 2>/dev/null | wc -l)
 # the json prompts ARE the captions on this corpus (no sidecar; same as the healthy twins) — a
 # latent without its json trains on an empty caption, silently
 [ "${NJSON}" -ge "$((NLAT * 9 / 10))" ] || { echo "[traj] FATAL: ${NJSON} json for ${NLAT} latents -- prompts missing"; exit 1; }
+# REFUSE to start over a live/leftover runroot (2026-08-20: a SMOKE=1 and a real submit ran
+# concurrently into the same arm dirs and corrupted each other's memmaps; the smoke gate is
+# SEQUENTIAL by design — smoke, check exit, THEN real, or wipe the runroot between).
+if ls "${RUNROOT}"/*/traj/upd_sketch.npy >/dev/null 2>&1; then
+  echo "[traj] FATAL: ${RUNROOT} already holds trajectory files. Another traj_sketch job may be"
+  echo "[traj]        running (squeue), or these are leftovers. rm -rf ${RUNROOT} first."
+  exit 1
+fi
 echo "[traj] latents=${NLAT} json=${NJSON} arms: ${ARMS}  smoke=${SMOKE}"
 
 run_arm() {  # run_arm NAME GCD

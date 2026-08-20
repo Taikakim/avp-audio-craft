@@ -145,7 +145,7 @@ torchrun --standalone --nnodes=1 --nproc-per-node='"${NPROC}"' \
   '"${ADAPTER_ARG}"' --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --optimizer adamw --lr '"${LR}"' \
   --encoded_dir '"${FLASH}"'/'"${LAT_DIR}"' --caption_sidecar '"${SIDECAR}"' \
-  --frames '"${FRAMES}"' --batch_size '"${BS}"' --num_workers 4 \
+  --frames '"${FRAMES}"' --batch_size '"${BS}"' --num_workers 4 --no_demos \
   '"${STEP_ARGS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   --save_dir '"${RUN}"' \
   2>&1 | sed "s/^/[ddp8] /"
