@@ -55,10 +55,14 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
 - **Gate:** trajectory stats (`eval/compare_trajectory_stats.py`) + soups + Kim's ears; pull before scratch purge.
 - Links: `lumi/sbatch/sanity16_arms.sbatch`, `sanity16_biggoa_ddp8.sbatch`, KIM-TASKLIST.
 
-### A4 — Full-FT AdamW + cosine: the MATCHED control for the drone family — **PLANNED (LUMI, 8 GCDs)**
-- **Why:** 2605.10468: full-FT of an Adam-pretrained base with Muon is the documented mismatch case
-  (more forgetting, hypersensitive to update strength); our full-FTs were Fusion or constant-LR AdamW —
-  the matched, decayed control was never run.
+### A4 — Full-FT AdamW: the MATCHED control for the drone family — **READY → Kim's submit 08-21 (`fullft_fleet.sbatch`)**
+- **Why:** 2605.10468: full-FT of an Adam-pretrained base with Muon is the documented mismatch case;
+  every prior full-FT was Fusion (drone) — the matched control was never run. Kim direct 08-21:
+  AdamW full-FT fp32 T1024 lr1e-4 on biggoa/avpaug/suomi/mix3. bs2+GA4 (effective 64 — the only
+  proven-safe full-FT batch pattern), EMA ON (render loads EMA weights), constant LR (no AdamW
+  scheduler exists) → judge by EMA + soups. `PRECISION=fp16` twins one submit away (Kim preferred
+  fp16's sound in the precision-ladder listens; fp16 also enables FA2). Kim's fp32-collapse worry
+  answered: the collapse mechanism was Fusion norm growth, not fp32 (trajectory twins identical).
 
 ### A5 — DoRA-rows vs plain LoRA under Fusion at r128 — **PLANNED (LUMI, 2 GCDs)**
 - **Why:** 2605.10468 found Adam-tuned LoRA variants do NOT transfer to Muon and never tested DoRA-Muon;
@@ -76,7 +80,7 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
 - `--fusion-split-qkv/--fusion-split-adaln` exist; were they ON in the regsweep/surgical arms? If not,
   the cheapest retest of the late collapse (2608.02502: AdaLN is the scale pathway).
 
-### A9 — Bread-and-butter AdamW production fleet (winning recipe × 4 datasets × 2 seeds) — **READY (Kim's submit 08-20)**
+### A9 — Bread-and-butter AdamW production fleet (winning recipe × 4 datasets × 2 seeds) — **RUNNING (21422678-81 seed1, 21422863-66 seed2)**
 - **Kim direct:** copy `winning_avp_t1024_a45_fp32` (DoRA-rows r128 α45, AdamW lr 1e-4 constant, fp32,
   T1024, 20 ep) onto suomisoundi, big goa, the 3-source mix — plus **avp itself as the control** that
   isolates the one deliberate delta (1-GCD batch 4 → 8-GCD DDP batch 8). 8 × single-node 8-GCD jobs
