@@ -74,7 +74,7 @@ EFF=$((BS * NPROC))
 SMOKE=${SMOKE:-0}
 
 LAT_DIR=${LAT_DIR:-latents_goa_bigset}
-SIDECAR=${SIDECAR:-${CODE}/lumi/goa_bigset_sidecar_hinted.json}
+SIDECAR=${SIDECAR:-${CODE}/lumi/goa_bigset_hinted_bylatent.json}
 RUN=${RUN:-${SCRATCH}/runs/sanity16_${ADAPTER}_ddp8/biggoa}
 
 [ -n "${SIF}" ] || { echo "[ddp8] FATAL: no multitorch image"; exit 1; }

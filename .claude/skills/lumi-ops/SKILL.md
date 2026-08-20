@@ -104,6 +104,19 @@ real job. The pattern is: smoke → `sacct` shows COMPLETED 0:0 → real. If bot
 21416097/99), the fix is scancel BOTH, `rm -rf` the runroot, resubmit the real one alone.
 `traj_sketch_arms.sbatch` now refuses to start over a runroot that already holds trajectory files.
 
+## Bigset sidecars are RELPATH-keyed; pre-encoded latents need the RE-KEYED one (3rd silent-caption incident, 2026-08-21)
+
+All three `goa_bigset_sidecar*.json` are keyed by track relpath; `latents_goa_bigset` ids are
+synthetic. `make_caption_sampler` keys on basename-stem and on a miss returns `{}` — and because
+the bigset was pre-encoded with `--no_caption_check` there is NO stored prompt either, so a
+relpath-keyed sidecar means **silent EMPTY-prompt (unconditional) training**. Six fleet arms
+burned ~2 h this way before the sidecar audit caught it. Fix: `lumi/build_bigset_caption_sidecar.py`
+(report-only first; 2026-08-21 run matched 12523/12524 exact-relpath) →
+`lumi/goa_bigset_hinted_bylatent.json`; every sbatch that trains on `latents_goa_bigset` must point
+at the **_bylatent** file. Rule of the incident family (3rd occurrence): **before any training
+launch on a new corpus/sidecar pairing, verify ONE key actually resolves** — one python line
+against the sidecar + one latent json beats any amount of post-hoc audit.
+
 ## Multi-GPU DDP — the --gpus-per-task=1 + SLURMEnvironment pattern is UNRELIABLE (2026-08-17)
 
 **Every multi-GPU training script in this repo (`fullft_avp_aug.sbatch` and everything modeled

@@ -59,10 +59,10 @@ RUN=${SCRATCH}/runs/winning_fleet/${NAME}
 # ── dataset registry (dirs under $SCRATCH; sidecars aligned 1:1; per-source caption probs) ──────
 case "${DATASET}" in
   suomi)  DIRS="suomisoundi_latents";           SIDES="${CODE}/lumi/suomisoundi_caption_sidecar.json"; PROBS="0,0.9,0.1" ;;
-  biggoa) DIRS="latents_goa_bigset";            SIDES="${CODE}/lumi/goa_bigset_sidecar_hinted.json";   PROBS="0,0,1" ;;
+  biggoa) DIRS="latents_goa_bigset";            SIDES="${CODE}/lumi/goa_bigset_hinted_bylatent.json";   PROBS="0,0,1" ;;
   avp)    DIRS="latents_avp";                   SIDES="${CODE}/lumi/avp_captions_tiered.json";         PROBS="0,0.9,0.1" ;;
   mix3)   DIRS="latents_goa_bigset,suomisoundi_latents,latents_avp"
-          SIDES="${CODE}/lumi/goa_bigset_sidecar_hinted.json,${CODE}/lumi/suomisoundi_caption_sidecar.json,${CODE}/lumi/avp_captions_tiered.json"
+          SIDES="${CODE}/lumi/goa_bigset_hinted_bylatent.json,${CODE}/lumi/suomisoundi_caption_sidecar.json,${CODE}/lumi/avp_captions_tiered.json"
           PROBS="0,0,1;0,0.9,0.1;0,0.9,0.1" ;;
   *) echo "[wfleet] FATAL: unknown DATASET ${DATASET}"; exit 1 ;;
 esac

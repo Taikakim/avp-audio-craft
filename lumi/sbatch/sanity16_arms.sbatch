@@ -83,7 +83,7 @@ RUNROOT=${RUNROOT:-${SCRATCH}/runs/sanity16_${ADAPTER}}
 # mismatched count silently pairs the wrong sidecar with the wrong corpus and every caption misses.
 SIDE_AVP=${SIDE_AVP:-${CODE}/lumi/avp_captions_tiered.json}
 SIDE_SUOMI=${SIDE_SUOMI:-${CODE}/lumi/suomisoundi_caption_sidecar.json}
-SIDE_BIGGOA=${SIDE_BIGGOA:-${CODE}/lumi/goa_bigset_sidecar_hinted.json}
+SIDE_BIGGOA=${SIDE_BIGGOA:-${CODE}/lumi/goa_bigset_hinted_bylatent.json}
 SIDE_GOA=${SIDE_GOA:-}      # intentionally EMPTY — see the goa arm's guard below
 
 declare -A DSET_DIRS DSET_SIDE
