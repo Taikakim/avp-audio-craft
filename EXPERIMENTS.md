@@ -233,6 +233,35 @@ parameter-table claim, including ones already in this file, against that.
 ### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
 
+### D11 — Frame-shuffle null on Tier-2 air (external queue "0b" — the one genuinely open Tier-0 gate) — **GATED on 1 GPU-hour**
+- **Question:** is Tier-2's air 0.918 melodic content or a static per-track spectral fingerprint
+  (mastering EQ / codec lowpass are track-constant and land in air)? Frame-shuffling within track
+  preserves the fingerprint and destroys melody — if 0.918 survives, the band scoping is aimed wrong.
+- **Partial evidence already in hand:** `same_chroma_E2_perwindow_norm_2026-08-12` — per-window z-norm
+  keeps matched > null (air 0.526 vs 0.266), so temporal structure carries identity beyond
+  window-local statics; but a constant chroma SHAPE survives per-window norm, so the shuffle null is
+  still the sharper test. **How:** regenerate the 1200 tier-2 predictions (predict_head.py, 1 GPU-h —
+  cache them somewhere durable this time, not tmpfs) + a 20-line shuffle variant of
+  `score_e2_perwindow_norm.py`. Their "0c" (band-weight confound: air is trained 4–6× harder) is a
+  reporting note to attach to the same result.
+- **Closed items from the same external queue (they could not see our repo):** their item 1
+  ("the make-or-break guidance listening test, never scheduled") RAN 2026-07-22 — chroma
+  melody-turning probe NEGATIVE 0/12, authority ~10× short → guidance route closed, conditioner route
+  (Head-B → prepend → SFD/B4) is the live lane. Their E1-stems and E2-perwindow both have result dirs
+  (2026-08-12). Their provenance warning about Tier-2 is wrong (full harness + results.json exist).
+  Their 0a kill-condition cannot fire: our P_melody is the v3 CSP basis, rank 15/256 by construction.
+
+### D12 — Contour-token conditioning stack (external drafts LANDED in mir; Q1 next) — **READY (code) / PLANNED (Q1)**
+- `mir/src/conditioners/{morph_grids,contour_codes,contour_streams,contour_stats}.py` + regression
+  tests (mir 42c3a83): monotone-invariant K&P dense-rank contour tokens over frame/event grids,
+  redundancy judged by CONDITIONAL ENTROPY (agreement provably blind cross-alphabet; nested-L
+  H(L2|L3)=0 reproduced in tests). Feeds Head-B/prepend/B4 target design.
+- **Q1 (do next, ~10 lines):** an IOI/duration morph stream on the note-onset grid — rhythm is the
+  channel the model KEEPS (beat R² 0.80 @ L14); all six current streams are pitch/energy-derived.
+- Parked from the same drop: Q3 distance-graded hard negatives, Q4 basis-space interpolation,
+  Q5–Q7 (gated on a Phase-B head). Their `measure_contour_codes.py` was NOT in the zip — ask the
+  external agent or re-derive if Q2 (min H(A|B) on real audio) is picked up.
+
 ## E. Melody head (LatCH f0) and LatCH hygiene
 
 ### E1 — Held-out-validated melody head: epoch budget + EMA — **DONE 08-18**
