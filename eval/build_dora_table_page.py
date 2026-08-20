@@ -109,7 +109,8 @@ STAGING_COPY = Path.home() / ".cache/evals_aac/dora_table.html"
 
 # column groups + per-metric direction (+1 = higher is better/green, -1 = lower is better)
 HP = ["model", "ckpt", "arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T",
-      "batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps", "train_N", "n_cells"]
+      "batch", "effective_batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps",
+      "train_N", "n_cells", "caption_probs", "params_source"]
 METRICS = {"clap_matched": +1, "clap_margin_far": +1, "ce": +1, "pq": +1, "cu": +1, "pc": +1,
            "zcr": -1, "flatness": -1, "flux": +1, "hf_ratio": -1, "bpm": 0,
            "onset_p95": +1, "centroid": 0, "crest": -1, "rms": +1,
@@ -119,7 +120,15 @@ STRUCT_COLS = ["recall", "boundaries_per_min", "loop_score"]  # not in the base 
 NICE = {"clap_matched": "CLAP", "clap_margin_far": "CLAP·mgn", "alpha_over_rank": "α/rank",
         "frames_T": "T", "onset_p95": "onset", "hf_ratio": "hf", "flatness": "flat",
         "precision": "prec", "optimizer": "opt",
+        "effective_batch": "eff·b", "caption_probs": "cap·p", "params_source": "src",
         "recall": "struct·recall", "boundaries_per_min": "sections/min", "loop_score": "loop"}
+
+# Dataset labels arrived from two extraction paths and disagree on spelling for the SAME
+# corpus (2026-08-21): the name-regex path emits avp/goa, the sbatch path emits the
+# encoded_dir basename (latents_avp / latents_sa3 / latents_avp_aug10). Left as-is they
+# split every dataset-grouped view in two and read as five corpora where there are three.
+DATASET_ALIASES = {"latents_avp": "avp", "latents_sa3": "goa",
+                   "latents_avp_aug10": "avp_aug10", "latents_avp_originals": "avp_originals"}
 
 # hover tooltips per column (native title=). ↑ = higher is better, ↓ = lower is better.
 DESC = {
@@ -131,7 +140,16 @@ DESC = {
     "alpha_over_rank": "alpha ÷ rank (effective scale). <1 = 'adjusted' (adj) — beats the standard α=rank.",
     "precision": "Training precision: fp32 or bf16. ≈equal for genre-adherence & buzz; fp32's edge is fidelity (ear-only).",
     "frames_T": "Latent context length in frames (T). ×0.0928 s = seconds. Optimum ~1024; T4096 (long) is worse.",
-    "batch": "Training batch size. Marginal 'bigger better' is a confound; at matched context small batch is cleaner.",
+    "batch": "PER-RANK training batch size. Marginal 'bigger better' is a confound; within a single "
+             "dataset the spread is ~0.1 PQ (8→7.57, 4→7.51, 1→7.46) and n.s. at run level.",
+    "effective_batch": "batch × ddp_world_size × accumulate_grad_batches — the batch the optimizer "
+                       "actually sees. Recorded for the 42% of runs whose sbatch was parsed; blank "
+                       "elsewhere. The plain `batch` column is PER-RANK and understates multi-GPU runs.",
+    "caption_probs": "Caption-tier sampling probabilities (T1,T2,T3) the run trained with. Blank where "
+                     "not recorded in the launch script.",
+    "params_source": "Where this row's hyperparameters came from: `sbatch` = parsed from the actual "
+                     "launch script (authoritative) · `name-regex` = inferred from the run name "
+                     "(a guess — treat rank/alpha/lr here as unverified).",
     "lr": "Learning rate. Flat 1e-4↔2e-4; cliffs (collapses) at 6e-4.",
     "optimizer": "Optimizer: FusionOpt or AdamW.",
     "dataset": "Training corpus: goa (psytrance) · avp (Kim's own music) · mixed.",
@@ -201,6 +219,11 @@ def main(public=False):
     rows = list(csv.DictReader(AGG.open()))
     # Hide borked model families (see HIDE_MODEL_PREFIXES): they vanish from the table entirely.
     rows = [r for r in rows if not r.get("model", "").startswith(HIDE_MODEL_PREFIXES)]
+    # Collapse the two spellings of each corpus (see DATASET_ALIASES) before anything groups on it.
+    for r in rows:
+        ds = (r.get("dataset") or "").strip()
+        if ds in DATASET_ALIASES:
+            r["dataset"] = DATASET_ALIASES[ds]
     # MODEL_SETS derived from the VISIBLE models only (hidden families have no rows to select).
     model_labels = sorted({r["model"] for r in rows})
     model_sets = derive_model_sets(model_labels)

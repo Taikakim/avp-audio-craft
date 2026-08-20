@@ -21,6 +21,24 @@
 #
 #   ARMSET=r32  sbatch …   → rank 32,  batch 16 : arm A lr 1e-4 | arm B lr 3e-5   (GPUs 0-3 / 4-7)
 #   ARMSET=r256 sbatch …   → rank 256, batch 8  : arm A lr 1e-4 | arm B lr 3e-5   (GPUs 0-3 / 4-7)
+#   ARMSET=alpha sbatch …  → rank 128, batch 4  : arm A α=45   | arm B α=128     (GPUs 0-3 / 4-7)
+#
+# ── ARMSET=alpha — THE SECOND ATTEMPT (2026-08-21) ────────────────────────────────────────
+# All four r32/r256 arms rendered DEGRADED (looping spectral glitch; adapter magnitude ran away
+# to 16% of base norm, 93% on the worst layer). This mode changes exactly the two things the
+# corpus-wide sweep (67k cells / 237 runs, that night) identifies as wrong with them, and holds
+# everything else fixed so the change is attributable:
+#   T=256 → T=512.  T=256 is the WORST frame length in the corpus (PQ 6.48, 3.1% top-decile)
+#     and all four failed arms used it; T=512 is the best broadly-attested one (7.32, 10.3%,
+#     127 runs across 87 distinct configs). The latents are (256, 4096) so T=512 is a crop
+#     parameter — NO re-encode needed.
+#   alpha=rank → alpha<rank.  alpha is the highest-variance parameter measured (eta^2 0.231,
+#     p=3.5e-09) and survives within-dataset control; lr does NOT (p=0.7 across 5e-5..2e-4),
+#     which is why both arms share one LR and alpha is the only variable. An lr bracket here
+#     would spend a node on a flat axis.
+# Ranks 32 and 256 are dropped on purpose: rank 128 is the only rank with broad attestation
+# (87 distinct configs vs 2 for rank 256), and rank 16/64 are the two worst buckets in the sweep.
+# STILL NO EMA — see the EMA note below; that gap is unchanged and is NOT what this set tests.
 #
 # = 16 GCDs total across the two jobs. Deliberately TWO single-node jobs rather than one
 # --nodes=2 job: multi-node DDP is UNSOLVED on this cluster (SKILL.md "Multi-GPU DDP" — adding
@@ -108,9 +126,29 @@ RUNROOT=${SCRATCH}/runs/suomisoundi_dora
 case "${ARMSET}" in
   r32)  RANK=32;  BS=${BS:-16} ;;
   r256) RANK=256; BS=${BS:-8}  ;;
-  *) echo "[suomi] FATAL: ARMSET must be r32 or r256 (got '${ARMSET}')"; exit 1 ;;
+  # ALPHA set (2026-08-21): rank 128, and the two arms differ by ALPHA instead of by LR.
+  # Rationale from the 67k-cell / 237-run parameter sweep run tonight:
+  #   * alpha is the HIGHEST-variance parameter in the corpus (eta^2 0.231, p=3.5e-09) and
+  #     survives control within a single dataset; lr does NOT (p=0.7 across 5e-5..2e-4).
+  #     So an lr pair spends a whole node on the axis the data says is flat, and an alpha
+  #     pair spends it on the axis that actually moves.
+  #   * alpha/rank < 1 tops the corpus: alpha 45 @ rank 128 scores PQ 7.581 with a 1.2%
+  #     degradation rate, vs 7.256 / 7.4% at alpha=rank=128. The r32/r256 arms that failed
+  #     ran alpha=rank (s=1) at BOTH ranks, which is the configuration this contradicts.
+  alpha) RANK=${RANK:-128}; BS=${BS:-4}
+         ALPHA_A=${ALPHA_A:-45}; ALPHA_B=${ALPHA_B:-128} ;;
+  *) echo "[suomi] FATAL: ARMSET must be r32, r256 or alpha (got '${ARMSET}')"; exit 1 ;;
 esac
 ALPHA=${ALPHA:-${RANK}}
+
+# Self-describing provenance text, per ARMSET (MANIFEST v2: every run states WHY it exists).
+if [ "${ARMSET}" = "alpha" ]; then
+  PURPOSE="Suomisoundi DoRA, second attempt. The first four arms (r32/r256 x lr1e-4/3e-5, alpha=rank, T=256) all rendered degraded -- a looping spectral glitch, with adapter magnitude running away to 16% of base norm (93% on the worst layer). This set changes the two things the corpus-wide sweep says were wrong with them: T=256 -> T=512, and alpha=rank -> alpha<rank."
+  HYPOTHESIS="T=256 is the WORST frame length in the 67k-cell corpus (PQ 6.48, 3.1% top-decile, vs 7.32/10.3% at T=512) and every failed arm used it. alpha is the highest-variance parameter measured (eta^2 0.231, p=3.5e-09, holds within-dataset) and alpha/rank<1 tops the corpus (alpha45@r128: PQ 7.581, 1.2% degraded; alpha=rank=128: 7.256, 7.4%). lr is NOT significant at run level (p=0.7 across 5e-5..2e-4), so both arms share lr and alpha is the only variable. If alpha 45 beats alpha 128 here, the corpus-wide alpha finding transfers to suomisoundi and becomes the default; if both work, T=256 was the whole story."
+else
+  PURPOSE="Suomisoundi (Kim's own-corpus finetune target) DoRA capacity x LR bracket: does rank 256 buy anything over rank 32 on a 1260-track corpus, and which LR holds. fp32 throughout, T=256 crops."
+  HYPOTHESIS="At 1260 tracks the corpus may not support rank 256; if r32 matches or beats it, the cheaper adapter is the one to ship. LR 1e-4 vs 3e-5 brackets the drift-vs-underfit axis."
+fi
 
 # Preflight: every one of these has cost a real job when it was assumed instead of asserted.
 [ -n "${SIF}" ] || { echo "[suomi] FATAL: no lumi-multitorch-full image"; exit 1; }
@@ -172,7 +210,7 @@ raise SystemExit(0 if tiers.get("t1") else 1)   # t1 is the fallback tier; witho
 PYEOF
 
 run_arm() {
-  local ARM_NAME=$1 LR=$2 PORT=$3 GPUS=$4
+  local ARM_NAME=$1 LR=$2 PORT=$3 GPUS=$4 ALPHA=${5:-${ALPHA}}
   local RUN=${RUNROOT}/${ARM_NAME}
   mkdir -p "${RUN}"
   # Self-describing output (MASTER §4): what this arm is, why it exists, what it trained on, and
@@ -184,8 +222,8 @@ run_arm() {
   "run": "${ARM_NAME}",
   "created": "$(date -Iseconds)",
   "slurm_job": "${SLURM_JOB_ID:-unset}",
-  "purpose": "Suomisoundi (Kim's own-corpus finetune target) DoRA capacity x LR bracket: does rank 256 buy anything over rank 32 on a 1260-track corpus, and which LR holds. fp32 throughout, T=256 crops.",
-  "hypothesis": "At 1260 tracks the corpus may not support rank 256; if r32 matches or beats it, the cheaper adapter is the one to ship. LR 1e-4 vs 3e-5 brackets the drift-vs-underfit axis.",
+  "purpose": "${PURPOSE}",
+  "hypothesis": "${HYPOTHESIS}",
   "dataset": {"name": "suomisoundi", "latents": "${LAT_DIR}", "n_latents": ${NLAT}, "pre_encoded": true,
               "caption_sidecar": "$(basename ${SIDECAR})", "caption_tiers": "t1/t2/t3",
               "caption_probs": "${CAPTION_PROBS}",
@@ -271,13 +309,28 @@ echo "[suomi/'"${ARM_NAME}"'] step finished"
 # Ports are ARMSET-scoped as well as arm-scoped. The two submissions each take a whole 8-GPU
 # node so they cannot land together, but a port scheme that only works because of a scheduling
 # assumption is one node-packing change away from a silent rendezvous collision.
-case "${ARMSET}" in r32) P_A=29531; P_B=29541 ;; r256) P_A=29551; P_B=29561 ;; esac
-run_arm "suomi_${ARMSET}_lr${LR_A}" "${LR_A}" "${P_A}" 0,1,2,3
-run_arm "suomi_${ARMSET}_lr${LR_B}" "${LR_B}" "${P_B}" 4,5,6,7
+case "${ARMSET}" in
+  r32)   P_A=29531; P_B=29541 ;;
+  r256)  P_A=29551; P_B=29561 ;;
+  alpha) P_A=29571; P_B=29581 ;;
+esac
+if [ "${ARMSET}" = "alpha" ]; then
+  # Same LR on both arms -- alpha is the variable. Names carry rank+alpha so the pair is
+  # self-describing in the run dir and on the eval board.
+  ARM_A="suomi_r${RANK}_a${ALPHA_A}_T${FRAMES}"
+  ARM_B="suomi_r${RANK}_a${ALPHA_B}_T${FRAMES}"
+  run_arm "${ARM_A}" "${LR_A}" "${P_A}" 0,1,2,3 "${ALPHA_A}"
+  run_arm "${ARM_B}" "${LR_A}" "${P_B}" 4,5,6,7 "${ALPHA_B}"
+else
+  ARM_A="suomi_${ARMSET}_lr${LR_A}"
+  ARM_B="suomi_${ARMSET}_lr${LR_B}"
+  run_arm "${ARM_A}" "${LR_A}" "${P_A}" 0,1,2,3
+  run_arm "${ARM_B}" "${LR_B}" "${P_B}" 4,5,6,7
+fi
 wait
 
 echo "[suomi] both arms finished (or timed out) -- verify the ARTIFACTS, never this script's rc:"
-for A in "suomi_${ARMSET}_lr${LR_A}" "suomi_${ARMSET}_lr${LR_B}"; do
+for A in "${ARM_A}" "${ARM_B}"; do
   echo "  ${A}: $(ls ${RUNROOT}/${A}/epoch=*.ckpt 2>/dev/null | grep -v weights | sort -V | tail -1)"
 done
 echo "[suomi] DDP check: grep -h LOCAL_RANK ${SLURM_JOB_NAME}-${SLURM_JOB_ID}.out | sort | uniq -c   (want 0,1,2,3 each twice)"

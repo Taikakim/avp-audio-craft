@@ -49,6 +49,37 @@ def tokens(name):
     return {t for t in re.split(r"[_\-.]+", name.lower()) if len(t) > 2 and t not in STOP}
 
 
+# Training hyperparameters extracted from the actual LUMI launch scripts (WINTERMUTE
+# 2026-08-21). Until now this index carried only label/family/n_ckpts/mtime, so models.html
+# and model_matrix.html showed WHICH checkpoints exist but nothing about how they were
+# trained -- a run's recipe lived only in its sbatch. `_source` on each entry is the
+# file:line it was read from, so a surprising value is traceable rather than trusted.
+EXTRACTED = Path("/home/kim/Projects/SAO/lumi/run_params_extracted.json")
+PARAM_FIELDS = ("rank", "alpha", "lr", "batch", "frames_T", "precision", "optimizer",
+                "dataset", "epochs", "weight_decay", "grad_clip_mode", "caption_probs",
+                "adapter_type", "ddp_world_size", "accumulate_grad_batches", "use_ema")
+_EXTRACTED_CACHE = None
+
+
+def script_params(label):
+    """Hyperparameters for a run, or {}. Resume/post-trained variants (`_ptm`, `_repr`)
+    reuse the parent's recipe and are not separately recorded, so fall back to the parent."""
+    global _EXTRACTED_CACHE
+    if _EXTRACTED_CACHE is None:
+        try:
+            _EXTRACTED_CACHE = json.loads(EXTRACTED.read_text())
+        except Exception:
+            _EXTRACTED_CACHE = {}
+    for cand in (label, f"{label}_repr", f"{label}_ptm",
+                 re.sub(r"_(ptm|repr|final)(_ptm)?$", "", label)):
+        got = _EXTRACTED_CACHE.get(cand)
+        if got:
+            return {k: v for k, v in got.items()
+                    if k in PARAM_FIELDS and v not in (None, "")} | {
+                        "_params_from": cand, "_source": got.get("_source", "")}
+    return {}
+
+
 def collect_models():
     models = []
     for base, family in ((LORA, "DoRA/LoRA adapter"), (CTRL, "control adapter / head run")):
@@ -67,12 +98,12 @@ def collect_models():
             canon = {(f[:-len(".weights.ckpt")] + ".ckpt") if f.endswith(".weights.ckpt") else f
                      for f in ckpts}
             models.append({"label": d.name, "family": family, "n_ckpts": len(canon),
-                           "mtime": d.stat().st_mtime})
+                           "mtime": d.stat().st_mtime, **script_params(d.name)})
     if LATCH.exists():
         for f in sorted(LATCH.glob("*_best.pt")):
             label = f.stem.replace("_best", "")
             models.append({"label": label, "family": "LatCH guidance head",
-                           "n_ckpts": 1, "mtime": f.stat().st_mtime})
+                           "n_ckpts": 1, "mtime": f.stat().st_mtime, **script_params(label)})
     return models
 
 
@@ -139,6 +170,26 @@ def main():
         rk = next((k for k in recipes if k in m["label"].lower() or m["label"].lower() in k), None)
         m["recipe"] = ov.get("recipe") or (recipes[rk].get("recipe") or recipes[rk].get("params", "")
                                            if rk else "")
+        # Merge in the sbatch-extracted recipe. The checkpoint-derived recipe knows
+        # optimizer/precision/seed/epoch but literally reports "lr not recorded in
+        # checkpoint" -- lr, rank, alpha, batch, T and corpus live only in the launch
+        # script. Append whatever the existing recipe does not already state, marked
+        # (script) so a parsed value is never mistaken for a curated one; `_params_from`
+        # names the run it was read off, which differs for _ptm/_repr resumes.
+        # recipes.json entries are sometimes a dict rather than a string -- normalise
+        # before any string work, or a handful of runs raise on .lower().
+        if isinstance(m["recipe"], dict):
+            m["recipe"] = " · ".join(f"{k}={v}" for k, v in m["recipe"].items())
+        elif not isinstance(m["recipe"], str):
+            m["recipe"] = str(m["recipe"] or "")
+        have = m["recipe"].lower()
+        bits = [f"{k}={m[k]}" for k in ("rank", "alpha", "lr", "batch", "frames_T", "dataset")
+                if k in m and f"{k}=".lower() not in have]
+        if bits:
+            via = m.get("_params_from", "")
+            tag = "script" if via == m["label"] else f"script via {via}"
+            extra = " · ".join(bits) + f" ({tag})"
+            m["recipe"] = f"{m['recipe']} · {extra}" if m["recipe"] else extra
         m["note"] = ov.get("note", "")
 
     n_barely = sum(1 for m in models if len(m["links"]) <= 1)
