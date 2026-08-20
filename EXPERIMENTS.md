@@ -21,7 +21,13 @@ position graph. State these up front in every external brief.
 
 **Standing methods that shape every entry:** lightweight tests first (Kim) · negative-result autopsy
 before a null is final (Kim) · disintegration gate + Kim's ears on any "works" claim · manifest-v2
-sidecars on every output · THREE-AUDIENCE standard on eval pages.
+sidecars on every output · THREE-AUDIENCE standard on eval pages · **PQ alone is the best algorithmic
+proxy of Kim's ear** (W, 08-21, fit on 668 real A/B votes: PQ-alone 77.6%, every other metric added
+makes it WORSE except CLAP, which is coverage-limited) — CE has ~zero correlation with his judgment
+(08-19 finding), stop leaning on it · **per-checkpoint p-values across the campaign are
+pseudo-replicated** (810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset,
+alpha, rank, optimizer, frames_T survive; batch/lr/precision go non-significant. Read any
+parameter-table claim, including ones already in this file, against that.
 
 ---
 
