@@ -105,19 +105,6 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
 
-- **big-goa bigset is finally pre-encoded (12523/12523) — but needs ONE caption decision before
-  the real mixed run can start** (C, 08-17). The ~10-day "preencode memory leak" was never a leak:
-  `caption_metadata_fn` rejects any audio file without a sibling `.txt`, and `goa_archive` has zero
-  `.txt` files, so every file was rejected after ~100 wasted full-track decodes each. Fixed with
-  `--no_caption_check`; RSS now flat at ~1 GB (was 300+ GB). **The consequence:** those latents have
-  NO captions, and their ids are synthetic (`000000000000`), so the existing
-  `goa_longform_sidecar.json` (keyed by track stem) will not match — training as-is would use empty
-  prompts. Each latent's `.json` does carry the original `path`/`relpath`, so a re-keyed sidecar is a
-  small local build, no code change. **Your call: which caption source should the 12523 tracks use?**
-  the granite pass (job 21255037 / `sa3_goa_granite_v5`, G's lane — is that output the one to use?),
-  the existing Music-Flamingo captions, or the longform sidecar's scheme re-derived. Say which and
-  I will build the sidecar and start the real mixed avp+bigset run.
-
 - **Goa captions were never genre-hinted — re-caption running, and it gates the final full-FT arms**
   (C, 08-18, found by W). The goa Music Flamingo captions record `genre_hint: None` in every sampled
   file: the hint mechanism exists and defaults to empty, so MF guessed genre unanchored and produced
@@ -334,6 +321,16 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+- **08-21** — the "ONE caption decision" above got OVERTAKEN BY EVENTS rather than answered: tonight's
+  `winning_fleet`/`fullft_fleet` campaign (12 arms) hit exactly the predicted failure — `biggoa`/`mix3`
+  arms trained ~2h with EMPTY/unconditional prompts, the relpath-keyed sidecar never matching the
+  bigset's synthetic latent ids. C caught it auditing the sidecars, ran the re-key tool that had sat
+  built-but-unrun since 08-17 (`build_bigset_caption_sidecar.py`), 12523/12524 exact-relpath matches,
+  `goa_bigset_hinted_bylatent.json` now exists (name implies the hinted/corrected Granite v5 pass, not
+  confirmed against your original three options — worth a glance if the source matters to you). Six
+  arms killed/cleaned/resubmitted; `sanity16` biggoa/biggoa_suomi arms in 21417155/56 also affected,
+  left running (their suomi arms are valid), goa arms need a separate rerun. New lumi-ops rule: verify
+  ONE key resolves before any launch on a new corpus+sidecar pairing. THE-FINN, from the channel.
 - **08-16** — mir's Audiobox scoring, dead since the system ffmpeg 8→9 upgrade, is fixed (G found
   it: 0/162 CE scores, no partial results). torchcodec's bundled backend needs the ffmpeg8 SONAMEs
   pacman removed. All three obvious routes were dead ends — no ffmpeg8-compat package exists
