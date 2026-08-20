@@ -53,7 +53,8 @@ EPOCHS=${EPOCHS:-20}
 CKEVERY=${CKEVERY:-2}
 RANK=${RANK:-128}
 ALPHA=${ALPHA:-45}
-NAME=wfleet_${DATASET}_t1024_a${ALPHA}_fp32_s${SEED}
+FRAMES=${FRAMES:-1024}      # 512 adds --beat-aware-crop (the T512 convention)
+NAME=wfleet_${DATASET}_t${FRAMES}_a${ALPHA}_fp32_s${SEED}
 RUN=${SCRATCH}/runs/winning_fleet/${NAME}
 
 # ── dataset registry (dirs under $SCRATCH; sidecars aligned 1:1; per-source caption probs) ──────
@@ -90,13 +91,13 @@ done
 SIDE_ARG=$(IFS=','; echo "${SS[*]}")
 
 mkdir -p "${RUN}"
-echo "[wfleet] CONFIG NAME=${NAME} DATASET=${DATASET} SEED=${SEED} LR=${LR} BS=${BS}/rank (global $((8*BS))) EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} rank=${RANK} alpha=${ALPHA} fp32 T1024 PROBS=${PROBS}"
+echo "[wfleet] CONFIG NAME=${NAME} DATASET=${DATASET} SEED=${SEED} LR=${LR} BS=${BS}/rank (global $((8*BS))) EPOCHS=${EPOCHS} CKEVERY=${CKEVERY} rank=${RANK} alpha=${ALPHA} fp32 T${FRAMES} PROBS=${PROBS}"
 cat > "${RUN}/run_meta.json" <<META
 {"run": "${NAME}", "created": "$(date -Iseconds)", "slurm_job": "${SLURM_JOB_ID:-unset}",
  "purpose": "Kim direct 2026-08-20: copy the winning_avp_t1024_a45_fp32 recipe onto ${DATASET}. Bread-and-butter AdamW production fleet (4 datasets x 2 seeds, 8x 1-node 8-GCD jobs).",
  "recipe": {"adapter": "dora-rows", "rank": ${RANK}, "alpha": ${ALPHA}, "optimizer": "adamw",
             "lr": "${LR}", "lr_schedule": "NONE (constant; no AdamW scheduler exists in train_lora) -- judge by soups/centroid",
-            "precision": "fp32 (no FA2 possible)", "frames": 1024, "batch_per_rank": ${BS},
+            "precision": "fp32 (no FA2 possible)", "frames": ${FRAMES}, "batch_per_rank": ${BS},
             "gpus": 8, "effective_batch": $((8*BS)), "epochs": ${EPOCHS}, "seed": ${SEED},
             "delta_vs_original": "8-GCD DDP effective batch $((8*BS)) vs original 1-GCD batch 4; avp arm is the control for exactly this"},
  "dataset": {"name": "${DATASET}", "dirs": "${DIRS}", "caption_probs": "${PROBS}"},
@@ -125,7 +126,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --adapter_type dora-rows --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --optimizer adamw --lr '"${LR}"' \
   --encoded_dir '"${FDIRS}"' --caption_sidecar '"${SIDE_ARG}"' --caption_probs "'"${PROBS}"'" \
-  --frames 1024 --batch_size '"${BS}"' --num_workers 4 --seed '"${SEED}"' \
+  --frames '"${FRAMES}"' '"$([ "${FRAMES}" = "512" ] && echo --beat-aware-crop)"' --batch_size '"${BS}"' --num_workers 4 --seed '"${SEED}"' \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   --no_demos --logger csv --name '"${NAME}"' \
   --save_dir '"${RUN}"' \
