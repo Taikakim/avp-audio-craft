@@ -129,15 +129,21 @@ sidecars on every output · THREE-AUDIENCE standard on eval pages.
 
 ## C. Soups, EMA, checkpoint selection
 
-### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **RUNNING (G, local)**
-- Soups: `Mantu/sa3_lora_runs/soups_ladder_2026-08-19/` (uniform/expasc/bell_late; winning families also
-  ep10–40 windows). Tool `eval/soup_ladder.py` (refuses cross-run input: B·A gauge).
-- **Finding driving it:** broken AdamW runs are a random walk — averaging is the repair (A1); W: winning_a128
-  peaks ep19, collapses after ep59 (averaging the healthy plateau).
+### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
+- 246/270 clean first pass, 24 SIGKILL-retried clean. Published to `dora_table` (11 scoped `score_and_publish.py`
+  runs). Soups: `Mantu/sa3_lora_runs/soups_ladder_2026-08-19/`. Verdict feeds C2.
 
-### C2 — Quality-weighted soups (PQ × crest × whitening per epoch) — **QUEUED (G, after C1)**
-- Kim: "a combination of PQ and the crest and whitening values are probably a good way to get the weighing".
-  `soup_ladder.py --weights '{"ep":w,...}'` → profile `quality`. W: PQ tracks Kim's ratings (ρ .66), CE does not.
+### C2 — Quality-weighted soups (PQ × crest × whitening per epoch) — **DONE 08-21 (G) — NUANCED, not a clean win**
+- 7 quality-weighted soups (fp32cmp×3, winning×4) built via Kim's PQ×crest×(-flatness) z-score formula,
+  rendered+scored (42 clips). **Does NOT consistently beat uniform/profile averaging** — competitive,
+  sometimes wins one axis (PQ or crest) but rarely both; e.g. `winning_avp_a128` quality 8.00/4.18 vs
+  ladder-best `bell_late` 8.07/3.84; `fp32cmp_goa_t4096` uniform edges quality on both axes. Real, separate
+  finding: `winning_avp_a128` (PQ ~8.0–8.07) vs `_a45` (PQ ~7.6–7.8) is a genuine alpha-scaling tradeoff
+  (brighter/cleaner vs dynamic range), not noise. **Open: Kim's ears** — PQ/crest may be missing what makes
+  quality-weighting sound better even where the metrics wash. Bug found+worked-around: soup renders never
+  saved `z0.npy`, so `score_and_publish`'s latent-sanity gate correctly refused rather than silently passed;
+  `--skip-sanity` used deliberately (DSP crest/flatness substituted, not a bypass) — future soup-render
+  scripts should save z0 too.
 
 ### C3 — Post-hoc power-EMA logging in train_lora (EDM2 §3) — **PLANNED (small)**
 - Two power-function EMAs snapshotted during training reconstruct ANY EMA length post hoc; trivial for
