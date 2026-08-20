@@ -85,6 +85,25 @@ two different tools/runs might have touched the same output path.** Same underly
 `--overwrite` flag existing on nearly every batch tool in this codebase — resumability is a feature
 that assumes ONE tool owns that directory, not a safe default across tool changes.
 
+## Demo callback needs torchcodec — pass `--no_demos` on EVERY multitorch training job (2026-08-20)
+
+The torchaudio-needs-torchcodec gotcha (live-encode gotcha #1) has a SECOND entrance: the DEMO
+callback. `train_lora.py` renders demo clips during training and saves them via `torchaudio.save`
+→ `save_with_torchcodec` → ImportError on the multitorch image — the run CRASHES at its first
+demo write (~4 min in), even for `--encoded_dir` jobs that never decode audio. This killed all
+arms of the first sanity16 matrix (21353159/60: FAILED 1:0 at 00:04, zero checkpoints) and was
+invisible until the log was read: exit-code plumbing worked, the checkpoint COUNT was the tell.
+**Rule: every training sbatch on multitorch passes `--no_demos`.** Both sanity16 scripts now do;
+`traj_sketch_arms` and `subspace_loss_*` always did.
+
+## Smoke gates are SEQUENTIAL — never submit smoke and real together (2026-08-20)
+
+A `SMOKE=1` submit and the real submit of the same sbatch write the SAME per-arm output dirs; run
+concurrently they truncate/recreate each other's files (memmaps, ckpt names) and can SIGBUS the
+real job. The pattern is: smoke → `sacct` shows COMPLETED 0:0 → real. If both were started (jobs
+21416097/99), the fix is scancel BOTH, `rm -rf` the runroot, resubmit the real one alone.
+`traj_sketch_arms.sbatch` now refuses to start over a runroot that already holds trajectory files.
+
 ## Multi-GPU DDP — the --gpus-per-task=1 + SLURMEnvironment pattern is UNRELIABLE (2026-08-17)
 
 **Every multi-GPU training script in this repo (`fullft_avp_aug.sbatch` and everything modeled
