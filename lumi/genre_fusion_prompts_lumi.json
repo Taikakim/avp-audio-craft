@@ -1,0 +1,21 @@
+{
+  "prompts": [
+    {"id": "gf_00", "text": "thrash metal acid psychedelic upbeat aggressive melodic 1996 goa trance music", "seed": 1996},
+    {"id": "gf_01", "text": "acid techno psychedelic space rock synth thrash metal fusion, 145 bpm, aggressive", "seed": 1997},
+    {"id": "gf_02", "text": "1996 goa trance blended with thrash metal riffs, acid bassline, psychedelic space rock atmosphere", "seed": 1998},
+    {"id": "gf_03", "text": "psychedelic space rock guitars over acid techno beat, thrash metal aggression, melodic goa trance lead", "seed": 1999},
+    {"id": "gf_04", "text": "aggressive thrash metal drums, acid synth arpeggios, 1996 goa trance, upbeat and psychedelic", "seed": 2000},
+    {"id": "gf_05", "text": "synth-driven acid trance with thrash metal breakdown, psychedelic space rock textures", "seed": 2001},
+    {"id": "gf_06", "text": "melodic goa trance, acid techno bassline, thrash metal guitar stabs, 145 bpm, aggressive energy", "seed": 2002},
+    {"id": "gf_07", "text": "psychedelic space rock meets 1996 goa trance, acid techno pulse, thrash metal intensity", "seed": 2003},
+    {"id": "gf_08", "text": "acid trance thrash metal hybrid, aggressive melodic synth leads, psychedelic space rock pads", "seed": 2004},
+    {"id": "gf_09", "text": "1996 goa trance with distorted thrash metal riffs and acid techno percussion, upbeat", "seed": 2005},
+    {"id": "gf_10", "text": "space rock synths, acid techno arpeggio, thrash metal double-kick, goa trance melody, 1996", "seed": 2006},
+    {"id": "gf_11", "text": "aggressive acid psychedelic trance, thrash metal edge, synth-heavy, melodic and upbeat", "seed": 2007},
+    {"id": "gf_12", "text": "goa trance thrash metal crossover, acid bassline, psychedelic space rock atmosphere, 1996", "seed": 2008},
+    {"id": "gf_13", "text": "psychedelic acid techno, thrash metal aggression, synth arpeggios, melodic goa trance hook", "seed": 2009},
+    {"id": "gf_14", "text": "1996 goa trance, acid techno, psychedelic space rock, thrash metal, all at once, aggressive", "seed": 2010},
+    {"id": "gf_15", "text": "aggressive psychedelic space rock, acid techno bass, thrash metal drums, 1996 goa trance lead", "seed": 2011},
+    {"id": "gf_ref", "text": "1996 goa trance, psychedelic, hypnotic, melodic", "seed": 2012}
+  ]
+}

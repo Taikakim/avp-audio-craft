@@ -1,0 +1,26 @@
+# genre-fusion generalization probe -- checkpoint list (GHOST-NOTE 2026-08-21)
+# Format: label epoch [ptm]
+# PARTIAL LIST -- only the top-8 sample WINTERMUTE gave in his first reply; waiting on his full
+# top-12-by-PQ cut before this is ready to submit. mid+last per run per Kim's ask; W's caveat:
+# goa runs use BEST-PQ epoch instead of last (they degrade with training) -- none of these 8 are
+# goa, so no substitution needed yet, but check any goa additions from the full list against that
+# rule before adding them here verbatim.
+dora256_avp_aug10_lr7e5_ptm 3 ptm
+fullft_avp_t256_sweep 90
+fullft_avp_t256_sweep 153
+bf16cmp_avp_t512_bs8_lr1e4_ptm 4 ptm
+bf16cmp_avp_t512_bs8_lr1e4_ptm 7 ptm
+dora128adj_avp_8ep_ptm 3 ptm
+dora128adj_avp_8ep_ptm 6 ptm
+# longctx_t1024_r128 and winning_goa_t512_a45_bf16_ptm are BOTH goa (W's table) -- W's own rule
+# says use BEST-PQ epoch here, not "last" (goa runs degrade with training). The two lines below
+# use the mid/last pair W gave (ep4/ep7, ep15/ep19) as a PLACEHOLDER ONLY -- confirm/replace the
+# second epoch of each with the actual best-PQ epoch before submitting.
+longctx_t1024_r128 4
+longctx_t1024_r128 7
+winning_avp_t1024_a45_fp32_ptm 15 ptm
+winning_avp_t1024_a45_fp32_ptm 19 ptm
+fp32cmp_avp_t4096_bs4_lr1e4 5
+fp32cmp_avp_t4096_bs4_lr1e4 26
+winning_goa_t512_a45_bf16_ptm 15 ptm
+winning_goa_t512_a45_bf16_ptm 19 ptm
