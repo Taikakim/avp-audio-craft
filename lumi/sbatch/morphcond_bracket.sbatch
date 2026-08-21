@@ -72,16 +72,27 @@ export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 RUNROOT='"${RUNROOT}"'
 FT='"${FT_CKPT}"'
 LAT=${FLASH}/latents_sa3
-case ${R} in
-  0) L=2; BK=base; SD=1 ;;  1) L=3; BK=base; SD=1 ;;  2) L=4; BK=base; SD=1 ;;
-  3) L=2; BK=ft;   SD=1 ;;  4) L=3; BK=ft;   SD=1 ;;  5) L=4; BK=ft;   SD=1 ;;
-  6) L=3; BK=base; SD=2 ;;  7) L=3; BK=ft;   SD=2 ;;
-esac
-case ${L} in 2) VOCAB=5 ;; 3) VOCAB=15 ;; 4) VOCAB=77 ;; esac
+STREAM='"${STREAM:-pitch}"'
+if [ "${STREAM}" = "ioi" ]; then
+  case ${R} in
+    0) BK=base; SD=1 ;; 1) BK=ft; SD=1 ;; 2) BK=base; SD=2 ;; 3) BK=ft; SD=2 ;;
+    4) BK=base; SD=3 ;; 5) BK=ft; SD=3 ;; 6) BK=base; SD=4 ;; 7) BK=ft; SD=4 ;;
+  esac
+  MDIR=${SCRATCH}/latents_sa3_morphIOI3; VOCAB=15
+  NAME=morph_IOI3_${BK}_s${SD}
+else
+  case ${R} in
+    0) L=2; BK=base; SD=1 ;;  1) L=3; BK=base; SD=1 ;;  2) L=4; BK=base; SD=1 ;;
+    3) L=2; BK=ft;   SD=1 ;;  4) L=3; BK=ft;   SD=1 ;;  5) L=4; BK=ft;   SD=1 ;;
+    6) L=3; BK=base; SD=2 ;;  7) L=3; BK=ft;   SD=2 ;;
+  esac
+  case ${L} in 2) VOCAB=5 ;; 3) VOCAB=15 ;; 4) VOCAB=77 ;; esac
+  MDIR=${SCRATCH}/latents_sa3_morphL${L}
+  NAME=morph_L${L}_${BK}_s${SD}
+fi
 EXTRA=""; [ "${BK}" = "ft" ] && EXTRA="--base-state-ckpt ${FT}"
-NAME=morph_L${L}_${BK}_s${SD}
 python -m sa3_control.train \
-  --control-mode melody_contour --melody-dir ${SCRATCH}/latents_sa3_morphL${L} \
+  --control-mode melody_contour --melody-dir ${MDIR} \
   --melody-vocab ${VOCAB} \
   --model medium-base ${EXTRA} \
   --encoded_dir ${LAT} --crop-frames 512 --random-crop \
