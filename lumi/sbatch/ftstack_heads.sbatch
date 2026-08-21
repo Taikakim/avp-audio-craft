@@ -54,8 +54,16 @@ RUNROOT=${SCRATCH}/runs/ftstack_heads
 [ -f "${FT_CKPT}" ] || { echo "[ftstack] FATAL: FT_CKPT not found: ${FT_CKPT}"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[ftstack] FATAL: venv missing"; exit 1; }
 [ -d "${SCRATCH}/latents_sa3_melody" ] || { echo "[ftstack] FATAL: latents_sa3_melody missing — rsync melody8 streams"; exit 1; }
-NPZ=$(ls ${SCRATCH}/latents_sa3/*.TIMESERIES.npz 2>/dev/null | wc -l)
-[ "${NPZ}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NPZ} TIMESERIES npz in latents_sa3 — rsync them first"; exit 1; }
+# LATENTS FROM FLASH (2026-08-21, F's watch): scratch latents_sa3 lost its base .npy
+# (tarred Jul 14 during cleanup — only npz+json remain there); flash carries the full
+# staged set (npy+json+npz) and the dorlor goa arms train from it concurrently.
+LATDIR=${FLASH}/latents_sa3
+NPY=$(ls ${LATDIR}/*.npy 2>/dev/null | wc -l)
+NPZ=$(ls ${LATDIR}/*.TIMESERIES.npz 2>/dev/null | wc -l)
+NJ=$(ls ${LATDIR}/*.json 2>/dev/null | wc -l)
+[ "${NPY}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NPY} base latents in ${LATDIR}"; exit 1; }
+[ "${NPZ}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NPZ} TIMESERIES npz in ${LATDIR} — cp from scratch (they exist there)"; exit 1; }
+[ "${NJ}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NJ} json metas in ${LATDIR}"; exit 1; }
 grep -q "base-state-ckpt" ${CODE}/control/sa3_control/train.py \
   || { echo "[ftstack] FATAL: control/ code stale (no --base-state-ckpt)"; exit 1; }
 [ -f "${CODE}/stable-audio-3/scripts/latch/train_latch.py" ] \
@@ -94,7 +102,7 @@ export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 RUNROOT='"${RUNROOT}"'
 FT='"${FT_CKPT}"'
 SEED='"${SEED}"'
-LAT=${SCRATCH}/latents_sa3
+LAT=${FLASH}/latents_sa3
 
 headb () {  # $1 = ft|base
   local TAG=$1 EXTRA=""
