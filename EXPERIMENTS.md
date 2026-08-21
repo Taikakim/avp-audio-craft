@@ -291,7 +291,16 @@ claim, including ones already in this file, against both corrections.
   OPEN. Render probe of the confound: fleet_quick_render's suomi_anchor prompt (the untrained t1)
   vs suomi_modal/random — weak anchor response on the T1024 arms = the confound made audible.
 
-### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **RUNNING: 21430195 (backbone = fullft_avpaug ep15-v1, EMA weights)**
+### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **RUNNING VERIFIED: 21435417, attempt SEVEN (backbone = fullft_avpaug ep19 EMA)**
+- **All 8 arms healthy 14:20** (F's watch): Head-B pair r0/r1 = base-state cov 100.0% + melody_dir
+  2649/5400; latch arms printing the correct source-track val split (808 crops / 401 held-out
+  tracks — matches D3's local numbers exactly); real compute (53 min AveCPU, 1.5 it/s, loss moving).
+- **The six-defect chain, for the postmortem ledger** (each one-line, each unmaskable only after
+  the previous fix): missing scratch jsons → sed-pipe rc-laundering (8-min COMPLETED) → node/glob
+  wedge (banners added) → scratch base-npy gone (Jul-14 tar; flash-pointed) → preflight globs
+  re-blinding the banners (stat-probes) → unbound FLASH in the inner block → stale flash npz
+  (20-field July snapshot, no f0 — the derivative-doesn't-know-its-source-changed pattern).
+  Guards left behind at every step; ftstack is now the most defensively-written sbatch in the repo.
 - Kim: "take our best full finetune, and train our FiLM, melody and LATCH heads with best known
   values and Fusion on top of that instead of the base model." One node, 8 single-GCD arms
   (`lumi/sbatch/ftstack_heads.sbatch`, FT_CKPT knob): r0 Head-B FiLM on the full-FT EMA weights
