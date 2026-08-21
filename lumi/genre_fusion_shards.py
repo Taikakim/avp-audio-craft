@@ -38,13 +38,25 @@ def resolve_ckpt(scratch_runs, label, epoch):
     import re
     m = re.match(r"^\d+", epoch)
     epoch_num = m.group(0) if m else epoch
-    pattern = os.path.join(scratch_runs, "*", label, f"epoch={epoch_num}-*.weights.ckpt")
-    hits = glob.glob(pattern)
-    if not hits:
+    # "_ptm" is a render/eval-time label (render_matrix_cells.py --pt-medium auto-appends it to
+    # the OUTPUT label), not part of the training-run folder name -- the underlying checkpoint
+    # is the same adapter, rendered against a different base model. Strip it before searching,
+    # but the caller still uses the ORIGINAL label (with _ptm) for --label so the render/board
+    # registration stays correctly distinguished from the non-ptm variant of the same run.
+    search_label = re.sub(r"_ptm$", "", label)
+    candidates = [search_label] + ([label] if label != search_label else [])
+    hits = []
+    for cand in candidates:
+        pattern = os.path.join(scratch_runs, "*", cand, f"epoch={epoch_num}-*.weights.ckpt")
+        hits = glob.glob(pattern)
+        if hits:
+            break
         # some families are one level shallower (RUN=${SCRATCH}/runs/<name> directly, no
         # intermediate family dir) -- try that too before giving up.
-        pattern2 = os.path.join(scratch_runs, label, f"epoch={epoch_num}-*.weights.ckpt")
+        pattern2 = os.path.join(scratch_runs, cand, f"epoch={epoch_num}-*.weights.ckpt")
         hits = glob.glob(pattern2)
+        if hits:
+            break
     if not hits:
         return None
     if len(hits) > 1:
