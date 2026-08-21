@@ -17,6 +17,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### ⏳ BEFORE LUMI SCRATCH WIPE: hand-tag promising FATS for final pull (Kim, self-assigned 2026-08-21)
+Kim will tag resume-worthy fat ckpts before the purge. Mechanics ready when he is: write the
+paths (one per line) into a keep_fats.txt, then a --files-from pull of exactly those (same
+pattern as today's slim pull); F can execute via his ssh lane. Candidate shortlist to start
+from: fullft_avpaug ep19 (B9 backbone), the A11 per-corpus winners once heard, B10 K=24
+terminals, one suomi wfleet replica set. The PQ keeplist (eval/build_fat_keeplist.py) is the
+metric-based skeleton for the END-OF-PROJECT local slim curation Kim mentioned — rerun it when
+the new arms are scored and it ranks everything.
+
 ### 📋 BOARD SNAPSHOT (C, 2026-08-21 ~12:45) + the three remaining terminal items
 LIVE: A11 dorlor 16+2 (bigset/suomi/avpaug/goa + LR probes), B10 subloss-K24 x4, B9 ftstack
 21432216 (avpaug ep19 backbone), wfleet restarts x3, T512-clean, fullft-mix3. DONE today:
