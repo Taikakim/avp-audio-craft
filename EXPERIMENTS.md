@@ -143,13 +143,19 @@ claim, including ones already in this file, against both corrections.
 - **Caveat:** recipe is AdamW bs4 constant-LR (= the diffusing regime, A1) — kept for comparability; if all
   arms random-walk, rerun the winning K under Fusion-braked (A2).
 
-### B2 — R²(t)-gated melody term (arm 4 of B1) — **READY (shipped 08-19)**
+### B2 — R²(t)-gated melody term (arm 4 of B1) — **TRAINED (3 ckpts on LUMI), ⚠️ NOT ACTUALLY RENDERED**
+- **⚠️ CORRECTED (F, 08-21 coverage audit):** earlier said "renders done, verdict = PENDING Kim's
+  ears" — checked directly (LUMI `subspace_loss_v3sel_grid_mt/subloss_v3sel_k5_tgate`, local
+  `evals_aac`, `manifest_live.jsonl`) and **nothing is rendered anywhere.** 3 checkpoints exist on
+  LUMI, zero clips exist anywhere. The other three B1 arms (k2/k12/k5) ARE in the live manifest —
+  this one alone was never actually rendered despite being reported as such.
 - **Why:** melody recoverable only in a t-window (2-crop probe: R²_melody .995/.744/.011 at t=.05/.5/.95 vs
   rest .997/.829/.239); a flat K spends most of its budget where melody isn't representable. Lemma A.2 of
   2602.19512: per-t weighting is the isotropic learned-schedule case (their best FFHQ result).
 - **How:** `stable_audio_3/training/tgate.py`, `--subspace-loss-tgate`, curve from `eval/melody_r2_vs_t.py`
   (the arm self-measures if `lumi/melody_r2_vs_t_medium-base.json` is absent). Modes r2 / r2sq / deficit.
 - **Kill:** no movement in recurrence or ears by ep10 → B4 gets the budget. Reference 48-crop curve: queued locally.
+  **Can't apply the kill criterion until it's actually rendered.**
 
 ### B3 — x0-target (E1a, JLT 2605.27102 port) — **READY (built 07-31, never submitted)**
 - Rebalances ALL low-variance eigendirections at once (complement to B1's targeted upweight). Needs a LUMI arm.
@@ -479,7 +485,15 @@ claim, including ones already in this file, against both corrections.
 
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
-- Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next").
+- Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **Concrete
+  cost, measured (F, 08-21 coverage audit, Kim's ask):** of ~27 distinct trained-model run dirs on
+  LUMI from the past week with real checkpoints, checked against `manifest_live.jsonl`, at least
+  **~104 trained checkpoints across 6 run families have ZERO rendered clips** — the suomisoundi_dora
+  r256/r32 × lr1e-4/lr3e-5 sweep (4 arms × 12 ckpts = 48, fully trained, nothing heard), the
+  `fullft_mixed_avp_latents_sa3_t4096{,_wdfix,_wd03}` family (3 variants, 53 ckpts combined), and B2
+  above (3 ckpts, previously reported rendered — it wasn't). Most of the remainder with zero clips
+  are 1-4-checkpoint early-stage/cancelled arms from this week's DDP incident, lower priority. Full
+  per-family breakdown in chat 08-21.
 - GPU mutex on the shared box: hold the lock with the DRIVER's pid across clips (G's per-clip processes
   read as idle/dead). `Misc/gpu_guard.sh`.
 - NVMe budget for step-resolution runs: ≤ ~80 % free; thin ckpts to the spectra grid once sketches exist.
