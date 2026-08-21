@@ -191,6 +191,7 @@ claim, including ones already in this file, against both corrections.
   arms random-walk, rerun the winning K under Fusion-braked (A2).
 
 ### B2 — R²(t)-gated melody term (arm 4 of B1) — **TRAINED (3 ckpts on LUMI), ⚠️ NOT ACTUALLY RENDERED**
+- **AUDIO READOUT (08-21 evening, 1680 matched cells):** all v3sel arms recurrence-UP at cleaner texture; k5 best (+16% rel), tgate +0.011 < k5 +0.030 — the R²(t) gate UNDERPERFORMS flat K=5 (first read; ears pending). K-curve non-monotonic (2<12<5) → B10's K=24 is the far-side probe. Gains concentrated in ~half the cells → per-prompt cut next. VERDICT.md in lumi_runs/analysis/melody_wall_v3sel_tgate/.
 - **⚠️ CORRECTED (F, 08-21 coverage audit):** earlier said "renders done, verdict = PENDING Kim's
   ears" — checked directly (LUMI `subspace_loss_v3sel_grid_mt/subloss_v3sel_k5_tgate`, local
   `evals_aac`, `manifest_live.jsonl`) and **nothing is rendered anywhere.** 3 checkpoints exist on
