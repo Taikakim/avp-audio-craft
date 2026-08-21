@@ -342,6 +342,20 @@ claim, including ones already in this file, against both corrections.
   checkpoint trained under the old sbatch. lumi-ops skill now carries the hardened authoring rule
   + 3-check verification.
 
+### B10 — Subspace-weighted trainer at K=24, four corpora (Kim direct 2026-08-21) — **RUNNING (21432109, 21432111-13)**
+- Continues the v3sel lane past its K=12 max: same 15-dim whitened-CSP melody basis, K
+  (=--subspace-loss-weight) doubled to 24. Arms: avpaug / suomi (ratified probs) / biggoa /
+  **bigmix** (bigset+old-goa — FLAC upweight by inclusion). Lane conventions kept so the K axis
+  stays clean vs k2/5/12 + lreq (dora-rows r128 α128, T512 beat-aware, AdamW CONSTANT LR);
+  Kim's overrides: lr 8e-5, bs8/rank torchrun DDP (eff 64 vs the grid's 4), 64 ep, ckpt every 8.
+  Baselines: subloss_v3sel_k12 (goa) + the per-corpus A11 arms (K=1 at matched DDP).
+- Prior-lane status for the "did the earlier test get buried?" question: NOT buried — the
+  k2/5/12+tgate grid trained to ep19; the tgate arm's missing renders were caught by F's
+  coverage audit and landed today (240 cells, 21431365). Whole quartet awaits Kim's ears +
+  melody_wall_analysis.
+- ⚠️ bigmix/goa preflight requires latents_sa3 .json metas on scratch (rsync from local);
+  submitted into the flash-metadata storm — expect slow staging until the mirctrl hang clears.
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
