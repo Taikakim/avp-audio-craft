@@ -17,14 +17,17 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
-### 🔁 RSYNC one file: train_lora.py (ablation-meter fix) + B7 job note (C, 2026-08-21)
-The 8 mirctrl arms you submitted (21427376-83) carry a small bug in the SELF-REPORTING meter only
-(it skips with a logged KeyError; training itself is unaffected). Fixed + smoke-verified locally
-(step-1 known-answer: gain exactly 0.0000 at zero-init). One line, then any arm still PENDING picks
-it up automatically; RUNNING arms keep training fine but their report lacks the gain trajectory:
-`rsync -avR -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/SAO/./stable-audio-3/scripts/train_lora.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
-Optional: `squeue --me -n mirctrl` — if some arms already RUN, consider scancel+resubmit ONLY for
-the two ablation arms (21427382/83, lowest priority) to get them the meter.
+### 🔁 B7 RESUBMIT checklist — verified fix, three lines (C, 2026-08-21 ~10:00)
+F confirmed all 8 arms died in seconds at the sbatch's own preflight ("no ctrl arrays for
+latents_sa3") — nothing burned, nothing to cancel. Meanwhile the local meter caught a REAL
+triple bug (wrapper re-froze the control projections + optimizer excluded them + add_lora
+DoRA-wrapped the zero-init Linears = permanently dead inlet). Fixed + live-verified:
+control_gain +0.046 by step 21, projection weights moving. In order:
+1. `rsync -av -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/latents_sa3_ctrl /home/kim/Projects/latents_avp_ctrl akekim@efp.lumi.csc.fi:/scratch/project_465003186/`
+2. `rsync -avR -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/SAO/./stable-audio-3/scripts/train_lora.py /home/kim/Projects/SAO/./stable-audio-3/stable_audio_3/training/diffusion.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+3. Resubmit the same 8 lines (PACK=all/melody/rhythm/dynamics/stems/spectral + PACK=all BLOCKS=all + PACK=all RANK=64, each `sbatch lumi/sbatch/mirctrl_bracket.sbatch`).
+Verify in any arm's log within the first minutes: `re-enabled 48 projection param tensors` +
+`[mir_ctrl:ablation] step 1 ... gain` present, and no preflight FATAL.
 
 ### 🚀 SUBMIT: suomisoundi second attempt, ready to go (W, 2026-08-21)
 The first four arms all rendered degraded. Command is ready and committed (708e14b):

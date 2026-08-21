@@ -137,7 +137,17 @@ sweep, 08-21). Read any parameter-table claim, including ones already in this fi
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
-### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING on LUMI (8 arms, 21427376-83), C owns**
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RESUBMIT PENDING (first 8 arms died at preflight; triple freeze-out bug found+fixed), C owns**
+- **08-21 ~10:00:** first submits 21427376-83 all FAILED in seconds at the sbatch's own preflight
+  (latents_sa3_ctrl not yet rsynced — guard worked, zero GPUh burned). Meanwhile the local ablation
+  meter caught a REAL triple bug: under lora_config the wrapper (1) re-froze the post-install
+  projections, (2) excluded them from the optimizer (get_lora_params only), and (3) add_lora
+  DoRA-WRAPPED the zero-init projection Linears (dora-rows of a zero base row = dead inlet forever,
+  with healthy-looking grads into the wrap). Fixed (SA3 6944f8a) + LIVE-VERIFIED: grads 717 vs 1.5,
+  proj weights 236→1232 over 40 steps, control_gain +0.046 by step 21 (shuffled control hurts vs
+  aligned ⇒ alignment exploited). STANDING RULE: post-load trainable modules in lora_config runs
+  face three independent silent killers — freeze, optimizer exclusion, adapter-wrapping; verify
+  with a gain meter. Resubmit checklist on KIM-TASKLIST (ctrl rsync → code rsync → same 8 lines).
 - **STATUS 08-21 morning:** code landed + 13 unit tests (SA3 2c3b650: `scripts/mir_control.py` +
   `build_ctrl_packs.py` + train_lora `--mir_ctrl_*`; SAO 90c921f: `lumi/sbatch/mirctrl_bracket.sbatch`).
   Kim submitted the full bracket: PACK = all / melody / rhythm / dynamics / stems / spectral +

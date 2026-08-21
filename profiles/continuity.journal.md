@@ -2206,3 +2206,29 @@ Design deltas that surfaced during the build, all now load-bearing:
 Kim submitted all 8 arms before the smoke verdict (21427376-83): all/melody/rhythm/dynamics/stems/
 spectral + blocks-all + r64 ablations. ~900 GPUh if all run to term -- the melody-head reserve is
 now this bracket, which is fair: B7 IS the melody-wall conditioner lane (B6's successor).
+
+### 2026-08-21 (later) — B7 freeze-out: a three-layer bug where each layer masked the next
+
+The morning's 8 arms died harmlessly at the sbatch preflight (missing ctrl rsync — F's sacct
+check), but the LOCAL smoke meter had already exposed something real: control_gain pinned at
++0.0000 with bit-zero projection weights. The debugging chain is worth recording because each
+fix was CORRECT and each verification still failed, three times:
+1. Wrapper freeze: DiffusionCondTrainingWrapper.__init__ under lora_config calls
+   diffusion.model.requires_grad_(False) — re-froze the projections installed before it.
+   Fixed (re-enable post-construction). Still bit-zero.
+2. Optimizer exclusion: the LoRA branch of configure_optimizers collects get_lora_params()
+   only. Fixed (append modular params). Still bit-zero — with grads FLOWING (probe: 0.69,
+   real backward: 1.5) and 120/120 params verified inside the optimizer. Impossible-looking.
+3. The tell was arithmetic: 120 tensors / 12 blocks = 10 per projection; a plain Linear pair
+   is 4. add_lora had DoRA-WRAPPED the projection Linears themselves — the base weight (what
+   my meter read, what the forward row-scales) frozen at zero, and dora-rows of a zero base
+   row is zero FOREVER. The 1.5 of gradient was flowing into adapters wrapped around a dead
+   base. Fix: auto-exclude modular_local_embeds from add_lora when mir_ctrl is on.
+After fix 3: grads 717 (460x), weights 236->1232 over 40 steps, gain +0.046 by step 21 —
+the model exploits curve ALIGNMENT (shuffled hurts) within 21 steps at T256. SA3 6944f8a.
+
+Method notes: (a) the counting argument (10 != 4 tensors) cracked it after three rounds of
+plumbing-tracing failed — count the params before tracing the calls; (b) 16-digit-identical
+losses across control variants is the unambiguous 'inlet dead' signature, distinct from
+'small effect'; (c) pkill -f bit me TWICE more (self-matching the wrapper shell) — the
+bash-sequencer memory exists for a reason, kill by exact pid.
