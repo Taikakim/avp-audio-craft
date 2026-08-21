@@ -23,8 +23,10 @@ LIVE: A11 dorlor 16+2 (bigset/suomi/avpaug/goa + LR probes), B10 subloss-K24 x4,
 fullft_avpaug ep19, B2 tgate renders (240 cells), soup render (check), suomi ingest (F).
 CANCELLED: mirctrl x6 (hung on flash + budget; B7 -> next allocation, all fixes banked).
 1. A11 log re-check ~13:00 (were arms through the staging gate): ls -la dorlor_ab-2143*.out — non-empty + WSD/fusion banners = healthy.
-2. PULL when soup render completes: the matrix_cells rsync (incl. wfleet_*soup* + subloss_v3sel_k5_tgate_*) → then G scores soup cells (the single-vs-soup A/B answers today's sound mystery).
-3. 🎧 LISTENING STACK now: top-100 page · soups-vs-terminal (G) · suomi anchor-vs-modal cells · B2 tgate vs siblings · (incoming) replica-soup vs single-replica.
+2. ✅ PULLED (~14:30): soups (48) + B2 tgate (240) + fleet quick cells home on UUID; G scoring
+   the soup cells → quartet table (single-replica vs replica-soup vs grand-mean vs fullft-EMA).
+3. 🎧 LISTENING STACK: top-100 page · soups-vs-terminal (G) · suomi anchor-vs-modal cells ·
+   B2 tgate vs k2/k5/k12 siblings · replica-soup vs single-replica (the sound-mystery closer).
 
 ### ⚖️ DECIDE: the four probs-confounded suomi T1024 arms (kill vs keep) (C, 2026-08-21)
 All four (a45 s1/s2 + a128 s1/s2) train with the drifted 0,0.9,0.1 captions — the "suomisoundi"
