@@ -87,7 +87,7 @@ srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
 set -uo pipefail
 R=${SLURM_PROCID}
 echo "[r${R}] rank alive on $(hostname) $(date -Is)"
-PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186
+PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; FLASH=/flash/project_465003186
 CODE=${PROJ}/code
 VENV='"${VENV}"'
 source ${VENV}/bin/activate
