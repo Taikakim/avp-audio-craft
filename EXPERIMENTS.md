@@ -132,7 +132,16 @@ claim, including ones already in this file, against both corrections.
 - **Gate:** constant-LR AdamW ⇒ judge by SOUPS/centroid (C1/C2 machinery) + trajectory stats + Kim's
   ears; per-arm DDP verify (LOCAL_RANK 0..7). Links: A1 (walk-vs-drift predicts these diffuse), C1.
 
-### A11 — The "mystified why so bad" A/B²: DoRA/LoRA × AdamW-WSD/braked-Fusion on bigset — **RUNNING (21431784-87, Kim direct 2026-08-21)**
+### A11 — The "mystified why so bad" A/B²: DoRA/LoRA × AdamW-WSD/braked-Fusion — **RUNNING: 16 arms + 2 LR probes across 4 corpora (Kim direct 2026-08-21)**
+- **EXTENDED same hour (Kim: "oozles of hours, one day left"):** the same A/B² on suomi
+  (21431938-41, ratified anchor probs — the first-ever suomi runs with correct captions AND real
+  DDP AND a schedule), avpaug (21431942-45), old goa (21431946-49), atop bigset (21431784-87).
+  Epochs step-matched to ~3.1k optimizer steps per corpus (suomi 320 / avpaug 160 / goa 64 /
+  bigset 32; ckpt cadence scaled to ~10 ladders each). + 2 large-batch LR probes on goa
+  dora_adamw: 2e-4 and 5.7e-4 sqrt-scaled (21431964/65) — main arms stay 1e-4 per W's run-level
+  n.s. finding. Readout is per-corpus by construction (W's pooling confound dodged), and per W's
+  underfit bit-exactness check the loss path is exonerated — A11 is the first real test of the
+  optimizer half of the stack.
 - 4 arms, everything pinned healthy: torchrun true DDP (verified pattern), T256, bf16 (FA2),
   per-rank bs16 (eff 128; W's monotonic batch finding), rank 128 α45, 32 ep, ckpt every 2,
   warmup 0.25 ep. AdamW arms = **the first scheduled-AdamW runs ever** (`--lr_schedule wsd`,
