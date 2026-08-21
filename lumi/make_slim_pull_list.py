@@ -5,11 +5,16 @@ longer than 15 epochs, every ceil(20% of span) epochs walking back while > ep15.
 
 Run ON LUMI (login node, plain python3):
     python3 /project/project_465003186/code/lumi/make_slim_pull_list.py
-Writes /tmp/pull_list.txt (paths relative to /scratch/.../runs) and prints a summary.
-Then pull from the LOCAL terminal:
-    rsync -av -e "ssh -i ~/.ssh/id_EFP" --files-from=:/tmp/pull_list.txt \
+Writes /scratch/project_465003186/pull_list.txt (paths relative to /scratch/.../runs) and
+prints a summary. NOT /tmp: LUMI /tmp is PER LOGIN NODE, so a list written on uan18 is
+invisible after the next login lands on uan14 — that is a silent "file not found" on the
+--files-from=:PATH remote read. Override with PULL_LIST_OUT=<path>.
+Then pull from the LOCAL terminal (--partial-dir, so a blackout mid-file resumes rather
+than orphaning a multi-GB .name.XXXXXX temp; plain rsync temps are NOT reused):
+    rsync -av --partial-dir=.rsync-partial -e "ssh -i ~/.ssh/id_EFP" \
+      --files-from=:/scratch/project_465003186/pull_list.txt \
       akekim@efp.lumi.csc.fi:/scratch/project_465003186/runs/ <local dest>/
-(single line; the --files-from=:PATH form reads the list from the REMOTE side)
+(single line in practice; the --files-from=:PATH form reads the list from the REMOTE side)
 """
 import glob
 import math
@@ -55,7 +60,7 @@ def main():
         for e in keep_epochs(list(by_ep)):
             for c in by_ep[e]:
                 sel.append(os.path.relpath(c, ROOT))
-    out = "/tmp/pull_list.txt"
+    out = os.environ.get("PULL_LIST_OUT", "/scratch/project_465003186/pull_list.txt")
     with open(out, "w") as f:
         f.write("\n".join(sorted(sel)) + "\n")
     tot = sum(os.path.getsize(os.path.join(ROOT, p)) for p in sel)
