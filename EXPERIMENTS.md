@@ -85,11 +85,18 @@ claim, including ones already in this file, against both corrections.
   `-v3` colliding checkpoint writers; `fullft_suomi`'s completed step-count (158 opt-steps/epoch =
   1260/(bs2×GA4) with **no /8**) proves every rank consumed the full dataset independently. **Do
   NOT delete anything** — each `-vN` file is a complete, valid 1-GCD model (the original winning
-  recipe), so this is an accidental n≈8 single-GPU-replica ensemble, not a wasted run; treat as
-  soup/ensemble raw material, and the `effective_batch` column on these rows in every board is
-  WRONG (it was never really ×8). Sbatch converted to CSC torchrun pattern, `f1eaabc`, verify now
-  runs the LOCAL_RANK check in-script rather than suggesting it. **DECIDED (C, A10): KEPT** — 10h
-  of 8-seed ensembles beats a half-trained restart with <1 day of LUMI allocation left.
+  recipe). Sbatch converted to CSC torchrun pattern, `f1eaabc`, verify now runs the LOCAL_RANK
+  check in-script rather than suggesting it.
+- **⚠️ CORRECTED (C, from F's inventory, A10): this family is NOT the 8-replica ensemble the
+  first reading claimed.** Version counts show mostly 1 checkpoint/epoch here (vs `winning_fleet`'s
+  DoRA arms, which genuinely show 7-8) — 7 of 8 fullft ranks died silently, likely at model-load or
+  first-step. So `effective_batch` here isn't just overstated by 8×, these runs are close to their
+  ORIGINAL 1-GCD training time with no soup-windfall silver lining. `fullft_bigset.sbatch` (#68,
+  the big-goa-set two-week-deliverable script) shares this family's Pattern-2 header — presumed
+  hit by the SAME 1-live-7-idle failure, not yet checked.
+- **REVISED DECISION (Kim, ~11:00, superseded the initial "keep"): cancel-soup-restart** — all
+  Pattern-2 arms scancelled except `fullft_avpaug` 21422923 (near-complete, kept as the B9 source).
+  Torchrun restarts submitted for the DoRA fleet; fullft restarts pending. Full detail: A10.
 - **Why:** 2605.10468: full-FT of an Adam-pretrained base with Muon is the documented mismatch case;
   every prior full-FT was Fusion (drone) — the matched control was never run. Kim direct 08-21:
   AdamW full-FT fp32 T1024 lr1e-4 on biggoa/avpaug/suomi/mix3. bs2+GA4 (effective 64 — the only
@@ -216,7 +223,7 @@ claim, including ones already in this file, against both corrections.
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
-### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59), CONFIRMED 8-replica per A10 (pre-conversion) — the first CLEAN suomi ensembles (anchor-fixed probs), KEPT**
+### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **21428358/59 CANCELLED in A10's revised decision (were pre-conversion 8-replica DoRA, real ensemble material — kept as soup input, not as a live run); torchrun clean resubmit pending, see A10**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
@@ -271,9 +278,14 @@ claim, including ones already in this file, against both corrections.
   replica ladder for soups (C3 material). TORCHRUN RESTARTS: 21429629 wfleet avp s1, 21429630
   wfleet mix3 s1, 21429631 wfleet suomi a45 s1 **anchor-clean** (PROBS_OVERRIDE), + suomi T512
   s1 clean + fullft mix3 (IDs pending). True-DDP pace: suomi ~2.5 h, avp ~4 h, mix3 ~7 h for
-  all 20 epochs — finishable inside the allocation. #68 big-FT (fullft_bigset.sbatch) FLAGGED:
-  same Pattern-2 header → the bigset full-FT is presumed 8-replica as well. lumi-ops skill now
-  carries the hardened authoring rule + 3-check verification.
+  all 20 epochs — finishable inside the allocation. **#68 big-FT (fullft_bigset.sbatch) FLAGGED,
+  TWO-WEEK-DELIVERABLE RELEVANT:** same Pattern-2 header → presumed affected, but per the fullft
+  correction two entries up, the failure mode to check for is 1-live-7-idle (like fullft_suomi/
+  biggoa/mix3), NOT the true 8-replica ensemble that wfleet's DoRA arms got — this internal doc
+  said "presumed 8-replica" until this line, which was wrong given fullft's own pattern; corrected
+  same pass. Not yet checked which one it actually is — do that before trusting any big-goa-set
+  checkpoint trained under the old sbatch. lumi-ops skill now carries the hardened authoring rule
+  + 3-check verification.
 
 ## C. Soups, EMA, checkpoint selection
 
