@@ -142,6 +142,11 @@ claim, including ones already in this file, against both corrections.
   n.s. finding. Readout is per-corpus by construction (W's pooling confound dodged), and per W's
   underfit bit-exactness check the loss path is exonerated — A11 is the first real test of the
   optimizer half of the stack.
+- **Fusion-half incident + resubmit (13:0x):** all 8 original fusion arms died on argparse
+  (`--fusion-snr grad` — a replace(count=1) fix that hit the comment line instead of OPTARGS;
+  the ~55 min of apparent runtime was flash-staging crawl). Fixed for real (04e1e38, zero grad
+  occurrences verified) and resubmitted as **21434153-60** (~1 h behind the AdamW half; step
+  budget identical, so the factorial stays matched). AdamW half (10 jobs) unaffected throughout.
 - 4 arms, everything pinned healthy: torchrun true DDP (verified pattern), T256, bf16 (FA2),
   per-rank bs16 (eff 128; W's monotonic batch finding), rank 128 α45, 32 ep, ckpt every 2,
   warmup 0.25 ep. AdamW arms = **the first scheduled-AdamW runs ever** (`--lr_schedule wsd`,
