@@ -36,8 +36,21 @@
 # --augment is live-encode ONLY ("No effect on --encoded_dir"), so there is no on-the-fly
 # augmentation available on the pre-encoded latent path. Pre-augmented dirs are the only route.
 #
-# RUN:  sbatch lumi/sbatch/lr5e5_allsets.sbatch                 (clean mix)
+# WARM=<ckpt|liked>: CONTINUE FROM the model Kim actually liked instead of re-learning it.
+# WARM=liked resolves to adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5/epoch=9-step=13500.ckpt.
+# It is a clean Lightning 2.6.5 save (epoch 9, step 13500, 687 dora-rows tensors, 1 optimizer
+# state, lr_schedulers []) so --resume_ckpt would ALSO load -- but we deliberately use
+# --warm_start_ckpt, because --resume_ckpt restores the LOOP state too, and those counters were
+# written against a 1350-step goa-only epoch. This run has ~2700 steps/epoch over a different
+# corpus, so a true resume would fast-forward a dataloader that no longer exists at that index.
+# warm-start keeps what we want (adapter weights + AdamW moments via OptimizerWarmStart) and
+# drops only the epoch/shuffle counters. CONSEQUENCE: --epochs is the ADDITIONAL count, so
+# EPOCHS=48 means 48 more on top of the original 10, not 48 total.
+# Adapter geometry must match the ckpt and does: dora-rows r128 a128.
+#
+# RUN:  sbatch lumi/sbatch/lr5e5_allsets.sbatch                 (clean mix, fresh)
 #       AUG=1 sbatch lumi/sbatch/lr5e5_allsets.sbatch           (+ augmented goa)
+#       WARM=liked sbatch lumi/sbatch/lr5e5_allsets.sbatch      (continue the liked model)
 # VERIFY within minutes: LOCAL_RANK 0..7 once each (NOT eight rank-0s -- the silent-DDP bug);
 #       "[captions] source i" one line per source; "[q5] steps/epoch" plausible vs the banner.
 #SBATCH --account=project_465003186
@@ -70,8 +83,17 @@ SEED=${SEED:-1}
 EPOCHS=${EPOCHS:-48}
 CKEVERY=${CKEVERY:-2}
 BIGW=${BIGW:-0.18}
+WARM=${WARM:-}
+LIKED=${SCRATCH}/runs/adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5/epoch=9-step=13500.ckpt
+[ "${WARM}" = "liked" ] && WARM=${LIKED}
+WARMARG=""
+if [ -n "${WARM}" ]; then
+  [ -f "${WARM}" ] || { echo "[q5] FATAL: warm-start ckpt not found: ${WARM}"; exit 1; }
+  WARMARG="--warm_start_ckpt ${WARM}"
+  echo "[q5] WARM-START from ${WARM} (adapter weights + AdamW moments; epoch counter restarts, so EPOCHS=${EPOCHS} is ADDITIONAL)"
+fi
 
-NAME=lr5e5mix$([ "${AUG}" = "1" ] && echo aug)_r${RANK}a${ALPHA}_t512_bf16_bs$((BS*GA*8))_s${SEED}
+NAME=lr5e5mix$([ "${AUG}" = "1" ] && echo aug)$([ -n "${WARM}" ] && echo warm)_r${RANK}a${ALPHA}_t512_bf16_bs$((BS*GA*8))_s${SEED}
 RUN=${SCRATCH}/runs/lr5e5_allsets/${NAME}
 
 [ -n "${SIF}" ] || { echo "[q5] FATAL: no multitorch image"; exit 1; }
@@ -136,7 +158,9 @@ cat > "${RUN}/run_meta.json" <<META
             "lr": "${LR}", "lr_schedule": "CONSTANT (as replicated; no warmup flag)",
             "precision": "bf16", "frames": 512, "beat_aware_crop": true,
             "batch_per_rank": ${BS}, "grad_accum": ${GA}, "gpus": 8, "ddp": "torchrun --standalone (verified pattern)",
-            "effective_batch": $((BS*GA*8)), "epochs": ${EPOCHS}, "seed": ${SEED}},
+            "effective_batch": $((BS*GA*8)), "epochs": ${EPOCHS}, "seed": ${SEED},
+            "warm_start_ckpt": "${WARM:-null}",
+            "warm_start_note": "--warm_start_ckpt not --resume_ckpt: the ckpt loop state was written against a 1350-step goa-only epoch and this run has a different corpus/length; EPOCHS is ADDITIONAL when warm-started"},
  "deviations_from_replicated_run": ["effective batch 8 vs 4 (single-GCD eff-4 = 88h to ep48, does not fit allocation)",
                                     "mixed corpus vs goa alone (the point of the run)"],
  "dataset": {"sources": "${DIRS}", "weights": "${WTS}", "caption_probs": "${PROBS}", "crops": ${TOT},
@@ -173,6 +197,7 @@ torchrun --standalone --nnodes=1 --nproc-per-node=8 \
   --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --num_workers 6 --seed '"${SEED}"' \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
+  '"${WARMARG}"' \
   --no_demos --logger csv --name '"${NAME}"' \
   --save_dir '"${RUN}"' \
   2>&1
