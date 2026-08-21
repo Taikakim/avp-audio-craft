@@ -416,8 +416,10 @@ claim, including ones already in this file, against both corrections.
   `renders/suomift_warm/`); 21445517/18 `pianoroll_fullft` EPOCHS=32 seeds 1/2 (gain was still
   climbing at 16 ep; same run dirs, overwrites the 16-ep names); 21445586 `morph_render`
   (`lumi/render_morph.py`: 16 arms × 8 real contour crops × {g1, g2, null} + decoded reference
-  windows → `renders/morph/<arm>/`). Still queued (Priority) at 23:50. Unfired candidates for the
-  remaining budget: showcase wave 2 (new --rng), A11 seed-2 ×16 (~48 node-h), K∈{8,16} fill ×4.
+  windows → `renders/morph/<arm>/`). Still queued (Priority) at 23:50. **A11 seed-2 factorial FIRED 23:58: 21445664–679** (4 datasets × 4 arms, ~48 node-h,
+  runs `dorlor_<ds>_<arm>_r128a45_t256_bf16_bs128_s2`); 21445634 = a bare ARM-less submit, dies at
+  preflight, ignore. Showcase wave 2 (`WAVE=2 RNG=20260822 sbatch showcase_render.sbatch`) and
+  K∈{8,16} fill ×4 still unfired.
 - **PULL LIST (scratch persists till purge, not urgent):** showcase/ (128 wav+z0+json), stack_cells/,
   stack_suomi/, suomift_warm/ (EMA weights only — prune optimizer first), pianoroll_fullft/ (both
   seeds + control_ablation.jsonl), morphcond run dirs.
