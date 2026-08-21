@@ -35,10 +35,19 @@ SIF=${PROJ}/containers/sa3.sif
 # pre-split: build the unit list ONCE, before srun (assignment is deterministic per rank)
 UNITS=${SCRATCH}/renders/a11_render_units.txt
 : > "${UNITS}"
+# CKPT THINNING (Kim 2026-08-21: "last, second to last and every fifth backwards —
+# we'll drown in clips otherwise"): per arm select indices {n-1, n-2, n-1-5k}.
 for d in ${SCRATCH}/runs/dorlor_ab/*/ ${SCRATCH}/runs/subloss_k24/*/; do
   [ -d "$d" ] || continue
-  for ck in $(ls ${d}epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$"); do
-    echo "${d%/}|${ck}" >> "${UNITS}"
+  mapfile -t CKS < <(ls ${d}epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V)
+  n=${#CKS[@]}
+  [ "${n}" -gt 0 ] || continue
+  PICK=""
+  [ $((n-1)) -ge 0 ] && PICK="$((n-1))"
+  [ $((n-2)) -ge 0 ] && PICK="${PICK} $((n-2))"
+  i=$((n-1-5)); while [ ${i} -ge 0 ]; do PICK="${PICK} ${i}"; i=$((i-5)); done
+  for idx in $(echo ${PICK} | tr " " "\n" | sort -un); do
+    echo "${d%/}|${CKS[${idx}]}" >> "${UNITS}"
   done
 done
 NU=$(wc -l < "${UNITS}")
