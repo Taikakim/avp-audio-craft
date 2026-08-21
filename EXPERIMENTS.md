@@ -257,7 +257,10 @@ claim, including ones already in this file, against both corrections.
 - CONFIRMED three ways: eight LOCAL_RANK:0 (fullft avpaug log), ckpts versioned to -v7 (wfleet
   suomi a45 ep9 = 8 writers), step math (suomi a45 step=12600 @ ep9 = 1260×10 at bs1, no /8;
   fullft suomi 158 st/ep = 1260/(2×4), no /8). Every pre-conversion winning_fleet/fullft_fleet
-  arm = 8 INDEPENDENT single-GCD trainings; nodes fully utilized (NOT 1-live-7-idle).
+  arm = 8 INDEPENDENT single-GCD trainings. *(Utilization split by family — corrected per the
+  inventory bullet below, propagated back here per W's hygiene rule: DoRA wfleet arms = true
+  8-replica, fully utilized; fullft arms = ~1 live replica, 7 died silently at startup =
+  1-live-7-idle after all.)*
 - **Interpretation rule:** each -vN fat ckpt is ONE replica's coherent model (EMA shadow included);
   a run dir = an 8-seed ensemble of the 1-GCD recipe. effective_batch on these rows is 8× overstated
   everywhere it is quoted. Soup/ensemble material — do not delete, do not treat as one 8×-batch run.
