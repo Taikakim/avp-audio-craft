@@ -4,6 +4,65 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-08-21 (early) — WINTERMUTE: PQ ALONE is the best algorithmic proxy for Kim's ear (77.6%);
+  CLAP backfilled 14%→45% and does NOT improve it (my 78.8% claim RETRACTED); the goa-corpus gap is
+  TRANSCODES, not bitrate; and "more steps is worse" reverses under control into an avp/goa split.**
+  Fitted a preference model on Kim's 668 real A/B votes (same-prompt/same-seed pairs, survivor-vs-survivor,
+  grouped 5-fold CV with both halves of a pair in one fold). **PQ alone 77.6%. Every addition made it
+  worse** — pq+ce 75.8, pq+cu 76.9, all-12-features 74.4.
+  *Retraction:* pq+ce+clap scored 78.8% on the 321 pairs then available, so I ran a CLAP backfill
+  (69,216 clips, 0 skipped, coverage 14%→45%) to exploit it. On the full 438 pairs it drops to **75.1%** —
+  small-sample optimism, and I should have distrusted the n-difference rather than chasing it.
+  **corr(PQ, CLAP) = +0.597**: CLAP is NOT "the axis independent of production quality" I called it.
+  What the backfill DID buy: CLAP reproduces the PQ parameter ordering almost exactly (T 512>4096>1024>2048>256;
+  rank 256>128>16>64; alpha 45 top / 64 bottom; aug10>0; lr 5e-5≈1e-4>2e-4>>6e-4) — two meters agreeing is
+  real corroboration. Plus one dissociation: **goa ties avp on prompt adherence (CLAP z −0.008 vs −0.011)
+  while losing on quality (PQ z +0.081 vs −0.109) → goa's deficit is FIDELITY, not conditioning.**
+  **Parameter sweep, 67,131 scored cells / 237 runs, failure-rate and quality-given-survival kept apart.**
+  Survives control: corpus (avp 7.27 vs goa 7.08), adapter scale (α45@r128 = PQ 7.581 at 1.2% degraded vs
+  7.256/7.4% at α=rank=128; rank 64 and α64 are the WORST buckets, below rank 16), frames_T (512 & 4096 good,
+  2048 & 256 bad — T256 is the worst length measured). Precision and optimizer matter as **reliability, not
+  quality**, and only on goa: bf16 fails 13.9% vs fp32 5.8% on goa but *less* than fp32 on avp (3.7 vs 4.5);
+  AdamW's 18% failure is goa-only. Does NOT survive: **lr** (p=0.7 at run level), **batch** (0.1 PQ spread
+  within one corpus), **aug** (6 run dirs = 3 distinct configs; α45/r256/batch16/lr7e-5 are largely ONE avp
+  family seen under five column headings).
+  **The reversal worth propagating:** pooled, more steps predicts worse output at every frame length
+  (ρ −0.15…−0.25, crushing p). *Within* runs it vanishes — mean ρ −0.003, p=0.31. It is a between-run
+  confound. Split by corpus: **avp runs IMPROVE with training (+0.133, only 29% declining), goa runs
+  DEGRADE (−0.087, 76% declining), p=4.5e-5** → the two corpora want OPPOSITE checkpoint policies
+  (take goa early, let avp run long). Fits the ep7 elbow and the post-ep59 collapse Kim hears.
+  **Standing methodological rule:** 810 checkpoint rows are ~30 epochs of ~265 runs — cluster at RUN level
+  or do not quote p-values. Every parameter table quoted lately, mine included, was pseudo-replicated.
+  **A near-miss worth recording:** a 12-feature fit put a bootstrap-stable −2.6 weight on `zcr`, with a
+  plausible physical story. Stratifying directly on matched PQ killed it (lower-zcr wins 52.7%, p=0.60) and
+  CV agreed (pq+zcr < pq). Collinearity inflating a coefficient — that is the shape of a false finding.
+  **goa corpus quality (new).** Measured both corpora the same way (spectral cutoff = real bandwidth;
+  header bitrate lies). Old goa `Goa_Separated` (full_mix only, 3,978): **75.9% near-lossless, mean 20.68 kHz**.
+  Archive `goa_archive_extracted` (14,838 after dedup): **27.7%, 19.06 kHz**. Quality-matched list at
+  ≥20.0 kHz = **4,111 files** (`mir/stats/goa_big_quality_matched/`), or **3,147** excluding the 2,669 that
+  already overlap old goa (`..._noverlap/`). Caveat: the MEAN matches, the SHAPE does not — old goa is bimodal
+  (mostly excellent + a lossy tail), the filtered set is bunched just above threshold, so its median is
+  *lower* (20.68 vs 21.29). **Worst-100 forensics (Kim's question, "mp3 alone should not do this" — he is
+  right): 76/100 declare ≥192 kbps and 14 declare ≥256, yet content stops at 4.7–11.9 kHz.** A clean 192k
+  encode reaches ~18–19 kHz; 128k reaches ~16. These are transcodes / analog rips / stream captures
+  re-encoded at a respectable bitrate — the header records the last encode, not the damage. Spread over
+  90 distinct albums, so not one bad batch. List + playlist: `mir/stats/goa_big_worst100/`.
+  **Tools/pages.** `mir/src/tools/goa_archive_quality.py --only-name` (measure `full_mix`, NOT the separated
+  stems — without it you get 5× the work and a tier distribution corrupted by lossy stem renders); new
+  `mir/src/tools/goa_archive_match_quality.py`. `eval/dora_table` gains `effective_batch`, `caption_probs`
+  and a **`params_source`** column — **531 of 916 rows had name-INFERRED rather than sbatch-parsed params and
+  nothing said so**; dataset labels normalised (`latents_avp`/`avp` and `latents_sa3`/`goa` were splitting
+  every dataset-grouped view in two); `build_model_index.py` now merges the extracted recipe into models.html
+  (the checkpoint-derived ones literally said "lr not recorded in checkpoint"). suomisoundi `ARMSET=alpha`
+  ready to submit (r128, T512, α45 vs α128, shared lr — commit 708e14b).
+  **Two process traps that cost me time.** (1) `run_in_background` is being reaped almost immediately in this
+  session — anything long-lived needs `setsid`+`nohup` (already the rule for eval servers; it now applies to
+  plain waiters too). (2) A job's progress counter goes to **stdout, which Python block-buffers when
+  redirected to a file**, while its warnings go to unbuffered **stderr** — so a healthy job shows a frozen
+  counter and looks hung. I nearly killed a 2-hour run twice. Count the stderr side, or `-u`.
+  Report: the full write-up is an artifact (cell-ranking + parameter analysis, every claim marked for whether
+  it survives control).
+
 - **2026-08-18 (eve) — CONTINUITY: weight-space forensics on the degraded AdamW arms + a step-resolution
   trajectory recorder; the broken runs are not converging, they are diffusing.** Kim asked for the
   Base→degraded delta, outlier weights, a repaired model, soups, and — sharpening it himself — deviant
@@ -2121,3 +2180,4 @@ OPEN: the BASS OCTAVE. Melodia and YIN disagree by ~12 semitones on every bass s
 - [2026-08-17] (wintermute) SELF-AUDIT of my work since the 08-13 token outage (Kim-directed). Three findings, two of them mine to fix. (1) **A stray `dora_table_TEST.html` (9.1 MB) had been publicly served since 08-13 22:44** — a working snapshot from the outage window, unreferenced by any page, not in git, and re-uploaded on every publish because leg_publish includes `*.html`. Leak-scanned clean, but it is the same class THE-FINN just closed for raw sources: an unreviewed artifact nobody knows is there. Removed from BOTH the server and the staging dir (staging, or it comes straight back). (2) **The redirect stub I scp'd to `/files/evals/rate.html` an hour earlier existed only on the SERVER** — the staging dir still held the old full 17 KB rate.html, so the next `score_and_publish` run would have silently overwritten the redirect and resurrected the page I had just retired, re-splitting the two versions the merge existed to unify. Fixed by copying the stub into staging; dry-run now shows a timestamp-only diff. GENERALISABLE, and it will bite anyone: **the publish leg's source of truth is `~/evals_aac`, so anything hand-scp'd to the server is reverted by the next publish unless the same file lands in staging.** A hand-deploy is not a deploy. (3) 44 records in `ratings_data/ratings.jsonl` still carry the salted `ip` hash the endpoint stored before I removed the field — ALL of them dated 08-14 22:01Z → 08-15 13:35Z, i.e. entirely before the public evaluator went live (08-15 19:10Z), so the public page's "no IP address or any other identifying data" claim is literally true and this is internal test data only. Flagged to Kim as tidiness (per F's severity rule, not filed as a breach); not stripped unilaterally. VERIFIED CLEAN, against real data rather than notes: dora_table's cfg7/w1 default scoring routes EVERY metric read through `mv()` (extents, hybrid normalisation, sort comparator, cell render — no path reads the raw column while 'all scores' is on); `is_op_point()` matches real manifest types (cfg/strength are floats, `7.0 == 7`, 12470/72964 entries classed op-point); deployed `ratings.php` is md5-identical to local with the correct 4-question whitelist and no stored ip; deployed `/evaluator/index.html` is md5-identical to the committed source; mir's venv wrapper still imports numpy/torch/torchaudio/torchcodec; `--rebuild` is a real flag on ingest_native_cells.py; no orphaned files remain on the public eval tree. One non-finding worth recording so nobody re-chases it: all 18 ratings posted after today's merge carry an empty `source` tag, which looks like the merged page failing to tag — it is not. They name `fp32cmp_goa_*` models, which the avp-only public pool cannot serve, so they came from an old internal rate.html still open in a tab from before the redirect landed.
 
 - [2026-08-18 00:11] (GHOST-NOTE) Suomisoundi pipeline: full raw->train-ready run complete (BS-RoFormer stems 1260/1260, Music Flamingo captions 1260/1260 genre-hinted, Granite revisions 1260/1260, MIR whole-track timeseries 1260/1260 all 50 fields incl. stem-dependent ones, SAME-L latents 1260/1260, caption sidecar `eval/build_suomisoundi_sidecar.py` T1/T2/T3 1260/1260 — train-ready via `--encoded_dir`/`--caption_sidecar`). Two real bugs found+fixed along the way, both fleet-relevant: (1) `goa_granite_task.py::read_mf()` was feeding Granite the file PATH instead of the nested MF caption text (schema mismatch: caption text lives under `d["captions"][prompt_type]`, not top-level) — affected the ENTIRE goa big-set corpus (23232/23232), producing plausible-but-hallucinated genre-generic captions instead of real per-track revisions. Fixed (63546e6); goa's Granite corpus needed a full re-run. (2) `ls`/`rm DIR/*.json` silently misbehaves (bash ARG_MAX) against 20k+-file directories — glob expansion fails, `ls | wc -l` reports a false 0, `rm -f` deletes nothing — cost 3 wasted goa Granite resubmits before catching it via `find`-based commands instead. Memory: shell-glob-arg-limit-large-dirs.md. goa's Granite re-run (job 21255037) landed clean and content-verified (23232/23232) after the fix. Also fixed: `score_and_publish.py`'s `leg_ingest` missing `--rebuild` (e1a9639); `whole_track_expanded.py`'s melody-height stem lookup missing `.m4a` (mir 6942358); `goa_granite_task.py::genre_hint()` hardcoded to goa/psytrance with no override (63546e6, `--genre-hint`/auto-detect from the MF json's own field). Docs: mir/CLAUDE.md now documents the expected per-track folder layout + the `--add-fields` two-tier-field-set gotcha; ARCHITECTURE.md indexes both sidecar builders and their DIFFERENT key schemes (goa=relpath for live-encode, Suomisoundi=latent-filename-stem for pre-encoded — copying one onto the other's training mode silently drops every caption).
+- [2026-08-21 08:52] (GHOST-NOTE) CORRECTION to my 2026-08-18 00:11 entry: I reported the Suomisoundi whole-track MIR timeseries as "1260/1260 all 50 fields" prematurely -- the re-extraction (adding stem-dependent fields) had actually died partway through (397/1260) sometime after that entry, and a self-matching bug in my own background-monitor loop (its pgrep -f pattern matched its own command-line source text) made it falsely report "still alive" for days. Kim noticed a pile of leftover tail -F processes and asked what they were, which surfaced it. Fixed: watch by real PID not text pattern, cleared 863 stale files, resumed, verified all 1260 by content this time (genuinely true now). Lesson: never pgrep -f a pattern that could match the watcher's own source -- memory shell-glob-arg-limit-large-dirs.md updated context, also see the new negative-result note in my journal.

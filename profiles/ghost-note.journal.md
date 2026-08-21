@@ -580,3 +580,94 @@ actual script — real CLI is just `path [-o] [-v] [-c] [--corr-threshold]
 [-l]`. Worth a docs-truth-auditor pass on that file.
 
 Output: `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/{info/,stats.json}`.
+
+**LSDJ re-review (2026-08-09) — a genuinely reusable long-form idea, Kim's greenlit trying it.**
+Kim asked for a re-review of `/home/kim/Projects/lsdj` ("Latent Space DJ" — a real-time SA3+Magenta
+DJ instrument, Apple-Silicon/MLX, actively developed, last commit 2026-08-04). Zero prior mentions
+of LSDJ anywhere in our docs/journals/WORKLOG — this is the first time anyone's actually captured
+findings from it.
+
+**The idea worth stealing: songs as an ARRANGEMENT OF REUSABLE PARTS, not one long generation**
+(their ADR-0033/0034). A song = `{base prompt, parts, arrangement}`; the arrangement is a letter
+string (`ABABCD`). Fresh letters cost one generation; REPEATED letters reuse the exact same
+rendered clip — free, and byte-identical, not a re-roll. `A'` variations render from their parent
+via audio-to-audio (global evolve) or inpainting (rework one window). Parts condition on the
+previous part's tail via `init_audio` for cross-part coherence, then get stitched on bar/beat
+boundaries with short crossfades, offline, in Python/numpy.
+
+This sidesteps "the model can't reliably bring back an identical chorus" by not asking it to —
+it just replays the audio. It's a STRUCTURAL trick, not a signal-processing one, which is exactly
+why it's complementary rather than redundant with our own `stable_audio_3/inference/longform.py`
+(sliding-window latent-space continuation, slerp/SaFa swap-join crossfades — GPU-validated
+2026-06-20, see [[longform-render-sa3]]) — ours does one continuous drift-free extension with a
+`PromptSchedule` for prompt changes over time; LSDJ's is discrete independent generations glued
+by structure. **Kim's call: combine them** — an arrangement-of-parts orchestrator on top, using
+OUR existing `InpaintContinuationGenerator`/`SDEditReanchor`/`CrossfadeStitcher` primitives at
+each part boundary instead of LSDJ's cruder waveform-level a2a+crossfade, plus the free-reuse-of-
+repeats trick for real song structure (verse/chorus/hook returns). Compute-wise this is inference-
+only (no training), a good fit for LUMI while the local GPU stays contended — proposing to scope
+it as a small design note before building (the existing longform machinery already provides most
+of the hard parts; the new piece is the arrangement/reuse-cache layer + neighbor-tail conditioning
+glue).
+
+**Secondary finding, our own repo:** checking LSDJ's SA3 integration surfaced that our vendored
+`optimized/mlx/` (Stability's Apple-Silicon MLX port, in this same stable-audio-3 checkout) is
+**49 commits behind upstream specifically, stale since 2026-05-20** — missing the multi-adapter
+LoRA CLI (`--lora <dir> strength=<S>`, upstream PR #57/#65) and whatever landed in upstream's
+merged MLX-native LoRA trainer. Not urgent (we're ROCm, not Apple Silicon) but worth a line
+whenever someone does a broader upstream sync pass — not yet actioned, flagging here so it isn't
+lost.
+
+## 2026-08-21 — Suomisoundi pipeline closed out; a real monitoring bug caught late
+
+Closed out the full Suomisoundi dataset pipeline started 2026-08-16: raw audio -> BS-RoFormer
+stems (1260/1260) -> Music Flamingo captions, genre-hinted ("suomisoundi, an eclectic Finnish
+sub-genre of psychedelic goa trance") (1260/1260) -> Granite short/medium revisions (1260/1260)
+-> SAME-L latents (1260/1260) -> whole-track MIR timeseries, all 50 fields incl. stem-dependent
+ones (1260/1260, see negative below) -> a new T1/T2/T3 caption sidecar
+(`eval/build_suomisoundi_sidecar.py`) for `--encoded_dir`/`--caption_sidecar` training. Every
+stage independently verified by content, not just file count, after getting burned earlier this
+session by trusting "COMPLETED"/file-exists as proof of correctness.
+
+**Real bugs found+fixed along the way, most worth carrying forward:**
+- `goa_granite_task.py::read_mf()` fed Granite the file PATH instead of the real caption text
+  (schema mismatch — caption lives nested under `captions.prompt_type`, not top-level). Affected
+  the ENTIRE goa big-set corpus (23232 tracks) — Granite had been revising filenames, producing
+  plausible-but-hallucinated genre-generic captions for months, not real per-track revisions.
+  Fixed (63546e6); goa's whole Granite corpus + its consolidated sidecar needed a full rebuild.
+  Confirmed via a smoking-gun same-track comparison (old T2 said "1997 goa psytrance 145bpm",
+  the fixed T2 correctly said "progressive trance... 319-second... arpeggiated leads" matching
+  the real caption's actual content and duration).
+- **NEGATIVE, cost real time**: `ls`/`rm DIR/*.json` silently misbehaves against 20k+-file
+  directories — bash hits ARG_MAX, the glob expansion fails, and a piped `ls | wc -l` reports a
+  false **0** rather than erroring loudly. Cost three wasted goa-Granite resubmits before I
+  caught it via `find`-based commands instead. Saved to memory
+  (`shell-glob-arg-limit-large-dirs`) so it doesn't repeat fleet-wide.
+- **NEGATIVE, the big one**: the Suomisoundi timeseries re-extraction (adding stem-dependent
+  fields once BS-RoFormer stems arrived) actually **died partway through days ago** and I never
+  knew — my own background-monitor loop had a self-matching bug: its `pgrep -f` search pattern
+  was literally present in its own command-line text (the loop's inline script source contains
+  the same string it was searching for), so it matched *itself* and reported "still alive"
+  indefinitely after the real extraction process had already exited. Real state when caught: only
+  397/1260 tracks had the fresh 50-field set, silently stalled since. Kim asked what a pile of
+  leftover `tail -F` processes were for, which is what actually surfaced it — not anything I
+  checked proactively. Fixed by watching the real PID directly (`kill -0 $PID`) instead of a text
+  pattern; cleared the 863 stale files, resumed, verified all 1260 by content afterward this time.
+  **Lesson for the fleet: never `pgrep -f` a pattern that could also match the watcher's own
+  source text** — check PIDs directly, or use a search string that can't self-collide.
+- `whole_track_expanded.py`'s melody-height stem lookup was missing `.m4a` (BS-RoFormer's actual
+  output format) — same blind-spot class as an already-fixed `.mp3` case in the same function.
+  Fixed (mir 6942358); documented the expected per-track folder layout + the `--add-fields`
+  two-tier-field-set gotcha in mir/CLAUDE.md so nobody re-derives either.
+- `score_and_publish.py`'s `leg_ingest` was missing `--rebuild`, so freshly-ingested clips could
+  never pass the sanity gate on the same run (e1a9639).
+- `goa_granite_task.py::genre_hint()` was hardcoded to goa/psytrance with no override — added
+  `--genre-hint` + auto-detect from the MF caption json's own field (63546e6).
+
+Separately finished C's delegated soups task (render/score/quality-weight 34+ soup checkpoints)
+via a forked instance that survived two real interruptions (a login expiry, then a monthly
+spend-limit hit) because the actual render/score work ran as detached OS processes, unaffected by
+the agent-session lifecycle — but the final publish leg never got triggered by the fork itself
+after the second interruption, so I finished that by hand. Headline finding: Kim's
+PQ×crest×whitening quality-weighting formula is competitive but does NOT consistently beat simple
+uniform/profile averaging — a wash worth his ears, not the metrics alone.
