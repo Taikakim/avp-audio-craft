@@ -24,7 +24,7 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=7
 #SBATCH --mem=0
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --job-name=lr5e5_probe
 #SBATCH --output=%x-%j.out
 #SBATCH --no-requeue
