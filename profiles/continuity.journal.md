@@ -2180,3 +2180,29 @@ that gated D11 for a week cannot recur.
 Also this session: B7 filed (Kim's MIR-timeseries rank-32 DoRA conditioner ask -- executes the
 parked ATTRIBUTE_BRANCHES milestone; A/B = per-frame additive + DoRA-on-late-blocks vs decoupled
 cross-attn frozen-base).
+
+### 2026-08-21 — B7: from Kim's one-liner to an 8-arm LUMI bracket in one sitting
+
+Kim: "train some really traditional models, using our mir data as conditioners, probably rank 32
+DoRAs... every feature we have... goa+avp aug (not big goa)". Discovery-first paid off twice: the
+task IS the parked ATTRIBUTE_BRANCHES milestone (2026-06-19, riffer trained with controls=() and
+the branch never flipped on), and the DiT already carries the perfect inlet -- 
+modular_local_cond_configs, per-id zero-init projections, additive per frame. Nobody had ever fed it.
+
+Design deltas that surfaced during the build, all now load-bearing:
+- The modular inlet is PER TransformerBlock (each block owns modular_local_embeds). Turned a
+  limitation into the layer-targeting knob: default install blocks 12-23 = W's layer-map union
+  (rhythm 12-19, acoustic 16-23); BLOCKS=all is a bracket arm.
+- .ctrl.npy arrays must live in SIBLING _ctrl dirs: PreEncodedDataset recursively globs *.npy and
+  would consume co-located control arrays AS LATENTS. Caught at design time, before any run.
+- Self-reporting: control-ablation meter (fixed batch, loss under true/shuffled/zero control) every
+  500 steps + report.md at fit end + sbatch epilogue fallback. control_gain>0 = the aligned control
+  is exploited. Built because the allocation dies in days -- train now, judge later from run dirs.
+- TDD earned its keep again: 13 tests, and the smoke caught the ablation meter needing explicit
+  t2a-zeros for the native inpaint local_add ids (the guard SKIPPED cleanly, training unaffected).
+  torch_shm_manager hang with workers>0 is a LOCAL sandbox quirk (main thread polling dead workers;
+  fleet has run file_system sharing + tensor metadata on LUMI all month) -- workers=0 for local smokes.
+
+Kim submitted all 8 arms before the smoke verdict (21427376-83): all/melody/rhythm/dynamics/stems/
+spectral + blocks-all + r64 ablations. ~900 GPUh if all run to term -- the melody-head reserve is
+now this bracket, which is fair: B7 IS the melody-wall conditioner lane (B6's successor).

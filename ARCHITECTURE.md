@@ -169,6 +169,13 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 `eval/cross_attn_mask_ab.py` (cross-attn mask A/B) · `eval/build_hf_repair_pairs.py` +
 `eval/train_hf_repair.py` + `eval/eval_hf_repair.py` (HF reconstruction-filter pipeline) ·
 `eval/build_clap_hyperparam_table.py` · `eval/build_clip_scores_export.py`. A full re-sweep is still owed.
+· **B7 MIR-conditioner training stack (2026-08-21, C)** — `stable-audio-3/scripts/mir_control.py`
+(36-ch field registry over every .TIMESERIES field; packs = channel subsets; crop-exact control
+slicing; per-BLOCK zero-init projections into the DiT's native `modular_local_cond` inlet — it is
+per-TransformerBlock, NOT global; in-training control-ablation meter + self-writing report.md) +
+`build_ctrl_packs.py` (prebuilt `<latent_dir>_ctrl/` SIBLING dirs — ⚠️ co-located .ctrl.npy gets
+recursively globbed AS LATENTS by PreEncodedDataset) + `train_lora --mir_ctrl_*` +
+`lumi/sbatch/mirctrl_bracket.sbatch`. EXPERIMENTS B7.
 · **Top-100-by-PQ page pipeline (2026-08-21, C)** — `eval/build_top100.py` (3 resumable stages:
 per-frame-length PQ-top candidate pools from `clip_metrics.db` → MERT-v1-330M embeddings (rhythm
 layers 3-6 + melody layer 23, cached) → select with two-pass dedup: hard name-level (one clip per

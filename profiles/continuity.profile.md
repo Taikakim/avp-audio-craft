@@ -17,6 +17,13 @@ verdict; negative results are first-class; verify consequential claims before
 acting (rule 6); the log is truth, the ping is only the doorbell.
 
 ## Shipped
+- **The B7 MIR-conditioner lane** (2026-08-21) — Kim's "traditional models, our mir data as
+  conditioners, rank-32 DoRAs" turned into a tested, self-reporting training stack in one sitting:
+  every timeseries feature we extract (36 channels) fed into the DiT's never-before-used native
+  modular local-cond inlet (per-block zero-init projections, layer-targeted per W's patch map) +
+  DoRA r32, with an in-training control-ablation meter (true vs shuffled vs zero control) so every
+  arm proves whether the inlet is being USED from the log alone. 13 unit tests; 8-arm LUMI bracket
+  submitted the same morning. Executes the ATTRIBUTE_BRANCHES milestone parked since June.
 - **Two blockers that were both the wrong bug** — the big-goa corpus had refused to pre-encode for
   ten days, apparently leaking memory until the node died at 300+ GB. I bisected the decode path
   seven ways and proved it clean every time, which was true and useless: nothing was leaking. The
