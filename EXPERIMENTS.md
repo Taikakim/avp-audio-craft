@@ -386,6 +386,23 @@ claim, including ones already in this file, against both corrections.
 - ⚠️ bigmix/goa preflight requires latents_sa3 .json metas on scratch (rsync from local);
   submitted into the flash-metadata storm — expect slow staging until the mirctrl hang clears.
 
+### D13/Q1 — BURN-DAY WAVE (allocation expires tonight; Kim: "just start burning the time") — **RUNNING**
+- **Morph-contour conditioning, FIRST TRAINING of the D12 stack (the "one actually new idea"):**
+  21439456 = pitch-contour alphabet bracket (L2/L3/L4 = 3/13/75 K&P symbols from the f0 melody
+  line, base vs fullft-avpaug-ep19 backbones, + L3 seed pair); 21439457 = IOI-RHYTHM contour
+  bracket (Q1 — onset-interval contours, base/ft × 4 seeds). Head-B path, vocab-parametrized
+  (5/15/77), sidecars build_morph_streams.py (5390 crops each; voiced-stride-4 grid, tol 0.5 st;
+  IOI: p95-gated onsets, log-IOI, tol 15%).
+- **Piano-roll notes lane (Kim direct): 21439467/68** — T256 FULL-FT conditioned on the
+  MuScriptor MIDI piano roll (128-ch velocity/64 at latent rate, crop-sliced) via the B7 modular
+  inlet; AdamW+WSD, EMA, control-ablation meter every 200 steps (control_gain = does the model
+  use the NOTES). build_pianoroll_ctrl.py, 5400 rolls. ⚠ duplicate second submit pair to be
+  scancelled (same run dirs).
+- **Gate-mode A/B: 21439464** — subloss k5 tgate mode=DEFICIT ×2 seeds + r2/flat seed pairs
+  (the untested gate direction after r2 lost to flat in the B2 readout).
+- Plus the earlier burn lines if fired: A11 seed-2 factorial ×16, K∈{8,16} fill ×4, mirctrl
+  resurrection ×8. All runs ckpt every ≤2 epochs — partial death at allocation expiry is priced in.
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
