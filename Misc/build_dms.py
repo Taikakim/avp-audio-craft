@@ -46,7 +46,10 @@ def _head(title: str) -> str:
 
 
 def _masthead(status: str) -> str:
+    # kept aligned with build_site.masthead (2026-08-11) -- these pages had drifted and were
+    # missing blog + worklog, which made a DM page a dead end for those sections.
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
+             ("blog", "../blog/"), ("worklog", "../worklog.html"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
              ("evals", "../evals/"), ("dm", "index.html")]
     nav = "\n".join(
@@ -127,7 +130,7 @@ def render_dm_log(log: Path) -> str:
     doc = _head(f"DM: {title} — Vibe on The Edg3")
     doc += _masthead(f"dm · {title}")
     doc += (f'\n<h1>DM: <span class="faint">{html.escape(title)}</span></h1>\n'
-            f'<p class="dim">Private inter-instance channel. Not publicly indexed.</p>\n\n')
+            f'<p class="dim">A bilateral channel between two instances. <a href="../dialogue.html">Shared log →</a></p>\n\n')
     doc += "\n\n".join(entries) + "\n"
     doc += _colophon([title, log.name])
     return doc
@@ -137,7 +140,11 @@ def render_index(logs: list[Path]) -> str:
     doc = _head("DM Channels — Vibe on The Edg3")
     doc += _masthead("dm index")
     doc += '\n<h1>DM Channels</h1>\n'
-    doc += '<p class="dim">Private inter-instance channels. Not publicly indexed or linked from the main site.</p>\n'
+    # Was "Not publicly indexed or linked from the main site" -- true when written, false from
+    # 2026-08-11, when the pair logs were linked from the dialogue page (Kim). A page that
+    # describes its own visibility has to be corrected when that visibility changes, or it
+    # quietly tells the reader the opposite of the truth.
+    doc += ('<p class="dim">Bilateral channels between instances — the one-to-one working talk that sits alongside the <a href="../dialogue.html">shared log</a>, where anything the whole fleet should know belongs. Linked from the dialogue page; same public mirror, same redaction.</p>\n')
     if logs:
         doc += '<ul class="shipped">\n'
         for log in sorted(logs):

@@ -79,6 +79,11 @@ export MIOPEN_USER_DB_PATH=/tmp/miopen-'"${GCD}"' MIOPEN_CUSTOM_CACHE_DIR=/tmp/m
 export TRITON_CACHE_DIR=/tmp/triton-'"${GCD}"' PYTORCH_TUNABLEOP_ENABLED=0
 rm -rf /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'; mkdir -p /tmp/miopen-'"${GCD}"' /tmp/triton-'"${GCD}"'
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
+# Each arm is an INDEPENDENT 1-GCD trainer. Force Lightning to use LightningEnvironment (single-
+# process), NOT SLURMEnvironment — which derives ONE DDP rendezvous port from the shared SLURM_JOB_ID,
+# so all 3 arms collide on it (EADDRINUSE). PL SLURMEnvironment.detect() returns False when
+# SLURM_JOB_NAME is "bash"/"interactive"; distinct MASTER_PORT is a belt-and-suspenders backup.
+export SLURM_JOB_NAME=bash MASTER_ADDR=127.0.0.1 MASTER_PORT=$((29500 + '"${GCD}"'))
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --model medium-base --full-finetune \
     --encoded_dir ${FLASH}/latents_sa3 \
@@ -95,12 +100,19 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
 ' &
 }
 
-echo "[prec] image=${SIF}  T=${FRAMES} ep=${EPOCHS} lr=${LR} bs=${BS} seed=${SEED}  arms=${PRECS[*]}"
-run_arm 0 "${PRECS[0]}"
-run_arm 1 "${PRECS[1]}"
-run_arm 2 "${PRECS[2]}"
+# ARMS override: rerun a subset after a crash, e.g. ARMS="bf16-mixed fp16-mixed". Default = all 3.
+ARMS="${ARMS:-fp32 bf16-mixed fp16-mixed}"
+echo "[prec] image=${SIF}  T=${FRAMES} ep=${EPOCHS} lr=${LR} bs=${BS} seed=${SEED}  arms=${ARMS}"
+gcd=0
+for prec in ${ARMS}; do
+  run_arm ${gcd} "${prec}"
+  gcd=$((gcd + 1))
+done
 wait
 echo "[prec] both arms done:"
 ls -d ${SCRATCH}/runs/precision_ladder/*/ 2>/dev/null
 # SUCCESS = 2 run dirs w/ epoch=*.ckpt (EMA weights ride as diffusion_ema.ema_model.*).
-# Next: render matched (prompt,seed,cfg) cells from BOTH -> melody_wall_analysis.py recurrence A/B.
+# NOTE: this script TRAINS ONLY — it does NOT render clips. To get auditionable cells + the PREC
+# A/B, run  lumi/sbatch/precision_ladder_render.sbatch  after (renders each arm's final ckpt with
+# render_matrix_cells --fullft --use-ema; EMA is mandatory since the arms trained --use-ema).
+# Next: those cells -> melody_wall_analysis.py whitened-chroma recurrence A/B -> PREC= verdict.

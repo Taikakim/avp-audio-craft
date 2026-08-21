@@ -1,10 +1,10 @@
 # SA3 Model Index
 
 > [!NOTE]
-> **Generated 2026-08-05 — re-run `python3 Misc/build_model_index_page.py`.**
+> **Generated 2026-08-17 — re-run `python3 Misc/build_model_index_page.py`.**
 > Auto-built from the live eval-board manifest (`~/.cache/evals_aac/model_matrix/manifest_live.jsonl`) joined to the maintained per-model source `Misc/models_index_overrides.json` (real recipes extracted from each checkpoint + plain-language why + comparison targets + hand-added by-ear verdicts). This replaces the old hand-compiled snapshot; the July-4 body is kept verbatim as a **Legacy snapshot** at the foot of this file.
 >
-> **Roster:** 227 board labels → **159 distinct trained models** across **21 families** (`_ptm` = same checkpoint re-rendered on medium-base, collapsed onto its parent). 145 carry a recipe/verdict override; 14 are on the board but not yet annotated; 140 carry a hand-added by-ear or board-metered verdict.
+> **Roster:** 245 board labels → **177 distinct trained models** across **27 families** (`_ptm` = same checkpoint re-rendered on medium-base, collapsed onto its parent). 153 carry a recipe/verdict override; 24 are on the board but not yet annotated; 148 carry a hand-added by-ear or board-metered verdict.
 >
 > **To change a verdict or recipe:** edit `Misc/models_index_overrides.json` (verdicts live there so they survive regeneration — this generator only reads them) and re-run the script. Off-board control-head notes live in `Misc/model_index_legacy.md`.
 
@@ -13,6 +13,7 @@
 ## base — 1 model(s)
 
 #### `base`
+- **ID `M-XD7Y0P`** · also known as: `base_ptm`
 - 1 ckpt tag(s) on board (base) · 514 clips
 - **Training data:** n/a (base post-trained model)
 - **Recipe:** stabilityai stable-audio-3-medium POST-TRAINED (ARC few-step), NO adapter -- steps 8, cfg 1 (native). The control row for the *_ptm adapter rows: if an adapter-on-PT row sounds like THIS row, the adapter is not expressing on the post-trained model.
@@ -22,6 +23,7 @@
 ## xft_distillation — 60 model(s), 60 with a verdict
 
 #### `xftdora128_fullft_avp_t1024`
+- **ID `M-2TQEAC`**
 - **SVD-extracted DoRA r128 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -40,6 +42,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_avp_t2048`
+- **ID `M-2WX6JC`**
 - **SVD-extracted DoRA r128 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -58,6 +61,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_avp_t256`
+- **ID `M-1ZPS08`**
 - **SVD-extracted DoRA r128 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -76,6 +80,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_avp_t4096`
+- **ID `M-42GVV9`**
 - **SVD-extracted DoRA r128 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -94,6 +99,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_avp_t512`
+- **ID `M-PW7P82`**
 - **SVD-extracted DoRA r128 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -112,6 +118,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_goa_t1024`
+- **ID `M-71CJS9`**
 - **SVD-extracted DoRA r128 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -130,6 +137,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_goa_t2048`
+- **ID `M-XNASVX`**
 - **SVD-extracted DoRA r128 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -148,6 +156,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_goa_t256`
+- **ID `M-QM51Y4`**
 - **SVD-extracted DoRA r128 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -166,6 +175,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_goa_t4096`
+- **ID `M-M12HPC`**
 - **SVD-extracted DoRA r128 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -184,6 +194,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora128_fullft_goa_t512`
+- **ID `M-YH4699`**
 - **SVD-extracted DoRA r128 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -202,6 +213,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_avp_t1024`
+- **ID `M-YTZHZX`**
 - **SVD-extracted DoRA r16 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -220,6 +232,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_avp_t2048`
+- **ID `M-VZZCCD`**
 - **SVD-extracted DoRA r16 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -238,6 +251,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_avp_t256`
+- **ID `M-YZ7DTD`**
 - **SVD-extracted DoRA r16 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -256,6 +270,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_avp_t4096`
+- **ID `M-0CCMFB`**
 - **SVD-extracted DoRA r16 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -274,6 +289,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_avp_t512`
+- **ID `M-VBEFEZ`**
 - **SVD-extracted DoRA r16 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -292,6 +308,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_goa_t1024`
+- **ID `M-6RY2J9`**
 - **SVD-extracted DoRA r16 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -310,6 +327,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_goa_t2048`
+- **ID `M-XWWKGA`**
 - **SVD-extracted DoRA r16 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -328,6 +346,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_goa_t256`
+- **ID `M-1YS280`**
 - **SVD-extracted DoRA r16 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -346,6 +365,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_goa_t4096`
+- **ID `M-WG7FNA`**
 - **SVD-extracted DoRA r16 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -364,6 +384,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora16_fullft_goa_t512`
+- **ID `M-7QA1HJ`**
 - **SVD-extracted DoRA r16 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -382,6 +403,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_avp_t1024`
+- **ID `M-37J37M`**
 - **SVD-extracted DoRA r64 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -400,6 +422,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_avp_t2048`
+- **ID `M-VA1GSR`**
 - **SVD-extracted DoRA r64 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -418,6 +441,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_avp_t256`
+- **ID `M-CGN1WA`**
 - **SVD-extracted DoRA r64 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -436,6 +460,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_avp_t4096`
+- **ID `M-4PVNVG`**
 - **SVD-extracted DoRA r64 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -454,6 +479,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_avp_t512`
+- **ID `M-HBWP7D`**
 - **SVD-extracted DoRA r64 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -472,6 +498,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_goa_t1024`
+- **ID `M-HBJAKC`**
 - **SVD-extracted DoRA r64 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -490,6 +517,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_goa_t2048`
+- **ID `M-G6XN3N`**
 - **SVD-extracted DoRA r64 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -508,6 +536,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_goa_t256`
+- **ID `M-532WGJ`**
 - **SVD-extracted DoRA r64 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -526,6 +555,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_goa_t4096`
+- **ID `M-0011A9`**
 - **SVD-extracted DoRA r64 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -544,6 +574,7 @@
 - *status: finding-not-shippable*
 
 #### `xftdora64_fullft_goa_t512`
+- **ID `M-8DR1J1`**
 - **SVD-extracted DoRA r64 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -562,6 +593,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_avp_t1024`
+- **ID `M-4KFA7P`**
 - **SVD-extracted LoRA r128 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -580,6 +612,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_avp_t2048`
+- **ID `M-90WKHH`**
 - **SVD-extracted LoRA r128 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -598,6 +631,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_avp_t256`
+- **ID `M-JN16NW`**
 - **SVD-extracted LoRA r128 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -616,6 +650,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_avp_t4096`
+- **ID `M-WY1QMQ`**
 - **SVD-extracted LoRA r128 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -634,6 +669,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_avp_t512`
+- **ID `M-RS6VDE`**
 - **SVD-extracted LoRA r128 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -652,6 +688,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_goa_t1024`
+- **ID `M-XF6HGD`**
 - **SVD-extracted LoRA r128 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -670,6 +707,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_goa_t2048`
+- **ID `M-7PV649`**
 - **SVD-extracted LoRA r128 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -688,6 +726,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_goa_t256`
+- **ID `M-NXMRAM`**
 - **SVD-extracted LoRA r128 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -706,6 +745,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_goa_t4096`
+- **ID `M-EASZSW`**
 - **SVD-extracted LoRA r128 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -724,6 +764,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora128_fullft_goa_t512`
+- **ID `M-PAEAQV`**
 - **SVD-extracted LoRA r128 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r128 recovers only ~25.7% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -742,6 +783,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_avp_t1024`
+- **ID `M-A4QAY6`**
 - **SVD-extracted LoRA r16 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -760,6 +802,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_avp_t2048`
+- **ID `M-M6HRK3`**
 - **SVD-extracted LoRA r16 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -778,6 +821,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_avp_t256`
+- **ID `M-FPMWV8`**
 - **SVD-extracted LoRA r16 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -796,6 +840,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_avp_t4096`
+- **ID `M-JKYYM6`**
 - **SVD-extracted LoRA r16 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -814,6 +859,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_avp_t512`
+- **ID `M-8F3R00`**
 - **SVD-extracted LoRA r16 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -832,6 +878,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_goa_t1024`
+- **ID `M-HGAW35`**
 - **SVD-extracted LoRA r16 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -850,6 +897,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_goa_t2048`
+- **ID `M-3QZSXY`**
 - **SVD-extracted LoRA r16 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -868,6 +916,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_goa_t256`
+- **ID `M-04436Q`**
 - **SVD-extracted LoRA r16 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -886,6 +935,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_goa_t4096`
+- **ID `M-ZP33XZ`**
 - **SVD-extracted LoRA r16 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -904,6 +954,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora16_fullft_goa_t512`
+- **ID `M-VKYH5P`**
 - **SVD-extracted LoRA r16 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r16 recovers only ~4.5% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -922,6 +973,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_avp_t1024`
+- **ID `M-8BSVTB`**
 - **SVD-extracted LoRA r64 from the avp t1024 whole-DiT fullft (fullft_avp_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -940,6 +992,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_avp_t2048`
+- **ID `M-NVN7P2`**
 - **SVD-extracted LoRA r64 from the avp t2048 whole-DiT fullft (fullft_avp_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -958,6 +1011,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_avp_t256`
+- **ID `M-HC1MRT`**
 - **SVD-extracted LoRA r64 from the avp t256 whole-DiT fullft (fullft_avp_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -976,6 +1030,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_avp_t4096`
+- **ID `M-N694TE`**
 - **SVD-extracted LoRA r64 from the avp t4096 whole-DiT fullft (fullft_avp_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -994,6 +1049,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_avp_t512`
+- **ID `M-0AYE92`**
 - **SVD-extracted LoRA r64 from the avp t512 whole-DiT fullft (fullft_avp_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1012,6 +1068,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_goa_t1024`
+- **ID `M-XJ3ANY`**
 - **SVD-extracted LoRA r64 from the goa t1024 whole-DiT fullft (fullft_goa_t1024) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1030,6 +1087,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_goa_t2048`
+- **ID `M-1KSQAB`**
 - **SVD-extracted LoRA r64 from the goa t2048 whole-DiT fullft (fullft_goa_t2048) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1048,6 +1106,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_goa_t256`
+- **ID `M-NSBXX4`**
 - **SVD-extracted LoRA r64 from the goa t256 whole-DiT fullft (fullft_goa_t256) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1066,6 +1125,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_goa_t4096`
+- **ID `M-CNSBQF`**
 - **SVD-extracted LoRA r64 from the goa t4096 whole-DiT fullft (fullft_goa_t4096) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1084,6 +1144,7 @@
 - *status: finding-not-shippable*
 
 #### `xftlora64_fullft_goa_t512`
+- **ID `M-2SRNX4`**
 - **SVD-extracted LoRA r64 from the goa t512 whole-DiT fullft (fullft_goa_t512) — task-#71 distillation test. Finding: the fullft delta is near-full-rank, so r64 recovers only ~14.8% of its energy (measured across all 10 fullft parents — invariant ±0.2pp); kept as A/B evidence, NOT a shippable model.**
 - 1 ckpt tag(s) on board (adapter) · 162 clips
 - **Recipe:**
@@ -1105,6 +1166,7 @@
 ## fp32cmp_bf16cmp — 17 model(s), 17 with a verdict
 
 #### `bf16cmp_avp_t512_bs8_lr1e4`
+- **ID `M-3DKQR8`** · also known as: `bf16cmp_avp_t512_bs8_lr1e4_ptm`, `bf16cmp_avp_t512_bs8_lr1e4_repr`, `bf16cmp_avp_t512_bs8_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: bf16 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
@@ -1123,6 +1185,7 @@
 - *(also on board as base-render variant: `bf16cmp_avp_t512_bs8_lr1e4_ptm`)*
 
 #### `bf16cmp_avp_t512_bs8_lr1e4_repr`
+- **ID `M-3DKQR8`**
 - **fp32-vs-bf16 precision A/B: bf16 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4. (representative-epoch re-pull)**
 - 1 ckpt tag(s) on board (ep7) · 208 clips
 - **Recipe:**
@@ -1140,6 +1203,7 @@
 - *(also on board as base-render variant: `bf16cmp_avp_t512_bs8_lr1e4_repr_ptm`)*
 
 #### `bf16cmp_goa_t512_bs8_lr1e4`
+- **ID `M-B5EW7K`** · also known as: `bf16cmp_goa_t512_bs8_lr1e4_ptm`
 - **fp32-vs-bf16 precision A/B: bf16 attention, DoRA-r128 FusionOpt, goa, T512 (47.6s), bs8, lr1e-4.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
@@ -1158,8 +1222,9 @@
 - *(also on board as base-render variant: `bf16cmp_goa_t512_bs8_lr1e4_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs1_lr1e4`
+- **ID `M-CDY4BY`** · also known as: `fp32cmp_avp_t4096_bs1_lr1e4_ptm`, `fp32cmp_avp_t4096_bs1_lr1e4_repr`, `fp32cmp_avp_t4096_bs1_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs1, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1656 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep17, ep18, ep2, ep3, ep4, ep5, ep6, ep7) · 1692 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1176,6 +1241,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs1_lr1e4_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs1_lr1e4_repr`
+- **ID `M-CDY4BY`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs1, lr1e-4. (representative-epoch re-pull)**
 - 2 ckpt tag(s) on board (ep4, ep7) · 303 clips
 - **Recipe:**
@@ -1193,8 +1259,9 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs1_lr1e4_repr_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs4_lr1e4`
+- **ID `M-VGZMYK`** · also known as: `fp32cmp_avp_t4096_bs4_lr1e4_ptm`, `fp32cmp_avp_t4096_bs4_lr1e4_repr`, `fp32cmp_avp_t4096_bs4_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1656 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep25, ep26, ep3, ep4, ep5, ep6, ep7) · 1692 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1211,6 +1278,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs4_lr1e4_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs4_lr1e4_repr`
+- **ID `M-VGZMYK`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr1e-4. (representative-epoch re-pull)**
 - 2 ckpt tag(s) on board (ep4, ep7) · 357 clips
 - **Recipe:**
@@ -1228,6 +1296,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs4_lr1e4_repr_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs4_lr5e5`
+- **ID `M-SVC9JF`** · also known as: `fp32cmp_avp_t4096_bs4_lr5e5_ptm`, `fp32cmp_avp_t4096_bs4_lr5e5_repr`, `fp32cmp_avp_t4096_bs4_lr5e5_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr5e-5.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1650 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
@@ -1246,6 +1315,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs4_lr5e5_ptm`)*
 
 #### `fp32cmp_avp_t4096_bs4_lr5e5_repr`
+- **ID `M-SVC9JF`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr5e-5. (representative-epoch re-pull)**
 - 2 ckpt tag(s) on board (ep4, ep7) · 357 clips
 - **Recipe:**
@@ -1263,6 +1333,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t4096_bs4_lr5e5_repr_ptm`)*
 
 #### `fp32cmp_avp_t512_bs8_lr1e4`
+- **ID `M-5VNP3R`** · also known as: `fp32cmp_avp_t512_bs8_lr1e4_ptm`, `fp32cmp_avp_t512_bs8_lr1e4_repr`, `fp32cmp_avp_t512_bs8_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
@@ -1281,6 +1352,7 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t512_bs8_lr1e4_ptm`)*
 
 #### `fp32cmp_avp_t512_bs8_lr1e4_repr`
+- **ID `M-5VNP3R`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4. (representative-epoch re-pull)**
 - 2 ckpt tag(s) on board (ep4, ep7) · 449 clips
 - **Recipe:**
@@ -1298,8 +1370,9 @@
 - *(also on board as base-render variant: `fp32cmp_avp_t512_bs8_lr1e4_repr_ptm`)*
 
 #### `fp32cmp_goa_t4096_bs1_lr1e4`
+- **ID `M-VFNDP4`** · also known as: `fp32cmp_goa_t4096_bs1_lr1e4_ptm`, `fp32cmp_goa_t4096_bs1_lr1e4_repr`, `fp32cmp_goa_t4096_bs1_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs1, lr1e-4.**
-- 7 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6) · 831 clips
+- 9 ckpt tag(s) on board (ep0, ep1, ep13, ep14, ep2, ep3, ep4, ep5, ep6) · 867 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1316,6 +1389,7 @@
 - *(also on board as base-render variant: `fp32cmp_goa_t4096_bs1_lr1e4_ptm`)*
 
 #### `fp32cmp_goa_t4096_bs1_lr1e4_repr`
+- **ID `M-VFNDP4`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs1, lr1e-4. (representative-epoch re-pull)**
 - 3 ckpt tag(s) on board (ep4, ep5, ep6) · 504 clips
 - **Recipe:**
@@ -1333,8 +1407,9 @@
 - *(also on board as base-render variant: `fp32cmp_goa_t4096_bs1_lr1e4_repr_ptm`)*
 
 #### `fp32cmp_goa_t4096_bs4_lr1e4`
+- **ID `M-6Z77DB`** · also known as: `fp32cmp_goa_t4096_bs4_lr1e4_ptm`, `fp32cmp_goa_t4096_bs4_lr1e4_repr`, `fp32cmp_goa_t4096_bs4_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 2195 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep15, ep16, ep2, ep3, ep4, ep5, ep6, ep7) · 2231 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1351,6 +1426,7 @@
 - *(also on board as base-render variant: `fp32cmp_goa_t4096_bs4_lr1e4_ptm`)*
 
 #### `fp32cmp_goa_t4096_bs4_lr1e4_repr`
+- **ID `M-6Z77DB`**
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr1e-4. (representative-epoch re-pull)**
 - 4 ckpt tag(s) on board (ep4, ep5, ep6, ep7) · 627 clips
 - **Recipe:**
@@ -1368,6 +1444,7 @@
 - *(also on board as base-render variant: `fp32cmp_goa_t4096_bs4_lr1e4_repr_ptm`)*
 
 #### `fp32cmp_goa_t4096_bs4_lr5e5`
+- **ID `M-GPBY1E`** · also known as: `fp32cmp_goa_t4096_bs4_lr5e5_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr5e-5.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1032 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
@@ -1386,6 +1463,7 @@
 - *(also on board as base-render variant: `fp32cmp_goa_t4096_bs4_lr5e5_ptm`)*
 
 #### `fp32cmp_goa_t512_bs8_lr1e4`
+- **ID `M-N7B91H`** · also known as: `fp32cmp_goa_t512_bs8_lr1e4_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T512 (47.6s), bs8, lr1e-4.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
@@ -1407,6 +1485,7 @@
 ## fp32frames — 16 model(s), 16 with a verdict
 
 #### `fp32frames_avp_t1024_bs1_lr1e4`
+- **ID `M-CN8QRQ`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T1024 (95.1s), bs1, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1423,6 +1502,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t1024_bs4_lr1e4`
+- **ID `M-M7G2Z8`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T1024 (95.1s), bs4, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1439,6 +1519,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t2048_bs1_lr1e4`
+- **ID `M-6XJ8KR`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T2048 (190.2s), bs1, lr1e-4.**
 - 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
 - **Recipe:**
@@ -1455,6 +1536,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t2048_bs4_lr1e4`
+- **ID `M-G45Y4Q`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T2048 (190.2s), bs4, lr1e-4.**
 - 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
 - **Recipe:**
@@ -1471,6 +1553,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t4096_bs1_lr1e4`
+- **ID `M-YVDAP4`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs1, lr1e-4.**
 - 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 243 clips
 - **Recipe:**
@@ -1487,6 +1570,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t4096_bs4_lr1e4`
+- **ID `M-CW4REX`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr1e-4.**
 - 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
 - **Recipe:**
@@ -1503,6 +1587,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t512_bs1_lr1e4`
+- **ID `M-BE4VF8`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T512 (47.6s), bs1, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1519,6 +1604,7 @@
 - *status: done*
 
 #### `fp32frames_avp_t512_bs4_lr1e4`
+- **ID `M-VMKVYV`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T512 (47.6s), bs4, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1535,6 +1621,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t1024_bs1_lr1e4`
+- **ID `M-2MCYD1`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T1024 (95.1s), bs1, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1551,6 +1638,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t1024_bs4_lr1e4`
+- **ID `M-JXANKH`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T1024 (95.1s), bs4, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1567,6 +1655,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t2048_bs1_lr1e4`
+- **ID `M-65JTW2`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T2048 (190.2s), bs1, lr1e-4.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep9) · 225 clips
 - **Recipe:**
@@ -1583,6 +1672,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t2048_bs4_lr1e4`
+- **ID `M-6281TM`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T2048 (190.2s), bs4, lr1e-4.**
 - 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
 - **Recipe:**
@@ -1599,6 +1689,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t4096_bs1_lr1e4`
+- **ID `M-753J0X`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs1, lr1e-4.**
 - 4 ckpt tag(s) on board (ep0, ep1, ep2, ep6) · 189 clips
 - **Recipe:**
@@ -1615,6 +1706,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t4096_bs4_lr1e4`
+- **ID `M-091S2H`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr1e-4.**
 - 6 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep8) · 207 clips
 - **Recipe:**
@@ -1631,6 +1723,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t512_bs1_lr1e4`
+- **ID `M-B2ZRMA`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T512 (47.6s), bs1, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1647,6 +1740,7 @@
 - *status: done*
 
 #### `fp32frames_goa_t512_bs4_lr1e4`
+- **ID `M-WX9EB1`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, goa, T512 (47.6s), bs4, lr1e-4.**
 - 1 ckpt tag(s) on board (ep9) · 162 clips
 - **Recipe:**
@@ -1666,6 +1760,7 @@
 ## fullft — 10 model(s), 10 with a verdict
 
 #### `fullft_avp_t1024`
+- **ID `M-PKCKYJ`** · also known as: `fullft_avp_t1024_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on avp at T=1024 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 1 ckpt tag(s) on board (ep7) · 88 clips
 - **Training data:** latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing
@@ -1688,6 +1783,7 @@
 - *(also on board as base-render variant: `fullft_avp_t1024_ptm`)*
 
 #### `fullft_avp_t2048`
+- **ID `M-37WTQA`** · also known as: `fullft_avp_t2048_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on avp at T=2048 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 108 clips
 - **Training data:** latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing
@@ -1710,8 +1806,9 @@
 - *(also on board as base-render variant: `fullft_avp_t2048_ptm`)*
 
 #### `fullft_avp_t256`
+- **ID `M-ARV23Y`** · also known as: `fullft_avp_t256_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on avp at T=256 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
-- 1 ckpt tag(s) on board (ep7) · 88 clips
+- 3 ckpt tag(s) on board (ep46, ep47, ep7) · 124 clips
 - **Training data:** latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing
 - **Recipe:**
   - kind: non-lora (control/latch/other)
@@ -1732,6 +1829,7 @@
 - *(also on board as base-render variant: `fullft_avp_t256_ptm`)*
 
 #### `fullft_avp_t4096`
+- **ID `M-M6M020`** · also known as: `fullft_avp_t4096_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on avp at T=4096 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 108 clips
 - **Training data:** latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing
@@ -1754,6 +1852,7 @@
 - *(also on board as base-render variant: `fullft_avp_t4096_ptm`)*
 
 #### `fullft_avp_t512`
+- **ID `M-6C5CYY`** · also known as: `fullft_avp_t512_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on avp at T=512 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 1 ckpt tag(s) on board (ep7) · 88 clips
 - **Training data:** latents_avp -- avp own-music crops, LUMI-side per-epoch checkpointing
@@ -1776,6 +1875,7 @@
 - *(also on board as base-render variant: `fullft_avp_t512_ptm`)*
 
 #### `fullft_goa_t1024`
+- **ID `M-YGC603`** · also known as: `fullft_goa_t1024_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on goa at T=1024 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 1 ckpt tag(s) on board (ep7) · 88 clips
 - **Training data:** latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing
@@ -1798,6 +1898,7 @@
 - *(also on board as base-render variant: `fullft_goa_t1024_ptm`)*
 
 #### `fullft_goa_t2048`
+- **ID `M-D26FMK`** · also known as: `fullft_goa_t2048_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on goa at T=2048 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 108 clips
 - **Training data:** latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing
@@ -1820,8 +1921,9 @@
 - *(also on board as base-render variant: `fullft_goa_t2048_ptm`)*
 
 #### `fullft_goa_t256`
+- **ID `M-MCN7MN`** · also known as: `fullft_goa_t256_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on goa at T=256 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
-- 1 ckpt tag(s) on board (ep7) · 88 clips
+- 3 ckpt tag(s) on board (ep19, ep20, ep7) · 124 clips
 - **Training data:** latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing
 - **Recipe:**
   - kind: non-lora (control/latch/other)
@@ -1842,6 +1944,7 @@
 - *(also on board as base-render variant: `fullft_goa_t256_ptm`)*
 
 #### `fullft_goa_t4096`
+- **ID `M-6626NW`** · also known as: `fullft_goa_t4096_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on goa at T=4096 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 108 clips
 - **Training data:** latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing
@@ -1864,6 +1967,7 @@
 - *(also on board as base-render variant: `fullft_goa_t4096_ptm`)*
 
 #### `fullft_goa_t512`
+- **ID `M-Y2NFWH`** · also known as: `fullft_goa_t512_ptm`
 - **Whole-1.4B-DiT FULL fine-tune on goa at T=512 latent frames (LUMI, bf16, FusionOpt lr 1e-4, 8 epochs; epoch=7 final synced). The 'just better, period' baseline that the xft_distillation grid tried — and failed — to compress into a small adapter.**
 - 1 ckpt tag(s) on board (ep7) · 88 clips
 - **Training data:** latents_sa3 -- goa crops, LUMI-side per-epoch checkpointing
@@ -1889,6 +1993,7 @@
 ## adamw_bf16_sweep — 8 model(s), 8 with a verdict
 
 #### `adamw_avp_t512_bs1_lr1e4`
+- **ID `M-PXNTVF`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 1, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -1910,6 +2015,7 @@
 - *status: done*
 
 #### `adamw_avp_t512_bs4_lr1e4`
+- **ID `M-SAYDMG`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -1931,6 +2037,7 @@
 - *status: done*
 
 #### `adamw_avp_t512_bs4_lr2e4`
+- **ID `M-CVDH8H`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 2e-4, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -1952,6 +2059,7 @@
 - *status: done*
 
 #### `adamw_avp_t512_bs4_lr5e5`
+- **ID `M-8KYW4J`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 5e-5, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -1973,6 +2081,7 @@
 - *status: done*
 
 #### `adamw_goa_t512_bs1_lr1e4`
+- **ID `M-JC1JNJ`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 1, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -1994,6 +2103,7 @@
 - *status: done*
 
 #### `adamw_goa_t512_bs4_lr1e4`
+- **ID `M-BM3T1E`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -2015,6 +2125,7 @@
 - *status: done*
 
 #### `adamw_goa_t512_bs4_lr2e4`
+- **ID `M-V38DK6`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 2e-4, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -2036,6 +2147,7 @@
 - *status: done*
 
 #### `adamw_goa_t512_bs4_lr5e5`
+- **ID `M-2H5GC4`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 5e-5, batch 4, T512 (47.6s).**
 - 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
 - **Recipe:**
@@ -2057,9 +2169,493 @@
 - *status: done*
 
 
+## dronesweep — 8 model(s), 8 with a verdict
+
+#### `dronesweep_adamw_fair_s1`
+- **ID `M-K0W9FZ`**
+- **LATENT RUNAWAY - 18/54 cells over bound**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- **Why it was made:** Drone-recipe fp32 full-FT sweep (LUMI, 4 recipes x 2 seeds, T1024/bs4/20ep, one arm per GCD): which recipe survives fp32 full-FT WITHOUT the latent runaway that produces the spectral drone.
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** LATENT RUNAWAY - 18/54 clips exceed the sanity bound (median z0 std 1.583, healthy ~1.0). Degraded/droning output; metrics withheld for the bad cells. 36 cells are within bound.
+- *status: failed-runaway*
+
+#### `dronesweep_adamw_fair_s2`
+- **ID `M-ZHC1GP`**
+- **DIVERGED - NaN latents, output is a square wave**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** DIVERGED TO NaN - all 54 clips have entirely non-finite latents. The audio decodes to a FULL-SCALE SQUARE WAVE (peak = rms = 1.0). Do not audition; do not read any metric from it. A training failure, NOT a sound-quality result.
+- *status: failed-diverged*
+
+#### `dronesweep_bf16_plain_s1`
+- **ID `M-SE16AE`**
+- **clean - median z0 std 0.83**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** CLEAN on this seed - all 54 clips within the latent-sanity bound (median z0 std 0.83, healthy ~1.0). Fully scored. One of the two recipes that survives fp32 full-FT.
+- *status: clean*
+
+#### `dronesweep_bf16_plain_s2`
+- **ID `M-FFSW62`**
+- **clean - median z0 std 0.736**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** CLEAN on this seed - all 54 clips within the latent-sanity bound (median z0 std 0.736, healthy ~1.0). Fully scored. One of the two recipes that survives fp32 full-FT.
+- *status: clean*
+
+#### `dronesweep_force_scalar_s1`
+- **ID `M-ZTY4XG`**
+- **LATENT RUNAWAY - 54/54 cells over bound**
+- 1 ckpt tag(s) on board (ep7) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** LATENT RUNAWAY - 54/54 clips exceed the sanity bound (median z0 std 3.121, healthy ~1.0). Degraded/droning output; metrics withheld for the bad cells. 0 cells are within bound.
+- *status: failed-runaway*
+
+#### `dronesweep_force_scalar_s2`
+- **ID `M-1R2M22`**
+- **LATENT RUNAWAY - 51/54 cells over bound**
+- 1 ckpt tag(s) on board (ep7) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** LATENT RUNAWAY - 51/54 clips exceed the sanity bound (median z0 std 2.958, healthy ~1.0). Degraded/droning output; metrics withheld for the bad cells. 3 cells are within bound.
+- *status: failed-runaway*
+
+#### `dronesweep_plain_s1`
+- **ID `M-HZPMZF`**
+- **clean - median z0 std 0.768**
+- 1 ckpt tag(s) on board (ep7) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** CLEAN on this seed - all 54 clips within the latent-sanity bound (median z0 std 0.768, healthy ~1.0). Fully scored. One of the two recipes that survives fp32 full-FT.
+- *status: clean*
+
+#### `dronesweep_plain_s2`
+- **ID `M-A6SE5S`**
+- **clean - median z0 std 0.675**
+- 1 ckpt tag(s) on board (ep7) · 54 clips
+- **Why it was made:** (same as `dronesweep_adamw_fair_s1`)
+- **Compare against:**
+  - t
+  - h
+  - e
+  -  
+  - o
+  - t
+  - h
+  - e
+  - r
+  -  
+  - t
+  - h
+  - r
+  - e
+  - e
+  -  
+  - d
+  - r
+  - o
+  - n
+  - e
+  - s
+  - w
+  - e
+  - e
+  - p
+  -  
+  - r
+  - e
+  - c
+  - i
+  - p
+  - e
+  - s
+  -  
+  - a
+  - t
+  -  
+  - t
+  - h
+  - e
+  -  
+  - s
+  - a
+  - m
+  - e
+  -  
+  - s
+  - e
+  - e
+  - d
+- **Verdict:** CLEAN on this seed - all 54 clips within the latent-sanity bound (median z0 std 0.675, healthy ~1.0). Fully scored. One of the two recipes that survives fp32 full-FT.
+- *status: clean*
+
+
 ## fp32_winning — 8 model(s), 8 with a verdict
 
 #### `winning_avp_t1024_a45_fp32`
+- **ID `M-7D0YTD`** · also known as: `winning_avp_t1024_a45_fp32_ptm`
 - **frames control: winning recipe at T1024 (the analysis' context-length optimum).**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_avp -- LUMI-side per-epoch checkpointing
@@ -2077,8 +2673,9 @@
 - *(also on board as base-render variant: `winning_avp_t1024_a45_fp32_ptm`)*
 
 #### `winning_avp_t512_a128_fp32`
+- **ID `M-HB4KK5`** · also known as: `winning_avp_t512_a128_fp32_ptm`
 - **alpha control (avp): alpha128 (s=1, undamped) vs the flagship's alpha45.**
-- 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
+- 7 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59, ep94, ep95) · 692 clips
 - **Training data:** latents_avp -- LUMI-side per-epoch checkpointing
 - **Recipe:**
   - kind: dora/lora
@@ -2094,6 +2691,7 @@
 - *(also on board as base-render variant: `winning_avp_t512_a128_fp32_ptm`)*
 
 #### `winning_avp_t512_a45_bf16`
+- **ID `M-R705ZX`** · also known as: `winning_avp_t512_a45_bf16_ptm`
 - **precision control (avp): bf16 on the identical winning recipe.**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_avp -- LUMI-side per-epoch checkpointing
@@ -2111,6 +2709,7 @@
 - *(also on board as base-render variant: `winning_avp_t512_a45_bf16_ptm`)*
 
 #### `winning_avp_t512_a45_fp32`
+- **ID `M-XWGFWR`** · also known as: `winning_avp_t512_a45_fp32_ptm`
 - **FLAGSHIP (avp): the winning recipe — r128 alpha45 fp32 T512 on the full avp corpus.**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_avp -- LUMI-side per-epoch checkpointing
@@ -2132,6 +2731,7 @@
 - *(also on board as base-render variant: `winning_avp_t512_a45_fp32_ptm`)*
 
 #### `winning_avpaug10_t512_a45_fp32`
+- **ID `M-GG6KT8`** · also known as: `winning_avpaug10_t512_a45_fp32_ptm`
 - **small-set control: aug10 corpus under the winning recipe.**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_avp -- LUMI-side per-epoch checkpointing
@@ -2149,8 +2749,9 @@
 - *(also on board as base-render variant: `winning_avpaug10_t512_a45_fp32_ptm`)*
 
 #### `winning_goa_t512_a128_fp32`
+- **ID `M-HZC05J`** · also known as: `winning_goa_t512_a128_fp32_ptm`
 - **alpha control (goa).**
-- 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
+- 7 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59, ep74, ep75) · 692 clips
 - **Training data:** latents_sa3 -- LUMI-side per-epoch checkpointing
 - **Recipe:**
   - kind: dora/lora
@@ -2166,6 +2767,7 @@
 - *(also on board as base-render variant: `winning_goa_t512_a128_fp32_ptm`)*
 
 #### `winning_goa_t512_a45_bf16`
+- **ID `M-QNBW1R`** · also known as: `winning_goa_t512_a45_bf16_ptm`
 - **precision control (goa).**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_sa3 -- LUMI-side per-epoch checkpointing
@@ -2183,6 +2785,7 @@
 - *(also on board as base-render variant: `winning_goa_t512_a45_bf16_ptm`)*
 
 #### `winning_goa_t512_a45_fp32`
+- **ID `M-TVC6VF`** · also known as: `winning_goa_t512_a45_fp32_ptm`
 - **FLAGSHIP (goa): the winning recipe on the goa corpus.**
 - 5 ckpt tag(s) on board (ep10, ep15, ep19, ep50, ep59) · 656 clips
 - **Training data:** latents_sa3 -- LUMI-side per-epoch checkpointing
@@ -2205,6 +2808,7 @@
 ## dora16_avp_exploration — 7 model(s), 7 with a verdict
 
 #### `dora16_avp_8ep`
+- **ID `M-REHGMB`** · also known as: `dora16_avp_8ep_ptm`
 - **DoRA r16 on avp, 8ep — the avp knee at ep4-6, but the deep-listen finding is EARLY epochs win (punch + dorian at ep2/ep6); conditioning collapses late.**
 - 3 ckpt tag(s) on board (ep0, ep2, ep6) · 838 clips
 - **Recipe:**
@@ -2221,6 +2825,7 @@
 - *(also on board as base-render variant: `dora16_avp_8ep_ptm`)*
 
 #### `dora16_avp_familiarity_8ep`
+- **ID `M-K84MRS`** · also known as: `dora16_avp_familiarity_8ep_ptm`
 - **DoRA r16 avp 'familiarity' arm — judged the WORST of the avp arms; a minimal bracket kept for completeness.**
 - 2 ckpt tag(s) on board (ep0, ep4) · 592 clips
 - **Recipe:**
@@ -2236,6 +2841,7 @@
 - *(also on board as base-render variant: `dora16_avp_familiarity_8ep_ptm`)*
 
 #### `dora16_avp_freeform_8ep`
+- **ID `M-8TDAYZ`** · also known as: `dora16_avp_freeform_8ep_ptm`
 - **DoRA r16 avp 'freeform' — a NEGATIVE result: a single descriptive caption does NOT fix conditioning collapse (it was never the trigger token's fault).**
 - 2 ckpt tag(s) on board (ep31, ep7) · 592 clips
 - **Recipe:**
@@ -2251,6 +2857,7 @@
 - *(also on board as base-render variant: `dora16_avp_freeform_8ep_ptm`)*
 
 #### `dora16_avp_originals_64ep`
+- **ID `M-J77CKP`** · also known as: `dora16_avp_originals_64ep_ptm`
 - **DoRA r16 avp originals, long 64-epoch ladder (save-every-8) — early wins; Kim HoF points near ep15/ep31; later saves post-collapse, omitted.**
 - 3 ckpt tag(s) on board (ep15, ep31, ep7) · 838 clips
 - **Recipe:**
@@ -2266,6 +2873,7 @@
 - *(also on board as base-render variant: `dora16_avp_originals_64ep_ptm`)*
 
 #### `dora16_avp_originals_densewin`
+- **ID `M-KFMENN`** · also known as: `dora16_avp_originals_densewin_ptm`
 - **DoRA r16 avp originals — a dense re-run window carrying the fine variants Kim HoF'd (ep2/ep6 fine); ep10 the one late witness.**
 - 3 ckpt tag(s) on board (ep10, ep2, ep6) · 838 clips
 - **Recipe:**
@@ -2281,6 +2889,7 @@
 - *(also on board as base-render variant: `dora16_avp_originals_densewin_ptm`)*
 
 #### `dora16_avp_originals_earlyeps`
+- **ID `M-BX8E1M`** · also known as: `dora16_avp_originals_earlyeps_ptm`
 - **DoRA r16 avp 'originals' (no augs), ep0-4 — spans only the early epochs by design, where the 'early epochs win' finding lives.**
 - 3 ckpt tag(s) on board (ep0, ep2, ep4) · 883 clips
 - **Recipe:**
@@ -2296,6 +2905,7 @@
 - *(also on board as base-render variant: `dora16_avp_originals_earlyeps_ptm`)*
 
 #### `dora16_avp_originals_win7`
+- **ID `M-PRNEEH`** · also known as: `dora16_avp_originals_win7_ptm`
 - **DoRA r16 avp originals — early-win: ep2 and ep6(fine) are Kim's favourites, ep0 anchor; ep10+ omitted as post-collapse.**
 - 3 ckpt tag(s) on board (ep0, ep2, ep6) · 838 clips
 - **Recipe:**
@@ -2314,36 +2924,43 @@
 ## sa3_goa_dora_47s (original July DoRA) — 7 model(s)
 
 #### `sa3-goa-dora-47s`
+- **ID `M-9C6SDV`** · also known as: `sa3-goa-dora-47s_ptm`
 - 1 ckpt tag(s) on board (ep0) · 349 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s_ptm`)*
 
 #### `sa3-goa-dora-47s-b4`
+- **ID `M-NZZBK2`** · also known as: `sa3-goa-dora-47s-b4_ptm`
 - 2 ckpt tag(s) on board (ep0, ep2) · 568 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-b4_ptm`)*
 
 #### `sa3-goa-dora-47s-b4-cont`
+- **ID `M-SWQ8TA`** · also known as: `sa3-goa-dora-47s-b4-cont_ptm`
 - 3 ckpt tag(s) on board (ep0, ep3, ep4) · 847 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-b4-cont_ptm`)*
 
 #### `sa3-goa-dora-47s-r128-adamw`
+- **ID `M-57AWDN`** · also known as: `sa3-goa-dora-47s-r128-adamw_ptm`
 - 2 ckpt tag(s) on board (ep0, ep7) · 598 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-r128-adamw_ptm`)*
 
 #### `sa3-goa-dora-47s-r128-fusion`
+- **ID `M-PM6MZY`** · also known as: `sa3-goa-dora-47s-r128-fusion_ptm`
 - 3 ckpt tag(s) on board (ep0, ep2, ep4) · 802 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-r128-fusion_ptm`)*
 
 #### `sa3-goa-dora-47s-r128-fusion-caut`
+- **ID `M-AHPZR0`** · also known as: `sa3-goa-dora-47s-r128-fusion-caut_ptm`
 - 2 ckpt tag(s) on board (ep0, ep2) · 568 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-r128-fusion-caut_ptm`)*
 
 #### `sa3-goa-dora-47s-r64`
+- **ID `M-TVXDBK`** · also known as: `sa3-goa-dora-47s-r64_ptm`
 - 3 ckpt tag(s) on board (ep0, ep3, ep7) · 802 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 - *(also on board as base-render variant: `sa3-goa-dora-47s-r64_ptm`)*
@@ -2352,6 +2969,7 @@
 ## dora_everything_lr_sweep — 4 model(s), 2 with a verdict
 
 #### `dora128_everything_8ep_lr0.5x`
+- **ID `M-HQ1ZXT`** · also known as: `dora128_everything_8ep_lr0.5x_ptm`
 - **DoRA r128 on 'everything', 8ep, 0.5x LR — the low-LR arm of the sweep, rendered across all 8 checkpoints on the standard grid.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1972 clips
 - **Recipe:**
@@ -2367,6 +2985,7 @@
 - *(also on board as base-render variant: `dora128_everything_8ep_lr0.5x_ptm`)*
 
 #### `dora128_everything_8ep_lr0.5x_cont5`
+- **ID `M-ESHQQR`** · also known as: `dora128_everything_8ep_lr0.5x_cont5_ptm`
 - **DoRA r128 'everything' 0.5x-LR — a 5-epoch warm-start continuation (epochs 9-13) so the length trajectory reads contiguously against the original 8ep 0.5x run.**
 - 5 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4) · 1126 clips
 - **Recipe:**
@@ -2381,6 +3000,7 @@
 - *(also on board as base-render variant: `dora128_everything_8ep_lr0.5x_cont5_ptm`)*
 
 #### `dora128_everything_8ep_lr1x`
+- **ID `M-T6H97J`** · also known as: `dora128_everything_8ep_lr1x_ptm`
 - **DoRA r128 on 'everything', 8ep, 1x LR — the CANONICAL sweep checkpoint (ep7): the 72-clip weight×length sweep + steps-24 lock-in all used this.**
 - 3 ckpt tag(s) on board (ep0, ep4, ep7) · 802 clips
 - **Recipe:**
@@ -2396,6 +3016,7 @@
 - *(also on board as base-render variant: `dora128_everything_8ep_lr1x_ptm`)*
 
 #### `dora128_everything_8ep_lr3x`
+- **ID `M-654EBM`** · also known as: `dora128_everything_8ep_lr3x_ptm`
 - **DoRA r128 on 'everything', 8ep, 3x LR — the high-LR twin of the 1x baseline; likely overcooked late, and that contrast is the point.**
 - 3 ckpt tag(s) on board (ep0, ep4, ep7) · 802 clips
 - **Recipe:**
@@ -2414,6 +3035,7 @@
 ## dora128adj_avp — 3 model(s), 3 with a verdict
 
 #### `dora128adj_avp_8ep`
+- **ID `M-Q0ZRTD`** · also known as: `dora128adj_avp_8ep_ptm`
 - **DoRA r128 α45 on avp, 8ep — the 'best of the avp board arms' (2026-07-08 verdict); the pre-final run before the warm-started final.**
 - 3 ckpt tag(s) on board (ep0, ep3, ep6) · 838 clips
 - **Recipe:**
@@ -2430,6 +3052,7 @@
 - *(also on board as base-render variant: `dora128adj_avp_8ep_ptm`)*
 
 #### `dora128adj_avp_8ep_final`
+- **ID `M-TJ25R9`** · also known as: `dora128adj_avp_8ep_final_ptm`
 - **DoRA r128 α45 on avp — the warm-started FINAL of the winning avp arm; a single checkpoint that IS the deliverable.**
 - 1 ckpt tag(s) on board (ep0) · 346 clips
 - **Recipe:**
@@ -2445,6 +3068,7 @@
 - *(also on board as base-render variant: `dora128adj_avp_8ep_final_ptm`)*
 
 #### `dora128adj_avp_aug10_lr1e4`
+- **ID `M-2TN31W`** · also known as: `dora128adj_avp_aug10_lr1e4_ptm`
 - **DoRA r128 α45 on avp, aug10, lr1e-4 — 'arm G', the BROADLY SHIPPABLE recipe: escapes both tempo AND spectral collapse, healthy centroid across 300-3000 steps.**
 - 28 ckpt tag(s) on board (ep37, ep7, ep74, ep74_iv0.0-0.6, ep74_iv0.0-0.7, ep74_iv0.0-0.8, ep74_iv0.0-0.9, ep74_iv0.0-1.0, ep74_iv0.1-0.6, ep74_iv0.1-0.7, ep74_iv0.1-0.8, ep74_iv0.1-0.9, ep74_iv0.1-1.0, ep74_iv0.2-0.6, ep74_iv0.2-0.7, ep74_iv0.2-0.8, ep74_iv0.2-0.9, ep74_iv0.2-1.0, ep74_iv0.3-0.6, ep74_iv0.3-0.7, ep74_iv0.3-0.8, ep74_iv0.3-0.9, ep74_iv0.3-1.0, ep74_iv0.4-0.6, ep74_iv0.4-0.7, ep74_iv0.4-0.8, ep74_iv0.4-0.9, ep74_iv0.4-1.0) · 1333 clips
 - **Recipe:**
@@ -2464,6 +3088,7 @@
 ## dora_caption_stack — 3 model(s), 2 with a verdict
 
 #### `dora128_47s_cont_from5`
+- **ID `M-P68RVX`** · also known as: `dora128_47s_cont_from5_ptm`
 - **DoRA r128 47s new-caption lineage — a fresh warm-start from the 5ep base's last checkpoint, 5 more epochs (lineage epochs 6-10).**
 - 28 ckpt tag(s) on board (ep0, ep10_iv0.0-0.6, ep10_iv0.0-0.7, ep10_iv0.0-0.8, ep10_iv0.0-0.9, ep10_iv0.0-1.0, ep10_iv0.1-0.6, ep10_iv0.1-0.7, ep10_iv0.1-0.8, ep10_iv0.1-0.9, ep10_iv0.1-1.0, ep10_iv0.2-0.6, ep10_iv0.2-0.7, ep10_iv0.2-0.8, ep10_iv0.2-0.9, ep10_iv0.2-1.0, ep10_iv0.3-0.6, ep10_iv0.3-0.7, ep10_iv0.3-0.8, ep10_iv0.3-0.9, ep10_iv0.3-1.0, ep10_iv0.4-0.6, ep10_iv0.4-0.7, ep10_iv0.4-0.8, ep10_iv0.4-0.9, ep10_iv0.4-1.0, ep2, ep4) · 1252 clips
 - **Recipe:**
@@ -2479,6 +3104,7 @@
 - *(also on board as base-render variant: `dora128_47s_cont_from5_ptm`)*
 
 #### `dora128_47s_newcaptions_5ep`
+- **ID `M-PKAFWK`** · also known as: `dora128_47s_newcaptions_5ep_ptm`
 - **DoRA r128 on 47s crops, new caption stack, 5ep — the base run; Kim preferred a later (ep8-equiv) point reached via the continuation.**
 - 3 ckpt tag(s) on board (ep0, ep2, ep4) · 802 clips
 - **Recipe:**
@@ -2494,6 +3120,7 @@
 - *(also on board as base-render variant: `dora128_47s_newcaptions_5ep_ptm`)*
 
 #### `dora128_newcap_continued_3more`
+- **ID `M-RP4H8M`** · also known as: `dora128_newcap_continued_3more_ptm`
 - **DoRA r128 new-caption — a 3-epoch warm-start continuation (≈ep7-8 overall); its tip is Kim's preferred 'newcap ep8' checkpoint.**
 - 2 ckpt tag(s) on board (ep0, ep2) · 568 clips
 - **Recipe:**
@@ -2509,24 +3136,82 @@
 - *(also on board as base-render variant: `dora128_newcap_continued_3more_ptm`)*
 
 
+## lreq_goa — 3 model(s)
+
+#### `lreq_goa_lr1e4`
+- **ID `M-HFN3YE`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `lreq_goa_lr2e4`
+- **ID `M-QJW67W`**
+- 7 ckpt tag(s) on board (ep1, ep11, ep13, ep3, ep5, ep7, ep9) · 504 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `lreq_goa_lr5e5`
+- **ID `M-PB0YZ9`**
+- 10 ckpt tag(s) on board (ep11, ep15, ep19, ep23, ep27, ep3, ep31, ep35, ep39, ep7) · 720 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## precision_ladder — 3 model(s)
+
+#### `precision_ladder_t256_bf16mixed`
+- **ID `M-2RFDS7`**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `precision_ladder_t256_fp16mixed`
+- **ID `M-XPPZT1`**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `precision_ladder_t256_fp32`
+- **ID `M-JQ8ZVG`**
+- 1 ckpt tag(s) on board (ep9) · 54 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## subloss — 3 model(s)
+
+#### `subloss_v3sel_k12`
+- **ID `M-F7W1YX`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k2`
+- **ID `M-ZV8Y2G`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k5`
+- **ID `M-SY1HZC`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## subloss_goa — 3 model(s)
 
 #### `subloss_goa_k12`
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- **ID `M-SR1K2Q`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 378 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 #### `subloss_goa_k2`
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- **ID `M-NEZ3A4`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 378 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 #### `subloss_goa_k5`
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- **ID `M-2AZX4C`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 378 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
 ## dora16_special — 2 model(s), 2 with a verdict
 
 #### `dora16_glitchheal_5ep_2xlr`
+- **ID `M-KY1781`** · also known as: `dora16_glitchheal_5ep_2xlr_ptm`
 - **DoRA r16 'glitch-heal' at 2x LR — a NEGATIVE result: the heal adapter OVERWRITES rather than heals; its own learned voice dominates.**
 - 2 ckpt tag(s) on board (ep0, ep4) · 598 clips
 - **Recipe:**
@@ -2542,6 +3227,7 @@
 - *(also on board as base-render variant: `dora16_glitchheal_5ep_2xlr_ptm`)*
 
 #### `dora16_goa_newstack_8ep`
+- **ID `M-HKNGKS`** · also known as: `dora16_goa_newstack_8ep_ptm`
 - **DoRA r16 on goa, new caption stack, 8ep — Kim's HEADLINE A/B: new caption stack vs the old hall-of-fame best; full bracket.**
 - 3 ckpt tag(s) on board (ep0, ep3, ep7) · 802 clips
 - **Recipe:**
@@ -2560,6 +3246,7 @@
 ## dora64_tiered_lr — 2 model(s), 2 with a verdict
 
 #### `dora64_avp_tiered_lr1e4`
+- **ID `M-GJWNVK`** · also known as: `dora64_avp_tiered_lr1e4_ptm`
 - **DoRA r64 avp tiered captions, lr1e-4 — UNDER-cooked: never reaches the sweet spot 2e-4 hits at ep0; usable band ep3-7.**
 - 3 ckpt tag(s) on board (ep0, ep3, ep7) · 883 clips
 - **Recipe:**
@@ -2575,6 +3262,7 @@
 - *(also on board as base-render variant: `dora64_avp_tiered_lr1e4_ptm`)*
 
 #### `dora64_avp_tiered_lr2e4`
+- **ID `M-MSB20T`** · also known as: `dora64_avp_tiered_lr2e4_ptm`
 - **DoRA r64 avp tiered captions, lr2e-4 — OVERSHOOTS: ep0 is the single usable checkpoint (caught at the edge of breakdown); every later epoch useless.**
 - 1 ckpt tag(s) on board (ep0) · 361 clips
 - **Recipe:**
@@ -2593,6 +3281,7 @@
 ## longctx — 2 model(s), 2 with a verdict
 
 #### `longctx_t1024_r128`
+- **ID `M-505NWG`** · also known as: `longctx_t1024_r128_ptm`
 - **DoRA r128 trained at T=1024 context (task-50 long-context arm) — the training-length-mismatch fix arm (train at the length you generate at). Verdict: C's lane.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
@@ -2611,6 +3300,7 @@
 - *(also on board as base-render variant: `longctx_t1024_r128_ptm`)*
 
 #### `longctx_t2048_r128`
+- **ID `M-J08YRH`** · also known as: `longctx_t2048_r128_ptm`
 - **DoRA r128 trained at T=2048 context (task-50 long-context arm) — the training-length-mismatch fix arm (train at the length you generate at). Verdict: C's lane.**
 - 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1608 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
@@ -2629,20 +3319,10 @@
 - *(also on board as base-render variant: `longctx_t2048_r128_ptm`)*
 
 
-## lreq_goa — 2 model(s)
-
-#### `lreq_goa_lr1e4`
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
-- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
-
-#### `lreq_goa_lr2e4`
-- 7 ckpt tag(s) on board (ep1, ep11, ep13, ep3, ep5, ep7, ep9) · 504 clips
-- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
-
-
 ## dora_rank_extreme — 1 model(s), 1 with a verdict
 
 #### `dora256_avp_aug10_lr7e5`
+- **ID `M-S9QYKX`** · also known as: `dora256_avp_aug10_lr7e5_ptm`
 - **DoRA r256 on avp, aug10, lr7.5e-5 — the rank-256 data point; a single checkpoint (the run only fits on the cluster, not locally).**
 - 1 ckpt tag(s) on board (ep3) · 346 clips
 - **Recipe:**
@@ -2658,9 +3338,34 @@
 - *(also on board as base-render variant: `dora256_avp_aug10_lr7e5_ptm`)*
 
 
+## fullft_bigset — 1 model(s)
+
+#### `fullft_bigset`
+- **ID `M-FAGVCW`**
+- 2 ckpt tag(s) on board (ep3, ep7) · 49 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_mixed_avp_goa — 1 model(s)
+
+#### `fullft_mixed_avp_goa_t4096`
+- **ID `M-6WMGSK`**
+- 1 ckpt tag(s) on board (ep0) · 54 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_mixed_wdfix_ddpbug — 1 model(s)
+
+#### `fullft_mixed_wdfix_ddpbug`
+- **ID `M-13C8RA`**
+- 1 ckpt tag(s) on board (ep7) · 18 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## smoke — 1 model(s)
 
 #### `smoke_r256_a256_lr1e4_f512_bs8`
+- **ID `M-9VQNRH`** · also known as: `smoke_r256_a256_lr1e4_f512_bs8_ptm`
 - **Pipeline smoke-test run (r256/a256, LUMI) — rendered for sanity confirmation only, NOT a model candidate.**
 - 2 ckpt tag(s) on board (ep2, ep5) · 464 clips
 - **Training data:** latents_sa3 subset (smoke)
@@ -2672,6 +3377,7 @@
 ## x0eq — 1 model(s)
 
 #### `x0eq_sub5_goa`
+- **ID `M-W9VXDJ`**
 - 6 ckpt tag(s) on board (ep0, ep11, ep15, ep19, ep3, ep7) · 432 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
@@ -2679,6 +3385,7 @@
 ## x0eq_goa — 1 model(s)
 
 #### `x0eq_goa`
+- **ID `M-6PJZEZ`**
 - 6 ckpt tag(s) on board (ep0, ep11, ep15, ep19, ep3, ep7) · 432 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 

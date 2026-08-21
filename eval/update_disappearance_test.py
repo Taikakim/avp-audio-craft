@@ -244,15 +244,25 @@ def run_loss(dit, sam, batches, meas_batch, crop_seconds, T, device, warmup, lr,
              melody_basis=None, tag="plain"):
     names = [n for n, p in dit.named_parameters() if p.requires_grad]
     st = AdamState(names, lr=lr)
+
+    def grads_finite(cl, pr, seed):
+        """rf_grads with a NaN-retry: bump the seed until the forward loss is finite."""
+        for k in range(6):
+            g, l = rf_grads(dit, sam, cl, pr, crop_seconds, T, device, melody_basis, seed=seed + 1000 * k)
+            if np.isfinite(l):
+                return g, l, seed + 1000 * k
+            print(f"[{tag}] non-finite loss at seed={seed + 1000 * k}, retrying", flush=True)
+        raise RuntimeError(f"{tag}: forward stayed non-finite after retries")
+
     # warm the moments on `warmup` prior batches at fixed theta
     for i in range(warmup):
         cl, pr = batches[i]
-        g, l = rf_grads(dit, sam, cl, pr, crop_seconds, T, device, melody_basis, seed=100 + i)
+        g, l, _ = grads_finite(cl, pr, 100 + i)
         st.observe(g)
         print(f"[{tag}] warmup {i+1}/{warmup} loss={l:.5f}", flush=True)
     # measurement batch -> final moment observation + Delta
     cl, pr = meas_batch
-    gm, lm = rf_grads(dit, sam, cl, pr, crop_seconds, T, device, melody_basis, seed=999)
+    gm, lm, _ = grads_finite(cl, pr, 999)
     st.observe(gm)
     print(f"[{tag}] measurement loss={lm:.5f} (adam step={st.step})", flush=True)
 
@@ -322,6 +332,9 @@ def main():
     print(f"[load] {args.model} fp32 on {device}", flush=True)
     sam = StableAudioModel.from_pretrained(args.model, device=device, model_half=False)
     dit = sam.model.model
+    dit.eval()   # deterministic forward (no dropout) — the writeback-disappearance mechanism
+                 # is independent of dropout; eval() makes plain vs melody use an identical
+                 # forward and removes stochastic-dropout NaNs at extreme noise levels.
     for p in dit.parameters():
         p.requires_grad_(True)
     latent_rate = float(sam.model.sample_rate) / float(sam.model.pretransform.downsampling_ratio)

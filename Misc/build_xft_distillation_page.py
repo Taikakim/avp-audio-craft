@@ -30,7 +30,11 @@ STAGE = Path.home() / "evals_aac"
 CLIPS = STAGE / "xft_distillation"
 CLIPS.mkdir(parents=True, exist_ok=True)
 
-SPECTRUM = json.loads((ROOT / "eval/svd_energy_spectrum.json").read_text())
+_SPEC_RAW = json.loads((ROOT / "eval/svd_energy_spectrum.json").read_text())
+# PUBLIC redaction (MASTER §4): the raw spectrum json carries an absolute checkpoint
+# path in .ckpt (+ unused .parent/.n_modules/.per_module_r90). The page renders ONLY the
+# two rank tables, so embed just those — the ckpt path/filename must never reach the HTML.
+SPECTRUM = {k: _SPEC_RAW[k] for k in ("whole_model_uniform_rank_energy", "class_summary")}
 
 # (pair label, glitch xft label+ckpt-tag, coherent trained-DoRA label+ckpt-tag, rank)
 PAIRS = [
@@ -149,5 +153,14 @@ T = T.replace("__NOTES__", notes_block(
     levels=[("clip", "this clip"), ("ckpt", "this pair"), ("page", "whole page")],
     hint="click a cell then note the verdict here"))
 out = STAGE / "xft_distillation.html"
-out.write_text(T.replace("__DATA__", DATA))
-print(f"wrote {out}: {len(pairs_out)} pairs, {sum(len(p['clips']) for p in pairs_out)} prompt-rows")
+final = T.replace("__DATA__", DATA)
+# fail-closed redaction tripwire: no absolute path / checkpoint filename may reach the
+# public HTML (W's 2026-08-06 catch — the raw spectrum .ckpt was leaking via DATA).
+# NB: match real leak signatures only — a bare `.ckpt` also hits legit JS property
+# accesses (dataset.ckpt, noteCtx.ckpt), the false-positive class W flagged on headb.
+import re as _re
+_leak = _re.search(r"/run/media|/home/kim|/scratch|/project/|Mantu|epoch=\d+-step=|\.weights\.ckpt", final)
+if _leak:
+    raise SystemExit(f"REDACTION TRIPWIRE: absolute path/ckpt leaked into xft page -> {_leak.group(0)!r}")
+out.write_text(final)
+print(f"wrote {out}: {len(pairs_out)} pairs, {sum(len(p['clips']) for p in pairs_out)} prompt-rows [redaction-clean]")

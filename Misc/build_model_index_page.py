@@ -199,6 +199,35 @@ def is_placeholder_note(note):
     return not note or str(note).strip().startswith("auto:")
 
 
+IDS = REPO / "Misc/model_ids.json"
+
+
+def _load_ids():
+    """(label -> id, canonical -> [synonyms]) from the ID registry; empty if it doesn't exist yet
+    so this generator never hard-depends on it."""
+    if not IDS.exists():
+        return {}, {}
+    reg = json.loads(IDS.read_text())
+    ids, aliases = reg.get("ids", {}), reg.get("aliases", {})
+    by_canon = defaultdict(list)
+    for alias, canon in aliases.items():
+        by_canon[canon].append(alias)
+    # a label resolves to its own id, or to its canonical's id if it is an alias
+    resolve = dict(ids)
+    for alias, canon in aliases.items():
+        if canon in ids:
+            resolve[alias] = ids[canon]
+    return resolve, {c: sorted(v) for c, v in by_canon.items()}
+
+
+_ID_RESOLVE, _ID_SYNONYMS = _load_ids()
+
+
+def model_identity(label):
+    """This model's stable ID and the other labels it is known by."""
+    return _ID_RESOLVE.get(label), _ID_SYNONYMS.get(label, [])
+
+
 def model_block(label, info, ov, dedup=None):
     """Markdown for one live model. `ov` may be None (recipe/verdict unknown).
     `dedup` maps a field name ('why'/'verdict') to {text: first_label}; when the
@@ -206,6 +235,13 @@ def model_block(label, info, ov, dedup=None):
     so families like xft_distillation (60 members sharing one finding) stay readable."""
     dedup = {} if dedup is None else dedup  # NB: empty dict is falsy; must not replace it
     L = [f"#### `{label}`"]
+    # Stable random ID + every other name this model answers to (Kim 2026-08-17: check the index
+    # before working with a model, "only for the synonym issues, if nothing else"). A label is not
+    # an identity -- 75 of 297 labels are synonyms -- so the ID is what to quote in a journal, a
+    # pull command or a chat post. Registry: Misc/model_ids.json, written by assign_model_ids.py.
+    mid, akas = model_identity(label)
+    if mid:
+        L.append(f"- **ID `{mid}`**" + (f" · also known as: {', '.join(f'`{a}`' for a in akas)}" if akas else ""))
     ckpts = sorted(info["ckpts"])
     meta = f"{len(ckpts)} ckpt tag(s) on board ({', '.join(ckpts)}) · {info['clips']} clips"
     if ov is None:

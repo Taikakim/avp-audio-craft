@@ -7,14 +7,24 @@ structure (transients, shimmer, "air"), NOT carrier-phase randomness. This probe
 that, and places SAME's encode->decode round-trip ON THE SAME AXES AS REAL MP3 (128k/320k)
 so "how bad, in units producers know" is answerable.
 
-Per clip, per version {SAME round-trip, mp3@128, mp3@320} vs ORIGINAL, in two bands
-(presence 4-8kHz, air 8-16kHz), after envelope-xcorr time alignment:
+Per clip, per version vs ORIGINAL, in two bands (presence 4-8kHz, air 8-16kHz),
+after envelope-xcorr time alignment. Versions (Kim 2026-08-06 — m4a leg added so the
+audition serving codec sits on the SAME axis as MP3 and the SAME round-trip):
+  SAME                       : the frozen SA3 codec encode->decode round-trip
+  mp3_128, mp3_320           : real libmp3lame MP3 anchors (the "producer units")
+  m4a_128, m4a_192, m4a_320  : native-AAC .m4a at OUR audition serving bitrates
+                               (128/192) + a 320 anchor matching mp3_320
   env_corr      : corr of band Hilbert-envelope (temporal detail retention; 1=perfect)
   fastmod_ret   : envelope modulation-spectrum energy >20Hz, ver/orig (crispness)
   crest_ret     : band crest factor ver/orig (transient sharpness; <1 = smeared)
   flatness_delta: band spectral flatness ver-orig (>0 = detail->wash = the veil)
   energy_ret    : band RMS ver/orig (bandwidth/rolloff)
-Plus full-signal 85% spectral-rolloff freq per version.
+Plus full-signal 85%-power spectral-rolloff freq per version (bass-dominated, so a
+weak HF discriminator — read the band env_corr, not rolloff).
+
+Also exports the aligned, measured mono audio for the first EXPORT_N clips as LOSSLESS
+FLAC (OUT/audio/) so codec artifacts survive intact to the ear on the audit page;
+build_clarity_audit_page.py turns results.json + that audio into the online page.
 
 Run (SA3 venv, GPU for the SAME leg, hold SAO/.gpu.lock):
   FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/hf_clarity_diagnosis.py
@@ -40,6 +50,7 @@ OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/hf_clarity")
 SR = 44100
 CLIP_S = 8.0
 N_TRACKS = 12
+EXPORT_N = 4          # first N clips get their aligned audio dumped for the audit page
 BANDS = {"presence_4-8k": (4000, 8000), "air_8-16k": (8000, 16000)}
 
 
@@ -90,15 +101,24 @@ def rolloff(y):
     return float(f[np.searchsorted(c, 0.85 * c[-1])])
 
 
-def mp3(y, kbps, tmp):
-    wav, out = tmp / "in.wav", tmp / f"o{kbps}.mp3"
+def _codec_roundtrip(y, kbps, tmp, ext, enc_args):
+    """encode y (mono) to <ext> at kbps via ffmpeg, decode back, return mono float32."""
+    wav, out, dec = tmp / "in.wav", tmp / f"o{kbps}.{ext}", tmp / f"d{ext}{kbps}.wav"
     sf.write(wav, y, SR)
-    subprocess.run(["ffmpeg", "-y", "-i", str(wav), "-b:a", f"{kbps}k", str(out)],
-                   capture_output=True)
-    subprocess.run(["ffmpeg", "-y", "-i", str(out), str(tmp / f"d{kbps}.wav")],
-                   capture_output=True)
-    d, _ = sf.read(tmp / f"d{kbps}.wav", dtype="float32", always_2d=True)
+    subprocess.run(["ffmpeg", "-y", "-i", str(wav), *enc_args, "-b:a", f"{kbps}k",
+                    str(out)], capture_output=True)
+    subprocess.run(["ffmpeg", "-y", "-i", str(out), str(dec)], capture_output=True)
+    d, _ = sf.read(dec, dtype="float32", always_2d=True)
     return d.mean(1)
+
+
+def mp3(y, kbps, tmp):
+    return _codec_roundtrip(y, kbps, tmp, "mp3", ["-c:a", "libmp3lame"])
+
+
+def m4a(y, kbps, tmp):
+    # native AAC (no libfdk) in an m4a container = exactly our audition serving codec
+    return _codec_roundtrip(y, kbps, tmp, "m4a", ["-c:a", "aac"])
 
 
 def main():
@@ -111,7 +131,11 @@ def main():
     n_clip = int(SR * CLIP_S)
     tracks = [d for d in sorted(CORPUS.iterdir()) if (d / "full_mix.flac").exists()][:N_TRACKS]
 
+    audio_dir = OUT / "audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
     agg = {}
+    clips_manifest = []          # per-exported-clip: label + {version: relpath}
+    ci = 0
     for d in tracks:
         a, sr = sf.read(d / "full_mix.flac", dtype="float32", always_2d=True)
         if a.shape[0] < int(60 * sr) + n_clip:
@@ -126,17 +150,30 @@ def main():
             with tempfile.TemporaryDirectory() as td:
                 for k in (128, 320):
                     versions[f"mp3_{k}"] = mp3(o, k, Path(td))
+                for k in (128, 192, 320):
+                    versions[f"m4a_{k}"] = m4a(o, k, Path(td))
+        export = ci < EXPORT_N
+        clip_audio = {}
+        if export:
+            cdir = audio_dir / f"clip{ci:02d}"
+            cdir.mkdir(exist_ok=True)
+            sf.write(cdir / "original.flac", o, SR)   # unaligned reference (t=0)
+            clip_audio["original"] = f"audio/clip{ci:02d}/original.flac"
         for vname, v in versions.items():
             oa, va = align(o, v.astype(np.float32))
             for bname, (lo, hi) in BANDS.items():
-                key = (vname, bname)
-                m = band_metrics(oa, va, lo, hi)
-                agg.setdefault(key, []).append(m)
+                agg.setdefault((vname, bname), []).append(band_metrics(oa, va, lo, hi))
             agg.setdefault((vname, "rolloff_hz"), []).append(rolloff(va))
+            if export:
+                sf.write(cdir / f"{vname}.flac", va, SR)  # aligned -> same-playhead
+                clip_audio[vname] = f"audio/clip{ci:02d}/{vname}.flac"
+        if export:
+            clips_manifest.append({"label": d.name, "audio": clip_audio})
         agg.setdefault(("original", "rolloff_hz"), []).append(rolloff(o))
         print(f"[clip] {d.name[:34]}: SAME air env_corr "
               f"{band_metrics(*align(o, versions['SAME'].astype(np.float32)), 8000, 16000)['env_corr']:.3f}",
               flush=True)
+        ci += 1
 
     # aggregate
     summary = {}
@@ -148,10 +185,10 @@ def main():
                 k: round(float(np.mean([r[k] for r in lst])), 3) for k in lst[0]}
     (OUT / "results.json").write_text(json.dumps(
         {"summary": summary, "n_tracks": len(tracks), "bands": BANDS,
-         "have_mp3_anchors": have_ffmpeg,
+         "have_mp3_anchors": have_ffmpeg, "clips": clips_manifest,
          "reading": "env_corr/crest_ret near 1 = temporal detail kept; <<1 = smeared. "
-                    "flatness_delta>0 = detail->wash (the veil). Compare SAME to mp3_128/320 "
-                    "to place the round-trip on the MP3 clarity ladder.",
+                    "flatness_delta>0 = detail->wash (the veil). Compare SAME to the mp3_* / "
+                    "m4a_* codec anchors to place the round-trip on the codec clarity ladder.",
          "result": None, "kim_feedback": None}, indent=2))
     print("\nSUMMARY (air 8-16k):")
     for v in summary:

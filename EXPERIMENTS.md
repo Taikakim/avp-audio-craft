@@ -411,6 +411,13 @@ claim, including ones already in this file, against both corrections.
     `$SCRATCH/runs/suomift_warm/`. NOT rendered yet — next: render both ladders on
     suomi_full_prompts and compare against the stack_suomi cells (adapter-on-FT) and B8's T512
     DoRA: does suomi need the whole backbone to move?
+- **MORNING WAVE 2026-08-22 (end date confirmed 23 Aug on the web UI; 169 node-h left ≈ 3.5 nodes
+  continuous):** 21445516 `suomift_render` (both warm-start ladders + bare backbones, 414 cells →
+  `renders/suomift_warm/`); 21445517/18 `pianoroll_fullft` EPOCHS=32 seeds 1/2 (gain was still
+  climbing at 16 ep; same run dirs, overwrites the 16-ep names); 21445586 `morph_render`
+  (`lumi/render_morph.py`: 16 arms × 8 real contour crops × {g1, g2, null} + decoded reference
+  windows → `renders/morph/<arm>/`). Still queued (Priority) at 23:50. Unfired candidates for the
+  remaining budget: showcase wave 2 (new --rng), A11 seed-2 ×16 (~48 node-h), K∈{8,16} fill ×4.
 - **PULL LIST (scratch persists till purge, not urgent):** showcase/ (128 wav+z0+json), stack_cells/,
   stack_suomi/, suomift_warm/ (EMA weights only — prune optimizer first), pianoroll_fullft/ (both
   seeds + control_ablation.jsonl), morphcond run dirs.

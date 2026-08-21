@@ -19,7 +19,7 @@ for ARM in goa_r16_bs1_fusion_cos goa_r16_bs1_fusion_snr goa_r16_bs1_fusion_cos_
   [ -f "${D}/traj/done.json" ] && { echo "[traj] SKIP ${ARM}"; continue; }
   echo "[traj] === ${ARM} $(date -Iseconds)"
   # shellcheck disable=SC2086
-  "${VENV}/bin/python" scripts/train_lora.py --model medium-base --encoded_dir ${LAT} --frames 256 --batch_size 1 --adapter_type lora --rank 16 --lora_alpha 16 --optimizer fusion ${DAMP[$ARM]} --lr 1e-4 --base_precision bf16 --no_demos --num_workers 0 --checkpoint_every 100000 --steps 5000 --accumulate_grad_batches 1 --save_dir "${D}/run" --traj-sketch-dir "${D}/traj" --traj-ckpt-every 5 --traj-ckpt-dense-until 500 > "${D}/train.log" 2>&1
+  "${VENV}/bin/python" scripts/train_lora.py --model medium-base --encoded_dir ${LAT} --frames 256 --batch_size 1 --adapter_type lora --rank 16 --lora_alpha 16 --optimizer fusion ${DAMP[$ARM]} --lr 1e-4 --base_precision bf16 --no_demos --num_workers 0 --checkpoint_every 100000 --steps 5000 --accumulate_grad_batches 1 --save_dir "${D}/run" --traj-sketch-dir "${D}/traj" --traj-ckpt-every 50 --traj-ckpt-dense-until 100 > "${D}/train.log" 2>&1
   rc=$?; echo "[traj] ${ARM} rc=${rc} $(date -Iseconds)"
   cat > "${D}/run_meta.json" <<META
 {"run": "${ARM}", "created": "$(date -Iseconds)", "exit_code": ${rc},

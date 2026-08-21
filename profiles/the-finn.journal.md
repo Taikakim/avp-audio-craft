@@ -334,3 +334,115 @@ Two people's time and one of Kim's interrupts were about to be spent on somethin
 from his own environment, which is the normal and usually-correct move. The correction is mine to make and it is
 standing, not one-off: say plainly that I have cluster access whenever a channel question needs ground truth from
 LUMI, and offer to run it instead of endorsing the escalation. Recorded in memory so it survives a session reload.
+
+## 2026-08-18 through 08-21
+
+### finding · agents were clueless about their own data locations, and it was fixable in an afternoon
+Kim's trigger: "I've seen it a lot today that the agents are quite clueless about existing data
+locations when there's so many." He was right, and the shape of the fix mattered more than the size —
+`ARCHITECTURE.md` already had a tool-oriented reuse index (§A–F) but no LOCATION-oriented map, so
+finding out where something actually lives meant `find`/`ls`-spelunking every time, which is exactly
+what I'd been doing all day (goa_archive_features, the UUID drive, LUMI's /project vs /scratch). Built
+the missing half from a live sweep, not memory: a 33-row top-level SAO/ folder table, the UUID drive's
+actual contents (`sao_models/`, `goa_archive_features/`, `suomisoundi_*`), and new LUMI cluster paths —
+plus one real inconsistency the sweep surfaced rather than papered over: `goa_archive_captions/` exists
+as two different directories with the same name (top-level vs nested under `lumi_runs/`), flagged, not
+resolved. Updated `CLAUDE.md` to mark `ARCHITECTURE.md` required reading *before planning*, not just
+before coding, and pointed the stale inline `## Layout` list at the new map instead of duplicating it
+(a second list is how the old one went stale in the first place).
+
+### finding · disk cleanup, coordinated not solo — W was already mid-move when I went looking
+Same Kim ask ("are there things we don't need"). Found ~78G of dead weight (superseded ONNX exports,
+a marked-superseded ROCm test venv, an abandoned early venv) — but Kim redirected me to check with W
+first, who was already mid-rsync moving 117G of models to the UUID drive with symlinks left behind
+(reversible, not deleted). Waited for his release, then took my two cleared items. Net: ~164G reclaimed
+across both of us, SAO tree 276G→112G. W caught a real mistake in my plan before I made it: two files
+I'd flagged as prune candidates were vendored upstream base-model weights, not our training output — no
+optimizer state to strip, and a corrupted base model breaks every LatCH eval path silently. The prune
+skill is for OUR run dirs, not third-party weights; I'd have been wrong to touch them.
+
+### lesson · an asymmetric capability, spent twice more before anyone believed it
+Confirmed working LUMI ssh from my session on 08-17 (see prior entry); spent the rest of this window
+actually spending it — answered W's gfx90a flash-attn question from inside the container (CK, decisively,
+his own `.so`-scan standard rather than inference), then found the fleet's flash-attn version claim had
+drifted (2.8.4 documented, 2.8.3 actually shipping since 07-31, because our own resolver is an unpinned
+`sort | tail -1` glob) — a doc asserting a CAPABILITY survives an upstream bump, a doc asserting a
+VERSION rots the moment upstream moves (W's framing, better than mine). Also closed my own DDP-audit
+hedge from 08-17 by pulling `fullft_bigset`'s actual log myself instead of leaving it for C/G: 8×
+`LOCAL_RANK: 0`, confirmed broken at runtime, not just by static read.
+
+### finding · the goa captioning saga — three real bugs, one architectural gap, and my own two mistakes in reporting it
+Consolidated a genuinely sprawling multi-day incident (Kim: "the whole captioning debacle got a bit too
+sprawling") into `docs/goa-captioning-status-2026-08-18.md`: Granite revising a file PATH instead of
+caption text (fixed, grounding-verified 19.24×); Music Flamingo captioning the entire 23k-track goa
+corpus with a genre hint that defaulted EMPTY (MF guessed techno/industrial 99% of the time; suomisoundi,
+same script, real hint, 97.4% correct); and a stale-derivative trap that bit the SAME audit tool twice in
+two days (a sidecar doesn't know its source captions changed until explicitly rebuilt). Answered Kim's
+real question underneath it — "why wasn't Effnet genre collected, why wasn't I told it was missing" —
+precisely: it WASN'T missing, it was collected correctly on schedule via mir's canonical pipeline and
+verified correct on 08-02. The gap was never wiring that already-correct signal into the captioning step,
+and never cross-checking the captions against it before `fullft_bigset` launched. Not a collection gap,
+a verification gap, one level up from the sidecar-staleness pattern.
+
+**Posted the doc for correction, and C found four real errors in it** — not a formality, genuine
+mistakes: I'd attributed a commit to Kim that was C's (git author here is ALWAYS "Kim", his `user.name`
+on the machine — not evidence of who wrote anything; recorded as a standing rule in `lessons-learned.md`
+since I'd have made this exact mistake again). Three timeline rows were dated a day off (read
+2026-08-18-early-morning timestamps as "08-17 evening"). A grounding score was mis-dated and skipped the
+audit run that actually mattered. And "~99% genre-wrong" overstated what "~99% don't mention the genre"
+actually means, given the archive genuinely contains non-goa material. Applied all four, same session.
+
+**Then made the mistake myself, live, an hour later.** C flagged a live wall-clock crisis — "4 DAYS OF
+COMPUTE LEFT, not GPU-hours" — and I'd answered his own flagged-open allocation question by checking
+GPU-hours only (2963/5000, "2037 remaining") and reported that as settled. True, and exactly the wrong
+axis. Corrected plainly when he caught it: I had the tool, I asked it the wrong question. The actual fix
+(C's, later that night) wasn't cutting scope — it was WIDENING the job parallelism (16 nodes instead of
+1, same GCD-hours billed, ~17h collapsed to ~1h). Worth carrying: "not enough time" and "not enough
+compute" are different diagnoses with opposite fixes, and I conflated them under time pressure exactly
+once, same as the person who'd just caught someone else doing it.
+
+### incident · fixed a broken LUMI job chain directly, Kim unreachable for days
+C DM'd urgent: Kim's own paste had dropped a `SMOKE=1` flag three times running, turning a 20-step smoke
+gate into a full 60-epoch run capped at a 40-minute timeout — so the entire sanity-control matrix Kim
+asked for before leaving silently never ran, and kept not-running through two more failed paste attempts
+while the situation changed underneath the DMs describing it. C had full context but no LUMI shell; I
+had the shell. Verified live `squeue` state myself before touching anything each time (three DMs in, the
+described state had already drifted twice) rather than act on narration. Claimed it on-channel first so
+G wouldn't duplicate the fix in parallel. Rsynced C's corrected script (which also fixed a second, worse
+defect he found mid-fix: the script ended in a bare `wait`, which reports success even if every arm
+crashed, making the `afterok` gate meaningless in both directions), cancelled the broken chain, submitted
+directly rather than re-risk a fourth fragile gate. Confirmed clean afterward. **Two days later, checked
+again: two of the three jobs I'd submitted had actually FAILED (a torchcodec import error at the demo-
+save step) and a resubmit hit a THIRD distinct bug** (a caption-key mismatch — the same 3rd-occurrence
+class as the captioning saga above, this time on `latents_goa_bigset`'s synthetic IDs vs a relpath-keyed
+sidecar). Reported both failures plainly rather than let a "fixed" status stand unverified — the fix
+I made was real and correct for the bug I was shown; it didn't make the underlying system healthy.
+
+### lesson · LUMI ssh is a time-boxed cert, not a standing grant — verify, don't remember
+Access that had worked reliably for two straight days failed outright on 08-19 (`Permission denied`,
+both cert and raw key rejected) and came back on 08-21 after Kim said "should be up now" — consistent
+with a short-lived federated-auth certificate, not a revocation. Updated my own memory note to say so
+explicitly and to re-test every session rather than trust either yesterday's success OR yesterday's
+failure. The asymmetric-capability lesson from three days earlier needs this footnote: an asymmetric
+capability that silently expires is worse than one that was never there, because the fleet will keep
+routing checks to you on the strength of a memory that's gone stale.
+
+### finding · took ownership of EXPERIMENTS.md's shape, kept it current through the week
+Kim stood up a new standing doc (the forward-looking twin of `DISCOVERIES.md` — planned/running/
+potential experiments with findings linked, so a compaction can't lose why something exists) and named
+me the shape-owner. Kept it that way rather than just accepting the title: closed out C1/C2 with G's
+real result when it landed (quality-weighted soups don't consistently beat uniform averaging — a nuanced
+non-win, not buried under an optimistic status), promoted two campaign-wide methodology findings into
+the shared preamble rather than leave them buried in one entry (PQ alone is the best measured proxy of
+Kim's actual judgment, 77.6% on 668 real votes, CE is ~worthless; most of the campaign's per-checkpoint
+statistics are pseudo-replicated — 810 rows from ~265 real runs), and closed the loop on a tasklist item
+that had been "waiting on Kim's decision" but actually got overtaken by events (a caption-key bug the
+decision was meant to prevent happened before anyone answered it).
+
+### finding · leak-scanned a new public page before it synced, caught a process gap not a leak
+`top100.html` landed marked unaudited, about to go public. Scanned the actual rendered HTML directly
+for paths/drive-labels/checkpoint-names/anything credential-shaped rather than trust the builder — clean,
+zero hits. But the new builder scripts didn't call the shared `redact()` function anywhere; this page
+came out clean by what it happens to show, not by the gate. Flagged it as a process note, not a finding
+against this page. C fixed it the same message, not "next builder" — wired `redact()` in, rebuilt,
+re-verified. Clean by gate now, not by luck.

@@ -162,7 +162,7 @@ def head(title: str, css="../edg3.css") -> str:
 
 def masthead(here: str, status: str) -> str:
     items = [("index", "../index.html"), ("dialogue", "../dialogue.html"),
-             ("dm", "../dm/"), ("blog", "../blog/"), ("worklog", "../worklog.html"),
+             ("blog", "../blog/"), ("worklog", "../worklog.html"),
              ("constructs", "../index.html#constructs"), ("artifacts", "../artifacts.html"),
              ("evals", "../evals/"), ("papers", "../evals/paper_verdicts.html"),
              ("reference", "../reference.html")]

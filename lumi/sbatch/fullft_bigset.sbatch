@@ -88,6 +88,11 @@ export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
 FATCKPT=$(ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -v "\.weights\.ckpt$" | sort -V | tail -1 || true)
 RESUME=""; [ -n "${FATCKPT}" ] && RESUME="--resume_ckpt ${FATCKPT}"
 
+# shm-crash fix (2026-08-06): train_lora now uses the file_system tensor-sharing strategy
+# (shares via /tmp, not /dev/shm) so 8 ranks x 6 workers x live-encode no longer exhaust
+# /dev/shm; raise the open-file limit since file_system opens one fd per shared tensor.
+ulimit -n 131072 2>/dev/null || ulimit -n 65536 2>/dev/null || true
+
 python ${CODE}/stable-audio-3/scripts/train_lora.py \
     --model medium-base --full-finetune \
     --data_dir '"${BIGSET_DIR}"' \
@@ -107,3 +112,6 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
 echo "[fullft] ckpts:"; ls "${RUN}"/epoch=*.ckpt 2>/dev/null | grep -cv weights || true
 # SUCCESS = ckpt count + train_loss in csv. EMA weights ride the ckpt as diffusion_ema.ema_model.*
 # (render must load the EMA set — see stable-audio-3/CLAUDE.md).
+# RENDER: this script TRAINS ONLY. For standard 20s audition cells, run
+#   lumi/sbatch/fullft_bigset_render.sbatch  (renders the newest ckpt with
+#   render_matrix_cells --fullft --use-ema; re-run it as new ckpts land every 4 ep).

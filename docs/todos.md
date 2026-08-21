@@ -318,3 +318,30 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
   DOWNGRADED to: (a) a gentle LR sweep 1e-4->3e-4 to test if Muon+DoRA-normalization tolerates
   somewhat hotter than naive AdamW; (b) the 1/step decay idea tested separately at fine-tuning LRs.
   Both low-priority behind #3 stereo-loss + longctx (the experiments that actually target our problem).
+
+## Parked — post-3-deliverables (2026-08-12 reading sweep; un-park after AVP model / density adapter / melody head)
+
+These are the ACTIONABLE next-steps that came out of the topology/syntax paper sweep. They are
+deliberately parked under the two-week directive (only the 3 deliverables), but were living ONLY in
+`papers/knowledge.md`'s synthesis sections — a person scanning todos would miss them (C audit,
+2026-08-13). Full detail + citations: `papers/knowledge.md` §"Sweep synthesis — W's 11" (lines
+~275-302) and §"Sweep synthesis — C's 5".
+
+- **THE DISCRETISATION GATE (W's top-ranked, gates three things at once).** Derive the right
+  discrete/scalar stream from our continuous 46-field timeseries — one piece of work that unblocks
+  ALL of: (a) `2505.10004` topology-driven repetition control (needs a scalar surrogate v(t) =
+  "relative position within the current cycle"), (b) Yust–Popoff meter/rhythm networks (need an
+  articulation set per part), (c) `2405.04796` featured-PH (needs a discretisation). `2201.02715`
+  (low-rank structured inference) supplies the method: an **HSMM over continuous emissions** yields
+  states + durations + boundaries in one model. **CPU-only, no GPU, no training**; `spectral_flux_ts`
+  is already a novelty curve to start from. W ranks this ABOVE any single head we could build in a week
+  because it's the common prerequisite. Also feeds Kim's harmonic-rhythm idea.
+- **Repetition head** (`2505.10004`) — the "punish too-exact repetition" a2a head Kim raised; gated on
+  the discretisation-gate scalar v(t) above.
+- **Dynamical-score-networks harmonic-region controls** (`2006.01033`) — tonal-region-id / centricity /
+  harmonic-mobility timeseries from mir's existing CHORDS field (graph modularity). BOUND (Mukherji):
+  it's a grouping not a parse — the hierarchical middle term (Rohrmeier 2011 PCFG) is missing if we want
+  true harmonic SYNTAX, not just region-grouping.
+- **Fused harmonic-tension control/eval** — Tymoczko orbifold-center (pitch-only, cheap) + Sethares
+  spectral-roughness (Essentia today). The dissonance/roughness timeseries is the cheapest single build
+  (free, Essentia) if any of this un-parks early.

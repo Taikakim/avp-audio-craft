@@ -65,7 +65,7 @@ Subcommands:
 """
 from __future__ import annotations
 
-import argparse, json, os, socket, sys, time
+import argparse, atexit, json, os, re, signal, socket, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -181,6 +181,73 @@ def check_queue(handle: str, since: float = 0.0, clear: bool = False) -> None:
         print("(queue cleared)")
 
 
+# ---- wake-armed marker: makes "deaf but present" VISIBLE (the recurring fall-off fix,
+# specced 2026-07-21, finally built 2026-08-08). `wait`/`dm-wait` write /tmp/sao-wake.<handle>
+# on arm and clear it on exit; `who` reports each present handle as ARMED (marker present AND
+# pid alive) vs DEAF (missing or pid dead — the wake died / never re-armed). SIGKILL leaves a
+# stale marker, so the read ALWAYS pid-checks — a dead pid reads DEAF, never a false ARMED. ----
+WAKE_MARKER = "/tmp/sao-wake.%s"
+
+
+def _pid_alive(pid) -> bool:
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except (OSError, ValueError, TypeError):
+        return False
+    return True
+
+
+def _wake_marker_path(handle: str) -> str:
+    return WAKE_MARKER % handle.lower()
+
+
+def _write_wake_marker(handle: str) -> None:
+    try:
+        with open(_wake_marker_path(handle), "w") as f:
+            f.write(f"pid={os.getpid()} ts={now()}\n")
+    except OSError:
+        pass
+
+
+def _clear_wake_marker(handle: str) -> None:
+    try:
+        os.remove(_wake_marker_path(handle))
+    except OSError:
+        pass
+
+
+def wake_state(handle: str) -> str:
+    """ARMED iff the marker exists AND its pid is alive; else DEAF."""
+    try:
+        with open(_wake_marker_path(handle)) as f:
+            txt = f.read()
+    except OSError:
+        return "DEAF"
+    m = re.search(r"pid=(\d+)", txt)
+    return "ARMED" if (m and _pid_alive(m.group(1))) else "DEAF"
+
+
+def _arm_marker(handle: str) -> None:
+    """Write the wake marker + register cleanup so ANY exit path clears it: atexit (normal
+    return / uncaught exception) + SIGTERM/SIGINT handlers (clean kill). SIGKILL can't be
+    trapped → a stale marker may remain, which is why wake_state() always pid-checks."""
+    _write_wake_marker(handle)
+    atexit.register(_clear_wake_marker, handle)
+
+    def _cleanup(signum, frame):
+        _clear_wake_marker(handle)
+        sys.exit(0)
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            signal.signal(sig, _cleanup)
+        except (ValueError, OSError):
+            pass
+
+
 # ---- DM helpers ----
 
 def dm_log_path(h1: str, h2: str) -> Path:
@@ -219,25 +286,29 @@ def dm_say(handle: str, to: str, text: str, re: str = "") -> None:
 
 def dm_wait(handle: str, timeout: float = 0.0) -> int:
     """Block until a DM doorbell arrives on /sao/dm/<handle-lower>, print it, EXIT."""
-    rx = _rx_socket()
-    if timeout and timeout > 0:
-        rx.settimeout(timeout)
-    target_addr = DM_ADDR + handle.lower()
-    sys.stderr.write(f"[dm] {handle} waiting for DM on {target_addr}\n")
-    while True:
-        try:
-            addr, args = decode(rx.recvfrom(4096)[0])
-        except socket.timeout:
-            print("[dm] WAIT_TIMEOUT — no DM received", flush=True)
-            rx.close(); return 2
-        except Exception:
-            continue
-        if addr == target_addr:
-            a = args + ["", "", ""]
-            h, ts = a[0], a[1]
-            log_name = dm_log_path(handle, h).name
-            print(f"[{ts}] DM WAKE from {h}: {a[2]}  — read {log_name}", flush=True)
-            rx.close(); return 0
+    _arm_marker(handle)
+    try:
+        rx = _rx_socket()
+        if timeout and timeout > 0:
+            rx.settimeout(timeout)
+        target_addr = DM_ADDR + handle.lower()
+        sys.stderr.write(f"[dm] {handle} waiting for DM on {target_addr}\n")
+        while True:
+            try:
+                addr, args = decode(rx.recvfrom(4096)[0])
+            except socket.timeout:
+                print("[dm] WAIT_TIMEOUT — no DM received", flush=True)
+                rx.close(); return 2
+            except Exception:
+                continue
+            if addr == target_addr:
+                a = args + ["", "", ""]
+                h, ts = a[0], a[1]
+                log_name = dm_log_path(handle, h).name
+                print(f"[{ts}] DM WAKE from {h}: {a[2]}  — read {log_name}", flush=True)
+                rx.close(); return 0
+    finally:
+        _clear_wake_marker(handle)
 
 
 def dm_status(handle: str) -> None:
@@ -348,7 +419,9 @@ def who(handle: str, wait: float = 3.0) -> None:
     rx.close()
     if seen:
         for h, st in sorted(seen.items()):
-            print(f"PRESENT {h} ({st})")
+            wk = wake_state(h)  # ARMED = reachable in real time; DEAF = present but wake down
+            flag = "ARMED" if wk == "ARMED" else "DEAF ⚠ (present but no live wake — DMs will queue unseen)"
+            print(f"PRESENT {h} ({st}) — {flag}")
     else:
         print("PRESENT nobody (no /here replies within the window)")
     hold = lock_holder()
@@ -451,6 +524,7 @@ def wait(handle: str, timeout: float = 0.0) -> int:
     presence. Designed to run under run_in_background: the process EXIT is the wake,
     so each OSC message becomes a wake-up signal. Returns 0 on a wake event, 2 on
     timeout (no event within --timeout seconds)."""
+    _arm_marker(handle)
     rx = _rx_socket()
     if timeout and timeout > 0:
         rx.settimeout(timeout)

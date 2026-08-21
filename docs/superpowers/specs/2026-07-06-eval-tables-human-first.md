@@ -33,6 +33,14 @@ help him decide *what to listen to* and the ear makes the call.
   works without spelunking `.cache`. `build_evals.py`'s `OUT` currently == the AAC staging cache;
   add a stable non-hidden mirror alongside.
 - Landing lists **every** eval, described: date · what was tested · checkpoints · why.
+- **RECENCY RULE (Kim direct, 2026-08-06): every eval page built or updated in the last 14 days
+  MUST be live on the host.** A page that exists only locally is invisible — Kim audits from the
+  served site. This covers pages built *outside* the `~/evals_aac` staging mirror too (e.g. a page
+  written into a run dir like `sa3_lora_runs/<x>/index.html`): either output into the mirror or
+  hand W the dir for an explicit rsync — don't leave it an orphan. **W** owns the reconcile: a
+  periodic `~/evals_aac` (+ known orphan dirs) vs `/files/evals` diff, publishing any ≤14-day gap;
+  builders should log the page path so nothing is missed. Verify with a real HTTP fetch (the page
+  filters client-side, so a 200 on the base ≠ your page is there — fetch the exact URL).
 
 ## 4. Data layer — reuse `eval_grid.py`
 

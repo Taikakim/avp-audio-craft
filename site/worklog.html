@@ -36,6 +36,100 @@
 <p>something an agent in another repo would want to know. Keep entries short; move</p>
 <p>durable facts into <code>MASTER.md</code>. Conventions:</p>
 <ul class="wl">
+<li>**2026-08-21 (early) — WINTERMUTE: PQ ALONE is the best algorithmic proxy for Kim&amp;#x27;s ear (77.6%);</li>
+</ul>
+<p>  CLAP backfilled 14%→45% and does NOT improve it (my 78.8% claim RETRACTED); the goa-corpus gap is</p>
+<p>  TRANSCODES, not bitrate; and &amp;quot;more steps is worse&amp;quot; reverses under control into an avp/goa split.**</p>
+<p>  Fitted a preference model on Kim&amp;#x27;s 668 real A/B votes (same-prompt/same-seed pairs, survivor-vs-survivor,</p>
+<p>  grouped 5-fold CV with both halves of a pair in one fold). **PQ alone 77.6%. Every addition made it</p>
+<p>  worse** — pq+ce 75.8, pq+cu 76.9, all-12-features 74.4.</p>
+<p>  <em>Retraction:</em> pq+ce+clap scored 78.8% on the 321 pairs then available, so I ran a CLAP backfill</p>
+<p>  (69,216 clips, 0 skipped, coverage 14%→45%) to exploit it. On the full 438 pairs it drops to <strong>75.1%</strong> —</p>
+<p>  small-sample optimism, and I should have distrusted the n-difference rather than chasing it.</p>
+<p>  <strong>corr(PQ, CLAP) = +0.597</strong>: CLAP is NOT &amp;quot;the axis independent of production quality&amp;quot; I called it.</p>
+<p>  What the backfill DID buy: CLAP reproduces the PQ parameter ordering almost exactly (T 512&amp;gt;4096&amp;gt;1024&amp;gt;2048&amp;gt;256;</p>
+<p>  rank 256&amp;gt;128&amp;gt;16&amp;gt;64; alpha 45 top / 64 bottom; aug10&amp;gt;0; lr 5e-5≈1e-4&amp;gt;2e-4&amp;gt;&amp;gt;6e-4) — two meters agreeing is</p>
+<p>  real corroboration. Plus one dissociation: **goa ties avp on prompt adherence (CLAP z −0.008 vs −0.011)</p>
+<p>  while losing on quality (PQ z +0.081 vs −0.109) → goa&amp;#x27;s deficit is FIDELITY, not conditioning.**</p>
+<p>  <strong>Parameter sweep, 67,131 scored cells / 237 runs, failure-rate and quality-given-survival kept apart.</strong></p>
+<p>  Survives control: corpus (avp 7.27 vs goa 7.08), adapter scale (α45@r128 = PQ 7.581 at 1.2% degraded vs</p>
+<p>  7.256/7.4% at α=rank=128; rank 64 and α64 are the WORST buckets, below rank 16), frames_T (512 &amp;amp; 4096 good,</p>
+<p>  2048 &amp;amp; 256 bad — T256 is the worst length measured). Precision and optimizer matter as **reliability, not</p>
+<p>  quality**, and only on goa: bf16 fails 13.9% vs fp32 5.8% on goa but <em>less</em> than fp32 on avp (3.7 vs 4.5);</p>
+<p>  AdamW&amp;#x27;s 18% failure is goa-only. Does NOT survive: <strong>lr</strong> (p=0.7 at run level), <strong>batch</strong> (0.1 PQ spread</p>
+<p>  within one corpus), <strong>aug</strong> (6 run dirs = 3 distinct configs; α45/r256/batch16/lr7e-5 are largely ONE avp</p>
+<p>  family seen under five column headings).</p>
+<p>  <strong>The reversal worth propagating:</strong> pooled, more steps predicts worse output at every frame length</p>
+<p>  (ρ −0.15…−0.25, crushing p). <em>Within</em> runs it vanishes — mean ρ −0.003, p=0.31. It is a between-run</p>
+<p>  confound. Split by corpus: **avp runs IMPROVE with training (+0.133, only 29% declining), goa runs</p>
+<p>  DEGRADE (−0.087, 76% declining), p=4.5e-5** → the two corpora want OPPOSITE checkpoint policies</p>
+<p>  (take goa early, let avp run long). Fits the ep7 elbow and the post-ep59 collapse Kim hears.</p>
+<p>  <strong>Standing methodological rule:</strong> 810 checkpoint rows are ~30 epochs of ~265 runs — cluster at RUN level</p>
+<p>  or do not quote p-values. Every parameter table quoted lately, mine included, was pseudo-replicated.</p>
+<p>  <strong>A near-miss worth recording:</strong> a 12-feature fit put a bootstrap-stable −2.6 weight on <code>zcr</code>, with a</p>
+<p>  plausible physical story. Stratifying directly on matched PQ killed it (lower-zcr wins 52.7%, p=0.60) and</p>
+<p>  CV agreed (pq+zcr &amp;lt; pq). Collinearity inflating a coefficient — that is the shape of a false finding.</p>
+<p>  <strong>goa corpus quality (new).</strong> Measured both corpora the same way (spectral cutoff = real bandwidth;</p>
+<p>  header bitrate lies). Old goa <code>[corpus]</code> (full_mix only, 3,978): <strong>75.9% near-lossless, mean 20.68 kHz</strong>.</p>
+<p>  Archive <code>[corpus]</code> (14,838 after dedup): <strong>27.7%, 19.06 kHz</strong>. Quality-matched list at</p>
+<p>  ≥20.0 kHz = <strong>4,111 files</strong> (<code>mir/stats/goa_big_quality_matched/</code>), or <strong>3,147</strong> excluding the 2,669 that</p>
+<p>  already overlap old goa (<code>..._noverlap/</code>). Caveat: the MEAN matches, the SHAPE does not — old goa is bimodal</p>
+<p>  (mostly excellent + a lossy tail), the filtered set is bunched just above threshold, so its median is</p>
+<p>  <em>lower</em> (20.68 vs 21.29). **Worst-100 forensics (Kim&amp;#x27;s question, &amp;quot;mp3 alone should not do this&amp;quot; — he is</p>
+<p>  right): 76/100 declare ≥192 kbps and 14 declare ≥256, yet content stops at 4.7–11.9 kHz.** A clean 192k</p>
+<p>  encode reaches ~18–19 kHz; 128k reaches ~16. These are transcodes / analog rips / stream captures</p>
+<p>  re-encoded at a respectable bitrate — the header records the last encode, not the damage. Spread over</p>
+<p>  90 distinct albums, so not one bad batch. List + playlist: <code>mir/stats/goa_big_worst100/</code>.</p>
+<p>  <strong>Tools/pages.</strong> <code>mir/src/tools/[corpus].py --only-name</code> (measure <code>full_mix</code>, NOT the separated</p>
+<p>  stems — without it you get 5× the work and a tier distribution corrupted by lossy stem renders); new</p>
+<p>  <code>mir/src/tools/[corpus].py</code>. <code>eval/dora_table</code> gains <code>effective_batch</code>, <code>caption_probs</code></p>
+<p>  and a <strong><code>params_source</code></strong> column — **531 of 916 rows had name-INFERRED rather than sbatch-parsed params and</p>
+<p>  nothing said so**; dataset labels normalised (<code>latents_avp</code>/<code>avp</code> and <code>latents_sa3</code>/<code>goa</code> were splitting</p>
+<p>  every dataset-grouped view in two); <code>build_model_index.py</code> now merges the extracted recipe into models.html</p>
+<p>  (the checkpoint-derived ones literally said &amp;quot;lr not recorded in checkpoint&amp;quot;). suomisoundi <code>ARMSET=alpha</code></p>
+<p>  ready to submit (r128, T512, α45 vs α128, shared lr — commit 708e14b).</p>
+<p>  <strong>Two process traps that cost me time.</strong> (1) <code>run_in_background</code> is being reaped almost immediately in this</p>
+<p>  session — anything long-lived needs <code>setsid</code>+<code>nohup</code> (already the rule for eval servers; it now applies to</p>
+<p>  plain waiters too). (2) A job&amp;#x27;s progress counter goes to **stdout, which Python block-buffers when</p>
+<p>  redirected to a file<strong>, while its warnings go to unbuffered </strong>stderr** — so a healthy job shows a frozen</p>
+<p>  counter and looks hung. I nearly killed a 2-hour run twice. Count the stderr side, or <code>-u</code>.</p>
+<p>  Report: the full write-up is an artifact (cell-ranking + parameter analysis, every claim marked for whether</p>
+<p>  it survives control).</p>
+<ul class="wl">
+<li>**2026-08-18 (eve) — CONTINUITY: weight-space forensics on the degraded AdamW arms + a step-resolution</li>
+</ul>
+<p>  trajectory recorder; the broken runs are not converging, they are diffusing.** Kim asked for the</p>
+<p>  Base→degraded delta, outlier weights, a repaired model, soups, and — sharpening it himself — deviant</p>
+<p>  EIGENDIRECTIONS rather than scalars. Built <code>eval/task_vector_gram.py</code> / <code>task_vector_spike.py</code> /</p>
+<p>  <code>spectral_repair_lora.py</code> / <code>soup_ladder.py</code> (ARCHITECTURE §B) and ran the goa set: 4 AdamW-sweep</p>
+<p>  terminals vs 19 healthy ckpts (bf16cmp/fp32cmp ladders + T4096 fp32). <strong>(1)</strong> bad-good cosine of the</p>
+<p>  DoRA-exact ΔW_eff is 0.03–0.12 while the healthy runs&amp;#x27; cos-to-consensus climbs to 0.72 — the sweep did</p>
+<p>  not learn what every healthy run shares. <strong>(2)</strong> bad arms carry 20–30 % of every matrix&amp;#x27;s delta energy in</p>
+<p>  ONE singular direction (eff-rank ~56/128); every healthy run at every epoch/config is flat (2.1 %,</p>
+<p>  ~118/128). <strong>(3)</strong> that direction is the SAME across the four bad arms (|cos| 0.25 vs chance 0.026,</p>
+<p>  strongest in <code>ff_in</code> 0.46 / <code>out</code> 0.33), not a global direction, not a channel outlier (PR ~520):</p>
+<p>  a systematic component, strongest at the smallest LR — it does not scale with learning. **Reframing</p>
+<p>  caveat:** the healthy twins were trained with <code>--optimizer fusion</code> (NS5 orthogonalisation flattens</p>
+<p>  spectra by construction), the sweep with AdamW; optimizer and batch are confounded in the archive.</p>
+<p>  **(4) Step resolution (Kim: &amp;quot;save every step; there&amp;#x27;s a compressed way to store movement&amp;quot; → CountSketch</p>
+<p>  callback <code>stable-audio-3/scripts/trajectory_sketch.py</code>, reader <code>eval/trajectory_sketch_analyze.py</code>).**</p>
+<p>  Local sanity16-recipe LoRA r16 at bs1, 4482 steps: update autocorrelation = **0.9^τ to 3 digits, then</p>
+<p>  exactly 0<strong> (Adam momentum on pure noise); gradient window-SNR = </strong>1/w to 3 digits up to w=1024** (the</p>
+<p>  repeatable gradient component is &amp;lt; 0.1 % of its energy); path efficiency above 1/√w by exactly the</p>
+<p>  AR(1) factor — <strong>zero drift, loss flat</strong> — yet B·A top-1 fraction climbs 0.33→0.56. Mechanism that fits</p>
+<p>  all of it: per-step gradients ≈ δ_t x̄ᵀ (dominated by the mean-activation direction), so <code>dB = δ_t (A x̄)ᵀ</code></p>
+<p>  accumulates rank-1 with a data-fixed input direction (shared across arms) and a random-walking output</p>
+<p>  direction (never settles); Adam preserves it, NS5 destroys it. **Working hypothesis, two decisive arms</p>
+<p>  running (accum8, Fusion-bs1) + LUMI job <code>lumi/sbatch/traj_sketch_arms.sbatch</code>:** at these batch sizes</p>
+<p>  nothing converges by drift; a checkpoint is listenable when it is AVERAGED (SF in Fusion, EMA on the</p>
+<p>  melody head, Kim&amp;#x27;s soups) and AdamW at constant LR without averaging hands you a random point of the</p>
+<p>  walk. Probe ckpts (remove/keep top-1, k3, magnitude reset) written + CPU renders queued</p>
+<p>  (<code>lumi_runs/analysis/task_vector_gram_goa_2026-08-18/</code>). Also: <strong>the D3 melody head generalises</strong></p>
+<p>  (first held-out-validated LatCH training, split BY SOURCE TRACK: lead 0.245→0.204, bass 0.191→0.152 on</p>
+<p>  401 unseen tracks; EMA monotone) — and every existing <code>*_best.pt</code> LatCH head was train-loss-selected.</p>
+<p>  <strong>Box note:</strong> <code>/tmp/suomisoundi_ts_full_extraction.log</code> is 27 GB in tmpfs (RAM) — whoever owns it, it is</p>
+<p>  why the box has 6 GB free.</p>
+<ul class="wl">
 <li>**2026-08-18 — CONTINUITY: the goa collapse had a THIRD cause — the corpus was captioned with NO</li>
 </ul>
 <p>  genre hint at all.** W scanned a tier nobody had questioned: goa&amp;#x27;s Music Flamingo prose mentions</p>
@@ -2501,6 +2595,37 @@
 </ul>
 <ul class="wl">
 <li>[2026-08-18 00:11] (GHOST-NOTE) Suomisoundi pipeline: full raw-&amp;gt;train-ready run complete (BS-RoFormer stems 1260/1260, Music Flamingo captions 1260/1260 genre-hinted, Granite revisions 1260/1260, MIR whole-track timeseries 1260/1260 all 50 fields incl. stem-dependent ones, SAME-L latents 1260/1260, caption sidecar <code>eval/build_suomisoundi_sidecar.py</code> T1/T2/T3 1260/1260 — train-ready via <code>--encoded_dir</code>/<code>--caption_sidecar</code>). Two real bugs found+fixed along the way, both fleet-relevant: (1) <code>goa_granite_task.py::read_mf()</code> was feeding Granite the file PATH instead of the nested MF caption text (schema mismatch: caption text lives under <code>d[&amp;quot;captions&amp;quot;][prompt_type]</code>, not top-level) — affected the ENTIRE goa big-set corpus (23232/23232), producing plausible-but-hallucinated genre-generic captions instead of real per-track revisions. Fixed (63546e6); goa&amp;#x27;s Granite corpus needed a full re-run. (2) <code>ls</code>/<code>rm DIR/*.json</code> silently misbehaves (bash ARG_MAX) against 20k+-file directories — glob expansion fails, <code>ls | wc -l</code> reports a false 0, <code>rm -f</code> deletes nothing — cost 3 wasted goa Granite resubmits before catching it via <code>find</code>-based commands instead. Memory: shell-glob-arg-limit-large-dirs.md. goa&amp;#x27;s Granite re-run (job 21255037) landed clean and content-verified (23232/23232) after the fix. Also fixed: <code>score_and_publish.py</code>&amp;#x27;s <code>leg_ingest</code> missing <code>--rebuild</code> (e1a9639); <code>whole_track_expanded.py</code>&amp;#x27;s melody-height stem lookup missing <code>.m4a</code> (mir 6942358); <code>goa_granite_task.py::genre_hint()</code> hardcoded to goa/psytrance with no override (63546e6, <code>--genre-hint</code>/auto-detect from the MF json&amp;#x27;s own field). Docs: mir/CLAUDE.md now documents the expected per-track folder layout + the <code>--add-fields</code> two-tier-field-set gotcha; ARCHITECTURE.md indexes both sidecar builders and their DIFFERENT key schemes (goa=relpath for live-encode, Suomisoundi=latent-filename-stem for pre-encoded — copying one onto the other&amp;#x27;s training mode silently drops every caption).</li>
+<li>[2026-08-21 08:52] (GHOST-NOTE) CORRECTION to my 2026-08-18 00:11 entry: I reported the Suomisoundi whole-track MIR timeseries as &amp;quot;1260/1260 all 50 fields&amp;quot; prematurely -- the re-extraction (adding stem-dependent fields) had actually died partway through (397/1260) sometime after that entry, and a self-matching bug in my own background-monitor loop (its pgrep -f pattern matched its own command-line source text) made it falsely report &amp;quot;still alive&amp;quot; for days. Kim noticed a pile of leftover tail -F processes and asked what they were, which surfaced it. Fixed: watch by real PID not text pattern, cleared 863 stale files, resumed, verified all 1260 by content this time (genuinely true now). Lesson: never pgrep -f a pattern that could match the watcher&amp;#x27;s own source -- memory shell-glob-arg-limit-large-dirs.md updated context, also see the new negative-result note in my journal.</li>
+<li>2026-08-21 (CONTINUITY): B7 MIR-CONDITIONER LANE SHIPPED + 8-ARM LUMI BRACKET SUBMITTED (21427376-83). Kim&amp;#x27;s ask: &amp;quot;traditional models, our mir data as conditioners, rank 32 DoRAs, every feature, goa+avp aug (not biggoa)&amp;quot;. New: stable-audio-3/scripts/mir_control.py (36-ch field registry incl. every timeseries field; packs = channel subsets; crop-exact slicing; per-item control dropout; PER-BLOCK zero-init projections into the DiT&amp;#x27;s native modular local-cond inlet, default blocks 12-23 per W&amp;#x27;s layer map; in-training control-ablation meter true/shuffled/zero; self-writing report.md) + build_ctrl_packs.py (prebuilt sibling _ctrl dirs; 5400 goa + 2393 avp arrays built locally, rsynced) + train_lora --mir_ctrl_<em> + lumi/sbatch/mirctrl_bracket.sbatch. 13 unit tests. TWO TRAPS for reuse: (1) .ctrl.npy must NEVER sit inside a latent dir -- PreEncodedDataset recursively globs </em>.npy and eats them as latents; (2) the modular inlet is per-TransformerBlock, not global -- installs are per-block. Executes the parked ATTRIBUTE_BRANCHES milestone (2026-06-19). SA3 2c3b650, SAO 90c921f. EXPERIMENTS B7.</li>
+<li>[2026-08-18] (the-finn) ARCHITECTURE.md + CLAUDE.md: added the missing location-oriented index (Kim</li>
+</ul>
+<p>  direct — &amp;quot;agents are quite clueless about existing data locations when there&amp;#x27;s so many&amp;quot;). New §&amp;quot;Where</p>
+<p>  things live&amp;quot;: a 33-row live-swept table of every SAO/ top-level folder (purpose + pointer into the</p>
+<p>  existing §A–F tool-reuse index), the UUID drive&amp;#x27;s actual contents (<code>sao_models/</code>, <code>[corpus]/</code>,</p>
+<p>  <code>suomisoundi_*</code> — none of this was documented anywhere before), and new LUMI <code>[path]</code> vs <code>[path]</code></p>
+<p>  path breakdowns. Flagged, not resolved: <code>[corpus]/</code> exists as two different directories with</p>
+<p>  the same name (top-level UUID drive vs nested under <code>lumi_runs/</code>). CLAUDE.md now marks ARCHITECTURE.md</p>
+<p>  required reading <em>before planning</em>, not just before coding; retired the stale inline <code>## Layout</code> list</p>
+<p>  that had drifted out of sync (pointed it at the new map instead of duplicating it a second time).</p>
+<p>  Coordinated disk cleanup same session with WINTERMUTE (his 117G models-move + my 12.9G of dead venvs/</p>
+<p>  ONNX-export artifacts) — SAO/ 276G→112G, nothing deleted that either of us hadn&amp;#x27;t independently verified.</p>
+<ul class="wl">
+<li>[2026-08-18] (the-finn) Fixed a broken LUMI sanity16 job chain directly via ssh (CONTINUITY&amp;#x27;s DM, Kim</li>
+</ul>
+<p>  unreachable for several days). Root cause: a <code>SMOKE=1</code> flag dropped from a pasted launch command, three</p>
+<p>  times running, turned a 20-step smoke gate into a full 60-epoch run capped at a 40-minute timeout — so</p>
+<p>  <code>--dependency=afterok</code> never satisfied and the whole stock-Stability sanity-control matrix Kim asked for</p>
+<p>  before leaving silently never ran. Verified live <code>squeue</code> state myself before each action rather than</p>
+<p>  act on DM narration (the described state had drifted twice between messages). Rsynced CONTINUITY&amp;#x27;s</p>
+<p>  script fix (which also closed a worse defect: the script&amp;#x27;s bare <code>wait</code> reported success even if every</p>
+<p>  arm crashed, making the gate meaningless in both directions), cancelled the broken chain, submitted</p>
+<p>  directly. Re-checked 08-21: 2 of the 3 jobs I&amp;#x27;d submitted had actually failed (<code>torchcodec</code> ImportError</p>
+<p>  at the periodic demo-audio-save step, not the training loop) and a resubmit hit a third distinct bug</p>
+<p>  (a caption-key mismatch on <code>latents_goa_bigset</code>&amp;#x27;s synthetic ids vs a relpath-keyed sidecar — the same</p>
+<p>  failure class CONTINUITY closed separately that night on the <code>winning_fleet</code>/<code>fullft_fleet</code> campaign).</p>
+<p>  Reported both failures plainly rather than let the earlier &amp;quot;fixed&amp;quot; status stand unverified.</p>
+<ul class="wl">
+<li>2026-08-21 (CONTINUITY): THE PATTERN-2 DDP INCIDENT + THE BIGGEST SUBMIT DAY OF THE CAMPAIGN. (1) INCIDENT (EXPERIMENTS A10): srun --ntasks=8 --gpus-per-task=1 + Lightning auto-detect NEVER formed DDP groups -- every winning_fleet/fullft_fleet arm (+ presumed #68 bigset big-FT) trained as independent single-GCD replicas; DoRA arms = true 8-replica ensembles (suomi: four COMPLETE 8x10 replica-epoch grids, first 2-D soup material), fullft arms = 1-live-7-idle (7 replicas died silently). All fleet sbatches converted to torchrun (CSC-verified pattern); 3-check verification now runs in-script (LOCAL_RANK 0..7 once each / UN-versioned ckpts / steps-per-epoch /8). lumi-ops skill hardened with the authoring rule. (2) Kim&amp;#x27;s cancel-soup-restart: replica_soup.py + soup render; G&amp;#x27;s analytics confirmed the bad-sound mechanism = unaveraged bs1 walk endpoints (EMA-rendered fullft clean, single replicas low, a128 disintegrating). (3) A11: 16-arm DoRA/LoRA x AdamW-WSD/braked-Fusion x 4-corpus factorial + 2 large-batch LR probes -- includes the FIRST scheduled AdamW ever (WSD wired into train_lora + WORLD_SIZE horizon fix) and the braked-Fusion kit&amp;#x27;s first true-DDP outing; loss path exonerated bit-exactly by W&amp;#x27;s underfit check, so A11 tests the optimizer half alone. (4) B10: subspace K=24 x 4 corpora. (5) B9 (control stack on full-FT backbone): triple failure chain fixed (missing jsons -&amp;gt; rc-laundering sed pipes -&amp;gt; resubmitted on finished avpaug ep19). (6) B2/tgate render gap (F audit) closed: 240 sibling-matched cells. (7) Flash metadata storms: staging locks added; stage-if-EMPTY (not if-absent) rule after stale empty dirs killed two mirctrl batches; mirctrl bracket deferred to next allocation (budget + wedge).</li>
 </ul>
 <footer class="colophon">
   <span>62 entries</span><span>·</span><span>append-only</span><span>·</span>

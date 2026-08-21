@@ -117,6 +117,28 @@ at the **_bylatent** file. Rule of the incident family (3rd occurrence): **befor
 launch on a new corpus/sidecar pairing, verify ONE key actually resolves** — one python line
 against the sidecar + one latent json beats any amount of post-hoc audit.
 
+## Multi-GPU DDP — AUTHORING RULE (hardened 2026-08-21 after the fleet-wide replica incident)
+
+**Any NEW sbatch that gives more than one GPU to a single training MUST use the torchrun
+pattern — no exceptions, no inheriting srun blocks from older scripts.** On 2026-08-21 the
+entire winning_fleet + fullft_fleet campaign (12+ arms, incl. the #68 big-FT via
+fullft_bigset.sbatch) was found to have trained as 8 INDEPENDENT single-GPU replicas per
+node: the Pattern-2 template (srun --ntasks=8 --gpus-per-task=1) had been copied from sbatch
+to sbatch even though this section said it was unreliable, because each replica produces a
+VALID model and nothing ever looks wrong. Three checks make a multi-GPU run real, and the
+converted scripts now run the first in their epilogue — read it anyway:
+  1. `grep LOCAL_RANK <log> | sort | uniq -c` → ranks 0..7 ONCE each (eight `LOCAL_RANK: 0`
+     lines = eight replicas);
+  2. checkpoints UN-versioned (`-vN` siblings at the same epoch = colliding writers);
+  3. steps/epoch = dataset/(bs×GA×**8**) — per-rank full-dataset step counts are the
+     smoking gun even when logs are unclear.
+Interpretation of the pre-conversion arms (EXPERIMENTS A10): each -vN fat ckpt = one
+replica's coherent model (EMA included); a run dir = an accidental 8-seed ensemble;
+effective_batch is 8x overstated on those rows. CSC reference re-verified 2026-08-21
+(docs.csc.fi/support/tutorials/ml-multi): --ntasks=1 + torchrun IS their sanctioned pattern;
+their srun-tasks Lightning variant needs Trainer(devices=N, strategy='ddp'), impossible
+under --gpus-per-task=1 cgroup isolation.
+
 ## Multi-GPU DDP — the --gpus-per-task=1 + SLURMEnvironment pattern is UNRELIABLE (2026-08-17)
 
 **Every multi-GPU training script in this repo (`fullft_avp_aug.sbatch` and everything modeled

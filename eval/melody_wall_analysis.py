@@ -19,10 +19,12 @@ Run (mir venv has librosa):  /home/kim/Projects/mir/mir/bin/python eval/melody_w
 import os, sys, glob, json, re, time
 import numpy as np
 
-RENDERS = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/renders/matrix_cells"
-OUTDIR = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/analysis/melody_wall"
-BASELINE = "lreq_goa_lr1e4"
-ARMS = ["x0eq_goa", "x0eq_sub5_goa", "subloss_goa_k2", "subloss_goa_k5", "subloss_goa_k12"]
+# env-overridable so the same tool runs LOCALLY (defaults) or ON LUMI over scratch cells
+# (MW_RENDERS=/scratch/.../renders/matrix_cells) with a different arm set (MW_ARMS=comma list).
+RENDERS = os.environ.get("MW_RENDERS", "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/renders/matrix_cells")
+OUTDIR = os.environ.get("MW_OUTDIR", "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/analysis/melody_wall")
+BASELINE = os.environ.get("MW_BASELINE", "lreq_goa_lr1e4")
+ARMS = os.environ.get("MW_ARMS", "x0eq_goa,x0eq_sub5_goa,subloss_goa_k2,subloss_goa_k5,subloss_goa_k12").split(",")
 SR = 44100
 
 CELL_RE = re.compile(r"^(?P<label>.+?)__ep(?P<ep>\d+)__cfg(?P<cfg>\d+)__w(?P<w>\d+)__(?P<prompt>.+?)__s(?P<seed>\d+)\.wav$")

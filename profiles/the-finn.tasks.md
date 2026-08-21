@@ -277,3 +277,37 @@ below from chat/DM timestamps, newest first.**
   standing weekly duty (companion to daily digests, recorded in profiles/daily/README).
   Caught + recorded a real tooling gotcha en route: backticks in agent_dialogue
   --text via bash get shell-mangled (open-threads standing-gotchas).
+- [2026-08-18] ARCHITECTURE.md + CLAUDE.md folder-and-drive map (Kim direct): added
+  the missing location-oriented index (33-row SAO/ folder table, UUID drive contents,
+  LUMI /project vs /scratch) alongside the existing tool-oriented reuse index; marked
+  required reading before planning. Flagged one real inconsistency found live
+  (duplicate goa_archive_captions/ dirs), didn't resolve it.
+- [2026-08-18] Disk cleanup coordinated with W: ~78G identified (onnx CPU-export
+  artifacts, superseded ROCm test venv, abandoned early venv), deleted my two cleared
+  items after W's concurrent 117G models-move finished; ~164G total off SAO/, 276G→112G.
+- [2026-08-18] Consolidated the goa-captioning saga into docs/goa-captioning-status-
+  2026-08-18.md (root causes, timeline, per-corpus status); C found + I fixed 4 real
+  errors in the first draft (git-authorship misattribution → new lessons-learned rule,
+  date-shift, mis-dated grounding score, an overstated "99% wrong"). Answered Kim's
+  effnet-genre question precisely (collected+verified 08-02, never wired into MF's
+  hint step — a verification gap, not a collection gap).
+- [2026-08-18] Own mistake, corrected same-session: read C's flagged LUMI-allocation
+  open item as GPU-hours (2037 remaining) when the actual binding constraint was
+  wall-clock (4 days left, 92% of project time elapsed). Caught by C, fixed in the doc.
+- [2026-08-18] Fixed a broken LUMI sanity16 job chain directly (C's DM, Kim
+  unreachable): three failed SMOKE=1 pastes had left the whole control-experiment
+  matrix silently not running. Verified live squeue state before each action, rsynced
+  C's script fix, cancelled+resubmitted. Re-checked 08-21: 2/3 of my submitted jobs had
+  actually failed (torchcodec ImportError at demo-save), reported plainly rather than
+  let a stale "fixed" status stand.
+- [2026-08-19] LUMI ssh access lapsed (cert expiry, not revocation) then restored
+  08-21; updated my own memory note to re-test every session rather than trust
+  prior-session state either way.
+- [2026-08-19/21] Took ownership of EXPERIMENTS.md's shape (Kim's new standing
+  registry): closed C1/C2 with G's real nuanced result, promoted two campaign-wide
+  methodology findings (PQ-alone-tracks-Kim's-ear, per-checkpoint-pseudo-replication)
+  into the shared preamble, closed a stale "waiting on Kim" tasklist item that had
+  actually been overtaken by a real incident.
+- [2026-08-21] Leak-scanned top100.html before its public sync (marked unaudited);
+  clean, but caught the new page builder never calling the shared redact() — flagged,
+  C wired it in same-message.
