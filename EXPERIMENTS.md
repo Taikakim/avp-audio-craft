@@ -28,7 +28,12 @@ pairs); on the full set PQ-alone wins outright (77.6% vs 75.1%), and corr(PQ,CLA
 isn't an independent axis either. If a soup got re-weighted toward CLAP on the retracted claim, undo
 it. CLAP's real value is corroboration: independently reproduces PQ's parameter ranking and shows the
 goa deficit is fidelity, not conditioning) — CE has ~zero correlation with his judgment (08-19
-finding), stop leaning on it · **per-checkpoint p-values across the campaign are pseudo-replicated**
+finding), stop leaning on it · **PQ has a sparse-material blind spot** (W, 08-21, 93,554 clips:
+spearman(onset_density, PQ)=+0.376, sparse material 5.94 vs busy 7.44) — every PQ-ranked surface
+(`top100.html`, best-of-N selection, the quality-weighted soup formula) systematically demotes
+ambient/sparse tracks; Kim's read is beatless material should NOT be filtered from training,
+especially with the density head coming, since it needs the low end of the range to learn from ·
+**per-checkpoint p-values across the campaign are pseudo-replicated**
 (810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset, alpha, rank, optimizer
 survive; batch/lr/precision go non-significant. **`frames_T` REMOVED from that survivor list, corrected
 same day (W, 08-21):** the apparent T-length effect was reading architecture composition, not context
@@ -73,7 +78,17 @@ claim, including ones already in this file, against both corrections.
 - **Gate:** trajectory stats (`eval/compare_trajectory_stats.py`) + soups + Kim's ears; pull before scratch purge.
 - Links: `lumi/sbatch/sanity16_arms.sbatch`, `sanity16_biggoa_ddp8.sbatch`, KIM-TASKLIST.
 
-### A4 — Full-FT AdamW: the MATCHED control for the drone family — **READY → Kim's submit 08-21 (`fullft_fleet.sbatch`)**
+### A4 — Full-FT AdamW: the MATCHED control for the drone family — **🚨 DDP NEVER FORMED, see incident note below**
+- **🚨 CONFIRMED BROKEN (C, 08-21):** `fullft_fleet.sbatch` used the disproven Pattern-2 DDP
+  (`srun --ntasks=8 --gpus-per-task=1` + Lightning `SLURMEnvironment`) — same signature as job
+  21161065. Verified live two ways: `fullft_avpaug`'s log shows eight `LOCAL_RANK: 0` lines +
+  `-v3` colliding checkpoint writers; `fullft_suomi`'s completed step-count (158 opt-steps/epoch =
+  1260/(bs2×GA4) with **no /8**) proves every rank consumed the full dataset independently. **Do
+  NOT delete anything** — each `-vN` file is a complete, valid 1-GCD model (the original winning
+  recipe), so this is an accidental n≈8 single-GPU-replica ensemble, not a wasted run; treat as
+  soup/ensemble raw material, and the `effective_batch` column on these rows in every board is
+  WRONG (it was never really ×8). Sbatch converted to CSC torchrun pattern, `f1eaabc`, verify now
+  runs the LOCAL_RANK check in-script rather than suggesting it. Kim deciding kill-vs-keep.
 - **Why:** 2605.10468: full-FT of an Adam-pretrained base with Muon is the documented mismatch case;
   every prior full-FT was Fusion (drone) — the matched control was never run. Kim direct 08-21:
   AdamW full-FT fp32 T1024 lr1e-4 on biggoa/avpaug/suomi/mix3. bs2+GA4 (effective 64 — the only
@@ -98,7 +113,10 @@ claim, including ones already in this file, against both corrections.
 - `--fusion-split-qkv/--fusion-split-adaln` exist; were they ON in the regsweep/surgical arms? If not,
   the cheapest retest of the late collapse (2608.02502: AdaLN is the scale pathway).
 
-### A9 — Bread-and-butter AdamW production fleet (winning recipe × 4 datasets × 2 seeds) — **RUNNING (21422678-81 seed1, 21422863-66 seed2)**
+### A9 — Bread-and-butter AdamW production fleet (winning recipe × 4 datasets × 2 seeds) — **🚨 DDP NEVER FORMED (see A4's incident note — same bug, same fix, `winning_fleet.sbatch` converted in the same commit `f1eaabc`)**
+- Do not read these as one 8×-batch DDP run per arm — each is 8 independent 1-GCD replicas at
+  the ORIGINAL winning recipe's real batch size. `effective_batch` on these rows is wrong
+  everywhere it's quoted. Not worthless: 8-seed ensemble/soup material, per C's framing in A4.
 - **Kim direct:** copy `winning_avp_t1024_a45_fp32` (DoRA-rows r128 α45, AdamW lr 1e-4 constant, fp32,
   T1024, 20 ep) onto suomisoundi, big goa, the 3-source mix — plus **avp itself as the control** that
   isolates the one deliberate delta (1-GCD batch 4 → 8-GCD DDP batch 8). 8 × single-node 8-GCD jobs
@@ -197,7 +215,7 @@ claim, including ones already in this file, against both corrections.
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
-### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59)**
+### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59), 🚨 pre-conversion — same DDP-never-formed bug as A4/A9, treat as 8 single-GPU replicas not one DDP run until re-verified against the converted sbatch**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
