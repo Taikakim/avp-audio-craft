@@ -88,7 +88,8 @@ claim, including ones already in this file, against both corrections.
   recipe), so this is an accidental n≈8 single-GPU-replica ensemble, not a wasted run; treat as
   soup/ensemble raw material, and the `effective_batch` column on these rows in every board is
   WRONG (it was never really ×8). Sbatch converted to CSC torchrun pattern, `f1eaabc`, verify now
-  runs the LOCAL_RANK check in-script rather than suggesting it. Kim deciding kill-vs-keep.
+  runs the LOCAL_RANK check in-script rather than suggesting it. **DECIDED (C, A10): KEPT** — 10h
+  of 8-seed ensembles beats a half-trained restart with <1 day of LUMI allocation left.
 - **Why:** 2605.10468: full-FT of an Adam-pretrained base with Muon is the documented mismatch case;
   every prior full-FT was Fusion (drone) — the matched control was never run. Kim direct 08-21:
   AdamW full-FT fp32 T1024 lr1e-4 on biggoa/avpaug/suomi/mix3. bs2+GA4 (effective 64 — the only
@@ -215,7 +216,7 @@ claim, including ones already in this file, against both corrections.
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
-### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59), 🚨 pre-conversion — same DDP-never-formed bug as A4/A9, treat as 8 single-GPU replicas not one DDP run until re-verified against the converted sbatch**
+### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59), CONFIRMED 8-replica per A10 (pre-conversion) — the first CLEAN suomi ensembles (anchor-fixed probs), KEPT**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
