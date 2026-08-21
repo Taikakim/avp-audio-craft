@@ -240,6 +240,22 @@ claim, including ones already in this file, against both corrections.
   latents_sa3_melody/ (~10M), control/ + latch trainer code sync. FT_CKPT menu: today's
   fullft_fleet arms (EMA on) > fullft_mixed_wdfix > precision-ladder fp16 (Kim's ear pick).
 
+### A10 — Pattern-2 DDP incident: FINAL READING (2026-08-21) — fleet arms = 8-replica ensembles
+- CONFIRMED three ways: eight LOCAL_RANK:0 (fullft avpaug log), ckpts versioned to -v7 (wfleet
+  suomi a45 ep9 = 8 writers), step math (suomi a45 step=12600 @ ep9 = 1260×10 at bs1, no /8;
+  fullft suomi 158 st/ep = 1260/(2×4), no /8). Every pre-conversion winning_fleet/fullft_fleet
+  arm = 8 INDEPENDENT single-GCD trainings; nodes fully utilized (NOT 1-live-7-idle).
+- **Interpretation rule:** each -vN fat ckpt is ONE replica's coherent model (EMA shadow included);
+  a run dir = an 8-seed ensemble of the 1-GCD recipe. effective_batch on these rows is 8× overstated
+  everywhere it is quoted. Soup/ensemble material — do not delete, do not treat as one 8×-batch run.
+- **Decision (Kim, 2026-08-21):** running arms KEPT (killing trades 10 h of 8-seed ensembles for
+  half-trained torchrun restarts with <1 day left). All three fleet sbatches converted to the CSC
+  torchrun pattern (f1eaabc); verify epilogue now RUNS the LOCAL_RANK check. Post-conversion
+  submits (mirctrl resubmit, suomi T512 twins-if-after-rsync... check per-job) are real DDP —
+  confirm per job: LOCAL_RANK 0..7 once each, UN-versioned ckpts, steps/epoch ÷8.
+- ⚠️ The suomi T512 twins 21428358/59 were submitted BEFORE the conversion rsync → they are
+  Pattern-2 too (= 8 replicas at T512, anchor-clean probs). Same interpretation rule applies.
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
