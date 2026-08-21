@@ -29,9 +29,17 @@ isn't an independent axis either. If a soup got re-weighted toward CLAP on the r
 it. CLAP's real value is corroboration: independently reproduces PQ's parameter ranking and shows the
 goa deficit is fidelity, not conditioning) — CE has ~zero correlation with his judgment (08-19
 finding), stop leaning on it · **per-checkpoint p-values across the campaign are pseudo-replicated**
-(810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset, alpha, rank, optimizer,
-frames_T survive; batch/lr/precision go non-significant (re-confirmed independently by W's 67k-cell
-sweep, 08-21). Read any parameter-table claim, including ones already in this file, against that.
+(810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset, alpha, rank, optimizer
+survive; batch/lr/precision go non-significant. **`frames_T` REMOVED from that survivor list, corrected
+same day (W, 08-21):** the apparent T-length effect was reading architecture composition, not context
+length — T256 in the sweep was 78% fullft with zero DoRA runs, T512 was 95% DoRA, so "T512/T4096 good,
+T256/T2048 bad" was really "DoRA beats fullft on goa" wearing a frame-length costume. Within families
+that differ only in T the spread is small and non-monotonic (46 pairs, longer-T wins 17/shorter 29,
+p=0.104) — **there is no general frame-length effect.** Same correction pass also retracted W's earlier
+AVP-adapter-advantage claim (p=9e-05 was DoRA vs a pool contaminated by 60 mislabeled broken `xft`
+checkpoints tagged `arch=dora` in `clap_dora_aggregate.csv`; cleaned, the AVP adapter advantage
+p=0.49 — does not exist in the data. Adapter-vs-fullft advantage is goa-only). Read any parameter-table
+claim, including ones already in this file, against both corrections.
 
 ---
 
