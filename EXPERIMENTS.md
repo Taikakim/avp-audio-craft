@@ -132,6 +132,20 @@ claim, including ones already in this file, against both corrections.
 - **Gate:** constant-LR AdamW ⇒ judge by SOUPS/centroid (C1/C2 machinery) + trajectory stats + Kim's
   ears; per-arm DDP verify (LOCAL_RANK 0..7). Links: A1 (walk-vs-drift predicts these diffuse), C1.
 
+### A11 — The "mystified why so bad" A/B²: DoRA/LoRA × AdamW-WSD/braked-Fusion on bigset — **RUNNING (21431784-87, Kim direct 2026-08-21)**
+- 4 arms, everything pinned healthy: torchrun true DDP (verified pattern), T256, bf16 (FA2),
+  per-rank bs16 (eff 128; W's monotonic batch finding), rank 128 α45, 32 ep, ckpt every 2,
+  warmup 0.25 ep. AdamW arms = **the first scheduled-AdamW runs ever** (`--lr_schedule wsd`,
+  knee ep8, cosine to 0.1×; known-answer tested; WORLD_SIZE horizon bug fixed en route — every
+  prior schedule horizon would have run 8× long under real DDP). Fusion arms = full damping kit
+  (--fusion-decay wsd knee-aligned + SNR gate row/grad-source). Staging lock added (no stampede).
+- **Standing caveat in run_meta:** bigset = 27.7% near-lossless vs old goa 75.9% (W audit) + goa
+  runs degrade with training (W within-run split). Uniform mediocrity across all 4 arms ⇒ corpus,
+  not optimizer; the follow-up would re-point the same arms at goa_big_quality_matched (4,111).
+- Read-out: PQ/CE per epoch ladder + soups; the WSD-vs-constant contrast on AdamW is the direct
+  test of the A2 "constant-LR walk needs averaging" mechanism (scheduled arm should be listenable
+  at the TERMINAL ckpt if the knee does its job).
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**
