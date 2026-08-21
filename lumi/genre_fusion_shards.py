@@ -58,11 +58,39 @@ def resolve_ckpt(scratch_runs, label, epoch):
         if hits:
             break
     if not hits:
-        return None
+        return None, None
     if len(hits) > 1:
         print(f"[shards] WARNING: {len(hits)} matches for {label} epoch={epoch}, using first: {hits}",
               file=sys.stderr)
-    return hits[0]
+    return hits[0], search_label
+
+
+def fuzzy_candidates(scratch_runs, label):
+    """Evidence-gathering for a failed resolve: list real run dirs that share a
+    significant token with `label`, so the FATAL message shows what's actually on
+    disk instead of forcing another blind guess at the family-dir naming."""
+    import re
+    tokens = [t for t in re.split(r"[_\-]", label) if len(t) >= 4 and not t.isdigit()]
+    all_dirs = set()
+    try:
+        for entry in glob.glob(os.path.join(scratch_runs, "*", "*")):
+            if os.path.isdir(entry):
+                all_dirs.add(entry)
+        for entry in glob.glob(os.path.join(scratch_runs, "*")):
+            if os.path.isdir(entry):
+                all_dirs.add(entry)
+    except OSError:
+        pass
+    scored = []
+    for d in all_dirs:
+        base = os.path.basename(d)
+        hit_tokens = [t for t in tokens if t in base]
+        if hit_tokens:
+            ckpts = sorted(glob.glob(os.path.join(d, "epoch=*.weights.ckpt")))
+            epochs = [os.path.basename(c).split("-")[0].split("=")[1] for c in ckpts]
+            scored.append((len(hit_tokens), base, d, epochs))
+    scored.sort(key=lambda x: -x[0])
+    return scored[:8]
 
 
 def main():
@@ -75,6 +103,7 @@ def main():
     a = ap.parse_args()
 
     rows = []
+    failed = False
     for line in open(a.checkpoints):
         line = line.strip()
         if not line or line.startswith("#"):
@@ -82,14 +111,30 @@ def main():
         parts = line.split()
         label, epoch = parts[0], parts[1]
         is_ptm = len(parts) > 2 and parts[2].lower() == "ptm"
-        ckpt = resolve_ckpt(a.scratch_runs, label, epoch)
+        ckpt, matched_dirname = resolve_ckpt(a.scratch_runs, label, epoch)
         if ckpt is None:
+            failed = True
             print(f"[shards] FATAL: no checkpoint found for label={label} epoch={epoch} "
                   f"under {a.scratch_runs} -- check the label/epoch against the real run dir "
                   f"name (they don't always match the model_matrix label 1:1)", file=sys.stderr)
-            sys.exit(1)
+            candidates = fuzzy_candidates(a.scratch_runs, label)
+            if candidates:
+                print(f"[shards]   near-miss run dirs on disk (shared-token match):", file=sys.stderr)
+                for n_tok, base, d, epochs in candidates:
+                    print(f"[shards]     {base}  epochs={epochs or '(no .weights.ckpt found)'}  ({d})",
+                          file=sys.stderr)
+            else:
+                print(f"[shards]   no run dir under {a.scratch_runs} shares any token with '{label}' "
+                      f"-- this family may live under a completely different name/path", file=sys.stderr)
+            continue
         rows.append((label, epoch, is_ptm, ckpt))
         print(f"[shards] {label} ep{epoch}{' (ptm)' if is_ptm else ''} -> {ckpt}")
+
+    if failed:
+        print(f"[shards] one or more checkpoints failed to resolve (see FATAL lines above) -- "
+              f"fix genre_fusion_checkpoints.txt against the near-miss dirs shown, then re-run. "
+              f"Not writing any shards.", file=sys.stderr)
+        sys.exit(1)
 
     # one shard-line per (checkpoint, native-length) pair
     lines = []
