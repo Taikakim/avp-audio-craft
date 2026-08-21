@@ -200,6 +200,20 @@ sweep, 08-21). Read any parameter-table claim, including ones already in this fi
   OPEN. Render probe of the confound: fleet_quick_render's suomi_anchor prompt (the untrained t1)
   vs suomi_modal/random — weak anchor response on the T1024 arms = the confound made audible.
 
+### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **READY TO SUBMIT (Kim direct 2026-08-21)**
+- Kim: "take our best full finetune, and train our FiLM, melody and LATCH heads with best known
+  values and Fusion on top of that instead of the base model." One node, 8 single-GCD arms
+  (`lumi/sbatch/ftstack_heads.sbatch`, FT_CKPT knob): r0 Head-B FiLM on the full-FT EMA weights
+  (new --base-state-ckpt overlay in sa3_control/train.py, the render-proven prefix-strip loader),
+  r1 Head-B on base = the matched control; r2-7 = f0_other/f0_bass/hpcp/rms_energy_bass/
+  onset_envelope/spectral_flatness heads with the best-known recipe (Fusion SF-NorMuon
+  ns5,normuon,sf + adaln_zero + bf16-hot + EMA 0.999 + COSINE fusion-decay [braked] + val split
+  BY SOURCE TRACK per 83329a8). Note: readout heads are backbone-free by construction — the
+  backbone-dependent science is the r0-vs-r1 Head-B pair; heads ride along for the recipe upgrade.
+- Prereqs: TIMESERIES npz (~3.1G) co-located into scratch latents_sa3/ (npz ≠ npy glob, safe),
+  latents_sa3_melody/ (~10M), control/ + latch trainer code sync. FT_CKPT menu: today's
+  fullft_fleet arms (EMA on) > fullft_mixed_wdfix > precision-ladder fp16 (Kim's ear pick).
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
