@@ -66,6 +66,10 @@ def main():
                     help="load the EMA shadow weights (diffusion_ema.ema_model.*) instead of the "
                          "online weights — REQUIRED for EMA-trained fullft ckpts (precision ladder, "
                          "#68 big-FT); the online weights are the un-averaged model, not what deploys.")
+    ap.add_argument("--base-state-ckpt", default=None,
+                    help="STACKING (Kim 2026-08-21): load this full-FT checkpoint's weights into "
+                         "the base BEFORE applying --ckpt as an adapter — renders 'good DoRA on "
+                         "good full finetune'. EMA shadow auto-preferred when present.")
     ap.add_argument("--fullft", action="store_true",
                     help="force the full-finetune load path (whole-model state_dict) regardless of "
                          "the label prefix — for fullft runs not named 'fullft_*' (e.g. precision_ladder).")
@@ -110,6 +114,9 @@ def main():
     t0 = time.time()
     model = StableAudioModel.from_pretrained("medium" if a.pt_medium else "medium-base", device="cuda")
     sr = model.model.sample_rate
+    if a.base_state_ckpt:
+        from render_showcase import load_fullft_state   # auto-EMA whole-model load, cov assert
+        load_fullft_state(model, a.base_state_ckpt)
     is_fullft = a.fullft or a.label.startswith("fullft_")
     if a.ckpt != "none" and is_fullft:
         ck = torch.load(a.ckpt, map_location="cpu", weights_only=False)
@@ -165,7 +172,8 @@ def main():
         wav.with_suffix(".mmline.json").write_text(json.dumps({
             "model": label, "ckpt": a.tag, "cfg": float(cfg), "strength": w,
             "prompt_id": p["id"], "prompt_text": p["text"], "seed": p["seed"],
-            "steps": a.steps, "duration": duration, "file": wav.name.replace(".wav", ".m4a")}))
+            "steps": a.steps, "duration": duration, "file": wav.name.replace(".wav", ".m4a"),
+            **({"base_state": os.path.basename(a.base_state_ckpt)} if a.base_state_ckpt else {})}))
         print(f"  [{label}/{a.tag} cfg{cfg} w{w} {p['id']} {mode}] {time.time()-t0:.1f}s", flush=True)
 
 
