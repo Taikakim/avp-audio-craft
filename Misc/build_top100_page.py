@@ -90,7 +90,11 @@ def main():
       "honest count. <b>How to read:</b> click a "
       "cell to play; switching clips keeps the playhead (A/B at the same position); click again to stop. "
       "Columns carry the full recipe (model label, epoch, cfg, guidance weight, prompt, seed) for "
-      "reproducibility. PQ is an ear <i>proxy</i> — this page is a listening shortlist, not a verdict.</div>")
+      "reproducibility. PQ is an ear <i>proxy</i> — this page is a listening shortlist, not a verdict. "
+      "<b>Known blind spot</b> (W, 2026-08-21): PQ penalises sparse material (very-sparse median "
+      "5.94 vs busy 7.44 over 93k clips), so ambient/beatless work is systematically "
+      "under-represented here by construction — absence from this list is not evidence of "
+      "low quality for sparse tracks.</div>")
     A(f"<div class=muted>generated {gen} · dedup threshold {data['thr']} (calibrated: guidance-weight "
       f"siblings vs cross-model pairs) · ranking source: clip_metrics.db · builder Misc/build_top100_page.py</div>")
     A("<div id=np>&#9654; nothing playing <span id=pos></span> <span id=ld></span></div><nav>")
