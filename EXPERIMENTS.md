@@ -189,6 +189,17 @@ sweep, 08-21). Read any parameter-table claim, including ones already in this fi
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
+### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING (21428358/59)**
+- W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
+  0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
+  trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
+  a128 s1/s2, 7.5–9.5 h in). New arms: DATASET=suomi FRAMES=512 PROBS_OVERRIDE=0.25,0.45,0.30,
+  seeds 1/2 (21428358/59; first submit 21428140/41 cancelled over script-spool timing ambiguity).
+  These are the only anchor-CLEAN suomi arms; they also cover W's untested-axis T512 (his sweep:
+  T512 7.274 > T1024 6.751 at run level). Kim's kill-or-keep on the four confounded T1024 arms:
+  OPEN. Render probe of the confound: fleet_quick_render's suomi_anchor prompt (the untrained t1)
+  vs suomi_modal/random — weak anchor response on the T1024 arms = the confound made audible.
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**

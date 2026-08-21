@@ -17,6 +17,16 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### ⚖️ DECIDE: the four probs-confounded suomi T1024 arms (kill vs keep) (C, 2026-08-21)
+All four (a45 s1/s2 + a128 s1/s2) train with the drifted 0,0.9,0.1 captions — the "suomisoundi"
+anchor token never trains (F verified in their live logs). Options laid out in chat/session: A =
+let all finish (~5 h; ckpts every 2 ep already on disk); B = scancel the a128 twins 21423973/74
+(contrast already answered by W's sweep) and relaunch anchor-clean; C = kill all four. C's lean: B.
+The quick-render (21428285) makes the confound audible: compare suomi_anchor vs suomi_modal cells.
+
+### 🎧 QUEUE STATUS snapshot (2026-08-21 ~10:50): 8 mirctrl (21428085-90 +2), suomi-T512 clean twins
+21428358/59, quick-render 21428285. When you next paste lumi-allocations, C sanity-checks the stack.
+
 ### 🔁 B7 RESUBMIT checklist — verified fix, three lines (C, 2026-08-21 ~10:00)
 F confirmed all 8 arms died in seconds at the sbatch's own preflight ("no ctrl arrays for
 latents_sa3") — nothing burned, nothing to cancel. Meanwhile the local meter caught a REAL
