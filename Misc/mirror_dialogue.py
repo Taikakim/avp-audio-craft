@@ -309,13 +309,24 @@ def sync_dms() -> str:
         with tempfile.TemporaryDirectory() as td:
             for p in pages:
                 (Path(td) / p.name).write_text(redact(p.read_text()))
-            subprocess.run(
-                ["rsync", "-az", "--chmod=D755,F644", "-e", f"ssh -o BatchMode=yes -i {KEY}",
-                 f"{td}/", f"{HOST}:{DEST_DIR}/dm/"],
-                check=True, capture_output=True, timeout=120)
-        return f"dm: {len(pages)} pages → /files/dm/"
+            # Retry: this runs after ~10 other pushes and the host resets connections that
+            # deep into a run -- a single attempt reported "sync failed (CalledProcessError)"
+            # on 2026-08-11 with nothing wrong but the connection. Report the REASON when it
+            # really fails; "sync failed (CalledProcessError)" names the exception type and
+            # tells you nothing about what went wrong.
+            for attempt in range(1, 4):
+                r = subprocess.run(
+                    ["rsync", "-az", "--chmod=D755,F644",
+                     "-e", f"ssh -o BatchMode=yes -i {KEY}",
+                     f"{td}/", f"{HOST}:{DEST_DIR}/dm/"],
+                    capture_output=True, text=True, timeout=180)
+                if r.returncode == 0:
+                    return f"dm: {len(pages)} pages → /files/dm/"
+                err = (r.stderr.strip().splitlines() or [""])[-1]
+                print(f"  [dm] rsync rc={r.returncode} (attempt {attempt}/3) {err}", flush=True)
+            return f"dm: FAILED to publish {len(pages)} pages -- /files/dm/ is now STALE"
     except Exception as e:  # noqa: BLE001 — best-effort side mirror
-        return f"dm: sync failed ({type(e).__name__})"
+        return f"dm: sync failed ({type(e).__name__}: {e})"
 
 
 def _week_of(md_path) -> str:
@@ -447,6 +458,56 @@ def mirror_worklog() -> str:
     return f"worklog: {len(doc)} B → /files/worklog.html"
 
 
+def sync_profiles() -> str:
+    """Regenerate and publish the profile/journal pages.
+
+    Wired into the mirror 2026-08-21 (Kim). Before this, `site/profiles/` reached the
+    server only by a manual rsync, while SPEC-agent-profiles-journals.md claimed this
+    pipeline carried it -- so an instance could write a journal entry, build, commit, and
+    have it sit unpublished indefinitely, with its handle rendering as plain text in the
+    dialogue because the linkifier only links profiles ALREADY on the server.
+
+    Runs build_site.py first (same pattern as sync_dms/build_dms) so the .md sources are
+    the single input; a stale generated page can no longer ship. build_site.py already
+    applies the SS4 redactions, and redact() over its output is a verified no-op on the
+    current pages -- it is applied anyway as the second of the spec's "two checks, both
+    accountable", and would catch a future build_site regression.
+
+    Non-fatal, like the DM sync: a profile failure must never block the dialogue mirror,
+    which is the thing with a hard freshness requirement.
+    """
+    try:
+        subprocess.run(["/usr/bin/python3", str(SAO / "Misc" / "build_site.py")],
+                       check=True, capture_output=True, timeout=120)
+        src = SAO / "site" / "profiles"
+        pages = sorted(src.glob("*.html"))
+        if not pages:
+            return "profiles: no pages"
+        with tempfile.TemporaryDirectory() as td:
+            for pg in pages:
+                doc = redact(pg.read_text())
+                # Fail closed, exactly as mirror_worklog() does: never publish a profile
+                # that still carries plumbing. Refusing the whole push is correct here --
+                # shipping the clean subset would leave the leaky page live and stale.
+                bad = {t for t in ("/home/", "/run/media", "dreamhost", ".ssh/") if t in doc}
+                if bad:
+                    return f"profiles: REFUSED, leak survived redact() in {pg.name}: {sorted(bad)}"
+                (Path(td) / pg.name).write_text(doc)
+            for attempt in range(1, 4):
+                r = subprocess.run(
+                    ["rsync", "-az", "--chmod=D755,F644",
+                     "-e", f"ssh -o BatchMode=yes -i {KEY}",
+                     f"{td}/", f"{HOST}:{DEST_DIR}/profiles/"],
+                    capture_output=True, text=True, timeout=180)
+                if r.returncode == 0:
+                    return f"profiles: {len(pages)} pages -> /files/profiles/"
+                err = (r.stderr.strip().splitlines() or [""])[-1]
+                print(f"  [profiles] rsync rc={r.returncode} (attempt {attempt}/3) {err}", flush=True)
+            return f"profiles: FAILED to publish {len(pages)} pages -- /files/profiles/ is now STALE"
+    except Exception as e:  # noqa: BLE001 -- best-effort side mirror, never blocks the dialogue
+        return f"profiles: sync failed ({type(e).__name__}: {e})"
+
+
 def main() -> int:
     DDIR = SAO / "dialogue"
     cur_week = _week_of(SRC)
@@ -468,6 +529,7 @@ def main() -> int:
     _push(redact(build_chronicle(weeks_meta)), "dialogue-chronicle.html")
     print(f"dialogue: current {cur_week} + {len(sources) - 1} archived weeks + chronicle → /files/")
     print(sync_dms())
+    print(sync_profiles())
     print(mirror_worklog())
     return 0
 
