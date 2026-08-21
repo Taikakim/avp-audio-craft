@@ -1,0 +1,525 @@
+{
+ "dora128_47s_newcaptions_5ep": [
+  0,
+  2,
+  4
+ ],
+ "dora128_everything_8ep_lr1x": [
+  0,
+  4,
+  7
+ ],
+ "dora128_everything_8ep_lr3x": [
+  0,
+  4,
+  7
+ ],
+ "dora128adj_avp_8ep": [
+  0,
+  3,
+  6
+ ],
+ "dora128adj_avp_aug10_lr1e4": [
+  7,
+  37,
+  74
+ ],
+ "dora16_avp_8ep": [
+  0,
+  2,
+  6
+ ],
+ "dora16_avp_originals_64ep": [
+  15,
+  31
+ ],
+ "dora16_avp_originals_densewin": [
+  2,
+  6,
+  10
+ ],
+ "dora16_avp_originals_earlyeps": [
+  0,
+  2,
+  4
+ ],
+ "dora16_avp_originals_win7": [
+  0,
+  2,
+  6
+ ],
+ "dora16_goa_newstack_8ep": [
+  0,
+  3,
+  7
+ ],
+ "dora64_avp_tiered_lr1e4": [
+  0,
+  3,
+  7
+ ],
+ "sa3-goa-dora-47s-b4-cont": [
+  0,
+  3,
+  4
+ ],
+ "sa3-goa-dora-47s-r128-fusion": [
+  2,
+  4
+ ],
+ "sa3-goa-dora-47s-r64": [
+  0,
+  3,
+  7
+ ],
+ "dora128_47s_cont_from5": [
+  0,
+  2,
+  4
+ ],
+ "dora128_everything_8ep_lr0.5x": [
+  5,
+  6,
+  7
+ ],
+ "dora128_everything_8ep_lr0.5x_cont5": [
+  0,
+  1,
+  4
+ ],
+ "bf16cmp_avp_t512_bs8_lr1e4": [
+  4,
+  5,
+  6,
+  7
+ ],
+ "bf16cmp_goa_t512_bs8_lr1e4": [
+  0,
+  1,
+  7
+ ],
+ "fp32cmp_avp_t4096_bs1_lr1e4": [
+  2,
+  3,
+  4,
+  18
+ ],
+ "fp32cmp_avp_t4096_bs4_lr1e4": [
+  25,
+  26
+ ],
+ "fp32cmp_avp_t4096_bs4_lr5e5": [
+  6,
+  7
+ ],
+ "fp32cmp_avp_t512_bs8_lr1e4": [
+  2,
+  3,
+  4,
+  7
+ ],
+ "fp32cmp_goa_t4096_bs1_lr1e4": [
+  0,
+  1,
+  14
+ ],
+ "fp32cmp_goa_t4096_bs4_lr1e4": [
+  7,
+  15,
+  16
+ ],
+ "fp32cmp_goa_t512_bs8_lr1e4": [
+  0,
+  1,
+  2,
+  7
+ ],
+ "fp32cmp_goa_t4096_bs4_lr5e5": [
+  0,
+  1,
+  2,
+  7
+ ],
+ "longctx_t1024_r128": [
+  0,
+  1,
+  2,
+  7
+ ],
+ "longctx_t2048_r128": [
+  0,
+  1,
+  7
+ ],
+ "fp32cmp_goa_t4096_bs1_lr1e4_repr": [
+  4,
+  5,
+  6
+ ],
+ "fp32cmp_goa_t4096_bs4_lr1e4_repr": [
+  4,
+  5,
+  7
+ ],
+ "fp32cmp_goa_t4096_bs4_lr1e4_ptm": [
+  0,
+  1,
+  4
+ ],
+ "fullft_avp_t2048": [
+  6,
+  7
+ ],
+ "fullft_avp_t256": [
+  7,
+  46,
+  47
+ ],
+ "fullft_avp_t4096": [
+  3,
+  4,
+  5,
+  7
+ ],
+ "fullft_goa_t2048": [
+  0,
+  1,
+  2,
+  7
+ ],
+ "fullft_goa_t256": [
+  7,
+  19,
+  20
+ ],
+ "fullft_goa_t4096": [
+  2,
+  3,
+  4,
+  7
+ ],
+ "fp32frames_avp_t2048_bs1_lr1e4": [
+  8,
+  9
+ ],
+ "fp32frames_avp_t2048_bs4_lr1e4": [
+  8,
+  9
+ ],
+ "fp32frames_goa_t2048_bs1_lr1e4": [
+  0,
+  1,
+  2,
+  9
+ ],
+ "fp32frames_goa_t2048_bs4_lr1e4": [
+  8,
+  9
+ ],
+ "fp32frames_avp_t4096_bs1_lr1e4": [
+  3,
+  4,
+  5,
+  9
+ ],
+ "fp32frames_avp_t4096_bs4_lr1e4": [
+  8,
+  9
+ ],
+ "fp32frames_goa_t4096_bs1_lr1e4": [
+  2,
+  6
+ ],
+ "fp32frames_goa_t4096_bs4_lr1e4": [
+  2,
+  3,
+  4,
+  8
+ ],
+ "bf16cmp_avp_t512_bs8_lr1e4_ptm": [
+  6,
+  7
+ ],
+ "bf16cmp_goa_t512_bs8_lr1e4_ptm": [
+  3,
+  4,
+  5,
+  7
+ ],
+ "dora128_47s_cont_from5_ptm": [
+  0,
+  2,
+  4
+ ],
+ "dora128_47s_newcaptions_5ep_ptm": [
+  2,
+  4
+ ],
+ "dora128_everything_8ep_lr0.5x_cont5_ptm": [
+  0,
+  1,
+  4
+ ],
+ "dora128_everything_8ep_lr0.5x_ptm": [
+  5,
+  6,
+  7
+ ],
+ "dora128_everything_8ep_lr1x_ptm": [
+  4,
+  7
+ ],
+ "dora128_everything_8ep_lr3x_ptm": [
+  0,
+  4,
+  7
+ ],
+ "dora128adj_avp_8ep_ptm": [
+  0,
+  3,
+  6
+ ],
+ "dora128adj_avp_aug10_lr1e4_ptm": [
+  7,
+  37,
+  74
+ ],
+ "dora16_avp_8ep_ptm": [
+  0,
+  2,
+  6
+ ],
+ "dora16_avp_originals_64ep_ptm": [
+  15,
+  31
+ ],
+ "dora16_avp_originals_densewin_ptm": [
+  2,
+  6,
+  10
+ ],
+ "dora16_avp_originals_earlyeps_ptm": [
+  0,
+  2,
+  4
+ ],
+ "dora16_avp_originals_win7_ptm": [
+  2,
+  6
+ ],
+ "dora16_goa_newstack_8ep_ptm": [
+  0,
+  3,
+  7
+ ],
+ "dora64_avp_tiered_lr1e4_ptm": [
+  0,
+  3,
+  7
+ ],
+ "fp32cmp_avp_t4096_bs1_lr1e4_ptm": [
+  4,
+  5,
+  6,
+  7
+ ],
+ "fp32cmp_avp_t4096_bs4_lr1e4_ptm": [
+  6,
+  7
+ ],
+ "fp32cmp_avp_t4096_bs4_lr5e5_ptm": [
+  6,
+  7
+ ],
+ "fp32cmp_avp_t512_bs8_lr1e4_ptm": [
+  3,
+  4,
+  5,
+  7
+ ],
+ "fp32cmp_goa_t4096_bs1_lr1e4_ptm": [
+  1,
+  2,
+  3
+ ],
+ "fp32cmp_goa_t4096_bs4_lr5e5_ptm": [
+  2,
+  3,
+  4
+ ],
+ "fp32cmp_goa_t512_bs8_lr1e4_ptm": [
+  5,
+  6,
+  7
+ ],
+ "longctx_t1024_r128_ptm": [
+  1,
+  2,
+  3,
+  7
+ ],
+ "longctx_t2048_r128_ptm": [
+  0,
+  1,
+  2,
+  7
+ ],
+ "sa3-goa-dora-47s-b4-cont_ptm": [
+  0,
+  3,
+  4
+ ],
+ "sa3-goa-dora-47s-r128-fusion_ptm": [
+  2,
+  4
+ ],
+ "sa3-goa-dora-47s-r64_ptm": [
+  0,
+  3,
+  7
+ ],
+ "winning_avp_t1024_a45_fp32": [
+  10,
+  15,
+  19,
+  59
+ ],
+ "winning_avp_t1024_a45_fp32_ptm": [
+  15,
+  19
+ ],
+ "winning_avp_t512_a128_fp32": [
+  15,
+  19,
+  50,
+  95
+ ],
+ "winning_avp_t512_a128_fp32_ptm": [
+  10,
+  15,
+  19
+ ],
+ "winning_avp_t512_a45_bf16": [
+  10,
+  15,
+  19,
+  59
+ ],
+ "winning_avp_t512_a45_bf16_ptm": [
+  15,
+  19
+ ],
+ "winning_avp_t512_a45_fp32": [
+  50,
+  59
+ ],
+ "winning_avp_t512_a45_fp32_ptm": [
+  10,
+  15,
+  19
+ ],
+ "winning_avpaug10_t512_a45_fp32": [
+  50,
+  59
+ ],
+ "winning_avpaug10_t512_a45_fp32_ptm": [
+  10,
+  15,
+  19
+ ],
+ "winning_goa_t512_a128_fp32": [
+  50,
+  59,
+  74,
+  75
+ ],
+ "winning_goa_t512_a128_fp32_ptm": [
+  10,
+  15,
+  19
+ ],
+ "winning_goa_t512_a45_bf16": [
+  50,
+  59
+ ],
+ "winning_goa_t512_a45_bf16_ptm": [
+  10,
+  15,
+  19
+ ],
+ "winning_goa_t512_a45_fp32": [
+  50,
+  59
+ ],
+ "winning_goa_t512_a45_fp32_ptm": [
+  10,
+  15,
+  19
+ ],
+ "lreq_goa_lr1e4": [
+  3,
+  7,
+  11,
+  19
+ ],
+ "lreq_goa_lr2e4": [
+  1,
+  3,
+  5,
+  13
+ ],
+ "subloss_goa_k12": [
+  3,
+  7,
+  19
+ ],
+ "subloss_goa_k2": [
+  3,
+  7,
+  19
+ ],
+ "subloss_goa_k5": [
+  3,
+  7,
+  19
+ ],
+ "x0eq_goa": [
+  0,
+  3,
+  7,
+  19
+ ],
+ "x0eq_sub5_goa": [
+  0,
+  3,
+  7,
+  19
+ ],
+ "subloss_v3sel_k12": [
+  3,
+  7,
+  19
+ ],
+ "subloss_v3sel_k2": [
+  3,
+  7,
+  19
+ ],
+ "subloss_v3sel_k5": [
+  3,
+  7,
+  11,
+  19
+ ],
+ "lreq_goa_lr5e5": [
+  3,
+  7,
+  11,
+  39
+ ],
+ "subloss_v3sel_k5_tgate": [
+  3,
+  7,
+  11
+ ]
+}
