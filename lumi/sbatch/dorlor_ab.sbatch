@@ -47,15 +47,27 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 
 ARM=${ARM:?set ARM=dora_adamw|dora_fusion|lora_adamw|lora_fusion}
+DATASET=${DATASET:-biggoa}      # biggoa | suomi | avpaug | goa (old set, latents_sa3)
 BS=${BS:-16}
 GA=${GA:-1}
 RANK=${RANK:-128}
 ALPHA=${ALPHA:-45}
 LR=${LR:-1e-4}
-EPOCHS=${EPOCHS:-32}
-KNEE=${KNEE:-8}
 SEED=${SEED:-1}
-CKEVERY=${CKEVERY:-2}
+# EPOCH SCALING (Kim extended to all corpora 2026-08-21): epochs default so every corpus gets
+# ~3,100 optimizer steps at eff batch 128 (bigset's 32-ep budget); ckpt cadence -> ~10 ladders.
+# Knee stays at 25% of the run; warmup fixed at 0.78% of total steps (bigset's 0.25 ep).
+case "${DATASET}" in
+  biggoa) DIRS="latents_goa_bigset";  SIDES="${CODE}/lumi/goa_bigset_hinted_bylatent.json"; PROBS="0,0,1";           EPD=32;  CKD=2 ;;
+  suomi)  DIRS="suomisoundi_latents"; SIDES="${CODE}/lumi/suomisoundi_caption_sidecar.json"; PROBS="0.25,0.45,0.30"; EPD=320; CKD=32 ;;
+  avpaug) DIRS="latents_avp";         SIDES="${CODE}/lumi/avp_captions_tiered.json";        PROBS="0,0.9,0.1";       EPD=160; CKD=16 ;;
+  goa)    DIRS="latents_sa3";         SIDES="${CODE}/lumi/goa_longform_sidecar.json";       PROBS="0.6,0.3,0.1";     EPD=64;  CKD=8 ;;
+  *) echo "[dorlor] FATAL: unknown DATASET ${DATASET}"; exit 1 ;;
+esac
+EPOCHS=${EPOCHS:-${EPD}}
+CKEVERY=${CKEVERY:-${CKD}}
+KNEE=${KNEE:-$((EPOCHS / 4))}
+WARMUP_FRAC=${WARMUP_FRAC:-0.0078}
 case "${ARM}" in
   dora_adamw)  AD=dora-rows; OPT=adamw ;;
   dora_fusion) AD=dora-rows; OPT=fusion ;;
@@ -63,10 +75,10 @@ case "${ARM}" in
   lora_fusion) AD=lora;      OPT=fusion ;;
   *) echo "[dorlor] FATAL: bad ARM ${ARM}"; exit 1 ;;
 esac
-NAME=dorlor_${ARM}_r${RANK}a${ALPHA}_t256_bf16_bs$((BS*GA*8))_s${SEED}
+NAME=dorlor_${DATASET}_${ARM}_r${RANK}a${ALPHA}_t256_bf16_bs$((BS*GA*8))_s${SEED}
 RUN=${SCRATCH}/runs/dorlor_ab/${NAME}
-DIR=latents_goa_bigset
-SIDE=${CODE}/lumi/goa_bigset_hinted_bylatent.json
+DIR=${DIRS}
+SIDE=${SIDES}
 
 [ -n "${SIF}" ] || { echo "[dorlor] FATAL: no multitorch image"; exit 1; }
 [ -f "${SIDE}" ] || { echo "[dorlor] FATAL: sidecar missing"; exit 1; }
@@ -101,7 +113,7 @@ cat > "${RUN}/run_meta.json" <<META
             "warmup": "0.25 epoch", "precision": "bf16 (FA2)", "frames": 256,
             "batch_per_rank": ${BS}, "grad_accum": ${GA}, "gpus": 8, "ddp": "torchrun (verified pattern)",
             "effective_batch": $((BS*GA*8)), "epochs": ${EPOCHS}, "seed": ${SEED}},
- "dataset": {"name": "goa_bigset", "caption_probs": "0,0,1",
+ "dataset": {"name": "${DATASET}", "dirs": "${DIRS}", "caption_probs": "${PROBS}",
              "caveat": "bigset 27.7% near-lossless vs old goa 75.9% (W audit) — corpus is a suspect in any uniform mediocrity"},
  "script": "lumi/sbatch/dorlor_ab.sbatch", "result": null, "kim_feedback": null}
 META
@@ -135,8 +147,8 @@ torchrun --standalone --nnodes=1 --nproc-per-node=8 \
   --model medium-base --base_precision bf16 \
   --adapter_type '"${AD}"' --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --optimizer '"${OPT}"' --lr '"${LR}"' '"${OPTARGS}"' \
-  --warmup-frac $(python3 -c "print(0.25/'"${EPOCHS}"')") \
-  --encoded_dir ${FLASH}/'"${DIR}"' --caption_sidecar '"${SIDE}"' --caption_probs "0,0,1" \
+  --warmup-frac '"${WARMUP_FRAC}"' \
+  --encoded_dir ${FLASH}/'"${DIR}"' --caption_sidecar '"${SIDE}"' --caption_probs "'"${PROBS}"'" \
   --frames 256 --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --num_workers 4 --seed '"${SEED}"' \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
