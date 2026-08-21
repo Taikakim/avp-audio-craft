@@ -142,6 +142,7 @@ claim, including ones already in this file, against both corrections.
   n.s. finding. Readout is per-corpus by construction (W's pooling confound dodged), and per W's
   underfit bit-exactness check the loss path is exonerated — A11 is the first real test of the
   optimizer half of the stack.
+- **Fusion half VERIFIED training (14:45): decay banners live under true DDP — the braked kit's first confirmed real-DDP activation.**
 - **Fusion-half incident + resubmit (13:0x):** all 8 original fusion arms died on argparse
   (`--fusion-snr grad` — a replace(count=1) fix that hit the comment line instead of OPTARGS;
   the ~55 min of apparent runtime was flash-staging crawl). Fixed for real (04e1e38, zero grad
@@ -356,7 +357,7 @@ claim, including ones already in this file, against both corrections.
   checkpoint trained under the old sbatch. lumi-ops skill now carries the hardened authoring rule
   + 3-check verification.
 
-### B10 — Subspace-weighted trainer at K=24, four corpora (Kim direct 2026-08-21) — **RUNNING (21432109, 21432111-13)**
+### B10 — Subspace-weighted trainer at K=24, four corpora (Kim direct 2026-08-21) — **suomi+avpaug COMPLETE (8 unversioned ckpts to ep63, verified true DDP); biggoa/bigmix running**
 - Continues the v3sel lane past its K=12 max: same 15-dim whitened-CSP melody basis, K
   (=--subspace-loss-weight) doubled to 24. Arms: avpaug / suomi (ratified probs) / biggoa /
   **bigmix** (bigset+old-goa — FLAC upweight by inclusion). Lane conventions kept so the K axis
