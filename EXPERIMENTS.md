@@ -386,7 +386,34 @@ claim, including ones already in this file, against both corrections.
 - ⚠️ bigmix/goa preflight requires latents_sa3 .json metas on scratch (rsync from local);
   submitted into the flash-metadata storm — expect slow staging until the mirctrl hang clears.
 
-### D13/Q1 — BURN-DAY WAVE (allocation expires tonight; Kim: "just start burning the time") — **RUNNING**
+### D13/Q1 — BURN-DAY WAVE (allocation expires tonight; Kim: "just start burning the time") — **LANDED 2026-08-21 23:07 (sacct): all arms COMPLETED, only tgate 21439464 + winning_fleet 21429630 still running**
+- **Verdict at landing (C, 23:30):** pianoroll control_gain LIFTED OFF and climbs monotonically
+  +0.0000 (step 0) → +0.0079 (600) → +0.0116 (1200), true<zero<shuffled — first in-training
+  evidence a DiT reads the note roll (1.3 % of loss at T256/16 ep; 8 ckpts per seed). Morph: all 16
+  arms printed their Embedding(5/15/77) banner, rc 0 — renders pending. Stacks/showcase/suomift
+  below all clean (0 FAILED).
+- **Late-wave additions (Kim direct 17:30–17:40), ALL COMPLETED 0 FAILED:**
+  - **Showcase 21440170** — 128 random-param t2048/t4096 clips on W's known-good list
+    (`lumi/render_showcase.py` + `sbatch/showcase_render.sbatch`; cfg∈{5,7,9}, w∈{0.8,1.0,1.2},
+    ptm: 8 steps cfg1; prompt from the 9054 training-caption pool; params+prompt+ckpt in a `.json`
+    sidecar, z0 saved). `$SCRATCH/renders/showcase/` = 128 wav. Kim playlist material.
+  - **Stack cells 21440457 (+21440202 first pass)** — every adapter of W's list × 3 full-FT
+    backbones (avpft90/153, avpaug19 EMA), strengths 0.5/1/1.5 cfg7, via the new
+    `render_matrix_cells.py --base-state-ckpt`. 42 combos, **2520 cells** in
+    `$SCRATCH/renders/stack_cells/`. Question: how much adapter does a shifted base tolerate.
+  - **Stack suomi 21440459** — suomi DoRAs (dorlor adamw/fusion + subloss_k24, last+mid) on
+    avpft153/avpaug19/goa-mid, suomi_full_prompts ×3 strengths: 18 combos, **1242 cells**,
+    `$SCRATCH/renders/stack_suomi/`. Question: is the suomi idiosyncrasy reproducible at all.
+  - **Suomi FULL-FT warm-start 21440462 (avpaug19) / 21440464 (goaft mid)** —
+    `sbatch/fullft_suomi_warm.sbatch`, train_lora `--init_state_ckpt` (new; whole-model
+    warm-start, EMA-preferred, cov 100.00 % verified on all ranks). T1024 bf16, Fusion + snr row +
+    cosine over 32 ep, spectral WD 0.2, subspace v3sel K=5, EMA. 8 ckpts each (every 4 ep),
+    `$SCRATCH/runs/suomift_warm/`. NOT rendered yet — next: render both ladders on
+    suomi_full_prompts and compare against the stack_suomi cells (adapter-on-FT) and B8's T512
+    DoRA: does suomi need the whole backbone to move?
+- **PULL LIST (scratch persists till purge, not urgent):** showcase/ (128 wav+z0+json), stack_cells/,
+  stack_suomi/, suomift_warm/ (EMA weights only — prune optimizer first), pianoroll_fullft/ (both
+  seeds + control_ablation.jsonl), morphcond run dirs.
 - **Morph-contour conditioning, FIRST TRAINING of the D12 stack (the "one actually new idea"):**
   21439456 = pitch-contour alphabet bracket (L2/L3/L4 = 3/13/75 K&P symbols from the f0 melody
   line, base vs fullft-avpaug-ep19 backbones, + L3 seed pair); 21439457 = IOI-RHYTHM contour
