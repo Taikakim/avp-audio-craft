@@ -463,6 +463,18 @@
           "title": "Dual-Contrastive Sparse Autoencoders Reveal Features of Musical Interpretation (DC-SAE)",
           "claim": "A two-branch TopK SAE with a shared decoder factors MusicGen-Large layer-24 residual activations into a work-identity branch and a performance-variation branch, using MERT-ranked same-work recording pivots as contrastive bags; steering along variation-branch directions shifts the performer/realization while preserving the underlying work (Chen, Cherep, Maes, Singh — the same MIT group as 2505.18186; ICML 2026 Mech-Interp Workshop, PDF on the local shelf). Verification saga: first flagged as a likely-fabricated citation (double-blind submission = no search footprint, OpenReview bot-blocked), then confirmed real from the PDF — the incident that set the verify-before-build rule's 'blocked source = unverified, not fabricated' clause. Directly relevant to the corpus curation plan: the performance-variation branch is exactly the different-masters signal the similarity clustering wants to keep.",
           "one_liner": "A two-branch sparse autoencoder that separates 'which piece' from 'how it's performed' — a named, steerable axis of musical interpretation."
+        },
+        {
+          "id": "2608.06717",
+          "title": "WaveFreqAnchor (training-free face restoration)",
+          "link": "https://arxiv.org/abs/2608.06717",
+          "claim": "A fixed, frequency-domain anisotropic wave operator (orientation/velocity-tunable) run on the denoising trajectory, plus phase-anchoring against a reference signal, gives training-free restoration guidance — real-world (unknown-degradation) restoration wins outright while operator-matched baselines collapse."
+        },
+        {
+          "id": "2608.04624",
+          "title": "Masked Diffusion Enables Coherent Beat Tracking",
+          "link": "https://arxiv.org/abs/2608.04624",
+          "claim": "One-step neural beat trackers emit incoherent mixtures of multiple valid metrical interpretations (consecutive downbeats, tempo halving/doubling); a masked-diffusion tracker that commits to one interpretation and fills coherently beats a DBN post-processing baseline without using a DBN at all."
         }
       ]
     }
