@@ -101,7 +101,14 @@ if [ "$(ls ${FLASH}/${DIR}/*.npy 2>/dev/null | wc -l)" -eq 0 ]; then
 fi
 N=$(ls ${FLASH}/${DIR}/*.npy 2>/dev/null | wc -l)
 [ "${N}" -gt 0 ] || { echo "[dorlor] FATAL: staging failed"; exit 1; }
-echo "[dorlor] ${DIR}: ${N} latents on flash"
+# json top-up: a dir staged before its jsons existed on scratch skips staging forever
+# (stage-if-empty checks npy only); train_lora's dataset REQUIRES the .json metas.
+if [ "$(ls ${FLASH}/${DIR}/*.json 2>/dev/null | wc -l)" -eq 0 ]; then
+  cp ${SCRATCH}/${DIR}/*.json "${FLASH}/${DIR}/" 2>/dev/null || true
+fi
+NJ=$(ls ${FLASH}/${DIR}/*.json 2>/dev/null | wc -l)
+[ "${NJ}" -gt 0 ] || { echo "[dorlor] FATAL: no .json metas for ${DIR} on flash OR scratch — rsync them from local first (train_lora requires them)"; exit 1; }
+echo "[dorlor] ${DIR}: ${N} latents, ${NJ} json metas on flash"
 
 mkdir -p "${RUN}"
 echo "[dorlor] CONFIG NAME=${NAME} AD=${AD} OPT=${OPT} BS=${BS}/rank GA=${GA} (eff $((BS*GA*8))) LR=${LR} KNEE=ep${KNEE} EPOCHS=${EPOCHS}"
