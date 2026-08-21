@@ -137,7 +137,12 @@ sweep, 08-21). Read any parameter-table claim, including ones already in this fi
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
-### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RESUBMIT PENDING (first 8 arms died at preflight; triple freeze-out bug found+fixed), C owns**
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING (resubmitted 21428085-90 + 2 ablation arms; fix verified on LUMI code), C owns**
+- **08-21 ~10:40 resubmit:** ctrl dirs verified on scratch, fixed code verified on LUMI by remote
+  grep (train_lora.py:2 / diffusion.py:1 modular refs = local parity). New jobs: 21428085 all,
+  086 melody, 087 rhythm, 088 dynamics, 089 stems, 090 spectral (+ BLOCKS=all and RANK=64 arms
+  submitted, IDs truncated in paste). Health signature per arm: 're-enabled 48 projection param
+  tensors' + step-1 ablation gain line, no preflight FATAL.
 - **08-21 ~10:00:** first submits 21427376-83 all FAILED in seconds at the sbatch's own preflight
   (latents_sa3_ctrl not yet rsynced — guard worked, zero GPUh burned). Meanwhile the local ablation
   meter caught a REAL triple bug: under lora_config the wrapper (1) re-froze the post-install
