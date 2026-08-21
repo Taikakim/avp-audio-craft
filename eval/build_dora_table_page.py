@@ -128,7 +128,9 @@ NICE = {"clap_matched": "CLAP", "clap_margin_far": "CLAP·mgn", "alpha_over_rank
 # encoded_dir basename (latents_avp / latents_sa3 / latents_avp_aug10). Left as-is they
 # split every dataset-grouped view in two and read as five corpora where there are three.
 DATASET_ALIASES = {"latents_avp": "avp", "latents_sa3": "goa",
-                   "latents_avp_aug10": "avp_aug10", "latents_avp_originals": "avp_originals"}
+                   "latents_avp_aug10": "avp_aug10", "latents_avp_originals": "avp_originals",
+                   "latents_goa_bigset": "biggoa", "goa_archive": "biggoa",
+                   "suomisoundi_latents": "suomi"}
 
 # hover tooltips per column (native title=). ↑ = higher is better, ↓ = lower is better.
 DESC = {
@@ -157,7 +159,7 @@ DESC = {
                      "(a guess — treat rank/alpha/lr here as unverified).",
     "lr": "Learning rate. Flat 1e-4↔2e-4; cliffs (collapses) at 6e-4.",
     "optimizer": "Optimizer: FusionOpt or AdamW.",
-    "dataset": "Training corpus: goa (psytrance) · avp (Kim's own music) · mixed.",
+    "dataset": "Training corpus: goa (psytrance) · avp (Kim's own music) · biggoa (23k-track big-set) · suomi (Suomisoundi) · mixed/combinations, plus dataset variants (aug10, originals). Filter list is derived live from what's actually in the data, so new corpora appear automatically.",
     "aug": "Augmentation multiplier (pitch/stretch). 0 = none. aug10 is the cleanest single win (helps every axis).",
     "epoch": "This checkpoint's training epoch. Overtraining collapses UN-augmented runs by ~ep15; aug10 climbs to ep74 (corpus best).",
     "steps": "Total training optimizer steps at this checkpoint (steps/epoch × epoch, from the recipe's recorded step count). Blank where not recorded.",
@@ -371,7 +373,7 @@ Hyperparameters parsed from the checkpoint recipes.</p>
 <div class=base id=base></div>
 <div class=ctl>
  <label>model set <select id=modelset title="campaign family (or 'all'). Filters BOTH the metric rows and the audio picker to this set; updates the URL (?set=) so the filtered view is shareable."></select></label>
- <label>dataset <select id=fds><option value="">all</option><option>goa</option><option>avp</option><option>mixed</option></select></label>
+ <label>dataset <select id=fds><option value="">all</option></select></label>
  <label>rank <select id=frank><option value="">all</option></select></label>
  <label>arch <select id=farch><option value="">all</option></select></label>
  <label>find <input id=ftext placeholder="model substring" size=18></label>
@@ -934,6 +936,7 @@ modelset.onchange=()=>applySet(modelset.value);
 for(const id of ['fds','frank','farch'])document.getElementById(id);
 [...new Set(rows.map(r=>r.rank).filter(v=>v!=null))].sort((a,b)=>a-b).forEach(v=>frank.add(new Option(v,v)));
 [...new Set(rows.map(r=>r.arch).filter(Boolean))].forEach(v=>farch.add(new Option(v,v)));
+[...new Set(rows.map(r=>r.dataset).filter(Boolean))].sort().forEach(v=>fds.add(new Option(v,v)));
 ['fds','frank','farch'].forEach(id=>document.getElementById(id).onchange=render);
 ftext.oninput=render;
 fallscores.onchange=()=>{showAll=fallscores.checked;computeExt();render();};
