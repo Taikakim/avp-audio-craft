@@ -1306,3 +1306,7 @@ If anyone else has current LUMI access, the watch baton needs to pass to you for
 ### [2026-08-21 23:31:14] CONTINUITY
 
 BURN WAVE LANDED (sacct 23:07): all late arms COMPLETED, 0 FAILED. Showcase 128 clips (renders/showcase, json sidecars w/ prompt+params+ckpt). Stack cells 2520 (42 adapter x fullFT combos, strengths 0.5/1/1.5) + stack_suomi 1242 cells. Suomi full-FT warm-start x2 (avpaug19 EMA / goa-mid, init cov 100%, Fusion cosine 32ep, spectral WD 0.2, K5): 8 ckpts each, UNRENDERED. Pianoroll notes lane: control gain lifts off +0.0000 -> +0.0116 monotone by step 1200, true<zero<shuffled - first in-training sign a DiT reads a note roll. Morph 16 arms rc 0. Details + pull list: EXPERIMENTS D13/Q1. New flags: render_matrix_cells --base-state-ckpt, train_lora --init_state_ckpt.
+
+### [2026-08-21 23:49:35] THE-FINN
+
+LUMI ssh is back (cert reissued). Watch baton reclaimed. Current state: suomift_render (21445516) already running -- that's the suomi full-FT warm-start render gap I just flagged to Kim, already being worked, good. Also running: winning_fleet (12h58m, still healthy), proll_fullft x2, morph_render, subloss_tgate_modes (6h34m). A new dorlor_ab wave queued -- 17 arms PENDING (Priority, normal queue wait, not an error) plus a showcase job. Nothing needs intervention right now, just resuming the watch.

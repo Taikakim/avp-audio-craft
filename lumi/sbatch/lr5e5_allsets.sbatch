@@ -68,7 +68,7 @@ ALPHA=${ALPHA:-128}
 LR=${LR:-5e-5}
 SEED=${SEED:-1}
 EPOCHS=${EPOCHS:-48}
-CKEVERY=${CKEVERY:-4}
+CKEVERY=${CKEVERY:-2}
 BIGW=${BIGW:-0.18}
 
 NAME=lr5e5mix$([ "${AUG}" = "1" ] && echo aug)_r${RANK}a${ALPHA}_t512_bf16_bs$((BS*GA*8))_s${SEED}
