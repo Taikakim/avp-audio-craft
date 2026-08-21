@@ -47,22 +47,27 @@ def resolve_ckpt(scratch_runs, label, epoch):
     candidates = [search_label] + ([label] if label != search_label else [])
     hits = []
     for cand in candidates:
-        pattern = os.path.join(scratch_runs, "*", cand, f"epoch={epoch_num}-*.weights.ckpt")
+        # checkpoints are saved as plain 'epoch=N-step=M.ckpt' (fat, w/ optimizer state) --
+        # a '.weights.ckpt' (stripped, slim) sibling only exists for SOME runs. Glob '*.ckpt'
+        # (which also matches '*.weights.ckpt') and prefer the slim one when both exist.
+        pattern = os.path.join(scratch_runs, "*", cand, f"epoch={epoch_num}-*.ckpt")
         hits = glob.glob(pattern)
         if hits:
             break
         # some families are one level shallower (RUN=${SCRATCH}/runs/<name> directly, no
         # intermediate family dir) -- try that too before giving up.
-        pattern2 = os.path.join(scratch_runs, cand, f"epoch={epoch_num}-*.weights.ckpt")
+        pattern2 = os.path.join(scratch_runs, cand, f"epoch={epoch_num}-*.ckpt")
         hits = glob.glob(pattern2)
         if hits:
             break
     if not hits:
         return None, None
-    if len(hits) > 1:
+    weights = [h for h in hits if h.endswith(".weights.ckpt")]
+    chosen = weights[0] if weights else hits[0]
+    if len(hits) > 1 and not weights:
         print(f"[shards] WARNING: {len(hits)} matches for {label} epoch={epoch}, using first: {hits}",
               file=sys.stderr)
-    return hits[0], search_label
+    return chosen, search_label
 
 
 def fuzzy_candidates(scratch_runs, label):
@@ -86,7 +91,7 @@ def fuzzy_candidates(scratch_runs, label):
         base = os.path.basename(d)
         hit_tokens = [t for t in tokens if t in base]
         if hit_tokens:
-            ckpts = sorted(glob.glob(os.path.join(d, "epoch=*.weights.ckpt")))
+            ckpts = sorted(glob.glob(os.path.join(d, "epoch=*.ckpt")))
             epochs = [os.path.basename(c).split("-")[0].split("=")[1] for c in ckpts]
             scored.append((len(hit_tokens), base, d, epochs))
     scored.sort(key=lambda x: -x[0])

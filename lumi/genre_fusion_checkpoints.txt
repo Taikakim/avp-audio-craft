@@ -13,7 +13,9 @@
 # checkpoint (epoch 74) at two INFERENCE-variance settings, not two training points. No --iv
 # flag in our render pipeline and no known checkpoint-filename convention for it; dropping
 # rather than guessing. 11 families / ~22 checkpoints remain.
-dora256_avp_aug10_lr7e5_ptm 3 ptm
+# dora256_avp_aug10_lr7e5_ptm 3 ptm  -- DOES NOT EXIST on LUMI (2026-08-21 verified: only
+#   dora256_mixed/dora256_mixed_a128_lr5e5 and dora256_mixed_a196_lr1e4 exist under dora256_mixed;
+#   no lr7e5 anywhere under runs/). Flagged to W to confirm the intended run before re-adding.
 fullft_avp_t256_sweep 90
 fullft_avp_t256_sweep 153
 bf16cmp_avp_t512_bs8_lr1e4_ptm 4 ptm
