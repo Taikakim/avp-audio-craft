@@ -105,6 +105,7 @@ headb () {  # $1 = ft|base
     --seed ${SEED} --run-name headb_${TAG}_s${SEED} \
     --save-dir ${RUNROOT}/headb_${TAG}_s${SEED} \
     2>&1 | sed "s/^/[r${R}:headb-${TAG}] /"
+  return ${PIPESTATUS[0]}   # sed launders $? — the 21430195 8-min-COMPLETED lesson
 }
 head_arm () {  # $1 = feature, extra args in $2...
   local FEAT=$1; shift
@@ -116,6 +117,7 @@ head_arm () {  # $1 = feature, extra args in $2...
     --epochs 30 --batch-size 32 --seed ${SEED} "$@" \
     --save-dir ${RUNROOT}/latch_${FEAT}_s${SEED} \
     2>&1 | sed "s/^/[r${R}:${FEAT}] /"
+  return ${PIPESTATUS[0]}
 }
 case ${R} in
   0) headb ft ;;
@@ -127,7 +129,9 @@ case ${R} in
   6) head_arm onset_envelope ;;
   7) head_arm spectral_flatness ;;
 esac
-echo "[r${R}] arm done"
+ARM_RC=$?
+echo "[r${R}] arm done rc=${ARM_RC}"
+exit ${ARM_RC}
 '
 rc=$?
 echo "[ftstack] srun rc=${rc}"
