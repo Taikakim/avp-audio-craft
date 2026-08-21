@@ -145,7 +145,13 @@ def main():
     lines = []
     for label, epoch, is_ptm, ckpt in rows:
         for frames in (256, 512):
-            extra = "--pt-medium --only-cfgs 1" if is_ptm else ""
+            # always pin to ONE representative cfg -- without --only-cfgs the prompts JSON's
+            # full cfgs:[1,7,16] grid renders all three per checkpoint (a 3x blowup never
+            # intended here; this probe wants one cell per checkpoint/length, not a cfg sweep).
+            # ptm (post-trained) native operating point is cfg1 (higher cfg "cooks" PT output);
+            # DoRA-on-base operating point is cfg7 (established convention, matches the local
+            # genre-fusion sweep's README).
+            extra = "--pt-medium --only-cfgs 1" if is_ptm else "--only-cfgs 7"
             lines.append(f"{label} ep{epoch} {ckpt} {frames} {extra}".strip())
 
     os.makedirs(a.out, exist_ok=True)

@@ -18,5 +18,8 @@
     {"id": "gf_15", "text": "aggressive psychedelic space rock, acid techno bass, thrash metal drums, 1996 goa trance lead", "seed": 2011},
     {"id": "gf_ref_goa", "text": "1996 goa trance, psychedelic, hypnotic, melodic", "seed": 2012},
     {"id": "gf_ref_avp", "text": "bittersweet eclectic house, aavepyora style", "seed": 2013}
-  ]
+  ],
+  "cfgs": [1.0, 7.0, 16.0],
+  "steps": 24,
+  "duration": 20.0
 }
