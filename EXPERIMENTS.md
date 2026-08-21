@@ -179,6 +179,57 @@ claim, including ones already in this file, against both corrections.
   place a systematic bug could still hide — which is exactly what this entry's AdamW-vs-Fusion
   contrast tests, at matched everything, for the first time.
 
+### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **RUNNING (2026-08-22, 21447642 fresh / 21447644 warm)**
+
+**Trigger (Kim direct, 2026-08-22, listening to `renders/length_variant/` on the drive as it pulled):**
+the 5e-5 clips beat 1e-4, 2e-4 shows degradation, and — the observation that actually motivated
+this — where 1e-4 and especially 2e-4 *"melt"* at cfg16/weight2, **5e-5 takes the same push and
+stays musical**, "which speaks to me like some deeper very healthy structure." Robustness under
+guidance overdrive as a proxy for a healthier optimum is a NEW selection criterion for us; every
+prior lr call was made on unpushed clips.
+
+**The run being replicated:** `runs/adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5`, arm 7 of
+`efp_adamw_bf16_sweep.sbatch` (2026-07-24, the Zach-prompted AdamW-vs-Fusion A/B). Its real
+settings, read off run_meta + sbatch + the ckpt itself — **four of them differ from the dorlor
+lane and would have been silently overwritten by a "same settings" copy**:
+| | replicated run | dorlor lane (A11) |
+|---|---|---|
+| alpha | **128** | 45 |
+| lr schedule | **constant, no warmup** (ckpt `lr_schedulers: []`) | WSD, knee 25% |
+| crop | **T512 beat-aware** | T256 |
+| goa caption tiers | **0,0,1** (longform t3 only) | 0.6,0.3,0.1 |
+| effective batch | **4** (bs4 on ONE GCD — that sweep ran 8 independent single-GCD arms off `SLURM_PROCID`, it was never DDP) | 128 |
+
+**Two arms, `lumi/sbatch/lr5e5_allsets.sbatch`:**
+- **21447642 fresh** — the recipe re-learned on the full mix.
+- **21447644 warm** (`WARM=liked`) — *continues the actual model Kim heard*
+  (`epoch=9-step=13500.ckpt`, Lightning 2.6.5, 687 dora-rows tensors, 1 optimizer state).
+  Uses `--warm_start_ckpt`, **not** `--resume_ckpt`: resume also restores loop state, and those
+  counters were written against a 1350-step goa-only epoch while this run is ~2700 steps/epoch
+  over a different corpus. Warm-start keeps adapter weights + AdamW moments, drops only the
+  epoch/shuffle counters — so `--epochs` is the ADDITIONAL count there.
+
+**Mix** (per-source sidecars + per-source caption tiers): goa `latents_sa3` 5400 w1.0 `0,0,1`;
+bigset `latents_goa_bigset` 12524 **w0.18** `0,0,1`; avpaug `latents_avp` w1.0 `0,0.9,0.1`;
+suomi `suomisoundi_latents` 1261 w1.0 `0.25,0.45,0.30`. Bigset is down-weighted to ~20% of draws
+(natural share 58%) — Kim: *"it's got mp3 sources more than the others"* — and rides t3 because
+its granite tier measured NOT GROUNDED (folder-name derived, 1.24× rare-term recall vs chance).
+`AUG=1` appends `latents_goa_aug8` (3941 bungee crops); **live augmentation is NOT available on
+this path** — `--augment` is live-encode only, explicitly inert with `--encoded_dir`.
+
+**Recorded deviation:** effective batch **8**, not 4 — single-GCD eff-4 is ~110 min/epoch on this
+mix = 88 h to ep48, outside the allocation. BS=1 × 8 ranks is the nearest reachable regime (BS=4
+× 8 = eff 32 would be a different experiment). Written into `run_meta.json`, not left to be
+rediscovered.
+
+**KILL / READ CRITERION.** The liked clip is ep9 of 10 over 5400 crops ≈ **54k crops seen**; ep48
+of this mix is ~1.04M ≈ **19×**. "More of the recipe" and "19× the dose" are not safely the same
+thing, so the ladder checkpoints every **2** epochs (24 rungs) and rung 1 sits near the original
+dose — it brackets the auditioned point **from below** instead of starting past it. If the
+robustness-under-push property is a *lightly-trained* property, the early rungs will show it and
+the deep end will have lost it. Audition at cfg16/w2, not just cfg7 — that is the property being
+selected for.
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**
