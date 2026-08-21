@@ -107,6 +107,19 @@ import soundfile as sf
 # mir/src/tools/augment_tracks.py exactly, per Kim's 2026-07-23 ruling) ────────
 PITCH_SEMITONES = [-2, -1, 1, 2]
 TEMPO_PCT = [-10, -5, 5, 10]
+# CORPUS-DEPENDENT (made a flag 2026-08-22). 155 is a GOA/PSY ceiling: it keeps tempo-up
+# variants from running away on already-fast material. On a corpus whose BPM is at or above the
+# cap it does something much worse than nothing — every tempo-up target collapses onto the cap,
+# dedupes against itself, and the variants are SKIPPED rather than rendered, so the set silently
+# comes out pitch-only with no error. Suomisoundi sits near/above 155; AVP (~66 BPM madmom) never
+# reaches it. Pass --bpm-cap per corpus, or 0 to disable capping entirely.
+# WORSE THAN DROPPING — THE CAP CAN INVERT A VARIANT AND KEEP ITS NAME. At bpm=160 the +5% target
+# is round(168) -> capped to 155 -> speed 155/160 = 0.97, i.e. a tempo DECREASE still emitted as
+# "tempo+5" in the filename and the manifest. Verified 2026-08-22:
+#   variants_for(160, cap=155) -> [pitch-2,-1,+1,+2, tempo-10, tempo-5, tempo+5]   (7, +10 gone)
+#   variants_for(160, cap=0)   -> [... tempo-10, tempo-5, tempo+5, tempo+10]       (8, all real)
+# So on any corpus whose BPM approaches the cap, set --bpm-cap explicitly (0 to disable) or the
+# augmented set is both smaller AND mislabelled, with nothing in the logs to say so.
 BPM_CAP = 155.0
 BPM_KEYS = ["bpm_madmom", "bpm_essentia", "bpm", "tempo"]
 
@@ -137,16 +150,19 @@ def pick_bpm(d: dict):
     return None
 
 
-def variants_for(bpm):
+def variants_for(bpm, bpm_cap=None):
     """Return [(variant_name, semitones, speed)] for the 8 v1 variants (4 fewer —
-    pitch-only — if bpm is unusable). Tempo targets are BPM-capped at 155 and deduped
-    against the source BPM and each other by (semitones, target_bpm)."""
+    pitch-only — if bpm is unusable). Tempo targets are BPM-capped (see BPM_CAP; pass
+    bpm_cap=0 to disable) and deduped against the source BPM and each other by
+    (semitones, target_bpm)."""
+    cap_v = BPM_CAP if bpm_cap is None else float(bpm_cap)
     out = [(f"pitch{s:+d}", s, 1.0) for s in PITCH_SEMITONES]
     if bpm is None:
         return out
 
     def cap(pct):
-        return min(round(bpm * (1.0 + pct / 100.0)), int(BPM_CAP))
+        t = round(bpm * (1.0 + pct / 100.0))
+        return t if cap_v <= 0 else min(t, int(cap_v))
 
     seen = {(0, round(bpm))}  # the untransformed source itself
     for pct in TEMPO_PCT:
@@ -317,6 +333,7 @@ def process_crop(json_path_str, out_dir_str, prefix_map, sample_n=None, stratify
 
 
 def main():
+    global BPM_CAP          # reassigned from --bpm-cap below; see the note there
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -343,9 +360,20 @@ def main():
         help="With --sample-n, guarantee >=1 pitch AND >=1 tempo variant per crop so every "
              "crop teaches both invariances (default on; --no-stratify = pure random pick).",
     )
+    ap.add_argument("--bpm-cap", "--bpm_cap", dest="bpm_cap", type=float, default=BPM_CAP,
+                    help=f"cap tempo-up targets at this BPM (default {BPM_CAP:g}, a GOA/PSY "
+                         "ceiling). 0 disables capping. On a corpus at or above the cap every "
+                         "tempo-up variant dedupes onto it and is SILENTLY SKIPPED — the set "
+                         "comes out pitch-only with no error, so set this per corpus.")
     ap.add_argument("--limit", type=int, default=None, help="Only process the first N crops (debug)")
     ap.add_argument("--dry-run", action="store_true", help="Print projected variant counts, render nothing")
     args = ap.parse_args()
+
+    # Thread the cap to the WORKERS via the module global: variants_for() reads BPM_CAP at call
+    # time, and ProcessPoolExecutor forks on Linux, so setting it here (before the pool is built)
+    # reaches every worker. Passing it as an argument instead would only fix the main process.
+    BPM_CAP = float(args.bpm_cap)
+    print(f"[augment] bpm_cap={BPM_CAP:g}" + (" (DISABLED)" if BPM_CAP <= 0 else ""), flush=True)
 
     if not args.dry_run:
         _startup_check_bungee()
