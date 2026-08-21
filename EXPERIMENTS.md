@@ -310,9 +310,20 @@ claim, including ones already in this file, against both corrections.
   `--skip-sanity` used deliberately (DSP crest/flatness substituted, not a bypass) — future soup-render
   scripts should save z0 too.
 
-### C3 — Post-hoc power-EMA logging in train_lora (EDM2 §3) — **PLANNED (small)**
+### C3 — Post-hoc power-EMA logging in train_lora (EDM2 §3) — **PLANNED (small); LIVE TEST READY (C, 08-21)**
 - Two power-function EMAs snapshotted during training reconstruct ANY EMA length post hoc; trivial for
   adapters. Makes every future run fully souprable; supersedes hand profiles.
+- **Live test of the same hypothesis, using A10's accidental 8-replica ensembles rather than
+  waiting on the logging feature:** G's ear-driven quality table found `wfleet_suomi_a128` has a
+  real whitening/disintegration signature (HF ratio 0.23, ~10× the clean controls) while `fullft_*`
+  scores clean — C's mechanistic read: the clean rows are EMA-rendered, the broken rows are
+  unaveraged single-replica terminal checkpoints from a constant-LR random walk (A1's finding,
+  now showing up by ear). `replica_soup.py` + `replica_soup_render.sbatch` (`6c40038`) built:
+  per suomi arm, mean-of-8-replicas @ ep19 + an ep11-19 replica×temporal grand mean, rendered on
+  the same 6 prompts as G's cells for direct A/B. Answers "does replica-averaging cancel the
+  disintegration" using data nobody planned to buy. Ready pending one rsync + Kim's submit; score
+  with the same pipeline when it lands — full quartet: single-replica / replica-soup / grand-mean
+  / fullft-EMA, one page. Zero further compute planned on `a128` outside this test (agreed, C+G).
 
 ### C4 — cfg-dependent optimal soup/EMA length — **POTENTIAL (test on C1's boards)**
 - EDM2 Fig 6: optimal EMA ~13 % no-CFG vs ~2 % at cfg 1.4 → Kim's cfg7 vs cfg16 cells plausibly want
