@@ -256,6 +256,15 @@ claim, including ones already in this file, against both corrections.
   confirm per job: LOCAL_RANK 0..7 once each, UN-versioned ckpts, steps/epoch ÷8.
 - ⚠️ The suomi T512 twins 21428358/59 were submitted BEFORE the conversion rsync → they are
   Pattern-2 too (= 8 replicas at T512, anchor-clean probs). Same interpretation rule applies.
+- **INVENTORY (F via ssh, 11:01 — channel post has the full table):** the four suomi wfleet
+  arms COMPLETED with FULL 8-replica ladders to ep19 (118-138G each; 516G total) = the first
+  2-D soup material (replica axis × temporal axis; C3 meets C1). avp_s1 partial to ep9 (on-curve
+  for Pattern-2 pace, not early-stop); avp_s2/biggoa/mix3 wfleet + fullft biggoa/mix3 = zero or
+  ep1-only (cancelled pre-first-write). **CORRECTION to the 8-replica reading for fullft:** version
+  counts show fullft arms ran as ~ONE effective replica (mostly 1 version/epoch vs wfleet's 7-8) —
+  7 of 8 fullft replicas died silently early (likely load/first-step OOM-class), so fullft
+  Pattern-2 arms WERE 1-live-7-idle; the DoRA wfleet arms were true 8-replica. Suomi dirs need
+  SLIMMING on LUMI before the purge-deadline pull (G's ops lane).
 - **REVISED DECISION (Kim, ~11:00): cancel-soup-restart.** 8×-slower epoch pace beats keeping
   them: all Pattern-2 arms scancelled EXCEPT fullft_avpaug 21422923 (ep15/19, ~2.5 h from a
   complete 8-replica ladder + it's the B9 backbone source). Every cancelled dir keeps its -vN
