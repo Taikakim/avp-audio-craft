@@ -16,6 +16,7 @@
     {"id": "gf_13", "text": "psychedelic acid techno, thrash metal aggression, synth arpeggios, melodic goa trance hook", "seed": 2009},
     {"id": "gf_14", "text": "1996 goa trance, acid techno, psychedelic space rock, thrash metal, all at once, aggressive", "seed": 2010},
     {"id": "gf_15", "text": "aggressive psychedelic space rock, acid techno bass, thrash metal drums, 1996 goa trance lead", "seed": 2011},
-    {"id": "gf_ref", "text": "1996 goa trance, psychedelic, hypnotic, melodic", "seed": 2012}
+    {"id": "gf_ref_goa", "text": "1996 goa trance, psychedelic, hypnotic, melodic", "seed": 2012},
+    {"id": "gf_ref_avp", "text": "bittersweet eclectic house, aavepyora style", "seed": 2013}
   ]
 }
