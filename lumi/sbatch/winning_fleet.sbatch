@@ -67,6 +67,10 @@ case "${DATASET}" in
           PROBS="0,0,1;0,0.9,0.1;0,0.9,0.1" ;;
   *) echo "[wfleet] FATAL: unknown DATASET ${DATASET}"; exit 1 ;;
 esac
+# PROBS_OVERRIDE (2026-08-21, W's audit): suomi's registry tuple 0,0.9,0.1 was DRIFT from the
+# ratified 0.25/0.45/0.30 (Kim 08-18) — a ZERO t1 share never trains the corpus-anchor token.
+# Override without editing the registry: PROBS_OVERRIDE="0.25,0.45,0.30" sbatch ...
+PROBS="${PROBS_OVERRIDE:-${PROBS}}"
 
 [ -n "${SIF}" ] || { echo "[wfleet] FATAL: no multitorch image"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[wfleet] FATAL: ${VENV} missing"; exit 1; }
