@@ -12,7 +12,13 @@ import html
 import json
 import os
 import re
+import sys
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_evals import redact   # shared public-page scrub gate (F's patrol note 2026-08-21):
+                                 # every string rendered into public HTML passes through it,
+                                 # so cleanliness is enforced, not luck
 
 WORK = "/home/kim/Projects/SAO/eval/top100_work/top100.json"
 OUT = "/home/kim/evals_aac/top100.html"
@@ -52,8 +58,8 @@ def main():
             rel = e["path"][len(ROOT):] if e["path"].startswith(ROOT) else None
             if rel is None:
                 continue
-            c = parse_cell(e["path"])
-            clips.append({"r": e["rank"], "u": rel, "pq": round(e["pq"], 3),
+            c = {k: redact(v) for k, v in parse_cell(e["path"]).items()}
+            clips.append({"r": e["rank"], "u": redact(rel), "pq": round(e["pq"], 3),
                           "dur": round(e["dur"]), **c})
         data["classes"].append({"id": lbl, "title": CLASS_TITLES[lbl][0],
                                 "sub": CLASS_TITLES[lbl][1], "clips": clips,
