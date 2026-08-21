@@ -142,9 +142,14 @@ DESC = {
     "frames_T": "Latent context length in frames (T). ×0.0928 s = seconds. Optimum ~1024; T4096 (long) is worse.",
     "batch": "PER-RANK training batch size. Marginal 'bigger better' is a confound; within a single "
              "dataset the spread is ~0.1 PQ (8→7.57, 4→7.51, 1→7.46) and n.s. at run level.",
-    "effective_batch": "batch × ddp_world_size × accumulate_grad_batches — the batch the optimizer "
-                       "actually sees. Recorded for the 42% of runs whose sbatch was parsed; blank "
-                       "elsewhere. The plain `batch` column is PER-RANK and understates multi-GPU runs.",
+    "effective_batch": "batch × ddp_world_size × accumulate_grad_batches. ⚠ TRUST WITH CARE "
+                       "(2026-08-21, C's DDP incident): this assumes the ranks form ONE DDP group. "
+                       "The Pattern-2 fleet arms did NOT — all 8 ranks ran as INDEPENDENT REPLICAS "
+                       "(eight LOCAL_RANK:0, -vN versioned ckpts, full dataset per rank with no ÷8), "
+                       "so each replica's true optimizer batch is the PER-RANK `batch` and this column "
+                       "is 8× overstated for them. A run dir from those arms is an 8-seed ensemble, "
+                       "not one model. Verify per job: LOCAL_RANK 0..7 once each, UN-versioned ckpts, "
+                       "steps/epoch ÷8. Recorded for ~42% of runs; blank elsewhere.",
     "caption_probs": "Caption-tier sampling probabilities (T1,T2,T3) the run trained with. Blank where "
                      "not recorded in the launch script.",
     "params_source": "Where this row's hyperparameters came from: `sbatch` = parsed from the actual "
