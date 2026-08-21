@@ -48,28 +48,29 @@ SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multito
 VENV=${TRAIN_VENV:-${SCRATCH}/sa3_train_venv_mt}
 
 FT_CKPT=${FT_CKPT:?set FT_CKPT=<path to full-FT fat ckpt on scratch>}
+echo "[ftstack] CONFIG FT_CKPT=${FT_CKPT} SEED=${SEED:-1} node=$(hostname) $(date -Is)"
 SEED=${SEED:-1}
 RUNROOT=${SCRATCH}/runs/ftstack_heads
 
 [ -f "${FT_CKPT}" ] || { echo "[ftstack] FATAL: FT_CKPT not found: ${FT_CKPT}"; exit 1; }
 [ -f "${VENV}/bin/activate" ] || { echo "[ftstack] FATAL: venv missing"; exit 1; }
 [ -d "${SCRATCH}/latents_sa3_melody" ] || { echo "[ftstack] FATAL: latents_sa3_melody missing — rsync melody8 streams"; exit 1; }
-# LATENTS FROM FLASH (2026-08-21, F's watch): scratch latents_sa3 lost its base .npy
-# (tarred Jul 14 during cleanup — only npz+json remain there); flash carries the full
-# staged set (npy+json+npz) and the dorlor goa arms train from it concurrently.
+# LATENTS FROM FLASH (2026-08-21): scratch latents_sa3 lost its base .npy (Jul-14 tar);
+# flash carries the full staged set. PREFLIGHT BY SINGLE-FILE STAT, NOT GLOB: a 5400-file
+# glob on flash under concurrent training load took >20 s from a login node (F measured)
+# and wedged attempt 3 in the preflight — three stats give the same one-key guarantee
+# for three metadata ops. (And the banner below now prints FIRST, so "counting" and
+# "wedged" stay distinguishable — the 8910bb4 lesson, reopened once, closed again.)
 LATDIR=${FLASH}/latents_sa3
-NPY=$(ls ${LATDIR}/*.npy 2>/dev/null | wc -l)
-NPZ=$(ls ${LATDIR}/*.TIMESERIES.npz 2>/dev/null | wc -l)
-NJ=$(ls ${LATDIR}/*.json 2>/dev/null | wc -l)
-[ "${NPY}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NPY} base latents in ${LATDIR}"; exit 1; }
-[ "${NPZ}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NPZ} TIMESERIES npz in ${LATDIR} — cp from scratch (they exist there)"; exit 1; }
-[ "${NJ}" -gt 5000 ] || { echo "[ftstack] FATAL: only ${NJ} json metas in ${LATDIR}"; exit 1; }
+echo "[ftstack] preflight: stat-probing ${LATDIR} (known stem 000003)"
+[ -f "${LATDIR}/000003.npy" ] || { echo "[ftstack] FATAL: base latents missing in ${LATDIR}"; exit 1; }
+[ -f "${LATDIR}/000003.TIMESERIES.npz" ] || { echo "[ftstack] FATAL: TIMESERIES npz missing in ${LATDIR}"; exit 1; }
+[ -f "${LATDIR}/000003.json" ] || { echo "[ftstack] FATAL: json metas missing in ${LATDIR}"; exit 1; }
 grep -q "base-state-ckpt" ${CODE}/control/sa3_control/train.py \
   || { echo "[ftstack] FATAL: control/ code stale (no --base-state-ckpt)"; exit 1; }
 [ -f "${CODE}/stable-audio-3/scripts/latch/train_latch.py" ] \
   || { echo "[ftstack] FATAL: latch trainer not synced"; exit 1; }
 
-echo "[ftstack] CONFIG FT_CKPT=${FT_CKPT} SEED=${SEED} node=$(hostname) $(date -Is)"
 echo "[ftstack] preflight passed; launching srun (8 single-GCD arms)"
 mkdir -p "${RUNROOT}"
 cat > "${RUNROOT}/run_meta.json" <<META
