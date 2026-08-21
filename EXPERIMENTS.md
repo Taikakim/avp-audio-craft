@@ -171,7 +171,12 @@ claim, including ones already in this file, against both corrections.
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
-### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING (resubmitted 21428085-90 + 2 ablation arms; fix verified on LUMI code), C owns**
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING: 3 torchrun arms — 21430167 all, 21430168 melody, 21430169 rhythm — C owns**
+- **Final submit (~11:15, third batch):** batches 1-2 (21427376-83, 21428085-90) died at preflight
+  (missing ctrl rsync; stale-empty-flash staging bug) — zero GPUh lost. This batch = torchrun
+  (real 8-way DDP, pattern verified on the wfleet restarts) + stage-if-empty + the triple
+  freeze-out fix. Kim trimmed to the 3 priority packs (dynamics/stems/spectral + ablation arms
+  cut for budget; submit lines remain in the sbatch header).
 - **08-21 ~10:40 resubmit:** ctrl dirs verified on scratch, fixed code verified on LUMI by remote
   grep (train_lora.py:2 / diffusion.py:1 modular refs = local parity). New jobs: 21428085 all,
   086 melody, 087 rhythm, 088 dynamics, 089 stems, 090 spectral (+ BLOCKS=all and RANK=64 arms
@@ -223,7 +228,7 @@ claim, including ones already in this file, against both corrections.
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
-### B8 — Suomisoundi T512 anchor-clean twins + caption-probs drift postmortem (W+C, 2026-08-21) — **21428358/59 CANCELLED in A10's revised decision (were pre-conversion 8-replica DoRA, real ensemble material — kept as soup input, not as a live run); torchrun clean resubmit pending, see A10**
+### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
   trains. F confirmed the drifted probs LIVE in the four running T1024 arms' own logs (a45 s1/s2 +
@@ -234,7 +239,7 @@ claim, including ones already in this file, against both corrections.
   OPEN. Render probe of the confound: fleet_quick_render's suomi_anchor prompt (the untrained t1)
   vs suomi_modal/random — weak anchor response on the T1024 arms = the confound made audible.
 
-### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **READY TO SUBMIT (Kim direct 2026-08-21)**
+### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **RUNNING: 21430195 (backbone = fullft_avpaug ep15-v1, EMA weights)**
 - Kim: "take our best full finetune, and train our FiLM, melody and LATCH heads with best known
   values and Fusion on top of that instead of the base model." One node, 8 single-GCD arms
   (`lumi/sbatch/ftstack_heads.sbatch`, FT_CKPT knob): r0 Head-B FiLM on the full-FT EMA weights
