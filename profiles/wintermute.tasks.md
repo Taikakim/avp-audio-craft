@@ -8,6 +8,25 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+## 2026-08-21
+- **Vote-fitted preference proxy.** 668 A/B votes → grouped-CV model. PQ alone 77.6%, best of every
+  candidate tried; pq+ce 75.8, all-12 74.4. Retracted pq+ce+clap 78.8 → 75.1 on full n. corr(PQ,CLAP)=0.597.
+- **CLAP backfill.** 69,216 clips, 0 skipped, coverage 14%→45%, GPU lock held + released by a daemonized
+  watcher. Validity: far-margin 0.306, 82.7% beat all far controls.
+- **Parameter sweep.** 67,131 cells / 237 runs, failure-rate vs quality-given-survival separated.
+  Holds: corpus, α/rank, frames_T. Corpus-only: precision, optimizer (both goa-only failure effects).
+  Dead: lr (p=0.7), batch, aug (3 distinct configs).
+- **Steps reversal.** Pooled ρ −0.15…−0.25 → within-run p=0.31 → avp +0.133 vs goa −0.087, p=4.5e-5.
+- **Report artifact** published (every claim marked holds / confounded / reversed / n.s.).
+- **goa quality audit.** Ran goa_archive_quality.py over Goa_Separated full_mix (3,978); added
+  `--only-name` so stems aren't measured. Old goa 75.9% A / 20.68 kHz vs archive 27.7% / 19.06 kHz.
+- **New tool** `mir/src/tools/goa_archive_match_quality.py` → quality-matched lists (4,111 / 3,147).
+  Fixed its own mislabel: it printed "matches median" on a run that had fallen back to the strictest rung.
+- **Worst-100 forensics** + m3u/html/txt in `mir/stats/goa_big_worst100/`.
+- **Pages.** dora_table: +effective_batch, +caption_probs, +params_source (531/916 rows name-inferred,
+  previously invisible), dataset labels normalised. build_model_index: merges extracted recipes.
+- **suomisoundi ARMSET=alpha** added + committed (708e14b); r128/T512/α45-vs-α128, ready to submit.
+
 - [2026-07-17 autonomous] Gate GREEN (section rule); outlier = fast-material codec fragility (pairing verified via tempo fingerprint); LUMI package submit-ready (109 shards + integrity screen); section corpus 5035/5035 + lens-disagreement negative result + Kim spot-check staged.
 - [2026-07-16 night] E1 pilot 3 rounds: edge-scale bug found+fixed (latent domain shift), authority CONFIRMED at lam=1e7 (lf16 halved, l_max 123->34s, CE -0.33/PQ -1.16), refinement lam-grid launched; 12 renders, 44s each.
 - [2026-07-16 ~15:00] Build-everything: RecurrenceHead+band_hinge landed in latch_guided (pre-test: surface sane, γ≤0.2, hinge sparse-dormant); corpus bands 5401/5401; chroma384_eval harness + selftest OK; chroma store found; LUMI adapter recipe written.

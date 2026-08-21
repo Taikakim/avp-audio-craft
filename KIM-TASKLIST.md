@@ -17,6 +17,50 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### 🔁 RSYNC one file: train_lora.py (ablation-meter fix) + B7 job note (C, 2026-08-21)
+The 8 mirctrl arms you submitted (21427376-83) carry a small bug in the SELF-REPORTING meter only
+(it skips with a logged KeyError; training itself is unaffected). Fixed + smoke-verified locally
+(step-1 known-answer: gain exactly 0.0000 at zero-init). One line, then any arm still PENDING picks
+it up automatically; RUNNING arms keep training fine but their report lacks the gain trajectory:
+`rsync -avR -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/SAO/./stable-audio-3/scripts/train_lora.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
+Optional: `squeue --me -n mirctrl` — if some arms already RUN, consider scancel+resubmit ONLY for
+the two ablation arms (21427382/83, lowest priority) to get them the meter.
+
+### 🚀 SUBMIT: suomisoundi second attempt, ready to go (W, 2026-08-21)
+The first four arms all rendered degraded. Command is ready and committed (708e14b):
+```
+ARMSET=alpha FRAMES=512 EPOCHS=40 CKEVERY=2 sbatch lumi/sbatch/suomisoundi_dora_2x4gpu.sbatch
+```
+One 8-GPU node, two 4-GPU arms, ~overnight. Changes exactly the two things the 67k-cell sweep says
+were wrong with the failed set: **T=256 → T=512** (T256 is the worst frame length measured — PQ 6.48
+vs 7.32 at T512 — and all four failed arms used it; the latents are (256,4096) so this is a crop
+param, no re-encode) and **alpha=rank → α45 at rank 128** (α45@r128 scores 7.581 at 1.2% degraded vs
+7.256/7.4% at α=rank). Both arms share one lr because lr is n.s. at run level (p=0.7), so alpha is the
+only variable — if α45 wins, that transfers the corpus-wide result to suomisoundi and becomes the
+default. Still no EMA (the trainer force-disables it for DoRA; unchanged, and not what this tests).
+
+### 🎧 DECIDE: quality-matched big-goa file list — which variant, and is the threshold right? (W, 2026-08-21)
+Your ask, done. Measured both corpora the same way (spectral cutoff, not header bitrate):
+**old goa 75.9% near-lossless / mean 20.68 kHz vs the archive 27.7% / 19.06 kHz** — a much bigger gap
+than the model results implied. Lists at `mir/stats/goa_big_quality_matched/` (**4,111 files**, cutoff
+≥20.0 kHz, duplicates already dropped, `master_variant` kept per your directive) and
+`..._matched_noverlap/` (**3,147** — same but excluding the 2,669 tracks already in old goa; use this one
+if it is meant as NEW data rather than a replacement corpus). Two calls for you: (a) which variant, and
+(b) the mean matches but the SHAPE does not — old goa is bimodal (mostly excellent + a lossy tail), the
+filtered set is bunched just above threshold so its median is *lower* (20.68 vs 21.29). Matching the shape
+exactly would mean discarding good files to reproduce old goa's bad ones; say the word if you want that.
+Ladder is in the tool output — ≥19.5k keeps 5,044, ≥20.5k keeps 2,326.
+
+### 👂 CURIOSITY ANSWERED: the worst 100 archive tracks — you were right about mp3 (W, 2026-08-21)
+`mir/stats/goa_big_worst100/` — `worst100.m3u` (open in any player, audition straight through),
+`worst100.html` (clickable file:// links + per-track stats; **open it locally**, the links are dead from
+a hosted page), `worst100.txt`. **76 of 100 declare ≥192 kbps and 14 declare ≥256, yet their content stops
+between 4.7 and 11.9 kHz.** A clean 192k encode reaches ~18–19 kHz; even 128k reaches ~16. So the source was
+already destroyed before this encode — transcodes, analog rips, or stream captures re-encoded at a
+respectable bitrate. Spread over 90 distinct albums (not one bad batch), concentrated in the 1994–1999
+collections. The bottom few at 4.7 kHz may include genuinely lo-fi material rather than bad sourcing —
+that part needs an ear, my measure can't tell them apart.
+
 ### 🎧 LISTEN: Top-100 clips per frame length, PQ-ranked (C, 2026-08-21)
 Your bedtime ask, live: https://aavepyora.online/files/evals/top100.html (needs G's morning sync of
 `~/evals_aac` before the link resolves publicly; local file is ready now). All 93k scored clips,
