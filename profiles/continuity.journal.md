@@ -2232,3 +2232,26 @@ plumbing-tracing failed — count the params before tracing the calls; (b) 16-di
 losses across control variants is the unambiguous 'inlet dead' signature, distinct from
 'small effect'; (c) pkill -f bit me TWICE more (self-matching the wrapper shell) — the
 bash-sequencer memory exists for a reason, kill by exact pid.
+
+### 2026-08-21 (afternoon) — the day the fleet's DDP turned out to be fiction, and what got built from the rubble
+
+Full chain in WORKLOG/A10; what belongs here is the shape. The Pattern-2 discovery came from a
+RENDER complaint ("evals sound bad") -> load-path probe (cleared) -> step arithmetic (8 replicas)
+-> F's version-count inventory (which then CORRECTED me: fullft arms were 1-live-7-idle, only
+the DoRA arms were true ensembles — the correction propagated back per W's grep-the-document
+rule after F caught A10 internally inconsistent). Every layer of today's diagnosis was somebody
+double-checking somebody: G's numbers on Kim's ears, my probe on my own base-model theory (wrong,
+retracted within minutes because the probe was cheap), W's v2 on his own v1 corpus audit, F's
+manifest audit on my "renders done" relay. The fleet's error-correction loop is the real asset.
+
+Technical yields beyond the incident: WSD scheduler (AdamW's first-ever schedule here; the
+known-answer test caught nothing but the WORLD_SIZE horizon bug it forced me to look at would
+have silently made every schedule 8x too long); replica_soup (2-D soup material nobody budgeted);
+the B9 rc-laundering lesson (sed pipes + srun rc=0 = 8 failed arms reporting COMPLETED in 8 min);
+the flash staging stampede (N jobs cp-ing the same dir; locks now); stage-if-EMPTY.
+
+Kim's instinct notes, worth remembering: he smelled the 8x slowdown instantly from the epoch
+math; he asked "should we scale LR too" at exactly the right moment (answer: probe, don't gamble
+the factorial); and "I recall we ran another test already, not sure if it got buried" was
+CORRECT — the k-grid wasn't buried, but its tgate arm's renders were, which F's audit had just
+surfaced. The lesson generalizes: when Kim half-remembers something, grep before answering.
