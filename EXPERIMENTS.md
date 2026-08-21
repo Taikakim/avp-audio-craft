@@ -256,6 +256,15 @@ claim, including ones already in this file, against both corrections.
   confirm per job: LOCAL_RANK 0..7 once each, UN-versioned ckpts, steps/epoch ÷8.
 - ⚠️ The suomi T512 twins 21428358/59 were submitted BEFORE the conversion rsync → they are
   Pattern-2 too (= 8 replicas at T512, anchor-clean probs). Same interpretation rule applies.
+- **REVISED DECISION (Kim, ~11:00): cancel-soup-restart.** 8×-slower epoch pace beats keeping
+  them: all Pattern-2 arms scancelled EXCEPT fullft_avpaug 21422923 (ep15/19, ~2.5 h from a
+  complete 8-replica ladder + it's the B9 backbone source). Every cancelled dir keeps its -vN
+  replica ladder for soups (C3 material). TORCHRUN RESTARTS: 21429629 wfleet avp s1, 21429630
+  wfleet mix3 s1, 21429631 wfleet suomi a45 s1 **anchor-clean** (PROBS_OVERRIDE), + suomi T512
+  s1 clean + fullft mix3 (IDs pending). True-DDP pace: suomi ~2.5 h, avp ~4 h, mix3 ~7 h for
+  all 20 epochs — finishable inside the allocation. #68 big-FT (fullft_bigset.sbatch) FLAGGED:
+  same Pattern-2 header → the bigset full-FT is presumed 8-replica as well. lumi-ops skill now
+  carries the hardened authoring rule + 3-check verification.
 
 ## C. Soups, EMA, checkpoint selection
 
