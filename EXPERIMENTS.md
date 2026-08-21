@@ -132,7 +132,7 @@ claim, including ones already in this file, against both corrections.
 - **Gate:** constant-LR AdamW ⇒ judge by SOUPS/centroid (C1/C2 machinery) + trajectory stats + Kim's
   ears; per-arm DDP verify (LOCAL_RANK 0..7). Links: A1 (walk-vs-drift predicts these diffuse), C1.
 
-### A11 — The "mystified why so bad" A/B²: DoRA/LoRA × AdamW-WSD/braked-Fusion — **RUNNING: 16 arms + 2 LR probes across 4 corpora (Kim direct 2026-08-21)**
+### A11 — The "mystified why so bad" A/B²: DoRA/LoRA × AdamW-WSD/braked-Fusion — **TRAINING COMPLETE (16:13): all 16 arms + 2 LR probes COMPLETED 0:0 — renders/analysis next**
 - **EXTENDED same hour (Kim: "oozles of hours, one day left"):** the same A/B² on suomi
   (21431938-41, ratified anchor probs — the first-ever suomi runs with correct captions AND real
   DDP AND a schedule), avpaug (21431942-45), old goa (21431946-49), atop bigset (21431784-87).
@@ -292,7 +292,7 @@ claim, including ones already in this file, against both corrections.
   OPEN. Render probe of the confound: fleet_quick_render's suomi_anchor prompt (the untrained t1)
   vs suomi_modal/random — weak anchor response on the T1024 arms = the confound made audible.
 
-### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **RUNNING VERIFIED: 21435417, attempt SEVEN (backbone = fullft_avpaug ep19 EMA)**
+### B9 — Control stack on the FULL-FT backbone (FiLM/Head-B + melody f0 + LatCH, best values + Fusion) — **COMPLETE (16:13): all 8 arms finished 0:0 — Head-B FT-vs-base pair + 6 best-recipe heads trained; readout = val summaries + melody pilot eval**
 - **All 8 arms healthy 14:20** (F's watch): Head-B pair r0/r1 = base-state cov 100.0% + melody_dir
   2649/5400; latch arms printing the correct source-track val split (808 crops / 401 held-out
   tracks — matches D3's local numbers exactly); real compute (53 min AveCPU, 1.5 it/s, loss moving).
@@ -357,7 +357,7 @@ claim, including ones already in this file, against both corrections.
   checkpoint trained under the old sbatch. lumi-ops skill now carries the hardened authoring rule
   + 3-check verification.
 
-### B10 — Subspace-weighted trainer at K=24, four corpora (Kim direct 2026-08-21) — **suomi+avpaug COMPLETE (8 unversioned ckpts to ep63, verified true DDP); biggoa/bigmix running**
+### B10 — Subspace-weighted trainer at K=24, four corpora (Kim direct 2026-08-21) — **suomi+avpaug+2 more COMPLETE or near (16:13: 2/4 still running: biggoa/bigmix)**
 - Continues the v3sel lane past its K=12 max: same 15-dim whitened-CSP melody basis, K
   (=--subspace-loss-weight) doubled to 24. Arms: avpaug / suomi (ratified probs) / biggoa /
   **bigmix** (bigset+old-goa — FLAC upweight by inclusion). Lane conventions kept so the K axis
