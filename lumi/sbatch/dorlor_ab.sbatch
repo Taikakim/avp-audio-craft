@@ -129,7 +129,7 @@ OPTARGS=""
 if [ "${OPT}" = "adamw" ]; then
   OPTARGS="--lr_schedule wsd --lr_knee_epoch ${KNEE}"
 else
-  OPTARGS="--fusion-decay wsd --fusion-decay-start-frac $(python3 -c "print(${KNEE}/${EPOCHS})") --fusion-snr grad"
+  OPTARGS="--fusion-decay wsd --fusion-decay-start-frac $(python3 -c "print(${KNEE}/${EPOCHS})") --fusion-snr row"
 fi
 
 srun --nodes=1 --ntasks=1 --cpus-per-task=56 \
