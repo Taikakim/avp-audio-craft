@@ -304,6 +304,10 @@ def main():
     # --- melody_contour (Head B) args ---
     ap.add_argument("--melody-dir", default="/home/kim/Projects/latents_sa3_melody",
                     help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
+    ap.add_argument("--melody-vocab", type=int, default=9,
+                    help="melody_contour embedding vocab (default 9 = Head-B's 8 classes + "
+                         "reserved null). Morph-contour streams (build_morph_streams.py): "
+                         "L2=5, L3=15, L4=77 (0=undefined, symbols+1, +reserved).")
     ap.add_argument("--melody-dropout", type=float, default=0.1,
                     help="melody_contour mode: per-item probability of zeroing the MELODY control "
                          "tokens, drawn INDEPENDENTLY of text dropout (--cfg-dropout doubles as the "
@@ -472,8 +476,9 @@ def main():
             print(f"[control] attribute '{args.control_feature}' ({in_ch}ch, /{cond_enc.downsample}) "
                   f"-> time-aligned AttributeEncoder", flush=True)
     elif args.control_mode == "melody_contour":
-        cond_enc = MelodyContourEncoder(control_dim=args.control_dim).to(device=device, dtype=dtype)
-        print(f"[control] melody_contour (Head B): Embedding(9, {args.control_dim}) per-frame "
+        cond_enc = MelodyContourEncoder(control_dim=args.control_dim,
+                                        n_classes=args.melody_vocab).to(device=device, dtype=dtype)
+        print(f"[control] melody_contour (Head B): Embedding({args.melody_vocab}, {args.control_dim}) per-frame "
               f"lookup, melody-dropout {args.melody_dropout} (independent of text "
               f"cfg-dropout {args.cfg_dropout})", flush=True)
     elif args.control_mode == "metrical_position":
