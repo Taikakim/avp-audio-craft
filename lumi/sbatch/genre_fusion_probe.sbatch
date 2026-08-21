@@ -36,13 +36,13 @@ PROJ=/project/project_465003186
 SCRATCH=/scratch/project_465003186
 CODE=${PROJ}/code
 MODELS=${PROJ}/models
-SIF=${MTSIF:-$(ls -d /appl/local/laifs/containers/lumi-multitorch-*/lumi-multitorch-full-*.sif 2>/dev/null | sort | tail -1)}
+SIF=${PROJ}/containers/sa3.sif
 OUT=${OUT:-${SCRATCH}/genre_fusion_probe/renders}
 SDIR=${SDIR:-${SCRATCH}/genre_fusion_probe/shards}
 PROMPTS=${PROMPTS:-${CODE}/lumi/genre_fusion_prompts_lumi.json}
 mkdir -p "${OUT}"
 
-[ -n "${SIF}" ] || { echo "[gf-probe] FATAL: no lumi-multitorch-full image"; exit 1; }
+[ -f "${SIF}" ] || { echo "[gf-probe] FATAL: ${SIF} missing"; exit 1; }
 [ -f "${PROMPTS}" ] || { echo "[gf-probe] FATAL: ${PROMPTS} missing — rsync lumi/genre_fusion_prompts_lumi.json"; exit 1; }
 for R in 0 1 2 3 4 5 6 7; do
   [ -f "${SDIR}/shard_00${R}.txt" ] || { echo "[gf-probe] FATAL: ${SDIR}/shard_00${R}.txt missing — run genre_fusion_shards.py first"; exit 1; }

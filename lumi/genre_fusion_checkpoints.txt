@@ -4,7 +4,8 @@
 # 81 models). mid+last per run, EXCEPT the 3 goa families which use BEST-PQ instead of last --
 # goa runs degrade with training (spearman epoch->PQ -0.434, 81% declining), so "last" would
 # probe a near-worst checkpoint and misread it as a generalization failure. See run_meta note:
-# longctx last=ep7 -> best=ep1 (best is the FIRST checkpoint saved); subloss ep19 -> ep3;
+# longctx mid=ep4, last=ep1 (per W: ep1 is genuinely the LAST saved checkpoint for this run,
+# not ep7 -- ep7 never belongs in the render set); subloss ep19 -> ep3;
 # winning_goa ep19 -> ep10. Corpus mix: 8 avp, 3 goa, 1 avp_aug10 (vote-gated set is avp-heavy --
 # flagged by W, not actioned here; ask if biggoa/suomi coverage is wanted, comes from a
 # different, unvoted PQ-floor cut).
