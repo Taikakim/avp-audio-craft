@@ -61,6 +61,8 @@ grep -q "base-state-ckpt" ${CODE}/control/sa3_control/train.py \
 [ -f "${CODE}/stable-audio-3/scripts/latch/train_latch.py" ] \
   || { echo "[ftstack] FATAL: latch trainer not synced"; exit 1; }
 
+echo "[ftstack] CONFIG FT_CKPT=${FT_CKPT} SEED=${SEED} node=$(hostname) $(date -Is)"
+echo "[ftstack] preflight passed; launching srun (8 single-GCD arms)"
 mkdir -p "${RUNROOT}"
 cat > "${RUNROOT}/run_meta.json" <<META
 {"run": "ftstack_heads", "created": "$(date -Iseconds)", "slurm_job": "${SLURM_JOB_ID:-unset}",
@@ -75,6 +77,7 @@ srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -uo pipefail
 R=${SLURM_PROCID}
+echo "[r${R}] rank alive on $(hostname) $(date -Is)"
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186
 CODE=${PROJ}/code
 VENV='"${VENV}"'
