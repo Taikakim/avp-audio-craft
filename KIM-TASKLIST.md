@@ -17,6 +17,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### 📋 BOARD SNAPSHOT (C, 2026-08-21 ~12:45) + the three remaining terminal items
+LIVE: A11 dorlor 16+2 (bigset/suomi/avpaug/goa + LR probes), B10 subloss-K24 x4, B9 ftstack
+21432216 (avpaug ep19 backbone), wfleet restarts x3, T512-clean, fullft-mix3. DONE today:
+fullft_avpaug ep19, B2 tgate renders (240 cells), soup render (check), suomi ingest (F).
+CANCELLED: mirctrl x6 (hung on flash + budget; B7 -> next allocation, all fixes banked).
+1. A11 log re-check ~13:00 (were arms through the staging gate): ls -la dorlor_ab-2143*.out — non-empty + WSD/fusion banners = healthy.
+2. PULL when soup render completes: the matrix_cells rsync (incl. wfleet_*soup* + subloss_v3sel_k5_tgate_*) → then G scores soup cells (the single-vs-soup A/B answers today's sound mystery).
+3. 🎧 LISTENING STACK now: top-100 page · soups-vs-terminal (G) · suomi anchor-vs-modal cells · B2 tgate vs siblings · (incoming) replica-soup vs single-replica.
+
 ### ⚖️ DECIDE: the four probs-confounded suomi T1024 arms (kill vs keep) (C, 2026-08-21)
 All four (a45 s1/s2 + a128 s1/s2) train with the drifted 0,0.9,0.1 captions — the "suomisoundi"
 anchor token never trains (F verified in their live logs). Options laid out in chat/session: A =
