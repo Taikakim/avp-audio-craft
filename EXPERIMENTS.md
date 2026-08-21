@@ -22,12 +22,16 @@ position graph. State these up front in every external brief.
 **Standing methods that shape every entry:** lightweight tests first (Kim) · negative-result autopsy
 before a null is final (Kim) · disintegration gate + Kim's ears on any "works" claim · manifest-v2
 sidecars on every output · THREE-AUDIENCE standard on eval pages · **PQ alone is the best algorithmic
-proxy of Kim's ear** (W, 08-21, fit on 668 real A/B votes: PQ-alone 77.6%, every other metric added
-makes it WORSE except CLAP, which is coverage-limited) — CE has ~zero correlation with his judgment
-(08-19 finding), stop leaning on it · **per-checkpoint p-values across the campaign are
-pseudo-replicated** (810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset,
-alpha, rank, optimizer, frames_T survive; batch/lr/precision go non-significant. Read any
-parameter-table claim, including ones already in this file, against that.
+proxy of Kim's ear** (W, 08-21, fit on 668 real A/B votes: PQ-alone 77.6%; **CORRECTED same day** —
+adding CLAP was first reported to beat it (78.8%) but that sat on a mismatched n (321 vs the full 438
+pairs); on the full set PQ-alone wins outright (77.6% vs 75.1%), and corr(PQ,CLAP)=+0.60 means CLAP
+isn't an independent axis either. If a soup got re-weighted toward CLAP on the retracted claim, undo
+it. CLAP's real value is corroboration: independently reproduces PQ's parameter ranking and shows the
+goa deficit is fidelity, not conditioning) — CE has ~zero correlation with his judgment (08-19
+finding), stop leaning on it · **per-checkpoint p-values across the campaign are pseudo-replicated**
+(810 checkpoint rows come from ~265 actual runs) — at RUN level only dataset, alpha, rank, optimizer,
+frames_T survive; batch/lr/precision go non-significant (re-confirmed independently by W's 67k-cell
+sweep, 08-21). Read any parameter-table claim, including ones already in this file, against that.
 
 ---
 
@@ -133,7 +137,20 @@ parameter-table claim, including ones already in this file, against that.
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
-### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **PLANNED, C owns**
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING on LUMI (8 arms, 21427376-83), C owns**
+- **STATUS 08-21 morning:** code landed + 13 unit tests (SA3 2c3b650: `scripts/mir_control.py` +
+  `build_ctrl_packs.py` + train_lora `--mir_ctrl_*`; SAO 90c921f: `lumi/sbatch/mirctrl_bracket.sbatch`).
+  Kim submitted the full bracket: PACK = all / melody / rhythm / dynamics / stems / spectral +
+  all-BLOCKS=all + all-RANK=64 (jobs **21427376-83**, 1 node × 14 h each). Design deltas found en
+  route: (a) the modular local-cond inlet is **per-TransformerBlock** — projections install on blocks
+  12-23 by default (W layer-map union), BLOCKS=all is arm 7; (b) ctrl arrays live in **sibling
+  `_ctrl` dirs** — co-located .ctrl.npy gets recursively globbed AS LATENTS by PreEncodedDataset;
+  (c) every arm self-reports (control-ablation meter every 500 steps: loss under true/shuffled/zero
+  control; `control_gain > 0` = aligned control exploited — the kill-criterion is readable from
+  report.md even after the allocation ends). Local smoke: torch_shm_manager hang with workers>0 on
+  the shared box (LOCAL sandbox quirk — LUMI fleet has run file_system sharing + tensor metadata all
+  month); re-verified with workers=0 + the prebuilt-ctrl path. Arm B (frozen-base AttributeEncoder
+  cross-attn) remains the LOCAL comparison, not yet scheduled.
 - **Kim's ask:** "train some really traditional models, using our mir data as conditioners. probably
   like rank 32 DoRAs" — classic MIR curves (band-RMS ×4, beat/downbeat/onset ×3, HPCP ×12 ≈ 19 ch,
   already time-aligned to T=4096 by `LatentControlDataset(controls=("dynamics","rhythm","melody"))`)
