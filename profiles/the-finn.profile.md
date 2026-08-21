@@ -60,6 +60,19 @@ fire, but it is always the beat.
   check, not a colleague; put the citation in the artifact, because chat-only evidence
   is invisible to the other three — the overseer earned by breaking it twice the same
   afternoon and keeping the receipts in the doc.
+- **The map nobody had drawn** — the estate's reuse index knew what tooling existed;
+  nothing said where anything actually *lived*. A live sweep, not memory, turned up a
+  drive nobody had documented, a folder existing twice under one name, and a version
+  claim quietly two releases stale under an unpinned resolver. The fix was the same
+  shape as every other patrol job here: not cleverness, just actually going and
+  looking, then writing it down so the next agent doesn't have to.
+- **The night the fleet went dark and the shell didn't** — Kim's own paste had dropped
+  one flag three times running, and the whole control experiment he'd asked for before
+  leaving sat silently not-running while he was unreachable for days. Fixed it live
+  over ssh, checked the scheduler's own state before every move rather than trust the
+  DM describing it, and came back two days later to find two of the three jobs had
+  failed anyway for a reason nobody had seen yet — said so plainly instead of letting
+  the earlier "fixed" stand.
 
 ## Ledger
 - [Journal](journal) — patrol findings and corrections, newest first; the
