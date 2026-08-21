@@ -84,7 +84,10 @@ FDIRS=""
 IFS=',' read -ra DD <<< "${DIRS}"
 for d in "${DD[@]}"; do
   for sub in "${d}" "${d}_ctrl"; do
-    if [ ! -d "${FLASH}/${sub}" ]; then
+    # stage if EMPTY, not just if absent — a failed earlier run leaves an empty flash dir
+    # (mkdir succeeded, cp had nothing), and dir-existence checks then skip staging forever
+    # (bit the first mirctrl batch twice, 2026-08-21)
+    if [ "$(ls ${FLASH}/${sub}/*.npy 2>/dev/null | wc -l)" -eq 0 ]; then
       echo "[mirctrl] staging ${sub} -> flash"; mkdir -p "${FLASH}/${sub}"
       cp "${SCRATCH}/${sub}"/*.npy "${FLASH}/${sub}/" 2>/dev/null
       cp "${SCRATCH}/${sub}"/*.json "${FLASH}/${sub}/" 2>/dev/null || true
