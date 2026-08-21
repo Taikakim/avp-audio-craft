@@ -51,6 +51,14 @@
 # RUN:  sbatch lumi/sbatch/lr5e5_allsets.sbatch                 (clean mix, fresh)
 #       AUG=1 sbatch lumi/sbatch/lr5e5_allsets.sbatch           (+ augmented goa)
 #       WARM=liked sbatch lumi/sbatch/lr5e5_allsets.sbatch      (continue the liked model)
+#       SCHED=wsd sbatch lumi/sbatch/lr5e5_allsets.sbatch        (+ decay: the constant-LR hedge)
+#
+# SCHED=wsd (Kim 2026-08-22, "I hope the constant LR does not become an issue"): linear warmup ->
+# flat to --lr_knee_epoch (default EPOCHS/4) -> cosine to 10% of lr by the end. The replicated run
+# was constant-LR, but it only ever ran 10 epochs that way; constant 5e-5 held for 48 is
+# unexplored, not proven. Running BOTH makes the schedule an AXIS instead of an assumption --
+# same corpus, same seed, same everything else. Warmup is 0.78% of steps (the ratified value) on
+# wsd arms only; the constant arms take no warmup, as replicated.
 # VERIFY within minutes: LOCAL_RANK 0..7 once each (NOT eight rank-0s -- the silent-DDP bug);
 #       "[captions] source i" one line per source; "[q5] steps/epoch" plausible vs the banner.
 #SBATCH --account=project_465003186
@@ -83,9 +91,18 @@ SEED=${SEED:-1}
 EPOCHS=${EPOCHS:-48}
 CKEVERY=${CKEVERY:-2}
 BIGW=${BIGW:-0.18}
+SCHED=${SCHED:-none}
 WARM=${WARM:-}
 LIKED=${SCRATCH}/runs/adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5/epoch=9-step=13500.ckpt
 [ "${WARM}" = "liked" ] && WARM=${LIKED}
+SCHEDARG=""
+if [ "${SCHED}" = "wsd" ]; then
+  KNEE=${KNEE:-$(python3 -c "print(${EPOCHS}/4)")}
+  SCHEDARG="--lr_schedule wsd --lr_knee_epoch ${KNEE} --warmup-frac ${WARMUP_FRAC:-0.0078}"
+  echo "[q5] SCHED=wsd knee=ep${KNEE} -> cosine to 10% of lr by ep${EPOCHS}"
+elif [ "${SCHED}" != "none" ]; then
+  echo "[q5] FATAL: SCHED must be none|wsd (got ${SCHED})"; exit 1
+fi
 WARMARG=""
 if [ -n "${WARM}" ]; then
   [ -f "${WARM}" ] || { echo "[q5] FATAL: warm-start ckpt not found: ${WARM}"; exit 1; }
@@ -93,7 +110,7 @@ if [ -n "${WARM}" ]; then
   echo "[q5] WARM-START from ${WARM} (adapter weights + AdamW moments; epoch counter restarts, so EPOCHS=${EPOCHS} is ADDITIONAL)"
 fi
 
-NAME=lr5e5mix$([ "${AUG}" = "1" ] && echo aug)$([ -n "${WARM}" ] && echo warm)_r${RANK}a${ALPHA}_t512_bf16_bs$((BS*GA*8))_s${SEED}
+NAME=lr5e5mix$([ "${AUG}" = "1" ] && echo aug)$([ -n "${WARM}" ] && echo warm)$([ "${SCHED}" != "none" ] && echo ${SCHED})_r${RANK}a${ALPHA}_t512_bf16_bs$((BS*GA*8))_s${SEED}
 RUN=${SCRATCH}/runs/lr5e5_allsets/${NAME}
 
 [ -n "${SIF}" ] || { echo "[q5] FATAL: no multitorch image"; exit 1; }
@@ -197,7 +214,7 @@ torchrun --standalone --nnodes=1 --nproc-per-node=8 \
   --batch_size '"${BS}"' --accumulate_grad_batches '"${GA}"' \
   --num_workers 6 --seed '"${SEED}"' \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
-  '"${WARMARG}"' \
+  '"${WARMARG}"' '"${SCHEDARG}"' \
   --no_demos --logger csv --name '"${NAME}"' \
   --save_dir '"${RUN}"' \
   2>&1
