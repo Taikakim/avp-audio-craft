@@ -96,6 +96,46 @@ def _recipe_to_text(recipe):
     return " ".join(p for p in parts if p)
 
 
+# ── SCRIPT-DERIVED PARAMS (2026-08-21, Kim: "we should have all of the training parameters for
+# every run in one script or another: SAO/lumi") ─────────────────────────────────────────────
+# parse_recipe below reconstructs hyperparameters by REGEX OVER THE MODEL NAME plus a free-text
+# recipe string, so it only ever knew what someone happened to encode in a filename. Measured
+# gaps that caused: optimizer missing on 88% of models, batch 74%, lr 49%, rank 37%. Worse than
+# missing, some fields were SILENTLY DEFAULTED -- precision fell through to "bf16" when unknown,
+# so "I don't know" and "it is bf16" were indistinguishable, and a controlled bf16-vs-fp32
+# comparison run against this column was comparing fp32 against a bucket that mostly meant
+# UNKNOWN. lumi/run_params_extracted.json carries the values read out of the sbatch scripts that
+# actually launched the runs, with file:line provenance. Those win; the regexes are the fallback.
+_EXTRACTED = {}
+_EXTRACT_PATH = Path(__file__).resolve().parents[1] / "lumi" / "run_params_extracted.json"
+if _EXTRACT_PATH.is_file():
+    try:
+        _raw = json.loads(_EXTRACT_PATH.read_text())
+        for _k, _v in _raw.items():
+            _base = _k.split("#")[0]              # collision suffixes: keep the first, see below
+            _EXTRACTED.setdefault(_base, _v)
+    except Exception as _e:
+        print(f"[hyper] WARNING: could not read {_EXTRACT_PATH}: {_e}")
+
+# Fields the scripts state directly. Anything not listed stays with parse_recipe.
+_SCRIPT_FIELDS = ("rank", "alpha", "lr", "batch", "frames_T", "precision", "optimizer",
+                  "dataset", "epochs", "weight_decay", "grad_clip_mode", "caption_probs",
+                  "adapter_type", "ddp_world_size", "accumulate_grad_batches", "use_ema")
+
+
+def script_params(label):
+    """Params read from the launching sbatch, for `label` or the run it derives from.
+
+    _ptm / _repr are RENDER-TIME variants of the same trained weights, so they inherit their
+    parent's training params -- but NOT base_target, which is exactly what distinguishes them.
+    """
+    for cand in (label, label.replace("_repr", ""), label.replace("_ptm", ""),
+                 label.replace("_repr_ptm", "").replace("_ptm", "").replace("_repr", "")):
+        if cand in _EXTRACTED:
+            return _EXTRACTED[cand]
+    return {}
+
+
 def parse_recipe(recipe, label):
     """Return a dict of structured hyperparams. recipe (authoritative) first, label fallback."""
     r = _recipe_to_text(recipe).lower()
@@ -119,7 +159,14 @@ def parse_recipe(recipe, label):
     d["alpha_over_rank"] = (d["alpha"] / d["rank"]) if (d.get("alpha") and d.get("rank")) else np.nan
 
     # precision
-    d["precision"] = "fp32" if ("fp32" in r or "32-true" in r or "fp32" in lab) else ("bf16" if ("bf16" in r or "bf16" in lab) else "bf16")
+    # NO DEFAULT. The old final `else "bf16"` made unknown indistinguishable from bf16 on 226
+    # of 293 models, and any analysis keyed on this column silently inherited that guess.
+    if "fp32" in r or "32-true" in r or "fp32" in lab:
+        d["precision"] = "fp32"
+    elif "bf16" in r or "bf16" in lab:
+        d["precision"] = "bf16"
+    else:
+        d["precision"] = np.nan
 
     # frame length T
     T = np.nan
@@ -162,7 +209,7 @@ def parse_recipe(recipe, label):
     # dataset + augmentation + base target
     d["dataset"] = "avp" if "avp" in lab else ("goa" if "goa" in lab else ("mixed" if "everything" in lab else np.nan))
     ma = re.search(r"aug(\d+)", lab)
-    d["aug"] = int(ma.group(1)) if ma else 0
+    d["aug"] = int(ma.group(1)) if ma else (0 if "aug" not in lab else np.nan)
     d["base_target"] = "ptm" if (lab.endswith("_ptm") or "post-trained" in r) else "base"
 
     # training steps: the recipe records "epoch M/step S (this ckpt)" -> steps/epoch = S/M,
@@ -213,7 +260,39 @@ def main():
     df = clap.merge(met, on="stem", how="left").drop(columns=["stem"])
 
     # per-model hyperparams
-    hp = {m: parse_recipe(resolve_recipe(m, ov), m) for m in df["model"].unique()}
+    hp = {}
+    _from_script = 0
+    for m in df["model"].unique():
+        d = parse_recipe(resolve_recipe(m, ov), m)
+        sp = script_params(m)
+        if sp:
+            _from_script += 1
+            for f in _SCRIPT_FIELDS:
+                if f in sp and sp[f] not in (None, ""):
+                    key = {"epochs": "epoch_total"}.get(f, f)
+                    d[key] = sp[f]
+            # effective batch: per-rank batch x DDP world size x grad accumulation. The scripts
+            # record batch PER RANK; several runs are 8- or 16-GCD, so a batch comparison that
+            # ignores this is wrong by that factor -- which is how a batch analysis on this table
+            # produced "no effect" from data that never held effective batch constant.
+            b, w, a = sp.get("batch"), sp.get("ddp_world_size") or 1, sp.get("accumulate_grad_batches") or 1
+            if b:
+                d["effective_batch"] = float(b) * float(w) * float(a)
+            d["alpha_over_rank"] = (d["alpha"] / d["rank"]) if (d.get("alpha") and d.get("rank")) else d.get("alpha_over_rank", np.nan)
+            d["params_source"] = "sbatch"
+        else:
+            d["params_source"] = "name-regex"
+        # Kim 2026-08-20: every run is FusionOpt unless the name says adamw. Validated 84/84
+        # against the rows that recorded it. Applied HERE, after extraction, and marked as
+        # imputed so it is never mistaken for something a script stated.
+        if not isinstance(d.get("optimizer"), str) or not d.get("optimizer"):
+            d["optimizer"] = "adamw" if "adamw" in m.lower() else "fusionopt"
+            d["optimizer_source"] = "imputed-from-name"
+        else:
+            d["optimizer_source"] = d.get("params_source")
+        hp[m] = d
+    print(f"[hyper] params from sbatch scripts: {_from_script}/{len(hp)} models; "
+          f"{len(hp)-_from_script} fall back to name-regex")
     hpdf = pd.DataFrame(hp).T.reset_index().rename(columns={"index": "model"})
     df = df.merge(hpdf, on="model", how="left")
 
@@ -244,7 +323,17 @@ def main():
 
     # tidy column order
     hp_cols = ["arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T", "duration_s",
-               "batch", "lr", "optimizer", "dataset", "aug", "base_target", "epoch", "steps", "train_N"]
+               "batch", "effective_batch", "lr", "optimizer", "dataset", "aug", "base_target",
+               "epoch", "steps", "train_N",
+               # New columns, all swept axes the table never carried (2026-08-21). weight_decay in
+               # particular routes into FusionOpt's spectral_wd and takes 0.0/0.01/0.03/0.1 across
+               # real runs -- it was invisible to every analysis while being one of the levers most
+               # suspected of driving late-training drift.
+               "weight_decay", "grad_clip_mode", "caption_probs", "adapter_type",
+               "ddp_world_size", "accumulate_grad_batches", "use_ema", "epoch_total",
+               # provenance: did these numbers come from the launching script, or from guessing at
+               # the model name? An analysis should be able to filter on this.
+               "params_source", "optimizer_source"]
     ctrl_cols = ["cfg", "strength"]
     metric_cols = ["clap_matched", "clap_margin_far", "retrieval_rank", "beats_all_far",
                    "ce", "pq", "cu", "pc", "zcr", "flatness", "flux", "hf_ratio", "bpm",
@@ -290,6 +379,29 @@ def main():
     for c in agg_metrics:
         aggd[c] = aggd[c].where(aggd["n_cells_default"] > 0, aggd[f"{c}_all"])
     aggd = aggd.rename(columns={"n_cells_all": "n_cells"})
+
+    # ---- QUARANTINE (Kim 2026-08-21) ----------------------------------------------
+    # xft* = DoRAs EXTRACTED from full finetunes. Kim: "all of them are more or less
+    # broken ... they should be quarantined and removed from all tables and statistics."
+    # dora_table.html has hidden them since 2026-08-02 (HIDE_MODEL_PREFIXES), but they
+    # stayed in THIS csv -- and the csv's `arch` column calls them `dora`, so every
+    # statistic computed off it silently pooled 60 broken checkpoints into the DoRA
+    # population. That is what suppressed the adapter-vs-fullft effect (eta^2 0.024,
+    # actually d=0.84) and it skewed the frame-length table too.
+    # Split rather than dropped: the rows move to a sibling csv so the record survives,
+    # but nothing that reads the main file can pick them up by accident.
+    QUARANTINE_PREFIXES = ("xft",)
+    QUARANTINE_REASON = "DoRA extracted from a full finetune; family is broken (Kim 2026-08-21)"
+    is_q = aggd["model"].astype(str).str.startswith(QUARANTINE_PREFIXES)
+    if is_q.any():
+        q = aggd[is_q].copy()
+        q["quarantine_reason"] = QUARANTINE_REASON
+        q.to_csv(ROOT / "eval/clap_dora_quarantined.csv", index=False)
+        print(f"[table] QUARANTINED {len(q)} rows ({q['model'].nunique()} runs) -> "
+              f"eval/clap_dora_quarantined.csv  [{QUARANTINE_REASON}]")
+        aggd = aggd[~is_q].reset_index(drop=True)
+    # -------------------------------------------------------------------------------
+
     aggd.to_csv(ROOT / "eval/clap_dora_aggregate.csv", index=False)
     n_fb = int(aggd["default_is_fallback"].sum())
     print(f"[table] wrote clap_dora_aggregate.csv  ({len(aggd)} model-checkpoints, "
