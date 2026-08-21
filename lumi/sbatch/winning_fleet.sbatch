@@ -27,9 +27,9 @@
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
-#SBATCH --gpus-per-task=1
-#SBATCH --cpus-per-task=7
+#SBATCH --gpus-per-node=8
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=56
 #SBATCH --mem=0
 #SBATCH --time=24:00:00
 #SBATCH --job-name=winning_fleet
@@ -108,7 +108,11 @@ cat > "${RUN}/run_meta.json" <<META
  "script": "lumi/sbatch/winning_fleet.sbatch", "result": null, "kim_feedback": null}
 META
 
-srun --nodes=1 --ntasks=8 --gpus-per-task=1 --cpus-per-task=7 \
+# TORCHRUN (converted 2026-08-21): the old srun --ntasks=8 --gpus-per-task=1 pattern
+# NEVER formed a DDP group on these jobs — confirmed live (eight LOCAL_RANK:0, colliding
+# -vN ckpts, per-rank full-dataset step counts). All pre-conversion arms of this script
+# trained as 8 independent single-GPU copies.
+srun --nodes=1 --ntasks=1 --cpus-per-task=56 \
   singularity exec --bind ${PROJ},${SCRATCH},${FLASH},/tmp "${SIF}" bash -c '
 set -uo pipefail
 PROJ=/project/project_465003186; SCRATCH=/scratch/project_465003186; FLASH=/flash/project_465003186
@@ -119,13 +123,14 @@ export PYTHONPATH=${VENV}/lib/python3.12/site-packages:${CODE}/stable-audio-3:${
 export HF_HOME='"${MODELS}"' HF_HUB_OFFLINE=1
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 export OMP_NUM_THREADS=7 MKL_NUM_THREADS=7
-export MIOPEN_USER_DB_PATH=/tmp/miopen-${SLURM_PROCID} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-${SLURM_PROCID}
+export MIOPEN_USER_DB_PATH=/tmp/miopen-wfleet MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-wfleet
 export MIOPEN_DISABLE_CACHE=1 MIOPEN_FIND_MODE=2
-export TRITON_CACHE_DIR=/tmp/triton-${SLURM_PROCID} PYTORCH_TUNABLEOP_ENABLED=0
-mkdir -p /tmp/miopen-${SLURM_PROCID} /tmp/triton-${SLURM_PROCID}
+export TRITON_CACHE_DIR=/tmp/triton-wfleet PYTORCH_TUNABLEOP_ENABLED=0
+rm -rf /tmp/miopen-wfleet /tmp/triton-wfleet; mkdir -p /tmp/miopen-wfleet /tmp/triton-wfleet
 export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
-ulimit -n 65536
-python ${CODE}/stable-audio-3/scripts/train_lora.py \
+ulimit -n 131072 2>/dev/null || ulimit -n 65536
+torchrun --standalone --nnodes=1 --nproc-per-node=8 \
+  ${CODE}/stable-audio-3/scripts/train_lora.py \
   --model medium-base --base_precision fp32 \
   --adapter_type dora-rows --rank '"${RANK}"' --lora_alpha '"${ALPHA}"' \
   --optimizer adamw --lr '"${LR}"' \
@@ -134,7 +139,7 @@ python ${CODE}/stable-audio-3/scripts/train_lora.py \
   --epochs '"${EPOCHS}"' --checkpoint_every_epochs '"${CKEVERY}"' \
   --no_demos --logger csv --name '"${NAME}"' \
   --save_dir '"${RUN}"' \
-  2>&1 | sed "s/^/[r${SLURM_PROCID}] /"
+  2>&1
 '
 rc=$?
 echo "[wfleet] srun rc=${rc}; ckpts: $(ls ${RUN}/*.ckpt 2>/dev/null | wc -l)"
