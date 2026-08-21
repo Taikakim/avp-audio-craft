@@ -1,0 +1,26 @@
+{
+ "cfgs": [
+  7
+ ],
+ "steps": 24,
+ "duration": 20.0,
+ "note": "quick eval 2026-08-21: cfg7 w1 only; snapshot of the exact local grid axes (ids/texts/seeds) for LUMI-side rendering, 2026-07-21",
+ "trigger_word_note": "TRIGGER-WORD SPELLING (2026-08-18, W): training captions contain 'aavepy\u00f6r\u00e4' 4724-7140 times and 'aavepyora' ZERO times, while every eval prompt asked for 'aavepyora'. Different strings to the text encoder, so every trig2/housestyle cell ever rendered asked a finetuned model for a token it never saw in training and got base-model noise back. The misspelled ids are KEPT VERBATIM rather than corrected in place: the whole historical board joins cells by prompt_id, so editing the text under an existing id would silently make old and new cells incomparable while looking identical. The correctly-spelled ids are ADDED alongside -- which also makes the pair the experiment: same model, same seed, one token spelled as trained and one as we have been testing. Seeds are deliberately IDENTICAL to the misspelled twin (trig2/trig2_uml both 1234) so the only variable between the pair is the spelling -- a different seed would confound the token with the sample and make the comparison worthless.",
+ "prompts": [
+  {
+   "id": "rb_common_0",
+   "text": "2020s goa trance, melodic mood, 148 bpm",
+   "seed": 786795416
+  },
+  {
+   "id": "rb_common_1",
+   "text": "mid 90s goa trance, melodic space mood, 140 bpm",
+   "seed": 225176290
+  },
+  {
+   "id": "rb_common_2",
+   "text": "mid 90s goa trance, 148 bpm",
+   "seed": 544354203
+  }
+ ]
+}
