@@ -139,12 +139,30 @@ claim, including ones already in this file, against both corrections.
   knee ep8, cosine to 0.1×; known-answer tested; WORLD_SIZE horizon bug fixed en route — every
   prior schedule horizon would have run 8× long under real DDP). Fusion arms = full damping kit
   (--fusion-decay wsd knee-aligned + SNR gate row/grad-source). Staging lock added (no stampede).
-- **Standing caveat in run_meta:** bigset = 27.7% near-lossless vs old goa 75.9% (W audit) + goa
-  runs degrade with training (W within-run split). Uniform mediocrity across all 4 arms ⇒ corpus,
-  not optimizer; the follow-up would re-point the same arms at goa_big_quality_matched (4,111).
+- **⚠️ Standing caveat CORRECTED (W, 08-21, same day): the 27.7% figure was itself a bug.** v1
+  measured ONE 30s window at a fixed offset, so it read intros not encodes (Kim caught it — good
+  tracks landing in the "worst" list, 4 rips of one Koxbox track all there). v2 (max over 6 windows
+  spanning the track) just finished: A-tier 20.7%→28.4%, D-tier(lossy) 5.4%→1.4% — **bigset is
+  substantially cleaner than reported.** The old-goa comparison (75.9%) is still re-running on the
+  same corrected method, so **the cross-corpus gap is not currently established in either
+  direction** — read the "corpus not optimizer" guard as *under re-audit*, not as a supported
+  premise, until both sides are re-measured on v2. The `goa_big_quality_matched` (4,111) list this
+  entry's follow-up depends on is ALSO invalidated by the same v1 bug and needs rebuilding first —
+  don't re-point A11's follow-up at it until that lands.
 - Read-out: PQ/CE per epoch ladder + soups; the WSD-vs-constant contrast on AdamW is the direct
   test of the A2 "constant-LR walk needs averaging" mechanism (scheduled arm should be listenable
   at the TERMINAL ckpt if the knee does its job).
+- **Why this arm matters more than "which optimizer sounds better" (W, 08-21, Kim's ask):**
+  independently verified the SA3 training loss/RF math against a second team's from-scratch
+  trainer (`underfit`, vendored not imported) — loss-normalization, masked-loss, and the RF
+  noise/target construction are bit-identical (max|diff|=0.000e+00) across every config checked,
+  including our fork's own additive-only commits. **Scope limit stated plainly: `underfit` imports
+  our own `models/lora.py`, so it can't independently check adapter scaling** — but that module has
+  zero fork commits (stock upstream), so the risk there is low. What it does NOT cover at all:
+  **FusionOpt, spectral WD, AdaGC, and the WSD schedule are ours alone, no external reference
+  exists for any of them.** So the base loss is exonerated and the optimizer path is now the only
+  place a systematic bug could still hide — which is exactly what this entry's AdamW-vs-Fusion
+  contrast tests, at matched everything, for the first time.
 
 ## B. The melody wall
 
