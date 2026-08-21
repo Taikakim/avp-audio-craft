@@ -179,7 +179,7 @@ claim, including ones already in this file, against both corrections.
   place a systematic bug could still hide — which is exactly what this entry's AdamW-vs-Fusion
   contrast tests, at matched everything, for the first time.
 
-### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **RUNNING (2026-08-22, 21447642 fresh / 21447644 warm)**
+### A12 — The 5e-5 replicate: Kim's auditioned operating point, carried to every corpus — **RUNNING (2026-08-22, ep24 wave: 21447819/20/21/22 → probe 21447823)**
 
 **Trigger (Kim direct, 2026-08-22, listening to `renders/length_variant/` on the drive as it pulled):**
 the 5e-5 clips beat 1e-4, 2e-4 shows degradation, and — the observation that actually motivated
@@ -229,6 +229,33 @@ dose — it brackets the auditioned point **from below** instead of starting pas
 robustness-under-push property is a *lightly-trained* property, the early rungs will show it and
 the deep end will have lost it. Audition at cfg16/w2, not just cfg7 — that is the property being
 selected for.
+
+**EP24 PIVOT (Kim, 2026-08-22, ~02:00).** The ep48 pair (21447642/44) was scancelled and resubmitted
+at **EPOCHS=24** as a 2×2 — fresh/warm × constant/wsd — because Kim flagged the open risk himself:
+*"I hope the constant LR does not become an issue."* Constant 5e-5 is proven at 10 epochs, not 48.
+ep24 is a decision point, not a target; the ladder still rungs every 2 epochs and the runs can be
+continued if the ep24 board reads well.
+- 21447819 fresh/constant · 21447820 warm/constant · 21447821 fresh/wsd · 21447822 warm/wsd
+- **21447823 = `lr5e5_probe.sbatch` on `--dependency=afterany`** of all four — renders whatever rungs
+  exist however the arms end (completed, crashed, walltime-killed). Fire-and-forget for an
+  overnight; you wake to audio, not to a queued job that never ran.
+- 21447824 = `dorlor_render.sbatch`, independent (A11's 32 arms, first audition).
+- **Warm arms: EPOCHS is ADDITIONAL** (warm-start restarts counters), so they end ~ep34-equivalent
+  of accumulated dose vs the fresh arms' 24 — the two ladders are NOT at matched dose.
+
+**BATCH-AXIS CHECK (Kim, 2026-08-22): "batch size 1 clips from those runs were melted all the way
+to hell. Is bs1x8 as stable as bs8?"** Yes — under REAL DDP. The eight ranks all-reduce to a mean
+gradient over 8 crops with 8 independently drawn timesteps, statistically the batch-8 object; the
+DiT has no BatchNorm, so nothing couples samples within a batch, and this run uses none of the
+per-rank subbatch losses (stereo/subspace) where a rank-local estimate on 1 sample would be
+noisier. Sweep evidence brackets it: **eff 1 melted, eff 4 is the liked run, ours is 8.**
+⚠️ **THE COROLLARY IS THE IMPORTANT PART: if DDP silently fails (the A10 pattern), there is no
+all-reduce and every rank becomes an independent trainer at BATCH 1 — precisely the melted regime.**
+The `LOCAL_RANK 0..7` grep is therefore not a correctness check here, it is a quality predictor:
+eight rank-0s = four arms training in the worst regime the sweep found. Check it before the ears.
+*(Exact eff-4 was reachable — 4 ranks × bs1, same node-hour cost since billing is per NODE — but at
+half throughput = ~36 h to ep48, past the 23 Aug wall. eff 8 is the closest reachable point, not a
+free choice.)*
 
 ## B. The melody wall
 
