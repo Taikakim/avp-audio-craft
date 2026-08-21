@@ -2156,3 +2156,27 @@ All 275 page clip refs verified present on disk. Explainer block carries the two
 PQ-alone rationale (three-audience standard). Registered in ARCHITECTURE 'built since' block.
 Embeddings cached in eval/top100_work/ (1688 clips, resumable) — reusable for any future
 similarity/dedup question, not just this page.
+
+### 2026-08-21 — D11 frame-shuffle null: the air readout is ~half fingerprint, half real melody
+
+Ran the external queue's one surviving Tier-0 gate (EXPERIMENTS D11) end to end, n=1200, 5
+permutations x 5 derangements. Result table (per-window znorm, median matched/shuffled/null ->
+fingerprint fraction): bass 0.323/0.248/0.136 -> 0.60; mid 0.449/0.345/0.220 -> 0.55; air
+0.526/0.401/0.266 -> 0.52. Reading: ~half of the matched-over-null identity signal in EVERY band
+is a static per-track chroma shape (key/drone/mastering); the other half is temporal. The
+kill-condition does NOT fire -- air is not fingerprint-dominated, and its absolute temporal
+component (matched-shuffled = 0.125) is the largest of the three bands. But the corpus-demean
+0.918 must never again be quoted as 'melody' without the shuffle-surviving caveat.
+
+Process notes worth keeping: (1) the self-test caught my own bad synthetic -- a random-walk
+'temporal signal' is autocorrelated, i.e. partially a drifting fingerprint, and legitimately
+survives shuffling; independent frames is the correct known-answer. The test failing before the
+real run is exactly what it was for. (2) Schema drift: muscriptor_full's stats.json were
+regenerated since 08-12 WITHOUT source_path/start_sample/end_sample -- those now live in
+index.jsonl; any E2 rerun needs the same merge patch or it silently drops all 1200. (3) Caches
+now durable: eval/musicology/tier2_predicted/ (full 5400) + e2_fold12_cache/ -- the tmpfs loss
+that gated D11 for a week cannot recur.
+
+Also this session: B7 filed (Kim's MIR-timeseries rank-32 DoRA conditioner ask -- executes the
+parked ATTRIBUTE_BRANCHES milestone; A/B = per-frame additive + DoRA-on-late-blocks vs decoupled
+cross-attn frozen-base).

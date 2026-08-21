@@ -133,6 +133,30 @@ parameter-table claim, including ones already in this file, against that.
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **PLANNED, C owns**
+- **Kim's ask:** "train some really traditional models, using our mir data as conditioners. probably
+  like rank 32 DoRAs" — classic MIR curves (band-RMS ×4, beat/downbeat/onset ×3, HPCP ×12 ≈ 19 ch,
+  already time-aligned to T=4096 by `LatentControlDataset(controls=("dynamics","rhythm","melody"))`)
+  as explicit conditioning. This EXECUTES the parked 2026-06-19 milestone
+  `control/sa3_control/ATTRIBUTE_BRANCHES.md` (riffer trained with controls=(); branch never flipped on).
+- **Design — the A/B settles the injection question that doc left open:**
+  **Arm A (Kim's):** curves → 1×1-conv projection → per-frame ADDITIVE stream (local_add_cond-style)
+  + rank-32 DoRA on late blocks 16–23 self-attn+FF (W's layer-map prior; rhythm 12–19). Backbone
+  learns to USE the stream — the chroma-guidance null (0/12) showed the frozen base won't follow
+  signals it wasn't trained on. **Arm B (control, already coded):** same 19 ch → `AttributeEncoder`
+  → decoupled time-aligned cross-attn adapter, base frozen, zero-init (MuseControlLite shape).
+  Per-item CFG-dropout on the control in both arms (control-CFG sweepable at inference).
+- **First step (30 min):** probe medium-base for usable `modular_local_cond`/`local_add_cond`
+  plumbing (ATTRIBUTE_BRANCHES' own precondition). Integration gap to close: `sa3_control/train.py`
+  freezes the base — needs a DoRA-on-base option for Arm A.
+- **Data/recipe:** `latents_sa3` (5400 goa crops with .TIMESERIES.npz), local GPU, fp32 medium-base,
+  AdamW standard recipe, judged by EMA/soups (sanity16 rule). R²(t) context: melody R² collapses at
+  high noise → conditioner earns its keep early in sampling.
+- **Eval (objective, no ears to gate):** held-out curve → generate → re-extract with mir →
+  time-resolved correlation; MERIT S_mel/S_rhy/S_tim (steer melody ⇒ S_mel up, others flat);
+  different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
+  curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
@@ -233,7 +257,21 @@ parameter-table claim, including ones already in this file, against that.
 ### D6 — Stabilisers for readout-space guidance — **READY (one-liners)**
 - Soft-clamped normalised gradient; stop-late from OUR R²(t); per-band reliability weights from Tier-2.
 
-### D11 — Frame-shuffle null on Tier-2 air (external queue "0b" — the one genuinely open Tier-0 gate) — **GATED on 1 GPU-hour**
+### D11 — Frame-shuffle null on Tier-2 air — **DONE 2026-08-21: ~half fingerprint, half temporal — kill-condition does NOT fire**
+- **Verdict (n=1200, 5 perms, 5 derangements; `eval/musicology/same_chroma_D11_frame_shuffle_2026-08-21/`):**
+  per-window znorm median matched / shuffled / null → fingerprint fraction: bass 0.323/0.248/0.136
+  → **ff 0.60**; mid 0.449/0.345/0.220 → **ff 0.55**; air 0.526/0.401/0.266 → **ff 0.52**. So ~half
+  of the matched-over-null identity signal is a static per-track chroma shape, ~half is temporal.
+  Air is NOT fingerprint-dominated (ff 0.52, not ~1), and its ABSOLUTE temporal component
+  (matched−shuffled = 0.125) is the largest of the three bands — the head does read time-varying
+  chroma, most strongly in air. Band scoping stands; but any claim quoting the corpus-demean 0.918
+  as "melody" must be halved in spirit: report the shuffle-surviving share alongside it (their "0c"
+  reporting note, now with numbers). Scorer self-test caught its own trap: a random-walk synthetic
+  is autocorrelated (= a drifting fingerprint) and survives shuffling — independent frames is the
+  correct known-answer. Schema drift fixed en route: muscriptor_full stats.json lost
+  source_path/start/end since 08-12; they live in index.jsonl now (merged per id; E2 reruns need
+  the same patch). Durable caches: tier2_predicted/ (all 5400 by end of run) + e2_fold12_cache/.
+- *(original gate, for the record)* — was GATED on 1 GPU-hour
 - **Question:** is Tier-2's air 0.918 melodic content or a static per-track spectral fingerprint
   (mastering EQ / codec lowpass are track-constant and land in air)? Frame-shuffling within track
   preserves the fingerprint and destroys melody — if 0.918 survives, the band scoping is aimed wrong.
