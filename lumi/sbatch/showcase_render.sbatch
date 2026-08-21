@@ -9,6 +9,7 @@
 # render_showcase.py build; per-clip .json sidecar + fp16 .z0.npy next to every wav.
 # Idempotent: re-run to fill gaps (builder skips if units.jsonl exists — same draw).
 # RUN: sbatch lumi/sbatch/showcase_render.sbatch
+#      wave 2: WAVE=2 RNG=20260822 sbatch lumi/sbatch/showcase_render.sbatch  (-> renders/showcase2, fresh draw)
 #SBATCH --account=project_465003186
 #SBATCH --partition=standard-g
 #SBATCH --nodes=1
@@ -29,7 +30,9 @@ CODE=${PROJ}/code
 MODELS=${PROJ}/models
 SIF=${PROJ}/containers/sa3.sif
 
-ROUT=${SCRATCH}/renders/showcase
+WAVE=${WAVE:-}
+RNG=${RNG:-20260821}
+ROUT=${SCRATCH}/renders/showcase${WAVE}
 UNITS=${ROUT}/units.jsonl
 mkdir -p ${ROUT}
 
@@ -40,7 +43,7 @@ if [ ! -s "${UNITS}" ]; then
       --checkpoints ${CODE}/lumi/genre_fusion_checkpoints.txt \
       --scratch-runs ${SCRATCH}/runs \
       --captions-dir ${CODE}/lumi \
-      --out ${UNITS} --n 128 --ranks 8 \
+      --out ${UNITS} --n ${N_CLIPS:-128} --ranks 8 --rng ${RNG} \
     || { echo "[show] FATAL: unit build failed"; exit 1; }
 else
   echo "[show] units.jsonl exists ($(wc -l < ${UNITS}) units) — refill mode"
@@ -61,8 +64,8 @@ export MIOPEN_USER_DB_PATH=/tmp/miopen-${R} MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-
 export TRITON_CACHE_DIR=/tmp/triton-${R}
 rm -rf /tmp/miopen-${R} /tmp/triton-${R}; mkdir -p /tmp/miopen-${R} /tmp/triton-${R}
 python ${CODE}/lumi/render_showcase.py render \
-  --units ${SCRATCH}/renders/showcase/units.jsonl --rank ${R} \
-  --out ${SCRATCH}/renders/showcase \
+  --units '"${UNITS}"' --rank ${R} \
+  --out '"${ROUT}"' \
   || echo "[r${R}] render pass FAILED (siblings unaffected)"
 echo "[r${R}] done"
 '
