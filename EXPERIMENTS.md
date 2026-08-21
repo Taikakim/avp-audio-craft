@@ -257,6 +257,50 @@ eight rank-0s = four arms training in the worst regime the sweep found. Check it
 half throughput = ~36 h to ep48, past the 23 Aug wall. eff 8 is the closest reachable point, not a
 free choice.)*
 
+### A13 — Mellow-LR full-FT on AVP with subspace weighting ("let one run roll on alone") — **RUNNING (2026-08-22, 21448092)**
+
+**Kim direct, ~03:00:** *"This one has a very mellow LR and some nice controls that have been
+helpful."* AVP aug latents, T1024, **lr 2.5e-5**, FULL-FT, AdamW (wd default 0.01), subspace-loss
+weighting on the v3sel basis, schedule flat to ep10 then cosine, ep64, eff batch 8 (bs1 × 8 ranks,
+torchrun). `lumi/sbatch/fullft_avp_subloss.sbatch`. ~299 steps/epoch → ~19k steps.
+
+**THREE PARTS OF THE ASK COULD NOT BE BUILT AS SPECIFIED — recorded because each looks available
+until you check:**
+1. **AdaGC is not implemented.** No flag, no code, in the trainer or the optimizer. It exists for
+   us only as **E2**, a *planned* bracket on the LatCH melody head — not a DiT training feature.
+2. **Spectral WD is FusionOpt-only** (`build_fusion_param_groups` → per-group decay on the 2D DiT
+   matrices). Under `--optimizer adamw` there is no such path; `--weight_decay` there is plain
+   decoupled AdamW decay. Kim's ruling: leave at default. *(Related history worth not losing: the
+   builder default 0.01 was "too weak for NS5/Muon → drone"; ~0.1 is the full-FT Fusion guidance.
+   So "spectral WD 0.02" would have been weak even where it exists.)*
+3. **LIVE ENCODE CANNOT DELIVER BUNGEE PITCH AUGMENTATION — this is structural.** `--augment` is
+   live-encode-only (inert with `--encoded_dir`) and its axes are sub-frame phase shift / gain /
+   stereo width / polarity. **Pitch shift and time stretch are `--aug-heavy` only, and that path
+   lazily loads torchaudio transforms = the sox-adjacent route CLAUDE.md bans in favour of
+   bungee.** Kim: *"bungee augs will be mandatory, especially the pitch augs."* Bungee is offline
+   CPU work by construction ⇒ **the only route to bungee pitch augs is a pre-augmented,
+   pre-encoded latent dir.** Hence `latents_avp`, not a `--data_dir` live-encode.
+   Kim's instinct — *"SAMEs encode fast on CPU, could we pre-calculate in parallel?"* — is right
+   and already built: **`aug8_encode.sbatch`** = phase A CPU bungee via HyperQueue, phase B SAME-L
+   encode, both on one node so the CPU phase rides the GPU booking for free. Not startable
+   tonight: its "bungee_python importable inside the container" risk is still open in the draft,
+   and `$SCRATCH/avp_src` showed no wav/flac at depth ≤3 — the source audio may not be up there.
+
+**SUBSPACE WEIGHT = 12, and NOT because 12 won.** Kim asked for "something which we know to work".
+**Nothing does yet** — weights tried 2/5/12 (v3sel grid, ep19), 20 (goa), 24 (latest lane, 4
+corpora), and per **B1** the quartet's renders only landed after F's coverage audit caught that
+the tgate arm had never been rendered despite being reported as such; **the whole set still awaits
+Kim's ears.** 12 = top of the COMPLETED grid and the baseline the k24 lane itself names, so this
+stays comparable. NOT 24: that lane was DoRA at eff batch 64 / lr 8e-5 against this run's full-FT
+at eff 8 / lr 2.5e-5, and a 5×-midpoint weight across that gap could dominate the loss. **No tgate
+on purpose** — the deficit-vs-r2 mode A/B is running as 21439464 and tgate here would preempt it.
+
+**READ IT AS:** subspace loss is our own "+10–15% tool" (B1: the wall is structural, melody is
+relational, no linear channel subspace captures it — B9/D12 conditioning is the wall-breaker). So
+judge this run on whether mellow-LR full-FT *sounds good* with a modest assist, NOT on whether
+melody arrives. ⚠️ Full-FT fats are ~31 GB each; `CKEVERY=8` → 8 rungs → ~250 GB (storage was
+35% of TB-hours at submit). Do not densify the ladder without checking free space.
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**
