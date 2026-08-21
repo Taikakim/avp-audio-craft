@@ -2126,3 +2126,33 @@ learning; the direction NS5 amplifies could be W's norm-growth runaway. The damp
 renders decide. Also: three arms in a row segfaulted at process teardown after their last step
 (data intact each time, verified row counts) — something in the recorder's memmap close or the
 ROCm exit path; harmless tonight, worth a look before it bites a run that isn't finished.
+
+### 2026-08-21 — Top-100-by-ear-proxy page: the dedup problem was the interesting part
+
+Kim's bedtime ask: "100 best clips for each frame length, ordered by PQ alone, disqualifying almost
+similar versions of higher scoring tracks (MERT similarity)". Built `eval/build_top100.py` (3
+resumable stages: DB candidates → MERT embed → select) + `Misc/build_top100_page.py` →
+`~/evals_aac/top100.html`, linked from the evals index, item on KIM-TASKLIST.
+
+**What did NOT work, for the record: a pure MERT-cosine threshold cannot do this dedup on our
+corpus.** First calibrated run (dup pairs = guidance-weight siblings; distinct pairs = cross-model
+cross-prompt) chose thr 0.9907 and left the long classes essentially undeduped — name-sibling
+survivors T2048 93/100, T4096 88/100. Cause: goa homogeneity saturates MERT cosine near 1.0 — the
+dup and distinct distributions OVERLAP (dup p10 0.9725 < distinct p95 0.9807 first pass; after
+purifying calibration pairs to knob-siblings only, dup p10 0.9784 vs distinct p95 0.9928 — the
+formula then computed thr 1.0028 > 1, i.e. 'never fire'). Some cross-model pairs are genuinely more
+similar than two guidance weights of one take.
+
+**Fix that worked: make the name carry the load, use MERT only for the tail.** Two-pass select:
+(1) hard name-level — `stem_key` = (model, ep, prompt, seed); one clip per knob-group (cfg/w
+variants keep best-PQ member) AND ≤3 epochs per (model,prompt,seed) take-family (epochs are
+versions too); (2) greedy MERT pass with the calibrated threshold CAPPED at 0.993. Result: 0
+over-cap families in every class; T256 100 clips/88 families, T512 100/90, T1024 18/10, T2048
+21/7, T4096 36/12. The short long-class lists are the honest population count — T2048 has only 7
+distinct take-families in the whole scored corpus, worth knowing in itself (it says our long-form
+eval diversity is thin; new long renders would widen it).
+
+All 275 page clip refs verified present on disk. Explainer block carries the two-pass method +
+PQ-alone rationale (three-audience standard). Registered in ARCHITECTURE 'built since' block.
+Embeddings cached in eval/top100_work/ (1688 clips, resumable) — reusable for any future
+similarity/dedup question, not just this page.

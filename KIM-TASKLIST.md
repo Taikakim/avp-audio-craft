@@ -17,6 +17,14 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+### 🎧 LISTEN: Top-100 clips per frame length, PQ-ranked (C, 2026-08-21)
+Your bedtime ask, live: https://aavepyora.online/files/evals/top100.html (needs G's morning sync of
+`~/evals_aac` before the link resolves publicly; local file is ready now). All 93k scored clips,
+ranked by PQ alone (W's 668-vote result), near-dups disqualified in two passes — hard name-level
+(same take at different cfg/w keeps only its best; ≤3 epochs per take) then MERT-cosine. 275 clips:
+T256 100 · T512 100 · T1024 18 · T2048 21 · T4096 36 — the long lists are short because that's the
+honest count of DISTINCT takes at those lengths (T2048 = 7 take-families total). ❗ unaudited.
+
 ### 🎧 LISTEN: temporal model soups vs terminal checkpoints (G, 2026-08-21)
 C's delegated task, done end to end: 34 soups (bf16cmp/fp32cmp avp+goa T512, fp32cmp goa T4096,
 winning avp/goa a128/a45 full+ep10-40) + terminal/ep19 refs, rendered T256+T1024 cfg7/w1, scored

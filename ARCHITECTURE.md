@@ -169,6 +169,14 @@ melodic-recurrence metric — raw chroma saturates on tonal goa) · `eval/precis
 `eval/cross_attn_mask_ab.py` (cross-attn mask A/B) · `eval/build_hf_repair_pairs.py` +
 `eval/train_hf_repair.py` + `eval/eval_hf_repair.py` (HF reconstruction-filter pipeline) ·
 `eval/build_clap_hyperparam_table.py` · `eval/build_clip_scores_export.py`. A full re-sweep is still owed.
+· **Top-100-by-PQ page pipeline (2026-08-21, C)** — `eval/build_top100.py` (3 resumable stages:
+per-frame-length PQ-top candidate pools from `clip_metrics.db` → MERT-v1-330M embeddings (rhythm
+layers 3-6 + melody layer 23, cached) → select with two-pass dedup: hard name-level (one clip per
+(model,ep,prompt,seed) knob-group, ≤3 epochs per take-family) then greedy MERT-cosine with a CAPPED
+calibrated threshold — in a homogeneous corpus the dup/distinct cosine distributions overlap near
+1.0, a threshold alone cannot do this) + `Misc/build_top100_page.py` (renders → `evals/top100.html`,
+same-playhead, full recipe columns, three-audience explainer). Ranking is PQ ALONE per W's 668-vote
+preference fit.
 
 ### A · MIR features & audio analysis (`mir/`, `mir/bin/python`)
 - **bungee time-stretch / pitch-shift** — `bungee_python` 0.2.1 (built in `mir/pitch_venv` from `mir/repos/bungee`); A/B GUI `mir/pitch_shifter_gui.py`. `bungee.Bungee(sr,ch).time_stretch/.pitch_shift`.

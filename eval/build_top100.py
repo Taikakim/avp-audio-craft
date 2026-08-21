@@ -40,17 +40,19 @@ CLASSES = [
 
 
 def stem_key(path):
-    """(model, prompt, seed) parsed from the cell naming convention
-    model__epN__cfgX__wYYY__prompt__sSEED — used ONLY for threshold calibration."""
+    """(model, epoch, prompt, seed) — the SAME TAKE up to sampler knobs (cfg / guidance weight).
+    Used for the HARD name-level dedup (knob variants of one take collapse to its best-PQ member)
+    and for threshold calibration (knob-sibling pairs are certain near-duplicates)."""
     b = os.path.basename(path)
     b = re.sub(r"\.(m4a|wav|flac|mp3)$", "", b)
     parts = b.split("__")
     if len(parts) >= 5:
         model = parts[0]
-        prompt = "__".join(p for p in parts[3:-1] if not p.startswith(("w", "cfg")))
+        ep = next((x for x in parts[1:3] if x.startswith("ep")), "")
+        prompt = "__".join(p for p in parts[2:-1] if not (p.startswith(("w", "cfg", "ep")) and p[-1].isdigit()))
         seed = parts[-1]
-        return model, prompt, seed
-    return b, "", ""
+        return model, ep, prompt, seed
+    return b, "", "", ""
 
 
 def stage_candidates(a):
@@ -166,27 +168,42 @@ def stage_select(a):
     if dup_sims and dist_sims:
         dup_med = float(np.median(dup_sims)); dup_p10 = float(np.percentile(dup_sims, 10))
         dist_p95 = float(np.percentile(dist_sims, 95))
-        thr = a.threshold if a.threshold else max(dist_p95 + 0.01, min(dup_p10, 0.995) - 0.005)
+        # In a homogeneous corpus the two distributions overlap near 1.0 (MERT cosine saturates),
+        # so the threshold is CAPPED — the hard name-dedup and the family cap carry most of the work.
+        thr = a.threshold if a.threshold else min(0.993, max(dist_p95 + 0.005, dup_p10))
         print(f"[cal] dupes med {dup_med:.4f} p10 {dup_p10:.4f} | distinct p95 {dist_p95:.4f} -> threshold {thr:.4f}")
     else:
         thr = a.threshold or 0.97
         print(f"[cal] insufficient calibration pairs; threshold {thr}")
 
     out = {"threshold": thr, "generated": time.strftime("%Y-%m-%d %H:%M"),
+           "hard_dedup": "one clip per (model, epoch, prompt, seed) knob-group + max 3 per (model, prompt, seed) take-family (epochs are versions too), BEFORE the MERT pass",
            "ranking": "PQ alone (W 2026-08-21: best single proxy of Kim's preference, 77.6% on 668 A/B votes)",
            "dedup": "MERT-v1-330M (mid 3-6 + layer 23), cosine, greedy from top PQ", "classes": {}}
     for lbl, es in cands.items():
         kept, dropped = [], 0
         kept_rows = []
+        seen_takes = set()
+        fam_count = {}
         for i, e in enumerate(es):
             k = f"{lbl}:{i}"
             if not done.get(k):
+                continue
+            take = stem_key(e["path"])
+            if take in seen_takes:            # knob variant of an already-kept take: hard-disqualified
+                dropped += 1
+                continue
+            fam = (take[0], take[2], take[3])  # model+prompt+seed, ANY epoch = one take family
+            if fam_count.get(fam, 0) >= 3:     # cap: epochs of one take are versions too
+                dropped += 1
                 continue
             v = E[row[k]]
             if kept_rows and float(np.max(np.stack(kept_rows) @ v)) >= thr:
                 dropped += 1
                 continue
             kept_rows.append(v)
+            seen_takes.add(take)
+            fam_count[fam] = fam_count.get(fam, 0) + 1
             e2 = dict(e); e2["rank"] = len(kept) + 1
             kept.append(e2)
             if len(kept) >= 100:

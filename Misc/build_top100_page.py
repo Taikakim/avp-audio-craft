@@ -22,8 +22,8 @@ CLASS_TITLES = {
     "T256_20s": ("T256 — 20–24 s", "the standard grid-cell length; by far the largest pool"),
     "T512_47s": ("T512 — ~47 s", "the production DoRA crop length"),
     "T1024_95s": ("T1024 — ~95 s", "long-form; small population so far — this class lists all it has"),
-    "T2048_190s": ("T2048 — ~190 s", "native-length evals (LUMI renders)"),
-    "T4096_380s": ("T4096 — ~380 s", "full-context native renders"),
+    "T2048_190s": ("T2048 — ~190 s", "native-length evals (LUMI renders); few distinct takes exist, so the deduped list is short"),
+    "T4096_380s": ("T4096 — ~380 s", "full-context native renders; ditto — short list = honest count of distinct takes"),
 }
 
 
@@ -75,10 +75,13 @@ def main():
     A("<div class=explain><b>What this is / why / how to read it.</b> Every generated clip we have "
       "ever scored (93k+), ranked <b>by Audiobox PQ alone</b> — chosen because on 668 of Kim's real "
       "A/B votes PQ alone predicted his preference better (77.6%) than any richer feature combination "
-      "(adding CE or DSP features made the proxy <i>worse</i>). Near-duplicates are <b>disqualified</b>: "
-      "walking each list from the top, a clip is dropped if its MERT embedding (rhythm layers 3–6 + "
-      "melody layer 23, cosine) is closer than a calibrated threshold to any clip already kept — so "
-      "the same take at three guidance weights appears once, at its best. <b>How to read:</b> click a "
+      "(adding CE or DSP features made the proxy <i>worse</i>). Near-duplicates are <b>disqualified</b> in two passes: "
+      "(1) hard name-level — the same take (model+prompt+seed) at different cfg/guidance-weight knobs "
+      "keeps only its best-PQ member, and at most 3 epochs of one take may appear; (2) MERT — walking "
+      "each list from the top, a clip is dropped if its MERT embedding (rhythm layers 3–6 + melody "
+      "layer 23, cosine) is closer than a capped calibrated threshold to any clip already kept. Long "
+      "classes list fewer than 100 because fewer than 100 distinct takes exist — the short list is the "
+      "honest count. <b>How to read:</b> click a "
       "cell to play; switching clips keeps the playhead (A/B at the same position); click again to stop. "
       "Columns carry the full recipe (model label, epoch, cfg, guidance weight, prompt, seed) for "
       "reproducibility. PQ is an ear <i>proxy</i> — this page is a listening shortlist, not a verdict.</div>")
