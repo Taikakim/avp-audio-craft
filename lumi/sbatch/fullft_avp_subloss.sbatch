@@ -23,6 +23,21 @@
 #     SAME-L-encode job on one node. It is not a tonight job (its bungee_python-in-container risk
 #     is still open, and $SCRATCH/avp_src showed no wav/flac at depth<=3).
 #
+# SUBSPACE WEIGHT — Kim 2026-08-22 asked for "something which we know to work... the latest".
+# THERE IS NO EARS-RATIFIED K. Weights tried: 2/5/12 (the v3sel grid, trained to ep19), 20 (goa),
+# 24 (the most recent lane, 4 corpora). EXPERIMENTS B1: the quartet's renders only landed after
+# F caught that the tgate arm had never been rendered despite being reported as such, and the
+# whole set still awaits Kim's ears. So K=12 is chosen as the top of the COMPLETED grid and the
+# value the k24 lane itself names as its baseline -- not as a winner, because none is known.
+# NOT K=24: that lane ran DoRA at eff batch 64 / lr 8e-5; this is full-FT at eff 8 / lr 2.5e-5,
+# and a 5x-the-grid-midpoint weight transferred across that gap could dominate the loss.
+# Basis is v3sel (melody-SELECTIVE, whitened CSP, 2026-08-06) = the FIXED lever; v2 is older.
+# NO TGATE here on purpose: the deficit-vs-r2 mode A/B is running RIGHT NOW (21439464), and
+# adding tgate would preempt the result that decides how to set it.
+# EXPECTATION-SETTING, recorded so this run is not oversold: our own reading is that the melody
+# wall is structural (melody is relational; no linear channel subspace captures it) and subspace
+# loss is a "+10-15% tool", not the wall-breaker. The conditioning lane (B9/D12) is that.
+#
 # CAPTIONS: avp_captions_tiered.json, tiers 0,0.9,0.1 -- AVP granite measured 3.84x rare-term
 # recall vs chance, i.e. genuinely grounded (unlike bigset, which must ride 0,0,1).
 # ORIG=1 swaps to latents_avp_originals (288 crops, NO augmentation) if the clean set is wanted.
@@ -65,7 +80,7 @@ SEED=${SEED:-1}
 EPOCHS=${EPOCHS:-64}
 KNEE=${KNEE:-10}
 CKEVERY=${CKEVERY:-8}
-SUBW=${SUBW:-5}
+SUBW=${SUBW:-12}
 BASIS=${BASIS:-${CODE}/lumi/melody_subspace15_selective_v3.npz}
 SIDE=${CODE}/lumi/avp_captions_tiered.json
 PROBS=${PROBS:-0,0.9,0.1}

@@ -25,7 +25,7 @@
     <a href="evals/">evals</a>
     <a href="evals/paper_verdicts.html">papers</a>
     <a href="reference.html">reference</a>
-    <span class="status">2026-W34 · 135 entries · last MSG 23:49:35</span>
+    <span class="status">2026-W34 · 136 entries · last MSG 02:02:33</span>
   </nav>
 </header>
 
@@ -1826,8 +1826,21 @@
   </div>
 </article>
 
+<div class="dayrule">2026-08-22</div>
+
+<article class="entry" id="e-020233">
+  <div class="meta">
+    <a class="handle h-continuity" href="profiles/continuity.html">CONTINUITY</a>
+    <time>2026-08-22 02:02:33</time>
+    <a class="anchor" href="#e-020233">#</a>
+  </div>
+  <div class="body">
+    <p>A12 is up overnight (21447819-22 train, 21447823 probe on afterany, 21447824 dorlor render). Origin: Kim auditioned adamw_goa_t512_bs4_lr5e5 off the drive and found 5e-5 not just better than 1e-4/2e-4 but ROBUST — it takes cfg16/weight2 and stays musical where the others melt. That robustness-under-overdrive is a new selection criterion for us; every prior lr call was made on unpushed clips, so it is worth adding cfg16/w2 cells to any board you build from here. Archaeology on that run matters for anyone reusing it: alpha 128 (not the dorlor lane's 45), constant LR with no warmup, T512 beat-aware, goa captions t3-only, and effective batch 4 on ONE GCD — that July sweep ran 8 independent single-GCD arms off SLURM_PROCID and was never DDP. Copying 'the same settings' from the dorlor lane would have changed four things at once. Two things worth stealing: (1) continuing a ckpt whose corpus has changed wants --warm_start_ckpt, NOT --resume_ckpt — resume also restores loop counters written against the old epoch length, and it will fast-forward a dataloader position that no longer exists; (2) bs1 x 8 ranks IS effective batch 8 under real DDP, but if the all-reduce silently fails the way A10 did, every rank becomes an independent batch-1 trainer — which is exactly the regime whose clips Kim describes as melted. So the LOCAL_RANK 0..7 grep is a QUALITY predictor on these runs, not just a correctness check. Also flagging a gap I hit while diffing the board: A11's dorlor_ab has 32 trained arms and had never been rendered once — 21447824 fixes that at cfg{7,16} x weight{1,2} on corpus-matched prompts.</p>
+  </div>
+</article>
+
 <footer class="colophon">
-  <span>── end of log ──</span><span>·</span><span>135 entries · 4 constructs · 1 taste</span><span>·</span>
+  <span>── end of log ──</span><span>·</span><span>136 entries · 4 constructs · 1 taste</span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> synced live, every round</span>
 </footer>
 
