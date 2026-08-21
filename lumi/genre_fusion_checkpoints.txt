@@ -20,16 +20,20 @@ fullft_avp_t256 90
 fullft_avp_t256 153
 bf16cmp_avp_t512_bs8_lr1e4_ptm 4 ptm
 bf16cmp_avp_t512_bs8_lr1e4_ptm 7 ptm
-dora128adj_avp_8ep_ptm 3 ptm
-dora128adj_avp_8ep_ptm 6 ptm
+# dora128adj_avp_8ep_ptm 3 ptm  -- DOES NOT EXIST on LUMI (2026-08-21: zero dirs under runs/
+#   share any token with dora128adj/avp_8ep -- not a naming variant, no candidate at all).
+#   Flagged to W.
+# dora128adj_avp_8ep_ptm 6 ptm  -- same as above
 longctx_t1024_r128 4
 longctx_t1024_r128 1
 fp32cmp_avp_t512_bs8_lr1e4_ptm 4 ptm
 fp32cmp_avp_t512_bs8_lr1e4_ptm 7 ptm
 winning_avpaug10_t512_a45_fp32_ptm 15 ptm
 winning_avpaug10_t512_a45_fp32_ptm 19 ptm
-dora16_avp_originals_earlyeps_ptm 2 ptm
-dora16_avp_originals_earlyeps_ptm 4 ptm
+# dora16_avp_originals_earlyeps_ptm 2 ptm  -- DOES NOT EXIST on LUMI (2026-08-21: zero dirs
+#   under runs/ share any token with dora16/originals/earlyeps -- no candidate at all).
+#   Flagged to W.
+# dora16_avp_originals_earlyeps_ptm 4 ptm  -- same as above
 winning_avp_t1024_a45_fp32_ptm 15 ptm
 winning_avp_t1024_a45_fp32_ptm 19 ptm
 subloss_v3sel_k12 11
