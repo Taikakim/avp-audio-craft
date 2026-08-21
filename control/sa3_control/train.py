@@ -187,6 +187,15 @@ def main():
                     help="explicit multi-root form of --encoded_dir: one or more latent dirs "
                          "(space-separated). Overrides --encoded_dir when given.")
     ap.add_argument("--model", default="medium-base")
+    ap.add_argument("--base-state-ckpt", default=None,
+                    help="B9 (Kim 2026-08-21): overlay a FULL-FINETUNE checkpoint's weights onto "
+                         "the loaded base DiT before attaching/training controls — 'train the "
+                         "heads on top of our best full finetune instead of the base model'. "
+                         "Path to the fat Lightning ckpt; EMA shadow weights are preferred "
+                         "(diffusion_ema.ema_model.*, what deploys) with online fallback.")
+    ap.add_argument("--base-state-online", action="store_true",
+                    help="with --base-state-ckpt: load the ONLINE weights (diffusion.model.*) "
+                         "instead of the EMA shadow")
     ap.add_argument("--adapter-layers", default="",
                     help="restrict TRAINING to these cross-attn tap indices, e.g. '8-15' or "
                          "'13,14,15' (default: all 24). Adapters are still INSTALLED at every "
@@ -382,6 +391,29 @@ def main():
     from stable_audio_3 import StableAudioModel
     print(f"[load] {args.model} ({args.precision})", flush=True)
     sam = StableAudioModel.from_pretrained(args.model, device=device, model_half=False)
+    if getattr(args, "base_state_ckpt", None):
+        # Same proven prefix-strip loader as lumi/render_matrix_cells.py:113 (the
+        # 2026-07-21 cov-assert bug lives in naive "model."-stripping — try both).
+        ck = torch.load(args.base_state_ckpt, map_location="cpu", weights_only=False)
+        sd_raw = ck.get("state_dict", ck)
+        tgt = sam.model.model
+        want = set(dict(tgt.named_parameters())) | set(dict(tgt.named_buffers()))
+        prefixes = (("diffusion.model.", "model.") if args.base_state_online
+                    else ("diffusion_ema.ema_model.",))
+        sd = max(
+            ({(k[len(pfx):] if k.startswith(pfx) else k): v for k, v in sd_raw.items()}
+             for pfx in prefixes),
+            key=lambda d: sum(1 for k in d if k in want))
+        missing, _ = tgt.load_state_dict(
+            {k: v.to(next(tgt.parameters()).dtype) for k, v in sd.items() if k in want},
+            strict=False)
+        cov = 1 - len(missing) / max(1, len(list(tgt.state_dict())))
+        assert cov > 0.99, (f"[base-state] ckpt covers only {cov:.1%} of the DiT "
+                            f"({len(missing)} missing) — wrong ckpt, or EMA keys absent "
+                            f"(try --base-state-online)")
+        print(f"[base-state] overlaid {args.base_state_ckpt} "
+              f"({'online' if args.base_state_online else 'EMA'} weights, cov {cov:.1%})")
+        del ck, sd_raw, sd
     if dtype != torch.float32:
         sam.model.to(dtype)                                 # base in bf16
     dit = sam.model.model                                    # DiTWrapper -> DiffusionTransformer
