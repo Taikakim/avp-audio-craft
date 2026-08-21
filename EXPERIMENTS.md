@@ -281,6 +281,13 @@ claim, including ones already in this file, against both corrections.
   different-curve ⇒ different-output check. **Kill-criterion:** after ~10 ep, if held-out
   curve-following corr of A ≤ B ≤ no-control baseline, the inlet is unused — stop.
 
+### C3-addendum — Replica-soup verdict (2026-08-21 evening): WORKS on healthy arms
+- a45 rsoup19/rtsoup cells score CLEAN (HF 0.004-0.006 = raw baseline; G) — the bubbly-artifact
+  finding was a128-contamination-ONLY (blending a spike-corrupted replica set). Pipeline
+  separately exonerated (soup-of-one identity test, audio cosine 1.000). Open: PQ delta of a45
+  soup vs single-replica cells (the averaging-rescue quantification); spectral repair on a128
+  queued behind G's checkpoint pull.
+
 ### B8 — Suomisoundi T512 anchor-clean + caption-probs drift postmortem (W+C, 2026-08-21) — **RUNNING: 21430198 (torchrun, PROBS_OVERRIDE=0.25,0.45,0.30); the cancelled 21428358/59 partials kept as soup input, see A10**
 - W's audit found winning_fleet's suomi tuple 0,0.9,0.1 was C's drift from the ratified
   0.25/0.45/0.30 (Kim 08-18) — zero t1 share = the corpus-anchor token "suomisoundi" never
