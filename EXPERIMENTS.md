@@ -491,16 +491,25 @@ claim, including ones already in this file, against both corrections.
   tail runs** — B2's job (21416096) TIMEOUT'd at exactly 12:00, right after ep19 finished and before
   its render tail could start; its 3 siblings survived only because their jobs happened to finish
   inside the window. A render that lives inside the training job's walltime is exactly as fragile
-  as the training job's own time estimate. **Concrete cost, measured (F, 08-21 coverage audit,
-  Kim's ask):** of ~27 distinct trained-model run dirs on LUMI from the past week with real
-  checkpoints, checked against `manifest_live.jsonl`, at least **~104 trained checkpoints across 6
-  run families have ZERO rendered clips** — the suomisoundi_dora r256/r32 × lr1e-4/lr3e-5 sweep (4
-  arms × 12 ckpts = 48, fully trained, nothing heard — W's call whether to render), the
-  `fullft_mixed_avp_latents_sa3_t4096{,_wdfix,_wd03}` family (3 variants, 53 ckpts combined), and B2
-  above (3 ckpts, previously reported rendered — it wasn't; catch-up render `b2_tgate_render.sbatch`
-  queued, `a898f28`). Most of the remainder with zero clips
-  are 1-4-checkpoint early-stage/cancelled arms from this week's DDP incident, lower priority. Full
-  per-family breakdown in chat 08-21.
+  as the training job's own time estimate.
+- **Coverage audit (F, 08-21, Kim's ask) — CORRECTED same day (W): scope was manifest coverage, not
+  render existence, and those imply very different remedies.** First pass checked ~27 trained-model
+  run dirs against `manifest_live.jsonl` and reported "~104 checkpoints, zero rendered clips" across
+  the suomisoundi_dora r256/r32×lr sweep (48 ckpts) and `fullft_mixed_avp_latents_sa3_t4096{,_wdfix,
+  _wd03}` (53 ckpts). **Wrong framing for both:** real renders exist for both families on the UUID
+  drive (already pulled home) — 2141 suomi_r* clips, 54 fullft_mixed_avp_goa_t4096 clips — they were
+  simply never INGESTED into the manifest. Kim had already listened to and flagged one of the
+  suomi clips as degraded on 08-18, which is the tell a "never rendered" reading should have caught.
+  **The actual gap is one `eval/ingest_matrix_cells.py` run, not GPU time** — Kim's call since it
+  writes to the board. **A real, smaller gap survives inside that:** W's dry-run found 967 of 3108
+  suomi sidecars have no sibling `.wav` — genuinely missing, not just un-ingested; worth identifying
+  which cells before calling that sweep complete. B2 (3 ckpts, tgate arm) remains a genuine
+  zero-render gap, verified the same way (checked the actual render directory, found nothing) — catch-up
+  render `b2_tgate_render.sbatch` queued (`a898f28`). The 1-4-checkpoint early-stage/cancelled tail
+  from this week's DDP incident is unchecked against render existence — treat that list as unverified
+  by this method, not confirmed-empty. **Standing lesson (W, same pattern he hit twice today
+  himself):** "absent from the index" and "was never produced" are different claims — state which
+  one a check actually measured.
 - GPU mutex on the shared box: hold the lock with the DRIVER's pid across clips (G's per-clip processes
   read as idle/dead). `Misc/gpu_guard.sh`.
 - NVMe budget for step-resolution runs: ≤ ~80 % free; thin ckpts to the spectra grid once sketches exist.
