@@ -485,13 +485,20 @@ claim, including ones already in this file, against both corrections.
 
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
-- Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **Concrete
-  cost, measured (F, 08-21 coverage audit, Kim's ask):** of ~27 distinct trained-model run dirs on
-  LUMI from the past week with real checkpoints, checked against `manifest_live.jsonl`, at least
-  **~104 trained checkpoints across 6 run families have ZERO rendered clips** — the suomisoundi_dora
-  r256/r32 × lr1e-4/lr3e-5 sweep (4 arms × 12 ckpts = 48, fully trained, nothing heard), the
+- Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **More
+  precise than "not implemented" (C, 08-21, from the B2 case): it exists as a fire-and-forget tail
+  INSIDE the training sbatch, so it silently dies whenever the job hits its walltime before the
+  tail runs** — B2's job (21416096) TIMEOUT'd at exactly 12:00, right after ep19 finished and before
+  its render tail could start; its 3 siblings survived only because their jobs happened to finish
+  inside the window. A render that lives inside the training job's walltime is exactly as fragile
+  as the training job's own time estimate. **Concrete cost, measured (F, 08-21 coverage audit,
+  Kim's ask):** of ~27 distinct trained-model run dirs on LUMI from the past week with real
+  checkpoints, checked against `manifest_live.jsonl`, at least **~104 trained checkpoints across 6
+  run families have ZERO rendered clips** — the suomisoundi_dora r256/r32 × lr1e-4/lr3e-5 sweep (4
+  arms × 12 ckpts = 48, fully trained, nothing heard — W's call whether to render), the
   `fullft_mixed_avp_latents_sa3_t4096{,_wdfix,_wd03}` family (3 variants, 53 ckpts combined), and B2
-  above (3 ckpts, previously reported rendered — it wasn't). Most of the remainder with zero clips
+  above (3 ckpts, previously reported rendered — it wasn't; catch-up render `b2_tgate_render.sbatch`
+  queued, `a898f28`). Most of the remainder with zero clips
   are 1-4-checkpoint early-stage/cancelled arms from this week's DDP incident, lower priority. Full
   per-family breakdown in chat 08-21.
 - GPU mutex on the shared box: hold the lock with the DRIVER's pid across clips (G's per-clip processes
