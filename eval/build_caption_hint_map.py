@@ -261,6 +261,11 @@ def main():
                             print(f"[hint-map] genre failed on {rel}: {e}", flush=True)
                             labs = []
                         gcache[rel] = labs
+                        # FLUSH PERIODICALLY: a ~35 min GPU pass that only writes its cache at the
+                        # end loses everything to any interruption (killed one run 2026-08-22).
+                        if a.genre_cache and len(gcache) % 50 == 0:
+                            json.dump(gcache, open(a.genre_cache, "w"))
+                            print(f"[hint-map] classified {len(gcache)}", flush=True)
                     if labs:
                         hint = ", ".join(labs)
                         stats["genre_model"] = stats.get("genre_model", 0) + 1

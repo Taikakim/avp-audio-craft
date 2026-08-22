@@ -147,6 +147,12 @@ def main():
     ap.add_argument("--plan-seed", type=int, default=20260822,
                     help="SHARED across families — do not vary it per arm or the comparison breaks")
     ap.add_argument("--control-gain", type=float, default=1.0)
+    ap.add_argument("--control-dir", default=None,
+                    help="dir of <stem>.melody8.npy contour sidecars for the CONTROL arms. The "
+                         "control fed to each cell is the SOURCE crop's OWN contour over the SAME "
+                         "window -- i.e. 'keep this clip's melodic shape while a foreign caption "
+                         "pulls the timbre elsewhere', which is the sharpest form of Kim's ask. A "
+                         "control ckpt WITHOUT this dir is a FATAL error, not a silent no-op.")
     ap.add_argument("--refs", action="store_true", help="also decode the untouched source crop")
     a = ap.parse_args()
 
@@ -156,6 +162,7 @@ def main():
     from stable_audio_3.inference.longform import SDEditReanchor
     from sa3_control.audio_io import save_audio
     from render_showcase import load_fullft_state
+    from sa3_control.adapters import ControlContext, use_control_context
 
     corpora = []
     for spec in a.corpus:
@@ -193,7 +200,6 @@ def main():
         ck = torch.load(a.ckpt, map_location="cpu", weights_only=False)
         md = next(sam.model.model.parameters()).dtype
         if ck.get("control_mode"):          # Head-B control adapter (morph / contour)
-            from sa3_control.adapters import ControlContext, use_control_context   # noqa: F401
             from sa3_control.conditioner import MelodyContourEncoder
             from sa3_control.generate import load_adapter_state
             from sa3_control.inject import install_adapters
@@ -206,7 +212,13 @@ def main():
             for w in wrappers:
                 w.adapter.to(device=device, dtype=md)
             enc.eval()
-            ctrl_ctx = ("control", enc)
+            ctrl_ctx = enc
+            if not a.control_dir:
+                raise SystemExit(
+                    f"[a2a] FATAL: {a.ckpt} is a control checkpoint (control_mode="
+                    f"{ck.get('control_mode')}) but no --control-dir was given. Running it "
+                    f"without a control stream would train-load the adapter and then condition on "
+                    f"NOTHING -- it would look like a working arm and silently be an ablation.")
             print(f"[a2a:{a.label}] control adapter, vocab={cargs.get('melody_vocab')}", flush=True)
         else:                                # plain LoRA/DoRA adapter checkpoint
             # model.load_lora([path]) is the loader render_matrix_cells.py uses (arch is read
@@ -236,7 +248,24 @@ def main():
             if not rp.exists():
                 decode_save(z_in, rp)
         with torch.inference_mode():
-            z_out = reanchor.reanchor(z_in, p["sigma"], p["prompt"], p["seed"])
+            if ctrl_ctx is None:
+                z_out = reanchor.reanchor(z_in, p["sigma"], p["prompt"], p["seed"])
+            else:
+                # the SOURCE crop's own contour over the SAME window as the latent crop
+                cp = os.path.join(a.control_dir, p["src_stem"] + ".melody8.npy")
+                if not os.path.exists(cp):
+                    print(f"[a2a:{a.label}] no contour for {p['src_stem']}; skipping cell",
+                          flush=True)
+                    continue
+                stream = np.load(cp)[i0:i0 + a.frames].astype(np.int64)
+                if len(stream) < a.frames:
+                    stream = np.pad(stream, (0, a.frames - len(stream)))
+                ctrl = ctrl_ctx(torch.from_numpy(stream)[None].to(device))
+                if a.cfg != 1.0:
+                    ctrl = torch.cat([ctrl, torch.zeros_like(ctrl)], dim=0)
+                with use_control_context(ControlContext(ctrl, gain=a.control_gain)):
+                    z_out = reanchor.reanchor(z_in, p["sigma"], p["prompt"], p["seed"])
+                np.save(out / (cell_name(p)[:-4] + ".stream.npy"), stream.astype(np.int8))
         name = cell_name(p)
         np.save(out / (name[:-4] + ".z0.npy"), z_out.cpu().to(torch.float16).numpy())
         decode_save(z_out, out / name)
