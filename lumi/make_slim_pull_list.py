@@ -24,7 +24,10 @@ import re
 ROOT = "/scratch/project_465003186/runs"
 
 
-def keep_epochs(eps):
+MIN_GAP = 2   # --min-gap: see keep_epochs
+
+
+def keep_epochs(eps, min_gap=None):
     eps = sorted(set(eps))
     if not eps:
         return set()
@@ -34,17 +37,43 @@ def keep_epochs(eps):
     def nearest(t):
         return min(eps, key=lambda e: (abs(e - t), -e))
 
-    keep = {last, nearest(round(0.50 * last)), nearest(round(0.75 * last))}
+    # PRIORITY ORDER matters once min_gap is enforced: the terminal epoch is never dropped, then
+    # 75%, then 50%, then the ladder. A pick closer than min_gap to an already-kept epoch is
+    # DISCARDED -- on a short run 50% and 75% land adjacent (epochs 0..7 -> 4 and 5) and we were
+    # pulling two near-identical 4.6 GB full-FT slims for one run. Kim spotted it in the transfer
+    # listing 2026-08-22. min_gap=0 restores the old behaviour.
+    gap = MIN_GAP if min_gap is None else int(min_gap)
+    keep = []
+
+    def add(e):
+        if e is None:
+            return
+        if any(abs(e - k) < gap for k in keep):
+            return
+        if e not in keep:
+            keep.append(e)
+
+    add(last)
+    add(nearest(round(0.75 * last)))
+    add(nearest(round(0.50 * last)))
     if span > 15:
         step = max(1, math.ceil(0.2 * span))
         e = last - step
         while e > 15:
-            keep.add(nearest(e))
+            add(nearest(e))
             e -= step
-    return keep
+    return set(keep)
 
 
 def main():
+    global MIN_GAP
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--min-gap", type=int, default=MIN_GAP,
+                    help="discard a kept epoch that is closer than this many epochs to one already "
+                         "kept (terminal wins, then 75%%, then 50%%, then the ladder). 0 = old "
+                         "behaviour. Default 2; 3 spreads short runs wider.")
+    MIN_GAP = ap.parse_args().min_gap
     sel, n_all = [], 0
     dirs = sorted(glob.glob(ROOT + "/*/")) + sorted(glob.glob(ROOT + "/*/*/"))
     for d in dirs:
