@@ -139,12 +139,51 @@ def main():
                          "computed keys actually HIT. Run this before trusting a --rel-prefix: a "
                          "keying mismatch produces no error at any later stage, it just produces "
                          "unhinted captions that look fine.")
+    ap.add_argument("--from-folders", action="store_true",
+                    help="FOLDER-NAME MODE (Kim 2026-08-22, the ai-music corpus): take every audio "
+                         "file under --archive and use its TOP-LEVEL folder as the hint — those "
+                         "folder names are real curation ('Full-on, Psytrance', 'Proto-trance, New "
+                         "Beat, Sunset Moody'), not path noise. Ignores .INFO sidecars entirely, "
+                         "since a freshly-rsynced archive has none. "
+                         "NOTE THE DISTINCTION THAT MATTERS: this feeds the folder name to Music "
+                         "Flamingo as GROUND TRUTH IT SHOULD ASSUME, so it still describes the "
+                         "audio it hears. It is NOT a caption derived from a folder name — that is "
+                         "exactly what made the bigset's granite tier measure NOT GROUNDED (1.24x "
+                         "rare-term recall vs chance).")
+    ap.add_argument("--folder-depth", type=int, default=1,
+                    help="how many leading path components form the hint (default 1 = top folder)")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="top-level folder to skip (repeatable), e.g. 'Goa Dataset'")
     ap.add_argument("--out", required=True, type=Path)
     a = ap.parse_args()
 
     fields = tuple(f.strip() for f in a.fields.split(",") if f.strip())
     out, stats = {}, {"with_meta": 0, "none": 0, "no_info": 0}
     years = {}
+
+    if a.from_folders:
+        skip = set(a.exclude)
+        per_folder = {}
+        for root, _dirs, files in os.walk(a.archive):
+            for f in files:
+                if os.path.splitext(f)[1].lower() not in AUDIO_EXT:
+                    continue
+                rel = str((Path(root) / f).relative_to(a.archive))
+                parts = Path(rel).parts
+                if not parts or parts[0] in skip:
+                    continue
+                hint = ", ".join(parts[:a.folder_depth])
+                key = hashlib.sha1((a.rel_prefix + rel).encode()).hexdigest()
+                out[key] = hint
+                per_folder[hint] = per_folder.get(hint, 0) + 1
+        if not out:
+            raise SystemExit(f"[hint-map] FATAL: no audio found under {a.archive}")
+        a.out.write_text(json.dumps(out, ensure_ascii=False))
+        print(f"[hint-map] {len(out)} tracks from {len(per_folder)} folders -> {a.out}")
+        for h, n in sorted(per_folder.items(), key=lambda kv: -kv[1]):
+            print(f"  {n:6d}  {h}")
+        return
+
     for root, _dirs, files in os.walk(a.archive):
         if a.audio_name:
             if a.audio_name not in files:
