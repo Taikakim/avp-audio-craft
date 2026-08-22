@@ -257,7 +257,7 @@ eight rank-0s = four arms training in the worst regime the sweep found. Check it
 half throughput = ~36 h to ep48, past the 23 Aug wall. eff 8 is the closest reachable point, not a
 free choice.)*
 
-### A13 — Mellow-LR full-FT on AVP with subspace weighting ("let one run roll on alone") — **RUNNING (2026-08-22, 21448092)**
+### A13 — Mellow-LR full-FT on AVP with subspace weighting ("let one run roll on alone") — **TRAINED (21448092, COMPLETED 03:44:22, 8 rungs, DDP verified 0..7); RENDERING (21453822)**
 
 **Kim direct, ~03:00:** *"This one has a very mellow LR and some nice controls that have been
 helpful."* AVP aug latents, T1024, **lr 2.5e-5**, FULL-FT, AdamW (wd default 0.01), subspace-loss
@@ -300,6 +300,13 @@ relational, no linear channel subspace captures it — B9/D12 conditioning is th
 judge this run on whether mellow-LR full-FT *sounds good* with a modest assist, NOT on whether
 melody arrives. ⚠️ Full-FT fats are ~31 GB each; `CKEVERY=8` → 8 rungs → ~250 GB (storage was
 35% of TB-hours at submit). Do not densify the ladder without checking free space.
+
+**RENDER PASS WAS MISSING — 21453822 (`a13_render.sbatch`, 2026-08-22).** The training sbatch
+shipped with no audition wired — the same gap that left A11's 32 arms unheard. Full-FT ckpts render
+as `--ckpt none --base-state-ckpt <ck>`; adapter `--strengths` do not apply, so the pushed axis is
+cfg alone: 20 prompts × cfg{7,16} × 8 rungs = 320 cells → `renders/a13_avp/`.
+**STANDING LESSON: a training sbatch is not finished until its render pass exists.** Every arm that
+trains without one becomes another unauditioned family — that is exactly how A11 accumulated 32.
 
 ## B. The melody wall
 
