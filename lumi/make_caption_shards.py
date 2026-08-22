@@ -77,6 +77,12 @@ def main():
                          "beside each full_mix, and an extension glob captions the stems as if they "
                          "were tracks (caught 2026-08-18 when a shard run found 2707 'tracks' in a "
                          "2676-track corpus -- the extra 31 were stems from an in-flight upload).")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="top-level folder under --archive to skip (repeatable). Needed to dry-run "
+                         "against the LOCAL ai-music tree, which still holds 'Goa Dataset' and "
+                         "'Goa_Separated' — the LUMI copy excluded them at rsync time, so without "
+                         "this a local count reads 12502 instead of the real 3434 and the GCD-hour "
+                         "estimate is ~4x too high.")
     ap.add_argument("--mixed-layout", action="store_true",
                     help="corpus mixes already-separated track dirs (<track>/full_mix.flac + "
                          "stems) with flat raw audio files. Per directory: a full_mix IS the "
@@ -130,7 +136,12 @@ def main():
     # `find` has been unreliable on Lustre here; scandir is neither.
     STEM_NAMES = {"bass", "drums", "other", "vocals", "guitar", "piano"}
     tracks = []
+    _excl = {e.rstrip("/") for e in a.exclude}
     for root, _dirs, files in os.walk(a.archive):
+        if _excl:
+            _rel = os.path.relpath(root, a.archive)
+            if _rel != "." and _rel.split(os.sep)[0] in _excl:
+                continue
         # MIXED LAYOUT (ai-music, 2026-08-22): this corpus is NOT uniform. Some folders are
         # already separated -- <track>/{full_mix,bass,drums,other,vocals}.flac + .INFO -- and the
         # rest are flat "Artist - Title.flac". NEITHER existing mode is correct here: an extension
