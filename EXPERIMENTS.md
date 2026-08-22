@@ -722,6 +722,55 @@ trains without one becomes another unauditioned family — that is exactly how A
   Q5–Q7 (gated on a Phase-B head). Their `measure_contour_codes.py` was NOT in the zip — ask the
   external agent or re-derive if Q2 (min H(A|B) on real audio) is picked up.
 
+### D14 — Cross-prompt a2a bracket at high noise, across model families — **PLANNED (Kim direct 2026-08-22, LUMI)**
+
+**Kim's spec, verbatim in intent:** bracket a2a transformations with noising values **random in
+[0.5, 0.9]**; take **T4096 crops** from our datasets; a2a them with **a random prompt taken from
+ANOTHER clip** (need not be the same corpus); run at least the **melody-subspace** models, plus
+whatever else might help — the **morph** arms, and the **MIDI/pianoroll control** path with a midi
+crop drawn from our datasets used as the control.
+
+**RELATION TO [D1]:** D1 is the *measurement* twin — SDEdit survival curves (temporal phase vs TIV
+vs t_s), "what survives noising". D14 is the *generative* twin: what the different model families
+DO to a real clip when handed a foreign prompt at high noise. Same machinery, same t_s axis,
+different question. Extend D1's answer into D14's grid rather than re-deriving the ladder.
+
+**REUSE — DO NOT REBUILD (this lane has already cost us one lost night):**
+- **Latent-space a2a already exists.** `stable_audio_3/inference/sampling.py` takes `init_data=`
+  (LATENTS) + `init_noise_level=`, and `inference/longform.py:330` already calls it that way. Our
+  corpora are stored AS latents, so the whole experiment runs in latent space — **no audio load,
+  no SAME encode**. That is the cheap path and it is already proven code.
+- `eval/a2a_fulltrack.py` (Kim 2026-07-07): the noise-ratio ladder + 380 s two-window crossfade,
+  and the `--noise-levels` interface. `eval/breathing_a2a.py`, `eval/dual_lora_a2a.py`,
+  `eval/layered_lora_a2a.py`, `eval/transition_lab.py` for the multi-adapter variants.
+- `lumi/render_morph.py` (2026-08-22) for the morph/control path: correct-vocab
+  `MelodyContourEncoder`, `install_adapters`/`load_adapter_state`, `ControlContext(ctrl, gain)`.
+- `lumi/render_matrix_cells.py` for ckpt loading across adapter / `--base-state-ckpt` / `--fullft`.
+
+**⚠️ TWO TRAPS THAT WILL SILENTLY RUIN THIS RUN:**
+1. **The 120 s `generate()` trap** (DISCOVERIES 2026-07-07, and the LUMI 2026-07-22 native-cell
+   bug). `generate(duration=)` defaults `sample_size` to 5,292,032 = **120 s**, so a "T4096 crop"
+   silently renders 120 s unless `sample_size`/`--frames` is set explicitly. Kim's spec is T4096 =
+   380 s; getting this wrong produces plausible audio at the wrong length and nothing errors.
+2. **The chosen noise band is exactly where we already know harmony dies.** W, 2026-07-30: *"the
+   mid-band a2a loss is the DiT abandoning harmony, not input fragility"*
+   (`Misc/latent_noise_fragility.py`). So [0.5, 0.9] is not neutral territory — it straddles the
+   band where the baseline is known to drop harmonic structure. That makes it a GOOD bracket (it
+   is where a melody-subspace or contour-conditioned model should differentiate from baseline) but
+   it means **baseline degradation is the expected result, not a bug** — and the read is the
+   DELTA between families in that band, not absolute quality.
+
+**READ / KILL:** the point is family separation in the 0.5–0.9 band. If subspace / morph /
+midi-control arms are indistinguishable from baseline there, the conditioning is not buying
+robustness under re-noising and the lane says so. Random-prompt-from-another-clip is what makes it
+a real test: it forces the model to choose between the init audio and the caption, which is
+precisely where a control signal should assert itself.
+
+**TIMING (2026-08-22):** the allocation ends **23 Aug** with ~85 node-h left, and a full grid does
+not fit. Either a deliberately small version runs today (a few families × a few crops) or this is
+the first experiment of the NEXT allocation. Do not let it be planned twice — that is what this
+entry exists to prevent.
+
 ## E. Melody head (LatCH f0) and LatCH hygiene
 
 ### E1 — Held-out-validated melody head: epoch budget + EMA — **DONE 08-18**
