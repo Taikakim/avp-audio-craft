@@ -839,9 +839,15 @@ probably closed to us, while a glitchy one is the thing the substrate can actual
 the claim before building on it: run the encodability screen (a linear probe from z for phoneme or
 grapheme identity on real vocal stems) — if it reads at chance, that settles the ceiling cheaply.
 
-**THE DATA CONSTRAINT:** vocal-bearing folders in ai-music are Punk 72, Goth 75, EBM & Industrial
-76, Spoken word/Rap 26, Rock 20, Progressive Rock 21 ≈ **290 tracks**. Far too little for
-conditioning to generalise — which for "weird glitchy" is arguably the mechanism rather than the
+**THE DATA CONSTRAINT — REVISED UPWARD, and the supervision is better than assumed.** Kim
+2026-08-22: *"timecoded lyrics exist"* — and there are **644 `.lrc` files in the tree, 582
+excluding Goa Dataset**: home listening 147, Full-on Psytrance 100, Psych/Exp/Acid Folk 57, Goth
+50, Punk 48, Retkipakumusaa 39, EBM 34, Spoken word/Rap 16, Rock 16, Prog Rock 13, Proto-trance
+11, … So the earlier "≈290 vocal tracks, needs a Whisper pass" estimate was both too small and the
+wrong shape: this is **582 tracks of GROUND-TRUTH, TIME-ALIGNED lyrics**, no ASR and no ASR error
+floor. Timecoding is what makes it usable at all — conditioning needs to know WHEN, and at
+10.766 Hz the alignment is the only part of a lyric the latent can act on. Still small for
+generalisation — which for "weird glitchy" is arguably the mechanism rather than the
 obstacle: undertrained conditioning on tiny data IS the glitch generator. Frame it as an
 aesthetic-instrument experiment, not a capability one, and the kill-criterion changes accordingly
 (does it produce something Kim wants to use, not does it transcribe).
@@ -852,8 +858,29 @@ BY-PRODUCT of the separation we want anyway. Whisper transcription can then happ
 time — it needs no allocation. So the LUMI-only half of this experiment gets done for free if the
 separation runs; skipping separation is what would make it expensive later.
 
-**Prereqs, in order:** ai-music separation (in flight) → vocal stems → local Whisper pass → the
-encodability screen above → only then any training decision.
+**Prereqs, in order:** ai-music separation (in flight) → vocal stems → **parse the existing .lrc
+timecodes** (no Whisper needed) → the encodability screen above → only then any training decision.
+The 574 already-separated tracks (see G-note below) come with vocal stems already, so a chunk of
+this is done before the allocation is even used.
+
+### G-note — ai-music corpus has TWO layouts; a naive separation run separates the stems — **ACTIVE (2026-08-22)**
+
+`/run/media/kim/Mantu/ai-music` (182 GB excl. `Goa Dataset` + `Goa_Separated`, 5,765 tracks,
+uploading to `$SCRATCH/aimusic_src/`) is **heterogeneous**:
+- **already separated + analysed** — `<track dir>/{full_mix,bass,drums,other,vocals}.flac` plus
+  `.INFO` / `.BEATS_GRID` / `.DOWNBEATS` / `.ONSETS`. Counts by `.INFO`: Prog & Psytechno 255,
+  Progressive Trance & Melodic Techno 146, Chill Dataset 131, organic dance 42 ≈ **574 tracks**.
+  `latents_chill` (115) and `latents_organic_dance` (32) are ALREADY pre-encoded locally.
+- **raw** — flat `Artist - Title.flac` (+ `.lrc` where lyrics exist), everything else.
+
+⚠️ **`goa_sep.sbatch` over this tree would (a) re-separate the 574 already-done tracks and (b)
+treat `bass.flac`/`drums.flac`/`other.flac`/`vocals.flac` as TRACKS and separate the stems.** Its
+`.sep_done` marker does not protect us — those dirs were separated by the LOCAL pipeline and never
+got one. This is the same shape as the 2026-08-15 incident where a resumable tool's skip-test
+("output exists") silently disagreed with what another tool had written to the same path.
+**Guard: skip any directory already containing `vocals.flac`, and never admit a stem basename as a
+track.** Same guard belongs on the captioning and pre-encode shards (their done-tests must agree
+with the separator's, per the lumi-ops shard rule).
 
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
