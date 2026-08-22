@@ -722,7 +722,7 @@ trains without one becomes another unauditioned family — that is exactly how A
   Q5–Q7 (gated on a Phase-B head). Their `measure_contour_codes.py` was NOT in the zip — ask the
   external agent or re-derive if Q2 (min H(A|B) on real audio) is picked up.
 
-### D14 — Cross-prompt a2a bracket at high noise, across model families — **PLANNED (Kim direct 2026-08-22, LUMI)**
+### D14 — Cross-prompt a2a bracket at high noise, across model families — **RUNNING (21457563, submitted 2026-08-22)**
 
 **Kim's spec, verbatim in intent:** bracket a2a transformations with noising values **random in
 [0.5, 0.9]**; take **T4096 crops** from our datasets; a2a them with **a random prompt taken from
@@ -766,10 +766,36 @@ robustness under re-noising and the lane says so. Random-prompt-from-another-cli
 a real test: it forces the model to choose between the init audio and the caption, which is
 precisely where a control signal should assert itself.
 
-**TIMING (2026-08-22):** the allocation ends **23 Aug** with ~85 node-h left, and a full grid does
-not fit. Either a deliberately small version runs today (a few families × a few crops) or this is
-the first experiment of the NEXT allocation. Do not let it be planned twice — that is what this
-entry exists to prevent.
+**SUBMITTED 21457563** — `lumi/sbatch/a2a_bracket.sbatch` + `lumi/a2a_bracket.py`, 8 families
+one-per-rank on one node, ~2 node-h of the 111 free. Families: baseline · sub_v3sel_k5 ·
+sub_v3sel_k12 · sub_k24_bigmix · a12_warm · a12_warmwsd · a13_fullft_avp · morph_L3_ft(+contour).
+Corpora goa/avpaug/suomi/biggoa, 50% of donor prompts drawn cross-CORPUS.
+
+**F'S SWEEP (2026-08-22, read-only) CONFIRMED THE GAPS ARE REAL:**
+- **No cross-prompt a2a exists anywhere in this codebase.** `a2a_fulltrack` is one prompt per
+  track; `layered_lora_a2a`'s "different prompts" are per-SECTION within ONE track. D14 is the
+  first deliberate audio/caption mismatch test.
+- **D1 WAS NEVER RUN** — "PLANNED" verbatim, no results. So there is no survival curve, no t_s
+  sweep, no numbers: nothing to extend, and **nothing validating the [0.5,0.9] band**. Hence the
+  anchor cells.
+- **Adapter vs full-FT under re-noising is UNTESTED.** D14's a13_fullft_avp arm against the
+  adapter arms is the first data point, not a confirmation.
+- **Literature:** *Diffusion Warm Initialization* (2606.18968, DAFx26) locates the SDEdit
+  skip-fraction sweet spot empirically on Stable Audio Open (our family lineage) via a
+  pitch-Jaccard + FAD sweep. No paper hands us a validated band, but that is a borrowable METHOD
+  if we ever want to check Kim's instinct with numbers instead of ears.
+- **Census gotcha:** morphcond arms save `riffer_final.pt`, NOT `epoch=N.ckpt` — an `epoch=*.ckpt`
+  glob finds ZERO morph arms.
+
+**DELIBERATELY EXCLUDED: the pianoroll / MIDI-control arm, though Kim asked for it.** Its control
+enters via the `modular_local_embeds` inlet, and `SDEditReanchor` builds its OWN conditioning dict
+(inpaint_mask + masked_input only) — the arm would run **unconditioned while looking like it
+worked**. Extending the reanchor conditioning path is the prerequisite; that is the follow-up, and
+it is the single most valuable thing to build for the next allocation since it also unblocks any
+future control-under-a2a test. *(The morph arm IS conditioned properly — on the SOURCE crop's own
+contour over the SAME window, i.e. "hold this clip's melodic shape while a foreign caption pulls
+the timbre elsewhere". `a2a_bracket.py` makes a control ckpt without `--control-dir` FATAL for
+exactly this reason.)*
 
 ## E. Melody head (LatCH f0) and LatCH hygiene
 
