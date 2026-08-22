@@ -1,10 +1,10 @@
 # SA3 Model Index
 
 > [!NOTE]
-> **Generated 2026-08-17 — re-run `python3 Misc/build_model_index_page.py`.**
+> **Generated 2026-08-22 — re-run `python3 Misc/build_model_index_page.py`.**
 > Auto-built from the live eval-board manifest (`~/.cache/evals_aac/model_matrix/manifest_live.jsonl`) joined to the maintained per-model source `Misc/models_index_overrides.json` (real recipes extracted from each checkpoint + plain-language why + comparison targets + hand-added by-ear verdicts). This replaces the old hand-compiled snapshot; the July-4 body is kept verbatim as a **Legacy snapshot** at the foot of this file.
 >
-> **Roster:** 245 board labels → **177 distinct trained models** across **27 families** (`_ptm` = same checkpoint re-rendered on medium-base, collapsed onto its parent). 153 carry a recipe/verdict override; 24 are on the board but not yet annotated; 148 carry a hand-added by-ear or board-metered verdict.
+> **Roster:** 377 board labels → **309 distinct trained models** across **71 families** (`_ptm` = same checkpoint re-rendered on medium-base, collapsed onto its parent). 153 carry a recipe/verdict override; 156 are on the board but not yet annotated; 148 carry a hand-added by-ear or board-metered verdict.
 >
 > **To change a verdict or recipe:** edit `Misc/models_index_overrides.json` (verdicts live there so they survive regeneration — this generator only reads them) and re-run the script. Off-board control-head notes live in `Misc/model_index_legacy.md`.
 
@@ -1168,7 +1168,7 @@
 #### `bf16cmp_avp_t512_bs8_lr1e4`
 - **ID `M-3DKQR8`** · also known as: `bf16cmp_avp_t512_bs8_lr1e4_ptm`, `bf16cmp_avp_t512_bs8_lr1e4_repr`, `bf16cmp_avp_t512_bs8_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: bf16 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1975 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1205,7 +1205,7 @@
 #### `bf16cmp_goa_t512_bs8_lr1e4`
 - **ID `M-B5EW7K`** · also known as: `bf16cmp_goa_t512_bs8_lr1e4_ptm`
 - **fp32-vs-bf16 precision A/B: bf16 attention, DoRA-r128 FusionOpt, goa, T512 (47.6s), bs8, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1975 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1224,7 +1224,7 @@
 #### `fp32cmp_avp_t4096_bs1_lr1e4`
 - **ID `M-CDY4BY`** · also known as: `fp32cmp_avp_t4096_bs1_lr1e4_ptm`, `fp32cmp_avp_t4096_bs1_lr1e4_repr`, `fp32cmp_avp_t4096_bs1_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs1, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep17, ep18, ep2, ep3, ep4, ep5, ep6, ep7) · 1692 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep17, ep18, ep2, ep3, ep4, ep5, ep6, ep7) · 1812 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1261,7 +1261,7 @@
 #### `fp32cmp_avp_t4096_bs4_lr1e4`
 - **ID `M-VGZMYK`** · also known as: `fp32cmp_avp_t4096_bs4_lr1e4_ptm`, `fp32cmp_avp_t4096_bs4_lr1e4_repr`, `fp32cmp_avp_t4096_bs4_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep25, ep26, ep3, ep4, ep5, ep6, ep7) · 1692 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep25, ep26, ep3, ep4, ep5, ep6, ep7) · 1812 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1298,7 +1298,7 @@
 #### `fp32cmp_avp_t4096_bs4_lr5e5`
 - **ID `M-SVC9JF`** · also known as: `fp32cmp_avp_t4096_bs4_lr5e5_ptm`, `fp32cmp_avp_t4096_bs4_lr5e5_repr`, `fp32cmp_avp_t4096_bs4_lr5e5_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr5e-5.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1650 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1770 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1335,7 +1335,7 @@
 #### `fp32cmp_avp_t512_bs8_lr1e4`
 - **ID `M-5VNP3R`** · also known as: `fp32cmp_avp_t512_bs8_lr1e4_ptm`, `fp32cmp_avp_t512_bs8_lr1e4_repr`, `fp32cmp_avp_t512_bs8_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, avp, T512 (47.6s), bs8, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1975 clips
 - **Training data:** latents_avp — 2393 crops incl. augmentation variants, trigger + longform-caption sidecar
 - **Recipe:**
   - kind: dora/lora
@@ -1372,7 +1372,7 @@
 #### `fp32cmp_goa_t4096_bs1_lr1e4`
 - **ID `M-VFNDP4`** · also known as: `fp32cmp_goa_t4096_bs1_lr1e4_ptm`, `fp32cmp_goa_t4096_bs1_lr1e4_repr`, `fp32cmp_goa_t4096_bs1_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs1, lr1e-4.**
-- 9 ckpt tag(s) on board (ep0, ep1, ep13, ep14, ep2, ep3, ep4, ep5, ep6) · 867 clips
+- 9 ckpt tag(s) on board (ep0, ep1, ep13, ep14, ep2, ep3, ep4, ep5, ep6) · 987 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1409,7 +1409,7 @@
 #### `fp32cmp_goa_t4096_bs4_lr1e4`
 - **ID `M-6Z77DB`** · also known as: `fp32cmp_goa_t4096_bs4_lr1e4_ptm`, `fp32cmp_goa_t4096_bs4_lr1e4_repr`, `fp32cmp_goa_t4096_bs4_lr1e4_repr_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep15, ep16, ep2, ep3, ep4, ep5, ep6, ep7) · 2231 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep15, ep16, ep2, ep3, ep4, ep5, ep6, ep7) · 2351 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1446,7 +1446,7 @@
 #### `fp32cmp_goa_t4096_bs4_lr5e5`
 - **ID `M-GPBY1E`** · also known as: `fp32cmp_goa_t4096_bs4_lr5e5_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T4096 (380.4s), bs4, lr5e-5.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1032 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1044 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1465,7 +1465,7 @@
 #### `fp32cmp_goa_t512_bs8_lr1e4`
 - **ID `M-N7B91H`** · also known as: `fp32cmp_goa_t512_bs8_lr1e4_ptm`
 - **fp32-vs-bf16 precision A/B: fp32 attention, DoRA-r128 FusionOpt, goa, T512 (47.6s), bs8, lr1e-4.**
-- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1856 clips
+- 8 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7) · 1975 clips
 - **Training data:** latents_sa3 — 5400 goa crops, longform-caption sidecar (t3 100% coverage)
 - **Recipe:**
   - kind: dora/lora
@@ -1487,7 +1487,7 @@
 #### `fp32frames_avp_t1024_bs1_lr1e4`
 - **ID `M-CN8QRQ`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T1024 (95.1s), bs1, lr1e-4.**
-- 1 ckpt tag(s) on board (ep9) · 162 clips
+- 1 ckpt tag(s) on board (ep9) · 174 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1504,7 +1504,7 @@
 #### `fp32frames_avp_t1024_bs4_lr1e4`
 - **ID `M-M7G2Z8`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T1024 (95.1s), bs4, lr1e-4.**
-- 1 ckpt tag(s) on board (ep9) · 162 clips
+- 1 ckpt tag(s) on board (ep9) · 282 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1521,7 +1521,7 @@
 #### `fp32frames_avp_t2048_bs1_lr1e4`
 - **ID `M-6XJ8KR`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T2048 (190.2s), bs1, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 372 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1538,7 +1538,7 @@
 #### `fp32frames_avp_t2048_bs4_lr1e4`
 - **ID `M-G45Y4Q`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T2048 (190.2s), bs4, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 372 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1555,7 +1555,7 @@
 #### `fp32frames_avp_t4096_bs1_lr1e4`
 - **ID `M-YVDAP4`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs1, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 243 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 363 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1572,7 +1572,7 @@
 #### `fp32frames_avp_t4096_bs4_lr1e4`
 - **ID `M-CW4REX`**
 - **fp32 context-length sweep: DoRA-r128 FusionOpt, avp, T4096 (380.4s), bs4, lr1e-4.**
-- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 252 clips
+- 10 ckpt tag(s) on board (ep0, ep1, ep2, ep3, ep4, ep5, ep6, ep7, ep8, ep9) · 330 clips
 - **Recipe:**
   - kind: dora/lora
   - method: dora-rows
@@ -1755,6 +1755,159 @@
   - `fp32cmp_<corpus>_t512_bs8_lr1e4 / fp32cmp_<corpus>_t4096_bs<N>_lr1e4` — cross-check against the fp32cmp family's own T512/T4096 arms (same precision, different bs/lr grid)
 - **Verdict:** (same as `fp32frames_avp_t1024_bs1_lr1e4`)
 - *status: done*
+
+
+## soup_winning_avp — 12 model(s)
+
+#### `soup_winning_avp_t512_a128_fp32_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a128_fp32_ep10-40_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a128_fp32_ep10-40_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a128_fp32_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a128_fp32_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a128_fp32_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_ep10-40_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_ep10-40_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_avp_t512_a45_fp32_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## soup_winning_goa — 12 model(s)
+
+#### `soup_winning_goa_t512_a128_fp32_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a128_fp32_ep10-40_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a128_fp32_ep10-40_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a128_fp32_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a128_fp32_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a128_fp32_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_ep10-40_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_ep10-40_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_winning_goa_t512_a45_fp32_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## wfleet_suomi — 12 model(s)
+
+#### `wfleet_suomi_t1024_a128_fp32_s1`
+- 1 ckpt tag(s) on board (ep17) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a128_fp32_s1_rsoup19`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a128_fp32_s1_rtsoup`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a128_fp32_s2`
+- 1 ckpt tag(s) on board (ep19) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a128_fp32_s2_rsoup19`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a128_fp32_s2_rtsoup`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s1`
+- 1 ckpt tag(s) on board (ep19) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s1_rsoup19`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s1_rtsoup`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s2`
+- 1 ckpt tag(s) on board (ep19) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s2_rsoup19`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `wfleet_suomi_t1024_a45_fp32_s2_rtsoup`
+- 1 ckpt tag(s) on board (soup) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
 ## fullft — 10 model(s), 10 with a verdict
@@ -1990,12 +2143,101 @@
 - *(also on board as base-render variant: `fullft_goa_t512_ptm`)*
 
 
+## soup_fp32cmp_goa — 10 model(s)
+
+#### `soup_fp32cmp_goa_t4096_bs4_lr1e4_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t4096_bs4_lr1e4_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t4096_bs4_lr1e4_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t4096_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t4096_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t512_bs8_lr1e4_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t512_bs8_lr1e4_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t512_bs8_lr1e4_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t512_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_goa_t512_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## subloss — 10 model(s)
+
+#### `subloss_k24_suomi_s1_ep39_on_avpaug19`
+- 1 ckpt tag(s) on board (ep39) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_k24_suomi_s1_ep39_on_avpft153`
+- 1 ckpt tag(s) on board (ep39) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_k24_suomi_s1_ep39_on_goaft7`
+- 1 ckpt tag(s) on board (ep39) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_k24_suomi_s1_ep63_on_avpaug19`
+- 1 ckpt tag(s) on board (ep63) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_k24_suomi_s1_ep63_on_avpft153`
+- 1 ckpt tag(s) on board (ep63) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_k24_suomi_s1_ep63_on_goaft7`
+- 1 ckpt tag(s) on board (ep63) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k12`
+- **ID `M-F7W1YX`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k2`
+- **ID `M-ZV8Y2G`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k5`
+- **ID `M-SY1HZC`**
+- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `subloss_v3sel_k5_tgate`
+- 3 ckpt tag(s) on board (ep11, ep3, ep7) · 240 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## adamw_bf16_sweep — 8 model(s), 8 with a verdict
 
 #### `adamw_avp_t512_bs1_lr1e4`
 - **ID `M-PXNTVF`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 1, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2017,7 +2259,7 @@
 #### `adamw_avp_t512_bs4_lr1e4`
 - **ID `M-SAYDMG`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 1e-4, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2039,7 +2281,7 @@
 #### `adamw_avp_t512_bs4_lr2e4`
 - **ID `M-CVDH8H`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 2e-4, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2061,7 +2303,7 @@
 #### `adamw_avp_t512_bs4_lr5e5`
 - **ID `M-8KYW4J`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on avp, bf16, lr 5e-5, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2083,7 +2325,7 @@
 #### `adamw_goa_t512_bs1_lr1e4`
 - **ID `M-JC1JNJ`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 1, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2105,7 +2347,7 @@
 #### `adamw_goa_t512_bs4_lr1e4`
 - **ID `M-BM3T1E`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 1e-4, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2127,7 +2369,7 @@
 #### `adamw_goa_t512_bs4_lr2e4`
 - **ID `M-V38DK6`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 2e-4, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 324 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2149,7 +2391,7 @@
 #### `adamw_goa_t512_bs4_lr5e5`
 - **ID `M-2H5GC4`**
 - **AdamW-vs-FusionOpt A/B: DoRA-r128 on goa, bf16, lr 5e-5, batch 4, T512 (47.6s).**
-- 2 ckpt tag(s) on board (ep5, ep9) · 216 clips
+- 2 ckpt tag(s) on board (ep5, ep9) · 336 clips
 - **Recipe:**
   - method: DoRA (dora-rows)
   - rank/alpha: rank 128, alpha 128 (alpha=rank convention, scaling=1); 229 target modules, full uniform coverage (no include/exclude filter) -- verified from checkpoint lora_config + state_dict
@@ -2167,6 +2409,76 @@
   - `family:adamw_bf16_sweep` — learning rate (1e-4/2e-4/5e-5) and batch size (1/4) within the sweep itself
 - **Verdict:** (same as `adamw_avp_t512_bs1_lr1e4`)
 - *status: done*
+
+
+## dorlor_suomi_dora_adamw — 8 model(s)
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep191_on_avpaug19`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep191_on_avpft153`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep191_on_goaft7`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_avpaug19`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_goaft7`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_suomi_dora_fusion — 8 model(s)
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep191_on_avpaug19`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep191_on_avpft153`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep191_on_goaft7`
+- 1 ckpt tag(s) on board (ep191) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_avpaug19`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_goaft7`
+- 1 ckpt tag(s) on board (ep319) · 69 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep255) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
 ## dronesweep — 8 model(s), 8 with a verdict
@@ -2966,6 +3278,29 @@
 - *(also on board as base-render variant: `sa3-goa-dora-47s-r64_ptm`)*
 
 
+## soup_fp32cmp_avp — 5 model(s)
+
+#### `soup_fp32cmp_avp_t512_bs8_lr1e4_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_avp_t512_bs8_lr1e4_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_avp_t512_bs8_lr1e4_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_avp_t512_quality`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_fp32cmp_avp_t512_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## dora_everything_lr_sweep — 4 model(s), 2 with a verdict
 
 #### `dora128_everything_8ep_lr0.5x`
@@ -3172,21 +3507,33 @@
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
-## subloss — 3 model(s)
+## soup_bf16cmp_avp — 3 model(s)
 
-#### `subloss_v3sel_k12`
-- **ID `M-F7W1YX`**
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+#### `soup_bf16cmp_avp_t512_bs8_lr1e4_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
-#### `subloss_v3sel_k2`
-- **ID `M-ZV8Y2G`**
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+#### `soup_bf16cmp_avp_t512_bs8_lr1e4_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
-#### `subloss_v3sel_k5`
-- **ID `M-SY1HZC`**
-- 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 360 clips
+#### `soup_bf16cmp_avp_t512_bs8_lr1e4_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## soup_bf16cmp_goa — 3 model(s)
+
+#### `soup_bf16cmp_goa_t512_bs8_lr1e4_bell_late`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_bf16cmp_goa_t512_bs8_lr1e4_expasc`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `soup_bf16cmp_goa_t512_bs8_lr1e4_uniform`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
@@ -3205,6 +3552,21 @@
 #### `subloss_goa_k5`
 - **ID `M-2AZX4C`**
 - 5 ckpt tag(s) on board (ep11, ep15, ep19, ep3, ep7) · 378 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## suomi — 3 model(s)
+
+#### `suomi_r256_lr1e-4`
+- 6 ckpt tag(s) on board (ep14, ep24, ep34, ep4, ep44, ep54) · 629 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `suomi_r32_lr1e-4`
+- 7 ckpt tag(s) on board (ep14, ep24, ep34, ep4, ep44, ep54, ep59) · 756 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `suomi_r32_lr3e-5`
+- 7 ckpt tag(s) on board (ep14, ep24, ep34, ep4, ep44, ep54, ep59) · 756 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
@@ -3278,6 +3640,138 @@
 - *(also on board as base-render variant: `dora64_avp_tiered_lr2e4_ptm`)*
 
 
+## dorlor_avpaug_dora_adamw — 2 model(s)
+
+#### `dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_avpaug_dora_fusion — 2 model(s)
+
+#### `dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep127) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_avpaug_lora_adamw — 2 model(s)
+
+#### `dorlor_avpaug_lora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_avpaug_lora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_avpaug_lora_fusion — 2 model(s)
+
+#### `dorlor_avpaug_lora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_avpaug_lora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep159) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_biggoa_dora_fusion — 2 model(s)
+
+#### `dorlor_biggoa_dora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_biggoa_dora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep25) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_biggoa_lora_fusion — 2 model(s)
+
+#### `dorlor_biggoa_lora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_biggoa_lora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep29) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_goa_dora_adamw — 2 model(s)
+
+#### `dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_goa_dora_fusion — 2 model(s)
+
+#### `dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep55) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_goa_lora_adamw — 2 model(s)
+
+#### `dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_goa_lora_fusion — 2 model(s)
+
+#### `dorlor_goa_lora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_goa_lora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep63) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_suomi_lora_adamw — 2 model(s)
+
+#### `dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_suomi_lora_fusion — 2 model(s)
+
+#### `dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep319) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep287) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## longctx — 2 model(s), 2 with a verdict
 
 #### `longctx_t1024_r128`
@@ -3319,6 +3813,53 @@
 - *(also on board as base-render variant: `longctx_t2048_r128_ptm`)*
 
 
+## terminal_fp32cmp_goa — 2 model(s)
+
+#### `terminal_fp32cmp_goa_t4096_bs4_lr1e4`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `terminal_fp32cmp_goa_t512_bs8_lr1e4`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## terminal_winning_avp — 2 model(s)
+
+#### `terminal_winning_avp_t512_a128_fp32`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `terminal_winning_avp_t512_a45_fp32`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## terminal_winning_goa — 2 model(s)
+
+#### `terminal_winning_goa_t512_a128_fp32`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+#### `terminal_winning_goa_t512_a45_fp32`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## bb_avpaug19 — 1 model(s)
+
+#### `bb_avpaug19`
+- 1 ckpt tag(s) on board (ep19) · 23 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## bb_goaft — 1 model(s)
+
+#### `bb_goaft`
+- 1 ckpt tag(s) on board (ep7) · 23 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## dora_rank_extreme — 1 model(s), 1 with a verdict
 
 #### `dora256_avp_aug10_lr7e5`
@@ -3338,11 +3879,74 @@
 - *(also on board as base-render variant: `dora256_avp_aug10_lr7e5_ptm`)*
 
 
+## dorlor_biggoa_dora_adamw — 1 model(s)
+
+#### `dorlor_biggoa_dora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_biggoa_lora_adamw — 1 model(s)
+
+#### `dorlor_biggoa_lora_adamw_r128a45_t256_bf16_bs128_s2`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_dora_adamw — 1 model(s)
+
+#### `dorlor_dora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## dorlor_lora_adamw — 1 model(s)
+
+#### `dorlor_lora_adamw_r128a45_t256_bf16_bs128_s1`
+- 1 ckpt tag(s) on board (ep31) · 80 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## ep19_winning_avp_t512_a128_fp32 — 1 model(s)
+
+#### `ep19_winning_avp_t512_a128_fp32`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_avp — 1 model(s)
+
+#### `fullft_avp_t256_sweep`
+- 32 ckpt tag(s) on board (ep100_20s, ep100_native, ep10_20s, ep10_native, ep110_20s, ep110_native, ep120_20s, ep120_native, ep130_20s, ep130_native, ep140_20s, ep140_native, ep150_20s, ep150_native, ep153_20s, ep153_native, ep20_20s, ep20_native, ep30_20s, ep30_native, ep40_20s, ep40_native, ep50_20s, ep50_native, ep60_20s, ep60_native, ep70_20s, ep70_native, ep80_20s, ep80_native, ep90_20s, ep90_native) · 96 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_avpaug — 1 model(s)
+
+#### `fullft_avpaug_t1024_fp32_lr1e-4_s1`
+- 1 ckpt tag(s) on board (ep15) · 3 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_biggoa — 1 model(s)
+
+#### `fullft_biggoa_t1024_fp32_lr1e-4_s1`
+- 1 ckpt tag(s) on board (ep1) · 3 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## fullft_bigset — 1 model(s)
 
 #### `fullft_bigset`
 - **ID `M-FAGVCW`**
 - 2 ckpt tag(s) on board (ep3, ep7) · 49 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_goa — 1 model(s)
+
+#### `fullft_goa_t256_sweep`
+- 14 ckpt tag(s) on board (ep10_20s, ep10_native, ep20_20s, ep20_native, ep30_20s, ep30_native, ep40_20s, ep40_native, ep50_20s, ep50_native, ep60_20s, ep60_native, ep69_20s, ep69_native) · 42 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
@@ -3354,11 +3958,25 @@
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
+## fullft_mixed_wd03 — 1 model(s)
+
+#### `fullft_mixed_wd03`
+- 2 ckpt tag(s) on board (ep6, ep7) · 36 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
 ## fullft_mixed_wdfix_ddpbug — 1 model(s)
 
 #### `fullft_mixed_wdfix_ddpbug`
 - **ID `M-13C8RA`**
 - 1 ckpt tag(s) on board (ep7) · 18 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## fullft_suomi — 1 model(s)
+
+#### `fullft_suomi_t1024_fp32_lr1e-4_s1`
+- 1 ckpt tag(s) on board (ep19) · 6 clips
 - *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
@@ -3372,6 +3990,48 @@
 - **Recipe:** LUMI pipeline smoke run: DoRA r256 α256, T=512 crops, batch 8, lr 1e-4 — sanity artifact, not a model candidate.
 - *status: not-a-model-candidate*
 - *(also on board as base-render variant: `smoke_r256_a256_lr1e4_f512_bs8_ptm`)*
+
+
+## suomift_avpaug19 — 1 model(s)
+
+#### `suomift_avpaug19`
+- 8 ckpt tag(s) on board (ep11, ep15, ep19, ep23, ep27, ep3, ep31, ep7) · 184 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## suomift_goaft — 1 model(s)
+
+#### `suomift_goaft`
+- 8 ckpt tag(s) on board (ep11, ep15, ep19, ep23, ep27, ep3, ep31, ep7) · 184 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## terminal_bf16cmp_avp — 1 model(s)
+
+#### `terminal_bf16cmp_avp_t512_bs8_lr1e4`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## terminal_bf16cmp_goa — 1 model(s)
+
+#### `terminal_bf16cmp_goa_t512_bs8_lr1e4`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## terminal_fp32cmp_avp — 1 model(s)
+
+#### `terminal_fp32cmp_avp_t512_bs8_lr1e4`
+- 2 ckpt tag(s) on board (20s, native) · 6 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
+
+
+## wfleet_avp — 1 model(s)
+
+#### `wfleet_avp_t1024_a45_fp32_s1`
+- 1 ckpt tag(s) on board (ep7) · 3 clips
+- *No override entry — recipe/verdict not yet recorded. Add one to `Misc/models_index_overrides.json` (or see the Legacy snapshot below for July by-ear notes) and re-run.*
 
 
 ## x0eq — 1 model(s)
