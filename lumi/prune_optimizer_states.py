@@ -40,7 +40,8 @@ def epoch_of(path):
 def kim_fat_epochs(epochs):
     """Kim's fat-retention policy (2026-08-21) as a pure function over the SORTED unique
     epoch indices present in a run dir. Returns the set of epochs whose ckpts stay fat.
-    <=15-epoch span: {last, ~50%, ~75%} (nearest existing). Longer: last + every
+    <=10-epoch span: {last, ~50%} (Kim 2026-08-22 -- 50%/75% bunch on short runs).
+    11-15: {last, ~50%, ~75%} (nearest existing). Longer: last + every
     ceil(0.2*span) epochs walking back from the last, stopping above ep15."""
     es = sorted(set(epochs))
     if not es:
@@ -49,6 +50,15 @@ def kim_fat_epochs(epochs):
     span = last + 1
     def nearest(target):
         return min(es, key=lambda e: (abs(e - target), -e))   # tie -> the LATER epoch
+    # SHORT RUNS (span <= 10): {last, mid} ONLY -- Kim 2026-08-22, from the transfer listing:
+    # "for runs of 10 and less, take the last and mid checkpoint". {last,50%,75%} bunches on a
+    # short run (epochs 0..7 -> 4,5,7: two ADJACENT picks) and at 4.6 GB per full-FT slim that is
+    # a wasted copy per run. Kim also recalled an exponential ladder toward the end; measured and
+    # REJECTED -- it keeps MORE files on long runs (320ep: 11 vs 7) and leaves a hole between ep0
+    # and ep63, which is precisely where the proven cooked-early case lives (bf16cmp_goa peaks
+    # ep0-1). Short-run thinning yes; end-weighted curve no.
+    if span <= 10:
+        return {last, nearest(round(0.50 * last))}
     keep = {last, nearest(round(0.50 * last)), nearest(round(0.75 * last))}
     if span > 15:
         step = max(1, math.ceil(0.2 * span))
