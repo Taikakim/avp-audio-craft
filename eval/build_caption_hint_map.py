@@ -67,6 +67,27 @@ MIN_PLAUSIBLE_YEAR = 1988
 AUDIO_EXT = (".mp3", ".flac", ".m4a", ".wav", ".ogg", ".opus", ".aiff", ".aif")
 
 
+def _tag_year(path):
+    """Release year from a file's OWN embedded tags. Deliberately NOT artist/title: telling Music
+    Flamingo the artist invites it to recite what it knows about that artist instead of describing
+    the audio in front of it, which is the failure the hint mechanism exists to prevent."""
+    try:
+        import mutagen
+        t = mutagen.File(str(path))
+        if not t or not t.tags:
+            return None
+        d = {k.lower(): v for k, v in dict(t.tags).items()}
+        for k in ("date", "year", "originaldate", "tdrc"):
+            v = d.get(k)
+            if v:
+                y = str(v[0] if isinstance(v, (list, tuple)) else v)[:4]
+                if y.isdigit() and int(y) >= MIN_PLAUSIBLE_YEAR:
+                    return int(y)
+    except Exception:
+        return None
+    return None
+
+
 def metadata_sentence(info: dict, fields=("year", "genres"), stats=None) -> str:
     """mir's {metadata} substitution, with the tag-genre fallback this corpus needs.
 
@@ -150,6 +171,15 @@ def main():
                          "audio it hears. It is NOT a caption derived from a folder name — that is "
                          "exactly what made the bigset's granite tier measure NOT GROUNDED (1.24x "
                          "rare-term recall vs chance).")
+    ap.add_argument("--tag-year", action="store_true",
+                    help="with --from-folders: also read the release year from each file's OWN "
+                         "embedded tags (FLAC/Vorbis `date`) and fold it into the hint. Measured on "
+                         "ai-music 2026-08-22: `date` present on 249/250 sampled tracks (99.6%%), "
+                         "`genre` present on ZERO — so tags supply the YEAR and folders supply the "
+                         "GENRE, and neither alone is enough. This corpus spans 1960s-2020s "
+                         "(2/4/3/15/46/97/82 per decade), which is exactly the multi-era case a "
+                         "single global hint gets wrong for everyone. Needs mutagen; a file whose "
+                         "tags cannot be read falls back to the folder hint alone.")
     ap.add_argument("--folder-depth", type=int, default=1,
                     help="how many leading path components form the hint (default 1 = top folder)")
     ap.add_argument("--exclude", action="append", default=[],
@@ -164,22 +194,43 @@ def main():
     if a.from_folders:
         skip = set(a.exclude)
         per_folder = {}
+        # ONE TRACK PER DIRECTORY WHEN THE DIRECTORY IS A SEPARATED TRACK. The ai-music tree is
+        # heterogeneous: already-separated folders hold <track>/{full_mix,bass,drums,other,
+        # vocals}.flac, raw folders hold flat "Artist - Title.flac". Walking every audio file
+        # counts the four STEMS as four extra tracks -- which inflated this map to 5765 entries
+        # and diluted measured year coverage to 56%, because stems carry no tags. Same trap the
+        # separation job has to avoid (EXPERIMENTS G-note); it caught this tool first.
+        STEMS = {"bass", "drums", "other", "vocals", "guitar", "piano"}
         for root, _dirs, files in os.walk(a.archive):
-            for f in files:
-                if os.path.splitext(f)[1].lower() not in AUDIO_EXT:
-                    continue
+            audio = [f for f in files if os.path.splitext(f)[1].lower() in AUDIO_EXT]
+            mix = [f for f in audio if os.path.splitext(f)[0].lower() == "full_mix"]
+            if mix:
+                audio = mix[:1]                      # separated track dir -> the mix IS the track
+            else:
+                audio = [f for f in audio if os.path.splitext(f)[0].lower() not in STEMS]
+            for f in audio:
                 rel = str((Path(root) / f).relative_to(a.archive))
                 parts = Path(rel).parts
                 if not parts or parts[0] in skip:
                     continue
-                hint = ", ".join(parts[:a.folder_depth])
+                folder = ", ".join(parts[:a.folder_depth])
+                hint = folder
+                if a.tag_year:
+                    y = _tag_year(Path(root) / f)
+                    if y:
+                        hint = f"{hint}, release year: {y}"
+                        stats["with_meta"] += 1
+                    else:
+                        stats["no_info"] += 1
                 key = hashlib.sha1((a.rel_prefix + rel).encode()).hexdigest()
                 out[key] = hint
-                per_folder[hint] = per_folder.get(hint, 0) + 1
+                per_folder[folder] = per_folder.get(folder, 0) + 1
         if not out:
             raise SystemExit(f"[hint-map] FATAL: no audio found under {a.archive}")
         a.out.write_text(json.dumps(out, ensure_ascii=False))
-        print(f"[hint-map] {len(out)} tracks from {len(per_folder)} folders -> {a.out}")
+        print(f"[hint-map] {len(out)} tracks from {len(per_folder)} folders -> {a.out}"
+              + (f"  (year on {stats['with_meta']}, missing on {stats['no_info']})"
+                 if a.tag_year else ""))
         for h, n in sorted(per_folder.items(), key=lambda kv: -kv[1]):
             print(f"  {n:6d}  {h}")
         return
