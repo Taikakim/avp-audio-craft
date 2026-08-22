@@ -42,6 +42,7 @@ Only stdlib.
 import argparse
 import hashlib
 import json
+import sys
 import os
 import re
 from pathlib import Path
@@ -171,6 +172,24 @@ def main():
                          "audio it hears. It is NOT a caption derived from a folder name — that is "
                          "exactly what made the bigset's granite tier measure NOT GROUNDED (1.24x "
                          "rare-term recall vs chance).")
+    ap.add_argument("--essentia-genre", action="store_true",
+                    help="PRIMARY genre source (Kim 2026-08-22: 'we can get genres quite accurately "
+                         "with the essentia classifiers we have'): run mir's discogs400 "
+                         "EffNet classifier on each track's audio and use its top labels as the "
+                         "hint, falling back to the folder name when nothing clears "
+                         "--genre-min-prob. Audio-DERIVED, so unlike a folder name it is grounded "
+                         "in what the track actually sounds like — the property whose absence made "
+                         "the bigset's granite tier measure NOT GROUNDED. Its 400 classes include "
+                         "Electronic---Goa Trance / Psy-Trance / Progressive Trance, i.e. this "
+                         "corpus's actual genres. "
+                         "MUST RUN IN THE MIR VENV: /home/kim/Projects/mir/mir/bin/python "
+                         "(essentia + onnxruntime + tensorflow). ~35 min for 3.4k tracks, per "
+                         "crop_genre.py's 5400-crop/55-min benchmark.")
+    ap.add_argument("--genre-top-k", type=int, default=2)
+    ap.add_argument("--genre-min-prob", type=float, default=0.15)
+    ap.add_argument("--genre-cache", default=None,
+                    help="json {relpath: [labels]} — reruns skip tracks already classified")
+    ap.add_argument("--mir-root", default="/home/kim/Projects/mir")
     ap.add_argument("--tag-year", action="store_true",
                     help="with --from-folders: also read the release year from each file's OWN "
                          "embedded tags (FLAC/Vorbis `date`) and fold it into the hint. Measured on "
@@ -201,6 +220,13 @@ def main():
         # and diluted measured year coverage to 56%, because stems carry no tags. Same trap the
         # separation job has to avoid (EXPERIMENTS G-note); it caught this tool first.
         STEMS = {"bass", "drums", "other", "vocals", "guitar", "piano"}
+        gcache, gfn = {}, None
+        if a.essentia_genre:
+            if a.genre_cache and os.path.exists(a.genre_cache):
+                gcache = json.load(open(a.genre_cache))
+            sys.path.insert(0, a.mir_root)
+            sys.path.insert(0, os.path.join(a.mir_root, "src"))
+            from classification.essentia_features import analyze_genre_mood_instrument as gfn
         for root, _dirs, files in os.walk(a.archive):
             audio = [f for f in files if os.path.splitext(f)[1].lower() in AUDIO_EXT]
             mix = [f for f in audio if os.path.splitext(f)[0].lower() == "full_mix"]
@@ -215,6 +241,31 @@ def main():
                     continue
                 folder = ", ".join(parts[:a.folder_depth])
                 hint = folder
+                if gfn is not None:
+                    labs = gcache.get(rel)
+                    if labs is None:
+                        try:
+                            r = gfn(str(Path(root) / f), threshold=a.genre_min_prob,
+                                    top_k=a.genre_top_k, include_mood=False,
+                                    include_instrument=False)
+                            # KEY IS "essentia_genre", not "genre" — a .get("genre") returns {}
+                            # with NO exception, so every track silently falls back to its folder
+                            # and the run looks like "the classifier found nothing" (cost one
+                            # smoke run to spot, 2026-08-22). Accept both spellings.
+                            g = (r or {}).get("essentia_genre") or (r or {}).get("genre") or {}
+                            # discogs400 labels are "Parent---Leaf"; the LEAF is the useful hint
+                            labs = [k.split("---")[-1] for k, v in
+                                    sorted(g.items(), key=lambda kv: -kv[1])
+                                    if v >= a.genre_min_prob][:a.genre_top_k]
+                        except Exception as e:
+                            print(f"[hint-map] genre failed on {rel}: {e}", flush=True)
+                            labs = []
+                        gcache[rel] = labs
+                    if labs:
+                        hint = ", ".join(labs)
+                        stats["genre_model"] = stats.get("genre_model", 0) + 1
+                    else:
+                        stats["genre_folder_fallback"] = stats.get("genre_folder_fallback", 0) + 1
                 if a.tag_year:
                     y = _tag_year(Path(root) / f)
                     if y:
@@ -227,6 +278,11 @@ def main():
                 per_folder[folder] = per_folder.get(folder, 0) + 1
         if not out:
             raise SystemExit(f"[hint-map] FATAL: no audio found under {a.archive}")
+        if a.genre_cache:
+            json.dump(gcache, open(a.genre_cache, "w"))
+        if a.essentia_genre:
+            print(f"[hint-map] genre: model {stats.get('genre_model',0)}, "
+                  f"folder-fallback {stats.get('genre_folder_fallback',0)}")
         a.out.write_text(json.dumps(out, ensure_ascii=False))
         print(f"[hint-map] {len(out)} tracks from {len(per_folder)} folders -> {a.out}"
               + (f"  (year on {stats['with_meta']}, missing on {stats['no_info']})"
