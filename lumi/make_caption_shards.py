@@ -77,6 +77,19 @@ def main():
                          "beside each full_mix, and an extension glob captions the stems as if they "
                          "were tracks (caught 2026-08-18 when a shard run found 2707 'tracks' in a "
                          "2676-track corpus -- the extra 31 were stems from an in-flight upload).")
+    ap.add_argument("--mixed-layout", action="store_true",
+                    help="corpus mixes already-separated track dirs (<track>/full_mix.flac + "
+                         "stems) with flat raw audio files. Per directory: a full_mix IS the "
+                         "track, otherwise take audio not named after a stem. Use for ai-music — "
+                         "neither --stem nor the extension glob is correct there, and both fail "
+                         "SILENTLY (one counts stems as tracks, the other drops every raw folder).")
+    ap.add_argument("--skip-separated", action="store_true",
+                    help="with --mixed-layout: omit track dirs that already contain a vocals stem. "
+                         "Use when building SEPARATION shards (those ~574 tracks are already done "
+                         "by the local pipeline and carry no .sep_done marker, so the task's own "
+                         "resume test cannot see it). Do NOT use for captioning/pre-encode shards "
+                         "— those tracks still need captions and latents.")
+
     ap.add_argument("--stem", default=None,
                     help="only shard files whose basename WITHOUT extension is this, e.g. full_mix. "
                          "Prefer this over --name for stem-separated corpora: --name pins ONE "
@@ -115,8 +128,27 @@ def main():
 
     # os.scandir over the tree, not glob — a 23k-file dir defeats shell globbing (ARG_MAX) and
     # `find` has been unreliable on Lustre here; scandir is neither.
+    STEM_NAMES = {"bass", "drums", "other", "vocals", "guitar", "piano"}
     tracks = []
     for root, _dirs, files in os.walk(a.archive):
+        # MIXED LAYOUT (ai-music, 2026-08-22): this corpus is NOT uniform. Some folders are
+        # already separated -- <track>/{full_mix,bass,drums,other,vocals}.flac + .INFO -- and the
+        # rest are flat "Artist - Title.flac". NEITHER existing mode is correct here: an extension
+        # glob captions the four STEMS as four extra tracks, and --stem full_mix silently DROPS
+        # every raw folder (~2860 of 3434 tracks) while reporting a clean run. Per directory: a
+        # full_mix IS the track; otherwise take audio that is not named after a stem.
+        if a.mixed_layout:
+            audio = [f for f in files if f.lower().endswith(AUDIO_EXT)]
+            mix = [f for f in audio if os.path.splitext(f)[0].lower() == "full_mix"]
+            if mix:
+                if a.skip_separated and any(
+                        os.path.splitext(x)[0].lower() == "vocals" for x in audio):
+                    continue          # already separated by the local pipeline -- nothing to do
+                tracks.append(Path(root) / sorted(mix)[0])
+            else:
+                tracks += [Path(root) / f for f in audio
+                           if os.path.splitext(f)[0].lower() not in STEM_NAMES]
+            continue
         for f in files:
             if a.stem:
                 base, ext = os.path.splitext(f)
