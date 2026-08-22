@@ -825,6 +825,36 @@ exactly this reason.)*
 ### F3 — avp/avpaug duplicate split — **GATED on Kim**
 ### F4 — mp3-vs-FLAC latent sensitivity (goa corpus quality / FLAC re-source) — **PLANNED** (memory: goa-corpus-quality).
 
+### F5 — Glitchy lyrics/vocal conditioning on the ai-music vocal stems — **POTENTIAL (Kim 2026-08-22, "not a lot of data we have")**
+
+**Kim, in passing while the ai-music upload ran:** *"we have lyrics too, not sure if we could in the
+future try to train some weird glitcy lyrics model (not a lot of data we have)."* Registered so it
+is not lost — it is a real idea with two hard constraints that happen to point the same way.
+
+**THE SUBSTRATE CONSTRAINT (and why it argues FOR the glitchy framing, not against it):** the SAME
+latent is **10.766 Hz** (4096× downsample). Phoneme rate is an order of magnitude above that, so
+INTELLIGIBLE lyrics are almost certainly not representable in this latent space at all. What DOES
+survive that bandwidth is vocal *texture* and prosodic contour. So a faithful lyrics model is
+probably closed to us, while a glitchy one is the thing the substrate can actually express. Test
+the claim before building on it: run the encodability screen (a linear probe from z for phoneme or
+grapheme identity on real vocal stems) — if it reads at chance, that settles the ceiling cheaply.
+
+**THE DATA CONSTRAINT:** vocal-bearing folders in ai-music are Punk 72, Goth 75, EBM & Industrial
+76, Spoken word/Rap 26, Rock 20, Progressive Rock 21 ≈ **290 tracks**. Far too little for
+conditioning to generalise — which for "weird glitchy" is arguably the mechanism rather than the
+obstacle: undertrained conditioning on tiny data IS the glitch generator. Frame it as an
+aesthetic-instrument experiment, not a capability one, and the kill-criterion changes accordingly
+(does it produce something Kim wants to use, not does it transcribe).
+
+**THE FREE WIN, and the reason to note this NOW rather than later:** BS-RoFormer emits a `vocals`
+stem. `goa_sep.sbatch` run over the ai-music corpus produces vocal stems for all 5,765 tracks as a
+BY-PRODUCT of the separation we want anyway. Whisper transcription can then happen locally at any
+time — it needs no allocation. So the LUMI-only half of this experiment gets done for free if the
+separation runs; skipping separation is what would make it expensive later.
+
+**Prereqs, in order:** ai-music separation (in flight) → vocal stems → local Whisper pass → the
+encodability screen above → only then any training decision.
+
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
 - Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **More
