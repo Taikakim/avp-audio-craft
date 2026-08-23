@@ -45,11 +45,29 @@ mkdir -p "${OUT}/shards"
 [ -d "${CODE}/mir-src/preprocessing" ] || { echo "[goa-sep] FATAL: ${CODE}/mir-src missing (rsync mir/src)"; exit 1; }
 
 # ── enumerate + round-robin split into 8 shards (stable order; resumable via .sep_done) ──
+# USE PRE-MADE SHARDS IF THEY EXIST — do NOT silently self-generate (lumi-ops: "PRE-DISTRIBUTE
+# THE WORK"; goa_caption/goa_granite are already FATAL-on-missing, this job never was).
+# WHY THIS MATTERS, learned the expensive way 2026-08-23: the bare extension find below treats
+# EVERY audio file as a track. On a uniform archive that is fine. On the ai-music tree — where 574
+# folders are already separated into <track>/{full_mix,bass,drums,other,vocals}.flac — it shards
+# the four STEMS as four extra tracks and re-separates the parent too, so a 2860-track job ran as
+# 5732 units and about half the compute was spent separating stems of stems. Shards built by
+# make_caption_shards.py --mixed-layout --skip-separated encode the correct rule; this job silently
+# overwrote them.
+if [ "${REGEN_SHARDS:-0}" != "1" ] && ls "${OUT}"/shards/shard_*.txt >/dev/null 2>&1; then
+  echo "[goa-sep] using PRE-MADE shards in ${OUT}/shards (REGEN_SHARDS=1 to rebuild)"
+  N=$(cat "${OUT}"/shards/shard_*.txt | wc -l)
+  echo "[goa-sep] ${N} tracks across $(ls "${OUT}"/shards/shard_*.txt | wc -l) shards"
+else
+  echo "[goa-sep] WARNING: no pre-made shards — self-generating with a bare extension glob."
+  echo "[goa-sep] That counts stems as tracks on a MIXED corpus. For anything but a uniform"
+  echo "[goa-sep] archive, build them first: make_caption_shards.py --mixed-layout --skip-separated"
 LIST=${OUT}/shards/all_tracks.txt
 find "${ARCHIVE}" -type f \( -iname '*.mp3' -o -iname '*.flac' -o -iname '*.m4a' \) | sort > "${LIST}"
 N=$(wc -l < "${LIST}")
 echo "[goa-sep] ${N} tracks; splitting round-robin into 8 shards"
 for R in 0 1 2 3 4 5 6 7; do awk -v r=${R} 'NR % 8 == r' "${LIST}" > "${OUT}/shards/shard_${R}.txt"; done
+fi
 
 LIMIT_ARG=""
 [ "${PROBE:-0}" = "1" ] && LIMIT_ARG="--limit 2" && echo "[goa-sep] PROBE MODE: 2 tracks/rank"
