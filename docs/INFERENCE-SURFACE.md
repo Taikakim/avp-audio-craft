@@ -30,6 +30,14 @@ marked ⚠️ UNVERIFIED rather than asserted.
 **Render-server endpoints:** `/generate` · `/a2a_track` · `/a2a_mix` · `/longform` · `/decode` ·
 `/bend` · `/schedule` · `/ckpts` · `/info` · `/status` · `/audio/{job}/{file}`.
 
+**`/longform` has THREE modes**, not two (the third added 2026-08-23, G):
+`audio_path` → a2a-style window loop over the source's own duration · no `audio_path` → pure t2a
+longform from t=0 · **`init_latent_path`** → **CONTINUE an existing render**: point it at a prior
+render's own `.z0.npy` and `duration` becomes the FINAL total, so only the new tail is generated.
+Only an overlap-sized tail of the prefix conditions the next window. The primitive always supported
+this — `InpaintContinuationGenerator.generate(prompt, prefix_latents, …)` takes `prefix_latents`
+as its second positional arg — the server just never passed one.
+
 **Guidance contract:** `controls.steering_payload()` → `{latch: [...], film, dora}`, advanced
 hparams (`rho`, `mu`, `gamma`, `n_iter`) top-level. Server-side, `resolve_latch()` takes a **LIST**
 of slots — per slot `head`/`path` · `kind` · `value` · `start_pct` · `end_pct` · `gain` ·
@@ -296,6 +304,9 @@ transition range · quantize-to-bars · mode · noise level · seam size + seam 
 splice · interpolation · construction mode · separate eps seeds for body and seam · tempo match +
 mode · fine align · **chroma target + chroma gain** · guidance end · prompt regions · whole-track.
 
+**Longform** (`/longform`): prompt schedule / arc, window + overlap, and **continuation from an
+existing render** via `init_latent_path` (fp16 `.z0.npy` cast to model dtype server-side).
+
 **Bend** (`bend_tab` → `/bend`): track/crop pickers, latent path, seed.
 
 **Shared steering panel** (inference + a2a): **3 LatCH slots** × (head · kind · value · gain ·
@@ -328,6 +339,11 @@ checkpoint journal, `/info` + `/status`.
    panel layout.
 6. **Two checkpoint naming conventions** — a scanner keyed on `epoch=*.ckpt` never sees the
    `riffer_*.pt` control runs.
+6b. **Continuation does not auto-recover the source clip's adapter.** `/longform
+   init_latent_path` continues the LATENT but the caller must re-specify ckpt + strength by hand;
+   the original clip's `.mmline.json` records label/tag/ckpt/strength, so wiring that recovery is
+   the obvious next increment (G, 2026-08-23 — deliberately deferred as a one-off at the time).
+   Until then a continuation can silently be rendered by a DIFFERENT model than its own prefix.
 7. **Head metadata is not surfaced.** Picking `same_chroma` (384-ch, cosine, unstandardised) versus
    a 1-ch scalar head changes what a target even means; the head's own metadata carries
    out_channels / loss_type / target_kind_default and the UI does not show it.
