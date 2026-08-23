@@ -952,7 +952,12 @@ def _longform_impl(req):
         InpaintContinuationGenerator (inference/longform.py — the machinery a
         night was once lost re-inventing); FiLM applies via context. LatCH is
         NOT reachable on this path (sample_diffusion seam) — warned, not dropped
-        silently."""
+        silently. Pass init_latent_path (a prior render's own .z0.npy) to CONTINUE
+        that render instead of starting from nothing — duration is then the FINAL
+        total (existing + new); see LongFormRenderer.render_latents' init_latents
+        (2026-08-23, GHOST-NOTE/CONTINUITY: parameter plumbing onto the existing
+        InpaintContinuationGenerator.generate(prefix_latents=...) primitive, not
+        new machinery)."""
     schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()
     if not schedule_arg:
         raise ValueError("schedule is required ('0:promptA|45:promptB|...' arc grammar)")
@@ -1030,6 +1035,21 @@ def _longform_impl(req):
             if latch_cfgs:
                 warnings.append("latch ignored on the t2a longform path "
                                 "(sample_diffusion seam has no latch hook)")
+            # CONTINUE FROM AN EXISTING RENDER: init_latent_path points at a prior
+            # render's own saved .z0.npy (every renderer writes one — the standing
+            # z0-with-audio directive). duration here is the FINAL total (existing +
+            # new), matching LongFormRenderer.render_latents' total_frames contract.
+            # Saved z0 sidecars are fp16; cast to the model's own dtype before use or
+            # this surfaces as garbage output, not an exception (CONTINUITY, 2026-08-23).
+            init_latents = None
+            init_latent_path = req.get("init_latent_path")
+            if init_latent_path:
+                init_latent_path = require_path(init_latent_path, "init_latent_path")
+                dit_param = next(MODEL.model.model.parameters())
+                init_latents = torch.from_numpy(np.load(init_latent_path)).to(
+                    dtype=dit_param.dtype, device=dit_param.device)
+                if init_latents.dim() == 2:
+                    init_latents = init_latents.unsqueeze(0)
             sched = PromptSchedule(arc, crossfade_sec=xfade_sec)
             fr = lambda s: max(1, int(round(s * FPS)))  # noqa: E731  (steered_longform)
             gen = InpaintContinuationGenerator(MODEL, steps=steps, cfg_scale=cfg)
@@ -1039,7 +1059,7 @@ def _longform_impl(req):
             ts = time.time()
             with film_context(req.get("film")):
                 lat = renderer.render_latents(sched, total_frames=fr(duration),
-                                              base_seed=seed)
+                                              base_seed=seed, init_latents=init_latents)
             stages["render"] = time.time() - ts
             ts = time.time()
             pre = MODEL.model.pretransform
@@ -1050,6 +1070,7 @@ def _longform_impl(req):
             stages["decode"] = time.time() - ts
             check_output_length(out, duration, "longform")
             meta = {"op": "longform", "mode": "t2a", "duration_sec": duration,
+                    "init_latent_path": init_latent_path,
                     "window_sec": window_sec, "overlap_sec": overlap_sec,
                     "xfade_sec": xfade_sec, "arc": arc_echo,
                     "drift_log": renderer.drift_log}
