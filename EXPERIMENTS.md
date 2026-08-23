@@ -174,9 +174,18 @@ claim, including ones already in this file, against both corrections.
   regardless of fidelity, so beatless tracks stay in and we train control heads on them.
   Tooling: `mir/src/tools/goa_archive_quality.py` (v2 docstring records why MAX is the principled
   statistic). **Bearing on A12:** the bigset down-weight to ~20% of draws was taken on Kim's
-  instinct that "it's got mp3 sources more than the others" — that instinct now has evidence. The `goa_big_quality_matched` (4,111) list this
-  entry's follow-up depends on is ALSO invalidated by the same v1 bug and needs rebuilding first —
-  don't re-point A11's follow-up at it until that lands.
+  instinct that "it's got mp3 sources more than the others" — that instinct now has evidence. **The `goa_big_quality_matched` follow-up is CLOSED,
+  not pending (Kim's call via W, 2026-08-23): DO NOT rebuild the 4,111 / 3,147 lists on v2 —
+  drop them.** They existed only to select a quality-GATED subset, and gating was already rejected:
+  PQ rates ambient 2–3 regardless of file fidelity, so it discards good music, and beatless tracks
+  stay in because the control heads train on them. Regenerating them correctly would have produced
+  a better-measured version of a thing we decided not to do. W has stamped `INVALID.md` into
+  `stats/goa_big_quality_matched{,_noverlap}` and `goa_big_worst100` in mir so a future instance
+  cannot mistake them for current.
+  **The fidelity signal survives in a different form, and A12 is the reference use:** tier
+  FRACTIONS as a corpus-MIXING WEIGHT — down-weight the more-compressed corpus while every track
+  stays eligible — does the useful work without discarding anything, and needs only the two v2
+  jsonls. **Recommended pattern for any future mix, over natural proportions.**
 - Read-out: PQ/CE per epoch ladder + soups; the WSD-vs-constant contrast on AdamW is the direct
   test of the A2 "constant-LR walk needs averaging" mechanism (scheduled arm should be listenable
   at the TERMINAL ckpt if the knee does its job).
