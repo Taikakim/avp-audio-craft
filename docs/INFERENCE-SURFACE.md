@@ -5,13 +5,48 @@ create a UI with Claude design"*). This is a CAPABILITY MAP, not a tutorial: eve
 point, every kind of model that can be loaded, every knob that actually changes the output, the
 file conventions in and out, and the traps that produce plausible-but-wrong results.
 
-Companion to F's relay of Kim's standing ask — that inference tooling should incorporate everything
-we have trained rather than living in bespoke scripts. **That fragmentation is real and this document
-describes it honestly rather than pretending a unified API exists.** Where two scripts do the same
-thing differently, that is called out; a UI has to dispatch on those differences today.
+> **CORRECTION, 2026-08-23 (Kim + W).** The first version of this document said no unified engine
+> existed and that a UI would have to dispatch across bespoke scripts. **That was wrong.** The
+> inference UI exists and has for months — see §0. It was missed because the app is split across two
+> repos and two venvs, so finding one half reads as "there is no generation path". A duplicate CLI
+> was built and deleted the same day. The second wrong claim, also corrected below: LatCH guidance
+> DOES reach a2a through the render server (`_a2a_pass` threads `latch_cfgs`).
 
 Scope note: entries below were read from the code on 2026-08-23. Anything I did not verify is
 marked ⚠️ UNVERIFIED rather than asserted.
+
+---
+
+## 0. START HERE — the engine already exists
+
+**One app, a viewer and TWO backends** (two backends because SAME-L must run under the SA3 venv):
+
+| piece | where | port · venv | role |
+|---|---|---|---|
+| **Viewer** | `mir` branch `sa3-latent-explorer`, `plots/explorer_sa3/app.py` | 8051 · mir venv | Dash GUI. Tabs `inference_tab` · `a2a_tab` · `bend_tab`; `render_client.py` = client, `controls.py` = shared steering panel |
+| **Latent player** | `mir/scripts/latent_server_sa3.py` (+ `latent_server_onnx.py`, low-VRAM) | 7892 · SA3 venv | **CROPS ONLY** — `/decode /mix /steer`. NOT the inference path. `/steer` = one head, one gradient step, gain only |
+| **Render server** | `SAO/eval/explorer_render_server.py` | 8056 · `SAO/.venv` | **THE generation path.** `medium-base` resident on GPU |
+
+**Render-server endpoints:** `/generate` · `/a2a_track` · `/a2a_mix` · `/longform` · `/decode` ·
+`/bend` · `/schedule` · `/ckpts` · `/info` · `/status` · `/audio/{job}/{file}`.
+
+**Guidance contract:** `controls.steering_payload()` → `{latch: [...], film, dora}`, advanced
+hparams (`rho`, `mu`, `gamma`, `n_iter`) top-level. Server-side, `resolve_latch()` takes a **LIST**
+of slots — per slot `head`/`path` · `kind` · `value` · `start_pct` · `end_pct` · `gain` ·
+`loss_type` · `w_sec`, plus parameterless `builtin` guides — against a `HEADS` registry carrying
+per-head `default_gain`, `value_default`, `target_kind_default`.
+
+⚠️ **`resolve_latch` NORMALISES gains**: `rho = mu = first slot's gain`, per-slot
+`weight = slot_gain / g0`. **A raw `weight` passed by any other tool is a different scale and its
+results will not be comparable.** This is the single strongest reason not to build a parallel driver.
+
+`controls.py` `LATCH_SLOTS = 3` is a **UI cap, not a model cap** — raise the constant for more.
+
+Render logic inside the server is IMPORTED from the proven eval scripts
+(`chroma_morph_transitions.py`, `a2a_fulltrack.py`, `density_control_eval.py`), not re-derived.
+
+**⇒ Extend the :8056 endpoint set, or write a thin CLIENT of it. A batch/sweep CLI over
+`/generate` is legitimately additive; a second implementation of guidance is not.**
 
 ---
 
@@ -61,6 +96,10 @@ checkpoint does not announce which it is in its filename alone.
 ---
 
 ## 3. Generation entry points
+
+**The primary surface is the render server (§0).** Everything below is the BATCH / HEADLESS tier —
+these exist because LUMI jobs and sweeps need a CLI, not because the server lacks the capability.
+Prefer the server for interactive work; prefer these for many-cell grids on a cluster.
 
 | script | mode | what it produces |
 |---|---|---|
@@ -136,11 +175,26 @@ with use_control_context(ControlContext(ctrl, gain=g)):
 strength, 1.0 = as trained. Under CFG the tokens must be `cat([ctrl, zeros])`, and the trained
 **null is zero tokens**, not absence.
 
-⚠️ **These do not all compose.** `SDEditReanchor` builds its own conditioning dict (inpaint mask +
-masked input only), so the **pianoroll / `mir_ctrl` path — which enters via `modular_local_embeds`
-— is NOT carried through a2a**. D14 had to drop that arm for exactly this reason: it would have run
-unconditioned while looking like a working arm. Closing this is the single highest-value item for
-the unification Kim asked for.
+### What actually composes — corrected 2026-08-23
+
+**Through the render server (:8056), these compose today:** text + cfg · DoRA/LoRA adapter ·
+**FiLM control** (via `ControlContext`) · **LatCH multi-head guidance** — and they compose in
+**a2a as well as t2a**: `_a2a_pass(..., latch_cfgs, latch_hp, film_req, ...)` calls `apply_latch()`
+on every pass, so guidance rides the a2a path. *(An earlier version of this doc claimed guidance
+did not reach a2a. It does. That claim was true only of the standalone `lumi/a2a_bracket.py`, which
+calls `SDEditReanchor` directly and builds no control at all.)*
+
+**What is genuinely NOT in the server** — verified by grep, no references at all:
+- **Head-B contour/morph adapters** (`control_mode=melody_contour`) — those live in
+  `lumi/render_morph.py` and `control/sa3_control/generate.py`.
+- **pianoroll / `mir_ctrl`**, which enters via `modular_local_embeds`.
+The server's only `ControlContext` user is FiLM (scalar value → encoder → tokens, with the trained
+null concatenated for CFG).
+
+⚠️ And on the raw `SDEditReanchor` path specifically: it builds its own conditioning dict (inpaint
+mask + masked input only), so a control adapter attached around it is **not conditioned**. D14
+dropped its pianoroll arm for exactly this reason — it would have run unconditioned while looking
+like a working arm.
 
 ---
 
@@ -195,18 +249,29 @@ A2A bracket: `a2a__<label>__<stem>__sig<S>__from_<corpus>_<donor>__cfg<C>.wav`.
 
 ---
 
-## 8. Known fragmentation — the honest list
+## 8. What is unified, and what genuinely is not
 
-For the unification ask, these are the seams a UI would otherwise have to encode itself:
+**Corrected 2026-08-23.** The earlier version of this section listed the whole surface as
+fragmented. Much of it is not — the render server IS the unification layer, and it already carries
+text, adapters, FiLM, LatCH guidance, a2a, longform and bend behind one HTTP contract, importing
+its render logic from the eval scripts rather than re-deriving it.
 
-- **Four different checkpoint loaders** (base / adapter / full-FT / control adapter), dispatched on
-  checkpoint shape rather than on any declared type.
-- **Two checkpoint naming conventions** (`epoch=…ckpt`, `riffer_*.pt`).
-- **Conditioning inlets are not unified**: cross-attn text, global cond (`prepend`|`adaLN`),
-  `local_add_cond` (257-ch), the native prepend path, and control-context tokens each have their own
-  call shape — and only some survive into the a2a/longform samplers.
-- **Every renderer re-implements its own output naming and manifest.**
+**Genuinely unified (through :8056):** checkpoint loading (base · adapter · full-FT, via `/ckpts`
++ `resolve_dora_req`) · FiLM control · multi-head LatCH guidance · t2a · a2a · longform · bend ·
+job/audio serving.
 
-**A single conditioning inlet — one path that carries all of the above so a sampler call need not
-know which head it serves — is the prerequisite for a unified renderer.** Every bespoke script above
-exists because that layer is missing.
+**Genuinely NOT unified — the real remaining seams:**
+1. **Head-B contour/morph adapters and pianoroll/`mir_ctrl` are outside the server entirely.**
+   They are reachable only from `lumi/render_morph.py` and `control/sa3_control/generate.py`, with
+   their own vocab and checkpoint conventions. This is the biggest gap and the one that matters for
+   Kim's "incorporate everything we have trained" ask.
+2. **The `modular_local_embeds` inlet does not survive into the a2a/longform samplers** even
+   in principle — `SDEditReanchor` builds inpaint-mask conditioning only. Any control-under-a2a
+   test needs that conditioning path extended first.
+3. **Two checkpoint naming conventions** — `epoch=<N>.ckpt` vs `riffer_*.pt` (control runs).
+4. **Batch scripts each re-implement output naming and manifests** (`.mmline.json` vs `.json`).
+
+**So the unification work is narrower than it looked:** not "build an engine" — the engine exists —
+but **bring the contour/morph and pianoroll control families into the :8056 contract**, which means
+giving the sampler one conditioning inlet that carries control tokens and modular embeds alongside
+the text/global/inpaint conditioning it already handles.
