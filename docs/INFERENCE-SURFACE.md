@@ -275,3 +275,59 @@ job/audio serving.
 but **bring the contour/morph and pianoroll control families into the :8056 contract**, which means
 giving the sampler one conditioning inlet that carries control tokens and modular embeds alongside
 the text/global/inpaint conditioning it already handles.
+
+---
+
+## 9. State of the tool — what it HAS, and what needs building
+
+Verified 2026-08-23 by reading the server, `controls.py` and the three tabs.
+
+### HAS
+
+**Text-to-audio** (`inference_tab` → `/generate`): base prompt + variation · negative prompt ·
+checkpoint picker (dropdown + rescan + explicit path) · duration · steps · cfg · seed · batch ·
+APG scale · duration padding · dist_shift + mode · **cfg_interval (σ) with a live sigma graph** ·
+**weight mutation** (on/op/amount/target — the weight-garden glitch path).
+
+**A2A from the same tab**: init path + init noise + **noise ladder** (routes to `/a2a_track`).
+
+**A2A / transitions** (`a2a_tab` → `/a2a_mix`): A/B anchors with sliders · segment seconds · snap ·
+transition range · quantize-to-bars · mode · noise level · seam size + seam noise · pure-basis
+splice · interpolation · construction mode · separate eps seeds for body and seam · tempo match +
+mode · fine align · **chroma target + chroma gain** · guidance end · prompt regions · whole-track.
+
+**Bend** (`bend_tab` → `/bend`): track/crop pickers, latent path, seed.
+
+**Shared steering panel** (inference + a2a): **3 LatCH slots** × (head · kind · value · gain ·
+start · end · loss · w_sec) · **FiLM** (enable/value/gain) · **DoRA** (dropdown/strength/imin/imax) ·
+advanced hparams rho · mu · gamma · n_iter. `steering_payload()` consumes 35 values.
+
+**Latent player** (`:7892`): `/decode` · `/mix` (slerp) · `/steer` (single-head gradient nudge) ·
+`/crops` · `/meta` · `/source`. Low-VRAM ONNX twin at `:7893`.
+
+**Plumbing**: resident model, GPU lock, job log ring, `/audio` serving, `/schedule`, cached
+checkpoint journal, `/info` + `/status`.
+
+### NEEDS BUILDING — ranked by what it unblocks
+
+1. **Checkpoint reach.** `/ckpts` accepts a `root` param and `render_client.ckpts()` forwards it,
+   but **no GUI control sets it** — the picker is pinned to `sa3_lora_runs` (162 older local DoRA
+   runs). The 14 LUMI-trained families on the UUID drive (`lumi_runs/runs`: dorlor_ab's 32 arms,
+   lr5e5_allsets, fullft_avp_subloss, subloss_k24, winning_fleet, …) are reachable only by typing a
+   path. **A root selector / multi-root scan is the smallest change with the biggest effect on
+   "experiment with what we have".**
+2. **Contour/morph control (Head-B) is absent from the server** — `control_mode=melody_contour`
+   arms (`morphcond`, `morph_head_sweep`, `riffer_*.pt`). Needs a control-adapter install path, a
+   contour-stream input (sidecar or drawn), and vocab matching against `args["melody_vocab"]`.
+3. **Pianoroll / `mir_ctrl` (note matrix) is absent** — enters via `modular_local_embeds`; needs
+   the conditioning inlet extended. Same blocker that made D14 drop its pianoroll arm.
+4. **No batch / sweep surface.** A GUI is the wrong shape for "sweep one axis with everything else
+   pinned", and there is no replayable per-render sidecar. Correct form: a thin CLI **client of
+   `/generate`**, never a second guidance implementation (gains are normalised server-side).
+5. **`LATCH_SLOTS = 3`** is a UI cap only — trivial to raise, but >3 slots wants a rethink of the
+   panel layout.
+6. **Two checkpoint naming conventions** — a scanner keyed on `epoch=*.ckpt` never sees the
+   `riffer_*.pt` control runs.
+7. **Head metadata is not surfaced.** Picking `same_chroma` (384-ch, cosine, unstandardised) versus
+   a 1-ch scalar head changes what a target even means; the head's own metadata carries
+   out_channels / loss_type / target_kind_default and the UI does not show it.
