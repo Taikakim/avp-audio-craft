@@ -158,10 +158,23 @@ claim, including ones already in this file, against both corrections.
   measured ONE 30s window at a fixed offset, so it read intros not encodes (Kim caught it — good
   tracks landing in the "worst" list, 4 rips of one Koxbox track all there). v2 (max over 6 windows
   spanning the track) just finished: A-tier 20.7%→28.4%, D-tier(lossy) 5.4%→1.4% — **bigset is
-  substantially cleaner than reported.** The old-goa comparison (75.9%) is still re-running on the
-  same corrected method, so **the cross-corpus gap is not currently established in either
-  direction** — read the "corpus not optimizer" guard as *under re-audit*, not as a supported
-  premise, until both sides are re-measured on v2. The `goa_big_quality_matched` (4,111) list this
+  substantially cleaner than reported.**
+- **✅ CLOSED (W, 2026-08-23) — both v2 re-audits complete, and the gap is REAL and LARGER than v1
+  said.** BIGSET n=23232: A **28.4%** / B 66.8% / C 3.4% / D 1.4%. OLD GOA n=3978: A **86.0%** /
+  B 11.4% / C 1.7% / D 0.8%. So the old corpus is **~3× richer in near-lossless material** and the
+  "bigset is the more lossy corpus" premise is now **SUPPORTED** — it was unsupported in either
+  direction between 08-21 and today. *(Supersedes 27.7% / 75.9% wherever those appear.)*
+  **Why the fix looks right:** v1→v2 moved old-goa +10.1pp but bigset only +0.7pp. Max-over-windows
+  RESCUES a genuinely-lossless track that had a quiet passage and CANNOT rescue genuine mp3, so the
+  asymmetry is the fix behaving specifically; equal movement would have been a smell.
+  **TWO CAVEATS W attaches, and they matter:** (1) this is an ENCODING-FIDELITY measure, not a
+  musical-quality one — it does NOT show bigset-trained models are worse, and that link has never
+  been demonstrated; (2) fidelity tiering here is DIAGNOSTIC, not a gate — W is explicitly not
+  proposing to filter the bigset, and Kim's standing correction holds that PQ scores ambient 2–3
+  regardless of fidelity, so beatless tracks stay in and we train control heads on them.
+  Tooling: `mir/src/tools/goa_archive_quality.py` (v2 docstring records why MAX is the principled
+  statistic). **Bearing on A12:** the bigset down-weight to ~20% of draws was taken on Kim's
+  instinct that "it's got mp3 sources more than the others" — that instinct now has evidence. The `goa_big_quality_matched` (4,111) list this
   entry's follow-up depends on is ALSO invalidated by the same v1 bug and needs rebuilding first —
   don't re-point A11's follow-up at it until that lands.
 - Read-out: PQ/CE per epoch ladder + soups; the WSD-vs-constant contrast on AdamW is the direct

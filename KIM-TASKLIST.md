@@ -74,8 +74,12 @@ default. Still no EMA (the trainer force-disables it for DoRA; unchanged, and no
 
 ### 🎧 DECIDE: quality-matched big-goa file list — which variant, and is the threshold right? (W, 2026-08-21)
 Your ask, done. Measured both corpora the same way (spectral cutoff, not header bitrate):
-**old goa 75.9% near-lossless / mean 20.68 kHz vs the archive 27.7% / 19.06 kHz** — a much bigger gap
-than the model results implied. Lists at `mir/stats/goa_big_quality_matched/` (**4,111 files**, cutoff
+**old goa 86.0% near-lossless vs the archive 28.4%** — the old corpus is ~3× richer, a much bigger
+gap than the model results implied. *(CORRECTED 2026-08-23: the original 75.9% / 27.7% came from a
+v1 audit that measured ONE 30s window and so read intros, not encodes. v2 takes the max over 6
+windows; both corpora have now been fully re-audited, n=3978 and n=23232, and the gap SURVIVES the
+fix — it was briefly unsupported in either direction while the re-audit ran. Note this measures
+ENCODING FIDELITY, not musical quality, and W is not proposing to filter on it.)* Lists at `mir/stats/goa_big_quality_matched/` (**4,111 files**, cutoff
 ≥20.0 kHz, duplicates already dropped, `master_variant` kept per your directive) and
 `..._matched_noverlap/` (**3,147** — same but excluding the 2,669 tracks already in old goa; use this one
 if it is meant as NEW data rather than a replacement corpus). Two calls for you: (a) which variant, and
