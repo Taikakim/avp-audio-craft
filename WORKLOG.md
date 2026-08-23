@@ -2208,3 +2208,47 @@ OPEN: the BASS OCTAVE. Melodia and YIN disagree by ~12 semitones on every bass s
   Reported both failures plainly rather than let the earlier "fixed" status stand unverified.
 - 2026-08-21 (CONTINUITY): THE PATTERN-2 DDP INCIDENT + THE BIGGEST SUBMIT DAY OF THE CAMPAIGN. (1) INCIDENT (EXPERIMENTS A10): srun --ntasks=8 --gpus-per-task=1 + Lightning auto-detect NEVER formed DDP groups -- every winning_fleet/fullft_fleet arm (+ presumed #68 bigset big-FT) trained as independent single-GCD replicas; DoRA arms = true 8-replica ensembles (suomi: four COMPLETE 8x10 replica-epoch grids, first 2-D soup material), fullft arms = 1-live-7-idle (7 replicas died silently). All fleet sbatches converted to torchrun (CSC-verified pattern); 3-check verification now runs in-script (LOCAL_RANK 0..7 once each / UN-versioned ckpts / steps-per-epoch /8). lumi-ops skill hardened with the authoring rule. (2) Kim's cancel-soup-restart: replica_soup.py + soup render; G's analytics confirmed the bad-sound mechanism = unaveraged bs1 walk endpoints (EMA-rendered fullft clean, single replicas low, a128 disintegrating). (3) A11: 16-arm DoRA/LoRA x AdamW-WSD/braked-Fusion x 4-corpus factorial + 2 large-batch LR probes -- includes the FIRST scheduled AdamW ever (WSD wired into train_lora + WORLD_SIZE horizon fix) and the braked-Fusion kit's first true-DDP outing; loss path exonerated bit-exactly by W's underfit check, so A11 tests the optimizer half alone. (4) B10: subspace K=24 x 4 corpora. (5) B9 (control stack on full-FT backbone): triple failure chain fixed (missing jsons -> rc-laundering sed pipes -> resubmitted on finished avpaug ep19). (6) B2/tgate render gap (F audit) closed: 240 sibling-matched cells. (7) Flash metadata storms: staging locks added; stage-if-EMPTY (not if-absent) rule after stale empty dirs killed two mirctrl batches; mirctrl bracket deferred to next allocation (budget + wedge).
 - 2026-08-22 (GHOST-NOTE): pulled + ingested + scored + published two LUMI campaigns: renders/length_variant (2606 new clips: fp32cmp_avp/goa_t4096 46 models, fp32frames_avp_t4096 16, adamw_avp/goa_t512 8) and renders/dorlor_ab (1631 new, the A11 32-arm DoRA/LoRA x AdamW/FusionOpt x avp/goa/biggoa/suomi/avpaug factorial, first audition). All via eval/score_and_publish.py per campaign pattern -- CE+CLAP scored, boards rebuilt, HTTP-verified live. Fixed genre_fusion_probe.sbatch (wrong container: lumi-multitorch-full lacks soundfile, every render_matrix_cells.py sbatch uses sa3.sif -- copy-paste artifact from a training template, commit 00728e4); job now runs clean (21445746). Process note: ran two ingest_matrix_cells.py invocations concurrently against the shared manifest_live.jsonl with no lock -- Kim caught it, killed the overlap, now wrapping ingest calls in filelock.py hold per CONTINUITY suggestion.
+
+## 2026-08-23 — ALLOCATION CLOSED (4765/5000 GPU-h) + the ai-music campaign — CONTINUITY
+
+**The allocation ended today** (`lumi-allocations` now reads `4765/0`). `/scratch` persists ~90 days,
+so nothing is lost, but no further compute. Final-day work:
+
+**ai-music corpus onto LUMI and captioned.** 195.6 GB / 9,221 files uploaded (`Goa Dataset` and
+`Goa_Separated` excluded), **3,434 tracks Music-Flamingo captioned** with a per-track hint carrying
+essentia genre + release year, and **2,860 tracks BS-RoFormer separated**. Granite never ran — the
+allocation closed first.
+- **Genre hints are audio-derived, not folder-derived.** `eval/build_caption_hint_map.py
+  --from-folders --essentia-genre --tag-year`: mir's discogs400 EffNet (MIGraphX, ~35 min for 3.4k)
+  supplies genre for 3,201/3,434, folder name is fallback only; the FLAC `date` tag supplies the
+  year at 93.6%. Measured on this corpus: `date` present on 249/250 sampled, **`genre` on ZERO** —
+  so tags give the year, the classifier gives the genre, and neither alone suffices. The corpus
+  spans 1960s-2020s (2/4/3/15/46/97/82 per decade), the multi-era case a single global hint gets
+  wrong for everyone. Artifacts: `eval/aimusic_hint_map.json`, `eval/aimusic_genre_cache.json`.
+- The classifier CONFIRMS the good folder labels (Full-on Psytrance → Psy-Trance 76%; Punk → Punk
+  63%) and RESCUES the vague ones (Chill Dataset → Ambient 52%; home listening → Folk 25%).
+
+**Two bugs of the same family, both "wrong count, no error":**
+1. **Stems counted as tracks.** The corpus is MIXED — 574 folders already separated into
+   `<track>/{full_mix,bass,drums,other,vocals}.flac`, the rest flat audio. An extension glob shards
+   the 4 stems as 4 extra tracks; `--stem full_mix` drops the ~2,860 raw ones. Added
+   `make_caption_shards.py --mixed-layout / --skip-separated` (a dir containing `full_mix` IS one
+   track), verified 3,434 / 2,860 against the hint map's independent count.
+2. **…and the guard went in the wrong place.** `goa_sep.sbatch` line 49 built its OWN list with a
+   bare `find` and OVERWROTE those shards, so separation ran **5,732 units instead of 2,860** —
+   exactly 574×5 of pure waste, separating stems of stems. The worker takes `--shard`, which is
+   what made it look shard-driven. **A job is only shard-driven if the SBATCH reads the shards;
+   verify at the submit layer, not the worker.** goa_sep now honours pre-made shards.
+
+**Experiments landed:** A12 ep24 2×2 (TIMEOUT at 12h ≈ ep15, 8 rungs/arm, `afterany` probe rendered
+2,560 cells regardless — the dependency is why the wall cost only epochs); A13 mellow-LR AVP
+full-FT (64 ep, 8 rungs, +320 render cells); **A11's dorlor_ab factorial auditioned for the first
+time** (32 arms × 80 cells = 2,560); **D14 cross-prompt a2a bracket** (21 GB, 8 families, the first
+deliberate audio/caption mismatch test in this codebase — `lumi/a2a_bracket.py` on the shipped
+`SDEditReanchor` latent path, no audio round-trip).
+
+**Retention rule corrected** (Kim): span ≤10 keeps {last, mid} only — 50%/75% land ADJACENT on a
+short run (epochs 0..7 → 4,5,7) and that cost a duplicate 4.6 GB slim per run. Applied to BOTH
+`make_slim_pull_list.py` and `prune_optimizer_states.py` so they cannot drift. An exponential
+end-weighted ladder was measured and REJECTED: more files on long runs (320ep: 11 vs 7) and a hole
+between ep0 and ep63, precisely where the proven cooked-early case (`bf16cmp_goa` peaks ep0-1) lives.
