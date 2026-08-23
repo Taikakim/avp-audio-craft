@@ -882,6 +882,20 @@ got one. This is the same shape as the 2026-08-15 incident where a resumable too
 track.** Same guard belongs on the captioning and pre-encode shards (their done-tests must agree
 with the separator's, per the lumi-ops shard rule).
 
+**⚠️ THIS FIRED ON 2026-08-23, AND THE GUARD WAS IN THE WRONG PLACE.** `make_caption_shards.py`
+got `--mixed-layout` / `--skip-separated` and produced the correct 2860-track shard set — but
+**`goa_sep.sbatch` never consumed it**: line 49 built its OWN list with a bare extension `find` and
+OVERWROTE the shards. So separation ran 5732 units instead of 2860 (≈ every audio file in the
+tree), separating `bass/drums/other/vocals` as tracks and re-separating the 574 already-done
+parents; roughly half the compute was waste. The task (`goa_sep_task.py`) does take `--shard`,
+which is what made it *look* shard-driven — checking the task and not the sbatch is the error.
+FIXED: goa_sep.sbatch now uses pre-made shards when present and warns loudly when it self-generates
+(`REGEN_SHARDS=1` forces the old behaviour). **Lesson: a job is only shard-driven if the SBATCH
+reads the shards — verify at the submit layer, not the worker layer.**
+CLEANUP: the junk outputs are the ones whose directory basename is a stem name —
+`find aimusic_stems -type d \( -name bass -o -name drums -o -name other -o -name vocals -o -name
+full_mix \) -prune` locates them; the real per-track outputs sit one level up.
+
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
 - Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **More
