@@ -90,6 +90,28 @@ approach**, run this search and say what you found:
    this family is for"). #3 is the current gap. **APPEND your existing eval pages with the explainer
    whenever their builder runs.** W's ship-time check gates on the explainer block being present.
 
+5. **For ANY inference / generation / rendering / control-head task: THE INFERENCE UI ALREADY
+   EXISTS. Read `docs/INFERENCE-SURFACE.md` and open it BEFORE writing a renderer.** (Kim direct
+   2026-08-23, after C twice told him it did not exist and then built a duplicate CLI in an
+   afternoon.) It is **ONE app with a viewer and TWO backends** — split because SAME-L must run
+   under the SA3 venv — and finding only one half reads as "there is no generation path":
+   - **Viewer** — mir branch **`sa3-latent-explorer`**, `plots/explorer_sa3/app.py`, Dash **:8051**,
+     mir venv. Tabs `inference_tab` / `a2a_tab` / `bend_tab`; `render_client.py` is the client and
+     names the contract in its docstring.
+   - **Latent player** — `mir/scripts/latent_server_sa3.py` **:7892**. CROPS ONLY (`/decode /mix
+     /steer`). **Not the inference path and never was** — `/steer` is one head, one gradient step.
+   - **Render server** — **`SAO/eval/explorer_render_server.py` :8056**, `SAO/.venv`, holds
+     `medium-base` RESIDENT. `/generate /a2a_track /a2a_mix /longform /decode /bend /schedule
+     /ckpts /info /status /audio`. **This is the generation path.**
+   **It already exposes MULTI-HEAD guidance with values:** `controls.py` `LATCH_SLOTS = 3`, each
+   slot head/kind/value/gain/start/end/loss/w_sec, shared by the inference and a2a tabs, driving
+   FiLM + DoRA too, rho/mu/gamma/n_iter as advanced hparams. `LATCH_SLOTS` is a UI cap, not a model
+   cap. Guidance contract: `controls.steering_payload()` → `{latch:[...], film, dora}`.
+   ⇒ **Do not write a new renderer, a new guidance driver, or a new "inference engine". Extend the
+   :8056 endpoint set, or write a thin CLIENT of it** (a batch/sweep CLI is legitimately additive;
+   a second implementation of guidance is not, and its knobs will silently not match — the server
+   NORMALISES gains, so a raw `weight` elsewhere is a different scale).
+
 Only build once this comes up empty. If you find prior work, **reuse it or state explicitly
 why you're not**. If you did new work, drop a journal line so THE-FINN can fold it into
 `DISCOVERIES.md` (he owns keeping that index generated from the journals).

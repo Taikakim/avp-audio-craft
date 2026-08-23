@@ -155,6 +155,34 @@ not enumerated here, only the project-relevant paths are.
 
 ## Reusable plumbing — the internal reuse index (check here before building)
 
+### ⭐ THE INFERENCE UI — one app, a viewer and TWO backends (check FIRST for anything generative)
+
+**If the task is inference / generation / rendering / control-head steering, this already exists.**
+Full callable surface: **`docs/INFERENCE-SURFACE.md`**. It is split across two repos and two venvs
+(SAME-L must run under the SA3 venv), which is why finding one half reads as "there is no
+generation path" — that mistake cost an afternoon and a duplicate CLI on 2026-08-23.
+
+| piece | where | port / venv | what it does |
+|---|---|---|---|
+| **Viewer** | `mir` branch **`sa3-latent-explorer`**, `plots/explorer_sa3/app.py` | **8051**, mir venv | Dash GUI. Tabs `inference_tab` · `a2a_tab` · `bend_tab`; `render_client.py` is the client, `controls.py` the shared steering panel |
+| **Latent player** | `mir/scripts/latent_server_sa3.py` (+ `latent_server_onnx.py`, low-VRAM) | **7892**, SA3 venv | CROPS ONLY: `/decode /mix /steer`. **Not** the inference path — `/steer` is one head, one gradient step, gain only |
+| **Render server** | **`SAO/eval/explorer_render_server.py`** | **8056**, `SAO/.venv` | **THE generation path.** `medium-base` resident on GPU; `/generate /a2a_track /a2a_mix /longform /decode /bend /schedule /ckpts /info /status /audio` |
+
+**Already supports multi-head guidance with values** — `controls.py` `LATCH_SLOTS = 3`, each slot
+`head · kind · value · gain · start · end · loss · w_sec`, shared by the inference and a2a tabs,
+plus FiLM + DoRA install, weight mutation, negative prompt, cfg_interval, dist_shift;
+rho/mu/gamma/n_iter as advanced hparams. `LATCH_SLOTS` is a UI cap, not a model cap.
+Guidance contract: `controls.steering_payload()` → `{latch:[...], film, dora}`.
+`resolve_latch()` server-side normalises gains (rho = mu = first slot's gain, per-slot weight =
+slot_gain/g0) — **so a raw `weight` passed by any other tool is a DIFFERENT SCALE and results will
+not be comparable.** Render logic is IMPORTED from the proven eval scripts
+(`chroma_morph_transitions.py`, `a2a_fulltrack.py`, `density_control_eval.py`), not re-derived.
+
+⇒ **Extend the :8056 endpoint set, or write a thin CLIENT of it. Do not build a second renderer or
+a second guidance driver.** A batch/sweep CLI over `/generate` is legitimately additive; a parallel
+implementation is not.
+
+
 Already built across the repos; **reuse, don't rebuild.** This is the *internal* reuse
 index; `papers/knowledge.md` is the *external* prior-art index, and `docs/open-threads.md`
 tracks open/dropped work. Paths are SAO-relative unless a repo is named. Last full
