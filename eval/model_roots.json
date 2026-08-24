@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "_doc": "THE checkpoint-root config for the SA3 inference surface. Standing project rule: no drive paths in code. Drives are removable and the eval drive mounts as Mantu OR Mantu1 depending on mount order, so a mount is resolved by probing its marker subdirectory (generalisation of explorer_render_server._mantu_root). A root whose mount is absent stays listed with available=false and the picker serves its cached journal.",
+  "mounts": {
+    "MANTU": {
+      "candidates": ["/run/media/kim/Mantu", "/run/media/kim/Mantu1"],
+      "marker": "sa3_lora_runs"
+    },
+    "EVALUUID": {
+      "candidates": ["/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d"],
+      "marker": "lumi_runs"
+    }
+  },
+  "roots": [
+    {
+      "id": "lumi_uuid",
+      "label": "LUMI runs (UUID drive)",
+      "path": "${EVALUUID}/lumi_runs/runs",
+      "priority": 30,
+      "enabled": true,
+      "note": "14 families, 412 ckpts, 62 run_meta.json. The authoritative LUMI grab."
+    },
+    {
+      "id": "local_dora",
+      "label": "local DoRA runs",
+      "path": "${MANTU}/sa3_lora_runs",
+      "priority": 20,
+      "enabled": true,
+      "note": "162 entries. Was the pinned CKPT_SCAN_ROOT before multi-root."
+    },
+    {
+      "id": "control",
+      "label": "control adapters (riffer_*.pt)",
+      "path": "${MANTU}/sa3_control_runs",
+      "priority": 15,
+      "enabled": true,
+      "note": "control_mode adapters; invisible to an epoch=*.ckpt glob."
+    },
+    {
+      "id": "lumi_mantu",
+      "label": "LUMI runs (Mantu, partial/superseded)",
+      "path": "${MANTU}/lumi_runs/runs/runs",
+      "priority": 5,
+      "enabled": true,
+      "note": "23 families, no run_meta. ARCHITECTURE.md: an early PARTIAL grab, superseded by lumi_uuid. Ranked lowest so dedupe prefers the UUID copy."
+    }
+  ],
+  "limits": {
+    "max_resident_adapters": 4,
+    "vram_floor_gb": 6.0
+  }
+}
