@@ -79,6 +79,28 @@ select,button{font:inherit;color:inherit}
 #startbtn{min-height:64px;padding:0 32px;border-radius:14px;border:2px solid #5d9;background:#173322;color:#9f9;
  font-size:20px;font-weight:600;margin-top:6px}
 #startbtn:disabled{opacity:.4;border-color:#445;background:#181820;color:#789}
+#helpbtn{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:2px solid #3a3d48;
+ background:#181820;color:#9ab;font-size:17px;font-weight:700}
+#helpoverlay{position:fixed;inset:0;background:rgba(10,10,14,.92);z-index:20;display:none;
+ overflow-y:auto;padding:24px 20px 40px}
+#helpoverlay.open{display:flex;flex-direction:column;align-items:center}
+#helpcard{max-width:460px;width:100%;background:#15161b;border:1px solid #2a2c34;border-radius:12px;
+ padding:18px 18px 8px}
+#helpcard h2{font-size:16px;margin:0 0 4px;color:#e8eef5}
+#helpcard .hitem{border-top:1px solid #23252c;padding:10px 0}
+#helpcard .hitem:first-of-type{border-top:none}
+#helpcard .hlabel{color:#7ed;font-size:11px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
+#helpcard .htext{color:#bcd;font-size:13.5px;line-height:1.5}
+#helpcard .guide-row{display:flex;gap:10px;padding:2px 0;font-size:13px;line-height:1.4}
+#helpcard .guide-n{flex:0 0 16px;color:#5b9dd9;font-weight:700}
+#helpcard .guide-n.g0{color:#e55}
+#helpcard .guide-t{color:#bcd}
+#helpclose{width:100%;min-height:50px;margin-top:14px;border-radius:10px;border:2px solid #3a3d48;
+ background:#181820;color:#9ab;font-size:15px;font-weight:600}
+#complabel,#scorelabel{color:#567;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+ text-align:center}
+#complabel{padding:2px 0 0}
+#scorelabel{padding:6px 0 0}
 </style></head><body>
 
 <div id="overlay">
@@ -112,13 +134,15 @@ select,button{font:inherit;color:inherit}
 </div>
 
 <div id="hdr">
- <select id="lensel"><option>loading…</option></select>
+ <select id="lensel" title="clip length -- changing this loads a whole new pair at that length"><option>loading…</option></select>
  <button id="playpause" title="pause / resume">&#9208;</button>
+ <button id="helpbtn" title="what does this page do?">?</button>
 </div>
 <div id="qdisplay">
  <div id="qprogress"></div>
  <div id="qtext"></div>
 </div>
+<div id="complabel">compare the two tracks &darr;</div>
 <div id="abrow">
  <button class="abbtn" id="btnA">A</button>
  <button class="abbtn abbtn-even" id="btnEven">EVEN</button>
@@ -128,6 +152,7 @@ select,button{font:inherit;color:inherit}
 <div id="coverage" style="text-align:center;color:#678;font-size:11px;letter-spacing:.06em;min-height:14px"></div>
 
 <div id="stage">
+ <div id="scorelabel">rate the track you're currently hearing (A, above)</div>
  <div class="rate-row" id="rowA"></div>
  <div id="center">
   <div id="loadring"></div>
@@ -138,7 +163,53 @@ select,button{font:inherit;color:inherit}
  </div>
  <div class="rate-row" id="rowB"></div>
  <div id="hint">0 broken · 1 unlistenable · 2 rough · 3 competent AI · 4 great · 5 exceptional
-  &middot; tap the circle to switch tracks (same moment, blind) &middot; drag sideways to scrub</div>
+  &middot; tap the circle to switch tracks (same moment, blind) &middot; drag sideways to scrub
+  &middot; tap the <b>?</b> above for a full explanation</div>
+</div>
+
+<div id="helpoverlay">
+ <div id="helpcard">
+  <h2>How this works</h2>
+  <div class="hitem">
+   <div class="hlabel">Length dropdown</div>
+   <div class="htext">Picks how long the clips are -- the standard 20s grid, or a native
+    length up to ~380s. <b>Changing it loads a whole new pair</b> of clips at that length, not
+    the same pair replayed longer -- that's expected, not a glitch.</div>
+  </div>
+  <div class="hitem">
+   <div class="hlabel">The circle in the middle</div>
+   <div class="htext"><b>Tap</b> it to switch which of the two tracks (A or B) you're
+    currently hearing -- both play from the exact same moment, so switching is a fair blind
+    comparison, never a restart. Whichever track is currently playing is also the one the
+    <b>rate</b> row below activates for -- so switch first, then rate what you just heard.
+    <b>Drag sideways</b> on it to scrub both tracks to a new position at once.</div>
+  </div>
+  <div class="hitem">
+   <div class="hlabel">A / EVEN / B buttons</div>
+   <div class="htext">Answer the single question shown above them (which track sounded more
+    interesting, with a nicer timbre) by picking the one you preferred, or EVEN if you truly
+    can't tell them apart. This is a <b>comparison between the two tracks</b> -- separate from
+    the 0-5 rating below, which scores each track on its own.</div>
+  </div>
+  <div class="hitem">
+   <div class="hlabel">0-5 rating (per track)</div>
+   <div class="htext">Independent of the A/B comparison -- an absolute quality score for
+    whichever single track you're currently listening to:</div>
+   <div class="guide-row"><span class="guide-n g0">0</span><span class="guide-t">broken</span></div>
+   <div class="guide-row"><span class="guide-n">1</span><span class="guide-t">glitchy and unusable, but not pure noise</span></div>
+   <div class="guide-row"><span class="guide-n">2</span><span class="guide-t">occasional glitches, boring / unpleasant, but music</span></div>
+   <div class="guide-row"><span class="guide-n">3</span><span class="guide-t">structurally intact, boilerplate music — "sounds like it was made by an AI"</span></div>
+   <div class="guide-row"><span class="guide-n">4</span><span class="guide-t">interesting melodies, very good production — "I'm nodding my head already"</span></div>
+   <div class="guide-row"><span class="guide-n">5</span><span class="guide-t">exceptional — "I listened to this three times already", "I can't believe it's AI"</span></div>
+  </div>
+  <div class="hitem">
+   <div class="hlabel">What happens when I'm done</div>
+   <div class="htext">Once you've answered the A/B question <b>and</b> rated both A and B
+    0-5, a brand new pair loads automatically -- there's no "next" button because you don't
+    need one.</div>
+  </div>
+  <button id="helpclose">got it</button>
+ </div>
 </div>
 
 <script>
@@ -519,11 +590,14 @@ const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('
 // "interesting" over a whole listen, spectral separation (mechanism still unclear -- kept as
 // an open, ear-checkable question rather than a claimed cause), and long-context coherence
 // (structure, native lengths only).
+// Kim direct 2026-08-25, after live feedback that the 4-dimension cycle read as "the
+// questions relate to both tracks but the rating scale relates to only one" (confusing) and
+// that the A/B/EVEN buttons' purpose wasn't legible at all: collapse to ONE question. The
+// per-dimension breakdown was diagnostic value we're giving up, but a rater who does not
+// understand the task at all produces no signal on ANY dimension -- one clear question beats
+// four unclear ones. #help (below) is the other half of this fix: explain what remains.
 const QUESTIONS=[
- {id:'top_end',text:'more precise/natural high frequency detail? (less harshness/noise)'},
- {id:'spectral_image',text:'clearer soundstage? (instruments stand out from each other and have meaningful timbres, instead of poorly defined noises lacking identity)'},
- {id:'structure',text:'more coherent structure? (flow of phrases/sections)',nativeOnly:true},
- {id:'interesting',text:'more interesting? (creative/unique)'},
+ {id:'interesting_timbre',text:'Which track sounded more interesting and had a more pleasant timbre?'},
 ];
 // The active question set depends on the length bucket -- computed fresh per pair in
 // resetRound() (curLenKey is already set by then) rather than filtering QUESTIONS inline
@@ -545,7 +619,9 @@ function showQuestion(){
   statusEl.textContent='';
  }else{
   qTextEl.textContent=activeQuestions[qIndex].text;
-  qProgEl.textContent='question '+(qIndex+1)+' / '+activeQuestions.length;
+  // "question 1 / 1" is noise now that there's only ever one -- only show progress when there
+  // is more than one question to track.
+  qProgEl.textContent=activeQuestions.length>1?('question '+(qIndex+1)+' / '+activeQuestions.length):'';
   statusEl.textContent=rDone?'Both tracks have been rated, all the questions must be answered.':'';
  }
 }
@@ -558,6 +634,7 @@ function resetRound(){
  [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
  btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
 }
+const scorelabelEl=document.getElementById('scorelabel');
 function updateUI(){
  rowA.classList.toggle('inactive',active!=='A');
  rowB.classList.toggle('inactive',active!=='B');
@@ -565,6 +642,7 @@ function updateUI(){
  [...rowB.children].forEach(b=>b.disabled=active!=='B');
  npAEl.classList.toggle('on',active==='A');
  npBEl.classList.toggle('on',active==='B');
+ if(scorelabelEl)scorelabelEl.textContent="rate the track you're currently hearing ("+active+")";
 }
 const EP='/files/ratings.php';
 // Tags every record so the export can still separate the two audiences now that they share
@@ -674,5 +752,15 @@ loadManifest().then(async()=>{
  startbtn.disabled=false;startbtn.textContent='tap to begin';
 }).catch(()=>{startbtn.textContent='failed to load — reload the page';});
 startbtn.onclick=()=>{overlay.style.display='none';loadNewPair();};
+
+// Persistent help -- Kim 2026-08-25, after feedback that the intro overlay's explanation
+// (ranking guide, what each control does) is gone for good once you tap "tap to begin" and
+// there's nowhere to see it again. The '?' button re-opens the same information any time,
+// mid-session, without losing the current pair (playback is left running underneath).
+const helpbtn=document.getElementById('helpbtn'),helpoverlay=document.getElementById('helpoverlay'),
+      helpclose=document.getElementById('helpclose');
+helpbtn.onclick=()=>helpoverlay.classList.add('open');
+helpclose.onclick=()=>helpoverlay.classList.remove('open');
+helpoverlay.addEventListener('click',e=>{if(e.target===helpoverlay)helpoverlay.classList.remove('open');});
 </script>
 </body></html>

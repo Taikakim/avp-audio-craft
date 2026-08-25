@@ -23,12 +23,36 @@ HTTP cache do its job, since staleness between periodic rebuilds is an accepted 
 """
 import datetime
 import json
+import sqlite3
 from pathlib import Path
 
 STAGE_MATRIX = Path.home() / "evals_aac" / "model_matrix"
 MANIFEST = STAGE_MATRIX / "manifest_live.jsonl"
 SCORED_AVP = STAGE_MATRIX / "scored_models_avp.json"
 OUT = STAGE_MATRIX / "manifest_avp_evaluator.json"
+CLIP_DB = Path(__file__).resolve().parent / "clip_metrics.db"
+
+# Kim direct 2026-08-25: drop tracks with PQ < 3.5 SILENTLY -- a low-PQ clip in a blind A/B
+# just wastes a rater's listen on something already known to be weak; no message, no visible
+# "N clips hidden" count, it simply never enters the pool. PQ (Audiobox production-quality) is
+# a per-CLIP score, not per-model -- the same checkpoint can render one prompt cleanly and
+# another badly, so this filters row-by-row, not model-by-model.
+PQ_FLOOR = 3.5
+
+
+def load_pq_by_file():
+    """{filename: pq} for every scored clip -- keyed on the .m4a basename (what manifest rows
+    carry as `file`), since clip_metrics.db stores full STAGE_MATRIX paths."""
+    if not CLIP_DB.exists():
+        print(f"[evaluator-manifest] WARNING: no {CLIP_DB} -- PQ floor cannot be applied, "
+              f"every clip passes")
+        return {}
+    con = sqlite3.connect(CLIP_DB)
+    out = {}
+    for path, pq in con.execute("SELECT path, pq FROM metrics WHERE pq IS NOT NULL"):
+        out[Path(path).name] = pq
+    con.close()
+    return out
 
 # Exactly the fields evaluator.html's loadManifest()/lengthBucket()/eligible() read off each
 # entry -- dropping prompt_text, seed, and everything else the full manifest carries but this
@@ -64,7 +88,9 @@ def main():
         raise SystemExit(f"[evaluator-manifest] no {SCORED_AVP} -- run build_clap_hyperparam_table.py first")
 
     scored = set(json.loads(SCORED_AVP.read_text()))
+    pq_by_file = load_pq_by_file()
     out = []
+    n_below_pq = n_no_pq = 0
     for ln in MANIFEST.read_text().splitlines():
         ln = ln.strip()
         if not ln:
@@ -76,6 +102,17 @@ def main():
         if e.get("model") not in scored:
             continue
         if not is_op_point(e):
+            continue
+        # Unscored (no pq row at all) PASSES THROUGH rather than being excluded -- most native-
+        # length clips have no Audiobox score at all (clip_metrics_audiobox.py hard-skips
+        # anything over 60s, unrelated to quality; see WORKLOG 2026-08-23), and treating
+        # "unscored" as "assume bad" would silently empty the native-length tiers of the length
+        # dropdown, which is a real deliberately-built feature, not a bug to route around here.
+        pq = pq_by_file.get(str(e.get("file") or ""))
+        if pq is None:
+            n_no_pq += 1
+        elif pq < PQ_FLOOR:
+            n_below_pq += 1
             continue
         row = {k: e.get(k) for k in FIELDS}
         clip = STAGE_MATRIX / str(e.get("file") or "")
@@ -90,6 +127,8 @@ def main():
     size = OUT.stat().st_size
     print(f"[evaluator-manifest] wrote {OUT}  ({len(out)} entries from {len(scored)} avp "
           f"models, {size:,} bytes -- was {MANIFEST.stat().st_size:,} bytes unfiltered)")
+    print(f"[evaluator-manifest] PQ<{PQ_FLOOR} floor: {n_below_pq} dropped silently, "
+          f"{n_no_pq} unscored-for-PQ passed through (native-length clips mostly)")
 
 
 if __name__ == "__main__":
