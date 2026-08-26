@@ -132,6 +132,7 @@ select,button{font:inherit;color:inherit}
   <p class="note" id="goabadge" style="display:none;color:#fa5">Internal mode (<code>?goa=1</code>):
    the pool is <b>every scored model</b>, goa-corpus ones included — not just the avp models the
    public link serves. First load is slower here; it reads the full manifest.</p>
+  <p class="note" id="pqbadge" style="display:none;color:#c9f"></p>
   <div style="text-align:center"><button id="startbtn" disabled>loading…</button></div>
  </div>
 </div>
@@ -246,6 +247,29 @@ const GOA=PARAMS.has('goa')||PARAMS.has('all');
 // than quietly implying the number is live.
 const RECENT_RAW=PARAMS.get('recent');
 const RECENT=(RECENT_RAW===null)?null:(parseFloat(RECENT_RAW)>0?parseFloat(RECENT_RAW):48);
+
+// ── QUALITY-MATCHED PAIRING (Kim direct 2026-08-26, dictated) ──────────────────────────────
+// Deliberately address-bar-only, no visible dropdown: the plain page stays the simple thing
+// regular raters see, this is for Kim/the fleet steering deliberate comparisons.
+// ?pq=<N>      pair only clips within N PERCENTILE POINTS of each other on the PQ distribution
+//              of everything currently loaded (not an absolute PQ delta -- a fixed delta would
+//              mean something different in a tight-PQ pool vs a wide one; percentile rank is
+//              the same "how similar, statistically" question regardless of pool shape).
+//              ?pq=10 = both clips must land within the same ~10-percentile-wide band.
+// ?crossds=1   additionally require the two clips come from DIFFERENT dataset groups (avp and
+//              avp-augmented count as ONE group -- "aug" is a data augmentation of avp, not a
+//              separate corpus; goa and suomi are their own groups). Stacks with ?pq=.
+// Both stack with ?goa=1/?all and ?recent= -- they constrain WHICH PAIR gets picked from the
+// pool those already built, not which pool loads.
+const PQ_TOL=(()=>{const v=parseFloat(PARAMS.get('pq'));return (isFinite(v)&&v>0)?v:0;})();
+const CROSS_DS=PARAMS.has('crossds');
+function datasetGroup(model){
+ const m=String(model||'').toLowerCase();
+ if(m.includes('suomi'))return'suomi';
+ if(m.includes('avp'))return'avp';    // avp + avp-augmented ("avpaug") -- one group
+ if(m.includes('goa'))return'goa';
+ return'other';
+}
 
 // ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
 const LENGTH_CLUSTERS=[24,48,95,190,380];
@@ -368,7 +392,18 @@ async function fetchEntries(){
  }
  return out;
 }
+let pqByFile={};
+async function loadPqByFile(){
+ // Only fetched when ?pq= actually needs it -- the plain default page (and ?crossds= alone,
+ // which doesn't need PQ) never pays for this extra ~1.3MB static file.
+ if(!PQ_TOL)return;
+ try{
+  const r=await fetch(CB+'pq_by_file.json',{cache:'no-store'});
+  pqByFile=await r.json();
+ }catch(_){pqByFile={};}
+}
 async function loadManifest(){
+ await loadPqByFile();
  const entries=await fetchEntries();
  const out={};
  for(const e of entries){
@@ -378,40 +413,77 @@ async function loadManifest(){
   out[key]=out[key]||{label,byPrompt:{}};
   out[key].byPrompt[pid]=out[key].byPrompt[pid]||new Map();
   allFiles.add(e.file);
+  const pq=Object.prototype.hasOwnProperty.call(pqByFile,e.file)?pqByFile[e.file]:null;
   out[key].byPrompt[pid].set(e.model+'|'+e.ckpt,
-   {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file});
+   {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file,pq});
  }
  pools=out;
+ buildPqIndex();
 }
+// Percentile rank, not an absolute PQ delta -- see the ?pq= comment above for why.
+let PQ_SORTED=[];
+function buildPqIndex(){
+ const vals=[];
+ for(const k in pools)for(const pid in pools[k].byPrompt)
+  for(const e of pools[k].byPrompt[pid].values())if(typeof e.pq==='number')vals.push(e.pq);
+ vals.sort((a,b)=>a-b);
+ PQ_SORTED=vals;
+}
+function pqPercentile(pq){
+ if(!PQ_SORTED.length)return 50;
+ let lo=0,hi=PQ_SORTED.length;
+ while(lo<hi){const mid=(lo+hi)>>1;if(PQ_SORTED[mid]<pq)lo=mid+1;else hi=mid;}
+ return 100*lo/PQ_SORTED.length;
+}
+function pqBandOk(a,b){
+ if(!PQ_TOL)return true;
+ if(a.pq==null||b.pq==null)return true;   // can't judge either clip -- don't block on it
+ return Math.abs(pqPercentile(a.pq)-pqPercentile(b.pq))<=PQ_TOL;
+}
+function crossDsOk(a,b){
+ return !CROSS_DS||datasetGroup(a.model)!==datasetGroup(b.model);
+}
+function pairOk(a,b){return pqBandOk(a,b)&&crossDsOk(a,b);}
 function bucketHasPairs(b){return Object.values(b.byPrompt).some(m=>m.size>=2);}
 // PREFER UNRATED. Coverage-first sampling: pick from prompts that still hold at least two
 // unrated clips; within a prompt, take unrated entries before rated ones. Falls back cleanly —
 // prompts with one unrated clip pair it against a rated one, and once everything is covered it
 // reverts to plain random so the page never dead-ends. Not a queue: two raters hitting it at
 // once still get useful work, they just stop colliding on the same few clips.
-function pickPair(bucket){
- const entries=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
- if(!entries.length)return null;
- const unratedOf=m=>[...m.values()].filter(e=>!ratedSet.has(e.file));
- let cands=entries.filter(([,m])=>unratedOf(m).length>=2);      // best: a fully-fresh pair
- let mode='fresh';
- if(!cands.length){cands=entries.filter(([,m])=>unratedOf(m).length===1); mode='half';}
- if(!cands.length){cands=entries; mode='covered';}
- const [pid,m]=cands[Math.floor(Math.random()*cands.length)];
- const all=[...m.values()], un=unratedOf(m);
- let pair;
- if(mode==='fresh'){
-  let i=Math.floor(Math.random()*un.length),j;
-  do{j=Math.floor(Math.random()*un.length);}while(j===i);
-  pair=[un[i],un[j]];
- }else if(mode==='half'){
-  const rest=all.filter(e=>e.file!==un[0].file);
-  pair=[un[0], rest[Math.floor(Math.random()*rest.length)]];
- }else{
-  let i=Math.floor(Math.random()*all.length),j;
-  do{j=Math.floor(Math.random()*all.length);}while(j===i);
-  pair=[all[i],all[j]];
+// allPairs(): every unordered pair within one prompt's entries, filtered by pairOk() (the
+// pq/crossds constraints above -- both no-ops when their URL param is absent, so this reduces
+// to "every pair" in the plain default case, same as before).
+function allPairs(arr,constrained){
+ const out=[];
+ for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+  const a=arr[i],b=arr[j];
+  if(!constrained||pairOk(a,b))out.push([a,b]);
  }
+ return out;
+}
+function pickPair(bucket){
+ const promptEntries=Object.entries(bucket.byPrompt).filter(([,m])=>m.size>=2);
+ if(!promptEntries.length)return null;
+ const withPairs=(constrained)=>promptEntries
+  .map(([pid,m])=>{const arr=[...m.values()];return [pid,arr,allPairs(arr,constrained)];})
+  .filter(([,,vp])=>vp.length>0);
+ // Try honoring ?pq=/?crossds= first; if that leaves nothing pairable anywhere in this pool
+ // (e.g. a prompt with only 2 models total and they don't happen to fall in the same PQ band),
+ // fall back to unconstrained rather than dead-end the page -- the same "never dead-end"
+ // philosophy the coverage fallback below already uses.
+ let entries=withPairs(true);
+ if(!entries.length)entries=withPairs(false);
+ if(!entries.length)return null;
+ const isUnrated=e=>!ratedSet.has(e.file);
+ let cands=entries.filter(([,,vp])=>vp.some(([a,b])=>isUnrated(a)&&isUnrated(b)));  // fully fresh
+ let mode='fresh';
+ if(!cands.length){cands=entries.filter(([,,vp])=>vp.some(([a,b])=>isUnrated(a)||isUnrated(b))); mode='half';}
+ if(!cands.length){cands=entries; mode='covered';}
+ const [pid,,vp]=cands[Math.floor(Math.random()*cands.length)];
+ let pool=vp;
+ if(mode==='fresh')pool=vp.filter(([a,b])=>isUnrated(a)&&isUnrated(b));
+ else if(mode==='half')pool=vp.filter(([a,b])=>isUnrated(a)||isUnrated(b));
+ const pair=[...pool[Math.floor(Math.random()*pool.length)]];
  if(Math.random()<0.5)pair.reverse();
  return {pid,a:pair[0],b:pair[1]};
 }
@@ -747,6 +819,15 @@ function populateLengthSelect(){
 // audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
 const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
 if(GOA)document.getElementById('goabadge').style.display='block';
+if(PQ_TOL||CROSS_DS){
+ const pb=document.getElementById('pqbadge');
+ const bits=[];
+ if(PQ_TOL)bits.push('pairs matched within '+PQ_TOL+' percentile points of PQ (<code>?pq='+PQ_TOL+'</code>)');
+ if(CROSS_DS)bits.push('always drawn from two different dataset groups (<code>?crossds=1</code>)');
+ pb.innerHTML='Internal mode: '+bits.join(', ')+'. Falls back to unconstrained pairing if a '
+  +'prompt has no matching pair under these constraints.';
+ pb.style.display='block';
+}
 // Say which pool is on. A page that silently shows a subset is a page that misleads whoever
 // forgot the URL parameter -- and ?recent's age data is only as fresh as the last manifest
 // rebuild, so the build time is stated rather than implied.

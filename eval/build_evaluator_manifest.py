@@ -103,6 +103,29 @@ def main():
     print(f"[evaluator-manifest] wrote {PQ_BELOW_FLOOR_OUT} ({len(below_floor)} filenames "
           f"below PQ<{PQ_FLOOR}, corpus-wide)")
 
+    # Kim direct 2026-08-26: PQ-matched pairing (evaluator.html ?pq=<tolerance%>) needs the
+    # actual PQ VALUE per clip, not just the below-floor boolean above. Scope to op-point-
+    # eligible files only (cfg7/w1, or cfg1/w1 for _ptm) -- the same eligible() cut the client
+    # already applies -- so this stays a join table over what can actually get paired, not a
+    # dump of the whole 102k+-row DB (most of which is off-grid cfg/strength sweep cells no
+    # evaluator pool ever surfaces). Corpus-wide (not avp-scoped): ?pq= is meant to work under
+    # both ?goa=1 and the default avp pool.
+    eligible_files = set()
+    for ln in MANIFEST.read_text().splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            e = json.loads(ln)
+        except Exception:
+            continue
+        if is_op_point(e):
+            eligible_files.add(str(e.get("file") or ""))
+    pq_by_file_out = {f: pq for f, pq in pq_by_file.items() if f in eligible_files}
+    (STAGE_MATRIX / "pq_by_file.json").write_text(json.dumps(pq_by_file_out))
+    print(f"[evaluator-manifest] wrote {STAGE_MATRIX / 'pq_by_file.json'} "
+          f"({len(pq_by_file_out)} eligible-file PQ values)")
+
     out = []
     n_below_pq = n_no_pq = 0
     for ln in MANIFEST.read_text().splitlines():
