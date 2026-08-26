@@ -30,6 +30,7 @@ STAGE_MATRIX = Path.home() / "evals_aac" / "model_matrix"
 MANIFEST = STAGE_MATRIX / "manifest_live.jsonl"
 SCORED_AVP = STAGE_MATRIX / "scored_models_avp.json"
 OUT = STAGE_MATRIX / "manifest_avp_evaluator.json"
+PQ_BELOW_FLOOR_OUT = STAGE_MATRIX / "pq_below_floor.json"
 CLIP_DB = Path(__file__).resolve().parent / "clip_metrics.db"
 
 # Kim direct 2026-08-25: drop tracks with PQ < 3.5 SILENTLY -- a low-PQ clip in a blind A/B
@@ -89,6 +90,19 @@ def main():
 
     scored = set(json.loads(SCORED_AVP.read_text()))
     pq_by_file = load_pq_by_file()
+
+    # Kim direct 2026-08-26: the PQ<3.5 floor was only applied to the avp-prefiltered path --
+    # ?all/?goa=1 (evaluator.html's internal mode, every scored model across every corpus, not
+    # just avp) fetches manifest_live.jsonl directly and had NO floor at all. Ship the exclusion
+    # set (not the full pq_by_file map -- 102k+ rows, most of it irrelevant) so the client can
+    # apply the identical floor: a file NOT in this list either scores >=3.5 or was never scored
+    # (Audiobox hard-skips >60s clips) -- both cases already pass through below, so this list is
+    # everything evaluator.html's GOA path needs to exclude, and nothing more.
+    below_floor = sorted(f for f, pq in pq_by_file.items() if pq < PQ_FLOOR)
+    PQ_BELOW_FLOOR_OUT.write_text(json.dumps(below_floor))
+    print(f"[evaluator-manifest] wrote {PQ_BELOW_FLOOR_OUT} ({len(below_floor)} filenames "
+          f"below PQ<{PQ_FLOOR}, corpus-wide)")
+
     out = []
     n_below_pq = n_no_pq = 0
     for ln in MANIFEST.read_text().splitlines():

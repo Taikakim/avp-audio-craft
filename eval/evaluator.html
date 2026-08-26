@@ -340,6 +340,16 @@ async function fetchEntries(){
   const sr=await fetch(CB+'scored_models.json',{cache:'no-store'});
   scored=new Set(await sr.json());
  }catch(_){scored=new Set();}
+ // Same PQ<3.5 floor as the avp path below, applied here too (Kim 2026-08-26: was missing
+ // entirely in GOA/?all mode -- a rater could get a known-noise clip with zero filtering).
+ // The server ships only the EXCLUDE set (filenames known below the floor), not a full
+ // filename->pq map, since a file absent from it is either scored ok or never scored at all
+ // (Audiobox hard-skips >60s clips) -- both cases pass through, matching the avp path's logic.
+ let belowPq=new Set();
+ try{
+  const pr=await fetch(CB+'pq_below_floor.json',{cache:'no-store'});
+  belowPq=new Set(await pr.json());
+ }catch(_){belowPq=new Set();}
  const r=await fetch(CB+'manifest_live.jsonl',{cache:'no-store'});
  const txt=await r.text();
  const out=[];
@@ -347,6 +357,7 @@ async function fetchEntries(){
   if(!ln.trim())continue;
   let e;try{e=JSON.parse(ln);}catch(_){continue;}
   if(!scored.has(e.model))continue;
+  if(belowPq.has(e.file))continue;
   out.push(e);
  }
  return out;
