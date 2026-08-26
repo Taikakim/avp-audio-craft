@@ -23,7 +23,8 @@ select,button{font:inherit;color:inherit}
 .abbtn{flex:1;min-height:76px;border-radius:14px;border:2px solid #3a3d48;background:#181820;
  color:#9ab;font-size:26px;font-weight:700;letter-spacing:.05em}
 .abbtn.chosen{border-color:#5d9;background:#173322;color:#8f8}
-.abbtn-even{font-size:16px;letter-spacing:.03em;color:#89a}
+.abbtn-even{font-size:14px;letter-spacing:.02em;color:#89a;line-height:1.3}
+.abbtn-even .sub{display:block;font-size:10px;color:#678;font-weight:400;letter-spacing:.02em}
 #status{text-align:center;color:#789;font-size:12px;min-height:16px;padding:2px 0}
 #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:10px}
 .rate-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px;transition:opacity .15s}
@@ -62,6 +63,8 @@ select,button{font:inherit;color:inherit}
 @keyframes loadspin{to{transform:rotate(360deg)}}
 @keyframes loadflash{0%{border-color:#5d9;opacity:1}50%{border-color:#fff;opacity:1}100%{border-color:#fff;opacity:0}}
 #hint{color:#556;font-size:11.5px;text-align:center;max-width:320px;line-height:1.6}
+#circlehint{color:#789;font-size:11.5px;text-align:center;max-width:280px;padding:4px 0 8px}
+#circlehint b{color:#5b9dd9;font-weight:700}
 #overlay{position:fixed;inset:0;background:#0f0f13;display:flex;flex-direction:column;align-items:center;
  justify-content:flex-start;z-index:10;overflow-y:auto;padding:28px 20px 40px}
 #intro{max-width:460px;width:100%}
@@ -145,7 +148,7 @@ select,button{font:inherit;color:inherit}
 <div id="complabel">compare the two tracks &darr;</div>
 <div id="abrow">
  <button class="abbtn" id="btnA">A</button>
- <button class="abbtn abbtn-even" id="btnEven">EVEN</button>
+ <button class="abbtn abbtn-even" id="btnEven">No difference<span class="sub">both sound about equal</span></button>
  <button class="abbtn" id="btnB">B</button>
 </div>
 <div id="status"></div>
@@ -161,9 +164,10 @@ select,button{font:inherit;color:inherit}
   <div id="bar"><div id="fill"></div></div>
   <div id="npB" class="np">B</div>
  </div>
+ <div id="circlehint">now playing <b id="nowplaying">A</b> &middot; tap the circle to switch clips
+  &middot; drag sideways to scrub</div>
  <div class="rate-row" id="rowB"></div>
  <div id="hint">0 broken · 1 unlistenable · 2 rough · 3 competent AI · 4 great · 5 exceptional
-  &middot; tap the circle to switch tracks (same moment, blind) &middot; drag sideways to scrub
   &middot; tap the <b>?</b> above for a full explanation</div>
 </div>
 
@@ -185,11 +189,13 @@ select,button{font:inherit;color:inherit}
     <b>Drag sideways</b> on it to scrub both tracks to a new position at once.</div>
   </div>
   <div class="hitem">
-   <div class="hlabel">A / EVEN / B buttons</div>
-   <div class="htext">Answer the single question shown above them (which track sounded more
-    interesting, with a nicer timbre) by picking the one you preferred, or EVEN if you truly
-    can't tell them apart. This is a <b>comparison between the two tracks</b> -- separate from
-    the 0-5 rating below, which scores each track on its own.</div>
+   <div class="hlabel">A / No difference / B buttons</div>
+   <div class="htext">Answer the single question shown above them (which track sounds
+    clearer, with its elements standing out distinctly instead of blurring into mush, and
+    with detail that feels meaningful rather than aimless noise) by picking the one you
+    preferred, or the middle button if you truly can't tell them apart. This is a
+    <b>comparison between the two tracks</b> -- separate from the 0-5 rating below, which
+    scores each track on its own.</div>
   </div>
   <div class="hitem">
    <div class="hlabel">0-5 rating (per track)</div>
@@ -608,7 +614,9 @@ const qTextEl=document.getElementById('qtext'),qProgEl=document.getElementById('
 // understand the task at all produces no signal on ANY dimension -- one clear question beats
 // four unclear ones. #help (below) is the other half of this fix: explain what remains.
 const QUESTIONS=[
- {id:'interesting_timbre',text:'Which track sounded more interesting and had a more pleasant timbre?'},
+ {id:'clarity_meaning',text:'Which track sounds clearer — its elements stand out distinctly '
+  +'(rather than blurring into indistinct mush), and what you hear feels meaningful rather '
+  +'than aimless noise?'},
 ];
 // The active question set depends on the length bucket -- computed fresh per pair in
 // resetRound() (curLenKey is already set by then) rather than filtering QUESTIONS inline
@@ -646,6 +654,7 @@ function resetRound(){
  btnA.classList.remove('chosen');btnEven.classList.remove('chosen');btnB.classList.remove('chosen');
 }
 const scorelabelEl=document.getElementById('scorelabel');
+const nowplayingEl=document.getElementById('nowplaying');
 function updateUI(){
  rowA.classList.toggle('inactive',active!=='A');
  rowB.classList.toggle('inactive',active!=='B');
@@ -654,6 +663,7 @@ function updateUI(){
  npAEl.classList.toggle('on',active==='A');
  npBEl.classList.toggle('on',active==='B');
  if(scorelabelEl)scorelabelEl.textContent="rate the track you're currently hearing ("+active+")";
+ if(nowplayingEl)nowplayingEl.textContent=active;
 }
 const EP='/files/ratings.php';
 // Tags every record so the export can still separate the two audiences now that they share
