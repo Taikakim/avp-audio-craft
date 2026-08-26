@@ -70,6 +70,12 @@ def main():
                     help="STACKING (Kim 2026-08-21): load this full-FT checkpoint's weights into "
                          "the base BEFORE applying --ckpt as an adapter — renders 'good DoRA on "
                          "good full finetune'. EMA shadow auto-preferred when present.")
+    ap.add_argument("--base-state-prefer-online", action="store_true",
+                    help="for --base-state-ckpt only: load the raw online weights even when an EMA "
+                         "shadow is present (default auto-prefers EMA). Added 2026-08-26 to check "
+                         "whether a warm-start full-FT run's EMA shadow actually moved off its init "
+                         "value (short runs vs train_lora.py's default ~10k-step EMA time constant "
+                         "can leave it statistically at init — see suomift_avpaug19/suomift_goaft).")
     ap.add_argument("--fullft", action="store_true",
                     help="force the full-finetune load path (whole-model state_dict) regardless of "
                          "the label prefix — for fullft runs not named 'fullft_*' (e.g. precision_ladder).")
@@ -116,7 +122,7 @@ def main():
     sr = model.model.sample_rate
     if a.base_state_ckpt:
         from render_showcase import load_fullft_state   # auto-EMA whole-model load, cov assert
-        load_fullft_state(model, a.base_state_ckpt)
+        load_fullft_state(model, a.base_state_ckpt, prefer_ema=not a.base_state_prefer_online)
     is_fullft = a.fullft or a.label.startswith("fullft_")
     if a.ckpt != "none" and is_fullft:
         ck = torch.load(a.ckpt, map_location="cpu", weights_only=False)

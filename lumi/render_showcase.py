@@ -136,15 +136,23 @@ def clip_name(u):
             f"__w{int(round(u['weight'] * 100)):03d}__T{u['frames']}__s{u['seed']}.wav")
 
 
-def load_fullft_state(model, ckpt_path):
-    """Whole-model load, EMA shadow preferred when present (what actually deploys)."""
+def load_fullft_state(model, ckpt_path, prefer_ema=True):
+    """Whole-model load, EMA shadow preferred when present (what actually deploys) --
+    unless prefer_ema=False, which forces the raw online weights even when an EMA shadow
+    is present. Added 2026-08-26: needed to demonstrate/confirm that a short warm-start
+    full-FT run's EMA shadow can sit statistically at its init value (train_lora.py's
+    SimpleEMA defaults give a ~10,000-step time constant against runs of ~1,000-1,300
+    total steps -- see suomift_avpaug19/suomift_goaft, WORKLOG 2026-08-26) -- comparing
+    the EMA shadow against the online weights from the SAME checkpoint file is the direct
+    test, no re-train needed."""
     import torch
     ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     sd_raw = ck.get("state_dict", ck)
     tgt = model.model.model
     want = set(dict(tgt.named_parameters())) | set(dict(tgt.named_buffers()))
     has_ema = any(k.startswith("diffusion_ema.ema_model.") for k in sd_raw)
-    prefixes = ("diffusion_ema.ema_model.",) if has_ema else ("diffusion.model.", "model.")
+    use_ema = has_ema and prefer_ema
+    prefixes = ("diffusion_ema.ema_model.",) if use_ema else ("diffusion.model.", "model.")
     sd = max(({(k[len(pfx):] if k.startswith(pfx) else k): v for k, v in sd_raw.items()}
               for pfx in prefixes),
              key=lambda d: sum(1 for k in d if k in want))
@@ -152,7 +160,7 @@ def load_fullft_state(model, ckpt_path):
         {k: v.to(next(tgt.parameters()).dtype) for k, v in sd.items() if k in want}, strict=False)
     cov = 1 - len(missing) / max(1, len(list(tgt.state_dict())))
     assert cov > 0.99, f"fullft ckpt covers only {cov:.1%} ({len(missing)} missing)"
-    print(f"[show] fullft load cov {cov:.2%} (ema={has_ema})")
+    print(f"[show] fullft load cov {cov:.2%} (ema_available={has_ema}, loaded={'ema' if use_ema else 'online'})")
     del ck, sd_raw, sd
 
 
