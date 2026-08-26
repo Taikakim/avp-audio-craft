@@ -349,14 +349,20 @@ async function loadCoverage(){
   if(j&&j.rated)j.rated.forEach(f=>ratedSet.add(f));
  }catch(_){}   // best-effort: coverage steering is an optimisation, never a hard dependency
 }
-let COVERAGE_TOTAL=0;
+// Kim direct 2026-08-26: "show rating progress by clip length instead of global progress" --
+// one combined count across every length bucket told you nothing about whether the length
+// you're actually rating right now is anywhere near covered (a healthy 20s-grid count could
+// bury a barely-touched native-length pool). Coverage is now scoped to whichever bucket
+// lensel is currently on, and recomputed every time that selection changes.
 function updateCoverage(){
- const el=document.getElementById('coverage'); if(!el||!COVERAGE_TOTAL)return;
- let done=0; for(const f of allFiles) if(ratedSet.has(f)) done++;
- el.textContent=`${done} / ${COVERAGE_TOTAL} clips rated`;
- el.style.color = done>=COVERAGE_TOTAL ? '#5d9' : '#678';
+ const el=document.getElementById('coverage'); if(!el)return;
+ const files=filesByLen[curLenKey||lensel.value];
+ if(!files||!files.size){el.textContent='';return;}
+ let done=0; for(const f of files) if(ratedSet.has(f)) done++;
+ el.textContent=`${done} / ${files.size} clips rated at this length`;
+ el.style.color = done>=files.size ? '#5d9' : '#678';
 }
-let allFiles=new Set();   // lengthKey -> {label, byPrompt:{pid: Map('model|ckpt' -> entry)}}
+let filesByLen={};   // lengthKey -> Set(file), used only for the coverage count above
 async function fetchEntries(){
  if(!GOA){
   const r=await fetch(CB+'manifest_avp_evaluator.json');
@@ -419,7 +425,7 @@ async function loadManifest(){
   const {key,label}=lengthBucket(e);
   out[key]=out[key]||{label,byPrompt:{}};
   out[key].byPrompt[pid]=out[key].byPrompt[pid]||new Map();
-  allFiles.add(e.file);
+  (filesByLen[key]=filesByLen[key]||new Set()).add(e.file);
   const pq=Object.prototype.hasOwnProperty.call(pqByFile,e.file)?pqByFile[e.file]:null;
   out[key].byPrompt[pid].set(e.model+'|'+e.ckpt,
    {model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file,pq});
@@ -451,7 +457,21 @@ function crossDsOk(a,b){
  return !CROSS_DS||datasetGroup(a.model)!==datasetGroup(b.model);
 }
 function pairOk(a,b){return pqBandOk(a,b)&&crossDsOk(a,b);}
-function bucketHasPairs(b){return Object.values(b.byPrompt).some(m=>m.size>=2);}
+// Kim direct 2026-08-26: "they should be removed from the UI" -- the length dropdown offered
+// buckets with barely any real content (~24s had exactly ONE prompt with exactly TWO models,
+// i.e. exactly one possible pair corpus-wide, so the page had no choice but to keep serving
+// that same pair every time). The right measure is TOTAL DISTINCT PAIRS available across the
+// whole bucket, not prompt count -- a bucket can have just one prompt but dozens of models on
+// it (~380s native: 1 prompt, 8 models, 28 distinct pairs -- plenty of real variety) while
+// another has several prompts that are each themselves degenerate. MIN_TOTAL_PAIRS=10 is the
+// floor for a length to be offered at all; raise/lower here if a length's real coverage
+// changes, nothing else needs touching.
+const MIN_TOTAL_PAIRS=10;
+function bucketHasPairs(b){
+ let n=0;
+ for(const m of Object.values(b.byPrompt)){const s=m.size; if(s>=2)n+=s*(s-1)/2; if(n>=MIN_TOTAL_PAIRS)return true;}
+ return false;
+}
 // PREFER UNRATED. Coverage-first sampling: pick from prompts that still hold at least two
 // unrated clips; within a prompt, take unrated entries before rated ones. Falls back cleanly —
 // prompts with one unrated clip pair it against a rated one, and once everything is covered it
@@ -810,6 +830,7 @@ function loadNewPair(){
  resetRound();
  setPairAudio(curA,curB);
  updateUI();
+ updateCoverage();
  statusEl.textContent='';
 }
 lensel.onchange=loadNewPair;
@@ -875,8 +896,8 @@ function showPoolBadge(nModels){
 }
 loadManifest().then(async()=>{
  await loadCoverage();          // global rated-set, best-effort, before the first pair is drawn
- COVERAGE_TOTAL=allFiles.size;
- updateCoverage();
+ // No coverage display yet -- it's per-length now (see updateCoverage()), and no length is
+ // selected/loaded until the first pair is drawn on "tap to begin" (loadNewPair() calls it).
  populateLengthSelect();
  const nm=new Set(); for(const k in pools) for(const pid in pools[k].byPrompt) for(const e of pools[k].byPrompt[pid].values()) nm.add(e.model);
  showPoolBadge(nm.size);
