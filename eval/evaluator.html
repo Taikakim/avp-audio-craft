@@ -27,12 +27,19 @@ select,button{font:inherit;color:inherit}
 .abbtn-even .sub{display:block;font-size:10px;color:#678;font-weight:400;letter-spacing:.02em}
 #status{text-align:center;color:#789;font-size:12px;min-height:16px;padding:2px 0}
 #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:10px}
-.rate-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px;transition:opacity .15s}
-.rate-row.inactive{opacity:.28}
+.rate-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px}
+/* Kim 2026-08-26: "the scoring circles should light up properly when scored". The dim used
+   to live on the ROW, so switching tracks faded the score you had just given down to .28
+   along with everything else -- and a child can never be brighter than its parent's opacity,
+   so the lit circle was unrecoverable by any rule on .chosen. Dim the individual UNCHOSEN
+   buttons instead: the row still reads as inactive (five of six buttons fade) but your
+   recorded score stays fully lit on both rows at once, which is the whole point of having
+   two rows. Transition moved to the button for the same reason. */
+.rate-row.inactive .rate-btn:not(.chosen){opacity:.28}
 .rate-btn{flex:1 1 0;max-width:60px;aspect-ratio:1;border-radius:50%;border:2px solid #3a3d48;background:#181820;
- color:#9ab;font-size:22px;font-weight:600}
+ color:#9ab;font-size:22px;font-weight:600;transition:opacity .15s}
 .rate-btn:disabled{cursor:default}
-.rate-btn.chosen{border-color:#5b9dd9;background:#132a3a;color:#9cf}
+.rate-btn.chosen{border-color:#5b9dd9;background:#132a3a;color:#9cf;opacity:1}
 .rate-btn.broken{border-color:#a44;color:#f77}
 .rate-btn.broken.chosen{border-color:#e55;background:#3a1414;color:#faa}
 #center{width:150px;height:150px;border-radius:50%;border:3px solid #445;background:radial-gradient(circle at 35% 30%,#2a2a36,#161620);
