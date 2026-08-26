@@ -104,6 +104,7 @@ select,button{font:inherit;color:inherit}
  text-align:center}
 #complabel{padding:2px 0 0}
 #scorelabel{padding:6px 0 0}
+#modebadge{color:#c9f;font-size:10px;letter-spacing:.04em;text-align:center;padding:2px 10px 4px}
 </style></head><body>
 
 <div id="overlay">
@@ -129,9 +130,7 @@ select,button{font:inherit;color:inherit}
    href="https://signal.me/#eu/00NAPf7EAdk6zym5PgUzzl5Jws72qThXA-2J779TrvSH88U5S4ZIZ4oexs8N115H"
    target="_blank" rel="noopener">Signal</a>.</p>
   <p class="note" id="recentbadge" style="display:none;color:#7ed"></p>
-  <p class="note" id="goabadge" style="display:none;color:#fa5">Internal mode (<code>?goa=1</code>):
-   the pool is <b>every scored model</b>, goa-corpus ones included — not just the avp models the
-   public link serves. First load is slower here; it reads the full manifest.</p>
+  <p class="note" id="goabadge" style="display:none;color:#fa5"></p>
   <p class="note" id="pqbadge" style="display:none;color:#c9f"></p>
   <div style="text-align:center"><button id="startbtn" disabled>loading…</button></div>
  </div>
@@ -142,6 +141,7 @@ select,button{font:inherit;color:inherit}
  <button id="playpause" title="pause / resume">&#9208;</button>
  <button id="helpbtn" title="what does this page do?">?</button>
 </div>
+<div id="modebadge" style="display:none"></div>
 <div id="qdisplay">
  <div id="qprogress"></div>
  <div id="qtext"></div>
@@ -818,7 +818,30 @@ function populateLengthSelect(){
 // on #startbtn, so mobile autoplay policy is satisfied once, and the single persistent
 // audioA/audioB elements stay "unlocked" for every subsequent programmatic play() after. ──
 const startbtn=document.getElementById('startbtn'),overlay=document.getElementById('overlay');
+// Kim 2026-08-26: the goabadge text hardcoded "?goa=1" even when ?all was the param that
+// actually got you here -- confusing, since the address bar and the badge disagreed. State
+// whichever one was actually used. GOA_PARAM_USED is null when neither is set (the default
+// avp-only page never shows this badge at all).
+const GOA_PARAM_USED=PARAMS.has('all')?'all':(PARAMS.has('goa')?'goa=1':null);
+if(GOA)document.getElementById('goabadge').innerHTML=
+ 'Internal mode (<code>?'+GOA_PARAM_USED+'</code>): the pool is <b>every scored model</b>, '
+ +'goa-corpus ones included — not just the avp models the public link serves. First load is '
+ +'slower here; it reads the full manifest.';
 if(GOA)document.getElementById('goabadge').style.display='block';
+// Kim 2026-08-26: "I didn't immediately see it" -- these badges lived ONLY in the one-time
+// intro overlay, which is easy to blow past on the way to "tap to begin" and then never see
+// again. Build the same summary into a small ALWAYS-VISIBLE strip under the header too --
+// #modebadge, shown for the whole session whenever any internal-only param is active, hidden
+// (no DOM change at all for a casual public visitor) otherwise.
+const modeBits=[];
+if(GOA)modeBits.push('pool: every scored model (?'+GOA_PARAM_USED+')');
+if(PQ_TOL)modeBits.push('PQ-matched within '+PQ_TOL+'pt (?pq='+PQ_TOL+')');
+if(CROSS_DS)modeBits.push('cross-dataset only (?crossds=1)');
+if(modeBits.length){
+ const mb=document.getElementById('modebadge');
+ mb.textContent='internal mode — '+modeBits.join(' · ');
+ mb.style.display='block';
+}
 if(PQ_TOL||CROSS_DS){
  const pb=document.getElementById('pqbadge');
  const bits=[];
