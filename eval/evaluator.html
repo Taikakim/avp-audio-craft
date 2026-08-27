@@ -395,13 +395,20 @@ let filesByLen={};   // lengthKey -> Set(file), used only for the coverage count
 // the threshold it used into lowq_flagged.json; compare it against the live sidecar and warn
 // (not fail -- the flag list is still usable, just possibly a slightly different cut than the
 // current model would draw) rather than filter on a mismatch no one can see.
-let LOWQ_STALE=false;
+let LOWQ_STALE=false, LOWQ_DISABLED=false;
+// WINTERMUTE 2026-08-27, the sharper half of this: STALE is visible (the badge below), but
+// the catch below used to swallow a genuine fetch failure (network blip, a missing deploy
+// step, anything) into an empty Set with zero signal -- the filter goes silently OFF while
+// the page looks perfectly healthy. That is worse than stale, not better, and it was the
+// exact failure shape of the PQ<3.5 floor this feature replaced. Both states are now visible;
+// OFF is flagged more prominently than STALE, matching which one is actually worse.
 async function loadLowqFlagged(){
  if(SHOW_FLAGGED)return new Set();
  try{
   const [fr,mr]=await Promise.all([
    fetch(CB+'lowq_flagged.json',{cache:'no-store'}),
    fetch(CB+'lowq_model_meta.json',{cache:'no-store'})]);
+  if(!fr.ok||!mr.ok)throw new Error('lowq fetch not ok: flagged='+fr.status+' meta='+mr.status);
   const flagged=await fr.json(), meta=await mr.json();
   if(typeof flagged.threshold==='number'&&typeof meta.threshold==='number'
      &&flagged.threshold!==meta.threshold){
@@ -410,7 +417,11 @@ async function loadLowqFlagged(){
     +meta.threshold+') -- rebuild eval/build_evaluator_manifest.py');
   }
   return new Set(flagged.flagged||[]);
- }catch(_){return new Set();}
+ }catch(err){
+  LOWQ_DISABLED=true;
+  console.warn('low-quality filter is OFF -- fetch failed:', err);
+  return new Set();
+ }
 }
 async function fetchEntries(){
  const lowq=await loadLowqFlagged();
@@ -911,7 +922,11 @@ function updateModeBadge(){
  if(PQ_TOL)modeBits.push('PQ-matched within '+PQ_TOL+'pt (?pq='+PQ_TOL+')');
  if(CROSS_DS)modeBits.push('cross-dataset only (?crossds=1)');
  if(SHOW_FLAGGED)modeBits.push('low-quality clips NOT hidden (?showflagged=1)');
- if(LOWQ_STALE)modeBits.push('⚠ low-quality flag list is stale (rebuild needed)');
+ // LOWQ_DISABLED outranks LOWQ_STALE (a broken filter is worse than a slightly-off one) and,
+ // unlike every other bit here, is worth surfacing even on the plain public page -- every
+ // visitor's audit experience just quietly got worse, not just an internal tester's.
+ if(LOWQ_DISABLED)modeBits.push('⚠ low-quality filter is OFF (data fetch failed)');
+ else if(LOWQ_STALE)modeBits.push('⚠ low-quality flag list is stale (rebuild needed)');
  const mb=document.getElementById('modebadge');
  if(modeBits.length){mb.textContent='internal mode — '+modeBits.join(' · ');mb.style.display='block';}
  else mb.style.display='none';
