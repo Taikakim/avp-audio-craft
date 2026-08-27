@@ -39,9 +39,16 @@ select,button{font:inherit;color:inherit}
 .rate-btn{flex:1 1 0;max-width:60px;aspect-ratio:1;border-radius:50%;border:2px solid #3a3d48;background:#181820;
  color:#9ab;font-size:22px;font-weight:600;transition:opacity .15s}
 .rate-btn:disabled{cursor:default}
-.rate-btn.chosen{border-color:#5b9dd9;background:#132a3a;color:#9cf;opacity:1}
+/* Kim 2026-08-27: "the scoring circles when they light up are still too dim... in daylight
+   that brightness doesn't really light up that much. They should really be around the
+   luminance of, I don't know, 160, 170." The old chosen fill (#132a3a, background luminance
+   ~37) put nearly all the "lit" signal on the 2px border -- fine on a dim indoor screen,
+   invisible at a glance in daylight. Backgrounds below are picked for perceived luminance
+   (0.299R+0.587G+0.114B) around 160-165 in each hue, so the WHOLE circle reads as lit, not
+   just its outline. */
+.rate-btn.chosen{border-color:#bfe0ff;background:#78b0e0;color:#0c2338;opacity:1}
 .rate-btn.broken{border-color:#a44;color:#f77}
-.rate-btn.broken.chosen{border-color:#e55;background:#3a1414;color:#faa}
+.rate-btn.broken.chosen{border-color:#ffc9c9;background:#e58888;color:#3a0c0c}
 #center{width:150px;height:150px;border-radius:50%;border:3px solid #445;background:radial-gradient(circle at 35% 30%,#2a2a36,#161620);
  display:flex;align-items:center;justify-content:center;position:relative;touch-action:none}
 #center.scrubbing{border-color:#fa5}
@@ -49,10 +56,17 @@ select,button{font:inherit;color:inherit}
    lined up with the rating row each one belongs to (rowA above, rowB below), the active one lit.
    Was a single label on top that just changed its text, which said which track was playing but
    not which rating row it went with. */
-.np{position:absolute;font-size:13px;font-weight:700;letter-spacing:.1em;color:#394050}
-.np.on{color:#5b9dd9}
-#npA{top:-24px}
-#npB{bottom:-24px}
+/* Kim 2026-08-27: "highlight a bit more which clip A or B is playing... on a casual glance...
+   it'll be better to see more immediately." A colored LETTER was too easy to miss at a glance
+   (phone lying on a table, not held up close) -- a filled, bright pill reads as a blob of
+   color from across a room the way a plain color change on text doesn't. Same blue as the
+   now-brightened .rate-btn.chosen, so "lit" means the same thing everywhere on the page. */
+.np{position:absolute;font-size:12px;font-weight:700;letter-spacing:.08em;color:#567;
+ padding:3px 11px;border-radius:11px;border:1.5px solid #333844;background:transparent;
+ transition:background .15s,color .15s,border-color .15s}
+.np.on{background:#78b0e0;color:#0c2338;border-color:#bfe0ff}
+#npA{top:-26px}
+#npB{bottom:-26px}
 #glyph{font-size:44px;color:#9ab;pointer-events:none}
 #bar{width:120px;height:4px;background:#2a2a34;border-radius:2px;position:absolute;bottom:20px;overflow:hidden}
 #fill{height:100%;background:#5b9dd9;width:0%}
