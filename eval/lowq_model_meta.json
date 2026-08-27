@@ -1,4 +1,6 @@
 {
+ "threshold": 0.13545904867653255,
+ "target_recall": 0.85,
  "features": [
   "dur",
   "rms",
@@ -13,9 +15,8 @@
   "pq",
   "cu"
  ],
- "threshold": 0.15144848604786612,
- "target_recall": 0.85,
- "n_train": 788,
+ "n_train": 804,
  "n_bad": 171,
- "cv_auc": 0.9334499132758963
+ "cv_auc": 0.9357648993468399,
+ "sklearn_venv": "mir"
 }
