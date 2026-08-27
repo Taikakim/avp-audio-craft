@@ -1,0 +1,21 @@
+{
+ "features": [
+  "dur",
+  "rms",
+  "crest",
+  "zcr",
+  "onset_p95",
+  "centroid",
+  "flatness",
+  "flux",
+  "hf_ratio",
+  "ce",
+  "pq",
+  "cu"
+ ],
+ "threshold": 0.15144848604786612,
+ "target_recall": 0.85,
+ "n_train": 788,
+ "n_bad": 171,
+ "cv_auc": 0.9334499132758963
+}

@@ -30,28 +30,41 @@ STAGE_MATRIX = Path.home() / "evals_aac" / "model_matrix"
 MANIFEST = STAGE_MATRIX / "manifest_live.jsonl"
 SCORED_AVP = STAGE_MATRIX / "scored_models_avp.json"
 OUT = STAGE_MATRIX / "manifest_avp_evaluator.json"
-PQ_BELOW_FLOOR_OUT = STAGE_MATRIX / "pq_below_floor.json"
+LOWQ_FLAGGED_OUT = STAGE_MATRIX / "lowq_flagged.json"
 CLIP_DB = Path(__file__).resolve().parent / "clip_metrics.db"
+LOWQ_META = Path(__file__).resolve().parent / "lowq_model_meta.json"
 
-# Kim direct 2026-08-25: drop tracks with PQ < 3.5 SILENTLY -- a low-PQ clip in a blind A/B
-# just wastes a rater's listen on something already known to be weak; no message, no visible
-# "N clips hidden" count, it simply never enters the pool. PQ (Audiobox production-quality) is
-# a per-CLIP score, not per-model -- the same checkpoint can render one prompt cleanly and
-# another badly, so this filters row-by-row, not model-by-model.
-PQ_FLOOR = 3.5
+# Kim direct 2026-08-25/27: a flat PQ<3.5 floor turned out to be a NO-OP -- it caught 0 of
+# the 90 clips Kim rated 0 (his worst-ever 0-rated clip scores PQ 4.16), 2 of 105717 corpus-
+# wide. The METRIC was fine (Spearman +0.564 vs his own ratings) -- the flat THRESHOLD was
+# not. WINTERMUTE's eval/lowq_model.py replaces it: a gradient-boosted classifier over 12
+# metrics columns (incl. pq), fit on Kim's own 0/1 vs 5-scale ratings, threshold picked at
+# his chosen operating point (85% recall on rating<=1, costing 3.8% of his 3+ and 1.7% of
+# his 4-5s -- see that file's docstring for the full recall/cost table). lowq_model_meta.json
+# is a plain-JSON sidecar of the pickle's non-model fields (threshold etc.) so this script
+# never needs to unpickle a GradientBoostingClassifier -- sklearn-version-fragile, and
+# pointless when all this needs is one float.
+#
+# FLAG, DO NOT DELETE (Kim, explicit, verbatim reason: may want to analyse the collapsed/
+# degenerate models later, there may be something meaningful in the dead latents). Nothing
+# is dropped from clip_metrics.db or from manifest_avp_evaluator.json here -- only a
+# filename list ships, which evaluator.html filters against client-side, respecting
+# ?showflagged=1 to bring them back reachable. A server-side drop (the old PQ-floor's
+# approach) can't offer that toggle without a second manifest build.
 
 
-def load_pq_by_file():
-    """{filename: pq} for every scored clip -- keyed on the .m4a basename (what manifest rows
-    carry as `file`), since clip_metrics.db stores full STAGE_MATRIX paths."""
-    if not CLIP_DB.exists():
-        print(f"[evaluator-manifest] WARNING: no {CLIP_DB} -- PQ floor cannot be applied, "
-              f"every clip passes")
-        return {}
+def load_lowq_flagged():
+    """{filename} whose lowq_p >= the shipped model's threshold, scored corpus-wide.
+    Basename-keyed (what manifest rows carry as `file`) since clip_metrics.db stores full
+    STAGE_MATRIX paths."""
+    if not CLIP_DB.exists() or not LOWQ_META.exists():
+        print(f"[evaluator-manifest] WARNING: missing {CLIP_DB} or {LOWQ_META} -- "
+              f"low-quality flag cannot be applied, every clip passes")
+        return set()
+    thr = json.loads(LOWQ_META.read_text())["threshold"]
     con = sqlite3.connect(CLIP_DB)
-    out = {}
-    for path, pq in con.execute("SELECT path, pq FROM metrics WHERE pq IS NOT NULL"):
-        out[Path(path).name] = pq
+    out = {Path(p).name for (p,) in con.execute(
+        "SELECT path FROM metrics WHERE lowq_p >= ?", (thr,))}
     con.close()
     return out
 
@@ -89,19 +102,22 @@ def main():
         raise SystemExit(f"[evaluator-manifest] no {SCORED_AVP} -- run build_clap_hyperparam_table.py first")
 
     scored = set(json.loads(SCORED_AVP.read_text()))
-    pq_by_file = load_pq_by_file()
 
-    # Kim direct 2026-08-26: the PQ<3.5 floor was only applied to the avp-prefiltered path --
-    # ?all/?goa=1 (evaluator.html's internal mode, every scored model across every corpus, not
-    # just avp) fetches manifest_live.jsonl directly and had NO floor at all. Ship the exclusion
-    # set (not the full pq_by_file map -- 102k+ rows, most of it irrelevant) so the client can
-    # apply the identical floor: a file NOT in this list either scores >=3.5 or was never scored
-    # (Audiobox hard-skips >60s clips) -- both cases already pass through below, so this list is
-    # everything evaluator.html's GOA path needs to exclude, and nothing more.
-    below_floor = sorted(f for f, pq in pq_by_file.items() if pq < PQ_FLOOR)
-    PQ_BELOW_FLOOR_OUT.write_text(json.dumps(below_floor))
-    print(f"[evaluator-manifest] wrote {PQ_BELOW_FLOOR_OUT} ({len(below_floor)} filenames "
-          f"below PQ<{PQ_FLOOR}, corpus-wide)")
+    lowq_flagged = load_lowq_flagged()
+    LOWQ_FLAGGED_OUT.write_text(json.dumps(sorted(lowq_flagged)))
+    print(f"[evaluator-manifest] wrote {LOWQ_FLAGGED_OUT} ({len(lowq_flagged)} filenames "
+          f"flagged low-quality, corpus-wide -- FLAGGED, not dropped; evaluator.html filters "
+          f"client-side, ?showflagged=1 shows them anyway)")
+
+    # PQ values (for ?pq=<tolerance%> percentile-matched pairing, unrelated to the quality
+    # flag above) -- keyed on the .m4a basename (what manifest rows carry as `file`), since
+    # clip_metrics.db stores full STAGE_MATRIX paths.
+    con = sqlite3.connect(CLIP_DB) if CLIP_DB.exists() else None
+    pq_by_file = ({Path(p).name: pq for p, pq in
+                   con.execute("SELECT path, pq FROM metrics WHERE pq IS NOT NULL")}
+                  if con else {})
+    if con:
+        con.close()
 
     # Kim direct 2026-08-26: PQ-matched pairing (evaluator.html ?pq=<tolerance%>) needs the
     # actual PQ VALUE per clip, not just the below-floor boolean above. Scope to op-point-
@@ -126,8 +142,11 @@ def main():
     print(f"[evaluator-manifest] wrote {STAGE_MATRIX / 'pq_by_file.json'} "
           f"({len(pq_by_file_out)} eligible-file PQ values)")
 
+    # No quality filtering here anymore -- every op-point-eligible avp row ships, flagged or
+    # not (see the FLAG, DO NOT DELETE note above). evaluator.html applies lowq_flagged.json
+    # client-side, same as the ?pq=/?crossds= pairing constraints, so ?showflagged=1 can
+    # bring them back without a second manifest build.
     out = []
-    n_below_pq = n_no_pq = 0
     for ln in MANIFEST.read_text().splitlines():
         ln = ln.strip()
         if not ln:
@@ -139,17 +158,6 @@ def main():
         if e.get("model") not in scored:
             continue
         if not is_op_point(e):
-            continue
-        # Unscored (no pq row at all) PASSES THROUGH rather than being excluded -- most native-
-        # length clips have no Audiobox score at all (clip_metrics_audiobox.py hard-skips
-        # anything over 60s, unrelated to quality; see WORKLOG 2026-08-23), and treating
-        # "unscored" as "assume bad" would silently empty the native-length tiers of the length
-        # dropdown, which is a real deliberately-built feature, not a bug to route around here.
-        pq = pq_by_file.get(str(e.get("file") or ""))
-        if pq is None:
-            n_no_pq += 1
-        elif pq < PQ_FLOOR:
-            n_below_pq += 1
             continue
         row = {k: e.get(k) for k in FIELDS}
         clip = STAGE_MATRIX / str(e.get("file") or "")
@@ -164,8 +172,6 @@ def main():
     size = OUT.stat().st_size
     print(f"[evaluator-manifest] wrote {OUT}  ({len(out)} entries from {len(scored)} avp "
           f"models, {size:,} bytes -- was {MANIFEST.stat().st_size:,} bytes unfiltered)")
-    print(f"[evaluator-manifest] PQ<{PQ_FLOOR} floor: {n_below_pq} dropped silently, "
-          f"{n_no_pq} unscored-for-PQ passed through (native-length clips mostly)")
 
 
 if __name__ == "__main__":

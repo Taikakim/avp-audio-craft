@@ -284,6 +284,12 @@ const RECENT=(RECENT_RAW===null)?null:(parseFloat(RECENT_RAW)>0?parseFloat(RECEN
 // pool those already built, not which pool loads.
 const PQ_TOL=(()=>{const v=parseFloat(PARAMS.get('pq'));return (isFinite(v)&&v>0)?v:0;})();
 const CROSS_DS=PARAMS.has('crossds');
+// ?showflagged=1 -- Kim's explicit "flag, don't delete": low-quality clips (WINTERMUTE's
+// eval/lowq_model.py, trained on Kim's own 0/1 ratings, replaces the old flat PQ<3.5 floor
+// that turned out to be a no-op) are hidden from the pool by DEFAULT, but never removed from
+// the underlying data -- this brings them back reachable for the collapsed/degenerate-model
+// research he's explicitly reserved, without a second manifest build.
+const SHOW_FLAGGED=PARAMS.has('showflagged');
 function datasetGroup(model){
  const m=String(model||'').toLowerCase();
  if(m.includes('suomi'))return'suomi';
@@ -377,13 +383,28 @@ function updateCoverage(){
  el.style.color = done>=files.size ? '#5d9' : '#678';
 }
 let filesByLen={};   // lengthKey -> Set(file), used only for the coverage count above
+// Kim's "flag, don't delete" (2026-08-27): low-quality clips are hidden from BOTH pools by
+// default -- manifest_avp_evaluator.json stopped pre-filtering server-side (that's what let
+// ?showflagged=1 exist at all: a server-side drop can't be un-dropped without a rebuild), so
+// this now applies uniformly to whichever entries fetchEntries() returns. Fetched once,
+// skipped entirely when SHOW_FLAGGED is set (the page a rater doing collapsed-model research
+// wants pays nothing extra either).
+async function loadLowqFlagged(){
+ if(SHOW_FLAGGED)return new Set();
+ try{
+  const r=await fetch(CB+'lowq_flagged.json',{cache:'no-store'});
+  return new Set(await r.json());
+ }catch(_){return new Set();}
+}
 async function fetchEntries(){
+ const lowq=await loadLowqFlagged();
  if(!GOA){
   const r=await fetch(CB+'manifest_avp_evaluator.json');
   const j=await r.json();
   // Back-compatible: older builds were a bare array with no age data.
-  const entries=Array.isArray(j)?j:(j.entries||[]);
+  let entries=Array.isArray(j)?j:(j.entries||[]);
   MANIFEST_BUILT=Array.isArray(j)?null:(j.build_time_iso||null);
+  entries=entries.filter(e=>!lowq.has(e.file));
   if(RECENT===null)return entries;
   const fresh=entries.filter(e=>typeof e.age_h==='number'&&e.age_h<=RECENT);
   // FAIL LOUD, not silently empty: an old manifest has no age_h at all, and quietly serving an
@@ -397,16 +418,6 @@ async function fetchEntries(){
   const sr=await fetch(CB+'scored_models.json',{cache:'no-store'});
   scored=new Set(await sr.json());
  }catch(_){scored=new Set();}
- // Same PQ<3.5 floor as the avp path below, applied here too (Kim 2026-08-26: was missing
- // entirely in GOA/?all mode -- a rater could get a known-noise clip with zero filtering).
- // The server ships only the EXCLUDE set (filenames known below the floor), not a full
- // filename->pq map, since a file absent from it is either scored ok or never scored at all
- // (Audiobox hard-skips >60s clips) -- both cases pass through, matching the avp path's logic.
- let belowPq=new Set();
- try{
-  const pr=await fetch(CB+'pq_below_floor.json',{cache:'no-store'});
-  belowPq=new Set(await pr.json());
- }catch(_){belowPq=new Set();}
  const r=await fetch(CB+'manifest_live.jsonl',{cache:'no-store'});
  const txt=await r.text();
  const out=[];
@@ -414,7 +425,7 @@ async function fetchEntries(){
   if(!ln.trim())continue;
   let e;try{e=JSON.parse(ln);}catch(_){continue;}
   if(!scored.has(e.model))continue;
-  if(belowPq.has(e.file))continue;
+  if(lowq.has(e.file))continue;
   out.push(e);
  }
  return out;
@@ -879,6 +890,7 @@ const modeBits=[];
 if(GOA)modeBits.push('pool: every scored model (?'+GOA_PARAM_USED+')');
 if(PQ_TOL)modeBits.push('PQ-matched within '+PQ_TOL+'pt (?pq='+PQ_TOL+')');
 if(CROSS_DS)modeBits.push('cross-dataset only (?crossds=1)');
+if(SHOW_FLAGGED)modeBits.push('low-quality clips NOT hidden (?showflagged=1)');
 if(modeBits.length){
  const mb=document.getElementById('modebadge');
  mb.textContent='internal mode — '+modeBits.join(' · ');
