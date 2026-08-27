@@ -389,11 +389,27 @@ let filesByLen={};   // lengthKey -> Set(file), used only for the coverage count
 // this now applies uniformly to whichever entries fetchEntries() returns. Fetched once,
 // skipped entirely when SHOW_FLAGGED is set (the page a rater doing collapsed-model research
 // wants pays nothing extra either).
+// WINTERMUTE 2026-08-27: every refit moves the threshold, so a flag list built before a
+// refit silently disagrees with the model that produced the CURRENT sidecar -- a rebuild
+// made stale by someone else's unrelated work, no signal it happened. The builder now stamps
+// the threshold it used into lowq_flagged.json; compare it against the live sidecar and warn
+// (not fail -- the flag list is still usable, just possibly a slightly different cut than the
+// current model would draw) rather than filter on a mismatch no one can see.
+let LOWQ_STALE=false;
 async function loadLowqFlagged(){
  if(SHOW_FLAGGED)return new Set();
  try{
-  const r=await fetch(CB+'lowq_flagged.json',{cache:'no-store'});
-  return new Set(await r.json());
+  const [fr,mr]=await Promise.all([
+   fetch(CB+'lowq_flagged.json',{cache:'no-store'}),
+   fetch(CB+'lowq_model_meta.json',{cache:'no-store'})]);
+  const flagged=await fr.json(), meta=await mr.json();
+  if(typeof flagged.threshold==='number'&&typeof meta.threshold==='number'
+     &&flagged.threshold!==meta.threshold){
+   LOWQ_STALE=true;
+   console.warn('lowq_flagged.json threshold ('+flagged.threshold+') != current model ('
+    +meta.threshold+') -- rebuild eval/build_evaluator_manifest.py');
+  }
+  return new Set(flagged.flagged||[]);
  }catch(_){return new Set();}
 }
 async function fetchEntries(){
@@ -886,16 +902,21 @@ if(GOA)document.getElementById('goabadge').style.display='block';
 // again. Build the same summary into a small ALWAYS-VISIBLE strip under the header too --
 // #modebadge, shown for the whole session whenever any internal-only param is active, hidden
 // (no DOM change at all for a casual public visitor) otherwise.
-const modeBits=[];
-if(GOA)modeBits.push('pool: every scored model (?'+GOA_PARAM_USED+')');
-if(PQ_TOL)modeBits.push('PQ-matched within '+PQ_TOL+'pt (?pq='+PQ_TOL+')');
-if(CROSS_DS)modeBits.push('cross-dataset only (?crossds=1)');
-if(SHOW_FLAGGED)modeBits.push('low-quality clips NOT hidden (?showflagged=1)');
-if(modeBits.length){
+// Called once now (init params only known synchronously) and again after loadManifest()
+// resolves, since LOWQ_STALE is only known once lowq_flagged.json vs lowq_model_meta.json
+// have actually been fetched and compared.
+function updateModeBadge(){
+ const modeBits=[];
+ if(GOA)modeBits.push('pool: every scored model (?'+GOA_PARAM_USED+')');
+ if(PQ_TOL)modeBits.push('PQ-matched within '+PQ_TOL+'pt (?pq='+PQ_TOL+')');
+ if(CROSS_DS)modeBits.push('cross-dataset only (?crossds=1)');
+ if(SHOW_FLAGGED)modeBits.push('low-quality clips NOT hidden (?showflagged=1)');
+ if(LOWQ_STALE)modeBits.push('⚠ low-quality flag list is stale (rebuild needed)');
  const mb=document.getElementById('modebadge');
- mb.textContent='internal mode — '+modeBits.join(' · ');
- mb.style.display='block';
+ if(modeBits.length){mb.textContent='internal mode — '+modeBits.join(' · ');mb.style.display='block';}
+ else mb.style.display='none';
 }
+updateModeBadge();
 if(PQ_TOL||CROSS_DS){
  const pb=document.getElementById('pqbadge');
  const bits=[];
@@ -921,6 +942,7 @@ function showPoolBadge(nModels){
     +' Drop <code>?recent</code> from the address for everything.';
 }
 loadManifest().then(async()=>{
+ updateModeBadge();             // LOWQ_STALE is only known now (set inside loadLowqFlagged())
  await loadCoverage();          // global rated-set, best-effort, before the first pair is drawn
  // No coverage display yet -- it's per-length now (see updateCoverage()), and no length is
  // selected/loaded until the first pair is drawn on "tap to begin" (loadNewPair() calls it).

@@ -54,19 +54,19 @@ LOWQ_META = Path(__file__).resolve().parent / "lowq_model_meta.json"
 
 
 def load_lowq_flagged():
-    """{filename} whose lowq_p >= the shipped model's threshold, scored corpus-wide.
-    Basename-keyed (what manifest rows carry as `file`) since clip_metrics.db stores full
-    STAGE_MATRIX paths."""
+    """(threshold, {filename}) -- filenames whose lowq_p >= the shipped model's threshold,
+    scored corpus-wide. Basename-keyed (what manifest rows carry as `file`) since
+    clip_metrics.db stores full STAGE_MATRIX paths."""
     if not CLIP_DB.exists() or not LOWQ_META.exists():
         print(f"[evaluator-manifest] WARNING: missing {CLIP_DB} or {LOWQ_META} -- "
               f"low-quality flag cannot be applied, every clip passes")
-        return set()
+        return None, set()
     thr = json.loads(LOWQ_META.read_text())["threshold"]
     con = sqlite3.connect(CLIP_DB)
     out = {Path(p).name for (p,) in con.execute(
         "SELECT path FROM metrics WHERE lowq_p >= ?", (thr,))}
     con.close()
-    return out
+    return thr, out
 
 # Exactly the fields evaluator.html's loadManifest()/lengthBucket()/eligible() read off each
 # entry -- dropping prompt_text, seed, and everything else the full manifest carries but this
@@ -103,11 +103,17 @@ def main():
 
     scored = set(json.loads(SCORED_AVP.read_text()))
 
-    lowq_flagged = load_lowq_flagged()
-    LOWQ_FLAGGED_OUT.write_text(json.dumps(sorted(lowq_flagged)))
+    # WINTERMUTE 2026-08-27: every refit of lowq_model.py moves the threshold (0.1514 -> 0.1355
+    # on the very first refit after this shipped), so a flag list built before a refit silently
+    # disagrees with the sidecar describing the model that actually produced it -- a rebuild
+    # made stale by someone else's unrelated work, with no signal that it happened. Stamping the
+    # threshold this build used INTO the output lets the page compare it against the current
+    # sidecar and complain on mismatch instead of silently filtering on a stale cut.
+    lowq_thr, lowq_flagged = load_lowq_flagged()
+    LOWQ_FLAGGED_OUT.write_text(json.dumps({"threshold": lowq_thr, "flagged": sorted(lowq_flagged)}))
     print(f"[evaluator-manifest] wrote {LOWQ_FLAGGED_OUT} ({len(lowq_flagged)} filenames "
-          f"flagged low-quality, corpus-wide -- FLAGGED, not dropped; evaluator.html filters "
-          f"client-side, ?showflagged=1 shows them anyway)")
+          f"flagged low-quality at threshold {lowq_thr}, corpus-wide -- FLAGGED, not dropped; "
+          f"evaluator.html filters client-side, ?showflagged=1 shows them anyway)")
 
     # PQ values (for ?pq=<tolerance%> percentile-matched pairing, unrelated to the quality
     # flag above) -- keyed on the .m4a basename (what manifest rows carry as `file`), since
