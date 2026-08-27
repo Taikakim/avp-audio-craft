@@ -134,7 +134,24 @@ def main():
                 fe = kim_fat_epochs([epoch_of(c) for c in cks if epoch_of(c) >= 0])
                 print(f"  [fat-policy kim] keeping FAT epochs: {sorted(fe)}")
             if fe is not None:
-                fat_set = {c for c in cks if epoch_of(c) in fe} or {keep}
+                # GHOST-NOTE 2026-08-28: a target epoch can have several files sharing that
+                # epoch NUMBER -- Lightning's "-v1/-v2/..." suffix on a resubmitted job re-
+                # saving the same epoch. epoch_of() only sees the number, so the naive
+                # "in fe" filter below used to keep EVERY version-duplicate fat (one run kept
+                # 18 fat ckpts for a 2-epoch keep-list). Pick exactly one file per target
+                # epoch -- the highest step_of() among that epoch's duplicates, i.e. the last
+                # actual save -- so a 2-epoch keep-list keeps exactly 2 files, not N.
+                by_target_epoch = defaultdict(list)
+                for c in cks:
+                    ep = epoch_of(c)
+                    if ep in fe:
+                        by_target_epoch[ep].append(c)
+                dupes = {ep: fs for ep, fs in by_target_epoch.items() if len(fs) > 1}
+                if dupes:
+                    print(f"  [keep-list] collapsing version-duplicates at epoch(s) "
+                          f"{sorted(dupes)}: keeping highest-step file only")
+                fat_set = ({max(fs, key=step_of) for fs in by_target_epoch.values()}
+                           or {keep})
         print(f"\n[{d}]  {len(cks)} ckpt(s); "
               + ("SLIM ALL (keep none full)" if a.slim_all else f"KEEP full: {os.path.basename(keep)}"))
         for c in cks:
