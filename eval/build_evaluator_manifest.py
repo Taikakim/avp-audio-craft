@@ -23,6 +23,7 @@ HTTP cache do its job, since staleness between periodic rebuilds is an accepted 
 """
 import datetime
 import json
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -111,6 +112,17 @@ def main():
     # sidecar and complain on mismatch instead of silently filtering on a stale cut.
     lowq_thr, lowq_flagged = load_lowq_flagged()
     LOWQ_FLAGGED_OUT.write_text(json.dumps({"threshold": lowq_thr, "flagged": sorted(lowq_flagged)}))
+    # The page fetches lowq_model_meta.json from the SAME web dir as the flag file in order to
+    # compare thresholds, so the sidecar has to be PUBLISHED, not merely present in eval/.
+    # W 2026-08-27: it was not, and the failure is silent in the worst way -- loadLowqFlagged()
+    # wraps both fetches in one try/catch returning an empty Set, so a 404 on the sidecar
+    # disables ALL low-quality filtering while the page looks perfectly healthy. That is the
+    # same shape as the PQ<3.5 floor this whole feature replaced: a filter that quietly does
+    # nothing. Copying it here means the staleness guard cannot outlive the file it compares
+    # against, and a publish can never ship one without the other.
+    shutil.copyfile(LOWQ_META, STAGE_MATRIX / LOWQ_META.name)
+    print(f"[evaluator-manifest] copied {LOWQ_META.name} into {STAGE_MATRIX} "
+          f"(the page compares thresholds against it; a 404 here silently disables filtering)")
     print(f"[evaluator-manifest] wrote {LOWQ_FLAGGED_OUT} ({len(lowq_flagged)} filenames "
           f"flagged low-quality at threshold {lowq_thr}, corpus-wide -- FLAGGED, not dropped; "
           f"evaluator.html filters client-side, ?showflagged=1 shows them anyway)")
