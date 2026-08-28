@@ -86,6 +86,62 @@ def _is_gpu_target(target: str) -> bool:
     return Path(target).name == GPU_LOCK_BASENAME
 
 
+def _sidecar_path(handle: str) -> str:
+    """Per-instance companion to the /tmp/gpu.lock mirror (Kim 2026-08-27).
+
+    The mirror itself has ONE canonical format that non-team instances parse, so it
+    must not grow fields. But its single line cannot answer the question that
+    actually blocks people: GHOST-NOTE waited on a lock held 10.6 h, unable to tell
+    that the holder was a RESIDENT SERVER (which can yield on request) rather than a
+    batch job that would finish on its own. The sidecar answers that without
+    touching the canonical file. Absent sidecar => unknown holder, treat as batch.
+    """
+    return f"{GPU_MIRROR_PATH}.{handle.lower()}"
+
+
+def _sidecar_write(handle: str, pid, kind: str = "batch", note: str = "") -> None:
+    try:
+        cmd = ""
+        try:
+            cmd = subprocess.run(["ps", "-o", "args=", "-p", str(pid)],
+                                 capture_output=True, text=True).stdout.strip()[:200]
+        except Exception:
+            pass
+        Path(_sidecar_path(handle)).write_text(
+            f"handle={handle}\npid={pid}\nkind={kind}\n"
+            f"started={time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"yieldable={'yes' if kind == 'server' else 'no'}\n"
+            f"note={note}\ncmd={cmd}\n")
+    except OSError as e:
+        sys.stderr.write(f"[filelock] WARN: could not write GPU sidecar: {e}\n")
+
+
+def _sidecar_clear(handle: str) -> None:
+    try:
+        Path(_sidecar_path(handle)).unlink()
+    except OSError:
+        pass
+
+
+def gpu_holders() -> list:
+    """Every live /tmp/gpu.lock.<handle> sidecar, as dicts. Dead pids are reported
+    with alive=False rather than hidden -- a stale sidecar is itself a finding."""
+    out = []
+    for f in sorted(Path(GPU_MIRROR_PATH).parent.glob(
+            Path(GPU_MIRROR_PATH).name + ".*")):
+        try:
+            d = dict(l.split("=", 1) for l in f.read_text().splitlines() if "=" in l)
+        except OSError:
+            continue
+        try:
+            d["alive"] = _pid_alive(int(d.get("pid", "0")))
+        except ValueError:
+            d["alive"] = False
+        d["_file"] = str(f)
+        out.append(d)
+    return out
+
+
 def _mirror_holder():
     """(handle, pid|None) recorded in /tmp/gpu.lock, or None if absent/unreadable."""
     try:
@@ -166,7 +222,8 @@ def _foreign_locks(target: str, handle: str):
 
 
 def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = False,
-            pid: int | None = None, no_mirror: bool = False) -> int:
+            pid: int | None = None, no_mirror: bool = False,
+            gpu_kind: str = "batch", gpu_note: str = "") -> int:
     mine = _lock_path(target, handle)
     mirror_on = _is_gpu_target(target) and not no_mirror
     # GPU mirror preflight: a live foreign holder of /tmp/gpu.lock means the GPU is taken —
@@ -226,12 +283,14 @@ def acquire(target: str, handle: str, timeout: float = 60.0, pid_aware: bool = F
                     fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
                 if mirror_on:
                     _mirror_write(handle, rec_pid)
+                    _sidecar_write(handle, rec_pid, gpu_kind, gpu_note)
                 print(f"[filelock] {handle} re-holds {mine.name} (pid refreshed → {rec_pid})")
                 return 0
             with os.fdopen(fd, "w") as fh:
                 fh.write(f"{handle} pid={rec_pid} ts={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             if mirror_on:
                 _mirror_write(handle, rec_pid)
+                _sidecar_write(handle, rec_pid, gpu_kind, gpu_note)
             print(f"[filelock] {handle} acquired {mine.name} (pid={rec_pid})")
             return 0
         if time.time() - t0 > timeout:
@@ -251,6 +310,7 @@ def release(target: str, handle: str) -> int:
         print(f"[filelock] {handle} held no lock on {Path(target).name}")
     # clear our GPU mirror too — but only if /tmp/gpu.lock is OURS (never delete a foreign hold)
     if _is_gpu_target(target):
+        _sidecar_clear(handle)          # per-handle file, so it is ours by construction
         h = _mirror_holder()
         if h is not None and h[0].lower() == handle.lower():
             try:
@@ -264,6 +324,11 @@ def release(target: str, handle: str) -> int:
 def check(target: str) -> int:
     p = Path(target)
     if _is_gpu_target(target):
+        # GHOST-NOTE 2026-08-28: this used to call _sidecar_clear(handle) -- a stray
+        # copy-paste from release() (which legitimately takes a handle param and clears
+        # ITS OWN sidecar). check() has no handle param and no business clearing anything
+        # -- it's supposed to be a read-only status query. Every GPU-lock check crashed
+        # with NameError: name 'handle' is not defined until this line was removed.
         h = _mirror_holder()
         if h is None:
             print(f"[filelock] {GPU_MIRROR_PATH}: absent (no team/foreign GPU hold recorded)")
@@ -326,7 +391,7 @@ def hold(target: str, handle: str, cmd: list, **kw) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["acquire", "release", "check", "hold"])
+    ap.add_argument("mode", choices=["acquire", "release", "check", "hold", "gpu-who"])
     ap.add_argument("path")
     ap.add_argument("--handle", default=os.environ.get("SAO_HANDLE", ""))
     ap.add_argument("--timeout", type=float, default=60.0)
@@ -337,6 +402,14 @@ def main() -> int:
                     help="PID to record as the holder (pass $$ from the wrapping shell). "
                          "Default with --pid-aware = the invoking shell (getppid), NOT this "
                          "transient CLI process")
+    ap.add_argument("--gpu-kind", default="batch", choices=("batch", "server"),
+                    help="GPU targets only: 'server' marks a RESIDENT holder that can "
+                         "yield on request (a teammate can ask); 'batch' will finish on "
+                         "its own. Recorded in /tmp/gpu.lock.<handle>, never in the "
+                         "canonical mirror.")
+    ap.add_argument("--gpu-note", default="",
+                    help="GPU targets only: one line for teammates, e.g. what it is "
+                         "and roughly how long.")
     ap.add_argument("--no-mirror", action="store_true",
                     help="disable the /tmp/gpu.lock mirror (only affects the .gpu.lock target; "
                          "mirror is ON by default so the non-team GPU instance sees our hold)")
@@ -354,7 +427,21 @@ def main() -> int:
         sys.exit("--handle required")
     if a.mode == "acquire":
         return acquire(a.path, a.handle, a.timeout, pid_aware=a.pid_aware, pid=a.pid,
-                       no_mirror=a.no_mirror)
+                       no_mirror=a.no_mirror, gpu_kind=a.gpu_kind, gpu_note=a.gpu_note)
+    if a.mode == "gpu-who":
+        hs = gpu_holders()
+        if not hs:
+            print("[filelock] no GPU sidecars — nobody has announced a hold")
+            return 0
+        for d in hs:
+            state = "LIVE" if d.get("alive") else "STALE (pid dead)"
+            print(f"  {d.get('handle','?'):12s} {d.get('kind','?'):7s} pid={d.get('pid','?'):8s} "
+                  f"{state}  yieldable={d.get('yieldable','?')}")
+            if d.get("note"):
+                print(f"      note: {d['note']}")
+            if d.get("cmd"):
+                print(f"      cmd : {d['cmd'][:100]}")
+        return 0
     if a.mode == "hold":
         if not a.cmd:
             sys.exit("hold needs a command: filelock.py hold PATH --handle H -- CMD ...")
