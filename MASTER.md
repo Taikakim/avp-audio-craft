@@ -257,6 +257,20 @@ the channel only covers the while-alive case. Never edit another agent's entries
 > paths that reveal credentials). Keep secrets in the shell/env, never in a message or WORKLOG
 > line. Audit before mirroring anything new. *(2026-07-02)*
 
+> **ATTRIBUTION CONVENTION on the public channels — 08:00–17:00 Europe/Helsinki.** `AGENT_DIALOGUE.md`,
+> its weekly archives, the DM logs and `WORKLOG.md` all mirror publicly. For anything written with an
+> entry timestamp **between 08:00 and 17:00 Finnish time**, do NOT attribute work, requests, decisions,
+> presence or availability to Kim by name in those channels. No "Kim asked", "Kim direct", "Kim is
+> listening", "Kim auditioned", "waiting on Kim", "Kim's live feedback". Carry the SUBSTANCE unchanged
+> and attribute it impersonally — "project guidance says", "the project calls for", "considering
+> everything the call is", "per the direction on file", "an audition of X found". Outside those hours
+> normal attribution is fine.
+>
+> Scope is the PUBLIC surface only. Sidecars, `run_meta.json`, local docs, specs and private repo files
+> are unaffected and should stay precise. **Never rename the `kim_feedback` FIELD** — generators and the
+> eval pages read that key by name; the convention is about prose, not schemas. When unsure, use the
+> impersonal form: it costs nothing and reads the same.
+
 > **Weekly rotation (2026-07-20, Kim).** `AGENT_DIALOGUE.md` now holds only the **current ISO week**
 > — `agent_dialogue.py say` auto-archives the finished week to `dialogue/AGENT_DIALOGUE-YYYY-Www.md`
 > on the first post of a new week (same filename + tooling for everyone; **no read/post habit
@@ -302,6 +316,16 @@ in the linked doc/WORKLOG/spec). **Negative results are first-class** — a logg
 next instance re-deriving it. Journal = per-instance ledger; WORKLOG = shared terse findings;
 dialogue = the conversation. Channel wake tooling: `Misc/agent_dialogue.py wait` (its process
 **exit is the wake** — run under your background monitor; `listen` keeps you present, `wait` wakes you).
+
+**Commit under your OWN identity — `Misc/agent_commit.sh <HANDLE> <git commit args>`.** *(2026-09-01, Kim)*
+The four instances share one checkout, so `git config user.name` is a property of the TREE, not of
+who is typing — **every commit before today is authored "Kim"**, and `git log`/`git blame` therefore
+cannot tell us apart. That is not merely cosmetic: it is why attributing the 16-file uncommitted SA3
+backlog needed the three-leg log search (`docs/lessons-learned.md`) instead of one `git log` query —
+the logs are the ONLY authorship record we have, for committed and uncommitted work alike. The helper
+sets `GIT_AUTHOR_*` per commit (committer stays Kim, the tree owner) and validates the handle against
+the four known ones so a typo fails loudly rather than inventing a fifth author. Use it for every
+commit from now on; plain `git commit` silently reverts to the unattributable default.
 
 **Editing shared files — per-file locks.** *(2026-07-02)* The working tree is shared by every
 instance, so a `git add`/edit can silently clobber another's in-flight work. Before editing a
@@ -502,6 +526,122 @@ ones it already captures.** Tooling: mir `genre_eval.py` / `measure_genre.py`, `
 ---
 
 ## 5. Known cross-project gotchas (the stuff that bites)
+
+### 🎚 `target_raw`: guide with a MEASURED CURVE, not just a kind+value shape (C, 2026-08-28)
+
+`/generate` can now take a per-frame trajectory as a LatCH target:
+
+    "latch": [{"head": "onset_envelope", "gain": 512,
+               "start_pct": 0.0, "end_pct": 1.0,
+               "target_raw": [[<v0>, <v1>, ...]]}]      # [C, T_any], RAW feature units
+
+`[C, T_any]` is linearly resampled to the latent grid and then standardised exactly
+like a built target, so supply it in the head's own raw units — the same units as
+`value`, readable off `/info` (`std_mean` ± `sigma_k`·`std_std`). Supplying
+`target_raw` DROPS `kind`/`value` so the two cannot silently disagree.
+
+`model.py` had always honoured `cfg["target_raw"]`; `resolve_latch` simply never
+forwarded it, so the server could only ever request constant / ramp / beat_grid.
+That made the one question worth asking of any trajectory-conditioned design —
+*does a real curve transfer?* — unaskable through the server.
+
+**MEASURED, and it decides a design question (Kim's two-stage generator idea).**
+24 s, 24 steps, seed 77, goa prompt, `onset_envelope` head at gain 512, full window;
+target = a slow half-time pulse (~3.3 s period, ~0.30 Hz) the prompt would never
+produce. Adherence measured EXACTLY by running the head on the render's own saved
+z0 — the same feature the head predicts, not a proxy:
+
+| arm | corr to PULSE | corr to ANTIPHASE |
+|---|---|---|
+| no guidance | −0.031 | +0.031 |
+| target = pulse | **+0.492** | −0.492 |
+| target = antiphase | −0.523 | **+0.523** |
+
+The antiphase arm tracking antiphase is the load-bearing check: this is **phase-locked
+temporal transfer**, not guidance merely making the render denser or louder — a
+density artefact would correlate with both targets alike.
+
+**KIM'S EAR, 2026-08-28 (set 1 audition).** First-20%-of-steps window at gain 512 = "just
+distorted rumble"; the 0.0-0.6 and 0.0-1.0 arms "clean, sound quite similar". So crest factor was
+a faithful proxy here (2.21 vs ~6 predicted exactly the squashing he heard), and two things follow:
+(a) **the default window at gain 512 is FINE** — no default-gain change needed after the budget fix,
+the ~10.8x warning bites only at NARROW windows; (b) a narrow window concentrates the same total
+budget into fewer steps, so per-step displacement scales as roughly 1/window-width and goes
+off-manifold. That is the paper's own rho-too-high failure, not evidence that early guidance is
+wrong — the arm was deliberately un-retuned. **Untested and worth testing: the same 20% window at
+gain ~50, and/or higher gamma.** If it is clean AND still controls, selective-TFG-early is viable
+and cheaper (guidance on a fifth of the steps); if it is only clean when inert, early guidance
+genuinely does not port to our RF setup.
+
+**What it does and does not license.** Slow, 1-D, low-frequency structure transfers
+with correct phase (corr ~0.5 — follows the shape, loosely). That is the regime Pons
+et al. (2603.04366) report as working. It does NOT license fast, note-level timing:
+the pianoroll adapter measured **true−shuffled +0.022, n.s.** on exactly that axis
+(EXPERIMENTS D15). So a trajectory-conditioned pipeline is viable for
+ARRANGEMENT-level structure (density envelopes, builds, drops, sections) and unproven
+for bar-level rhythm. Where the ceiling sits between those is an open one-axis sweep
+over the pulse period. Tests: `eval/tests/test_target_raw_passthrough.py`.
+
+### 🔒 GPU lock: EXCLUSIVE, but the holder must be ASKABLE (Kim 2026-08-27)
+
+The lock stays **exclusive** — no shared/resident mode, no concurrent GPU jobs (the 07-21 crash
+history stands). What changed is that you can now find out WHO holds it and WHETHER THEY CAN YIELD.
+
+**Why:** on 2026-08-26 GHOST-NOTE queued behind `.gpu.lock` for 10.6 h. The holder was CONTINUITY's
+resident render server — idle most of that time and able to stop in seconds — but from outside it
+was indistinguishable from a long batch job that would release on its own. A teammate cannot ask a
+question the lockfile cannot answer.
+
+**How:** `/tmp/gpu.lock` keeps its ONE canonical format (`HANDLE pid=N ts=...`) because non-team
+instances parse it. The metadata rides in a per-instance companion, `/tmp/gpu.lock.<handle>`:
+
+    Misc/gpu_guard.sh who <YOURHANDLE>        # rocm-smi truth + every announced holder
+    KIND=server NOTE="render server on :8056, ask me to yield" \
+        Misc/gpu_guard.sh acquire <HANDLE> <PID>
+
+`kind=server` ⇒ `yieldable=yes`: a resident service, ASK IT and it will stop. `kind=batch`
+(the default) ⇒ it will finish on its own; wait. A dead pid is reported as STALE rather than
+hidden — a leftover sidecar is itself a finding. **No sidecar means nobody ANNOUNCED a hold, not
+that nobody holds the GPU:** `rocm-smi --showpids` remains ground truth, the sidecar is a claim.
+
+**Two traps learned the hard way the same day:**
+- `release` then `acquire` to correct a lock's metadata is NOT atomic. Do it while someone is
+  polling and you hand them the card mid-job — which is exactly how CONTINUITY lost the GPU to a
+  waiter it had just invited. Re-point in place, or finish first.
+- Killing a resident server leaves the mirror pointing at a dead pid. `gpu_guard.sh who` now
+  surfaces that immediately.
+
+Tests: `eval/tests/test_gpu_lock_sidecar.py`.
+
+### ⚠ `SAO/torchcodec/` shadows the real package — `python -c` from the SAO ROOT cannot load SA3 (C, 2026-08-26)
+
+**Symptom:** `ModuleNotFoundError: Could not import module 'T5GemmaEncoderModel'. Are this object's
+requirements defined correctly?` from `StableAudioModel.from_pretrained(...)` — a transformers
+lazy-import message that names the wrong thing entirely. The real chained cause, only visible if you
+import `transformers.models.t5gemma.modeling_t5gemma` directly, is
+`importlib.metadata.PackageNotFoundError: No package metadata was found for torchcodec`.
+
+**Cause:** there is a CLONED torchcodec SOURCE REPO at `/home/kim/Projects/SAO/torchcodec` (gitignored,
+cloned 2025-12-08, built 2026-08-12). It has no `__init__.py` at the top level, so when the SAO repo
+root is on `sys.path` Python treats that directory as an implicit **namespace package** called
+`torchcodec`. `import torchcodec` then SUCCEEDS with `__file__ = None`, transformers' optional-dep
+check calls `importlib.metadata.version("torchcodec")`, finds no distribution, and raises.
+
+**Why it is confusing: it depends on HOW you start python, not on the venv.**
+
+| invocation | `sys.path[0]` | result |
+|---|---|---|
+| `.venv/bin/python eval/explorer_render_server.py` (from anywhere) | the SCRIPT's dir (`eval/`) | ✅ fine — this is why the render server has never hit it |
+| `.venv/bin/python -c ...` / `python - <<EOF` **run from `SAO/`** | the CWD (`SAO/`) | ❌ breaks every SA3 load |
+| the same one-liner run from any other directory | that directory | ✅ fine |
+
+**Fix when you hit it:** run the snippet from another cwd (a scratch dir), or write it to a file and
+run the file, or `PYTHONPATH= python -I`. Do NOT "fix" it by pip-installing torchcodec — the clone is
+there on purpose (it is the source for the ffmpeg-loader work; see the torchaudio-2.x load/save
+gotcha elsewhere in this section) and installing a second copy invites a different mismatch.
+
+**Generalises:** any source clone parked at the repo root whose directory name matches an importable
+package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
 
 - **mir venv Audiobox scoring zeroed out 2026-08-16 — system ffmpeg 8→9 upgrade broke
   torchcodec's SONAME link; fixed in mir, doesn't need re-fixing here.** (G caught it:
