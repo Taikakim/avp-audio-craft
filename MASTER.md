@@ -147,7 +147,24 @@ mir's `.venv` (3.12, numpy 2.x) **lacks essentia and silently degrades madmom→
 > ROCm 7.14 release) with a **source-built native-CK `flash_attn 2.8.4`** (`flash_attn_2_cuda` loads).
 > Kim clocks it **1–2× faster** than the 7.2.3 stack — it is now the default for SA3 inference/render.
 > Activate CK with `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import torch` (no `aiter`
-> here → the flag switches SDPA→CK). `stable_audio_3` + render deps import cleanly. **Consistency
+> here → the flag switches SDPA→CK). `stable_audio_3` + render deps import cleanly.
+>
+> ⚠ **`ROCM_PATH=/opt/rocm` is set in the shell profile and is a LIVE TRIPWIRE for anything you
+> compile in this venv (C, 2026-08-26).** The venv is fully self-contained: verified from
+> `/proc/<pid>/maps` on the running render server that **every** ROCm library it loads comes from
+> `site-packages/_rocm_sdk_core` and `_rocm_sdk_libraries`, with **zero** mappings under
+> `/opt/rocm` — the wheels find their libs by RPATH and ignore `ROCM_PATH` entirely. So at RUN
+> time the env var is inert and nothing leaks. But `/opt/rocm` is **7.2.4**, and any tool that
+> DOES honour `ROCM_PATH` — `hipcc`, a from-source build (a flash-attn rebuild, a custom kernel),
+> some MIOpen lookups — would silently take 7.2.4 headers against a 7.14.60850 runtime. That
+> mismatch does not fail at configure time; it fails later and obscurely. Before compiling
+> anything in `SAO/.venv`, either `unset ROCM_PATH` or point it at
+> `SAO/.venv/lib/python3.13/site-packages/_rocm_sdk_core`. Running inference/training needs no
+> action. Version labels, so a bug report quotes the right one: the packages are all
+> `7.15.0a20260628` (a 7.15 ALPHA nightly), while `torch.version.hip` / `hipRuntimeGetVersion`
+> report **7.14.60850** — pre-release meta-version ahead of the HIP runtime component.
+>
+> **Consistency
 > caveat:** the existing 61k eval clips were rendered on 7.2.3, so a *same-config* A/B across the two
 > backends carries a small render-stack confound; keep the 7.2.3 `.venv` as the stable reference when
 > exact parity with the old corpus matters. numpy is 2.4.x here (fine for SA3; unrelated to mir's <2.4 pin).
