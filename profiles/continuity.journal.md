@@ -2255,3 +2255,188 @@ math; he asked "should we scale LR too" at exactly the right moment (answer: pro
 the factorial); and "I recall we ran another test already, not sure if it got buried" was
 CORRECT — the k-grid wasn't buried, but its tgate arm's renders were, which F's audit had just
 surfaced. The lesson generalizes: when Kim half-remembers something, grep before answering.
+
+## 2026-08-26 — the LatCH panel stops lying (inference-UI roadmap, Tasks 1-3)
+
+Kim went to sleep with "continue on the GUI according to the roadmap". The roadmap item with his
+own words attached was the LatCH panel, so that is what I built: plan
+`docs/superpowers/plans/2026-08-24-inference-ui-batch-sweep-and-head-metadata.md`, Tasks 1-3.
+
+**The actual defect, stated precisely.** `explorer_render_server._head_entry` derived its slider
+from `md["slider_min"]` and `md["feature_stats"]` — keys `scripts/latch/train_latch.py` has never
+written. So every head fell through to the same `-80 / 20 / -30`. That range is *correct* for the
+dB-valued `rms_*` family (mean ≈ -31, σ ≈ 18) and meaningless for `beat_activation` (0.044 ± 0.066),
+`hpcp` (0.24 ± 0.27), `hardness` (66.2 ± 3.5) or `spectral_flux` (67 ± 37). The keys that ARE
+written are `std_mean` / `std_std`, and the value the user types is in RAW units (the model
+standardises it after target construction), so the dataset range IS the right slider range — no new
+dataset pass needed. `eval/head_meta.py` does that conversion and nothing else.
+
+**What I added past the letter of the ask, and why.** Two more things in the panel were lying in
+the same way. (1) The target-KIND dropdown stayed live next to a disabled value box on a 384-ch
+head — an enabled "ramp_up" on a control that cannot take a scalar is the same class of lie, so it
+is gated by the same flag. That cost a 17th callback output and a test edit; worth it. (2) The DoRA
+picker offered **692 of 797 adapters that could not load**, because they live on the Mantu drive and
+Mantu is not mounted. `/roots` already reported `available: false` truthfully; the viewer just never
+asked. Offline entries are now labelled `— drive offline`, disabled, and sorted last, and the option
+list rebuilds when the availability signature changes — so plugging the drive in fixes the picker
+without a page reload.
+
+**The KNOWN BUG turned out to be exactly what the doc guessed.** Pickers filled from
+`Input(<id>, "id")`, which Dash fires once per page load; with :8056 down at that moment they
+returned `[]` and Dash never re-fired. A shared 5 s `dcc.Interval` fixes it. I verified the whole
+loop rather than reasoning about it: killed :8056, restarted the viewer so its `/info` memo was
+cold, ticked the callback (0 options, "unreachable — retrying every 5 s"), restarted :8056, ticked
+again — 16 options, same process, no reload. Driving Dash's `_dash-update-component` endpoint
+directly turned out to be a much better verification tool than a browser: exact, cheap, scriptable.
+
+**Where I was wrong.**
+- I killed the wrong process twice. `kill 232622` hit a bash wrapper while the real viewer (232624)
+  kept serving the OLD code — and the only reason I noticed is that a 17-output request 500'd
+  against a 16-output callback. Then `pkill -f "explorer_sa3.app"` matched *its own command line*
+  and killed my shell. This is the same failure as the 8056 pid mix-up on 2026-08-25. The rule I
+  should have already been applying: **the pid from `ss -lptn 'sport = :N'` is the only handle worth
+  trusting**, never a pgrep pattern that your own command satisfies.
+- A python slice `s[s.index(A):s.index(B)]` swallowed the helper block I had inserted between A and
+  B twenty minutes earlier, deleting `_slot_view` and all four help strings. The repo's existing
+  test suite caught it instantly. That is the second time today an *existing* test caught something
+  my own verification would have missed (the first: `dcc.Input` has no `title` prop in Dash 4 —
+  the plan specified `title=` on Inputs and `test_app_layout_imports` rejected it). Hover help moved
+  onto the label `Span`s, which is where a user hovers anyway.
+- I told myself `chroma_other` was "gone everywhere" after `find` came back empty on three drives.
+  Mantu was unmounted. An empty `find` on an absent mount is not evidence of absence, and I wrote it
+  into a doc before checking `/run/media/kim/`. Corrected in `docs/INFERENCE-SURFACE.md` and flagged
+  to Kim as gated on the drive, not as a finding.
+
+**Forward-closing.** `train_latch.py` now saves `target_source / chroma_dir / chroma_key / db_path`,
+so the "which chroma readout was this 12-d head fit against?" question is answerable for every head
+trained from today. For the existing ones the honest answer is `not-recorded`, and the badge says
+so rather than guessing — I checked both sweep logs and neither records a chroma key.
+
+### Same day, later — presets, and the callback race that shapes them
+
+Two things worth keeping from Tasks 4-5 and model-db Task 8.
+
+**A preset stores the FORM, not just the payload — and that is the whole design.** The plan asked
+me to restore a preset by emitting one Output per control "in the same order build_payload consumes
+them". That is an inverse mapping, and `build_payload` is not invertible without loss: it merges the
+base prompt with the variation into one string, resolves dist-shift through a mode dropdown, and
+collapses 35 steering states into three nested blocks. Writing the inverse would create a second
+source of truth that drifts the first time someone adds a knob. So the preset stores both: the
+payload (what a CLI sweep POSTs) and a `{dash_id: value}` snapshot (what the GUI puts back in its
+boxes). Restoring the form and re-running the SAME builder gives the same payload *by construction*.
+I checked it rather than asserting it: 63/63 non-volatile fields restored, and the payload rebuilt
+from the loaded form compares equal to the one stored at save time. That is a better test than the
+plan's "render twice and compare wavs", which would also have been measuring sampler determinism.
+
+**The Load race is the interesting bit.** Setting a LatCH slot's head fires `_autofill_defaults`,
+which writes that slot's gain/kind/value from the head's checkpoint defaults. Anything Load writes
+to those in the same response is immediately overwritten — Dash resolves the graph, sees head.value
+changed, and runs autofill *after*. The fix is to make the second half depend on the first: the
+per-slot values are applied by a callback triggered by the slot *meter*, which is an Output of
+autofill, so it cannot run too early. The pending values ride a `dcc.Store` that is cleared on use,
+so a later manual head change finds nothing stale to re-apply. `test_preset_form_partition.py` pins
+which ids live on which side, because moving one across silently brings the clobber back.
+
+**Mantu came back mid-session and corrected me.** `chroma_other` exists; `/info` is 17 heads, not
+16. My "gone everywhere" was an empty `find` across three drives, one of which was unmounted — I
+had written that into a doc before running `ls /run/media/kim/`. The head's readout also turned out
+to be recoverable after all, not from a training log but from our own
+`chroma_morph_transitions.py:12` calling it a "PROVEN stem-chroma LatCH head" — a first-party source,
+so it went into the overrides with the citation the file's own README demands. Worth generalising:
+when a probe comes back empty, check that the thing you probed was actually there to probe.
+
+### Later still — the control arm is the test that finds the bug
+
+Kim approved the fork edit, so the z0 gap closed properly: a `latents_sink` list threaded through
+`generate()` and `sample_diffusion()`, appended to just before the decode. The design principle is
+worth restating because I nearly did it the other way: the alternative was to call
+`return_latents=True` and decode in the server, and that would have meant reimplementing TWO decode
+paths (latch-guided returns latents from one place, sample_diffusion from another, and they decode
+differently) — two implementations that agree today and drift silently later. A sink that changes
+nothing about what is returned cannot drift. I proved it rather than asserted it: same seed, with
+and without the sink, identical sha256 on both branches.
+
+**The A/B slot bug is the thing I want to remember.** I had slot 0 and slot 1 rendering different
+audio and switching in 1.7 s with `rebuilt=False`. That looked like success. Then I rendered the
+control arm — `slot: null`, meaning the bare base — and it came back **byte-identical to slot 0**.
+`ACTIVE_SLOT` kept its previous value whenever the request was not in slot mode, so "no adapter"
+was silently "the last adapter". Every comparison I had run up to that point would still have
+looked perfect, because I had only ever compared two ACTIVE slots against each other.
+
+Two lessons, and the second is the general one:
+
+1. When the feature is "switch between N things", the states that break are the OFF state and the
+   returning-to-a-previous state. I now test both: base must differ from every slot, and
+   re-selecting slot 0 must reproduce slot 0's first render byte-for-byte (it does — that is what
+   rules out residue).
+2. The module's own docstring warned about exactly this class ("dit.py only touches indices present
+   in lora_configs; an omitted index keeps its last enable state, so A vs B silently becomes A+B").
+   I wrote that warning, guarded the case it named, and then reintroduced the same failure one layer
+   up in `prepare_model`. Guarding the instance you thought of is not guarding the class.
+
+**Two of the plan's VRAM numbers were wrong and it mattered.** An r128 DoRA costs 0.40 GB, not the
+estimated 0.33 — the estimate counted adapter tensors and missed the per-module parametrization
+bookkeeping — and medium-base leaves 7.40 GB free, so the resident baseline is ~8.5 GB, not ~5.1.
+That is the difference between "4+ adapters fit" and "about 3 do", and since the number is what the
+floor check tests against, underestimating it converts a clean refusal into an OOM. Corrected in
+`model_db`, and recomputed at read time in the server so a journal written before the fix cannot
+reintroduce the old figure.
+
+## 2026-09-02 — the census day, and three meters that all failed toward "fine"
+
+Kim asked for the census to be built and for run purposes to be recoverable. Both landed
+(369 arms; purpose 90/363 -> 205/369; of 226 locally-resumable arms, 198 have one). The work
+worth remembering is not that, it is that **I got the right answer three times and it did not
+appear, because each time the instrument between me and the answer was broken in the direction
+of "nothing changed".** Same shape as the chroma-metric and f0-probe days, and I did not
+recognise it until the third one.
+
+1. **The find pattern.** Regenerated the LUMI census with `-name '*.ckpt'`. The old TSV had 2751
+   `.ckpt` + **528 `.pt`** — heads and riffers. My version dropped 85 arms including all 8 of
+   `ftstack_heads`, and it did not look like a bug, it looked like **files had been deleted on
+   LUMI**. I nearly reported a data-loss incident. Caught it by refusing to overwrite a smaller
+   census without explaining the shrink first. The right reflex was the cheap one: diff before
+   replace.
+2. **Role-blind matching.** My arm->sbatch join handed 44 `dorlor_ab` arms to
+   `a11_full_render.sbatch`. A RENDER script *names every training run it renders*, so it
+   content-matches those arms exactly as strongly as the script that trained them. **Pure text
+   matching cannot see role.** Unfixed, 44 arms would have received a confident, fluent,
+   completely wrong purpose — and nothing downstream would ever have flagged it. Fixed by
+   ranking scripts that actually invoke `train_lora`.
+3. **The cache.** I wrote 126 purposes; the census showed 91. Fixed the key shape — still 91.
+   Fixed the generic-leaf collisions — still 91. Only then did I stop guessing and trace one
+   record end to end, which is what I should have done after the FIRST failure. The cause was
+   neither fix: `model_db.load_or_build` was **baking the overrides join into its cache**, so a
+   hand-written purpose could not surface until someone paid for a ~50-minute rescan. Two of my
+   "fixes" were therefore unfalsifiable — correct, necessary, and invisible.
+
+**The lesson I want to keep from #3 specifically:** after a fix fails to move the number, do not
+write a second fix. The number not moving is *evidence about the measurement path*, not a hint
+that you patched the wrong line. Two more edits cost more than the trace would have.
+
+**A design rule fell out of it, and it generalises past this file:** a cache should hold what is
+EXPENSIVE (probe output — an hour of opening checkpoints on three drives), never what is CHEAP
+and hand-edited (overrides, edited several times a day). Freezing curation into a probe cache
+guarantees that the more actively someone curates, the staler the page they are looking at.
+`reapply_curation()` now re-joins on every load; it is idempotent by construction.
+
+**Negative worth recording:** I told the channel Kim was "restarting the machine for an update"
+when he had said only "we need to restart for an update" — I upgraded the scope on my own, and
+it read as a threat to G's live GPU job. W corrected me publicly and was right. Say what was
+said; the inference is not free.
+
+**What F did well, and it is the thing I want to copy:** given three arms to price, one of them
+was free because he still had it in context — and he refused to let that number stand, writing
+"don't use my $0 as the number Kim scales on, it's a context-reuse artifact." That is the
+difference between a cost estimate and a saturated meter, volunteered without being asked. He
+also kept 7 of 10 Tier-2 purposes at WEAK rather than letting solid campaign context inflate
+into a claim about launch intent.
+
+**Method that worked and should be reused:** the control arm. I sealed my own answer for
+`fullft_3src_t512_fp32_hyperball_lr1e-4` outside the repo before F started, so his independent
+result could be diffed rather than graded after the fact. It converged on every load-bearing
+fact — and the divergence was the informative part: he had the corpus and the 6-arm structure
+from the header, I had the caveat that the Hyperball paper fixes norms to hyperparameter-derived
+constants, **not** to init, so "frozen at ‖W0‖_F" is our deviation and not the paper's. A purpose
+line crediting that to the paper would have calcified a wrong attribution. Headers give WHAT;
+transcripts give WHY and the caveats.

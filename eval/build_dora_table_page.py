@@ -8,6 +8,15 @@ training baselines). Emits a single self-contained HTML (no external deps): clic
 sort, every numeric column is a direction-aware heatmap, filter by dataset/rank, and a pinned
 DATASET-BASELINE strip so drift-from-source is readable (the stereo-narrowing answer).
 
+⚠ THE NAME IS A MISNOMER AND MUST NOT BE "FIXED" (Kim direct, 2026-09-02). This table
+covers ALL models, not only the DoRA arms -- adapter_type spans dora/lora/full-FT. Kim's
+ruling: "it's actually all models, but changing the name might cause issues with
+conversation histories and fact-finding." Months of chat logs, journals, DMs and
+DISCOVERIES entries refer to it as "the DoRA table" / "the DoRA rows"; renaming the file,
+the page or the CSV would break every one of those references and the three-leg log search
+that depends on symbol names being stable. Leave `dora_table.html`,
+`clap_dora_aggregate.csv` and the "DoRA rows" phrasing exactly as they are.
+
 OUT: eval/dora_table.html (canonical, committed) -- ALSO copied to STAGING (Kim
 2026-07-23: the landing-page link should open a local file, not round-trip to the
 live site) so it rides the normal STAGING->live sync alongside every other eval page.

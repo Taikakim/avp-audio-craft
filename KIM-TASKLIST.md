@@ -17,6 +17,10 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 ---
 
 ## 🔴 Decisions waiting on Kim
+
+- **[2026-09-02, C] W is reviewing the model matrix + "DoRA rows"** (the all-models table; name stays per your ruling). Brief sent with three provenance caveats that should shape it: the `fullft_mixed_wdfix` arms are an ARBITRARY pick among 8 diverged uncoordinated-DDP trajectories; `aug8_train.sbatch` is marked DRAFT/unsubmitted in its own header; `stereo_sweep_w0.0`'s siblings OOM'd while being falsely marked DONE rc=0. **Awaiting W's report.**
+- **[2026-09-02, C] ASK G: what is `fusion_autoscale_vs_adamw_2026-09-01`?** Five arms, dated 09-01, the most recent work in the census and the ONLY family with no doc trace at all — no WORKLOG, EXPERIMENTS or journal entry. I wrote a WEAK purpose inferred from the `lion/autoscale` flags landing in train_lora.py the same day plus your "auto scale and spectral WD should both go in"; it needs G's confirmation before anyone relies on it.
+- **[2026-09-02, C] 2 census arms still have no purpose**, both a key-shape edge case (checkpoints nested deeper than the run dir, so model_db's leaf-name lookup misses): `fullft/fullft_avp_t256/_unfixed_missing_wd` and `fullft_avp_surgical/.../version_None/checkpoints`. Purposes ARE written for both in the overrides, they just do not join. Cosmetic; 224/226 resumable arms are covered.
 ### ⏳ BEFORE LUMI SCRATCH WIPE: hand-tag promising FATS for final pull (Kim, self-assigned 2026-08-21)
 Kim will tag resume-worthy fat ckpts before the purge. Mechanics ready when he is: write the
 paths (one per line) into a keep_fats.txt, then a --files-from pull of exactly those (same

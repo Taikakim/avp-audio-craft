@@ -201,6 +201,62 @@ not knowing the substrate. Deep dives: SA3 report `papers/arxiv-2605.17991 - Sta
 the 384-d 3-band SAME chroma above) and **`hpcp`**, +12 others; load via `load_latch_from_checkpoint`
 (never hardcode arch — MASTER §5). ⇒ a melody/movement conditioner may already exist as a head.
 
+## Training runs — write the notes AT LAUNCH, into the census's SOURCES (Kim direct 2026-09-02)
+*"We should have a directive about writing training notes directly to the census when commencing
+training."* The reason this rule exists: by the time a run finishes, whoever launched it has been
+compacted away, and `fullft_3src_t512_fp32_hyperball_lr1e-4`-shaped names tell you nothing. Kim
+2026-09-01, looking at his own runs: **"I don't remember what all of these were about anymore."**
+Recovering it afterwards cost a day of reading 111 sbatch scripts by hand.
+
+**The census (`eval/model_census.html` + `.csv`, `eval/build_model_census.py`) is GENERATED.
+Never hand-edit it — the next build silently erases your edit.** Write to its SOURCES instead:
+
+**1. AT LAUNCH — the sbatch writes `run_meta.json` into the run dir.** Not afterwards, not by
+hand: a heredoc in the submit script itself, so it is impossible to start a run without one.
+**Copy the proven pattern at `lumi/sbatch/fullft_fleet.sbatch:91`** — it already carries
+`run`/`created`/`slurm_job`/`purpose`/`recipe{}`/`dataset{}`/`script`, plus `result` and
+`kim_feedback` pre-seeded as `null` for later. The fields that cannot be reconstructed from
+anything else, and which nothing but the launcher knows:
+- **`purpose`** — one line: what question this run answers, WHO asked, and the EXPERIMENTS.md
+  id if it has one. The good example in that file names Kim's date, the experiment id and the
+  paper it tests.
+- **`hypothesis` / kill-criterion** — what you expect, and what result would end the run.
+- **`status`** — running | done | abandoned, **and WHY if abandoned**. This is the field whose
+  absence makes a dead arm indistinguishable from an unfinished one.
+- **`recipe.notes`** — the operational traps a future renderer needs (e.g. "RENDERING MUST LOAD
+  THE EMA WEIGHTS", "fp32 ⇒ no FA2").
+As of 2026-09-02 only **24 of 111** sbatch scripts do this, and `purpose` is filled for **90 of
+363** census arms — that gap is why Kim could not remember what his own runs were.
+A run with no `purpose` is a run somebody will have to reverse-engineer. Also register it in
+`EXPERIMENTS.md` the same session (§3b) — `run_meta.json` says what the ARM is, EXPERIMENTS says
+why the experiment exists; a compaction must not be able to lose either.
+
+**2. AFTERWARDS — verdicts go in `Misc/models_index_overrides.json`**, keyed by run label
+(`note` = the one-sentence evaluation shown on the page, `recipe` = real hyperparameters).
+That file is the last word in the recipe chain and survives every rebuild.
+
+**⛔ 3. DO NOT hand-write the DERIVED columns — they are computed, and a hand-written copy is a
+second source of truth that will drift.** *Clips rendered* (`matrix`, resolved by linking arms
+into `model_matrix.html`), *locally available* / *resumable* / fat-vs-slim byte counts
+(`local_fat_n`, `remote_slim_b`, …), family, rank, alpha, precision — all derived from the
+checkpoint probe, the drives, and the LUMI census TSV. To make them CORRECT you re-derive, you
+don't retype:
+- **`eval/build_model_census.py --rescan`** after any pull, any new recipe source, or any drive
+  remount. Without it the builder reuses a cache — a 26-08 cache silently reproduced its own
+  numbers on 02-09 and the new data never appeared.
+- **Mount every drive first.** A cached or fresh scan taken with a drive down reports that
+  drive's arms as ABSENT, not as unknown. This has bitten twice (`chroma_other` "gone
+  everywhere" was an empty `find` on an unmounted Mantu).
+- **Regenerate the LUMI side over ONE multiplexed ssh**, and match the file pattern:
+  `find … \( -name '*.ckpt' -o -name '*.pt' \)`. Heads and riffers are `.pt` — a `.ckpt`-only
+  find drops 528 files and 85 arms and looks exactly like a deletion on LUMI.
+
+**Recipe precedence, when sources disagree** (`eval/model_db.py::record_for`, each field tagged
+in `prov`): **ckpt probe > `run_meta.json` > `lumi/run_params_extracted.json` > overrides.**
+The probe wins because it is what the run actually DID, not what a script asked for.
+⚠ `lumi/run_params_extracted.json` was **hand-read from the sbatch corpus — there is no
+extractor script and it cannot be regenerated.** Do not delete it; extend it by hand.
+
 ## Git — the four rules that must be in context (full manual: `docs/GIT-PROTOCOL.md`)
 *(Kim's ask 2026-09-02, after a commit campaign produced an unauthorized push, a false
 "that remote doesn't exist" claim, and nine commits landing under the wrong author.)*
