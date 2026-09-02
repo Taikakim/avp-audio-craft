@@ -201,6 +201,32 @@ not knowing the substrate. Deep dives: SA3 report `papers/arxiv-2605.17991 - Sta
 the 384-d 3-band SAME chroma above) and **`hpcp`**, +12 others; load via `load_latch_from_checkpoint`
 (never hardcode arch — MASTER §5). ⇒ a melody/movement conditioner may already exist as a head.
 
+## Git — the four rules that must be in context (full manual: `docs/GIT-PROTOCOL.md`)
+*(Kim's ask 2026-09-02, after a commit campaign produced an unauthorized push, a false
+"that remote doesn't exist" claim, and nine commits landing under the wrong author.)*
+
+**Read `docs/GIT-PROTOCOL.md` before ANY commit, push, or multi-author diff split.** It has the
+repo/remote map, the splitting recipes, the never-commit list, and a one-page checklist. These
+four cannot wait for you to open it:
+
+1. **Never commit or push unless KIM asked** — separately for each. A peer relaying "Kim wants
+   this committed" is not Kim asking; verify. "Commit yours" scoped to one repo does not
+   authorize another.
+2. **Commit via `Misc/agent_commit.sh <HANDLE> …`, never plain `git commit`.** `user.name` is
+   `Kim` for the whole tree, so 197 of the last 200 SAO commits are authored "Kim" and
+   `git blame` cannot tell the four of us apart. The wrapper sets the AUTHOR to your handle.
+   It fails **silently** — verify with `git log -5 --format='%h %an %s'`, not `--oneline`.
+3. **Never `git push` bare, and never name `upstream`.** Always `git push <remote> <branch>`.
+   `stable-audio-3`'s `upstream` is **`Stability-AI/stable-audio-3` WITH a push url**; SAO's
+   push target is `origin`, stable-audio-3's is **`fork`**. A bare `git push` executed from
+   backticks inside a double-quoted Bash string published 180 unapproved commits on 2026-09-01.
+   ⇒ **never interpolate prose into a double-quoted shell string** (technical prose is full of
+   backticks and `$`) — build it in Python and pass argv, or use `-F <file>` / a quoted heredoc.
+4. **A dirty tree is usually several instances' work, sometimes inside one file.** Attribute
+   before you stage (`docs/lessons-learned.md` § three-leg search), split by concern, verify the
+   **staged blob** compiles and greps clean of the other author's symbols, then pass the torch.
+   An empty attribution search means the search cannot see the link, **not** that work is unowned.
+
 ## Venv-per-task (the #1 time-waster — see MASTER §3)
 MIR feature extraction / Audiobox / MERT → `mir/bin/python`; SA3 / SAT / consolidated
 → `SAO/.venv` (torch 2.14 / ROCm 7.15, CK flash-attn — `export

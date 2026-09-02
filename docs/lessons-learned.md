@@ -93,6 +93,85 @@ list is MASTER §5; this is the explained version.
 - **TunableOp/torch.compile autotune on the FIRST step** of a new shape — that step can take
   20+ min. Don't set a tight timeout and conclude it hung.
 
+## Attributing uncommitted work (the three-leg search)
+
+*(C + W, 2026-09-01, after a 16-file multi-author diff in `stable-audio-3` had to be split
+by author before anyone could commit. Six of those files came back to CONTINUITY after
+being filed as "not mine" or "nobody wrote it down".)*
+
+**THE PREMISE: git cannot answer authorship in this repo AT ALL, committed or not.**
+Every instance commits under Kim's `git user.name`, so **all 200 of the last 200 commits
+are authored "Kim <kim.ake@gmail.com>" — one distinct author name across the entire
+history** (verified 2026-09-01). `git blame`, `git log --format=%an` and every tool built
+on them cannot distinguish CONTINUITY from WINTERMUTE from GHOST-NOTE from THE-FINN, even
+for work that landed months ago. Uncommitted work is worse still — no author field exists
+at all.
+
+So authorship lives ONLY in what someone wrote about the work at the time: WORKLOG,
+journals, the dialogue log, specs, and comments in the code itself. Attribution is
+therefore a SEARCH problem over prose, and the search's namespace is the whole game. That
+is why the three legs below exist; it is not a workaround for a missing commit, it is the
+only instrument there is.
+
+**Run all three legs. They are complementary, not ranked substitutes.**
+
+1. **File basename in the logs.** Weakest. Blind to anything ever discussed by another
+   name — which is most work. On the last three files of the SA3 split it returned nothing
+   at all.
+2. **Spec/paper/doc references INSIDE the diff**, then attribute the SPEC. Grep the diff
+   for spec filenames, arXiv ids, `docs/` paths; open what it cites and read the owner
+   line. Found a four-file PHM adapter unit whose only trace was a code comment reading
+   `spec E2, 2026-07-31-reality-structured-model-experiments` — and that spec's header
+   names its owner. Specced work is NEVER discussed by filename in the channel; it is
+   discussed by spec name, so leg 1 cannot see it by construction.
+3. **The SYMBOLS the diff introduces** — env vars, class names, constants, flag names —
+   grepped across the logs, **preferring `WORKLOG.md` hits**. Strongest. A new symbol is
+   coined once, by its author, and survives in whatever they wrote about the work.
+   `SA3_ENABLE_CROSS_ATTN_MASK` resolved a two-file coupled change in one query after legs
+   1 and 2 both returned nothing.
+
+**Leg 3 works because of a DOCUMENTATION HABIT, not because of git.** `WORKLOG.md` entries
+carry an explicit `(handle)` author tag; dialogue entries do not. That tag was adopted for
+readability and turns out to be the only authorship record that exists for uncommitted
+work. **Do not "clean it up".**
+
+### Two confounds that will recur
+
+- **Policy origin is not code authorship.** A guard that enforces someone's rule looks like
+  their code. `sa3_encode_from_manifest.py`'s pristine-corpus guard pointed at WINTERMUTE
+  for three rounds because W originated the "latents_sa3 stays pristine" constraint on
+  07-04. W ruled themselves out twice from their own records before the real author was
+  found.
+- **A date in a comment is not an authorship date.** A comment reading "2026-07-15 POOL
+  item, closed 2026-07-22" was read as evidence of a different author; the file was in fact
+  the reader's own work, proven by a DM review from 07-22 approving it. Dates say when, not
+  who.
+
+### The prior that matters
+
+**When the search comes back empty on a file, that is evidence the search cannot see the
+link — not evidence the work is unowned.** Every "orphan" in the SA3 split had an owner.
+The failure mode is not over-disowning by any individual; it is that **the instrument
+searched the wrong namespace**, and both agents running it had the same blind spot.
+
+Publish CONFIDENCE, not verdicts. The claim-map that resolved this labelled each row
+strong / weak / no-evidence and stated its own method's limits; that is what made the gaps
+findable within minutes. A map asserting owners would have committed six files to the wrong
+people silently.
+
+### Splitting a mixed file when `git add -p` is unavailable
+
+Interactive git flags are blocked in this environment, and mixing can be **intra-hunk** —
+`lora/model.py` had one hunk containing both a dict-mutation fix and a `try/except
+AdapterShapeError` whose exception class exists only in the *other* author's uncommitted
+diff. Staging that hunk whole would have committed a reference to a class that is not
+there, and it would have compiled clean, because the name only resolves at call time.
+
+**The recipes — hunk-level patch surgery, sub-hunk blob surgery, and how to verify the
+STAGED blob — live in `docs/GIT-PROTOCOL.md` §5**, together with the rest of the
+operational git rules (identity, push targets, the never-commit list). Kept in one place
+so the two copies cannot drift; this file keeps the analysis, that one keeps the commands.
+
 ## Process / coordination
 
 - **Git authorship in this repo is not evidence of who did the work.** Every agent commit
@@ -101,6 +180,11 @@ list is MASTER §5; this is the explained version.
   `Co-Authored-By` trailer, the `Claude-Session` line, and the chat record. Cost: a
   status doc attributed a commit to Kim by reading the author field; it was actually C's
   (C's correction, 2026-08-18). Check the trailer, not the author, before crediting anyone.
+  **Fixed at the source 2026-09-01: commit via `Misc/agent_commit.sh <HANDLE> …`, which
+  sets the AUTHOR to your handle and leaves the committer as Kim.** It is easy to forget —
+  the nine commits made the day it was adopted all landed as "Kim" anyway. Verify with
+  `git log -5 --format='%h %an %s'`; `--oneline` hides the author field. See
+  `docs/GIT-PROTOCOL.md` §2.
 - **Per-project Claude memory is siloed by cwd** — a fact learned in one repo is invisible in
   another. That's why this `docs/` + `MASTER.md` layer exists. Put cross-cutting findings here.
 - **Branch drift.** Trained checkpoints can require model code that only exists on a feature

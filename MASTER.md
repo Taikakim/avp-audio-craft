@@ -42,6 +42,19 @@ context you need is often already written down there; read before re-deriving.**
 Supporting (no canonical venv of note): `SAO/sa3-rocm7.13-test` (FA/ROCm 7.13 build test),
 `SAO/torchcodec`, `SAO/my_wheels` (custom torch+ROCm wheels).
 
+Also ours, **siblings of SAO not nested in it** (so `git -C fusion-optimiser` from the SAO
+root fails with "cannot change to" — use the absolute path): **`/home/kim/Projects/fusion-optimiser`**
+(FusionOpt, `Taikakim/fusion-optimiser`) and `mir` above.
+
+**Git push targets — get these wrong and it goes somewhere public.** SAO → `origin`
+(`Taikakim/avp-audio-craft`); **stable-audio-3 → `fork`**, and note its **`upstream` is
+`Stability-AI/stable-audio-3` WITH A PUSH URL** — never name it, never `git push` bare;
+stable-audio-tools → `origin` (`Taikakim/audio-tools-avp`); mir → `origin`; fusion-optimiser
+→ `origin`. **Commit via `Misc/agent_commit.sh <HANDLE>`**, not plain `git commit` —
+`user.name` is `Kim` for the whole tree, so 197 of the last 200 SAO commits are authored
+"Kim" and `git blame` cannot tell the four instances apart. Full rules + the incidents
+behind them: **`docs/GIT-PROTOCOL.md`** (Kim's ask 2026-09-02).
+
 **Hardware:** AMD RX 9070 XT (RDNA4, gfx1201, 16 GB) + Ryzen 9 9900X. ROCm 7.2.x, torch 2.10 ROCm.
 
 **Three Python versions (3.10 / 3.12 / 3.13) → the venvs cannot be merged.** Always

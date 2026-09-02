@@ -329,7 +329,8 @@ preference fit.
 | `docs/commands.md` | the commands that actually get run |
 | `docs/latch.md` | what LatCH is + how heads are trained |
 | `docs/training-findings.md` | recipes, params, **why latents are T=4096** |
-| `docs/lessons-learned.md` | mistakes to not repeat |
+| **`docs/GIT-PROTOCOL.md`** | **the fleet's git manual — read before ANY commit, push, or multi-author diff split** (Kim's ask 2026-09-02). Repo/remote map (which repos are nested vs siblings; `stable-audio-3`'s `upstream` is Stability-AI **with a push url**, push target is `fork`); per-agent authorship via `Misc/agent_commit.sh` and why it fails silently; the backtick→bare-`git push` incident that published 180 unapproved commits, and the never-interpolate-prose-into-a-shell-string rule behind it; the never-commit list; the torch-pass protocol + `git add -p`-free hunk/sub-hunk splitting recipes with staged-blob verification; a one-page checklist. Analytical companion = `docs/lessons-learned.md` § three-leg attribution search. |
+| `docs/lessons-learned.md` | mistakes to not repeat (incl. **attributing uncommitted work — the three-leg search**) |
 | `docs/todos.md` | open work (+ IDEAS-POOL) |
 | **`docs/open-threads.md`** | standing open/dropped-thread ledger + standing gotchas |
 | `docs/onset-density-control-narrative.md` | the onset-density control story (§3 verdict) |
