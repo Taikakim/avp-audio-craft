@@ -172,6 +172,73 @@ STAGED blob — live in `docs/GIT-PROTOCOL.md` §5**, together with the rest of 
 operational git rules (identity, push targets, the never-commit list). Kept in one place
 so the two copies cannot drift; this file keeps the analysis, that one keeps the commands.
 
+## Stale provenance under fresh content launders a guess into a citation (2026-09-02/03, C + G)
+
+**The shape.** `Misc/models_index_overrides.json` stores a `purpose` alongside two SIBLING fields —
+`purpose_evidence` (where it came from) and `purpose_confidence` (weak/strong). CONTINUITY had mined
+purposes for 28 arms with no doc trace and correctly tagged them `weak`, citing the documents searched.
+GHOST-NOTE later overwrote five of those `purpose` strings with first-hand knowledge from having RUN
+the experiments — but wrote only `purpose`/`hypothesis`/`status`, leaving the sibling fields untouched.
+
+Result: measured numbers (path_length 2223 vs 322, step_cos 0.5448 vs 0.5390, Kim's verbatim "the clips
+sound excellent") sat in the census attributed to a doc search that could not possibly have produced
+them, and rated **weak**. Not a missing citation — a WRONG one, which is worse: it makes a first-hand
+result look like an inference, and would make an inference look sourced if the swap ran the other way.
+
+**Rule: overwrite all three fields together, or none.** If you replace someone's mined `purpose`, also
+rewrite `purpose_evidence` and `purpose_confidence` in the same edit. Same applies to any record whose
+provenance lives in fields adjacent to the content rather than inside it. And when you ADD a new key,
+fill all three even though nothing was superseded — otherwise it becomes the one row a reader cannot
+place (this happened to `adamw_lr3e-4_step2000`, fixed 2026-09-03).
+
+**Generalises:** this is the schema-level twin of the git-authorship problem (§ three-leg search) — a
+shared file where the content changes hands but the attribution does not follow it.
+
+**Third clause (C, 2026-09-03): when you cannot source an existing purpose, say UNRECORDED — do not
+leave it blank and do not invent a citation.** Auditing the 8 arms above turned up **18 more rows
+repo-wide with no provenance at all** (`fp32cmp_*`, `adamw_*_t512_*` and friends). They predate the
+convention, so nobody violated anything — they are the population version of the same problem, and
+they were the rows a reader could not place. They now carry an explicit "UNRECORDED — predates the
+purpose_evidence convention (adopted 2026-09-02) ... do not cite as verified" line with
+`purpose_confidence: "unrecorded"`.
+
+**`unrecorded` is a DISTINCT value from `weak`, and collapsing them is the same laundering in a
+quieter register:** *weak* means someone looked and found little; *unrecorded* means nobody looked.
+A reader who cannot tell those apart cannot tell a poor source from no source.
+
+So the rule has three clauses: (1) overwrite all three fields together; (2) fill all three on a NEW
+key, even though nothing was superseded; (3) mark unsourceable ones UNRECORDED. Repo-wide state after
+this pass: 174 entries with a purpose, **0 missing provenance** (121 weak / 35 strong / 18 unrecorded),
+verified 2026-09-03.
+
+**The one-line version, which generalises past this file:** *read the record you are about to
+overwrite well enough to know what else is in it.* Same reason the staged-blob check exists in
+`GIT-PROTOCOL.md`.
+
+## Broken measurement fails toward ABSENCE — three instances in two days (2026-09-02/03)
+
+All three read as "the data is not there" when the data was fine and the TOOL was wrong:
+1. **`build_model_census.py` without `--census <tsv>`** → 350 rows, `LUMI: 0`, every LUMI-only arm
+   silently gone. Looks exactly like deletion on LUMI. (G, 2026-09-02.)
+2. **A `.ckpt`-only `find`** missing 528 `.pt` files (heads/riffers) → read as "deleted from LUMI". (C.)
+3. **`model_db` baking the overrides join into its cache** → freshly written purposes silently never
+   appeared. (C.)
+Plus the same shape in the eval board: 16 morphcond arms reported `clips = -` because they are
+(correctly) not on the standard board, and that was read as "never rendered" — 4.5 GB of finished
+renders had been sitting there since August. Kim caught it ("I thought we had at least the morphcond
+flats").
+
+**Rule: before reporting an absence, check the instrument that reported it.** State which claim you
+actually measured — "absent from the index" and "was never produced" are different sentences. A
+generator that can silently produce a partial view should REFUSE rather than default: making
+`--census` required (with an explicit `--no-census` opt-out) is the right shape of fix.
+
+**SHIPPED (C, 2026-09-03) — `eval/build_model_census.py` now refuses on both paths, verified:** no
+`--census`/`--no-census` is an argparse error naming the failure ("would report LUMI 0 arms and every
+LUMI-only arm as absent, which is indistinguishable from data loss"), and a `--census` pointing at a
+nonexistent file is fatal too — that second one was the WIDER hole, since a typo'd path failed exactly
+the way the omission did while looking like a correct invocation.
+
 ## Process / coordination
 
 - **Git authorship in this repo is not evidence of who did the work.** Every agent commit
