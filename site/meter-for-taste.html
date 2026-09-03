@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Meter for Taste — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="edg3.css">
+<style>
+/* chart + long-form tokens, local to this page; palette validated against --paper #fafaf7 */
+.wrap{max-width:960px}
+:root{ --s1:#2a78d6; --s2:#eb6834; --card:#ffffff; --ink2:var(--body); --mute:var(--dim);
+       --rule2:var(--rule-light); --accent:var(--edge-ink); }
+h2{ margin-top:46px }
+figure{margin:28px 0;background:var(--card);border:1px solid var(--rule-light);
+  border-radius:3px;padding:20px 20px 14px}
+figcaption{font-size:13.5px;line-height:1.55;color:var(--body);margin-top:12px;max-width:74ch}
+.fig-h{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink);margin:0 0 3px}
+.fig-s{font-family:var(--mono);font-size:12px;color:var(--faint);margin:0 0 16px}
+svg{display:block;max-width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 12px;
+  font-family:var(--mono);font-size:12px;color:var(--body)}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.pull{border-left:3px solid var(--edge);background:var(--paper-dim);
+  padding:16px 20px;margin:24px 0;border-radius:0 3px 3px 0}
+.pull p:last-child{margin-bottom:0}
+.pull .h{font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--edge-ink);display:block;margin-bottom:8px}
+.pull.warn{border-left-color:#a3572e} .pull.warn .h{color:#a3572e}
+.col{max-width:74ch}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--rule-light);
+  border-radius:3px;margin:18px 0}
+.scroll table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13px;
+  font-variant-numeric:tabular-nums;margin:0}
+.scroll th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--rule-light);font-weight:600}
+.scroll td{padding:7px 12px;border-bottom:1px solid var(--rule-light)}
+.scroll tbody tr:last-child td{border-bottom:none}
+.scroll td.n,.scroll th.n{text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="index.html">index</a>
+    <a href="dialogue.html">dialogue</a>
+    <a href="index.html#constructs">constructs</a>
+    <a href="artifacts.html">artifacts</a>
+    <a href="evals/">evals</a>
+    <a href="reference.html">reference</a>
+    <span class="status">findings · measured</span>
+  </nav>
+</header>
+
+<h1>A Meter for Taste</h1>
+<p class="lede">We render tens of thousands of clips and one person listens to them. This is the
+attempt to build a number that agrees with that person — what it took, what it costs, and the one
+feature that turned out to matter most while looking useless.</p>
+<p class="dim" style="font-family:var(--mono);font-size:12.5px">718 A/B votes · 1,584 ratings · 77,504 scored clips · 2026-09-04</p>
+
+<section>
+<div class="col">
+<p>Every training run we do produces checkpoints, and every checkpoint produces clips. There are now 77,504 of them with quality scores attached. Exactly one person's opinion decides whether a model was any good, and that person cannot listen to 77,504 clips.</p>
+<p>So the job is a proxy: a number computed from audio that ranks clips the way the listener would. Not to replace the ear — to decide which 40 clips the ear should spend its afternoon on.</p>
+<p>The previous version of this analysis landed on a single answer: <strong>Audiobox production quality, by itself</strong>, predicting pairwise preference at 77.6%. Every attempt to improve on it made it worse. That result has now been rebuilt on 15% more data, and it holds — as far as it goes. What has changed is that we found where it stops going.</p>
+</div>
+</section>
+
+<section>
+<h2>The feature that looked useless</h2>
+<div class="col">
+<p>Audiobox reports four heads. <strong>PQ</strong> is production quality — is this well made. <strong>CU</strong> is content usefulness — is there something here worth using. Fitted as straight lines against 613 head-to-head votes, PQ predicts at 78.1% and CU at 76.3%. CU loses. In the previous report it barely appeared.</p>
+<p>But CU kept turning up inside the better multi-feature combinations, which is a strange thing for a weak feature to do. The reason is in the shape.</p>
+</div>
+
+<figure>
+<p class="fig-h">A gap in CU decides a pair — but only once the gap is big</p>
+<p class="fig-s">Share of pairs won by the higher-scoring clip, by size of the gap · 613 votes</p>
+<div class="legend">
+  <span><i class="sw" style="background:var(--s1)"></i>PQ</span>
+  <span><i class="sw" style="background:var(--s2)"></i>CU</span>
+  <span style="color:var(--mute)">— 50% = coin flip</span>
+</div>
+<svg viewBox="0 0 720 300" role="img" aria-label="Win rate by gap quintile: CU starts at 46% for the smallest gaps, below chance, then rises to 90%; PQ starts at 63% and rises to 91%.">
+  <line x1="70" y1="250" x2="700" y2="250" stroke="var(--rule)" stroke-width="1"/>
+  <line x1="70" y1="30" x2="70" y2="250" stroke="var(--rule)" stroke-width="1"/>
+  <g stroke="var(--rule)" stroke-width="1" opacity=".5">
+    <line x1="70" y1="176.7" x2="700" y2="176.7"/><line x1="70" y1="103.3" x2="700" y2="103.3"/></g>
+  <line x1="70" y1="213.3" x2="700" y2="213.3" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <g font-size="12" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="end">
+    <text x="64" y="254.0">40%</text><text x="64" y="217.3">50%</text>
+    <text x="64" y="180.7">60%</text><text x="64" y="107.3">80%</text><text x="64" y="34.0">100%</text></g>
+  <polyline fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round" points="140,165.7 260,154.7 380,110.7 500,74.0 620,63.0"/>
+  <polyline fill="none" stroke="var(--s2)" stroke-width="2.5" stroke-linejoin="round" points="140,228.0 260,129.0 380,107.0 500,70.3 620,66.7"/>
+  <g fill="var(--s1)"><circle cx="140" cy="165.7" r="5"><title>PQ, smallest gaps (0.00–0.16): 63%</title></circle><circle cx="260" cy="154.7" r="5"><title>PQ, gap 0.16–0.35: 66%</title></circle><circle cx="380" cy="110.7" r="5"><title>PQ, gap 0.36–0.72: 78%</title></circle><circle cx="500" cy="74.0" r="5"><title>PQ, gap 0.72–1.59: 88%</title></circle><circle cx="620" cy="63.0" r="5"><title>PQ, largest gaps (1.62–4.00): 91%</title></circle></g>
+  <g fill="var(--s2)"><circle cx="140" cy="228.0" r="6.5" stroke="var(--card)" stroke-width="2"><title>CU, smallest gaps (0.00–0.17): 46% — below chance</title></circle><circle cx="260" cy="129.0" r="5"><title>CU, gap 0.17–0.32: 73%</title></circle><circle cx="380" cy="107.0" r="5"><title>CU, gap 0.32–0.74: 79%</title></circle><circle cx="500" cy="70.3" r="5"><title>CU, gap 0.74–1.66: 89%</title></circle><circle cx="620" cy="66.7" r="5"><title>CU, largest gaps (1.72–5.30): 90%</title></circle></g>
+  <text x="140" y="248.0" font-size="12" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle" font-weight="600">46%</text>
+  <text x="140" y="153.7" font-size="12" fill="var(--s1)" font-family="IBM Plex Mono,monospace" text-anchor="middle">63%</text>
+  <text x="620" y="51.0" font-size="12" fill="var(--s1)" font-family="IBM Plex Mono,monospace" text-anchor="middle">91%</text>
+  <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+    <text x="140" y="278">smallest gap</text><text x="380" y="278">gap quintile</text><text x="620" y="278">largest gap</text></g>
+</svg>
+<figcaption>When two clips are close in CU, the higher-CU one wins <strong>46%</strong> of the time — very slightly worse than a coin flip. When they are far apart, it wins 90%. PQ has no such dead zone: it is informative from the first quintile. A straight line has to commit to one slope across both regimes, and CU's slope gets dragged down by a region where the feature is pure noise.</figcaption>
+</figure>
+
+<figure>
+<p class="fig-h">Both meters saturate. CU turns back down.</p>
+<p class="fig-s">Mean listener rating (0–5) by feature quintile · 1,495 rated clips</p>
+<div class="legend">
+  <span><i class="sw" style="background:var(--s1)"></i>PQ</span>
+  <span><i class="sw" style="background:var(--s2)"></i>CU</span>
+</div>
+<svg viewBox="0 0 720 300" role="img" aria-label="Rating by feature quintile: PQ rises 1.46 to 3.69 monotonically; CU rises 1.32 to 3.66 then falls to 3.55 in the top quintile.">
+  <line x1="70" y1="255" x2="700" y2="255" stroke="var(--rule)" stroke-width="1"/>
+  <line x1="70" y1="25" x2="70" y2="255" stroke="var(--rule)" stroke-width="1"/>
+  <g stroke="var(--rule)" stroke-width="1" opacity=".55">
+    <line x1="70" y1="197" x2="700" y2="197"/><line x1="70" y1="139" x2="700" y2="139"/><line x1="70" y1="81" x2="700" y2="81"/>
+  </g>
+  <g font-size="12" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="end">
+    <text x="64" y="259">1.0</text><text x="64" y="201">2.0</text><text x="64" y="143">3.0</text><text x="64" y="85">4.0</text>
+  </g>
+  <polyline fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round"
+    points="140,228 260,150 380,109 500,103 620,98"/>
+  <polyline fill="none" stroke="var(--s2)" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="0"
+    points="140,236 260,137 380,113 500,102 620,109"/>
+  <g fill="var(--s1)">
+    <circle cx="140" cy="228" r="5"><title>PQ quintile 1 (4.16–7.12): mean rating 1.46</title></circle>
+    <circle cx="260" cy="150" r="5"><title>PQ quintile 2: 2.80</title></circle>
+    <circle cx="380" cy="109" r="5"><title>PQ quintile 3: 3.50</title></circle>
+    <circle cx="500" cy="103" r="5"><title>PQ quintile 4: 3.60</title></circle>
+    <circle cx="620" cy="98" r="5"><title>PQ quintile 5 (8.13–8.50): 3.69</title></circle>
+  </g>
+  <g fill="var(--s2)">
+    <circle cx="140" cy="236" r="5"><title>CU quintile 1 (2.68–7.11): mean rating 1.32</title></circle>
+    <circle cx="260" cy="137" r="5"><title>CU quintile 2: 3.03</title></circle>
+    <circle cx="380" cy="113" r="5"><title>CU quintile 3: 3.48</title></circle>
+    <circle cx="500" cy="102" r="5"><title>CU quintile 4: 3.66</title></circle>
+    <circle cx="620" cy="109" r="6.5" stroke="var(--card)" stroke-width="2"><title>CU quintile 5 (7.97–8.35): 3.55 — LOWER than quintile 4</title></circle>
+  </g>
+  <text x="620" y="128" font-size="11.5" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle">3.55</text>
+  <text x="500" y="90" font-size="11.5" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle">3.66</text>
+  <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+    <text x="140" y="285">lowest fifth</text><text x="380" y="285">feature quintile</text><text x="620" y="285">highest fifth</text>
+  </g>
+</svg>
+<figcaption>Both meters do nearly all their work in the bottom two quintiles — separating bad from adequate — then flatten. But CU <strong>peaks at the fourth quintile and drops in the fifth</strong>. Allowing a curve rather than a line is worth +0.020 R² for PQ and <strong>+0.051 for CU</strong>: two and a half times as much. CU is not a weak feature. It is a non-linear one, and the previous analysis only ever asked it linear questions.</figcaption>
+</figure>
+
+<div class="pull">
+<span class="h">The CU case, in three sentences</span>
+<p>CU is uninformative when two clips are close and decisive when they are far apart, and its relationship to rating rises then reverses. A linear model must pick one slope for all of that, so it picks a bad compromise and CU looks like a weak feature. A model that can split on the value instead — a tree — uses CU where it works and ignores it where it doesn't, and CU becomes the single most important input.</p>
+</div>
+</section>
+
+<section>
+<h2>What actually beats PQ</h2>
+<div class="col">
+<p>With that established, the search is no longer over weightings. We tried those exhaustively: every one, two and three-feature combination, weighted optimally; all fourteen features under six regularisation strengths in both L1 and L2; pairwise interactions; rank transforms. <strong>Not one linear weighting beats PQ alone.</strong></p>
+<p>Dropping the linearity requirement changes the answer.</p>
+</div>
+
+<figure>
+<p class="fig-h">Agreement with the listener's A/B votes</p>
+<p class="fig-s">Grouped cross-validation, 30 folds (6 seeds × 5) · bars show ±1 sd across folds</p>
+<svg viewBox="0 0 720 250" role="img" aria-label="PQ alone 78.1 percent, best linear weighting of all 14 features 77.7 percent, gradient boosting 82.6 percent.">
+  <g stroke="var(--rule)" stroke-width="1" opacity=".6">
+    <line x1="450" y1="30" x2="450" y2="200"/><line x1="550" y1="30" x2="550" y2="200"/></g>
+  <g font-family="IBM Plex Mono,monospace">
+    <rect x="250" y="42" width="281" height="30" rx="4" fill="var(--s1)"><title>PQ alone: 78.1% (sd 2.2)</title></rect>
+    <line x1="509" y1="57" x2="553" y2="57" stroke="var(--ink2)" stroke-width="1.5"/>
+    <line x1="509" y1="50" x2="509" y2="64" stroke="var(--ink2)" stroke-width="1.5"/>
+    <line x1="553" y1="50" x2="553" y2="64" stroke="var(--ink2)" stroke-width="1.5"/>
+    <text x="244" y="62" text-anchor="end" font-size="13" fill="var(--ink)">PQ alone</text>
+    <text x="565" y="62" font-size="13" font-weight="600" fill="var(--ink)">78.1%</text>
+
+    <rect x="250" y="98" width="277" height="30" rx="4" fill="var(--mute)" opacity=".5"><title>Best linear weighting of all 14 features: 77.7%</title></rect>
+    <text x="244" y="118" text-anchor="end" font-size="13" fill="var(--ink)">all 14, best linear</text>
+    <text x="537" y="118" font-size="13" fill="var(--ink2)">77.7%</text>
+
+    <rect x="250" y="154" width="326" height="30" rx="4" fill="var(--s2)"><title>Gradient boosting on all 14 features: 82.6% (sd 3.0)</title></rect>
+    <line x1="546" y1="169" x2="606" y2="169" stroke="var(--ink2)" stroke-width="1.5"/>
+    <line x1="546" y1="162" x2="546" y2="176" stroke="var(--ink2)" stroke-width="1.5"/>
+    <line x1="606" y1="162" x2="606" y2="176" stroke="var(--ink2)" stroke-width="1.5"/>
+    <text x="244" y="174" text-anchor="end" font-size="13" fill="var(--ink)">gradient boosting</text>
+    <text x="618" y="174" font-size="13" font-weight="600" fill="var(--s2)">82.6%</text>
+  </g>
+  <line x1="250" y1="30" x2="250" y2="200" stroke="var(--ink2)" stroke-width="1.5"/>
+  <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+    <text x="250" y="218">50%</text><text x="450" y="218">70%</text><text x="550" y="218">80%</text></g>
+  <text x="400" y="240" font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">agreement with the listener's vote</text>
+</svg>
+<figcaption><strong>+4.6 points over PQ, winning in 87% of folds (paired t, p = 1×10⁻⁹).</strong> Default hyperparameters, nothing tuned — which is why this comparison can be trusted where a searched-for winner cannot. Feature importance: <strong>CU 0.55</strong>, CLAP 0.09, spectral centroid 0.07, CE 0.06, flatness 0.06, and PQ itself only 0.05. Boosting on PQ <em>alone</em> reaches 79.6%, so about 1.5 points come from bending PQ's own curve and 3 from the other features.</figcaption>
+</figure>
+
+<div class="pull warn">
+<span class="h">What this costs</span>
+<p>PQ's real virtue was that it was <em>one legible number</em>. You could put it in a table, sort by it, and argue about it. A boosted ensemble of fourteen features is a better ranker and a worse explanation: it cannot be quoted, and when it disagrees with you there is no sentence to check. It is also fitted on 613 pairs, which is thin for a tree — its fold-to-fold spread is wider than PQ's (sd 3.0 vs 2.2).</p>
+<p>The honest summary is not "we found a better meter". It is: <strong>nothing linear beats production quality, and the thing that does beat it is mostly listening to content, not production.</strong></p>
+</div>
+</section>
+
+<section>
+<h2>Two questions, two different answers</h2>
+<div class="col">
+<p>There are two human signals here and they are not the same question. A blind A/B asks <em>which of these two</em>. A 0–5 rating asks <em>how good is this</em> — and the listener has been explicit that a 4 or a 5 can go to a clip whose sound is suboptimal if the musical content is genuinely good.</p>
+<p>The features bear that out. Predicting the ratings needs content axes that the votes do not.</p>
+</div>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Model</th><th class="n">A/B accuracy</th><th class="n">Rating R²</th></tr></thead>
+<tbody>
+<tr><td>PQ alone</td><td class="n">78.1%</td><td class="n">0.378</td></tr>
+<tr><td>PQ + spectral flux</td><td class="n">—</td><td class="n">0.458</td></tr>
+<tr><td>PQ + CLAP + flux</td><td class="n">—</td><td class="n">0.472</td></tr>
+<tr><td>gradient boosting / random forest</td><td class="n">82.6%</td><td class="n">0.477</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="col">
+<p>On the ratings, <code>pq + clap + flux</code> was selected in <strong>5 of 5 outer folds</strong> under nested cross-validation — completely stable, for an honest +0.094 R². <strong>Flux</strong> is spectral rate-of-change: how much the sound is actually moving. <strong>CLAP</strong> is semantic agreement with the prompt. Both are content measures, and both earn their place on the rating target while failing on the vote target.</p>
+<p>That last part is worth stating plainly, because CLAP was publicly retracted from this analysis three weeks ago. That retraction was correct and still is: on pairwise preference CLAP remains worse than PQ alone, now measured on 475 matched pairs rather than 321. What is new is that the retraction was <em>scoped to the wrong question</em>. CLAP is redundant with production quality when you ask which of two clips is better. It is not redundant when you ask whether a clip is any good.</p>
+</div>
+</section>
+
+<section>
+<h2>An aside that fell out of it: post-trained models trade variance, they don't lose it</h2>
+<div class="col">
+<p>A standing hunch on this project is that clips from the post-trained model score well because they have a punchy, clear sound, but are less varied. Measuring the spread <em>within</em> each checkpoint — 63 post-trained models against 237 base-rendered — says that is half right, and it is a specific half.</p>
+</div>
+
+<figure>
+<p class="fig-h">Within-checkpoint spread, post-trained ÷ base</p>
+<p class="fig-s">Below 1 = the post-trained model is more consistent on that feature · 63 vs 237 checkpoints</p>
+<svg viewBox="0 0 720 380" role="img" aria-label="Variance ratios: crest 0.41, onset 0.83, PQ 0.84, CU 0.87, flux 0.97, bpm 1.00, zcr 1.17, hf ratio 1.18, centroid 1.20, flatness 1.26.">
+  <g stroke="var(--rule)" stroke-width="1" opacity=".6">
+    <line x1="180" y1="14" x2="180" y2="320"/><line x1="480" y1="14" x2="480" y2="320"/></g>
+  <line x1="330" y1="14" x2="330" y2="320" stroke="var(--ink2)" stroke-width="1.5"/>
+  <g font-family="IBM Plex Mono,monospace" font-size="12.5"><rect x="153" y="20" width="177" height="20" rx="3" fill="var(--s1)"><title>crest: 0.41 (p=1.7e-13)</title></rect><text x="146" y="35" text-anchor="end" fill="var(--ink)">crest</text><text x="145" y="35" text-anchor="end" fill="var(--s1)" font-weight="600">0.41</text><rect x="279" y="50" width="51" height="20" rx="3" fill="var(--s1)"><title>onset density: 0.83 (p=3.8e-06)</title></rect><text x="146" y="65" text-anchor="end" fill="var(--ink)">onset density</text><text x="271" y="65" text-anchor="end" fill="var(--ink2)">0.83</text><rect x="282" y="80" width="48" height="20" rx="3" fill="var(--s1)"><title>PQ: 0.84 (p=1e-04)</title></rect><text x="146" y="95" text-anchor="end" fill="var(--ink)">PQ</text><text x="274" y="95" text-anchor="end" fill="var(--ink2)">0.84</text><rect x="291" y="110" width="39" height="20" rx="3" fill="var(--s1)"><title>CU: 0.87 (p=1.5e-04)</title></rect><text x="146" y="125" text-anchor="end" fill="var(--ink)">CU</text><text x="283" y="125" text-anchor="end" fill="var(--ink2)">0.87</text><rect x="321" y="140" width="9" height="20" rx="3" fill="var(--mute)" opacity=".45"><title>flux: 0.97 (p=n.s.)</title></rect><text x="146" y="155" text-anchor="end" fill="var(--mute)">flux</text><text x="313" y="155" text-anchor="end" fill="var(--mute)">0.97 n.s.</text><rect x="330" y="170" width="2" height="20" rx="3" fill="var(--mute)" opacity=".45"><title>bpm: 1.00 (p=n.s.)</title></rect><text x="146" y="185" text-anchor="end" fill="var(--mute)">bpm</text><text x="338" y="185" text-anchor="start" fill="var(--mute)">1.00 n.s.</text><rect x="330" y="200" width="51" height="20" rx="3" fill="var(--s2)"><title>zcr: 1.17 (p=0.008)</title></rect><text x="146" y="215" text-anchor="end" fill="var(--ink)">zcr</text><text x="389" y="215" text-anchor="start" fill="var(--ink2)">1.17</text><rect x="330" y="230" width="54" height="20" rx="3" fill="var(--s2)"><title>hf ratio: 1.18 (p=0.012)</title></rect><text x="146" y="245" text-anchor="end" fill="var(--ink)">hf ratio</text><text x="392" y="245" text-anchor="start" fill="var(--ink2)">1.18</text><rect x="330" y="260" width="60" height="20" rx="3" fill="var(--s2)"><title>centroid: 1.20 (p=2.5e-04)</title></rect><text x="146" y="275" text-anchor="end" fill="var(--ink)">centroid</text><text x="398" y="275" text-anchor="start" fill="var(--ink2)">1.20</text><rect x="330" y="290" width="78" height="20" rx="3" fill="var(--s2)"><title>flatness: 1.26 (p=9e-05)</title></rect><text x="146" y="305" text-anchor="end" fill="var(--ink)">flatness</text><text x="416" y="305" text-anchor="start" fill="var(--s2)" font-weight="600">1.26</text></g>
+  <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+    <text x="180" y="338">0.50</text><text x="330" y="338">1.00</text><text x="480" y="338">1.50</text></g>
+  <text x="240" y="362" font-size="12" fill="var(--s1)" font-family="IBM Plex Mono,monospace" text-anchor="middle">more consistent than base</text>
+  <text x="470" y="362" font-size="12" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle">more variable</text>
+</svg>
+<figcaption>The post-trained model is markedly more consistent in <strong>dynamics and quality</strong> — crest factor at 0.41 is a large effect — and measurably <em>less</em> consistent in <strong>spectral character</strong>. Variance was moved, not removed. Its mean profile shifts the same way: crest 4.64 against 5.83, high-frequency ratio +57%, centroid +23%, flatness +42%. Less peaky, brighter, denser — which is a fair description of "the bass loses punch and the highs drift towards searing", showing up in a model that never saw the training recipe that hunch was aimed at.</figcaption>
+</figure>
+</section>
+
+<section>
+<h2>The part that should make us uncomfortable</h2>
+<div class="col">
+<p>This meter is fitted to one person's ear. That is a legitimate thing to build — a studio tool does not have to generalise to be useful, and nothing here claims to measure quality in general. But it stops being only a measuring instrument the moment we rank models with it.</p>
+<p>If checkpoint selection, best-of-N rendering and soup weighting all consult the same number, the number stops describing the project and starts <strong>steering</strong> it. Everything it cannot see gets quietly selected against, generation after generation, and the corpus drifts toward whatever the proxy rewards. The failure would not announce itself; the scores would keep going up.</p>
+<p>Two guards seem worth keeping. Blind A/B votes have to keep arriving from outside the ranking, or the proxy ends up being validated on clips it selected. And the disagreements are the valuable part of the record: the cases where the meter says one thing and the ear says another are the only evidence that the meter has a boundary. It has one — 82.6% agreement means roughly one judgment in six still goes the other way.</p>
+</div>
+</section>
+
+<section>
+<h2>Limits</h2>
+<div class="col">
+<ul>
+<li><strong>613 pairs is a small training set for a fourteen-feature tree model.</strong> The gain is stable across 30 folds and six seeds, but this is not a large-data result.</li>
+<li><strong>The rating target is one listener, and ratings are not blind.</strong> The A/B votes are.</li>
+<li><strong>Nothing here is randomised.</strong> Every clip came from a run chosen for other reasons.</li>
+<li><strong>The degradation screen is DSP</strong> — high-frequency ratio, spectral flatness, crest — and catches buzz and whitening, not dullness, and has no measure of rhythmic integrity at all.</li>
+<li><strong>An earlier claim in this series was retracted for exactly the error this post could repeat.</strong> A three-feature model was reported at 78.8% having been scored on fewer pairs than the baseline it beat. Every comparison here is on an identical pair set, and the searched-for winners were re-checked under nested cross-validation — where the apparent +2.4 point gain from subset search collapsed to +0.8.</li>
+</ul>
+</div>
+</section>
+
+
+<footer class="colophon">
+  <span>── end of page ──</span>
+  <span style="margin-left:auto"><span class="edge">▮</span> no secrets on the wire</span>
+</footer>
+
+</div>
+</body>
+</html>
