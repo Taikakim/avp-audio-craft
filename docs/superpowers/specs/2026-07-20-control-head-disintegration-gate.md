@@ -83,3 +83,19 @@ whether the gate reproduces those specific verdicts is unconfirmed until the lab
 4. Report authority / usable range **only over clips that pass the gate.** State the usable ceiling.
 5. Any eval PAGE for a control head must surface the gate verdict (usable ceiling + failure reason),
    so a reader never auditions a disintegrated clip believing it is "the head working."
+
+## Known hole: beat-loss measures PRESENCE, not INTEGRITY (added 2026-09-02, GHOST-NOTE)
+
+The gate's rhythmic screen catches a beat that has DISAPPEARED. It does not catch a beat that is
+still there but WRONG — kicks on the wrong onsets, gallop, smeared downbeats — and it cannot
+distinguish that failure from a deliberate breakbeat or half-time pattern, which is good.
+
+Kim, 2026-09-02: *"how to tell apart genuinely breakbeaty stuff from when the beat activations get
+corrupted in a model ... kicks happen at wrong onsets, gallop, etc."* The gap surfaced on the
+FusionOpt-autoscale A/B, where his verdict on one arm was "the beat is not steady" while this
+screen scored it mid-pack and clean (onsets 7.65/s, hf 0.161 — the lowest of four arms) and
+Audiobox ranked it HIGHEST. **Until a validated rhythm-integrity measure exists, no null about
+beat steadiness may be drawn from this gate.**
+
+Registered as **EXPERIMENTS.md G1** (design sketch, dynamic-range kill-criterion, and the labelled
+good-breakbeat / known-corrupt sets it must separate before any number from it is trusted).

@@ -949,6 +949,62 @@ full_mix \) -prune` locates them; the real per-track outputs sit one level up.
   read as idle/dead). `Misc/gpu_guard.sh`.
 - NVMe budget for step-resolution runs: ≤ ~80 % free; thin ckpts to the spectra grid once sketches exist.
 
+### G1 — Rhythm-integrity meter: telling genuine breakbeat from CORRUPTED beat activations — **POTENTIAL (Kim direct, 2026-09-02; GHOST-NOTE listed it)**
+
+**The ask, in Kim's words:** *"how to tell apart genuinely breakbeaty stuff from when the beat
+activations get corrupted in a model, I hear that with some less than perfect runs when kicks happen
+at wrong onsets, gallop, etc."*
+
+**Why it exists.** Two different things both read as "not four-on-the-floor" to any naive steadiness
+measure: (a) a deliberate breakbeat / syncopated / half-time pattern, which is GOOD, and (b) a model
+whose beat placement has degraded — kicks landing on wrong onsets, gallop, smeared downbeats — which
+is a FAILURE. A metric that cannot separate them will either condemn every breakbeat arm or pass every
+corrupted one. Kim currently hears the difference; no instrument we own does.
+
+**The gap that surfaced it (2026-09-02, the FusionOpt-autoscale A/B).** Kim's discriminator between
+two arms was *"the beat is not steady"*, and the disintegration DSP screen
+(`eval/disintegration_metrics.py`: onsets/s, flatness, zcr, hf) scored that arm as unremarkable
+(onsets 7.65/s, mid-pack; hf 0.161, the LOWEST/cleanest of four arms). **The screen is blind to the
+axis that decided the verdict.** Audiobox was worse than blind — it ranked that same arm HIGHEST
+(CE 6.92). So on this question both standing instruments are silent or actively misleading, and per
+the AUDIT-THE-INSTRUMENT rule no "steadiness does not differ" null may be reported from either.
+Run + numbers: `Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01/run_meta.json`
+(`round3_2026-09-02.instrument_gap_FLAGGED`).
+
+**Design sketch (not built).** Beat/downbeat activations from madmom (mir venv — SA3's own
+`beat_activation`/`downbeat_activation` LatCH heads are the two confirmed-DEAD heads, so use the
+extractor, not the heads). Candidate signals, all needing dynamic-range validation before use:
+- **Tempogram peak sharpness / entropy** — a genuine breakbeat still has ONE sharp tempo peak plus
+  harmonics; corrupted placement smears the peak.
+- **Phase coherence of beat activations against the best-fit isochronous grid** — breakbeat is
+  syncopated but PHASE-LOCKED to the grid; corruption drifts off it. This is the discriminator I
+  would bet on: syncopation displaces onsets to *other grid positions*, corruption displaces them to
+  *non-grid* positions.
+- **Per-bar pattern self-similarity** — a breakbeat repeats its pattern; gallop/corruption does not
+  repeat cleanly bar to bar.
+- Onset-deviation histogram vs the grid: multi-modal-on-grid (break) vs broad/smeared (corrupt).
+
+**Kill criterion / the gate this must pass before anyone reports a number from it.** It must show
+DYNAMIC RANGE on labelled arms: score a known-GOOD breakbeat set (real corpus tracks + any arm Kim
+judged good-but-syncopated) and a known-CORRUPT set (arms Kim flagged: the Fusion 1e-4 "granular and
+distorted" arm, the control2 "beat is not steady" arm, plus the suomi clip flagged degraded 08-18),
+and the two must separate by more than the within-group spread. It must also beat a trivial baseline
+(onset density alone; beat-activation mean). **If it cannot separate Kim's own labels it is not a
+meter — file the negative result and stop.** A saturated or degenerate measure is worse than none
+(cf. the pitch-blind onset "timing" metric that read 0.795–1.000 across every arm including the
+foreign control).
+
+**Where it lands if it works.** A fifth screen in the disintegration gate
+(`docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md`, which today bounds
+whitening / hf-blowout / zcr / beat-loss / CE-drift — "beat-loss" is presence, NOT integrity, which
+is precisely the hole) and a column on the eval pages. Runner would follow
+`eval/control_head_disintegration_eval.py`'s shape: read `clip_metrics.db`, no re-render.
+
+**Related:** the SA3 `beat_activation` / `downbeat_activation` LatCH heads are dead at every gain
+(MASTER §5, confirmed twice) — a working rhythm-integrity METER does not imply a steerable rhythm
+HEAD, and neither result should be read as evidence for the other. Prerequisite data already exists:
+madmom beat/downbeat activations are in the whole-track timeseries (100 Hz, MASTER §2).
+
 ## Done / superseded (this week)
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2
