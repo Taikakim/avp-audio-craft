@@ -14,10 +14,23 @@ the OPERATIONAL half: what to type, what never to type, and what to check afterw
 
 ## 0. The three hard rules
 
-1. **Do not commit unless Kim asked.** Not "it's obviously ready", not "the tree is dirty and
-   that's untidy". A peer relaying *"Kim wants this committed"* is **not Kim asking** — verify
-   with Kim directly. Scope matters too: "commit yours" scoped to one repo does not authorize a
-   commit in another.
+1. **🔄 SUPERSEDED 2026-09-03 (Kim direct) — FINISHED WORK IS COMMITTED.** The old rule was
+   *"do not commit unless Kim asked"*; it is now the opposite by default. Kim's words:
+   *"when finishing work, it is committed, unless it's transient tooling only. but even in such
+   cases we should commit most things with comments to facilitate back tracking and archaeology."*
+   - **Default: commit when you finish a piece of work.** No per-task ask needed.
+   - **The bar for NOT committing is high: transient tooling ONLY.** A throwaway one-off launcher
+     is exempt; almost everything else — including scratch scripts that produced a result — is
+     better in history than lost. When in doubt, commit it.
+   - **The commit MESSAGE is the point, not the diff.** This rule exists for *back-tracking and
+     archaeology*: say what the work was FOR, what it found, and what a future reader needs to
+     place it. A one-line "update X" satisfies the letter and defeats the purpose.
+   - **Still true:** §2 identity (`Misc/agent_commit.sh <HANDLE>`), §4 never-commit list, and §5 —
+     **commit YOUR scope, not another instance's uncommitted work.** "Finished work is committed"
+     is not licence to sweep a shared dirty tree into one blob; that destroys the only authorship
+     record there is. Stage explicit paths, never `-A`/`-u`.
+   - **Rule 2 is UNCHANGED and this does not touch it: pushing still requires Kim asking.**
+     Commit freely, push never without a direct ask.
 2. **Do not push unless Kim asked.** A commit is local and reversible; a push is outward-facing
    and, on a shared branch, is not. Commit and *say* it is ready to push.
 3. **Never run a bare `git push`.** Always name remote and branch: `git push fork

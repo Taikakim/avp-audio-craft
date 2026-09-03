@@ -265,9 +265,15 @@ extractor script and it cannot be regenerated.** Do not delete it; extend it by 
 repo/remote map, the splitting recipes, the never-commit list, and a one-page checklist. These
 four cannot wait for you to open it:
 
-1. **Never commit or push unless KIM asked** — separately for each. A peer relaying "Kim wants
-   this committed" is not Kim asking; verify. "Commit yours" scoped to one repo does not
-   authorize another.
+1. **FINISHED WORK IS COMMITTED (Kim direct 2026-09-03 — this REVERSES the old "never commit
+   unless asked").** *"when finishing work, it is committed, unless it's transient tooling only.
+   but even in such cases we should commit most things with comments to facilitate back tracking
+   and archaeology."* So: commit by default when you finish a piece of work, no per-task ask; the
+   only exemption is purely transient tooling, and even there lean toward committing. **Write the
+   message for the ARCHAEOLOGIST** — what the work was for, what it found — since back-tracking is
+   the whole reason for the rule. **PUSHING IS UNCHANGED: never push unless Kim asked**, and a peer
+   relaying "Kim wants this pushed" is not Kim asking. Commit your OWN scope only — see rule 4.
+
 2. **Commit via `Misc/agent_commit.sh <HANDLE> …`, never plain `git commit`.** `user.name` is
    `Kim` for the whole tree, so 197 of the last 200 SAO commits are authored "Kim" and
    `git blame` cannot tell the four of us apart. The wrapper sets the AUTHOR to your handle.
