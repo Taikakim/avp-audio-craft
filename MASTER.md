@@ -88,6 +88,7 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 | `ai-music/Goa_Separated` (4470) | **Full tracks** + stems + `.INFO` + `.BEATS_GRID`/`.DOWNBEATS`/`.ONSETS` | SA3 encode, whole-track timeseries |
 | ~~`goa_crops`~~ | **Removed from Mantu (verified 2026-08-05)** — older 11.9 s crop corpus (`<Artist - Title>_N.flac`); fed the legacy SAO-Small LatCH, superseded by the whole-track set | — (legacy) |
 | `sa3_lora_runs` | **SA3 LoRA checkpoints + demos** (moved from Lehto 2026-07-04) | SA3 |
+| `sa3_lora_runs/model_matrix` | The eval-matrix clip corpus (~404 G, 234k files). **🚫 DO NOT prune the `.wav`s — Kim direct 2026-09-03: he keeps them to analyse HF detail, and the `.m4a` siblings are lossy.** 342.7 G of wav vs 49.5 G of m4a looks like 85% redundancy on a 98%-full drive; it is not. m4a = audition format, wav = analysis format, `.z0.npy` (11.5 G) = pre-decode latents, not re-derivable without a re-render. Deletion is Kim's call alone — see the dir's `README-DO-NOT-PRUNE-WAVS.md`. | eval pages, evaluator UI |
 | `sa3_control_runs` | **SA3 control-adapter/LatCH eval runs + renders** (the eval convention consolidated here; Lehto's copy was empty/stubs) | control/eval |
 
 > ⚠️ Stale path in old memories: `Mantu/ai-music/Goa_Separated_crops` **no longer exists**.
