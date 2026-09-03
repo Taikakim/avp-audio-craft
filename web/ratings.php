@@ -54,7 +54,15 @@ $RATE_SECONDS = 0.15;
 // now conditional client-side (native-length clips only -- a 20s grid clip has no room for
 // phrase/section flow to exist), but still validated the same way here: this whitelist is
 // deliberately not length-aware, it just accepts whichever question_ids the client sends.
-$QUESTIONS = ['top_end', 'spectral_image', 'structure', 'interesting'];
+// Historical ids, kept for reference only -- NOT a gate. A hardcoded whitelist here silently
+// discarded every A/B vote for 9 days when the UI collapsed to one question 'clarity_meaning'
+// (2026-08-25): the server 400'd, the page flashed and advanced, ~108 votes lost unnoticed.
+// An earlier id 'production' had drifted the same way. question_id is length-capped and
+// control-char stripped like every other field, so the list added no real validation strength
+// -- only a way for a UI rename to destroy data. Shape-validated instead; see $QUESTION_RE.
+$QUESTIONS_HISTORICAL = ['top_end', 'spectral_image', 'structure', 'interesting', 'production',
+                         'clarity_meaning'];
+$QUESTION_RE = '/^[a-z0-9_]{1,40}$/';
 
 if (!is_dir($DATA)) @mkdir($DATA, 0700, true);
 if (!is_dir($RATE)) @mkdir($RATE, 0700, true);
@@ -151,13 +159,13 @@ if ($method === 'POST') {
                 'cfg' => (float)$in['cfg'], 'w' => (float)$in['w'], 'length' => $length,
                 'file' => $file, 'rating' => (int)$rating, 'source' => $source];
     } elseif ($type === 'ab') {
-        global $QUESTIONS;
+        global $QUESTION_RE;
         $question_id = (string)($in['question_id'] ?? '');
         $choice = (string)($in['choice'] ?? '');
         $model_a = clean_str($in['model_a'] ?? '', $MAX_STR); $ckpt_a = clean_str($in['ckpt_a'] ?? '', $MAX_STR);
         $model_b = clean_str($in['model_b'] ?? '', $MAX_STR); $ckpt_b = clean_str($in['ckpt_b'] ?? '', $MAX_STR);
         $file_a = (string)($in['file_a'] ?? ''); $file_b = (string)($in['file_b'] ?? '');
-        if (!in_array($question_id, $QUESTIONS, true) || !in_array($choice, ['A', 'B', 'EVEN'], true)
+        if (!preg_match($QUESTION_RE, $question_id) || !in_array($choice, ['A', 'B', 'EVEN'], true)
             || $model_a === '' || $ckpt_a === '' || $model_b === '' || $ckpt_b === '' || $prompt_id === ''
             || !valid_file($file_a) || !valid_file($file_b)
             || !valid_num($in['cfg_a'] ?? null, 0, 100) || !valid_num($in['w_a'] ?? null, 0, 100)

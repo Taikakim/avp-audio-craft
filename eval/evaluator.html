@@ -825,15 +825,43 @@ const SOURCE=GOA?'internal_all':'public_evaluator';
 // backoff, so nothing gets lost regardless of how fast the taps come in.
 let postQueue=Promise.resolve();
 function post(body){postQueue=postQueue.then(()=>postOnce({...body,source:SOURCE}));}
+// A vote that cannot be saved MUST be visible. From 2026-08-25 to 09-03 the server rejected
+// every A/B vote (its question whitelist had not been told the questions collapsed to one) and
+// this function swallowed it: no throw, no message, the round just advanced. ~108 votes were
+// lost across nine days of voting and the only symptom was a number that failed to grow.
+let saveWarnEl=null,saveFailN=0;
+function saveWarn(msg){
+ if(!saveWarnEl){
+  saveWarnEl=document.createElement('div');
+  saveWarnEl.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 14px;'
+   +'font:13px/1.45 system-ui,sans-serif;text-align:center;background:#7a1020;color:#fff';
+  document.body.appendChild(saveWarnEl);
+ }
+ saveWarnEl.textContent=msg;
+}
+// Deliberately never cleared by a later success: a vote that was lost stays lost, and a banner
+// that disappears on the next good POST would hide exactly the intermittent case.
+function postFailed(why){
+ saveFailN++;
+ saveWarn('\u26a0 '+saveFailN+' vote'+(saveFailN>1?'s':'')+' NOT saved ('+why+'). '
+  +'Please stop and report this \u2014 continuing to vote will not recover them.');
+}
 async function postOnce(body,attempt){
  attempt=attempt||0;
  let r;
  try{r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
  catch(e){r=null;}
- if((!r||!r.ok)&&attempt<6){
+ if(r&&r.ok)return;
+ // 4xx other than 429 is DETERMINISTIC: the server rejected this payload's shape and an
+ // identical retry is rejected identically. Retrying turned each lost vote into 7 requests,
+ // which is why the breakage read as 758 rejected POSTs instead of ~108 lost votes -- volume
+ // that hid the cause. Fail fast and surface it.
+ if(r&&r.status>=400&&r.status<500&&r.status!==429){postFailed('rejected '+r.status);return;}
+ if(attempt<6){
   await new Promise(res=>setTimeout(res,250));
   return postOnce(body,attempt+1);
  }
+ postFailed(r?('server '+r.status):'no connection');
 }
 function rateSlot(slot,val,btn){
  const e=slot==='A'?curA:curB;
