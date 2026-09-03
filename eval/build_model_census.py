@@ -297,6 +297,19 @@ are weights only &mdash; inference yes, resume no. LUMI <code>/scratch</code> da
 approximately 2026-11-20, so any arm reading <span class="no">NO</span> under
 <em>resumable</em> with nothing left on LUMI is already unresumable for good.
 Click a header to sort; type to filter.</p>
+<p class="sub" style="border-left:3px solid #c85;padding-left:10px">
+<b>How to read the automatic metrics &mdash; and how not to.</b>
+The two Audiobox scores do <em>not</em> carry equal weight here.
+<b>Production Quality (PQ) tracks listening selection well</b> &mdash; on earlier
+analyses of the evaluator-GUI data it accounted for roughly <b>70%</b> of which
+arms were actually picked, so it is a genuine predictor and is presented as one.
+<b>Content Enjoyment (CE) does not, on this set</b>: it scores the arm judged
+<em>weakest</em> by ear highest of all (CE&nbsp;6.92). Do not read the CE column
+as a ranking on this page.
+Separately, the DSP screen behind these numbers carries <b>no beat-steadiness
+measure</b> &mdash; and steadiness was the actual discriminator in the audition.
+No conclusion about steadiness can be drawn from anything shown here; that one
+still needs the ear.</p>
 <input id="q" placeholder="filter (arm, corpus, optimizer, note...)">
 <div class="wrap"><table id="t"><thead><tr>
 """

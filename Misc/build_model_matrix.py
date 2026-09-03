@@ -252,6 +252,11 @@ def main():
             _agg.setdefault(f"{_b[0]}|{_b[1]}", []).append(_ce)
         for _k, _v in _agg.items():
             gf[_k] = [round(100 * sum(1 for x in _v if x >= 6.0) / len(_v)), len(_v)]
+        # clip_metrics.db outlives the clips: a model whose renders were withdrawn from the
+        # board still has rows here, and they would ship in the payload naming a model the
+        # page can no longer show. Keep only labels the board actually carries.
+        _live = {m["label"] for m in models}
+        gf = {_k: _v for _k, _v in gf.items() if _k.split("|", 1)[0] in _live}
 
     n_models_lit = sum(1 for v in cov.values() if v)
     doc = [f'<!doctype html><html><head><meta charset=utf-8>'
