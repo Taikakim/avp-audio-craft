@@ -509,6 +509,9 @@ function crossDsOk(a,b){
  return !CROSS_DS||datasetGroup(a.model)!==datasetGroup(b.model);
 }
 function pairOk(a,b){return pqBandOk(a,b)&&crossDsOk(a,b);}
+// null = no constrained mode requested / nothing served yet; true = constraints held for
+// the current pair; false = nothing satisfied them and this pair is unconstrained.
+let PAIR_CONSTRAINED=null;
 // Kim direct 2026-08-26: "they should be removed from the UI" -- the length dropdown offered
 // buckets with barely any real content (~24s had exactly ONE prompt with exactly TWO models,
 // i.e. exactly one possible pair corpus-wide, so the page had no choice but to keep serving
@@ -551,7 +554,11 @@ function pickPair(bucket){
  // fall back to unconstrained rather than dead-end the page -- the same "never dead-end"
  // philosophy the coverage fallback below already uses.
  let entries=withPairs(true);
- if(!entries.length)entries=withPairs(false);
+ // Record whether the constraint SURVIVED. The fallback below is right -- never dead-end the
+ // page -- but it silently downgrades what the rater asked for, and the mode line would then
+ // keep claiming ?pq=/?crossds= while serving an unmatched pair. Report the EFFECTIVE mode.
+ PAIR_CONSTRAINED=true;
+ if(!entries.length){entries=withPairs(false);PAIR_CONSTRAINED=false;}
  if(!entries.length)return null;
  const isUnrated=e=>!ratedSet.has(e.file);
  let cands=entries.filter(([,,vp])=>vp.some(([a,b])=>isUnrated(a)&&isUnrated(b)));  // fully fresh
@@ -886,6 +893,15 @@ function describeModes(){
 function showModeLine(){
  bottomLine('modeline','background:rgba(20,20,26,.82);color:#9aa;letter-spacing:.02em')
   .textContent='mode: '+describeModes().join('  ·  ');
+ // A requested constraint that could not be met is reported, not hidden: pickPair() falls back
+ // to an unconstrained pair rather than dead-ending, which is correct behaviour but means the
+ // pair on screen is NOT the one the URL asked for.
+ if((PQ_TOL||CROSS_DS)&&PAIR_CONSTRAINED===false){
+  bottomLine('pairwarn','background:#6a4a10;color:#fff').textContent=
+   '\u26a0 this pair is UNCONSTRAINED \u2014 no pair in the pool satisfied '
+   +[PQ_TOL?'pq='+PQ_TOL:null,CROSS_DS?'crossds':null].filter(Boolean).join(' + ')
+   +', so the page fell back rather than dead-end';
+ }else{const w=document.getElementById('pairwarn'); if(w)w.remove();}
  const bad=[...PARAMS.keys()].filter(k=>k.includes('?')||!KNOWN_PARAMS.includes(k));
  if(bad.length){
   const fixed=location.search.replace(/\?(?=.*=)/g,(m,i)=>i===0?'?':'&');
@@ -960,6 +976,7 @@ function loadNewPair(){
  const bucket=pools[lensel.value];
  if(!bucket){statusEl.textContent='no data at this length';return;}
  const picked=pickPair(bucket);
+ if(typeof showModeLine==='function')showModeLine();
  if(!picked){statusEl.textContent='no pairs available at this length yet';return;}
  curPid=picked.pid;curA=picked.a;curB=picked.b;curLenKey=lensel.value;
  resetRound();
