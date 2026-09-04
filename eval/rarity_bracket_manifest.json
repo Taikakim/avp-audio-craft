@@ -1535,6 +1535,212 @@
     "epoch=59-step=9420.ckpt"
    ],
    "reason": "LUMI burn-down spurt (2026-08-21/22), terminal checkpoint only. Registered 2026-09-02 by GHOST-NOTE on Kim's ask: local checkpoint exists, ZERO clips on the board. Terminal ckpt is the only pick -- these are unauditioned arms, so the first question is 'does the end state sound like anything', not an epoch ladder. Source arm: sanity16_lora/suomi. Board label is a symlink alias for the ambiguous dir name 'suomi'."
+  },
+  "aug8ddp_ddp_smoke_dora": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/lumi_runs/runs/runs/aug8_train_ddp",
+   "picks": [
+    "epoch=1-step=1350.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: aug8_train_ddp/aug8ddp_ddp_smoke_dora."
+  },
+  "dora128_300trk__59h2y4zo": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/dora128_300trk/dora128_300trk/59h2y4zo",
+   "picks": [
+    "epoch=6-step=35.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: dora128_300trk/dora128_300trk/59h2y4zo/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "dora256_mixed_a128_lr5e5": {
+   "tier": "single",
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/dora256_mixed",
+   "picks": [
+    "epoch=3-step=1481.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: dora256_mixed/dora256_mixed_a128_lr5e5."
+  },
+  "dora256_mixed_a196_lr1e4": {
+   "tier": "single",
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/dora256_mixed",
+   "picks": [
+    "epoch=3-step=1481.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: dora256_mixed/dora256_mixed_a196_lr1e4."
+  },
+  "adamw_lr1e-4": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=162-step=6000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/adamw_lr1e-4."
+  },
+  "adamw_lr3e-4_step2000": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=54-step=2000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/adamw_lr3e-4_step2000."
+  },
+  "adamw_scratch_step5000": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=135-step=5000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/adamw_scratch_step5000."
+  },
+  "fusion_autoscale_lr1e-4": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=81-step=3000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/fusion_autoscale_lr1e-4."
+  },
+  "fusion_autoscale_lr1e-6_full": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=81-step=3000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/fusion_autoscale_lr1e-6_full."
+  },
+  "fusion_autoscale_lr5e-6_full3h": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=81-step=3000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/fusion_autoscale_lr5e-6_full3h."
+  },
+  "fusion_autoscale_lr5e6_bs2": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=79-step=12000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/fusion_autoscale_lr5e6_bs2."
+  },
+  "fusion_autoscale_lr5e6_control2": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=81-step=3000.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: fusion_autoscale_vs_adamw_2026-09-01/fusion_autoscale_lr5e6_control2."
+  },
+  "sa3-goa-dora-47s-b4-cont__x20b3ygb": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb",
+   "picks": [
+    "epoch=4-step=6750.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s-b4__vjnnndnu": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4/vjnnndnu",
+   "picks": [
+    "epoch=2-step=4050.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-b4/vjnnndnu/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s-r128-adamw__dq0egegi": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-adamw/dq0egegi",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-r128-adamw/dq0egegi/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s-r128-fusion-caut__qy50uilf": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-fusion-caut/sa3-goa-dora-47s-r128-fusion-caut/qy50uilf",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-r128-fusion-caut/sa3-goa-dora-47s-r128-fusion-caut/qy50uilf/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s-r128-fusion__mqe3ne49": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r128-fusion/mqe3ne49",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-r128-fusion/mqe3ne49/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s-r64__i8nygj4y": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-r64/i8nygj4y",
+   "picks": [
+    "epoch=7-step=10800.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s-r64/i8nygj4y/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "sa3-goa-dora-47s__2ankrkoh": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s/2ankrkoh",
+   "picks": [
+    "epoch=0-step=5400.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: sa3-goa-dora-47s/2ankrkoh/checkpoints. Board label is a symlink alias; the run dir is named 'checkpoints', which is ambiguous across runs."
+  },
+  "stereo_sweep_w0.0": {
+   "tier": "single",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs",
+   "picks": [
+    "epoch=1-step=4000.weights.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: stereo_sweep_w0.0."
+  },
+  "suomi_r256_lr3e-5": {
+   "tier": "single",
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/suomisoundi_dora",
+   "picks": [
+    "epoch=59-step=2340.ckpt"
+   ],
+   "reason": "Long-tail render pass 2026-09-04 (GHOST-NOTE, Kim's ask: render standard clips for any terminal checkpoint that has none). Terminal checkpoint only. The xft_extracted family (60 arms) is deliberately EXCLUDED as quarantined-broken, and the three soup dirs (62 parallel recipes, no 'last' checkpoint) are excluded pending a decision on which subset to audition. Source arm: suomisoundi_dora/suomi_r256_lr3e-5."
+  },
+  "soups_dora": {
+   "tier": "all",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs",
+   "picks": [
+    "cross_10A90F.ckpt",
+    "cross_15A85F.ckpt",
+    "cross_20A80F.ckpt",
+    "cross_25A75F.ckpt",
+    "cross_30A70F.ckpt",
+    "r128f_expasc.ckpt",
+    "r128f_expdesc.ckpt",
+    "r128f_goodearly.ckpt",
+    "r16_expasc.ckpt",
+    "r16_expdesc.ckpt",
+    "r16_goodearly.ckpt",
+    "r64_expasc.ckpt",
+    "r64_expdesc.ckpt",
+    "r64_goodearly.ckpt"
+   ],
+   "reason": "Model soups (weight-averaged checkpoints), Kim 2026-09-04: initial 3-prompt cfg-7 pass. Registered as ONE label per soup FAMILY with every soup as a checkpoint cell, because the ckpts sit flat in the family dir and build_jobs resolves root/<label>/<pick> — a label per soup would need a directory per soup. These are PARALLEL recipes, not an epoch ladder, so --terminal-only must NOT be used on them: it would keep one arbitrary soup per family. 14 soups. These 17 soups had NO prior clips under any label — genuinely new, rendered complete 2026-09-04 (42 + 9 cells)."
+  },
+  "soups_dora_caut": {
+   "tier": "all",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs",
+   "picks": [
+    "r128caut_expasc.ckpt",
+    "r128caut_expdesc.ckpt",
+    "r128caut_goodearly.ckpt"
+   ],
+   "reason": "Model soups (weight-averaged checkpoints), Kim 2026-09-04: initial 3-prompt cfg-7 pass. Registered as ONE label per soup FAMILY with every soup as a checkpoint cell, because the ckpts sit flat in the family dir and build_jobs resolves root/<label>/<pick> — a label per soup would need a directory per soup. These are PARALLEL recipes, not an epoch ladder, so --terminal-only must NOT be used on them: it would keep one arbitrary soup per family. 3 soups. These 17 soups had NO prior clips under any label — genuinely new, rendered complete 2026-09-04 (42 + 9 cells)."
+  },
+  "soups_ladder_2026-08-19": {
+   "tier": "all",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs",
+   "picks": [],
+   "reason": "Model soups (weight-averaged checkpoints), Kim 2026-09-04: initial 3-prompt cfg-7 pass. Registered as ONE label per soup FAMILY with every soup as a checkpoint cell, because the ckpts sit flat in the family dir and build_jobs resolves root/<label>/<pick> — a label per soup would need a directory per soup. These are PARALLEL recipes, not an epoch ladder, so --terminal-only must NOT be used on them: it would keep one arbitrary soup per family. 45 soups. SUPERSEDED: redundant, see 'skip'.",
+   "skip": "ALL 45 of these soups were ALREADY rendered under their own per-soup labels (soup_winning_*, soup_fp32cmp_*, soup_bf16cmp_*). Registering the family as one label re-renders identical audio under a second board row. Render STOPPED 2026-09-04 after 86 duplicate cells; do not resume."
   }
  },
  "legacy_goa_dora_nested": {
