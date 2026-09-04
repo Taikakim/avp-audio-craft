@@ -829,15 +829,70 @@ function post(body){postQueue=postQueue.then(()=>postOnce({...body,source:SOURCE
 // every A/B vote (its question whitelist had not been told the questions collapsed to one) and
 // this function swallowed it: no throw, no message, the round just advanced. ~108 votes were
 // lost across nine days of voting and the only symptom was a number that failed to grow.
-let saveWarnEl=null,saveFailN=0;
-function saveWarn(msg){
- if(!saveWarnEl){
-  saveWarnEl=document.createElement('div');
-  saveWarnEl.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 14px;'
-   +'font:13px/1.45 system-ui,sans-serif;text-align:center;background:#7a1020;color:#fff';
-  document.body.appendChild(saveWarnEl);
+// ── BOTTOM STATUS STACK (Kim 2026-09-04: "add other notifications at the bottom of the page
+// so they won't compromise what we have in place") ───────────────────────────────────────────
+// Every message the page needs to show the rater lives in ONE fixed container pinned to the
+// bottom. Rules that keep it from disturbing the rating UI:
+//   - position:fixed, so it is out of flow and displaces nothing above it;
+//   - pointer-events:none, so it can never swallow a tap meant for a control beneath it;
+//   - z-index 15, BELOW the #overlay/#helpoverlay pair at 20, so a full-screen overlay still
+//     covers it rather than having status text float over the splash.
+// Children stack vertically, newest concerns above the permanent mode line.
+let botStack=null;
+function bottomStack(){
+ if(!botStack){
+  botStack=document.createElement('div');
+  botStack.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;'
+   +'flex-direction:column;pointer-events:none';
+  document.body.appendChild(botStack);
  }
- saveWarnEl.textContent=msg;
+ return botStack;
+}
+function bottomLine(id,css){
+ const st=bottomStack();
+ let el=document.getElementById(id);
+ if(!el){
+  el=document.createElement('div'); el.id=id;
+  // warnings go ABOVE the permanent mode line so the mode line stays the last thing on screen
+  const mode=document.getElementById('modeline');
+  if(mode&&id!=='modeline') st.insertBefore(el,mode); else st.appendChild(el);
+ }
+ el.style.cssText='padding:6px 12px;font:12px/1.4 system-ui,sans-serif;text-align:center;'+css;
+ return el;
+}
+
+let saveFailN=0;
+function saveWarn(msg){
+ bottomLine('savewarn','background:#7a1020;color:#fff;font-size:13px;padding:10px 14px').textContent=msg;
+}
+
+// ── ACTIVE MODE, stated out loud ─────────────────────────────────────────────────────────────
+// Every mode here is address-bar-only and there is no UI for any of it, so the page can be in a
+// mode the rater never chose and cannot see. Worse, a malformed query silently yields NO mode:
+// "?all?pq=10" is ONE parameter literally named "all?pq" (a URL has one '?', the rest join with
+// '&'), so has('all') is false, get('pq') is null, and the page loads the small default pool with
+// no quality matching while looking entirely normal. State the mode, and name a bad parameter
+// instead of ignoring it.
+const KNOWN_PARAMS=['all','goa','pq','crossds','recent','showflagged'];
+function describeModes(){
+ const m=[];
+ m.push(GOA?(PARAMS.has('all')?'all — full pool':'goa — full pool'):'default — avp only');
+ if(PQ_TOL) m.push('pq='+PQ_TOL+' — quality-matched pairing');
+ if(CROSS_DS) m.push('crossds — pair across datasets');
+ if(RECENT) m.push('recent='+RECENT+'h');
+ if(SHOW_FLAGGED) m.push('showflagged');
+ return m;
+}
+function showModeLine(){
+ bottomLine('modeline','background:rgba(20,20,26,.82);color:#9aa;letter-spacing:.02em')
+  .textContent='mode: '+describeModes().join('  ·  ');
+ const bad=[...PARAMS.keys()].filter(k=>k.includes('?')||!KNOWN_PARAMS.includes(k));
+ if(bad.length){
+  const fixed=location.search.replace(/\?(?=.*=)/g,(m,i)=>i===0?'?':'&');
+  bottomLine('paramwarn','background:#6a4a10;color:#fff').textContent=
+   '\u26a0 ignored parameter'+(bad.length>1?'s':'')+': '+bad.join(', ')
+   +(location.search.slice(1).includes('?')?('  \u2014 did you mean '+fixed+' ?'):'');
+ }
 }
 // Deliberately never cleared by a later success: a vote that was lost stays lost, and a banner
 // that disappears on the next good POST would hide exactly the intermittent case.
@@ -1006,5 +1061,9 @@ const helpbtn=document.getElementById('helpbtn'),helpoverlay=document.getElement
 helpbtn.onclick=()=>helpoverlay.classList.add('open');
 helpclose.onclick=()=>helpoverlay.classList.remove('open');
 helpoverlay.addEventListener('click',e=>{if(e.target===helpoverlay)helpoverlay.classList.remove('open');});
+
+// Announce the active mode as soon as the page is up -- before the rater starts, so a wrong or
+// silently-dropped parameter is visible while it still costs nothing to fix.
+showModeLine();
 </script>
 </body></html>
