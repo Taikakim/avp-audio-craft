@@ -300,9 +300,21 @@ function datasetGroup(model){
 
 // ── DATA: same manifest dora_table.html / model_matrix.html already read ──────────────
 const LENGTH_CLUSTERS=[24,48,95,190,380];
+// STD_MAX_SEC: anything longer than this is NOT a 20s grid cell, whatever the metadata says.
+const STD_MAX_SEC=25;
 function lengthBucket(e){
- if((e.duration_mode||'std')!=='native') return {key:'std',label:'20s (grid)'};
+ // Bucket on the clip's ACTUAL duration first, and only fall back to duration_mode.
+ // Kim 2026-09-04, rating the "20s" set and getting a ~3-minute clip: this function used to
+ // test duration_mode ALONE, and that field is present on just 4,274 of 77,572 manifest
+ // entries while `duration` is present on 21,354. So every long clip whose entry lacked
+ // duration_mode fell through `(undefined||'std')!=='native'` into the 20s bucket -- 2,499
+ // clips, including 718 of 380s (6.3 minutes) and 216 of 190s. The rater then gets a
+ // six-minute render in a bucket promising 20 seconds, and the length selector, the
+ // per-length coverage counter and any length-scoped analysis are all wrong together.
+ // duration is the measurement; duration_mode is a label ABOUT it. Trust the measurement.
  const d=parseFloat(e.duration||0);
+ const longByDuration=isFinite(d)&&d>STD_MAX_SEC;
+ if(!longByDuration&&(e.duration_mode||'std')!=='native') return {key:'std',label:'20s (grid)'};
  let best=LENGTH_CLUSTERS[0],bd=Infinity;
  for(const c of LENGTH_CLUSTERS){const diff=Math.abs(d-c);if(diff<bd){bd=diff;best=c;}}
  return {key:'nat'+best,label:'~'+best+'s (native)'};
