@@ -187,6 +187,111 @@ def load_matrix_ckpts(page: Path) -> dict[str, list[str]]:
     return {k: v["ckpts"] for k, v in (MM.get("models") or {}).items() if v.get("ckpts")}
 
 
+BOARDS_PATH = Path(__file__).resolve().parent / "eval_boards.json"
+
+
+def load_boards(path: Path = BOARDS_PATH) -> dict:
+    """Registry of eval boards that are NOT the standard model matrix.
+
+    WHY THIS EXISTS (C + GHOST-NOTE, 2026-09-03): the census derives its clip coverage
+    solely from model_matrix.html, so any arm auditioned on a DIFFERENT board reports
+    clips='-' -- indistinguishable from "never rendered". 16 morphcond arms did exactly
+    that while 4.5 GB of finished renders sat on the UUID drive since August, and a human
+    read the '-' and concluded the lane had never been rendered.
+
+    REGISTER, DON'T MERGE. These arms must not be folded onto the standard board: it
+    varies prompt/cfg/weight against a fixed model, whereas a control-response grid varies
+    gain x source and its control arm is THE SAME MODEL with the projection zeroed.
+    Flattened onto the standard board the off-column stops reading as a control and
+    becomes just another cell, which destroys the A/B.
+    """
+    if not path.exists():
+        return {"boards": []}
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError) as e:
+        print(f"[warn] board registry unreadable ({e}); "
+              f"boarded arms will report as uncovered", file=sys.stderr)
+        return {"boards": []}
+
+
+def apply_boards(rows: list[dict], boards: dict, url_kind: str = "local",
+                 warn=None) -> list[str]:
+    """Attach a board link to any row whose arm is registered on a non-standard board.
+
+    MATCHES ON THE FULL ARM PATH, not the leaf (GHOST-NOTE, 2026-09-03, who broke the leaf
+    version adversarially). The live census has 371 rows but only 350 distinct leaves --
+    12 collide, and not just the known `checkpoints` x11: `lr_equiv_grid/lreq_goa_lr1e4`
+    vs `lr_equiv_grid_mt/lreq_goa_lr1e4`, `onset_AdamW_lr1e-4/seg1` vs
+    `onset_AdamW_lr7.5e-5/seg1`, and the subspace_loss_grid `_mt` twins. Under leaf
+    matching, registering ONE of those credits BOTH arms.
+
+    That direction is worse than the false ABSENCE this registry was built to fix. False
+    absence made us re-render work that already existed -- wasteful, and visible. FALSE
+    PRESENCE marks an arm as auditioned that nobody has heard, so it is never listened to,
+    and no output ever looks wrong. Silence is the failure.
+
+    A legacy bare-leaf entry still resolves, but ONLY when it is unambiguous; an ambiguous
+    or unmatched entry is reported, never silently linked. Returns the problems found.
+    """
+    problems: list[str] = []
+    by_path = {str(r.get("arm", "")): r for r in rows}
+    by_leaf: dict[str, list[dict]] = {}
+    for r in rows:
+        by_leaf.setdefault(str(r.get("arm", "")).rsplit("/", 1)[-1], []).append(r)
+    for r in rows:
+        r.setdefault("board", "")
+
+    for b in boards.get("boards", []):
+        bid = b.get("id", "?")
+        title = html.escape(b.get("title", bid))
+        note = b.get("note", "")
+        unvalidated = note.strip().upper().startswith("NOT VALIDATED")
+        url = b.get("public") if url_kind == "public" else b.get("url")
+        url = url or ""
+        for a in b.get("arms", []):
+            targets = []
+            if a in by_path:
+                targets = [by_path[a]]
+            else:
+                cands = by_leaf.get(a.rsplit("/", 1)[-1], [])
+                if len(cands) == 1:
+                    targets = cands
+                elif len(cands) > 1:
+                    problems.append(
+                        f"board '{bid}': arm '{a}' is AMBIGUOUS -- matches "
+                        f"{len(cands)} rows ({', '.join(str(c['arm']) for c in cands[:3])}"
+                        f"...). Registry must store the FULL arm path. Not linked.")
+                    continue
+                else:
+                    problems.append(
+                        f"board '{bid}': arm '{a}' matches NO census row. A registry that "
+                        f"matches nothing produces output identical to no registry at all.")
+                    continue
+            # "NOT VALIDATED" goes in the VISIBLE label, not only the tooltip -- a tooltip
+            # is the one place a skimmer never looks (GHOST-NOTE).
+            label = ("NOT VALIDATED — " + title) if unvalidated else title
+            for t in targets:
+                t["board"] = (f'<a href="{html.escape(url)}" target="_blank" '
+                              f'title="{html.escape(note)}">{label}</a>' if url else label)
+    if problems and warn:
+        for m in problems:
+            warn(m)
+    return problems
+
+
+def coverage(rows: list[dict]) -> dict:
+    """Clip coverage, counted so that NO covered arm can read as zero.
+
+    `any` is the number the summary line must lead with. Reporting only `matrix` is what
+    made 16 rendered arms look unrendered.
+    """
+    m = sum(1 for r in rows if r.get("matrix"))
+    b = sum(1 for r in rows if r.get("board") and not r.get("matrix"))
+    any_ = sum(1 for r in rows if r.get("matrix") or r.get("board"))
+    return {"matrix": m, "board": b, "any": any_, "total": len(rows)}
+
+
 def matrix_links(arm: str, ckpts: dict[str, list[str]], base_url: str) -> str:
     """One link per epoch: opens the matrix with prev | this | next preselected.
 
@@ -336,6 +441,7 @@ t.tHead.addEventListener('click',e=>{
 """
 
 COLUMNS = [("arm", "arm"), ("matrix", "epochs \u2192 matrix"),
+           ("board", "other board"),
            ("family", "family"), ("where", "where"),
            ("resumable", "resumable"), ("local_fat_n", "loc fat"), ("local_fat_b", "loc fat B"),
            ("local_slim_n", "loc slim"), ("local_slim_b", "loc slim B"),
@@ -368,7 +474,7 @@ def write_html(rows: list[dict], out: Path) -> None:
             elif key in ("purpose", "kim_feedback", "run_status"):
                 parts.append(f'<td class="note"><div class="clip">'
                              f'{html.escape(str(v))}</div></td>')
-            elif key == "matrix":
+            elif key in ("matrix", "board"):
                 parts.append(f'<td class="mx">{v}</td>')   # already-escaped markup
             elif isinstance(v, (int, float)):
                 parts.append(f'<td class="num">{v if v else ""}</td>')
@@ -383,6 +489,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--census", type=Path, help="TSV from LUMI: size<TAB>date<TAB>path")
+    ap.add_argument("--no-census", action="store_true",
+                    help="build the LOCAL-ONLY census deliberately, with no LUMI side. Required "
+                         "to omit --census, because omitting it silently is indistinguishable "
+                         "from data loss (see below).")
     ap.add_argument("--scratch-meta", type=Path,
                     help="local mirror of scratch run_meta.json sidecars")
     ap.add_argument("--matrix-page", type=Path, default=MATRIX_DEFAULT,
@@ -391,6 +501,13 @@ def main() -> int:
                     help="href the epoch links point at")
     ap.add_argument("--html", type=Path, default=Path("eval/model_census.html"))
     ap.add_argument("--csv", type=Path, default=Path("eval/model_census.csv"))
+    ap.add_argument("--board-urls", choices=("local", "public"), default="local",
+                    help="which board URL to emit. 'local' is the file:///home/kim/... path, "
+                         "fine for the local census; 'public' emits the board's site-relative "
+                         "path instead. USE public IF model_census.html IS EVER SHIPPED -- the "
+                         "file:// url is a home-path leak under the redaction rule (spec §4), "
+                         "and it is the only absolute path the census emits (GHOST-NOTE, "
+                         "2026-09-03).")
     ap.add_argument("--rescan", action="store_true",
                     help="re-probe every mounted root instead of reusing the model_db "
                          "cache. Needed after a pull, after new recipe sources land "
@@ -398,6 +515,20 @@ def main() -> int:
                          "unmounted during the last scan is back -- a cached scan taken "
                          "with a drive down silently reports that drive's arms as absent.")
     args = ap.parse_args()
+
+    # REFUSE to run without an explicit choice (C, 2026-09-03, after G omitted --census and got
+    # 350 rows with "LUMI: 0 arms" -- every LUMI-only arm silently gone). A census missing its
+    # remote half does not look broken, it looks like the checkpoints were DELETED, and that is
+    # the third instance in two days of a broken measurement failing toward ABSENCE rather than
+    # toward an error (docs/lessons-learned.md). Absence must be asserted, never defaulted into.
+    if not args.census and not args.no_census:
+        ap.error("refusing to build without --census: the result would report LUMI 0 arms and "
+                 "every LUMI-only arm as absent, which is indistinguishable from data loss. "
+                 "Pass --census eval/lumi_ckpt_census.tsv, or --no-census if you really do want "
+                 "a local-only census.")
+    if args.census and not args.census.exists():
+        ap.error(f"--census {args.census} does not exist; refusing to silently build a "
+                 f"census with no LUMI side.")
 
     if args.rescan:
         print("[rescan] re-probing every mounted root (cache ignored)", file=sys.stderr)
@@ -416,8 +547,20 @@ def main() -> int:
     ckpts = load_matrix_ckpts(args.matrix_page) if args.matrix_page.exists() else {}
     print(f"matrix: {len(ckpts)} labels with rendered clips")
     rows = build_rows(local, remote, meta, ckpts, args.matrix_url)
-    linked = sum(1 for r in rows if r["matrix"])
-    print(f"arms linkable into the matrix: {linked}/{len(rows)}")
+    boards = load_boards()
+    # Board problems are LOUD: an unmatched or ambiguous registry entry is exactly the
+    # silent-failure class this whole registry exists to remove.
+    board_problems = apply_boards(rows, boards, url_kind=args.board_urls,
+                                  warn=lambda m: print(f"[board] {m}", file=sys.stderr))
+    cov = coverage(rows)
+    print(f"arms with clips SOMEWHERE: {cov['any']}/{cov['total']}  "
+          f"(standard matrix {cov['matrix']}, other boards {cov['board']})")
+    for b in boards.get("boards", []):
+        print(f"  board '{b['id']}': {len(b.get('arms', []))} arms, "
+              f"{b.get('cells', '?')} cells — {b.get('kind', '')}")
+    if board_problems:
+        print(f"[board] {len(board_problems)} registry problem(s) above — those arms were "
+              f"NOT linked and do NOT count toward coverage", file=sys.stderr)
     only_remote = sum(1 for r in rows if r["where"] == "LUMI only")
     unresumable = sum(1 for r in rows if r["resumable"] == "NO")
     print(f"rows: {len(rows)} | LUMI-only arms: {only_remote} | "

@@ -330,6 +330,46 @@ cfg alone: 20 prompts × cfg{7,16} × 8 rungs = 320 cells → `renders/a13_avp/`
 **STANDING LESSON: a training sbatch is not finished until its render pass exists.** Every arm that
 trains without one becomes another unauditioned family — that is exactly how A11 accumulated 32.
 
+### B11 — Decoupled Muon/AdamW learning rates (Zach's ratio) — **READY, flag shipped, unrun (C 2026-09-04)**
+- **Why.** Zach/Stability: *"I run Muon at 1e-3 for pretraining... around 10x what I would use for AdamW"* and
+  *"I keep the AdamW parameters at normal AdamW LR"*. Our best Fusion LR is 5e-6 — ~200x below. `build_fusion_param_groups`
+  has ALWAYS accepted `spectral_lr`/`scalar_lr` and **nothing ever passed them**, so every Fusion run used ONE lr for
+  BOTH groups. Coupling means the spectral rate cannot rise without dragging norms/biases with it — the params that
+  destabilise, and our failure mode is latent-scale runaway.
+- **Arms.** A `--lr 5e-6` (control) · B `--spectral-lr 5e-5 --scalar-lr 5e-6` (ratio) · C `--spectral-lr 5e-4 --scalar-lr 5e-6`.
+  Same seed/data/steps as the autoscale arms; readout = `path_length`/`step_cos` (G's bs2 control is the precedent).
+- **Caveats to keep in the arm's notes.** Zach's 1e-3 is PRETRAINING; the RATIO is the transferable half, not the absolute.
+  And MASTER records our base as "overwhelmingly AdamW-shaped" — Muon was adopted late/briefly — so the geometry his rule
+  assumes may not describe our base at all.
+- **Kill criterion (3 clauses; the third is G's and is the one C would have mis-read).** (1) C unstable AND B
+  indistinguishable from A on trajectory geometry ⇒ coupling hypothesis dead, 5e-6 is the real optimum.
+  (2) B and C both degrade ⇒ likeliest cause is the AdamW-shaped base, a real finding not a failed arm.
+  (3) **If B DESTABILISES, the story INVERTS**: coupling predicts the scalar group is the fragile one, so raising
+  ONLY spectral should be safe. B blowing up means the fragility is spectral-side and the whole diagnosis is wrong.
+  Owner: GHOST-NOTE (briefed, verified the flag reaches gamma_t at fusion_opt.py:722/:951; awaiting Kim's go — a
+  ~7.5h 3-arm GPU bracket is Kim's call, not a peer's).
+
+### B12 — Rewind post-training by weight interpolation (PT → base soup) — **READY, tool built, unrun (C 2026-09-04)**
+- **Why (Kim).** PT "gets some things right, like a coherent, punchy sound" but "always sounds more or less the same with
+  the kick, bass and percussions". Rewind partially instead of choosing.
+- **Measured before building.** 997 identical tensors; median relative delta 0.0013, **MEAN 0.0215, MAX 0.714**;
+  median cosine 1.0000; 6/899 below cos 0.9. ⚠ **CORRECTED 2026-09-04**: C first summarised this as "post-training
+  barely moved the weights" — the median is the wrong statistic for a tail this heavy (mean is 16× the median).
+  The supported claim is that the change is **highly CONCENTRATED**: near-zero in most tensors, 0.56–0.71 in the
+  `to_local_embed.0.bias` tensors of layers 16-19. G's independent functional measurement confirms the tail —
+  PT-rendered clips vs base-rendered: hf_ratio **+57%**, centroid +23%, flatness +42%, crest 4.64 vs 5.83
+  (63 vs 237 checkpoints). A bias adds directly to activations without input scaling, so a 70% bias change is a
+  first-order shift, not a perturbation. ⇒ **those 48 bias tensors are an unusually cheap control surface, a
+  finding independent of the soup.**
+- **Why interpolation is still safe.** NOT because the models are close — that justification is now thin. Because
+  PT is a fine-tune OF base, so they lie on ONE trajectory (linear-mode-connectivity regime), unlike the
+  independently-trained soups of C1/C2. Expect intermediate alphas to move audibly more than 0.13% suggests.
+- **Arms.** global alpha {0.25,0.5,0.75,1.0} · TARGETED alpha=1 everywhere except `to_local_embed.*bias` held at {0,0.5}
+  · three-way `+ beta*(FT-base)` on the winner. Tool `eval/soup_pt_ladder.py`; 8.6 GB/blend.
+- **Trap.** PT is a few-step ping-pong denoiser (`--steps 8`), base is multi-step. An intermediate alpha belongs to
+  NEITHER — render each blend under BOTH samplers. **Judge by ear**; we have no metric for "punchy but varied" and this
+  week's record says do not invent one casually.
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**

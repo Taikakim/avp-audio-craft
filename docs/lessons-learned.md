@@ -239,6 +239,23 @@ LUMI-only arm as absent, which is indistinguishable from data loss"), and a `--c
 nonexistent file is fatal too — that second one was the WIDER hole, since a typo'd path failed exactly
 the way the omission did while looking like a correct invocation.
 
+## rsync `--chmod=F644` sets FILE modes only — a new remote dir lands 0700 and serves 404s (W, 2026-09-03)
+
+Publishing the morph-conditioner audition, all 393 files transferred correctly, mode 644, and
+**every URL returned 404**. `rsync --chmod=F644` applies to files; a **newly created** remote
+directory takes the transfer default and landed `drwx------`, so the webserver could not
+traverse it. Nothing in the rsync output says so — it reports a clean, complete, `rc=0`
+transfer.
+
+- **Fix:** `--chmod=D755,F644` for any transfer that may CREATE a remote directory.
+- **Why it never showed before:** every previously-shipped directory already existed at 755,
+  so the bug is invisible until the first ship of a NEW eval set — i.e. exactly when nobody
+  is expecting it.
+- **Verify with a real HTTP GET, never a remote `ls`.** An `ls` shows 393 files present and
+  correct and tells you everything is fine. The only check that distinguishes "uploaded" from
+  "reachable" is fetching a URL. Same shape as the wrapper that exited 0 while its rsync died
+  (§ below): a success code describing the wrong question.
+
 ## Process / coordination
 
 - **Git authorship in this repo is not evidence of who did the work.** Every agent commit

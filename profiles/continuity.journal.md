@@ -2440,3 +2440,50 @@ from the header, I had the caveat that the Hyperball paper fixes norms to hyperp
 constants, **not** to init, so "frozen at ‖W0‖_F" is our deviation and not the paper's. A purpose
 line crediting that to the paper would have calcified a wrong attribution. Headers give WHAT;
 transcripts give WHY and the caveats.
+
+## 2026-09-04 — four meters, four failed gates, and the controls that saved it
+
+Kim asked a simple question: does the morph conditioner transfer melody? I still cannot
+answer it. That is the honest outcome, and the day's value is entirely in the controls.
+
+**Three times I had a publishable-looking number and a control killed it.**
+1. MERIT gain-2.0 read `+0.0247, 48/64 positive, p=7.7e-05` toward the reference. I nearly
+   sent that as "the conditioner works at gain 2". The foreign arm showed conditioning
+   raised FOREIGN similarity MORE (+0.041 vs +0.025) — a generic style shift.
+2. D15's transcription measure returned six clean nulls. Its own-vs-foreign gate said the
+   measure could not tell the true reference from a foreign one, so the nulls meant nothing.
+3. The contour test — the one I built *because* the first two were mismatched — failed its
+   positive control: re-extracting from the reference audio itself scored 0.146, LOWER than
+   the renders' 0.151. The extractor cannot reproduce the stream from the exact source it
+   came from.
+
+**The structural lesson, which I should have reached by reading rather than by measuring:**
+`contour_codes.py` says in its own docstring that monotone invariance is the point — dense
+rank discards absolute pitch by construction. So MERT melody embeddings, pitch-class cosine,
+pitch-set Jaccard and note-cell F1 all measure precisely the information the conditioner
+throws away. A perfectly-adhering render scores at chance on every one of them. I ran two
+full passes before opening the file that says so. **Read what the thing under test claims
+about itself before choosing a metric for it** — the discovery-phase rule applies to
+measurement design, not just to code reuse.
+
+**Kim caught the first half of that too**: I was building a transcription pipeline when
+MERIT was already cloned with a first-party wrapper. Twice in one session I started building
+before checking, at two different levels.
+
+**What good practice actually bought:** every one of these tools now carries its control as
+a FATAL gate, not a printed line. `morph_merit.py` aborts if self-similarity is not ~1.0;
+`morph_contour_ab.py` refuses to let its numbers be read as a result when the positive
+control is below 0.5. The encoder control also gave a CEILING (0.55 on L3 against ground
+truth, degrading with alphabet size = a grid offset, not a wrong feature), which converts
+"uninterpretable null" into "bounded bug, fix next session".
+
+**Negative worth keeping:** a false-presence bug is worse than a false-absence one. G proved
+it on the board registry — leaf-key collision would mark an arm as auditioned that nobody
+heard, so it never gets listened to and nothing ever looks wrong. False absence is wasteful
+and visible; false presence is silent. I had the ordering backwards.
+
+**Measured before building, which paid off twice:** PT-vs-base is median relative delta
+0.0013 — so the interpolation is safe AND the change is concentrated in `to_local_embed`
+biases, which turned a global alpha sweep into a targeted-rewind experiment. And
+`spectral_lr`/`scalar_lr` turned out to already exist and to have never been passed, so
+Kim's LR question needed two CLI args rather than a plumbing job.

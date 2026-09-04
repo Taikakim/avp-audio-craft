@@ -153,8 +153,27 @@ NEW_PROMPTS = [
 
 
 def ckpt_tag(fname):
+    """Label for a checkpoint file — INCLUDING its replica marker when it has one.
+
+    ⚠ THE -vN IS NOT A DUPLICATE MARKER, IT IS A DIFFERENT MODEL (GHOST-NOTE measured this
+    2026-09-03). Under the Pattern-2 DDP incident (EXPERIMENTS A4/A9/A10) the 8 srun ranks
+    were independent single-GCD trainers writing collision filenames, so
+    epoch=19-step=5980.ckpt and epoch=19-step=5980-v1.ckpt are separately-trained models
+    (521/522 DiT tensors differ, max|delta| 0.21).
+
+    This function used to return "ep19" for BOTH. That destroyed replica identity in the
+    render FILENAME, i.e. upstream of every rating and metric: manifest.jsonl stores this
+    tag rather than a path, and all 22,036 fullft/wfleet rows in clip_metrics.db carry no
+    -vN marker. No path-keyed export can recover it after the fact.
+
+    Bare filenames are UNCHANGED ("ep19"), so existing joins keep working; only a replica
+    file gets the extra suffix it should always have had.
+    """
     m = re.search(r"epoch=(\d+)", fname)
-    return f"ep{m.group(1)}" if m else Path(fname).stem
+    if not m:
+        return Path(fname).stem
+    rep = re.search(r"-v(\d+)(?:\.|$)", Path(fname).stem)
+    return f"ep{m.group(1)}" + (f"v{rep.group(1)}" if rep else "")
 
 
 def build_prompts(n_per_band=3, n_kimlong=3):
@@ -355,6 +374,14 @@ def main():
     ap.add_argument("--base-full", action="store_true",
                      help="render ONLY medium-base across the full prompt list x cfg axis "
                           "(completes the base row; strength n/a)")
+    ap.add_argument("--weights", choices=("auto","ema","online"), default="auto",
+                    help="which tensor set to load from a FULL-FINETUNE checkpoint. auto (default) "
+                         "= EMA when the checkpoint carries one, else online. EMA is what the run "
+                         "was set up to produce, but SimpleEMA's beta=0.9999 has a ~10k-step time "
+                         "constant, so short runs have an under-converged EMA still dominated by "
+                         "early training -- use 'online' to render the optimizer's own weights, or "
+                         "to reproduce cells rendered before 2026-09-04, when this loop always "
+                         "loaded online. Ignored for LoRA/DoRA (no EMA there).")
     ap.add_argument("--pt-medium", action="store_true",
                      help="load the POST-TRAINED 'medium' (rf_denoiser / ping-pong) instead of "
                           "medium-base and suffix every label with '_ptm' -- tests base-trained "
@@ -570,6 +597,7 @@ def main():
         model = StableAudioModel.from_pretrained(
             "medium" if args.pt_medium else "medium-base", device="cuda")
         sr = model.model.sample_rate
+        _wset = None
         if ckpt_path and is_fullft:
             # whole-model checkpoint: load the full state dict over the base DiT.
             # FAIL LOUD on partial coverage — a fullft ckpt silently part-loading
@@ -585,10 +613,34 @@ def main():
             # never matches those checkpoints and silently 0%-covers -- caught 2026-07-21 when
             # a retry loop that only checked for OOM mislabeled 4 straight AssertionErrors as
             # "succeeded". Try both prefixes, keep whichever actually matches the target.
+            # WEIGHT-SET CHOICE (GHOST-NOTE 2026-09-04). A full-FT checkpoint trained with
+            # EMA carries BOTH sets: "diffusion.model.*" (online — where the optimizer is)
+            # and "diffusion_ema.ema_model.*" (the smoothed average). Generation is supposed
+            # to use the EMA set — stable-audio-3/CLAUDE.md has carried that as an open TODO
+            # in the render path since 2026-08-03. Until now this loop stripped only
+            # "diffusion.model." and so silently rendered the ONLINE set for every
+            # EMA-carrying checkpoint (18 of 19 unrendered full-FT arms carry one), while the
+            # >99% coverage assert passed happily because the online set fills the model 100%.
+            #
+            # NOT unconditionally better, and that is why --weights exists: SimpleEMA's default
+            # beta=0.9999 has a ~10,000-step time constant, so on a 3,000-step run the EMA is
+            # still ~74% its own starting point and is dominated by early training. Prefer EMA
+            # where it exists (the run asked for it), but make the choice explicit and RECORD
+            # it per clip so no cell is ever ambiguous about which tensors produced it.
+            _has_ema = any(k.startswith("diffusion_ema.ema_model.") for k in _sd_raw)
+            _want = args.weights
+            _use_ema = _has_ema if _want == "auto" else (_want == "ema")
+            if _use_ema and not _has_ema:
+                raise SystemExit(f"--weights ema but {ckpt_path} carries no EMA tensors")
+            _prefixes = (("diffusion_ema.ema_model.",) if _use_ema
+                         else ("diffusion.model.", "model."))
             _sd = max(
                 ({(k[len(_pfx):] if k.startswith(_pfx) else k): v for k, v in _sd_raw.items()}
-                 for _pfx in ("diffusion.model.", "model.")),
+                 for _pfx in _prefixes),
                 key=lambda sd: sum(1 for k in sd if k in _tgt_keys))
+            _wset = "ema" if _use_ema else "online"
+            print(f"[weights] {label}/{tag}: {_wset}"
+                  + ("" if _has_ema else " (no EMA in ckpt)"), flush=True)
             _missing, _unexpected = _tgt.load_state_dict(
                 { k: v.to(next(_tgt.parameters()).dtype) for k, v in _sd.items()
                   if k in dict(_tgt.named_parameters()) or k in dict(_tgt.named_buffers()) },
@@ -648,7 +700,7 @@ def main():
                         m4a_path = RENDER_DIR / m4a_name
                         if not m4a_path.exists():
                             transcode(wav_path, m4a_path)
-                        append_manifest({"model": label, "ckpt": tag, "cfg": cfg, "strength": w,
+                        append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
                                          "prompt_id": prompt["id"], "prompt_text": prompt["text"],
                                          "seed": prompt["seed"], "steps": steps, "file": m4a_name})
                         existing.add(key)
@@ -666,7 +718,7 @@ def main():
                         key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
                         if key in existing:
                             continue
-                        append_manifest({"model": label, "ckpt": tag, "cfg": cfg, "strength": w,
+                        append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
                                          "prompt_id": prompt["id"], "prompt_text": prompt["text"],
                                          "seed": prompt["seed"], "steps": steps, "file": base_m4a_name})
                         existing.add(key)
@@ -738,7 +790,7 @@ def main():
                          f"w{nw} {np_['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
                 if not nm4a_path.exists():
                     transcode(nwav_path, nm4a_path)
-                append_manifest({"model": label, "ckpt": tag, "cfg": ncfg, "strength": nw,
+                append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": ncfg, "strength": nw,
                                  "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
                                  "steps": steps, "duration": native_dur, "duration_mode": "native",
                                  "file": nm4a_path.name})

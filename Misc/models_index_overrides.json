@@ -1070,7 +1070,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_avp_t4096_bs4_lr1e4": {
   "recipe": {
@@ -1117,7 +1119,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_avp_t4096_bs4_lr5e5": {
   "recipe": {
@@ -1164,7 +1168,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_avp_t512_bs8_lr1e4": {
   "recipe": {
@@ -1211,7 +1217,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_goa_t4096_bs1_lr1e4": {
   "recipe": {
@@ -1258,7 +1266,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_goa_t4096_bs4_lr1e4": {
   "recipe": {
@@ -1305,7 +1315,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_goa_t4096_bs4_lr5e5": {
   "recipe": {
@@ -1352,7 +1364,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fp32cmp_goa_t512_bs8_lr1e4": {
   "recipe": {
@@ -1399,7 +1413,9 @@
   "status": "in-progress",
   "purpose": "fp32 arm of the fp32-vs-bf16 training-precision campaign, {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}, auditioned against the bf16 twins.",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "bf16cmp_avp_t512_bs8_lr1e4": {
   "recipe": {
@@ -1446,7 +1462,9 @@
   "status": "in-progress",
   "purpose": "bf16 TWIN — the matched bf16 control for the fp32-vs-bf16 training-precision campaign (twins exist only at t512).",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "bf16cmp_goa_t512_bs8_lr1e4": {
   "recipe": {
@@ -1493,7 +1511,9 @@
   "status": "in-progress",
   "purpose": "bf16 TWIN — the matched bf16 control for the fp32-vs-bf16 training-precision campaign (twins exist only at t512).",
   "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) — quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "longctx_t1024_r128": {
   "recipe": {
@@ -6898,42 +6918,58 @@
  "precision_ladder_t256_fp32": {
   "purpose": "3-arm training-PRECISION A/B that picks the precision for the big full-FT run: fp32 vs bf16-mixed vs fp16-mixed, T256 / 10 ep, full-FT + Fusion + EMA, 1 node / 3 GCD (job 20682678).",
   "purpose_source": "WORKLOG.md:2140 (2026-08-04, continuity) — quoted: \"precision_ladder (job 20682678, 3 arms fp32/bf16-mixed/fp16-mixed, T256/10ep full-FT/Fusion/EMA, 1 node/3GCD -- picks big-FT precision)\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "precision_ladder_t256_bf16mixed": {
   "purpose": "3-arm training-PRECISION A/B that picks the precision for the big full-FT run: fp32 vs bf16-mixed vs fp16-mixed, T256 / 10 ep, full-FT + Fusion + EMA, 1 node / 3 GCD (job 20682678).",
   "purpose_source": "WORKLOG.md:2140 (2026-08-04, continuity) — quoted: \"precision_ladder (job 20682678, 3 arms fp32/bf16-mixed/fp16-mixed, T256/10ep full-FT/Fusion/EMA, 1 node/3GCD -- picks big-FT precision)\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "precision_ladder_t256_fp16mixed": {
   "purpose": "3-arm training-PRECISION A/B that picks the precision for the big full-FT run: fp32 vs bf16-mixed vs fp16-mixed, T256 / 10 ep, full-FT + Fusion + EMA, 1 node / 3 GCD (job 20682678).",
   "purpose_source": "WORKLOG.md:2140 (2026-08-04, continuity) — quoted: \"precision_ladder (job 20682678, 3 arms fp32/bf16-mixed/fp16-mixed, T256/10ep full-FT/Fusion/EMA, 1 node/3GCD -- picks big-FT precision)\"",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "subloss_v3sel_k2": {
   "purpose": "B1 / #59 — subspace-weighted rectified-flow loss on the v3 melody-selective basis (lumi/melody_subspace15_selective_v3.npz), K in {2,5,12}. An attack on the melody wall.",
   "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "subloss_v3sel_k5": {
   "purpose": "B1 / #59 — subspace-weighted rectified-flow loss on the v3 melody-selective basis (lumi/melody_subspace15_selective_v3.npz), K in {2,5,12}. An attack on the melody wall.",
   "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "subloss_v3sel_k12": {
   "purpose": "B1 / #59 — subspace-weighted rectified-flow loss on the v3 melody-selective basis (lumi/melody_subspace15_selective_v3.npz), K in {2,5,12}. An attack on the melody wall.",
   "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "fullft_wd_ab_adamw_wd0p1": {
   "purpose": "The weight-decay-fix A/B that decides whether the fix for the full-FT latent-scale runaway -> spectral drone actually works (3 arms, 8h wall, job 20940322).",
   "purpose_source": "WORKLOG.md:2147 (2026-08-11, wintermute) — quoted: \"fullft_wd_ab (20940322, 3 arms / 8h wall) is the wd-fix A/B deciding whether the drone fix works\"; fix itself DISCOVERIES.md:65",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "soups_ladder_2026-08-19": {
   "purpose": "C1 — temporal soups of the healthy ladders, rendered T256+T1024 at cfg7/w1 and scored; the verdict feeds C2 (quality-weighted soups).",
   "purpose_source": "EXPERIMENTS.md:595 heading \"C1 - Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored\" + EXPERIMENTS.md:597 (\"Soups: Mantu/sa3_lora_runs/soups_ladder_2026-08-19/. Verdict feeds C2.\")",
-  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)"
+  "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
+  "purpose_evidence": "UNRECORDED — predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
+  "purpose_confidence": "unrecorded"
  },
  "_doc_purpose": "\"purpose\"/\"purpose_source\": WHY the run exists, mined from EXPERIMENTS.md / WORKLOG.md and QUOTED with file:line. eval/model_db.record_for() lets these win over run_meta. An arm whose motivation is nowhere recorded is left EMPTY on purpose -- a wrong purpose is worse than a blank one.",
  "fullft_mixed_avp_latents_sa3_t4096": {
@@ -7537,29 +7573,49 @@
   "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
  },
  "adamw_lr1e-4": {
-  "purpose": "Arm of the FusionOpt AUTOSCALE vs AdamW A/B, run 2026-09-01 (the run directory is dated). Follows the `lion/autoscale` flags landing in train_lora.py on 09-01 and Kim's ruling that \"auto scale and spectral WD should both go in\" to the fusion-optimiser repo. Arms pair AdamW baselines (adamw_lr1e-4, adamw_scratch_step5000) against autoscale at several LRs (1e-4, 1e-6_full, 5e-6_full3h), so the comparison is autoscale-vs-AdamW at matched and at deliberately-low LR. ⚠ WEAK — this is the most RECENT work in the census and predates any doc: no WORKLOG, EXPERIMENTS or journal entry mentions it. It is almost certainly GHOST-NOTE's; ASK G before relying on this description.",
-  "purpose_confidence": "weak",
-  "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+  "purpose": "AdamW lr 1e-4 baseline. Later resumed 4000->6000, which exposed a Lightning resume-discontinuity (step_cos -0.4993, net displacement DROPPED 65.6->45.9 and never recovered): the resume restores model+optimizer but not the dataloader/shuffle position. Superseded by adamw_scratch_step5000. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand: ran the fusion_autoscale vs AdamW A/B 2026-09-01/02 and recorded per-arm trajectory metrics + Kim's ear verdicts. (Superseded C's weak 2026-09-02 inference, which was a single shared string guessed from the lion/autoscale flag landing.)",
+  "note": "AdamW baseline, lr 1e-4. Steps 1000-4000 clean; RESUMED to 6000 and the resume introduced a discontinuity (step_cos -0.4993 at step 5000, net displacement DROPPED 65.6->45.9 and never recovered) -- Lightning restores model+optimizer but not dataloader/shuffle position. Superseded by adamw_scratch_step5000; use that instead. Kim: s6000 'not entirely bad'.",
+  "recipe": "adamw · lr 1e-4 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 6000 steps (4000 + resumed 2000)",
+  "hypothesis": "Baseline; expected smooth monotonic displacement.",
+  "status": "done -- steps 5000/6000 compromised, use the scratch arm"
  },
  "adamw_scratch_step5000": {
-  "purpose": "Arm of the FusionOpt AUTOSCALE vs AdamW A/B, run 2026-09-01 (the run directory is dated). Follows the `lion/autoscale` flags landing in train_lora.py on 09-01 and Kim's ruling that \"auto scale and spectral WD should both go in\" to the fusion-optimiser repo. Arms pair AdamW baselines (adamw_lr1e-4, adamw_scratch_step5000) against autoscale at several LRs (1e-4, 1e-6_full, 5e-6_full3h), so the comparison is autoscale-vs-AdamW at matched and at deliberately-low LR. ⚠ WEAK — this is the most RECENT work in the census and predates any doc: no WORKLOG, EXPERIMENTS or journal entry mentions it. It is almost certainly GHOST-NOTE's; ASK G before relying on this description.",
-  "purpose_confidence": "weak",
-  "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+  "purpose": "Clean uninterrupted AdamW baseline to 5000 steps, run specifically to avoid the resume discontinuity in adamw_lr1e-4. Smooth 34-36/1000-step velocity, path_eff 0.550, step_cos 0.087. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand: ran the fusion_autoscale vs AdamW A/B 2026-09-01/02 and recorded per-arm trajectory metrics + Kim's ear verdicts. (Superseded C's weak 2026-09-02 inference, which was a single shared string guessed from the lion/autoscale flag landing.)",
+  "note": "Clean uninterrupted AdamW baseline to 5000 steps, run to avoid the resume bug in adamw_lr1e-4. Smooth ~34-36/1000-step velocity, path_eff 0.550, step_cos 0.087. Kim's pick of the AdamW arms: 'more engaging and coherent things'. Audiobox CE 6.72.",
+  "recipe": "adamw · lr 1e-4 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 5000 steps",
+  "hypothesis": "A continuous run should beat the resumed one.",
+  "status": "done -- best of the AdamW arms by ear"
  },
  "fusion_autoscale_lr1e-4": {
-  "purpose": "Arm of the FusionOpt AUTOSCALE vs AdamW A/B, run 2026-09-01 (the run directory is dated). Follows the `lion/autoscale` flags landing in train_lora.py on 09-01 and Kim's ruling that \"auto scale and spectral WD should both go in\" to the fusion-optimiser repo. Arms pair AdamW baselines (adamw_lr1e-4, adamw_scratch_step5000) against autoscale at several LRs (1e-4, 1e-6_full, 5e-6_full3h), so the comparison is autoscale-vs-AdamW at matched and at deliberately-low LR. ⚠ WEAK — this is the most RECENT work in the census and predates any doc: no WORKLOG, EXPERIMENTS or journal entry mentions it. It is almost certainly GHOST-NOTE's; ASK G before relying on this description.",
-  "purpose_confidence": "weak",
-  "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+  "purpose": "Upper bound of the LR bracket for FusionOpt+autoscale: is autoscale safe at the AdamW-typical learning rate? Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand: ran the fusion_autoscale vs AdamW A/B 2026-09-01/02 and recorded per-arm trajectory metrics + Kim's ear verdicts. (Superseded C's weak 2026-09-02 inference, which was a single shared string guessed from the lion/autoscale flag landing.)",
+  "note": "FusionOpt + autoscale at lr 1e-4 -- UNSTABLE. path_length 2223 / net 1854, ~7x the 5e-6 arm. Kim: 'pretty granular and distorted'. Do not use; kept as the upper bound of the LR bracket.",
+  "recipe": "fusion + autoscale · lr 1e-4 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 3000 steps",
+  "hypothesis": "Autoscale may be safe at 1e-4.",
+  "status": "done -- UNSTABLE (path 2223 vs 322 at 5e-6); audition: granular and distorted"
  },
  "fusion_autoscale_lr1e-6_full": {
-  "purpose": "Arm of the FusionOpt AUTOSCALE vs AdamW A/B, run 2026-09-01 (the run directory is dated). Follows the `lion/autoscale` flags landing in train_lora.py on 09-01 and Kim's ruling that \"auto scale and spectral WD should both go in\" to the fusion-optimiser repo. Arms pair AdamW baselines (adamw_lr1e-4, adamw_scratch_step5000) against autoscale at several LRs (1e-4, 1e-6_full, 5e-6_full3h), so the comparison is autoscale-vs-AdamW at matched and at deliberately-low LR. ⚠ WEAK — this is the most RECENT work in the census and predates any doc: no WORKLOG, EXPERIMENTS or journal entry mentions it. It is almost certainly GHOST-NOTE's; ASK G before relying on this description.",
-  "purpose_confidence": "weak",
-  "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+  "purpose": "Deliberately LOW starting LR: does autoscale grow the effective step on its own? Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand: ran the fusion_autoscale vs AdamW A/B 2026-09-01/02 and recorded per-arm trajectory metrics + Kim's ear verdicts. (Superseded C's weak 2026-09-02 inference, which was a single shared string guessed from the lion/autoscale flag landing.)",
+  "note": "FusionOpt + autoscale at a deliberately LOW lr 1e-6, testing whether autoscale grows the step itself. It does: step_cos 0.591, path_eff 0.893 -- the same trajectory shape as 5e-6 at half the displacement. Kim: 'also good but not quite, maybe learned some things [less]'. Audiobox CE 6.64.",
+  "recipe": "fusion + autoscale · lr 1e-6 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 3000 steps",
+  "hypothesis": "If autoscale works, a 1e-6 start still reaches a useful step size.",
+  "status": "done -- yes; same trajectory SHAPE as 5e-6 (step_cos 0.591) at half the displacement"
  },
  "fusion_autoscale_lr5e-6_full3h": {
-  "purpose": "Arm of the FusionOpt AUTOSCALE vs AdamW A/B, run 2026-09-01 (the run directory is dated). Follows the `lion/autoscale` flags landing in train_lora.py on 09-01 and Kim's ruling that \"auto scale and spectral WD should both go in\" to the fusion-optimiser repo. Arms pair AdamW baselines (adamw_lr1e-4, adamw_scratch_step5000) against autoscale at several LRs (1e-4, 1e-6_full, 5e-6_full3h), so the comparison is autoscale-vs-AdamW at matched and at deliberately-low LR. ⚠ WEAK — this is the most RECENT work in the census and predates any doc: no WORKLOG, EXPERIMENTS or journal entry mentions it. It is almost certainly GHOST-NOTE's; ASK G before relying on this description.",
-  "purpose_confidence": "weak",
-  "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+  "purpose": "The headline FusionOpt+autoscale arm, 3h at lr 5e-6. Clip ladder rendered at steps 1000/2000/3000. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand: ran the fusion_autoscale vs AdamW A/B 2026-09-01/02 and recorded per-arm trajectory metrics + Kim's ear verdicts. (Superseded C's weak 2026-09-02 inference, which was a single shared string guessed from the lion/autoscale flag landing.)",
+  "note": "THE PICK. Kim 2026-09-02: 'the clips sound excellent, and seem to have learned the dataset style very well ... in your face and forest-punk ... slightly saturated like tape'. step_cos 0.539, path_eff 0.879, net 283.0; highest onset density of all arms (8.09/s). Clip ladder rendered at steps 1000/2000/3000. Kim also notes it 'starts to sound similar-ish to the from-scratch s5000 AdamW'.",
+  "recipe": "fusion + autoscale · lr 5e-6 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 3000 steps",
+  "hypothesis": "Autoscale at a low-but-not-tiny LR gives character without instability.",
+  "status": "done -- BEST SOUNDING of every arm by ear; step_cos 0.539, path_eff 0.879, highest onset density (8.09/s)"
  },
  "onset_Fusion_lr1e-4_randomcrop_L13-15": {
   "purpose": "Injection-SITE ablation of the onset-density FiLM control: layer band 13-15, the narrower/later counterpart to the L8-15 arm.",
@@ -7570,5 +7626,32 @@
   "purpose": "Injection-SITE ablation of the onset-density FiLM control: layer band 8-15. Plain Fusion (the ear-approved variant) — paired against the L13-15 arm to test how deep the density control needs to sit.",
   "purpose_confidence": "weak",
   "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+ },
+ "adamw_lr3e-4_step2000": {
+  "note": "Does a 3x-faster AdamW catch up to Fusion in 2000 steps? NO. Audiobox CE 6.51 +/- 0.55, joint-LOWEST of all arms. Mean RF loss over steps 1500-2000 was 0.7487 vs 0.7501 at lr 1e-4 -- a 3x LR change moved the loss by 0.0014, i.e. the loss is blind to this axis; judge by ear. path_eff 1.000 (single interval, step_cos undefined at 2 checkpoints).",
+  "recipe": "adamw · lr 3e-4 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 42 · 2000 steps",
+  "purpose": "Does a 3x faster AdamW catch up with Fusion+autoscale in 2000 steps? Answer: no. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "hypothesis": "If LR is what autoscale effectively buys, 3e-4 should approach the Fusion 5e-6 arm.",
+  "status": "done -- NO catch-up; and a 3x LR change moved RF loss by 0.0014, so the loss cannot see this axis",
+  "purpose_confidence": "strong",
+  "purpose_evidence": "GHOST-NOTE, first-hand (fusion_autoscale vs AdamW A/B, 2026-09-01/02). New arm created 2026-09-02 -- no prior mined entry existed, so nothing was superseded; provenance added for parity with its seven siblings."
+ },
+ "fusion_autoscale_lr5e6_control2": {
+  "note": "ATTRIBUTION CONTROL: is the autoscale direction-convergence a property of the optimizer or of the small training set? ANSWER: the optimizer. Different seed (9001) + disjoint 300-track subset reproduced step_cos to 0.5448 vs 0.5390 (delta 0.006) and path_eff 0.880 vs 0.879. BUT the SOUND changed: Kim 'sounds weak, the beat is not steady, like it was trained on more chill stuff, not as engaging'. => weight-space signature is optimizer-driven, timbre is data-driven. Confounded on seed+data+init; a same-data/different-seed arm would separate them. Audiobox rates it HIGHEST (CE 6.92) and is therefore not tracking Kim's judgment on this question.",
+  "recipe": "fusion + autoscale · lr 5e-6 · rank 128 · bs 8 · T512 · bf16 · warmup 200 · clip 1.0 · seed 9001 · 3000 steps · disjoint 300-track subset (selection_seed 777, prior track ids excluded, artist overlap allowed)",
+  "purpose": "ATTRIBUTION CONTROL: is the autoscale direction-convergence a property of the OPTIMIZER or of the small training set? Different seed (9001) + a disjoint 300-track subset. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "hypothesis": "If step_cos reproduces with new seed and new data, the signature is the optimizer's.",
+  "status": "done -- OPTIMIZER: step_cos 0.5448 vs 0.5390 (delta 0.006). But the SOUND changed (weak, unsteady beat), so weight-space shape is optimizer-driven while timbre is data-driven. Confounded on seed+data+init",
+  "purpose_evidence": "GHOST-NOTE, first-hand (fusion_autoscale vs AdamW A/B, 2026-09-01/02)",
+  "purpose_confidence": "strong"
+ },
+ "fusion_autoscale_lr5e6_bs2": {
+  "note": "QUARTER-BATCH test of the 5e-6 arm, sample-matched (12000 bs2 steps = 3000 bs8 steps). lr held at 5e-6 rather than sqrt-scaled to 2.5e-6, deliberately, to test whether autoscale is batch-size robust. IT IS NOT: path_length 590.1 vs 322.1 and net 504.1 vs 283.0 -- ~1.8x further in weight space for the same samples seen, path_eff 0.854, step_cos 0.453. Direction-convergence survives but weakens. Clean by DSP (hf 0.177, no disintegration); Audiobox CE 6.79. Follow-up if over-trained: rerun at 2.5e-6.",
+  "recipe": "fusion + autoscale · lr 5e-6 · rank 128 · bs 2 · T512 · bf16 · warmup 800 · clip 1.0 · seed 42 · 12000 steps · ckpt every 4000 (steps 4000/8000/12000 are sample-equivalent to the bs8 arm's 1000/2000/3000)",
+  "purpose": "QUARTER-BATCH test of the 5e-6 arm, sample-matched (12000 bs2 steps = 3000 bs8 steps). LR deliberately HELD at 5e-6 rather than sqrt-scaled to 2.5e-6, to test autoscale's batch-size invariance. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
+  "hypothesis": "If autoscale truly sets the effective step, the sample-matched bs2 trajectory lands on top of the bs8 one.",
+  "status": "done -- IT DOES NOT: path 590.1 vs 322.1, ~1.8x further in weight space for the same samples; step_cos 0.453",
+  "purpose_evidence": "GHOST-NOTE, first-hand (fusion_autoscale vs AdamW A/B, 2026-09-01/02)",
+  "purpose_confidence": "strong"
  }
 }
