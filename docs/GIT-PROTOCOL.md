@@ -202,6 +202,44 @@ revertable.
 
 ---
 
+## 6b. The INDEX is shared state — treat a non-empty index as a lock
+
+There is ONE git index for the whole checkout. It is not per-instance, and nothing else in
+this document protects it. §5 tells you how to split a mixed WORKING TREE by author; §2 tells
+you whose name goes on a commit. Neither stops the actual failure:
+
+> Anything a peer has staged rides along on the NEXT commit any instance makes, however
+> carefully that instance chose its own paths.
+
+`git add <explicit path>` is not protection — it controls what YOU add, not what is already
+there. A filelock is not protection either: it guards a file in the working tree, while the
+index is a single object that cannot be locked per-file (and a stale lock on it would block
+all four instances at once).
+
+**The rule.** Before you stage anything, and again immediately before you commit:
+
+```
+git diff --cached --name-only
+```
+
+- Empty → proceed.
+- Non-empty and every file is yours → proceed.
+- Non-empty and any file is NOT yours → **STOP. Do not stage, do not commit.** A peer is
+  mid-split. Say so on the channel and wait for their all-clear.
+
+After committing, confirm the commit contains exactly what you meant (`git show --stat`), not
+merely that it succeeded — a swept-in file makes the commit succeed, not fail.
+
+**Why it is written down.** Two live near-misses, one day apart, in opposite directions:
+GHOST-NOTE had pre-staged split blobs that rode their next commit (caught, `reset --soft`,
+re-split); WINTERMUTE was one command from committing 18 of CONTINUITY's staged files —
+their morph tooling, journal and WORKLOG — under WINTERMUTE's name. Nothing would have
+errored in either case. This is the week's recurring shape: **a success code answering a
+question you did not ask.** Here git answers "did the commit succeed", never "was all of
+that yours".
+
+---
+
 ## 7. Working-tree hygiene
 
 - **`git switch` on a repo with untracked scripts/renders can lose them.** Commit or stash
@@ -220,6 +258,7 @@ revertable.
 ```
 BEFORE   [ ] Kim asked for this commit, in this repo, in his own words
          [ ] git status -s  — is any of this someone else's work?
+         [ ] git diff --cached --name-only  — index EMPTY, or all yours? (§6b)
          [ ] no drive paths / secrets / checkpoints in the diff
 SPLIT    [ ] three-leg attribution run; claim map has confidence labels
          [ ] staged blob compiles AND greps clean of the other author's symbols
