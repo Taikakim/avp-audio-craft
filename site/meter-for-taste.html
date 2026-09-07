@@ -62,9 +62,19 @@ svg{display:block;max-width:100%;height:auto;overflow:visible}
 
 <h1>A Meter for Taste</h1>
 <p class="lede">We render tens of thousands of clips and one person listens to them. This is the
-attempt to build a number that agrees with that person — what it took, what it costs, and the one
-feature that turned out to matter most while looking useless.</p>
-<p class="dim" style="font-family:var(--mono);font-size:12.5px">718 A/B votes · 1,584 ratings · 77,504 scored clips · 2026-09-04</p>
+attempt to build a number that agrees with that person — what it took, what it costs, the one
+feature that looked useless and turned out to matter, and the headline result that did not survive
+being checked.</p>
+<p class="dim" style="font-family:var(--mono);font-size:12.5px">718 A/B votes · 1,584 ratings · 77,504 scored clips · 2026-09-04 · corrected 2026-09-07</p>
+<div class="pull warn" style="margin-top:18px">
+<span class="h">Correction, 2026-09-07</span>
+<p>This page originally reported that a gradient-boosted ensemble beat production quality at
+<strong>82.6%</strong>. That fit leaked: its cross-validation was grouped by vote <em>row</em>, and the
+stored rows are 293 clip pairs each rated on three to five questions, so the same pair appeared in
+training and test. Grouped by pair the ensemble scores <strong>74.9%</strong> — below PQ alone. The
+section is rewritten below and the model-comparison claim is withdrawn. The CU finding and the
+rating-side results are unaffected; the reasoning is set out where the numbers appear.</p>
+</div>
 
 <section>
 <div class="col">
@@ -161,16 +171,17 @@ feature that turned out to matter most while looking useless.</p>
 </section>
 
 <section>
-<h2>What actually beats PQ</h2>
+<h2>The ensemble that didn&rsquo;t survive its own cross-validation</h2>
 <div class="col">
 <p>With that established, the search is no longer over weightings. We tried those exhaustively: every one, two and three-feature combination, weighted optimally; all fourteen features under six regularisation strengths in both L1 and L2; pairwise interactions; rank transforms. <strong>Not one linear weighting beats PQ alone.</strong></p>
-<p>Dropping the linearity requirement changes the answer.</p>
+<p>Dropping the linearity requirement appeared to change the answer. It did not. This section originally reported gradient boosting at 82.6% &mdash; a headline result that was wrong, and the reason it was wrong is more useful than the number would have been.</p>
+<p>The stored votes are not independent comparisons. The 1020 rows are <strong>293 distinct pairs rated on three to five questions each</strong>: the same two clips judged on different dimensions. Cross-validation grouped by <em>row</em> therefore puts the same pair of clips in both the training and the test fold, and a tree with enough capacity to memorise a clip pair scores itself on material it has already seen. Grouping by <strong>pair</strong> instead &mdash; the honest unit &mdash; costs the ensemble nearly eight points and drops it below the single feature it was supposed to beat.</p>
 </div>
 
 <figure>
-<p class="fig-h">Agreement with the listener's A/B votes</p>
-<p class="fig-s">Grouped cross-validation, 30 folds (6 seeds × 5) · bars show ±1 sd across folds</p>
-<svg viewBox="0 0 720 250" role="img" aria-label="PQ alone 78.1 percent, best linear weighting of all 14 features 77.7 percent, gradient boosting 82.6 percent.">
+<p class="fig-h">Agreement with the listener&rsquo;s A/B votes</p>
+<p class="fig-s">Cross-validation grouped by <strong>pair</strong>, not by row &middot; bars show &plusmn;1 sd across folds where measured</p>
+<svg viewBox="0 0 720 250" role="img" aria-label="PQ alone 78.1 percent, best linear weighting of all 14 features 77.7 percent, gradient boosting 74.9 percent.">
   <g stroke="var(--rule)" stroke-width="1" opacity=".6">
     <line x1="450" y1="30" x2="450" y2="200"/><line x1="550" y1="30" x2="550" y2="200"/></g>
   <g font-family="IBM Plex Mono,monospace">
@@ -185,25 +196,28 @@ feature that turned out to matter most while looking useless.</p>
     <text x="244" y="118" text-anchor="end" font-size="13" fill="var(--ink)">all 14, best linear</text>
     <text x="537" y="118" font-size="13" fill="var(--ink2)">77.7%</text>
 
-    <rect x="250" y="154" width="326" height="30" rx="4" fill="var(--s2)"><title>Gradient boosting on all 14 features: 82.6% (sd 3.0)</title></rect>
-    <line x1="546" y1="169" x2="606" y2="169" stroke="var(--ink2)" stroke-width="1.5"/>
-    <line x1="546" y1="162" x2="546" y2="176" stroke="var(--ink2)" stroke-width="1.5"/>
-    <line x1="606" y1="162" x2="606" y2="176" stroke="var(--ink2)" stroke-width="1.5"/>
+    <rect x="250" y="154" width="249" height="30" rx="4" fill="var(--mute)" opacity=".5"><title>Gradient boosting on all 14 features, grouped by pair: 74.9%</title></rect>
     <text x="244" y="174" text-anchor="end" font-size="13" fill="var(--ink)">gradient boosting</text>
-    <text x="618" y="174" font-size="13" font-weight="600" fill="var(--s2)">82.6%</text>
+    <text x="509" y="174" font-size="13" font-weight="600" fill="var(--ink2)">74.9%</text>
   </g>
   <line x1="250" y1="30" x2="250" y2="200" stroke="var(--ink2)" stroke-width="1.5"/>
   <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
     <text x="250" y="218">50%</text><text x="450" y="218">70%</text><text x="550" y="218">80%</text></g>
-  <text x="400" y="240" font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">agreement with the listener's vote</text>
+  <text x="400" y="240" font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">agreement with the listener&rsquo;s vote</text>
 </svg>
-<figcaption><strong>+4.6 points over PQ, winning in 87% of folds (paired t, p = 1×10⁻⁹).</strong> Default hyperparameters, nothing tuned — which is why this comparison can be trusted where a searched-for winner cannot. Feature importance: <strong>CU 0.55</strong>, CLAP 0.09, spectral centroid 0.07, CE 0.06, flatness 0.06, and PQ itself only 0.05. Boosting on PQ <em>alone</em> reaches 79.6%, so about 1.5 points come from bending PQ's own curve and 3 from the other features.</figcaption>
+<figcaption><strong>Grouped by row the same ensemble read 82.6%; grouped by pair it reads 74.9%, three points <em>below</em> PQ alone.</strong> The gap between those two numbers is the size of the leak, not a hyperparameter choice &mdash; nothing was tuned in either run. The feature-importance ranking that came with the inflated fit (CU dominant, PQ itself near the bottom) is withdrawn along with it: importances read off a leaking model describe what the model used to identify the pair, not what predicts taste.</figcaption>
 </figure>
 
 <div class="pull warn">
-<span class="h">What this costs</span>
-<p>PQ's real virtue was that it was <em>one legible number</em>. You could put it in a table, sort by it, and argue about it. A boosted ensemble of fourteen features is a better ranker and a worse explanation: it cannot be quoted, and when it disagrees with you there is no sentence to check. It is also fitted on 613 pairs, which is thin for a tree — its fold-to-fold spread is wider than PQ's (sd 3.0 vs 2.2).</p>
-<p>The honest summary is not "we found a better meter". It is: <strong>nothing linear beats production quality, and the thing that does beat it is mostly listening to content, not production.</strong></p>
+<span class="h">What this leaves standing</span>
+<p><strong>PQ alone is still the best single meter we have for the A/B question</strong>, and the exhaustive linear search above is unaffected &mdash; a one-feature linear model has almost nothing to memorise a pair <em>with</em>, which is exactly why the leak inflated the tree and not the line.</p>
+<p>The CU finding earlier in this piece also stands on its own evidence. It came from descriptive win-rate and rating curves, not from the cross-validated fit, so nothing about it depends on the ensemble. CU is non-linear in a way a straight line cannot use; that remains true and remains the more interesting observation.</p>
+<p>The honest summary is therefore narrower than the one this page first carried: <strong>nothing we have tried beats production quality on the A/B question</strong> &mdash; not a weighting, and not a tree. The gains are on the <em>rating</em> question, below, where the unit of analysis is a single clip and this leak does not arise.</p>
+</div>
+
+<div class="pull">
+<span class="h">Why this correction is in the page rather than behind it</span>
+<p>The error was caught by someone else re-deriving the grouping, not by the fit reporting anything unusual &mdash; an 82.6% with a clean p-value and untuned hyperparameters looks exactly like a real result. That is the whole hazard of a leaking split: it fails <em>toward</em> a discovery. Leaving the retraction visible is cheaper than the alternative, which is a number that keeps getting cited after it stops being true.</p>
 </div>
 </section>
 
@@ -221,7 +235,7 @@ feature that turned out to matter most while looking useless.</p>
 <tr><td>PQ alone</td><td class="n">78.1%</td><td class="n">0.378</td></tr>
 <tr><td>PQ + spectral flux</td><td class="n">—</td><td class="n">0.458</td></tr>
 <tr><td>PQ + CLAP + flux</td><td class="n">—</td><td class="n">0.472</td></tr>
-<tr><td>gradient boosting / random forest</td><td class="n">82.6%</td><td class="n">0.477</td></tr>
+<tr><td>gradient boosting / random forest</td><td class="n">74.9%</td><td class="n">0.477</td></tr>
 </tbody>
 </table>
 </div>
@@ -260,7 +274,7 @@ feature that turned out to matter most while looking useless.</p>
 <div class="col">
 <p>This meter is fitted to one person's ear. That is a legitimate thing to build — a studio tool does not have to generalise to be useful, and nothing here claims to measure quality in general. But it stops being only a measuring instrument the moment we rank models with it.</p>
 <p>If checkpoint selection, best-of-N rendering and soup weighting all consult the same number, the number stops describing the project and starts <strong>steering</strong> it. Everything it cannot see gets quietly selected against, generation after generation, and the corpus drifts toward whatever the proxy rewards. The failure would not announce itself; the scores would keep going up.</p>
-<p>Two guards seem worth keeping. Blind A/B votes have to keep arriving from outside the ranking, or the proxy ends up being validated on clips it selected. And the disagreements are the valuable part of the record: the cases where the meter says one thing and the ear says another are the only evidence that the meter has a boundary. It has one — 82.6% agreement means roughly one judgment in six still goes the other way.</p>
+<p>Two guards seem worth keeping. Blind A/B votes have to keep arriving from outside the ranking, or the proxy ends up being validated on clips it selected. And the disagreements are the valuable part of the record: the cases where the meter says one thing and the ear says another are the only evidence that the meter has a boundary. It has one — 78.1% agreement means better than one judgment in five still goes the other way.</p>
 </div>
 </section>
 
