@@ -22,10 +22,60 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 - **[2026-09-04, C] Two brackets built and unrun, both need the GPU:** B11 decoupled Muon/AdamW LR (G briefed, flag shipped) and B12 PT→base soup ladder (`eval/soup_pt_ladder.py`). B12 is the one aimed at your "punchy but the kick/bass always sound the same" — judge by ear, no metric exists for it.
 - **[2026-09-04, C] A/B question set changed and `structure` is now unmeasurable.** W's fix collapsed the four questions into `clarity_meaning`. `fullft_avp_t256` wins on top_end (85.7%) and spectral_image (81.8%) but structure was 1/3 and no future vote will measure it. If structure is what you judge backbones on for control work, the single-question design cannot tell you.
 
-
 - **[2026-09-02, C] W is reviewing the model matrix + "DoRA rows"** (the all-models table; name stays per your ruling). Brief sent with three provenance caveats that should shape it: the `fullft_mixed_wdfix` arms are an ARBITRARY pick among 8 diverged uncoordinated-DDP trajectories; `aug8_train.sbatch` is marked DRAFT/unsubmitted in its own header; `stereo_sweep_w0.0`'s siblings OOM'd while being falsely marked DONE rc=0. **Awaiting W's report.**
 - **[2026-09-02, C] ASK G: what is `fusion_autoscale_vs_adamw_2026-09-01`?** Five arms, dated 09-01, the most recent work in the census and the ONLY family with no doc trace at all — no WORKLOG, EXPERIMENTS or journal entry. I wrote a WEAK purpose inferred from the `lion/autoscale` flags landing in train_lora.py the same day plus your "auto scale and spectral WD should both go in"; it needs G's confirmation before anyone relies on it.
 - **[2026-09-02, C] 2 census arms still have no purpose**, both a key-shape edge case (checkpoints nested deeper than the run dir, so model_db's leaf-name lookup misses): `fullft/fullft_avp_t256/_unfixed_missing_wd` and `fullft_avp_surgical/.../version_None/checkpoints`. Purposes ARE written for both in the overrides, they just do not join. Cosmetic; 224/226 resumable arms are covered.
+### 📥 LUMI pull for the pianoroll/contour work — commands ready, two decisions first (C, 2026-08-26)
+Sizing from `eval/lumi_ckpt_census.tsv` vs the local UUID drive. **Everything = 1177 GB; you have
+402 GB free on UUID, 239 GB on Mantu.** So it has to be pruned-then-pulled, not pulled whole.
+
+| what | on LUMI | local | note |
+|---|---|---|---|
+| `pianoroll_fullft` **terminal fat** ×2 seeds | — | ✅ **already pulled**, 13.6 GB each, `optimizer_states=True` | nothing to do |
+| `pianoroll_fullft` mid epochs | 46 files, 624 GB, **all fat** | 0 | prune on LUMI first (in scope for `prune_optimizer_states.py`) |
+| `morphcond` `riffer_step*.pt` | 256 files, 464 GB | only `riffer_final.pt` ×16 | **out of the pruner's scope** — see below |
+| `morph_head_sweep` | 24 files, 59 GB | 0 | small, pull whole |
+| `ftstack_heads/headb_*` | 16 files, 29 GB | 0 | small, pull whole |
+
+**Decision 1 — the `-v1` duplicates.** Epochs 1–15 of each pianoroll seed exist TWICE
+(`epoch=N-step=M.ckpt` and `…-v1.ckpt`): the duplicate submit `EXPERIMENTS.md` flagged
+("⚠ duplicate second submit pair to be scancelled (same run dirs)") ran concurrently in the same
+directory, so Lightning suffixed the second writer. Epochs 17–31 have no twin, i.e. only one job
+survived. Which job wrote the non-`-v1` early epochs is not recoverable from names alone — the
+mtime listing (command 1) settles it. Until then the pull excludes `*-v1*`.
+
+**Decision 2 — extending the pruner to the `riffer_*.pt` family.** Those files are **not**
+weights-only. **The classifier bug is now FIXED** (`eval/ckpt_probe.py`): it tested only Lightning's
+`optimizer_states` key, while the riffer trainer writes a top-level `opt` — so an entire family read
+as slim. Both keys are now matched as length-prefixed pickle strings (so a bare `opt` substring
+cannot false-positive), covering both pickle string encodings; 5 tests in
+`eval/tests/test_ckpt_probe_slim.py`. **A `?rescan=1` + census rebuild is needed to propagate it** —
+the "132 arms with NO fat copy anywhere" figure is understated until then. Measured breakdown of a real one: `opt`
+**1359.6 MB of 1813 MB — 75%**, vs `state` 226.5 MB + `model_train` 226.5 MB. Stripping `opt` is a
+**4× reduction**, which turns morphcond's 464 GB into ~116 GB and makes it pullable at all.
+`lumi/prune_optimizer_states.py` matches `epoch=(\d+)` `.ckpt` only, so it does not touch them.
+The clean fix is to EXTEND that script (keeping its safe-by-design order: write slim, verify, then
+delete) rather than write a second pruner — the skill is explicit about not writing ad-hoc ones.
+**Say the word and I will extend it; it then needs an rsync to LUMI before it can run.**
+
+### 🔌 Plug the Mantu eval drive back in — 692 adapters + the ckpt picker are dark (C, 2026-08-26)
+`/run/media/kim/` currently holds only the UUID drive and Lehto; **Mantu is not mounted**. Live
+consequences right now: `/ckpts` 404s (the checkpoint picker is empty), `chroma_other` is skipped at
+boot so `/info` reports **16 heads not 17**, and **692 of 797 adapters** in the DoRA picker sit on
+that drive. The UI no longer lies about it — offline adapters are marked `— drive offline`, disabled
+and sorted last, and the ckpt status names the real cause — but nothing on Mantu is usable until it
+is mounted. **Two follow-ups gated on that:** (a) re-check whether `latch_sa3_chroma_other_best.pt`
+still exists; my search found it nowhere, but the drive was unmounted, so that is **not** a finding
+yet. (b) The model DB journal is the pre-dedupe one; a `?rescan=1` once the drive is back will fix
+the census's local/remote columns too.
+
+</details>
+
+### 🧾 Two commits a subagent made without being asked — revert or keep? (C, 2026-08-25, still open)
+`c1c4983` (model_roots config-driven multi-root) and `b819097` (ckpt_probe family classifier) went
+into history unasked on `sa3-style-adapter`. Both are code we want; the issue is only that they were
+committed rather than left in the working tree for you. Your call: keep, or reset and re-stage.
+
 ### ⏳ BEFORE LUMI SCRATCH WIPE: hand-tag promising FATS for final pull (Kim, self-assigned 2026-08-21)
 Kim will tag resume-worthy fat ckpts before the purge. Mechanics ready when he is: write the
 paths (one per line) into a keep_fats.txt, then a --files-from pull of exactly those (same
@@ -419,6 +469,12 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+
+### ✅ PT→base soup ladder — LISTENED, closed NEGATIVE (Kim, 2026-09-07)
+*"only the alpha .5 is listenable, and even that has artifacts... it's evident the mixing just degrades the sound."* **PT does not blend with base** — no usable intermediate model exists, so the punchy-vs-always-the-same question stays untested by this route. Falsifies the assumption the arm rested on: a fine-tune does NOT stay in the linear-mode-connectivity regime just because 997 of 1019 tensors are identical. Also explains why my descriptors gave opposite answers per sampler — they were reading artifact spectra, not a mixture. EXPERIMENTS C6, closed. Don't rebuild.
+
+- **08-26 (C)** — render server (`:8056`) now saves z0 next to every render: `/generate` writes `out_NN.z0.npy` and every response carries a `latents` list, proved byte-identical on both sampling branches (same-seed A/B, same sha256), with a `/longform` continuation round-trip proof (prefix correlation 1.000). a2a paths deliberately save none (crossfade of separately-sampled windows, no single z0 produced it) and say why in `meta.z0_reason`. Closes the standing "save z0 next to every render" directive for the inference UI.
+- **08-21 (W)** — the goa archive's worst 100 tracks archaeology: 76/100 declare ≥192kbps but their content stops at 4.7-11.9kHz — the source was destroyed before this encode (transcodes/rips/stream captures), spread over 90 distinct albums concentrated 1994-1999, not one bad batch. `mir/stats/goa_big_worst100/`.
 - **08-21** — the "ONE caption decision" above got OVERTAKEN BY EVENTS rather than answered: tonight's
   `winning_fleet`/`fullft_fleet` campaign (12 arms) hit exactly the predicted failure — `biggoa`/`mix3`
   arms trained ~2h with EMPTY/unconditional prompts, the relpath-keyed sidecar never matching the

@@ -2571,3 +2571,39 @@ Standing correction to my own habit: a self-gating instrument protects against a
 metric, not against a *partial* matrix. Reporting when 8 of 16 cells exist is the same class
 of error as reporting a null before auditing the meter — I had the rule and still needed the
 other half of the grid to catch it.
+
+
+### 2026-09-07, close — Kim's ears closed C6 in one sentence, and I should have asked for them first
+
+*"only the alpha .5 is listenable, and even that has artifacts... it's evident the mixing just
+degrades the sound."* PT does not blend with base. C6 is a negative.
+
+**The assumption that died.** The whole arm rested on PT being a fine-tune of base — one
+trajectory, therefore the linear-mode-connectivity regime where weight averaging is known to
+work, unlike the independently-trained soups of C1/C2. I wrote that into the ARCHITECTURE row
+as the *justification* for the arm being safe. It's false: post-training leaves the regime
+despite being a fine-tune. 997 of 1019 tensors identical and a median relative delta of 0.0013
+did not imply blendability. Weight-space closeness is not functional closeness, and I had the
+evidence for that in hand — the same diff showed the change was CONCENTRATED (mean 0.0215,
+max 0.714), which is exactly the shape that breaks averaging.
+
+**The measurement was answering a question that had already been settled.** If the blends are
+degraded rather than mixed, `soup_descriptors.py` was reading artifact spectra. That explains
+the thing I flagged as an open hypothesis this afternoon — the two samplers disagreeing about
+the same 48 biases — with something far more boring than "a local-conditioning bias matters
+differently under a different denoiser objective." Degradation simply has no reason to be
+consistent across sampling objectives. The euler/24 cell where both blends fell OUTSIDE the
+endpoint range was the tell; I called it a manifold property of interpolation when it was a
+broken model.
+
+**The actual process error, and it is not the one I corrected earlier today.** I corrected
+myself for concluding from a partial grid. Fine, but the deeper mistake was upstream: I built a
+self-gating instrument, a descriptor suite, an audition page and a 48-clip render before anyone
+listened to a single blend. **One clip, played once, closes this experiment.** My self-gate
+proved a descriptor could SEE a difference between arms; it could never establish that the
+difference was musical, and I let "the metric has dynamic range" stand in for "the artifact is
+worth measuring." Kim's cost-order principle (cheap probes first) applies to the LISTEN, not
+just to the compute — the cheapest probe available was his ears and I scheduled them last.
+
+Kept as a negative worth having: don't soup PT with base, and don't assume a fine-tune is
+linearly connected to its base just because the weights are close.

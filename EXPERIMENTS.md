@@ -771,7 +771,27 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   with the same pipeline when it lands — full quartet: single-replica / replica-soup / grand-mean
   / fullft-EMA, one page. Zero further compute planned on `a128` outside this test (agreed, C+G).
 
-### C6 — PT&rarr;base soup: can "punchy" be rewound without rewinding "always the same"? — **RENDERED 09-07 (C), awaits Kim's ears**
+### C6 — PT&rarr;base soup: can "punchy" be rewound without rewinding "always the same"? — **DONE 09-07, NEGATIVE (Kim's ears)**
+
+- **VERDICT (Kim, 2026-09-07, after listening to all 48).** *"only the alpha .5 is listenable, and
+  even that has artifacts... it's evident the mixing just degrades the sound."* **PT does not blend
+  with base.** The answer to the original question is that the ladder cannot ask it — there is no
+  usable intermediate model to judge, so "punchy vs always-the-same" stays untested by this route.
+  **Do not rebuild this ladder.**
+- **What that invalidates, and it is worth understanding before trying anything similar.** The whole
+  arm rested on PT being a FINE-TUNE of base, hence one trajectory, hence the linear-mode-connectivity
+  regime where weight averaging is known to work (unlike the independently-trained soups of C1/C2).
+  That reasoning is falsified: **post-training moves the model out of the regime despite being a
+  fine-tune.** Weight-space closeness (997 of 1019 tensors identical, median rel delta 0.0013) did
+  not imply blendability.
+- **And it retro-explains the measurement.** The blends are DEGRADED, not interpolated &rArr;
+  `soup_descriptors.py` was reading **artifact spectra, not a mixture**. That is why the two samplers
+  gave opposite verdicts about the same 48 `to_local_embed` biases: degradation has no reason to be
+  consistent across sampling objectives. The euler/24 cell where both blends fell OUTSIDE the
+  endpoint range was the tell, and I read it as a manifold property instead of a broken model.
+  **Lesson: "between the endpoints in descriptor space" never implied musically between them** — the
+  self-gate proved a descriptor could SEE a difference, never that the difference was musical.
+  A listenability check on one clip would have closed this before any of the measurement was built.
 
 - **Why.** Kim 2026-09-06: the post-trained `medium` "gets some things right, like a coherent,
   punchy sound. it also always sounds more or less the same with the kick, bass and
