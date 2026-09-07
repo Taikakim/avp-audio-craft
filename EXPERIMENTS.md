@@ -771,6 +771,45 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   with the same pipeline when it lands — full quartet: single-replica / replica-soup / grand-mean
   / fullft-EMA, one page. Zero further compute planned on `a128` outside this test (agreed, C+G).
 
+### C6 — PT&rarr;base soup: can "punchy" be rewound without rewinding "always the same"? — **RENDERED 09-07 (C), awaits Kim's ears**
+
+- **Why.** Kim 2026-09-06: the post-trained `medium` "gets some things right, like a coherent,
+  punchy sound. it also always sounds more or less the same with the kick, bass and
+  percussions." Those are the same post-training pass. This asks whether they separate.
+- **How.** `eval/soup_pt_ladder.py` builds `W = base + alpha*(PT-base)`; `eval/render_soup.py`
+  renders a blend dir (or, `--endpoint {base,pt}`, an unblended endpoint) at fixed seed 1234,
+  cfg 7, 20 s, 3 prompts x steps {8,24} x sampler {euler,pingpong}.
+  Arms: `ptm_a050` (global alpha=0.5) and `ptm_local000` (alpha=1 EXCEPT the 48
+  `to_local_embed.*bias` tensors held at base -- the biggest movers, per the 997-tensor diff:
+  median rel delta 0.0013 but MEAN 0.0215, MAX 0.714, i.e. concentrated not small).
+- **&#9888; The two endpoints do not share a sampler.** `medium` is
+  `diffusion_objective: rf_denoiser` (native **pingpong**); `medium-base` is `rectified_flow`
+  (**euler**); and a blend loads medium-base's CONFIG whatever its alpha, so every blend samples
+  as rectified_flow. Both samplers are rendered for every arm; compare only WITHIN a sampler.
+- **Result so far (`eval/soup_descriptors.py`, n=3 prompts/cell -- directional, not established).**
+  The script self-gates: a descriptor is reported only if it separates the endpoints by more than
+  the within-endpoint prompt spread. **6 of 8 descriptor/step cells came back MUTE.**
+  - steps=8, `hf` (STFT fraction >6 kHz) is the one clean channel: base 0.1762 &rarr; PT 0.2602;
+    `ptm_a050` 0.2056 (35% toward PT), `ptm_local000` 0.2529 (**91%** toward PT).
+    &rArr; **holding the 48 biggest-moving biases at base recovers only ~9% of the brightness
+    change.** Biggest weight mover != most functionally responsible; the character is
+    distributed across the other ~950 tensors, so a cheap targeted rewind does not exist.
+  - steps=24: `hf` goes MUTE (base and PT converge -- PT's advantage is few-step), `flatness`
+    becomes readable and BOTH blends land **OUTSIDE** the endpoint range, not between them.
+    &rArr; linear weight interpolation does not stay on the audio manifold under the base's
+    multi-step sampler.
+- **Kill-criterion / what would settle it.** No metric here scores "punchy but varied" -- the
+  descriptors can only say whether a blend interpolates. The verdict is Kim's ears on
+  `eval/build_soup_page.py`'s same-playhead page. If tighter and more-generic move together at
+  every rung, they are one knob and the trade is unavoidable; if one moves faster, there is a
+  setting worth having.
+- **Gotcha for anyone re-running.** pingpong fragments the allocator far worse than euler and
+  OOMs all 4 arms on a 16 GB card; `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` alone
+  fixes it (0 &rarr; 3 writes on the minimal retest). Renders also segfault at *teardown* after
+  all files are written -- the exit code lies, count the wavs.
+- **Artifacts.** `/home/kim/evals_aac/soup_rewind/` (wavs + `index.html`), blends on Mantu at
+  `/run/media/kim/Mantu/soups/{ptm_a050,ptm_local000}` (8.59 GB each).
+
 ### C4 — cfg-dependent optimal soup/EMA length — **POTENTIAL (test on C1's boards)**
 - EDM2 Fig 6: optimal EMA ~13 % no-CFG vs ~2 % at cfg 1.4 → Kim's cfg7 vs cfg16 cells plausibly want
   different soups. Render both cfgs for the same soups and compare.

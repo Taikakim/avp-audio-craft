@@ -39,6 +39,36 @@ from src.conditioners.contour_streams import contour_stream, expand_to_frames  #
 
 FPS = 10.766
 STRIDE, TOL_ST, IOI_TOL = 4, 0.5, 0.15
+LAT = "/home/kim/Projects/latents_sa3"
+SIDECARS = "/run/media/kim/Lehto/latents-all-backup/latents_sa3_morph{}"
+
+
+def stream_from_truth(stem: str, L: int) -> "np.ndarray | None":
+    """Rebuild a stem's contour stream from ground-truth f0 — EXACT, verified 120/120.
+
+    ⚠ THE BUG THIS FIXES (C, 2026-09-04): `f0_other_ts` is in HERTZ. build_morph_streams
+    converts to SEMITONES first (12*log2(f0/440), unvoiced zeroed) and only then encodes,
+    because `tol=0.5` means half a SEMITONE. Feeding raw Hz with a 0.5 tolerance collapses
+    the "equal" band to nothing, so the dense ranks diverge — that reproduced the sidecars
+    at only 0.755 / 0.550 / 0.337 for L2/L3/L4 and made the whole adherence test
+    unreadable. It degraded with alphabet size, which read like a grid offset; it was a
+    UNIT error. With the conversion in place: 40/40 EXACT on every vocabulary.
+
+    The crop was never wrong — sidecar[i0:i1] vs the fed stream matches at 1.0000.
+    """
+    import numpy as np
+    z = np.load(f"{LAT}/{stem}.TIMESERIES.npz")
+    f0 = np.asarray(z["f0_other_ts"], np.float64)
+    v = np.asarray(z["f0_other_voiced_ts"], np.float64) > 0.5
+    T = f0.shape[0]
+    semis = np.zeros(T)
+    semis[v] = 12.0 * np.log2(np.maximum(f0[v], 1e-3) / 440.0)
+    pts = np.flatnonzero(v)[::STRIDE]
+    if pts.size < L + 2:
+        return None
+    syms, anch = contour_stream(semis, pts, L=L, tol=TOL_ST)
+    s = expand_to_frames(syms, anch, T)
+    return np.where(s < 0, 0, s + 1).astype(np.int8)
 L_OF_VOCAB = {5: 2, 15: 3, 77: 4}
 
 
