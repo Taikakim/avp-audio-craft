@@ -786,18 +786,28 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   `diffusion_objective: rf_denoiser` (native **pingpong**); `medium-base` is `rectified_flow`
   (**euler**); and a blend loads medium-base's CONFIG whatever its alpha, so every blend samples
   as rectified_flow. Both samplers are rendered for every arm; compare only WITHIN a sampler.
-- **Result so far (`eval/soup_descriptors.py`, n=3 prompts/cell -- directional, not established).**
-  The script self-gates: a descriptor is reported only if it separates the endpoints by more than
-  the within-endpoint prompt spread. **6 of 8 descriptor/step cells came back MUTE.**
-  - steps=8, `hf` (STFT fraction >6 kHz) is the one clean channel: base 0.1762 &rarr; PT 0.2602;
-    `ptm_a050` 0.2056 (35% toward PT), `ptm_local000` 0.2529 (**91%** toward PT).
-    &rArr; **holding the 48 biggest-moving biases at base recovers only ~9% of the brightness
-    change.** Biggest weight mover != most functionally responsible; the character is
-    distributed across the other ~950 tensors, so a cheap targeted rewind does not exist.
-  - steps=24: `hf` goes MUTE (base and PT converge -- PT's advantage is few-step), `flatness`
-    becomes readable and BOTH blends land **OUTSIDE** the endpoint range, not between them.
-    &rArr; linear weight interpolation does not stay on the audio manifold under the base's
-    multi-step sampler.
+- **Result (`eval/soup_descriptors.py`, all 48 clips, n=3 prompts/cell -- directional, not
+  established).** The script self-gates: a descriptor is reported only if it separates the
+  endpoints by more than the within-endpoint prompt spread. **9 of 16 cells came back MUTE.**
+  - **&#9888; LOCALIZATION IS UNRESOLVED -- the two samplers disagree about the same 48 tensors.**
+    | cell | descriptor | `ptm_local000` | holding the 48 biases at base recovers |
+    |---|---|---|---|
+    | euler / 8 | `hf` | 91% toward PT | **9%** |
+    | pingpong / 24 | `flatness` | 13% toward PT | **87%** |
+    | pingpong / 24 | `zcr` | 12% toward PT | **88%** |
+    Under euler the biases look nearly irrelevant; under pingpong they carry almost the whole
+    effect. *(An earlier version of this entry, and commit e510144, asserted the euler/8 reading
+    as the finding -- "the rewind is not localized". That was one cell generalised to the whole
+    question, written before the pingpong side existed. Corrected 2026-09-07.)*
+  - **Why they can legitimately disagree:** NEITHER table is a clean weights-only comparison --
+    in the euler table PT is off its native sampler, in the pingpong table base is. Each is
+    "both models under ONE model's objective". `to_local_embed` sits in the local-conditioning
+    path, so a bias there plausibly matters differently under a different denoiser objective.
+    Testable; not settled at n=3.
+  - **What does hold:** alpha=0.5 interpolates MONOTONICALLY wherever a descriptor is readable
+    (+0.35, +0.67, +0.46 -- always between the endpoints). And at **euler/24 both blends land
+    OUTSIDE** the endpoint range (flatness -0.19 and +1.39) &rArr; linear weight interpolation
+    does not stay on the audio manifold there.
 - **Kill-criterion / what would settle it.** No metric here scores "punchy but varied" -- the
   descriptors can only say whether a blend interpolates. The verdict is Kim's ears on
   `eval/build_soup_page.py`'s same-playhead page. If tighter and more-generic move together at

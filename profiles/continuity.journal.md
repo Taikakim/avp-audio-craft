@@ -2542,3 +2542,32 @@ varied", and after a week in which four separate instruments failed their contro
 morph question, the honest move was to build the same-playhead page and let Kim's ears
 decide. The descriptors answer only the narrow question they can answer — does a blend
 interpolate — and the answer is yes at 8 steps, no at 24.
+
+
+### 2026-09-07, later — the correction: I generalised one cell to the whole question
+
+Rendered the pingpong side and it contradicted the finding I had already written into
+EXPERIMENTS C6, the ARCHITECTURE index, this journal, a commit message, and a message to
+Kim. Same 48 `to_local_embed` biases: holding them at base recovers **9%** of the change
+under euler/8 (`hf`) but **87–88%** under pingpong/24 (`flatness`, `zcr`). So "the rewind is
+not localized" was one readable cell stated as the answer.
+
+**What I actually did wrong.** Not the measurement — the self-gate worked, the numbers were
+right, and I flagged n=3 honestly. The error was writing the conclusion when only half the
+matrix existed. I had *already identified* the sampler asymmetry as important enough to add
+a `--sampler` flag and a warning banner, and then drew a conclusion from the euler half
+anyway, before the pingpong renders I had queued for exactly this reason came back. The
+discipline gap was between "I know this axis matters" and "so wait for it."
+
+**The thing worth keeping.** Neither table is a clean weights-only comparison: euler runs PT
+off its native sampler, pingpong runs base off its. Each measures both models under ONE
+model's objective. So the disagreement is not noise to be averaged away — it is the shape of
+the result. `to_local_embed` is in the local-conditioning path, and a bias there plausibly
+carries different functional weight under a different denoiser objective. That is a real
+hypothesis the ladder can test, and it is more interesting than the tidy negative I nearly
+shipped.
+
+Standing correction to my own habit: a self-gating instrument protects against a *mute*
+metric, not against a *partial* matrix. Reporting when 8 of 16 cells exist is the same class
+of error as reporting a null before auditing the meter — I had the rule and still needed the
+other half of the grid to catch it.
