@@ -2487,3 +2487,58 @@ and visible; false presence is silent. I had the ordering backwards.
 biases, which turned a global alpha sweep into a targeted-rewind experiment. And
 `spectral_lr`/`scalar_lr` turned out to already exist and to have never been passed, so
 Kim's LR question needed two CLI args rather than a plumbing job.
+
+
+## 2026-09-07 — The PT rewind is not localized, and the two endpoints don't share a sampler
+
+Kim's question was whether the post-trained `medium`'s two traits separate: the punchy
+coherence he wants, and the "always more or less the same kick, bass and percussions" he
+doesn't. Rendered the ladder and measured what could honestly be measured.
+
+**The finding that actually matters is negative and useful.** `ptm_local000` holds the 48
+`to_local_embed.*bias` tensors at base value — the biggest movers in the 997-tensor diff
+(median rel delta 0.0013, but mean 0.0215 and max 0.714, which is what made a targeted arm
+worth building at all). Holding them back recovers only **~9%** of the brightness change
+(hf 0.2529 against PT's 0.2602 and base's 0.1762). So the character is distributed across
+the other ~950 tensors. **Biggest weight mover is not most functionally responsible** — I had
+half-expected the targeted arm to be the interesting one, and it is, but for the opposite
+reason: it rules out the cheap surgical rewind rather than delivering it.
+
+**The trap I nearly shipped past.** `medium` is `diffusion_objective: rf_denoiser`, native
+sampler **pingpong**; `medium-base` is `rectified_flow`, **euler**. A blend loads
+medium-base's CONFIG whatever its alpha — so every blend samples as rectified_flow, and
+`ptm_local000` is PT weights running under the base's objective. My first endpoint render
+forced euler on PT too. That is *correct* for a controlled comparison (differences become
+purely weights) and *wrong* as a reference, because Kim's entire impression of PT comes from
+hearing it on pingpong. Handing him a euler-PT clip labelled "PT" would have made
+post-training look worse than it is and biased the whole ladder. Both samplers now render
+for every arm and the page refuses to put them in one table. I found this only because I
+stopped to check what `sampler_type="euler"` was actually doing — the hardcoded default in
+my own script from two days earlier.
+
+**The self-gate earned its keep.** `soup_descriptors.py` reports a descriptor only if it
+separates the endpoints by more than the within-endpoint prompt spread; **6 of 8 cells came
+back MUTE**. Without that gate I would have had eight numbers to talk about and no way to
+tell which were the metric's ceiling — exactly the failure the audit-the-instrument rule
+names. The two that survive say opposite-flavoured things: at steps=8 `hf` interpolates
+cleanly and monotonically, and at steps=24 `hf` goes mute (the endpoints converge — PT's
+whole advantage is few-step) while `flatness` puts both blends **OUTSIDE** the endpoint
+range. Linear weight interpolation does not stay on the audio manifold under the base's
+multi-step sampler. n=3 prompts per cell, so directional only; I said so rather than
+dressing it up.
+
+**Debugging note worth keeping.** All four pingpong arms died as CUDA OOM and I was one step
+from concluding the 16 GB card can't run pingpong. It was allocator fragmentation —
+`expandable_segments:True` alone took the minimal retest from 0 writes to 3 — and the
+cascade of immediate restarts after each crash is what made a soft limit look like a hard
+one. The error message had said so in its own text. Related: every render segfaults at
+*teardown* after writing all its files, so `|| echo FAILED` reports failure on complete
+work; the exit code lies and the wav count is the truth. And `grep -c 'wrote '` read 0 on a
+log whose writes were real — progress bars use `\r`, so the write lines were hidden inside
+bar lines until I piped through `tr`.
+
+What I did NOT do: invent a "punchiness" score. No metric we have measures "punchy but
+varied", and after a week in which four separate instruments failed their controls on the
+morph question, the honest move was to build the same-playhead page and let Kim's ears
+decide. The descriptors answer only the narrow question they can answer — does a blend
+interpolate — and the answer is yes at 8 steps, no at 24.
