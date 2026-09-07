@@ -837,8 +837,18 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   OOMs all 4 arms on a 16 GB card; `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` alone
   fixes it (0 &rarr; 3 writes on the minimal retest). Renders also segfault at *teardown* after
   all files are written -- the exit code lies, count the wavs.
-- **Artifacts.** `/home/kim/evals_aac/soup_rewind/` (wavs + `index.html`), blends on Mantu at
-  `/run/media/kim/Mantu/soups/{ptm_a050,ptm_local000}` (8.59 GB each).
+- **Artifacts, and what was deleted (Kim 2026-09-07, after the verdict).**
+  - **KEPT** — `/home/kim/evals_aac/soup_rewind/`: all **48 wavs** + per-clip JSON, `index.html`
+    (both sampler tables, same-playhead), `descriptors.json`, and the two `BLEND.*.json`
+    provenance records + the render scripts, copied out of the blend dirs before they went.
+    Kim's call: "delete the soup weights, leave the clips for now" — the clips are the evidence
+    for the negative, and re-rendering them costs GPU time the verdict does not justify.
+  - **DELETED** — `/run/media/kim/Mantu/soups/{ptm_a050,ptm_local000}`, 8.59 GB each, **+17 GB
+    freed** (Mantu 91 GB &rarr; 108 GB after `sync`; btrfs accounts asynchronously, so the first
+    `df` still read 91 GB and looked like the delete had failed).
+  - **Regenerable**, which is why deleting was cheap: `eval/soup_pt_ladder.py` rebuilds either
+    blend from `medium` + `medium-base` in minutes, and `BLEND.json` records the exact alpha,
+    targeted regex and tensor count. Only `/run/media/kim/Mantu/soups/*.{log,sh}` remain.
 
 ### C4 — cfg-dependent optimal soup/EMA length — **POTENTIAL (test on C1's boards)**
 - EDM2 Fig 6: optimal EMA ~13 % no-CFG vs ~2 % at cfg 1.4 → Kim's cfg7 vs cfg16 cells plausibly want
