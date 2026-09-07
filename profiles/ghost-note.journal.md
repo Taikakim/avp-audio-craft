@@ -671,3 +671,103 @@ the agent-session lifecycle — but the final publish leg never got triggered by
 after the second interruption, so I finished that by hand. Headline finding: Kim's
 PQ×crest×whitening quality-weighting formula is competitive but does NOT consistently beat simple
 uniform/profile averaging — a wash worth his ears, not the metrics alone.
+
+## 2026-08-25/26 — longform seam repair: four experiments, gap-inpaint wins; suomisoundi EMA root-caused; evaluator UX pass
+
+### finding · longform "bursts" are windows resetting, not drift — and gap re-inpainting fixes it, RMS-guidance doesn't
+Kim's complaint about `fp32cmp_avp_t4096_bs1_lr1e4` ep7's 570s sliding-window continuation:
+same style throughout but arriving in discrete "bursts." Root cause (confirmed by reading
+`longform.py`): each window is an independent fresh-seed diffusion sample, softly conditioned
+on the prior tail via inpaint mask, joined by a short slerp crossfade — so per-window energy/
+dynamics reset even though style doesn't drift. Tested Kim's two hypotheses in parallel:
+(1) **RMS-guided continuation** (LatCH `constant` head on `rms_energy_*`, self-calibrated target
+from the tail, gain 512, 20s windows) — made bursts WORSE (22.84dB mean RMS jump vs 13.82dB
+plain baseline), a genuine negative result, reported as such. (2) **Post-hoc SDEdit reanchor**
+at the seams (±4s, sigma 0.6/0.7) — DSP metrics improved 10-20x but Kim's ear said "the
+inpainting didn't really work." Kim's own follow-up idea won: **true bidirectional native
+inpainting of the gap itself** (mask out ±N seconds around each seam, let SA3 regenerate the
+whole transition using `inpaint_audio`+mask, not just reanchor). First cut (10s gap / 10s+10s
+context) — "much better, gaps disappeared naturally," one residual break ~7:05, and a
+style-lock-in after 7min. Widening context to 20s/20s ("morectx") was the clear best; making it
+asymmetric (90s before / 2s after, forcing the model to work off only the preceding audio) was
+WORSE (6 breaks, not fewer) — symmetric wide context beats asymmetric narrow. Built a
+spectral-flux break detector (smoothed, 2xMAD threshold) + beat-snapping (madmom downbeats via
+`mir/src/rhythm/beat_grid.py`) to auto-locate/rank seam severity, but honestly reported it found
+no clean fadeout signal in RMS or spectral centroid for the specific fade Kim wanted auto-cropped
+— asked for a manual timestamp rather than keep blind-tuning thresholds. Net takeaway for anyone
+doing sliding-window longform: **fix seams by re-inpainting the transition itself with wide
+symmetric context (~20s/20s), not by trying to condition the generation to not need seam repair
+in the first place.** Landed a real capability along the way, built with CONTINUITY (she owns
+`explorer_render_server.py`, coordinated rather than duplicated): `LongFormRenderer.render_latents`
+gained `init_latents=None` to continue an existing render (SA3 commit 43037de), `/longform`'s
+t2a path gained `init_latent_path` (SAO commit 2e3c8dd). All the seam-repair scripts themselves
+are scratch-only (never promoted into the render server per Kim's later redirect below).
+
+### finding · suomisoundi's "identical across epochs" / "pure noise" reports both root-caused, neither is a training-code bug
+Kim: `suomift_goaft` renders identically every epoch, `suomift_avpaug19` is spectral noise at
+every epoch. Traced via file-checksum (not literal dupes) -> DB metric flatness across 8 epochs
+-> sbatch/`train_lora.py` hyperparameter read -> direct comparison against already-scored
+bare-backbone renders. **Root cause: `train_lora.py`'s SimpleEMA defaults are `--ema-beta 0.9999`
+/ `--ema-warmup-steps 100`**, a ~10,000-step time-constant baked in regardless of how few real
+steps a short warm-start fine-tune (effective_batch 32, 32 epochs, likely <1000 total steps)
+actually runs — so the EMA shadow saved at every checkpoint stays essentially at its
+initialization value the whole run, which for `suomift_avpaug19` means "the noisy `bb_avpaug19`
+bare-backbone starting point," not a training bug. Confirmed the noise pre-dates the fine-tune
+entirely by diffing against the scored bare-backbone renders directly. Proposed a fix (auto-scale
+beta from `epochs, dataset_size, effective_batch` computed as an explicit product, not buried in
+an opaque `total_steps`) — Kim caught a real gap in my first framing ("shouldn't beta depend on
+batch? a step means something different at bs1 vs bs64") and I agreed it needs to be
+**explicit** in the code, not just implicitly correct via cancellation. **NOT YET IMPLEMENTED —
+Kim's message was a correction to validate the design, not a go-ahead; I asked "want me to write
+it that way?" and got no reply before the session moved on. Do this before trusting any more EMA
+checkpoints from short warm-start runs.**
+
+### tool · evaluator.html UX pass from live tester feedback (Kim relayed, translated from Finnish)
+Collapsed the 4-question cycle to Kim's one stated dimension ("Which track sounded more
+interesting and had a more pleasant timbre?"), added a persistent `?` help modal (ranking guide +
+every control explained, was previously only shown once on first visit and then lost), and
+labelled the two evaluation modes (comparative vs. per-track absolute rating) inline so their
+scope stops being ambiguous. `build_evaluator_manifest.py` gained a silent Audiobox PQ<3.5 floor
+(row-level — same checkpoint can render one prompt cleanly and another badly — unscored clips,
+mostly native-length since Audiobox hard-skips >60s, pass through rather than being excluded, so
+native-length tiers don't silently empty). Verified via `node --check` + a standalone `node -e`
+harness against the real rebuilt manifest (3504 entries, pools pairable at every length bucket,
+exactly 1 question resolves) — **no live browser verification possible in this environment**
+(both the Chrome extension and Playwright failed to reach a display); flagged rather than claimed.
+Committed 36dc484. Deferred by Kim mid-thread ("after you've finished with this, do some more
+clips with our various suomisoundi models, since they sound curiously bad so far") — next up,
+now that the EMA root cause above explains at least part of why.
+
+## 2026-09-07 — Dual-LR full-FT at spectral 1e-3: negative, and a mean-vs-median trap
+
+`fullft_dual_1e-3_2026-09-05` (medium-base full FT, 6000 steps, Fusion hyperball
+`ns5,normuon`, spectral 1e-3 / scalar 1e-4, T=256, bs1×accum4, bf16, seed 42, same 300-item
+subset as the 09-04 ladder). **Spectral 1e-3 destabilises the run and it never recovers:**
+median `train/loss` ≈ 2.5 in every 1000-step bin vs **0.79** flat for the 09-04 ladder arms on
+identical data and seed; **361/960 logged steps (38%) spike above 5.0**, first at step 206,
+peaks 15833 / 10308 / 9504, with `gradient_clip_val 1.0` on throughout and not containing it.
+Non-spike trend ends *higher* than it starts (~0.95 → ~1.8).
+
+**Method note — the meter nearly inverted the finding.** My first read used bin MEANS, which
+showed 405 → 84 and looked like healthy convergence. That was the spikes dominating the mean;
+the run was diverging the entire time. Median + a spike count settled it in one line. This is
+an audit-the-instrument case failing toward a **false POSITIVE**, the opposite of the usual
+false-absence direction the CLAUDE.md rule warns about — worth noting that the rule cuts both ways.
+
+**Settles an over-claim.** I had said the spectral group "needs a bigger LR" off 1e-5 vs 1e-4,
+was challenged, and withdrew it. This closes the bracket from above: the ceiling is below 1e-3,
+so the evidence supports only 1e-4 > 1e-5. Don't exceed 1e-4 on the spectral group without a
+fresh stability check.
+
+**Full-FT memory map on 16 GB** (reusable): AdamW OOM (15.13 GiB) · Fusion default OOM ·
+Fusion+hyperball OOM at 14.87 GiB (short by 144 MiB) · Fusion+hyperball+`ns5,normuon` FITS ·
+LionSR fits. `ns5` allocates no state (it *is* the Newton-Schulz step); the cost is `mona`
+(2 buffers) and `sf` (2 fp32 clones). Full-FT ckpts are 9.7 GB each.
+
+Related: the 09-04 autoscale ladder's null is explained — the excessive weight growth is a
+Schedule-Free artefact, and the memory-feasible component set drops `sf`, so that ladder could
+not reproduce the pathology it was built to test.
+
+⚠ Outstanding: `site/meter-for-taste.html`'s gradient-boosting section is invalidated by W's
+pair-grouping correction (82.6% → 74.9%, *below* PQ alone at 78.1%). Page still claims the
+opposite; not to be cited until fixed.

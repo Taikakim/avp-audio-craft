@@ -349,6 +349,24 @@ trains without one becomes another unauditioned family — that is exactly how A
   Owner: GHOST-NOTE (briefed, verified the flag reaches gamma_t at fusion_opt.py:722/:951; awaiting Kim's go — a
   ~7.5h 3-arm GPU bracket is Kim's call, not a peer's).
 
+- **PARTIAL RESULT, 2026-09-07 (G) — clause (3) FIRES: the fragility is SPECTRAL-side.** Not B11's own arms
+  (those pair spectral with `scalar 5e-6`), but a clean isolate of the spectral group all the same, because two
+  full-FT runs share `scalar_lr 1e-4` and differ only in the spectral rate:
+  `fullft_autoscale_2026-09-04/C_dual` (spectral **1e-4**) sits flat at median `train/loss` **0.79**, max 0.9;
+  `fullft_dual_1e-3_2026-09-05` (spectral **1e-3**, 6000 steps, same seed/data/subset) runs at median **2.5**
+  in every 1000-step bin, spikes above 5.0 on **361 of 960** logged steps (38%, first at step 206), peaks
+  15833 / 10308 / 9504, and ends higher than it starts — with `gradient_clip_val 1.0` active and not containing it.
+  Raising ONLY the spectral group destabilises ⇒ the coupling diagnosis that motivated B11 (scalar group fragile,
+  spectral safe to raise) is **inverted**, exactly as clause (3) anticipated. Zach's ~10x ratio does not port here;
+  the AdamW-shaped-base caveat in this entry is the live explanation. **Ceiling is bracketed: 1e-4 usable, 1e-3 not**
+  — B11's arm C at `spectral 5e-4` now sits inside the suspect band and should be treated as likely-unstable rather
+  than exploratory. Evidence supports only 1e-4 > 1e-5; a previous "spectral needs a bigger LR" claim of mine
+  (withdrawn under challenge) is now closed from above too.
+  *Meter warning for whoever reads these logs:* bin MEANS on the 1e-3 run show 405 → 84 and read as clean
+  convergence. That is outlier domination — the run diverges throughout. Use **median + a spike count**, never the
+  mean, on any arm suspected of instability.
+  Run: `/home/kim/fullft_dual_1e-3_2026-09-05/run_meta.json` (`result` field). Journal: `profiles/ghost-note.journal.md` 2026-09-07.
+
 ### B12 — Rewind post-training by weight interpolation (PT → base soup) — **READY, tool built, unrun (C 2026-09-04)**
 - **Why (Kim).** PT "gets some things right, like a coherent, punchy sound" but "always sounds more or less the same with
   the kick, bass and percussions". Rewind partially instead of choosing.
@@ -577,6 +595,96 @@ trains without one becomes another unauditioned family — that is exactly how A
 - ⚠️ bigmix/goa preflight requires latents_sa3 .json metas on scratch (rsync from local);
   submitted into the flash-metadata storm — expect slow staging until the mirctrl hang clears.
 
+### D16 — Where is the TEMPORAL CEILING of trajectory guidance? — **PLANNED, not started (C, 2026-08-28)**
+**Why it exists.** Two measurements bracket the answer and nothing fills the gap:
+⚠ **PREMISE CORRECTED 2026-09-03 (C).** This entry was written against D15's FIRST, RETRACTED number and its framing has not caught up: D15's revised verdict is that note-level timing **DOES** transfer — `true−shuffled +0.100` melody F1, 6/6 positive, sign test p=0.016, measured by MuScriptor transcription. The `+0.022 n.s.` below came from the chroma screen that could not separate "adopted the key" from "followed the melody", and it is exactly the audit-the-instrument case. The gap D16 probes is therefore NOT "does timing transfer at all" but **how FAST a trajectory the control can still follow** — the ceiling between note-level (which works) and the latent Nyquist. Re-scope before running. Original text follows:
+
+D15 found note-level timing does NOT transfer (`true−shuffled +0.022`, n.s.), while the
+`target_raw` probe (MASTER §5, 2026-08-28) found a slow ~0.30 Hz pulse DOES, phase-locked
+(+0.492 vs −0.031 baseline; the antiphase arm tracked antiphase, ruling out a density artefact).
+So trajectory conditioning works somewhere between "arrangement" and "bar" and we do not know where.
+
+**Why it matters beyond curiosity.** It decides what a Stage-1 trajectory generator should be
+asked to produce (Kim's two-stage idea, 2026-08-28) — density envelopes and section structure, or
+actual rhythm. Building Stage 1 before knowing this is building against an unmeasured ceiling.
+
+**How to run.** One axis, ~6 cells, `eval/sweep_run.py` — a preset with a `target_raw` onset pulse,
+sweeping the pulse PERIOD from ~8 beats down to ~1/4 beat (≈0.3 Hz → ≈10 Hz, the latent Nyquist at
+10.77 fps is 5.4 Hz, so the fast end is expected to fail and that bound is itself worth confirming).
+Measure adherence exactly as the probe did: run the head on the render's own saved z0, correlate
+against the requested curve, and ALWAYS include the antiphase control so density is not mistaken
+for alignment.
+
+**Kill criterion / what a null means.** If correlation is flat across the sweep, the +0.492 was
+gain-specific rather than frequency-specific and the whole framing is wrong — re-test at several
+gains before concluding anything. Owner: unassigned. Cost: ~6 short renders, minutes.
+
+### D15 — Pianoroll notes-lane: does the control steer at INFERENCE? — **DONE 2026-08-26 (C), verdict below**
+Follow-up to D13/Q1's in-training control_gain. That measured only that the DiT *uses* the roll
+during training; this asks whether the trained control steers a render.
+
+**Setup.** `proll_fullft_t256_bf16_s1` (terminal, fat, local), inlet re-installed on blocks 12-23,
+full state dict loaded clean (1045 tensors, 0 missing). Six tracks, each its DENSEST 256-frame
+window (~5% density), one seed/prompt, 24 steps, T256 to match the training crop. Four arms:
+`true` / `shuffled` (frames permuted) / `foreign` (a DIFFERENT track's window) / `zero` (= the
+unconditioned model, since the projection is zero-init). Metric: per-frame chroma cosine between
+the roll's pitch-class energy and the render's — crude, screening only.
+
+**VERDICT — REVISED 2026-08-28 after transcription. The control transfers KEY almost totally
+AND follows note PLACEMENT measurably. The first verdict below was an artefact of a blunt metric.**
+
+Kim's ear (2026-08-28): "true & shuffle have very identical notes; foreign seems to be in a
+different key". Both halves check out, and the second one exposed the problem: the six rolls have
+mean pairwise pitch-class-profile cosine 0.29, i.e. every foreign pairing is in a DIFFERENT KEY.
+Chroma cosine scores "adopted the key" and "followed the melody" alike, so it could not separate
+them. MuScriptor transcription can. Per arm, against the source roll, decomposed:
+
+| measure | true | shuffled | foreign | true−foreign | true−shuffled |
+|---|---|---|---|---|---|
+| key (pitch-class profile cos) | 0.952 | 0.955 | 0.169 | +0.783 | −0.004 |
+| content (pitch-set Jaccard) | 0.875 | 0.857 | 0.533 | +0.342 | +0.018 |
+| melody ((pitch,frame) F1) | **0.534** | **0.435** | 0.094 | +0.441 | **+0.100** |
+
+**melody true−shuffled = +0.100, 6/6 positive, sd 0.044, sign test p = 0.016.** Shuffled holds key
+(0.955) and content (0.857) essentially equal to true, so that gap is specifically the PLACEMENT OF
+THE RIGHT PITCHES IN TIME — the thing the chroma screen reported as +0.022 n.s. and could not see.
+
+**CONSONANCE-WEIGHTED (Kim 2026-08-28: semitone error treats C→C# and C→G alike, which is
+musically wrong).** Of 5871 played notes vs the requested roll: **69.5% exact, 30.4% a different
+note but INSIDE the roll own pitch-class set, 0.2% outside it.** By interval class to the nearest
+requested note: 87.0% unison/3rd/4th/5th-class, 13.0% m2/M2/tritone. So raw precision 0.697
+badly understates musical correctness — the model is essentially never out of key; its "errors"
+are diatonic substitutions. Caveat: in-key is a generous test if a roll pitch-class set is dense.
+
+⚠ My pitch-blind onset "timing" measure SATURATED (0.795–1.000 across every arm including foreign)
+and is uninformative — do not quote it. Same failure mode as the frame-cosine recurrence meter.
+
+Caveats: transcription is itself a model (MuScriptor under-transcribes legato — our own 07-11
+finding), melody F1 0.534 is partial not tight, n=6, 24 steps, T256.
+
+**Superseded first verdict, kept because the error is instructive:**
+
+| comparison | asks | mean | positive | sign test |
+|---|---|---|---|---|
+| true − **foreign** | does it follow THIS melody (pitch + timing)? | **+0.110** | **6/6** | **p = 0.016** |
+| true − **shuffled** | does it follow the TIMING (pitch held equal)? | +0.022 | 5/6 | p = 0.109, n.s. |
+| true − zero | does conditioning do anything at all? | ~+0.10 | 6/6 | — |
+
+The shuffled arm is the subtle one: permuting frames PRESERVES the pitch-class distribution and
+destroys only timing, so true-vs-shuffled isolates temporal alignment — and it is ~0. Against a
+foreign roll (different pitches AND timing) the effect is large and unanimous. So the conditioner
+is behaving as a harmonic/pitch-set conditioner more than a rhythmic one.
+
+⚠ **A single-track first pass gave true−shuffled = +0.12 and would have been reported as "follows
+the roll".** It rested on 20 note-bearing frames (that window was 0.24% dense). With ~255 frames
+per track across six tracks it collapses to +0.022. Do not screen a control on one window.
+
+**Caveats:** chroma metric is plain STFT pitch-class, no harmonic weighting and blind to octave;
+24 steps; T256 (23.8 s); n=6. Kim's ears are the verdict — wavs kept for audition.
+
+**Open next:** does timing alignment improve with more steps, higher control gain, or the s2 seed?
+That is the question that decides whether the pianoroll UI should promise rhythm or only harmony.
+
 ### D13/Q1 — BURN-DAY WAVE (allocation expires tonight; Kim: "just start burning the time") — **LANDED 2026-08-21 23:07 (sacct): all arms COMPLETED, only tgate 21439464 + winning_fleet 21429630 still running**
 - **Verdict at landing (C, 23:30):** pianoroll control_gain LIFTED OFF and climbs monotonically
   +0.0000 (step 0) → +0.0079 (600) → +0.0116 (1200), true<zero<shuffled — first in-training
@@ -774,6 +882,7 @@ trains without one becomes another unauditioned family — that is exactly how A
   Their 0a kill-condition cannot fire: our P_melody is the v3 CSP basis, rank 15/256 by construction.
 
 ### D12 — Contour-token conditioning stack (external drafts LANDED in mir; Q1 next) — **READY (code) / PLANNED (Q1)**
+- **AUDITION SURFACE EXISTS as of 2026-09-03 (C)** — the morphcond grid was trained AND rendered weeks ago and nobody had listened: 384 cells (16 arms = vocab L2/L3/IOI3/L4 × medium-base/full-FT × seeds, × 8 stems × {off, g1.0, g2.0}) sat on the UUID drive. Page: `eval/build_morph_page.py` → `~/evals_aac/morph_conditioner/index.html`, same-playhead, with each stem's reference clip. **Kim's ears are the next gate.** ⚠ No objective adherence metric has been run on these — the D15 transcription measure (note-cell F1 vs a source roll) has NOT been ported to contour streams, so nothing here is a claim yet.
 - `mir/src/conditioners/{morph_grids,contour_codes,contour_streams,contour_stats}.py` + regression
   tests (mir 42c3a83): monotone-invariant K&P dense-rank contour tokens over frame/event grids,
   redundancy judged by CONDITIONAL ENTROPY (agreement provably blind cross-alphabet; nested-L
