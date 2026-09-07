@@ -83,11 +83,11 @@ being checked.</p>
 </div>
 
 <figure>
-<p class="fig-h">A gap in CU decides a pair — but only once the gap is big</p>
-<p class="fig-s">Share of pairs won by the higher-scoring clip, by size of the gap · 613 votes</p>
+<p class="fig-h">Content usefulness only predicts the winner once the two clips are far apart</p>
+<p class="fig-s">Each vote is one listener choosing between two clips. Plotted: how often the clip the meter scored higher is the one they picked &mdash; grouped by how far apart the meter put the two &middot; 613 votes</p>
 <div class="legend">
-  <span><i class="sw" style="background:var(--s1)"></i>PQ</span>
-  <span><i class="sw" style="background:var(--s2)"></i>CU</span>
+  <span><i class="sw" style="background:var(--s1)"></i>PQ &mdash; production quality</span>
+  <span><i class="sw" style="background:var(--s2)"></i>CU &mdash; content usefulness</span>
   <span style="color:var(--mute)">— 50% = coin flip</span>
 </div>
 <svg viewBox="0 0 720 300" role="img" aria-label="Win rate by gap quintile: CU starts at 46% for the smallest gaps, below chance, then rises to 90%; PQ starts at 63% and rises to 91%.">
@@ -107,17 +107,17 @@ being checked.</p>
   <text x="140" y="153.7" font-size="12" fill="var(--s1)" font-family="IBM Plex Mono,monospace" text-anchor="middle">63%</text>
   <text x="620" y="51.0" font-size="12" fill="var(--s1)" font-family="IBM Plex Mono,monospace" text-anchor="middle">91%</text>
   <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
-    <text x="140" y="278">smallest gap</text><text x="380" y="278">gap quintile</text><text x="620" y="278">largest gap</text></g>
+    <text x="140" y="278">smallest gap</text><text x="380" y="278">difference between the two clips&rsquo; scores</text><text x="620" y="278">largest gap</text></g>
 </svg>
 <figcaption>When two clips are close in CU, the higher-CU one wins <strong>46%</strong> of the time — very slightly worse than a coin flip. When they are far apart, it wins 90%. PQ has no such dead zone: it is informative from the first quintile. A straight line has to commit to one slope across both regimes, and CU's slope gets dragged down by a region where the feature is pure noise.</figcaption>
 </figure>
 
 <figure>
-<p class="fig-h">Both meters saturate. CU turns back down.</p>
-<p class="fig-s">Mean listener rating (0–5) by feature quintile · 1,495 rated clips</p>
+<p class="fig-h">Both meters flatten out at the top. Content usefulness turns back down.</p>
+<p class="fig-s">Clips sorted by meter score and cut into five equal groups, worst to best. Plotted: the average score the listener gave each group, out of 5 &middot; 1,495 rated clips</p>
 <div class="legend">
-  <span><i class="sw" style="background:var(--s1)"></i>PQ</span>
-  <span><i class="sw" style="background:var(--s2)"></i>CU</span>
+  <span><i class="sw" style="background:var(--s1)"></i>PQ &mdash; production quality</span>
+  <span><i class="sw" style="background:var(--s2)"></i>CU &mdash; content usefulness</span>
 </div>
 <svg viewBox="0 0 720 300" role="img" aria-label="Rating by feature quintile: PQ rises 1.46 to 3.69 monotonically; CU rises 1.32 to 3.66 then falls to 3.55 in the top quintile.">
   <line x1="70" y1="255" x2="700" y2="255" stroke="var(--rule)" stroke-width="1"/>
@@ -170,8 +170,8 @@ being checked.</p>
 </div>
 
 <figure>
-<p class="fig-h">Agreement with the listener&rsquo;s A/B votes</p>
-<p class="fig-s">Cross-validation grouped by <strong>pair</strong>, not by row &middot; bars show &plusmn;1 sd across folds where measured</p>
+<p class="fig-h">How often each meter picks the same clip the listener did</p>
+<p class="fig-s">50% is a coin flip. Each meter is scored on clip pairs it was not fitted on, with every vote on the same pair kept together so nothing can be memorised &middot; bars show &plusmn;1 sd across folds where measured</p>
 <svg viewBox="0 0 720 250" role="img" aria-label="PQ alone 78.1 percent, best linear weighting of all 14 features 77.7 percent, gradient boosting 74.9 percent.">
   <g stroke="var(--rule)" stroke-width="1" opacity=".6">
     <line x1="450" y1="30" x2="450" y2="200"/><line x1="550" y1="30" x2="550" y2="200"/></g>
@@ -244,8 +244,8 @@ being checked.</p>
 </div>
 
 <figure>
-<p class="fig-h">Within-checkpoint spread, post-trained ÷ base</p>
-<p class="fig-s">Below 1 = the post-trained model is more consistent on that feature · 63 vs 237 checkpoints</p>
+<p class="fig-h">Does fine-tuning make a model more consistent with itself?</p>
+<p class="fig-s">Each bar is one audio feature: how much a fine-tuned model varies across its own clips, divided by how much the base model does. Below 1 = fine-tuning steadied it &middot; 63 vs 237 checkpoints</p>
 <svg viewBox="0 0 720 380" role="img" aria-label="Variance ratios: crest 0.41, onset 0.83, PQ 0.84, CU 0.87, flux 0.97, bpm 1.00, zcr 1.17, hf ratio 1.18, centroid 1.20, flatness 1.26.">
   <g stroke="var(--rule)" stroke-width="1" opacity=".6">
     <line x1="180" y1="14" x2="180" y2="320"/><line x1="480" y1="14" x2="480" y2="320"/></g>
