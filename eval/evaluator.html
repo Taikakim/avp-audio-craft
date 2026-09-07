@@ -953,7 +953,11 @@ function saveWarn(msg){
 // '&'), so has('all') is false, get('pq') is null, and the page loads the small default pool with
 // no quality matching while looking entirely normal. State the mode, and name a bad parameter
 // instead of ignoring it.
-const KNOWN_PARAMS=['all','goa','pq','crossds','recent','showflagged'];
+// KEEP IN SYNC with every PARAMS.get/has above — this list is what tells a rater a
+// parameter was ignored, so a param that works but is missing HERE produces a warning
+// that is the exact opposite of the truth. 'pairs' was added to the reader and not to
+// this list, and the landing page reported the curated mode as ignored while it ran.
+const KNOWN_PARAMS=['all','goa','pq','crossds','recent','showflagged','pairs'];
 function describeModes(){
  const m=[];
  m.push(GOA?(PARAMS.has('all')?'all — full pool':'goa — full pool'):'default — avp only');
