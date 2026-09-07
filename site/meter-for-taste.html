@@ -90,7 +90,7 @@ being checked.</p>
   <span><i class="sw" style="background:var(--s2)"></i>CU &mdash; content usefulness</span>
   <span style="color:var(--mute)">— 50% = coin flip</span>
 </div>
-<svg viewBox="0 0 720 300" role="img" aria-label="Win rate by gap quintile: CU starts at 46% for the smallest gaps, below chance, then rises to 90%; PQ starts at 63% and rises to 91%.">
+<svg viewBox="0 0 720 300" role="img" aria-label="How often the meter&rsquo;s higher-scored clip is the one the listener picked, grouped by how far apart the two scores were. Content usefulness starts at 46% when the two clips are closest &mdash; below a coin flip &mdash; then rises to 90% when they are furthest apart. Production quality starts at 63% and rises to 91%.">
   <line x1="70" y1="250" x2="700" y2="250" stroke="var(--rule)" stroke-width="1"/>
   <line x1="70" y1="30" x2="70" y2="250" stroke="var(--rule)" stroke-width="1"/>
   <g stroke="var(--rule)" stroke-width="1" opacity=".5">
@@ -119,7 +119,7 @@ being checked.</p>
   <span><i class="sw" style="background:var(--s1)"></i>PQ &mdash; production quality</span>
   <span><i class="sw" style="background:var(--s2)"></i>CU &mdash; content usefulness</span>
 </div>
-<svg viewBox="0 0 720 300" role="img" aria-label="Rating by feature quintile: PQ rises 1.46 to 3.69 monotonically; CU rises 1.32 to 3.66 then falls to 3.55 in the top quintile.">
+<svg viewBox="0 0 720 300" role="img" aria-label="Average listener rating out of 5 for clips grouped into five equal bands by meter score, worst to best. Production quality rises steadily from 1.46 to 3.69. Content usefulness rises from 1.32 to 3.66 but then falls back to 3.55 in the highest band.">
   <line x1="70" y1="255" x2="700" y2="255" stroke="var(--rule)" stroke-width="1"/>
   <line x1="70" y1="25" x2="70" y2="255" stroke="var(--rule)" stroke-width="1"/>
   <g stroke="var(--rule)" stroke-width="1" opacity=".55">
@@ -149,7 +149,7 @@ being checked.</p>
   <text x="620" y="128" font-size="11.5" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle">3.55</text>
   <text x="500" y="90" font-size="11.5" fill="var(--s2)" font-family="IBM Plex Mono,monospace" text-anchor="middle">3.66</text>
   <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
-    <text x="140" y="285">lowest fifth</text><text x="380" y="285">feature quintile</text><text x="620" y="285">highest fifth</text>
+    <text x="140" y="285">lowest fifth</text><text x="380" y="285">clips grouped by meter score, worst to best</text><text x="620" y="285">highest fifth</text>
   </g>
 </svg>
 <figcaption>Both meters do nearly all their work in the bottom two quintiles — separating bad from adequate — then flatten. But CU <strong>peaks at the fourth quintile and drops in the fifth</strong>. Allowing a curve rather than a line is worth +0.020 R² for PQ and <strong>+0.051 for CU</strong>: two and a half times as much. CU is not a weak feature. It is a non-linear one, and the previous analysis only ever asked it linear questions.</figcaption>
