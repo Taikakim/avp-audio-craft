@@ -260,7 +260,23 @@ select,button{font:inherit;color:inherit}
 const BASE='/files/evals/';
 const CB=BASE+'model_matrix/';
 const PARAMS=new URLSearchParams(location.search);
-const GOA=PARAMS.has('goa')||PARAMS.has('all');
+// ── ?pairs=<name> — CURATED PAIR LIST MODE ────────────────────────────────────────────
+// Serves a PRE-BUILT list of specific pairs in order instead of sampling the pool randomly.
+// It exists because random sampling cannot answer the question the ratings raised: nothing in
+// the 14-feature set separates a 4 from a 5 (every 4->5 Cohen's d sits inside its own CI, and
+// the 5 bucket is NARROWER than the 4 bucket, not wider — so it is not two routes cancelling).
+// Resolving that needs pairs chosen for a reason: one axis moved with the rest held, both
+// clips already rated so the A/B and 1-5 scales can be linked at all, and repeats to measure
+// the rater's own consistency ceiling. None of those can arise by chance.
+//
+// The name is SHAPE-gated, not whitelisted — same lesson as the question_id whitelist that
+// silently destroyed nine days of votes: a list that must be edited in two places to add one
+// file is a way to lose data, not a validation strength.
+//   /evaluator/?pairs=curated_pairs_2026-09-07
+// Implies ?goa=1: curated pairs name specific files across the whole corpus, so the small
+// pre-filtered avp manifest would not contain most of them.
+const PAIRS_LIST=(()=>{const v=PARAMS.get('pairs');return (v&&/^[a-z0-9_-]{1,64}$/.test(v))?v:null;})();
+const GOA=PARAMS.has('goa')||PARAMS.has('all')||!!PAIRS_LIST;
 // ?recent=<hours> -- restrict the pool to clips whose files are younger than N hours at manifest
 // BUILD time (Kim 2026-08-18: show visitors the new checkpoints rather than the whole back
 // catalogue). `?recent` with no value means 48. The age comes from the pre-built manifest's
@@ -354,6 +370,11 @@ function eligible(e){
 //
 // eligible() re-checks both paths (defense in depth; it is the primary filter only for ?goa=1).
 let pools={};
+// Curated-mode state. BYFILE is populated for EVERY manifest entry, deliberately BEFORE the
+// eligible() gate: a curated pair names exact files, and the normal cfg7/w1 eligibility rule
+// (and the unrated-only preference in pickPair) would drop precisely the already-rated clips
+// the bridge stratum is built from.
+let CURATED=null,CURATED_I=0,CURATED_SKIPPED=0,CURATED_MISSING=[],curCurated=null,BYFILE={};
 let MANIFEST_BUILT=null, RECENT_FALLBACK=false;
 
 // ── COVERAGE (Kim 2026-08-18: "don't play clips again which have been already evaluated ...
@@ -484,6 +505,7 @@ async function loadManifest(){
  const entries=await fetchEntries();
  const out={};
  for(const e of entries){
+  BYFILE[e.file]={model:e.model,ckpt:e.ckpt,cfg:parseFloat(e.cfg),w:parseFloat(e.strength),file:e.file,pq:null};
   if(!eligible(e))continue;
   const pid=String(e.prompt_id);
   const {key,label}=lengthBucket(e);
@@ -496,6 +518,39 @@ async function loadManifest(){
  }
  pools=out;
  buildPqIndex();
+ await loadCurated();
+}
+// Fetches the curated list and resolves each side against BYFILE. A pair whose files are not
+// in the manifest is DROPPED and COUNTED rather than skipped silently — an unresolvable pair
+// means the clip was never rendered or never staged, which is a finding about the pipeline,
+// not a detail to hide from the rater.
+async function loadCurated(){
+ if(!PAIRS_LIST)return;
+ let j=null;
+ try{
+  const r=await fetch(CB+PAIRS_LIST+'.json',{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  j=await r.json();
+ }catch(err){
+  bottomLine('curatedwarn','background:#7a1f1f;color:#fff').textContent=
+   '\u26a0 curated list "'+PAIRS_LIST+'" could not be loaded ('+err.message+') — falling back to random pairs';
+  return;
+ }
+ const raw=Array.isArray(j)?j:(j.pairs||[]);
+ const ok=[];
+ for(const q of raw){
+  const a=BYFILE[q.file_a],b=BYFILE[q.file_b];
+  if(!a||!b){CURATED_SKIPPED++; if(CURATED_MISSING.length<5)CURATED_MISSING.push(!a?q.file_a:q.file_b); continue;}
+  ok.push({...q,_a:a,_b:b});
+ }
+ if(!ok.length){
+  bottomLine('curatedwarn','background:#7a1f1f;color:#fff').textContent=
+   '\u26a0 curated list "'+PAIRS_LIST+'" resolved 0 of '+raw.length+' pairs against the manifest — falling back to random pairs';
+  return;
+ }
+ CURATED=ok;CURATED_I=0;
+ if(CURATED_SKIPPED)bottomLine('curatedskip','background:#6a4a10;color:#fff').textContent=
+  '\u26a0 '+CURATED_SKIPPED+' of '+raw.length+' curated pairs reference clips missing from the manifest (e.g. '+CURATED_MISSING[0]+')';
 }
 // Percentile rank, not an absolute PQ delta -- see the ?pq= comment above for why.
 let PQ_SORTED=[];
@@ -817,7 +872,13 @@ function showQuestion(){
 
 let curPid,curLenKey,curA,curB,roundState;
 function resetRound(){
- activeQuestions=questionsFor(curLenKey);
+ // A curated pair carries the question it was DESIGNED to answer — a one-factor pair and a
+ // route-contrast pair test different things and must not both be asked the default question.
+ activeQuestions=(curCurated&&curCurated.question_id)
+  ? [{id:curCurated.question_id,
+      text:curCurated.question_text||(QUESTIONS.find(x=>x.id===curCurated.question_id)||{}).text
+           ||'Which track do you prefer?'}]
+  : questionsFor(curLenKey);
  roundState={ratedA:false,ratedB:false};
  qIndex=0;showQuestion();
  [...rowA.children,...rowB.children].forEach(b=>b.classList.remove('chosen'));
@@ -900,6 +961,9 @@ function describeModes(){
  if(CROSS_DS) m.push('crossds — pair across datasets');
  if(RECENT) m.push('recent='+RECENT+'h');
  if(SHOW_FLAGGED) m.push('showflagged');
+ if(CURATED) m.push('curated '+PAIRS_LIST+' — pair '+Math.min(CURATED_I,CURATED.length)+'/'+CURATED.length
+   +(curCurated?('  ·  '+curCurated.stratum):''));
+ else if(PAIRS_LIST) m.push('curated '+PAIRS_LIST+' REQUESTED BUT NOT LOADED');
  return m;
 }
 function showModeLine(){
@@ -984,7 +1048,33 @@ function maybeAdvance(){
   setTimeout(loadNewPair,550);
  }
 }
+// Which length bucket a specific file landed in — curated mode addresses files directly, so
+// it has to recover the bucket rather than being handed one by the selector.
+function lenKeyOf(file){
+ for(const k in filesByLen)if(filesByLen[k].has(file))return k;
+ return 'std';
+}
 function loadNewPair(){
+ if(CURATED){
+  if(CURATED_I>=CURATED.length){
+   statusEl.textContent='curated list finished — '+CURATED.length+' pairs done. Remove ?pairs= to go back to random pairs.';
+   bottomLine('curateddone','background:#1f5a2a;color:#fff').textContent=
+    '\u2714 curated list "'+PAIRS_LIST+'" complete: '+CURATED.length+' pairs rated';
+   return;
+  }
+  const q=CURATED[CURATED_I++];
+  curCurated=q;
+  curPid=q.prompt_id||'curated';
+  curA=q._a;curB=q._b;
+  curLenKey=lenKeyOf(q.file_a);
+  resetRound();
+  setPairAudio(curA,curB);
+  updateUI();
+  updateCoverage();
+  if(typeof showModeLine==='function')showModeLine();
+  statusEl.textContent='';
+  return;
+ }
  const bucket=pools[lensel.value];
  if(!bucket){statusEl.textContent='no data at this length';return;}
  const picked=pickPair(bucket);

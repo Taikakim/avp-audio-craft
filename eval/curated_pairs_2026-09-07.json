@@ -15,7 +15,7 @@
  "pairs": [
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32frames_avp_t4096_bs1_lr1e4__ep7__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "file_b": "fp32frames_avp_t2048_bs4_lr1e4__ep4__cfg7__w100__kl_bracket_0__s1000__d190.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -25,11 +25,12 @@
    "rating_b": 4,
    "prompt_id": "kl_bracket_0",
    "model_a": "fp32frames_avp_t4096_bs1_lr1e4",
-   "model_b": "fp32frames_avp_t2048_bs4_lr1e4"
+   "model_b": "fp32frames_avp_t2048_bs4_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_8ep_ptm__ep0__cfg1__w100__kl_0__s1000__st8.m4a",
    "file_b": "bf16cmp_avp_t512_bs8_lr1e4__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (4.0 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -39,11 +40,12 @@
    "rating_b": 3.5,
    "prompt_id": "kl_0",
    "model_a": "dora128adj_avp_8ep_ptm",
-   "model_b": "bf16cmp_avp_t512_bs8_lr1e4"
+   "model_b": "bf16cmp_avp_t512_bs8_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep80_native__cfg7__w100__rb_common_1__s225176290.m4a",
    "file_b": "dora16_glitchheal_5ep_2xlr_ptm__ep4__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -53,11 +55,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_common_1",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "dora16_glitchheal_5ep_2xlr_ptm"
+   "model_b": "dora16_glitchheal_5ep_2xlr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora64_avp_tiered_lr2e4__ep0__cfg7__w100__rb_rare_8__s278158216__d48.m4a",
    "file_b": "sa3-goa-dora-47s-r64__ep7__cfg7__w100__rb_rare_8__s278158216__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -67,11 +70,12 @@
    "rating_b": 5,
    "prompt_id": "rb_rare_8",
    "model_a": "dora64_avp_tiered_lr2e4",
-   "model_b": "sa3-goa-dora-47s-r64"
+   "model_b": "sa3-goa-dora-47s-r64",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-b4__ep2__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "fp32cmp_avp_t512_bs8_lr1e4__ep7__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -81,11 +85,12 @@
    "rating_b": 4.5,
    "prompt_id": "kl_0",
    "model_a": "sa3-goa-dora-47s-b4",
-   "model_b": "fp32cmp_avp_t512_bs8_lr1e4"
+   "model_b": "fp32cmp_avp_t512_bs8_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-r64_ptm__ep7__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "bf16cmp_avp_t512_bs8_lr1e4__ep0__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (5.0 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -95,11 +100,12 @@
    "rating_b": 3.5,
    "prompt_id": "kl_0",
    "model_a": "sa3-goa-dora-47s-r64_ptm",
-   "model_b": "bf16cmp_avp_t512_bs8_lr1e4"
+   "model_b": "bf16cmp_avp_t512_bs8_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256__ep47__cfg7__w100__rb_rare_7__s16488276.m4a",
    "file_b": "subloss_goa_k12__ep15__cfg7__w100__rb_rare_7__s16488276.m4a",
    "rationale": "both already rated (4.5 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -109,11 +115,12 @@
    "rating_b": 3.5,
    "prompt_id": "rb_rare_7",
    "model_a": "fullft_avp_t256",
-   "model_b": "subloss_goa_k12"
+   "model_b": "subloss_goa_k12",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128_everything_8ep_lr0.5x_ptm__ep7__cfg1__w100__rb_rare_8__s278158216__st8__d48.m4a",
    "file_b": "dora128adj_avp_aug10_lr1e4__ep74__cfg7__w100__rb_rare_8__s278158216__d48.m4a",
    "rationale": "both already rated (4.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -123,11 +130,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_8",
    "model_a": "dora128_everything_8ep_lr0.5x_ptm",
-   "model_b": "dora128adj_avp_aug10_lr1e4"
+   "model_b": "dora128adj_avp_aug10_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora64_avp_tiered_lr2e4__ep0__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
    "file_b": "dora128_newcap_continued_3more_ptm__ep2__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
    "rationale": "both already rated (3.5 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -137,11 +145,12 @@
    "rating_b": 5,
    "prompt_id": "rb_bracket_0",
    "model_a": "dora64_avp_tiered_lr2e4",
-   "model_b": "dora128_newcap_continued_3more_ptm"
+   "model_b": "dora128_newcap_continued_3more_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_8ep_final__ep0__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "file_b": "winning_goa_t512_a45_bf16_ptm__ep10__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -151,11 +160,12 @@
    "rating_b": 4,
    "prompt_id": "rb_rare_7",
    "model_a": "dora128adj_avp_8ep_final",
-   "model_b": "winning_goa_t512_a45_bf16_ptm"
+   "model_b": "winning_goa_t512_a45_bf16_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep10_20s__cfg7__w100__rb_common_2__s544354203__d24.m4a",
    "file_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__rb_common_2__s544354203__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -165,11 +175,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_2",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm"
+   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-r64_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "file_b": "sa3-goa-dora-47s-b4__ep2__cfg7__w100__rb_common_1__s225176290__d48.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -179,11 +190,12 @@
    "rating_b": 4,
    "prompt_id": "rb_common_1",
    "model_a": "sa3-goa-dora-47s-r64_ptm",
-   "model_b": "sa3-goa-dora-47s-b4"
+   "model_b": "sa3-goa-dora-47s-b4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep80_20s__cfg7__w100__rb_common_1__s225176290__d24.m4a",
    "file_b": "sa3-goa-dora-47s-b4_ptm__ep2__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -193,11 +205,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_1",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "sa3-goa-dora-47s-b4_ptm"
+   "model_b": "sa3-goa-dora-47s-b4_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__techno__s1234__st8__d48.m4a",
    "file_b": "sa3-goa-dora-47s-r128-adamw_ptm__ep7__cfg1__w100__techno__s1234__st8__d48.m4a",
    "rationale": "both already rated (5.0 vs 3.7); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -207,11 +220,12 @@
    "rating_b": 3.6666666666666665,
    "prompt_id": "techno",
    "model_a": "fp32cmp_avp_t512_bs8_lr1e4_repr_ptm",
-   "model_b": "sa3-goa-dora-47s-r128-adamw_ptm"
+   "model_b": "sa3-goa-dora-47s-r128-adamw_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora64_avp_tiered_lr2e4__ep0__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
    "file_b": "dora64_avp_tiered_lr1e4__ep7__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
    "rationale": "both already rated (3.5 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -221,11 +235,12 @@
    "rating_b": 5,
    "prompt_id": "rb_bracket_0",
    "model_a": "dora64_avp_tiered_lr2e4",
-   "model_b": "dora64_avp_tiered_lr1e4"
+   "model_b": "dora64_avp_tiered_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep140_native__cfg7__w100__rb_common_1__s225176290.m4a",
    "file_b": "dora128adj_avp_8ep_ptm__ep6__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -235,11 +250,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_1",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "dora128adj_avp_8ep_ptm"
+   "model_b": "dora128adj_avp_8ep_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_aug10_lr1e4_ptm__ep74__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "fp32cmp_avp_t512_bs8_lr1e4__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -249,11 +265,12 @@
    "rating_b": 4.5,
    "prompt_id": "kl_0",
    "model_a": "dora128adj_avp_aug10_lr1e4_ptm",
-   "model_b": "fp32cmp_avp_t512_bs8_lr1e4"
+   "model_b": "fp32cmp_avp_t512_bs8_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "winning_avpaug10_t512_a45_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "dora16_avp_originals_win7__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -263,11 +280,12 @@
    "rating_b": 4,
    "prompt_id": "kl_0",
    "model_a": "winning_avpaug10_t512_a45_fp32_ptm",
-   "model_b": "dora16_avp_originals_win7"
+   "model_b": "dora16_avp_originals_win7",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32frames_avp_t4096_bs1_lr1e4__ep7__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "file_b": "winning_goa_t512_a45_bf16__ep10__cfg7__w100__kl_bracket_0__s1000__d48.m4a",
    "rationale": "both already rated (5.0 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -277,11 +295,12 @@
    "rating_b": 3.5,
    "prompt_id": "kl_bracket_0",
    "model_a": "fp32frames_avp_t4096_bs1_lr1e4",
-   "model_b": "winning_goa_t512_a45_bf16"
+   "model_b": "winning_goa_t512_a45_bf16",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep40_native__cfg7__w100__rb_common_2__s544354203.m4a",
    "file_b": "dora128adj_avp_8ep_ptm__ep6__cfg1__w100__rb_common_2__s544354203__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -291,11 +310,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_common_2",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "dora128adj_avp_8ep_ptm"
+   "model_b": "dora128adj_avp_8ep_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256__ep47__cfg7__w100__rb_rare_7__s16488276.m4a",
    "file_b": "dora128_everything_8ep_lr0.5x__ep7__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -305,11 +325,12 @@
    "rating_b": 4,
    "prompt_id": "rb_rare_7",
    "model_a": "fullft_avp_t256",
-   "model_b": "dora128_everything_8ep_lr0.5x"
+   "model_b": "dora128_everything_8ep_lr0.5x",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32frames_avp_t4096_bs1_lr1e4__ep5__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "file_b": "winning_goa_t512_a128_fp32_ptm__ep10__cfg1__w100__kl_bracket_0__s1000__st8__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -319,11 +340,12 @@
    "rating_b": 4,
    "prompt_id": "kl_bracket_0",
    "model_a": "fp32frames_avp_t4096_bs1_lr1e4",
-   "model_b": "winning_goa_t512_a128_fp32_ptm"
+   "model_b": "winning_goa_t512_a128_fp32_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-b4_ptm__ep2__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "dora128adj_avp_8ep__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -333,11 +355,12 @@
    "rating_b": 4,
    "prompt_id": "kl_0",
    "model_a": "sa3-goa-dora-47s-b4_ptm",
-   "model_b": "dora128adj_avp_8ep"
+   "model_b": "dora128adj_avp_8ep",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep150_20s__cfg7__w100__rb_common_2__s544354203__d24.m4a",
    "file_b": "dora128_newcap_continued_3more_ptm__ep2__cfg1__w100__rb_common_2__s544354203__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -347,11 +370,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_2",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "dora128_newcap_continued_3more_ptm"
+   "model_b": "dora128_newcap_continued_3more_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora256_avp_aug10_lr7e5__ep3__cfg7__w100__rb_rare_8__s278158216__d48.m4a",
    "file_b": "base_ptm__base__cfg1__w100__rb_rare_8__s278158216__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -361,11 +385,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_8",
    "model_a": "dora256_avp_aug10_lr7e5",
-   "model_b": "base_ptm"
+   "model_b": "base_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32frames_avp_t4096_bs4_lr1e4__ep6__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "file_b": "fp32frames_avp_t2048_bs1_lr1e4__ep9__cfg7__w100__kl_bracket_0__s1000__d190.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -375,11 +400,12 @@
    "rating_b": 4,
    "prompt_id": "kl_bracket_0",
    "model_a": "fp32frames_avp_t4096_bs4_lr1e4",
-   "model_b": "fp32frames_avp_t2048_bs1_lr1e4"
+   "model_b": "fp32frames_avp_t2048_bs1_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora16_glitchheal_5ep_2xlr_ptm__ep4__cfg1__w100__rb_rare_7__s16488276__st8__d48.m4a",
    "file_b": "sa3-goa-dora-47s-r128-fusion__ep4__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -389,11 +415,12 @@
    "rating_b": 4,
    "prompt_id": "rb_rare_7",
    "model_a": "dora16_glitchheal_5ep_2xlr_ptm",
-   "model_b": "sa3-goa-dora-47s-r128-fusion"
+   "model_b": "sa3-goa-dora-47s-r128-fusion",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256_sweep__ep153_20s__cfg7__w100__rb_common_2__s544354203__d24.m4a",
    "file_b": "sa3-goa-dora-47s-b4_ptm__ep2__cfg1__w100__rb_common_2__s544354203__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -403,11 +430,12 @@
    "rating_b": 3.5,
    "prompt_id": "rb_common_2",
    "model_a": "fullft_avp_t256_sweep",
-   "model_b": "sa3-goa-dora-47s-b4_ptm"
+   "model_b": "sa3-goa-dora-47s-b4_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-r64_ptm__ep7__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
    "file_b": "fp32cmp_avp_t4096_bs4_lr1e4__ep6__cfg7__w100__rb_bracket_0__s1102008041.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -417,11 +445,12 @@
    "rating_b": 5,
    "prompt_id": "rb_bracket_0",
    "model_a": "sa3-goa-dora-47s-r64_ptm",
-   "model_b": "fp32cmp_avp_t4096_bs4_lr1e4"
+   "model_b": "fp32cmp_avp_t4096_bs4_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora16_goa_newstack_8ep__ep0__cfg7__w100__kl_0__s1000.m4a",
    "file_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "both already rated (3.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -431,11 +460,12 @@
    "rating_b": 4,
    "prompt_id": "kl_0",
    "model_a": "dora16_goa_newstack_8ep",
-   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm"
+   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32cmp_goa_t4096_bs4_lr5e5_ptm__ep1__cfg1__w100__rb_common_1__s225176290__st8.m4a",
    "file_b": "sa3-goa-dora-47s-b4_ptm__ep2__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -445,11 +475,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_1",
    "model_a": "fp32cmp_goa_t4096_bs4_lr5e5_ptm",
-   "model_b": "sa3-goa-dora-47s-b4_ptm"
+   "model_b": "sa3-goa-dora-47s-b4_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s__ep0__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "file_b": "winning_goa_t512_a45_bf16_ptm__ep10__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -459,11 +490,12 @@
    "rating_b": 4,
    "prompt_id": "rb_rare_7",
    "model_a": "sa3-goa-dora-47s",
-   "model_b": "winning_goa_t512_a45_bf16_ptm"
+   "model_b": "winning_goa_t512_a45_bf16_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora16_avp_originals_win7_ptm__ep6__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "file_b": "dora64_avp_tiered_lr2e4_ptm__ep0__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -473,11 +505,12 @@
    "rating_b": 5,
    "prompt_id": "rb_common_1",
    "model_a": "dora16_avp_originals_win7_ptm",
-   "model_b": "dora64_avp_tiered_lr2e4_ptm"
+   "model_b": "dora64_avp_tiered_lr2e4_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fullft_avp_t256__ep46__cfg7__w100__rb_bracket_0__s1102008041.m4a",
    "file_b": "sa3-goa-dora-47s__ep0__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -487,11 +520,12 @@
    "rating_b": 5,
    "prompt_id": "rb_bracket_0",
    "model_a": "fullft_avp_t256",
-   "model_b": "sa3-goa-dora-47s"
+   "model_b": "sa3-goa-dora-47s",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128_everything_8ep_lr0.5x_cont5_ptm__ep4__cfg1__w100__rb_rare_7__s16488276__st8__d48.m4a",
    "file_b": "dora128adj_avp_8ep_final_ptm__ep0__cfg1__w100__rb_rare_7__s16488276__st8__d48.m4a",
    "rationale": "both already rated (3.5 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -501,11 +535,12 @@
    "rating_b": 5,
    "prompt_id": "rb_rare_7",
    "model_a": "dora128_everything_8ep_lr0.5x_cont5_ptm",
-   "model_b": "dora128adj_avp_8ep_final_ptm"
+   "model_b": "dora128adj_avp_8ep_final_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_aug10_lr1e4_ptm__ep74__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "winning_avpaug10_t512_a45_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -515,11 +550,12 @@
    "rating_b": 4.5,
    "prompt_id": "kl_0",
    "model_a": "dora128adj_avp_aug10_lr1e4_ptm",
-   "model_b": "winning_avpaug10_t512_a45_fp32_ptm"
+   "model_b": "winning_avpaug10_t512_a45_fp32_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "winning_avp_t512_a128_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "dora128_everything_8ep_lr0.5x_ptm__ep7__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "both already rated (5.0 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -529,11 +565,12 @@
    "rating_b": 4,
    "prompt_id": "kl_0",
    "model_a": "winning_avp_t512_a128_fp32_ptm",
-   "model_b": "dora128_everything_8ep_lr0.5x_ptm"
+   "model_b": "dora128_everything_8ep_lr0.5x_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128_everything_8ep_lr1x__ep7__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "dora64_avp_tiered_lr2e4__ep0__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (4.0 vs 3.5); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -543,11 +580,12 @@
    "rating_b": 3.5,
    "prompt_id": "kl_0",
    "model_a": "dora128_everything_8ep_lr1x",
-   "model_b": "dora64_avp_tiered_lr2e4"
+   "model_b": "dora64_avp_tiered_lr2e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "bf16cmp_goa_t512_bs8_lr1e4__ep1__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "fp32cmp_goa_t512_bs8_lr1e4__ep1__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "both already rated (4.0 vs 5.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -557,11 +595,12 @@
    "rating_b": 5,
    "prompt_id": "kl_0",
    "model_a": "bf16cmp_goa_t512_bs8_lr1e4",
-   "model_b": "fp32cmp_goa_t512_bs8_lr1e4"
+   "model_b": "fp32cmp_goa_t512_bs8_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "A_bridge",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora64_avp_tiered_lr1e4_ptm__ep7__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "file_b": "dora16_glitchheal_5ep_2xlr_ptm__ep4__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "both already rated (4.5 vs 4.0); the only pairs that tie the A/B scale to the 1-5 scale inside the blind band",
@@ -571,7 +610,8 @@
    "rating_b": 4,
    "prompt_id": "kl_0",
    "model_a": "dora64_avp_tiered_lr1e4_ptm",
-   "model_b": "dora16_glitchheal_5ep_2xlr_ptm"
+   "model_b": "dora16_glitchheal_5ep_2xlr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -585,7 +625,8 @@
    "rating_b": null,
    "prompt_id": "techno",
    "model_a": "fp32cmp_goa_t4096_bs4_lr1e4_repr",
-   "model_b": "dora128adj_avp_8ep_ptm"
+   "model_b": "dora128adj_avp_8ep_ptm",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -599,7 +640,8 @@
    "rating_b": 4,
    "prompt_id": "suomi_random",
    "model_a": "fullft_suomi_t1024_fp32_lr1e-4_s1",
-   "model_b": "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153"
+   "model_b": "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -613,7 +655,8 @@
    "rating_b": null,
    "prompt_id": "rb_common_0",
    "model_a": "fp32frames_avp_t4096_bs1_lr1e4",
-   "model_b": "longctx_t1024_r128"
+   "model_b": "longctx_t1024_r128",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -627,7 +670,8 @@
    "rating_b": null,
    "prompt_id": "s225176290",
    "model_a": "terminal_winning_avp_t512_a45_fp32",
-   "model_b": "soup_fp32cmp_goa_t512_uniform"
+   "model_b": "soup_fp32cmp_goa_t512_uniform",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -641,7 +685,8 @@
    "rating_b": null,
    "prompt_id": "ss_fast",
    "model_a": "suomi_r32_lr1e-4",
-   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2"
+   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -655,7 +700,8 @@
    "rating_b": null,
    "prompt_id": "ss_fast",
    "model_a": "suomi_r32_lr3e-5",
-   "model_b": "dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1"
+   "model_b": "dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -669,7 +715,8 @@
    "rating_b": null,
    "prompt_id": "ss_fast",
    "model_a": "suomi_r32_lr3e-5",
-   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s1"
+   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s1",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -683,7 +730,8 @@
    "rating_b": null,
    "prompt_id": "ss_euphoric",
    "model_a": "suomi_r32_lr3e-5",
-   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2"
+   "model_b": "dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -697,7 +745,8 @@
    "rating_b": null,
    "prompt_id": "housestyle_uml",
    "model_a": "dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s1",
-   "model_b": "dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s2"
+   "model_b": "dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s2",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_flux",
@@ -711,7 +760,8 @@
    "rating_b": null,
    "prompt_id": "w100",
    "model_a": "sa3-goa-dora-47s-b4",
-   "model_b": "sa3-goa-dora-47s-b4-cont"
+   "model_b": "sa3-goa-dora-47s-b4-cont",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -725,7 +775,8 @@
    "rating_b": null,
    "prompt_id": "kl_1",
    "model_a": "dora128_47s_cont_from5",
-   "model_b": "suomi_r32_lr3e-5"
+   "model_b": "suomi_r32_lr3e-5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -739,7 +790,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_3",
    "model_a": "dora128_47s_newcaptions_5ep",
-   "model_b": "winning_avp_t512_a128_fp32_ptm"
+   "model_b": "winning_avp_t512_a128_fp32_ptm",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -753,7 +805,8 @@
    "rating_b": null,
    "prompt_id": "w200",
    "model_a": "sa3-goa-dora-47s-r128-fusion",
-   "model_b": "sa3-goa-dora-47s"
+   "model_b": "sa3-goa-dora-47s",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -767,7 +820,8 @@
    "rating_b": null,
    "prompt_id": "rb_bracket_0",
    "model_a": "fp32cmp_avp_t4096_bs4_lr1e4",
-   "model_b": "dora128adj_avp_aug10_lr1e4"
+   "model_b": "dora128adj_avp_aug10_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -781,7 +835,8 @@
    "rating_b": null,
    "prompt_id": "kl_1",
    "model_a": "winning_goa_t512_a128_fp32",
-   "model_b": "winning_avpaug10_t512_a45_fp32"
+   "model_b": "winning_avpaug10_t512_a45_fp32",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -795,7 +850,8 @@
    "rating_b": null,
    "prompt_id": "kimlong",
    "model_a": "dora16_avp_8ep_ptm",
-   "model_b": "fp32cmp_goa_t4096_bs4_lr1e4"
+   "model_b": "fp32cmp_goa_t4096_bs4_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -809,7 +865,8 @@
    "rating_b": null,
    "prompt_id": "housestyle",
    "model_a": "dora128adj_avp_aug10_lr1e4_ptm",
-   "model_b": "fp32cmp_avp_t512_bs8_lr1e4"
+   "model_b": "fp32cmp_avp_t512_bs8_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -823,7 +880,8 @@
    "rating_b": null,
    "prompt_id": "w100",
    "model_a": "sa3-goa-dora-47s-b4",
-   "model_b": "sa3-goa-dora-47s-r64"
+   "model_b": "sa3-goa-dora-47s-r64",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -837,7 +895,8 @@
    "rating_b": null,
    "prompt_id": "w200",
    "model_a": "sa3-goa-dora-47s-b4-cont",
-   "model_b": "sa3-goa-dora-47s-r64"
+   "model_b": "sa3-goa-dora-47s-r64",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_clap",
@@ -851,7 +910,8 @@
    "rating_b": null,
    "prompt_id": "rb_rare_8",
    "model_a": "fp32cmp_avp_t4096_bs4_lr1e4",
-   "model_b": "fp32cmp_goa_t4096_bs4_lr5e5"
+   "model_b": "fp32cmp_goa_t4096_bs4_lr5e5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_crest",
@@ -865,7 +925,8 @@
    "rating_b": null,
    "prompt_id": "goa_organic",
    "model_a": "fp32cmp_goa_t4096_bs4_lr1e4",
-   "model_b": "dora128_everything_8ep_lr0.5x"
+   "model_b": "dora128_everything_8ep_lr0.5x",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_zcr",
@@ -879,7 +940,8 @@
    "rating_b": null,
    "prompt_id": "goa_organic",
    "model_a": "sa3-goa-dora-47s-r128-fusion-caut",
-   "model_b": "fp32cmp_avp_t4096_bs4_lr1e4_repr"
+   "model_b": "fp32cmp_avp_t4096_bs4_lr1e4_repr",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_zcr",
@@ -893,7 +955,8 @@
    "rating_b": null,
    "prompt_id": "goa_organic",
    "model_a": "fp32frames_avp_t2048_bs1_lr1e4",
-   "model_b": "fp32cmp_avp_t512_bs8_lr1e4_repr"
+   "model_b": "fp32cmp_avp_t512_bs8_lr1e4_repr",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -907,7 +970,8 @@
    "rating_b": null,
    "prompt_id": "kl_0",
    "model_a": "dora16_goa_newstack_8ep",
-   "model_b": "fp32cmp_goa_t4096_bs4_lr5e5"
+   "model_b": "fp32cmp_goa_t4096_bs4_lr5e5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -921,7 +985,8 @@
    "rating_b": null,
    "prompt_id": "kl_2",
    "model_a": "subloss_goa_k2",
-   "model_b": "subloss_goa_k5"
+   "model_b": "subloss_goa_k5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -935,7 +1000,8 @@
    "rating_b": null,
    "prompt_id": "rb_common_1",
    "model_a": "bf16cmp_goa_t512_bs8_lr1e4",
-   "model_b": "dora64_avp_tiered_lr1e4"
+   "model_b": "dora64_avp_tiered_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -949,7 +1015,8 @@
    "rating_b": null,
    "prompt_id": "kl_0",
    "model_a": "dora16_goa_newstack_8ep",
-   "model_b": "xftlora16_fullft_avp_t4096"
+   "model_b": "xftlora16_fullft_avp_t4096",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -963,7 +1030,8 @@
    "rating_b": null,
    "prompt_id": "rb_rare_8",
    "model_a": "dora128adj_avp_8ep_ptm",
-   "model_b": "adamw_goa_t512_bs4_lr1e4"
+   "model_b": "adamw_goa_t512_bs4_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -977,7 +1045,8 @@
    "rating_b": null,
    "prompt_id": "rb_rare_6",
    "model_a": "subloss_k24_biggoa_t512_bf16_s1",
-   "model_b": "adamw_goa_t512_bs4_lr5e5"
+   "model_b": "adamw_goa_t512_bs4_lr5e5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -991,7 +1060,8 @@
    "rating_b": null,
    "prompt_id": "w200",
    "model_a": "sa3-goa-dora-47s-r128-fusion",
-   "model_b": "sa3-goa-dora-47s-b4"
+   "model_b": "sa3-goa-dora-47s-b4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -1005,7 +1075,8 @@
    "rating_b": null,
    "prompt_id": "rb_bracket_0",
    "model_a": "winning_avp_t512_a128_fp32",
-   "model_b": "xftlora16_fullft_goa_t256"
+   "model_b": "xftlora16_fullft_goa_t256",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -1019,7 +1090,8 @@
    "rating_b": null,
    "prompt_id": "w100",
    "model_a": "sa3-goa-dora-47s-r64",
-   "model_b": "sa3-goa-dora-47s-b4"
+   "model_b": "sa3-goa-dora-47s-b4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_onset_p95",
@@ -1033,7 +1105,8 @@
    "rating_b": null,
    "prompt_id": "rb_rare_8",
    "model_a": "fp32cmp_goa_t4096_bs4_lr1e4_ptm",
-   "model_b": "dora16_glitchheal_5ep_2xlr"
+   "model_b": "dora16_glitchheal_5ep_2xlr",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_hf_ratio",
@@ -1047,7 +1120,8 @@
    "rating_b": null,
    "prompt_id": "goa_organic",
    "model_a": "fp32cmp_avp_t4096_bs4_lr5e5",
-   "model_b": "sa3-goa-dora-47s"
+   "model_b": "sa3-goa-dora-47s",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "C_onefactor_hf_ratio",
@@ -1061,7 +1135,8 @@
    "rating_b": null,
    "prompt_id": "ss_slow",
    "model_a": "dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128_s1",
-   "model_b": "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s2"
+   "model_b": "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s2",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1075,7 +1150,8 @@
    "rating_b": null,
    "prompt_id": "w200",
    "model_a": "sa3-goa-dora-47s-r64",
-   "model_b": "sa3-goa-dora-47s-r128-adamw"
+   "model_b": "sa3-goa-dora-47s-r128-adamw",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1089,7 +1165,8 @@
    "rating_b": null,
    "prompt_id": "rb_common_0",
    "model_a": "dora128adj_avp_8ep",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1103,7 +1180,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_5",
    "model_a": "dora128_everything_8ep_lr3x",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1117,7 +1195,8 @@
    "rating_b": null,
    "prompt_id": "w100",
    "model_a": "sa3-goa-dora-47s-b4",
-   "model_b": "sa3-goa-dora-47s-b4-cont"
+   "model_b": "sa3-goa-dora-47s-b4-cont",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1131,7 +1210,8 @@
    "rating_b": null,
    "prompt_id": "w200",
    "model_a": "sa3-goa-dora-47s-r64",
-   "model_b": "sa3-goa-dora-47s-b4"
+   "model_b": "sa3-goa-dora-47s-b4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1145,7 +1225,8 @@
    "rating_b": null,
    "prompt_id": "kl_2",
    "model_a": "bf16cmp_goa_t512_bs8_lr1e4",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1159,7 +1240,8 @@
    "rating_b": null,
    "prompt_id": "kl_2",
    "model_a": "bf16cmp_goa_t512_bs8_lr1e4",
-   "model_b": "base"
+   "model_b": "base",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1173,7 +1255,8 @@
    "rating_b": null,
    "prompt_id": "kl_0",
    "model_a": "dora128_newcap_continued_3more",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1187,7 +1270,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_4",
    "model_a": "base",
-   "model_b": "dora128_everything_8ep_lr1x"
+   "model_b": "dora128_everything_8ep_lr1x",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1201,7 +1285,8 @@
    "rating_b": null,
    "prompt_id": "kl_2",
    "model_a": "bf16cmp_goa_t512_bs8_lr1e4",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1215,7 +1300,8 @@
    "rating_b": null,
    "prompt_id": "trig2",
    "model_a": "fp32cmp_avp_t4096_bs4_lr5e5_ptm",
-   "model_b": "dora128adj_avp_aug10_lr1e4"
+   "model_b": "dora128adj_avp_aug10_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1229,7 +1315,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_4",
    "model_a": "base",
-   "model_b": "dora128_everything_8ep_lr1x"
+   "model_b": "dora128_everything_8ep_lr1x",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1243,7 +1330,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_3",
    "model_a": "fp32cmp_avp_t4096_bs4_lr1e4",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1257,7 +1345,8 @@
    "rating_b": 3.3333333333333335,
    "prompt_id": "goa_organic",
    "model_a": "fp32cmp_avp_t4096_bs4_lr5e5",
-   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm"
+   "model_b": "bf16cmp_avp_t512_bs8_lr1e4_repr_ptm",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1271,7 +1360,8 @@
    "rating_b": null,
    "prompt_id": "trig2",
    "model_a": "bf16cmp_avp_t512_bs8_lr1e4",
-   "model_b": "dora128adj_avp_aug10_lr1e4"
+   "model_b": "dora128adj_avp_aug10_lr1e4",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1285,7 +1375,8 @@
    "rating_b": null,
    "prompt_id": "kl_0",
    "model_a": "base",
-   "model_b": "dora128_everything_8ep_lr1x"
+   "model_b": "dora128_everything_8ep_lr1x",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1299,7 +1390,8 @@
    "rating_b": null,
    "prompt_id": "rb_rare_8",
    "model_a": "fp32cmp_goa_t4096_bs4_lr1e4_repr",
-   "model_b": "dora128adj_avp_8ep_final"
+   "model_b": "dora128adj_avp_8ep_final",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1313,7 +1405,8 @@
    "rating_b": null,
    "prompt_id": "rb_mid_3",
    "model_a": "sa3-goa-dora-47s-r128-fusion-caut",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1327,7 +1420,8 @@
    "rating_b": null,
    "prompt_id": "rb_bracket_0",
    "model_a": "dora128adj_avp_aug10_lr1e4",
-   "model_b": "dora128_47s_cont_from5"
+   "model_b": "dora128_47s_cont_from5",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "D_route",
@@ -1341,11 +1435,12 @@
    "rating_b": null,
    "prompt_id": "rb_mid_5",
    "model_a": "dora128adj_avp_aug10_lr1e4",
-   "model_b": "dora128_47s_newcaptions_5ep"
+   "model_b": "dora128_47s_newcaptions_5ep",
+   "question_text": "Which track is more interesting to listen to \u2014 more going on, more worth hearing again?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-b4__ep2__cfg7__w100__rb_common_1__s225176290__d48.m4a",
    "file_b": "sa3-goa-dora-47s-r64_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1355,11 +1450,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_common_1",
    "model_a": "sa3-goa-dora-47s-b4",
-   "model_b": "sa3-goa-dora-47s-r64_ptm"
+   "model_b": "sa3-goa-dora-47s-r64_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32cmp_avp_t512_bs8_lr1e4__ep7__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "sa3-goa-dora-47s-b4__ep2__cfg7__w100__kl_0__s1000__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1369,11 +1465,12 @@
    "rating_b": 5,
    "prompt_id": "kl_0",
    "model_a": "fp32cmp_avp_t512_bs8_lr1e4",
-   "model_b": "sa3-goa-dora-47s-b4"
+   "model_b": "sa3-goa-dora-47s-b4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32cmp_avp_t512_bs8_lr1e4__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "dora128adj_avp_aug10_lr1e4_ptm__ep74__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1383,11 +1480,12 @@
    "rating_b": 5,
    "prompt_id": "kl_0",
    "model_a": "fp32cmp_avp_t512_bs8_lr1e4",
-   "model_b": "dora128adj_avp_aug10_lr1e4_ptm"
+   "model_b": "dora128adj_avp_aug10_lr1e4_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "bf16cmp_avp_t512_bs8_lr1e4__ep0__cfg7__w100__kl_0__s1000__d48.m4a",
    "file_b": "sa3-goa-dora-47s-r64_ptm__ep7__cfg1__w100__kl_0__s1000__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1397,11 +1495,12 @@
    "rating_b": 5,
    "prompt_id": "kl_0",
    "model_a": "bf16cmp_avp_t512_bs8_lr1e4",
-   "model_b": "sa3-goa-dora-47s-r64_ptm"
+   "model_b": "sa3-goa-dora-47s-r64_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-r128-adamw_ptm__ep7__cfg1__w100__techno__s1234__st8__d48.m4a",
    "file_b": "fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__techno__s1234__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1411,11 +1510,12 @@
    "rating_b": 5,
    "prompt_id": "techno",
    "model_a": "sa3-goa-dora-47s-r128-adamw_ptm",
-   "model_b": "fp32cmp_avp_t512_bs8_lr1e4_repr_ptm"
+   "model_b": "fp32cmp_avp_t512_bs8_lr1e4_repr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "subloss_goa_k12__ep15__cfg7__w100__rb_rare_7__s16488276.m4a",
    "file_b": "fullft_avp_t256__ep47__cfg7__w100__rb_rare_7__s16488276.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1425,11 +1525,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_7",
    "model_a": "subloss_goa_k12",
-   "model_b": "fullft_avp_t256"
+   "model_b": "fullft_avp_t256",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "winning_goa_t512_a45_bf16__ep10__cfg7__w100__kl_bracket_0__s1000__d48.m4a",
    "file_b": "fp32frames_avp_t4096_bs1_lr1e4__ep7__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1439,11 +1540,12 @@
    "rating_b": 5,
    "prompt_id": "kl_bracket_0",
    "model_a": "winning_goa_t512_a45_bf16",
-   "model_b": "fp32frames_avp_t4096_bs1_lr1e4"
+   "model_b": "fp32frames_avp_t4096_bs1_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "winning_goa_t512_a45_bf16_ptm__ep10__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
    "file_b": "sa3-goa-dora-47s__ep0__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1453,11 +1555,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_7",
    "model_a": "winning_goa_t512_a45_bf16_ptm",
-   "model_b": "sa3-goa-dora-47s"
+   "model_b": "sa3-goa-dora-47s",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128_everything_8ep_lr0.5x__ep7__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "file_b": "fullft_avp_t256__ep47__cfg7__w100__rb_rare_7__s16488276.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1467,11 +1570,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_7",
    "model_a": "dora128_everything_8ep_lr0.5x",
-   "model_b": "fullft_avp_t256"
+   "model_b": "fullft_avp_t256",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_8ep_ptm__ep6__cfg1__w100__rb_common_2__s544354203__st8__d48.m4a",
    "file_b": "fullft_avp_t256_sweep__ep40_native__cfg7__w100__rb_common_2__s544354203.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1481,11 +1585,12 @@
    "rating_b": 4,
    "prompt_id": "rb_common_2",
    "model_a": "dora128adj_avp_8ep_ptm",
-   "model_b": "fullft_avp_t256_sweep"
+   "model_b": "fullft_avp_t256_sweep",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128adj_avp_aug10_lr1e4__ep74__cfg7__w100__rb_rare_8__s278158216__d48.m4a",
    "file_b": "dora128_everything_8ep_lr0.5x_ptm__ep7__cfg1__w100__rb_rare_8__s278158216__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1495,11 +1600,12 @@
    "rating_b": 4,
    "prompt_id": "rb_rare_8",
    "model_a": "dora128adj_avp_aug10_lr1e4",
-   "model_b": "dora128_everything_8ep_lr0.5x_ptm"
+   "model_b": "dora128_everything_8ep_lr0.5x_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "winning_goa_t512_a45_bf16_ptm__ep10__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
    "file_b": "dora128adj_avp_8ep_final__ep0__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1509,11 +1615,12 @@
    "rating_b": 5,
    "prompt_id": "rb_rare_7",
    "model_a": "winning_goa_t512_a45_bf16_ptm",
-   "model_b": "dora128adj_avp_8ep_final"
+   "model_b": "dora128adj_avp_8ep_final",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "sa3-goa-dora-47s-r128-fusion__ep4__cfg7__w100__rb_rare_7__s16488276__d48.m4a",
    "file_b": "dora16_glitchheal_5ep_2xlr_ptm__ep4__cfg1__w100__rb_rare_7__s16488276__st8__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1523,11 +1630,12 @@
    "rating_b": 4.5,
    "prompt_id": "rb_rare_7",
    "model_a": "sa3-goa-dora-47s-r128-fusion",
-   "model_b": "dora16_glitchheal_5ep_2xlr_ptm"
+   "model_b": "dora16_glitchheal_5ep_2xlr_ptm",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "dora128_newcap_continued_3more_ptm__ep2__cfg1__w100__rb_bracket_0__s1102008041__st8__d48.m4a",
    "file_b": "dora64_avp_tiered_lr2e4__ep0__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1537,11 +1645,12 @@
    "rating_b": 3.5,
    "prompt_id": "rb_bracket_0",
    "model_a": "dora128_newcap_continued_3more_ptm",
-   "model_b": "dora64_avp_tiered_lr2e4"
+   "model_b": "dora64_avp_tiered_lr2e4",
+   "question_text": "Which track do you prefer overall?"
   },
   {
    "stratum": "B_consistency",
-   "question_id": "interesting",
+   "question_id": "preference",
    "file_a": "fp32frames_avp_t2048_bs1_lr1e4__ep9__cfg7__w100__kl_bracket_0__s1000__d190.m4a",
    "file_b": "fp32frames_avp_t4096_bs4_lr1e4__ep6__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
    "rationale": "REPEAT of an A_bridge pair, sides swapped -- the only way to measure the self-consistency ceiling",
@@ -1551,7 +1660,8 @@
    "rating_b": 5,
    "prompt_id": "kl_bracket_0",
    "model_a": "fp32frames_avp_t2048_bs1_lr1e4",
-   "model_b": "fp32frames_avp_t4096_bs4_lr1e4"
+   "model_b": "fp32frames_avp_t4096_bs4_lr1e4",
+   "question_text": "Which track do you prefer overall?"
   }
  ]
 }
