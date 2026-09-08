@@ -1790,9 +1790,11 @@
   "lion_lr5e-5-batch32": {
    "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
    "picks": [
+    "epoch=222-step=2000.ckpt",
+    "epoch=444-step=4000.ckpt",
     "epoch=666-step=6000.ckpt"
    ],
-   "_note": "Registered 2026-09-08 (Kim direct: render clips for checkpoints that miss them, incl. the latest lion 5e-5). Second Lion arm of the fusion-vs-adamw campaign, trained to 6000 steps at bs32/lr5e-5 (vs lion_lr1e-5's bs8/lr1e-5). Terminal ckpt only, matching every sibling in this run. DoRA-rows r128 a128 T512 -> the full 3-strength sweep + the d48 native cell = the same 109-cell set the siblings have."
+   "_note": "Registered 2026-09-08 (Kim direct: render clips for checkpoints that miss them, incl. the latest lion 5e-5). Second Lion arm of the fusion-vs-adamw campaign, trained to 6000 steps at bs32/lr5e-5 (vs lion_lr1e-5's bs8/lr1e-5). Terminal ckpt only, matching every sibling in this run. DoRA-rows r128 a128 T512 -> the full 3-strength sweep + the d48 native cell = the same 109-cell set the siblings have. 2026-09-08 (Kim direct): ep222 (step2000) and ep444 (step4000) added so the arm has a TRAJECTORY, not just an endpoint. Both rendered at the standard sibling shape -- 108 grid cells + 1 native -- NOT --native-grid; ep666 carries 216 cells only because an earlier pass passed that flag by mistake."
   }
  },
  "legacy_goa_dora_nested": {
