@@ -771,3 +771,159 @@ not reproduce the pathology it was built to test.
 ⚠ Outstanding: `site/meter-for-taste.html`'s gradient-boosting section is invalidated by W's
 pair-grouping correction (82.6% → 74.9%, *below* PQ alone at 78.1%). Page still claims the
 opposite; not to be cited until fixed.
+
+## 2026-09-08 — RUNBOOK.md: the operator manual, and a workflow inversion
+
+Kim's call: he runs the trainings, transfers and renders himself now; the fleet documents the
+scaffolding and queues ready-to-run tasks. The reason is budget — tokens run out by mid-week, and an
+agent-only operating path means the lab stops when they do. So this is not a doc chore, it is the
+thing that keeps work possible on a dry Thursday.
+
+Shipped `RUNBOOK.md` (repo root, 428 lines, commit `cfead24`): every routine operation as a
+copy-pasteable command with cwd, absolute venv path, required exports, expected wall-clock, and an
+**artifact-level VERIFY** step. The verify line is the whole point — our most expensive recurring bug
+is trusting an exit code (renders segfault at ROCm teardown *after* writing every file; sbatch returns
+0 for jobs whose tasks OOM'd; `echo "$(date): rc=$?"` prints 0 for a crashed process).
+
+Method note worth repeating: I dispatched ONE subagent to harvest the commands from the docs + skills,
+so its file dumps never entered my context — only the inventory did. That is the right shape for any
+"read widely, then write once" task under budget pressure.
+
+**Verified before shipping** (a runbook that hands the operator a stale command is worse than none):
+all 22 cited paths/venvs/scripts exist, all 19 cited `train_lora` flags are really in its argparse,
+and handle `KIM` works for `filelock.py`/`gpu_guard.sh` — the presumed "Kim has no handle" blocker
+dissolved; only `agent_commit.sh` whitelists the four agent handles, and he doesn't need it.
+
+Two sections exist so absences are visible rather than discovered mid-task. **§15 known-broken:** six
+commands still printed in older docs — `docs/commands.md` sets `PYTORCH_TUNABLEOP_ENABLED=1` (freezes
+RDNA4) and omits `--frames` (silently trains at T=4096, the 65× trap), and its beat-aligned encode
+scripts lived in `/tmp` and are **gone**. **§16 gaps:** six operations with no command anywhere,
+including regenerating `lumi_ckpt_census.tsv` and rebuilding that lost encode pipeline.
+
+Convention changes: `CLAUDE.md` §8 + `MASTER.md` §8 carry the standing rule with Kim's reason
+attached, so a compaction can't lose why it exists. `KIM-TASKLIST.md` actionables are now **runnable
+blocks** — WHAT/WHY · RUN · TAKES · VERIFY · REPORT BACK · ROLLBACK — because "can you launch X" makes
+him rebuild an arg list the agent already had in context. Corollary I wrote in deliberately: a session
+should end with the batch queued, not with two things run.
+
+**Self-inflicted, reported:** `git add` on the shared tree swept in another instance's uncommitted
+edits (the :7892 latent-player retirement in CLAUDE.md/ARCHITECTURE.md, stale August KIM-TASKLIST
+items) — 92 deletions I did not author now sit under my name. Nothing lost, but it is exactly the
+rule-4 failure the git protocol warns about: attribute before you stage. On a shared checkout,
+`git status` is not a list of your own work.
+
+## 2026-09-08 — Filling the clip gaps in the last week's autoscale campaign
+
+Asked to render clips for checkpoints that miss them, "including the latest lion 5e-5", then
+narrowed to the last week's autoscale tests.
+
+**What was actually missing.** Of the 13 arms in `fusion_autoscale_vs_adamw_2026-09-01`, nine
+carried a full 109-cell board set and two Lion arms had **zero**. `lion_lr1e-5` was registered
+with zero cells (a known gap). `lion_lr5e-5-batch32` **was not in
+`eval/rarity_bracket_manifest.json` at all** — so no renderer would ever have picked it up, no
+matter how much GPU time it was given. Registered it, reading the recipe off the checkpoint's
+`lora_config` + `lightning_logs/metrics.csv` rather than parsing the directory name: DoRA-rows
+r128/alpha128, T=512, Lion lr 5e-5 constant, batch 32, 6000 steps (epoch 666). Neither Lion
+checkpoint carries a `diffusion_ema` shadow (LoRA runs force-disable EMA), which is why
+`--weights online` was correct here and worth verifying rather than assuming.
+
+**Negative result on the full-FT ladder's "deleted" checkpoints.** Project guidance said the
+full-FT checkpoints were deleted after a too-large LR corrupted them. That is true of
+`fullft_dual_1e-3_2026-09-05` (six ckpts, 58 GB, deliberately deleted, already recorded with
+`picks: []`). It is NOT true of the 2026-09-04 autoscale ladder: all six checkpoints (A_control /
+B_autoscale / C_dual x ep19, ep39, ~11 GB each) are intact on Mantu inside the campaign dir. The
+manifest's `root` pointed at `/home/kim/fullft_autoscale_2026-09-04`, the NVMe copy, which was
+freed — so every render pass printed `[skip-missing]` and the arms read as deleted. Repointed the
+root. **A stale path and a deletion are indistinguishable from the render log alone**; the only
+way to tell is to look for the file, not to trust the skip.
+
+**Self-inflicted: `--native-grid` is not the native-cell flag.** I rendered both Lion arms with
+`--native-grid`, believing (from the `sa3-canonical-clips` skill's own text) that it produced the
+single trained-context-length cell the siblings have. It renders the FULL prompt x cfg x strength
+grid a second time at native length: **216 cells per arm instead of 109**, +108 long renders each.
+Not destructive — every clip is real, lands as a `__d48` sibling and verified clean (432 m4a, zero
+duration outliers, natives exactly 47.549977 s) — but it doubled the render and leaves the two Lion
+arms asymmetric with the other nine. The skill described the DEFAULT behaviour (no flag) under the
+`--native-grid` heading while its §3 recipe passed the flag; corrected both, with the cost recorded
+so it reads as a trap and not a preference.
+
+Board cells now: `lion_lr1e-5` ep399 216, `lion_lr5e-5-batch32` ep666 216, `fullft_ladder_*` ep19
+36 each (ep39 was already there — ep19 is the trajectory midpoint that was missing).
+
+## 2026-09-08 (later) — A NaN latent decodes to full-scale noise, and nothing we had could see it
+
+Rendering the last week's unrendered autoscale arms turned into finding a render fault that has
+been quietly on the board since August. Writing it up properly because I got the mechanism wrong
+three times, and the wrong turns are the instructive part.
+
+**The finding.** `eval/score_and_publish.py`'s latent-sanity gate refused to score `lion_lr` —
+13/48 cfg7/w1 clips "decoded from blown-up latents". A full scan: **110 of 432 lion cells had 100%
+non-finite latents**. A NaN latent does not decode to silence or to a glitch — it decodes to a
+**full-scale constant, peak 1.0 / RMS 1.0**, i.e. maximum-volume noise. That is what makes it
+dangerous: it is not short, not quiet, not truncated, so the file count was right, `ffprobe`
+reported the exact requested duration, the process exited 0, and a spot-listen of the early clips
+passes. It reached the listening board. My own "verified, zero duration outliers" earlier the same
+evening was true and useless — **duration is the discriminator for truncation, not for degeneracy.**
+
+**Three wrong mechanisms, each killed by an isolation test.**
+1. *"The checkpoint is unstable at native length."* Killed by the campaign's own `standard_clips`:
+   `lion_lr1e-5_step6000__kl_0__native48s.wav` is the SAME checkpoint at the SAME 47.55 s and is
+   healthy (peak 0.891, rms 0.174). Kim pushed back — "earlier the 1e-5 clips were all perfect" —
+   and he was right.
+2. *"A transient fault."* Sorting cells by mtime showed the failures contiguous in time, with the
+   clean stretch resuming exactly when the process loaded the second checkpoint. Killed by
+   re-rendering: 108 of the 110 came back NaN. The time-contiguity was an artefact — natives render
+   as a block after the grid, so "contiguous in time" and "all the natives" are the same set.
+3. *"Process lifetime / cell count."* 24 cells clean, 110 and 216 bad — until a **12-cell** batch
+   dropped cells too. Also killed.
+Not the cfg either: a 7-way direct `generate()` probe (T512 and T280 x cfg 1/7/16, plus the other
+arm) came back 100% finite, absmax 4.5-6.3. Not `sample_size`/the pad-clamp (finite given, omitted
+and oversized), not `set_lora_strength` (3 grid + 3 native cycling w1.0/1.5/2.0: clean).
+**The one untested lead:** the probe only generates; the renderer also runs `model.same.decode`,
+and a native decode is ~2.4x the memory of a 20 s one. Repeated large decodes fragmenting VRAM
+would yield garbage rather than an OOM on ROCm. Parked for budget, 2026-09-08.
+
+**Not native-only, and far bigger than the first scan showed.** The native scan (7,989 files) found
+55. Scanning the other 67,459 standard-length latents found **627 more, across 15 arms** —
+`adamw_goa_t512_bs1_lr1e4` 114, `sa3-goa-dora-47s-r128-fusion-caut` 108, `wfleet_mix3_*` 60, three
+arms at 54, and so on. 682 pre-existing cells in total. The "native-length" framing I reported first
+was an artefact of WHICH FILES I SCANNED — I scanned natives because the fresh failure looked
+native, and then read the result as confirming that shape. Scan the population you want to make a
+claim about, not the one your hypothesis points at. All 682 quarantined, manifest lines stripped,
+stale `clip_metrics.db` rows deleted; board re-verified at 74,765 latents / 0 non-finite. **0 rated,
+0 in the evaluator pool.**
+
+**It is not new — that was the question worth asking.** Kim asked why we only see this now. My
+first answer ("we normally render one native cell") was wrong: 30 models carry 81 native cells,
+several 90. So I scanned all **7,989** native latents in the corpus: **55 pre-existing NaN cells**,
+`adamw_goa_t512_bs1_lr1e4` 54/108 (2026-08-04, all inside ONE ten-minute window, 18 each across
+cfg 1/7/16 — tonight's signature exactly) and `wfleet_mix3_t1024_a45_fp32_s1` 1/1 (09-03). They had
+been on the board for five weeks. **We did not start having this problem; we started being able to
+see it.** Cross-checked against both ratings exports on file/file_a/file_b: none was ever rated.
+
+**The guard** (commit `dd0300f`): `z0_is_finite()` in both render paths refuses to write a
+non-finite cell — no wav, no m4a, **no manifest line**. Writing nothing is the design: `existing` is
+keyed off the manifest, so an unwritten cell stays missing and a resume re-renders it, whereas
+recording it would poison the board AND make every future resume skip it. Exits 3 listing what it
+dropped. Tests `eval/tests/test_model_matrix_z0_finite.py` (9). The wiring tests earned their keep
+immediately: my first helper referenced a module-level `torch` that does not exist, since
+`model_matrix_gen` imports torch inside `main()` so `--dry-run` works without it — a guard that
+raises `NameError` the moment a NaN appears is worse than no guard.
+
+**Also fixed on the way:** Audiobox scoring was silently dead again (`audiobox DONE: 0 scored`,
+exit 0) — `libbluray` upgraded to `.so.4` while the venv-private ffmpeg8 libs DT_NEED `.so.3`, so
+torchcodec failed every backend. Extracted `libbluray.so.3.1.0` from the cached `libbluray-1.4.1`
+package into `mir/lib/ffmpeg8-compat/`, same pattern as the 08-16 shim: no root, nothing
+system-wide, reversible. Same failure family as that one — **a system package upgrade breaking a
+transitive dep of a venv-private extraction.**
+
+**And a gate pattern worth naming.** Three times tonight a step reported OK on data it had not
+written: `DSP metering: 108 rows for 'fullft_ladder'` (those were pre-existing ep39 rows; ep19 was
+0), `Audiobox: 216 rows | ce 108` (passed `ce > 0` while scoring nothing). The gates count rows
+matching the pattern, not rows the step produced, so a complete no-op reads as success.
+
+**Two self-inflicted ones, recorded so they are not mistaken for anything deeper.** I passed
+`--native-grid` believing it produced the single native cell (it renders the whole grid AGAIN at
+native length: 216 cells where siblings have 109) — skill corrected. And `batch_natives.sh` ran a
+render inside a `while read` loop without `< /dev/null`, so python ate the loop's stdin and the
+second iteration rendered a cell at **cfg 150**; quarantined with a note.

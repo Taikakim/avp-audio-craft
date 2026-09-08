@@ -627,6 +627,61 @@ that nobody holds the GPU:** `rocm-smi --showpids` remains ground truth, the sid
 
 Tests: `eval/tests/test_gpu_lock_sidecar.py`.
 
+### 🚨 A NaN latent decodes to FULL-SCALE NOISE — and passes every check we had (G, 2026-09-08)
+
+**Symptom:** clips on the model-matrix board that are peak 1.0 / RMS 1.0 — a full-scale constant,
+i.e. maximum-volume noise. Their `.z0.npy` is 100% non-finite. **Nothing flagged them:** the file
+count was right, `ffprobe` reported the exact requested duration (they are not truncated), the
+render process exited 0, and an early spot-listen passes because the burst starts later. Only
+`eval/score_and_publish.py`'s latent-sanity gate caught them — and that gate inspects the cfg7/w1
+subset alone, so a burst confined to other cfgs still ships.
+
+**Scale — bigger than the first scan suggested, and NOT native-only.** 110 of 432 cells in one
+2026-09-08 pass, plus **682 PRE-EXISTING** across the whole corpus: 55 of 7,989 NATIVE latents, and
+**627 of 67,459 STANDARD 20 s latents** in 15 arms — `adamw_goa_t512_bs1_lr1e4` 114,
+`sa3-goa-dora-47s-r128-fusion-caut` 108, `wfleet_mix3_t1024_a45_fp32_s1` 60, `subloss_goa_k2` /
+`subloss_v3sel_k5` / `dronesweep_adamw_fair_s2` 54 each, then `subloss_v3sel_k12`, `lreq_goa_*`,
+`x0eq_goa`, `soups_dora_caut`, `wfleet_suomi_*_rsoup19`. So **any renderer that saves latents can
+be affected at any length** — the first scan's native-only picture was an artefact of what was
+scanned. **This is not new — we merely acquired a check that can see it.** All quarantined under
+`Mantu/sa3_lora_runs/model_matrix_QUARANTINE_2026-09-08_nan/` (with per-batch READMEs), manifest
+lines stripped and `clip_metrics.db` rows deleted so no aggregate or ranking counts them.
+**Verified clean afterwards: 74,765 latents on the board, 0 non-finite.** Contamination check:
+**0 of the 682 were ever rated** (all `eval/ratings_export_*.jsonl`, on file/file_a/file_b) and
+**0 are in the avp evaluator pool** (3,517 entries). The affected arms now have GAPS in their
+grids — deliberate: a missing cell is honest and re-renderable, a noise clip is silently wrong.
+
+**NOT diagnosed — do not re-derive these eliminations.** Ruled out by isolation tests: the
+checkpoint (a 7-way direct `generate()` probe at T512 and T280 x cfg 1/7/16 is 100% finite, and the
+campaign's own `standard_clips` native cell for the implicated ckpt is healthy); the native length;
+`sample_size` / the pad-clamp (finite when given, omitted and oversized); cfg; `set_lora_strength`;
+and process cell-count (24 cells clean, but a 12-cell batch also dropped cells, so "long process"
+is not it either). **Untested lead:** the probe only GENERATES, the renderer also runs
+`model.same.decode`, and a native decode is ~2.4x the memory of a 20 s one — repeated large decodes
+fragmenting VRAM would produce garbage rather than an OOM on ROCm.
+
+**Guard in place:** `eval/model_matrix_gen.py::z0_is_finite` refuses to write a non-finite cell —
+no wav, no m4a, no manifest line, so the cell stays missing and a resume re-renders it; the run
+exits 3 listing what it dropped (commit `dd0300f`, tests `eval/tests/test_model_matrix_z0_finite.py`).
+**Any OTHER renderer that saves latents needs the same check** — the control/riffer/longform paths
+do not have it yet.
+
+### 🔧 Audiobox scoring dies silently when a system package moves a SONAME (G, 2026-09-08)
+
+Second occurrence of the 2026-08-16 family. `clip_metrics_audiobox.py` printed
+`audiobox DONE: 0 scored in 0s` and **returned 0**, so `score_and_publish`'s gate passed on
+pre-existing `ce` rows and the pass looked successful while scoring nothing. Cause: `libbluray`
+upgraded to `.so.4`, while the venv-private ffmpeg8 libs in `mir/mir/lib/ffmpeg8-compat/` DT_NEED
+`libbluray.so.3` — so torchcodec failed to load EVERY backend (the visible error names
+`libtorchcodec_core4`, which is merely the last one tried; the real cause is only in the chained
+exception). Fix, same pattern as the original shim: extract the missing SONAME from the pacman
+cache into that dir — no root, nothing system-wide, reversible:
+`tar --use-compress-program=unzstd -xf /var/cache/pacman/pkg/libbluray-1.4.1-*.pkg.tar.zst usr/lib`
+then copy `libbluray.so.3.1.0` in and symlink `libbluray.so.3`. Verify with
+`mir/bin/python -c "from torchcodec._core.ops import load_torchcodec_shared_libraries as L; print(L())"`.
+**Check every lib in that dir for missing deps after any system upgrade:**
+`for f in ffmpeg8-compat/*.so.*; do LD_LIBRARY_PATH=ffmpeg8-compat ldd "$f" | grep 'not found'; done`.
+
 ### ⚠ `SAO/torchcodec/` shadows the real package — `python -c` from the SAO ROOT cannot load SA3 (C, 2026-08-26)
 
 **Symptom:** `ModuleNotFoundError: Could not import module 'T5GemmaEncoderModel'. Are this object's

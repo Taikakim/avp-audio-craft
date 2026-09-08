@@ -7658,5 +7658,9 @@
   "purpose": "Lion optimizer arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01). NOTE: this run has NO run_meta.json on disk -- purpose reconstructed 2026-09-07 by CONTINUITY from the run dir and checkpoint-stats/lion_lr1e-5_trajectory.md, NOT from a launcher record.",
   "recipe": "LoRA r128, T=512, bf16, lr 1e-5, optimizer Lion; 300-item constrained goa/psytrance subset of latents_sa3, seed42 -- same training recipe as the AdamW/Fusion arms of this campaign per its standard_clips run_meta.",
   "note": "Trajectory (checkpoint-stats/lion_lr1e-5_trajectory.md, computed over steps 1000-4000 only -- 2 later ckpts exist): path efficiency 0.664 = wandering within a basin, so soup-averaging should help; centroid at step 2000. ⚠ T=512 here is what makes the d48 native cell render; it is asserted from the campaign recipe, not read off the checkpoint."
+ },
+ "lion_lr5e-5-batch32": {
+  "purpose": "Second Lion arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01): Lion at lr 5e-5 with batch 32, against lion_lr1e-5's lr 1e-5 / batch 8. Same 300-item constrained goa/psytrance subset of latents_sa3 as the rest of the campaign. Trained to 6000 steps (epoch 666); constant LR, no warmup decay visible in metrics.csv. Recipe read from the checkpoint's lora_config + lightning metrics, not from a launcher record -- this run has no run_meta.json on disk.",
+  "recipe": "DoRA-rows r128, alpha 128, T=512, lr 5e-5, optimizer Lion, batch 32, 6000 steps; 300-item constrained goa/psytrance subset of latents_sa3. No EMA in the checkpoint (LoRA runs force-disable it), so renders load the online weights."
  }
 }

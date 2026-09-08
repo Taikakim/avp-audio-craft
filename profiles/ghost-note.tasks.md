@@ -164,3 +164,23 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - 2026-08-16/21: full Suomisoundi dataset pipeline (raw -> stems -> captions -> Granite -> latents -> MIR timeseries -> caption sidecar), all stages verified by content; found+fixed a Granite read_mf() bug affecting the entire goa big-set corpus (23232 tracks, hallucinated-from-filename captions), a bash ARG_MAX glob gotcha, and a self-matching pgrep bug that let a dead extraction process report "still running" for days; finished CONTINUITY's delegated soup render/score/quality-weight task after her fork hit two account-level interruptions.
 - 2026-08-25/26: fixed genre_fusion_probe.sbatch container bug + resubmitted; ingested/scored/published ~9 LUMI render batches (matrix_cells, showcase, stack_cells/suomi, suomift_warm, length_variant, morph, dorlor_ab, a13_avp, a2a_bracket); D14 cross-prompt a2a scoring investigation; explained the new INFERENCE-SURFACE.md doc to Kim and coordinated with CONTINUITY rather than touching her in-flight render-server work; four-experiment longform seam-repair investigation (RMS-guidance negative, SDEdit-reanchor negative, gap-inpaint positive, asymmetric-context negative) landing `init_latents`/`init_latent_path` on the longform renderer+server; root-caused suomift_goaft/suomift_avpaug19 to an EMA time-constant bug in train_lora.py (fix design validated with Kim, not yet implemented); ran stem continuation/a2a-crossdev experiments on Kim's own "Two Suns in Phrygia" stems (15 clips, feedback pending); evaluator.html UX pass (single question, help modal, silent PQ<3.5 floor) shipped, commit 36dc484.
 - 2026-09-07 — `fullft_dual_1e-3_2026-09-05` finished (6/6 ckpts). NEGATIVE: spectral 1e-3 destabilises full-FT, median loss 2.5 vs 0.79 baseline, 38% of steps spike >5, peak 15833, grad-clip 1.0 ineffective. Brackets the spectral-LR ceiling below 1e-3 and closes my earlier "needs a bigger LR" over-claim. Bin MEANS read as convergence (405→84) — outlier-dominated; median+spike-count is the right meter. Journal + run_meta.result + chat post done.
+- 2026-09-08 — Wrote `RUNBOOK.md` (operator manual, 428 lines) + `CLAUDE.md`/`MASTER.md` §8 + KIM-TASKLIST runnable-block convention + ARCHITECTURE doc-map entry. Kim runs the routine ops himself now (token budget). Verified 22 paths + 19 train_lora flags + that handle `KIM` works. Flagged 6 broken documented commands and 6 gaps. Commit `cfead24`. Caveat: swept another instance's uncommitted doc edits into my commit.
+- 2026-09-08 — Rendered the missing board clips for the last week's autoscale campaign: `lion_lr1e-5`
+  ep399 and `lion_lr5e-5-batch32` ep666 (the latter was never registered in
+  `eval/rarity_bracket_manifest.json`, so it was unreachable, not merely unrendered), plus the
+  `fullft_ladder_{A,B,C}` ep19 trajectory midpoint. Repointed the ladder's manifest root from the
+  freed NVMe path to the Mantu copy — the checkpoints were believed deleted but are intact; only
+  `fullft_dual_1e-3_2026-09-05` was really deleted. Over-rendered the Lion arms 216 cells instead of
+  109 by passing `--native-grid` (it re-renders the whole grid at native length; the single native
+  cell is the default) — clips verified good, skill corrected.
+- 2026-09-08 — NaN-latent render fault: found 110 non-finite cells in a fresh pass, then 55
+  pre-existing ones (55 native + 627 standard-length across 15 arms; `adamw_goa_t512_bs1_lr1e4` worst
+  at 114+54) — on the board since at least 2026-08-04 because a NaN
+  latent decodes to full-scale noise that passes file-count, duration and exit-code checks. All
+  quarantined with READMEs; none was ever rated. Root cause NOT diagnosed (checkpoint, length,
+  sample_size/pad-clamp, cfg and set_lora_strength all eliminated; the untested lead is VRAM
+  fragmentation from repeated native decodes) — parked for budget. Guard added: `z0_is_finite` in
+  `model_matrix_gen`, commit dd0300f + 9 tests.
+- 2026-09-08 — Fixed Audiobox scoring, dead again: `libbluray` .so.3 -> .so.4 broke the venv-private
+  ffmpeg8 libs, so torchcodec loaded no backend and `clip_metrics_audiobox.py` reported "0 scored"
+  with exit 0. Extracted libbluray.so.3 from the pacman cache into `mir/lib/ffmpeg8-compat/`.

@@ -28,6 +28,49 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⬜ Re-render the 93 quarantined `lion_lr1e-5` native cells (optional — the arm is already usable)
+**WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
+were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine
+campaign siblings carry ONE native cell each, so the arm already exceeds the sibling shape — this
+only buys extra long-form material.
+**WHY** — the underlying render fault is undiagnosed and parked for budget (2026-09-08). Batching is
+a workaround, not a fix: a 24-cell process rendered clean and a 12-cell one did not, so expect some
+batches to drop cells. That is now SAFE — `model_matrix_gen` refuses to write a non-finite cell, so
+repeated passes converge and nothing bad reaches the board.
+**RUN** — one (cfg, strength) combo per process; note the `< /dev/null`, without which the inner
+python eats the loop's stdin and the second iteration reads a mangled `cfg=150`:
+```bash
+cd /home/kim/Projects/SAO
+export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+python3 Misc/filelock.py acquire /home/kim/Projects/SAO/.gpu.lock --handle KIM --pid-aware --pid $$
+for combo in "1 1.0" "1 1.5" "1 2.0" "7 1.5" "7 2.0" "16 1.0" "16 1.5" "16 2.0"; do
+  set -- $combo
+  echo "=== cfg$1 strength$2"
+  .venv/bin/python eval/model_matrix_gen.py --only-labels lion_lr1e-5 --weights online       --native-grid --only-cfgs "$1" --only-strengths "$2" < /dev/null
+done
+python3 Misc/filelock.py release /home/kim/Projects/SAO/.gpu.lock --handle KIM
+```
+**TAKES** — ~8 batches x ~2.5 min = ~20 min, plus a model load per batch.
+**VERIFY** — the artifact, not the exit code (it exits 3 whenever it drops a cell, by design):
+```bash
+/home/kim/Projects/SAO/.venv/bin/python -c "
+import numpy as np, glob
+g=glob.glob('/run/media/kim/Mantu/sa3_lora_runs/model_matrix/lion_lr1e-5__*__d48.z0.npy')
+print(len(g),'native cells, NaN:',sum(1 for p in g if not np.isfinite(np.load(p)).all()))"
+```
+Expect NaN = 0 always (the guard cannot write one); the number of native cells is what should climb
+toward 108. Re-run the loop to fill whatever a pass dropped.
+**REPORT BACK** — paste the line above.
+**ROLLBACK** — nothing to roll back; the guard cannot write a bad cell, and a resume only adds.
+
+### ⬜ Decide: 60 `xft_*` arms have zero board cells (~9 GPU-hours)
+**WHAT / WHY** — all 60 SVD-extracted adapters are on disk with zero rendered cells. `EXPERIMENTS.md:44`
+calls them "60 mislabeled broken `xft` checkpoints" while their manifest note records that load and
+generation were verified before registration. Those two statements do not agree, and it is a night of
+GPU either way — a call, not a task.
+
+
+
 *Ready-to-execute blocks, newest first. Move to "Recently done" with the outcome once run.*
 
 _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
