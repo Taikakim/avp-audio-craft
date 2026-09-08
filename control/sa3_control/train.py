@@ -954,15 +954,16 @@ def main():
                     _sync(); _tf = time.time(); prof["fwd"] += _tf - _tt
                 # grad-accum: divide BEFORE backward so each microbatch contributes 1/N of the step gradient
                 (loss / args.grad_accum).backward()
-            if args.profile:
-                _sync(); _tb = time.time(); prof["bwd"] += _tb - _tf
-            # optimizer step only every grad_accum microbatches (standard gradient accumulation)
-            if (step + 1) % args.grad_accum == 0:
-                if args.smoke:      # sample grads BEFORE the step clears them (see below)
+                if args.smoke:      # grads are live here at ANY --grad-accum; the step
+                    # block below runs only every Nth microbatch and clears them after
                     _smoke_adapter_g = [float(q.grad.norm()) for w in wrappers
                                         for q in w.adapter.parameters() if q.grad is not None]
                     _smoke_dora_g = [float(q.grad.norm()) for q in _lora_params
                                      if q.grad is not None]
+            if args.profile:
+                _sync(); _tb = time.time(); prof["bwd"] += _tb - _tf
+            # optimizer step only every grad_accum microbatches (standard gradient accumulation)
+            if (step + 1) % args.grad_accum == 0:
                 gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
                 if args.warmup_steps > 0 and args.optimizer == "adamw":  # FusionOpt warms up internally
                     for pg in opt.param_groups:
