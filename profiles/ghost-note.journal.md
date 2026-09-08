@@ -850,7 +850,7 @@ so it reads as a trap and not a preference.
 Board cells now: `lion_lr1e-5` ep399 216, `lion_lr5e-5-batch32` ep666 216, `fullft_ladder_*` ep19
 36 each (ep39 was already there — ep19 is the trajectory midpoint that was missing).
 
-## 2026-09-08 (later) — A NaN latent decodes to full-scale noise, and nothing we had could see it
+## 2026-09-08 (later) — A NaN latent decodes to a full-scale DC constant, and nothing we had could see it
 
 Rendering the last week's unrendered autoscale arms turned into finding a render fault that has
 been quietly on the board since August. Writing it up properly because I got the mechanism wrong
@@ -859,7 +859,7 @@ three times, and the wrong turns are the instructive part.
 **The finding.** `eval/score_and_publish.py`'s latent-sanity gate refused to score `lion_lr` —
 13/48 cfg7/w1 clips "decoded from blown-up latents". A full scan: **110 of 432 lion cells had 100%
 non-finite latents**. A NaN latent does not decode to silence or to a glitch — it decodes to a
-**full-scale constant, peak 1.0 / RMS 1.0**, i.e. maximum-volume noise. That is what makes it
+**full-scale DC constant** (every sample exactly -1.0) -- DC, not noise. That is what makes it
 dangerous: it is not short, not quiet, not truncated, so the file count was right, `ffprobe`
 reported the exact requested duration, the process exited 0, and a spot-listen of the early clips
 passes. It reached the listening board. My own "verified, zero duration outliers" earlier the same
@@ -879,9 +879,29 @@ evening was true and useless — **duration is the discriminator for truncation,
 Not the cfg either: a 7-way direct `generate()` probe (T512 and T280 x cfg 1/7/16, plus the other
 arm) came back 100% finite, absmax 4.5-6.3. Not `sample_size`/the pad-clamp (finite given, omitted
 and oversized), not `set_lora_strength` (3 grid + 3 native cycling w1.0/1.5/2.0: clean).
-**The one untested lead:** the probe only generates; the renderer also runs `model.same.decode`,
-and a native decode is ~2.4x the memory of a 20 s one. Repeated large decodes fragmenting VRAM
-would yield garbage rather than an OOM on ROCm. Parked for budget, 2026-09-08.
+**And then the answer, from Kim: this is an old, comprehensively discussed issue — broken models,
+weights grown too far.** He is right and I should have searched the record before theorising.
+`DISCOVERIES.md` 2026-08-10 carries C's *"Full-FT latent-scale runaway -> spectral drone (root
+cause + fix + tests)"* (z0 std 5.6 vs a healthy 1.134), C's journal carries the cautious-rescale
+norm inflation (+37% effective spectral LR) that **"NaN'd the DoRA r128 cautious A/B between
+ep2->3"** — and `sa3-goa-dora-47s-r128-fusion-caut`, 108 of the cells I quarantined, IS that arm —
+and WORKLOG 2026-08-11 records an earlier quarantine of 59 clips for the same family. My "renderer
+VRAM fragmentation" theory was a fourth wrong mechanism, arrived at by testing instead of reading.
+**The discovery-phase rule exists for exactly this.**
+
+What I can add rather than repeat: for `lion_lr1e-5` ep399 the growth signature is ABSENT — global
+L2 **2327** vs clean siblings 2345 / 2322, with a perfectly clean `fusion_autoscale_lr1e-4` the
+LARGEST at 3408; max|w| 11.1 everywhere; surviving renders at z0 std 1.057. So that arm is an
+anomaly within the family, not an instance of it, and it is recorded as an anomaly (MASTER §5)
+rather than smoothed into the story. Parked for budget, 2026-09-08.
+
+**The mechanism of the FILE, which was worth nailing down.** `save_audio` does
+`if normalize and peak > 1e-6:`; with a NaN buffer `peak` is NaN and `nan > 1e-6` is **False**, so
+peak-normalisation is skipped, `clamp` leaves NaN, and libsndfile writes the rail. Every sample
+becomes exactly -1.0: a full-scale **DC constant**, not noise — audibly a click at each end and
+nothing between. I had been calling it "maximum-volume noise" in five documents; corrected. The
+useful residue is a free screen: **healthy clips peak at exactly 0.8913 (the -1 dBFS target), dead
+ones at exactly 1.000.**
 
 **Not native-only, and far bigger than the first scan showed.** The native scan (7,989 files) found
 55. Scanning the other 67,459 standard-length latents found **627 more, across 15 arms** —

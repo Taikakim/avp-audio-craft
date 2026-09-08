@@ -176,7 +176,7 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - 2026-09-08 — NaN-latent render fault: found 110 non-finite cells in a fresh pass, then 55
   pre-existing ones (55 native + 627 standard-length across 15 arms; `adamw_goa_t512_bs1_lr1e4` worst
   at 114+54) — on the board since at least 2026-08-04 because a NaN
-  latent decodes to full-scale noise that passes file-count, duration and exit-code checks. All
+  latent decodes to a full-scale DC constant that passes file-count, duration and exit-code checks. All
   quarantined with READMEs; none was ever rated. Root cause NOT diagnosed (checkpoint, length,
   sample_size/pad-clamp, cfg and set_lora_strength all eliminated; the untested lead is VRAM
   fragmentation from repeated native decodes) — parked for budget. Guard added: `z0_is_finite` in

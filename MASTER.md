@@ -627,10 +627,12 @@ that nobody holds the GPU:** `rocm-smi --showpids` remains ground truth, the sid
 
 Tests: `eval/tests/test_gpu_lock_sidecar.py`.
 
-### 🚨 A NaN latent decodes to FULL-SCALE NOISE — and passes every check we had (G, 2026-09-08)
+### 🚨 A NaN latent writes a FULL-SCALE DC file — the old broken-model failure, now detectable (G, 2026-09-08)
 
-**Symptom:** clips on the model-matrix board that are peak 1.0 / RMS 1.0 — a full-scale constant,
-i.e. maximum-volume noise. Their `.z0.npy` is 100% non-finite. **Nothing flagged them:** the file
+**Symptom:** clips on the model-matrix board at peak 1.0 / RMS 1.0, whose `.z0.npy` is 100%
+non-finite. **It is a full-scale DC constant — every sample exactly -1.0 — not noise.** Audibly a
+click at each end and nothing between, because DC carries no frequency content (the AAC copy
+decodes to a near-constant -0.95, std 0.0025). It does hold a speaker cone fully deflected. **Nothing flagged them:** the file
 count was right, `ffprobe` reported the exact requested duration (they are not truncated), the
 render process exited 0, and an early spot-listen passes because the burst starts later. Only
 `eval/score_and_publish.py`'s latent-sanity gate caught them — and that gate inspects the cfg7/w1
@@ -649,16 +651,39 @@ lines stripped and `clip_metrics.db` rows deleted so no aggregate or ranking cou
 **Verified clean afterwards: 74,765 latents on the board, 0 non-finite.** Contamination check:
 **0 of the 682 were ever rated** (all `eval/ratings_export_*.jsonl`, on file/file_a/file_b) and
 **0 are in the avp evaluator pool** (3,517 entries). The affected arms now have GAPS in their
-grids — deliberate: a missing cell is honest and re-renderable, a noise clip is silently wrong.
+grids — deliberate: a missing cell is honest and re-renderable, a DC clip is silently wrong.
 
-**NOT diagnosed — do not re-derive these eliminations.** Ruled out by isolation tests: the
-checkpoint (a 7-way direct `generate()` probe at T512 and T280 x cfg 1/7/16 is 100% finite, and the
-campaign's own `standard_clips` native cell for the implicated ckpt is healthy); the native length;
-`sample_size` / the pad-clamp (finite when given, omitted and oversized); cfg; `set_lora_strength`;
-and process cell-count (24 cells clean, but a 12-cell batch also dropped cells, so "long process"
-is not it either). **Untested lead:** the probe only GENERATES, the renderer also runs
-`model.same.decode`, and a native decode is ~2.4x the memory of a 20 s one — repeated large decodes
-fragmenting VRAM would produce garbage rather than an OOM on ROCm.
+**WHY THE FILE LOOKS LIKE THAT — the exact line.** `sa3_control.audio_io.save_audio` does
+`if normalize and peak > 1e-6:`. With a NaN buffer `peak` is NaN, and **`nan > 1e-6` is False**
+(NaN compares false to everything), so peak-normalisation is SKIPPED; `clamp` leaves NaN as NaN and
+libsndfile writes it to the rail. Hence the free diagnostic: **a healthy clip peaks at exactly
+0.8913** (the -1 dBFS normalise target) **and a dead one at exactly 1.000.** Verified end-to-end.
+
+**CAUSE: broken models, not a render bug — and this is a LONG-KNOWN family (Kim direct,
+2026-09-08).** Do not re-open it as a new renderer mystery; the record is:
+- `DISCOVERIES.md` **2026-08-10, "Full-FT latent-scale runaway → spectral drone (root cause + fix
+  + tests)"** (C) — weight/latent scale runs away, z0 std **5.6** vs a healthy **1.134**;
+  `fusion_groups.py`, `stable-audio-tools/tests/test_fusion_weight_decay.py`, `lumi/sbatch/fullft_wd_ab.sbatch`.
+- C's **cautious-rescale norm inflation** finding — the `1/keep_frac` survivor rescale inflates the
+  update NORM by `1/sqrt(keep)`, +37% effective spectral LR at keep≈0.53; it **"NaN'd the DoRA r128
+  cautious A/B between ep2→3"** while the identical-minus-cautious baseline trained clean. Fixed in
+  `fusion_opt.apply_cautious`. **`sa3-goa-dora-47s-r128-fusion-caut` — 108 of the cells quarantined
+  here — is that arm.** Its clips are the artefact of an already-diagnosed, already-fixed bug.
+- WORKLOG 2026-08-11: an earlier quarantine of 59 broken clips into
+  `evals_aac/_QUARANTINE_fullft_bigset_latent_runaway/`, same family.
+⇒ Treat a NaN cell as **evidence about the CHECKPOINT**, and check the arm's weight/latent scale
+before suspecting the renderer.
+
+**What is NOT explained by weight growth, recorded so the next person has the anomaly and not just
+the theory.** For `lion_lr1e-5` ep399 specifically the growth signature is ABSENT: global L2
+**2327** vs clean siblings 2345 / 2322 (and a clean `fusion_autoscale_lr1e-4` at **3408**, the
+largest of all), max|w| 11.1 across the board, and its surviving renders sit at z0 std **1.057** —
+normal. It is also not deterministic: the same checkpoint, config and seed rendered 100% finite in
+a direct `generate()` probe and in small batches, and its own `standard_clips` native cell is
+healthy. Ruled out for this arm: native length, `sample_size`/pad-clamp, cfg, `set_lora_strength`,
+and process cell-count (24 cells clean, 12-cell batch not). A marginal model tipping over on
+run-to-run numerical nondeterminism fits both observations, but is NOT established. Parked for
+budget 2026-09-08 — don't re-run the eliminations above.
 
 **Guard in place:** `eval/model_matrix_gen.py::z0_is_finite` refuses to write a non-finite cell —
 no wav, no m4a, no manifest line, so the cell stays missing and a resume re-renders it; the run

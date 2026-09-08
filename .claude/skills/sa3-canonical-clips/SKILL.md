@@ -127,7 +127,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   standard 20 s latents across 15 arms**, some since 2026-08-04. **Not native-only** (the first
   scan covered natives alone because the fresh failure looked native — scan the population you
   want to make a claim about). A NaN latent decodes to a **full-scale constant — peak 1.0, RMS 1.0, i.e.
-  maximum-volume noise**. It is not short, not quiet, not truncated, so the file count was
+  a DC constant, NOT noise**. It is not short and not truncated, so the file count was
   right, `ffprobe` reported the exact requested duration, and the process exited 0. The clips
   reached the board. Ruled out by isolation tests: the checkpoint (a direct `generate()` probe
   and the campaign's own `standard_clips` at the same length are both clean), the native
@@ -137,6 +137,12 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   `model_matrix_gen` now refuses to write a non-finite cell (`z0_is_finite`, tests
   `eval/tests/test_model_matrix_z0_finite.py`) and exits 3 listing what it dropped — a
   dropped cell is simply missing, so a resume re-renders it.
+  **Cause: broken models, a long-known family — not a new render bug (Kim direct 2026-09-08).**
+  See MASTER §5 and `DISCOVERIES.md` 2026-08-10 (full-FT latent-scale runaway) plus C's
+  cautious-rescale finding, which NaN'd `sa3-goa-dora-47s-r128-fusion-caut` — 108 of the
+  quarantined cells. **Cheapest screen: a healthy clip peaks at exactly 0.8913 (the -1 dBFS
+  normalise target); a dead one peaks at exactly 1.000**, because `save_audio`'s
+  `peak > 1e-6` test is False when peak is NaN, so normalisation is skipped.
 
 
 - **Renders can segfault at teardown AFTER writing every file.** The exit code lies. **Count
