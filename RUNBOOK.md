@@ -212,6 +212,20 @@ Misc/gpu_guard.sh release KIM
 Grid: **109 cells per LoRA checkpoint, 36 per full-FT** (12 prompts × cfg 1/7/16 × strength 1/1.5/2,
 24 steps, 20 s).
 
+**⚠ The post-trained `medium` (`_ptm` labels) is the exception: it runs at 8 steps and cfg 1.**
+That is the model's native operating point, set by Stability — not a render preference. Use:
+
+```bash
+.venv/bin/python eval/model_matrix_gen.py --pt-medium --steps 8 --only-cfgs 1 --only-strengths 1.0
+```
+
+`clip_name()` appends `__st8` only because 8 differs from the default 24, so ptm clips land as
+siblings and never overwrite. Rendering a ptm arm at 24 steps / cfg 7 is off-config (cfg>1
+reportedly "cooks" PT output); rendering a base or full-FT arm at 8 steps / cfg 1 is under-sampled
+and produces grainy percussion and bass that is easy to mistake for a flaw in the checkpoint.
+`medium` also samples ping-pong (`rf_denoiser`) while `medium-base` samples euler
+(`rectified_flow`) — compare only within a sampler.
+
 ⚠ **Never render native-length cells (T≥2048) locally** — those go to LUMI. A native-length render on
 the card that is also driving the display corrupted the compositor's GL context and required a
 plasmashell restart. The renderer carries a hard guard, but do not go looking for a way around it.

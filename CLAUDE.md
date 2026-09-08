@@ -295,6 +295,24 @@ not knowing the substrate. Deep dives: SA3 report `papers/arxiv-2605.17991 - Sta
   Muon was adopted LATE/BRIEF (variable-length phase) → **the base is overwhelmingly AdamW-shaped** (relevant
   to any full-FT optimizer choice + the drone runaway).
 
+**⚠ THE POST-TRAINED `medium` HAS ITS OWN OPERATING POINT: 8 STEPS, cfg 1 — it is not a
+drop-in for `medium-base` settings (Kim direct 2026-09-08).** Stability post-trained/distilled
+`medium` to run there; `medium-base` wants ~24 steps and cfg 7. This is a *model property*, not a
+render preference, and it cuts both ways:
+- Rendering a **ptm arm at 24 steps / cfg 7** is off-config — cfg>1 reportedly "cooks" PT output.
+- Rendering a **base/full-FT arm at 8 steps / cfg 1** is under-sampled, and the artifact it
+  produces (grainy percussion and bass, like sample-rate reduction or quantisation) is easy to
+  mistake for a property of the checkpoint. It is not.
+So an `_ptm` clip at `__st8` + cfg 1 and a base clip at 24 steps + cfg 7 are each **at their own
+correct setting** — that comparison is fair, and the differing filenames are not a confound. What
+IS a confound is any pair where one side is off its native config.
+They also do not share a sampler: `medium` is `diffusion_objective: rf_denoiser` (native
+**ping-pong**), `medium-base` is `rectified_flow` (**euler**) — and a soup/blend loads
+medium-base's config whatever the alpha, so every blend samples as rectified_flow. Compare only
+WITHIN a sampler.
+Renderer: `model_matrix_gen.py --pt-medium --steps 8 --only-cfgs 1 --only-strengths 1.0`.
+
+
 **Control we ALREADY trained (check before building a "new" one):** SA3-medium LatCH heads at
 `stable-audio-3/latch_weights_sa3_medium/latch_sa3_<feat>_best.pt` — including **`same_chroma`** (a head on
 the 384-d 3-band SAME chroma above) and **`hpcp`**, +12 others; load via `load_latch_from_checkpoint`

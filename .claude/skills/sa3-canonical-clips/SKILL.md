@@ -45,6 +45,22 @@ Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 16.0)
 - **Full-FT arm:** 12 × 3 × **1** = **36** — no adapter, so no strength axis. Switched on by
   `label.startswith("fullft_")`, so **a full fine-tune's label MUST start with `fullft_`**
   or it gets a meaningless 3× strength sweep and a wrong cell count.
+- **`_ptm` arm (adapter on the POST-TRAINED `medium`):** rendered at **8 steps, cfg 1,
+  strength 1.0** — **not** the 24-step / cfg 1-7-16 grid. Stability post-trained/distilled
+  `medium` to that operating point, so it is a property of the model, not a render choice
+  (Kim direct 2026-09-08):
+  ```
+  model_matrix_gen.py --pt-medium --steps 8 --only-cfgs 1 --only-strengths 1.0
+  ```
+  **Both directions of getting this wrong are silent.** A ptm arm at 24 steps / cfg 7 is
+  off-config — cfg>1 reportedly "cooks" PT output. A base or full-FT arm at 8 steps / cfg 1 is
+  under-sampled, and the grainy percussion / bass it produces (like sample-rate reduction or
+  quantisation) reads as a flaw in the *checkpoint* when it is really the step count. This has
+  already caused one misattribution during an A/B audition.
+  ⇒ **When comparing arms, each side must sit at ITS OWN native config.** Two clips whose names
+  differ in `__st<N>` are therefore not automatically an unfair pair; a clip rendered off its
+  model's native config is. And `medium` samples ping-pong (`rf_denoiser`) while `medium-base`
+  samples euler (`rectified_flow`) — compare only within a sampler.
 
 **The native cell** (`--native-grid`): one full trained-context-length render, `kl_0`, cfg 7,
 w100. Length = `frames / FPS` → T512 = 47.55 s (files tagged `__d48`), T256 = 23.78 s,
