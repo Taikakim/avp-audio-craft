@@ -261,6 +261,51 @@ being checked.</p>
 </section>
 
 <section>
+<h2>Where the meter stops: nothing tells a 4 from a 5</h2>
+<div class="col">
+<p>The A/B votes above ask which of two clips is better. The other signal — a 0–5 rating of a single clip — turns out to answer a sharper question, because it lets us ask <em>where</em> on the scale a feature is doing its work.</p>
+<p>Production quality does almost all of its work at the bottom. Between a 1 and a 2 it is emphatic. By the top step it is not merely weak: the mean PQ of a 4 and the mean PQ of a 5 are <strong>identical to three decimals</strong>, 7.922 against 7.922. Its spread narrows the same way, from 1.00 at a 1 to 0.31 at a 5. It is a floor detector — excellent at &ldquo;is this broken&rdquo;, blind to &ldquo;is this good&rdquo;.</p>
+</div>
+
+<figure>
+<p class="fig-h">Where on the scale does production quality still tell ratings apart?</p>
+<p class="fig-s">Each bar is one step between adjacent ratings. Height is the standardised gap in PQ between the clips on either side of that step (Cohen&rsquo;s <em>d</em>) &middot; 0 means the two ratings are indistinguishable &middot; 1,897 rated clips</p>
+<svg viewBox="0 0 720 250" role="img" aria-label="Effect of production quality per rating step: 1 to 2 is 0.93, 2 to 3 is 0.77, 3 to 4 is 0.33, 4 to 5 is 0.00 — the feature stops working at the top step.">
+  <g stroke="var(--rule)" stroke-width="1" opacity=".6">
+    <line x1="425" y1="20" x2="425" y2="190"/><line x1="600" y1="20" x2="600" y2="190"/></g>
+  <g font-family="IBM Plex Mono,monospace" font-size="13">
+    <rect x="250" y="30" width="326" height="26" rx="3" fill="var(--s1)"><title>rating 1 to 2: d = 0.93</title></rect>
+    <text x="244" y="48" text-anchor="end" fill="var(--ink)">1 &rarr; 2</text><text x="588" y="48" fill="var(--ink)" font-weight="600">0.93</text>
+    <rect x="250" y="70" width="270" height="26" rx="3" fill="var(--s1)"><title>rating 2 to 3: d = 0.77</title></rect>
+    <text x="244" y="88" text-anchor="end" fill="var(--ink)">2 &rarr; 3</text><text x="532" y="88" fill="var(--ink)">0.77</text>
+    <rect x="250" y="110" width="116" height="26" rx="3" fill="var(--s1)" opacity=".7"><title>rating 3 to 4: d = 0.33</title></rect>
+    <text x="244" y="128" text-anchor="end" fill="var(--ink)">3 &rarr; 4</text><text x="378" y="128" fill="var(--ink2)">0.33</text>
+    <rect x="250" y="150" width="3" height="26" rx="1" fill="var(--s2)"><title>rating 4 to 5: d = 0.00</title></rect>
+    <text x="244" y="168" text-anchor="end" fill="var(--ink)">4 &rarr; 5</text>
+    <text x="265" y="168" fill="var(--s2)" font-weight="600">0.00 &mdash; nothing</text>
+  </g>
+  <line x1="250" y1="20" x2="250" y2="190" stroke="var(--ink2)" stroke-width="1.5"/>
+  <g font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+    <text x="250" y="208">0</text><text x="425" y="208">0.50</text><text x="600" y="208">1.00</text></g>
+  <text x="425" y="232" font-size="11.5" fill="var(--mute)" font-family="IBM Plex Mono,monospace" text-anchor="middle">standardised gap between the two ratings</text>
+</svg>
+<figcaption>Every other feature we have behaves the same way at the top step. The ones that carry the <strong>3&rarr;4</strong> step are not the production ones at all &mdash; spectral flux (0.44) and prompt agreement (0.42) overtake PQ (0.33) there, and crest goes <em>negative</em>. At <strong>4&rarr;5</strong>, all fourteen sit inside their own error bars; the largest is zero-crossing rate at 0.14 &plusmn; 0.14, a coin flip.</figcaption>
+</figure>
+
+<div class="col">
+<p>The obvious escape hatch is that the top rating might be reached by two opposite routes &mdash; one clean and professional, one rough but musically interesting &mdash; whose feature means would cancel. That is testable, and it is wrong: two opposing routes would make the 5s <em>wider</em> than the 4s, and every measured spread is narrower or equal (crest 0.64&times;, CU 0.76&times;), with no sign of a two-humped shape. The 5s are a tighter cloud sitting on top of the 4s, not two clouds.</p>
+<p>So the gap was searched for directly, and it stayed empty:</p>
+<ul>
+<li><strong>Fourteen low-level audio features</strong> &mdash; loudness, brightness, dynamics, onset density, tempo, the four Audiobox heads. All flat at the top step.</li>
+<li><strong>Similarity to the training corpus</strong>, on the hunch that top marks go to clips that sound like the source material. Measured in CLAP audio-embedding space against 800 excerpts from 400 training tracks: <em>d</em> = 0.08 &plusmn; 0.18. Its own falsifying prediction failed too &mdash; if familiarity were being rewarded, the very closest clips should read as near-copies and score <em>worse</em>, and the curve is monotonic to the last decile.</li>
+<li><strong>519 semantic classifier outputs</strong> &mdash; mood, emotion, instrumentation, 400 genres, and two regressions trained on human judgements of exactly this axis. Zero survive correction, and a permutation test settles it: the largest effect found anywhere in those 519 columns is <em>within</em> what 519 correlated columns produce from shuffled labels (p = 0.09). The two best-motivated heads, named in advance, were the flattest of all.</li>
+</ul>
+<p>Those same 519 outputs describe the <strong>3&rarr;4</strong> step vividly &mdash; 45 of them survive correction, and they agree on one thing: a 4 is recognised as <em>actually being the genre</em> and as <em>melodic</em>, where a 3 reads as generic beat-driven library music. So the instruments work. They just stop one step early.</p>
+<p>What every one of these measures has in common is that it is a <strong>summary over the whole clip</strong>. The distinction being missed was described from the listening chair as loopy and unchanging versus developing &mdash; a property of arrangement over time, which a mean across twenty seconds cannot see by construction. That is the standing hypothesis, and it is the one thing not yet measured.</p>
+</div>
+</section>
+
+<section>
 <h2>The part that should make us uncomfortable</h2>
 <div class="col">
 <p>This meter is fitted to one person's ear. That is a legitimate thing to build — a studio tool does not have to generalise to be useful, and nothing here claims to measure quality in general. But it stops being only a measuring instrument the moment we rank models with it.</p>
