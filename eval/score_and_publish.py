@@ -65,7 +65,35 @@ SSH = "ssh -o BatchMode=yes -i /home/kim/.ssh/id_ed25519"
 # plumbing that must never reach a public page (science/hyperparams are fine, see spec §4).
 # Anchored patterns only: a bare \.ckpt matches JS property accesses like noteCtx.ckpt and
 # produced two phantom "leaks" in one day.
-LOCAL_ONLY = re.compile(r"(^|/)(run_meta|_meta)\.json$|\.commentary\.json$|/longclips\.json$")
+# BLEND.*.json (soup recipes: which two checkpoint snapshots were blended) and AUDIT_*.json
+# (per-dir provenance audits) are the same class as run_meta: local provenance that carries
+# absolute paths BY DESIGN and that no served page reads. Withhold them rather than redact --
+# redacting would destroy the only record of which snapshot a soup came from. (W, 2026-09-09)
+LOCAL_ONLY = re.compile(r"(^|/)(run_meta|_meta)\.json$|\.commentary\.json$|/longclips\.json$"
+                        r"|(^|/)BLEND[^/]*\.json$|(^|/)AUDIT_[^/]*\.json$")
+MEDIA_EXT = (".m4a", ".flac", ".wav", ".mp3", ".ogg")
+
+
+def is_local_only(rel):
+    """True for local provenance that must not leave the box.
+
+    Beyond the named files above, a .json sitting beside a clip of the SAME STEM is a per-clip
+    sidecar (render params, blend recipe, checkpoint snapshot paths). Those carry absolute paths
+    by design and no served page fetches them -- the boards bake provenance into the HTML at
+    build time. The test has to be structural, not a name pattern: these sidecars are named
+    after their clip, so there is no name to match. (W, 2026-09-09)
+    """
+    if LOCAL_ONLY.search(rel):
+        return True
+    p = STAGE / rel
+    if p.suffix == ".json":
+        return any(p.with_suffix(e).exists() for e in MEDIA_EXT)
+    # A page with a redacted twin beside it: the twin is what boards link to and what ships
+    # (build_morph_page --public, dora_table_public.html). The unredacted original keeps its
+    # source paths on purpose and must stay home. (W, 2026-09-09)
+    if p.suffix == ".html" and not p.stem.endswith("_public"):
+        return p.with_name(p.stem + "_public.html").exists()
+    return False
 # A FILENAME, not a bare extension: requiring a filename character immediately before the
 # extension keeps 'epoch=7-step=10800.weights.ckpt' matching while letting PROSE through --
 # model_matrix legitimately says 'PRUNED (slim .weights.ckpt - no optimizer state)', which is
@@ -395,7 +423,7 @@ def leg_publish(pattern, dry) -> Step:
             changed.append(name)
         else:
             timeonly += 1
-    todo = [f for f in new + changed if not LOCAL_ONLY.search(f)]
+    todo = [f for f in new + changed if not is_local_only(f)]
     held = len(new) + len(changed) - len(todo)
     if not todo:
         return s.done(True, f"host already current ({timeonly} timestamp-only, "

@@ -45,6 +45,8 @@ import model_db  # noqa: E402
 
 MATRIX_DEFAULT = Path.home() / "evals_aac" / "model_matrix.html"
 MATRIX_URL_DEFAULT = "file:///home/kim/evals_aac/model_matrix.html"
+# served copy: census and matrix are siblings under /files/evals/, so a bare name resolves.
+MATRIX_URL_PUBLIC = "model_matrix.html"
 
 RECIPE_FIELDS = ("corpus", "crop_frames", "optimizer", "lr", "precision", "seed",
                  "n_files", "slurm_job")
@@ -497,8 +499,12 @@ def main() -> int:
                     help="local mirror of scratch run_meta.json sidecars")
     ap.add_argument("--matrix-page", type=Path, default=MATRIX_DEFAULT,
                     help="model_matrix.html to read rendered-checkpoint labels from")
-    ap.add_argument("--matrix-url", default=MATRIX_URL_DEFAULT,
-                    help="href the epoch links point at")
+    ap.add_argument("--matrix-url", default=None,
+                    help="href the epoch links point at. Default follows --board-urls: the "
+                         "file:// path locally, the site-relative 'model_matrix.html' under "
+                         "--board-urls public. --board-urls alone did NOT cover these links "
+                         "and they leaked a home path into a shipped census (W, 2026-09-09); "
+                         "they were also dead links for any web visitor.")
     ap.add_argument("--html", type=Path, default=Path("eval/model_census.html"))
     ap.add_argument("--csv", type=Path, default=Path("eval/model_census.csv"))
     ap.add_argument("--board-urls", choices=("local", "public"), default="local",
@@ -546,7 +552,9 @@ def main() -> int:
 
     ckpts = load_matrix_ckpts(args.matrix_page) if args.matrix_page.exists() else {}
     print(f"matrix: {len(ckpts)} labels with rendered clips")
-    rows = build_rows(local, remote, meta, ckpts, args.matrix_url)
+    matrix_url = args.matrix_url or (MATRIX_URL_PUBLIC if args.board_urls == "public"
+                                    else MATRIX_URL_DEFAULT)
+    rows = build_rows(local, remote, meta, ckpts, matrix_url)
     boards = load_boards()
     # Board problems are LOUD: an unmatched or ambiguous registry entry is exactly the
     # silent-failure class this whole registry exists to remove.
