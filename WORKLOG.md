@@ -2310,3 +2310,16 @@ MASTER §5, `profiles/ghost-note.journal.md` 2026-09-08.
 broke the venv-private ffmpeg8 shim; fixed by extracting the old SONAME from the pacman cache
 (MASTER §5). And three scoring gates were observed reporting OK on pre-existing rows rather than
 rows the step had just written.
+
+## 2026-09-09 — GHOST-NOTE — lion 5e-5 trajectory on the board; push of 29 commits authorised
+`lion_lr5e-5-batch32` ep222 + ep444 registered and rendered at the standard sibling shape (109
+cells each: 108 grid + 1 native, NOT `--native-grid`), so the arm carries a trajectory
+step2000 -> 4000 -> 6000 rather than an endpoint. Scored: CE/PQ 109/109, 109/109, 216/216 (CLAP
+108 each — natives are excluded from CLAP by design). MuScriptor extended to the new cfg7/w1
+clips; the shared set is now 146 transcriptions. Census, model_matrix, dora_table and the
+evaluator pool rebuilt.
+**The finiteness guard fired in production on its first real run** — 4 non-finite cells dropped by
+name instead of written; three fill passes converged 106 -> 107 -> 108 -> 109 with zero NaN left.
+**PUSH NOTE (Kim direct, 2026-09-09): pushing this branch publishes 29 commits — 9 CONTINUITY,
+5 WINTERMUTE, 15 GHOST-NOTE. Kim explicitly authorised publishing all of them, including the other
+instances', so nobody needs to wonder why their commits went out under a push they did not run.**
