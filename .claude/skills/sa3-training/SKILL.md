@@ -14,42 +14,86 @@ description: Use BEFORE launching, resuming, or interpreting any SA3/SAME traini
 > once it is trained. Cluster work: **`lumi-ops`**. Cross-repo facts: `MASTER.md`.
 > Experiment registry: `EXPERIMENTS.md`. Never duplicate those here; point at them.
 
-## ⛔ 1. THE EMA TRAP — the one that silently destroys a comparison
+## ⛔ 1. EMA — get the HORIZON right, and check the checkpoint actually has one
 
-**`--use_ema` keeps an EMA shadow of the DiT weights (full-finetune ONLY — LoRA/DoRA
-force-disable it). Default `--ema-beta 0.9999`. That is a time constant of roughly
-10,000 optimizer steps.**
+`--use_ema` keeps an EMA shadow of the DiT (**full-finetune ONLY** — LoRA/DoRA force-disable
+it, `use_ema=(args.use_ema and args.full_finetune)`). Implementation is **`SimpleEMA`**
+(`stable_audio_3/training/diffusion.py:49`) — `ema_pytorch` was stripped from this fork.
 
-⇒ **On a short run the EMA is still mostly its own starting point.** A 3,000-step run's EMA
-is ~74% the weights it started from. A 6,000-step run's is still heavily weighted toward
-early training.
+### 1a. The horizon arithmetic (corrected 2026-09-08 after Kim brought an external analysis)
 
-**Why this is dangerous rather than merely suboptimal:** anything that loads a checkpoint
-**prefers the EMA shadow when one is present**, and does so silently:
+A fixed decay defines a timescale in **EMA UPDATES**, not in optimizer steps:
 
-- **Rendering** — `eval/model_matrix_gen.py --weights auto` (the DEFAULT) = EMA if the
-  checkpoint carries one. Render a 3-arm 3,000-step ladder this way and **every arm sounds
-  like the base model**, because you mostly rendered the base. The arms look identical and
-  the experiment reads as a null.
-- **Warm-start** — `train_lora.py --init_state_ckpt` uses
-  `("diffusion_ema.ema_model.",) if _has_ema else ("diffusion.model.", "model.")`. Same
-  preference, same silence. You can warm-start from what is nearly the base and think you
-  continued a run.
+    half-life H = ln(0.5)/ln(beta)      1/e horizon = 1/(1-beta)
+    beta = 0.9999  ->  H = 6931 updates,  1/e = 10000 updates
+    residual weight on the STARTING point after U updates = beta**U
 
-**Practice:**
-- **Short run (≲10k steps) ⇒ render with `--weights online`.** State it in the run's notes.
-- **Long run ⇒ EMA is genuinely better** (damps late-training drift; ~0.9999 tracks late
-  sharpening). This is why `run_meta.recipe.notes` on some LUMI arms says *"RENDERING MUST
-  LOAD THE EMA WEIGHTS"* — that is correct **for those long arms** and wrong for a 3k-step
-  local bracket. **The rule is not "always EMA" or "never EMA" — it is a function of step
-  count against a 10k-step time constant.**
-- **Check what the siblings used** before adding cells to an existing arm, so one board row
-  isn't half EMA and half online: the staged manifest records it —
-  `grep -m1 '<label>' /home/kim/evals_aac/model_matrix/manifest.jsonl` → `"weights"` field.
-- A checkpoint carries BOTH sets: `diffusion.model.*` (online, where the optimizer is) and
-  `diffusion_ema.ema_model.*` (the shadow). Presence of the EMA keys is not a recommendation.
-- `--ema-warmup-steps` (default 100) hard-tracks the online weights first so the EMA starts
-  from a real point rather than init. It does **not** rescue the time-constant problem.
+**⚠ Our EMA updates PER MICROBATCH, not per optimizer step.** `update()` is called from
+`on_train_batch_end` (`diffusion.py:1009`), whose inline comment claims Lightning fires it
+post-step — **that is wrong whenever `accumulate_grad_batches > 1`**. With accumulation 4 the
+EMA gets 4x the updates, so its horizon in optimizer steps is 4x SHORTER than beta suggests.
+
+| run | opt. steps | accum | EMA updates | weight still on init | R = updates/H |
+|---|---|---|---|---|---|
+| fullft_autoscale 09-04 (bs1, acc4) | 3000 | 4 | 12000 | **30%** | 1.73 |
+| fullft_dual 09-05 (bs1, acc4) | 6000 | 4 | 24000 | **9%** | 3.46 |
+| the same 3000 steps, NO accumulation | 3000 | 1 | 3000 | **74%** | 0.43 |
+
+**Read `R`:** <1 dominated by the starting point · ~2 conservative · **3-10 the useful
+fine-tuning range** · >>10 mostly recent trajectory. Target a half-life around **5-20% of
+total planned exposure** so the EMA actually turns over during the run.
+
+### 1b. Transferring a beta between runs — batch size belongs in the conversion
+
+A decay copied from another recipe means nothing without its **effective** batch
+`B_eff = micro x devices x grad_accum`. To preserve the same *data* horizon:
+
+    beta1 = beta0 ** (B1/B0)
+
+    0.9999 @ batch 32 -> batch 128 : 0.99960006   (H 6931 -> 1733 updates)
+    0.9999 @ batch 32 -> batch   4 : 0.99998750   (H 6931 -> 55449 updates)
+
+Counter-intuitive but correct: a **larger** batch sees more data per update, so beta must move
+**away** from 1 to keep the same data horizon. Prefer expressing the horizon in **audio
+seconds or non-padding latent frames** rather than examples — variable-length crops make "one
+example" an unstable unit. Dataset size only enters if you want the horizon in *epochs*, and
+epochs are a poor unit here (random crops, weighted mixtures, oversampling).
+
+### 1c. The actual hazard: silent EMA PREFERENCE on load
+
+Anything loading a checkpoint **prefers the EMA shadow when the file carries one**, silently:
+- `eval/model_matrix_gen.py --weights auto` (**the default**) = EMA if present
+- `train_lora.py --init_state_ckpt` = `("diffusion_ema.ema_model.",) if _has_ema else (...)`
+
+So a low-`R` run rendered on `auto` is largely a render of its *starting point*: the arms of a
+ladder come out looking alike and the experiment reads as a null.
+
+**⚠ But check before you invoke this — it only applies if the checkpoint HAS an EMA.**
+Verified 2026-09-08 by grepping the checkpoints' `data.pkl`: the **09-04 ladder and
+`lion_lr1e-5` carry ZERO `diffusion_ema` keys** (`--use_ema` was never passed), so `auto`
+resolves to online for them and the trap did **not** bite those runs. Where it does apply:
+arms trained WITH `--use_ema` — per `model_matrix_gen`, **18 of 19 unrendered full-FT LUMI
+arms carry one**. Cheap check, no full load:
+```bash
+python -c "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]);  pk=[n for n in z.namelist() if n.endswith('data.pkl')][0];  print('EMA keys:', z.read(pk).count(b'diffusion_ema'))" <ckpt>
+```
+And match the siblings so one board row isn't half EMA and half online:
+`grep -m1 '<label>' /home/kim/evals_aac/model_matrix/manifest.jsonl` -> `"weights"`.
+
+### 1d. Practice
+- **Decide the horizon in data exposure first**, then derive beta from `B_eff` and update
+  frequency. Do not copy a beta across recipes.
+- **`--weights online` for a low-R run; EMA for a long one.** This is why some LUMI
+  `run_meta` files correctly say *RENDERING MUST LOAD THE EMA WEIGHTS* while a short local
+  bracket must not — it is R, not dogma.
+- **No ramp is available.** `SimpleEMA` has a fixed beta; `--ema-warmup-steps` (default 100)
+  **hard-copies** the online weights for the first N updates, it does not ramp the decay
+  toward its target the way `ema_pytorch`'s inverse-decay schedule would.
+- `--ema-update-every N` multiplies the horizon in optimizer steps by N. Fold it in.
+- **Always save and audition BOTH** online and EMA. For a short, clean, low-LR fine-tune EMA
+  is not automatically better — it can blur exactly the specific behaviour you trained for.
+- The known LoRA-EMA subtlety (a slow EMA retaining the near-no-op zero-init adapter) **cannot
+  occur here**: EMA is force-disabled for LoRA/DoRA.
 
 ## 2. The GPU lock — `rocm-smi` is ground truth, lockfiles are claims
 

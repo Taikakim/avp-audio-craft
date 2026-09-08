@@ -57,11 +57,12 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    discovery time from agents when they start"*).** Invoke them with the Skill tool; they live in
    `~/.claude/skills/` so they apply across repos.
    - **`sa3-training`** — BEFORE launching, resuming, or interpreting ANY training run. Holds the
-     traps that produce **wrong results rather than errors**: the **EMA time-constant trap**
-     (`--ema-beta 0.9999` ≈ a 10,000-step time constant, so a 3k-step run's EMA is ~74% its own
-     starting point — and BOTH `model_matrix_gen --weights auto` AND `train_lora --init_state_ckpt`
-     silently PREFER the EMA shadow, so a short-run ladder rendered that way makes every arm sound
-     like the base and reads as a null); the GPU lock (`rocm-smi` is ground truth — a 6-hour job
+     traps that produce **wrong results rather than errors**: the **EMA horizon** (a decay is a
+     timescale in EMA *updates* — `0.9999` ⇒ half-life 6931 — and **our EMA updates per MICROBATCH,
+     not per optimizer step**, so `accumulate_grad_batches` divides the horizon; transferring a beta
+     across batch sizes needs `β₁=β₀^(B₁/B₀)`; and BOTH `model_matrix_gen --weights auto` AND
+     `train_lora --init_state_ckpt` silently PREFER the EMA shadow **when the checkpoint carries
+     one**, so a low-turnover run rendered that way is largely a render of its starting point); the GPU lock (`rocm-smi` is ground truth — a 6-hour job
      held the card with an EMPTY lockfile on 09-08); measured optimizer/LR facts; and what a run
      must record at launch.
    - **`sa3-canonical-clips`** — rendering/checking the standard clip set. Starts with the rule
