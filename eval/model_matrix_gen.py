@@ -86,6 +86,43 @@ NATIVE_LEN_STRENGTH = 1.0
 NATIVE_FRAMES_MAP: dict[str, int] = {}
 
 
+# Cells whose latent came back non-finite. A long render process can start emitting NaN
+# partway through (GHOST-NOTE 2026-09-08: 110 of 216 cells in one pass, 108 of 110 in the
+# next, while the SAME checkpoint+config rendered clean in a 24-cell process and in a direct
+# generate() probe -- so it is process-lifetime state, not the weights, the length, the
+# sample_size/pad clamp, or set_lora_strength; all four were ruled out by isolation tests).
+#
+# WHY A CHECK IS NEEDED AT ALL: a NaN latent decodes to a FULL-SCALE CONSTANT -- peak 1.0,
+# RMS 1.0, i.e. maximum-volume noise. It is not truncated, not quiet, and not short, so every
+# verification we had passed it: the file count was right, ffprobe reported the exact
+# requested duration, and the render exited 0. It reached the listening board and was caught
+# only by score_and_publish's latent-sanity gate, which inspects the cfg7/w1 subset alone --
+# a NaN burst confined to other cfgs would still have shipped.
+NONFINITE_CELLS: list[str] = []
+
+
+def z0_is_finite(z0, where: str) -> bool:
+    """True if `z0` is usable. On a non-finite latent, log loudly and return False so the
+    caller SKIPS the whole cell -- no .wav, no .m4a, no manifest line. Writing nothing is
+    deliberate: `existing` is keyed off the manifest, so an unwritten cell simply stays
+    missing and the next resume re-renders it. Recording it instead would poison the board
+    with noise AND make the resume skip it forever."""
+    # torch is imported inside main() (line ~572) so --dry-run works without it -- import
+    # locally rather than assume a module-level name that does not exist.
+    import torch as _t
+
+    bad = ~_t.isfinite(z0)
+    n = int(bad.sum())
+    if n == 0:
+        return True
+    NONFINITE_CELLS.append(where)
+    print(f"  !! NON-FINITE LATENT -- CELL DROPPED: [{where}] {n}/{z0.numel()} elements "
+          f"non-finite. Nothing written; the cell stays missing so a resume re-renders it. "
+          f"If these cluster late in a long pass, split the run into smaller batches.",
+          flush=True)
+    return False
+
+
 def native_len_seconds(label: str) -> float | None:
     """Trained context length in seconds for `label`, if known (from
     --native-frames-file first, else the recipe override's 'T=<frames>' text) --
@@ -686,6 +723,9 @@ def main():
                             z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
                                                 cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
                                                 return_latents=True, sample_size=duration_sample_size)
+                            if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
+                                                    f"{prompt['id']} st{steps}"):
+                                continue
                             if save_latents:
                                 # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
                                 np.save(wav_path.with_suffix(".z0.npy"),
@@ -706,7 +746,10 @@ def main():
                         existing.add(key)
                     if base_m4a_name is None:
                         base_m4a_name = m4a_name
-                if ckpt_path is None and only_strengths is None:
+                if ckpt_path is None and only_strengths is None and base_m4a_name is not None:
+                    # base_m4a_name is None only if the single base render was DROPPED for a
+                    # non-finite latent -- mirroring then would write manifest lines pointing at
+                    # a file that does not exist. Skip; the resume re-renders the real cell.
                     # base: strength n/a -- mirror the one render across the other strength
                     # cells so the grid lights up without 3x-redundant compute. Skipped under
                     # --only-strengths: the caller asked for an exact strength set (e.g. the
@@ -779,6 +822,9 @@ def main():
                                         batch_size=1, return_latents=True,
                                         sample_size=native_frames * 4096)
                     assert z0.shape[-1] == native_frames, (z0.shape, native_frames)
+                    if not z0_is_finite(z0, f"{label}/{tag} NATIVE {native_dur}s cfg{ncfg} "
+                                            f"w{nw} {np_['id']} st{steps}"):
+                        continue
                     if save_latents:
                         np.save(nwav_path.with_suffix(".z0.npy"),
                                z0.detach().to(torch.float16).cpu().numpy())
@@ -803,7 +849,16 @@ def main():
     if stopped:
         print(f"[model_matrix] STOPPED on time budget ({args.time_budget_hours}h) -- resumable, "
               f"re-run the same command to continue", flush=True)
+    if NONFINITE_CELLS:
+        print(f"[model_matrix] {len(NONFINITE_CELLS)} CELL(S) DROPPED for non-finite latents "
+              f"-- they were NOT written and are NOT on the board; re-run to fill them, "
+              f"preferably in smaller batches:", flush=True)
+        for w in NONFINITE_CELLS:
+            print(f"    dropped: {w}", flush=True)
     print("[model_matrix] done", flush=True)
+    if NONFINITE_CELLS:
+        # exit non-zero so a wrapper/cron notices; the artifacts already written are valid.
+        sys.exit(3)
 
 
 if __name__ == "__main__":
