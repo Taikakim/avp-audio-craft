@@ -551,6 +551,11 @@ async function loadCurated(){
  CURATED=ok;CURATED_I=0;
  if(CURATED_SKIPPED)bottomLine('curatedskip','background:#6a4a10;color:#fff').textContent=
   '\u26a0 '+CURATED_SKIPPED+' of '+raw.length+' curated pairs reference clips missing from the manifest (e.g. '+CURATED_MISSING[0]+')';
+ // The mode line is painted at script end, BEFORE this async load resolves, and nothing else
+ // repaints it until the first pair renders -- so the landing page said "REQUESTED BUT NOT
+ // LOADED" over a curated list that had loaded fine. Repaint here, on the one event that
+ // actually changes the answer.
+ if(typeof showModeLine==='function')showModeLine();
 }
 // Percentile rank, not an absolute PQ delta -- see the ?pq= comment above for why.
 let PQ_SORTED=[];
