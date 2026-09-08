@@ -164,9 +164,21 @@ class LatentControlDataset(Dataset):
         # this sidesteps the 000000.* stem COLLISION between corpora (goa + avp). Single-dir
         # behaviour is byte-identical (one sorted glob over the one root).
         _roots = list(root) if isinstance(root, (list, tuple)) else [root]
+        # ...and the SIDECAR dirs must be per-root for the same reason. A single dir
+        # applies to every root (unchanged single-corpus behaviour); a LIST must line up
+        # with the roots one-for-one. Resolving a sidecar by bare filename stem against
+        # one flat dir is the bug this map exists to prevent: goa/000000.npy and
+        # avp/000000.npy would both read 000000.melody8.npy, silently conditioning the
+        # second corpus on the FIRST corpus's contours (CONTINUITY 2026-09-09).
+        _mel_roots = self._per_root(melody_dir, _roots, "melody_dir")
+        _met_roots = self._per_root(metrical_dir, _roots, "metrical_dir")
         self.paths = []
-        for _r in _roots:
-            self.paths.extend(sorted(glob.glob(os.path.join(str(_r), "*.npy"))))
+        self._sidecar_of = {}          # latent path -> (melody_dir, metrical_dir)
+        for _r, _mel, _met in zip(_roots, _mel_roots, _met_roots):
+            _ps = sorted(glob.glob(os.path.join(str(_r), "*.npy")))
+            for _p in _ps:
+                self._sidecar_of[_p] = (_mel, _met)
+            self.paths.extend(_ps)
         # drop junk crops with no .json companion (e.g. silence.npy) — they lack every
         # sidecar and would crash the timeseries loader in fingerprint/window mode, where
         # the scalar_field filter below (which also excludes them) never runs.
@@ -213,13 +225,32 @@ class LatentControlDataset(Dataset):
     def __len__(self):
         return len(self.paths)
 
+    @staticmethod
+    def _per_root(value, roots, name):
+        """Broadcast a sidecar dir over the roots, or check a per-root list lines up.
+
+        A mismatched list is a hard error, never a silent fallback to roots[0]: the
+        fallback would produce exactly the cross-corpus mislabeling this map prevents,
+        and it would train without complaint.
+        """
+        if value is None:
+            return [None] * len(roots)
+        if isinstance(value, (list, tuple)):
+            if len(value) != len(roots):
+                raise ValueError(
+                    f"{name}: got {len(value)} sidecar dirs for {len(roots)} latent "
+                    f"roots — a per-root list must line up one-for-one with the roots "
+                    f"(pass a single dir to apply one sidecar set to all of them)")
+            return list(value)
+        return [value] * len(roots)
+
     def _melody_path(self, latent_path: str) -> str:
         stem = os.path.basename(latent_path)[:-4]
-        return os.path.join(str(self.melody_dir), stem + ".melody8.npy")
+        return os.path.join(str(self._sidecar_of[latent_path][0]), stem + ".melody8.npy")
 
     def _metrical_path(self, latent_path: str) -> str:
         stem = os.path.basename(latent_path)[:-4]
-        return os.path.join(str(self.metrical_dir), stem + ".metrical.npy")
+        return os.path.join(str(self._sidecar_of[latent_path][1]), stem + ".metrical.npy")
 
     def _load_controls(self, stem: str) -> dict:
         if not self.controls:                       # scalar/no-timeseries mode: don't touch the npz

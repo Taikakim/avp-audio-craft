@@ -242,7 +242,35 @@ def main():
     ap.add_argument("--warmup-steps", type=int, default=0,
                     help="linear LR warmup over this many steps (0 = none). Best practice for "
                          "higher LRs — prevents the early gradient explosion seen at lr 1e-3.")
-    ap.add_argument("--optimizer", choices=["adamw", "fusion", "sfadamw", "fusion_nm", "fusion_full"], default="adamw",
+    ap.add_argument("--weight-decay", type=float, default=0.01,
+                    help="decoupled weight decay. NOTE Lion's update is a unit-sign step, so "
+                         "the paper wants wd 3-10x LARGER than AdamW's at a 3-10x smaller lr; "
+                         "0.01 is the AdamW-shaped default, not a tuned Lion value.")
+    ap.add_argument("--lion-betas", type=float, nargs=2, default=(0.9, 0.99),
+                    help="LionSR (beta1 = update interpolation, beta2 = momentum EMA)")
+    ap.add_argument("--fusion-autoscale", action="store_true",
+                    help="D-Adaptation/Prodigy step-size estimator: d starts tiny and only "
+                         "grows, driven by dot(grad, p0 - p) against an EMA of gradient "
+                         "magnitude; folded in as a pure lr multiplier. Works with --optimizer "
+                         "fusion* (a FusionOpt component) AND with lion (dadapt_scale). "
+                         "⚠ On lion the OCO bound does NOT hold — Lion's step magnitude is lr "
+                         "regardless of the gradient — so it is an adaptive-lr heuristic there.")
+    ap.add_argument("--fusion-autoscale-slice-p", type=int, default=16,
+                    help="keep every Nth coordinate of the per-param init clone + accumulator "
+                         "(state cost O(numel/N)). No effect unless --fusion-autoscale.")
+    ap.add_argument("--fusion-autoscale-growth-rate", type=float, default=float("inf"),
+                    help="cap on how fast d may grow per step, multiplicative. Does NOT bound "
+                         "the FIRST estimate, which is taken outright (d0 is a placeholder).")
+    ap.add_argument("--hyperball", action="store_true",
+                    help="constrain each weight to the sphere of radius ‖W0‖_F (arXiv "
+                         "2606.16899); weight decay is ignored, and 'sf' is dropped from the "
+                         "components (incompatible). ⚠ MOSTLY INERT ON AN ADAPTER RECIPE: "
+                         "every adapter tensor we train is zero-init (LoRA/DoRA lora_B, the "
+                         "cross-attn to_out), and ‖W0‖=0 would pin them at zero forever — "
+                         "FusionOpt detects that and falls back to the ordinary update for "
+                         "those params, so hyperball only really binds a --base-state-ckpt's "
+                         "own weights if you ever unfreeze them.")
+    ap.add_argument("--optimizer", choices=["adamw", "fusion", "sfadamw", "fusion_nm", "fusion_full", "lion"], default="adamw",
                     help="adamw (default); fusion (SF-NorMuon = ns5+normuon+sf); sfadamw (sf-only = "
                          "ScheduleFree-AdamW); fusion_nm (mona+ns5+normuon+sf — everything EXCEPT KL-Shampoo, "
                          "now viable on large adapters thanks to component-gated state alloc); fusion_full "
@@ -304,6 +332,13 @@ def main():
     # --- melody_contour (Head B) args ---
     ap.add_argument("--melody-dir", default="/home/kim/Projects/latents_sa3_melody",
                     help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
+    ap.add_argument("--melody-dirs", nargs="+", default=None,
+                    help="per-root form of --melody-dir, for a MULTI-CORPUS run: one contour "
+                         "sidecar dir per --encoded-dirs root, in the SAME ORDER. Required "
+                         "whenever the corpora have colliding crop stems (goa and avp both "
+                         "start at 000000.npy) — a single --melody-dir would resolve both to "
+                         "the same stream file and condition one corpus on the other's "
+                         "contours. A single --melody-dir still applies to every root.")
     ap.add_argument("--melody-vocab", type=int, default=9,
                     help="melody_contour embedding vocab (default 9 = Head-B's 8 classes + "
                          "reserved null). Morph-contour streams (build_morph_streams.py): "
@@ -387,6 +422,10 @@ def main():
         encoded_dir = _parts if len(_parts) > 1 else args.encoded_dir
     if isinstance(encoded_dir, list):
         print(f"[data] multi-root dataset: {len(encoded_dir)} corpora {encoded_dir}", flush=True)
+    # --melody-dirs (list) wins over --melody-dir; the dataset checks it lines up with the roots
+    melody_dir = args.melody_dirs if args.melody_dirs else args.melody_dir
+    if isinstance(melody_dir, list):
+        print(f"[data] per-root contour sidecars: {melody_dir}", flush=True)
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -538,7 +577,15 @@ def main():
         # stable_audio_tools is editable-installed in SAO/.venv; no path hack needed.
         from stable_audio_tools.training.fusion_opt import FusionOpt
         from stable_audio_tools.training.fusion_groups import build_fusion_param_groups
-        trainable_mod = torch.nn.ModuleList([w.adapter for w in wrappers] + [cond_enc])
+        # ⚠ `dit` MUST be in here when --dora-rank > 0. The fusion path used to route only
+        # the control adapters + conditioner, so a `--optimizer fusion --dora-rank 128` run
+        # allocated no optimizer state for the DoRA tensors and never stepped them: the rank
+        # was paid for in memory and compute and learned NOTHING, while the AdamW path (which
+        # optimises `params`, dora included) did the obvious thing. named_parameters() dedupes
+        # by identity, so listing dit alongside adapters that live inside it is safe, and the
+        # requires_grad filter keeps the frozen base out. (CONTINUITY 2026-09-09)
+        trainable_mod = torch.nn.ModuleList(
+            [w.adapter for w in wrappers] + [cond_enc] + ([dit] if _lora_params else []))
         groups = build_fusion_param_groups(trainable_mod, spectral_wd=0.01, scalar_wd=0.0)
         comps = ({"sf"} if args.optimizer == "sfadamw"
                  else None if args.optimizer == "fusion_full"        # None = all 5 (mona+shampoo+ns5+normuon+sf)
@@ -546,13 +593,34 @@ def main():
                  else {"ns5", "normuon", "sf"})                      # fusion = SF-NorMuon
         if args.cautious:                                            # C-Muon: same recipe + cautious mask
             comps = ({"mona", "shampoo", "ns5", "normuon", "sf"} if comps is None else set(comps)) | {"cautious"}
-        opt = FusionOpt(groups, lr=args.lr, warmup_steps=args.warmup_steps, hot_dtype="bf16", components=comps)
+        if args.hyperball:            # SF averaging and the norm constraint are incompatible
+            comps = ({"mona", "shampoo", "ns5", "normuon"} if comps is None else set(comps)) - {"sf"}
+        if args.fusion_autoscale:
+            comps = ({"mona", "shampoo", "ns5", "normuon", "sf"} if comps is None else set(comps)) | {"autoscale"}
+        opt = FusionOpt(groups, lr=args.lr, warmup_steps=args.warmup_steps, hot_dtype="bf16",
+                        components=comps, hyperball=args.hyperball,
+                        autoscale_slice_p=args.fusion_autoscale_slice_p,
+                        autoscale_growth_rate=args.fusion_autoscale_growth_rate)
         _sf = bool(getattr(opt, "uses_sf_averaging", False))
         if _sf:
             opt.train()
         print(f"[opt] {args.optimizer} (components={sorted(comps)}, SF={_sf})", flush=True)
+    elif args.optimizer == "lion":
+        from stable_audio_3.training.lion_optimizer import LionSR
+        opt = LionSR(params, lr=args.lr, betas=tuple(args.lion_betas),
+                     weight_decay=args.weight_decay,
+                     autoscale=args.fusion_autoscale,
+                     autoscale_slice_p=args.fusion_autoscale_slice_p,
+                     autoscale_growth_rate=args.fusion_autoscale_growth_rate)
+        _sf = False
+        _n = sum(p.numel() for p in params)
+        print(f"[opt] LionSR lr={args.lr:g} betas={tuple(args.lion_betas)} "
+              f"wd={args.weight_decay:g} autoscale={args.fusion_autoscale} "
+              f"over {_n/1e6:.1f}M params", flush=True)
+        if args.hyperball:
+            print("[opt] ⚠ --hyperball is a FusionOpt feature and is IGNORED by lion", flush=True)
     else:
-        opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.01)
+        opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=args.weight_decay)
         _sf = False
 
     ema = EMA(params, args.ema) if args.ema and args.ema > 0 else None
@@ -637,7 +705,7 @@ def main():
     elif args.control_mode == "melody_contour":
         ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
                                   seed=args.seed, subset_tracks=args.subset_tracks,
-                                  melody_dir=args.melody_dir,
+                                  melody_dir=melody_dir,
                                   random_crop_frames=(args.crop_frames if args.random_crop else None))
     elif args.control_mode == "metrical_position":
         ds = LatentControlDataset(encoded_dir, controls=(), audio_ref=None,
