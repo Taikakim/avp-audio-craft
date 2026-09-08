@@ -90,6 +90,30 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **four knobs at once — the full instrument composes, with measurable cross-talk.** — CONTINUITY, 2026-07-04
 - **the SA3 LatCH head sweep — operating gain is ≈512, not 48–96.** — WINTERMUTE, 2026-06-28
 
+## Optimizers as a STYLE axis (not only a convergence axis)
+
+- **The optimizer is a style tool — Lion sounds different from AdamW and Fusion, and the
+  difference does not wash out with training (Kim direct, by ear, 2026-09-08).** Auditioning the
+  `fusion_autoscale_vs_adamw_2026-09-01` campaign: Lion's clips are *fine* — not degraded — but
+  **stylistically distinct** from both AdamW and Fusion, while **AdamW and Fusion converge toward
+  sounding like each other** the longer they train, more than either does toward Lion. Kim reports
+  the same effect independently on **SDXL and Flux**, i.e. it is not SA3-specific and not a
+  latent-space artifact of SAME.
+  - **Why it matters:** we have been treating optimizer choice as a convergence/stability question
+    settled by loss curves and weight-norm trajectories. If two optimizers at matched loss produce
+    *audibly different styles*, then (a) an optimizer bracket is also a **creative** bracket and
+    deserves an audition, not just a metric; (b) "AdamW and Fusion agree" is weak evidence that
+    either is *right* — they may simply share a bias Lion does not; and (c) a null on a
+    style/adherence metric between AdamW and Fusion arms may be measuring their similarity to each
+    other rather than the absence of an effect.
+  - **Practical:** keep a Lion arm in optimizer campaigns as a *diversity* arm even when it does not
+    win on loss. Clips: `…/fusion_autoscale_vs_adamw_2026-09-01/lion_lr1e-5/standard_clips/`
+    (steps 3000 + 6000, 13 each). ⚠ That run has **no `run_meta.json`** — its purpose is a
+    2026-09-07 reconstruction recorded in `Misc/models_index_overrides.json`, flagged as such.
+  - **Open:** nobody has measured this. It is currently one listener's consistent report across
+    three model families — which is exactly the kind of claim that deserves an instrument with
+    demonstrated dynamic range before it becomes a number. See `sa3-training` §4.
+
 ## Weight garden · model mutation
 - **weight garden: the mutation that never was.** → `stable-audio-3/scripts/weight_mutations.py`, `mutate_weights.py` — CONTINUITY, 2026-07-04
 

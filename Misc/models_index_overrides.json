@@ -7653,5 +7653,10 @@
   "status": "done -- IT DOES NOT: path 590.1 vs 322.1, ~1.8x further in weight space for the same samples; step_cos 0.453",
   "purpose_evidence": "GHOST-NOTE, first-hand (fusion_autoscale vs AdamW A/B, 2026-09-01/02)",
   "purpose_confidence": "strong"
+ },
+ "lion_lr1e-5": {
+  "purpose": "Lion optimizer arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01). NOTE: this run has NO run_meta.json on disk -- purpose reconstructed 2026-09-07 by CONTINUITY from the run dir and checkpoint-stats/lion_lr1e-5_trajectory.md, NOT from a launcher record.",
+  "recipe": "LoRA r128, T=512, bf16, lr 1e-5, optimizer Lion; 300-item constrained goa/psytrance subset of latents_sa3, seed42 -- same training recipe as the AdamW/Fusion arms of this campaign per its standard_clips run_meta.",
+  "note": "Trajectory (checkpoint-stats/lion_lr1e-5_trajectory.md, computed over steps 1000-4000 only -- 2 later ckpts exist): path efficiency 0.664 = wandering within a basin, so soup-averaging should help; centroid at step 2000. ⚠ T=512 here is what makes the d48 native cell render; it is asserted from the campaign recipe, not read off the checkpoint."
  }
 }

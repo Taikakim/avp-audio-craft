@@ -1741,6 +1741,48 @@
    "picks": [],
    "reason": "Model soups (weight-averaged checkpoints), Kim 2026-09-04: initial 3-prompt cfg-7 pass. Registered as ONE label per soup FAMILY with every soup as a checkpoint cell, because the ckpts sit flat in the family dir and build_jobs resolves root/<label>/<pick> — a label per soup would need a directory per soup. These are PARALLEL recipes, not an epoch ladder, so --terminal-only must NOT be used on them: it would keep one arbitrary soup per family. 45 soups. SUPERSEDED: redundant, see 'skip'.",
    "skip": "ALL 45 of these soups were ALREADY rendered under their own per-soup labels (soup_winning_*, soup_fp32cmp_*, soup_bf16cmp_*). Registering the family as one label re-renders identical audio under a second board row. Render STOPPED 2026-09-04 after 86 duplicate cells; do not resume."
+  },
+  "fullft_ladder_A_control": {
+   "tier": "single",
+   "root": "/home/kim/fullft_autoscale_2026-09-04",
+   "picks": [
+    "epoch=19-step=1500.ckpt",
+    "epoch=39-step=3000.ckpt"
+   ],
+   "reason": "Full-FT autoscale/dual-LR ladder, 2026-09-04 (Kim). Rendered to judge autoscale as a QUALITY tool -- the weight-growth question it was built for is unanswerable here, because Schedule-Free (the component Kim identifies as the source of the runaway) had to be dropped to fit 16 GB. Reduced Fusion: hyperball + ns5,normuon. A=no autoscale, B=+autoscale, C=+autoscale +decoupled spectral/scalar LR. 3000 steps, seed 42, identical data. Arm dir 'A_control' aliased to 'fullft_ladder_A_control' because model_matrix_gen keys is_fullft on the label prefix.",
+   "_note": "Kim 2026-09-07 asked for standard clips across this run: ep39 was rendered, the step1500 midpoint never was, so the ladder had an endpoint but no trajectory. Render with --weights online: these are 3000-step runs and SimpleEMA's beta=0.9999 is a ~10k-step time constant, so an EMA render would still be dominated by the base and would make all three arms sound alike. The ep39 clips already on disk were rendered online (manifest-verified) -- match them."
+  },
+  "fullft_ladder_B_autoscale": {
+   "tier": "single",
+   "root": "/home/kim/fullft_autoscale_2026-09-04",
+   "picks": [
+    "epoch=19-step=1500.ckpt",
+    "epoch=39-step=3000.ckpt"
+   ],
+   "reason": "Full-FT autoscale/dual-LR ladder, 2026-09-04 (Kim). Rendered to judge autoscale as a QUALITY tool -- the weight-growth question it was built for is unanswerable here, because Schedule-Free (the component Kim identifies as the source of the runaway) had to be dropped to fit 16 GB. Reduced Fusion: hyperball + ns5,normuon. A=no autoscale, B=+autoscale, C=+autoscale +decoupled spectral/scalar LR. 3000 steps, seed 42, identical data. Arm dir 'B_autoscale' aliased to 'fullft_ladder_B_autoscale' because model_matrix_gen keys is_fullft on the label prefix.",
+   "_note": "Kim 2026-09-07 asked for standard clips across this run: ep39 was rendered, the step1500 midpoint never was, so the ladder had an endpoint but no trajectory. Render with --weights online: these are 3000-step runs and SimpleEMA's beta=0.9999 is a ~10k-step time constant, so an EMA render would still be dominated by the base and would make all three arms sound alike. The ep39 clips already on disk were rendered online (manifest-verified) -- match them."
+  },
+  "fullft_ladder_C_dual": {
+   "tier": "single",
+   "root": "/home/kim/fullft_autoscale_2026-09-04",
+   "picks": [
+    "epoch=19-step=1500.ckpt",
+    "epoch=39-step=3000.ckpt"
+   ],
+   "reason": "Full-FT autoscale/dual-LR ladder, 2026-09-04 (Kim). Rendered to judge autoscale as a QUALITY tool -- the weight-growth question it was built for is unanswerable here, because Schedule-Free (the component Kim identifies as the source of the runaway) had to be dropped to fit 16 GB. Reduced Fusion: hyperball + ns5,normuon. A=no autoscale, B=+autoscale, C=+autoscale +decoupled spectral/scalar LR. 3000 steps, seed 42, identical data. Arm dir 'C_dual' aliased to 'fullft_ladder_C_dual' because model_matrix_gen keys is_fullft on the label prefix.",
+   "_note": "Kim 2026-09-07 asked for standard clips across this run: ep39 was rendered, the step1500 midpoint never was, so the ladder had an endpoint but no trajectory. Render with --weights online: these are 3000-step runs and SimpleEMA's beta=0.9999 is a ~10k-step time constant, so an EMA render would still be dominated by the base and would make all three arms sound alike. The ep39 clips already on disk were rendered online (manifest-verified) -- match them."
+  },
+  "lion_lr1e-5": {
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fusion_autoscale_vs_adamw_2026-09-01",
+   "picks": [
+    "epoch=399-step=6000.ckpt"
+   ],
+   "_note": "Kim 2026-09-07: the only arm of the fusion-vs-adamw campaign with ZERO rendered cells. Terminal ckpt only, matching every sibling in this run (each is registered with its terminal pick alone). LoRA r128 T512 -> gets the full 3-strength sweep + the d48 native cell, i.e. the same 109-cell set the siblings have."
+  },
+  "fullft_dual_1e-3_2026-09-05": {
+   "root": "/home/kim",
+   "picks": [],
+   "_note": "DO NOT RE-ADD PICKS. Kim 2026-09-08: 'the clips for the dual run were utterly degraded, I think one of the LRs was too large. so I removed them.' He listened, judged it, and DELETED all 6 checkpoints (58 GB) himself -- the weights are gone on purpose, not lost. Registering picks here would only produce [skip-missing] noise on every render pass. The run's verdict is preserved in its run_meta.json (spectral_lr 1e-3 destabilises full-FT: median train loss 2.1-2.7 vs 0.79 baseline, 38% of logged steps spiking >5, peak 15832.9). Kept as an empty entry so the deletion is a recorded decision rather than an unexplained absence."
   }
  },
  "legacy_goa_dora_nested": {

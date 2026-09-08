@@ -51,6 +51,28 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    air-gapped — no `git pull`, no internet at all**; code reaches LUMI only via
    `rsync -avR -e "ssh -i ~/.ssh/id_EFP" <path> akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
    (dry-run with `-n` first). Getting this wrong wastes a round-trip every time.
+6b. **`sa3-training` and `sa3-canonical-clips` — the two GLOBAL skills (Kim direct 2026-09-08:
+   *"everything useful and locally we know should go there, read whenever an agent trains"*, and
+   *"concrete steps for creating our canonical clips ... because now I see this always takes
+   discovery time from agents when they start"*).** Invoke them with the Skill tool; they live in
+   `~/.claude/skills/` so they apply across repos.
+   - **`sa3-training`** — BEFORE launching, resuming, or interpreting ANY training run. Holds the
+     traps that produce **wrong results rather than errors**: the **EMA time-constant trap**
+     (`--ema-beta 0.9999` ≈ a 10,000-step time constant, so a 3k-step run's EMA is ~74% its own
+     starting point — and BOTH `model_matrix_gen --weights auto` AND `train_lora --init_state_ckpt`
+     silently PREFER the EMA shadow, so a short-run ladder rendered that way makes every arm sound
+     like the base and reads as a null); the GPU lock (`rocm-smi` is ground truth — a 6-hour job
+     held the card with an EMPTY lockfile on 09-08); measured optimizer/LR facts; and what a run
+     must record at launch.
+   - **`sa3-canonical-clips`** — rendering/checking the standard clip set. Starts with the rule
+     that **clips live in TWO places** (`evals_aac/model_matrix/` AND `<run_root>/<arm>/standard_clips/`)
+     and that checking one and declaring "no clips" has now been wrong twice; then the exact grid
+     (12 canonical prompt ids, cfg 1/7/16, strengths 1/1.5/2, 24 steps, 20 s ⇒ **109 cells per LoRA
+     ckpt, 36 per full-FT**), how to register an arm in `eval/rarity_bracket_manifest.json`, and how
+     to verify OUTPUT rather than exit code (renders segfault at teardown AFTER writing every file).
+   **These two supersede re-deriving any of it from source.** When you learn something new about
+   training or clip-rendering, ADD IT THERE — that is where the next agent will look.
+
 7. **`KIM-TASKLIST.md`** — the team-maintained running tasklist **for Kim** (Kim 2026-08-05): the
    single place the fleet surfaces what needs him — decisions, his ears, reviews, submits — so
    sprawling work across four agents doesn't get forgotten. **When work lands that needs Kim, ADD an
