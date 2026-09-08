@@ -947,3 +947,48 @@ matching the pattern, not rows the step produced, so a complete no-op reads as s
 native length: 216 cells where siblings have 109) — skill corrected. And `batch_natives.sh` ran a
 render inside a `while read` loop without `< /dev/null`, so python ate the loop's stdin and the
 second iteration rendered a cell at **cfg 150**; quarantined with a note.
+
+## 2026-09-09 — The MIDI features are orthogonal to PQ and CE, and that is the whole point
+
+Asked to squeeze mileage out of the 146 new MuScriptor transcriptions. The useful result is not a
+new score but a demonstration that the transcription features carry information our aesthetic
+metrics do not.
+
+**Instrument audit first, and it mattered.** Of the 20 numeric fields in `hook_metrics.jsonl`,
+the melodic ones — `hook_melodic_ratio`, `contour_compression`, `top_motif`, `distinct46_grid_ratio`
+— are **NULL on 66–81% of clips**. Not broken: they require a lead voice, and **40% of these
+renders have `n_lead == 0`**. Only `n_notes`, `bpm`, `n_kick`, `n_lead` are defined everywhere.
+Had I gone straight to "do MIDI features predict X", every answer would have been a report on the
+null rate. This is the audit-the-instrument rule paying off before a null, not after one.
+
+**The finding.** Split the 146 clips by whether the transcription found a lead at all, and ask
+what our existing metrics see (Cohen's d, z):
+
+| metric | no-lead | lead | d | z |
+|---|---|---|---|---|
+| pq | 7.956 | 7.927 | −0.10 | −0.61 |
+| ce | 6.676 | 6.782 | +0.22 | +1.27 |
+| crest | 4.058 | 4.744 | **+0.45** | **+2.62** |
+| flatness | 0.021 | 0.026 | +0.31 | +1.83 |
+| hf_ratio | 0.013 | 0.013 | +0.00 | +0.00 |
+
+**PQ and CE are blind to whether a clip has a melody at all.** Only crest partially sees it, which
+makes sense — a lead adds transient peaks. Given that project guidance says engaging melodic
+content is what separates a top rating from a merely well-produced clip, a metric set that cannot
+see melody cannot model that judgment. That is a concrete reason the 4-vs-5 gap has stayed closed
+to us.
+
+**Shipped:** `eval/midi_metrics_ingest.py` folds the features into `clip_metrics.db` as a SEPARATE
+`midi_metrics` table keyed by `path` — not new columns on `metrics`, because other tools `SELECT *`
+and derive their column list from it. 146 rows, all 146 joinable. Indexed in ARCHITECTURE's reuse
+list and RUNBOOK §12b. It gates on the JOIN count, not the insert count: rows that never match
+`metrics.path` are invisible to every page, which is indistinguishable from not ingesting at all.
+
+**Suggestive, NOT a finding — recorded so it is not mistaken for one.** Lead-presence per
+checkpoint runs 5/12 to 10/12, but at n=12 the Wilson intervals overlap almost completely, so the
+ranking is not significant. The paired view is more interesting because all arms share the same 12
+prompts and seeds: `fullft_ladder_C_dual` vs `B_autoscale` at ep39 is **5–0 discordant** (exact
+McNemar p≈0.06 two-sided) and `A_control` vs `B_autoscale` 4–1 (n.s.). So there is a HINT that the
+autoscale arm drops the melodic lead more often than its ladder siblings, at a sample size that
+cannot establish it. The cheap next test is more prompts on those three checkpoints, not more
+analysis of these twelve.

@@ -184,3 +184,10 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - 2026-09-08 — Fixed Audiobox scoring, dead again: `libbluray` .so.3 -> .so.4 broke the venv-private
   ffmpeg8 libs, so torchcodec loaded no backend and `clip_metrics_audiobox.py` reported "0 scored"
   with exit 0. Extracted libbluray.so.3 from the pacman cache into `mir/lib/ffmpeg8-compat/`.
+- 2026-09-09 — Mined the 146 new MuScriptor transcriptions: whether a render has a melodic lead at
+  all is INVISIBLE to PQ (z −0.61) and CE (z +1.27), partly visible to crest (z +2.62) — so the MIDI
+  features add an axis the aesthetic metrics lack. Shipped `eval/midi_metrics_ingest.py` (separate
+  `midi_metrics` table in clip_metrics.db, 146 rows all joinable), indexed in ARCHITECTURE + RUNBOOK
+  §12b. Coverage caveat recorded: melodic features are NULL on ~66% of clips because 40% of renders
+  have no lead voice. Hint only (n=12, p≈0.06): the autoscale ladder arm loses the lead more often
+  than control/dual.

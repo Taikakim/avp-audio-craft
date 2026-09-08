@@ -358,6 +358,35 @@ numbers are the result; the exit code is not.
 Standalone Audiobox on one directory: `/home/kim/Projects/mir/mir/bin/python`, **single-file mode
 only** — batch mode OOMs WavLM at 16 GB.
 
+## 12b. MIDI-transcribe clips and fold the features into the metrics DB
+
+```bash
+cd /home/kim/Projects/SAO
+python3 Misc/filelock.py acquire /home/kim/Projects/SAO/.gpu.lock --handle KIM --pid-aware --pid $$
+export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+# 1. transcribe (GPU). --wavs takes a glob OR a file of paths, one per line. Resumable twice
+#    over: clips already in --out are skipped, and clips with a saved .mid are re-scored on CPU.
+.venv/bin/python eval/hook_eval_renders.py \
+  --wavs '/run/media/kim/Mantu/sa3_lora_runs/model_matrix/<label>*__cfg7__w100__*.wav' \
+  --out  /run/media/kim/Mantu/sa3_lora_runs/muscriptor_<campaign>/hook_metrics.jsonl \
+  --midi-dir /run/media/kim/Mantu/sa3_lora_runs/muscriptor_<campaign>/midi
+python3 Misc/filelock.py release /home/kim/Projects/SAO/.gpu.lock --handle KIM
+# 2. fold into clip_metrics.db (CPU, instant, idempotent)
+.venv/bin/python eval/midi_metrics_ingest.py \
+  /run/media/kim/Mantu/sa3_lora_runs/muscriptor_<campaign>/hook_metrics.jsonl
+```
+
+Restrict to **cfg7 / w100** — the operating point — so the set is comparable across arms instead
+of mixing guidance settings.
+
+TAKES: ~4 s per 20 s clip, ~10 s per native-length one. VERIFY the artifact:
+`wc -l <hook_metrics.jsonl>` and `ls <midi-dir> | wc -l` should match the clip count, and the
+ingest prints `midi_metrics now N rows, M of them joinable to metrics.path` — **M is the number
+that matters**; rows that do not join are invisible to every page.
+
+⚠ `has_lead` and `n_lead` are defined for every clip; the melodic features are NULL whenever
+there is no lead voice (~66% of clips), which is a real property, not a failed measurement.
+
 ## 13. Commit and push
 
 **As yourself: plain `git commit`.** The tree's `user.name` is already Kim. `Misc/agent_commit.sh`
