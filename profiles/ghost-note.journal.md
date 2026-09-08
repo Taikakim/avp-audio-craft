@@ -992,3 +992,31 @@ McNemar p≈0.06 two-sided) and `A_control` vs `B_autoscale` 4–1 (n.s.). So th
 autoscale arm drops the melodic lead more often than its ladder siblings, at a sample size that
 cannot establish it. The cheap next test is more prompts on those three checkpoints, not more
 analysis of these twelve.
+
+## 2026-09-09 — We were pulling the weights and leaving the logs
+
+Kim noticed a LUMI run dir with a `lightning_logs/` and asked whether we were saving training logs.
+We were not, mostly. Counted before touching anything: **207 local run dirs, 14 with
+`lightning_logs/`, 6 with `metrics.csv`**; the Mantu mirror had zero of either across 58 dirs. So
+for most of the fleet the loss curve, the LR schedule and the real step counts existed in exactly
+one place — LUMI scratch, which has no backups on any tier and is deleted 90 days after the
+allocation ends. The asymmetry is the point: we had careful rules for which CHECKPOINTS to pull
+(last-fat, slims elsewhere) and no rule at all for the megabytes that explain them.
+
+Pulled over one multiplexed ssh, logs only: `lightning_logs` 14 -> 103, `metrics.csv` 6 -> 123,
+`train*.log` 63 -> 248, all `*.log` 270/270. **The find worth remembering is the second rsync:
+342 sbatch `.out`/`.err` files, 159 MB, which are NOT under `runs/`** — `%x-%j.out` lands in the
+submit cwd, `/project/.../code`. They hold the launch-config echo, the first traceback and the DDP
+rank lines, i.e. most of what the verification ladder in the lumi-ops skill actually reads, and
+they are easy to miss precisely because they do not live with the run.
+
+Two null results that are real answers rather than gaps, recorded so nobody re-runs the pull
+looking for them: **`hparams.yaml` is 0 because LUMI has none at all** (I checked remotely rather
+than assuming my filter was wrong), and 21 of the 120 remote `lightning_logs` dirs hold no
+`metrics.csv`, so `--prune-empty-dirs` correctly skipped them — 120 remote dirs against 103 local
+is completeness, not loss. `run_meta.json` is the one asymmetry, and it runs the other way: local
+166 vs remote 118, because earlier pulls and local-only runs add to it.
+
+Also worth separating from the throttle signature the skill warns about: my first attempt failed
+with `Permission denied (publickey)` on a valid key. `ssh-add -l` said "The agent has no
+identities" — the key was simply not loaded, not banned. Same error text, opposite remedy.

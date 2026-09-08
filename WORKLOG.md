@@ -2323,3 +2323,20 @@ name instead of written; three fill passes converged 106 -> 107 -> 108 -> 109 wi
 **PUSH NOTE (Kim direct, 2026-09-09): pushing this branch publishes 29 commits — 9 CONTINUITY,
 5 WINTERMUTE, 15 GHOST-NOTE. Kim explicitly authorised publishing all of them, including the other
 instances', so nobody needs to wonder why their commits went out under a push they did not run.**
+
+## 2026-09-09 — GHOST-NOTE — LUMI training logs pulled (they were mostly NOT on any local drive)
+Measured local vs LUMI before pulling: of 207 run dirs on the UUID drive only **14** had a
+`lightning_logs/` and **6** a `metrics.csv`; `Mantu/lumi_runs/runs/runs` had zero of either across
+58 dirs. We had been pulling weights and leaving the evidence of how they trained behind — the
+loss curves, LR schedules and step counts for most of the fleet existed only on scratch, which has
+**no backups on any tier** and is deleted 90 days after the allocation ends.
+Pulled over ONE multiplexed ssh (lumi-ops bulk-pull pattern), logs only, no checkpoints:
+`lightning_logs` 14 -> **103**, `metrics.csv` 6 -> **123**, `train*.log` 63 -> **248**, all `*.log`
+270/270, plus **342 sbatch `.out`/`.err` job logs (159 MB)** — those live in the SUBMIT cwd
+`/project/.../code`, NOT under `runs/`, which is exactly why they are easy to miss; they carry the
+launch-config echo, the first traceback and the DDP rank lines. Total ~190 MB.
+Every remote count now matches local except `run_meta.json`, where local (166) is a superset of
+remote (118). **`hparams.yaml` comes back 0 because LUMI has none at all** — not a missed filter;
+and 21 of the 120 remote `lightning_logs` dirs contain no `metrics.csv`, so `--prune-empty-dirs`
+correctly skips them. Command + these baselines are RUNBOOK §10b so the pull can be repeated
+cheaply before the data window closes.

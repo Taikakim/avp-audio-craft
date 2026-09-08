@@ -28,6 +28,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ✅ DONE 2026-09-09 — LUMI training logs pulled
+Key loaded, pull run by GHOST-NOTE. `lightning_logs` 14 -> **103**, `metrics.csv` 6 -> **123**,
+`train*.log` 63 -> **248**, plus **342** sbatch `.out/.err` job logs (159 MB) that live in the
+SUBMIT cwd `/project/.../code`, not under `runs/`. Every remote count now matches local except
+`run_meta.json`, where local (166) is a superset of remote (118). `hparams.yaml` is 0 because
+LUMI has none. Command is now RUNBOOK §10b so it can be re-run before the data window closes.
+
+
+
 ### ⬜ Re-render the 93 quarantined `lion_lr1e-5` native cells (optional — the arm is already usable)
 **WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
 were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine

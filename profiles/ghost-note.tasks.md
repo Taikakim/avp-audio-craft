@@ -191,3 +191,7 @@ convention — see §3a. Going forward, append your own lines as you finish task
   §12b. Coverage caveat recorded: melodic features are NULL on ~66% of clips because 40% of renders
   have no lead voice. Hint only (n=12, p≈0.06): the autoscale ladder arm loses the lead more often
   than control/dual.
+- 2026-09-09 — Pulled the LUMI training logs, which we had almost entirely not been saving:
+  lightning_logs 14 -> 103, metrics.csv 6 -> 123, train*.log 63 -> 248, plus 342 sbatch .out/.err
+  (159 MB) from the SUBMIT cwd /project/.../code — not under runs/, which is why they were missed.
+  ~190 MB total against terabytes of weights. RUNBOOK §10b carries the command + baselines.

@@ -317,6 +317,37 @@ Never brace-expand an rsync destination. Never pipe rsync into grep to test succ
 
 VERIFY: `find <dest> -name '*.wav' | wc -l` against the remote dry-run's count.
 
+## 10b. Pull the LUMI TRAINING LOGS (not the checkpoints)
+
+The logs are ~27 MB against terabytes of weights, and LUMI has **no backups on any tier** —
+after the allocation ends data is read-only for 90 days, then deleted. Pull them early and often.
+
+```bash
+ssh-add ~/.ssh/id_EFP          # once per boot; without it every connection is Permission denied
+CP=/tmp/ssh-lumi-logs.sock
+MUX="ssh -i $HOME/.ssh/id_EFP -o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o ControlMaster=auto -o ControlPath=$CP -o ControlPersist=1800"
+$MUX -N -f akekim@efp.lumi.csc.fi
+DEST=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs
+rsync -a --partial --append-verify --timeout=900 --prune-empty-dirs --max-size=200M --include='*/' --include='run_meta.json' --include='*.log' --include='metrics.csv' --include='hparams.yaml' --include='*.yaml' --include='*.txt' --include='wandb/***' --exclude='*' -e "$MUX" akekim@efp.lumi.csc.fi:/scratch/project_465003186/runs/ "$DEST/runs/"
+rsync -a --partial --append-verify --timeout=900 --prune-empty-dirs --include='*/' --include='*.out' --include='*.err' --exclude='*' -e "$MUX" akekim@efp.lumi.csc.fi:/project/project_465003186/code/ "$DEST/job_logs/"
+$MUX -O exit akekim@efp.lumi.csc.fi
+```
+
+**The sbatch job logs are the second rsync and they are NOT under `runs/`** — `%x-%j.out` lands in
+the SUBMIT cwd, which is `/project/.../code`. 342 files / 159 MB, and they hold the launch config
+echo, the first traceback, and the DDP rank lines. Easy to forget precisely because they are not
+where the run is.
+
+TAKES: a minute or two. VERIFY by counting artifacts, and compare against the remote count rather
+than a guess:
+```bash
+find $DEST/runs -type d -name lightning_logs | wc -l ; find $DEST/runs -name metrics.csv | wc -l
+```
+2026-09-09 baseline after the first full pull: **103 lightning_logs, 123 metrics.csv, 248 train
+logs, 342 job .out/.err** (from 14 / 6 / 63 / 0). `hparams.yaml` legitimately comes back **0** —
+there are none on LUMI at all; that is not a missed filter. 21 of the 120 remote `lightning_logs`
+dirs hold no `metrics.csv`, and `--prune-empty-dirs` correctly skips them.
+
 ## 11. sbatch on LUMI
 
 ```bash
