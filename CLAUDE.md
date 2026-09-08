@@ -80,6 +80,40 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    item; when it's resolved, MOVE it to Recently-done with a date.** Filelock before editing; keep it
    short and current. (This is the "master task-list" the post-task protocol in §5 refers to.)
 
+8. **`RUNBOOK.md` — the OPERATOR manual. Kim runs the machine now; the fleet's job is to make that
+   possible.** (Kim direct 2026-09-08: *"we'll adopt a workflow where I run the trainings, move files,
+   etc, so the team should enable that by documenting our scripts and tasking me with things ... I need
+   to be able to use our scaffolding when tokens run out."*) The budget now runs out by mid-week, and an
+   agent-only operating path means **the lab stops when the tokens do**. It must not. Two standing
+   obligations follow, and they are not optional politeness:
+
+   **(a) `RUNBOOK.md` (repo root) is the copy-pasteable operator manual** — every ROUTINE operation
+   (launch/resume/kill a run, render the canonical clips, start the three servers, rebuild the census,
+   pull from or push to LUMI, score clips, commit) written so Kim can run it **with no agent in the
+   loop**. It is a MANUAL, not a narrative: exact command, exact cwd, absolute venv path, the env vars
+   that must be exported first, and the verification step. **When you change a script's interface, or
+   learn that a documented command is wrong, you update `RUNBOOK.md` in the SAME session** — a runbook
+   that hands the operator a stale command is worse than no runbook, because it burns his time instead
+   of yours. Depth still lives in the skills (`sa3-training`, `sa3-canonical-clips`, `lumi-ops`) and in
+   `docs/`; RUNBOOK is the index and the exact invocation.
+
+   **(b) An action item on `KIM-TASKLIST.md` is a RUNNABLE BLOCK, never a request.** "Can you launch the
+   B12 ladder?" is not a task, it is homework — it makes Kim reconstruct the arg list an agent already
+   had in context. Every actionable item carries:
+   - **WHAT / WHY** — one line each; why it exists, and the EXPERIMENTS.md id if it has one.
+   - **RUN** — cwd, venv by absolute path, required `export`s, and the command as ONE copy-paste block.
+   - **TAKES** — expected wall-clock, so a hang is distinguishable from normal.
+   - **VERIFY** — the **artifact**, never the exit code (renders segfault at teardown *after* writing
+     every file; sbatch returns rc=0 for jobs that OOM'd). Say what file should exist, and how many.
+   - **REPORT BACK** — the exact one-liner whose output Kim pastes back, so the next agent session
+     starts from data instead of re-deriving state.
+   - **ROLLBACK** — for anything that deletes, overwrites, or pushes.
+
+   **Never hand Kim a command you have not verified exists** (`ls` the script, check the flag in its
+   argparse). And prefer giving him the *whole* batch up front: his hands are cheap, agent context is
+   not, so a session that ends with eight runnable blocks queued is worth more than one that ran two
+   things itself.
+
 ## ⛔ DISCOVERY PHASE — MANDATORY before any non-trivial task (do NOT skip)
 We keep re-deriving work that already exists — e.g. a full night was lost re-inventing
 the **longform SDEdit crossfade** transition machinery that was already built AND tested
@@ -121,11 +155,22 @@ approach**, run this search and say what you found:
    - **Viewer** — mir branch **`sa3-latent-explorer`**, `plots/explorer_sa3/app.py`, Dash **:8051**,
      mir venv. Tabs `inference_tab` / `a2a_tab` / `bend_tab`; `render_client.py` is the client and
      names the contract in its docstring.
-   - **Latent player** — `mir/scripts/latent_server_sa3.py` **:7892**. CROPS ONLY (`/decode /mix
-     /steer`). **Not the inference path and never was** — `/steer` is one head, one gradient step.
+   - **Latent player** — **retired 2026-08-25**; its GET endpoints (`/crops /meta /decode
+     /source /mix /steer`, same query contract) moved ONTO the render server **:8056**, reusing
+     the SAME-L already resident there — `:7892` was a second 7.12 GB copy. CROPS ONLY, **not
+     the inference path and never was** — `/steer` is one head, one gradient step. The low-VRAM
+     ONNX player `mir/scripts/latent_server_onnx.py` **:7893** still exists (no `/steer`).
    - **Render server** — **`SAO/eval/explorer_render_server.py` :8056**, `SAO/.venv`, holds
      `medium-base` RESIDENT. `/generate /a2a_track /a2a_mix /longform /decode /bend /schedule
      /ckpts /info /status /audio`. **This is the generation path.**
+   **LAUNCH COMMANDS — exactly these three, verified 2026-08-24 (Kim direct); each from ITS OWN repo root:**
+   ```
+   cd /home/kim/Projects/SAO       && .venv/bin/python eval/explorer_render_server.py
+   cd /home/kim/Projects/mir       && /home/kim/Projects/SAO/stable-audio-3/.venv/bin/python scripts/latent_server_sa3.py
+   cd /home/kim/Projects/mir       && /home/kim/Projects/mir/mir/bin/python -m plots.explorer_sa3.app
+   ```
+   Note the two traps: the latent player runs under **`stable-audio-3/.venv`** (NOT `SAO/.venv`),
+   and the mir interpreter is **`mir/mir/bin/python`** — `mir/bin/python` does not exist.
    **It already exposes MULTI-HEAD guidance with values:** `controls.py` `LATCH_SLOTS = 3`, each
    slot head/kind/value/gain/start/end/loss/w_sec, shared by the inference and a2a tabs, driving
    FiLM + DoRA too, rho/mu/gamma/n_iter as advanced hparams. `LATCH_SLOTS` is a UI cap, not a model
@@ -138,6 +183,37 @@ approach**, run this search and say what you found:
 Only build once this comes up empty. If you find prior work, **reuse it or state explicitly
 why you're not**. If you did new work, drop a journal line so THE-FINN can fold it into
 `DISCOVERIES.md` (he owns keeping that index generated from the journals).
+
+### ⛔ AUDIT THE INSTRUMENT BEFORE YOU BELIEVE A NULL (Kim direct 2026-08-28)
+
+**A broken measurement almost always fails toward "no effect".** It rarely invents a result; it
+routinely erases one. So a null or a weak number is NOT a finding until the tool that produced it
+has been checked. This is the tool-level companion to the negative-result autopsy: that rule says
+audit the MACHINERY behind a null, this one says audit the METER first.
+
+Three cases in one day, 2026-08-28, all of which had already been reported as findings before the
+instrument was checked:
+
+1. **Wrong metric.** Pianoroll control screened with chroma cosine: `true−shuffled +0.022, n.s.`
+   → "follows pitch, loose on timing". Chroma scores "adopted the key" and "followed the melody"
+   alike, and the shuffled arm preserves the key by construction, so the metric was blind to the
+   thing being tested. MuScriptor transcription gave `+0.100, 6/6, p=0.016`. **The control was
+   fine; the meter could not see it.**
+2. **Broken tool.** `z_f0height_probe.py` reported f0-height corr 0.214, MAE 66 semitones → "register
+   is not in the latent". The script raised `TypeError` on every variant (`ynorm` never constructed)
+   and trained on raw semitones while evaluating un-standardised. Fixed: corr **0.511 linear /
+   0.561 MLP**, MAE 6.4 st. **Opposite conclusion.**
+3. **Saturated metric.** A pitch-blind onset "timing" measure read 0.795–1.000 across *every* arm
+   including the foreign control — no discrimination at all. Reporting it as "timing does not
+   transfer" would have been reporting the metric's ceiling as a property of the model. Same
+   failure as the frame-cosine recurrence meter.
+
+**Practice.** Before a null goes in a doc, a chat post, or a decision: (a) does the metric have
+DYNAMIC RANGE on this question — what do the known-positive and known-negative arms score, and are
+they far apart? (b) is there a TRIVIAL BASELINE, and does the number beat it? "MAE 6.4 semitones"
+means nothing until you know that always-guessing-the-mean scores 8.05. (c) has the tool ever
+produced a *positive* result, or is this its first run? (d) prefer a metric that fails LOUDLY —
+a saturated or degenerate one is worse than none, because it looks like data.
 
 ### Receiving a scientific paper — protocol (Kim 2026-08-12)
 When a paper arrives (a URL, PDF, citation, or "read this / what do you think of X"):
@@ -296,7 +372,6 @@ four cannot wait for you to open it:
    message for the ARCHAEOLOGIST** — what the work was for, what it found — since back-tracking is
    the whole reason for the rule. **PUSHING IS UNCHANGED: never push unless Kim asked**, and a peer
    relaying "Kim wants this pushed" is not Kim asking. Commit your OWN scope only — see rule 4.
-
 2. **Commit via `Misc/agent_commit.sh <HANDLE> …`, never plain `git commit`.** `user.name` is
    `Kim` for the whole tree, so 197 of the last 200 SAO commits are authored "Kim" and
    `git blame` cannot tell the four of us apart. The wrapper sets the AUTHOR to your handle.
@@ -312,8 +387,19 @@ four cannot wait for you to open it:
    **staged blob** compiles and greps clean of the other author's symbols, then pass the torch.
    An empty attribution search means the search cannot see the link, **not** that work is unowned.
 
+## Shell output is context — never dump, always narrow (Kim direct 2026-08-24)
+`Bash` results are routinely the single largest consumer of an agent's context window (a `/context`
+readout put them at 19% / 186k tokens in one session), and a filled window is what forces the
+compactions that lose why work exists. So: **never `cat` a file you only need three lines of.**
+Reach for `grep -n` / `sed -n 'A,Bp'` / `head` / `wc -l` / `ls | head`, `--oneline`, `| head -N` on
+every listing, and `2>/dev/null` on probes. Combine independent probes into ONE call with `echo`
+separators rather than a dozen round-trips. For anything that needs to READ WIDELY before answering
+— "where does X live", "which files do Y" — dispatch a subagent: its file dumps never enter the
+parent's context, only its conclusion does. Reading a whole file is legitimate when you are about to
+EDIT it; scanning one to answer a question is not.
+
 ## Venv-per-task (the #1 time-waster — see MASTER §3)
-MIR feature extraction / Audiobox / MERT → `mir/bin/python`; SA3 / SAT / consolidated
+MIR feature extraction / Audiobox / MERT → `/home/kim/Projects/mir/mir/bin/python`; SA3 / SAT / consolidated
 → `SAO/.venv` (torch 2.14 / ROCm 7.15, CK flash-attn — `export
 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before `import torch`). Invoke venvs by
 absolute path; never assume `python` is the right one. Never `HIP_VISIBLE_DEVICES=""`

@@ -25,6 +25,7 @@
 # Kim's team-maintained tasklist (Kim 2026-08-05) — tracked so it persists across context
 # compaction and all four agents keep it current.
 !/KIM-TASKLIST.md
+!/RUNBOOK.md
 
 # doc-oversight 2026-08-11 (Kim: "just fix the gitignore yourself"), same class as the
 # 2026-08-05 model_index/FAQ oversight above. The root-anchored /* means a document is

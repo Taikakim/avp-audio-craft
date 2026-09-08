@@ -950,3 +950,24 @@ standalone — you can clone just one fork and run its `./install.sh` without
 needing this meta-repo. See `README.md` for the standard new-machine flow and
 `docs/flash-attn-ck-rdna4.md` for the RDNA4 / ROCm 7.14 / CK flash-attn recipe
 that the SA3 install uses.
+
+## 8. Operator layer — `RUNBOOK.md` (Kim runs it; the fleet documents it)
+
+**Kim now runs the routine operations himself** — launching and killing trainings, moving and pulling
+files, rendering, starting the servers — because the token budget runs out by mid-week and the lab
+cannot stop when it does (Kim direct 2026-09-08). The fleet's job shifted accordingly: **document the
+scaffolding and hand over ready-to-run tasks, rather than running them.**
+
+- **`RUNBOOK.md`** (SAO root) is the copy-pasteable operator manual: per operation, the exact command,
+  cwd, **absolute venv path**, required `export`s, expected wall-clock, and the artifact-level
+  verification. Cross-repo, because the operations are (mir venv for scoring, SA3 venv for render,
+  `sat-venv` for LatCH/CLAP). **Update it in the same session you change a script's interface** — a
+  stale runbook costs the operator his time instead of an agent's.
+- **`KIM-TASKLIST.md` actionables are RUNNABLE BLOCKS**, not requests: WHAT/WHY · RUN · TAKES · VERIFY
+  (the artifact, never the exit code) · REPORT BACK · ROLLBACK. Never hand over an unverified command.
+- Depth stays where it is — the `sa3-training` / `sa3-canonical-clips` / `lumi-ops` skills, `docs/`.
+  RUNBOOK is the **index and the exact invocation**, not a second copy of the reasoning.
+- Corollary for every instance: **end a session with the batch queued**, not with two things run.
+  Kim's hands are cheap and agent context is not.
+
+Full rule: `CLAUDE.md` §8.

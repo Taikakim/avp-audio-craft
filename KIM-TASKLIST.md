@@ -14,6 +14,24 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 > (valid `set` keys come from the live MODEL_SETS — e.g. subloss, fp32frames, lreq, longctx, winning,
 > fullft, everything). Only leave an item link-less when nothing is hosted yet — then say so.
 
+
+> **▶️ ACTIONABLES ARE RUNNABLE BLOCKS, NOT REQUESTS (Kim direct 2026-09-08).** Kim now runs the
+> trainings, transfers and renders himself — tokens run out by mid-week and the lab must not stop with
+> them. So an item that asks him to DO something must arrive ready to execute: **WHAT/WHY · RUN (cwd,
+> absolute venv path, required exports, one copy-paste command) · TAKES (expected wall-clock) · VERIFY
+> (the artifact and its count — never the exit code) · REPORT BACK (the one-liner to paste back) ·
+> ROLLBACK (if it deletes/overwrites/pushes)**. Never hand over a command you have not `ls`-verified.
+> Standing operator manual: **`RUNBOOK.md`** — link to its section instead of retyping the invocation,
+> and fix it there when it's wrong. Full rule: `CLAUDE.md` §8.
+
+---
+
+## ▶️ Runnable now — queued for Kim
+
+*Ready-to-execute blocks, newest first. Move to "Recently done" with the outcome once run.*
+
+_(none queued yet — see `RUNBOOK.md` for the standing operations.)_
+
 ---
 
 ## 🔴 Decisions waiting on Kim
@@ -85,52 +103,6 @@ terminals, one suomi wfleet replica set. The PQ keeplist (eval/build_fat_keeplis
 metric-based skeleton for the END-OF-PROJECT local slim curation Kim mentioned — rerun it when
 the new arms are scored and it ranks everything.
 
-### 📋 BOARD SNAPSHOT (C, 2026-08-21 ~12:45) + the three remaining terminal items
-LIVE: A11 dorlor 16+2 (bigset/suomi/avpaug/goa + LR probes), B10 subloss-K24 x4, B9 ftstack
-21432216 (avpaug ep19 backbone), wfleet restarts x3, T512-clean, fullft-mix3. DONE today:
-fullft_avpaug ep19, B2 tgate renders (240 cells), soup render (check), suomi ingest (F).
-CANCELLED: mirctrl x6 (hung on flash + budget; B7 -> next allocation, all fixes banked).
-1. A11 log re-check ~13:00 (were arms through the staging gate): ls -la dorlor_ab-2143*.out — non-empty + WSD/fusion banners = healthy.
-2. ✅ PULLED (~14:30): soups (48) + B2 tgate (240) + fleet quick cells home on UUID; G scoring
-   the soup cells → quartet table (single-replica vs replica-soup vs grand-mean vs fullft-EMA).
-3. 🎧 LISTENING STACK: top-100 page · soups-vs-terminal (G) · suomi anchor-vs-modal cells ·
-   B2 tgate vs k2/k5/k12 siblings · replica-soup vs single-replica (the sound-mystery closer).
-
-### ⚖️ DECIDE: the four probs-confounded suomi T1024 arms (kill vs keep) (C, 2026-08-21)
-All four (a45 s1/s2 + a128 s1/s2) train with the drifted 0,0.9,0.1 captions — the "suomisoundi"
-anchor token never trains (F verified in their live logs). Options laid out in chat/session: A =
-let all finish (~5 h; ckpts every 2 ep already on disk); B = scancel the a128 twins 21423973/74
-(contrast already answered by W's sweep) and relaunch anchor-clean; C = kill all four. C's lean: B.
-The quick-render (21428285) makes the confound audible: compare suomi_anchor vs suomi_modal cells.
-
-### 🎧 QUEUE STATUS snapshot (2026-08-21 ~10:50): 8 mirctrl (21428085-90 +2), suomi-T512 clean twins
-21428358/59, quick-render 21428285. When you next paste lumi-allocations, C sanity-checks the stack.
-
-### 🔁 B7 RESUBMIT checklist — verified fix, three lines (C, 2026-08-21 ~10:00)
-F confirmed all 8 arms died in seconds at the sbatch's own preflight ("no ctrl arrays for
-latents_sa3") — nothing burned, nothing to cancel. Meanwhile the local meter caught a REAL
-triple bug (wrapper re-froze the control projections + optimizer excluded them + add_lora
-DoRA-wrapped the zero-init Linears = permanently dead inlet). Fixed + live-verified:
-control_gain +0.046 by step 21, projection weights moving. In order:
-1. `rsync -av -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/latents_sa3_ctrl /home/kim/Projects/latents_avp_ctrl akekim@efp.lumi.csc.fi:/scratch/project_465003186/`
-2. `rsync -avR -e "ssh -i ~/.ssh/id_EFP" /home/kim/Projects/SAO/./stable-audio-3/scripts/train_lora.py /home/kim/Projects/SAO/./stable-audio-3/stable_audio_3/training/diffusion.py akekim@efp.lumi.csc.fi:/project/project_465003186/code/`
-3. Resubmit the same 8 lines (PACK=all/melody/rhythm/dynamics/stems/spectral + PACK=all BLOCKS=all + PACK=all RANK=64, each `sbatch lumi/sbatch/mirctrl_bracket.sbatch`).
-Verify in any arm's log within the first minutes: `re-enabled 48 projection param tensors` +
-`[mir_ctrl:ablation] step 1 ... gain` present, and no preflight FATAL.
-
-### 🚀 SUBMIT: suomisoundi second attempt, ready to go (W, 2026-08-21)
-The first four arms all rendered degraded. Command is ready and committed (708e14b):
-```
-ARMSET=alpha FRAMES=512 EPOCHS=40 CKEVERY=2 sbatch lumi/sbatch/suomisoundi_dora_2x4gpu.sbatch
-```
-One 8-GPU node, two 4-GPU arms, ~overnight. Changes exactly the two things the 67k-cell sweep says
-were wrong with the failed set: **T=256 → T=512** (T256 is the worst frame length measured — PQ 6.48
-vs 7.32 at T512 — and all four failed arms used it; the latents are (256,4096) so this is a crop
-param, no re-encode) and **alpha=rank → α45 at rank 128** (α45@r128 scores 7.581 at 1.2% degraded vs
-7.256/7.4% at α=rank). Both arms share one lr because lr is n.s. at run level (p=0.7), so alpha is the
-only variable — if α45 wins, that transfers the corpus-wide result to suomisoundi and becomes the
-default. Still no EMA (the trainer force-disables it for DoRA; unchanged, and not what this tests).
-
 ### 🎧 DECIDE: quality-matched big-goa file list — which variant, and is the threshold right? (W, 2026-08-21)
 Your ask, done. Measured both corpora the same way (spectral cutoff, not header bitrate):
 **old goa 86.0% near-lossless vs the archive 28.4%** — the old corpus is ~3× richer, a much bigger
@@ -146,16 +118,6 @@ if it is meant as NEW data rather than a replacement corpus). Two calls for you:
 filtered set is bunched just above threshold so its median is *lower* (20.68 vs 21.29). Matching the shape
 exactly would mean discarding good files to reproduce old goa's bad ones; say the word if you want that.
 Ladder is in the tool output — ≥19.5k keeps 5,044, ≥20.5k keeps 2,326.
-
-### 👂 CURIOSITY ANSWERED: the worst 100 archive tracks — you were right about mp3 (W, 2026-08-21)
-`mir/stats/goa_big_worst100/` — `worst100.m3u` (open in any player, audition straight through),
-`worst100.html` (clickable file:// links + per-track stats; **open it locally**, the links are dead from
-a hosted page), `worst100.txt`. **76 of 100 declare ≥192 kbps and 14 declare ≥256, yet their content stops
-between 4.7 and 11.9 kHz.** A clean 192k encode reaches ~18–19 kHz; even 128k reaches ~16. So the source was
-already destroyed before this encode — transcodes, analog rips, or stream captures re-encoded at a
-respectable bitrate. Spread over 90 distinct albums (not one bad batch), concentrated in the 1994–1999
-collections. The bottom few at 4.7 kHz may include genuinely lo-fi material rather than bad sourcing —
-that part needs an ear, my measure can't tell them apart.
 
 ### 🎧 LISTEN: Top-100 clips per frame length, PQ-ranked (C, 2026-08-21)
 Your bedtime ask, live: https://aavepyora.online/files/evals/top100.html (needs G's morning sync of
@@ -234,7 +196,6 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   this week, and an unresumable timeout on a 7.5-day effective budget is hours billed for
   nothing. C's 4-node/32-rank rendezvous smoke is built and ready — cheap (~mins of a 4-node
   alloc), needs your submit.
-- **Merge PR #1** — doc-oversight doc review → `main`, when you're happy: https://github.com/Taikakim/avp-audio-craft/pull/1
 - **same-chroma-steering-demos** — 1 commit stranded off `main`; merge it, or keep it a demos branch? (C to action)
 - **Dev-branch rename** — `sa3-style-adapter` is a misnomer now ("far past a style adapter"); rename / restructure around `main` whenever you want. No rush.
 - **SSH to the desktop — half-done, needs you at the desk** (08-04/05). `sshd` is enabled + starts on
@@ -252,35 +213,6 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   local-only twin (private network, nothing public can write to it) would let me ingest verdicts
   straight into the sidecars and auto-clear the ❗. Needs Tailscale to work away from home. — W
 - *Carried from the 07-31 return-notes — team to confirm still-open or close:* alpha campaign + GOA-node submits.
-
-- **Goa captions were never genre-hinted — re-caption running, and it gates the final full-FT arms**
-  (C, 08-18, found by W). The goa Music Flamingo captions record `genre_hint: None` in every sampled
-  file: the hint mechanism exists and defaults to empty, so MF guessed genre unanchored and produced
-  **1.2% goa / 70.8% techno-industrial-house** on a goa corpus. Suomisoundi, same script *with* a
-  hint, is 97.4%. You killed 21330736 + 21334767; re-caption **21335408** is running at **89.1% goa**
-  (~24h, finishes ~02:00 on the 19th), then granite → sidecar rebuild → audit → re-key → the three
-  bounded-norm arms. **Nothing needed from you until it finishes** except the one open decision below.
-  Worth knowing: this is the THIRD independent cause of the goa collapse (after DDP never forming and
-  the FusionOpt weight-decay runaway, both fixed and verified) — so if the new arms still disappoint,
-  the prior should be "there is a fourth", not "the method does not work".
-- **🔴🔴 WALL CLOCK, NOT GPU-HOURS, IS NOW THE BINDING CONSTRAINT — 4 DAYS OF COMPUTE LEFT**
-  (C, 08-18, from your `lumi-allocations`). 92% of project time gone; **2037 GPU-hours REMAIN**
-  (2963/5000 used) but only ~4 days to spend them in. Everything the fleet has been optimising —
-  including my own "should it be three arms or two" — was the wrong variable: the hours fit easily,
-  the SERIAL CHAIN does not. Mine: MF re-caption (~03:00 Aug 19) → granite (~12-24h) → rebuild/audit/
-  re-key (~3h) → three arms (24-48h) ends **Aug 21-22**, against a deadline ~Aug 22. No slack.
-  **DECISION I NEED FROM YOU (buys back 12-24h):** skip the granite stage. After the re-caption, T3
-  is hinted MF at ~89% genre-correct and T1 is the effnet classifier at 70.4% — both genre-correct,
-  neither derived from granite — so the arms can train on T1+T3 (`--caption_probs 0.3,0,0.7`) and
-  start a half-day to a day earlier. Granite adds short-tag phrasing diversity; it is not worth a
-  fifth of the days left. My recommendation: **skip it**, add it to a later run if there is time.
-  Corollary, and it reverses advice I gave you last night: **`CKEVERY=2` means a truncated run is not
-  a wasted run** — do NOT shorten the arms defensively, start them as early as possible and keep
-  whatever lands when compute ends.
-  **AND the storage pressure is OFF:** 94 days until data removal, `/scratch` 36% full (18 of 50 TB).
-  Ignore my earlier push to prune aggressively and pull selectively against a full drive — fats can
-  sit on scratch for weeks while you pull at leisure, which also preserves the earlier checkpoints you
-  said you may want to continue from rather than the possibly-overtrained final ones.
 
 - **Rating page: the switching bug is fixed and the two versions are now one — worth 60 seconds
   of your hands before you share it** (W, 08-17). Your report ("clicking the circle stops
@@ -512,3 +444,4 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 
 ---
 *Deeper state: `WORKLOG.md` (what landed / broke) · `docs/open-threads.md` (open/dropped work ledger) · `profiles/*.journal.md` (per-instance).*
+
