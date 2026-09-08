@@ -62,7 +62,7 @@ Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 16.0)
   model's native config is. And `medium` samples ping-pong (`rf_denoiser`) while `medium-base`
   samples euler (`rectified_flow`) — compare only within a sampler.
 
-**The native cell** (`--native-grid`): one full trained-context-length render, `kl_0`, cfg 7,
+**The native cell** — rendered by DEFAULT, with **no flag**: one full trained-context-length render, `kl_0`, cfg 7,
 w100. Length = `frames / FPS` → T512 = 47.55 s (files tagged `__d48`), T256 = 23.78 s,
 T1024 = 95.1 s. The length comes from `--native-frames-file` or a `T=<frames>` string in the
 arm's `Misc/models_index_overrides.json` recipe. **No `T=` ⇒ the native cell is silently
@@ -98,8 +98,16 @@ trap "Misc/gpu_guard.sh release <HANDLE>" EXIT
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 .venv/bin/python eval/model_matrix_gen.py \
-  --only-labels <a,b,c> --weights online --native-grid
+  --only-labels <a,b,c> --weights online
 ```
+- **⚠ Do NOT add `--native-grid` unless you mean it.** It is not the flag that turns the native
+  cell on — the single native cell is the default. `--native-grid` renders the **full prompt ×
+  cfg × strength grid AGAIN at native length**, i.e. **+108 long renders per arm instead of +1**,
+  taking an arm to 216 cells where its siblings have 109. Not destructive (the extra clips are
+  real and land as `__d48` siblings), but it doubles the render and leaves the arm asymmetric
+  with the rest of the board. GHOST-NOTE did exactly this on the two lion arms 2026-09-08,
+  misled by an earlier version of THIS file that described `--native-grid` as the way to get
+  the single native cell.
 - **Always `--dry-run` first.** It prints the job list, the resolved ckpt paths and the cell
   count — and it is how you catch a `[skip-missing]` before burning GPU time.
 - **`--weights auto|ema|online` — see `sa3-training` §1.** `auto` = EMA when present, which
@@ -112,6 +120,24 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   `--limit`, `--time-budget-hours`, `--terminal-only`.
 
 ## 4. ⛔ Verify the OUTPUT, not the exit code
+
+- **A long render can start emitting NaN partway through, and every check we had passed it.**
+  2026-09-08: 110 of 216 cells in one pass, 108 of 110 in the next — and a corpus scan then
+  found **682 MORE already on the board**, 55 of 7,989 native latents and **627 of 67,459
+  standard 20 s latents across 15 arms**, some since 2026-08-04. **Not native-only** (the first
+  scan covered natives alone because the fresh failure looked native — scan the population you
+  want to make a claim about). A NaN latent decodes to a **full-scale constant — peak 1.0, RMS 1.0, i.e.
+  maximum-volume noise**. It is not short, not quiet, not truncated, so the file count was
+  right, `ffprobe` reported the exact requested duration, and the process exited 0. The clips
+  reached the board. Ruled out by isolation tests: the checkpoint (a direct `generate()` probe
+  and the campaign's own `standard_clips` at the same length are both clean), the native
+  length, `sample_size`/the pad-clamp, and `set_lora_strength`. 24 cells in one process:
+  0 NaN. 110 and 216 cells: NaN. **It is process-lifetime state — so split a big render into
+  batches, or accept that a fresh process per arm is what saved the second arm.**
+  `model_matrix_gen` now refuses to write a non-finite cell (`z0_is_finite`, tests
+  `eval/tests/test_model_matrix_z0_finite.py`) and exits 3 listing what it dropped — a
+  dropped cell is simply missing, so a resume re-renders it.
+
 
 - **Renders can segfault at teardown AFTER writing every file.** The exit code lies. **Count
   the files.**
