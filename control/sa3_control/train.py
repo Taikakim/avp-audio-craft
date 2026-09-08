@@ -573,6 +573,8 @@ def main():
         load_adapter_state(torch.load(args.resume, map_location="cpu")["state"], wrappers, cond_enc)
         print(f"[resume] warm-started adapter+conditioner from {args.resume}", flush=True)
 
+    _smoke_adapter_g, _smoke_dora_g = [], []   # filled per-step under --smoke
+
     if args.optimizer in ("fusion", "sfadamw", "fusion_nm", "fusion_full"):
         # stable_audio_tools is editable-installed in SAO/.venv; no path hack needed.
         from stable_audio_tools.training.fusion_opt import FusionOpt
@@ -956,6 +958,11 @@ def main():
                 _sync(); _tb = time.time(); prof["bwd"] += _tb - _tf
             # optimizer step only every grad_accum microbatches (standard gradient accumulation)
             if (step + 1) % args.grad_accum == 0:
+                if args.smoke:      # sample grads BEFORE the step clears them (see below)
+                    _smoke_adapter_g = [float(q.grad.norm()) for w in wrappers
+                                        for q in w.adapter.parameters() if q.grad is not None]
+                    _smoke_dora_g = [float(q.grad.norm()) for q in _lora_params
+                                     if q.grad is not None]
                 gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
                 if args.warmup_steps > 0 and args.optimizer == "adamw":  # FusionOpt warms up internally
                     for pg in opt.param_groups:
@@ -1078,10 +1085,30 @@ def main():
             step = args.steps
 
     if args.smoke:
-        # confirm the adapters (not the base) received gradients
-        g = [float(p.grad.norm()) for w in wrappers for p in w.adapter.parameters() if p.grad is not None]
+        # Confirm the adapters (not the base) received gradients.
+        #
+        # This used to read p.grad HERE, after the loop -- but the loop ends with
+        # opt.zero_grad(set_to_none=True), so every .grad was None and the check reported
+        # "0 adapter tensors got grads; mean grad-norm nan" while still printing
+        # "[smoke OK]". A gate whose whole job is to catch "the thing you think you are
+        # training is not training" cannot itself be blind to that, so it now samples
+        # inside the step and FAILS instead of narrating. It also covers the joint DoRA
+        # params, which is exactly the case that was silently a no-op under
+        # --optimizer fusion*. (CONTINUITY 2026-09-09)
+        g = list(_smoke_adapter_g)
         base_frozen = all(not p.requires_grad for w in wrappers for p in w.base_attention.parameters())
         base_no_grad = all(p.grad is None for w in wrappers for p in w.base_attention.parameters())
+        dg = list(_smoke_dora_g)
+        if not g:
+            raise SystemExit("[smoke FAIL] no adapter tensor received a gradient — the "
+                             "control adapters are not training")
+        if args.dora_rank > 0 and not dg:
+            raise SystemExit(f"[smoke FAIL] --dora-rank {args.dora_rank} was requested but no "
+                             "DoRA tensor received a gradient — the rank is being paid for and "
+                             "not trained (this is what the fusion param-group bug looked like)")
+        if dg:
+            print(f"[smoke] {len(dg)} DoRA tensors got grads; mean grad-norm {np.mean(dg):.4e}",
+                  flush=True)
         print(f"[smoke OK] {len(g)} adapter tensors got grads; mean grad-norm {np.mean(g):.4e}; "
               f"base cross-attn frozen={base_frozen} got_no_grad={base_no_grad}", flush=True)
     else:
