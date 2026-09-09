@@ -107,7 +107,13 @@ def main():
     assert ck.get("control_mode") == "melody_contour", ck.get("control_mode")
     cargs = ck["args"]
     vocab = int(cargs.get("melody_vocab", 9))
-    assert int(cargs.get("dora_rank", 0) or 0) == 0, "dora-rows arm: use melody_pilot_eval's path"
+    # JOINT dora-rows arms are supported here now. They used to be bounced to
+    # melody_pilot_eval, but that path renders SYNTHETIC motif streams in the 9-class fold
+    # alphabet and builds its conditioner at the default vocab -- so for a K&P arm (vocab
+    # 5/15/77) it is the wrong alphabet AND the wrong embedding size, which is the whole
+    # reason this script exists. Neither renderer could do a K&P + dora arm; porting the
+    # ~20-line rebuild is cheaper and less duplicative than a third renderer.
+    dora_rank = int(cargs.get("dora_rank", 0) or ck.get("dora_rank", 0) or 0)
     base_state = a.base_state_ckpt or cargs.get("base_state_ckpt")
     refs = pick_refs(a.melody_dir, a.n_refs, a.frames, a.seed)
     duration = a.frames / FPS
@@ -136,7 +142,41 @@ def main():
         assert os.path.exists(base_state), base_state
         load_fullft_state(sam, base_state)
     md = next(sam.model.model.parameters()).dtype
+    dit = sam.model.model
+
+    # dora-rows (joint-trained) -- rebuild the same parametrization, load the saved state.
+    # ORDER MATTERS (lifted verbatim in spirit from melody_pilot_eval, which learned it the
+    # hard way in job 20328757): add_lora on the RAW DiT MUST run BEFORE install_adapters, so
+    # the control-adapter Linears are NOT dora-parametrized (dora covers the base DiT only);
+    # but the LOAD must run AFTER install_adapters wraps each cross_attn into
+    # ControlledCrossAttention.base_attention, because get_lora_state_dict serialised the dora
+    # keys post-wrap and ck["lora_state"] carries the `cross_attn.base_attention.*` prefix.
+    # Load before the wrap and every key is "unexpected".
+    if dora_rank > 0:
+        from functools import partial
+        from stable_audio_3.models.lora import add_lora, LoRAParametrization
+        alpha = cargs.get("dora_alpha") or ck.get("dora_alpha") or float(dora_rank)
+        lcfg = {torch.nn.Linear: {"weight": partial(LoRAParametrization.from_linear,
+                                                    rank=dora_rank, lora_alpha=float(alpha),
+                                                    adapter_type="dora-rows")},
+                torch.nn.Conv1d: {"weight": partial(LoRAParametrization.from_conv1d,
+                                                    rank=dora_rank, lora_alpha=float(alpha),
+                                                    adapter_type="dora-rows")}}
+        add_lora(dit, lcfg)                       # raw DiT, BEFORE wrap (as trained)
+        print(f"[morph:{a.label}] dora-rows r={dora_rank} alpha={alpha:g} rebuilt", flush=True)
+
     wrappers = install_adapters(sam, control_dim=int(cargs.get("control_dim", 768)))
+
+    if dora_rank > 0:                             # AFTER wrap: keys carry base_attention.*
+        ls = ck.get("lora_state")
+        assert ls, "dora_rank > 0 but the checkpoint carries no 'lora_state'"
+        missing, unexpected = dit.load_state_dict(ls, strict=False)
+        n_loaded = len(ls) - len([k for k in ls if k in missing])
+        # A dora arm whose weights silently fail to load renders as the BASE model and reads
+        # as "the conditioner does nothing" -- refuse rather than report that null.
+        assert not unexpected, f"unexpected dora keys: {list(unexpected)[:4]}"
+        assert n_loaded == len(ls), f"only {n_loaded}/{len(ls)} dora tensors loaded"
+        print(f"[morph:{a.label}] dora-rows loaded {n_loaded}/{len(ls)} tensors", flush=True)
     cond_enc = MelodyContourEncoder(control_dim=int(cargs.get("control_dim", 768)),
                                     n_classes=vocab).to(device=device, dtype=md)
     load_adapter_state(ck["state"], wrappers, cond_enc)
