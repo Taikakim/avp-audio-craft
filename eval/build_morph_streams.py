@@ -17,6 +17,7 @@ dataset's melody filter drops them, same as Head-B's 2649/5400 coverage behaviou
 
 Run: /home/kim/Projects/mir/mir/bin/python eval/build_morph_streams.py
 """
+import argparse
 import os
 import sys
 
@@ -25,13 +26,23 @@ import numpy as np
 sys.path.insert(0, "/home/kim/Projects/mir")
 from src.conditioners.contour_streams import contour_stream, expand_to_frames  # noqa: E402
 
-LAT = "/home/kim/Projects/latents_sa3"
+# Default corpus, overridable with --lat so the same alphabet/stride/tolerance settings
+# can be applied to a SECOND corpus (AVP) without forking the script -- the sidecars must
+# be built identically or the two corpora carry different symbol semantics under one
+# vocab. Output dirs are always <lat>_morphL{2,3,4} / <lat>_morphIOI3, so a per-root
+# --melody-dirs list can point at each corpus's own. (CONTINUITY 2026-09-09)
+LAT = os.environ.get("MORPH_LAT", "/home/kim/Projects/latents_sa3")
 STRIDE = 4
 TOL_SEMITONES = 0.5
 LS = (2, 3, 4)
 IOI_TOL = 0.15          # relative IOI tolerance: within 15% = "equal" duration (log-space)
 
 def main():
+    global LAT
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    ap.add_argument("--lat", default=LAT, help="latent dir holding the .TIMESERIES.npz crops")
+    LAT = ap.parse_args().lat
+    print(f"[morph] corpus {LAT}", flush=True)
     outs = {L: f"{LAT}_morphL{L}" for L in LS}
     for d in outs.values():
         os.makedirs(d, exist_ok=True)
