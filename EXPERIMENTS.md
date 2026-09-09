@@ -960,6 +960,56 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   (2026-08-12). Their provenance warning about Tier-2 is wrong (full harness + results.json exist).
   Their 0a kill-condition cannot fire: our P_melody is the v3 CSP basis, rank 15/256 by construction.
 
+### D17 — Morph conditioner at CAPACITY: Lion + D-Adaptation, r128 joint DoRA, eff-batch 32 — **RUNNING (local, launched 2026-09-09 ~02:15 EEST, C)**
+
+*Why:* D12's bracket established that the morph-contour conditioner **can exert some control** —
+weak but real. Kim's read 2026-09-09: *"now that the conditioner did something, a model with more
+weight in training might bring up something."* The bracket was fusion, bs4 × ga2, and no DoRA on
+most arms; this is the capacity/step-size arm of the same question.
+
+*Arm:* `sa3_control.train --control-mode melody_contour`, L3 alphabet (vocab 15), medium-base,
+**LionSR 4e-5 + D-Adaptation autoscale**, **r128 dora-rows joint**, **effective batch 32**
+(4 × accum 8), bf16, crop 512, EMA 0.999, 12 epochs, val 0.1, early-stop 4, seed 1.
+Run dir: `UUID/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09` (`run_meta.json` carries the
+full recipe, hypothesis and kill-criterion).
+
+*Corpus:* goa `latents_sa3` **+ AVP non-aug**, unweighted concatenation — **5678 crops** (5390 goa
++ 288 AVP, 2814 tracks), AVP a ~5.1% addition. AVP is new to this lane: its f0 existed at track
+level for all 170 tracks but had never been resampled into the crop companions, so the melody
+filter had been silently dropping every AVP crop. Backfilled with `eval/backfill_crop_f0.py`.
+
+*Kill criterion:* val divergence, or adherence at/below the D12 bracket at matched epochs — which
+would say the Head-B contour path is at its ceiling and the next move is a **different
+conditioning inlet**, not a bigger adapter.
+
+*⚠ Confound to hold in mind when reading it:* `wd 0.05` is a judgement call (Lion wants a much
+larger wd than AdamW at a much smaller lr; the trainer's old hardcoded value was AdamW's 0.01),
+so a difference vs the bracket is not attributable to capacity alone.
+
+**Four bugs found while scoping this, all of which fail toward a NULL** (commits `7483945`,
+`3b6088c`, `cea23a1`, `e869141` in SAO; `223c7f4` in stable-audio-3; `5d32199` in
+stable-audio-tools; `81a9929` in mir):
+1. **`--dora-rank` was a NO-OP under `--optimizer fusion*`** — the fusion branch built param
+   groups from the adapters + conditioner only, so DoRA tensors got no optimizer state and were
+   never stepped. Any earlier `fusion + dora` control arm trained no rank. Fixing it revealed the
+   cost the bug hid: `fusion + r128` now OOMs on 16 GB.
+2. **`--smoke` printed `[smoke OK]` on zero evidence** — read `p.grad` after `zero_grad`, so it
+   reported `0 adapter tensors got grads; mean grad-norm nan` and passed. Every smoke run we have
+   ever done passed that way.
+3. **Multi-root sidecars resolved by bare filename stem** — goa/`000000.npy` and avp/`000000.npy`
+   both read one stream file. Now per-root via `--melody-dirs`.
+4. **Hyperball freezes zero-init params at zero forever** (`lora_B` is `torch.zeros`, Head-B
+   `to_out` is `zero_module`; R=‖W0‖=0 zeroes both halves of the update). Measured 0.0 vs -0.059
+   after six steps. **Do not reach for `--hyperball` on an adapter recipe.**
+
+*Big-goa is NOT in this arm and cannot be yet:* the bigset has latents (12524 crops) and complete
+captions but **no f0 anywhere** — its 49-field MIR pack carries `pitch_salience` (a salience
+curve, not a melody line) and the bigset crops have no timeseries companions at all;
+`muscriptor_full` is 5400 mid+stats = the SMALL goa crop set. Bigset morph conditioning needs a
+melodia pass over `goa_archive_stems` (23129 tracks × 4 stems, ~190 G / ~48 G for `other` alone).
+⚠ And its full-prose caption tier is the **contaminated** build (300 sampled: 159 techno, 132
+industrial, 2 goa) — use the **granite** tier (268/300 goa) or the hinted prose tier.
+
 ### D12 — Contour-token conditioning stack (external drafts LANDED in mir; Q1 next) — **READY (code) / PLANNED (Q1)**
 - **AUDITION SURFACE EXISTS as of 2026-09-03 (C)** — the morphcond grid was trained AND rendered weeks ago and nobody had listened: 384 cells (16 arms = vocab L2/L3/IOI3/L4 × medium-base/full-FT × seeds, × 8 stems × {off, g1.0, g2.0}) sat on the UUID drive. Page: `eval/build_morph_page.py` → `~/evals_aac/morph_conditioner/index.html`, same-playhead, with each stem's reference clip. **Kim's ears are the next gate.** ⚠ No objective adherence metric has been run on these — the D15 transcription measure (note-cell F1 vs a source roll) has NOT been ported to contour streams, so nothing here is a claim yet.
 - `mir/src/conditioners/{morph_grids,contour_codes,contour_streams,contour_stats}.py` + regression

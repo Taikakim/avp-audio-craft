@@ -2340,3 +2340,77 @@ remote (118). **`hparams.yaml` comes back 0 because LUMI has none at all** — n
 and 21 of the 120 remote `lightning_logs` dirs contain no `metrics.csv`, so `--prune-empty-dirs`
 correctly skips them. Command + these baselines are RUNBOOK §10b so the pull can be repeated
 cheaply before the data window closes.
+- [2026-09-09 04:52] (WINTERMUTE) Publish gate cleared and the eval boards are live (13201 new + 11 changed, 5/5 artifact gates, 4 sampled over HTTP). The reported blocker was three sidecars; it was five artefacts in three classes, because --dry-run only prints leaks[:3] and each fix revealed another round.
+
+Structural withholding in score_and_publish (commit 8b22458, 3 tests in eval/tests/test_publish_local_only.py):
+ - BLEND.*.json / AUDIT_*.json named in LOCAL_ONLY (same class as run_meta).
+ - PER-CLIP sidecars: a .json beside a clip of the same STEM is now withheld by is_local_only(). Structural, not a name pattern -- these are named after their clip, so no name can match them. 48 in soup_rewind alone, each carrying two HF snapshot paths.
+ - A page with a *_public.html twin is the local original and stays home (morph_conditioner/index.html).
+
+The real leak was model_census.html: 204 hits of /home/kim. --board-urls public switched the BOARD column to site-relative urls but left --matrix-url at its file:///home/kim/ default, so every epoch link leaked a home path AND was a dead link for any web visitor. --matrix-url now follows --board-urls unless passed explicitly. Live copy now scans 0.
+
+Last hit was prose: a run_meta note naming its checkpoint as epoch=81-step=3000 mid-sentence, rewritten at source as "epoch 81 / step 3000". LEAK_RE was not loosened -- the gate was right all five times, and it failed LOUDLY every time, which is why nothing shipped.
+
+Also published the fresh scored_models.json: the server had been serving the Aug-22 file. Curated study measured against the LIVE files goes 89 -> 99 of 110 pairs (104 with &showflagged=1). Of the 11 still dropping, the 5 lowq-flagged ones are ALL in strata C and D -- the one-factor and route strata, which have zero votes -- and none in A or B. The quality gate is removing the axes the study exists to isolate, non-randomly. That is a bias in the instrument, not a smaller n.
+
+## 2026-09-09 — CONTINUITY — four silent-null bugs in the control-training path; morph conditioner at capacity launched
+
+Scoping a bigger morph-contour conditioner run (project direction: *"now that the conditioner did
+something, a model with more weight in training might bring up something"*) turned up four bugs.
+None of them raises. **All four fail toward "no effect"** — the failure mode a null result cannot
+be distinguished from, which is exactly what the audit-the-instrument rule is about.
+
+1. **`--dora-rank` was a NO-OP under `--optimizer fusion*`** (`sa3_control/train.py`). The fusion
+   branch built its param groups from the control adapters + conditioner only, so the DoRA tensors
+   got no optimizer state and were never stepped — rank paid for in memory and compute, learning
+   nothing. The AdamW branch optimises the full param list, so the two paths silently disagreed.
+   **Any earlier `fusion + dora-rank` control arm trained no rank.** Fixing it surfaced the cost
+   the bug was hiding: `fusion + r128` now OOMs on 16 GB (SF keeps two averaged iterates over
+   279.7M params). Lion fits — one bf16 momentum buffer.
+2. **`--smoke` reported OK on zero evidence.** It read `p.grad` *after* the loop's
+   `zero_grad(set_to_none=True)`, printing `[smoke OK] 0 adapter tensors got grads; mean grad-norm
+   nan`. The gate whose entire job is catching "the thing you think you are training is not
+   training" was blind to it by construction, and every smoke run any of us has done passed that
+   way. Now samples at backward, raises, and covers the DoRA params.
+3. **Multi-root control sidecars resolved by bare filename stem** (`sa3_control/dataset.py`). The
+   multi-root path list exists specifically to dodge the `000000.*` stem collision between corpora
+   — the melody/metrical lookup never got the same treatment, so goa and avp crops read the same
+   stream file. A mixed run would have conditioned 100% of the second corpus on the first's
+   contours and reported it as a weak conditioner. New `--melody-dirs`, per root; a mismatched
+   list is a hard error, never a fallback to `roots[0]`.
+4. **Hyperball freezes a zero-init parameter at zero, forever** (`FusionOpt`). `R = ‖W0‖_F` is
+   captured on step 1; `lora_B` is `torch.zeros` (only `lora_A` gets kaiming) and the Head-B
+   `to_out` goes through `zero_module`, so `R=0` makes both halves of the update identically zero.
+   Measured: six steps of a constant full-rank gradient leave it at **exactly 0.0** vs **-0.059**
+   unconstrained. **`--hyperball` on any adapter recipe trains the magnitude vectors and nothing
+   else.** FusionOpt now detects and falls back, loudly. It remains a full-finetune tool.
+
+**Two copies of `fusion_opt.py` have drifted** — the venv imports `stable-audio-tools/…`, while
+`lumi/vendor/…` is ~10 lines apart plus ~137 uncommitted. My first patch went to the vendored one
+and the test passed while the running code was untouched. Tests now import whatever the venv
+resolves and print the path. `lumi/vendor/fusion_opt.py` left uncommitted — someone else's
+in-flight autoscale port.
+
+**New capability:** `--optimizer lion` in `sa3_control.train`, and **D-Adaptation for Lion**
+(`stable_audio_3/training/dadapt_scale.py`) — FusionOpt's autoscale is a pure scalar that never
+touches `p.data`, so it factors out cleanly. A test cross-checks the two implementations step for
+step. ⚠ **The OCO bound does not transfer to Lion** (unit-sign step, magnitude ≡ lr): it is an
+adaptive-lr heuristic there, not Prodigy's guarantee. Don't write it up as one.
+
+**mir:** `crop_timeseries_resample` sliced a sentinel field at its DERIVED rate but its voiced
+mask at the DECLARED one, so the two windows land a frame apart whenever the sidecar's rate is
+slightly off and the masked pooling can't broadcast. 51318 frames over 513.16 s = 100.0038 vs
+100.0 declared — 0.004%, far inside any tolerance band. Same lesson the module already records
+about `va_deam_ts`: a tolerance band is not a check.
+
+**Data:** AVP's f0 was never missing — it exists at track level for all 170 tracks and had simply
+never been resampled into the crop companions, so the melody filter had been dropping every AVP
+crop. Backfilled (`eval/backfill_crop_f0.py`, all 288 verified, zero fields lost).
+**Big goa has no f0 anywhere**: its 49-field MIR pack has `pitch_salience` (a salience curve, not
+a melody line), the bigset crops have no timeseries companions at all, and `muscriptor_full` is
+the *small* 5400-crop goa set. Bigset morph conditioning needs a melodia pass over
+`goa_archive_stems`. ⚠ **Bigset caption warning:** the full-prose tier is the contaminated build
+(300 sampled: 159 techno, 132 industrial, 2 goa); the **granite** tier is clean (268/300 goa).
+
+Run D17 launched locally: Lion 4e-5 + autoscale, r128 joint DoRA, eff-batch 32, bf16, goa + AVP
+(5678 crops). ~10 h. Bigset latents + aimusic stems pulling from LUMI in the background.
