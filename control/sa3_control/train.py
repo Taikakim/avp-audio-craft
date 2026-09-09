@@ -258,9 +258,16 @@ def main():
     ap.add_argument("--fusion-autoscale-slice-p", type=int, default=16,
                     help="keep every Nth coordinate of the per-param init clone + accumulator "
                          "(state cost O(numel/N)). No effect unless --fusion-autoscale.")
-    ap.add_argument("--fusion-autoscale-growth-rate", type=float, default=float("inf"),
+    ap.add_argument("--fusion-autoscale-growth-rate", type=float, default=1.0005,
                     help="cap on how fast d may grow per step, multiplicative. Does NOT bound "
-                         "the FIRST estimate, which is taken outright (d0 is a placeholder).")
+                         "the FIRST estimate, which is taken outright (d0 is a placeholder). "
+                         "DEFAULT IS NO LONGER INFINITY: an uncapped d only ever grows, which "
+                         "is a monotonically rising effective lr, and it produced an "
+                         "accelerating weight-norm runaway on the 2026-09-09 morph arm "
+                         "(||W|| 159->353 with ||dW||/1000 steps climbing 23->43.5, median "
+                         "gnorm 0.29->5.07 in the last bin). 1.0005 still allows ~1.65x per "
+                         "1000 steps, which is ample adaptation; pass inf explicitly if you "
+                         "genuinely want the unbounded behaviour.")
     ap.add_argument("--hyperball", action="store_true",
                     help="constrain each weight to the sphere of radius ‖W0‖_F (arXiv "
                          "2606.16899); weight decay is ignored, and 'sf' is dropped from the "
@@ -986,8 +993,21 @@ def main():
                 rate = step / (time.time() - t0)
                 _cc = f" cc {cc_val:.4f}" if cc_probe is not None else ""
                 _fp = f" fp {fp_val:.4f}(held {fp_held:.3f})" if fp_probe is not None else ""
+                # AUTOSCALE TELEMETRY. Added after a run where the D-Adaptation multiplier
+                # was the prime suspect for a weight runaway and the log could not answer it:
+                # d only ever GROWS, so an uncapped multiplier is a rising effective lr and
+                # the one number that would show it was the one nobody recorded. Adding a
+                # knob without its meter is how a null becomes unattributable.
+                _auto = ""
+                if hasattr(opt, "autoscale_multiplier"):                 # LionSR
+                    _auto = f" dmult {opt.autoscale_multiplier():.3g}"
+                elif getattr(opt, "_auto_d", None) is not None and "autoscale" in getattr(
+                        opt, "_components", ()):                          # FusionOpt
+                    _auto = f" dmult {opt._auto_d / opt._auto_d0:.3g}"
                 print(f"[step {step}/{args.steps}] loss {loss.item():.4f}{_cc}{_fp} "
-                      f"gnorm {float(gnorm):.3f} {rate:.2f} it/s", flush=True)
+                      f"gnorm {float(gnorm):.3f}{_auto} {rate:.2f} it/s", flush=True)
+                if _auto and wb is not None:
+                    wb.log({"opt/autoscale_mult": float(_auto.split()[-1])}, step=step)
                 if cc_probe is not None and wb is not None:
                     wb.log({"cc/loss": cc_val, "cc/weighted": args.lambda_cc * cc_val}, step=step)
                 if fp_probe is not None and wb is not None:
