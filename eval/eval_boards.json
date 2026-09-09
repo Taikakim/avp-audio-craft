@@ -28,6 +28,20 @@
     "morphcond/morph_L4_ft_s1"
    ],
    "arms_note": "full census arm paths — never bare leaves; see apply_boards docstring"
+  },
+  {
+   "id": "morph_d17_lion_r128",
+   "title": "Morph conditioner — training ladder (D17)",
+   "kind": "control-response trajectory (checkpoint x source stem x {off, g1.0, g2.0}; control arm = same model, trained null stream)",
+   "url": "file:///home/kim/evals_aac/morph_d17_lion_r128/index.html",
+   "public": "morph_d17_lion_r128/index_public.html",
+   "cells": 72,
+   "note": "NOT VALIDATED: no objective adherence metric exists for contour streams. Listening surface only. NOT on the model matrix by design -- a control adapter the matrix cannot load, whose null-vs-conditioned axis the board cannot express.",
+   "builder": "eval/build_morph_step_page.py",
+   "arms": [
+    "morph_d17/morph_L3_lion_r128_bs32"
+   ],
+   "arms_note": "full census arm paths — never bare leaves; see apply_boards docstring"
   }
  ],
  "_doc": "Eval boards that are NOT the standard model matrix. The census reads this so arms auditioned elsewhere are not reported as having zero clips -- see eval/build_model_census.py::load_boards. REGISTER, DON'T MERGE: these grids have different axes and their own control arms; folding them onto the standard board destroys the A/B."
