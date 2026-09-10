@@ -22,8 +22,10 @@ os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 import argparse
+import configparser
 import contextlib
 import gc
+import io
 import json
 import math
 import random
@@ -33,6 +35,7 @@ import tempfile
 import threading
 import time
 import traceback
+import wave
 from collections import deque
 from pathlib import Path
 
@@ -40,8 +43,8 @@ import numpy as np
 import soundfile as sf
 import torch
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, "/home/kim/Projects/SAO/eval")
@@ -69,6 +72,38 @@ from stable_audio_3.models import transformer as _sa3_tf  # noqa: E402
 FPS = cmt.FPS                      # 44100 / 4096 ≈ 10.7666 latent frames/sec
 MAX_DURATION_SEC = 378.0
 MEDIUM_HEAD_DIR = Path("/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium")
+import head_meta  # noqa: E402  (eval/ is already on sys.path)
+import presets  # noqa: E402
+import continuation  # noqa: E402
+_HEAD_OVERRIDES = head_meta.load_overrides()
+
+# ---------------------------------------------------------------- latent player (ported from :7892)
+# The standalone torch player (mir/scripts/latent_server_sa3.py) called
+# AutoencoderModel.from_pretrained("same-l") -- a SECOND resident copy (7.12 GB)
+# of the very weights this server already holds as MODEL.model.pretransform.
+# Its GET endpoints live here now and reuse that instance. Config, never a
+# hardcoded drive path: SA3_PLAYER_INI overrides the co-located ini.
+PLAYER_INI_PATH = Path(os.environ.get("SA3_PLAYER_INI")
+                       or Path(__file__).with_name("latent_player.ini"))
+
+
+def load_player_cfg(path=None) -> dict:
+    """Read [player] from the ini. Missing file -> in-code defaults (no crash at boot)."""
+    cfg = {"latent_dir": "", "chunk_size": 128, "overlap": 32}
+    parser = configparser.ConfigParser()
+    try:
+        if parser.read(str(path or PLAYER_INI_PATH)) and parser.has_section("player"):
+            sec = parser["player"]
+            cfg["latent_dir"] = sec.get("latent_dir", cfg["latent_dir"])
+            cfg["chunk_size"] = sec.getint("chunk_size", cfg["chunk_size"])
+            cfg["overlap"] = sec.getint("overlap", cfg["overlap"])
+    except (OSError, configparser.Error, ValueError):
+        pass
+    return cfg
+
+
+PLAYER_CFG = load_player_cfg()
+STEER_HEADS: dict = {}             # feature -> loaded LatCH head (lazy, GPU-resident)
 
 # The eval drive is removable; udisks mounts it as Mantu OR Mantu1 depending on
 # mount order. Hardcoding either breaks DoRA loading when it flips (C bug 2026-07-13).
@@ -80,6 +115,30 @@ def _mantu_root():
     return "/run/media/kim/Mantu"
 _MANTU = _mantu_root()
 
+import model_db                                   # noqa: E402
+import model_roots                                # noqa: E402
+
+_ROOTS_CFG = model_roots.load_config()
+_LIMITS = model_roots.limits(_ROOTS_CFG)
+import adapter_slots  # noqa: E402
+SLOTS = adapter_slots.SlotTable(
+    max_slots=int(_LIMITS.get('max_resident_adapters', 4)),
+    vram_floor_gb=float(_LIMITS.get('vram_floor_gb', 6.0)))
+ACTIVE_SLOT = None          # index into SLOTS.slots, or None = base model
+
+
+def _root_by_id(rid):
+    for r in model_roots.resolve_roots(_ROOTS_CFG):
+        if r.id == rid:
+            return r
+    return None
+
+
+def _default_scan_root():
+    """Backwards compat: the pinned root the picker used before multi-root."""
+    r = _root_by_id("local_dora")
+    return Path(r.path) if r and r.path else Path(f"{_MANTU}/sa3_lora_runs")
+
 DORA_REGISTRY = {
     "none": None,
     "hof": f"{_MANTU}/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
@@ -90,8 +149,14 @@ FILM_DEFAULT_CKPT = (f"{_MANTU}/sa3_control_runs/"
                      "onset_Fusion_lr1e-4_randomcrop/riffer_final.pt")
 FILM_DEFAULT_GAIN = 1.75
 
-CKPT_SCAN_ROOT = Path(f"{_MANTU}/sa3_lora_runs")
-CKPT_JOURNAL_PATH = Path("/tmp/sa3_explorer_ckpt_journal.json")
+CKPT_SCAN_ROOT = _default_scan_root()      # legacy single-root default (compat)
+# Persistent, not /tmp: a reboot used to wipe this and force a full rescan of the
+# checkpoint tree off USB spinning disks. Override with SA3_CKPT_JOURNAL.
+CKPT_JOURNAL_PATH = Path(os.environ.get(
+    "SA3_CKPT_JOURNAL",
+    Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache"))
+    / "sa3-explorer" / "ckpt_journal.json"))
+CKPT_JOURNAL_PATH.parent.mkdir(parents=True, exist_ok=True)
 CKPT_JOURNAL_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------- globals
@@ -190,11 +255,15 @@ def resolve_dist_shift(req):
 def resolve_dora_req(req):
     """Fold the GUI ckpt picker's TOP-LEVEL `ckpt_path` into the dora request
     dict consumed by _resolve_dora (an explicit dora.ckpt_path still wins)."""
-    dora_req = req.get("dora")
+    if not req.get("dora") and not req.get("ckpt_path"):
+        return None                       # unchanged: no dora block at all
+    dora_req = dict(req.get("dora") or {})
     top = req.get("ckpt_path")
     if top:
-        dora_req = dict(dora_req or {})
         dora_req.setdefault("ckpt_path", str(top))
+    # `slot` selects one of the RESIDENT adapters instead of naming a checkpoint to
+    # load. Absent (the default) => today's path, byte for byte.
+    dora_req.setdefault("slot", None)
     return dora_req
 
 
@@ -272,44 +341,59 @@ def _num(v, default=None):
 
 
 def _head_entry(name, family, path, default_gain):
-    info = {"name": name, "family": family, "path": str(path),
-            "default_gain": default_gain, "out_channels": None, "loss_type": None,
-            "target_kind_default": "constant",
-            "slider_min": -80.0, "slider_max": 20.0, "value_default": -30.0}
+    """Enriched head description. The slider derivation moved to head_meta.py:
+    the old md["slider_min"] / md["feature_stats"] lookup read keys that
+    scripts/latch/train_latch.py never writes, so every head silently got the
+    same -80/20/-30 range -- right for the dB-valued rms_* family and wrong for
+    beat_activation (0.044 +/- 0.066), hpcp, hardness (Kim, 2026-08-24)."""
     try:
         head = load_latch_from_checkpoint(str(path), device="cpu")  # never hardcode arch
         md = dict(getattr(head, "metadata", None) or {})
-        info["out_channels"] = int(_num(md.get("out_channels"),
-                                        head.out_proj.weight.shape[0]))
-        info["loss_type"] = md.get("loss_type")
-        info["target_kind_default"] = md.get("target_kind_default", "constant")
-        # slider derivation = interface/diffusion_cond.py:690-707
-        stats = md.get("feature_stats", {}) or {}
-        if md.get("slider_min") is not None and md.get("slider_max") is not None:
-            smin, smax = _num(md["slider_min"]), _num(md["slider_max"])
-            sval = _num(stats.get("mean"), (smin + smax) / 2.0)
-            sval = min(max(sval, smin), smax)
-        elif stats and "min" in stats and "max" in stats:
-            smin = _num(stats["min"])
-            smax = _num(stats["max"]) * 2.0 if _num(stats["max"]) > 0 else 1.0
-            sval = _num(stats.get("mean"), (smin + smax) / 2.0)
-        else:
-            smin, smax, sval = -80.0, 20.0, -30.0
-        info.update(slider_min=smin, slider_max=smax, value_default=sval)
+        md.setdefault("out_channels", int(head.out_proj.weight.shape[0]))
         del head
-    except Exception as e:                      # unmounted Mantu etc: keep entry, note error
+        info = head_meta.describe(name, family, path, default_gain,
+                                  metadata=md, overrides=_HEAD_OVERRIDES)
+    except Exception as e:                  # unmounted drive etc: keep the entry
+        info = head_meta.describe(name, family, path, default_gain,
+                                  metadata={}, overrides=_HEAD_OVERRIDES)
         info["scan_error"] = str(e)
+        info["health"] = "unknown"
+        info["health_reason"] = f"checkpoint could not be read: {e}"
     return info
+
+
+def _chroma_head_path():
+    """cmt.CHROMA_HEAD is a literal under /run/media/kim/Mantu1
+    (chroma_morph_transitions.py:46). The eval drive mounts as Mantu OR Mantu1
+    depending on label collision at mount time, so re-root it onto whichever is
+    live rather than hardcoding either (no-hardcoded-drive-paths rule)."""
+    raw = str(cmt.CHROMA_HEAD)
+    if os.path.exists(raw):
+        return raw
+    for stale in ("/run/media/kim/Mantu1", "/run/media/kim/Mantu"):
+        if raw.startswith(stale):
+            cand = _MANTU + raw[len(stale):]
+            if os.path.exists(cand):
+                return cand
+    return None
 
 
 def scan_latch_heads():
     for p in sorted(MEDIUM_HEAD_DIR.glob("latch_sa3_*_best.pt")):
         name = p.stem[len("latch_sa3_"):-len("_best")]
         HEADS[name] = _head_entry(name, "medium", p, 512.0)
-    HEADS["chroma_other"] = _head_entry("chroma_other", "chroma",
-                                        cmt.CHROMA_HEAD, cmt.CHROMA_GAIN)
+    n_medium = len(HEADS)
+    # The 17th head. NOT from MEDIUM_HEAD_DIR -- a different family, a different
+    # default gain (2048 vs 512), and its own readout. Kept explicit so the UI can
+    # say so instead of showing it as a peer of the 16 medium heads.
+    cp = _chroma_head_path()
+    if cp:
+        HEADS["chroma_other"] = _head_entry("chroma_other", "chroma", cp, cmt.CHROMA_GAIN)
+    else:
+        log(f"[boot] chroma_other SKIPPED: {cmt.CHROMA_HEAD} not found under {_MANTU}")
     gc.collect()
-    log(f"[boot] latch registry: {len(HEADS)} heads")
+    log(f"[boot] latch registry: {len(HEADS)} heads ({n_medium} medium + "
+        f"{len(HEADS) - n_medium} chroma)")
 
 
 # ---------------------------------------------------------------- adapters (A.2)
@@ -385,6 +469,13 @@ def with_lora_interval(kw):
     """Attach per-request LoRA sigma-interval gating (Kim 2026-07-12; native
     sigma semantics, dit.py:466 — e.g. (0.25, 1.0) = adapter OFF for the final
     low-noise detail steps). No-op at the (0,1) default or with no adapter."""
+    if SLOTS.slots:
+        # TRAP (adapter_slots docstring): dit.py only touches indices PRESENT in
+        # lora_configs; an omitted index keeps its last enable state, so "A vs B"
+        # silently becomes "A+B". Always emit every resident index.
+        kw.setdefault("lora_configs",
+                      SLOTS.lora_configs(ACTIVE_SLOT, interval=CURRENT_LORA_INTERVAL))
+        return kw
     if LOADED_DORA not in (None, "none") and CURRENT_LORA_INTERVAL != (0.0, 1.0):
         kw.setdefault("lora_configs", [{"lora_index": 0,
                                         "interval": CURRENT_LORA_INTERVAL}])
@@ -394,12 +485,25 @@ def with_lora_interval(kw):
 def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
-    global CURRENT_LORA_INTERVAL
+    global CURRENT_LORA_INTERVAL, ACTIVE_SLOT
     CURRENT_LORA_INTERVAL = (
         _f(dora_req or {}, "interval_min", 0.0),
         _f(dora_req or {}, "interval_max", 1.0))
     mut_key = json.dumps(mutate_req, sort_keys=True) if mutate_req else None
-    key, ckpt, strength = _resolve_dora(dora_req, default_dora)
+    # SLOT MODE: the resident slot table owns adapter residency, so a "which model"
+    # change costs nothing -- no rebuild, no disk read. The single-adapter path
+    # below is untouched when `slot` is absent.
+    slot = (dora_req or {}).get("slot")
+    if SLOTS.slots and slot is not None:
+        ACTIVE_SLOT = int(slot)
+        key, ckpt, strength = "none", None, _f(dora_req or {}, "strength", 1.0)
+    else:
+        # NOT slot mode. Every resident slot must be silenced explicitly -- leaving
+        # ACTIVE_SLOT at its previous value made a `slot: null` render come back
+        # BYTE-IDENTICAL to the last slot render (caught 2026-08-26), i.e. "base
+        # model" was quietly still the last adapter. Same failure class as trap 1.
+        ACTIVE_SLOT = None
+        key, ckpt, strength = _resolve_dora(dora_req, default_dora)
     film_ckpt = None
     if film_req:
         film_ckpt = require_path(film_req.get("ckpt") or FILM_DEFAULT_CKPT, "FiLM checkpoint")
@@ -436,6 +540,18 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
             MODEL.load_lora([str(ckpt)])
         LOADED_DORA, LOADED_STRENGTH = key, 1.0
         LOADED_MUT = mut_key
+        if SLOTS.slots:
+            # The rebuild threw the resident adapters away with the old MODEL. The
+            # table still believes they are loaded, so clear its belief first or
+            # apply() sees an unchanged set and skips the reload.
+            want = [sl.as_dict() for sl in SLOTS.slots]
+            SLOTS.slots = []
+            SLOTS.apply(MODEL, want)
+            log(f"[slots] re-applied {len(want)} after model rebuild")
+    if SLOTS.slots:
+        # ACTIVE_SLOT is None outside slot mode, so this zeroes every slot.
+        SLOTS.push_strengths(MODEL, ACTIVE_SLOT,
+                             strength if slot is not None else 0.0)
     if ckpt and strength != LOADED_STRENGTH:
         MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
         LOADED_STRENGTH = strength
@@ -506,6 +622,23 @@ def resolve_latch(latch_list, req, extra_first=None):
             cfg["loss_type"] = str(s["loss_type"])   # mse/smooth_l1/cosine/scalar_pooled/chroma_rung1/2
         if s.get("w_sec") is not None:
             cfg["w_sec"] = _f(s, "w_sec", 1.0)
+        # MEASURED CURVE as the target, instead of a kind+value shape (C, 2026-08-28).
+        # model.py:539 has always honoured cfg["target_raw"] -- [C, T_any], linearly
+        # resampled to the latent grid and then standardised exactly like a built
+        # target, so it is supplied in RAW feature units like `value`. resolve_latch
+        # simply never passed it through, so /generate could only ever request
+        # constant / ramp / beat_grid shapes. That made the one question worth asking
+        # of a trajectory-conditioned generator -- "does a REAL curve transfer?" --
+        # unaskable through the server. `kind` is dropped when raw is present so the
+        # two cannot silently disagree.
+        if s.get("target_raw") is not None:
+            raw = s["target_raw"]
+            n = len(raw[0]) if raw and isinstance(raw[0], (list, tuple)) else len(raw)
+            if n < 2:
+                raise ValueError("target_raw needs at least 2 frames")
+            cfg["target_raw"] = raw
+            cfg.pop("kind", None)
+            cfg.pop("value", None)
         slots.append((cfg, gain))
     if not slots:
         return None, None
@@ -524,6 +657,27 @@ def apply_latch(kw, latch_cfgs, latch_hp):
     return kw
 
 
+# ---------------------------------------------------------------- latents (z0)
+def save_z0(jd, stem, latents, index=None):
+    """Write <stem>.z0.npy next to the audio. Standing directive: save z0 next to
+    every render (Kim). fp16 to match what every batch renderer writes, so the
+    sidecars are interchangeable and eval/continuation.py can read either.
+
+    `latents` is the (B, C, T) tensor handed back by MODEL.generate's latents_sink;
+    pass `index` to slice one batch item. Never raises: a good render must not be
+    lost because a sidecar could not be written."""
+    try:
+        t = latents if index is None else latents[index]
+        arr = t.detach().squeeze(0).to(torch.float16).cpu().numpy() \
+            if t.dim() == 3 else t.detach().to(torch.float16).cpu().numpy()
+        p = Path(jd) / f"{stem}.z0.npy"
+        np.save(p, arr)
+        return str(p)
+    except Exception as e:
+        log(f"[z0] not saved for {stem}: {e}")
+        return None
+
+
 # ---------------------------------------------------------------- responses
 def build_response(job_id, jd, files, seed, t0, stages, warnings, meta, req, rebuilt):
     meta = dict(meta)
@@ -531,6 +685,9 @@ def build_response(job_id, jd, files, seed, t0, stages, warnings, meta, req, reb
                  "model_rebuilt": bool(rebuilt), "params_echo": req})
     resp = {"status": "ok", "job_id": job_id,
             "files": [str(f) for f in files],
+            # top-level so clients (eval/sweep_run.py, the viewer) do not have to
+            # know which endpoint produced them
+            "latents": list(meta.get("latents") or []),
             "urls": [f"/audio/{job_id}/{Path(f).name}" for f in files],
             "seed": seed,
             "timings": {"total_sec": round(time.time() - t0, 1),
@@ -581,9 +738,37 @@ def _scan_ckpts(root: Path):
 
 
 @app.get("/ckpts")
-def ckpts(rescan: int = 0, root: str = None):
-    """Checkpoint journal for the GUI picker. Cached in a json journal
-    (/tmp/sa3_explorer_ckpt_journal.json, keyed by root); rescan=1 re-walks."""
+def ckpts(rescan: int = 0, root: str = None, root_ids: str = None):
+    """Checkpoint journal for the GUI picker.
+
+    LEGACY (no params / root=): unchanged -- single root, the /tmp journal keyed
+    by root path, rescan=1 re-walks. Callers written before multi-root see the
+    exact same response shape.
+
+    NEW (root_ids=a,b): merged multi-root listing from the model DB. Entries keep
+    the legacy keys and gain root_id + family + label so the picker can render a
+    useful option label without a second request.
+    """
+    if root_ids:
+        ids = [s for s in root_ids.split(",") if s]
+        out = model_db.load_or_build(ids, rescan=bool(rescan))
+        entries = []
+        for m in out["models"]:
+            rp = m.get("_root_path")
+            try:
+                name = str(Path(m["path"]).relative_to(rp)) if rp else Path(m["path"]).name
+            except ValueError:
+                name = Path(m["path"]).name
+            entries.append({"path": m["path"], "name": name,
+                            "mtime": m["mtime"], "size": m["size"], "kind": m["kind"],
+                            "root_id": m["root_id"], "family": m["family"],
+                            "label": m["label"], "epoch": m["epoch"], "step": m["step"],
+                            "rank": m["rank"], "corpus": m.get("corpus"),
+                            "verdict": m.get("verdict")})
+        entries.sort(key=lambda e: e["mtime"], reverse=True)
+        return {"ok": True, "roots": out["roots"], "cached": not rescan,
+                "scanned_at": time.time(), "count": len(entries),
+                "ckpts": entries, "stale_root_ids": out["stale_root_ids"]}
     rootp = Path(root) if root else CKPT_SCAN_ROOT
     key = str(rootp)
     with CKPT_JOURNAL_LOCK:
@@ -620,6 +805,205 @@ def ckpts(rescan: int = 0, root: str = None):
         log(f"[ckpts] scanned {key}: {len(entries)} ckpts in {scanned_at - t0:.1f}s")
         return {"ok": True, "root": key, "cached": False, "scanned_at": scanned_at,
                 "count": len(entries), "ckpts": entries}
+
+
+@app.get("/presets")
+def presets_list():
+    """Named /generate payloads. A preset is a RECIPE: seed and batch_size are
+    stripped on save so a sweep's seed axis is never silently pinned."""
+    return {"ok": True, "presets": presets.list_presets()}
+
+
+@app.get("/presets/{name}")
+def presets_get(name: str):
+    try:
+        return presets.load(name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/presets")
+async def presets_post(request: Request):
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    try:
+        p = presets.save(name, body.get("payload") or {},
+                         notes=body.get("notes", ""), form=body.get("form"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "name": name, "path": str(p)}
+
+
+def _slot_state(extra=None):
+    d = SLOTS.as_dict()
+    # ARGS is None until main() parses; /slots must still answer under a
+    # TestClient, which imports the module without running main().
+    d.update(ok=True, active=ACTIVE_SLOT, backbone=getattr(ARGS, "model", None))
+    if extra:
+        d.update(extra)
+    return d
+
+
+@app.post("/ab")
+async def ab_post(request: Request):
+    """One payload, rendered across several resident slots. Body = any /generate
+    payload plus {"ab": {"slots": [int|null, ...], "strengths": [float]?}}.
+
+    `null` is the bare base -- the control arm, and the one you actually need: an
+    adapter that "sounds better" against nothing is not a finding.
+
+    ONE seed is resolved up front and reused for every arm, so the arms differ only
+    by the model. This is the interactive counterpart to eval/sweep_run.py: /ab
+    needs every arm resident at once (bounded by VRAM), a sweep does not.
+    """
+    body = await request.json()
+    ab = body.get("ab") or {}
+    want = list(ab.get("slots") or [])
+    if len(want) < 2:
+        return JSONResponse(status_code=400,
+                            content={"ok": False, "error": "ab.slots needs at least two "
+                                                           "arms (use null for the base)"})
+    bad = [x for x in want if x is not None and not (0 <= int(x) < len(SLOTS.slots))]
+    if bad:
+        return JSONResponse(
+            status_code=400,
+            content={"ok": False,
+                     "error": f"slot(s) {bad} not resident — POST /slots first "
+                              f"({len(SLOTS.slots)} resident)"})
+    strengths = list(ab.get("strengths") or [])
+    seed = resolve_seed(_i(body, "seed", -1))          # ONE seed, reused per arm
+    t0 = time.time()
+    arms, warnings = [], []
+    for i, sl in enumerate(want):
+        one = {k: v for k, v in body.items() if k != "ab"}
+        one["seed"] = seed
+        st = float(strengths[i]) if i < len(strengths) else 1.0
+        one["dora"] = {**(body.get("dora") or {}), "slot": sl, "strength": st}
+        one.pop("ckpt_path", None)                      # the slot IS the model
+        try:
+            resp = await run_in_threadpool(_generate_impl, one)
+            label = ("base (no adapter)" if sl is None
+                     else SLOTS.slots[int(sl)].label)
+            arms.append({"slot": sl, "label": label, "strength": st,
+                         "files": resp.get("files", []), "urls": resp.get("urls", []),
+                         "z0": resp.get("latents", []), "job_id": resp.get("job_id"),
+                         "rebuilt": (resp.get("meta") or {}).get("model_rebuilt")})
+        except Exception as e:
+            warnings.append(f"arm {i} (slot {sl}) failed: {e}")
+            arms.append({"slot": sl, "label": f"slot {sl}", "strength": st,
+                         "files": [], "urls": [], "z0": [], "error": str(e)})
+    return {"ok": True, "arms": arms, "seed": seed, "warnings": warnings,
+            "timings": {"total_sec": round(time.time() - t0, 1)}}
+
+
+@app.get("/slots")
+def slots_get():
+    """Resident adapter slots. A/B between them costs milliseconds; the alternative
+    (rebuild per switch) re-reads GBs from disk and transiently double-allocates."""
+    return _slot_state()
+
+
+@app.post("/slots")
+async def slots_post(request: Request):
+    """Body: {"slots": [{"ckpt_path", "label"?}, ...], "activate": int|None}.
+
+    Every entry is resolved against the model DB so family and residency cost are
+    ground truth, not caller-supplied. A non-adapter family or a set that would
+    cross the VRAM floor is REFUSED with a reason rather than OOMing mid-render.
+    """
+    global ACTIVE_SLOT
+    body = await request.json()
+    specs = []
+    db = {m["path"]: m for m in model_db.load_or_build(rescan=False)["models"]}
+    for ent in (body.get("slots") or []):
+        path = str(ent.get("ckpt_path") or "").strip()
+        if not path:
+            raise HTTPException(status_code=400, detail="each slot needs a ckpt_path")
+        rec = db.get(path)
+        if rec is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"{path} is not in the model DB — check /models, or rescan")
+        if not os.path.exists(path):
+            raise HTTPException(
+                status_code=404,
+                detail=f"{path} is in the DB but not on disk (drive unmounted?)")
+        specs.append({"path": path,
+                      "label": ent.get("label") or rec.get("label") or path,
+                      "family": rec.get("family", "adapter"),
+                      # recomputed, not read from the record: a journal written
+                      # before the 2026-08-26 measured correction carries the old
+                      # 0.33 GB/r128 estimate, and understating cost is how the
+                      # floor check lets through a set that then OOMs.
+                      "cost_gb": model_db._load_cost_gb(
+                          rec.get("family", "adapter"), rec.get("rank"))})
+    if MODEL is None:
+        raise HTTPException(status_code=409, detail="model not loaded yet")
+    plan = SLOTS.apply(MODEL, specs)
+    if not plan["ok"]:
+        return JSONResponse(status_code=400,
+                            content={"ok": False, "reason": plan["reason"],
+                                     "projected_free_gb": plan["projected_free_gb"]})
+    act = body.get("activate", None)
+    ACTIVE_SLOT = None if act is None else int(act)
+    if ACTIVE_SLOT is not None and not (0 <= ACTIVE_SLOT < len(SLOTS.slots)):
+        ACTIVE_SLOT = None
+    SLOTS.push_strengths(MODEL, ACTIVE_SLOT, 1.0)
+    log(f"[slots] {len(SLOTS.slots)} resident, active={ACTIVE_SLOT}, "
+        f"free={plan['projected_free_gb']} GB")
+    return _slot_state({"rebuild": plan["rebuild"]})
+
+
+@app.get("/roots")
+def roots():
+    """Configured checkpoint roots + live availability. The GUI's root selector
+    is fed from here; an unmounted removable drive comes back available=false
+    rather than as an error."""
+    out = model_db.load_or_build(rescan=False)
+    counts = {}
+    for m in out["models"]:
+        counts[m["root_id"]] = counts.get(m["root_id"], 0) + 1
+    rows = []
+    for r in model_roots.resolve_roots(_ROOTS_CFG):
+        d = r.as_dict()
+        d["count"] = counts.get(r.id, 0)
+        rows.append(d)
+    return {"ok": True, "roots": rows, "stale_root_ids": out["stale_root_ids"],
+            "limits": _LIMITS}
+
+
+@app.get("/models")
+def models(root_ids: str = None, family: str = None, corpus: str = None,
+           q: str = None, loadable: int = None, rescan: int = 0):
+    """The model database. Every field is either detected from the checkpoint,
+    read from the run's run_meta.json, or a human verdict from
+    Misc/models_index_overrides.json -- record["provenance"] says which."""
+    ids = [s for s in (root_ids or "").split(",") if s] or None
+    out = model_db.load_or_build(ids, rescan=bool(rescan))
+    ms = out["models"]
+    if family:
+        ms = [m for m in ms if m["family"] == family]
+    if corpus:
+        ms = [m for m in ms if (m.get("corpus") or "") == corpus]
+    if loadable is not None:
+        ms = [m for m in ms if bool(m["loadable"]) == bool(loadable)]
+    if q:
+        ql = q.lower()
+        ms = [m for m in ms
+              if ql in m["path"].lower() or ql in (m.get("label") or "").lower()]
+    return {"ok": True, "count": len(ms), "models": ms,
+            "stale_root_ids": out["stale_root_ids"]}
+
+
+@app.get("/models/{model_id}")
+def model_one(model_id: str):
+    for m in model_db.load_or_build(rescan=False)["models"]:
+        if m["id"] == model_id:
+            return {"ok": True, "model": m}
+    return JSONResponse({"ok": False, "error": f"no model {model_id!r}"},
+                        status_code=404)
 
 
 @app.api_route("/schedule", methods=["GET", "POST"])
@@ -769,18 +1153,30 @@ def _generate_impl(req):
             kw["sampler_type"] = req["sampler_type"]
         apply_latch(kw, latch_cfgs, latch_hp)
         tg = time.time()
+        # latents_sink is a NON-INVASIVE capture added to the fork 2026-08-26: the
+        # audio returned is byte-identical to a call without it (proved on both the
+        # sample_diffusion and latch-guided branches with a same-seed A/B), and we
+        # additionally get the z0 that produced it. The alternative -- a second
+        # return_latents=True call -- would double the compute; decoding it here
+        # instead would mean reimplementing two different decode paths.
+        z0_sink = []
         with film_context(req.get("film")):
-            out = MODEL.generate(**with_lora_interval(kw))
+            out = MODEL.generate(**with_lora_interval(kw), latents_sink=z0_sink)
         stages["generate"] = time.time() - tg
         check_output_length(out, duration, "generate")
-        files = []
+        files, latents = [], []
+        z0 = z0_sink[0] if z0_sink else None
         for i in range(out.shape[0]):
             p = jd / f"out_{i:02d}.wav"
             save_audio(p, out[i].float().cpu(), SR, normalize=True)
             files.append(p)
+            if z0 is not None and i < z0.shape[0]:
+                zp = save_z0(jd, f"out_{i:02d}", z0, index=i)
+                if zp:
+                    latents.append(zp)
         log(f"[gen {job_id}] done {time.time()-t0:.1f}s")
         return build_response(job_id, jd, files, seed, t0, stages, [],
-                              {"op": "generate"}, req, rebuilt)
+                              {"op": "generate", "latents": latents}, req, rebuilt)
 
 
 # ---------------------------------------------------------------- /a2a_track
@@ -923,6 +1319,13 @@ def _a2a_track_impl(req):
             stages[f"nl{nl:.2f}"] = time.time() - tnl
             log(f"[a2a_track {job_id}] nl={nl:.2f} done {time.time()-tnl:.1f}s")
         meta = {"op": "a2a_track", "duration_sec": round(total_sec, 1),
+                # No z0 for the a2a paths, deliberately: the output is a crossfade of
+                # SEPARATELY sampled windows, so there is no single latent that produced
+                # it. Re-encoding the finished audio would give a latent OF the render,
+                # not the z0 THAT MADE it -- calling that z0 would break continuation in
+                # a way nobody could see. (C, 2026-08-26)
+                "latents": [],
+                "z0_reason": "a2a output is a crossfade of separately sampled windows — no single z0 exists for it",
                 "windows": wins, "noise_levels": nls}
         return build_response(job_id, jd, files, seed, t0, stages, warnings,
                               meta, req, rebuilt)
@@ -983,6 +1386,7 @@ def _longform_impl(req):
                                 mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
+        lat = None            # set only on the t2a branch, which decodes latents itself
         if audio_path:
             # a2a arc: window loop like /a2a_track, prompt per window from the arc
             audio_path = require_path(audio_path, "audio_path")
@@ -1045,6 +1449,11 @@ def _longform_impl(req):
             init_latent_path = req.get("init_latent_path")
             if init_latent_path:
                 init_latent_path = require_path(init_latent_path, "init_latent_path")
+                # Recover the prefix's OWN adapter before rendering the tail with
+                # whatever happens to be resident. Silence here is how a track ends
+                # up with two different models in it and no record (632c417).
+                warnings.extend(continuation.apply(
+                    req, continuation.recover(init_latent_path)))
                 dit_param = next(MODEL.model.model.parameters())
                 init_latents = torch.from_numpy(np.load(init_latent_path)).to(
                     dtype=dit_param.dtype, device=dit_param.device)
@@ -1076,6 +1485,17 @@ def _longform_impl(req):
                     "drift_log": renderer.drift_log}
         p = jd / "out_00.wav"
         save_audio(p, out, SR, normalize=True)
+        # Standing directive: save z0 next to every render. On this path we already
+        # hold the latents (we decode them ourselves), so it is a free np.save --
+        # and it is what makes THIS render continuable in turn.
+        if lat is not None:
+            try:
+                np.save(jd / "out_00.z0.npy",
+                        lat.detach().squeeze(0).to(torch.float16).cpu().numpy())
+                meta["z0_path"] = str(jd / "out_00.z0.npy")
+                meta["latents"] = [meta["z0_path"]]
+            except Exception as e:                  # never fail a good render over this
+                warnings.append(f"z0 not saved: {e}")
         log(f"[longform {job_id}] done {time.time()-t0:.1f}s")
         return build_response(job_id, jd, [p], seed, t0, stages, warnings,
                               meta, req, rebuilt)
@@ -1519,6 +1939,13 @@ def _a2a_mix_impl(req):
         log(f"[a2a_mix {job_id}] done {time.time()-t0:.1f}s")
 
         meta = {"op": "a2a_mix", "mode": mode,
+                # No z0 for the a2a paths, deliberately: the output is a crossfade of
+                # SEPARATELY sampled windows, so there is no single latent that produced
+                # it. Re-encoding the finished audio would give a latent OF the render,
+                # not the z0 THAT MADE it -- calling that z0 would break continuation in
+                # a way nobody could see. (C, 2026-08-26)
+                "latents": [],
+                "z0_reason": "a2a output is a crossfade of separately sampled windows — no single z0 exists for it",
                 "construction": construction, "interp": interp,
                 "eps_seed": eps_seed, "seam_eps_seed": seam_eps_seed,
                 "tempo_a": round(ta, 2), "tempo_b": round(tb, 2) if tb else None,
@@ -1537,7 +1964,7 @@ def _a2a_mix_impl(req):
 # ---------------------------------------------------------------- /decode (P2)
 def _decode_impl(req):
     # handler logic per mir/scripts/latent_server_sa3.py::_decode_latent
-    latent_dir = Path(req.get("latent_dir") or "/home/kim/Projects/latents_sa3")
+    latent_dir = Path(req.get("latent_dir") or PLAYER_CFG["latent_dir"])
     crop_id = req.get("crop_id")
     latent_path = req.get("latent_path")
     sidecar = None
@@ -1592,7 +2019,7 @@ def _bend_impl(req):
         raise ValueError("ops must be a non-empty list of bend-op dicts "
                          "(weight_mutations-style: [{'op': ..., 'amount': ...}, ...])")
     seed = resolve_seed(_i(req, "seed", -1))
-    latent_dir = Path(req.get("latent_dir") or "/home/kim/Projects/latents_sa3")
+    latent_dir = Path(req.get("latent_dir") or PLAYER_CFG["latent_dir"])
     crop_id = req.get("crop_id")
     latent_path = req.get("latent_path")
     sidecar = None
@@ -1640,6 +2067,189 @@ def _bend_impl(req):
         return build_response(job_id, jd, [out], seed, t0, stages, [], meta, req, False)
 
 
+# ---------------------------------------------------------------- latent player GET endpoints
+# Ported 1:1 from mir/scripts/latent_server_sa3.py (:7892) so the second resident
+# SAME-L copy can be retired. The query-parameter contract is UNCHANGED
+# (?crop= / ?crop_a=&crop_b=&t=&interp= / ?crop=&head=&gain=) so the viewer
+# client needs only a base-URL change. Every decode goes through the already
+# loaded MODEL.model.pretransform -- never a second from_pretrained().
+def _player_latent_dir() -> Path:
+    d = PLAYER_CFG.get("latent_dir")
+    if not d:
+        raise RuntimeError(f"latent_dir not configured -- set it in {PLAYER_INI_PATH}")
+    return Path(d)
+
+
+def wav_bytes(audio: np.ndarray, sr: int) -> bytes:
+    """audio [2, samples] float32 -> stereo int16 WAV bytes (verbatim from :7892)."""
+    a = np.clip(audio, -1.0, 1.0)
+    i16 = (a * 32767).astype(np.int16)
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(2)
+        wf.setsampwidth(2)
+        wf.setframerate(sr)
+        wf.writeframes(i16.T.flatten().tobytes())
+    return buf.getvalue()
+
+
+def _player_meta(crop_id: str) -> dict:
+    return json.loads((_player_latent_dir() / f"{crop_id}.json").read_text())
+
+
+def _player_latent(crop_id: str) -> np.ndarray:
+    path = _player_latent_dir() / f"{crop_id}.npy"
+    if not path.exists():
+        raise FileNotFoundError(f"crop {crop_id}")
+    arr = np.load(path).astype(np.float32)
+    return arr[0] if arr.ndim == 3 else arr
+
+
+def _player_decode(z_np: np.ndarray) -> np.ndarray:
+    """[C, T] latent -> [2, samples] float32, on the RESIDENT pretransform."""
+    pre = MODEL.model.pretransform
+    par = next(pre.parameters())
+    z = torch.from_numpy(np.ascontiguousarray(z_np)).unsqueeze(0).to(
+        device=par.device, dtype=par.dtype)
+    with torch.inference_mode():
+        audio = pre.decode(z, chunked=True,
+                           chunk_size=int(PLAYER_CFG["chunk_size"]),
+                           overlap=int(PLAYER_CFG["overlap"]))
+    return audio.squeeze(0).float().cpu().numpy()
+
+
+def _player_trim(audio_np: np.ndarray, meta: dict | None, n_frames: int) -> np.ndarray:
+    if not meta:
+        return audio_np
+    n_content = int(sum(meta.get("padding_mask") or [])) or n_frames
+    samples = n_content * DS
+    return audio_np[:, :samples] if 0 < samples < audio_np.shape[1] else audio_np
+
+
+def _player_steer_head(feature: str):
+    """Load a LatCH head from the SHARED HEADS registry (no second scanner)."""
+    if feature in STEER_HEADS:
+        return STEER_HEADS[feature]
+    entry = HEADS.get(feature)
+    if entry is None:
+        raise FileNotFoundError(f"head {feature}")
+    dev = next(MODEL.model.pretransform.parameters()).device
+    head = load_latch_from_checkpoint(str(entry["path"]), device=str(dev))
+    head.eval().requires_grad_(False)
+    STEER_HEADS[feature] = head
+    return head
+
+
+def _player_run(fn):
+    """Shared error contract of the old player: 404 for unknown crop/head."""
+    try:
+        return Response(content=fn(), media_type="audio/wav")
+    except FileNotFoundError as e:
+        log(f"[player] 404 {e}")
+        return JSONResponse({"error": "unknown crop or head",
+                             "heads": sorted(HEADS)}, status_code=404)
+    except Exception as e:
+        log(f"[player] error {e}")
+        return JSONResponse({"error": str(e),
+                             "traceback": traceback.format_exc()}, status_code=500)
+
+
+@app.get("/crops")
+def player_crops():
+    try:
+        return sorted(p.stem for p in _player_latent_dir().glob("*.npy"))
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/meta")
+def player_meta(crop: str = None, crop_id: str = None):
+    try:
+        return _player_meta(crop or crop_id)
+    except (FileNotFoundError, TypeError):
+        return JSONResponse({"error": "unknown crop"}, status_code=404)
+
+
+@app.get("/player_status")
+def player_status():
+    """The old :7892 /status. Not mounted at /status -- this server already has one."""
+    try:
+        latent_dir = str(_player_latent_dir())
+    except Exception as e:
+        latent_dir = f"<{e}>"
+    return {"ok": True, "model": ARGS.model if ARGS else None, "sample_rate": SR,
+            "latent_dir": latent_dir, "heads": sorted(HEADS)}
+
+
+@app.get("/decode")
+def player_decode(crop: str = None, crop_id: str = None):
+    cid = crop or crop_id
+
+    def run():
+        arr = _player_latent(cid)
+        meta = None
+        if (_player_latent_dir() / f"{cid}.json").exists():
+            meta = _player_meta(cid)
+        with GPU_LOCK:
+            audio = _player_decode(arr)
+        return wav_bytes(_player_trim(audio, meta, arr.shape[1]), SR)
+    return _player_run(run)
+
+
+@app.get("/source")
+def player_source(crop: str = None, crop_id: str = None):
+    cid = crop or crop_id
+
+    def run():
+        meta = _player_meta(cid)
+        audio, sr = sf.read(meta["source_path"], dtype="float32", always_2d=True,
+                            start=int(meta["start_sample"]),
+                            stop=int(meta["end_sample"]))
+        audio = audio.T
+        if audio.shape[0] == 1:
+            audio = np.repeat(audio, 2, axis=0)
+        elif audio.shape[0] > 2:
+            audio = audio[:2]
+        return wav_bytes(audio, sr)
+    return _player_run(run)
+
+
+@app.get("/mix")
+def player_mix(crop_a: str, crop_b: str, t: float = 0.5, interp: str = "slerp"):
+    def run():
+        a, b = _player_latent(crop_a), _player_latent(crop_b)
+        n = min(a.shape[1], b.shape[1])
+        za = torch.from_numpy(a[:, :n]).unsqueeze(0).float()
+        zb = torch.from_numpy(b[:, :n]).unsqueeze(0).float()
+        # SA3's own slerp (already imported) -- per-frame over the channel dim.
+        z = (slerp(za, zb, float(t)) if interp == "slerp"
+             else (1.0 - float(t)) * za + float(t) * zb)
+        with GPU_LOCK:
+            audio = _player_decode(z.squeeze(0).numpy())
+        return wav_bytes(audio, SR)
+    return _player_run(run)
+
+
+@app.get("/steer")
+def player_steer(crop: str = None, head: str = None, gain: float = 48.0,
+                 crop_id: str = None, feature: str = None):
+    cid, feat = crop or crop_id, head or feature
+
+    def run():
+        arr = _player_latent(cid)
+        h = _player_steer_head(feat)
+        dev = next(MODEL.model.pretransform.parameters()).device
+        z = torch.from_numpy(arr).unsqueeze(0).float().to(dev)
+        z.requires_grad_(True)
+        ts = torch.tensor([0.001], dtype=torch.float32, device=z.device)
+        h(z, ts).mean().backward()
+        z_edit = (z.detach() + float(gain) * z.grad).cpu().numpy()[0]
+        with GPU_LOCK:
+            audio = _player_decode(z_edit)
+        return wav_bytes(audio, SR)
+    return _player_run(run)
+
+
 # ---------------------------------------------------------------- boot
 def main():
     global ARGS, OUT_DIR, MODEL, SR, DS, LOADED_DORA
@@ -1653,6 +2263,21 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     scan_latch_heads()
+
+    # Warm the model database in the background while the DiT loads. The first
+    # /models call otherwise walks ~2100 files across two USB drives, which blows
+    # past the viewer client's timeout -- the picker then silently falls back to
+    # its four legacy registry names, which is exactly how the UI looked empty
+    # for a whole day (2026-08-24/25).
+    def _warm_model_db():
+        try:
+            t0 = time.time()
+            n = len(model_db.load_or_build(rescan=False)["models"])
+            log(f"[boot] model db warm: {n} models in {time.time() - t0:.1f}s")
+        except Exception as e:                       # never block boot on a scan
+            log(f"[boot] model db warm failed: {e}")
+    threading.Thread(target=_warm_model_db, daemon=True).start()
+
     log(f"[boot] loading {ARGS.model} on {ARGS.device} ...")
     MODEL = StableAudioModel.from_pretrained(ARGS.model, device=ARGS.device)
     LOADED_DORA = "none"

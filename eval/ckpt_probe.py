@@ -73,7 +73,26 @@ def _probe_zip(path: Path, kind: str) -> dict:
     out["dtype_hint"] = next((d for d, tok in (
         ("float32", b"FloatStorage"), ("float16", b"HalfStorage"),
         ("bfloat16", b"BFloat16Storage")) if tok in raw), None)
-    out["slim"] = b"optimizer_states" not in raw
+    # Two different optimizer-state conventions, and testing only the first
+    # mis-reported an entire family as slim (C, 2026-08-26):
+    #   * Lightning .ckpt                          -> key "optimizer_states"
+    #   * riffer_*.pt (control-adapter trainer)    -> top-level key "opt"
+    # Measured on morphcond/morph_L3_ft_s1/riffer_final.pt: opt = 1359.6 MB of
+    # 1813 MB, i.e. 75% of the file. Calling those slim understated their pull
+    # cost 4x and told the census 32 arms had no resumable copy.
+    #
+    # Matched as LENGTH-PREFIXED pickle strings so a bare "opt" cannot collide
+    # with substrings of longer names ("optimizer", "opt_state", ...). torch
+    # writes BINUNICODE (4-byte LE length) here, but SHORT_BINUNICODE (1-byte)
+    # is equally legal and appears in other protocol/version combinations, so
+    # both forms are tested.
+    def _pickled_key(raw_bytes, name):
+        b = name.encode()
+        n = len(b)
+        return (bytes([n]) + b) in raw_bytes or \
+               (n.to_bytes(4, "little") + b) in raw_bytes
+    out["slim"] = not (_pickled_key(raw, "optimizer_states")
+                       or _pickled_key(raw, "opt"))
 
     lora_a = _LORA_A_KEY.findall(raw)
     has_control_mode = b"control_mode" in raw
