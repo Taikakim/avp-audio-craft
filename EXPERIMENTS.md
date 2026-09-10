@@ -960,6 +960,68 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   (2026-08-12). Their provenance warning about Tier-2 is wrong (full harness + results.json exist).
   Their 0a kill-condition cannot fire: our P_melody is the v3 CSP basis, rank 15/256 by construction.
 
+### D18 — Morph conditioner with a REAL LR schedule: warmup → hold → cosine — **RUNNING (local, launched 2026-09-10 03:34 EEST, W; entry written by C from W's run_meta at W's request)**
+
+*Why:* D17 (below) answered its question by failing. Listening put the **only audible contour
+correspondence at step2000, gain 2** — ~250 optimizer steps, ~1.4 epochs — i.e. the entire useful
+signal sat in the clean stretch *before* the first instability. D18 asks whether that was a
+ceiling of the Head-B contour path or merely step-size instability destroying everything after it.
+
+*Arm:* `morph_L3_lion_r128_cos`, identical to D17 except:
+- **autoscale OFF** — D-Adaptation is itself a step-size controller; running it under an explicit
+  schedule puts two controllers on one knob and nothing would attribute cleanly.
+- **warmup 1000 → hold 1000 → cosine 10000** micro-batches (12000 total, ~8.5 epochs), floor 0.
+- **save-every 500** (24 ckpts) — D17 saved so coarsely that "somewhere in the first 1.4 epochs"
+  was the best resolution available on the thing that actually worked.
+Unchanged: corpus (goa + AVP, 5678 crops), K&P L3 vocab 15, medium-base, DoRA r128, Lion 4e-5
+betas (0.9, 0.99), wd 0.05, bf16, batch 4 × accum 8 = 32, crop 512 random, EMA 0.999, seed 1.
+
+*Kill criterion:* gnorm sustained above ~2 again, or adherence at 12000 no better than D17's
+step2000 — the latter would say the ceiling is the **conditioning inlet**, not the optimiser.
+⚠ `--val-frac` / `--early-stop-patience` are INERT in this mode (see the no-op list below), so the
+guard is an **external watchdog** on the run's own log: SIGTERM if gnorm stays >4.0 for 10
+consecutive samples (~200 micro-batches). 4.0 is deliberately above D17's worst bin median (2.718)
+so it cannot fire on a transient.
+
+*Gain ladder, already rendered:* gains 3/4/6/8 on **both step2000 and step4000** of D17.
+step4000 is the control — **if the later checkpoint also improves with gain, then what degraded
+after 1.4 epochs is achievable STRENGTH, not adherence**, and the schedule is only half the fix.
+That is a question the objective A/B can answer and the ear cannot.
+
+*Division of labour:* W owns training + pages; **C owns the measurement** and will run
+`eval/morph_contour_ab.py` on D17 **and** D18 so the comparison is a number rather than two sets
+of impressions.
+
+**⛔ SIX ACCEPT-BUT-IGNORE FLAGS FOUND IN `sa3_control/train.py` ACROSS D17/D18 — the file's
+established failure mode.** It accepts a flag, **echoes it into the run's own sidecar**, and does
+not apply it — so the manifest lies and the run looks configured:
+1. `--dora-rank` was never optimised under `--optimizer fusion*` (no optimizer state, never stepped).
+2. `--smoke` reported `[smoke OK]` on zero evidence (read `p.grad` after `zero_grad`).
+3. multi-root sidecars resolved by bare stem — one corpus read the other's contours.
+4. `--hyperball` pins zero-init adapters at zero forever.
+5. **`--val-frac` / `--early-stop-patience` do nothing outside `fingerprint` mode** (`train.py:794`)
+   — D17's `run_meta` kill-criterion was literally "val loss diverging" and val never ran.
+6. **`--warmup-steps` did nothing off adamw** (W, `5ee62c2`) — so D17 ran with no warmup despite
+   passing the flag, which plausibly contributed to the instability D17 attributed elsewhere.
+7. **`--cautious` is silently inert under `--optimizer lion` and `--optimizer adamw`** (C audit,
+   2026-09-10) — it is consumed only inside the `fusion*` branch. Unlike `--hyperball`, which
+   prints an explicit `IGNORED by lion` line, `--cautious` accepts and says nothing.
+
+**AUDIT DONE (C, 2026-09-10), 74 flags.** A static "never referenced" screen finds almost nothing
+— the dangerous class is flags that ARE referenced but sit behind a mode/optimizer gate, which is
+invisible to reference counting. (My own screen also produced a false positive on
+`--export-onnx-on-finish`, which is read via `getattr` rather than `args.`, so the tool needed
+auditing before its output could be trusted — the usual rule applying to itself.)
+Per-mode dispatch flags (`--scalar-field`, `--fp-*`, `--metrical-*` …) are legitimate. The
+dangerous ones are **flags that read as universal but are silently mode-gated**: `--val-frac`,
+`--early-stop-patience`, `--cautious`, and formerly `--warmup-steps`.
+**Proposed general fix, modelled on the line that already does it right:** at startup, warn for
+every flag the caller passed that cannot reach code under the chosen `--control-mode` /
+`--optimizer`. `--hyperball`'s `IGNORED by lion` message is the pattern; the rule is that a flag
+that cannot apply must SAY SO rather than be echoed into `run_meta.json` as if it were in force.
+Deferred until the card is free — editing that file with a job running against it is how the
+next silent no-op gets introduced.
+
 ### D17 — Morph conditioner at CAPACITY: Lion + D-Adaptation, r128 joint DoRA, eff-batch 32 — **RUNNING (local, launched 2026-09-09 ~02:15 EEST, C)**
 
 *Why:* D12's bracket established that the morph-contour conditioner **can exert some control** —
