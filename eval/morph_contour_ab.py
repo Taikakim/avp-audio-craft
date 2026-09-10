@@ -155,7 +155,16 @@ def main():
         mp = os.path.join(a.midi, base + ".mid")
         if not (os.path.exists(sp) and os.path.exists(mp)):
             continue
-        arm = os.path.basename(os.path.dirname(jf))
+        # ARM = the render's own label when it has one, NOT the directory name. The old
+        # layout was one directory per arm, so dirname was the arm; a checkpoint TRAJECTORY
+        # is many arms in ONE directory (six checkpoints of the same run, plus a gain ladder
+        # rendered alongside them), and dirname would collapse all of them into a single
+        # pooled row set -- with the last stream written per stem silently winning, so every
+        # checkpoint would be scored against whichever one happened to load last. Pooling
+        # across cells that differ in the variable under study is the error the board's
+        # per-cell rule exists to prevent. Falls back to dirname for the old layout.
+        # (CONTINUITY 2026-09-10)
+        arm = str(d.get("label") or os.path.basename(os.path.dirname(jf)))
         fed = np.load(sp).astype(np.int8)
         # ONLY conditioned cells carry a real stream. A null cell saves an ALL-ZERO stream
         # (zero tokens = the trained null), and since "null" sorts after "g1.0"/"g2.0" it was
