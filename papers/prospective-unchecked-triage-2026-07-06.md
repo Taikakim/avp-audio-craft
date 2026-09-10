@@ -121,7 +121,7 @@ All promoted papers got a light pass (`action: light-abstract`); none were flagg
   route to a goal SAME already pursues by different means (soft-norm + linear-decodability
   losses), not a checked box or a gap. Worth checking against only if SAME is ever retrained. Not
   previously covered. *(Note: source abstract_markdown for this paper arrived truncated/malformed
-  in the triage batch; the file written to `papers/arxiv-2606.23064 - STAR-VAE: Structured Topology-Aware Regularization for Audio Reconstruction and Generation.md` was reconstructed from the
+  in the triage batch; the file written to `papers/arxiv-2606.23064 - STAR-VAE - Structured Topology-Aware Regularization for Audio Reconstruction and Generation.md` was reconstructed from the
   paper's one-liner, relevance, and POV notes to match house format — flag for a spot-check against
   the PDF if precision matters later.)*
 

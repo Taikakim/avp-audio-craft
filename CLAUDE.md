@@ -270,7 +270,7 @@ specs), `stable-audio-3/`/`stable-audio-tools/` (nested thin forks, package delt
 ## SA3 / SAME architecture — the basics (MEMORIZE; stop re-deriving them)
 *(Added 2026-08-11 after C forgot the SAME latent carries a native chroma — costly slips come from
 not knowing the substrate. Deep dives: SA3 report `papers/arxiv-2605.17991 - Stable Audio 3.md`, SAME
-`papers/arxiv-2605.18613 - SAME: A Semantically-Aligned Music Autoencoder.md`, gutted-features+gotchas `stable-audio-3/CLAUDE.md`, head-families MASTER §5.)*
+`papers/arxiv-2605.18613 - SAME - A Semantically-Aligned Music Autoencoder.md`, gutted-features+gotchas `stable-audio-3/CLAUDE.md`, head-families MASTER §5.)*
 
 **SAME = our autoencoder / latent space** (`SAME-L` 852M; `SAME-S` 108M CPU, distilled, decoder-compatible):
 - **Latent = 256 channels, 4096× downsample, 10.766 Hz**, stereo → T1024≈95.1 s, T2048≈190.2 s, T4096≈380 s.

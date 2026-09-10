@@ -4,7 +4,7 @@
 > phase-invariance / SAME-latent thread. Triage: CONTINUITY same day.
 > **Verdict: HIGHEST-fidelity Gemini report we've triaged.** The SAME-architecture and
 > IFGD-phase-loss sections were cross-checked NOT against the report's own citations but
-> against (a) our own deep-read `papers/arxiv-2605.18613 - SAME: A Semantically-Aligned Music Autoencoder.md` and (b) the source PDF
+> against (a) our own deep-read `papers/arxiv-2605.18613 - SAME - A Semantically-Aligned Music Autoencoder.md` and (b) the source PDF
 > `stable-audio-3/SAME- ...2605.18613v1.pdf` directly. Both corroborate. Minimal costume.
 
 ## Verified against our own materials
@@ -12,7 +12,7 @@
   TRB S=16→4096×, differential-attn/QK-norm/RoPE/DyT, SAME-L 852M (sliding-window) /
   SAME-S 108M (chunked+midpoint-shift), soft-norm bottleneck (learnable affine+running-std,
   NOT a VAE), 4-layer/768-d generative-alignment DiT (grads→encoder), chroma+ILD via single
-  1×1 conv, T5Gemma contrastive triplet, relativistic GAN. All match `arxiv-2605.18613 - SAME: A Semantically-Aligned Music Autoencoder.md`.
+  1×1 conv, T5Gemma contrastive triplet, relativistic GAN. All match `arxiv-2605.18613 - SAME - A Semantically-Aligned Music Autoencoder.md`.
 - **IFGD phase loss confirmed in the PDF:** grep hits — `group delay`, `IFGD`×3, `K-weight`,
   `mid/side`, `multi-resolution`×6, `multi-scale STFT`, `FFT size`, `75%`. So the "decoder
   hallucinates sub-frame phase via IF+GD, multi-res STFT, K-weighting, per-channel + M/S"
