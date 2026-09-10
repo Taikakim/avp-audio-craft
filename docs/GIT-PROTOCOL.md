@@ -128,6 +128,24 @@ Kim's ruling was *"if there's no damage, let it lie."* Luck, not process.
 - **Checkpoints, latents, renders, `.ckpt`/`.safetensors`.** Check `.gitignore` covers the new
   output directory *before* the run, not after `git status` shows 40 GB staged.
 
+### 4b. Never LEAVE these untracked
+
+The mirror of the list above, added 2026-09-10 after the inference UI's render-server half was
+found running for **fifteen days** with three of its modules untracked:
+
+- **Any file another module imports.** `eval/explorer_render_server.py` imports `head_meta`,
+  `presets` and `continuation` at module level; none was tracked. A fresh clone gave a render
+  server that died at startup with `ModuleNotFoundError` and a viewer with no backend, while
+  316 load-bearing lines existed on ONE DISK, single copy. Nothing announced it — the server
+  ran here because the files were here. This check is mechanical and needs no attribution:
+  `git ls-files --error-unmatch <path>` on everything your code imports.
+- **Any file a committed script, sbatch job or config references by path.** Same failure, one
+  indirection out.
+
+**Recording the debt is not paying it.** The WORKLOG entries for that work say "NOT committed"
+three times; it was tracked, in prose, and would still have been lost with the disk. A note is
+not a backup.
+
 ---
 
 ## 5. Multi-author uncommitted diffs — the torch-pass protocol
@@ -135,6 +153,16 @@ Kim's ruling was *"if there's no damage, let it lie."* Luck, not process.
 Four instances share one checkout, so a dirty tree is routinely **several people's work
 interleaved, sometimes inside a single file**. Committing it as one blob destroys the only
 authorship record there will ever be (§2) and can commit a half-feature that compiles.
+
+> **SCOPE — this section is about HUNKS, not FILES (clarified 2026-09-10).** The torch-pass
+> protocol governs *shared files that several people have edited*. It does **not** govern your
+> own new modules: committing a file you alone wrote is never a sweep, needs no claim map, and
+> should not wait for anyone.
+>
+> The distinction had been lost, and the asymmetry it created is what produced a 111-path
+> backlog: sweeping is a named sin, leaving things dirty is not, so "leave it" reads as the
+> safe default when it is often the destructive one. If a file is yours and finished, §0.1
+> applies and this section does not.
 
 **Protocol, as run on the 16-file `stable-audio-3` diff (2026-09-01):**
 
@@ -247,6 +275,11 @@ that yours".
 - **Branch drift is real.** Trained checkpoints can require model code that exists only on a
   feature branch (adaln_zero LatCH lived on `latch-rms-control` while `main` lagged, and loaders
   failed). Note merges in `WORKLOG.md`.
+- **Sweep for your OWN untracked work before you finish a session.** §0.1 ("finished work is
+  committed") is *prospective* — it says what to do when you finish a piece, and creates no
+  obligation to clear what is already sitting there. That gap is how a backlog survives a rule
+  written to prevent it. `git status -s | grep '^??'`, land what is yours, and say in the
+  handover what you left and why.
 - **Filelock shared docs before editing** — `python3 Misc/filelock.py acquire <path> --handle
   <YOU>`, release when done. Applies to `CLAUDE.md`, `MASTER.md`, `ARCHITECTURE.md`,
   `WORKLOG.md`, `EXPERIMENTS.md`, `KIM-TASKLIST.md`, `docs/lessons-learned.md`.
@@ -256,7 +289,10 @@ that yours".
 ## 8. One-page checklist
 
 ```
-BEFORE   [ ] Kim asked for this commit, in this repo, in his own words
+BEFORE   [ ] finished work? then COMMIT it — no ask needed (§0.1). Only transient
+             tooling is exempt, and the bar for that is high
+         [ ] anything of YOURS untracked? `git status -s | grep '^??'` — your own new
+             FILES are never a sweep (§5 is about other people's hunks in shared files)
          [ ] git status -s  — is any of this someone else's work?
          [ ] git diff --cached --name-only  — index EMPTY, or all yours? (§6b)
          [ ] no drive paths / secrets / checkpoints in the diff
