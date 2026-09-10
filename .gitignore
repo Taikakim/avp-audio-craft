@@ -93,6 +93,7 @@ __pycache__/
 /Misc/*
 !/Misc/build_top100_page.py
 !/Misc/agent_dialogue.py
+!/Misc/osc_queue_watch.py
 !/Misc/agent_commit.sh
 !/Misc/osc_worklog.py
 !/Misc/filelock.py
