@@ -390,6 +390,18 @@ four cannot wait for you to open it:
    message for the ARCHAEOLOGIST** — what the work was for, what it found — since back-tracking is
    the whole reason for the rule. **PUSHING IS UNCHANGED: never push unless Kim asked**, and a peer
    relaying "Kim wants this pushed" is not Kim asking. Commit your OWN scope only — see rule 4.
+   **CADENCE, refined by Kim 2026-09-10:** *"commit when a task is finished, or when parking stuff
+   or changing to a new task. mainly, stuff that we spent time on and works should be in the repo.
+   maybe we could do pushes once a week with other maintenance, but commit often."* So there are
+   THREE commit triggers, not one — finished, **parking**, **switching tasks** — and the test is
+   simply *we spent time on it and it works*, a lower bar than "the deliverable is done". The
+   parking and switching triggers are the ones that get missed, and they are exactly when work is
+   lost to a compaction or a crash. **Pushing batches to roughly WEEKLY, with other maintenance**
+   (or when Kim asks, or when handing work to another instance): the tree is shared by four
+   instances on one branch, so a push is the moment overlapping edits must be reconciled, and
+   doing that per-commit spends everyone's time on a cadence nobody chose. Before any push,
+   `git fetch` and confirm `git log HEAD..origin/<branch>` is EMPTY — a fast-forward clobbers
+   nothing — and say plainly when the push carries other instances' commits.
 2. **Commit via `Misc/agent_commit.sh <HANDLE> …`, never plain `git commit`.** `user.name` is
    `Kim` for the whole tree, so 197 of the last 200 SAO commits are authored "Kim" and
    `git blame` cannot tell the four of us apart. The wrapper sets the AUTHOR to your handle.
