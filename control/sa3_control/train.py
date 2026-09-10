@@ -15,6 +15,7 @@ Run with the consolidated SAO/.venv (CK flash-attn; set the flag before import):
 import argparse
 import copy
 import json
+import math
 import os
 import subprocess
 import sys
@@ -34,6 +35,34 @@ from sa3_control.conditioner import (AudioRefEncoder, ScalarAttributeEncoder, At
 from sa3_control.dataset import LatentControlDataset, CONTROL_FIELDS, CONTROL_DIMS
 from sa3_control.inject import (adapter_state_dict, freeze_base_train_adapters,
                                 install_adapters)
+
+
+def lr_multiplier(step: int, warmup: int, hold: int, cosine: int, min_factor: float = 0.0) -> float:
+    """LR as a fraction of --lr at micro-batch `step` (1-based): warmup -> hold -> cosine.
+
+    Units are MICRO-BATCHES, matching --warmup-steps and the "[step N/M]" log line, because
+    that is the number a person reads off the log and off a checkpoint filename. With
+    --grad-accum G the optimizer takes step/G actual steps.
+
+    WHY THE HOLD PHASE EXISTS (2026-09-09): the D17 morph run's gradient norm ramped
+    0.104 -> 0.415 -> 2.700 over its first 2.8 epochs and the loss never returned to its
+    first-bin value, so the useful signal was all in the first ~1.4 epochs. A flat stretch
+    at full LR after warmup, before decay, is the requested shape: warm in, train hard
+    briefly, then anneal instead of continuing to bounce.
+
+    A zero `cosine` keeps the LR flat forever after warmup -- the previous behaviour --
+    so passing none of the new flags cannot change an existing run.
+    """
+    if warmup > 0 and step < warmup:
+        return step / warmup
+    if cosine <= 0:
+        return 1.0
+    t = step - warmup - hold
+    if t <= 0:
+        return 1.0
+    if t >= cosine:
+        return min_factor
+    return min_factor + (1.0 - min_factor) * 0.5 * (1.0 + math.cos(math.pi * t / cosine))
 
 
 class EMA:
@@ -242,6 +271,17 @@ def main():
     ap.add_argument("--warmup-steps", type=int, default=0,
                     help="linear LR warmup over this many steps (0 = none). Best practice for "
                          "higher LRs — prevents the early gradient explosion seen at lr 1e-3.")
+    ap.add_argument("--lr-hold-steps", type=int, default=0,
+                    help="hold LR flat at --lr for this many steps AFTER warmup, before cosine "
+                         "decay starts (0 = decay begins the moment warmup ends).")
+    ap.add_argument("--cosine-steps", type=int, default=0,
+                    help="cosine-decay the LR over this many steps once warmup+hold are done "
+                         "(0 = no decay, LR stays flat — the previous behaviour). "
+                         "ALL THREE OF THESE COUNT MICRO-BATCHES, not optimizer steps, matching "
+                         "--warmup-steps and the [step N/M] log line; with --grad-accum G the "
+                         "optimizer sees N/G of them.")
+    ap.add_argument("--lr-min-factor", type=float, default=0.0,
+                    help="floor of the cosine as a fraction of --lr (0.0 = decay to zero).")
     ap.add_argument("--weight-decay", type=float, default=0.01,
                     help="decoupled weight decay. NOTE Lion's update is a unit-sign step, so "
                          "the paper wants wd 3-10x LARGER than AdamW's at a 3-10x smaller lr; "
@@ -632,6 +672,26 @@ def main():
         opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=args.weight_decay)
         _sf = False
 
+    # WHO OWNS THE LEARNING RATE. FusionOpt schedules its own warmup internally (it is
+    # handed warmup_steps at construction), so mutating param_group["lr"] underneath it
+    # would apply the ramp twice. Every other optimizer here has no internal schedule and
+    # takes it from us.
+    #
+    # This gate used to read `args.optimizer == "adamw"`, which meant --warmup-steps was a
+    # SILENT NO-OP on lion -- accepted, echoed into run_meta, and never applied. The D17
+    # morph run is the case in point: it asked for no warmup and got none, but a run that
+    # HAD asked would have been misled about why its gradients still exploded. (W, 2026-09-09)
+    _sched_external = args.optimizer in ("adamw", "lion", "sfadamw")
+    if _sched_external and (args.warmup_steps or args.cosine_steps):
+        print(f"[lr] external schedule on {args.optimizer}: warmup {args.warmup_steps} -> "
+              f"hold {args.lr_hold_steps} -> cosine {args.cosine_steps} micro-batches "
+              f"(floor {args.lr_min_factor:g}x); grad-accum {args.grad_accum} so the "
+              f"optimizer sees ~{(args.warmup_steps + args.lr_hold_steps + args.cosine_steps) // max(1, args.grad_accum)} steps",
+              flush=True)
+    elif args.cosine_steps:
+        print(f"[lr] ⚠ --cosine-steps is IGNORED for --optimizer {args.optimizer}: FusionOpt "
+              f"owns its own LR schedule and a second one would compound with it.", flush=True)
+
     ema = EMA(params, args.ema) if args.ema and args.ema > 0 else None
     if ema is not None:
         print(f"[ema] decay={args.ema} over {n_train/1e6:.1f}M params", flush=True)
@@ -972,9 +1032,11 @@ def main():
             # optimizer step only every grad_accum microbatches (standard gradient accumulation)
             if (step + 1) % args.grad_accum == 0:
                 gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
-                if args.warmup_steps > 0 and args.optimizer == "adamw":  # FusionOpt warms up internally
+                if _sched_external:
+                    _m = lr_multiplier(step + 1, args.warmup_steps, args.lr_hold_steps,
+                                       args.cosine_steps, args.lr_min_factor)
                     for pg in opt.param_groups:
-                        pg["lr"] = args.lr * min(1.0, (step + 1) / args.warmup_steps)
+                        pg["lr"] = args.lr * _m
                 if hasattr(opt, "_telem_on"):       # FusionOpt: instrument the step we're about to log
                     opt._telem_on = ((step + 1) % args.log_every == 0)
                 opt.step()

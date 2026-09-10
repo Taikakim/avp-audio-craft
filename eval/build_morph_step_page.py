@@ -94,6 +94,12 @@ def build(cells, refs, meta, out_dir: Path, player_js: str) -> Path:
         lab_meta.setdefault(c["label"], c)
     labels = sorted(lab_meta, key=step_of)
     stems = sorted(by_stem)
+    # Gain columns come from the DATA, not a fixed list: a gain ladder rendered later must
+    # appear as its own columns rather than silently vanishing because the table only knew
+    # about g1/g2. "null" always leads -- it is the control the rest are read against.
+    gains = sorted({c["gain"] for c in cells if c["gain"] is not None})
+    gcols = ["null"] + [f"g{g:g}" for g in gains]
+    ghead = ["control off"] + [f"gain {g:g}" for g in gains]
     one = cells[0]
     rec = meta.get("recipe", {})
     ds = meta.get("dataset", {})
@@ -161,7 +167,7 @@ control and nothing else. Expect subtlety — the result this set is trying to b
 <div class="box">
 <h3>FOR ENGINEERS — recipe and reproduction</h3>
 <p><b>Ladder.</b> checkpoints {", ".join(str(step_of(l)) for l in labels)} of one run ×
-{len(stems)} source stems × {{off, gain 1.0, gain 2.0}}. Coverage {one.get('coverage')},
+{len(stems)} source stems × {{off, {", ".join(f"gain {g:g}" for g in gains)}}}. Coverage {one.get('coverage')},
 cfg {one.get('cfg')}, {one.get('steps')} steps, T{one.get('frames')} windows.</p>
 <p><b>Recipe.</b> {html.escape(rec.get('control_mode',''))} · alphabet
 <code>{html.escape(str(rec.get('alphabet','')))}</code> (vocab {one.get('vocab')}) · backbone
@@ -194,13 +200,13 @@ ported to them. Treat any impression here as a hypothesis, not a result.</p>
     for st in stems:
         parts.append(f'<h2>Source stem <code>{html.escape(st)}</code></h2>')
         parts.append('<table><thead><tr><th style="width:22%">training step</th><th>seed</th>'
-                     '<th>control off</th><th>gain 1.0</th><th>gain 2.0</th>'
-                     '</tr></thead><tbody>')
+                     + "".join(f"<th>{html.escape(h)}</th>" for h in ghead)
+                     + '</tr></thead><tbody>')
         r = refs.get(st)
         if r:
             parts.append(f'<tr class="refrow"><td colspan="2"><span class="ctl">▲ REFERENCE</span> '
                          f'<span class="tag">the track the contour was taken from</span></td>'
-                         f'<td colspan="3"><button class="clip" data-src="{html.escape(r)}" '
+                         f'<td colspan="{len(gcols)}"><button class="clip" data-src="{html.escape(r)}" '
                          f'onclick="play(this)">▶ reference</button></td></tr>')
         for lab in labels:
             m = lab_meta[lab]
@@ -208,7 +214,7 @@ ported to them. Treat any impression here as a hypothesis, not a result.</p>
             parts.append(
                 f'<tr><td class="step">step <b>{step_of(lab):,}</b></td>'
                 f'<td>{html.escape(str(m["seed"]))}</td>'
-                + cell(g.get("null")) + cell(g.get("g1")) + cell(g.get("g2")) + '</tr>')
+                + "".join(cell(g.get(k)) for k in gcols) + '</tr>')
         parts.append('</tbody></table>')
 
     parts.append('<p class="sub" style="margin-top:26px">Built by '
