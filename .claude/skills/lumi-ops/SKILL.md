@@ -85,6 +85,51 @@ two different tools/runs might have touched the same output path.** Same underly
 `--overwrite` flag existing on nearly every batch tool in this codebase — resumability is a feature
 that assumes ONE tool owns that directory, not a safe default across tool changes.
 
+## Bulk PULLS: multiplex ONE ssh, never a connection per file (2026-09-01)
+
+**Context change (Kim direct 2026-08-31): non-interactive `ssh -i ~/.ssh/id_EFP` now WORKS from the
+agent side — the passphrase is agent-loaded. Agents may run read-only ssh and PULL rsync themselves.
+Writing to LUMI scratch is still forbidden, and Kim's own rule stands: DO NOT PRUNE ANYTHING on LUMI
+(2026-08-27) — scratch gets wiped anyway, but a future allocation may need the resume state.**
+
+Pulling the 654 GB last-fat keep-set exposed two failure modes worth never repeating:
+
+1. **One long-lived rsync cannot carry a multi-hour transfer.** A single `rsync --files-from` of 48
+   large files died at 59 min with `Read from remote host: Connection reset by peer` /
+   `rsync error: unexplained error (code 255)`, 28 GB of 602 GB in. Expect the connection to drop;
+   design for resume, not for an unbroken session.
+2. **The naive fix — retry per file — is WORSE, because it is a reconnect storm.** Retrying each
+   file with its own fresh ssh fired 8 rapid auth attempts on the first stall and tripped LUMI's
+   connection throttle: every later attempt returned **`Permission denied (publickey)` with a
+   perfectly valid, agent-loaded key** (`ssh-add -l` fingerprint matched `id_EFP` exactly). The
+   symptom reads as a broken/expired key and sends you debugging the wrong thing entirely.
+   Diagnostic that settles it in one line: compare `ssh-keygen -lf ~/.ssh/id_EFP` against
+   `ssh-add -l` — if they match, the key is fine and you are being throttled, so BACK OFF; probing
+   more often only feeds the ban.
+
+**THE PATTERN THAT WORKS — one authentication for the whole pull:**
+```
+CP=/tmp/ssh-lumi-pull.sock
+MUX="ssh -i $HOME/.ssh/id_EFP -o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o ControlMaster=auto -o ControlPath=$CP -o ControlPersist=900"
+$MUX -N -f akekim@efp.lumi.csc.fi                       # master up once
+rsync -a --partial --append-verify --timeout=900 --files-from=one.txt -e "$MUX" SRC DEST
+$MUX -O exit akekim@efp.lumi.csc.fi                     # tear down at the end
+```
+Every rsync reuses the master, so N files cost ONE auth instead of N. `--append-verify` (not bare
+`--append`) resumes a partial by checksumming the existing prefix first — safe, and it makes the
+59-minute drop a non-event. Keep per-file retries to ~3 with a flat ≥120 s gap.
+
+**Two harness traps met the same night, unrelated to LUMI but fatal to unattended transfers:**
+- **`rc=0` from a wrapper script means the LAST command succeeded, not the job.** The first pull's
+  wrapper reported exit 0 while its Mantu rsync had died with rc=255 an hour earlier. Always grep
+  the per-step rc, never trust the wrapper's status. (Same family as "trust the artifact, not the
+  launch command".)
+- **Never pipe rsync into grep to test success** — `if rsync ... | grep -v '^$'` tests GREP's status.
+  A silent successful `-a` transfer prints nothing, grep returns 1, and every success reads as a
+  failure and retries forever. Capture `rc=$?` from rsync directly.
+- **A long in-script `sleep` gets the background task reaped.** Do the waiting OUTSIDE (a Monitor
+  poll loop), and keep the transfer script wait-free.
+
 ## Demo callback needs torchcodec — pass `--no_demos` on EVERY multitorch training job (2026-08-20)
 
 The torchaudio-needs-torchcodec gotcha (live-encode gotcha #1) has a SECOND entrance: the DEMO

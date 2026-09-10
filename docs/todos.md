@@ -12,6 +12,19 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Unified inference/latent tool consolidating every trained head** (Kim direct, 2026-08-23,
+      relayed via THE-FINN — "the team could co-operate" on this). The ask: one inference-time
+      tool that can incorporate ALL of our experimental conditioning/control machinery, not each
+      living in its own bespoke script — note-matrix/pianoroll conditioning (`proll_fullft`,
+      `lumi/render_morph.py`'s control-context path), the morph work (`morphcond`/`morph_head_sweep`
+      arms, `riffer_*.pt`), and every trained LatCH/FiLM/chroma/other head (14 production LatCH heads
+      per EXPERIMENTS E3, the stem-chroma head, Head-B FiLM). Currently scattered: separate scripts
+      per mechanism (`eval/a2a_fulltrack.py`, `render_morph.py`, `render_matrix_cells.py`,
+      `latch/train_latch.py` + its inference counterpart, `control/sa3_control/train.py`), each with
+      its own ckpt-loading/vocab conventions — D14's own "REUSE — DO NOT REBUILD" list is a good
+      starting inventory of what exists and needs pulling together. No owner assigned yet; scope
+      (which heads, what a unified interface looks like) not yet decided — flagging for the team to
+      pick up and shape, not something to build unprompted.
 - [ ] **LUMI training runs must auto-render our standard clip grid on finish** (Kim's standing
       directive, resurfaced 2026-08-05 after the aug8 clip gap turned out to be exactly this —
       verified the plan was NEVER actually implemented for the DoRA/fullFT training path: grepped

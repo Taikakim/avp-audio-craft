@@ -90,3 +90,40 @@ Self/cross-attention injection and RF inversion solvers — the toolkit for SA3 
 ---
 
 *A neutral full list of these components (no ranking) is in [`CONTROL_FINDINGS.md`](CONTROL_FINDINGS.md).*
+
+---
+
+## 7. Sibling implementation on disk — `/home/kim/Projects/steer-sao` (checked 2026-08-24)
+
+`github.com/manoskary/steer-sao`, last commit 2026-06-18 — an **independent MuseControlLite-style
+adapter layer for SA3 `small-music`**, same week our `ATTRIBUTE_BRANCHES.md` was written. Same
+lineage as `sa3_control/adapters.py` (frozen base `to_q` + `apply_attn`, own `to_k`/`to_v`,
+zero-init `to_out`, `add_fractional_positions`, context-var control channel — near-identical code)
+so it is **not** a source of adapter novelty. It targets `small-music`; ours targets `medium-base`.
+
+**Three things it has that we do not:**
+
+1. **Multi-branch control-CFG at inference** (`guidance.py:ControlledDiTModel`). Batches four
+   branches into ONE DiT call per step — `uncond / text / text+attr / text+attr+audio` — and
+   composes them with *independent* scales (`GuidanceScales(text, attribute, audio)`), each branch
+   zeroing the control tokens it must not see. **We only have a scalar `gain` on the control
+   tokens** (`ControlContext(gain=...)`, `generate.py --gain`, render server `:8056` line 459) —
+   i.e. token strength, not a guidance axis. EXPERIMENTS.md §Arm B already promises
+   "control-CFG sweepable at inference"; this is a working reference implementation of exactly
+   that, and it composes cleanly with our multi-adapter stack.
+2. **Dynamic latent length.** Control features are `F.interpolate`d to the requested latent length
+   (`controls.py:resize_feature`), so 5 s and 120 s renders share one adapter. Ours is
+   T=4096-aligned by construction (`ATTRIBUTE_BRANCHES.md`: "time-aligned to the latent, no
+   resampling") — fine for training crops, a real constraint for a UI with a duration slider.
+3. **Deployment surface** — a Gradio app + HF Space (`scripts/gradio_app.py`, `app.py`, ZeroGPU
+   torch pins) and `safetensors` checkpoints carrying metadata (base model id, revision, control
+   set, adapter config). Our control checkpoints are `.pt` with a bare `control_mode` key; that
+   metadata block is the right shape for the inference-UI **model database**.
+
+**Where we are ahead:** its control extraction is self-contained torch (log-STFT chroma, RMS-diff
+onset, 2-ch rhythm) against our 97-feature mir timeseries + trained LatCH heads; it has one
+attribute branch and one audio branch, we stack N adapters (`multi_adapter_onset_eval.py`) and add
+LatCH TFG guidance as a 4th knob; it has no DoRA/FiLM, no longform, no a2a.
+
+**Verdict:** lift (1) and (2) into `sa3_control` + the `:8056` render server; steal (3)'s metadata
+convention for the model DB. Nothing else.

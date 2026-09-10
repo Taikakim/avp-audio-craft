@@ -42,13 +42,26 @@ case "$ACTION" in
     # foreign holder, writes the mirror on acquire and clears it on release, in ITS format
     # (HANDLE pid=N ts=...). This script must NOT touch the file -- writing a bare pid here would
     # break filelock's own "clear only if it's ours" parse and strand a stale lock blocking everyone.
-    python3 "$SAO/Misc/filelock.py" acquire "$OURS" --handle "$HANDLE" --pid-aware --pid "$MYPID" || exit 1
-    echo "[gpu_guard] acquired (filelock owns the $FOREIGN mirror)"
+    python3 "$SAO/Misc/filelock.py" acquire "$OURS" --handle "$HANDLE" --pid-aware --pid "$MYPID" \
+      --gpu-kind "${KIND:-batch}" --gpu-note "${NOTE:-}" || exit 1
+    echo "[gpu_guard] acquired (filelock owns the $FOREIGN mirror + $FOREIGN.$(echo "$HANDLE" | tr 'A-Z' 'a-z') sidecar)"
     ;;
   release)
     python3 "$SAO/Misc/filelock.py" release "$OURS" --handle "$HANDLE"   # also clears the mirror
     echo "[gpu_guard] released"
     ;;
+  who)
+    # "who holds the GPU, and can they yield?" -- the question GHOST-NOTE could not
+    # answer on 2026-08-26 while waiting 10.6 h on what turned out to be a resident
+    # server rather than a batch job (Kim 2026-08-27: keep the lock EXCLUSIVE, make
+    # the holder ASKABLE).
+    echo "[gpu_guard] rocm-smi (ground truth):"
+    rocm-smi --showpids 2>/dev/null | awk '$1 ~ /^[0-9]+$/ && $4+0 > 0 {printf "  pid %s  %s bytes\n", $1, $4}'
+    echo "[gpu_guard] announced holders:"
+    python3 "$SAO/Misc/filelock.py" gpu-who "$OURS" --handle "${HANDLE:-query}"
+    ;;
   *)
-    echo "usage: $0 {acquire|release} <HANDLE> [PID]"; exit 2 ;;
+    echo "usage: $0 {acquire|release|who} <HANDLE> [PID]"
+    echo "  KIND=server NOTE='what it is' $0 acquire <HANDLE> <PID>   # resident, can yield"
+    exit 2 ;;
 esac
