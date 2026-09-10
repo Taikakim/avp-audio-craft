@@ -1,0 +1,2514 @@
+{
+ "threshold": 0.993,
+ "generated": "2026-08-21 03:21",
+ "hard_dedup": "one clip per (model, epoch, prompt, seed) knob-group + max 3 per (model, prompt, seed) take-family (epochs are versions too), BEFORE the MERT pass",
+ "ranking": "PQ alone (W 2026-08-21: best single proxy of Kim's preference, 77.6% on 668 A/B votes)",
+ "dedup": "MERT-v1-330M (mid 3-6 + layer 23), cosine, greedy from top PQ",
+ "classes": {
+  "T256_20s": {
+   "clips": [
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora256_avp_aug10_lr7e5__ep3__cfg16__w200__techno__s1234.m4a",
+     "pq": 8.583757400512695,
+     "dur": 20.02,
+     "ce": 7.97931432723999,
+     "crest": 3.559,
+     "flatness": 0.01639,
+     "rank": 1
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw__ep0__cfg16__w100__housestyle__s1234.m4a",
+     "pq": 8.56789493560791,
+     "dur": 20.02,
+     "ce": 7.738561630249023,
+     "crest": 4.662,
+     "flatness": 0.01812,
+     "rank": 2
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw__ep7__cfg16__w200__kl_1__s1001.m4a",
+     "pq": 8.56634521484375,
+     "dur": 20.02,
+     "ce": 7.878598690032959,
+     "crest": 4.535,
+     "flatness": 0.0126,
+     "rank": 3
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_glitchheal_5ep_2xlr_ptm__ep4__cfg1__w100__techno__s1234__st8.m4a",
+     "pq": 8.566129684448242,
+     "dur": 20.02,
+     "ce": 7.813342094421387,
+     "crest": 7.077,
+     "flatness": 0.04477,
+     "rank": 4
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/subloss_v3sel_k5__ep15__cfg7__w100__kimlong__s1234.m4a",
+     "pq": 8.563953399658203,
+     "dur": 20.02,
+     "ce": 7.969610691070557,
+     "crest": 4.928,
+     "flatness": 0.02708,
+     "rank": 5
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avpaug10_t512_a45_fp32__ep19__cfg16__w200__techno__s1234.m4a",
+     "pq": 8.562999725341797,
+     "dur": 20.02,
+     "ce": 7.949518203735352,
+     "crest": 3.717,
+     "flatness": 0.02011,
+     "rank": 6
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_glitchheal_5ep_2xlr_ptm__ep0__cfg1__w100__techno__s1234__st8.m4a",
+     "pq": 8.549981117248535,
+     "dur": 20.02,
+     "ce": 7.866002082824707,
+     "crest": 7.218,
+     "flatness": 0.03228,
+     "rank": 7
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/subloss_v3sel_k2__ep15__cfg7__w150__kimlong__s1234.m4a",
+     "pq": 8.545121192932129,
+     "dur": 20.02,
+     "ce": 7.985208034515381,
+     "crest": 4.616,
+     "flatness": 0.01275,
+     "rank": 8
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep0__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.544021606445312,
+     "dur": 20.02,
+     "ce": 7.833084583282471,
+     "crest": 3.983,
+     "flatness": 0.01279,
+     "rank": 9
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/adamw_goa_t512_bs4_lr1e4__ep5__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.53676700592041,
+     "dur": 20.02,
+     "ce": 7.933744430541992,
+     "crest": 4.688,
+     "flatness": 0.04069,
+     "rank": 10
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep1__cfg1__w100__techno__s1234__st8.m4a",
+     "pq": 8.533345222473145,
+     "dur": 20.02,
+     "ce": 7.827261447906494,
+     "crest": 6.529,
+     "flatness": 0.02216,
+     "rank": 11
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_mixed_avp_goa_t4096__ep0__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.531505584716797,
+     "dur": 20.0,
+     "ce": 7.824685573577881,
+     "crest": 4.251,
+     "flatness": 0.00711,
+     "rank": 12
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora64_avp_tiered_lr1e4__ep0__cfg16__w150__techno__s1234.m4a",
+     "pq": 8.528382301330566,
+     "dur": 20.02,
+     "ce": 7.8160719871521,
+     "crest": 3.674,
+     "flatness": 0.01822,
+     "rank": 13
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep6__cfg16__w060__rb_rare_7__s16488276.m4a",
+     "pq": 8.52391529083252,
+     "dur": 20.02,
+     "ce": 7.4761152267456055,
+     "crest": 5.004,
+     "flatness": 0.05036,
+     "rank": 14
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/onset_AdamW_lr7.5e-5_continuous/eval_mp/ep10/p1_s777_g3_d7.m4a",
+     "pq": 8.516274452209473,
+     "dur": 20.02,
+     "ce": 7.590216159820557,
+     "crest": 3.448,
+     "flatness": 0.03988,
+     "rank": 15
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_glitchheal_5ep_2xlr__ep0__cfg16__w150__techno__s1234.m4a",
+     "pq": 8.514719009399414,
+     "dur": 20.02,
+     "ce": 7.70536470413208,
+     "crest": 5.092,
+     "flatness": 0.01038,
+     "rank": 16
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_bf16__ep10__cfg16__w150__techno__s1234.m4a",
+     "pq": 8.513293266296387,
+     "dur": 20.02,
+     "ce": 7.908639907836914,
+     "crest": 3.6,
+     "flatness": 0.02538,
+     "rank": 17
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4__ep7__cfg16__w150__housestyle__s1234.m4a",
+     "pq": 8.511539459228516,
+     "dur": 20.02,
+     "ce": 7.769607067108154,
+     "crest": 7.044,
+     "flatness": 0.01598,
+     "rank": 18
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4__ep5__cfg16__w200__housestyle__s1234.m4a",
+     "pq": 8.50938892364502,
+     "dur": 20.02,
+     "ce": 7.852153778076172,
+     "crest": 5.351,
+     "flatness": 0.00677,
+     "rank": 19
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr0.5x_cont5_ptm__ep3__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
+     "pq": 8.508456230163574,
+     "dur": 20.02,
+     "ce": 7.0304765701293945,
+     "crest": 5.91,
+     "flatness": 0.01992,
+     "rank": 20
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/onset_AdamW_lr7.5e-5_randomcrop_20ep/eval_mp/soup_expasc/p2_s777_g3_d7.m4a",
+     "pq": 8.506810188293457,
+     "dur": 20.02,
+     "ce": 7.6794657707214355,
+     "crest": 3.903,
+     "flatness": 0.02036,
+     "rank": 21
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep7__cfg7__w150__housestyle__s1234.m4a",
+     "pq": 8.506138801574707,
+     "dur": 20.02,
+     "ce": 7.9056782722473145,
+     "crest": 4.888,
+     "flatness": 0.00966,
+     "rank": 22
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/smoke_r256_a256_lr1e4_f512_bs8_ptm__ep2__cfg1__w100__rb_rare_8__s278158216__st8.m4a",
+     "pq": 8.504199028015137,
+     "dur": 20.02,
+     "ce": 7.336353302001953,
+     "crest": 4.116,
+     "flatness": 0.02114,
+     "rank": 23
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4__ep4__cfg16__w060__kl_1__s1001.m4a",
+     "pq": 8.504128456115723,
+     "dur": 20.02,
+     "ce": 8.152698516845703,
+     "crest": 5.856,
+     "flatness": 0.03384,
+     "rank": 24
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep4__cfg16__w200__housestyle__s1234.m4a",
+     "pq": 8.503962516784668,
+     "dur": 20.02,
+     "ce": 7.862527370452881,
+     "crest": 6.014,
+     "flatness": 0.01645,
+     "rank": 25
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep3__cfg16__w100__housestyle__s1234.m4a",
+     "pq": 8.500053405761719,
+     "dur": 20.02,
+     "ce": 7.79302453994751,
+     "crest": 4.925,
+     "flatness": 0.00945,
+     "rank": 26
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_47s_cont_from5__ep2__cfg16__w060__rb_rare_7__s16488276.m4a",
+     "pq": 8.499154090881348,
+     "dur": 20.02,
+     "ce": 7.437407493591309,
+     "crest": 3.985,
+     "flatness": 0.02412,
+     "rank": 27
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4__ep3__cfg16__w100__rb_rare_6__s564875484.m4a",
+     "pq": 8.496411323547363,
+     "dur": 20.02,
+     "ce": 7.535449028015137,
+     "crest": 5.441,
+     "flatness": 0.02964,
+     "rank": 28
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-fusion__ep4__cfg7__w200__rb_rare_6__s564875484.m4a",
+     "pq": 8.496076583862305,
+     "dur": 20.02,
+     "ce": 7.570689678192139,
+     "crest": 8.324,
+     "flatness": 0.02489,
+     "rank": 29
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4__ep4__cfg16__w060__rb_rare_6__s564875484.m4a",
+     "pq": 8.495710372924805,
+     "dur": 20.02,
+     "ce": 7.596762180328369,
+     "crest": 4.902,
+     "flatness": 0.05235,
+     "rank": 30
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_fp32__ep19__cfg16__w100__rb_rare_7__s16488276.m4a",
+     "pq": 8.495208740234375,
+     "dur": 20.02,
+     "ce": 7.2573933601379395,
+     "crest": 6.095,
+     "flatness": 0.0631,
+     "rank": 31
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps_ptm__ep0__cfg1__w100__techno__s1234__st8.m4a",
+     "pq": 8.494606971740723,
+     "dur": 20.02,
+     "ce": 7.668774127960205,
+     "crest": 5.184,
+     "flatness": 0.0548,
+     "rank": 32
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep7__cfg7__w200__kl_1__s1001.m4a",
+     "pq": 8.49305534362793,
+     "dur": 20.02,
+     "ce": 7.781943321228027,
+     "crest": 4.301,
+     "flatness": 0.01288,
+     "rank": 33
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_mixed_avp_goa_t4096__ep0__cfg16__w100__rb_rare_7__s16488276.m4a",
+     "pq": 8.492321968078613,
+     "dur": 20.0,
+     "ce": 7.133323669433594,
+     "crest": 6.18,
+     "flatness": 0.03379,
+     "rank": 34
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep7__cfg16__w060__kl_1__s1001.m4a",
+     "pq": 8.492156028747559,
+     "dur": 20.02,
+     "ce": 7.9913763999938965,
+     "crest": 6.599,
+     "flatness": 0.02542,
+     "rank": 35
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/rarity_gen_set/base__common__28746829__s226379550.m4a",
+     "pq": 8.491440773010254,
+     "dur": 20.02,
+     "ce": 7.727324962615967,
+     "crest": 5.918,
+     "flatness": 0.00495,
+     "rank": 36
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps__ep2__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.489548683166504,
+     "dur": 20.02,
+     "ce": 7.887953281402588,
+     "crest": 3.131,
+     "flatness": 0.02699,
+     "rank": 37
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_newcap_continued_3more__ep2__cfg7__w100__rb_rare_7__s16488276.m4a",
+     "pq": 8.489296913146973,
+     "dur": 20.02,
+     "ce": 7.500349521636963,
+     "crest": 5.743,
+     "flatness": 0.018,
+     "rank": 38
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep4__cfg16__w200__rb_mid_5__s232172918.m4a",
+     "pq": 8.489129066467285,
+     "dur": 20.02,
+     "ce": 7.558847904205322,
+     "crest": 3.362,
+     "flatness": 0.01326,
+     "rank": 39
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/xftdora16_fullft_avp_t1024__adapter__cfg7__w200__kimlong__s1234.m4a",
+     "pq": 8.488883018493652,
+     "dur": 20.02,
+     "ce": 7.683119297027588,
+     "crest": 5.797,
+     "flatness": 0.02425,
+     "rank": 40
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4_ptm__ep2__cfg1__w100__rb_common_1__s225176290.m4a",
+     "pq": 8.488419532775879,
+     "dur": 20.02,
+     "ce": 6.546907901763916,
+     "crest": 3.771,
+     "flatness": 0.05791,
+     "rank": 41
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep2__cfg1__w100__rb_rare_6__s564875484__st8.m4a",
+     "pq": 8.487542152404785,
+     "dur": 20.02,
+     "ce": 7.45166015625,
+     "crest": 4.621,
+     "flatness": 0.06078,
+     "rank": 42
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s_ptm__ep0__cfg1__w100__techno__s1234__st8.m4a",
+     "pq": 8.48728084564209,
+     "dur": 20.02,
+     "ce": 7.608090400695801,
+     "crest": 4.837,
+     "flatness": 0.06153,
+     "rank": 43
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep3__cfg16__w150__techno__s1234.m4a",
+     "pq": 8.487269401550293,
+     "dur": 20.02,
+     "ce": 7.819626808166504,
+     "crest": 3.849,
+     "flatness": 0.02513,
+     "rank": 44
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep1__cfg16__w100__kl_0__s1000.m4a",
+     "pq": 8.486573219299316,
+     "dur": 20.02,
+     "ce": 6.6919846534729,
+     "crest": 6.715,
+     "flatness": 0.05141,
+     "rank": 45
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4__ep3__cfg16__w150__housestyle__s1234.m4a",
+     "pq": 8.485498428344727,
+     "dur": 20.02,
+     "ce": 7.706943511962891,
+     "crest": 6.95,
+     "flatness": 0.01025,
+     "rank": 46
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps__ep0__cfg7__w150__trig2__s1234.m4a",
+     "pq": 8.484786033630371,
+     "dur": 20.02,
+     "ce": 7.73550271987915,
+     "crest": 3.931,
+     "flatness": 0.04479,
+     "rank": 47
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4__ep2__cfg16__w150__kl_1__s1001.m4a",
+     "pq": 8.483875274658203,
+     "dur": 20.02,
+     "ce": 7.835414886474609,
+     "crest": 5.5,
+     "flatness": 0.03433,
+     "rank": 48
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps__ep0__cfg7__w100__rb_rare_6__s564875484.m4a",
+     "pq": 8.483588218688965,
+     "dur": 20.02,
+     "ce": 7.332749843597412,
+     "crest": 3.753,
+     "flatness": 0.01891,
+     "rank": 49
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/lreq_goa_lr5e5__ep15__cfg7__w300__kimlong__s1234.m4a",
+     "pq": 8.483388900756836,
+     "dur": 20.0,
+     "ce": 7.893270969390869,
+     "crest": 5.466,
+     "flatness": 0.0186,
+     "rank": 50
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_47s_newcaptions_5ep__ep4__cfg16__w100__rb_rare_7__s16488276.m4a",
+     "pq": 8.483184814453125,
+     "dur": 20.02,
+     "ce": 7.39460563659668,
+     "crest": 5.574,
+     "flatness": 0.03381,
+     "rank": 51
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep7__cfg7__w100__rb_common_0__s786795416.m4a",
+     "pq": 8.482666969299316,
+     "dur": 20.02,
+     "ce": 7.071380615234375,
+     "crest": 5.464,
+     "flatness": 0.02496,
+     "rank": 52
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps__ep0__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.482329368591309,
+     "dur": 20.02,
+     "ce": 7.716814041137695,
+     "crest": 3.267,
+     "flatness": 0.01503,
+     "rank": 53
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4__ep5__cfg16__w150__housestyle__s1234.m4a",
+     "pq": 8.481901168823242,
+     "dur": 20.02,
+     "ce": 7.607487201690674,
+     "crest": 5.803,
+     "flatness": 0.01728,
+     "rank": 54
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s__ep0__cfg16__w150__rb_common_0__s786795416.m4a",
+     "pq": 8.480853080749512,
+     "dur": 20.02,
+     "ce": 7.44530725479126,
+     "crest": 3.012,
+     "flatness": 0.0089,
+     "rank": 55
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep5__cfg16__w150__housestyle__s1234.m4a",
+     "pq": 8.48056411743164,
+     "dur": 20.02,
+     "ce": 7.849606037139893,
+     "crest": 4.111,
+     "flatness": 0.01045,
+     "rank": 56
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep3__cfg16__w200__kl_1__s1001.m4a",
+     "pq": 8.47977066040039,
+     "dur": 20.02,
+     "ce": 7.853487491607666,
+     "crest": 7.632,
+     "flatness": 0.02711,
+     "rank": 57
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr0.5x_cont5_ptm__ep2__cfg1__w100__housestyle__s1234__st8.m4a",
+     "pq": 8.479717254638672,
+     "dur": 20.02,
+     "ce": 7.510979175567627,
+     "crest": 4.614,
+     "flatness": 0.04098,
+     "rank": 58
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/subloss_goa_k12__ep15__cfg7__w100__techno__s1234.m4a",
+     "pq": 8.479702949523926,
+     "dur": 20.02,
+     "ce": 7.850205898284912,
+     "crest": 4.322,
+     "flatness": 0.02167,
+     "rank": 59
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/rarity_gen_set/base__rare__55358669__s1201752520.m4a",
+     "pq": 8.479642868041992,
+     "dur": 20.02,
+     "ce": 7.585451602935791,
+     "crest": 3.287,
+     "flatness": 0.01654,
+     "rank": 60
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4_ptm__ep4__cfg1__w100__rb_mid_4__s1331736365__st8.m4a",
+     "pq": 8.479044914245605,
+     "dur": 20.02,
+     "ce": 7.329282760620117,
+     "crest": 5.562,
+     "flatness": 0.04473,
+     "rank": 61
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr1x__ep0__cfg16__w100__techno__s1234.m4a",
+     "pq": 8.47862434387207,
+     "dur": 20.02,
+     "ce": 7.811739921569824,
+     "crest": 4.134,
+     "flatness": 0.0408,
+     "rank": 62
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep2__cfg7__w200__kl_1__s1001.m4a",
+     "pq": 8.477875709533691,
+     "dur": 20.02,
+     "ce": 7.81511926651001,
+     "crest": 5.411,
+     "flatness": 0.02027,
+     "rank": 63
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep7__cfg7__w100__rb_common_1__s225176290.m4a",
+     "pq": 8.477627754211426,
+     "dur": 20.02,
+     "ce": 7.1756062507629395,
+     "crest": 4.617,
+     "flatness": 0.02597,
+     "rank": 64
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4__ep1__cfg16__w100__rb_common_2__s544354203.m4a",
+     "pq": 8.477314949035645,
+     "dur": 20.02,
+     "ce": 6.551166534423828,
+     "crest": 5.737,
+     "flatness": 0.02026,
+     "rank": 65
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4_ptm__ep3__cfg7__w100__techno__s1234.m4a",
+     "pq": 8.476922035217285,
+     "dur": 20.02,
+     "ce": 7.818222999572754,
+     "crest": 4.546,
+     "flatness": 0.00403,
+     "rank": 66
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-b4__ep0__cfg16__w150__rb_mid_5__s232172918.m4a",
+     "pq": 8.476109504699707,
+     "dur": 20.02,
+     "ce": 7.568630695343018,
+     "crest": 3.744,
+     "flatness": 0.01432,
+     "rank": 67
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4__ep2__cfg7__w100__rb_common_0__s786795416.m4a",
+     "pq": 8.476058006286621,
+     "dur": 20.02,
+     "ce": 7.790454387664795,
+     "crest": 4.372,
+     "flatness": 0.0143,
+     "rank": 68
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep7__cfg7__w100__rb_mid_4__s1331736365.m4a",
+     "pq": 8.475730895996094,
+     "dur": 20.02,
+     "ce": 7.003235816955566,
+     "crest": 4.104,
+     "flatness": 0.01024,
+     "rank": 69
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/subloss_goa_k2__ep3__cfg7__w100__housestyle__s1234.m4a",
+     "pq": 8.475192070007324,
+     "dur": 20.02,
+     "ce": 7.85144567489624,
+     "crest": 5.055,
+     "flatness": 0.02606,
+     "rank": 70
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/onset_AdamW_lr7.5e-5_randomcrop/eval_mp/ep2/p1_s777_g3_d8.m4a",
+     "pq": 8.474756240844727,
+     "dur": 20.02,
+     "ce": 7.674027919769287,
+     "crest": 3.837,
+     "flatness": 0.05358,
+     "rank": 71
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base_ptm__base__cfg1__w100__kl_1__s1001.m4a",
+     "pq": 8.47449016571045,
+     "dur": 20.02,
+     "ce": 7.384202003479004,
+     "crest": 7.637,
+     "flatness": 0.03601,
+     "rank": 72
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s__ep0__cfg7__w060__rb_common_1__s225176290.m4a",
+     "pq": 8.474296569824219,
+     "dur": 20.02,
+     "ce": 7.482451438903809,
+     "crest": 4.315,
+     "flatness": 0.02818,
+     "rank": 73
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep1__cfg16__w060__rb_mid_4__s1331736365.m4a",
+     "pq": 8.473703384399414,
+     "dur": 20.02,
+     "ce": 7.295289516448975,
+     "crest": 5.115,
+     "flatness": 0.03209,
+     "rank": 74
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep7__cfg16__w100__rb_bracket_0__s1102008041.m4a",
+     "pq": 8.472968101501465,
+     "dur": 20.02,
+     "ce": 7.695084571838379,
+     "crest": 5.262,
+     "flatness": 0.01337,
+     "rank": 75
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep25__cfg7__w100__techno__s1234.m4a",
+     "pq": 8.472917556762695,
+     "dur": 20.0,
+     "ce": 7.798879623413086,
+     "crest": 4.727,
+     "flatness": 0.00728,
+     "rank": 76
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/soups_vibe/eval_mp/best_of_runs/p0_s777_g2_d6.m4a",
+     "pq": 8.472843170166016,
+     "dur": 20.02,
+     "ce": 7.9098076820373535,
+     "crest": 4.316,
+     "flatness": 0.02992,
+     "rank": 77
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4__ep5__cfg16__w200__kimlong__s1234.m4a",
+     "pq": 8.471930503845215,
+     "dur": 20.02,
+     "ce": 7.7919020652771,
+     "crest": 6.51,
+     "flatness": 0.02178,
+     "rank": 78
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora16_avp_originals_earlyeps__ep0__cfg7__w060__housestyle__s1234.m4a",
+     "pq": 8.471370697021484,
+     "dur": 20.02,
+     "ce": 7.62321138381958,
+     "crest": 3.657,
+     "flatness": 0.03796,
+     "rank": 79
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/x0eq_goa__ep0__cfg7__w100__rb_rare_6__s564875484.m4a",
+     "pq": 8.469809532165527,
+     "dur": 20.02,
+     "ce": 7.303862571716309,
+     "crest": 4.015,
+     "flatness": 0.04043,
+     "rank": 80
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr0.5x_ptm__ep7__cfg1__w100__rb_rare_7__s16488276__st8.m4a",
+     "pq": 8.469687461853027,
+     "dur": 20.02,
+     "ce": 7.224730968475342,
+     "crest": 4.291,
+     "flatness": 0.02379,
+     "rank": 81
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep0__cfg16__w150__rb_rare_7__s16488276.m4a",
+     "pq": 8.469284057617188,
+     "dur": 20.02,
+     "ce": 7.179935932159424,
+     "crest": 3.903,
+     "flatness": 0.04393,
+     "rank": 82
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/onset_AdamW_lr7.5e-5_continuous/eval_mp/ep2/p1_s777_g2_d9.m4a",
+     "pq": 8.46846866607666,
+     "dur": 20.02,
+     "ce": 7.517495155334473,
+     "crest": 4.402,
+     "flatness": 0.03525,
+     "rank": 83
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/xftdora16_fullft_avp_t256__adapter__cfg16__w100__rb_rare_7__s16488276.m4a",
+     "pq": 8.468328475952148,
+     "dur": 20.02,
+     "ce": 6.701930046081543,
+     "crest": 5.768,
+     "flatness": 0.03414,
+     "rank": 84
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_47s_newcaptions_5ep__ep0__cfg16__w100__housestyle__s1234.m4a",
+     "pq": 8.468270301818848,
+     "dur": 20.02,
+     "ce": 7.685511589050293,
+     "crest": 4.993,
+     "flatness": 0.02451,
+     "rank": 85
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128adj_avp_aug10_lr1e4_ptm__ep37__cfg1__w100__housestyle__s1234__st8.m4a",
+     "pq": 8.46774959564209,
+     "dur": 20.02,
+     "ce": 6.786433696746826,
+     "crest": 5.514,
+     "flatness": 0.0127,
+     "rank": 86
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr0.5x__ep2__cfg7__w200__kl_1__s1001.m4a",
+     "pq": 8.46772289276123,
+     "dur": 20.02,
+     "ce": 7.749547004699707,
+     "crest": 4.594,
+     "flatness": 0.02185,
+     "rank": 87
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep6__cfg16__w150__kl_1__s1001.m4a",
+     "pq": 8.466651916503906,
+     "dur": 20.02,
+     "ce": 7.829988956451416,
+     "crest": 4.801,
+     "flatness": 0.02568,
+     "rank": 88
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-b4__ep0__cfg16__w060__kl_0__s1000.m4a",
+     "pq": 8.466135025024414,
+     "dur": 20.02,
+     "ce": 7.333313941955566,
+     "crest": 4.408,
+     "flatness": 0.00882,
+     "rank": 89
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs1_lr1e4__ep9__cfg16__w200__rb_mid_5__s232172918.m4a",
+     "pq": 8.466021537780762,
+     "dur": 20.02,
+     "ce": 7.177512168884277,
+     "crest": 4.426,
+     "flatness": 0.00654,
+     "rank": 90
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr3x__ep0__cfg7__w060__rb_rare_7__s16488276.m4a",
+     "pq": 8.46595573425293,
+     "dur": 20.02,
+     "ce": 7.390966415405273,
+     "crest": 2.908,
+     "flatness": 0.01654,
+     "rank": 91
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avp_t512_a45_fp32__ep15__cfg16__w150__kl_bracket_0__s1000.m4a",
+     "pq": 8.465906143188477,
+     "dur": 20.02,
+     "ce": 7.755610466003418,
+     "crest": 5.496,
+     "flatness": 0.02102,
+     "rank": 92
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4_ptm__ep4__cfg1__w100__kl_bracket_0__s1000__st8.m4a",
+     "pq": 8.465770721435547,
+     "dur": 20.02,
+     "ce": 7.879404067993164,
+     "crest": 4.653,
+     "flatness": 0.01553,
+     "rank": 93
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4__ep0__cfg16__w150__kimlong__s1234.m4a",
+     "pq": 8.46571159362793,
+     "dur": 20.02,
+     "ce": 7.631282806396484,
+     "crest": 3.646,
+     "flatness": 0.01344,
+     "rank": 94
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep0__cfg7__w200__rb_mid_5__s232172918.m4a",
+     "pq": 8.465325355529785,
+     "dur": 20.02,
+     "ce": 7.59686803817749,
+     "crest": 4.357,
+     "flatness": 0.02529,
+     "rank": 95
+    },
+    {
+     "path": "/home/kim/evals_aac/control_runs/onset_AdamW_lr7.5e-5_randomcrop_20ep/eval_mp/ep5/p0_s777_g0.5_d12.m4a",
+     "pq": 8.465023040771484,
+     "dur": 20.02,
+     "ce": 7.634810924530029,
+     "crest": 4.623,
+     "flatness": 0.04998,
+     "rank": 96
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr0.5x__ep2__cfg7__w150__rb_rare_7__s16488276.m4a",
+     "pq": 8.464734077453613,
+     "dur": 20.02,
+     "ce": 7.556910514831543,
+     "crest": 3.604,
+     "flatness": 0.00827,
+     "rank": 97
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/dora128_everything_8ep_lr1x__ep7__cfg16__w150__rb_rare_6__s564875484.m4a",
+     "pq": 8.464563369750977,
+     "dur": 20.02,
+     "ce": 7.321377754211426,
+     "crest": 12.584,
+     "flatness": 0.04364,
+     "rank": 98
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep1__cfg16__w150__housestyle__s1234.m4a",
+     "pq": 8.463908195495605,
+     "dur": 20.02,
+     "ce": 7.665552139282227,
+     "crest": 4.566,
+     "flatness": 0.02457,
+     "rank": 99
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4_ptm__ep0__cfg7__w150__rb_rare_8__s278158216__st8.m4a",
+     "pq": 8.463445663452148,
+     "dur": 20.02,
+     "ce": 6.562143325805664,
+     "crest": 4.609,
+     "flatness": 0.02281,
+     "rank": 100
+    }
+   ],
+   "near_dup_disqualified": 284,
+   "pool_scanned": 384
+  },
+  "T512_47s": {
+   "clips": [
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora_audition/clips/qy50uilf_epoch0-step1350__p1_seed42.m4a",
+     "pq": 8.401649475097656,
+     "dur": 47.02,
+     "ce": 7.628056526184082,
+     "crest": 4.065,
+     "flatness": 0.05247,
+     "rank": 1
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/r128f/mqe3ne49_epoch0-step1350__p1_seed1234.m4a",
+     "pq": 8.387453079223633,
+     "dur": 47.02,
+     "ce": 7.344959735870361,
+     "crest": 3.643,
+     "flatness": 0.02946,
+     "rank": 2
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_mp_crossmodel/everything_ep7__tstyle__s1234__st10.m4a",
+     "pq": 8.378913879394531,
+     "dur": 47.02,
+     "ce": 7.521541595458984,
+     "crest": 4.092,
+     "flatness": 0.01055,
+     "rank": 3
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw__ep7__cfg16__w200__rb_rare_7__s16488276__d48.m4a",
+     "pq": 8.373421669006348,
+     "dur": 47.55,
+     "ce": 6.747798919677734,
+     "crest": 3.923,
+     "flatness": 0.0303,
+     "rank": 4
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg7__w100__rb_bracket_0__s1102008041__d48.m4a",
+     "pq": 8.373190879821777,
+     "dur": 47.55,
+     "ce": 7.396096229553223,
+     "crest": 6.602,
+     "flatness": 0.08176,
+     "rank": 5
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r64/i8nygj4y_epoch7-step10800__p1_seed42.m4a",
+     "pq": 8.372578620910645,
+     "dur": 47.02,
+     "ce": 7.233676433563232,
+     "crest": 3.4,
+     "flatness": 0.05883,
+     "rank": 6
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_mp_crossmodel/base__kimlong__s1234__st10.m4a",
+     "pq": 8.371148109436035,
+     "dur": 47.02,
+     "ce": 7.3007378578186035,
+     "crest": 4.162,
+     "flatness": 0.02691,
+     "rank": 7
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/r64/i8nygj4y_epoch1-step2700__p1_seed1234.m4a",
+     "pq": 8.369579315185547,
+     "dur": 47.02,
+     "ce": 7.414837837219238,
+     "crest": 3.537,
+     "flatness": 0.03533,
+     "rank": 8
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128a/dq0egegi_epoch1-step2700__p1_seed42.m4a",
+     "pq": 8.360869407653809,
+     "dur": 47.02,
+     "ce": 7.401569366455078,
+     "crest": 3.939,
+     "flatness": 0.06233,
+     "rank": 9
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avpaug10_t512_a45_fp32_ptm__ep10__cfg1__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.358870506286621,
+     "dur": 47.55,
+     "ce": 7.520080089569092,
+     "crest": 3.296,
+     "flatness": 0.0254,
+     "rank": 10
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avp_t512_a45_fp32_ptm__ep15__cfg1__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.349103927612305,
+     "dur": 47.55,
+     "ce": 6.878753662109375,
+     "crest": 4.247,
+     "flatness": 0.03404,
+     "rank": 11
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg16__w100__techno__s1234__d48.m4a",
+     "pq": 8.341270446777344,
+     "dur": 47.55,
+     "ce": 6.943667888641357,
+     "crest": 5.514,
+     "flatness": 0.00322,
+     "rank": 12
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128a/dq0egegi_epoch7-step10800__p1_seed42.m4a",
+     "pq": 8.32972240447998,
+     "dur": 47.02,
+     "ce": 7.199685096740723,
+     "crest": 4.16,
+     "flatness": 0.08385,
+     "rank": 13
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_dora_aac/soups_dora_r128f_expdesc__p1_seed42.m4a",
+     "pq": 8.327095031738281,
+     "dur": 47.02,
+     "ce": 7.08488655090332,
+     "crest": 3.632,
+     "flatness": 0.0869,
+     "rank": 14
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128a/dq0egegi_epoch2-step4050__p1_seed42.m4a",
+     "pq": 8.321659088134766,
+     "dur": 47.02,
+     "ce": 7.27309513092041,
+     "crest": 3.373,
+     "flatness": 0.0315,
+     "rank": 15
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/cont/x20b3ygb_epoch0-step1350__p1_seed1234.m4a",
+     "pq": 8.321575164794922,
+     "dur": 47.02,
+     "ce": 7.2586259841918945,
+     "crest": 3.774,
+     "flatness": 0.03471,
+     "rank": 16
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg16__w100__rb_rare_8__s278158216__d48.m4a",
+     "pq": 8.309621810913086,
+     "dur": 47.55,
+     "ce": 6.8914690017700195,
+     "crest": 4.395,
+     "flatness": 0.00906,
+     "rank": 17
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/cont/x20b3ygb_epoch2-step4050__p1_seed1234.m4a",
+     "pq": 8.309346199035645,
+     "dur": 47.02,
+     "ce": 7.490015029907227,
+     "crest": 3.744,
+     "flatness": 0.04141,
+     "rank": 18
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep3__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.308540344238281,
+     "dur": 47.55,
+     "ce": 7.1140923500061035,
+     "crest": 3.584,
+     "flatness": 0.03273,
+     "rank": 19
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_density_control_g175/evr3x__psy_plain_s1234__film_d7.m4a",
+     "pq": 8.307493209838867,
+     "dur": 47.02,
+     "ce": 7.26893424987793,
+     "crest": 3.46,
+     "flatness": 0.01965,
+     "rank": 20
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora_audition/clips/qy50uilf_epoch2-step4050__p1_seed42.m4a",
+     "pq": 8.307243347167969,
+     "dur": 47.02,
+     "ce": 7.5430803298950195,
+     "crest": 5.686,
+     "flatness": 0.09177,
+     "rank": 21
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r16/vjnnndnu_epoch1-step2700__p1_seed42.m4a",
+     "pq": 8.304814338684082,
+     "dur": 47.02,
+     "ce": 7.277165412902832,
+     "crest": 4.508,
+     "flatness": 0.07708,
+     "rank": 22
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_board_seeds/r16_originals__epoch1_step72__kimlong__s1234.m4a",
+     "pq": 8.303816795349121,
+     "dur": 47.02,
+     "ce": 7.44624137878418,
+     "crest": 5.179,
+     "flatness": 0.0185,
+     "rank": 23
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_fp32_ptm__ep10__cfg1__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.296114921569824,
+     "dur": 47.55,
+     "ce": 6.951849937438965,
+     "crest": 5.439,
+     "flatness": 0.0354,
+     "rank": 24
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch4-step6750__p1_seed1234.m4a",
+     "pq": 8.293277740478516,
+     "dur": 47.02,
+     "ce": 6.770057678222656,
+     "crest": 3.693,
+     "flatness": 0.06392,
+     "rank": 25
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg16__w100__goa_organic__s2026__d48.m4a",
+     "pq": 8.285843849182129,
+     "dur": 47.55,
+     "ce": 6.722184181213379,
+     "crest": 5.619,
+     "flatness": 0.02741,
+     "rank": 26
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw_ptm__ep7__cfg1__w100__rb_rare_7__s16488276__st8__d48.m4a",
+     "pq": 8.28421688079834,
+     "dur": 47.55,
+     "ce": 7.160019874572754,
+     "crest": 4.034,
+     "flatness": 0.03374,
+     "rank": 27
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__techno__s1234__st8__d48.m4a",
+     "pq": 8.281792640686035,
+     "dur": 47.55,
+     "ce": 7.367343425750732,
+     "crest": 5.857,
+     "flatness": 0.02124,
+     "rank": 28
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/dora128_everything_8ep_lr1x_ep7_sweep/T512_medium_s1.0_seed1234.m4a",
+     "pq": 8.276533126831055,
+     "dur": 47.55,
+     "ce": 6.941823959350586,
+     "crest": 9.952,
+     "flatness": 0.08974,
+     "rank": 29
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep1__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.272204399108887,
+     "dur": 47.55,
+     "ce": 6.7850446701049805,
+     "crest": 4.726,
+     "flatness": 0.02775,
+     "rank": 30
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep4__cfg7__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.268126487731934,
+     "dur": 47.55,
+     "ce": 6.9866461753845215,
+     "crest": 2.952,
+     "flatness": 0.0132,
+     "rank": 31
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr__ep7__cfg16__w100__goa_organic__s2026__d48.m4a",
+     "pq": 8.267791748046875,
+     "dur": 47.55,
+     "ce": 7.019448280334473,
+     "crest": 4.48,
+     "flatness": 0.02397,
+     "rank": 32
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg16__w100__rb_common_1__s225176290__d48.m4a",
+     "pq": 8.267172813415527,
+     "dur": 47.55,
+     "ce": 7.120530605316162,
+     "crest": 4.515,
+     "flatness": 0.01654,
+     "rank": 33
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch2-step4050__p1_seed42.m4a",
+     "pq": 8.263895988464355,
+     "dur": 47.02,
+     "ce": 6.960227966308594,
+     "crest": 3.088,
+     "flatness": 0.08999,
+     "rank": 34
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_cfg_sweep/early_ep2__kimlong__cfg7.0.m4a",
+     "pq": 8.261139869689941,
+     "dur": 47.02,
+     "ce": 7.230236530303955,
+     "crest": 5.007,
+     "flatness": 0.0218,
+     "rank": 35
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/dora128_everything_8ep_lr1x_ep7_sweep/T512_medium_s1.4_seed4242.m4a",
+     "pq": 8.254443168640137,
+     "dur": 47.55,
+     "ce": 7.444209098815918,
+     "crest": 7.732,
+     "flatness": 0.11019,
+     "rank": 36
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch3-step5400__p1_seed42.m4a",
+     "pq": 8.252161979675293,
+     "dur": 47.02,
+     "ce": 7.191534996032715,
+     "crest": 5.356,
+     "flatness": 0.06955,
+     "rank": 37
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_goa_t512_bs8_lr1e4_ptm__ep4__cfg7__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.250788688659668,
+     "dur": 47.55,
+     "ce": 7.021768569946289,
+     "crest": 5.425,
+     "flatness": 0.02395,
+     "rank": 38
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/dora128_everything_8ep_lr1x_ep7_sweep/T512_medium_s1.4_seed1234.m4a",
+     "pq": 8.24693775177002,
+     "dur": 47.55,
+     "ce": 6.898106098175049,
+     "crest": 10.132,
+     "flatness": 0.05958,
+     "rank": 39
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_board_r64/r64_lr1e4__epoch00__kimlong__s1234__st10.m4a",
+     "pq": 8.240622520446777,
+     "dur": 47.02,
+     "ce": 7.008018970489502,
+     "crest": 5.469,
+     "flatness": 0.01985,
+     "rank": 40
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr__ep7__cfg16__w100__rb_bracket_0__s1102008041__d48.m4a",
+     "pq": 8.239554405212402,
+     "dur": 47.55,
+     "ce": 7.361135959625244,
+     "crest": 4.958,
+     "flatness": 0.0254,
+     "rank": 41
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r64/i8nygj4y_epoch6-step9450__p1_seed1234.m4a",
+     "pq": 8.23644733428955,
+     "dur": 47.02,
+     "ce": 6.752152442932129,
+     "crest": 3.652,
+     "flatness": 0.07845,
+     "rank": 42
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/smoke_r256_a256_lr1e4_f512_bs8__ep2__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.232898712158203,
+     "dur": 47.55,
+     "ce": 7.464343547821045,
+     "crest": 5.112,
+     "flatness": 0.01374,
+     "rank": 43
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_goa_t512_bs8_lr1e4_ptm__ep0__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.231739044189453,
+     "dur": 47.55,
+     "ce": 6.417623043060303,
+     "crest": 4.197,
+     "flatness": 0.03991,
+     "rank": 44
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r64/i8nygj4y_epoch6-step9450__p2_seed42.m4a",
+     "pq": 8.224577903747559,
+     "dur": 47.02,
+     "ce": 7.143463134765625,
+     "crest": 3.569,
+     "flatness": 0.04553,
+     "rank": 45
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/cont/x20b3ygb_epoch2-step4050__p2_seed1234.m4a",
+     "pq": 8.21875286102295,
+     "dur": 47.02,
+     "ce": 7.037593841552734,
+     "crest": 3.36,
+     "flatness": 0.02024,
+     "rank": 46
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch5-step8100__p1_seed42.m4a",
+     "pq": 8.218209266662598,
+     "dur": 47.02,
+     "ce": 6.6394476890563965,
+     "crest": 3.489,
+     "flatness": 0.08142,
+     "rank": 47
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch5-step8100__p2_seed42.m4a",
+     "pq": 8.217347145080566,
+     "dur": 47.02,
+     "ce": 6.8831281661987305,
+     "crest": 2.863,
+     "flatness": 0.03561,
+     "rank": 48
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_dora_aac/i8nygj4y_epoch5-step8100__p1_seed42.m4a",
+     "pq": 8.216914176940918,
+     "dur": 47.02,
+     "ce": 7.249063968658447,
+     "crest": 4.276,
+     "flatness": 0.07296,
+     "rank": 49
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_goa_t512_bs8_lr1e4_ptm__ep4__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.21114730834961,
+     "dur": 47.55,
+     "ce": 6.587194442749023,
+     "crest": 4.212,
+     "flatness": 0.04875,
+     "rank": 50
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep2__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.207304000854492,
+     "dur": 47.55,
+     "ce": 6.50014066696167,
+     "crest": 4.661,
+     "flatness": 0.03482,
+     "rank": 51
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/base__base__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.207080841064453,
+     "dur": 47.55,
+     "ce": 7.128329277038574,
+     "crest": 5.961,
+     "flatness": 0.01504,
+     "rank": 52
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch1-step2700__p1_seed42.m4a",
+     "pq": 8.204428672790527,
+     "dur": 47.02,
+     "ce": 6.955601215362549,
+     "crest": 3.217,
+     "flatness": 0.08986,
+     "rank": 53
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_board_seeds/r16_originals__epoch0_step36__kimlong__s1234__st10.m4a",
+     "pq": 8.201483726501465,
+     "dur": 47.02,
+     "ce": 7.080064296722412,
+     "crest": 4.351,
+     "flatness": 0.04932,
+     "rank": 54
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_dora_aac/i8nygj4y_epoch4-step6750__p1_seed1234.m4a",
+     "pq": 8.200968742370605,
+     "dur": 47.02,
+     "ce": 6.682756423950195,
+     "crest": 3.694,
+     "flatness": 0.05396,
+     "rank": 55
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_density_control_g175/base__hypno_plain_s4242__film_d7.m4a",
+     "pq": 8.200653076171875,
+     "dur": 47.02,
+     "ce": 7.445163726806641,
+     "crest": 5.287,
+     "flatness": 0.01987,
+     "rank": 56
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep4__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.19941520690918,
+     "dur": 47.55,
+     "ce": 6.6557087898254395,
+     "crest": 4.061,
+     "flatness": 0.02067,
+     "rank": 57
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/bf16cmp_avp_t512_bs8_lr1e4_ptm__ep2__cfg7__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.19765853881836,
+     "dur": 47.55,
+     "ce": 5.514261722564697,
+     "crest": 4.314,
+     "flatness": 0.01308,
+     "rank": 58
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t512__ep7__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.191876411437988,
+     "dur": 47.55,
+     "ce": 7.544477462768555,
+     "crest": 3.801,
+     "flatness": 0.01118,
+     "rank": 59
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr__ep7__cfg16__w150__kimlong__s1234__d48.m4a",
+     "pq": 8.188713073730469,
+     "dur": 47.55,
+     "ce": 7.497689247131348,
+     "crest": 8.13,
+     "flatness": 0.0289,
+     "rank": 60
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/r128f/mqe3ne49_epoch1-step2700__p1_seed1234.m4a",
+     "pq": 8.18856143951416,
+     "dur": 47.02,
+     "ce": 6.622556686401367,
+     "crest": 3.123,
+     "flatness": 0.03533,
+     "rank": 61
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_board_freeform/freeform__epoch47_step1728__freeform__s7__st10.m4a",
+     "pq": 8.185525894165039,
+     "dur": 47.02,
+     "ce": 7.4715986251831055,
+     "crest": 4.367,
+     "flatness": 0.01932,
+     "rank": 62
+    },
+    {
+     "path": "/home/kim/evals_aac/latch_sa3_sweep/hardness__g2048__p0.m4a",
+     "pq": 8.182968139648438,
+     "dur": 47.58,
+     "ce": 7.059957027435303,
+     "crest": 5.64,
+     "flatness": 0.08059,
+     "rank": 63
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_density_control_g175/evr1x__psy_plain_s1234__film_d7.m4a",
+     "pq": 8.182154655456543,
+     "dur": 47.02,
+     "ce": 7.128340244293213,
+     "crest": 3.399,
+     "flatness": 0.01274,
+     "rank": 64
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avp_t512_a45_bf16__ep15__cfg7__w100__kl_bracket_0__s1000__d48.m4a",
+     "pq": 8.181449890136719,
+     "dur": 47.55,
+     "ce": 7.01806640625,
+     "crest": 3.991,
+     "flatness": 0.02991,
+     "rank": 65
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_promptstyle/evr3x__psy_styled_s4242.m4a",
+     "pq": 8.180902481079102,
+     "dur": 47.02,
+     "ce": 7.265027046203613,
+     "crest": 5.212,
+     "flatness": 0.03574,
+     "rank": 66
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_fp32_ptm__ep10__cfg1__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.17700481414795,
+     "dur": 47.55,
+     "ce": 6.425271034240723,
+     "crest": 6.868,
+     "flatness": 0.0628,
+     "rank": 67
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/goa_everything_board/everything_r128__epoch5_step9162__psy__s1234__st10.m4a",
+     "pq": 8.175734519958496,
+     "dur": 47.02,
+     "ce": 7.231709957122803,
+     "crest": 3.607,
+     "flatness": 0.008,
+     "rank": 68
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128a/dq0egegi_epoch5-step8100__p2_seed42.m4a",
+     "pq": 8.175396919250488,
+     "dur": 47.02,
+     "ce": 6.962093830108643,
+     "crest": 3.228,
+     "flatness": 0.05255,
+     "rank": 69
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avp_t512_a128_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.171825408935547,
+     "dur": 47.55,
+     "ce": 7.215854167938232,
+     "crest": 4.222,
+     "flatness": 0.02683,
+     "rank": 70
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.1716890335083,
+     "dur": 47.55,
+     "ce": 6.75346040725708,
+     "crest": 4.373,
+     "flatness": 0.0316,
+     "rank": 71
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_promptstyle/newcap5__psy_styled_s1234.m4a",
+     "pq": 8.170197486877441,
+     "dur": 47.02,
+     "ce": 6.80331563949585,
+     "crest": 4.718,
+     "flatness": 0.02357,
+     "rank": 72
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/avp_board_seeds/base__epoch00_step0__kimlong__s7.m4a",
+     "pq": 8.167969703674316,
+     "dur": 47.02,
+     "ce": 7.11284875869751,
+     "crest": 9.291,
+     "flatness": 0.0428,
+     "rank": 73
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr_ptm__ep7__cfg1__w100__rb_common_1__s225176290__st8__d48.m4a",
+     "pq": 8.167694091796875,
+     "dur": 47.55,
+     "ce": 6.99828577041626,
+     "crest": 3.809,
+     "flatness": 0.03241,
+     "rank": 74
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a45_fp32_ptm__ep15__cfg1__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.162650108337402,
+     "dur": 47.55,
+     "ce": 6.733432769775391,
+     "crest": 4.211,
+     "flatness": 0.02752,
+     "rank": 75
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora/ep0/2ankrkoh_epoch0-step5400__p0_seed1234.m4a",
+     "pq": 8.159095764160156,
+     "dur": 47.02,
+     "ce": 7.4332661628723145,
+     "crest": 3.362,
+     "flatness": 0.01569,
+     "rank": 76
+    },
+    {
+     "path": "/home/kim/evals_aac/latch_sa3_sweep/spectral_skewness__g2048__p0.m4a",
+     "pq": 8.158180236816406,
+     "dur": 47.58,
+     "ce": 7.077555179595947,
+     "crest": 4.827,
+     "flatness": 0.00455,
+     "rank": 77
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_ptm__ep6__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.157855033874512,
+     "dur": 47.55,
+     "ce": 6.2966508865356445,
+     "crest": 2.492,
+     "flatness": 0.00652,
+     "rank": 78
+    },
+    {
+     "path": "/home/kim/evals_aac/latch_sa3_sweep/hardness__g64__p0.m4a",
+     "pq": 8.157853126525879,
+     "dur": 47.58,
+     "ce": 7.038171768188477,
+     "crest": 3.903,
+     "flatness": 0.05219,
+     "rank": 79
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep6__cfg7__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.156307220458984,
+     "dur": 47.55,
+     "ce": 6.619302749633789,
+     "crest": 3.3,
+     "flatness": 0.01255,
+     "rank": 80
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_goa_t512_a128_fp32_ptm__ep15__cfg1__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.1561861038208,
+     "dur": 47.55,
+     "ce": 6.924809455871582,
+     "crest": 4.932,
+     "flatness": 0.02812,
+     "rank": 81
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/dora16_goa_newstack_8ep/dora16_goa_newstack_8ep_epoch3-step5400__p2_seed1234.m4a",
+     "pq": 8.152094841003418,
+     "dur": 47.02,
+     "ce": 7.069520950317383,
+     "crest": 4.466,
+     "flatness": 0.01965,
+     "rank": 82
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw__ep7__cfg16__w100__rb_bracket_0__s1102008041__d48.m4a",
+     "pq": 8.150135040283203,
+     "dur": 47.55,
+     "ce": 7.044311046600342,
+     "crest": 3.803,
+     "flatness": 0.00917,
+     "rank": 83
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/dora16_goa_newstack_8ep/dora16_goa_newstack_8ep_epoch1-step2700__p2_seed1234.m4a",
+     "pq": 8.14949893951416,
+     "dur": 47.02,
+     "ce": 6.672435760498047,
+     "crest": 5.421,
+     "flatness": 0.00838,
+     "rank": 84
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4__ep7__cfg7__w100__kl_bracket_0__s1000__d48.m4a",
+     "pq": 8.14569091796875,
+     "dur": 47.55,
+     "ce": 7.448221683502197,
+     "crest": 3.699,
+     "flatness": 0.02519,
+     "rank": 85
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128f/mqe3ne49_epoch5-step8100__p2_seed1234.m4a",
+     "pq": 8.145142555236816,
+     "dur": 47.02,
+     "ce": 6.946979522705078,
+     "crest": 3.791,
+     "flatness": 0.0259,
+     "rank": 86
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/sa3-goa-dora-47s-r128-adamw__ep7__cfg7__w100__kimlong__s1234__d48.m4a",
+     "pq": 8.144972801208496,
+     "dur": 47.55,
+     "ce": 6.976831436157227,
+     "crest": 6.035,
+     "flatness": 0.03711,
+     "rank": 87
+    },
+    {
+     "path": "/home/kim/evals_aac/riffer/clips_dora_aac/mqe3ne49_epoch2-step4050__p2_seed42.m4a",
+     "pq": 8.144305229187012,
+     "dur": 47.02,
+     "ce": 6.767230033874512,
+     "crest": 2.862,
+     "flatness": 0.02144,
+     "rank": 88
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/winning_avp_t512_a128_fp32_ptm__ep10__cfg1__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.144187927246094,
+     "dur": 47.55,
+     "ce": 6.752676010131836,
+     "crest": 3.985,
+     "flatness": 0.03849,
+     "rank": 89
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep5__cfg7__w100__kl_0__s1000__st8__d48.m4a",
+     "pq": 8.144018173217773,
+     "dur": 47.55,
+     "ce": 6.732834815979004,
+     "crest": 3.673,
+     "flatness": 0.01358,
+     "rank": 90
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_ptm__ep1__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.143694877624512,
+     "dur": 47.55,
+     "ce": 6.318515777587891,
+     "crest": 7.412,
+     "flatness": 0.05831,
+     "rank": 91
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep6__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.143619537353516,
+     "dur": 47.55,
+     "ce": 6.182785511016846,
+     "crest": 3.318,
+     "flatness": 0.01157,
+     "rank": 92
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep5__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.141489028930664,
+     "dur": 47.55,
+     "ce": 6.599610805511475,
+     "crest": 3.108,
+     "flatness": 0.00628,
+     "rank": 93
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_density_control_g175/base__psy_plain_s1234__both_d7.m4a",
+     "pq": 8.141474723815918,
+     "dur": 47.02,
+     "ce": 6.673492431640625,
+     "crest": 3.849,
+     "flatness": 0.03111,
+     "rank": 94
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_ptm__ep3__cfg7__w100__kl_0__s1000__d48.m4a",
+     "pq": 8.140840530395508,
+     "dur": 47.55,
+     "ce": 7.093581199645996,
+     "crest": 3.026,
+     "flatness": 0.00245,
+     "rank": 95
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/renders_dora2/r128a/dq0egegi_epoch5-step8100__p1_seed1234.m4a",
+     "pq": 8.13990306854248,
+     "dur": 47.02,
+     "ce": 6.261063575744629,
+     "crest": 4.621,
+     "flatness": 0.03326,
+     "rank": 96
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_repr__ep7__cfg16__w200__rb_common_1__s225176290__d48.m4a",
+     "pq": 8.139653205871582,
+     "dur": 47.55,
+     "ce": 7.182881832122803,
+     "crest": 4.479,
+     "flatness": 0.01549,
+     "rank": 97
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t512_bs8_lr1e4_ptm__ep2__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.136743545532227,
+     "dur": 47.55,
+     "ce": 6.764253616333008,
+     "crest": 3.901,
+     "flatness": 0.02597,
+     "rank": 98
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t512_bs8_lr1e4_ptm__ep7__cfg7__w100__kl_bracket_0__s1000__st8__d48.m4a",
+     "pq": 8.134017944335938,
+     "dur": 47.55,
+     "ce": 6.7715606689453125,
+     "crest": 3.631,
+     "flatness": 0.02433,
+     "rank": 99
+    },
+    {
+     "path": "/home/kim/evals_aac/renders/newcap8_density_control_g175/base__psy_plain_s1234__film_d7.m4a",
+     "pq": 8.130217552185059,
+     "dur": 47.02,
+     "ce": 6.719568252563477,
+     "crest": 4.089,
+     "flatness": 0.02348,
+     "rank": 100
+    }
+   ],
+   "near_dup_disqualified": 153,
+   "pool_scanned": 253
+  },
+  "T1024_95s": {
+   "clips": [
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep1__cfg7__w100__kl_bracket_0__s1000__st8__d95.m4a",
+     "pq": 8.20858097076416,
+     "dur": 95.11,
+     "ce": 5.7812395095825195,
+     "crest": 4.232,
+     "flatness": 0.0258,
+     "rank": 1
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep2__cfg7__w100__kl_0__s1000__st8__d95.m4a",
+     "pq": 8.063116073608398,
+     "dur": 95.11,
+     "ce": 5.851433753967285,
+     "crest": 5.543,
+     "flatness": 0.04022,
+     "rank": 2
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep2__cfg7__w100__kl_bracket_0__s1000__st8__d95.m4a",
+     "pq": 8.013586044311523,
+     "dur": 95.11,
+     "ce": 5.764763832092285,
+     "crest": 4.767,
+     "flatness": 0.02042,
+     "rank": 3
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t1024_ptm__ep7__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.9467949867248535,
+     "dur": 95.11,
+     "ce": 6.370335578918457,
+     "crest": 4.285,
+     "flatness": 0.03208,
+     "rank": 4
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep3__cfg7__w100__kl_0__s1000__st8__d95.m4a",
+     "pq": 7.895289897918701,
+     "dur": 95.11,
+     "ce": 5.450301170349121,
+     "crest": 4.396,
+     "flatness": 0.03125,
+     "rank": 5
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep0__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.87448787689209,
+     "dur": 95.11,
+     "ce": 6.431839466094971,
+     "crest": 4.61,
+     "flatness": 0.0087,
+     "rank": 6
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep3__cfg7__w100__kl_bracket_0__s1000__st8__d95.m4a",
+     "pq": 7.869302749633789,
+     "dur": 95.11,
+     "ce": 5.286602020263672,
+     "crest": 4.859,
+     "flatness": 0.03345,
+     "rank": 7
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep4__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.852349281311035,
+     "dur": 95.11,
+     "ce": 5.65706729888916,
+     "crest": 3.61,
+     "flatness": 0.01517,
+     "rank": 8
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep0__cfg7__w100__kl_0__s1000__st8__d95.m4a",
+     "pq": 7.734237194061279,
+     "dur": 95.11,
+     "ce": 5.479836940765381,
+     "crest": 5.113,
+     "flatness": 0.03188,
+     "rank": 9
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128__ep7__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.635575294494629,
+     "dur": 95.11,
+     "ce": 5.8327484130859375,
+     "crest": 3.524,
+     "flatness": 0.01047,
+     "rank": 10
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep5__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.22273063659668,
+     "dur": 95.11,
+     "ce": 4.512777328491211,
+     "crest": 5.02,
+     "flatness": 0.02871,
+     "rank": 11
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep6__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.191325664520264,
+     "dur": 95.11,
+     "ce": 4.7736077308654785,
+     "crest": 4.972,
+     "flatness": 0.02212,
+     "rank": 12
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t1024_ptm__ep7__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.147277355194092,
+     "dur": 95.11,
+     "ce": 4.885761260986328,
+     "crest": 6.572,
+     "flatness": 0.11397,
+     "rank": 13
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t1024_r128_ptm__ep0__cfg7__w100__kl_0__s1000__d95.m4a",
+     "pq": 7.087719917297363,
+     "dur": 95.11,
+     "ce": 4.40657377243042,
+     "crest": 4.246,
+     "flatness": 0.02572,
+     "rank": 14
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t1024_ptm__ep7__cfg7__w100__kl_0__s1000__st8__d95.m4a",
+     "pq": 6.565209865570068,
+     "dur": 95.11,
+     "ce": 3.366513729095459,
+     "crest": 6.971,
+     "flatness": 0.03127,
+     "rank": 15
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t1024_ptm__ep7__cfg7__w100__kl_bracket_0__s1000__st8__d95.m4a",
+     "pq": 6.101560115814209,
+     "dur": 95.11,
+     "ce": 4.266923904418945,
+     "crest": 5.662,
+     "flatness": 0.03693,
+     "rank": 16
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t1024_ptm__ep7__cfg7__w100__kl_bracket_0__s1000__st8__d95.m4a",
+     "pq": 5.958257675170898,
+     "dur": 95.11,
+     "ce": 3.4780898094177246,
+     "crest": 7.298,
+     "flatness": 0.06752,
+     "rank": 17
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t1024_ptm__ep7__cfg7__w100__kl_0__s1000__st8__d95.m4a",
+     "pq": 5.3521199226379395,
+     "dur": 95.11,
+     "ce": 3.4262423515319824,
+     "crest": 4.592,
+     "flatness": 0.01942,
+     "rank": 18
+    }
+   ],
+   "near_dup_disqualified": 20,
+   "pool_scanned": 38
+  },
+  "T2048_190s": {
+   "clips": [
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep5__cfg16__w150__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.272378921508789,
+     "dur": 190.22,
+     "ce": 7.2897419929504395,
+     "crest": 4.812,
+     "flatness": 0.0578,
+     "rank": 1
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs1_lr1e4__ep9__cfg16__w150__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.231000900268555,
+     "dur": 190.22,
+     "ce": 7.315613746643066,
+     "crest": 4.922,
+     "flatness": 0.01613,
+     "rank": 2
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep3__cfg16__w150__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.198410987854004,
+     "dur": 190.22,
+     "ce": 7.30000114440918,
+     "crest": 7.234,
+     "flatness": 0.03244,
+     "rank": 3
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/longctx_t2048_r128__ep1__cfg16__w150__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.172774314880371,
+     "dur": 190.22,
+     "ce": 6.526975154876709,
+     "crest": 6.811,
+     "flatness": 0.02506,
+     "rank": 4
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t2048__ep1__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.169221878051758,
+     "dur": 190.22,
+     "ce": 7.041347026824951,
+     "crest": 4.918,
+     "flatness": 0.02425,
+     "rank": 5
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs4_lr1e4__ep6__cfg16__w200__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.090052604675293,
+     "dur": 190.22,
+     "ce": 7.406393527984619,
+     "crest": 4.902,
+     "flatness": 0.01576,
+     "rank": 6
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs4_lr1e4__ep9__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.074402809143066,
+     "dur": 190.22,
+     "ce": 7.258770942687988,
+     "crest": 3.931,
+     "flatness": 0.01252,
+     "rank": 7
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs1_lr1e4__ep6__cfg16__w200__kl_bracket_0__s1000__d190.m4a",
+     "pq": 8.0213623046875,
+     "dur": 190.22,
+     "ce": 6.785038948059082,
+     "crest": 5.778,
+     "flatness": 0.01702,
+     "rank": 8
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs4_lr1e4__ep3__cfg1__w200__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.9830121994018555,
+     "dur": 190.22,
+     "ce": 7.052021503448486,
+     "crest": 4.83,
+     "flatness": 0.01576,
+     "rank": 9
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t2048_bs1_lr1e4__ep2__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.9389472007751465,
+     "dur": 190.22,
+     "ce": 7.039416313171387,
+     "crest": 5.272,
+     "flatness": 0.0175,
+     "rank": 10
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs4_lr1e4__ep0__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.895949840545654,
+     "dur": 190.22,
+     "ce": 6.467257499694824,
+     "crest": 3.286,
+     "flatness": 0.01567,
+     "rank": 11
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs1_lr1e4__ep6__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.874107360839844,
+     "dur": 190.22,
+     "ce": 6.38555383682251,
+     "crest": 4.435,
+     "flatness": 0.0245,
+     "rank": 12
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t2048__ep7__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.858315944671631,
+     "dur": 190.22,
+     "ce": 6.997573375701904,
+     "crest": 5.178,
+     "flatness": 0.02122,
+     "rank": 13
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs1_lr1e4__ep5__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.804666519165039,
+     "dur": 190.22,
+     "ce": 6.427978515625,
+     "crest": 9.7,
+     "flatness": 0.07012,
+     "rank": 14
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs1_lr1e4__ep1__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.714341640472412,
+     "dur": 190.22,
+     "ce": 6.483800888061523,
+     "crest": 4.787,
+     "flatness": 0.02858,
+     "rank": 15
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t2048__ep4__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.695689678192139,
+     "dur": 190.22,
+     "ce": 6.891063213348389,
+     "crest": 4.505,
+     "flatness": 0.0215,
+     "rank": 16
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs4_lr1e4__ep1__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.636247634887695,
+     "dur": 190.22,
+     "ce": 6.510251045227051,
+     "crest": 4.412,
+     "flatness": 0.02372,
+     "rank": 17
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t2048__ep5__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.580819129943848,
+     "dur": 190.22,
+     "ce": 6.043262004852295,
+     "crest": 4.719,
+     "flatness": 0.03788,
+     "rank": 18
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t2048__ep2__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.542307376861572,
+     "dur": 190.22,
+     "ce": 6.365604400634766,
+     "crest": 4.728,
+     "flatness": 0.03552,
+     "rank": 19
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t2048__ep3__cfg16__w100__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.365405559539795,
+     "dur": 190.22,
+     "ce": 7.053200721740723,
+     "crest": 5.253,
+     "flatness": 0.03191,
+     "rank": 20
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t2048_bs4_lr1e4__ep7__cfg1__w200__kl_bracket_0__s1000__d190.m4a",
+     "pq": 7.26636266708374,
+     "dur": 190.22,
+     "ce": 5.929096221923828,
+     "crest": 4.288,
+     "flatness": 0.02204,
+     "rank": 21
+    }
+   ],
+   "near_dup_disqualified": 379,
+   "pool_scanned": 400
+  },
+  "T4096_380s": {
+   "clips": [
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4__ep2__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.138854026794434,
+     "dur": 380.44,
+     "ce": 7.230088233947754,
+     "crest": 5.671,
+     "flatness": 0.01335,
+     "rank": 1
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep1__cfg7__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.134256362915039,
+     "dur": 380.44,
+     "ce": 6.433429718017578,
+     "crest": 5.067,
+     "flatness": 0.04791,
+     "rank": 2
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t4096__ep2__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.098610877990723,
+     "dur": 380.44,
+     "ce": 6.954228401184082,
+     "crest": 5.253,
+     "flatness": 0.01797,
+     "rank": 3
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4__ep1__cfg7__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.089254379272461,
+     "dur": 380.44,
+     "ce": 7.573935508728027,
+     "crest": 4.276,
+     "flatness": 0.01787,
+     "rank": 4
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr5e5__ep6__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.064557075500488,
+     "dur": 380.44,
+     "ce": 7.032329082489014,
+     "crest": 5.347,
+     "flatness": 0.02501,
+     "rank": 5
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs1_lr1e4__ep3__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.06404972076416,
+     "dur": 380.44,
+     "ce": 7.317607879638672,
+     "crest": 5.51,
+     "flatness": 0.0093,
+     "rank": 6
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs4_lr1e4__ep9__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.046380996704102,
+     "dur": 380.44,
+     "ce": 7.48198127746582,
+     "crest": 6.557,
+     "flatness": 0.01389,
+     "rank": 7
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs4_lr1e4__ep5__cfg7__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.037346839904785,
+     "dur": 380.44,
+     "ce": 7.19777774810791,
+     "crest": 5.062,
+     "flatness": 0.01332,
+     "rank": 8
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep2__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.011161804199219,
+     "dur": 380.44,
+     "ce": 6.1069841384887695,
+     "crest": 7.79,
+     "flatness": 0.0355,
+     "rank": 9
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs1_lr1e4__ep1__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.010444641113281,
+     "dur": 380.44,
+     "ce": 6.417631149291992,
+     "crest": 5.894,
+     "flatness": 0.00777,
+     "rank": 10
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs1_lr1e4__ep4__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 8.000815391540527,
+     "dur": 380.44,
+     "ce": 7.446324825286865,
+     "crest": 5.987,
+     "flatness": 0.0092,
+     "rank": 11
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep7__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.984453201293945,
+     "dur": 380.44,
+     "ce": 7.053114414215088,
+     "crest": 5.052,
+     "flatness": 0.0176,
+     "rank": 12
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t4096__ep7__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.981696605682373,
+     "dur": 380.44,
+     "ce": 6.8506999015808105,
+     "crest": 4.493,
+     "flatness": 0.03169,
+     "rank": 13
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t4096__ep4__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.95426082611084,
+     "dur": 380.44,
+     "ce": 7.134893417358398,
+     "crest": 4.953,
+     "flatness": 0.01551,
+     "rank": 14
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr5e5__ep0__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.950547695159912,
+     "dur": 380.44,
+     "ce": 6.88735294342041,
+     "crest": 5.137,
+     "flatness": 0.05152,
+     "rank": 15
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs4_lr1e4__ep0__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.939323425292969,
+     "dur": 380.44,
+     "ce": 6.748100280761719,
+     "crest": 4.194,
+     "flatness": 0.02492,
+     "rank": 16
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep4__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.938333034515381,
+     "dur": 380.44,
+     "ce": 6.670080661773682,
+     "crest": 4.51,
+     "flatness": 0.01552,
+     "rank": 17
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr1e4__ep5__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.906911849975586,
+     "dur": 380.44,
+     "ce": 6.858331680297852,
+     "crest": 4.836,
+     "flatness": 0.01773,
+     "rank": 18
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_avp_t4096__ep6__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.9011359214782715,
+     "dur": 380.44,
+     "ce": 7.036826133728027,
+     "crest": 4.83,
+     "flatness": 0.0139,
+     "rank": 19
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs1_lr1e4__ep8__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.898929119110107,
+     "dur": 380.44,
+     "ce": 7.258711338043213,
+     "crest": 4.898,
+     "flatness": 0.01019,
+     "rank": 20
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs4_lr1e4__ep3__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.898816108703613,
+     "dur": 380.44,
+     "ce": 6.241903305053711,
+     "crest": 5.145,
+     "flatness": 0.05707,
+     "rank": 21
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_avp_t4096_bs1_lr1e4__ep3__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.8950324058532715,
+     "dur": 380.44,
+     "ce": 7.049494743347168,
+     "crest": 5.089,
+     "flatness": 0.006,
+     "rank": 22
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs1_lr1e4__ep0__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.894308567047119,
+     "dur": 380.44,
+     "ce": 6.337656021118164,
+     "crest": 4.312,
+     "flatness": 0.02015,
+     "rank": 23
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4__ep7__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.847050189971924,
+     "dur": 380.44,
+     "ce": 6.462019443511963,
+     "crest": 4.732,
+     "flatness": 0.06326,
+     "rank": 24
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_avp_t4096_bs4_lr5e5__ep7__cfg16__w200__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.832521438598633,
+     "dur": 380.44,
+     "ce": 7.734293460845947,
+     "crest": 5.32,
+     "flatness": 0.01598,
+     "rank": 25
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t4096__ep3__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.814618110656738,
+     "dur": 380.44,
+     "ce": 6.905460357666016,
+     "crest": 4.238,
+     "flatness": 0.023,
+     "rank": 26
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fullft_goa_t4096__ep4__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.774413585662842,
+     "dur": 380.44,
+     "ce": 6.790386199951172,
+     "crest": 4.833,
+     "flatness": 0.03207,
+     "rank": 27
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs1_lr1e4__ep0__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.766482353210449,
+     "dur": 380.44,
+     "ce": 6.554575443267822,
+     "crest": 4.475,
+     "flatness": 0.0272,
+     "rank": 28
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr5e5__ep5__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.701781272888184,
+     "dur": 380.44,
+     "ce": 6.078704357147217,
+     "crest": 5.45,
+     "flatness": 0.05772,
+     "rank": 29
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4__ep5__cfg16__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.6013617515563965,
+     "dur": 380.44,
+     "ce": 6.042161464691162,
+     "crest": 4.641,
+     "flatness": 0.04253,
+     "rank": 30
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr5e5__ep3__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.504027843475342,
+     "dur": 380.44,
+     "ce": 5.767983436584473,
+     "crest": 3.936,
+     "flatness": 0.03119,
+     "rank": 31
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr1e4__ep6__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.4172163009643555,
+     "dur": 380.44,
+     "ce": 6.004262924194336,
+     "crest": 4.728,
+     "flatness": 0.05522,
+     "rank": 32
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs4_lr1e4__ep2__cfg7__w100__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.411253929138184,
+     "dur": 380.44,
+     "ce": 6.054375171661377,
+     "crest": 4.631,
+     "flatness": 0.0663,
+     "rank": 33
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32cmp_goa_t4096_bs4_lr5e5__ep6__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 7.275195598602295,
+     "dur": 380.44,
+     "ce": 5.819281101226807,
+     "crest": 4.304,
+     "flatness": 0.01891,
+     "rank": 34
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs1_lr1e4__ep2__cfg16__w200__kl_bracket_0__s1000__d380.m4a",
+     "pq": 6.667850017547607,
+     "dur": 380.44,
+     "ce": 5.017728328704834,
+     "crest": 8.478,
+     "flatness": 0.04243,
+     "rank": 35
+    },
+    {
+     "path": "/home/kim/evals_aac/model_matrix/fp32frames_goa_t4096_bs4_lr1e4__ep4__cfg16__w150__kl_bracket_0__s1000__d380.m4a",
+     "pq": 6.43876838684082,
+     "dur": 380.44,
+     "ce": 5.37827730178833,
+     "crest": 4.737,
+     "flatness": 0.01559,
+     "rank": 36
+    }
+   ],
+   "near_dup_disqualified": 364,
+   "pool_scanned": 400
+  }
+ }
+}

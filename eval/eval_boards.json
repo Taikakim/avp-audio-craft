@@ -35,7 +35,7 @@
    "kind": "control-response trajectory (checkpoint x source stem x {off, g1.0, g2.0}; control arm = same model, trained null stream)",
    "url": "file:///home/kim/evals_aac/morph_d17_lion_r128/index.html",
    "public": "morph_d17_lion_r128/index_public.html",
-   "cells": 72,
+   "cells": 104,
    "note": "NOT VALIDATED: no objective adherence metric exists for contour streams. Listening surface only. NOT on the model matrix by design -- a control adapter the matrix cannot load, whose null-vs-conditioned axis the board cannot express.",
    "builder": "eval/build_morph_step_page.py",
    "arms": [

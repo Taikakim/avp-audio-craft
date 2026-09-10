@@ -1,0 +1,1962 @@
+{
+ "_doc": "Tier-1 purpose-mining bundle, produced by eval/mine_purposes.py. One entry per SBATCH: write ONE purpose line against its `header`, then apply it to every arm in `arms`. Land results in Misc/models_index_overrides.json under `purpose` / `purpose_evidence` / `purpose_confidence` -- NEVER in the generated census. Arms in `_unmatched` have no sbatch and are the Tier-2 (transcript) queue.",
+ "_stats": {
+  "arms_considered": 273,
+  "arms_matched": 126,
+  "distinct_headers": 23,
+  "arms_unmatched": 147
+ },
+ "by_sbatch": {
+  "dorlor_ab.sbatch": {
+   "role": "trainer",
+   "header": "dorlor_ab.sbatch — Kim direct 2026-08-21: \"DoRA vs LoRA, goa big set, batch 8 GA 2 (or 16\n direct if VRAM suffices), t256, bf16, lr 1e-4, AdamW and Fusion, warmup 1/4 epoch, LR to\n cosine at a knee ~ep8, Fusion with ALL damping fixes, rank 128, 4 nodes x 8 GPUs, 32 epochs.\n I'm mystified why we are getting so bad results now again.\"\n\n THE DIAGNOSTIC A/B^2: adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked\n Fusion), everything else pinned at the healthiest known settings: TRUE 8-way DDP (torchrun),\n bf16 (=> FA2 on multitorch), T256, per-rank batch 16 default (W's monotonic batch finding;\n BS=8 GA=2 fallback knob), rank 128 alpha 45 (ratified winning value; ALPHA=128 to replicate\n the healthy bf16cmp twins instead), 32 epochs, ckpt every 2.\n   - AdamW arms: --lr_schedule wsd (warmup 0.25 ep -> flat -> cosine from ep8) — the FIRST\n     scheduled-AdamW runs in the campaign (every prior AdamW run was constant-LR: A2 walk).\n   - Fusion arms: --fusion-decay wsd (flat until 25% = ep8, then decay) + --fusion-snr row —\n     the full damping kit from the A-series.\n CORPUS CAVEAT recorded up front: bigset is 27.7% near-lossless vs old goa 75.9% (W audit) —\n if all four arms land mediocre-but-healthy, suspect the corpus before the optimizers.\n\n RUN (4 jobs):\n   ARM=dora_adamw  sbatch lumi/sbatch/dorlor_ab.sbatch\n   ARM=dora_fusion sbatch lumi/sbatch/dorlor_ab.sbatch\n   ARM=lora_adamw  sbatch lumi/sbatch/dorlor_ab.sbatch\n   ARM=lora_fusion sbatch lumi/sbatch/dorlor_ab.sbatch\n VERIFY (per job, within minutes): LOCAL_RANK 0..7 once each; steps/epoch ~ 12524/(16*8)=97\n   (or /(8*2*8)=97 with the fallback knobs — same optimizer-step count); ckpts UN-versioned;\n   AdamW arms print \"[lr] WSD: ...\" and Fusion arms \"[fusion] decay: wsd ...\".",
+   "arms": [
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_lora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_lora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_lora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_avpaug_lora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_dora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_dora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_dora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_lora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_lora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_biggoa_lora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_dora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_lora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_goa_lora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_lora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s1",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "dorlor_ab/dorlor_suomi_lora_fusion_r128a45_t256_bf16_bs128_s2",
+     "matched_on": "dorlor_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "dorlor_render.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    }
+   ]
+  },
+  "aug8_train.sbatch": {
+   "role": "trainer",
+   "header": "aug8_train.sbatch — DRAFT (2026-07-23, unsubmitted, for Kim's review): stage 2 of\n the aug8 campaign (docs/superpowers/specs/2026-07-23-aug8-15ep-campaign.md; renamed\n from aug10 -> aug8 per Kim's ruling — variant set now matches\n mir/src/tools/augment_tracks.py exactly, 8 not 10 variants/crop).\n One standard-g node, 8 GCDs, 8 independent single-GCD arms driven by SLURM_PROCID\n (the ONE-ARM-PER-GCD lane — see the sibling aug8_train_ddp.sbatch for the\n EXPERIMENTAL 8-way-DDP-per-arm alternative Kim asked to try for the walltime risk).\n Skeleton = efp_fp32_compare.sbatch (proven multi-arm one-task-per-GCD pattern);\n fullft flag/behavior = efp_fullft_short.sbatch / efp_fullft_t4096.sbatch. Read those\n three for the deployment rationale this file doesn't re-explain.\n\n DESIGN (Kim's 2026-07-23 listening verdicts, docs/training-findings.md): fp32 +\n full-finetune sound better than bf16 / adapter-only; rank helps; augmentation SEEMS\n to help; 15 EPOCHS is the new default target (models \"start to sound fine after ep5,\n often ep7 is first really good\" — prior 8-ep runs were stopping at the threshold of\n good). This campaign crosses the aug8 augmented GOA corpus (+ the EXISTING avp aug\n set, see DATASET PATHS — RESOLVED below) against the two axes Kim's verdict just\n settled (precision, full-ft-vs-adapter), all at 15 epochs, so the next listening pass\n can read off aug's effect ALONGSIDE the precision/rank effect rather than re-deriving\n it separately. GOA-aug8 x AVP(existing aug) x {DoRA-r128, fullft} x {fp32, bf16} =\n 8 arms, all --frames 512 (T=512, Kim's T-frames convention, MASTER.md §5) with\n --beat-aware-crop.\n\n Arms:\n   PROCID 0: goa-aug8  DoRA-r128  fp32  T=512  BS=8            lr=1e-4\n   PROCID 1: goa-aug8  DoRA-r128  bf16  T=512  BS=8            lr=1e-4\n   PROCID 2: goa-aug8  fullft     fp32  T=512  BS=probe(4->1)  lr=1e-4\n   PROCID 3: goa-aug8  fullft     bf16  T=512  BS=4            lr=1e-4\n   PROCID 4: avp       DoRA-r128  fp32  T=512  BS=8            lr=1e-4\n   PROCID 5: avp       DoRA-r128  bf16  T=512  BS=8            lr=1e-4\n   PROCID 6: avp       fullft     fp32  T=512  BS=probe(4->1)  lr=1e-4\n   PROCID 7: avp       fullft     bf16  T=512  BS=4            lr=1e-4\n\n LR / RANK / ALPHA convention (grepped from efp_fp32_compare.sbatch, efp_bf16_twin.sbatch,\n efp_fullft_short/t4096.sbatch — all four agree): lr **1e-4** for every arm (DoRA and\n fullft alike; no family here trains at 5e-5); DoRA = `--adapter_type dora-rows --rank\n 128 --lora_alpha 128` (alpha=rank, s=1, MASTER §5 convention); fullft = `--full-finetune`\n (unfreezes the whole 1.4B DiT, injects NO adapter, mutually exclusive with the rank/\n adapter flags). `--optimizer fusion` throughout (established default across all four\n reference sbatches).\n\n BATCH SIZE: DoRA-r128 T=512 BS=8 is PROVEN (efp_fp32_compare arms 4/5, efp_bf16_twin\n arms 0/1 — same T, same rank, both precisions, no probe needed). fullft bf16 T=512\n BS=4 is PROVEN (efp_fullft_short.sbatch arm 2/3: \"batch 4 fits T=256/512/1024/2048\n with headroom\", no probe). fullft **fp32** T=512 has NO direct precedent (fp32\n fullft was only ever run at T=4096 BS=2 ga=2, a different context length) — fp32\n roughly doubles the full-model param+grad+optimizer-state footprint vs bf16, so\n arms 2/6 get the proven 30-step batch PROBE (efp_fp32_compare's 4->3->2->1 ladder,\n extended down to 1 since a whole-DiT fp32 optimizer state is heavier than a DoRA\n adapter's) rather than assuming BS=4 blindly.\n\n EPOCH-TIME ESTIMATE — ASSUMPTION, NOT MEASURED (10-min grep of WORKLOG/journals\n found no per-epoch T=512/aug8 timing; the one hard number available is\n docs/training-findings.md's \"~2.4 s/step\" for SA3 DoRA at T~512 BS1, and\n efp_fp32_compare's own note that its T=4096 BS1 goa arm — 5400 steps/epoch, ~2-4\n s/step — \"may hit the 48h wall around epoch 5-8\"). Reasoning chain: GOA-aug8 is\n ~5400 orig + up to 5400x8=43200 aug crops (BPM-cap dedup likely trims the average\n below 8/crop slightly) ≈ **~43-48k crops**. At BS=8, T=512 (8x shorter context than\n the T=4096 arm above, so materially cheaper per step despite ~8x more crops and 8x\n the batch — steps/epoch ≈ 45000/8 ≈ 5600, roughly the SAME step COUNT as the\n T=4096/BS1 arm's 5400, but each step should be substantially cheaper at T=512):\n **DoRA arms: order ~1-2h/epoch -> 15-30h for 15 epochs (fits the 47h wall).**\n fullft arms do more work per step (whole-DiT backward + bigger optimizer) at a\n SMALLER batch (4 or probed-down), i.e. MORE steps/epoch than DoRA -> **fullft bf16:\n order ~2-4h/epoch -> 30-60h; fullft fp32 (smallest probed batch): likely the\n arm(s) that DON'T finish 15 epochs in one 47h job.** Per-epoch checkpoints (below)\n make partial completion useful regardless — re-submit with --resume_ckpt to\n continue past a wall-clock cutoff, OR see aug8_train_ddp.sbatch (Kim's requested\n DDP experiment: same 8 GCDs applied to ONE arm at a time instead of 8 arms in\n parallel, ~8x less wall-clock per arm). AVP arms (2393 base crops, ~10-20x smaller\n than GOA-aug8's) will finish 15 epochs comfortably early and idle their GCD —\n acceptable, matches the fp32cmp/fullft campaigns' own convention.\n\n DATASET PATHS — RESOLVED (Kim's ruling, 2026-07-23):\n   GOA-aug8 = original goa crops + the aug8 output from aug8_encode.sbatch, as TWO\n   comma-separated --encoded_dir sources (train_lora.py supports multi-source\n   --encoded_dir/--caption_sidecar natively):\n     ${FLASH}/latents_sa3,${FLASH}/latents_goa_aug8\n   AVP: reuse the EXISTING latents_avp aug set AS-IS — no new avp augmentation is\n   generated for this campaign. (This also makes the earlier open question — the\n   `latents_avp_aug10` naming collision with the 320-crop small-set control from\n   docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md — MOOT: nothing here\n   writes to or reads that path.)\n\n CAPTIONS: inherited default (longform sidecars, PROBS=0,0,1) — same override knobs\n as efp_fp32_compare.sbatch (CAPTIONS=stored, SIDECAR=, PROBS=). Augmented crops carry\n their PARENT crop's inherited prompt (see encode_aug_task.py) so the sidecar's\n per-source-track lookup still resolves for them.\n\n CAVEAT — beat-aware crop on augmented latents: --beat-aware-crop falls back to\n uniform-random sub-cropping for any latent lacking a sibling .TIMESERIES.npz\n (dataset.py, confirmed) — the aug8 latents from encode_aug_task.py do NOT carry\n one (not built in this draft). So the original 5400 goa crops (and existing avp\n crops) get true beat-aligned T=512 sub-crops; the aug8 variants get uniform-random\n ones. Flagged as an open question in the campaign spec, not fixed here.\n\n PREREQS: code+SIF+models pre-staged; latents_sa3.tar.gz + latents_avp.tar.gz (existing)\n AND latents_goa_aug8.tar.gz (aug8_encode.sbatch output) on ${SCRATCH}; code tarball\n refreshed from the WORKING TREE (never `git archive` — lumi-ops rule) so\n scripts/train_lora.py carries --full-finetune and --frames.",
+   "arms": [
+    {
+     "arm": "aug8_train_ddp/aug8ddp_ddp_smoke",
+     "matched_on": "aug8_train_ddp",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "aug8_encode.sbatch",
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "lr5e5_allsets.sbatch"
+     ]
+    },
+    {
+     "arm": "aug8_train_ddp/aug8ddp_ddp_smoke_dora",
+     "matched_on": "aug8_train_ddp",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "aug8_encode.sbatch",
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "lr5e5_allsets.sbatch"
+     ]
+    },
+    {
+     "arm": "dora128_300trk/dora128_300trk/59h2y4zo/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft/fullft_avp_t256/_unfixed_missing_wd",
+     "matched_on": "fullft",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a13_render.sbatch",
+      "a2a_bracket.sbatch",
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "ckpt_dup_delta.sbatch",
+      "continue_8runs_openended.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "dronesweep_render.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "fleet_quick_render.sbatch",
+      "ftstack_heads.sbatch",
+      "fullft_3src_t512_fp32_bounded.sbatch",
+      "fullft_avp_aug.sbatch",
+      "fullft_avp_aug_mn2.sbatch",
+      "fullft_avp_dronesweep.sbatch",
+      "fullft_avp_regsweep.sbatch",
+      "fullft_avp_render.sbatch",
+      "fullft_avp_subloss.sbatch",
+      "fullft_avp_surgical.sbatch",
+      "fullft_bigset.sbatch",
+      "fullft_bigset_render.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_fleet.sbatch",
+      "fullft_mem_probe.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_mixed_render.sbatch",
+      "fullft_mixed_wdfix_render.sbatch",
+      "fullft_mixed_wdfix_render_allversions.sbatch",
+      "fullft_reg_ab.sbatch",
+      "fullft_suomi_warm.sbatch",
+      "fullft_wd_ab.sbatch",
+      "fullft_wd_ab_render.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "mirctrl_bracket.sbatch",
+      "morphcond_bracket.sbatch",
+      "multinode_ddp_smoke.sbatch",
+      "native_cells_hq.sbatch",
+      "pianoroll_fullft.sbatch",
+      "precision_ladder.sbatch",
+      "precision_ladder_render.sbatch",
+      "preencode_bigset.sbatch",
+      "render_continue8_latest2.sbatch",
+      "stack_cells.sbatch",
+      "stack_suomi.sbatch",
+      "subloss_goa_k20_fullft.sbatch",
+      "suomift_render.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_stats_cpu.sbatch",
+      "trigger_word_ab.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_avp_regsweep/fullft_avp_regsweep_anchor/fullft_avp_regsweep/cvya41jr/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_avp_regsweep.sbatch",
+      "fullft_avp_surgical.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_avp_surgical/fullft_avp_surgical_adamw_2e4/fullft_avp_surgical/version_None/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_avp_surgical.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_avp_surgical/fullft_avp_surgical_anchor/fullft_avp_surgical/n3sa7fes/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_avp_surgical.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-b4/vjnnndnu/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-r128-adamw/dq0egegi/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-r128-fusion-caut/sa3-goa-dora-47s-r128-fusion-caut/qy50uilf/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-r128-fusion/mqe3ne49/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longctx_t1024.sbatch",
+      "longctx_t2048.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s-r64/i8nygj4y/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    },
+    {
+     "arm": "sa3-goa-dora-47s/2ankrkoh/checkpoints",
+     "matched_on": "checkpoints",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "aug8_train_ddp.sbatch",
+      "aug8_train_ddp_render.sbatch",
+      "dora256_mixed_2x4gpu.sbatch",
+      "efp_alpha_campaign.sbatch",
+      "efp_bf16_twin.sbatch",
+      "efp_fp32_compare.sbatch",
+      "efp_fp32_frames.sbatch",
+      "efp_fp32_winning.sbatch",
+      "efp_fp32_winning_continue40.sbatch",
+      "efp_fullft_short.sbatch",
+      "efp_fullft_t4096.sbatch",
+      "efp_smoke_r256.sbatch",
+      "fleet_quick_render.sbatch",
+      "fp32cmp_continue_15e.sbatch",
+      "fullft_cells_hq.sbatch",
+      "fullft_mixed_avp_goa_t4096.sbatch",
+      "fullft_reg_ab.sbatch",
+      "genre_fusion_probe.sbatch",
+      "length_variant_hq.sbatch",
+      "longctx_t1024.sbatch",
+      "longctx_t2048.sbatch",
+      "longrun_epoch_sweep_render.sbatch",
+      "native_cells_hq.sbatch",
+      "render_continue8_latest2.sbatch",
+      "sanity16_arms.sbatch",
+      "sanity16_biggoa_ddp8.sbatch",
+      "showcase_render.sbatch",
+      "stack_cells.sbatch",
+      "suomisoundi_audition_render.sbatch",
+      "traj_sketch_arms.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    }
+   ]
+  },
+  "ftstack_heads.sbatch": {
+   "role": "trainer",
+   "header": "ftstack_heads.sbatch — B9: the control stack retrained ON TOP of our best FULL FINETUNE\n (CONTINUITY 2026-08-21, Kim direct: \"take our best full finetune, and train our FiLM,\n melody and LATCH heads with best known values and Fusion on top of that instead of the\n base model\").\n\n 8 single-GCD arms on one node:\n   r0  Head-B FiLM (melody_contour) on the FULL-FT backbone   <- the backbone-dependent piece\n   r1  Head-B FiLM on medium-base                             <- matched control (same seed)\n   r2  f0_other melody head   r3  f0_bass melody head         <- D3 best values (EMA 0.999,\n   r4  hpcp                   r5  rms_energy_bass                 val split BY SOURCE TRACK)\n   r6  onset_envelope         r7  spectral_flatness           <- strongest steering features\n Heads (r2-7) are latent readouts (backbone-free by construction) — retrained here with the\n BEST KNOWN recipe: Fusion SF-NorMuon (ns5,normuon,sf) + adaln_zero + bf16 hot dtype + EMA\n 0.999 + cosine fusion-decay (the braked Fusion — undamped NS5 is the drone mechanism) +\n held-out val split by source_track (83329a8: crop-split leaks sibling crops).\n\n KNOB (required): FT_CKPT=/scratch/.../runs/fullft_fleet/<arm>/epoch=N.ckpt  (FAT ckpt; the\n   EMA shadow weights are loaded — that is what deploys). Candidates, best-first:\n   - today's fullft_fleet arms (AdamW matched controls, EMA on): fullft_avpaug/mix3/suomi/...\n   - fullft_mixed_wdfix (completed, bounded-norm, z0 std 1.134 healthy)\n   - the precision-ladder fp16 arm (Kim's \"sound of its own\" pick)\n\n PREREQ on LUMI: latents_sa3/*.TIMESERIES.npz co-located with latents (rsync ~3.1G — .npz\n   does NOT collide with the dataset's *.npy glob); ${SCRATCH}/latents_sa3_melody/ (melody8\n   streams, ~10M); code: control/ + stable-audio-3/scripts/latch/ synced.\n RUN:  FT_CKPT=/scratch/.../epoch=N.ckpt sbatch lumi/sbatch/ftstack_heads.sbatch",
+   "arms": [
+    {
+     "arm": "ftstack_heads/headb_base_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/headb_ft_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_f0_bass_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_f0_other_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_hpcp_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_onset_envelope_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_rms_energy_bass_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "ftstack_heads/latch_spectral_flatness_s1",
+     "matched_on": "ftstack_heads",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "fullft_fleet/fullft_biggoa_t1024_fp32_lr1e-4_s1",
+     "matched_on": "fullft_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "fleet_quick_render.sbatch",
+      "fullft_fleet.sbatch",
+      "fullft_suomi_warm.sbatch",
+      "mirctrl_bracket.sbatch",
+      "stack_cells.sbatch",
+      "stack_suomi.sbatch",
+      "suomift_render.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_fleet/fullft_mix3_t1024_fp32_lr1e-4_s1",
+     "matched_on": "fullft_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "fleet_quick_render.sbatch",
+      "fullft_fleet.sbatch",
+      "fullft_suomi_warm.sbatch",
+      "mirctrl_bracket.sbatch",
+      "stack_cells.sbatch",
+      "stack_suomi.sbatch",
+      "suomift_render.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_fleet/fullft_suomi_t1024_fp32_lr1e-4_s1",
+     "matched_on": "fullft_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "fleet_quick_render.sbatch",
+      "fullft_fleet.sbatch",
+      "fullft_suomi_warm.sbatch",
+      "mirctrl_bracket.sbatch",
+      "stack_cells.sbatch",
+      "stack_suomi.sbatch",
+      "suomift_render.sbatch"
+     ]
+    }
+   ]
+  },
+  "dora256_mixed_2x4gpu.sbatch": {
+   "role": "trainer",
+   "header": "dora256_mixed_2x4gpu.sbatch — CONTINUITY 2026-08-17 (Kim direct, after the full-FT DDP-bug\n saga tonight: \"with all the trouble we've having with full finetunes, let's also run... rank\n 256 DoRA, FP32, alpha 196\" then corrected \"why single GPU? Run on four. And another four with\n 5e-5 but alpha 128\" then \"EMA and warmup on, and Adagc\"). Two DoRA arms on ONE 8-GPU node,\n 4 real DDP-synced GPUs each, same mixed avp+goa T4096 dataset as\n fullft_mixed_avp_goa_t4096.sbatch:\n   arm A (GPUs 0-3): rank=256 alpha=196 lr=1e-4\n   arm B (GPUs 4-7): rank=256 alpha=128 lr=5e-5\n\n ✅ STATUS: VERIFIED WORKING. Smoke job 21330059 (2026-08-17) formed BOTH 4-way DDP groups:\n `grep -h LOCAL_RANK <log> | sort | uniq -c` gave LOCAL_RANK 0,1,2,3 each exactly TWICE, with\n CUDA_VISIBLE_DEVICES [0,1,2,3] per group (arm B's ROCR set 4-7 correctly renumbers to logical\n 0-3), both srun steps COMPLETED 0:0, arms concurrent (each step 4m34s inside a 4m36s job).\n Full run: job 21330736. See ROUND 3 below for the launch that achieves this; the two blocks\n immediately following are SUPERSEDED and kept only as a record of the wrong turns.\n\n ── ROUND 1 (SUPERSEDED, kept for the record) ── the original reasoning was that splitting one\n node into TWO independent 4-GPU DDP groups needs each group to see its OWN scoped\n SLURM_NTASKS=4/SLURM_PROCID=0..3, since Lightning's SLURMEnvironment derives world_size/rank\n from those, so the plan was TWO separate srun job STEPS each with --ntasks=4 --exclusive,\n letting SLURM's step scheduler hand each arm a disjoint GPU set. That is NOT what the script\n does now: the SLURMEnvironment premise is exactly the thing that turned out to be unreliable\n (see ROUND 3), so per-arm scoping now comes from torchrun, GPU disjointness from an explicit\n ROCR_VISIBLE_DEVICES, and the steps use --overlap rather than --exclusive. What DID survive\n from this round: backgrounding each arm with `&` plus a trailing `wait`, so the two arms run\n concurrently rather than sequentially.\n\n EMA (Kim asked for it explicitly): train_lora.py FORCE-DISABLES EMA for DoRA/LoRA adapters\n regardless of the flag (full-finetune only) -- passing --use-ema here is a harmless no-op,\n not withheld, just doesn't do anything for this adapter type. Flagging so it isn't mistaken\n for silently working.\n\n ── ROUND 3, THE ONE THAT ACTUALLY WORKS (2026-08-17) ── migrated to the CSC/LUMI reference\n torchrun launch, after job 21251551 PROVED it on the sibling full-FT script: real DDP\n confirmed by LOCAL_RANK 0..7 (not eight 0s), ZERO -vN duplicate checkpoints, and\n 244 steps/epoch vs the broken run's 1948 (= 1948/8, i.e. genuine 8-way data sharding), in\n 3h41m instead of 1d8h. Per arm here: ONE srun --overlap task, explicit ROCR_VISIBLE_DEVICES\n (0-3 / 4-7), and `torchrun --nproc-per-node=4` with a PER-ARM rdzv port (two rendezvous\n servers on one node collide on a shared port). Requires train_lora.py's\n torch.cuda.set_device(LOCAL_RANK) fix (guarded in the preflight below).\n\n ── ROUND 2 (SUPERSEDED AND HALF-WRONG -- read the warning) ── this block recorded removing\n --devices 4 per arm, which HAD crashed both arms outright (job 21245642.1,\n MisconfigurationException: \"You requested gpu: [0,1,2,3] But your machine only has: [0]\" --\n under cgroup isolation each process only ever sees ONE device, so --devices N>1 always fails).\n That crash diagnosis is CORRECT and still holds: do not add --devices back.\n ⚠️ BUT the conclusion drawn from it was WRONG, and it is the precise false belief that cost two\n node allocations, so it is spelled out rather than deleted: this block claimed\n fullft_avp_aug.sbatch (job #68) was \"the actual proven precedent\" showing --gpus-per-task=1 with\n no --devices lets Lightning's SLURMEnvironment form the DDP group from SLURM_NTASKS alone.\n IT DOES NOT. That pattern SILENTLY fails to form a group -- every rank logs LOCAL_RANK: 0 and\n you get N uncoordinated single-GPU trainers writing colliding -vN checkpoints, no crash and no\n hang. #68's in-file comment was evidence about one job, not a guarantee; it was never verified\n with the LOCAL_RANK check. Removing --devices was necessary but not sufficient -- ROUND 3 (the\n torchrun launch) is what actually forms the group.\n\n RUN: SMOKE=1 sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch   (bounded ~20 steps/arm, verify\n      BOTH arms print world_size=4 with 4 distinct local GPUs, no crash/hang, ckpts appear)\n      — PASSED 2026-08-17 as job 21330059, see STATUS at the top of this header.\n      then: sbatch lumi/sbatch/dora256_mixed_2x4gpu.sbatch      (full, open only after SMOKE passes)",
+   "arms": [
+    {
+     "arm": "avp_dronesweep/adamw_fair_s1",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/adamw_fair_s2",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/bf16_plain_s1",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/bf16_plain_s2",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/force_scalar_s1",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/force_scalar_s2",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/plain_s1",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "avp_dronesweep/plain_s2",
+     "matched_on": "avp_dronesweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "dronesweep_render.sbatch",
+      "fullft_avp_dronesweep.sbatch"
+     ]
+    },
+    {
+     "arm": "dora256_mixed/dora256_mixed_a128_lr5e5",
+     "matched_on": "dora256_mixed",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "dora256_mixed/dora256_mixed_a196_lr1e4",
+     "matched_on": "dora256_mixed",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    }
+   ]
+  },
+  "subloss_tgate_modes.sbatch": {
+   "role": "trainer",
+   "header": "subloss_tgate_modes.sbatch — R2(t)-GATE MODE A/B + seed pairs (burn-day, Kim 2026-08-21)\n (CONTINUITY 2026-08-06). Identical to subspace_loss_grid_mt.sbatch EXCEPT the subspace basis:\n melody_subspace15_selective_v3.npz instead of _v2. This is the A/B that Kim's melody\n machinery-audit motivated. The v2 basis (top-15 melody VARIANCE) had ~ZERO melody-vs-codec-noise\n selectivity on held-out data (SNR 1.0x) — so upweighting it boosts codec hiss as much as melody,\n the probable reason #59 came back weak. v3 (whitened CSP: signal=atlas interval deltas, noise=\n real codec deltas+timbre) is 5.1x melody-over-codec-noise on held-out. See\n eval/musicology/melody_selective_subspace_2026-08-06/VERDICT.md.\n\n ARMS (single-GCD, small-g): K in {2, 5, 12} — matched to the v2 grid so v3 arms compare\n directly against the already-run subloss_goa_k{2,5,12} (v2) + the shared lreq_goa_lr1e4 (K=1)\n baseline. RECIPE = lreq_goa_lr1e4 EXACTLY (nothing but the basis differs from the v2 grid).\n Diffs vs sa3.sif version: MTSIF + sa3_train_venv_mt overlay, PYTHONPATH append+first, no\n MIOPEN_FIND_MODE hack, PYTORCH_TUNABLEOP_ENABLED=0. PREREQ: build_train_venv_mt.sh GATE=PASS.",
+   "arms": [
+    {
+     "arm": "lr_equiv_grid_mt/lreq_goa_lr1e4",
+     "matched_on": "lr_equiv_grid_mt/lreq_goa_lr1e4",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "lr_equiv_grid_mt.sbatch",
+      "melody_wall_v3sel.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch",
+      "x0equiv_grid.sbatch",
+      "x0equiv_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "subloss_tgate_modes/subloss_v3sel_k5_s2",
+     "matched_on": "subloss_tgate_modes",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "subloss_tgate_modes/subloss_v3sel_k5_tgate_deficit_s1",
+     "matched_on": "subloss_tgate_modes",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "subloss_tgate_modes/subloss_v3sel_k5_tgate_deficit_s2",
+     "matched_on": "subloss_tgate_modes",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "subloss_tgate_modes/subloss_v3sel_k5_tgate_r2_s2",
+     "matched_on": "subloss_tgate_modes",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "subspace_loss_grid/subloss_goa_k12",
+     "matched_on": "subspace_loss_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "subspace_loss_grid/subloss_goa_k5",
+     "matched_on": "subspace_loss_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "subspace_loss_grid_mt/subloss_goa_k12",
+     "matched_on": "subspace_loss_grid_mt",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "subspace_loss_grid_mt/subloss_goa_k5",
+     "matched_on": "subspace_loss_grid_mt",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "morph_head_sweep.sbatch": {
+   "role": "trainer",
+   "header": "morph_head_sweep.sbatch — 8-arm melody control-head sweep, one 8-GCD node. CONTINUITY 2026-08-12 (Kim-greenlit).\n\n THIS IS SWEEP-1 = the CONFIG-READY arms only: it varies the FIRST-ORDER levers we can drive with existing\n flags — INJECTION SITE (--adapter-layers, Head-A's pivot), OPTIMIZER (Fusion vs AdamW; Fusion was sovereign\n for onset density), CAPACITY (dora-rank), TARGET among existing modes (melody_contour vs hpcp-attribute),\n and CFG/melody DROPOUT (Zach's overfit knob). Base recipe = the proven headb_melody.sbatch, moved onto\n FusionOpt. The MORPHOLOGICAL arms (soft-rank/contour loss, k=3 temporal kernel, per-window rank-norm target,\n chroma384 attribute) need CODE + DATA that don't exist yet -> SWEEP-2, after C implements the flags.\n\n PINNING: ROCR_VISIBLE_DEVICES=$SLURM_PROCID ALONE + srun --overlap --cpu-bind=none (the proven\n aug8_encode/muscriptor pattern). Today's saga: --gpus-per-task=1 put all 8 arms on GCD0 -> OOM/collision.\n ENV: sa3.sif — the KNOWN-GOOD control-head env (headb note: local ROCm-7.15 pilot heap-corrupted; sa3.sif green).\n\n RUN ORDER (today's hard lesson — always smoke an 8-GCD node job first):\n   SMOKE=1 sbatch morph_head_sweep.sbatch     # ~10 min; confirm [gpu-assign] shows ROCR 0..7 DISTINCT, no crash\n   sbatch        morph_head_sweep.sbatch       # full 15-epoch run",
+   "arms": [
+    {
+     "arm": "morph_head_sweep/adamw",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/base_fusion",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/fusion_nm",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/highdrop",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/hpcp_attr",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/site_L13_15",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/site_L8_15",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    },
+    {
+     "arm": "morph_head_sweep/wide_r256",
+     "matched_on": "morph_head_sweep",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    }
+   ]
+  },
+  "mirctrl_bracket.sbatch": {
+   "role": "trainer",
+   "header": "mirctrl_bracket.sbatch — B7 MIR-timeseries conditioner bracket (CONTINUITY 2026-08-21,\n Kim direct: \"train some really traditional models, using our mir data as conditioners,\n probably rank 32 DoRAs ... target is every feature we have ... goa+avp aug mixed set\").\n\n WHAT EACH ARM IS: medium-base + DoRA-rows rank 32 + a zero-init per-frame additive\n control projection (the DiT's native modular local-cond inlet, installed on blocks\n 12-23 = W's layer-map union) fed with REAL MIR curves from the target crop\n (teacher-forced; per-item control dropout 0.2 = the CFG null). The PACK knob picks the\n feature family; 'all' = every field we have (36 ch: band-RMS 4, stem RMS/onset 8,\n rhythm 3, HPCP 12, spectral 4, position 1, f0 4 [goa-only, zero-filled on avp]).\n\n SELF-REPORTING (train-now-evaluate-later, allocation ends imminently): every arm\n (a) measures the CONTROL-ABLATION meter in-training every 500 steps — RF loss on a\n     fixed batch under {true, shuffled, zero} control; control_gain > 0 <=> the model\n     exploits the time-ALIGNED control (B7 kill-criterion readable from the log alone);\n (b) writes report.md + report.json + control_ablation.jsonl into the run dir at fit\n     end, with an sbatch-epilogue fallback for walltime-truncated runs.\n\n DATASET (fixed): latents_sa3 (goa 5400) + latents_avp (avp aug 2393) with their\n PROVEN longform sidecars (the winning fp32 family pairing). NOT biggoa (Kim: issues).\n PREREQ on ${SCRATCH}: latents_sa3/, latents_avp/, latents_sa3_ctrl/, latents_avp_ctrl/\n   (the _ctrl dirs come from build_ctrl_packs.py locally + rsync; they are SIBLINGS on\n   purpose — a .ctrl.npy INSIDE a latent dir gets globbed as a latent by the dataset).\n\n BRACKET (one arm per job; priority order if budget is short):\n   PACK=all      sbatch lumi/sbatch/mirctrl_bracket.sbatch     # 1. the headline arm\n   PACK=melody   sbatch ...                                    # 2. the melody-wall arm\n   PACK=rhythm   sbatch ...                                    # 3. the channel SA3 keeps\n   PACK=dynamics sbatch ...                                    # 4.\n   PACK=stems    sbatch ...                                    # 5.\n   PACK=spectral sbatch ...                                    # 6.\n   PACK=all BLOCKS=all sbatch ...                              # 7. blocks ablation\n   PACK=all RANK=64    sbatch ...                              # 8. capacity ablation",
+   "arms": [
+    {
+     "arm": "winning_fleet/wfleet_avp_t1024_a45_fp32_s1",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_mix3_t1024_a45_fp32_s1",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t1024_a128_fp32_s1",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t1024_a128_fp32_s2",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t1024_a45_fp32_s1",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t1024_a45_fp32_s2",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t512_a45_fp32_s1",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    },
+    {
+     "arm": "winning_fleet/wfleet_suomi_t512_a45_fp32_s2",
+     "matched_on": "winning_fleet",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "fleet_quick_render.sbatch",
+      "replica_soup_render.sbatch",
+      "winning_fleet.sbatch"
+     ]
+    }
+   ]
+  },
+  "lr5e5_allsets.sbatch": {
+   "role": "trainer",
+   "header": "lr5e5_allsets.sbatch — Kim direct 2026-08-22, after auditioning\n renders/length_variant/adamw_goa_t512_bs4_lr5e5__ep9__cfg16__w100__*: \"the 5e-5 clips sound\n better than 1e-4, 2e-4 shows degradation, and where 1e-4/2e-4 MELT at cfg16/w2 the 5e-5 can\n take that push and still sound musical — which speaks to some deeper very healthy structure.\"\n => REPLICATE THAT RUN'S RECIPE IN FULL, across every sound set we have, to ep48.\n\n THE RUN BEING REPLICATED: runs/adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5 (arm 7 of\n efp_adamw_bf16_sweep.sbatch, 2026-07-24). Its ACTUAL settings, read off run_meta + sbatch:\n   dora-rows r128 ALPHA 128 (not 45), AdamW wd0.01 betas[0.9,0.95], lr 5e-5 CONSTANT (no\n   schedule), bf16, T=512 beat-aware, goa longform sidecar at caption tiers 0,0,1 (t3 ONLY),\n   NO warmup flag, seed 1 -- and batch 4 on ONE GCD, i.e. EFFECTIVE BATCH 4. That sweep ran\n   8 independent single-GCD arms off SLURM_PROCID; it was never DDP.\n TWO DELIBERATE DEVIATIONS, both forced, both recorded so nobody reads this as a pure replicate:\n   1. EFFECTIVE BATCH 8, not 4. Single-GCD at eff-4 puts a ~21.6k-crop mix at ~110 min/epoch =\n      88 h to ep48, which does not fit the allocation. 8-way DDP at BS=1 is the closest\n      reachable regime (eff 8 = 2x, vs eff 32 if we kept BS=4 across 8 ranks = 8x and a\n      different experiment). lr stays 5e-5 -- the variable Kim isolated.\n   2. MIXED CORPUS, not goa alone (that is the point of the run).\n NOT A DEVIATION, deliberately kept: alpha 128, constant lr, T512, beat-aware, t3-only goa\n captions. The dorlor lane uses alpha 45 / WSD / T256 / 0.6,0.3,0.1 -- copying it here would\n have changed four things at once and thrown away what Kim actually heard.\n\n CORPUS MIX (--encoded_dir order; per-source sidecars + per-source caption tiers):\n   goa     latents_sa3          5400   w 1.00   goa_longform_sidecar          0,0,1\n   bigset  latents_goa_bigset  12524   w 0.18   goa_bigset_hinted_bylatent    0,0,1\n   avpaug  latents_avp          ~2400  w 1.00   avp_captions_tiered           0,0.9,0.1\n   suomi   suomisoundi_latents   1261   w 1.00   suomisoundi_caption_sidecar   0.25,0.45,0.30\n BIGSET WEIGHT: Kim asked for \"maybe 20% chance because it's got mp3 sources more than the\n others\". Natural proportion would be 58%; w=0.18 lands it at ~20% of draws. It also rides\n tiers 0,0,1 because its granite tier measured NOT GROUNDED (folder-name derived, rare-term\n recall 1.24x vs chance) -- per-source probs exist precisely so that cannot poison the mix.\n\n AUG=1: appends latents_goa_aug8 (3941 bungee-augmented goa crops) as a 5th source, sharing\n the goa sidecar -- the same clean+aug pairing aug8_train_ddp.sbatch used. NOTE: train_lora's\n --augment is live-encode ONLY (\"No effect on --encoded_dir\"), so there is no on-the-fly\n augmentation available on the pre-encoded latent path. Pre-augmented dirs are the only route.\n\n WARM=<ckpt|liked>: CONTINUE FROM the model Kim actually liked instead of re-learning it.\n WARM=liked resolves to adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5/epoch=9-step=13500.ckpt.\n It is a clean Lightning 2.6.5 save (epoch 9, step 13500, 687 dora-rows tensors, 1 optimizer\n state, lr_schedulers []) so --resume_ckpt would ALSO load -- but we deliberately use\n --warm_start_ckpt, because --resume_ckpt restores the LOOP state too, and those counters were\n written against a 1350-step goa-only epoch. This run has ~2700 steps/epoch over a different\n corpus, so a true resume would fast-forward a dataloader that no longer exists at that index.\n warm-start keeps what we want (adapter weights + AdamW moments via OptimizerWarmStart) and\n drops only the epoch/shuffle counters. CONSEQUENCE: --epochs is the ADDITIONAL count, so\n EPOCHS=48 means 48 more on top of the original 10, not 48 total.\n Adapter geometry must match the ckpt and does: dora-rows r128 a128.\n\n RUN:  sbatch lumi/sbatch/lr5e5_allsets.sbatch                 (clean mix, fresh)\n       AUG=1 sbatch lumi/sbatch/lr5e5_allsets.sbatch           (+ augmented goa)\n       WARM=liked sbatch lumi/sbatch/lr5e5_allsets.sbatch      (continue the liked model)\n       SCHED=wsd sbatch lumi/sbatch/lr5e5_allsets.sbatch        (+ decay: the constant-LR hedge)\n\n SCHED=wsd (Kim 2026-08-22, \"I hope the constant LR does not become an issue\"): linear warmup ->\n flat to --lr_knee_epoch (default EPOCHS/4) -> cosine to 10% of lr by the end. The replicated run\n was constant-LR, but it only ever ran 10 epochs that way; constant 5e-5 held for 48 is\n unexplored, not proven. Running BOTH makes the schedule an AXIS instead of an assumption --\n same corpus, same seed, same everything else. Warmup is 0.78% of steps (the ratified value) on\n wsd arms only; the constant arms take no warmup, as replicated.\n VERIFY within minutes: LOCAL_RANK 0..7 once each (NOT eight rank-0s -- the silent-DDP bug);\n       \"[captions] source i\" one line per source; \"[q5] steps/epoch\" plausible vs the banner.",
+   "arms": [
+    {
+     "arm": "lr5e5_allsets/lr5e5mix_r128a128_t512_bf16_bs8_s1",
+     "matched_on": "lr5e5_allsets",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a2a_bracket.sbatch",
+      "lr5e5_probe.sbatch"
+     ]
+    },
+    {
+     "arm": "lr5e5_allsets/lr5e5mixwarm_r128a128_t512_bf16_bs8_s1",
+     "matched_on": "lr5e5_allsets",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a2a_bracket.sbatch",
+      "lr5e5_probe.sbatch"
+     ]
+    },
+    {
+     "arm": "lr5e5_allsets/lr5e5mixwarmwsd_r128a128_t512_bf16_bs8_s1",
+     "matched_on": "lr5e5_allsets",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a2a_bracket.sbatch",
+      "lr5e5_probe.sbatch"
+     ]
+    },
+    {
+     "arm": "lr5e5_allsets/lr5e5mixwsd_r128a128_t512_bf16_bs8_s1",
+     "matched_on": "lr5e5_allsets",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a2a_bracket.sbatch",
+      "lr5e5_probe.sbatch"
+     ]
+    }
+   ]
+  },
+  "subloss_k24.sbatch": {
+   "role": "trainer",
+   "header": "subloss_k24.sbatch — SUBSPACE-WEIGHTED trainer, K=24, four corpora (Kim direct 2026-08-21:\n \"rerun the subspace weighed trainer. DoRA, 8e-5, rank 128, BF16, K 24 instead of the last\n max of 12, batch 8, one run each: avp aug, suomisoundi, goa bigset, goa bigset+goa\n (upweight the FLAC sources), 64 epochs\").\n\n LANE CONTEXT: continues the v3sel grid (K=2/5/12 + k5_tgate, trained ep19, rendered — the\n tgate arm's 240 catch-up cells landed 2026-08-21, verdict pending Kim's ears). K here =\n --subspace-loss-weight, the multiplier on the RF error's melody-subspace share; basis stays\n melody_subspace15_selective_v3.npz (whitened-CSP, 15-dim, held-out melody/codec SNR 5.1x).\n Lane conventions kept for comparability: dora-rows r128 ALPHA 128, T512 --beat-aware-crop,\n AdamW CONSTANT LR (the k-grid + lreq baseline are constant-LR; a WSD variant would confound\n the K axis — run one later if K=24 wins). Kim's overrides: lr 8e-5, bs8/rank (x8 DDP =\n eff 64 vs the grid's 4 — recorded in meta), 64 epochs, ckpt every 8.\n\n RUN (4 jobs):\n   DATASET=avpaug sbatch lumi/sbatch/subloss_k24.sbatch\n   DATASET=suomi  sbatch lumi/sbatch/subloss_k24.sbatch\n   DATASET=biggoa sbatch lumi/sbatch/subloss_k24.sbatch\n   DATASET=bigmix sbatch lumi/sbatch/subloss_k24.sbatch   # bigset + old goa (FLAC upweight by inclusion)\n VERIFY: LOCAL_RANK 0..7 once each; UN-versioned ckpts; steps/ep = n/(8*8).",
+   "arms": [
+    {
+     "arm": "subloss_k24/subloss_k24_avpaug_t512_bf16_s1",
+     "matched_on": "subloss_k24",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "a2a_bracket.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "subloss_k24/subloss_k24_biggoa_t512_bf16_s1",
+     "matched_on": "subloss_k24",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "a2a_bracket.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "subloss_k24/subloss_k24_bigmix_t512_bf16_s1",
+     "matched_on": "subloss_k24",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "a2a_bracket.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    },
+    {
+     "arm": "subloss_k24/subloss_k24_suomi_t512_bf16_s1",
+     "matched_on": "subloss_k24",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a11_full_render.sbatch",
+      "a2a_bracket.sbatch",
+      "stack_suomi.sbatch"
+     ]
+    }
+   ]
+  },
+  "x0equiv_grid.sbatch": {
+   "role": "trainer",
+   "header": "x0equiv_grid.sbatch — E1a: x0-EQUIVALENT LOSS arms (CONTINUITY 2026-07-31, Kim\n \"go on with the tests\"). JLT port (arXiv 2605.27102): sigma^2-weighted v-loss ==\n x0-space MSE for a v-output head — removes the isotropic covariance floor that swamps\n low-variance eigendirections. PRE-TEST MEASURED the mechanism live: the v-trained base\n recovers low-lambda eigendirections 2-8x worse per unit signal (worst at sigma 0.2).\n\n ARMS (single-GCD, small-g):\n   0: --x0-equiv-loss alone            (the parameterization lever solo)\n   1: --x0-equiv-loss + subspace K=5   (combined: rebalance-all x upweight-melody)\n RECIPE = lreq_goa_lr1e4 EXACTLY => shared baseline with the lr-equiv + subloss grids;\n the three melody-wall attacks (subspace / x0 / combined) compare on one axis system.\n\n READOUT (post-pull): board cells + hook-decile contour repetition + per-eigendirection\n ERROR SPECTRUM of the trained model (rerun eval/e1_pretest_error_spectrum.py against\n the arm ckpt — does the sub-floor region's relative error actually drop vs base?).\n\n PREREQ: code refresh must carry BOTH new flags (train_lora.py + training/diffusion.py,\n 2026-07-31) + lumi/melody_subspace15_v2.npz — fail-loud checks below.",
+   "arms": [
+    {
+     "arm": "x0equiv_grid/x0eq_goa",
+     "matched_on": "x0equiv_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "x0equiv_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "x0equiv_grid/x0eq_sub5_goa",
+     "matched_on": "x0equiv_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "x0equiv_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "x0equiv_grid_mt/x0eq_goa",
+     "matched_on": "x0eq_goa",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "x0equiv_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "x0equiv_grid_mt/x0eq_sub5_goa",
+     "matched_on": "x0eq_sub5_goa",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "x0equiv_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_suomi_warm.sbatch": {
+   "role": "trainer",
+   "header": "fullft_suomi_warm.sbatch — Kim direct 2026-08-21: \"suomisoundi full ft over both our best\n avp and (old) goa full ft. T1024, Fusion (all damping bells and whistles) + the subspace\n k5 scaling. Spectral WD larger than we're used to, cosine schedule over 32 epochs.\"\n\n Two arms (one node each): ARM=avpaug19 (fullft_avpaug t1024 fp32 ep19 EMA — the vetted B9\n backbone) | ARM=goaft (fullft_goa_t4096 at its MID checkpoint — goa fullfts degrade with\n training, W/G 2026-08-21, so warm-starting from \"last\" would bake in a near-worst base).\n Warm-start via train_lora --init_state_ckpt (weights only, EMA-preferred, fresh optimizer).\n Recipe: FULL-FT T1024 bf16, FusionOpt (mona+ns5+normuon+sf) + snr row gate + COSINE\n in-optimizer decay over all 32 epochs + spectral WD 0.2 (Kim: larger than the usual 0.1;\n the runaway lesson says 0.01 was too weak for NS5 — never omit) + EMA. Subspace: v3sel\n 15-dim melody basis, K=5 (the melody-wall winner). NO forced/force_scalar arms — the drone\n ablation showed force_scalar RUNS AWAY (54/54) while plain fusion stays clean.\n RUN: ARM=avpaug19 sbatch lumi/sbatch/fullft_suomi_warm.sbatch\n      ARM=goaft    sbatch lumi/sbatch/fullft_suomi_warm.sbatch",
+   "arms": [
+    {
+     "arm": "fullft_fleet/fullft_avpaug_t1024_fp32_lr1e-4_s1",
+     "matched_on": "fullft_fleet/fullft_avpaug_t1024_fp32_lr1e-4_s1",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "fleet_quick_render.sbatch",
+      "ftstack_heads.sbatch",
+      "fullft_fleet.sbatch",
+      "mirctrl_bracket.sbatch",
+      "stack_cells.sbatch",
+      "stack_suomi.sbatch",
+      "suomift_render.sbatch"
+     ]
+    },
+    {
+     "arm": "suomift_warm/suomift_warm_avpaug19_t1024_bf16_k5_s1",
+     "matched_on": "suomift_warm",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "suomift_render.sbatch"
+     ]
+    },
+    {
+     "arm": "suomift_warm/suomift_warm_goaft_t1024_bf16_k5_s1",
+     "matched_on": "suomift_warm",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "suomift_render.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_mixed_wdfix_render.sbatch": {
+   "role": "trainer",
+   "header": "fullft_mixed_wdfix_render.sbatch — CONTINUITY 2026-08-17: render job 21161065's finished run\n (fullft_mixed_avp_goa_t4096.sbatch, RUNTAG=wdfix, RUN=fullft_mixed_avp_latents_sa3_t4096_wdfix).\n All 8 epochs completed (log: \"Epoch 7/7\"), BUT this run shipped WITHOUT --devices -> its 8 srun\n ranks were 8 UNCOORDINATED single-GPU trainers writing to the same checkpoint names, not one\n real DDP job (see train_lora.py --devices help text, precedent job 20413874; confirmed via the\n -v1..-v4 duplicate ckpts, being cross-checked by ckpt_dup_delta.py/job 21243996). So whichever\n epoch=7-*.ckpt currently sorts last (highest -vN) is an ARBITRARY pick among up to 8\n independently-diverged trajectories, not a deliberate result -- render it anyway to have\n something to listen to, label clearly flags the provenance caveat. NOT --use-ema (this run\n never passed --use-ema, unlike the continue8 fullft arms).",
+   "arms": [
+    {
+     "arm": "fullft_mixed_avp_latents_sa3_t4096",
+     "matched_on": "fullft_mixed_avp_latents_sa3_t4096",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "ckpt_dup_delta.sbatch",
+      "fullft_mixed_render.sbatch",
+      "fullft_mixed_wdfix_render_allversions.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_mixed_avp_latents_sa3_t4096_wd03",
+     "matched_on": "fullft_mixed_avp_latents_sa3_t4096_wd03",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": []
+    },
+    {
+     "arm": "fullft_mixed_avp_latents_sa3_t4096_wdfix",
+     "matched_on": "fullft_mixed_avp_latents_sa3_t4096_wdfix",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "ckpt_dup_delta.sbatch",
+      "fullft_mixed_wdfix_render_allversions.sbatch"
+     ]
+    }
+   ]
+  },
+  "continue_8runs_openended.sbatch": {
+   "role": "trainer",
+   "header": "continue_8runs_openended.sbatch — CONTINUITY 2026-08-15 (Kim direct): resume 8 specific\n named runs on ONE node (8 GCDs, one arm each), open-ended (NO --epochs cap — Kim: \"maybe\n it's interesting to go on past 60, for style transfers overtrained models can be very\n good... continue from last epoch of each\"). Combines THREE previously-separate campaigns\n that share one deployment (lumi-multitorch-full — MIGRATED from sa3.sif, see below —\n same latents_avp/latents_sa3):\n   arms 0-3: fp32cmp DoRA arms      (precedent: fp32cmp_continue_15e.sbatch, DRAFT/unconfirmed-run)\n   arms 4-5: winning DoRA arms      (precedent: efp_fp32_winning_continue40.sbatch)\n   arms 6-7: fullft_t256 full-FT    (precedent: efp_fullft_short.sbatch; NEW this run: EMA+AGC)\n\n ── OPEN-ENDED, NOT A FIXED TARGET (Kim direct) ── CORRECTED 2026-08-16 after job 21161063\n proved the first version wrong: omitting --epochs does NOT give unlimited training.\n train_lora.py's Trainer construction is `max_steps=(-1 if args.epochs else args.steps)` --\n an omitted --epochs falls through to max_steps=args.steps, and --steps DEFAULTS TO 10000.\n So the first submit capped every arm at step 10000 regardless of epoch progress, and since\n arms RESUME from wherever they left off, 6 of 8 arms had already passed step 10000 and did\n ZERO additional training for the full 2h40m job (only fp32cmp_avp_t4096_bs4_lr1e4 and\n fullft_avp_t256, both resumed below 10000, made real progress before also hitting the cap).\n FIX: pass an explicit huge --epochs instead of omitting it -- makes args.epochs truthy\n (-> max_steps=-1, no step cap) AND gives Lightning a concrete max_epochs instead of None\n (sidesteps Lightning's OWN separate \"both max_epochs and max_steps unset -> defaults to\n 1000\" fallback, which omitting --epochs would otherwise land on ambiguously).\n --epochs 100000 is effectively unlimited for any realistic run while being unambiguous in\n both places. Re-submit this same script to keep extending past a walltime timeout\n (FATCKPT glob below auto-picks up wherever each arm left off — same auto-resume pattern\n as every other continue script this session).\n\n ── EMA + AGC now added to arms 6-7 ONLY (fullft_t256, Kim direct 2026-08-15) — NOT arms\n 0-5: EMA is full-finetune ONLY, train_lora.py force-disables it for DoRA/LoRA regardless\n of the flag (see its own printed note), so passing --use-ema on arms 0-5 would be a no-op;\n left OFF there to match the arm's actual recipe, not to withhold a working feature.\n   - CRASH SAFETY (verified in code, not assumed): train_lora.py sets\n     training_wrapper.strict_loading = False on any --resume_ckpt specifically to tolerate\n     key-set mismatches (comment: \"DoRA fats strip the frozen base... a partial restore is\n     CORRECT\"). Newly turning on --use-ema on a checkpoint trained WITHOUT it means the\n     resumed ckpt has no diffusion_ema.* keys at all -- strict_loading=False means this is\n     a normal missing-keys skip, not a crash.\n   - STALENESS SAFETY (verified in code): SimpleEMA.update_after_step (bound to\n     --ema-warmup-steps, default 100) HARD-COPIES the online model into the EMA shadow for\n     the first 100 steps (ep.copy_(mp.detach())), not the slow 0.9999 lerp -- so EMA catches\n     up to wherever the resumed model currently is almost immediately, not after thousands\n     of steps decaying from a stale pretrained-base copy. Default warmup is fine, no override.\n   - OOM SAFETY: tonight's two EMA+full-FT OOMs (jobs 21148122/21148584, see\n     fullft_avp_aug.sbatch's post-mortem comment) were BOTH at T=1024 with a raw\n     --batch_size (8, then 4) and no grad-accum. T=256 is 4x shorter (quadratic attention ->\n     ~16x less activation memory) so BS=4 direct is very likely fine, but per that same\n     post-mortem's own lesson (\"a config that 'looks small enough' is not evidence until\n     it's actually run\") this job still uses the ONE proven-safe pattern instead of trusting\n     the shorter-T argument alone: --batch_size 2 --accumulate_grad_batches 2 (effective 4,\n     matching the ORIGINAL fullft_t256 recipe's batch=4 exactly -- same optimizer-step\n     semantics, just split across 2 micro-batches instead of one).\n\n ── DEPLOYMENT: MIGRATED to lumi-multitorch-full (2026-08-15, Kim direct) -- these three\n campaigns were the last ones still on legacy sa3.sif, purely by inherited precedent, not\n because sa3.sif is actually better for them. sa3.sif's flash-attn wheel targets gfx1201\n (the desktop RDNA4 card) and CANNOT run on LUMI's gfx90a (MI250X) -- architecturally\n incompatible, not a missing pip install (docs/lumi-transition-plan.md flagged this exact\n gap before tonight). lumi-multitorch-full ships a REAL prebuilt gfx90a flash-attn,\n already proven in production (the caption pipeline, WORKLOG 2026-07-30) and already the\n deployment every OTHER script this session uses (fullft_avp_aug.sbatch,\n subloss_goa_k20_fullft.sbatch, fullft_mixed_avp_goa_t4096.sbatch). Verified BEFORE\n migrating, not assumed: varlen kernels (flash_attn_varlen_func) confirmed importable in\n sa3_train_venv_mt on LUMI (Kim ran the check, printed 1) -- so this gets both plain FA2 AND\n varlen for free, no from-scratch CK compile needed (that was the OTHER option in the\n transition plan, GPU_ARCHS=gfx90a rebuild -- not required since LUMI's own image already\n has it; and note a GPU_ARCHS=gfx90a rebuild of OUR wheel was never possible anyway -- our CK\n recipe is on the RDNA-only rdna_fmha_gfx1100_gfx1201 branch, no CDNA kernels to compile).\n\n BACKEND + VERSION, corrected 2026-08-17 (F, scanned inside the container): the backend IS CK\n -- 9044 gfx90a + 42721 gfx950 code objects, 205k ck_tile strings -- with the Triton path\n bundled ALONGSIDE it, which is why FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE is load-bearing:\n both are present and the env var picks. BUT this block used to say \"flash-attn 2.8.4\" and\n that is now WRONG: the newest image (20260807) carries 2.8.3+lumi_aif_gfx90a_b664ea0. It WAS\n 2.8.4 in the Mar-May builds and moved BACKWARDS on 2026-07-31, while the `sort | tail -1`\n resolver below silently follows whatever LUMI ships newest -- so a campaign straddling that\n date changed attention backend mid-flight with no diff and no log line. Do not restate a\n version here without re-reading the image's dist-info. Full table: lumi-ops SKILL.md.\n\n RESIDUAL UNVERIFIED RISK: no script this session has yet run --adapter_type dora-rows on\n multitorch (every prior multitorch script here was --full-finetune) -- arms 0-5 (DoRA) are\n the first test of that combo. Should just work (stable-audio-3's LoRA/DoRA code is pure\n PyTorch, no extra deps beyond what full-FT already needs, and PYTHONPATH points at the same\n ${CODE}/stable-audio-3 regardless of container) but WATCH the first \"LoRA config: rank=...\"\n print + first successful step on arms 0-5 rather than assuming zero risk.\n\n MIOpen env DROPPED vs the sa3.sif version: MIOPEN_FIND_MODE=2 (the FAST-mode hang-on-a-\n cache-gap bug is a sa3.sif/ROCm-6.2 MIOpen defect -- multitorch's newer MIOpen doesn't have\n it, confirmed by every multitorch script tonight running clean without it) and\n MIOPEN_DISABLE_CACHE=1 (multitorch scripts redirect MIOPEN_USER_DB_PATH/\n MIOPEN_CUSTOM_CACHE_DIR to a real bound /tmp instead, which avoids the Lustre-SQLite-open\n failure without disabling caching outright -- same pattern as every other multitorch\n script). FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ADDED (must be set before `import torch`/\n `flash_attn` or the wrapper silently routes to the slow Triton-AMD fallback instead of CK).",
+   "arms": [
+    {
+     "arm": "subloss_goa_k20",
+     "matched_on": "subloss_goa_k20",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "subloss_goa_k20_fullft.sbatch"
+     ]
+    },
+    {
+     "arm": "subspace_loss_grid/subloss_goa_k2",
+     "matched_on": "subloss_goa_k2",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subloss_goa_k20_fullft.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "subspace_loss_grid_mt/subloss_goa_k2",
+     "matched_on": "subloss_goa_k2",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "melody_wall_v3sel.sbatch",
+      "subloss_goa_k20_fullft.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_3src_t512_fp32_bounded.sbatch": {
+   "role": "trainer",
+   "header": "fullft_3src_t512_fp32_bounded.sbatch — CONTINUITY 2026-08-17, Kim direct:\n   \"stage yet one more fp32 full-ft comparison at t512: lr 3e-5 and 1e-4 (I have a feeling Fusion\n    goes fast, I want to see about a bit slower rates if it finds some smaller paths to new\n    places) EMA, batch of 2, gradient accumulation steps 2. If that OOMs, batch 1, GAS 4.\n    Datasets: suomisoundi, goa large, avp aug x8. AVP prompts need to be granite ones. We have the\n    full music flamingo prompts, we could use them too 10% of the time (taken away from the granite\n    prompts, leave unconditional as it is). And, each runs on 8x GPUs. #1 hyperball, #2 EDM2, #3 both.\"\n\n ONE ARM PER SUBMIT — MODE x LR. Six arms total:\n   MODE=hyperball LR=3e-5 | MODE=hyperball LR=1e-4     <- #1\n   MODE=edm2      LR=3e-5 | MODE=edm2      LR=1e-4     <- #2\n   MODE=both      LR=3e-5 | MODE=both      LR=1e-4     <- #3\n ALL SIX ARE READY (2026-08-17): --forced-weight-norm landed in stable-audio-3 1d6474c with 12\n tests. What the two bounds actually differ in, since the arms are only worth running if they are\n not the same experiment:\n   hyperball -> whole-tensor ‖W‖_F FROZEN at ‖W0‖_F, optimizer-side, on EVERY spectral matrix.\n                Output magnitude cannot change at all.\n   edm2      -> per-output-channel DIRECTION normalised with a LEARNABLE per-channel gain, on the\n                output projection only (transformer.py:1171). Magnitude can still adapt, but\n                through one well-conditioned parameter per channel instead of drifting across the\n                whole matrix. Strictly the weaker, more expressive constraint.\n   both      -> hyperball on the bulk + per-channel gain control at the output.\n Both are retrofit-safe (each reproduces the pretrained function at step 0, so no fine-tune spike).\n\n WHY THESE TWO BOUNDS AND NOT MORE WARMUP/EMA/AdaGC: warmup, EMA and AdaGC all shape the PATH,\n none bounds the DESTINATION. Warmup only delays onset (equilibrium norm unchanged); EMA averages a\n drifting trajectory so the average drifts too; AdaGC clips against an EMA of recent clipped norms,\n so it catches SPIKES while sustained drift passes every test unremarked. Hyperball and EDM2-style\n forced weight norm are the two retrofit-safe options that put a HARD bound on ‖W‖. Full reasoning +\n the 12-paper read: papers/CONTINUITY-drone-optimizer-synthesis-2026-08-11.md.\n\n CONTEXT WORTH KNOWING BEFORE READING THE RESULTS (2026-08-17): the latent-scale runaway that\n motivated all of this is ALREADY BOUNDED by `--weight_decay` — the wd-fixed full-FT measures ep7\n global z0 std 1.134 with 0/256 channels over 2.0, vs the runaway's 5.6 and 166/256. So these arms\n are asking the FINER question Kim posed: at a bounded norm, does a slower LR find different\n (better) minima? They are NOT rescuing a diverging run. Judge them on Kim's ears + the\n disintegration DSP, not on the z0 number, which all arms should pass.",
+   "arms": [
+    {
+     "arm": "e3_metrical/shuffled",
+     "matched_on": "shuffled",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "mirctrl_bracket.sbatch"
+     ]
+    },
+    {
+     "arm": "fullft_3src_t512/fullft_3src_t512_fp32_hyperball_lr1e-4",
+     "matched_on": "fullft_3src_t512",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": []
+    }
+   ]
+  },
+  "lr_equiv_grid.sbatch": {
+   "role": "trainer",
+   "header": "lr_equiv_grid.sbatch — LR × epoch × weight EQUIVALENCE GRID (CONTINUITY 2026-07-30,\n Kim greenlit via W). Spec: docs/superpowers/specs/2026-07-30-lr-steps-weight-equivalence-grid.md\n\n Question: are inference-weight / LR / steps interchangeable along a cumulative-learning\n axis? Param-space half is DONE (‖dW‖ ∝ LR — magnitude invariant; direction cos 0.17-0.47 —\n flavor diverges). THIS RUN gets the missing piece: the DIRECTION-MATURITY curve\n (cos(dW@ep_k, dW@final) needs intermediate ckpts the adamw sweep never saved) + the\n perceptual grid (matched-cumulative triples + weight-for-steps substitution).\n\n ARMS (matched cumulative LR×ep endpoints = 2e-3), SAME recipe as the DONE weight-space\n arms (goa, dora-rows r128 a128, AdamW, bf16, T512 beat-aware, bs4, longform sidecar) so\n the existing cross-LR cosines compose with the new curves:\n   0: lr 2e-4  -> 14 ep  (ep10 = matched point; ep11-14 = the over-train probe)  ckpt every 2\n   1: lr 1e-4  -> 20 ep  (endpoint = matched point)                              ckpt every 4\n   2: lr 5e-5  -> 40 ep  (endpoint = matched point; dominant cost ~40h)          ckpt every 4\n (ckpt cadence chosen so the MATCHED-CUMULATIVE epochs are actually saved: arm0 needs\n  epoch idx 9 => every-2; arms 1/2 hit idx 19/39 on every-4.)\n\n PARTITION: small-g (billed PER GPU — 3 GCDs, not a whole standard-g node with 5 idle),\n 72h max wall covers the 40-ep arm + its render tail. Pattern A pinning (--gpus-per-task=1\n cgroup, NO ROCR export — lumi-ops).\n\n RENDER TAIL (per arm, after training): every saved fat ckpt x cfg7 ONLY x strengths\n {1.0,1.5,2.0,3.0} x 18 board prompts, 20s. -> $SCRATCH/renders/matrix_cells (board ingest).\n Native-length picks happen later, hand-selected.\n\n RESUMABLE: FATCKPT glob auto-resumes each arm toward its target on re-submit.",
+   "arms": [
+    {
+     "arm": "lr_equiv_grid/lreq_goa_lr2e4",
+     "matched_on": "lr_equiv_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "lr_equiv_grid_mt.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch",
+      "x0equiv_grid.sbatch",
+      "x0equiv_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "lr_equiv_grid/lreq_goa_lr5e5",
+     "matched_on": "lr_equiv_grid",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "lr_equiv_grid_mt.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch",
+      "x0equiv_grid.sbatch",
+      "x0equiv_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "lr_equiv_grid_mt.sbatch": {
+   "role": "trainer",
+   "header": "lr_equiv_grid_mt.sbatch — LR × epoch × weight EQUIVALENCE GRID on the LUMI MULTITORCH\n image (ROCm 7 + gfx90a FA2). Multitorch migration of lr_equiv_grid.sbatch (CONTINUITY\n 2026-08-03) off sa3.sif (ROCm 6.2 MIOpen gfx90a find-fallback HANG). Arm 1 (lr1e-4) is the\n shared K=1 baseline for the whole melody-wall campaign (subspace / x0-equiv / combined).\n Diffs vs sa3.sif version: MTSIF + sa3_train_venv_mt overlay, PYTHONPATH append+first,\n no MIOPEN_FIND_MODE hack (ROCm7 has no hang), PYTORCH_TUNABLEOP_ENABLED=0. See lumi-ops\n \"Containers\". PREREQ: build_train_venv_mt.sh COMPAT GATE = PASS.",
+   "arms": [
+    {
+     "arm": "lr_equiv_grid_mt/lreq_goa_lr2e4",
+     "matched_on": "lr_equiv_grid_mt",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    },
+    {
+     "arm": "lr_equiv_grid_mt/lreq_goa_lr5e5",
+     "matched_on": "lr_equiv_grid_mt",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "efp_fp32_winning.sbatch": {
+   "role": "trainer",
+   "header": "efp_fp32_winning.sbatch — the \"winning fp32 run\" (WINTERMUTE 2026-07-22, from the DoRA\n hyperparameter × metric analysis). Flagship = the top-CLAP recipe levers (α<rank \"adj\",\n augmentation, fp32) on the FULL corpus, + ablations that isolate each lever from the\n 320-crop small-set confound Kim caught. One standard-g node, 8 GCDs, 8 SLURM_PROCID arms.\n Adapted from efp_fp32_compare.sbatch (same SDPA-fp32 probe / MIOpen / staging plumbing).\n Plan: docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md\n\n ARMS (α = lora_alpha; rank 128, lr 1e-4, FusionOpt, medium-base, 20 epochs, ckpt/epoch):\n   0: avp-full   T512   α45  fp32   FLAGSHIP (winning recipe, avp)\n   1: goa        T512   α45  fp32   FLAGSHIP (winning recipe, goa)\n   2: avp-full   T512   α128 fp32   α control (isolates the adj benefit)\n   3: goa        T512   α128 fp32   α control (goa)\n   4: avp-aug10  T512   α45  fp32   small-set control (does fp32 alone rescue the 320-crop result?)\n   5: avp-full   T1024  α45  fp32   frames control (analysis: T1024 optimum)\n   6: avp-full   T512   α45  bf16   precision control (fp32 vs bf16 on the identical winning recipe)\n   7: goa        T512   α45  bf16   precision control (goa)\n\n PREREQ: latents_avp.tar.gz + latents_sa3.tar.gz + latents_avp_aug10.tar.gz on ${SCRATCH},\n SIF+models+code pre-staged (same as efp_fp32_compare). The aug10 tarball is the NEW prereq.",
+   "arms": [
+    {
+     "arm": "analysis/task_vector_gram_goa_2026-08-18/repaired",
+     "matched_on": "analysis",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "fullft_wd_ab.sbatch",
+      "melody_wall_v3sel.sbatch",
+      "precision_ladder.sbatch",
+      "precision_ladder_render.sbatch",
+      "subspace_loss_grid.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "traj_stats_cpu.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_mixed_avp_goa_t4096.sbatch": {
+   "role": "trainer",
+   "header": "fullft_mixed_avp_goa_t4096.sbatch — CONTINUITY 2026-08-15 (Kim direct): \"the best I hope\"\n run -- full-FT, FusionOpt, EMA, warmup, AGC, T4096, bf16, MIXED avp-aug + goa dataset, one\n node, 8 GPUs. Combines three things proven separately tonight, never together:\n   - the proven T4096 full-FT batch config (efp_fullft_t4096.sbatch, 2026-07-17):\n     BS=2 + accumulate_grad_batches=2 (effective batch 4) -- T4096 bf16 full-FT is tight at\n     batch 4 live (~55GB/64GB GCD), so grad-accum keeps token-count parity while halving\n     live activation memory. NOT a guess -- this exact config already trained successfully.\n   - tonight's warmup+AGC stabilization recipe (fullft_avp_aug_warmup_agc, job 21148122)\n   - multi-source --encoded_dir mixing (train_lora.py's comma-separated dirs/sidecars/\n     weights, each source keeps its own caption path)\n\n ── GOA_DIR is a ONE-VARIABLE SWAP ── defaults to latents_sa3 (5400 crops, already pre-\n encoded, what every other goa run used tonight) as a stand-in for the TRUE big-goa\n corpus (12,523 tracks, goa_archive) which is still preencoding as of this writing. Once\n that lands at ${SCRATCH}/latents_goa_bigset, resubmit with GOA_DIR=latents_goa_bigset for\n the real mixed run Kim actually asked for -- this stand-in is a deliberate, flagged\n substitution, not a silent one.\n\n ── WARMUP_EPOCHS (not WARMUP_FRAC directly) ── Kim asked for \"warmup of 0.5 epochs\", an\n absolute epoch count, not train_lora.py's --warmup-frac (a fraction of TOTAL steps across\n all epochs). Computed here as WARMUP_FRAC = WARMUP_EPOCHS / EPOCHS so \"0.5 epochs\" means\n the same thing regardless of how many EPOCHS this run ends up doing.\n\n ── DDP: THIRD launch pattern tonight, this one from the actual CSC/LUMI reference recipe\n    (~/Projects/llm-fine-tuning-examples, run-finetuning-lumi-gpu8.sh -- Kim pointed at it\n    2026-08-17). Rounds 1-2 both used --gpus-per-task=1 srun with N tasks, relying on\n    Lightning's SLURMEnvironment to auto-detect a DDP group from SLURM_NTASKS/SLURM_PROCID:\n      round 1: omitted --devices -- job 21161065 SILENTLY trained as 8 uncoordinated\n        single-GPU copies (confirmed via train_rank*.log: LOCAL_RANK: 0 on ALL 8 ranks, and\n        ckpt_dup_delta.py: the 5 \"duplicate\" checkpoints had genuinely diverged weights,\n        521/522 tensors differ, max_abs_diff ~0.25-0.27 -- not floating-point noise).\n      round 2: added --devices 8 -- crashed outright (job 21245565,\n        MisconfigurationException: \"You requested gpu: [0..7] But your machine only has:\n        [0]\" -- cgroup-isolated --gpus-per-task=1 means each process only ever sees ONE\n        GPU, so --devices N>1 asks Lightning to grab N GPUs from inside a single process).\n    CSC's own reference recipe does neither: --ntasks=1 (ONE task, all 8 GPUs visible, no\n    cgroup isolation) + `torchrun --standalone --nproc-per-node=8` INSIDE that task, which\n    spawns and coordinates the 8 worker processes itself via RANK/LOCAL_RANK/WORLD_SIZE env\n    vars -- sidesteps SLURMEnvironment guessing entirely. Lightning auto-detects\n    TorchElasticEnvironment from those vars. REQUIRED companion fix (train_lora.py, same\n    commit): torch.cuda.set_device(LOCAL_RANK) added before model load, since with all 8\n    GPUs visible per process (no cgroup remap), torch.device(\"cuda\") would otherwise\n    resolve every rank to physical GPU 0 -- the exact \"Pattern 1 OOM\" fullft_avp_aug.sbatch\n    already warned about. UNVERIFIED end to end -- SMOKE test first (see RUN below).",
+   "arms": [
+    {
+     "arm": "fullft_avp_aug_warmup_agc",
+     "matched_on": "fullft_avp_aug_warmup_agc",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "subloss_goa_k20_fullft.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_avp_subloss.sbatch": {
+   "role": "trainer",
+   "header": "fullft_avp_subloss.sbatch — Kim direct 2026-08-22 (~03:00), \"let one run roll on alone\":\n AVP, T1024, lr 2.5e-5, FULL-FT, AdamW (wd at default), subspace-loss weighting in, schedule\n flat until ep10 then cosine, to ep64. \"This one has a very mellow LR and some nice controls\n that have been helpful.\"\n\n THREE THINGS RESOLVED BEFORE WRITING THIS, all of which changed the spec:\n  1. ADAGC IS NOT IMPLEMENTED. No flag, no code, anywhere in the trainer or optimizer. It exists\n     for us only as EXPERIMENTS E2, a PLANNED bracket on the LatCH melody head. Dropped -- it\n     would have to be written, not enabled.\n  2. SPECTRAL WD IS FUSIONOPT-ONLY (build_fusion_param_groups -> per-group weight_decay on the 2D\n     DiT matrices). Under --optimizer adamw there is no such path; --weight_decay is plain\n     decoupled AdamW decay. Kim: \"AdamW WD can be at default\" => omitted entirely (0.01).\n  3. LIVE ENCODE CANNOT DELIVER THE AUGMENTATION KIM WANTS. --augment (live-encode only) covers\n     sub_frame_shift / gain / stereo_width / polarity. PITCH SHIFT AND TIME STRETCH ARE\n     --aug-heavy ONLY, and that path lazily loads torchaudio transforms -- the sox-adjacent thing\n     CLAUDE.md bans in favour of bungee. Kim: \"bungee augs will be mandatory, especially the\n     pitch augs\". Bungee is OFFLINE (CPU, HyperQueue) by construction, so the ONLY route to\n     bungee pitch augmentation is a PRE-AUGMENTED, PRE-ENCODED latent dir. Hence this trains on\n     latents_avp (the existing avp aug set, 2394 crops) and NOT on a --data_dir live-encode.\n     Kim's own instinct -- \"SAMEs encode fast on CPU, could we pre-calculate in parallel?\" -- is\n     exactly right and is already built: aug8_encode.sbatch is a two-phase CPU-bungee-then-\n     SAME-L-encode job on one node. It is not a tonight job (its bungee_python-in-container risk\n     is still open, and $SCRATCH/avp_src showed no wav/flac at depth<=3).\n\n SUBSPACE WEIGHT — Kim 2026-08-22 asked for \"something which we know to work... the latest\".\n THERE IS NO EARS-RATIFIED K. Weights tried: 2/5/12 (the v3sel grid, trained to ep19), 20 (goa),\n 24 (the most recent lane, 4 corpora). EXPERIMENTS B1: the quartet's renders only landed after\n F caught that the tgate arm had never been rendered despite being reported as such, and the\n whole set still awaits Kim's ears. So K=12 is chosen as the top of the COMPLETED grid and the\n value the k24 lane itself names as its baseline -- not as a winner, because none is known.\n NOT K=24: that lane ran DoRA at eff batch 64 / lr 8e-5; this is full-FT at eff 8 / lr 2.5e-5,\n and a 5x-the-grid-midpoint weight transferred across that gap could dominate the loss.\n Basis is v3sel (melody-SELECTIVE, whitened CSP, 2026-08-06) = the FIXED lever; v2 is older.\n NO TGATE here on purpose: the deficit-vs-r2 mode A/B is running RIGHT NOW (21439464), and\n adding tgate would preempt the result that decides how to set it.\n EXPECTATION-SETTING, recorded so this run is not oversold: our own reading is that the melody\n wall is structural (melody is relational; no linear channel subspace captures it) and subspace\n loss is a \"+10-15% tool\", not the wall-breaker. The conditioning lane (B9/D12) is that.\n\n CAPTIONS: avp_captions_tiered.json, tiers 0,0.9,0.1 -- AVP granite measured 3.84x rare-term\n recall vs chance, i.e. genuinely grounded (unlike bigset, which must ride 0,0,1).\n ORIG=1 swaps to latents_avp_originals (288 crops, NO augmentation) if the clean set is wanted.\n\n EPOCH MATH (Kim raised this himself): 2394 crops at effective batch 8 = ~299 steps/epoch, so\n ep64 ~= 19k steps with the knee at ep10 (~3k flat, then cosine to 10% of lr over ~16k). On the\n 288-crop ORIG set it is 36 steps/epoch and ep64 is only ~2.3k steps -- raise EPOCHS there.\n\n ⚠ DISK: full-FT fats are ~31 GB EACH (not the ~2 GB an adapter run writes). CKEVERY=8 => 8 rungs\n => ~250 GB. Do NOT drop CKEVERY to 4 here without checking scratch free space first; 16 rungs is\n ~500 GB and would fill scratch under an active pull.\n\n RUN: sbatch lumi/sbatch/fullft_avp_subloss.sbatch",
+   "arms": [
+    {
+     "arm": "fullft_avp_subloss/fullft_avp_t1024_bf16_lr25e6_sub12v3sel_wsd10_bs8_s1",
+     "matched_on": "fullft_avp_subloss",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a13_render.sbatch",
+      "a2a_bracket.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_avp_aug.sbatch": {
+   "role": "trainer",
+   "header": "fullft_avp_aug.sbatch — CONTINUITY 2026-08-09 (Kim direct: \"stage an AVP aug set x8\n with the same recipe, 60eps\"). Full-finetune of medium-base on the AVP ×8 set, 60\n epochs, mirroring #68's fullft_bigset recipe (full-FT, FusionOpt, EMA) on PRE-ENCODED\n latents.\n\n ── latents_avp IS ALREADY THE ×8 SET (verified 2026-08-09) ───────────────────────────\n No separate encode stage is needed: latents_avp = 2394 crops = 289 base + 2105 bungee-\n augmented, across exactly the 8 variants (pitch±1/±2, tempo±5/±10). The AVP corpus was\n augmented via mir/src/tools/augment_tracks.py, then base+variants were all cropped and\n SAME-encoded into latents_avp. So this trains directly on:\n   --encoded_dir latents_avp        (the base + ×8 augmentation, all in one dir)\n (An earlier draft assumed the aug set had to be built like goa's latents_goa_aug8 — it\n doesn't; avp was pre-augmented. Kim caught the redundant source upload.)\n\n ── WHY PRE-ENCODED x8, not live --augment ────────────────────────────────────────────\n #68 uses --data_dir + --augment (LIGHT live aug: gain/stereo; pitch/time only under\n --aug-heavy, which routes to torchaudio — FORBIDDEN by the bungee-only rule). The \"x8\"\n Kim wants is the STRUCTURAL 8-variant bungee pitch/tempo set, which only exists\n pre-encoded. So: pre-encoded base+aug8 latents (the x8 data) + #68's model recipe.\n\n ── DDP: Pattern 2 (--gpus-per-task=1, NO --devices) — IDENTICAL to #68's proven\n    multitorch launch. On this image Pattern 1 (all GPUs visible + --devices 8) OOMs:\n    load_model's model.to(\"cuda\") runs BEFORE Lightning assigns per-rank devices, so all\n    8 ranks pile onto GPU 0 (job 20869819 died this way). cgroup-pinning each rank to 1\n    GCD is what fixes it. See the srun block below + lumi-ops SKILL. ───────────────────",
+   "arms": [
+    {
+     "arm": "fullft_bigset",
+     "matched_on": "fullft_bigset",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "fullft_avp_render.sbatch",
+      "fullft_bigset.sbatch",
+      "fullft_bigset_render.sbatch",
+      "fullft_mixed_render.sbatch",
+      "fullft_reg_ab.sbatch",
+      "fullft_wd_ab.sbatch",
+      "multinode_ddp_smoke.sbatch",
+      "precision_ladder.sbatch",
+      "preencode_bigset.sbatch"
+     ]
+    }
+   ]
+  },
+  "fullft_reg_ab.sbatch": {
+   "role": "trainer",
+   "header": "fullft_reg_ab.sbatch — REGULARIZATION A/B for the full-FT latent-scale runaway (CONTINUITY 2026-08-10).\n Spec: docs/superpowers/specs/2026-08-10-fullft-regularization-ab.md\n\n WHY: the first A/B (fullft_wd_ab.sbatch) showed plain weight_decay 0.1 BOUNDS the FusionOpt full-FT\n latent-scale runaway (global std 0.7->5.6 ep3->ep7; #chan>2.0 0->166/256). But wd is BLUNT — it shrinks\n every weight direction, incl. the subtle feature-bearing ones we're trying to strengthen. This job tests\n whether GENTLER / MORE TARGETED regularizers bound the runaway with less collateral on fine detail:\n   - AGC (Adaptive Gradient Clipping, NFNets): scale-relative per-output-unit grad clip — reins in only\n     large-grad-relative-to-scale units (--grad-clip-mode agc --agc-lambda 0.01).\n   - output-std penalty: penalize z0_hat's per-channel std drifting off the data's, in the LOSS not the\n     weights, gated to low noise (--output-std-penalty LOUT --output-std-t-gate 0.5). Logs both stds to\n     the CSV each step so the runaway is readable WITHOUT a render.\n\n 8 arms = {limiter} x {output-reg} at wd 0.01, + wd/wd-full references (1 arm per GCD, single-GPU each —\n the precision_ladder / fullft_wd_ab pattern, which itself droned, so the reg comparison is faithful).\n Reproduces the failing setup: full-FT, big goa set via LIVE-ENCODE (--data_dir + sidecar, like\n fullft_bigset), bf16-mixed (Kim: speed; a precision confound vs the fp32 #68, but the reg comparison is\n INTERNAL so it holds), T512, bs4, 10ep, FusionOpt(all-on)+EMA. Tail renders the cfg16 canary per\n checkpoint + prints the latent-std table (same probe as wd_ab): anchor should climb (positive control);\n a winner tracks ~1.0 with 0 non-finite AND retains detail >= the `wd` baseline (Kim's ears + DSP proxy).",
+   "arms": [
+    {
+     "arm": "fullft_wd_ab/fullft_wd_ab_wd0",
+     "matched_on": "fullft_wd_ab",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "fullft_wd_ab.sbatch",
+      "fullft_wd_ab_render.sbatch"
+     ]
+    }
+   ]
+  },
+  "subspace_loss_grid.sbatch": {
+   "role": "trainer",
+   "header": "subspace_loss_grid.sbatch — SUBSPACE-WEIGHTED RF LOSS grid (CONTINUITY 2026-07-30,\n Kim direct). Counter to diffusion spectral bias (tau ~ 1/lambda, arXiv 2503.03206):\n melody = a measured 15-dim latent subspace holding only 9.3% of corpus variance, so\n plain RF gradient-starves it. This grid upweights the RF error's melody-subspace\n component by K (loss = mse + (K-1)*subspace_share; K=1 is byte-identical off).\n\n ARMS (single-GCD, small-g): K in {2, 5, 12}  (12 ~ 1/variance-share).\n RECIPE = lreq_goa_lr1e4 EXACTLY (goa latents, dora-rows r128 a128, adamw, bf16, T512\n beat-aware, bs4, lr 1e-4, 20 ep, ckpt every 4) => the lr-equiv middle arm IS the K=1\n baseline — no extra baseline burn. Render tail identical (cfg7, w{1,1.5,2,3}).\n\n READOUT (post-pull): board cells + muscriptor contour-repetition (the hook-decile\n axis) + melody-subspace variance share of generated latents vs baseline.\n\n PREREQ: code refresh must carry the new flag (train_lora.py + training/diffusion.py,\n 2026-07-30) + lumi/melody_subspace15_v2.npz — fail-loud checks below.",
+   "arms": [
+    {
+     "arm": "lr_equiv_grid/lreq_goa_lr1e4",
+     "matched_on": "lr_equiv_grid/lreq_goa_lr1e4",
+     "via": "trainer",
+     "strength": "strong",
+     "other_candidates": [
+      "length_variant_hq.sbatch",
+      "lr_equiv_grid.sbatch",
+      "lr_equiv_grid_mt.sbatch",
+      "melody_wall_v3sel.sbatch",
+      "subloss_tgate_modes.sbatch",
+      "subspace_loss_grid_mt.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch",
+      "x0equiv_grid.sbatch",
+      "x0equiv_grid_mt.sbatch"
+     ]
+    }
+   ]
+  },
+  "subloss_goa_k20_fullft.sbatch": {
+   "role": "trainer",
+   "header": "subloss_goa_k20_fullft.sbatch — CONTINUITY 2026-08-15 (Kim direct): scale the subspace-\n weighted RF loss (#59) up from its original lightweight DoRA+AdamW grid (K in {2,5,12},\n T512, subspace_loss_v3sel_grid_mt.sbatch) to the SAME full-FT+FusionOpt+EMA+warmup+AGC\n recipe used tonight for fullft_avp_aug_warmup_agc — on GOA, K=20 (past the old grid's\n max), T1024, fp32 (Kim: \"actually, make it fp32\").\n\n ── WHY THIS IS A BIGGER CHANGE THAN \"K12 -> K20\" (flagging, not silently deciding) ──\n \"warmup\" only has meaning under --optimizer fusion (train_lora.py: \"FusionOpt only... No\n effect for adamw\"), and --use-ema is full-finetune ONLY (LoRA/DoRA force-disables it) --\n so asking for EMA+warmup+AGC together necessarily means switching off the original K-grid's\n adamw+DoRA-adapter setup onto fusion+full-FT. Also defaulting to the melody-SELECTIVE v3\n basis (whitened-CSP, 5.1x melody-over-codec-noise SNR held-out) rather than the older v2\n basis the original \"subloss_goa_k{2,5,12}\" runs used (v2 measured ~1.0x selectivity on\n held-out data -- the probable reason #59 read weak) -- v3 is the confirmed-better one.\n\n ── DDP: Pattern 2, IDENTICAL launch to fullft_avp_aug.sbatch (proven tonight, job 21148122)",
+   "arms": [
+    {
+     "arm": "subspace_loss_v3sel_grid_mt/subloss_v3sel_k5_tgate",
+     "matched_on": "subspace_loss_v3sel_grid_mt",
+     "via": "trainer",
+     "strength": "weak",
+     "other_candidates": [
+      "a2a_bracket.sbatch",
+      "b2_tgate_render.sbatch",
+      "subspace_loss_v3sel_grid_mt.sbatch"
+     ]
+    }
+   ]
+  }
+ },
+ "_unmatched": [
+  "(root)",
+  "_probe_b2",
+  "_probe_b4",
+  "dora128_47s_newcaptions_5ep",
+  "dora128_everything_8ep_lr0.5x",
+  "dora128_everything_8ep_lr1x",
+  "dora128_everything_8ep_lr3x",
+  "dora128_newcap_continued_3more",
+  "dora128adj_avp_8ep",
+  "dora128adj_avp_8ep_final",
+  "dora128adj_avp_aug10_lr1e4",
+  "dora16_avp_8ep",
+  "dora16_avp_familiarity_8ep",
+  "dora16_avp_freeform_8ep",
+  "dora16_avp_originals_64ep",
+  "dora16_avp_originals_densewin",
+  "dora16_avp_originals_earlyeps",
+  "dora16_avp_originals_win7",
+  "dora16_glitchheal_5ep_2xlr",
+  "dora16_goa_newstack_8ep",
+  "dora256_avp_aug10_lr7e5",
+  "dora64_avp_tiered_lr1e4",
+  "dora64_avp_tiered_lr2e4",
+  "e2_phm",
+  "e3_metrical/real",
+  "head_a_ceiling_act/ckpts",
+  "latch_ema_retrain_20260719/beat_activation_ema20",
+  "latch_ema_retrain_20260719/beat_activation_ema40",
+  "latch_ema_retrain_20260719/downbeat_activation_ema20",
+  "latch_ema_retrain_20260719/downbeat_activation_ema40",
+  "latch_ema_retrain_20260719/heads_ema20",
+  "latch_ema_retrain_20260719/heads_ema40",
+  "latch_ema_retrain_20260719/hpcp_ema20",
+  "latch_ema_retrain_20260719/hpcp_ema40",
+  "latch_ema_retrain_20260719/onset_envelope_ema20",
+  "latch_ema_retrain_20260719/onset_envelope_ema40",
+  "latch_ema_retrain_20260719/rms_energy_air_ema20",
+  "latch_ema_retrain_20260719/rms_energy_air_ema40",
+  "latch_ema_retrain_20260719/rms_energy_body_ema20",
+  "latch_ema_retrain_20260719/rms_energy_body_ema40",
+  "latch_ema_retrain_20260719/spectral_kurtosis_ema20",
+  "latch_ema_retrain_20260719/spectral_kurtosis_ema40",
+  "onset_AdamW_lr1e-4/seg1",
+  "onset_AdamW_lr1e-4/seg2",
+  "onset_AdamW_lr1e-4/seg3",
+  "onset_AdamW_lr1e-4/seg4",
+  "onset_AdamW_lr7.5e-5/seg1",
+  "onset_AdamW_lr7.5e-5/seg2",
+  "onset_AdamW_lr7.5e-5/seg3",
+  "onset_AdamW_lr7.5e-5_continuous",
+  "onset_AdamW_lr7.5e-5_randomcrop",
+  "onset_AdamW_lr7.5e-5_randomcrop_20ep",
+  "onset_FUSION_lr1e4_5000_FIXED",
+  "onset_FUSION_lr2e5_40epoch",
+  "onset_FUSION_lr8e5_10epoch",
+  "onset_FUSION_lr8e5_1p2ep",
+  "onset_FusionCC_lr1e-4_randomcrop",
+  "onset_FusionCaut_lr1e-4_randomcrop",
+  "onset_Fusion_lr1e-4_randomcrop",
+  "onset_Fusion_lr1e-4_randomcrop_20ep",
+  "onset_Fusion_lr1e-4_randomcrop_L13-15",
+  "onset_Fusion_lr1e-4_randomcrop_L8-15",
+  "onset_Fusion_opb_10ep",
+  "onset_Fusion_opb_lr1.5e-4_30ep",
+  "onset_density_400trk_crop1024",
+  "onset_density_FULL_3000_crop1024",
+  "onset_density_FULL_3000b_crop1024",
+  "onset_density_FULL_3000c_crop1024",
+  "riffer_200trk_2e-4_adamw",
+  "riffer_200trk_2e-4_fusion",
+  "riffer_200trk_2e-4_sfadamw",
+  "riffer_200trk_4e-4_adamw",
+  "riffer_200trk_5e-5_fusion",
+  "riffer_200trk_6e-4_adamw_wu",
+  "riffer_20pct_2048_lr1e3",
+  "riffer_20pct_2048_nockpt",
+  "riffer_400trk_lr1e-4_crop1024",
+  "riffer_bf16test",
+  "sanity16_lora/suomi",
+  "soups",
+  "soups_dora",
+  "soups_dora_caut",
+  "soups_vibe",
+  "stereo_sweep_w0.0",
+  "style_fpA_adamw",
+  "style_fpC_adamw",
+  "style_fpC_genrecc",
+  "xft_extracted/xftdora128_fullft_avp_t1024",
+  "xft_extracted/xftdora128_fullft_avp_t2048",
+  "xft_extracted/xftdora128_fullft_avp_t256",
+  "xft_extracted/xftdora128_fullft_avp_t4096",
+  "xft_extracted/xftdora128_fullft_avp_t512",
+  "xft_extracted/xftdora128_fullft_goa_t1024",
+  "xft_extracted/xftdora128_fullft_goa_t2048",
+  "xft_extracted/xftdora128_fullft_goa_t256",
+  "xft_extracted/xftdora128_fullft_goa_t4096",
+  "xft_extracted/xftdora128_fullft_goa_t512",
+  "xft_extracted/xftdora16_fullft_avp_t1024",
+  "xft_extracted/xftdora16_fullft_avp_t2048",
+  "xft_extracted/xftdora16_fullft_avp_t256",
+  "xft_extracted/xftdora16_fullft_avp_t4096",
+  "xft_extracted/xftdora16_fullft_avp_t512",
+  "xft_extracted/xftdora16_fullft_goa_t1024",
+  "xft_extracted/xftdora16_fullft_goa_t2048",
+  "xft_extracted/xftdora16_fullft_goa_t256",
+  "xft_extracted/xftdora16_fullft_goa_t4096",
+  "xft_extracted/xftdora16_fullft_goa_t512",
+  "xft_extracted/xftdora64_fullft_avp_t1024",
+  "xft_extracted/xftdora64_fullft_avp_t2048",
+  "xft_extracted/xftdora64_fullft_avp_t256",
+  "xft_extracted/xftdora64_fullft_avp_t4096",
+  "xft_extracted/xftdora64_fullft_avp_t512",
+  "xft_extracted/xftdora64_fullft_goa_t1024",
+  "xft_extracted/xftdora64_fullft_goa_t2048",
+  "xft_extracted/xftdora64_fullft_goa_t256",
+  "xft_extracted/xftdora64_fullft_goa_t4096",
+  "xft_extracted/xftdora64_fullft_goa_t512",
+  "xft_extracted/xftlora128_fullft_avp_t1024",
+  "xft_extracted/xftlora128_fullft_avp_t2048",
+  "xft_extracted/xftlora128_fullft_avp_t256",
+  "xft_extracted/xftlora128_fullft_avp_t4096",
+  "xft_extracted/xftlora128_fullft_avp_t512",
+  "xft_extracted/xftlora128_fullft_goa_t1024",
+  "xft_extracted/xftlora128_fullft_goa_t2048",
+  "xft_extracted/xftlora128_fullft_goa_t256",
+  "xft_extracted/xftlora128_fullft_goa_t4096",
+  "xft_extracted/xftlora128_fullft_goa_t512",
+  "xft_extracted/xftlora16_fullft_avp_t1024",
+  "xft_extracted/xftlora16_fullft_avp_t2048",
+  "xft_extracted/xftlora16_fullft_avp_t256",
+  "xft_extracted/xftlora16_fullft_avp_t4096",
+  "xft_extracted/xftlora16_fullft_avp_t512",
+  "xft_extracted/xftlora16_fullft_goa_t1024",
+  "xft_extracted/xftlora16_fullft_goa_t2048",
+  "xft_extracted/xftlora16_fullft_goa_t256",
+  "xft_extracted/xftlora16_fullft_goa_t4096",
+  "xft_extracted/xftlora16_fullft_goa_t512",
+  "xft_extracted/xftlora64_fullft_avp_t1024",
+  "xft_extracted/xftlora64_fullft_avp_t2048",
+  "xft_extracted/xftlora64_fullft_avp_t256",
+  "xft_extracted/xftlora64_fullft_avp_t4096",
+  "xft_extracted/xftlora64_fullft_avp_t512",
+  "xft_extracted/xftlora64_fullft_goa_t1024",
+  "xft_extracted/xftlora64_fullft_goa_t2048",
+  "xft_extracted/xftlora64_fullft_goa_t256",
+  "xft_extracted/xftlora64_fullft_goa_t4096",
+  "xft_extracted/xftlora64_fullft_goa_t512"
+ ]
+}

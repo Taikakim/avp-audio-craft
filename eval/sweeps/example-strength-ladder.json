@@ -1,0 +1,7 @@
+{
+  "name": "strength-ladder",
+  "preset": "roundtrip-test",
+  "axes": {"strength": [0.5, 1.0, 1.5, 2.0], "cfg": [7, 16]},
+  "seeds": [11, 22],
+  "notes": "Adapter strength x cfg, two seeds. cfg 16 / strength 2 are DIAGNOSTIC cells (INFERENCE-SURFACE trap 6): the discriminator between checkpoints is which ones stay musical when guidance is pushed, not which sound best at the safe setting."
+}

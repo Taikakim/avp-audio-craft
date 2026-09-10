@@ -1,0 +1,13 @@
+{
+  "lin_ctx1": {
+    "variant": "lin_ctx1",
+    "arch": "lin",
+    "ctx": 1,
+    "height_corr": 0.2139,
+    "height_mae_st": 66.108,
+    "pitchclass_mae_st": 2.997,
+    "n_voiced_frames": 985726,
+    "n_train": 1598,
+    "n_val": 320
+  }
+}

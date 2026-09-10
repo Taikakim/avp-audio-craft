@@ -17,9 +17,26 @@
 #
 # KNOB (required): FT_CKPT=/scratch/.../runs/fullft_fleet/<arm>/epoch=N.ckpt  (FAT ckpt; the
 #   EMA shadow weights are loaded — that is what deploys). Candidates, best-first:
-#   - today's fullft_fleet arms (AdamW matched controls, EMA on): fullft_avpaug/mix3/suomi/...
-#   - fullft_mixed_wdfix (completed, bounded-norm, z0 std 1.134 healthy)
-#   - the precision-ladder fp16 arm (Kim's "sound of its own" pick)
+#   ⛔ CORRECTED 2026-09-03 (C) — THE ORDER BELOW IS STALE AND ITS #1 IS A KNOWN-DAMAGED
+#   FAMILY. This list predates the A10 Pattern-2 finding (EXPERIMENTS A4/A9/A10): the
+#   fullft_fleet / winning_fleet arms are DDP-NEVER-FORMED runs whose 8 srun ranks were
+#   independent single-GCD trainers writing collision -vN filenames, and A10's inventory
+#   says that for the FULL-FT arms specifically ~1 replica was live and 7 died silently at
+#   startup. So a fullft_fleet -vN is one arbitrary survivor of a broken run, trained at
+#   1/8 the intended effective batch — NOT a matched control, whatever this line used to
+#   claim. It was picked on that basis for the morphcond ft arms and Kim's ear on those
+#   renders is "weird glitchy organic noises" (2026-09-03). Do not take #1 without reading
+#   A10 first. A ratings-based ranking is being built (G, pending W's evaluator export);
+#   until it lands, prefer a backbone with a MEASURED health number over one with a
+#   reputation.
+#   - fullft_mixed_wdfix (completed, bounded-norm, z0 std 1.134 healthy) — the only
+#     candidate here carrying an objective health number. ⚠ also shipped without --devices,
+#     so its -vN is an arbitrary replica too; the difference is that its health was measured.
+#   - the precision-ladder fp16 arm (Kim's "sound of its own" pick) — the only entry backed
+#     by Kim's own ear rather than by a recipe argument.
+#   - fullft_fleet arms (fullft_avpaug/mix3/suomi/...) — DEMOTED, see the block above.
+#     Each -vN is ONE replica's coherent model; a run dir is an 8-seed ensemble, and
+#     effective_batch is 8x overstated wherever it is quoted for these.
 #
 # PREREQ on LUMI: latents_sa3/*.TIMESERIES.npz co-located with latents (rsync ~3.1G — .npz
 #   does NOT collide with the dataset's *.npy glob); ${SCRATCH}/latents_sa3_melody/ (melody8

@@ -1,0 +1,46 @@
+{
+ "runs": [
+  {
+   "variant": "lin_ctx1",
+   "lr": 0.003,
+   "best_epoch": 23,
+   "val": {
+    "frame_f1": 0.3077,
+    "precision": 0.1867,
+    "recall": 0.8726,
+    "centroid_corr": 0.4949,
+    "centroid_mae_keys": 8.948
+   },
+   "test": {
+    "frame_f1": 0.3338,
+    "precision": 0.2057,
+    "recall": 0.8851,
+    "centroid_corr": 0.4986,
+    "centroid_mae_keys": 8.081
+   },
+   "n": 2110,
+   "time_s": 286
+  },
+  {
+   "variant": "mlp_ctx2",
+   "lr": 0.001,
+   "best_epoch": 11,
+   "val": {
+    "frame_f1": 0.3478,
+    "precision": 0.2165,
+    "recall": 0.8831,
+    "centroid_corr": 0.5071,
+    "centroid_mae_keys": 8.811
+   },
+   "test": {
+    "frame_f1": 0.3683,
+    "precision": 0.2318,
+    "recall": 0.8964,
+    "centroid_corr": 0.5217,
+    "centroid_mae_keys": 7.952
+   },
+   "n": 2110,
+   "time_s": 314
+  }
+ ]
+}

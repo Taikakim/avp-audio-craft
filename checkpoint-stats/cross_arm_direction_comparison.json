@@ -1,0 +1,52 @@
+{
+  "comparison": "step1000_to_step3000_delta_directions",
+  "arms": [
+    "AdamW 1e-4",
+    "AdamW scratch",
+    "Fusion+AS 5e-6 (Kim)",
+    "Fusion+AS 1e-6",
+    "Fusion+AS 1e-4",
+    "Lion 1e-5"
+  ],
+  "cosine_similarity_matrix": {
+    "AdamW 1e-4 vs AdamW 1e-4": 1.0489521026611328,
+    "AdamW 1e-4 vs AdamW scratch": 0.8095225095748901,
+    "AdamW 1e-4 vs Fusion+AS 5e-6 (Kim)": 0.20793375372886658,
+    "AdamW 1e-4 vs Fusion+AS 1e-6": 0.3336498737335205,
+    "AdamW 1e-4 vs Fusion+AS 1e-4": 0.0022630321327596903,
+    "AdamW 1e-4 vs Lion 1e-5": 0.23626497387886047,
+    "AdamW scratch vs AdamW scratch": 1.048972487449646,
+    "AdamW scratch vs Fusion+AS 5e-6 (Kim)": 0.2083241194486618,
+    "AdamW scratch vs Fusion+AS 1e-6": 0.33530277013778687,
+    "AdamW scratch vs Fusion+AS 1e-4": 0.002252739854156971,
+    "AdamW scratch vs Lion 1e-5": 0.23437325656414032,
+    "Fusion+AS 5e-6 (Kim) vs Fusion+AS 5e-6 (Kim)": 1.0414042472839355,
+    "Fusion+AS 5e-6 (Kim) vs Lion 1e-5": 0.09498552232980728,
+    "Fusion+AS 1e-6 vs Fusion+AS 5e-6 (Kim)": 0.4427105486392975,
+    "Fusion+AS 1e-6 vs Fusion+AS 1e-6": 1.0413516759872437,
+    "Fusion+AS 1e-6 vs Lion 1e-5": 0.15911266207695007,
+    "Fusion+AS 1e-4 vs Fusion+AS 5e-6 (Kim)": 0.00042660560575313866,
+    "Fusion+AS 1e-4 vs Fusion+AS 1e-6": -0.0027900871355086565,
+    "Fusion+AS 1e-4 vs Fusion+AS 1e-4": 1.0399471521377563,
+    "Fusion+AS 1e-4 vs Lion 1e-5": -0.0009708036668598652,
+    "Lion 1e-5 vs Lion 1e-5": 1.0476586818695068
+  },
+  "pca": {
+    "singular_values": [
+      1717.8167724609375,
+      242.92576599121094,
+      107.86100769042969,
+      50.50923538208008,
+      25.164308547973633,
+      1.1065994501113892
+    ],
+    "variance_explained": [
+      0.9755902886390686,
+      0.019510164856910706,
+      0.0038462963420897722,
+      0.000843442277982831,
+      0.00020935521752107888,
+      4.0485048202754115e-07
+    ]
+  }
+}

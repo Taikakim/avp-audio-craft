@@ -1,0 +1,26 @@
+{
+ "lin_ctx1": {
+  "variant": "lin_ctx1",
+  "arch": "lin",
+  "ctx": 1,
+  "height_corr": 0.5109,
+  "height_mae_st": 6.743,
+  "pitchclass_mae_st": 3.04,
+  "n_voiced_frames": 985726,
+  "n_train": 1598,
+  "n_val": 320
+ },
+ "_NOTE": "lin_ctx1 below was produced BEFORE the 2026-08-28 fix and is NOT trustworthy: the loop trained on raw semitones while evaluate() un-standardised, and ynorm was never constructed (TypeError on every run). height_mae_st 66.1 ~ 5.5 octaves is the signature of a head outputting ~0 against 60-84 st targets. Superseded by the reruns.",
+ "mlp_ctx2": {
+  "variant": "mlp_ctx2",
+  "arch": "mlp",
+  "ctx": 2,
+  "height_corr": 0.5606,
+  "height_mae_st": 6.383,
+  "pitchclass_mae_st": 3.002,
+  "n_voiced_frames": 985726,
+  "n_train": 1598,
+  "n_val": 320
+ },
+ "_FINDING": "2026-08-28 (C), after fixing the probe: register IS in z, LINEARLY, and the nonlinear gain is small -- lin 0.511 vs mlp+ctx2 0.561 corr (+0.05), MAE 6.74 -> 6.38 st. So a SIMPLE readout captures nearly all of it and ~0.56 is the substrate ceiling, not a modelling limit. But MAE ~6.4 st is half an octave: z carries the melodic REGISTER CONTOUR (is the lead high or low just now), NOT note-accurate pitch. CAUTION on pitchclass_mae_st ~3.0: that is EXACTLY chance for a circular 12-class quantity (mean |error| of a uniform draw = 3.0), but it is DERIVED from the coarse height estimate (height mod 12), NOT an independent chroma readout -- it is NOT evidence that chroma is absent from z. The same_chroma LatCH head reads a 384-d chroma directly and works. IMPLICATION: an f0 LatCH is viable as a CONTOUR/REGISTER control, not a note-level one -- which is what the existing melody_contour riffers already target with vocabs 5/9/15/77 (coarse contour alphabets). That convergence suggests whoever sized those vocabularies chose well."
+}
