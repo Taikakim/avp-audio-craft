@@ -738,6 +738,44 @@ That is the question that decides whether the pianoroll UI should promise rhythm
 - Plus the earlier burn lines if fired: A11 seed-2 factorial ×16, K∈{8,16} fill ×4, mirctrl
   resurrection ×8. All runs ckpt every ≤2 epochs — partial death at allocation expiry is priced in.
 
+### B13 — Does a MIDI melody axis separate what PQ and CE cannot? — **PLANNED (G, 2026-09-10)**
+- **The finding it rests on (measured, 146 transcribed clips):** split by whether MuScriptor found a lead
+  voice at all, and ask what our existing metrics see —
+
+  | metric | no-lead | lead | d | z |
+  |---|---|---|---|---|
+  | pq | 7.956 | 7.927 | −0.10 | −0.61 |
+  | ce | 6.676 | 6.782 | +0.22 | +1.27 |
+  | crest | 4.058 | 4.744 | **+0.45** | **+2.62** |
+  | flatness | 0.021 | 0.026 | +0.31 | +1.83 |
+  | hf_ratio | 0.013 | 0.013 | 0.00 | 0.00 |
+
+  **Whether a render contains a melody at all is invisible to PQ and CE.** Only crest partly sees it (a lead
+  adds transient peaks). Since the project's standing read is that engaging melodic content is what separates
+  a top rating from a merely well-produced clip, a metric set blind to melody structurally cannot model that
+  judgment — a mechanism for the 4-vs-5 gap, not another failed correlation.
+- **Substrate exists:** `eval/midi_metrics_ingest.py` folds the transcription features into
+  `clip_metrics.db` as a separate `midi_metrics` table keyed by `path` (146 rows, all joinable);
+  `eval/hook_eval_renders.py` produces them and re-scores from saved MIDI on CPU, so metric changes cost no
+  GPU. Runbook §12b.
+- **⚠ COVERAGE IS THE TRAP:** `has_lead`/`n_lead` are defined for every clip, but the melodic features
+  (hook_melodic_ratio, contour_compression, top_motif, distinct46_grid_ratio) are NULL on ~66% because 40%
+  of renders have NO lead voice. Averaging one over a mixed set averages over "no melody" as if it were
+  missing at random. Any null from these metrics must be read against that before it is believed.
+- **Test 1 (cheap, decides the axis):** transcribe the clips Kim has ALREADY RATED and ask whether lead
+  presence / hook_melodic_ratio separates 4 from 5 where PQ and CE do not. Power bound from the ratings
+  work: at n5=154 only d≥0.26 is detectable, so a null here is only informative for effects that large.
+- **Test 2 (the hint worth resolving):** all arms share the same 12 prompts and seeds, so lead presence is
+  PAIRABLE. `fullft_ladder_C_dual` vs `B_autoscale` at ep39 is **5–0 discordant** (exact McNemar p≈0.06),
+  `A_control` vs `B_autoscale` 4–1 (n.s.) — a hint that the autoscale arm drops the melodic lead more often
+  than its ladder siblings, at n=12 pairs which cannot establish it. Per-checkpoint rates run 5/12–10/12
+  with almost fully overlapping Wilson intervals. **Cheap next step: more prompts on those three
+  checkpoints, not more analysis of these twelve.**
+- **Kill criterion:** if lead presence does not separate rated 4s from 5s AND the ladder pairing does not
+  reach significance with a larger prompt set, the axis is orthogonal-but-useless and we stop mining MIDI
+  for taste.
+
+
 ## C. Soups, EMA, checkpoint selection
 
 ### C1 — Temporal soups of the healthy ladders, rendered T256+T1024 cfg7/w1, scored — **DONE 08-21 (G)**
@@ -857,6 +895,48 @@ That is the question that decides whether the pianoroll UI should promise rhythm
 ### C5 — Spectral-repair probes (remove/keep top-1 direction of a broken arm) — **DONE, awaiting Kim's ears**
 - `eval/spectral_repair_lora.py`; 6 rendered sets under `lumi_runs/analysis/task_vector_gram_goa_2026-08-18/renders/`.
   DSP pre-read: removing top-1 restores brightness, not punch; the spike is LoRA-structure, not the pathology.
+
+### C7 — Re-render `fullft_avp_regsweep` + `fullft_avp_surgical` from the ONLINE weights — **PLANNED (G, 2026-09-10)**
+- **Question:** did the surgical/regsweep levers actually differ? **We have never heard them.** Both sbatch
+  scripts train with `--use-ema --ema-beta 0.9999` AND render their in-job auditions with `--use-ema`
+  (`fullft_avp_{regsweep,surgical}.sbatch:166-167`). At beta 0.9999 the half-life is 6931 EMA updates, and
+  with `BS=2`, no accumulation, updates = steps:
+
+  | ckpt | updates | half-lives | EMA still BASE |
+  |---|---|---|---|
+  | ep4 step2990 | 2 990 | 0.43 | **74%** |
+  | ep9 step5980 | 5 980 | 0.86 | **55%** |
+  | ep14 step8970 | 8 970 | 1.29 | 41% |
+  | ep19 step11960 | 11 960 | 1.73 | 30% |
+  | ep24 step14950 | 14 950 | 2.16 | 22% |
+
+  So every audition of these two sweeps was substantially a render of `medium-base`. "All the arms sound
+  alike" is the EXPECTED output of that setup and is not evidence about the levers.
+- **Why it is recoverable:** the checkpoints carry BOTH weight sets. Verified directly on
+  `surgical_anchor` ep14 (LUMI, mmap load): `state_dict` prefixes `{diffusion: 997, diffusion_ema: 523}` —
+  **522 online tensors** (`diffusion.model.*`) and 523 EMA, and they are not the same tensor
+  (`to_cond_embed.2.weight`: online norm 94.80 vs EMA 98.47, cos 0.9977). The LUMI prune keeps the whole
+  `state_dict`, so slimming does not endanger this.
+- **THE BLOCKER, and it is the real work: arm identity is LOST.** All 21 + 22 checkpoints of these two
+  sweeps sit in ONE anonymous `<run>/version_None/checkpoints/` pile — the eight per-GCD arm processes all
+  wrote to the same Lightning default dir, so `-v1..-v5` is ARM COLLISION, not epochs. `epoch=9-step=5980-v3.ckpt`
+  could be any of {anchor, wd0p1, force_scalar, cmuon, x0, SURGICAL, hyperball, adamw_2e4}. Only 3+5
+  checkpoints survive under properly-named per-arm dirs (`regsweep_anchor` and `surgical_anchor`, ep4/9/14).
+  They were found 2026-09-09 inside an unrelated project's folder,
+  `/scratch/.../film_grain/renders/lumi/` — nothing scans there, which is why they were invisible.
+- **How:** (1) identify arms by probing weights (each lever has a signature — `force_scalar` leaves output
+  projections off the spectral path, `hyperball` retracts, `adamw_2e4` is a different optimizer entirely;
+  a per-checkpoint weight-norm/latent-std fingerprint against the anchor should separate them);
+  (2) render the identified set at cfg7/w1 with **`--weights online`** — note both
+  `model_matrix_gen --weights auto` AND `train_lora --init_state_ckpt` PREFER the EMA shadow when one
+  exists, which is precisely the trap that produced the original nulls; (3) read the latent-std table the
+  sweeps were designed around, then Kim's ears.
+- **Kill criterion:** if the online-weight renders are ALSO indistinguishable across arms, the levers
+  genuinely did not differ at these epochs and both sweeps are closed — but that verdict cannot be reached
+  from the EMA renders, which is the whole point.
+- **Cost:** the LUMI prune (running 2026-09-09) takes these from ~1.41 TB to slims; a keep-set of terminal
+  + one mid per identified arm is then affordable against 393 G of local space.
+
 
 ## D. a2a, guidance, sampling
 
