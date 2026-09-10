@@ -168,3 +168,4 @@ latch/val_arm_logs/
 latch/val_arm_logs_driver.log
 .cache/
 traj_sketch_bundle.tgz
+.directory
