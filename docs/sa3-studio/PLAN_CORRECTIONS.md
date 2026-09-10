@@ -95,6 +95,62 @@ The timeline-first spine also survives — it never depended on the server being
   and look sound, but none has been independently checked. Spot-check before building on any
   of them.
 
+## 4b. PRIOR ART THE PLAN MISSED — latent stem mixing already worked once
+
+Kim (2026-09-10): *"we've had an older version where we did latent mixing already, it
+worked pretty cool, it had weighing per stem."* Found, and no plan or map mentions it.
+
+**`mir-feature-extraction/scripts/latent_crossfader.py`** (302 lines) — a documented math
+spec for latent-space stem crossfading on Stable Audio Small:
+
+```
+STEMS = ["drums", "bass", "other", "vocals"]
+
+1. z_math = Interp(z_stem_A, z_stem_B, alpha)     # PER-STEM alpha = the weighting
+2. z_math = slerp(z_math, z_fullmix_A, beta_A)    # "dual reality anchor"
+   z_math = slerp(z_math, z_fullmix_B, beta_B)    #  pull toward each source's colour
+3. audio  = tanh( sum_i Decoder(z_math_i) )
+```
+
+Public API: `setup_device`, `slerp`, `lerp`, `reality_anchor`, `crossfade_stems`,
+`load_latent`, `soft_clip`. Slerp runs on `[B,C,T]` flattened to `[B,C*T]` on the unit
+sphere, energy-preserving, with a lerp fallback for near-parallel vectors.
+
+**`mir-feature-extraction/scripts/latent_server.py:438` — `beatmatch_crossfade_to_wav`:**
+*"Load source stem audio, pitch-shift + time-stretch per track, encode to latents,
+crossfade in latent space."* Supporting machinery in the same file: `_apply_pitch_stretch`
+(bungee → pedalboard → rubberband fallback chain), `_smart_loop_points`,
+`_nearest_zero_crossing`, `_load_crop_downbeats`, `find_stem_crops`.
+
+### Why this matters
+
+That IS the commit pipeline this project arrived at independently: **manipulate in audio,
+encode at the target offset, mix in latent.** It has been built once and Kim reports it
+worked well. Consequences:
+
+- **The M2 hypothesis is partially de-risked.** The premise that audio-domain alignment
+  plus a commit-time encode produces good latent-domain results has precedent, on a
+  different model. M2 still needs running, but it is no longer unprecedented.
+- **The `reality_anchor` idea appears nowhere in the design or any plan.** Interpolating
+  toward each source's full-mix latent to restore colour is a real technique worth a
+  place in the MIX panel.
+- **Four stems maps onto the design's four lanes** — very likely where the lane count came
+  from.
+- **Reuse the pitch/stretch chain.** `_apply_pitch_stretch`'s three-backend fallback is
+  exactly the design's Bungee module, already written.
+
+### The caution before porting the math
+
+This is **SAO-Small**: 64-dim, 21.53 Hz, a conv VAE. **SAME-L is 256-dim, 10.77 Hz, and a
+soft-norm bottleneck — NOT a VAE.** Slerp assumes a roughly isotropic spherical geometry.
+Our own measurements say SAME's latent is **~786x anisotropic, 1/f spectrum
+(alpha ~ -1.12), with 188/256 eigendirections below the velocity-target noise floor**
+(`avp-audio-craft/papers/deep-research/briefs/2026-08-02-frozen-codec-clarity-brief.md`).
+Unit-sphere slerp is a much weaker prior on SAME, and `reality_anchor` may behave
+differently too. **Check empirically on SAME before assuming the math transfers.** Note
+the live server already exposes `GET /mix?crop_a=&crop_b=&t=&interp=slerp`, so a
+comparison is cheap.
+
 ## 5. Design-handoff corrections worth carrying forward
 
 The synthesis found these independently and they match what we established in conversation;
