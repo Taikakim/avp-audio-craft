@@ -57,6 +57,13 @@ def main() -> None:
         addr = str(e.get("addr", ""))
         if not a.include_acks and (addr.endswith("/ack") or addr.endswith("/presence")):
             continue
+        # A DM addressed to SOMEONE ELSE is not yours to read. The queue is written by a
+        # listener that sees ALL multicast traffic, so /sao/dm/<other> lands in it too and
+        # a naive tail shows you the first 180 chars of other people's bilateral messages.
+        # Found 2026-09-10 when this watcher surfaced a GHOST-NOTE -> CONTINUITY DM to
+        # WINTERMUTE. `wait` never had this problem: it filters by address server-side.
+        if "/dm/" in addr and not addr.rsplit("/", 1)[-1].lower() == a.handle.lower():
+            continue
         key = (e.get("ts"), addr, e.get("from"), str(e.get("preview", ""))[:60])
         if key in seen:
             continue
