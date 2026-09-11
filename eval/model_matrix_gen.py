@@ -328,6 +328,55 @@ def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, onl
     return jobs
 
 
+# label -> EMA beta from the run's own recipe. beta is NOT in the checkpoint, so it must come
+# from a recipe source; anything absent here falls back to train_lora's 0.9999 default and is
+# reported as "assumed default" rather than passed off as known. Populated from
+# Misc/models_index_overrides.json / run_meta.json by _load_ema_betas() below.
+EMA_BETAS: dict[str, float] = {}
+
+
+def _load_ema_betas():
+    """Scrape `--ema-beta`/`ema_beta` out of the recipe text we already keep per arm."""
+    import re as _re
+    for label, doc in MODELS_OVERRIDES.items():
+        if not isinstance(doc, dict):
+            continue
+        blob = " ".join(str(doc.get(k, "")) for k in ("recipe", "recipe_legacy_str", "purpose"))
+        m = _re.search(r"ema[-_ ]?beta[ =:]+([0-9.]+)", blob, _re.I)
+        if m:
+            try: EMA_BETAS[label] = float(m.group(1))
+            except ValueError: pass
+
+
+def ema_convergence(state_dict, beta=None, beta_source="assumed default"):
+    """How far an EMA shadow actually travelled from its STARTING weights.
+
+    The checkpoint records the true update count itself: `diffusion_ema.ema_step`. Use it --
+    do NOT substitute `global_step`. They differ by the accumulation factor (a suomi full-FT
+    read global_step 3160 but ema_step 12600, a 4x error in the wrong direction), and guessing
+    from the step count is how this gets mis-reported.
+
+    R = ema_step / halflife, halflife = ln2 / (1 - beta). R is "how many halvings of the
+    initial weights have happened", so the residual starting weight is 0.5**R. CONTINUITY's
+    band (2026-09-10): R = 3..10 is useful; below 3 the shadow is still substantially its own
+    starting point, and for a WARM START that starting point is another model entirely.
+
+    beta is NOT stored in the checkpoint (`hyper_parameters` is empty on ours), so it has to
+    come from the run's recipe -- run_meta.json / the census -- or fall back to the 0.9999
+    default, which is flagged as assumed rather than silently taken as fact.
+    """
+    step = state_dict.get("diffusion_ema.ema_step")
+    if step is None:
+        return None
+    import math
+    n = int(step)
+    b = 0.9999 if beta is None else float(beta)
+    half = math.log(2) / (1.0 - b)
+    r = n / half
+    return {"ema_step": n, "beta": b, "beta_source": beta_source,
+            "halflives": r, "residual_init": 0.5 ** r, "converged": r >= 3.0}
+
+
 def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS, duration=DURATION):
     # steps/duration suffixes ONLY when non-default so existing files + their resume
     # keys are byte-identical; a different steps/duration pass lands as a sibling
@@ -462,6 +511,7 @@ def main():
                      help="stop cleanly after this many wall-clock hours (finishes current clip, "
                           "flushes manifest; resumable via the skip-if-exists cells)")
     args = ap.parse_args()
+    _load_ema_betas()   # recipe-derived betas; absent -> reported as assumed default
 
     if args.native_frames_file:
         for ln in Path(args.native_frames_file).read_text().splitlines():
@@ -678,6 +728,22 @@ def main():
             _wset = "ema" if _use_ema else "online"
             print(f"[weights] {label}/{tag}: {_wset}"
                   + ("" if _has_ema else " (no EMA in ckpt)"), flush=True)
+            # WARN when the shadow we are about to render never left its starting point.
+            # Silent is how this cost us the suomi full-FTs and both AVP sweeps.
+            _emac = ema_convergence(_sd_raw, beta=EMA_BETAS.get(label))
+            if _emac:
+                _src = _emac["beta_source"]
+                _msg = (f"[ema] {label}/{tag}: {_emac['ema_step']} EMA updates, "
+                        f"beta {_emac['beta']} ({_src}) -> {_emac['halflives']:.2f} half-lives, "
+                        f"shadow is still {_emac['residual_init']:.0%} its STARTING weights")
+                if _use_ema and not _emac["converged"]:
+                    print("  !! " + _msg, flush=True)
+                    print("  !! UNCONVERGED EMA (want >=3 half-lives). You are rendering mostly "
+                          "the run's starting point, not what it learned. For a WARM START that "
+                          "starting point is ANOTHER MODEL. Re-run with --weights online to hear "
+                          "the trained weights.", flush=True)
+                else:
+                    print("  " + _msg, flush=True)
             _missing, _unexpected = _tgt.load_state_dict(
                 { k: v.to(next(_tgt.parameters()).dtype) for k, v in _sd.items()
                   if k in dict(_tgt.named_parameters()) or k in dict(_tgt.named_buffers()) },
