@@ -28,6 +28,64 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⬜ Suomi full-FT: render the ONLINE-weight clips, and add a weight-set toggle to the matrix
+**WHAT / WHY** — the three suomi FULL-FT arms have only ever been auditioned through their EMA
+shadow, and for two of them that shadow is ~97% the starting weights. **Proven, not inferred:**
+all three checkpoints carry `diffusion_ema.*` (523 tensors vs 522 online), and
+`model_matrix_gen --weights` defaults to `auto` = *EMA when the checkpoint has one*. The code is
+deterministic, so the existing board clips for these arms ARE the EMA renders.
+
+| arm | step | half-lives | EMA is still |
+|---|---|---|---|
+| `fullft_suomi_t1024_fp32_lr1e-4_s1` (COLD from medium-base) | 3160 | 0.46 | 73% base |
+| `suomift_warm_avpaug19_t1024_bf16_k5_s1` (warm from an EMA ckpt) | 320 | 0.05 | **97% the warm-start** |
+| `suomift_warm_goaft_t1024_bf16_k5_s1` (warm from goa mid) | 320 | 0.05 | **97% the warm-start** |
+
+At β=0.9999 the half-life is 6931 EMA updates and suomisoundi is 1,260 tracks — ~79 microbatches
+an epoch — so the shadow never leaves its origin. The warm arms compound it: `--init_state_ckpt`
+is EMA-PREFERRED, so the initialisation was itself an under-converged EMA, and the run's own EMA
+then averaged back toward that. **The DoRA suomi arms (`wfleet_suomi_*`, `suomisoundi_dora`,
+`sanity16`) are NOT affected** — `train_lora.py` force-disables EMA for adapters, which is exactly
+why the rank-16/32 sanity sounded fine while the full-FTs did not.
+
+**RUN** — one arm per process, standard 109-cell shape:
+```bash
+cd /home/kim/Projects/SAO
+export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+python3 Misc/filelock.py acquire /home/kim/Projects/SAO/.gpu.lock --handle KIM --pid-aware --pid $$
+for a in fullft_suomi_t1024_fp32_lr1e-4_s1 suomift_warm_avpaug19_t1024_bf16_k5_s1 suomift_warm_goaft_t1024_bf16_k5_s1; do
+  .venv/bin/python eval/model_matrix_gen.py --only-labels "$a" --weights online < /dev/null
+done
+python3 Misc/filelock.py release /home/kim/Projects/SAO/.gpu.lock --handle KIM
+```
+**⚠ BLOCKED ON A NAMING DECISION FIRST — do not run the above until it is made.** `clip_name()`
+encodes steps and duration but NOT the weight set, so an online render would OVERWRITE the EMA
+clip at the same path instead of landing beside it, and the comparison would be destroyed by
+doing it. Proposed (mine, needs your yes): rename these three arms' existing clips to carry
+`__ema` — justified because we can PROVE what they are from the code plus the checkpoint
+contents — then let online renders take the plain name, so "no suffix = online" becomes true
+going forward. Note the wrinkle this exposes: 31,257 older full-FT cells have no recorded weight
+set, so a bare "no suffix = online" rule would silently mislabel them; they need the same
+deterministic probe (does the ckpt carry EMA?) before any backfill.
+
+**THEN the matrix UI** (Kim direct 2026-09-11): the weight set is a CHECKBOX like the
+native-length and post-trained toggles, **not** its own row. Default = online. If the online clip
+does not exist, fall back to the EMA one, and **say so beside the player** — the requested clip
+could not be played, here is what you are hearing. Mechanism to copy: `build_model_matrix.py`'s
+`body.filter-native .cell.have.no-nat{opacity:.22}` pattern.
+
+**TAKES** ~15 min for three arms. **VERIFY** the artifact:
+`ls /run/media/kim/Mantu/sa3_lora_runs/model_matrix/ | grep -c '^fullft_suomi.*__ema'` and the
+plain-named count, and a z0-std read (healthy ~1.0; the runaway signature is 5.6).
+**ROLLBACK** — the rename is reversible; the renders only add.
+
+**Separately, a HALF-MISSING PROTECTION worth a decision:** `fullft_suomi_warm.sbatch` passes
+`--weight_decay 0.2` (double the 0.1 the 2026-08-10 latent-runaway fix prescribes — good) but
+has **no `--gradient_clip_val`**, which `train_lora.py` then defaults to `None`. The documented
+fix is the pair. Not necessarily the cause of anything here, but it is half a seatbelt.
+
+
+
 ### ✅ DONE 2026-09-09 — LUMI training logs pulled
 Key loaded, pull run by GHOST-NOTE. `lightning_logs` 14 -> **103**, `metrics.csv` 6 -> **123**,
 `train*.log` 63 -> **248**, plus **342** sbatch `.out/.err` job logs (159 MB) that live in the
