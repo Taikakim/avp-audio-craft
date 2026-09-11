@@ -144,6 +144,56 @@ _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
 
 ---
 
+## MORPH A/B — the measurement that decides the lane (C, 2026-09-11)
+
+**WHY:** D17/D18 both rendered EMA weights whose shadow started at the ZERO-INIT adapter —
+77.9% zero-init at step2000, 22.3% at step12000. The dilution shrinks monotonically with step,
+so it is perfectly confounded with training progress: an A/B on the raw checkpoints would
+measure the EMA horizon and report it as learning. Run these three in order and the lane gets a
+real number instead of impressions. All tooling is committed and self-validating.
+
+### 1. Deconvolve the checkpoints (CPU only, no GPU lock)
+RUN — one block, from `/home/kim/Projects/SAO`:
+```
+R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && for S in 4000 6000 8000 10000 12000; do P=$((S-2000)); .venv/bin/python eval/ema_deconv_ckpt.py --ckpt $R/riffer_step$S.pt --prev $R/riffer_step$P.pt --out $R/deconv/riffer_step$S.pt --report; done
+```
+TAKES ~6 min. VERIFY `ls $R/deconv/*.pt | wc -l` = **5**, and each `[validate]` line shows
+deconvolved **below** raw (expect ~0.20 vs ~0.59). A validate line that does NOT improve means
+the gap or beta is wrong — stop and say so.
+REPORT BACK: `grep -h validate` output from the run.
+ROLLBACK: `rm -rf $R/deconv` — nothing else is touched, originals are read-only inputs.
+
+### 2. Re-render the morph clips from the deconvolved weights (GPU, ~15 min)
+RUN:
+```
+cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && for S in 4000 6000 8000 10000 12000; do .venv/bin/python lumi/render_morph.py --ckpt $R/deconv/riffer_step$S.pt --label morph_L3_deconv_step$S --melody-dir /home/kim/Projects/latents_sa3_morphL3 --latent-dir /home/kim/Projects/latents_sa3 --out $R/clips --n-refs 4 --gains 1.0,2.0 --cfg 7 --steps 24; done; Misc/gpu_guard.sh release KIM
+```
+TAKES ~15 min. **VERIFY THE ARTIFACT, NOT THE EXIT CODE** — renders segfault at teardown after
+writing every file (rc=134 happened on step6000 last time and all 12 clips were fine):
+`ls $R/clips/*deconv*.wav | wc -l` = **60**. Also check none is a dead DC clip:
+a healthy clip peaks at exactly **0.8913**, a NaN one at exactly **1.000**.
+REPORT BACK: that count.
+ROLLBACK: `rm $R/clips/*deconv*` — the original EMA clips are untouched and differently named.
+
+### 3. Transcribe + score both weight sets (GPU then CPU)
+RUN:
+```
+cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/hook_eval_renders.py --wavs "$R/clips/*.wav" --out $R/hook.jsonl --midi-dir eval/morph_midi; Misc/gpu_guard.sh release KIM; .venv/bin/python eval/morph_contour_ab.py --renders $R/clips --midi eval/morph_midi --out eval/morph_contour_ab_D17.json
+```
+TAKES ~30 min (transcription dominates; it is resumable — clips with a cached `.mid` skip the GPU).
+VERIFY `morph_contour_ab_D17.json` exists and the run printed `cells:` with a number **> 100**.
+**READ IT AS:** per arm, `own` vs `foreign`. Own > foreign = the render followed ITS OWN fed
+contour rather than contours in general. Compare `morph_L3_lion_r128_bs32_step*` (EMA) against
+`morph_L3_deconv_step*` — **that delta is the whole point**: if adherence rises across steps only
+in the EMA set, the "learning" was the EMA horizon.
+ROLLBACK: delete the json; nothing else is written.
+
+**⚠ The positive control in step 3 is FATAL BY DESIGN and has failed before** (scored 0.09 where
+the renders scored 0.151, because the fed stream is f0-derived while the check re-extracts a
+MuScriptor skyline). If it fails, the number that follows is not interpretable — report the
+control's value and stop rather than reading the adherence figures.
+
+
 ## 🔴 Decisions waiting on Kim
 
 - **[2026-09-04, C] Morph-conditioner adherence is still UNMEASURED after four instruments.** Not a null result — every meter failed its own control. Next session, step 1 is a bounded bug: the contour encoder reproduces ground truth at only 0.55 (L3) when it should be ~1.0, degrading with alphabet size = a grid/window offset. Fix that and the whole test becomes readable. **Nothing about the conditioner should be concluded until then.**
