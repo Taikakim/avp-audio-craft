@@ -108,8 +108,9 @@
   </div>
 
   {#each project.lanes as lane (lane.id)}
-    <div class="lane-row">
+    <div class="lane-row" style="border-left: 3px solid {lane.color}">
       <div class="lane-header">
+        <span class="lane-chip" style="background: {lane.color}"></span>
         <span class="lane-label">{lane.label}</span>
         <button class:active={lane.muted} onclick={() => project.toggleMute(lane.id)} title="Mute">M</button>
         <button class:active={lane.solo} onclick={() => project.toggleSolo(lane.id)} title="Solo">S</button>
@@ -144,7 +145,7 @@
             class:selected={project.selectedClipId === clip.id}
             class:stale={clip.latentState === "stale"}
             class:pending={!!clip.pendingJobId}
-            style="left: {secToPx(clip.startSec)}px; width: {secToPx(clip.durationSec)}px"
+            style="left: {secToPx(clip.startSec)}px; width: {secToPx(clip.durationSec)}px; border-color: {lane.color}"
             role="button"
             tabindex="0"
             aria-pressed={project.selectedClipId === clip.id}
@@ -173,7 +174,7 @@
   .timeline {
     overflow-x: auto;
     background: var(--panel-bg);
-    border-radius: 6px;
+    border: 1px solid var(--border);
     padding: 8px 0;
   }
   .ruler {
@@ -185,7 +186,7 @@
   .ruler-mark {
     position: absolute;
     top: 0;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--fg-dim);
     transform: translateX(-50%);
   }
@@ -199,31 +200,40 @@
     flex: 0 0 140px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px;
+    gap: 6px;
+    padding: 5px 8px;
+    background: var(--panel2);
+  }
+  .lane-chip {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
   }
   .lane-label {
     flex: 1;
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--fg);
   }
   .lane-header button {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     font-size: 10px;
     padding: 0;
-    background: var(--btn-bg);
+    background: var(--panel-bg);
     border: 1px solid var(--border);
-    border-radius: 3px;
     color: var(--fg-dim);
     cursor: pointer;
   }
   .lane-header button.active {
     background: var(--accent);
+    border-color: var(--accent);
     color: var(--accent-fg);
   }
   .lane-header input[type="range"] {
-    width: 40px;
+    width: 36px;
+    accent-color: var(--accent);
   }
   .lane-track {
     position: relative;
@@ -246,7 +256,6 @@
     bottom: 4px;
     background: var(--clip-bg);
     border: 1px solid var(--clip-border);
-    border-radius: 4px;
     overflow: hidden;
     cursor: grab;
     touch-action: none;
@@ -257,9 +266,11 @@
   }
   .clip.selected {
     outline: 2px solid var(--accent);
+    outline-offset: -1px;
   }
   .clip.stale {
-    border-color: var(--warn);
+    border-color: var(--warn) !important;
+    border-style: dashed;
   }
   .clip.pending {
     opacity: 0.6;
@@ -274,8 +285,8 @@
   .latent-badge {
     font-size: 9px;
     padding: 1px 4px;
-    border-radius: 3px;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
     flex: 0 0 auto;
   }
   .latent-badge.valid {

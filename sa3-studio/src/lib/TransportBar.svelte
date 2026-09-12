@@ -10,9 +10,9 @@
 
 <div class="transport">
   <button onclick={() => (project.playing ? project.pause() : project.play())} class="primary">
-    {project.playing ? "Pause" : "Play"}
+    {project.playing ? "❚❚ PAUSE" : "▶ PLAY"}
   </button>
-  <button onclick={() => project.stop()}>Stop</button>
+  <button onclick={() => project.stop()}>■ STOP</button>
   <span class="time">{fmt(project.playheadSec)}</span>
 
   <span class="spacer"></span>
@@ -34,18 +34,21 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    height: 42px;
+    padding: 0 12px;
     background: var(--panel-bg);
-    border-radius: 6px;
+    border: 1px solid var(--border);
   }
   button {
     background: var(--btn-bg);
     border: 1px solid var(--border);
     color: var(--fg);
-    padding: 6px 14px;
-    border-radius: 4px;
+    padding: 5px 12px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-family: inherit;
   }
   button.primary {
     background: var(--accent);
@@ -55,13 +58,13 @@
   .time {
     font-variant-numeric: tabular-nums;
     color: var(--fg-dim);
-    font-size: 13px;
+    font-size: 12px;
   }
   .spacer {
     flex: 1;
   }
   .server {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--fg-dim);
   }
   .server.err {

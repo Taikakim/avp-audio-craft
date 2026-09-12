@@ -20,22 +20,23 @@
 </script>
 
 <div class="inspector">
+  <h3>Clip</h3>
   {#if !project.selectedClip}
     <p class="hint">Select a clip to inspect and render it.</p>
   {:else}
     {@const clip = project.selectedClip}
     <div class="row">
-      <span class="field-label">source</span>
+      <span class="field-label">SOURCE</span>
       <span class="mono">
         {clip.source.kind === "audio-file" ? clip.source.name : clip.source.kind === "crop" ? `crop:${clip.source.cropId}` : `job:${clip.source.jobId}`}
       </span>
     </div>
     <div class="row">
-      <span class="field-label">position</span>
+      <span class="field-label">POSITION</span>
       <span class="mono">{clip.startSec.toFixed(3)}s → {(clip.startSec + clip.durationSec).toFixed(3)}s</span>
     </div>
     <div class="row">
-      <span class="field-label">latent</span>
+      <span class="field-label">LATENT</span>
       <span class="latent-state {clip.latentState}">{clip.latentState}</span>
       {#if clip.latentState === "stale"}
         <span class="hint-inline">moved since last encode — RENDER to re-encode at this position</span>
@@ -45,30 +46,30 @@
     <hr />
 
     <label class="field">
-      <span>prompt (leave empty to just re-decode the source latent)</span>
+      <span>PROMPT <em>(empty = just re-decode the source latent)</em></span>
       <textarea rows="2" bind:value={clip.render.prompt}></textarea>
     </label>
     <label class="field">
-      <span>negative prompt</span>
+      <span>NEGATIVE PROMPT</span>
       <input type="text" bind:value={clip.render.negativePrompt} />
     </label>
     <div class="row-fields">
       <label class="field narrow">
-        <span>steps</span>
+        <span>STEPS</span>
         <input type="number" min="1" bind:value={clip.render.steps} />
       </label>
       <label class="field narrow">
-        <span>cfg</span>
+        <span>CFG</span>
         <input type="number" step="0.1" bind:value={clip.render.cfgScale} />
       </label>
       <label class="field narrow">
-        <span>seed</span>
+        <span>SEED</span>
         <input type="number" bind:value={clip.render.seed} />
       </label>
     </div>
 
     <button class="render-btn" onclick={doRender} disabled={rendering || !!clip.pendingJobId}>
-      {rendering || clip.pendingJobId ? "Rendering…" : "RENDER"}
+      {rendering || clip.pendingJobId ? "RENDERING…" : "▸ RENDER"}
     </button>
     {#if renderError}
       <p class="error">{renderError}</p>
@@ -82,17 +83,25 @@
 
 <style>
   .inspector {
-    padding: 12px;
+    padding: 10px 12px;
     background: var(--panel-bg);
-    border-radius: 6px;
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: 8px;
     min-width: 260px;
   }
+  h3 {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+  }
   .hint {
     color: var(--fg-dim);
-    font-size: 13px;
+    font-size: 12px;
   }
   .hint-inline {
     color: var(--warn);
@@ -108,6 +117,8 @@
     color: var(--fg-dim);
     width: 64px;
     flex: 0 0 auto;
+    font-size: 10px;
+    letter-spacing: 0.05em;
   }
   .mono {
     font-family: ui-monospace, monospace;
@@ -116,8 +127,8 @@
   }
   .latent-state {
     padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 11px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
   .latent-state.valid {
@@ -141,17 +152,23 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    font-size: 12px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
     color: var(--fg-dim);
+  }
+  .field em {
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    opacity: 0.8;
   }
   .field input,
   .field textarea {
-    background: var(--track-bg);
+    background: var(--panel2);
     border: 1px solid var(--border);
     color: var(--fg);
-    border-radius: 4px;
     padding: 4px 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-family: inherit;
   }
   .row-fields {
@@ -164,11 +181,12 @@
   .render-btn {
     background: var(--accent);
     color: var(--accent-fg);
-    border: none;
-    border-radius: 4px;
+    border: 1px solid var(--accent);
     padding: 8px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    font-family: inherit;
+    font-size: 12px;
     cursor: pointer;
   }
   .render-btn:disabled {
@@ -181,7 +199,7 @@
   }
   .note {
     color: var(--fg-dim);
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.4;
   }
 </style>

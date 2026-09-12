@@ -9,7 +9,7 @@
 
 <div class="library">
   <h3>Crops</h3>
-  <p class="hint">Server-known latents (GET /crops). Drag one onto a lane.</p>
+  <p class="hint">server-known latents (GET /crops) — drag one onto a lane</p>
   {#if project.availableCrops.length === 0}
     <p class="hint">none reported by the server yet</p>
   {/if}
@@ -20,24 +20,28 @@
       </div>
     {/each}
   </div>
-  <p class="hint">Or drop an audio file straight onto a lane to import it directly.</p>
+  <p class="hint">or drop an audio file straight onto a lane to import it directly</p>
 </div>
 
 <style>
   .library {
-    padding: 12px;
+    padding: 10px 12px;
     background: var(--panel-bg);
-    border-radius: 6px;
+    border: 1px solid var(--border);
     min-width: 220px;
   }
   h3 {
     margin: 0 0 4px;
-    font-size: 13px;
-    color: var(--fg);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
   }
   .hint {
     color: var(--fg-dim);
-    font-size: 11px;
+    font-size: 10px;
+    letter-spacing: 0.02em;
     margin: 4px 0;
   }
   .chips {
@@ -48,9 +52,8 @@
     overflow-y: auto;
   }
   .chip {
-    background: var(--track-bg);
+    background: var(--panel2);
     border: 1px solid var(--border);
-    border-radius: 4px;
     padding: 4px 8px;
     font-size: 12px;
     font-family: ui-monospace, monospace;

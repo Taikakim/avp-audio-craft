@@ -88,18 +88,25 @@ export interface Clip {
 export const LANE_IDS = ["drums", "bass", "other", "vocals"] as const;
 export type LaneId = (typeof LANE_IDS)[number];
 
+// Same four hues as LANE_META in the design handoff (docs/sa3-studio/design_handoff/
+// SA3 Studio v3.dc.html) -- purple/green/turq/neutral, in that order -- so a clip's
+// lane is visually identifiable the same way there and here.
+export const LANE_COLORS = ["var(--purple)", "var(--green)", "var(--accent)", "var(--neutral-lane)"] as const;
+
 export interface Lane {
   id: LaneId;
   label: string;
+  color: string;
   muted: boolean;
   solo: boolean;
   gain: number; // 0..1, audio-domain preview gain only -- never sent to the server
 }
 
 export function defaultLanes(): Lane[] {
-  return LANE_IDS.map((id) => ({
+  return LANE_IDS.map((id, i) => ({
     id,
     label: id[0].toUpperCase() + id.slice(1),
+    color: LANE_COLORS[i % LANE_COLORS.length],
     muted: false,
     solo: false,
     gain: 1.0,
