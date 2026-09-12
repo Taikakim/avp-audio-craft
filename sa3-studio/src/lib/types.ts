@@ -113,9 +113,24 @@ export const DEFAULT_RENDER_PARAMS: RenderParams = {
 };
 
 export type ClipSource =
+  | { kind: "empty" } // a slot on the timeline with nothing in it yet -- a generate/longform will fill it
   | { kind: "audio-file"; name: string; url: string } // user-imported audio, decoded client-side
   | { kind: "crop"; cropId: string } // a pre-extracted latent crop known to the render server (GET /crops)
   | { kind: "render"; jobId: string; filename: string }; // output of a committed RENDER (GET /audio/{job}/{filename})
+
+/** Label for a clip's source, for the timeline and the inspector. */
+export function sourceLabel(source: ClipSource): string {
+  switch (source.kind) {
+    case "empty":
+      return "empty";
+    case "audio-file":
+      return source.name;
+    case "crop":
+      return source.cropId;
+    case "render":
+      return source.filename;
+  }
+}
 
 export interface Clip {
   id: string;

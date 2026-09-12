@@ -116,6 +116,38 @@ class ProjectStore {
 
   // ---------------------------------------------------------------- clips
 
+  /**
+   * An empty slot for a generation. Without this there is no way to reach
+   * /generate at all -- every other route into the timeline starts from audio
+   * that already exists. Default length is the server's own /generate default
+   * (47s); drag the clip's right edge to change it before rendering.
+   */
+  addEmptyClip(laneId: LaneId, startSec: number, durationSec = 47): Clip {
+    const clip: Clip = {
+      id: nextId("clip"),
+      laneId,
+      startSec: Math.max(0, snapSec(startSec, this.snap, this.meter, this.edgesExcept(""))),
+      durationSec,
+      offsetSec: 0,
+      source: { kind: "empty" },
+      latentState: "none",
+      render: { ...DEFAULT_RENDER_PARAMS, op: "generate" },
+    };
+    this.clips.push(clip);
+    this.selectedClipId = clip.id;
+    return this.lastClip();
+  }
+
+  /**
+   * The clip just pushed, as it lives in the array. $state deep-proxies on
+   * insert, so the local object we built is NOT the same reference the store
+   * now holds -- returning the raw one gives callers a dead handle whose
+   * mutations silently don't apply. Always hand back the proxy.
+   */
+  private lastClip(): Clip {
+    return this.clips[this.clips.length - 1];
+  }
+
   addClipFromFile(file: File, laneId: LaneId, startSec: number, durationSec: number): Clip {
     const url = URL.createObjectURL(file);
     const clip: Clip = {
@@ -131,7 +163,7 @@ class ProjectStore {
     };
     this.clips.push(clip);
     this.markMasterStale();
-    return clip;
+    return this.lastClip();
   }
 
   /** Drop a server-known latent crop onto the timeline. Preview comes from
@@ -159,7 +191,7 @@ class ProjectStore {
     };
     this.clips.push(clip);
     this.markMasterStale();
-    return clip;
+    return this.lastClip();
   }
 
   /** Correct a clip's length once its audio has actually decoded. */

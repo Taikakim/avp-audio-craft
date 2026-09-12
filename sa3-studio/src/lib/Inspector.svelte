@@ -51,11 +51,13 @@
     <div class="rows">
       <span class="k">SOURCE</span>
       <span class="v mono">
-        {clip.source.kind === "audio-file"
-          ? clip.source.name
-          : clip.source.kind === "crop"
-            ? `crop:${clip.source.cropId}`
-            : `job:${clip.source.jobId}`}
+        {clip.source.kind === "empty"
+          ? "empty slot — nothing rendered yet"
+          : clip.source.kind === "audio-file"
+            ? clip.source.name
+            : clip.source.kind === "crop"
+              ? `crop:${clip.source.cropId}`
+              : `job:${clip.source.jobId}`}
       </span>
 
       <span class="k">POSITION</span>

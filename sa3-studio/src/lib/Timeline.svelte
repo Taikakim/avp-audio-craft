@@ -268,6 +268,7 @@
           bind:this={laneEl[lane.id]}
           style="width: {contentPx}px"
           onclick={(e) => onLaneClick(e, lane.id)}
+          ondblclick={(e) => project.addEmptyClip(lane.id, secAtClientX(e.clientX, lane.id))}
           onkeydown={onLaneKeydown}
           ondragover={(e) => e.preventDefault()}
           ondrop={async (e) => {

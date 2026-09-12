@@ -1,6 +1,6 @@
 <script lang="ts">
   import { project } from "./store.svelte";
-  import type { Clip } from "./types";
+  import { sourceLabel, type Clip } from "./types";
   import { drawPeaks, peaksFor } from "./waveform";
 
   interface Props {
@@ -17,11 +17,9 @@
 
   const widthPx = $derived(Math.max(2, clip.durationSec * pxPerSec));
   const label = $derived(
-    clip.source.kind === "audio-file"
-      ? clip.source.name
-      : clip.source.kind === "crop"
-        ? clip.source.cropId
-        : clip.source.filename,
+    clip.source.kind === "empty"
+      ? clip.render.prompt.trim() || "empty — set a prompt, then RENDER"
+      : sourceLabel(clip.source),
   );
 
   // Load the clip's audio, reduce it to peaks over exactly the trimmed span,
@@ -66,6 +64,7 @@
   class:selected={project.selectedClipId === clip.id}
   class:stale={clip.latentState === "stale"}
   class:pending={!!clip.pendingJobId}
+  class:empty={clip.source.kind === "empty"}
   style="left: {clip.startSec * pxPerSec}px; width: {widthPx}px; border-color: {laneColor}"
   role="button"
   tabindex="0"
@@ -134,6 +133,12 @@
   }
   .clip.pending {
     opacity: 0.65;
+  }
+  /* Nothing rendered into it yet -- reads as a slot, not as silent audio. */
+  .clip.empty {
+    background: transparent;
+    border-style: dashed;
+    opacity: 0.85;
   }
   .wave {
     position: absolute;

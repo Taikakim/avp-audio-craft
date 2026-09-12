@@ -21,6 +21,7 @@
     {/each}
   </div>
   <p class="hint">or drop an audio file straight onto a lane to import it directly</p>
+  <p class="hint">double-click an empty lane to place a slot for a text → audio generate</p>
 </div>
 
 <style>
