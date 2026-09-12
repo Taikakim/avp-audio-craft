@@ -38,11 +38,49 @@ export function fromLatentOffset(o: LatentOffset): number {
   return (o.frame * LATENT_HOP + o.residualSamples) / SAMPLE_RATE;
 }
 
+/**
+ * What a RENDER actually runs. Each maps to one real endpoint on
+ * explorer_render_server.py -- there is deliberately no option here that the
+ * server cannot currently do (no n-way latent mixdown, no /encode, no
+ * /inpaint; those are M7 work we'd author server-side first).
+ */
+export type RenderOp = "generate" | "decode" | "a2a_track" | "a2a_mix" | "longform" | "bend";
+
+export const RENDER_OPS: { value: RenderOp; label: string; needs: string }[] = [
+  { value: "generate", label: "generate — text → audio", needs: "prompt" },
+  { value: "decode", label: "decode — latent → audio", needs: "a crop or latent path" },
+  { value: "a2a_track", label: "a2a — audio → audio pass", needs: "a server-side audio path + prompt" },
+  { value: "a2a_mix", label: "a2a mix — A→B transition", needs: "two server-side audio paths" },
+  { value: "longform", label: "longform — prompt arc", needs: "a schedule string" },
+  { value: "bend", label: "bend — latent data-bending", needs: "a latent + at least one op" },
+];
+
+/** One entry of /bend's `ops` list. Vocabulary read from eval/latent_bend.py. */
+export interface BendOp {
+  op: "channel_swap" | "channel_roll" | "noise" | "quantize" | "segment_shuffle" | "band_scale";
+  amount?: number;
+  k?: number;
+  shift?: number;
+  bits?: number;
+  seg?: number;
+  channels?: number[];
+}
+
+export const BEND_OP_NAMES: BendOp["op"][] = [
+  "channel_swap",
+  "channel_roll",
+  "noise",
+  "quantize",
+  "segment_shuffle",
+  "band_scale",
+];
+
 /** Per-clip render parameters -- deliberately NOT global. The design handoff's
  * prototype kept prompt/steps/cfg/seed in one global block; PLAN_CORRECTIONS.md
  * §5 flags that as a bug the real app must fix (each clip can be a different
  * generation). */
 export interface RenderParams {
+  op: RenderOp;
   prompt: string;
   negativePrompt?: string;
   steps: number;
@@ -50,13 +88,28 @@ export interface RenderParams {
   seed: number; // -1 = resolve server-side (resolve_seed)
   samplerType?: string;
   distShift?: number;
+  /** a2a_track / a2a_mix / longform */
+  noiseLevel: number;
+  apgScale?: number;
+  /** a2a_mix: the B side, and the region prompt the transition is rendered under */
+  mixBPath?: string;
+  promptRegion?: string;
+  /** longform */
+  schedule?: string;
+  windowSec?: number;
+  overlapSec?: number;
+  xfadeSec?: number;
+  /** bend */
+  bendOps?: BendOp[];
 }
 
 export const DEFAULT_RENDER_PARAMS: RenderParams = {
+  op: "generate",
   prompt: "",
   steps: 24,
   cfgScale: 6.0,
   seed: -1,
+  noiseLevel: 0.4,
 };
 
 export type ClipSource =
@@ -70,6 +123,8 @@ export interface Clip {
   /** Timeline position in seconds. Audio-domain, unconstrained by the latent frame. */
   startSec: number;
   durationSec: number;
+  /** Trim into the source material, in seconds from its start. */
+  offsetSec: number;
   source: ClipSource;
   /** Set once a clip is backed by a latent (crop or a render that returned latents). */
   latentState: LatentState;
@@ -77,9 +132,26 @@ export interface Clip {
   encodedAt?: LatentOffset;
   /** URL the transport can decodeAudioData() from -- always audio, per "the timeline is audio". */
   previewUrl?: string;
+  /**
+   * Absolute path ON THE SERVER, when one is known. This is the hinge for
+   * a2a: /a2a_track and /a2a_mix take `audio_path` and resolve it with
+   * require_path() server-side -- they do NOT accept an upload, and the server
+   * has no ingest route. So a clip is only a2a-able once the server can see
+   * its audio: either it came back from a job (build_response's `files` are
+   * absolute server paths), or the path was typed in by hand.
+   */
+  serverPath?: string;
+  /** Server-side path to this clip's latent, when it has one (job `latents`). */
+  latentPath?: string;
+  /** Native tempo, for MATCH BPM. No /analyze endpoint exists -- user-entered. */
+  bpm?: number;
+  /** First downbeat, seconds into the clip's own material. User-entered. */
+  downbeatSec?: number;
   render: RenderParams;
   /** Set while a RENDER is in flight for this clip. */
   pendingJobId?: string;
+  /** Human-readable note from the last render (timings, warnings). */
+  lastRenderNote?: string;
 }
 
 // Four lanes, matching the four-stem prior art (mir-feature-extraction's

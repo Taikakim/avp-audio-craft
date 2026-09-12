@@ -124,10 +124,17 @@ export class Transport {
       const lane = lanes.find((l) => l.id === clip.laneId);
       node.connect(lane ? this.laneGain(lane.id) : this.masterGain);
 
-      const offsetIntoClip = Math.max(0, fromSec - clip.startSec);
+      // Two different offsets: how far the playhead is into the clip, and how
+      // far the clip is trimmed into its own source material.
+      const intoClip = Math.max(0, fromSec - clip.startSec);
+      const offsetIntoBuffer = clip.offsetSec + intoClip;
       const whenToStart = ctxStart + Math.max(0, clip.startSec - fromSec);
-      const durationRemaining = clip.durationSec - offsetIntoClip;
-      node.start(whenToStart, offsetIntoClip, durationRemaining);
+      const durationRemaining = Math.min(
+        clip.durationSec - intoClip,
+        Math.max(0, buf.duration - offsetIntoBuffer),
+      );
+      if (durationRemaining <= 0) continue;
+      node.start(whenToStart, offsetIntoBuffer, durationRemaining);
       this.scheduled.push({ node, clipId: clip.id });
       latestEnd = Math.max(latestEnd, clipEnd);
     }

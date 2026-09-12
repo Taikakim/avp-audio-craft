@@ -101,6 +101,71 @@ export interface DecodeRequest {
   latent_dir?: string;
 }
 
+/**
+ * POST /a2a_track. `audio_path` is resolved by require_path() ON THE SERVER --
+ * there is no upload route, so the file must already exist on the server's
+ * filesystem. `noise_levels` renders one output per level (a sweep); omit it
+ * and `noise_level` is used for a single pass.
+ */
+export interface A2ATrackRequest {
+  audio_path: string;
+  prompt: string;
+  noise_level?: number; // default 0.4
+  noise_levels?: number[];
+  steps?: number; // default 24
+  cfg_scale?: number; // default 6.0
+  apg_scale?: number; // default 1.0
+  seed?: number;
+  [extra: string]: unknown;
+}
+
+/** POST /a2a_mix -- the A→B transition, not an n-way mixdown (no such op exists). */
+export interface A2AMixRequest {
+  a_path: string;
+  b_path: string;
+  prompt_region: string;
+  mode?: string; // default "sinesweep"
+  seg_sec?: number; // default 75.0
+  snap_to_downbeat?: boolean; // default true
+  tempo_match?: boolean; // default true
+  tempo_mode?: string; // default "ramp"
+  fine_align?: boolean; // default true
+  trans_start_sec?: number; // default 26.0
+  trans_end_sec?: number; // default 49.0
+  noise_level?: number; // default 0.42
+  chroma_morph?: boolean; // default true
+  interp?: "slerp" | "lerp";
+  steps?: number;
+  cfg_scale?: number;
+  seed?: number;
+  [extra: string]: unknown;
+}
+
+/** POST /longform -- `schedule` uses the arc grammar "0:promptA|45:promptB|...". */
+export interface LongformRequest {
+  schedule: string;
+  duration?: number; // default 120.0
+  steps?: number;
+  cfg_scale?: number;
+  seed?: number;
+  audio_path?: string;
+  init_latent_path?: string;
+  window_sec?: number; // default 30.0
+  overlap_sec?: number; // default 5.0  (must satisfy 0 < overlap < window)
+  xfade_sec?: number; // default 4.0
+  noise_level?: number; // default 0.4
+  [extra: string]: unknown;
+}
+
+/** POST /bend -- op vocabulary from eval/latent_bend.py's apply_bends(). */
+export interface BendRequest {
+  ops: { op: string; amount?: number; [k: string]: unknown }[];
+  latent_path?: string;
+  crop_id?: string;
+  latent_dir?: string;
+  seed?: number;
+}
+
 const RENDER_BASE = ""; // vite dev proxy forwards these paths to the render server (see vite.config.ts)
 
 /** Parse a response body as JSON, tolerating the non-JSON bodies a dead proxy
@@ -162,6 +227,22 @@ export const api = {
   generate: (req: GenerateRequest) => postJSON<JobResponse>("/generate", req),
   /** RENDER: decode an existing latent (crop_id or latent_path) to audio. */
   decodeJob: (req: DecodeRequest) => postJSON<JobResponse>("/decode", req),
+  /** RENDER: audio-to-audio pass over a file the SERVER can see. */
+  a2aTrack: (req: A2ATrackRequest) => postJSON<JobResponse>("/a2a_track", req),
+  /** RENDER: the A→B transition between two server-side files. */
+  a2aMix: (req: A2AMixRequest) => postJSON<JobResponse>("/a2a_mix", req),
+  /** RENDER: longform generation over a prompt arc. */
+  longform: (req: LongformRequest) => postJSON<JobResponse>("/longform", req),
+  /** RENDER: latent data-bending, then decode. */
+  bend: (req: BendRequest) => postJSON<JobResponse>("/bend", req),
+
+  /** The sigma schedule the real run would use -- same build_schedule() the sampler calls. */
+  schedule: (params: Record<string, string | number>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) p.set(k, String(v));
+    return getJSON<Record<string, unknown>>(`/schedule?${p.toString()}`);
+  },
+  roots: () => getJSON<Record<string, unknown>>("/roots"),
 
   /** Ready-to-play URL for a job's output file (GET /audio/{job_id}/{filename}). */
   audioUrl: (jobId: string, filename: string) => `${RENDER_BASE}/audio/${jobId}/${filename}`,

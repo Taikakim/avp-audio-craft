@@ -2,15 +2,41 @@
   import { onDestroy, onMount } from "svelte";
   import CropLibrary from "./lib/CropLibrary.svelte";
   import Inspector from "./lib/Inspector.svelte";
+  import MasterStrip from "./lib/MasterStrip.svelte";
+  import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
   import Timeline from "./lib/Timeline.svelte";
   import TransportBar from "./lib/TransportBar.svelte";
 
+  function onKeydown(e: KeyboardEvent) {
+    const t = e.target as HTMLElement | null;
+    // Never steal keys from a field the user is typing in.
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+    if (e.key === " ") {
+      e.preventDefault();
+      project.togglePlay();
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+      if (project.selectedClipId) {
+        e.preventDefault();
+        project.removeClip(project.selectedClipId);
+      }
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      project.seek(0);
+    } else if (e.key === "+" || e.key === "=") {
+      project.zoomBy(1.4);
+    } else if (e.key === "-") {
+      project.zoomBy(1 / 1.4);
+    }
+  }
+
   onMount(() => {
     project.connect();
+    window.addEventListener("keydown", onKeydown);
   });
   onDestroy(() => {
     project.disconnect();
+    window.removeEventListener("keydown", onKeydown);
   });
 </script>
 
@@ -23,8 +49,12 @@
   <TransportBar />
 
   <div class="workspace">
-    <Timeline />
+    <div class="stack">
+      <MasterStrip />
+      <Timeline />
+    </div>
     <aside>
+      <ServerPanel />
       <CropLibrary />
       <Inspector />
     </aside>
@@ -122,14 +152,17 @@
     gap: 12px;
     align-items: flex-start;
   }
-  .workspace > :global(.timeline) {
+  .stack {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
   aside {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    flex: 0 0 260px;
+    flex: 0 0 280px;
   }
 </style>
