@@ -758,9 +758,13 @@ All times in timeline seconds; `SR = 44100`, `HOP = 4096`, `T = ceil(duration_se
      cfg_interval (from progress with σ₀ = nl), dist_shift (ArraySchedule or model default),
      scale_phi, sampler_type, latch (lane chain, §5.5), film/lora via prepare_model,
      latents_sink, callback)`.
-   - The callback is the sinesweep hold (`explorer_render_server.py` 1793–1799) generalised:
+   - The hold is the sinesweep release (`explorer_render_server.py` 1793–1799) generalised:
      at step time `t`, frames with `depth < t` are overwritten with `(1−t)·z_ref + t·eps`
-     (not yet released), so frames whose depth is 0 come out identical to the reference.
+     (not yet released). ODE samplers (euler/rk4/dpmpp, and the LatCH-guided Euler) get it
+     as the step callback; **pingpong gets it as a `renoise_hook`**, because its callback
+     fires after the denoise and edits to `x` there have no effect. After the pass the result
+     is **spliced** into the lane (`SPLICE_XFADE_FRAMES` crossfade at region edges) over the
+     frames with `depth > 0`, so frames whose depth is 0 are exactly the reference.
    - `z_lane := z0` after the pass; a non-finite z0 aborts the commit (`non-finite latents in
      lane n pass g — refusing to continue`).
    Lanes whose chain is active but which have no A2A clip get the stage note
@@ -809,10 +813,9 @@ Re-running a commit with the resolved seeds reproduces it bit-for-bit, within th
 CK-flash-attention nondeterminism.
 
 ### 8.3 Known risks, each tested before it is relied on
-- **R1 — callback hold on the guided path.** The sinesweep hold is proven on the unguided
-  sampler; the guided sampler must also pass the live `x` into the callback. M8 task 1 is a
-  failing test that proves or refutes this; if refuted, the fork hook adds a `hold_fn` argument
-  to `sample_flow_euler_multi_latch_guided` applied after each Euler update.
+- **R1 — callback hold on the guided path — resolved while planning.** The guided sampler
+  already passes the live `x` to its callback and documents that in-place edits take effect
+  (`latch_guided.py`, "graded clamps / release schedules"); M8's GPU smoke confirms it.
 - **R2 — slerp on SAME's anisotropic latent** (~786× anisotropic). The committed-vs-preview A/B
   on the master strip is the instrument; no default is changed until Kim has listened.
 - **R3 — latent splice clicks.** `SPLICE_XFADE_FRAMES` is a named constant for tuning by ear.
