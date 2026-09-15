@@ -417,6 +417,18 @@ four cannot wait for you to open it:
    **staged blob** compiles and greps clean of the other author's symbols, then pass the torch.
    An empty attribution search means the search cannot see the link, **not** that work is unowned.
 
+## Background tasks die to Claude Code's OWN memory reaper (2026-09-15)
+`run_in_background` tasks on this desktop get killed with *"stopped because the system is running
+low on memory"* while **MemAvailable is ~85 GB**. It is **not** the kernel OOM killer (nothing in
+`journalctl -k`), not systemd-oomd/earlyoom (both inactive), and not baloo (it only uses RAM, it
+kills nothing). The harness reaper appears to read **MemFree**, which the page cache keeps under
+1 GB, so a tiny 15 MB wake listener was reaped twice within a minute. Processes started OUTSIDE the
+harness survive: the systemd `sao-listen-*` units run for days untouched. So:
+- **Anything long (renders, training, waits) runs outside the harness**: a `systemd --user` unit,
+  or `setsid nohup … &` with its output in a log. Kim launching it himself also works.
+- **A killed background task is not a failed job.** Check the artifact (files written, log tail).
+- **Do not re-arm a reaped `wait` in a loop.** The systemd unit still queues events; only the wake is lost.
+
 ## Shell output is context — never dump, always narrow (Kim direct 2026-08-24)
 `Bash` results are routinely the single largest consumer of an agent's context window (a `/context`
 readout put them at 19% / 186k tokens in one session), and a filled window is what forces the
