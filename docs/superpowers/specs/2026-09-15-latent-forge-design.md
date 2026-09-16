@@ -296,7 +296,7 @@ Ranges (handoff table, adjusted for rectified flow where noted in §10):
 | length s | 1–184 | no |
 | seed | 0–999999 | yes |
 | σ min | 0.001–0.5 | no |
-| σ max | 0.01–1 | no |
+| σ max — **not a `ScheduleSpec` field**: it is the pass's init noise level, so it is the same number as the target's NOISE on an A2A target, and a read-only 1.00 for a fresh generate | 0.01–1 | no |
 | ρ (σ curve) | 0.1–15 | no |
 | λ min / λ max | −12–0 / 0–6 | no |
 | plateaus | 2–24 | yes |
@@ -472,7 +472,11 @@ no sampling for it to steer.
 
 ## 6. HTTP contract (frozen for M1–M10)
 
-All `/forge/*` bodies and responses are JSON unless stated. Errors return
+All `/forge/*` bodies and responses are JSON unless stated. **Only `/forge/*` is frozen by this
+spec.** The client also calls these pre-existing server routes directly, unchanged: `/info`,
+`/status`, `/schedule`, `/models`, `/slots`, `/audio/{job_id}/{filename}`. Keep them in their own
+client module (`lib/forge/models.ts` for the checkpoint index) so the frozen and unfrozen surfaces
+stay distinguishable. Errors return
 `{"ok": false, "error": "<message>"}` with 400 (validation), 404 (missing thing), 409 (busy or
 conflict) or 500 (adds `"traceback"`). TypeScript types in `latent-forge/src/lib/forgeApi.ts`
 and Python in `eval/forge/contract.py` mirror this section field for field.
@@ -526,6 +530,9 @@ interface JobResponse {                  // = build_response() of the existing s
 interface Progress {
   job_id: string; op: string;
   stage: string; stage_index: number; stage_count: number;   // commit: the 9 stage labels of §8.1
+  // stage_index is 1-BASED; 0 = not started. Ops wrapped from the existing server
+  // (generate, a2a_track, a2a_mix, longform, decode, bend) have no stage vocabulary:
+  // they emit stage_count 0 and an empty stage, and report steps only.
   step: number; steps: number;                                // within the current sampling pass
   steps_left_total: number; steps_total: number;              // across the whole job
 }
