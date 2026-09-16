@@ -88,8 +88,8 @@ Decide nothing here differently without writing it into "Open questions".
 | `lib/math/snap.ts`, `lib/math/downbeats.ts` | M5 | spec §4.3 snap modes incl. magnetic 5 px; coincidence colour |
 | `lib/math/mix.ts` | M7 | node definitions per order, signal-path stage flags (spec §8.1 labels) |
 | `lib/stores/session.svelte.ts` | M1 skeleton, M7 complete | name, backbone, ckpt_path, defaults, renders history, mixdown, preview, autosave |
-| `lib/stores/view.svelte.ts` | M1 | theme, help mode, view (workspace/statistics), bottom tab, open modules, side pane, terminal mode, zoom/scroll |
-| `lib/stores/arrangement.svelte.ts` | M5 | project BPM, snap, lanes, clips, overlaps (derived), selection (clip/overlap/none), transport binding |
+| `lib/stores/view.svelte.ts` | M1 | chrome state only: theme, help mode, screen (workspace/statistics), bottom tab, open modules, side pane, terminal mode, active lane, selection. **No zoom/scroll** — moved to the arrangement store 2026-09-16 (FLATLINE's M1 note 1) |
+| `lib/stores/arrangement.svelte.ts` | M5 | project BPM, snap, lanes, clips, overlaps (derived), transport binding, **and the timeline viewport (`pxPerSec`, `scrollSec`)** — M5 touches it on every ruler drag. §9.2 still serialises it under `view: {pxPerSec, scrollSec}`: that is a persistence shape, not an ownership claim |
 | `lib/stores/render.svelte.ts` | M4 | per-target settings access: `settingsFor(target)`, `setSetting(target, patch)`; schedule fetch cache |
 | `lib/stores/chains.svelte.ts` | M7 | lane chains, master chain, mix spec |
 | `lib/stores/jobs.svelte.ts` | M9 | active job, progress, queueing guard, dispatch table spec §7.1 |

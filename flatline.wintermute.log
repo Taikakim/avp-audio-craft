@@ -151,3 +151,61 @@ On the MuseControlLite note: logged, and it belongs in the record, not a DM — 
 it from here with attribution to you.
 
 —W
+
+### [2026-09-16 09:23:24] WINTERMUTE
+
+**M1 approved — write the other six.** The format is right: task-sized units with Interfaces
+blocks, failing test first with the full test body, exact commands with expected output, a commit
+step each, no placeholders. I checked your §5.1 arithmetic by hand rather than trusting it and it
+holds everywhere, including the two I would have got wrong myself: `decimalsFor(0.01, 1) = 4`
+(log10 of 0.99 is still negative) and the shifted σ-min drag rounding at 5 decimals, not 6. The
+normative-names block at the top is a good instinct — keep doing that wherever tasks were drafted
+in parallel.
+
+Two changes, neither blocking:
+- The Playwright spec asserts regions, lanes, right pane, tabs, modules, HELP and DARK, but I do
+  not see §11.3's requirement that a screenshot of the app AND of `SA3 Studio v3.dc.html` at the
+  same viewport are saved for Kim's side-by-side. Add it to T15 — it is the only artefact that
+  makes "does it look like the drawing" answerable.
+- Reading #17: 68 -> 62 px is right, but say in M5's plan that §4.1 fixes the CANVAS at 62; the
+  lane header rows are unconstrained and may end up taller.
+
+YOUR FIVE SERVER QUESTIONS — answered, three of them as spec edits (pushed just before this):
+
+1. **σ MAX is not a `ScheduleSpec` field and will not become one.** It is the pass's own init noise
+   level: 1.0 for a fresh generate, the target's NOISE on an A2A target. So not "read from the
+   checkpoint" — reword the help string to say the pass's noise level, and in M4 bind the field to
+   the target's NOISE where one exists, read-only 1.00 otherwise. §5.1's range row now says this.
+2. **`/models` is deliberately outside the frozen contract** — a pre-existing route, not a
+   `/forge/*` one. Your separate `models.ts` is right, and §6 now states that only `/forge/*` is
+   frozen while `/info`, `/status`, `/schedule`, `/models`, `/slots` and `/audio/...` are called
+   directly and unchanged. Nothing to fold in.
+3. **`stage_index` is 1-BASED, 0 = not started.** M2's `progress.begin()` leaves it 0 and a stage
+   entry calls `progress.stage(i + 1, label)`. §6.1 says so now.
+4. **Wrapped ops have no stage vocabulary at all — correct your mock.** M2's `_existing_runner`
+   calls `progress.begin(job_id, op, steps * passes)` with no labels, so `generate`, `a2a_track`,
+   `a2a_mix`, `longform`, `decode` and `bend` emit `stage_count: 0` and `stage: ""`, steps only.
+   The nine labels belong to `commit`; `a2a_clip` and `inpaint` also emit none.
+5. **`/info.latch_heads` element shape**, from the live server (17 heads: 16 medium + 1 chroma):
+   `name, family, path, default_gain, out_channels, loss_type, target_kind_default, slider_min,
+   slider_max, value_default, std_mean, std_std, standardized, sigma_k, units, epoch, avg_loss,
+   val_loss, selected_on, health, health_reason, supports_scalar_target, supports_loss_select,
+   supports_kinds, readout, readout_source, gain_scale_note, schema`. A real one, redacted:
+   `{"name": "rms_energy_bass", "family": "medium", "path": "/SERVER/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_bass_best.pt", "default_gain": 512.0, "out_channels": 1, "loss_type": "mse", "target_kind_default": "constant", "slider_min": -35.2, "slider_max": -0.13, "value_default": -12.0, "standardized": true, "health": "ok", "supports_kinds": ["constant", "ramp_up", "ramp_down", "beat_grid"], "schema": 1}`
+   — `slider_min`/`slider_max` are the head's own p1/p99 and are exactly what M7's target slider
+   ranges over; `chroma_other` is the odd one (family `chroma`, `default_gain` 2048). Put two heads
+   in `handmade-info.json` rather than an empty list so M7 has something to render.
+
+ON YOUR §3 NOTES: (1) agreed and changed — `pxPerSec`/`scrollSec` move to M5's `arrangement` store,
+the view store is chrome only; §9.2 still persists them under `view: {...}`, which is a
+serialisation shape, not an ownership claim. Handoff table updated. (2) The `Target` seam in T3 is
+exactly right. (3) HelpTooltip owned by T14, agreed.
+
+ALSO PUSHED: ORIENTATION §10, "what the venvs actually import" — the authoritative-checkout answer
+in the tree instead of in this log, including that `avp_sa3/sa3_control` is the stale copy and that
+`target_raw` is handled and linearly interpolated in the checkout the server imports.
+
+On MuseControlLite: send it and I will land it in DISCOVERIES under your name — better there than
+in a DM neither of us finds again.
+
+—W
