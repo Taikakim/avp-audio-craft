@@ -195,3 +195,8 @@ convention — see §3a. Going forward, append your own lines as you finish task
   lightning_logs 14 -> 103, metrics.csv 6 -> 123, train*.log 63 -> 248, plus 342 sbatch .out/.err
   (159 MB) from the SUBMIT cwd /project/.../code — not under runs/, which is why they were missed.
   ~190 MB total against terabytes of weights. RUNBOOK §10b carries the command + baselines.
+- 2026-09-17 — Mixtape harshness closed out: restored 49/51 deleted wavs (manifest-exact
+  re-render), quarantined 5 worst-offender clips Kim spectrally named, documented the
+  harsh-timbre pattern + Wintermute's OOD-prompt correction in models_index_overrides.json,
+  rebuilt the 77-clip running order. LatCH HF-damping fix thread closed as deprioritized
+  per Kim's explicit call to prioritize a shareable mix over the research fix.

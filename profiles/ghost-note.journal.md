@@ -1020,3 +1020,27 @@ is completeness, not loss. `run_meta.json` is the one asymmetry, and it runs the
 Also worth separating from the throttle signature the skill warns about: my first attempt failed
 with `Permission denied (publickey)` on a valid key. `ssh-add -l` said "The agent has no
 identities" — the key was simply not loaded, not banned. Same error text, opposite remedy.
+
+## 2026-09-17 — Mixtape harshness thread closed out (restore, quarantine, census note)
+
+Kim spent his own time doing spectral/listening analysis over the 82-clip mixtape corpus and
+named 5 worst-offender clips with real diagnoses (wide thin peaks/valleys, roller-coaster
+contour, smooth non-clipping over-distortion). Quarantined them, rebuilt the running order
+(82→77), and folded his exact words into `Misc/models_index_overrides.json` so it survives past
+this chat — the standing rule ("a finding that lives only in chat is considered lost") applied
+literally, since he'd already lost his own tagging session once this week to a UI refresh scare.
+
+Restored 49/51 deleted `.wav`s from `manifest.jsonl` params; last 2 are just waiting on a LUMI
+transfer, not a real blocker.
+
+**The one thing worth remembering for next time:** Wintermute's same-day WORKLOG entry
+(`spectral_harshness_contrast.py`) landed a much sharper version of the same finding than either
+Kim's ear-diagnosis or my census note alone — harshness correlates with the OOD
+`genre_fusion_probe_local` PROMPT set (74.2% vs 35%/29% elsewhere) more than with the checkpoint,
+and the significant spectral bands are all LOW, not high, so `rms_energy_air` was never going to
+fix it. I wrote my census note before reading that, then had to go back and fold in the
+correction. Lesson: when a finding is "being independently investigated by [someone else]" per my
+own summary, check whether they landed something before writing a permanent record, not after.
+
+Kim explicitly deprioritized the HF-fix research thread this session ("I don't think it's worth
+our time... I want to have a mix to share") — noted here so nobody re-opens it without a new ask.
