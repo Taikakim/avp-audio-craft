@@ -205,21 +205,33 @@ def process_pair(model, sr, p, args, out_dir):
     # clips again, exactly the bug already found and fixed tonight.
     ta, tb = p["a_bpm"], p["b_bpm"]
 
-    # Beat-aware cropping via the ESTABLISHED mir tool (create_training_crops.py),
-    # not a fresh reimplementation: A's END must snap BACKWARD ONLY
-    # (find_downbeat_before) so the crop never overshoots past the target point --
-    # a plain nearest-neighbor snap (what this used to do) can pick a downbeat AFTER
-    # the target, silently lengthening A past where it was meant to end. B's START
-    # uses find_closest_downbeat (nearest, either direction), matching that tool's
-    # own "for start alignment" convention.
-    db_a = np.asarray(madmom_downbeats(A, sr))
-    db_b = np.asarray(madmom_downbeats(B, sr))
-    a_target = args.a_frac * A.shape[1] / sr
-    b_target = args.b_frac * B.shape[1] / sr
-    a_end = find_downbeat_before(db_a, a_target)
-    a_end = float(a_end) if a_end is not None else a_target
-    b_start = find_closest_downbeat(db_b, b_target)
-    b_start = float(b_start) if b_start is not None else b_target
+    # Beat-aware cropping. Two paths:
+    #  - PRECOMPUTED bounds (Kim 2026-09-17, via mixtape_bar_aware_bounds.py):
+    #    a_end/b_start are each that clip's OWN entry/exit point, computed once
+    #    from its own downbeat grid so it's identical whether the clip is acting
+    #    as "A" here or was "B" in the previous pair -- bar count from entry to
+    #    exit is a multiple of 4 ("the eventual clips you're mixing have
+    #    downbeats divisible by four"), snapped to a zero crossing, and the exit
+    #    point is chosen from a low-RMS spot in the clip's latter section where
+    #    possible (avoids landing a transition mid-drop/mid-buildup).
+    #  - fallback: the original per-pair a_frac/b_frac downbeat snap, via the
+    #    ESTABLISHED mir tool (create_training_crops.py). A's END snaps BACKWARD
+    #    ONLY (find_downbeat_before) so the crop never overshoots past the
+    #    target point -- a plain nearest-neighbor snap (what this used to do)
+    #    can pick a downbeat AFTER the target, silently lengthening A past
+    #    where it was meant to end. B's START uses find_closest_downbeat
+    #    (nearest, either direction), matching that tool's own convention.
+    if "a_end_sec" in p and "b_start_sec" in p:
+        a_end, b_start = float(p["a_end_sec"]), float(p["b_start_sec"])
+    else:
+        db_a = np.asarray(madmom_downbeats(A, sr))
+        db_b = np.asarray(madmom_downbeats(B, sr))
+        a_target = args.a_frac * A.shape[1] / sr
+        b_target = args.b_frac * B.shape[1] / sr
+        a_end = find_downbeat_before(db_a, a_target)
+        a_end = float(a_end) if a_end is not None else a_target
+        b_start = find_closest_downbeat(db_b, b_target)
+        b_start = float(b_start) if b_start is not None else b_target
     A_use = A[:, :max(1, round(a_end * sr))]
     B_use = B[:, round(b_start * sr):]
 
