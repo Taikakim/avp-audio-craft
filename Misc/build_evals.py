@@ -87,6 +87,24 @@ RIFFER_HTML = ["onset_eval.html", "disentangle.html", "dora_results.html",
                "chroma_steer.html", "gain_knee.html", "mp.html", "traj.html",
                "latch_sweep.html", "breathing.html", "rarity.html"]
 
+# THEMATIC eval folders (project guidance 2026-09-16: "we'll need to start to have
+# some structure with our artifacts"). A theme is ONE accumulating page at
+# /files/evals/<folder>/ that collects every test in its stream, instead of a new
+# page + a new landing link per experiment. That is the clutter fix: the landing
+# grows by THEME, not by experiment, so a new test costs zero landing entries.
+#
+# These are NOT built by this script -- each theme has its own generator and its own
+# staging dir, and WINTERMUTE rsyncs it to /files/evals/<folder>/. This list exists
+# so the landing LINKS them; a page nobody links is reachable only by URL, which is
+# how pages get lost. Add a tuple when a theme starts, not when it is finished.
+#
+# (folder, label, one-line "what this family of evals is for")
+THEMATIC = [
+    ("latch", "LatCH steering — eval stream",
+     "Does a trained control head actually steer the model, and by how much? "
+     "Accumulating: newest test first, each with clips and what it does not establish."),
+]
+
 
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
 --dim:#7a8a8e;--faint:#9aa7a9;--rule:#c9d2d0;--rule-light:#e2e6e2;--edge:#0f9e99;--edge-ink:#0c807c;
@@ -2760,6 +2778,12 @@ def build_landing(control, renders):
             'model and which tests exercised it (the awareness page; barely-tested flagged).</p>')
     doc += ('<p class="dim">📊 <a href="stats.html"><b>Statistics</b></a> — the whole zoo measured '
             '(31k clips × 14 metrics): rank 128 vs 16, the training-length sweet spot, CE/PQ leaderboard.</p>')
+    # W 2026-09-16: top100.html is built by Misc/build_top100_page.py into ~/evals_aac/
+    # -- a DIFFERENT dir from this script's OUT -- so this landing never knew about it
+    # and every regeneration silently dropped its link while the page itself kept
+    # serving. Linked explicitly here so it survives a rebuild rather than by accident.
+    doc += ('<p class="dim">🏆 <a href="top100.html"><b>Top 100 by ear-proxy</b></a> — our best '
+            'clips per frame length, PQ-ranked, near-duplicates disqualified (name-level + MERT).</p>')
     doc += ('<p class="dim">❓ <a href="kaq.html"><b>KAQ</b></a> — Kim\'s Asked Questions: settled answers to recurring questions, by topic.</p>')
     # Kim, 2026-07-13: musicological analysis of the MuScriptor Goa MIDIs — standalone
     # analysis page (built by Misc/build_goa_musicology_page.py into staging).
@@ -2819,6 +2843,19 @@ def build_landing(control, renders):
                 f'text-decoration:none">{html.escape(_t)} &rarr;</a>'
                 f'<div style="color:#9ab;font-size:12px;line-height:1.45">{html.escape(_d)}</div></div>')
     doc += '</div>'
+    # Thematic streams rank ABOVE the curated players: each one aggregates a whole
+    # line of work onto a single accumulating page (eval-tables spec §15 -- pages that
+    # collect a lot of work sit near the top of their section), and they are where new
+    # tests land from now on, so they should be the first thing found.
+    if THEMATIC:
+        doc += '<h2><span class="mark">§</span> Thematic streams</h2>'
+        doc += ('<p class="dim">One accumulating page per theme — new tests are appended '
+                'to the stream rather than spawning a page each. Start here.</p>')
+        for _folder, _lbl, _desc in THEMATIC:
+            doc += (f'<div class="run"><div class="name">'
+                    f'<a href="{html.escape(_folder)}/">{html.escape(_lbl)}</a></div>'
+                    f'<div class="desc">{html.escape(_desc)}</div></div>')
+
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
     doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')
     _riffer_labels = {"onset_eval.html": "onset control-authority", "disentangle.html": "disentanglement",
