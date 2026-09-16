@@ -4,6 +4,26 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-09-16 — WINTERMUTE: `docs/data.md` — a GENERATED training-data census, because agents
+  keep re-deriving "what can this corpus train" by `find`/`ls` every session.**
+  `Misc/training_data_census.py` scans every latent/target/timeseries store and both SQLite DBs and
+  emits the doc — re-run it, don't hand-edit counts. Referenced from `ARCHITECTURE.md` (Doc map +
+  Data & drives) and `CLAUDE.md` (reading order, 2b).
+  It exists to defuse two naming traps that each produced a confident wrong answer this session:
+  (1) **`.npy` is ALWAYS the latent, `.npz` is ALWAYS a target/companion** — a store can be 100%
+  `.npz` and train nothing (`latents_sa3_chroma` 5401, `latents_sa3_stem_chroma` 4907 are chroma
+  TARGETS); (2) **several target stores are named `latents_*`**, so the name lies.
+  Capability findings worth knowing before planning a control run: `latents_sa3` (goa, 5401),
+  `latents_avp` (2393) and the four ai-music curated sets (chill 115 · organic_dance 32 ·
+  prog_psytechno 371 · prog_trance_melodic_techno 192) carry crop scalars AND per-crop timeseries →
+  scalar-control + LatCH ready. `latents_goa_bigset` (goa_archive, 12,524), `latents_goa_aug8`
+  (3,941) and `suomisoundi_latents` (1,261) are **latents only — no crop scalars, no ts** → base/LoRA
+  only until targets are generated for them.
+  Two traps now written down: `whole_track_target_source.get()` applies the top-level 100 Hz rate to
+  EVERY field, so a ~1 Hz expanded field (genre/mood/instrument) is sliced at a 100x offset and the
+  crop is **silently dropped**, not errored; and goa_archive whole-track features cover only the
+  **first 90 s** of each track — ~80% of T256 crops and 68% of T512 crops fall inside, **0% of T1024**.
+
 - **2026-08-21 (early) — WINTERMUTE: PQ ALONE is the best algorithmic proxy for Kim's ear (77.6%);
   CLAP backfilled 14%→45% and does NOT improve it (my 78.8% claim RETRACTED); the goa-corpus gap is
   TRANSCODES, not bitrate; and "more steps is worse" reverses under control into an avp/goa split.**
@@ -2429,3 +2449,49 @@ DISPOSITION: Z0_STD_MAX stays as a crude non-finite-adjacent backstop; per-epoch
 MY OWN WRONG TURN, recorded because the method matters more than the result: I "confirmed" the per-channel discriminator on n=6 per group and reported MEDIANS of a distribution I had not plotted. Blown channels are bimodal (p50 0, p90 154, p99 253), so a median reports the low half and is blind to the tail by construction -- two groups agreeing at "2 channels" was the same flat half sampled twice, not an invariance. I also drew the flagged group with an undisclosed std<6 cap; it excluded nothing that day (ptm max 5.33) but an undisclosed filter is worse than a wrong number. STANDARD ADOPTED: a meter is credible when it recovers an ordering nobody told it about (the lr dose-response), not when it separates two hand-picked groups.
 
 CONTAMINATION (the question that actually mattered): of the 285, 37 were ever rated across 74 of 3078 rating records; worst RATED clip std 4.8, nearly all 2.3-2.9, and the 163.98 end was never served to anyone. Boards are clean even though the gate is miscalibrated.
+
+- **2026-09-16 (overnight)** — DJ-style beat-matched overlay mixing built end-to-end (per Kim's
+  own manual-DJ-mixing description): real madmom downbeat crop-correction, asymmetric BPM
+  pre-bending on both sides before the mix point (outgoing track creeps up in small steps timed
+  to quiet passages, incoming track starts under-tempo and catches up around a detected break),
+  the overlap built via outpainting each side toward the join (not a short inpainted gap), an
+  EQ sweep on the incoming track (thin/mids start, bass snapped in at the nearest downbeat), then
+  a latent slerp crossfade + nl 0.8 chroma-guided sine-bump a2a (nl 0.7-0.8 confirmed by ear as
+  the best a2a strength on this SA3-generated-clip corpus — unlike real-track transitions, a2a
+  doesn't cost crispness here since both sides are already SA3 output). New files: `eval/
+  dj_beatmatch.py`, `eval/dj_eq_sweep.py`, `eval/chain_dj_overlay.py` (built via 3 parallel
+  agents + 1 integration critic — the critic caught 4 real bugs pre-first-run, incl. a
+  clip-ordering bug that would have silently broken the "unfiltered outside the mix region"
+  guarantee, since SA3's raw output routinely exceeds ±1). First real run found the outpaint
+  scale interpretation gave a ~90s overlap (extension = mult×own-length, not the outpaint_
+  lengthen.py "total = mult×own-length" convention) — "sounded horrible" per Kim's ear; a
+  corrected ~15s-overlap rerun on the same pairs was confirmed better.
+- **2026-09-16 (overnight)** — real madmom BPM measurement for all 82 AVP mixtape clips
+  (`eval/mixtape_madmom_bpm.py`), replacing the coarser corpus-metadata bpm field. TWO real bugs
+  found and fixed en route, both worth remembering: (1) the loader lacked the m4a/ffmpeg
+  fallback every other script in this codebase has — 51/82 clips (all `.m4a`) silently fell
+  back to the old bpm before this was caught. (2) The octave/subdivision-fold correction
+  (`chroma_morph_transitions.tempo_of()`'s "closest to 145 in the 110-185 band" logic) does NOT
+  generalize to this corpus — the AVP mixtape genuinely spans 92.3-153.8 bpm per its own
+  metadata, so the hardcoded 110-185 "goa trance" band force-folded several genuinely-slow
+  clips upward by 1.5x (measured 148.15 for clips whose corpus bpm was 99.4). Fixed by anchoring
+  the fold-candidate selection to each clip's OWN corpus-metadata bpm instead of a fixed global
+  target — avoids re-hardcoding a second wrong band. Final corrected range: 93.0-154.8 bpm,
+  monotonic, no more suspicious repeated values.
+- **2026-09-16 (overnight)** — mixtape v2 compiled: all 82 clips 3x-lengthened (outpaint_
+  lengthen.py's validated mechanism) with the last third faded + run through an ASCENDING
+  (not symmetric) noise-level a2a pass toward nl 0.8, prepping each as the DJ-overlay's
+  "outgoing" segment; all 81 consecutive BPM-sorted pairs mixed via the corrected-scale
+  chain_dj_overlay.py. Assembled into one continuous 121.9-minute file
+  (`eval/mixtape_assemble.py`) — flagged limitation: each pairwise render is a self-contained
+  two-clip mix, not a splice-ready snippet, so concatenation needs a short crossfade at each of
+  80 internal joins and each clip's arrival is technically heard twice nearby its own seam; true
+  seamlessness would need the compile re-architected as one continuous multi-clip pass. Staged
+  at `~/staging/mixtape-v2/` (full mixtape + 82 individual lengthened clips) and `~/staging/
+  dj-mixing-experiments/` (the three test batches + Kim's live commentary), DM'd to Wintermute
+  for publish. UNREVIEWED BY KIM — this entire mixtape rebuild ran overnight while he slept.
+- **2026-09-16 (overnight)** — background-task memory-reaper (the known false-OOM-kill gotcha,
+  see CLAUDE.md) hit the 81-pair DJ-overlay compile job right at its own teardown crash, AFTER
+  all 81 pairs had already rendered successfully (162/162 files, "[all done]" in the log) — the
+  "killed" status was misleading; always check the log/output files before assuming a killed
+  background task lost its work, not just its exit code.
