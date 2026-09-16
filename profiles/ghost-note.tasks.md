@@ -200,3 +200,7 @@ convention — see §3a. Going forward, append your own lines as you finish task
   harsh-timbre pattern + Wintermute's OOD-prompt correction in models_index_overrides.json,
   rebuilt the 77-clip running order. LatCH HF-damping fix thread closed as deprioritized
   per Kim's explicit call to prioritize a shareable mix over the research fix.
+- 2026-09-17 (cont) — Mixtape v3: added div-4-bar cropping + RMS-aware mixing-point
+  placement (reused mir's find_end_for_div4_downbeats/find_zero_crossing_backwards and
+  dj_beatmatch.detect_quiet_points instead of reinventing). Full 76-transition/52.7min
+  render, published as portfolio page "Custom Stable Audio 3 model portfolio".
