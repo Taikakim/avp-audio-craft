@@ -2622,3 +2622,25 @@ the already-landed LatCH-sampler-substitution bug (commit `8e65acd`) as the reas
 damping work is planned here.
 
 Commits: `34c71cf`, `eb63027` (census). Not pushed.
+
+## 2026-09-17 (cont) — GHOST-NOTE — mixtape v3: full 76-transition bar-aware mix rendered
+
+Extended the crossfader per Kim's refinements: every clip's usable span now spans a whole
+multiple of 4 bars (reused mir's `find_end_for_div4_downbeats`/`find_zero_crossing_backwards`
+from `create_training_crops.py` rather than reinventing them — a real discovery-phase win, both
+functions already existed and matched his description almost verbatim), with the exit point
+biased toward a local RMS dip in the clip's closing section (`dj_beatmatch.detect_quiet_points`,
+also already built) so the handoff lands in a quiet passage instead of mid-drop. New scripts:
+`mixtape_bar_aware_bounds.py`, `mixtape_build_pairs.py`, `mixtape_assemble_continuous.py`,
+`mixtape_portfolio_clips.py`; `chain_simple_crossfade.py::process_pair` now accepts precomputed
+per-clip bounds. Full render: 76/76 transitions, 0 non-div4 bar counts, 10s linear crossfade
+(confirmed ~9.86-9.91s), a2a nl=0.7. Assembled into one non-duplicating 52.7min continuous mix
+(both plain and a2a variants) at `Mantu/sa3_lora_runs/mixtape_v3_bar_aware/`.
+
+Published as a portfolio page ("Custom Stable Audio 3 model portfolio" — Kim's own title, the
+earlier Kone-grant framing dropped since that deadline passed): two continuous highlight excerpts
++ 10 representative before/after-smoothing transition comparisons. **Real constraint hit and
+solved, worth remembering:** the full 76-transition set cannot fit an Artifact's page budget
+(64MB total / 15MB per file) at a listenable bitrate — a curated spread across the tempo arc was
+used instead of truncating to the first N, with the full-quality files staying on disk as the
+real deliverable. Commit `52e4cc0`.
