@@ -122,6 +122,7 @@ __pycache__/
 !/Misc/build_paper_verdicts.py
 !/Misc/paper_verdicts_data.json
 !/Misc/training_data_census.py
+!/Misc/build_latch_evals_page.py
 
 # DM logs (tracked — private repo, private content; NOT publicly mirrored by default)
 !/*.*.log
