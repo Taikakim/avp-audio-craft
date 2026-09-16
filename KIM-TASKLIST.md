@@ -606,7 +606,15 @@ correction (harshness tracks the OOD `genre_fusion_probe_local` prompt set more 
 and the real spectral signature is thin low-mid, not excess HF). **Not pursuing an HF-damping fix**
 per Kim's call — see next item.
 
-- **[2026-09-17, G] Full mixtape rebuild with the validated crossfader — not yet requested, flagging as the natural next step.** You said "I want to have a mix to share with some people" but haven't yet asked for a specific rebuild pass. If/when you do: the settled recipe is real madmom-BPM-sorted 77-clip order (`mixtape_final_order.json`, already updated for the 5 quarantined clips), 10 s crossfade window, plain linear amplitude crossfade (not equal-power, not dB-linear — both tried and rejected this week), optional bass-swap variant (kick/bass held to A until late in the window, highs cross-fade throughout) and a2a nl up to 0.75, all in `eval/chain_simple_crossfade.py`. Say the word and this can run unattended.
+### ✅ Full mixtape rebuild with bar-aware cropping — DONE, needs your ears (G, 2026-09-17)
+Built and rendered per your follow-up ask: div-4-bar cropping + RMS-aware mixing-point placement
+on top of the previously-validated recipe (10s linear crossfade, a2a nl 0.7). All 76 transitions
+rendered clean, 0 non-div4 bar counts. Full 52.7min continuous mix (plain + a2a variants) at
+`Mantu/sa3_lora_runs/mixtape_v3_bar_aware/mixtape_full_{plain,a2a}.wav`. Portfolio page published:
+**"Custom Stable Audio 3 model portfolio"** — two continuous highlight excerpts + 10 before/after
+transition comparisons (the full 76-transition set doesn't fit the page's size budget at
+listenable quality, so it's a curated spread, not a truncation). Awaiting your listen — bass-swap
+variant not rendered this round since you hadn't confirmed you wanted it.
 
 ### ✅ PT→base soup ladder — LISTENED, closed NEGATIVE (Kim, 2026-09-07)
 *"only the alpha .5 is listenable, and even that has artifacts... it's evident the mixing just degrades the sound."* **PT does not blend with base** — no usable intermediate model exists, so the punchy-vs-always-the-same question stays untested by this route. Falsifies the assumption the arm rested on: a fine-tune does NOT stay in the linear-mode-connectivity regime just because 997 of 1019 tensors are identical. Also explains why my descriptors gave opposite answers per sampler — they were reading artifact spectra, not a mixture. EXPERIMENTS C6, closed. Don't rebuild.
