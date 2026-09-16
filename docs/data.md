@@ -90,6 +90,31 @@ Mostly targets and probe sets. Read the `.npz` column before assuming these are 
 | `latents (SAO-Small)` | MISSING | | | | — | 64-dim @21.53Hz, T=256. |
 | `latents_stems` | 0 | 0 | **none** |  | **targets only** (no model input) | 64-dim stem latents (per-track subdirs). |
 
+## Duplicate copies — this document may name the WRONG one
+
+Same store basename found at a path the tables do not use. **Prefer the local NVMe copy for any dataloader** (MASTER §5: cold random reads off the removable drive crawl and were a real cause of step-0 hangs). Removable drives also unmount; a `Projects/` path does not.
+
+| store | .npy | .npz | also on disk at | census currently says |
+|---|---:|---:|---|---|
+| `latents_avp_aavepyora` | 194 | 194 | `/home/kim/Projects/latents_avp_aavepyora` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_aavepyora` |
+| `latents_avp_aug10` | 320 | 320 | `/home/kim/Projects/latents_avp_aug10` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_aug10` |
+| `latents_avp_originals` | 288 | 288 | `/home/kim/Projects/latents_avp_originals` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_originals` |
+| `latents_avp_summamutikka` | 78 | 78 | `/home/kim/Projects/latents_avp_summamutikka` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_summamutikka` |
+| `latents_chill` | 115 | 115 | `/home/kim/Projects/latents_chill` | `/run/media/kim/Lehto/latents-all-backup/latents_chill` |
+| `latents_organic_dance` | 32 | 32 | `/home/kim/Projects/latents_organic_dance` | `/run/media/kim/Lehto/latents-all-backup/latents_organic_dance` |
+
+## Unlisted stores (found by sweep, NOT in any curated table above)
+
+Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no table above names. **A row here is a gap in this document, not a verdict on the data** — it has no provenance because nobody wrote one. Add it to `PRIMARY`/`DERIVED`/`LEGACY` with a real description, or confirm it is scratch.
+
+| store | .npy | .npz | path |
+|---|---:|---:|---|
+| `latents_avp_originals_morphL3` | 288 | 0 | `/home/kim/Projects/latents_avp_originals_morphL3` |
+| `latents_sa3_f0_sample` | 11 | 11 | `/home/kim/Projects/latents_sa3_f0_sample` |
+| `latents_sa3_subset300` | 300 | 0 | `/home/kim/Projects/latents_sa3_subset300` |
+| `aug_AB_A` | 600 | 0 | `/run/media/kim/Mantu/aug_AB_A` |
+| `aug_AB_B` | 600 | 0 | `/run/media/kim/Mantu/aug_AB_B` |
+
 ## Whole-track timeseries (per track, sliced at consumer time)
 
 | store | files | notes |

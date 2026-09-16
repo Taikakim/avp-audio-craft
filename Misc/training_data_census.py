@@ -41,6 +41,80 @@ NVME = "/home/kim/Projects"
 TARGET_SCALARS = ("onset_density", "onset_per_beat", "spectral_flatness",
                   "bpm_essentia", "lufs", "syncopation")
 
+def unlisted_section():
+    """Stores on disk that NO curated list above names.
+
+    Why this exists (W, 2026-09-17): every table in this file is a HAND-MAINTAINED list of
+    tuples, so a store is in the census only if someone remembered to add it. That is a
+    silent failure mode -- a new directory is simply invisible, and the doc looks complete
+    while being wrong. Project guidance flagged exactly this ("/home/kim/Projects has a host
+    of latents"), and the sweep found four the lists had missed: latents_avp_originals_morphL3
+    (288 melody targets), latents_sa3_f0_sample, latents_sa3_subset300, plus the
+    mir-same-chroma CHECKOUT, which is correctly not a store -- and the point is that the
+    census now SAYS so rather than staying quiet.
+
+    This does not replace the curated tables: those carry the provenance and the caveats that
+    make a store usable, which no scan can infer. It is the completeness check on them.
+    """
+    listed = PRIMARY + DERIVED + LEGACY + TS_STORES
+    known = {os.path.realpath(p) for _, p, _ in listed}
+    # basename -> the path this document currently tells you to use
+    by_name = {os.path.basename(p.rstrip("/")): p for _, p, _ in listed}
+    rows, dupes, roots = [], [], [NVME, LEHTO, MANTU, UUID]
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        try:
+            entries = sorted(os.listdir(root))
+        except OSError:
+            continue
+        for name in entries:
+            d = os.path.join(root, name)
+            if not os.path.isdir(d) or os.path.realpath(d) in known:
+                continue
+            try:
+                kids = os.listdir(d)
+            except OSError:
+                continue
+            npy = sum(1 for f in kids if f.endswith(".npy"))
+            npz = sum(1 for f in kids if f.endswith(".npz"))
+            if npy + npz < 8:            # not a store; a checkout or scratch dir
+                continue
+            if name in by_name:
+                dupes.append((name, d, npy, npz, by_name[name]))
+            else:
+                rows.append((name, d, npy, npz))
+    out = []
+    if dupes:
+        # A SECOND COPY is not a missing store -- it is a WRONG PATH in this document, and a
+        # more dangerous defect. MASTER §5: pointing a dataloader at the removable Lehto copy
+        # instead of the NVMe mirror is what made SA3 training crawl/hang at step 0 (cold
+        # random reads at ~2 MB/s). If this document names the slow copy, it hands every
+        # reader that bug.
+        out += ["\n## Duplicate copies — this document may name the WRONG one\n",
+                "Same store basename found at a path the tables do not use. **Prefer the "
+                "local NVMe copy for any dataloader** (MASTER §5: cold random reads off the "
+                "removable drive crawl and were a real cause of step-0 hangs). Removable "
+                "drives also unmount; a `Projects/` path does not.\n",
+                "| store | .npy | .npz | also on disk at | census currently says |",
+                "|---|---:|---:|---|---|"]
+        for name, d, npy, npz, canon in dupes:
+            out.append(f"| `{name}` | {npy} | {npz} | `{d}` | `{canon}` |")
+    if rows:
+        out += ["\n## Unlisted stores (found by sweep, NOT in any curated table above)\n",
+                "Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no "
+                "table above names. **A row here is a gap in this document, not a verdict on "
+                "the data** — it has no provenance because nobody wrote one. Add it to "
+                "`PRIMARY`/`DERIVED`/`LEGACY` with a real description, or confirm it is "
+                "scratch.\n",
+                "| store | .npy | .npz | path |", "|---|---:|---:|---|"]
+        for name, d, npy, npz in rows:
+            out.append(f"| `{name}` | {npy} | {npz} | `{d}` |")
+    if not out:
+        out = ["\n## Unlisted stores\n", "None — every store on disk is named above.\n"]
+    return out
+
+
 PRIMARY = [
     ("latents_sa3", f"{NVME}/latents_sa3",
      "**GOA** (Goa_Separated). The canonical SA3 set; the 2026-06 onset head trained here."),
@@ -370,6 +444,8 @@ def main() -> int:
                  "these are latents.")
     out += table(LEGACY, "LEGACY SAO-Small / SA1 grid",
                  "**64-dim @ 21.53 Hz — a different latent grid. Never mix into an SA3 run.**")
+
+    out += unlisted_section()
 
     out.append("\n## Whole-track timeseries (per track, sliced at consumer time)\n")
     out.append("| store | files | notes |")
