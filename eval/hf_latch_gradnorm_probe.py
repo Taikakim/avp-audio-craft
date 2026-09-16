@@ -126,11 +126,25 @@ def main() -> int:
                  "weight": 1.0, "start_pct": 0.0, "end_pct": 1.0}]
 
     # (tag, latch_configs, latch_hparams)
+    #
+    # arm1-arm3 FORCE euler to reproduce the pre-fix behaviour on this post-trained
+    # checkpoint. Before 2026-09-16 euler was hardcoded here, so these three arms are
+    # exactly what G's bracket ran. arm4 is the fix: the same head, gain, seed and
+    # checkpoint through the model's NATIVE pingpong sampler. Forcing the sampler
+    # explicitly on both sides is what keeps the A/B honest -- otherwise "before" and
+    # "after" would differ by the code version rather than by one named variable.
     arms = [
         ("arm0_baseline_pingpong", None, None),
-        ("arm1_euler_gain0", latch_cfg(), {"rho": 0.0, "mu": 0.0, "log_norms": True}),
-        ("arm2_gain2", latch_cfg(), {"rho": 2.0, "mu": 2.0, "log_norms": True}),
-        ("arm3_gain2048", latch_cfg(), {"rho": 2048.0, "mu": 2048.0, "log_norms": True}),
+        ("arm1_euler_gain0", latch_cfg(),
+         {"rho": 0.0, "mu": 0.0, "log_norms": True, "sampler_type": "euler"}),
+        ("arm2_euler_gain2", latch_cfg(),
+         {"rho": 2.0, "mu": 2.0, "log_norms": True, "sampler_type": "euler"}),
+        ("arm3_euler_gain2048", latch_cfg(),
+         {"rho": 2048.0, "mu": 2048.0, "log_norms": True, "sampler_type": "euler"}),
+        ("arm4_pingpong_gain2", latch_cfg(),
+         {"rho": 2.0, "mu": 2.0, "log_norms": True, "sampler_type": "pingpong"}),
+        ("arm5_pingpong_gain2048", latch_cfg(),
+         {"rho": 2048.0, "mu": 2048.0, "log_norms": True, "sampler_type": "pingpong"}),
     ]
 
     z0 = {}
@@ -164,9 +178,15 @@ def main() -> int:
           flush=True)
     dists = {}
     pairs = [
+        # --- the pre-fix picture (all euler, as G's bracket ran it) ---------------
         ("sampler swap alone (arm1 vs arm0)", "arm1_euler_gain0", "arm0_baseline_pingpong"),
-        ("guidance at gain 2 (arm2 vs arm1)", "arm2_gain2", "arm1_euler_gain0"),
-        ("1000x gain increase (arm3 vs arm2)", "arm3_gain2048", "arm2_gain2"),
+        ("euler: guidance at gain 2", "arm2_euler_gain2", "arm1_euler_gain0"),
+        ("euler: 1000x gain increase", "arm3_euler_gain2048", "arm2_euler_gain2"),
+        # --- the fix ---------------------------------------------------------------
+        # THE decisive one: with the sampler correct, does gain finally do anything?
+        ("pingpong: 1000x gain increase", "arm5_pingpong_gain2048", "arm4_pingpong_gain2"),
+        ("fix effect at gain 2 (pingpong vs euler)", "arm4_pingpong_gain2", "arm2_euler_gain2"),
+        ("pingpong guidance vs unguided baseline", "arm4_pingpong_gain2", "arm0_baseline_pingpong"),
     ]
     for label, a, b in pairs:
         if a in z0 and b in z0:
@@ -177,15 +197,20 @@ def main() -> int:
             print(f"  {label:40s} (missing arm)", flush=True)
 
     print("\nHOW TO READ IT:", flush=True)
-    print("  large 'sampler swap' + ~0 '1000x gain'  -> the damping is the SAMPLER;", flush=True)
-    print("     the head is inert. Fix = a guided pingpong sampler, NOT a retrain.", flush=True)
-    print("  ~0 'sampler swap'                       -> my diagnosis is wrong; the", flush=True)
-    print("     Euler/pingpong difference does not matter here. Say so.", flush=True)
-    print("  large '1000x gain'                      -> gain DOES act and G's arms", flush=True)
-    print("     differed by something other than gain. Re-open the bracket.", flush=True)
-    print("  per-step ||grad_var|| ~0 above          -> head contributes nothing;", flush=True)
-    print("     large but gain-invariant             -> overshoot saturation (tune", flush=True)
-    print("     n_iter/mu, still no retrain).", flush=True)
+    print("  THE HEADLINE is 'pingpong: 1000x gain increase':", flush=True)
+    print("    clearly > 0  -> the fix works. Gain acts once the sampler matches the", flush=True)
+    print("       model, and the head never needed retraining.", flush=True)
+    print("    still ~0     -> the sampler was NOT the (only) cause. Then read the", flush=True)
+    print("       grad norms: ~0 = the head really is inert on these latents (a", flush=True)
+    print("       retrain becomes arguable, though NOT the rf_denoiser one -- that", flush=True)
+    print("       is still a no-op); large-but-gain-invariant = overshoot saturation,", flush=True)
+    print("       tune n_iter/mu.", flush=True)
+    print("  'sampler swap alone' large -> confirms the over-damping G heard was the", flush=True)
+    print("     sampler, since that arm has guidance mathematically inert (rho=mu=0).", flush=True)
+    print("  'sampler swap alone' ~0    -> my diagnosis was wrong. Say so plainly;", flush=True)
+    print("     the euler/pingpong difference did not matter here.", flush=True)
+    print("  'euler: 1000x gain' ~0 while 'pingpong: 1000x gain' > 0 is the whole", flush=True)
+    print("     before/after in two numbers.", flush=True)
 
     (OUT_DIR / "run_meta.json").write_text(json.dumps({
         "purpose": "Decide whether the rms_energy_air LatCH head is inert on the "
