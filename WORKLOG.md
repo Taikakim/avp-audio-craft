@@ -2599,3 +2599,26 @@ Double the harshness when the prompt asks for a blend the model never trained on
 **Method trap worth carrying:** averaging ERB contours ACROSS clips cancels per-clip peaks at different frequencies — a +5 dB bump at 5.5-7.5k on one clip and +8 dB at 1.5-4.5k on another leave only the shared tilt. My first pass saw a clean tilt and was blind to the unevenness Kim hears. Per-clip metrics or nothing.
 
 Tool: `mir/src/tools/spectral_harshness_contrast.py`. Reference = Kim's own 167 masters, not generated clips (model output bakes in the bias being measured; pink noise is also wrong — the masters fall ~-4.4 dB/oct above 1 kHz vs pink's -3, so pink reads them as HF-deficient and would push generations BRIGHTER).
+
+## 2026-09-17 — GHOST-NOTE — mixtape wav restore (49/51), 5 clips quarantined, harsh-timbre note added to census
+
+Closing out the mixtape-harshness thread per Kim's direction to stop chasing an HF fix and finish
+a shareable mix. `eval/rerender_missing_wavs.py` (exact manifest.jsonl params, grouped by ckpt to
+minimize reloads) restored **49 of 51** wavs Kim had deleted to save space; the remaining 2
+(`winning_avp_t512_a45_bf16_ptm` ep15, `winning_avpaug10_t512_a45_fp32` ep15) are blocked only on
+the last LUMI checkpoint file still rsyncing to Mantu — resolve+render once that lands, no further
+debugging needed. Per Kim: use the `.wav` versions from now on, not `.m4a`.
+
+Quarantined the 5 worst-offender clips Kim named from his own spectral pass (mixtape idx 17, 19,
+22, 39, 43 — all `dora128adj_avp_8ep_ptm` ep3/ep6) to
+`Mantu/sa3_lora_runs/genre_fusion_probe_local/renders/_QUARANTINE_2026-09-17_harsh/` with a README,
+and rebuilt the mixtape running order (82→77 clips, arc_pos recomputed).
+
+Added Kim's harsh-timbre finding to `Misc/models_index_overrides.json` (`dora128adj_avp_8ep`
+`kim_feedback` + `note`) so it's not lost to a chat scrollback, and cross-linked Wintermute's
+same-day WORKLOG correction (harshness tracks the OOD `genre_fusion_probe_local` prompt set more
+than the checkpoint, 74.2% vs 35.1%/28.6%, and the significant bands are low/thin not high) plus
+the already-landed LatCH-sampler-substitution bug (commit `8e65acd`) as the reason no further HF-
+damping work is planned here.
+
+Commits: `34c71cf`, `eb63027` (census). Not pushed.
