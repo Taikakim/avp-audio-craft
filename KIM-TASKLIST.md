@@ -28,7 +28,7 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### ⬜ Suomi full-FT: render the ONLINE-weight clips, and add a weight-set toggle to the matrix
+### ⬜ DONE (by Ghost Note) 11.9.2026 Suomi full-FT: render the ONLINE-weight clips, and add a weight-set toggle to the matrix
 **WHAT / WHY** — the three suomi FULL-FT arms have only ever been auditioned through their EMA
 shadow, and for two of them that shadow is ~97% the starting weights. **Proven, not inferred:**
 all three checkpoints carry `diffusion_ema.*` (523 tensors vs 522 online), and
@@ -95,7 +95,7 @@ LUMI has none. Command is now RUNBOOK §10b so it can be re-run before the data 
 
 
 
-### ⬜ Re-render the 93 quarantined `lion_lr1e-5` native cells (optional — the arm is already usable)
+### DONE 11.9.2026 ⬜ Re-render the 93 quarantined `lion_lr1e-5` native cells (optional — the arm is already usable)
 **WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
 were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine
 campaign siblings carry ONE native cell each, so the arm already exceeds the sibling shape — this
@@ -196,6 +196,36 @@ control's value and stop rather than reading the adherence figures.
 
 ## 🔴 Decisions waiting on Kim
 
+- **[2026-09-16, G] Song-structure retest queued, not yet run.** `song_structure_probe.py`
+  (the "Can it conjure a whole song?" A/B/C/D clips Kim just reviewed — "internally very
+  clean, but prompts didn't really affect them like different song sections") used
+  `StableAudioModel.from_pretrained("medium")` (post-trained) at `steps=8, cfg=1.0` for
+  every clip — confirmed from the actual code. cfg=1.0 is the minimum-guidance setting
+  (CFG reduces to the plain conditional prediction), so text has minimal steering leverage
+  there — same root cause as the layered-dual-lora-probe's earlier "suspiciously similar
+  clips" finding tonight. **Do NOT just raise cfg on this checkpoint** — CLAUDE.md already
+  documents cfg>1 "cooking" post-trained `medium` output. Kim's fix: switch checkpoint to
+  `sa3-goa-dora-47s-b4-cont` ("it should be clean") —
+  `/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=4-step=6750.weights.ckpt`
+  (final epoch — Kim confirmed 09-16: "ep4 at least sounded fine on the evals") on
+  `medium-base`, 24 steps / cfg 6 — the combo already
+  proven all night to differentiate strongly by prompt. Also use much more verbose,
+  concrete per-section prompts (Kim supplied real examples for intro/middle; outro =
+  intro's element-list in reverse) rather than the current bare "song section: X" suffix,
+  and/or layer in an onset-density LatCH control-head sweep for a guaranteed-reliable
+  arrangement lever independent of text conditioning. Not yet built or run.
+- **[2026-09-16, G] Mixtape v2 (BPM-corrected, DJ-overlay) rebuilt overnight, needs your ears.**
+  `~/staging/mixtape-v2/` — full 121.9min mixtape (real madmom BPM for all 82 clips, corrected
+  a 1.5x octave-fold bug found along the way; each clip 3x-lengthened + tail-faded/treated;
+  all 81 pairs mixed via the corrected-scale DJ-overlay technique from earlier the same night).
+  **Known limitation, not a bug to fix blind:** the 81 pairwise renders are independent
+  self-contained two-clip mixes, concatenated with a short crossfade at each of 80 internal
+  joins — each clip's arrival is technically heard twice near its own seam. If it doesn't hold
+  up, the real fix is re-architecting the compile as one continuous multi-clip pass, not a
+  smaller tweak. Also staged: `~/staging/dj-mixing-experiments/` (the night's three test
+  batches + your live commentary). Interactive tagging page for HF-damping (per-clip checkbox,
+  saves to its own db) at `https://claude.ai/code/artifact/aa3b5dc6-4358-4080-b02e-9d041241d333`.
+  DM'd to Wintermute for publish; none of this has been listened to by Kim yet.
 - **[2026-09-04, C] Morph-conditioner adherence is still UNMEASURED after four instruments.** Not a null result — every meter failed its own control. Next session, step 1 is a bounded bug: the contour encoder reproduces ground truth at only 0.55 (L3) when it should be ~1.0, degrading with alphabet size = a grid/window offset. Fix that and the whole test becomes readable. **Nothing about the conditioner should be concluded until then.**
 - **[2026-09-04, C] Two brackets built and unrun, both need the GPU:** B11 decoupled Muon/AdamW LR (G briefed, flag shipped) and B12 PT→base soup ladder (`eval/soup_pt_ladder.py`). B12 is the one aimed at your "punchy but the kick/bass always sound the same" — judge by ear, no metric exists for it.
 - **[2026-09-04, C] A/B question set changed and `structure` is now unmeasurable.** W's fix collapsed the four questions into `clarity_meaning`. `fullft_avp_t256` wins on top_end (85.7%) and spectral_image (81.8%) but structure was 1/3 and no future vote will measure it. If structure is what you judge backbones on for control work, the single-question design cannot tell you.
@@ -561,6 +591,22 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+
+### ✅ Mixtape wav restore + harsh-clip quarantine — DONE, awaiting last LUMI file (G, 2026-09-17)
+Restored **49 of 51** `.wav`s Kim had deleted from `model_matrix/` to save space, re-rendered from
+the exact manifest.jsonl params (`eval/rerender_missing_wavs.py`). Remaining 2
+(`winning_avp_t512_a45_bf16_ptm` ep15, `winning_avpaug10_t512_a45_fp32` ep15) block only on the
+last LUMI checkpoint file still transferring to Mantu — no further action needed once it lands,
+just resolve+re-run. **From now on the mixtape/harshness work uses `.wav`, not `.m4a`, per Kim.**
+Quarantined the 5 worst-offender clips Kim spectrally diagnosed himself (idx 17/19/22/39/43, all
+`dora128adj_avp_8ep_ptm` ep3/ep6) to `renders/_QUARANTINE_2026-09-17_harsh/`, rebuilt the running
+order (82→77 clips). Documented the "model creates harsh timbres" pattern in
+`Misc/models_index_overrides.json` (`dora128adj_avp_8ep`), cross-linked to Wintermute's same-day
+correction (harshness tracks the OOD `genre_fusion_probe_local` prompt set more than the checkpoint,
+and the real spectral signature is thin low-mid, not excess HF). **Not pursuing an HF-damping fix**
+per Kim's call — see next item.
+
+- **[2026-09-17, G] Full mixtape rebuild with the validated crossfader — not yet requested, flagging as the natural next step.** You said "I want to have a mix to share with some people" but haven't yet asked for a specific rebuild pass. If/when you do: the settled recipe is real madmom-BPM-sorted 77-clip order (`mixtape_final_order.json`, already updated for the 5 quarantined clips), 10 s crossfade window, plain linear amplitude crossfade (not equal-power, not dB-linear — both tried and rejected this week), optional bass-swap variant (kick/bass held to A until late in the window, highs cross-fade throughout) and a2a nl up to 0.75, all in `eval/chain_simple_crossfade.py`. Say the word and this can run unattended.
 
 ### ✅ PT→base soup ladder — LISTENED, closed NEGATIVE (Kim, 2026-09-07)
 *"only the alpha .5 is listenable, and even that has artifacts... it's evident the mixing just degrades the sound."* **PT does not blend with base** — no usable intermediate model exists, so the punchy-vs-always-the-same question stays untested by this route. Falsifies the assumption the arm rested on: a fine-tune does NOT stay in the linear-mode-connectivity regime just because 997 of 1019 tensors are identical. Also explains why my descriptors gave opposite answers per sampler — they were reading artifact spectra, not a mixture. EXPERIMENTS C6, closed. Don't rebuild.
