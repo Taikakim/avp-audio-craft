@@ -96,7 +96,8 @@ TS_STORES = [
     ("suomisoundi_timeseries", f"{MANTU}/suomisoundi_data/suomisoundi_timeseries",
      "Suomisoundi whole-track, 50 fields."),
     ("goa_archive_features/npz", f"{UUID}/goa_archive_features/npz",
-     "goa_archive. **`f__`/`r__` key prefixes**, and only the FIRST 90 s of each track."),
+     "goa_archive, **FULL TRACK** (dur_analyzed_s p50 362 s, max 4440). **`f__`/`r__` key "
+     "prefixes.** Carries the 24 EXPANDED fields ONLY — the base 20 were never run here."),
     ("suomisoundi_features/npz", f"{MANTU}/suomisoundi_data/suomisoundi_features/npz",
      "Suomisoundi, same `f__`/`r__` layout as goa_archive."),
 ]
@@ -391,9 +392,17 @@ def main() -> int:
                "from a whole-track store).")
     out.append("- A store with latents but **no** scalars/ts can still join a base or LoRA run, "
                "and can be *upgraded* by generating targets for it.")
-    out.append("- `goa_archive` whole-track features cover only the **first 90 s** of each track: "
-               "~80% of T256 crops and ~68% of T512 crops fall inside that window, and **0% of "
-               "T1024 crops do**.")
+    out.append("- **`goa_archive` features are FULL-TRACK** (`dur_analyzed_s` p50 362 s, max 4440) — "
+               "the extractor's `--seconds` arg is vestigial and never reaches `ExpandedExtractor`. "
+               "The real limit is WHICH fields: it holds the **24 expanded fields only** "
+               "(novelty_curve, loudness_ebu, chroma_linmap, dissonance, genre/mood/instrument, "
+               "MAEST, attack, stereo). The **base 20 are absent** — no `onset_envelope_ts`, no "
+               "`rms_energy_*_ts`, no `beat_activation_ts`/`downbeat_activation_ts`, no `hpcp_ts`, "
+               "no `spectral_flatness_ts`/`spectral_flux_ts`. So goa_archive can target a chroma, "
+               "novelty, loudness or genre head today, but an **onset- or rms-density head needs "
+               "`mir/src/spectral/whole_track_timeseries.py` run over the archive first** "
+               "(CPU-only: the expanded pass took 66.3 h at 3 workers for 23,228 tracks and never "
+               "touched the GPU).")
     out.append("\n## Paths\n")
     for label, path, _ in PRIMARY + DERIVED + LEGACY:
         out.append(f"- `{label}` → `{path}`{'' if os.path.isdir(path) else '  (MISSING)'}")

@@ -96,7 +96,7 @@ Mostly targets and probe sets. Read the `.npz` column before assuming these are 
 |---|---:|---|
 | `Lehto/timeseries` | 5,035 | goa (4461) + the 4 ai-music curated sets (574). Base 100Hz + expanded at native rates. |
 | `suomisoundi_timeseries` | 1,260 | Suomisoundi whole-track, 50 fields. |
-| `goa_archive_features/npz` | 23,231 | goa_archive. **`f__`/`r__` key prefixes**, and only the FIRST 90 s of each track. |
+| `goa_archive_features/npz` | 23,231 | goa_archive, **FULL TRACK** (dur_analyzed_s p50 362 s, max 4440). **`f__`/`r__` key prefixes.** Carries the 24 EXPANDED fields ONLY — the base 20 were never run here. |
 | `suomisoundi_features/npz` | 1,260 | Suomisoundi, same `f__`/`r__` layout as goa_archive. |
 
 ## Databases
@@ -172,7 +172,7 @@ c.execute("select path, rms, crest, flatness, ce, pq from metrics limit 5").fetc
 - **crop scalars** = the crop `.json` carries control targets (checked: onset_density, onset_per_beat, spectral_flatness, bpm_essentia, lufs, syncopation). Needed for FiLM / scalar control adapters.
 - **can train** — `base/LoRA` needs no targets; `scalar control` needs the crop scalars; `LatCH` needs per-frame targets (per-crop `.TIMESERIES.npz`, or sliced from a whole-track store).
 - A store with latents but **no** scalars/ts can still join a base or LoRA run, and can be *upgraded* by generating targets for it.
-- `goa_archive` whole-track features cover only the **first 90 s** of each track: ~80% of T256 crops and ~68% of T512 crops fall inside that window, and **0% of T1024 crops do**.
+- **`goa_archive` features are FULL-TRACK** (`dur_analyzed_s` p50 362 s, max 4440) — the extractor's `--seconds` arg is vestigial and never reaches `ExpandedExtractor`. The real limit is WHICH fields: it holds the **24 expanded fields only** (novelty_curve, loudness_ebu, chroma_linmap, dissonance, genre/mood/instrument, MAEST, attack, stereo). The **base 20 are absent** — no `onset_envelope_ts`, no `rms_energy_*_ts`, no `beat_activation_ts`/`downbeat_activation_ts`, no `hpcp_ts`, no `spectral_flatness_ts`/`spectral_flux_ts`. So goa_archive can target a chroma, novelty, loudness or genre head today, but an **onset- or rms-density head needs `mir/src/spectral/whole_track_timeseries.py` run over the archive first** (CPU-only: the expanded pass took 66.3 h at 3 workers for 23,228 tracks and never touched the GPU).
 
 ## Paths
 

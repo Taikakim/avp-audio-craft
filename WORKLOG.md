@@ -21,8 +21,18 @@ durable facts into `MASTER.md`. Conventions:
   only until targets are generated for them.
   Two traps now written down: `whole_track_target_source.get()` applies the top-level 100 Hz rate to
   EVERY field, so a ~1 Hz expanded field (genre/mood/instrument) is sliced at a 100x offset and the
-  crop is **silently dropped**, not errored; and goa_archive whole-track features cover only the
-  **first 90 s** of each track — ~80% of T256 crops and 68% of T512 crops fall inside, **0% of T1024**.
+  crop is **silently dropped**, not errored.
+  **CORRECTION (same session, before anyone acts on it): I first wrote that goa_archive features cover
+  only the first 90 s of each track. That is WRONG** — I sampled `find | head -1`, which happened to be
+  a ~90 s track, and generalised from n=1. They are **FULL-TRACK**: `process_one` never passes the
+  `--seconds` arg to `ExpandedExtractor` (it is vestigial, as its own docstring says), `index.jsonl`
+  reports `dur_analyzed_s` p50 **362 s** / max 4440, and 8 random npz span 364–522 s.
+  The REAL goa_archive limit is WHICH FIELDS: it holds the **24 expanded fields only**. The base 20
+  are absent — no `onset_envelope_ts`, `rms_energy_*_ts`, `beat_activation_ts`, `hpcp_ts`,
+  `spectral_flatness/flux_ts`. So it can target a chroma/novelty/loudness/genre head today, but an
+  **onset- or rms-density head needs `whole_track_timeseries.py` run over the archive first**.
+  That pass is **CPU-only** (`CUDA_VISIBLE_DEVICES` is cleared before the TF import): the expanded run
+  did 23,228 tracks in **66.3 h at 3 workers** without ever touching the GPU.
 
 - **2026-08-21 (early) — WINTERMUTE: PQ ALONE is the best algorithmic proxy for Kim's ear (77.6%);
   CLAP backfilled 14%→45% and does NOT improve it (my 78.8% claim RETRACTED); the goa-corpus gap is
