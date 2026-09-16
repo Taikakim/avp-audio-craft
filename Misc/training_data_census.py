@@ -311,6 +311,38 @@ c.execute("select path, rms, crest, flatness, ce, pq from metrics limit 5").fetc
 ```
 '''
 
+ITEM_NOTE = '''
+## What a stored item actually is (read before quoting any count)
+
+**Every `.npy` is `(256, 4096)` = 380.44 s at 10.7666 Hz** — one fixed ~6.3-minute window.
+Not a short excerpt, and not "the whole track":
+
+- A source track **longer** than 380.44 s produces SEVERAL items (`crop_idx` 0, 1, 2 …).
+  Goa sources run 382–1320 s (median 473), so ~2 items per track is typical — 5,401 items
+  over 4,461 tracks.
+- A source track **shorter** than 380.44 s is zero-padded, and `padding_mask` says how much
+  is real (50 of 200 sampled `latents_goa_bigset` items carry padding; some are 20% pad).
+  The avp encode instead DROPPED sub-380 s tracks rather than padding them.
+
+**"crop" is overloaded in this codebase, which is the thing to watch:**
+
+| the word | means | where |
+|---|---|---|
+| a crop / `crop_idx` / "per-crop .json" | one STORED 380 s item | the tables here, the sidecars |
+| `--crop-frames` (default **1024** = 95.1 s) | the TRAINING WINDOW sliced out of that 4096-frame item, first-N or random beat-aligned (`--random-crop`) | `control/sa3_control/train.py` |
+
+So a log line like `[data] 805 crops, 400 tracks; crop 1024f (95.1s)` means 805 stored items,
+each of which the trainer reads a 1024-frame window from. **The tables below count stored
+items**, not training windows and not tracks.
+
+**Two `.json` conventions — `seconds_total` does not mean the same thing in both:**
+
+- `latents_sa3` / avp / ai-music: `seconds_total` = the ITEM's own length (380.436), with
+  `source_total_samples` carrying the track length, plus the full control scalars.
+- `latents_goa_bigset`: `seconds_total` = the SOURCE TRACK duration (152–702 s), and there
+  are no control scalars at all.
+'''
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -328,6 +360,8 @@ def main() -> int:
            "`latents_sa3_stem_chroma`, `latents_sa3_proll`. The name lies; the `.npz` column "
            "says what is actually inside.\n",
            "All three data drives are removable — `MISSING` means unmounted, not deleted.\n"]
+
+    out.append(ITEM_NOTE)
 
     out += table(PRIMARY, "Primary SA3 corpora (256-dim, 10.767 Hz, T=4096)")
     out += table(DERIVED, "Derived / experiment-specific",
