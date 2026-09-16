@@ -10,11 +10,13 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*224 entries from 4 journals.*
+*271 entries from 4 journals.*
 
 ---
 
 ## Long-form generation · transitions · crossfade
+- **B7: from Kim's one-liner to an 8-arm LUMI bracket in one sitting.** — CONTINUITY, 2026-08-21
+- **longform "bursts" are windows resetting, not drift — and gap re-inpainting fixes it, RMS-guidance doesn't.** → `longform.py`, `mir/src/rhythm/beat_grid.py`, `explorer_render_server.py`, `/longform` — GHOST-NOTE, 2026-08-21
 - **goa_archive statistics + clustering (task #85, Kim direct).** → `goa_archive_curate.py`, `clusters_summary.json`, `mir/src/tools/statistical_analysis.py`, `whole_track_expanded.py`, `mir/src/tools/goa_archive_stats_export.py`, `statistical_analysis.py`, `STATISTICAL_ANALYSIS_MANUAL.md`, `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/{info/,stats.json}`, `/home/kim/Projects/lsdj`, `stable_audio_3/inference/longform.py`, `optimized/mlx/` — GHOST-NOTE, 2026-08-02
 - **tier-0 morning under Kim's lightweight-first directive: two branches resolved cheap.** — CONTINUITY, 2026-07-31
 - **two Gemini theory reviews, and a prediction that failed cleanly.** — CONTINUITY, 2026-07-15
@@ -62,6 +64,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [session] **the night the thread started.** — CONTINUITY, 2026-06-30
 
 ## Evolutionary strategies · weight-trajectory search (ES)
+- **Dual-LR full-FT at spectral 1e-3: negative, and a mean-vs-median trap.** → `train/loss`, `site/meter-for-taste.html` — GHOST-NOTE, 2026-09-07
 - **[2026-08-10] Full-FT latent-scale runaway → spectral drone (root cause + fix + tests).** → `fusion_groups.py`, `stable-audio-tools/tests/test_fusion_weight_decay.py`, `lumi/sbatch/fullft_wd_ab.sbatch` — CONTINUITY, 2026-08-10
 - **the heard landscape, photographed — mapper × ES first contact.** — CONTINUITY, 2026-07-03
 - **field-guided jump — walk direction transfers, fine relief doesn't.** — CONTINUITY, 2026-07-03
@@ -71,6 +74,9 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- **the LatCH panel stops lying (inference-UI roadmap, Tasks 1-3).** → `docs/superpowers/plans/2026-08-24-inference-ui-batch-sweep-and-head-metadata.md`, `scripts/latch/train_latch.py`, `eval/head_meta.py`, `/roots`, `/info`, `/run/media/kim/`, `docs/INFERENCE-SURFACE.md`, `train_latch.py` — CONTINUITY, 2026-08-26
+- **Same day, later — presets, and the callback race that shapes them.** → `test_preset_form_partition.py`, `/info` — CONTINUITY, 2026-08-26
+- **Later still — the control arm is the test that finds the bug.** — CONTINUITY, 2026-08-26
 - **Reading-sweep 5/5 DONE + Kim's off-lane-criterion correction.** — CONTINUITY, 2026-08-12
 - **[2026-08-11] same_chroma readout VALIDATED on synthetic MIDI-latent pairs (Kim's test) — chroma readable where contour wasn't.** → `docs/superpowers/specs/2026-07-22-melodic-latch-film.md`, `eval/musicology/same_chroma_readout_2026-08-11/` — CONTINUITY, 2026-08-11
 - **the mid-band a2a loss is the DiT abandoning harmony, not input fragility.** → `Misc/latent_noise_fragility.py` — WINTERMUTE, 2026-07-30
@@ -90,34 +96,12 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **four knobs at once — the full instrument composes, with measurable cross-talk.** — CONTINUITY, 2026-07-04
 - **the SA3 LatCH head sweep — operating gain is ≈512, not 48–96.** — WINTERMUTE, 2026-06-28
 
-## Optimizers as a STYLE axis (not only a convergence axis)
-
-- **The optimizer is a style tool — Lion sounds different from AdamW and Fusion, and the
-  difference does not wash out with training (Kim direct, by ear, 2026-09-08).** Auditioning the
-  `fusion_autoscale_vs_adamw_2026-09-01` campaign: Lion's clips are *fine* — not degraded — but
-  **stylistically distinct** from both AdamW and Fusion, while **AdamW and Fusion converge toward
-  sounding like each other** the longer they train, more than either does toward Lion. Kim reports
-  the same effect independently on **SDXL and Flux**, i.e. it is not SA3-specific and not a
-  latent-space artifact of SAME.
-  - **Why it matters:** we have been treating optimizer choice as a convergence/stability question
-    settled by loss curves and weight-norm trajectories. If two optimizers at matched loss produce
-    *audibly different styles*, then (a) an optimizer bracket is also a **creative** bracket and
-    deserves an audition, not just a metric; (b) "AdamW and Fusion agree" is weak evidence that
-    either is *right* — they may simply share a bias Lion does not; and (c) a null on a
-    style/adherence metric between AdamW and Fusion arms may be measuring their similarity to each
-    other rather than the absence of an effect.
-  - **Practical:** keep a Lion arm in optimizer campaigns as a *diversity* arm even when it does not
-    win on loss. Clips: `…/fusion_autoscale_vs_adamw_2026-09-01/lion_lr1e-5/standard_clips/`
-    (steps 3000 + 6000, 13 each). ⚠ That run has **no `run_meta.json`** — its purpose is a
-    2026-09-07 reconstruction recorded in `Misc/models_index_overrides.json`, flagged as such.
-  - **Open:** nobody has measured this. It is currently one listener's consistent report across
-    three model families — which is exactly the kind of claim that deserves an instrument with
-    demonstrated dynamic range before it becomes a number. See `sa3-training` §4.
-
 ## Weight garden · model mutation
 - **weight garden: the mutation that never was.** → `stable-audio-3/scripts/weight_mutations.py`, `mutate_weights.py` — CONTINUITY, 2026-07-04
 
 ## Style/genre adapters · fingerprint conditioning
+- **"the model makes harsh timbres" is mostly the PROMPT, and the band we were fixing is the wrong band.** → `mir/src/tools/spectral_harshness_contrast.py` — WINTERMUTE, 2026-09-17
+- **D11 frame-shuffle null: the air readout is ~half fingerprint, half real melody.** — CONTINUITY, 2026-08-21
 - **[2026-08-11] same_chroma Tier-2 on REAL goa — air/melody reads STRONGEST, and the chroma-trap IS the design key.** → `eval/musicology/same_chroma_readout_tier2_muscriptor_2026-08-11/` — CONTINUITY, 2026-08-11
 - **expanded-Essentia sweep fully complete + MF ctx bug root-caused.** — GHOST-NOTE, 2026-07-15
 - [RULED OUT] **three sweep-build dead ends, all fixed.** — GHOST-NOTE, 2026-07-14
@@ -130,6 +114,17 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **the discogs-400 genre head is multi-label, not softmax.** — WINTERMUTE, 2026-07-02
 
 ## Captions · conditioning · training data
+- **"more training is worse" is a between-run confound hiding an opposite-signed split.** — WINTERMUTE, 2026-08-21
+- **Suomisoundi pipeline closed out; a real monitoring bug caught late.** → `eval/build_suomisoundi_sidecar.py`, `whole_track_expanded.py`, `score_and_publish.py` — GHOST-NOTE, 2026-08-21
+- [lesson] **over-classing severity costs you the next real finding.** — THE-FINN, 2026-08-17
+- [lesson] **a capability the fleet doesn't know you have gets routed around, twice, in one thread.** — THE-FINN, 2026-08-17
+- **agents were clueless about their own data locations, and it was fixable in an afternoon.** → `ARCHITECTURE.md`, `sao_models/`, `goa_archive_features/`, `goa_archive_captions/`, `lumi_runs/`, `CLAUDE.md` — THE-FINN, 2026-08-17
+- **the goa captioning saga — three real bugs, one architectural gap, and my own two mistakes in reporting it.** → `docs/goa-captioning-status-2026-08-18.md`, `lessons-learned.md` — THE-FINN, 2026-08-17
+- [incident] **fixed a broken LUMI job chain directly, Kim unreachable for days.** — THE-FINN, 2026-08-17
+- **took ownership of EXPERIMENTS.md's shape, kept it current through the week.** → `DISCOVERIES.md` — THE-FINN, 2026-08-17
+- **[2026-08-17] preencode_bigset's "memory leak" was never a leak -- caption_metadata_fn rejecting 100% of goa_archive.** → `pre_encode_dataset.py`, `.txt`, `dataset.py` — CONTINUITY, 2026-08-14
+- **[2026-08-17] Two blockers closed; both diagnosed wrong first, and one earlier conclusion is now suspect.** → `.txt`, `ckpt_dup_delta.py`, `train_lora.py`, `~/Projects/llm-fine-tuning-examples`, `lumi/build_bigset_caption_sidecar.py`, `stable-audio-tools/.../fusion_groups.py` — CONTINUITY, 2026-08-14
+- **[2026-08-18] The goa collapse had a THIRD cause nobody was looking for: the captions were never hinted.** → `goa_caption_task.py`, `lumi/goa_caption_task.py`, `"<track>/<variant>"` — CONTINUITY, 2026-08-14
 - **2026-08-12 (evening) — the melody target, and four broken instruments.** → `whole_track_expanded.py`, `[N/4461]` — WINTERMUTE, 2026-08-12
 - **[2026-08-11] Drone/optimizer 12-paper reading recorded+relocated; melody-movement Gemini brief drafted.** → `papers/prospective-unchecked`, `papers/`, `papers/CONTINUITY-drone-optimizer-synthesis-2026-08-11.md`, `docs/gemini-brief-musical-movement-conditioning.md` — CONTINUITY, 2026-08-11
 - **Stage-1 archive curation built + validated on the partial index.** → `mir/src/tools/goa_archive_curate.py` — CONTINUITY, 2026-07-30
@@ -156,6 +151,10 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **TADA! deep-read: the semantic bottleneck is real, and it cuts both ways.** → `latch/probe_layer_feature_map.py` — CONTINUITY, 2026-07-06
 
 ## Evals · metrics · benchmarking pitfalls
+- **The PT rewind is not localized, and the two endpoints don't share a sampler.** → `soup_descriptors.py` — CONTINUITY, 2026-09-07
+- **four meters, four failed gates, and the controls that saved it.** → `contour_codes.py`, `morph_merit.py`, `morph_contour_ab.py` — CONTINUITY, 2026-09-04
+- **Top-100-by-ear-proxy page: the dedup problem was the interesting part.** → `eval/build_top100.py`, `Misc/build_top100_page.py`, `~/evals_aac/top100.html` — CONTINUITY, 2026-08-21
+- [tool] **evaluator.html UX pass from live tester feedback (Kim relayed, translated from Finnish).** → `build_evaluator_manifest.py` — GHOST-NOTE, 2026-08-21
 - **[2026-08-06] Codec clarity ladder: the m4a leg (Kim ask).** → `hf_clarity_diagnosis.py`, `mp3_latent_sensitivity.py`, `build_clarity_audit_page.py`, `hf_clarity/index.html`, `/files/audit/codec-clarity/` — CONTINUITY, 2026-08-06
 - **fp32frames T-length trend SYNTHESIZED (the flagged-open gap, G metered / C synthesized).** — CONTINUITY, 2026-07-30
 - **chroma-steering page extended: solo instruments, chord progressions, model tabs (Kim ask).** → `control/sa3_control/chroma_guided_generator.py`, `eval/chroma_steer_targets.py`, `eval/chroma_steer_render.py`, `eval/chroma_steer_driver.sh`, `riffer-evals/chroma_steer.html` — CONTINUITY, 2026-07-19
@@ -196,6 +195,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **roles move the voices.** — GHOST-NOTE, 2026-07-02
 
 ## Bitwig · OSC music production
+- **The MIDI features are orthogonal to PQ and CE, and that is the whole point.** → `eval/midi_metrics_ingest.py` — GHOST-NOTE, 2026-09-09
 - **[2026-08-06] Interval-resolution ladder (Kim's "are we even seeing a small second?" machinery-audit).** → `eval/musicology/interval_resolution_ladder.py`, `lumi/melody_subspace15_v2.npz`, `eval/musicology/interval_resolution_ladder_2026-08-06/` — CONTINUITY, 2026-08-06
 - **[2026-08-04] Melody-wall audio readout (#59 subspace-loss + E1a x0-equiv) — autonomous, Kim asleep.** → `eval/melody_wall_analysis.py`, `lumi_runs/analysis/melody_wall/{VERDICT.md,summary.json,per_clip.jsonl}` — CONTINUITY, 2026-08-01
 - **autonomous stretch (Kim asleep, prunes running): the note-following eval + gate-#0.** — CONTINUITY, 2026-07-20
@@ -205,6 +205,13 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **Bitwig calls middle C "C3".** — GHOST-NOTE, 2026-07-02
 
 ## Infra gotchas · venvs · ROCm/CK · storage
+- **We were pulling the weights and leaving the logs.** → `lightning_logs/`, `metrics.csv`, `runs/`, `/project/.../code`, `hparams.yaml`, `run_meta.json` — GHOST-NOTE, 2026-09-09
+- **RUNBOOK.md: the operator manual, and a workflow inversion.** → `RUNBOOK.md`, `filelock.py`, `gpu_guard.sh`, `agent_commit.sh`, `docs/commands.md`, `/tmp`, `CLAUDE.md`, `MASTER.md`, `KIM-TASKLIST.md` — GHOST-NOTE, 2026-09-08
+- **Filling the clip gaps in the last week's autoscale campaign.** → `eval/rarity_bracket_manifest.json`, `lightning_logs/metrics.csv`, `/home/kim/fullft_autoscale_2026-09-04` — GHOST-NOTE, 2026-09-08
+- [lesson] **a pinned snapshot underneath an unpinned resolver is a claim with an expiry date nobody set.** → `lumi-ops/SKILL.md` — THE-FINN, 2026-08-17
+- **disk cleanup, coordinated not solo — W was already mid-move when I went looking.** — THE-FINN, 2026-08-17
+- [lesson] **an asymmetric capability, spent twice more before anyone believed it.** — THE-FINN, 2026-08-17
+- **D3 melody head wired + goa pilot trained (both voices).** → `train_latch.py`, `latch_weights_sa3_medium/`, `SAO/.venv` — CONTINUITY, 2026-08-14
 - **[2026-08-11] AVP drone-fix sweep stalled — bf16-mixed fused-fallback, NOT our code (root cause + relaunch).** — CONTINUITY, 2026-08-11
 - **CK FlashAttention-2 for the ComfyUI venv — the two `[device-gfx1201]` extras.** → `my_wheels/` — THE-FINN, 2026-08-07
 - **[2026-08-06] in-mix semitone floor test (closes the atlas scope caveat).** → `/run/media/kim/Mantu/Stems/`, `eval/musicology/inmix_stage1_build.py`, `inmix_stage2_encode.py`, `eval/musicology/inmix_floor_2026-08-06/` — CONTINUITY, 2026-08-06
@@ -223,7 +230,23 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- **2026-09-07, later — the correction: I generalised one cell to the whole question.** — CONTINUITY, 2026-09-07
+- **2026-09-07, close — Kim's ears closed C6 in one sentence, and I should have asked for them first.** → `soup_descriptors.py` — CONTINUITY, 2026-09-07
+- **the census day, and three meters that all failed toward "fine".** — CONTINUITY, 2026-09-02
+- **2026-08-21 (later) — B7 freeze-out: a three-layer bug where each layer masked the next.** — CONTINUITY, 2026-08-21
+- **2026-08-21 (afternoon) — the day the fleet's DDP turned out to be fiction, and what got built from the rubble.** — CONTINUITY, 2026-08-21
+- **PQ alone is the best proxy for Kim's ear — and my attempt to beat it failed twice.** — WINTERMUTE, 2026-08-21
+- **the goa corpus gap is transcodes, not bitrate — Kim called it before the data did.** — WINTERMUTE, 2026-08-21
+- [note] **two measurement traps, both nearly fatal to a running job.** — WINTERMUTE, 2026-08-21
+- **suomisoundi's "identical across epochs" / "pure noise" reports both root-caused, neither is a training-code bug.** → `train_lora.py` — GHOST-NOTE, 2026-08-21
+- [lesson] **every guard we own fires on WRITE, so nothing can retract what predates it.** → `.md`, `/files/profiles/`, `publish_docs.py`, `.py`, `.sh` — THE-FINN, 2026-08-17
+- [negative result] **the deployed manifest is not a leak (checked, so nobody re-checks).** → `publish_docs.py` — THE-FINN, 2026-08-17
+- [lesson] **a classifier that returns the same verdict for every input has told you nothing.** — THE-FINN, 2026-08-17
+- [confirmed] **the `fullft_bigset` DDP prediction, closed at runtime by me rather than handed off.** → `/users/akekim/sa3_fullft_bigset-20784494.out` — THE-FINN, 2026-08-17
+- [lesson] **LUMI ssh is a time-boxed cert, not a standing grant — verify, don't remember.** — THE-FINN, 2026-08-17
+- **leak-scanned a new public page before it synced, caught a process gap not a leak.** → `top100.html` — THE-FINN, 2026-08-17
 - **[2026-08-12] Morphological-space path: doc reviewed+current, 8-arm sweep sbatch, soft-rank loss prototype (TDD).** → `papers/deep-research/MORPHOLOGICAL_SPACE_DESIGN_NOTE.md`, `lumi/sbatch/morph_head_sweep.sbatch`, `control/sa3_control/contour_loss.py` — CONTINUITY, 2026-08-12
+- **2026-08-16→17 — the bug report that described its own cause.** → `rate.html`, `evaluator.html` — WINTERMUTE, 2026-08-12
 - **the dead rows were at the top of the list.** → `file://` — WINTERMUTE, 2026-08-10
 - **open-tails audit + cite-a-check (earned the hard way, on my own doc).** — THE-FINN, 2026-08-09
 - **[2026-08-06] melody-SELECTIVE subspace built (whitened CSP) — the #59 lever, fixed.** → `eval/musicology/build_melody_selective_subspace.py`, `lumi/melody_subspace15_selective_v3.npz`, `eval/musicology/melody_selective_subspace_2026-08-06/` — CONTINUITY, 2026-08-06

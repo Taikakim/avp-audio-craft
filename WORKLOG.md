@@ -2505,3 +2505,97 @@ CONTAMINATION (the question that actually mattered): of the 285, 37 were ever ra
   all 81 pairs had already rendered successfully (162/162 files, "[all done]" in the log) — the
   "killed" status was misleading; always check the log/output files before assuming a killed
   background task lost its work, not just its exit code.
+
+- **2026-09-16** — NEGATIVE RESULT, confirmed by ear over two bracket rounds: the
+  `rms_energy_air` LatCH head (`latch_sa3_rms_energy_air_best.pt`, trained for
+  `diffusion_objective: rectified_flow` / medium-base's euler sampler) has NO
+  audible effect on the post-trained `medium` checkpoint (`rf_denoiser` / ping-pong,
+  8-step native operating point). Round 1: gain {128,512,2048} x end_pct {0.7,1.0}
+  on one flagged-harsh clip — all 6 guided renders sounded identical to each other
+  (strongly over-damped vs baseline, but zero differentiation across a 16x gain
+  range or end_pct). Round 2: gain {2,8,32,64} x start_pct {0.0,0.2,0.4} (end_pct
+  fixed 1.0) — same result, zero audible difference across a 32x gain range and
+  delayed-onset variants. `model.generate()` itself flags this at runtime:
+  `[LatCH] WARNING: head trained for noise_schedule='rectified_flow' but model
+  objective is 'rf_denoiser'` — the sampler mismatch is real, not cosmetic, and
+  the guidance saturates/no-ops rather than partially working. Kim's own read:
+  8 steps may simply be too few for a guidance adapter to act on regardless of
+  retraining. Conclusion: do NOT use any medium-base-trained LatCH head on
+  post-trained `medium` renders and expect it to work — this needs a head
+  retrained specifically for the `rf_denoiser` 8-step regime, not a
+  gain/schedule tuning fix. Scripts: `eval/hf_latch_bracket.py`.
+
+- **2026-09-16 (ROOT CAUSE, corrects the entry above)** — the LatCH-no-op-on-post-trained-
+  medium null result is an architectural bug, not a training/calibration mismatch.
+  Verified directly in `stable_audio_3/model.py`: the plain `generate()` path (~L385)
+  correctly passes `diffusion_objective=self.model.diffusion_objective` into
+  `sample_diffusion()`, respecting whichever sampler the loaded model actually uses.
+  `_latch_guided_generate` (~L590) instead ALWAYS calls
+  `sample_flow_euler_multi_latch_guided()` — a hardcoded Euler/rectified-flow loop that
+  never checks `diffusion_objective` at all. So passing ANY `latch_configs` silently
+  swaps post-trained medium's native ping-pong (`rf_denoiser`) sampler for a generic
+  Euler one, independent of gain — which is why every guided render in both bracket
+  rounds sounded identical to every other guided render (same substitute sampler
+  dominating) while differing from baseline (the only render using the real sampler).
+  Retraining a head would hit the identical wrong code path and fix nothing. Same
+  neighborhood as Wintermute's 2026-09-16 02:06 finding (`target_raw` silently
+  time-stretched via `F.interpolate` in the same guided-generation code) — the guided
+  path has more than one place that doesn't track the model's real config. Real fix
+  needs an rf_denoiser-aware guided sampler, not new training data; flagged to
+  Wintermute, retrain request retracted.
+- [2026-09-16 20:08] (wintermute) **2026-09-16 (eve) — WINTERMUTE: the HF/rms_energy_air head did not need retraining — guidance was silently swapping the post-trained model's native sampler. Fix landed, NOT yet confirmed by render.**
+
+Correcting the conclusion of the same-day NEGATIVE RESULT entry above (G's two bracket rounds on `rms_energy_air` vs post-trained `medium`). Everything in that entry stands — the bracket methodology, the negative result, the runtime warning it quotes — except its final call, "this needs a head retrained specifically for the rf_denoiser 8-step regime". That retrain is a **no-op**, and running it would have made things worse.
+
+**Why the retrain is a no-op.** `latch/train_latch.py:67` maps BOTH `rectified_flow` and `rf_denoiser` to the same forward noising (alpha=1-t, sigma=t) — one branch, identical (alpha_t, sigma_t). So `--objective rf_denoiser` trains a numerically identical head; the only thing that changes is the `noise_schedule` string written at line 731, which is exactly what `model.py` string-compares to raise the `[LatCH] WARNING`. Retraining would have **deleted the warning while changing nothing** — the one signal pointing at a real problem gone, and the head looking blessed. The warning is a false alarm for this specific pair: `sampling.py:491` puts both objectives in the same velocity branch (`z0 = x - t*v`), so the head's input distribution and the guided loop's math are both valid on the post-trained model.
+
+**The actual bug, structural and code-verified.** `sampling.py:445` picks `pingpong` for `rf_denoiser` and `euler` otherwise. The guided path in `model.py` hardcoded euler. So merely passing `latch_configs` converted an 8-step pingpong render into an 8-step Euler render — badly under-resolved for a model distilled to pingpong, and it happened **before any head was consulted**. That is the most likely source of "every guided render strongly over-damped vs baseline, yet identical to every other guided render": all guided clips shared one wrong-sampler sound, and none was comparable to its own unguided baseline, which is precisely what makes an inert head and a mismatched sampler indistinguishable by ear.
+
+**Fix.** `sample_flow_pingpong_multi_latch_guided` — not a new method: the guidance math is the Euler sibling's unchanged, and only the loop's last line differs (euler reuses the model's implied noise, pingpong redraws it; both are the same `z_t = (1-t)z0 + t*noise` form, so the two guidance seams sit in identical places). Because pingpong renoises FROM the clean estimate, mean guidance on z0 is the load-bearing seam. `resolve_guided_sampler()` now holds the choice in ONE place (precedence: latch_hparams > generate(sampler_type=) > native), pinned by test to agree with sampling.py's unguided choice — two places deciding one thing by different rules is how this arose. `rk4`/`dpmpp` now raise instead of being silently downgraded to euler; no current caller combines them with latch.
+
+**NOT CONFIRMED BY RENDER.** This fixes a verified structural gap, but whether it also explains the gain-invariance is unmeasured. `eval/hf_latch_gradnorm_probe.py` decides it: arms 1-3 force euler (reproducing the pre-fix behaviour on the same ckpt/seed/head), arms 4-5 use pingpong, and the headline is "pingpong: 1000x gain increase" — clearly >0 means gain acts once the sampler matches; still ~0 sends it to the per-step `||grad_var||`, where ~0 means the head is genuinely inert and large-but-gain-invariant means overshoot saturation in the n_iter=4 mean-guidance loop (tunable, still no retrain). The "sampler swap alone" arm runs rho=mu=0, so guidance is mathematically inert and any distance is the sampler's alone. Needs the GPU lock; ~4 short renders.
+
+**Two of my own hypotheses died en route, recorded so nobody retries them:** (1) gain is NOT being dropped — `model.py` reads `cfg.get("weight")` and ignores a `gain` key, but the bracket passed `latch_hparams={"rho": gain, "mu": gain}`, the correct channel; (2) the step windows do NOT round to zero at 8 steps (end_pct 0.7 -> int(5.6)=5 -> steps 0-4; start_pct 0.4 -> int(3.2)=3 -> steps 3-7).
+
+**Separate issue, still open and it matters for the 40 harsh clips:** the bracket's target was the head's own std_mean, which after standardization is exactly 0.0 — "make air energy corpus-average", not "reduce it". Even with working guidance that is not a damping request. Left unchanged in the probe on purpose so it does not confound the does-guidance-act-at-all question.
+
+Commits: `8e65acd` (SA3 fork: sampler + dispatch), `7fcf856` (probe + 8 dispatch tests, no GPU). Kim's "8 steps may be too few for guidance to act at all" remains open; the per-step norms inform it.
+- [2026-09-16 21:29] (wintermute) **2026-09-16 (eve, +2h) — WINTERMUTE: CONFIRMED BY RENDER. The guided-sampler fix works; the head never needed retraining. Supersedes the "NOT CONFIRMED" status of my entry above.**
+
+`eval/hf_latch_gradnorm_probe.py` ran on the post-trained `medium` + DoRA, 6 arms, one seed/prompt/head/ckpt. All six renders healthy (peak exactly 0.8913, finite, no DC/NaN cells).
+
+Relative L2 between arms:
+```
+sampler swap alone (guidance INERT, rho=mu=0)   1.999727
+euler: 1000x gain increase                      0.026365
+pingpong: 1000x gain increase                   0.246328   <- 9.4x more responsive
+fix effect at matched gain 2                    1.063998
+```
+
+**The z0 std is the mechanism, and it is unambiguous.** Baseline pingpong **1.149** — the healthy value DISCOVERIES 2026-08-10 records (vs 5.6 for the latent-runaway family). Every euler arm **2.15–2.17**, near-double, with `||x||` inflating across steps (386 -> 611). Every pingpong guided arm **1.17–1.18**, on-manifold. So the guided path was manufacturing an off-manifold latent BY ITSELF: the "sampler swap alone" arm ran rho=mu=0, guidance mathematically inert, and still sat 2.0 away from baseline. That is attributable to the sampler and nothing else. G's "strongly over-damped vs baseline" was this, not the head.
+
+**Why gain looked dead.** Not saturation, and not a zero gradient — swamping. `||grad_var||` is 1.2e-05..5.9e-04 against `||x||` of 386..611, so even at gain 2048 the variance-guidance displacement is ~6.6e-5 relative. Euler's 0.026 of gain response was buried under a 2.0 sampler artefact, i.e. inaudible. On pingpong the same 1000x span moves 0.246. (Norms are near-identical between gain 2 and 2048 exactly as expected — grad_var is computed before rho scales it.)
+
+**Honest limits, so nobody over-reads this.** (1) Variance guidance is weak on BOTH samplers; the recovered responsiveness comes from mean guidance on z0. (2) 0.246 across a 1000x gain span is real but modest authority — the fix restores steering, it does not prove the head can audibly damp harsh HF. That needs an ear on arm4/arm5 vs arm0 (`/tmp/hf_latch_gradnorm/`, volatile). (3) The target is still the head's own std_mean = standardized 0.0, i.e. "make it corpus-average", NOT "reduce it" — so this probe does not test damping at all. Building the real target from the 42 unflagged clips needs the head's own training extractor. (4) Kim's "8 steps may be too few" is now partly answered — gain does act at 8 steps — but how MUCH it can act is unmeasured.
+
+Commits: `8e65acd` (sampler + dispatch), `7fcf856` (probe + dispatch tests), `811aa29` (sampler numerics tests: gain must move the output, pingpong must differ from euler and be stochastic where euler is deterministic). 16 tests, no GPU, ~2s.
+- [2026-09-17 01:09] (wintermute) **2026-09-17 — WINTERMUTE: harshness is the PROMPT, not the checkpoint — and `rms_energy_air` is the wrong band to fix it with.**
+
+Asked to record that the model makes harsh timbres. The measured version is narrower and more useful.
+
+**Concentration.** 23 of the 40 ear-flagged mixtape clips come from ONE render set, `genre_fusion_probe_local` (OOD genre-fusion prompts, post-trained medium, cfg1). Control, same model family and cfg:
+```
+genre-fusion probe (OOD prompts)   23/31  74.2% harsh
+OTHER ptm + cfg1 (normal prompts)  13/37  35.1%
+non-ptm (base-model arms)           4/14  28.6%
+by prompt: genre_fusion 74.2 · rb_rare 55.6 · rb_common 50.0 · other 12.0
+```
+Double the harshness when the prompt asks for a blend the model never trained on, with a clean rarity gradient behind it. **Not "this checkpoint sounds harsh" but "this model gets harsh out of distribution"** — which predicts harshness from the REQUEST, before rendering. (I first misread the `gf2_` filename prefix as a training arm; it is the probe set, `gf_NN` is a prompt index.)
+
+**[RULED OUT] the `rms_energy_air` head cannot fix this.** Flagged vs not-flagged per clip, on the window actually judged (0-25% — Kim skipped ahead on clips that opened well): six bands survive Bonferroni, ALL of them low (20-49 Hz -4.11 dB d=-0.89; 252-308 -3.50 d=-0.91; 308-371 -3.44 d=-0.92; also 81-117, 157-202, 518-605). Across the whole 2.5-22 kHz `air` span, **not one significant band**. Harsh = THIN: ~3-4 dB of missing low-mid body, not excess treble. An HF cut makes it worse, which is what the guided renders did (air -26.2→-29.0 but body -23.9→-28.0 — the degenerate solution to an absolute-energy target). Replacement target must be LEVEL-INVARIANT, same logic as `onset_per_beat`.
+
+**Marginal / refuted, so nobody re-runs them expecting a result:** contour roughness 2.04 vs 1.81 dB (p=0.067), peak-to-valley 11.11 vs 9.87 (p=0.055), z0 std 1.366 vs 1.252 (p=0.062, n=17/34) — all lean right, none clears 0.05. **Crest factor REFUTES soft-distortion as measured**: 13.37 vs 13.03 dB, p=0.62, both normal for dance masters. Crest is the wrong instrument (saturation adds harmonics without crushing peak/RMS); THD/intermodulation is the real test. Both z0 pools are mildly above healthy ~1.13-1.15 and nowhere near the 5.6 runaway family.
+
+**Method trap worth carrying:** averaging ERB contours ACROSS clips cancels per-clip peaks at different frequencies — a +5 dB bump at 5.5-7.5k on one clip and +8 dB at 1.5-4.5k on another leave only the shared tilt. My first pass saw a clean tilt and was blind to the unevenness Kim hears. Per-clip metrics or nothing.
+
+Tool: `mir/src/tools/spectral_harshness_contrast.py`. Reference = Kim's own 167 masters, not generated clips (model output bakes in the bias being measured; pink noise is also wrong — the masters fall ~-4.4 dB/oct above 1 kHz vs pink's -3, so pink reads them as HF-deficient and would push generations BRIGHTER).
