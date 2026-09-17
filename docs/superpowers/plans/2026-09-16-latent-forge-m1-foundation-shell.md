@@ -41,6 +41,9 @@ text is the stale one. Nothing else in the milestone is ambiguous.
 | selection | `view.selection: Target` (the union from T3) | T7 |
 | help tooltip component | `src/ui/shell/HelpTooltip.svelte`, **created by T14**; T9–T11 must not create it | T14 |
 | legacy components | `legacyInspector` and `legacyServer` stay mounted as right-pane modules through M1 (see the self-review); removed by M4 and M9 respectively | T15 |
+| viewport state | `pxPerSec` / `scrollSec` live in the **arrangement** store, not the view store (WINTERMUTE, 2026-09-16 — the view store is chrome only). T7's body still lists them; the arrangement store wins. §9.2 still serialises them under `view: {...}`, which is a storage shape, not an ownership claim | existing `store.svelte.ts`, M5 takes over |
+| pass σ max | **not** a `ScheduleSpec` field and never will be — it is the pass's own init noise level: 1.0 for a fresh generate, the target's NOISE on an A2A target (WINTERMUTE, 2026-09-16) | M4 binds it |
+| `Progress.stage_index` | **1-based, 0 = not started.** Only `commit` has stage labels; every other op emits `stage: ""` and `stage_count: 0`, steps only | T6 |
 
 A task that consumes any of these must restate the exact name in its own **Interfaces** block —
 implementing agents see one task at a time and cannot look this table up.
@@ -368,7 +371,7 @@ describe("Progress guard", () => {
     expect(
       isProgress({
         job_id: "forge-20260916-120000-1", op: "commit",
-        stage: "ENCODE audio → latent", stage_index: 2, stage_count: 9,
+        stage: "ENCODE audio → latent", stage_index: 3, stage_count: 9,   // 1-based, 0 = not started
         step: 4, steps: 24, steps_left_total: 44, steps_total: 48,
       }),
     ).toBe(true);
@@ -1439,17 +1442,29 @@ describe("lifecycle, one tick per poll", () => {
     expect(rec.result.seed).toBe(424242);
   });
 
-  it("reports the nine commit stages of spec §8.1, 0-based", () => {
+  it("reports the nine commit stages of spec §8.1, 1-based", () => {
     const { q: q2 } = queueAt();
     const id = (q2.submit("commit", {}).body as { job_id: string }).job_id;
     expect(COMMIT_STAGES).toHaveLength(9);
     q2.get(id); // queued
     const first = (q2.get(id).body as { progress: { stage: string; stage_index: number; stage_count: number } }).progress;
     expect(first.stage_count).toBe(9);
-    expect(first.stage_index).toBe(3);
+    // slot 3 of the array, reported as stage_index 4 — 1-based, 0 = not started.
+    expect(first.stage_index).toBe(4);
     expect(first.stage).toBe(COMMIT_STAGES[3]);
     expect(COMMIT_STAGES[0]).toBe("DECODE latent → audio");
     expect(COMMIT_STAGES[2]).toBe("ENCODE audio → latent");
+  });
+
+  it("gives a wrapped op no stage vocabulary at all (steps only)", () => {
+    const { q: q3 } = queueAt();
+    const id = (q3.submit("generate", {}).body as { job_id: string }).job_id;
+    q3.get(id); // queued
+    const p = (q3.get(id).body as { progress: { stage: string; stage_index: number; stage_count: number; steps: number } }).progress;
+    expect(p.stage).toBe("");
+    expect(p.stage_index).toBe(0);
+    expect(p.stage_count).toBe(0);
+    expect(p.steps).toBeGreaterThan(0);
   });
 });
 
@@ -1687,15 +1702,19 @@ export const COMMIT_STAGES: string[] = [
  * mock's own minimal lists so the progress line has something honest to show. When
  * M2 records real job fixtures, the recorded labels win (see Open questions).
  */
+// CORRECTED (WINTERMUTE, 2026-09-16): only `commit` has a stage vocabulary. M2's
+// `_existing_runner` calls `progress.begin(job_id, op, steps * passes)` with NO labels, so every
+// other op — the six wrapped ones AND `a2a_clip` / `inpaint` — emits `stage_count: 0` and
+// `stage: ""`, steps only. The mock must not invent labels the server will never send.
 export const STAGES_BY_OP: Record<JobOp, string[]> = {
-  generate: ["SAMPLE"],
-  a2a_track: ["SAMPLE"],
-  a2a_mix: ["SAMPLE"],
-  longform: ["SAMPLE"],
-  decode: ["DECODE latent → audio"],
-  bend: ["BEND"],
-  a2a_clip: ["ENCODE audio → latent", "A2A RE-NOISE", "DECODE latent → audio"],
-  inpaint: ["ENCODE audio → latent", "INPAINT OVERLAPS", "DECODE latent → audio"],
+  generate: [],
+  a2a_track: [],
+  a2a_mix: [],
+  longform: [],
+  decode: [],
+  bend: [],
+  a2a_clip: [],
+  inpaint: [],
   commit: COMMIT_STAGES,
 };
 
@@ -1745,16 +1764,21 @@ export function serverJobId(forgeJobId: string): string {
 }
 
 function progressOf(rec: JobRecord, done: number, left: number, total: number): Progress {
-  const stages = STAGES_BY_OP[rec.op] ?? ["SAMPLE"];
-  // 0-based, matching the guard test of Task 3 (stage_index 2 = "ENCODE audio → latent", S3 of §8.1).
+  const stages = STAGES_BY_OP[rec.op];
+  // stage_index is 1-BASED and 0 means "not started" (WINTERMUTE, 2026-09-16: M2's
+  // `progress.begin()` leaves it 0 and each stage entry calls `progress.stage(i + 1, label)`).
+  // An op with no stage vocabulary — everything except `commit` — reports stage "" and
+  // stage_count 0, steps only. Do NOT invent labels the server will never send.
   // Multiply before dividing: (done/total)*stages is a knife-edge for floor() -- 8/24*9 comes out
   // 2.9999999999999996 and lands on the wrong stage, while (8*9)/24 is exactly 3.
-  const stage_index = Math.min(stages.length - 1, Math.floor((done * stages.length) / (total || 1)));
+  const slot = stages.length
+    ? Math.min(stages.length - 1, Math.floor((done * stages.length) / (total || 1)))
+    : -1;
   return {
     job_id: rec.job_id,
     op: rec.op,
-    stage: stages[stage_index],
-    stage_index,
+    stage: slot >= 0 ? stages[slot] : "",
+    stage_index: slot >= 0 ? slot + 1 : 0,
     stage_count: stages.length,
     step: done,
     steps: total,
@@ -2293,7 +2317,26 @@ absolute path is `/SERVER/...`.
     "fps": 10.7666015625,
     "max_duration_sec": 184.0,
     "out_dir": "/SERVER/out",
-    "latch_heads": [],
+    "latch_heads": [
+      {
+        "name": "rms_energy_bass", "family": "medium",
+        "path": "/SERVER/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_bass_best.pt",
+        "default_gain": 512.0, "out_channels": 1, "loss_type": "mse",
+        "target_kind_default": "constant",
+        "slider_min": -35.2, "slider_max": -0.13, "value_default": -12.0,
+        "standardized": true, "health": "ok",
+        "supports_kinds": ["constant", "ramp_up", "ramp_down", "beat_grid"], "schema": 1
+      },
+      {
+        "name": "chroma_other", "family": "chroma",
+        "path": "/SERVER/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_chroma_other_best.pt",
+        "default_gain": 2048.0, "out_channels": 384, "loss_type": "mse",
+        "target_kind_default": "constant",
+        "slider_min": 0.0, "slider_max": 1.0, "value_default": 0.5,
+        "standardized": true, "health": "ok",
+        "supports_kinds": ["constant"], "schema": 1
+      }
+    ],
     "dora": {},
     "film_default": { "ckpt": null, "gain": 1.0 }
   }
@@ -8914,7 +8957,20 @@ server, unable to start a job, from here until M9.
 Contract questions are marked **[server]** — those are the ones Kim relays to WINTERMUTE; the rest
 are readings taken so no implementing agent is ever blocked.
 
-### For the server side
+### For the server side — ALL ANSWERED (WINTERMUTE, 2026-09-16)
+
+Answered in `flatline.wintermute.log`; three landed as spec edits (`e87cfc9`). Kept here with their
+answers so a reader of this plan alone is not left hunting.
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | σ MAX's place in the contract | Not a `ScheduleSpec` field and will not become one — it is the **pass's own init noise level** (1.0 for a fresh generate, the target's NOISE on an A2A target). §5.1's range row now says so; T14's help string says "the pass's noise level", and M4 binds the field to the target's NOISE where one exists, read-only 1.00 otherwise. |
+| 2 | `/models` outside the frozen contract | Deliberate — a pre-existing route, not a `/forge/*` one. The separate `models.ts` is correct. §6 now states that only `/forge/*` is frozen, while `/info`, `/status`, `/schedule`, `/models`, `/slots` and `/audio/...` are called directly and unchanged. |
+| 3 | `Progress.stage_index` base | **1-based, 0 = not started.** Applied to T3's guard test and T6's `progressOf`. |
+| 4 | Stage vocabulary for wrapped ops | **None at all** — `generate`, `a2a_track`, `a2a_mix`, `longform`, `decode`, `bend`, and also `a2a_clip` and `inpaint`, emit `stage: ""` and `stage_count: 0`, steps only. The nine labels belong to `commit`. T6's `STAGES_BY_OP` corrected. |
+| 5 | `/info.latch_heads` element shape | 28 fields, given in full in the DM; `slider_min`/`slider_max` are the head's own p1/p99 and are exactly what M7's target slider ranges over. `handmade-info.json` now ships two real redacted heads (`rms_energy_bass`, `chroma_other`) so M7 has something to render. |
+
+#### Original wording, for the record
 
 1. **[server] σ MAX has no home in the contract** (§9.4 lists it among the strings to rewrite,
    implying an editable control, but `ScheduleSpec` in §6.1 has no `sigma_max` field — only
