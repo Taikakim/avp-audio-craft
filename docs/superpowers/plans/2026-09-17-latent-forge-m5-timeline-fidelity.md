@@ -85,7 +85,7 @@ const REF: AudioRef = { kind: "crop", crop_id: "000412" };
 function reset() {
   for (const c of [...arrangement.clips]) arrangement.removeClip(c.id);
   arrangement.setBpm(120);
-  arrangement.setSnap("off");
+  arrangement.setSnap("free");
   for (let i = 0; i < 4; i++) {
     arrangement.lanes[i].muted = false;
     arrangement.lanes[i].solo = false;
@@ -129,6 +129,14 @@ describe("project tempo is non-elastic (spec §7.3)", () => {
     const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
     arrangement.setBpm(140);
     expect(c.dur_sec).toBe(4);
+  });
+
+  it("rescales the TRIM as well, or a trimmed clip plays different material", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF, nativeBpm: 120 });
+    arrangement.trimClip(c.id, "start", 2);          // offset_sec = 2, dur_sec = 6
+    arrangement.setBpm(240);                          // stretched source halves
+    expect(c.offset_sec).toBeCloseTo(1, 9);
+    expect(c.dur_sec).toBeCloseTo(3, 9);
   });
 });
 
@@ -181,6 +189,15 @@ describe("overlaps are derived, per lane, and keyed stably", () => {
     expect(arrangement.overlaps[0].key).toBe(`${a.id}-${b.id}`);
   });
 
+  it("finds a non-adjacent pair — the case the drawing's adjacency loop misses", () => {
+    // A spans everything; B and C sit inside it. Sorted A,B,C, so (A,C) is not adjacent.
+    const a = arrangement.addClip({ lane: 0, startSec: 0, durSec: 10, audio: REF });
+    arrangement.addClip({ lane: 0, startSec: 2, durSec: 1, audio: REF });
+    const c = arrangement.addClip({ lane: 0, startSec: 5, durSec: 1, audio: REF });
+    const keys = arrangement.overlaps.map((o) => o.key);
+    expect(keys).toContain(`${a.id}-${c.id}`);
+  });
+
   it("does not pair clips in different lanes", () => {
     arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF });
     arrangement.addClip({ lane: 1, startSec: 6, durSec: 8, audio: REF });
@@ -213,6 +230,15 @@ describe("a2a (spec §5.2)", () => {
     arrangement.setEnvelope(c.id, { points: [0.2, 0.4, 0.6, 0.8], curves: [0, 0, 0] });
     arrangement.setNoise(c.id, 0.8);           // was 0.4 -> factor 2
     expect(c.a2a!.envelope.points).toEqual([0.4, 0.8, 1, 1]);   // clamped at 1
+  });
+
+  it("survives a pass through zero instead of pinning every point to 1", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    arrangement.ensureA2A(c.id);
+    arrangement.setNoise(c.id, 0);                       // legal drag value (§5.1)
+    expect(c.a2a!.envelope.points).toEqual([0, 0, 0, 0]);
+    arrangement.setNoise(c.id, 0.5);                     // from 0: flat at the new value
+    expect(c.a2a!.envelope.points).toEqual([0.5, 0.5, 0.5, 0.5]);
   });
 });
 
@@ -270,6 +296,7 @@ import {
 import type {
   AudioRef, Envelope, ForgeClip, ForgeLane, OverlapParams,
 } from "../forge/types";
+import type { SnapMode } from "../math/snap";
 
 export const MIN_PX_PER_SEC = 4;
 export const MAX_PX_PER_SEC = 600;
@@ -314,7 +341,9 @@ function defaultLanes(): ForgeLane[] {
 class ArrangementStore {
   bpm = $state(120);
   beatsPerBar = $state(4);
-  snap = $state<string>("lane");            // spec §4.3 default: downbeats (magnetic)
+  // Typed, not `string`: an untyped field let the v1 spelling "off" through
+  // svelte-check. SnapMode comes from lib/math/snap (Task 2), so Task 2 lands first.
+  snap = $state<SnapMode>("lane");          // spec 4.3 default: downbeats (magnetic)
   lanes = $state<ForgeLane[]>(defaultLanes());
   clips = $state<ForgeClip[]>([]);
   pxPerSec = $state(80);
@@ -331,9 +360,16 @@ class ArrangementStore {
       const inLane = this.clips
         .filter((c) => c.lane === lane)
         .sort((a, b) => a.start_sec - b.start_sec);
-      for (let i = 0; i < inLane.length - 1; i++) {
+      // ALL pairs, not sorted-adjacent ones. The drawing's _overlaps (v3:1601-1611)
+      // checks adjacency only, but there an overlap was a purple box; here it becomes
+      // 6.9's commit payload, and 8.1 S3 equal-power-crossfades an overlap instead of
+      // summing it, so a missed overlap is a louder, possibly clipping render with no
+      // inpaint pass. A [0,10) with B [2,3) and C [5,6) is the case adjacency misses.
+      // n is tens; the cost is irrelevant.
+      for (let i = 0; i < inLane.length; i++) {
+        for (let j = i + 1; j < inLane.length; j++) {
         const a = inLane[i];
-        const b = inLane[i + 1];
+        const b = inLane[j];
         const aEnd = a.start_sec + a.dur_sec;
         if (aEnd > b.start_sec + 1e-9) {
           out.push({
@@ -344,6 +380,7 @@ class ArrangementStore {
             a_id: a.id,
             b_id: b.id,
           });
+        }
         }
       }
     }
@@ -470,9 +507,17 @@ class ArrangementStore {
   setNoise(id: string, noise: number) {
     const c = this.find(id);
     if (!c?.a2a) return;
-    const from = c.a2a.noise || 1e-6;
-    const factor = noise / from;
+    const from = c.a2a.noise;
     c.a2a.noise = noise;
+    // NOISE 0 is a legal drag value (5.1), and 0 scales nothing: from 0 the only
+    // sane reading of "scales all four points proportionally" is a flat envelope at
+    // the new value. Guarding with `noise || 1e-6` instead turns the next drag into
+    // a factor of 500000 and pins every point to 1 -- the opposite of the gesture.
+    if (from <= 0) {
+      c.a2a.envelope.points = [noise, noise, noise, noise];
+      return;
+    }
+    const factor = noise / from;
     c.a2a.envelope.points = c.a2a.envelope.points.map(
       (p) => Math.max(0, Math.min(1, p * factor)),
     ) as Envelope["points"];
@@ -530,12 +575,17 @@ class ArrangementStore {
     if (Math.abs(next - prev) < 1e-9) return;
     for (const c of this.clips) {
       if (c.native_bpm == null) continue;
-      c.dur_sec = c.dur_sec * (prev / next);
+      // BOTH move: 7.3 puts offset_sec and dur_sec in the stretched domain, so a
+      // change of stretch rescales the whole timebase. Rescaling only dur_sec makes
+      // a trimmed clip point at different material after a tempo nudge.
+      const ratio = prev / next;
+      c.offset_sec = c.offset_sec * ratio;
+      c.dur_sec = c.dur_sec * ratio;
     }
     this.bpm = next;
   }
 
-  setSnap(mode: string) {
+  setSnap(mode: SnapMode) {
     this.snap = mode;
   }
 
@@ -561,7 +611,7 @@ Then remove from `src/lib/stores/view.svelte.ts`: the fields `pxPerSec` and `scr
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/stores/__tests__/arrangement.test.ts
 ```
 
-Expected: `Tests  16 passed (16)`.
+Expected: `Tests  22 passed (22)`.
 
 Then confirm nothing else broke:
 
@@ -621,7 +671,7 @@ describe("the snap menu is the spec 4.3 list, in order", () => {
     expect(SNAP_MODES.map((m) => m.value)).toEqual(
       ["bar", "beat", "1/8", "1/16", "1/32", "lane", "edge", "free"],
     );
-    expect(SNAP_MODES.find((m) => m.value === "lane").label).toBe("downbeats (magnetic)");
+    expect(SNAP_MODES.find((m) => m.value === "lane")!.label).toBe("downbeats (magnetic)");
   });
 });
 
@@ -785,19 +835,23 @@ describe("coincidence within one 32nd note (spec 4.3)", () => {
   });
 });
 
-describe("the marker colour ramps between the two tokens", () => {
-  it("returns the dim token at 0 and the hit token at 1", () => {
-    expect(downbeatColor(0, "rgb(10, 20, 30)", "rgb(200, 100, 0)")).toBe("rgb(10, 20, 30)");
-    expect(downbeatColor(1, "rgb(10, 20, 30)", "rgb(200, 100, 0)")).toBe("rgb(200, 100, 0)");
+describe("the marker colour ramps in OKLCH and builds its own string", () => {
+  it("is the spec's dim endpoint at 0 and its hit endpoint at 1", () => {
+    expect(downbeatColor(0)).toBe("oklch(78.00% 0.080 250.0)");
+    expect(downbeatColor(1)).toBe("oklch(85.00% 0.170 95.0)");
   });
 
-  it("mixes channel-wise at the midpoint", () => {
-    expect(downbeatColor(0.5, "rgb(0, 0, 0)", "rgb(200, 100, 50)")).toBe("rgb(100, 50, 25)");
+  it("interpolates every channel at the midpoint", () => {
+    expect(downbeatColor(0.5)).toBe("oklch(81.50% 0.125 172.5)");
   });
 
   it("clamps out-of-range t rather than extrapolating", () => {
-    expect(downbeatColor(-1, "rgb(0, 0, 0)", "rgb(10, 10, 10)")).toBe("rgb(0, 0, 0)");
-    expect(downbeatColor(9, "rgb(0, 0, 0)", "rgb(10, 10, 10)")).toBe("rgb(10, 10, 10)");
+    expect(downbeatColor(-1)).toBe(downbeatColor(0));
+    expect(downbeatColor(9)).toBe(downbeatColor(1));
+  });
+
+  it("emits oklch, never rgb -- a custom property is a token stream, not channels", () => {
+    expect(downbeatColor(0.3).startsWith("oklch(")).toBe(true);
   });
 });
 ```
@@ -957,24 +1011,36 @@ export function coincidence(sec: number, others: number[], bpm: number): number 
   return best;
 }
 
-function parseRgb(css: string): [number, number, number] {
-  const m = css.match(/-?\d+(\.\d+)?/g);
-  if (!m || m.length < 3) return [0, 0, 0];
-  return [Number(m[0]), Number(m[1]), Number(m[2])];
-}
-
 /**
- * Mix two resolved colours. Both come from getComputedStyle on the canvas
- * element (`--downbeat`, `--downbeat-hit`), never literal oklch, so DARK works
- * without touching this file. Browsers resolve custom properties to rgb(),
- * which is what makes channel-wise mixing safe here.
+ * The marker colour at coincidence `t`, built directly in OKLCH.
+ *
+ * It does NOT read a CSS custom property. An unregistered custom property's
+ * computed value is its literal token stream, so
+ * `getComputedStyle(el).getPropertyValue("--downbeat")` hands back the STRING
+ * `"oklch(78% 0.08 250)"` -- there are no channels to mix, and scraping the
+ * digits out of it yields `rgb(78, 0, 250)`, an indigo. Canvas accepts an
+ * `oklch()` string directly, so we build one.
+ *
+ * Endpoints are the spec's (4.3) and the interpolation is per channel IN
+ * OKLCH, as the drawing does it (`_dbColor`, v3:1155-1158): an sRGB lerp
+ * between these two passes through a desaturated grey-green that OKLCH does
+ * not. Hue 95 is the spec's; the drawing says 100 -- the spec wins, recorded in
+ * this milestone's Open questions.
+ *
+ * The rule "canvas colours come from getComputedStyle, never literal oklch"
+ * still holds for every FLAT colour. This is the one ramp, and a ramp needs
+ * channels; the endpoints live here because nothing can interpolate a token
+ * stream.
  */
-export function downbeatColor(t: number, dim: string, hit: string): string {
+export const DOWNBEAT_DIM = { l: 78, c: 0.08, h: 250 } as const;
+export const DOWNBEAT_HIT = { l: 85, c: 0.17, h: 95 } as const;
+
+export function downbeatColor(t: number): string {
   const k = Math.max(0, Math.min(1, t));
-  const a = parseRgb(dim);
-  const b = parseRgb(hit);
-  const mix = a.map((v, i) => Math.round(v + (b[i] - v) * k));
-  return `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
+  const l = DOWNBEAT_DIM.l + (DOWNBEAT_HIT.l - DOWNBEAT_DIM.l) * k;
+  const c = DOWNBEAT_DIM.c + (DOWNBEAT_HIT.c - DOWNBEAT_DIM.c) * k;
+  const h = DOWNBEAT_DIM.h + (DOWNBEAT_HIT.h - DOWNBEAT_DIM.h) * k;
+  return `oklch(${l.toFixed(2)}% ${c.toFixed(3)} ${h.toFixed(1)})`;
 }
 ```
 
@@ -984,7 +1050,15 @@ export function downbeatColor(t: number, dim: string, hit: string): string {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/math/__tests__/snap.test.ts src/lib/math/__tests__/downbeats.test.ts
 ```
 
-Expected: `Test Files  2 passed (2)` and `Tests  24 passed (24)`.
+Expected: `Test Files  2 passed (2)` and `Tests  29 passed (29)`.
+
+Then the type gate every task in this milestone runs:
+
+```bash
+npm test && npm run check
+```
+
+Expected: every suite passes and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
