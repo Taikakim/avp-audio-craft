@@ -4,7 +4,17 @@ replacing the corpus-metadata `bpm` field (clip_metrics.db, method/precision unk
 with a direct measurement via the same madmom pipeline used throughout tonight's DJ-mix
 work (dj_beatmatch.madmom_downbeats -> median inter-downbeat interval -> BPM). Writes a
 new arc file sorted by this real BPM. CPU-only, mir venv, no GPU.
-"""
+
+⛔ SUPERSEDED 2026-09-17 — bpm_from_downbeats()'s fold-correction is a confirmed BUG, not
+a fix: it anchors its 2/3-fold disambiguation to a stale/unreliable prior BPM estimate
+(`anchor=c.get("bpm")`) and wrongly folds already-correct measurements DOWN by 2/3 for
+roughly half the corpus (Kim caught it by ear -- "basically random order" -- confirmed:
+raw madmom beats on a clip whose prompt states "148 BPM" gave 146.3 correctly, but this
+script's fold heuristic reported 98.8). Root cause of the whole fold-guessing approach:
+mir/src/rhythm/bpm.py::calculate_bpm_from_beats() ALREADY EXISTS and computes BPM
+directly from the mean RAW BEAT interval (not a downbeat/bar grouping), sidestepping the
+entire fold-ambiguity class this script tries to correct for -- should have been used
+from the start instead of writing new fold-guessing logic. Use mixtape_madmom_bpm_v2.py.
 import json
 import sys
 from pathlib import Path

@@ -15,7 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-RENDER_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v3_bar_aware")
+RENDER_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/mixtape_v5_clean")
 PAIRS_JSON = Path(
     "/tmp/claude-1000/-home-kim-Projects-SAO-stable-audio-3/"
     "cd7a9ba8-7c77-4763-a269-4b41c0eb857d/scratchpad/mixtape_pairs.json")

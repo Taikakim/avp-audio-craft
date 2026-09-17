@@ -198,11 +198,14 @@ def process_pair(model, sr, p, args, out_dir):
     B, srb = load(p["b_path"])
     assert sra == sr and srb == sr
 
-    # Real madmom BPM (from mixtape_madmom_bpm.py, already fold-corrected and
-    # anchored to this corpus's own metadata) -- NOT chroma_morph_transitions.
-    # tempo_of(), which carries a hardcoded 110-185bpm fold band that is wrong
-    # for this corpus (it spans 93-155bpm) and would silently 1.5x-fold slow
-    # clips again, exactly the bug already found and fixed tonight.
+    # Real madmom BPM computed from RAW BEAT timestamps (mixtape_madmom_bpm_v2.py,
+    # mir/src/rhythm/bpm.py::calculate_bpm_from_beats) -- not a downbeat/bar-interval
+    # heuristic. The earlier downbeat-interval version (mixtape_madmom_bpm.py) had a
+    # real fold-correction bug: it anchored its 2/3-fold disambiguation to a stale/
+    # unreliable prior BPM estimate and wrongly halved-and-a-half'd already-CORRECT
+    # measurements for roughly half the corpus (Kim caught this by ear -- "basically
+    # random order" -- confirmed against clips whose prompt text states a nominal BPM).
+    # Raw beats have no such ambiguity (no bar-grouping guess to get wrong).
     ta, tb = p["a_bpm"], p["b_bpm"]
 
     # Beat-aware cropping. Two paths:
@@ -223,6 +226,17 @@ def process_pair(model, sr, p, args, out_dir):
     #    (nearest, either direction), matching that tool's own convention.
     if "a_end_sec" in p and "b_start_sec" in p:
         a_end, b_start = float(p["a_end_sec"]), float(p["b_start_sec"])
+        # a_start_sec: clip A's OWN entry point -- the SAME value that was used as
+        # b_start_sec when this same clip was "B" in the PREVIOUS pair. Without this,
+        # A_use always started at sample 0 of the raw file regardless of where the
+        # clip's own crossfade-in had already happened one pair earlier, so every
+        # middle clip got a chunk of its own early audio played TWICE when pairs were
+        # concatenated into a continuous mix: once (from a_start onward) blended into
+        # the previous transition, and again (from sample 0) as this pair's A_head --
+        # a hard timeline jump right at the seam ("glitch when the overlap ends",
+        # Kim's ear, 2026-09-17). Defaults to 0.0 for the first clip in the sequence,
+        # which has no previous pair and legitimately starts at its own sample 0.
+        a_start = float(p.get("a_start_sec", 0.0))
     else:
         db_a = np.asarray(madmom_downbeats(A, sr))
         db_b = np.asarray(madmom_downbeats(B, sr))
@@ -232,7 +246,8 @@ def process_pair(model, sr, p, args, out_dir):
         a_end = float(a_end) if a_end is not None else a_target
         b_start = find_closest_downbeat(db_b, b_target)
         b_start = float(b_start) if b_start is not None else b_target
-    A_use = A[:, :max(1, round(a_end * sr))]
+        a_start = 0.0
+    A_use = A[:, round(a_start * sr):max(round(a_start * sr) + 1, round(a_end * sr))]
     B_use = B[:, round(b_start * sr):]
 
     window_sec = args.crossfade_sec if args.crossfade_sec else args.crossfade_frac * (A_use.shape[1] / sr)

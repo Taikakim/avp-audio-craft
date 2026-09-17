@@ -33,11 +33,18 @@ def main():
     for i in range(len(clips) - 1):
         a, b = clips[i], clips[i + 1]
         ba, bb = bounds[a["file"]], bounds[b["file"]]
+        # a_start_sec: clip A's OWN entry point -- 0.0 for the very first clip in the
+        # sequence (nothing plays before it), otherwise the SAME value used as
+        # b_start_sec one pair back, so a clip's contribution to the continuous mix
+        # runs from where it faded in to where it fades out, never from its file's
+        # absolute sample 0 (see chain_simple_crossfade.py::process_pair).
+        a_start = 0.0 if i == 0 else ba["start"]
         pairs.append({
             "a_path": ba["path_used"],
             "b_path": bb["path_used"],
             "a_bpm": a["bpm"],
             "b_bpm": b["bpm"],
+            "a_start_sec": a_start,
             "a_end_sec": ba["end"],
             "b_start_sec": bb["start"],
             "a_bars": ba["bars"],
