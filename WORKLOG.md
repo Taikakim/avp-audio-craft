@@ -2644,3 +2644,52 @@ solved, worth remembering:** the full 76-transition set cannot fit an Artifact's
 (64MB total / 15MB per file) at a listenable bitrate — a curated spread across the tempo arc was
 used instead of truncating to the first N, with the full-quality files staying on disk as the
 real deliverable. Commit `52e4cc0`.
+
+## 2026-09-17 (cont, corrected) — GHOST-NOTE — mixtape v3/v4 had three real bugs; fixed in v5
+
+Kim's ear caught two problems in the v3 mixtape build within minutes of it shipping ("bpms
+are off... basically random order", "crossfades... glitch when the overlap ends"), plus a fair
+"why did you make your own BPM tool when mir already has one" challenge. All three led to
+confirmed, fixed bugs — recorded in full because a chat-only fix is a lost fix:
+
+**BPM was wrong for ~half the corpus.** `mixtape_madmom_bpm.py`'s downbeat-interval fold
+heuristic anchored its 2/3-fold disambiguation to a stale/unreliable prior BPM value and folded
+already-correct measurements DOWN by 2/3 for a large fraction of clips (verified: a clip whose
+prompt states "148 BPM" measured 146.3 from raw beats, correctly — but the heuristic reported
+98.8). Root cause of the whole approach existing: `mir/src/rhythm/bpm.py::
+calculate_bpm_from_beats()` already computes BPM directly from the mean raw beat interval,
+sidestepping the downbeat-grouping fold ambiguity entirely — a real discovery-phase miss, should
+have been used from the start instead of writing new fold-guessing logic. `mixtape_madmom_bpm_v2.py`
+replaces it; corpus BPM range corrected from a bogus 93-155 to a clean 120-155 (later 120-151
+after the gf2 removal below).
+
+**Cross-pair splice duplication.** Every middle clip's crop (`A_use`) sliced from the raw file's
+sample 0 regardless of where its OWN crossfade-in had already happened one pair earlier, so
+concatenating pairs into a continuous mix played a chunk of each clip's early material TWICE —
+once tempo-bent (from its real entry point, via the previous transition) and again raw (from
+sample 0, as the next pair's own head) — a hard, audible discontinuity. Fixed by threading each
+clip's own entry point (`a_start_sec`) through `mixtape_build_pairs.py` into
+`chain_simple_crossfade.py::process_pair`. Residual mismatch (pair i's continuation of clip i+1
+is tempo-bent, pair i+1's own head is raw — two different renderings of the same moment) is
+handled with a short (40ms) crossfade AT the assembly splice itself
+(`mixtape_assemble_continuous.py`) rather than a hard cut.
+
+**genre_fusion_probe_local (gf2_*) has genuine waveform corruption, not just subjective
+harshness.** Found while verifying the splice fix. New tool `audio_corruption_scan.py`: a naive
+"biggest single-sample jump" metric is a false-alarm magnet (real kick/bass transients in
+hot-mastered dance music legitimately hit 0.4-1.0+ amplitude in one sample), but the COUNT of
+such jumps cleanly separates real corruption from normal transients — a clean clip in this corpus
+shows 0-2 jumps >0.6 in its whole duration; the worst gf2_* clips showed 5783 and 8161. 18 of 26
+gf2_* clips in the mixtape corpus show this. Independently confirms Wintermute's same-day spectral
+finding (this exact OOD-prompt family runs 74% harsh) with a completely different, objective
+measurement — the two agreeing is much stronger than either alone. Dropped the entire gf2_* family
+from the mixtape (26/77 clips), not just the 5 originally ear-flagged. Census entries updated
+(`dora128adj_avp_8ep`, `dora16_avp_originals_earlyeps`).
+
+Final corrected mixtape: 51 clips, BPM 120-151, 33.8min, at
+`Mantu/sa3_lora_runs/mixtape_v5_clean/mixtape_full_{plain,a2a}.wav`. Portfolio page republished
+(same URL, updated content/stats). Handed the full-quality WAVs to Wintermute (DM) for hosting on
+Kim's own site with real streaming — outside the Artifact platform's hard 15MB/file, 64MB/page
+cap, and outside GHOST-NOTE's lane (Kim's website is W's per MASTER §4).
+
+Commit `f6bcf3c`. Not pushed.
