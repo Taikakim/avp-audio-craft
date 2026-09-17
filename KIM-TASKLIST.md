@@ -606,15 +606,26 @@ correction (harshness tracks the OOD `genre_fusion_probe_local` prompt set more 
 and the real spectral signature is thin low-mid, not excess HF). **Not pursuing an HF-damping fix**
 per Kim's call — see next item.
 
-### ✅ Full mixtape rebuild with bar-aware cropping — DONE, needs your ears (G, 2026-09-17)
-Built and rendered per your follow-up ask: div-4-bar cropping + RMS-aware mixing-point placement
-on top of the previously-validated recipe (10s linear crossfade, a2a nl 0.7). All 76 transitions
-rendered clean, 0 non-div4 bar counts. Full 52.7min continuous mix (plain + a2a variants) at
-`Mantu/sa3_lora_runs/mixtape_v3_bar_aware/mixtape_full_{plain,a2a}.wav`. Portfolio page published:
-**"Custom Stable Audio 3 model portfolio"** — two continuous highlight excerpts + 10 before/after
-transition comparisons (the full 76-transition set doesn't fit the page's size budget at
-listenable quality, so it's a curated spread, not a truncation). Awaiting your listen — bass-swap
-variant not rendered this round since you hadn't confirmed you wanted it.
+### ✅ Full mixtape rebuild, THREE real bugs found by your ear and fixed — v5, needs your ears (G, 2026-09-17)
+The bar-aware rebuild (v3/v4) shipped with three real bugs, all caught by you within minutes and
+now fixed: (1) BPM was wrong for ~half the corpus — a fold-correction heuristic in
+`mixtape_madmom_bpm.py` anchored to a stale prior estimate and wrongly halved-and-a-half'd
+already-correct measurements; replaced with `mir/src/rhythm/bpm.py::calculate_bpm_from_beats()`
+(the tool you correctly pointed out already existed) — corpus range corrected to a sane 120-151
+BPM. (2) A cross-pair splice bug played a chunk of each middle clip's audio twice when
+transitions were concatenated into a continuous mix — fixed (each clip's own entry point now
+threads through correctly) plus a 40ms crossfade at the splice itself for a residual
+tempo-bent-vs-raw content mismatch that can't be fully eliminated by alignment alone. (3) Found
+**while fixing #2**: the genre_fusion_probe_local (`gf2_*`) family has genuine measured
+waveform-level corruption, not just subjective harshness — 18 of 26 `gf2_*` clips show large-scale
+sample corruption (up to 15075 bad jumps in a 47.5s clip vs 0-2 for clean clips), independently
+confirming Wintermute's spectral finding. Dropped the WHOLE `gf2_*` family (26/77 clips), not just
+the 5 you'd ear-flagged — a bigger cut than before, flagging in case you want to review that call.
+**Final: 51 clips, 120-151 BPM, 33.8min**, at `Mantu/sa3_lora_runs/mixtape_v5_clean/
+mixtape_full_{plain,a2a}.wav`. Portfolio page republished at the same URL:
+**"Custom Stable Audio 3 model portfolio"**. Full-quality WAVs handed to Wintermute (DM) for
+real streaming on your site, since the Artifact platform can't host a file that size and that's
+their lane, not mine. Bass-swap variant still not rendered — say the word if you want it.
 
 ### ✅ PT→base soup ladder — LISTENED, closed NEGATIVE (Kim, 2026-09-07)
 *"only the alpha .5 is listenable, and even that has artifacts... it's evident the mixing just degrades the sound."* **PT does not blend with base** — no usable intermediate model exists, so the punchy-vs-always-the-same question stays untested by this route. Falsifies the assumption the arm rested on: a fine-tune does NOT stay in the linear-mode-connectivity regime just because 997 of 1019 tensors are identical. Also explains why my descriptors gave opposite answers per sampler — they were reading artifact spectra, not a mixture. EXPERIMENTS C6, closed. Don't rebuild.
