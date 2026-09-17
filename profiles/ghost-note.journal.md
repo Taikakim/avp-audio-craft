@@ -1044,3 +1044,37 @@ own summary, check whether they landed something before writing a permanent reco
 
 Kim explicitly deprioritized the HF-fix research thread this session ("I don't think it's worth
 our time... I want to have a mix to share") — noted here so nobody re-opens it without a new ask.
+
+## 2026-09-17 (cont) — Three real bugs in one mixtape build, all caught by Kim's ear first
+
+Worth writing down because it's a clean case study in "ship, get corrected, verify before
+re-shipping" working as intended, and because one of the three was a real discovery-phase miss
+on my own part.
+
+Kim listened to the v3 mixtape for maybe a few minutes and came back with two precise complaints:
+BPM order looked random, and there was a glitch at the end of each crossfade overlap. Both were
+real. The BPM one was mine to be embarrassed about — I'd built a custom downbeat-interval
+fold-correction heuristic in `mixtape_madmom_bpm.py` earlier in the session instead of checking
+whether mir already had a BPM tool. It did: `mir/src/rhythm/bpm.py::calculate_bpm_from_beats()`,
+which sidesteps the whole fold-ambiguity problem by working from raw beat timestamps instead of
+downbeat groupings. Kim asked directly why I'd made my own — fair question, no good answer except
+that I didn't check. The glitch turned out to be a real architectural gap: pairs were rendered
+independently but concatenated as if each one already knew where the PREVIOUS pair had left off,
+which wasn't true, so every middle clip's early audio played twice at slightly different
+processing states (raw vs tempo-bent). Fixed by threading each clip's own entry point through the
+pair-building step, plus a short crossfade at the assembly splice for the residual mismatch that
+alignment alone can't close (the two sides really are different audio, not just misaligned).
+
+The THIRD bug I found myself, only because I was building a diagnostic to verify the second fix:
+the genre_fusion_probe_local family has actual sample-level waveform corruption on a majority of
+its ptm renders, way beyond the 5 clips Kim had ear-flagged. A naive "biggest single jump" check
+is nearly useless here (real kick transients in this genre legitimately look like clicks to that
+metric) but the COUNT of large jumps cleanly separates real corruption (thousands per clip) from
+normal transients (0-2). This independently confirms Wintermute's spectral finding from the same
+day with a completely different measurement, which is a much stronger form of confirmation than
+either alone — see [[genre-fusion-probe-waveform-corruption]] once that memory exists.
+
+Lesson I'm keeping: when a fresh feature (the assembler script) reveals a problem in OLD code
+(the pair-rendering it stitches together) that individual-file review never exposed, don't assume
+the new code introduced it — check whether the review method itself (isolated pair files) was
+just structurally blind to that class of bug.
