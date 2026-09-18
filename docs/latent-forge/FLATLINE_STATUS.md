@@ -26,7 +26,35 @@ Everything lives in `avp-audio-craft` (= `~/Projects/SAO`), branch **`latent-for
 | **M1** foundation & shell, 15 tasks, ~9k lines | `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md` | **approved by W**, corrections applied |
 | **M5** timeline fidelity, 12 tasks, ~6k lines | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | pushed, awaiting W's read |
 
-Both pushed. Last commit `6cfa783`.
+| **M4** PROMPT + SIGMA, 12 tasks planned | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | **Tasks 1-3 only**, critic-reviewed, 8 blocking findings fixed |
+
+M1 and M5 are pushed. M4 is partial — see below.
+
+## Resuming M4 (this is the live one)
+
+Tasks 1-3 are written and corrected: the per-target settings store with the M5 seam, sampler
+availability with the LatCH-forces-Euler rule, and schedule validation with the flat-plateau note and
+sigma max. Tasks 4-11 are **not written**. The two Sonnet writer briefs that produce them are saved
+verbatim in `docs/latent-forge/M4_WRITER_BRIEFS.md`, together with the assembly steps and Task 12.
+Dispatch those two briefs in parallel and continue from step 1 of that file's "After both return".
+
+Three things M4 established that are worth carrying even if the plan is rewritten:
+
+- **Today's `/schedule` ignores `schedule` and `sampler_type`** (`explorer_render_server.py:1022-1049`
+  reads only `steps`, `duration`, `sigma_max`, `dist_shift`). M3 adds them. So until M3 lands, every
+  shape charts the model curve and rho/STEPPED/PLATEAUS/TILT move nothing. M4 sends the full body
+  anyway and shows `schedule shape is charted from M3 onward`. It does **not** compute the curve
+  locally to cover the gap -- 5.3 says the canvas never computes sigma, and a graph that disagrees
+  with the server is worse than one that admits it is behind.
+- **`/schedule` takes `duration` and it matters.** The model shape's dist shift is length-dependent
+  (`latent_len = ceil(duration*SR/DS)`). M1's `forgeApi.schedule` omits the field, so it would
+  silently chart the server's 47 s default at every LENGTH. M4's client sends it.
+- **M1's `forgeApi.schedule` return type is wrong**: it declares `{ok, sigmas, shape, warnings}`, but
+  today's route returns `{ok, steps, duration, sigma_max, dist_shift, latent_len, sigmas}` -- no
+  `shape`, no `warnings`. M4 types them optional rather than editing approved M1. If W ever reopens
+  M1, that is the correction.
+
+## Done
 
 ## Remaining, in the spec's dependency order (§12)
 
@@ -88,6 +116,16 @@ with expected failure → implementation with FULL code → run command with exp
    `ForgeClip.downbeats_sec`'s doc comment in M1's `types.ts`, and M1 is approved, so it needs W.
 
 ## Process lessons, paid for
+
+- **Watch the budget with `mcp__ccd_session_mgmt__get_usage`.** It reports the 5-hour window, the
+  weekly window and whether extra usage (credits) is enabled. Kim's rule, 2026-09-18: **at 90% of the
+  5-hour window the agents stop** and the session does only enough work to be resumable. Extra usage
+  being *enabled* means nothing stops on its own at 100% -- it silently bills credits, which is what
+  happened the night before. Check before spawning any fleet and between stages; a critic plus two
+  writers is roughly a 40-point bite out of a 5-hour window, so it does not fit below ~50%.
+- **When the budget cuts a milestone in half, save the briefs, not a summary.** The expensive artefact
+  is not the prose describing what is left -- it is the fully-built agent briefs, with every inherited
+  interface name restated. `M4_WRITER_BRIEFS.md` is that, and it is why M4 can resume in one turn.
 
 - **Critic BEFORE writers, not alongside.** Running them in parallel on M5 let Task 7 faithfully
   re-extract an overlap bug the critic had just made me fix — it read the pre-fix version. Sequencing
