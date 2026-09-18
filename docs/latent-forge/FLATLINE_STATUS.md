@@ -1,0 +1,122 @@
+# FLATLINE — where the frontend planning stands
+
+*Written 2026-09-18 before a context compact, for my next self. Companion to
+`docs/sa3-studio/ORIENTATION.md`, which is still the read-first document for the project as a
+whole. This file covers only the Latent Forge planning job and how to resume it.*
+
+## Who I am and what I was asked to do
+
+**FLATLINE** — the remote planning agent `docs/latent-forge/REMOTE_HANDOFF.md` is addressed to.
+Laptop, no GPU, no render server, no drives: everything is read-and-reason off the tree. The GPU-box
+instance is **WINTERMUTE**; the fleet also has GHOST-NOTE and THE-FINN. I talk to W through
+`flatline.wintermute.log` at the repo root (`<from>.<to>.log` is the house convention, tracked via
+the root `.gitignore`'s `!/*.*.log`). Kim relays — W keeps comms polling off to save tokens, so
+assume latency and never expect a same-session reply.
+
+**The job:** write seven frontend implementation plans — M1, M4, M5, M6, M7, M9, M10 — for
+`docs/superpowers/specs/2026-09-15-latent-forge-design.md`. Plans only. **Do not implement anything
+unless Kim explicitly asks.** Do not edit `eval/`, the spec, or W's four plans (M2, M3, M8, M11).
+
+Everything lives in `avp-audio-craft` (= `~/Projects/SAO`), branch **`latent-forge`**.
+
+## Done
+
+| Plan | File | State |
+|---|---|---|
+| **M1** foundation & shell, 15 tasks, ~9k lines | `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md` | **approved by W**, corrections applied |
+| **M5** timeline fidelity, 12 tasks, ~6k lines | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | pushed, awaiting W's read |
+
+Both pushed. Last commit `6cfa783`.
+
+## Remaining, in the spec's dependency order (§12)
+
+**M1 → (M4, M5, M10) → (M6, M7) → M9.** M5 is done, so:
+
+1. **M4** — PROMPT + SIGMA and ADVANCED SAMPLING. Spec §4.5, §5.3, §7.2. The natural next one:
+   only needs M1, and unblocks M7. Note W's ruling that **σ MAX is not a `ScheduleSpec` field** —
+   it is the pass's own init noise level (1.0 for a fresh generate, the target's NOISE on an A2A
+   target), and M4 binds the field to the target's NOISE where one exists, read-only 1.00
+   otherwise. §5.1's range row now says this.
+2. **M10** — statistics view, first version. Spec §4.4. Leaf; only needs M1 + fixtures.
+3. **M6** — CHROMA tab. Spec §5.4. Needs M5.
+4. **M7** — chains, mix, library, sessions. Spec §4.6, §5.5, §9.2, §9.3. Needs M4 + M5.
+5. **M9** — rendering. Spec §7.1, §9.5, §9.7. Needs M7. Last.
+
+## How to write one (the format is fixed and W checks it)
+
+`REMOTE_HANDOFF.md` §4 is normative. In short: header with the "For agentic workers" line, **Goal**,
+**Architecture**, **Tech Stack**, **Spec**/**Depends on**, `## Global Constraints`, `## File
+Structure` table, then `### Task N:` units each with **Files:**, **Interfaces:** (Consumes /
+Produces, exact names and types), then checkbox steps — failing test with FULL code → run command
+with expected failure → implementation with FULL code → run command with expected pass → commit.
+**No placeholders.** Every plan ends with a self-review against the spec sections it covers.
+
+- Commit form in plans: `Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M<N> T<N>: ..."`,
+  working directory `/home/kim/Projects/sa3-studio-review/latent-forge`.
+- **Node 26.8.1 / npm 12.0.2** — W's box, where implementing agents run. This laptop has 24.15.0 /
+  11.12.1; write to W's.
+- Implementing agents see **one task at a time** and cannot look anything up. Restate every
+  interface name a task consumes, every time.
+- Add a **"Normative names"** block to Global Constraints whenever tasks were drafted in parallel.
+  It is the cheap fix for agents independently guessing at the same shared surface, and it works
+  because a one-task reader still gets the plan header.
+
+## Facts W has settled — do not re-ask
+
+- **Canonical checkouts** (what the venvs actually import, now also ORIENTATION §10):
+  `stable_audio_3` → `SAO/stable-audio-3`; `stable_audio_tools` →
+  `SAO/stable-audio-tools/stable_audio_tools`; `sa3_control` → `SAO/control/sa3_control` (the
+  superset — `audio-tools-avp/avp_sa3/sa3_control` is **stale by default**). `SAI/` and `sat/` exist
+  only on this laptop; nothing on W's box imports them.
+- **`Progress.stage_index` is 1-based**, 0 = not started. Only `commit` has stage labels; every
+  other op emits `stage: ""`, `stage_count: 0`, steps only.
+- **Only `/forge/*` is frozen.** `/info`, `/status`, `/schedule`, `/models`, `/slots`, `/audio/...`
+  are pre-existing and called directly.
+- **`/info.latch_heads`** has 28 fields; `slider_min`/`slider_max` are the head's own p1/p99 and are
+  what M7's target slider ranges over. Two real redacted heads are in M1's `handmade-info.json`.
+- **`target_raw` is linearly interpolated** to the padded latent grid (`model.py:539-550`), which is
+  why `/a2a_mix`'s chroma morph lands ~11% late. W is handling that separately; not ours.
+
+## Open — waiting on W, do not decide unilaterally
+
+1. **`ForgeClip.previewAudio`** — M5 T10 needs it for the stretched preview, but `ForgeClip` is
+   pinned by §9.2 and read by M7's v1→v2 converter, so it is a spec change.
+2. **Downbeat-coincidence window** — §4.3 says one 32nd note, linear; the drawing's `_dbColor`
+   (v3:1155-1158) uses a quarter-beat with a `^0.7` ramp. M5 ships the spec's reading.
+3. **`downbeats_sec` timebase** — `/forge/analyze` returns it unstretched at `native_bpm` while
+   `offset_sec`/`dur_sec` are stretched (§7.3). M5 currently mixes them. The fix belongs in
+   `ForgeClip.downbeats_sec`'s doc comment in M1's `types.ts`, and M1 is approved, so it needs W.
+
+## Process lessons, paid for
+
+- **Critic BEFORE writers, not alongside.** Running them in parallel on M5 let Task 7 faithfully
+  re-extract an overlap bug the critic had just made me fix — it read the pre-fix version. Sequencing
+  costs nothing.
+- **A critic pass is worth its cost.** On two tasks I had called done it returned 32 findings, 11
+  blocking, including three green tests sitting on a feature that could never have worked.
+- **Sonnet is enough for the writers.** Both M5 writers produced complete, placeholder-free tasks and
+  flagged real ambiguities instead of inventing answers. Spend the better model on the critic.
+- **`getComputedStyle().getPropertyValue("--token")` returns the literal token stream**, not a
+  resolved colour — an unregistered custom property is not converted. Fine to pass straight to
+  `ctx.fillStyle` (canvas accepts `oklch()`); fatal if you try to parse channels out of it. M6's
+  chroma heatmap will hit this next.
+- **Verify by running, not by reasoning**, when it is cheap. A scratch npm project settled both
+  "do Svelte 5 runes work in `.svelte.ts` under vitest with this config" (yes) and "does my
+  `pollJob` abort test actually pass" (no — an `abort` listener added after the signal already
+  fired never runs, so the promise never settled).
+
+## Mechanics that will otherwise waste a turn
+
+- **The Bash tool mangles heredocs containing apostrophes** — `cat >> file <<'EOF'` fails with
+  "unexpected EOF while looking for matching `''". Write the content with the Write tool to the
+  scratchpad, then `cat` it onto the target.
+- **Pushing needs `GCM_GUI_PROMPT=true`** and a dialog on Kim's desktop; without it git hangs
+  silently forever. Run the push with `run_in_background: true` so the dialog stays up. Then
+  `cmdkey /delete:git:https://github.com` and verify `cmdkey /list | grep -ci github` is 0.
+- **The repo is PUBLIC**, despite the `.gitignore` comment and spec §12 both calling it private.
+  Confirmed by an anonymous `ls-remote` with the credential helper disabled. Kim has been told; no
+  secrets, hostnames or tunnel URLs in anything committed.
+- Repo-local git identity is already `Kim <kim.ake@gmail.com>`; verify with
+  `git log -1 --format='%an <%ae>'` before the first commit of a session.
+- **Never use the M365 / Outlook / Teams / SharePoint tools** on this work, and say so in every
+  subagent brief.
