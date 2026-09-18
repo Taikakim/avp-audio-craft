@@ -32,11 +32,35 @@ M1 and M5 are pushed. M4 is partial — see below.
 
 ## Resuming M4 (this is the live one)
 
-Tasks 1-3 are written and corrected: the per-target settings store with the M5 seam, sampler
-availability with the LatCH-forces-Euler rule, and schedule validation with the flat-plateau note and
-sigma max. Tasks 4-11 are **not written**. The two Sonnet writer briefs that produce them are saved
-verbatim in `docs/latent-forge/M4_WRITER_BRIEFS.md`, together with the assembly steps and Task 12.
-Dispatch those two briefs in parallel and continue from step 1 of that file's "After both return".
+**Tasks 1, 2, 3, 8, 9 and 12 exist. Tasks 4, 5, 6, 7, 10 and 11 do not.** The plan's own
+"Status of this plan" block at the top of its task section says the same thing in more detail and is
+the authority; keep the two in step if either changes.
+
+- **1-3** (settings store and the M5 seam, sampler availability, schedule validation and sigma max)
+  are written AND critic-reviewed: 17 findings, 8 blocking, all applied.
+- **8, 9** (target bar; prompt column and the MODEL STAGE / STEPS / CFG / LENGTH / SEED column) and
+  **12** (settings presets, the Playwright layout spec, the self-review table) are written but have
+  had **no critic pass**. Do not hand them to an implementing agent first. A critic has returned
+  blocking defects on every batch it has ever seen — never once zero — so assume wrong test counts,
+  imports of names M1 does not export, and tests that pass on a broken implementation.
+- **4-7** (the `/schedule` client, the CFG interval conversion, the sigma graph geometry and its
+  canvas) and **10, 11** (the sigma column and tab assembly, the ADVANCED SAMPLING module) were never
+  started — the writer producing 4-7 was killed before it wrote anything.
+
+Both writer briefs are saved verbatim in `docs/latent-forge/M4_WRITER_BRIEFS.md`. Writer A's is still
+wholly unused; Writer B's covers 8-11, of which only 8 and 9 came back, so re-dispatch it scoped to
+**Tasks 10 and 11 only**. Then run one critic over 4-12 together before calling M4 done.
+
+**Order for the next session:** re-dispatch Writer A (4-7) and Writer B scoped to 10-11, in parallel;
+assemble; then one critic over Tasks 4-12. Roughly a 40-point bite out of a 5-hour window, and the
+weekly window is what actually binds — check both before starting.
+
+**One open question this raised, for W:** `RenderSettings` has no duration or length field, so §4.5's
+`LENGTH s` control has nowhere in the per-target settings to live. Task 9 lifted it to the tab's own
+state, which works but means a `render` preset cannot recall the length it was made at — and §9.3
+says a render preset carries "every ADVANCED SAMPLING field" alongside the txt2audio parameters.
+That is a §9.2 project-shape question, and it is the same shape as M5's `ForgeClip.previewAudio`
+question. Both are waiting on him.
 
 Three things M4 established that are worth carrying even if the plan is rewritten:
 
