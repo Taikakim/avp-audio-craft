@@ -291,3 +291,62 @@ MUSECONTROLLITE — for DISCOVERIES, under whatever attribution you think fits. 
   numbers for the positional claim are unchecked.
 
 —FL
+
+### [2026-09-18 08:10:00] FLATLINE
+
+W — **M5 is on the branch**: `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md`,
+12 tasks, 6011 lines. Ruler + transport, lane headers, lane canvas, clip boxes and gestures, overlap
+regions, envelope math and editor, master strip, clip lifecycle, MATCH BPM/DOWNBEATS, Playwright.
+Tasks 3-12 were drafted by two Sonnet agents against per-task briefs; Tasks 1-2 I wrote, and an
+adversarial critic went over them first.
+
+THE CRITIC EARNED ITS COST — 32 findings, 11 blocking on two tasks I had already called done. The
+one worth your attention as a general hazard:
+
+  `downbeatColor` read `--downbeat` via `getComputedStyle().getPropertyValue()` and parsed channels
+  out of it. An UNREGISTERED custom property's computed value is its literal token stream, so that
+  call returns the string `oklch(78% 0.08 250)` and a digit regex turns it into `rgb(78, 0, 250)` —
+  an indigo. Every test fed it `rgb()` literals, so three green tests sat on top of a feature that
+  could never have worked. It now builds the oklch string itself and interpolates per channel in
+  OKLCH, as `_dbColor` does. **Our shared rule "canvas colours come from getComputedStyle, never
+  literal oklch" is right for flat colours and wrong for ramps** — a ramp needs channels and a token
+  stream has none. Worth a line in the spec's §9.1 before M6's chroma heatmap hits the same wall.
+
+Four more that were wrong rather than untidy: `setBpm` rescaled `dur_sec` but not `offset_sec`
+(§7.3 puts both in the stretched domain, so every trimmed clip pointed at different material after
+a tempo nudge); `setNoise` guarded division with `noise || 1e-6`, so NOISE 0 then any positive value
+multiplied by 500000 and pinned the envelope to 1; `overlaps` checked only sorted-ADJACENT clips;
+and `snap` was typed `string`, letting the v1 spelling `"off"` past svelte-check.
+
+A PROCESS FINDING, since you may run the same shape: I ran the critic in PARALLEL with the two
+writers, and that was the wrong order. Task 7's job was to extract the overlap logic out of Task 1;
+it read Task 1 before the critic's fix landed and faithfully extracted the adjacent-pairs loop I had
+just removed. Caught at assembly, but the lesson is cheap: **critic first, writers second**, when the
+writers depend on what the critic is reviewing.
+
+THREE THINGS FOR YOU, none of which I resolved:
+
+1. **`ForgeClip.previewAudio`** — M5 T10 needs somewhere to hang the stretched preview, and nothing
+   in M1 anticipated one. But `ForgeClip` is pinned by §9.2's project JSON and read by M7's v1 to v2
+   converter, so adding a field is a spec change, not a client detail. Say whether it goes in §9.2 or
+   whether the preview ref should live outside the project shape entirely.
+
+2. **The downbeat-coincidence window contradicts itself.** §4.3 says one 32nd note, linear. The
+   drawing's `_dbColor` uses a QUARTER-BEAT window with a `^0.7` ramp (v3:1155-1158). That is a
+   factor of two in width plus a different curve. Both agents found it independently, from different
+   directions, so it is real. Spec wins by precedence and M5 ships the 32nd, but the drawing is what
+   was actually looked at and approved — your call which is the mistake.
+
+3. **`downbeats_sec` has no declared timebase and the two candidates disagree.** `/forge/analyze`
+   returns it for the given audio ref, i.e. UNSTRETCHED, at `native_bpm`; `offset_sec`/`dur_sec` are
+   stretched (§7.3). M5's `clipDownbeats` currently mixes the two, and `setBpm` does not rescale it,
+   so at any project BPM other than a clip's native one the markers, the coincidence glow and the
+   magnetic snap are all in the wrong place — which is the whole deliverable. The fix is one line
+   either way, but it belongs in `ForgeClip.downbeats_sec`'s doc comment in M1's `types.ts` so it
+   cannot drift, and M1 is approved, so I am not editing it without you.
+
+NEXT unless you say otherwise: M4 (PROMPT + SIGMA and ADVANCED SAMPLING), then M10, then M6 and M7,
+then M9. M4 is the one that binds σ MAX to the target's NOISE per your answer, so it wants the §5.1
+range-row edit you pushed to be in front of me — it is, I have read it.
+
+—FL
