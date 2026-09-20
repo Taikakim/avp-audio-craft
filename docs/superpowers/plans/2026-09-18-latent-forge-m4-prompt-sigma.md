@@ -82,47 +82,41 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 
 ---
 
-## Status of this plan — READ BEFORE IMPLEMENTING
+## Status of this plan
 
-**Every task is now written. Nothing below Task 3 has been reviewed.** Tasks 1-3 went through an
-adversarial critic; Tasks 4-12 have not. What exists:
+**Complete and reviewed.** Twelve tasks. Tasks 1-3 went through an adversarial critic on 2026-09-18
+(17 findings, 8 blocking); Tasks 4-12 through one on 2026-09-20 (32 findings, 24 blocking). All 49
+are applied. `docs/latent-forge/M4_CRITIC_FINDINGS.md` holds the second round in full, including the
+two findings that were corrected rather than obeyed.
 
-| Task | State |
-|---|---|
-| 1 settings store and the M5 seam | written, critic-reviewed, 8 blocking findings applied |
-| 2 sampler availability, LatCH forces Euler | written, critic-reviewed |
-| 3 schedule validation, flat-plateau note, sigma max | written, critic-reviewed |
-| 4 `/schedule` client | written, **not reviewed** |
-| 5 CFG interval progress/step conversion | written, **not reviewed** |
-| 6 sigma graph geometry | written, **not reviewed** |
-| 7 `SigmaGraph.svelte` | written, **not reviewed** |
-| 8 target bar | written, **not reviewed** |
-| 9 prompt column + model stage column | written, **not reviewed** |
-| 10 sigma column + tab assembly | written, **not reviewed** |
-| 11 ADVANCED SAMPLING module | written, **not reviewed** |
-| 12 settings presets + Playwright + self-review | written, **not reviewed** |
+Test counts are verified mechanically, not by eye — every `it(` block counted and compared against
+every stated gate:
 
-Tasks 8, 9 and 12 have had **no critic pass**. On every milestone so far a critic has returned
-blocking defects on tasks that were already called done — 11 on M5's first two tasks, 8 on this
-plan's Tasks 1-3, never once zero. Treat 8, 9 and 12 as drafts: run a critic over them before an
-implementing agent touches them, and expect wrong test counts, imports of names M1 does not export,
-and tests that pass on a broken implementation.
+| Task | `it()` | Task | `it()` |
+|---|---|---|---|
+| 1 settings store and the M5 seam | 17 | 7 `SigmaGraph.svelte` | 15 |
+| 2 sampler availability, LatCH forces Euler | 13 | 8 target bar | 16 |
+| 3 schedule validation, flat-plateau, sigma max | 21 | 9 prompt + model stage columns | 21 |
+| 4 `/schedule` client | 26 | 10 sigma column + tab assembly | 21 |
+| 5 CFG interval conversion | 21 | 11 ADVANCED SAMPLING module | 18 |
+| 6 sigma graph geometry | 17 | 12 presets, Playwright, self-review | 27 |
 
-Tasks 8 and 9 were written BEFORE Tasks 4-7 existed, against names fixed in
-`docs/latent-forge/M4_WRITER_BRIEFS.md` rather than against real code — `ScheduleClient`,
-`ScheduleRequest`, `SigmaGraph.svelte` and its props, `formatCfgBound`, `stepAtProgress`. The brief
-was the contract and Writer A was told to honour the call sites, but **nothing has yet verified that
-the two halves agree**. That is the single most likely place for a blocking defect in this plan, and
-it is the first thing the critic should check.
+Task 3's gate is cumulative (34 = Task 2's 13 plus its own 21). Task 12's section holds 28 `it(`
+blocks, one of which replaces a test in Task 8's suite rather than adding one of its own.
 
-The three writers also could not see each other, so the **Normative names** block above wins over any
-task that disagrees with it — extend that block as the critic finds conflicts.
+Three things an implementing agent should know before starting:
 
-One finding from Task 9 worth carrying whatever happens to this plan: **`RenderSettings` has no
-duration or length field**, so §4.5's `LENGTH s` control has nowhere in the per-target settings to
-live. Task 9 lifted it to the tab's own state. That is a §9.2 project-shape question (a render's
-length is surely part of what a preset should recall), and it belongs with WINTERMUTE alongside the
-`ForgeClip.previewAudio` question M5 raised for the same reason.
+1. **Task 4 does not use `forgeApi.schedule`.** M1's client cannot carry `duration`, takes no
+   `AbortSignal`, and declares a return type the route does not match. Rather than edit an approved
+   plan, Task 4 calls `/schedule` itself — §6 freezes only `/forge/*` and says to keep the
+   pre-existing routes in their own module. `forgeApi.schedule` is left alone and unused.
+2. **Module ids are kebab-case here** (`advanced-sampling`). M1 declares `ModuleId` twice,
+   incompatibly — kebab in T7's view store, camel in T12 — and this plan follows the view store,
+   because that spelling is what persists into the project JSON's `ui.modules`.
+3. **Until M3 lands the sigma graph is honest but limited.** Today's `/schedule` ignores `schedule`
+   and `sampler_type` entirely, so every shape charts the model curve and ρ/STEPPED/PLATEAUS/TILT
+   move nothing. The pane says so rather than computing a curve locally, because §5.3 says the canvas
+   never computes σ.
 
 ---
 
