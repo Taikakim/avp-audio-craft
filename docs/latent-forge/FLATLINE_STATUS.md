@@ -30,48 +30,41 @@ Everything lives in `avp-audio-craft` (= `~/Projects/SAO`), branch **`latent-for
 
 M1 and M5 are pushed. M4 is partial — see below.
 
-## Resuming M4 (this is the live one)
+## M4 — done
 
-**All twelve tasks are written. Only Tasks 1-3 have been reviewed.** 5785 lines. The plan's own
-"Status of this plan" block is the authority; keep the two in step.
+**Complete and reviewed**, 6199 lines, twelve tasks, `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md`.
+Two critic rounds, 49 findings, 40 blocking, all applied; the second round is kept in full in
+`docs/latent-forge/M4_CRITIC_FINDINGS.md`. Test counts verified mechanically rather than by eye.
 
-**THE NEXT ACTION IS A CRITIC OVER TASKS 4-12.** Not more writing. It is the only thing left in M4,
-it was cut twice for budget, and it is not optional: a critic has returned blocking defects on every
-batch it has ever seen — 11 on M5's first two tasks, 8 on this plan's Tasks 1-3 — and never once
-zero. Until it runs, treat Tasks 4-12 as drafts and do not hand them to an implementing agent.
+Three decisions taken while finishing it, each recorded in the plan's Normative-names block:
 
-Where to point it first: **Tasks 8 and 9 were written before Tasks 4-7 existed.** They call
-`ScheduleClient`, `ScheduleRequest`, `SigmaGraph.svelte` and its props, `formatCfgBound` and
-`stepAtProgress` as the briefs *specified* them, not as Writer A actually wrote them. Writer A was
-told to honour those call sites, but nothing has checked that the two halves agree. That seam is the
-likeliest blocking defect in the whole plan. After it, the usual haul: test counts that do not match
-the `it()` blocks actually written, imports of names M1 does not export, strict-mode TS that will not
-compile, and tests that pass on a broken implementation.
+- **Task 4 calls `/schedule` itself** instead of M1's `forgeApi.schedule`, which cannot carry
+  `duration`, takes no `AbortSignal`, and declares a return type the route does not match. §6 freezes
+  only `/forge/*` and says to keep pre-existing routes in their own module, so this needs no edit to
+  an approved plan. **[W]** `forgeApi.schedule` is now dead and wrong in M1 T5 — delete or correct it.
+- **Module ids are kebab-case.** **[W] M1 declares `ModuleId` twice, incompatibly** — kebab in T7's
+  view store (`advanced-sampling`, and it is this spelling that persists into the project JSON's
+  `ui.modules`), camel in T12 (`advancedSampling`), with `ModuleShell` rendering
+  `data-module-toggle={id}` from the camel list. No plan can be correct against both. M4 follows the
+  view store. One of M1's two declarations has to go.
+- **σ max stays unclamped** where it mirrors a clip's NOISE; only charting applies a floor.
 
-Then reconcile the **nine open questions** the three writers raised, in the two `## Open questions`
-sections at the tail, and fold anything normative into the plan's Normative-names block — that block
-exists because parallel writers cannot see each other, and it is what stopped M5's drift.
+**A third question for W**, alongside `ForgeClip.previewAudio` and the downbeat pair from M5:
+`RenderSettings` has no duration or length field, so §4.5's `LENGTH s` lives in the tab's own state.
+It works, but a `render` preset then cannot recall the length it was made at, and §9.3 says a render
+preset carries the txt2audio parameters. A §9.2 project-shape question, not a client detail.
 
-Three known content facts, worth keeping whatever happens to the plan:
+## Two things worth keeping, whatever happens to M4
 
-- **Today's `/schedule` ignores `schedule` and `sampler_type`** (`explorer_render_server.py:1022-1049`
-  reads only `steps`, `duration`, `sigma_max`, `dist_shift`). M3 adds them. So until M3 lands, every
-  shape charts the model curve and rho/STEPPED/PLATEAUS/TILT move nothing. M4 sends the full body
-  anyway and shows `schedule shape is charted from M3 onward`. It does **not** compute the curve
-  locally to cover the gap -- 5.3 says the canvas never computes sigma, and a graph that disagrees
-  with the server is worse than one that admits it is behind.
-- **`/schedule` takes `duration` and it matters.** The model shape's dist shift is length-dependent
-  (`latent_len = ceil(duration*SR/DS)`). M1's `forgeApi.schedule` omits the field, so it would
-  silently chart the server's 47 s default at every LENGTH.
-- **M1's `forgeApi.schedule` return type is wrong**: it declares `{ok, sigmas, shape, warnings}` but
-  today's route returns `{ok, steps, duration, sigma_max, dist_shift, latent_len, sigmas}`. M4 types
-  the extra fields optional rather than editing approved M1. If W reopens M1, that is the correction.
-
-**A third question for W**, alongside `ForgeClip.previewAudio` and the two from M5: `RenderSettings`
-has no duration or length field, so 4.5's `LENGTH s` has nowhere in the per-target settings to live.
-Task 9 lifted it to the tab's own state and Task 10 owns it, which works -- but it means a `render`
-preset cannot recall the length it was made at, and 9.3 says a render preset carries the txt2audio
-parameters. Same shape as `previewAudio`: a 9.2 project-shape change, not a client detail.
+- **jsdom mangles a token read from a `<style>` block.** `getComputedStyle(el).getPropertyValue()`
+  returned `oklch(90%0.012 240)` — the space after `90%` eaten — while the same property set inline
+  round-trips exactly, and an undefined one returns `""`, which makes `ctx.fillStyle` a silent no-op.
+  Measured, not reasoned about; the table is at the end of `M4_CRITIC_FINDINGS.md`. Any canvas test
+  in M6 or M10 that seeds tokens must seed them inline.
+- **Count every `it(` block mechanically at the end of a milestone** where more than one agent
+  touched the tests. Doing that caught a stale cross-agent reference no single agent could see: Task
+  12 stated "Task 8's suite stays at 21", written before a later fix cut Task 8 to 16. It also caught
+  a wrong count of my own.
 
 ## After M4
 
