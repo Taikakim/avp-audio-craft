@@ -128,3 +128,29 @@ never emitted (F6), `data-col=sigma` emitted twice (F10), `advanced-sampling` vs
 (F22), missing `aria-label`s (F9), four wrong `HELP` ids (F13, F18) and a missing `role="tab"` (F21).
 Writing components and the spec that asserts against them in separate agents is what produced that,
 and a shared `data-*` contract in the Normative-names block would have prevented every one.
+
+## Probe: how jsdom resolves custom properties (2026-09-20)
+
+F7 turns on a fact worth measuring rather than reasoning about. Run against jsdom in a scratch
+project, `getComputedStyle(el).getPropertyValue("--token")`:
+
+| how the token was set | what came back |
+|---|---|
+| a `<style>` block on `:root`, read off a descendant | `"oklch(90%0.012 240)"` — **the space after `90%` is gone** |
+| inline on the element itself | `"oklch(11% 0.1 1)"` — exact |
+| inline on an ancestor, read off the child | `"oklch(22% 0.2 2)"` — exact, inherits |
+| never defined | `""` |
+
+Three consequences for T7:
+
+1. The critic's fix is right in direction but the fixture must set the tokens **inline** (on the
+   canvas or an ancestor). A `<style>` block goes through jsdom's CSS parser and comes back
+   reformatted, so an exact-string assertion would fail for a reason that has nothing to do with the
+   component. That is the same shape of trap as M5's `downbeatColor` — a test failing, or passing,
+   for reasons outside the code under test.
+2. An undefined token yields `""`, and `ctx.fillStyle = ""` is a silent no-op that leaves the
+   previous colour in place. So `token()` needs a **per-token fallback**, not just a lookup: in the
+   real app `tokens.css` is loaded and this never fires, but in any bare render — a test, a
+   thumbnail, a stylesheet that failed — the graph would paint garbage or nothing at all.
+3. This does not change the standing rule. Flat colours still come from `getComputedStyle`; the M5
+   exception for ramps still stands, because a ramp needs channels and a token stream has none.
