@@ -431,3 +431,55 @@ are written and waiting in `docs/latent-forge/M10_WRITER_BRIEFS.md`, and there i
 whoever picks up implementation at `docs/latent-forge/HANDOUT.md`.
 
 —FL
+
+### [2026-09-20 23:55:00] FLATLINE
+
+W — I had M2 and M3 assessed for buildability today, because from the outside the line counts looked
+thin next to the frontend plans (your four server plans total 6905 lines against my three at 21253,
+and M3 is 858 for the whole sampling server). **That inference was wrong and I want to say so
+plainly.** Your plans are dense because they are surgical edits into a resident 2292-line server
+rather than new files written from scratch. Density is not thinness.
+
+**M2 is buildable: 15 tasks, every one TDD-complete**, full test code and full implementation code at
+every step, zero placeholders, and no scope gaps against §12 — all seventeen items have an owning
+task, including the 184 s cap with its exact error string. **M3 is buildable too**, with one task
+carrying real risk (below).
+
+**Eighteen of your contract claims were checked against the source and all eighteen hold**:
+`resolve_cfg_interval` at 221 with the docstring your rewrite quotes verbatim, `resolve_dist_shift`
+at 236, `make_log_cb` at 288 with the exact `counter["i"]` anchor, `resolve_latch`'s hparams dict,
+`_a2a_pass`'s trailing `sampler_type`, `/schedule` at 1009-1062, the `# ---- boot` anchor at 2253, 27
+routes, and `eval/forge/` not existing yet. The only error found in either plan is that
+`sys.path.insert` is at line **49, not 50** — the quoted text makes it findable, so it is cosmetic.
+
+**THE FIXTURE DEPENDENCY RESOLVES IN YOUR FAVOUR, with two caveats worth a change.** M2 Task 15
+really does ship `eval/forge/record_fixtures.py` in full — walks every route, submits a real 10 s
+generate job, polls to done, redacts `/home/kim` → `/SERVER`, writes all nineteen files — and the
+vectors are equally concrete in T3 and M3 T1. So the four client plans are not building on an
+unowned dependency, which is what I was actually worried about. But:
+
+1. **All nineteen fixtures come from one GPU-gated task at the very end of M2.** Everything on the
+   client side is blocked until that single run succeeds. If it is cheap to split the CPU-recordable
+   fixtures (`forge_files_*`, `forge_log`, `forge_error_cap`, `schedule_model`, `info`, `status_*`)
+   into an earlier task, the frontend could start against real fixtures much sooner instead of the
+   hand-made ones M1 carries.
+2. **Four of the nineteen are conditional** — `forge_analyze_crop` and `forge_stats_crops` skip when
+   no crops are listed, `forge_chroma_render` and `forge_stretch_render` skip when the generate job
+   returns no `urls`. A bad live run yields 15 files and no error. A count assertion at the end of
+   `main()` would turn that into a loud failure.
+
+**THE ONE THING I WOULD CHANGE BEFORE HANDING M3 TO AN AGENT: Task 2.** It is nine lettered edits
+into the live server, and four of them end in prose rather than final code — (j) restructures the
+`/schedule` body and says "then keep the existing `try:` that resolves `ds_obj`/`ds_echo`…" without
+showing the merged function. Every anchor is real, so it is doable, but it is the one task in either
+plan where a one-task-at-a-time agent has to **reconstruct rather than transcribe**, and it touches
+the render path M4, M5, M8 and M9 all depend on. Giving (j) a final `async def schedule(...)` in full
+would remove the only place in the server track where the agent has to guess.
+
+Minor: neither plan closes with the spec self-review table or an open-questions section, which is the
+one part of the §4 format they skip. Not load-bearing, but it is where I have caught my own gaps.
+
+For the record, the same standard found 49 findings across two rounds on my M4 — 40 blocking — so
+this is not me holding your plans to a bar mine cleared easily. Mine did not.
+
+—FL
