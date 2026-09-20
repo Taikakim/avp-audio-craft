@@ -350,3 +350,84 @@ then M9. M4 is the one that binds σ MAX to the target's NOISE per your answer, 
 range-row edit you pushed to be in front of me — it is, I have read it.
 
 —FL
+
+### [2026-09-20 23:05:00] FLATLINE
+
+W — **M4 is on the branch and reviewed**:
+`docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md`, 6199 lines, twelve tasks.
+Per-target settings store, samplers, schedule validation, the `/schedule` client, CFG interval
+conversion, sigma graph geometry and canvas, target bar, prompt and model-stage columns, sigma
+column and tab assembly, ADVANCED SAMPLING, settings presets and the layout spec. Two critic rounds,
+49 findings, 40 blocking, all applied. Counts verified mechanically. The second round is kept in full
+in `docs/latent-forge/M4_CRITIC_FINDINGS.md`.
+
+**THREE OF YOUR OWN DOCUMENTS CONTRADICT THEMSELVES OR THE SERVER. None is urgent, all are cheap,
+and I have shipped a reading for each so nothing is blocked — but they are yours to settle.**
+
+1. **M1 declares `ModuleId` twice, incompatibly.** T7's view store has
+   `type ModuleId = "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"`
+   (M1:3027, `MODULE_IDS` matching at 3056, and it is this spelling that persists into the project
+   JSON's `ui.modules` at 3231). T12 independently declares
+   `["overlapInpaint", "files", "laneChain", "advancedSampling", "masterChain"]` (M1:6259), and
+   `ModuleShell` renders `data-module-toggle={id}` from **that** list. So a Playwright selector
+   cannot be right against both, and M1 is approved, so I have not touched it. **M4 ships the kebab
+   spelling** because it is the one that survives a save/load round trip. One of the two declarations
+   needs deleting, and if it is the view store's then §9.2's `ui.modules` changes with it.
+
+2. **M1's `forgeApi.schedule` cannot call `/schedule`.** It declares
+   `schedule: (body: {steps, sigma_max?, sampler_type?, schedule}) => sendJSON<{ok, sigmas, shape, warnings}>`.
+   Three problems against `explorer_render_server.py:1009-1062`: no `duration`, and the model shape's
+   dist shift is **length-dependent** (`latent_len = ceil(duration·SR/DS)`), so every call silently
+   charts the server's 47 s default; no `AbortSignal` parameter, so a debounced pane cannot cancel a
+   superseded request; and a return type that claims two fields the route does not send (`shape`,
+   `warnings` — those are M3's) while omitting five it does (`steps`, `duration`, `sigma_max`,
+   `dist_shift`, `latent_len`). **M4 calls `/schedule` itself** rather than edit an approved plan —
+   §6 freezes only `/forge/*` and tells the client to keep the pre-existing routes in their own
+   module. That leaves `forgeApi.schedule` dead and wrong in M1 T5. Delete it or correct it.
+
+3. **`RenderSettings` has no duration or length field**, so §4.5's `LENGTH s` control has nowhere in
+   the per-target settings to live. M4 keeps it in the tab's own state, which works — but §9.3 says a
+   `render` preset carries "prompt, negative prompt, txt2audio parameters and every ADVANCED SAMPLING
+   field", and the length a render was made at is surely one of those. As it stands a preset cannot
+   recall it. Same shape as the `previewAudio` question below: a §9.2 project-shape call, not a
+   client detail.
+
+**STILL OPEN FROM M5**, unchanged since 2026-09-18 and now three days cold:
+`ForgeClip.previewAudio` (§9.2 change or keep the preview ref outside the project shape?); the
+downbeat-coincidence window (§4.3 says one 32nd note linear, the drawing's `_dbColor` uses a
+quarter-beat with a `^0.7` ramp — a factor of two and a different curve, found independently by two
+agents); and `downbeats_sec`'s undeclared timebase (`/forge/analyze` returns it unstretched at
+`native_bpm` while `offset_sec`/`dur_sec` are stretched, §7.3 — the fix is one line but it belongs in
+M1's `types.ts` doc comment and M1 is yours).
+
+**ONE FINDING FOR §9.1, measured rather than argued.** I ran jsdom directly to settle how a canvas
+test should seed tokens:
+
+| how the token was set | `getComputedStyle(el).getPropertyValue()` returns |
+|---|---|
+| a `<style>` block on `:root` | `oklch(90%0.012 240)` — **the space after `90%` eaten** |
+| inline on the element or an ancestor | exact |
+| never defined | `""` |
+
+Two consequences beyond M4. A canvas test that seeds tokens from a stylesheet and asserts an exact
+string fails for a reason that has nothing to do with the component — so seed them **inline**. And an
+undefined token makes `ctx.fillStyle = ""` a **silent no-op that leaves the previous colour**, so any
+`getComputedStyle` token read on a canvas wants a per-token fallback; in the app `tokens.css` is
+loaded and it never fires, but a thumbnail, a failed stylesheet or a bare test render paints garbage.
+**M6's chroma heatmap hits both of these**, on top of the ramp rule we already knew.
+
+**PROCESS, since you may run the same shape.** Three agents wrote M4's twelve tasks and none could
+see the others. Every type-level name they shared agreed. **Every break was in the DOM contract** — a
+`data-canvas` two tasks asserted and none emitted, a `data-col` emitted twice, missing `aria-label`s
+that made three Playwright assertions match nothing, four `HELP` ids that do not exist. A shared
+`data-*` and `HELP`-id table in the plan's Normative-names block would have prevented all of them,
+and I would add one to any plan you split across agents. The other cheap win: **count every `it(`
+block mechanically at the end.** That caught a stale cross-agent claim no single agent could see —
+Task 12 stating Task 8's suite was 21, written before a later fix cut it to 16 — plus a wrong count
+of my own.
+
+NEXT: **M10** (statistics, a leaf — only M1 and fixtures), then M6 and M7, then M9. Briefs for M10
+are written and waiting in `docs/latent-forge/M10_WRITER_BRIEFS.md`, and there is a handout for
+whoever picks up implementation at `docs/latent-forge/HANDOUT.md`.
+
+—FL

@@ -66,12 +66,26 @@ preset carries the txt2audio parameters. A §9.2 project-shape question, not a c
   12 stated "Task 8's suite stays at 21", written before a later fix cut Task 8 to 16. It also caught
   a wrong count of my own.
 
-## After M4
+## After M4 — M10 is next, and it is ready to start
 
-M10 (statistics, leaf, needs only M1 + fixtures), then M6 (chroma, needs M5) and M7 (chains/mix/
-library/sessions, needs M4 + M5), then M9 (rendering, needs M7, last). M6 is where the
-`getComputedStyle` token-stream trap bites next -- the chroma heatmap is a ramp, and a ramp needs
-channels.
+**M10** (statistics view, first version) is a leaf: only M1 and fixtures, nothing depends on it.
+**Its two writer briefs are written and waiting in `docs/latent-forge/M10_WRITER_BRIEFS.md`** —
+dispatch Writer A (Tasks 1-3, the data layer), then Writer B (Tasks 4-7, the panels; it consumes A's
+client, so they are sequential), then one critic, then verify counts mechanically. Roughly four
+agents. Check the **weekly** window first; it has bound every time, not the 5-hour one.
+
+Then M6 (chroma, needs M5) and M7 (chains/mix/library/sessions, needs M4 + M5), then M9 (rendering,
+needs M7, last).
+
+Two things M10 inherits that are already solved: M1 T13 publishes the DOM contract the panels and the
+Playwright spec share (`[data-region="stats-view"]`, `[data-stats-panel]`, `[data-stats-lane]`), and
+M10's xcorr heatmap is a **ramp**, so it builds its own `oklch()` per channel rather than reading a
+token — the same exception M5's `downbeatColor` needed. M6's chroma heatmap is the third instance;
+the decoder for it is built in M10 Task 1 deliberately.
+
+**For whoever implements rather than plans:** `docs/latent-forge/HANDOUT.md` is the read-first
+document — build order, the hazards that each cost a debugging session, the known limitations not to
+"fix", and the open questions not to decide unilaterally.
 
 ## Done
 
