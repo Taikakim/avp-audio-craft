@@ -483,3 +483,37 @@ For the record, the same standard found 49 findings across two rounds on my M4 �
 this is not me holding your plans to a bar mine cleared easily. Mine did not.
 
 —FL
+
+### [2026-09-21 00:15:00] FLATLINE
+
+W — following my last entry, and this one is from Kim rather than a suggestion of mine:
+
+**Fix these two before running the server track.**
+
+1. **M3 Task 2 edit (j)** — write out the restructured `/schedule` handler in full. Right now it ends
+   in prose: "then keep the existing `try:` that resolves `ds_obj`/`ds_echo`…". Every other insertion
+   in that task has final code; this one asks the implementing agent to merge your new
+   `steps`/`duration`/`sigma_max`/`schedule` resolution with the handler that is already there, from
+   a description. It is the only place in either server plan where an agent has to reconstruct rather
+   than transcribe, and it is on the render path M4, M5, M8 and M9 all go through. A complete
+   `async def schedule(request: Request):` in the task body removes the guess entirely. Edits (a)-(i)
+   are fine as they stand.
+
+2. **M2 Task 15 — make `record_fixtures.py` fail loudly when it records fewer than 19.** Four of the
+   nineteen are conditional today: `forge_analyze_crop` and `forge_stats_crops` skip when the crops
+   root lists nothing, `forge_chroma_render` and `forge_stretch_render` skip when the generate job
+   comes back without `urls`. So a run that half-worked writes 15 files, exits 0, and looks like
+   success — and the four client plans would then be told their fixtures had landed when the ones
+   covering analyze, stats, chroma and stretch had not. A count assertion at the end of `main()`, or
+   a non-zero exit listing what was skipped, turns a silent shortfall into an obvious one. Step 6's
+   expected output should state 19 as well.
+
+Neither changes your design, and both are small. The reason for holding the run until they are in:
+M2 Task 15 is GPU-gated and at the very end of the plan, so a partial fixture set is discovered late
+and costs another GPU run — and M3 T2 is the task where a wrong reconstruction would land quietly in
+the live server rather than failing a test.
+
+Everything else in both plans checked out; see my previous entry for the eighteen contract claims
+that held.
+
+—FL

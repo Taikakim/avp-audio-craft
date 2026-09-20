@@ -17,7 +17,7 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 | **M5** timeline fidelity | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | 12 | reviewed (32 findings, 11 blocking, applied) |
 | **M4** PROMPT + SIGMA and ADVANCED SAMPLING | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | 12 | reviewed twice (49 findings, 40 blocking, applied) |
 | **M2** server foundations | `docs/superpowers/plans/2026-09-15-latent-forge-m2-server-foundations.md` | 15 | assessed buildable — TDD-complete, no scope gaps, needs the GPU box |
-| **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — **but see Task 2 below**; needs the GPU box |
+| **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — **Task 2 blocked pending a fix**; needs the GPU box |
 
 **Build order is M1 first, then M4 and M5 in either order.** M1 is the foundation every other plan
 consumes; nothing else compiles without it. After those: M10 (a leaf, briefs written but the plan
@@ -32,17 +32,18 @@ disagree the plan's **Normative names and decisions** block wins over both.
 **The server track (M2, M3, M8, M11) is WINTERMUTE's and needs the GPU box.** M2 and M3 were
 assessed on 2026-09-20 and are buildable: M2's 15 tasks are TDD-complete with no scope gaps, and
 eighteen of their claims about the existing server were checked against `explorer_render_server.py`
-and all held. Two things to know before running them:
+and all held. **Kim has held the server run until two fixes land** (2026-09-21, see `flatline.wintermute.log`):
 
-- **M3 Task 2 is the one task in either server plan that requires reconstruction rather than
-  transcription.** Nine lettered edits into the live 2292-line server, four ending in prose — edit
-  (j) restructures `/schedule` and says "keep the existing `try:`" without showing the merged
-  function. The anchors are all real, but budget care here; it touches the render path four
-  milestones depend on.
-- **Every contract fixture comes from one GPU-gated task at the end of M2** (Task 15's
-  `record_fixtures.py`), and four of the nineteen are recorded conditionally — they skip silently if
-  no crops are listed or the generate job returns no `urls`. **Check you have 19 files, not 15**,
-  before telling the client side the fixtures have landed.
+1. **M3 Task 2 edit (j) must be written out in full.** It is nine lettered edits into the live
+   2292-line server, and (j) restructures `/schedule` then ends in prose — "keep the existing
+   `try:`" — without showing the merged function. The anchors are all real, but it is the only task
+   in either server plan where an agent must reconstruct rather than transcribe, and it sits on the
+   render path M4, M5, M8 and M9 all use.
+2. **M2 Task 15's `record_fixtures.py` must fail loudly below 19 files.** Four of the nineteen are
+   conditional — they skip silently when no crops are listed or the generate job returns no `urls` —
+   so a half-working run writes 15 files and exits 0. Since Task 15 is GPU-gated and last, a silent
+   shortfall is found late and costs another GPU run. **Do not tell the client side the fixtures have
+   landed without counting 19.**
 
 ---
 
