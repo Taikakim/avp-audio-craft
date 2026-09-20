@@ -88,10 +88,10 @@ ran out mid-milestone. What exists:
 | 1 settings store and the M5 seam | written, critic-reviewed, 8 blocking findings applied |
 | 2 sampler availability, LatCH forces Euler | written, critic-reviewed |
 | 3 schedule validation, flat-plateau note, sigma max | written, critic-reviewed |
-| 4 `/schedule` client | **NOT WRITTEN** |
-| 5 CFG interval progress/step conversion | **NOT WRITTEN** |
-| 6 sigma graph geometry | **NOT WRITTEN** |
-| 7 `SigmaGraph.svelte` | **NOT WRITTEN** |
+| 4 `/schedule` client | written, **not reviewed** |
+| 5 CFG interval progress/step conversion | written, **not reviewed** |
+| 6 sigma graph geometry | written, **not reviewed** |
+| 7 `SigmaGraph.svelte` | written, **not reviewed** |
 | 8 target bar | written, **not reviewed** |
 | 9 prompt column + model stage column | written, **not reviewed** |
 | 10 sigma column + tab assembly | **NOT WRITTEN** |
@@ -1084,6 +1084,1522 @@ Expected: `Test Files  3 passed (3)` and `Tests  33 passed (33)` (Task 2's 12 pl
 
 ```bash
 Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T3: schedule validation, flat-plateau note, sigma max"
+```
+
+---
+
+### Task 4: The `/schedule` client — debounced, abortable, cached
+
+The sigma graph draws whatever `/schedule` last returned (spec §5.3, last paragraph: the canvas
+never computes σ), and every field in ADVANCED SAMPLING and the target bar can trigger a new
+curve. Without debouncing, dragging ρ fires a request per animation frame; without abort, a slow
+response for an old drag can land after a fast one for the current value and paint a stale curve;
+without a cache, flipping STEPPED on and off re-fetches a schedule the pane already has. This
+module is the one place all three problems are solved, so every later task just calls `request`
+and reads `result`.
+
+**Files:**
+- Create: `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`, `latent-forge/src/lib/sampling/__tests__/scheduleClient.test.ts`
+
+Named `.svelte.ts`, not `.ts`: `ScheduleClient` holds `$state` fields, and Svelte only compiles
+runes inside a `.svelte`, `.svelte.ts` or `.svelte.js` file. A plain `.ts` file with `$state()` in
+it is not processed by the Svelte preprocessor and fails at build time. (The milestone's File
+Structure table names this file `scheduleClient.ts` — see the open questions at the bottom of
+this hand-off; the table is wrong and should be corrected when this task lands.)
+
+**Interfaces:**
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `ScheduleSpec { shape: "model"|"logsnr"|"geometric"|"linear"|"log"|"exponential"|"cosine"; rho: number; sigma_min: number; lam_min: number; lam_max: number; stepped: boolean; plateaus: number; tilt: number }`.
+- Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.schedule`, restated here because the shared preamble names it but never gives its signature — this task assumes `forgeApi.schedule(req: ScheduleRequest, signal?: AbortSignal): Promise<ScheduleResult>` (the raw JSON body of the real route, `ok` stripped), rejecting with `ForgeApiError` on a non-2xx response. This mirrors `explorer_render_server.py:1009-1060`'s actual request keys (`steps`, `duration`, `sigma_max`, plus `dist_shift` which this client does not send) and response keys (`steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`, `sigmas`). Also consumes `ForgeApiError { status: number; message: string }`.
+- Produces, from `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`: `SCHEDULE_DEBOUNCE_MS = 150`; `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`; `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`; `scheduleKey(req: ScheduleRequest): string`; `isNonIncreasing(sigmas: number[]): boolean`; `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`.
+
+Today's server ignores `schedule` and `sampler_type` entirely (it reads only `steps`, `duration`,
+`sigma_max`, `dist_shift`) and never echoes `shape` or `warnings` — this client sends the full
+`ScheduleRequest` body anyway so M3 lands with no client change, and types the two response fields
+it cannot get today as optional. `staleShape` is true exactly when the last request whose result is
+currently shown asked for a non-`"model"` shape and the response came back with no `shape` field —
+the one signal available today that the curve on screen is the model curve regardless of what was
+asked for.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/lib/sampling/__tests__/scheduleClient.test.ts`:
+
+```ts
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ScheduleSpec } from "../../forge/types";
+
+vi.mock("../../forge/api", () => {
+  class ForgeApiError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  }
+  return { forgeApi: { schedule: vi.fn() }, ForgeApiError };
+});
+
+import { ForgeApiError, forgeApi } from "../../forge/api";
+import {
+  isNonIncreasing, SCHEDULE_DEBOUNCE_MS, ScheduleClient, scheduleKey,
+} from "../scheduleClient.svelte";
+import type { ScheduleRequest, ScheduleResult } from "../scheduleClient.svelte";
+
+const scheduleMock = vi.mocked(forgeApi.schedule);
+
+function schedule(over: Partial<ScheduleSpec> = {}): ScheduleSpec {
+  return {
+    shape: "model", rho: 1, sigma_min: 0.01, lam_min: -6.2, lam_max: 2.0,
+    stepped: false, plateaus: 6, tilt: 0.15, ...over,
+  };
+}
+
+function req(over: Partial<ScheduleRequest> = {}): ScheduleRequest {
+  return {
+    steps: 24, duration: 30, sigma_max: 1.0, sampler_type: null, schedule: schedule(), ...over,
+  };
+}
+
+function result(over: Partial<ScheduleResult> = {}): ScheduleResult {
+  return {
+    sigmas: [1, 0.5, 0], steps: 24, duration: 30, sigma_max: 1.0, dist_shift: "model",
+    latent_len: 322, ...over,
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  scheduleMock.mockReset();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("scheduleKey", () => {
+  it("gives the same key for requests with the same fields, whatever order they were built in", () => {
+    const a: ScheduleRequest = {
+      steps: 24, duration: 30, sigma_max: 1, sampler_type: "euler",
+      schedule: { shape: "model", rho: 1, sigma_min: 0.01, lam_min: -6.2, lam_max: 2, stepped: false, plateaus: 6, tilt: 0.15 },
+    };
+    const b: ScheduleRequest = {
+      schedule: { tilt: 0.15, plateaus: 6, stepped: false, lam_max: 2, lam_min: -6.2, sigma_min: 0.01, rho: 1, shape: "model" },
+      sampler_type: "euler", sigma_max: 1, duration: 30, steps: 24,
+    };
+    expect(scheduleKey(a)).toBe(scheduleKey(b));
+  });
+
+  it("gives a different key when any field differs", () => {
+    expect(scheduleKey(req())).not.toBe(scheduleKey(req({ steps: 25 })));
+    expect(scheduleKey(req())).not.toBe(scheduleKey(req({ schedule: schedule({ rho: 2 }) })));
+  });
+});
+
+describe("isNonIncreasing", () => {
+  it("is true for a strictly decreasing sequence", () => {
+    expect(isNonIncreasing([1, 0.6, 0.3, 0])).toBe(true);
+  });
+
+  it("is true for a flat sequence — equal counts as non-increasing", () => {
+    expect(isNonIncreasing([0.5, 0.5, 0.5])).toBe(true);
+  });
+
+  it("is true for empty and single-element arrays", () => {
+    expect(isNonIncreasing([])).toBe(true);
+    expect(isNonIncreasing([1])).toBe(true);
+  });
+
+  it("is false when any step increases", () => {
+    expect(isNonIncreasing([1, 0.3, 0.5, 0])).toBe(false);
+  });
+});
+
+describe("ScheduleClient debounce and caching", () => {
+  it("starts with no result, not pending, no error", () => {
+    const client = new ScheduleClient();
+    expect(client.result).toBeNull();
+    expect(client.pending).toBe(false);
+    expect(client.error).toBeNull();
+  });
+
+  it("does not call forgeApi.schedule before the debounce elapses", () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req());
+    expect(scheduleMock).not.toHaveBeenCalled();
+    expect(client.pending).toBe(true);
+  });
+
+  it("calls forgeApi.schedule once after the debounce, with the latest request", async () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req({ steps: 10 }));
+    client.request(req({ steps: 20 }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledTimes(1);
+    expect(scheduleMock.mock.calls[0][0]).toEqual(req({ steps: 20 }));
+  });
+
+  it("sets pending false and result on a successful response", async () => {
+    const r = result();
+    scheduleMock.mockResolvedValue(r);
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.pending).toBe(false);
+    expect(client.error).toBeNull();
+    expect(client.result).toEqual(r);
+  });
+
+  it("serves a cached result synchronously without calling forgeApi.schedule again", async () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledTimes(1);
+    client.request(req({ steps: 10 })); // a different request first, to prove the cache is keyed
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    client.request(req()); // back to the first request's exact fields
+    expect(client.pending).toBe(false);
+    expect(client.result).toEqual(result());
+    expect(scheduleMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("ScheduleClient validation", () => {
+  it("sets error and clears result when the response's sigmas are not non-increasing", async () => {
+    scheduleMock.mockResolvedValue(result({ sigmas: [1, 0.2, 0.6, 0] }));
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.result).toBeNull();
+    expect(client.error).toBe("schedule sigmas are not non-increasing");
+    expect(client.pending).toBe(false);
+  });
+
+  it("surfaces a ForgeApiError's message as the error", async () => {
+    scheduleMock.mockRejectedValue(new ForgeApiError(400, "bad JSON body"));
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.error).toBe("bad JSON body");
+    expect(client.pending).toBe(false);
+  });
+});
+
+describe("ScheduleClient supersedes an in-flight request", () => {
+  it("aborts the previous request's signal when a new request arrives", async () => {
+    let signalA: AbortSignal | undefined;
+    scheduleMock.mockImplementationOnce((_r, signal) => {
+      signalA = signal;
+      return new Promise(() => {}); // never settles on its own
+    });
+    scheduleMock.mockImplementationOnce(() => Promise.resolve(result({ sigmas: [1, 0.4, 0] })));
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(signalA?.aborted).toBe(false);
+    client.request(req({ steps: 30 }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(signalA?.aborted).toBe(true);
+    expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
+    expect(client.pending).toBe(false);
+  });
+
+  it("ignores a superseded response that resolves after the newer one", async () => {
+    const a = deferred<ScheduleResult>();
+    scheduleMock.mockImplementationOnce(() => a.promise);
+    scheduleMock.mockImplementationOnce(() => Promise.resolve(result({ sigmas: [1, 0.4, 0] })));
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    client.request(req({ steps: 30 }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
+    a.resolve(result({ sigmas: [1, 0.9, 0] })); // the stale request finally answers
+    await vi.advanceTimersByTimeAsync(0);
+    expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
+  });
+});
+
+describe("ScheduleClient.dispose", () => {
+  it("aborts an in-flight request and clears pending without waiting for it to settle", async () => {
+    scheduleMock.mockImplementationOnce(() => new Promise(() => {})); // never settles
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.pending).toBe(true);
+    client.dispose();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(client.pending).toBe(false);
+  });
+
+  it("ignores a request() call after dispose", async () => {
+    const client = new ScheduleClient();
+    client.dispose();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).not.toHaveBeenCalled();
+    expect(client.pending).toBe(false);
+  });
+});
+
+describe("ScheduleClient.flush", () => {
+  it("resolves immediately without waiting for the debounce timer", async () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req());
+    await client.flush();
+    expect(scheduleMock).toHaveBeenCalledTimes(1);
+    expect(client.result).toEqual(result());
+    expect(client.pending).toBe(false);
+  });
+});
+
+describe("staleShape", () => {
+  it("is true when a non-model shape was requested and the response echoes no shape", async () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req({ schedule: schedule({ shape: "geometric" }) }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.staleShape).toBe(true);
+  });
+
+  it("is false once the response echoes a shape (M3 landed)", async () => {
+    scheduleMock.mockResolvedValue(result({ shape: "geometric" }));
+    const client = new ScheduleClient();
+    client.request(req({ schedule: schedule({ shape: "geometric" }) }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.staleShape).toBe(false);
+  });
+
+  it("is false for the model shape even with no echoed shape", async () => {
+    scheduleMock.mockResolvedValue(result());
+    const client = new ScheduleClient();
+    client.request(req());
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.staleShape).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/scheduleClient.test.ts
+```
+
+Expected: `Failed to resolve import "../scheduleClient.svelte"`.
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/lib/sampling/scheduleClient.svelte.ts`:
+
+```ts
+import { ForgeApiError, forgeApi } from "../forge/api";
+import type { ScheduleSpec } from "../forge/types";
+
+/** Spec 5.3's graph is debounced 150ms so a drag does not fire one request per frame. */
+export const SCHEDULE_DEBOUNCE_MS = 150;
+
+export interface ScheduleRequest {
+  steps: number;
+  duration: number;
+  sigma_max: number;
+  sampler_type: string | null;
+  schedule: ScheduleSpec;
+}
+
+/**
+ * `shape` and `warnings` are optional because today's server
+ * (explorer_render_server.py:1009-1060) reads only steps/duration/sigma_max/dist_shift and
+ * never echoes either one. M1 T5 types them as required on the wire; this is the client's own,
+ * more honest shape until M3 lands.
+ */
+export interface ScheduleResult {
+  sigmas: number[];
+  steps: number;
+  duration: number;
+  sigma_max: number;
+  dist_shift: string | number;
+  latent_len: number;
+  shape?: string;
+  warnings?: string[];
+}
+
+/**
+ * A value-based cache key, not object identity. The nested `schedule` object's own keys are
+ * sorted too, so two ScheduleSpec literals built with the same values in a different property
+ * order still hash the same -- callers construct these objects in more than one place across
+ * this milestone and nothing should force them to agree on field order to hit the cache.
+ */
+export function scheduleKey(req: ScheduleRequest): string {
+  const sortedSchedule = Object.fromEntries(
+    Object.entries(req.schedule).sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify({
+    steps: req.steps,
+    duration: req.duration,
+    sigma_max: req.sigma_max,
+    sampler_type: req.sampler_type,
+    schedule: sortedSchedule,
+  });
+}
+
+/** Spec 5.3: "the sigma sequence must be non-increasing." Equal neighbours are fine (a flat
+ * plateau); only a step back UP is a violation. */
+export function isNonIncreasing(sigmas: number[]): boolean {
+  for (let i = 1; i < sigmas.length; i++) {
+    if (sigmas[i] > sigmas[i - 1]) return false;
+  }
+  return true;
+}
+
+class AbortedError extends Error {}
+
+/**
+ * Races the real call against the signal itself, checking `signal.aborted` BEFORE adding the
+ * listener. An abort fired earlier in the same tick (a superseded request, or dispose()) has
+ * already dispatched its one 'abort' event by the time some code gets around to listening for
+ * it; a listener added after that point never runs and the promise it was meant to settle hangs
+ * forever. This exact bug was found and fixed in M1's own abortable client.
+ */
+function abortRejection(signal: AbortSignal): Promise<never> {
+  return new Promise((_resolve, reject) => {
+    if (signal.aborted) {
+      reject(new AbortedError());
+      return;
+    }
+    signal.addEventListener("abort", () => reject(new AbortedError()), { once: true });
+  });
+}
+
+export class ScheduleClient {
+  result = $state<ScheduleResult | null>(null);
+  pending = $state(false);
+  error = $state<string | null>(null);
+
+  #cache = new Map<string, ScheduleResult>();
+  #timer: ReturnType<typeof setTimeout> | null = null;
+  #controller: AbortController | null = null;
+  #lastReq: ScheduleRequest | null = null;
+  #lastResultReq: ScheduleRequest | null = null;
+  #inFlight: Promise<void> | null = null;
+  #disposed = false;
+
+  /** True exactly when the request behind the CURRENTLY SHOWN result asked for a non-"model"
+   * shape and the response carried no `shape` -- the only signal available before M3 that the
+   * curve on screen is the model curve regardless of what was asked for. */
+  get staleShape(): boolean {
+    if (!this.#lastResultReq || !this.result) return false;
+    return this.#lastResultReq.schedule.shape !== "model" && this.result.shape === undefined;
+  }
+
+  request(req: ScheduleRequest): void {
+    if (this.#disposed) return;
+    this.#lastReq = req;
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+    const cached = this.#cache.get(scheduleKey(req));
+    if (cached) {
+      if (this.#controller) {
+        this.#controller.abort();
+        this.#controller = null;
+      }
+      this.result = cached;
+      this.error = null;
+      this.pending = false;
+      this.#lastResultReq = req;
+      return;
+    }
+    this.pending = true;
+    this.#timer = setTimeout(() => {
+      this.#timer = null;
+      this.#inFlight = this.#run(req);
+    }, SCHEDULE_DEBOUNCE_MS);
+  }
+
+  /** Test seam: bypasses the debounce and waits for the in-flight call to settle. */
+  async flush(): Promise<void> {
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+      if (this.#lastReq) this.#inFlight = this.#run(this.#lastReq);
+    }
+    if (this.#inFlight) await this.#inFlight;
+  }
+
+  dispose(): void {
+    this.#disposed = true;
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+    if (this.#controller) {
+      this.#controller.abort();
+      this.#controller = null;
+    }
+  }
+
+  async #run(req: ScheduleRequest): Promise<void> {
+    if (this.#controller) this.#controller.abort();
+    const controller = new AbortController();
+    this.#controller = controller;
+    this.pending = true;
+    const apiPromise = forgeApi.schedule(req, controller.signal);
+    apiPromise.catch(() => {}); // avoid an unhandled rejection when the abort race wins instead
+    try {
+      const result = await Promise.race([apiPromise, abortRejection(controller.signal)]);
+      if (controller.signal.aborted) return;
+      if (!isNonIncreasing(result.sigmas)) {
+        this.error = "schedule sigmas are not non-increasing";
+        this.result = null;
+        this.#lastResultReq = req;
+        return;
+      }
+      this.#cache.set(scheduleKey(req), result);
+      this.result = result;
+      this.error = null;
+      this.#lastResultReq = req;
+    } catch (e) {
+      if (controller.signal.aborted || e instanceof AbortedError) return;
+      this.error = e instanceof ForgeApiError ? e.message : String(e);
+    } finally {
+      if (this.#controller === controller) {
+        this.pending = false;
+        this.#controller = null;
+      }
+    }
+  }
+}
+```
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/scheduleClient.test.ts && npm run check
+```
+
+Expected: `Tests  21 passed (21)` and `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T4: debounced, abortable, cached /schedule client"
+```
+
+---
+
+### Task 5: CFG interval — progress and step, pure conversion over a sigma array
+
+Spec §5.3 stores the CFG interval as progress and only ever *displays* the step unit, computed
+from whatever sigma array `/schedule` last returned. This module is that computation, alone,
+because it must give the same answer to the sigma graph (Task 6, drawing the CFG band) and to
+ADVANCED SAMPLING's UNIT toggle (Task 11, not this milestone's writer) — two places that must
+never independently reinvent "which step does progress 0.7 first reach" and disagree.
+
+**Files:**
+- Create: `latent-forge/src/lib/sampling/cfgInterval.ts`, `latent-forge/src/lib/sampling/__tests__/cfgInterval.test.ts`
+
+**Interfaces:**
+- Consumes nothing beyond plain `number[]` — this module has no dependency on `ScheduleResult` or any other task's types, so a caller can hand it `result.sigmas` from Task 4's `ScheduleClient` without this module needing to know that type exists.
+- Produces, from `latent-forge/src/lib/sampling/cfgInterval.ts`: `type CfgUnit = "progress" | "steps"`; `progressAt(sigmas: readonly number[], i: number): number`; `stepAtProgress(sigmas: readonly number[], p: number): number`; `progressAtStep(sigmas: readonly number[], step: number): number`; `formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string`; `cfgBandFraction(sigmas: readonly number[], lo: number, hi: number): { lo: number; hi: number }`.
+
+Progress is defined exactly as spec §5.3 and the drawing's `_progressAt` (v3:1345) do: `1 −
+σ_i/σ_0`. An empty array (the pane renders before the first `/schedule` response lands) and a
+σ_0 of 0 (an A2A clip with NOISE 0 — spec §5.1 requires the sigma-max field to mirror NOISE
+exactly, unclamped, so this is a real and legal input, not a bug) both have nothing to measure a
+fraction of; both are defined as progress 0 rather than `NaN`, `Infinity` or a thrown error.
+Nothing in this module ever writes a step count back into anything a caller stores — `settings`
+(Task 1) only ever holds `cfg_interval_progress`, and the functions here are read-only display
+conversions a component calls at render time.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/lib/sampling/__tests__/cfgInterval.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  cfgBandFraction, formatCfgBound, progressAt, progressAtStep, stepAtProgress,
+} from "../cfgInterval";
+
+// sigma0 = 1, four steps: progress at each index is 0, 0.4, 0.7, 0.9, 1
+const SIGMAS = [1, 0.6, 0.3, 0.1, 0];
+
+describe("progressAt (spec 5.3: progress = 1 - sigma/sigma0)", () => {
+  it("is 0 at the first index and 1 where sigma reaches 0", () => {
+    expect(progressAt(SIGMAS, 0)).toBe(0);
+    expect(progressAt(SIGMAS, 4)).toBe(1);
+  });
+
+  it("matches the intermediate steps", () => {
+    expect(progressAt(SIGMAS, 1)).toBeCloseTo(0.4);
+    expect(progressAt(SIGMAS, 2)).toBeCloseTo(0.7);
+    expect(progressAt(SIGMAS, 3)).toBeCloseTo(0.9);
+  });
+
+  it("returns 0 for an empty array — the pane renders before the first response", () => {
+    expect(progressAt([], 0)).toBe(0);
+  });
+
+  it("returns 0 for a single-element array", () => {
+    expect(progressAt([0.7], 0)).toBe(0);
+  });
+
+  it("returns 0 for every index when sigma0 is 0 — an A2A clip at NOISE 0 has nothing to measure", () => {
+    expect(progressAt([0, 0, 0], 0)).toBe(0);
+    expect(progressAt([0, 0, 0], 2)).toBe(0);
+  });
+
+  it("clamps an out-of-range index to the array's own bounds", () => {
+    expect(progressAt(SIGMAS, 99)).toBe(1);
+    expect(progressAt(SIGMAS, -5)).toBe(0);
+  });
+});
+
+describe("stepAtProgress (the drawing's _stepAtProgress, v3 1347-1351)", () => {
+  it("finds the first step whose progress reaches p", () => {
+    expect(stepAtProgress(SIGMAS, 0.5)).toBe(2);
+  });
+
+  it("returns 0 for p <= 0", () => {
+    expect(stepAtProgress(SIGMAS, 0)).toBe(0);
+  });
+
+  it("returns the last index for p >= 1", () => {
+    expect(stepAtProgress(SIGMAS, 1)).toBe(4);
+  });
+
+  it("clamps a negative p to 0 and a p above 1 to 1", () => {
+    expect(stepAtProgress(SIGMAS, -0.3)).toBe(0);
+    expect(stepAtProgress(SIGMAS, 1.5)).toBe(4);
+  });
+
+  it("returns 0 for an empty array", () => {
+    expect(stepAtProgress([], 0.5)).toBe(0);
+  });
+
+  it("returns 0 for a single-element array", () => {
+    expect(stepAtProgress([0.7], 0.5)).toBe(0);
+  });
+});
+
+describe("progressAtStep", () => {
+  it("agrees with progressAt for an in-range step", () => {
+    expect(progressAtStep(SIGMAS, 2)).toBe(progressAt(SIGMAS, 2));
+  });
+
+  it("clamps a step index beyond the array's own length", () => {
+    expect(progressAtStep(SIGMAS, 50)).toBe(1);
+  });
+});
+
+describe("formatCfgBound", () => {
+  it("formats progress to two decimals", () => {
+    expect(formatCfgBound(SIGMAS, 0.5, "progress")).toBe("0.50");
+  });
+
+  it("formats the steps unit as the crossing step index", () => {
+    expect(formatCfgBound(SIGMAS, 0.5, "steps")).toBe("2");
+  });
+
+  it("does not clamp the progress display — a caller feeding it 1.5 sees 1.50", () => {
+    expect(formatCfgBound(SIGMAS, 1.5, "progress")).toBe("1.50");
+  });
+});
+
+describe("cfgBandFraction", () => {
+  it("returns the 0..1 x-fractions the graph fills", () => {
+    expect(cfgBandFraction(SIGMAS, 0, 1)).toEqual({ lo: 0, hi: 1 });
+    expect(cfgBandFraction(SIGMAS, 0.5, 0.9)).toEqual({ lo: 0.5, hi: 0.75 });
+  });
+
+  it("returns {lo:0, hi:0} for an empty array", () => {
+    expect(cfgBandFraction([], 0, 1)).toEqual({ lo: 0, hi: 0 });
+  });
+
+  it("returns {lo:0, hi:0} for a single-element array, which has no band to draw", () => {
+    expect(cfgBandFraction([0.7], 0, 1)).toEqual({ lo: 0, hi: 0 });
+  });
+});
+
+describe("a stored progress is never converted into a stored step (spec 5.3)", () => {
+  it("round-tripping a progress through the step unit loses precision — why storage stays in progress", () => {
+    const p = 0.5;
+    const roundTripped = progressAtStep(SIGMAS, stepAtProgress(SIGMAS, p));
+    expect(roundTripped).not.toBe(p);
+    expect(roundTripped).toBeCloseTo(0.7);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/cfgInterval.test.ts
+```
+
+Expected: `Failed to resolve import "../cfgInterval"`.
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/lib/sampling/cfgInterval.ts`:
+
+```ts
+export type CfgUnit = "progress" | "steps";
+
+function sigma0(sigmas: readonly number[]): number {
+  return sigmas.length > 0 ? sigmas[0] : 0;
+}
+
+/**
+ * Spec 5.3: progress = 1 - sigma/sigma0. An empty array has no schedule to report progress
+ * over, and sigma0 === 0 (an A2A clip at NOISE 0 — spec 5.1 requires this field to mirror NOISE
+ * exactly, unclamped) has no noise range to traverse: 0/0 and x/0 are not "the pass hasn't
+ * started", they are "there is nothing to measure", so both are defined as progress 0 rather
+ * than NaN.
+ */
+export function progressAt(sigmas: readonly number[], i: number): number {
+  const s0 = sigma0(sigmas);
+  if (sigmas.length === 0 || s0 === 0) return 0;
+  const idx = Math.max(0, Math.min(sigmas.length - 1, i));
+  return 1 - sigmas[idx] / s0;
+}
+
+/**
+ * First step index whose progress reaches p — the drawing's _stepAtProgress (v3 1347-1351). p is
+ * clamped into [0, 1] first, matching the drawing's own Math.max(0, Math.min(1, ...)) at every
+ * call site: an out-of-range bound must still chart something rather than throw or search past
+ * the array.
+ */
+export function stepAtProgress(sigmas: readonly number[], p: number): number {
+  const n = sigmas.length - 1;
+  if (n < 0) return 0;
+  const target = Math.max(0, Math.min(1, p));
+  for (let i = 0; i <= n; i++) {
+    if (progressAt(sigmas, i) >= target) return i;
+  }
+  return n;
+}
+
+/** The inverse direction: what progress a given step index sits at. Clamped to the array's own
+ * bounds so a step index left over from a longer schedule (STEPS was lowered since it was
+ * recorded) still reads as something rather than undefined. */
+export function progressAtStep(sigmas: readonly number[], step: number): number {
+  return progressAt(sigmas, step);
+}
+
+/**
+ * Display only. Nothing in this module, or anywhere this milestone's stores touch, writes a
+ * step count back into `cfg_interval_progress` — the store only ever holds progress, and this
+ * function's "steps" branch exists purely so the UNIT toggle can show one without ever
+ * persisting it.
+ */
+export function formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string {
+  if (unit === "progress") return p.toFixed(2);
+  return String(stepAtProgress(sigmas, p));
+}
+
+/** The 0..1 x-fractions of the CFG band, for the graph to fill (Task 6). */
+export function cfgBandFraction(
+  sigmas: readonly number[], lo: number, hi: number,
+): { lo: number; hi: number } {
+  const n = sigmas.length - 1;
+  if (n <= 0) return { lo: 0, hi: 0 };
+  return { lo: stepAtProgress(sigmas, lo) / n, hi: stepAtProgress(sigmas, hi) / n };
+}
+```
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/cfgInterval.test.ts && npm run check
+```
+
+Expected: `Tests  21 passed (21)` and `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T5: CFG interval progress/step conversion over a sigma array"
+```
+
+---
+
+### Task 6: Sigma graph geometry — pure, so vitest can assert layout without a canvas
+
+Porting `_drawSigma` (v3:1352-1429) means porting its *drawing*, not its maths: spec §5.3's last
+paragraph says the canvas never computes σ, so every y-coordinate here comes from indexing the
+array `/schedule` returned, never from `_sigmaAt`'s formula. Splitting the geometry out as pure
+functions is what makes that testable at all — vitest can assert exact pixel coordinates with no
+`HTMLCanvasElement`, and Task 7's component becomes nothing but a loop that strokes what this
+module computed.
+
+**Files:**
+- Create: `latent-forge/src/lib/sampling/sigmaGraph.ts`, `latent-forge/src/lib/sampling/__tests__/sigmaGraph.test.ts`
+
+**Interfaces:**
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }`.
+- Consumes from `src/lib/sampling/samplers.ts` (M4 T2): `activeSlots(l: LatchState): LatchSlot[]`, `interface LatchState { latch_on: boolean; slots: readonly LatchSlot[] }`. This module always calls `activeSlots({ latch_on: true, slots: input.slots })` — whether the lane's chain is actually switched on is a fact this pure geometry function is not given and must not need; the caller (a later task) only ever passes the active lane's own slots when there is something to draw.
+- Consumes from `src/lib/sampling/cfgInterval.ts` (M4 T5): `progressAt(sigmas: readonly number[], i: number): number`, `cfgBandFraction(sigmas: readonly number[], lo: number, hi: number): { lo: number; hi: number }`.
+- Produces, from `latent-forge/src/lib/sampling/sigmaGraph.ts`: `LANE_H = 7`, `LANE_GAP = 2`, `PAD = 4`, `MAX_TICKS = 200`, `reservedHeight(nSlots: number): number`; `interface SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`; `interface SlotBand { index: 0 | 1; x0: number; w: number; laneY: number; hatch: { x0: number; w: number } | null }`; `interface SigmaGraphGeometry { plotHeight: number; cfgBand: { x0: number; x1: number }; sigmaPath: { x: number; y: number }[]; progressPath: { x: number; y: number }[]; ticks: { x: number; y: number }[]; rescaleY: number | null; slotBands: SlotBand[]; stepLabel: string }`; `sigmaGraphGeometry(input: SigmaGraphInput): SigmaGraphGeometry`.
+
+`reservedHeight` takes `nSlots` but, matching the drawing's own hard-coded `RESERVED = 2 * LANE_H
++ LANE_GAP + 2`, always returns the same number: the layout reserves for **two** lanes
+unconditionally, so a slot appearing or disappearing never reflows the σ curve above it. The σ
+curve is sampled once per pixel column by rounding that column's fraction of the width to the
+nearest sigma-array index — a lookup, never a formula.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/lib/sampling/__tests__/sigmaGraph.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import type { LatchSlot } from "../../forge/types";
+import {
+  LANE_H, PAD, reservedHeight, sigmaGraphGeometry,
+} from "../sigmaGraph";
+import type { SigmaGraphInput } from "../sigmaGraph";
+
+const SIGMAS = [1, 0.6, 0.3, 0.1, 0]; // sigma0=1, 4 steps
+
+// start_pct/end_pct chosen as exact binary fractions (0.25, 0.75, 0.5) throughout this file so
+// every expected x0/w below is an exact integer, never a 0.1-plus-0.2-style rounding artefact.
+function slot(over: Partial<LatchSlot> = {}): LatchSlot {
+  return { head: "onsets", kind: "value", value: 0.5, weight: 1, start_pct: 0.25, end_pct: 0.75, ...over };
+}
+
+function input(over: Partial<SigmaGraphInput> = {}): SigmaGraphInput {
+  return {
+    sigmas: SIGMAS, steps: 4, cfgLo: 0, cfgHi: 1, stepped: false, scalePhi: 0,
+    slots: [], width: 100, height: 118, ...over,
+  };
+}
+
+describe("reservedHeight (drawing's RESERVED = 2*LANE_H + LANE_GAP + 2)", () => {
+  it("is 18 for zero, one or two slots alike — it reserves for two lanes unconditionally", () => {
+    expect(reservedHeight(0)).toBe(18);
+    expect(reservedHeight(1)).toBe(18);
+    expect(reservedHeight(2)).toBe(18);
+  });
+});
+
+describe("sigmaGraphGeometry with no slots, a full-width CFG band, no rescale", () => {
+  const g = sigmaGraphGeometry(input());
+
+  it("computes plotHeight by subtracting the two-lane reservation from height", () => {
+    expect(g.plotHeight).toBe(100);
+  });
+
+  it("samples the sigma curve by nearest-index lookup, one point per pixel column", () => {
+    expect(g.sigmaPath).toHaveLength(101);
+    expect(g.sigmaPath[0]).toEqual({ x: 0, y: 4 });
+    expect(g.sigmaPath[100]).toEqual({ x: 100, y: 96 });
+  });
+
+  it("computes the progress curve as the sigma curve's mirror image", () => {
+    expect(g.progressPath[0]).toEqual({ x: 0, y: 96 });
+    expect(g.progressPath[100]).toEqual({ x: 100, y: 4 });
+  });
+
+  it("places one tick per step, capped, at the step's own sigma value", () => {
+    expect(g.ticks).toHaveLength(5);
+    expect(g.ticks[0]).toEqual({ x: 0, y: 4 });
+    expect(g.ticks[2]).toEqual({ x: 50, y: 68.4 });
+    expect(g.ticks[4]).toEqual({ x: 100, y: 96 });
+  });
+
+  it("fills the CFG band across the whole width when the interval is [0,1]", () => {
+    expect(g.cfgBand).toEqual({ x0: 0, x1: 100 });
+  });
+
+  it("reports rescaleY null when scale_phi is 0", () => {
+    expect(g.rescaleY).toBeNull();
+  });
+
+  it("carries the step count as the label", () => {
+    expect(g.stepLabel).toBe("4");
+  });
+});
+
+describe("sigmaGraphGeometry with an active LatCH slot", () => {
+  it("places the slot's band at its own start/end fraction of the width", () => {
+    const g = sigmaGraphGeometry(input({ cfgLo: 0.5, cfgHi: 1, slots: [slot()] }));
+    expect(g.slotBands).toHaveLength(1);
+    expect(g.slotBands[0].index).toBe(0);
+    expect(g.slotBands[0].x0).toBe(25);
+    expect(g.slotBands[0].w).toBe(50);
+    expect(g.slotBands[0].laneY).toBe(102);
+  });
+
+  it("hatches only the intersection of the slot's window and the CFG band", () => {
+    const g = sigmaGraphGeometry(input({ cfgLo: 0.5, cfgHi: 1, slots: [slot()] }));
+    expect(g.slotBands[0].hatch).toEqual({ x0: 50, w: 25 });
+  });
+
+  it("omits an inert slot (head none or weight 0)", () => {
+    const g = sigmaGraphGeometry(input({ slots: [slot({ head: "none" }), slot({ weight: 0 })] }));
+    expect(g.slotBands).toEqual([]);
+  });
+
+  it("keeps the same plotHeight whether zero, one or two slots are active", () => {
+    const none = sigmaGraphGeometry(input({ slots: [] }));
+    const one = sigmaGraphGeometry(input({ slots: [slot()] }));
+    const two = sigmaGraphGeometry(input({ slots: [slot(), slot({ start_pct: 0, end_pct: 0.1 })] }));
+    expect(one.plotHeight).toBe(none.plotHeight);
+    expect(two.plotHeight).toBe(none.plotHeight);
+  });
+});
+
+describe("sigmaGraphGeometry, stepped vs continuous", () => {
+  it("adds a vertical jump between pixel columns when stepped", () => {
+    const g = sigmaGraphGeometry(input({ stepped: true }));
+    expect(g.sigmaPath.length).toBeGreaterThan(101);
+    const hasJump = g.sigmaPath.some((p, i) => i > 0 && p.x === g.sigmaPath[i - 1].x && p.y !== g.sigmaPath[i - 1].y);
+    expect(hasJump).toBe(true);
+  });
+
+  it("draws a smooth line with no repeated x when not stepped", () => {
+    const g = sigmaGraphGeometry(input({ stepped: false }));
+    expect(g.sigmaPath).toHaveLength(101);
+    const xs = g.sigmaPath.map((p) => p.x);
+    expect(new Set(xs).size).toBe(xs.length);
+  });
+});
+
+describe("sigmaGraphGeometry, rescale line", () => {
+  it("places rescaleY proportionally to scale_phi", () => {
+    const g = sigmaGraphGeometry(input({ scalePhi: 0.25 }));
+    expect(g.rescaleY).toBe(73);
+  });
+
+  it("is null for scale_phi <= 0", () => {
+    expect(sigmaGraphGeometry(input({ scalePhi: 0 })).rescaleY).toBeNull();
+    expect(sigmaGraphGeometry(input({ scalePhi: -0.1 })).rescaleY).toBeNull();
+  });
+});
+
+describe("sigmaGraphGeometry, empty input", () => {
+  it("returns empty paths and no crash for an empty sigmas array", () => {
+    const g = sigmaGraphGeometry(input({ sigmas: [] }));
+    expect(g.sigmaPath).toEqual([]);
+    expect(g.progressPath).toEqual([]);
+    expect(g.ticks).toEqual([]);
+    expect(g.slotBands).toEqual([]);
+    expect(g.cfgBand).toEqual({ x0: 0, x1: 0 });
+  });
+});
+```
+
+Two constants used above are worth restating so the numbers check out without re-deriving them:
+`LANE_H = 7` (used for `laneY` spacing) and `PAD = 4` (folded into every y formula below).
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/sigmaGraph.test.ts
+```
+
+Expected: `Failed to resolve import "../sigmaGraph"`.
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/lib/sampling/sigmaGraph.ts`:
+
+```ts
+import type { LatchSlot } from "../forge/types";
+import { cfgBandFraction, progressAt } from "./cfgInterval";
+import { activeSlots } from "./samplers";
+import type { LatchState } from "./samplers";
+
+export const LANE_H = 7;
+export const LANE_GAP = 2;
+export const PAD = 4;
+export const MAX_TICKS = 200;
+
+/**
+ * The drawing's RESERVED = 2*LANE_H + LANE_GAP + 2 (v3:1355) reserves for TWO lanes
+ * unconditionally, so a slot appearing or disappearing never reflows the sigma curve above it.
+ * `nSlots` is accepted for callers that want to name what they are reserving for, but the
+ * returned number never depends on it.
+ */
+export function reservedHeight(nSlots: number): number {
+  void nSlots;
+  return 2 * LANE_H + LANE_GAP + 2;
+}
+
+export interface SigmaGraphInput {
+  sigmas: number[];
+  steps: number;
+  cfgLo: number;
+  cfgHi: number;
+  stepped: boolean;
+  scalePhi: number;
+  slots: readonly LatchSlot[];
+  width: number;
+  height: number;
+}
+
+export interface SlotBand {
+  index: 0 | 1;
+  x0: number;
+  w: number;
+  laneY: number;
+  hatch: { x0: number; w: number } | null;
+}
+
+export interface SigmaGraphGeometry {
+  plotHeight: number;
+  cfgBand: { x0: number; x1: number };
+  sigmaPath: { x: number; y: number }[];
+  progressPath: { x: number; y: number }[];
+  ticks: { x: number; y: number }[];
+  rescaleY: number | null;
+  slotBands: SlotBand[];
+  stepLabel: string;
+}
+
+function emptyGeometry(steps: number, plotHeight: number): SigmaGraphGeometry {
+  return {
+    plotHeight: Math.max(0, plotHeight),
+    cfgBand: { x0: 0, x1: 0 },
+    sigmaPath: [],
+    progressPath: [],
+    ticks: [],
+    rescaleY: null,
+    slotBands: [],
+    stepLabel: String(steps),
+  };
+}
+
+/**
+ * Pure geometry for SigmaGraph.svelte (Task 7). Every y-coordinate below comes from indexing
+ * `sigmas` -- the array `/schedule` returned -- never from re-deriving sigma with a formula
+ * (spec 5.3, last paragraph; the drawing's own _sigmaAt is exactly what this milestone must NOT
+ * port).
+ */
+export function sigmaGraphGeometry(input: SigmaGraphInput): SigmaGraphGeometry {
+  const { sigmas, steps, cfgLo, cfgHi, stepped, scalePhi, slots, width, height } = input;
+  const n = sigmas.length - 1;
+  const drawnSlots = activeSlots({ latch_on: true, slots } satisfies LatchState).slice(0, 2);
+  const plotHeight = height - reservedHeight(drawnSlots.length);
+
+  if (sigmas.length === 0 || width <= 0 || plotHeight <= 0) {
+    return emptyGeometry(steps, plotHeight);
+  }
+
+  const sigma0 = sigmas[0];
+  const { lo, hi } = cfgBandFraction(sigmas, cfgLo, cfgHi);
+  const cfgBand = { x0: lo * width, x1: hi * width };
+
+  const sigmaAtIndex = (idx: number): number => sigmas[Math.max(0, Math.min(n, idx))];
+  const yFromSigma = (s: number): number =>
+    plotHeight - PAD - (sigma0 > 0 ? s / sigma0 : 0) * (plotHeight - 2 * PAD);
+  const yFromProgress = (p: number): number => plotHeight - PAD - p * (plotHeight - 2 * PAD);
+
+  const sigmaPath: { x: number; y: number }[] = [];
+  let prevY: number | null = null;
+  for (let px = 0; px <= width; px++) {
+    const idx = Math.round((px / width) * n);
+    const y = yFromSigma(sigmaAtIndex(idx));
+    if (stepped && prevY !== null) sigmaPath.push({ x: px, y: prevY });
+    sigmaPath.push({ x: px, y });
+    prevY = y;
+  }
+
+  const progressPath: { x: number; y: number }[] = [];
+  for (let px = 0; px <= width; px++) {
+    const idx = Math.round((px / width) * n);
+    progressPath.push({ x: px, y: yFromProgress(progressAt(sigmas, idx)) });
+  }
+
+  const nTicks = Math.min(MAX_TICKS, Math.max(1, steps));
+  const ticks: { x: number; y: number }[] = [];
+  for (let i = 0; i <= nTicks; i++) {
+    const u = i / nTicks;
+    const idx = Math.round(u * n);
+    ticks.push({ x: u * width, y: yFromSigma(sigmaAtIndex(idx)) });
+  }
+
+  const rescaleY = scalePhi > 0 ? yFromProgress(scalePhi) : null;
+
+  const slotBands: SlotBand[] = drawnSlots.map((s, k) => {
+    const index = k as 0 | 1;
+    const x0 = s.start_pct * width;
+    const w = Math.max(0, s.end_pct - s.start_pct) * width;
+    const laneY = plotHeight + 2 + k * (LANE_H + LANE_GAP);
+    const oLo = Math.max(s.start_pct, lo);
+    const oHi = Math.min(s.end_pct, hi);
+    const hatch = oHi > oLo ? { x0: oLo * width, w: (oHi - oLo) * width } : null;
+    return { index, x0, w, laneY, hatch };
+  });
+
+  return {
+    plotHeight, cfgBand, sigmaPath, progressPath, ticks, rescaleY, slotBands,
+    stepLabel: String(steps),
+  };
+}
+```
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/lib/sampling/__tests__/sigmaGraph.test.ts && npm run check
+```
+
+Expected: `Tests  17 passed (17)` and `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T6: sigma graph pure geometry"
+```
+
+---
+
+### Task 7: `SigmaGraph.svelte` — the canvas, drawing only
+
+The last piece of the port: a component that owns no numbers, only strokes what Task 6's
+`sigmaGraphGeometry` computed. Every colour comes from `getComputedStyle` once per frame and every
+translucency from `ctx.globalAlpha`, never a string edit on a token — the Global Constraints spell
+out why: the drawing's `SLOT_COLORS[k].replace(')', ' / 0.26)')` is a text transform on an
+unparsed value that breaks the moment DARK (or any theme) writes a token in a different colour
+space.
+
+**Files:**
+- Create: `latent-forge/src/ui/prompt/SigmaGraph.svelte`, `latent-forge/src/ui/prompt/__tests__/SigmaGraph.test.ts`
+
+**Interfaces:**
+- Consumes from `src/lib/sampling/sigmaGraph.ts` (M4 T6): `sigmaGraphGeometry(input: SigmaGraphInput): SigmaGraphGeometry`, `LANE_H = 7`, `PAD = 4`, types `SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`, `SigmaGraphGeometry { plotHeight; cfgBand: {x0,x1}; sigmaPath: {x,y}[]; progressPath: {x,y}[]; ticks: {x,y}[]; rescaleY: number | null; slotBands: SlotBand[]; stepLabel: string }`, `SlotBand { index: 0|1; x0: number; w: number; laneY: number; hatch: {x0,w} | null }`.
+- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, id `sigmaGraph` — the drawing's own sigma canvas carries a `data-help` string (v3:404), so this component restates the same idea as `data-help={HELP.sigmaGraph}`. This id is not in the shared preamble's confirmed list; see the open questions at the bottom of this hand-off.
+- Produces, from `latent-forge/src/ui/prompt/SigmaGraph.svelte`: the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`.
+
+Colour tokens, restated from the Global Constraints: `--panel2` the ground, `--turq-strong` the
+CFG band fill and its two edges, `--slot1` / `--slot2` the LatCH lanes (by `slotBands[k].index`),
+`--warm` the dotted rescale line, `--text-dim` the tick marks and both labels, `--text` the solid
+σ curve. Labels: `"sigma + progress"` left of the plot, the step count (`geometry.stepLabel`)
+right-aligned, both at `plotHeight - 4`, mirroring the drawing's own layout (v3:1421-1428). While
+`pending` is true the σ and progress curves (not the background, band or slot lanes) draw at
+`ctx.globalAlpha = 0.4`, so a stale-but-still-shown curve visibly dims while a fresher one is on
+the way. `note` renders as a `--text-dim` line only when `input` is `null` or `error` is `null`
+and there is otherwise nothing more urgent to say; `error` always takes precedence and is drawn
+in place of the curve.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/ui/prompt/__tests__/SigmaGraph.test.ts`:
+
+```ts
+// @vitest-environment jsdom
+import { cleanup, render } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SigmaGraphInput } from "../../../lib/sampling/sigmaGraph";
+import SigmaGraph from "../SigmaGraph.svelte";
+
+type Call = { kind: "call"; name: string; args: unknown[] } | { kind: "set"; name: string; value: unknown };
+
+function fakeContext() {
+  const calls: Call[] = [];
+  const ctx: Record<string, unknown> = {};
+  const methods = [
+    "fillRect", "beginPath", "moveTo", "lineTo", "stroke", "fillText", "save", "restore",
+    "clip", "rect", "setLineDash", "setTransform",
+  ];
+  for (const m of methods) {
+    ctx[m] = (...args: unknown[]) => {
+      calls.push({ kind: "call", name: m, args });
+    };
+  }
+  ctx.measureText = (text: string) => {
+    calls.push({ kind: "call", name: "measureText", args: [text] });
+    return { width: text.length * 6 };
+  };
+  for (const p of ["fillStyle", "strokeStyle", "lineWidth", "globalAlpha"]) {
+    let v: unknown;
+    Object.defineProperty(ctx, p, {
+      get: () => v,
+      set: (nv: unknown) => {
+        v = nv;
+        calls.push({ kind: "set", name: p, value: nv });
+      },
+    });
+  }
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, calls };
+}
+
+let fake: ReturnType<typeof fakeContext>;
+beforeEach(() => {
+  fake = fakeContext();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fake.ctx as never);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  cleanup();
+});
+
+const SIGMAS = [1, 0.6, 0.3, 0.1, 0];
+
+function input(over: Partial<SigmaGraphInput> = {}): SigmaGraphInput {
+  return {
+    sigmas: SIGMAS, steps: 4, cfgLo: 0, cfgHi: 1, stepped: false, scalePhi: 0,
+    slots: [], width: 100, height: 118, ...over,
+  };
+}
+
+function tokenSets(name: string): unknown[] {
+  return fake.calls.filter((c) => c.kind === "set" && c.name === name).map((c) => (c as { value: unknown }).value);
+}
+
+describe("SigmaGraph, a full render", () => {
+  it("carries the data-help attribute and a stable test id", () => {
+    const { getByTestId } = render(SigmaGraph, {
+      props: { input: input(), note: null, pending: false, error: null },
+    });
+    expect(getByTestId("sigma-graph").getAttribute("data-help")).toBeTruthy();
+  });
+
+  it("fills the ground with --panel2 before anything else", () => {
+    render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
+    const fillStyles = tokenSets("fillStyle");
+    expect(fillStyles[0]).toBe("var(--panel2)");
+    const firstFillRectIndex = fake.calls.findIndex((c) => c.kind === "call" && c.name === "fillRect");
+    const firstStrokeIndex = fake.calls.findIndex((c) => c.kind === "call" && c.name === "stroke");
+    expect(firstFillRectIndex).toBeGreaterThanOrEqual(0);
+    expect(firstStrokeIndex).toBeGreaterThan(firstFillRectIndex);
+  });
+
+  it("fills the CFG band with --turq-strong and strokes its two edges in the same colour", () => {
+    render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
+    expect(tokenSets("fillStyle")).toContain("var(--turq-strong)");
+    expect(tokenSets("strokeStyle")).toContain("var(--turq-strong)");
+  });
+
+  it("strokes the sigma curve in --text and the progress curve in --turq-strong, dashed", () => {
+    render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
+    expect(tokenSets("strokeStyle")).toContain("var(--text)");
+    const dashCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "setLineDash");
+    expect(dashCalls.length).toBeGreaterThan(0);
+  });
+
+  it("draws the tick marks and both labels in --text-dim", () => {
+    render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
+    expect(tokenSets("fillStyle")).toContain("var(--text-dim)");
+    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "sigma + progress")).toBe(true);
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "4")).toBe(true);
+  });
+
+  it("scales the backing store by devicePixelRatio through setTransform", () => {
+    const dprSpy = vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
+    const transform = fake.calls.find((c) => c.kind === "call" && c.name === "setTransform") as
+      { args: unknown[] } | undefined;
+    expect(transform?.args).toEqual([2, 0, 0, 2, 0, 0]);
+    dprSpy.mockRestore();
+  });
+});
+
+describe("SigmaGraph with an active LatCH slot", () => {
+  it("fills the slot lane with --slot1 for index 0 and --slot2 for index 1", () => {
+    render(SigmaGraph, {
+      props: {
+        input: input({
+          cfgLo: 0.5, cfgHi: 1,
+          slots: [
+            { head: "onsets", kind: "value", value: 0.5, weight: 1, start_pct: 0.2, end_pct: 0.6 },
+            { head: "beat_grid", kind: "value", value: 0.5, weight: 1, start_pct: 0, end_pct: 0.1 },
+          ],
+        }),
+        note: null, pending: false, error: null,
+      },
+    });
+    const fillStyles = tokenSets("fillStyle");
+    expect(fillStyles).toContain("var(--slot1)");
+    expect(fillStyles).toContain("var(--slot2)");
+  });
+});
+
+describe("SigmaGraph, rescale line", () => {
+  it("draws the dotted rescale line in --warm only when scale_phi > 0", () => {
+    render(SigmaGraph, {
+      props: { input: input({ scalePhi: 0.3 }), note: null, pending: false, error: null },
+    });
+    expect(tokenSets("strokeStyle")).toContain("var(--warm)");
+  });
+
+  it("draws no rescale line when scale_phi is 0", () => {
+    render(SigmaGraph, {
+      props: { input: input({ scalePhi: 0 }), note: null, pending: false, error: null },
+    });
+    expect(tokenSets("strokeStyle")).not.toContain("var(--warm)");
+  });
+});
+
+describe("SigmaGraph, pending dims the curve", () => {
+  it("sets globalAlpha below 1 while pending, and back to 1 for the background", () => {
+    render(SigmaGraph, { props: { input: input(), note: null, pending: true, error: null } });
+    const alphas = tokenSets("globalAlpha") as number[];
+    expect(alphas).toContain(1);
+    expect(alphas.some((a) => a > 0 && a < 1)).toBe(true);
+  });
+});
+
+describe("SigmaGraph, note and error", () => {
+  it("renders the note text when there is no error", () => {
+    render(SigmaGraph, {
+      props: { input: input(), note: "schedule shape is charted from M3 onward", pending: false, error: null },
+    });
+    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "schedule shape is charted from M3 onward")).toBe(true);
+  });
+
+  it("renders the error text instead of the note when both are set", () => {
+    render(SigmaGraph, {
+      props: { input: input(), note: "a note", pending: false, error: "schedule is not non-increasing" },
+    });
+    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "schedule is not non-increasing")).toBe(true);
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "a note")).toBe(false);
+  });
+
+  it("renders only the background and the note when input is null", () => {
+    render(SigmaGraph, {
+      props: { input: null, note: "computing schedule…", pending: true, error: null },
+    });
+    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
+    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "computing schedule…")).toBe(true);
+    expect(fake.calls.some((c) => c.kind === "call" && c.name === "stroke")).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/ui/prompt/__tests__/SigmaGraph.test.ts
+```
+
+Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/ui/prompt/SigmaGraph.svelte`:
+
+```svelte
+<script lang="ts">
+  import { HELP } from "../../lib/help/strings";
+  import { LANE_H, PAD, sigmaGraphGeometry } from "../../lib/sampling/sigmaGraph";
+  import type { SigmaGraphInput } from "../../lib/sampling/sigmaGraph";
+
+  interface Props {
+    input: SigmaGraphInput | null;
+    note: string | null;
+    pending: boolean;
+    error: string | null;
+  }
+  let { input, note, pending, error }: Props = $props();
+
+  let canvas: HTMLCanvasElement | undefined = $state();
+
+  const SLOT_TOKENS = ["--slot1", "--slot2"] as const;
+
+  function draw(): void {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cssW = input?.width ?? canvas.clientWidth ?? 320;
+    const cssH = input?.height ?? canvas.clientHeight ?? 180;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(cssW * dpr));
+    canvas.height = Math.max(1, Math.round(cssH * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "var(--panel2)";
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    if (error !== null) {
+      ctx.fillStyle = "var(--text-dim)";
+      ctx.fillText(error, PAD, cssH / 2);
+      return;
+    }
+    if (input === null || input.sigmas.length === 0) {
+      if (note !== null) {
+        ctx.fillStyle = "var(--text-dim)";
+        ctx.fillText(note, PAD, cssH / 2);
+      }
+      return;
+    }
+
+    const g = sigmaGraphGeometry(input);
+
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = "var(--turq-strong)";
+    ctx.fillRect(g.cfgBand.x0, 0, g.cfgBand.x1 - g.cfgBand.x0, g.plotHeight);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "var(--turq-strong)";
+    ctx.lineWidth = 1;
+    for (const x of [g.cfgBand.x0, g.cfgBand.x1]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, g.plotHeight);
+      ctx.stroke();
+    }
+
+    for (const band of g.slotBands) {
+      const token = SLOT_TOKENS[band.index];
+      ctx.globalAlpha = 0.26;
+      ctx.fillStyle = `var(${token})`;
+      ctx.fillRect(band.x0, 0, band.w, g.plotHeight);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = `var(${token})`;
+      ctx.fillRect(band.x0, band.laneY, band.w, LANE_H);
+      if (band.hatch) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(band.hatch.x0, band.laneY, band.hatch.w, LANE_H);
+        ctx.clip();
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = "var(--panel2)";
+        for (let x = band.hatch.x0 - LANE_H; x < band.hatch.x0 + band.hatch.w + LANE_H; x += 3) {
+          ctx.beginPath();
+          ctx.moveTo(x, band.laneY + LANE_H);
+          ctx.lineTo(x + LANE_H, band.laneY);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    if (g.rescaleY !== null) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "var(--warm)";
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, g.rescaleY);
+      ctx.lineTo(cssW, g.rescaleY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // sigma + progress dim together while a fresher response is on the way (pending), so the
+    // curve on screen visibly admits it might be stale without disappearing outright.
+    ctx.globalAlpha = pending ? 0.4 : 1;
+    ctx.strokeStyle = "var(--turq-strong)";
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    g.progressPath.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "var(--text)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    g.sigmaPath.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = "var(--text-dim)";
+    ctx.lineWidth = 1;
+    for (const t of g.ticks) {
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y - 2.5);
+      ctx.lineTo(t.x, t.y + 2.5);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "var(--text-dim)";
+    const label = "sigma + progress";
+    ctx.fillText(label, PAD, g.plotHeight - 4);
+    const stepText = g.stepLabel;
+    const stepW = ctx.measureText(stepText).width;
+    ctx.fillText(stepText, cssW - stepW - PAD, g.plotHeight - 4);
+
+    if (note !== null) {
+      ctx.fillStyle = "var(--text-dim)";
+      ctx.fillText(note, PAD, g.plotHeight + LANE_H);
+    }
+  }
+
+  $effect(() => {
+    void input;
+    void note;
+    void pending;
+    void error;
+    draw();
+  });
+</script>
+
+<canvas
+  bind:this={canvas}
+  class="sigma-graph"
+  data-testid="sigma-graph"
+  data-help={HELP.sigmaGraph}
+  width={input?.width ?? 320}
+  height={input?.height ?? 180}
+></canvas>
+
+<style>
+  .sigma-graph {
+    width: 100%;
+    height: 100%;
+    display: block;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+  }
+</style>
+```
+
+Note the colour values are literal CSS `var(--token)` strings assigned to `fillStyle` /
+`strokeStyle`, per Global Constraints — for a real `CanvasRenderingContext2D`, `fillStyle` accepts
+only a resolved colour string, not `var(...)`, so this draft's remaining gap (folded into Step 3's
+real implementation rather than left as a TODO) resolves each token through
+`getComputedStyle(canvas).getPropertyValue(token).trim()` immediately after `canvas.width` is set,
+caching nothing across frames as the Global Constraints require. The test fakes accept any string
+`fillStyle`/`strokeStyle` value, including an unresolved `var(...)`, so the tests above pass
+against either form; the real browser needs the resolved one. Concretely, replace every literal
+`"var(--x)"` assignment above with `token("--x")` where:
+
+```ts
+function token(name: string): string {
+  return getComputedStyle(canvas!).getPropertyValue(name).trim();
+}
+```
+
+called after `canvas.width`/`canvas.height` are set. This keeps the recorded calls in the test
+identical in shape (a `fillStyle`/`strokeStyle` set, once per token, in the same order) while
+making the shipped component spec-correct; no test above asserts the literal string `"var(--x)"`
+itself — each asserts `toContain("var(--x)")`, so use that same literal as `getComputedStyle`'s
+return value in the tests' own canvas stub (jsdom resolves inline `style.setProperty("--panel2",
+"var(--panel2)")` back out as `"var(--panel2)"`, a no-op round trip used only to keep the fixture
+trivial) or, more simply, replace the `toContain("var(--x)")` assertions with the resolved value
+set on the canvas element's own inline style before each render — either is consistent with
+"resolve through `getComputedStyle`, once per frame."
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/ui/prompt/__tests__/SigmaGraph.test.ts && npm run check
+```
+
+Expected: `Tests  13 passed (13)` and `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T7: SigmaGraph.svelte -- canvas strokes Task 6's geometry, colours via getComputedStyle"
 ```
 
 ---
@@ -3002,3 +4518,29 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
 **Deferred with their owner:** the `▸ RENDER` button, job submission, polling, the SAMPLING label and everything inside the preview container are M9's — M4 leaves M1's frame untouched. The LatCH slots the sigma graph draws are written by M7's LANE CHAIN; until then the legend shows two empty slots and the graph draws no slot lanes. `module` and `master` preset levels are M7's.
 
 **Known incomplete:** until M3 lands, `/schedule` ignores `schedule` and `sampler_type`, so the graph charts the model curve whatever SHAPE says, and ρ, STEPPED, PLATEAUS and TILT move nothing on it. The pane says so rather than faking a curve. This milestone therefore cannot demonstrate that a shape does what the field claims — that demonstration belongs to whoever runs M3 against a GPU.
+
+---
+
+## Open questions (Tasks 4-7)
+
+- **`scheduleClient.ts`'s file extension** — the milestone's File Structure table names it
+  `latent-forge/src/lib/sampling/scheduleClient.ts`; this hand-off ships it as
+  `scheduleClient.svelte.ts` because `ScheduleClient` holds `$state` fields and Svelte only
+  compiles runes inside a `.svelte`/`.svelte.ts`/`.svelte.js` file. The table should be corrected
+  when this task lands; every other task in this hand-off imports the file by its real name.
+- **`forgeApi.schedule`'s exact signature** is named in the shared preamble (`forgeApi.schedule`
+  is in the inherited list) but never given a shape anywhere Writer A could read. Task 4 assumes
+  `schedule(req: ScheduleRequest, signal?: AbortSignal): Promise<ScheduleResult>`, rejecting with
+  `ForgeApiError` on a non-2xx response, matching the real route's JSON body and response fields
+  read at `explorer_render_server.py:1009-1060`. If M1 T5's actual client differs (a different
+  parameter order, no `AbortSignal` support, a wrapped `{ok, ...}` envelope it unwraps itself),
+  `ScheduleClient.#run`'s single call site is the only place to reconcile it.
+- **`HELP.sigmaGraph`** — Task 7's canvas carries `data-help={HELP.sigmaGraph}`, mirroring the
+  drawing's own `data-help` on the sigma canvas (v3:404). This id is not among the ones the
+  shared preamble confirms exist in M1 T14's frozen 87-entry table (unlike Task 8's `targetBar`,
+  `promptPreset`, `a2aToggle`, `a2aNoise`, `opSelect`, which the plan explicitly confirms). If the
+  table uses a different id for this control, rename the one reference in `SigmaGraph.svelte`.
+- **σ max stays outside `ScheduleRequest.schedule`** — confirmed, not a disagreement: Task 4's
+  `ScheduleRequest.sigma_max` is a sibling of `schedule`, never a field inside it, matching
+  WINTERMUTE's 2026-09-17 decision (spec §5.1, §10) and Task 3's `sigmaMaxFor`. Noted here only so
+  the assembler does not need to re-derive it from the two specs independently.
