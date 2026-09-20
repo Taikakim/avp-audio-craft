@@ -34,56 +34,56 @@ but it will mislead whoever reads M1 next.
 
 ## Blocking
 
-- [ ] **F1** T4 `ScheduleClient.dispose()` — nulls `#controller` before `#run`'s `finally`, so the
+- [x] **F1** T4 `ScheduleClient.dispose()` — nulls `#controller` before `#run`'s `finally`, so the
   `this.#controller === controller` guard fails and `pending` never clears; the task's own test
   asserts `false`. → set `this.pending = false` in `dispose()`.
 - [x] **F2** T4 `forgeApi.schedule(req, signal)` — M1's client takes one parameter. → own the call.
 - [x] **F3** T4 `ScheduleResult` not assignable from M1's declared return. → own the call.
 - [x] **F4** T4/T10 `duration` absent from M1's request body type. → own the call.
-- [ ] **F5** T4 `get staleShape` — true only when `shape !== "model"`, but ρ/STEPPED/PLATEAUS/TILT
+- [x] **F5** T4 `get staleShape` — true only when `shape !== "model"`, but ρ/STEPPED/PLATEAUS/TILT
   changed at shape `model` are equally uncharted and get no note. → compare the whole `ScheduleSpec`
   against `SCHEDULE_DEFAULT`.
-- [ ] **F6** T7 `SigmaGraph.svelte` emits `data-testid="sigma-graph"` but T10 and T12 both assert
+- [x] **F6** T7 `SigmaGraph.svelte` emits `data-testid="sigma-graph"` but T10 and T12 both assert
   `canvas[data-canvas="sigma"]`. → add the attribute.
-- [ ] **F7** T7 ships two mutually exclusive colour implementations — literal `"var(--x)"` (what its
+- [x] **F7** T7 ships two mutually exclusive colour implementations — literal `"var(--x)"` (what its
   13 tests assert) and a `token()`/`getComputedStyle` rewrite (what Global Constraints require). In
   jsdom `getComputedStyle(canvas).getPropertyValue("--panel2")` is `""`. → keep `token()`, set the
   custom properties inline on the fixture canvas, assert resolved values.
-- [ ] **F8** T7 — not one of its 13 tests asserts a coordinate, so a component that strokes an empty
+- [x] **F8** T7 — not one of its 13 tests asserts a coordinate, so a component that strokes an empty
   path or swaps σ for progress passes. → assert first/last `lineTo` and the CFG band's `fillRect`
   against `sigmaGraphGeometry`'s own output.
-- [ ] **F9** T9 numeric fields use a sibling `<span class="label">`, so T12's three
+- [x] **F9** T9 numeric fields use a sibling `<span class="label">`, so T12's three
   `page.getByLabel("CFG")` assertions match nothing. → add `aria-label`, as T11 already does.
-- [ ] **F10** T10 emits `data-col="sigma"` on both `SigmaColumn`'s root and `PromptSigmaTab`'s
+- [x] **F10** T10 emits `data-col="sigma"` on both `SigmaColumn`'s root and `PromptSigmaTab`'s
   wrapper; T12 asserts one and Playwright strict mode fails on two. → drop it from `SigmaColumn`.
-- [ ] **F11** T10 "shows the client's error as the graph's note" — `SigmaGraph` paints `error` with
+- [x] **F11** T10 "shows the client's error as the graph's note" — `SigmaGraph` paints `error` with
   `fillText`, never into the DOM, so `findByText` cannot match; the test also polls real timers under
   `vi.useFakeTimers()`. → render the note as a DOM sibling of the canvas.
-- [ ] **F12** T10 same test expects `"render server unreachable"`, but `#run`'s catch does
+- [x] **F12** T10 same test expects `"render server unreachable"`, but `#run`'s catch does
   `String(e)` → `"Error: render server unreachable"`. → `e instanceof Error ? e.message : String(e)`.
-- [ ] **F13** T11 `HELP.shape`, `HELP.sigmaRho`, `HELP.cfgRescale` are not in M1 T14's frozen table;
+- [x] **F13** T11 `HELP.shape`, `HELP.sigmaRho`, `HELP.cfgRescale` are not in M1 T14's frozen table;
   the real ids are `scheduleShape`, `scheduleRho`, `rescale`. → rename.
-- [ ] **F14** T11 passes `EMPTY_SIGMAS` to `formatCfgBound`, so the STEPS unit renders `"0"` forever
+- [x] **F14** T11 passes `EMPTY_SIGMAS` to `formatCfgBound`, so the STEPS unit renders `"0"` forever
   and the UNIT toggle is a dead control — §5.3 requires it computed from the returned array. → share
   the `ScheduleClient` result, or move the CFG interval fields into the SIGMA column that owns it.
-- [ ] **F15** T11 in the STEPS unit shows a step index but writes `Number(value)` straight into
+- [x] **F15** T11 in the STEPS unit shows a step index but writes `Number(value)` straight into
   `cfg_interval_progress`, so typing `3` stores progress 3.0; the drag range also stays
   `RANGES.cfg_interval` when §5.1 gives the steps unit `0–steps, int`. → convert on input, swap the
   range with the unit.
-- [ ] **F16** T12 "applies a complete, valid preset" — the fixture's `seed` is M1's `-1`
+- [x] **F16** T12 "applies a complete, valid preset" — the fixture's `seed` is M1's `-1`
   server-resolve sentinel, which fails `RANGES.seed {min: 0}`, so a round-trip of the app's own
   defaults is rejected. → exempt `-1` in `numberOk` for `seed`, and say why.
-- [ ] **F17** T12 `forgeApi.preset(level, name)` returns the payload itself (§6.3), not
+- [x] **F17** T12 `forgeApi.preset(level, name)` returns the payload itself (§6.3), not
   `{ok, preset}`; `res.preset` is `undefined` and every recall silently applies nothing. → pass `res`.
-- [ ] **F18** T12 `HELP.settingsPreset` does not exist; T8 uses `promptPreset` for this control.
-- [ ] **F19** T12 `settingsPresetSelect.test.ts` lacks the `// @vitest-environment jsdom` pragma every
+- [x] **F18** T12 `HELP.settingsPreset` does not exist; T8 uses `promptPreset` for this control.
+- [x] **F19** T12 `settingsPresetSelect.test.ts` lacks the `// @vitest-environment jsdom` pragma every
   sibling suite declares.
-- [ ] **F20** T12 replaces T8's placeholder select, breaking T8's green test
+- [x] **F20** T12 replaces T8's placeholder select, breaking T8's green test
   `renders the SETTINGS PRESET slot disabled with one dash option`, and never amends it.
-- [ ] **F21** T12 Playwright `getByRole("tab", …)`. CONFIRMED against M1:5554, which produces
+- [x] **F21** T12 Playwright `getByRole("tab", …)`. CONFIRMED against M1:5554, which produces
   `[data-testid="bottom-tab-chroma" | "-prompt" | "-mix" | "-terminal"]` and no `role="tab"`. M1 T11 renders `<button class="tab"
   data-testid="bottom-tab-prompt">` with no `role="tab"`.
-- [ ] **F22** T12 Playwright `[data-module-toggle=advanced-sampling]`. **The critic has this
+- [x] **F22** T12 Playwright `[data-module-toggle=advanced-sampling]`. **The critic has this
   backwards, and in doing so found an M1 bug instead.** Verified: M1 T7's view store declares
   `type ModuleId = "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"`
   (kebab, M1:3027, with `MODULE_IDS` matching at 3056), while **M1 T12 independently declares its own
@@ -93,26 +93,26 @@ but it will mislead whoever reads M1 next.
   against both. → M4 ships the **kebab** spelling (the view store's, which is what persists into the
   project JSON's `ui.modules` at M1:3231) and the Normative-names block records it. **[W]** M1 needs
   one of its two `ModuleId` declarations deleted.
-- [ ] **F23** T8 states `Tests 22 passed (22)`; actual 21.
-- [ ] **F24** T12 states `Tests 26 passed (26)`; actual 27.
+- [x] **F23** T8 states `Tests 22 passed (22)`; actual 21.
+- [x] **F24** T12 states `Tests 26 passed (26)`; actual 27.
 
 ## Minor
 
-- [ ] **F25** T8 `opDisabledReason` invents a latent gate; §7.1 disables RENDER with
+- [x] **F25** T8 `opDisabledReason` invents a latent gate; §7.1 disables RENDER with
   `turn A2A on or choose an op`, and §7.3 says staleness "is informational (badge) and no longer
   blocks anything". → drop it or make it a question for W.
-- [ ] **F26** T10 comment claims the server would 400 on `sigma_max` out of range; the route does no
+- [x] **F26** T10 comment claims the server would 400 on `sigma_max` out of range; the route does no
   range check at all. → restate as a client-side chartability rule.
 - [ ] **F27** T4 `abortRejection`'s listener is never removed on success — one leak per request.
-- [ ] **F28** T9/T11 `await Promise.resolve()` before asserting the DOM; Svelte 5 flushes on its own
+- [x] **F28** T9/T11 `await Promise.resolve()` before asserting the DOM; Svelte 5 flushes on its own
   schedule. → `await tick()`.
-- [ ] **F29** T9 "highlights BASE as active by default" — `beforeEach` sets the stage explicitly, so
+- [x] **F29** T9 "highlights BASE as active by default" — `beforeEach` sets the stage explicitly, so
   the test proves nothing about the default; and `not.toHaveProperty("length")` is vacuous.
-- [ ] **F30** T10 `sigmaNote(null, true, spec(), "euler")` is unreachable: `spec()` is shape `model`,
+- [x] **F30** T10 `sigmaNote(null, true, spec(), "euler")` is unreachable: `spec()` is shape `model`,
   where `staleShape` cannot be true.
-- [ ] **F31** T12's four component tests share the `settings` singleton with no reset, so test 3's
+- [x] **F31** T12's four component tests share the `settings` singleton with no reset, so test 3's
   "before" value is test 2's leftover.
-- [ ] **F32** Open question "HELP.sigmaGraph may not exist" is answerable — it does exist in M1's
+- [x] **F32** Open question "HELP.sigmaGraph may not exist" is answerable — it does exist in M1's
   table. → close it; the real HELP defect is F13.
 
 ## What the seam check found
@@ -154,3 +154,24 @@ Three consequences for T7:
    thumbnail, a stylesheet that failed — the graph would paint garbage or nothing at all.
 3. This does not change the standing rule. Flat colours still come from `getComputedStyle`; the M5
    exception for ramps still stands, because a ramp needs channels and a token stream has none.
+
+
+## All 32 applied — 2026-09-20
+
+Every finding is applied. Two were corrected rather than obeyed (F22's casing, which uncovered M1
+declaring `ModuleId` twice; F2-F4, answered by owning the `/schedule` call instead of editing an
+approved plan). Three more defects surfaced while applying them, none of which the critic saw:
+
+- **Task 2's own count was wrong** — an earlier fix of mine swapped one test for another and lowered
+  the stated total anyway. 13, not 12, and Task 3's cumulative gate followed to 34.
+- **A shared singleton's cache outlives an unmount.** Making `scheduleClient` a singleton (F14) means
+  each `SigmaColumn` test must use its own LENGTH or it reads the previous test's cached result. Also
+  `dispose()` is permanent on a shared instance, so T10 no longer calls it.
+- **A stale cross-agent count.** Task 12 said "Task 8's suite stays at 21", written before F25
+  removed Task 8's four-test describe. It is 16. Caught by counting every `it(` block in the file
+  and comparing against every stated gate — worth doing mechanically at the end of any milestone
+  where more than one agent touched the tests, because no single agent can see it.
+
+Counts now verified mechanically, task by task: T1 17, T2 13, T3 21 (cumulative gate 34), T4 26,
+T5 21, T6 17, T7 15, T8 16, T9 21, T10 21, T11 18, T12 27 (its section holds 28 `it(` blocks, one
+being the replacement for a Task 8 test rather than an addition of its own).

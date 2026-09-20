@@ -50,6 +50,8 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 | σ max | `sigmaMaxFor(a2a: A2AState \| null)` in `lib/sampling/sigmaMax.ts`, **not** a field of `ScheduleSpec`. It takes the clip's A2A block, not a `Target` — the store that maps a target to its clip is M5's, and this module must not depend on it | WINTERMUTE 2026-09-17 |
 | `/schedule` request | `{steps, duration, sigma_max, sampler_type, schedule}` — `duration` is **required**. `schedule` and `sampler_type` are **sent but ignored by today's server**, exactly like the response's missing fields: M3 adds them | the model shape's dist shift is length-dependent, and sending the full body now means M3 lands without a client change |
 | `/schedule` response | `steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`, `sigmas` are present today; `shape` and `warnings` **are optional** until M3 lands | M1 T5 typed them as required; today's server returns neither |
+| who calls `/schedule` | T4's `scheduleClient.svelte.ts`, through its own module-local `postSchedule(req, signal)` — a plain `fetch("/schedule", {method:"POST", …, signal})` that throws M1's `ForgeApiError` on a non-ok status. **`forgeApi.schedule` is not used anywhere in M4** | §6 freezes only `/forge/*`, lists `/schedule` among the pre-existing routes the client "calls directly", and says to keep those "in their own client module so the frozen and unfrozen surfaces stay distinguishable". M1's frozen client cannot serve M4 regardless: it takes one parameter (so there is no `AbortSignal` for T4's abort-and-supersede mechanism), has no `duration` in its body type, and declares a return type that both claims `shape`/`warnings` the route does not send and omits the five it does (`steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`). Correcting an approved plan for no gain is the worse move; M4 owns the call. `forgeApi.schedule` being then dead and wrong in M1 is flagged to WINTERMUTE |
+| the `ScheduleClient` instance | one module singleton, `export const scheduleClient = new ScheduleClient()` in T4, exactly as `settings` and `view` are singletons. **T10's `SigmaColumn` is the only caller of `request()`**; T11's ADVANCED SAMPLING reads `scheduleClient.result?.sigmas ?? []` and never requests | the CFG interval's STEPS unit is computed from the returned sigma array (§5.3), and the bottom pane and the right-pane module must not each hold a client that answers the question differently |
 | CFG unit | stored **always** as progress `[p_lo, p_hi]`; the step unit is a display conversion computed from the returned sigma array, never a second stored value | §5.3, and the drawing's own help string says so |
 | POST/BASE | session-level, one confirm, `POST /forge/backbone`. It loads the stage defaults into `session.defaults` **only** — existing per-target settings are untouched | §5.3, §10 X4 |
 | sampler in POST | `cfg_scale` is **sent as 1.0** while the stage is POST; the stored value is left alone so returning to BASE restores it | §5.3 |
@@ -1116,16 +1118,21 @@ this hand-off; the table is wrong and should be corrected when this task lands.)
 
 **Interfaces:**
 - Consumes from `src/lib/forge/types.ts` (M1 T3): `ScheduleSpec { shape: "model"|"logsnr"|"geometric"|"linear"|"log"|"exponential"|"cosine"; rho: number; sigma_min: number; lam_min: number; lam_max: number; stepped: boolean; plateaus: number; tilt: number }`.
-- Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.schedule`, restated here because the shared preamble names it but never gives its signature — this task assumes `forgeApi.schedule(req: ScheduleRequest, signal?: AbortSignal): Promise<ScheduleResult>` (the raw JSON body of the real route, `ok` stripped), rejecting with `ForgeApiError` on a non-2xx response. This mirrors `explorer_render_server.py:1009-1060`'s actual request keys (`steps`, `duration`, `sigma_max`, plus `dist_shift` which this client does not send) and response keys (`steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`, `sigmas`). Also consumes `ForgeApiError { status: number; message: string }`.
-- Produces, from `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`: `SCHEDULE_DEBOUNCE_MS = 150`; `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`; `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`; `scheduleKey(req: ScheduleRequest): string`; `isNonIncreasing(sigmas: number[]): boolean`; `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`.
+- Consumes from `src/lib/forge/api.ts` (M1 T5): **`ForgeApiError { status: number; message: string }` and nothing else.** This task does **not** go through `forgeApi.schedule`: M1's frozen client takes one parameter (no `AbortSignal`, so `forgeApi.schedule(req, signal)` is a TS2554 and T4's whole abort-and-supersede mechanism has nothing to abort), has no `duration` in its body type, and declares a return type that both claims `shape`/`warnings` the route does not send and omits the five it does. M1 is approved and frozen and is not edited here. Instead this module owns the call, which is what the spec asks for anyway: §6 freezes only `/forge/*`, lists `/schedule` among the pre-existing routes the client "calls directly", and says to keep those "in their own client module so the frozen and unfrozen surfaces stay distinguishable" — `scheduleClient.svelte.ts` is that module. The request and response keys below are read off `explorer_render_server.py:1009-1060` (request: `steps`, `duration`, `sigma_max`, plus `dist_shift`, which this client does not send; response: `steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`, `sigmas`).
+- Consumes from `src/lib/forge/defaults.ts` (M1 T4): `SCHEDULE_DEFAULT: ScheduleSpec`.
+- Produces, from `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`: `SCHEDULE_DEBOUNCE_MS = 150`; `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`; `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`; `scheduleKey(req: ScheduleRequest): string`; `isNonIncreasing(sigmas: number[]): boolean`; `scheduleIsDefault(spec: ScheduleSpec): boolean`; `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`; and the singleton `scheduleClient = new ScheduleClient()`. `postSchedule` is **module-local, not exported** — nothing outside this file calls `/schedule`.
+- Produces the milestone's one `ScheduleClient` instance. T10's `SigmaColumn` is the only caller of `request()`; T11's ADVANCED SAMPLING only ever *reads* `scheduleClient.result`. A singleton rather than a per-component instance because §5.3's CFG interval step unit is computed from the returned sigma array, and the bottom pane and the right-pane module must not each hold a client that answers that question differently.
 
 Today's server ignores `schedule` and `sampler_type` entirely (it reads only `steps`, `duration`,
 `sigma_max`, `dist_shift`) and never echoes `shape` or `warnings` — this client sends the full
 `ScheduleRequest` body anyway so M3 lands with no client change, and types the two response fields
-it cannot get today as optional. `staleShape` is true exactly when the last request whose result is
-currently shown asked for a non-`"model"` shape and the response came back with no `shape` field —
-the one signal available today that the curve on screen is the model curve regardless of what was
-asked for.
+it cannot get today as optional. `staleShape` is true exactly when the request behind the currently
+shown result asked for **any** non-default `ScheduleSpec` and the response came back with no `shape`
+field. Not just a non-`"model"` shape: today's route ignores the whole `schedule` block, so ρ,
+STEPPED, PLATEAUS and TILT changed at shape `model` are every bit as uncharted as a changed shape
+is, and a rule that only watched `shape` left the commonest case of all — a person dragging ρ on the
+default shape and seeing nothing move — with no note at all. `scheduleIsDefault` is the whole-spec
+comparison that makes that check honest.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1133,26 +1140,43 @@ asked for.
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SCHEDULE_DEFAULT } from "../../forge/defaults";
 import type { ScheduleSpec } from "../../forge/types";
-
-vi.mock("../../forge/api", () => {
-  class ForgeApiError extends Error {
-    status: number;
-    constructor(status: number, message: string) {
-      super(message);
-      this.status = status;
-    }
-  }
-  return { forgeApi: { schedule: vi.fn() }, ForgeApiError };
-});
-
-import { ForgeApiError, forgeApi } from "../../forge/api";
 import {
-  isNonIncreasing, SCHEDULE_DEBOUNCE_MS, ScheduleClient, scheduleKey,
+  isNonIncreasing, SCHEDULE_DEBOUNCE_MS, ScheduleClient, scheduleIsDefault, scheduleKey,
 } from "../scheduleClient.svelte";
 import type { ScheduleRequest, ScheduleResult } from "../scheduleClient.svelte";
 
-const scheduleMock = vi.mocked(forgeApi.schedule);
+// The client owns its own call to /schedule (see this task's Interfaces), so the seam under
+// test is `fetch`, not `forgeApi`. Stubbing the global is also what lets a test hold on to the
+// AbortSignal the client passed and assert it was aborted.
+const fetchMock = vi.fn<typeof fetch>();
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+/** A fresh Response per call: a Response body can only be read once, and several tests below
+ * let the client call /schedule twice. */
+function answers(body: unknown, status = 200): () => Promise<Response> {
+  return () => Promise.resolve(jsonResponse(body, status));
+}
+
+function callAt(i: number): { url: string; init: RequestInit } {
+  const [url, init] = fetchMock.mock.calls[i] as [string, RequestInit];
+  return { url, init };
+}
+
+function sentBody(i: number): ScheduleRequest {
+  return JSON.parse(String(callAt(i).init.body)) as ScheduleRequest;
+}
+
+function sentSignal(i: number): AbortSignal {
+  return callAt(i).init.signal as AbortSignal;
+}
 
 function schedule(over: Partial<ScheduleSpec> = {}): ScheduleSpec {
   return {
@@ -1183,9 +1207,11 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  scheduleMock.mockReset();
+  fetchMock.mockReset();
+  vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -1227,6 +1253,27 @@ describe("isNonIncreasing", () => {
   });
 });
 
+describe("scheduleIsDefault", () => {
+  it("is true for SCHEDULE_DEFAULT itself and for a copy of it", () => {
+    expect(scheduleIsDefault(SCHEDULE_DEFAULT)).toBe(true);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT })).toBe(true);
+  });
+
+  it("is false for a changed shape", () => {
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, shape: "geometric" })).toBe(false);
+  });
+
+  it("is false for every other field too — not just shape", () => {
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, rho: 3 })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, sigma_min: 0.05 })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, lam_min: -5 })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, lam_max: 3 })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, stepped: true })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, plateaus: 10 })).toBe(false);
+    expect(scheduleIsDefault({ ...SCHEDULE_DEFAULT, tilt: 0.4 })).toBe(false);
+  });
+});
+
 describe("ScheduleClient debounce and caching", () => {
   it("starts with no result, not pending, no error", () => {
     const client = new ScheduleClient();
@@ -1235,27 +1282,29 @@ describe("ScheduleClient debounce and caching", () => {
     expect(client.error).toBeNull();
   });
 
-  it("does not call forgeApi.schedule before the debounce elapses", () => {
-    scheduleMock.mockResolvedValue(result());
+  it("does not POST /schedule before the debounce elapses", () => {
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req());
-    expect(scheduleMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(client.pending).toBe(true);
   });
 
-  it("calls forgeApi.schedule once after the debounce, with the latest request", async () => {
-    scheduleMock.mockResolvedValue(result());
+  it("POSTs /schedule once after the debounce, with the latest request as the body", async () => {
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req({ steps: 10 }));
     client.request(req({ steps: 20 }));
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledTimes(1);
-    expect(scheduleMock.mock.calls[0][0]).toEqual(req({ steps: 20 }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(callAt(0).url).toBe("/schedule");
+    expect(callAt(0).init.method).toBe("POST");
+    expect(sentBody(0)).toEqual(req({ steps: 20 }));
   });
 
   it("sets pending false and result on a successful response", async () => {
     const r = result();
-    scheduleMock.mockResolvedValue(r);
+    fetchMock.mockImplementation(answers(r));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
@@ -1264,24 +1313,24 @@ describe("ScheduleClient debounce and caching", () => {
     expect(client.result).toEqual(r);
   });
 
-  it("serves a cached result synchronously without calling forgeApi.schedule again", async () => {
-    scheduleMock.mockResolvedValue(result());
+  it("serves a cached result synchronously without POSTing again", async () => {
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     client.request(req({ steps: 10 })); // a different request first, to prove the cache is keyed
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
     client.request(req()); // back to the first request's exact fields
     expect(client.pending).toBe(false);
     expect(client.result).toEqual(result());
-    expect(scheduleMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
 describe("ScheduleClient validation", () => {
   it("sets error and clears result when the response's sigmas are not non-increasing", async () => {
-    scheduleMock.mockResolvedValue(result({ sigmas: [1, 0.2, 0.6, 0] }));
+    fetchMock.mockImplementation(answers(result({ sigmas: [1, 0.2, 0.6, 0] })));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
@@ -1290,8 +1339,11 @@ describe("ScheduleClient validation", () => {
     expect(client.pending).toBe(false);
   });
 
-  it("surfaces a ForgeApiError's message as the error", async () => {
-    scheduleMock.mockRejectedValue(new ForgeApiError(400, "bad JSON body"));
+  it("surfaces the route's own error message from a non-ok status", async () => {
+    // The real route answers a bad body with 400 and {"error": "..."} and no `ok` key
+    // (explorer_render_server.py:1024-1027), which is what postSchedule turns into a
+    // ForgeApiError carrying that sentence.
+    fetchMock.mockImplementation(answers({ error: "bad JSON body" }, 400));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
@@ -1302,34 +1354,30 @@ describe("ScheduleClient validation", () => {
 
 describe("ScheduleClient supersedes an in-flight request", () => {
   it("aborts the previous request's signal when a new request arrives", async () => {
-    let signalA: AbortSignal | undefined;
-    scheduleMock.mockImplementationOnce((_r, signal) => {
-      signalA = signal;
-      return new Promise(() => {}); // never settles on its own
-    });
-    scheduleMock.mockImplementationOnce(() => Promise.resolve(result({ sigmas: [1, 0.4, 0] })));
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => {})); // never settles
+    fetchMock.mockImplementationOnce(answers(result({ sigmas: [1, 0.4, 0] })));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(signalA?.aborted).toBe(false);
+    expect(sentSignal(0).aborted).toBe(false);
     client.request(req({ steps: 30 }));
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(signalA?.aborted).toBe(true);
+    expect(sentSignal(0).aborted).toBe(true);
     expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
     expect(client.pending).toBe(false);
   });
 
   it("ignores a superseded response that resolves after the newer one", async () => {
-    const a = deferred<ScheduleResult>();
-    scheduleMock.mockImplementationOnce(() => a.promise);
-    scheduleMock.mockImplementationOnce(() => Promise.resolve(result({ sigmas: [1, 0.4, 0] })));
+    const a = deferred<Response>();
+    fetchMock.mockImplementationOnce(() => a.promise);
+    fetchMock.mockImplementationOnce(answers(result({ sigmas: [1, 0.4, 0] })));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
     client.request(req({ steps: 30 }));
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
     expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
-    a.resolve(result({ sigmas: [1, 0.9, 0] })); // the stale request finally answers
+    a.resolve(jsonResponse(result({ sigmas: [1, 0.9, 0] }))); // the stale request finally answers
     await vi.advanceTimersByTimeAsync(0);
     expect(client.result?.sigmas).toEqual([1, 0.4, 0]);
   });
@@ -1337,7 +1385,7 @@ describe("ScheduleClient supersedes an in-flight request", () => {
 
 describe("ScheduleClient.dispose", () => {
   it("aborts an in-flight request and clears pending without waiting for it to settle", async () => {
-    scheduleMock.mockImplementationOnce(() => new Promise(() => {})); // never settles
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => {})); // never settles
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
@@ -1352,18 +1400,18 @@ describe("ScheduleClient.dispose", () => {
     client.dispose();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(client.pending).toBe(false);
   });
 });
 
 describe("ScheduleClient.flush", () => {
   it("resolves immediately without waiting for the debounce timer", async () => {
-    scheduleMock.mockResolvedValue(result());
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req());
     await client.flush();
-    expect(scheduleMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(client.result).toEqual(result());
     expect(client.pending).toBe(false);
   });
@@ -1371,23 +1419,41 @@ describe("ScheduleClient.flush", () => {
 
 describe("staleShape", () => {
   it("is true when a non-model shape was requested and the response echoes no shape", async () => {
-    scheduleMock.mockResolvedValue(result());
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req({ schedule: schedule({ shape: "geometric" }) }));
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
     expect(client.staleShape).toBe(true);
   });
 
+  it("is true for a non-default spec at shape model — rho, STEPPED, PLATEAUS and TILT are as uncharted as the shape", async () => {
+    fetchMock.mockImplementation(answers(result()));
+    for (const over of [{ rho: 3 }, { stepped: true }, { plateaus: 10 }, { tilt: 0.4 }]) {
+      const client = new ScheduleClient();
+      client.request(req({ schedule: schedule(over) }));
+      await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+      expect(client.staleShape).toBe(true);
+    }
+  });
+
   it("is false once the response echoes a shape (M3 landed)", async () => {
-    scheduleMock.mockResolvedValue(result({ shape: "geometric" }));
+    fetchMock.mockImplementation(answers(result({ shape: "geometric" })));
     const client = new ScheduleClient();
     client.request(req({ schedule: schedule({ shape: "geometric" }) }));
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
     expect(client.staleShape).toBe(false);
   });
 
-  it("is false for the model shape even with no echoed shape", async () => {
-    scheduleMock.mockResolvedValue(result());
+  it("is false once the response echoes a shape even for a non-default spec at shape model", async () => {
+    fetchMock.mockImplementation(answers(result({ shape: "model" })));
+    const client = new ScheduleClient();
+    client.request(req({ schedule: schedule({ rho: 3 }) }));
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(client.staleShape).toBe(false);
+  });
+
+  it("is false for a wholly default spec even with no echoed shape", async () => {
+    fetchMock.mockImplementation(answers(result()));
     const client = new ScheduleClient();
     client.request(req());
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
@@ -1409,7 +1475,8 @@ Expected: `Failed to resolve import "../scheduleClient.svelte"`.
 `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`:
 
 ```ts
-import { forgeApi } from "../forge/api";
+import { ForgeApiError } from "../forge/api";
+import { SCHEDULE_DEFAULT } from "../forge/defaults";
 import type { ScheduleSpec } from "../forge/types";
 
 /** Spec 5.3's graph is debounced 150ms so a drag does not fire one request per frame. */
@@ -1468,7 +1535,48 @@ export function isNonIncreasing(sigmas: number[]): boolean {
   return true;
 }
 
+const SCHEDULE_FIELDS = Object.keys(SCHEDULE_DEFAULT) as (keyof ScheduleSpec)[];
+
+/**
+ * Whether a spec is byte-for-byte M1 T4's SCHEDULE_DEFAULT. Keyed off the default object's own
+ * keys rather than a hand-written field list, so a ScheduleSpec field added later is compared
+ * without anyone remembering to come back here. `staleShape` needs the WHOLE spec, not just
+ * `shape`: today's route ignores the entire `schedule` block, so ρ, STEPPED, PLATEAUS and TILT
+ * changed at shape "model" chart exactly the same curve as the untouched default does.
+ */
+export function scheduleIsDefault(spec: ScheduleSpec): boolean {
+  return SCHEDULE_FIELDS.every((k) => spec[k] === SCHEDULE_DEFAULT[k]);
+}
+
 class AbortedError extends Error {}
+
+/**
+ * M4's own call to /schedule. NOT `forgeApi.schedule`: M1's frozen client takes one parameter
+ * (no AbortSignal), has no `duration` in its body type, and declares a return type that claims
+ * `shape`/`warnings` the route does not send while omitting the five it does. Spec 6 freezes
+ * only `/forge/*` and asks for the pre-existing routes the client "calls directly" -- /schedule
+ * among them -- to live "in their own client module so the frozen and unfrozen surfaces stay
+ * distinguishable". This file is that module, so the call lives here. Module-local on purpose:
+ * `ScheduleClient` is the only caller, and nothing outside this file should reach the route.
+ */
+async function postSchedule(req: ScheduleRequest, signal: AbortSignal): Promise<ScheduleResult> {
+  const res = await fetch("/schedule", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(req),
+    signal,
+  });
+  // Parse tolerantly for the same reason M1's own client does: a dead proxy answers with HTML
+  // or with nothing, and a raw JSON parse error tells the operator nothing.
+  const body = (await res.json().catch(() => null)) as (ScheduleResult & { error?: string }) | null;
+  if (body === null) {
+    throw new ForgeApiError(res.status, "render server unreachable (non-JSON response from /schedule)");
+  }
+  // The route answers a validation failure with {"error": "..."} and no `ok` key
+  // (explorer_render_server.py:1024-1031), so the status is what decides.
+  if (!res.ok) throw new ForgeApiError(res.status, body.error ?? `request failed (${res.status})`);
+  return body;
+}
 
 /**
  * Races the real call against the signal itself, checking `signal.aborted` BEFORE adding the
@@ -1500,12 +1608,15 @@ export class ScheduleClient {
   #inFlight: Promise<void> | null = null;
   #disposed = false;
 
-  /** True exactly when the request behind the CURRENTLY SHOWN result asked for a non-"model"
-   * shape and the response carried no `shape` -- the only signal available before M3 that the
-   * curve on screen is the model curve regardless of what was asked for. */
+  /** True exactly when the request behind the CURRENTLY SHOWN result asked for ANY non-default
+   * ScheduleSpec and the response carried no `shape` -- the only signal available before M3
+   * that the curve on screen is the model curve regardless of what was asked for. The whole
+   * spec, not just `shape`: the route ignores the entire `schedule` block today, so a person
+   * dragging rho or switching STEPPED on at shape "model" is looking at exactly as uncharted a
+   * curve as someone who picked "geometric", and deserves the same note. */
   get staleShape(): boolean {
     if (!this.#lastResultReq || !this.result) return false;
-    return this.#lastResultReq.schedule.shape !== "model" && this.result.shape === undefined;
+    return !scheduleIsDefault(this.#lastResultReq.schedule) && this.result.shape === undefined;
   }
 
   request(req: ScheduleRequest): void {
@@ -1565,7 +1676,7 @@ export class ScheduleClient {
     const controller = new AbortController();
     this.#controller = controller;
     this.pending = true;
-    const apiPromise = forgeApi.schedule(req, controller.signal);
+    const apiPromise = postSchedule(req, controller.signal);
     apiPromise.catch(() => {}); // avoid an unhandled rejection when the abort race wins instead
     try {
       const result = await Promise.race([apiPromise, abortRejection(controller.signal)]);
@@ -1594,6 +1705,16 @@ export class ScheduleClient {
     }
   }
 }
+
+/**
+ * The milestone's one client, a module singleton exactly as `settings` and `view` are.
+ * Task 10's SigmaColumn is the only thing that calls `request()` -- it is the component that
+ * knows the target's steps, the tab's LENGTH and the A2A sigma max. Task 11's ADVANCED
+ * SAMPLING only READS `scheduleClient.result?.sigmas` to render the CFG interval's STEPS unit;
+ * a second client there would answer "which step does progress 0.7 reach" from a different
+ * array than the graph drew, which is the one thing spec 5.3 forbids.
+ */
+export const scheduleClient = new ScheduleClient();
 ```
 
 - [ ] **Step 4: Run the tests — they must pass**
@@ -1602,7 +1723,7 @@ export class ScheduleClient {
 cd latent-forge && npx vitest run src/lib/sampling/__tests__/scheduleClient.test.ts && npm run check
 ```
 
-Expected: `Tests  21 passed (21)` and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Tests  26 passed (26)` and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -2196,18 +2317,29 @@ space.
 **Interfaces:**
 - Consumes from `src/lib/sampling/sigmaGraph.ts` (M4 T6): `sigmaGraphGeometry(input: SigmaGraphInput): SigmaGraphGeometry`, `LANE_H = 7`, `PAD = 4`, types `SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`, `SigmaGraphGeometry { plotHeight; cfgBand: {x0,x1}; sigmaPath: {x,y}[]; progressPath: {x,y}[]; ticks: {x,y}[]; rescaleY: number | null; slotBands: SlotBand[]; stepLabel: string }`, `SlotBand { index: 0|1; x0: number; w: number; laneY: number; hatch: {x0,w} | null }`.
 - Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, id `sigmaGraph` — the drawing's own sigma canvas carries a `data-help` string (v3:404), so this component restates the same idea as `data-help={HELP.sigmaGraph}`. **Verified against M1 T14's frozen table: `sigmaGraph` is in it** (sourced from v3:404, the same line of the drawing), so this is not an assumption.
-- Produces, from `latent-forge/src/ui/prompt/SigmaGraph.svelte`: the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`. Its canvas carries **both** `data-testid="sigma-graph"` (this task's own tests) and `data-canvas="sigma"` — Tasks 10 and 12 both select the canvas by the latter, and it is the canvas's place in the tab, not its component identity, that they are asserting.
+- Produces, from `latent-forge/src/ui/prompt/SigmaGraph.svelte`: the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`. Its canvas carries **both** `data-testid="sigma-graph"` (this task's own tests) and `data-canvas="sigma"` — Tasks 10 and 12 both select the canvas by the latter, and it is the canvas's place in the tab, not its component identity, that they are asserting. `note` and `error` are **DOM siblings of the canvas**, `[data-graph-note]` and `[data-graph-error]`, never `fillText` on the canvas: Task 10 asserts the note's text with Testing Library, and text painted into a canvas is invisible to every DOM query there is.
 
 Colour tokens, restated from the Global Constraints: `--panel2` the ground, `--turq-strong` the
 CFG band fill and its two edges, `--slot1` / `--slot2` the LatCH lanes (by `slotBands[k].index`),
 `--warm` the dotted rescale line, `--text-dim` the tick marks and both labels, `--text` the solid
-σ curve. Labels: `"sigma + progress"` left of the plot, the step count (`geometry.stepLabel`)
+σ curve. Every one resolves through `getComputedStyle(canvas).getPropertyValue(name)` once per
+frame — there is **no** literal `"var(--x)"` form; a real `CanvasRenderingContext2D` accepts only a
+resolved colour string, and the Global Constraints require the token read anyway so DARK works.
+Labels: `"sigma + progress"` left of the plot, the step count (`geometry.stepLabel`)
 right-aligned, both at `plotHeight - 4`, mirroring the drawing's own layout (v3:1421-1428). While
 `pending` is true the σ and progress curves (not the background, band or slot lanes) draw at
 `ctx.globalAlpha = 0.4`, so a stale-but-still-shown curve visibly dims while a fresher one is on
-the way. `note` renders as a `--text-dim` line only when `input` is `null` or `error` is `null`
-and there is otherwise nothing more urgent to say; `error` always takes precedence and is drawn
-in place of the curve.
+the way. `error` takes precedence over `note`: exactly one of the two spans is ever in the DOM, so
+a caller that passes the same sentence as both (Task 10's `sigmaNote` returns the client's error as
+the note) renders it once and `getByText` stays unambiguous.
+
+**`token()` takes a required fallback, and it is not decoration.** Measured against real jsdom
+(see `docs/latent-forge/M4_CRITIC_FINDINGS.md`, "Probe: how jsdom resolves custom properties"): an
+undefined custom property comes back as `""`, and `ctx.fillStyle = ""` is a **silent no-op** that
+leaves the previous colour in place. A graph rendered anywhere `tokens.css` did not load — a test,
+a thumbnail, a stylesheet that 404'd — would paint the last colour it happened to hold, or nothing,
+with no error anywhere. So every token below is read with a real colour to fall back to, and the
+two slot fallbacks are §5.3's own literals.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2217,6 +2349,7 @@ in place of the curve.
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { sigmaGraphGeometry } from "../../../lib/sampling/sigmaGraph";
 import type { SigmaGraphInput } from "../../../lib/sampling/sigmaGraph";
 import SigmaGraph from "../SigmaGraph.svelte";
 
@@ -2251,12 +2384,35 @@ function fakeContext() {
   return { ctx: ctx as unknown as CanvasRenderingContext2D, calls };
 }
 
+/**
+ * The tokens the component reads, set INLINE on an ancestor of the canvas. Measured against
+ * real jsdom (M4_CRITIC_FINDINGS.md, "Probe: how jsdom resolves custom properties"): a value
+ * set inline on the element or on any ancestor comes back out of getComputedStyle exactly as
+ * written, and inherits down. **Do not "fix" this into a `<style>` block** — a `:root` rule goes
+ * through jsdom's CSS parser and comes back reformatted (`oklch(90% 0.012 240)` returns as
+ * `oklch(90%0.012 240)`, the space after the percent eaten), so every assertion below would
+ * fail for a reason that has nothing to do with this component. Values are deliberately
+ * unlike the real theme's, so a test can only pass by actually reading the property.
+ */
+const TOKENS: Record<string, string> = {
+  "--panel2": "oklch(11% 0.1 1)",
+  "--turq-strong": "oklch(22% 0.2 2)",
+  "--slot1": "oklch(33% 0.3 3)",
+  "--slot2": "oklch(44% 0.4 4)",
+  "--warm": "oklch(55% 0.5 5)",
+  "--text-dim": "oklch(66% 0.6 6)",
+  "--text": "oklch(77% 0.7 7)",
+};
+
 let fake: ReturnType<typeof fakeContext>;
 beforeEach(() => {
   fake = fakeContext();
+  // render() mounts into a container under document.body, so the canvas inherits these.
+  for (const [k, v] of Object.entries(TOKENS)) document.body.style.setProperty(k, v);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fake.ctx as never);
 });
 afterEach(() => {
+  for (const k of Object.keys(TOKENS)) document.body.style.removeProperty(k);
   vi.restoreAllMocks();
   cleanup();
 });
@@ -2274,6 +2430,30 @@ function tokenSets(name: string): unknown[] {
   return fake.calls.filter((c) => c.kind === "set" && c.name === name).map((c) => (c as { value: unknown }).value);
 }
 
+function argsOf(name: string): unknown[][] {
+  return fake.calls
+    .filter((c) => c.kind === "call" && c.name === name)
+    .map((c) => (c as { args: unknown[] }).args);
+}
+
+/**
+ * The moveTo/lineTo pairs of the ONE path stroked in `color`, from that strokeStyle set up to
+ * the `stroke` that closes it. Both the sigma and the progress curve emit lineTo calls, so a
+ * flat list of every lineTo cannot tell a component that swapped them apart from one that did
+ * not; slicing by colour can.
+ */
+function pathStrokedIn(color: string): unknown[][] {
+  const start = fake.calls.findIndex(
+    (c) => c.kind === "set" && c.name === "strokeStyle" && c.value === color,
+  );
+  if (start < 0) return [];
+  const end = fake.calls.findIndex((c, i) => i > start && c.kind === "call" && c.name === "stroke");
+  return fake.calls
+    .slice(start, end < 0 ? undefined : end)
+    .filter((c) => c.kind === "call" && (c.name === "moveTo" || c.name === "lineTo"))
+    .map((c) => (c as { args: unknown[] }).args);
+}
+
 describe("SigmaGraph, a full render", () => {
   it("carries the data-help attribute and a stable test id", () => {
     const { getByTestId } = render(SigmaGraph, {
@@ -2282,10 +2462,10 @@ describe("SigmaGraph, a full render", () => {
     expect(getByTestId("sigma-graph").getAttribute("data-help")).toBeTruthy();
   });
 
-  it("fills the ground with --panel2 before anything else", () => {
+  it("fills the ground with the resolved --panel2 before anything else", () => {
     render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
     const fillStyles = tokenSets("fillStyle");
-    expect(fillStyles[0]).toBe("var(--panel2)");
+    expect(fillStyles[0]).toBe(TOKENS["--panel2"]);
     const firstFillRectIndex = fake.calls.findIndex((c) => c.kind === "call" && c.name === "fillRect");
     const firstStrokeIndex = fake.calls.findIndex((c) => c.kind === "call" && c.name === "stroke");
     expect(firstFillRectIndex).toBeGreaterThanOrEqual(0);
@@ -2294,20 +2474,20 @@ describe("SigmaGraph, a full render", () => {
 
   it("fills the CFG band with --turq-strong and strokes its two edges in the same colour", () => {
     render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
-    expect(tokenSets("fillStyle")).toContain("var(--turq-strong)");
-    expect(tokenSets("strokeStyle")).toContain("var(--turq-strong)");
+    expect(tokenSets("fillStyle")).toContain(TOKENS["--turq-strong"]);
+    expect(tokenSets("strokeStyle")).toContain(TOKENS["--turq-strong"]);
   });
 
   it("strokes the sigma curve in --text and the progress curve in --turq-strong, dashed", () => {
     render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
-    expect(tokenSets("strokeStyle")).toContain("var(--text)");
+    expect(tokenSets("strokeStyle")).toContain(TOKENS["--text"]);
     const dashCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "setLineDash");
     expect(dashCalls.length).toBeGreaterThan(0);
   });
 
   it("draws the tick marks and both labels in --text-dim", () => {
     render(SigmaGraph, { props: { input: input(), note: null, pending: false, error: null } });
-    expect(tokenSets("fillStyle")).toContain("var(--text-dim)");
+    expect(tokenSets("fillStyle")).toContain(TOKENS["--text-dim"]);
     const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
     expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "sigma + progress")).toBe(true);
     expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "4")).toBe(true);
@@ -2338,8 +2518,8 @@ describe("SigmaGraph with an active LatCH slot", () => {
       },
     });
     const fillStyles = tokenSets("fillStyle");
-    expect(fillStyles).toContain("var(--slot1)");
-    expect(fillStyles).toContain("var(--slot2)");
+    expect(fillStyles).toContain(TOKENS["--slot1"]);
+    expect(fillStyles).toContain(TOKENS["--slot2"]);
   });
 });
 
@@ -2348,14 +2528,40 @@ describe("SigmaGraph, rescale line", () => {
     render(SigmaGraph, {
       props: { input: input({ scalePhi: 0.3 }), note: null, pending: false, error: null },
     });
-    expect(tokenSets("strokeStyle")).toContain("var(--warm)");
+    expect(tokenSets("strokeStyle")).toContain(TOKENS["--warm"]);
   });
 
   it("draws no rescale line when scale_phi is 0", () => {
     render(SigmaGraph, {
       props: { input: input({ scalePhi: 0 }), note: null, pending: false, error: null },
     });
-    expect(tokenSets("strokeStyle")).not.toContain("var(--warm)");
+    expect(tokenSets("strokeStyle")).not.toContain(TOKENS["--warm"]);
+  });
+});
+
+describe("SigmaGraph strokes Task 6's geometry, not its own", () => {
+  it("draws the sigma curve through sigmaGraphGeometry's own first and last sigmaPath points", () => {
+    const inp = input();
+    render(SigmaGraph, { props: { input: inp, note: null, pending: false, error: null } });
+    // Same input the component was handed, so a component that strokes an empty path, or
+    // strokes the progress curve where the sigma curve belongs, cannot pass this.
+    const g = sigmaGraphGeometry(inp);
+    const first = g.sigmaPath[0];
+    const last = g.sigmaPath[g.sigmaPath.length - 1];
+    const path = pathStrokedIn(TOKENS["--text"]);
+    expect(path.length).toBe(g.sigmaPath.length); // the opening moveTo plus one lineTo each
+    expect(path[0]).toEqual([first.x, first.y]); // the moveTo that opens the path
+    expect(argsOf("lineTo")).toContainEqual([last.x, last.y]);
+    expect(path[path.length - 1]).toEqual([last.x, last.y]);
+  });
+
+  it("fills the CFG band at exactly the rectangle sigmaGraphGeometry computed", () => {
+    const inp = input({ cfgLo: 0.5, cfgHi: 0.9 });
+    render(SigmaGraph, { props: { input: inp, note: null, pending: false, error: null } });
+    const g = sigmaGraphGeometry(inp);
+    expect(argsOf("fillRect")).toContainEqual([
+      g.cfgBand.x0, 0, g.cfgBand.x1 - g.cfgBand.x0, g.plotHeight,
+    ]);
   });
 });
 
@@ -2369,29 +2575,33 @@ describe("SigmaGraph, pending dims the curve", () => {
 });
 
 describe("SigmaGraph, note and error", () => {
-  it("renders the note text when there is no error", () => {
-    render(SigmaGraph, {
+  // Both are DOM siblings of the canvas, never fillText: Task 10 looks the note up with
+  // Testing Library, and text painted into a canvas is invisible to every DOM query there is.
+  it("renders the note as a DOM sibling of the canvas when there is no error", () => {
+    const { container, getByText } = render(SigmaGraph, {
       props: { input: input(), note: "schedule shape is charted from M3 onward", pending: false, error: null },
     });
-    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
-    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "schedule shape is charted from M3 onward")).toBe(true);
+    expect(getByText("schedule shape is charted from M3 onward")).toBeTruthy();
+    expect(container.querySelector("[data-graph-note]")?.textContent)
+      .toBe("schedule shape is charted from M3 onward");
+    expect(container.querySelector("[data-graph-error]")).toBeNull();
   });
 
-  it("renders the error text instead of the note when both are set", () => {
-    render(SigmaGraph, {
+  it("renders the error instead of the note when both are set", () => {
+    const { container } = render(SigmaGraph, {
       props: { input: input(), note: "a note", pending: false, error: "schedule is not non-increasing" },
     });
-    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
-    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "schedule is not non-increasing")).toBe(true);
-    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "a note")).toBe(false);
+    expect(container.querySelector("[data-graph-error]")?.textContent)
+      .toBe("schedule is not non-increasing");
+    expect(container.querySelector("[data-graph-note]")).toBeNull();
   });
 
   it("renders only the background and the note when input is null", () => {
-    render(SigmaGraph, {
+    const { container } = render(SigmaGraph, {
       props: { input: null, note: "computing schedule…", pending: true, error: null },
     });
-    const textCalls = fake.calls.filter((c) => c.kind === "call" && c.name === "fillText");
-    expect(textCalls.some((c) => (c as { args: unknown[] }).args[0] === "computing schedule…")).toBe(true);
+    expect(container.querySelector("[data-graph-note]")?.textContent).toBe("computing schedule…");
+    expect(container.querySelector('canvas[data-canvas="sigma"]')).toBeTruthy();
     expect(fake.calls.some((c) => c.kind === "call" && c.name === "stroke")).toBe(false);
   });
 });
@@ -2425,7 +2635,19 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
 
   let canvas: HTMLCanvasElement | undefined = $state();
 
-  const SLOT_TOKENS = ["--slot1", "--slot2"] as const;
+  /**
+   * One token read, with a REQUIRED fallback. Measured against real jsdom (the probe in
+   * docs/latent-forge/M4_CRITIC_FINDINGS.md): an undefined custom property returns `""`, and
+   * `ctx.fillStyle = ""` is a SILENT no-op — the context keeps whatever colour it last held and
+   * nothing anywhere reports a problem. In the shipped app tokens.css is loaded and no fallback
+   * ever fires; in a bare render (a test, a thumbnail, a stylesheet that failed to load) the
+   * difference is between a readable graph and one painted entirely in the last colour used.
+   * The two slot fallbacks are spec 5.3's own literals; the rest are plain DARK-ish stand-ins.
+   */
+  function token(el: Element, name: string, fallback: string): string {
+    const v = getComputedStyle(el).getPropertyValue(name).trim();
+    return v === "" ? fallback : v;
+  }
 
   function draw(): void {
     if (!canvas) return;
@@ -2439,30 +2661,36 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
     canvas.height = Math.max(1, Math.round(cssH * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+    // Resolved once per frame, never cached across frames -- a theme switch must be picked up
+    // by the next draw without this component knowing a switch happened (Global Constraints).
+    const c = {
+      panel2: token(canvas, "--panel2", "oklch(18% 0.01 250)"),
+      turq: token(canvas, "--turq-strong", "oklch(72% 0.13 190)"),
+      warm: token(canvas, "--warm", "oklch(75% 0.14 65)"),
+      textDim: token(canvas, "--text-dim", "oklch(62% 0.01 250)"),
+      text: token(canvas, "--text", "oklch(92% 0.01 250)"),
+      slots: [
+        token(canvas, "--slot1", "oklch(72% 0.15 75)"),
+        token(canvas, "--slot2", "oklch(62% 0.14 330)"),
+      ] as const,
+    };
+
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "var(--panel2)";
+    ctx.fillStyle = c.panel2;
     ctx.fillRect(0, 0, cssW, cssH);
 
-    if (error !== null) {
-      ctx.fillStyle = "var(--text-dim)";
-      ctx.fillText(error, PAD, cssH / 2);
-      return;
-    }
-    if (input === null || input.sigmas.length === 0) {
-      if (note !== null) {
-        ctx.fillStyle = "var(--text-dim)";
-        ctx.fillText(note, PAD, cssH / 2);
-      }
-      return;
-    }
+    // `note` and `error` are DOM siblings below, not fillText: a canvas is opaque to every DOM
+    // query, and Task 10 asserts the note's text with Testing Library.
+    if (error !== null) return;
+    if (input === null || input.sigmas.length === 0) return;
 
     const g = sigmaGraphGeometry(input);
 
     ctx.globalAlpha = 0.16;
-    ctx.fillStyle = "var(--turq-strong)";
+    ctx.fillStyle = c.turq;
     ctx.fillRect(g.cfgBand.x0, 0, g.cfgBand.x1 - g.cfgBand.x0, g.plotHeight);
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = "var(--turq-strong)";
+    ctx.strokeStyle = c.turq;
     ctx.lineWidth = 1;
     for (const x of [g.cfgBand.x0, g.cfgBand.x1]) {
       ctx.beginPath();
@@ -2472,12 +2700,12 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
     }
 
     for (const band of g.slotBands) {
-      const token = SLOT_TOKENS[band.index];
+      const slotColor = c.slots[band.index];
       ctx.globalAlpha = 0.26;
-      ctx.fillStyle = `var(${token})`;
+      ctx.fillStyle = slotColor;
       ctx.fillRect(band.x0, 0, band.w, g.plotHeight);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = `var(${token})`;
+      ctx.fillStyle = slotColor;
       ctx.fillRect(band.x0, band.laneY, band.w, LANE_H);
       if (band.hatch) {
         ctx.save();
@@ -2485,7 +2713,7 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
         ctx.rect(band.hatch.x0, band.laneY, band.hatch.w, LANE_H);
         ctx.clip();
         ctx.globalAlpha = 0.85;
-        ctx.strokeStyle = "var(--panel2)";
+        ctx.strokeStyle = c.panel2;
         for (let x = band.hatch.x0 - LANE_H; x < band.hatch.x0 + band.hatch.w + LANE_H; x += 3) {
           ctx.beginPath();
           ctx.moveTo(x, band.laneY + LANE_H);
@@ -2499,7 +2727,7 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
 
     if (g.rescaleY !== null) {
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = "var(--warm)";
+      ctx.strokeStyle = c.warm;
       ctx.setLineDash([2, 3]);
       ctx.beginPath();
       ctx.moveTo(0, g.rescaleY);
@@ -2511,21 +2739,21 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
     // sigma + progress dim together while a fresher response is on the way (pending), so the
     // curve on screen visibly admits it might be stale without disappearing outright.
     ctx.globalAlpha = pending ? 0.4 : 1;
-    ctx.strokeStyle = "var(--turq-strong)";
+    ctx.strokeStyle = c.turq;
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
     g.progressPath.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.strokeStyle = "var(--text)";
+    ctx.strokeStyle = c.text;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     g.sigmaPath.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    ctx.strokeStyle = "var(--text-dim)";
+    ctx.strokeStyle = c.textDim;
     ctx.lineWidth = 1;
     for (const t of g.ticks) {
       ctx.beginPath();
@@ -2534,17 +2762,12 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
       ctx.stroke();
     }
 
-    ctx.fillStyle = "var(--text-dim)";
+    ctx.fillStyle = c.textDim;
     const label = "sigma + progress";
     ctx.fillText(label, PAD, g.plotHeight - 4);
     const stepText = g.stepLabel;
     const stepW = ctx.measureText(stepText).width;
     ctx.fillText(stepText, cssW - stepW - PAD, g.plotHeight - 4);
-
-    if (note !== null) {
-      ctx.fillStyle = "var(--text-dim)";
-      ctx.fillText(note, PAD, g.plotHeight + LANE_H);
-    }
   }
 
   $effect(() => {
@@ -2565,6 +2788,11 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
   width={input?.width ?? 320}
   height={input?.height ?? 180}
 ></canvas>
+{#if error !== null}
+  <span class="err" data-graph-error>{error}</span>
+{:else if note !== null}
+  <span class="note" data-graph-note>{note}</span>
+{/if}
 
 <style>
   .sigma-graph {
@@ -2574,34 +2802,29 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
     box-sizing: border-box;
     border: 1px solid var(--border);
   }
+  .err,
+  .note {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .err {
+    color: var(--warm);
+  }
 </style>
 ```
 
-Note the colour values are literal CSS `var(--token)` strings assigned to `fillStyle` /
-`strokeStyle`, per Global Constraints — for a real `CanvasRenderingContext2D`, `fillStyle` accepts
-only a resolved colour string, not `var(...)`, so this draft's remaining gap (folded into Step 3's
-real implementation rather than left as a TODO) resolves each token through
-`getComputedStyle(canvas).getPropertyValue(token).trim()` immediately after `canvas.width` is set,
-caching nothing across frames as the Global Constraints require. The test fakes accept any string
-`fillStyle`/`strokeStyle` value, including an unresolved `var(...)`, so the tests above pass
-against either form; the real browser needs the resolved one. Concretely, replace every literal
-`"var(--x)"` assignment above with `token("--x")` where:
+`LANE_H` is still imported for the slot lanes' own height; `PAD` for the two labels. Nothing in
+this component reads a colour any way other than `token()` — the earlier draft's literal
+`"var(--x)"` form is gone, because a real `CanvasRenderingContext2D` silently ignores an
+unparseable `fillStyle` and would have shipped a graph that draws in whatever colour it held last.
 
-```ts
-function token(name: string): string {
-  return getComputedStyle(canvas!).getPropertyValue(name).trim();
-}
-```
-
-called after `canvas.width`/`canvas.height` are set. This keeps the recorded calls in the test
-identical in shape (a `fillStyle`/`strokeStyle` set, once per token, in the same order) while
-making the shipped component spec-correct; no test above asserts the literal string `"var(--x)"`
-itself — each asserts `toContain("var(--x)")`, so use that same literal as `getComputedStyle`'s
-return value in the tests' own canvas stub (jsdom resolves inline `style.setProperty("--panel2",
-"var(--panel2)")` back out as `"var(--panel2)"`, a no-op round trip used only to keep the fixture
-trivial) or, more simply, replace the `toContain("var(--x)")` assertions with the resolved value
-set on the canvas element's own inline style before each render — either is consistent with
-"resolve through `getComputedStyle`, once per frame."
+**A warning for whoever next touches the test fixture:** the custom properties must be set
+**inline**, on the canvas or an ancestor (`el.style.setProperty("--panel2", …)`). A `<style>`
+block does **not** round-trip through jsdom: its CSS parser returns `oklch(90%0.012 240)` for
+`oklch(90% 0.012 240)`, eating the space after the percent, so an exact-string assertion fails for
+a reason that has nothing to do with this component. That was measured, not guessed — the table is
+in `docs/latent-forge/M4_CRITIC_FINDINGS.md`. Do not "fix" the fixture back into a stylesheet.
 
 - [ ] **Step 4: Run the tests — they must pass**
 
@@ -2609,7 +2832,7 @@ set on the canvas element's own inline style before each render — either is co
 cd latent-forge && npx vitest run src/ui/prompt/__tests__/SigmaGraph.test.ts && npm run check
 ```
 
-Expected: `Tests  13 passed (13)` and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Tests  15 passed (15)` and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -2638,8 +2861,15 @@ does for a fresh generate.
 - Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `RANGES: Record<"rho"|"sigma_min"|"sigma_max"|"lam_min"|"lam_max"|"plateaus"|"tilt"|"steps"|"cfg_scale"|"scale_phi"|"length_sec"|"seed"|"cfg_interval"|"noise"|"detune_cents", {min:number; max:number; int?:boolean}>` — this task reads exactly `RANGES.noise`, which is `{ min: 0, max: 1 }`.
 - Consumes from `src/lib/actions/dragScale.ts` (M1 T8): the action `dragScale(node, options)`, used as `use:dragScale={{ min, max, int, value, onValue }}` where `DragScaleOptions = { min: number; max: number; int?: boolean; value: number; onValue: (v: number) => void }`.
 - Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, of which this task uses the ids `targetBar`, `promptPreset`, `a2aToggle`, `a2aNoise`, `opSelect` — all five already exist in the frozen, 87-entry `HELP` table (`opSelect` is one of the seven "new controls the drawing did not have").
-- Produces, from `latent-forge/src/ui/prompt/targetBar.ts`: `type TargetTag = "GENERATE" | "CLIP" | "A2A" | "INPAINT"`; `targetTag(t: Target, a2aOn: boolean): TargetTag`; `targetTagColorVar(tag: TargetTag, lane: 0|1|2|3): string` (`GENERATE` → `"--turq-strong"`, `CLIP` → `` `--lane${lane+1}` ``, `A2A` and `INPAINT` → `"--purple-strong"`); `CLIP_OPS: readonly ["generate", "decode", "longform", "bend"]`; `opDisabledReason(op: string, clipHasLatent: boolean): string | null`.
+- Produces, from `latent-forge/src/ui/prompt/targetBar.ts`: `type TargetTag = "GENERATE" | "CLIP" | "A2A" | "INPAINT"`; `targetTag(t: Target, a2aOn: boolean): TargetTag`; `targetTagColorVar(tag: TargetTag, lane: 0|1|2|3): string` (`GENERATE` → `"--turq-strong"`, `CLIP` → `` `--lane${lane+1}` ``, `A2A` and `INPAINT` → `"--purple-strong"`); `CLIP_OPS: readonly ["generate", "decode", "longform", "bend"]`.
 - Produces, from `latent-forge/src/ui/prompt/TargetBar.svelte`: the component, props `{ target: Target; clipName: string | null; lane: 0|1|2|3; a2a: {on: boolean; noise: number} | null; clipHasLatent: boolean; onA2AToggle: (on: boolean) => void; onNoise: (v: number) => void; op: string | null; onOp: (op: string) => void }`. It renders the tag, the target name, a disabled SETTINGS PRESET select holding a single `—` option (Task 12 of this milestone's authorship, not this task, fills it — see the M4 plan's "After both return" step 2), and, only when `target.kind === "clip"`, the A2A toggle, the NOISE drag field over `RANGES.noise`, and the OP select. **This component owns the bar's markup and nothing else**: M5 supplies `clipName`, `a2a`, `clipHasLatent` and the two callbacks from whatever store ends up owning clips.
+
+**No op in the select is ever disabled here.** The only op-related disabling the spec defines
+belongs to the `▸ RENDER` control — §7.1 greys it with `turn A2A on or choose an op`, and §7.3 says
+staleness "is informational (badge) and no longer blocks anything" — and that control is M9's, not
+this milestone's. An earlier draft invented a per-option latent gate that appears in neither
+section; it is gone. `clipHasLatent` stays in the props because M5 supplies it and M9's RENDER
+control is what will read it, but nothing in this component consumes it today.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2649,7 +2879,7 @@ does for a fresh generate.
 import { describe, expect, it } from "vitest";
 import type { Target } from "../../../lib/forge/types";
 import {
-  CLIP_OPS, opDisabledReason, targetTag, targetTagColorVar,
+  CLIP_OPS, targetTag, targetTagColorVar,
 } from "../targetBar";
 
 const NONE: Target = { kind: "none" };
@@ -2691,32 +2921,6 @@ describe("targetTagColorVar (spec 4.5)", () => {
 describe("CLIP_OPS (spec 10 X11)", () => {
   it("is generate, decode, longform, bend in that order", () => {
     expect(CLIP_OPS).toEqual(["generate", "decode", "longform", "bend"]);
-  });
-});
-
-describe("opDisabledReason", () => {
-  it("never disables generate — it does not touch the clip's own latent", () => {
-    expect(opDisabledReason("generate", false)).toBeNull();
-    expect(opDisabledReason("generate", true)).toBeNull();
-  });
-
-  it("disables decode, longform and bend without a latent, and says why", () => {
-    expect(opDisabledReason("decode", false))
-      .toBe("this clip has no encoded latent yet — commit or run A2A first");
-    expect(opDisabledReason("longform", false))
-      .toBe("this clip has no encoded latent yet — commit or run A2A first");
-    expect(opDisabledReason("bend", false))
-      .toBe("this clip has no encoded latent yet — commit or run A2A first");
-  });
-
-  it("allows them once the clip has a latent", () => {
-    expect(opDisabledReason("decode", true)).toBeNull();
-    expect(opDisabledReason("longform", true)).toBeNull();
-    expect(opDisabledReason("bend", true)).toBeNull();
-  });
-
-  it("rejects an op outside CLIP_OPS", () => {
-    expect(opDisabledReason("mix", true)).toBe('unknown op "mix"');
   });
 });
 ```
@@ -2829,7 +3033,7 @@ describe("TargetBar on a clip", () => {
     expect(onA2AToggle).toHaveBeenCalledWith(true);
   });
 
-  it("disables decode, longform and bend in the OP select without a latent, and shows the note", () => {
+  it("leaves every op selectable whatever clipHasLatent says — the spec's only op gate is RENDER's (M9)", () => {
     const { getByTestId } = render(TargetBar, {
       props: {
         target: { kind: "clip", id: "c1" }, clipName: "kick loop", lane: 0 as const,
@@ -2838,26 +3042,9 @@ describe("TargetBar on a clip", () => {
       },
     });
     const select = getByTestId("target-op") as HTMLSelectElement;
-    const byValue = (v: string) => Array.from(select.options).find((o) => o.value === v)!;
-    expect(byValue("generate").disabled).toBe(false);
-    expect(byValue("decode").disabled).toBe(true);
-    expect(byValue("longform").disabled).toBe(true);
-    expect(byValue("bend").disabled).toBe(true);
-    expect(getByTestId("target-op-note").textContent)
-      .toBe("this clip has no encoded latent yet — commit or run A2A first");
-  });
-
-  it("enables every op once the clip has a latent, and shows no note", () => {
-    const { getByTestId, queryByTestId } = render(TargetBar, {
-      props: {
-        target: { kind: "clip", id: "c1" }, clipName: "kick loop", lane: 0 as const,
-        a2a: { on: false, noise: 0.4 }, clipHasLatent: true,
-        onA2AToggle: noop, onNoise: noop, op: "decode", onOp: noop,
-      },
-    });
-    const select = getByTestId("target-op") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value))
+      .toEqual(["generate", "decode", "longform", "bend"]);
     expect(Array.from(select.options).every((o) => !o.disabled)).toBe(true);
-    expect(queryByTestId("target-op-note")).toBeNull();
   });
 
   it("changing the OP select calls onOp with the chosen value", async () => {
@@ -2913,23 +3100,14 @@ export function targetTagColorVar(tag: TargetTag, lane: 0 | 1 | 2 | 3): string {
   return "--purple-strong"; // A2A and INPAINT
 }
 
-/** Spec 10 X11 — the ops the existing app already had, kept reachable here. */
-export const CLIP_OPS = ["generate", "decode", "longform", "bend"] as const;
-
 /**
- * `generate` is a fresh render that happens to target this clip: it never
- * touches the clip's own latent, so it is never disabled here. The other three
- * act ON that latent (decode plays it back, longform continues it, bend runs
- * latent operations on it), and a clip with no latent yet (spec 7.3's
- * `latentState`) has nothing for them to act on until it has been through a
- * commit or an A2A pass.
+ * Spec 10 X11 -- the ops the existing app already had, kept reachable here. All four are
+ * always selectable: the only op-related disabling the spec defines belongs to the RENDER
+ * control (7.1, `turn A2A on or choose an op`), which is M9's, and 7.3 says staleness "is
+ * informational (badge) and no longer blocks anything". A per-option latent gate here would
+ * be a rule this app has invented for itself.
  */
-export function opDisabledReason(op: string, clipHasLatent: boolean): string | null {
-  if (!(CLIP_OPS as readonly string[]).includes(op)) return `unknown op "${op}"`;
-  if (op === "generate") return null;
-  if (!clipHasLatent) return "this clip has no encoded latent yet — commit or run A2A first";
-  return null;
-}
+export const CLIP_OPS = ["generate", "decode", "longform", "bend"] as const;
 ```
 
 `latent-forge/src/ui/prompt/TargetBar.svelte`:
@@ -2946,13 +3124,16 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
   import type { Target } from "../../lib/forge/types";
   import { HELP } from "../../lib/help/strings";
   import { RANGES } from "../../lib/sampling/scheduleRules";
-  import { CLIP_OPS, opDisabledReason, targetTag, targetTagColorVar } from "./targetBar";
+  import { CLIP_OPS, targetTag, targetTagColorVar } from "./targetBar";
 
   interface Props {
     target: Target;
     clipName: string | null;
     lane: 0 | 1 | 2 | 3;
     a2a: { on: boolean; noise: number } | null;
+    /** Declared so callers (M5, and M9's RENDER control) have somewhere to put it. Nothing in
+     *  this component reads it: the only op-related disabling the spec defines is the RENDER
+     *  control's (7.1), and that control is M9's. */
     clipHasLatent: boolean;
     onA2AToggle: (on: boolean) => void;
     onNoise: (v: number) => void;
@@ -2960,7 +3141,7 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
     onOp: (op: string) => void;
   }
   let {
-    target, clipName, lane, a2a, clipHasLatent, onA2AToggle, onNoise, op, onOp,
+    target, clipName, lane, a2a, onA2AToggle, onNoise, op, onOp,
   }: Props = $props();
 
   const a2aOn = $derived(a2a?.on ?? false);
@@ -2970,7 +3151,6 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
   const name = $derived(
     target.kind === "none" ? "session" : target.kind === "clip" ? (clipName ?? target.id) : target.key,
   );
-  const opNote = $derived(op !== null ? opDisabledReason(op, clipHasLatent) : null);
 
   function handleOp(e: Event): void {
     onOp((e.target as HTMLSelectElement).value);
@@ -3024,12 +3204,9 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
         onchange={handleOp}
       >
         {#each CLIP_OPS as o (o)}
-          <option value={o} disabled={opDisabledReason(o, clipHasLatent) !== null}>{o}</option>
+          <option value={o}>{o}</option>
         {/each}
       </select>
-      {#if opNote !== null}
-        <span class="op-note" data-testid="target-op-note">{opNote}</span>
-      {/if}
     </div>
   {/if}
 </div>
@@ -3107,11 +3284,6 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
     font-size: 10px;
     padding: 2px 4px;
   }
-  .op-note {
-    font-size: 10px;
-    color: var(--warm);
-    flex-basis: 100%;
-  }
 </style>
 ```
 
@@ -3121,7 +3293,7 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
 cd latent-forge && npx vitest run src/ui/prompt/__tests__/targetBar.test.ts src/ui/prompt/__tests__/TargetBar.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  21 passed (21)` (11 in `targetBar.test.ts`, 10 in
+Expected: `Test Files  2 passed (2)` / `Tests  16 passed (16)` (7 in `targetBar.test.ts`, 9 in
 `TargetBar.component.test.ts`), and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
@@ -3888,7 +4060,7 @@ reference) never reruns when Task 11's ADVANCED SAMPLING module edits ρ or TILT
 - Consumes from `src/lib/sampling/scheduleClient.svelte.ts` (M4 T4) — **the real file is
   `scheduleClient.svelte.ts`, imported as `"../../lib/sampling/scheduleClient.svelte"`** (the
   milestone's File Structure table still says `scheduleClient.ts`; Task 4 itself flagged that
-  table as wrong): `SCHEDULE_DEBOUNCE_MS = 150`, `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`, `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`, `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`.
+  table as wrong): `SCHEDULE_DEBOUNCE_MS = 150`, `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`, `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`, `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`; and **the singleton `scheduleClient`**, which is what this task uses — not a `new ScheduleClient()` of its own. **`SigmaColumn` is the one place in the milestone that calls `request()`**: it is the component that knows the target's steps, the tab's LENGTH and the A2A sigma max. Task 11's ADVANCED SAMPLING only ever *reads* `scheduleClient.result?.sigmas`, which is how its CFG interval STEPS unit ends up counting steps on the same array the graph drew. Task 4's client calls `/schedule` itself with `fetch` (`forgeApi.schedule` is not used anywhere in M4 — see Normative names), so a test that wants to observe or fake a request stubs `globalThis.fetch`, never `forgeApi`.
 - Consumes from `src/lib/sampling/sigmaGraph.ts` (M4 T6): `interface SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`.
 - Consumes from `src/ui/prompt/SigmaGraph.svelte` (M4 T7): the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`. It falls back to measuring its own canvas only when `input` itself is `null`; once an `input` object is given, `input.width`/`input.height` are what it uses, so this task supplies fixed nominal values (see the WHY note in Step 3) rather than trying to measure a canvas it does not own.
 - Consumes from `src/ui/prompt/TargetBar.svelte` (M4 T8): the component, props `{ target: Target; clipName: string | null; lane: 0|1|2|3; a2a: {on: boolean; noise: number} | null; clipHasLatent: boolean; onA2AToggle: (on: boolean) => void; onNoise: (v: number) => void; op: string | null; onOp: (op: string) => void }`.
@@ -3940,9 +4112,9 @@ describe("sigmaNote picks the first applicable message", () => {
   });
 
   it("shows the stale-shape note when there is no error", () => {
-    // A non-"model" shape, because that is the only state in which the client's own
-    // `staleShape` can be true -- passing the default spec here would assert against a
-    // combination the caller can never hand this function.
+    // A spec that differs from SCHEDULE_DEFAULT, because that is the only state in which the
+    // client's own `staleShape` can be true -- passing the untouched default here would assert
+    // against a combination the caller can never hand this function.
     expect(sigmaNote(null, true, spec({ shape: "geometric" }), "euler")).toBe(STALE_SHAPE_NOTE);
     expect(STALE_SHAPE_NOTE).toBe("schedule shape is charted from M3 onward");
   });
@@ -3979,13 +4151,13 @@ same case-collision reason Task 8 named its own suite that way):
 ```ts
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/svelte";
+import { tick } from "svelte";
 import {
   afterEach, beforeEach, describe, expect, it, vi,
 } from "vitest";
-import { forgeApi } from "../../../lib/forge/api";
 import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
 import type { RenderSettings, Target } from "../../../lib/forge/types";
-import { SCHEDULE_DEBOUNCE_MS } from "../../../lib/sampling/scheduleClient.svelte";
+import { SCHEDULE_DEBOUNCE_MS, scheduleClient } from "../../../lib/sampling/scheduleClient.svelte";
 import { settings } from "../../../lib/stores/settings.svelte";
 import SigmaColumn from "../SigmaColumn.svelte";
 
@@ -3997,16 +4169,33 @@ function fakeSource() {
 }
 
 let src: ReturnType<typeof fakeSource>;
-let scheduleMock: ReturnType<typeof vi.fn>;
+let fetchMock: ReturnType<typeof vi.fn>;
+
+// Task 4's client calls /schedule itself, so the seam is `fetch`. `forgeApi` is not involved.
+function scheduleResponse(steps: number): Response {
+  return new Response(
+    JSON.stringify({
+      ok: true, sigmas: [1, 0.5, 0], steps, duration: 30, sigma_max: 1.0,
+      dist_shift: "model", latent_len: 322,
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
+
+function sentBody(i: number): Record<string, unknown> {
+  const [, init] = fetchMock.mock.calls[i] as [string, RequestInit];
+  return JSON.parse(String(init.body)) as Record<string, unknown>;
+}
 
 beforeEach(() => {
   vi.useFakeTimers();
   src = fakeSource();
   settings.attach(src);
-  scheduleMock = vi.spyOn(forgeApi, "schedule").mockImplementation(async () => ({
-    sigmas: [1, 0.5, 0], steps: src.clips.c1.steps, duration: 30, sigma_max: 1.0,
-    dist_shift: "model", latent_len: 322,
-  })) as unknown as ReturnType<typeof vi.fn>;
+  fetchMock = vi.fn(async () => scheduleResponse(src.clips.c1.steps));
+  vi.stubGlobal("fetch", fetchMock);
+  // `scheduleClient` is a module singleton (Task 4), so its $state survives an unmount.
+  scheduleClient.result = null;
+  scheduleClient.error = null;
   // SigmaGraph.svelte draws to a real canvas; jsdom has no 2D context, so stub it the
   // same way Task 7's own test does, purely so mounting does not throw.
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
@@ -4018,59 +4207,67 @@ beforeEach(() => {
 afterEach(() => {
   settings.detach();
   cleanup();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
+// Every test below uses a LENGTH of its own. The client's cache is keyed on the whole request
+// and lives on the singleton, so two tests that built the same request would make the second
+// one a silent cache hit that never touches fetch at all.
 describe("SigmaColumn builds and sends the ScheduleRequest (spec 4.5 item 3, 5.3)", () => {
   it("sends the target's steps, schedule and sampler_type with the given length as duration", async () => {
     src.clips.c1.steps = 40;
     render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledWith(
-      expect.objectContaining({ steps: 40, duration: 30, sampler_type: src.clips.c1.sampler_type }),
-      expect.anything(),
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0] as [string, RequestInit])[0]).toBe("/schedule");
+    expect(sentBody(0)).toMatchObject({
+      steps: 40, duration: 30, sampler_type: src.clips.c1.sampler_type,
+    });
   });
 
   it("sends 1.0 as sigma_max for a fresh generate (a2a null)", async () => {
-    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    render(SigmaColumn, { props: { target: CLIP, length: 31, a2a: null } });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ sigma_max: 1.0 }), expect.anything());
+    expect(sentBody(0)).toMatchObject({ sigma_max: 1.0 });
   });
 
   it("sends the clip's NOISE, capped at 1, as sigma_max on an A2A target", async () => {
-    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: { on: true, noise: 0.4 } } });
+    render(SigmaColumn, { props: { target: CLIP, length: 32, a2a: { on: true, noise: 0.4 } } });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ sigma_max: 0.4 }), expect.anything());
+    expect(sentBody(0)).toMatchObject({ sigma_max: 0.4 });
   });
 
   it("sends no request at all when NOISE floors sigma max below the chartable range", async () => {
-    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: { on: true, noise: 0 } } });
+    render(SigmaColumn, { props: { target: CLIP, length: 33, a2a: { on: true, noise: 0 } } });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("re-requests with the new duration when length changes", async () => {
-    const { rerender } = render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    const { rerender } = render(SigmaColumn, { props: { target: CLIP, length: 34, a2a: null } });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    scheduleMock.mockClear();
+    fetchMock.mockClear();
     await rerender({ target: CLIP, length: 60, a2a: null });
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ duration: 60 }), expect.anything());
+    expect(sentBody(0)).toMatchObject({ duration: 60 });
   });
 
-  it("shows the client's error as the graph's note", async () => {
-    scheduleMock.mockRejectedValue(new Error("render server unreachable"));
-    const { findByText } = render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+  it("shows the client's error as the graph's note, in the DOM", async () => {
+    fetchMock.mockRejectedValue(new Error("render server unreachable"));
+    const { container } = render(SigmaColumn, { props: { target: CLIP, length: 35, a2a: null } });
+    // No findByText here: it polls on real timers, and this suite runs on fake ones.
     await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
-    expect(await findByText("render server unreachable")).toBeTruthy();
+    await tick();
+    expect(container.querySelector("[data-graph-error]")?.textContent)
+      .toBe("render server unreachable");
   });
 
   it("shows the LatCH slot legend, or an em dash when a slot is absent", () => {
     const { getByTestId } = render(SigmaColumn, {
       props: {
-        target: CLIP, length: 30, a2a: null,
+        target: CLIP, length: 36, a2a: null,
         slots: [{ head: "beat_grid", kind: "value", value: 0.5, weight: 1, start_pct: 0, end_pct: 1 }],
       },
     });
@@ -4088,20 +4285,30 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import {
   afterEach, beforeEach, describe, expect, it, vi,
 } from "vitest";
-import { forgeApi } from "../../../lib/forge/api";
 import { LENGTH_CAP_SEC } from "../../../lib/forge/defaults";
 import type { Target } from "../../../lib/forge/types";
+import { scheduleClient } from "../../../lib/sampling/scheduleClient.svelte";
 import { view } from "../../../lib/stores/view.svelte";
 import PromptSigmaTab from "../PromptSigmaTab.svelte";
 
 const NONE: Target = { kind: "none" };
 const CLIP: Target = { kind: "clip", id: "c1" };
 
+// Task 4's client calls /schedule with fetch, so that is the seam here too.
+let fetchMock: ReturnType<typeof vi.fn>;
+
 beforeEach(() => {
   vi.useFakeTimers();
-  vi.spyOn(forgeApi, "schedule").mockResolvedValue({
-    sigmas: [1, 0.5, 0], steps: 24, duration: 30, sigma_max: 1.0, dist_shift: "model", latent_len: 322,
-  });
+  fetchMock = vi.fn(async () => new Response(
+    JSON.stringify({
+      ok: true, sigmas: [1, 0.5, 0], steps: 24, duration: 30, sigma_max: 1.0,
+      dist_shift: "model", latent_len: 322,
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  ));
+  vi.stubGlobal("fetch", fetchMock);
+  scheduleClient.result = null; // a module singleton, so its $state outlives an unmount
+  scheduleClient.error = null;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     save: () => {}, restore: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {},
     stroke: () => {}, fill: () => {}, fillRect: () => {}, setTransform: () => {},
@@ -4111,6 +4318,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -4140,11 +4348,13 @@ describe("PromptSigmaTab assembles the three columns (spec 4.5)", () => {
   });
 
   it("owns LENGTH as its own state and feeds the same number to the schedule request", async () => {
-    const scheduleMock = vi.mocked(forgeApi.schedule);
     const { getByTestId } = render(PromptSigmaTab);
     await fireEvent.change(getByTestId("stage-length"), { target: { value: "77" } });
     await vi.advanceTimersByTimeAsync(200);
-    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ duration: 77 }), expect.anything());
+    const bodies = fetchMock.mock.calls.map(
+      (c) => JSON.parse(String((c as [string, RequestInit])[1].body)) as Record<string, unknown>,
+    );
+    expect(bodies).toContainEqual(expect.objectContaining({ duration: 77 }));
   });
 
   it("clamps a typed length to LENGTH_CAP_SEC", async () => {
@@ -4236,12 +4446,14 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
 ```svelte
 <script lang="ts">
   // Spec 4.5 item 3: SIGMA label, graph label, LatCH slot legend, the sigma canvas. This
-  // component owns the ONLY ScheduleClient in the milestone (Task 4) and is the one place
-  // that turns the selected target's own settings plus the tab's LENGTH into a
-  // ScheduleRequest. M4 has no lane-chain store (M7's), so `slots` arrives as a prop with a
-  // safe empty default, the same pattern Task 8's TargetBar uses for `a2a`.
+  // component is the ONLY caller of `scheduleClient.request()` in the milestone (Task 4 owns
+  // the client itself, as a singleton) and the one place that turns the selected target's own
+  // settings plus the tab's LENGTH into a ScheduleRequest -- Task 11's ADVANCED SAMPLING reads
+  // the same client's result and never requests. M4 has no lane-chain store (M7's), so `slots`
+  // arrives as a prop with a safe empty default, the same pattern Task 8's TargetBar uses for
+  // `a2a`.
   import type { LatchSlot, Target } from "../../lib/forge/types";
-  import { ScheduleClient } from "../../lib/sampling/scheduleClient.svelte";
+  import { scheduleClient } from "../../lib/sampling/scheduleClient.svelte";
   import { chartableSigmaMax, sigmaMaxFor } from "../../lib/sampling/sigmaMax";
   import type { SigmaGraphInput } from "../../lib/sampling/sigmaGraph";
   import { settings } from "../../lib/stores/settings.svelte";
@@ -4259,13 +4471,13 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
   }
   let { target, length, a2a, slots = [] }: Props = $props();
 
-  const client = new ScheduleClient();
-  // Runs once (it reads nothing reactive), so its cleanup runs exactly once, on unmount --
-  // never on every request, which would abort the client mid-debounce every time a field
-  // changes.
-  $effect(() => {
-    return () => client.dispose();
-  });
+  // No dispose() on unmount: `scheduleClient` is a module singleton shared with Task 11's
+  // ADVANCED SAMPLING, and dispose() is permanent (it sets #disposed, so every later
+  // request() is ignored). Closing the PROMPT + SIGMA tab must not leave the right-pane
+  // module reading a client that can never answer again. The client's own
+  // abort-and-supersede handles the only thing dispose() was doing here: a request left in
+  // flight is aborted the moment the next one is made.
+  const client = scheduleClient;
 
   const current = $derived(settings.current(target));
   // Reading `current.schedule` (the reference) would not rerun this when Task 11 mutates a
@@ -4472,7 +4684,7 @@ Expected: `Test Files  3 passed (3)` / `Tests  21 passed (21)` (9 in `sigmaColum
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T10: sigma column (owns the only ScheduleClient) + PROMPT + SIGMA tab assembly, LENGTH lifted here per Task 9's finding, sigma_max skips the request entirely below the chartable floor"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T10: sigma column (the only caller of the shared ScheduleClient) + PROMPT + SIGMA tab assembly, LENGTH lifted here per Task 9's finding, sigma_max skips the request entirely below the chartable floor"
 ```
 
 ---
@@ -4507,11 +4719,23 @@ in the target bar's NOISE control (Task 8); this module only displays it, from `
 - Consumes from `src/lib/sampling/samplers.ts` (M4 T2): `interface LatchState { latch_on: boolean; slots: readonly LatchSlot[] }`, `resolveSampler(objective, requested: string | null, latch: LatchState): { value: string; label: string; options: readonly string[]; disabled: boolean; forced: boolean }`.
 - Consumes from `src/lib/sampling/sigmaMax.ts` (M4 T3): `interface A2AState { on: boolean; noise: number }`, `sigmaMaxFor(a2a: A2AState | null): number`.
 - Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `SCHEDULE_SHAPES: readonly ["model","logsnr","geometric","linear","log","exponential","cosine"]`, `RANGES` (keys used here: `rho, sigma_min, lam_min, lam_max, plateaus, tilt, scale_phi, cfg_interval`, each `{min, max, int?}`), `interface ScheduleIssue { field: string; severity: "error" | "warning"; message: string }`, `validateSchedule(spec: ScheduleSpec, sigmaMax: number, samplerType: string | null): ScheduleIssue[]`.
-- Consumes from `src/lib/sampling/cfgInterval.ts` (M4 T5): `type CfgUnit = "progress" | "steps"`, `formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string`. This module has no live sigma array of its own (Task 10's `SigmaColumn` owns the milestone's only `ScheduleClient`, and sharing it across the bottom pane and this right-pane module would need a store neither this milestone nor the spec describes), so every call here passes `sigmas: []` — Task 5 covers the empty-array case explicitly so this never NaNs, and the STEPS unit's number is honestly degraded until a later milestone shares the schedule result. See this hand-off's Open Questions.
+- Consumes from `src/lib/sampling/cfgInterval.ts` (M4 T5): `type CfgUnit = "progress" | "steps"`, `formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string`, `stepAtProgress(sigmas: readonly number[], p: number): number`, `progressAtStep(sigmas: readonly number[], step: number): number`.
+- Consumes from `src/lib/sampling/scheduleClient.svelte.ts` (M4 T4), imported as `"../../lib/sampling/scheduleClient.svelte"`: the singleton `scheduleClient`, read as `scheduleClient.result?.sigmas ?? []` and `scheduleClient.result?.steps`. **This module never calls `request()`** — Task 10's `SigmaColumn` owns the requesting, because it is the component that knows the target's steps, the tab's LENGTH and the A2A sigma max. Reading the shared client is what makes the UNIT toggle a live control: §5.3 says the step unit is "the step index where progress first reaches p, computed from the server-returned sigma array", so an earlier draft's `formatCfgBound([], p, unit)` rendered `"0"` for every bound forever and the toggle did nothing at all. With no schedule yet the toggle is **disabled**, with a title saying why, rather than silently showing a step index of 0 — a number that looks like an answer is worse than a control that says it has none.
 - Consumes from `src/lib/actions/dragScale.ts` (M1 T8): `use:dragScale={{ min, max, int, value, onValue }}`.
 - Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, ids `sampler`, `scheduleShape`, `scheduleRho`, `sigmaMin`, `sigmaMax`, `lamMin`, `lamMax`, `stepped`, `plateaus`, `tilt`, `cfgLo`, `cfgHi`, `cfgUnit`, `rescale` — **all fourteen verified against M1 T14's frozen table** (entered there from the drawing's own `data-help` strings at v3:576-595, the same controls). Three of them were guessed wrong in this task's first draft and are corrected here: the table spells them `scheduleShape`, `scheduleRho` and `rescale`, **not** `shape`, `sigmaRho` or `cfgRescale`, and those three ids do not exist at all.
 - Produces, from `latent-forge/src/ui/modules/advancedSampling.ts`: `shapeUsesLambda(shape: string): boolean`, `fieldIssue(issues: readonly ScheduleIssue[], field: string): { severity: "error" | "warning"; message: string } | null`.
 - Produces, from `latent-forge/src/ui/modules/AdvancedSampling.svelte`: the component, props `{ a2a?: {on: boolean; noise: number} | null; latch?: LatchState }`, both defaulted (`null`, `{latch_on: false, slots: []}`) so `<AdvancedSampling />` keeps working unmodified from M1 T12's `RightPaneModules.svelte` until M5 and M7 exist to wire them.
+
+**The CFG interval's two units, stated once so nothing here re-derives them.** The stored value is
+**always** progress — §5.3 and this plan's Normative block both say so, and the step unit is a
+display conversion, never a second stored value. So in the PROGRESS unit the field shows
+`formatCfgBound(sigmas, p, "progress")` and writes `Number(value)` straight through, over
+`RANGES.cfg_interval`; in the STEPS unit it shows `stepAtProgress(sigmas, p)` and converts **back**
+with `progressAtStep(sigmas, k)` before writing, over `{min: 0, max: steps, int: true}` per §5.1's
+`CFG LO/HI (steps unit) | 0–steps | yes` row. An earlier draft did neither — it displayed a step
+index and then wrote `Number(value)` into `cfg_interval_progress`, so typing `3` in the STEPS unit
+stored progress 3.0, three times past the top of the range — and kept `RANGES.cfg_interval` as the
+drag range in both units.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4567,18 +4791,42 @@ describe("fieldIssue", () => {
 ```ts
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BASE_DEFAULTS, SCHEDULE_DEFAULT, cloneRenderSettings } from "../../../lib/forge/defaults";
 import type { RenderSettings, Target } from "../../../lib/forge/types";
+import { progressAtStep } from "../../../lib/sampling/cfgInterval";
+import { scheduleClient } from "../../../lib/sampling/scheduleClient.svelte";
 import { settings } from "../../../lib/stores/settings.svelte";
 import { view } from "../../../lib/stores/view.svelte";
 import AdvancedSampling from "../AdvancedSampling.svelte";
 
 const CLIP: Target = { kind: "clip", id: "c1" };
 
+// sigma0 = 1, four steps: progress at each index is 0, 0.4, 0.7, 0.9, 1
+const SIGMAS = [1, 0.6, 0.3, 0.1, 0];
+
 function fakeSource() {
   const clips: Record<string, RenderSettings> = { c1: cloneRenderSettings(BASE_DEFAULTS) };
   return { clips, clipSettings: (id: string) => clips[id] ?? null, overlapSettings: () => null };
+}
+
+/**
+ * This module never requests a schedule -- Task 10's SigmaColumn does -- so a test that needs
+ * the STEPS unit drives the shared singleton directly, through the same public API the column
+ * uses. `flush()` is Task 4's own test seam: it skips the debounce.
+ */
+async function seedSchedule(): Promise<void> {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(
+    JSON.stringify({
+      ok: true, sigmas: SIGMAS, steps: 4, duration: 30, sigma_max: 1,
+      dist_shift: "model", latent_len: 322,
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  )));
+  scheduleClient.request({
+    steps: 4, duration: 30, sigma_max: 1, sampler_type: "euler", schedule: { ...SCHEDULE_DEFAULT },
+  });
+  await scheduleClient.flush();
 }
 
 let src: ReturnType<typeof fakeSource>;
@@ -4586,10 +4834,15 @@ beforeEach(() => {
   src = fakeSource();
   settings.attach(src);
   view.selection = CLIP;
+  // `scheduleClient` is a module singleton, so a result seeded by one test would otherwise
+  // still be there for the next one.
+  scheduleClient.result = null;
+  scheduleClient.error = null;
 });
 afterEach(() => {
   settings.detach();
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("AdvancedSampling (spec 4.6 item 4, 5.3)", () => {
@@ -4667,7 +4920,16 @@ describe("AdvancedSampling (spec 4.6 item 4, 5.3)", () => {
     expect(src.clips.c1.cfg_interval_progress).toEqual([0.2, 0.9]);
   });
 
+  it("disables the UNIT toggle until a schedule arrives, and says why", () => {
+    const { getByTestId } = render(AdvancedSampling);
+    const toggle = getByTestId("adv-cfg-unit") as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(toggle.title).toBe("the step index needs a schedule from the server");
+    expect(toggle.textContent).toBe("PROGRESS");
+  });
+
   it("toggling the CFG unit changes only the displayed label, never the stored progress", async () => {
+    await seedSchedule();
     const { getByTestId } = render(AdvancedSampling);
     const before = [...src.clips.c1.cfg_interval_progress];
     await fireEvent.click(getByTestId("adv-cfg-unit"));
@@ -4675,6 +4937,20 @@ describe("AdvancedSampling (spec 4.6 item 4, 5.3)", () => {
     expect(getByTestId("adv-cfg-unit").textContent).toBe("STEPS");
     await fireEvent.click(getByTestId("adv-cfg-unit"));
     expect(getByTestId("adv-cfg-unit").textContent).toBe("PROGRESS");
+  });
+
+  it("in the STEPS unit shows the crossing step index and still stores progress, never the step", async () => {
+    await seedSchedule();
+    settings.patch(CLIP, { cfg_interval_progress: [0.5, 1] });
+    const { getByTestId } = render(AdvancedSampling);
+    await fireEvent.click(getByTestId("adv-cfg-unit"));
+    // progress 0.5 first reaches at index 2 of SIGMAS, and 1 at the last index
+    expect((getByTestId("adv-cfg-lo") as HTMLInputElement).value).toBe("2");
+    expect((getByTestId("adv-cfg-hi") as HTMLInputElement).value).toBe("4");
+    // typing a step index writes the progress that step sits at -- NOT 3
+    await fireEvent.change(getByTestId("adv-cfg-lo"), { target: { value: "3" } });
+    expect(src.clips.c1.cfg_interval_progress[0]).toBeCloseTo(progressAtStep(SIGMAS, 3));
+    expect(src.clips.c1.cfg_interval_progress[0]).not.toBe(3);
   });
 
   it("renders a validation error inline under the offending field", async () => {
@@ -4733,7 +5009,10 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
   // safe defaults, the same pattern Task 8's TargetBar uses for `a2a`.
   import { dragScale } from "../../lib/actions/dragScale";
   import type { LatchSlot, ScheduleSpec, Target } from "../../lib/forge/types";
-  import { formatCfgBound, type CfgUnit } from "../../lib/sampling/cfgInterval";
+  import {
+    formatCfgBound, progressAtStep, stepAtProgress, type CfgUnit,
+  } from "../../lib/sampling/cfgInterval";
+  import { scheduleClient } from "../../lib/sampling/scheduleClient.svelte";
   import { RANGES, SCHEDULE_SHAPES, validateSchedule } from "../../lib/sampling/scheduleRules";
   import { resolveSampler, type LatchState } from "../../lib/sampling/samplers";
   import { sigmaMaxFor } from "../../lib/sampling/sigmaMax";
@@ -4756,12 +5035,44 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
   const usesLambda = $derived(shapeUsesLambda(scheduleSnapshot.shape));
   const issues = $derived(validateSchedule(scheduleSnapshot, sigmaMax, sampler.value));
 
-  // No live sigma array exists in this module (see this task's Interfaces note); formatCfgBound
-  // degrades gracefully on an empty array (Task 5 covers it) rather than NaN-ing.
-  const EMPTY_SIGMAS: readonly number[] = [];
+  // The sigma array the graph is drawing, read from the shared client (Task 4's singleton).
+  // This module never calls request() -- Task 10's SigmaColumn owns that -- but it must count
+  // steps on the SAME array, or the UNIT toggle would answer "which step does progress 0.7
+  // reach" differently from the band drawn on the canvas.
+  const sigmas = $derived<readonly number[]>(scheduleClient.result?.sigmas ?? []);
+  const hasSchedule = $derived(sigmas.length > 0);
+  const steps = $derived(scheduleClient.result?.steps ?? current.steps);
+
   let cfgUnit = $state<CfgUnit>("progress");
-  const cfgLoText = $derived(formatCfgBound(EMPTY_SIGMAS, current.cfg_interval_progress[0], cfgUnit));
-  const cfgHiText = $derived(formatCfgBound(EMPTY_SIGMAS, current.cfg_interval_progress[1], cfgUnit));
+  const cfgLoText = $derived(formatCfgBound(sigmas, current.cfg_interval_progress[0], cfgUnit));
+  const cfgHiText = $derived(formatCfgBound(sigmas, current.cfg_interval_progress[1], cfgUnit));
+  // Spec 5.1: the steps unit drags over 0..steps as integers; progress stays on RANGES.cfg_interval.
+  const cfgRange = $derived(
+    cfgUnit === "steps"
+      ? { min: 0, max: steps, int: true }
+      : { min: RANGES.cfg_interval.min, max: RANGES.cfg_interval.max, int: false },
+  );
+  // What the drag action should carry: the displayed number, which is a step index in the
+  // steps unit and the progress itself in the progress unit.
+  const cfgLoDrag = $derived(
+    cfgUnit === "steps"
+      ? stepAtProgress(sigmas, current.cfg_interval_progress[0])
+      : current.cfg_interval_progress[0],
+  );
+  const cfgHiDrag = $derived(
+    cfgUnit === "steps"
+      ? stepAtProgress(sigmas, current.cfg_interval_progress[1])
+      : current.cfg_interval_progress[1],
+  );
+
+  /**
+   * Spec 5.3 and this plan's Normative block: the stored value is ALWAYS progress. The steps
+   * unit is a display, so every write from it converts back through the same sigma array it
+   * was displayed from. Without this, typing 3 in the steps unit stored progress 3.0.
+   */
+  function toProgress(displayed: number): number {
+    return cfgUnit === "steps" ? progressAtStep(sigmas, displayed) : displayed;
+  }
 
   function onSampler(e: Event): void {
     settings.patch(target, { sampler_type: (e.target as HTMLSelectElement).value });
@@ -4769,15 +5080,20 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
   function onShape(e: Event): void {
     settings.patchSchedule(target, { shape: (e.target as HTMLSelectElement).value as ScheduleSpec["shape"] });
   }
-  function onCfgLo(e: Event): void {
-    const v = Number((e.target as HTMLInputElement).value);
+  function setCfgLo(v: number): void {
     settings.patch(target, { cfg_interval_progress: [v, current.cfg_interval_progress[1]] });
   }
-  function onCfgHi(e: Event): void {
-    const v = Number((e.target as HTMLInputElement).value);
+  function setCfgHi(v: number): void {
     settings.patch(target, { cfg_interval_progress: [current.cfg_interval_progress[0], v] });
   }
+  function onCfgLo(e: Event): void {
+    setCfgLo(toProgress(Number((e.target as HTMLInputElement).value)));
+  }
+  function onCfgHi(e: Event): void {
+    setCfgHi(toProgress(Number((e.target as HTMLInputElement).value)));
+  }
   function toggleCfgUnit(): void {
+    if (!hasSchedule) return;
     cfgUnit = cfgUnit === "progress" ? "steps" : "progress";
   }
 </script>
@@ -4939,11 +5255,12 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
     <div class="field">
       <span class="label">CFG LO</span>
       <input
-        type="number" step="0.01" data-testid="adv-cfg-lo" data-help={HELP.cfgLo}
+        type="number" step={cfgUnit === "steps" ? 1 : 0.01}
+        data-testid="adv-cfg-lo" data-help={HELP.cfgLo}
         value={cfgLoText}
         use:dragScale={{
-          min: RANGES.cfg_interval.min, max: RANGES.cfg_interval.max, value: current.cfg_interval_progress[0],
-          onValue: (v) => settings.patch(target, { cfg_interval_progress: [v, current.cfg_interval_progress[1]] }),
+          min: cfgRange.min, max: cfgRange.max, int: cfgRange.int, value: cfgLoDrag,
+          onValue: (v) => setCfgLo(toProgress(v)),
         }}
         onchange={onCfgLo}
       />
@@ -4951,19 +5268,25 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
     <div class="field">
       <span class="label">CFG HI</span>
       <input
-        type="number" step="0.01" data-testid="adv-cfg-hi" data-help={HELP.cfgHi}
+        type="number" step={cfgUnit === "steps" ? 1 : 0.01}
+        data-testid="adv-cfg-hi" data-help={HELP.cfgHi}
         value={cfgHiText}
         use:dragScale={{
-          min: RANGES.cfg_interval.min, max: RANGES.cfg_interval.max, value: current.cfg_interval_progress[1],
-          onValue: (v) => settings.patch(target, { cfg_interval_progress: [current.cfg_interval_progress[0], v] }),
+          min: cfgRange.min, max: cfgRange.max, int: cfgRange.int, value: cfgHiDrag,
+          onValue: (v) => setCfgHi(toProgress(v)),
         }}
         onchange={onCfgHi}
       />
     </div>
     <div class="field">
       <span class="label">UNIT</span>
+      <!-- Disabled, with a reason, until a schedule exists: the step index is computed from
+           the server's sigma array, and showing a confident "0" instead would be a lie the
+           person has no way to see through. -->
       <button
         type="button" class="unit" data-testid="adv-cfg-unit" data-help={HELP.cfgUnit}
+        disabled={!hasSchedule}
+        title={hasSchedule ? "" : "the step index needs a schedule from the server"}
         onclick={toggleCfgUnit}
       >{cfgUnit === "progress" ? "PROGRESS" : "STEPS"}</button>
     </div>
@@ -5045,13 +5368,13 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
 cd latent-forge && npx vitest run src/ui/modules/__tests__/advancedSampling.test.ts src/ui/modules/__tests__/AdvancedSampling.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  16 passed (16)` (5 in `advancedSampling.test.ts`, 11 in
+Expected: `Test Files  2 passed (2)` / `Tests  18 passed (18)` (5 in `advancedSampling.test.ts`, 13 in
 `AdvancedSampling.component.test.ts`), and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T11: ADVANCED SAMPLING module -- sampler/shape/rho/sigma-min/lambda/stepped/plateaus/tilt/rescale/CFG interval, sigma max shown read-only from sigmaMaxFor, inline validation from validateSchedule"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T11: ADVANCED SAMPLING module -- sampler/shape/rho/sigma-min/lambda/stepped/plateaus/tilt/rescale/CFG interval, CFG UNIT reads the shared ScheduleClient's sigmas and converts steps back to progress on write, sigma max shown read-only from sigmaMaxFor, inline validation from validateSchedule"
 ```
 
 ---
@@ -5773,7 +6096,7 @@ is unchanged at 10 — this is a replacement, not an addition), adding
 cd latent-forge && npx vitest run && npm run check
 ```
 
-Expected: every suite passes — this task adds `Tests  27 passed (27)` across its two files (23 in `renderPresets.test.ts`, 4 in `settingsPresetSelect.test.ts`) — and `svelte-check found 0 errors and 0 warnings`. Task 8's suite stays at 21: the amended `TargetBar.component.test.ts` replaces one test rather than adding one.
+Expected: every suite passes — this task adds `Tests  27 passed (27)` across its two files (23 in `renderPresets.test.ts`, 4 in `settingsPresetSelect.test.ts`) — and `svelte-check found 0 errors and 0 warnings`. Task 8's suite stays at 16: the amended `TargetBar.component.test.ts` replaces one test rather than adding one.
 
 Then the layout spec, which needs the mock server:
 
@@ -5812,7 +6135,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
 | 9.3 prompt and render presets | T12 | module and master levels are M7's |
 | 10 X4 session-level stage | T1, T9 | one rebuild, one confirm |
 | 10 X6 RF sigma ranges | T3 | not the drawing's k-diffusion units |
-| 10 X11 per-clip OP select | T8 | disabled with a reason when the clip has neither |
+| 10 X11 per-clip OP select | T8 | all four ops selectable; the spec's only op gate is RENDER's (M9) |
 | 10 X15 settings recalled explicitly | T12 | HISTORY loads audio only — that half is M9's |
 
 **Deferred with their owner:** the `▸ RENDER` button, job submission, polling, the SAMPLING label and everything inside the preview container are M9's — M4 leaves M1's frame untouched. The LatCH slots the sigma graph draws are written by M7's LANE CHAIN; until then the legend shows two empty slots and the graph draws no slot lanes. `module` and `master` preset levels are M7's.
@@ -5828,13 +6151,15 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   `scheduleClient.svelte.ts` because `ScheduleClient` holds `$state` fields and Svelte only
   compiles runes inside a `.svelte`/`.svelte.ts`/`.svelte.js` file. The table should be corrected
   when this task lands; every other task in this hand-off imports the file by its real name.
-- **`forgeApi.schedule`'s exact signature** is named in the shared preamble (`forgeApi.schedule`
-  is in the inherited list) but never given a shape anywhere Writer A could read. Task 4 assumes
-  `schedule(req: ScheduleRequest, signal?: AbortSignal): Promise<ScheduleResult>`, rejecting with
-  `ForgeApiError` on a non-2xx response, matching the real route's JSON body and response fields
-  read at `explorer_render_server.py:1009-1060`. If M1 T5's actual client differs (a different
-  parameter order, no `AbortSignal` support, a wrapped `{ok, ...}` envelope it unwraps itself),
-  `ScheduleClient.#run`'s single call site is the only place to reconcile it.
+- ~~**`forgeApi.schedule`'s exact signature**~~ — **closed, and the answer was that M4 does not use
+  it.** M1 T5's real client is `schedule: (body) => sendJSON(...)`: one parameter, no `AbortSignal`,
+  no `duration` in the body type, and a return type that claims `shape`/`warnings` the route does
+  not send while omitting the five it does. M1 is approved and frozen, so Task 4 owns the call
+  through its own module-local `postSchedule`, which is what §6 asks for anyway (`/schedule` is one
+  of the pre-existing routes the client "calls directly", kept "in their own client module so the
+  frozen and unfrozen surfaces stay distinguishable"). See the Normative names block. **[W]**
+  `forgeApi.schedule` is now dead and wrong in an approved plan — M1 T5 should delete it or correct
+  it to the real route's shape.
 - ~~**`HELP.sigmaGraph`**~~ — **closed.** Task 7's canvas carries `data-help={HELP.sigmaGraph}`,
   mirroring the drawing's own `data-help` on the sigma canvas (v3:404), and `sigmaGraph` **is** in
   M1 T14's frozen table, entered from that same v3:404. Nothing to rename. (The HELP ids that
@@ -5855,12 +6180,14 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   get real pixel dimensions from. Task 10 ships the drawing's own nominal canvas size
   (`SIGMA_GRAPH_WIDTH = 320`, `SIGMA_GRAPH_HEIGHT = 180`, v3:404) rather than inventing a
   cross-component ref or a ResizeObserver neither brief asked for.
-- **ADVANCED SAMPLING's CFG LO/HI in the STEPS unit has no live sigma array.** Task 10's
-  `SigmaColumn` owns the milestone's only `ScheduleClient`; sharing its result with the right-pane
-  module would need a store neither this milestone nor the spec describes. Task 11 ships
-  `formatCfgBound([], p, unit)`, which Task 5 explicitly covers for the empty-array case, so the
-  PROGRESS unit is exact and the STEPS unit shows a degraded number until a later milestone shares
-  the schedule result across the pane.
+- ~~**ADVANCED SAMPLING's CFG LO/HI in the STEPS unit has no live sigma array.**~~ — **closed.**
+  `formatCfgBound([], p, unit)` made the STEPS unit render `"0"` for every bound forever, so the
+  UNIT toggle was a dead control and §5.3's "computed from the server-returned sigma array" was not
+  honoured at all. The `ScheduleClient` is now a module singleton (Task 4), exactly as `settings`
+  and `view` are: Task 10's `SigmaColumn` is the only thing that calls `request()`, and Task 11
+  reads `scheduleClient.result?.sigmas ?? []`. No new store was needed. Before the first response
+  the toggle is disabled with a title saying the step index needs a schedule from the server —
+  a control that admits it has no answer, rather than a confident 0.
 - ~~**Thirteen `HELP` ids used by Task 11**~~ — **closed.** All fourteen (`sampler, scheduleShape,
   scheduleRho, sigmaMin, sigmaMax, lamMin, lamMax, stepped, plateaus, tilt, cfgLo, cfgHi, cfgUnit,
   rescale`) are in M1 T14's frozen table, entered there from the drawing's own `data-help` strings
