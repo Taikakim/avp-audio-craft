@@ -80,8 +80,8 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 
 ## Status of this plan — READ BEFORE IMPLEMENTING
 
-**This plan is incomplete and unreviewed below Task 3.** It was written against a token budget that
-ran out mid-milestone. What exists:
+**Every task is now written. Nothing below Task 3 has been reviewed.** Tasks 1-3 went through an
+adversarial critic; Tasks 4-12 have not. What exists:
 
 | Task | State |
 |---|---|
@@ -94,8 +94,8 @@ ran out mid-milestone. What exists:
 | 7 `SigmaGraph.svelte` | written, **not reviewed** |
 | 8 target bar | written, **not reviewed** |
 | 9 prompt column + model stage column | written, **not reviewed** |
-| 10 sigma column + tab assembly | **NOT WRITTEN** |
-| 11 ADVANCED SAMPLING module | **NOT WRITTEN** |
+| 10 sigma column + tab assembly | written, **not reviewed** |
+| 11 ADVANCED SAMPLING module | written, **not reviewed** |
 | 12 settings presets + Playwright + self-review | written, **not reviewed** |
 
 Tasks 8, 9 and 12 have had **no critic pass**. On every milestone so far a critic has returned
@@ -104,10 +104,15 @@ plan's Tasks 1-3, never once zero. Treat 8, 9 and 12 as drafts: run a critic ove
 implementing agent touches them, and expect wrong test counts, imports of names M1 does not export,
 and tests that pass on a broken implementation.
 
-The missing tasks' briefs are ready to dispatch in `docs/latent-forge/M4_WRITER_BRIEFS.md`. Tasks 8
-and 9 consume Task 4-7 names (`ScheduleClient`, `ScheduleRequest`, `SigmaGraph.svelte`,
-`formatCfgBound`) that do not exist yet — that is by design, the brief fixes those names, but nothing
-has yet checked that what Task 8/9 wrote against them matches.
+Tasks 8 and 9 were written BEFORE Tasks 4-7 existed, against names fixed in
+`docs/latent-forge/M4_WRITER_BRIEFS.md` rather than against real code — `ScheduleClient`,
+`ScheduleRequest`, `SigmaGraph.svelte` and its props, `formatCfgBound`, `stepAtProgress`. The brief
+was the contract and Writer A was told to honour the call sites, but **nothing has yet verified that
+the two halves agree**. That is the single most likely place for a blocking defect in this plan, and
+it is the first thing the critic should check.
+
+The three writers also could not see each other, so the **Normative names** block above wins over any
+task that disagrees with it — extend that block as the critic finds conflicts.
 
 One finding from Task 9 worth carrying whatever happens to this plan: **`RenderSettings` has no
 duration or length field**, so §4.5's `LENGTH s` control has nowhere in the per-target settings to
@@ -3817,6 +3822,1207 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T9: prompt column + MODEL
 
 ---
 
+### Task 10: The sigma column and the PROMPT + SIGMA tab assembly
+
+Spec §4.5 item 3 (SIGMA label, graph label, LatCH slot legend, the sigma canvas) and the tab
+assembly that stacks Task 8's target bar, Task 9's two columns and this task's sigma column into
+the 162 px body M1 reserved for the `prompt` bottom tab. This is also where **`duration` becomes
+real**: Task 9 found that `RenderSettings` has no length field, so `ModelStageColumn`'s LENGTH
+lives as a controlled prop pair `{length, onLength}` one level up — this task is that level up. It
+owns the `length` `$state` and is the only place in this milestone that builds a `ScheduleRequest`
+and feeds its `duration`, because the model shape's dist shift is length-dependent and nothing
+downstream has anywhere else to get that number from.
+
+Two things this task must get right or the graph lies: **`sigma_max` is not `1.0` by default** —
+it is `sigmaMaxFor(a2a)` from Task 3, and when that value floors below the chartable range (an A2A
+clip with NOISE 0) there is nothing to chart and **no `/schedule` request is sent at all**, rather
+than sending a value the server's own `RANGES.sigma_max` (0.01–1) would 400 on. And **schedule
+fields are read into the request individually**, never by handing the whole `current.schedule`
+object reference to a `$derived` — Svelte 5's `$state` proxy tracks a nested mutation only where
+it is actually read, and `settings.patchSchedule` (Task 1) mutates the existing `schedule` object
+in place rather than replacing it, so a `$derived` that only reads `current.schedule` (the
+reference) never reruns when Task 11's ADVANCED SAMPLING module edits ρ or TILT.
+
+**Files:**
+- Create: `latent-forge/src/ui/prompt/sigmaColumn.ts`, `latent-forge/src/ui/prompt/__tests__/sigmaColumn.test.ts`
+- Create: `latent-forge/src/ui/prompt/SigmaColumn.svelte`, `latent-forge/src/ui/prompt/__tests__/SigmaColumn.component.test.ts`
+- Create: `latent-forge/src/ui/prompt/PromptSigmaTab.svelte`, `latent-forge/src/ui/prompt/__tests__/PromptSigmaTab.component.test.ts`
+- Modify: `latent-forge/src/ui/shell/BottomPane.svelte` (M1 T11 left the `prompt` tab body as
+  `<!-- body: M4 (spec §4.5 three columns, §5.3) --> <div class="tab-empty"></div>` inside
+  `{:else if tab === "prompt"}` — that comment names this exact task)
+
+**Interfaces:**
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`, `RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress: [number, number]; schedule: ScheduleSpec; scale_phi; sampler_type: string | null }`, `ScheduleSpec { shape; rho; sigma_min; lam_min; lam_max; stepped; plateaus; tilt }`, `LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }`.
+- Consumes from `src/lib/forge/defaults.ts` (M1 T4): `LENGTH_CAP_SEC = 184`.
+- Consumes from `src/lib/stores/view.svelte.ts` (M1): the singleton `view` with `view.selection: Target` — a plain, directly-readable `$state` field on the exported singleton (the same idiom as `settings.stage`), used exactly as M1 T12's own `RightPaneModules.svelte` already reads `view.selection.kind` and `view.activeLane`.
+- Consumes from `src/lib/stores/settings.svelte.ts` (M4 T1): the singleton `settings` with `current(t: Target): RenderSettings`.
+- Consumes from `src/lib/sampling/sigmaMax.ts` (M4 T3): `interface A2AState { on: boolean; noise: number }`, `sigmaMaxFor(a2a: A2AState | null): number` (unclamped), `chartableSigmaMax(sigmaMax: number): number | null`.
+- Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `flatPlateauNote(spec: ScheduleSpec, samplerType: string | null): string | null`.
+- Consumes from `src/lib/sampling/scheduleClient.svelte.ts` (M4 T4) — **the real file is
+  `scheduleClient.svelte.ts`, imported as `"../../lib/sampling/scheduleClient.svelte"`** (the
+  milestone's File Structure table still says `scheduleClient.ts`; Task 4 itself flagged that
+  table as wrong): `SCHEDULE_DEBOUNCE_MS = 150`, `interface ScheduleRequest { steps: number; duration: number; sigma_max: number; sampler_type: string | null; schedule: ScheduleSpec }`, `interface ScheduleResult { sigmas: number[]; steps: number; duration: number; sigma_max: number; dist_shift: string | number; latent_len: number; shape?: string; warnings?: string[] }`, `class ScheduleClient` with `$state` fields `result: ScheduleResult | null`, `pending: boolean`, `error: string | null`, a getter `staleShape: boolean`, and methods `request(req: ScheduleRequest): void`, `flush(): Promise<void>`, `dispose(): void`.
+- Consumes from `src/lib/sampling/sigmaGraph.ts` (M4 T6): `interface SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`.
+- Consumes from `src/ui/prompt/SigmaGraph.svelte` (M4 T7): the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`. It falls back to measuring its own canvas only when `input` itself is `null`; once an `input` object is given, `input.width`/`input.height` are what it uses, so this task supplies fixed nominal values (see the WHY note in Step 3) rather than trying to measure a canvas it does not own.
+- Consumes from `src/ui/prompt/TargetBar.svelte` (M4 T8): the component, props `{ target: Target; clipName: string | null; lane: 0|1|2|3; a2a: {on: boolean; noise: number} | null; clipHasLatent: boolean; onA2AToggle: (on: boolean) => void; onNoise: (v: number) => void; op: string | null; onOp: (op: string) => void }`.
+- Consumes from `src/ui/prompt/PromptColumn.svelte` (M4 T9): the component, props `{ target: Target }`.
+- Consumes from `src/ui/prompt/ModelStageColumn.svelte` (M4 T9): the component, props `{ target: Target; length: number; onLength: (sec: number) => void }`.
+- Produces, from `latent-forge/src/ui/prompt/sigmaColumn.ts`: `DEFAULT_LENGTH_SEC = 30`, `SIGMA_GRAPH_WIDTH = 320`, `SIGMA_GRAPH_HEIGHT = 180`, `STALE_SHAPE_NOTE = "schedule shape is charted from M3 onward"`, `buildScheduleRequest(steps: number, duration: number, sigmaMax: number, samplerType: string | null, schedule: ScheduleSpec): ScheduleRequest`, `sigmaNote(error: string | null, staleShape: boolean, spec: ScheduleSpec, samplerType: string | null): string | null`, `slotLegendLabel(slot: LatchSlot | undefined): string`.
+- Produces, from `latent-forge/src/ui/prompt/SigmaColumn.svelte`: the component, props `{ target: Target; length: number; a2a: {on: boolean; noise: number} | null; slots?: readonly LatchSlot[] }` (`slots` defaults to `[]` — M4 has no lane-chain store; M7 passes the active lane's real two slots the same way Task 8's `a2a` prop waits for M5).
+- Produces, from `latent-forge/src/ui/prompt/PromptSigmaTab.svelte`: the component, props `{ clipName?: string | null; lane?: 0|1|2|3; a2a?: {on: boolean; noise: number} | null; clipHasLatent?: boolean; onA2AToggle?: (on: boolean) => void; onNoise?: (v: number) => void; op?: string | null; onOp?: (op: string) => void }`, every one defaulted (`null`/`0`/`false`/no-op) so `<PromptSigmaTab />` mounts with zero props from `BottomPane.svelte` exactly as it does today. It reads `target` from `view.selection` itself (an M1 store, not M5's arrangement store), owns `length` as local `$state` seeded at `DEFAULT_LENGTH_SEC` and clamped to `LENGTH_CAP_SEC`, and renders `data-tab-body="prompt"` on its own root and `data-col="prompt" | "model-stage" | "sigma"` on the three column wrappers — these are the exact selectors `tests/sampling.spec.ts` (Task 12) asserts, and they live on this task's own markup rather than on `BottomPane.svelte` so M1's frozen file needs no attribute added to it.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/ui/prompt/__tests__/sigmaColumn.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { SCHEDULE_DEFAULT } from "../../../lib/forge/defaults";
+import type { LatchSlot, ScheduleSpec } from "../../../lib/forge/types";
+import { FLAT_PLATEAU_NOTE } from "../../../lib/sampling/scheduleRules";
+import {
+  buildScheduleRequest, sigmaNote, slotLegendLabel, STALE_SHAPE_NOTE,
+} from "../sigmaColumn";
+
+function spec(over: Partial<ScheduleSpec> = {}): ScheduleSpec {
+  return { ...SCHEDULE_DEFAULT, ...over };
+}
+
+function slot(over: Partial<LatchSlot> = {}): LatchSlot {
+  return { head: "onsets", kind: "value", value: 0.5, weight: 1, start_pct: 0, end_pct: 1, ...over };
+}
+
+describe("buildScheduleRequest carries duration through (spec 5.3, the plan's Global Constraints)", () => {
+  it("puts every argument in its own request field, duration included", () => {
+    const s = spec({ rho: 3 });
+    expect(buildScheduleRequest(24, 30, 1.0, "euler", s)).toEqual({
+      steps: 24, duration: 30, sigma_max: 1.0, sampler_type: "euler", schedule: s,
+    });
+  });
+
+  it("never substitutes a default for duration, even 0", () => {
+    expect(buildScheduleRequest(8, 0, 0.4, null, spec()).duration).toBe(0);
+  });
+});
+
+describe("sigmaNote picks the first applicable message", () => {
+  it("shows the client's error before anything else", () => {
+    const flat = spec({ stepped: true, tilt: 0 });
+    expect(sigmaNote("render server unreachable", true, flat, "euler"))
+      .toBe("render server unreachable");
+  });
+
+  it("shows the stale-shape note when there is no error", () => {
+    expect(sigmaNote(null, true, spec(), "euler")).toBe(STALE_SHAPE_NOTE);
+    expect(STALE_SHAPE_NOTE).toBe("schedule shape is charted from M3 onward");
+  });
+
+  it("falls back to the flat-plateau note once neither an error nor staleness applies", () => {
+    const flat = spec({ stepped: true, tilt: 0 });
+    expect(sigmaNote(null, false, flat, "euler")).toBe(FLAT_PLATEAU_NOTE);
+  });
+
+  it("is null when nothing is wrong", () => {
+    expect(sigmaNote(null, false, spec(), "euler")).toBeNull();
+  });
+});
+
+describe("slotLegendLabel (spec 4.5's LatCH slot legend)", () => {
+  it("shows the slot's head name", () => {
+    expect(slotLegendLabel(slot({ head: "beat_grid" }))).toBe("beat_grid");
+  });
+
+  it("shows an em dash for an absent slot", () => {
+    expect(slotLegendLabel(undefined)).toBe("—");
+  });
+
+  it("shows an em dash for a slot with no head or head 'none'", () => {
+    expect(slotLegendLabel(slot({ head: "" }))).toBe("—");
+    expect(slotLegendLabel(slot({ head: "none" }))).toBe("—");
+  });
+});
+```
+
+`latent-forge/src/ui/prompt/__tests__/SigmaColumn.component.test.ts` (named `.component.` for the
+same case-collision reason Task 8 named its own suite that way):
+
+```ts
+// @vitest-environment jsdom
+import { cleanup, render } from "@testing-library/svelte";
+import {
+  afterEach, beforeEach, describe, expect, it, vi,
+} from "vitest";
+import { forgeApi } from "../../../lib/forge/api";
+import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
+import type { RenderSettings, Target } from "../../../lib/forge/types";
+import { SCHEDULE_DEBOUNCE_MS } from "../../../lib/sampling/scheduleClient.svelte";
+import { settings } from "../../../lib/stores/settings.svelte";
+import SigmaColumn from "../SigmaColumn.svelte";
+
+const CLIP: Target = { kind: "clip", id: "c1" };
+
+function fakeSource() {
+  const clips: Record<string, RenderSettings> = { c1: cloneRenderSettings(BASE_DEFAULTS) };
+  return { clips, clipSettings: (id: string) => clips[id] ?? null, overlapSettings: () => null };
+}
+
+let src: ReturnType<typeof fakeSource>;
+let scheduleMock: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  src = fakeSource();
+  settings.attach(src);
+  scheduleMock = vi.spyOn(forgeApi, "schedule").mockImplementation(async () => ({
+    sigmas: [1, 0.5, 0], steps: src.clips.c1.steps, duration: 30, sigma_max: 1.0,
+    dist_shift: "model", latent_len: 322,
+  })) as unknown as ReturnType<typeof vi.fn>;
+  // SigmaGraph.svelte draws to a real canvas; jsdom has no 2D context, so stub it the
+  // same way Task 7's own test does, purely so mounting does not throw.
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    save: () => {}, restore: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {},
+    stroke: () => {}, fill: () => {}, fillRect: () => {}, setTransform: () => {},
+    setLineDash: () => {}, scale: () => {}, measureText: () => ({ width: 0 }), fillText: () => {},
+  } as unknown as CanvasRenderingContext2D);
+});
+afterEach(() => {
+  settings.detach();
+  cleanup();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
+describe("SigmaColumn builds and sends the ScheduleRequest (spec 4.5 item 3, 5.3)", () => {
+  it("sends the target's steps, schedule and sampler_type with the given length as duration", async () => {
+    src.clips.c1.steps = 40;
+    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledWith(
+      expect.objectContaining({ steps: 40, duration: 30, sampler_type: src.clips.c1.sampler_type }),
+      expect.anything(),
+    );
+  });
+
+  it("sends 1.0 as sigma_max for a fresh generate (a2a null)", async () => {
+    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ sigma_max: 1.0 }), expect.anything());
+  });
+
+  it("sends the clip's NOISE, capped at 1, as sigma_max on an A2A target", async () => {
+    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: { on: true, noise: 0.4 } } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ sigma_max: 0.4 }), expect.anything());
+  });
+
+  it("sends no request at all when NOISE floors sigma max below the chartable range", async () => {
+    render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: { on: true, noise: 0 } } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).not.toHaveBeenCalled();
+  });
+
+  it("re-requests with the new duration when length changes", async () => {
+    const { rerender } = render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    scheduleMock.mockClear();
+    await rerender({ target: CLIP, length: 60, a2a: null });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ duration: 60 }), expect.anything());
+  });
+
+  it("shows the client's error as the graph's note", async () => {
+    scheduleMock.mockRejectedValue(new Error("render server unreachable"));
+    const { findByText } = render(SigmaColumn, { props: { target: CLIP, length: 30, a2a: null } });
+    await vi.advanceTimersByTimeAsync(SCHEDULE_DEBOUNCE_MS);
+    expect(await findByText("render server unreachable")).toBeTruthy();
+  });
+
+  it("shows the LatCH slot legend, or an em dash when a slot is absent", () => {
+    const { getByTestId } = render(SigmaColumn, {
+      props: {
+        target: CLIP, length: 30, a2a: null,
+        slots: [{ head: "beat_grid", kind: "value", value: 0.5, weight: 1, start_pct: 0, end_pct: 1 }],
+      },
+    });
+    expect(getByTestId("sigma-slot-0").textContent).toBe("beat_grid");
+    expect(getByTestId("sigma-slot-1").textContent).toBe("—");
+  });
+});
+```
+
+`latent-forge/src/ui/prompt/__tests__/PromptSigmaTab.component.test.ts`:
+
+```ts
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import {
+  afterEach, beforeEach, describe, expect, it, vi,
+} from "vitest";
+import { forgeApi } from "../../../lib/forge/api";
+import { LENGTH_CAP_SEC } from "../../../lib/forge/defaults";
+import type { Target } from "../../../lib/forge/types";
+import { view } from "../../../lib/stores/view.svelte";
+import PromptSigmaTab from "../PromptSigmaTab.svelte";
+
+const NONE: Target = { kind: "none" };
+const CLIP: Target = { kind: "clip", id: "c1" };
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.spyOn(forgeApi, "schedule").mockResolvedValue({
+    sigmas: [1, 0.5, 0], steps: 24, duration: 30, sigma_max: 1.0, dist_shift: "model", latent_len: 322,
+  });
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    save: () => {}, restore: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {},
+    stroke: () => {}, fill: () => {}, fillRect: () => {}, setTransform: () => {},
+    setLineDash: () => {}, scale: () => {}, measureText: () => ({ width: 0 }), fillText: () => {},
+  } as unknown as CanvasRenderingContext2D);
+  view.selection = NONE;
+});
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
+describe("PromptSigmaTab assembles the three columns (spec 4.5)", () => {
+  it("tags itself as the prompt tab body, and each column with its own data-col", () => {
+    const { container } = render(PromptSigmaTab);
+    expect(container.querySelector('[data-tab-body="prompt"]')).toBeTruthy();
+    expect(container.querySelector('[data-col="prompt"]')).toBeTruthy();
+    expect(container.querySelector('[data-col="model-stage"]')).toBeTruthy();
+    expect(container.querySelector('[data-col="sigma"]')).toBeTruthy();
+    expect(container.querySelector('canvas[data-canvas="sigma"]')).toBeTruthy();
+  });
+
+  it("reads the target from view.selection, not a prop", () => {
+    view.selection = CLIP;
+    const { getByTestId } = render(PromptSigmaTab, { props: { clipName: "kick loop" } });
+    expect(getByTestId("target-name").textContent).toBe("kick loop");
+  });
+
+  it("passes the clip-shaped props straight through to the target bar", () => {
+    view.selection = CLIP;
+    const { getByTestId } = render(PromptSigmaTab, {
+      props: { clipName: "kick loop", clipHasLatent: true, a2a: { on: false, noise: 0.4 }, op: "generate" },
+    });
+    expect(getByTestId("target-clip-row")).toBeTruthy();
+  });
+
+  it("owns LENGTH as its own state and feeds the same number to the schedule request", async () => {
+    const scheduleMock = vi.mocked(forgeApi.schedule);
+    const { getByTestId } = render(PromptSigmaTab);
+    await fireEvent.change(getByTestId("stage-length"), { target: { value: "77" } });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(scheduleMock).toHaveBeenCalledWith(expect.objectContaining({ duration: 77 }), expect.anything());
+  });
+
+  it("clamps a typed length to LENGTH_CAP_SEC", async () => {
+    const { getByTestId } = render(PromptSigmaTab);
+    await fireEvent.change(getByTestId("stage-length"), { target: { value: "9999" } });
+    expect((getByTestId("stage-length") as HTMLInputElement).value).toBe(String(LENGTH_CAP_SEC));
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/ui/prompt/__tests__/sigmaColumn.test.ts src/ui/prompt/__tests__/SigmaColumn.component.test.ts src/ui/prompt/__tests__/PromptSigmaTab.component.test.ts
+```
+
+Expected: `Failed to resolve import "../sigmaColumn"`, `"../SigmaColumn.svelte"`, `"../PromptSigmaTab.svelte"`.
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/ui/prompt/sigmaColumn.ts`:
+
+```ts
+// Pure parts of the sigma column (spec 4.5 item 3, 5.3) and the tab's own defaults, kept
+// out of the components so the request-building and note-priority rules are covered
+// without mounting anything or faking a debounce timer.
+
+import type { LatchSlot, ScheduleSpec } from "../../lib/forge/types";
+import type { ScheduleRequest } from "../../lib/sampling/scheduleClient.svelte";
+import { flatPlateauNote } from "../../lib/sampling/scheduleRules";
+
+/** Round number, distinct from the server's own 47s default so an unset LENGTH is never
+ * mistaken for one the person actually chose. */
+export const DEFAULT_LENGTH_SEC = 30;
+
+/** The drawing's own canvas attributes (v3:404, width="320" height="180"). SigmaGraph.svelte
+ * (Task 7) only measures its own DOM box when `input` is null; once this column has a
+ * schedule to draw, it must supply a width/height itself, and it has no ref to a canvas it
+ * does not own -- so it supplies the drawing's own nominal geometry rather than guessing at
+ * a live pixel size. See this task's Open Questions entry. */
+export const SIGMA_GRAPH_WIDTH = 320;
+export const SIGMA_GRAPH_HEIGHT = 180;
+
+export const STALE_SHAPE_NOTE = "schedule shape is charted from M3 onward";
+
+/** Every argument lands in its own request field. `duration` is never defaulted or
+ * omitted -- the Global Constraints say omitting it silently charts the server's 47s
+ * default, and this is the one function in the milestone that assembles the request body. */
+export function buildScheduleRequest(
+  steps: number,
+  duration: number,
+  sigmaMax: number,
+  samplerType: string | null,
+  schedule: ScheduleSpec,
+): ScheduleRequest {
+  return { steps, duration, sigma_max: sigmaMax, sampler_type: samplerType, schedule };
+}
+
+/**
+ * Spec 4.5's SIGMA column note is the first of three things that could be wrong, in this
+ * order: the client actually failed; the server may not be honouring the requested shape
+ * yet (Global Constraints -- until M3, only "model" is true); or the schedule itself is
+ * flagged by Task 3's flat-plateau rule. Only one shows at a time -- showing all three would
+ * bury the one that matters.
+ */
+export function sigmaNote(
+  error: string | null,
+  staleShape: boolean,
+  spec: ScheduleSpec,
+  samplerType: string | null,
+): string | null {
+  if (error !== null) return error;
+  if (staleShape) return STALE_SHAPE_NOTE;
+  return flatPlateauNote(spec, samplerType);
+}
+
+/** Spec 4.5's LatCH slot legend: the slot's own head name, or an em dash for a slot that
+ * is absent, unset, or explicitly "none". Active-ness (Task 2's isLatchActive) is not the
+ * test here -- the drawing's legend names whatever is IN the slot, active or not. */
+export function slotLegendLabel(slot: LatchSlot | undefined): string {
+  if (!slot) return "—";
+  if (slot.head === "" || slot.head === "none") return "—";
+  return slot.head;
+}
+```
+
+`latent-forge/src/ui/prompt/SigmaColumn.svelte`:
+
+```svelte
+<script lang="ts">
+  // Spec 4.5 item 3: SIGMA label, graph label, LatCH slot legend, the sigma canvas. This
+  // component owns the ONLY ScheduleClient in the milestone (Task 4) and is the one place
+  // that turns the selected target's own settings plus the tab's LENGTH into a
+  // ScheduleRequest. M4 has no lane-chain store (M7's), so `slots` arrives as a prop with a
+  // safe empty default, the same pattern Task 8's TargetBar uses for `a2a`.
+  import type { LatchSlot, Target } from "../../lib/forge/types";
+  import { ScheduleClient } from "../../lib/sampling/scheduleClient.svelte";
+  import { chartableSigmaMax, sigmaMaxFor } from "../../lib/sampling/sigmaMax";
+  import type { SigmaGraphInput } from "../../lib/sampling/sigmaGraph";
+  import { settings } from "../../lib/stores/settings.svelte";
+  import SigmaGraph from "./SigmaGraph.svelte";
+  import {
+    buildScheduleRequest, DEFAULT_LENGTH_SEC, SIGMA_GRAPH_HEIGHT, SIGMA_GRAPH_WIDTH,
+    sigmaNote, slotLegendLabel,
+  } from "./sigmaColumn";
+
+  interface Props {
+    target: Target;
+    length: number;
+    a2a: { on: boolean; noise: number } | null;
+    slots?: readonly LatchSlot[];
+  }
+  let { target, length, a2a, slots = [] }: Props = $props();
+
+  const client = new ScheduleClient();
+  // Runs once (it reads nothing reactive), so its cleanup runs exactly once, on unmount --
+  // never on every request, which would abort the client mid-debounce every time a field
+  // changes.
+  $effect(() => {
+    return () => client.dispose();
+  });
+
+  const current = $derived(settings.current(target));
+  // Reading `current.schedule` (the reference) would not rerun this when Task 11 mutates a
+  // field of it in place via settings.patchSchedule -- the $state proxy rule bites here.
+  // Spreading reads every own field individually, which IS tracked.
+  const scheduleSnapshot = $derived<typeof current.schedule>({ ...current.schedule });
+  const sigmaMax = $derived(sigmaMaxFor(a2a));
+  const chartable = $derived(chartableSigmaMax(sigmaMax));
+
+  $effect(() => {
+    if (chartable === null) return;
+    client.request(
+      buildScheduleRequest(current.steps, length, chartable, current.sampler_type, scheduleSnapshot),
+    );
+  });
+
+  const graphInput = $derived<SigmaGraphInput | null>(
+    client.result === null
+      ? null
+      : {
+          sigmas: client.result.sigmas,
+          steps: client.result.steps,
+          cfgLo: current.cfg_interval_progress[0],
+          cfgHi: current.cfg_interval_progress[1],
+          stepped: current.schedule.stepped,
+          scalePhi: current.scale_phi,
+          slots,
+          width: SIGMA_GRAPH_WIDTH,
+          height: SIGMA_GRAPH_HEIGHT,
+        },
+  );
+
+  const note = $derived(sigmaNote(client.error, client.staleShape, current.schedule, current.sampler_type));
+</script>
+
+<div class="sigma-column" data-col="sigma">
+  <div class="header">
+    <span class="label">SIGMA</span>
+    <span class="shape">{current.schedule.shape}</span>
+    <span class="legend" data-testid="sigma-slot-0" style="color: var(--slot1);">
+      {slotLegendLabel(slots[0])}
+    </span>
+    <span class="legend" data-testid="sigma-slot-1" style="color: var(--slot2);">
+      {slotLegendLabel(slots[1])}
+    </span>
+  </div>
+  <SigmaGraph input={graphInput} note={note} pending={client.pending} error={client.error} />
+</div>
+
+<style>
+  .sigma-column {
+    flex: 1 1 260px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .label {
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .shape {
+    font-size: 10px;
+    color: var(--turq-strong);
+  }
+  .legend {
+    font-size: 10px;
+  }
+</style>
+```
+
+`latent-forge/src/ui/prompt/PromptSigmaTab.svelte`:
+
+```svelte
+<script lang="ts">
+  // The tab assembly (spec 4.5): Task 8's target bar, Task 9's prompt and model-stage
+  // columns, and this task's sigma column, stacked in the 162px body M1 T11 reserved for
+  // the `prompt` bottom tab. Every clip-shaped fact is a prop with a safe default -- M5's
+  // arrangement store does not exist yet, so a caller that passes nothing gets exactly the
+  // fresh-generate reading, same as Task 8's TargetBar taken alone. `target` itself comes
+  // from `view.selection` (an M1 store every milestone reads, not M5's), matching M1 T12's
+  // own RightPaneModules.svelte precedent.
+  import { LENGTH_CAP_SEC } from "../../lib/forge/defaults";
+  import { view } from "../../lib/stores/view.svelte";
+  import ModelStageColumn from "./ModelStageColumn.svelte";
+  import PromptColumn from "./PromptColumn.svelte";
+  import { DEFAULT_LENGTH_SEC } from "./sigmaColumn";
+  import SigmaColumn from "./SigmaColumn.svelte";
+  import TargetBar from "./TargetBar.svelte";
+
+  interface Props {
+    clipName?: string | null;
+    lane?: 0 | 1 | 2 | 3;
+    a2a?: { on: boolean; noise: number } | null;
+    clipHasLatent?: boolean;
+    onA2AToggle?: (on: boolean) => void;
+    onNoise?: (v: number) => void;
+    op?: string | null;
+    onOp?: (op: string) => void;
+  }
+  let {
+    clipName = null, lane = 0, a2a = null, clipHasLatent = false,
+    onA2AToggle = () => {}, onNoise = () => {}, op = null, onOp = () => {},
+  }: Props = $props();
+
+  const target = $derived(view.selection);
+
+  // LENGTH is not a RenderSettings field (Task 9's finding), so it lives here, one level
+  // above the column that displays it and the column that needs it for /schedule's duration.
+  let length = $state(DEFAULT_LENGTH_SEC);
+  function onLength(sec: number): void {
+    length = Math.min(LENGTH_CAP_SEC, sec);
+  }
+</script>
+
+<div class="prompt-sigma-tab" data-tab-body="prompt">
+  <div class="col" data-col="prompt">
+    <TargetBar
+      {target} {clipName} {lane} {a2a} {clipHasLatent}
+      {onA2AToggle} {onNoise} {op} {onOp}
+    />
+    <PromptColumn {target} />
+  </div>
+  <div class="col-fixed" data-col="model-stage">
+    <ModelStageColumn {target} {length} {onLength} />
+  </div>
+  <div class="col" data-col="sigma">
+    <SigmaColumn {target} {length} {a2a} />
+  </div>
+</div>
+
+<style>
+  .prompt-sigma-tab {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    align-items: stretch;
+    min-height: 0;
+    overflow-x: auto;
+  }
+  .col {
+    flex: 1 1 250px;
+    min-width: 186px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 0;
+  }
+  .col-fixed {
+    flex: 0 0 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+</style>
+```
+
+Modify `latent-forge/src/ui/shell/BottomPane.svelte`: add
+`import PromptSigmaTab from "../prompt/PromptSigmaTab.svelte";` to the script block, and inside
+`data-region="bottom-tab-body"`, replace
+
+```svelte
+    {:else if tab === "prompt"}
+      <!-- body: M4 (spec §4.5 three columns, §5.3) -->
+      <div class="tab-empty"></div>
+```
+
+with
+
+```svelte
+    {:else if tab === "prompt"}
+      <PromptSigmaTab />
+```
+
+Nothing else in `BottomPane.svelte` changes: the `.tab-body` element's own `flex: 0 0 162px` and
+`overflow: hidden` (M1 T11) already give `PromptSigmaTab`'s `height: 100%` its 162 px, so the
+Playwright layout test in Task 12 (`[data-tab-body=prompt]` bounding box ≈ 162 px) holds without
+touching M1's own sizing rules.
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/ui/prompt/__tests__/sigmaColumn.test.ts src/ui/prompt/__tests__/SigmaColumn.component.test.ts src/ui/prompt/__tests__/PromptSigmaTab.component.test.ts && npm run check
+```
+
+Expected: `Test Files  3 passed (3)` / `Tests  21 passed (21)` (9 in `sigmaColumn.test.ts`, 7 in
+`SigmaColumn.component.test.ts`, 5 in `PromptSigmaTab.component.test.ts`), and
+`svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T10: sigma column (owns the only ScheduleClient) + PROMPT + SIGMA tab assembly, LENGTH lifted here per Task 9's finding, sigma_max skips the request entirely below the chartable floor"
+```
+
+---
+
+### Task 11: `AdvancedSampling.svelte` — the sampling apparatus's own module
+
+Spec §4.6 item 4 and §5.3. M1 T12 left `src/ui/modules/AdvancedSampling.svelte` as a frame with
+the comment `M1 FRAME ONLY ... are M4` — this task is that M4. Everything here writes through
+Task 1's settings store for the target the right pane is currently showing, which is
+`view.selection` (an M1 store, read the same way M1 T12's own `RightPaneModules.svelte` already
+reads it — this module does not need `RightPaneModules.svelte` touched at all, since it takes no
+props from it and defaults its two upstream-owned facts, `a2a` and `latch`, exactly as Task 8's
+`TargetBar` and this milestone's `SigmaColumn` already do for the stores M5 and M7 have not built
+yet).
+
+The one field worth restating before the checklist: **σ MAX is not a `ScheduleSpec` field and is
+never edited here.** It is the pass's own initial noise level — a read-only `1.00` for a fresh
+generate, and the selected clip's own NOISE, unclamped, when `a2a.on` is true. It is edited only
+in the target bar's NOISE control (Task 8); this module only displays it, from `sigmaMaxFor(a2a)`.
+
+**Files:**
+- Create: `latent-forge/src/ui/modules/advancedSampling.ts`, `latent-forge/src/ui/modules/__tests__/advancedSampling.test.ts`
+- Modify: `latent-forge/src/ui/modules/AdvancedSampling.svelte` (replace M1 T12's
+  `<p class="pending">CFG interval, sampler, schedule shape and rescale arrive in M4 (spec §5.3)</p>`
+  frame with this task's fields — M1's own comment names this task as the one that fills it)
+- Create: `latent-forge/src/ui/modules/__tests__/AdvancedSampling.component.test.ts`
+
+**Interfaces:**
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target`, `ScheduleSpec { shape; rho; sigma_min; lam_min; lam_max; stepped; plateaus; tilt }`, `LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }`.
+- Consumes from `src/lib/stores/view.svelte.ts` (M1): the singleton `view` with `view.selection: Target`, read directly as a `$state` field (the same idiom Task 10 uses, and M1 T12's `RightPaneModules.svelte` already reads).
+- Consumes from `src/lib/stores/settings.svelte.ts` (M4 T1): the singleton `settings` — `objective: "rf_denoiser" | "rectified_flow"`, `current(t: Target): RenderSettings`, `patch(t, p: Partial<RenderSettings>): void`, `patchSchedule(t, p: Partial<ScheduleSpec>): void`.
+- Consumes from `src/lib/sampling/samplers.ts` (M4 T2): `interface LatchState { latch_on: boolean; slots: readonly LatchSlot[] }`, `resolveSampler(objective, requested: string | null, latch: LatchState): { value: string; label: string; options: readonly string[]; disabled: boolean; forced: boolean }`.
+- Consumes from `src/lib/sampling/sigmaMax.ts` (M4 T3): `interface A2AState { on: boolean; noise: number }`, `sigmaMaxFor(a2a: A2AState | null): number`.
+- Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `SCHEDULE_SHAPES: readonly ["model","logsnr","geometric","linear","log","exponential","cosine"]`, `RANGES` (keys used here: `rho, sigma_min, lam_min, lam_max, plateaus, tilt, scale_phi, cfg_interval`, each `{min, max, int?}`), `interface ScheduleIssue { field: string; severity: "error" | "warning"; message: string }`, `validateSchedule(spec: ScheduleSpec, sigmaMax: number, samplerType: string | null): ScheduleIssue[]`.
+- Consumes from `src/lib/sampling/cfgInterval.ts` (M4 T5): `type CfgUnit = "progress" | "steps"`, `formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string`. This module has no live sigma array of its own (Task 10's `SigmaColumn` owns the milestone's only `ScheduleClient`, and sharing it across the bottom pane and this right-pane module would need a store neither this milestone nor the spec describes), so every call here passes `sigmas: []` — Task 5 covers the empty-array case explicitly so this never NaNs, and the STEPS unit's number is honestly degraded until a later milestone shares the schedule result. See this hand-off's Open Questions.
+- Consumes from `src/lib/actions/dragScale.ts` (M1 T8): `use:dragScale={{ min, max, int, value, onValue }}`.
+- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, ids `sampler`, `shape`, `sigmaRho`, `sigmaMin`, `sigmaMax`, `lamMin`, `lamMax`, `stepped`, `plateaus`, `tilt`, `cfgLo`, `cfgHi`, `cfgUnit`, `cfgRescale` — none of these thirteen are in the shared preamble's confirmed list (only `targetBar, promptPreset, a2aToggle, a2aNoise, opSelect` for Task 8 and `prompt, negativePrompt, modelStagePost, modelStageBase, steps, cfg, length, seed, seedRandom` for Task 9 are confirmed there); they are named here by matching the drawing's own `data-help` strings for these exact controls (v3:576-595), the same open assumption Task 7 already made for `HELP.sigmaGraph`. Flagged below.
+- Produces, from `latent-forge/src/ui/modules/advancedSampling.ts`: `shapeUsesLambda(shape: string): boolean`, `fieldIssue(issues: readonly ScheduleIssue[], field: string): { severity: "error" | "warning"; message: string } | null`.
+- Produces, from `latent-forge/src/ui/modules/AdvancedSampling.svelte`: the component, props `{ a2a?: {on: boolean; noise: number} | null; latch?: LatchState }`, both defaulted (`null`, `{latch_on: false, slots: []}`) so `<AdvancedSampling />` keeps working unmodified from M1 T12's `RightPaneModules.svelte` until M5 and M7 exist to wire them.
+
+- [ ] **Step 1: Write the failing tests**
+
+`latent-forge/src/ui/modules/__tests__/advancedSampling.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import type { ScheduleIssue } from "../../../lib/sampling/scheduleRules";
+import { fieldIssue, shapeUsesLambda } from "../advancedSampling";
+
+describe("shapeUsesLambda (spec 5.3: lambda min/max are logsnr-only)", () => {
+  it("is true only for logsnr", () => {
+    expect(shapeUsesLambda("logsnr")).toBe(true);
+  });
+
+  it("is false for every other shape", () => {
+    for (const s of ["model", "geometric", "linear", "log", "exponential", "cosine"]) {
+      expect(shapeUsesLambda(s)).toBe(false);
+    }
+  });
+});
+
+describe("fieldIssue", () => {
+  const issues: ScheduleIssue[] = [
+    { field: "rho", severity: "error", message: "rho must be between 0.1 and 15" },
+    { field: "tilt", severity: "warning", message: "flat plateaus are no-op steps on ODE samplers" },
+  ];
+
+  it("returns null when the field has no issue", () => {
+    expect(fieldIssue(issues, "sigma_min")).toBeNull();
+    expect(fieldIssue([], "rho")).toBeNull();
+  });
+
+  it("returns the matching issue's severity and message", () => {
+    expect(fieldIssue(issues, "rho")).toEqual({ severity: "error", message: "rho must be between 0.1 and 15" });
+    expect(fieldIssue(issues, "tilt")).toEqual({
+      severity: "warning", message: "flat plateaus are no-op steps on ODE samplers",
+    });
+  });
+
+  it("returns only the first match for a field", () => {
+    const dup: ScheduleIssue[] = [
+      { field: "rho", severity: "error", message: "first" },
+      { field: "rho", severity: "warning", message: "second" },
+    ];
+    expect(fieldIssue(dup, "rho")).toEqual({ severity: "error", message: "first" });
+  });
+});
+```
+
+`latent-forge/src/ui/modules/__tests__/AdvancedSampling.component.test.ts`:
+
+```ts
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
+import type { RenderSettings, Target } from "../../../lib/forge/types";
+import { settings } from "../../../lib/stores/settings.svelte";
+import { view } from "../../../lib/stores/view.svelte";
+import AdvancedSampling from "../AdvancedSampling.svelte";
+
+const CLIP: Target = { kind: "clip", id: "c1" };
+
+function fakeSource() {
+  const clips: Record<string, RenderSettings> = { c1: cloneRenderSettings(BASE_DEFAULTS) };
+  return { clips, clipSettings: (id: string) => clips[id] ?? null, overlapSettings: () => null };
+}
+
+let src: ReturnType<typeof fakeSource>;
+beforeEach(() => {
+  src = fakeSource();
+  settings.attach(src);
+  view.selection = CLIP;
+});
+afterEach(() => {
+  settings.detach();
+  cleanup();
+});
+
+describe("AdvancedSampling (spec 4.6 item 4, 5.3)", () => {
+  it("offers the current objective's samplers with the target's own value selected", () => {
+    src.clips.c1.sampler_type = "rk4";
+    const { getByTestId } = render(AdvancedSampling);
+    expect((getByTestId("adv-sampler") as HTMLSelectElement).value).toBe("rk4");
+  });
+
+  it("disables and relabels the sampler when the given latch forces Euler", () => {
+    const { getByTestId } = render(AdvancedSampling, {
+      props: {
+        latch: {
+          latch_on: true,
+          slots: [{ head: "onsets", kind: "value", value: 0.5, weight: 1, start_pct: 0, end_pct: 1 }],
+        },
+      },
+    });
+    const select = getByTestId("adv-sampler") as HTMLSelectElement;
+    expect(select.disabled).toBe(true);
+    expect(select.value).toBe("euler");
+    expect(select.options[0].textContent).toBe("euler (forced by LatCH)");
+  });
+
+  it("writes a chosen shape through settings.patchSchedule", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    await fireEvent.change(getByTestId("adv-shape"), { target: { value: "geometric" } });
+    expect(src.clips.c1.schedule.shape).toBe("geometric");
+  });
+
+  it("greys lambda min/max and shows the note unless the shape is logsnr", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    expect((getByTestId("adv-lam-min") as HTMLInputElement).disabled).toBe(true);
+    expect((getByTestId("adv-lam-max") as HTMLInputElement).disabled).toBe(true);
+    expect(getByTestId("adv-lam-note")).toBeTruthy();
+    await fireEvent.change(getByTestId("adv-shape"), { target: { value: "logsnr" } });
+    expect((getByTestId("adv-lam-min") as HTMLInputElement).disabled).toBe(false);
+    expect((getByTestId("adv-lam-max") as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("shows sigma max read-only at 1.00 with no A2A clip", () => {
+    const { getByLabelText } = render(AdvancedSampling);
+    const field = getByLabelText("σ MAX") as HTMLInputElement;
+    expect(field.value).toBe("1.00");
+    expect(field.readOnly).toBe(true);
+  });
+
+  it("mirrors the clip's own NOISE when A2A is on", () => {
+    const { getByLabelText } = render(AdvancedSampling, { props: { a2a: { on: true, noise: 0.4 } } });
+    expect((getByLabelText("σ MAX") as HTMLInputElement).value).toBe("0.40");
+  });
+
+  it("writes rho, sigma min, plateaus and tilt through settings.patchSchedule", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    await fireEvent.change(getByTestId("adv-rho"), { target: { value: "3" } });
+    await fireEvent.change(getByTestId("adv-sigma-min"), { target: { value: "0.05" } });
+    await fireEvent.change(getByTestId("adv-plateaus"), { target: { value: "10" } });
+    await fireEvent.change(getByTestId("adv-tilt"), { target: { value: "0.4" } });
+    expect(src.clips.c1.schedule.rho).toBe(3);
+    expect(src.clips.c1.schedule.sigma_min).toBe(0.05);
+    expect(src.clips.c1.schedule.plateaus).toBe(10);
+    expect(src.clips.c1.schedule.tilt).toBe(0.4);
+  });
+
+  it("writes CFG rescale through settings.patch, not patchSchedule", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    await fireEvent.change(getByTestId("adv-rescale"), { target: { value: "0.3" } });
+    expect(src.clips.c1.scale_phi).toBe(0.3);
+  });
+
+  it("writes the CFG interval bounds through settings.patch as progress, never as a step", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    await fireEvent.change(getByTestId("adv-cfg-lo"), { target: { value: "0.2" } });
+    await fireEvent.change(getByTestId("adv-cfg-hi"), { target: { value: "0.9" } });
+    expect(src.clips.c1.cfg_interval_progress).toEqual([0.2, 0.9]);
+  });
+
+  it("toggling the CFG unit changes only the displayed label, never the stored progress", async () => {
+    const { getByTestId } = render(AdvancedSampling);
+    const before = [...src.clips.c1.cfg_interval_progress];
+    await fireEvent.click(getByTestId("adv-cfg-unit"));
+    expect(src.clips.c1.cfg_interval_progress).toEqual(before);
+    expect(getByTestId("adv-cfg-unit").textContent).toBe("STEPS");
+    await fireEvent.click(getByTestId("adv-cfg-unit"));
+    expect(getByTestId("adv-cfg-unit").textContent).toBe("PROGRESS");
+  });
+
+  it("renders a validation error inline under the offending field", async () => {
+    settings.patchSchedule(CLIP, { rho: 999 });
+    const { getByTestId } = render(AdvancedSampling);
+    expect(getByTestId("adv-issue-rho").textContent).toContain("rho must be between");
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests — they must fail**
+
+```bash
+cd latent-forge && npx vitest run src/ui/modules/__tests__/advancedSampling.test.ts src/ui/modules/__tests__/AdvancedSampling.component.test.ts
+```
+
+Expected: `Failed to resolve import "../advancedSampling"`, and the component test fails because
+`AdvancedSampling.svelte` still renders only M1 T12's `<p class="pending">` frame (none of the
+`data-testid`s exist yet).
+
+- [ ] **Step 3: Implement**
+
+`latent-forge/src/ui/modules/advancedSampling.ts`:
+
+```ts
+// Pure parts of ADVANCED SAMPLING (spec 4.6 item 4, 5.3): which fields the current shape
+// makes meaningful, and picking one issue out of Task 3's validateSchedule list for a
+// specific field, so the component only ever renders "the" issue for a field, not the list.
+
+import type { ScheduleIssue } from "../../lib/sampling/scheduleRules";
+
+/** Lambda min/max describe a logSNR interval; every other shape ignores them (spec 5.3's
+ * schedule table only reads lam_min/lam_max under "logsnr"). */
+export function shapeUsesLambda(shape: string): boolean {
+  return shape === "logsnr";
+}
+
+export function fieldIssue(
+  issues: readonly ScheduleIssue[],
+  field: string,
+): { severity: "error" | "warning"; message: string } | null {
+  const found = issues.find((i) => i.field === field);
+  return found ? { severity: found.severity, message: found.message } : null;
+}
+```
+
+Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
+
+```svelte
+<script lang="ts">
+  // Spec 4.6 item 4, 5.3. M1 T12 left this file as a frame naming this exact task. Every
+  // field writes through Task 1's settings store for view.selection -- an M1 store, read the
+  // same way M1 T12's own RightPaneModules.svelte already reads it, so this component takes
+  // no props from that file and needs it untouched. `a2a` and `latch` are upstream facts
+  // (M5's clip store, M7's lane-chain store) that do not exist yet, so both are props with
+  // safe defaults, the same pattern Task 8's TargetBar uses for `a2a`.
+  import { dragScale } from "../../lib/actions/dragScale";
+  import type { LatchSlot, ScheduleSpec, Target } from "../../lib/forge/types";
+  import { formatCfgBound, type CfgUnit } from "../../lib/sampling/cfgInterval";
+  import { RANGES, SCHEDULE_SHAPES, validateSchedule } from "../../lib/sampling/scheduleRules";
+  import { resolveSampler, type LatchState } from "../../lib/sampling/samplers";
+  import { sigmaMaxFor } from "../../lib/sampling/sigmaMax";
+  import { HELP } from "../../lib/help/strings";
+  import { settings } from "../../lib/stores/settings.svelte";
+  import { view } from "../../lib/stores/view.svelte";
+  import { fieldIssue, shapeUsesLambda } from "./advancedSampling";
+
+  interface Props {
+    a2a?: { on: boolean; noise: number } | null;
+    latch?: LatchState;
+  }
+  let { a2a = null, latch = { latch_on: false, slots: [] as readonly LatchSlot[] } }: Props = $props();
+
+  const target = $derived<Target>(view.selection);
+  const current = $derived(settings.current(target));
+  const scheduleSnapshot = $derived<ScheduleSpec>({ ...current.schedule });
+  const sigmaMax = $derived(sigmaMaxFor(a2a));
+  const sampler = $derived(resolveSampler(settings.objective, current.sampler_type, latch));
+  const usesLambda = $derived(shapeUsesLambda(scheduleSnapshot.shape));
+  const issues = $derived(validateSchedule(scheduleSnapshot, sigmaMax, sampler.value));
+
+  // No live sigma array exists in this module (see this task's Interfaces note); formatCfgBound
+  // degrades gracefully on an empty array (Task 5 covers it) rather than NaN-ing.
+  const EMPTY_SIGMAS: readonly number[] = [];
+  let cfgUnit = $state<CfgUnit>("progress");
+  const cfgLoText = $derived(formatCfgBound(EMPTY_SIGMAS, current.cfg_interval_progress[0], cfgUnit));
+  const cfgHiText = $derived(formatCfgBound(EMPTY_SIGMAS, current.cfg_interval_progress[1], cfgUnit));
+
+  function onSampler(e: Event): void {
+    settings.patch(target, { sampler_type: (e.target as HTMLSelectElement).value });
+  }
+  function onShape(e: Event): void {
+    settings.patchSchedule(target, { shape: (e.target as HTMLSelectElement).value as ScheduleSpec["shape"] });
+  }
+  function onCfgLo(e: Event): void {
+    const v = Number((e.target as HTMLInputElement).value);
+    settings.patch(target, { cfg_interval_progress: [v, current.cfg_interval_progress[1]] });
+  }
+  function onCfgHi(e: Event): void {
+    const v = Number((e.target as HTMLInputElement).value);
+    settings.patch(target, { cfg_interval_progress: [current.cfg_interval_progress[0], v] });
+  }
+  function toggleCfgUnit(): void {
+    cfgUnit = cfgUnit === "progress" ? "steps" : "progress";
+  }
+</script>
+
+<div class="advanced-sampling">
+  <div class="row">
+    <div class="field wide">
+      <span class="label">SAMPLER</span>
+      <select
+        data-testid="adv-sampler" data-help={HELP.sampler}
+        disabled={sampler.disabled} value={sampler.value} onchange={onSampler}
+      >
+        {#if sampler.forced}
+          <option value={sampler.value}>{sampler.label}</option>
+        {:else}
+          {#each sampler.options as o (o)}
+            <option value={o}>{o}</option>
+          {/each}
+        {/if}
+      </select>
+    </div>
+    <div class="field wide">
+      <span class="label">SHAPE</span>
+      <select data-testid="adv-shape" data-help={HELP.shape} value={scheduleSnapshot.shape} onchange={onShape}>
+        {#each SCHEDULE_SHAPES as s (s)}
+          <option value={s}>{s}</option>
+        {/each}
+      </select>
+      {#if fieldIssue(issues, "shape") !== null}
+        <span class="issue" data-testid="adv-issue-shape">{fieldIssue(issues, "shape")?.message}</span>
+      {/if}
+    </div>
+    <div class="field">
+      <span class="label">σ CURVE</span>
+      <input
+        type="number" step="0.1" data-testid="adv-rho" data-help={HELP.sigmaRho}
+        value={scheduleSnapshot.rho}
+        use:dragScale={{
+          min: RANGES.rho.min, max: RANGES.rho.max, value: scheduleSnapshot.rho,
+          onValue: (v) => settings.patchSchedule(target, { rho: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { rho: Number((e.target as HTMLInputElement).value) })}
+      />
+      {#if fieldIssue(issues, "rho") !== null}
+        <span class="issue" data-testid="adv-issue-rho">{fieldIssue(issues, "rho")?.message}</span>
+      {/if}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <span class="label">λ MIN</span>
+      <input
+        type="number" step="0.1" data-testid="adv-lam-min" data-help={HELP.lamMin}
+        disabled={!usesLambda} value={scheduleSnapshot.lam_min}
+        use:dragScale={{
+          min: RANGES.lam_min.min, max: RANGES.lam_min.max, value: scheduleSnapshot.lam_min,
+          onValue: (v) => settings.patchSchedule(target, { lam_min: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { lam_min: Number((e.target as HTMLInputElement).value) })}
+      />
+    </div>
+    <div class="field">
+      <span class="label">λ MAX</span>
+      <input
+        type="number" step="0.1" data-testid="adv-lam-max" data-help={HELP.lamMax}
+        disabled={!usesLambda} value={scheduleSnapshot.lam_max}
+        use:dragScale={{
+          min: RANGES.lam_max.min, max: RANGES.lam_max.max, value: scheduleSnapshot.lam_max,
+          onValue: (v) => settings.patchSchedule(target, { lam_max: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { lam_max: Number((e.target as HTMLInputElement).value) })}
+      />
+    </div>
+    {#if !usesLambda}
+      <span class="note" data-testid="adv-lam-note">λ MIN / λ MAX are meaningful only for the logsnr shape</span>
+    {/if}
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <span class="label">σ MIN</span>
+      <input
+        type="number" step="0.01" data-testid="adv-sigma-min" data-help={HELP.sigmaMin}
+        value={scheduleSnapshot.sigma_min}
+        use:dragScale={{
+          min: RANGES.sigma_min.min, max: RANGES.sigma_min.max, value: scheduleSnapshot.sigma_min,
+          onValue: (v) => settings.patchSchedule(target, { sigma_min: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { sigma_min: Number((e.target as HTMLInputElement).value) })}
+      />
+      {#if fieldIssue(issues, "sigma_min") !== null}
+        <span class="issue" data-testid="adv-issue-sigma_min">{fieldIssue(issues, "sigma_min")?.message}</span>
+      {/if}
+    </div>
+    <div class="field">
+      <span class="label">σ MAX</span>
+      <input
+        type="number" aria-label="σ MAX" data-testid="adv-sigma-max" data-help={HELP.sigmaMax}
+        readonly value={sigmaMax.toFixed(2)}
+      />
+    </div>
+    <div class="field toggle">
+      <span class="label">STEPPED</span>
+      <button
+        type="button" class="stepped" class:on={scheduleSnapshot.stepped}
+        data-testid="adv-stepped" data-help={HELP.stepped}
+        onclick={() => settings.patchSchedule(target, { stepped: !scheduleSnapshot.stepped })}
+      >{scheduleSnapshot.stepped ? "ON" : "OFF"}</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <span class="label">PLATEAUS</span>
+      <input
+        type="number" step="1" data-testid="adv-plateaus" data-help={HELP.plateaus}
+        value={scheduleSnapshot.plateaus}
+        use:dragScale={{
+          min: RANGES.plateaus.min, max: RANGES.plateaus.max, int: true, value: scheduleSnapshot.plateaus,
+          onValue: (v) => settings.patchSchedule(target, { plateaus: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { plateaus: Number((e.target as HTMLInputElement).value) })}
+      />
+      {#if fieldIssue(issues, "plateaus") !== null}
+        <span class="issue" data-testid="adv-issue-plateaus">{fieldIssue(issues, "plateaus")?.message}</span>
+      {/if}
+    </div>
+    <div class="field">
+      <span class="label">TILT</span>
+      <input
+        type="number" step="0.05" data-testid="adv-tilt" data-help={HELP.tilt}
+        value={scheduleSnapshot.tilt}
+        use:dragScale={{
+          min: RANGES.tilt.min, max: RANGES.tilt.max, value: scheduleSnapshot.tilt,
+          onValue: (v) => settings.patchSchedule(target, { tilt: v }),
+        }}
+        onchange={(e) => settings.patchSchedule(target, { tilt: Number((e.target as HTMLInputElement).value) })}
+      />
+      {#if fieldIssue(issues, "tilt") !== null}
+        <span class="issue" data-testid="adv-issue-tilt">{fieldIssue(issues, "tilt")?.message}</span>
+      {/if}
+    </div>
+    <div class="field">
+      <span class="label">RESCALE</span>
+      <input
+        type="number" step="0.01" data-testid="adv-rescale" data-help={HELP.cfgRescale}
+        value={current.scale_phi}
+        use:dragScale={{
+          min: RANGES.scale_phi.min, max: RANGES.scale_phi.max, value: current.scale_phi,
+          onValue: (v) => settings.patch(target, { scale_phi: v }),
+        }}
+        onchange={(e) => settings.patch(target, { scale_phi: Number((e.target as HTMLInputElement).value) })}
+      />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <span class="label">CFG LO</span>
+      <input
+        type="number" step="0.01" data-testid="adv-cfg-lo" data-help={HELP.cfgLo}
+        value={cfgLoText}
+        use:dragScale={{
+          min: RANGES.cfg_interval.min, max: RANGES.cfg_interval.max, value: current.cfg_interval_progress[0],
+          onValue: (v) => settings.patch(target, { cfg_interval_progress: [v, current.cfg_interval_progress[1]] }),
+        }}
+        onchange={onCfgLo}
+      />
+    </div>
+    <div class="field">
+      <span class="label">CFG HI</span>
+      <input
+        type="number" step="0.01" data-testid="adv-cfg-hi" data-help={HELP.cfgHi}
+        value={cfgHiText}
+        use:dragScale={{
+          min: RANGES.cfg_interval.min, max: RANGES.cfg_interval.max, value: current.cfg_interval_progress[1],
+          onValue: (v) => settings.patch(target, { cfg_interval_progress: [current.cfg_interval_progress[0], v] }),
+        }}
+        onchange={onCfgHi}
+      />
+    </div>
+    <div class="field">
+      <span class="label">UNIT</span>
+      <button
+        type="button" class="unit" data-testid="adv-cfg-unit" data-help={HELP.cfgUnit}
+        onclick={toggleCfgUnit}
+      >{cfgUnit === "progress" ? "PROGRESS" : "STEPS"}</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .advanced-sampling {
+    padding: 6px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    width: 60px;
+  }
+  .field.wide {
+    width: 110px;
+  }
+  .label {
+    color: var(--text-dim);
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  input,
+  select {
+    box-sizing: border-box;
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 4px;
+    font-size: 11px;
+    width: 100%;
+  }
+  input:not([readonly]) {
+    cursor: ew-resize;
+  }
+  input:disabled,
+  input[readonly] {
+    color: var(--text-dim);
+  }
+  .stepped,
+  .unit {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 10px;
+    padding: 4px 6px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .stepped.on {
+    background: var(--turq-strong);
+    border-color: var(--turq-strong);
+    color: white;
+  }
+  .issue {
+    font-size: 10px;
+    color: var(--red);
+  }
+  .note {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+</style>
+```
+
+- [ ] **Step 4: Run the tests — they must pass**
+
+```bash
+cd latent-forge && npx vitest run src/ui/modules/__tests__/advancedSampling.test.ts src/ui/modules/__tests__/AdvancedSampling.component.test.ts && npm run check
+```
+
+Expected: `Test Files  2 passed (2)` / `Tests  16 passed (16)` (5 in `advancedSampling.test.ts`, 11 in
+`AdvancedSampling.component.test.ts`), and `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T11: ADVANCED SAMPLING module -- sampler/shape/rho/sigma-min/lambda/stepped/plateaus/tilt/rescale/CFG interval, sigma max shown read-only from sigmaMaxFor, inline validation from validateSchedule"
+```
+
+---
+
 ### Task 12: The SETTINGS PRESET select, and the milestone's layout spec
 
 The last piece of §4.5's target bar, and the one place in this milestone where data arrives from outside the app. A preset is a JSON file under `OUT_DIR/_forge/presets/<level>/<name>.json` that a person can edit by hand, so **its contents are data, never a shape to trust**: every field is validated before it reaches a `RenderSettings`, and a preset carrying `steps: "lots"` must leave the store exactly as it was and say so, not poison it.
@@ -4544,3 +5750,36 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   `ScheduleRequest.sigma_max` is a sibling of `schedule`, never a field inside it, matching
   WINTERMUTE's 2026-09-17 decision (spec §5.1, §10) and Task 3's `sigmaMaxFor`. Noted here only so
   the assembler does not need to re-derive it from the two specs independently.
+
+---
+
+## Open questions (Tasks 10-11)
+
+- **`SigmaGraphInput.width`/`.height`** — Task 6 types them as required numbers and Task 7's own
+  implementation only measures its own canvas (`canvas.clientWidth`/`clientHeight`) when the whole
+  `input` prop is `null`; once a schedule exists, whatever width/height the caller supplies is what
+  is used. Neither the spec nor Tasks 4-9 say where a caller that does not own the canvas should
+  get real pixel dimensions from. Task 10 ships the drawing's own nominal canvas size
+  (`SIGMA_GRAPH_WIDTH = 320`, `SIGMA_GRAPH_HEIGHT = 180`, v3:404) rather than inventing a
+  cross-component ref or a ResizeObserver neither brief asked for.
+- **ADVANCED SAMPLING's CFG LO/HI in the STEPS unit has no live sigma array.** Task 10's
+  `SigmaColumn` owns the milestone's only `ScheduleClient`; sharing its result with the right-pane
+  module would need a store neither this milestone nor the spec describes. Task 11 ships
+  `formatCfgBound([], p, unit)`, which Task 5 explicitly covers for the empty-array case, so the
+  PROGRESS unit is exact and the STEPS unit shows a degraded number until a later milestone shares
+  the schedule result across the pane.
+- **Thirteen `HELP` ids used by Task 11** (`sampler, shape, sigmaRho, sigmaMin, sigmaMax, lamMin,
+  lamMax, stepped, plateaus, tilt, cfgLo, cfgHi, cfgUnit, cfgRescale`) are not in the shared
+  preamble's confirmed list, the same open point Task 7 already raised for `HELP.sigmaGraph`. They
+  are named by matching the drawing's own `data-help` strings for these controls (v3:576-595); if
+  the real 87-entry table spells any of them differently, this is a rename, not a re-read of §9.4.
+- **PromptSigmaTab and AdvancedSampling both read `view.selection` directly** rather than taking a
+  `target` prop, on the precedent of M1 T12's own `RightPaneModules.svelte` doing the same for
+  `view.selection.kind` and `view.activeLane`. If a later review decides the PROMPT + SIGMA tab and
+  the right-pane modules should instead receive `target` as an explicit prop from a shell component,
+  both files change the same one line (`$derived(view.selection)` → a prop read) with no change to
+  their tests' assertions about what is shown for a given target.
+- **`DEFAULT_LENGTH_SEC = 30`** — no task before this one fixes what LENGTH starts at for a fresh
+  tab (`RenderSettings` has no duration field at all, per Task 9's finding). 30 is a plain round
+  number distinct from the server's own 47 s fallback, chosen only so an unset LENGTH is never
+  mistaken for a deliberate one; it is not derived from any spec section.
