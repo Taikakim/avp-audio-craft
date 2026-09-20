@@ -32,6 +32,67 @@ M1 and M5 are pushed. M4 is partial — see below.
 
 ## Resuming M4 (this is the live one)
 
+**All twelve tasks are written. Only Tasks 1-3 have been reviewed.** 5785 lines. The plan's own
+"Status of this plan" block is the authority; keep the two in step.
+
+**THE NEXT ACTION IS A CRITIC OVER TASKS 4-12.** Not more writing. It is the only thing left in M4,
+it was cut twice for budget, and it is not optional: a critic has returned blocking defects on every
+batch it has ever seen — 11 on M5's first two tasks, 8 on this plan's Tasks 1-3 — and never once
+zero. Until it runs, treat Tasks 4-12 as drafts and do not hand them to an implementing agent.
+
+Where to point it first: **Tasks 8 and 9 were written before Tasks 4-7 existed.** They call
+`ScheduleClient`, `ScheduleRequest`, `SigmaGraph.svelte` and its props, `formatCfgBound` and
+`stepAtProgress` as the briefs *specified* them, not as Writer A actually wrote them. Writer A was
+told to honour those call sites, but nothing has checked that the two halves agree. That seam is the
+likeliest blocking defect in the whole plan. After it, the usual haul: test counts that do not match
+the `it()` blocks actually written, imports of names M1 does not export, strict-mode TS that will not
+compile, and tests that pass on a broken implementation.
+
+Then reconcile the **nine open questions** the three writers raised, in the two `## Open questions`
+sections at the tail, and fold anything normative into the plan's Normative-names block — that block
+exists because parallel writers cannot see each other, and it is what stopped M5's drift.
+
+Three known content facts, worth keeping whatever happens to the plan:
+
+- **Today's `/schedule` ignores `schedule` and `sampler_type`** (`explorer_render_server.py:1022-1049`
+  reads only `steps`, `duration`, `sigma_max`, `dist_shift`). M3 adds them. So until M3 lands, every
+  shape charts the model curve and rho/STEPPED/PLATEAUS/TILT move nothing. M4 sends the full body
+  anyway and shows `schedule shape is charted from M3 onward`. It does **not** compute the curve
+  locally to cover the gap -- 5.3 says the canvas never computes sigma, and a graph that disagrees
+  with the server is worse than one that admits it is behind.
+- **`/schedule` takes `duration` and it matters.** The model shape's dist shift is length-dependent
+  (`latent_len = ceil(duration*SR/DS)`). M1's `forgeApi.schedule` omits the field, so it would
+  silently chart the server's 47 s default at every LENGTH.
+- **M1's `forgeApi.schedule` return type is wrong**: it declares `{ok, sigmas, shape, warnings}` but
+  today's route returns `{ok, steps, duration, sigma_max, dist_shift, latent_len, sigmas}`. M4 types
+  the extra fields optional rather than editing approved M1. If W reopens M1, that is the correction.
+
+**A third question for W**, alongside `ForgeClip.previewAudio` and the two from M5: `RenderSettings`
+has no duration or length field, so 4.5's `LENGTH s` has nowhere in the per-target settings to live.
+Task 9 lifted it to the tab's own state and Task 10 owns it, which works -- but it means a `render`
+preset cannot recall the length it was made at, and 9.3 says a render preset carries the txt2audio
+parameters. Same shape as `previewAudio`: a 9.2 project-shape change, not a client detail.
+
+## After M4
+
+M10 (statistics, leaf, needs only M1 + fixtures), then M6 (chroma, needs M5) and M7 (chains/mix/
+library/sessions, needs M4 + M5), then M9 (rendering, needs M7, last). M6 is where the
+`getComputedStyle` token-stream trap bites next -- the chroma heatmap is a ramp, and a ramp needs
+channels.
+
+## Done
+
+| Plan | File | State |
+|---|---|---|
+| **M1** foundation & shell, 15 tasks, ~9k lines | `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md` | **approved by W**, corrections applied |
+| **M5** timeline fidelity, 12 tasks, ~6k lines | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | pushed, awaiting W's read |
+
+| **M4** PROMPT + SIGMA, 12 tasks planned | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | **Tasks 1-3 only**, critic-reviewed, 8 blocking findings fixed |
+
+M1 and M5 are pushed. M4 is partial — see below.
+
+## Resuming M4 (this is the live one)
+
 **Tasks 1, 2, 3, 8, 9 and 12 exist. Tasks 4, 5, 6, 7, 10 and 11 do not.** The plan's own
 "Status of this plan" block at the top of its task section says the same thing in more detail and is
 the authority; keep the two in step if either changes.
