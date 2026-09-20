@@ -54,6 +54,8 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 | POST/BASE | session-level, one confirm, `POST /forge/backbone`. It loads the stage defaults into `session.defaults` **only** — existing per-target settings are untouched | §5.3, §10 X4 |
 | sampler in POST | `cfg_scale` is **sent as 1.0** while the stage is POST; the stored value is left alone so returning to BASE restores it | §5.3 |
 | slot colours | `--slot1` / `--slot2` via `getComputedStyle`, alpha via `ctx.globalAlpha` | see Global Constraints |
+| module id for ADVANCED SAMPLING | **kebab** — `advanced-sampling`, so `[data-module-toggle=advanced-sampling]` | M1 declares `ModuleId` **twice and differently**: kebab in the view store (`"overlap" \| "files" \| "lane-chain" \| "advanced-sampling" \| "master-chain"`, M1:3027, `MODULE_IDS` at 3056) and camel in T12's own list (`advancedSampling`, M1:6259, which is what `ModuleShell` renders `data-module-toggle` from). No task can satisfy both. M4 takes the view store's spelling because that is the one persisted into the project JSON's `ui.modules` (M1:3231), and a DOM id that disagrees with the saved state is the worse of the two errors. M1 needs one of its two declarations deleted — flagged to WINTERMUTE |
+| sigma canvas selector | `canvas[data-canvas="sigma"]` on `SigmaGraph.svelte`'s own canvas; `data-col="prompt" \| "model-stage" \| "sigma"` **only** on `PromptSigmaTab`'s three column wrappers | the DOM contract is where the parallel writers broke: an attribute asserted but never emitted, and one emitted twice, both failed silently |
 
 ## File Structure
 
@@ -708,7 +710,7 @@ export function resolveSampler(
 cd latent-forge && npx vitest run src/lib/sampling/__tests__/samplers.test.ts && npm run check
 ```
 
-Expected: `Tests  12 passed (12)` and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Tests  13 passed (13)` and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -1083,7 +1085,7 @@ export function validateSchedule(
 cd latent-forge && npx vitest run src/lib/sampling && npm run check
 ```
 
-Expected: `Test Files  3 passed (3)` and `Tests  33 passed (33)` (Task 2's 12 plus these 21), and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Test Files  3 passed (3)` and `Tests  34 passed (34)` (Task 2's 13 plus these 21), and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -1407,7 +1409,7 @@ Expected: `Failed to resolve import "../scheduleClient.svelte"`.
 `latent-forge/src/lib/sampling/scheduleClient.svelte.ts`:
 
 ```ts
-import { ForgeApiError, forgeApi } from "../forge/api";
+import { forgeApi } from "../forge/api";
 import type { ScheduleSpec } from "../forge/types";
 
 /** Spec 5.3's graph is debounced 150ms so a drag does not fire one request per frame. */
@@ -1552,6 +1554,10 @@ export class ScheduleClient {
       this.#controller.abort();
       this.#controller = null;
     }
+    // Clears pending HERE rather than leaving it to #run's finally: nulling #controller
+    // above makes that block's `this.#controller === controller` guard false, so the
+    // in-flight run never clears the flag and a disposed client stays pending forever.
+    this.pending = false;
   }
 
   async #run(req: ScheduleRequest): Promise<void> {
@@ -1576,7 +1582,10 @@ export class ScheduleClient {
       this.#lastResultReq = req;
     } catch (e) {
       if (controller.signal.aborted || e instanceof AbortedError) return;
-      this.error = e instanceof ForgeApiError ? e.message : String(e);
+      // Any Error's own message, not just a ForgeApiError's: `String(e)` on a plain
+      // Error yields "Error: render server unreachable", and the note the SIGMA column
+      // shows is meant to read as the server's sentence, not as a stringified throw.
+      this.error = e instanceof Error ? e.message : String(e);
     } finally {
       if (this.#controller === controller) {
         this.pending = false;
@@ -2186,8 +2195,8 @@ space.
 
 **Interfaces:**
 - Consumes from `src/lib/sampling/sigmaGraph.ts` (M4 T6): `sigmaGraphGeometry(input: SigmaGraphInput): SigmaGraphGeometry`, `LANE_H = 7`, `PAD = 4`, types `SigmaGraphInput { sigmas: number[]; steps: number; cfgLo: number; cfgHi: number; stepped: boolean; scalePhi: number; slots: readonly LatchSlot[]; width: number; height: number }`, `SigmaGraphGeometry { plotHeight; cfgBand: {x0,x1}; sigmaPath: {x,y}[]; progressPath: {x,y}[]; ticks: {x,y}[]; rescaleY: number | null; slotBands: SlotBand[]; stepLabel: string }`, `SlotBand { index: 0|1; x0: number; w: number; laneY: number; hatch: {x0,w} | null }`.
-- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, id `sigmaGraph` — the drawing's own sigma canvas carries a `data-help` string (v3:404), so this component restates the same idea as `data-help={HELP.sigmaGraph}`. This id is not in the shared preamble's confirmed list; see the open questions at the bottom of this hand-off.
-- Produces, from `latent-forge/src/ui/prompt/SigmaGraph.svelte`: the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`.
+- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, id `sigmaGraph` — the drawing's own sigma canvas carries a `data-help` string (v3:404), so this component restates the same idea as `data-help={HELP.sigmaGraph}`. **Verified against M1 T14's frozen table: `sigmaGraph` is in it** (sourced from v3:404, the same line of the drawing), so this is not an assumption.
+- Produces, from `latent-forge/src/ui/prompt/SigmaGraph.svelte`: the component, props `{ input: SigmaGraphInput | null; note: string | null; pending: boolean; error: string | null }`. Its canvas carries **both** `data-testid="sigma-graph"` (this task's own tests) and `data-canvas="sigma"` — Tasks 10 and 12 both select the canvas by the latter, and it is the canvas's place in the tab, not its component identity, that they are asserting.
 
 Colour tokens, restated from the Global Constraints: `--panel2` the ground, `--turq-strong` the
 CFG band fill and its two edges, `--slot1` / `--slot2` the LatCH lanes (by `slotBands[k].index`),
@@ -2551,6 +2560,7 @@ Expected: `Failed to resolve import "../SigmaGraph.svelte"`.
   bind:this={canvas}
   class="sigma-graph"
   data-testid="sigma-graph"
+  data-canvas="sigma"
   data-help={HELP.sigmaGraph}
   width={input?.width ?? 320}
   height={input?.height ?? 180}
@@ -3111,7 +3121,7 @@ export function opDisabledReason(op: string, clipHasLatent: boolean): string | n
 cd latent-forge && npx vitest run src/ui/prompt/__tests__/targetBar.test.ts src/ui/prompt/__tests__/TargetBar.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  22 passed (22)` (11 in `targetBar.test.ts`, 11 in
+Expected: `Test Files  2 passed (2)` / `Tests  21 passed (21)` (11 in `targetBar.test.ts`, 10 in
 `TargetBar.component.test.ts`), and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
@@ -3154,7 +3164,7 @@ Task 8's `TargetBar` already uses for `a2a`/`onNoise` — the value lives one le
 - Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `RANGES` (this task reads `steps`, `cfg_scale`, `length_sec`, `seed`, each `{min, max, int?}`), `POST_CFG_NOTE`, `flatPlateauNote(spec: ScheduleSpec, samplerType: string | null): string | null`.
 - Produces, from `latent-forge/src/ui/prompt/modelStage.ts`: `randomSeed(rand?: () => number): number` (a fresh integer within `RANGES.seed`), `stageConfirmMessage(next: "POST" | "BASE"): string` (spec 5.3's exact wording, `"rebuilds the model — continue?"`, the same for both directions).
 - Produces, from `latent-forge/src/ui/prompt/PromptColumn.svelte`: props `{ target: Target }`. Reads and writes `settings.current(target).prompt` / `.negative_prompt` through `settings.patch(target, {...})` on every input.
-- Produces, from `latent-forge/src/ui/prompt/ModelStageColumn.svelte`: props `{ target: Target; length: number; onLength: (sec: number) => void }`. Renders MODEL STAGE POST/BASE (with the inline confirm and the rebuild-then-`setStage` sequence described below), STEPS, CFG (greyed with `POST_CFG_NOTE` while `settings.cfgDisabled`), the flat-plateau note, LENGTH (bound to the `length`/`onLength` props, capped at `LENGTH_CAP_SEC`), and SEED + RND.
+- Produces, from `latent-forge/src/ui/prompt/ModelStageColumn.svelte`: props `{ target: Target; length: number; onLength: (sec: number) => void }`. Renders MODEL STAGE POST/BASE (with the inline confirm and the rebuild-then-`setStage` sequence described below), STEPS, CFG (greyed with `POST_CFG_NOTE` while `settings.cfgDisabled`), the flat-plateau note, LENGTH (bound to the `length`/`onLength` props, capped at `LENGTH_CAP_SEC`), and SEED + RND. Each of the four numeric inputs carries an `aria-label` matching the `<span class="label">` beside it (`STEPS`, `CFG`, `LENGTH s`, `SEED`) — a sibling span names nothing, and Task 12's Playwright spec reaches CFG by `getByLabel`, the same way Task 11 already labels `σ MAX`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3258,6 +3268,7 @@ describe("PromptColumn (spec 4.5 item 1)", () => {
 ```ts
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { forgeApi } from "../../../lib/forge/api";
 import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
@@ -3297,12 +3308,21 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
     expect((getByTestId("stage-length") as HTMLInputElement).value).toBe("30");
   });
 
-  it("highlights BASE as active by default and shows no pending confirm", () => {
+  it("highlights whichever stage the store is on, and shows no pending confirm until asked", async () => {
+    // `beforeEach` sets the stage explicitly (the `settings` singleton is shared across
+    // files), so this cannot assert the store's DEFAULT -- Task 1's own suite already pins
+    // that. What it proves instead is the thing this component owns: the lit button follows
+    // `settings.stage`, in both directions.
     const { getByTestId, queryByTestId } = render(ModelStageColumn, {
       props: { target: CLIP, length: 30, onLength: () => {} },
     });
     expect(getByTestId("stage-base").className).toContain("on");
     expect(getByTestId("stage-post").className).not.toContain("on");
+    expect(queryByTestId("stage-confirm")).toBeNull();
+    settings.setStage("POST");
+    await tick();
+    expect(getByTestId("stage-post").className).toContain("on");
+    expect(getByTestId("stage-base").className).not.toContain("on");
     expect(queryByTestId("stage-confirm")).toBeNull();
   });
 
@@ -3321,7 +3341,7 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
     expect((getByTestId("stage-cfg") as HTMLInputElement).disabled).toBe(false);
     expect(queryByTestId("cfg-note")).toBeNull();
     settings.setStage("POST");
-    await Promise.resolve();
+    await tick();
     expect((getByTestId("stage-cfg") as HTMLInputElement).disabled).toBe(true);
     expect(getByTestId("cfg-note").textContent).toBe(POST_CFG_NOTE);
   });
@@ -3341,7 +3361,7 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
     expect(queryByTestId("flat-warn")).toBeNull();
     settings.patch(CLIP, { sampler_type: "euler" });
     settings.patchSchedule(CLIP, { stepped: true, tilt: 0 });
-    await Promise.resolve();
+    await tick();
     expect(getByTestId("flat-warn").textContent).toBe(FLAT_PLATEAU_NOTE);
   });
 
@@ -3365,12 +3385,16 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
 
   it("changing LENGTH calls onLength, never settings.patch", async () => {
     const onLength = vi.fn();
+    // `not.toHaveProperty("length")` would be vacuous -- RenderSettings has no length
+    // field to begin with, so it passes even if the component writes one somewhere else.
+    // Watching the store's own write path is what actually pins "never settings.patch".
+    const patch = vi.spyOn(settings, "patch");
     const { getByTestId } = render(ModelStageColumn, {
       props: { target: CLIP, length: 30, onLength },
     });
     await fireEvent.change(getByTestId("stage-length"), { target: { value: "60" } });
     expect(onLength).toHaveBeenCalledWith(60);
-    expect(src.clips.c1).not.toHaveProperty("length");
+    expect(patch).not.toHaveBeenCalled();
   });
 
   it("clicking the inactive stage button shows the inline confirm; CONTINUE rebuilds then switches stage", async () => {
@@ -3633,7 +3657,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
     <div class="field steps">
       <span class="label">STEPS</span>
       <input
-        type="number" data-testid="stage-steps" data-help={HELP.steps}
+        type="number" aria-label="STEPS" data-testid="stage-steps" data-help={HELP.steps}
         value={current.steps} onchange={onSteps}
         use:dragScale={{
           min: RANGES.steps.min, max: RANGES.steps.max, int: true, value: current.steps,
@@ -3644,7 +3668,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
     <div class="field cfg">
       <span class="label">CFG</span>
       <input
-        type="number" step="0.1" data-testid="stage-cfg" data-help={HELP.cfg}
+        type="number" step="0.1" aria-label="CFG" data-testid="stage-cfg" data-help={HELP.cfg}
         value={current.cfg_scale} disabled={settings.cfgDisabled} onchange={onCfg}
         use:dragScale={{
           min: RANGES.cfg_scale.min, max: RANGES.cfg_scale.max, value: current.cfg_scale,
@@ -3675,7 +3699,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
     <div class="field length">
       <span class="label">LENGTH s</span>
       <input
-        type="number" data-testid="stage-length" data-help={HELP.length}
+        type="number" aria-label="LENGTH s" data-testid="stage-length" data-help={HELP.length}
         value={length} onchange={onLengthTyped}
         use:dragScale={{ min: RANGES.length_sec.min, max: LENGTH_CAP_SEC, value: length, onValue: onLength }}
       />
@@ -3684,7 +3708,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
       <span class="label">SEED</span>
       <div class="seed-row">
         <input
-          type="number" data-testid="stage-seed" data-help={HELP.seed}
+          type="number" aria-label="SEED" data-testid="stage-seed" data-help={HELP.seed}
           value={current.seed} onchange={onSeed}
           use:dragScale={{
             min: RANGES.seed.min, max: RANGES.seed.max, int: true, value: current.seed,
@@ -3835,8 +3859,11 @@ downstream has anywhere else to get that number from.
 
 Two things this task must get right or the graph lies: **`sigma_max` is not `1.0` by default** —
 it is `sigmaMaxFor(a2a)` from Task 3, and when that value floors below the chartable range (an A2A
-clip with NOISE 0) there is nothing to chart and **no `/schedule` request is sent at all**, rather
-than sending a value the server's own `RANGES.sigma_max` (0.01–1) would 400 on. And **schedule
+clip with NOISE 0) there is nothing to chart and **no `/schedule` request is sent at all**. That
+is a client-side chartability rule, not a guess at the server: today's route range-checks
+`sigma_max` nowhere at all and would answer 200 with a curve that starts at zero. The rule exists
+because §5.1's own `sigma_max` range (0.01–1) is what makes a curve readable, and a flat zero line
+tells a person less than an empty graph and a note. And **schedule
 fields are read into the request individually**, never by handing the whole `current.schedule`
 object reference to a `$derived` — Svelte 5's `$state` proxy tracks a nested mutation only where
 it is actually read, and `settings.patchSchedule` (Task 1) mutates the existing `schedule` object
@@ -3913,7 +3940,10 @@ describe("sigmaNote picks the first applicable message", () => {
   });
 
   it("shows the stale-shape note when there is no error", () => {
-    expect(sigmaNote(null, true, spec(), "euler")).toBe(STALE_SHAPE_NOTE);
+    // A non-"model" shape, because that is the only state in which the client's own
+    // `staleShape` can be true -- passing the default spec here would assert against a
+    // combination the caller can never hand this function.
+    expect(sigmaNote(null, true, spec({ shape: "geometric" }), "euler")).toBe(STALE_SHAPE_NOTE);
     expect(STALE_SHAPE_NOTE).toBe("schedule shape is charted from M3 onward");
   });
 
@@ -4271,7 +4301,10 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
   const note = $derived(sigmaNote(client.error, client.staleShape, current.schedule, current.sampler_type));
 </script>
 
-<div class="sigma-column" data-col="sigma">
+<!-- No `data-col="sigma"` here: PromptSigmaTab's own wrapper carries it, and Playwright's
+     strict mode fails a locator that matches two elements. The column marker belongs to
+     whoever places the column, not to the column itself. -->
+<div class="sigma-column">
   <div class="header">
     <span class="label">SIGMA</span>
     <span class="shape">{current.schedule.shape}</span>
@@ -4476,7 +4509,7 @@ in the target bar's NOISE control (Task 8); this module only displays it, from `
 - Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `SCHEDULE_SHAPES: readonly ["model","logsnr","geometric","linear","log","exponential","cosine"]`, `RANGES` (keys used here: `rho, sigma_min, lam_min, lam_max, plateaus, tilt, scale_phi, cfg_interval`, each `{min, max, int?}`), `interface ScheduleIssue { field: string; severity: "error" | "warning"; message: string }`, `validateSchedule(spec: ScheduleSpec, sigmaMax: number, samplerType: string | null): ScheduleIssue[]`.
 - Consumes from `src/lib/sampling/cfgInterval.ts` (M4 T5): `type CfgUnit = "progress" | "steps"`, `formatCfgBound(sigmas: readonly number[], p: number, unit: CfgUnit): string`. This module has no live sigma array of its own (Task 10's `SigmaColumn` owns the milestone's only `ScheduleClient`, and sharing it across the bottom pane and this right-pane module would need a store neither this milestone nor the spec describes), so every call here passes `sigmas: []` — Task 5 covers the empty-array case explicitly so this never NaNs, and the STEPS unit's number is honestly degraded until a later milestone shares the schedule result. See this hand-off's Open Questions.
 - Consumes from `src/lib/actions/dragScale.ts` (M1 T8): `use:dragScale={{ min, max, int, value, onValue }}`.
-- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, ids `sampler`, `shape`, `sigmaRho`, `sigmaMin`, `sigmaMax`, `lamMin`, `lamMax`, `stepped`, `plateaus`, `tilt`, `cfgLo`, `cfgHi`, `cfgUnit`, `cfgRescale` — none of these thirteen are in the shared preamble's confirmed list (only `targetBar, promptPreset, a2aToggle, a2aNoise, opSelect` for Task 8 and `prompt, negativePrompt, modelStagePost, modelStageBase, steps, cfg, length, seed, seedRandom` for Task 9 are confirmed there); they are named here by matching the drawing's own `data-help` strings for these exact controls (v3:576-595), the same open assumption Task 7 already made for `HELP.sigmaGraph`. Flagged below.
+- Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, ids `sampler`, `scheduleShape`, `scheduleRho`, `sigmaMin`, `sigmaMax`, `lamMin`, `lamMax`, `stepped`, `plateaus`, `tilt`, `cfgLo`, `cfgHi`, `cfgUnit`, `rescale` — **all fourteen verified against M1 T14's frozen table** (entered there from the drawing's own `data-help` strings at v3:576-595, the same controls). Three of them were guessed wrong in this task's first draft and are corrected here: the table spells them `scheduleShape`, `scheduleRho` and `rescale`, **not** `shape`, `sigmaRho` or `cfgRescale`, and those three ids do not exist at all.
 - Produces, from `latent-forge/src/ui/modules/advancedSampling.ts`: `shapeUsesLambda(shape: string): boolean`, `fieldIssue(issues: readonly ScheduleIssue[], field: string): { severity: "error" | "warning"; message: string } | null`.
 - Produces, from `latent-forge/src/ui/modules/AdvancedSampling.svelte`: the component, props `{ a2a?: {on: boolean; noise: number} | null; latch?: LatchState }`, both defaulted (`null`, `{latch_on: false, slots: []}`) so `<AdvancedSampling />` keeps working unmodified from M1 T12's `RightPaneModules.svelte` until M5 and M7 exist to wire them.
 
@@ -4768,7 +4801,7 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
     </div>
     <div class="field wide">
       <span class="label">SHAPE</span>
-      <select data-testid="adv-shape" data-help={HELP.shape} value={scheduleSnapshot.shape} onchange={onShape}>
+      <select data-testid="adv-shape" data-help={HELP.scheduleShape} value={scheduleSnapshot.shape} onchange={onShape}>
         {#each SCHEDULE_SHAPES as s (s)}
           <option value={s}>{s}</option>
         {/each}
@@ -4780,7 +4813,7 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
     <div class="field">
       <span class="label">σ CURVE</span>
       <input
-        type="number" step="0.1" data-testid="adv-rho" data-help={HELP.sigmaRho}
+        type="number" step="0.1" data-testid="adv-rho" data-help={HELP.scheduleRho}
         value={scheduleSnapshot.rho}
         use:dragScale={{
           min: RANGES.rho.min, max: RANGES.rho.max, value: scheduleSnapshot.rho,
@@ -4891,7 +4924,7 @@ Replace the whole of `latent-forge/src/ui/modules/AdvancedSampling.svelte` with:
     <div class="field">
       <span class="label">RESCALE</span>
       <input
-        type="number" step="0.01" data-testid="adv-rescale" data-help={HELP.cfgRescale}
+        type="number" step="0.01" data-testid="adv-rescale" data-help={HELP.rescale}
         value={current.scale_phi}
         use:dragScale={{
           min: RANGES.scale_phi.min, max: RANGES.scale_phi.max, value: current.scale_phi,
@@ -5032,15 +5065,16 @@ Two levels appear in one select (§4.5, §9.3): `render` presets carry the whole
 **Files:**
 - Create: `latent-forge/src/lib/presets/renderPresets.ts`, `latent-forge/src/lib/presets/__tests__/renderPresets.test.ts`, `latent-forge/src/ui/prompt/SettingsPresetSelect.svelte`, `latent-forge/src/ui/prompt/__tests__/settingsPresetSelect.test.ts`, `latent-forge/tests/sampling.spec.ts`
 - Modify: `latent-forge/src/ui/prompt/TargetBar.svelte` (replace Task 8's disabled placeholder select with `<SettingsPresetSelect>`)
+- Modify: `latent-forge/src/ui/prompt/__tests__/TargetBar.component.test.ts` (Task 8's placeholder test asserts the very attributes that replacement removes — amend it, see Step 3)
 
 **Interfaces:**
 - Consumes from `src/lib/forge/types.ts` (M1 T3): `RenderSettings { prompt: string; negative_prompt: string; steps: number; cfg_scale: number; seed: number; apg_scale: number; cfg_interval_progress: [number, number]; schedule: ScheduleSpec; scale_phi: number; sampler_type: string | null }`, `ScheduleSpec { shape: string; rho: number; sigma_min: number; lam_min: number; lam_max: number; stepped: boolean; plateaus: number; tilt: number }`, `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`.
 - Consumes from `src/lib/forge/defaults.ts` (M1 T4): `SCHEDULE_DEFAULT`, `BASE_DEFAULTS`, `cloneRenderSettings(s: RenderSettings): RenderSettings`.
-- Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.presets(level: string)` → `{ ok: true; names: string[] }`, `forgeApi.preset(level: string, name: string)` → `{ ok: true; preset: unknown }`, `forgeApi.savePreset(level: string, name: string, body: unknown)` → `{ ok: true }`, `ForgeApiError { status: number; message: string }`.
+- Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.presets(level: string)` → `{ ok: true; names: string[] }`, `forgeApi.preset(level: string, name: string)` → `Record<string, unknown>` — **the preset payload itself, not an envelope.** M1 T5 declares it `preset: (level, name) => getJSON<Record<string, unknown>>(...)`, so the resolved value is the JSON file's own body; there is no `.preset` field to reach through, and reaching for one yields `undefined` and applies nothing, `forgeApi.savePreset(level: string, name: string, body: unknown)` → `{ ok: true }`, `ForgeApiError { status: number; message: string }`.
 - Consumes from `src/lib/sampling/scheduleRules.ts` (Task 3): `SCHEDULE_SHAPES: readonly string[]`, `RANGES` (keys include `rho`, `sigma_min`, `lam_min`, `lam_max`, `plateaus`, `tilt`, `steps`, `cfg_scale`, `scale_phi`, `seed`, `cfg_interval`, each `{ min: number; max: number; int?: boolean }`).
 - Consumes from `src/lib/stores/settings.svelte.ts` (Task 1): the `settings` singleton — `current(t: Target): RenderSettings`, `editable(t: Target): RenderSettings`, `patch(t, p)`, `scope(t)`.
 - Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`.
-- Produces, from `src/lib/presets/renderPresets.ts`: `type PresetLevel = "prompt" | "render"`, `PRESET_NAME_RE`, `PROMPT_GROUP_LABEL = "prompt only"`, `RENDER_GROUP_LABEL = "render"`, `interface PresetOption { level: PresetLevel; name: string; group: string }`, `interface PresetApplyResult { applied: string[]; rejected: string[] }`, `presetOptions(renderNames: string[], promptNames: string[]): PresetOption[]`, `isValidPresetName(name: string): boolean`, `renderPresetBody(s: RenderSettings): RenderSettings`, `promptPresetBody(s: RenderSettings): { prompt: string; negative_prompt: string }`, `applyPromptPreset(into: RenderSettings, body: unknown): PresetApplyResult`, `applyRenderPreset(into: RenderSettings, body: unknown): PresetApplyResult`.
+- Produces, from `src/lib/presets/renderPresets.ts`: `type PresetLevel = "prompt" | "render"`, `PRESET_NAME_RE`, `SEED_SENTINEL = -1`, `PROMPT_GROUP_LABEL = "prompt only"`, `RENDER_GROUP_LABEL = "render"`, `interface PresetOption { level: PresetLevel; name: string; group: string }`, `interface PresetApplyResult { applied: string[]; rejected: string[] }`, `presetOptions(renderNames: string[], promptNames: string[]): PresetOption[]`, `isValidPresetName(name: string): boolean`, `renderPresetBody(s: RenderSettings): RenderSettings`, `promptPresetBody(s: RenderSettings): { prompt: string; negative_prompt: string }`, `applyPromptPreset(into: RenderSettings, body: unknown): PresetApplyResult`, `applyRenderPreset(into: RenderSettings, body: unknown): PresetApplyResult`.
 - Produces: the component `SettingsPresetSelect` with props `{ target: Target; disabled?: boolean }`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -5053,7 +5087,7 @@ import { BASE_DEFAULTS, cloneRenderSettings } from "../../forge/defaults";
 import type { RenderSettings } from "../../forge/types";
 import {
   applyPromptPreset, applyRenderPreset, isValidPresetName, PROMPT_GROUP_LABEL,
-  presetOptions, promptPresetBody, RENDER_GROUP_LABEL, renderPresetBody,
+  presetOptions, promptPresetBody, RENDER_GROUP_LABEL, renderPresetBody, SEED_SENTINEL,
 } from "../renderPresets";
 
 let s: RenderSettings;
@@ -5144,6 +5178,8 @@ describe("applyPromptPreset", () => {
 
 describe("applyRenderPreset validates every field before it lands", () => {
   it("applies a complete, valid preset", () => {
+    // A round trip of the app's own defaults, seed sentinel and all: `rejected` must be
+    // empty, or saving and recalling an untouched target reads as corrupt.
     const body = renderPresetBody(cloneRenderSettings(BASE_DEFAULTS));
     body.steps = 40;
     body.cfg_scale = 9;
@@ -5238,6 +5274,9 @@ describe("applyRenderPreset validates every field before it lands", () => {
     expect(applyRenderPreset(s, {}).applied).toEqual([]);
     expect(applyRenderPreset(s, { seed: -5 }).rejected).toEqual(["seed"]);
     expect(applyRenderPreset(s, { seed: 12 }).applied).toEqual(["seed"]);
+    // -1 is M1's server-resolve sentinel and the value the app's own defaults carry.
+    expect(applyRenderPreset(s, { seed: SEED_SENTINEL }).applied).toEqual(["seed"]);
+    expect(s.seed).toBe(SEED_SENTINEL);
   });
 });
 ```
@@ -5245,14 +5284,24 @@ describe("applyRenderPreset validates every field before it lands", () => {
 `latent-forge/src/ui/prompt/__tests__/settingsPresetSelect.test.ts`:
 
 ```ts
+// @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { forgeApi } from "../../../lib/forge/api";
+import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
 import { settings } from "../../../lib/stores/settings.svelte";
 import type { Target } from "../../../lib/forge/types";
 import SettingsPresetSelect from "../SettingsPresetSelect.svelte";
 
 const NONE: Target = { kind: "none" };
+
+beforeEach(() => {
+  // `settings` is a singleton shared by every suite in the run, and with no source
+  // attached `{kind:"none"}` resolves to `session.defaults` -- so without this, one test's
+  // applied preset is the next test's "before" value.
+  settings.detach();
+  settings.defaults = cloneRenderSettings(BASE_DEFAULTS);
+});
 
 afterEach(() => {
   cleanup();
@@ -5278,10 +5327,8 @@ describe("SettingsPresetSelect", () => {
         ? { ok: true as const, names: ["warm pad"] }
         : { ok: true as const, names: [] },
     );
-    vi.spyOn(forgeApi, "preset").mockResolvedValue({
-      ok: true as const,
-      preset: { steps: 40, prompt: "from the preset" },
-    });
+    // The payload itself -- `forgeApi.preset` returns Record<string, unknown> (M1 T5).
+    vi.spyOn(forgeApi, "preset").mockResolvedValue({ steps: 40, prompt: "from the preset" });
     render(SettingsPresetSelect, { props: { target: NONE } });
     const sel = await screen.findByLabelText("SETTINGS PRESET");
     await fireEvent.change(sel, { target: { value: "render:warm pad" } });
@@ -5291,10 +5338,7 @@ describe("SettingsPresetSelect", () => {
 
   it("reports the fields a malformed preset could not supply, and changes nothing else", async () => {
     vi.spyOn(forgeApi, "presets").mockResolvedValue({ ok: true as const, names: ["bad"] });
-    vi.spyOn(forgeApi, "preset").mockResolvedValue({
-      ok: true as const,
-      preset: { steps: 9000 },
-    });
+    vi.spyOn(forgeApi, "preset").mockResolvedValue({ steps: 9000 });
     const before = settings.current(NONE).steps;
     render(SettingsPresetSelect, { props: { target: NONE } });
     const sel = await screen.findByLabelText("SETTINGS PRESET");
@@ -5321,7 +5365,10 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("tab", { name: "PROMPT + SIGMA" }).click();
+  // M1 T11's bottom tabs are plain `<button class="tab" data-testid="bottom-tab-...">` with
+  // no `role="tab"` (M1:5554 names these testids as the Playwright surface), so a role
+  // locator matches nothing.
+  await page.locator("[data-testid=bottom-tab-prompt]").click();
 });
 
 test("the bottom pane keeps 4.1's geometry with the tab open", async ({ page }) => {
@@ -5432,8 +5479,21 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function numberOk(v: unknown, r: { min: number; max: number; int?: boolean }): v is number {
+/**
+ * `sentinel` is an exact value admitted alongside the range, and exactly one field uses
+ * it: SEED. M1's own BASE_DEFAULTS/POST_DEFAULTS ship `seed: -1`, the "let the server pick
+ * one" sentinel, which sits outside RANGES.seed's `{min: 0}`. Without the exemption a
+ * preset saved from the app's untouched defaults -- the commonest preset there is -- comes
+ * back reading as malformed, and a round trip of the defaults rejects its own seed.
+ * -1 is admitted; -5 is still rejected, because the sentinel is one value, not a floor.
+ */
+function numberOk(
+  v: unknown,
+  r: { min: number; max: number; int?: boolean },
+  sentinel?: number,
+): v is number {
   if (typeof v !== "number" || !Number.isFinite(v)) return false;
+  if (sentinel !== undefined && v === sentinel) return true;
   if (r.int && !Number.isInteger(v)) return false;
   return v >= r.min && v <= r.max;
 }
@@ -5454,10 +5514,17 @@ export function applyPromptPreset(into: RenderSettings, body: unknown): PresetAp
   return { applied, rejected };
 }
 
-const NUMERIC_TOP: { key: keyof RenderSettings; range: keyof typeof RANGES }[] = [
+/** SEED's `-1` is M1's server-resolve sentinel; see `numberOk`. */
+export const SEED_SENTINEL = -1;
+
+const NUMERIC_TOP: {
+  key: keyof RenderSettings;
+  range: keyof typeof RANGES;
+  sentinel?: number;
+}[] = [
   { key: "steps", range: "steps" },
   { key: "cfg_scale", range: "cfg_scale" },
-  { key: "seed", range: "seed" },
+  { key: "seed", range: "seed", sentinel: SEED_SENTINEL },
   { key: "scale_phi", range: "scale_phi" },
 ];
 
@@ -5489,10 +5556,10 @@ export function applyRenderPreset(into: RenderSettings, body: unknown): PresetAp
   applied.push(...text.applied);
   rejected.push(...text.rejected);
 
-  for (const { key, range } of NUMERIC_TOP) {
+  for (const { key, range, sentinel } of NUMERIC_TOP) {
     if (!(key in body)) continue;
     const v = body[key];
-    if (numberOk(v, RANGES[range])) {
+    if (numberOk(v, RANGES[range], sentinel)) {
       (into[key] as number) = v;
       applied.push(key);
     } else {
@@ -5617,11 +5684,13 @@ export function applyRenderPreset(into: RenderSettings, body: unknown): PresetAp
     const level = v.slice(0, sep);
     const name = v.slice(sep + 1);
     try {
+      // `forgeApi.preset` resolves to the preset payload itself (M1 T5), so `res` IS the
+      // body to validate. There is no `{ok, preset}` envelope to unwrap.
       const res = await forgeApi.preset(level, name);
       const into = settings.editable(target);
       const r = level === "prompt"
-        ? applyPromptPreset(into, res.preset)
-        : applyRenderPreset(into, res.preset);
+        ? applyPromptPreset(into, res)
+        : applyRenderPreset(into, res);
       message = r.rejected.length > 0 ? `ignored: ${r.rejected.join(", ")}` : null;
     } catch (e) {
       message = e instanceof ForgeApiError ? e.message : String(e);
@@ -5629,7 +5698,9 @@ export function applyRenderPreset(into: RenderSettings, body: unknown): PresetAp
   }
 </script>
 
-<label class="wrap" data-help={HELP.settingsPreset}>
+<!-- `promptPreset` is the id M1 T14's table gives this control (v3:361), and the id Task 8's
+     placeholder select already carried. There is no `settingsPreset` id. -->
+<label class="wrap" data-help={HELP.promptPreset}>
   <span class="lab">SETTINGS PRESET</span>
   <select aria-label="SETTINGS PRESET" {disabled} {value} onchange={choose}>
     <option value="">—</option>
@@ -5673,13 +5744,36 @@ In `TargetBar.svelte`, replace Task 8's disabled placeholder select with:
 
 and add `import SettingsPresetSelect from "./SettingsPresetSelect.svelte";` to its script block.
 
+That replacement also retires Task 8's own green test — `renders the SETTINGS PRESET slot
+disabled with one dash option` asserts a `data-testid="target-settings-preset"` and a `disabled`
+attribute this task deliberately removes, so leaving it alone turns a passing suite red. Amend it
+in place in `latent-forge/src/ui/prompt/__tests__/TargetBar.component.test.ts` (the suite's count
+is unchanged at 10 — this is a replacement, not an addition), adding
+`import { forgeApi } from "../../../lib/forge/api";` to the file and `vi.restoreAllMocks()` to its
+`afterEach`:
+
+```ts
+  it("renders the live SETTINGS PRESET select, enabled, with the dash option first", async () => {
+    vi.spyOn(forgeApi, "presets").mockResolvedValue({ ok: true as const, names: [] });
+    const { findByLabelText } = render(TargetBar, {
+      props: {
+        target: { kind: "none" }, clipName: null, lane: 0 as const, a2a: null,
+        clipHasLatent: false, onA2AToggle: noop, onNoise: noop, op: null, onOp: noop,
+      },
+    });
+    const select = (await findByLabelText("SETTINGS PRESET")) as HTMLSelectElement;
+    expect(select.disabled).toBe(false);
+    expect(select.options[0].value).toBe("");
+  });
+```
+
 - [ ] **Step 4: Run the tests — they must pass**
 
 ```bash
 cd latent-forge && npx vitest run && npm run check
 ```
 
-Expected: every suite passes — this task adds `Tests  26 passed (26)` across its two files (22 in `renderPresets.test.ts`, 4 in `settingsPresetSelect.test.ts`) — and `svelte-check found 0 errors and 0 warnings`.
+Expected: every suite passes — this task adds `Tests  27 passed (27)` across its two files (23 in `renderPresets.test.ts`, 4 in `settingsPresetSelect.test.ts`) — and `svelte-check found 0 errors and 0 warnings`. Task 8's suite stays at 21: the amended `TargetBar.component.test.ts` replaces one test rather than adding one.
 
 Then the layout spec, which needs the mock server:
 
@@ -5741,11 +5835,10 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   read at `explorer_render_server.py:1009-1060`. If M1 T5's actual client differs (a different
   parameter order, no `AbortSignal` support, a wrapped `{ok, ...}` envelope it unwraps itself),
   `ScheduleClient.#run`'s single call site is the only place to reconcile it.
-- **`HELP.sigmaGraph`** — Task 7's canvas carries `data-help={HELP.sigmaGraph}`, mirroring the
-  drawing's own `data-help` on the sigma canvas (v3:404). This id is not among the ones the
-  shared preamble confirms exist in M1 T14's frozen 87-entry table (unlike Task 8's `targetBar`,
-  `promptPreset`, `a2aToggle`, `a2aNoise`, `opSelect`, which the plan explicitly confirms). If the
-  table uses a different id for this control, rename the one reference in `SigmaGraph.svelte`.
+- ~~**`HELP.sigmaGraph`**~~ — **closed.** Task 7's canvas carries `data-help={HELP.sigmaGraph}`,
+  mirroring the drawing's own `data-help` on the sigma canvas (v3:404), and `sigmaGraph` **is** in
+  M1 T14's frozen table, entered from that same v3:404. Nothing to rename. (The HELP ids that
+  really were wrong were Task 11's and Task 12's, and they are now corrected in place.)
 - **σ max stays outside `ScheduleRequest.schedule`** — confirmed, not a disagreement: Task 4's
   `ScheduleRequest.sigma_max` is a sibling of `schedule`, never a field inside it, matching
   WINTERMUTE's 2026-09-17 decision (spec §5.1, §10) and Task 3's `sigmaMaxFor`. Noted here only so
@@ -5768,11 +5861,11 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   `formatCfgBound([], p, unit)`, which Task 5 explicitly covers for the empty-array case, so the
   PROGRESS unit is exact and the STEPS unit shows a degraded number until a later milestone shares
   the schedule result across the pane.
-- **Thirteen `HELP` ids used by Task 11** (`sampler, shape, sigmaRho, sigmaMin, sigmaMax, lamMin,
-  lamMax, stepped, plateaus, tilt, cfgLo, cfgHi, cfgUnit, cfgRescale`) are not in the shared
-  preamble's confirmed list, the same open point Task 7 already raised for `HELP.sigmaGraph`. They
-  are named by matching the drawing's own `data-help` strings for these controls (v3:576-595); if
-  the real 87-entry table spells any of them differently, this is a rename, not a re-read of §9.4.
+- ~~**Thirteen `HELP` ids used by Task 11**~~ — **closed.** All fourteen (`sampler, scheduleShape,
+  scheduleRho, sigmaMin, sigmaMax, lamMin, lamMax, stepped, plateaus, tilt, cfgLo, cfgHi, cfgUnit,
+  rescale`) are in M1 T14's frozen table, entered there from the drawing's own `data-help` strings
+  at v3:576-595. The draft had three of them wrong — `shape`, `sigmaRho` and `cfgRescale` are not
+  ids at all — and Task 11's markup now uses the table's own spellings.
 - **PromptSigmaTab and AdvancedSampling both read `view.selection` directly** rather than taking a
   `target` prop, on the precedent of M1 T12's own `RightPaneModules.svelte` doing the same for
   `view.selection.kind` and `view.activeLane`. If a later review decides the PROMPT + SIGMA tab and
