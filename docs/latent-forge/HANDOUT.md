@@ -1,57 +1,17 @@
 # Latent Forge — handout for the implementing team
 
-*Written 2026-09-20 by FLATLINE. Read this before picking up a plan. It says what is ready to build,
-in what order, what will bite you, and what is still a question. It does not repeat the spec.*
+*Written 2026-09-20 by FLATLINE, reconciled 2026-09-22 against WINTERMUTE's `7193ba9`. Read this
+before picking up a plan. It says what is ready to build, in what order, what will bite you, and
+what is still a question. It does not repeat the spec.*
+
+**Where this document and a plan's own "Normative names and decisions" block disagree, the plan
+wins** — and where a plan and M1's table disagree, M1's table wins. This is a map, not a contract.
 
 **Read-first documents, in order:** `docs/sa3-studio/ORIENTATION.md` (the project as a whole, and
 Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-latent-forge-design.md`
 (the design, normative), then the plan you are implementing.
 
 ---
-
-> ## ⚠ STATUS UPDATE — 2026-09-22, WINTERMUTE
->
-> **Added, not edited: everything below this block is FLATLINE's and is left as written.** Two of its
-> sections have since been overtaken, and an implementer who acts on them will hold off work that is
-> no longer blocked. Where this block and a later section disagree, **this block is the current one.**
->
-> **1. The server track is UNBLOCKED. Both held fixes landed (commit `7193ba9`).**
-> - **M3 Task 2 edit (j)** now ends in a complete `async def schedule(request: Request):` — the whole
->   restructured handler, not prose. Nothing to reconstruct. The task body also states the two
->   differences from today's function: the `steps`/`duration`/`sigma_max` parse moves above the
->   `MODEL is None` check so an array schedule charts during a backbone rebuild, and the dist_shift
->   resolution keeps its own `try:` so the legacy `float(req["dist_shift"])` path still answers 400.
-> - **M2 Task 15's `record_fixtures.py`** now carries an `EXPECTED` tuple and a `RECORDED` set, and
->   exits non-zero naming what it skipped. **It is TWENTY fixtures, not nineteen** — the count in the
->   section below is wrong and was wrong when written; four are conditional exactly as described.
->   Step 6's expected output says twenty.
->
-> **2. The "Open questions" section below is CLOSED. All five are decided, plus three more found
-> while deciding them.** Do not re-open them from that list; the live source is **M1's
-> "Normative names" table**, which now carries a row for each:
->
-> | was open | decided |
-> |---|---|
-> | `ForgeClip.previewAudio` | **in-memory only**, §9.2 unchanged — it is a cache of §7.3's analyze→stretch step, re-derived on load. M5 T10 stands as written |
-> | downbeat-coincidence window | **the spec's window, the drawing's ramp**: `w = (60/bpm)/8`, `t = max(0, 1 - dt/w) ** 0.7`, OKLCH per channel. §4.3 states it once and exactly. `downbeatColor(t)` is unchanged — only the `t` fed to it |
-> | `downbeats_sec` timebase | **source seconds, unstretched, at `native_bpm`** — documented on the field in M1 T3 |
-> | `RenderSettings` length | **`duration_sec` added** (§4.5 LENGTH, ≤184). Wire name stays `duration`. **M4 should move its LENGTH control out of the tab's own state into the target's settings when next touched** |
-> | the two `ModuleId` declarations | **kebab, declared once in the view store**, and it was THREE declarations — the third (T9's surface block) was right that `legacy-inspector`/`legacy-server` are real ids. T12 imports and narrows to `SpecModuleId` |
->
-> Three more, found in the same pass and fixed in M1: the view store declared `.view` where the table
-> says `.screen` (and never declared `.activeLane`); `TerminalMode`'s middle mode was `"normal"`
-> against the table's `"pane"`; and `BottomTabId` was declared in T11 while the table said T7 imports
-> it — backwards, since T7 is built first and its own vitest run would fail. **T7 now declares both.**
-> Task 13's `CentreColumn` rendered a bare `<BottomPane />` and a `workspace` snippet Task 9 never
-> declared; it now renders Task 9's own `{@render centre()}` / `{@render bottom?.()}`, and says why
-> `CentreColumn` must never construct a `BottomPane` itself.
->
-> **3. One defect nobody had flagged.** M1's handmade job fixture sent `duration_sec` inside a
-> generate payload — a key `_generate_impl` does not read — so a fixture-shaped payload would have
-> quietly rendered 47 s instead of 45. Fixed in both fixtures.
->
-> FLATLINE has the full reasoning in `flatline.wintermute.log` (2026-09-21 16:55). M6 and M7 are
-> still unwritten and are the remaining frontend work; M8 and M11 are server-side and mine.
 
 ## What is ready to build
 
@@ -61,8 +21,11 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 | **M5** timeline fidelity | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | 12 | reviewed (32 findings, 11 blocking, applied) |
 | **M4** PROMPT + SIGMA and ADVANCED SAMPLING | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | 12 | reviewed twice (49 findings, 40 blocking, applied) |
 | **M2** server foundations | `docs/superpowers/plans/2026-09-15-latent-forge-m2-server-foundations.md` | 15 | assessed buildable — TDD-complete, no scope gaps, needs the GPU box |
-| **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — **Task 2 blocked pending a fix**; needs the GPU box |
-| **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | reviewed (6 findings, 2 blocking — both pre-existing M1 defects, not M10's; see its own Open questions #6) |
+| **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — Task 2's edit (j) now written out in full; needs the GPU box |
+| **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | reviewed (6 findings, 2 blocking — both were pre-existing M1 defects, not M10's, and both are now fixed in M1) |
+| **M6** chroma | *not yet a plan* | 11 | **half written.** Writer A's Tasks 1–5 are drafted; Writer B (6–11), assembly and a critic pass remain. The brief is `docs/latent-forge/M6_WRITER_BRIEFS.md`. Do not start it — FLATLINE is mid-milestone |
+| **M7** chains / mix / library / sessions | *not yet a plan* | — | prerequisites in hand, no brief yet |
+| **M9** rendering | *not yet a plan* | — | last; needs M7 |
 
 **Build order is M1 first, then M4 and M5 in either order.** M1 is the foundation every other plan
 consumes; nothing else compiles without it. After those: M10 (a leaf — needs only M1 and fixtures),
@@ -75,21 +38,24 @@ section and can look nothing up, which is why every task restates the interfaces
 "helpfully" read ahead and merge tasks — the restatements are the contract, and where two tasks
 disagree the plan's **Normative names and decisions** block wins over both.
 
-**The server track (M2, M3, M8, M11) is WINTERMUTE's and needs the GPU box.** M2 and M3 were
-assessed on 2026-09-20 and are buildable: M2's 15 tasks are TDD-complete with no scope gaps, and
-eighteen of their claims about the existing server were checked against `explorer_render_server.py`
-and all held. **Kim has held the server run until two fixes land** (2026-09-21, see `flatline.wintermute.log`):
+**The server track (M2, M3, M8, M11) is WINTERMUTE's and needs the GPU box. It is UNBLOCKED as of
+2026-09-21 (`7193ba9`).** M2 and M3 were assessed on 2026-09-20 and are buildable: M2's 15 tasks are
+TDD-complete with no scope gaps, and eighteen of their claims about the existing server were checked
+against `explorer_render_server.py` and all held. Kim held the run until two fixes landed; both have:
 
-1. **M3 Task 2 edit (j) must be written out in full.** It is nine lettered edits into the live
-   2292-line server, and (j) restructures `/schedule` then ends in prose — "keep the existing
-   `try:`" — without showing the merged function. The anchors are all real, but it is the only task
-   in either server plan where an agent must reconstruct rather than transcribe, and it sits on the
-   render path M4, M5, M8 and M9 all use.
-2. **M2 Task 15's `record_fixtures.py` must fail loudly below 19 files.** Four of the nineteen are
-   conditional — they skip silently when no crops are listed or the generate job returns no `urls` —
-   so a half-working run writes 15 files and exits 0. Since Task 15 is GPU-gated and last, a silent
-   shortfall is found late and costs another GPU run. **Do not tell the client side the fixtures have
-   landed without counting 19.**
+1. **M3 Task 2 edit (j) is now a complete `async def schedule(request: Request):`** rather than nine
+   lettered edits ending in prose. Nothing is left to reconstruct. The task body also names the two
+   differences from today's function: the `steps`/`duration`/`sigma_max` parse moves above the
+   `MODEL is None` check so an array schedule charts during a backbone rebuild, and the dist_shift
+   resolution keeps its own `try:` so the legacy `float(req["dist_shift"])` path still answers 400
+   rather than 500. This sits on the render path M4, M5, M8 and M9 all use, which is why it was
+   worth holding for.
+2. **M2 Task 15's `record_fixtures.py` now has an `EXPECTED` tuple, a `RECORDED` set and a non-zero
+   exit naming what it skipped.** Four of the fixtures are conditional — they skip silently when no
+   crops are listed or the generate job returns no `urls` — so a half-working run used to exit 0
+   looking like success. **It is TWENTY fixtures, not nineteen**; the earlier count here was wrong
+   when written. Step 6's expected output says twenty. Do not tell the client side the fixtures have
+   landed without counting 20.
 
 ---
 
@@ -123,6 +89,23 @@ code. And `ctx.fillStyle = ""` is a **silent no-op that leaves the previous colo
 component reading tokens needs a per-token fallback — in the app `tokens.css` is loaded and it never
 fires, but a bare render paints garbage.
 
+**Seven M1 names changed on 2026-09-21; a plan written before that may still cite the old ones.**
+Fixed in the view store (M1 T7) and correct everywhere in M4/M5/M6/M10 as of this reconciliation:
+`view.view` → **`view.screen`** (and `setActiveLane` is now a real setter beside `setView`);
+`TerminalMode`'s middle mode `"normal"` → **`"pane"`**; `type BottomTab` → **`BottomTabId`**,
+declared once in T7 and re-exported by T11 (not the other way round — T7 is built first, so its own
+vitest run would fail); `BOTTOM_TABS` → **`BOTTOM_TAB_IDS`**; and `ModuleId` is **kebab, declared
+once, with seven members** — the five spec modules plus `legacy-inspector` and `legacy-server`, which
+are real ids T9 mounts. `MODULE_IDS` (restoreUi's whitelist) has all seven; T12's `MODULE_ORDER` has
+the five, narrowed through `SpecModuleId`. Also: M1 T13's `CentreColumn` now renders Task 9's own
+`{@render centre()}` / `{@render bottom?.()}` and never constructs a `BottomPane` itself.
+
+**A payload key the server does not read is silently ignored.** M1's handmade job fixture sent
+`duration_sec` inside a generate payload; `_generate_impl` reads `duration`, so a fixture-shaped
+payload would have quietly rendered 47 s instead of 45. Fixed in both fixtures on 2026-09-21. The
+lesson generalises: this server 200s on an unknown key rather than rejecting it, so a wire-name typo
+shows up as a wrong-length render, not an error.
+
 **An abort listener added after the signal already fired never runs.** Check `signal.aborted` before
 registering one, or the promise never settles. This was a real green-looking test that hung.
 
@@ -147,53 +130,39 @@ needs no client change) and the pane displays `schedule shape is charted from M3
 Do **not** compute the curve locally to cover the gap. §5.3 says the canvas never computes σ, and a
 graph that quietly disagrees with the server is worse than one that admits it is behind.
 
-**`/schedule` needs `duration` and M1's client cannot send it.** The model shape's dist shift is
-length-dependent (`latent_len = ceil(duration·SR/DS)`), so omitting it charts the server's 47 s
-default whatever LENGTH says. M4's Task 4 therefore calls `/schedule` directly instead of through
-`forgeApi.schedule` — §6 freezes only `/forge/*` and says to keep the pre-existing routes in their
-own module. **`forgeApi.schedule` in M1 T5 is dead and wrong; do not call it.**
-
-**Module ids are kebab-case** (`advanced-sampling`). M1 declares `ModuleId` twice, incompatibly —
-kebab in T7's view store, camel in T12 — and the plans follow the view store, because that spelling
-is what persists into the project JSON's `ui.modules`. Awaiting WINTERMUTE.
-
-**Two more M1 self-contradictions, found by M10's critic pass on 2026-09-21.** Neither blocks a
-plan that reads around them, both are M1's to fix, both are in `flatline.wintermute.log`:
-
-- M1's own Normative-names table (line 35) says the view store's field is `view.screen`; M1 Task 7's
-  actual `ViewStore` class declares it `view = $state<ViewName>("workspace")` — `.view`, never
-  `.screen`, and `.activeLane` likewise appears only in the table, never in the class body. Every
-  plan so far has cited the table's names (correctly, since M1's own rule says the table wins), so
-  nothing downstream is broken today — but the class body itself needs fixing to match, or the table
-  does.
-- M1 Task 9 declares `CentreColumn`'s props as `{centre: Snippet, bottom?: Snippet}`, and Task 11's
-  `App.svelte` wiring assumes `CentreColumn` still renders `{@render bottom?.()}` internally to place
-  a fully-configured `<BottomPane visible tab ontab terminalMode onterminalmode .../>`. Task 13's
-  replacement instead renders a bare, propless `<BottomPane/>` and references a `workspace` snippet
-  Task 9 never declared — dropping Task 11's TERMINAL wiring in the workspace view and likely failing
-  `svelte-check` on the undeclared prop. M10's own statistics-view Playwright assertion (bottom pane
-  absent) is expected to survive any reasonable fix, since it only depends on T13's if/else shape, not
-  the Props mismatch — but re-verify it once M1 T9/T11/T13 are actually implemented.
+**`/schedule` needs `duration`.** The model shape's dist shift is length-dependent
+(`latent_len = ceil(duration·SR/DS)`), so omitting it charts the server's 47 s default whatever
+LENGTH says. M1 T5's `forgeApi.schedule` was corrected on 2026-09-21 and now takes `duration` as a
+required body key plus an `AbortSignal`, returning the route's nine fields — **the earlier warning
+that it was "dead and wrong" no longer applies.** M4's Task 4 still calls `/schedule` through its
+own `scheduleClient.svelte.ts`, because §6 freezes only `/forge/*` and says to keep the pre-existing
+routes in their own module, and because that module already owns the debounce, cache and abort. The
+two now agree field for field; either would work.
 
 ---
 
-## Open questions — do not decide these unilaterally
+## Open questions — none are currently open
 
-All are with WINTERMUTE (see `flatline.wintermute.log`). Each has a shipped reading, so nothing is
-blocked; but if you find yourself needing a different answer, ask rather than change it.
+**All five closed on 2026-09-21 by WINTERMUTE, plus three more found in the same pass.** The live
+source for each is **M1's own "Normative names and decisions" table**, which now carries a row per
+decision; this list is a pointer, not a second copy that can drift.
 
-1. **`ForgeClip.previewAudio`** — M5 T10 needs somewhere to hang the stretched preview, but
-   `ForgeClip` is pinned by §9.2 and read by M7's v1→v2 converter, so adding a field is a spec change.
-2. **The downbeat-coincidence window** — §4.3 says one 32nd note, linear; the drawing's `_dbColor`
-   uses a quarter-beat with a `^0.7` ramp. Factor of two plus a different curve. M5 ships the spec's.
-3. **`downbeats_sec`'s timebase** — `/forge/analyze` returns it unstretched at `native_bpm` while
-   `offset_sec`/`dur_sec` are stretched (§7.3). One line either way, but it belongs in M1's
-   `types.ts` doc comment so it cannot drift.
-4. **`RenderSettings` has no length field** — §4.5's `LENGTH s` lives in the tab's state, so a
-   `render` preset cannot recall the length it was made at, which §9.3 arguably requires.
-5. **M1's two `ModuleId` declarations** — one has to go.
+| was open | decided |
+|---|---|
+| `ForgeClip.previewAudio` | **in-memory only**, §9.2 unchanged — a cache of §7.3's analyze→stretch step, re-derived on load. Persisting it would point a reopened project at a render that may be gone. M5 T10 stands as written; M7's converter ignores it |
+| the downbeat-coincidence window | **the spec's window, the drawing's ramp.** §4.3 now states it once and exactly: `w = (60 / bpm) / 8`, `t = max(0, 1 - dt / w) ** 0.7`, interpolated per channel in OKLCH. `downbeatColor(t)` is unchanged — only the `t` fed to it. M5 T2 is updated |
+| `downbeats_sec`'s timebase | **source seconds, unstretched, at `native_bpm`**, unlike `start_sec`/`offset_sec`/`dur_sec`. Documented on the field in M1 T3; scale by the clip's stretch factor before drawing or snapping |
+| `RenderSettings` has no length field | **`duration_sec` added** (§4.5 LENGTH, ≤ 184, default 47.556 = T:512 exactly). **Wire name stays `duration`.** Ignored on an A2A target. M4 T9/T10 are updated: LENGTH is per-target settings state, owned by the tab |
+| M1's two `ModuleId` declarations | **kebab, declared once in the view store** — and it was three declarations, not two. See the names list above |
 
----
+Three more found while deciding those, all fixed in M1: the view store's `.view`/`.screen`
+mismatch, `TerminalMode`'s `"normal"`/`"pane"` mismatch, and `BottomTabId` being declared in T11
+when T7 needs it first. All three are in the names list above. M10's statistics-view Playwright
+assertion (bottom pane absent) survives the `CentreColumn` fix — it depends on T13's if/else shape,
+not on the Props mismatch — so M10 needed no change.
+
+**If you find yourself needing a different answer to any of these, ask rather than change it.**
+The full reasoning is in `flatline.wintermute.log`, entry 2026-09-21 16:55.
 
 ## If you are splitting a plan across parallel agents
 

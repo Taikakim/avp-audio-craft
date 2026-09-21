@@ -91,15 +91,25 @@ Note it in your open questions.
   `ForgeClip.detune_cents` is the per-clip detune this milestone reads and writes;
   **`ForgeClip.previewAudio`** (added by M5 T10) is the **stretched** preview audio — §5.4 says
   chroma is computed on that, not on the raw source, "so it matches what the timeline plays".
+  Settled 2026-09-21: `previewAudio` is **in-memory only and is NOT serialised** into the project
+  JSON (§9.2 is unchanged); it is a cache of §7.3's analyze→stretch step, re-derived on load. Read
+  it, never persist it, and read `clip.previewAudio ?? clip.audio` so an unstretched clip still
+  resolves.
 - From `src/lib/stores/view.svelte.ts` (**M1 T7**): `view.bottomTab`, `view.setBottomTab`,
-  `view.activeLane`. **Caution:** M1's Normative table and M1 Task 7's actual class body disagree on
-  the screen field's name (`view.screen` vs `view.view`), and `activeLane` likewise appears only in
-  the table — cite the Normative table's spelling, which M1's own rule says wins, and do not depend
-  on either at runtime if you can avoid it. (Found by M10's critic; already with WINTERMUTE.)
-- From **M1 T11/T12**: the bottom-pane tab frame. `type BottomTab = "chroma" | "prompt" | "mix" |
-  "terminal"` (M1:3026) — note M1 **also** declares `type BottomTabId` with the identical union
-  (M1:3721, 5744); they are structurally the same, so pick one, say which in your Normative block,
-  and flag the duplication. The body you fill is `[data-region="bottom-tab-body"]`, **162 px**, and
+  `view.activeLane`, `view.setActiveLane`. **The earlier caution is withdrawn — fixed by WINTERMUTE
+  on 2026-09-21 (`7193ba9`).** M1 T7's class body now declares `screen` and `activeLane` as real
+  fields, matching the Normative table; `setView(v)` keeps its name and writes `screen`, and
+  `setActiveLane(n)` is new. Two neighbours changed in the same pass and **you must use the new
+  spellings**: `TerminalMode`'s middle mode is `"pane"`, never `"normal"`, and the string-array
+  constant of bottom-tab ids is `BOTTOM_TAB_IDS`, not `BOTTOM_TABS`. `ModuleId` is kebab, declared
+  once, and now has **seven** members (the five spec modules plus `legacy-inspector` and
+  `legacy-server`); `MODULE_IDS` carries all seven, while T12's `MODULE_ORDER` carries the five.
+- From **M1 T11/T12**: the bottom-pane tab frame. The duplication is gone (WINTERMUTE,
+  2026-09-21): the type is **`BottomTabId`**, declared **once in the view store (T7)** and
+  re-exported by `src/ui/shell/bottomTabs.ts` (T11) for the tab table's convenience — T7 is built
+  first, so declaring it there is what keeps T7's own vitest run green in task order. `type
+  BottomTab` no longer exists; do not cite it. The body you fill is
+  `[data-region="bottom-tab-body"]`, **162 px**, and
   the tab's right-aligned hint is already `hover the heatmap to read a frame` (M1 T12's
   `bottomHint("chroma")`) — do not re-render it.
 - From **M5 T6**: `SCORE_PLACEHOLDER = "χ —"`, the clip box's score-label slot. **M6 fills the real

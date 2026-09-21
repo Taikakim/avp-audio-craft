@@ -773,7 +773,8 @@ describe("snapDelta reports what happened, for the magnet indicator", () => {
 import { describe, expect, it } from "vitest";
 import type { ForgeClip } from "../../forge/types";
 import {
-  clipDownbeats, coincidence, COINCIDENCE_DIVISION, coincidenceToleranceSec, downbeatColor, laneDownbeats,
+  clipDownbeats, coincidence, COINCIDENCE_DIVISION, COINCIDENCE_RAMP_EXP, coincidenceToleranceSec,
+  downbeatColor, laneDownbeats,
 } from "../downbeats";
 
 function clip(over: Partial<ForgeClip>): ForgeClip {
@@ -826,8 +827,18 @@ describe("coincidence within one 32nd note (spec 4.3)", () => {
     expect(coincidence(4.0, [4.5], 120)).toBe(0);
   });
 
-  it("ramps linearly inside the tolerance so a near miss reads as a near miss", () => {
-    expect(coincidence(4.0, [4.03125], 120)).toBeCloseTo(0.5, 6);
+  it("ramps with the spec's 0.7 exponent, not linearly", () => {
+    expect(COINCIDENCE_RAMP_EXP).toBe(0.7);
+    // Half a 32nd away: linear would be 0.50; spec 4.3 is 0.5 ** 0.7.
+    expect(coincidence(4.0, [4.03125], 120)).toBeCloseTo(0.6155722, 6);
+  });
+
+  it("is concave, so a near miss stays visible instead of fading out", () => {
+    // Every point strictly inside the window sits ABOVE the linear ramp.
+    for (const frac of [0.1, 0.25, 0.5, 0.75, 0.9]) {
+      const dt = 0.0625 * frac;
+      expect(coincidence(4.0, [4.0 + dt], 120)).toBeGreaterThan(1 - frac);
+    }
   });
 
   it("takes the closest of several", () => {
@@ -962,11 +973,20 @@ export function snapSec(sec: number, mode: SnapMode, ctx: SnapContext): number {
 // Downbeat positions on the timeline, and how strongly one agrees with another
 // lane's. Spec 4.3: markers interpolate from --downbeat toward --downbeat-hit
 // for downbeats coinciding with another lane's within one 32nd note at mean
-// project tempo.
+// project tempo, on a `** 0.7` ramp across that window.
 
 import type { ForgeClip } from "../forge/types";
 
 export const COINCIDENCE_DIVISION = 32;
+
+/**
+ * Spec 4.3's ramp exponent. The WINDOW is the spec's (one 32nd note, half the
+ * drawing's quarter-beat, because a quarter-beat lights markers that are
+ * audibly not together); the CURVE is the drawing's `_dbColor`, because a
+ * linear ramp makes a near miss almost invisible. Settled 2026-09-21 and now
+ * stated once and exactly in the spec.
+ */
+export const COINCIDENCE_RAMP_EXP = 0.7;
 
 /**
  * A clip's analysed downbeats in TIMELINE seconds: shifted by the clip's
@@ -996,9 +1016,10 @@ export function coincidenceToleranceSec(bpm: number): number {
 }
 
 /**
- * 1 when `sec` lands exactly on one of `others`, falling linearly to 0 at one
- * 32nd away. The ramp is what makes a near miss visibly a near miss instead of
- * flicking between two colours.
+ * 1 when `sec` lands exactly on one of `others`, falling to 0 at one 32nd away:
+ * spec 4.3's `t = max(0, 1 - dt / w) ** 0.7`. The ramp is what makes a near
+ * miss visibly a near miss instead of flicking between two colours, and the
+ * exponent is what keeps it visible rather than almost-off.
  */
 export function coincidence(sec: number, others: number[], bpm: number): number {
   const tol = coincidenceToleranceSec(bpm);
@@ -1006,7 +1027,7 @@ export function coincidence(sec: number, others: number[], bpm: number): number 
   for (const o of others) {
     const d = Math.abs(o - sec);
     if (d >= tol) continue;
-    best = Math.max(best, 1 - d / tol);
+    best = Math.max(best, (1 - d / tol) ** COINCIDENCE_RAMP_EXP);
   }
   return best;
 }
@@ -1050,7 +1071,7 @@ export function downbeatColor(t: number): string {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/math/__tests__/snap.test.ts src/lib/math/__tests__/downbeats.test.ts
 ```
 
-Expected: `Test Files  2 passed (2)` and `Tests  29 passed (29)`.
+Expected: `Test Files  2 passed (2)` and `Tests  30 passed (30)`.
 
 Then the type gate every task in this milestone runs:
 
@@ -5979,7 +6000,12 @@ Carried up from the parallel drafts, deduplicated where two agents found the sam
   `arrangement.clips` — but Tasks 3–7 may be relying on the promised names. Worth confirming
   whether T1's committed code (as opposed to the plan text) actually has them before Tasks 3–7
   are reconciled against it.
-- **`ForgeClip` had no field for the lifecycle's stretched preview audio.** Neither T1's shown
+- **`ForgeClip` had no field for the lifecycle's stretched preview audio.** **RESOLVED 2026-09-22
+  (WINTERMUTE): `previewAudio` is IN-MEMORY ONLY and §9.2 is unchanged.** It is a cache of §7.3's
+  analyze→stretch step, re-derived on load; persisting it would point a reopened project at a render
+  that may be gone, and M7's v1→v2 converter neither reads nor writes it. There is now a row in M1's
+  Normative-names table saying so, specifically so a serialiser cannot pick it up by accident.
+  **Task 10 below stands exactly as written.** The original finding, for the reasoning: neither T1's shown
   code nor its Interfaces line anticipated a distinct "what actually plays" ref separate from
   `audio` (the original source). Task 10 adds `previewAudio: AudioRef | null` to `ForgeClip` and
   `setPreviewAudio`/`setDownbeats` to `arrangement`, mirroring T1's own precedent of extending the
@@ -6000,12 +6026,15 @@ Carried up from the parallel drafts, deduplicated where two agents found the sam
   (M9 does not exist yet to ever hold a render), not a spec contradiction resolved silently, but
   it does mean the toggle's visibility rule itself will need revisiting in M9 rather than merely
   its `disabled` attribute.
-- **The handoff's markup (v3 line 66) says lane downbeats glow "within a quarter-beat of another
-  lane's"; the spec (§4.3) and M5 T2's own `COINCIDENCE_DIVISION = 32` say one 32nd note.** A
-  quarter-beat is an eighth-note-per-beat-quarter, i.e. a 16th note at 4/4 — not a 32nd. T2 (already
-  built) went with the spec's 32nd-note figure, which these tasks did not touch or need to
-  reconcile, but the drawing and the spec disagree with each other on this specific number and
-  nobody has resolved which one is "right" versus merely newer.
+- ~~**The handoff's markup (v3 line 66) says lane downbeats glow "within a quarter-beat of another
+  lane's"; the spec (§4.3) and M5 T2's own `COINCIDENCE_DIVISION = 32` say one 32nd note.**~~
+  **RESOLVED 2026-09-22 (WINTERMUTE). The spec's window, the drawing's ramp**, and §4.3 now states
+  the whole rule once and exactly: `w = (60 / bpm) / 8`, `t = max(0, 1 - dt / w) ** 0.7`,
+  interpolated per channel in OKLCH. The window is the spec's because a quarter-beat lights markers
+  that are audibly not together; the `0.7` is the drawing's because a linear ramp makes a near miss
+  almost invisible. **T2 above is updated**: `COINCIDENCE_RAMP_EXP = 0.7`, applied in `coincidence`,
+  with two tests replacing the one that asserted a linear midpoint. `downbeatColor(t)` is unchanged
+  — only the `t` its caller feeds it — and its endpoints (hue 95, not the drawing's 100) stand.
 - **Task 12's clip/overlap/snap selectors are unverified against Tasks 3–7's actual output**,
   since that work happens in parallel by a different agent and was not visible while this file was
   written. The task text says explicitly to fix selector strings, not test intent, if they differ.

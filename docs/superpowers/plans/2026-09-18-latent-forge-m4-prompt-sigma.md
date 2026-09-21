@@ -19,7 +19,7 @@
 - **The canvas never computes σ** (spec §5.3, last paragraph). The only source of a sigma array is `POST /schedule`. A task that finds itself porting `_sigmaAt` from the drawing has taken a wrong turn — the drawing computed locally because it had no server.
 - **`σ max` is not a `ScheduleSpec` field** (WINTERMUTE, 2026-09-17; spec §5.1's range row). It is the pass's own initial noise level: `1.0` for a fresh generate, and the selected clip's `a2a.noise` when the target is a clip with A2A on. The field is therefore **read-only `1.00` unless the target is an A2A clip**, where it mirrors NOISE and is edited there. It is sent as the `sigma_max` request field, never inside `schedule`.
 - **Until M3 lands, the sigma graph is only as truthful as today's route.** `explorer_render_server.py:1022-1049` reads `steps`, `duration`, `sigma_max` and `dist_shift` and **ignores `schedule` and `sampler_type` entirely** — so every shape charts the model curve, and ρ, STEPPED, PLATEAUS and TILT move nothing. M4 sends the full body anyway (M3 then needs no client change) and the SIGMA column carries the line `schedule shape is charted from M3 onward` whenever the spec is non-default and the response echoes no `shape`. Do not fake the curve locally to cover the gap: §5.3 says the canvas never computes σ, and a graph that disagrees with the server is worse than one that admits it is behind.
-- **`/schedule` takes `duration`, and it matters.** For `shape: "model"` the server derives `latent_len = ceil(duration · SR / DS)` and the distribution shift is length-dependent (`explorer_render_server.py:1009-1060`). Omitting it silently charts the server's 47 s default. Every `/schedule` call in this milestone sends the target's LENGTH.
+- **`/schedule` takes `duration`, and it matters.** For `shape: "model"` the server derives `latent_len = ceil(duration · SR / DS)` and the distribution shift is length-dependent (`explorer_render_server.py:1009-1060`). Omitting it silently charts the server's 47 s default. Every `/schedule` call in this milestone sends the target's `settings.duration_sec` (§4.5 LENGTH).
 - Canvas colours resolve through `getComputedStyle(el).getPropertyValue("--token")` once per frame, never literal oklch — DARK depends on it. **Opacity is applied with `ctx.globalAlpha`, never by string surgery on the token.** The drawing's `SLOT_COLORS[k].replace(")", " / 0.26)")` happens to work on a token stream, but it is a text transform on an unparsed value and it breaks the moment a token is written in any other colour space.
 - No border radius, no shadows.
 - **The `$state` proxy rule:** any store method appending to a `$state` array returns `arr[arr.length - 1]`, never the local object it built. A `RenderSettings` handed out by the settings store is a proxy; mutate it in place, do not reassign a captured copy.
@@ -49,14 +49,15 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 | the M5 seam | `settings.attach(source: TargetSettingsSource)`. Until M5 attaches one, every target resolves to `session.defaults` and `scope()` returns `"session"` | M4 and M5 are siblings (§12); neither may import the other's store |
 | σ max | `sigmaMaxFor(a2a: A2AState \| null)` in `lib/sampling/sigmaMax.ts`, **not** a field of `ScheduleSpec`. It takes the clip's A2A block, not a `Target` — the store that maps a target to its clip is M5's, and this module must not depend on it | WINTERMUTE 2026-09-17 |
 | `/schedule` request | `{steps, duration, sigma_max, sampler_type, schedule}` — `duration` is **required**. `schedule` and `sampler_type` are **sent but ignored by today's server**, exactly like the response's missing fields: M3 adds them | the model shape's dist shift is length-dependent, and sending the full body now means M3 lands without a client change |
+| `RenderSettings.duration_sec` | §4.5 LENGTH lives in the **per-target settings**, not in the tab's own state. Range 1–184 (`RANGES.length_sec`, `LENGTH_CAP_SEC`); `BASE_DEFAULTS.duration_sec` = `POST_DEFAULTS.duration_sec` = **47.556** (T=512 exactly). **Wire name is `duration`** on both `/generate` and `/schedule`. Ignored on an A2A target, where the clip supplies the length | Added to M1 by WINTERMUTE on 2026-09-21 in answer to this milestone's own finding, because §9.3 says a `render` preset recalls every txt2audio parameter and the length a render was made at is one of them. T9's `ModelStageColumn` still takes `{length, onLength}` rather than touching the store, so that T10 is the single owner reading it and writing it back |
 | `/schedule` response | `steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`, `sigmas` are present today; `shape` and `warnings` **are optional** until M3 lands | M1 T5 typed them as required; today's server returns neither |
-| who calls `/schedule` | T4's `scheduleClient.svelte.ts`, through its own module-local `postSchedule(req, signal)` — a plain `fetch("/schedule", {method:"POST", …, signal})` that throws M1's `ForgeApiError` on a non-ok status. **`forgeApi.schedule` is not used anywhere in M4** | §6 freezes only `/forge/*`, lists `/schedule` among the pre-existing routes the client "calls directly", and says to keep those "in their own client module so the frozen and unfrozen surfaces stay distinguishable". M1's frozen client cannot serve M4 regardless: it takes one parameter (so there is no `AbortSignal` for T4's abort-and-supersede mechanism), has no `duration` in its body type, and declares a return type that both claims `shape`/`warnings` the route does not send and omits the five it does (`steps`, `duration`, `sigma_max`, `dist_shift`, `latent_len`). Correcting an approved plan for no gain is the worse move; M4 owns the call. `forgeApi.schedule` being then dead and wrong in M1 is flagged to WINTERMUTE |
+| who calls `/schedule` | T4's `scheduleClient.svelte.ts`, through its own module-local `postSchedule(req, signal)` — a plain `fetch("/schedule", {method:"POST", …, signal})` that throws M1's `ForgeApiError` on a non-ok status. **`forgeApi.schedule` is not called anywhere in M4** | §6 freezes only `/forge/*`, lists `/schedule` among the pre-existing routes the client "calls directly", and says to keep those "in their own client module so the frozen and unfrozen surfaces stay distinguishable" — `scheduleClient.svelte.ts` is that module, and it owns the debounce, the cache and the abort that wrap the call. **Updated 2026-09-22:** M1 T5's `forgeApi.schedule` was corrected on 2026-09-21 and now agrees with the route field for field, takes `duration` as a required body key, and accepts an `AbortSignal` — so the two are equivalent and either would work. M4 keeps its own because §6's separation rule is the spec's and because the surrounding machinery is already there; an implementer who notices both is not looking at a contradiction. The earlier reason (M1's client was one-parameter, `duration`-less and wrongly typed) no longer holds and is struck |
 | the `ScheduleClient` instance | one module singleton, `export const scheduleClient = new ScheduleClient()` in T4, exactly as `settings` and `view` are singletons. **T10's `SigmaColumn` is the only caller of `request()`**; T11's ADVANCED SAMPLING reads `scheduleClient.result?.sigmas ?? []` and never requests | the CFG interval's STEPS unit is computed from the returned sigma array (§5.3), and the bottom pane and the right-pane module must not each hold a client that answers the question differently |
 | CFG unit | stored **always** as progress `[p_lo, p_hi]`; the step unit is a display conversion computed from the returned sigma array, never a second stored value | §5.3, and the drawing's own help string says so |
 | POST/BASE | session-level, one confirm, `POST /forge/backbone`. It loads the stage defaults into `session.defaults` **only** — existing per-target settings are untouched | §5.3, §10 X4 |
 | sampler in POST | `cfg_scale` is **sent as 1.0** while the stage is POST; the stored value is left alone so returning to BASE restores it | §5.3 |
 | slot colours | `--slot1` / `--slot2` via `getComputedStyle`, alpha via `ctx.globalAlpha` | see Global Constraints |
-| module id for ADVANCED SAMPLING | **kebab** — `advanced-sampling`, so `[data-module-toggle=advanced-sampling]` | M1 declares `ModuleId` **twice and differently**: kebab in the view store (`"overlap" \| "files" \| "lane-chain" \| "advanced-sampling" \| "master-chain"`, M1:3027, `MODULE_IDS` at 3056) and camel in T12's own list (`advancedSampling`, M1:6259, which is what `ModuleShell` renders `data-module-toggle` from). No task can satisfy both. M4 takes the view store's spelling because that is the one persisted into the project JSON's `ui.modules` (M1:3231), and a DOM id that disagrees with the saved state is the worse of the two errors. M1 needs one of its two declarations deleted — flagged to WINTERMUTE |
+| module id for ADVANCED SAMPLING | **kebab** — `advanced-sampling`, so `[data-module-toggle=advanced-sampling]` | **Settled 2026-09-21 (WINTERMUTE, `7193ba9`), and M4's reading won.** M1 had declared `ModuleId` three times, not two; it is now declared **once**, in the view store, kebab, with seven members: the five spec modules plus `legacy-inspector` and `legacy-server` (the third declaration was right that those are real ids). T12 imports it and narrows to `SpecModuleId = Exclude<ModuleId, "legacy-inspector" \| "legacy-server">` for `MODULE_ORDER`, `moduleTitle` and `litModules`, so a legacy module can be open and persisted but never gets a lit dot or a pane row. The original reason M4 chose kebab still stands and is now M1's: it is the spelling persisted into the project JSON's `ui.modules` (§9.2), and a DOM id that disagrees with saved state is the worse error. **Nothing in M4 changes** |
 | sigma canvas selector | `canvas[data-canvas="sigma"]` on `SigmaGraph.svelte`'s own canvas; `data-col="prompt" \| "model-stage" \| "sigma"` **only** on `PromptSigmaTab`'s three column wrappers | the DOM contract is where the parallel writers broke: an attribute asserted but never emitted, and one emitted twice, both failed silently |
 
 ## File Structure
@@ -3305,15 +3306,21 @@ one session-level control in the pane), sharing one pure module for the two bits
 are not just "read a `RANGES` entry and call `settings.patch`": a fresh random seed, and the
 inline rebuild confirm's wording.
 
-**LENGTH is not a `RenderSettings` field** — M1's `RenderSettings` (restated from the shared
-preamble: `{ prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress;
-schedule; scale_phi; sampler_type }`) has no duration. Spec §7.1's `generate` row sends
-`duration = LENGTH`, and §7.3 gives a clip its own `dur_sec`, but a fresh generate (`{kind:
-"none"}`, still every target until M5 attaches a source) has no clip to read a duration from.
-So LENGTH is **lifted state that the tab (Task 10) owns**, not a `settings` field: this task's
-`ModelStageColumn` takes it as a controlled prop pair `{ length, onLength }`, exactly the pattern
-Task 8's `TargetBar` already uses for `a2a`/`onNoise` — the value lives one level up so Task 10's
-`SigmaColumn` can read the same number when it builds a `ScheduleRequest`.
+**LENGTH is `settings.duration_sec`, and this column does not write it.** M1's `RenderSettings`
+carries `duration_sec` (§4.5 LENGTH, ≤ 184, default 47.556 — T=512 exactly), added 2026-09-21
+because §9.3 requires a `render` preset to recall every txt2audio parameter and the length a render
+was made at is one of them. **The wire name stays `duration`**: that is what the existing server
+reads on `/generate` and `/schedule`, so whoever builds a payload sends
+`duration: settings.duration_sec`. On an A2A target the clip supplies the length and the field is
+ignored.
+
+Even so, `ModelStageColumn` takes LENGTH as a **controlled prop pair `{ length, onLength }`**, not
+by reaching into the store itself — exactly the pattern Task 8's `TargetBar` already uses for
+`a2a`/`onNoise`. The reason is Task 10: `SigmaColumn` needs the same number to build a
+`ScheduleRequest`, and one owner reading and writing it (the tab, Task 10) is what stops the two
+columns from disagreeing about what the current length is mid-edit. So this column renders what it
+is given and calls `onLength`; **it never calls `settings.patch` for LENGTH**, and a test below pins
+that. The clamp to `LENGTH_CAP_SEC` and the store write both live one level up.
 
 **Files:**
 - Create: `latent-forge/src/ui/prompt/modelStage.ts`, `latent-forge/src/ui/prompt/__tests__/modelStage.test.ts`
@@ -3321,7 +3328,7 @@ Task 8's `TargetBar` already uses for `a2a`/`onNoise` — the value lives one le
 - Create: `latent-forge/src/ui/prompt/ModelStageColumn.svelte`, `latent-forge/src/ui/prompt/__tests__/ModelStageColumn.test.ts`
 
 **Interfaces:**
-- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`, `RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress; schedule; scale_phi; sampler_type }`.
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`, `RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress; schedule; scale_phi; sampler_type; duration_sec }`.
 - Consumes from `src/lib/forge/defaults.ts` (M1 T4): `LENGTH_CAP_SEC = 184`, `BASE_DEFAULTS`, `cloneRenderSettings`.
 - Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.setBackbone(id: string): Promise<{ ok: true; active: string; objective: string; rebuild_sec: number; warnings: string[] }>`, `ForgeApiError { status: number; message: string }`.
 - Consumes from `src/lib/actions/dragScale.ts` (M1 T8): `use:dragScale={{ min, max, int, value, onValue }}`.
@@ -3551,9 +3558,10 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
 
   it("changing LENGTH calls onLength, never settings.patch", async () => {
     const onLength = vi.fn();
-    // `not.toHaveProperty("length")` would be vacuous -- RenderSettings has no length
-    // field to begin with, so it passes even if the component writes one somewhere else.
-    // Watching the store's own write path is what actually pins "never settings.patch".
+    // RenderSettings DOES have duration_sec, so this assertion is load-bearing:
+    // the column must delegate to onLength and leave the store write to the tab
+    // (Task 10), which is the single owner. Watching the store's own write path
+    // is what pins that -- an assertion on the settings object would not.
     const patch = vi.spyOn(settings, "patch");
     const { getByTestId } = render(ModelStageColumn, {
       props: { target: CLIP, length: 30, onLength },
@@ -3735,9 +3743,11 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
   // leave settings.stage on the backbone actually loaded, per this
   // milestone's settings store (Task 1) and spec 5.3.
   //
-  // LENGTH is not a RenderSettings field (see this task's WHY paragraph): it
-  // is a controlled prop pair, {length, onLength}, owned by the tab (Task 10)
-  // so the sigma column can read the same number.
+  // LENGTH is settings.duration_sec (see this task's WHY paragraph), but this
+  // column never writes it: it is a controlled prop pair, {length, onLength},
+  // whose single owner is the tab (Task 10), so that the sigma column building
+  // /schedule's `duration` and this input can never disagree mid-edit. The
+  // clamp and the settings.patch both live up there.
   import { dragScale } from "../../lib/actions/dragScale";
   import { forgeApi } from "../../lib/forge/api";
   import { LENGTH_CAP_SEC } from "../../lib/forge/defaults";
@@ -4007,7 +4017,7 @@ Expected: `Test Files  3 passed (3)` / `Tests  21 passed (21)` (5 in `modelStage
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T9: prompt column + MODEL STAGE/STEPS/CFG/LENGTH/SEED column -- session-level stage confirm-then-rebuild-then-switch, LENGTH lifted to the tab since RenderSettings has no duration field"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T9: prompt column + MODEL STAGE/STEPS/CFG/LENGTH/SEED column -- session-level stage confirm-then-rebuild-then-switch, LENGTH delegated to the tab via {length, onLength} so one owner writes settings.duration_sec"
 ```
 
 ---
@@ -4017,11 +4027,13 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T9: prompt column + MODEL
 Spec §4.5 item 3 (SIGMA label, graph label, LatCH slot legend, the sigma canvas) and the tab
 assembly that stacks Task 8's target bar, Task 9's two columns and this task's sigma column into
 the 162 px body M1 reserved for the `prompt` bottom tab. This is also where **`duration` becomes
-real**: Task 9 found that `RenderSettings` has no length field, so `ModelStageColumn`'s LENGTH
-lives as a controlled prop pair `{length, onLength}` one level up — this task is that level up. It
-owns the `length` `$state` and is the only place in this milestone that builds a `ScheduleRequest`
-and feeds its `duration`, because the model shape's dist shift is length-dependent and nothing
-downstream has anywhere else to get that number from.
+real**: `ModelStageColumn` (Task 9) takes LENGTH as a controlled prop pair `{length, onLength}` and
+never writes it, so this task is its single owner. It reads `settings.current(target).duration_sec`
+and writes it back through `settings.patch`, clamping to `LENGTH_CAP_SEC`, and it is the only place
+in this milestone that builds a `ScheduleRequest` and feeds its `duration` — because the model
+shape's dist shift is length-dependent and nothing downstream has anywhere else to get that number
+from. **LENGTH is per-target**, not per-tab: selecting a different clip shows that clip's own
+length, which is the point of §9.3's preset rule.
 
 Two things this task must get right or the graph lies: **`sigma_max` is not `1.0` by default** —
 it is `sigmaMaxFor(a2a)` from Task 3, and when that value floors below the chartable range (an A2A
@@ -4045,7 +4057,7 @@ reference) never reruns when Task 11's ADVANCED SAMPLING module edits ρ or TILT
   `{:else if tab === "prompt"}` — that comment names this exact task)
 
 **Interfaces:**
-- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`, `RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress: [number, number]; schedule: ScheduleSpec; scale_phi; sampler_type: string | null }`, `ScheduleSpec { shape; rho; sigma_min; lam_min; lam_max; stepped; plateaus; tilt }`, `LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }`.
+- Consumes from `src/lib/forge/types.ts` (M1 T3): `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`, `RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale; cfg_interval_progress: [number, number]; schedule: ScheduleSpec; scale_phi; sampler_type: string | null; duration_sec: number }`, `ScheduleSpec { shape; rho; sigma_min; lam_min; lam_max; stepped; plateaus; tilt }`, `LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }`.
 - Consumes from `src/lib/forge/defaults.ts` (M1 T4): `LENGTH_CAP_SEC = 184`.
 - Consumes from `src/lib/stores/view.svelte.ts` (M1): the singleton `view` with `view.selection: Target` — a plain, directly-readable `$state` field on the exported singleton (the same idiom as `settings.stage`), used exactly as M1 T12's own `RightPaneModules.svelte` already reads `view.selection.kind` and `view.activeLane`.
 - Consumes from `src/lib/stores/settings.svelte.ts` (M4 T1): the singleton `settings` with `current(t: Target): RenderSettings`.
@@ -4060,9 +4072,9 @@ reference) never reruns when Task 11's ADVANCED SAMPLING module edits ρ or TILT
 - Consumes from `src/ui/prompt/TargetBar.svelte` (M4 T8): the component, props `{ target: Target; clipName: string | null; lane: 0|1|2|3; a2a: {on: boolean; noise: number} | null; clipHasLatent: boolean; onA2AToggle: (on: boolean) => void; onNoise: (v: number) => void; op: string | null; onOp: (op: string) => void }`.
 - Consumes from `src/ui/prompt/PromptColumn.svelte` (M4 T9): the component, props `{ target: Target }`.
 - Consumes from `src/ui/prompt/ModelStageColumn.svelte` (M4 T9): the component, props `{ target: Target; length: number; onLength: (sec: number) => void }`.
-- Produces, from `latent-forge/src/ui/prompt/sigmaColumn.ts`: `DEFAULT_LENGTH_SEC = 30`, `SIGMA_GRAPH_WIDTH = 320`, `SIGMA_GRAPH_HEIGHT = 180`, `STALE_SHAPE_NOTE = "schedule shape is charted from M3 onward"`, `buildScheduleRequest(steps: number, duration: number, sigmaMax: number, samplerType: string | null, schedule: ScheduleSpec): ScheduleRequest`, `sigmaNote(error: string | null, staleShape: boolean, spec: ScheduleSpec, samplerType: string | null): string | null`, `slotLegendLabel(slot: LatchSlot | undefined): string`.
+- Produces, from `latent-forge/src/ui/prompt/sigmaColumn.ts`: `SIGMA_GRAPH_WIDTH = 320`, `SIGMA_GRAPH_HEIGHT = 180`, `STALE_SHAPE_NOTE = "schedule shape is charted from M3 onward"`, `buildScheduleRequest(steps: number, duration: number, sigmaMax: number, samplerType: string | null, schedule: ScheduleSpec): ScheduleRequest`, `sigmaNote(error: string | null, staleShape: boolean, spec: ScheduleSpec, samplerType: string | null): string | null`, `slotLegendLabel(slot: LatchSlot | undefined): string`.
 - Produces, from `latent-forge/src/ui/prompt/SigmaColumn.svelte`: the component, props `{ target: Target; length: number; a2a: {on: boolean; noise: number} | null; slots?: readonly LatchSlot[] }` (`slots` defaults to `[]` — M4 has no lane-chain store; M7 passes the active lane's real two slots the same way Task 8's `a2a` prop waits for M5).
-- Produces, from `latent-forge/src/ui/prompt/PromptSigmaTab.svelte`: the component, props `{ clipName?: string | null; lane?: 0|1|2|3; a2a?: {on: boolean; noise: number} | null; clipHasLatent?: boolean; onA2AToggle?: (on: boolean) => void; onNoise?: (v: number) => void; op?: string | null; onOp?: (op: string) => void }`, every one defaulted (`null`/`0`/`false`/no-op) so `<PromptSigmaTab />` mounts with zero props from `BottomPane.svelte` exactly as it does today. It reads `target` from `view.selection` itself (an M1 store, not M5's arrangement store), owns `length` as local `$state` seeded at `DEFAULT_LENGTH_SEC` and clamped to `LENGTH_CAP_SEC`, and renders `data-tab-body="prompt"` on its own root and `data-col="prompt" | "model-stage" | "sigma"` on the three column wrappers — these are the exact selectors `tests/sampling.spec.ts` (Task 12) asserts, and they live on this task's own markup rather than on `BottomPane.svelte` so M1's frozen file needs no attribute added to it.
+- Produces, from `latent-forge/src/ui/prompt/PromptSigmaTab.svelte`: the component, props `{ clipName?: string | null; lane?: 0|1|2|3; a2a?: {on: boolean; noise: number} | null; clipHasLatent?: boolean; onA2AToggle?: (on: boolean) => void; onNoise?: (v: number) => void; op?: string | null; onOp?: (op: string) => void }`, every one defaulted (`null`/`0`/`false`/no-op) so `<PromptSigmaTab />` mounts with zero props from `BottomPane.svelte` exactly as it does today. It reads `target` from `view.selection` itself (an M1 store, not M5's arrangement store), owns LENGTH by reading `settings.current(target).duration_sec` and writing it back with `settings.patch(target, { duration_sec })` clamped to `LENGTH_CAP_SEC`, and renders `data-tab-body="prompt"` on its own root and `data-col="prompt" | "model-stage" | "sigma"` on the three column wrappers — these are the exact selectors `tests/sampling.spec.ts` (Task 12) asserts, and they live on this task's own markup rather than on `BottomPane.svelte` so M1's frozen file needs no attribute added to it.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4341,7 +4353,7 @@ describe("PromptSigmaTab assembles the three columns (spec 4.5)", () => {
     expect(getByTestId("target-clip-row")).toBeTruthy();
   });
 
-  it("owns LENGTH as its own state and feeds the same number to the schedule request", async () => {
+  it("owns LENGTH through settings.duration_sec and feeds the same number to the schedule request", async () => {
     const { getByTestId } = render(PromptSigmaTab);
     await fireEvent.change(getByTestId("stage-length"), { target: { value: "77" } });
     await vi.advanceTimersByTimeAsync(200);
@@ -4355,6 +4367,16 @@ describe("PromptSigmaTab assembles the three columns (spec 4.5)", () => {
     const { getByTestId } = render(PromptSigmaTab);
     await fireEvent.change(getByTestId("stage-length"), { target: { value: "9999" } });
     expect((getByTestId("stage-length") as HTMLInputElement).value).toBe(String(LENGTH_CAP_SEC));
+    expect(settings.current(view.selection).duration_sec).toBe(LENGTH_CAP_SEC);
+  });
+
+  it("writes LENGTH to the selected target's settings, so it is per target not per tab", async () => {
+    view.selection = { kind: "clip", id: "c1" };
+    const { getByTestId } = render(PromptSigmaTab);
+    await fireEvent.change(getByTestId("stage-length"), { target: { value: "77" } });
+    expect(settings.current({ kind: "clip", id: "c1" }).duration_sec).toBe(77);
+    // A different target keeps its own -- the default, untouched.
+    expect(settings.current({ kind: "clip", id: "c2" }).duration_sec).toBeCloseTo(47.556, 3);
   });
 });
 ```
@@ -4379,10 +4401,6 @@ Expected: `Failed to resolve import "../sigmaColumn"`, `"../SigmaColumn.svelte"`
 import type { LatchSlot, ScheduleSpec } from "../../lib/forge/types";
 import type { ScheduleRequest } from "../../lib/sampling/scheduleClient.svelte";
 import { flatPlateauNote } from "../../lib/sampling/scheduleRules";
-
-/** Round number, distinct from the server's own 47s default so an unset LENGTH is never
- * mistaken for one the person actually chose. */
-export const DEFAULT_LENGTH_SEC = 30;
 
 /** The drawing's own canvas attributes (v3:404, width="320" height="180"). SigmaGraph.svelte
  * (Task 7) only measures its own DOM box when `input` is null; once this column has a
@@ -4453,7 +4471,7 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
   import { settings } from "../../lib/stores/settings.svelte";
   import SigmaGraph from "./SigmaGraph.svelte";
   import {
-    buildScheduleRequest, DEFAULT_LENGTH_SEC, SIGMA_GRAPH_HEIGHT, SIGMA_GRAPH_WIDTH,
+    buildScheduleRequest, SIGMA_GRAPH_HEIGHT, SIGMA_GRAPH_WIDTH,
     sigmaNote, slotLegendLabel,
   } from "./sigmaColumn";
 
@@ -4565,10 +4583,10 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
   // from `view.selection` (an M1 store every milestone reads, not M5's), matching M1 T12's
   // own RightPaneModules.svelte precedent.
   import { LENGTH_CAP_SEC } from "../../lib/forge/defaults";
+  import { settings } from "../../lib/stores/settings.svelte";
   import { view } from "../../lib/stores/view.svelte";
   import ModelStageColumn from "./ModelStageColumn.svelte";
   import PromptColumn from "./PromptColumn.svelte";
-  import { DEFAULT_LENGTH_SEC } from "./sigmaColumn";
   import SigmaColumn from "./SigmaColumn.svelte";
   import TargetBar from "./TargetBar.svelte";
 
@@ -4589,11 +4607,13 @@ export function slotLegendLabel(slot: LatchSlot | undefined): string {
 
   const target = $derived(view.selection);
 
-  // LENGTH is not a RenderSettings field (Task 9's finding), so it lives here, one level
-  // above the column that displays it and the column that needs it for /schedule's duration.
-  let length = $state(DEFAULT_LENGTH_SEC);
+  // LENGTH is settings.duration_sec, and this component is its single owner: Task 9's column
+  // displays it and Task 10's sigma column sends it as /schedule's `duration`, so exactly one
+  // place reads the store and writes it back. It is PER TARGET -- selecting another clip shows
+  // that clip's own length (spec 9.3: a render preset recalls every txt2audio parameter).
+  const length = $derived(settings.current(target).duration_sec);
   function onLength(sec: number): void {
-    length = Math.min(LENGTH_CAP_SEC, sec);
+    settings.patch(target, { duration_sec: Math.min(LENGTH_CAP_SEC, sec) });
   }
 </script>
 
@@ -4671,8 +4691,8 @@ touching M1's own sizing rules.
 cd latent-forge && npx vitest run src/ui/prompt/__tests__/sigmaColumn.test.ts src/ui/prompt/__tests__/SigmaColumn.component.test.ts src/ui/prompt/__tests__/PromptSigmaTab.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  3 passed (3)` / `Tests  21 passed (21)` (9 in `sigmaColumn.test.ts`, 7 in
-`SigmaColumn.component.test.ts`, 5 in `PromptSigmaTab.component.test.ts`), and
+Expected: `Test Files  3 passed (3)` / `Tests  22 passed (22)` (9 in `sigmaColumn.test.ts`, 7 in
+`SigmaColumn.component.test.ts`, 6 in `PromptSigmaTab.component.test.ts`), and
 `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
@@ -6145,15 +6165,17 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   `scheduleClient.svelte.ts` because `ScheduleClient` holds `$state` fields and Svelte only
   compiles runes inside a `.svelte`/`.svelte.ts`/`.svelte.js` file. The table should be corrected
   when this task lands; every other task in this hand-off imports the file by its real name.
-- ~~**`forgeApi.schedule`'s exact signature**~~ — **closed, and the answer was that M4 does not use
-  it.** M1 T5's real client is `schedule: (body) => sendJSON(...)`: one parameter, no `AbortSignal`,
-  no `duration` in the body type, and a return type that claims `shape`/`warnings` the route does
-  not send while omitting the five it does. M1 is approved and frozen, so Task 4 owns the call
-  through its own module-local `postSchedule`, which is what §6 asks for anyway (`/schedule` is one
-  of the pre-existing routes the client "calls directly", kept "in their own client module so the
-  frozen and unfrozen surfaces stay distinguishable"). See the Normative names block. **[W]**
-  `forgeApi.schedule` is now dead and wrong in an approved plan — M1 T5 should delete it or correct
-  it to the real route's shape.
+- ~~**`forgeApi.schedule`'s exact signature**~~ — **closed twice over.** First here: M1 T5's client
+  was `schedule: (body) => sendJSON(...)` — one parameter, no `AbortSignal`, no `duration` in the
+  body type, and a return type that claimed `shape`/`warnings` the route does not send while
+  omitting the five it does — so Task 4 owned the call through its own module-local `postSchedule`.
+  Then by WINTERMUTE on **2026-09-21** (`7193ba9`), who **corrected M1 T5 rather than deleting it**:
+  the client now takes `{steps, duration, sigma_max?, sampler_type?, schedule}` plus an
+  `AbortSignal` (forwarded by `sendJSON`) and returns the route's nine fields, with the
+  `duration`-is-required reason in its doc block. **Task 4 keeps its own call** — §6's
+  own-module rule, and the debounce/cache/abort already live there — but the two now agree field
+  for field, so switching would be a mechanical swap rather than a correctness fix. Nothing in this
+  milestone is dead or wrong any more.
 - ~~**`HELP.sigmaGraph`**~~ — **closed.** Task 7's canvas carries `data-help={HELP.sigmaGraph}`,
   mirroring the drawing's own `data-help` on the sigma canvas (v3:404), and `sigmaGraph` **is** in
   M1 T14's frozen table, entered from that same v3:404. Nothing to rename. (The HELP ids that
@@ -6193,7 +6215,9 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
   the right-pane modules should instead receive `target` as an explicit prop from a shell component,
   both files change the same one line (`$derived(view.selection)` → a prop read) with no change to
   their tests' assertions about what is shown for a given target.
-- **`DEFAULT_LENGTH_SEC = 30`** — no task before this one fixes what LENGTH starts at for a fresh
-  tab (`RenderSettings` has no duration field at all, per Task 9's finding). 30 is a plain round
-  number distinct from the server's own 47 s fallback, chosen only so an unset LENGTH is never
-  mistaken for a deliberate one; it is not derived from any spec section.
+- ~~**`DEFAULT_LENGTH_SEC = 30`**~~ — **closed 2026-09-22.** `RenderSettings` gained
+  `duration_sec` (WINTERMUTE, commit `7193ba9`), so there is nothing for this milestone to invent:
+  `BASE_DEFAULTS.duration_sec`/`POST_DEFAULTS.duration_sec` are both **47.556 s** (T=512 exactly),
+  which M1 T4 pins and M1 T3 documents. The constant is deleted from `sigmaColumn.ts` and its
+  already-unused import removed from `SigmaColumn.svelte`. LENGTH is now per target rather than
+  per tab, which is what §9.3 asks for.

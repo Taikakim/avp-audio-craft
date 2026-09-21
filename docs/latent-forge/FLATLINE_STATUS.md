@@ -1,6 +1,6 @@
 # FLATLINE — where the frontend planning stands
 
-*Written 2026-09-18, last updated 2026-09-21 after M10. Companion to `docs/sa3-studio/ORIENTATION.md`,
+*Written 2026-09-18, last updated 2026-09-22 after reconciling W's answers into M4/M5/M6/HANDOUT. Companion to `docs/sa3-studio/ORIENTATION.md`,
 which is still the read-first document for the project as a whole. This file covers only the Latent
 Forge planning job and how to resume it.*
 
@@ -177,20 +177,47 @@ with expected failure → implementation with FULL code → run command with exp
 - **σ MAX is not a `ScheduleSpec` field.** It is the pass's own init noise level — 1.0 for a fresh
   generate, the target's NOISE on an A2A clip.
 
-## Open — waiting on W, do not decide unilaterally
+## Open — nothing. All eight closed 2026-09-21 (W, `7193ba9`), reconciled 2026-09-22
 
-1. **`ForgeClip.previewAudio`** — M5 T10 needs it for the stretched preview, but `ForgeClip` is
-   pinned by §9.2 and read by M7's v1→v2 converter, so it is a spec change.
-2. **Downbeat-coincidence window** — §4.3 says one 32nd note, linear; the drawing's `_dbColor`
-   (v3:1155-1158) uses a quarter-beat with a `^0.7` ramp. M5 ships the spec's reading.
-3. **`downbeats_sec` timebase** — `/forge/analyze` returns it unstretched at `native_bpm` while
-   `offset_sec`/`dur_sec` are stretched (§7.3). M5 currently mixes them. The fix belongs in
-   `ForgeClip.downbeats_sec`'s doc comment in M1's `types.ts`, and M1 is approved, so it needs W.
-4. **`RenderSettings` has no length field** (from M4) — a `render` preset can't recall LENGTH.
-5. **M1's two `ModuleId` declarations disagree** (from M4) — kebab vs camel.
-6. **`forgeApi.schedule`** (from M4) is dead and wrong against the real `/schedule` route.
-7. **M1's `view.screen`/`.view` naming mismatch** (from M10) — table vs Task 7's class body.
-8. **M1's `CentreColumn`/`BottomPane` Props mismatch across Tasks 9/11/13** (from M10).
+Every one of the eight was real and every one was W's. **The live source for each is M1's own
+Normative-names table**; the list below says only what changed on my side, so that a future session
+does not re-derive it.
+
+| was open | decided | what I changed |
+|---|---|---|
+| 1. `ForgeClip.previewAudio` | in-memory only, §9.2 unchanged | M5 T10 stands. Marked resolved in M5's Open questions; the M6 brief now says read it, never persist it, and read `previewAudio ?? audio` |
+| 2. downbeat-coincidence window | the **spec's window**, the **drawing's ramp**: `w = (60/bpm)/8`, `t = max(0, 1 - dt/w) ** 0.7` | **M5 T2 edited**: `COINCIDENCE_RAMP_EXP = 0.7` applied in `coincidence()`; the linear-midpoint test replaced by two (the 0.7 midpoint, and a concavity check across the window); T2's gate 29 → **30**, counted mechanically. `downbeatColor` untouched |
+| 3. `downbeats_sec` timebase | source seconds, unstretched, at `native_bpm` | documented by W on the field in M1 T3. Nothing of mine to change |
+| 4. `RenderSettings` has no length | **`duration_sec` added**, ≤ 184, default 47.556 (T=512). Wire name stays `duration` | **M4 T9/T10 edited** — see below |
+| 5. M1's `ModuleId` declarations | kebab, once, **seven** members (five spec + two legacy) | M4's kebab choice won; its Normative row rewritten from "M1 needs one deleted" to the settled reading |
+| 6. `forgeApi.schedule` | **corrected, not deleted**: takes `duration` + an `AbortSignal`, returns the route's nine fields | M4 T4 **keeps its own `postSchedule`** (§6's own-module rule; the debounce/cache/abort already live there). The two now agree field for field, so the Normative row and the Open question both say "equivalent, either would work" instead of "dead and wrong" |
+| 7. `view.screen`/`.view` | table wins; T7's class body fixed, `setActiveLane` added | M6 brief's caution withdrawn and replaced with the new spellings |
+| 8. `CentreColumn`/`BottomPane` Props | T13 now renders T9's own `{@render centre()}` / `{@render bottom?.()}` | **M10 needed no change** — W confirmed its `stats.spec.ts` bottom-pane assertion survives, as I had read it |
+
+**The M4 LENGTH move, in full, since it is the one non-trivial edit.** `ModelStageColumn` keeps its
+controlled prop pair `{length, onLength}` — the component shape was never the problem, only who
+owned the number. What changed is the owner: `PromptSigmaTab` no longer holds
+`let length = $state(DEFAULT_LENGTH_SEC)`; it reads `$derived(settings.current(target).duration_sec)`
+and writes `settings.patch(target, {duration_sec: min(LENGTH_CAP_SEC, sec)})`. So **LENGTH is now
+per target, not per tab**, which is the point of §9.3. `DEFAULT_LENGTH_SEC = 30` is deleted
+(`BASE_DEFAULTS.duration_sec` = 47.556 supersedes it) along with its already-unused import in
+`SigmaColumn.svelte`. One test added (LENGTH is per target), one extended (the clamp now also
+asserts the store), one renamed; T10's gate 21 → **22**, counted mechanically.
+
+**Three more W found in the same pass, all fixed in M1, all now in the M6 brief:** `TerminalMode`'s
+middle mode is `"pane"` not `"normal"`; `BOTTOM_TABS` is now `BOTTOM_TAB_IDS`; and `type BottomTab`
+is gone — it is **`BottomTabId`, declared once in T7** and re-exported by T11, not the reverse.
+
+**One correction W made to me, verified:** `sys.path.insert(0, "/home/kim/Projects/SAO/eval")` **is**
+at line 50 of `eval/explorer_render_server.py`. I checked it directly on this checkout; M2's anchor
+text is right as written and my earlier count was simply wrong. Seventeen of the eighteen contract
+claims I audited held; that one did not.
+
+**Also worth knowing:** W's `dm-say` had a path bug that silently wrote DMs to a fresh log at the
+main checkout root whenever the real log lived on another worktree's branch — which is exactly our
+case, since `flatline.wintermute.log` is on `latent-forge`. It hit twice on the 21st and W caught
+both by eye. Fixed (`Misc/agent_dialogue.py`, five tests). **The tell, if a DM ever seems missing:
+a log that is short and starts with a fresh header when the conversation is long.**
 
 ## Process lessons, paid for
 
