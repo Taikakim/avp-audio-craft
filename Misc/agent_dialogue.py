@@ -250,10 +250,69 @@ def _arm_marker(handle: str) -> None:
 
 # ---- DM helpers ----
 
+_WORKTREES: list[Path] | None = None
+
+
+def _sao_worktrees() -> list[Path]:
+    """SAO's main checkout plus every linked worktree, main first.
+
+    A DM log is a TRACKED file, so it exists only in the worktrees whose branch
+    carries it. `flatline.wintermute.log` lives on `latent-forge`, which is
+    checked out at a linked worktree -- the main checkout is on another branch
+    and does not have the file at all.
+    """
+    global _WORKTREES
+    if _WORKTREES is not None:
+        return _WORKTREES
+    roots = [SAO]
+    try:
+        import subprocess
+        out = subprocess.run(["git", "-C", str(SAO), "worktree", "list", "--porcelain"],
+                             capture_output=True, text=True, timeout=10)
+        for line in out.stdout.splitlines():
+            if line.startswith("worktree "):
+                wt = Path(line[len("worktree "):].strip())
+                if wt != SAO and wt.is_dir():
+                    roots.append(wt)
+    except Exception:
+        # git missing, or SAO is not a repo: the main root alone is still correct
+        pass
+    _WORKTREES = roots
+    return roots
+
+
 def dm_log_path(h1: str, h2: str) -> Path:
-    """Canonical DM log: SAO/<sorted-lower-h1>.<sorted-lower-h2>.log (x.y == y.x)."""
+    """Canonical DM log: <sorted-lower-h1>.<sorted-lower-h2>.log (x.y == y.x).
+
+    Canonically at the SAO root -- but a log tracked on a branch that is checked
+    out in a LINKED WORKTREE lives there and nowhere else. Writing to the SAO
+    root in that case silently creates a second, empty log the recipient never
+    reads, because they are on the branch that carries the real one. Bit twice on
+    2026-09-21 (two DMs to FLATLINE, whose log is on `latent-forge`); both had to
+    be moved by hand, and an unnoticed one would simply have been lost.
+
+    So: prefer an EXISTING log in any SAO worktree, and only fall back to the SAO
+    root when creating a genuinely new one. Ambiguity is reported, never silently
+    resolved.
+    """
     names = sorted([h1.lower(), h2.lower()])
-    return SAO / f"{names[0]}.{names[1]}.log"
+    fname = f"{names[0]}.{names[1]}.log"
+    found = [root / fname for root in _sao_worktrees() if (root / fname).is_file()]
+    if not found:
+        return SAO / fname
+    # Main-first ordering makes the ordinary case right: the same tracked log
+    # legitimately exists in several worktrees whenever several branches carry
+    # it, and the main checkout's copy is the live one. Only the reverse is
+    # worth a word -- a linked worktree holding MORE of the conversation than
+    # main means the real log is over there and main's is a stale branch copy.
+    chosen = found[0]
+    bigger = [f for f in found[1:] if f.stat().st_size > chosen.stat().st_size]
+    if bigger:
+        chosen = max(bigger, key=lambda f: f.stat().st_size)
+        print(f"[dialogue] {fname}: using {chosen.parent} -- its copy is larger than "
+              f"{found[0].parent}'s, so that is where the conversation actually is.",
+              file=sys.stderr, flush=True)
+    return chosen
 
 
 def _dm_header(handle: str, other: str) -> str:
@@ -313,7 +372,13 @@ def dm_wait(handle: str, timeout: float = 0.0) -> int:
 
 def dm_status(handle: str) -> None:
     """List all DM logs involving handle and tail each."""
-    logs = sorted(SAO.glob("*.*.log"))
+    # Every worktree, for the same reason dm_log_path walks them: a log tracked on
+    # a branch checked out elsewhere is invisible to a glob of the main root.
+    seen: dict[str, Path] = {}
+    for root in _sao_worktrees():
+        for l in sorted(root.glob("*.*.log")):
+            seen.setdefault(l.name, l)
+    logs = [seen[k] for k in sorted(seen)]
     mine = [l for l in logs if handle.lower() in l.stem and not l.name.startswith(".")]
     if not mine:
         print(f"(no DM logs for {handle})")
