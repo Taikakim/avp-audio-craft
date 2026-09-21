@@ -18,11 +18,11 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 | **M4** PROMPT + SIGMA and ADVANCED SAMPLING | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | 12 | reviewed twice (49 findings, 40 blocking, applied) |
 | **M2** server foundations | `docs/superpowers/plans/2026-09-15-latent-forge-m2-server-foundations.md` | 15 | assessed buildable — TDD-complete, no scope gaps, needs the GPU box |
 | **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — **Task 2 blocked pending a fix**; needs the GPU box |
+| **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | reviewed (6 findings, 2 blocking — both pre-existing M1 defects, not M10's; see its own Open questions #6) |
 
 **Build order is M1 first, then M4 and M5 in either order.** M1 is the foundation every other plan
-consumes; nothing else compiles without it. After those: M10 (a leaf, briefs written but the plan
-itself is not), then M6 and M7, then M9. M2, M3, M8 and M11 are WINTERMUTE's, server-side, and need
-the GPU box.
+consumes; nothing else compiles without it. After those: M10 (a leaf — needs only M1 and fixtures),
+then M6 and M7, then M9. M2, M3, M8 and M11 are WINTERMUTE's, server-side, and need the GPU box.
 
 Each plan is written for **one task at a time**. An implementing agent sees a single `### Task N`
 section and can look nothing up, which is why every task restates the interfaces it consumes. Do not
@@ -110,6 +110,24 @@ own module. **`forgeApi.schedule` in M1 T5 is dead and wrong; do not call it.**
 **Module ids are kebab-case** (`advanced-sampling`). M1 declares `ModuleId` twice, incompatibly —
 kebab in T7's view store, camel in T12 — and the plans follow the view store, because that spelling
 is what persists into the project JSON's `ui.modules`. Awaiting WINTERMUTE.
+
+**Two more M1 self-contradictions, found by M10's critic pass on 2026-09-21.** Neither blocks a
+plan that reads around them, both are M1's to fix, both are in `flatline.wintermute.log`:
+
+- M1's own Normative-names table (line 35) says the view store's field is `view.screen`; M1 Task 7's
+  actual `ViewStore` class declares it `view = $state<ViewName>("workspace")` — `.view`, never
+  `.screen`, and `.activeLane` likewise appears only in the table, never in the class body. Every
+  plan so far has cited the table's names (correctly, since M1's own rule says the table wins), so
+  nothing downstream is broken today — but the class body itself needs fixing to match, or the table
+  does.
+- M1 Task 9 declares `CentreColumn`'s props as `{centre: Snippet, bottom?: Snippet}`, and Task 11's
+  `App.svelte` wiring assumes `CentreColumn` still renders `{@render bottom?.()}` internally to place
+  a fully-configured `<BottomPane visible tab ontab terminalMode onterminalmode .../>`. Task 13's
+  replacement instead renders a bare, propless `<BottomPane/>` and references a `workspace` snippet
+  Task 9 never declared — dropping Task 11's TERMINAL wiring in the workspace view and likely failing
+  `svelte-check` on the undeclared prop. M10's own statistics-view Playwright assertion (bottom pane
+  absent) is expected to survive any reasonable fix, since it only depends on T13's if/else shape, not
+  the Props mismatch — but re-verify it once M1 T9/T11/T13 are actually implemented.
 
 ---
 
