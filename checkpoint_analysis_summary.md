@@ -1,8 +1,8 @@
 # Stable Audio 3 Checkpoint Analysis Catalog
 
-> **Generated:** 2026-09-21 20:08:43  
-> **Total Runs Analyzed:** 233  
-> **Total Checkpoints Cataloged:** 1385  
+> **Generated:** 2026-09-21 22:20:05  
+> **Total Runs Analyzed:** 389  
+> **Total Checkpoints Cataloged:** 2005  
 
 ---
 
@@ -243,6 +243,162 @@
 | `onset_envelope_ema20` | DoRA/LoRA adapter | 20 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
 | `onset_envelope_ema40` | DoRA/LoRA adapter | 40 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
 | `plain_s1` | DoRA/LoRA adapter | 1 | 4784–4784 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `plain_s2` | DoRA/LoRA adapter | 1 | 4784–4784 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `precision_ladder_t256_bf16mixed` | DoRA/LoRA adapter | 1 | 4500–4500 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `precision_ladder_t256_fp16mixed` | DoRA/LoRA adapter | 1 | 4500–4500 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `precision_ladder_t256_fp32` | DoRA/LoRA adapter | 1 | 4500–4500 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `proll_fullft_t256_bf16_s1` | DoRA/LoRA adapter | 1 | 2688–2688 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `proll_fullft_t256_bf16_s2` | DoRA/LoRA adapter | 1 | 2688–2688 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `pzqv5mcw` | DoRA/LoRA adapter | 2 | 5–10 | 1.53 | 140.11 | --- | 1.000 | **YES** | 0 |
+| `qy50uilf` | DoRA/LoRA adapter | 8 | 1350–10800 | nan | nan | +nan | --- | ❌ NaN | 0 |
+| `real` | DoRA/LoRA adapter | 23 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `repaired` | DoRA/LoRA adapter | 4 | -1–-1 | 93.19 | --- | -0.6582 | 0.000 | **YES** | 0 |
+| `rhythm_heads` | DoRA/LoRA adapter | 3 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_2e-4_adamw` | DoRA/LoRA adapter | 7 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_2e-4_fusion` | DoRA/LoRA adapter | 5 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_2e-4_sfadamw` | DoRA/LoRA adapter | 5 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_4e-4_adamw` | DoRA/LoRA adapter | 7 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_5e-5_fusion` | DoRA/LoRA adapter | 5 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_200trk_6e-4_adamw_wu` | DoRA/LoRA adapter | 7 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_20pct_2048_lr1e3` | DoRA/LoRA adapter | 12 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_20pct_2048_nockpt` | DoRA/LoRA adapter | 12 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_400trk_lr1e-4_crop1024` | DoRA/LoRA adapter | 13 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `riffer_bf16test` | DoRA/LoRA adapter | 2 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `rms_energy_air_ema20` | DoRA/LoRA adapter | 20 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `rms_energy_air_ema40` | DoRA/LoRA adapter | 40 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `rms_energy_body_ema20` | DoRA/LoRA adapter | 20 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `rms_energy_body_ema40` | DoRA/LoRA adapter | 40 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `sa3-goa-dora-47s-b4-cont__x20b3ygb` | DoRA/LoRA adapter | 5 | 1350–6750 | 39.44 | 8.45 | -0.0118 | 0.495 | **YES** | 0 |
+| `sa3-goa-dora-47s-b4__vjnnndnu` | DoRA/LoRA adapter | 3 | 1350–4050 | 23.24 | 8.49 | +0.0492 | 0.724 | **YES** | 0 |
+| `sa3-goa-dora-47s-r128-adamw__dq0egegi` | DoRA/LoRA adapter | 8 | 1350–10800 | 95.96 | 24.21 | -0.0234 | 0.382 | **YES** | 0 |
+| `sa3-goa-dora-47s-r128-fusion-caut__qy50uilf` | DoRA/LoRA adapter | 8 | 1350–10800 | nan | nan | +nan | --- | ❌ NaN | 0 |
+| `sa3-goa-dora-47s-r128-fusion__mqe3ne49` | DoRA/LoRA adapter | 8 | 1350–10800 | 573.76 | 62.66 | +0.6576 | 0.644 | **YES** | 0 |
+| `sa3-goa-dora-47s-r64__i8nygj4y` | DoRA/LoRA adapter | 8 | 1350–10800 | 70.39 | 16.99 | -0.0219 | 0.392 | **YES** | 0 |
+| `sa3-goa-dora-47s__2ankrkoh` | DoRA/LoRA adapter | 1 | 5400–5400 | 24.87 | --- | --- | 1.000 | **YES** | 0 |
+| `sa3_control_runs` | DoRA/LoRA adapter | 2 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `sanity16_suomi` | DoRA/LoRA adapter | 1 | 9420–9420 | 35.08 | --- | --- | 1.000 | **YES** | 0 |
+| `seg1` | DoRA/LoRA adapter | 4 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `seg2` | DoRA/LoRA adapter | 4 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `seg3` | DoRA/LoRA adapter | 4 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `seg4` | DoRA/LoRA adapter | 3 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `shuffled` | DoRA/LoRA adapter | 23 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `site_L13_15` | DoRA/LoRA adapter | 3 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `site_L8_15` | DoRA/LoRA adapter | 3 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `smoke_r256_a256_lr1e4_f512_bs8` | smoke | 3 | 100–300 | 61.49 | 191.26 | +0.6131 | 0.899 | **YES** | 0 |
+| `soups` | DoRA/LoRA adapter | 12 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `soups_vibe` | DoRA/LoRA adapter | 15 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `spectral_kurtosis_ema20` | DoRA/LoRA adapter | 20 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `spectral_kurtosis_ema40` | DoRA/LoRA adapter | 40 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `stereo_sweep_w0.0` | DoRA/LoRA adapter | 8 | 500–4000 | 204.83 | 56.03 | +0.7025 | 0.683 | **YES** | 0 |
+| `style_fpA_adamw` | DoRA/LoRA adapter | 2 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `style_fpC_adamw` | DoRA/LoRA adapter | 2 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `style_fpC_genrecc` | DoRA/LoRA adapter | 8 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_goa_k12` | DoRA/LoRA adapter | 2 | 5400–27000 | 144.06 | 6.73 | --- | 1.000 | **YES** | 0 |
+| `subloss_goa_k2` | DoRA/LoRA adapter | 2 | 5400–27000 | 146.34 | 6.80 | --- | 1.000 | **YES** | 0 |
+| `subloss_goa_k20` | DoRA/LoRA adapter | 1 | 2700–2700 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `subloss_goa_k5` | DoRA/LoRA adapter | 2 | 5400–27000 | 145.03 | 6.76 | --- | 1.000 | **YES** | 0 |
+| `subloss_k24_avpaug_t512_bf16_s1` | DoRA/LoRA adapter | 1 | 2368–2368 | 48.47 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_k24_biggoa_t512_bf16_s1` | DoRA/LoRA adapter | 1 | 12480–12480 | 98.77 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_k24_bigmix_t512_bf16_s1` | DoRA/LoRA adapter | 1 | 15680–15680 | 109.16 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_k24_suomi_t512_bf16_s1` | DoRA/LoRA adapter | 1 | 1216–1216 | 31.10 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k12` | DoRA/LoRA adapter | 1 | 27000–27000 | 147.40 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k2` | DoRA/LoRA adapter | 1 | 27000–27000 | 146.65 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5` | DoRA/LoRA adapter | 1 | 27000–27000 | 147.19 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5_s2` | DoRA/LoRA adapter | 1 | 27000–27000 | 146.66 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5_tgate` | DoRA/LoRA adapter | 1 | 16200–16200 | 115.09 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5_tgate_deficit_s1` | DoRA/LoRA adapter | 1 | 27000–27000 | 147.06 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5_tgate_deficit_s2` | DoRA/LoRA adapter | 1 | 27000–27000 | 147.08 | --- | --- | 1.000 | **YES** | 0 |
+| `subloss_v3sel_k5_tgate_r2_s2` | DoRA/LoRA adapter | 1 | 27000–27000 | 146.70 | --- | --- | 1.000 | **YES** | 0 |
+| `suomi` | DoRA/LoRA adapter | 1 | 9420–9420 | 35.08 | --- | --- | 1.000 | **YES** | 0 |
+| `suomi_r256_lr1e-4` | DoRA/LoRA adapter | 1 | 2340–2340 | 164.38 | --- | --- | 1.000 | **YES** | 0 |
+| `suomi_r256_lr3e-5` | DoRA/LoRA adapter | 1 | 2340–2340 | 65.16 | --- | --- | 1.000 | **YES** | 0 |
+| `suomi_r32_lr1e-4` | DoRA/LoRA adapter | 1 | 1140–1140 | 152.43 | --- | --- | 1.000 | **YES** | 0 |
+| `suomi_r32_lr3e-5` | DoRA/LoRA adapter | 1 | 1140–1140 | 85.08 | --- | --- | 1.000 | **YES** | 0 |
+| `suomift_warm_avpaug19_t1024_bf16_k5_s1` | DoRA/LoRA adapter | 3 | 320–1280 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `suomift_warm_goaft_t1024_bf16_k5_s1` | DoRA/LoRA adapter | 3 | 320–1280 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `version_None` | DoRA/LoRA adapter | 1 | 75–75 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
+| `vjnnndnu` | DoRA/LoRA adapter | 3 | 1350–4050 | 23.24 | 8.49 | +0.0492 | 0.724 | **YES** | 0 |
+| `wfleet_avp_t1024_a45_fp32_s1` | DoRA/LoRA adapter | 1 | 23930–23930 | 189.83 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_mix3_t1024_a45_fp32_s1` | DoRA/LoRA adapter | 1 | 40440–40440 | 336.28 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_suomi_t1024_a128_fp32_s1` | DoRA/LoRA adapter | 1 | 25200–25200 | nan | --- | --- | 1.000 | ❌ NaN | 0 |
+| `wfleet_suomi_t1024_a128_fp32_s2` | DoRA/LoRA adapter | 1 | 25200–25200 | 185.40 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_suomi_t1024_a45_fp32_s1` | DoRA/LoRA adapter | 1 | 25200–25200 | 157.21 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_suomi_t1024_a45_fp32_s2` | DoRA/LoRA adapter | 1 | 25200–25200 | 146.64 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_suomi_t512_a45_fp32_s1` | DoRA/LoRA adapter | 1 | 3160–3160 | 64.64 | --- | --- | 1.000 | **YES** | 0 |
+| `wfleet_suomi_t512_a45_fp32_s2` | DoRA/LoRA adapter | 1 | 2520–2520 | 53.94 | --- | --- | 1.000 | **YES** | 0 |
+| `wide_r256` | DoRA/LoRA adapter | 3 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `winning_avp_t1024_a45_fp32` | fp32_winning | 6 | 6578–35880 | 665.16 | 17.99 | +0.6894 | 0.757 | **YES** | 0 |
+| `winning_avp_t512_a128_fp32` | fp32_winning | 10 | 3289–68471 | 873.99 | 16.90 | +0.3168 | 0.609 | **YES** | 0 |
+| `winning_avp_t512_a45_bf16` | fp32_winning | 8 | 3289–17940 | 515.14 | 27.08 | +0.7221 | 0.761 | **YES** | 0 |
+| `winning_avp_t512_a45_fp32` | fp32_winning | 8 | 3289–17940 | 514.25 | 27.01 | +0.7193 | 0.761 | **YES** | 0 |
+| `winning_avpaug10_t512_a45_fp32` | fp32_winning | 7 | 440–2400 | 200.73 | 79.24 | +0.7592 | 0.801 | **YES** | 0 |
+| `winning_goa_t512_a128_fp32` | fp32_winning | 9 | 7425–91125 | 802.31 | 12.06 | +0.3041 | 0.588 | **YES** | 0 |
+| `winning_goa_t512_a45_bf16` | fp32_winning | 6 | 7425–40500 | 632.40 | 16.09 | +0.6543 | 0.737 | **YES** | 0 |
+| `winning_goa_t512_a45_fp32` | fp32_winning | 6 | 7425–40500 | 631.99 | 16.16 | +0.6518 | 0.736 | **YES** | 0 |
+| `x0eq_goa` | DoRA/LoRA adapter | 2 | 5400–27000 | 141.14 | 6.63 | --- | 1.000 | **YES** | 0 |
+| `x0eq_sub5_goa` | DoRA/LoRA adapter | 2 | 5400–27000 | 141.10 | 6.62 | --- | 1.000 | **YES** | 0 |
+| `x20b3ygb` | DoRA/LoRA adapter | 5 | 1350–6750 | 39.44 | 8.45 | -0.0118 | 0.495 | **YES** | 0 |
+| `xftdora128_fullft_avp_t1024` | xft_distillation | 1 | N/A | 137.24 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_avp_t2048` | xft_distillation | 1 | N/A | 138.16 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_avp_t256` | xft_distillation | 1 | N/A | 136.57 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_avp_t4096` | xft_distillation | 1 | N/A | 139.45 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_avp_t512` | xft_distillation | 1 | N/A | 136.68 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_goa_t1024` | xft_distillation | 1 | N/A | 168.29 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_goa_t2048` | xft_distillation | 1 | N/A | 168.62 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_goa_t256` | xft_distillation | 1 | N/A | 168.32 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_goa_t4096` | xft_distillation | 1 | N/A | 168.86 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora128_fullft_goa_t512` | xft_distillation | 1 | N/A | 168.33 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_avp_t1024` | xft_distillation | 1 | N/A | 52.64 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_avp_t2048` | xft_distillation | 1 | N/A | 53.01 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_avp_t256` | xft_distillation | 1 | N/A | 52.33 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_avp_t4096` | xft_distillation | 1 | N/A | 53.52 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_avp_t512` | xft_distillation | 1 | N/A | 52.37 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_goa_t1024` | xft_distillation | 1 | N/A | 64.59 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_goa_t2048` | xft_distillation | 1 | N/A | 64.73 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_goa_t256` | xft_distillation | 1 | N/A | 64.54 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_goa_t4096` | xft_distillation | 1 | N/A | 64.87 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora16_fullft_goa_t512` | xft_distillation | 1 | N/A | 64.60 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_avp_t1024` | xft_distillation | 1 | N/A | 100.59 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_avp_t2048` | xft_distillation | 1 | N/A | 101.29 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_avp_t256` | xft_distillation | 1 | N/A | 100.06 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_avp_t4096` | xft_distillation | 1 | N/A | 102.26 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_avp_t512` | xft_distillation | 1 | N/A | 100.14 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_goa_t1024` | xft_distillation | 1 | N/A | 123.30 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_goa_t2048` | xft_distillation | 1 | N/A | 123.56 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_goa_t256` | xft_distillation | 1 | N/A | 123.28 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_goa_t4096` | xft_distillation | 1 | N/A | 123.76 | --- | --- | 1.000 | **YES** | 0 |
+| `xftdora64_fullft_goa_t512` | xft_distillation | 1 | N/A | 123.33 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_avp_t1024` | xft_distillation | 1 | N/A | 137.24 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_avp_t2048` | xft_distillation | 1 | N/A | 138.16 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_avp_t256` | xft_distillation | 1 | N/A | 136.57 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_avp_t4096` | xft_distillation | 1 | N/A | 139.45 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_avp_t512` | xft_distillation | 1 | N/A | 136.68 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_goa_t1024` | xft_distillation | 1 | N/A | 168.29 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_goa_t2048` | xft_distillation | 1 | N/A | 168.62 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_goa_t256` | xft_distillation | 1 | N/A | 168.32 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_goa_t4096` | xft_distillation | 1 | N/A | 168.86 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora128_fullft_goa_t512` | xft_distillation | 1 | N/A | 168.33 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_avp_t1024` | xft_distillation | 1 | N/A | 52.64 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_avp_t2048` | xft_distillation | 1 | N/A | 53.01 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_avp_t256` | xft_distillation | 1 | N/A | 52.33 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_avp_t4096` | xft_distillation | 1 | N/A | 53.52 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_avp_t512` | xft_distillation | 1 | N/A | 52.37 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_goa_t1024` | xft_distillation | 1 | N/A | 64.59 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_goa_t2048` | xft_distillation | 1 | N/A | 64.73 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_goa_t256` | xft_distillation | 1 | N/A | 64.54 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_goa_t4096` | xft_distillation | 1 | N/A | 64.87 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora16_fullft_goa_t512` | xft_distillation | 1 | N/A | 64.60 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_avp_t1024` | xft_distillation | 1 | N/A | 100.59 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_avp_t2048` | xft_distillation | 1 | N/A | 101.29 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_avp_t256` | xft_distillation | 1 | N/A | 100.06 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_avp_t4096` | xft_distillation | 1 | N/A | 102.26 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_avp_t512` | xft_distillation | 1 | N/A | 100.14 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_goa_t1024` | xft_distillation | 1 | N/A | 123.30 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_goa_t2048` | xft_distillation | 1 | N/A | 123.56 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_goa_t256` | xft_distillation | 1 | N/A | 123.28 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_goa_t4096` | xft_distillation | 1 | N/A | 123.76 | --- | --- | 1.000 | **YES** | 0 |
+| `xftlora64_fullft_goa_t512` | xft_distillation | 1 | N/A | 123.33 | --- | --- | 1.000 | **YES** | 0 |
+| `z18fy24b` | DoRA/LoRA adapter | 7 | 500–3500 | 24.65 | 12.25 | +0.1277 | 0.567 | **YES** | 0 |
 
 ---
 
@@ -3138,4 +3294,1722 @@
 | Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 4784 | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
+
+
+### `plain_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 4784 | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
+
+
+### `precision_ladder_t256_bf16mixed`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 4500 | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
+
+
+### `precision_ladder_t256_fp16mixed`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 4500 | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
+
+
+### `precision_ladder_t256_fp32`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 4500 | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
+
+
+### `proll_fullft_t256_bf16_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2688 | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 12948.0 |
+
+
+### `proll_fullft_t256_bf16_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2688 | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 12948.0 |
+
+
+### `pzqv5mcw`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5 | 0 | 1.03 | 34.89 | --- | --- | 0.00 | 0.00 | ✓ | 82.5 |
+| 10 | 1 | 1.53 | 34.91 | 140.11 | --- | 0.70 | 0.70 | ✓ | 82.5 |
+
+
+### `qy50uilf`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 128.31 | 98.83 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 2700 | 1 | 176.85 | 99.64 | 66.07 | --- | 89.19 | 89.19 | ✓ | 635.7 |
+| 4050 | 2 | 213.39 | 100.61 | 54.47 | +0.5354 | 162.72 | 142.78 | ✓ | 635.7 |
+| 5400 | 3 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 6750 | 4 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 8100 | 5 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 9450 | 6 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 10800 | 7 | nan | nan | nan | +nan | nan | nan | ❌ | 3814.2 |
+
+
+### `real`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 660 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 1320 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 1980 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 2640 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 3300 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 3960 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 4620 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 5280 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 5940 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 6600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 7260 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 7920 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 8580 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 9240 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 9900 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 10560 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 11220 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 11880 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 12540 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 13200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 13860 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 14520 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+
+
+### `repaired`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| -1 | -1 | 93.19 | 93.19 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| -1 | -1 | 28.26 | 28.26 | --- | --- | 97.38 | 97.38 | ✓ | 635.7 |
+| -1 | -1 | 88.99 | 88.99 | --- | -0.0878 | 190.74 | 128.85 | ✓ | 635.7 |
+| -1 | -1 | 93.19 | 93.19 | --- | -0.6582 | 319.59 | 0.00 | ✓ | 635.7 |
+
+
+### `rhythm_heads`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `riffer_200trk_2e-4_adamw`
+> **Verdict / Note:** Part of the June-19 LR/optimizer bracket — reference-tracking peaks hard around step 6000 then elbow-declines; this is the recipe that set that baseline.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 2048 · optimizer adamw · steps 6000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_200trk_2e-4_fusion`
+> **Verdict / Note:** FusionOpt variant in the LR/optimizer bracket — no distinct standalone verdict beyond the bracket's overall lr1e-4-is-the-sweet-spot finding.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer fusion · steps 4000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_200trk_2e-4_sfadamw`
+> **Verdict / Note:** Optimizer-variant in the LR/optimizer bracket — no distinct standalone verdict beyond the bracket's overall lr1e-4-is-the-sweet-spot finding.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer sfadamw · steps 4000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_200trk_4e-4_adamw`
+> **Verdict / Note:** Higher-LR bracket variant — heavier LR pushed the adapter toward the mode-collapse regime the bracket was designed to detect.
+
+> **Recipe:** model medium-base · lr 0.0004 · batch 1 · crop_frames 2048 · optimizer adamw · steps 6000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_200trk_5e-5_fusion`
+> **Verdict / Note:** Lowest-LR FusionOpt variant in the bracket — no distinct standalone verdict recorded.
+
+> **Recipe:** model medium-base · lr 5e-05 · batch 1 · crop_frames 1024 · optimizer fusion · steps 4000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_200trk_6e-4_adamw_wu`
+> **Verdict / Note:** Highest-LR bracket variant (with warmup) — same bracket that established heavier LR mode-collapses outputs across references.
+
+> **Recipe:** model medium-base · lr 0.0006 · batch 1 · crop_frames 2048 · optimizer adamw · steps 6000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_20pct_2048_lr1e3`
+> **Verdict / Note:** 10x-LR follow-up — outputs were nearly identical across different references (0.3% diff): a mode-collapse mirage, not real reference-tracking.
+
+> **Recipe:** model medium-base · lr 0.001 · batch 1 · crop_frames 2048 · optimizer unset in checkpoint (early run, predates the --optimizer flag; current code default is adamw) · steps 200000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 7500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 9000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 10500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 12000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 13500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 15000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 16500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_20pct_2048_nockpt`
+> **Verdict / Note:** First riffer concept test — loss barely moved (−0.05 vs a 0.168 noise floor); the adapter learned almost nothing at lr1e-4.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 2048 · optimizer unset in checkpoint (early run, predates the --optimizer flag; current code default is adamw) · steps 200000 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 7500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 9000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 10500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 12000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 13500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 15000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 16500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_400trk_lr1e-4_crop1024`
+> **Verdict / Note:** Retrained at more data / lower effective LR to test whether that smooths the riffer effect — reference-specific tracking confirmed, same lr1e-4 peak-then-elbow shape as the 200trk bracket.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 1024 · optimizer adamw · steps 6000 · mode:audio_ref · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 1500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 2500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 3500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 4500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 5500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `riffer_bf16test`
+> **Verdict / Note:** Precision/infra smoke test only (bf16 training path) — no steering evaluation.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 1024 · optimizer unset in checkpoint (early run, predates the --optimizer flag; current code default is adamw) · steps 40 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 40 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 221.5 |
+
+
+### `rms_energy_air_ema20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `rms_energy_air_ema40`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 21 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 22 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 23 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 24 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 25 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 26 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 27 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 28 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 29 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 30 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 32 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 33 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 34 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 35 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 36 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 37 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 38 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 39 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 40 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `rms_energy_body_ema20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `rms_energy_body_ema40`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 21 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 22 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 23 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 24 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 25 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 26 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 27 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 28 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 29 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 30 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 32 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 33 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 34 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 35 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 36 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 37 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 38 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 39 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 40 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `sa3-goa-dora-47s-b4-cont__x20b3ygb`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 27.69 | 41.19 | --- | --- | 0.00 | 0.00 | ✓ | 82.6 |
+| 2700 | 1 | 31.67 | 43.08 | 8.24 | --- | 11.12 | 11.12 | ✓ | 82.6 |
+| 4050 | 2 | 35.16 | 44.72 | 8.26 | -0.0628 | 22.27 | 15.25 | ✓ | 82.6 |
+| 5400 | 3 | 37.31 | 45.24 | 8.42 | -0.0174 | 33.64 | 19.02 | ✓ | 82.6 |
+| 6750 | 4 | 39.44 | 45.86 | 8.45 | -0.0118 | 45.04 | 22.29 | ✓ | 247.8 |
+
+
+### `sa3-goa-dora-47s-b4__vjnnndnu`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 13.95 | 37.36 | --- | --- | 0.00 | 0.00 | ✓ | 82.6 |
+| 2700 | 1 | 19.18 | 38.49 | 8.64 | --- | 11.66 | 11.66 | ✓ | 82.6 |
+| 4050 | 2 | 23.24 | 39.49 | 8.49 | +0.0492 | 23.13 | 16.75 | ✓ | 247.8 |
+
+
+### `sa3-goa-dora-47s-r128-adamw__dq0egegi`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 34.92 | 101.09 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 2700 | 1 | 48.59 | 102.83 | 24.09 | --- | 32.52 | 32.52 | ✓ | 635.7 |
+| 4050 | 2 | 59.31 | 104.65 | 24.15 | +0.0057 | 65.12 | 46.18 | ✓ | 635.7 |
+| 5400 | 3 | 68.16 | 106.37 | 24.03 | -0.0062 | 97.56 | 56.61 | ✓ | 635.7 |
+| 6750 | 4 | 76.02 | 108.12 | 24.07 | -0.0157 | 130.06 | 65.48 | ✓ | 635.7 |
+| 8100 | 5 | 83.20 | 109.87 | 24.15 | -0.0164 | 162.66 | 73.40 | ✓ | 635.7 |
+| 9450 | 6 | 89.83 | 111.59 | 24.21 | -0.0215 | 195.34 | 80.58 | ✓ | 635.7 |
+| 10800 | 7 | 95.96 | 113.31 | 24.21 | -0.0234 | 228.02 | 87.20 | ✓ | 1907.2 |
+
+
+### `sa3-goa-dora-47s-r128-fusion-caut__qy50uilf`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 128.31 | 98.83 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 2700 | 1 | 176.85 | 99.64 | 66.07 | --- | 89.19 | 89.19 | ✓ | 635.7 |
+| 4050 | 2 | 213.39 | 100.61 | 54.47 | +0.5354 | 162.72 | 142.78 | ✓ | 635.7 |
+| 5400 | 3 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 6750 | 4 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 8100 | 5 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 9450 | 6 | nan | nan | nan | +nan | nan | nan | ❌ | 635.7 |
+| 10800 | 7 | nan | nan | nan | +nan | nan | nan | ❌ | 3814.2 |
+
+
+### `sa3-goa-dora-47s-r128-fusion__mqe3ne49`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 234.31 | 101.86 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 2700 | 1 | 319.27 | 106.20 | 120.78 | --- | 163.06 | 163.06 | ✓ | 635.7 |
+| 4050 | 2 | 381.68 | 110.36 | 99.32 | +0.5112 | 297.13 | 258.68 | ✓ | 635.7 |
+| 5400 | 3 | 432.11 | 114.23 | 86.32 | +0.6016 | 413.67 | 328.92 | ✓ | 635.7 |
+| 6750 | 4 | 474.67 | 117.78 | 77.50 | +0.6416 | 518.30 | 385.05 | ✓ | 635.7 |
+| 8100 | 5 | 511.77 | 121.09 | 71.50 | +0.6556 | 614.83 | 432.16 | ✓ | 635.7 |
+| 9450 | 6 | 544.50 | 124.12 | 66.51 | +0.6606 | 704.61 | 472.69 | ✓ | 635.7 |
+| 10800 | 7 | 573.76 | 126.90 | 62.66 | +0.6576 | 789.21 | 508.26 | ✓ | 3814.2 |
+
+
+### `sa3-goa-dora-47s-r64__i8nygj4y`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 25.51 | 71.96 | --- | --- | 0.00 | 0.00 | ✓ | 319.6 |
+| 2700 | 1 | 35.61 | 73.49 | 17.15 | --- | 23.15 | 23.15 | ✓ | 319.6 |
+| 4050 | 2 | 43.35 | 74.96 | 16.97 | +0.0240 | 46.06 | 32.96 | ✓ | 319.6 |
+| 5400 | 3 | 49.85 | 76.37 | 17.01 | +0.0029 | 69.02 | 40.55 | ✓ | 319.6 |
+| 6750 | 4 | 55.75 | 77.84 | 17.05 | -0.0064 | 92.04 | 47.19 | ✓ | 319.6 |
+| 8100 | 5 | 61.04 | 79.23 | 17.09 | -0.0103 | 115.12 | 53.04 | ✓ | 319.6 |
+| 9450 | 6 | 65.84 | 80.53 | 17.11 | -0.0188 | 138.22 | 58.28 | ✓ | 319.6 |
+| 10800 | 7 | 70.39 | 81.93 | 16.99 | -0.0219 | 161.16 | 63.20 | ✓ | 959.0 |
+
+
+### `sa3-goa-dora-47s__2ankrkoh`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 0 | 24.87 | 39.11 | --- | --- | 0.00 | 0.00 | ✓ | 82.6 |
+
+
+### `sa3_control_runs`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2.4 |
+
+
+### `sanity16_suomi`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 9420 | 59 | 35.08 | 43.30 | --- | --- | 0.00 | 0.00 | ✓ | 237.6 |
+
+
+### `seg1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `seg2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `seg3`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `seg4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `shuffled`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 660 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 1320 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 1980 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 2640 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 3300 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 3960 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 4620 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 5280 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 5940 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 6600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 7260 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 7920 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 8580 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 9240 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 9900 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 10560 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 11220 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 11880 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 12540 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 13200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 13860 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| 14520 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2774.3 |
+
+
+### `site_L13_15`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 20 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1229.4 |
+| 40 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1229.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1229.4 |
+
+
+### `site_L8_15`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 20 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1499.5 |
+| 40 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1499.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1499.5 |
+
+
+### `smoke_r256_a256_lr1e4_f512_bs8`
+> **Recipe:** LUMI pipeline smoke run: DoRA r256 α256, T=512 crops, batch 8, lr 1e-4 — sanity artifact, not a model candidate.
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 37.40 | 139.78 | --- | --- | 0.00 | 0.00 | ✓ | 1267.8 |
+| 200 | 5 | 51.36 | 139.80 | 234.35 | --- | 23.44 | 23.44 | ✓ | 1267.8 |
+| 300 | 8 | 61.49 | 139.75 | 191.26 | +0.6131 | 42.56 | 38.27 | ✓ | 7607.2 |
+
+
+### `soups`
+> **Verdict / Note:** 12 weight-averaged blends of the 40-epoch Fusion onset run (ascending/descending/peak/sine/triangle schedules) — no single blend has a standout recorded verdict beyond exppeak/expasc being the ones referenced elsewhere as reasonable picks.
+
+> **Recipe:** model medium-base · lr 2e-05 · batch 1 · crop_frames 512 · optimizer fusion · steps 216000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `soups_vibe`
+> **Verdict / Note:** Cross-optimizer soups (AdamW × Fusion blends) — the cross_25A75F blend was the standout, topping tracking accuracy while keeping control range.
+
+> **Recipe:** model medium-base · lr 7.5e-05 · batch 1 · crop_frames 512 (random-crop) · optimizer adamw · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `spectral_kurtosis_ema20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `spectral_kurtosis_ema40`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 21 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 22 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 23 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 24 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 25 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 26 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 27 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 28 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 29 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 30 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 32 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 33 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 34 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 35 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 36 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 37 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 38 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 39 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 40 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `stereo_sweep_w0.0`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 500 | 0 | 80.44 | 98.68 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 1000 | 0 | 109.62 | 98.82 | 107.35 | --- | 53.67 | 53.67 | ✓ | 635.7 |
+| 1500 | 0 | 131.68 | 99.05 | 88.23 | +0.5513 | 97.79 | 86.24 | ✓ | 635.7 |
+| 2000 | 0 | 149.92 | 99.29 | 76.74 | +0.6390 | 136.16 | 110.78 | ✓ | 635.7 |
+| 2500 | 0 | 165.76 | 99.55 | 68.98 | +0.6793 | 170.65 | 130.90 | ✓ | 635.7 |
+| 3000 | 1 | 179.94 | 99.84 | 63.39 | +0.7013 | 202.34 | 148.27 | ✓ | 635.7 |
+| 3500 | 1 | 192.87 | 100.13 | 59.38 | +0.7056 | 232.03 | 163.70 | ✓ | 635.7 |
+| 4000 | 1 | 204.83 | 100.45 | 56.03 | +0.7025 | 260.05 | 177.66 | ✓ | 3814.2 |
+
+
+### `style_fpA_adamw`
+> **Verdict / Note:** Style+groove fingerprint (15-dim) — decisively outperformed by the simpler fpC variant in a direct A/B; not the shipped head.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 4 x2accum · crop_frames 512 (random-crop) · optimizer adamw · steps 20000 · mode:fingerprint · fp_variant:A · ema 0.999 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+
+
+### `style_fpC_adamw`
+> **Verdict / Note:** Ship this — best genre steering of the style heads (Goa confidence 0.92, Psy 0.46).
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 4 x2accum · crop_frames 512 (random-crop) · optimizer adamw · steps 20000 · mode:fingerprint · fp_variant:C · ema 0.999 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+
+
+### `style_fpC_genrecc`
+> **Verdict / Note:** Don't use — the genre-consistency loss variant HURT steering vs plain fpC (Goa 0.92→0.65, Psy 0.46→0.03); meter-in-the-gradient added interference, not signal.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 4 x2accum · crop_frames 512 (random-crop) · optimizer adamw · steps 20000 · mode:fingerprint · fp_variant:C · genre-cc lambda_fp 0.1 supervise@0,1,2,4 · ema 0.999 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2700 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 8100 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 13500 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| 18900 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 912.4 |
+
+
+### `subloss_goa_k12`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 65.46 | 105.26 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 144.06 | 127.95 | 6.73 | --- | 145.45 | 145.45 | ✓ | 1907.2 |
+
+
+### `subloss_goa_k2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 66.35 | 105.64 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 146.34 | 129.54 | 6.80 | --- | 146.98 | 146.98 | ✓ | 1907.2 |
+
+
+### `subloss_goa_k20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2700 | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 39256.2 |
+
+
+### `subloss_goa_k5`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 65.92 | 105.47 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 145.03 | 128.63 | 6.76 | --- | 145.93 | 145.93 | ✓ | 1907.2 |
+
+
+### `subloss_k24_avpaug_t512_bf16_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2368 | 63 | 48.47 | 108.74 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_k24_biggoa_t512_bf16_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 12480 | 63 | 98.77 | 120.34 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_k24_bigmix_t512_bf16_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 15680 | 55 | 109.16 | 124.32 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_k24_suomi_t512_bf16_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1216 | 63 | 31.10 | 102.28 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k12`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 147.40 | 129.62 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 146.65 | 129.80 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 147.19 | 129.97 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 146.66 | 129.70 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5_tgate`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 16200 | 11 | 115.09 | 118.62 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5_tgate_deficit_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 147.06 | 129.86 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5_tgate_deficit_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 147.08 | 129.88 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `subloss_v3sel_k5_tgate_r2_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 27000 | 19 | 146.70 | 129.76 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `suomi`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 9420 | 59 | 35.08 | 43.30 | --- | --- | 0.00 | 0.00 | ✓ | 237.6 |
+
+
+### `suomi_r256_lr1e-4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2340 | 59 | 164.38 | 144.90 | --- | --- | 0.00 | 0.00 | ✓ | 7607.2 |
+
+
+### `suomi_r256_lr3e-5`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2340 | 59 | 65.16 | 143.64 | --- | --- | 0.00 | 0.00 | ✓ | 7607.2 |
+
+
+### `suomi_r32_lr1e-4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1140 | 59 | 152.43 | 116.06 | --- | --- | 0.00 | 0.00 | ✓ | 807.9 |
+
+
+### `suomi_r32_lr3e-5`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1140 | 59 | 85.08 | 80.80 | --- | --- | 0.00 | 0.00 | ✓ | 807.9 |
+
+
+### `suomift_warm_avpaug19_t1024_bf16_k5_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 320 | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 7169.8 |
+| 640 | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 7169.8 |
+| 1280 | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 40430.2 |
+
+
+### `suomift_warm_goaft_t1024_bf16_k5_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 320 | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 7169.8 |
+| 640 | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 7169.8 |
+| 1280 | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 40430.2 |
+
+
+### `version_None`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 75 | 0 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 25426.1 |
+
+
+### `vjnnndnu`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 13.95 | 37.36 | --- | --- | 0.00 | 0.00 | ✓ | 82.6 |
+| 2700 | 1 | 19.18 | 38.49 | 8.64 | --- | 11.66 | 11.66 | ✓ | 82.6 |
+| 4050 | 2 | 23.24 | 39.49 | 8.49 | +0.0492 | 23.13 | 16.75 | ✓ | 247.8 |
+
+
+### `wfleet_avp_t1024_a45_fp32_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 23930 | 9 | 189.83 | 178.59 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_mix3_t1024_a45_fp32_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 40440 | 19 | 336.28 | 229.69 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_suomi_t1024_a128_fp32_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 25200 | 19 | nan | nan | --- | --- | 0.00 | 0.00 | ❌ | 1907.2 |
+
+
+### `wfleet_suomi_t1024_a128_fp32_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 25200 | 19 | 185.40 | 154.87 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_suomi_t1024_a45_fp32_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 25200 | 19 | 157.21 | 164.52 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_suomi_t1024_a45_fp32_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 25200 | 19 | 146.64 | 151.63 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_suomi_t512_a45_fp32_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 3160 | 19 | 64.64 | 114.30 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wfleet_suomi_t512_a45_fp32_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2520 | 1 | 53.94 | 110.08 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `wide_r256`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 20 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2995.5 |
+| 40 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2995.5 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 2995.5 |
+
+
+### `winning_avp_t1024_a45_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 11960, 'provenance': {'checkpoint': 'manifest:winning_avp_t1024_a45_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 6578 | 10 | 303.96 | 112.51 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 11960 | 19 | 406.62 | 122.40 | 32.90 | --- | 177.08 | 177.08 | ✓ | 3814.2 |
+| 18538 | 30 | 503.54 | 134.08 | 25.42 | +0.5881 | 344.32 | 306.85 | ✓ | 635.7 |
+| 24518 | 40 | 573.62 | 143.53 | 21.78 | +0.6694 | 474.56 | 400.13 | ✓ | 635.7 |
+| 30498 | 50 | 626.62 | 150.40 | 19.39 | +0.6791 | 590.54 | 470.06 | ✓ | 635.7 |
+| 35880 | 59 | 665.16 | 155.19 | 17.99 | +0.6894 | 687.37 | 520.57 | ✓ | 3814.2 |
+
+
+### `winning_avp_t512_a128_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 5980, 'provenance': {'checkpoint': 'manifest:winning_avp_t512_a128_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 3289 | 10 | 199.44 | 102.68 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 4784 | 15 | 238.77 | 104.71 | 49.98 | --- | 74.72 | 74.72 | ✓ | 635.7 |
+| 5980 | 19 | 265.32 | 106.22 | 45.25 | +0.6720 | 128.83 | 118.09 | ✓ | 3814.2 |
+| 6279 | 20 | 271.65 | 106.60 | 51.58 | +0.6546 | 144.25 | 127.55 | ✓ | 635.7 |
+| 9269 | 30 | 329.26 | 110.97 | 34.31 | +0.6068 | 246.84 | 204.21 | ✓ | 635.7 |
+| 12259 | 40 | 376.91 | 115.23 | 29.68 | +0.6564 | 335.57 | 266.77 | ✓ | 635.7 |
+| 15249 | 50 | 414.16 | 118.36 | 26.62 | +0.6673 | 415.18 | 314.74 | ✓ | 635.7 |
+| 17940 | 59 | 442.14 | 120.59 | 24.89 | +0.6832 | 482.15 | 350.28 | ✓ | 3814.2 |
+| 34385 | 114 | 591.09 | 138.39 | 19.62 | +0.4220 | 804.87 | 528.73 | ✓ | 635.7 |
+| 68471 | 228 | 873.99 | 197.83 | 16.90 | +0.3168 | 1380.95 | 841.23 | ✓ | 3814.2 |
+
+
+### `winning_avp_t512_a45_bf16`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 5980, 'provenance': {'checkpoint': 'manifest:winning_avp_t512_a45_bf16', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 3289 | 10 | 220.40 | 107.27 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 4784 | 15 | 266.94 | 111.03 | 54.79 | --- | 81.91 | 81.91 | ✓ | 3814.2 |
+| 5980 | 19 | 298.73 | 113.84 | 49.42 | +0.7112 | 141.01 | 130.72 | ✓ | 3814.2 |
+| 6279 | 20 | 306.36 | 114.57 | 54.40 | +0.7031 | 157.28 | 141.48 | ✓ | 635.7 |
+| 9269 | 30 | 376.83 | 122.49 | 38.00 | +0.6557 | 270.91 | 230.38 | ✓ | 635.7 |
+| 12259 | 40 | 435.32 | 129.89 | 32.92 | +0.7111 | 369.35 | 304.42 | ✓ | 635.7 |
+| 15249 | 50 | 480.99 | 135.50 | 29.26 | +0.7099 | 456.84 | 361.19 | ✓ | 635.7 |
+| 17940 | 59 | 515.14 | 139.57 | 27.08 | +0.7221 | 529.72 | 403.17 | ✓ | 3814.2 |
+
+
+### `winning_avp_t512_a45_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 5980, 'provenance': {'checkpoint': 'manifest:winning_avp_t512_a45_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 3289 | 10 | 220.16 | 107.22 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 4784 | 15 | 266.75 | 110.95 | 54.73 | --- | 81.82 | 81.82 | ✓ | 3814.2 |
+| 5980 | 19 | 298.48 | 113.77 | 49.45 | +0.7073 | 140.96 | 130.53 | ✓ | 3814.2 |
+| 6279 | 20 | 306.06 | 114.49 | 54.43 | +0.7011 | 157.24 | 141.25 | ✓ | 635.7 |
+| 9269 | 30 | 376.22 | 122.28 | 38.02 | +0.6535 | 270.92 | 229.99 | ✓ | 635.7 |
+| 12259 | 40 | 434.68 | 129.65 | 32.87 | +0.7116 | 369.18 | 304.10 | ✓ | 635.7 |
+| 15249 | 50 | 480.24 | 135.22 | 29.14 | +0.7109 | 456.32 | 360.76 | ✓ | 635.7 |
+| 17940 | 59 | 514.25 | 139.24 | 27.01 | +0.7193 | 528.99 | 402.58 | ✓ | 3814.2 |
+
+
+### `winning_avpaug10_t512_a45_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 800, 'provenance': {'checkpoint': 'manifest:winning_avpaug10_t512_a45_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 440 | 10 | 80.46 | 100.42 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 640 | 15 | 96.91 | 101.00 | 143.70 | --- | 28.74 | 28.74 | ✓ | 3814.2 |
+| 800 | 19 | 108.26 | 101.40 | 133.08 | +0.7204 | 50.03 | 46.49 | ✓ | 3814.2 |
+| 1240 | 30 | 139.18 | 103.23 | 106.31 | +0.7089 | 96.81 | 84.89 | ✓ | 635.7 |
+| 1640 | 40 | 164.40 | 105.31 | 95.56 | +0.7629 | 135.03 | 115.81 | ✓ | 635.7 |
+| 2040 | 50 | 184.82 | 106.93 | 85.32 | +0.7468 | 169.16 | 139.93 | ✓ | 635.7 |
+| 2400 | 59 | 200.73 | 108.19 | 79.24 | +0.7592 | 197.69 | 158.34 | ✓ | 3814.2 |
+
+
+### `winning_goa_t512_a128_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 13500, 'provenance': {'checkpoint': 'manifest:winning_goa_t512_a128_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 7425 | 10 | 271.47 | 102.79 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 13500 | 19 | 354.27 | 106.61 | 27.04 | --- | 164.24 | 164.24 | ✓ | 3814.2 |
+| 14175 | 20 | 362.10 | 107.05 | 32.78 | +0.5287 | 186.36 | 176.94 | ✓ | 635.7 |
+| 20925 | 30 | 432.23 | 112.11 | 20.99 | +0.5563 | 328.02 | 276.40 | ✓ | 635.7 |
+| 27675 | 40 | 488.25 | 117.05 | 18.08 | +0.5891 | 450.09 | 354.59 | ✓ | 635.7 |
+| 34425 | 50 | 529.61 | 120.38 | 16.40 | +0.6041 | 560.78 | 412.39 | ✓ | 635.7 |
+| 40500 | 59 | 559.30 | 122.60 | 15.40 | +0.6239 | 654.36 | 453.71 | ✓ | 3814.2 |
+| 45900 | 67 | 582.85 | 124.80 | 15.37 | +0.6038 | 737.34 | 485.57 | ✓ | 635.7 |
+| 91125 | 134 | 802.31 | 170.01 | 12.06 | +0.3041 | 1282.98 | 754.32 | ✓ | 3814.2 |
+
+
+### `winning_goa_t512_a45_bf16`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 13500, 'provenance': {'checkpoint': 'manifest:winning_goa_t512_a45_bf16', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 7425 | 10 | 293.41 | 108.04 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 13500 | 19 | 385.38 | 114.26 | 28.36 | --- | 172.26 | 172.26 | ✓ | 3814.2 |
+| 20925 | 30 | 477.94 | 123.55 | 22.11 | +0.5493 | 336.42 | 296.12 | ✓ | 635.7 |
+| 27675 | 40 | 547.02 | 132.08 | 19.26 | +0.6412 | 466.45 | 388.07 | ✓ | 635.7 |
+| 34425 | 50 | 597.01 | 137.80 | 17.27 | +0.6381 | 583.04 | 454.78 | ✓ | 635.7 |
+| 40500 | 59 | 632.40 | 141.56 | 16.09 | +0.6543 | 680.78 | 502.02 | ✓ | 3814.2 |
+
+
+### `winning_goa_t512_a45_fp32`
+> **Recipe:** {'kind': 'dora/lora', 'lora_config': {'rank': 128, 'alpha': 45.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': {'lr': 0.0001, 'weight_decay': 0.01, 'eps': 1e-08}, 'epoch': 19, 'global_step': 13500, 'provenance': {'checkpoint': 'manifest:winning_goa_t512_a45_fp32', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 7425 | 10 | 292.35 | 107.99 | --- | --- | 0.00 | 0.00 | ✓ | 3814.2 |
+| 13500 | 19 | 384.63 | 114.11 | 28.47 | --- | 172.94 | 172.94 | ✓ | 3814.2 |
+| 20925 | 30 | 477.63 | 123.40 | 22.22 | +0.5473 | 337.92 | 297.25 | ✓ | 635.7 |
+| 27675 | 40 | 546.69 | 131.92 | 19.25 | +0.6401 | 467.84 | 389.02 | ✓ | 635.7 |
+| 34425 | 50 | 596.60 | 137.65 | 17.27 | +0.6365 | 584.44 | 455.51 | ✓ | 635.7 |
+| 40500 | 59 | 631.99 | 141.44 | 16.16 | +0.6518 | 682.58 | 502.66 | ✓ | 3814.2 |
+
+
+### `x0eq_goa`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 66.00 | 105.62 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 141.14 | 127.41 | 6.63 | --- | 143.22 | 143.22 | ✓ | 1907.2 |
+
+
+### `x0eq_sub5_goa`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 65.80 | 105.55 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 141.10 | 127.26 | 6.62 | --- | 143.00 | 143.00 | ✓ | 1907.2 |
+
+
+### `x20b3ygb`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 27.69 | 41.19 | --- | --- | 0.00 | 0.00 | ✓ | 82.6 |
+| 2700 | 1 | 31.67 | 43.08 | 8.24 | --- | 11.12 | 11.12 | ✓ | 82.6 |
+| 4050 | 2 | 35.16 | 44.72 | 8.26 | -0.0628 | 22.27 | 15.25 | ✓ | 82.6 |
+| 5400 | 3 | 37.31 | 45.24 | 8.42 | -0.0174 | 33.64 | 19.02 | ✓ | 82.6 |
+| 6750 | 4 | 39.44 | 45.86 | 8.45 | -0.0118 | 45.04 | 22.29 | ✓ | 247.8 |
+
+
+### `xftdora128_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 137.24 | 137.24 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 138.16 | 138.16 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 136.57 | 136.57 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 139.45 | 139.45 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 136.68 | 136.68 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.29 | 168.29 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.62 | 168.62 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.32 | 168.32 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.86 | 168.86 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora128_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora128_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.33 | 168.33 | --- | --- | 0.00 | 0.00 | ✓ | 317.8 |
+
+
+### `xftdora16_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.64 | 52.64 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 53.01 | 53.01 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.33 | 52.33 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 53.52 | 53.52 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.37 | 52.37 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.59 | 64.59 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.73 | 64.73 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.54 | 64.54 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.87 | 64.87 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora16_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora16_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.60 | 64.60 | --- | --- | 0.00 | 0.00 | ✓ | 41.3 |
+
+
+### `xftdora64_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.59 | 100.59 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 101.29 | 101.29 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.06 | 100.06 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 102.26 | 102.26 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.14 | 100.14 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.30 | 123.30 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.56 | 123.56 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.28 | 123.28 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.76 | 123.76 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftdora64_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'dora-rows', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftdora64_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.33 | 123.33 | --- | --- | 0.00 | 0.00 | ✓ | 159.8 |
+
+
+### `xftlora128_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 137.24 | 137.24 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 138.16 | 138.16 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 136.57 | 136.57 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 139.45 | 139.45 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 136.68 | 136.68 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.29 | 168.29 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.62 | 168.62 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.32 | 168.32 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.86 | 168.86 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora128_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 128, 'alpha': 128.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 128, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora128_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 168.33 | 168.33 | --- | --- | 0.00 | 0.00 | ✓ | 316.1 |
+
+
+### `xftlora16_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.64 | 52.64 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 53.01 | 53.01 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.33 | 52.33 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 53.52 | 53.52 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 52.37 | 52.37 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.59 | 64.59 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.73 | 64.73 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.54 | 64.54 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.87 | 64.87 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora16_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 16, 'alpha': 16.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 16, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora16_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 64.60 | 64.60 | --- | --- | 0.00 | 0.00 | ✓ | 39.6 |
+
+
+### `xftlora64_fullft_avp_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_avp_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.59 | 100.59 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_avp_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_avp_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 101.29 | 101.29 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_avp_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_avp_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.06 | 100.06 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_avp_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_avp_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 102.26 | 102.26 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_avp_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_avp_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_avp_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 100.14 | 100.14 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_goa_t1024`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t1024', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_goa_t1024', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.30 | 123.30 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_goa_t2048`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t2048', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_goa_t2048', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.56 | 123.56 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_goa_t256`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t256', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_goa_t256', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.28 | 123.28 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_goa_t4096`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t4096', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_goa_t4096', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.76 | 123.76 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `xftlora64_fullft_goa_t512`
+> **Verdict / Note:** auto: recipe extracted from checkpoint; evaluation sentence pending
+
+> **Recipe:** {'kind': 'safetensors adapter (svd-extracted)', 'lora_config': {'rank': 64, 'alpha': 64.0, 'adapter_type': 'lora', 'dropout': 0.0, 'include': None, 'exclude': None}, 'target_modules_count': 229, 'rank_from_shapes': 64, 'optimizer': 'N/A (SVD-extracted adapter — no training optimizer state)', 'extraction_provenance': {'extracted_from_run': 'fullft_goa_t512', 'extraction_method': 'svd-fullft-delta'}, 'provenance': {'checkpoint': 'manifest:xftlora64_fullft_goa_t512', 'extracted': '2026-07-30 via Misc/extract_recipes.py (real checkpoint read)', 'pruned_slim': False, 'optimizer_note': 'N/A (SVD-extracted adapter — no training optimizer state)'}}
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 123.33 | 123.33 | --- | --- | 0.00 | 0.00 | ✓ | 158.1 |
+
+
+### `z18fy24b`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 500 | 0 | 4.79 | 99.01 | --- | --- | 0.00 | 0.00 | ✓ | 2549.7 |
+| 1000 | 0 | 10.47 | 99.27 | 15.15 | --- | 7.57 | 7.57 | ✓ | 2549.7 |
+| 1500 | 0 | 14.37 | 99.48 | 13.80 | +0.3232 | 14.48 | 11.78 | ✓ | 2549.7 |
+| 2000 | 0 | 17.53 | 99.65 | 13.20 | +0.2489 | 21.08 | 15.12 | ✓ | 2549.7 |
+| 2500 | 1 | 20.24 | 99.80 | 12.75 | +0.2016 | 27.45 | 17.97 | ✓ | 2549.7 |
+| 3000 | 1 | 22.58 | 99.93 | 12.45 | +0.1605 | 33.67 | 20.41 | ✓ | 2549.7 |
+| 3500 | 1 | 24.65 | 100.04 | 12.25 | +0.1277 | 39.80 | 22.56 | ✓ | 2549.7 |
 
