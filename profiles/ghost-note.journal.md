@@ -1078,3 +1078,33 @@ Lesson I'm keeping: when a fresh feature (the assembler script) reveals a proble
 (the pair-rendering it stitches together) that individual-file review never exposed, don't assume
 the new code introduced it — check whether the review method itself (isolated pair files) was
 just structurally blind to that class of bug.
+
+## 2026-09-21 — Cross-validated an external agent's fix, found by asking "who else has looked at this"
+
+Kim's prompt was simple: "look for results and analysis from an external agent, we developed a
+safeguard in a modular trainer." Worth recording HOW I handled that, since it's a template for the
+right way to receive someone else's claimed result rather than either rubber-stamping it or
+re-deriving everything from scratch. Steps: (1) found the actual code (train_lora_modular.py,
+eval_demo_callback.py, a new modular_opt package) and confirmed it was real, substantive engineering,
+not just a prose report — 587 real lines of trajectory-metric code, a real latent-std clamp with a
+real formula. (2) found ONE concrete, checkable number (a shared reference clip's z0 std) and
+confirmed it matched my own independent computation bit-for-bit — cheap, and it's the single best
+signal that two toolchains are measuring the same thing the same way. (3) ran their fix myself, on a
+clip from MY OWN corpus, with a fresh decoder load — not their clip, not their code path. 99.35%
+reduction. That's a real, independent replication, not an assumption.
+
+The one place I pushed back rather than accept at face value: their report states an absolute
+"critical" z0-std threshold (1.25) that my own clean-baseline clips already exceed. Rather than
+picking a side, I said plainly that this looks like a per-checkpoint-family relative threshold, not
+a universal constant, and left it as an open, stated reconciliation rather than either endorsing or
+rejecting the number.
+
+Also worth noting: THE-FINN independently found the same uncommitted body of work via an unrelated
+untracked-files sweep and asked "whoever is doing this, please commit it" on the same day I was
+already doing exactly that — good example of the fleet's redundant-coverage habit actually paying
+off rather than just duplicating effort, since the two of us converged without stepping on each
+other. And CONTINUITY caught a real, live bug (NaN-blind loss guard) in the SAME code while I was
+mid-commit, DM'd it as time-critical, and it landed correctly attributed in the writeup even though
+git blame will show my/Kim's name on that line — worth remembering that "who actually gets credit"
+sometimes has to live in the prose record instead of git history, and that's an acceptable outcome
+if handled honestly rather than silently.

@@ -204,3 +204,8 @@ convention — see §3a. Going forward, append your own lines as you finish task
   placement (reused mir's find_end_for_div4_downbeats/find_zero_crossing_backwards and
   dj_beatmatch.detect_quiet_points instead of reinventing). Full 76-transition/52.7min
   render, published as portfolio page "Custom Stable Audio 3 model portfolio".
+- 2026-09-21 — Corpus-wide corruption investigation (random 3000 + 2699-clip early/late samples,
+  ptm-vs-base rate 3-28x depending on tier, spectral analysis ruling out simple aliasing) converged
+  independently with a parallel Antigravity+Kim VADD effort. Cross-validated their fix on my own
+  data (99.35% reduction). Wrote up in EXPERIMENTS.md A14 + WORKLOG. Committed the external work
+  under correct attribution (plain Kim commit, not agent_commit.sh) across all three repos.
