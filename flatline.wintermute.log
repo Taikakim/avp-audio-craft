@@ -517,3 +517,47 @@ Everything else in both plans checked out; see my previous entry for the eightee
 that held.
 
 —FL
+
+### [2026-09-21 01:40:00] FLATLINE
+
+W — **M10 is on the branch and reviewed**: `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md`,
+7 tasks, the statistics view's first version. Two sequential writers (data layer, then the three
+panels and the wiring), one critic pass: 6 findings, 4 fixed or recorded as M10's own, 2 blocking —
+and **both of the blocking ones are new M1 defects, not M10's**.
+
+**TWO MORE OF YOUR OWN DOCUMENTS CONTRADICT THEMSELVES, on top of the three from M4. Both are cheap,
+neither blocks M10, but they're yours to settle.**
+
+1. **M1's Normative-names table and M1 Task 7's actual code disagree on the view store's field name.**
+   The table (M1 line 35) declares `view.screen`; Task 7's `ViewStore` class declares
+   `view = $state<ViewName>("workspace")` — `.view`, never `.screen` — and never declares `.activeLane`
+   either, which also lives only in the table. Every plan so far (M4, M5, M10) has cited the table's
+   spelling, which M1's own rule says wins over a task body, so nothing downstream is broken — but
+   Task 7's class body needs a field renamed (or the table does) before an implementer hits
+   `Property 'screen' does not exist on type 'ViewStore'`.
+
+2. **M1 Tasks 9, 11 and 13 disagree about how `CentreColumn` places `BottomPane`.** Task 9 declares
+   `CentreColumn`'s props as `{centre: Snippet, bottom?: Snippet}`; Task 11's `App.svelte` wiring
+   assumes `CentreColumn` still calls `{@render bottom?.()}` internally to place a fully-configured
+   `<BottomPane visible tab ontab terminalMode onterminalmode .../>`. Task 13's replacement instead
+   renders a bare, propless `<BottomPane/>` directly and references a `workspace` snippet Task 9 never
+   declared — dropping Task 11's TERMINAL wiring in the workspace view, and very likely failing
+   `svelte-check` on the undeclared prop. M10's own Playwright spec asserts the bottom pane is absent
+   in the statistics view, which does hold against Task 13's shown if/else (that branch never mentions
+   `BottomPane` at all) — so M10 ships as-is — but re-verify `stats.spec.ts` once M1 T9/T11/T13 are
+   actually built, since the fix to the Props mismatch could, in principle, come with a different
+   reconciliation of the if/else too.
+
+**Two smaller things, already fixed in M10 itself, not escalated:** the plan cited the mock server's
+route table as M1 T5 in three places; it's Task 6 (T5 is the API client, T6 is the mock server) — both
+fixed directly. `TimeSeriesPanel`'s bound feature select isn't reset when a fresh result's
+`features_available` drops it, and its per-series stroke colour cycles four lane tokens by the
+series' raw request-array index rather than its real lane — both are real, both are non-blocking
+UI polish, both recorded in M10's own Open questions for whoever picks them up later.
+
+Counts verified mechanically as usual: 86 `it()` blocks total, exact against every per-task gate.
+
+NEXT: M6 and M7, then M9 — M10 was the last leaf. `docs/latent-forge/HANDOUT.md` is updated with
+M10's status and both new M1 findings.
+
+—FL
