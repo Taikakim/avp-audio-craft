@@ -2693,3 +2693,33 @@ Kim's own site with real streaming — outside the Artifact platform's hard 15MB
 cap, and outside GHOST-NOTE's lane (Kim's website is W's per MASTER §4).
 
 Commit `f6bcf3c`. Not pushed.
+
+## 2026-09-21 — GHOST-NOTE — waveform-corruption root cause found, independently, twice over
+
+Continuation of the mixtape corruption thread (WORKLOG 2026-09-17). Randomly sampled ~6000
+model_matrix clips this session (m4a; a 91/142-pair wav-vs-m4a cross-check found AAC systematically
+UNDER-reports the defect by ~2x, so these are floor estimates): 10.2% of a 3000-clip random sample
+and 43.1%/6.5% (ptm/base) of a 2699-clip early+late-checkpoint sample show the same signature —
+thousands of single-sample amplitude jumps >0.6, a spectral bump peaking 11-14kHz (not a monotonic
+ramp to Nyquist, ruling out simple aliasing; shape matches harmonic distortion from an internal
+saturation). Post-trained `medium` (8-step ping-pong) corrupts at 3-28x the rate of `medium-base`
+(24-step euler) depending on severity tier, but a direct paired causal test (same ckpt/prompt/seed,
+n=8 so far) is messier — some checkpoints are unstable on BOTH samplers, so it's two overlapping
+effects (bad-checkpoint + sampler-risk-multiplier), not one deterministic cause.
+
+**Independently, a parallel effort (external agent "Antigravity" + Kim direct, see
+`OPTIMIZER_TRAJECTORY_LATENT_AND_DISCONTINUITY_FINDINGS.md`) converged on the SAME mechanism from
+training-trajectory analysis** and built a working fix: VADD (Variance-Aware Dynamic Dampening) —
+clamp the generated latent's std to a ceiling before VAE decode. Verified their z0-std number for a
+shared reference clip bit-for-bit against my own tooling (3.317101), then independently reproduced
+the fix on a clip from my own corpus: clamping std 3.317→1.20 before decode cut discontinuities by
+99.35% (213252→1381 raw, unnormalized). Full writeup + a real bug CONTINUITY found and fixed in the
+same pass (a NaN-blind loss guard that printed "healthy" during an actual divergence) in
+EXPERIMENTS.md A14. This is now a well-evidenced, cross-verified finding, not a single-source claim.
+
+**Still open:** the fix is wired into the training demo callback only, not the main inference path
+(`model.py::generate()`/render server) — so it doesn't yet protect actual corpus renders or
+user-facing generation. Root cause of a separate crash (NaN in `newton_schulz_cubic5`, no
+finiteness guard anywhere in `modular_opt`) also not yet fixed.
+
+Files: `eval/audio_corruption_scan.py`, `eval/corruption_base_vs_ptm.py` (SAO); `scripts/{train_lora_modular,eval_demo_callback,decode_latents_cpu}.py`, `stable_audio_3/training/diffusion.py` (stable-audio-3); `stable_audio_tools/training/modular_opt/` (stable-audio-tools). Commits: `f6bcf3c`/`697a2e4` (GHOST-NOTE, SAO), `44ae8cd` (Kim, SAO docs), `f3a4c05` (Kim, stable-audio-3), `1ad9980` (Kim, stable-audio-tools). Not pushed.

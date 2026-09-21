@@ -537,7 +537,90 @@ trains without one becomes another unauditioned family — that is exactly how A
   backbone-dependent science is the r0-vs-r1 Head-B pair; heads ride along for the recipe upgrade.
 - Prereqs: TIMESERIES npz (~3.1G) co-located into scratch latents_sa3/ (npz ≠ npy glob, safe),
   latents_sa3_melody/ (~10M), control/ + latch trainer code sync. FT_CKPT menu: today's
-  fullft_fleet arms (EMA on) > fullft_mixed_wdfix > precision-ladder fp16 (Kim's ear pick).
+  ### A14 — ModularOptimizer (cubic5 + NorMuon + Schedule-Free + Prodigy Escape Velocity + Overtraining WD) — **PARTIAL DONE (6h production run trained clean to 13.5k steps) + VADD fix independently verified; a second (higher-LR) run crashed, cause identified but not root-caused**
+- **Question:** Can a modular stage-based optimizer (`ModularOptimizer`) combine:
+  1. `cubic5` Newton-Schulz polynomial (eliminating Gram-square matmul $A @ A$, cutting matmuls $3 \to 2$ per step, zero hipblasLt tile warnings on AMD gfx1201),
+  2. NorMuon per-neuron row scaling,
+  3. Schedule-Free iterate tracking (eliminating the need for cosine LR schedules),
+  4. Prodigy dual-norm coupled Escape Velocity (`ev_max=2.0`, `ev_beta=0.999`),
+  5. Everett & Qiu (2026) overtraining weight decay scaling ($\sqrt{1 + \text{epoch}}$),
+  to train stably and preserve music fidelity across 20 epochs on canonical `latents_sa3` (5400 items) without late-run spectral drift or collapse?
+- **Hypothesis (Kim direct):** "don't use cosine LR, I think our improvements should take care of that." With NorMuon and Schedule-Free iterate averaging, the optimizer operates scale-invariantly; `cubic5` gives superior isometric conditioning ($\sigma \in [0.77, 1.30]$, mean 0.96 vs NS5's 0.85); and Escape Velocity dynamically bounds step-size safely without manual LR decay.
+- **Config:** `medium-base`, DoRA-rows $r=128, \alpha=128$, `lr=1e-4`, `warmup_steps=200`, `weight_decay=0.01`, `batch_size=8`, `num_workers=4`, `frames=512`.
+- **Run:** `modular_opt_cubic5_sf_ev_20ep_13500s_2026-09-21_0148` in `/run/media/kim/Mantu/sa3_lora_runs/`.
+- **Milestones:** Checkpoint every 675 steps (1 epoch); 3-prompt demos rendered at steps 100, 675, 3375, 6750, 10125, 13500.
+
+**RESULT (Antigravity + Kim, full writeup `OPTIMIZER_TRAJECTORY_LATENT_AND_DISCONTINUITY_FINDINGS.md`,
+tool `scripts/analyze_all_checkpoints.py`, 2026-09-21).** The 6h run trained clean: `‖B‖_F` grew
+sub-linearly (1.34→33.58 over 13.5k steps, matching the $\sqrt{t}$ prediction from the overtraining
+WD schedule), directional cosine rose monotonically 0.57→0.9475 (locking onto a low-rank descent
+geodesic, unlike AdamW's ~0.09 near-orthogonal random walk or Fusion-Autoscale's runaway 0.98/
+$\|B\|_F$>390 that collapsed rhythm by step 2k), and the 150 BPM rhythm-entrainment score rose
+monotonically 0.7336→0.7915. **Root cause of this session's waveform-discontinuity investigation
+(independently converged on via a completely different method — corpus-wide corruption scanning,
+see WORKLOG 2026-09-21/-note below):** under aggressive CFG + OOD prompts, generated clean-latent
+std can exceed a checkpoint's normal operating range, and the SAME decoder's nonlinear layers
+respond to that with single-sample discontinuities — not clipping, not a random ROCm bitflip. Fix:
+**VADD (Variance-Aware Dynamic Dampening)**, a 3-tier system — Tier 1 a quadratic hinge loss barrier
+on clean-latent std during training, Tier 2 an optimizer step-size throttle keyed off a running std
+estimate, **Tier 3 a hard clamp on the generated latent's std before VAE decode at inference/demo
+time** (`--demo-latent-clamp`, `stable-audio-3/scripts/eval_demo_callback.py`). Their own measurement:
+232→30 discontinuities (87.1%) on a corrupted `step6750_rb_rare_7` clip.
+
+**INDEPENDENTLY VERIFIED (GHOST-NOTE, same day, different corpus/checkpoint, fresh from-scratch
+decoder load):** z0 std for a shared reference clip (`dora16_avp_originals_earlyeps_ptm ep2/gf_11`)
+matched the external tool's own number **bit-for-bit (3.317101)** — confirms both toolchains measure
+the same quantity the same way. Applying the Tier-3 clamp (std 3.317→1.20) to that clip's raw decoder
+output cut single-sample jumps >0.6 from **213,252 → 1,381, a 99.35% reduction** (numbers are on the
+*unnormalized* raw decode, not directly comparable to the corpus-scan's saved-wav convention, but the
+relative reduction is the valid, load-bearing result). This is now the strongest lead from two
+independent investigations (mine: population statistics across ~6000 sampled model_matrix clips +
+spectral analysis showing a harmonic-distortion-shaped bump, not aliasing; theirs: live training-
+trajectory audit + an engineered, measured fix).
+
+**Open reconciliation, not a contradiction:** their report states a "critical threshold" of
+σ(z0)>1.25; my own clean-baseline clips in the (unrelated, older, ptm-vs-base-medium) gf2 family
+already sit at std 1.6–2.1 and are clean. Working explanation: the threshold is relative to each
+checkpoint/training-run's own normal operating range, not a universal constant — their run is a
+fresh DoRA r128 on medium-base via this new optimizer; mine were older DoRA-on-ptm checkpoints.
+Not yet tested directly.
+
+**A second, higher-LR run (`modular_opt_cubic5_sf_ev_lr3e-4_radbrake08`) crashed** with
+`HSA_STATUS_ERROR_EXCEPTION` in `index_elementwise_kernel` (CONTINUITY, 2026-09-21 18:40ish diagnosis,
+DM). NOT root-caused (ROCm launches async — the abort names the kernel, not the launching line), but
+two things ARE established: (a) input data is clean (all 300 `latents_sa3_subset300` latents scanned,
+zero non-finite, max abs 10.73 — the NaN is generated in the model or optimizer, not fed in); (b)
+`modular_opt`'s six files have **zero** `isfinite`/`isnan`/`nan_to_num` calls anywhere, and
+`newton_schulz_cubic5` divides by `X.norm()` unconditionally — a NaN entering that path propagates
+silently with nothing to catch it. **Real bug found and fixed in the same pass (CONTINUITY):** the
+loss guard in `ModularDemoAndLossGuardCallback` was NaN-blind — `mean_loss > threshold` is `False`
+for NaN in Python, so a diverged epoch fell through to the healthy branch and printed
+`"Loss healthy (nan <= 1.0)"` verbatim (epochs 5 and 6 of the crashed run, two epochs before the GPU
+actually aborted). Fixed: `diverged = (not math.isfinite(mean_loss)) or (mean_loss > threshold)`.
+Landed in `stable-audio-3` commit `f3a4c05` (a whole-file commit under Kim's identity alongside the
+rest of the external work — see that commit's message; the fix itself is CONTINUITY's, on record here
+since git blame won't show it).
+
+**Also found (CONTINUITY), not yet fixed:** `_escape_velocity_step` (`optimizer.py:668,671`) calls
+`.item()` twice per parameter per step — a blocking GPU sync each time. With 684 DoRA tensors that's
+~1400 syncs/step, measured at 0.51 it/s — likely most of why the run was slow. Not a correctness bug,
+but it makes `--modular-ev` runs unusable as a timing baseline against other optimizers until batched/
+removed. **Also:** the `newton_schulz_cubic5` docstring (`lmo.py:99`) claims the cubic5 schedule
+eliminates hipblasLt issues on ROCm — false, lines 109/110 (cubic5) are exactly what emitted the
+`HIPBLAS_STATUS_NOT_SUPPORTED` warnings in the crashed run's log (benign, falls back to cublas with
+the right answer, but the doc claim should be corrected before someone plans around it).
+
+**Next steps (not yet done):** (1) root-cause the actual NaN source in `newton_schulz_cubic5` or the
+EV path now that the loss guard can see it; (2) wire a `nan_to_num`/isfinite guard into the LMO path
+directly, not just the demo callback; (3) batch or remove the `.item()` calls in
+`_escape_velocity_step`; (4) test whether VADD Tier 3 generalizes to the older ptm-family checkpoints
+(reconciling the 1.25-vs-1.6-2.1 threshold question above) — `eval/corruption_base_vs_ptm.py` +
+`eval/audio_corruption_scan.py` are the tools, `Mantu/sa3_lora_runs/corruption_investigation/` has
+the in-progress data; (5) wire VADD Tier 3 into the MAIN inference path (`model.py::generate()`/the
+render server), not just the training demo callback — right now it only protects training-time demos,
+not the actual corpus-render or user-facing generation path.
+- Links: `OPTIMIZER_TRAJECTORY_LATENT_AND_DISCONTINUITY_FINDINGS.md`, `checkpoint_analysis_summary.md`,
+  WORKLOG 2026-09-21, DM logs `ghost-note.wintermute.log`/`continuity.ghost-note.log`.
 
 ### A10 — Pattern-2 DDP incident: FINAL READING (2026-08-21) — fleet arms = 8-replica ensembles
 - CONFIRMED three ways: eight LOCAL_RANK:0 (fullft avpaug log), ckpts versioned to -v7 (wfleet
