@@ -15,6 +15,12 @@
 !/DISCOVERIES.md
 !/EXPERIMENTS.md
 !/DAWPROJECT.md
+# 2026-09-21: track the ModularOptimizer/VADD corruption-fix findings + the analysis
+# tool that produced them -- a cross-cutting research report, same class as DISCOVERIES.md.
+!/OPTIMIZER_TRAJECTORY_LATENT_AND_DISCONTINUITY_FINDINGS.md
+!/checkpoint_analysis_summary.md
+!/scripts/
+!/scripts/*
 # doc-oversight 2026-08-05: track model_index (the kept-up-to-date model roster) + the renamed
 # FAQ (a Q&A archive that must survive context compaction) — both were untracked/local-only.
 !/model_index.md
