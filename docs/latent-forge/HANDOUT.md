@@ -23,6 +23,8 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 **Build order is M1 first, then M4 and M5 in either order.** M1 is the foundation every other plan
 consumes; nothing else compiles without it. After those: M10 (a leaf — needs only M1 and fixtures),
 then M6 and M7, then M9. M2, M3, M8 and M11 are WINTERMUTE's, server-side, and need the GPU box.
+**M10 is not a pure leaf after all** — M6 reuses `dequantiseScaled` from M10 Task 1, built there
+deliberately for it, so M10 T1 must land before M6 T2.
 
 Each plan is written for **one task at a time**. An implementing agent sees a single `### Task N`
 section and can look nothing up, which is why every task restates the interfaces it consumes. Do not

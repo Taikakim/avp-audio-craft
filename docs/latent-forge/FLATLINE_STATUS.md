@@ -84,11 +84,54 @@ on 2026-09-21 pending two small fixes to M3 T2 and M2 T15 — see `flatline.wint
   claimed Task 8's suite was 21, cut to 16 by a later fix); on M10 it confirmed 86 exact against every
   per-task gate, with no drift — the two-writer-in-sequence (not parallel) approach seems to help.
 
-## After M10 — M6 or M7 is next, neither has a plan yet
+## M6 — IN PROGRESS, half written. Resume here.
 
-**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M10 was the last leaf; M6 and M7 both
-need prerequisites now in hand (M5 for M6; M4 + M5 for M7). No writer briefs exist for either yet —
-the first step of either is drafting them, same shape as `M10_WRITER_BRIEFS.md`.
+**Writer A is done, Writer B has not run.** Stopped at 86% of the 5-hour window, Kim's kill line.
+
+- **Briefs:** `docs/latent-forge/M6_WRITER_BRIEFS.md` (committed). Eleven tasks, split 5/6.
+- **Writer A's output: `scratchpad/m6_part_a.md`** — Tasks 1-5, 1902 lines, **68 `it()` blocks
+  (T1:18, T2:11, T3:13, T4:14, T5:12), verified mechanically**, 8 open questions.
+  **`scratchpad/` is gitignored**, so that file is on disk only (OneDrive-synced). Do not wipe it.
+- **Next action:** dispatch **Writer B (Tasks 6-11)** from the brief's "Writer B" section — it reads
+  `scratchpad/m6_part_a.md` first. Then assemble, then one critic, then count `it(` mechanically.
+  Roughly two agents, ~20 points of a 5-hour window.
+
+**Three of Writer A's eight open questions are load-bearing and want Kim's or W's answer, not a
+default** — full text at the tail of `scratchpad/m6_part_a.md`:
+
+1. **`INTERVAL_W` is indexed by raw class distance, not interval class.** v3's `_matchFrame`
+   collapses to `INTERVAL_W[|a-b|]`, so a minor second (0.10) and a major seventh (0.22) score
+   differently although both are interval class 1. §5.4 pins the twelve weights and names
+   `_matchFrame` as the definition, but never restates the indexing. A ships the drawing's raw
+   distance with a comment, because "fixing" it to `min(ic, 12-ic)` would change every score in the
+   app — but if the drawing's version is a bug, now is the cheap moment to say so.
+2. **Two different 12-class folds exist and §5.4 doesn't say which feeds the match.** §5.4's GLOBAL
+   folds the three bands locally and normalises per frame; §6.3 also transports a precomputed
+   `fold12` quantised once over the whole clip (so quiet frames keep less resolution, and it is not
+   per-frame normalised). A ships display from the local fold and the match/scan/score path from the
+   transported one, on performance grounds. If they should be identical, the match path must fold
+   the bands too.
+3. **The mock server has no chroma fixture, and M1 T6 asserts its handmade set is exactly ten
+   files.** Same gap M10 hit on both of its routes. **Writer B's Task 11 must add
+   `handmade-forge_chroma_render.json` AND extend M1 T6's ten-file assertion**, or the mock-server
+   suite goes red the moment the fixture lands. This is already written into the resume path above.
+
+The other five are settled with a shipped reading: the B/C fold boundary (took the server's
+circular-nearest rule, bins 124 vs 125, since client and server must fold identically), chord
+aliases (`Cmin` rejected — shipped §5.4's nine exactly), chord-quality case (`CM7` reads as C minor
+7, the drawing's lowercasing), enharmonic roots (`E#`→F by arithmetic, correcting a drawing bug that
+produced a garbage root), and five helper names the brief did not pre-name.
+
+## After M6 — M7, then M9
+
+**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M6 is half written (above). **M7**
+(chains, mix, library, sessions — §4.6, §5.5, §9.2, §9.3) has its prerequisites in hand but no
+writer brief yet; drafting one is its first step, same shape as `M6_WRITER_BRIEFS.md`. M9
+(rendering) needs M7 and is last.
+
+**M10 is no longer a pure leaf:** M6 consumes `dequantiseScaled` from M10 Task 1, which was built
+there deliberately for this reuse. Anything that reorders the milestones has to keep M10 T1 ahead
+of M6 T2.
 
 **For whoever implements rather than plans:** `docs/latent-forge/HANDOUT.md` is the read-first
 document — build order, the hazards that each cost a debugging session, the known limitations not to
