@@ -9,6 +9,50 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 
 ---
 
+> ## ⚠ STATUS UPDATE — 2026-09-22, WINTERMUTE
+>
+> **Added, not edited: everything below this block is FLATLINE's and is left as written.** Two of its
+> sections have since been overtaken, and an implementer who acts on them will hold off work that is
+> no longer blocked. Where this block and a later section disagree, **this block is the current one.**
+>
+> **1. The server track is UNBLOCKED. Both held fixes landed (commit `7193ba9`).**
+> - **M3 Task 2 edit (j)** now ends in a complete `async def schedule(request: Request):` — the whole
+>   restructured handler, not prose. Nothing to reconstruct. The task body also states the two
+>   differences from today's function: the `steps`/`duration`/`sigma_max` parse moves above the
+>   `MODEL is None` check so an array schedule charts during a backbone rebuild, and the dist_shift
+>   resolution keeps its own `try:` so the legacy `float(req["dist_shift"])` path still answers 400.
+> - **M2 Task 15's `record_fixtures.py`** now carries an `EXPECTED` tuple and a `RECORDED` set, and
+>   exits non-zero naming what it skipped. **It is TWENTY fixtures, not nineteen** — the count in the
+>   section below is wrong and was wrong when written; four are conditional exactly as described.
+>   Step 6's expected output says twenty.
+>
+> **2. The "Open questions" section below is CLOSED. All five are decided, plus three more found
+> while deciding them.** Do not re-open them from that list; the live source is **M1's
+> "Normative names" table**, which now carries a row for each:
+>
+> | was open | decided |
+> |---|---|
+> | `ForgeClip.previewAudio` | **in-memory only**, §9.2 unchanged — it is a cache of §7.3's analyze→stretch step, re-derived on load. M5 T10 stands as written |
+> | downbeat-coincidence window | **the spec's window, the drawing's ramp**: `w = (60/bpm)/8`, `t = max(0, 1 - dt/w) ** 0.7`, OKLCH per channel. §4.3 states it once and exactly. `downbeatColor(t)` is unchanged — only the `t` fed to it |
+> | `downbeats_sec` timebase | **source seconds, unstretched, at `native_bpm`** — documented on the field in M1 T3 |
+> | `RenderSettings` length | **`duration_sec` added** (§4.5 LENGTH, ≤184). Wire name stays `duration`. **M4 should move its LENGTH control out of the tab's own state into the target's settings when next touched** |
+> | the two `ModuleId` declarations | **kebab, declared once in the view store**, and it was THREE declarations — the third (T9's surface block) was right that `legacy-inspector`/`legacy-server` are real ids. T12 imports and narrows to `SpecModuleId` |
+>
+> Three more, found in the same pass and fixed in M1: the view store declared `.view` where the table
+> says `.screen` (and never declared `.activeLane`); `TerminalMode`'s middle mode was `"normal"`
+> against the table's `"pane"`; and `BottomTabId` was declared in T11 while the table said T7 imports
+> it — backwards, since T7 is built first and its own vitest run would fail. **T7 now declares both.**
+> Task 13's `CentreColumn` rendered a bare `<BottomPane />` and a `workspace` snippet Task 9 never
+> declared; it now renders Task 9's own `{@render centre()}` / `{@render bottom?.()}`, and says why
+> `CentreColumn` must never construct a `BottomPane` itself.
+>
+> **3. One defect nobody had flagged.** M1's handmade job fixture sent `duration_sec` inside a
+> generate payload — a key `_generate_impl` does not read — so a fixture-shaped payload would have
+> quietly rendered 47 s instead of 45. Fixed in both fixtures.
+>
+> FLATLINE has the full reasoning in `flatline.wintermute.log` (2026-09-21 16:55). M6 and M7 are
+> still unwritten and are the remaining frontend work; M8 and M11 are server-side and mine.
+
 ## What is ready to build
 
 | Plan | File | Tasks | State |
