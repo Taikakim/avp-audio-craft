@@ -84,43 +84,50 @@ on 2026-09-21 pending two small fixes to M3 T2 and M2 T15 — see `flatline.wint
   claimed Task 8's suite was 21, cut to 16 by a later fix); on M10 it confirmed 86 exact against every
   per-task gate, with no drift — the two-writer-in-sequence (not parallel) approach seems to help.
 
-## M6 — IN PROGRESS, half written. Resume here.
+## M6 — WRITTEN AND ASSEMBLED. One critic pass left.
 
-**Writer A is done, Writer B has not run.** Stopped at 86% of the 5-hour window, Kim's kill line.
+`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — 6,930 lines, eleven tasks,
+**211 `it()` blocks, every per-task count mechanically equal to its own stated gate**. Written by two
+writers **sequentially** (B read A's output before starting), which is why there is no cross-writer
+drift; M4's three parallel writers produced a stale count that no single agent could see.
 
-- **Briefs:** `docs/latent-forge/M6_WRITER_BRIEFS.md` (committed). Eleven tasks, split 5/6.
-- **Writer A's output: `scratchpad/m6_part_a.md`** — Tasks 1-5, 1902 lines, **68 `it()` blocks
-  (T1:18, T2:11, T3:13, T4:14, T5:12), verified mechanically**, 8 open questions.
-  **`scratchpad/` is gitignored**, so that file is on disk only (OneDrive-synced). Do not wipe it.
-- **Next action:** dispatch **Writer B (Tasks 6-11)** from the brief's "Writer B" section — it reads
-  `scratchpad/m6_part_a.md` first. Then assemble, then one critic, then count `it(` mechanically.
-  Roughly two agents, ~20 points of a 5-hour window.
+| task | `it()` | task | `it()` |
+|---|---|---|---|
+| 1 `bins.ts` | 18 | 7 match curve + legend | 21 |
+| 2 `chromaClient.svelte.ts` | 11 | 8 `DetuneScanStrip.svelte` | 22 |
+| 3 `match.ts` | 13 | 9 target row | 23 |
+| 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
+| 5 `detuneScan.ts` | 12 | 11 tab, fixture, Playwright | 17 |
+| 6 heatmap geometry + canvas | 37 | | |
 
-**Three of Writer A's eight open questions are load-bearing and want Kim's or W's answer, not a
-default** — full text at the tail of `scratchpad/m6_part_a.md`:
+**Next action: run ONE critic over the whole plan**, then apply its findings and re-count
+mechanically. Budget roughly one agent (~280k subagent tokens, ~18 points of a 5-hour window). Every
+previous critic pass returned findings — 17, 32, 49 and 6 — and none has ever come back empty, so
+the plan is not done until it has run. The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` are
+gitignored and on disk only; they can be deleted once the critic's findings are applied.
 
-1. **`INTERVAL_W` is indexed by raw class distance, not interval class.** v3's `_matchFrame`
-   collapses to `INTERVAL_W[|a-b|]`, so a minor second (0.10) and a major seventh (0.22) score
-   differently although both are interval class 1. §5.4 pins the twelve weights and names
-   `_matchFrame` as the definition, but never restates the indexing. A ships the drawing's raw
-   distance with a comment, because "fixing" it to `min(ic, 12-ic)` would change every score in the
-   app — but if the drawing's version is a bug, now is the cheap moment to say so.
-2. **Two different 12-class folds exist and §5.4 doesn't say which feeds the match.** §5.4's GLOBAL
-   folds the three bands locally and normalises per frame; §6.3 also transports a precomputed
-   `fold12` quantised once over the whole clip (so quiet frames keep less resolution, and it is not
-   per-frame normalised). A ships display from the local fold and the match/scan/score path from the
-   transported one, on performance grounds. If they should be identical, the match path must fold
-   the bands too.
-3. **The mock server has no chroma fixture, and M1 T6 asserts its handmade set is exactly ten
-   files.** Same gap M10 hit on both of its routes. **Writer B's Task 11 must add
-   `handmade-forge_chroma_render.json` AND extend M1 T6's ten-file assertion**, or the mock-server
-   suite goes red the moment the fixture lands. This is already written into the resume path above.
+**Five open questions want Kim's or W's answer rather than a default** (full text at the tail of the
+plan, with each writer's original list underneath):
 
-The other five are settled with a shipped reading: the B/C fold boundary (took the server's
-circular-nearest rule, bins 124 vs 125, since client and server must fold identically), chord
-aliases (`Cmin` rejected — shipped §5.4's nine exactly), chord-quality case (`CM7` reads as C minor
-7, the drawing's lowercasing), enharmonic roots (`E#`→F by arithmetic, correcting a drawing bug that
-produced a garbage root), and five helper names the brief did not pre-name.
+1. **`INTERVAL_W` is indexed by raw class distance, not interval class** — a minor second (0.10) and
+   a major seventh (0.22) score differently although both are interval class 1. Shipped the
+   drawing's behaviour; "fixing" it would change every score in the app.
+2. **Two different 12-class folds exist and §5.4 does not say which feeds the match** — display uses
+   the per-frame-normalised local fold, match/scan/score use §6.3's transported `fold12`. **A GLOBAL
+   cell's brightness and its hue therefore come from different arrays.**
+3. **Chord quality is lowercased, so `CM7` reads as C minor 7** — the drawing's behaviour, and what
+   makes `CDIM` work, but many charts mean C major 7.
+4. **Nine controls ship with no `data-help`** because M1 T14 has no id for them. M10 shipped nine
+   bare for the same reason — one follow-up to M1 T14 should add all eighteen in a single pass.
+5. **The heatmap's y-axis note labels are not drawn**, although §5.4 says they use
+   `semitone_bin_centers`. At 162 px the drawing draws none, and guessing a layout would be
+   inventing UI.
+
+**One defect in my own M10 found while assembling, and fixed 2026-09-22:** M10 Task 7 created two
+handmade fixtures without extending M1 T6's exact-name assertion, which compares a sorted
+`readdirSync` listing to a literal array — so M10 would have turned M1 T6's suite red on landing.
+M10 T7 now modifies `mock/__tests__/plugin.test.ts` in the same commit. M6 T11 does the same again
+for the chroma fixture, so whichever lands second extends the list the first one left.
 
 ## After M6 — M7, then M9
 
