@@ -78,6 +78,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="/scratch/project_465003186/runs")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--keep-fat", action="store_true",
+                    help="write the slim .weights.ckpt NEXT TO the fat and keep BOTH (Kim "
+                         "2026-09-11). This does NOT reclaim space -- it COSTS ~25%% more -- it "
+                         "buys LOAD SPEED while preserving the ability to continue the run: a "
+                         "42 GB fat takes ~6 min to read off the eval drive, its 10 GB slim ~90 s, "
+                         "and inference never needs the optimizer state. Use for arms you re-render "
+                         "often but might still resume. Without it, the fat is deleted (the "
+                         "original space-reclaim behaviour).")
     ap.add_argument("--slim-all", action="store_true",
                     help="slim EVERY ckpt (keep none full) — for local copies where you never "
                          "resume (the resumable full ckpt lives on LUMI). Drops optimizer from all.")
@@ -173,7 +181,9 @@ def main():
                 continue
             is_last = (c in fat_set) and not a.slim_all and not a.keep_last_only and not a.settle
             if a.dry_run:
-                print(f"  {'slim+KEEP' if is_last else 'slim+RM'}  {os.path.basename(c)} ({sz/1e9:.1f} GB)")
+                # the dry-run label MUST match what the real path would do, or the preview lies
+                _act = "slim+KEEPFAT" if a.keep_fat else ("slim+KEEP" if is_last else "slim+RM")
+                print(f"  {_act}  {os.path.basename(c)} ({sz/1e9:.1f} GB)")
                 if not is_last:
                     freed += sz
                 continue
@@ -193,7 +203,11 @@ def main():
                 ck = None; gc.collect()                        # free the ~30 GB optimizer state NOW,
                 #                                                before torch.save — avoids 2x peak
                 torch.save(slim, wpt)
-                if not is_last:
+                if a.keep_fat:
+                    print(f"  wrote slim, KEPT fat: {os.path.basename(c)} -> "
+                          f"{os.path.basename(wpt)} ({sz/1e9:.1f} GB fat + "
+                          f"{os.path.getsize(wpt)/1e9:.2f} GB slim; run stays resumable)")
+                elif not is_last:
                     os.remove(c)                                # drop the fat ckpt
                     freed += sz - os.path.getsize(wpt)
                     print(f"  stripped+removed {os.path.basename(c)} -> {os.path.basename(wpt)} "
@@ -205,7 +219,14 @@ def main():
                 print(f"  ERROR on {os.path.basename(c)}: {e} (left untouched)")
             finally:
                 ck = slim = None; gc.collect()                 # ensure freed before the next load
-    print(f"\n[prune] {'WOULD free' if a.dry_run else 'freed'} ~{freed/1e12:.2f} TB")
+    if a.keep_fat:
+        # keep-fat RECLAIMS NOTHING -- it spends space to buy load speed. Reporting a "freed"
+        # number here would be a straight lie about the operation the user just asked for.
+        print(f"\n[prune] --keep-fat: {'WOULD write' if a.dry_run else 'wrote'} slim siblings and "
+              f"KEPT every fat. Space is SPENT, not reclaimed (~+25%); the runs stay resumable "
+              f"and inference loads ~4x faster.")
+    else:
+        print(f"\n[prune] {'WOULD free' if a.dry_run else 'freed'} ~{freed/1e12:.2f} TB")
 
 
 if __name__ == "__main__":

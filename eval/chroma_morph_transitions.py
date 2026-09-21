@@ -43,18 +43,24 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 
 FPS = 44100 / 4096
-CHROMA_HEAD = ("/run/media/kim/Mantu1/sa3_lora_runs/cu_reward_renders/analysis/"
+# NOTE 2026-09-15: "Mantu1" was an old mount label; the drive was consolidated
+# into "Mantu" at some point and Mantu1 no longer exists. Paths below fixed to
+# match current mounts (verified present under Mantu).
+CHROMA_HEAD = ("/run/media/kim/Mantu/sa3_lora_runs/cu_reward_renders/analysis/"
                "chroma_heads/latch_sa3_chroma_other_best.pt")
 CHROMA_GAIN = 2048.0
 MIR_VENV_PY = "/home/kim/Projects/mir/.venv/bin/python"
 
 TRACKS = {
     "kaikki":  "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Kaikki-Alla.flac",
-    "angelic": "/run/media/kim/Mantu1/ai-music/Goa Dataset/0934. Hallucinogen - Angelic Particles (Remastered 2024).flac",
+    "angelic": "/run/media/kim/Mantu/ai-music/Goa Dataset/0934. Hallucinogen - Angelic Particles (Remastered 2024).flac",
     "vapaus":  "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-flac/009 goddess guerrilla (2006)/Aavepyora - Goddess Guerilla - Vapausvoima.flac",
     # 2026-07-07 evening set (Kim): in-dataset goa + the acid-rock experiment
-    "phreaky": "/run/media/kim/Mantu1/ai-music/Goa Dataset/0818. Phreaky - Techno Prisioners (Rework 2022).flac",
+    "phreaky": "/run/media/kim/Mantu/ai-music/Goa Dataset/0818. Phreaky - Techno Prisioners (Rework 2022).flac",
     "heron":   "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/ai-music2/Playlists/Acid Rock/14. Heron Oblivion - Beneath Fields.m4a",
+    # 2026-09-15 (Kim, for the Kone portfolio): both tracks are Kim's own.
+    "ruoste":   "/run/media/kim/Mantu/avp-stems-original-classified/Kadonneet maat - Ruoste organic techno/full mix 126 BPM.flac",
+    "tomorrow": "/run/media/kim/Mantu/avp-analyzed-stems/Aavepyora - Goddess Guerilla - Dance of Tomorrow/full_mix.flac",
 }
 PAIRS = [("phreaky", "angelic"), ("angelic", "heron"), ("heron", "phreaky")]
 
@@ -62,8 +68,10 @@ PAIRS = [("phreaky", "angelic"), ("angelic", "heron"), ("heron", "phreaky")]
 def load(track):
     try:
         a, sr = sf.read(track, dtype="float32", always_2d=True)
+        if sr != 44100:
+            raise ValueError(f"native sr {sr} != 44100, resample via ffmpeg")
     except Exception:
-        # m4a etc: decode via ffmpeg to 44.1k stereo wav
+        # m4a etc, or a native rate != 44.1k: decode via ffmpeg to 44.1k stereo wav
         with tempfile.TemporaryDirectory() as td:
             wav = f"{td}/dec.wav"
             subprocess.run(["ffmpeg", "-v", "error", "-i", track, "-ar", "44100",
@@ -173,7 +181,7 @@ def encode(model, audio, sr):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", type=Path, required=True)
-    ap.add_argument("--ckpt", default="/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt")
+    ap.add_argument("--ckpt", default="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt")
     ap.add_argument("--windows", default="512,1024", help="crossfade lengths (latent frames)")
     ap.add_argument("--noise-levels", default="0.35,0.42,0.5,0.55")
     ap.add_argument("--seg-sec", type=float, default=75.0, help="audio per side of the junction")
@@ -238,9 +246,11 @@ def main():
     model.load_lora([args.ckpt])
     sr = model.model.sample_rate
 
-    audio_cache = {k: load(p) for k, p in TRACKS.items()}
-
     pairs = ([tuple(p.split(":")) for p in args.pairs.split(",")] if args.pairs else PAIRS)
+    # load only the tracks the requested pairs need — a stale/moved path for an
+    # unrelated track (e.g. a renamed album dir) shouldn't fail every run.
+    needed = {k for pair in pairs for k in pair}
+    audio_cache = {k: load(TRACKS[k]) for k in needed}
     for a_key, b_key in pairs:
         A, sra = audio_cache[a_key]
         B, srb = audio_cache[b_key]

@@ -1795,6 +1795,29 @@
     "epoch=666-step=6000.ckpt"
    ],
    "_note": "Registered 2026-09-08 (Kim direct: render clips for checkpoints that miss them, incl. the latest lion 5e-5). Second Lion arm of the fusion-vs-adamw campaign, trained to 6000 steps at bs32/lr5e-5 (vs lion_lr1e-5's bs8/lr1e-5). Terminal ckpt only, matching every sibling in this run. DoRA-rows r128 a128 T512 -> the full 3-strength sweep + the d48 native cell = the same 109-cell set the siblings have. 2026-09-08 (Kim direct): ep222 (step2000) and ep444 (step4000) added so the arm has a TRAJECTORY, not just an endpoint. Both rendered at the standard sibling shape -- 108 grid cells + 1 native -- NOT --native-grid; ep666 carries 216 cells only because an earlier pass passed that flag by mistake."
+  },
+  "fullft_suomift_warm_avpaug19_t1024_bf16_k5_s1": {
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/suomift_warm",
+   "picks": [
+    "epoch=31-step=1280.ckpt"
+   ],
+   "_note": "Registered 2026-09-11 (Kim direct). Suomi FULL-FT, warm-started from fullft_avpaug t1024 ep19 (itself an EMA ckpt). Was in NO manifest, so no renderer could reach it and it has ZERO board clips -- unreachable, not merely unrendered. Terminal ep31/step1280. RENDER WITH --weights online: this ckpt's EMA shadow has ema_step 2528 = 0.36 half-lives at beta 0.9999, i.e. 78% of the STARTING weights, and for a warm start the starting point is another model. ALIASED to a fullft_ prefix 2026-09-11: model_matrix_gen keys is_fullft on the LABEL, so without it a full fine-tune is loaded as an adapter (load_lora on a 42 GB whole-model ckpt) and the run dies rc=1 — and it would also get a meaningless 3x strength sweep and the wrong cell count. The arm DIRECTORY keeps its real name; root+picks still resolve it.",
+   "dir": "suomift_warm_avpaug19_t1024_bf16_k5_s1"
+  },
+  "fullft_suomift_warm_goaft_t1024_bf16_k5_s1": {
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/suomift_warm",
+   "picks": [
+    "epoch=31-step=1280.ckpt"
+   ],
+   "_note": "Registered 2026-09-11 (Kim direct). Suomi FULL-FT, warm-started from fullft_goa_t4096 at its MID checkpoint. Was in NO manifest, so no renderer could reach it and it has ZERO board clips -- unreachable, not merely unrendered. Terminal ep31/step1280. RENDER WITH --weights online: this ckpt's EMA shadow has ema_step 2528 = 0.36 half-lives at beta 0.9999, i.e. 78% of the STARTING weights, and for a warm start the starting point is another model. ALIASED to a fullft_ prefix 2026-09-11: model_matrix_gen keys is_fullft on the LABEL, so without it a full fine-tune is loaded as an adapter (load_lora on a 42 GB whole-model ckpt) and the run dies rc=1 — and it would also get a meaningless 3x strength sweep and the wrong cell count. The arm DIRECTORY keeps its real name; root+picks still resolve it.",
+   "dir": "suomift_warm_goaft_t1024_bf16_k5_s1"
+  },
+  "fullft_suomi_t1024_fp32_lr1e-4_s1": {
+   "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fullft_fleet",
+   "picks": [
+    "epoch=19-step=3160.weights.ckpt"
+   ],
+   "_note": "Registered 2026-09-11 (Kim direct). The COLD-START suomi full-FT — no --init_state_ckpt, straight from medium-base — which makes it the clean control against the two warm-started suomift_warm arms. It had 6 board clips and NO manifest entry, so those 6 came from some other render path and nothing could ever extend them. Terminal slim ep19/step3160. RENDER --weights online: the EMA shadow is ema_step 12600 = 1.82 half-lives at beta 0.9999, i.e. still 28% the starting weights, under CONTINUITY's usable band of 3."
   }
  },
  "legacy_goa_dora_nested": {

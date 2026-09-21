@@ -141,6 +141,32 @@ button.clip.playing{{background:#7cf;color:#0e0f12;border-color:#7cf}}
 <p class="sub">{len(cells)} cells · {len(labels)} checkpoints × {len(stems)} source stems × 3 conditions
 · cfg {one.get('cfg')} · {one.get('steps')} steps · T{one.get('frames')} · AAC 192k.</p>
 {flag}
+<div class="box" style="border-color:#a44;background:#231a1a">
+<h3 style="color:#fb7">⚠ READ BEFORE LISTENING — these clips render a DILUTED adapter (2026-09-10)</h3>
+<p>The trainer builds its EMA shadow from the parameters <b>at construction</b>, which for a fresh
+adapter is the <b>zero-init</b> state, and the saved <code>state</code> is that shadow. So every
+clip here is of an adapter that is <b>partly not there</b>. At decay 0.999 updated per optimizer
+step with grad-accum 8, the half-life is 693 optimizer steps and the residual zero-init fraction
+still present is:</p>
+<p><code>step 2000 → 77.9%&nbsp;&nbsp; 4000 → 60.6%&nbsp;&nbsp; 6000 → 47.2%&nbsp;&nbsp;
+8000 → 36.8%&nbsp;&nbsp; 10000 → 28.6%&nbsp;&nbsp; 12000 → 22.3%</code></p>
+<p><b>What this does to the two readings on this page.</b> Comparing <i>off vs gain</i> within one
+row is still sound — the dilution is identical across that row. <b>Reading DOWN the column is
+NOT.</b> Dilution falls monotonically with step, so "later checkpoint sounds more conditioned" and
+"later checkpoint is less diluted" predict the same ordering on every row here; a trajectory read
+would measure the EMA horizon and call it learning.</p>
+<p><b>There is no undiluted copy to fall back on.</b> The checkpoint's online-weight field holds
+the adapter and conditioner only (73 tensors); the 684 DoRA tensors are saved from inside the
+EMA-swapped region, so the DoRA half exists <i>only</i> in averaged form. Recovery is arithmetic
+rather than a re-read: the EMA recurrence between two consecutive checkpoints inverts to a
+normalised average of the online weights over that window, removing the zero-init contribution
+exactly. Validated where ground truth exists (the adapter half, which does keep an online copy):
+raw EMA sits at rel. err. 0.588 against the true online weights, the deconvolved estimate at
+<b>0.196</b> — 3× closer, and honestly a windowed average rather than the endpoint. No retraining
+is needed either way. Until re-rendered clips land, treat any impression from the step axis as
+unproven.</p>
+</div>
+
 <div class="box">
 <h3>WHAT THIS IS — read this first</h3>
 <p>The model normally writes whatever melody it likes. The <b>morph conditioner</b> hands it a
@@ -156,10 +182,11 @@ the player holds its position so you stay at the same moment while switching. Li
 <i>movement</i> matching the reference — rises where it rises, falls where it falls. <b>Not</b> the
 same notes and <b>not</b> the same key: the alphabet encodes relative motion, so matching pitch
 would be coincidence and matching shape is the result. Timbre changing is not adherence.</p>
-<p><b>Then read DOWN the column.</b> This is a trajectory, not a grid of rivals. If adherence grows
-from the earliest checkpoint to the latest, the earlier weak-but-real result was capacity-limited.
-If it is flat, the run's own kill criterion says this conditioning path is at its ceiling and the
-next move is a different inlet, not a bigger adapter.</p>
+<p><b>Reading DOWN the column is currently CONFOUNDED</b> — see the warning at the top of this
+page. The step axis was meant to answer whether adherence accumulates with training; until these
+are re-rendered from the undiluted weights, the same ordering is predicted by the EMA dilution
+falling with step, and the two cannot be told apart here. The <i>off vs gain</i> comparison within
+a single row is unaffected and remains the thing to listen to.</p>
 <p class="warn">Not a quality ranking. One prompt, one cfg, one seed per source; it isolates the
 control and nothing else. Expect subtlety — the result this set is trying to beat was itself weak.</p>
 </div>

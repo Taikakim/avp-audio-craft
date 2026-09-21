@@ -301,7 +301,12 @@ def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, onl
         # Mantu sa3_lora_runs tree (e.g. dora128_47s_cont_from5, trained straight
         # to local NVMe -- Mantu wasn't the save target, so RUNS/label/pick would
         # 404 without this)
-        d = Path(spec["root"]) / label if "root" in spec else RUNS / label
+        # "dir" decouples the on-disk directory from the LABEL. Needed because is_fullft is keyed
+        # on the label prefix (line ~655), so a full fine-tune whose run dir is not named fullft_*
+        # must be RELABELLED to render correctly -- without this it is loaded as an adapter
+        # (load_lora on a whole-model ckpt, rc=1) and gets a meaningless 3x strength sweep.
+        _dirname = spec.get("dir", label)
+        d = Path(spec["root"]) / _dirname if "root" in spec else RUNS / _dirname
         for fname in spec["picks"]:
             p = d / fname
             if not p.exists() and fname.endswith(".ckpt") and not fname.endswith(".weights.ckpt"):
@@ -377,21 +382,31 @@ def ema_convergence(state_dict, beta=None, beta_source="assumed default"):
             "halflives": r, "residual_init": 0.5 ** r, "converged": r >= 3.0}
 
 
-def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS, duration=DURATION):
+def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS, duration=DURATION, weights=None):
     # steps/duration suffixes ONLY when non-default so existing files + their resume
     # keys are byte-identical; a different steps/duration pass lands as a sibling
     # (__st48 / __dNNN), never an overwrite.
     st = f"__st{steps}" if steps != STEPS else ""
     du = f"__d{int(round(duration))}" if duration != DURATION else ""
-    return f"{label}__{ckpt}__cfg{int(cfg)}__w{int(round(strength * 100)):03d}__{pid}__s{seed}{st}{du}.wav"
+    # ONLINE is the default weight set (Kim 2026-09-11), so an EMA render is the one that gets
+    # a suffix -- same rule as steps/duration: no suffix means default, so existing filenames
+    # and their resume keys stay byte-identical.
+    wt = "__ema" if weights == "ema" else ""
+    return f"{label}__{ckpt}__cfg{int(cfg)}__w{int(round(strength * 100)):03d}__{pid}__s{seed}{st}{du}{wt}.wav"
 
 
 def manifest_key(e):
     # legacy entries predate the "steps"/"duration" fields -> default to STEPS(24)/
     # DURATION(20s), which is also what a default render produces, so resume stays
     # consistent across the schema bump.
+    # WEIGHT SET IS PART OF THE IDENTITY (2026-09-11). Without it, an --weights online pass is
+    # SKIPPED as already-rendered against an EMA row -- which is exactly what happened the first
+    # time the suomi re-render ran: 0 cells, exit 0, "done". Suffix-when-non-default keeps every
+    # pre-existing key byte-identical (absent weights -> "online" -> no suffix).
+    _w = e.get("weights") or "online"
+    _wk = "" if _w == "online" else f"|{_w}"
     return (f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{e["prompt_id"]}|'
-           f'st{e.get("steps", STEPS)}|d{e.get("duration", DURATION)}')
+           f'st{e.get("steps", STEPS)}|d{e.get("duration", DURATION)}{_wk}')
 
 
 def load_existing_keys():
@@ -773,7 +788,7 @@ def main():
                 for w in strengths_to_render:
                     key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
                     wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
-                                         duration=duration)
+                                         duration=duration, weights=_wset)
                     m4a_name = wav_name.replace(".wav", ".m4a")
                     if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
                         if ckpt_path:
@@ -867,7 +882,7 @@ def main():
                     break
                 nkey = f'{label}|{tag}|{ncfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
                 nwav_name = clip_name(label, tag, ncfg, nw, np_["id"], np_["seed"],
-                                      steps, duration=native_dur)
+                                      steps, duration=native_dur, weights=_wset)
                 nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
                 if nkey in existing and not (args.require_file and not nm4a_path.exists()):
                     continue
