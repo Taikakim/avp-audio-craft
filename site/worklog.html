@@ -25,7 +25,7 @@
     <a href="evals/">evals</a>
     <a href="evals/paper_verdicts.html">papers</a>
     <a href="reference.html">reference</a>
-    <span class="status">67 entries</span>
+    <span class="status">71 entries</span>
   </nav>
 </header>
 
@@ -35,6 +35,37 @@
 <p>Reverse-chronological. Append an entry (newest at top) when you finish or learn</p>
 <p>something an agent in another repo would want to know. Keep entries short; move</p>
 <p>durable facts into <code>MASTER.md</code>. Conventions:</p>
+<ul class="wl">
+<li>**2026-09-16 — WINTERMUTE: <code>docs/data.md</code> — a GENERATED training-data census, because agents</li>
+</ul>
+<p>  keep re-deriving &amp;quot;what can this corpus train&amp;quot; by <code>find</code>/<code>ls</code> every session.**</p>
+<p>  <code>Misc/training_data_census.py</code> scans every latent/target/timeseries store and both SQLite DBs and</p>
+<p>  emits the doc — re-run it, don&amp;#x27;t hand-edit counts. Referenced from <code>ARCHITECTURE.md</code> (Doc map +</p>
+<p>  Data &amp;amp; drives) and <code>CLAUDE.md</code> (reading order, 2b).</p>
+<p>  It exists to defuse two naming traps that each produced a confident wrong answer this session:</p>
+<p>  (1) <strong><code>.npy</code> is ALWAYS the latent, <code>.npz</code> is ALWAYS a target/companion</strong> — a store can be 100%</p>
+<p>  <code>.npz</code> and train nothing (<code>latents_sa3_chroma</code> 5401, <code>latents_sa3_stem_chroma</code> 4907 are chroma</p>
+<p>  TARGETS); (2) **several target stores are named <code>latents_*</code>**, so the name lies.</p>
+<p>  Capability findings worth knowing before planning a control run: <code>latents_sa3</code> (goa, 5401),</p>
+<p>  <code>latents_avp</code> (2393) and the four ai-music curated sets (chill 115 · organic_dance 32 ·</p>
+<p>  prog_psytechno 371 · prog_trance_melodic_techno 192) carry crop scalars AND per-crop timeseries →</p>
+<p>  scalar-control + LatCH ready. <code>latents_goa_bigset</code> ([corpus], 12,524), <code>latents_goa_aug8</code></p>
+<p>  (3,941) and <code>suomisoundi_latents</code> (1,261) are <strong>latents only — no crop scalars, no ts</strong> → base/LoRA</p>
+<p>  only until targets are generated for them.</p>
+<p>  Two traps now written down: <code>whole_track_target_source.get()</code> applies the top-level 100 Hz rate to</p>
+<p>  EVERY field, so a ~1 Hz expanded field (genre/mood/instrument) is sliced at a 100x offset and the</p>
+<p>  crop is <strong>silently dropped</strong>, not errored.</p>
+<p>  **CORRECTION (same session, before anyone acts on it): I first wrote that [corpus] features cover</p>
+<p>  only the first 90 s of each track. That is WRONG** — I sampled <code>find | head -1</code>, which happened to be</p>
+<p>  a ~90 s track, and generalised from n=1. They are <strong>FULL-TRACK</strong>: <code>process_one</code> never passes the</p>
+<p>  <code>--seconds</code> arg to <code>ExpandedExtractor</code> (it is vestigial, as its own docstring says), <code>index.jsonl</code></p>
+<p>  reports <code>dur_analyzed_s</code> p50 <strong>362 s</strong> / max 4440, and 8 random npz span 364–522 s.</p>
+<p>  The REAL [corpus] limit is WHICH FIELDS: it holds the <strong>24 expanded fields only</strong>. The base 20</p>
+<p>  are absent — no <code>onset_envelope_ts</code>, <code>rms_energy_*_ts</code>, <code>beat_activation_ts</code>, <code>hpcp_ts</code>,</p>
+<p>  <code>spectral_flatness/flux_ts</code>. So it can target a chroma/novelty/loudness/genre head today, but an</p>
+<p>  <strong>onset- or rms-density head needs <code>whole_track_timeseries.py</code> run over the archive first</strong>.</p>
+<p>  That pass is <strong>CPU-only</strong> (<code>CUDA_VISIBLE_DEVICES</code> is cleared before the TF import): the expanded run</p>
+<p>  did 23,228 tracks in <strong>66.3 h at 3 workers</strong> without ever touching the GPU.</p>
 <ul class="wl">
 <li>**2026-08-21 (early) — WINTERMUTE: PQ ALONE is the best algorithmic proxy for Kim&amp;#x27;s ear (77.6%);</li>
 </ul>
@@ -2836,8 +2867,247 @@
 <p>DISPOSITION: Z0_STD_MAX stays as a crude non-finite-adjacent backstop; per-epoch slope goes in as TRAINING telemetry, not a publish gate. Gate untouched.</p>
 <p>MY OWN WRONG TURN, recorded because the method matters more than the result: I &amp;quot;confirmed&amp;quot; the per-channel discriminator on n=6 per group and reported MEDIANS of a distribution I had not plotted. Blown channels are bimodal (p50 0, p90 154, p99 253), so a median reports the low half and is blind to the tail by construction -- two groups agreeing at &amp;quot;2 channels&amp;quot; was the same flat half sampled twice, not an invariance. I also drew the flagged group with an undisclosed std&amp;lt;6 cap; it excluded nothing that day (ptm max 5.33) but an undisclosed filter is worse than a wrong number. STANDARD ADOPTED: a meter is credible when it recovers an ordering nobody told it about (the lr dose-response), not when it separates two hand-picked groups.</p>
 <p>CONTAMINATION (the question that actually mattered): of the 285, 37 were ever rated across 74 of 3078 rating records; worst RATED clip std 4.8, nearly all 2.3-2.9, and the 163.98 end was never served to anyone. Boards are clean even though the gate is miscalibrated.</p>
+<ul class="wl">
+<li><strong>2026-09-16 (overnight)</strong> — DJ-style beat-matched overlay mixing built end-to-end (per Kim&amp;#x27;s</li>
+</ul>
+<p>  own manual-DJ-mixing description): real madmom downbeat crop-correction, asymmetric BPM</p>
+<p>  pre-bending on both sides before the mix point (outgoing track creeps up in small steps timed</p>
+<p>  to quiet passages, incoming track starts under-tempo and catches up around a detected break),</p>
+<p>  the overlap built via outpainting each side toward the join (not a short inpainted gap), an</p>
+<p>  EQ sweep on the incoming track (thin/mids start, bass snapped in at the nearest downbeat), then</p>
+<p>  a latent slerp crossfade + nl 0.8 chroma-guided sine-bump a2a (nl 0.7-0.8 confirmed by ear as</p>
+<p>  the best a2a strength on this SA3-generated-clip corpus — unlike real-track transitions, a2a</p>
+<p>  doesn&amp;#x27;t cost crispness here since both sides are already SA3 output). New files: `eval/</p>
+<p>  dj_beatmatch.py<code>, </code>eval/dj_eq_sweep.py<code>, </code>eval/chain_dj_overlay.py` (built via 3 parallel</p>
+<p>  agents + 1 integration critic — the critic caught 4 real bugs pre-first-run, incl. a</p>
+<p>  clip-ordering bug that would have silently broken the &amp;quot;unfiltered outside the mix region&amp;quot;</p>
+<p>  guarantee, since SA3&amp;#x27;s raw output routinely exceeds ±1). First real run found the outpaint</p>
+<p>  scale interpretation gave a ~90s overlap (extension = mult×own-length, not the outpaint_</p>
+<p>  lengthen.py &amp;quot;total = mult×own-length&amp;quot; convention) — &amp;quot;sounded horrible&amp;quot; per Kim&amp;#x27;s ear; a</p>
+<p>  corrected ~15s-overlap rerun on the same pairs was confirmed better.</p>
+<ul class="wl">
+<li><strong>2026-09-16 (overnight)</strong> — real madmom BPM measurement for all 82 AVP mixtape clips</li>
+</ul>
+<p>  (<code>eval/mixtape_madmom_bpm.py</code>), replacing the coarser corpus-metadata bpm field. TWO real bugs</p>
+<p>  found and fixed en route, both worth remembering: (1) the loader lacked the m4a/ffmpeg</p>
+<p>  fallback every other script in this codebase has — 51/82 clips (all <code>.m4a</code>) silently fell</p>
+<p>  back to the old bpm before this was caught. (2) The octave/subdivision-fold correction</p>
+<p>  (<code>chroma_morph_transitions.tempo_of()</code>&amp;#x27;s &amp;quot;closest to 145 in the 110-185 band&amp;quot; logic) does NOT</p>
+<p>  generalize to this corpus — the AVP mixtape genuinely spans 92.3-153.8 bpm per its own</p>
+<p>  metadata, so the hardcoded 110-185 &amp;quot;goa trance&amp;quot; band force-folded several genuinely-slow</p>
+<p>  clips upward by 1.5x (measured 148.15 for clips whose corpus bpm was 99.4). Fixed by anchoring</p>
+<p>  the fold-candidate selection to each clip&amp;#x27;s OWN corpus-metadata bpm instead of a fixed global</p>
+<p>  target — avoids re-hardcoding a second wrong band. Final corrected range: 93.0-154.8 bpm,</p>
+<p>  monotonic, no more suspicious repeated values.</p>
+<ul class="wl">
+<li><strong>2026-09-16 (overnight)</strong> — mixtape v2 compiled: all 82 clips 3x-lengthened (outpaint_</li>
+</ul>
+<p>  lengthen.py&amp;#x27;s validated mechanism) with the last third faded + run through an ASCENDING</p>
+<p>  (not symmetric) noise-level a2a pass toward nl 0.8, prepping each as the DJ-overlay&amp;#x27;s</p>
+<p>  &amp;quot;outgoing&amp;quot; segment; all 81 consecutive BPM-sorted pairs mixed via the corrected-scale</p>
+<p>  chain_dj_overlay.py. Assembled into one continuous 121.9-minute file</p>
+<p>  (<code>eval/mixtape_assemble.py</code>) — flagged limitation: each pairwise render is a self-contained</p>
+<p>  two-clip mix, not a splice-ready snippet, so concatenation needs a short crossfade at each of</p>
+<p>  80 internal joins and each clip&amp;#x27;s arrival is technically heard twice nearby its own seam; true</p>
+<p>  seamlessness would need the compile re-architected as one continuous multi-clip pass. Staged</p>
+<p>  at <code>[path]</code> (full mixtape + 82 individual lengthened clips) and `[path]</p>
+<p>  dj-mixing-experiments/` (the three test batches + Kim&amp;#x27;s live commentary), DM&amp;#x27;d to Wintermute</p>
+<p>  for publish. UNREVIEWED BY KIM — this entire mixtape rebuild ran overnight while he slept.</p>
+<ul class="wl">
+<li><strong>2026-09-16 (overnight)</strong> — background-task memory-reaper (the known false-OOM-kill gotcha,</li>
+</ul>
+<p>  see CLAUDE.md) hit the 81-pair DJ-overlay compile job right at its own teardown crash, AFTER</p>
+<p>  all 81 pairs had already rendered successfully (162/162 files, &amp;quot;[all done]&amp;quot; in the log) — the</p>
+<p>  &amp;quot;killed&amp;quot; status was misleading; always check the log/output files before assuming a killed</p>
+<p>  background task lost its work, not just its exit code.</p>
+<ul class="wl">
+<li><strong>2026-09-16</strong> — NEGATIVE RESULT, confirmed by ear over two bracket rounds: the</li>
+</ul>
+<p>  <code>rms_energy_air</code> LatCH head (<code>latch_sa3_rms_energy_air_best.pt</code>, trained for</p>
+<p>  <code>diffusion_objective: rectified_flow</code> / medium-base&amp;#x27;s euler sampler) has NO</p>
+<p>  audible effect on the post-trained <code>medium</code> checkpoint (<code>rf_denoiser</code> / ping-pong,</p>
+<p>  8-step native operating point). Round 1: gain {128,512,2048} x end_pct {0.7,1.0}</p>
+<p>  on one flagged-harsh clip — all 6 guided renders sounded identical to each other</p>
+<p>  (strongly over-damped vs baseline, but zero differentiation across a 16x gain</p>
+<p>  range or end_pct). Round 2: gain {2,8,32,64} x start_pct {0.0,0.2,0.4} (end_pct</p>
+<p>  fixed 1.0) — same result, zero audible difference across a 32x gain range and</p>
+<p>  delayed-onset variants. <code>model.generate()</code> itself flags this at runtime:</p>
+<p>  `[LatCH] WARNING: head trained for noise_schedule=&amp;#x27;rectified_flow&amp;#x27; but model</p>
+<p>  objective is &amp;#x27;rf_denoiser&amp;#x27;` — the sampler mismatch is real, not cosmetic, and</p>
+<p>  the guidance saturates/no-ops rather than partially working. Kim&amp;#x27;s own read:</p>
+<p>  8 steps may simply be too few for a guidance adapter to act on regardless of</p>
+<p>  retraining. Conclusion: do NOT use any medium-base-trained LatCH head on</p>
+<p>  post-trained <code>medium</code> renders and expect it to work — this needs a head</p>
+<p>  retrained specifically for the <code>rf_denoiser</code> 8-step regime, not a</p>
+<p>  gain/schedule tuning fix. Scripts: <code>eval/hf_latch_bracket.py</code>.</p>
+<ul class="wl">
+<li><strong>2026-09-16 (ROOT CAUSE, corrects the entry above)</strong> — the LatCH-no-op-on-post-trained-</li>
+</ul>
+<p>  medium null result is an architectural bug, not a training/calibration mismatch.</p>
+<p>  Verified directly in <code>stable_audio_3/model.py</code>: the plain <code>generate()</code> path (~L385)</p>
+<p>  correctly passes <code>diffusion_objective=self.model.diffusion_objective</code> into</p>
+<p>  <code>sample_diffusion()</code>, respecting whichever sampler the loaded model actually uses.</p>
+<p>  <code>_latch_guided_generate</code> (~L590) instead ALWAYS calls</p>
+<p>  <code>sample_flow_euler_multi_latch_guided()</code> — a hardcoded Euler/rectified-flow loop that</p>
+<p>  never checks <code>diffusion_objective</code> at all. So passing ANY <code>latch_configs</code> silently</p>
+<p>  swaps post-trained medium&amp;#x27;s native ping-pong (<code>rf_denoiser</code>) sampler for a generic</p>
+<p>  Euler one, independent of gain — which is why every guided render in both bracket</p>
+<p>  rounds sounded identical to every other guided render (same substitute sampler</p>
+<p>  dominating) while differing from baseline (the only render using the real sampler).</p>
+<p>  Retraining a head would hit the identical wrong code path and fix nothing. Same</p>
+<p>  neighborhood as Wintermute&amp;#x27;s 2026-09-16 02:06 finding (<code>target_raw</code> silently</p>
+<p>  time-stretched via <code>F.interpolate</code> in the same guided-generation code) — the guided</p>
+<p>  path has more than one place that doesn&amp;#x27;t track the model&amp;#x27;s real config. Real fix</p>
+<p>  needs an rf_denoiser-aware guided sampler, not new training data; flagged to</p>
+<p>  Wintermute, retrain request retracted.</p>
+<ul class="wl">
+<li>[2026-09-16 20:08] (wintermute) <strong>2026-09-16 (eve) — WINTERMUTE: the HF/rms_energy_air head did not need retraining — guidance was silently swapping the post-trained model&amp;#x27;s native sampler. Fix landed, NOT yet confirmed by render.</strong></li>
+</ul>
+<p>Correcting the conclusion of the same-day NEGATIVE RESULT entry above (G&amp;#x27;s two bracket rounds on <code>rms_energy_air</code> vs post-trained <code>medium</code>). Everything in that entry stands — the bracket methodology, the negative result, the runtime warning it quotes — except its final call, &amp;quot;this needs a head retrained specifically for the rf_denoiser 8-step regime&amp;quot;. That retrain is a <strong>no-op</strong>, and running it would have made things worse.</p>
+<p><strong>Why the retrain is a no-op.</strong> <code>latch/train_latch.py:67</code> maps BOTH <code>rectified_flow</code> and <code>rf_denoiser</code> to the same forward noising (alpha=1-t, sigma=t) — one branch, identical (alpha_t, sigma_t). So <code>--objective rf_denoiser</code> trains a numerically identical head; the only thing that changes is the <code>noise_schedule</code> string written at line 731, which is exactly what <code>model.py</code> string-compares to raise the <code>[LatCH] WARNING</code>. Retraining would have <strong>deleted the warning while changing nothing</strong> — the one signal pointing at a real problem gone, and the head looking blessed. The warning is a false alarm for this specific pair: <code>sampling.py:491</code> puts both objectives in the same velocity branch (<code>z0 = x - t*v</code>), so the head&amp;#x27;s input distribution and the guided loop&amp;#x27;s math are both valid on the post-trained model.</p>
+<p><strong>The actual bug, structural and code-verified.</strong> <code>sampling.py:445</code> picks <code>pingpong</code> for <code>rf_denoiser</code> and <code>euler</code> otherwise. The guided path in <code>model.py</code> hardcoded euler. So merely passing <code>latch_configs</code> converted an 8-step pingpong render into an 8-step Euler render — badly under-resolved for a model distilled to pingpong, and it happened <strong>before any head was consulted</strong>. That is the most likely source of &amp;quot;every guided render strongly over-damped vs baseline, yet identical to every other guided render&amp;quot;: all guided clips shared one wrong-sampler sound, and none was comparable to its own unguided baseline, which is precisely what makes an inert head and a mismatched sampler indistinguishable by ear.</p>
+<p><strong>Fix.</strong> <code>sample_flow_pingpong_multi_latch_guided</code> — not a new method: the guidance math is the Euler sibling&amp;#x27;s unchanged, and only the loop&amp;#x27;s last line differs (euler reuses the model&amp;#x27;s implied noise, pingpong redraws it; both are the same <code>z_t = (1-t)z0 + t*noise</code> form, so the two guidance seams sit in identical places). Because pingpong renoises FROM the clean estimate, mean guidance on z0 is the load-bearing seam. <code>resolve_guided_sampler()</code> now holds the choice in ONE place (precedence: latch_hparams &amp;gt; generate(sampler_type=) &amp;gt; native), pinned by test to agree with sampling.py&amp;#x27;s unguided choice — two places deciding one thing by different rules is how this arose. <code>rk4</code>/<code>dpmpp</code> now raise instead of being silently downgraded to euler; no current caller combines them with latch.</p>
+<p><strong>NOT CONFIRMED BY RENDER.</strong> This fixes a verified structural gap, but whether it also explains the gain-invariance is unmeasured. <code>eval/hf_latch_gradnorm_probe.py</code> decides it: arms 1-3 force euler (reproducing the pre-fix behaviour on the same ckpt/seed/head), arms 4-5 use pingpong, and the headline is &amp;quot;pingpong: 1000x gain increase&amp;quot; — clearly &amp;gt;0 means gain acts once the sampler matches; still ~0 sends it to the per-step <code>||grad_var||</code>, where ~0 means the head is genuinely inert and large-but-gain-invariant means overshoot saturation in the n_iter=4 mean-guidance loop (tunable, still no retrain). The &amp;quot;sampler swap alone&amp;quot; arm runs rho=mu=0, so guidance is mathematically inert and any distance is the sampler&amp;#x27;s alone. Needs the GPU lock; ~4 short renders.</p>
+<p><strong>Two of my own hypotheses died en route, recorded so nobody retries them:</strong> (1) gain is NOT being dropped — <code>model.py</code> reads <code>cfg.get(&amp;quot;weight&amp;quot;)</code> and ignores a <code>gain</code> key, but the bracket passed <code>latch_hparams={&amp;quot;rho&amp;quot;: gain, &amp;quot;mu&amp;quot;: gain}</code>, the correct channel; (2) the step windows do NOT round to zero at 8 steps (end_pct 0.7 -&amp;gt; int(5.6)=5 -&amp;gt; steps 0-4; start_pct 0.4 -&amp;gt; int(3.2)=3 -&amp;gt; steps 3-7).</p>
+<p><strong>Separate issue, still open and it matters for the 40 harsh clips:</strong> the bracket&amp;#x27;s target was the head&amp;#x27;s own std_mean, which after standardization is exactly 0.0 — &amp;quot;make air energy corpus-average&amp;quot;, not &amp;quot;reduce it&amp;quot;. Even with working guidance that is not a damping request. Left unchanged in the probe on purpose so it does not confound the does-guidance-act-at-all question.</p>
+<p>Commits: <code>8e65acd</code> (SA3 fork: sampler + dispatch), <code>7fcf856</code> (probe + 8 dispatch tests, no GPU). Kim&amp;#x27;s &amp;quot;8 steps may be too few for guidance to act at all&amp;quot; remains open; the per-step norms inform it.</p>
+<ul class="wl">
+<li>[2026-09-16 21:29] (wintermute) <strong>2026-09-16 (eve, +2h) — WINTERMUTE: CONFIRMED BY RENDER. The guided-sampler fix works; the head never needed retraining. Supersedes the &amp;quot;NOT CONFIRMED&amp;quot; status of my entry above.</strong></li>
+</ul>
+<p><code>eval/hf_latch_gradnorm_probe.py</code> ran on the post-trained <code>medium</code> + DoRA, 6 arms, one seed/prompt/head/ckpt. All six renders healthy (peak exactly 0.8913, finite, no DC/NaN cells).</p>
+<p>Relative L2 between arms:</p>
+<p>```</p>
+<p>sampler swap alone (guidance INERT, rho=mu=0)   1.999727</p>
+<p>euler: 1000x gain increase                      0.026365</p>
+<p>pingpong: 1000x gain increase                   0.246328   &amp;lt;- 9.4x more responsive</p>
+<p>fix effect at matched gain 2                    1.063998</p>
+<p>```</p>
+<p><strong>The z0 std is the mechanism, and it is unambiguous.</strong> Baseline pingpong <strong>1.149</strong> — the healthy value DISCOVERIES 2026-08-10 records (vs 5.6 for the latent-runaway family). Every euler arm <strong>2.15–2.17</strong>, near-double, with <code>||x||</code> inflating across steps (386 -&amp;gt; 611). Every pingpong guided arm <strong>1.17–1.18</strong>, on-manifold. So the guided path was manufacturing an off-manifold latent BY ITSELF: the &amp;quot;sampler swap alone&amp;quot; arm ran rho=mu=0, guidance mathematically inert, and still sat 2.0 away from baseline. That is attributable to the sampler and nothing else. G&amp;#x27;s &amp;quot;strongly over-damped vs baseline&amp;quot; was this, not the head.</p>
+<p><strong>Why gain looked dead.</strong> Not saturation, and not a zero gradient — swamping. <code>||grad_var||</code> is 1.2e-05..5.9e-04 against <code>||x||</code> of 386..611, so even at gain 2048 the variance-guidance displacement is ~6.6e-5 relative. Euler&amp;#x27;s 0.026 of gain response was buried under a 2.0 sampler artefact, i.e. inaudible. On pingpong the same 1000x span moves 0.246. (Norms are near-identical between gain 2 and 2048 exactly as expected — grad_var is computed before rho scales it.)</p>
+<p><strong>Honest limits, so nobody over-reads this.</strong> (1) Variance guidance is weak on BOTH samplers; the recovered responsiveness comes from mean guidance on z0. (2) 0.246 across a 1000x gain span is real but modest authority — the fix restores steering, it does not prove the head can audibly damp harsh HF. That needs an ear on arm4/arm5 vs arm0 (<code>/tmp/hf_latch_gradnorm/</code>, volatile). (3) The target is still the head&amp;#x27;s own std_mean = standardized 0.0, i.e. &amp;quot;make it corpus-average&amp;quot;, NOT &amp;quot;reduce it&amp;quot; — so this probe does not test damping at all. Building the real target from the 42 unflagged clips needs the head&amp;#x27;s own training extractor. (4) Kim&amp;#x27;s &amp;quot;8 steps may be too few&amp;quot; is now partly answered — gain does act at 8 steps — but how MUCH it can act is unmeasured.</p>
+<p>Commits: <code>8e65acd</code> (sampler + dispatch), <code>7fcf856</code> (probe + dispatch tests), <code>811aa29</code> (sampler numerics tests: gain must move the output, pingpong must differ from euler and be stochastic where euler is deterministic). 16 tests, no GPU, ~2s.</p>
+<ul class="wl">
+<li>[2026-09-17 01:09] (wintermute) <strong>2026-09-17 — WINTERMUTE: harshness is the PROMPT, not the checkpoint — and <code>rms_energy_air</code> is the wrong band to fix it with.</strong></li>
+</ul>
+<p>Asked to record that the model makes harsh timbres. The measured version is narrower and more useful.</p>
+<p><strong>Concentration.</strong> 23 of the 40 ear-flagged mixtape clips come from ONE render set, <code>genre_fusion_probe_local</code> (OOD genre-fusion prompts, post-trained medium, cfg1). Control, same model family and cfg:</p>
+<p>```</p>
+<p>genre-fusion probe (OOD prompts)   23/31  74.2% harsh</p>
+<p>OTHER ptm + cfg1 (normal prompts)  13/37  35.1%</p>
+<p>non-ptm (base-model arms)           4/14  28.6%</p>
+<p>by prompt: genre_fusion 74.2 · rb_rare 55.6 · rb_common 50.0 · other 12.0</p>
+<p>```</p>
+<p>Double the harshness when the prompt asks for a blend the model never trained on, with a clean rarity gradient behind it. <strong>Not &amp;quot;this checkpoint sounds harsh&amp;quot; but &amp;quot;this model gets harsh out of distribution&amp;quot;</strong> — which predicts harshness from the REQUEST, before rendering. (I first misread the <code>gf2_</code> filename prefix as a training arm; it is the probe set, <code>gf_NN</code> is a prompt index.)</p>
+<p><strong>[RULED OUT] the <code>rms_energy_air</code> head cannot fix this.</strong> Flagged vs not-flagged per clip, on the window actually judged (0-25% — Kim skipped ahead on clips that opened well): six bands survive Bonferroni, ALL of them low (20-49 Hz -4.11 dB d=-0.89; 252-308 -3.50 d=-0.91; 308-371 -3.44 d=-0.92; also 81-117, 157-202, 518-605). Across the whole 2.5-22 kHz <code>air</code> span, <strong>not one significant band</strong>. Harsh = THIN: ~3-4 dB of missing low-mid body, not excess treble. An HF cut makes it worse, which is what the guided renders did (air -26.2→-29.0 but body -23.9→-28.0 — the degenerate solution to an absolute-energy target). Replacement target must be LEVEL-INVARIANT, same logic as <code>onset_per_beat</code>.</p>
+<p><strong>Marginal / refuted, so nobody re-runs them expecting a result:</strong> contour roughness 2.04 vs 1.81 dB (p=0.067), peak-to-valley 11.11 vs 9.87 (p=0.055), z0 std 1.366 vs 1.252 (p=0.062, n=17/34) — all lean right, none clears 0.05. <strong>Crest factor REFUTES soft-distortion as measured</strong>: 13.37 vs 13.03 dB, p=0.62, both normal for dance masters. Crest is the wrong instrument (saturation adds harmonics without crushing peak/RMS); THD/intermodulation is the real test. Both z0 pools are mildly above healthy ~1.13-1.15 and nowhere near the 5.6 runaway family.</p>
+<p><strong>Method trap worth carrying:</strong> averaging ERB contours ACROSS clips cancels per-clip peaks at different frequencies — a +5 dB bump at 5.5-7.5k on one clip and +8 dB at 1.5-4.5k on another leave only the shared tilt. My first pass saw a clean tilt and was blind to the unevenness Kim hears. Per-clip metrics or nothing.</p>
+<p>Tool: <code>mir/src/tools/spectral_harshness_contrast.py</code>. Reference = Kim&amp;#x27;s own 167 masters, not generated clips (model output bakes in the bias being measured; pink noise is also wrong — the masters fall ~-4.4 dB/oct above 1 kHz vs pink&amp;#x27;s -3, so pink reads them as HF-deficient and would push generations BRIGHTER).</p>
+<h3>2026-09-17 — GHOST-NOTE — mixtape wav restore (49/51), 5 clips quarantined, harsh-timbre note added to census</h3>
+<p>Closing out the mixtape-harshness thread per Kim&amp;#x27;s direction to stop chasing an HF fix and finish</p>
+<p>a shareable mix. <code>eval/rerender_missing_wavs.py</code> (exact manifest.jsonl params, grouped by ckpt to</p>
+<p>minimize reloads) restored <strong>49 of 51</strong> wavs Kim had deleted to save space; the remaining 2</p>
+<p>(<code>winning_avp_t512_a45_bf16_ptm</code> ep15, <code>winning_avpaug10_t512_a45_fp32</code> ep15) are blocked only on</p>
+<p>the last LUMI checkpoint file still rsyncing to [path] — resolve+render once that lands, no further</p>
+<p>debugging needed. Per Kim: use the <code>.wav</code> versions from now on, not <code>.m4a</code>.</p>
+<p>Quarantined the 5 worst-offender clips Kim named from his own spectral pass (mixtape idx 17, 19,</p>
+<p>22, 39, 43 — all <code>dora128adj_avp_8ep_ptm</code> ep3/ep6) to</p>
+<p><code>[path]</code> with a README,</p>
+<p>and rebuilt the mixtape running order (82→77 clips, arc_pos recomputed).</p>
+<p>Added Kim&amp;#x27;s harsh-timbre finding to <code>Misc/models_index_overrides.json</code> (<code>dora128adj_avp_8ep</code></p>
+<p><code>kim_feedback</code> + <code>note</code>) so it&amp;#x27;s not lost to a chat scrollback, and cross-linked Wintermute&amp;#x27;s</p>
+<p>same-day WORKLOG correction (harshness tracks the OOD <code>genre_fusion_probe_local</code> prompt set more</p>
+<p>than the checkpoint, 74.2% vs 35.1%/28.6%, and the significant bands are low/thin not high) plus</p>
+<p>the already-landed LatCH-sampler-substitution bug (commit <code>8e65acd</code>) as the reason no further HF-</p>
+<p>damping work is planned here.</p>
+<p>Commits: <code>34c71cf</code>, <code>eb63027</code> (census). Not pushed.</p>
+<h3>2026-09-17 (cont) — GHOST-NOTE — mixtape v3: full 76-transition bar-aware mix rendered</h3>
+<p>Extended the crossfader per Kim&amp;#x27;s refinements: every clip&amp;#x27;s usable span now spans a whole</p>
+<p>multiple of 4 bars (reused mir&amp;#x27;s <code>find_end_for_div4_downbeats</code>/<code>find_zero_crossing_backwards</code></p>
+<p>from <code>create_training_crops.py</code> rather than reinventing them — a real discovery-phase win, both</p>
+<p>functions already existed and matched his description almost verbatim), with the exit point</p>
+<p>biased toward a local RMS dip in the clip&amp;#x27;s closing section (<code>dj_beatmatch.detect_quiet_points</code>,</p>
+<p>also already built) so the handoff lands in a quiet passage instead of mid-drop. New scripts:</p>
+<p><code>mixtape_bar_aware_bounds.py</code>, <code>mixtape_build_pairs.py</code>, <code>mixtape_assemble_continuous.py</code>,</p>
+<p><code>mixtape_portfolio_clips.py</code>; <code>chain_simple_crossfade.py::process_pair</code> now accepts precomputed</p>
+<p>per-clip bounds. Full render: 76/76 transitions, 0 non-div4 bar counts, 10s linear crossfade</p>
+<p>(confirmed ~9.86-9.91s), a2a nl=0.7. Assembled into one non-duplicating 52.7min continuous mix</p>
+<p>(both plain and a2a variants) at <code>[path]</code>.</p>
+<p>Published as a portfolio page (&amp;quot;Custom Stable Audio 3 model portfolio&amp;quot; — Kim&amp;#x27;s own title, the</p>
+<p>earlier Kone-grant framing dropped since that deadline passed): two continuous highlight excerpts</p>
+<p>+ 10 representative before/after-smoothing transition comparisons. **Real constraint hit and</p>
+<p>solved, worth remembering:** the full 76-transition set cannot fit an Artifact&amp;#x27;s page budget</p>
+<p>(64MB total / 15MB per file) at a listenable bitrate — a curated spread across the tempo arc was</p>
+<p>used instead of truncating to the first N, with the full-quality files staying on disk as the</p>
+<p>real deliverable. Commit <code>52e4cc0</code>.</p>
+<h3>2026-09-17 (cont, corrected) — GHOST-NOTE — mixtape v3/v4 had three real bugs; fixed in v5</h3>
+<p>Kim&amp;#x27;s ear caught two problems in the v3 mixtape build within minutes of it shipping (&amp;quot;bpms</p>
+<p>are off... basically random order&amp;quot;, &amp;quot;crossfades... glitch when the overlap ends&amp;quot;), plus a fair</p>
+<p>&amp;quot;why did you make your own BPM tool when mir already has one&amp;quot; challenge. All three led to</p>
+<p>confirmed, fixed bugs — recorded in full because a chat-only fix is a lost fix:</p>
+<p><strong>BPM was wrong for ~half the corpus.</strong> <code>mixtape_madmom_bpm.py</code>&amp;#x27;s downbeat-interval fold</p>
+<p>heuristic anchored its 2/3-fold disambiguation to a stale/unreliable prior BPM value and folded</p>
+<p>already-correct measurements DOWN by 2/3 for a large fraction of clips (verified: a clip whose</p>
+<p>prompt states &amp;quot;148 BPM&amp;quot; measured 146.3 from raw beats, correctly — but the heuristic reported</p>
+<p>98.8). Root cause of the whole approach existing: `mir/src/rhythm/bpm.py::</p>
+<p>calculate_bpm_from_beats()` already computes BPM directly from the mean raw beat interval,</p>
+<p>sidestepping the downbeat-grouping fold ambiguity entirely — a real discovery-phase miss, should</p>
+<p>have been used from the start instead of writing new fold-guessing logic. <code>mixtape_madmom_bpm_v2.py</code></p>
+<p>replaces it; corpus BPM range corrected from a bogus 93-155 to a clean 120-155 (later 120-151</p>
+<p>after the gf2 removal below).</p>
+<p><strong>Cross-pair splice duplication.</strong> Every middle clip&amp;#x27;s crop (<code>A_use</code>) sliced from the raw file&amp;#x27;s</p>
+<p>sample 0 regardless of where its OWN crossfade-in had already happened one pair earlier, so</p>
+<p>concatenating pairs into a continuous mix played a chunk of each clip&amp;#x27;s early material TWICE —</p>
+<p>once tempo-bent (from its real entry point, via the previous transition) and again raw (from</p>
+<p>sample 0, as the next pair&amp;#x27;s own head) — a hard, audible discontinuity. Fixed by threading each</p>
+<p>clip&amp;#x27;s own entry point (<code>a_start_sec</code>) through <code>mixtape_build_pairs.py</code> into</p>
+<p><code>chain_simple_crossfade.py::process_pair</code>. Residual mismatch (pair i&amp;#x27;s continuation of clip i+1</p>
+<p>is tempo-bent, pair i+1&amp;#x27;s own head is raw — two different renderings of the same moment) is</p>
+<p>handled with a short (40ms) crossfade AT the assembly splice itself</p>
+<p>(<code>mixtape_assemble_continuous.py</code>) rather than a hard cut.</p>
+<p>**genre_fusion_probe_local (gf2_*) has genuine waveform corruption, not just subjective</p>
+<p>harshness.** Found while verifying the splice fix. New tool <code>audio_corruption_scan.py</code>: a naive</p>
+<p>&amp;quot;biggest single-sample jump&amp;quot; metric is a false-alarm magnet (real kick/bass transients in</p>
+<p>hot-mastered dance music legitimately hit 0.4-1.0+ amplitude in one sample), but the COUNT of</p>
+<p>such jumps cleanly separates real corruption from normal transients — a clean clip in this corpus</p>
+<p>shows 0-2 jumps &amp;gt;0.6 in its whole duration; the worst gf2_* clips showed 5783 and 8161. 18 of 26</p>
+<p>gf2_* clips in the mixtape corpus show this. Independently confirms Wintermute&amp;#x27;s same-day spectral</p>
+<p>finding (this exact OOD-prompt family runs 74% harsh) with a completely different, objective</p>
+<p>measurement — the two agreeing is much stronger than either alone. Dropped the entire gf2_* family</p>
+<p>from the mixtape (26/77 clips), not just the 5 originally ear-flagged. Census entries updated</p>
+<p>(<code>dora128adj_avp_8ep</code>, <code>dora16_avp_originals_earlyeps</code>).</p>
+<p>Final corrected mixtape: 51 clips, BPM 120-151, 33.8min, at</p>
+<p><code>[path]</code>. Portfolio page republished</p>
+<p>(same URL, updated content/stats). Handed the full-quality WAVs to Wintermute (DM) for hosting on</p>
+<p>Kim&amp;#x27;s own site with real streaming — outside the Artifact platform&amp;#x27;s hard 15MB/file, 64MB/page</p>
+<p>cap, and outside GHOST-NOTE&amp;#x27;s lane (Kim&amp;#x27;s website is W&amp;#x27;s per MASTER §4).</p>
+<p>Commit <code>f6bcf3c</code>. Not pushed.</p>
+<h3>2026-09-21 — GHOST-NOTE — waveform-corruption root cause found, independently, twice over</h3>
+<p>Continuation of the mixtape corruption thread (WORKLOG 2026-09-17). Randomly sampled ~6000</p>
+<p>model_matrix clips this session (m4a; a 91/142-pair wav-vs-m4a cross-check found AAC systematically</p>
+<p>UNDER-reports the defect by ~2x, so these are floor estimates): 10.2% of a 3000-clip random sample</p>
+<p>and 43.1%/6.5% (ptm/base) of a 2699-clip early+late-checkpoint sample show the same signature —</p>
+<p>thousands of single-sample amplitude jumps &amp;gt;0.6, a spectral bump peaking 11-14kHz (not a monotonic</p>
+<p>ramp to Nyquist, ruling out simple aliasing; shape matches harmonic distortion from an internal</p>
+<p>saturation). Post-trained <code>medium</code> (8-step ping-pong) corrupts at 3-28x the rate of <code>medium-base</code></p>
+<p>(24-step euler) depending on severity tier, but a direct paired causal test (same ckpt/prompt/seed,</p>
+<p>n=8 so far) is messier — some checkpoints are unstable on BOTH samplers, so it&amp;#x27;s two overlapping</p>
+<p>effects (bad-checkpoint + sampler-risk-multiplier), not one deterministic cause.</p>
+<p>**Independently, a parallel effort (external agent &amp;quot;Antigravity&amp;quot; + Kim direct, see</p>
+<p><code>OPTIMIZER_TRAJECTORY_LATENT_AND_DISCONTINUITY_FINDINGS.md</code>) converged on the SAME mechanism from</p>
+<p>training-trajectory analysis** and built a working fix: VADD (Variance-Aware Dynamic Dampening) —</p>
+<p>clamp the generated latent&amp;#x27;s std to a ceiling before VAE decode. Verified their z0-std number for a</p>
+<p>shared reference clip bit-for-bit against my own tooling (3.317101), then independently reproduced</p>
+<p>the fix on a clip from my own corpus: clamping std 3.317→1.20 before decode cut discontinuities by</p>
+<p>99.35% (213252→1381 raw, unnormalized). Full writeup + a real bug CONTINUITY found and fixed in the</p>
+<p>same pass (a NaN-blind loss guard that printed &amp;quot;healthy&amp;quot; during an actual divergence) in</p>
+<p>EXPERIMENTS.md A14. This is now a well-evidenced, cross-verified finding, not a single-source claim.</p>
+<p><strong>Still open:</strong> the fix is wired into the training demo callback only, not the main inference path</p>
+<p>(<code>model.py::generate()</code>/render server) — so it doesn&amp;#x27;t yet protect actual corpus renders or</p>
+<p>user-facing generation. Root cause of a separate crash (NaN in <code>newton_schulz_cubic5</code>, no</p>
+<p>finiteness guard anywhere in <code>modular_opt</code>) also not yet fixed.</p>
+<p>Files: <code>eval/audio_corruption_scan.py</code>, <code>eval/corruption_base_vs_ptm.py</code> (SAO); <code>scripts/{train_lora_modular,eval_demo_callback,decode_latents_cpu}.py</code>, <code>stable_audio_3/training/diffusion.py</code> (stable-audio-3); <code>stable_audio_tools/training/modular_opt/</code> (stable-audio-tools). Commits: <code>f6bcf3c</code>/<code>697a2e4</code> (GHOST-NOTE, SAO), <code>44ae8cd</code> (Kim, SAO docs), <code>f3a4c05</code> (Kim, stable-audio-3), <code>1ad9980</code> (Kim, stable-audio-tools). Not pushed.</p>
 <footer class="colophon">
-  <span>67 entries</span><span>·</span><span>append-only</span><span>·</span>
+  <span>71 entries</span><span>·</span><span>append-only</span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> shared findings ledger</span>
 </footer>
 

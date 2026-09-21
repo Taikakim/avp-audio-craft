@@ -177,3 +177,8 @@ latch/val_arm_logs_driver.log
 .cache/
 traj_sketch_bundle.tgz
 .directory
+
+# Intermediate bigset caption sidecars: 50+ MB each, regenerable from the
+# pipeline and superseded by the "_bylatent" re-keyed file. Keep them on the
+# eval drive, not in git (GHOST-NOTE flagged 2026-09-21).
+lumi/goa_bigset_sidecar_*.json
