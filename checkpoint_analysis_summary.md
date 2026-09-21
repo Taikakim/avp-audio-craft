@@ -1,8 +1,8 @@
 # Stable Audio 3 Checkpoint Analysis Catalog
 
-> **Generated:** 2026-09-21 18:53:22  
-> **Total Runs Analyzed:** 182  
-> **Total Checkpoints Cataloged:** 1025  
+> **Generated:** 2026-09-21 20:08:43  
+> **Total Runs Analyzed:** 233  
+> **Total Checkpoints Cataloged:** 1385  
 
 ---
 
@@ -192,6 +192,57 @@
 | `longctx_t2048_r128` | longctx | 2 | 2700–5400 | 243.31 | 45.42 | --- | 1.000 | **YES** | 0 |
 | `lr5e5mix_r128a128_t512_bf16_bs8_s1` | DoRA/LoRA adapter | 1 | 43152–43152 | 99.20 | --- | --- | 1.000 | **YES** | 0 |
 | `lr5e5mixwarm_r128a128_t512_bf16_bs8_s1` | DoRA/LoRA adapter | 1 | 43152–43152 | 112.87 | --- | --- | 1.000 | **YES** | 0 |
+| `lr5e5mixwarmwsd_r128a128_t512_bf16_bs8_s1` | DoRA/LoRA adapter | 1 | 43152–43152 | 102.23 | --- | --- | 1.000 | **YES** | 0 |
+| `lr5e5mixwsd_r128a128_t512_bf16_bs8_s1` | DoRA/LoRA adapter | 1 | 43152–43152 | 86.44 | --- | --- | 1.000 | **YES** | 0 |
+| `lreq_goa_lr1e4` | DoRA/LoRA adapter | 2 | 5400–27000 | 146.33 | 6.80 | --- | 1.000 | **YES** | 0 |
+| `lreq_goa_lr2e4` | DoRA/LoRA adapter | 2 | 8100–18900 | 221.48 | 22.12 | --- | 1.000 | **YES** | 0 |
+| `lreq_goa_lr5e5` | DoRA/LoRA adapter | 2 | 5400–54000 | 115.56 | 2.30 | --- | 1.000 | **YES** | 0 |
+| `melodychroma_r32_hpcp` | DoRA/LoRA adapter | 6 | 2700–16200 | 63.50 | 7.98 | +0.0069 | 0.491 | **YES** | 0 |
+| `modular_opt_cubic5_sf_ev_20ep_13500s_2026-09-21_0148` | DoRA/LoRA adapter | 20 | 100–12825 | 44.09 | 3.50 | +0.8070 | 0.724 | **YES** | 30 |
+| `modular_opt_lr1e4_w200_ev_normuon_300s_2026-09-20_2304` | DoRA/LoRA adapter | 3 | 100–300 | 2.71 | 15.24 | +0.6499 | 0.910 | **YES** | 18 |
+| `modular_opt_lr1e4_w200_sf_normuon_300s_2026-09-20_2230` | DoRA/LoRA adapter | 3 | 100–300 | 2.72 | 15.27 | +0.6497 | 0.910 | **YES** | 48 |
+| `modular_opt_normuon_sf_otwd_3000s_2026-09-20_2138` | DoRA/LoRA adapter | 3 | 100–600 | 0.50 | 0.84 | +0.7777 | 0.944 | **YES** | 48 |
+| `modular_opt_stage3_ns5_2026-09-20` | DoRA/LoRA adapter | 2 | 100–120 | 0.35 | 4.86 | --- | 1.000 | **YES** | 19 |
+| `modular_opt_stage3_ns5_otwd_3000s_2026-09-20_1800` | DoRA/LoRA adapter | 4 | 100–666 | 1.35 | 3.40 | +0.3741 | 0.815 | **YES** | 48 |
+| `morph_IOI3_base_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_base_s2` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_base_s3` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_base_s4` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_ft_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_ft_s2` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_ft_s3` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_IOI3_ft_s4` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L2_base_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L2_ft_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L3_base_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L3_base_s2` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L3_ft_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L3_ft_s2` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L4_base_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `morph_L4_ft_s1` | DoRA/LoRA adapter | 1 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `mqe3ne49` | DoRA/LoRA adapter | 8 | 1350–10800 | 573.76 | 62.66 | +0.6576 | 0.644 | **YES** | 0 |
+| `onset_AdamW_lr7.5e-5_continuous` | DoRA/LoRA adapter | 13 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_AdamW_lr7.5e-5_randomcrop` | DoRA/LoRA adapter | 13 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_AdamW_lr7.5e-5_randomcrop_20ep` | DoRA/LoRA adapter | 25 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FUSION_lr1e4_5000_FIXED` | DoRA/LoRA adapter | 6 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FUSION_lr2e5_40epoch` | DoRA/LoRA adapter | 43 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FUSION_lr8e5_10epoch` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FUSION_lr8e5_1p2ep` | DoRA/LoRA adapter | 4 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FusionCC_lr1e-4_randomcrop` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_FusionCaut_lr1e-4_randomcrop` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_lr1e-4_randomcrop` | DoRA/LoRA adapter | 12 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_lr1e-4_randomcrop_20ep` | DoRA/LoRA adapter | 3 | 5400–16200 | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_lr1e-4_randomcrop_L13-15` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_lr1e-4_randomcrop_L8-15` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_opb_10ep` | DoRA/LoRA adapter | 11 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_Fusion_opb_lr1.5e-4_30ep` | DoRA/LoRA adapter | 26 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_density_400trk_crop1024` | DoRA/LoRA adapter | 7 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_density_FULL_3000_crop1024` | DoRA/LoRA adapter | 2 | 1000–2000 | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_density_FULL_3000b_crop1024` | DoRA/LoRA adapter | 2 | 1000–2000 | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_density_FULL_3000c_crop1024` | DoRA/LoRA adapter | 4 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_envelope_ema20` | DoRA/LoRA adapter | 20 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `onset_envelope_ema40` | DoRA/LoRA adapter | 40 | N/A | 0.00 | --- | --- | 1.000 | **YES** | 0 |
+| `plain_s1` | DoRA/LoRA adapter | 1 | 4784–4784 | 0.00 | --- | --- | 1.000 | ❌ NaN | 0 |
 
 ---
 
@@ -2404,4 +2455,687 @@
 | Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 43152 | 15 | 112.87 | 119.53 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `lr5e5mixwarmwsd_r128a128_t512_bf16_bs8_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 43152 | 15 | 102.23 | 116.40 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `lr5e5mixwsd_r128a128_t512_bf16_bs8_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 43152 | 15 | 86.44 | 112.16 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+
+
+### `lreq_goa_lr1e4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 66.15 | 105.59 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 27000 | 19 | 146.33 | 129.62 | 6.80 | --- | 146.91 | 146.91 | ✓ | 1907.2 |
+
+
+### `lreq_goa_lr2e4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 8100 | 5 | 123.23 | 120.42 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 18900 | 13 | 221.48 | 159.84 | 22.12 | --- | 238.89 | 238.89 | ✓ | 1907.2 |
+
+
+### `lreq_goa_lr5e5`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | 3 | 35.56 | 101.47 | --- | --- | 0.00 | 0.00 | ✓ | 1907.2 |
+| 54000 | 39 | 115.56 | 122.09 | 2.30 | --- | 112.00 | 112.00 | ✓ | 1907.2 |
+
+
+### `melodychroma_r32_hpcp`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 2700 | 0 | 26.22 | 52.80 | --- | --- | 0.00 | 0.00 | ✓ | 702.9 |
+| 5400 | 1 | 36.80 | 55.46 | 8.44 | --- | 22.79 | 22.79 | ✓ | 702.9 |
+| 8100 | 2 | 45.15 | 58.14 | 8.22 | +0.0806 | 44.98 | 33.06 | ✓ | 702.9 |
+| 10800 | 3 | 52.02 | 60.53 | 8.08 | +0.0453 | 66.78 | 41.08 | ✓ | 702.9 |
+| 13500 | 4 | 58.04 | 62.79 | 8.01 | +0.0206 | 88.39 | 47.91 | ✓ | 702.9 |
+| 16200 | 5 | 63.50 | 65.02 | 7.98 | +0.0069 | 109.93 | 53.99 | ✓ | 702.9 |
+
+
+### `modular_opt_cubic5_sf_ev_20ep_13500s_2026-09-21_0148`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 0 | 0.46 | 98.84 | --- | --- | 0.00 | 0.00 | ✓ | 3181.6 |
+| 675 | 0 | 5.94 | 99.02 | 10.05 | --- | 5.78 | 5.78 | ✓ | 3181.6 |
+| 1350 | 1 | 10.14 | 99.15 | 8.25 | +0.5597 | 11.34 | 10.02 | ✓ | 3181.6 |
+| 2025 | 2 | 13.29 | 99.25 | 6.65 | +0.6971 | 15.84 | 13.18 | ✓ | 3181.6 |
+| 2700 | 3 | 15.90 | 99.34 | 5.78 | +0.7622 | 19.74 | 15.80 | ✓ | 3181.6 |
+| 3375 | 4 | 18.17 | 99.41 | 5.19 | +0.7870 | 23.24 | 18.07 | ✓ | 3181.6 |
+| 4050 | 5 | 20.39 | 99.49 | 4.83 | +0.8106 | 26.51 | 20.30 | ✓ | 3181.6 |
+| 4725 | 6 | 22.54 | 99.57 | 4.62 | +0.8272 | 29.62 | 22.46 | ✓ | 3181.6 |
+| 5400 | 7 | 24.60 | 99.64 | 4.45 | +0.8338 | 32.63 | 24.52 | ✓ | 3181.6 |
+| 6075 | 8 | 26.58 | 99.72 | 4.32 | +0.8360 | 35.55 | 26.51 | ✓ | 3181.6 |
+| 6750 | 9 | 28.38 | 99.78 | 4.03 | +0.8188 | 38.26 | 28.30 | ✓ | 3181.6 |
+| 7425 | 10 | 30.23 | 99.85 | 3.97 | +0.8226 | 40.94 | 30.16 | ✓ | 3181.6 |
+| 8100 | 11 | 32.07 | 99.93 | 3.91 | +0.8255 | 43.58 | 32.01 | ✓ | 3181.6 |
+| 8775 | 12 | 33.89 | 100.00 | 3.84 | +0.8245 | 46.17 | 33.82 | ✓ | 3181.6 |
+| 9450 | 13 | 35.66 | 100.07 | 3.78 | +0.8240 | 48.73 | 35.60 | ✓ | 3181.6 |
+| 10125 | 14 | 37.32 | 100.13 | 3.68 | +0.8150 | 51.21 | 37.26 | ✓ | 3181.6 |
+| 10800 | 15 | 39.04 | 100.20 | 3.64 | +0.8126 | 53.67 | 38.98 | ✓ | 3181.6 |
+| 11475 | 16 | 40.75 | 100.27 | 3.60 | +0.8128 | 56.10 | 40.69 | ✓ | 3181.6 |
+| 12150 | 17 | 42.43 | 100.34 | 3.55 | +0.8103 | 58.49 | 42.38 | ✓ | 3181.6 |
+| 12825 | 18 | 44.09 | 100.40 | 3.50 | +0.8070 | 60.86 | 44.03 | ✓ | 3181.6 |
+
+
+### `modular_opt_lr1e4_w200_ev_normuon_300s_2026-09-20_2304`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 0.48 | 98.85 | --- | --- | 0.00 | 0.00 | ✓ | 3181.6 |
+| 200 | 5 | 1.49 | 98.88 | 11.79 | --- | 1.18 | 1.18 | ✓ | 3181.6 |
+| 300 | 8 | 2.71 | 98.93 | 15.24 | +0.6499 | 2.70 | 2.46 | ✓ | 3181.6 |
+
+
+### `modular_opt_lr1e4_w200_sf_normuon_300s_2026-09-20_2230`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 0.48 | 98.85 | --- | --- | 0.00 | 0.00 | ✓ | 2545.9 |
+| 200 | 5 | 1.49 | 98.88 | 11.79 | --- | 1.18 | 1.18 | ✓ | 2545.9 |
+| 300 | 8 | 2.72 | 98.93 | 15.27 | +0.6497 | 2.71 | 2.46 | ✓ | 2545.9 |
+
+
+### `modular_opt_normuon_sf_otwd_3000s_2026-09-20_2138`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 0.12 | 98.84 | --- | --- | 0.00 | 0.00 | ✓ | 2545.9 |
+| 300 | 8 | 0.29 | 98.85 | 0.98 | --- | 0.20 | 0.20 | ✓ | 2545.9 |
+| 600 | 16 | 0.50 | 98.86 | 0.84 | +0.7777 | 0.45 | 0.42 | ✓ | 2545.9 |
+
+
+### `modular_opt_stage3_ns5_2026-09-20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 0.31 | 98.84 | --- | --- | 0.00 | 0.00 | ✓ | 1271.5 |
+| 120 | 3 | 0.35 | 98.84 | 4.86 | --- | 0.10 | 0.10 | ✓ | 1271.5 |
+
+
+### `modular_opt_stage3_ns5_otwd_3000s_2026-09-20_1800`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 100 | 2 | 0.31 | 98.84 | --- | --- | 0.00 | 0.00 | ✓ | 1271.5 |
+| 300 | 8 | 0.72 | 98.85 | 2.58 | --- | 0.52 | 0.52 | ✓ | 1271.5 |
+| 600 | 16 | 1.24 | 98.86 | 2.27 | +0.5339 | 1.20 | 1.05 | ✓ | 1271.5 |
+| 666 | 17 | 1.35 | 98.86 | 3.40 | +0.3741 | 1.42 | 1.16 | ✓ | 1271.5 |
+
+
+### `morph_IOI3_base_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_base_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_base_s3`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_base_s4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_ft_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_ft_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_ft_s3`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_IOI3_ft_s4`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_L2_base_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.6 |
+
+
+### `morph_L2_ft_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.6 |
+
+
+### `morph_L3_base_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_L3_base_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_L3_ft_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_L3_ft_s2`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1728.8 |
+
+
+### `morph_L4_base_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1729.7 |
+
+
+### `morph_L4_ft_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1729.7 |
+
+
+### `mqe3ne49`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1350 | 0 | 234.31 | 101.86 | --- | --- | 0.00 | 0.00 | ✓ | 635.7 |
+| 2700 | 1 | 319.27 | 106.20 | 120.78 | --- | 163.06 | 163.06 | ✓ | 635.7 |
+| 4050 | 2 | 381.68 | 110.36 | 99.32 | +0.5112 | 297.13 | 258.68 | ✓ | 635.7 |
+| 5400 | 3 | 432.11 | 114.23 | 86.32 | +0.6016 | 413.67 | 328.92 | ✓ | 635.7 |
+| 6750 | 4 | 474.67 | 117.78 | 77.50 | +0.6416 | 518.30 | 385.05 | ✓ | 635.7 |
+| 8100 | 5 | 511.77 | 121.09 | 71.50 | +0.6556 | 614.83 | 432.16 | ✓ | 635.7 |
+| 9450 | 6 | 544.50 | 124.12 | 66.51 | +0.6606 | 704.61 | 472.69 | ✓ | 635.7 |
+| 10800 | 7 | 573.76 | 126.90 | 62.66 | +0.6576 | 789.21 | 508.26 | ✓ | 3814.2 |
+
+
+### `onset_AdamW_lr7.5e-5_continuous`
+> **Verdict / Note:** Continuous (no-segmentation) AdamW run, first-crop — finished clean at step 54000/10 checkpoints after an early dateutil-crash fix; later shown to have a much narrower control range than the random-crop variants it was compared against.
+
+> **Recipe:** model medium-base · lr 7.5e-05 · batch 1 · crop_frames 512 · optimizer adamw · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_AdamW_lr7.5e-5_randomcrop`
+> **Verdict / Note:** Random-crop AdamW baseline — random-crop dramatically widened the onset-density control range vs the earlier first-crop runs (this is one of the two runs that established that).
+
+> **Recipe:** model medium-base · lr 7.5e-05 · batch 1 · crop_frames 512 (random-crop) · optimizer adamw · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_AdamW_lr7.5e-5_randomcrop_20ep`
+> **Verdict / Note:** Random-crop AdamW at 20 epochs — part of the random-crop control-range study; superseded as a recipe by the Fusion+random-crop runs, which had a cleaner training trajectory.
+
+> **Recipe:** model medium-base · lr 7.5e-05 · batch 1 · crop_frames 512 (random-crop) · optimizer adamw · steps 108000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 59400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 64800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 70200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 75600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 81000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 86400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 91800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 97200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 102600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 108000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_FUSION_lr1e4_5000_FIXED`
+> **Verdict / Note:** Became the E_fusion_v2 checkpoint used in the composed_sweep replication of the FusionCC advantage (Goa-only, 1e-4/5000 steps).
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 1024 · optimizer fusion · steps 5000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_FUSION_lr2e5_40epoch`
+> **Verdict / Note:** The ONNX reference head — monotonic, calibrated steering (density 3→4.88, 11→11.15 onsets/sec); soup_exppeak.pt from this run is baked into the shipped ONNX DiT control graph.
+
+> **Recipe:** model medium-base · lr 2e-05 · batch 1 · crop_frames 512 · optimizer fusion · steps 216000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 59400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 64800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 70200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 75600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 81000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 86400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 91800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 97200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 102600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 108000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 113400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 118800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 124200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 129600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 135000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 140400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 145800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 151200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 156600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 162000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 167400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 172800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 178200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 183600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 189000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 194400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 199800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 205200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 210600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 216000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_FUSION_lr8e5_10epoch`
+> **Verdict / Note:** Higher-LR FusionOpt variant, 10 epochs — no distinct standalone quality verdict recorded beyond the general optimizer-bracket findings.
+
+> **Recipe:** model medium-base · lr 8e-05 · batch 1 · crop_frames 512 · optimizer fusion · steps 54000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_FUSION_lr8e5_1p2ep`
+> **Verdict / Note:** Quick higher-LR FusionOpt probe — no distinct standalone quality verdict recorded.
+
+> **Recipe:** model medium-base · lr 8e-05 · batch 1 · crop_frames 1024 · optimizer fusion · steps 6480 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 3600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_FusionCC_lr1e-4_randomcrop`
+> **Verdict / Note:** Best onset head — the campaign's first significant win: corr/gain g2 .584→.880 (P=.99), tracking mid-range densities beautifully (req 5/6/7 → meas 6.0/6.8/7.6 vs baseline's overshoot).
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · cc-loss lambda 0.1 · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+
+
+### `onset_FusionCaut_lr1e-4_randomcrop`
+> **Verdict / Note:** Cautious-masking variant — a quality TRADE not a win (drier/cleaner separation, muted highs, smears when pushed); over-trains past ep5. Palette option with early-stop, not the default.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion (cautious) · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+
+
+### `onset_Fusion_lr1e-4_randomcrop`
+> **Verdict / Note:** The FusionCC baseline ("E_fusion") — corr/gain g1 .582, g2 .657, g3 .793; solid but superseded by the CC-loss variant above.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion · steps 54000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_Fusion_lr1e-4_randomcrop_20ep`
+> **Verdict / Note:** 20-epoch Fusion companion to the AdamW 20ep multiprompt render — that render's headline finding (more epochs narrows control range) was specifically about the AdamW variant; no separate Fusion-specific verdict recorded.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion · steps 108000 · mode:scalar · scalar:onset_density · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_Fusion_lr1e-4_randomcrop_L13-15`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 690.9 |
+
+
+### `onset_Fusion_lr1e-4_randomcrop_L8-15`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 961.0 |
+
+
+### `onset_Fusion_opb_10ep`
+> **Verdict / Note:** First onset-per-beat (BPM-normalized) head — the tempo-shortcut is dead (corr −0.09 vs the raw onset_density baseline's +0.7 to +0.9), and control is still functional.
+
+> **Recipe:** model medium-base · lr 0.0001 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion · steps 54000 · mode:scalar · scalar:onset_per_beat · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_Fusion_opb_lr1.5e-4_30ep`
+> **Verdict / Note:** opb head at +50% LR, extended to 30 epochs — control authority plateaued by epoch 15 (+0.964, same as epoch 25); the extra 15 epochs bought nothing.
+
+> **Recipe:** model medium-base · lr 0.00015 · batch 1 · crop_frames 512 (random-crop) · optimizer fusion · steps 135000 · mode:scalar · scalar:onset_per_beat · feature:melody · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 5400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 10800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 16200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 21600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 27000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 32400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 37800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 43200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 48600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 54000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 59400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 64800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 70200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 75600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 81000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1825.4 |
+| 86400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 91800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 97200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 102600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 108000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 113400 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 118800 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 124200 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 129600 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| 135000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 1140.8 |
+
+
+### `onset_density_400trk_crop1024`
+> **Verdict / Note:** Original scalar onset-density head — steers output onset density at corr +0.90 (gain 1): sparse→dense = 4.3→8.3 onsets/sec.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer adamw · steps 6000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 4000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 5000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 6000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_density_FULL_3000_crop1024`
+> **Verdict / Note:** Full-dataset retrain attempt — crashed at step ~2000 on a junk silence.npy crop; superseded by the _c variant after the dataset fix.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer adamw · steps 3000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_density_FULL_3000b_crop1024`
+> **Verdict / Note:** Second full-dataset retrain attempt — crashed again on the same junk-crop issue; superseded by the _c variant.
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer adamw · steps 3000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_density_FULL_3000c_crop1024`
+> **Verdict / Note:** Full-dataset result after the crop-skip fix — corr +0.92, wider range (3.6→9.1), but gain sweep shows non-monotonic collapse past gain 3 (overtraining elbow at ~2000 steps/lr2e-4).
+
+> **Recipe:** model medium-base · lr 0.0002 · batch 1 · crop_frames 1024 · optimizer adamw · steps 3000 · mode:scalar · scalar:onset_density · bf16
+
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 2000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| 3000 | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+| None | None | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 228.1 |
+
+
+### `onset_envelope_ema20`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `onset_envelope_ema40`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| None | 1 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 2 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 3 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 4 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 5 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 6 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 8 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 9 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 10 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 11 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 12 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 13 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 14 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 15 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 16 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 17 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 18 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 19 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 20 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 21 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 22 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 23 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 24 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 25 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 26 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 27 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 28 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 29 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 30 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 31 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 32 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 33 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 34 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 35 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 36 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 37 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 38 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 39 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+| None | 40 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ✓ | 18.8 |
+
+
+### `plain_s1`
+| Step | Epoch | ||B||_F | ||A||_F | Velocity (u/1k) | Dir Cosine | Path Len | Displ. Init | Finite | Size (MB) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 4784 | 7 | 0.00 | 0.00 | --- | --- | 0.00 | 0.00 | ❌ | 42056.2 |
 
