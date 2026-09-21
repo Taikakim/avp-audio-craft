@@ -189,7 +189,13 @@ lines at 55% height. Click locates the playhead; middle-drag zooms (vertical) an
 - Clicking the header makes the lane active (switches LANE CHAIN).
 - Canvas: waveform ink in lane colour (overlapping ink lightness × 0.75), bar/beat grid,
   downbeat markers `oklch(78% 0.08 250)` interpolating to `oklch(85% 0.17 95)` for downbeats
-  coinciding with another lane's within one 32nd note at mean project tempo, red clip marks.
+  coinciding with another lane's, red clip marks. **The coincidence rule, exactly:** the window
+  is **one 32nd note at mean project tempo**, `w = (60 / bpm) / 8` seconds, and the
+  interpolation across it is `t = max(0, 1 - dt / w) ** 0.7`, `dt` = distance to the nearest
+  other lane's downbeat. The window is the spec's (the handoff drawing's `_dbColor` uses a
+  quarter-beat — twice as wide, and it lights markers that are audibly not together); the `0.7`
+  ramp is the drawing's, kept because a linear ramp makes a near-miss almost invisible.
+  Interpolate per channel in OKLCH, not sRGB.
 - Clip boxes over the canvas: score label (chroma match vs target, §5.4), LOOP toggle, BPM
   label; staleness badge from the existing app (`stale` amber) at the right edge.
 - Overlap regions: purple-labelled boxes where two clips in a lane overlap (`_overlaps`,
@@ -510,6 +516,10 @@ interface RenderSettings {
   schedule: ScheduleSpec;
   scale_phi: number;                  // default 0
   sampler_type: string | null;        // null = objective default
+  duration_sec: number;               // §4.5 LENGTH, ≤ 184; wire name on /generate and
+                                      // /schedule is `duration`. Ignored on an A2A target,
+                                      // where the clip supplies the length. Default 47.556
+                                      // (T=512 exactly).
 }
 
 interface LatchSlot { head: string; kind: string; value: number; weight: number; start_pct: number; end_pct: number }
@@ -849,6 +859,11 @@ lanes: [{index, name, muted, solo, gain, chain: LaneChain}], clips: [Clip], over
 {[key]: OverlapParams}, mix, master, defaults: RenderSettings, backbone, ckpt_path,
 renders: [{job_id, forge_job_id, file, label, kind: "gen"|"a2a"|"inpaint"|"mix", dur_sec,
 source_clip_id | null, created}], mixdown: <index into renders> | null, preview: <index> | null, ui: {bottomTab, modules, sideOpen, terminal}}`.
+**Not serialised:** a clip's `previewAudio` (the stretched-preview render it is currently
+playing) is in-memory only. It is a cache of §7.3's analyze → stretch step, re-derived on load,
+and persisting it would point a reopened project at a render that may no longer exist. The v1→v2
+converter neither reads nor writes it.
+
 Version 1 files (the existing app) load through a converter: lanes `drums/bass/other/vocals` →
 `LANE 1..4`, `clip.render` → `RenderSettings` with defaults filled. Autosave to the current
 session name 2 s after the last change; SESSION select shows `unsaved` until named.

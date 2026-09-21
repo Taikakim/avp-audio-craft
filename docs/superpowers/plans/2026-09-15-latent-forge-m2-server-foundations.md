@@ -3194,6 +3194,15 @@ Expected: FAIL — module not found.
 
 Run with the dev server up: /home/kim/Projects/SAO/.venv/bin/python eval/forge/record_fixtures.py
 Every string is redacted: /home/kim -> /SERVER, /run/media/kim -> /SERVER/media.
+
+All 20 fixtures are REQUIRED. Four of them are recorded only if the live run got
+far enough -- analyze and stats need the crops root to list something, chroma and
+stretch need the generate job to come back with urls -- so a half-working run used
+to write 15 files and exit 0, and four client plans would be told their fixtures
+had landed when the ones covering analyze, stats, chroma and stretch had not. This
+is a GPU-gated task at the end of the milestone: a silent shortfall costs another
+GPU run to discover. main() therefore checks the set and exits non-zero, naming
+what is missing.
 """
 import json
 import re
@@ -3232,9 +3241,20 @@ def call(method, path, body=None, timeout=600):
         return e.code, json.loads(e.read() or b"null")
 
 
+EXPECTED = (
+    "info", "status_idle", "models_adapters", "slots", "schedule_model", "forge_backbone",
+    "forge_files_crops", "forge_files_renders", "forge_analyze_crop", "forge_stats_crops",
+    "forge_dataset_scalars", "forge_job_submit", "forge_job_running", "status_busy",
+    "forge_job_generate_done", "forge_chroma_render", "forge_stretch_render", "forge_log",
+    "forge_error_cap", "forge_audio_ref_example",
+)
+RECORDED = set()
+
+
 def save(name, status, body):
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
     (FIXTURE_DIR / f"{name}.json").write_text(json.dumps({"status": status, "body": redact(body)}, indent=1) + "\n")
+    RECORDED.add(name)
     print(f"  {name}: {status}")
 
 
@@ -3285,6 +3305,14 @@ def main():
     save("forge_log", *call("GET", "/forge/log?since=0"))
     save("forge_error_cap", *call("POST", "/forge/jobs", {"op": "generate", "payload": {"prompt": "x", "duration": 400}}))
     save("forge_audio_ref_example", 200, {"url": "/forge/audio?ref=" + q(json.dumps({"kind": "crop", "crop_id": "000000"}))})
+    missing = [n for n in EXPECTED if n not in RECORDED]
+    if missing:
+        print(f"\nINCOMPLETE: {len(RECORDED)}/{len(EXPECTED)} fixtures recorded.")
+        print("  missing: " + ", ".join(missing))
+        print("  analyze/stats need a non-empty crops root; chroma/stretch need the generate")
+        print("  job to return urls. Fix the cause and re-run -- do NOT ship a partial set.")
+        return 1
+    print(f"\nall {len(EXPECTED)} fixtures recorded")
     return 0
 
 
@@ -3312,7 +3340,7 @@ eval/forge/dev_server.sh start
 curl -s localhost:8056/info | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['model'], d['objective'])"
 $PY eval/forge/record_fixtures.py
 ```
-Expected: `medium-base rectified_flow`, then one line per fixture; `forge_job_generate_done` must show status 200 and `"state": "done"`; `forge_error_cap` status 400.
+Expected: `medium-base rectified_flow`, then one line per fixture, ending with `all 20 fixtures recorded` and exit 0. `forge_job_generate_done` must show status 200 and `"state": "done"`; `forge_error_cap` status 400. **If it prints `INCOMPLETE` and exits 1, stop** — the named fixtures were skipped because the crops root listed nothing or the generate job returned no urls, and the client plans depend on all of them.
 
 Backbone round trip (only if `medium` shows `cached: true` in `forge_backbone.json`):
 ```bash

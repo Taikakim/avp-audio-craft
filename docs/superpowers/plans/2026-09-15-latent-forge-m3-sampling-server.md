@@ -581,8 +581,28 @@ and after that `kw` add
                 kw["scale_phi"] = resolve_scale_phi(req)
 ```
 
-(j) `/schedule` route: at the top of the `try:` that parses steps/duration/sigma_max, the parsed values are needed before the model check. Restructure the function body to:
+(j) `/schedule` route: **replace the whole `async def schedule(...)` with this.** The shape
+branch has to run before the `MODEL is None` check (an array schedule needs no model, and the
+GUI charts it during a backbone rebuild), and `steps`/`duration`/`sigma_max` are parsed once at
+the top so both branches see the same values. Everything below the shape branch is the existing
+function unchanged except for the two added response keys.
+
 ```python
+@app.api_route("/schedule", methods=["GET", "POST"])
+async def schedule(request: Request):
+    """Real sigma schedule for the GUI chart — same build_schedule call the run
+    makes: dist_shift is length-dependent, seq_len = ceil(duration*SR/DS) exactly
+    as compute_effective_seq_len_from_conditioning derives it from seconds_total
+    (generate() sets use_effective_length_for_schedule=True).
+
+    POST JSON (the render_client contract): {"steps": int, "duration": float,
+    "dist_shift": float|null (null/absent = model default; float = constant-alpha
+    Flux shift, matching resolve_dist_shift on /generate), "sigma_max": float,
+    "schedule": ScheduleSpec|null, "sampler_type": str|null}. A schedule whose
+    shape is not "model" replaces dist_shift entirely and is computed here without
+    the model. GET keeps the same keys as query params, plus the legacy shift=0
+    flag (-> linear, no warp); GET never carries a schedule spec. For a2a previews
+    pass sigma_max=init_noise_level (schedule truncates there)."""
     if request.method == "POST":
         try:
             req = json.loads((await request.body()) or b"{}")
@@ -610,9 +630,42 @@ and after that `kw` add
         return JSONResponse({"error": str(e)}, status_code=400)
     m = MODEL
     if m is None:
-        return JSONResponse({"error": "model not loaded (rebuild in progress?)"}, status_code=503)
+        return JSONResponse({"error": "model not loaded (rebuild in progress?)"},
+                            status_code=503)
+    try:
+        if str(req.get("shift", "1")) in ("0", "false", "False"):  # legacy GET flag
+            ds_obj, ds_echo = None, "linear"
+        else:
+            ds_obj = resolve_dist_shift(req)
+            if ds_obj is None:
+                ds_echo = "model"
+                ds_obj = m.model.sampling_dist_shift
+            elif req.get("dist_shift") == "flux":
+                ds_echo = "flux"
+            else:
+                ds_echo = float(req["dist_shift"])
+    except (TypeError, ValueError) as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    latent_len = max(1, math.ceil(duration * SR / DS))
+    sched = build_schedule(steps=steps, sigma_max=sigma_max,
+                           dist_shift=ds_obj,
+                           fallback_seq_len=latent_len,
+                           include_endpoint=True, device="cpu")
+    if sched.dim() == 2:
+        sched = sched[0]
+    sigmas = [float(s) for s in sched]
+    return {"ok": True, "steps": steps, "duration": duration,
+            "sigma_max": sigma_max, "dist_shift": ds_echo,
+            "shape": "model", "latent_len": latent_len,
+            "sigmas": sigmas, "warnings": []}
 ```
-then keep the existing `try:` that resolves `ds_obj`/`ds_echo` (without re-parsing steps/duration/sigma_max), the `build_schedule` call, and add `"shape": "model", "warnings": []` to the returned dict.
+
+Two things to keep straight while transcribing. The original parsed `steps`/`duration`/`sigma_max`
+*after* the `MODEL is None` check, inside the same `try:` as the dist_shift resolution; here they
+move above it and the dist_shift resolution keeps its own `try:` so the legacy `float(req["dist_shift"])`
+path still answers 400 rather than 500. And the response gains exactly two keys — `shape` and
+`warnings` — on both branches, because `forgeApi.schedule` (M1 Task 5) declares them and the sigma
+graph reads `warnings` to mark a sampler/shape mismatch.
 
 - [ ] **Step 4: Run tests**
 

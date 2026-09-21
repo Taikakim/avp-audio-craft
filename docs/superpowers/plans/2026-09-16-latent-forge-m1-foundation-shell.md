@@ -35,12 +35,17 @@ text is the stale one. Nothing else in the milestone is ambiguous.
 | current screen | `view.screen: "workspace" \| "statistics"` — **not** `view.view` | T7 |
 | help mode flag | `view.helpOn: boolean` (toggle `view.toggleHelp()`) | T7 |
 | terminal mode | `view.terminal: "collapsed" \| "pane" \| "full"` — the middle mode is `"pane"`, matching the button's own copy | T7 |
-| bottom tab id type | `BottomTabId`, declared in `src/ui/shell/bottomTabs.ts` (T11) and **imported** by the view store, not redeclared | T11 declares, T7 imports |
+| bottom tab id type | `BottomTabId`, declared **once, in the view store** (T7) and re-exported by `src/ui/shell/bottomTabs.ts` (T11) for the tab table's convenience. T7 is built first, so declaring it there keeps each task's own vitest run green in task order | T7 declares, T11 re-exports |
 | module open state | owned by the view store (`view.isModuleOpen(id)` / `view.toggleModule(id)`); `ModuleShell` props are `{ id, title, lit, children }` and it reads the store itself | T9 builds, T12 uses |
+| module ids | **kebab-case, declared ONCE** in the view store: `"overlap" \| "files" \| "lane-chain" \| "advanced-sampling" \| "master-chain" \| "legacy-inspector" \| "legacy-server"`. This is both the `data-module-toggle` value and the vocabulary persisted into `ui.modules` (§9.2), so a DOM id that disagrees with the saved state cannot happen. T12 imports it and narrows to `SpecModuleId` (the five, no legacy) for `MODULE_ORDER` and `litModules` | T7 declares, T12 imports |
+| view-store setters | `setView(v: ViewName)` writes `view.screen`; `setActiveLane(n)` writes `view.activeLane`. The method keeps the name every task already calls; only the field is `screen` | T7 |
+| `RenderSettings.duration_sec` | §4.5 LENGTH lives in the per-target settings, not in the pane's own state, because §9.3 says a `render` preset recalls every txt2audio parameter. **Wire name is `duration`** — the existing server reads that on `/generate` and `/schedule` | T3/T4 declare, M4 edits, M9 sends |
+| `ForgeClip.downbeats_sec` | SOURCE seconds (unstretched, at `native_bpm`), as `/forge/analyze` returns them — **not** the stretched timeline domain `start_sec`/`offset_sec`/`dur_sec` live in. Scale by the clip's stretch factor before drawing or snapping | T3 |
+| `ForgeClip.previewAudio` | in-memory only: M5 adds it to the type, **but it is NOT serialised into the project JSON** and §9.2 does not change. It is a cache of the stretch preview, re-derived on load by §7.3's own analyze→stretch step; persisting it would point a reloaded project at a render that may be gone | M5 adds, M7's converter ignores |
 | active lane | `view.activeLane: 0 \| 1 \| 2 \| 3` | T7 |
 | selection | `view.selection: Target` (the union from T3) | T7 |
 | help tooltip component | `src/ui/shell/HelpTooltip.svelte`, **created by T14**; T9–T11 must not create it | T14 |
-| legacy components | `legacyInspector` and `legacyServer` stay mounted as right-pane modules through M1 (see the self-review); removed by M4 and M9 respectively | T15 |
+| legacy components | `legacy-inspector` and `legacy-server` stay mounted as right-pane modules through M1 (see the self-review); removed by M4 and M9 respectively | T15 |
 | viewport state | `pxPerSec` / `scrollSec` live in the **arrangement** store, not the view store (WINTERMUTE, 2026-09-16 — the view store is chrome only). T7's body still lists them; the arrangement store wins. §9.2 still serialises them under `view: {...}`, which is a storage shape, not an ownership claim | existing `store.svelte.ts`, M5 takes over |
 | pass σ max | **not** a `ScheduleSpec` field and never will be — it is the pass's own init noise level: 1.0 for a fresh generate, the target's NOISE on an A2A target (WINTERMUTE, 2026-09-16) | M4 binds it |
 | `Progress.stage_index` | **1-based, 0 = not started.** Only `commit` has stage labels; every other op emits `stage: ""` and `stage_count: 0`, steps only | T6 |
@@ -450,6 +455,16 @@ export interface RenderSettings {
   schedule: ScheduleSpec;
   scale_phi: number;
   sampler_type: string | null;               // null = objective default
+  /**
+   * §4.5 LENGTH, in seconds, <= 184. It belongs here and not in the tab's own
+   * state because §9.3 says a `render` preset recalls every txt2audio parameter,
+   * and the length a render was made at is one of them. On an A2A target the
+   * clip supplies the length and this field is ignored.
+   *
+   * WIRE NAME: the existing server reads `duration` on /generate and /schedule,
+   * so whoever builds a job payload sends `duration: settings.duration_sec`.
+   */
+  duration_sec: number;
 }
 
 export interface LatchSlot {
@@ -536,6 +551,14 @@ export interface ForgeClip {
   audio: AudioRef;
   native_bpm: number | null;
   detune_cents: number;
+  /**
+   * SOURCE seconds, i.e. the UNSTRETCHED audio at `native_bpm`, exactly as
+   * /forge/analyze returns them -- unlike `offset_sec`/`dur_sec`/`start_sec`,
+   * which are timeline seconds in the STRETCHED domain (spec §7.3). A consumer
+   * drawing or snapping to a downbeat must scale by the clip's own stretch
+   * factor first; they are stored unstretched so that changing the project BPM
+   * does not require re-analysing every clip.
+   */
   downbeats_sec: number[];
   render: RenderSettings;
   a2a: null | { on: boolean; noise: number; envelope: Envelope };
@@ -739,6 +762,7 @@ describe("BASE defaults are the server's validated defaults (spec §5.3)", () =>
     expect(BASE_DEFAULTS.steps).toBe(24);
     expect(BASE_DEFAULTS.cfg_scale).toBe(6.0);
     expect(BASE_DEFAULTS.sampler_type).toBe("euler");
+    expect(BASE_DEFAULTS.duration_sec).toBeCloseTo(47.556, 3);
     expect(BASE_DEFAULTS.schedule.shape).toBe("model");
     expect(BASE_DEFAULTS.cfg_interval_progress).toEqual([0, 1]);
   });
@@ -748,6 +772,7 @@ describe("POST defaults (spec §5.3)", () => {
   it("is 8 steps, pingpong, logsnr lam[-6.2, 2.0], rho 1, cfg disabled as 1.0", () => {
     expect(POST_DEFAULTS.steps).toBe(8);
     expect(POST_DEFAULTS.sampler_type).toBe("pingpong");
+    expect(POST_DEFAULTS.duration_sec).toBeCloseTo(47.556, 3);
     expect(POST_DEFAULTS.schedule.shape).toBe("logsnr");
     expect(POST_DEFAULTS.schedule.lam_min).toBe(-6.2);
     expect(POST_DEFAULTS.schedule.lam_max).toBe(2.0);
@@ -879,6 +904,7 @@ export const BASE_DEFAULTS: RenderSettings = {
   schedule: { ...SCHEDULE_DEFAULT },
   scale_phi: 0,
   sampler_type: "euler",
+  duration_sec: 47.556,   // T=512 exactly (MASTER: crop lengths are frame multiples)
 };
 
 /** spec §5.3 — POST = medium (rf_denoiser); guidance is distilled in, so CFG is sent as 1.0. */
@@ -893,6 +919,7 @@ export const POST_DEFAULTS: RenderSettings = {
   schedule: { ...SCHEDULE_DEFAULT, shape: "logsnr", rho: 1, lam_min: -6.2, lam_max: 2.0 },
   scale_phi: 0,
   sampler_type: "pingpong",
+  duration_sec: 47.556,
 };
 
 /** The session default before a backbone is known. BASE is the resident model (spec §2.2). */
@@ -1160,11 +1187,13 @@ function getJSON<T>(path: string): Promise<T> {
   return request<T>(path);
 }
 
-function sendJSON<T>(path: string, method: "POST" | "PUT" | "DELETE", payload?: unknown): Promise<T> {
+function sendJSON<T>(path: string, method: "POST" | "PUT" | "DELETE", payload?: unknown,
+                     signal?: AbortSignal): Promise<T> {
   return request<T>(path, {
     method,
     headers: { "Content-Type": "application/json" },
     body: payload === undefined ? undefined : JSON.stringify(payload),
+    signal,
   });
 }
 
@@ -1223,9 +1252,25 @@ export const forgeApi = {
   deletePreset: (level: string, name: string) => sendJSON<{ ok: true }>(`/forge/presets/${encodeURIComponent(level)}/${encodeURIComponent(name)}`, "DELETE"),
 
   // ------------------------------------------------------------ schedule
-  /** The sigma curve the graph draws. The canvas never computes sigma itself (spec §5.3). */
-  schedule: (body: { steps: number; sigma_max?: number; sampler_type?: string | null; schedule: ScheduleSpec }) =>
-    sendJSON<{ ok: true; sigmas: number[]; shape: string; warnings: string[] }>("/schedule", "POST", body),
+  /**
+   * The sigma curve the graph draws. The canvas never computes sigma itself (spec §5.3).
+   *
+   * `duration` is REQUIRED even though the route defaults it: the model shape's dist
+   * shift is length-dependent (`latent_len = ceil(duration*SR/DS)`), so omitting it
+   * silently charts the server's 47 s default instead of the pass being configured.
+   * `signal` exists because the pane debounces and a superseded request must be
+   * cancellable. The fields are the route's own, verbatim (M3 Task 2 edit (j)).
+   */
+  schedule: (
+    body: { steps: number; duration: number; sigma_max?: number;
+            sampler_type?: string | null; schedule: ScheduleSpec },
+    signal?: AbortSignal,
+  ) =>
+    sendJSON<{
+      ok: true; steps: number; duration: number; sigma_max: number;
+      dist_shift: number | string | null; shape: string; latent_len: number;
+      sigmas: number[]; warnings: string[];
+    }>("/schedule", "POST", body, signal),
 
   // ------------------------------------------------------------ jobs
   submitJob: (op: JobOp, payload: unknown) =>
@@ -2492,7 +2537,7 @@ omitted (spec §6.3: an unavailable root is listed, not an error):
       },
       "scale_phi": 0,
       "sampler_type": "euler",
-      "duration_sec": 45.0
+      "duration": 45.0
     },
     "state": "running",
     "position": null,
@@ -2540,7 +2585,7 @@ forge job id (spec §6.2):
       },
       "scale_phi": 0,
       "sampler_type": "euler",
-      "duration_sec": 45.0
+      "duration": 45.0
     },
     "state": "done",
     "position": null,
@@ -2631,11 +2676,11 @@ media query.
   `--neutral-lane`, `--btn-bg`, `--clip-bg`, `--clip-border`, `--ok`, `--ok-fg`, `--warn`,
   `--warn-fg`; and the same colour tokens redefined under `:root[data-theme="dark"]`.
 - Produces, from `latent-forge/src/lib/stores/view.svelte.ts`: types `Theme`, `ViewName`,
-  `BottomTab`, `ModuleId`, `TerminalMode`, `TerminalLine`, `UiState`, `StorageLike`; constants
-  `THEME_KEY`, `BOTTOM_TABS`, `MODULE_IDS`, `MIN_PX_PER_SEC`, `MAX_PX_PER_SEC`, `LOG_RING`;
-  class `ViewStore` with fields `theme`, `helpOn`, `view`, `bottomTab`, `openModules`, `sideOpen`,
+  `BottomTabId`, `ModuleId`, `TerminalMode`, `TerminalLine`, `UiState`, `StorageLike`; constants
+  `THEME_KEY`, `BOTTOM_TAB_IDS`, `MODULE_IDS`, `MIN_PX_PER_SEC`, `MAX_PX_PER_SEC`, `LOG_RING`;
+  class `ViewStore` with fields `theme`, `helpOn`, `screen`, `activeLane`, `bottomTab`, `openModules`, `sideOpen`,
   `terminal`, `pxPerSec`, `scrollSec`, `selection`, `logLines`, derived `selectionKey`, and methods
-  `setTheme`, `toggleTheme`, `toggleHelp`, `setView`, `setBottomTab`, `isModuleOpen`, `openModule`,
+  `setTheme`, `toggleTheme`, `toggleHelp`, `setView`, `setActiveLane`, `setBottomTab`, `isModuleOpen`, `openModule`,
   `closeModule`, `toggleModule`, `toggleSide`, `setTerminal`, `setPxPerSec`, `zoomBy`,
   `setScrollSec`, `select`, `clearSelection`, `appendLog`, `clearLog`, `snapshotUi`, `restoreUi`;
   and the singleton `view`.
@@ -2708,9 +2753,9 @@ describe("shell state", () => {
 
   it("switches between workspace and statistics", () => {
     const v = new ViewStore(fakeStorage());
-    expect(v.view).toBe("workspace");
+    expect(v.screen).toBe("workspace");
     v.setView("statistics");
-    expect(v.view).toBe("statistics");
+    expect(v.screen).toBe("statistics");
   });
 
   it("selects a bottom tab (spec §4.5)", () => {
@@ -2742,7 +2787,7 @@ describe("shell state", () => {
 
   it("has the three terminal modes", () => {
     const v = new ViewStore(fakeStorage());
-    expect(v.terminal).toBe("normal");
+    expect(v.terminal).toBe("pane");
     v.setTerminal("full");
     expect(v.terminal).toBe("full");
     v.setTerminal("collapsed");
@@ -2810,7 +2855,7 @@ describe("project ui slice (spec §9.2)", () => {
     v.restoreUi({ bottomTab: "nope", modules: ["files", "nope"], sideOpen: true, terminal: "nope" });
     expect(v.bottomTab).toBe("prompt");
     expect(v.openModules).toEqual(["files"]);
-    expect(v.terminal).toBe("normal");
+    expect(v.terminal).toBe("pane");
   });
 });
 
@@ -3023,9 +3068,11 @@ import type { Target } from "../forge/types";
 
 export type Theme = "light" | "dark";
 export type ViewName = "workspace" | "statistics";
-export type BottomTab = "chroma" | "prompt" | "mix" | "terminal";
-export type ModuleId = "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain";
-export type TerminalMode = "collapsed" | "normal" | "full";
+export type BottomTabId = "chroma" | "prompt" | "mix" | "terminal";
+export type ModuleId =
+  | "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"
+  | "legacy-inspector" | "legacy-server";
+export type TerminalMode = "collapsed" | "pane" | "full";
 
 export interface TerminalLine {
   seq: number;
@@ -3050,10 +3097,17 @@ export interface StorageLike {
 export const THEME_KEY = "latentforge.theme";
 
 /** spec §4.5 -- CHROMA · PROMPT + SIGMA · MIX + SIGNAL PATH · TERMINAL, in tab order. */
-export const BOTTOM_TABS: BottomTab[] = ["chroma", "prompt", "mix", "terminal"];
+export const BOTTOM_TAB_IDS: BottomTabId[] = ["chroma", "prompt", "mix", "terminal"];
 
-/** spec §4.6 -- the five right-pane modules, in pane order. */
-export const MODULE_IDS: ModuleId[] = ["overlap", "files", "lane-chain", "advanced-sampling", "master-chain"];
+/**
+ * Every id a stored project may legally carry in `ui.modules` (spec §9.2) --
+ * the five spec modules plus the two legacy ones T15 re-homes. Task 12's
+ * MODULE_ORDER is a different list: the five, in PANE order, for rendering.
+ */
+export const MODULE_IDS: ModuleId[] = [
+  "overlap", "files", "lane-chain", "advanced-sampling", "master-chain",
+  "legacy-inspector", "legacy-server",
+];
 
 export const MIN_PX_PER_SEC = 4;
 export const MAX_PX_PER_SEC = 400;
@@ -3077,11 +3131,14 @@ function browserStorage(): StorageLike | null {
 export class ViewStore {
   theme = $state<Theme>("light");
   helpOn = $state(false);
-  view = $state<ViewName>("workspace");
-  bottomTab = $state<BottomTab>("prompt");
+  /** The Normative-names table's `view.screen`. `setView()` is its setter. */
+  screen = $state<ViewName>("workspace");
+  /** Which lane the lane-scoped modules follow (spec §4.6). */
+  activeLane = $state<0 | 1 | 2 | 3>(0);
+  bottomTab = $state<BottomTabId>("prompt");
   openModules = $state<ModuleId[]>(["files", "lane-chain"]);
   sideOpen = $state(true);
-  terminal = $state<TerminalMode>("normal");
+  terminal = $state<TerminalMode>("pane");
   pxPerSec = $state(60);
   scrollSec = $state(0);
   selection = $state<Target>({ kind: "none" });
@@ -3131,10 +3188,14 @@ export class ViewStore {
   }
 
   setView(next: ViewName): void {
-    this.view = next;
+    this.screen = next;
   }
 
-  setBottomTab(next: BottomTab): void {
+  setActiveLane(next: 0 | 1 | 2 | 3): void {
+    this.activeLane = next;
+  }
+
+  setBottomTab(next: BottomTabId): void {
     this.bottomTab = next;
   }
 
@@ -3227,11 +3288,11 @@ export class ViewStore {
 
   /** A stored project can be older than the current tab/module vocabulary. */
   restoreUi(ui: UiState): void {
-    if ((BOTTOM_TABS as string[]).includes(ui.bottomTab)) this.bottomTab = ui.bottomTab as BottomTab;
+    if ((BOTTOM_TAB_IDS as string[]).includes(ui.bottomTab)) this.bottomTab = ui.bottomTab as BottomTabId;
     const modules = (ui.modules ?? []).filter((m): m is ModuleId => (MODULE_IDS as string[]).includes(m));
     this.openModules.splice(0, this.openModules.length, ...modules);
     this.sideOpen = Boolean(ui.sideOpen);
-    if (["collapsed", "normal", "full"].includes(ui.terminal)) this.terminal = ui.terminal as TerminalMode;
+    if (["collapsed", "pane", "full"].includes(ui.terminal)) this.terminal = ui.terminal as TerminalMode;
   }
 }
 
@@ -3720,13 +3781,14 @@ props-driven frame; Task 11 mounts it in the bottom pane and gives it a live log
   export type ForgeView = "workspace" | "statistics";
   export type BottomTabId = "chroma" | "prompt" | "mix" | "terminal";
   export type TerminalMode = "collapsed" | "pane" | "full";
-  export type ModuleId = "overlap" | "files" | "chain" | "advanced" | "master"
-                       | "legacyInspector" | "legacyServer";
+  export type ModuleId =
+    | "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"
+    | "legacy-inspector" | "legacy-server";
   export const viewStore: {
-    theme: "light" | "dark"; helpMode: boolean; view: ForgeView;
+    theme: "light" | "dark"; helpOn: boolean; screen: ForgeView; activeLane: 0 | 1 | 2 | 3;
     bottomTab: BottomTabId; sideOpen: boolean; terminal: TerminalMode;
     toggleTheme(): void; toggleHelp(): void;
-    setView(v: ForgeView): void; setBottomTab(t: BottomTabId): void;
+    setView(v: ForgeView): void; setActiveLane(n: 0 | 1 | 2 | 3): void; setBottomTab(t: BottomTabId): void;
     toggleSide(): void; setTerminal(m: TerminalMode): void;
     isModuleOpen(id: ModuleId): boolean; toggleModule(id: ModuleId): void;
   };
@@ -4464,8 +4526,8 @@ are **deleted**: `src/styles/tokens.css` owns the tokens (spec §9.1), and §9.1
 The existing components stay mounted so this commit loses no behaviour: `TransportBar`,
 `MasterStrip` and `Timeline` move into the scrolling centre, `CropLibrary` into the FILES
 module, and `Inspector` / `ServerPanel` into two clearly marked legacy modules at the foot of
-the right pane (M4 removes `legacyInspector` when PROMPT + SIGMA lands, M9 removes
-`legacyServer` when the render controls and TERMINAL replace it). `OVERLAP — INPAINT` is
+the right pane (M4 removes `legacy-inspector` when PROMPT + SIGMA lands, M9 removes
+`legacy-server` when the render controls and TERMINAL replace it). `OVERLAP — INPAINT` is
 rendered unconditionally here; M5 owns overlap selection and gates it then.
 
 `latent-forge/src/App.svelte` (complete file):
@@ -4501,7 +4563,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
   });
 
   function onRootMove(e: MouseEvent) {
-    if (!viewStore.helpMode) {
+    if (!viewStore.helpOn) {
       if (helpText !== null) helpText = null;
       return;
     }
@@ -4544,9 +4606,9 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
 
 <div class="forge-root" bind:this={rootEl} onmousemove={onRootMove}>
   <TopBar
-    view={viewStore.view}
+    view={viewStore.screen}
     onview={(v) => viewStore.setView(v)}
-    helpMode={viewStore.helpMode}
+    helpMode={viewStore.helpOn}
     onhelp={() => viewStore.toggleHelp()}
     theme={viewStore.theme}
     ontheme={() => viewStore.toggleTheme()}
@@ -4555,7 +4617,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
   <div class="main-row">
     <CentreColumn>
       {#snippet centre()}
-        {#if viewStore.view === "workspace"}
+        {#if viewStore.screen === "workspace"}
           <section class="centre-stack" data-region="workspace-centre">
             <TransportBar />
             <MasterStrip />
@@ -4568,7 +4630,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
       {/snippet}
 
       {#snippet bottom()}
-        <BottomPane visible={viewStore.view === "workspace"} />
+        <BottomPane visible={viewStore.screen === "workspace"} />
       {/snippet}
     </CentreColumn>
 
@@ -4622,16 +4684,16 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
 
       <ModuleShell
         label="INSPECTOR (legacy — M4 removes)"
-        open={viewStore.isModuleOpen("legacyInspector")}
-        ontoggle={() => viewStore.toggleModule("legacyInspector")}
+        open={viewStore.isModuleOpen("legacy-inspector")}
+        ontoggle={() => viewStore.toggleModule("legacy-inspector")}
       >
         <Inspector />
       </ModuleShell>
 
       <ModuleShell
         label="SERVER (legacy — M9 removes)"
-        open={viewStore.isModuleOpen("legacyServer")}
-        ontoggle={() => viewStore.toggleModule("legacyServer")}
+        open={viewStore.isModuleOpen("legacy-server")}
+        ontoggle={() => viewStore.toggleModule("legacy-server")}
       >
         <ServerPanel />
       </ModuleShell>
@@ -4648,7 +4710,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
     aria-hidden="true"
   ></canvas>
 
-  <HelpTooltip on={viewStore.helpMode} text={helpText} x={helpX} y={helpY} />
+  <HelpTooltip on={viewStore.helpOn} text={helpText} x={helpX} y={helpY} />
 </div>
 
 <style>
@@ -4751,8 +4813,8 @@ name held in `App.svelte` and nothing else.
   `ForgeApiError { status, message }` from the same module.
 - Consumes: `Progress` from `latent-forge/src/lib/forge/types.ts` (only its `steps_left_total`
   field, which M9 feeds to `mixdownLabel`).
-- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `viewStore.view`,
-  `viewStore.setView`, `viewStore.helpMode`, `viewStore.toggleHelp`, `viewStore.theme`,
+- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `viewStore.screen`,
+  `viewStore.setView`, `viewStore.helpOn`, `viewStore.toggleHelp`, `viewStore.theme`,
   `viewStore.toggleTheme` (surface repeated in full in Task 9).
 - Consumes: `TopBar.svelte` from Task 9 (props `view`, `onview`, `helpMode`, `onhelp`, `theme`,
   `ontheme`).
@@ -5455,9 +5517,9 @@ and replace the `<TopBar ... />` element with:
 
 ```svelte
   <TopBar
-    view={viewStore.view}
+    view={viewStore.screen}
     onview={(v) => viewStore.setView(v)}
-    helpMode={viewStore.helpMode}
+    helpMode={viewStore.helpOn}
     onhelp={() => viewStore.toggleHelp()}
     theme={viewStore.theme}
     ontheme={() => viewStore.toggleTheme()}
@@ -5539,10 +5601,10 @@ session makes no requests. The log store is where this milestone's `$state` prox
   `ForgeApiError { status, message }` from the same module.
 - Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `viewStore.bottomTab`,
   `viewStore.setBottomTab(t: BottomTabId)`, `viewStore.terminal`,
-  `viewStore.setTerminal(m: TerminalMode)`, `viewStore.view` (surface repeated in full in Task 9).
+  `viewStore.setTerminal(m: TerminalMode)`, `viewStore.screen` (surface repeated in full in Task 9).
 - Consumes: `BottomPane.svelte` and `Terminal.svelte` from Task 9 (`Terminal` props `mode`,
   `busy`, `lines`, `onmode`).
-- Produces: `type BottomTabId = "chroma" | "prompt" | "mix" | "terminal"`;
+- Produces: `BottomTabId` **re-exported** from the view store (Task 7 declares it);
   `BOTTOM_TABS: { id: BottomTabId; label: string }[]`; `bottomHint(tab: BottomTabId): string`;
   `type LogTone = "text" | "dim" | "accent" | "error"`;
   `interface LogLine { seq: number; text: string; tone: LogTone }`; `LOG_RING = 400`;
@@ -5740,8 +5802,12 @@ Expected: `Failed to resolve import "../bottomTabs"` and
 ```ts
 // Spec §4.5: the tab row and its right-aligned per-tab hint. The strings are the
 // spec's verbatim (v3 line 1996-1998 carries the same four).
-
-export type BottomTabId = "chroma" | "prompt" | "mix" | "terminal";
+//
+// BottomTabId is the view store's (Task 7) -- it is the type of `view.bottomTab`,
+// so the store cannot import it from here without a cycle. Re-exported so a tab
+// consumer has one import.
+import type { BottomTabId } from "../../lib/stores/view.svelte";
+export type { BottomTabId };
 
 export const BOTTOM_TABS: { id: BottomTabId; label: string }[] = [
   { id: "chroma", label: "CHROMA" },
@@ -6149,7 +6215,7 @@ In `latent-forge/src/App.svelte`, replace the `bottom` snippet with:
 ```svelte
       {#snippet bottom()}
         <BottomPane
-          visible={viewStore.view === "workspace"}
+          visible={viewStore.screen === "workspace"}
           tab={viewStore.bottomTab}
           ontab={(t) => viewStore.setBottomTab(t)}
           terminalMode={viewStore.terminal}
@@ -6227,8 +6293,9 @@ contents later and the implementing agent must not anticipate them:
 - Consumes `view` from `src/lib/stores/view.svelte.ts` (Task 6): `view.selection: Target`,
   `view.activeLane: 0 | 1 | 2 | 3`, `view.isModuleOpen(id: string): boolean`,
   `view.toggleModule(id: string): void`.
-- Produces: `MODULE_ORDER: ModuleId[]`, `type ModuleId`, `moduleTitle(id, activeLane) => string`,
-  `type ModuleStateSnapshot`, `litModules(s: ModuleStateSnapshot) => Record<ModuleId, boolean>`,
+- Produces: `MODULE_ORDER: SpecModuleId[]`, `type SpecModuleId` (`ModuleId` itself is imported
+  from the view store, never redeclared), `moduleTitle(id, activeLane) => string`,
+  `type ModuleStateSnapshot`, `litModules(s: ModuleStateSnapshot) => Record<SpecModuleId, boolean>`,
   `deepEqual(a: unknown, b: unknown) => boolean`, and the component `RightPaneModules`.
 
 - [ ] **Step 1: Write the failing test**
@@ -6256,17 +6323,17 @@ const EMPTY: ModuleStateSnapshot = {
 describe("module order and titles (spec §4.6)", () => {
   it("is the spec's five modules in the spec's order", () => {
     expect(MODULE_ORDER).toEqual([
-      "overlapInpaint", "files", "laneChain", "advancedSampling", "masterChain",
+      "overlap", "files", "lane-chain", "advanced-sampling", "master-chain",
     ]);
   });
 
   it("gives the lane chain a header that follows the active lane", () => {
-    expect(moduleTitle("laneChain", 0)).toBe("LANE 1 CHAIN");
-    expect(moduleTitle("laneChain", 2)).toBe("LANE 3 CHAIN");
+    expect(moduleTitle("lane-chain", 0)).toBe("LANE 1 CHAIN");
+    expect(moduleTitle("lane-chain", 2)).toBe("LANE 3 CHAIN");
     expect(moduleTitle("files", 2)).toBe("FILES");
-    expect(moduleTitle("overlapInpaint", 0)).toBe("OVERLAP — INPAINT");
-    expect(moduleTitle("advancedSampling", 3)).toBe("ADVANCED SAMPLING");
-    expect(moduleTitle("masterChain", 3)).toBe("MASTER CHAIN");
+    expect(moduleTitle("overlap", 0)).toBe("OVERLAP — INPAINT");
+    expect(moduleTitle("advanced-sampling", 3)).toBe("ADVANCED SAMPLING");
+    expect(moduleTitle("master-chain", 3)).toBe("MASTER CHAIN");
   });
 });
 
@@ -6284,55 +6351,55 @@ describe("deepEqual", () => {
 describe("litModules with nothing loaded (the M1 state)", () => {
   it("lights nothing", () => {
     expect(litModules(EMPTY)).toEqual({
-      overlapInpaint: false, files: false, laneChain: false,
-      advancedSampling: false, masterChain: false,
+      "overlap": false, files: false, "lane-chain": false,
+      "advanced-sampling": false, "master-chain": false,
     });
   });
 });
 
 describe("litModules lights a module exactly when its settings differ from the defaults", () => {
   it("leaves the lane chain dark at CHAIN_DEFAULTS and lights it on any change", () => {
-    expect(litModules({ ...EMPTY, chain: clone(CHAIN_DEFAULTS) }).laneChain).toBe(false);
+    expect(litModules({ ...EMPTY, chain: clone(CHAIN_DEFAULTS) })["lane-chain"]).toBe(false);
     const latched = clone(CHAIN_DEFAULTS);
     latched.latch_on = true;
-    expect(litModules({ ...EMPTY, chain: latched }).laneChain).toBe(true);
+    expect(litModules({ ...EMPTY, chain: latched })["lane-chain"]).toBe(true);
   });
 
   it("sees a change nested two levels down", () => {
     const chain = clone(CHAIN_DEFAULTS);
     chain.slots[0].weight = 2;
-    expect(litModules({ ...EMPTY, chain }).laneChain).toBe(true);
+    expect(litModules({ ...EMPTY, chain })["lane-chain"]).toBe(true);
   });
 
   it("leaves the master chain dark at MASTER_DEFAULT and lights it on a gain change", () => {
-    expect(litModules({ ...EMPTY, master: clone(MASTER_DEFAULT) }).masterChain).toBe(false);
-    expect(litModules({ ...EMPTY, master: { ...MASTER_DEFAULT, gain: 80 } }).masterChain).toBe(true);
+    expect(litModules({ ...EMPTY, master: clone(MASTER_DEFAULT) })["master-chain"]).toBe(false);
+    expect(litModules({ ...EMPTY, master: { ...MASTER_DEFAULT, gain: 80 } })["master-chain"]).toBe(true);
   });
 
   it("leaves the overlap dark at OVERLAP_DEFAULT and lights it on a steps change", () => {
-    expect(litModules({ ...EMPTY, overlap: clone(OVERLAP_DEFAULT) }).overlapInpaint).toBe(false);
+    expect(litModules({ ...EMPTY, overlap: clone(OVERLAP_DEFAULT) })["overlap"]).toBe(false);
     const over = clone(OVERLAP_DEFAULT);
     over.steps = 40;
-    expect(litModules({ ...EMPTY, overlap: over }).overlapInpaint).toBe(true);
+    expect(litModules({ ...EMPTY, overlap: over })["overlap"]).toBe(true);
   });
 
   it("compares ADVANCED SAMPLING on the schedule and the sampling fields only, never the prompt", () => {
     const withPrompt = clone(BASE_DEFAULTS);
     withPrompt.prompt = "dub techno, tape hiss";
     withPrompt.negative_prompt = "vocals";
-    expect(litModules({ ...EMPTY, sampling: withPrompt }).advancedSampling).toBe(false);
+    expect(litModules({ ...EMPTY, sampling: withPrompt })["advanced-sampling"]).toBe(false);
 
     const shaped = clone(BASE_DEFAULTS);
     shaped.schedule.shape = "logsnr";
-    expect(litModules({ ...EMPTY, sampling: shaped }).advancedSampling).toBe(true);
+    expect(litModules({ ...EMPTY, sampling: shaped })["advanced-sampling"]).toBe(true);
 
     const rescaled = clone(BASE_DEFAULTS);
     rescaled.scale_phi = 0.4;
-    expect(litModules({ ...EMPTY, sampling: rescaled }).advancedSampling).toBe(true);
+    expect(litModules({ ...EMPTY, sampling: rescaled })["advanced-sampling"]).toBe(true);
 
     const banded = clone(BASE_DEFAULTS);
     banded.cfg_interval_progress = [0.2, 1];
-    expect(litModules({ ...EMPTY, sampling: banded }).advancedSampling).toBe(true);
+    expect(litModules({ ...EMPTY, sampling: banded })["advanced-sampling"]).toBe(true);
   });
 
   it("never lights FILES — a root and a filter are navigation, not settings", () => {
@@ -6364,23 +6431,27 @@ Expected: `Failed to resolve import "../nonDefault"`.
 
 import { BASE_DEFAULTS, CHAIN_DEFAULTS, MASTER_DEFAULT, OVERLAP_DEFAULT } from "./defaults";
 import type { LaneChain, MasterChain, OverlapParams, RenderSettings } from "./types";
+// ModuleId is declared ONCE, by the view store (it is also the vocabulary
+// persisted into the project JSON's ui.modules). The two legacy ids T15
+// re-homes are not spec modules, so they never appear in MODULE_ORDER and
+// never get a lit dot.
+import type { ModuleId } from "../stores/view.svelte";
 
-export type ModuleId =
-  | "overlapInpaint" | "files" | "laneChain" | "advancedSampling" | "masterChain";
+export type SpecModuleId = Exclude<ModuleId, "legacy-inspector" | "legacy-server">;
 
 /** Spec §4.6, top to bottom. */
-export const MODULE_ORDER: ModuleId[] = [
-  "overlapInpaint", "files", "laneChain", "advancedSampling", "masterChain",
+export const MODULE_ORDER: SpecModuleId[] = [
+  "overlap", "files", "lane-chain", "advanced-sampling", "master-chain",
 ];
 
 /** The header text. LANE n CHAIN follows the active lane (spec §4.6.3). */
-export function moduleTitle(id: ModuleId, activeLane: 0 | 1 | 2 | 3): string {
+export function moduleTitle(id: SpecModuleId, activeLane: 0 | 1 | 2 | 3): string {
   switch (id) {
-    case "overlapInpaint": return "OVERLAP — INPAINT";
+    case "overlap": return "OVERLAP — INPAINT";
     case "files": return "FILES";
-    case "laneChain": return `LANE ${activeLane + 1} CHAIN`;
-    case "advancedSampling": return "ADVANCED SAMPLING";
-    case "masterChain": return "MASTER CHAIN";
+    case "lane-chain": return `LANE ${activeLane + 1} CHAIN`;
+    case "advanced-sampling": return "ADVANCED SAMPLING";
+    case "master-chain": return "MASTER CHAIN";
   }
 }
 
@@ -6431,14 +6502,14 @@ function samplingIsDefault(s: RenderSettings): boolean {
   );
 }
 
-export function litModules(s: ModuleStateSnapshot): Record<ModuleId, boolean> {
+export function litModules(s: ModuleStateSnapshot): Record<SpecModuleId, boolean> {
   return {
-    overlapInpaint: s.overlap !== null && !deepEqual(s.overlap, OVERLAP_DEFAULT),
+    "overlap": s.overlap !== null && !deepEqual(s.overlap, OVERLAP_DEFAULT),
     // A root and a filter string are navigation, not settings: FILES never lights.
     files: false,
-    laneChain: s.chain !== null && !deepEqual(s.chain, CHAIN_DEFAULTS),
-    advancedSampling: s.sampling !== null && !samplingIsDefault(s.sampling),
-    masterChain: s.master !== null && !deepEqual(s.master, MASTER_DEFAULT),
+    "lane-chain": s.chain !== null && !deepEqual(s.chain, CHAIN_DEFAULTS),
+    "advanced-sampling": s.sampling !== null && !samplingIsDefault(s.sampling),
+    "master-chain": s.master !== null && !deepEqual(s.master, MASTER_DEFAULT),
   };
 }
 ```
@@ -6589,20 +6660,20 @@ with the existing CropLibrary's content over `/forge/files`:
   // Module 1 exists only while an overlap is the render target (spec §4.6.1).
   const overlapSelected = $derived(view.selection.kind === "overlap");
   const present = $derived(
-    MODULE_ORDER.filter((id) => id !== "overlapInpaint" || overlapSelected),
+    MODULE_ORDER.filter((id) => id !== "overlap" || overlapSelected),
   );
 </script>
 
 <div class="modules">
   {#each present as id (id)}
     <ModuleShell {id} title={moduleTitle(id, view.activeLane)} lit={lit[id]}>
-      {#if id === "overlapInpaint"}
+      {#if id === "overlap"}
         <OverlapInpaint />
       {:else if id === "files"}
         <Files />
-      {:else if id === "laneChain"}
+      {:else if id === "lane-chain"}
         <LaneChain />
-      {:else if id === "advancedSampling"}
+      {:else if id === "advanced-sampling"}
         <AdvancedSampling />
       {:else}
         <MasterChain />
@@ -7346,11 +7417,19 @@ STATISTICS (spec §4.1, §4.4). Add the import and replace the column's body wit
 {:else}
   <!-- the scrolling workspace centre, already in this component -->
   <div class="scrolling-centre">
-    {@render workspace?.()}
+    {@render centre()}
   </div>
-  <BottomPane />
+  {@render bottom?.()}
 {/if}
 ```
+
+**The two snippet names are Task 9's `{ centre: Snippet; bottom?: Snippet }` and do not change
+here.** `CentreColumn` must NOT import `BottomPane` or construct one: `App.svelte` owns the
+`bottom` snippet and passes a fully-wired `<BottomPane visible tab ontab terminalMode
+onterminalmode />` (Task 11). Rendering a bare `<BottomPane />` here would drop that wiring —
+including the TERMINAL — and fail `svelte-check` on the required props. Not rendering `bottom`
+at all in the statistics branch is what hides the pane; Task 11's `visible` prop then never
+sees the statistics view and is belt-and-braces.
 
 - [ ] **Step 4: Run it, expect pass**
 
@@ -8251,8 +8330,8 @@ test("each bottom tab opens", async ({ page }) => {
 });
 
 test("each right-pane module opens, and OVERLAP is absent without an overlap selected", async ({ page }) => {
-  await expect(page.locator('[data-module="overlapInpaint"]')).toHaveCount(0);
-  for (const id of ["files", "laneChain", "advancedSampling", "masterChain"]) {
+  await expect(page.locator('[data-module="overlap"]')).toHaveCount(0);
+  for (const id of ["files", "lane-chain", "advanced-sampling", "master-chain"]) {
     const body = page.locator(`[data-module-body="${id}"]`);
     if (!(await body.isVisible())) await page.locator(`[data-module-toggle="${id}"]`).click();
     await expect(body).toBeVisible();
@@ -8949,7 +9028,7 @@ T9 provides the root-level overlay slot it mounts into), §9.7 error surfaces (M
 v1 `Inspector` and `ServerPanel` stay mounted as two clearly labelled `legacy*` modules at the foot
 of the right pane, so the app can still start a render at every commit of this milestone. They are
 frozen — no new work goes into them — and they are removed by the milestone that supersedes each:
-`legacyInspector` by M4, `legacyServer` by M9. Without this the app would be a shell over the mock
+`legacy-inspector` by M4, `legacy-server` by M9. Without this the app would be a shell over the mock
 server, unable to start a job, from here until M9.
 
 ## Open questions
