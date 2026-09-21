@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;}
+a{color:var(--turq-strong);text-decoration:none;}
+a:hover{color:var(--purple-strong);}
+input,select,textarea,button{font-family:inherit;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:oklch(80% 0.014 240);}
+</style>
+</helmet>
+<div ref="{{rootRef}}" onMouseMove="{{onRootMove}}" style="--bg:oklch(96% 0.006 240);--panel:oklch(93% 0.008 240);--panel2:oklch(90% 0.012 240);--border:oklch(80% 0.014 240);--text:oklch(27% 0.02 250);--text-dim:oklch(52% 0.016 250);--turq-strong:oklch(55% 0.11 195);--purple-strong:oklch(54% 0.10 300);--green-strong:oklch(56% 0.11 150);--red:oklch(55% 0.20 25);height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px;position:relative;">
+
+<div style="height:42px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);">
+  <div style="font-weight:700;letter-spacing:0.16em;font-size:12px;color:var(--turq-strong);flex-shrink:0;">SA3 STUDIO</div>
+  <select data-help="Session — clips rendered in one working session." value="{{session}}" onChange="{{setSession}}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;min-width:0;flex:1;max-width:170px;">
+    <option value="s1">session_2026-09-06_0912</option>
+    <option value="s2">session_2026-09-07_2140</option>
+    <option value="s3">session_2026-09-08_0815</option>
+  </select>
+  <select data-help="Clips rendered in this session." value="{{clip}}" onChange="{{setClip}}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;min-width:0;flex:1;max-width:150px;">
+    <option value="c1">clip_011 — 0:38</option>
+    <option value="c2">clip_012 — 1:02</option>
+    <option value="c3">clip_014 — 0:45</option>
+  </select>
+  <select data-help="Checkpoint used for generation, a2a and the encode/decode round trip." value="{{model}}" onChange="{{setModel}}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;min-width:0;flex:1;max-width:165px;">
+    <option value="base">stable-audio-3-base</option>
+    <option value="custom_v3">custom_v3 (LatCH medium)</option>
+    <option value="custom_v2">custom_v2</option>
+  </select>
+  <input data-help="Direct checkpoint folder — any path the loader can read." type="text" value="{{modelFolder}}" onChange="{{setModelFolder}}" style="flex:2;min-width:60px;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;" />
+  <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;border-left:1px solid var(--border);padding-left:8px;">
+    <span style="font-size:10px;color:var(--text-dim);">MASTER PRESET</span>
+    <select data-help="Master preset — stores every lane chain, the mix order and node values, the master chain, the sigma schedule and the prompt in one recall." value="{{presets.master}}" onChange="{{setPresetMaster}}" style="background:var(--panel2);border:1px solid var(--purple-strong);color:var(--text);font-size:10px;padding:3px 5px;max-width:140px;">
+      <sc-for list="{{masterPresetOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+    </select>
+    <button data-help="Save the whole state as a new master preset." style="background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:3px 6px;cursor:pointer;">SAVE</button>
+  </div>
+  <div style="display:flex;gap:3px;flex-shrink:0;">
+    <button onClick="{{setViewWorkspace}}" style="{{tabWorkspaceStyle}}">WORKSPACE</button>
+    <button onClick="{{setViewStats}}" style="{{tabStatsStyle}}">STATISTICS</button>
+    <button data-help="Help mode. While on, hovering a control shows what it does." onClick="{{toggleHelp}}" style="{{helpBtnStyle}}">HELP</button>
+  </div>
+</div>
+
+<div style="flex:1;display:flex;min-height:0;">
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+    <div style="flex:1;min-height:0;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:auto;">
+
+      <sc-if value="{{isWorkspace}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px;">
+            <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">MASTER — MIX RESULT</span>
+            <span style="font-size:10px;color:var(--purple-strong);">a2a noise envelope: drag a node, or drag a curve to bend it</span>
+            <span style="font-size:10px;color:var(--text-dim);margin-left:auto;">downbeats glow yellow within a 32nd of another lane's · <span style="color:var(--red);">red edge marks = clipped frames</span></span>
+          </div>
+          <div data-help="Master strip: the decoded mix result. The purple curve is the a2a noise-amount envelope over time." style="position:relative;width:100%;height:88px;">
+            <canvas ref="{{masterRef}}" width="1400" height="88" style="width:100%;height:88px;display:block;box-sizing:border-box;border:1px solid var(--border);"></canvas>
+            <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;">
+              <path d="{{env.pathD}}" stroke="var(--purple-strong)" stroke-width="2" fill="none" vector-effect="non-scaling-stroke" />
+              <sc-for list="{{env.segments}}" as="seg" hint-placeholder-count="3">
+                <path d="{{seg.d}}" stroke="transparent" stroke-width="16" onMouseDown="{{seg.onDown}}" style="cursor:ns-resize;" />
+              </sc-for>
+            </svg>
+            <sc-for list="{{env.points}}" as="pt" hint-placeholder-count="4">
+              <div onMouseDown="{{pt.onDown}}" style="{{pt.style}}"></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);">
+          <sc-for list="{{lanes}}" as="lane" hint-placeholder-count="4">
+            <div style="{{lane.rowStyle}}">
+              <div onClick="{{lane.onSelect}}" data-help="Lane header. Click to make this lane the active chain in the context pane. The colour is the lane's identity across the whole UI." style="{{lane.headStyle}}">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="{{lane.chipStyle}}"></span>
+                  <span style="font-size:11px;font-weight:600;">{{lane.name}}</span>
+                  <span style="{{lane.kindStyle}}">{{lane.kind}}</span>
+                </div>
+                <div draggable="false" onDragOver="{{allowDrop}}" onDrop="{{lane.onDrop}}" data-help="Drop an audio file or a latent here. Latents are decoded to audio for display; the chain re-encodes them before mixing." style="{{lane.slotStyle}}">{{lane.slotLabel}}</div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <span style="font-size:10px;color:var(--text-dim);">BPM</span>
+                  <input data-help="Detected BPM, editable. Correcting it moves the beat grid and the offbeats — the waveform is the material's own contour and does not change." type="number" step="0.1" value="{{lane.bpm}}" onChange="{{lane.onBpm}}" style="width:52px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 4px;" />
+                  <span style="font-size:10px;color:var(--text-dim);">det {{lane.bpmDet}}</span>
+                  <div style="display:flex;gap:3px;margin-left:auto;">
+                    <button data-help="PAD: scrubbing past the material leaves empty space. Material moved off screen stays in memory, and the padded part can be outpainted." onClick="{{lane.onPad}}" style="{{lane.padStyle}}">PAD</button>
+                    <button data-help="LOOP: scrubbing rotates the material endlessly — no empty space." onClick="{{lane.onLoop}}" style="{{lane.loopStyle}}">LOOP</button>
+                  </div>
+                </div>
+              </div>
+              <div style="flex:1;position:relative;min-width:0;">
+                <canvas ref="{{lane.ref}}" width="1200" height="52" onMouseDown="{{lane.onScrubDown}}" style="width:100%;height:52px;display:block;cursor:ew-resize;"></canvas>
+                <span style="{{lane.badgeStyle}}">{{lane.badge}}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <div style="flex:2;min-width:0;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);padding:8px 10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+              <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">MIX ORDER</span>
+              <select data-help="slerp is defined pairwise, so a 4-way mix runs as a tree of pairwise slerps. WEIGHTED 4-WAY mixes all four lanes at once but is lerp-only." value="{{mixOrder}}" onChange="{{setMixOrder}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 6px;">
+                <option value="tree">(1+2) + (3+4)</option>
+                <option value="cascade">((1+2)+3)+4</option>
+                <option value="quad">weighted 4-way (lerp only)</option>
+              </select>
+              <div style="flex:1;"></div>
+              <button data-help="Least-work match: the loaded lanes meet at their mean BPM, so each is stretched as little as possible, then each is rotated by the shortest path to the common downbeat phase." onClick="{{autoMatch}}" style="background:var(--panel2);border:1px solid var(--turq-strong);color:var(--turq-strong);font-size:10px;padding:5px 9px;cursor:pointer;">AUTO-MATCH — LEAST WORK</button>
+              <span data-help="The BPM every loaded lane would meet at." style="font-size:10px;color:var(--text-dim);">→ {{meetBpmLabel}}</span>
+            </div>
+
+            <sc-if value="{{isQuad}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;gap:12px;">
+              <sc-for list="{{quadWeights}}" as="q" hint-placeholder-count="4">
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="{{q.chipStyle}}"></span><span style="font-size:10px;">{{q.label}}</span><span style="font-size:10px;color:var(--text-dim);margin-left:auto;">{{q.valueLabel}}</span></div>
+                  <input type="range" min="0" max="1" step="0.01" value="{{q.value}}" onChange="{{q.onChange}}" style="width:100%;accent-color:var(--purple-strong);" />
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{isTreeOrCascade}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex;align-items:stretch;gap:8px;">
+              <sc-for list="{{mixNodes}}" as="node" hint-placeholder-count="3">
+                <div style="{{node.boxStyle}}">
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">
+                    <sc-for list="{{node.chips}}" as="c" hint-placeholder-count="2">
+                      <span style="{{c.style}}"></span>
+                    </sc-for>
+                    <span style="font-size:10px;font-weight:600;margin-left:2px;">{{node.label}}</span>
+                  </div>
+                  <div style="display:flex;gap:3px;margin-bottom:5px;">
+                    <button onClick="{{node.onLerp}}" style="{{node.lerpStyle}}">LERP</button>
+                    <button onClick="{{node.onSlerp}}" style="{{node.slerpStyle}}">SLERP</button>
+                  </div>
+                  <input data-help="Interpolation position between this node's two inputs." type="range" min="0" max="1" step="0.01" value="{{node.t}}" onChange="{{node.onT}}" style="width:100%;accent-color:var(--purple-strong);" />
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);padding:8px 10px;">
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+              <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">SIGNAL PATH</span>
+              <span style="font-size:10px;color:var(--text-dim);">live</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <sc-for list="{{pipeline}}" as="st" hint-placeholder-count="6">
+                <div data-help="Live signal path: stages reflect what the lanes and chains currently do. Dimmed stages are skipped for this run." style="{{st.style}}">
+                  <span style="color:var(--text-dim);font-size:10px;width:12px;">{{st.n}}</span>
+                  <span style="font-size:10px;flex:1;">{{st.label}}</span>
+                  <span style="{{st.noteStyle}}">{{st.note}}</span>
+                </div>
+              </sc-for>
+            </div>
+            <button style="width:100%;margin-top:8px;background:var(--turq-strong);border:1px solid var(--turq-strong);color:white;font-size:11px;font-weight:600;padding:7px;cursor:pointer;letter-spacing:0.04em;">▸ RUN MIX</button>
+          </div>
+        </div>
+
+      </div>
+      </sc-if>
+
+      <sc-if value="{{isStats}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">ANALYSE</span>
+          <sc-for list="{{statLaneButtons}}" as="b" hint-placeholder-count="5">
+            <button onClick="{{b.onClick}}" style="{{b.style}}">{{b.label}}</button>
+          </sc-for>
+          <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">features read from the sidecars (.TIMESERIES.npz, .json)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">256×256 DIM CROSS-CORRELATION</div>
+            <canvas ref="{{xcorrRef}}" width="300" height="300" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">PCA — PC1 vs PC2 (frame pool)</div>
+            <canvas ref="{{pcaRef}}" width="300" height="300" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:10px;color:var(--text-dim);">DIM ↔ FEATURE CORRELATION</span>
+              <select value="{{statFeature}}" onChange="{{setStatFeature}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="spectral_centroid">spectral_centroid</option>
+                <option value="rms">rms</option>
+                <option value="onset_strength">onset_strength</option>
+              </select>
+            </div>
+            <canvas ref="{{featRef}}" width="300" height="180" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <select value="{{statAxisX}}" onChange="{{setStatAxisX}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="bpm">bpm</option><option value="lufs">lufs</option><option value="rel_pos">rel_pos</option>
+              </select>
+              <span style="font-size:10px;color:var(--text-dim);">vs</span>
+              <select value="{{statAxisY}}" onChange="{{setStatAxisY}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="lufs">lufs</option><option value="bpm">bpm</option><option value="rel_pos">rel_pos</option>
+              </select>
+            </div>
+            <canvas ref="{{scatterRef}}" width="300" height="180" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+
+    <sc-if value="{{isWorkspace}}" hint-placeholder-val="{{true}}">
+    <div style="flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);padding:8px 10px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1 1 200px;min-width:150px;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+          <span style="color:var(--text-dim);font-size:10px;letter-spacing:0.06em;">PROMPT</span>
+          <select data-help="Prompt preset — recalls prompt text only, nothing else in the chain." value="{{presets.prompt}}" onChange="{{setPresetPrompt}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 4px;max-width:120px;">
+            <sc-for list="{{promptPresetOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+          </select>
+          <button style="background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 5px;cursor:pointer;">SAVE</button>
+        </div>
+        <textarea data-help="Conditioning prompt for generation and for a2a. Empty means unconditional." value="{{prompt}}" onChange="{{setPrompt}}" placeholder="describe the sound…" style="resize:none;height:56px;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:6px;font-size:11px;"></textarea>
+      </div>
+      <div style="flex:2 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px;">
+        <div><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">STEPS</div><input data-help="Sampler steps." type="number" value="{{steps}}" onChange="{{setSteps}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /></div>
+        <div><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">CFG</div><input data-help="Guidance scale." type="number" step="0.1" value="{{cfg}}" onChange="{{setCfg}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /></div>
+        <div><div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;"><span style="color:var(--text-dim);font-size:10px;">CFG LO</span><button data-help="Switch the CFG interval between a 0–1 fraction of the schedule and a step number. The interval is stored as a fraction, so changing STEPS rescales the step numbers with it." onClick="{{toggleCfgUnit}}" style="{{cfgUnitBtnStyle}}">{{cfgUnitLabel}}</button></div><input data-help="Start of the interval where guidance is applied — the turquoise band on the schedule graph." type="number" step="{{cfgStep}}" value="{{cfgLoField}}" onChange="{{setCfgLo}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /></div>
+        <div><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">CFG HI</div><input data-help="End of the guidance interval — the right edge of the turquoise band." type="number" step="{{cfgStep}}" value="{{cfgHiField}}" onChange="{{setCfgHi}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /></div>
+        <div><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">LENGTH s</div><input data-help="Output length in seconds." type="number" value="{{duration}}" onChange="{{setDuration}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /></div>
+        <div><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">SEED</div><div style="display:flex;gap:3px;"><input type="number" value="{{seed}}" onChange="{{setSeed}}" style="width:100%;min-width:0;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;" /><button data-help="New random seed." onClick="{{randomizeSeed}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:0 6px;cursor:pointer;">RND</button></div></div>
+      </div>
+      <div style="flex:0 0 250px;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px;">
+          <span style="color:var(--text-dim);font-size:10px;letter-spacing:0.06em;">SIGMA SCHEDULE</span>
+          <span style="font-size:10px;color:var(--turq-strong);">{{sigmaGraphLabel}}</span>
+        </div>
+        <canvas data-help="Sigma over the sampler steps for the current schedule. The turquoise band is the interval where CFG is applied, bounded by CFG LO and CFG HI." ref="{{sigmaRef}}" width="250" height="56" style="width:250px;height:56px;display:block;border:1px solid var(--border);"></canvas>
+      </div>
+    </div>
+    </sc-if>
+
+    <div style="{{terminalStyle}}">
+      <div style="height:24px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--panel2);border-top:1px solid var(--border);">
+        <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">TERMINAL</span>
+        <span style="{{terminalDotStyle}}"></span>
+        <div style="flex:1;"></div>
+        <button onClick="{{terminalCollapse}}" style="{{termBtn1}}">COLLAPSE</button>
+        <button onClick="{{terminalNormal}}" style="{{termBtn2}}">PANE</button>
+        <button onClick="{{terminalFull}}" style="{{termBtn3}}">FULL SCREEN</button>
+      </div>
+      <sc-if value="{{terminalOpen}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1;overflow:auto;padding:6px 10px;background:oklch(94% 0.006 240);">
+        <sc-for list="{{logLines}}" as="l" hint-placeholder-count="6">
+          <div style="{{l.style}}">{{l.text}}</div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+
+  </div>
+
+  <div style="{{sidePaneStyle}}">
+    <button onClick="{{toggleSide}}" data-help="Collapse or expand the context pane. Menus keep a lit marker when something inside them is active." style="width:100%;text-align:left;background:var(--panel2);border:none;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:10px;letter-spacing:0.08em;padding:7px 9px;cursor:pointer;">{{sideToggleLabel}}</button>
+    <sc-if value="{{sideOpen}}" hint-placeholder-val="{{true}}">
+    <div style="overflow-y:auto;flex:1;">
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuFiles}}" style="{{menuFilesHeadStyle}}"><span>{{menuFilesArrow}} FILES</span><span style="{{menuFilesDot}}"></span></button>
+        <sc-if value="{{menus.files}}" hint-placeholder-val="{{true}}">
+        <div style="padding:2px 0 8px;">
+          <div style="padding:4px 10px;font-size:10px;color:var(--text-dim);">~/PROJECTS/LATENTS_SA3/AUDIO</div>
+          <sc-for list="{{files}}" as="f" hint-placeholder-count="8">
+            <div draggable="true" onDragStart="{{f.onDragStart}}" data-help="Drag onto any lane. Audio and latents are both accepted." style="padding:4px 10px;cursor:grab;font-size:11px;border-left:2px solid transparent;" style-hover="background:var(--panel2);border-left:2px solid var(--turq-strong);">{{f.name}}</div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuGen}}" style="{{menuGenHeadStyle}}"><span>{{menuGenArrow}} GENERATION</span><span style="{{menuGenDot}}"></span></button>
+        <sc-if value="{{menus.gen}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <button data-help="Renders with the prompt and settings from the pane at the bottom of the screen." style="background:var(--turq-strong);border:1px solid var(--turq-strong);color:white;font-size:11px;font-weight:600;padding:6px;cursor:pointer;">▸ RENDER SOUND</button>
+          <div style="font-size:10px;color:var(--text-dim);">RENDERED THIS SESSION — drag to a lane</div>
+          <sc-for list="{{renders}}" as="r" hint-placeholder-count="4">
+            <div draggable="true" onDragStart="{{r.onDragStart}}" style="display:flex;gap:6px;padding:4px 6px;background:var(--panel2);border:1px solid var(--border);cursor:grab;font-size:10px;">
+              <span style="flex:1;">{{r.name}}</span><span style="color:var(--text-dim);">{{r.len}}</span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuChain}}" style="{{menuChainHeadStyle}}"><span>{{menuChainArrow}} {{activeLaneLabel}} CHAIN</span><span style="{{menuChainDot}}"></span></button>
+        <sc-if value="{{menus.chain}}" hint-placeholder-val="{{true}}">
+        <div style="{{chainBodyStyle}}">
+          <div style="font-size:10px;color:var(--text-dim);">latent chain for the selected lane — click another lane header to switch</div>
+
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleLatch}}" style="{{latchBtnStyle}}">{{latchLabel}}</button>
+            <span style="font-size:10px;">LATCH</span>
+            <select data-help="Module preset — recalls just this module's settings." value="{{presets.latch}}" onChange="{{setPresetLatch}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{latchPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <select data-help="LatCH control head applied to this lane's latent. Heads are auto-detected from the weights directory." value="{{chain.latchHead}}" onChange="{{setLatchHead}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <option value="adaln_zero_medium">adaln_zero — medium</option>
+            <option value="standardized_d4">standardized — depth 4</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">GAIN</span><input data-help="SA3-medium heads want roughly 48–96. Judge by spread, not correlation." type="range" min="0" max="120" value="{{chain.latchGain}}" onChange="{{setLatchGain}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{chain.latchGain}}</span></div>
+
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleFilm}}" style="{{filmBtnStyle}}">{{filmLabel}}</button>
+            <span style="font-size:10px;">FILM</span>
+            <select value="{{presets.film}}" onChange="{{setPresetFilm}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{filmPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SCALE</span><input type="range" min="0" max="2" step="0.05" value="{{chain.filmScale}}" onChange="{{setFilmScale}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{chain.filmScaleLabel}}</span></div>
+
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleLora}}" style="{{loraBtnStyle}}">{{loraLabel}}</button>
+            <span style="font-size:10px;">LORA / DORA</span>
+            <select value="{{presets.lora}}" onChange="{{setPresetLora}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{loraPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <select data-help="Adapters found in the LoRA/DoRA search paths. Type is detected from the checkpoint." value="{{chain.lora}}" onChange="{{setLora}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <sc-for list="{{loraOptions}}" as="o" hint-placeholder-count="5">
+              <option value="{{o.value}}">{{o.label}}</option>
+            </sc-for>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SCALE</span><input type="range" min="0" max="1" step="0.01" value="{{chain.loraScale}}" onChange="{{setLoraScale}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{chain.loraScaleLabel}}</span></div>
+
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleBungee}}" style="{{bungeeBtnStyle}}">{{bungeeLabel}}</button>
+            <span style="font-size:10px;">BUNGEE STRETCH / PITCH</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SEMITONES</span><input data-help="Pitch shift applied during the Bungee stage, before re-encoding." type="number" step="0.5" value="{{chain.semis}}" onChange="{{setSemis}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;" /></div>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuMaster}}" style="{{menuMasterHeadStyle}}"><span>{{menuMasterArrow}} MASTER CHAIN</span><span style="{{menuMasterDot}}"></span></button>
+        <sc-if value="{{menus.master}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:10px;color:var(--text-dim);">applied to the mixed latent, after the lane chains</div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleMasterLatch}}" style="{{masterLatchBtnStyle}}">{{masterLatchLabel}}</button>
+            <span style="font-size:10px;">LATCH HEAD</span>
+            <select value="{{presets.masterChain}}" onChange="{{setPresetMasterChain}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{masterChainPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <select value="{{master.head}}" onChange="{{setMasterHead}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <option value="adaln_zero_medium">adaln_zero — medium</option>
+            <option value="standardized_d4">standardized — depth 4</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">GAIN</span><input type="range" min="0" max="120" value="{{master.gain}}" onChange="{{setMasterGain}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{master.gain}}</span></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleMasterNorm}}" style="{{masterNormBtnStyle}}">{{masterNormLabel}}</button>
+            <span style="font-size:10px;">LATENT NORMALISE</span>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuSigma}}" style="{{menuSigmaHeadStyle}}"><span>{{menuSigmaArrow}} SIGMA SCHEDULE</span><span style="{{menuSigmaDot}}"></span></button>
+        <sc-if value="{{menus.sigma}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="font-size:10px;color:var(--text-dim);">PRESET</span>
+            <select value="{{presets.sigma}}" onChange="{{setPresetSigma}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:110px;">
+              <sc-for list="{{sigmaPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <select value="{{sigma.type}}" onChange="{{setSigmaType}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <option value="karras">karras</option><option value="exponential">exponential</option><option value="linear">linear</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SIGMA MIN</span><input type="number" step="0.01" value="{{sigma.min}}" onChange="{{setSigmaMin}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;" /></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SIGMA MAX</span><input type="number" step="0.1" value="{{sigma.max}}" onChange="{{setSigmaMax}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;" /></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">RHO</span><input type="number" step="0.1" value="{{sigma.rho}}" onChange="{{setSigmaRho}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;" /></div>
+        </div>
+        </sc-if>
+      </div>
+
+    </div>
+    </sc-if>
+  </div>
+
+</div>
+
+<sc-if value="{{helpVisible}}" hint-placeholder-val="{{false}}">
+<div style="{{helpBoxStyle}}">{{helpText}}</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;workspace&quot;,&quot;stats&quot;],&quot;default&quot;:&quot;workspace&quot;,&quot;tsType&quot;:&quot;'workspace' | 'stats'&quot;}}">
+const LANE_META = [
+  { name: 'LANE 1', color: 'oklch(54% 0.10 300)', soft: 'oklch(54% 0.10 300 / 0.10)' },
+  { name: 'LANE 2', color: 'oklch(56% 0.11 150)', soft: 'oklch(56% 0.11 150 / 0.10)' },
+  { name: 'LANE 3', color: 'oklch(55% 0.11 195)', soft: 'oklch(55% 0.11 195 / 0.10)' },
+  { name: 'LANE 4', color: 'oklch(50% 0.02 250)', soft: 'oklch(50% 0.02 250 / 0.10)' },
+];
+const ONSET = 'oklch(78% 0.08 250)';
+const OFFBEAT = 'oklch(48% 0.13 258)';
+const CLIP = 'oklch(55% 0.20 25)';
+const MAT_N = 1600;    // contour samples per material
+const MAT_PX = 3000;   // material length in canvas px
+
+class Component extends DCLogic {
+  state = {
+    view: null, helpMode: false, helpText: '', helpX: 0, helpY: 0,
+    session: 's2', clip: 'c3', model: 'custom_v3',
+    modelFolder: '/home/kim/Projects/SAO/stable-audio-3/checkpoints/custom_v3',
+    sideOpen: true, terminal: 'collapsed',
+    menus: { files: true, gen: false, chain: true, master: false, sigma: false },
+    activeLane: 0,
+    lanes: [
+      { file: 'pad_drone_Cmin.wav', kind: 'AUDIO', bpm: 124.0, bpmDet: 124.0, shift: 0, scrubMode: 'loop', hasSidecar: true,
+        chain: { latchOn: true, latchHead: 'adaln_zero_medium', latchGain: 64, filmOn: false, filmScale: 1, loraOn: true, lora: 'vinyl_warmth', loraScale: 0.8, bungeeOn: true, semis: 0 } },
+      { file: '000412.npy', kind: 'LATENT', bpm: 128.0, bpmDet: 127.6, shift: 0, scrubMode: 'pad', hasSidecar: true,
+        chain: { latchOn: false, latchHead: 'adaln_zero_medium', latchGain: 48, filmOn: true, filmScale: 1.2, loraOn: false, lora: 'none', loraScale: 0.5, bungeeOn: true, semis: -2 } },
+      { file: null, kind: '—', bpm: 120.0, bpmDet: 0, shift: 0, scrubMode: 'loop', hasSidecar: false,
+        chain: { latchOn: false, latchHead: 'standardized_d4', latchGain: 56, filmOn: false, filmScale: 1, loraOn: false, lora: 'none', loraScale: 0.5, bungeeOn: false, semis: 0 } },
+      { file: null, kind: '—', bpm: 120.0, bpmDet: 0, shift: 0, scrubMode: 'loop', hasSidecar: false,
+        chain: { latchOn: false, latchHead: 'adaln_zero_medium', latchGain: 48, filmOn: false, filmScale: 1, loraOn: false, lora: 'none', loraScale: 0.5, bungeeOn: false, semis: 0 } },
+    ],
+    scrub: null,
+    mixOrder: 'tree', matchTarget: '0',
+    nodes: { M1: { interp: 'slerp', t: 0.5 }, M2: { interp: 'lerp', t: 0.5 }, MX: { interp: 'slerp', t: 0.5 } },
+    quadWeights: [0.4, 0.3, 0.2, 0.1],
+    master: { latchOn: false, head: 'adaln_zero_medium', gain: 64, normOn: true },
+    sigma: { type: 'karras', min: 0.03, max: 14.6, rho: 7.0 },
+    env: { points: [0.5, 0.75, 0.3, 0.6], curves: [0, 0, 0] },
+    prompt: '', steps: 40, cfg: 4.2, cfgLo: 0.1, cfgHi: 0.85, cfgUnit: 'steps', seed: 30219, duration: 45,
+    presets: { master: 'club_mix_v1', prompt: 'ambient_pad_v2', latch: 'medium_default', film: 'flat', lora: 'warm_light', masterChain: 'glue_v1', sigma: 'karras_std' },
+    statLane: 0, statFeature: 'spectral_centroid', statAxisX: 'bpm', statAxisY: 'lufs',
+  };
+
+  _drag = null;
+  _contours = {};
+  rootRef = React.createRef();
+  masterRef = React.createRef();
+  sigmaRef = React.createRef();
+  laneRefs = [React.createRef(), React.createRef(), React.createRef(), React.createRef()];
+  xcorrRef = React.createRef(); pcaRef = React.createRef(); featRef = React.createRef(); scatterRef = React.createRef();
+
+  _rng(seed) { let s = Math.abs(Math.floor(seed)) % 4294967296 || 7; return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; }
+  _hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; } return h; }
+
+  // Amplitude contour of the material: computed once per file, gaussian-smoothed,
+  // cached — so BPM edits and scrubbing never alter the drawn shape.
+  _contour(file) {
+    if (this._contours[file]) return this._contours[file];
+    const seed = this._hash(file), rng = this._rng(seed), raw = new Float32Array(MAT_N);
+    for (let i = 0; i < MAT_N; i++) {
+      const slow = 0.42 + 0.34 * Math.sin(i / MAT_N * Math.PI * 5 + (seed % 100) / 16);
+      raw[i] = Math.min(1, slow * (0.5 + rng() * 0.7) * (rng() < 0.02 ? 1.5 : 1));
+    }
+    const R = 8, w = [];
+    for (let k = -R; k <= R; k++) w.push(Math.exp(-(k * k) / (2 * 3.4 * 3.4)));
+    const wsum = w.reduce((a, b) => a + b, 0), out = new Float32Array(MAT_N);
+    for (let i = 0; i < MAT_N; i++) {
+      let acc = 0;
+      for (let k = -R; k <= R; k++) acc += raw[Math.min(MAT_N - 1, Math.max(0, i + k))] * w[k + R];
+      out[i] = acc / wsum;
+    }
+    let peak = 0;
+    for (let i = 0; i < MAT_N; i++) if (out[i] > peak) peak = out[i];
+    for (let i = 0; i < MAT_N; i++) out[i] = out[i] / peak;
+    // a few genuinely clipped runs, so the clip markers have something to mark
+    const nRuns = 2 + Math.floor(rng() * 3);
+    for (let r = 0; r < nRuns; r++) {
+      const start = Math.floor(rng() * (MAT_N - 30)), len = 4 + Math.floor(rng() * 10);
+      for (let i = start; i < start + len; i++) out[i] = 1;
+    }
+    this._contours[file] = out;
+    return out;
+  }
+
+  // Downbeat positions in canvas px for one lane (bar = 4 beats at the corrected BPM,
+  // with the material's own phase, moved by the scrub shift).
+  _downbeats(lane, w) {
+    const pxPerBeat = w / (16 * (lane.bpm || 120) / 60), bar = pxPerBeat * 4;
+    const phase = ((this._hash(lane.file) % 997) / 997) * bar;
+    const out = [];
+    let x = (((phase - lane.shift) % bar) + bar) % bar;
+    for (; x <= w; x += bar) out.push(x);
+    return out;
+  }
+
+  // Light blue → yellow as two lanes' downbeats converge, so they glow into place.
+  _downbeatColor(t, alpha) {
+    const L = 78 + (85 - 78) * t, C = 0.08 + (0.17 - 0.08) * t, H = 250 + (100 - 250) * t;
+    return `oklch(${L.toFixed(1)}% ${C.toFixed(3)} ${H.toFixed(0)} / ${alpha})`;
+  }
+
+  _onsetPositions(file) {
+    const key = file + '::onsets';
+    if (this._contours[key]) return this._contours[key];
+    const rng = this._rng(this._hash(file) + 91), arr = [];
+    for (let x = 0; x < MAT_PX; x += 20 + rng() * 44) arr.push(x);
+    this._contours[key] = arr;
+    return arr;
+  }
+
+  // Filled waveform body: sample(x) returns amplitude in px, or -1 where there is no material.
+  _fillWave(ctx, w, h, color, sample) {
+    const mid = h / 2;
+    ctx.fillStyle = color;
+    let run = [];
+    const flush = () => {
+      if (run.length < 2) { run = []; return; }
+      ctx.beginPath();
+      ctx.moveTo(run[0][0], mid - run[0][1]);
+      for (let i = 1; i < run.length; i++) ctx.lineTo(run[i][0], mid - run[i][1]);
+      for (let i = run.length - 1; i >= 0; i--) ctx.lineTo(run[i][0], mid + run[i][1]);
+      ctx.closePath(); ctx.fill();
+      run = [];
+    };
+    for (let x = 0; x <= w; x++) {
+      const a = sample(x);
+      if (a < 0) flush(); else run.push([x, Math.max(0.6, a)]);
+    }
+    flush();
+  }
+
+  _drawMaster(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height, mid = h / 2, clipAt = mid * 0.94;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const c = this._contour('__master__');
+    const amps = new Float32Array(w + 1);
+    for (let x = 0; x <= w; x++) amps[x] = c[Math.min(MAT_N - 1, Math.floor(x / w * MAT_N))] * mid;
+    this._fillWave(ctx, w, h, 'oklch(55% 0.11 195)', x => amps[x]);
+    ctx.fillStyle = CLIP;
+    for (let x = 0; x <= w; x++) if (amps[x] >= clipAt) { ctx.fillRect(x, 0, 1, 2); ctx.fillRect(x, h - 2, 1, 2); }
+  }
+
+  _drawLane(canvas, i) {
+    if (!canvas) return;
+    const lane = this.state.lanes[i];
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height, mid = h / 2, clipAt = mid * 0.92;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    if (!lane.file) {
+      ctx.fillStyle = 'oklch(66% 0.012 240)'; ctx.font = "11px 'Space Grotesk', monospace";
+      ctx.fillText('empty lane — drop a file on the slot at the left', 12, mid + 4);
+      return;
+    }
+    const contour = this._contour(lane.file), loop = lane.scrubMode === 'loop', shift = lane.shift;
+    // BPM correction time-stretches the material: native tempo → target tempo
+    const native = lane.bpmDet || lane.bpm;
+    const matPx = MAT_PX * (native / (lane.bpm || native));
+    const map = (x) => { let m = x + shift; if (loop) { m = ((m % matPx) + matPx) % matPx; } return (m < 0 || m >= matPx) ? -1 : m; };
+    const amps = new Float32Array(w + 1);
+    for (let x = 0; x <= w; x++) {
+      const m = map(x);
+      amps[x] = m < 0 ? -1 : contour[Math.min(MAT_N - 1, Math.floor(m / matPx * MAT_N))] * mid * 0.94;
+    }
+    this._fillWave(ctx, w, h, LANE_META[i].color, x => amps[x]);
+    // beat grid + offbeats follow the corrected BPM
+    const pxPerBeat = w / (16 * lane.bpm / 60), gridOff = -((shift / pxPerBeat) % 1) * pxPerBeat;
+    ctx.strokeStyle = 'oklch(84% 0.012 240)'; ctx.lineWidth = 1;
+    for (let x = gridOff; x <= w; x += pxPerBeat) {
+      const px = Math.round(x) + 0.5;
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+    }
+
+    // downbeats only — they glow yellow as they line up with another lane's downbeat
+    const dbs = this._dbs || [], mine = dbs[i] || [], others = dbs.filter((_, j) => j !== i && (dbs[j] || []).length);
+    const win = this._alignWindow || 8;
+    mine.forEach(x => {
+      let best = Infinity;
+      others.forEach(list => list.forEach(ox => { const d = Math.abs(ox - x); if (d < best) best = d; }));
+      // ramp over a quarter-beat, saturating to full yellow inside a 64th
+      const t = best === Infinity ? 0 : Math.pow(Math.max(0, 1 - best / win), 0.7);
+      if (t > 0.02) {
+        ctx.strokeStyle = this._downbeatColor(t, 0.5 * t);
+        ctx.lineWidth = 14;
+        ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+        ctx.strokeStyle = this._downbeatColor(t, 0.75 * t);
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+      }
+      ctx.strokeStyle = t > 0.02 ? this._downbeatColor(t, 1) : ONSET;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+    });
+    ctx.fillStyle = CLIP;
+    for (let x = 0; x <= w; x++) if (amps[x] >= clipAt) { ctx.fillRect(x, 0, 1, 2); ctx.fillRect(x, h - 2, 1, 2); }
+    const sc = this.state.scrub;
+    if (sc && sc.lane === i) {
+      ctx.strokeStyle = 'oklch(54% 0.10 300)'; ctx.lineWidth = 2;
+      const px = Math.round(sc.x * w) + 0.5;
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+    }
+  }
+
+  _sigmaAt(u) {
+    const { type, min, max, rho } = this.state.sigma;
+    if (type === 'linear') return max + (min - max) * u;
+    if (type === 'exponential') return Math.exp(Math.log(max) + (Math.log(min) - Math.log(max)) * u);
+    const a = Math.pow(max, 1 / rho), b = Math.pow(min, 1 / rho);
+    return Math.pow(a + (b - a) * u, rho);
+  }
+
+  _drawSigma(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height, pad = 4;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const lo = Math.max(0, Math.min(1, this.state.cfgLo)), hi = Math.max(lo, Math.min(1, this.state.cfgHi));
+    ctx.fillStyle = 'oklch(55% 0.11 195 / 0.16)';
+    ctx.fillRect(lo * w, 0, (hi - lo) * w, h);
+    ctx.strokeStyle = 'oklch(55% 0.11 195)'; ctx.lineWidth = 1;
+    [lo, hi].forEach(u => { const x = Math.round(u * w) + 0.5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); });
+    const maxS = this._sigmaAt(0);
+    ctx.strokeStyle = 'oklch(27% 0.02 250)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let px = 0; px <= w; px++) {
+      const s = this._sigmaAt(px / w), y = h - pad - (s / maxS) * (h - pad * 2);
+      px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = 'oklch(52% 0.016 250)'; ctx.font = "9px 'Space Grotesk', monospace";
+    ctx.fillText('step 0', 3, h - 3);
+    ctx.fillText(`${this.state.steps}`, w - 16, h - 3);
+  }
+
+  _statSeed() { return this.state.statLane === 4 ? 5 : 17 + this.state.statLane * 29; }
+  _drawXcorr(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, n = 32, cell = w / n, rng = this._rng(this._statSeed());
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const v = x === y ? 1 : (rng() * 2 - 1) * (1 - Math.abs(x - y) / n);
+      ctx.fillStyle = v > 0 ? `oklch(${72 - v * 15}% ${0.10 + v * 0.03} 195)` : `oklch(${72 + v * 15}% ${0.09 - v * 0.03} 300)`;
+      ctx.fillRect(x * cell, y * cell, cell, cell);
+    }
+  }
+  _drawPCA(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, rng = this._rng(this._statSeed() + 3);
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const col = this.state.statLane === 4 ? 'oklch(55% 0.11 195)' : LANE_META[this.state.statLane].color;
+    ctx.globalAlpha = 0.62; ctx.fillStyle = col;
+    for (let i = 0; i < 200; i++) {
+      const a = rng() * Math.PI * 2, r = rng() * rng() * (w * 0.42);
+      ctx.beginPath(); ctx.arc(w / 2 + Math.cos(a) * r, h / 2 + Math.sin(a) * r * 0.75, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  _drawFeat(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, mid = h / 2, rng = this._rng(this._statSeed() + 7);
+    ctx.clearRect(0, 0, w, h);
+    const n = 48, bw = w / n;
+    for (let i = 0; i < n; i++) {
+      const v = (rng() * 2 - 1) * 0.8;
+      ctx.fillStyle = v >= 0 ? 'oklch(55% 0.11 195)' : 'oklch(54% 0.10 300)';
+      ctx.fillRect(i * bw, mid - Math.max(0, v) * mid, bw - 1, Math.abs(v) * mid);
+    }
+    ctx.strokeStyle = 'oklch(80% 0.014 240)'; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+  }
+  _drawScatter(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, rng = this._rng(this._statSeed() + 11);
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'oklch(55% 0.11 195 / 0.75)';
+    for (let i = 0; i < 90; i++) { ctx.beginPath(); ctx.arc(20 + rng() * (w - 40), h - 20 - rng() * (h - 40), 3, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  componentDidMount() { this._redraw(); }
+  componentDidUpdate() { this._redraw(); }
+  _redraw() {
+    this._drawMaster(this.masterRef.current);
+    // downbeats for every loaded lane first, so each lane can test coincidence against the rest
+    this._dbs = this.laneRefs.map((r, i) => (r.current && this.state.lanes[i].file) ? this._downbeats(this.state.lanes[i], r.current.width) : []);
+    const loaded = this.state.lanes.filter(l => l.file);
+    const w = (this.laneRefs.find(r => r.current) || {}).current;
+    if (loaded.length && w) {
+      const avgBpm = loaded.reduce((a, l) => a + (l.bpm || 120), 0) / loaded.length;
+      // glow ramps over a quarter-beat at the average BPM of the loaded clips
+      this._alignWindow = (w.width / (16 * avgBpm / 60)) / 4;
+    }
+    this.laneRefs.forEach((r, i) => this._drawLane(r.current, i));
+    this._drawSigma(this.sigmaRef.current);
+    this._drawXcorr(this.xcorrRef.current);
+    this._drawPCA(this.pcaRef.current);
+    this._drawFeat(this.featRef.current);
+    this._drawScatter(this.scatterRef.current);
+  }
+
+  _onMove = (e) => {
+    const d = this._drag; if (!d) return;
+    if (d.mode === 'point') {
+      const rect = d.el.getBoundingClientRect();
+      const value = Math.min(1, Math.max(0, (90 - (e.clientY - rect.top) / rect.height * 100) / 80));
+      this.setState(s => { const env = { ...s.env, points: [...s.env.points] }; env.points[d.idx] = value; return { env }; });
+    } else if (d.mode === 'segment') {
+      const c = Math.min(1, Math.max(-1, d.startCurve + (d.startY - e.clientY) / 60));
+      this.setState(s => { const env = { ...s.env, curves: [...s.env.curves] }; env.curves[d.idx] = c; return { env }; });
+    } else if (d.mode === 'scrub') {
+      const rect = d.el.getBoundingClientRect(), scale = d.el.width / rect.width;
+      const shift = d.startShift - (e.clientX - d.startX) * scale;
+      this.setState(s => ({
+        lanes: s.lanes.map((l, j) => j === d.lane ? { ...l, shift } : l),
+        scrub: { lane: d.lane, x: (d.startX - rect.left) / rect.width },
+      }));
+    }
+  };
+  _onUp = () => {
+    if (this._drag && this._drag.mode === 'scrub') this.setState({ scrub: null });
+    this._drag = null;
+    window.removeEventListener('mousemove', this._onMove); window.removeEventListener('mouseup', this._onUp);
+  };
+  _arm() { window.addEventListener('mousemove', this._onMove); window.addEventListener('mouseup', this._onUp); }
+
+  _envelope() {
+    const st = this.state.env, xs = [0, 133.33, 266.67, 400], y = v => 90 - v * 80;
+    const points = st.points.map((v, i) => ({
+      style: `position:absolute;left:clamp(0px, calc(${(i / 3) * 100}% - 4.5px), calc(100% - 9px));top:${y(v)}%;width:9px;height:9px;margin:-4.5px 0 0 0;border-radius:50%;background:var(--purple-strong);border:1.5px solid white;box-sizing:border-box;cursor:ns-resize;`,
+      onDown: (e) => { e.stopPropagation(); this._drag = { mode: 'point', idx: i, el: e.currentTarget.parentElement }; this._arm(); },
+    }));
+    let d = `M ${xs[0]},${y(st.points[0])} `; const segments = [];
+    for (let i = 0; i < 3; i++) {
+      const x1 = xs[i], y1 = y(st.points[i]), x2 = xs[i + 1], y2 = y(st.points[i + 1]);
+      d += `Q ${(x1 + x2) / 2},${(y1 + y2) / 2 - st.curves[i] * 60} ${x2},${y2} `;
+      segments.push({ d: `M ${x1},${y1} L ${x2},${y2}`, onDown: (e) => { e.stopPropagation(); this._drag = { mode: 'segment', idx: i, startY: e.clientY, startCurve: this.state.env.curves[i] }; this._arm(); } });
+    }
+    return { pathD: d, points, segments };
+  }
+
+  _setLane(i, patch) { this.setState(s => ({ lanes: s.lanes.map((l, j) => j === i ? { ...l, ...patch } : l) })); }
+  _setChain(patch) { this.setState(s => { const i = s.activeLane; return { lanes: s.lanes.map((l, j) => j === i ? { ...l, chain: { ...l.chain, ...patch } } : l) }; }); }
+
+  onRootMove = (e) => {
+    if (!this.state.helpMode) { if (this.state.helpText) this.setState({ helpText: '' }); return; }
+    const el = e.target.closest && e.target.closest('[data-help]');
+    this.setState({ helpText: el ? el.getAttribute('data-help') : '', helpX: e.clientX, helpY: e.clientY });
+  };
+
+  renderVals() {
+    const S = this.state;
+    const view = S.view || this.props.startView || 'workspace';
+    const chip = (i, size = 9) => `display:inline-block;width:${size}px;height:${size}px;background:${LANE_META[i].color};flex-shrink:0;`;
+    const tab = (on) => `background:${on ? 'var(--panel2)' : 'transparent'};border:1px solid ${on ? 'var(--turq-strong)' : 'transparent'};color:${on ? 'var(--turq-strong)' : 'var(--text-dim)'};font-size:10px;letter-spacing:0.04em;padding:6px 10px;cursor:pointer;`;
+    const toggle = (on, color) => `background:${on ? color : 'var(--panel2)'};border:1px solid ${on ? color : 'var(--border)'};color:${on ? 'white' : 'var(--text)'};font-size:10px;padding:3px 9px;cursor:pointer;`;
+    const menuHead = (accent) => `width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:transparent;border:none;border-left:3px solid ${accent};color:var(--text);font-size:11px;font-weight:600;padding:8px 10px;cursor:pointer;`;
+    const dot = (on, color) => `width:6px;height:6px;background:${on ? color : 'transparent'};border:1px solid ${on ? color : 'var(--border)'};flex-shrink:0;`;
+    const opts = (arr) => arr.map(v => ({ value: v.replace(/\W+/g, '_').toLowerCase(), label: v }));
+
+    const active = S.lanes[S.activeLane], chain = active.chain, accent = LANE_META[S.activeLane].color;
+    const chainActive = chain.latchOn || chain.filmOn || chain.loraOn || chain.bungeeOn;
+
+    const lanes = S.lanes.map((l, i) => ({
+      name: LANE_META[i].name, kind: l.kind, bpm: l.bpm, bpmDet: l.bpmDet ? l.bpmDet.toFixed(1) : '—',
+      ref: this.laneRefs[i], slotLabel: l.file || 'drop file', chipStyle: chip(i, 10),
+      kindStyle: `font-size:10px;color:${LANE_META[i].color};margin-left:auto;`,
+      rowStyle: `display:flex;align-items:stretch;border-bottom:${i < 3 ? '1px solid var(--border)' : 'none'};background:${S.activeLane === i ? LANE_META[i].soft : 'transparent'};`,
+      headStyle: `width:250px;flex-shrink:0;padding:6px 8px;border-right:1px solid var(--border);border-left:4px solid ${LANE_META[i].color};display:flex;flex-direction:column;gap:4px;cursor:pointer;`,
+      slotStyle: `height:24px;background:var(--panel2);border:1px dashed ${S.activeLane === i ? LANE_META[i].color : 'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:10px;color:${l.file ? 'var(--text)' : 'var(--text-dim)'};overflow:hidden;`,
+      padStyle: toggle(l.scrubMode === 'pad', LANE_META[i].color),
+      loopStyle: toggle(l.scrubMode === 'loop', LANE_META[i].color),
+      badge: S.scrub && S.scrub.lane === i ? (l.scrubMode === 'loop' ? 'SCRUB ▸ LOOPING' : 'SCRUB ▸ PADDING') : '',
+      badgeStyle: S.scrub && S.scrub.lane === i
+        ? 'position:absolute;top:3px;right:6px;font-size:10px;letter-spacing:0.04em;color:white;background:var(--purple-strong);padding:1px 5px;'
+        : 'display:none;',
+      onSelect: () => this.setState(s => ({ activeLane: i, menus: { ...s.menus, chain: true } })),
+      onDrop: (e) => { e.preventDefault(); const n = e.dataTransfer.getData('text/plain'); if (n) this._setLane(i, { file: n, kind: n.endsWith('.npy') ? 'LATENT' : 'AUDIO', hasSidecar: true, bpmDet: 118 + i * 3.4, shift: 0 }); },
+      onBpm: (e) => this._setLane(i, { bpm: parseFloat(e.target.value) || 0 }),
+      onPad: (e) => { e.stopPropagation(); this._setLane(i, { scrubMode: 'pad' }); },
+      onLoop: (e) => { e.stopPropagation(); this._setLane(i, { scrubMode: 'loop' }); },
+      onScrubDown: (e) => {
+        e.preventDefault();
+        const el = e.currentTarget, rect = el.getBoundingClientRect();
+        this._drag = { mode: 'scrub', lane: i, el, startX: e.clientX, startShift: S.lanes[i].shift };
+        this._arm();
+        this.setState({ scrub: { lane: i, x: (e.clientX - rect.left) / rect.width } });
+      },
+    }));
+
+    const nodeDefs = S.mixOrder === 'cascade'
+      ? [{ k: 'M1', label: '1 + 2', chips: [0, 1] }, { k: 'M2', label: 'M1 + 3', chips: [2] }, { k: 'MX', label: 'M2 + 4', chips: [3] }]
+      : [{ k: 'M1', label: '1 + 2', chips: [0, 1] }, { k: 'M2', label: '3 + 4', chips: [2, 3] }, { k: 'MX', label: 'M1 + M2', chips: [] }];
+    const mixNodes = nodeDefs.map(d => ({
+      label: d.label, t: S.nodes[d.k].t, chips: d.chips.map(i => ({ style: chip(i, 8) })),
+      boxStyle: `flex:1;border:1px solid ${d.k === 'MX' ? 'var(--turq-strong)' : 'var(--border)'};background:var(--panel2);padding:7px 8px;`,
+      lerpStyle: toggle(S.nodes[d.k].interp === 'lerp', 'var(--purple-strong)'),
+      slerpStyle: toggle(S.nodes[d.k].interp === 'slerp', 'var(--purple-strong)'),
+      onLerp: () => this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], interp: 'lerp' } } })),
+      onSlerp: () => this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], interp: 'slerp' } } })),
+      onT: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], t: v } } })); },
+    }));
+
+    // dynamic signal path — derived from the current lane/chain/mix state
+    const loaded = S.lanes.filter(l => l.file);
+    const latents = loaded.filter(l => l.kind === 'LATENT');
+    const stretchers = loaded.filter(l => l.chain.bungeeOn && (Math.abs(l.bpm - l.bpmDet) > 0.05 || l.chain.semis !== 0));
+    const modLanes = loaded.filter(l => l.chain.latchOn || l.chain.filmOn || l.chain.loraOn);
+    const laneNames = (arr) => arr.map(l => 'L' + (S.lanes.indexOf(l) + 1)).join(' ');
+    const stages = [
+      { label: 'DECODE latent → audio', on: latents.length > 0, note: latents.length ? laneNames(latents) : 'no latents' },
+      { label: 'BUNGEE stretch / pitch', on: stretchers.length > 0, note: stretchers.length ? laneNames(stretchers) : 'nothing to correct' },
+      { label: 'ENCODE audio → latent', on: loaded.length > 0, note: loaded.length ? laneNames(loaded) : 'idle' },
+      { label: 'LANE CHAINS', on: modLanes.length > 0, note: modLanes.length ? laneNames(modLanes) : 'all bypassed' },
+      { label: S.mixOrder === 'quad' ? 'MIX weighted 4-way' : 'MIX pairwise', on: loaded.length > 1, note: S.mixOrder === 'quad' ? 'lerp' : nodeDefs.map(d => S.nodes[d.k].interp[0]).join('·') },
+      { label: 'MASTER CHAIN', on: S.master.latchOn || S.master.normOn, note: [S.master.latchOn ? 'latch' : null, S.master.normOn ? 'norm' : null].filter(Boolean).join(' + ') || 'bypassed' },
+      { label: 'DECODE latent → audio', on: true, note: `${S.duration}s` },
+    ];
+    const pipeline = stages.map((st, i) => ({
+      n: String(i + 1), label: st.label, note: st.note,
+      style: `display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--panel2);border-left:3px solid ${st.on ? (i === 4 ? 'var(--turq-strong)' : 'var(--green-strong)') : 'var(--border)'};opacity:${st.on ? 1 : 0.45};`,
+      noteStyle: `font-size:10px;color:${st.on ? 'var(--text-dim)' : 'var(--text-dim)'};`,
+    }));
+
+    const files = ['kick_break_140bpm.wav', 'pad_drone_Cmin.wav', 'vocal_chop_verse.wav', 'field_rain_loop.wav', 'bass_sub_hit.wav', 'arp_pluck_16th.wav', '000412.npy', '000871.npy']
+      .map(name => ({ name, onDragStart: (e) => { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'copy'; } }));
+    const renders = [
+      { name: 'clip_014_take3.wav', len: '0:45' }, { name: 'clip_014_take2.wav', len: '0:45' },
+      { name: 'clip_012_a2a.wav', len: '1:02' }, { name: 'clip_011_out.wav', len: '0:38' },
+    ].map(r => ({ ...r, onDragStart: (e) => { e.dataTransfer.setData('text/plain', r.name); e.dataTransfer.effectAllowed = 'copy'; } }));
+
+    return {
+      rootRef: this.rootRef, onRootMove: this.onRootMove,
+      isWorkspace: view === 'workspace', isStats: view === 'stats',
+      tabWorkspaceStyle: tab(view === 'workspace'), tabStatsStyle: tab(view === 'stats'),
+      setViewWorkspace: () => this.setState({ view: 'workspace' }), setViewStats: () => this.setState({ view: 'stats' }),
+      helpBtnStyle: `background:${S.helpMode ? 'var(--purple-strong)' : 'transparent'};border:1px solid ${S.helpMode ? 'var(--purple-strong)' : 'var(--border)'};color:${S.helpMode ? 'white' : 'var(--text-dim)'};font-size:10px;padding:6px 10px;cursor:pointer;`,
+      toggleHelp: () => this.setState(s => ({ helpMode: !s.helpMode, helpText: '' })),
+      helpVisible: !!(S.helpMode && S.helpText), helpText: S.helpText,
+      helpBoxStyle: `position:fixed;left:${S.helpX + 14}px;top:${S.helpY + 16}px;max-width:280px;background:oklch(24% 0.02 250);color:oklch(96% 0.006 240);font-size:11px;line-height:1.45;padding:7px 9px;z-index:100;pointer-events:none;`,
+
+      session: S.session, clip: S.clip, model: S.model, modelFolder: S.modelFolder,
+      setSession: (e) => this.setState({ session: e.target.value }),
+      setClip: (e) => this.setState({ clip: e.target.value }),
+      setModel: (e) => this.setState({ model: e.target.value }),
+      setModelFolder: (e) => this.setState({ modelFolder: e.target.value }),
+
+      masterRef: this.masterRef, sigmaRef: this.sigmaRef, env: this._envelope(), lanes,
+      allowDrop: (e) => e.preventDefault(),
+      sigmaGraphLabel: S.cfgUnit === 'steps'
+        ? `${S.sigma.type} · cfg step ${Math.round(S.cfgLo * S.steps)}–${Math.round(S.cfgHi * S.steps)} / ${S.steps}`
+        : `${S.sigma.type} · cfg ${S.cfgLo.toFixed(2)}–${S.cfgHi.toFixed(2)}`,
+
+      mixOrder: S.mixOrder, isQuad: S.mixOrder === 'quad', isTreeOrCascade: S.mixOrder !== 'quad',
+      setMixOrder: (e) => this.setState({ mixOrder: e.target.value }), mixNodes,
+      quadWeights: S.quadWeights.map((v, i) => ({
+        value: v, valueLabel: v.toFixed(2), label: LANE_META[i].name, chipStyle: chip(i, 8),
+        onChange: (e) => { const nv = parseFloat(e.target.value); this.setState(s => { const q = [...s.quadWeights]; q[i] = nv; return { quadWeights: q }; }); },
+      })),
+      meetBpmLabel: loaded.length ? (loaded.reduce((a, l) => a + l.bpm, 0) / loaded.length).toFixed(1) + ' bpm' : '—',
+      autoMatch: () => {
+        // Least-work match: meet at the mean BPM of the loaded lanes (each moves as little as
+        // possible), then rotate each lane by the shortest path to the circular mean downbeat phase.
+        const ref = this.laneRefs.find(r => r.current);
+        if (!ref) return;
+        const w = ref.current.width;
+        const loadedIdx = S.lanes.map((l, i) => l.file ? i : -1).filter(i => i >= 0);
+        if (!loadedIdx.length) return;
+        const target = loadedIdx.reduce((a, i) => a + S.lanes[i].bpm, 0) / loadedIdx.length;
+        const bar = (w / (16 * target / 60)) * 4;
+        const phases = {}, angles = [];
+        loadedIdx.forEach(i => {
+          const l = S.lanes[i];
+          const phase = ((this._hash(l.file) % 997) / 997) * bar;
+          const x0 = (((phase - l.shift) % bar) + bar) % bar;
+          phases[i] = { phase, x0 };
+          angles.push((x0 / bar) * Math.PI * 2);
+        });
+        const mx = angles.reduce((a, v) => a + Math.cos(v), 0) / angles.length;
+        const my = angles.reduce((a, v) => a + Math.sin(v), 0) / angles.length;
+        let meanAngle = Math.atan2(my, mx); if (meanAngle < 0) meanAngle += Math.PI * 2;
+        const targetX0 = (meanAngle / (Math.PI * 2)) * bar;
+        this.setState(s => ({
+          lanes: s.lanes.map((l, i) => {
+            if (!l.file) return l;
+            const { phase } = phases[i];
+            let shift = phase - targetX0;
+            // shortest rotation from the lane's current position
+            const k = Math.round((l.shift - shift) / bar);
+            shift += k * bar;
+            return { ...l, bpm: Math.round(target * 10) / 10, shift };
+          }),
+        }));
+      },
+      pipeline,
+
+      sideOpen: S.sideOpen,
+      sidePaneStyle: `width:${S.sideOpen ? '284px' : '26px'};flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--border);overflow:hidden;transition:width 0.15s;`,
+      sideToggleLabel: S.sideOpen ? '▾ CONTEXT' : '▸',
+      toggleSide: () => this.setState(s => ({ sideOpen: !s.sideOpen })),
+      menus: S.menus,
+      menuFilesArrow: S.menus.files ? '▾' : '▸', menuGenArrow: S.menus.gen ? '▾' : '▸',
+      menuChainArrow: S.menus.chain ? '▾' : '▸', menuMasterArrow: S.menus.master ? '▾' : '▸', menuSigmaArrow: S.menus.sigma ? '▾' : '▸',
+      menuFilesHeadStyle: menuHead('var(--border)'), menuFilesDot: dot(loaded.length > 0, 'var(--turq-strong)'),
+      menuGenHeadStyle: menuHead('var(--border)'), menuGenDot: dot(S.prompt.length > 0, 'var(--turq-strong)'),
+      menuChainHeadStyle: menuHead(accent), menuChainDot: dot(chainActive, accent),
+      menuMasterHeadStyle: menuHead('var(--border)'), menuMasterDot: dot(S.master.latchOn || S.master.normOn, 'var(--turq-strong)'),
+      menuSigmaHeadStyle: menuHead('var(--border)'), menuSigmaDot: dot(S.sigma.type !== 'karras', 'var(--turq-strong)'),
+      toggleMenuFiles: () => this.setState(s => ({ menus: { ...s.menus, files: !s.menus.files } })),
+      toggleMenuGen: () => this.setState(s => ({ menus: { ...s.menus, gen: !s.menus.gen } })),
+      toggleMenuChain: () => this.setState(s => ({ menus: { ...s.menus, chain: !s.menus.chain } })),
+      toggleMenuMaster: () => this.setState(s => ({ menus: { ...s.menus, master: !s.menus.master } })),
+      toggleMenuSigma: () => this.setState(s => ({ menus: { ...s.menus, sigma: !s.menus.sigma } })),
+      files, renders,
+
+      presets: S.presets,
+      masterPresetOptions: opts(['club_mix_v1', 'ambient_bed', 'drum_swap_a', 'init']),
+      promptPresetOptions: opts(['ambient_pad_v2', 'techno_loop', 'field_texture', 'unconditional']),
+      latchPresetOptions: opts(['medium_default', 'high_gain', 'subtle']),
+      filmPresetOptions: opts(['flat', 'bright', 'dark']),
+      loraPresetOptions: opts(['warm_light', 'club_heavy', 'off']),
+      masterChainPresetOptions: opts(['glue_v1', 'norm_only', 'off']),
+      sigmaPresetOptions: opts(['karras_std', 'karras_long_tail', 'exp_fast']),
+      setPresetMaster: (e) => this.setState(s => ({ presets: { ...s.presets, master: e.target.value } })),
+      setPresetPrompt: (e) => this.setState(s => ({ presets: { ...s.presets, prompt: e.target.value } })),
+      setPresetLatch: (e) => this.setState(s => ({ presets: { ...s.presets, latch: e.target.value } })),
+      setPresetFilm: (e) => this.setState(s => ({ presets: { ...s.presets, film: e.target.value } })),
+      setPresetLora: (e) => this.setState(s => ({ presets: { ...s.presets, lora: e.target.value } })),
+      setPresetMasterChain: (e) => this.setState(s => ({ presets: { ...s.presets, masterChain: e.target.value } })),
+      setPresetSigma: (e) => this.setState(s => ({ presets: { ...s.presets, sigma: e.target.value } })),
+
+      activeLaneLabel: LANE_META[S.activeLane].name,
+      chainBodyStyle: `padding:8px 10px 12px;display:flex;flex-direction:column;gap:6px;border-left:3px solid ${accent};background:${LANE_META[S.activeLane].soft};`,
+      chain: { latchHead: chain.latchHead, latchGain: chain.latchGain, filmScale: chain.filmScale, filmScaleLabel: chain.filmScale.toFixed(2), lora: chain.lora, loraScale: chain.loraScale, loraScaleLabel: chain.loraScale.toFixed(2), semis: chain.semis },
+      latchLabel: chain.latchOn ? '[ON]' : '[OFF]', latchBtnStyle: toggle(chain.latchOn, accent),
+      filmLabel: chain.filmOn ? '[ON]' : '[OFF]', filmBtnStyle: toggle(chain.filmOn, accent),
+      loraLabel: chain.loraOn ? '[ON]' : '[OFF]', loraBtnStyle: toggle(chain.loraOn, accent),
+      bungeeLabel: chain.bungeeOn ? '[ON]' : '[OFF]', bungeeBtnStyle: toggle(chain.bungeeOn, accent),
+      toggleLatch: () => this._setChain({ latchOn: !chain.latchOn }),
+      toggleFilm: () => this._setChain({ filmOn: !chain.filmOn }),
+      toggleLora: () => this._setChain({ loraOn: !chain.loraOn }),
+      toggleBungee: () => this._setChain({ bungeeOn: !chain.bungeeOn }),
+      setLatchHead: (e) => this._setChain({ latchHead: e.target.value }),
+      setLatchGain: (e) => this._setChain({ latchGain: parseInt(e.target.value) }),
+      setFilmScale: (e) => this._setChain({ filmScale: parseFloat(e.target.value) }),
+      setLora: (e) => this._setChain({ lora: e.target.value }),
+      setLoraScale: (e) => this._setChain({ loraScale: parseFloat(e.target.value) }),
+      setSemis: (e) => this._setChain({ semis: parseFloat(e.target.value) || 0 }),
+      loraOptions: [
+        { value: 'none', label: '— none —' },
+        { value: 'vinyl_warmth', label: 'vinyl_warmth (LoRA, r16)' },
+        { value: 'tape_sat', label: 'tape_sat (LoRA, r8)' },
+        { value: 'club_lowend', label: 'club_lowend (DoRA, r32)' },
+        { value: 'granular_pads', label: 'granular_pads (DoRA, r16)' },
+      ],
+
+      master: { head: S.master.head, gain: S.master.gain },
+      masterLatchLabel: S.master.latchOn ? '[ON]' : '[OFF]', masterLatchBtnStyle: toggle(S.master.latchOn, 'var(--turq-strong)'),
+      masterNormLabel: S.master.normOn ? '[ON]' : '[OFF]', masterNormBtnStyle: toggle(S.master.normOn, 'var(--turq-strong)'),
+      toggleMasterLatch: () => this.setState(s => ({ master: { ...s.master, latchOn: !s.master.latchOn } })),
+      toggleMasterNorm: () => this.setState(s => ({ master: { ...s.master, normOn: !s.master.normOn } })),
+      setMasterHead: (e) => this.setState(s => ({ master: { ...s.master, head: e.target.value } })),
+      setMasterGain: (e) => { const v = parseInt(e.target.value); this.setState(s => ({ master: { ...s.master, gain: v } })); },
+
+      sigma: S.sigma,
+      setSigmaType: (e) => this.setState(s => ({ sigma: { ...s.sigma, type: e.target.value } })),
+      setSigmaMin: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, min: v } })); },
+      setSigmaMax: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, max: v } })); },
+      setSigmaRho: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, rho: v } })); },
+
+      prompt: S.prompt, setPrompt: (e) => this.setState({ prompt: e.target.value }),
+      steps: S.steps, setSteps: (e) => this.setState({ steps: parseInt(e.target.value) || 0 }),
+      cfg: S.cfg, setCfg: (e) => this.setState({ cfg: parseFloat(e.target.value) || 0 }),
+      cfgUnitLabel: S.cfgUnit === 'steps' ? 'STEPS' : 'FRAC',
+      cfgUnitBtnStyle: `background:var(--panel2);border:1px solid ${S.cfgUnit === 'steps' ? 'var(--turq-strong)' : 'var(--border)'};color:${S.cfgUnit === 'steps' ? 'var(--turq-strong)' : 'var(--text-dim)'};font-size:9px;padding:0 4px;margin-left:auto;cursor:pointer;`,
+      toggleCfgUnit: () => this.setState(s => ({ cfgUnit: s.cfgUnit === 'steps' ? 'frac' : 'steps' })),
+      cfgStep: S.cfgUnit === 'steps' ? 1 : 0.05,
+      cfgLoField: S.cfgUnit === 'steps' ? Math.round(S.cfgLo * S.steps) : Number(S.cfgLo.toFixed(2)),
+      cfgHiField: S.cfgUnit === 'steps' ? Math.round(S.cfgHi * S.steps) : Number(S.cfgHi.toFixed(2)),
+      setCfgLo: (e) => { const v = parseFloat(e.target.value) || 0; this.setState(s => ({ cfgLo: Math.min(1, Math.max(0, s.cfgUnit === 'steps' ? v / (s.steps || 1) : v)) })); },
+      setCfgHi: (e) => { const v = parseFloat(e.target.value) || 0; this.setState(s => ({ cfgHi: Math.min(1, Math.max(0, s.cfgUnit === 'steps' ? v / (s.steps || 1) : v)) })); },
+      duration: S.duration, setDuration: (e) => this.setState({ duration: parseFloat(e.target.value) || 0 }),
+      seed: S.seed, setSeed: (e) => this.setState({ seed: parseInt(e.target.value) || 0 }),
+      randomizeSeed: () => this.setState({ seed: Math.floor(Math.random() * 999999) }),
+
+      terminalStyle: `flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);${S.terminal === 'full' ? 'position:absolute;inset:42px 0 0 0;z-index:40;' : S.terminal === 'normal' ? 'height:132px;' : 'height:24px;'}`,
+      terminalOpen: S.terminal !== 'collapsed',
+      terminalDotStyle: dot(true, 'var(--green-strong)'),
+      termBtn1: tab(S.terminal === 'collapsed'), termBtn2: tab(S.terminal === 'normal'), termBtn3: tab(S.terminal === 'full'),
+      terminalCollapse: () => this.setState({ terminal: 'collapsed' }),
+      terminalNormal: () => this.setState({ terminal: 'normal' }),
+      terminalFull: () => this.setState({ terminal: 'full' }),
+      logLines: [
+        { text: '$ player /status → ok  same-l  heads: adaln_zero, standardized', c: 'var(--text-dim)' },
+        { text: 'lane 2  decode 000412.npy  [256,4096] → 45.0 s audio   1.14 s (RTF 39x)', c: 'var(--text)' },
+        { text: 'lane 2  bungee  stretch 127.6 → 124.0 bpm   pitch -2.0 st', c: 'var(--green-strong)' },
+        { text: 'lane 2  encode  45.0 s → [256,4096]   0.91 s', c: 'var(--text)' },
+        { text: 'mix     M1 slerp t=0.50   M2 lerp t=0.50   MX slerp t=0.50', c: 'var(--purple-strong)' },
+        { text: 'onset align  lane 2 shift +37 px  (overlap 0.81)', c: 'var(--turq-strong)' },
+        { text: 'master  decode → 45.0 s   peak -0.4 dBFS  2 clipped frames', c: 'var(--text)' },
+      ].map(l => ({ text: l.text, style: `font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:${l.c};white-space:pre;` })),
+
+      statLane: S.statLane,
+      statLaneButtons: [0, 1, 2, 3, 4].map(i => ({
+        label: i === 4 ? 'MASTER' : `LANE ${i + 1}`,
+        style: i === 4 ? tab(S.statLane === 4)
+          : `background:${S.statLane === i ? LANE_META[i].soft : 'transparent'};border:1px solid ${S.statLane === i ? LANE_META[i].color : 'var(--border)'};color:${S.statLane === i ? LANE_META[i].color : 'var(--text-dim)'};font-size:10px;padding:5px 9px;cursor:pointer;`,
+        onClick: () => this.setState({ statLane: i }),
+      })),
+      xcorrRef: this.xcorrRef, pcaRef: this.pcaRef, featRef: this.featRef, scatterRef: this.scatterRef,
+      statFeature: S.statFeature, setStatFeature: (e) => this.setState({ statFeature: e.target.value }),
+      statAxisX: S.statAxisX, setStatAxisX: (e) => this.setState({ statAxisX: e.target.value }),
+      statAxisY: S.statAxisY, setStatAxisY: (e) => this.setState({ statAxisY: e.target.value }),
+    };
+  }
+}
+</script>
+</body>
+</html>

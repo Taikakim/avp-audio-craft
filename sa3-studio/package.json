@@ -1,0 +1,21 @@
+{
+  "name": "sa3-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Four-lane audio arrangement compositor for SA3. Timeline is audio; RENDER commits to the real latent op on the explorer_render_server.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@tsconfig/svelte": "^5.0.4",
+    "svelte": "^5.1.0",
+    "svelte-check": "^4.0.5",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}

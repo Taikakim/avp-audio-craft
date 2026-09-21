@@ -1,0 +1,513 @@
+analysis.py:
+"""Live, on-demand latent analysis over a sampled subset of crops.
+
+All functions take already-loaded latents [256, T] (variable T) and pool
+frames across crops. No precompute, no disk artifacts.
+"""
+from __future__ import annotations
+import numpy as np
+
+
+def _stack_frames(latents: list[np.ndarray]) -> np.ndarray:
+    """Concatenate all crops' frames → [n_frames_total, 256]."""
+    return np.concatenate([z.T for z in latents], axis=0).astype(np.float64)
+
+
+def pca_frames(latents: list[np.ndarray], k: int = 3):
+    X = _stack_frames(latents)
+    X = X - X.mean(axis=0, keepdims=True)
+    # SVD of centered frames; components are right-singular vectors
+    _, S, Vt = np.linalg.svd(X, full_matrices=False)
+    var = (S ** 2) / max(1, X.shape[0] - 1)
+    evr = var / var.sum()
+    return Vt[:k].astype(np.float32), evr[:k].astype(np.float32)
+
+
+def dim_xcorr(latents: list[np.ndarray]) -> np.ndarray:
+    X = _stack_frames(latents)            # [N, 256]
+    return np.corrcoef(X, rowvar=False).astype(np.float32)
+
+
+def dim_feature_corr(latents: list[np.ndarray],
+                     feature_ts: list[np.ndarray]) -> np.ndarray:
+    """Per-dim Pearson r vs a per-frame feature, pooled across crops."""
+    dim_cols, feat_vals = [], []
+    for z, f in zip(latents, feature_ts):
+        T = min(z.shape[1], len(f))
+        dim_cols.append(z[:, :T].T)        # [T, 256]
+        feat_vals.append(np.asarray(f[:T], dtype=np.float64))
+    X = np.concatenate(dim_cols, axis=0).astype(np.float64)   # [N, 256]
+    fv = np.concatenate(feat_vals, axis=0)                    # [N]
+    Xc = X - X.mean(axis=0, keepdims=True)
+    fc = fv - fv.mean()
+    num = Xc.T @ fc
+    den = np.sqrt((Xc ** 2).sum(axis=0) * (fc ** 2).sum())
+    den = np.where(den < 1e-12, np.nan, den)
+    return (num / den).astype(np.float32)
+
+
+####
+
+analysis_tab.py
+
+"""Live analysis tab: PCA, dim xcorr, dim<->feature correlation."""
+from __future__ import annotations
+import numpy as np
+import plotly.graph_objects as go
+from dash import dcc, html
+
+
+def xcorr_figure(c: np.ndarray) -> go.Figure:
+    fig = go.Figure(go.Heatmap(z=c, colorscale="RdBu", zmid=0, zmin=-1, zmax=1))
+    fig.update_layout(title="256×256 dim cross-correlation", height=560)
+    return fig
+
+
+def feature_corr_figure(corr: np.ndarray, feature: str) -> go.Figure:
+    fig = go.Figure(go.Bar(x=np.arange(len(corr)), y=corr))
+    fig.update_layout(title=f"dim ↔ {feature} correlation",
+                      xaxis_title="latent dim", yaxis_title="Pearson r",
+                      height=320)
+    return fig
+
+
+def layout() -> html.Div:
+    return html.Div([
+        html.Button("Recompute (sampled)", id="sa3-analysis-go"),
+        dcc.Graph(id="sa3-xcorr-graph"),
+        dcc.Dropdown(id="sa3-feat-dd"),
+        dcc.Graph(id="sa3-featcorr-graph"),
+    ])
+
+
+####
+
+app.py
+
+"""SA3 latent explorer — Dash entrypoint (mir venv)."""
+from __future__ import annotations
+import configparser
+from pathlib import Path
+import dash
+from dash import dcc, html
+from .sidecar_index import scan_index
+from . import viewer_tab, dataset_tab, analysis_tab
+from .callbacks import register
+
+_INI = Path(__file__).parent.parent.parent / "latent_player_sa3.ini"
+
+
+def _latent_dir() -> Path:
+    cfg = configparser.ConfigParser()
+    cfg.read(_INI)
+    return Path(cfg["server"]["latent_dir"])
+
+
+def build_layout(index) -> html.Div:
+    return html.Div([
+        html.H2(f"SA3 Latent Explorer — {len(index)} crops"),
+        dcc.Tabs([
+            dcc.Tab(label="Viewer", children=viewer_tab.layout()),
+            dcc.Tab(label="Dataset", children=dataset_tab.layout()),
+            dcc.Tab(label="Analysis", children=analysis_tab.layout()),
+        ]),
+    ])
+
+
+app = dash.Dash(__name__)
+
+
+def main():
+    ld = _latent_dir()
+    index = scan_index(ld)
+    app.layout = build_layout(index)
+    register(app, index, ld)
+    app.run(debug=False, port=8051)
+
+
+if __name__ == "__main__":
+    main()
+
+
+####
+
+audio_panel.py
+
+"""Audio controls that target the SA3 player over HTTP."""
+from __future__ import annotations
+from dash import html
+from . import player_client as pc
+
+
+def panel(crop_id: str, alive: bool) -> html.Div:
+    if not alive:
+        return html.Div([
+            html.P("Player offline. Launch:"),
+            html.Code("/home/kim/Projects/SAO/stable-audio-3/.venv/bin/"
+                      "python scripts/latent_server_sa3.py"),
+        ])
+    return html.Div([
+        html.Audio(src=pc.decode_url(crop_id), controls=True),
+        html.Audio(src=pc.source_url(crop_id), controls=True),
+    ])
+
+
+####
+
+callbacks.py
+
+"""Dash callback wiring for the SA3 explorer."""
+from __future__ import annotations
+from pathlib import Path
+import numpy as np
+from dash import Input, Output, no_update
+from . import latents, analysis, viewer_tab, dataset_tab, analysis_tab, audio_panel
+from . import player_client as pc
+from .sidecar_index import CropMeta
+
+
+SCALAR_FIELDS = ["bpm", "lufs", "rel_pos"]
+
+
+def oned_feature_names(ts: dict) -> list[str]:
+    """TIMESERIES field names that are 1-D per-frame features (excludes 2-D like hpcp_ts)."""
+    return [k for k, v in ts.items() if getattr(v, "ndim", 0) == 1]
+
+
+def scalar_options() -> list[dict]:
+    """Dropdown options for the numeric CropMeta scalars usable on the scatter."""
+    return [{"label": f, "value": f} for f in SCALAR_FIELDS]
+
+
+def sample_ids(index: list[CropMeta], n: int, seed: int = 0) -> list[str]:
+    ids = [c.id for c in index]
+    if len(ids) <= n:
+        return ids
+    rng = np.random.default_rng(seed)
+    pick = rng.choice(len(ids), size=n, replace=False)
+    return [ids[i] for i in sorted(pick)]
+
+
+def register(app, index: list[CropMeta], latent_dir: Path):
+    crop_opts = [{"label": f"{c.id} — {c.source_track}", "value": c.id}
+                 for c in index]
+
+    @app.callback(Output("sa3-crop-dd", "options"),
+                  Input("sa3-crop-dd", "id"))
+    def _fill(_):
+        return crop_opts
+
+    @app.callback(Output("sa3-latent-graph", "figure"),
+                  Output("sa3-ts-dd", "options"),
+                  Output("sa3-audio-panel", "children"),
+                  Input("sa3-crop-dd", "value"))
+    def _show(cid):
+        if not cid:
+            return no_update, no_update, no_update
+        import json
+        z = latents.load_latent(latent_dir, cid)
+        meta = json.loads((latent_dir / f"{cid}.json").read_text())
+        ts = latents.load_timeseries(latent_dir, cid)
+        fig = viewer_tab.latent_figure(z, latents.content_frames(meta))
+        return (fig, [{"label": k, "value": k} for k in ts],
+                audio_panel.panel(cid, pc.status()))
+
+    @app.callback(Output("sa3-ts-graph", "figure"),
+                  Input("sa3-crop-dd", "value"), Input("sa3-ts-dd", "value"))
+    def _ts(cid, name):
+        if not cid or not name:
+            return no_update
+        ts = latents.load_timeseries(latent_dir, cid)[name]
+        return viewer_tab.timeseries_figure(name, ts)
+
+    @app.callback(Output("sa3-xcorr-graph", "figure"),
+                  Input("sa3-analysis-go", "n_clicks"))
+    def _analysis(n):
+        if not n:
+            return no_update
+        ids = sample_ids(index, 400)
+        lats = [latents.load_latent(latent_dir, i) for i in ids]
+        return analysis_tab.xcorr_figure(analysis.dim_xcorr(lats))
+
+    @app.callback(Output("sa3-feat-dd", "options"),
+                  Output("sa3-feat-dd", "value"),
+                  Input("sa3-analysis-go", "n_clicks"))
+    def _feat_dd_fill(n):
+        if not n:
+            return no_update, no_update
+        ids = sample_ids(index, 400)
+        ts = latents.load_timeseries(latent_dir, ids[0])
+        names = oned_feature_names(ts)
+        opts = [{"label": k, "value": k} for k in names]
+        default = names[0] if names else None
+        return opts, default
+
+    @app.callback(Output("sa3-featcorr-graph", "figure"),
+                  Input("sa3-feat-dd", "value"))
+    def _featcorr(feat):
+        if not feat:
+            return no_update
+        ids = sample_ids(index, 400)
+        lats, feats = [], []
+        for cid in ids:
+            ts = latents.load_timeseries(latent_dir, cid)
+            if feat not in ts:
+                continue
+            f = ts[feat]
+            if getattr(f, "ndim", 0) != 1:
+                continue
+            lats.append(latents.load_latent(latent_dir, cid))
+            feats.append(f)
+        if not lats:
+            return no_update
+        corr = analysis.dim_feature_corr(lats, feats)
+        return analysis_tab.feature_corr_figure(corr, feat)
+
+    @app.callback(Output("sa3-ds-x", "options"), Output("sa3-ds-x", "value"),
+                  Output("sa3-ds-y", "options"), Output("sa3-ds-y", "value"),
+                  Input("sa3-ds-x", "id"))
+    def _ds_fill(_):
+        opts = scalar_options()
+        return opts, "bpm", opts, "lufs"
+
+    @app.callback(Output("sa3-ds-graph", "figure"),
+                  Input("sa3-ds-x", "value"), Input("sa3-ds-y", "value"))
+    def _ds_scatter(xf, yf):
+        if not xf or not yf:
+            return no_update
+        xs, ys, txt = [], [], []
+        for c in index:
+            xv, yv = getattr(c, xf), getattr(c, yf)
+            if xv is None or yv is None:
+                continue
+            xs.append(xv); ys.append(yv); txt.append(f"{c.artist} — {c.title}")
+        return dataset_tab.scatter_figure(xs, ys, xlabel=xf, ylabel=yf, text=txt)
+
+
+####
+
+dataset_tab.py
+
+"""Dataset-wide scatter/histograms over cached sidecar scalars."""
+from __future__ import annotations
+import plotly.graph_objects as go
+from dash import dcc, html
+
+
+def scatter_figure(xs, ys, xlabel, ylabel, text=None) -> go.Figure:
+    fig = go.Figure(go.Scattergl(x=xs, y=ys, mode="markers", text=text,
+                                 marker=dict(size=5, opacity=0.6)))
+    fig.update_layout(xaxis_title=xlabel, yaxis_title=ylabel, height=520)
+    return fig
+
+
+def layout() -> html.Div:
+    return html.Div([
+        dcc.Dropdown(id="sa3-ds-x"), dcc.Dropdown(id="sa3-ds-y"),
+        dcc.Graph(id="sa3-ds-graph"),
+    ])
+
+
+#####
+
+latents.py
+
+"""Pure loaders for SA3 latents and their TIMESERIES sidecars."""
+from __future__ import annotations
+from pathlib import Path
+import numpy as np
+
+LATENT_DIM = 256
+N_FRAMES = 4096
+FRAME_RATE_HZ = 44100 / 4096   # 10.7666 Hz
+
+
+def load_latent(latent_dir: Path, crop_id: str) -> np.ndarray:
+    """Load NNNNNN.npy as float32 [256, T]. Squeezes a leading batch dim."""
+    arr = np.load(Path(latent_dir) / f"{crop_id}.npy")
+    if arr.ndim == 3 and arr.shape[0] == 1:
+        arr = arr[0]
+    if arr.ndim != 2 or arr.shape[0] != LATENT_DIM:
+        raise ValueError(
+            f"{crop_id}: expected [{LATENT_DIM}, T], got {arr.shape}")
+    return arr.astype(np.float32)
+
+
+def content_frames(meta: dict) -> int:
+    """Number of non-padding frames from padding_mask; full T if absent."""
+    mask = meta.get("padding_mask")
+    if mask is None:
+        return N_FRAMES
+    return int(sum(mask))
+
+
+def load_timeseries(latent_dir: Path, crop_id: str) -> dict[str, np.ndarray]:
+    p = Path(latent_dir) / f"{crop_id}.TIMESERIES.npz"
+    with np.load(p) as z:
+        return {k: z[k] for k in z.files}
+
+
+####
+
+player_client.py
+
+"""URL builders + reachability check for the SAME decode player.
+
+Targets the torch player `latent_server_sa3.py` (port 7892, full incl. /steer) by
+default. Set `SA3_PLAYER_PORT` (e.g. 7893) to point at the low-VRAM ONNX server
+`latent_server_onnx.py` instead — same /status /crops /meta /decode /mix /source
+shape (it has no /steer). `SA3_PLAYER_BASE` overrides the whole base URL.
+"""
+from __future__ import annotations
+import os
+from urllib.parse import urlencode
+
+BASE = os.environ.get(
+    "SA3_PLAYER_BASE",
+    f"http://localhost:{os.environ.get('SA3_PLAYER_PORT', '7892')}")
+
+
+def decode_url(crop_id: str) -> str:
+    return f"{BASE}/decode?{urlencode({'crop': crop_id})}"
+
+
+def source_url(crop_id: str) -> str:
+    return f"{BASE}/source?{urlencode({'crop': crop_id})}"
+
+
+def mix_url(crop_a: str, crop_b: str, t: float = 0.5,
+            interp: str = "slerp") -> str:
+    q = urlencode({"crop_a": crop_a, "crop_b": crop_b,
+                   "t": f"{float(t):.3f}", "interp": interp})
+    return f"{BASE}/mix?{q}"
+
+
+def steer_url(crop_id: str, head: str, gain: float = 48.0) -> str:
+    q = urlencode({"crop": crop_id, "head": head, "gain": f"{float(gain)}"})
+    return f"{BASE}/steer?{q}"
+
+
+def status(timeout: float = 0.5) -> bool:
+    import urllib.request
+    try:
+        urllib.request.urlopen(f"{BASE}/status", timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+
+####
+
+sidecar_index.py
+
+"""Scan latents_sa3 .json sidecars into an in-memory, searchable index."""
+from __future__ import annotations
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class CropMeta:
+    id: str
+    source_track: str
+    artist: str
+    title: str
+    prompt: str
+    bpm: float | None
+    lufs: float | None
+    rel_pos: float
+
+
+def _to_float(v) -> float | None:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def scan_index(latent_dir: Path) -> list[CropMeta]:
+    """Scan every NNNNNN.json beside an NNNNNN.npy. Skip unreadable sidecars."""
+    latent_dir = Path(latent_dir)
+    out: list[CropMeta] = []
+    for jp in sorted(latent_dir.glob("*.json")):
+        if jp.name.endswith(".TIMESERIES.json"):
+            continue
+        if not jp.with_suffix(".npy").exists():
+            continue
+        try:
+            m = json.loads(jp.read_text())
+        except Exception:
+            continue
+        out.append(CropMeta(
+            id=jp.stem,
+            source_track=str(m.get("source_track", "")),
+            artist=str(m.get("track_metadata_artist", "")),
+            title=str(m.get("track_metadata_title", "")),
+            prompt=str(m.get("prompt", "")),
+            bpm=_to_float(m.get("bpm_madmom") or m.get("bpm_essentia")),
+            lufs=_to_float(m.get("lufs")),
+            rel_pos=_to_float(m.get("relative_position_start")) or 0.0,
+        ))
+    return out
+
+
+def search(index: list[CropMeta], query: str) -> list[CropMeta]:
+    if not query:
+        return list(index)
+    q = query.lower()
+    return [c for c in index
+            if q in c.artist.lower() or q in c.title.lower()
+            or q in c.prompt.lower() or q in c.source_track.lower()]
+
+
+def group_by_track(index: list[CropMeta]) -> dict[str, list[CropMeta]]:
+    g: dict[str, list[CropMeta]] = {}
+    for c in index:
+        g.setdefault(c.source_track, []).append(c)
+    return g
+
+
+####
+
+viewer_tab.py
+"""Per-crop latent + timeseries view."""
+from __future__ import annotations
+import numpy as np
+import plotly.graph_objects as go
+from dash import dcc, html
+from .latents import FRAME_RATE_HZ
+
+
+def latent_figure(z: np.ndarray, content_frames: int) -> go.Figure:
+    T = z.shape[1]
+    secs = np.arange(T) / FRAME_RATE_HZ
+    fig = go.Figure(go.Heatmap(z=z, x=secs, colorscale="RdBu", zmid=0))
+    if 0 < content_frames < T:
+        cut = content_frames / FRAME_RATE_HZ
+        fig.add_vline(x=cut, line_dash="dash", line_color="black")
+    fig.update_layout(title="Latent [256 × T]", xaxis_title="seconds",
+                      yaxis_title="latent dim", height=480)
+    return fig
+
+
+def timeseries_figure(name: str, ts: np.ndarray) -> go.Figure:
+    if ts.ndim == 2:
+        fig = go.Figure(go.Heatmap(z=ts.T, colorscale="Viridis"))
+    else:
+        secs = np.arange(len(ts)) / FRAME_RATE_HZ
+        fig = go.Figure(go.Scatter(x=secs, y=ts, mode="lines"))
+    fig.update_layout(title=name, height=240, margin=dict(t=30))
+    return fig
+
+
+def layout() -> html.Div:
+    return html.Div([
+        dcc.Dropdown(id="sa3-crop-dd"),
+        dcc.Graph(id="sa3-latent-graph"),
+        dcc.Dropdown(id="sa3-ts-dd"),
+        dcc.Graph(id="sa3-ts-graph"),
+        html.Div(id="sa3-audio-panel"),
+    ])
+
+

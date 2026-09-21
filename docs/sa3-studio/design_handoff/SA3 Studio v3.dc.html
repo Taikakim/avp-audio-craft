@@ -1,0 +1,2313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;}
+a{color:var(--turq-strong);text-decoration:none;}
+a:hover{color:var(--purple-strong);}
+input,select,textarea,button{font-family:inherit;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:oklch(80% 0.014 240);}
+</style>
+</helmet>
+<div ref="{{rootRef}}" onMouseMove="{{onRootMove}}" style="--bg:oklch(96% 0.006 240);--panel:oklch(93% 0.008 240);--panel2:oklch(90% 0.012 240);--border:oklch(80% 0.014 240);--text:oklch(27% 0.02 250);--text-dim:oklch(52% 0.016 250);--turq-strong:oklch(55% 0.11 195);--purple-strong:oklch(54% 0.10 300);--green-strong:oklch(56% 0.11 150);--red:oklch(55% 0.20 25);--warm:oklch(72% 0.15 75);height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px;position:relative;">
+
+<div style="height:42px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);">
+  <div style="font-weight:700;letter-spacing:0.16em;font-size:12px;color:var(--turq-strong);flex-shrink:0;">SA3 STUDIO</div>
+  <select data-help="Session — clips rendered in one working session." value="{{session}}" onChange="{{setSession}}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;min-width:0;flex:1;max-width:165px;">
+    <option value="s1">session_2026-09-06_0912</option>
+    <option value="s2">session_2026-09-07_2140</option>
+    <option value="s3">session_2026-09-08_0815</option>
+  </select>
+  <select data-help="Checkpoint used for generation, a2a, inpainting and the encode/decode round trip." value="{{model}}" onChange="{{setModel}}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;min-width:0;flex:1;max-width:170px;">
+    <option value="base">stable-audio-3-base</option>
+    <option value="custom_v3">custom_v3 (LatCH medium)</option>
+    <option value="custom_v2">custom_v2</option>
+  </select>
+  <input data-help="Direct checkpoint folder — any path the loader can read." type="text" value="{{modelFolder}}" onChange="{{setModelFolder}}" style="flex:2;min-width:60px;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px 6px;font-size:11px;" />
+  <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;border-left:1px solid var(--border);padding-left:8px;">
+    <span style="font-size:10px;color:var(--text-dim);">MASTER PRESET</span>
+    <select data-help="Master preset — every lane chain, the clip layout, mix order and node values, master chain, sigma schedule and prompt in one recall." value="{{presets.master}}" onChange="{{setPresetMaster}}" style="background:var(--panel2);border:1px solid var(--purple-strong);color:var(--text);font-size:10px;padding:3px 5px;max-width:135px;">
+      <sc-for list="{{masterPresetOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+    </select>
+    <button style="background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:3px 6px;cursor:pointer;">SAVE</button>
+  </div>
+  <button onClick="{{startRender}}" data-help="Runs the current target. While sampling, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count." style="{{renderBtnStyle}}flex-shrink:0;">{{renderLabel}}</button>
+  <div style="display:flex;gap:3px;flex-shrink:0;">
+    <button onClick="{{setViewWorkspace}}" style="{{tabWorkspaceStyle}}">WORKSPACE</button>
+    <button onClick="{{setViewStats}}" style="{{tabStatsStyle}}">STATISTICS</button>
+    <button data-help="Help mode. While on, hovering a control shows what it does." onClick="{{toggleHelp}}" style="{{helpBtnStyle}}">HELP</button>
+    <button onClick="{{toggleFxPanel}}" style="{{helpBtnStyle}}">FX</button>
+  </div>
+</div>
+
+<div style="flex:1;display:flex;min-height:0;">
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+    <div style="flex:1;min-height:0;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:auto;">
+
+      <sc-if value="{{isWorkspace}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px;">
+            <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">MASTER — MIX RESULT</span>
+            <span style="{{envHintStyle}}">{{envHint}}</span>
+            <span style="font-size:10px;color:var(--text-dim);margin-left:auto;">downbeats glow yellow within a quarter-beat of another lane's · <span style="color:var(--red);">red edge marks = clipping</span></span>
+          </div>
+          <div data-help="Master strip: the decoded mix result. The purple curve is the a2a noise-amount envelope over time." style="position:relative;width:100%;height:56px;">
+            <canvas ref="{{masterRef}}" width="1400" height="56" style="width:100%;height:56px;display:block;box-sizing:border-box;border:1px solid var(--border);"></canvas>
+            <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="{{envSvgStyle}}">
+              <path d="{{env.pathD}}" stroke="var(--purple-strong)" stroke-width="2" fill="none" vector-effect="non-scaling-stroke" />
+              <sc-for list="{{env.segments}}" as="seg" hint-placeholder-count="3">
+                <path d="{{seg.d}}" stroke="transparent" stroke-width="16" onMouseDown="{{seg.onDown}}" style="cursor:ns-resize;" />
+              </sc-for>
+            </svg>
+            <sc-if value="{{envActive}}" hint-placeholder-val="{{true}}">
+              <sc-for list="{{env.points}}" as="pt" hint-placeholder-count="4">
+                <div onMouseDown="{{pt.onDown}}" style="{{pt.style}}"></div>
+              </sc-for>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="box-sizing:border-box;border:1px solid var(--border);background:var(--panel);">
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid var(--border);background:var(--panel2);">
+            <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">TIMELINE</span>
+            <span style="font-size:10px;color:var(--text-dim);">PROJECT BPM</span>
+            <input data-help="Project tempo. Every clip is stretched from its native BPM to this, and the grid is drawn from it. Safe value: MATCH BPM sets it to the mean of the loaded clips, which is the least stretch for all of them. Drag to scale; hold shift for 1/100th detail." type="number" step="0.1" value="{{projectBpm}}" onChange="{{setProjectBpm}}" onMouseDown="{{dragProjectBpm}}" style="width:58px;background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 4px;cursor:ew-resize;" />
+            <span style="font-size:10px;color:var(--text-dim);">SNAP</span>
+            <select data-help="Snap resolution for dragging clips. DOWNBEATS is magnetic — a dragged clip's downbeats jump to another clip's within 5px, and dragging further pulls them free again. CLIP EDGES snaps to the start or end of any clip." value="{{snap}}" onChange="{{setSnap}}" style="background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 4px;">
+              <option value="bar">bar</option><option value="beat">beat</option>
+              <option value="8">1/8</option><option value="16">1/16</option><option value="32">1/32</option>
+              <option value="lane">downbeats (magnetic)</option><option value="edge">clip edges</option><option value="off">free</option>
+            </select>
+            <div style="flex:1;"></div>
+            <button data-help="Least-work tempo match: the clips meet at their mean native BPM, so each is stretched as little as possible. Does not move anything in time." onClick="{{autoMatch}}" style="background:var(--panel);border:1px solid var(--turq-strong);color:var(--turq-strong);font-size:10px;padding:4px 8px;cursor:pointer;">MATCH BPM</button>
+            <span style="font-size:10px;color:var(--text-dim);">→ {{meetBpmLabel}}</span>
+            <button data-help="Shifts every clip by the shortest path so its downbeats land on the common downbeat phase — the circular mean of all clips' phases. Tempo is left alone." onClick="{{autoMatchDownbeats}}" style="background:var(--panel);border:1px solid var(--purple-strong);color:var(--purple-strong);font-size:10px;padding:4px 8px;cursor:pointer;">MATCH DOWNBEATS</button>
+            <span data-help="Middle-click and drag over the timeline: up and down zooms, left and right scrolls, both at once in one gesture. Shift + wheel also scrolls. Plain wheel is left to the page." style="font-size:10px;color:var(--turq-strong);border-left:1px solid var(--border);padding-left:8px;">{{zoomLabel}}</span>
+          </div>
+
+          <div style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);">
+            <div style="width:250px;flex-shrink:0;border-right:1px solid var(--border);padding:3px 8px;display:flex;flex-direction:column;justify-content:center;">
+              <span style="font-size:10px;color:var(--text-dim);">{{playheadBarLabel}}</span>
+              <span style="font-size:10px;color:var(--text-dim);">{{playheadTimeLabel}}</span>
+            </div>
+            <div style="flex:1;min-width:0;position:relative;">
+              <canvas data-help="Ruler: bars and beats, seconds, and latent frames at 10.767 Hz. Click to locate the playhead. Middle-click and drag to zoom (up/down) and scroll (left/right) at once." ref="{{rulerRef}}" width="1400" height="30" onMouseDown="{{onRulerDown}}" onAuxClick="{{noop}}" onWheel="{{onWheel}}" style="width:100%;height:30px;display:block;cursor:crosshair;"></canvas>
+            </div>
+          </div>
+
+          <sc-for list="{{lanes}}" as="lane" hint-placeholder-count="4">
+            <div style="{{lane.rowStyle}}">
+              <div onClick="{{lane.onSelect}}" data-help="Lane header. Click to make this lane the active chain in the context pane; TARGET makes it the chroma reference the other lanes are matched against." style="{{lane.headStyle}}">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="{{lane.chipStyle}}"></span>
+                  <span style="font-size:11px;font-weight:600;">{{lane.name}}</span>
+                  <span style="{{lane.countStyle}}">{{lane.countLabel}}</span>
+                </div>
+                <div draggable="false" onDragOver="{{allowDrop}}" onDrop="{{lane.onDrop}}" data-help="Drop an audio file or a latent here to add a clip at the playhead. Latents are decoded for display; the chain re-encodes them before mixing." style="{{lane.slotStyle}}">drop to add clip at playhead</div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <button onClick="{{lane.onTarget}}" data-help="Make this lane the chroma target. Every other lane is then coloured by how consonant it is with this one." style="{{lane.targetStyle}}">TARGET</button>
+                  <span style="font-size:10px;color:var(--text-dim);">CLIP BPM</span>
+                  <input data-help="Native BPM of the selected clip in this lane. Correcting it restretches that clip against the project tempo. Drag to scale; hold shift for 1/100th detail." type="number" step="0.1" value="{{lane.clipBpm}}" onChange="{{lane.onClipBpm}}" onMouseDown="{{lane.dragClipBpm}}" style="width:52px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 4px;cursor:ew-resize;" />
+                  <span style="font-size:10px;color:var(--text-dim);">DETUNE ¢</span>
+                  <input data-help="Pitch offset of the selected clip in cents. It rotates the clip's chroma against the target, so dragging it sweeps the match score — useful for finding where a blues or a differently tuned source actually sits. 100 cents is one semitone. Safe value: 0. Drag to scale." type="number" step="1" value="{{lane.clipDetune}}" onChange="{{lane.onClipDetune}}" onMouseDown="{{lane.dragClipDetune}}" style="width:46px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 4px;cursor:ew-resize;" />
+                </div>
+              </div>
+              <div style="flex:1;min-width:0;position:relative;" onWheel="{{onWheel}}" onMouseDown="{{lane.onLaneDown}}" onAuxClick="{{noop}}">
+                <canvas ref="{{lane.ref}}" width="1400" height="62" style="width:100%;height:62px;display:block;"></canvas>
+                <sc-for list="{{lane.clips}}" as="clip" hint-placeholder-count="2">
+                  <div onMouseDown="{{clip.onDown}}" style="{{clip.style}}">
+                    <div style="display:flex;align-items:center;gap:4px;padding:2px 3px;min-width:0;position:relative;z-index:2;">
+                      <span style="{{clip.scoreStyle}}">{{clip.scoreLabel}}</span>
+                      <button onClick="{{clip.onLoop}}" style="{{clip.loopStyle}}">LOOP</button>
+                      <span style="{{clip.bpmStyle}}">{{clip.bpmLabel}}</span>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-for list="{{lane.overlaps}}" as="ov" hint-placeholder-count="1">
+                  <div onMouseDown="{{ov.onSelect}}" style="{{ov.style}}">
+                    <span style="font-size:9px;color:white;background:var(--purple-strong);padding:0 3px;">{{ov.label}}</span>
+                  </div>
+                </sc-for>
+                <div style="{{playheadStyle}}"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+      </div>
+      </sc-if>
+
+      <sc-if value="{{isStats}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">ANALYSE</span>
+          <sc-for list="{{statLaneButtons}}" as="b" hint-placeholder-count="5">
+            <button onClick="{{b.onClick}}" style="{{b.style}}">{{b.label}}</button>
+          </sc-for>
+          <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">features read from the sidecars (.TIMESERIES.npz, .json)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">256×256 DIM CROSS-CORRELATION</div>
+            <canvas ref="{{xcorrRef}}" width="300" height="300" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">PCA — PC1 vs PC2 (frame pool)</div>
+            <canvas ref="{{pcaRef}}" width="300" height="300" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:10px;color:var(--text-dim);">DIM ↔ FEATURE CORRELATION</span>
+              <select value="{{statFeature}}" onChange="{{setStatFeature}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="spectral_centroid">spectral_centroid</option>
+                <option value="rms">rms</option>
+                <option value="onset_strength">onset_strength</option>
+              </select>
+            </div>
+            <canvas ref="{{featRef}}" width="300" height="180" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--panel);padding:10px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <select value="{{statAxisX}}" onChange="{{setStatAxisX}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="bpm">bpm</option><option value="lufs">lufs</option><option value="rel_pos">rel_pos</option>
+              </select>
+              <span style="font-size:10px;color:var(--text-dim);">vs</span>
+              <select value="{{statAxisY}}" onChange="{{setStatAxisY}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 5px;">
+                <option value="lufs">lufs</option><option value="bpm">bpm</option><option value="rel_pos">rel_pos</option>
+              </select>
+            </div>
+            <canvas ref="{{scatterRef}}" width="300" height="180" style="width:100%;max-width:300px;display:block;"></canvas>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+
+    </div>
+
+
+    <div style="{{footerStackStyle}}">
+      <div style="{{bottomTabsStyle}}">
+        <sc-for list="{{bottomTabs}}" as="t" hint-placeholder-count="4">
+          <button onClick="{{t.onClick}}" style="{{t.style}}">{{t.label}}</button>
+        </sc-for>
+        <div style="flex:1;"></div>
+        <span style="font-size:10px;color:var(--text-dim);">{{bottomHint}}</span>
+      </div>
+      <sc-if value="{{showMixTab}}" hint-placeholder-val="{{false}}">
+      <div style="{{mixTabStyle}}">
+        <div style="{{mixRowStyle}}">
+          <div style="flex:2;min-width:0;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);padding:8px 10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+              <button onClick="{{toggleMixRow}}" data-help="Fold the mix order and signal path into a one-line summary to free vertical space." style="background:transparent;border:none;color:var(--text-dim);font-size:10px;cursor:pointer;padding:0;">▾</button>
+              <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">MIX ORDER</span>
+              <select data-help="slerp is defined pairwise, so a 4-way mix runs as a tree of pairwise slerps. WEIGHTED 4-WAY mixes all four lanes at once but is lerp-only." value="{{mixOrder}}" onChange="{{setMixOrder}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 6px;">
+                <option value="tree">(1+2) + (3+4)</option>
+                <option value="cascade">((1+2)+3)+4</option>
+                <option value="quad">weighted 4-way (lerp only)</option>
+              </select>
+            </div>
+            <sc-if value="{{isQuad}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;gap:12px;">
+              <sc-for list="{{quadWeights}}" as="q" hint-placeholder-count="4">
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="{{q.chipStyle}}"></span><span style="font-size:10px;">{{q.label}}</span><span style="font-size:10px;color:var(--text-dim);margin-left:auto;">{{q.valueLabel}}</span></div>
+                  <input type="range" min="0" max="1" step="0.01" value="{{q.value}}" onChange="{{q.onChange}}" style="width:100%;accent-color:var(--purple-strong);" />
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+            <sc-if value="{{isTreeOrCascade}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex;align-items:stretch;gap:8px;">
+              <sc-for list="{{mixNodes}}" as="node" hint-placeholder-count="3">
+                <div style="{{node.boxStyle}}">
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">
+                    <sc-for list="{{node.chips}}" as="c" hint-placeholder-count="2">
+                      <span style="{{c.style}}"></span>
+                    </sc-for>
+                    <span style="font-size:10px;font-weight:600;margin-left:2px;">{{node.label}}</span>
+                  </div>
+                  <div style="display:flex;gap:3px;margin-bottom:5px;">
+                    <button onClick="{{node.onLerp}}" style="{{node.lerpStyle}}">LERP</button>
+                    <button onClick="{{node.onSlerp}}" style="{{node.slerpStyle}}">SLERP</button>
+                  </div>
+                  <input data-help="Interpolation position between this node's two inputs: 0 is all of the first, 1 all of the second. Safe value: 0.50." type="range" min="0" max="1" step="0.01" value="{{node.t}}" onChange="{{node.onT}}" style="width:100%;accent-color:var(--purple-strong);" />
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);padding:8px 10px;">
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+              <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">SIGNAL PATH</span>
+              <span style="font-size:10px;color:var(--text-dim);">live</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <sc-for list="{{pipeline}}" as="st" hint-placeholder-count="7">
+                <div data-help="Live signal path: stages reflect what the clips and chains currently do. Dimmed stages are skipped for this run." style="{{st.style}}">
+                  <span style="color:var(--text-dim);font-size:10px;width:12px;">{{st.n}}</span>
+                  <span style="font-size:10px;flex:1;">{{st.label}}</span>
+                  <span style="font-size:10px;color:var(--text-dim);">{{st.note}}</span>
+                </div>
+              </sc-for>
+            </div>
+            <button onClick="{{startRender}}" style="{{renderBtnStyle}}width:100%;margin-top:8px;">{{renderLabel}}</button>
+          </div>
+        </div>
+
+        <div style="{{mixSummaryStyle}}">
+          <button onClick="{{toggleMixRow}}" data-help="Expand the mix order and signal path panels." style="background:transparent;border:none;color:var(--text-dim);font-size:10px;cursor:pointer;padding:0;">▸</button>
+          <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">MIX + SIGNAL PATH</span>
+          <span style="font-size:10px;">{{mixSummaryLabel}}</span>
+          <span style="font-size:10px;color:var(--text-dim);">{{pathSummaryLabel}}</span>
+          <div style="flex:1;"></div>
+          <button onClick="{{startRender}}" style="{{renderBtnStyle}}">{{renderLabel}}</button>
+        </div>
+
+      </div>
+      </sc-if>
+      <sc-if value="{{showChromaTab}}" hint-placeholder-val="{{true}}">
+        <div style="{{chromaPaneStyle}}">
+          <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--panel2);border-bottom:1px solid var(--border);flex-wrap:wrap;">
+
+            <sc-for list="{{chromaModeButtons}}" as="m" hint-placeholder-count="4">
+              <button onClick="{{m.onClick}}" style="{{m.style}}">{{m.label}}</button>
+            </sc-for>
+            <sc-if value="{{showLegend}}" hint-placeholder-val="{{true}}">
+            <div data-help="Per-frame harmonic-overlap score against the target. The three marks are computed from the target itself: what the score reads when the same chroma is heard a tritone, a fifth, and a unison away. Anything at or above the fifth mark reads as in tune with the target; below the tritone mark is genuinely clashing." style="display:flex;align-items:flex-end;gap:5px;margin-left:4px;">
+              <div style="position:relative;">
+                <div style="display:flex;">
+                  <sc-for list="{{legendStops}}" as="s" hint-placeholder-count="9">
+                    <span style="{{s.style}}"></span>
+                  </sc-for>
+                </div>
+                <sc-for list="{{legendTicks}}" as="t" hint-placeholder-count="3">
+                  <span style="{{t.markStyle}}"></span>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <sc-for list="{{legendTicks}}" as="t" hint-placeholder-count="3">
+                  <span style="{{t.keyStyle}}">{{t.label}} {{t.value}}</span>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+            <div style="flex:1;"></div>
+            <span style="font-size:10px;color:var(--text-dim);">TARGET</span>
+            <button onClick="{{setTargetModeLane}}" style="{{targetModeLaneStyle}}">{{targetLaneLabel}}</button>
+            <button onClick="{{setTargetModeSet}}" style="{{targetModeSetStyle}}">SEMITONE SET</button>
+          </div>
+          <div style="padding:7px 8px;display:flex;flex-direction:column;gap:6px;min-height:0;flex:1;">
+            <sc-if value="{{targetIsSet}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="display:flex;gap:2px;">
+                <sc-for list="{{pianoKeys}}" as="k" hint-placeholder-count="12">
+                  <button onClick="{{k.onClick}}" style="{{k.style}}">{{k.label}}</button>
+                </sc-for>
+              </div>
+              <input data-help="Type a chord symbol (e.g. Cmaj7, F#m, Adim) and the key row fills in." type="text" value="{{chordText}}" onChange="{{setChordText}}" placeholder="chord symbol" style="width:110px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px 5px;" />
+              <span style="font-size:10px;color:var(--text-dim);">{{chordHint}}</span>
+            </div>
+            </sc-if>
+            <div style="display:flex;gap:8px;flex:1;min-height:0;">
+              <div style="width:250px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto;">
+                <span style="font-size:10px;color:var(--text-dim);">{{chromaModeLabel}}</span>
+                <span data-help="Match is a harmonic-overlap score: the partial series implied by each chroma frame is compared with the target's, so a fifth scores high and a semitone low even though it is closer in pitch." style="font-size:10px;color:var(--turq-strong);">match {{matchScoreLabel}} · {{chromaScaleLabel}}</span>
+                <span style="font-size:9px;color:var(--text-dim);">middle-drag: ↕ zoom · ↔ scroll</span>
+                <canvas data-help="Match score as the selected clip is detuned across ±100 cents. The peak is where this clip's chroma lines up best with the target; the red mark is the clip's current detune. Click or drag on the strip to set it, or press BEST to jump to the peak." ref="{{scanRef}}" width="500" height="30" onMouseDown="{{onScanDown}}" style="width:100%;height:30px;flex-shrink:0;display:block;box-sizing:border-box;border:1px solid var(--border);cursor:ew-resize;margin-top:2px;"></canvas>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <span style="font-size:9px;color:var(--text-dim);flex:1;">{{scanLabel}}</span>
+                  <button onClick="{{toggleScanCrit}}" data-help="What BEST optimises. HIGHEST takes the detune with the greatest average match — the curve sits high but may still swing. STEADIEST takes the greatest average minus its spread, so the match holds level through the clip, which is what matters before a crossfade or an inpainted join. A flat curve on its own is not a good match: it can be uniformly dissonant." style="{{scanCritStyle}}">{{scanCritLabel}}</button>
+                  <button onClick="{{onScanBest}}" data-help="Sets the clip's detune to the peak of the scan, under the criterion in the button to the left." style="{{scanBestStyle}}">BEST</button>
+                </div>
+                <div style="{{chromaHoverStyle}}">
+                  <div style="font-size:14px;font-weight:600;color:var(--purple-strong);line-height:1.1;">{{chromaHoverNote}}</div>
+                  <div style="font-size:9px;color:var(--text-dim);line-height:1.35;">{{chromaHoverDetail}}</div>
+                </div>
+              </div>
+              <div ref="{{chromaBoxRef}}" style="flex:1;min-width:0;min-height:0;position:relative;">
+                <canvas onMouseMove="{{onChromaHover}}" onMouseLeave="{{onChromaLeave}}" data-help="Chroma over time for the selected lane, with the target's chroma as the reference row at the top. Per-frame colour is the harmonic-overlap score when CONSONANCE COLOUR is on. Moving the cursor reads out the pitch class under it and marks the same frame on the clip in the lane with a red line." ref="{{chromaRef}}" width="1400" height="{{chromaH}}" style="{{chromaCanvasStyle}}"></canvas>
+                <sc-if value="{{showCurve}}" hint-placeholder-val="{{true}}">
+                <canvas data-help="Harmonic-overlap score over time against the target, overlaid on the heatmap. Dips are dissonant passages." ref="{{curveRef}}" width="1400" height="{{chromaH}}" style="{{curveCanvasStyle}}"></canvas>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{showPromptTab}}" hint-placeholder-val="{{false}}">
+      <div ref="{{promptPaneRef}}" style="{{promptPaneStyle}}">
+      <div style="display:flex;flex-wrap:nowrap;gap:10px;align-items:stretch;height:100%;min-height:0;overflow-x:auto;">
+
+      <div style="flex:1 1 250px;min-width:186px;display:flex;flex-direction:column;gap:4px;min-height:0;">
+        <div data-help="These settings act on whatever is selected: a clip (audio→audio on that clip), an inpaint region, or nothing (a fresh render). Selecting something else switches the whole pane with it, so a prompt always belongs to one target." style="{{targetBarStyle}}">
+          <span style="{{targetTagStyle}}">{{targetTag}}</span>
+          <span style="font-size:10px;color:var(--text);flex:1 1 60px;min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{targetName}}</span>
+          <select data-help="Prompt preset — recalls the prompt and negative prompt text only." value="{{presets.prompt}}" onChange="{{setPresetPrompt}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:1px 3px;flex:0 1 104px;min-width:40px;">
+            <sc-for list="{{promptPresetOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+          </select>
+        </div>
+        <sc-if value="{{targetIsClip}}" hint-placeholder-val="{{true}}">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <button data-help="Audio→audio on this clip: it is decoded, re-noised to the amount below, and re-denoised with these settings. Off means the clip is left as it is and the settings apply to a fresh render. Safe value: off." onClick="{{toggleClipA2a}}" style="{{clipA2aStyle}}">{{clipA2aLabel}}</button>
+            <span style="font-size:10px;">A2A</span>
+            <span style="font-size:10px;color:var(--text-dim);margin-left:4px;">NOISE</span>
+            <input data-help="Init noise level — how much of the clip is destroyed before re-denoising. Near 0 barely changes it; at the top it is a fresh generation with only a hint of the source. The backend range is 0.1–100 for v/eps models and 0.01–1.0 for rectified flow. Safe value: 0.2. Drag to scale." type="number" step="0.01" value="{{clipNoise}}" onChange="{{setClipNoise}}" onMouseDown="{{dragClipNoise}}" style="width:52px;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:2px 4px;font-size:11px;cursor:ew-resize;" />
+          </div>
+        </sc-if>
+        <textarea data-help="Conditioning prompt for generation, a2a and inpainting. Empty means unconditional." value="{{prompt}}" onChange="{{setPrompt}}" placeholder="describe the sound…" style="resize:none;flex:1;min-height:44px;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:5px 6px;font-size:11px;"></textarea>
+        <textarea data-help="Negative conditioning — guidance is steered away from this. Empty falls back to the unconditional embedding." value="{{negPrompt}}" onChange="{{setNegPrompt}}" placeholder="negative prompt — what to steer away from" style="resize:none;flex:0 0 34px;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:3px 6px;font-size:11px;"></textarea>
+      </div>
+
+      <div style="flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:5px;min-height:0;">
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="width:104px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">MODEL STAGE</div>
+            <div style="display:flex;gap:3px;">
+              <button data-help="The released SA3 checkpoints are adversarially post-trained: they sample with ping-pong in 8 steps on a logSNR-uniform schedule and need no CFG, because guidance is baked in during distillation. Safe value: POST." onClick="{{setObjPost}}" style="{{objPostStyle}}">POST</button>
+              <button data-help="The flow-matching base model before distillation: solved as an ODE over 50–100 steps with DPM++ and real CFG. Only use this if you are running a pre-distillation checkpoint. Safe value: POST." onClick="{{setObjBase}}" style="{{objBaseStyle}}">BASE</button>
+            </div>
+          </div>
+          <div style="width:46px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">STEPS</div><input data-help="Number of denoising steps. More steps cost time and give diminishing returns. Safe value: 100 for v/eps models, 50 for rectified_flow, 8 for rf_denoiser. Drag to scale; hold shift for 1/100th detail." type="number" value="{{steps}}" onChange="{{setSteps}}" onMouseDown="{{dragSteps}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:40px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">CFG</div><input data-help="Classifier-free guidance scale — how hard the prompt is enforced. Too high burns the output and flattens dynamics. Safe value: 7.0 (1.0 for rf_denoiser, which is effectively guidance-free). Drag to scale; hold shift for 1/100th detail." type="number" step="0.1" value="{{cfg}}" onChange="{{setCfg}}" onMouseDown="{{dragCfg}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+        </div>
+        <div style="{{cfgNoteStyle}}">{{cfgNote}}</div>
+        <div style="{{flatWarnStyle}}">{{flatWarn}}</div>
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="width:56px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">LENGTH s</div><input data-help="Requested duration. This is not just a buffer size — SA3 conditions on it through both cross-attention and AdaLN, and allocates a variable-length latent of ceil((d + 6 s) · 44100 / 4096) embeddings, the trailing 6 s being silence padding that is trimmed after generation. Ceiling is the checkpoint's own maximum (2 min for small, 6 min 20 s for medium and large). Safe value: anything under that. Drag to scale." type="number" value="{{duration}}" onChange="{{setDuration}}" onMouseDown="{{dragDuration}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:84px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">SEED</div><div style="display:flex;gap:3px;"><input data-help="RNG seed for the initial noise. Same seed, same settings, same result. Safe value: any integer, or RND for a fresh one — there is no wrong seed." type="number" value="{{seed}}" onChange="{{setSeed}}" onMouseDown="{{dragSeed}}" style="width:100%;min-width:0;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /><button data-help="New random seed." onClick="{{randomizeSeed}}" style="background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:0 5px;cursor:pointer;">RND</button></div></div>
+        </div>
+      </div>
+
+      <div style="flex:1 1 260px;min-width:0;display:flex;flex-direction:column;min-height:0;">
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;">
+          <span style="color:var(--text-dim);font-size:10px;letter-spacing:0.06em;">SIGMA</span>
+          <span style="font-size:10px;color:var(--turq-strong);">{{sigmaGraphLabel}}</span>
+          <sc-for list="{{slotLegend}}" as="s" hint-placeholder-count="2">
+            <span style="{{s.style}}">{{s.label}}</span>
+          </sc-for>
+        </div>
+        <canvas data-help="Sigma over the sampler steps, with a tick per step — where the ticks bunch up, more steps are spent in that noise band. The turquoise band is the interval where CFG is applied." ref="{{sigmaRef}}" width="320" height="180" style="width:100%;flex:1;min-height:90px;display:block;box-sizing:border-box;border:1px solid var(--border);"></canvas>
+      </div>
+
+      </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{showTerminalTab}}" hint-placeholder-val="{{false}}">
+    <div style="{{terminalStyle}}">
+      <div style="height:24px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--panel2);border-top:1px solid var(--border);">
+        <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.08em;">TERMINAL</span>
+        <span style="{{terminalDotStyle}}"></span>
+        <div style="flex:1;"></div>
+        <button onClick="{{terminalCollapse}}" style="{{termBtn1}}">COLLAPSE</button>
+        <button onClick="{{terminalNormal}}" style="{{termBtn2}}">PANE</button>
+        <button onClick="{{terminalFull}}" style="{{termBtn3}}">FULL SCREEN</button>
+      </div>
+      <sc-if value="{{terminalOpen}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1;overflow:auto;padding:6px 10px;background:oklch(94% 0.006 240);">
+        <sc-for list="{{logLines}}" as="l" hint-placeholder-count="7">
+          <div style="{{l.style}}">{{l.text}}</div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+      </sc-if>
+
+    </div>
+
+
+  </div>
+
+  <div style="{{sidePaneStyle}}">
+    <button onClick="{{toggleSide}}" data-help="Collapse or expand the context pane. Menus keep a lit marker when something inside them is active." style="width:100%;text-align:left;background:var(--panel2);border:none;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:10px;letter-spacing:0.08em;padding:7px 9px;cursor:pointer;">{{sideToggleLabel}}</button>
+    <sc-if value="{{sideOpen}}" hint-placeholder-val="{{true}}">
+    <div style="overflow-y:auto;flex:1;">
+
+      <sc-if value="{{overlapSelected}}" hint-placeholder-val="{{false}}">
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuOverlap}}" style="{{menuOverlapHeadStyle}}"><span>{{menuOverlapArrow}} OVERLAP — INPAINT</span><span style="{{menuOverlapDot}}"></span></button>
+        <sc-if value="{{menus.overlap}}" hint-placeholder-val="{{true}}">
+        <div style="padding:8px 10px 12px;display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--purple-strong);background:oklch(54% 0.10 300 / 0.08);">
+          <div style="font-size:10px;color:var(--text-dim);">{{overlapInfo}}</div>
+          <span style="font-size:10px;color:var(--text-dim);">CROSSFADE CURVE — drag a node or bend a segment</span>
+          <div style="position:relative;width:100%;height:64px;background:var(--panel2);border:1px solid var(--border);">
+            <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="{{envSvgStyle}}">
+              <path d="{{xfade.pathD}}" stroke="var(--purple-strong)" stroke-width="2" fill="none" vector-effect="non-scaling-stroke" />
+              <sc-for list="{{xfade.segments}}" as="seg" hint-placeholder-count="3">
+                <path d="{{seg.d}}" stroke="transparent" stroke-width="16" onMouseDown="{{seg.onDown}}" style="cursor:ns-resize;" />
+              </sc-for>
+            </svg>
+            <sc-for list="{{xfade.points}}" as="pt" hint-placeholder-count="4">
+              <div onMouseDown="{{pt.onDown}}" style="{{pt.style}}"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleChromaXfade}}" style="{{chromaXfadeStyle}}">{{chromaXfadeLabel}}</button>
+            <span data-help="Crossfades the chroma of the two clips through the overlap using the harmonic-overlap matching, instead of a plain amplitude fade." style="font-size:10px;">CHROMA CROSSFADE</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleLocalOverride}}" style="{{localOverrideStyle}}">{{localOverrideLabel}}</button>
+            <span data-help="When off, the region is inpainted with the global STEPS and CFG from the pane below. Safe value: off." style="font-size:10px;">LOCAL STEPS / CFG</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">STEPS</span><input data-help="Steps used for this inpaint region only, overriding the global STEPS. Short regions need fewer. Safe value: leave the override off, or 28. Drag to scale; hold shift for 1/100th detail." type="number" value="{{overlapSteps}}" onChange="{{setOverlapSteps}}" onMouseDown="{{dragOverlapSteps}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;cursor:ew-resize;" /></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">CFG</span><input data-help="Guidance scale for this inpaint region only. Lower than the global value usually blends better, since the region has to agree with audio on both sides. Safe value: 3.0. Drag to scale; hold shift for 1/100th detail." type="number" step="0.1" value="{{overlapCfg}}" onChange="{{setOverlapCfg}}" onMouseDown="{{dragOverlapCfg}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;cursor:ew-resize;" /></div>
+          <button style="background:var(--purple-strong);border:1px solid var(--purple-strong);color:white;font-size:11px;font-weight:600;padding:6px;cursor:pointer;">▸ INPAINT OVERLAP</button>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuFiles}}" style="{{menuFilesHeadStyle}}"><span>{{menuFilesArrow}} FILES</span><span style="{{menuFilesDot}}"></span></button>
+        <sc-if value="{{menus.files}}" hint-placeholder-val="{{true}}">
+        <div style="padding:2px 0 8px;">
+          <div style="padding:4px 10px;font-size:10px;color:var(--text-dim);">~/PROJECTS/LATENTS_SA3/AUDIO</div>
+          <sc-for list="{{files}}" as="f" hint-placeholder-count="8">
+            <div draggable="true" onDragStart="{{f.onDragStart}}" data-help="Drag onto a lane to add a clip at the playhead. Audio and latents are both accepted." style="padding:4px 10px;cursor:grab;font-size:11px;border-left:2px solid transparent;" style-hover="background:var(--panel2);border-left:2px solid var(--turq-strong);">{{f.name}}</div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuGen}}" style="{{menuGenHeadStyle}}"><span>{{menuGenArrow}} GENERATION</span><span style="{{menuGenDot}}"></span></button>
+        <sc-if value="{{menus.gen}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <button onClick="{{startRender}}" data-help="Renders with the prompt and settings from the pane at the bottom of the screen. While sampling, the window border runs a raster bar whose sweep rate falls with the remaining step count." style="{{renderBtnStyle}}">{{renderLabel}}</button>
+          <div style="font-size:10px;color:var(--text-dim);">RENDERED THIS SESSION — drag to a lane</div>
+          <sc-for list="{{renders}}" as="r" hint-placeholder-count="4">
+            <div draggable="true" onDragStart="{{r.onDragStart}}" style="display:flex;gap:6px;padding:4px 6px;background:var(--panel2);border:1px solid var(--border);cursor:grab;font-size:10px;">
+              <span style="flex:1;">{{r.name}}</span><span style="color:var(--text-dim);">{{r.len}}</span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuChain}}" style="{{menuChainHeadStyle}}"><span>{{menuChainArrow}} {{activeLaneLabel}} CHAIN</span><span style="{{menuChainDot}}"></span></button>
+        <sc-if value="{{menus.chain}}" hint-placeholder-val="{{true}}">
+        <div style="{{chainBodyStyle}}">
+          <div style="font-size:10px;color:var(--text-dim);">latent chain for the selected lane — click another lane header to switch</div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleLatch}}" style="{{latchBtnStyle}}">{{latchLabel}}</button>
+            <span style="font-size:10px;">LATCH GUIDANCE</span>
+            <select data-help="Module preset — recalls just this module's settings." value="{{presets.latch}}" onChange="{{setPresetLatch}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{latchPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <sc-for list="{{latchSlots}}" as="sl" hint-placeholder-count="2">
+            <div style="{{sl.boxStyle}}">
+              <div style="{{sl.titleStyle}}"><span style="{{sl.chipStyle}}"></span>{{sl.title}}<span style="margin-left:auto;color:var(--text-dim);">{{sl.rangeText}}</span></div>
+              <select data-help="LatCH head checkpoint, listed from latch_weights/*.pt. The target slider's bounds come from the head's own feature_stats / p1–p99 metadata." value="{{sl.model}}" onChange="{{sl.onModel}}" style="width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;margin-bottom:4px;">
+                <sc-for list="{{latchModelOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+              </select>
+              <select data-help="Target kind. constant holds one value; ramp_up / ramp_down sweep it over the window; beat_grid takes a BPM instead of a feature value; chroma_major / chroma_minor target a key." value="{{sl.kind}}" onChange="{{sl.onKind}}" style="width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;margin-bottom:4px;">
+                <sc-for list="{{latchKindOptions}}" as="o" hint-placeholder-count="6"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+              </select>
+              <div style="display:flex;align-items:center;gap:6px;"><span style="width:44px;font-size:9px;color:var(--text-dim);">{{sl.targetLabel}}</span><input data-help="The value this head steers the feature toward. Its range comes from the head's own training statistics (p1–p99), so mid-slider is roughly the training mean; for beat_grid it is a BPM instead. Safe value: the head's mean, or 120 BPM for beat_grid." type="range" min="{{sl.targetMin}}" max="{{sl.targetMax}}" step="{{sl.targetStep}}" value="{{sl.target}}" onChange="{{sl.onTarget}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:34px;text-align:right;font-size:10px;">{{sl.targetText}}</span></div>
+              <div style="display:flex;align-items:center;gap:6px;"><span style="width:44px;font-size:9px;color:var(--text-dim);">WEIGHT</span><input data-help="How much this slot contributes relative to the other. 0 disables the slot without unloading it; past roughly 10 the head tends to dominate the prompt. Safe value: 1.0." type="range" min="0" max="50" step="0.1" value="{{sl.weight}}" onChange="{{sl.onWeight}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:34px;text-align:right;font-size:10px;">{{sl.weightText}}</span></div>
+              <div style="display:flex;align-items:center;gap:6px;"><span style="width:44px;font-size:9px;color:var(--text-dim);">START %</span><input data-help="Window start as a fraction of the step schedule. Each slot gets its own colour and its own lane on the sigma graph; hatching marks where the window overlaps the CFG-active region." type="range" min="0" max="1" step="0.01" value="{{sl.start}}" onChange="{{sl.onStart}}" style="{{sl.windowStyle}}" /><span style="width:34px;text-align:right;font-size:10px;">{{sl.startText}}</span></div>
+              <div style="display:flex;align-items:center;gap:6px;"><span data-help="Window end as a fraction of the step schedule. Guidance late in the schedule fights the detail steps, so keeping the window early is usually better. Safe value: 0.20." style="width:44px;font-size:9px;color:var(--text-dim);">END %</span><input type="range" min="0" max="1" step="0.01" value="{{sl.end}}" onChange="{{sl.onEnd}}" style="{{sl.windowStyle}}" /><span style="width:34px;text-align:right;font-size:10px;">{{sl.endText}}</span></div>
+            </div>
+          </sc-for>
+          <div style="font-size:9px;color:var(--text-dim);letter-spacing:0.06em;margin-top:2px;">GUIDANCE HYPERPARAMETERS</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">ρ VARIANCE</span><input data-help="Weight on the variance term of the LatCH guidance objective — how strongly the latent's spread is pushed toward the head's target. High values wash out transients. Safe value: 1.0." type="range" min="0" max="30" step="0.1" value="{{latchH.rho}}" onChange="{{setLatchRho}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:30px;text-align:right;font-size:10px;">{{latchH.rhoText}}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">μ MEAN</span><input data-help="Weight on the mean term — how strongly the latent's centre is moved toward the target. This is the one that actually shifts the feature; raise it before ρ. Safe value: 1.0." type="range" min="0" max="30" step="0.1" value="{{latchH.mu}}" onChange="{{setLatchMu}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:30px;text-align:right;font-size:10px;">{{latchH.muText}}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">γ NOISE</span><input data-help="Noise injected per guidance iteration, which keeps the correction from collapsing into a single mode. 0 makes it deterministic and often over-smoothed. Safe value: 0.3." type="range" min="0" max="20" step="0.05" value="{{latchH.gamma}}" onChange="{{setLatchGamma}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:30px;text-align:right;font-size:10px;">{{latchH.gammaText}}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">MEAN ITER</span><input data-help="Inner iterations spent solving the mean term at each step. More is more faithful and linearly slower. Safe value: 4." type="range" min="1" max="80" step="1" value="{{latchH.nIter}}" onChange="{{setLatchIter}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:30px;text-align:right;font-size:10px;">{{latchH.nIter}}</span></div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button data-help="Prints the guidance gradient norms to the terminal each step — diagnostic only, for checking whether ρ and μ are in a sane range. Safe value: off." onClick="{{toggleLatchLog}}" style="{{latchLogStyle}}">{{latchLogLabel}}</button>
+            <span style="font-size:10px;">LOG GRADIENT NORMS</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleFilm}}" style="{{filmBtnStyle}}">{{filmLabel}}</button>
+            <span style="font-size:10px;">FILM</span>
+            <select value="{{presets.film}}" onChange="{{setPresetFilm}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{filmPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SCALE</span><input type="range" min="0" max="2" step="0.05" value="{{chain.filmScale}}" onChange="{{setFilmScale}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{chain.filmScaleLabel}}</span></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleLora}}" style="{{loraBtnStyle}}">{{loraLabel}}</button>
+            <span style="font-size:10px;">LORA / DORA</span>
+            <select value="{{presets.lora}}" onChange="{{setPresetLora}}" style="margin-left:auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;max-width:92px;">
+              <sc-for list="{{loraPresetOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <select value="{{chain.lora}}" onChange="{{setLora}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <sc-for list="{{loraOptions}}" as="o" hint-placeholder-count="5"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SCALE</span><input type="range" min="0" max="1" step="0.01" value="{{chain.loraScale}}" onChange="{{setLoraScale}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{chain.loraScaleLabel}}</span></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleBungee}}" style="{{bungeeBtnStyle}}">{{bungeeLabel}}</button>
+            <span style="font-size:10px;">BUNGEE STRETCH / PITCH</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">SEMITONES</span><input data-help="Pitch shift in semitones, applied during the Bungee stage before re-encoding. Safe value: 0 — no shift. Drag to scale; hold shift for 1/100th detail." type="number" step="0.5" value="{{chain.semis}}" onChange="{{setSemis}}" onMouseDown="{{dragSemis}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:3px;cursor:ew-resize;" /></div>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuAdv}}" style="{{menuAdvHeadStyle}}"><span>{{menuAdvArrow}} ADVANCED SAMPLING</span><span style="{{menuAdvDot}}"></span></button>
+        <sc-if value="{{menus.adv}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="width:50px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">CFG LO</div><input data-help="Where guidance switches on, in progress (1 − sigma) as the sampler reports it — not a step fraction. Raising it leaves the first, structure-forming steps unguided. Safe value: 0.00. Drag to scale; hold shift for 1/100th detail." type="number" step="{{cfgStep}}" value="{{cfgLoField}}" onChange="{{setCfgLo}}" onMouseDown="{{dragCfgLo}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:50px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">CFG HI</div><input data-help="Where guidance switches off, in progress (1 − sigma). Lowering it lets the final detail steps run unguided, which often reduces harshness. Safe value: 1.00. Drag to scale; hold shift for 1/100th detail." type="number" step="{{cfgStep}}" value="{{cfgHiField}}" onChange="{{setCfgHi}}" onMouseDown="{{dragCfgHi}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:44px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">UNIT</div><button data-help="Switch the CFG interval display between progress (0–1, the value the backend takes) and the step number where that progress is first crossed. It is stored as progress, so changing STEPS only changes the displayed step numbers." onClick="{{toggleCfgUnit}}" style="{{cfgUnitBtnStyle}}">{{cfgUnitLabel}}</button></div>
+          </div>
+        <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="width:126px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">SAMPLER</div>
+            <select data-help="Which sampler integrates the reverse diffusion. The list follows the model's objective: rectified_flow gives euler / rk4 / dpmpp, rf_denoiser gives pingpong, the v and eps models give the k-diffusion set. Safe value: dpmpp-3m-sde (euler for rectified_flow, pingpong for rf_denoiser)." value="{{sampler}}" onChange="{{setSampler}}" style="width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;">
+              <sc-for list="{{samplerOptions}}" as="o" hint-placeholder-count="6"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+          <div style="width:96px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">SHAPE</div>
+            <select data-help="How sigma falls from σ MAX to σ MIN. GEOMETRIC is the one the backend's three numbers describe; the others must be sent as an explicit sigma array. LINEAR falls evenly in sigma, so it lingers at low noise. LOG drops fast then flattens — more steps on detail. EXPONENTIAL holds high noise then dives — more steps on structure. COSINE is a smooth S. Safe value: logSNR-uniform for the released checkpoints. STEPPED beside PLATEAUS then holds any of these shapes in plateaus and jumps down between them." value="{{sigma.shape}}" onChange="{{setSigmaShape}}" style="width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;">
+              <option value="logsnr">logSNR-uniform (SA3)</option><option value="geometric">geometric</option><option value="linear">linear</option><option value="log">log</option><option value="exponential">exponential</option><option value="cosine">cosine</option>
+            </select>
+          </div>
+          <div style="width:58px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">σ CURVE</div><input data-help="Sigma curve strength: how the steps are distributed between σ MAX and σ MIN. 1.0 is a plain geometric ramp; higher values spend more steps at high noise, lower values crowd them at the low-noise end where detail is decided. Watch the tick density on the graph. Safe value: 1.0. Drag to scale; shift for 1/100th." type="number" step="0.1" value="{{sigma.rho}}" onChange="{{setSigmaRho}}" onMouseDown="{{dragSigmaRho}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="{{lamFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">λ MIN</div><input data-help="Low end of the logSNR interval — the noisiest step the schedule starts from. SA3 ships −6.2. Safe value: −6.2. Drag to scale." type="number" step="0.1" value="{{sigma.lamMin}}" onChange="{{setLamMin}}" onMouseDown="{{dragLamMin}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="{{lamFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">λ MAX</div><input data-help="High end of the logSNR interval — the cleanest step the schedule ends at. SA3 ships 2.0. Safe value: 2.0. Drag to scale." type="number" step="0.1" value="{{sigma.lamMax}}" onChange="{{setLamMax}}" onMouseDown="{{dragLamMax}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="{{sigFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">σ MIN</div><input data-help="The noise level the schedule ends at, just before the final step, in the same unitless multiples of the latent's standard deviation as σ MAX. Too high and the output stays hazy; effectively zero and the last steps do nothing. Ignored by rectified-flow objectives. Safe value: 0.01 (range 0–2). Drag to scale; hold shift for 1/100th detail." type="number" step="0.01" value="{{sigma.min}}" onChange="{{setSigmaMin}}" onMouseDown="{{dragSigmaMin}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="{{sigFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">σ MAX</div><input data-help="The noise level the schedule starts from, as a unitless multiple of the latent's own standard deviation. At 100 the start is effectively pure noise; below about 10 the sampler starts near the data, so more of the init audio survives. Beyond ~200 nothing changes except that steps are wasted denoising from further away. Ignored by rectified-flow objectives. Safe value: 100 (range 0–1000). Drag to scale; hold shift for 1/100th detail." type="number" step="0.1" value="{{sigma.max}}" onChange="{{setSigmaMax}}" onMouseDown="{{dragSigmaMax}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:62px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">STEPPED</div><button data-help="Quantises the chosen shape into plateaus: sigma is held for several steps, then jumps down. The shape still decides where the plateaus sit, so this stacks on geometric, log, logSNR and the rest. Safe value: off." onClick="{{toggleStepped}}" style="{{steppedStyle}}">{{steppedLabel}}</button></div>
+          <div style="{{plateauFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">TILT</div><input data-help="How much of its own span each plateau still travels. At 0 the plateaus are perfectly flat, which is a no-op on the ODE samplers — dt is zero, so DPM++ and friends spend a forward pass and change nothing. Under ping-pong a flat plateau is instead a churn step: the model re-noises to the same level and gets a second look, correcting earlier errors at the cost of some smoothing. A small tilt keeps every step doing work. Safe value: 0.15. Drag to scale." type="number" step="0.05" value="{{sigma.tilt}}" onChange="{{setTilt}}" onMouseDown="{{dragTilt}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="{{plateauFieldStyle}}"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">PLATEAUS</div><input data-help="How many plateaus the stepped schedule holds. Each plateau repeats one noise level for several steps, then jumps down. Safe value: 6. Drag to scale." type="number" step="1" value="{{sigma.plateaus}}" onChange="{{setSigmaPlateaus}}" onMouseDown="{{dragPlateaus}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+          <div style="width:66px;"><div style="color:var(--text-dim);font-size:10px;margin-bottom:2px;">RESCALE</div><input data-help="CFG rescale amount (scale_phi): pulls the guided prediction's scale back toward the unguided one, which tames the over-bright result of a high CFG. 0 disables it. Shown as the dotted line on the sigma graph. Safe value: 0.00." type="number" step="0.01" value="{{cfgRescale}}" onChange="{{setCfgRescale}}" onMouseDown="{{dragCfgRescale}}" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:4px;font-size:11px;cursor:ew-resize;" /></div>
+        </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border);">
+        <button onClick="{{toggleMenuMaster}}" style="{{menuMasterHeadStyle}}"><span>{{menuMasterArrow}} MASTER CHAIN</span><span style="{{menuMasterDot}}"></span></button>
+        <sc-if value="{{menus.master}}" hint-placeholder-val="{{false}}">
+        <div style="padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:10px;color:var(--text-dim);">applied to the mixed latent, after the lane chains</div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button onClick="{{toggleMasterLatch}}" style="{{masterLatchBtnStyle}}">{{masterLatchLabel}}</button>
+            <span style="font-size:10px;">LATCH HEAD</span>
+          </div>
+          <select value="{{master.head}}" onChange="{{setMasterHead}}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;">
+            <sc-for list="{{latchModelOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:52px;font-size:10px;color:var(--text-dim);">GAIN</span><input type="range" min="0" max="120" value="{{master.gain}}" onChange="{{setMasterGain}}" style="flex:1;accent-color:var(--turq-strong);" /><span style="width:24px;text-align:right;font-size:10px;">{{master.gain}}</span></div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+            <button onClick="{{toggleMasterNorm}}" style="{{masterNormBtnStyle}}">{{masterNormLabel}}</button>
+            <span data-help="Renormalises the mixed latent to the distribution the decoder expects. Mixing two latents shrinks their norm, so leaving this off tends to give a quiet, dull decode. Safe value: on." style="font-size:10px;">LATENT NORMALISE</span>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+    </div>
+    </sc-if>
+  </div>
+
+</div>
+
+<canvas ref="{{fxRef}}" width="300" height="170" style="{{fxStyle}}"></canvas>
+
+<div style="{{fxPanelStyle}}">
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:10px;font-weight:600;color:var(--purple-strong);letter-spacing:0.06em;">RASTER FX — TEMP</span>
+    <div style="flex:1;"></div>
+    <button onClick="{{toggleFxLoop}}" style="{{fxLoopStyle}}">{{fxLoopLabel}}</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;">
+    <span style="font-size:9px;color:var(--text-dim);width:82px;">PALETTE</span>
+    <select value="{{fxPalette}}" onChange="{{setFxPalette}}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:2px 3px;">
+      <sc-for list="{{fxPaletteOptions}}" as="o" hint-placeholder-count="5"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+    </select>
+  </div>
+  <sc-for list="{{fxFields}}" as="fd" hint-placeholder-count="11">
+    <div style="display:flex;align-items:center;gap:5px;">
+      <span style="font-size:9px;color:var(--text-dim);width:82px;flex-shrink:0;">{{fd.label}}</span>
+      <input type="range" min="{{fd.min}}" max="{{fd.max}}" step="{{fd.step}}" value="{{fd.value}}" onChange="{{fd.onInput}}" style="flex:1;min-width:0;accent-color:var(--purple-strong);" />
+      <span style="font-size:9px;width:38px;text-align:right;flex-shrink:0;">{{fd.value}}</span>
+    </div>
+  </sc-for>
+  <textarea readonly="readonly" value="{{fxDump}}" style="height:38px;resize:none;background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-size:9px;padding:3px;"></textarea>
+</div>
+
+<sc-if value="{{helpVisible}}" hint-placeholder-val="{{false}}">
+<div style="{{helpBoxStyle}}">{{helpText}}</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;workspace&quot;,&quot;stats&quot;],&quot;default&quot;:&quot;workspace&quot;,&quot;tsType&quot;:&quot;'workspace' | 'stats'&quot;}}">
+const LANE_META = [
+  { name: 'LANE 1', color: 'oklch(54% 0.10 300)', soft: 'oklch(54% 0.10 300 / 0.10)' },
+  { name: 'LANE 2', color: 'oklch(56% 0.11 150)', soft: 'oklch(56% 0.11 150 / 0.10)' },
+  { name: 'LANE 3', color: 'oklch(55% 0.11 195)', soft: 'oklch(55% 0.11 195 / 0.10)' },
+  { name: 'LANE 4', color: 'oklch(50% 0.02 250)', soft: 'oklch(50% 0.02 250 / 0.10)' },
+];
+const DOWNBEAT = 'oklch(78% 0.08 250)';
+const CLIP_RED = 'oklch(55% 0.20 25)';
+// LatCH slot identity colours — used on the slot box, its window lane, and the readouts
+const SLOT_COLORS = ['oklch(72% 0.15 75)', 'oklch(62% 0.14 330)'];
+const DEFAULT_ENV = { points: [0.4, 0.4, 0.4, 0.4], curves: [0, 0, 0] };
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// NOTE FOR THE REAL APP — per-target render settings.
+// The bottom pane follows the selection: a clip (a2a on that clip), an overlap region
+// (inpaint), or nothing (a fresh render). In this mockup, prompt / negPrompt / steps / cfg /
+// cfgLo / cfgHi / seed / duration / sampler / sigma still live in ONE global block, so
+// selecting a different clip shows the same numbers again — the mock only demonstrates the
+// switching, not the storage.
+// In the shipped app that block must be stored PER TARGET, i.e. moved onto each clip
+// (clip.render = { prompt, negPrompt, steps, cfg, cfgLo, cfgHi, cfgRescale, seed, sampler,
+// sigma }) and onto each overlap region's params, with the pane reading and writing the
+// selected target's copy and a session-level default used to seed a newly created clip.
+// Otherwise a clip cannot say which prompt produced it, re-rendering one clip silently
+// adopts another's settings, and master presets cannot restore a session faithfully.
+// The per-clip a2a fields (a2a, noise, env) are already stored the right way — follow that
+// shape for the rest.
+const FRAME_HZ = 10.767;
+const MAT_N = 1200;
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+// harmonic-overlap weights by interval class: unison, 5th/4th and 3rds/6ths score high,
+// semitone and tritone low — proximity in pitch is not consonance.
+const INTERVAL_W = [1.0, 0.10, 0.35, 0.62, 0.70, 0.82, 0.18, 0.90, 0.66, 0.72, 0.30, 0.22];
+
+class Component extends DCLogic {
+  state = {
+    view: null, helpMode: false, helpText: '', helpX: 0, helpY: 0,
+    session: 's2', model: 'custom_v3',
+    modelFolder: '/home/kim/Projects/SAO/stable-audio-3/checkpoints/custom_v3',
+    sideOpen: true, terminal: 'collapsed',
+    menus: { overlap: true, files: true, gen: false, chain: true, master: false, sigma: false, adv: false },
+    activeLane: 0, targetLane: 0,
+    projectBpm: 124, snap: 'bar', barsVisible: 8, viewStartBar: 0, playheadBeat: 4,
+    nextClipId: 5,
+    clips: [
+      { id: 1, lane: 0, start: 0, len: 16, file: 'pad_drone_Cmin.wav', kind: 'AUDIO', bpmNative: 124, loop: false, a2a: true, noise: 0.35, env: { points: [0.5, 0.75, 0.3, 0.6], curves: [0, 0, 0] } },
+      { id: 2, lane: 0, start: 14, len: 16, file: 'arp_pluck_16th.wav', kind: 'AUDIO', bpmNative: 126, loop: false, a2a: false, noise: 0.2, env: null },
+      { id: 3, lane: 1, start: 4, len: 20, file: '000412.npy', kind: 'LATENT', bpmNative: 127.6, loop: true, a2a: false, noise: 0.2, env: null },
+      { id: 4, lane: 2, start: 8, len: 12, file: 'kick_break_140bpm.wav', kind: 'AUDIO', bpmNative: 140, loop: false, a2a: false, noise: 0.2, env: null },
+    ],
+    selected: { type: 'clip', id: 1 },
+    chains: [0, 1, 2, 3].map((i) => ({
+      latchOn: i === 0,
+      latch: [
+        { model: i === 0 ? 'bpm_madmom_v3.pt' : 'none', kind: 'constant', target: 1, weight: 1, start: 0, end: 0.2 },
+        { model: 'none', kind: 'constant', target: 1, weight: 1, start: 0, end: 0.2 },
+      ],
+      lRho: 1, lMu: 1, lGamma: 0.3, lIter: 4, lLog: false,
+      filmOn: i === 1, filmScale: 1.2, loraOn: i === 0, lora: 'vinyl_warmth', loraScale: 0.8,
+      bungeeOn: true, semis: i === 1 ? -2 : 0,
+    })),
+    chromaOpen: true, mixRowOpen: false, laneWidthPx: 1000, chromaHover: null,
+    chromaFrozen: true, promptOpen: true, promptFrozen: true, promptH: 0, chromaH: 132, scanCriterion: 'mean',
+    chromaBand: 'global', bottomTab: 'chroma', rendering: false, stepsLeft: 0,
+    fxPanel: false, fxLoop: false,
+    fxCfg: { sweepStart: 95, sweepEnd: 0, dur: 5, thickness: 4, linesPerColour: 3,
+      jitter: 0.59, persistence: 0.002, chromaBleed: 1.5, supersample: 8, gain: 0.8,
+      spotSpread: 0.16, palette: 'teal' },
+    chromaMode: 'folded',
+    chromaModes: { curve: true, consonance: true }, // consonance colour is always on
+    targetMode: 'lane', targetSet: [0, 3, 7], chordText: '',
+    overlapParams: {},
+    mixOrder: 'tree',
+    nodes: { M1: { interp: 'slerp', t: 0.5 }, M2: { interp: 'lerp', t: 0.5 }, MX: { interp: 'slerp', t: 0.5 } },
+    quadWeights: [0.4, 0.3, 0.2, 0.1],
+    master: { latchOn: false, head: 'chroma_384_v1.pt', gain: 64, normOn: true },
+    sampler: 'pingpong',
+    objective: 'post',
+    sigma: { shape: 'logsnr', stepped: false, plateaus: 6, tilt: 0.15, min: 0.01, max: 100, rho: 1.0, lamMin: -6.2, lamMax: 2.0 },
+    cfgRescale: 0,
+    prompt: '', negPrompt: '', steps: 8, cfg: 4.2, cfgLo: 0.1, cfgHi: 0.85, cfgUnit: 'steps', seed: 30219, duration: 45,
+    presets: { master: 'club_mix_v1', prompt: 'ambient_pad_v2', latch: 'bpm_default', film: 'flat', lora: 'warm_light' },
+    statLane: 0, statFeature: 'spectral_centroid', statAxisX: 'bpm', statAxisY: 'lufs',
+  };
+
+  _drag = null; _cache = {};
+  rootRef = React.createRef(); masterRef = React.createRef(); rulerRef = React.createRef();
+  sigmaRef = React.createRef(); chromaRef = React.createRef(); curveRef = React.createRef(); scanRef = React.createRef();
+  promptPaneRef = React.createRef(); chromaBoxRef = React.createRef(); fxRef = React.createRef();
+
+  // C64 loader border as the inference progress indicator: the raster sweep rate
+  // falls with the step count, so the bars slow to a standstill as the run finishes.
+  _startRender = () => {
+    if (this.state.rendering) return;
+    const total = Math.max(1, this.state.steps);
+    this.setState({ rendering: true, stepsLeft: total });
+    const run = (mod) => {
+      const cv = this.fxRef.current;
+      if (!cv) return;
+      const c = this.state.fxCfg;
+      const fx = mod.createPhosphorBorder(cv, {
+        thickness: c.thickness, supersample: c.supersample, linesPerColour: c.linesPerColour,
+        jitter: c.jitter, persistence: c.persistence, chromaBleed: c.chromaBleed,
+        gain: c.gain, spotSpread: c.spotSpread,
+        sweepHz: c.sweepStart, alphaOut: true, palette: mod.PALETTES[c.palette] || mod.PALETTES.teal,
+      });
+      this._fx = fx;
+      fx.start();
+      let t0 = performance.now();
+      const tick = (now) => {
+        const cc = this.state.fxCfg;
+        const dur = Math.max(0.2, cc.dur) * 1000;
+        let u = Math.min(1, (now - t0) / dur);
+        const left = Math.round(total * (1 - u));
+        fx.set({ sweepHz: cc.sweepStart + (cc.sweepEnd - cc.sweepStart) * u });
+        if (left !== this.state.stepsLeft) this.setState({ stepsLeft: left });
+        if (u < 1) { this._fxRaf = requestAnimationFrame(tick); return; }
+        if (this.state.fxLoop) { t0 = now; this._fxRaf = requestAnimationFrame(tick); return; }
+        fx.stop(); fx.destroy(); this._fx = null;
+        this.setState({ rendering: false, stepsLeft: 0 });
+      };
+      this._fxRaf = requestAnimationFrame(tick);
+    };
+    if (this._fxMod) run(this._fxMod);
+    else import('./phosphor-border.js').then(m => { this._fxMod = m; run(m); });
+  };
+  laneRefs = [React.createRef(), React.createRef(), React.createRef(), React.createRef()];
+  xcorrRef = React.createRef(); pcaRef = React.createRef(); featRef = React.createRef(); scatterRef = React.createRef();
+
+  _rng(seed) { let s = Math.abs(Math.floor(seed)) % 4294967296 || 7; return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; }
+  _hash(str) { let h = 2166136261; for (let i = 0; i < String(str).length; i++) { h ^= String(str).charCodeAt(i); h = (h * 16777619) >>> 0; } return h; }
+
+  _contour(file) {
+    const key = 'c:' + file;
+    if (this._cache[key]) return this._cache[key];
+    const seed = this._hash(file), rng = this._rng(seed), raw = new Float32Array(MAT_N);
+    for (let i = 0; i < MAT_N; i++) {
+      const slow = 0.42 + 0.34 * Math.sin(i / MAT_N * Math.PI * 5 + (seed % 100) / 16);
+      raw[i] = Math.min(1, slow * (0.5 + rng() * 0.7) * (rng() < 0.02 ? 1.5 : 1));
+    }
+    const R = 8, w = [];
+    for (let k = -R; k <= R; k++) w.push(Math.exp(-(k * k) / (2 * 3.4 * 3.4)));
+    const wsum = w.reduce((a, b) => a + b, 0), out = new Float32Array(MAT_N);
+    for (let i = 0; i < MAT_N; i++) {
+      let acc = 0;
+      for (let k = -R; k <= R; k++) acc += raw[Math.min(MAT_N - 1, Math.max(0, i + k))] * w[k + R];
+      out[i] = acc / wsum;
+    }
+    let peak = 0; for (let i = 0; i < MAT_N; i++) if (out[i] > peak) peak = out[i];
+    for (let i = 0; i < MAT_N; i++) out[i] /= peak;
+    const runs = 2 + Math.floor(rng() * 3);
+    for (let r = 0; r < runs; r++) {
+      const st = Math.floor(rng() * (MAT_N - 24)), len = 3 + Math.floor(rng() * 8);
+      for (let i = st; i < st + len; i++) out[i] = 1;
+    }
+    this._cache[key] = out;
+    return out;
+  }
+
+  // 12-class chroma profile per clip (the 384-bin view folds down to these classes)
+  _chroma(file) {
+    const key = 'x:' + file;
+    if (this._cache[key]) return this._cache[key];
+    const rng = this._rng(this._hash(file) + 17), frames = 96, out = [];
+    const root = this._hash(file) % 12;
+    for (let f = 0; f < frames; f++) {
+      const col = new Float32Array(12);
+      [0, 4, 7, 10].forEach((iv, k) => { col[(root + iv) % 12] = (1 - k * 0.18) * (0.6 + rng() * 0.4); });
+      for (let p = 0; p < 12; p++) col[p] = Math.min(1, col[p] + rng() * 0.22);
+      out.push(col);
+    }
+    this._cache[key] = out;
+    return out;
+  }
+
+  // SA3's chroma head is three regressors, not one: octave-band chromagrams centred at
+  // octaves 1, 5 and 9 (widths 1.0, 1.5, 1.0), each projecting the latent to 128 bins —
+  // 384 in total. GLOBAL folds all three onto 12 classes; the band views show the raw 128.
+  _chromaBand(clip, band) {
+    const key = 'cb:' + clip.file + ':' + band + ':' + (clip.detune || 0);
+    if (this._cache[key]) return this._cache[key];
+    const base = this._chromaOf(clip);
+    const seed = band === 'bass' ? 11 : band === 'mid' ? 23 : 41;
+    const rng = this._rng(this._hash(clip.file) + seed);
+    const tilt = band === 'bass' ? -1 : band === 'high' ? 1 : 0;
+    const spread = band === 'mid' ? 1.5 : 1.0;
+    const out = base.map(col12 => {
+      const col = new Float32Array(128);
+      for (let b = 0; b < 128; b++) {
+        const pcf = (b / 128) * 12, p0 = Math.floor(pcf), fr = pcf - p0;
+        const v = col12[p0 % 12] * (1 - fr) + col12[(p0 + 1) % 12] * fr;
+        const shape = 1 + tilt * 0.22 * Math.cos((b / 128) * Math.PI * 2);
+        col[b] = Math.min(1, v * shape * (0.6 + rng() * 0.45) * (band === 'mid' ? 1 : 0.85) / (spread * 0.8));
+      }
+      return col;
+    });
+    this._cache[key] = out;
+    return out;
+  }
+
+  _chroma384(file) {
+    const key = 'x384:' + file;
+    if (this._cache[key]) return this._cache[key];
+    const base = this._chroma(file), rng = this._rng(this._hash(file) + 53);
+    const out = base.map(col12 => {
+      const col = new Float32Array(384);
+      for (let p = 0; p < 12; p++) {
+        for (let s = 0; s < 32; s++) {
+          col[p * 32 + s] = Math.min(1, col12[p] * (0.7 + rng() * 0.6));
+        }
+      }
+      return col;
+    });
+    this._cache[key] = out;
+    return out;
+  }
+
+  _targetProfile() {
+    const S = this.state;
+    if (S.targetMode === 'set') {
+      const col = new Float32Array(12);
+      S.targetSet.forEach(p => { col[p % 12] = 1; });
+      return col;
+    }
+    const clip = S.clips.find(c => c.lane === S.targetLane);
+    if (!clip) return new Float32Array(12);
+    const ch = this._chroma(clip.file), col = new Float32Array(12);
+    ch.forEach(fr => { for (let p = 0; p < 12; p++) col[p] += fr[p]; });
+    let m = 0; for (let p = 0; p < 12; p++) if (col[p] > m) m = col[p];
+    if (m) for (let p = 0; p < 12; p++) col[p] /= m;
+    return col;
+  }
+
+  // Detune rotates the whole chroma by a fractional number of semitones, energy split
+  // between the two neighbouring classes. 100 cents = one class.
+  _rotate(col, semis) {
+    if (!semis) return col;
+    const out = new Float32Array(12), i = Math.floor(semis), fr = semis - i;
+    for (let p = 0; p < 12; p++) {
+      const a = ((p - i) % 12 + 12) % 12, b = ((p - i - 1) % 12 + 12) % 12;
+      out[p] = col[a] * (1 - fr) + col[b] * fr;
+    }
+    return out;
+  }
+  _chromaOf(clip) {
+    const cents = clip.detune || 0;
+    if (!cents) return this._chroma(clip.file);
+    const key = 'xd:' + clip.file + ':' + cents;
+    if (this._cache[key]) return this._cache[key];
+    const out = this._chroma(clip.file).map(c => this._rotate(c, cents / 100));
+    this._cache[key] = out;
+    return out;
+  }
+  // Reference points on the match scale, computed from the target itself: what the score
+  // reads when the same chroma is heard at a unison, a fifth, and a tritone away.
+  _anchors() {
+    const t = this._targetProfile();
+    return [
+      { label: 'unison', v: this._matchFrame(t, t), color: 'oklch(58% 0.13 155)' },
+      { label: 'fifth', v: this._matchFrame(this._rotate(t, 7), t), color: 'oklch(60% 0.12 90)' },
+      { label: 'tritone', v: this._matchFrame(this._rotate(t, 6), t), color: 'oklch(58% 0.17 25)' },
+    ];
+  }
+
+  // harmonic-overlap score: every pair of active pitch classes contributes its interval weight
+  _matchFrame(frame, target) {
+    let num = 0, den = 0;
+    for (let a = 0; a < 12; a++) {
+      if (frame[a] < 0.08) continue;
+      for (let b = 0; b < 12; b++) {
+        if (target[b] < 0.08) continue;
+        const ic = Math.abs(a - b) % 12;
+        num += frame[a] * target[b] * INTERVAL_W[Math.min(ic, 12 - ic) === 0 ? 0 : ic];
+        den += frame[a] * target[b];
+      }
+    }
+    return den ? num / den : 0;
+  }
+  _matchClip(fileOrClip) {
+    const target = this._targetProfile();
+    const ch = typeof fileOrClip === 'string' ? this._chroma(fileOrClip) : this._chromaOf(fileOrClip);
+    return ch.reduce((a, fr) => a + this._matchFrame(fr, target), 0) / ch.length;
+  }
+  // match as a function of detune, sampled across ±100 cents
+  // Two different questions: how HIGH the match sits on average, and how STEADY it is
+  // across the clip. A flat curve is not the same as a good one — it can be uniformly
+  // dissonant — so the scan reports both and the criterion picks which one BEST follows.
+  _detuneScan(clip) {
+    const target = this._targetProfile(), base = this._chroma(clip.file), out = [];
+    const stable = this.state.scanCriterion === 'stable';
+    for (let c = -100; c <= 100; c += 4) {
+      const s = c / 100, vals = [];
+      for (let i = 0; i < base.length; i += 3) vals.push(this._matchFrame(this._rotate(base[i], s), target));
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length);
+      out.push({ cents: c, mean, sd, v: stable ? mean - sd : mean });
+    }
+    return out;
+  }
+
+  _beatsVisible() { return this.state.barsVisible * 4; }
+  _x(beat, w) { return ((beat - this.state.viewStartBar * 4) / this._beatsVisible()) * w; }
+  _beatAt(px, w) { return this.state.viewStartBar * 4 + (px / w) * this._beatsVisible(); }
+  _snapBeat(beat, dragClip) {
+    const S = this.state;
+    if (S.snap === 'off') return beat;
+    if (S.snap === 'lane' && dragClip) {
+      // align the dragged clip's own downbeats to any other clip's, magnetically
+      const pxPerBeat = (S.laneWidthPx || 1000) / this._beatsVisible();
+      const thresh = 5 / pxPerBeat;
+      const phase = ((this._hash(dragClip.file) % 997) / 997) * 4 % 4;
+      const targets = [];
+      S.clips.forEach(c => { if (c.id !== dragClip.id) targets.push(...this._clipDownbeats(c)); });
+      let bestDelta = 0, d = Infinity;
+      for (let b = beat + phase; b <= beat + dragClip.len; b += 4) {
+        targets.forEach(t => { const dd = t - b; if (Math.abs(dd) < d) { d = Math.abs(dd); bestDelta = dd; } });
+      }
+      return d <= thresh ? beat + bestDelta : beat;
+    }
+    if (S.snap === 'edge') {
+      let best = beat, d = Infinity;
+      S.clips.forEach(c => [c.start, c.start + c.len].forEach(e => { const dd = Math.abs(e - beat); if (dd < d) { d = dd; best = e; } }));
+      return best;
+    }
+    if (S.snap === 'lane') {
+      // magnetic: only snaps inside a pixel threshold, so dragging further pulls free again
+      const pxPerBeat = (S.laneWidthPx || 1000) / this._beatsVisible();
+      const thresh = 5 / pxPerBeat;
+      let best = beat, d = Infinity;
+      S.clips.forEach(c => this._clipDownbeats(c).forEach(b => {
+        const dd = Math.abs(b - beat);
+        if (dd < d) { d = dd; best = b; }
+      }));
+      return d <= thresh ? best : beat;
+    }
+    const grid = S.snap === 'bar' ? 4 : S.snap === 'beat' ? 1 : S.snap === '8' ? 0.5 : S.snap === '16' ? 0.25 : 0.125;
+    return Math.round(beat / grid) * grid;
+  }
+
+  _fillWave(ctx, x0, x1, h, color, sample) {
+    const mid = h / 2;
+    ctx.fillStyle = color;
+    let run = [];
+    const flush = () => {
+      if (run.length > 1) {
+        ctx.beginPath(); ctx.moveTo(run[0][0], mid - run[0][1]);
+        for (let i = 1; i < run.length; i++) ctx.lineTo(run[i][0], mid - run[i][1]);
+        for (let i = run.length - 1; i >= 0; i--) ctx.lineTo(run[i][0], mid + run[i][1]);
+        ctx.closePath(); ctx.fill();
+      }
+      run = [];
+    };
+    for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
+      const a = sample(x);
+      if (a < 0) flush(); else run.push([x, Math.max(0.6, a)]);
+    }
+    flush();
+  }
+
+  _drawMaster(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, mid = h / 2, clipAt = mid * 0.94;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const c = this._contour('__master__'), amps = new Float32Array(w + 1);
+    for (let x = 0; x <= w; x++) amps[x] = c[Math.min(MAT_N - 1, Math.floor(x / w * MAT_N))] * mid;
+    this._fillWave(ctx, 0, w, h, 'oklch(55% 0.11 195)', x => amps[x]);
+    ctx.fillStyle = CLIP_RED;
+    for (let x = 0; x <= w; x++) if (amps[x] >= clipAt) { ctx.fillRect(x, 0, 1, 2); ctx.fillRect(x, h - 2, 1, 2); }
+  }
+
+  _drawRuler(canvas) {
+    if (!canvas) return;
+    const S = this.state, ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const beats = this._beatsVisible(), pxBeat = w / beats, secPerBeat = 60 / (S.projectBpm || 120);
+    ctx.textBaseline = 'top';
+    const labels = [];
+    for (let b = 0; b <= beats; b++) {
+      const beat = S.viewStartBar * 4 + b, x = Math.round(b * pxBeat) + 0.5, isBar = beat % 4 === 0;
+      ctx.strokeStyle = isBar ? 'oklch(70% 0.014 240)' : 'oklch(84% 0.012 240)';
+      ctx.beginPath(); ctx.moveTo(x, isBar ? 0 : h * 0.55); ctx.lineTo(x, h); ctx.stroke();
+      if (isBar && pxBeat > 8) labels.push({ x: x, sec: beat * secPerBeat, bar: beat / 4 + 1 });
+    }
+    if (labels.length) {
+      const T = this._textOn(ctx, canvas, 10);
+      for (const l of labels) {
+        ctx.fillStyle = 'oklch(27% 0.02 250)'; ctx.fillText(String(l.bar), T.X(l.x + 3), 0);
+        ctx.fillStyle = 'oklch(48% 0.016 250)';
+        ctx.fillText(l.sec.toFixed(1) + 's', T.X(l.x + 3), 11);
+        ctx.fillText(Math.round(l.sec * FRAME_HZ) + 'f', T.X(l.x + 3), 22);
+      }
+      T.end();
+    }
+    const px = Math.round(this._x(S.playheadBeat, w)) + 0.5;
+    ctx.strokeStyle = 'oklch(54% 0.10 300)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+  }
+
+  _drawLane(canvas, i) {
+    if (!canvas) return;
+    const S = this.state, ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, mid = h / 2;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const beats = this._beatsVisible(), pxBeat = w / beats;
+    ctx.strokeStyle = 'oklch(84% 0.012 240)'; ctx.lineWidth = 1;
+    for (let b = 0; b <= beats; b++) {
+      const beat = S.viewStartBar * 4 + b, x = Math.round(b * pxBeat) + 0.5;
+      ctx.strokeStyle = beat % 4 === 0 ? 'oklch(78% 0.014 240)' : 'oklch(86% 0.010 240)';
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    const clips = S.clips.filter(c => c.lane === i);
+    if (!clips.length) {
+      ctx.fillStyle = 'oklch(60% 0.014 240)';
+      const T = this._textOn(ctx, canvas, 11); ctx.fillText('empty lane', T.X(10), mid + 4); T.end();
+    }
+    const clipAt = mid * 0.9;
+    const sampleFor = (c) => {
+      const x0 = this._x(c.start, w), x1 = this._x(c.start + c.len, w);
+      const contour = this._contour(c.file), span = x1 - x0;
+      return { x0, x1, f: (x) => {
+        if (x < x0 || x > x1) return -1;
+        let u = (x - x0) / span;
+        if (c.loop) u = (u * 2) % 1;
+        return contour[Math.min(MAT_N - 1, Math.floor(u * MAT_N))] * mid * 0.8;
+      } };
+    };
+    clips.forEach(c => {
+      const { x0, x1, f: sample } = sampleFor(c);
+      if (x1 < 0 || x0 > w) return;
+      this._fillWave(ctx, Math.max(0, x0), Math.min(w, x1), h, LANE_META[i].color, sample);
+      ctx.fillStyle = CLIP_RED;
+      for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(w, Math.ceil(x1)); x++) {
+        const a = sample(x);
+        if (a >= clipAt) { ctx.fillRect(x, 0, 1, 2); ctx.fillRect(x, h - 2, 1, 2); }
+      }
+    });
+    // where two clips in the same lane overlap, their waveform ink is redrawn 25% darker
+    const darkInk = this._darken(LANE_META[i].color, 0.75);
+    for (let a = 0; a < clips.length; a++) {
+      for (let b = a + 1; b < clips.length; b++) {
+        const A = clips[a], B = clips[b];
+        const s = Math.max(A.start, B.start), e = Math.min(A.start + A.len, B.start + B.len);
+        if (e <= s) continue;
+        const xs = Math.max(0, this._x(s, w)), xe = Math.min(w, this._x(e, w));
+        if (xe <= xs) continue;
+        [A, B].forEach(c => {
+          const { f } = sampleFor(c);
+          this._fillWave(ctx, xs, xe, h, darkInk, f);
+        });
+      }
+    }
+    // downbeats: bar lines of each clip's own phase, glowing yellow as they coincide with another lane's
+    const mine = this._downbeats(i, w), others = [0, 1, 2, 3].filter(j => j !== i).map(j => this._downbeats(j, w));
+    const win = pxBeat / 4;
+    mine.forEach(x => {
+      if (x < 0 || x > w) return;
+      let best = Infinity;
+      others.forEach(list => list.forEach(ox => { const d = Math.abs(ox - x); if (d < best) best = d; }));
+      const t = best === Infinity ? 0 : Math.pow(Math.max(0, 1 - best / win), 0.7);
+      if (t > 0.02) {
+        ctx.strokeStyle = this._dbColor(t, 0.5 * t); ctx.lineWidth = 14;
+        ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+        ctx.strokeStyle = this._dbColor(t, 0.75 * t); ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+      }
+      ctx.strokeStyle = t > 0.02 ? this._dbColor(t, 1) : DOWNBEAT; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+    });
+    // the chroma frame under the cursor, located in the clip it came from
+    if (S.chromaHover && S.chromaHover.lane === i) {
+      const hx = Math.round(this._x(S.chromaHover.beat, w)) + 0.5;
+      if (hx >= 0 && hx <= w) {
+        ctx.strokeStyle = CLIP_RED; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(hx, 0); ctx.lineTo(hx, h); ctx.stroke();
+      }
+    }
+  }
+
+  // downbeat positions of one clip, in beats, on the project grid
+  _clipDownbeats(c) {
+    const phase = ((this._hash(c.file) % 997) / 997) * 4, out = [];
+    for (let b = c.start + phase % 4; b <= c.start + c.len; b += 4) out.push(b);
+    return out;
+  }
+
+  _downbeats(lane, w) {
+    const S = this.state, out = [];
+    S.clips.filter(c => c.lane === lane).forEach(c => {
+      const phase = ((this._hash(c.file) % 997) / 997) * 4;
+      for (let b = c.start + phase % 4; b <= c.start + c.len; b += 4) out.push(this._x(b, w));
+    });
+    return out;
+  }
+  _darken(col, f) {
+    return col.replace(/oklch\(\s*([\d.]+)%/, (m, l) => 'oklch(' + (parseFloat(l) * f).toFixed(1) + '%');
+  }
+  _dbColor(t, alpha) {
+    const L = 78 + (85 - 78) * t, C = 0.08 + (0.17 - 0.08) * t, H = 250 + (100 - 250) * t;
+    return `oklch(${L.toFixed(1)}% ${C.toFixed(3)} ${H.toFixed(0)} / ${alpha})`;
+  }
+
+  _drawChroma(canvas) {
+    if (!canvas) return;
+    const S = this.state, ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    const clip = S.clips.find(c => c.lane === S.activeLane);
+    if (!clip) {
+      ctx.fillStyle = 'oklch(58% 0.014 240)';
+      const T = this._textOn(ctx, canvas, 11); ctx.fillText('no clip in the selected lane', T.X(10), h / 2); T.end();
+      return;
+    }
+    const ch = this._chromaOf(clip), target = this._targetProfile();
+    const band = S.chromaBand === 'global' ? null : S.chromaBand;
+    const frames = band ? this._chromaBand(clip, band) : ch;
+    const rows = band ? 128 : 12;
+    const refH = 9, bodyY = refH + 2, bodyH = h - bodyY;
+    // reference row: the target chroma, 12 classes wide
+    for (let p = 0; p < 12; p++) {
+      const bw = w / 12;
+      ctx.fillStyle = `oklch(${90 - target[p] * 46}% ${0.02 + target[p] * 0.12} 300)`;
+      ctx.fillRect(p * bw, 0, bw, refH);
+      ctx.strokeStyle = 'oklch(96% 0.006 240)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p * bw + 0.5, 0); ctx.lineTo(p * bw + 0.5, refH); ctx.stroke();
+    }
+    const rowH = bodyH / rows, colW = w / frames.length;
+    for (let f = 0; f < frames.length; f++) {
+      const m = this._matchFrame(ch[f], target);
+      const hue = (60 + (1 - m) * 200).toFixed(0);
+      for (let r = 0; r < rows; r++) {
+        const v = frames[f][r];
+        if (v < 0.04) continue;
+        ctx.fillStyle = `oklch(${94 - v * 48}% ${(0.02 + v * 0.19).toFixed(3)} ${hue})`;
+        ctx.fillRect(f * colW, bodyY + (rows - 1 - r) * rowH, colW + 0.6, Math.max(0.7, rowH + 0.4));
+      }
+    }
+    // pitch-class separators so the 384 sub-bins stay readable
+    ctx.strokeStyle = 'oklch(80% 0.014 240 / 0.55)'; ctx.lineWidth = 1;
+    for (let p = 1; p < 12; p++) {
+      const y = bodyY + bodyH - (p / 12) * bodyH + 0.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    ctx.strokeStyle = 'oklch(70% 0.014 240)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, bodyY - 1.5); ctx.lineTo(w, bodyY - 1.5); ctx.stroke();
+    ctx.fillStyle = 'oklch(30% 0.02 250)';
+    const TH = this._textOn(ctx, canvas, 10);
+    ctx.fillText('target', TH.X(3), 8);
+    const rl = band
+      ? (band === 'bass' ? 'octave 1 · width 1.0 · 128 bins' : band === 'mid' ? 'octave 5 · width 1.5 · 128 bins' : 'octave 9 · width 1.0 · 128 bins')
+      : '12 classes · all three regressors folded';
+    ctx.fillText(rl, TH.X(w) - ctx.measureText(rl).width - 4, 8);
+    TH.end();
+    if (S.chromaHover) {
+      const x = Math.round(S.chromaHover.frac * w) + 0.5;
+      ctx.strokeStyle = CLIP_RED; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+  }
+
+  _textOn(ctx, canvas, px = 10, weight = '') {
+    const sx = canvas.clientWidth ? canvas.width / canvas.clientWidth : 1;
+    ctx.save(); ctx.scale(sx, 1);
+    ctx.font = weight + Math.max(10, px) + "px 'Space Grotesk', monospace";
+    return { X: (cx) => cx / sx, end: () => ctx.restore(), sx };
+  }
+
+  _drawScan(canvas) {
+    if (!canvas) return;
+    const S = this.state, ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+    ctx.fillStyle = 'oklch(93% 0.010 240)'; ctx.fillRect(0, 0, w, h);
+    const clip = S.clips.find(c => c.lane === S.activeLane);
+    if (!clip) return;
+    const scan = this._detuneScan(clip);
+    const vs = scan.map(s => s.v);
+    let lo = Math.min(...vs), hi = Math.max(...vs);
+    if (hi - lo < 0.01) { lo -= 0.01; hi += 0.01; }
+    ctx.strokeStyle = 'oklch(84% 0.012 240)'; ctx.lineWidth = 1;
+    [-50, 0, 50].forEach(c => {
+      const x = Math.round(((c + 100) / 200) * w) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    });
+    ctx.beginPath();
+    scan.forEach((s, i) => {
+      const x = (i / (scan.length - 1)) * w, y = h - 2 - ((s.v - lo) / (hi - lo)) * (h - 5);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = 'oklch(62% 0.09 195 / 0.22)'; ctx.fill();
+    ctx.beginPath();
+    scan.forEach((s, i) => {
+      const x = (i / (scan.length - 1)) * w, y = h - 2 - ((s.v - lo) / (hi - lo)) * (h - 5);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = 'oklch(45% 0.10 195)'; ctx.lineWidth = 1.6; ctx.stroke();
+    const best = scan.reduce((a, b) => b.v > a.v ? b : a);
+    const bx = Math.round(((best.cents + 100) / 200) * w) + 0.5;
+    ctx.strokeStyle = 'oklch(58% 0.13 155)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(bx, 0); ctx.lineTo(bx, h); ctx.stroke(); ctx.setLineDash([]);
+    const cx = Math.round((((clip.detune || 0) + 100) / 200) * w) + 0.5;
+    ctx.strokeStyle = CLIP_RED; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+  }
+
+  // Match curve, drawn transparently over the heatmap
+  _drawCurve(canvas) {
+    if (!canvas) return;
+    const S = this.state, ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const clip = S.clips.find(c => c.lane === S.activeLane);
+    if (!clip) return;
+    const ch = this._chromaOf(clip), target = this._targetProfile();
+    const scores = ch.map(fr => this._matchFrame(fr, target));
+    // The axis is anchored to the reference intervals rather than the data, so the same
+    // height always means the same thing from clip to clip.
+    const anch = this._anchors();
+    const aHi = anch[0].v, aLo = anch[2].v, span = Math.max(0.06, aHi - aLo);
+    const lo = aLo - span * 0.22, hi = aHi + span * 0.12;
+    const top = 13, y = (m) => h - 4 - ((m - lo) / (hi - lo)) * (h - top - 4);
+    // reference lines: unison / fifth / tritone, computed from this target
+    ctx.lineWidth = 1;
+    const sxc = canvas.clientWidth ? canvas.width / canvas.clientWidth : 1;
+    const gutter = 54 * sxc;
+    for (const a of anch) {
+      const yy = Math.round(y(a.v)) + 0.5;
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = a.color; ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w - gutter, yy); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = 'oklch(91% 0.012 240 / 0.92)'; ctx.fillRect(w - gutter + 2, yy - 7, gutter - 3, 14);
+      const T = this._textOn(ctx, canvas, 10);
+      ctx.fillStyle = a.color; ctx.fillText(a.label, T.X(w - gutter + 6), yy + 4);
+      T.end();
+    }
+    // the curve, as dark ink with a tinted fill so it reads over the heatmap
+    const path = () => {
+      ctx.beginPath();
+      scores.forEach((m, ff) => {
+        const x = (ff / (scores.length - 1)) * w, yy = y(m);
+        ff === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+      });
+    };
+    path(); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = 'oklch(35% 0.05 285 / 0.13)'; ctx.fill();
+    path();
+    ctx.strokeStyle = 'oklch(97% 0.008 240 / 0.85)'; ctx.lineWidth = 3.4; ctx.stroke();
+    ctx.strokeStyle = 'oklch(32% 0.09 285)'; ctx.lineWidth = 1.7; ctx.stroke();
+  }
+
+  // Schedule shapes. GEOMETRIC is the backend's current contract (sigma_min, sigma_max, rho).
+  // The others are not expressible in those three numbers — to ship them the UI has to hand
+  // the sampler an explicit sigma array (most k-diffusion samplers accept a precomputed
+  // schedule; see _sigmaList below for exactly what to send).
+  _sigmaAt(u) {
+    const { min, max, rho, shape, plateaus, stepped, tilt, lamMin, lamMax } = this.state.sigma;
+    // quantise the time axis into plateaus, so the chosen shape is held then jumps down
+    const quant = (t) => {
+      if (!stepped) return t;
+      const p = Math.max(2, plateaus || 6);
+      const k = tilt == null ? 0.15 : tilt;
+      const x = t * p, i = Math.floor(x);
+      return Math.min(1, (i + k * (x - i)) / (p - 1));
+    };
+    if (shape === 'logsnr') {
+      // SA3's released schedule: N+1 equally spaced logSNR steps in [lamMin, lamMax],
+      // recovered as t = sigmoid(-lambda). Perceptual salience is ~uniform in logSNR.
+      const t0 = quant(Math.pow(Math.min(1, Math.max(0, u)), Math.max(0.01, rho)));
+      const lam = lamMin + (lamMax - lamMin) * t0;
+      return 1 / (1 + Math.exp(lam));
+    }
+    // rho warps the time axis first, so it still works as "curve strength" on every shape
+    const t = quant(Math.pow(Math.min(1, Math.max(0, u)), Math.max(0.01, rho)));
+    const lo = Math.log(Math.max(1e-6, min)), hi = Math.log(max);
+    switch (shape) {
+      case 'linear':       return max + (min - max) * t;
+      case 'log':          return max + (min - max) * (Math.log1p(9 * t) / Math.log(10));
+      case 'exponential':  return max + (min - max) * ((Math.exp(3 * t) - 1) / (Math.exp(3) - 1));
+      case 'cosine':       return min + (max - min) * (1 + Math.cos(Math.PI * t)) / 2;
+      default:             return Math.exp(hi + (lo - hi) * t); // geometric
+    }
+  }
+  // The array a non-parametric shape must be sent as: one sigma per step, plus a final 0.
+  _sigmaList() {
+    const n = Math.max(1, this.state.steps), out = [];
+    for (let i = 0; i < n; i++) out.push(this._sigmaAt(i / n));
+    out.push(0);
+    return out;
+  }
+  // progress as the sampler reports it: 1 - sigma, normalised by sigma_max
+  _progressAt(u) { return 1 - this._sigmaAt(u) / this._sigmaAt(0); }
+  // step index where progress first crosses p — what the backend's chart marks
+  _stepAtProgress(p) {
+    const n = Math.max(1, this.state.steps);
+    for (let i = 0; i <= n; i++) if (this._progressAt(i / n) >= p) return i;
+    return n;
+  }
+  _drawSigma(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d'), w = canvas.width, hFull = canvas.height;
+    const LANE_H = 7, LANE_GAP = 2, RESERVED = 2 * LANE_H + LANE_GAP + 2;
+    const h = hFull - RESERVED, pad = 4;
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, hFull);
+    const S = this.state, n = Math.max(1, S.steps);
+    // CFG interval is given in progress, so its step position is where progress first crosses
+    const loU = this._stepAtProgress(Math.max(0, Math.min(1, S.cfgLo))) / n;
+    const hiU = this._stepAtProgress(Math.max(0, Math.min(1, S.cfgHi))) / n;
+    ctx.fillStyle = 'oklch(55% 0.11 195 / 0.16)'; ctx.fillRect(loU * w, 0, (hiU - loU) * w, h);
+    ctx.strokeStyle = 'oklch(55% 0.11 195)'; ctx.lineWidth = 1;
+    [loU, hiU].forEach(u => { const x = Math.round(u * w) + 0.5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); });
+    // LatCH windows of the active lane: one stacked lane per slot, in the slot's own colour.
+    // A hatched overlay marks where a window overlaps the CFG-active region.
+    const lat = S.chains[S.activeLane];
+    if (lat.latchOn) {
+      lat.latch.forEach((sl, k) => {
+        if (sl.model === 'none' || sl.end <= sl.start) return;
+        const y = h + 2 + k * (LANE_H + LANE_GAP);
+        const x0 = sl.start * w, ww = (sl.end - sl.start) * w;
+        ctx.fillStyle = SLOT_COLORS[k].replace(')', ' / 0.26)');
+        ctx.fillRect(x0, 0, ww, h);
+        ctx.fillStyle = SLOT_COLORS[k];
+        ctx.fillRect(x0, y, ww, LANE_H);
+        const oLo = Math.max(sl.start, loU), oHi = Math.min(sl.end, hiU);
+        if (oHi > oLo) {
+          ctx.save();
+          ctx.beginPath(); ctx.rect(oLo * w, y, (oHi - oLo) * w, LANE_H); ctx.clip();
+          ctx.strokeStyle = 'oklch(99% 0.005 240 / 0.85)'; ctx.lineWidth = 1;
+          for (let x = oLo * w - LANE_H; x < oHi * w + LANE_H; x += 3) {
+            ctx.beginPath(); ctx.moveTo(x, y + LANE_H); ctx.lineTo(x + LANE_H, y); ctx.stroke();
+          }
+          ctx.restore();
+        }
+      });
+    }
+    if (S.cfgRescale > 0) {
+      const y = Math.round(h - pad - S.cfgRescale * (h - pad * 2)) + 0.5;
+      ctx.strokeStyle = 'oklch(72% 0.15 85)'; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // progress (1 - sigma), the axis the CFG interval is actually expressed in
+    ctx.strokeStyle = 'oklch(62% 0.09 195)'; ctx.lineWidth = 1; ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    for (let px = 0; px <= w; px++) {
+      const y = h - pad - this._progressAt(px / w) * (h - pad * 2);
+      px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    const maxS = this._sigmaAt(0);
+    ctx.strokeStyle = 'oklch(27% 0.02 250)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    let prevY = null;
+    for (let px = 0; px <= w; px++) {
+      const y = h - pad - (this._sigmaAt(px / w) / maxS) * (h - pad * 2);
+      if (px === 0) ctx.moveTo(px, y);
+      else { if (S.sigma.stepped && prevY !== null) ctx.lineTo(px, prevY); ctx.lineTo(px, y); }
+      prevY = y;
+    }
+    ctx.stroke();
+    // one tick per sampler step — density of the ticks is where the steps are spent
+    const nTicks = Math.min(200, n);
+    ctx.strokeStyle = 'oklch(40% 0.02 250 / 0.5)'; ctx.lineWidth = 1;
+    for (let i = 0; i <= nTicks; i++) {
+      const u = i / nTicks, y = h - pad - (this._sigmaAt(u) / maxS) * (h - pad * 2);
+      ctx.beginPath(); ctx.moveTo(u * w, y - 2.5); ctx.lineTo(u * w, y + 2.5); ctx.stroke();
+    }
+    ctx.strokeStyle = 'oklch(80% 0.014 240)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, h + 0.5); ctx.lineTo(w, h + 0.5); ctx.stroke();
+    const TS = this._textOn(ctx, canvas, 10);
+    const lab = 'sigma + progress', lw = ctx.measureText(lab).width, sw = ctx.measureText(String(S.steps)).width;
+    ctx.fillStyle = 'oklch(90% 0.012 240)';
+    ctx.fillRect(TS.X(1), h - 15, lw + 5, 14);
+    ctx.fillRect(TS.X(w) - sw - 5, h - 15, sw + 4, 14);
+    ctx.fillStyle = 'oklch(40% 0.02 250)';
+    ctx.fillText(lab, TS.X(3), h - 4); ctx.fillText(String(S.steps), TS.X(w) - sw - 3, h - 4);
+    TS.end();
+  }
+
+  _statSeed() { return this.state.statLane === 4 ? 5 : 17 + this.state.statLane * 29; }
+  _drawXcorr(c) {
+    if (!c) return;
+    const ctx = c.getContext('2d'), w = c.width, n = 32, cell = w / n, rng = this._rng(this._statSeed());
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const v = x === y ? 1 : (rng() * 2 - 1) * (1 - Math.abs(x - y) / n);
+      ctx.fillStyle = v > 0 ? `oklch(${72 - v * 15}% ${0.10 + v * 0.03} 195)` : `oklch(${72 + v * 15}% ${0.09 - v * 0.03} 300)`;
+      ctx.fillRect(x * cell, y * cell, cell, cell);
+    }
+  }
+  _drawPCA(c) {
+    if (!c) return;
+    const ctx = c.getContext('2d'), w = c.width, h = c.height, rng = this._rng(this._statSeed() + 3);
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.62;
+    ctx.fillStyle = this.state.statLane === 4 ? 'oklch(55% 0.11 195)' : LANE_META[this.state.statLane].color;
+    for (let i = 0; i < 200; i++) {
+      const a = rng() * Math.PI * 2, r = rng() * rng() * (w * 0.42);
+      ctx.beginPath(); ctx.arc(w / 2 + Math.cos(a) * r, h / 2 + Math.sin(a) * r * 0.75, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  _drawFeat(c) {
+    if (!c) return;
+    const ctx = c.getContext('2d'), w = c.width, h = c.height, mid = h / 2, rng = this._rng(this._statSeed() + 7);
+    ctx.clearRect(0, 0, w, h);
+    const n = 48, bw = w / n;
+    for (let i = 0; i < n; i++) {
+      const v = (rng() * 2 - 1) * 0.8;
+      ctx.fillStyle = v >= 0 ? 'oklch(55% 0.11 195)' : 'oklch(54% 0.10 300)';
+      ctx.fillRect(i * bw, mid - Math.max(0, v) * mid, bw - 1, Math.abs(v) * mid);
+    }
+    ctx.strokeStyle = 'oklch(80% 0.014 240)'; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+  }
+  _drawScatter(c) {
+    if (!c) return;
+    const ctx = c.getContext('2d'), w = c.width, h = c.height, rng = this._rng(this._statSeed() + 11);
+    ctx.fillStyle = 'oklch(90% 0.012 240)'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'oklch(55% 0.11 195 / 0.75)';
+    for (let i = 0; i < 90; i++) { ctx.beginPath(); ctx.arc(20 + rng() * (w - 40), h - 20 - rng() * (h - 40), 3, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  componentDidMount() {
+    this._redraw();
+    this._measure();
+    this._ro = new ResizeObserver(() => this._measure());
+    if (this.laneRefs[0].current) this._ro.observe(this.laneRefs[0].current);
+    if (this.promptPaneRef.current) this._ro.observe(this.promptPaneRef.current);
+    if (this.chromaBoxRef.current) this._ro.observe(this.chromaBoxRef.current);
+    window.addEventListener('resize', this._measure);
+  }
+  componentWillUnmount() {
+    if (this._ro) this._ro.disconnect();
+    window.removeEventListener('resize', this._measure);
+  }
+  _measure = () => {
+    const cb = this.chromaBoxRef.current;
+    if (cb) {
+      const ch = Math.max(24, Math.round(cb.getBoundingClientRect().height));
+      if (Math.abs(ch - (this.state.chromaH || 0)) > 2) this.setState({ chromaH: ch });
+    }
+    const pp = this.promptPaneRef.current;
+    if (pp) {
+      const ph = Math.round(pp.getBoundingClientRect().height);
+      if (Math.abs(ph - (this.state.promptH || 0)) > 2) this.setState({ promptH: ph });
+    }
+    const el = this.laneRefs.map(r => r.current).find(Boolean);
+    if (!el) return;
+    const px = el.getBoundingClientRect().width;
+    if (Math.abs(px - (this.state.laneWidthPx || 0)) > 2) this.setState({ laneWidthPx: px });
+  };
+  componentDidUpdate() { this._redraw(); this._measure(); }
+  _redraw() {
+    this._drawMaster(this.masterRef.current);
+    this._drawRuler(this.rulerRef.current);
+    this.laneRefs.forEach((r, i) => this._drawLane(r.current, i));
+    this._drawChroma(this.chromaRef.current);
+    this._drawCurve(this.curveRef.current);
+    this._drawScan(this.scanRef.current);
+    this._drawSigma(this.sigmaRef.current);
+    this._drawXcorr(this.xcorrRef.current);
+    this._drawPCA(this.pcaRef.current);
+    this._drawFeat(this.featRef.current);
+    this._drawScatter(this.scatterRef.current);
+  }
+
+  _onMove = (e) => {
+    const d = this._drag; if (!d) return;
+    if (d.mode === 'point' || d.mode === 'segment') {
+      const set = d.setter;
+      if (d.mode === 'point') {
+        const rect = d.el.getBoundingClientRect();
+        const value = Math.min(1, Math.max(0, (90 - (e.clientY - rect.top) / rect.height * 100) / 80));
+        set(env => { const points = [...env.points]; points[d.idx] = value; return { ...env, points }; });
+      } else {
+        const c = Math.min(1, Math.max(-1, d.startCurve + (d.startY - e.clientY) / 60));
+        set(env => { const curves = [...env.curves]; curves[d.idx] = c; return { ...env, curves }; });
+      }
+    } else if (d.mode === 'clip') {
+      const rect = d.el.getBoundingClientRect();
+      const dBeats = ((e.clientX - d.startX) / rect.width) * this._beatsVisible();
+      const dragClip = this.state.clips.find(c => c.id === d.id);
+      const start = this._snapBeat(Math.max(0, d.startBeat + dBeats), dragClip);
+      const laneH = rect.height;
+      const laneDelta = Math.round((e.clientY - d.startY) / laneH);
+      const lane = Math.min(3, Math.max(0, d.startLane + laneDelta));
+      this.setState(s => ({ clips: s.clips.map(c => c.id === d.id ? { ...c, start, lane } : c) }));
+    } else if (d.mode === 'scan') {
+      d.set(e);
+    } else if (d.mode === 'num') {
+      const dx = e.clientX - d.startX;
+      if (Math.abs(dx) > 1) d.moved = true;
+      const gain = e.shiftKey ? 0.01 : 1;
+      let raw = d.startVal + (dx / 260) * d.range * gain;
+      raw = d.int ? Math.round(raw) : parseFloat(raw.toFixed(e.shiftKey ? Math.min(5, d.dec + 2) : d.dec));
+      d.onValue(Math.min(d.max, Math.max(d.min, raw)));
+    } else if (d.mode === 'zoom') {
+      // vertical zooms, horizontal scrolls — both live in the same gesture
+      const bars = Math.min(64, Math.max(1, Math.round(d.startBars * Math.pow(1.012, e.clientY - d.startY))));
+      const px = this.state.laneWidthPx || 1000;
+      const start = Math.max(0, Math.round(d.startView - ((e.clientX - d.startX) / px) * (bars * 4) / 4));
+      this.setState({ barsVisible: bars, viewStartBar: start });
+    } else if (d.mode === 'playhead') {
+      const rect = d.el.getBoundingClientRect();
+      this.setState({ playheadBeat: Math.max(0, this._snapBeat(this._beatAt(e.clientX - rect.left, rect.width))) });
+    }
+  };
+  _onUp = () => {
+    const d = this._drag;
+    // a click without movement still puts the caret in the field for typing
+    if (d && d.mode === 'num' && !d.moved && d.el) d.el.focus();
+    this._drag = null;
+    window.removeEventListener('mousemove', this._onMove); window.removeEventListener('mouseup', this._onUp);
+  };
+  _arm() { window.addEventListener('mousemove', this._onMove); window.addEventListener('mouseup', this._onUp); }
+
+  // Drag-to-scale. The scale is per-parameter: one DRAG_SWEEP of travel — about a wrist's
+  // worth, no elbow — sweeps the parameter's typical min..max. Shift drops that to 1/100th.
+  _numDrag(value, min, max, onValue, opts = {}) {
+    const range = max - min;
+    const dec = opts.int ? 0 : Math.min(4, Math.max(0, 3 - Math.floor(Math.log10(Math.abs(range) || 1))));
+    return (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      this._drag = {
+        mode: 'num', el: e.currentTarget, startX: e.clientX, startVal: Number(value) || 0,
+        range, dec, min, max, int: !!opts.int, onValue, moved: false,
+      };
+      this._arm();
+    };
+  }
+
+  _envelope(env, setter) {
+    const xs = [0, 133.33, 266.67, 400], y = v => 90 - v * 80;
+    const points = env.points.map((v, i) => ({
+      style: `position:absolute;left:clamp(0px, calc(${(i / 3) * 100}% - 4.5px), calc(100% - 9px));top:${y(v)}%;width:9px;height:9px;margin:-4.5px 0 0 0;border-radius:50%;background:var(--purple-strong);border:1.5px solid white;box-sizing:border-box;cursor:ns-resize;`,
+      onDown: (e) => { e.stopPropagation(); this._drag = { mode: 'point', idx: i, el: e.currentTarget.parentElement, setter }; this._arm(); },
+    }));
+    let d = `M ${xs[0]},${y(env.points[0])} `; const segments = [];
+    for (let i = 0; i < 3; i++) {
+      const x1 = xs[i], y1 = y(env.points[i]), x2 = xs[i + 1], y2 = y(env.points[i + 1]);
+      d += `Q ${(x1 + x2) / 2},${(y1 + y2) / 2 - env.curves[i] * 60} ${x2},${y2} `;
+      segments.push({ d: `M ${x1},${y1} L ${x2},${y2}`, onDown: (e) => { e.stopPropagation(); this._drag = { mode: 'segment', idx: i, startY: e.clientY, startCurve: env.curves[i], setter }; this._arm(); } });
+    }
+    return { pathD: d, points, segments };
+  }
+
+  _setChain(patch) {
+    this.setState(s => ({ chains: s.chains.map((c, j) => j === s.activeLane ? { ...c, ...patch } : c) }));
+  }
+  _overlaps() {
+    const out = [];
+    [0, 1, 2, 3].forEach(lane => {
+      const cs = this.state.clips.filter(c => c.lane === lane).sort((a, b) => a.start - b.start);
+      for (let i = 0; i < cs.length - 1; i++) {
+        const a = cs[i], b = cs[i + 1], s = b.start, e = Math.min(a.start + a.len, b.start + b.len);
+        if (e > s) out.push({ key: `${a.id}-${b.id}`, lane, start: s, end: e, a, b });
+      }
+    });
+    return out;
+  }
+  _overlapParams(key) {
+    return this.state.overlapParams[key] || { points: [0, 0.35, 0.7, 1], curves: [0, 0, 0], chromaXfade: true, override: false, steps: 28, cfg: 3.0 };
+  }
+  _setOverlap(key, patch) {
+    this.setState(s => ({ overlapParams: { ...s.overlapParams, [key]: { ...this._overlapParams(key), ...patch } } }));
+  }
+
+  onRootMove = (e) => {
+    if (!this.state.helpMode) { if (this.state.helpText) this.setState({ helpText: '' }); return; }
+    const el = e.target.closest && e.target.closest('[data-help]');
+    this.setState({ helpText: el ? el.getAttribute('data-help') : '', helpX: e.clientX, helpY: e.clientY });
+  };
+
+  // Plain wheel is left to the page. Shift+wheel scrolls the timeline; middle-drag up/down zooms.
+  onWheel = (e) => {
+    if (!e.shiftKey) return;
+    e.preventDefault();
+    this.setState(s => ({ viewStartBar: Math.max(0, s.viewStartBar + (e.deltaY > 0 ? 1 : -1)) }));
+  };
+  onMiddleDown = (e) => {
+    if (e.button !== 1) return false;
+    e.preventDefault();
+    this._drag = {
+      mode: 'zoom', startX: e.clientX, startY: e.clientY,
+      startBars: this.state.barsVisible, startView: this.state.viewStartBar,
+    };
+    this._arm();
+    return true;
+  };
+
+  renderVals() {
+    const S = this.state;
+    const view = S.view || this.props.startView || 'workspace';
+    const chip = (i, size = 9) => `display:inline-block;width:${size}px;height:${size}px;background:${LANE_META[i].color};flex-shrink:0;`;
+    const tab = (on) => `background:${on ? 'var(--panel2)' : 'transparent'};border:1px solid ${on ? 'var(--turq-strong)' : 'transparent'};color:${on ? 'var(--turq-strong)' : 'var(--text-dim)'};font-size:10px;letter-spacing:0.04em;padding:6px 10px;cursor:pointer;`;
+    const toggle = (on, color) => `background:${on ? color : 'var(--panel2)'};border:1px solid ${on ? color : 'var(--border)'};color:${on ? 'white' : 'var(--text)'};font-size:10px;padding:3px 9px;cursor:pointer;`;
+    const small = (on, color) => `background:${on ? color : 'transparent'};border:1px solid ${on ? color : 'var(--border)'};color:${on ? 'white' : 'var(--text-dim)'};font-size:9px;padding:1px 5px;cursor:pointer;`;
+    const menuHead = (accent) => `width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:transparent;border:none;border-left:3px solid ${accent};color:var(--text);font-size:11px;font-weight:600;padding:8px 10px;cursor:pointer;`;
+    const dot = (on, color) => `width:6px;height:6px;background:${on ? color : 'transparent'};border:1px solid ${on ? color : 'var(--border)'};flex-shrink:0;`;
+    const optList = (arr) => arr.map(v => ({ value: v.replace(/\W+/g, '_').toLowerCase(), label: v }));
+
+    const chain = S.chains[S.activeLane], accent = LANE_META[S.activeLane].color;
+    const chainActive = (chain.latchOn && chain.latch.some(sl => sl.model !== 'none')) || chain.filmOn || chain.loraOn || chain.bungeeOn;
+    const allOverlaps = this._overlaps();
+    const beatsVisible = this._beatsVisible();
+    const pct = (beat) => (((beat - S.viewStartBar * 4) / beatsVisible) * 100);
+    const secPerBeat = 60 / (S.projectBpm || 120);
+
+    const lanes = [0, 1, 2, 3].map(i => {
+      const laneClips = S.clips.filter(c => c.lane === i);
+      const sel = S.selected.type === 'clip' ? laneClips.find(c => c.id === S.selected.id) : null;
+      const bpmClip = sel || laneClips[0];
+      return {
+        name: LANE_META[i].name, ref: this.laneRefs[i], chipStyle: chip(i, 10),
+        countLabel: laneClips.length ? `${laneClips.length} clip${laneClips.length > 1 ? 's' : ''}` : 'empty',
+        countStyle: `font-size:10px;color:${LANE_META[i].color};margin-left:auto;`,
+        rowStyle: `display:flex;align-items:stretch;border-bottom:${i < 3 ? '1px solid var(--border)' : 'none'};background:${S.activeLane === i ? LANE_META[i].soft : 'transparent'};`,
+        headStyle: `width:250px;flex-shrink:0;padding:5px 8px;border-right:1px solid var(--border);border-left:4px solid ${LANE_META[i].color};display:flex;flex-direction:column;gap:4px;cursor:pointer;`,
+        slotStyle: `height:20px;background:var(--panel2);border:1px dashed ${S.activeLane === i ? LANE_META[i].color : 'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dim);`,
+        targetStyle: small(S.targetLane === i, 'var(--warm)'),
+        clipBpm: bpmClip ? bpmClip.bpmNative : 0,
+        dragClipBpm: this._numDrag(bpmClip ? bpmClip.bpmNative : 0, 60, 200,
+          v => bpmClip && this.setState(s => ({ clips: s.clips.map(c => c.id === bpmClip.id ? { ...c, bpmNative: v } : c) }))),
+        clipDetune: bpmClip ? (bpmClip.detune || 0) : 0,
+        onClipDetune: (e) => bpmClip && this.setState(s => ({ clips: s.clips.map(c => c.id === bpmClip.id ? { ...c, detune: parseFloat(e.target.value) || 0 } : c) })),
+        dragClipDetune: this._numDrag(bpmClip ? (bpmClip.detune || 0) : 0, -100, 100,
+          v => bpmClip && this.setState(s => ({ clips: s.clips.map(c => c.id === bpmClip.id ? { ...c, detune: Math.round(v) } : c) })), { int: true }),
+        onTarget: (e) => { e.stopPropagation(); this.setState({ targetLane: i, targetMode: 'lane' }); },
+        onClipBpm: (e) => { const v = parseFloat(e.target.value) || 0; if (bpmClip) this.setState(s => ({ clips: s.clips.map(c => c.id === bpmClip.id ? { ...c, bpmNative: v } : c) })); },
+        onSelect: () => this.setState(s => ({ activeLane: i, menus: { ...s.menus, chain: true } })),
+        onDrop: (e) => {
+          e.preventDefault();
+          const n = e.dataTransfer.getData('text/plain'); if (!n) return;
+          this.setState(s => ({
+            clips: [...s.clips, { id: s.nextClipId, lane: i, start: this._snapBeat(s.playheadBeat), len: 16, file: n, kind: n.endsWith('.npy') ? 'LATENT' : 'AUDIO', bpmNative: 118 + i * 3.4, loop: false, a2a: false, noise: 0.2, env: null }],
+            nextClipId: s.nextClipId + 1, selected: { type: 'clip', id: s.nextClipId },
+          }));
+        },
+        onLaneDown: (e) => {
+          if (this.onMiddleDown(e)) return;
+          if (e.target.tagName !== 'CANVAS') return;
+          const el = e.currentTarget, rect = el.getBoundingClientRect();
+          this._drag = { mode: 'playhead', el };
+          this._arm();
+          this.setState({ playheadBeat: Math.max(0, this._snapBeat(this._beatAt(e.clientX - rect.left, rect.width))), activeLane: i });
+        },
+        clips: laneClips.map(c => {
+          const stretch = ((S.projectBpm / c.bpmNative) - 1) * 100;
+          const isSel = S.selected.type === 'clip' && S.selected.id === c.id;
+          const score = this._matchClip(c);
+          // drop labels by measured pixel width, and never let the score chip be the one sliced
+          const clipPx = (c.len / beatsVisible) * (S.laneWidthPx || 1000);
+          const showBpm = clipPx > 150, showLoop = clipPx > 70;
+          return {
+            bpmLabel: `${c.bpmNative.toFixed(1)}→${S.projectBpm} ${stretch >= 0 ? '+' : ''}${stretch.toFixed(1)}%`,
+            bpmStyle: `display:${showBpm ? 'block' : 'none'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:9px;color:var(--text);background:oklch(96% 0.006 240 / 0.75);padding:0 3px;white-space:nowrap;`,
+            loopStyle: small(c.loop, LANE_META[i].color) + `display:${showLoop ? 'inline-block' : 'none'};flex-shrink:0;`,
+            scoreLabel: `${c.a2a ? '↻ ' : ''}χ ${score.toFixed(2)}`,
+            scoreStyle: `flex-shrink:0;font-size:9px;padding:0 3px;color:white;white-space:nowrap;background:oklch(${(60 + score * 15).toFixed(0)}% ${(0.06 + score * 0.10).toFixed(2)} ${(75 + (1 - score) * 185).toFixed(0)});`,
+            style: `position:absolute;left:${pct(c.start)}%;width:${(c.len / beatsVisible) * 100}%;top:0;height:100%;box-sizing:border-box;border:1px solid ${LANE_META[i].color};background:${isSel ? LANE_META[i].soft : 'transparent'};box-shadow:${isSel ? 'inset 0 0 0 1px ' + LANE_META[i].color : 'none'};cursor:grab;overflow:hidden;`,
+            onDown: (e) => {
+              e.stopPropagation();
+              const el = e.currentTarget.parentElement;
+              this._drag = { mode: 'clip', id: c.id, el, startX: e.clientX, startY: e.clientY, startBeat: c.start, startLane: c.lane };
+              this._arm();
+              this.setState({ selected: { type: 'clip', id: c.id }, activeLane: i });
+            },
+            onLoop: (e) => { e.stopPropagation(); this.setState(s => ({ clips: s.clips.map(x => x.id === c.id ? { ...x, loop: !x.loop } : x) })); },
+          };
+        }),
+        overlaps: allOverlaps.filter(o => o.lane === i).map(o => ({
+          label: `INPAINT ${((o.end - o.start) / 4).toFixed(2)} bar`,
+          style: `position:absolute;left:${pct(o.start)}%;width:${((o.end - o.start) / beatsVisible) * 100}%;top:0;height:100%;box-sizing:border-box;border-left:1px solid var(--purple-strong);border-right:1px solid var(--purple-strong);background:oklch(54% 0.10 300 / ${S.selected.type === 'overlap' && S.selected.id === o.key ? 0.3 : 0.16});display:flex;align-items:flex-end;justify-content:center;cursor:pointer;`,
+          onSelect: (e) => { e.stopPropagation(); this.setState(s => ({ selected: { type: 'overlap', id: o.key }, menus: { ...s.menus, overlap: true } })); },
+        })),
+      };
+    });
+
+    const nodeDefs = S.mixOrder === 'cascade'
+      ? [{ k: 'M1', label: '1 + 2', chips: [0, 1] }, { k: 'M2', label: 'M1 + 3', chips: [2] }, { k: 'MX', label: 'M2 + 4', chips: [3] }]
+      : [{ k: 'M1', label: '1 + 2', chips: [0, 1] }, { k: 'M2', label: '3 + 4', chips: [2, 3] }, { k: 'MX', label: 'M1 + M2', chips: [] }];
+    const mixNodes = nodeDefs.map(d => ({
+      label: d.label, t: S.nodes[d.k].t, chips: d.chips.map(i => ({ style: chip(i, 8) })),
+      boxStyle: `flex:1;border:1px solid ${d.k === 'MX' ? 'var(--turq-strong)' : 'var(--border)'};background:var(--panel2);padding:7px 8px;`,
+      lerpStyle: toggle(S.nodes[d.k].interp === 'lerp', 'var(--purple-strong)'),
+      slerpStyle: toggle(S.nodes[d.k].interp === 'slerp', 'var(--purple-strong)'),
+      onLerp: () => this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], interp: 'lerp' } } })),
+      onSlerp: () => this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], interp: 'slerp' } } })),
+      onT: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ nodes: { ...s.nodes, [d.k]: { ...s.nodes[d.k], t: v } } })); },
+    }));
+
+    const laneNames = (arr) => arr.map(l => 'L' + (l + 1)).join(' ');
+    const latentLanes = [...new Set(S.clips.filter(c => c.kind === 'LATENT').map(c => c.lane))];
+    const stretchLanes = [...new Set(S.clips.filter(c => Math.abs(c.bpmNative - S.projectBpm) > 0.05).map(c => c.lane))];
+    const usedLanes = [...new Set(S.clips.map(c => c.lane))];
+    const modLanes = usedLanes.filter(i => (S.chains[i].latchOn && S.chains[i].latch.some(sl => sl.model !== 'none')) || S.chains[i].filmOn || S.chains[i].loraOn);
+    const stages = [
+      { label: 'DECODE latent → audio', on: latentLanes.length > 0, note: latentLanes.length ? laneNames(latentLanes) : 'no latents' },
+      { label: 'BUNGEE stretch / pitch', on: stretchLanes.length > 0, note: stretchLanes.length ? laneNames(stretchLanes) : 'at tempo' },
+      { label: 'ENCODE audio → latent', on: usedLanes.length > 0, note: usedLanes.length ? laneNames(usedLanes) : 'idle' },
+      { label: 'LANE CHAINS', on: modLanes.length > 0, note: modLanes.length ? laneNames(modLanes) : 'all bypassed' },
+      { label: 'A2A RE-NOISE', on: S.clips.some(c => c.a2a), note: (() => { const a = S.clips.filter(c => c.a2a); return a.length ? a.map(c => 'L' + (c.lane + 1)).join(' ') : 'none'; })() },
+      { label: 'INPAINT OVERLAPS', on: allOverlaps.length > 0, note: allOverlaps.length ? `${allOverlaps.length} region${allOverlaps.length > 1 ? 's' : ''}` : 'none' },
+      { label: S.mixOrder === 'quad' ? 'MIX weighted 4-way' : 'MIX pairwise', on: usedLanes.length > 1, note: S.mixOrder === 'quad' ? 'lerp' : nodeDefs.map(d => S.nodes[d.k].interp[0]).join('·') },
+      { label: 'MASTER CHAIN', on: S.master.latchOn || S.master.normOn, note: [S.master.latchOn ? 'latch' : null, S.master.normOn ? 'norm' : null].filter(Boolean).join(' + ') || 'bypassed' },
+      { label: 'DECODE latent → audio', on: true, note: `${S.duration}s` },
+    ];
+
+    const selOv = S.selected.type === 'overlap' ? allOverlaps.find(o => o.key === S.selected.id) : null;
+    const selClip = S.selected.type === 'clip' ? S.clips.find(c => c.id === S.selected.id) : null;
+    const selClipEnv = (selClip && selClip.env) || DEFAULT_ENV;
+    const ovKey = selOv ? selOv.key : null;
+    const ovp = ovKey ? this._overlapParams(ovKey) : null;
+    const activeChroma = S.clips.find(c => c.lane === S.activeLane);
+
+    return {
+      rootRef: this.rootRef, onRootMove: this.onRootMove, onWheel: this.onWheel,
+      noop: (e) => e.preventDefault(),
+      // ranges are the typical working span of each parameter, not the hard limit
+      dragProjectBpm: this._numDrag(S.projectBpm, 60, 200, v => this.setState({ projectBpm: v })),
+      dragSteps: this._numDrag(S.steps, 1, 150, v => this.setState({ steps: v }), { int: true }),
+      dragCfg: this._numDrag(S.cfg, 0, 15, v => this.setState({ cfg: v })),
+      dragCfgLo: S.cfgUnit === 'steps'
+        ? this._numDrag(this._stepAtProgress(S.cfgLo), 0, S.steps, v => this.setState(s => ({ cfgLo: Math.min(1, Math.max(0, this._progressAt(v / (s.steps || 1)))) })), { int: true })
+        : this._numDrag(S.cfgLo, 0, 1, v => this.setState({ cfgLo: Math.min(1, Math.max(0, v)) })),
+      dragCfgHi: S.cfgUnit === 'steps'
+        ? this._numDrag(this._stepAtProgress(S.cfgHi), 0, S.steps, v => this.setState(s => ({ cfgHi: Math.min(1, Math.max(0, this._progressAt(v / (s.steps || 1)))) })), { int: true })
+        : this._numDrag(S.cfgHi, 0, 1, v => this.setState({ cfgHi: Math.min(1, Math.max(0, v)) })),
+      dragDuration: this._numDrag(S.duration, 1, 180, v => this.setState({ duration: v })),
+      dragSeed: this._numDrag(S.seed, 0, 999999, v => this.setState({ seed: v }), { int: true }),
+      dragSigmaMin: this._numDrag(S.sigma.min, 0, 2, v => this.setState(s => ({ sigma: { ...s.sigma, min: v } }))),
+      dragSigmaMax: this._numDrag(S.sigma.max, 0, 1000, v => this.setState(s => ({ sigma: { ...s.sigma, max: v } }))),
+      dragSigmaRho: this._numDrag(S.sigma.rho, 0, 10, v => this.setState(s => ({ sigma: { ...s.sigma, rho: v } }))),
+      dragSemis: this._numDrag(chain.semis, -24, 24, v => this._setChain({ semis: v })),
+      dragOverlapSteps: this._numDrag(ovp ? ovp.steps : 28, 1, 100, v => ovKey && this._setOverlap(ovKey, { steps: v }), { int: true }),
+      dragOverlapCfg: this._numDrag(ovp ? ovp.cfg : 3, 0, 15, v => ovKey && this._setOverlap(ovKey, { cfg: v })),
+      isWorkspace: view === 'workspace', isStats: view === 'stats',
+      tabWorkspaceStyle: tab(view === 'workspace'), tabStatsStyle: tab(view === 'stats'),
+      setViewWorkspace: () => this.setState({ view: 'workspace' }), setViewStats: () => this.setState({ view: 'stats' }),
+      helpBtnStyle: `background:${S.helpMode ? 'var(--purple-strong)' : 'transparent'};border:1px solid ${S.helpMode ? 'var(--purple-strong)' : 'var(--border)'};color:${S.helpMode ? 'white' : 'var(--text-dim)'};font-size:10px;padding:6px 10px;cursor:pointer;`,
+      toggleHelp: () => this.setState(s => ({ helpMode: !s.helpMode, helpText: '' })),
+      helpVisible: !!(S.helpMode && S.helpText), helpText: S.helpText,
+      helpBoxStyle: `position:fixed;left:${S.helpX + 14}px;top:${S.helpY + 16}px;max-width:280px;background:oklch(24% 0.02 250);color:oklch(96% 0.006 240);font-size:11px;line-height:1.45;padding:7px 9px;z-index:100;pointer-events:none;`,
+
+      session: S.session, model: S.model, modelFolder: S.modelFolder,
+      setSession: (e) => this.setState({ session: e.target.value }),
+      setModel: (e) => this.setState({ model: e.target.value }),
+      setModelFolder: (e) => this.setState({ modelFolder: e.target.value }),
+
+      masterRef: this.masterRef, rulerRef: this.rulerRef, sigmaRef: this.sigmaRef,
+      chromaRef: this.chromaRef, curveRef: this.curveRef, scanRef: this.scanRef,
+      chromaBoxRef: this.chromaBoxRef, chromaH: S.chromaH,
+      fxRef: this.fxRef,
+      fxStyle: `position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none;z-index:60;display:${S.rendering ? 'block' : 'none'};`,
+      startRender: this._startRender,
+      // TEMPORARY tuning panel — remove once the values are settled
+      fxPanelOpen: S.fxPanel,
+      toggleFxPanel: () => this.setState(s => ({ fxPanel: !s.fxPanel })),
+      fxPanelStyle: `position:absolute;right:296px;top:52px;z-index:80;width:236px;background:var(--panel);border:1px solid var(--purple-strong);padding:7px 9px;display:${S.fxPanel ? 'flex' : 'none'};flex-direction:column;gap:4px;box-shadow:0 4px 14px oklch(60% 0.02 250 / 0.25);`,
+      fxLoopLabel: S.fxLoop ? 'LOOP ON' : 'LOOP OFF',
+      fxLoopStyle: small(S.fxLoop, 'var(--purple-strong)'),
+      toggleFxLoop: () => this.setState(s => ({ fxLoop: !s.fxLoop })),
+      fxDump: JSON.stringify(S.fxCfg),
+      fxPaletteOptions: ['teal', 'amber', 'accent', 'sparse', 'c64'].map(v => ({ value: v, label: v })),
+      fxPalette: S.fxCfg.palette,
+      setFxPalette: (e) => {
+        const palette = e.target.value;
+        this.setState(s => ({ fxCfg: { ...s.fxCfg, palette } }));
+        if (this._fx && this._fxMod) this._fx.set({ palette: this._fxMod.PALETTES[palette] });
+      },
+      fxFields: [
+        { k: 'sweepStart', label: 'SWEEP START Hz', min: 0, max: 2000, step: 5 },
+        { k: 'sweepEnd', label: 'SWEEP END Hz', min: 0, max: 500, step: 1 },
+        { k: 'dur', label: 'DURATION s', min: 0.5, max: 20, step: 0.5 },
+        { k: 'thickness', label: 'THICKNESS px', min: 1, max: 40, step: 1 },
+        { k: 'linesPerColour', label: 'LINES / COLOUR', min: 1, max: 60, step: 1 },
+        { k: 'jitter', label: 'JITTER', min: 0, max: 1, step: 0.01 },
+        { k: 'persistence', label: 'PERSISTENCE s', min: 0.002, max: 0.12, step: 0.002 },
+        { k: 'chromaBleed', label: 'CHROMA BLEED', min: 0.2, max: 12, step: 0.1 },
+        { k: 'supersample', label: 'SUPERSAMPLE', min: 1, max: 14, step: 1 },
+        { k: 'gain', label: 'GAIN', min: 0.2, max: 5, step: 0.05 },
+        { k: 'spotSpread', label: 'SPOT SPREAD', min: 0, max: 1, step: 0.01 },
+      ].map(fd => ({
+        label: fd.label,
+        value: S.fxCfg[fd.k],
+        min: fd.min, max: fd.max, step: fd.step,
+        onInput: (e) => {
+          const v = parseFloat(e.target.value);
+          this.setState(s => ({ fxCfg: { ...s.fxCfg, [fd.k]: v } }));
+          if (this._fx && fd.k !== 'sweepStart' && fd.k !== 'sweepEnd' && fd.k !== 'dur') this._fx.set({ [fd.k]: v });
+        },
+      })),
+      rendering: S.rendering,
+      renderLabel: S.rendering ? `SAMPLING · ${S.stepsLeft} steps left` : '▸ RENDER',
+      renderBtnStyle: `background:${S.rendering ? 'var(--panel2)' : 'var(--turq-strong)'};border:1px solid var(--turq-strong);color:${S.rendering ? 'var(--turq-strong)' : 'white'};font-size:11px;font-weight:600;padding:5px 14px;cursor:${S.rendering ? 'default' : 'pointer'};letter-spacing:0.04em;`,
+      chromaCanvasStyle: `width:100%;height:${S.chromaH}px;display:block;box-sizing:border-box;border:1px solid var(--border);`,
+      curveCanvasStyle: `position:absolute;inset:1px;width:calc(100% - 2px);height:${S.chromaH - 2}px;display:block;pointer-events:none;`,
+      env: this._envelope(selClipEnv, (fn) => selClip && this.setState(s => ({
+        clips: s.clips.map(c => c.id === selClip.id ? { ...c, env: fn(c.env || DEFAULT_ENV) } : c),
+      }))),
+      envActive: !!(selClip && selClip.a2a),
+      envSvgStyle: `position:absolute;inset:0;width:100%;height:100%;opacity:${selClip && selClip.a2a ? 1 : 0.28};pointer-events:${selClip && selClip.a2a ? 'auto' : 'none'};`,
+      envHint: selClip && selClip.a2a
+        ? `a2a noise envelope — ${selClip.file} · drag a node, or drag a curve to bend it`
+        : 'a2a noise envelope — inactive; turn A2A on for the selected clip',
+      envHintStyle: `font-size:10px;color:${selClip && selClip.a2a ? 'var(--purple-strong)' : 'var(--text-dim)'};`,
+
+      targetBarStyle: `display:flex;align-items:center;gap:5px;padding:2px 0 1px;border-bottom:1px solid var(--border);margin-bottom:2px;min-width:0;flex-wrap:wrap;`,
+      targetTag: selOv ? 'INPAINT' : selClip ? (selClip.a2a ? 'A2A' : 'CLIP') : 'GENERATE',
+      targetTagStyle: `font-size:9px;letter-spacing:0.06em;padding:1px 5px;color:white;background:${selOv ? 'var(--purple-strong)' : selClip ? (selClip.a2a ? 'var(--purple-strong)' : LANE_META[selClip.lane].color) : 'var(--turq-strong)'};`,
+      targetName: selOv ? `${selOv.a.file} → ${selOv.b.file}` : selClip ? selClip.file : 'new clip at the playhead',
+      targetIsClip: !!selClip && !selOv,
+      clipA2aLabel: selClip && selClip.a2a ? '[ON]' : '[OFF]',
+      clipA2aStyle: toggle(!!(selClip && selClip.a2a), 'var(--purple-strong)'),
+      toggleClipA2a: () => selClip && this.setState(s => ({
+        clips: s.clips.map(c => c.id === selClip.id ? { ...c, a2a: !c.a2a, env: c.env || DEFAULT_ENV } : c),
+      })),
+      clipNoise: selClip ? selClip.noise : 0.2,
+      setClipNoise: (e) => { const v = parseFloat(e.target.value) || 0; selClip && this.setState(s => ({ clips: s.clips.map(c => c.id === selClip.id ? { ...c, noise: v } : c) })); },
+      dragClipNoise: this._numDrag(selClip ? selClip.noise : 0.2, 0, 1, v => selClip && this.setState(s => ({ clips: s.clips.map(c => c.id === selClip.id ? { ...c, noise: v } : c) }))),
+      allowDrop: (e) => e.preventDefault(),
+      lanes,
+
+      projectBpm: S.projectBpm, setProjectBpm: (e) => this.setState({ projectBpm: parseFloat(e.target.value) || 120 }),
+      snap: S.snap, setSnap: (e) => this.setState({ snap: e.target.value }),
+      zoomLabel: `${S.barsVisible} bars · bar ${S.viewStartBar + 1}+`,
+      playheadStyle: `position:absolute;left:${pct(S.playheadBeat)}%;top:0;bottom:0;width:2px;background:var(--purple-strong);pointer-events:none;`,
+      playheadBarLabel: `bar ${Math.floor(S.playheadBeat / 4) + 1}.${(S.playheadBeat % 4 + 1).toFixed(2)}`,
+      playheadTimeLabel: `${(S.playheadBeat * secPerBeat).toFixed(2)}s · frame ${Math.round(S.playheadBeat * secPerBeat * FRAME_HZ)}`,
+      onRulerDown: (e) => {
+        if (this.onMiddleDown(e)) return;
+        const el = e.currentTarget, rect = el.getBoundingClientRect();
+        this._drag = { mode: 'playhead', el };
+        this._arm();
+        this.setState({ playheadBeat: Math.max(0, this._snapBeat(this._beatAt(e.clientX - rect.left, rect.width))) });
+      },
+      meetBpmLabel: S.clips.length ? (S.clips.reduce((a, c) => a + c.bpmNative, 0) / S.clips.length).toFixed(1) + ' bpm' : '—',
+      autoMatch: () => {
+        const target = S.clips.length ? S.clips.reduce((a, c) => a + c.bpmNative, 0) / S.clips.length : S.projectBpm;
+        this.setState({ projectBpm: Math.round(target * 10) / 10 });
+      },
+      autoMatchDownbeats: () => {
+        if (!S.clips.length) return;
+        // circular mean of every clip's downbeat phase within the bar, then shift each clip
+        // there by the shortest path
+        const ph = S.clips.map(c => (((this._hash(c.file) % 997) / 997) * 4 + c.start) % 4);
+        const mx = ph.reduce((a, p) => a + Math.cos(p / 4 * Math.PI * 2), 0) / ph.length;
+        const my = ph.reduce((a, p) => a + Math.sin(p / 4 * Math.PI * 2), 0) / ph.length;
+        let ang = Math.atan2(my, mx); if (ang < 0) ang += Math.PI * 2;
+        const targetPhase = (ang / (Math.PI * 2)) * 4;
+        this.setState(s => ({
+          clips: s.clips.map((c, i) => {
+            let delta = targetPhase - ph[i];
+            if (delta > 2) delta -= 4;
+            if (delta < -2) delta += 4;
+            return { ...c, start: Math.max(0, parseFloat((c.start + delta).toFixed(3))) };
+          }),
+        }));
+      },
+
+      scanLabel: (() => {
+        const clip = S.clips.find(c => c.lane === S.activeLane);
+        if (!clip) return 'detune scan · no clip';
+        const scan = this._detuneScan(clip);
+        const best = scan.reduce((a, b) => b.v > a.v ? b : a);
+        const at = scan.reduce((a, b) => Math.abs(b.cents - (clip.detune || 0)) < Math.abs(a.cents - (clip.detune || 0)) ? b : a);
+        return `now ${clip.detune || 0}¢ · mean ${at.mean.toFixed(2)} ± ${at.sd.toFixed(2)} · peak ${best.cents > 0 ? '+' : ''}${best.cents}¢`;
+      })(),
+      scanCritLabel: S.scanCriterion === 'stable' ? 'STEADIEST' : 'HIGHEST',
+      scanCritStyle: small(true, S.scanCriterion === 'stable' ? 'var(--purple-strong)' : 'var(--turq-strong)'),
+      toggleScanCrit: () => this.setState(s => ({ scanCriterion: s.scanCriterion === 'stable' ? 'mean' : 'stable' })),
+      scanBestStyle: toggle(false, 'var(--turq-strong)'),
+      onScanBest: () => {
+        const clip = S.clips.find(c => c.lane === S.activeLane);
+        if (!clip) return;
+        const best = this._detuneScan(clip).reduce((a, b) => b.v > a.v ? b : a);
+        this.setState(s => ({ clips: s.clips.map(c => c.id === clip.id ? { ...c, detune: best.cents } : c) }));
+      },
+      onScanDown: (e) => {
+        const clip = S.clips.find(c => c.lane === S.activeLane);
+        if (!clip || e.button !== 0) return;
+        e.preventDefault();
+        const el = e.currentTarget;
+        const set = (ev) => {
+          const r = el.getBoundingClientRect();
+          const cents = Math.round(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)) * 200 - 100);
+          this.setState(s => ({ clips: s.clips.map(c => c.id === clip.id ? { ...c, detune: cents } : c) }));
+        };
+        set(e);
+        this._drag = { mode: 'scan', set };
+        this._arm();
+      },
+      onChromaHover: (e) => {
+        const clip = S.clips.find(c => c.lane === S.activeLane);
+        if (!clip) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        const frac = Math.min(0.999, Math.max(0, (e.clientX - r.left) / r.width));
+        const yf = Math.min(0.999, Math.max(0, ((e.clientY - r.top) - 11) / Math.max(1, r.height - 11)));
+        const ch = this._chromaOf(clip);
+        const fi = Math.floor(frac * ch.length), fr = ch[fi];
+        const band = S.chromaBand === 'global' ? null : S.chromaBand;
+        const rows = band ? 128 : 12;
+        const row = Math.min(rows - 1, Math.floor((1 - yf) * rows));
+        const pcf = band ? (row / 128) * 12 : row;
+        const pc = Math.floor(pcf) % 12;
+        const cents = band ? Math.round((pcf - Math.floor(pcf)) * 100) : null;
+        let top = 0; for (let p = 1; p < 12; p++) if (fr[p] > fr[top]) top = p;
+        this.setState({ chromaHover: {
+          frac, lane: S.activeLane, beat: clip.start + frac * clip.len,
+          pc, cents, band, bin: band ? row : null, val: band ? this._chromaBand(clip, band)[fi][row] : fr[pc], top, topVal: fr[top],
+          frame: fi, frames: ch.length, match: this._matchFrame(fr, this._targetProfile()),
+          sec: frac * clip.len * (60 / (S.projectBpm || 120)),
+        } });
+      },
+      onChromaLeave: () => this.state.chromaHover && this.setState({ chromaHover: null }),
+      chromaHoverStyle: `display:${S.chromaHover ? 'block' : 'none'};flex-shrink:0;margin-top:3px;padding:4px 6px;background:var(--panel2);border:1px solid var(--border);`,
+      chromaHoverNote: S.chromaHover
+        ? `${NOTE_NAMES[S.chromaHover.pc]}${S.chromaHover.cents ? ' +' + S.chromaHover.cents + '¢' : ''}  ${S.chromaHover.val.toFixed(2)}`
+        : '',
+      chromaHoverDetail: S.chromaHover
+        ? `strongest ${NOTE_NAMES[S.chromaHover.top]} ${S.chromaHover.topVal.toFixed(2)} · match ${S.chromaHover.match.toFixed(2)} · frame ${S.chromaHover.frame + 1}/${S.chromaHover.frames} · ${S.chromaHover.sec.toFixed(2)} s`
+        : '',
+      chromaOpen: S.chromaOpen, chromaArrow: S.chromaOpen ? '▾' : '▸',
+      promptArrow: S.promptOpen ? '▾' : '▸',
+      togglePromptOpen: () => this.setState(s => ({ promptOpen: !s.promptOpen })),
+      promptFreezeLabel: S.promptFrozen ? 'FROZEN' : 'FREEZE',
+      promptFreezeStyle: small(S.promptFrozen, 'var(--purple-strong)'),
+      togglePromptFreeze: () => this.setState(s => ({ promptFrozen: !s.promptFrozen })),
+      promptSummary: S.promptOpen ? '' : `${S.steps} steps · cfg ${S.cfg} · ${S.sampler} · seed ${S.seed}`,
+      promptPaneRef: this.promptPaneRef,
+      promptOpen: S.promptOpen,
+      // One bottom pane at a time, at a constant height, so the lanes never move.
+      footerStackStyle: `flex-shrink:0;display:${view === 'workspace' ? 'flex' : 'none'};flex-direction:column;height:248px;padding:6px 10px 8px;background:var(--bg);border-top:1px solid var(--border);overflow:hidden;`,
+      bottomTabsStyle: 'flex-shrink:0;display:flex;align-items:center;gap:3px;padding-bottom:5px;',
+      bottomTabs: [
+        { k: 'chroma', label: 'CHROMA' },
+        { k: 'prompt', label: 'PROMPT + SIGMA' },
+        { k: 'mix', label: 'MIX + SIGNAL PATH' },
+        { k: 'terminal', label: 'TERMINAL' },
+      ].map(t => ({
+        label: t.label,
+        style: tab(S.bottomTab === t.k) + 'padding:3px 10px;',
+        onClick: () => this.setState({ bottomTab: t.k }),
+      })),
+      bottomHint: S.bottomTab === 'chroma' ? 'hover the heatmap to read a frame'
+        : S.bottomTab === 'prompt' ? 'settings follow the selection'
+        : S.bottomTab === 'mix' ? 'lane order feeds the mix nodes' : 'stdout of the running job',
+      showChromaTab: S.bottomTab === 'chroma',
+      showPromptTab: S.bottomTab === 'prompt',
+      showMixTab: S.bottomTab === 'mix',
+      showTerminalTab: S.bottomTab === 'terminal',
+      mixTabStyle: 'flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;',
+      promptPaneStyle: 'box-sizing:border-box;background:var(--panel);border:1px solid var(--border);padding:6px 10px;flex:1;min-height:0;overflow-y:auto;',
+      chromaFreezeLabel: S.chromaFrozen ? 'FROZEN' : 'FREEZE',
+      chromaFreezeStyle: small(S.chromaFrozen, 'var(--purple-strong)'),
+      toggleChromaFreeze: () => this.setState(s => ({ chromaFrozen: !s.chromaFrozen })),
+      chromaPaneStyle: 'box-sizing:border-box;border:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column;overflow:hidden;'
+        + 'flex:1;min-height:0;',
+      toggleChroma: () => this.setState(s => ({ chromaOpen: !s.chromaOpen })),
+      chromaModeButtons: [
+        { k: 'band:global', label: 'GLOBAL', on: S.chromaBand === 'global' },
+        { k: 'band:bass', label: 'BASS oct1', on: S.chromaBand === 'bass' },
+        { k: 'band:mid', label: 'MID oct5', on: S.chromaBand === 'mid' },
+        { k: 'band:high', label: 'HIGH oct9', on: S.chromaBand === 'high' },
+        { k: 'curve', label: 'MATCH CURVE', on: S.chromaModes.curve },
+      ].map(m => ({
+        label: m.label, style: toggle(m.on, 'var(--turq-strong)'),
+        onClick: () => m.k.startsWith('band:')
+          ? this.setState({ chromaBand: m.k.slice(5) })
+          : this.setState(s => ({ chromaModes: { ...s.chromaModes, [m.k]: !s.chromaModes[m.k] } })),
+      })),
+      showCurve: S.chromaModes.curve,
+      showLegend: true,
+      legendStops: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => {
+        const t = i / 8;
+        return { style: `display:inline-block;width:15px;height:10px;background:oklch(58% 0.17 ${(60 + (1 - t) * 200).toFixed(0)});` };
+      }),
+      legendTicks: this._anchors().slice().sort((x, y) => x.v - y.v).map(a => {
+        const pct = Math.min(99, Math.max(1, a.v * 100));
+        return {
+          label: a.label,
+          value: a.v.toFixed(2),
+          markStyle: `position:absolute;left:${pct}%;top:-2px;width:1px;height:14px;background:oklch(20% 0.02 250);`,
+          keyStyle: `font-size:9px;color:${a.color};white-space:nowrap;`,
+        };
+      }),
+      chromaModeLabel: `${activeChroma ? activeChroma.file : 'no clip'} · ${S.chromaBand === 'global' ? '12 classes' : (S.chromaBand === 'bass' ? 'oct 1' : S.chromaBand === 'mid' ? 'oct 5' : 'oct 9') + ' · 128 bins'}`,
+      chromaScaleLabel: 'consonance colour',
+      matchScoreLabel: (() => {
+        if (!activeChroma) return '—';
+        const m = this._matchClip(activeChroma), a = this._anchors();
+        const where = m >= a[0].v - 0.02 ? 'at unison' : m >= a[1].v ? 'above a fifth' : m >= a[2].v ? 'between fifth and tritone' : 'below a tritone';
+        return `${m.toFixed(2)} · ${where}`;
+      })(),
+      targetIsSet: S.targetMode === 'set',
+      targetLaneLabel: `LANE ${S.targetLane + 1}`,
+      targetModeLaneStyle: toggle(S.targetMode === 'lane', LANE_META[S.targetLane].color),
+      targetModeSetStyle: toggle(S.targetMode === 'set', 'var(--warm)'),
+      setTargetModeLane: () => this.setState({ targetMode: 'lane' }),
+      setTargetModeSet: () => this.setState({ targetMode: 'set' }),
+      pianoKeys: NOTES.map((n, p) => ({
+        label: n,
+        style: `background:${S.targetSet.includes(p) ? 'var(--warm)' : (n.includes('#') ? 'oklch(84% 0.012 240)' : 'var(--panel2)')};border:1px solid ${S.targetSet.includes(p) ? 'var(--warm)' : 'var(--border)'};color:${S.targetSet.includes(p) ? 'white' : 'var(--text)'};font-size:9px;padding:3px 4px;min-width:20px;cursor:pointer;`,
+        onClick: () => this.setState(s => ({ targetSet: s.targetSet.includes(p) ? s.targetSet.filter(x => x !== p) : [...s.targetSet, p] })),
+      })),
+      chordText: S.chordText,
+      chordHint: S.targetSet.length ? S.targetSet.slice().sort((a, b) => a - b).map(p => NOTES[p]).join(' ') : 'no classes selected',
+      setChordText: (e) => {
+        const t = e.target.value.trim();
+        const m = t.match(/^([A-Ga-g])([#b]?)\s*(maj7|min7|m7|maj|min|m|dim|aug|7)?$/);
+        if (!m) { this.setState({ chordText: t }); return; }
+        let root = NOTES.indexOf(m[1].toUpperCase() + (m[2] === '#' ? '#' : ''));
+        if (m[2] === 'b') root = (NOTES.indexOf(m[1].toUpperCase()) + 11) % 12;
+        const q = (m[3] || 'maj').toLowerCase();
+        const ivs = q === 'min' || q === 'm' ? [0, 3, 7] : q === 'm7' || q === 'min7' ? [0, 3, 7, 10]
+          : q === 'maj7' ? [0, 4, 7, 11] : q === '7' ? [0, 4, 7, 10]
+            : q === 'dim' ? [0, 3, 6] : q === 'aug' ? [0, 4, 8] : [0, 4, 7];
+        this.setState({ chordText: t, targetSet: ivs.map(i => (root + i) % 12), targetMode: 'set' });
+      },
+
+      overlapSelected: !!selOv,
+      menus: S.menus,
+      menuOverlapArrow: S.menus.overlap ? '▾' : '▸',
+      menuOverlapHeadStyle: menuHead('var(--purple-strong)'),
+      menuOverlapDot: dot(!!selOv, 'var(--purple-strong)'),
+      toggleMenuOverlap: () => this.setState(s => ({ menus: { ...s.menus, overlap: !s.menus.overlap } })),
+      overlapInfo: selOv ? `lane ${selOv.lane + 1} · ${selOv.a.file} → ${selOv.b.file}
+mask ${(selOv.start * secPerBeat).toFixed(2)}–${(selOv.end * secPerBeat).toFixed(2)} s · ${((selOv.end - selOv.start) / 4).toFixed(2)} bar · ${Math.round((selOv.end - selOv.start) * secPerBeat * FRAME_HZ)} frames` : '',
+      xfade: this._envelope(ovp || { points: [0, 0.35, 0.7, 1], curves: [0, 0, 0] }, (fn) => { if (ovKey) this._setOverlap(ovKey, fn(this._overlapParams(ovKey))); }),
+      chromaXfadeLabel: ovp && ovp.chromaXfade ? '[ON]' : '[OFF]',
+      chromaXfadeStyle: toggle(!!(ovp && ovp.chromaXfade), 'var(--purple-strong)'),
+      toggleChromaXfade: () => ovKey && this._setOverlap(ovKey, { chromaXfade: !ovp.chromaXfade }),
+      localOverrideLabel: ovp && ovp.override ? '[ON]' : '[OFF]',
+      localOverrideStyle: toggle(!!(ovp && ovp.override), 'var(--purple-strong)'),
+      toggleLocalOverride: () => ovKey && this._setOverlap(ovKey, { override: !ovp.override }),
+      overlapSteps: ovp ? ovp.steps : 28, setOverlapSteps: (e) => ovKey && this._setOverlap(ovKey, { steps: parseInt(e.target.value) || 0 }),
+      overlapCfg: ovp ? ovp.cfg : 3, setOverlapCfg: (e) => ovKey && this._setOverlap(ovKey, { cfg: parseFloat(e.target.value) || 0 }),
+
+      sideOpen: S.sideOpen,
+      sidePaneStyle: `width:${S.sideOpen ? '284px' : '26px'};flex-shrink:0;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--border);overflow:hidden;transition:width 0.15s;`,
+      sideToggleLabel: S.sideOpen ? '▾ CONTEXT' : '▸',
+      toggleSide: () => this.setState(s => ({ sideOpen: !s.sideOpen })),
+      menuFilesArrow: S.menus.files ? '▾' : '▸', menuGenArrow: S.menus.gen ? '▾' : '▸',
+      menuChainArrow: S.menus.chain ? '▾' : '▸', menuMasterArrow: S.menus.master ? '▾' : '▸',
+      menuFilesHeadStyle: menuHead('var(--border)'), menuFilesDot: dot(S.clips.length > 0, 'var(--turq-strong)'),
+      menuGenHeadStyle: menuHead('var(--border)'), menuGenDot: dot(S.prompt.length > 0 || S.negPrompt.length > 0, 'var(--turq-strong)'),
+      menuChainHeadStyle: menuHead(accent), menuChainDot: dot(chainActive, accent),
+      menuMasterHeadStyle: menuHead('var(--border)'), menuMasterDot: dot(S.master.latchOn || S.master.normOn, 'var(--turq-strong)'),
+      menuAdvHeadStyle: menuHead('var(--border)'), menuAdvArrow: S.menus.adv ? '▾' : '▸',
+      menuAdvDot: dot(S.sigma.shape !== 'logsnr' || S.sigma.stepped || S.cfgLo > 0 || S.cfgHi < 1 || S.cfgRescale > 0, 'var(--purple-strong)'),
+      toggleMenuAdv: () => this.setState(s => ({ menus: { ...s.menus, adv: !s.menus.adv } })),
+
+      toggleMenuFiles: () => this.setState(s => ({ menus: { ...s.menus, files: !s.menus.files } })),
+      toggleMenuGen: () => this.setState(s => ({ menus: { ...s.menus, gen: !s.menus.gen } })),
+      toggleMenuChain: () => this.setState(s => ({ menus: { ...s.menus, chain: !s.menus.chain } })),
+      toggleMenuMaster: () => this.setState(s => ({ menus: { ...s.menus, master: !s.menus.master } })),
+
+      files: ['kick_break_140bpm.wav', 'pad_drone_Cmin.wav', 'vocal_chop_verse.wav', 'field_rain_loop.wav', 'bass_sub_hit.wav', 'arp_pluck_16th.wav', '000412.npy', '000871.npy']
+        .map(name => ({ name, onDragStart: (e) => { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'copy'; } })),
+      renders: [
+        { name: 'clip_014_take3.wav', len: '0:45' }, { name: 'clip_014_take2.wav', len: '0:45' },
+        { name: 'clip_012_a2a.wav', len: '1:02' }, { name: 'clip_011_out.wav', len: '0:38' },
+      ].map(r => ({ ...r, onDragStart: (e) => { e.dataTransfer.setData('text/plain', r.name); e.dataTransfer.effectAllowed = 'copy'; } })),
+
+      presets: S.presets,
+      masterPresetOptions: optList(['club_mix_v1', 'ambient_bed', 'drum_swap_a', 'init']),
+      promptPresetOptions: optList(['ambient_pad_v2', 'techno_loop', 'field_texture', 'unconditional']),
+      latchPresetOptions: optList(['bpm_default', 'chroma_lock', 'centroid_ramp', 'off']),
+      filmPresetOptions: optList(['flat', 'bright', 'dark']),
+      loraPresetOptions: optList(['warm_light', 'club_heavy', 'off']),
+      setPresetMaster: (e) => this.setState(s => ({ presets: { ...s.presets, master: e.target.value } })),
+      setPresetPrompt: (e) => this.setState(s => ({ presets: { ...s.presets, prompt: e.target.value } })),
+      setPresetLatch: (e) => this.setState(s => ({ presets: { ...s.presets, latch: e.target.value } })),
+      setPresetFilm: (e) => this.setState(s => ({ presets: { ...s.presets, film: e.target.value } })),
+      setPresetLora: (e) => this.setState(s => ({ presets: { ...s.presets, lora: e.target.value } })),
+
+      activeLaneLabel: LANE_META[S.activeLane].name,
+      chainBodyStyle: `padding:8px 10px 12px;display:flex;flex-direction:column;gap:6px;border-left:3px solid ${accent};background:${LANE_META[S.activeLane].soft};`,
+      latchModelOptions: ['none', 'bpm_madmom_v3.pt', 'spectral_centroid_v2.pt', 'rms_v1.pt', 'chroma_384_v1.pt', 'onset_strength_v1.pt'].map(v => ({ value: v, label: v })),
+      latchKindOptions: ['constant', 'ramp_up', 'ramp_down', 'beat_grid', 'chroma_major', 'chroma_minor'].map(v => ({ value: v, label: v })),
+      latchSlots: chain.latch.map((sl, k) => {
+        const beat = sl.kind === 'beat_grid';
+        const bounds = beat ? { min: 30, max: 240, step: 1 } : { min: 0, max: 5, step: 0.05 };
+        const set = (patch) => this._setChain({ latch: chain.latch.map((x, j) => j === k ? { ...x, ...patch } : x) });
+        return {
+          title: `SLOT ${k + 1}`,
+          rangeText: sl.model === 'none' ? 'inactive' : `${sl.start.toFixed(2)}–${sl.end.toFixed(2)}`,
+          boxStyle: `border:1px solid var(--border);border-left:4px solid ${sl.model === 'none' ? 'var(--border)' : SLOT_COLORS[k]};background:var(--panel);padding:6px 6px 6px 8px;display:flex;flex-direction:column;gap:4px;`,
+          titleStyle: `display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:0.06em;color:${sl.model === 'none' ? 'var(--text-dim)' : SLOT_COLORS[k]};margin-bottom:2px;`,
+          chipStyle: `display:inline-block;width:8px;height:8px;background:${sl.model === 'none' ? 'var(--border)' : SLOT_COLORS[k]};flex-shrink:0;`,
+          windowStyle: `accent-color:${SLOT_COLORS[k]};flex:1;`,
+          model: sl.model, kind: sl.kind,
+          target: sl.target, targetMin: bounds.min, targetMax: bounds.max, targetStep: bounds.step,
+          targetLabel: beat ? 'BPM' : 'TARGET',
+          targetText: beat ? String(Math.round(sl.target)) : sl.target.toFixed(2),
+          weight: sl.weight, weightText: sl.weight.toFixed(1),
+          start: sl.start, startText: sl.start.toFixed(2),
+          end: sl.end, endText: sl.end.toFixed(2),
+          onModel: (e) => set({ model: e.target.value }),
+          onKind: (e) => { const kind = e.target.value; set({ kind, target: kind === 'beat_grid' ? 120 : 1 }); },
+          onTarget: (e) => set({ target: parseFloat(e.target.value) }),
+          onWeight: (e) => set({ weight: parseFloat(e.target.value) }),
+          onStart: (e) => set({ start: parseFloat(e.target.value) }),
+          onEnd: (e) => set({ end: parseFloat(e.target.value) }),
+        };
+      }),
+      slotLegend: chain.latch.map((sl, k) => ({
+        label: sl.model === 'none' ? '' : `slot ${k + 1}`,
+        style: sl.model === 'none' || !chain.latchOn ? 'display:none;'
+          : `font-size:9px;padding:0 4px;color:oklch(22% 0.02 250);background:${SLOT_COLORS[k]};`,
+      })),
+      latchH: {
+        rho: chain.lRho, rhoText: chain.lRho.toFixed(1),
+        mu: chain.lMu, muText: chain.lMu.toFixed(1),
+        gamma: chain.lGamma, gammaText: chain.lGamma.toFixed(2),
+        nIter: chain.lIter,
+      },
+      setLatchRho: (e) => this._setChain({ lRho: parseFloat(e.target.value) }),
+      setLatchMu: (e) => this._setChain({ lMu: parseFloat(e.target.value) }),
+      setLatchGamma: (e) => this._setChain({ lGamma: parseFloat(e.target.value) }),
+      setLatchIter: (e) => this._setChain({ lIter: parseInt(e.target.value) }),
+      latchLogLabel: chain.lLog ? '[ON]' : '[OFF]',
+      latchLogStyle: toggle(chain.lLog, accent),
+      toggleLatchLog: () => this._setChain({ lLog: !chain.lLog }),
+      chain: { filmScale: chain.filmScale, filmScaleLabel: chain.filmScale.toFixed(2), lora: chain.lora, loraScale: chain.loraScale, loraScaleLabel: chain.loraScale.toFixed(2), semis: chain.semis },
+      latchLabel: chain.latchOn ? '[ON]' : '[OFF]', latchBtnStyle: toggle(chain.latchOn, accent),
+      filmLabel: chain.filmOn ? '[ON]' : '[OFF]', filmBtnStyle: toggle(chain.filmOn, accent),
+      loraLabel: chain.loraOn ? '[ON]' : '[OFF]', loraBtnStyle: toggle(chain.loraOn, accent),
+      bungeeLabel: chain.bungeeOn ? '[ON]' : '[OFF]', bungeeBtnStyle: toggle(chain.bungeeOn, accent),
+      toggleLatch: () => this._setChain({ latchOn: !chain.latchOn }),
+      toggleFilm: () => this._setChain({ filmOn: !chain.filmOn }),
+      toggleLora: () => this._setChain({ loraOn: !chain.loraOn }),
+      toggleBungee: () => this._setChain({ bungeeOn: !chain.bungeeOn }),
+      setFilmScale: (e) => this._setChain({ filmScale: parseFloat(e.target.value) }),
+      setLora: (e) => this._setChain({ lora: e.target.value }),
+      setLoraScale: (e) => this._setChain({ loraScale: parseFloat(e.target.value) }),
+      setSemis: (e) => this._setChain({ semis: parseFloat(e.target.value) || 0 }),
+      loraOptions: [
+        { value: 'none', label: '— none —' },
+        { value: 'vinyl_warmth', label: 'vinyl_warmth (LoRA, r16)' },
+        { value: 'tape_sat', label: 'tape_sat (LoRA, r8)' },
+        { value: 'club_lowend', label: 'club_lowend (DoRA, r32)' },
+        { value: 'granular_pads', label: 'granular_pads (DoRA, r16)' },
+      ],
+
+      master: { head: S.master.head, gain: S.master.gain },
+      masterLatchLabel: S.master.latchOn ? '[ON]' : '[OFF]', masterLatchBtnStyle: toggle(S.master.latchOn, 'var(--turq-strong)'),
+      masterNormLabel: S.master.normOn ? '[ON]' : '[OFF]', masterNormBtnStyle: toggle(S.master.normOn, 'var(--turq-strong)'),
+      toggleMasterLatch: () => this.setState(s => ({ master: { ...s.master, latchOn: !s.master.latchOn } })),
+      toggleMasterNorm: () => this.setState(s => ({ master: { ...s.master, normOn: !s.master.normOn } })),
+      setMasterHead: (e) => this.setState(s => ({ master: { ...s.master, head: e.target.value } })),
+      setMasterGain: (e) => { const v = parseInt(e.target.value); this.setState(s => ({ master: { ...s.master, gain: v } })); },
+
+      sigma: S.sigma,
+      sampler: S.sampler,
+      setSampler: (e) => this.setState({ sampler: e.target.value }),
+      setSigmaShape: (e) => this.setState(s => ({ sigma: { ...s.sigma, shape: e.target.value } })),
+      lamFieldStyle: `width:70px;display:${S.sigma.shape === 'logsnr' ? 'block' : 'none'};`,
+      sigFieldStyle: `width:70px;display:${S.sigma.shape === 'logsnr' ? 'none' : 'block'};`,
+      setLamMin: (e) => this.setState(s => ({ sigma: { ...s.sigma, lamMin: parseFloat(e.target.value) || 0 } })),
+      setLamMax: (e) => this.setState(s => ({ sigma: { ...s.sigma, lamMax: parseFloat(e.target.value) || 0 } })),
+      dragLamMin: this._numDrag(S.sigma.lamMin, -12, 0, v => this.setState(s => ({ sigma: { ...s.sigma, lamMin: v } }))),
+      dragLamMax: this._numDrag(S.sigma.lamMax, 0, 6, v => this.setState(s => ({ sigma: { ...s.sigma, lamMax: v } }))),
+      objPostStyle: toggle(S.objective === 'post', 'var(--turq-strong)'),
+      objBaseStyle: toggle(S.objective === 'base', 'var(--turq-strong)'),
+      setObjPost: () => this.setState({ objective: 'post', sampler: 'pingpong', steps: 8, sigma: { ...S.sigma, shape: 'logsnr' } }),
+      setObjBase: () => this.setState({ objective: 'base', sampler: 'dpmpp-3m-sde', steps: 50, sigma: { ...S.sigma, shape: 'geometric' } }),
+      flatWarn: S.sigma.stepped && (S.sigma.tilt || 0) < 0.02 && S.sampler !== 'pingpong'
+        ? `flat plateaus on ${S.sampler}: dt = 0, so ${Math.round(S.steps - (S.sigma.plateaus || 6))} of ${S.steps} steps are no-ops. Raise TILT, or switch to pingpong to use them as churn steps.` : '',
+      flatWarnStyle: `font-size:9px;color:var(--warn, oklch(55% 0.14 40));line-height:1.3;max-width:300px;display:${S.sigma.stepped && (S.sigma.tilt || 0) < 0.02 && S.sampler !== 'pingpong' ? 'block' : 'none'};`,
+      cfgNote: S.objective === 'post'
+        ? 'CFG is baked in by distillation — the post-trained checkpoints need no guidance at inference. These fields are inert.'
+        : `base flow-matching model · latent ${Math.ceil((S.duration + 6) * 44100 / 4096)} frames incl. 6 s silence pad`,
+      cfgNoteStyle: `font-size:9px;color:${S.objective === 'post' ? 'var(--purple-strong)' : 'var(--text-dim)'};line-height:1.3;max-width:300px;`,
+      setSigmaPlateaus: (e) => this.setState(s => ({ sigma: { ...s.sigma, plateaus: Math.max(2, parseInt(e.target.value) || 2) } })),
+      dragPlateaus: this._numDrag(S.sigma.plateaus, 2, 24, v => this.setState(s => ({ sigma: { ...s.sigma, plateaus: v } })), { int: true }),
+      plateauFieldStyle: `width:66px;display:${S.sigma.stepped ? 'block' : 'none'};`,
+      steppedLabel: S.sigma.stepped ? '[ON]' : '[OFF]',
+      steppedStyle: toggle(S.sigma.stepped, 'var(--purple-strong)') + 'width:100%;box-sizing:border-box;padding:4px 2px;',
+      toggleStepped: () => this.setState(s => ({ sigma: { ...s.sigma, stepped: !s.sigma.stepped } })),
+      setTilt: (e) => this.setState(s => ({ sigma: { ...s.sigma, tilt: Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)) } })),
+      dragTilt: this._numDrag(S.sigma.tilt, 0, 1, v => this.setState(s => ({ sigma: { ...s.sigma, tilt: v } }))),
+      samplerOptions: ['dpmpp-2m-sde', 'dpmpp-3m-sde', 'dpmpp-2m', 'k-heun', 'k-lms', 'k-dpmpp-2s-ancestral', 'k-dpm-2', 'k-dpm-adaptive', 'k-dpm-fast', 'v-ddim', 'v-ddim-cfgpp', 'euler', 'rk4', 'dpmpp', 'pingpong'].map(v => ({ value: v, label: v })),
+      cfgRescale: S.cfgRescale,
+      setCfgRescale: (e) => this.setState({ cfgRescale: Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)) }),
+      dragCfgRescale: this._numDrag(S.cfgRescale, 0, 1, v => this.setState({ cfgRescale: v })),
+      setSigmaMin: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, min: v } })); },
+      setSigmaMax: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, max: v } })); },
+      setSigmaRho: (e) => { const v = parseFloat(e.target.value); this.setState(s => ({ sigma: { ...s.sigma, rho: v } })); },
+
+      mixOrder: S.mixOrder, isQuad: S.mixOrder === 'quad', isTreeOrCascade: S.mixOrder !== 'quad',
+      setMixOrder: (e) => this.setState({ mixOrder: e.target.value }), mixNodes,
+      mixRowStyle: 'display:flex;gap:8px;flex:1;min-height:0;',
+      mixSummaryStyle: `display:none;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--border);background:var(--panel);padding:5px 10px;`,
+      toggleMixRow: () => this.setState(s => ({ mixRowOpen: !s.mixRowOpen })),
+      mixSummaryLabel: S.mixOrder === 'quad'
+        ? `weighted 4-way · ${S.quadWeights.map(v => v.toFixed(2)).join(' / ')}`
+        : `${nodeDefs.map(d => `${d.label} ${S.nodes[d.k].interp} ${S.nodes[d.k].t.toFixed(2)}`).join('   ')}`,
+      pathSummaryLabel: stages.filter(st => st.on).length + '/' + stages.length + ' stages active'
+        + (allOverlaps.length ? ` · ${allOverlaps.length} inpaint` : ''),
+      quadWeights: S.quadWeights.map((v, i) => ({
+        value: v, valueLabel: v.toFixed(2), label: LANE_META[i].name, chipStyle: chip(i, 8),
+        onChange: (e) => { const nv = parseFloat(e.target.value); this.setState(s => { const q = [...s.quadWeights]; q[i] = nv; return { quadWeights: q }; }); },
+      })),
+      pipeline: stages.map((st, i) => ({
+        n: String(i + 1), label: st.label, note: st.note,
+        style: `display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--panel2);border-left:3px solid ${st.on ? (i === 5 ? 'var(--turq-strong)' : i === 4 ? 'var(--purple-strong)' : 'var(--green-strong)') : 'var(--border)'};opacity:${st.on ? 1 : 0.45};`,
+      })),
+
+      prompt: S.prompt, setPrompt: (e) => this.setState({ prompt: e.target.value }),
+      negPrompt: S.negPrompt, setNegPrompt: (e) => this.setState({ negPrompt: e.target.value }),
+      steps: S.steps, setSteps: (e) => this.setState({ steps: parseInt(e.target.value) || 0 }),
+      cfg: S.cfg, setCfg: (e) => this.setState({ cfg: parseFloat(e.target.value) || 0 }),
+      cfgUnitLabel: S.cfgUnit === 'steps' ? 'STEP' : 'PROG',
+      cfgUnitBtnStyle: `width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid ${S.cfgUnit === 'steps' ? 'var(--turq-strong)' : 'var(--border)'};color:${S.cfgUnit === 'steps' ? 'var(--turq-strong)' : 'var(--text-dim)'};font-size:10px;padding:4px 2px;cursor:pointer;`,
+      toggleCfgUnit: () => this.setState(s => ({ cfgUnit: s.cfgUnit === 'steps' ? 'frac' : 'steps' })),
+      cfgStep: S.cfgUnit === 'steps' ? 1 : 0.05,
+      cfgLoField: S.cfgUnit === 'steps' ? this._stepAtProgress(S.cfgLo) : Number(S.cfgLo.toFixed(2)),
+      cfgHiField: S.cfgUnit === 'steps' ? this._stepAtProgress(S.cfgHi) : Number(S.cfgHi.toFixed(2)),
+      setCfgLo: (e) => { const v = parseFloat(e.target.value) || 0; this.setState(s => ({ cfgLo: Math.min(1, Math.max(0, s.cfgUnit === 'steps' ? this._progressAt(v / (s.steps || 1)) : v)) })); },
+      setCfgHi: (e) => { const v = parseFloat(e.target.value) || 0; this.setState(s => ({ cfgHi: Math.min(1, Math.max(0, s.cfgUnit === 'steps' ? this._progressAt(v / (s.steps || 1)) : v)) })); },
+      duration: S.duration, setDuration: (e) => this.setState({ duration: parseFloat(e.target.value) || 0 }),
+      seed: S.seed, setSeed: (e) => this.setState({ seed: parseInt(e.target.value) || 0 }),
+      randomizeSeed: () => this.setState({ seed: Math.floor(Math.random() * 999999) }),
+      sigmaGraphLabel: S.cfgUnit === 'steps'
+        ? `${S.sigma.shape}${S.sigma.stepped ? ' · stepped' : ''} · cfg step ${this._stepAtProgress(S.cfgLo)}–${this._stepAtProgress(S.cfgHi)} / ${S.steps}`
+        : `${S.sigma.shape}${S.sigma.stepped ? ' · stepped' : ''} · cfg prog ${S.cfgLo.toFixed(2)}–${S.cfgHi.toFixed(2)}`,
+
+      terminalStyle: `flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);${S.terminal === 'full' ? 'position:absolute;inset:42px 0 0 0;z-index:40;' : ''}`,
+      terminalOpen: true,
+      terminalDotStyle: dot(true, 'var(--green-strong)'),
+      termBtn1: tab(S.terminal === 'collapsed'), termBtn2: tab(S.terminal === 'normal'), termBtn3: tab(S.terminal === 'full'),
+      terminalCollapse: () => this.setState({ terminal: 'collapsed' }),
+      terminalNormal: () => this.setState({ terminal: 'normal' }),
+      terminalFull: () => this.setState({ terminal: 'full' }),
+      logLines: [
+        { text: '$ player /status → ok  same-l  heads: adaln_zero, standardized, chroma_match', c: 'var(--text-dim)' },
+        { text: 'lane 2  decode 000412.npy  [256,4096] → 45.0 s audio   1.14 s (RTF 39x)', c: 'var(--text)' },
+        { text: 'lane 2  bungee  stretch 127.6 → 124.0 bpm   pitch -2.0 st', c: 'var(--green-strong)' },
+        { text: 'lane 1  overlap 14.0–16.0 beats  inpaint 28 steps cfg 3.0  chroma xfade on', c: 'var(--purple-strong)' },
+        { text: 'chroma  target lane 1 (C E G)  harmonic overlap 0.78 mean / 0.41 min', c: 'var(--turq-strong)' },
+        { text: 'mix     M1 slerp t=0.50   M2 lerp t=0.50   MX slerp t=0.50', c: 'var(--purple-strong)' },
+        { text: 'master  decode → 45.0 s   peak -0.4 dBFS  2 clipped frames', c: 'var(--text)' },
+      ].map(l => ({ text: l.text, style: `font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:${l.c};white-space:pre;` })),
+
+      statLane: S.statLane,
+      statLaneButtons: [0, 1, 2, 3, 4].map(i => ({
+        label: i === 4 ? 'MASTER' : `LANE ${i + 1}`,
+        style: i === 4 ? tab(S.statLane === 4)
+          : `background:${S.statLane === i ? LANE_META[i].soft : 'transparent'};border:1px solid ${S.statLane === i ? LANE_META[i].color : 'var(--border)'};color:${S.statLane === i ? LANE_META[i].color : 'var(--text-dim)'};font-size:10px;padding:5px 9px;cursor:pointer;`,
+        onClick: () => this.setState({ statLane: i }),
+      })),
+      xcorrRef: this.xcorrRef, pcaRef: this.pcaRef, featRef: this.featRef, scatterRef: this.scatterRef,
+      statFeature: S.statFeature, setStatFeature: (e) => this.setState({ statFeature: e.target.value }),
+      statAxisX: S.statAxisX, setStatAxisX: (e) => this.setState({ statAxisX: e.target.value }),
+      statAxisY: S.statAxisY, setStatAxisY: (e) => this.setState({ statAxisY: e.target.value }),
+    };
+  }
+}
+</script>
+</body>
+</html>
