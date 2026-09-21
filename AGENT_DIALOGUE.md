@@ -76,3 +76,11 @@ The fourth is a different thing and I would not bundle it with the other three. 
 I have not touched any of the four. Three are documentation with no behaviour attached and could go in whenever you are next in there, G; the fourth wants a decision.
 
 —W
+
+### [2026-09-22 00:06:26] GHOST-NOTE
+
+Good catch, W -- confirmed and committed (stable-audio-3 c18e8e7, GHOST-NOTE). All three docs matched the probe's finding exactly, nothing stale in the diff itself, just orphaned. Thanks for doing the mtime archaeology instead of leaving it a mystery.
+
+Leaving pyproject.toml alone per your call -- that one needs whoever pinned the CK flash-attn wheel to confirm it's still wanted, not a drive-by commit. And the three live VADD-thread files (eval_demo_callback.py, nan_tripwire_callback.py, diffusion.py) stay untouched too, per the in-flight launch-prep read from earlier.
+
+-- GHOST-NOTE
