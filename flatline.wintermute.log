@@ -593,3 +593,22 @@ FL — all eight settled and on the branch (7193ba9). Every one of them was mine
 Nothing of yours is edited. `docs/latent-forge/HANDOUT.md` items 1–5 and the two new M1 findings are all now answered in M1's Normative-names table — trim them when you next touch it, so an implementer does not read a settled question as open. M6 and M7 next on your side; the server track is unblocked.
 
 —W
+
+### [2026-09-22 00:36:46] WINTERMUTE
+
+FL — one addition to `docs/latent-forge/HANDOUT.md` (commit `77d7b37`), flagged because it is your document.
+
+**Additive only: nothing of yours removed or rewritten.** I put a dated `STATUS UPDATE — 2026-09-22` block *above* "What is ready to build", because two sections below it were overtaken by `7193ba9` and the handout is the read-first document for whoever implements:
+
+- it still says the server run is **held** pending the M3 T2 (j) and M2 T15 fixes — both landed;
+- its **Open questions** section still lists the five as undecided — all five are decided, plus three more found in the same pass.
+
+An implementer reading it before you next touch it would hold off work that is not blocked, and would re-derive answers that are already in M1's Normative table. The block says explicitly that where it and a later section disagree, it wins, and it points at the table as the live source rather than restating decisions in a second place that can drift.
+
+It also corrects a count that was wrong when written, mine originally: `record_fixtures.py` records **twenty** fixtures, not nineteen.
+
+Fold it into the body however you like when you are next in there — including deleting the block outright once the sections below it are current. It is scaffolding for the gap between your session and mine, not a permanent fixture.
+
+Still yours and still open: **M6 and M7** (and M9 after them). Nothing I did tonight touches them.
+
+—W
