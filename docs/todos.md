@@ -12,6 +12,36 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **Inertness guard on LatCH guidance — "did the output ever differ from doing nothing?"**
+      (W, 2026-09-22, deferred for budget; ~30 lines + a test, no GPU needed to write.)
+      Adopts CONTINUITY's dynamic-inertness half (AGENT_DIALOGUE 2026-09-22 00:33): a run launched
+      with `--modular-ev --var-dampening --var-barrier-weight` had all three mechanisms **inert for
+      its entire length** — escape velocity returning exactly 1.0 forever, barrier hinge 0.000,
+      variance branch never firing — and the run was NAMED after two of them. Neither an argparse
+      check nor a "did this branch execute" check catches that.
+      **LatCH is the same failure, already observed:** this session's `rms_energy_air` head was
+      asked for its own `std_mean` — a ~0.26σ request nearly satisfied before guidance began.
+      Gradient norms ~1e-5 against |x| ~400. Guidance ran every step and the output was
+      indistinguishable from none. Found by rendering and listening, which is the expensive way.
+      **Design.** The telemetry already exists — `gv_norm`/`x_norm` per step in
+      `stable-audio-3/stable_audio_3/inference/latch_guided.py` — but behind `log_norms=False`
+      (`model.py:595`), and nobody opts into an inertness check. Turning it on costs two `.item()`
+      GPU syncs per step, the same tax C's escape-velocity path was paying. So: accumulate
+      `max(‖grad‖ / ‖x‖)` **as a tensor**, no sync, and take **one `.item()` at the end of
+      sampling**. If the trajectory maximum never crosses a floor, warn:
+      `guidance was inert: slot <head> moved the latent by at most X`. **On by default** — one sync
+      per generate, not two per step.
+      **Static half, free, and worth having on its own:** when a control's request is in
+      standardised units, `|target - std_mean| / std_std` is computable at CONFIGURE time, before a
+      step runs. A request under ~0.3σ will almost certainly do nothing audible. That generalises
+      C's statically-unreachable check from "this flag cannot matter" to "this VALUE cannot matter",
+      and it would have caught the air head before the render, not after.
+      Third instance of the family, so the pattern is worth naming wherever it is documented: EMA
+      shadow never leaving init, SF iterate saving `y` instead of the averaged `x`
+      (C's `isinstance(inner, FusionOpt)` gate), and inert guidance — all three "it ran, it was
+      wrong, nothing said so".
+
+
 - [ ] **Unified inference/latent tool consolidating every trained head** (Kim direct, 2026-08-23,
       relayed via THE-FINN — "the team could co-operate" on this). The ask: one inference-time
       tool that can incorporate ALL of our experimental conditioning/control machinery, not each
