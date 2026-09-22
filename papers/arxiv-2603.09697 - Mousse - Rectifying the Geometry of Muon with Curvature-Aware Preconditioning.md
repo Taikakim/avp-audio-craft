@@ -56,6 +56,51 @@ stability techniques** (§1, "Robust Engineering Insights"), not as incidental d
 Bias correction is not a substitute for trace normalization, and a hardcoded alpha=0.25 is
 not spectral tempering.
 
+## Section 5.3 and Figure 7 — the ablations, read directly
+
+**Single-sided IS validated (section 5.3).** "We investigate a variant of Mousse that employs a
+single-sided preconditioner substituting the full Kronecker product R (x) L with only one
+factor... achieves comparable performance to the Mousse baseline, yielding a negligible
+decline or even slight improvements." Halves both eigendecomposition cost and preconditioner
+memory. So one-sided is a validated variant, not a cost dodge.
+
+**But the paper has a PREFERRED side, and it is not the one we can afford.** "Using the
+left-sided preconditioner (L) is consistently slightly better than the right-sided
+preconditioner (R). We hypothesize that this advantage stems from the presence of the
+preceding LayerNorm, which typically standardizes the input activations (whose statistics are
+captured by L)." We choose by SIZE, so on a (12288, 128) LoRA factor we take the side the
+paper found slightly worse -- the better one is the 12288x12288 we cannot build.
+
+**alpha = 0.125, NOT 0.25 (Figure 7a).** "Trace Normalization is essential for stability.
+Furthermore, Spectral Tempering (alpha = 0.125) consistently outperforms the aggressive
+curvature correction (alpha = 0.25), yielding the lowest final loss." Our default is now
+0.125. The same figure independently confirms trace normalization was worth fixing.
+
+**Their own implementation is a proof of concept (section 6.2):** "significant headroom for
+system-level optimizations, such as adopting power iteration with QR decomposition or
+Newton-Schulz iteration for spectral decomposition instead of naive torch.linalg.eigh."
+That is the same opening DASH exploits, and the same one our batching measurement points at.
+
+## A degeneracy to watch for under one-sided whitening
+
+KL-Shampoo (2509.03378) proves two things that bear on our configuration:
+
+- **Claim 1**: the KL-optimal ONE-SIDED preconditioner is exactly `S_a* = E[G G^T]` -- the plain
+  covariance. So in one-sided mode, plain Shampoo IS KL-Shampoo. The distinction only returns
+  if the bottleneck is turned off.
+- **Short-sided KL-Shampoo recovers scaled Muon when momentum is disabled** (d_a < d_b).
+
+The second is worth taking seriously. With `G = U D V^T`, left-whitening gives
+`(G G^T)^(-alpha) G = U D^(1-2alpha) V^T`, and Newton-Schulz maps that to `U V^T` -- identical
+to `msign(G)` for ANY alpha. The forward whitening is annihilated by the orthogonalization.
+What survives is the UNWHITENING, which yields `U D^(-2alpha) V^T` renormalized by gamma: a
+spectral reweighting, i.e. a softened Muon.
+
+That algebra is exact only when the preconditioner shares eigenvectors with what it multiplies
+-- no momentum, no EMA on the covariance. We use both, which is why the paper's equivalence
+carries the "when momentum is disabled" qualifier. But it means one-sided whitening can quietly
+collapse toward plain Muon, and that is a thing to MEASURE rather than assume.
+
 ## Mousse vs SOAP — the paper's own argument (p6)
 
 > SOAP relies on running a complete AdamW optimizer within the rotated frame, necessitating
