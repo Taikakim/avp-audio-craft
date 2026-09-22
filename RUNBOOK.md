@@ -446,6 +446,15 @@ reconstruct: `purpose` (what question this answers, and the EXPERIMENTS.md id), 
 kill-criterion, `status` (running | done | **abandoned, and why**), and `recipe.notes` (the traps a
 future renderer needs, e.g. "must load the EMA weights").
 
+**Local `train_lora_modular.py` does this for you (since 2026-09-22):** it writes
+`<output-dir>/<name>/run_meta.json` at launch. Pass `--purpose '...' --hypothesis '...'` (and
+optionally `--run-notes '...'`); on a terminal it ASKS if you leave them out, unattended it records
+null with a warning. `status` flips to `done` or `crashed` by itself when the run ends. VERIFY:
+`python3 -c "import json;d=json.load(open('<run_dir>/run_meta.json'));print(d['status'],d['purpose'])"`.
+Other trainer flags added the same day: `--modular-lora-a-lr-mult X` (multiply the step size of every
+LoRA/DoRA `lora_A`; default 1.0). Always pass `--eval_demos` to this script: without it the stock
+demo callback dies on the torchcodec import at step 1.
+
 ```bash
 # Pre-encode a dataset to latents
 cd /home/kim/Projects/SAO/stable-audio-3

@@ -388,6 +388,17 @@ trains without one becomes another unauditioned family — that is exactly how A
   NEITHER — render each blend under BOTH samplers. **Judge by ear**; we have no metric for "punchy but varied" and this
   week's record says do not invent one casually.
 
+### A14 — Let LoRA A move: asymmetric step size (`--modular-lora-a-lr-mult 20`) — **READY, Kim to run (C, 2026-09-23)**
+- **Question:** does the input side of the adapter matter to the SOUND? On audition_160ep_2026-09-22-b
+  A's row space stayed 99.2% unchanged from step 240 to 1440 (B's column space: 35%), so every adapter
+  read a random 128-d slice of its input for the whole run. Gate for porting LoRA-TSD (2609.02734,
+  `~/Projects/LoRA-TSD`; unbatched it costs 8.5 s/step on our 229 adapters, a batched rewrite is ~a session).
+- **Arm:** audition recipe re-run to step 480 with A's step x20 (applied after NorMuon, WD unchanged).
+  Same seed, data order and schedule as the baseline, so its step 240/480 checkpoints + clips are the control.
+- **Read:** ears first (step 240/480 clips vs baseline); then `eval/lora_gauge_drift.py` and A's
+  row-space overlap. **Kill:** same sound and A still >0.95 overlap => A-subspace is not our bottleneck,
+  drop LoRA-TSD. Clearly different/better => build the batched LoRA-TSD.
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**
