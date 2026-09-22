@@ -1,0 +1,139 @@
+[
+ {
+  "step": 240,
+  "normB": 13.8356650669313,
+  "normA": 99.0376318130163,
+  "normBA": 8.077224057020862,
+  "coupling_median": 0.08892526514257053
+ },
+ {
+  "step": 480,
+  "normB": 22.634838448772527,
+  "normA": 99.08078325973565,
+  "normBA": 13.264127791482455,
+  "coupling_median": 0.08905529473469834,
+  "gauge_frac": 0.04751871294625602,
+  "chance_baseline": 0.019743524491909647,
+  "rel_vel_B": 0.6048414911788765,
+  "rel_vel_BA": 0.6064249652116456,
+  "dA_share": 0.07677369965523162,
+  "top_gauge_modules": [
+   [
+    0.552,
+    "model.to_cond_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.688,
+    "model.to_cond_embed.2.parametrizations.weight.0"
+   ],
+   [
+    0.702,
+    "model.to_global_embed.0.parametrizations.weight.0"
+   ]
+  ]
+ },
+ {
+  "step": 720,
+  "normB": 29.863442013706866,
+  "normA": 99.03791687458826,
+  "normBA": 17.538169549714635,
+  "coupling_median": 0.08918153118953354,
+  "gauge_frac": 0.0654838051835122,
+  "chance_baseline": 0.0194640805375026,
+  "rel_vel_B": 0.39285357736402815,
+  "rel_vel_BA": 0.3948995430889764,
+  "dA_share": 0.06901877872317652,
+  "top_gauge_modules": [
+   [
+    0.399,
+    "model.transformer.layers.11.to_local_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.553,
+    "model.to_cond_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.672,
+    "model.to_cond_embed.2.parametrizations.weight.0"
+   ]
+  ]
+ },
+ {
+  "step": 960,
+  "normB": 36.07219785934604,
+  "normA": 98.8706474383418,
+  "normBA": 21.17605802919973,
+  "coupling_median": 0.08924032348109827,
+  "gauge_frac": 0.08433249148951746,
+  "chance_baseline": 0.019636045436781237,
+  "rel_vel_B": 0.28776325724031177,
+  "rel_vel_BA": 0.2889369341587099,
+  "dA_share": 0.06838375058532808,
+  "top_gauge_modules": [
+   [
+    0.382,
+    "model.postprocess_conv.parametrizations.weight.0"
+   ],
+   [
+    0.385,
+    "model.to_cond_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.397,
+    "model.transformer.layers.9.to_local_embed.0.parametrizations.weight.0"
+   ]
+  ]
+ },
+ {
+  "step": 1200,
+  "normB": 41.57949460363761,
+  "normA": 98.61751330431615,
+  "normBA": 24.365490519535733,
+  "coupling_median": 0.08931255426396709,
+  "gauge_frac": 0.10517327753023692,
+  "chance_baseline": 0.01992395998623914,
+  "rel_vel_B": 0.2251812884632605,
+  "rel_vel_BA": 0.22583191366968924,
+  "dA_share": 0.0736956517246764,
+  "top_gauge_modules": [
+   [
+    0.403,
+    "model.transformer.layers.11.to_local_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.423,
+    "model.postprocess_conv.parametrizations.weight.0"
+   ],
+   [
+    0.6,
+    "model.to_global_embed.0.parametrizations.weight.0"
+   ]
+  ]
+ },
+ {
+  "step": 1440,
+  "normB": 46.61208459728297,
+  "normA": 98.29846791702221,
+  "normBA": 27.23627942793332,
+  "coupling_median": 0.08936588530339575,
+  "gauge_frac": 0.12345258583350839,
+  "chance_baseline": 0.02000836174003905,
+  "rel_vel_B": 0.18644614965993053,
+  "rel_vel_BA": 0.18659620376463437,
+  "dA_share": 0.07207603777364224,
+  "top_gauge_modules": [
+   [
+    0.405,
+    "model.to_cond_embed.0.parametrizations.weight.0"
+   ],
+   [
+    0.459,
+    "model.postprocess_conv.parametrizations.weight.0"
+   ],
+   [
+    0.459,
+    "model.to_global_embed.0.parametrizations.weight.0"
+   ]
+  ]
+ }
+]
