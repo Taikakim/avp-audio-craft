@@ -454,6 +454,13 @@ null with a warning. `status` flips to `done` or `crashed` by itself when the ru
 Other trainer flags added the same day: `--modular-lora-a-lr-mult X` (multiply the step size of every
 LoRA/DoRA `lora_A`; default 1.0). Always pass `--eval_demos` to this script: without it the stock
 demo callback dies on the torchcodec import at step 1.
+Captions, several corpora at once (2026-09-23): `--encoded_dir a,b,c --caption_sidecar ,<avp json>,<bigset json>`
+(empty entry = stored prompts) `--caption_probs "0,0.9,0.1;0,0.9,0.1;0.5,0.5,0"` (per source, in order)
+`[--source_weights 1,1,0.5] [--track_type_prob 0.5]`. VERIFY in the first minute of the log: one
+`[captions] source N ...: audit of 200: X rejected, Y distinct prompts` line per source — 0 rejected and
+many distinct prompts is healthy; a WARNING line means that corpus would train on a placeholder or a
+constant. Sidecars: avp `SAO/lumi/avp_captions_tiered.json`; goa bigset
+`Kosmos/latents_goa_bigset/goa_archive_caption_sidecar.json` (v5; T1 70% genre-correct, T2 48%, T3 1.2%).
 
 ```bash
 # Pre-encode a dataset to latents
