@@ -24,7 +24,7 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 | **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — Task 2's edit (j) now written out in full; needs the GPU box |
 | **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | reviewed (6 findings, 2 blocking — both were pre-existing M1 defects, not M10's, and both are now fixed in M1) |
 | **M6** chroma | `docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` | 11 | reviewed **twice** (2 findings then 17, 5 of them blocking — all applied), then reconciled against WINTERMUTE's three rulings (directed-distance `INTERVAL_W`, single fold12, superset fixture check), 208 tests, counts verified |
-| **M7** chains / mix / library / sessions | *not yet a plan* | — | prerequisites in hand, no brief yet |
+| **M7** chains / mix / library / sessions | `docs/superpowers/plans/2026-09-23-latent-forge-m7-chains-mix-sessions.md` | 10 | written and assembled, 124 tests, counts verified — **not yet reviewed by a critic.** Treat as unreviewed until that pass has run |
 | **M9** rendering | *not yet a plan* | — | last; needs M7 |
 
 **Build order is M1 first, then M4 and M5 in either order.** M1 is the foundation every other plan

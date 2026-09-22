@@ -164,12 +164,43 @@ resume doc that disagrees with itself in the first screen costs more than a minu
 plan itself still said "Not yet reviewed by a critic" directly above a "Critic pass" section that
 already had findings in it — same shape of staleness, fixed the same day.
 
-## After M6 — M7, then M9
+## M7 — WRITTEN, ASSEMBLED, NOT YET CRITIC-REVIEWED. Resume here.
 
-**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M6 is done (above). **M7**
-(chains, mix, library, sessions — §4.6, §5.5, §9.2, §9.3) has its prerequisites in hand but no
-writer brief yet; drafting one is its first step, same shape as `M6_WRITER_BRIEFS.md`. M9
-(rendering) needs M7 and is last.
+`docs/superpowers/plans/2026-09-23-latent-forge-m7-chains-mix-sessions.md` — ten tasks, **115 `it()`
+blocks + 9 Playwright `test()`s = 124, every per-task count mechanically equal to its own stated
+gate**. Brief: `docs/latent-forge/M7_WRITER_BRIEFS.md`. Two writers **in parallel this time**, not
+sequentially like M6 — the split is by feature area (Writer A: LANE CHAIN + MASTER CHAIN + MIX/
+SIGNAL PATH; Writer B: FILES' HELP gap + OVERLAP-INPAINT + sessions/presets/autosave/v1→v2), and the
+one real shared name (`arrangement.mix`/`.master`) was pre-declared in the brief so neither writer
+needed the other's output. Both independently re-verified their own v3 line numbers and HELP ids
+against the real files rather than trusting the brief's own research pass.
+
+**Seven real defects found in M1/M4/M5 while researching and writing this, none M7's to fix, all
+independently verified** (several by me directly against `eval/`, not just accepted from the
+writers): `fetchAdapters()` reads `body.ckpts` but the real `/models` route returns `models` —
+verified against `eval/explorer_render_server.py:975-993`, always resolves to `[]` today; M1's own
+Playwright layout spec clicks `[data-tab="${id}"]`, which matches nothing — the real attribute is
+`data-testid="bottom-tab-{id}"` (M1 plan lines 8335 vs 6134); `ModuleShell` is declared twice in M1
+and disagrees with itself (use the Normative table's version, not Task 9's shown code); some of
+M1's own `App.svelte` code blocks import a `viewStore` that doesn't exist (the real export is
+`view`); `settings.attach()` (M4) is never called anywhere outside a test fixture across M1/M4/M5 —
+verified by a full grep of both plans, so PROMPT+SIGMA may always be reading `session.defaults`
+rather than a clip's own settings; M5's Normative table wrongly names Task 7 as where the legacy v1
+project store gets rewired (it never touches `App.svelte`/`TopBar.svelte`); and the real v1
+`SnapMode` spelling isn't what either the brief or M5's own table claimed. All batched for
+WINTERMUTE's next read, alongside the usual server-contract items (`/forge/sessions`, `/forge/
+presets`, the FILES routes — all M2's).
+
+**Next action:** run one critic over the whole plan, apply findings, run a second — M6's own history
+(a "clean" first pass that understated 17 more findings) is the reason not to stop after one. Budget
+roughly two agents (~300k each) plus the assembly-edit work already done. The two scratchpad drafts
+(`scratchpad/m7_part_a.md`, `m7_part_b.md`) are gitignored, on disk only; keep them until the critic's
+findings are applied, same as every prior milestone.
+
+## After M7 — M9 is last
+
+**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M6 and M7 are both written (above). **M9**
+(rendering) needs M7 and is last — no plan or brief yet.
 
 **M10 is no longer a pure leaf:** M6 consumes `dequantiseScaled` from M10 Task 1, which was built
 there deliberately for this reuse. Anything that reorders the milestones has to keep M10 T1 ahead
