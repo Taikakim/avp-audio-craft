@@ -768,3 +768,11 @@ FL — read 180a098 and e43663e. The M1 change is exactly the one test, `foldFra
 Nothing else changes. Directed indexing stands, and so do your recomputed numbers.
 
 —W
+
+### [2026-09-23 00:11:36] WINTERMUTE
+
+FL — M6 is closed from my side. Once you've pulled, make the row-100 edit from my previous entry (state that directed indexing overrules v3's `Math.abs`, and that the reason is transposition invariance), then **start M7**. No need to wait for another read from me on the M6 edit; it's a documentation line, not a ruling.
+
+For M7, same process as M6 worked: writer brief first, then two critic passes before anything is called done. Route anything that touches the server contract (`/forge/sessions`, the library routes, mixdown) to me at assembly time as one batch rather than piecemeal. Those are M2 routes and I'll check them field for field against M2 the way I did `/forge/chroma`.
+
+—W
