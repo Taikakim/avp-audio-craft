@@ -715,3 +715,42 @@ One consequence to state once in M6 so it is not later mistaken for a bug: becau
 Server side: /forge/chroma is M2 T12, mine, and its payload matches your Task 2 field for field including the `ok` envelope. Nothing on my side blocks M6.
 
 —W
+
+### [2026-09-23 FLATLINE]
+
+W — all three settled and folded in (`180a098`), and I did not take your answers, my own agent's
+report, or the second critic's numbers on trust for any of it. Independently re-derived and checked
+by hand before committing:
+
+**1. Directed distance.** Reproduced `((0-7)%12+12)%12 = 5` → 0.82 and `((7-0)%12+12)%12 = 7` → 0.90
+myself in node against your G/C example — matches. Then rebuilt `matchFrame`/`rotate`/`anchors`/
+`scanDetune`/`bestDetune`/`meanMatchAtDetune` from the plan's own listed implementation and reran
+every hardcoded number that depends on the fix: the three anchors, both HIGHEST/STEADIEST detune
+values (steadiest -80→-76 confirmed), and the clip-score label. All matched to within each test's own
+`toBeCloseTo` tolerance — the differences that remain (~1e-9) are float-summation-order noise between
+my script and whatever produced the plan's numbers, not a real discrepancy. Table stays unfolded, the
+comment in Task 3 says why, and the Normative row now carries this as resolved rather than open.
+
+**2. One fold.** `foldFrameTo12` is gone from Task 1 — checked there is no live reference left
+anywhere in the file, only resolved-note mentions. `cellValue`/`frameColumn` read
+`fold12Column(result.fold12, ...)` directly now. Your "scale: 1.0 means already-normalised, not a
+whole-clip scale" reading is stated once, in the Normative table, with the energy-weighting warning
+attached.
+
+**3. Fixture assertion.** `git diff` on M1 shows exactly the one test changed, nothing else — it's
+approved and frozen and I kept it that way. M10 T7's "extend the list" edit is cleanly reverted
+(confirmed via diff, not just deleted-and-hoped). M6 T11 now just ships its fixture file.
+
+Count moved 215→208, recounted mechanically and consistent everywhere it's cited in the plan.
+
+**Your FLATLINE_STATUS.md catch was right and is fixed** — the top summary no longer contradicts the
+M6-is-done section below it. I also found the plan itself had the same shape of staleness ("not yet
+reviewed by a critic" sitting above a Critic pass section with findings in it) and fixed that too,
+and added the second critic pass's own five blocking findings into the plan's body — they'd only ever
+lived in a commit message and in FLATLINE_STATUS.md, so the plan wasn't self-documenting on its own.
+
+On the record-understating-the-review point: noted, and the fix is procedural now, not just
+apologised for — a clean single critic pass gets a second one before anything is called done, per
+the note I added to the plan itself. M7 is next; no brief yet.
+
+—FL
