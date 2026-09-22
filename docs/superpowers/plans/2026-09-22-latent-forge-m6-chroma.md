@@ -16,7 +16,7 @@ heatmap, the curve overlay and the scan strip; DOM for anything a test asserts t
 
 **Spec:** `docs/superpowers/specs/2026-09-15-latent-forge-design.md` — §5.4 is the normative section;
 §6.3 is the `/forge/chroma` contract; §9.7 is error surfacing; §4.3 supplies the clip score label and
-the TARGET lane; §4.6 supplies the bottom-pane frame.
+the TARGET lane; §4.5 supplies the bottom-pane frame.
 
 **Depends on:**
 
@@ -192,9 +192,10 @@ indent against each task's own stated `Tests N passed (N)` gate:
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
 | 5 `detuneScan.ts` | 12 | 11 tab, fixture, Playwright | 17 |
-| 6 heatmap geometry + canvas | 37 | | |
+| 6 heatmap geometry + canvas | 38 | | |
 
-**211 `it()` blocks across eleven tasks.**
+**212 `it()` blocks across eleven tasks** (38 in Task 6, one more than at first assembly — see
+the critic-fix note in Open questions).
 
 **Not yet reviewed by a critic.** Every previous milestone's critic pass returned findings — 17, 32,
 49 and 6 across four rounds, and it has never once come back empty — so treat this plan as unreviewed
@@ -2567,6 +2568,32 @@ describe("ChromaHeatmap's middle-drag gesture (v3 331: up/down zooms, left/right
     expect(seen!.to - seen!.from).toBeLessThan(96);
   });
 
+  it("recomputes from the drag's start each move, so reversing the pointer returns exactly to the start window", async () => {
+    // A regression test for compounding: if each move zoomed the CURRENT
+    // window instead of re-deriving from drag.startWin, ending back at the
+    // pointer's start position would not generally restore the start window
+    // once a step in between has been clamped -- and even short of a clamp,
+    // compounding two inverse multiplicative factors is not exactly identity
+    // in floating point the way "recompute from a fixed start" is.
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fakeContext().ctx);
+    let seen: { from: number; to: number } | null = null;
+    const START = { from: 0, to: 96 };
+    const { getByTestId } = render(ChromaHeatmap, {
+      props: {
+        view: "global", win: START, result: res(96), target: TARGET,
+        onwin: (w: { from: number; to: number }) => { seen = w; },
+      },
+    });
+    const canvas = getByTestId("chroma-heatmap");
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
+      left: 0, top: 0, width: 400, height: 131, right: 400, bottom: 131, x: 0, y: 0, toJSON: () => ({}),
+    });
+    await fireEvent.pointerDown(canvas, { button: 1, clientX: 200, clientY: 60, pointerId: 1 });
+    await fireEvent.pointerMove(canvas, { clientX: 260, clientY: 10, pointerId: 1 }); // zoom in + scroll
+    await fireEvent.pointerMove(canvas, { clientX: 200, clientY: 60, pointerId: 1 }); // back to the start point
+    expect(seen).toEqual(START);
+  });
+
   it("ignores a plain left-drag, which belongs to hover (Task 10)", async () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fakeContext().ctx);
     let seen: { from: number; to: number } | null = null;
@@ -2888,7 +2915,14 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
   // The chroma heatmap (spec §5.4; v3 markup 343-344, logic _drawChroma
   // 1160-1215). Four views; the target's profile as a reference row across the
   // top; middle-drag zooms the frame axis (up/down) and scrolls it
-  // (left/right) in one gesture, as the timeline ruler does.
+  // (left/right) in one gesture, as the timeline ruler does -- INCLUDING M5
+  // T3's convention that the gesture is anchored to the START of the drag,
+  // not the previous pointermove: re-derive the absolute window from the
+  // window the drag started with every move, rather than compounding onto
+  // the already-clamped prop from the last move. Compounding onto `win`
+  // (which clampWindow may already have floored or ceilinged) makes the
+  // gesture non-reversible once a drag hits either bound and the pointer
+  // reverses -- the same bug M5 T3's own comment exists to prevent.
   //
   // This component owns NO state but the gesture: the window arrives as a prop
   // and goes back out through onwin, so Task 11's tab is its single owner and
@@ -2932,7 +2966,10 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
   let { view, win, result, target, detuneCents = 0, onwin }: Props = $props();
 
   let canvasEl = $state<HTMLCanvasElement>();
-  let drag: { x: number; y: number; anchorFrac: number } | null = null;
+  // startWin is `win` AS IT STOOD when the drag began -- every move below
+  // recomputes from it, never from the current `win` prop, so the gesture
+  // stays reversible even after clampWindow has floored or ceilinged it.
+  let drag: { startX: number; startY: number; anchorFrac: number; startWin: FrameWindow } | null = null;
 
   function draw(): void {
     const canvas = canvasEl;
@@ -2991,7 +3028,10 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
     const canvas = canvasEl;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    drag = { x: e.clientX, y: e.clientY, anchorFrac: (e.clientX - rect.left) / Math.max(1, rect.width) };
+    drag = {
+      startX: e.clientX, startY: e.clientY, startWin: win,
+      anchorFrac: (e.clientX - rect.left) / Math.max(1, rect.width),
+    };
     canvas.setPointerCapture?.(e.pointerId);
   }
 
@@ -2999,12 +3039,13 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
     const canvas = canvasEl;
     if (!drag || !canvas || !result) return;
     const rect = canvas.getBoundingClientRect();
-    const dy = e.clientY - drag.y;
-    const dx = e.clientX - drag.x;
-    drag = { x: e.clientX, y: e.clientY, anchorFrac: drag.anchorFrac };
-    let next = win;
-    if (dy !== 0) next = zoomWindow(next, middleDragZoomFactor(dy), drag.anchorFrac, result.T);
-    if (dx !== 0) next = scrollWindow(next, dx, Math.max(1, rect.width), result.T);
+    // Both deltas are measured from the START of the drag (drag.startX/Y),
+    // never from the previous move, and both apply to drag.startWin, never
+    // to the current `win` prop -- see the WHY comment above the component.
+    const totalDy = e.clientY - drag.startY;
+    const totalDx = e.clientX - drag.startX;
+    let next = zoomWindow(drag.startWin, middleDragZoomFactor(totalDy), drag.anchorFrac, result.T);
+    next = scrollWindow(next, totalDx, Math.max(1, rect.width), result.T);
     onwin?.(next);
   }
 
@@ -3072,9 +3113,10 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
 cd latent-forge && npx vitest run src/lib/chroma/__tests__/consonanceColor.test.ts src/lib/chroma/__tests__/heatmapGeometry.test.ts src/ui/chroma/__tests__/chromaCanvas.test.ts src/ui/chroma/__tests__/ChromaHeatmap.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  4 passed (4)` / `Tests  37 passed (37)` — 8 in `consonanceColor.test.ts`,
-18 in `heatmapGeometry.test.ts`, 4 in `chromaCanvas.test.ts` and 7 in
-`ChromaHeatmap.component.test.ts` — and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Test Files  4 passed (4)` / `Tests  38 passed (38)` — 8 in `consonanceColor.test.ts`,
+18 in `heatmapGeometry.test.ts`, 4 in `chromaCanvas.test.ts` and 8 in
+`ChromaHeatmap.component.test.ts` (one added by the 2026-09-22 critic fix below) — and
+`svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -6634,7 +6676,7 @@ The whole chroma milestone together, for the record:
 cd latent-forge && npx vitest run src/lib/chroma src/ui/chroma
 ```
 
-Expected: `Test Files  20 passed (20)` / `Tests  202 passed (202)`.
+Expected: `Test Files  20 passed (20)` / `Tests  203 passed (203)`.
 *Counting note for whoever verifies this plan mechanically:* a raw grep for indented `it(` blocks
 over this task's section returns **17**, not 15. Fifteen of those are the new tests (11 in
 `ChromaTab.component.test.ts`, 4 in `chromaFixture.test.ts`); the other two are the **before and
@@ -6644,7 +6686,7 @@ after** of the single `ships the … fixtures …` block being edited in
 `src/lib/chroma` is 12 files / 147 tests — Writer A's 68 (`bins` 18, `chromaClient` 11, `match` 13,
 `target` 14, `detuneScan` 12) plus 79 here (`consonanceColor` 8, `heatmapGeometry` 18, `matchCurve`
 11, `scanStrip` 12, `targetStore` 14, `hoverReadout` 9, `chromaLink` 7). `src/ui/chroma` is 8 files
-/ 55 tests (`chromaCanvas` 4, `ChromaHeatmap` 7, `MatchCurveOverlay` 4, `MatchLegend` 6,
+/ 56 tests (`chromaCanvas` 4, `ChromaHeatmap` 8, `MatchCurveOverlay` 4, `MatchLegend` 6,
 `DetuneScanStrip` 10, `TargetRow` 9, `HoverReadout` 4, `ChromaTab` 11). Task 10's remaining 3
 (`ClipBox.score.component.test.ts`) live under `src/ui/timeline` and are not in this run.
 
@@ -6715,6 +6757,41 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M6 T11: CHROMA tab assembled
 
 
 ---
+
+## Critic pass (2026-09-22)
+
+One agent, read-only, against the sources listed in this plan's header. **2 findings, 0 blocking,
+1 unconfirmed** — the lightest of any milestone's pass so far (prior rounds: 17, 32, 49, 6). Every
+INTERVAL_W/rotate/anchor/detune-scan number was hand-recomputed rather than trusted, every v3 line
+citation was checked against the actual handoff file, every data-*/HELP id was checked in both
+directions against the Normative table, and the API restatements were checked against M1/M5/M10's
+declaring tasks. All held except the two below, both now fixed in this plan.
+
+1. **NON-BLOCKING, fixed.** The header's "Spec:" line cited §4.6 for the bottom-pane frame; §4.5 is
+   the section that actually defines the 248 px bottom pane and lists CHROMA under it (§4.6 is the
+   unrelated right-pane accordion). Every task-body citation elsewhere in this plan already said
+   §4.5 correctly — this was an isolated slip in the header. Fixed above.
+2. **NON-BLOCKING, fixed.** Task 6's middle-drag zoom/scroll compounded each pointermove's delta onto
+   the *already-clamped* `win` prop from the previous move, rather than recomputing an absolute
+   target from the window the drag started with — the convention M5 T3's own comment establishes
+   ("middleDragZoomFactor is relative to the START of the drag, not the previous event") and which
+   this task's own docstring claimed to replicate but did not. Once a drag pushes the window to
+   `MIN_VISIBLE_FRAMES` or the full-clip bound and the pointer reverses, compounding does not unwind
+   symmetrically the way start-anchored recomputation does — the gesture silently stops being
+   reversible. Not visible in the single-pointermove test that existed. **Fixed**: `drag` now stores
+   `startWin` (the window at drag start) alongside the start pointer position, and every move
+   recomputes `zoomWindow`/`scrollWindow` from `startWin` using the *total* delta since drag start,
+   never from the current `win` prop. A new test drags out then reverses to the exact start point and
+   asserts the reported window is exactly the start window — something the compounding version would
+   not generally guarantee once a clamp had fired in between. Task 6's gate moved 37 → **38**; the
+   header table, the 211 → 212 total, and the tail's combined-run count (202 → 203) are all updated
+   to match.
+
+**One item flagged but not treated as a finding:** `hoverReadout.ts`'s `hoverNoteText` uses
+`h.cents ? … : ""`, which is falsy for `cents === 0` — a real, reachable case (bin 2 in a band view
+is exactly a class centre). No test exercises a genuine `cents === 0` from `readHover`, so whether
+omitting "+0¢" is intended or accidental could not be confirmed either way; it reads as a defensible
+UX choice and is left as written. Worth a look if it ever comes up during implementation.
 
 ## Open questions
 

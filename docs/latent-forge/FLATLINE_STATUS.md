@@ -84,10 +84,10 @@ on 2026-09-21 pending two small fixes to M3 T2 and M2 T15 — see `flatline.wint
   claimed Task 8's suite was 21, cut to 16 by a later fix); on M10 it confirmed 86 exact against every
   per-task gate, with no drift — the two-writer-in-sequence (not parallel) approach seems to help.
 
-## M6 — WRITTEN AND ASSEMBLED. One critic pass left.
+## M6 — DONE. Written, assembled, critic pass applied.
 
-`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — 6,930 lines, eleven tasks,
-**211 `it()` blocks, every per-task count mechanically equal to its own stated gate**. Written by two
+`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — eleven tasks,
+**212 `it()` blocks, every per-task count mechanically equal to its own stated gate**. Written by two
 writers **sequentially** (B read A's output before starting), which is why there is no cross-writer
 drift; M4's three parallel writers produced a stale count that no single agent could see.
 
@@ -98,13 +98,21 @@ drift; M4's three parallel writers produced a stale count that no single agent c
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
 | 5 `detuneScan.ts` | 12 | 11 tab, fixture, Playwright | 17 |
-| 6 heatmap geometry + canvas | 37 | | |
+| 6 heatmap geometry + canvas | 38 | | |
 
-**Next action: run ONE critic over the whole plan**, then apply its findings and re-count
-mechanically. Budget roughly one agent (~280k subagent tokens, ~18 points of a 5-hour window). Every
-previous critic pass returned findings — 17, 32, 49 and 6 — and none has ever come back empty, so
-the plan is not done until it has run. The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` are
-gitignored and on disk only; they can be deleted once the critic's findings are applied.
+**The critic pass ran 2026-09-22 — 2 findings, 0 blocking, 1 unconfirmed, both applied.** The
+lightest of any milestone's pass (prior rounds: 17, 32, 49, 6). One was a wrong spec-section
+citation in the header (§4.6 → §4.5, an isolated slip — every task body already cited §4.5
+correctly). The other was real: Task 6's middle-drag zoom/scroll compounded each pointermove's
+delta onto the already-clamped `win` prop instead of recomputing from the window the drag started
+with, the convention M5 T3's own comment establishes and this task's docstring claimed but did not
+follow — so a drag that hit the zoom floor or ceiling and then reversed did not unwind symmetrically.
+Fixed: `drag` now carries `startWin`, and every move recomputes from it using the total delta since
+drag start. One test added (drag out, reverse to the start point, assert the exact start window);
+Task 6's gate moved 37 → 38, total 211 → 212. Full writeup, including the one flagged-but-unconfirmed
+item (`hoverNoteText`'s falsy check on `cents === 0`), is in the plan's own "Critic pass" section,
+right before its Open questions. The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` are
+gitignored and on disk only; safe to delete now that the critic's findings are applied.
 
 **Five open questions want Kim's or W's answer rather than a default** (full text at the tail of the
 plan, with each writer's original list underneath):
@@ -131,7 +139,7 @@ for the chroma fixture, so whichever lands second extends the list the first one
 
 ## After M6 — M7, then M9
 
-**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M6 is half written (above). **M7**
+**Order per spec §12: M1 → (M4, M5, M10) → (M6, M7) → M9.** M6 is done (above). **M7**
 (chains, mix, library, sessions — §4.6, §5.5, §9.2, §9.3) has its prerequisites in hand but no
 writer brief yet; drafting one is its first step, same shape as `M6_WRITER_BRIEFS.md`. M9
 (rendering) needs M7 and is last.
@@ -142,7 +150,7 @@ of M6 T2.
 
 **For whoever implements rather than plans:** `docs/latent-forge/HANDOUT.md` is the read-first
 document — build order, the hazards that each cost a debugging session, the known limitations not to
-"fix", and the open questions not to decide unilaterally. It is updated through M10.
+"fix", and the open questions not to decide unilaterally. It is updated through M6.
 
 ## How to write one (the format is fixed and W checks it)
 
