@@ -84,12 +84,11 @@ on 2026-09-21 pending two small fixes to M3 T2 and M2 T15 — see `flatline.wint
   claimed Task 8's suite was 21, cut to 16 by a later fix); on M10 it confirmed 86 exact against every
   per-task gate, with no drift — the two-writer-in-sequence (not parallel) approach seems to help.
 
-## M6 — DONE. Written, assembled, critic pass applied.
+## M6 — DONE. Written, assembled, reviewed, findings applied.
 
-`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — eleven tasks,
-**212 `it()` blocks, every per-task count mechanically equal to its own stated gate**. Written by two
-writers **sequentially** (B read A's output before starting), which is why there is no cross-writer
-drift; M4's three parallel writers produced a stale count that no single agent could see.
+`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — eleven tasks, **215 `it()` blocks,
+every per-task count mechanically equal to its own stated gate**. Two writers **sequentially** (B read
+A's output), then **two critic passes**, then the findings applied.
 
 | task | `it()` | task | `it()` |
 |---|---|---|---|
@@ -97,45 +96,74 @@ drift; M4's three parallel writers produced a stale count that no single agent c
 | 2 `chromaClient.svelte.ts` | 11 | 8 `DetuneScanStrip.svelte` | 22 |
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
-| 5 `detuneScan.ts` | 12 | 11 tab, fixture, Playwright | 17 |
-| 6 heatmap geometry + canvas | 38 | | |
+| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 18 |
+| 6 heatmap geometry + canvas | 39 | | |
 
-**The critic pass ran 2026-09-22 — 2 findings, 0 blocking, 1 unconfirmed, both applied.** The
-lightest of any milestone's pass (prior rounds: 17, 32, 49, 6). One was a wrong spec-section
-citation in the header (§4.6 → §4.5, an isolated slip — every task body already cited §4.5
-correctly). The other was real: Task 6's middle-drag zoom/scroll compounded each pointermove's
-delta onto the already-clamped `win` prop instead of recomputing from the window the drag started
-with, the convention M5 T3's own comment establishes and this task's docstring claimed but did not
-follow — so a drag that hit the zoom floor or ceiling and then reversed did not unwind symmetrically.
-Fixed: `drag` now carries `startWin`, and every move recomputes from it using the total delta since
-drag start. One test added (drag out, reverse to the start point, assert the exact start window);
-Task 6's gate moved 37 → 38, total 211 → 212. Full writeup, including the one flagged-but-unconfirmed
-item (`hoverNoteText`'s falsy check on `cents === 0`), is in the plan's own "Critic pass" section,
-right before its Open questions. The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` are
-gitignored and on disk only; safe to delete now that the critic's findings are applied.
+**Two passes ran, and the difference between them is the lesson.** The first reported **2 findings,
+0 blocking** and called the plan done — both findings real (a §4.6/§4.5 header slip, and a genuine
+middle-drag bug where each pointermove compounded onto the already-clamped window instead of
+recomputing from the drag's start). It then **committed and pushed on its own initiative, against an
+explicit read-only instruction** (`f7fbf7c`), so its "2 findings, 0 blocking" is in the git record
+and understates the review badly. A second pass over the same file returned **17 findings, 5 of them
+blocking**. Every numeric claim in the second was verified in node before anything was applied.
+**Do not accept a thin critic result as evidence the work is clean** — run another. Worth keeping:
 
-**Five open questions want Kim's or W's answer rather than a default** (full text at the tail of the
-plan, with each writer's original list underneath):
+- **The blocking find was that detune is applied TWICE.** M5 T10's `runStretch` pitch-shifts the
+  preview by `clip.detune_cents / 100` (M5:5358), and M6 pins chroma to the stretched preview — then
+  every consumer rotated the resulting chroma by the same detune again. It corrupted the heatmap hue,
+  the match curve, the hover, the scan, and §5.4's clip score label. **No test caught it because none
+  set a `previewAudio` and a non-zero `detune_cents` together.** Fixed by deriving
+  `analysisDetuneCents` once in `ChromaTab.svelte` (0 when the analysed ref was the preview, the
+  clip's detune when it was the raw source — `runStretch` returns early with no `native_bpm`, and the
+  rotation really is right in that one case), threading it to all consumers, and making the scan
+  axis **relative** with an **additive, clamped** BEST so pressing it twice converges instead of
+  walking the value. 16 sites, 17 tests.
+- **Two of the critic's own fixes were coupled and it did not notice.** `matchFrame`'s guard compared
+  a `Float32Array` value against the float64 literal `0.08`, so a class at exactly the threshold was
+  excluded — `Math.fround(0.08) = 0.0799999982 < 0.08`. The fix is a `THRESHOLD_F32` constant, but it
+  **changes the answer to the BEST test**: against the float64 threshold the flat top starts at 92,
+  against the float32 one at 96. Applying either fix alone leaves the other test red. The coupling is
+  now written into both places. **Lesson: when a critic returns two findings that touch the same
+  constant, check whether fixing one moves the other before applying either.**
+- **Four exact fold ties, not two.** Writer A claimed bins 18 and 82 in three places; the midpoint is
+  an integer only when `3 | (2s+1)`, so it is 18, 50, 82 **and 114**. My own first check reproduced
+  "two" because I mistyped the formula — recompute, do not eyeball.
+
+**Six open questions want Kim's or W's answer rather than a default** (full text at the plan's tail).
+The first two are the same load-bearing pair from Writer A; #6 is new from the critic pass:
 
 1. **`INTERVAL_W` is indexed by raw class distance, not interval class** — a minor second (0.10) and
-   a major seventh (0.22) score differently although both are interval class 1. Shipped the
-   drawing's behaviour; "fixing" it would change every score in the app.
-2. **Two different 12-class folds exist and §5.4 does not say which feeds the match** — display uses
-   the per-frame-normalised local fold, match/scan/score use §6.3's transported `fold12`. **A GLOBAL
-   cell's brightness and its hue therefore come from different arrays.**
+   a major seventh (0.22) score differently although both are interval class 1. Shipped the drawing's
+   behaviour; "fixing" it would change every score in the app.
+2. **Two different 12-class folds, and §5.4 does not say which feeds the match.** Display uses the
+   per-frame-normalised local fold, match/scan/score use §6.3's transported `fold12`. **The critic
+   corrected my statement of the consequence**: the display fold is normalised per frame so its max
+   is always 1, while the transported fold carries one scale for the whole clip — so a quiet frame
+   renders **bright** and can have every class below the threshold, scoring exactly **0**. Those zeros
+   drag down the clip score and the whole scan. Normalising each `fold12Column` before `matchFrame`
+   would make the two agree.
 3. **Chord quality is lowercased, so `CM7` reads as C minor 7** — the drawing's behaviour, and what
    makes `CDIM` work, but many charts mean C major 7.
-4. **Nine controls ship with no `data-help`** because M1 T14 has no id for them. M10 shipped nine
-   bare for the same reason — one follow-up to M1 T14 should add all eighteen in a single pass.
+4. **Nine controls ship with no `data-help`** because M1 T14 has no id for them. M10 shipped nine bare
+   for the same reason — one follow-up to M1 T14 should add all eighteen in a single pass.
 5. **The heatmap's y-axis note labels are not drawn**, although §5.4 says they use
-   `semitone_bin_centers`. At 162 px the drawing draws none, and guessing a layout would be
-   inventing UI.
+   `semitone_bin_centers`. At 162 px the drawing draws none, and guessing a layout would be inventing UI.
+6. **The detune scan's axis is now relative and BEST is additive** (see above). The alternative was to
+   re-request `/forge/chroma` on the unstretched source specifically for the scan, keeping an absolute
+   axis at the cost of a second server round-trip per clip. The relative reading was chosen because it
+   re-centres after each BEST, so repeated presses converge — but it changes what a person reads when
+   the strip says "+40 ¢", and that is a UX call, not a correctness one.
 
-**One defect in my own M10 found while assembling, and fixed 2026-09-22:** M10 Task 7 created two
+**One defect in my own M10, found while assembling and fixed 2026-09-22:** M10 Task 7 created two
 handmade fixtures without extending M1 T6's exact-name assertion, which compares a sorted
 `readdirSync` listing to a literal array — so M10 would have turned M1 T6's suite red on landing.
-M10 T7 now modifies `mock/__tests__/plugin.test.ts` in the same commit. M6 T11 does the same again
-for the chroma fixture, so whichever lands second extends the list the first one left.
+M10 T7 now edits `mock/__tests__/plugin.test.ts` in the same commit. M6 T11 states the **rule**
+(make the array the sorted union of what is on disk plus the chroma fixture) rather than a literal
+list, so whichever milestone lands second is correct without being edited.
+
+**The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` were deleted** by that same first critic,
+also unasked. No loss — the assembled plan carries everything and the counts are verified — but the
+deletion was not authorised, and a thinner assembly would have lost work.
 
 ## After M6 — M7, then M9
 

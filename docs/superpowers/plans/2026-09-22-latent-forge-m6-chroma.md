@@ -98,13 +98,14 @@ Where a task body and this block disagree, **this block wins.**
 | decision | the reading this plan ships | why |
 |---|---|---|
 | `INTERVAL_W`'s index | the **raw class distance** `INTERVAL_W[abs(a-b)]`, as v3's `_matchFrame` computes it — *not* `min(ic, 12-ic)` | §5.4 pins the twelve weights and names `_matchFrame` as the definition, but does not restate the indexing. "Fixing" it to interval class would silently change every score in the app. A comment in Task 3 says so, so nobody helpfully corrects it. **Open question 1** |
-| which 12-class fold feeds what | **display** (GLOBAL's cells, the hover value) from `foldFrameTo12(bands, …)`, per-frame normalised, §5.4's own words; **match / scan / clip score** from §6.3's transported `fold12`, quantised once over the clip | they are genuinely different arrays and §5.4 does not say. 51 × T rotations over a locally-folded array would be the pane's slowest path, and §6.3 ships `fold12` for exactly this. **Consequence a reviewer must know: a GLOBAL cell's brightness and its hue come from two different arrays**, so a frame can look quiet and still score high. **Open question 2** |
-| the B/C fold boundary | the server's **circular-nearest** rule: bin 124 is B, bin 125 is C (boundary at 2.0 + 11.5·(128/12) = 124.67) | client and server must fold identically. Bins 18 and 82 are exact ties and go to the **lower** class, matching numpy's `argmin`; the one-line `Math.round((bin−2)/(128/12))` sends both the other way and is therefore not usable |
+| which 12-class fold feeds what | **display** (GLOBAL's cells, the hover value) from `foldFrameTo12(bands, …)`, per-frame normalised, §5.4's own words; **match / scan / clip score** from §6.3's transported `fold12`, quantised once over the clip | they are genuinely different arrays and §5.4 does not say. 51 × T rotations over a locally-folded array would be the pane's slowest path, and §6.3 ships `fold12` for exactly this. **Consequence a reviewer must know: a GLOBAL cell's brightness and its hue come from two different arrays.** The display fold is normalised PER FRAME, so its max is always 1; the transported `fold12` carries one scale for the whole clip. A quiet frame therefore renders bright and can have **every** class below `MATCH_THRESHOLD`, giving `den === 0` and a match of exactly **0** — so the failure is a bright cell scoring zero, and those zeros drag down `meanMatchAtDetune`, which is §5.4's clip score label, and the whole detune scan. **Open question 2** |
+| the B/C fold boundary | the server's **circular-nearest** rule: bin 124 is B, bin 125 is C (boundary at 2.0 + 11.5·(128/12) = 124.67) | client and server must fold identically. Bins **18, 50, 82 and 114** are exact ties and go to the **lower** class, matching numpy's `argmin`; the one-line `Math.round((bin−2)/(128/12))` sends all four the other way and is therefore not usable. There are exactly four: the midpoint between centres *s* and *s+1* is `2 + (2s+1)·16/3`, an integer only when `3 | (2s+1)`, i.e. `s ∈ {1, 4, 7, 10}` |
 | C's bin, and the semitone width | C at bin **2.0**; each semitone spans **128/12** bins | §5.4, pinned verbatim |
 | chord vocabulary | §5.4's **nine exactly** — `C, Cm, C7, Cmaj7, Cm7, Cdim, Caug, Csus2, Csus4`. `Cmin` returns `null` | the drawing accepts `min`/`min7`/`maj` and has no `sus2`/`sus4`; the spec's list is normative. Trivial to add aliases later |
 | chord quality case | **lowercased**, as the drawing does, so `CDIM` works and `CM7` reads as C **minor** 7 | pinned in a test because it is a real ambiguity, not an oversight. **Open question 3** |
 | enharmonic roots | letter-semitone + accidental **arithmetic**: `E#`→F, `Cb`→B, `B#m7`→`Cm7` | the drawing's `NOTES.indexOf(letter + "#")` returns −1 for `E#`/`B#` and produces a garbage root. This is a data-layer correction; the drawing is explicitly low-fidelity for data |
 | detune scan | cents **−100..100 step 4**, every **3rd** frame; `HIGHEST` = `mean`, `STEADIEST` = `mean − sd` | §5.4, pinned verbatim |
+| **how much detune to rotate by — the analysed ref decides** | **`analysisDetuneCents`**, derived once in `ChromaTab.svelte`: **`0`** when the analysed ref was `clip.previewAudio`, **`clip.detune_cents`** when it was `clip.audio`. It is what every consumer receives in place of `clip.detune_cents` — `ChromaHeatmap`'s per-cell hue, `windowScores`, `readHover`, `meanMatchAtDetune`, `scanDetune`. Consequently **the scan strip's ±100 ¢ axis is RELATIVE to the clip's current detune** — the red mark sits at the strip's centre, the label says what the axis is relative to, and **BEST is ADDITIVE**: `setDetune(clip.id, clip.detune_cents + bestDetune(...))`, clamped to ±100 | M5 T10's `runStretch` already pitch-shifts the preview by `clip.detune_cents / 100` (M5:5358), and this plan's own row below pins chroma to the stretched preview. So `chromaClient.result.fold12` is **already** the chroma of detuned audio and rotating it again by `detune_cents / 100` applies the detune twice. v3 did not have this bug because its scan and its chroma both started from the unstretched source. The rotation is still right in the one case where `runStretch` returns early (`clip.native_bpm == null`, so `previewAudio` stays null) — which is exactly what `analysisDetuneCents` encodes, in **one** place, so nothing re-derives the rule. Bare `bestDetune(...)` made pressing BEST twice walk the value instead of converging. **Open question 6** |
 | the clip score | `meanMatchAtDetune` over **every** frame at the clip's current detune — deliberately un-strided where the scan strides | §5.4's score is the clip's, not the scan's; the scan may stride because it runs 51 times |
 | `/forge/stretch` | debounced **400 ms**; the commit takes **semitones** (`cents / 100`) | §5.4 |
 | which request leads on a detune change | **stretch first, chroma second.** Detune arms M5 T10's debounced stretch; chroma re-requests when the stretch lands a new `previewAudio`, not when detune changes | §5.4 computes chroma on the stretched preview, so a chroma request fired on the detune change would analyse the old audio |
@@ -143,7 +144,9 @@ may emit one that is not in this table, and no task may assert one that no task 
 | `[data-testid="chroma-empty"]`, `[data-testid="chroma-error"]` | T11 | — |
 
 The two lane-level ids this milestone reads but does not own are M1 T14's `laneTarget` and
-`clipDetune`, on M5's lane header and clip box respectively.
+`clipDetune`, **both on M5's `LaneHeader.svelte`** (M5:2605 and M5:2631 — `clipDetune` sits on the
+`bpmClip` detune input ten lines below `laneTarget`, not on the clip box). `ClipBox.svelte` carries
+no `data-help` at all.
 
 ---
 
@@ -191,11 +194,17 @@ indent against each task's own stated `Tests N passed (N)` gate:
 | 2 `chromaClient.svelte.ts` | 11 | 8 `DetuneScanStrip.svelte` | 22 |
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
-| 5 `detuneScan.ts` | 12 | 11 tab, fixture, Playwright | 17 |
-| 6 heatmap geometry + canvas | 38 | | |
+| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 18 |
+| 6 heatmap geometry + canvas | 39 | | |
 
-**212 `it()` blocks across eleven tasks** (38 in Task 6, one more than at first assembly — see
-the critic-fix note in Open questions).
+**215 `it()` blocks across eleven tasks** — four more than the 211 of first assembly, every one of
+them from the 2026-09-22 critic pass: the reversible middle-drag in Task 6's
+`ChromaHeatmap.component.test.ts`, `frameColumn` in its `heatmapGeometry.test.ts`, and, from the
+blocking detune-applied-twice finding, the relative scan axis in Task 5's `detuneScan.test.ts` and a
+stretched clip with a non-zero detune in Task 11's `ChromaTab.component.test.ts`. The same pass
+**changed** rather than added tests in Tasks 6, 7, 8, 10 and 11 — the canvas fallback table, the
+strip's relative axis and additive BEST, and `await tick()` in place of `await Promise.resolve()`.
+See Open question 6.
 
 **Not yet reviewed by a critic.** Every previous milestone's critic pass returned findings — 17, 32,
 49 and 6 across four rounds, and it has never once come back empty — so treat this plan as unreviewed
@@ -329,7 +338,7 @@ describe("binToPitchClass and its inverse", () => {
   });
 
   it("breaks an exact tie to the LOWER pitch class, as the reference fold_to_12's argmin does", () => {
-    // Bins 18 and 82 are the only two of the 128 that sit exactly halfway
+    // Bins 18, 50, 82 and 114 are the only four of the 128 that sit exactly halfway
     // between two centres (5.3333 from each). numpy's argmin keeps the first,
     // so they belong to C# and G -- Math.round() would send both the other way.
     expect(binToPitchClass(18)).toBe(1);
@@ -508,8 +517,10 @@ export function semitoneBinCenters(): number[] {
  * is 2.0 + 11.5*(128/12) = 124.667.
  *
  * Ties break to the LOWER class because the comparison is strict `<`, which is
- * what numpy's argmin does in the server's fold_to_12. Bins 18 and 82 are the
- * only exact ties, and Math.round() on (bin - 2)/(128/12) sends both the other
+ * what numpy's argmin does in the server's fold_to_12. Bins 18, 50, 82 and 114
+ * are the only exact ties -- the midpoint between centres s and s+1 is
+ * 2 + (2s+1)*16/3, an integer only when 3 divides (2s+1), i.e. s in {1,4,7,10}
+ * -- and Math.round() on (bin - 2)/(128/12) sends all four the other
  * way -- hence this loop rather than the one-line formula.
  */
 export function binToPitchClass(bin: number, binsPerBand: number = BINS_PER_BAND): number {
@@ -1204,6 +1215,9 @@ describe("matchFrame", () => {
 
   it("includes a class at exactly 0.08 and excludes one just below it", () => {
     const t = profile({ 0: 1.0 });
+    // `profile` writes into a Float32Array, so 0.08 arrives as 0.079999998.
+    // The guard compares against Math.fround(MATCH_THRESHOLD) for exactly this
+    // reason -- against the float64 literal, this assertion returns 0.
     expect(matchFrame(profile({ 6: MATCH_THRESHOLD }), t)).toBeCloseTo(0.18, 10);
     expect(matchFrame(profile({ 6: 0.0799 }), t)).toBe(0);
     // and the same rule applies on the target side
@@ -1295,7 +1309,7 @@ Expected: `Failed to resolve import "../match"`.
 
 ```ts
 // The harmonic-overlap match score (spec §5.4; the drawing's _matchFrame at
-// v3 925-937, _rotate at 895-903, _anchors at 913-922). Pure -- no canvas, no
+// v3 925-937, _rotate at 895-903, _anchors at 915-922). Pure -- no canvas, no
 // store, no network -- so vitest pins the exact numbers the spec specifies.
 //
 // The score is a weighted average, not a dot product: every pair of ACTIVE
@@ -1311,6 +1325,20 @@ export const INTERVAL_W: readonly number[] = [
 
 /** Pitch classes at or above this count; below it they are not there at all. */
 export const MATCH_THRESHOLD = 0.08;
+
+/**
+ * MATCH_THRESHOLD rounded to float32, which is what the guards below actually
+ * compare against. This is NOT pedantry: every chroma array in this milestone
+ * is a `Float32Array`, so a value written as `0.08` is stored as
+ * `Math.fround(0.08) = 0.079999998211860657`. Comparing that against the
+ * float64 literal `0.08 = 0.080000000000000002` makes `value < MATCH_THRESHOLD`
+ * TRUE for a class the caller set to exactly the threshold -- so "at exactly
+ * 0.08" would be excluded, which is the opposite of the documented rule.
+ * Rounding the threshold the same way makes the comparison happen in one
+ * precision. `0.0799` still rounds to 0.079899996, which is strictly below, so
+ * "just under the threshold is excluded" is unaffected.
+ */
+const THRESHOLD_F32 = Math.fround(MATCH_THRESHOLD);
 
 function require12(name: string, v: Float32Array): void {
   if (v.length !== 12) throw new RangeError(`${name}: expected 12 pitch classes, got ${v.length}`);
@@ -1335,10 +1363,10 @@ export function matchFrame(frame: Float32Array, target: Float32Array): number {
   let den = 0;
   for (let a = 0; a < 12; a++) {
     const fa = frame[a];
-    if (fa < MATCH_THRESHOLD) continue;
+    if (fa < THRESHOLD_F32) continue;
     for (let b = 0; b < 12; b++) {
       const tb = target[b];
-      if (tb < MATCH_THRESHOLD) continue;
+      if (tb < THRESHOLD_F32) continue;
       const w = fa * tb;
       num += w * INTERVAL_W[Math.abs(a - b)];
       den += w;
@@ -1736,8 +1764,12 @@ detune". Pure, so vitest pins the whole curve with no canvas and no store.
   `DETUNE_MIN = -100`, `DETUNE_MAX = 100`, `DETUNE_STEP = 4`, `FRAME_STRIDE = 3`;
   `type ScanCriterion = "highest" | "steadiest"`;
   `interface DetuneScan { cents: number[]; mean: number[]; sd: number[] }`;
-  `scanDetune(fold12: Float32Array, T: number, target: Float32Array): DetuneScan`;
-  `bestDetune(scan: DetuneScan, criterion: ScanCriterion): number`;
+  `scanDetune(fold12: Float32Array, T: number, target: Float32Array, analysisDetuneCents?: number):
+  DetuneScan` (each step rotates by `(analysisDetuneCents + cents) / 100`, so the 51-point axis is
+  **relative to the clip's current detune** in both analysis cases — see the Normative block's
+  "how much detune to rotate by" row; the default `0` is the stretched-preview case);
+  `bestDetune(scan: DetuneScan, criterion: ScanCriterion): number` (the step, i.e. an **offset** from
+  the clip's current detune — callers add it, they do not assign it);
   `meanMatchAtDetune(fold12: Float32Array, T: number, target: Float32Array, cents: number): number`
   (the clip score label — **every** frame, no stride).
 
@@ -1824,6 +1856,20 @@ describe("scanDetune", () => {
     expect(bestDetune(scan, "highest")).toBe(bestDetune(scan, "steadiest"));
   });
 
+  it("rotates by the ANALYSIS detune plus each step, so the axis is RELATIVE to it", () => {
+    // The scan runs on audio the stretch has usually already detuned, so step
+    // c means "the clip's current detune, plus c". The base argument is what
+    // keeps that true in the OTHER case too -- a clip with no native_bpm,
+    // whose previewAudio is null and whose fold is therefore undetuned.
+    const target = profile({ 0: 1 });
+    const fold12 = packFold12([profile({ 0: 1 })]);
+    const flat = scanDetune(fold12, 1, target);
+    const shifted = scanDetune(fold12, 1, target, 100);
+    expect(shifted.cents).toEqual(flat.cents);                 // the axis itself never moves
+    expect(shifted.mean[25]).toBeCloseTo(flat.mean[50], 9);    //    0 rel = +100 absolute
+    expect(shifted.mean[0]).toBeCloseTo(flat.mean[25], 9);     // -100 rel =    0 absolute
+  });
+
   it("returns zeros rather than NaN for an all-zero target", () => {
     const scan = scanDetune(packFold12([profile({ 0: 1 }), profile({ 4: 1 })]), 2, new Float32Array(12));
     expect(scan.mean.every((v) => v === 0)).toBe(true);
@@ -1869,10 +1915,13 @@ describe("HIGHEST and STEADIEST", () => {
     const scan = {
       cents: [-8, -4, 0, 4],
       mean: [0.5, 0.9, 0.9, 0.2],
-      sd: [0.0, 0.5, 0.4, 0.0],
+      sd: [0.5, 0.5, 0.4, 0.0],
     };
     expect(bestDetune(scan, "highest")).toBe(-4);      // 0.9 first, at index 1
-    expect(bestDetune(scan, "steadiest")).toBe(0);     // 0.5 vs 0.4 vs 0.5 -> 0.5 at index 2
+    // mean - sd = [0.0, 0.4, 0.5, 0.2]: a UNIQUE max at index 2. The earlier
+    // sd of [0.0, 0.5, 0.4, 0.0] gave [0.5, 0.4, 0.5, 0.2] -- a tie between
+    // index 0 and index 2 -- and first-wins would have returned -8, not 0.
+    expect(bestDetune(scan, "steadiest")).toBe(0);
     expect(bestDetune({ cents: [-4, 0], mean: [0.3, 0.3], sd: [0, 0] }, "highest")).toBe(-4);
   });
 });
@@ -1964,8 +2013,23 @@ function centsAxis(): number[] {
  * Scan the clip's 12-class fold against the target across the detune range.
  * `fold12` is the server's [12,T] C-order array; `T` its frame count.
  * Rotation is by `cents/100` classes -- 100 cents is exactly one pitch class.
+ *
+ * `analysisDetuneCents` is the detune NOT already present in the analysed
+ * audio: 0 when the fold came from the stretched preview (M5 T10's runStretch
+ * has already pitch-shifted it by clip.detune_cents / 100), and
+ * clip.detune_cents when it came from the raw source. Each step therefore
+ * rotates by (analysisDetuneCents + c) / 100, which makes the 51-point cents
+ * axis RELATIVE to the clip's current detune in BOTH cases -- step c means
+ * "clip.detune_cents + c". So `bestDetune`'s answer is an OFFSET the caller
+ * adds to the clip's detune, never a value it assigns. See the plan's
+ * Normative block and Open question 6.
  */
-export function scanDetune(fold12: Float32Array, T: number, target: Float32Array): DetuneScan {
+export function scanDetune(
+  fold12: Float32Array,
+  T: number,
+  target: Float32Array,
+  analysisDetuneCents = 0,
+): DetuneScan {
   const cents = centsAxis();
   const mean: number[] = [];
   const sd: number[] = [];
@@ -1980,7 +2044,7 @@ export function scanDetune(fold12: Float32Array, T: number, target: Float32Array
       sd.push(0);
       continue;
     }
-    const semis = c / 100;
+    const semis = (analysisDetuneCents + c) / 100;
     const vals: number[] = [];
     let sum = 0;
     for (const col of columns) {
@@ -1999,7 +2063,9 @@ export function scanDetune(fold12: Float32Array, T: number, target: Float32Array
 }
 
 /**
- * The cents value BEST jumps to. Ties keep the FIRST (most negative) step --
+ * The scan step BEST moves by -- an OFFSET from the clip's current detune, not
+ * an absolute detune, because scanDetune's axis is relative (see above). Ties
+ * keep the FIRST (most negative) step --
  * the comparison is strict `>` -- so the button is deterministic on the flat
  * stretches the 0.08 threshold creates near a whole-class rotation.
  */
@@ -2036,7 +2102,7 @@ export function meanMatchAtDetune(
 cd latent-forge && npx vitest run src/lib/chroma/__tests__/detuneScan.test.ts && npm run check
 ```
 
-Expected: `Test Files  1 passed (1)` / `Tests  12 passed (12)`, and
+Expected: `Test Files  1 passed (1)` / `Tests  13 passed (13)`, and
 `svelte-check found 0 errors and 0 warnings`.
 
 The whole chroma math layer together, for the record:
@@ -2045,7 +2111,7 @@ The whole chroma math layer together, for the record:
 cd latent-forge && npx vitest run src/lib/chroma
 ```
 
-Expected: `Test Files  5 passed (5)` / `Tests  68 passed (68)` (18 + 11 + 13 + 14 + 12).
+Expected: `Test Files  5 passed (5)` / `Tests  69 passed (69)` (18 + 11 + 13 + 14 + 13).
 
 - [ ] **Step 5: Commit**
 
@@ -2128,12 +2194,18 @@ milestone does not reuse it — see the open questions.)
   `xToFrame(x, win, widthPx): number`; `rowHeight(view, heightPx): number`;
   `rowToY(row, view, heightPx): number`; `yToRow(y, view, heightPx): number | null`;
   `rowPitchClass(row, view): number`; `rowCents(row, view): number | null`;
-  `cellValue(result: ChromaResult, view: ChromaView, frame: number, row: number): number`.
+  `cellValue(result: ChromaResult, view: ChromaView, frame: number, row: number): number`;
+  `frameColumn(result: ChromaResult, view: ChromaView, frame: number): Float32Array` (the whole
+  column for one frame, `rowCount(view)` long — the fold done **once** per frame instead of once
+  per row).
 - Produces, from `chromaCanvas.ts`: `CHROMA_TOKEN_FALLBACK: Readonly<Record<string, string>>`;
   `chromaColour(el: Element, token: string): string`;
   `fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null`.
 - Produces the component `ChromaHeatmap` (props `{ view: ChromaView; win: FrameWindow; result:
-  ChromaResult | null; target: Float32Array; detuneCents?: number; onwin?: (w: FrameWindow) => void }`),
+  ChromaResult | null; target: Float32Array; detuneCents?: number; onwin?: (w: FrameWindow) => void }`
+  — `detuneCents` is Task 11's **`analysisDetuneCents`**, not `clip.detune_cents`: `0` when the
+  analysed ref was the already-stretched `clip.previewAudio`, `clip.detune_cents` when it was the
+  raw `clip.audio`. See the Normative block's "how much detune to rotate by" row),
   rendering `<canvas data-testid="chroma-heatmap" data-help={HELP.chromaHeatmap}>` and an
   empty-state paragraph `data-testid="chroma-heatmap-empty"` as a **DOM sibling** — never `fillText`,
   which `findByText` can never see (the blocking M4 finding).
@@ -2161,7 +2233,7 @@ import {
   targetRowColor,
 } from "../consonanceColor";
 
-describe("consonanceHue (v3 _drawChroma 1185: hue = 60 + (1 - match) * 200)", () => {
+describe("consonanceHue (v3 _drawChroma 1186: hue = 60 + (1 - match) * 200)", () => {
   it("is the consonant hue at a perfect match and the dissonant hue at zero", () => {
     expect(consonanceHue(1)).toBe(CONSONANT_HUE);
     expect(consonanceHue(0)).toBe(DISSONANT_HUE);
@@ -2194,7 +2266,7 @@ describe("consonanceColor builds its own oklch() string (HANDOUT.md ramp excepti
   });
 });
 
-describe("targetRowColor (the reference row across the top, v3 1177)", () => {
+describe("targetRowColor (the reference row across the top, v3 1178)", () => {
   it("uses its own purple hue, so the target never reads as a score", () => {
     expect(targetRowColor(1)).toContain(`${TARGET_ROW_HUE.toFixed(1)})`);
     expect(targetRowColor(0)).toContain(`${TARGET_ROW_HUE.toFixed(1)})`);
@@ -2236,6 +2308,7 @@ import {
   bandIndexFor,
   cellValue,
   clampWindow,
+  frameColumn,
   frameToX,
   fullWindow,
   rowCents,
@@ -2390,6 +2463,20 @@ describe("cellValue reads the right axis out of a C-order payload", () => {
     expect(cellValue(res, "mid", 3, 7)).toBeCloseTo(0.2 + 7 / 1000 + 3 / 100000, 6);
     expect(cellValue(res, "high", 3, 7)).toBeCloseTo(0.3 + 7 / 1000 + 3 / 100000, 6);
   });
+
+  it("frameColumn folds the frame ONCE and agrees with cellValue row for row", () => {
+    // The heatmap draws a whole column per frame, so the folding cellValue
+    // does per row is repeated twelve times for one frame's worth of pixels.
+    // frameColumn is the same numbers computed once -- pinned here so the two
+    // paths can never drift apart.
+    const res = result(4);
+    const global = frameColumn(res, "global", 2);
+    expect(global).toHaveLength(12);
+    for (let r = 0; r < 12; r++) expect(global[r]).toBeCloseTo(cellValue(res, "global", 2, r), 9);
+    const bass = frameColumn(res, "bass", 3);
+    expect(bass).toHaveLength(128);
+    for (let r = 0; r < 128; r++) expect(bass[r]).toBeCloseTo(cellValue(res, "bass", 3, r), 9);
+  });
 });
 ```
 
@@ -2443,6 +2530,7 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChromaResult } from "../../../lib/chroma/chromaClient.svelte";
 import { consonanceColor } from "../../../lib/chroma/consonanceColor";
+import { matchFrame } from "../../../lib/chroma/match";
 import { HELP } from "../../../lib/help/strings";
 import ChromaHeatmap from "../ChromaHeatmap.svelte";
 
@@ -2543,7 +2631,12 @@ describe("ChromaHeatmap draws the view it is given (spec §5.4)", () => {
     const styles = fake.calls
       .filter((c) => c.kind === "set" && c.name === "fillStyle")
       .map((c) => (c as { value: unknown }).value);
-    expect(styles).toContain(consonanceColor(1, 1));
+    // NOT consonanceColor(1, 1). TARGET is [1,0,0,0,1,0,0,1,0,0,0,0] (classes
+    // 0, 4, 7) and each frame's fold12 column is [1,0,...], so the frame's match
+    // is num/den = (W[0] + W[4] + W[7]) / 3 = (1.0 + 0.70 + 0.90) / 3 = 0.8666...,
+    // not 1. Compute the expectation rather than assuming a saturated frame.
+    const frameMatch = matchFrame(Float32Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), TARGET);
+    expect(styles).toContain(consonanceColor(1, frameMatch));
     expect(styles).not.toContain("");
   });
 });
@@ -2850,6 +2943,32 @@ export function cellValue(result: ChromaResult, view: ChromaView, frame: number,
   if (band === null) return foldFrameTo12(result.bands, frame, result.T)[((row % 12) + 12) % 12];
   return result.bands[(band * BINS_PER_BAND + row) * result.T + frame];
 }
+
+/**
+ * The whole column for one frame -- rowCount(view) values, in the same order
+ * cellValue returns them row by row.
+ *
+ * This exists because cellValue's GLOBAL branch folds all 3 x 128 bins down to
+ * twelve classes and then indexes ONE of them. Called from a row loop, that is
+ * twelve folds and twelve Float32Array(12) allocations per visible frame, on
+ * every repaint -- including every pointermove of a middle-drag. Fold once,
+ * index twelve times.
+ *
+ * GLOBAL is the case that matters. A band view's 128 rows are already single
+ * array reads, so ChromaHeatmap.draw() keeps calling cellValue there rather
+ * than materialising 128 bins it can index in place; the band branch is here
+ * so the function is total and its test can compare the two paths directly.
+ * cellValue stays the hover path's accessor (Task 10), which reads one cell.
+ */
+export function frameColumn(result: ChromaResult, view: ChromaView, frame: number): Float32Array {
+  const band = bandIndexFor(view);
+  if (band === null) return foldFrameTo12(result.bands, frame, result.T);
+  const out = new Float32Array(BINS_PER_BAND);
+  for (let i = 0; i < BINS_PER_BAND; i++) {
+    out[i] = result.bands[(band * BINS_PER_BAND + i) * result.T + frame];
+  }
+  return out;
+}
 ```
 
 `latent-forge/src/ui/chroma/chromaCanvas.ts`:
@@ -2870,15 +2989,23 @@ export function cellValue(result: ChromaResult, view: ChromaView, frame: number,
 // canvas and garbage. (M1 T13's panelColour has no fallback, which is why this
 // milestone does not reuse it -- see the plan's open questions.)
 
+// COPIED VERBATIM from M1 T12's tokens.css :root block (M1:2925-2937) -- NOT
+// from v3's canvas literals, which is where an earlier draft of this table
+// came from and where every one of these eight values was subtly wrong:
+// --panel carried --bg's 96%, --red was 58%/0.170 rather than 55%/0.20,
+// --purple-strong was hue 285 rather than 300. A fallback that does not match
+// the real token is worse than no fallback at all -- it silently renders a
+// DIFFERENT canvas in exactly the situation it exists for. If tokens.css
+// changes, this table changes in the same commit.
 const FALLBACK: Record<string, string> = {
-  "--panel": "oklch(96% 0.006 240)",
-  "--panel2": "oklch(93% 0.010 240)",
+  "--panel": "oklch(93% 0.008 240)",
+  "--panel2": "oklch(90% 0.012 240)",
   "--border": "oklch(80% 0.014 240)",
-  "--text": "oklch(30% 0.020 250)",
-  "--text-dim": "oklch(58% 0.014 240)",
-  "--red": "oklch(58% 0.170 25)",
-  "--turq-strong": "oklch(45% 0.100 195)",
-  "--purple-strong": "oklch(32% 0.090 285)",
+  "--text": "oklch(27% 0.02 250)",
+  "--text-dim": "oklch(52% 0.016 250)",
+  "--red": "oklch(55% 0.20 25)",
+  "--turq-strong": "oklch(55% 0.11 195)",
+  "--purple-strong": "oklch(54% 0.10 300)",
 };
 
 const LAST_RESORT = "oklch(58% 0.014 240)";
@@ -2933,6 +3060,12 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
   // whose comment says why); every flat colour goes through chromaColour(),
   // which has a per-token fallback because ctx.fillStyle = "" silently keeps
   // whatever colour was there before.
+  //
+  // DETUNE: `detuneCents` is the ANALYSIS detune (Task 11's
+  // analysisDetuneCents), not the clip's. When the analysed audio was the
+  // stretched preview it is 0, because M5 T10's runStretch already shifted
+  // that audio by clip.detune_cents / 100 and rotating the fold again would
+  // apply the detune twice.
   import { fold12Column } from "../../lib/chroma/bins";
   import type { ChromaResult } from "../../lib/chroma/chromaClient.svelte";
   import { consonanceColor, targetRowColor } from "../../lib/chroma/consonanceColor";
@@ -2943,6 +3076,7 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
     type FrameWindow,
     REF_ROW_H,
     cellValue,
+    frameColumn,
     frameToX,
     rowCount,
     rowHeight,
@@ -2960,6 +3094,14 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
     win: FrameWindow;
     result: ChromaResult | null;
     target: Float32Array;
+    /**
+     * The ANALYSIS detune, NOT `clip.detune_cents`. Task 11 derives it as
+     * `analysisDetuneCents`: 0 when the analysed ref was `clip.previewAudio`
+     * (M5 T10's runStretch already pitch-shifted that audio by the clip's
+     * detune, so the fold12 in `result` is already detuned and rotating it
+     * again would apply the detune twice), and `clip.detune_cents` when the
+     * analysed ref was the raw `clip.audio`. Never re-derive the rule here.
+     */
     detuneCents?: number;
     onwin?: (w: FrameWindow) => void;
   }
@@ -3000,8 +3142,14 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
     for (let f = from; f < to; f++) {
       const m = matchFrame(rotate(fold12Column(result.fold12, result.T, f), semis), target);
       const x = frameToX(f, win, w);
+      // GLOBAL: fold this frame ONCE. cellValue's GLOBAL branch folds all 384
+      // bins and returns one class, so calling it inside the row loop folded
+      // the same frame twelve times per repaint -- including on every
+      // pointermove of a middle-drag. A band view's rows are single array
+      // reads, so it keeps cellValue and materialises nothing.
+      const col = view === "global" ? frameColumn(result, view, f) : null;
       for (let r = 0; r < rows; r++) {
-        const v = cellValue(result, view, f, r);
+        const v = col ? col[r] : cellValue(result, view, f, r);
         if (v < CELL_FLOOR) continue;
         ctx.fillStyle = consonanceColor(v, m);
         ctx.fillRect(x, rowToY(r, view, h), colW + 0.6, Math.max(0.7, rh + 0.4));
@@ -3113,10 +3261,10 @@ export function fitChromaCanvas(canvas: HTMLCanvasElement): CanvasRenderingConte
 cd latent-forge && npx vitest run src/lib/chroma/__tests__/consonanceColor.test.ts src/lib/chroma/__tests__/heatmapGeometry.test.ts src/ui/chroma/__tests__/chromaCanvas.test.ts src/ui/chroma/__tests__/ChromaHeatmap.component.test.ts && npm run check
 ```
 
-Expected: `Test Files  4 passed (4)` / `Tests  38 passed (38)` — 8 in `consonanceColor.test.ts`,
-18 in `heatmapGeometry.test.ts`, 4 in `chromaCanvas.test.ts` and 8 in
-`ChromaHeatmap.component.test.ts` (one added by the 2026-09-22 critic fix below) — and
-`svelte-check found 0 errors and 0 warnings`.
+Expected: `Test Files  4 passed (4)` / `Tests  39 passed (39)` — 8 in `consonanceColor.test.ts`,
+19 in `heatmapGeometry.test.ts` (one added by the 2026-09-22 critic's `frameColumn` fix),
+4 in `chromaCanvas.test.ts` and 8 in `ChromaHeatmap.component.test.ts` (one added by the
+2026-09-22 critic fix below) — and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 
@@ -3182,12 +3330,16 @@ task adds the fifth beside them.
   `ANCHOR_COLORS: Readonly<Record<"unison" | "fifth" | "tritone", string>>`;
   `interface CurveAxis { lo: number; hi: number }`; `curveAxis(a: MatchAnchors): CurveAxis`;
   `curveY(match: number, axis: CurveAxis, heightPx: number): number`;
-  `windowScores(result: ChromaResult, target: Float32Array, win: FrameWindow, detuneCents: number): number[]`;
+  `windowScores(result: ChromaResult, target: Float32Array, win: FrameWindow,
+  analysisDetuneCents: number): number[]` (the **analysis** detune — `0` when `result` came from the
+  already-stretched `clip.previewAudio`, `clip.detune_cents` when it came from the raw
+  `clip.audio`; see the Normative block's "how much detune to rotate by" row);
   `interface LegendTick { label: "unison" | "fifth" | "tritone"; value: number; pct: number }`;
   `legendTicks(a: MatchAnchors): LegendTick[]` (ascending by value, `pct` clamped to 1..99);
   `matchVerdict(score: number, a: MatchAnchors): string`.
 - Produces the component `MatchCurveOverlay` (props `{ result: ChromaResult | null; target:
-  Float32Array; win: FrameWindow; detuneCents?: number }`), rendering
+  Float32Array; win: FrameWindow; detuneCents?: number }` — again the **analysis** detune, Task 11's
+  `analysisDetuneCents`, never `clip.detune_cents`), rendering
   `<canvas data-testid="chroma-match-curve" data-help={HELP.chromaMatchCurve}>`.
 - Produces the component `MatchLegend` (props `{ target: Float32Array; clipScore: number | null }`),
   rendering `<div data-testid="chroma-legend" data-help={HELP.chromaMatchMarks}>` with nine
@@ -3255,7 +3407,11 @@ describe("windowScores plots exactly the frames the heatmap is showing", () => {
     expect(scores.every((s) => Math.abs(s - 1) < 1e-9)).toBe(true);
   });
 
-  it("applies the clip's detune, so 100 cents rotates the frame a whole class", () => {
+  it("applies the ANALYSIS detune, so 100 cents rotates the frame a whole class", () => {
+    // The argument is the analysis detune, not the clip's: it is 0 whenever
+    // the chroma came from the already-stretched previewAudio, and only
+    // carries the clip's detune when the chroma came from the raw source. 100
+    // here is the raw-source case.
     const target = Float32Array.from([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     const at0 = windowScores(result(2, 0), target, { from: 0, to: 2 }, 0)[0];
     const at100 = windowScores(result(2, 0), target, { from: 0, to: 2 }, 100)[0];
@@ -3419,8 +3575,14 @@ describe("MatchLegend draws the gradient and its three anchor marks (spec §5.4)
     const { container } = render(MatchLegend, { props: { target: TARGET, clipScore: 0.62 } });
     const stops = container.querySelectorAll("[data-legend-stop]");
     expect(stops).toHaveLength(9);
-    expect((stops[0] as HTMLElement).style.background).toContain("oklch");
-    expect((stops[8] as HTMLElement).style.background).toBe(legendColor(1));
+    // Read the RAW attribute, not `.style.background`. jsdom parses the style
+    // attribute through cssstyle, whose colour parser may not know `oklch()` --
+    // an unrecognised value makes the whole `background` shorthand a no-op and
+    // `.style.background` returns "". A version that does understand CSS Color 4
+    // would SERIALISE it (`oklch(58% 0.17 60)`), so an exact-string compare
+    // fails there too. The attribute is untouched by the CSSOM either way.
+    expect(stops[0].getAttribute("style")).toContain("oklch");
+    expect(stops[8].getAttribute("style")).toContain(legendColor(1));
   });
 
   it("marks unison, fifth and tritone, each with its own value", () => {
@@ -3515,19 +3677,28 @@ export function curveY(match: number, axis: CurveAxis, heightPx: number): number
 }
 
 /**
- * One score per VISIBLE frame, at the clip's own detune. The window is
- * clamped to the clip, so a stale window after a shorter clip lands cannot
- * read past the end of the array.
+ * One score per VISIBLE frame, at the ANALYSIS detune. The window is clamped
+ * to the clip, so a stale window after a shorter clip lands cannot read past
+ * the end of the array.
+ *
+ * `analysisDetuneCents` is NOT `clip.detune_cents`. M5 T10's runStretch
+ * already pitch-shifts the preview by `clip.detune_cents / 100`, and this
+ * milestone analyses that preview, so `result.fold12` is ALREADY detuned:
+ * rotating it again by the clip's detune would apply the detune twice. Task 11
+ * derives the one right number (`analysisDetuneCents`: 0 for a previewAudio,
+ * `clip.detune_cents` for the raw clip.audio) and passes it here. The
+ * parameter stays because the raw-audio case is real -- runStretch returns
+ * early when `clip.native_bpm == null`, leaving previewAudio null.
  */
 export function windowScores(
   result: ChromaResult,
   target: Float32Array,
   win: FrameWindow,
-  detuneCents: number,
+  analysisDetuneCents: number,
 ): number[] {
   const from = Math.max(0, Math.floor(win.from));
   const to = Math.min(result.T, Math.ceil(win.to));
-  const semis = detuneCents / 100;
+  const semis = analysisDetuneCents / 100;
   const out: number[] = [];
   for (let f = from; f < to; f++) {
     out.push(matchFrame(rotate(fold12Column(result.fold12, result.T, f), semis), target));
@@ -3583,6 +3754,12 @@ export function matchVerdict(score: number, a: MatchAnchors): string {
     result: ChromaResult | null;
     target: Float32Array;
     win: FrameWindow;
+    /**
+     * The ANALYSIS detune (Task 11's `analysisDetuneCents`), not the clip's:
+     * 0 when `result` came from the already-stretched `clip.previewAudio`,
+     * `clip.detune_cents` when it came from the raw `clip.audio`. Rotating an
+     * already-stretched fold by the clip's detune applies it twice.
+     */
     detuneCents?: number;
   }
   let { result, target, win, detuneCents = 0 }: Props = $props();
@@ -3782,6 +3959,17 @@ buttons beneath it (v3 335-336).
 deep proxy — but it would skip the store's own ±100 clamp and rounding, and it is exactly the class
 of shortcut the `$state` proxy rule exists to stop.
 
+**The strip's ±100 ¢ axis is RELATIVE to the clip's current detune, and BEST is ADDITIVE.** The
+chroma this strip scans is normally the chroma of the clip's *stretched preview*, which M5 T10's
+`runStretch` has already pitch-shifted by `clip.detune_cents / 100` (M5:5358) — so step *c* of the
+scan means "the clip's current detune, **plus** *c*", not "*c*". Three consequences, all pinned
+below: the red mark sits at the strip's **centre**, not at `xForCents(clip.detune_cents)`; `onBest`
+and `setFromPointer` write `clip.detune_cents + …`, clamped, because assigning `bestDetune(…)`'s
+bare value made a second press of BEST *walk* the detune instead of converging on it; and the label
+says what the axis is relative to, so a reader of "+40 ¢" knows what it is 40 cents from. The
+`analysisDetuneCents` prop keeps this true for the one clip that has no stretched preview — see the
+Normative block's "how much detune to rotate by" row and Open question 6.
+
 **This component does NOT call `/forge/stretch`.** Spec §5.4 says a detune change re-stretches the
 clip's preview, debounced 400 ms, and M5 T10 already ships that as
 `scheduleStretch(clipId, onError?)` — but the lane header's own DETUNE ¢ field (M5 T4) writes detune
@@ -3799,10 +3987,12 @@ either writer. Stated here so an implementer building this task alone does not a
 - Consumes `DETUNE_MIN = -100`, `DETUNE_MAX = 100`, `DETUNE_STEP = 4`, `FRAME_STRIDE = 3`,
   `type ScanCriterion = "highest" | "steadiest"`,
   `interface DetuneScan { cents: number[]; mean: number[]; sd: number[] }`,
-  `scanDetune(fold12: Float32Array, T: number, target: Float32Array): DetuneScan` (51 points;
-  rotates by `cents/100` classes at each step, sampling every 3rd frame) and
+  `scanDetune(fold12: Float32Array, T: number, target: Float32Array, analysisDetuneCents?: number):
+  DetuneScan` (51 points; rotates by `(analysisDetuneCents + cents)/100` classes at each step,
+  sampling every 3rd frame — so the axis is **relative to the clip's current detune**) and
   `bestDetune(scan: DetuneScan, criterion: ScanCriterion): number` (argmax of `mean`, or of
-  `mean − sd`; ties keep the most negative step) from
+  `mean − sd`; ties keep the most negative step — and it is an **offset** from the clip's current
+  detune, which is why `onBest` adds it) from
   `latent-forge/src/lib/chroma/detuneScan.ts` (**this milestone's Task 5**).
 - Consumes `interface ChromaResult { frames: number; fps: number; bands: Float32Array; fold12:
   Float32Array; T: number }` from `latent-forge/src/lib/chroma/chromaClient.svelte.ts` (**Task 2**).
@@ -3827,9 +4017,14 @@ either writer. Stated here so an implementer building this task alone does not a
   `interface ScanRange { lo: number; hi: number }`; `scanRange(values: readonly number[]): ScanRange`;
   `scanY(v: number, range: ScanRange, heightPx: number): number`;
   `nearestScanIndex(scan: DetuneScan, cents: number): number`;
-  `scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriterion): string`.
+  `scanLabel(scan: DetuneScan, relCents: number, criterion: ScanCriterion, currentCents: number):
+  string` (`relCents` and the reported peak are **offsets** on the relative axis; `currentCents` is
+  the clip's own detune, named in the label so "+40 ¢" says what it is 40 cents from).
 - Produces the component `DetuneScanStrip` (props `{ clip: ForgeClip | null; result: ChromaResult |
-  null; target: Float32Array; criterion: ScanCriterion; oncriterion?: (c: ScanCriterion) => void }`),
+  null; target: Float32Array; criterion: ScanCriterion; detuneCents?: number;
+  oncriterion?: (c: ScanCriterion) => void }` — `detuneCents` is Task 11's `analysisDetuneCents`,
+  the detune **not** already in the analysed audio, which is what keeps the axis relative for a clip
+  with no stretched preview),
   rendering `<canvas data-testid="chroma-scan-strip" data-help={HELP.chromaDetuneScan} width="500"
   height="30">`, `<span data-testid="chroma-scan-label">`,
   `<button data-testid="chroma-best-criterion" data-help={HELP.chromaBestCriterion}>` and
@@ -3912,7 +4107,7 @@ describe("the criterion chooses which number the strip plots (spec §5.4)", () =
   });
 });
 
-describe("the vertical range (v3 1230-1231: expand a flat curve rather than divide by zero)", () => {
+describe("the vertical range (v3 1233: expand a flat curve rather than divide by zero)", () => {
   it("uses the data's own range when it is wide enough", () => {
     expect(scanRange([0.2, 0.8, 0.5])).toEqual({ lo: 0.2, hi: 0.8 });
   });
@@ -3940,15 +4135,26 @@ describe("reading the curve at the clip's own detune", () => {
     expect(s.cents[nearestScanIndex(s, -100)]).toBe(-100);
   });
 
-  it("reads out now / mean ± sd / peak, signing the peak (v3 1912-1918)", () => {
+  it("reads out now / mean ± sd / peak, signing the peak, and names what the axis is relative to", () => {
     const s = peakAt(28, 0.1); // index 28 -> cents = -100 + 28*4 = 12
-    expect(scanLabel(s, 0, "highest")).toBe("now 0¢ · mean 0.50 ± 0.00 · peak +12¢");
+    // The axis is RELATIVE: 0 is the clip's own detune, so the strip always
+    // reads "now 0¢" and the final clause says what 0 actually is.
+    expect(scanLabel(s, 0, "highest", 0)).toBe(
+      "now 0¢ · mean 0.50 ± 0.00 · peak +12¢ · ±100¢ relative to 0¢",
+    );
+    expect(scanLabel(s, 0, "highest", -30)).toBe(
+      "now 0¢ · mean 0.50 ± 0.00 · peak +12¢ · ±100¢ relative to -30¢",
+    );
   });
 
   it("reports a negative peak without a plus sign, and follows the criterion", () => {
     const s = peakAt(10, 0.6); // cents = -60; mean - sd = 0.3, below the 0.5 floor
-    expect(scanLabel(s, -60, "highest")).toBe("now -60¢ · mean 0.90 ± 0.60 · peak -60¢");
-    expect(scanLabel(s, -60, "steadiest")).toBe("now -60¢ · mean 0.90 ± 0.60 · peak -100¢");
+    expect(scanLabel(s, -60, "highest", 20)).toBe(
+      "now -60¢ · mean 0.90 ± 0.60 · peak -60¢ · ±100¢ relative to 20¢",
+    );
+    expect(scanLabel(s, -60, "steadiest", 20)).toBe(
+      "now -60¢ · mean 0.90 ± 0.60 · peak -100¢ · ±100¢ relative to 20¢",
+    );
   });
 });
 ```
@@ -4043,16 +4249,20 @@ describe("DetuneScanStrip's DOM contract", () => {
 });
 
 describe("clicking and dragging the strip sets detune (spec §5.4)", () => {
-  it("writes through arrangement.setDetune, never by mutating the clip", async () => {
+  it("writes through arrangement.setDetune, never by mutating the clip, and ADDS to what is there", async () => {
+    // The axis is RELATIVE to the clip's current detune, because the fold
+    // being scanned is the fold of already-stretched audio. x = 0 is therefore
+    // "-100 ¢ FROM 20 ¢", i.e. -80 -- not -100.
+    arrangement.setDetune(clip.id, 20);
     const spy = vi.spyOn(arrangement, "setDetune");
     const { getByTestId } = render(DetuneScanStrip, {
-      props: { clip, result: result(12), target: TARGET, criterion: "highest" },
+      props: { clip: arrangement.clips[0], result: result(12), target: TARGET, criterion: "highest" },
     });
     const canvas = getByTestId("chroma-scan-strip");
     rect(canvas);
     await fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 15, pointerId: 1 });
-    expect(spy).toHaveBeenCalledWith(clip.id, -100);
-    expect(arrangement.clips[0].detune_cents).toBe(-100);
+    expect(spy).toHaveBeenCalledWith(clip.id, -80);
+    expect(arrangement.clips[0].detune_cents).toBe(-80);
   });
 
   it("keeps following the pointer while the button is held, and stops after it is released", async () => {
@@ -4061,7 +4271,11 @@ describe("clicking and dragging the strip sets detune (spec §5.4)", () => {
     });
     const canvas = getByTestId("chroma-scan-strip");
     rect(canvas);
+    // x = 250 is the strip's centre, i.e. 0 ¢ relative: the press alone leaves
+    // the clip's 0 ¢ where it is. The move to the right edge is +100 from
+    // there.
     await fireEvent.pointerDown(canvas, { button: 0, clientX: 250, clientY: 15, pointerId: 1 });
+    expect(arrangement.clips[0].detune_cents).toBe(0);
     await fireEvent.pointerMove(canvas, { clientX: 500, clientY: 15, pointerId: 1 });
     expect(arrangement.clips[0].detune_cents).toBe(100);
     await fireEvent.pointerUp(canvas, { clientX: 500, clientY: 15, pointerId: 1 });
@@ -4081,13 +4295,25 @@ describe("clicking and dragging the strip sets detune (spec §5.4)", () => {
 });
 
 describe("BEST and the criterion toggle (spec §5.4, v3 1919-1929)", () => {
-  it("jumps detune to the argmax under the current criterion", async () => {
+  it("ADDS the argmax under the current criterion to the clip's own detune", async () => {
+    arrangement.setDetune(clip.id, -20);
     const { getByTestId } = render(DetuneScanStrip, {
-      props: { clip, result: result(12), target: TARGET, criterion: "highest" },
+      props: { clip: arrangement.clips[0], result: result(12), target: TARGET, criterion: "highest" },
     });
     await fireEvent.click(getByTestId("chroma-best"));
-    // a pure-C clip against a pure-C# target peaks a whole class up
-    expect(arrangement.clips[0].detune_cents).toBe(100);
+    // A pure-C clip against a pure-C# target does NOT peak cleanly at +100.
+    // `rotate` splits linearly, so at c cents the frame is {0: 1-c/100,
+    // 1: c/100}; once 1-c/100 falls below the float32 threshold, class 0 drops
+    // out entirely and the score is W[0] = 1.0 exactly. That happens at 96 and
+    // at 100 -- a flat top -- and `bestDetune`'s strict `>` keeps the FIRST,
+    // so BEST returns 96. (Against the float64 literal threshold it would be a
+    // three-way tie from 92; the Math.fround fix in Task 3 is what moves the
+    // first tied point to 96. The two are coupled -- do not change one alone.)
+    //
+    // And 96 is a step on a RELATIVE axis, so BEST adds it: -20 + 96 = 76.
+    // The bare-assignment version returned 96 here and, pressed again, 96
+    // again rather than converging -- which is the bug this pins.
+    expect(arrangement.clips[0].detune_cents).toBe(76);
   });
 
   it("does nothing at all when there is no clip or no chroma yet", async () => {
@@ -4113,7 +4339,7 @@ describe("BEST and the criterion toggle (spec §5.4, v3 1919-1929)", () => {
 });
 
 describe("the red mark at the clip's current detune (spec §5.4)", () => {
-  it("strokes a line in the --red token at the detune's own x", () => {
+  it("strokes a line in the --red token at the CENTRE, because the axis is relative to it", () => {
     arrangement.setDetune(clip.id, 50);
     const fake = fakeContext();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fake.ctx);
@@ -4121,10 +4347,20 @@ describe("the red mark at the clip's current detune (spec §5.4)", () => {
       props: { clip: arrangement.clips[0], result: result(12), target: TARGET, criterion: "highest" },
     });
     expect(getByTestId("chroma-scan-strip")).toBeTruthy();
-    const strokes = fake.calls.filter((c) => c.kind === "set" && c.name === "strokeStyle").map((c) => (c as { value: unknown }).value);
-    expect(strokes).toContain("oklch(58% 0.170 25)"); // chromaCanvas's --red fallback
-    const moves = fake.calls.filter((c) => c.kind === "call" && c.name === "moveTo") as { args: number[] }[];
-    expect(moves.some((m) => Math.abs(m.args[0] - 375.5) < 1)).toBe(true); // (50 + 100)/200 * 500
+    // Find the mark by its colour and read the moveTo that follows it -- the
+    // 0 ¢ GRID line is drawn at the same x, so a bare "some moveTo is at 250.5"
+    // would pass even with no mark at all.
+    const redAt = fake.calls.findIndex(
+      (c) => c.kind === "set" && c.name === "strokeStyle" && c.value === "oklch(55% 0.20 25)",
+    ); // chromaCanvas's --red fallback, copied from M1 T12's tokens.css
+    expect(redAt).toBeGreaterThanOrEqual(0);
+    const mark = fake.calls
+      .slice(redAt)
+      .find((c) => c.kind === "call" && c.name === "moveTo") as { args: number[] } | undefined;
+    expect(mark).toBeTruthy();
+    // 250.5, the strip's centre -- NOT xForCents(50) = 375.5. The clip's
+    // detune is the axis ORIGIN, so the mark does not move when it changes.
+    expect(mark!.args[0]).toBeCloseTo(250.5, 6);
   });
 });
 ```
@@ -4225,12 +4461,26 @@ export function nearestScanIndex(scan: DetuneScan, cents: number): number {
   return best;
 }
 
-/** v3 1917: `now <n>¢ · mean <m> ± <sd> · peak <±n>¢`. */
-export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriterion): string {
-  const i = nearestScanIndex(scan, cents);
+/**
+ * v3 1917: `now <n>¢ · mean <m> ± <sd> · peak <±n>¢`, plus the clause v3 did
+ * not need.
+ *
+ * `relCents` and the peak are offsets on the strip's RELATIVE axis -- the scan
+ * runs on audio the stretch has already detuned, so step c means "the clip's
+ * current detune plus c". Without naming that origin, a reader of "peak +40¢"
+ * cannot tell 40 from what. `currentCents` is the clip's own detune, and the
+ * trailing clause states the axis and its origin together.
+ */
+export function scanLabel(
+  scan: DetuneScan,
+  relCents: number,
+  criterion: ScanCriterion,
+  currentCents: number,
+): string {
+  const i = nearestScanIndex(scan, relCents);
   const peak = bestDetune(scan, criterion);
   const sign = peak > 0 ? "+" : "";
-  return `now ${cents}¢ · mean ${scan.mean[i].toFixed(2)} ± ${scan.sd[i].toFixed(2)} · peak ${sign}${peak}¢`;
+  return `now ${relCents}¢ · mean ${scan.mean[i].toFixed(2)} ± ${scan.sd[i].toFixed(2)} · peak ${sign}${peak}¢ · ±${DETUNE_MAX}¢ relative to ${currentCents}¢`;
 }
 ```
 
@@ -4249,7 +4499,19 @@ export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriter
   // This component does NOT debounce a /forge/stretch. M5 T10 already owns
   // that (scheduleStretch, 400 ms), and the lane header's DETUNE ¢ field
   // writes detune too, so Task 11's tab arms it once for BOTH writers.
+  //
+  // THE AXIS IS RELATIVE. The fold this strip scans is normally the fold of
+  // the clip's STRETCHED preview, which runStretch has already pitch-shifted
+  // by clip.detune_cents / 100 -- so scan step c means "the clip's current
+  // detune, plus c". Hence: the red mark sits at the strip's CENTRE, both
+  // writers ADD (clip.detune_cents + …), and the label names the origin. The
+  // `detuneCents` prop is the ANALYSIS detune (Task 11's analysisDetuneCents),
+  // which is 0 for a stretched preview and clip.detune_cents for a clip that
+  // has none -- passing it to scanDetune is what keeps the axis relative in
+  // both cases. See the plan's Normative block and Open question 6.
   import {
+    DETUNE_MAX,
+    DETUNE_MIN,
     type DetuneScan,
     type ScanCriterion,
     bestDetune,
@@ -4279,19 +4541,32 @@ export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriter
     result: ChromaResult | null;
     target: Float32Array;
     criterion: ScanCriterion;
+    /** The ANALYSIS detune (Task 11's `analysisDetuneCents`), never the clip's. */
+    detuneCents?: number;
     oncriterion?: (c: ScanCriterion) => void;
   }
-  let { clip, result, target, criterion, oncriterion }: Props = $props();
+  let { clip, result, target, criterion, detuneCents = 0, oncriterion }: Props = $props();
 
   let canvasEl = $state<HTMLCanvasElement>();
   let dragging = false;
 
   const scan = $derived<DetuneScan | null>(
-    result ? scanDetune(result.fold12, result.T, target) : null,
+    result ? scanDetune(result.fold12, result.T, target, detuneCents) : null,
   );
+  // `0` because the axis is relative: the clip's current detune IS the centre.
+  // Its absolute value goes in as the origin the label names.
   const label = $derived(
-    !clip || !scan ? "detune scan · no clip" : scanLabel(scan, clip.detune_cents, criterion),
+    !clip || !scan ? "detune scan · no clip" : scanLabel(scan, 0, criterion, clip.detune_cents),
   );
+
+  /** Every write is an OFFSET from where the clip already is. */
+  function applyOffset(offsetCents: number): void {
+    if (!clip) return;
+    const next = clip.detune_cents + offsetCents;
+    // setDetune clamps and rounds too (M5 T1); clamping here says out loud
+    // that an additive write can leave the range that an absolute one cannot.
+    arrangement.setDetune(clip.id, Math.min(DETUNE_MAX, Math.max(DETUNE_MIN, next)));
+  }
 
   function draw(): void {
     const canvas = canvasEl;
@@ -4328,7 +4603,9 @@ export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriter
     ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    const bx = Math.round(xForCents(clip.detune_cents, w)) + 0.5;
+    // The clip's current detune is the axis ORIGIN, so the mark is at 0
+    // relative -- the centre of the strip -- whatever that detune is.
+    const bx = Math.round(xForCents(0, w)) + 0.5;
     ctx.strokeStyle = chromaColour(canvas, "--red");
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -4341,7 +4618,7 @@ export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriter
     const canvas = canvasEl;
     if (!canvas || !clip) return;
     const rect = canvas.getBoundingClientRect();
-    arrangement.setDetune(clip.id, centsAtX(e.clientX - rect.left, rect.width));
+    applyOffset(centsAtX(e.clientX - rect.left, rect.width));
   }
 
   function onPointerDown(e: PointerEvent): void {
@@ -4364,13 +4641,17 @@ export function scanLabel(scan: DetuneScan, cents: number, criterion: ScanCriter
 
   function onBest(): void {
     if (!clip || !scan) return;
-    arrangement.setDetune(clip.id, bestDetune(scan, criterion));
+    // ADDITIVE. bestDetune returns a step on the relative axis, so assigning
+    // it bare made a second press walk the detune (d -> best -> best + best)
+    // instead of converging on it.
+    applyOffset(bestDetune(scan, criterion));
   }
 
   $effect(() => {
     void clip?.detune_cents;
     void scan;
     void criterion;
+    void detuneCents;
     draw();
   });
 </script>
@@ -5174,7 +5455,10 @@ question.
   `interface ChromaHover { frame: number; frames: number; frac: number; pitchClass: number; cents:
   number | null; value: number; top: number; topValue: number; match: number; sec: number }`;
   `readHover(args: { result: ChromaResult; target: Float32Array; view: ChromaView; win: FrameWindow;
-  x: number; y: number; widthPx: number; heightPx: number; detuneCents: number }): ChromaHover | null`;
+  x: number; y: number; widthPx: number; heightPx: number; detuneCents: number }): ChromaHover | null`
+  (`detuneCents` is Task 11's **`analysisDetuneCents`** — `0` when `result` came from the
+  already-stretched `clip.previewAudio`, `clip.detune_cents` when it came from the raw `clip.audio`;
+  see the Normative block's "how much detune to rotate by" row);
   `hoverNoteText(h: ChromaHover): string`; `hoverDetailText(h: ChromaHover): string`.
 - Produces, from `chromaLink.svelte.ts`: `class ChromaLink` with `$state` fields
   `hover: { clipId: string; frac: number } | null` and `scores: Record<string, number>`, methods
@@ -5257,7 +5541,10 @@ describe("readHover turns a pointer into a frame and a pitch class", () => {
     expect(h.value).toBeCloseTo(0.8, 6);
   });
 
-  it("names the frame's strongest class and its own match, at the clip's detune", () => {
+  it("names the frame's strongest class and its own match, at the ANALYSIS detune", () => {
+    // `detuneCents` is the detune NOT already in the analysed audio: 0 for the
+    // usual stretched-preview case, the clip's own only when the chroma came
+    // from the raw source. 100 below is that second case.
     const h = readHover({ ...base, view: "global", x: 0, y: 130 })!;
     expect(h.top).toBe(0);
     expect(h.topValue).toBeCloseTo(1, 6);
@@ -5506,6 +5793,14 @@ export interface HoverArgs {
   y: number;
   widthPx: number;
   heightPx: number;
+  /**
+   * The ANALYSIS detune, not the clip's: 0 when `result` came from the
+   * already-stretched `clip.previewAudio` (M5 T10's runStretch pitch-shifted
+   * that audio by clip.detune_cents / 100, so the fold is already detuned and
+   * rotating it again applies the detune twice), and clip.detune_cents when
+   * `result` came from the raw clip.audio. Task 11 derives it once as
+   * `analysisDetuneCents`; never re-derive it here.
+   */
   detuneCents: number;
 }
 
@@ -5535,7 +5830,11 @@ export function readHover(args: HoverArgs): ChromaHover | null {
 }
 
 export function hoverNoteText(h: ChromaHover): string {
-  const cents = h.cents ? `${h.cents > 0 ? "+" : ""}${h.cents}¢ ` : "";
+  // `h.cents` is `number | null`, and 0 is falsy: a band-view hover landing
+  // exactly on a class centre (bins 2, 34, 66, 98) has cents === 0 and must
+  // still show "0¢", or it is indistinguishable from a GLOBAL hover, where
+  // cents genuinely do not exist. Test the null, never the truthiness.
+  const cents = h.cents === null ? "" : `${h.cents > 0 ? "+" : ""}${h.cents}¢ `;
   return `${NOTE_NAMES[h.pitchClass]} ${cents} ${h.value.toFixed(2)}`.replace(/\s{3,}/g, "  ");
 }
 
@@ -5802,9 +6101,12 @@ questions, and check the directory before choosing which list below to write.
   ChromaResult | null; target: Float32Array; win: FrameWindow; detuneCents?: number }`),
   `MatchLegend` (**Task 7**, props `{ target: Float32Array; clipScore: number | null }`),
   `DetuneScanStrip` (**Task 8**, props `{ clip: ForgeClip | null; result: ChromaResult | null;
-  target: Float32Array; criterion: ScanCriterion; oncriterion?: (c: ScanCriterion) => void }`),
+  target: Float32Array; criterion: ScanCriterion; detuneCents?: number;
+  oncriterion?: (c: ScanCriterion) => void }`),
   `TargetRow` (**Task 9**, no props) and `HoverReadout` (**Task 10**, props `{ hover: ChromaHover |
-  null }`), all default exports from `latent-forge/src/ui/chroma/`.
+  null }`), all default exports from `latent-forge/src/ui/chroma/`. **Every `detuneCents` above takes
+  this task's `analysisDetuneCents`, never `clip.detune_cents`** — see the Normative block's "how
+  much detune to rotate by" row and Open question 6.
 - Consumes `CHROMA_VIEWS: readonly ChromaView[]`, `VIEW_LABELS: Record<ChromaView, string>`,
   `type ChromaView = "global" | "bass" | "mid" | "high"`,
   `interface FrameWindow { from: number; to: number }` and `fullWindow(T): FrameWindow` from
@@ -5815,7 +6117,8 @@ questions, and check the directory before choosing which list below to write.
   `interface ChromaResult { frames: number; fps: number; bands: Float32Array; fold12: Float32Array;
   T: number }` from `latent-forge/src/lib/chroma/chromaClient.svelte.ts` (**Task 2**).
 - Consumes `meanMatchAtDetune(fold12: Float32Array, T: number, target: Float32Array, cents: number):
-  number` (§5.4's clip score — **every** frame, no stride) and `type ScanCriterion =
+  number` (§5.4's clip score — **every** frame, no stride; `cents` is this task's
+  **`analysisDetuneCents`**, not `clip.detune_cents`) and `type ScanCriterion =
   "highest" | "steadiest"` from `latent-forge/src/lib/chroma/detuneScan.ts` (**Task 5**).
 - Consumes the singleton `chromaTarget` (`mode`, `profile: Float32Array`, `loadLane(refs): Promise<void>`,
   `error`) and `laneTargetRefs(clips, lane): AudioRef[]` from
@@ -5829,7 +6132,14 @@ questions, and check the directory before choosing which list below to write.
   `latent-forge/src/lib/clips/lifecycle.ts` (**M5 T10**), and `ForgeApiError { status: number;
   message: string }` from `latent-forge/src/lib/forge/api.ts` (**M1 T5**).
 - Consumes the singleton `arrangement` from `latent-forge/src/lib/stores/arrangement.svelte.ts`
-  (**M5 T1**): `clips: ForgeClip[]`, `targetLane: 0 | 1 | 2 | 3 | null`.
+  (**M5 T1**): `clips: ForgeClip[]`, `targetLane: 0 | 1 | 2 | 3 | null`, and — used by this task's
+  own component test, so restated here rather than looked up —
+  `addClip(args: AddClipArgs): ForgeClip` where
+  `interface AddClipArgs { lane: 0|1|2|3; startSec: number; durSec: number; audio: AudioRef;
+  nativeBpm?: number | null; downbeatsSec?: number[] }` (M5:315, M5:396),
+  `removeClip(id: string): void` (M5:422),
+  `setDetune(id: string, cents: number): void` (M5:481 — clamps to ±100 and rounds) and
+  `setPreviewAudio(id: string, ref: AudioRef | null): void` (M5:5200 — added to the store by M5 T10).
   **`arrangement.selectedClip` is promised in M5 T1's Interfaces line but never defined in its Step 3
   code** — M5's own self-review says so, and M5 T9 computes the selected clip locally instead. This
   task does the same: `view.selection.kind === "clip"` then `arrangement.clips.find(...)`.
@@ -5837,7 +6147,12 @@ questions, and check the directory before choosing which list below to write.
   `view.bottomTab: BottomTabId`, `view.selection: Target` where
   `Target = {kind:"none"} | {kind:"clip"; id:string} | {kind:"overlap"; key:string}`, and
   `view.appendLog(text: string, level?: "info" | "error"): TerminalLine`, which returns the array's
-  **live** element (the `$state` proxy rule).
+  **live** element (the `$state` proxy rule). Four more that this task's own component test calls,
+  restated so an agent reading only `### Task 11` need look nothing up:
+  `select(target: Target): void` (M1:3244), `clearSelection(): void` (M1:3248),
+  `clearLog(): void` (M1:3274) and the field `logLines: TerminalLine[]` (M1:3145) where
+  `interface TerminalLine { seq: number; text: string; level: "info" | "error" }` — `appendLog` is
+  M1:3261.
 - Consumes `ForgeClip` and `AudioRef` from `latent-forge/src/lib/forge/types.ts` (**M1 T3**);
   `ForgeClip.previewAudio: AudioRef | null` is the stretched preview (M5 T10), **in-memory only and
   never serialised**, so the tab always reads `clip.previewAudio ?? clip.audio`.
@@ -5860,9 +6175,11 @@ questions, and check the directory before choosing which list below to write.
 
 ```ts
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chromaClient } from "../../../lib/chroma/chromaClient.svelte";
 import { chromaLink } from "../../../lib/chroma/chromaLink.svelte";
+import { meanMatchAtDetune } from "../../../lib/chroma/detuneScan";
 import { chromaTarget } from "../../../lib/chroma/targetStore.svelte";
 import { arrangement } from "../../../lib/stores/arrangement.svelte";
 import { view } from "../../../lib/stores/view.svelte";
@@ -5872,6 +6189,12 @@ const scheduleStretch = vi.fn();
 vi.mock("../../../lib/clips/lifecycle", () => ({
   scheduleStretch: (...args: unknown[]) => scheduleStretch(...args),
 }));
+
+// Waiting for Svelte is `await tick()`, never `await Promise.resolve()`.
+// Svelte 5 flushes its scheduler in a microtask as well, so a bare resolved
+// promise is not ORDERED after the re-render -- it happens to work today and
+// is a flake tomorrow. `chromaClient.flush()` and timer advances stay where
+// the test is genuinely waiting on a fetch or a debounce rather than the DOM.
 
 /** /forge/chroma's own wire shape (spec §6.3), one frame of pure C. */
 function chromaBody(T: number) {
@@ -5964,7 +6287,7 @@ describe("honest empty states (spec §9.7 and §5.4)", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
     selectAClip();
     const { getByTestId } = render(ChromaTab);
-    await Promise.resolve();
+    await tick();
     expect(getByTestId("chroma-empty").textContent).toBe("computing chroma…");
   });
 
@@ -5973,7 +6296,7 @@ describe("honest empty states (spec §9.7 and §5.4)", () => {
     selectAClip();
     const { getByTestId } = render(ChromaTab);
     await chromaClient.flush();
-    await Promise.resolve();
+    await tick();
     expect(getByTestId("chroma-error").textContent).toContain("no such crop");
     const last = view.logLines[view.logLines.length - 1];
     expect(last.level).toBe("error");
@@ -6016,7 +6339,7 @@ describe("detune: the stretch leads and the chroma follows (spec §5.4)", () => 
     await chromaClient.flush();
     scheduleStretch.mockClear();
     arrangement.setDetune(clip.id, 24);
-    await Promise.resolve();
+    await tick();
     expect(scheduleStretch).toHaveBeenCalledTimes(1);
     expect(scheduleStretch).toHaveBeenCalledWith(clip.id, expect.any(Function));
   });
@@ -6033,7 +6356,7 @@ describe("detune: the stretch leads and the chroma follows (spec §5.4)", () => 
     expect(seen).toHaveLength(1);
 
     arrangement.setDetune(clip.id, 24);
-    await Promise.resolve();
+    await tick();
     expect(seen).toHaveLength(1); // the detune alone asks the server nothing
 
     arrangement.setPreviewAudio(clip.id, { kind: "path", path: "/stretched-24.wav" });
@@ -6050,8 +6373,33 @@ describe("the clip score label and the lane cross-link", () => {
     const clip = selectAClip();
     render(ChromaTab);
     await chromaClient.flush();
-    await Promise.resolve();
+    await tick();
     expect(chromaLink.scores[clip.id]).toBeGreaterThan(0);
+  });
+
+  it("does NOT rotate a STRETCHED clip's chroma by its detune -- the stretch already applied it", async () => {
+    // The 2026-09-22 critic's blocking finding, pinned. M5 T10's runStretch
+    // pitch-shifts previewAudio by clip.detune_cents / 100 (M5:5358) and this
+    // tab analyses that preview, so result.fold12 is ALREADY detuned; rotating
+    // it again by the clip's detune applied the detune twice. No test set BOTH
+    // a previewAudio and a non-zero detune_cents, which is why nothing caught
+    // it -- this one sets both, and asserts the UN-rotated score.
+    vi.stubGlobal("fetch", vi.fn(async () => json(chromaBody(8))));
+    chromaTarget.setChordText("C");
+    const clip = selectAClip({ detune: 50 });
+    arrangement.setPreviewAudio(clip.id, { kind: "path", path: "/stretched-50.wav" });
+    render(ChromaTab);
+    await chromaClient.flush();
+    await tick();
+    const res = chromaClient.result!;
+    const target = chromaTarget.profile;
+    expect(chromaLink.scores[clip.id]).toBeCloseTo(meanMatchAtDetune(res.fold12, res.T, target, 0), 9);
+    // and it is genuinely a different number, so the assertion above has teeth:
+    // rotating [1,0,...] by half a class splits it across classes 0 and 1.
+    expect(chromaLink.scores[clip.id]).not.toBeCloseTo(
+      meanMatchAtDetune(res.fold12, res.T, target, 50),
+      6,
+    );
   });
 
   it("marks the hovered frame on the clip in its lane, and clears it on leave", async () => {
@@ -6059,7 +6407,7 @@ describe("the clip score label and the lane cross-link", () => {
     const clip = selectAClip();
     const { container, getByTestId } = render(ChromaTab);
     await chromaClient.flush();
-    await Promise.resolve();
+    await tick();
     const box = container.querySelector('[data-region="chroma-heatmap-box"]')! as HTMLElement;
     vi.spyOn(box, "getBoundingClientRect").mockReturnValue({
       left: 0, top: 0, width: 480, height: 131, right: 480, bottom: 131, x: 0, y: 0, toJSON: () => ({}),
@@ -6283,14 +6631,23 @@ Replace it with the same list plus this milestone's fixture, in sorted order, an
   });
 ```
 
-**Check the fixture directory before you commit this.** If M10 Task 7 has already landed, it added
-`handmade-forge_dataset_scalars.json` and `handmade-forge_stats_crops.json` without extending this
-list, so the assertion is *already* red and the correct list is thirteen names — the eleven above
-plus `handmade-forge_dataset_scalars.json` (after `handmade-forge_chroma_render.json`) and
-`handmade-forge_stats_crops.json` (after `handmade-forge_sessions.json`), with the title
-`ships the thirteen fixtures M1's shell, M6's CHROMA tab and M10's statistics view call`. That is an
-M10 defect, not M6's, but this is the commit that meets it. `ls
-docs/latent-forge/contract/fixtures/handmade-*.json` settles it in one command.
+**Do not assume the ten-name block above is what you will find.** M10 Task 7 also adds two
+fixtures and, since 2026-09-22, **extends this same assertion itself** to a twelve-name list titled
+`ships the twelve fixtures M1's shell and the statistics view call` (see M10 T7's own WHY paragraph).
+Whichever of the two milestones lands second extends the list the first one left, so:
+
+**The rule, not the literal:** `ls docs/latent-forge/contract/fixtures/handmade-*.json`, and make the
+array the **sorted union** of what is on disk plus `handmade-forge_chroma_render.json`. Retitle the
+test to name whatever set that is. Concretely there are only two cases:
+
+- **M6 lands first** — the block above is what you find; use the eleven-name list as written.
+- **M10 landed first** — you will find M10's twelve-name list, not the ten-name one. Add
+  `handmade-forge_chroma_render.json` after `handmade-forge_backbone.json` for a **thirteen**-name
+  list, titled `ships the thirteen fixtures M1's shell, M6's CHROMA tab and M10's statistics view
+  call`.
+
+Either way the assertion is green before your commit and green after it; it is never transiently
+red, because the plan that adds a fixture is the plan that widens the list.
 
 `latent-forge/tests/chroma.spec.ts`:
 
@@ -6386,6 +6743,19 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
   // analyses the pre-stretch audio in between. One debounce, one owner, and it
   // covers the lane header's detune field as well as the strip's.
   //
+  // HOW MUCH DETUNE TO ROTATE BY -- decided ONCE, here. runStretch has already
+  // pitch-shifted previewAudio by clip.detune_cents / 100 (M5:5358), so when
+  // the analysed ref WAS previewAudio the chroma is already detuned and a
+  // consumer that rotates it again by the clip's detune applies the detune
+  // twice. When the analysed ref was the raw clip.audio -- which happens
+  // whenever runStretch returns early, i.e. clip.native_bpm == null -- the
+  // detune is NOT in the audio and the rotation is still needed. That is the
+  // whole rule, and `analysisDetuneCents` below is the only place it lives:
+  // every consumer (heatmap hue, match curve, hover, clip score, detune scan)
+  // gets THAT number rather than clip.detune_cents, so nothing re-derives it.
+  // Its knock-on effect is that the scan strip's axis is relative and BEST is
+  // additive -- see Task 8 and the plan's Open question 6.
+  //
   // arrangement.selectedClip is promised by M5 T1's Interfaces line and never
   // defined in its code (M5's own self-review says so), so the selected clip is
   // computed locally from view.selection, exactly as M5 T9 does.
@@ -6426,6 +6796,14 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
   });
   /** §5.4: the STRETCHED preview, falling back to the source for an unstretched clip. */
   const audioRef = $derived(selectedClip ? (selectedClip.previewAudio ?? selectedClip.audio) : null);
+  /**
+   * The detune that is NOT already baked into the analysed audio -- 0 when the
+   * analysed ref was the stretched preview, the clip's own when it was the raw
+   * source. The single decision point; every consumer below takes this.
+   */
+  const analysisDetuneCents = $derived(
+    selectedClip && !selectedClip.previewAudio ? selectedClip.detune_cents : 0,
+  );
   const result = $derived(chromaClient.result);
   const target = $derived(chromaTarget.profile);
   const error = $derived(chromaClient.error ?? chromaTarget.error);
@@ -6464,7 +6842,7 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
     const clip = selectedClip;
     const res = result;
     if (!clip || !res) return;
-    chromaLink.setScore(clip.id, meanMatchAtDetune(res.fold12, res.T, target, clip.detune_cents));
+    chromaLink.setScore(clip.id, meanMatchAtDetune(res.fold12, res.T, target, analysisDetuneCents));
   });
 
   // 6. §9.7: a server error is a red TERMINAL line as well as an inline one.
@@ -6490,7 +6868,7 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
       y: e.clientY - rect.top,
       widthPx: rect.width,
       heightPx: rect.height,
-      detuneCents: clip.detune_cents,
+      detuneCents: analysisDetuneCents,
     });
     hover = h;
     if (h) chromaLink.setHover(clip.id, h.frac);
@@ -6531,6 +6909,7 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
         result={result}
         target={target}
         criterion={criterion}
+        detuneCents={analysisDetuneCents}
         oncriterion={(c) => (criterion = c)}
       />
       <HoverReadout hover={hover} />
@@ -6554,7 +6933,7 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
         win={win}
         result={result}
         target={target}
-        detuneCents={selectedClip?.detune_cents ?? 0}
+        detuneCents={analysisDetuneCents}
         onwin={(w) => (win = w)}
       />
       {#if showCurve}
@@ -6562,7 +6941,7 @@ Expected: `wrote .../handmade-forge_chroma_render.json: 24 frames, band scales <
           result={result}
           target={target}
           win={win}
-          detuneCents={selectedClip?.detune_cents ?? 0}
+          detuneCents={analysisDetuneCents}
         />
       {/if}
     </div>
@@ -6665,7 +7044,7 @@ height assertion holds without touching M1's sizing rules — the same edit shap
 cd latent-forge && npx vitest run src/ui/chroma/__tests__/ChromaTab.component.test.ts && npx vitest run mock && npm run check
 ```
 
-Expected: `Test Files  1 passed (1)` / `Tests  11 passed (11)` for the tab, then
+Expected: `Test Files  1 passed (1)` / `Tests  12 passed (12)` for the tab, then
 `Test Files  3 passed (3)` / `Tests  28 passed (28)` for `mock` — M1 T6's own 24 over two files
 (unchanged in count, because the fixture-list assertion was **edited**, not added to) plus this
 task's 4 in `chromaFixture.test.ts`. Then `svelte-check found 0 errors and 0 warnings`.
@@ -6676,18 +7055,18 @@ The whole chroma milestone together, for the record:
 cd latent-forge && npx vitest run src/lib/chroma src/ui/chroma
 ```
 
-Expected: `Test Files  20 passed (20)` / `Tests  203 passed (203)`.
+Expected: `Test Files  20 passed (20)` / `Tests  206 passed (206)`.
 *Counting note for whoever verifies this plan mechanically:* a raw grep for indented `it(` blocks
-over this task's section returns **17**, not 15. Fifteen of those are the new tests (11 in
+over this task's section returns **18**, not 16. Sixteen of those are the new tests (12 in
 `ChromaTab.component.test.ts`, 4 in `chromaFixture.test.ts`); the other two are the **before and
 after** of the single `ships the … fixtures …` block being edited in
 `mock/__tests__/plugin.test.ts`, which is one test either way and adds none.
 
-`src/lib/chroma` is 12 files / 147 tests — Writer A's 68 (`bins` 18, `chromaClient` 11, `match` 13,
-`target` 14, `detuneScan` 12) plus 79 here (`consonanceColor` 8, `heatmapGeometry` 18, `matchCurve`
+`src/lib/chroma` is 12 files / 149 tests — Writer A's 69 (`bins` 18, `chromaClient` 11, `match` 13,
+`target` 14, `detuneScan` 13) plus 80 here (`consonanceColor` 8, `heatmapGeometry` 19, `matchCurve`
 11, `scanStrip` 12, `targetStore` 14, `hoverReadout` 9, `chromaLink` 7). `src/ui/chroma` is 8 files
-/ 56 tests (`chromaCanvas` 4, `ChromaHeatmap` 8, `MatchCurveOverlay` 4, `MatchLegend` 6,
-`DetuneScanStrip` 10, `TargetRow` 9, `HoverReadout` 4, `ChromaTab` 11). Task 10's remaining 3
+/ 57 tests (`chromaCanvas` 4, `ChromaHeatmap` 8, `MatchCurveOverlay` 4, `MatchLegend` 6,
+`DetuneScanStrip` 10, `TargetRow` 9, `HoverReadout` 4, `ChromaTab` 12). Task 10's remaining 3
 (`ClipBox.score.component.test.ts`) live under `src/ui/timeline` and are not in this run.
 
 Then the Playwright spec, against the mock server:
@@ -6716,9 +7095,9 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M6 T11: CHROMA tab assembled
 | §5.4 match: `INTERVAL_W`, classes counted only above 0.08 | T3 `matchFrame` | done |
 | §5.4 detune rotation: `cents/100` classes, linear energy split | T3 `rotate` | done |
 | §5.4 legend anchors: unison / fifth / tritone of the target against itself | T3 `anchors`, T7 `legendTicks` | done |
-| §5.4 clip score label = mean frame match at the clip's detune | T5 `meanMatchAtDetune`, T10 `clipScoreLabel`, T11 effect 5 | done |
+| §5.4 clip score label = mean frame match at the clip's detune | T5 `meanMatchAtDetune`, T10 `clipScoreLabel`, T11 effect 5 — at `analysisDetuneCents`, because the analysed preview already carries the detune | done |
 | §5.4 scan: −100..100 step 4, every 3rd frame, HIGHEST = mean, STEADIEST = mean − sd | T5 `scanDetune`/`bestDetune`, T8 strip | done |
-| §5.4 strip: red mark at the current detune; click or drag sets it; BEST jumps to the argmax | T8 | done |
+| §5.4 strip: red mark at the current detune; click or drag sets it; BEST jumps to the argmax | T8 — on a **relative** axis: the mark is the strip's centre, and both writers add rather than assign | done |
 | §5.4 detune re-stretches through `/forge/stretch`, debounced 400 ms | T11 effect 3, via M5 T10's `scheduleStretch` | done |
 | §5.4 hover: note name + frame index, 14 px / 9 px, red line on the clip in its lane | T10 `HoverReadout`, `chromaLink`, `LaneCanvas` edit | done |
 | §6.3 `[3,128,T]` with **three** band scales, `[12,T]` with **one**, `byte/255·scale` | T2 `decodeChroma` (M10 T1's `dequantiseScaled`) | done |
@@ -6741,7 +7120,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M6 T11: CHROMA tab assembled
    has no `CanvasRenderingContext2D`" — applies to the nine lines added to `LaneCanvas.redraw()`.
    Worth one Playwright check once a clip can be dropped from a fixture.
 3. **`CHROMA CROSSFADE` on an overlap is M7's, and the commit-time chroma slot is server-side.**
-   §4.6's toggle (`HELP.overlapChromaXfade`, v3 459-460) and §8.1's stage are deliberately untouched
+   §4.6's toggle (`HELP.overlapChromaXfade`, v3 460) and §8.1's stage are deliberately untouched
    here.
 4. **Lane-mode target cost.** One `/forge/chroma` per TARGET-lane clip, sequentially, on every change
    to that lane's clip list. The per-`AudioRef` cache inside the target store's own `ChromaClient`
@@ -6795,7 +7174,7 @@ UX choice and is left as written. Worth a look if it ever comes up during implem
 
 ## Open questions
 
-**Every one has a shipped reading, so nothing here blocks an implementer.** The five below are the
+**Every one has a shipped reading, so nothing here blocks an implementer.** The six below are the
 load-bearing ones — they want Kim's or WINTERMUTE's answer rather than a default, because changing
 any of them later changes numbers the app has already shown someone. The rest are recorded in full
 underneath, as each writer found them.
@@ -6807,8 +7186,13 @@ underneath, as each writer found them.
 2. **Two different 12-class folds exist and §5.4 does not say which feeds the match.** Display comes
    from the per-frame-normalised local fold; match, scan and clip score come from §6.3's transported
    `fold12`. **A GLOBAL cell's brightness and its hue therefore come from different arrays**, so a
-   frame can look quiet and still score high. If the two should be identical, the match path should
-   fold the bands too — at a real performance cost.
+   the display fold is normalised **per frame** (max always 1) while the transported `fold12` carries
+   **one scale for the whole clip**. So the failure is the opposite of "looks quiet, scores high": a
+   quiet frame renders **bright** and can have every class below `MATCH_THRESHOLD`, giving `den === 0`
+   and a match of exactly **0**. Those zeros drag down `meanMatchAtDetune` — §5.4's clip score — and
+   the whole detune scan, which is why this is question 2 and not a footnote. If the two should
+   agree, normalise each `fold12Column` to max 1 before `matchFrame` (a two-line change at
+   `fold12Column`'s call sites), which also removes the threshold's dependence on clip-wide loudness.
 3. **Chord quality is lowercased, so `CM7` reads as C minor 7.** That is the drawing's behaviour and
    it is what makes `CDIM` work, but many charts mean C major 7 by `CM7`. The alternative is to match
    §5.4's nine spellings case-sensitively and reject `CM7` outright.
@@ -6819,6 +7203,27 @@ underneath, as each writer found them.
 5. **The heatmap's y-axis note labels are not drawn**, although §5.4 says they "use
    `semitone_bin_centers`". The data exists and the hover readout names the note; at 162 px of tab
    body the drawing itself draws none, and guessing a layout for twelve labels would be inventing UI.
+6. **Detune was applied twice, and the fix makes the scan strip's axis relative.** Found by the
+   **2026-09-22 critic pass**, blocking. M5 T10's `runStretch` already stretches the clip's preview
+   by `clip.detune_cents / 100` (M5:5358), and this plan pins chroma to that stretched preview — so
+   `chromaClient.result.fold12` is the chroma of audio that has *already* been pitch-shifted, and
+   every consumer rotating it again by `detune_cents / 100` applied the detune a second time. (v3
+   did not have the bug: its scan and its chroma both started from the unstretched source. The
+   rotation was, however, still correct in the one case where `runStretch` returns early —
+   `clip.native_bpm == null`, leaving `previewAudio` null.) **Shipped reading: the analysed ref
+   decides.** `ChromaTab.svelte` derives `analysisDetuneCents` — `0` when the analysed ref was
+   `clip.previewAudio`, `clip.detune_cents` when it was `clip.audio` — and passes that to every
+   consumer in place of `clip.detune_cents`, so one place decides and nothing re-derives the rule.
+   The consequence is that **the scan strip's ±100 ¢ axis becomes relative to the clip's current
+   detune**: the red mark sits at the strip's centre, the label says what the axis is relative to,
+   and **BEST is additive** (`clip.detune_cents + bestDetune(...)`, clamped), which is also what
+   makes pressing BEST twice converge rather than walk the value. **The relative-axis reading was
+   chosen over the alternative** — re-requesting chroma on the *unstretched* source so the axis
+   could stay absolute — because it is one fewer server round-trip, and because the scan re-centres
+   after each BEST as the new stretch lands, so repeated presses converge. **Kim or WINTERMUTE may
+   prefer the other reading**: an absolute axis reads more naturally beside the lane header's
+   DETUNE ¢ field, at the price of a second `/forge/chroma` per clip and a scan that no longer
+   describes the audio the timeline actually plays.
 
 **Two defects in other plans, found while writing this one, both already fixed:**
 
@@ -6862,7 +7267,8 @@ against this plan.*
   (= 122.67) belongs to C again; the server's own `fold_to_12` assigns each bin to the nearest
   centre by *circular* distance, which puts the B/C boundary at 2.0 + 11.5·(128/12) = **124.67**
   (bin 124 is B, bin 125 is C). — Shipped the server's rule, since client and server must fold
-  identically, and pinned 124/125 in a test. Bins 18 and 82 are exact ties and go to the *lower*
+  identically, and pinned 124/125 in a test. Bins 18, 50, 82 and 114 (four, not two — corrected by
+  the 2026-09-22 critic) are exact ties and go to the *lower*
   class, matching numpy's `argmin`; `Math.round((bin−2)/(128/12))` sends both the other way, so the
   one-line formula is not usable.
 - **Which 12-class fold feeds the match** — §5.4 defines GLOBAL as the three bands folded locally

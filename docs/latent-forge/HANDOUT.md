@@ -23,7 +23,7 @@ Kim's authoritative workflow in §3), then `docs/superpowers/specs/2026-09-15-la
 | **M2** server foundations | `docs/superpowers/plans/2026-09-15-latent-forge-m2-server-foundations.md` | 15 | assessed buildable — TDD-complete, no scope gaps, needs the GPU box |
 | **M3** sampling server | `docs/superpowers/plans/2026-09-15-latent-forge-m3-sampling-server.md` | 4 | assessed buildable — Task 2's edit (j) now written out in full; needs the GPU box |
 | **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | reviewed (6 findings, 2 blocking — both were pre-existing M1 defects, not M10's, and both are now fixed in M1) |
-| **M6** chroma | `docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` | 11 | reviewed (2 findings, 0 blocking, applied), 212 tests, counts verified |
+| **M6** chroma | `docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` | 11 | reviewed **twice** (2 findings then 17, 5 of them blocking — all applied), 215 tests, counts verified |
 | **M7** chains / mix / library / sessions | *not yet a plan* | — | prerequisites in hand, no brief yet |
 | **M9** rendering | *not yet a plan* | — | last; needs M7 |
 
@@ -105,6 +105,14 @@ the five, narrowed through `SpecModuleId`. Also: M1 T13's `CentreColumn` now ren
 payload would have quietly rendered 47 s instead of 45. Fixed in both fixtures on 2026-09-21. The
 lesson generalises: this server 200s on an unknown key rather than rejecting it, so a wire-name typo
 shows up as a wrong-length render, not an error.
+
+**A `Float32Array` value compared against a float64 threshold literal is off by a rounding step.**
+`Math.fround(0.08) = 0.079999998`, which is strictly **less than** the literal `0.08`. So a guard
+written `if (value < THRESHOLD) continue;` excludes a value the caller set to exactly the threshold —
+the opposite of the documented rule. Round the threshold the same way the data is stored
+(`Math.fround(THRESHOLD)`) so the comparison happens in one precision. M6 hit this in `matchFrame`,
+and it cascaded: the same rounding decided where a flat-topped scan's first tied maximum fell, so two
+apparently independent test fixes turned out to be coupled.
 
 **An abort listener added after the signal already fired never runs.** Check `signal.aborted` before
 registering one, or the promise never settles. This was a real green-looking test that hung.
