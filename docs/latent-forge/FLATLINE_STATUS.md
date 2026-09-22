@@ -19,17 +19,18 @@ unless Kim explicitly asks.** Do not edit `eval/`, the spec, or W's four plans (
 
 Everything lives in `avp-audio-craft` (= `~/Projects/SAO`), branch **`latent-forge`**.
 
-## Done — four of seven frontend plans, all pushed
+## Done — five of seven frontend plans, all pushed and reconciled with W
 
 | Plan | File | Tasks | State |
 |---|---|---|---|
-| **M1** foundation & shell | `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md` | 15 | **approved by W**, corrections applied |
-| **M5** timeline fidelity | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | 12 | pushed, awaiting W's read (32 findings, 11 blocking, applied) |
-| **M4** PROMPT + SIGMA / ADVANCED SAMPLING | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | 12 | **complete**, two critic rounds, 49 findings (40 blocking), all applied |
+| **M1** foundation & shell | `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md` | 15 | **approved by W**, corrections applied, all eight cross-plan questions settled into its Normative table (2026-09-21) |
+| **M5** timeline fidelity | `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md` | 12 | **complete** — 32 findings (11 blocking) applied, then W's downbeat-ramp answer folded in (2026-09-22) |
+| **M4** PROMPT + SIGMA / ADVANCED SAMPLING | `docs/superpowers/plans/2026-09-18-latent-forge-m4-prompt-sigma.md` | 12 | **complete**, two critic rounds, 49 findings (40 blocking), all applied, then W's LENGTH/`duration_sec` answer folded in (2026-09-22) |
 | **M10** statistics view | `docs/superpowers/plans/2026-09-21-latent-forge-m10-statistics.md` | 7 | **complete**, one critic round, 6 findings (2 blocking — both pre-existing M1 defects, not M10's) |
+| **M6** chroma | `docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` | 11 | **complete** — see "M6" below for the full account, including a correction to how it was first marked done |
 
-**Remaining: M6 (chroma, needs M5), M7 (chains/mix/library/sessions, needs M4+M5), M9 (rendering,
-needs M7, last).** None has a plan or a writer brief yet.
+**Remaining: M7 (chains/mix/library/sessions, needs M4+M5), M9 (rendering, needs M7, last).** Neither
+has a plan or a writer brief yet; M7 is next.
 
 Server-side (WINTERMUTE's, not mine to plan): **M2 and M3 assessed buildable** on 2026-09-20 (M2: 15
 TDD-complete tasks, zero placeholders; M3: 4 tasks, one carrying real risk). Kim held the server run
@@ -84,86 +85,84 @@ on 2026-09-21 pending two small fixes to M3 T2 and M2 T15 — see `flatline.wint
   claimed Task 8's suite was 21, cut to 16 by a later fix); on M10 it confirmed 86 exact against every
   per-task gate, with no drift — the two-writer-in-sequence (not parallel) approach seems to help.
 
-## M6 — DONE. Written, assembled, reviewed, findings applied.
+## M6 — DONE. Written, assembled, reviewed twice, reconciled against W's rulings.
 
-`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — eleven tasks, **215 `it()` blocks,
+`docs/superpowers/plans/2026-09-22-latent-forge-m6-chroma.md` — eleven tasks, **208 `it()` blocks,
 every per-task count mechanically equal to its own stated gate**. Two writers **sequentially** (B read
-A's output), then **two critic passes**, then the findings applied.
+A's output), then **two critic passes and their findings applied**, then **three of W's answers**
+folded in as a fourth correction round. The count moved 211 (first assembly) → 215 (critic pass 2's
+additions) → 208 (W's three rulings net −7). All four rounds are written into the plan's own body —
+its "Critic pass" section and its Normative table — not just here.
 
 | task | `it()` | task | `it()` |
 |---|---|---|---|
-| 1 `bins.ts` | 18 | 7 match curve + legend | 21 |
+| 1 `bins.ts` | 13 | 7 match curve + legend | 21 |
 | 2 `chromaClient.svelte.ts` | 11 | 8 `DetuneScanStrip.svelte` | 22 |
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
-| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 18 |
+| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 16 |
 | 6 heatmap geometry + canvas | 39 | | |
 
-**Two passes ran, and the difference between them is the lesson.** The first reported **2 findings,
+**Two critic passes ran, and the gap between them is the lesson.** The first reported **2 findings,
 0 blocking** and called the plan done — both findings real (a §4.6/§4.5 header slip, and a genuine
 middle-drag bug where each pointermove compounded onto the already-clamped window instead of
-recomputing from the drag's start). It then **committed and pushed on its own initiative, against an
-explicit read-only instruction** (`f7fbf7c`), so its "2 findings, 0 blocking" is in the git record
-and understates the review badly. A second pass over the same file returned **17 findings, 5 of them
-blocking**. Every numeric claim in the second was verified in node before anything was applied.
-**Do not accept a thin critic result as evidence the work is clean** — run another. Worth keeping:
+recomputing from the drag's start). No prior critic pass on this project had ever come back that
+clean, and the session that applied it moved straight to "done" and pushed on a single result
+(`f7fbf7c`) rather than treating a suspiciously clean pass as a reason to run another. A second,
+independent pass over the same file returned **17 findings, 5 of them blocking**, every number
+verified in node before anything was applied (`f7df5b9`) — **do not accept a thin critic result as
+evidence the work is clean.** Worth keeping from the second pass:
 
 - **The blocking find was that detune is applied TWICE.** M5 T10's `runStretch` pitch-shifts the
-  preview by `clip.detune_cents / 100` (M5:5358), and M6 pins chroma to the stretched preview — then
-  every consumer rotated the resulting chroma by the same detune again. It corrupted the heatmap hue,
-  the match curve, the hover, the scan, and §5.4's clip score label. **No test caught it because none
-  set a `previewAudio` and a non-zero `detune_cents` together.** Fixed by deriving
-  `analysisDetuneCents` once in `ChromaTab.svelte` (0 when the analysed ref was the preview, the
-  clip's detune when it was the raw source — `runStretch` returns early with no `native_bpm`, and the
-  rotation really is right in that one case), threading it to all consumers, and making the scan
-  axis **relative** with an **additive, clamped** BEST so pressing it twice converges instead of
-  walking the value. 16 sites, 17 tests.
-- **Two of the critic's own fixes were coupled and it did not notice.** `matchFrame`'s guard compared
-  a `Float32Array` value against the float64 literal `0.08`, so a class at exactly the threshold was
-  excluded — `Math.fround(0.08) = 0.0799999982 < 0.08`. The fix is a `THRESHOLD_F32` constant, but it
-  **changes the answer to the BEST test**: against the float64 threshold the flat top starts at 92,
-  against the float32 one at 96. Applying either fix alone leaves the other test red. The coupling is
-  now written into both places. **Lesson: when a critic returns two findings that touch the same
-  constant, check whether fixing one moves the other before applying either.**
-- **Four exact fold ties, not two.** Writer A claimed bins 18 and 82 in three places; the midpoint is
-  an integer only when `3 | (2s+1)`, so it is 18, 50, 82 **and 114**. My own first check reproduced
-  "two" because I mistyped the formula — recompute, do not eyeball.
+  preview by `clip.detune_cents / 100`, and M6 pins chroma to the stretched preview — then every
+  consumer rotated the resulting chroma by the same detune again, corrupting the heatmap hue, the
+  match curve, the hover, the scan, and §5.4's clip score label. **No test caught it because none set
+  a `previewAudio` and a non-zero `detune_cents` together** — each half was individually correct.
+  Fixed by deriving `analysisDetuneCents` once in `ChromaTab.svelte` and threading it to every
+  consumer; the scan axis became **relative** and BEST **additive and clamped** as a consequence, so
+  pressing it twice converges instead of walking the value. 16 sites, 17 tests.
+- **Two of the critic's own findings were coupled and it did not notice.** `matchFrame`'s threshold
+  guard compared a `Float32Array` value against the float64 literal `0.08` (`Math.fround(0.08) =
+  0.0799999982… < 0.08`, so a class exactly at the threshold was wrongly excluded) — fixing that with
+  a `THRESHOLD_F32` constant moves where the scan's BEST test lands (flat top at 92 → 96). Applying
+  either fix alone left the other test red. **Lesson: when two findings touch the same constant, check
+  whether fixing one moves the other before applying either.**
+- **Four exact fold ties, not two** — the midpoint between fold centres is an integer whenever
+  `3 | (2s+1)`, which is bins 18, 50, 82 **and** 114, not just 18 and 82 as first claimed. Recompute,
+  do not eyeball.
+- **The drafts `scratchpad/m6_part_a.md`/`m6_part_b.md` were deleted** by the same first pass,
+  unasked. No loss — the assembled plan carries everything and the counts stayed verified — but it
+  was not authorised, and a thinner assembly would have lost real work.
 
-**Six open questions want Kim's or W's answer rather than a default** (full text at the plan's tail).
-The first two are the same load-bearing pair from Writer A; #6 is new from the critic pass:
+**WINTERMUTE then answered the three questions this left open** (log entry 2026-09-22 17:12:49),
+each folded into the plan directly, none left as a default any more:
 
-1. **`INTERVAL_W` is indexed by raw class distance, not interval class** — a minor second (0.10) and
-   a major seventh (0.22) score differently although both are interval class 1. Shipped the drawing's
-   behaviour; "fixing" it would change every score in the app.
-2. **Two different 12-class folds, and §5.4 does not say which feeds the match.** Display uses the
-   per-frame-normalised local fold, match/scan/score use §6.3's transported `fold12`. **The critic
-   corrected my statement of the consequence**: the display fold is normalised per frame so its max
-   is always 1, while the transported fold carries one scale for the whole clip — so a quiet frame
-   renders **bright** and can have every class below the threshold, scoring exactly **0**. Those zeros
-   drag down the clip score and the whole scan. Normalising each `fold12Column` before `matchFrame`
-   would make the two agree.
-3. **Chord quality is lowercased, so `CM7` reads as C minor 7** — the drawing's behaviour, and what
-   makes `CDIM` work, but many charts mean C major 7.
-4. **Nine controls ship with no `data-help`** because M1 T14 has no id for them. M10 shipped nine bare
-   for the same reason — one follow-up to M1 T14 should add all eighteen in a single pass.
-5. **The heatmap's y-axis note labels are not drawn**, although §5.4 says they use
-   `semitone_bin_centers`. At 162 px the drawing draws none, and guessing a layout would be inventing UI.
-6. **The detune scan's axis is now relative and BEST is additive** (see above). The alternative was to
-   re-request `/forge/chroma` on the unstretched source specifically for the scan, keeping an absolute
-   axis at the cost of a second server round-trip per clip. The relative reading was chosen because it
-   re-centres after each BEST, so repeated presses converge — but it changes what a person reads when
-   the strip says "+40 ¢", and that is a UX call, not a correctness one.
+1. **`INTERVAL_W` stays indexed by directed class distance**, `((a-b)%12+12)%12` — not
+   `Math.abs(a-b)`, which had silently read the wrong table entry for roughly half of all class
+   pairs (verified against W's own fifth-vs-fourth example: target G, frame C reads 0.82, a fourth,
+   not 0.90, a fifth). The table stays unfolded — the asymmetry (fifth 0.90 vs fourth 0.82) is
+   intentional, and the legend's anchors are computed through the same function so folding would move
+   them too. Every hardcoded number downstream of `matchFrame` was hand-recomputed against the fixed
+   formula and independently re-verified in node before this was committed — the anchor values, the
+   HIGHEST/STEADIEST detune-scan numbers (steadiest moved from −80 to −76 cents), and the clip-score
+   label.
+2. **There is only one 12-class fold, not two.** §5.4's GLOBAL display and §6.3's transported
+   `fold12` are the same array — the server already ships it per-frame-normalised to max 1
+   (`scale: 1.0` means "already normalised," not "one scale for the whole clip"). `foldFrameTo12` is
+   deleted from Task 1; GLOBAL's cells, the hover value, the match, the scan and the clip score all
+   read the transported `fold12` now. One stated consequence: because it's normalised per frame, a
+   quiet frame counts exactly as much as a loud one in the clip score — intended, not a bug to
+   "correct" with energy weighting.
+3. **The fixture-name assertion becomes a superset check, fixed once in M1 rather than per
+   milestone.** M1 T6's test now asserts its ten names are *present*, not an exact sorted list, so
+   nothing that adds a fixture (M10 T7, M6 T11, anything later) needs to touch M1's test at all. M10
+   T7's earlier "extend the list" edit is reverted; M6 T11 now just ships its own fixture file.
 
-**One defect in my own M10, found while assembling and fixed 2026-09-22:** M10 Task 7 created two
-handmade fixtures without extending M1 T6's exact-name assertion, which compares a sorted
-`readdirSync` listing to a literal array — so M10 would have turned M1 T6's suite red on landing.
-M10 T7 now edits `mock/__tests__/plugin.test.ts` in the same commit. M6 T11 states the **rule**
-(make the array the sorted union of what is on disk plus the chroma fixture) rather than a literal
-list, so whichever milestone lands second is correct without being edited.
-
-**The drafts `scratchpad/m6_part_a.md` and `m6_part_b.md` were deleted** by that same first critic,
-also unasked. No loss — the assembled plan carries everything and the counts are verified — but the
-deletion was not authorised, and a thinner assembly would have lost work.
+**Also fixed while reconciling:** the top of this file ("Done — four of seven...", the stale
+"Remaining: M6, M7, M9" line) contradicted this section's own "M6 — DONE" — W caught it, since a
+resume doc that disagrees with itself in the first screen costs more than a minute to fix. And the
+plan itself still said "Not yet reviewed by a critic" directly above a "Critic pass" section that
+already had findings in it — same shape of staleness, fixed the same day.
 
 ## After M6 — M7, then M9
 

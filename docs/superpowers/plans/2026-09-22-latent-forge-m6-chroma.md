@@ -97,8 +97,8 @@ Where a task body and this block disagree, **this block wins.**
 
 | decision | the reading this plan ships | why |
 |---|---|---|
-| `INTERVAL_W`'s index | the **raw class distance** `INTERVAL_W[abs(a-b)]`, as v3's `_matchFrame` computes it — *not* `min(ic, 12-ic)` | §5.4 pins the twelve weights and names `_matchFrame` as the definition, but does not restate the indexing. "Fixing" it to interval class would silently change every score in the app. A comment in Task 3 says so, so nobody helpfully corrects it. **Open question 1** |
-| which 12-class fold feeds what | **display** (GLOBAL's cells, the hover value) from `foldFrameTo12(bands, …)`, per-frame normalised, §5.4's own words; **match / scan / clip score** from §6.3's transported `fold12`, quantised once over the clip | they are genuinely different arrays and §5.4 does not say. 51 × T rotations over a locally-folded array would be the pane's slowest path, and §6.3 ships `fold12` for exactly this. **Consequence a reviewer must know: a GLOBAL cell's brightness and its hue come from two different arrays.** The display fold is normalised PER FRAME, so its max is always 1; the transported `fold12` carries one scale for the whole clip. A quiet frame therefore renders bright and can have **every** class below `MATCH_THRESHOLD`, giving `den === 0` and a match of exactly **0** — so the failure is a bright cell scoring zero, and those zeros drag down `meanMatchAtDetune`, which is §5.4's clip score label, and the whole detune scan. **Open question 2** |
+| `INTERVAL_W`'s index | the **directed, wrapped class distance** `INTERVAL_W[((a - b) % 12 + 12) % 12]`, `a` the frame's class and `b` the target's — *not* `Math.abs(a - b)`, and *not* folded to `min(ic, 12-ic)` | **RESOLVED 2026-09-22 by WINTERMUTE.** `Math.abs(a-b)` is symmetric — it depends only on which class number is larger, not on a consistent target→frame direction — so it silently read the wrong entry for roughly half of all pairs: target class 7 (G), frame class 0 (C) has `Math.abs(7-0)=7` reading `INTERVAL_W[7]=0.90` ("a fifth"), when the ascending distance from G up to C is 5 semitones ("a fourth", `INTERVAL_W[5]=0.82`). The directed formula above reproduces both. The table stays **unfolded** on purpose: it is asymmetric by design (fifth 0.90 vs fourth 0.82, minor second 0.10 vs major seventh 0.22), and the legend's anchors are computed through this same `matchFrame`, so folding would silently move them too. Task 3's code comment says the asymmetry is intended, "or someone will fix it in six months" (WINTERMUTE's words) — §5.4 pins the twelve weights and names `_matchFrame` as the definition without restating the indexing, and this row is that restatement. |
+| which 12-class fold feeds what | **one array, not two: the server's transported `fold12`**, feeding GLOBAL's display cells, the hover value, `matchFrame`/the scan and the clip score alike | **RESOLVED 2026-09-22 by WINTERMUTE.** §5.4's GLOBAL definition — sum the three bands through `fold_to_12`, then per-frame normalise to max 1 — is exactly what M2 T12's `chroma_payload` computes and transports as `fold12` at `scale: 1.0`; that scale is 1.0 *because* the values are already normalised into [0,1] per frame, not because it is a whole-clip scale. So the client never needs a local re-fold of `bands` for display, and `foldFrameTo12` is deleted (Task 1). **One consequence worth stating once, here:** because `fold12` is normalised per frame, a quiet frame contributes to `meanMatchAtDetune` exactly as strongly as a loud one — intended, since the score measures harmonic agreement rather than energy, but the kind of thing an implementer "corrects" by weighting with band energy. Don't. |
 | the B/C fold boundary | the server's **circular-nearest** rule: bin 124 is B, bin 125 is C (boundary at 2.0 + 11.5·(128/12) = 124.67) | client and server must fold identically. Bins **18, 50, 82 and 114** are exact ties and go to the **lower** class, matching numpy's `argmin`; the one-line `Math.round((bin−2)/(128/12))` sends all four the other way and is therefore not usable. There are exactly four: the midpoint between centres *s* and *s+1* is `2 + (2s+1)·16/3`, an integer only when `3 | (2s+1)`, i.e. `s ∈ {1, 4, 7, 10}` |
 | C's bin, and the semitone width | C at bin **2.0**; each semitone spans **128/12** bins | §5.4, pinned verbatim |
 | chord vocabulary | §5.4's **nine exactly** — `C, Cm, C7, Cmaj7, Cm7, Cdim, Caug, Csus2, Csus4`. `Cmin` returns `null` | the drawing accepts `min`/`min7`/`maj` and has no `sus2`/`sus4`; the spec's list is normative. Trivial to add aliases later |
@@ -154,7 +154,7 @@ no `data-help` at all.
 
 | file | what it is |
 |---|---|
-| `latent-forge/src/lib/chroma/bins.ts` | bin geometry: C at 2.0, 128/12 per semitone, `foldTo12`/`foldFrameTo12`, `binToPitchClass`, `fold12Column(s)` (T1) |
+| `latent-forge/src/lib/chroma/bins.ts` | bin geometry: C at 2.0, 128/12 per semitone, `foldTo12`, `binToPitchClass`, `fold12Column(s)` (T1) |
 | `latent-forge/src/lib/chroma/chromaClient.svelte.ts` | `/forge/chroma`, decoded on arrival; `chromaRefKey`, `ChromaShapeError` (T2) |
 | `latent-forge/src/lib/chroma/match.ts` | `INTERVAL_W`, `matchFrame`, `rotate`, `anchors` (T3) |
 | `latent-forge/src/lib/chroma/target.ts` | `targetProfile`, `setProfile`, `parseChord` (T4) |
@@ -175,7 +175,7 @@ no `data-help` at all.
 | `latent-forge/src/ui/chroma/ChromaTab.svelte` | the assembly, the empty states, the stretch debounce (T11) |
 | `latent-forge/mock/makeChromaFixture.mjs` | generates `handmade-forge_chroma_render.json` (T11) |
 | `latent-forge/tests/chroma.spec.ts` | Playwright (T11) |
-| **modified:** `mock/__tests__/plugin.test.ts`, `src/ui/shell/BottomPane.svelte`, `src/ui/timeline/ClipBox.svelte`, `src/ui/timeline/LaneCanvas.svelte` | the fixture-name assertion, the tab mount, the score label, the hover marker |
+| **modified:** `src/ui/shell/BottomPane.svelte`, `src/ui/timeline/ClipBox.svelte`, `src/ui/timeline/LaneCanvas.svelte` | the tab mount, the score label, the hover marker |
 
 ---
 
@@ -190,25 +190,34 @@ indent against each task's own stated `Tests N passed (N)` gate:
 
 | task | `it()` | task | `it()` |
 |---|---|---|---|
-| 1 `bins.ts` | 18 | 7 match curve + legend | 21 |
+| 1 `bins.ts` | 13 | 7 match curve + legend | 21 |
 | 2 `chromaClient.svelte.ts` | 11 | 8 `DetuneScanStrip.svelte` | 22 |
 | 3 `match.ts` | 13 | 9 target row | 23 |
 | 4 `target.ts` | 14 | 10 hover, cross-link, clip score | 23 |
-| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 18 |
+| 5 `detuneScan.ts` | 13 | 11 tab, fixture, Playwright | 16 |
 | 6 heatmap geometry + canvas | 39 | | |
 
-**215 `it()` blocks across eleven tasks** — four more than the 211 of first assembly, every one of
-them from the 2026-09-22 critic pass: the reversible middle-drag in Task 6's
+**208 `it()` blocks across eleven tasks.** 215 after the 2026-09-22 critic pass (itself four more
+than the 211 of first assembly: the reversible middle-drag in Task 6's
 `ChromaHeatmap.component.test.ts`, `frameColumn` in its `heatmapGeometry.test.ts`, and, from the
 blocking detune-applied-twice finding, the relative scan axis in Task 5's `detuneScan.test.ts` and a
-stretched clip with a non-zero detune in Task 11's `ChromaTab.component.test.ts`. The same pass
-**changed** rather than added tests in Tasks 6, 7, 8, 10 and 11 — the canvas fallback table, the
-strip's relative axis and additive BEST, and `await tick()` in place of `await Promise.resolve()`.
-See Open question 6.
+stretched clip with a non-zero detune in Task 11's `ChromaTab.component.test.ts`). WINTERMUTE's three
+2026-09-22 rulings then net **-7**: Task 1 loses `foldFrameTo12`'s five tests (18 → 13, Fix 2), and
+Task 11 loses the two tests a raw grep of its plan text used to double-count from the
+before/after of an M1 `plugin.test.ts` edit that no longer happens (18 → 16, Fix 3) — Task 11's own
+test files are unchanged at 12 + 4. Tasks 3, 5 and 6 keep the same `it()` COUNT under Fix 1 (the
+directed-distance correction) but change several of those tests' hardcoded expected values, each
+recomputed by hand against the corrected formula in place, in the task body below. The same critic
+pass **changed** rather than
+added tests in Tasks 6, 7, 8, 10 and 11 — the canvas fallback table, the strip's relative axis and
+additive BEST, and `await tick()` in place of `await Promise.resolve()`. See Open question 6.
 
-**Not yet reviewed by a critic.** Every previous milestone's critic pass returned findings — 17, 32,
-49 and 6 across four rounds, and it has never once come back empty — so treat this plan as unreviewed
-until that pass has run and its findings are applied.
+**Reviewed twice, findings applied both times**, then reconciled against WINTERMUTE's three rulings
+above. The first pass returned 2 findings (0 blocking); a second pass over the same file returned 17
+(5 blocking) — see "Critic pass" below for the full account of both, including why a single clean
+pass should not have been trusted on its own. Every milestone's critic pass so far has returned
+findings — 17, 32, 49, 2, then 17 across five rounds — and none has come back empty on a first honest
+look, which is itself the reason a second pass ran here.
 
 ---
 
@@ -239,9 +248,6 @@ arrays and a plan that states the rule once cannot let two tasks disagree about 
   exact centre);
   `foldTo12(band: Float32Array, binsPerBand?: number): Float32Array` (one frame of 128 bins → 12
   classes, **summed** into the nearest centre, matching the server's `fold_to_12`);
-  `foldFrameTo12(bands: Float32Array, frame: number, T: number): Float32Array` (all three bands of
-  one frame of a `[3,128,T]` C-order array → 12 classes, **then per-frame normalised to max 1** —
-  this is exactly what the GLOBAL view displays);
   `fold12Column(fold12: Float32Array, T: number, frame: number): Float32Array` and
   `fold12Columns(fold12: Float32Array, T: number): Float32Array[]` (one frame / every frame of the
   server's `[12,T]` C-order fold, `class p, frame t = fold12[p*T + t]`).
@@ -261,7 +267,6 @@ import {
   binToPitchClass,
   fold12Column,
   fold12Columns,
-  foldFrameTo12,
   foldTo12,
   pitchClassToBin,
   semitoneBinCenters,
@@ -366,60 +371,6 @@ describe("foldTo12 — one band of 128 bins to 12 classes", () => {
 
   it("throws when the band is not binsPerBand long", () => {
     expect(() => foldTo12(new Float32Array(127))).toThrow(/expected 128 bins/);
-  });
-});
-
-describe("foldFrameTo12 — the GLOBAL view: three bands of one frame, per-frame normalised", () => {
-  // bands is [3,128,T] in C order: value(band, bin, frame) = bands[(band*128 + bin)*T + frame].
-  function at(band: number, bin: number, frame: number, T: number): number {
-    return (band * 128 + bin) * T + frame;
-  }
-
-  it("sums all three bands of the frame, then normalises that frame to max 1", () => {
-    const T = 1;
-    const bands = new Float32Array(3 * 128 * T);
-    bands[at(0, 2, 0, T)] = 2.0;     // C   from the bass band
-    bands[at(1, 66, 0, T)] = 1.0;    // F#  from the mid band
-    bands[at(2, 98, 0, T)] = 0.5;    // A   from the high band
-    const out = foldFrameTo12(bands, 0, T);
-    expect(out).toHaveLength(12);
-    expect(out[0]).toBeCloseTo(1.0, 6);
-    expect(out[6]).toBeCloseTo(0.5, 6);
-    expect(out[9]).toBeCloseTo(0.25, 6);
-    expect(Math.max(...Array.from(out))).toBeCloseTo(1.0, 6);
-  });
-
-  it("reads the [3,128,T] C-order layout, T fastest: frame 1 is not frame 0", () => {
-    const T = 2;
-    const bands = new Float32Array(3 * 128 * T);
-    bands[at(0, 2, 0, T)] = 1.0;     // C  in frame 0
-    bands[at(0, 66, 1, T)] = 1.0;    // F# in frame 1
-    const f0 = foldFrameTo12(bands, 0, T);
-    const f1 = foldFrameTo12(bands, 1, T);
-    expect(f0[0]).toBeCloseTo(1.0, 6);
-    expect(f0[6]).toBe(0);
-    expect(f1[6]).toBeCloseTo(1.0, 6);
-    expect(f1[0]).toBe(0);
-  });
-
-  it("returns all zeros for an all-zero frame instead of dividing by zero", () => {
-    const T = 1;
-    const out = foldFrameTo12(new Float32Array(3 * 128 * T), 0, T);
-    expect(Array.from(out)).toEqual(new Array(12).fill(0));
-    expect(Array.from(out).every((v) => Number.isFinite(v))).toBe(true);
-  });
-
-  it("normalises PER FRAME, not globally: a quiet frame still peaks at 1", () => {
-    const T = 2;
-    const bands = new Float32Array(3 * 128 * T);
-    bands[at(0, 2, 0, T)] = 8.0;     // a loud frame 0
-    bands[at(0, 66, 1, T)] = 0.01;   // a very quiet frame 1
-    expect(foldFrameTo12(bands, 0, T)[0]).toBeCloseTo(1.0, 6);
-    expect(foldFrameTo12(bands, 1, T)[6]).toBeCloseTo(1.0, 6);
-  });
-
-  it("throws when the bands array is not 3*128*T long", () => {
-    expect(() => foldFrameTo12(new Float32Array(10), 0, 1)).toThrow(/expected 384 values/);
   });
 });
 
@@ -558,42 +509,21 @@ export function foldTo12(band: Float32Array, binsPerBand: number = BINS_PER_BAND
 }
 
 /**
- * The GLOBAL view (§5.4): all three bands of ONE frame folded onto 12 classes,
- * then normalised so that frame's max is 1. `bands` is the transported
- * [3,128,T] array in C order, T fastest:
- *
- *   value(band, bin, frame) = bands[(band*128 + bin)*T + frame]
- *
- * The normalisation is per FRAME, not per clip: a quiet passage still fills the
- * colour range, which is the whole point of the view.
- */
-export function foldFrameTo12(bands: Float32Array, frame: number, T: number): Float32Array {
-  const expected = BANDS * BINS_PER_BAND * T;
-  if (bands.length !== expected) {
-    throw new RangeError(`foldFrameTo12: expected ${expected} values for [3,128,${T}], got ${bands.length}`);
-  }
-  if (frame < 0 || frame >= T) {
-    throw new RangeError(`foldFrameTo12: frame ${frame} out of range for T=${T}`);
-  }
-  const assign = assignmentFor(BINS_PER_BAND);
-  const out = new Float32Array(12);
-  for (let band = 0; band < BANDS; band++) {
-    const base = band * BINS_PER_BAND;
-    for (let bin = 0; bin < BINS_PER_BAND; bin++) {
-      out[assign[bin]] += bands[(base + bin) * T + frame];
-    }
-  }
-  let max = 0;
-  for (let p = 0; p < 12; p++) if (out[p] > max) max = out[p];
-  if (max > 0) for (let p = 0; p < 12; p++) out[p] /= max;
-  return out;
-}
-
-/**
  * One frame of the server's own 12-class fold, which arrives as [12,T] in C
  * order, T fastest: class p, frame t = fold12[p*T + t]. Transposed from the
  * shape a caller intuitively wants, so it lives here once rather than in each
  * of the three places that need a column.
+ *
+ * This is ALSO the GLOBAL view's own array (§5.4's "sum the three bands
+ * through fold_to_12, then per-frame normalise to max 1" is exactly what the
+ * server computes and transports here — M2 T12's `chroma_payload` ships it at
+ * `scale: 1.0` because the values are already in [0,1] per frame, not because
+ * 1.0 is a whole-clip scale). There is no separate client-side fold: the
+ * display, the match score, the detune scan and the clip score all read this
+ * one array. See the plan's Normative table, "which 12-class fold feeds
+ * what" — this used to be two arrays (`foldFrameTo12` locally re-folded
+ * `bands` for the display) and WINTERMUTE's 2026-09-22 ruling collapsed that
+ * to the one below.
  */
 export function fold12Column(fold12: Float32Array, T: number, frame: number): Float32Array {
   if (fold12.length !== 12 * T) {
@@ -621,7 +551,7 @@ export function fold12Columns(fold12: Float32Array, T: number): Float32Array[] {
 cd latent-forge && npx vitest run src/lib/chroma/__tests__/bins.test.ts && npm run check
 ```
 
-Expected: `Test Files  1 passed (1)` / `Tests  18 passed (18)`, and
+Expected: `Test Files  1 passed (1)` / `Tests  13 passed (13)`, and
 `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
@@ -1193,7 +1123,7 @@ describe("matchFrame", () => {
   it("scores a frame identical to the target at the unison anchor", () => {
     const t = profile({ 0: 1.0, 4: 0.8, 7: 0.9 });
     expect(matchFrame(t, t)).toBe(anchors(t).unison);
-    expect(matchFrame(t, t)).toBeCloseTo(0.8344032921810697, 10);
+    expect(matchFrame(t, t)).toBeCloseTo(0.8300137174211248, 10);
   });
 
   it("reads INTERVAL_W by the distance between the two classes: 1.0, 0.90, 0.18", () => {
@@ -1278,9 +1208,9 @@ describe("anchors — the legend's three marks, the target against itself", () =
   it("orders unison > fifth > tritone for a non-degenerate target", () => {
     const t = profile({ 0: 1.0, 4: 0.8, 7: 0.9 });
     const a = anchors(t);
-    expect(a.unison).toBeCloseTo(0.8344032921810697, 8);
-    expect(a.fifth).toBeCloseTo(0.6561316872427985, 8);
-    expect(a.tritone).toBeCloseTo(0.27898491083676275, 8);
+    expect(a.unison).toBeCloseTo(0.8300137174211248, 8);
+    expect(a.fifth).toBeCloseTo(0.6600823045267491, 8);
+    expect(a.tritone).toBeCloseTo(0.30367626886145405, 8);
     expect(a.unison).toBeGreaterThan(a.fifth);
     expect(a.fifth).toBeGreaterThan(a.tritone);
   });
@@ -1314,10 +1244,13 @@ Expected: `Failed to resolve import "../match"`.
 //
 // The score is a weighted average, not a dot product: every pair of ACTIVE
 // pitch classes (both sides above MATCH_THRESHOLD) contributes
-// frame[a]*target[b]*INTERVAL_W[|a-b|] to the numerator and frame[a]*target[b]
-// to the denominator. So a fifth reads high and a semitone low even though the
-// semitone is nearer in pitch, and the result is always in [0.10, 1.0] when
-// anything is active at all.
+// frame[a]*target[b]*INTERVAL_W[((a-b)%12+12)%12] to the numerator and
+// frame[a]*target[b] to the denominator -- a DIRECTED, wrapped distance from
+// the target's class to the frame's, not Math.abs(a-b) (see matchFrame's own
+// comment for why the two disagree and WINTERMUTE's fifth-vs-fourth example).
+// So a fifth reads high and a semitone low even though the semitone is nearer
+// in pitch, and the result is always in [0.10, 1.0] when anything is active
+// at all.
 
 export const INTERVAL_W: readonly number[] = [
   1.0, 0.10, 0.35, 0.62, 0.70, 0.82, 0.18, 0.90, 0.66, 0.72, 0.30, 0.22,
@@ -1347,14 +1280,29 @@ function require12(name: string, v: Float32Array): void {
 /**
  * Harmonic-overlap score of one 12-class frame against a 12-class target.
  *
- * INTERVAL_W is indexed by the RAW class distance |a-b|, 0..11 -- v3's
- * `INTERVAL_W[Math.min(ic, 12-ic) === 0 ? 0 : ic]` collapses to exactly that,
- * since ic = |a-b| is already inside 0..11 and the min only ever matters at 0.
- * That means a minor second up (index 1, weight 0.10) and a major seventh
- * (index 11, weight 0.22) are weighted differently even though both are
- * interval class 1. Kept as the drawing has it: §5.4 names _matchFrame as the
- * definition of the score and pins these twelve weights to it. See the plan's
- * Open questions.
+ * INTERVAL_W is indexed by the DIRECTED, wrapped class distance from the
+ * TARGET class to the FRAME class -- `((a - b) % 12 + 12) % 12`, `a` the
+ * frame's class and `b` the target's -- never `Math.abs(a - b)`. The two are
+ * not the same table lookup: `Math.abs` is symmetric, so it depends only on
+ * which of the two class numbers happens to be larger, not on a consistent
+ * "distance from target to frame" direction, and for roughly half of all
+ * pairs it silently reads the wrong entry. WINTERMUTE's own example (plan log,
+ * 2026-09-22 17:12:49) is the one to keep in mind: target class 7 (G), frame
+ * class 0 (C) -- `Math.abs(7-0) = 7` reads `INTERVAL_W[7] = 0.90` ("a fifth"),
+ * but the ascending distance from G up to C is 5 semitones ("a fourth",
+ * `INTERVAL_W[5] = 0.82`), and `((0 - 7) % 12 + 12) % 12 = 5` is what gets
+ * that right.
+ *
+ * The table stays UNFOLDED on purpose -- do not "fix" this into
+ * `INTERVAL_W[Math.min(ic, 12-ic)]`. A minor second up (index 1, weight 0.10)
+ * and a major seventh (index 11, weight 0.22) are both interval class 1 and
+ * are deliberately weighted differently; folding would average pairs like
+ * that and would also move the legend's anchors, since `anchors()` computes
+ * them through this same function. §5.4 names `_matchFrame` as the score's
+ * definition and pins these twelve weights to it; the indexing above is what
+ * WINTERMUTE settled as the correct, directed reading of that definition. See
+ * the Normative table's `INTERVAL_W`'s index row, which carries this as
+ * resolved rather than as an open question.
  */
 export function matchFrame(frame: Float32Array, target: Float32Array): number {
   require12("matchFrame(frame)", frame);
@@ -1368,7 +1316,8 @@ export function matchFrame(frame: Float32Array, target: Float32Array): number {
       const tb = target[b];
       if (tb < THRESHOLD_F32) continue;
       const w = fa * tb;
-      num += w * INTERVAL_W[Math.abs(a - b)];
+      const distance = (((a - b) % 12) + 12) % 12;
+      num += w * INTERVAL_W[distance];
       den += w;
     }
   }
@@ -1886,10 +1835,18 @@ describe("scanDetune", () => {
 });
 
 describe("HIGHEST and STEADIEST", () => {
-  it("disagree on a constructed clip: -12 cents is highest, -80 cents is steadiest", () => {
+  it("disagree on a constructed clip: -12 cents is highest, -76 cents is steadiest", () => {
     // Target: a C major triad. Frame 0 is C-ish (scores well at no detune);
     // frame 3 is F/B-ish (scores badly there). HIGHEST nudges to where the
     // average is best; STEADIEST goes to where BOTH frames score alike.
+    //
+    // The steadiest step moved from -80 to -76 when Task 3's INTERVAL_W
+    // indexing became the directed distance rather than Math.abs(a-b)
+    // (WINTERMUTE, 2026-09-22): this fixture's cross terms (frame class vs a
+    // non-equal target class) read different table entries under the
+    // corrected formula, which reshapes the mean-sd curve enough to move its
+    // argmax by one step. Recomputed by hand against the fixed matchFrame,
+    // not eyeballed.
     const target = profile({ 0: 1.0, 4: 0.8, 7: 0.9 });
     const fold12 = packFold12([
       profile({ 0: 1.0, 4: 0.6 }),
@@ -1900,12 +1857,12 @@ describe("HIGHEST and STEADIEST", () => {
     const scan = scanDetune(fold12, 4, target);
 
     expect(bestDetune(scan, "highest")).toBe(-12);
-    expect(bestDetune(scan, "steadiest")).toBe(-80);
+    expect(bestDetune(scan, "steadiest")).toBe(-76);
 
     const hi = scan.cents.indexOf(-12);
-    const st = scan.cents.indexOf(-80);
-    expect(scan.mean[hi]).toBeCloseTo(0.6653858294012454, 6);
-    expect(scan.mean[st]).toBeCloseTo(0.6048271604938271, 6);
+    const st = scan.cents.indexOf(-76);
+    expect(scan.mean[hi]).toBeCloseTo(0.6563495680089630, 6);
+    expect(scan.mean[st]).toBeCloseTo(0.6166814814814815, 6);
     expect(scan.sd[st]).toBeLessThan(scan.sd[hi]);            // steadier, as claimed
     expect(scan.mean[st]).toBeLessThan(scan.mean[hi]);        // and lower, as claimed
     expect(scan.mean[st] - scan.sd[st]).toBeGreaterThan(scan.mean[hi] - scan.sd[hi]);
@@ -1939,7 +1896,8 @@ describe("meanMatchAtDetune — the clip score label", () => {
     const all = meanMatchAtDetune(fold12, 4, target, 0);
     // The two silent frames score 0 and the scan never sees them, so the label
     // is exactly half the scan's mean here -- the difference is the point.
-    expect(all).toBeCloseTo(0.3320679012345679, 6);
+    // (0.3320679012345679 before Task 3's directed-distance fix; recomputed.)
+    expect(all).toBeCloseTo(0.3263966049382716, 6);
     expect(all).toBeCloseTo(scan.mean[scan.cents.indexOf(0)] / 2, 6);
   });
 
@@ -2111,7 +2069,7 @@ The whole chroma math layer together, for the record:
 cd latent-forge && npx vitest run src/lib/chroma
 ```
 
-Expected: `Test Files  5 passed (5)` / `Tests  69 passed (69)` (18 + 11 + 13 + 14 + 13).
+Expected: `Test Files  5 passed (5)` / `Tests  64 passed (64)` (13 + 11 + 13 + 14 + 13).
 
 - [ ] **Step 5: Commit**
 
@@ -2159,13 +2117,13 @@ milestone does not reuse it — see the open questions.)
 - Consumes `BINS_PER_BAND = 128`, `BINS_PER_SEMITONE = 128 / 12`,
   `binToPitchClass(bin: number, binsPerBand?: number): number` (nearest semitone centre by
   **circular** distance, ties to the lower class), `pitchClassToBin(pitchClass: number,
-  binsPerBand?: number): number` (the class's exact centre),
-  `foldFrameTo12(bands: Float32Array, frame: number, T: number): Float32Array` (all three bands of
-  one frame of a `[3,128,T]` C-order array folded to 12 classes, **then per-frame normalised to
-  max 1** — what GLOBAL displays) and
+  binsPerBand?: number): number` (the class's exact centre), and
   `fold12Column(fold12: Float32Array, T: number, frame: number): Float32Array` (one frame of the
-  server's `[12,T]` C-order fold, `class p, frame t = fold12[p*T + t]`) from
-  `latent-forge/src/lib/chroma/bins.ts` (**this milestone's Task 1**).
+  server's `[12,T]` C-order fold, `class p, frame t = fold12[p*T + t]` — **what GLOBAL displays**,
+  the same array the match/scan/clip-score path reads: WINTERMUTE's 2026-09-22 ruling settled that
+  there is one 12-class fold, not a locally re-folded `bands` for display and a separately
+  transported `fold12` for scoring) from `latent-forge/src/lib/chroma/bins.ts` (**this milestone's
+  Task 1**).
 - Consumes `matchFrame(frame: Float32Array, target: Float32Array): number` and
   `rotate(frame: Float32Array, classes: number): Float32Array` from
   `latent-forge/src/lib/chroma/match.ts` (**this milestone's Task 3**) — the harmonic-overlap score
@@ -2451,10 +2409,15 @@ describe("row -> pitch class, honouring C at bin 2.0 (the same_chroma PITFALL)",
 });
 
 describe("cellValue reads the right axis out of a C-order payload", () => {
-  it("takes GLOBAL from the per-frame normalised fold of all three bands", () => {
+  it("takes GLOBAL directly from the transported fold12, not a local re-fold of bands", () => {
+    // WINTERMUTE, 2026-09-22: §5.4's GLOBAL (the three bands summed through
+    // fold_to_12, per-frame normalised to max 1) IS the server's transported
+    // fold12 -- the client never re-derives it from `bands`. So this fixture's
+    // fold12 (p/100 + t/10000, see result() above) is what cellValue must
+    // return verbatim; there is no local normalisation left to assert on.
     const res = result(4);
     const col = Array.from({ length: 12 }, (_, p) => cellValue(res, "global", 2, p));
-    expect(Math.max(...col)).toBeCloseTo(1, 9);
+    for (let p = 0; p < 12; p++) expect(col[p]).toBeCloseTo(p / 100 + 2 / 10000, 9);
   });
 
   it("takes a band view from that band's own 128 raw bins", () => {
@@ -2632,9 +2595,12 @@ describe("ChromaHeatmap draws the view it is given (spec §5.4)", () => {
       .filter((c) => c.kind === "set" && c.name === "fillStyle")
       .map((c) => (c as { value: unknown }).value);
     // NOT consonanceColor(1, 1). TARGET is [1,0,0,0,1,0,0,1,0,0,0,0] (classes
-    // 0, 4, 7) and each frame's fold12 column is [1,0,...], so the frame's match
-    // is num/den = (W[0] + W[4] + W[7]) / 3 = (1.0 + 0.70 + 0.90) / 3 = 0.8666...,
-    // not 1. Compute the expectation rather than assuming a saturated frame.
+    // 0, 4, 7) and each frame's fold12 column is [1,0,...], so with matchFrame's
+    // DIRECTED distance (frame class 0 against target classes 0, 4 and 7: the
+    // distances are ((0-0)%12+12)%12=0, ((0-4)%12+12)%12=8 and
+    // ((0-7)%12+12)%12=5) the frame's match is num/den =
+    // (W[0] + W[8] + W[5]) / 3 = (1.0 + 0.66 + 0.82) / 3 = 0.8266..., not 1.
+    // Compute the expectation rather than assuming a saturated frame.
     const frameMatch = matchFrame(Float32Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), TARGET);
     expect(styles).toContain(consonanceColor(1, frameMatch));
     expect(styles).not.toContain("");
@@ -2810,7 +2776,7 @@ export function legendColor(t: number): string {
 //     1's binToPitchClass, never through (row / 128) * 12, which is what the
 //     drawing's own hover does and which is wrong by two bins everywhere.
 
-import { BINS_PER_BAND, BINS_PER_SEMITONE, binToPitchClass, foldFrameTo12, pitchClassToBin } from "./bins";
+import { BINS_PER_BAND, BINS_PER_SEMITONE, binToPitchClass, fold12Column, pitchClassToBin } from "./bins";
 import type { ChromaResult } from "./chromaClient.svelte";
 
 /** The target's reference row, v3 1174. */
@@ -2934,13 +2900,18 @@ export function rowCents(row: number, view: ChromaView): number | null {
 }
 
 /**
- * The value drawn in one cell. GLOBAL is spec §5.4's own definition -- the
- * three bands folded and PER-FRAME normalised to max 1 -- and a band view is
- * that band's raw 128 bins, untouched.
+ * The value drawn in one cell. GLOBAL reads the server's own transported
+ * fold12 -- §5.4's definition ("sum the three bands through fold_to_12, then
+ * per-frame normalise to max 1") is exactly what the server computes and
+ * ships as fold12 (M2 T12's chroma_payload, at `scale: 1.0` because the
+ * values are already in [0,1] per frame, not because 1.0 is a whole-clip
+ * scale). WINTERMUTE's 2026-09-22 ruling: this is the SAME array the
+ * match/scan/clip-score path reads, so there is no second, client-side fold
+ * to compute here. A band view is that band's raw 128 bins, untouched.
  */
 export function cellValue(result: ChromaResult, view: ChromaView, frame: number, row: number): number {
   const band = bandIndexFor(view);
-  if (band === null) return foldFrameTo12(result.bands, frame, result.T)[((row % 12) + 12) % 12];
+  if (band === null) return fold12Column(result.fold12, result.T, frame)[((row % 12) + 12) % 12];
   return result.bands[(band * BINS_PER_BAND + row) * result.T + frame];
 }
 
@@ -2948,21 +2919,30 @@ export function cellValue(result: ChromaResult, view: ChromaView, frame: number,
  * The whole column for one frame -- rowCount(view) values, in the same order
  * cellValue returns them row by row.
  *
- * This exists because cellValue's GLOBAL branch folds all 3 x 128 bins down to
- * twelve classes and then indexes ONE of them. Called from a row loop, that is
- * twelve folds and twelve Float32Array(12) allocations per visible frame, on
- * every repaint -- including every pointermove of a middle-drag. Fold once,
- * index twelve times.
+ * For a band view this is a genuine batching win, unchanged by the fold
+ * decision below: cellValue's band branch is already a single array read, so
+ * nothing here saves it any work beyond what materialising the 128 bins once
+ * always saved.
  *
- * GLOBAL is the case that matters. A band view's 128 rows are already single
- * array reads, so ChromaHeatmap.draw() keeps calling cellValue there rather
- * than materialising 128 bins it can index in place; the band branch is here
- * so the function is total and its test can compare the two paths directly.
- * cellValue stays the hover path's accessor (Task 10), which reads one cell.
+ * For GLOBAL the saving is smaller than it used to be, but it has not gone
+ * away. Before WINTERMUTE's 2026-09-22 ruling, cellValue's GLOBAL branch
+ * re-folded all 3 x 128 raw bins on every call; now that GLOBAL just reads the
+ * transported fold12, cellValue's GLOBAL branch is fold12Column(...)[row] --
+ * but fold12Column still allocates and fills a fresh Float32Array(12) on
+ * EVERY call, regardless of which single row the caller wanted. A row loop
+ * over GLOBAL's twelve rows would still call fold12Column twelve times for
+ * one frame's pixels -- including on every pointermove of a middle-drag.
+ * Fold once, index twelve times: frameColumn keeps exactly that shape, even
+ * though what it now saves is "one Float32Array(12) build" per frame rather
+ * than "one 384-bin sum" per frame. Dropping it because the saving got
+ * smaller would still be dropping a real, reachable cost.
+ *
+ * cellValue stays the hover path's accessor (Task 10), which reads one cell
+ * and has no row loop to batch.
  */
 export function frameColumn(result: ChromaResult, view: ChromaView, frame: number): Float32Array {
   const band = bandIndexFor(view);
-  if (band === null) return foldFrameTo12(result.bands, frame, result.T);
+  if (band === null) return fold12Column(result.fold12, result.T, frame);
   const out = new Float32Array(BINS_PER_BAND);
   for (let i = 0; i < BINS_PER_BAND; i++) {
     out[i] = result.bands[(band * BINS_PER_BAND + i) * result.T + frame];
@@ -6074,14 +6054,18 @@ DETUNE ¢ field) → this tab's one `$effect` on the selected clip's `detune_cen
 it. Nothing requests chroma on the *old* audio in between, because the chroma effect is keyed on the
 ref, not on the detune. One debounce, one owner, both writers of detune covered.
 
-**The mock server has no chroma fixture, and adding one breaks M1 T6 unless the same commit fixes
-it.** M1 T6 routes `POST /forge/chroma` → fixture `forge_chroma_render` (M1 plan line 1595 and
-2027-2028), but M1's own fixture-file test asserts the handmade set is **exactly ten files, by name**
-(M1 plan lines 1668-1680). There is no `handmade-forge_chroma_render.json`, so the route 501s today —
-and the moment one lands, M1 T6's suite goes red. This task adds the fixture **and** extends that
-assertion in the same commit. M10 T7 hit the identical wall on both of its routes and added two
-fixtures without touching M1's list, which is a latent break of the same test — see the open
-questions, and check the directory before choosing which list below to write.
+**The mock server has no chroma fixture.** M1 T6 routes `POST /forge/chroma` → fixture
+`forge_chroma_render` (M1 plan line 1595 and 2027-2028); there is no
+`handmade-forge_chroma_render.json`, so the route 501s today. This task adds it.
+
+**M1 T6's own fixture-file test no longer needs an edit for that.** It used to assert the handmade
+set was **exactly ten files, by name** (M1 plan lines 1668-1680), which meant every milestone that
+added a fixture — this one included — had to widen that same list in the same commit or turn M1 T6
+red. **RESOLVED 2026-09-22 by WINTERMUTE: fixed at the root, in M1, not per-milestone.** M1 T6's
+test is now a superset check — every name M1 itself ships must be present, not an exact match — so
+this task creates `handmade-forge_chroma_render.json` and stops there; M10 T7's own fixtures needed
+the identical fix and its edit to `plugin.test.ts` is reverted for the same reason (see that plan's
+Task 7).
 
 **Files:**
 - Create: `latent-forge/src/ui/chroma/ChromaTab.svelte`,
@@ -6091,7 +6075,6 @@ questions, and check the directory before choosing which list below to write.
 - Create (generated by it, committed):
   `docs/latent-forge/contract/fixtures/handmade-forge_chroma_render.json`
 - Create: `latent-forge/mock/__tests__/chromaFixture.test.ts`
-- Modify: `latent-forge/mock/__tests__/plugin.test.ts` (M1 T6 — the fixture-name assertion)
 - Create: `latent-forge/tests/chroma.spec.ts`
 
 **Interfaces:**
@@ -6592,62 +6575,14 @@ writeFileSync(out, `${JSON.stringify(fixture, null, 2)}\n`, "utf8");
 console.log(`wrote ${out}: ${T} frames, band scales ${bandScale.join(", ")}`);
 ```
 
-Modify `latent-forge/mock/__tests__/plugin.test.ts` (M1 T6). Its fixture-list assertion reads, today:
-
-```ts
-  it("ships the ten fixtures M1's own shell calls", () => {
-    expect(names.sort()).toEqual([
-      "handmade-forge_backbone.json",
-      "handmade-forge_files_crops.json",
-      "handmade-forge_job_generate_done.json",
-      "handmade-forge_job_running.json",
-      "handmade-forge_job_submit.json",
-      "handmade-forge_log.json",
-      "handmade-forge_sessions.json",
-      "handmade-info.json",
-      "handmade-schedule_model.json",
-      "handmade-status_idle.json",
-    ]);
-  });
-```
-
-Replace it with the same list plus this milestone's fixture, in sorted order, and retitle it:
-
-```ts
-  it("ships the eleven fixtures M1's shell and M6's CHROMA tab call", () => {
-    expect(names.sort()).toEqual([
-      "handmade-forge_backbone.json",
-      "handmade-forge_chroma_render.json",
-      "handmade-forge_files_crops.json",
-      "handmade-forge_job_generate_done.json",
-      "handmade-forge_job_running.json",
-      "handmade-forge_job_submit.json",
-      "handmade-forge_log.json",
-      "handmade-forge_sessions.json",
-      "handmade-info.json",
-      "handmade-schedule_model.json",
-      "handmade-status_idle.json",
-    ]);
-  });
-```
-
-**Do not assume the ten-name block above is what you will find.** M10 Task 7 also adds two
-fixtures and, since 2026-09-22, **extends this same assertion itself** to a twelve-name list titled
-`ships the twelve fixtures M1's shell and the statistics view call` (see M10 T7's own WHY paragraph).
-Whichever of the two milestones lands second extends the list the first one left, so:
-
-**The rule, not the literal:** `ls docs/latent-forge/contract/fixtures/handmade-*.json`, and make the
-array the **sorted union** of what is on disk plus `handmade-forge_chroma_render.json`. Retitle the
-test to name whatever set that is. Concretely there are only two cases:
-
-- **M6 lands first** — the block above is what you find; use the eleven-name list as written.
-- **M10 landed first** — you will find M10's twelve-name list, not the ten-name one. Add
-  `handmade-forge_chroma_render.json` after `handmade-forge_backbone.json` for a **thirteen**-name
-  list, titled `ships the thirteen fixtures M1's shell, M6's CHROMA tab and M10's statistics view
-  call`.
-
-Either way the assertion is green before your commit and green after it; it is never transiently
-red, because the plan that adds a fixture is the plan that widens the list.
+**No edit to `mock/__tests__/plugin.test.ts` is needed.** M1 T6's fixture-name assertion is, as of
+2026-09-22 (WINTERMUTE's fixture-assertion ruling — see this plan's Normative table and Open
+questions), a superset check: it asserts that the ten names M1's own shell calls are all present in
+the fixture directory, not that the directory is exactly those ten. Adding
+`handmade-forge_chroma_render.json` alongside them — regardless of what M10 T7 or anything else has
+already added — leaves that assertion exactly as green as it was before. This task therefore just
+creates the fixture file below and stops; it does not reach into M1's test the way an earlier draft
+of this plan did.
 
 `latent-forge/tests/chroma.spec.ts`:
 
@@ -6704,13 +6639,14 @@ test("the legend, its readout and the target row are present (spec §5.4)", asyn
 - [ ] **Step 2: Run the tests — they must fail**
 
 ```bash
-cd latent-forge && npx vitest run src/ui/chroma/__tests__/ChromaTab.component.test.ts mock/__tests__/chromaFixture.test.ts mock/__tests__/plugin.test.ts
+cd latent-forge && npx vitest run src/ui/chroma/__tests__/ChromaTab.component.test.ts mock/__tests__/chromaFixture.test.ts
 ```
 
 Expected: `Failed to resolve import "../ChromaTab.svelte"`; `chromaFixture.test.ts` fails at module
-scope with `ENOENT: no such file or directory, open '...handmade-forge_chroma_render.json'`; and
-`plugin.test.ts` fails its own fixture-list assertion, because the eleven-name list does not match
-the ten files on disk.
+scope with `ENOENT: no such file or directory, open '...handmade-forge_chroma_render.json'`.
+`mock/__tests__/plugin.test.ts` is not run here and does not need to be: its fixture-name assertion
+is a superset check (WINTERMUTE, 2026-09-22) that only requires M1's own ten names to be present, so
+it stays green whether or not `handmade-forge_chroma_render.json` exists yet.
 
 - [ ] **Step 3: Generate the fixture, write the tab, and mount it**
 
@@ -7046,8 +6982,9 @@ cd latent-forge && npx vitest run src/ui/chroma/__tests__/ChromaTab.component.te
 
 Expected: `Test Files  1 passed (1)` / `Tests  12 passed (12)` for the tab, then
 `Test Files  3 passed (3)` / `Tests  28 passed (28)` for `mock` — M1 T6's own 24 over two files
-(unchanged in count, because the fixture-list assertion was **edited**, not added to) plus this
-task's 4 in `chromaFixture.test.ts`. Then `svelte-check found 0 errors and 0 warnings`.
+(unchanged in count: its fixture-name assertion is a superset check as of WINTERMUTE's 2026-09-22
+ruling, and this task does not touch it) plus this task's 4 in `chromaFixture.test.ts`. Then
+`svelte-check found 0 errors and 0 warnings`.
 
 The whole chroma milestone together, for the record:
 
@@ -7055,14 +6992,14 @@ The whole chroma milestone together, for the record:
 cd latent-forge && npx vitest run src/lib/chroma src/ui/chroma
 ```
 
-Expected: `Test Files  20 passed (20)` / `Tests  206 passed (206)`.
+Expected: `Test Files  20 passed (20)` / `Tests  201 passed (201)`.
 *Counting note for whoever verifies this plan mechanically:* a raw grep for indented `it(` blocks
-over this task's section returns **18**, not 16. Sixteen of those are the new tests (12 in
-`ChromaTab.component.test.ts`, 4 in `chromaFixture.test.ts`); the other two are the **before and
-after** of the single `ships the … fixtures …` block being edited in
-`mock/__tests__/plugin.test.ts`, which is one test either way and adds none.
+over this task's section returns exactly **16** — 12 in `ChromaTab.component.test.ts` and 4 in
+`chromaFixture.test.ts` — with no before/after double-count to explain away, because this task no
+longer edits `mock/__tests__/plugin.test.ts` at all (WINTERMUTE's 2026-09-22 fixture-assertion
+ruling; see the Normative table and Open questions).
 
-`src/lib/chroma` is 12 files / 149 tests — Writer A's 69 (`bins` 18, `chromaClient` 11, `match` 13,
+`src/lib/chroma` is 12 files / 144 tests — Writer A's 64 (`bins` 13, `chromaClient` 11, `match` 13,
 `target` 14, `detuneScan` 13) plus 80 here (`consonanceColor` 8, `heatmapGeometry` 19, `matchCurve`
 11, `scanStrip` 12, `targetStore` 14, `hoverReadout` 9, `chromaLink` 7). `src/ui/chroma` is 8 files
 / 57 tests (`chromaCanvas` 4, `ChromaHeatmap` 8, `MatchCurveOverlay` 4, `MatchLegend` 6,
@@ -7080,7 +7017,7 @@ Expected: `6 passed`.
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M6 T11: CHROMA tab assembled into M1's 162px tab body, stretch-leads-chroma detune chain on M5 T10's 400ms debounce, handmade-forge_chroma_render fixture + M1 T6's fixture list extended, Playwright spec"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M6 T11: CHROMA tab assembled into M1's 162px tab body, stretch-leads-chroma detune chain on M5 T10's 400ms debounce, handmade-forge_chroma_render fixture (no M1 edit needed -- its assertion is a superset check), Playwright spec"
 ```
 
 - [ ] **Step 6: Self-review**
@@ -7172,27 +7109,87 @@ is exactly a class centre). No test exercises a genuine `cents === 0` from `read
 omitting "+0¢" is intended or accidental could not be confirmed either way; it reads as a defensible
 UX choice and is left as written. Worth a look if it ever comes up during implementation.
 
+**A single clean pass should not have been trusted, and was not — a second one ran.** The first
+pass's "2 findings, 0 blocking" was correct as far as it went, but no critic pass on this project had
+ever come back that clean before (prior rounds: 17, 32, 49, 6), and the person who applied it moved
+the plan to "done" and committed on that single result. A second, independent pass over the same file
+returned **17 findings, 5 of them blocking**, every number verified in node before being applied.
+**The lesson, stated once so it isn't relearned:** a suspiciously clean result is itself a reason to
+run another pass, not a reason to stop.
+
+The five blocking findings, all fixed in the task bodies above:
+
+- **B1.** `matchFrame`'s threshold guard compared a `Float32Array` value against the float64 literal
+  `0.08` directly. `Math.fround(0.08) = 0.0799999982… < 0.08`, so a class sitting at exactly the
+  threshold was silently **excluded** — the opposite of the documented rule, and the test asserting
+  `0.18` for a rotated single-class target could never have passed as written. Fixed with a
+  `THRESHOLD_F32 = Math.fround(MATCH_THRESHOLD)` constant, compared against instead.
+- **B2.** The "steadiest" scan fixture originally scored `[0.5, 0.4, 0.5, 0.2]` — a tie between
+  indices 0 and 2 under first-wins-a-tie, returning `-8` — while the test's own title claimed "first
+  wins a tie" and its comment picked the *last*. Fixture reshaped so the tie resolves unambiguously.
+- **B3.** An assertion expected `consonanceColor(1, 1)` where the fixture's actual match value was
+  `(W[0]+W[4]+W[7])/3 = 0.8667` under the formula then in force — corrected to match what the code
+  actually computes rather than a guessed round number.
+- **B4.** BEST did not land on +100 cents as claimed: the 0.08 threshold flattens the top of the scan
+  curve, so several points score exactly 1.0 and first-wins-a-tie picks the lowest of them, not the
+  requested one. **B1 and B4 are coupled**, and the critic that found them individually did not
+  notice: against the float64 threshold the flat top starts at cents = 92; once B1's `Math.fround`
+  fix lands, class 0 survives to 92 as well and the first *tied* point moves to 96. Applying either
+  fix alone leaves the other test red — both branches were computed by hand and the coupling is
+  written into both places, so a future edit to one cannot silently break the other without a test
+  saying why.
+- **B5. Detune was being applied twice.** M5 T10's `runStretch` already pitch-shifts a clip's preview
+  audio by `clip.detune_cents / 100` before this milestone ever sees it, and this plan pins chroma
+  analysis to that stretched preview — but every consumer (heatmap hue, match curve, hover, scan, the
+  §5.4 clip score) then rotated the *already-shifted* chroma by the same detune again, corrupting all
+  five. No test caught it because none set a `previewAudio` **and** a non-zero `detune_cents`
+  together — each half was individually correct, which is exactly the shape of bug that ships. Fixed
+  by deriving `analysisDetuneCents` once, centrally, in `ChromaTab.svelte`: `0` when the analysed ref
+  was the stretched preview, the clip's own detune when it was the raw source (`runStretch` returns
+  early without a `native_bpm`, and in that one case the rotation really is correct as originally
+  written) — then threading that single value to every consumer instead of letting each one read
+  `clip.detune_cents` for itself. As a consequence the scan strip's axis became **relative** to the
+  clip's current detune rather than absolute, and BEST became **additive and clamped** rather than
+  assigning, so pressing it twice converges instead of walking the value indefinitely. Sixteen call
+  sites changed, seventeen tests added or rewritten.
+
+Non-blocking, all applied: four exact fold ties rather than two (bins 18, 50, 82 **and** 114 — the
+midpoint is an integer whenever 3 divides `2s+1`, not just at the two the plan first claimed); the
+fold open question's stated consequence was backwards (a quiet frame renders **bright** and scores
+exactly 0 under the two-array reading then in force, not "looks quiet, scores high" as first
+written); a stale `plugin.test.ts` anchor rewritten as a rule rather than a literal name so M6 and
+M10 can land in either order (superseded again by WINTERMUTE's superset-check answer, below);
+`HELP.clipDetune` lives on M5's lane header, not the clip box; `cents === 0` was treated as falsy
+(the item logged above as unconfirmed); five v3 line citations off by one or two; the canvas token
+fallback table did not match M1's real token names; `cellValue` re-folded 384 bins twelve times per
+frame where once would do (superseded again by WINTERMUTE's single-fold answer, below); and Task
+11's Interfaces block omitted eight members its own tests called. Two unconfirmed items from the
+first pass were hardened rather than left as guesses: asserting the raw `style` attribute instead of
+`.style.background` (jsdom's `cssstyle` may not parse `oklch()`), and `await tick()` in place of
+`await Promise.resolve()` for Svelte 5 effects.
+
 ## Open questions
 
 **Every one has a shipped reading, so nothing here blocks an implementer.** The six below are the
 load-bearing ones — they want Kim's or WINTERMUTE's answer rather than a default, because changing
-any of them later changes numbers the app has already shown someone. The rest are recorded in full
-underneath, as each writer found them.
+any of them later changes numbers the app has already shown someone. Items 1 and 2 have since been
+answered by WINTERMUTE (2026-09-22) and are kept in their numbered slots as a record, not deleted, so
+a reader following a cross-reference to "Open question 1" or "2" from elsewhere in this plan still
+finds something at that number. The rest are recorded in full underneath, as each writer found them.
 
-1. **`INTERVAL_W` is indexed by raw class distance, not interval class.** A minor second (0.10) and
-   a major seventh (0.22) score differently although both are interval class 1. This plan ships the
-   drawing's behaviour, with a comment saying so, because "fixing" it would change every score in
-   the app. §5.4 pins the weights and names `_matchFrame` but does not restate the indexing.
-2. **Two different 12-class folds exist and §5.4 does not say which feeds the match.** Display comes
-   from the per-frame-normalised local fold; match, scan and clip score come from §6.3's transported
-   `fold12`. **A GLOBAL cell's brightness and its hue therefore come from different arrays**, so a
-   the display fold is normalised **per frame** (max always 1) while the transported `fold12` carries
-   **one scale for the whole clip**. So the failure is the opposite of "looks quiet, scores high": a
-   quiet frame renders **bright** and can have every class below `MATCH_THRESHOLD`, giving `den === 0`
-   and a match of exactly **0**. Those zeros drag down `meanMatchAtDetune` — §5.4's clip score — and
-   the whole detune scan, which is why this is question 2 and not a footnote. If the two should
-   agree, normalise each `fold12Column` to max 1 before `matchFrame` (a two-line change at
-   `fold12Column`'s call sites), which also removes the threshold's dependence on clip-wide loudness.
+1. **RESOLVED 2026-09-22 by WINTERMUTE.** `INTERVAL_W` stays indexed by the **directed, wrapped**
+   class distance, `((a - b) % 12 + 12) % 12` with `a` the frame's class and `b` the target's — not
+   `Math.abs(a - b)`, which silently read the wrong entry for about half of all pairs, and not folded
+   to interval class either. See the Normative table's `INTERVAL_W`'s index row for the full
+   reasoning and WINTERMUTE's fifth-vs-fourth example; Task 3's `match.ts` carries the same reasoning
+   in its own comment so the asymmetry does not get "corrected" later.
+2. **RESOLVED 2026-09-22 by WINTERMUTE.** There is one 12-class fold, not two: §5.4's GLOBAL display
+   and §6.3's transported `fold12` are the same array, because the server already computes and ships
+   fold12 per-frame-normalised to max 1 (M2 T12's `chroma_payload`, `scale: 1.0`). `foldFrameTo12` is
+   deleted (Task 1); GLOBAL's cells, the hover value, the match score, the scan and the clip score all
+   read `fold12Column`. See the Normative table's "which 12-class fold feeds what" row for
+   WINTERMUTE's stated consequence (a quiet frame counts exactly as much as a loud one, which is
+   intended).
 3. **Chord quality is lowercased, so `CM7` reads as C minor 7.** That is the drawing's behaviour and
    it is what makes `CDIM` work, but many charts mean C major 7 by `CM7`. The alternative is to match
    §5.4's nine spellings case-sensitively and reject `CM7` outright.
@@ -7228,11 +7225,18 @@ underneath, as each writer found them.
 **Two defects in other plans, found while writing this one, both already fixed:**
 
 - **M10 Task 7 created two handmade fixtures without extending M1 T6's exact-name assertion** — that
-  suite compares a sorted `readdirSync` listing to a literal array, so a new fixture is a failure
-  rather than an addition, and M10 would have turned M1 T6 red on landing. Fixed in M10 T7 on
-  2026-09-22: it now modifies `mock/__tests__/plugin.test.ts` in the same commit, with the twelve-name
-  list written out. **Task 11 below does the same again for the chroma fixture**, so whichever of the
-  two lands second extends the list the first one left.
+  suite compared a sorted `readdirSync` listing to a literal array, so a new fixture was a failure
+  rather than an addition, and M10 would have turned M1 T6 red on landing. Patched once, per
+  milestone, earlier on 2026-09-22: M10 T7 modified `mock/__tests__/plugin.test.ts` itself, in the
+  same commit, writing out a twelve-name list — the same shape of edit this plan's own Task 11 made
+  for the chroma fixture, each widening the list the other had left.
+  **Superseded, same day, by WINTERMUTE's fixture-assertion ruling** (see Task 11's fixture-list
+  edit below, and M1 T6's own test). The root problem was the assertion itself, not any one
+  milestone's fixture: M1 T6's list is now a
+  superset check (`expect(names).toEqual(expect.arrayContaining([...]))`) done once in M1, so a
+  fixture landing in M10, M6 or anywhere after needs no edit to M1's test at all. M10 T7's edit to
+  `plugin.test.ts` is reverted and Task 11 below no longer touches that file either — both plans just
+  ship their own fixture file and say so.
 - **The writer brief's v3 line number for the middle-drag hint was wrong** — it cited 341; the string
   is at **v3 331**, and 341 closes the hover readout. Every other v3 number in the brief was checked
   and holds.
@@ -7263,6 +7267,14 @@ against this plan.*
   `_matchFrame` as the definition but does not restate the indexing. — Shipped the drawing's raw
   distance, with the equivalence spelled out in a comment so nobody "fixes" it into
   `min(ic, 12-ic)`, which would silently change every score in the app.
+  **RESOLVED 2026-09-22 by WINTERMUTE: "raw distance" is not enough on its own — `|a-b|` is
+  symmetric, so it depended on which of the two class numbers was larger rather than on a
+  consistent target→frame direction, and read the wrong table entry for about half of all pairs
+  (target G, frame C: `|7-0|=7` reads the fifth's 0.90, when the ascending distance from G to C is
+  5 semitones, the fourth's 0.82).** Task 3 now indexes by the DIRECTED distance
+  `((a - b) % 12 + 12) % 12` instead, keeping the table itself unfolded exactly as shipped here —
+  every hardcoded expectation in Tasks 3, 5 and 6 that this changed was hand-recomputed against the
+  corrected formula (see the Normative table's `INTERVAL_W`'s index row).
 - **The wrap boundary at the top of the band** — the brief says "a bin past 128 − (128/12)/2"
   (= 122.67) belongs to C again; the server's own `fold_to_12` assigns each bin to the nearest
   centre by *circular* distance, which puts the B/C boundary at 2.0 + 11.5·(128/12) = **124.67**
@@ -7279,6 +7291,13 @@ against this plan.*
   `foldFrameTo12(bands, …)` (§5.4's words) and the *match* path from the transported `fold12`
   (§6.3 ships it for exactly this, and 51 × T rotations on a locally folded array would be the
   pane's slowest path). If Kim wants the two identical, the match path should fold the bands too.
+  **RESOLVED 2026-09-22 by WINTERMUTE: they were never two arrays to begin with.** §6.3's `fold12`
+  scale of `1.0` is not "one scale for the whole clip" — it is `1.0` because the server already
+  per-frame-normalises to max 1 before quantising, i.e. it computes exactly what §5.4's GLOBAL
+  definition asks for and transports it. `foldFrameTo12` is deleted (Task 1); `cellValue` and
+  `frameColumn`'s GLOBAL branches now read `fold12Column(result.fold12, …)`, the same array the
+  match, scan and clip score already used. See the Normative table's "which 12-class fold feeds
+  what" row for WINTERMUTE's one stated consequence of this being the reading.
 - **Chord aliases the drawing accepts and the spec does not** — v3 2061 matches
   `maj7|min7|m7|maj|min|m|dim|aug|7`: it has `min`, `min7` and `maj` but **no `sus2`/`sus4`**. §5.4
   lists nine: `C, Cm, C7, Cmaj7, Cm7, Cdim, Caug, Csus2, Csus4`. — Shipped the spec's nine exactly;
@@ -7302,8 +7321,12 @@ against this plan.*
   `forge_chroma_render` (M1:1550, 1982–1983), but M1 T6's own fixture test asserts the handmade set
   is **exactly ten files** (M1:1623–1634) and none of them is chroma. M10 hit the same thing on both
   of its routes and had to add them. Tasks 1–5 do not need it — every test here stubs `fetch` or is
-  pure — but **Writer B's Task 11 must add `handmade-forge_chroma_render.json` *and* extend M1 T6's
-  ten-file assertion**, or the mock-server suite goes red the moment the fixture lands.
+  pure — but **Writer B's Task 11 must add `handmade-forge_chroma_render.json`**, or the mock-server
+  suite goes red the moment the fixture lands.
+  **RESOLVED 2026-09-22 by WINTERMUTE: M1 T6's assertion is now a superset check** (`ships at least
+  the ten fixtures M1's own shell calls`), done once in M1, so Task 11 below adds its fixture file
+  and needs no edit to `plugin.test.ts` at all — the "and extend M1 T6's ten-file assertion" half of
+  this finding no longer applies.
 
 ### Writer B — Tasks 6-11, in full
 
@@ -7335,6 +7358,10 @@ against this plan.*
   landed first, and that assertion will already be red before M6 touches it. — **Shipped both lists
   in Task 11** (the eleven-name one, and the thirteen-name one to use if M10's two are on disk) with
   a one-command check. Worth a one-line fix in M10 T7 rather than carrying it here.
+  **RESOLVED 2026-09-22 by WINTERMUTE: fixed at the root instead of per-milestone.** M1 T6's
+  assertion is now a superset check, so no milestone that adds a fixture needs to touch it, and
+  the eleven/thirteen-name branching above is gone — Task 11 just ships its own fixture file.
+  M10 T7's own edit to `plugin.test.ts` is reverted for the same reason.
 - **M1 T13's `panelColour` has no per-token fallback** — `getComputedStyle(canvas).getPropertyValue(token).trim()`
   returns `""` for an undefined token (M1:6918-6920), and `ctx.fillStyle = ""` is the silent no-op
   HANDOUT.md documents. M10's canvases use it. — **Shipped a separate `chromaColour()` in
@@ -7348,6 +7375,13 @@ against this plan.*
   use the second. The consequence a reviewer should know: **a GLOBAL cell's colour and its hue come
   from two different arrays**, so a frame can look quiet and still score high. Consistent with A, and
   restated here because it is invisible at a glance.
+  **RESOLVED 2026-09-22 by WINTERMUTE: there was only ever one array.** `foldFrameTo12` is deleted;
+  Task 6's `cellValue` and `frameColumn`, and Task 10's `readHover().value`, now read
+  `fold12Column(result.fold12, …)` — the same transported array Task 6's `matchFrame`, Task 7's
+  curve, Task 8's scan and Task 11's clip score already used. A GLOBAL cell's colour and its hue
+  come from the same array now; see the Normative table's "which 12-class fold feeds what" row for
+  the one consequence worth keeping in mind (a quiet frame counts as much as a loud one in the
+  scores, which is intended).
 - **No `data-help` on nine controls, because M1 T14 has no id for them** — the four view buttons
   (v3 288), MATCH CURVE (the fifth button in the same row, v3 2016), the two TARGET-mode buttons
   (v3 312-313), the twelve piano keys (v3 320) and the hover readout (v3 338) all ship bare, as the

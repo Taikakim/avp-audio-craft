@@ -1665,19 +1665,28 @@ describe("synthetic audio", () => {
 describe("the hand-made fixtures themselves", () => {
   const names = readdirSync(FIXTURE_DIR).filter((n) => n.startsWith("handmade-") && n.endsWith(".json"));
 
-  it("ships the ten fixtures M1's own shell calls", () => {
-    expect(names.sort()).toEqual([
-      "handmade-forge_backbone.json",
-      "handmade-forge_files_crops.json",
-      "handmade-forge_job_generate_done.json",
-      "handmade-forge_job_running.json",
-      "handmade-forge_job_submit.json",
-      "handmade-forge_log.json",
-      "handmade-forge_sessions.json",
-      "handmade-info.json",
-      "handmade-schedule_model.json",
-      "handmade-status_idle.json",
-    ]);
+  it("ships at least the ten fixtures M1's own shell calls", () => {
+    // A superset check, not an exact-list one (WINTERMUTE, 2026-09-22): this
+    // only needs to catch one of M1's own ten fixtures silently vanishing, and
+    // arrayContaining does that exactly as well as toEqual on a sorted array
+    // would -- while letting a later milestone add its own handmade fixtures
+    // to this directory without also having to edit this list in the same
+    // commit. The envelope test right below already validates any new
+    // arrival's shape generically.
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "handmade-forge_backbone.json",
+        "handmade-forge_files_crops.json",
+        "handmade-forge_job_generate_done.json",
+        "handmade-forge_job_running.json",
+        "handmade-forge_job_submit.json",
+        "handmade-forge_log.json",
+        "handmade-forge_sessions.json",
+        "handmade-info.json",
+        "handmade-schedule_model.json",
+        "handmade-status_idle.json",
+      ]),
+    );
   });
 
   it("each has the {status, body} envelope", () => {

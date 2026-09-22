@@ -2646,36 +2646,9 @@ rather than one that could miss a second, unrelated failure.
 today, both routes 501 with `"no fixture ... yet"` (`mock/plugin.ts`'s `sendFixture`). XYPanel's own
 mount-time request (Task 5) would hit this on every visit to the statistics view until M2 records the
 real ones. This task adds the two handmade fixtures so the mock server — and this task's own
-Playwright spec — has something real to serve.
-
-**And it must widen M1 T6's own fixture assertion in the same commit.** That suite does not count
-files, it compares the sorted directory listing to a literal ten-name array (M1:1668-1680), so a new
-fixture is a failure rather than an addition. The list after this task is the ten M1 ships plus this
-task's two, sorted:
-
-```ts
-    expect(names.sort()).toEqual([
-      "handmade-forge_backbone.json",
-      "handmade-forge_dataset_scalars.json",   // added by M10 T7
-      "handmade-forge_files_crops.json",
-      "handmade-forge_job_generate_done.json",
-      "handmade-forge_job_running.json",
-      "handmade-forge_job_submit.json",
-      "handmade-forge_log.json",
-      "handmade-forge_sessions.json",
-      "handmade-forge_stats_crops.json",       // added by M10 T7
-      "handmade-info.json",
-      "handmade-schedule_model.json",
-      "handmade-status_idle.json",
-    ]);
-```
-
-Rename the test to `"ships the twelve fixtures M1's shell and the statistics view call"` while you
-are in there, so the name does not lie. The two sibling tests in that describe block (`each has the
-{status, body} envelope`, and the no-absolute-path check) iterate `names` and need no change — they
-will simply cover the two new files as well, which is the point. **M6 does the same thing again**
-for `handmade-forge_chroma_render.json`; whichever milestone lands second extends the list the first
-one left.
+Playwright spec — has something real to serve. M1 T6's own fixture-name assertion needs no edit for
+this: it is a superset check (WINTERMUTE, 2026-09-22), so this task just creates its two fixture
+files and nothing in `mock/__tests__/plugin.test.ts` changes.
 
 **Files:**
 - Create: `latent-forge/src/ui/stats/statisticsWiring.ts`, `latent-forge/src/ui/stats/__tests__/statisticsWiring.test.ts`
@@ -2683,12 +2656,6 @@ one left.
 - Create: `latent-forge/src/ui/stats/__tests__/StatisticsView.component.test.ts`
 - Create: `docs/latent-forge/contract/fixtures/handmade-forge_stats_crops.json`
 - Create: `docs/latent-forge/contract/fixtures/handmade-forge_dataset_scalars.json`
-- **Modify: `latent-forge/mock/__tests__/plugin.test.ts`** — M1 T6's own suite asserts the handmade
-  fixture directory **by exact name list** (`it("ships the ten fixtures M1's own shell calls")`,
-  M1:1668-1680). It reads the directory with `readdirSync` and compares the sorted result to a
-  literal array, so **adding a fixture without editing that array turns M1 T6's suite red.** This
-  task adds two, and must edit the assertion in the same commit, alongside the fixtures themselves
-  in Step 1.
 - Create: `latent-forge/tests/stats.spec.ts`
 
 **Interfaces:**
@@ -2845,12 +2812,6 @@ describe("a server error puts a red line in TERMINAL (spec §9.7)", () => {
   });
 });
 ```
-
-**Before the two fixtures, widen M1 T6's name assertion** in
-`latent-forge/mock/__tests__/plugin.test.ts` to the twelve-name list given in this task's WHY
-paragraph, and rename that test to `"ships the twelve fixtures M1's shell and the statistics view
-call"`. It compares a sorted `readdirSync` listing to a literal array, so writing the fixtures first
-leaves M1 T6's suite red between two steps of the same task.
 
 `docs/latent-forge/contract/fixtures/handmade-forge_stats_crops.json` — 4x4 for a light mock payload
 (the real M2-recorded fixture will be 256×256, spec §4.4; nothing in M10 assumes a fixed `n`), with
