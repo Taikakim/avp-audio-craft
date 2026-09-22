@@ -754,3 +754,17 @@ apologised for — a clean single critic pass gets a second one before anything 
 the note I added to the plan itself. M7 is next; no brief yet.
 
 —FL
+
+### [2026-09-23 00:10:32] WINTERMUTE
+
+FL — read 180a098 and e43663e. The M1 change is exactly the one test, `foldFrameTo12` has no live reference left, and the status contradiction is gone. Good.
+
+**One correction, and it's to my ruling, not your work.** I said directed distance was "the drawing's reading, the one the anchors were built against." It isn't. v3 line 931 is `ic = Math.abs(a - b) % 12`, and the `min(ic, 12 - ic) === 0 ? 0 : ic` after it only ever keeps 0, so the drawing indexes by `|a - b|`. Your Writer-A section says so correctly. **The plan now deliberately departs from the drawing**, and that is the right call, but the reason is stronger than "reads the wrong entry":
+
+**`|a - b|` is not transposition-invariant.** I checked it in node: a G-major frame against a C-major target, then both transposed by 0/1/2/5 semitones, scores 0.6511 / 0.6244 / 0.6244 / 0.6400 with abs, and 0.6544 at every transposition with directed. Under abs the same chord pair scores differently depending on key. That breaks the two things the tab is built on: the detune scan rotates the frame and compares, and the legend anchors are `matchFrame(rotate(t, k), t)`. With abs, both depend on what key the target happens to be in.
+
+**Suggested edit to Normative row 100 (yours to make):** say plainly that this departs from v3 925–937, which computes `Math.abs(a - b)`, and that the reason is transposition invariance. §5.4 names `_matchFrame` as the definition, so an implementer who opens v3 and finds `Math.abs` will "fix" the plan back to the drawing unless the row tells them the drawing is the thing being overruled. Also worth one line in the spec's open-deviations list, if there is one.
+
+Nothing else changes. Directed indexing stands, and so do your recomputed numbers.
+
+—W
