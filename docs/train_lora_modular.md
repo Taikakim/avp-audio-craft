@@ -39,7 +39,9 @@ band, your verdict: "very clean, small background sounds better defined"; ~2 h):
 ```
 
 **B. Three corpora** (`goa3_avp_r256_2026-09-23`, rank 128 despite its name; "quite good, moving in
-a good direction" at steps 1268–2536; ~16 h for 10144 steps):
+a good direction" at steps 1268–2536, but **it went NaN at ~step 6900**: best checkpoint step 5072. Cause:
+small DoRA magnitudes crossed zero, §5b `--modular-magnitude-update`. Retry with that flag set to
+`multiplicative`, and/or lr 5e-4, before trusting the full 10144 steps; ~5.7 s/step):
 
 ```
 .venv/bin/python stable-audio-3/scripts/train_lora_modular.py --encoded_dir /home/kim/Projects/latents_sa3,/run/media/kim/Kosmos/latents_avp,/run/media/kim/Kosmos/latents_goa_bigset --caption_sidecar ,/home/kim/Projects/SAO/lumi/avp_captions_tiered.json,/run/media/kim/Kosmos/latents_goa_bigset/goa_archive_caption_sidecar.json --caption_probs "0,0.9,0.1;0,0.9,0.1;0.5,0.5,0" --frames 256 --model medium-base --rank 128 --lora_alpha 128 --adapter_type dora-rows --name MYRUN --output-dir /run/media/kim/Mantu/sa3_lora_runs --batch-size 32 --num-workers 10 --steps 10144 --lr 6e-4 --warmup-steps 75 --optimizer modular --modular-lmo-poly cubic5 --modular-schedule-free --modular-sf-c-warmup 1000 --modular-sf-r 1.0 --modular-wd 0.02 --modular-wd-overtraining --eval_demos --eval_milestones 1268 2536 3804 5072 6340 7608 8876 10144 --checkpoint_every 100000 --purpose '...' --hypothesis '...' 2>&1 | tee /tmp/MYRUN.log
@@ -81,7 +83,7 @@ train on a placeholder or a constant label — stop and add a sidecar.
 | `--lora_alpha` | = rank | Output scale is alpha/rank. Keep alpha = rank (scale 1) unless you know why. |
 | `--adapter_type` | `dora-rows` | `dora-rows` (= `dora`): LoRA plus a learned per-output-neuron magnitude — our standard. `dora-cols`: legacy per-input variant. `bora`: magnitude on both axes. `lora`: no magnitude. |
 | `--dropout` | 0.0 | Dropout inside the adapter. Untested. |
-| `--include` / `--exclude` | all | Regex patterns selecting which layers get an adapter. Default = every eligible layer (229 on medium). |
+| `--include` / `--exclude` | all | Name SUBSTRINGS selecting which layers get an adapter (not regex). Default = every eligible layer (229 on medium). E.g. `--exclude to_global_embed global_cond_embedder to_timestep_embed` leaves the global-conditioning path untouched. |
 | `--lora_checkpoint` | none | Start from an existing adapter's weights (optimizer starts fresh). |
 
 ## 5. The optimizer
@@ -91,7 +93,7 @@ train on a placeholder or a constant label — stop and add a sidecar.
 | flag | default | what it does / range |
 |---|---|---|
 | `--optimizer` | `modular` | `modular` = this manual. `fusion` = older FusionOpt (mona+ns5+normuon+sf). `adamw`, `lion` = classic baselines (need their own LR: our AdamW LoRA runs used ~5e-5–1e-4). |
-| `--lr` | **5e-6 (too low — always set it)** | Step size. Modular: **5e-4 tested** (run A), **6e-4** tested so far in run B. Higher = the adapter moves further from the base sooner; the failure mode is long (48 s) renders diverging to NaN while training loss still looks fine. ≥1e-3 not validated. |
+| `--lr` | **5e-6 (too low — always set it)** | Step size. Modular: **5e-4 tested** (run A). **6e-4 in run B was clean to step 5072, then NaN at ~6900** (magnitude zero-crossing, not LR alone). Higher = the adapter moves further from the base sooner; the failure mode is long (48 s) renders diverging to NaN while training loss still looks fine. ≥1e-3 not validated. |
 | `--warmup-steps` | 0 | Linear LR ramp at the start. 75 tested. Protects the first steps, when B is still near zero. |
 | `--weight_decay` = `--modular-wd` | 0.01 | Pulls the adapter back toward zero, i.e. toward the base model's sound. **0.02 tested.** Higher = more conservative, stays closer to medium-base; lower = drifts further. |
 | `--modular-wd-overtraining` | off | Grows weight decay as √(epochs) (Everett & Qiu 2026) — 4× by epoch 16, 12.6× by epoch 160. Tested on (both runs). Suspected of pulling long runs back toward the base's modern-psy sound — *hypothesis, untested*; the test is one run without it. |
