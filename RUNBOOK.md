@@ -446,6 +446,8 @@ reconstruct: `purpose` (what question this answers, and the EXPERIMENTS.md id), 
 kill-criterion, `status` (running | done | **abandoned, and why**), and `recipe.notes` (the traps a
 future renderer needs, e.g. "must load the EMA weights").
 
+**Full flag-by-flag manual for `train_lora_modular.py`, with recipes and the after-run analysis commands: `docs/train_lora_modular.md`.**
+
 **Local `train_lora_modular.py` does this for you (since 2026-09-22):** it writes
 `<output-dir>/<name>/run_meta.json` at launch. Pass `--purpose '...' --hypothesis '...'` (and
 optionally `--run-notes '...'`); on a terminal it ASKS if you leave them out, unattended it records

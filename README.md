@@ -50,6 +50,9 @@ commits via `git pull`.
     real ROCm 7.14 path, no aiter/Triton workaround)
   - `latch.md` — LatCH heads pipeline, end-to-end
   - `training-findings.md` — what we've learned from training runs
+  - `train_lora_modular.md` — **operator manual for the modular LoRA trainer**: every
+    command-line option, its default, the values tried and what they do; copy-paste recipes;
+    how to check a finished run yourself
   - `lessons-learned.md` — cross-cutting gotchas worth remembering
   - `todos.md` — open work items
 
