@@ -452,7 +452,11 @@ trains without one becomes another unauditioned family — that is exactly how A
 - Head-B steers at cfg16 only (07-29); chroma melody-turning probe NEGATIVE 0/12 (07-22). Superseded in
   priority by B1–B4. Links: DISCOVERIES "melody".
 
-### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **RUNNING: 3 torchrun arms — 21430167 all, 21430168 melody, 21430169 rhythm — C owns**
+### B7 — MIR-timeseries conditioning: rank-32 DoRA + per-frame inlet vs decoupled cross-attn (Kim direct 2026-08-21) — **OUTCOME UNKNOWN: 3 torchrun arms 21430167/68/69 submitted 08-21, never pulled — C owns (corrected 2026-09-24 weekly)**
+- **2026-09-24:** nothing from these arms exists locally under any `mirctrl*` name; their output would be on
+  LUMI at `$SCRATCH/runs/mirctrl_bracket/<NAME>` (`lumi/sbatch/mirctrl_bracket.sbatch:67`). LUMI couldn't be
+  checked (F's ssh cert expired). **Next:** one read-only `sacct -j 21430167,21430168,21430169` + `ls` of that
+  dir. Remember the /scratch purge window (MEMORY: lumi-project-purge-deadline): results may already be gone.
 - **Final submit (~11:15, third batch):** batches 1-2 (21427376-83, 21428085-90) died at preflight
   (missing ctrl rsync; stale-empty-flash staging bug) — zero GPUh lost. This batch = torchrun
   (real 8-way DDP, pattern verified on the wfleet restarts) + stage-if-empty + the triple
@@ -1198,7 +1202,15 @@ that cannot apply must SAY SO rather than be echoed into `run_meta.json` as if i
 Deferred until the card is free — editing that file with a job running against it is how the
 next silent no-op gets introduced.
 
-### D17 — Morph conditioner at CAPACITY: Lion + D-Adaptation, r128 joint DoRA, eff-batch 32 — **RUNNING (local, launched 2026-09-09 ~02:15 EEST, C)**
+### D17 — Morph conditioner at CAPACITY: Lion + D-Adaptation, r128 joint DoRA, eff-batch 32 — **TRAINED + RENDERED, A/B NEVER RUN (C; status corrected 2026-09-24 weekly)**
+
+*2026-09-24 status (checked on disk, not from memory):* training **completed** 2026-09-09 16:28, rc=0
+(`riffer_step2000..16000.pt` + `riffer_final.pt`; the ONNX export step failed on a missing `onnxscript`,
+harmless). 418 clip files rendered 2026-09-10 03:39 in `clips/`, **from the EMA weights, whose shadow started
+at the zero-init adapter** (KIM-TASKLIST's morph A/B item explains why they under-represent the run; the
+online weights are recoverable from two EMA checkpoints, `eval/` tool of 09-11). **The contour A/B was never
+run:** no `morph_contour_ab_D17.json` exists anywhere. Verdict: none yet. Next: that KIM-TASKLIST block.
+`run_meta.json` status set to done.
 
 *Why:* D12's bracket established that the morph-contour conditioner **can exert some control** —
 weak but real. Kim's read 2026-09-09: *"now that the conditioner did something, a model with more
