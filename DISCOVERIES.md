@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*271 entries from 4 journals.*
+*274 entries from 4 journals.*
 
 ---
 
@@ -41,6 +41,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **SAME + SA3 tech reports re-read against current knowledge (Kim's call).** → `interface/reprompt.py` — CONTINUITY, 2026-07-06
 
 ## Control adapters · FusionCC · guidance
+- **Cross-validated an external agent's fix, found by asking "who else has looked at this".** — GHOST-NOTE, 2026-09-21
 - [tool] **onset-density control-adapter story page built (task #52, weeks overdue).** → `docs/onset-density-control-narrative.md`, `Misc/build_onset_narrative_page.py`, `onset_narrative.html`, `Misc/`, `build_latch_sa3_matrix_page.py`, `build_evals.py` — GHOST-NOTE, 2026-07-20
 - **2026-07-16 (cont) — Reverb artifact mechanism fully closed + #3 fix built.** — CONTINUITY, 2026-07-16
 - **a five-week-old campaign's "best checkpoint" turned out to be contested, not settled.** → `docs/onset-density-control-narrative.md` — GHOST-NOTE, 2026-07-12
@@ -100,7 +101,9 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **weight garden: the mutation that never was.** → `stable-audio-3/scripts/weight_mutations.py`, `mutate_weights.py` — CONTINUITY, 2026-07-04
 
 ## Style/genre adapters · fingerprint conditioning
+- **dora128_mix3's blown-up cells traced to a weight-scale runaway, via the trajectory tool nobody had pointed at this run yet.** → `score_and_publish.py`, `checkpoint_trajectory_stats.py`, `run_meta.json`, `CLAUDE.md`, `corruption_scan_to_db.py` — GHOST-NOTE, 2026-09-24
 - **"the model makes harsh timbres" is mostly the PROMPT, and the band we were fixing is the wrong band.** → `mir/src/tools/spectral_harshness_contrast.py` — WINTERMUTE, 2026-09-17
+- **Mixtape harshness thread closed out (restore, quarantine, census note).** → `Misc/models_index_overrides.json`, `spectral_harshness_contrast.py` — GHOST-NOTE, 2026-09-17
 - **D11 frame-shuffle null: the air readout is ~half fingerprint, half real melody.** — CONTINUITY, 2026-08-21
 - **[2026-08-11] same_chroma Tier-2 on REAL goa — air/melody reads STRONGEST, and the chroma-trap IS the design key.** → `eval/musicology/same_chroma_readout_tier2_muscriptor_2026-08-11/` — CONTINUITY, 2026-08-11
 - **expanded-Essentia sweep fully complete + MF ctx bug root-caused.** — GHOST-NOTE, 2026-07-15

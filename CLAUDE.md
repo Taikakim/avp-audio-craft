@@ -135,6 +135,12 @@ approach**, run this search and say what you found:
    LITERATURE index (what each paper contains + what stays ours, with cite-verified verdicts).
    DISCOVERIES = what *we* found; knowledge.md = what the *field* found + our take. **Search both
    first**, before writing code or designing an approach.
+   **When STARTING a planning or troubleshooting task, grep both with AND-narrowed keywords, not
+   a single bare term (Kim direct 2026-09-24).** A one-word grep on something common — `dora`,
+   `runaway`, `nan`, `latch` — returns dozens of unrelated hits across 270+ entries and burns
+   context reading through them. Narrow with a second term before reading matches:
+   `grep -i "dora" DISCOVERIES.md | grep -i "runaway"` (or `grep -iE` with a lookahead) beats one
+   broad pass every time. Same applies to `papers/knowledge.md` and the journal grep in item 2.
 2. `grep` the instance **journals** (`profiles/*.journal.md`) and **`WORKLOG.md`** for your
    keywords — the journals hold findings (incl. negative results) before they reach the index.
    **And `EXPERIMENTS.md`** — the experiment may already be planned, running, or gated on a
@@ -382,6 +388,33 @@ in `prov`): **ckpt probe > `run_meta.json` > `lumi/run_params_extracted.json` > 
 The probe wins because it is what the run actually DID, not what a script asked for.
 ⚠ `lumi/run_params_extracted.json` was **hand-read from the sbatch corpus — there is no
 extractor script and it cannot be regenerated.** Do not delete it; extend it by hand.
+
+## Training-failure postmortems go in DISCOVERIES.md + MASTER §5, with evidence (Kim direct 2026-09-24)
+
+This is the write-side counterpart to the AT-LAUNCH notes above: that rule stops a run from
+being undocumented going in, this one stops a FAILURE from being undocumented coming out. A
+blown-up or dead checkpoint diagnosed once and only reported in chat is a diagnosis the next
+instance re-does from scratch — the NaN-latent DC-file writeup, the full-FT latent-scale
+runaway, and the cautious-rescale +37% norm inflation (all in `MASTER.md` §5) are the existing
+model for how this should look, and got there ad hoc rather than because a rule required it.
+
+**When you diagnose why a run/checkpoint failed (NaN, drone, collapse, stall), write it up in
+both places, not just one:**
+- **`DISCOVERIES.md`** (via your journal + `Misc/build_discoveries.py`, filelocked) — the
+  one-line, searchable "have we seen this" entry, so the next AND-narrowed keyword search (see
+  the DISCOVERY PHASE section above) actually surfaces it.
+- **`MASTER.md` §5** — the reusable gotcha writeup with the mechanism, since that's the section
+  every repo's `CLAUDE.md` imports and the one people actually read before touching a checkpoint.
+
+**A verdict alone ("this run is broken") is not enough — attach the EVIDENCE that got you
+there**, the same standard `docs/lessons-learned.md`'s negative-result autopsy already holds
+non-training nulls to: the specific numbers (`checkpoint_trajectory_stats.py`'s global_norm /
+velocity / path-efficiency / per-layer curve, or the z0-std / finite-fraction reading that
+flagged it), which checkpoint/step it was measured at, and whether the failure signature matches
+an already-known family (uniform layer movement + low path efficiency + an early single-step
+norm jump ⇒ the runaway family) or is a genuinely new mechanism. "Checked the trajectory, matches
+the known runaway signature, recommend the pre-blowup checkpoint instead" is a postmortem;
+"this arm is bad" is not.
 
 ## Git — the four rules that must be in context (full manual: `docs/GIT-PROTOCOL.md`)
 *(Kim's ask 2026-09-02, after a commit campaign produced an unauthorized push, a false

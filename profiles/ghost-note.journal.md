@@ -1108,3 +1108,53 @@ mid-commit, DM'd it as time-critical, and it landed correctly attributed in the 
 git blame will show my/Kim's name on that line — worth remembering that "who actually gets credit"
 sometimes has to live in the prose record instead of git history, and that's an acceptable outcome
 if handled honestly rather than silently.
+
+## 2026-09-24 — dora128_mix3's blown-up cells traced to a weight-scale runaway, via the trajectory tool nobody had pointed at this run yet
+
+Registered and rendered 26 new `sa3_lora_runs` arms (14 standalone picks + the 11-arm
+`fusion_autoscale_vs_adamw_2026-09-01` optimizer campaign + `fullft_goa_t256`'s two
+continued-training checkpoints), then ran the CLAP+Audiobox+DSP score+publish chain across all 8
+resulting pattern groups. 7/8 passed clean. `dora128_mix3` halted at `score_and_publish.py`'s
+latent-sanity gate: 12/36 (33%) of `dora128_mix3_nodas_20260918_231123`'s cfg7/w1 cells came back
+with z0 std 3.9–4.4 against a healthy ~1.1–1.3 — the drone/blow-up signature from MASTER §5, not
+literal NaN (the render-time `z0_is_finite` guard would have dropped those cells entirely; this is
+the milder "elevated but finite" cousin).
+
+Kim's instruction was to investigate rather than just exclude-and-move-on, so I ran
+`checkpoint_trajectory_stats.py` (glob had to be overridden to `epoch=*-step=*.ckpt` — the
+script's default `riffer_step*.pt` silently finds nothing on a Lightning DoRA run dir, no error,
+just `[traj] no checkpoints in <dir>`) across all 15 checkpoints of that run. The picked board
+checkpoint (ep3/step7500) sits at the tail of a clear runaway: global_norm 712 (step 500) → 1716
+(step 1500) → a single-checkpoint jump to 7851 (step ~2000, velocity 7652 — the single largest
+movement anywhere in the run) → peaks at 12189 around step ~4200 → partially subsides to 8918 by
+step 7500. Path efficiency across the whole run is 0.141 (net displacement is only 14% of total
+distance traveled — wandering in a blown-up basin, not converging). The layers doing almost all of
+that movement are EVERY transformer FFN's `lora_B` moving in near lockstep (8270–8358 velocity
+across layers 1–9, no outlier) — a uniform, non-selective blow-up, not one layer learning
+something. That fingerprint (uniform FFN-B growth + low path efficiency + a single-step norm
+explosion early in training) matches CONTINUITY's 2026-08-10 full-FT/DoRA latent-scale-runaway
+root cause exactly, but this is a DIFFERENT run from the ones already diagnosed there or in the
+2026-08-11 cautious-rescale finding — same failure family, independent occurrence.
+
+One more thing worth recording because it's a documentation-hygiene bug in its own right: this
+run's `run_meta.json` is NOT this run's metadata. It's copied verbatim from the earlier
+`dora128_mix3_conservative_20260918_143724` restart (spectral_lr 1e-5, the fix attempt for a
+D-Adaptation growth-factor problem in an even earlier run) — the `_nodas` variant that actually
+produced these checkpoints never got its own launch-time notes written. So the one place that
+would tell us in one read whether this run's recipe actually addressed the runaway (turned off
+D-Adaptation? changed the LR again? something else?) says nothing true about it. I couldn't
+answer "did the fix apply here" from metadata alone — only from re-deriving it off the checkpoint
+weights themselves, which is exactly the failure mode `CLAUDE.md`'s "write the notes AT LAUNCH"
+directive exists to prevent, and exactly what happened anyway because a restart inherited a copied
+file instead of a fresh one.
+
+Recommendation handed back to Kim, not yet acted on: the step-7500 pick is past the runaway; an
+earlier checkpoint from the SAME run (step 500 or 1000, before the step ~1500→2000 explosion) is
+far more likely to render clean, and is worth trying as a manifest swap before writing off the
+whole arm.
+
+Also handled in the same session: confirmed a DM concern from WINTERMUTE about orphaned
+`clip_metrics.db` rows after his 52-cell NaN quarantine from the LUMI matrix-cells batch — my
+`corruption_scan_to_db.py` had indeed re-touched those paths, but correctly, writing the
+`n_bad_jumps=999999` non-finite sentinel rather than a clean-looking row. No orphan risk; reported
+back to him with the specific query I ran to check it, not just an assurance.
