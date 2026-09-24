@@ -191,11 +191,20 @@ project store gets rewired (it never touches `App.svelte`/`TopBar.svelte`); and 
 WINTERMUTE's next read, alongside the usual server-contract items (`/forge/sessions`, `/forge/
 presets`, the FILES routes — all M2's).
 
-**Next action:** run one critic over the whole plan, apply findings, run a second — M6's own history
-(a "clean" first pass that understated 17 more findings) is the reason not to stop after one. Budget
-roughly two agents (~300k each) plus the assembly-edit work already done. The two scratchpad drafts
-(`scratchpad/m7_part_a.md`, `m7_part_b.md`) are gitignored, on disk only; keep them until the critic's
-findings are applied, same as every prior milestone.
+**Status 2026-09-24 — paused by Kim until the next 5-hour window.** Critic pass 1 (31 findings, 12
+blocking) is applied and pushed (`11560e7`; now 132 `it()` + 10 Playwright). Critic pass 2 ran on the
+corrected file: **14 findings, 2 blocking** (both data-loss paths in the code pass 1's fixes added:
+IMPORT's failure path autosaves a half-imported project over the loaded session; `loadSession` renames
+the session before the content arrives). Findings saved to `scratchpad/m7_critic2.md` (gitignored, on
+disk only — do not delete). The fix agent was stopped before it edited anything; the plan is exactly
+`11560e7`.
+
+**Next action:** dispatch a fix agent on `scratchpad/m7_critic2.md` — all 14, with the two blocking
+ones plus #3/#5/#6/#7 resolved as ONE ordered load/import sequence in Task 9 (bump load seq → disarm
+autosave → validate → apply → clear selection/overlapStore → rebuild stage (v2 only) → schedule
+stretches → arm with the project as loaded), each data-loss path proven by a test. Then recount,
+commit, and batch everything for WINTERMUTE. Keep `scratchpad/m7_part_a.md`, `m7_part_b.md`,
+`m7_critic1.md`, `m7_critic2.md` until then.
 
 ## After M7 — M9 is last
 
