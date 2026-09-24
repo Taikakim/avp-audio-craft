@@ -389,22 +389,29 @@ The probe wins because it is what the run actually DID, not what a script asked 
 ⚠ `lumi/run_params_extracted.json` was **hand-read from the sbatch corpus — there is no
 extractor script and it cannot be regenerated.** Do not delete it; extend it by hand.
 
-## Training-failure postmortems go in DISCOVERIES.md + MASTER §5, with evidence (Kim direct 2026-09-24)
+## Training-failure postmortems go in docs/training-findings.md + DISCOVERIES.md, with evidence (Kim direct 2026-09-24)
 
 This is the write-side counterpart to the AT-LAUNCH notes above: that rule stops a run from
 being undocumented going in, this one stops a FAILURE from being undocumented coming out. A
 blown-up or dead checkpoint diagnosed once and only reported in chat is a diagnosis the next
-instance re-does from scratch — the NaN-latent DC-file writeup, the full-FT latent-scale
-runaway, and the cautious-rescale +37% norm inflation (all in `MASTER.md` §5) are the existing
-model for how this should look, and got there ad hoc rather than because a rule required it.
+instance re-does from scratch.
 
-**When you diagnose why a run/checkpoint failed (NaN, drone, collapse, stall), write it up in
-both places, not just one:**
-- **`DISCOVERIES.md`** (via your journal + `Misc/build_discoveries.py`, filelocked) — the
-  one-line, searchable "have we seen this" entry, so the next AND-narrowed keyword search (see
-  the DISCOVERY PHASE section above) actually surfaces it.
-- **`MASTER.md` §5** — the reusable gotcha writeup with the mechanism, since that's the section
-  every repo's `CLAUDE.md` imports and the one people actually read before touching a checkpoint.
+**`docs/training-findings.md`'s "causes and effects of training failure" section (CONTINUITY,
+2026-09-24) is the canonical destination — use its format, don't invent a new one:** each entry
+is **symptom → cause → evidence → fix / status**, grouped under **A. failures of the MODEL**
+(the weights went bad), **B. failures of the INSTRUMENTS** (the run was judged on wrong numbers
+— pairs with the AUDIT-THE-INSTRUMENT rule above), or **C. operational traps**. The existing
+entries (DoRA magnitude zero-crossing NaN, the half-loss/NaN-blind-guard instrument bugs, caption
+traps) are the model for depth and citation style — read a couple before adding your own.
+`MASTER.md` §5 still holds the older cross-project entries written before this convention existed
+(the NaN-latent DC-file writeup, the full-FT latent-scale runaway) — leave those in place, but
+put NEW training-failure postmortems in `docs/training-findings.md` from now on so there is one
+growing document instead of two competing ones.
+
+**Also drop a `DISCOVERIES.md` entry** (via your journal + `Misc/build_discoveries.py`,
+filelocked) — the one-line, searchable "have we seen this" pointer, so the next AND-narrowed
+keyword search (see the DISCOVERY PHASE section above) surfaces the full writeup in
+`docs/training-findings.md`.
 
 **A verdict alone ("this run is broken") is not enough — attach the EVIDENCE that got you
 there**, the same standard `docs/lessons-learned.md`'s negative-result autopsy already holds

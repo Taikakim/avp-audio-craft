@@ -20,7 +20,9 @@ ran, built, or learned this session.
 **Detailed docs** (this file is the summary; depth lives in `docs/`):
 `ARCHITECTURE.md` (1-page map) · `docs/venvs.md` (venvs + CK flash-attn build) ·
 `docs/commands.md` · `docs/latch.md` · `docs/training-findings.md`
-(**recipes, params, why latents are T=4096**) · `docs/lessons-learned.md` · `docs/todos.md` ·
+(**recipes, params, why latents are T=4096, + the "causes and effects of training failure" log
+added 2026-09-24 — symptom → cause → evidence → fix for every diagnosed bad run/checkpoint**) ·
+`docs/lessons-learned.md` · `docs/todos.md` ·
 `docs/inference-servers.md` (**all-CPU eval/inference servers + queue concurrency**).
 The authoritative LatCH experiment log is `stable-audio-tools/LATCH_RESULTS.txt`.
 
@@ -92,6 +94,11 @@ Both data drives are **removable** — if a path 404s, the drive is unmounted, n
 | `sa3_control_runs` | **SA3 control-adapter/LatCH eval runs + renders** (the eval convention consolidated here; Lehto's copy was empty/stubs) | control/eval |
 
 > ⚠️ Stale path in old memories: `Mantu/ai-music/Goa_Separated_crops` **no longer exists**.
+> Also as of 2026-09-22 (Kim direct): `Mantu/avp-analyzed-stems` and `Mantu/suomisoundi_data`
+> **no longer exist** — both moved to Lehto (below), to get small-file training/analysis
+> data off a drive under LUMI-pull pressure and onto one with headroom. Code repointed:
+> `eval/chroma_morph_transitions.py`, `eval/backfill_crop_f0.py`,
+> `Misc/training_data_census.py`'s `suomisoundi_*` entries.
 
 ### LUMI training/render pulls — CANONICAL TARGET = the UUID drive (2026-07-23, Kim)
 **`/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/` is the canonical LUMI
@@ -114,20 +121,47 @@ consolidated onto UUID + reclaimed 2026-07-23.
   further (per the ckpt-prune skill). Terminal-fat convention reads **ep9** for the `fp32_frames`
   family, **ep7** elsewhere. Pull fat only for the terminal epoch, slims elsewhere.
 
-### Derived data — Lehto (`/run/media/kim/Lehto`) — TRAINING DATA ONLY (2026-07-04)
+### Derived data — Lehto (`/run/media/kim/Lehto`) — TRAINING/ANALYSIS DATA, NOT eval/checkpoints
 Lehto no longer holds evals or checkpoints — those moved to Mantu (above) to free space
 (Lehto was at 94%) and consolidate the eval convention on the drive that already had
-most of it. Lehto is now strictly the large-training-corpus drive.
+most of it. 2026-09-22/23: the bulk precalc/sidecar sets that used to live here moved to
+Kosmos (new 256 G NVMe, Kim's call — Lehto was back up to 89% full and is the drive
+flagged for cold-random-read I/O contention on the dataloader path, § "first-step hang"
+below); Lehto then absorbed `avp-analyzed-stems` + `suomisoundi_data` FROM Mantu (Kim
+direct, same day) and became the resting place for ~23 control/target latent sets that
+used to be duplicated on the OS drive (`/home/kim/Projects`, below). Every move in this
+whole 2026-09-22/23 pass was `rsync -a`, checksum-verified per directory (not just
+size/count — a real divergence turned up once, see the `latents_avp_originals` note
+below) before the source original was deleted.
+
+| Path | What | Used by |
+|---|---|---|
+| `avp-analyzed-stems` | AVP stem `.INFO`/timeseries sidecars (from Mantu 2026-09-22) | `eval/chroma_morph_transitions.py`, `eval/backfill_crop_f0.py` |
+| `suomisoundi_data/` | Suomisoundi corpus: `_by_track`, `_captions`, `_features`, `_stems`, `_timeseries` (from Mantu 2026-09-22) | census `suomisoundi_timeseries`/`suomisoundi_features` entries |
+| `latents-all-backup/` | ~23 control/target latent sets — `latents_sa3_ctrl`, `latents_sa3_proll`, `latents_sa3_notegrid88`, `latents_sa3_chroma`, `latents_avp_ctrl`, `latents_sa3_metrical_shuffled`, the morph variants (L2/L3/L4/IOI3), `latents_prog_*`, the `latents_avp_*` AVP subsets, `latents_chill`, `latents_organic_dance`. Checksum-verified byte-identical to what used to be duplicated on `/home/kim/Projects`; Projects' copies deleted 2026-09-23 — **this is now the only copy of most of them.** (`latents_avp_originals`: Projects' copy looked divergent at a glance — 292 files vs 290 — but was a false alarm: same content, just redundantly double-nested; the 2 caption sidecars matched byte-for-byte once compared at the right depth.) `latents_sa3_melody`/`latents_sa3_metrical` ALSO copied to Kosmos (kept here too, not moved) since `sa3_control/train.py` reads them live during training — Lehto's I/O contention is a real risk for an active dataloader path, not just a backup. | control/musicology scripts, `Misc/training_data_census.py` (`LEHTO_BACKUP` constant) |
+| `latents_sa3_lora300`, `sa3-latch-latents` | Small, untouched by the 2026-09 moves | — |
+| ~~`latents`~~, ~~`latents_stems`~~ | **Retired for real 2026-09-23** (not unmounted — actually gone, Kim deleted them) — the old SAO-Small/SA1 64-dim VAE latents, confirmed unusable for SA3 back in `profiles/ghost-note.tasks.md` 2026-05-26 ("no shortcut around a re-encode"). No live code depended on them. | — (dead) |
+
+> ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems`, `Lehto/sa3_lora_runs`,
+> `Lehto/sa3_control_runs/{soups,riffer,...}`, `Lehto/timeseries`, `Lehto/latents_sa3_stem_chroma`,
+> `Lehto/latents_goa_aug8`, `Lehto/section_labels` **no longer exist** — see Kosmos below.
+
+### Dataset precalcs/sidecars — Kosmos (`/run/media/kim/Kosmos`) — new 256G NVMe (2026-09-22)
 
 | Path | What | Grid | Used by |
 |---|---|---|---|
-| `latents` (15 G, 4808) | SAO-Small/SA1 latents, **64-dim** | 21.53 Hz, T=256 (11.9 s) | SAT LatCH |
-| `latents_stems` (43 G) | Stem latents | 21.53 Hz | SAT |
 | `timeseries` (37 G, 4461) | **Whole-track MIR timeseries** — **50 fields** now = **20 legacy** (100 Hz) + **26 expanded** + **4 melody-height** (08-12, see below) (expanded-Essentia sweep 07-14/15: MAEST 768-d embeddings, sliding-window genre/mood/instrument, DEAM/emoMusic arousal-valence, attack-transient family, stereo width/corr, Bark/ERB bands, chroma_linmap (NNLS), chords, EBU-R128, dyn-complexity). Expanded fields land at **NATIVE per-field rates (0.2–100 Hz)**, not 100 Hz — consumers MUST read the sidecar's `field_rates`/`fields`/`expanded_version` meta. Producer `mir/src/spectral/whole_track_expanded.py`; incremental backfill via `whole_track_timeseries.py --add-fields`. Corpus-wide (avp 1516 + goa 4461 + genre corpora 574). *(OpenL3 was extracted then DROPPED 07-14 per C's retrieval gate — not in the frozen set.)* **+4 MELODY-HEIGHT fields (2026-08-12, goa corpus): `f0_{other,bass}_ts` + `f0_{other,bass}_voiced_ts`, 100 Hz, PredominantPitchMelodia+EqualLoudness on the SEPARATED stems** — the only pitch fields that are NOT octave-folded, and the prediction target for the pitch/melody control head. **Unvoiced frames are 0.0 Hz: MASK with the `_voiced_ts` field, never regress on raw values — 0 Hz is not a low note.** Two voices because a rolling bassline is its own melodic voice (Kim); map to SA3's 3-band chroma at the CONDITIONING stage (bass→low, other→mid+high), not in extraction. Known unresolved: `f0_bass_ts` may sit one octave above the true fundamental (melodia and YIN disagree by ~12 st on every bass stem; three tests failed to settle it — melodia chosen for contour stability, YIN flips octaves *within* a track). | native per-field | SAT LatCH, SA3 crop companions, **melody head** |
-| (in `mir/`) `data/timeseries.db` (2.6 G, ~209k) | Legacy **per-crop** timeseries SQLite | 21.53 Hz, T=256 | SAT LatCH |
-
-> ⚠️ Stale paths in old memories: `Lehto/goa-small`, `Lehto/goa-stems`, `Lehto/sa3_lora_runs`,
-> `Lehto/sa3_control_runs/{soups,riffer,...}` **no longer exist**.
+| (in `mir/`) `data/timeseries.db` (2.6 G, ~209k) | Legacy **per-crop** timeseries SQLite, lives in the `mir/` repo tree, not on Kosmos | 21.53 Hz, T=256 | SAT LatCH |
+| `latents_sa3_stem_chroma` (29 G) | Per-stem chroma targets — NOT latents | — | SAME stem-chroma eval |
+| `latents_goa_aug8` (16 G) | 8x pitch/stretch augmentation of goa | — | — |
+| `suomisoundi_latents` (5 G) | Suomisoundi latents | — | — |
+| `section_labels` | Section-boundary labels | — | `eval/section_boundary_validate.py` |
+| `latents_avp` (6 G) | AVP own-music latents, moved off the OS drive 2026-09-23 | — | — |
+| `latents_goa_bigset` (53 G) | Moved off the UUID drive 2026-09-23 (96% full there; `goa_archive_features` at 161G was too big for Kosmos and stays on UUID) | — | — |
+| `latents_sa3_melody` (11 M), `latents_sa3_metrical` (156 M) | Live training-read control targets — see the Lehto row above, also mirrored there | — | `control/sa3_control/train.py` |
+| `goa_archive_captions_hinted` (90 M) | Genre-hinted goa_archive caption generation (2026-08-18), kept separate from the unhinted control set, moved off the UUID drive 2026-09-23 (sole copy) | — | `eval/build_goa_archive_sidecar.py`, `eval/inject_year_into_captions.py` |
+| `muscriptor_full` (328 M, 5400 mid+stats) | MIDI transcriptions + stats.json for the small/original goa crop set, moved off the UUID drive 2026-09-23 (sole copy) | — | `eval/build_pianoroll_ctrl.py`, `eval/musicology/*` (8 files) |
+| `goa_archive_captions` (108 M, 69721 files incl. `granite_pre_v5_backup`) | The CURRENT v5 goa_archive captions (Kim direct 2026-09-23: small files, NVMe wins). Moved off the UUID drive — checked for symlinks pointing in first (lesson from the `latents_avp_*` incident above), none found, clean move. **This supersedes the earlier note in this file that it stayed on UUID** — that was true for a few hours, not anymore. | — | `eval/build_goa_archive_sidecar.py`, `eval/caption_corpus_sample.py` |
 
 > 🚨 **`Lehto/latents_sa3` was REMOVED 2026-07-04** (Kim's call, to avoid mix-ups with the
 > NVMe copy). `/home/kim/Projects/latents_sa3` (14 G; 5401 `.npy` + 5400 `.json` + 5400
@@ -139,7 +173,11 @@ most of it. Lehto is now strictly the large-training-corpus drive.
 > behind"; no cron/systemd automates it) — "keep it up to date" (Kim). An off-site copy
 > (**LUMI-O**, not Allas — see `docs/csc-data-guidelines-guide.md`) is a nice-to-have,
 > blocked only on Kim generating the auth.lumidata.eu token. All code defaults point at the
-> NVMe copy (grep-swept 2026-07-04). *(Separate artifact NOT covered by this backup:
+> NVMe copy (grep-swept 2026-07-04). **`latents_sa3` is the one deliberate exception left
+> on `/home/kim/Projects` after the 2026-09-23 cleanup below** — removable-drive speed
+> (Kosmos) wasn't judged worth trading for OS-drive reliability on the live training set;
+> also left: `latents_sa3_subset300` (2.4 M, a genuine sole copy, too small to matter).
+> *(Separate artifact NOT covered by this backup:
 > `eval/clip_metrics.db` — the eval-metrics DB was itself single-copy; F snapshotted it to
 > Mantu 2026-07-19, recurring backup still TODO — see `docs/open-threads.md`.)*
 
