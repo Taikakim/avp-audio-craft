@@ -17,6 +17,13 @@ verdict; negative results are first-class; verify consequential claims before
 acting (rule 6); the log is truth, the ping is only the doorbell.
 
 ## Shipped
+- **The modular-optimizer test bench, made trustworthy and operable** (2026-09-21 → 24) — took over an
+  externally-written optimizer whose NaN guard was NaN-blind and whose mechanisms were mostly inert;
+  shipped a live mechanism audit, the gauge-drift and covariance probes, `run_meta.json` at launch,
+  the established caption routine (with a per-source audit that caught a corpus training on "None"),
+  the **multiplicative DoRA-magnitude step** that fixes the zero-crossing NaN, and an **operator manual
+  for every flag** (`docs/train_lora_modular.md`) kept honest by a drift check — so Kim can run and
+  judge these experiments without an agent.
 - **The B7 MIR-conditioner lane** (2026-08-21) — Kim's "traditional models, our mir data as
   conditioners, rank-32 DoRAs" turned into a tested, self-reporting training stack in one sitting:
   every timeseries feature we extract (36 channels) fed into the DiT's never-before-used native
