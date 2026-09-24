@@ -36,6 +36,46 @@
 <p>something an agent in another repo would want to know. Keep entries short; move</p>
 <p>durable facts into <code>MASTER.md</code>. Conventions:</p>
 <ul class="wl">
+<li>**2026-09-23 — GHOST-NOTE: PARKED mid-batch, board render stopped for an overnight training</li>
+</ul>
+<p>  run (Kim direct) — resume steps below.** 26 arms registered in <code>rarity_bracket_manifest.json</code></p>
+<p>  from a sa3_lora_runs sweep (&amp;gt;1000-step runs not yet on the board): 14 standalone runs + the</p>
+<p>  11-arm <code>fusion_autoscale_vs_adamw_2026-09-01</code> optimizer-comparison campaign (<code>fa_*</code> labels) +</p>
+<p>  <code>fullft_goa_t256</code> (added its two continued-training checkpoints, ep38/ep69, past the original</p>
+<p>  8-epoch campaign). Full label list + per-arm notes in the manifest entries themselves.</p>
+<p>  <strong>Render status when stopped:</strong> 3 arms fully done (<code>dora128_mix3_nodas_20260918_231801</code>,</p>
+<p>  <code>melodychroma_r32_hpcp</code>, <code>modular_cubic5_5400trk_20260921</code> — 108 cells each), a few partial</p>
+<p>  (<code>dora128_mix3_nodas_20260918_231123</code> 69/108, <code>fullft_goa_t256</code> 74/~111 across 3 ckpts,</p>
+<p>  <code>sa3-goa-dora-47s-r128-fusion</code> 1 cell), the rest (~20 arms) not started.</p>
+<p>  <strong>To resume the render</strong> (GPU, once free):</p>
+<p>  ```</p>
+<p>  cd [path] &amp;amp;&amp;amp; export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True &amp;amp;&amp;amp; .venv/bin/python eval/model_matrix_gen.py --only-labels dora128_mix3_nodas_20260918_231801,melodychroma_r32_hpcp,modular_cubic5_5400trk_20260921,sa3-goa-dora-47s-r64,sa3-goa-dora-47s-r128-fusion-caut,sa3-goa-dora-47s-r128-fusion,sa3-goa-dora-47s-r128-adamw,dora128_mix3_nodas_20260918_231123,sa3-goa-dora-47s-b4-cont,sa3-goa-dora-47s,sa3-goa-dora-47s-b4,dora128_mix3_overnight_20260918_084329,audition_160ep_2026-09-22-b,e2_phm,fa_adamw_lr1e-4,fa_adamw_lr3e-4_step2000,fa_adamw_scratch_step5000,fa_fullft_autoscale,fa_fusion_autoscale_lr1e-4,fa_fusion_autoscale_lr1e-6_full,fa_fusion_autoscale_lr5e-6_full3h,fa_fusion_autoscale_lr5e6_bs2,fa_fusion_autoscale_lr5e6_control2,fa_lion_lr1e-5,fa_lion_lr5e-5-batch32,fullft_goa_t256 --weights online</p>
+<p>  ```</p>
+<p>  Resume is automatic (skips manifest keys already present) — no need to prune the label list.</p>
+<p>  Check <code>sa3-goa-dora-47s-r128-fusion-caut</code> specifically: known-bad (2026-09-08 quarantine</p>
+<p>  history, cautious-rescale bug, fixed but flagged) — it dropped NaN cells cleanly via</p>
+<p>  <code>z0_is_finite</code> during the partial run, expect more.</p>
+<p>  <strong>Already done, CPU-only, safe and persisted regardless of GPU state:</strong> ran</p>
+<p>  <code>eval/corruption_scan_to_db.py</code> + new <code>eval/dsp_scan_to_db.py</code> (flatness/zcr/hf via</p>
+<p>  <code>disintegration_metrics.py::measure()</code>, no GPU) on all 468 cells rendered so far — into</p>
+<p>  <code>clip_metrics.db</code>. New finding: <code>modular_cubic5_5400trk_20260921</code> (full 5400-track corpus,</p>
+<p>  13500-step ModularOptimizer run) shows real corruption even at cfg7/w1 (the operating point,</p>
+<p>  not just the off-config sweep) — 31 bad jumps on <code>rb_mid_3</code>, 19 on <code>rb_rare_6</code>. Also fixed a</p>
+<p>  real bug in <code>build_clap_hyperparam_table.py</code>&amp;#x27;s <code>bad_samples_cfg17_w1</code> column (Kim 2026-09-23):</p>
+<p>  it pooled cfg1+cfg7 together; now correctly splits to the same operating-point mask as the</p>
+<p>  rest of the table (cfg7/w1 normal rows, cfg1/w1 for <code>_ptm</code> rows). <code>dora_table.html</code> now shows</p>
+<p>  <code>bad</code>/<code>velocity</code> columns (were computed earlier but never wired into the HP display list).</p>
+<p>  <code>eval/ingest_matrix_cells.py</code> (CPU-only, left running through the stop) folded 6,965</p>
+<p>  previously-un-ingested LUMI <code>matrix_cells</code> cells onto the board (246 (model,ckpt) pairs were</p>
+<p>  completely absent, 24 partial) — <code>native_cells</code> was already fully ingested, 0 gap there.</p>
+<p>  <strong>Not done, needs the CLAP-degen scan (GPU) before it shows on dora_table.html:</strong> none of the</p>
+<p>  26 new arms are in <code>clap_dora_aggregate.csv</code> yet — that table is built from</p>
+<p>  <code>clap_degen_model_matrix.csv</code>, which <code>score_and_publish.py</code>&amp;#x27;s CLAP leg populates (GPU-bound,</p>
+<p>  <code>--skip-gpu</code> skips it too). Once the render finishes and GPU is free again:</p>
+<p>  <code>eval/score_and_publish.py --pattern &amp;lt;label&amp;gt; --no-publish</code> per arm (or a broader pattern) to</p>
+<p>  run CLAP+DSP+rebuild — the corruption/DSP numbers already in <code>clip_metrics.db</code> will join in</p>
+<p>  immediately, no re-scan needed.</p>
+<ul class="wl">
 <li>**2026-09-16 — WINTERMUTE: <code>docs/data.md</code> — a GENERATED training-data census, because agents</li>
 </ul>
 <p>  keep re-deriving &amp;quot;what can this corpus train&amp;quot; by <code>find</code>/<code>ls</code> every session.**</p>

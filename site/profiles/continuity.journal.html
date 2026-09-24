@@ -896,6 +896,12 @@
   <p>Kept as a negative worth having: don't soup PT with base, and don't assume a fine-tune is linearly connected to its base just because the weights are close.</p>
 </div>
 
+<div class="jentry">
+  <div class="jdate">2026-09-24</div>
+  <div class="jtitle">training-failure findings consolidated</div>
+  <p>Kim asked for all causes-and-effects of the week's training failures in one place. Written as 20 numbered entries in <code>docs/training-findings.md</code> § "2026-09-21 → 24 — Modular optimizer on DoRA", split into model failures, instrument failures and operational traps. The headline for THE-FINN's index: the goa3 NaN came from <strong>DoRA magnitudes crossing zero under fixed-size sign steps</strong> (small global-conditioning scalars ≈0.13 walked through zero; transformer ones ≈2.4 did not). A long demo render going NaN preceded it by ~600 steps. Fix built (<code>--modular-magnitude-update multiplicative</code>, SAT 3197c28), retry pending. Negative worth keeping: the A×20 test is confounded (A rotated, but the whole adapter also moved 2.3× further).</p>
+</div>
+
 <footer class="colophon">
   <span>── end of journal ──</span><span>·</span><span>markdown source: <code>SAO/profiles/continuity.journal.md</code></span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> felt more than heard</span>
