@@ -4,6 +4,45 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-09-23 — GHOST-NOTE: PARKED mid-batch, board render stopped for an overnight training
+  run (Kim direct) — resume steps below.** 26 arms registered in `rarity_bracket_manifest.json`
+  from a sa3_lora_runs sweep (>1000-step runs not yet on the board): 14 standalone runs + the
+  11-arm `fusion_autoscale_vs_adamw_2026-09-01` optimizer-comparison campaign (`fa_*` labels) +
+  `fullft_goa_t256` (added its two continued-training checkpoints, ep38/ep69, past the original
+  8-epoch campaign). Full label list + per-arm notes in the manifest entries themselves.
+  **Render status when stopped:** 3 arms fully done (`dora128_mix3_nodas_20260918_231801`,
+  `melodychroma_r32_hpcp`, `modular_cubic5_5400trk_20260921` — 108 cells each), a few partial
+  (`dora128_mix3_nodas_20260918_231123` 69/108, `fullft_goa_t256` 74/~111 across 3 ckpts,
+  `sa3-goa-dora-47s-r128-fusion` 1 cell), the rest (~20 arms) not started.
+  **To resume the render** (GPU, once free):
+  ```
+  cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True && .venv/bin/python eval/model_matrix_gen.py --only-labels dora128_mix3_nodas_20260918_231801,melodychroma_r32_hpcp,modular_cubic5_5400trk_20260921,sa3-goa-dora-47s-r64,sa3-goa-dora-47s-r128-fusion-caut,sa3-goa-dora-47s-r128-fusion,sa3-goa-dora-47s-r128-adamw,dora128_mix3_nodas_20260918_231123,sa3-goa-dora-47s-b4-cont,sa3-goa-dora-47s,sa3-goa-dora-47s-b4,dora128_mix3_overnight_20260918_084329,audition_160ep_2026-09-22-b,e2_phm,fa_adamw_lr1e-4,fa_adamw_lr3e-4_step2000,fa_adamw_scratch_step5000,fa_fullft_autoscale,fa_fusion_autoscale_lr1e-4,fa_fusion_autoscale_lr1e-6_full,fa_fusion_autoscale_lr5e-6_full3h,fa_fusion_autoscale_lr5e6_bs2,fa_fusion_autoscale_lr5e6_control2,fa_lion_lr1e-5,fa_lion_lr5e-5-batch32,fullft_goa_t256 --weights online
+  ```
+  Resume is automatic (skips manifest keys already present) — no need to prune the label list.
+  Check `sa3-goa-dora-47s-r128-fusion-caut` specifically: known-bad (2026-09-08 quarantine
+  history, cautious-rescale bug, fixed but flagged) — it dropped NaN cells cleanly via
+  `z0_is_finite` during the partial run, expect more.
+  **Already done, CPU-only, safe and persisted regardless of GPU state:** ran
+  `eval/corruption_scan_to_db.py` + new `eval/dsp_scan_to_db.py` (flatness/zcr/hf via
+  `disintegration_metrics.py::measure()`, no GPU) on all 468 cells rendered so far — into
+  `clip_metrics.db`. New finding: `modular_cubic5_5400trk_20260921` (full 5400-track corpus,
+  13500-step ModularOptimizer run) shows real corruption even at cfg7/w1 (the operating point,
+  not just the off-config sweep) — 31 bad jumps on `rb_mid_3`, 19 on `rb_rare_6`. Also fixed a
+  real bug in `build_clap_hyperparam_table.py`'s `bad_samples_cfg17_w1` column (Kim 2026-09-23):
+  it pooled cfg1+cfg7 together; now correctly splits to the same operating-point mask as the
+  rest of the table (cfg7/w1 normal rows, cfg1/w1 for `_ptm` rows). `dora_table.html` now shows
+  `bad`/`velocity` columns (were computed earlier but never wired into the HP display list).
+  `eval/ingest_matrix_cells.py` (CPU-only, left running through the stop) folded 6,965
+  previously-un-ingested LUMI `matrix_cells` cells onto the board (246 (model,ckpt) pairs were
+  completely absent, 24 partial) — `native_cells` was already fully ingested, 0 gap there.
+  **Not done, needs the CLAP-degen scan (GPU) before it shows on dora_table.html:** none of the
+  26 new arms are in `clap_dora_aggregate.csv` yet — that table is built from
+  `clap_degen_model_matrix.csv`, which `score_and_publish.py`'s CLAP leg populates (GPU-bound,
+  `--skip-gpu` skips it too). Once the render finishes and GPU is free again:
+  `eval/score_and_publish.py --pattern <label> --no-publish` per arm (or a broader pattern) to
+  run CLAP+DSP+rebuild — the corruption/DSP numbers already in `clip_metrics.db` will join in
+  immediately, no re-scan needed.
+
 - **2026-09-16 — WINTERMUTE: `docs/data.md` — a GENERATED training-data census, because agents
   keep re-deriving "what can this corpus train" by `find`/`ls` every session.**
   `Misc/training_data_census.py` scans every latent/target/timeseries store and both SQLite DBs and

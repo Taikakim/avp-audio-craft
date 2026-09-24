@@ -24,19 +24,30 @@ Pipeline per pair (A outgoing, B incoming):
      ONLY meaningful because step 2 already brought both sides to one shared tempo
      across the window -- a pure sample-shift search has no reason to show a clean
      minimum otherwise (Kim's own caveat, and it's the right one).
-  4. db_linear_crossfade of A's tail against B's (aligned) head over that window --
-     ONE curve doing both the volume ramp-down AND the crossfade (Kim: "a 10% ramp-
-     down at the end and crossfade the audio to the target"), linear in dB rather
-     than equal-power, so the perceived transition rate is constant across the whole
-     window instead of front/back-loaded (Kim's ear, 2026-09-16: the equal-power
-     version's audible crossfade compressed into ~2s of a much longer nominal
-     window -- see db_linear_crossfade's docstring for the exact mechanism). This IS
-     the whole transition, no generative call needed for it.
-  5. Also renders a "+a2a" variant: a light nl=0.7 sine-bump smoothing pass over just
-     the crossfaded window, to test whether generative smoothing still helps at all now
-     that the starting point is real overlapping audio rather than independently
-     generated bridge material (a genuinely different question than it was against
-     chain_dj_overlay.py's construction).
+  4. Plain linear crossfade of A's tail against B's (aligned) head over that window --
+     just two volume knobs, one down (1-t) one up (t) (Kim: "why can't we just ramp
+     the volume ... like turning one knob down and the other up"). This IS the whole
+     transition, no generative call needed for it.
+  5. ALWAYS renders BOTH overlap mechanisms, each with and without a smoothing pass
+     -- a full 2x2 matrix per pair (Kim 2026-09-22, was previously an opt-in extra):
+     "plain"/"a2a" = the linear crossfade above; "bassswap"/"bassswap_a2a" = Kim's
+     DJ-EQ bass-swap (mids/highs cross on the normal timeline, kick/bass holds from
+     A until late in the window then swaps fast to B -- see bass_swap_crossfade's
+     docstring; diagnosed as the fix for "two full-density kick patterns clashing
+     the whole overlap", which is what "out of sync" actually was). The "+a2a"
+     variants add a light nl=0.7 sine-bump smoothing pass over just the crossfaded
+     window, to test whether generative smoothing still helps now that the starting
+     point is real overlapping audio rather than independently generated bridge
+     material (a genuinely different question than it was against chain_dj_overlay.py's
+     construction).
+  6. Meeting-tempo fix (2026-09-22): the pre-bend target used to be `ta + fixed 2 BPM`
+     regardless of where B's real (MIR-madmom-measured) tempo actually sat -- always
+     pushing A UP even when B was slower, so the two tempos never converged. Now the
+     meeting point is the true midpoint `(ta+tb)/2` (capped at +/-bend-bpm per side),
+     and prebend_outgoing() accepts a signed bend so A can slow down as well as speed
+     up. The gradual small-step nudge itself (0.25 BPM normal / 0.5 BPM at quiet
+     points, over the whole crossfade window) was already correct -- see
+     dj_beatmatch.py -- it just needed the right, direction-aware target fed in.
 """
 import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
@@ -254,9 +265,20 @@ def process_pair(model, sr, p, args, out_dir):
     tail_start = A_use.shape[1] - round(window_sec * sr)
     A_head, A_tail = A_use[:, :tail_start], A_use[:, tail_start:]
 
-    target_bpm = ta + args.bend_bpm
+    # Meeting-point fix (Kim 2026-09-22): this used to be `ta + args.bend_bpm`
+    # unconditionally -- always pushing A UP by a fixed amount regardless of
+    # where B actually sits. When B is the SLOWER of the two, that moves the
+    # meeting point away from B, not toward it, and is the most likely cause
+    # of the "out of sync" percept (A and B were never converging on a shared
+    # tempo). Move both sides toward each other by half the REAL gap instead
+    # -- true midpoint, direction-aware -- capped at +/-args.bend_bpm per side
+    # (the flag's original role, a sane ceiling on how far either side bends,
+    # kept; it no longer forces one fixed direction).
+    gap = tb - ta
+    bend = float(np.clip(gap / 2.0, -args.bend_bpm, args.bend_bpm))
+    target_bpm = ta + bend
     A_tail_bent = prebend_outgoing(A_tail, sr, ta, mix_point_sec=A_tail.shape[1] / sr,
-                                    max_bonus_bpm=args.bend_bpm)
+                                    max_bonus_bpm=bend)
     quiet = detect_quiet_points(B_use, sr)
     catch_up_center = quiet[0] if quiet else 1.5
     B_bent = prebend_incoming(B_use, sr, tb, target_bpm, catch_up_center)
@@ -284,27 +306,30 @@ def process_pair(model, sr, p, args, out_dir):
     # window-length lever (the outpainted extension) is what actually controls
     # whether the transition FEELS long enough; this curve just governs how it feels
     # within whatever window it's given.
-    overlap = linear_crossfade(A_tail_bent, B_aligned)
-    W = overlap.shape[1]
-    B_post = B_aligned[:, W:]
+    # Always render the full 2x2 matrix (Kim 2026-09-22): {linear, bass-swap}
+    # overlap x {plain, +a2a} smoothing, so every transition is directly
+    # A/B-able on both axes instead of bass-swap being an opt-in extra.
+    overlaps = {
+        "plain": linear_crossfade(A_tail_bent, B_aligned),
+        "bassswap": bass_swap_crossfade(A_tail_bent, B_aligned, sr,
+                                         late_frac=args.bass_swap_late_frac),
+    }
+    a2a_suffix = {"plain": "a2a", "bassswap": "bassswap_a2a"}
+    meas_overlap_sec = None
+    for name, overlap in overlaps.items():
+        W = overlap.shape[1]
+        B_post = B_aligned[:, W:]
+        composite = np.concatenate([A_head, overlap, B_post], axis=1)
+        save_audio(str(out_dir / f"{p['out_name']}_{name}.wav"), torch.tensor(composite), sr)
 
-    plain = np.concatenate([A_head, overlap, B_post], axis=1)
-    plain_path = out_dir / f"{p['out_name']}_plain.wav"
-    save_audio(str(plain_path), torch.tensor(plain), sr)
+        smoothed = a2a_smooth_window(model, composite, sr, A_head.shape[1] / sr, W / sr,
+                                      args.nl, args.prompt, args.steps, args.cfg_scale, args.seed)
+        save_audio(str(out_dir / f"{p['out_name']}_{a2a_suffix[name]}.wav"), torch.tensor(smoothed), sr)
+        if name == "plain":
+            meas_overlap_sec = W / sr
 
-    smoothed = a2a_smooth_window(model, plain, sr, A_head.shape[1] / sr, W / sr,
-                                  args.nl, args.prompt, args.steps, args.cfg_scale, args.seed)
-    a2a_path = out_dir / f"{p['out_name']}_a2a.wav"
-    save_audio(str(a2a_path), torch.tensor(smoothed), sr)
-
-    if args.bass_swap:
-        bs_overlap = bass_swap_crossfade(A_tail_bent, B_aligned, sr,
-                                          late_frac=args.bass_swap_late_frac)
-        bs = np.concatenate([A_head, bs_overlap, B_post], axis=1)
-        save_audio(str(out_dir / f"{p['out_name']}_bassswap.wav"), torch.tensor(bs), sr)
-
-    return {"tempo_a": ta, "tempo_b": tb, "target_bpm": target_bpm,
-            "align_shift_ms": shift_sec * 1000, "overlap_sec": W / sr,
+    return {"tempo_a": ta, "tempo_b": tb, "target_bpm": target_bpm, "bend_bpm": bend,
+            "align_shift_ms": shift_sec * 1000, "overlap_sec": meas_overlap_sec,
             "a_head_sec": A_head.shape[1] / sr}
 
 
@@ -319,9 +344,9 @@ def main():
     ap.add_argument("--bend-bpm", type=float, default=2.0)
     ap.add_argument("--max-shift-sec", type=float, default=0.08)
     ap.add_argument("--nl", type=float, default=0.7)
-    ap.add_argument("--bass-swap", action="store_true", default=False,
-                     help="also render Kim's bass-swap variant (mids/highs cross early, bass holds from A until late)")
-    ap.add_argument("--bass-swap-late-frac", type=float, default=0.85)
+    ap.add_argument("--bass-swap-late-frac", type=float, default=0.85,
+                     help="bass-swap crossfade: fraction of the window before the kick/bass "
+                          "starts swapping from A to B (mids/highs cross on the normal timeline)")
     ap.add_argument("--steps", type=int, default=24)
     ap.add_argument("--cfg-scale", type=float, default=6.0)
     ap.add_argument("--prompt", default="aggressive upbeat goa trance")
@@ -345,14 +370,16 @@ def main():
         print(f"[gen] {out_name}", flush=True)
         meas = process_pair(model, sr, p, args, args.out_dir)
         print(f"  tempo A={meas['tempo_a']:.1f} B={meas['tempo_b']:.1f} "
-              f"target={meas['target_bpm']:.1f} align={meas['align_shift_ms']:+.1f}ms "
-              f"overlap={meas['overlap_sec']:.2f}s", flush=True)
+              f"target={meas['target_bpm']:.1f} (bend={meas['bend_bpm']:+.2f}) "
+              f"align={meas['align_shift_ms']:+.1f}ms overlap={meas['overlap_sec']:.2f}s", flush=True)
         (args.out_dir / f"{out_name}_run_meta.json").write_text(json.dumps({
-            "purpose": "the 'improved crossfader' redesign: real-audio equal-power crossfade "
-                       "(no outpainting) between A's faded tail and B's head, aligned via "
-                       "reverse-polarity-difference null test in the kick/bass band, after "
-                       "bungee pre-bend to a shared tempo. Genuinely splice-safe (no clip "
-                       "duplicated across neighbouring transitions), unlike chain_dj_overlay.py.",
+            "purpose": "the 'improved crossfader' redesign: real-audio crossfade (no outpainting) "
+                       "between A's faded tail and B's head, aligned via reverse-polarity-difference "
+                       "null test in the kick/bass band, after bungee pre-bend to a direction-aware "
+                       "midpoint tempo (fixed 2026-09-22 -- was previously always A+2bpm regardless "
+                       "of B's real tempo). Renders the full {linear,bassswap}x{plain,+a2a} matrix "
+                       "every time. Genuinely splice-safe (no clip duplicated across neighbouring "
+                       "transitions), unlike chain_dj_overlay.py.",
             "params": vars(args) | {"pairs_json": str(args.pairs_json)},
             "measured": meas, "kim_feedback": None,
         }, indent=2, default=str))

@@ -117,9 +117,10 @@ def cell_fallback():
 STAGING_COPY = Path.home() / ".cache/evals_aac/dora_table.html"
 
 # column groups + per-metric direction (+1 = higher is better/green, -1 = lower is better)
-HP = ["model", "ckpt", "arch", "rank", "alpha", "alpha_over_rank", "precision", "frames_T",
-      "batch", "effective_batch", "lr", "optimizer", "dataset", "aug", "epoch", "steps",
-      "train_N", "n_cells", "caption_probs", "params_source"]
+HP = ["model", "ckpt", "model_date", "arch", "rank", "alpha", "alpha_over_rank", "precision",
+      "frames_T", "batch", "effective_batch", "lr", "optimizer", "dataset", "aug", "epoch",
+      "steps", "train_N", "n_cells", "caption_probs", "params_source",
+      "bad_samples_cfg17_w1", "opt_velocity"]
 METRICS = {"clap_matched": +1, "clap_margin_far": +1, "ce": +1, "pq": +1, "cu": +1, "pc": +1,
            "zcr": -1, "flatness": -1, "flux": +1, "hf_ratio": -1, "bpm": 0,
            "onset_p95": +1, "centroid": 0, "crest": -1, "rms": +1,
@@ -128,9 +129,10 @@ METRICS = {"clap_matched": +1, "clap_margin_far": +1, "ce": +1, "pq": +1, "cu": 
 STRUCT_COLS = ["recall", "boundaries_per_min", "loop_score"]  # not in the base CSV -> merged in
 NICE = {"clap_matched": "CLAP", "clap_margin_far": "CLAP·mgn", "alpha_over_rank": "α/rank",
         "frames_T": "T", "onset_p95": "onset", "hf_ratio": "hf", "flatness": "flat",
-        "precision": "prec", "optimizer": "opt",
+        "precision": "prec", "optimizer": "opt", "model_date": "date",
         "effective_batch": "eff·b", "caption_probs": "cap·p", "params_source": "src",
-        "recall": "struct·recall", "boundaries_per_min": "sections/min", "loop_score": "loop"}
+        "recall": "struct·recall", "boundaries_per_min": "sections/min", "loop_score": "loop",
+        "bad_samples_cfg17_w1": "bad", "opt_velocity": "velocity"}
 
 # Dataset labels arrived from two extraction paths and disagree on spelling for the SAME
 # corpus (2026-08-21): the name-regex path emits avp/goa, the sbatch path emits the
@@ -145,6 +147,18 @@ DATASET_ALIASES = {"latents_avp": "avp", "latents_sa3": "goa",
 DESC = {
     "model": "Training run label (the recipe). Each row aggregates that run's cfg×strength×prompt cells.",
     "ckpt": "Checkpoint = the training epoch snapshot rendered (ep<N>).",
+    "model_date": "When this checkpoint's clips were first rendered onto the board (earliest "
+                  "cell's file mtime) -- click to sort newest-first, e.g. right after a training "
+                  "push (Kim 2026-09-23).",
+    "bad_samples_cfg17_w1": "Count of clips at the OPERATING POINT ONLY (cfg7/w1, or cfg1/w1 for "
+                            "_ptm rows -- same split as the default-score columns) flagged by "
+                            "audio_corruption_scan.py's amplitude-jump screen (n_bad_jumps>0). "
+                            "Blank = not yet scanned, NOT confirmed clean -- audit the meter "
+                            "before trusting a 0 (Kim 2026-09-22/23).",
+    "opt_velocity": "Weight-space learning velocity (||W_t - W_{t-1}||) between this checkpoint "
+                    "and the previous one in checkpoint_trajectory_stats.py's library, when both "
+                    "exist locally. Blank for most rows -- most runs only kept a terminal "
+                    "checkpoint, and a trajectory needs at least two.",
     "arch": "Adapter type: dora (DoRA rows) · fullft (whole DiT fine-tuned) · base (no adapter).",
     "rank": "DoRA/LoRA rank = adapter capacity. r16 harsh/worst; ≥64 plateaus; 128 = safe default.",
     "alpha": "DoRA alpha = adapter scaling. With α<rank the adapter is applied more gently.",
@@ -457,6 +471,7 @@ const inSet=m=>!memberSet||memberSet.has(m);
 let showAll=false;
 function mv(r,c){if(showAll){const av=r[c+'_all'];if(typeof av==='number')return av;}return r[c];}
 const nfmt=(c,v)=>{if(v==null||v==='')return '';if(typeof v!=='number')return v;
+ if(c==='model_date')return new Date(v*1000).toISOString().slice(0,10);
  if(['lr'].includes(c))return v.toExponential(1);
  if(['rank','alpha','frames_T','batch','aug','epoch','n_cells','bpm'].includes(c))return v%1?v.toFixed(1):v.toFixed(0);
  return v.toFixed(3);};

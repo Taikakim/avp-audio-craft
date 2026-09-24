@@ -15,10 +15,11 @@ than forcing the whole gap closed in one audible jump at the join. This module
 implements that PRE-bending step (applied to each clip's tail/head BEFORE it
 reaches the existing seam machinery), not a replacement for the seam itself:
 
-  A (outgoing): prebend_outgoing() — nudges A's speed up in small steps
+  A (outgoing): prebend_outgoing() — nudges A's tempo toward B in small steps
       (bigger steps allowed at detected quiet points, where a step is less
-      audible) so that by the mix point A has already picked up up to
-      `max_bonus_bpm` of tempo toward B.
+      audible) so that by the mix point A has already moved up to
+      `max_bonus_bpm` of tempo toward B (either direction — A may need to
+      slow down, not just speed up, depending on which side of B it's on).
   B (incoming): prebend_incoming() — starts BELOW its own native tempo and
       ramps up to the meeting tempo (typically A's post-prebend tempo),
       with the bulk of that ramp concentrated in a caller-supplied
@@ -233,14 +234,18 @@ np.save({dst!r}, np.concatenate(outs, axis=0))
 
 def prebend_outgoing(audio, sr, bpm, mix_point_sec, max_bonus_bpm=2.0,
                       normal_step=0.25, quiet_step=0.5) -> np.ndarray:
-    """Track A (already playing, about to be mixed OUT): gradually speeds up
-    via a series of small steps so that by `mix_point_sec` its effective
-    tempo has risen by `max_bonus_bpm`, using `normal_step`-sized BPM
-    increments generally but snapping to (and using `quiet_step`-sized
-    increments at) any detect_quiet_points() timestamp that falls near a
-    nominal step time — a bigger tempo nudge hides better where the material
-    is already quiet, so a candidate step is grown and moved there instead of
-    firing at its evenly-spaced default time.
+    """Track A (already playing, about to be mixed OUT): gradually moves its
+    tempo TOWARD `bpm + max_bonus_bpm` via a series of small steps, using
+    `normal_step`-sized BPM increments generally but snapping to (and using
+    `quiet_step`-sized increments at) any detect_quiet_points() timestamp
+    that falls near a nominal step time — a bigger tempo nudge hides better
+    where the material is already quiet, so a candidate step is grown and
+    moved there instead of firing at its evenly-spaced default time.
+
+    `max_bonus_bpm` MAY BE NEGATIVE (2026-09-22: the caller now derives this
+    from a signed gap to B — A can need to slow down, not just speed up, when
+    B is the slower of the two). Step sizing/placement uses the MAGNITUDE;
+    the sign only decides whether the schedule adds or subtracts from `bpm`.
 
     Step placement: `n_steps = round(max_bonus_bpm / normal_step)` nominal
     step times are laid out evenly across [0, mix_point_sec]; each is
@@ -267,10 +272,12 @@ def prebend_outgoing(audio, sr, bpm, mix_point_sec, max_bonus_bpm=2.0,
     duration = audio.shape[1] / sr
     mix_point_sec = float(min(mix_point_sec, duration))
 
-    if max_bonus_bpm <= 0 or mix_point_sec <= 0:
+    mag = abs(max_bonus_bpm)
+    direction = 1.0 if max_bonus_bpm >= 0 else -1.0
+    if mag <= 1e-9 or mix_point_sec <= 0:
         return audio.copy()
 
-    n_steps = max(1, int(round(max_bonus_bpm / normal_step)))
+    n_steps = max(1, int(round(mag / normal_step)))
     nominal_times = np.linspace(0.0, mix_point_sec, n_steps + 1)[1:]
     tol = 0.5 * (mix_point_sec / n_steps)
 
@@ -282,7 +289,7 @@ def prebend_outgoing(audio, sr, bpm, mix_point_sec, max_bonus_bpm=2.0,
     bonus = [0.0]
     acc = 0.0
     for t_nom in nominal_times:
-        if acc >= max_bonus_bpm - 1e-9:
+        if acc >= mag - 1e-9:
             break
         step = normal_step
         t_use = float(t_nom)
@@ -290,19 +297,19 @@ def prebend_outgoing(audio, sr, bpm, mix_point_sec, max_bonus_bpm=2.0,
             j = int(np.argmin(np.abs(quiet - t_nom)))
             if abs(quiet[j] - t_nom) <= tol:
                 step, t_use = quiet_step, float(quiet[j])
-        acc = min(max_bonus_bpm, acc + step)
+        acc = min(mag, acc + step)
         t_use = max(t_use, times[-1] + 1e-3)  # keep the schedule monotonic
         times.append(t_use)
         bonus.append(acc)
 
-    if bonus[-1] < max_bonus_bpm - 1e-9:
+    if bonus[-1] < mag - 1e-9:
         times.append(mix_point_sec)
-        bonus.append(max_bonus_bpm)
+        bonus.append(mag)
     if times[-1] < duration:
         times.append(duration)          # hold the fully-bent tempo to the end
-        bonus.append(max_bonus_bpm)
+        bonus.append(mag)
 
-    speeds = [(bpm + b) / bpm for b in bonus]
+    speeds = [(bpm + direction * b) / bpm for b in bonus]
     return _bungee_stretch_schedule(audio, sr, times, speeds)
 
 

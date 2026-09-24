@@ -78,6 +78,19 @@ def ingest(src: Path, only_prefix: str = "", dry_run: bool = False, archive: boo
                     m4a_dest = mmg.RENDER_DIR / m4a
                     if not m4a_dest.exists():
                         shutil.copy2(m4a_path, m4a_dest)
+                # VERIFY before claiming the cell is on the board (2026-09-24, GHOST-NOTE):
+                # append_manifest used to run unconditionally here. On a near-full btrfs
+                # volume under concurrent write pressure (this ingest + a GPU board render
+                # sharing the same drive), 52 of 6964 wav copies silently failed while the
+                # manifest line still got written -- "manifest says done" is not "the file is
+                # actually there" (same class of bug as docs/open-threads.md 2026-07-29's
+                # playability gap). A cell whose archive copy didn't land stays MISSING, not
+                # falsely marked present -- honest and re-ingestible on the next pass.
+                wav_dest = mmg.RENDER_DIR / wav.name
+                if not wav_dest.exists():
+                    print(f"[ingest] !! archive copy FAILED for {wav.name} -- not marking present", flush=True)
+                    n_missing += 1
+                    continue
             mmg.append_manifest(e)
         existing.add(key)
         n_new += 1

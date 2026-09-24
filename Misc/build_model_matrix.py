@@ -182,14 +182,25 @@ def main():
                         # line-wins, which under full grids was effectively random.
     nscore = {}
     cov = {}           # model -> {ckpt: n_clips}
+    ckpt_mtime = {}    # model -> {ckpt: earliest staged-clip mtime (epoch seconds)} -- the
+                       # "order by date" signal (Kim 2026-09-22). Not the checkpoint's own
+                       # save time (that needs resolving its Mantu/LUMI path per-arm, which
+                       # this script doesn't do) -- the earliest render of it is a fine, always-
+                       # available proxy, since a ckpt can't appear in the dropdown at all
+                       # without at least one staged clip.
     for e in entries:
         pid = str(e.get("prompt_id"))
         prompts.setdefault(pid, e.get("prompt_text", pid))
         # a cell is playable only when its m4a actually exists in staging --
         # G's manifest runs ahead of his transcode; dead cells are worse than
         # briefly-missing ones (they'd 404-cache in the browser)
-        if not (STAGING / "model_matrix" / e["file"]).exists():
+        _fpath = STAGING / "model_matrix" / e["file"]
+        if not _fpath.exists():
             continue
+        _mt = _fpath.stat().st_mtime
+        _cm = ckpt_mtime.setdefault(e["model"], {})
+        if e["ckpt"] not in _cm or _mt < _cm[e["ckpt"]]:
+            _cm[e["ckpt"]] = _mt
         if e.get("duration_mode") == "native":
             mk = f'{e["model"]}|{e["ckpt"]}'
             ngrid[f'{mk}|{jsnum(e["cfg"])}|{jsnum(e["strength"])}|{pid}'] = e["file"]
@@ -230,6 +241,12 @@ def main():
             "recipe": redact(_recipe) if isinstance(_recipe, str) else "",
             "training_data": redact(ov.get("training_data", "")),
             "note": redact(ov.get("note", "")), "ckpts": sorted(cov.get(m["label"], {}).keys()),
+            "ckpt_dates": {k: round(v) for k, v in ckpt_mtime.get(m["label"], {}).items()},
+            # earliest staged-clip mtime across ALL this model's checkpoints -- "models by
+            # date" (Kim 2026-09-23, correcting the earlier per-checkpoint version: "the
+            # ckpts per date is not what I meant ... models per date is the useful one").
+            "model_date": (round(min(ckpt_mtime[m["label"]].values()))
+                            if ckpt_mtime.get(m["label"]) else None),
         }
         commentary = _public_commentary(ov)
         if commentary:
@@ -278,6 +295,11 @@ def main():
                'selected column IS already a _ptm model, this has nothing to dim against (you&#39;re '
                'already looking at the post-trained render) and is a no-op, same as unchecking it.">'
                '<input type=checkbox id=mptm> post-trained</label>'
+               ' <label style="color:#8a8" title="sort the MODEL dropdown by when it was first '
+               'rendered onto this board, newest first, instead of alphabetically -- useful '
+               'right after a training push when you want to find recent arms without knowing '
+               'their exact label.">'
+               '<input type=checkbox id=mmodeldate onchange="render()"> models by date</label>'
                ' <button id=mspread onclick="spreadCkpts()" title="fill all four columns with an '
                'evenly-spaced sample of the selected model&#39;s checkpoints (first, last, and two '
                'between) -- the useful default for an unscored model, where there are no metrics to '
@@ -422,18 +444,28 @@ window.addEventListener('load',()=>{const nb=document.getElementById('mnative');
  if(pb)pb.addEventListener('change',syncFilterClasses);});
 const labels=Object.keys(MM.models);
 function ckptsFor(m){return MM.models[m]?MM.models[m].ckpts:[]}
+// "models by date" (Kim 2026-09-23, replacing an earlier per-checkpoint version that
+// wasn't the useful one): sort the MODEL dropdown by earliest-render mtime, newest first,
+// instead of alphabetically. Undated models (manifest-only labels with no staged clip yet)
+// sort to the end rather than disappearing.
+function orderedLabels(){
+ const byDate=document.getElementById('mmodeldate');
+ if(!byDate||!byDate.checked)return labels;
+ return [...labels].sort((a,b)=>((MM.models[b]||{}).model_date??-Infinity)-((MM.models[a]||{}).model_date??-Infinity));
+}
 function render(){
  const wrap=document.getElementById('cols');wrap.innerHTML='';
  for(let c=0;c<4;c++){
   const st=colState[c];const div=document.createElement('div');div.className='col';
   let h='<select onchange="colState['+c+'].model=this.value;colState['+c+'].ckpt=null;render()">';
   h+='<option value="">— model —</option>';
-  for(const m of labels){const lit=ckptsFor(m).length>0;
+  for(const m of orderedLabels()){const lit=ckptsFor(m).length>0;
    h+='<option class="'+(lit?'lit':'unlit')+'" value="'+m+'"'+(st.model===m?' selected':'')+'>'+m+(lit?' ●':'')+'</option>'}
   h+='</select>';
   if(st.model){const info=MM.models[st.model];const cks=info.ckpts;
    h+='<select onchange="colState['+c+'].ckpt=this.value;render()"><option value="">— checkpoint —</option>';
-   for(const k of cks)h+='<option class=lit value="'+k+'"'+(st.ckpt===k?' selected':'')+'>'+k+' ●</option>';
+   for(const k of cks){
+    h+='<option class=lit value="'+k+'"'+(st.ckpt===k?' selected':'')+'>'+k+' ●</option>'}
    if(!cks.length)h+='<option disabled>(none rendered yet)</option>';
    h+='</select>';
    const cm=info.commentary;
@@ -513,6 +545,7 @@ function syncURL(){
  let h='c='+parts.join('|');
  const nb=document.getElementById('mnative'); if(nb&&nb.checked)h+='&nat=1';
  const pb=document.getElementById('mptm'); if(pb&&pb.checked)h+='&ptm=1';
+ const db=document.getElementById('mmodeldate'); if(db&&db.checked)h+='&mdt=1';
  // replaceState, not assignment: writing location.hash would push a history entry per click
  // and turn Back into an undo-one-column crawl.
  try{history.replaceState(null,'','#'+h);}catch(e){}}
@@ -525,6 +558,7 @@ function applyURL(){
    colState[i].ckpt=decodeURIComponent(k||'')||null;});}
  if(q.nat==='1'){const nb=document.getElementById('mnative'); if(nb)nb.checked=true;}
  if(q.ptm==='1'){const pb=document.getElementById('mptm'); if(pb)pb.checked=true;}
+ if(q.mdt==='1'){const db=document.getElementById('mmodeldate'); if(db)db.checked=true;}
  return !!q.c;}
 // EVEN CHECKPOINT SPREAD (Kim 2026-08-05: "in a lack of the scores ... an evenly sampled
 // selection of checkpoints"). Unscored models have no metrics to rank their checkpoints by,

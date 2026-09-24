@@ -7663,5 +7663,46 @@
   "lion_lr5e-5-batch32": {
     "purpose": "Second Lion arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01): Lion at lr 5e-5 with batch 32, against lion_lr1e-5's lr 1e-5 / batch 8. Same 300-item constrained goa/psytrance subset of latents_sa3 as the rest of the campaign. Trained to 6000 steps (epoch 666); constant LR, no warmup decay visible in metrics.csv. Recipe read from the checkpoint's lora_config + lightning metrics, not from a launcher record -- this run has no run_meta.json on disk.",
     "recipe": "DoRA-rows r128, alpha 128, T=512, lr 5e-5, optimizer Lion, batch 32, 6000 steps; 300-item constrained goa/psytrance subset of latents_sa3. No EMA in the checkpoint (LoRA runs force-disable it), so renders load the online weights."
+  },
+  "modular_sfswap_20260921__step2500": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run -- terminal checkpoint so far (ep277/step2500) (in progress 2026-09-21/22, target 10000 steps).",
+    "note": "ModularOptimizer SF-swap verification run, in progress 2026-09-21/22."
+  },
+  "modular_sfswap_20260921__step100": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run (in progress 2026-09-21/22, target 10000 steps)."
+  },
+  "modular_sfswap_20260921__step500": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run (in progress 2026-09-21/22, target 10000 steps)."
+  },
+  "modular_sfswap_20260921__step1000": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run (in progress 2026-09-21/22, target 10000 steps)."
+  },
+  "modular_sfswap_20260921__step1500": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run (in progress 2026-09-21/22, target 10000 steps)."
+  },
+  "modular_sfswap_20260921__step2000": {
+    "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run (in progress 2026-09-21/22, target 10000 steps)."
+  },
+  "audition_160ep_2026-09-22-b": {
+    "note": "Kim 09-23 @step1440: very clean, small background sounds better defined; right direction but not 90s goa yet, leans modern/full-on psytrance.",
+    "recipe": "DoRA-rows r128 a128, modular cubic5+NorMuon+SF(c_warmup 75), lr 5e-4, wd 0.02 overtraining-scaled, b32, 160 ep subset300, frames 256"
+  },
+  "goa3_avp_r256_2026-09-23": {
+    "one_liner": "ABANDONED at ~step 6900 (NaN loss) - best checkpoint step 5072; the name says r256 but the adapter is rank 128",
+    "family": "modular-optimizer DoRA",
+    "why": "Does a bigger goa mix move the modular recipe toward the 90s goa sound? Three corpora (goa, avp with tiered captions, goa bigset with v5 captions), same modular optimizer as audition_160ep_2026-09-22-b but lr 6e-4 and Schedule-Free averaging delayed to step 1000.",
+    "recipe": "medium-base, DoRA-rows rank 128 alpha 128 (NOT 256, despite the run name), modular optimizer (cubic5 + NorMuon + Schedule-Free, c_warmup 1000), lr 6e-4, wd 0.02, batch 32, 256-frame crops, planned 10144 steps = 16 epochs.",
+    "verdict": "Steps 1268 and 2536 audition as clean and moving in a good direction. Training diverged: the step-6340 checkpoint already renders NaN on the rb_mid_4 prompt, and the loss guard stopped the run at epoch 10 on a NaN loss. Cause found: DoRA magnitude scalars in the global-conditioning and timestep embedders crossed zero under fixed-size sign steps. Only step1268..step5072 are on this board; step6340 and the abort checkpoint are withheld because their renders are non-finite. Known artefact: the rb_rare_7 20 s clip crackles at every milestone (887-1202 sample jumps at steps 1268-3804, 169 at step 5072) - labelled, not hidden; the 48 s rb_rare_7 clips are clean.",
+    "status": "abandoned",
+    "compare_against": "audition_160ep_2026-09-22-b (subset300, same recipe at lr 5e-4)"
+  },
+  "audition_amult20_480_2026-09-23": {
+    "one_liner": "LoRA A-step x20 probe, one milestone (step 240)",
+    "family": "modular-optimizer DoRA",
+    "why": "In audition_160ep_2026-09-22-b the LoRA A row-space stayed 99.2% frozen. Does letting A move (x20 step size) change the sound? Gates porting LoRA-TSD: same sound and A still frozen means drop it.",
+    "recipe": "medium-base, DoRA-rows rank 128 alpha 128, modular optimizer, LoRA A step x20, lr 5e-4, wd 0.02, batch 32, 256-frame crops, 240 steps, subset300.",
+    "verdict": "Five of six demo clips on the board. The rb_mid_4 48 s render diverged to NaN and is withheld. rb_rare_7 20 s and kl_2 20 s show mild crackle (82 and 55 sample jumps).",
+    "status": "probe",
+    "compare_against": "audition_160ep_2026-09-22-b at step 240"
   }
 }

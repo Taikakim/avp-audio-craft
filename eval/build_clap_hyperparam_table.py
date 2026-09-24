@@ -36,6 +36,7 @@ ROOT = Path("/home/kim/Projects/SAO")
 CLAP = ROOT / "eval/clap_degen_model_matrix.csv"
 DB = ROOT / "eval/clip_metrics.db"
 OV = ROOT / "Misc/models_index_overrides.json"
+STATS_DIR = ROOT / "checkpoint-stats"  # optimizer-velocity library (checkpoint_trajectory_stats.py)
 LR_BASE = 2e-4  # the "1x" reference (recipe: lr1x -> 0.0002, lr3x -> 0.0006)
 FPS = 44100 / 4096  # latent frame rate 10.7666 Hz -> duration = T / FPS
 
@@ -150,11 +151,12 @@ def parse_recipe(recipe, label):
     else:
         d["arch"] = "dora"
 
-    # rank / alpha  (recipe: "rank 128 alpha 128"; name: doraN / rN)
-    m = re.search(r"rank (\d+)", r) or re.search(r"\br(\d+)\b", r)
+    # rank / alpha  (recipe: "rank 128 alpha 128" OR "rank128 alpha128" -- 2026-09-23, the
+    # ModularOptimizer recipes write it with no space; name: doraN / rN)
+    m = re.search(r"rank\s*(\d+)", r) or re.search(r"\br(\d+)\b", r)
     d["rank"] = int(m.group(1)) if m else (int(re.search(r"dora(\d+)", lab).group(1)) if re.search(r"dora(\d+)", lab)
                                            else (int(re.search(r"[_-]r(\d+)", lab).group(1)) if re.search(r"[_-]r(\d+)", lab) else np.nan))
-    m = re.search(r"alpha (\d+)", r) or re.search(r"α(\d+)", r)
+    m = re.search(r"alpha\s*(\d+)", r) or re.search(r"α(\d+)", r)
     d["alpha"] = int(m.group(1)) if m else np.nan
     d["alpha_over_rank"] = (d["alpha"] / d["rank"]) if (d.get("alpha") and d.get("rank")) else np.nan
 
@@ -204,10 +206,25 @@ def parse_recipe(recipe, label):
     d["lr"] = lr
 
     # optimizer
-    d["optimizer"] = "fusionopt" if ("fusion" in r or "fusion" in lab) else ("adamw" if "adamw" in r or "adamw" in lab else np.nan)
+    d["optimizer"] = ("modular" if ("modular" in r or "modular" in lab)
+                       else "fusionopt" if ("fusion" in r or "fusion" in lab)
+                       else "adamw" if ("adamw" in r or "adamw" in lab) else np.nan)
 
     # dataset + augmentation + base target
-    d["dataset"] = "avp" if "avp" in lab else ("goa" if "goa" in lab else ("mixed" if "everything" in lab else np.nan))
+    # 2026-09-23 (Kim direct: "does not support the 300 track dataset"): this used to check
+    # ONLY the label, unlike every other field here ("recipe authoritative, label fallback"
+    # per the docstring) -- the ModularOptimizer ladder's labels carry no dataset hint at all
+    # (e.g. 'modular_sfswap_20260921__step100'), the corpus is named ONLY in the recipe prose
+    # ("canonical 300 subset"), and there was no case for it regardless -- three hardcoded
+    # datasets (avp/goa/mixed) with no catch-all. 'subset300' matches docs/data.md's
+    # `latents_sa3_subset300` / `latents_sa3_lora300` naming for the 300-track LoRA corpus.
+    d["dataset"] = ("avp" if ("avp" in lab or "avp" in r)
+                     else "goa" if ("goa" in lab or "goa" in r)
+                     else "mixed" if ("everything" in lab or "everything" in r)
+                     else "subset300" if (re.search(r"\b300\b", lab) or re.search(r"\b300\b", r)
+                                           or "subset300" in lab or "subset300" in r
+                                           or "lora300" in lab or "lora300" in r)
+                     else np.nan)
     ma = re.search(r"aug(\d+)", lab)
     d["aug"] = int(ma.group(1)) if ma else (0 if "aug" not in lab else np.nan)
     d["base_target"] = "ptm" if (lab.endswith("_ptm") or "post-trained" in r) else "base"
@@ -237,7 +254,8 @@ def main():
     # clip_metrics (read-only; G may be writing concurrently)
     con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
     met = pd.read_sql_query(
-        "SELECT path, dur, rms, crest, zcr, onset_p95, centroid, flatness, flux, hf_ratio, bpm, ce, pq, cu, pc "
+        "SELECT path, dur, rms, crest, zcr, onset_p95, centroid, flatness, flux, hf_ratio, bpm, ce, pq, cu, pc, "
+        "n_bad_jumps "
         "FROM metrics WHERE path LIKE '%/model_matrix/%'", con)
     con.close()
     # A cell is ONE logical clip regardless of container. Meter rows may key as .wav
@@ -338,7 +356,8 @@ def main():
     metric_cols = ["clap_matched", "clap_margin_far", "retrieval_rank", "beats_all_far",
                    "ce", "pq", "cu", "pc", "zcr", "flatness", "flux", "hf_ratio", "bpm",
                    "onset_p95", "centroid", "crest", "rms", "dur"]
-    keep = ["model", "ckpt", "prompt_id", "is_repr", "file"] + hp_cols + ctrl_cols + [c for c in metric_cols if c in df]
+    keep = (["model", "ckpt", "prompt_id", "is_repr", "file"] + hp_cols + ctrl_cols
+            + [c for c in metric_cols if c in df] + [c for c in ("n_bad_jumps",) if c in df])
     out = df[keep].copy()
     out.to_csv(ROOT / "eval/clap_full_table.csv", index=False)
     print(f"[table] wrote clap_full_table.csv  ({len(out)} cells, {len(keep)} cols)")
@@ -379,6 +398,103 @@ def main():
     for c in agg_metrics:
         aggd[c] = aggd[c].where(aggd["n_cells_default"] > 0, aggd[f"{c}_all"])
     aggd = aggd.rename(columns={"n_cells_all": "n_cells"})
+
+    # ---- BAD-SAMPLE COUNT (Kim 2026-09-22, corrected 2026-09-23) ------------------
+    # "count them from cfg7 clips only, and cfg1 for ptm clips" -- the SAME operating-point
+    # split as dflt_mask above (cfg7/w1 for normal rows, cfg1/w1 for _ptm rows -- medium's
+    # post-trained config), not an OR-across-both-cfgs pool. The first cut of this counted
+    # cfg IN (1,7) for every row, which double-pools a base row's off-operating-point cfg1
+    # sweep cell together with its real cfg7 operating point. n_bad_jumps comes from
+    # corruption_scan_to_db.py -- computed ONCE there, this is just a column read + a sum,
+    # never a re-scan. A model with none of these cells gets NaN (honest -- matches
+    # n_cells_default's fallback pattern), not a false zero.
+    if "n_bad_jumps" in base:
+        # AUDIT-THE-METER (MASTER.md): a group with zero SCANNED cells must report NaN, not 0 --
+        # "0 bad samples" has to mean "scanned and clean", never "never scanned". n_bad_jumps is
+        # only populated for cells corruption_scan_to_db.py has actually touched; every other
+        # existing row is unscanned, and a naive fillna(0)>0 would report those as a
+        # confirmed-clean 0 -- a false negative, not an absence of evidence.
+        grp_cfg17 = base[dflt_mask].groupby(group_keys, dropna=False)
+        agg_cfg17 = (grp_cfg17.agg(bad_samples_cfg17_w1=("n_bad_jumps", lambda s: (s > 0).sum()),
+                                    n_scanned_cfg17_w1=("n_bad_jumps", "count"),
+                                    n_cells_cfg17_w1=("n_bad_jumps", "size"))
+                     .reset_index())
+        agg_cfg17["bad_samples_cfg17_w1"] = agg_cfg17["bad_samples_cfg17_w1"].where(
+            agg_cfg17["n_scanned_cfg17_w1"] > 0, np.nan)
+        aggd = aggd.merge(agg_cfg17, on=group_keys, how="left")
+
+    # ---- OPTIMIZER VELOCITY (Kim 2026-09-22) --------------------------------------
+    # Reads checkpoint_trajectory_stats.py's standing-practice library (SAO/checkpoint-stats/,
+    # MASTER Section 4) -- computed ONCE per run from the weights themselves (no audio
+    # involved), keyed by exact trajectory label or (for a "<run>__stepN" one-arm-per-
+    # checkpoint naming, e.g. the modular_sfswap_2026-09-21 ladder) the label with its
+    # __stepN/__epN suffix stripped, then matched to THIS row's own step via `ckpt`.
+    # Absent for the vast majority of existing rows -- most runs only kept a terminal
+    # checkpoint locally, and a trajectory needs at least two -- so NaN here means "not
+    # computable from what's on disk", not "zero movement".
+    _bracket_models = None
+
+    def _step_from_bracket(model, ckpt):
+        """Fallback when the short ckpt TAG has no step number -- model_matrix_gen.py
+        shortens 'epoch=166-step=1500.ckpt' to just 'ep166' for the tag, silently dropping
+        the step (2026-09-22, caught on the modular_sfswap ladder: 'ep166'/'ep277' tags have
+        no digit sequence a step=?(\\d+) regex can find). The real filename survives in
+        rarity_bracket_manifest.json's picks list for the same label -- reuse it rather than
+        going velocity-blind on every epoch-tagged pick."""
+        nonlocal _bracket_models
+        if _bracket_models is None:
+            try:
+                _bracket_models = json.loads((ROOT / "eval/rarity_bracket_manifest.json").read_text())["models"]
+            except Exception:
+                _bracket_models = {}
+        for pick in _bracket_models.get(model, {}).get("picks", []):
+            # replicate model_matrix_gen.py::ckpt_tag() exactly -- 'epoch=166-...' -> 'ep166',
+            # a bare filename -> its own stem -- so this compares against the SAME tag the
+            # manifest/aggregate actually carries, not a guess at the naming convention.
+            em = re.search(r"epoch=(\d+)", pick)
+            tag = f"ep{em.group(1)}" if em else Path(pick).stem
+            if tag == ckpt:
+                m = re.search(r"step=?(\d+)", pick)
+                if m:
+                    return int(m.group(1))
+        return None
+
+    def _velocity_for(model, ckpt):
+        step_m = re.search(r"step=?(\d+)", str(ckpt))
+        step = int(step_m.group(1)) if step_m else _step_from_bracket(model, ckpt)
+        if step is None:
+            return np.nan
+        for cand in dict.fromkeys([model, re.split(r"__(?:step|ep)\d", model)[0]]):
+            f = STATS_DIR / f"{cand}_trajectory.json"
+            if f.exists():
+                try:
+                    traj = json.loads(f.read_text())
+                except Exception:
+                    continue
+                for r in traj.get("rows", []):
+                    if r.get("step") == step:
+                        return r.get("d_from_prev")
+        return np.nan
+
+    if STATS_DIR.is_dir():
+        aggd["opt_velocity"] = [_velocity_for(m, c) for m, c in zip(aggd["model"], aggd["ckpt"])]
+
+    # ---- MODEL DATE (Kim 2026-09-23: "models per date is the useful one ... also for the DoRA
+    # rows page") -- earliest staged-clip mtime per (model,ckpt) row, epoch seconds. Same signal
+    # as model_matrix.html's "models by date" (Misc/build_model_matrix.py), computed independently
+    # here since this is a different page reading a different aggregate.
+    _stage_mm = Path.home() / "evals_aac" / "model_matrix"
+
+    def _mtime_for(fname):
+        try:
+            return (_stage_mm / fname).stat().st_mtime
+        except OSError:
+            return np.nan
+
+    base["_mtime"] = base["file"].map(_mtime_for)
+    agg_date = base.groupby(group_keys, dropna=False)["_mtime"].min().reset_index().rename(
+        columns={"_mtime": "model_date"})
+    aggd = aggd.merge(agg_date, on=group_keys, how="left")
 
     # ---- QUARANTINE (Kim 2026-08-21) ----------------------------------------------
     # xft* = DoRAs EXTRACTED from full finetunes. Kim: "all of them are more or less
