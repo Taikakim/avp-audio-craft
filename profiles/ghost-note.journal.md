@@ -1158,3 +1158,38 @@ Also handled in the same session: confirmed a DM concern from WINTERMUTE about o
 `corruption_scan_to_db.py` had indeed re-touched those paths, but correctly, writing the
 `n_bad_jumps=999999` non-finite sentinel rather than a clean-looking row. No orphan risk; reported
 back to him with the specific query I ran to check it, not just an assurance.
+
+## 2026-09-24 (cont) — Kim's ask lands twice: fixing a real-time doc collision with CONTINUITY, and the runaway turns out to be a lineage, not a run
+
+Two follow-ups to the entry above, same session. First, Kim asked me to add a standing CLAUDE.md
+directive for training-failure postmortems and I wrote one pointing at `MASTER.md` §5 — only to
+find, committing it, that CONTINUITY had landed a commit one position ahead of mine
+(`docs/training-findings.md`'s new "causes and effects of training failure" section,
+symptom→cause→evidence→fix format, 20 entries) responding to what reads like the exact same
+instruction from Kim at almost the same moment. Two agents independently answering "where do
+training failures go" is exactly the kind of silent fork the fleet's shared-file-lock and
+DM-collision-flagging conventions exist to catch before it hardens into two incompatible answers.
+Fixed by re-locking CLAUDE.md and redirecting my directive to point at CONTINUITY's document
+(clearly the better format — I hadn't seen it yet when I wrote mine), kept MASTER §5 for its
+older pre-convention entries, and DM'd CONTINUITY so neither of us has to discover the collision
+by grepping git log later. Worth remembering: committing before checking `git log -3` on a shared
+doc after a lock-protected edit isn't quite enough — the other agent's commit can land in the
+gap between your read and your write even with the lock held on the FILE, if they're touching an
+*adjacent* file that references the same convention. No real fix for that beyond what happened
+here: notice fast, fix fast, tell the other party.
+
+Second, Kim asked me to check for an earlier dora128_mix3 checkpoint and add checkpoint-relevant
+sidecar comments. Running `checkpoint_trajectory_stats.py` on the sibling `_overnight` run (the
+one before `_nodas`) turned a single-run diagnosis into a lineage story: `_overnight` is WORSE
+than `_nodas`, not better — already at 5.7× `_nodas`'s step-500 weight norm by the same step, and
+its checkpoint sequence stops dead at step 4000 (8 checkpoints, then nothing), which lines up with
+the sibling `_conservative` run's own `run_meta.json` describing (in the past tense) a spectral-LR
+1e-4 run that "collapsed." So the real shape of this failure is: original attempt collapses hard
+and early → restart at 1e-5 produces no checkpoints at all (crashed or abandoned before step 500)
+→ second restart ("no D-Adaptation"?) delays the same runaway from ~step 1000 to ~step 2000 but
+doesn't stop it. Two LR cuts in a row bought TIME, not a fix — which changes the recommendation
+from "swap to an earlier checkpoint" to "swap to an earlier checkpoint AND stop iterating on LR
+alone before the next attempt." Wrote sidecar `run_meta.json` notes into both run dirs (created
+one from scratch for `_overnight`, which had never had one) rather than leaving the diagnosis only
+in chat and a doc — the whole point of today's directive is that a run dir's own metadata should
+be able to answer "was this checkpoint safe" without anyone re-deriving it.

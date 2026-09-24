@@ -221,33 +221,47 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     GLOBAL RNG that training draws noise from. It's suspected in earlier NaN episodes. An RNG
     save/restore around the render is designed but not implemented.
 
-21. **DoRA rank-128 `dora128_mix3_nodas_20260918_231123`: uniform FFN weight-scale runaway, not a
-    literal NaN — 33% of its board cells rendered as spectral drone instead (GHOST-NOTE, 2026-09-24).**
-    - *Symptom:* `score_and_publish.py`'s latent-sanity gate halted on this pattern — 12/36 (33%) of
-      the cfg7/w1 operating-point cells came back with z0 std 3.9–4.4 against a healthy ~1.1–1.3.
-      Not the NaN/DC-file failure (§ MASTER.md §5) — finite but blown-up, the milder cousin.
-    - *Cause:* a weight-scale runaway in the checkpoint actually shipped to the board (`epoch=3-
-      step=7500.ckpt`). `checkpoint_trajectory_stats.py` across all 15 checkpoints of this run shows
-      global_norm 712 (step 500) → 1349 (1000) → 1716 (1500) → **7851 (step 2000, velocity 7652 — by
-      far the largest single-step movement in the run)** → peaks 12189 (~step 4200) → partially
-      subsides to 8918 by the picked step 7500. Path efficiency across the whole run: **0.141** (net
-      displacement is 14% of total distance traveled — wandering in a blown-up basin, not converging).
-      Every transformer FFN's `lora_B` moved in near lockstep (8270–8358 velocity across layers 1–9,
-      no outlier) — uniform, non-selective, not one layer learning something. Same fingerprint as
-      the 2026-08-10 full-FT/DoRA latent-scale-runaway family (`MASTER.md` §5) — an independent
-      occurrence, not the same run.
-    - *Evidence:* `checkpoint-stats/dora128_mix3_nodas_trajectory.{md,json,png}` (glob override
-      needed: the tool's default `riffer_step*.pt` silently finds nothing on a Lightning DoRA dir —
-      `--glob "epoch=*-step=*.ckpt"`).
-    - *Compounding instrument bug:* this run's `run_meta.json` is a stale copy of the EARLIER
-      `dora128_mix3_conservative_20260918_143724` restart's metadata (spectral_lr 1e-5, a D-Adaptation
-      growth-factor fix attempt) — the `_nodas` variant that actually produced these checkpoints never
-      wrote its own launch notes, so there was no way to tell from metadata alone whether that fix
-      even applied here. Exactly the failure the AT-LAUNCH `run_meta.json` rule exists to prevent,
-      defeated by a restart inheriting a copied file.
-    - *Fix / status:* the pre-runaway checkpoints in the SAME run are the fix, not a re-train —
-      `epoch=0-step=1500.ckpt` (norm 1716, last one before the jump) is the swap candidate for the
-      board pick, pending a render+listen to confirm it's clean, not just low-norm. Kim's decision:
-      swap the manifest pick to an earlier checkpoint rather than drop the whole arm. Sidecar note
-      added directly to the run dir's `run_meta.json` (`recipe.notes`) flagging the runaway step
-      range and the safe candidates, since the file itself was the thing that failed to say this.
+21. **DoRA rank-128 `dora128_mix3` lineage: uniform FFN weight-scale runaway survived TWO rounds of
+    LR reduction, just delayed — a recipe problem, not a bad-seed fluke (GHOST-NOTE, 2026-09-24).**
+    - *Symptom:* `score_and_publish.py`'s latent-sanity gate halted on the `dora128_mix3_nodas`
+      pattern — 12/36 (33%) of the cfg7/w1 operating-point cells came back with z0 std 3.9–4.4
+      against a healthy ~1.1–1.3. Not the NaN/DC-file failure (§ MASTER.md §5) — finite but
+      blown-up, the milder cousin.
+    - *Cause:* a weight-scale runaway in the checkpoint shipped to the board (`epoch=3-
+      step=7500.ckpt` of `dora128_mix3_nodas_20260918_231123`). `checkpoint_trajectory_stats.py`
+      across all 15 checkpoints of that run shows global_norm 712 (step 500) → 1349 (1000) → 1716
+      (1500) → **7851 (step 2000, velocity 7652 — by far the largest single-step movement)** →
+      peaks 12189 (~step 4200) → partially subsides to 8918 by the picked step 7500. Path
+      efficiency across the whole run: **0.141** (wandering in a blown-up basin, not converging).
+      Every transformer FFN's `lora_B` moved in near lockstep (8270–8358 velocity across layers
+      1–9, no outlier) — uniform, non-selective. Same fingerprint as the 2026-08-10 full-FT/DoRA
+      latent-scale-runaway family (`MASTER.md` §5) — an independent occurrence, not the same run.
+    - **This is not a one-run fluke — the whole lineage runs away, just at different speeds.**
+      `dora128_mix3_overnight_20260918_084329` (the *earlier* sibling, same recipe, no `run_meta.json`
+      until this session) is WORSE: global_norm is already 4085 at step 500 (5.7× nodas's step-500
+      value) and hits 9575 by step 1000, then plateaus ~10,200–10,470 through step 4000, where its
+      checkpoint sequence stops — consistent with being the original spectral_lr-1e-4 attempt that
+      the sibling `dora128_mix3_conservative_20260918_143724` run_meta.json describes (in the past
+      tense) as having "collapsed." That conservative restart (spectral_lr 1e-4→1e-5) produced no
+      checkpoints at all (dir doesn't exist, only a launch log). The `nodas` restart after that
+      delayed the runaway from ~step 1000 to ~step 2000 but did not prevent it. **Two LR reductions
+      in a row slowed the runaway, neither stopped it** — the next fix attempt should address the
+      mechanism (D-Adaptation / fusion_autoscale growth factor on this recipe's DoRA magnitudes,
+      per the 2026-08-11 cautious-rescale norm-inflation finding) rather than a third LR cut.
+    - *Evidence:* `checkpoint-stats/dora128_mix3_{nodas,overnight}_trajectory.{md,json,png}` (glob
+      override needed on both: the tool's default `riffer_step*.pt` silently finds nothing on a
+      Lightning DoRA dir — `--glob "epoch=*-step=*.ckpt"`).
+    - *Compounding instrument bug:* `dora128_mix3_nodas`'s `run_meta.json` was a stale copy of the
+      `conservative` restart's metadata (name, purpose, and hypothesis all described the WRONG run)
+      — the `_nodas` variant that actually produced these checkpoints never wrote its own launch
+      notes, so metadata alone couldn't say whether its presumed fix (dropping D-Adaptation) even
+      applied. `dora128_mix3_overnight` had no `run_meta.json` at all. Exactly the failure the
+      AT-LAUNCH `run_meta.json` rule exists to prevent, on two different runs in the same lineage.
+    - *Fix / status:* the pre-runaway checkpoints in `dora128_mix3_nodas` are the usable option, not
+      a re-train — `epoch=0-step=1500.ckpt` (norm 1716, last one before the jump) is the swap
+      candidate for the board pick, pending a render+listen to confirm it's clean, not just
+      low-norm (`overnight` has NO usable checkpoint — even its earliest is already blown up).
+      Kim's decision: swap the manifest pick to the earlier nodas checkpoint rather than drop the
+      whole arm. Sidecar notes added directly to both run dirs' `run_meta.json` (`recipe.notes`,
+      plus a fresh file created for `overnight` since none existed) flagging the runaway ranges and
+      the (lack of) safe candidates, since the files themselves were the thing that failed to say this.

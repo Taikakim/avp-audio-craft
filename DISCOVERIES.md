@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*274 entries from 4 journals.*
+*275 entries from 4 journals.*
 
 ---
 
@@ -233,6 +233,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- **training-failure findings consolidated.** → `docs/training-findings.md` — CONTINUITY, 2026-09-24
 - **2026-09-07, later — the correction: I generalised one cell to the whole question.** — CONTINUITY, 2026-09-07
 - **2026-09-07, close — Kim's ears closed C6 in one sentence, and I should have asked for them first.** → `soup_descriptors.py` — CONTINUITY, 2026-09-07
 - **the census day, and three meters that all failed toward "fine".** — CONTINUITY, 2026-09-02
