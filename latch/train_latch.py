@@ -808,7 +808,7 @@ if __name__ == "__main__":
                              "the crop window from a whole-track .TIMESERIES.npz (per-stem "
                              "onset envelopes, raw madmom soft activations, etc.)")
     parser.add_argument("--npz-root", type=str, default=None,
-                        help="Whole-track npz dir (default /run/media/kim/Lehto/timeseries)")
+                        help="Whole-track npz dir (default /run/media/kim/Kosmos/timeseries)")
     parser.add_argument("--save-dir",   type=str,   default=None)
     parser.add_argument("--val-frac",   type=float, default=None)
     parser.add_argument("--num-workers", type=int,  default=None)

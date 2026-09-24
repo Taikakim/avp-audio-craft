@@ -32,9 +32,9 @@ sys.path.insert(0, HERE)
 import hook_metric as HM
 
 MELODIES = os.path.join(HERE, 'melodies.jsonl')
-MIDI_DIR = '/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/muscriptor_full'
+MIDI_DIR = '/run/media/kim/Kosmos/muscriptor_full'
 LATENTS = '/home/kim/Projects/latents_sa3'
-OUT = '/home/kim/Projects/latents_sa3_notegrid88'   # NVMe sidecar dir, beside latents (like latents_sa3_melody); NOT the repo tree
+OUT = '/run/media/kim/Lehto/latents-all-backup/latents_sa3_notegrid88'   # sidecar dir (moved off NVMe 2026-09-23, verified dupe of the Lehto-backup copy); NOT the repo tree
 
 N_FRAMES = 4096
 FRAME_DUR = 4096.0 / 44100.0        # 0.0928798 s (10.7666 Hz), matches prep_targets.py

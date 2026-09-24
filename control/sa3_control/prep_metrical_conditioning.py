@@ -37,7 +37,7 @@ import numpy as np
 from scipy.signal import find_peaks
 
 LATENTS = "/home/kim/Projects/latents_sa3"
-OUT_DEFAULT = "/home/kim/Projects/latents_sa3_metrical"
+OUT_DEFAULT = "/run/media/kim/Kosmos/latents_sa3_metrical"
 FRATE = 10.7666015625
 # 145 bpm 4/4: beat 4.46 frames, bar 17.8 frames. Guards span 100-180 bpm.
 BEAT_MIN_DIST = 3

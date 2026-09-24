@@ -226,7 +226,7 @@ class LatCHDataset(Dataset):
             import sys as _sys
             _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
             from whole_track_target_source import WholeTrackTargetSource
-            root = npz_root or "/run/media/kim/Lehto/timeseries"
+            root = npz_root or "/run/media/kim/Kosmos/timeseries"
             self._wt = WholeTrackTargetSource(root)
             print(f"WholeTrackTargetSource: {root}")
             print(f"Target feature        : '{self.bare_feature}' → npz field '{self.ts_feature}'")

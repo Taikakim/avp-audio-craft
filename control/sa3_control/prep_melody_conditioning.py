@@ -31,7 +31,7 @@ import numpy as np
 
 TARGETS = "/home/kim/Projects/SAO/eval/musicology/head_a_ceiling/targets"
 LATENTS = "/home/kim/Projects/latents_sa3"
-OUT_DEFAULT = "/home/kim/Projects/latents_sa3_melody"
+OUT_DEFAULT = "/run/media/kim/Kosmos/latents_sa3_melody"
 FOLD_NAMES = ["rest", "pedal", "m1", "m2", "m3", "m5", "m7", "m12"]
 
 

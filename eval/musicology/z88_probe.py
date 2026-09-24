@@ -24,7 +24,7 @@ import torch, torch.nn as nn, torch.nn.functional as F
 HERE = os.path.dirname(os.path.abspath(__file__))
 SPLITS = os.path.join(HERE, 'head_a_ceiling', 'splits.json')
 LATENTS = '/home/kim/Projects/latents_sa3'
-ROLLS = '/home/kim/Projects/latents_sa3_notegrid88'
+ROLLS = '/run/media/kim/Lehto/latents-all-backup/latents_sa3_notegrid88'
 RESULTS = os.path.join(HERE, 'z88_probe_results.json')
 N_FRAMES, N_KEYS, THR = 4096, 88, 0.1
 

@@ -18,7 +18,7 @@ Also writes an index.jsonl (one row per crop: id, source_track, source_path, sta
 bpm) next to the outputs, for a quick corpus-wide lookup / rename table.
 
     python eval/musicology/enrich_muscriptor_meta.py \
-        --muscriptor-dir /run/media/kim/9a410a1d-.../lumi_runs/muscriptor_full \
+        --muscriptor-dir /run/media/kim/Kosmos/muscriptor_full \
         [--crop-meta /home/kim/Projects/latents_sa3] [--dry-run] [--force]
 """
 import argparse

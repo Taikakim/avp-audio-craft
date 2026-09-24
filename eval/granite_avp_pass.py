@@ -27,7 +27,7 @@ import unicodedata
 sys.path.insert(0, "/home/kim/Projects/mir/src")
 
 AVP_ROOT = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed"
-LATENTS = "/home/kim/Projects/latents_avp"
+LATENTS = "/run/media/kim/Kosmos/latents_avp"
 OUT_SIDECAR = os.path.join(LATENTS, "captions_tiered.json")
 GRANITE = ("/home/kim/Projects/mir/models/LMM/granite-4.0-h-tiny-GGUF/"
            "granite-4.0-h-tiny-Q8_0.gguf")

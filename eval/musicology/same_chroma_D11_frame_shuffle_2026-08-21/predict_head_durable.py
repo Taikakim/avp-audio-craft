@@ -37,7 +37,7 @@ from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 
 CKPT = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_same_chroma_best.pt"
 LATENT_DIR = Path("/home/kim/Projects/latents_sa3")
-MUSCRIPTOR_DIR = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/muscriptor_full")
+MUSCRIPTOR_DIR = Path("/run/media/kim/Kosmos/muscriptor_full")
 OUT_DIR = Path("/home/kim/Projects/SAO/eval/musicology/tier2_predicted")  # DURABLE (D11): the 08-11 run cached to tmpfs and lost it
 
 

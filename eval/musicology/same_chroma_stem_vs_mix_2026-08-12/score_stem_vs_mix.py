@@ -51,7 +51,7 @@ from harmonic.same_chroma import compute_same_chroma, fold_to_12  # noqa: E402
 HERE = Path(__file__).parent
 PRED_DIR = Path("/tmp/claude-1000/-home-kim-Projects-SAO/49cd5391-27e7-4545-8295-a1053db2a077/scratchpad/tier2_predicted")
 LATENT_DIR = Path("/home/kim/Projects/latents_sa3")
-STEM_CHROMA_DIR = Path("/run/media/kim/Lehto/latents_sa3_stem_chroma")
+STEM_CHROMA_DIR = Path("/run/media/kim/Kosmos/latents_sa3_stem_chroma")
 
 
 def align(a, b):

@@ -6,7 +6,7 @@ import numpy as np
 sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
 from harmonic.same_chroma import fold_to_12
 out = {}
-files = sorted(glob.glob("/home/kim/Projects/latents_sa3_chroma/*.npz"))
+files = sorted(glob.glob("/run/media/kim/Lehto/latents-all-backup/latents_sa3_chroma/*.npz"))
 for k, f in enumerate(files):
     cid = f.split("/")[-1][:-4]
     with np.load(f) as z:

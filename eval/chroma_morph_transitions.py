@@ -60,7 +60,7 @@ TRACKS = {
     "heron":   "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/ai-music2/Playlists/Acid Rock/14. Heron Oblivion - Beneath Fields.m4a",
     # 2026-09-15 (Kim, for the Kone portfolio): both tracks are Kim's own.
     "ruoste":   "/run/media/kim/Mantu/avp-stems-original-classified/Kadonneet maat - Ruoste organic techno/full mix 126 BPM.flac",
-    "tomorrow": "/run/media/kim/Mantu/avp-analyzed-stems/Aavepyora - Goddess Guerilla - Dance of Tomorrow/full_mix.flac",
+    "tomorrow": "/run/media/kim/Lehto/avp-analyzed-stems/Aavepyora - Goddess Guerilla - Dance of Tomorrow/full_mix.flac",
 }
 PAIRS = [("phreaky", "angelic"), ("angelic", "heron"), ("heron", "phreaky")]
 

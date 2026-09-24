@@ -51,7 +51,7 @@ import numpy as np
 SAO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIR_FT = "/home/kim/Projects/mir/data/feature_tables"
 LATENTS_GOA = "/home/kim/Projects/latents_sa3"
-LATENTS_AVP = "/home/kim/Projects/latents_avp"
+LATENTS_AVP = "/run/media/kim/Kosmos/latents_avp"
 POOL = os.path.join(SAO, "eval", "kimlong_pool.json")
 BUDGET = os.path.join(MIR_FT, "flamingo_budget.json")
 CLUSTERS = os.path.join(MIR_FT, "merged_clusters_k48.npz")

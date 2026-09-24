@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Phase 1: per-file musicological features for the muscriptor_full MIDI corpus.
 
-Corpus: /run/media/kim/9a410a1d-.../lumi_runs/muscriptor_full/{id}.mid + {id}.stats.json
+Corpus: /run/media/kim/Kosmos/muscriptor_full/{id}.mid + {id}.stats.json
 Outputs (in this dir):
   features.jsonl   -- one JSON object per kept file (resumable, keyed by id)
   melodies.jsonl   -- per-file quantized lead melody (16th-grid slots) for phase 3
@@ -21,7 +21,7 @@ import argparse, json, os, sys, math, glob
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-CORPUS = '/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/muscriptor_full'
+CORPUS = '/run/media/kim/Kosmos/muscriptor_full'
 META_DIR = '/home/kim/Projects/latents_sa3'
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 FEATURES = os.path.join(OUT_DIR, 'features.jsonl')

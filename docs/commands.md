@@ -8,7 +8,7 @@ Copy-paste reference. All venv paths absolute (see `venvs.md`).
 MIR=/home/kim/Projects/mir; PY=$MIR/mir/bin/python
 # Full pipeline (config-driven)
 $PY $MIR/src/master_pipeline.py --config $MIR/config/master_pipeline.yaml
-# Whole-track 100 Hz timeseries → /run/media/kim/Lehto/timeseries/<track>.TIMESERIES.npz
+# Whole-track 100 Hz timeseries → /run/media/kim/Kosmos/timeseries/<track>.TIMESERIES.npz
 $PY $MIR/src/spectral/whole_track_timeseries.py /run/media/kim/Mantu/ai-music/Goa_Separated --workers 4
 # Audiobox aesthetics on a render dir (single-file mode; batch OOMs WavLM on 16 GB)
 $PY -c "import sys; sys.path.insert(0,'$MIR/src'); from timbral.audiobox_aesthetics import analyze_audiobox_aesthetics as a; print(a('clip.flac'))"
@@ -24,7 +24,7 @@ $PY $SAT/scripts/train_latch.py --feature rms_energy_bass \
   --optimizer fusion --components ns5,normuon,sf --t-injection adaln_zero \
   --compile --hot-dtype bf16 --dim 256 --depth 4 --batch-size 64 --lr 3e-4 \
   --epochs 40 --seed 1 --save-best-only
-#   whole-track targets:  --target-source whole_track --npz-root /run/media/kim/Lehto/timeseries
+#   whole-track targets:  --target-source whole_track --npz-root /run/media/kim/Kosmos/timeseries
 # Audition renders → renders/<set>/ (+ manifest.json + index.html)
 $PY $SAT/scripts/render_audition.py
 $PY $SAT/scripts/build_manifest.py        # regenerate manifest after adding clips

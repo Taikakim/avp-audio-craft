@@ -8,7 +8,7 @@ import numpy as np
 
 MUS = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis/musicology")
 import os
-SEC = Path(os.environ.get("SEC_DIR", "/run/media/kim/Lehto/section_labels"))
+SEC = Path(os.environ.get("SEC_DIR", "/run/media/kim/Kosmos/section_labels"))
 GOA = Path("/run/media/kim/Mantu/ai-music/Goa_Separated")
 
 def f_at(ref, hyp, tol):

@@ -377,7 +377,7 @@ def main():
                          "4-level metrical tree (subdiv/beat/bar/phrase) hard-class streams + "
                          "coverage, via MetricalEncoder.")
     # --- melody_contour (Head B) args ---
-    ap.add_argument("--melody-dir", default="/home/kim/Projects/latents_sa3_melody",
+    ap.add_argument("--melody-dir", default="/run/media/kim/Kosmos/latents_sa3_melody",
                     help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
     ap.add_argument("--melody-dirs", nargs="+", default=None,
                     help="per-root form of --melody-dir, for a MULTI-CORPUS run: one contour "
@@ -398,7 +398,7 @@ def main():
                          "draws expose all four {text, melody} on/off states so per-source guidance "
                          "scales are calibratable at inference.")
     # --- metrical_position (E3) args ---
-    ap.add_argument("--metrical-dir", default="/home/kim/Projects/latents_sa3_metrical",
+    ap.add_argument("--metrical-dir", default="/run/media/kim/Kosmos/latents_sa3_metrical",
                     help="sidecar dir of <stem>.metrical.npy (5,4096) tree-position streams + "
                          "<stem>.metrical_conf.npy confidences (metrical_position mode)")
     ap.add_argument("--metrical-dropout", type=float, default=0.15,

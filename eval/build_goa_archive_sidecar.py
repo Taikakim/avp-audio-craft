@@ -54,7 +54,7 @@ FEATURES = Path(os.environ.get(
     "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features"))
 CAPTIONS = Path(os.environ.get(
     "GOA_CAPTIONS_DIR",
-    "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/goa_archive_captions"))
+    "/run/media/kim/Kosmos/goa_archive_captions"))
 MODELS_ESSENTIA = Path("/home/kim/Projects/mir/models/essentia")
 
 CLASS_JSON = {

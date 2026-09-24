@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-LT = Path("/run/media/kim/Lehto/timeseries")
+LT = Path("/run/media/kim/Kosmos/timeseries")
 AVP = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed")
 OUT = Path("/home/kim/Projects/SAO/eval/corpus_reference.json")
 SCALAR = ["stereo_width_ts", "stereo_corr_ts", "dissonance_ts", "inharmonicity_ts",

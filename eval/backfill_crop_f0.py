@@ -18,7 +18,7 @@ Do not reimplement the pooling here; that module is where the rules live.
 
   mir/bin/python eval/backfill_crop_f0.py \
       --crop-dir  /run/media/kim/Lehto/latents-all-backup/latents_avp_originals \
-      --stems-dir /run/media/kim/Mantu/avp-analyzed-stems --dry-run
+      --stems-dir /run/media/kim/Lehto/avp-analyzed-stems --dry-run
 """
 import argparse
 import glob

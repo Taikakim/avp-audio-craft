@@ -35,7 +35,7 @@ import numpy as np
 
 CLIPS = Path.home() / ".cache/evals_aac/model_matrix"
 CLAP = Path("/home/kim/Projects/SAO/eval/clap_degen_model_matrix.csv")
-LT = Path("/run/media/kim/Lehto/timeseries")
+LT = Path("/run/media/kim/Kosmos/timeseries")
 AVP = Path("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/avp-analyzed")
 HZ = 2.0            # analysis frame rate for structure (coarse -- form is slow)
 KERN = 16           # Foote checkerboard half-width (frames) ~= 8 s at 2 Hz

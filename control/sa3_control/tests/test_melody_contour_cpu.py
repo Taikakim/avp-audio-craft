@@ -25,7 +25,7 @@ from sa3_control.conditioner import MelodyContourEncoder
 from sa3_control.adapters import (ControlContext, ControlledCrossAttention,
                                   use_control_context)
 
-MELODY_DIR = "/home/kim/Projects/latents_sa3_melody"
+MELODY_DIR = "/run/media/kim/Kosmos/latents_sa3_melody"
 LATENTS = "/home/kim/Projects/latents_sa3"
 
 

@@ -49,14 +49,14 @@ items**, not training windows and not tracks.
 | `latents_goa_bigset` | 12,524 | 0 | **none** | (256, 4096) f4 | base/LoRA | **goa_archive** crops. Latents only — crop .json carries NO control scalars. |
 | `latents_goa_aug8` | 3,941 | 0 | **none** | (256, 4096) f4 | base/LoRA | 8x pitch/stretch augmentation of goa. Augment metadata only, no control scalars. |
 | `suomisoundi_latents` | 1,261 | 0 | **none** | (256, 4096) f4 | base/LoRA | **Suomisoundi**. No crop scalars; per-frame targets must come from the whole-track store. |
-| `latents_avp` | 2,393 | 2,393 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.) |
-| `latents_avp_aug10` | 320 | 320 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | avp 10x augmentation. |
-| `latents_avp_originals` | 288 | 288 — per-crop timeseries (25 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | avp unaugmented. |
-| `latents_avp_aavepyora` | 194 | 194 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | aavepyora subset. |
-| `latents_avp_summamutikka` | 78 | 78 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | summamutikka subset. |
+| `latents_avp` | 2,393 | 2,393 — per-crop timeseries (21 fields) | **none** | (256, 4096) f2 | base/LoRA, LatCH | **avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.) |
+| `latents_avp_aug10` | 320 | 320 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | avp 10x augmentation. |
+| `latents_avp_originals` | 288 | 288 — per-crop timeseries (25 fields) | **none** | ? | base/LoRA, LatCH | avp unaugmented. |
+| `latents_avp_aavepyora` | 194 | 194 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | aavepyora subset. |
+| `latents_avp_summamutikka` | 78 | 78 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | summamutikka subset. |
 | `latents_chill` | 115 | 115 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Chill Dataset. |
 | `latents_organic_dance` | 32 | 32 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: organic dance. |
-| `latents_prog_psytechno` | 371 | 371 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Prog & Psytechno. (Copy on Lehto backup.) |
+| `latents_prog_psytechno` | 371 | 371 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Prog & Psytechno. |
 | `latents_prog_trance_melodic_techno` | 192 | 192 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Progressive Trance & Melodic Techno. |
 | `sa3-latch-latents` | 3,000 | 0 | **none** | (256, 124) f4 | base/LoRA | LatCH-specific encode. |
 | `latents_sa3_lora300` | 607 | 0 | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control | 300-track LoRA subset. |
@@ -87,21 +87,6 @@ Mostly targets and probe sets. Read the `.npz` column before assuming these are 
 
 | store | .npy | .npz | crop scalars | latent shape | can train | notes |
 |---|---:|---|---|---|---|---|
-| `latents (SAO-Small)` | MISSING | | | | — | 64-dim @21.53Hz, T=256. |
-| `latents_stems` | 0 | 0 | **none** |  | **targets only** (no model input) | 64-dim stem latents (per-track subdirs). |
-
-## Duplicate copies — this document may name the WRONG one
-
-Same store basename found at a path the tables do not use. **Prefer the local NVMe copy for any dataloader** (MASTER §5: cold random reads off the removable drive crawl and were a real cause of step-0 hangs). Removable drives also unmount; a `Projects/` path does not.
-
-| store | .npy | .npz | also on disk at | census currently says |
-|---|---:|---:|---|---|
-| `latents_avp_aavepyora` | 194 | 194 | `/home/kim/Projects/latents_avp_aavepyora` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_aavepyora` |
-| `latents_avp_aug10` | 320 | 320 | `/home/kim/Projects/latents_avp_aug10` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_aug10` |
-| `latents_avp_originals` | 288 | 288 | `/home/kim/Projects/latents_avp_originals` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_originals` |
-| `latents_avp_summamutikka` | 78 | 78 | `/home/kim/Projects/latents_avp_summamutikka` | `/run/media/kim/Lehto/latents-all-backup/latents_avp_summamutikka` |
-| `latents_chill` | 115 | 115 | `/home/kim/Projects/latents_chill` | `/run/media/kim/Lehto/latents-all-backup/latents_chill` |
-| `latents_organic_dance` | 32 | 32 | `/home/kim/Projects/latents_organic_dance` | `/run/media/kim/Lehto/latents-all-backup/latents_organic_dance` |
 
 ## Unlisted stores (found by sweep, NOT in any curated table above)
 
@@ -109,8 +94,6 @@ Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no t
 
 | store | .npy | .npz | path |
 |---|---:|---:|---|
-| `latents_avp_originals_morphL3` | 288 | 0 | `/home/kim/Projects/latents_avp_originals_morphL3` |
-| `latents_sa3_f0_sample` | 11 | 11 | `/home/kim/Projects/latents_sa3_f0_sample` |
 | `latents_sa3_subset300` | 300 | 0 | `/home/kim/Projects/latents_sa3_subset300` |
 | `aug_AB_A` | 600 | 0 | `/run/media/kim/Mantu/aug_AB_A` |
 | `aug_AB_B` | 600 | 0 | `/run/media/kim/Mantu/aug_AB_B` |
@@ -119,7 +102,7 @@ Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no t
 
 | store | files | notes |
 |---|---:|---|
-| `Lehto/timeseries` | 5,035 | goa (4461) + the 4 ai-music curated sets (574). Base 100Hz + expanded at native rates. |
+| `Kosmos/timeseries` | 5,035 | goa (4461) + the 4 ai-music curated sets (574). Base 100Hz + expanded at native rates. |
 | `suomisoundi_timeseries` | 1,260 | Suomisoundi whole-track, 50 fields. |
 | `goa_archive_features/npz` | 23,231 | goa_archive, **FULL TRACK** (dur_analyzed_s p50 362 s, max 4440). **`f__`/`r__` key prefixes.** Carries the 24 EXPANDED fields ONLY — the base 20 were never run here. |
 | `suomisoundi_features/npz` | 1,260 | Suomisoundi, same `f__`/`r__` layout as goa_archive. |
@@ -129,7 +112,7 @@ Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no t
 | database | size | tables | what |
 |---|---|---|---|
 | `mir per-crop TimeseriesDB` | 2.7G | `ts` 217,648 rows | Per-crop timeseries for the **legacy** SAO-Small grid (21.53 Hz, T=256). `gzip(msgpack)` blobs keyed by crop stem. Used by the legacy LatCH dataset. |
-| `eval clip metrics` | 64.1M | `metrics` 171,330 rows; `midi_metrics` 146 rows | Every rendered eval clip's measured DSP + Audiobox metrics. The disintegration gate, the boards, and `score_and_publish.py` all read this. |
+| `eval clip metrics` | 64.2M | `metrics` 171,819 rows; `midi_metrics` 146 rows | Every rendered eval clip's measured DSP + Audiobox metrics. The disintegration gate, the boards, and `score_and_publish.py` all read this. |
 
 - `mir per-crop TimeseriesDB` → `/home/kim/Projects/mir/data/timeseries.db`
 
@@ -202,36 +185,34 @@ c.execute("select path, rms, crest, flatness, ce, pq from metrics limit 5").fetc
 ## Paths
 
 - `latents_sa3` → `/home/kim/Projects/latents_sa3`
-- `latents_goa_bigset` → `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/latents_goa_bigset`
-- `latents_goa_aug8` → `/run/media/kim/Lehto/latents_goa_aug8`
-- `suomisoundi_latents` → `/run/media/kim/Lehto/suomisoundi_latents`
-- `latents_avp` → `/home/kim/Projects/latents_avp`
+- `latents_goa_bigset` → `/run/media/kim/Kosmos/latents_goa_bigset`
+- `latents_goa_aug8` → `/run/media/kim/Kosmos/latents_goa_aug8`
+- `suomisoundi_latents` → `/run/media/kim/Kosmos/suomisoundi_latents`
+- `latents_avp` → `/run/media/kim/Kosmos/latents_avp`
 - `latents_avp_aug10` → `/run/media/kim/Lehto/latents-all-backup/latents_avp_aug10`
 - `latents_avp_originals` → `/run/media/kim/Lehto/latents-all-backup/latents_avp_originals`
 - `latents_avp_aavepyora` → `/run/media/kim/Lehto/latents-all-backup/latents_avp_aavepyora`
 - `latents_avp_summamutikka` → `/run/media/kim/Lehto/latents-all-backup/latents_avp_summamutikka`
 - `latents_chill` → `/run/media/kim/Lehto/latents-all-backup/latents_chill`
 - `latents_organic_dance` → `/run/media/kim/Lehto/latents-all-backup/latents_organic_dance`
-- `latents_prog_psytechno` → `/home/kim/Projects/latents_prog_psytechno`
-- `latents_prog_trance_melodic_techno` → `/home/kim/Projects/latents_prog_trance_melodic_techno`
+- `latents_prog_psytechno` → `/run/media/kim/Lehto/latents-all-backup/latents_prog_psytechno`
+- `latents_prog_trance_melodic_techno` → `/run/media/kim/Lehto/latents-all-backup/latents_prog_trance_melodic_techno`
 - `sa3-latch-latents` → `/run/media/kim/Lehto/sa3-latch-latents`
 - `latents_sa3_lora300` → `/run/media/kim/Lehto/latents_sa3_lora300`
-- `latents_sa3_chroma` → `/home/kim/Projects/latents_sa3_chroma`
-- `latents_sa3_stem_chroma` → `/run/media/kim/Lehto/latents_sa3_stem_chroma`
-- `latents_sa3_ctrl` → `/home/kim/Projects/latents_sa3_ctrl`
-- `latents_avp_ctrl` → `/home/kim/Projects/latents_avp_ctrl`
-- `latents_sa3_metrical` → `/home/kim/Projects/latents_sa3_metrical`
-- `latents_sa3_metrical_shuffled` → `/home/kim/Projects/latents_sa3_metrical_shuffled`
-- `latents_sa3_proll` → `/home/kim/Projects/latents_sa3_proll`
-- `latents_sa3_melody` → `/home/kim/Projects/latents_sa3_melody`
-- `latents_sa3_notegrid88` → `/home/kim/Projects/latents_sa3_notegrid88`
-- `latents_sa3_morphL2` → `/home/kim/Projects/latents_sa3_morphL2`
-- `latents_sa3_morphL3` → `/home/kim/Projects/latents_sa3_morphL3`
-- `latents_sa3_morphL4` → `/home/kim/Projects/latents_sa3_morphL4`
-- `latents_sa3_morphIOI3` → `/home/kim/Projects/latents_sa3_morphIOI3`
-- `latents (SAO-Small)` → `/run/media/kim/Lehto/latents`  (MISSING)
-- `latents_stems` → `/run/media/kim/Lehto/latents_stems`
-- `Lehto/timeseries` → `/run/media/kim/Lehto/timeseries`
-- `suomisoundi_timeseries` → `/run/media/kim/Mantu/suomisoundi_data/suomisoundi_timeseries`
+- `latents_sa3_chroma` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_chroma`
+- `latents_sa3_stem_chroma` → `/run/media/kim/Kosmos/latents_sa3_stem_chroma`
+- `latents_sa3_ctrl` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_ctrl`
+- `latents_avp_ctrl` → `/run/media/kim/Lehto/latents-all-backup/latents_avp_ctrl`
+- `latents_sa3_metrical` → `/run/media/kim/Kosmos/latents_sa3_metrical`
+- `latents_sa3_metrical_shuffled` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_metrical_shuffled`
+- `latents_sa3_proll` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll`
+- `latents_sa3_melody` → `/run/media/kim/Kosmos/latents_sa3_melody`
+- `latents_sa3_notegrid88` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_notegrid88`
+- `latents_sa3_morphL2` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_morphL2`
+- `latents_sa3_morphL3` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_morphL3`
+- `latents_sa3_morphL4` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_morphL4`
+- `latents_sa3_morphIOI3` → `/run/media/kim/Lehto/latents-all-backup/latents_sa3_morphIOI3`
+- `Kosmos/timeseries` → `/run/media/kim/Kosmos/timeseries`
+- `suomisoundi_timeseries` → `/run/media/kim/Lehto/suomisoundi_data/suomisoundi_timeseries`
 - `goa_archive_features/npz` → `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/npz`
-- `suomisoundi_features/npz` → `/run/media/kim/Mantu/suomisoundi_data/suomisoundi_features/npz`
+- `suomisoundi_features/npz` → `/run/media/kim/Lehto/suomisoundi_data/suomisoundi_features/npz`

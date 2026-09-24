@@ -33,7 +33,7 @@ sys.path.insert(0, MUS)
 import hook_metric as HM
 
 MELODIES = os.path.join(MUS, 'melodies.jsonl')
-MIDI_DIR = '/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/muscriptor_full'
+MIDI_DIR = '/run/media/kim/Kosmos/muscriptor_full'
 LATENTS = '/home/kim/Projects/latents_sa3'
 TARGETS = os.path.join(HERE, 'targets')
 

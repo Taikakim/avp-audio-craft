@@ -20,7 +20,7 @@ mir features ──► targets ──► train head ──► guided sampling
 ```
 
 - **Targets, two stores** (MASTER §2/§4): legacy per-crop `mir/data/timeseries.db` (fixed
-  crop↔track mapping, 256 frames @ 21.53 Hz); whole-track `Lehto/timeseries/*.npz`
+  crop↔track mapping, 256 frames @ 21.53 Hz); whole-track `Kosmos/timeseries/*.npz`
   (100 Hz, sliced+resampled to any window/T via
   `stable-audio-tools/scripts/whole_track_target_source.py`).
 - **Two latent grids** — heads are grid-specific. SAO-Small: 64-d @ 21.53 Hz, T=256. SA3:

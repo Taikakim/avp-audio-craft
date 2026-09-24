@@ -18,8 +18,8 @@ import os
 import mido
 import numpy as np
 
-MID_DIR = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/muscriptor_full"
-OUT = "/home/kim/Projects/latents_sa3_proll"
+MID_DIR = "/run/media/kim/Kosmos/muscriptor_full"
+OUT = "/run/media/kim/Lehto/latents-all-backup/latents_sa3_proll"
 FPS = 44100 / 4096
 T = 4096
 

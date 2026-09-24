@@ -34,6 +34,8 @@ import sys
 
 MANTU = "/run/media/kim/Mantu"
 LEHTO = "/run/media/kim/Lehto"
+LEHTO_BACKUP = f"{LEHTO}/latents-all-backup"
+KOSMOS = "/run/media/kim/Kosmos"
 UUID = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d"
 NVME = "/home/kim/Projects"
 
@@ -60,7 +62,7 @@ def unlisted_section():
     known = {os.path.realpath(p) for _, p, _ in listed}
     # basename -> the path this document currently tells you to use
     by_name = {os.path.basename(p.rstrip("/")): p for _, p, _ in listed}
-    rows, dupes, roots = [], [], [NVME, LEHTO, MANTU, UUID]
+    rows, dupes, roots = [], [], [NVME, LEHTO, KOSMOS, MANTU, UUID]
     for root in roots:
         if not os.path.isdir(root):
             continue
@@ -118,61 +120,62 @@ def unlisted_section():
 PRIMARY = [
     ("latents_sa3", f"{NVME}/latents_sa3",
      "**GOA** (Goa_Separated). The canonical SA3 set; the 2026-06 onset head trained here."),
-    ("latents_goa_bigset", f"{UUID}/latents_goa_bigset",
+    ("latents_goa_bigset", f"{KOSMOS}/latents_goa_bigset",
      "**goa_archive** crops. Latents only — crop .json carries NO control scalars."),
-    ("latents_goa_aug8", f"{LEHTO}/latents_goa_aug8",
+    ("latents_goa_aug8", f"{KOSMOS}/latents_goa_aug8",
      "8x pitch/stretch augmentation of goa. Augment metadata only, no control scalars."),
-    ("suomisoundi_latents", f"{LEHTO}/suomisoundi_latents",
+    ("suomisoundi_latents", f"{KOSMOS}/suomisoundi_latents",
      "**Suomisoundi**. No crop scalars; per-frame targets must come from the whole-track store."),
-    ("latents_avp", f"{NVME}/latents_avp",
+    ("latents_avp", f"{KOSMOS}/latents_avp",
      "**avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.)"),
-    ("latents_avp_aug10", f"{LEHTO}/latents-all-backup/latents_avp_aug10", "avp 10x augmentation."),
-    ("latents_avp_originals", f"{LEHTO}/latents-all-backup/latents_avp_originals", "avp unaugmented."),
-    ("latents_avp_aavepyora", f"{LEHTO}/latents-all-backup/latents_avp_aavepyora", "aavepyora subset."),
-    ("latents_avp_summamutikka", f"{LEHTO}/latents-all-backup/latents_avp_summamutikka",
+    ("latents_avp_aug10", f"{LEHTO_BACKUP}/latents_avp_aug10", "avp 10x augmentation."),
+    ("latents_avp_originals", f"{LEHTO_BACKUP}/latents_avp_originals", "avp unaugmented."),
+    ("latents_avp_aavepyora", f"{LEHTO_BACKUP}/latents_avp_aavepyora", "aavepyora subset."),
+    ("latents_avp_summamutikka", f"{LEHTO_BACKUP}/latents_avp_summamutikka",
      "summamutikka subset."),
-    ("latents_chill", f"{LEHTO}/latents-all-backup/latents_chill",
+    ("latents_chill", f"{LEHTO_BACKUP}/latents_chill",
      "**ai-music curated**: Chill Dataset."),
-    ("latents_organic_dance", f"{LEHTO}/latents-all-backup/latents_organic_dance",
+    ("latents_organic_dance", f"{LEHTO_BACKUP}/latents_organic_dance",
      "**ai-music curated**: organic dance."),
-    ("latents_prog_psytechno", f"{NVME}/latents_prog_psytechno",
-     "**ai-music curated**: Prog & Psytechno. (Copy on Lehto backup.)"),
-    ("latents_prog_trance_melodic_techno", f"{NVME}/latents_prog_trance_melodic_techno",
+    ("latents_prog_psytechno", f"{LEHTO_BACKUP}/latents_prog_psytechno",
+     "**ai-music curated**: Prog & Psytechno."),
+    ("latents_prog_trance_melodic_techno", f"{LEHTO_BACKUP}/latents_prog_trance_melodic_techno",
      "**ai-music curated**: Progressive Trance & Melodic Techno."),
     ("sa3-latch-latents", f"{LEHTO}/sa3-latch-latents", "LatCH-specific encode."),
     ("latents_sa3_lora300", f"{LEHTO}/latents_sa3_lora300", "300-track LoRA subset."),
 ]
 
 DERIVED = [
-    ("latents_sa3_chroma", f"{NVME}/latents_sa3_chroma", "SAME chroma targets — NOT latents."),
-    ("latents_sa3_stem_chroma", f"{LEHTO}/latents_sa3_stem_chroma", "per-stem chroma targets — NOT latents."),
-    ("latents_sa3_ctrl", f"{NVME}/latents_sa3_ctrl", "control-arm latents."),
-    ("latents_avp_ctrl", f"{NVME}/latents_avp_ctrl", "avp control-arm latents."),
-    ("latents_sa3_metrical", f"{NVME}/latents_sa3_metrical", "metrical probe set."),
-    ("latents_sa3_metrical_shuffled", f"{NVME}/latents_sa3_metrical_shuffled", "metrical NULL control."),
-    ("latents_sa3_proll", f"{NVME}/latents_sa3_proll", "pianoroll targets."),
-    ("latents_sa3_melody", f"{NVME}/latents_sa3_melody", "melody probe set."),
-    ("latents_sa3_notegrid88", f"{NVME}/latents_sa3_notegrid88", "88-key notegrid targets."),
-    ("latents_sa3_morphL2", f"{NVME}/latents_sa3_morphL2", "morph variant."),
-    ("latents_sa3_morphL3", f"{NVME}/latents_sa3_morphL3", "morph variant."),
-    ("latents_sa3_morphL4", f"{NVME}/latents_sa3_morphL4", "morph variant."),
-    ("latents_sa3_morphIOI3", f"{NVME}/latents_sa3_morphIOI3", "morph variant."),
+    ("latents_sa3_chroma", f"{LEHTO_BACKUP}/latents_sa3_chroma", "SAME chroma targets — NOT latents."),
+    ("latents_sa3_stem_chroma", f"{KOSMOS}/latents_sa3_stem_chroma", "per-stem chroma targets — NOT latents."),
+    ("latents_sa3_ctrl", f"{LEHTO_BACKUP}/latents_sa3_ctrl", "control-arm latents."),
+    ("latents_avp_ctrl", f"{LEHTO_BACKUP}/latents_avp_ctrl", "avp control-arm latents."),
+    ("latents_sa3_metrical", f"{KOSMOS}/latents_sa3_metrical", "metrical probe set."),
+    ("latents_sa3_metrical_shuffled", f"{LEHTO_BACKUP}/latents_sa3_metrical_shuffled", "metrical NULL control."),
+    ("latents_sa3_proll", f"{LEHTO_BACKUP}/latents_sa3_proll", "pianoroll targets."),
+    ("latents_sa3_melody", f"{KOSMOS}/latents_sa3_melody", "melody probe set."),
+    ("latents_sa3_notegrid88", f"{LEHTO_BACKUP}/latents_sa3_notegrid88", "88-key notegrid targets."),
+    ("latents_sa3_morphL2", f"{LEHTO_BACKUP}/latents_sa3_morphL2", "morph variant."),
+    ("latents_sa3_morphL3", f"{LEHTO_BACKUP}/latents_sa3_morphL3", "morph variant."),
+    ("latents_sa3_morphL4", f"{LEHTO_BACKUP}/latents_sa3_morphL4", "morph variant."),
+    ("latents_sa3_morphIOI3", f"{LEHTO_BACKUP}/latents_sa3_morphIOI3", "morph variant."),
 ]
 
 LEGACY = [
-    ("latents (SAO-Small)", f"{LEHTO}/latents", "64-dim @21.53Hz, T=256."),
-    ("latents_stems", f"{LEHTO}/latents_stems", "64-dim stem latents (per-track subdirs)."),
+    # Both retired for real (not just unmounted) as of 2026-09-22/23 -- SAO-Small's
+    # old 64-dim VAE latents (`latents`, `latents_stems`), confirmed unusable for SA3
+    # back in ghost-note.tasks.md 2026-05-26 ("no shortcut around a re-encode").
 ]
 
 TS_STORES = [
-    ("Lehto/timeseries", f"{LEHTO}/timeseries",
+    ("Kosmos/timeseries", f"{KOSMOS}/timeseries",
      "goa (4461) + the 4 ai-music curated sets (574). Base 100Hz + expanded at native rates."),
-    ("suomisoundi_timeseries", f"{MANTU}/suomisoundi_data/suomisoundi_timeseries",
+    ("suomisoundi_timeseries", f"{LEHTO}/suomisoundi_data/suomisoundi_timeseries",
      "Suomisoundi whole-track, 50 fields."),
     ("goa_archive_features/npz", f"{UUID}/goa_archive_features/npz",
      "goa_archive, **FULL TRACK** (dur_analyzed_s p50 362 s, max 4440). **`f__`/`r__` key "
      "prefixes.** Carries the 24 EXPANDED fields ONLY — the base 20 were never run here."),
-    ("suomisoundi_features/npz", f"{MANTU}/suomisoundi_data/suomisoundi_features/npz",
+    ("suomisoundi_features/npz", f"{LEHTO}/suomisoundi_data/suomisoundi_features/npz",
      "Suomisoundi, same `f__`/`r__` layout as goa_archive."),
 ]
 

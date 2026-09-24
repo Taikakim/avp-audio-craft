@@ -13,8 +13,8 @@ import os, json, glob, argparse, random, re, textwrap
 
 DRIVE = "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d"
 CUR = f"{DRIVE}/goa_archive_features/curated.jsonl"
-JSON_DIR = f"{DRIVE}/lumi_runs/goa_archive_captions/json"
-GRANITE_DIR = f"{DRIVE}/lumi_runs/goa_archive_captions/granite"
+JSON_DIR = "/run/media/kim/Kosmos/goa_archive_captions/json"
+GRANITE_DIR = "/run/media/kim/Kosmos/goa_archive_captions/granite"
 
 
 def load_curated(path):
