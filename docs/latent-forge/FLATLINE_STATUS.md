@@ -195,16 +195,16 @@ presets`, the FILES routes — all M2's).
 blocking) is applied and pushed (`11560e7`; now 132 `it()` + 10 Playwright). Critic pass 2 ran on the
 corrected file: **14 findings, 2 blocking** (both data-loss paths in the code pass 1's fixes added:
 IMPORT's failure path autosaves a half-imported project over the loaded session; `loadSession` renames
-the session before the content arrives). Findings saved to `scratchpad/m7_critic2.md` (gitignored, on
-disk only — do not delete). The fix agent was stopped before it edited anything; the plan is exactly
+the session before the content arrives). Findings are tracked in `docs/latent-forge/M7_CRITIC2_FINDINGS.md`
+(pass 1's, applied, in `M7_CRITIC1_FINDINGS.md`). The fix agent was stopped before it edited anything; the plan is exactly
 `11560e7`.
 
-**Next action:** dispatch a fix agent on `scratchpad/m7_critic2.md` — all 14, with the two blocking
+**Next action:** dispatch a fix agent on `docs/latent-forge/M7_CRITIC2_FINDINGS.md` — all 14, with the two blocking
 ones plus #3/#5/#6/#7 resolved as ONE ordered load/import sequence in Task 9 (bump load seq → disarm
 autosave → validate → apply → clear selection/overlapStore → rebuild stage (v2 only) → schedule
 stretches → arm with the project as loaded), each data-loss path proven by a test. Then recount,
-commit, and batch everything for WINTERMUTE. Keep `scratchpad/m7_part_a.md`, `m7_part_b.md`,
-`m7_critic1.md`, `m7_critic2.md` until then.
+commit, and batch everything for WINTERMUTE. The writer drafts `scratchpad/m7_part_a.md`/`m7_part_b.md`
+(gitignored) are fully merged into the plan and no longer needed.
 
 ## After M7 — M9 is last
 
