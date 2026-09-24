@@ -28,6 +28,16 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⬜ Matrix UI: add the weight-set (online/EMA) checkbox — the render half is done, this half isn't
+**VERIFIED 2026-09-24 (THE-FINN, weekly-routine patrol):** the naming decision below WAS made and
+shipped — `model_matrix_gen.py:394` writes `__ema` suffix, and both plain (81 files) and `__ema`
+(93 files) renders exist on disk for `fullft_suomi_t1024_fp32_lr1e-4_s1`. **What's still open:**
+`Misc/build_model_matrix.py` has no weight-set checkbox, EMA-fallback logic, or
+`filter-native`-style opacity pattern yet — grepped directly, zero matches. The "THEN the matrix
+UI" spec below (checkbox, default=online, fallback-with-message) is unbuilt.
+
+<details><summary>Original entry (render half — DONE, kept for the UI spec + the two still-open sub-decisions below)</summary>
+
 ### ⬜ DONE (by Ghost Note) 11.9.2026 Suomi full-FT: render the ONLINE-weight clips, and add a weight-set toggle to the matrix
 **WHAT / WHY** — the three suomi FULL-FT arms have only ever been auditioned through their EMA
 shadow, and for two of them that shadow is ~97% the starting weights. **Proven, not inferred:**
@@ -84,9 +94,11 @@ plain-named count, and a z0-std read (healthy ~1.0; the runaway signature is 5.6
 has **no `--gradient_clip_val`**, which `train_lora.py` then defaults to `None`. The documented
 fix is the pair. Not necessarily the cause of anything here, but it is half a seatbelt.
 
+</details>
 
 
-### ✅ DONE 2026-09-09 — LUMI training logs pulled
+
+### ✅ DONE 2026-09-09 — LUMI training logs pulled *(misfiled — this was already done, just relocated to Recently done 2026-09-24)*
 Key loaded, pull run by GHOST-NOTE. `lightning_logs` 14 -> **103**, `metrics.csv` 6 -> **123**,
 `train*.log` 63 -> **248**, plus **342** sbatch `.out/.err` job logs (159 MB) that live in the
 SUBMIT cwd `/project/.../code`, not under `runs/`. Every remote count now matches local except
@@ -95,7 +107,7 @@ LUMI has none. Command is now RUNBOOK §10b so it can be re-run before the data 
 
 
 
-### DONE 11.9.2026 ⬜ Re-render the 93 quarantined `lion_lr1e-5` native cells (optional — the arm is already usable)
+### ✅ DONE (verified 2026-09-24, THE-FINN) Re-render the 93 quarantined `lion_lr1e-5` native cells
 **WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
 were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine
 campaign siblings carry ONE native cell each, so the arm already exceeds the sibling shape — this
