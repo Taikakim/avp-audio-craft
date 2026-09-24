@@ -8,6 +8,44 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+## 2026-09-24 (weekly; list was stale since 08-21)
+
+> Reconstructed from WINTERMUTE-authored commits. 08-22..08-31 predate per-agent git identities
+> (09-01) and are not separable from git alone; see WORKLOG for that window.
+
+### done since 08-21
+- **Fleet git hygiene.** `Misc/agent_commit.sh` (per-agent authorship) + MASTER attribution convention
+  (09-01); GIT-PROTOCOL 6b: a non-empty shared index is a lock (09-04); checklist fixed to the current rule (09-10).
+- **Evaluator / ratings.** Duration buckets from measured length, not a 5%-present label; effective vs
+  requested pairing mode shown; a UI question rename no longer destroys A/B votes (09-04); curated `pairs` mode (09-08).
+- **Publish gate.** Local provenance withheld structurally; census home-path leak closed (09-09).
+- **Train.** warmup -> hold -> cosine LR; `--warmup-steps` was a silent no-op off adamw (09-10).
+- **LatCH sampler.** Guidance no longer silently swaps the model's native sampler; probe + tests on what the
+  guided ping-pong actually does (09-16). Inertness guard designed and queued in docs/todos.md, deferred for budget (09-22).
+- **Harshness.** `spectral_harshness_contrast` - human-flagged harshness is the PROMPT, and rms_energy_air is the
+  wrong band (09-17). `grit_index` (HPSS-residual texture): **null**, rho -0.155 p=0.18 vs low-mid -0.432 (09-22).
+- **Data docs.** Training-data census + store sweep with duplicate flags; stale avp/suomisoundi paths corrected;
+  goa_archive fast base features, and a RETRACTION (features are full-track, not first 90 s) (09-16/17).
+- **Latent Forge / SA3 Studio.** Full-app spec; server plans M2, M3, M8, M11 (09-15); settled FLATLINE's eight
+  M1 questions + two held server fixes (09-21); M6's three rulings; one of mine corrected (INTERVAL_W: the drawing
+  uses |a-b|, which is not transposition-invariant - directed indexing is the deliberate departure) (09-22/23).
+- **Comms.** `dm-say` silently wrote to the wrong log when a pair's log lived in a worktree - fixed + 5 tests (09-22).
+- **Tree sweep.** sa3-style-adapter was ahead 39 / behind 6 for nine days (22 of G's commits single-disk) - merged and
+  pushed; stable-audio-3 45 dirty -> 5, ~7.5 GB excluded via info/exclude (09-21/22).
+- **Website.** Demo-clip ladders for goa3_avp_r256 (steps 1268-5072), audition_160ep, audition_amult20 staged into the
+  model matrix and scored; G's batches 1+2 published (~9,000 cells). Pre-publish latent scan: **52 non-finite cells
+  quarantined** (Mantu model_matrix_QUARANTINE_2026-09-24_nan), dora128_mix3 ep3 held (12/12 op-point cells blown up) (09-23/24).
+- **A14 datapoint.** LoRA A-step x20 at step 240, matched clips: CE 6.84 -> 5.50, PQ 8.09 -> 7.09 (09-23).
+
+### stuck / waiting on someone
+- `pyproject.toml` CK flash-attn pin in stable-audio-3 - needs its author's decision (changes everyone's `uv sync`).
+- dora128_mix3 ep3 - waiting on G's weight-trajectory check (ship or drop).
+- 2.9 GB of renders_*/flowsep/zerosep results still in the SAO tree (eval-drive rule) - now ignored, not moved.
+
+### next when unblocked
+- M7 server-route batch review (sessions / library / mixdown vs M2) when FLATLINE sends it.
+- LatCH inertness guard (queued), retract the "9.4x more responsive" headline on the LatCH eval page.
+
 ## 2026-08-21
 - **Vote-fitted preference proxy.** 668 A/B votes → grouped-CV model. PQ alone 77.6%, best of every
   candidate tried; pq+ce 75.8, all-12 74.4. Retracted pq+ce+clap 78.8 → 75.1 on full n. corr(PQ,CLAP)=0.597.

@@ -945,3 +945,18 @@ marked). Labels: G's export, 2026-09-17. Reference corpus = Kim's own 167 master
 generated clips — model output would bake in the bias being measured, and pink noise is also
 wrong here (the masters fall ~-4.4 dB/oct above 1 kHz, steeper than pink's -3, so a pink
 target reads them as HF-deficient and would push generations brighter).
+
+### 2026-09-22→24 — three checks that each caught something the green light didn't
+
+- **A DM path that dropped messages silently.** `dm-say` resolved the log under the SAO root only, so a pair
+  whose log lives in a worktree got a fresh stub instead of the conversation - twice caught by eye, a third
+  time would have been silence read as "no reply yet". Fixed with worktree discovery + 5 tests (`Misc/agent_dialogue.py`).
+- **A ruling I gave with the wrong reason.** I said directed INTERVAL_W indexing was the design drawing's; the
+  drawing uses `|a-b|`. Directed is still right, for a stronger reason measured in node: `|a-b|` scores the same
+  chord pair 0.651/0.624/0.624/0.640 across four transpositions, directed 0.654 at all four. The plan now says it
+  overrules the drawing and why - otherwise the next reader "fixes" it back.
+- **A publish the tool would have passed.** 6,941 staged board cells, every label under the 20% op-point gate - and
+  52 of them full-scale DC files from non-finite latents, all off the operating point. The gate is right about what
+  to *judge*; it was never meant to decide what to *serve*. Quarantined before the push.
+- **Negative result:** `grit_index` (HPSS-residual texture) does not track the audible jumps (rho -0.155, p=0.18);
+  low-mid energy does (rho -0.432, p=8.6e-5). Committed with its null.
