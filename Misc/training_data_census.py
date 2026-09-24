@@ -127,7 +127,11 @@ PRIMARY = [
     ("suomisoundi_latents", f"{KOSMOS}/suomisoundi_latents",
      "**Suomisoundi**. No crop scalars; per-frame targets must come from the whole-track store."),
     ("latents_avp", f"{KOSMOS}/latents_avp",
-     "**avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.)"),
+     "**avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.) "
+     "⚠️ the per-crop `prompt` field is ARTIST NAME ONLY (3 distinct values over all "
+     "2393 items: 'aavepyora'/'aavepyorä'/'') -- NOT a usable caption. Real tiered captions "
+     "(t1/t2/t3) are `lumi/avp_captions_tiered.json`, keyed by item stem, all 2393 match "
+     "(CONTINUITY, 2026-09-23)."),
     ("latents_avp_aug10", f"{LEHTO_BACKUP}/latents_avp_aug10", "avp 10x augmentation."),
     ("latents_avp_originals", f"{LEHTO_BACKUP}/latents_avp_originals", "avp unaugmented."),
     ("latents_avp_aavepyora", f"{LEHTO_BACKUP}/latents_avp_aavepyora", "aavepyora subset."),

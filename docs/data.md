@@ -49,11 +49,11 @@ items**, not training windows and not tracks.
 | `latents_goa_bigset` | 12,524 | 0 | **none** | (256, 4096) f4 | base/LoRA | **goa_archive** crops. Latents only — crop .json carries NO control scalars. |
 | `latents_goa_aug8` | 3,941 | 0 | **none** | (256, 4096) f4 | base/LoRA | 8x pitch/stretch augmentation of goa. Augment metadata only, no control scalars. |
 | `suomisoundi_latents` | 1,261 | 0 | **none** | (256, 4096) f4 | base/LoRA | **Suomisoundi**. No crop scalars; per-frame targets must come from the whole-track store. |
-| `latents_avp` | 2,393 | 2,393 — per-crop timeseries (21 fields) | **none** | (256, 4096) f2 | base/LoRA, LatCH | **avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.) |
-| `latents_avp_aug10` | 320 | 320 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | avp 10x augmentation. |
-| `latents_avp_originals` | 288 | 288 — per-crop timeseries (25 fields) | **none** | ? | base/LoRA, LatCH | avp unaugmented. |
-| `latents_avp_aavepyora` | 194 | 194 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | aavepyora subset. |
-| `latents_avp_summamutikka` | 78 | 78 — unreadable (FileNotFoundError) | **none** | ? | base/LoRA, LatCH | summamutikka subset. |
+| `latents_avp` | 2,393 | 2,393 — per-crop timeseries (21 fields) | **none** | (256, 4096) f2 | base/LoRA, LatCH | **avp** own-music, augmented. Full scalars + per-crop timeseries. (Copy on Lehto backup.) ⚠️ the per-crop `prompt` field is ARTIST NAME ONLY (3 distinct values over all 2393 items: 'aavepyora'/'aavepyorä'/'') -- NOT a usable caption. Real tiered captions (t1/t2/t3) are `lumi/avp_captions_tiered.json`, keyed by item stem, all 2393 match (CONTINUITY, 2026-09-23). |
+| `latents_avp_aug10` | 320 | 320 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | avp 10x augmentation. |
+| `latents_avp_originals` | 288 | 288 — per-crop timeseries (25 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | avp unaugmented. |
+| `latents_avp_aavepyora` | 194 | 194 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | aavepyora subset. |
+| `latents_avp_summamutikka` | 78 | 78 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | summamutikka subset. |
 | `latents_chill` | 115 | 115 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Chill Dataset. |
 | `latents_organic_dance` | 32 | 32 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: organic dance. |
 | `latents_prog_psytechno` | 371 | 371 — per-crop timeseries (21 fields) | onset_density, onset_per_beat… | (256, 4096) f2 | base/LoRA, scalar control, LatCH | **ai-music curated**: Prog & Psytechno. |
@@ -112,7 +112,7 @@ Directories under the four data roots holding >= 8 `.npy`/`.npz` files that no t
 | database | size | tables | what |
 |---|---|---|---|
 | `mir per-crop TimeseriesDB` | 2.7G | `ts` 217,648 rows | Per-crop timeseries for the **legacy** SAO-Small grid (21.53 Hz, T=256). `gzip(msgpack)` blobs keyed by crop stem. Used by the legacy LatCH dataset. |
-| `eval clip metrics` | 64.2M | `metrics` 171,819 rows; `midi_metrics` 146 rows | Every rendered eval clip's measured DSP + Audiobox metrics. The disintegration gate, the boards, and `score_and_publish.py` all read this. |
+| `eval clip metrics` | 73.4M | `metrics` 199,402 rows; `midi_metrics` 146 rows | Every rendered eval clip's measured DSP + Audiobox metrics. The disintegration gate, the boards, and `score_and_publish.py` all read this. |
 
 - `mir per-crop TimeseriesDB` → `/home/kim/Projects/mir/data/timeseries.db`
 
