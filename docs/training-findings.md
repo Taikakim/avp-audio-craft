@@ -106,3 +106,117 @@ bs1-vs-bs4 and T4096-vs-T2048. Recorded to the 10 fp32cmp/bf16cmp run_meta kim_f
 - Augmentation SEEMS to help → aug×10 campaign drafted (docs/superpowers/specs/
   2026-07-23-aug10-15ep-campaign.md); fullft→extracted-adapter comparison assigned to G
   (extraction at r16/64/128 may beat straight-trained DoRAs — Kim's hypothesis).
+
+---
+
+## 2026-09-21 → 24 — Modular optimizer on DoRA: causes and effects of training failure (CONTINUITY)
+
+*Kim's ask 2026-09-24: record the causes and effects of training failures. Each entry: **symptom →
+cause → evidence → fix / status**. Operator manual for every flag named here: `docs/train_lora_modular.md`.
+Runs: `/run/media/kim/Mantu/sa3_lora_runs/{audition_160ep_2026-09-22-b, audition_amult20_480_2026-09-23,
+goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/`.*
+
+### A. Failures of the MODEL (the weights went bad)
+
+1. **NaN loss at ~step 6900 after 9 healthy epochs: DoRA magnitudes crossed zero** (`goa3_avp_r256_2026-09-23`,
+   rank 128, 3 corpora, lr 6e-4, b32).
+   - *Cause:* the modular optimizer trains every 1-D parameter, DoRA magnitudes included, with a **sign
+     step**: each element moves by lr every step, regardless of its size. The small global-conditioning
+     magnitudes (init = W0 row norms ≈ 0.13–0.45) walked through zero; the transformer-block ones (≈2.4)
+     did not move meaningfully.
+   - *Evidence:* at step 6340, `to_global_embed.0` had 592 non-positive rows, with a worst relative change
+     of 40,000×. Also `to_global_embed.2` (78 rows), `global_cond_embedder.0` (77), `to_timestep_embed.2`
+     (18); rows down to |m| = 2.6e-5. The emergency checkpoint's magnitudes are FINITE; NaN is in A/B of
+     all 228 modules. The likely chain: the conditioning output breaks, feeds every block's AdaLN, and
+     NaN gradients spread everywhere.
+   - *Effect timeline:* loss steady (epoch means ~0.74) → step 6340: both `rb_mid_4` renders all-NaN →
+     ~6900: training loss NaN → loss guard stop + emergency checkpoint (all its clips NaN).
+     **Best checkpoint: step 5072.**
+   - *Fix:* `--modular-magnitude-update multiplicative` (m ← m·exp(−lr·sign), relative step, sign can
+     never change; SAT 3197c28, 7 tests). **Retry pending** (same recipe + only this flag).
+     Workaround: `--exclude to_global_embed global_cond_embedder to_timestep_embed`.
+   - *Literature:* no source reports DoRA magnitudes crossing zero. Muown (2605.10797) trains row
+     magnitudes as their own optimizer variable; LionVote (2607.09266) finds sign steps ~2× too large
+     for normalization params. Triage: `papers/deep-research/2026-09-24-dora-magnitude-optimization-research-triage.md`.
+   - *Generalises:* **any fixed-size-step optimizer (sign, Lion, normalised) is scale-blind on 1-D
+     parameters. Small-valued gains are where it bites first.** AdamW is also ≈ ±lr per element for a
+     consistent gradient, so "use AdamW for the scalars" alone is not a fix. Adaptive damping that
+     watches gradient chaos (PsiLogic, 2607.16268) would not have fired: the drift happened in a
+     STABLE phase.
+
+2. **A long demo render diverging to NaN is an early warning of the weights getting too far out,
+   while the training loss still looks fine.** Seen twice: `audition_amult20` step 240
+   (`rb_mid_4_48s` all-NaN), and goa3 step 6340, ~600 steps before the training NaN.
+   *Rule:* a `[DEMO WARNING] … NaN/Inf` line means stop or back off; don't wait for the loss guard.
+
+3. **LoRA A barely moves under Muon-family steps; the adapter reads a random slice of its input.**
+   - *Cause:* A starts large (norm ≈99 over 229 modules) and the steps are fixed-size, so each is a tiny
+     fraction of A.
+   - *Evidence:* A's row space was 99.2% unchanged from step 240 to 1440 (B's column space: 35%); A carries
+     ~7% of step energy.
+   - *Tried:* `--modular-lora-a-lr-mult 20` rotated A (overlap 0.67 at step 240), but also made
+     ‖B·A‖ 2.3× larger and one 48 s render NaN. **Confounded** (A rotating vs the whole adapter moving
+     further).
+   - *Status:* LoRA-TSD (2609.02734) would size steps on B·A directly. Unbatched it costs 8.5 s/step on
+     our 229 adapters: ROCm `torch.linalg.qr` takes 12–17 ms per call, CholeskyQR2 ~2 ms. A batched port
+     is ~a session.
+
+4. **Gauge drift (A and B moving without changing B·A) grows as the loss flattens.**
+   - *Evidence:* 4.8% → 12.4% of step energy over `audition_160ep` (chance ~2%), concentrated in the
+     conditioning embedders; goa3 was already at 12.8% by step 2536.
+   - *Harm:* none audible so far. B's velocity equals B·A's velocity to 3 digits, so trajectory velocity
+     numbers are real function motion.
+   - *Tool:* `eval/lora_gauge_drift.py`. Source idea: 2608.07436 (Muon keeps full steps after the loss is
+     solved).
+
+5. **Crackle clusters in the 20 s renders of the rare prompt; all 48 s renders stay clean.**
+   `rb_rare_7_20s` had 166 jumps (audition, gone by step 720) and 887–1202 (goa3, persistent). Crackling
+   clips go with latent std 1.3–1.4, against 0.9–1.1 for clean ones. `--demo-latent-clamp 1.20` is aimed
+   at this (untested). *Open hypothesis:* sidecars say seconds_total = 380 s, so training computes the
+   timestep shift for 4096 frames while the 20 s demos render at 256.
+
+6. **Healthy trajectory band (for comparison):** audition velocity 57 → 36 per 1k steps, cosine 0.51 → 0.76.
+   goa3 velocity 46 → 37, cosine 0.29, path efficiency 0.81 (more turning: more varied data, higher LR).
+   Band that sounds good: 30–50. The runaway that collapsed rhythm was at 142.
+
+### B. Failures of the INSTRUMENTS (runs judged on wrong numbers)
+
+7. **Loss monitor reported half the true loss:** Lightning divides by `accumulate_grad_batches` before
+   callbacks see it. Fixed by multiplying back.
+8. **Loss guard was NaN-blind:** `nan > 1.0` is False, so NaN took the "healthy" branch. Fixed with `isfinite`.
+9. **Schedule-Free eval swap skipped ModularOptimizer** (an `isinstance(FusionOpt)` gate). Demos
+   rendered the training iterate instead of the averaged one: wrong weights judged. Fixed with `_sf_opt()`.
+10. **Inert mechanisms credited for results:**
+    - Escape velocity: its multiplier stayed at 1.0, while its buffer added 0.6 GB per checkpoint.
+    - VADD tier 2: never fired.
+    - Schedule-Free: inert when `c_warmup ≥ total steps`.
+
+    Now audited live: `[MECHANISM AUDIT]` every 500 steps.
+11. **Caption traps (would have trained on placeholders):**
+    - `latents_avp` stored prompts are the artist name only (3 distinct values over 2,393 items); its
+      captions are in `lumi/avp_captions_tiered.json`.
+    - `latents_goa_bigset` stored prompts are the string `"None"`, and its sidecar is keyed by source path,
+      which the latent-stem lookup never matched; this holds in `train_lora.py` too, pre-encoded.
+    - `--source_weights` in `train_lora.py` is inert: nothing consumes the dataset's sample weights.
+    - The dataset dill-loads the metadata fn on every item, so a closure over a 54 MB table would be
+      deserialised per sample.
+
+    All fixed in `train_lora_modular.py` with a startup caption audit per source.
+12. **Metadata:** `run_meta.json` was written to the PARENT output dir (each run overwrote the last), and a
+    loss-guard stop was recorded as `done`. Both fixed.
+13. **Checkpoint duplication:** Lightning's periodic save plus milestone saves wrote 9.3 GB of duplicates.
+    Use `--checkpoint_every 100000` with milestones.
+
+### C. Operational traps
+14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).
+15. Without `--eval_demos`, the stock demo callback crashes at step 1 (torchcodec).
+16. `VAR=x && python` does not export; env vars must be `export`ed (a covariance probe never armed this way).
+17. The run NAME is not the recipe: `goa3_avp_r256_*` is rank 128. Trust `run_meta.json`.
+18. Two GPU jobs at once (e.g. a matrix render plus training) slow both and glitch the desktop.
+    Capping the GPU at 220 W (from 300) barely changed the step time.
+19. Full Kronecker whitening is not viable on 12288-wide LoRA factors: one eigh takes 7.23 s, ×24 tensors
+    per step. Gradient-covariance effective rank is only 90–228 of 8192; 95% of the mass needs rank
+    512–2048.
+20. *Open, not fixed:* the demo callback calls `torch.manual_seed(seed)` per clip, which reseeds the
+    GLOBAL RNG that training draws noise from. It's suspected in earlier NaN episodes. An RNG
+    save/restore around the render is designed but not implemented.
