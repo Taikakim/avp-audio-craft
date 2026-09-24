@@ -1915,9 +1915,10 @@
     "dora128_mix3_nodas_20260918_231123": {
       "dir": "dora128_mix3_nodas_20260918_231123",
       "picks": [
+        "epoch=0-step=1500.ckpt",
         "epoch=3-step=7500.ckpt"
       ],
-      "note": "7500-step run, has its own run_meta.json + standard_clips sibling."
+      "note": "7500-step run, has its own run_meta.json + standard_clips sibling. GHOST-NOTE 2026-09-24: checkpoint_trajectory_stats.py confirmed a weight-scale runaway between step 1500 (norm 1716) and step 2000 (norm 7851) -- 12/36 of ep3/step7500's cfg7/w1 cells later failed score_and_publish.py's latent-sanity gate (z0 std 3.9-4.4). Added epoch=0-step=1500.ckpt as the pre-runaway candidate; ep3/step7500 stays registered as the known-bad witness, not to hide the failure. See docs/training-findings.md #21."
     },
     "sa3-goa-dora-47s-b4-cont": {
       "dir": "sa3-goa-dora-47s-b4-cont",

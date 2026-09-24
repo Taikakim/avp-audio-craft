@@ -221,6 +221,17 @@ function render(){
 // rendered, not a stale link. Click-to-toggle + loop-until-stopped, matches the established
 // site convention (no hover-autoplay -- see model_matrix.html / the other eval pages).
 let cellIndex=null,nativeIndex=null,cellsByMC=null,nativeByMC=null,playingKey=null,playingModel=null,playingCkpt=null,curLabel='';
+// per-clip bad-sample count (Kim direct 2026-09-24: "a column with per-clip bad sample
+// count... per selected clip") -- basename-keyed, built by build_bad_samples_index.py from
+// clip_metrics.db's n_bad_jumps (see audio_corruption_scan.py's calibration note: a small
+// count often blends in inaudibly, it's a screen not a verdict -- shown as a plain number,
+// not a pass/fail badge, for exactly that reason). Best-effort: absent on file:// / offline.
+let badIndex=null;
+function badLabel(file){
+ if(!badIndex||!file)return'';
+ const n=badIndex[file.split('/').pop()];
+ if(n==null)return'';
+ return n>=999999?' · NON-FINITE LATENT':(n>0?' · '+n+' bad sample'+(n===1?'':'s'):' · 0 bad samples');}
 const HIDE=(D.hide||[]);                 // hidden model-label prefixes (borked families)
 const isHidden=m=>HIDE.some(p=>String(m).startsWith(p));
 // clip / SSM base path: served page lives at /files/ (clips under evals/); a local file://
@@ -483,7 +494,7 @@ function repickCurrent(){
  const key=cellKey(hit.mkey,playingCkpt,hit.pid,hit.cfg,hit.w)+sw.nkey;
  if(key===playingKey)return;                          // already on the resolved clip
  playingKey=key;
- curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
+ curLabel=hit.mkey+' '+playingCkpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag+badLabel(sw.file);
  plabel.className='playing';plabel.textContent='▶ '+curLabel;
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);showSSM(sw.file);setDL(sw.file);
  noteFromPlay(playingModel,playingCkpt,sw.file);markPlaying();}
@@ -503,7 +514,7 @@ function playRow(tr){
  const key=cellKey(hit.mkey,tr.dataset.ckpt,hit.pid,hit.cfg,hit.w)+sw.nkey;
  if(playingKey===key){stopPlaying();return;}
  playingKey=key;playingModel=tr.dataset.model;playingCkpt=tr.dataset.ckpt;
- curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag;
+ curLabel=hit.mkey+' '+tr.dataset.ckpt+' × '+hit.pid+' cfg'+hit.cfg+' w'+hit.w+(hit.exact?'':' ·nearest')+sw.tag+badLabel(sw.file);
  plabel.className='playing';plabel.textContent='loading… '+curLabel;
  pl.pause();pl.src=CB+sw.file;seekAndPlay(ph);     // resume at the shared playhead (A/B), not from 0
  showSSM(sw.file);setDL(sw.file);
@@ -574,7 +585,11 @@ function fillPicker(promptTxt,cfgSet,wSet){
  applyPtmLock();  // the page never restores ptm itself, but browsers re-check the box from their
                   // own form-state cache on F5/back-nav -- without this the lock would be missing
  markAvailability();}
+async function loadBadIndex(){
+ try{const r=await fetch('model_matrix/n_bad_by_file.json',{cache:'no-store'});
+  if(r.ok)badIndex=await r.json();}catch(err){/* offline / file:// -- per-clip count just won't show */}}
 async function loadManifest(){
+ loadBadIndex();  // fire-and-forget, independent of the manifest fetch below
  cellIndex=new Map();nativeIndex=new Map();
  const promptTxt=new Map(),cfgSet=new Set(),wSet=new Set();
  try{

@@ -12,7 +12,17 @@ dora128adj_avp_8ep / dora16_avp_originals_earlyeps).
 
 Usage: audio_corruption_scan.py <clips.json with a "path" field per entry> [threshold] [min_count]
 Prints every clip whose count of |diff|>threshold samples exceeds min_count, sorted worst-first.
-"""
+
+CALIBRATION NOTE (Kim direct, 2026-09-24): the jump COUNT does not map linearly onto
+audible badness -- a handful of jumps blend into the mix surprisingly well and often
+aren't detectable by ear at all, but as the count climbs the clip audibly and
+increasingly degrades. So `n_bad_jumps` is a SCREEN, not a verdict: a small nonzero
+count is not itself grounds to reject a clip, and there is no single "audible" threshold
+to draw a hard pass/fail line at -- treat it the same way `hf_ratio`/`flatness`/z0-std
+are treated elsewhere (relative ranking + Kim's ear settles borderline cases, not the
+number alone). The one count that IS an unconditional verdict is the 999999 sentinel
+`corruption_scan_to_db.py` writes for a non-finite latent -- that's not "many jumps",
+it's a DC-constant clip, a different failure class entirely (see MASTER.md sec5).
 import json
 import sys
 from pathlib import Path
