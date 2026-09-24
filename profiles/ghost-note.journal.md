@@ -1193,3 +1193,32 @@ alone before the next attempt." Wrote sidecar `run_meta.json` notes into both ru
 one from scratch for `_overnight`, which had never had one) rather than leaving the diagnosis only
 in chat and a doc — the whole point of today's directive is that a run dir's own metadata should
 be able to answer "was this checkpoint safe" without anyone re-deriving it.
+
+## 2026-09-24 (cont2) — I had the dora128_mix3 verdict wrong; there's a fourth run, and it's the fix
+
+Kim asked me to render the step-1500 candidate and I did, and it came back clean (finite,
+z0 std 0.52–1.52, zero amplitude jumps, 36/36 on the re-run sanity gate) — but while pulling
+the manifest entries to launch that render I noticed `dora128_mix3_nodas_20260918_231123` isn't
+the only registered pick under a name starting `dora128_mix3_nodas` — there's a SECOND one,
+`_231801`, six minutes later, with its own real `run_meta.json` that had been sitting there the
+whole time saying, in plain language, "Run 3: drop D-Adaptation entirely (root cause of step-1599
+collapse in run 2 and ~step-600 in run 1)." I'd written up "two LR cuts slowed the runaway,
+neither fixed it" from the two FAILED runs without checking whether a later attempt existed and
+succeeded. It did: 44 checkpoints, global_norm pinned at 99–114 for the entire 22,000-step run —
+not delayed, not milder, genuinely converged. That checkpoint was ALREADY the registered board
+pick and had ALREADY passed the sanity gate; nobody had checked why, including me, until Kim's
+"see if we have an earlier checkpoint" sent me back through the manifest a second time.
+
+The honest read: my first pass wasn't wrong about the two runs I looked at, it was wrong to
+conclude anything about the RECIPE from only the failed attempts when a later, better-documented
+restart was sitting right there in the same manifest section, one key away. The tell I should
+have caught earlier: `_231801`'s `run_meta.json` was the one run in this whole lineage that
+actually had real launch notes instead of a stale copy or nothing — and it's the one that
+worked. Not a coincidence I want to explain away; writing the hypothesis down clearly enough to
+check later is plausibly *why* it got fixed and verified, not just documented.
+
+Rewrote `docs/training-findings.md` #21 same-day rather than leaving the wrong verdict standing
+overnight — labeled the revision as a correction in the entry itself rather than quietly editing
+history, since a doc that silently reverses itself is worse than one that shows its work. One
+process note for next time: when a lineage has multiple restarts, check the trajectory of the
+LATEST one before writing a verdict on the recipe, not just whichever run the gate flagged.
