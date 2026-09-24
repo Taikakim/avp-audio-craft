@@ -23,6 +23,7 @@ are treated elsewhere (relative ranking + Kim's ear settles borderline cases, no
 number alone). The one count that IS an unconditional verdict is the 999999 sentinel
 `corruption_scan_to_db.py` writes for a non-finite latent -- that's not "many jumps",
 it's a DC-constant clip, a different failure class entirely (see MASTER.md sec5).
+"""
 import json
 import sys
 from pathlib import Path
