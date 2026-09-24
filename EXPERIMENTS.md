@@ -1134,7 +1134,9 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   (2026-08-12). Their provenance warning about Tier-2 is wrong (full harness + results.json exist).
   Their 0a kill-condition cannot fire: our P_melody is the v3 CSP basis, rank 15/256 by construction.
 
-### D18 — Morph conditioner with a REAL LR schedule: warmup → hold → cosine — **RUNNING (local, launched 2026-09-10 03:34 EEST, W; entry written by C from W's run_meta at W's request)**
+### D18 — Morph conditioner with a REAL LR schedule: warmup → hold → cosine — **TRAINED, NOT YET EVALUATED (local, 2026-09-10 03:34 → 10:30 EEST, W; entry written by C from W's run_meta at W's request; status corrected 2026-09-24)**
+
+*Outcome (2026-09-24, W, from the run dir):* ran to completion — all 24 checkpoints (step 500…12000) plus `riffer_final.pt`, finished 10:30 the same morning. **The schedule fixed the instability:** gnorm max **0.268** over 600 logged samples, never above 2 (D17's worst bin median was 2.718), so the watchdog never fired and the first kill criterion is cleared. The post-train ONNX export failed (`onnxscript` missing in that venv) — non-fatal, weights saved. **The second criterion — adherence at 12000 vs D17's step2000 — is UNTESTED: no renders exist for this arm.** So D18 has not yet answered its question; it has only removed the reason D17 could not. Next: the same gain ladder (3/4/6/8) on step2000 / step6000 / step12000.
 
 *Why:* D17 (below) answered its question by failing. Listening put the **only audible contour
 correspondence at step2000, gain 2** — ~250 optimizer steps, ~1.4 epochs — i.e. the entire useful
