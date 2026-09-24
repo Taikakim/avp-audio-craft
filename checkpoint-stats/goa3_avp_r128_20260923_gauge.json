@@ -1,0 +1,35 @@
+[
+ {
+  "step": 1268,
+  "normB": 71.54193796562708,
+  "normA": 98.68022347554587,
+  "normBA": 41.853581610093336,
+  "coupling_median": 0.08979186751572567
+ },
+ {
+  "step": 2536,
+  "normB": 94.90049130124035,
+  "normA": 98.42925480022217,
+  "normBA": 55.37802672289544,
+  "coupling_median": 0.09006985482411783,
+  "gauge_frac": 0.12803225637241014,
+  "chance_baseline": 0.019298929698757402,
+  "rel_vel_B": 0.5985831429798117,
+  "rel_vel_BA": 0.6055605077223193,
+  "dA_share": 0.0580505505965927,
+  "top_gauge_modules": [
+   [
+    0.329,
+    "conditioners.seconds_total.embedder.embedding.1.parametrizations.weight.0"
+   ],
+   [
+    0.45,
+    "model.transformer.global_cond_embedder.2.parametrizations.weight.0"
+   ],
+   [
+    0.482,
+    "model.postprocess_conv.parametrizations.weight.0"
+   ]
+  ]
+ }
+]
