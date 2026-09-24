@@ -98,15 +98,6 @@ fix is the pair. Not necessarily the cause of anything here, but it is half a se
 
 
 
-### ✅ DONE 2026-09-09 — LUMI training logs pulled *(misfiled — this was already done, just relocated to Recently done 2026-09-24)*
-Key loaded, pull run by GHOST-NOTE. `lightning_logs` 14 -> **103**, `metrics.csv` 6 -> **123**,
-`train*.log` 63 -> **248**, plus **342** sbatch `.out/.err` job logs (159 MB) that live in the
-SUBMIT cwd `/project/.../code`, not under `runs/`. Every remote count now matches local except
-`run_meta.json`, where local (166) is a superset of remote (118). `hparams.yaml` is 0 because
-LUMI has none. Command is now RUNBOOK §10b so it can be re-run before the data window closes.
-
-
-
 ### ✅ DONE (verified 2026-09-24, THE-FINN) Re-render the 93 quarantined `lion_lr1e-5` native cells
 **WHAT** — `lion_lr1e-5` ep399 has its full 108-cell 20 s grid plus 18 native cells; 93 more natives
 were quarantined for non-finite latents (see `model_matrix_QUARANTINE_2026-09-08_nan/`). Its nine
@@ -278,25 +269,25 @@ The clean fix is to EXTEND that script (keeping its safe-by-design order: write 
 delete) rather than write a second pruner — the skill is explicit about not writing ad-hoc ones.
 **Say the word and I will extend it; it then needs an rsync to LUMI before it can run.**
 
-### 🔌 Plug the Mantu eval drive back in — 692 adapters + the ckpt picker are dark (C, 2026-08-26)
-`/run/media/kim/` currently holds only the UUID drive and Lehto; **Mantu is not mounted**. Live
-consequences right now: `/ckpts` 404s (the checkpoint picker is empty), `chroma_other` is skipped at
-boot so `/info` reports **16 heads not 17**, and **692 of 797 adapters** in the DoRA picker sit on
-that drive. The UI no longer lies about it — offline adapters are marked `— drive offline`, disabled
-and sorted last, and the ckpt status names the real cause — but nothing on Mantu is usable until it
-is mounted. **Two follow-ups gated on that:** (a) re-check whether `latch_sa3_chroma_other_best.pt`
-still exists; my search found it nowhere, but the drive was unmounted, so that is **not** a finding
-yet. (b) The model DB journal is the pre-dedupe one; a `?rescan=1` once the drive is back will fix
-the census's local/remote columns too.
-
 </details>
 
 ### 🧾 Two commits a subagent made without being asked — revert or keep? (C, 2026-08-25, still open)
+⚠️ AMBIGUOUS (THE-FINN, 2026-09-24): both commits are still in `sa3-style-adapter` history,
+unreverted, a month later — verified via `git log`/`git show`, neither was reset. That's a full
+month of de-facto "keep," and other work has almost certainly built on top by now, so reverting
+today would be far more disruptive than it would have been in August. Practically this reads as
+moot, but the explicit decision this entry asks for was never actually made, so I'm not silently
+marking it resolved — flagging for a real call (formalize the keep, or confirm it's still open).
 `c1c4983` (model_roots config-driven multi-root) and `b819097` (ckpt_probe family classifier) went
 into history unasked on `sa3-style-adapter`. Both are code we want; the issue is only that they were
 committed rather than left in the working tree for you. Your call: keep, or reset and re-stage.
 
 ### ⏳ BEFORE LUMI SCRATCH WIPE: hand-tag promising FATS for final pull (Kim, self-assigned 2026-08-21)
+⚠️ AMBIGUOUS (THE-FINN, 2026-09-24): can't determine whether the scratch wipe this entry is
+racing already happened over the past month — no mention of a completed wipe in WORKLOG,
+DISCOVERIES, or the W35-W38/live dialogue archives, and I can't reach LUMI to check scratch
+directly (ssh cert looks expired). If the wipe already ran, this is moot and whatever wasn't
+hand-tagged is already gone either way; if it hasn't, it's still live and worth doing soon.
 Kim will tag resume-worthy fat ckpts before the purge. Mechanics ready when he is: write the
 paths (one per line) into a keep_fats.txt, then a --files-from pull of exactly those (same
 pattern as today's slim pull); F can execute via his ssh lane. Candidate shortlist to start
@@ -340,6 +331,14 @@ GHOST-NOTE channel post. Board: `dora_table.html?set=soups` (verify the `set` ke
 if not). Files: `/run/media/kim/Mantu/sa3_lora_runs/soups_ladder_2026-08-19/`.
 
 ### ⏱️ WHEN YOU GET A SHELL FROM THE LAPTOP (C, 2026-08-18 evening — read this first)
+⚠️ AMBIGUOUS (THE-FINN, 2026-09-24, whole-block flag): this entry is over a month old and written
+as one-time orientation for a specific return-to-laptop moment that has long since passed — its
+"read this first" framing is definitely stale. I checked whether the individual sub-items (job IDs
+21353159-61, 21351425, 21342762-63, the goa_src caption chain, etc.) got resolved since: none show
+up anywhere in WORKLOG, DISCOVERIES, or the W35-W38/live dialogue archives, and I can't verify the
+LUMI-side job states directly (ssh cert looks expired). Given the framing is clearly expired but I
+can't confirm the substance is too, I'm not pruning this — it needs a fresh owner pass (C, or
+whoever has live LUMI access) rather than my guess.
 State is not as messy as it looked when you left; most of it is queued correctly. One command
 orients you:
 
@@ -514,6 +513,13 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
   spike-only is dull and punchless (2163 / 3.35). Consistent with the shared rank-1 direction being a
   low-pass/DC-shift and the lost dynamics living in the rest of the walk. Ears decide.
 ## ⏳ In flight — FYI, no action
+⚠️ AMBIGUOUS (THE-FINN, 2026-09-24, whole-section flag): every entry below is dated 2026-08-05
+through 2026-08-18 — over a month old, all LUMI-job-ID-dependent, and "FYI, no action" implies
+this section is meant to be pruned once resolved, which evidently hasn't happened. I found no
+resolution for any of these threads in WORKLOG, DISCOVERIES, or the W35-W38/live dialogue
+archives, and can't verify LUMI job states directly (ssh cert looks expired). Not bulk-pruning a
+whole section on staleness-by-date alone without verification — flagging for whoever owns each
+thread (mostly C/G per the entries' own bylines) to confirm still-relevant vs. clear out.
 - **Melody head (D3): first validated training arms DONE 2026-08-18 20:41 — both voices generalise; EMA
   monotone; lead 0.2036 (EMA, still improving @30), bass 0.1520 (EMA @24). Details in my journal.** — 4 arms,
   `{f0_other, f0_bass} × {plain, EMA 0.999}`, 30 epochs each, sequential on the local card (GPU
@@ -603,6 +609,17 @@ stats for the broken arms for most of a day and did not. Check artifact counts a
 - **model_index.md generator** — being built (F, 08-05).
 
 ## ✅ Recently done (rolling — prune monthly)
+
+### ✅ LUMI training logs pulled (was misfiled as still-open, moved here 2026-09-24 by THE-FINN)
+Done 2026-09-09 by GHOST-NOTE — `lightning_logs` 14→103, `metrics.csv` 6→123, `train*.log` 63→248,
+plus 342 sbatch job logs. Every remote count now matches local except `run_meta.json` (local is a
+superset) and `hparams.yaml` (LUMI has none, expected). Command lives in RUNBOOK §10b for reruns.
+
+### ✅ Mantu eval drive plugged back in — resolved same-day, still mounted (C 2026-08-26, verified still true by THE-FINN 2026-09-24)
+Was flagged unmounted (692/797 adapters dark, `/ckpts` 404s, 16 heads not 17). CONTINUITY's own
+follow-up post ~3 hours later (2026-08-26 07:10) confirms: "Mantu is mounted again and chroma_other
+DOES exist — /info is 17 heads, not 16." Re-verified directly today (`mount` shows `/dev/sdc1` on
+`/run/media/kim/Mantu`, btrfs, currently mounted) — a month later, still holding.
 
 ### ✅ Mixtape wav restore + harsh-clip quarantine — DONE, awaiting last LUMI file (G, 2026-09-17)
 Restored **49 of 51** `.wav`s Kim had deleted from `model_matrix/` to save space, re-rendered from
