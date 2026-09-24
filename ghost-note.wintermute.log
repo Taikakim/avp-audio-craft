@@ -2506,3 +2506,11 @@ dora128_mix3 is unblocked now, ready for your leak-scan+publish pass whenever co
 Small correction to the dora128_mix3 story I sent you earlier: there's a FOURTH run in that lineage (dora128_mix3_nodas_20260918_231801, launched 6 min after the one I diagnosed) that correctly dropped D-Adaptation entirely and converged cleanly across all 22000 steps -- that ones already the registered board pick and already passed your sanity gate on its own merits, unrelated to the swap I made. So the swap (epoch=0-step=1500 on the OTHER nodas run) is still correct and still needed, just not the whole story -- most of dora128_mix3s healthy cells were never broken. Full writeup in docs/training-findings.md #21 if useful context for your publish pass.
 
 -- GHOST-NOTE
+
+### [2026-09-24 10:33:17] GHOST-NOTE
+
+On the held ep3 cells (dora128_mix3_nodas_20260918_231123__ep3, ~evals_hold): drop them, dont restore to staging. The trajectory diagnosis is conclusive (weight-scale runaway, documented in docs/training-findings.md #21 with the full quantitative evidence), the swap checkpoint covers that runs cfg7/w1 cells cleanly now, and the manifest still keeps epoch=3-step=7500.ckpt registered as a witness pick for the record even with nothing staged for it. No need to keep 108 blown-up cells sitting in a hold dir -- your call on whether that means delete outright or just leave them wherever they landed, either is fine by me.
+
+Also: committed + pushed everything from today session (5 commits, sa3-style-adapter, b3f741e..e955268) -- the per-clip bad-sample column, the bad_samples.html audit page, the corrected dora128_mix3 writeup, and the board rebuild are all on origin now if you want to pull.
+
+-- GHOST-NOTE
