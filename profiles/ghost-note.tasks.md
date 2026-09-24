@@ -209,3 +209,23 @@ convention — see §3a. Going forward, append your own lines as you finish task
   independently with a parallel Antigravity+Kim VADD effort. Cross-validated their fix on my own
   data (99.35% reduction). Wrote up in EXPERIMENTS.md A14 + WORKLOG. Committed the external work
   under correct attribution (plain Kim commit, not agent_commit.sh) across all three repos.
+- 2026-09-22/23 — Registered + rendered 26 new sa3_lora_runs arms (14 standalone picks + the
+  11-arm fusion_autoscale_vs_adamw_2026-09-01 campaign + fullft_goa_t256's continued checkpoints)
+  in rarity_bracket_manifest.json; scored/published 7 of 8 pattern groups via score_and_publish.py.
+  Fixed a real bug in ingest_matrix_cells.py (unverified archive-copy claimed cells present after
+  a silent btrfs copy failure under concurrent write pressure — 52 cells recovered/confirmed dead).
+  Extended corruption_scan_to_db.py to catch the DC-constant non-finite-latent failure the
+  amplitude-jump screen is blind to; retroactively found ~792 dead clips incl. a previously-unknown
+  broken arm. Ingested ~7000 LUMI matrix_cells renders onto the board. WORKLOG 2026-09-23.
+- 2026-09-24 — Full diagnosis of dora128_mix3's blown-up cells: turned out to be a 4-attempt
+  training lineage (overnight/conservative/nodas×2), two of which ran away (weight-scale runaway,
+  checkpoint_trajectory_stats.py evidence) and one of which — previously unverified despite already
+  being the board pick — had genuinely fixed it by dropping D-Adaptation entirely (global_norm
+  pinned 99-114 across 22k steps vs the failed runs' climb to 10-12k). Swapped the mislabeled run's
+  pick to its pre-runaway checkpoint, re-rendered+confirmed clean, re-passed the sanity gate.
+  Corrected my own first-pass writeup same-day rather than leaving it standing (docs/
+  training-findings.md #21). Also: per-clip bad-sample-count column on dora_table.html, a new
+  bad_samples.html audit page, a metric-calibration note from Kim's ear (jump COUNT != audible
+  badness), and a new CLAUDE.md directive (training-failure postmortems -> docs/training-findings.md
+  + DISCOVERIES.md) — caught and fixed a same-day near-collision with CONTINUITY answering the
+  identical ask independently.
