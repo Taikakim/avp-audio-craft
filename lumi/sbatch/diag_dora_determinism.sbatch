@@ -59,8 +59,8 @@ export MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_DISABLE_CACHE=1
 export MIOPEN_USER_DB_PATH=/tmp/miopen-diag MIOPEN_CUSTOM_CACHE_DIR=/tmp/miopen-diag
 export TRITON_CACHE_DIR=/tmp/triton-diag
 rm -rf "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"; mkdir -p "${MIOPEN_USER_DB_PATH}" "${TRITON_CACHE_DIR}"
-# Single GCD, PROCID is always 0 here, but pin explicitly per lumi-ops convention.
-export ROCR_VISIBLE_DEVICES=0
+# No ROCR_VISIBLE_DEVICES here: Slurm assigns the one GCD, and the proven render sbatches
+# (a13_render, a2a_bracket) do not override it.
 export TMPDIR=/tmp
 
 DIAG=${CODE}/stable-audio-3/scripts/diag_dora_render_determinism.py
@@ -68,13 +68,14 @@ DIAG=${CODE}/stable-audio-3/scripts/diag_dora_render_determinism.py
 echo "[diag] === 3x --mode live --sdpa ==="
 for i in 1 2 3; do
   echo "[diag] --- live run ${i} ---"
-  python "${DIAG}" --mode live --sdpa --slim-adapter --ckpt "${ADAPTER}"
-  echo "[diag] run ${i} rc=$?"
+  # the repro exits 1 on MISMATCH by design: capture it, or set -e ends the job after run 1
+  rc=0; python "${DIAG}" --mode live --sdpa --slim-adapter --ckpt "${ADAPTER}" || rc=$?
+  echo "[diag] run ${i} rc=${rc}"
 done
 
 echo "[diag] === control: 1x --mode merged --sdpa (must say DETERMINISTIC) ==="
-python "${DIAG}" --mode merged --sdpa --slim-adapter --ckpt "${ADAPTER}"
-echo "[diag] control rc=$?"
+rc=0; python "${DIAG}" --mode merged --sdpa --slim-adapter --ckpt "${ADAPTER}" || rc=$?
+echo "[diag] control rc=${rc}"
 '
 # SUCCESS = readable per this repo:
 #   - every "live fresh cfg1" std matches across the 3 live runs (baseline is sound here too)
