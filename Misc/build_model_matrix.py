@@ -470,7 +470,21 @@ function orderedLabels(){
  if(!byDate||!byDate.checked)return labels;
  return [...labels].sort((a,b)=>((MM.models[b]||{}).model_date??-Infinity)-((MM.models[a]||{}).model_date??-Infinity));
 }
+// Prompt rows shown (W 2026-09-26): the 12 canonical prompts always, plus any other prompt
+// that at least one SELECTED column (model+checkpoint) actually has clips for. Campaign-only
+// sets (AVP extension, bracket, suomisoundi, the trigger-spelling pair) used to be listed as
+// empty greyed rows under every model, which read as a duplicated prompt list. The row set is
+// the union across columns, so a prompt still lands on the same line in every column (07-22).
+const CANON_PIDS=['rb_common_0','rb_common_1','rb_common_2','rb_mid_3','rb_mid_4','rb_mid_5',
+ 'rb_rare_6','rb_rare_7','rb_rare_8','kl_0','kl_1','kl_2'];
+function visiblePids(){
+ const sel=colState.filter(st=>st.model&&st.ckpt).map(st=>st.model+'|'+st.ckpt+'|');
+ const have=new Set();
+ if(sel.length)for(const k in MM.data){if(sel.some(p=>k.startsWith(p)))have.add(k.slice(k.lastIndexOf('|')+1))}
+ return Object.keys(MM.prompts).filter(pid=>CANON_PIDS.includes(pid)||have.has(pid));}
+let VISIBLE_PIDS=[];
 function render(){
+ VISIBLE_PIDS=visiblePids();
  const wrap=document.getElementById('cols');wrap.innerHTML='';
  for(let c=0;c<4;c++){
   const st=colState[c];const div=document.createElement('div');div.className='col';
@@ -524,7 +538,7 @@ function render(){
     // dora_table's P marker (mislabeling "the base sibling also has this cell" as "missing
     // post-trained" would be backwards).
     const ptmSib=st.model.endsWith('_ptm')?null:st.model+'_ptm';
-    for(const pid of Object.keys(MM.prompts)){
+    for(const pid of VISIBLE_PIDS){
      // Zero coverage at the CURRENT cfg/w settings: GREY the prompt's LABEL with a hint
      // instead of HIDING it — hiding non-bracket prompts at bracket-only settings reads
      // as data loss (Kim 2026-07-13). ALWAYS render the full (all-miss) table too, so a
