@@ -403,11 +403,22 @@ function startCell(el,f){
 // native-length overlay (Kim 2026-08-02 spec): with the header checkbox on, a cell click
 // plays its native-training-length twin from MM.ngrid when one exists (terminal ckpts),
 // else the 20s clip. The single per-ckpt audition line (data-cf="native") is untouched.
+// Variant resolution per the 2026-08-02 native/ptm spec §10: the two checkboxes pick among up
+// to four files at one (model, ckpt, cfg, w, prompt) coordinate -- medium-20s, medium-native,
+// ptm-20s, ptm-native. A _ptm render is NOT its own board row; it is this row's post-trained
+// variant (W 2026-09-26: this page only DIMMED on the checkbox, and listed _ptm labels as
+// separate models, so the directive was implemented on dora_table but never here).
 function effSrc(el){
  const f=el.dataset.src;
- if(!window.mnative||!mnative.checked||!MM.ngrid||el.dataset.cf==='native')return f;
+ if(el.dataset.cf==='native')return f;
  const st=colState[el.dataset.col];if(!st||!st.model||!st.ckpt)return f;
- return MM.ngrid[st.model+'|'+st.ckpt+'|'+el.dataset.cf+'|'+el.dataset.w+'|'+el.dataset.pid]||f;}
+ const tail='|'+st.ckpt+'|'+el.dataset.cf+'|'+el.dataset.w+'|'+el.dataset.pid;
+ const nat=!!(window.mnative&&mnative.checked&&MM.ngrid);
+ const ptm=!!(window.mptm&&mptm.checked)&&!st.model.endsWith('_ptm');
+ if(ptm){const sk=st.model+'_ptm'+tail;
+  const pf=(nat&&MM.ngrid[sk])||MM.data[sk]; if(pf)return pf;}
+ if(nat)return MM.ngrid[st.model+tail]||f;
+ return f;}
 function play(el){const f=effSrc(el);if(!el.dataset.src)return;
  if(cur===el){a.pause();el.classList.remove('playing','loading');cur=null;curCoord=null;document.getElementById('ld').textContent='';return}
  if(cur)cur.classList.remove('playing','loading');
@@ -441,8 +452,14 @@ window.addEventListener('load',()=>{const nb=document.getElementById('mnative');
   if(!a.src.endsWith('/'+ef)){a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph);
    dl.href='model_matrix/'+ef;dl.setAttribute('download',ef);}});
  const pb=document.getElementById('mptm');
- if(pb)pb.addEventListener('change',syncFilterClasses);});
-const labels=Object.keys(MM.models);
+ if(pb)pb.addEventListener('change',()=>{
+  syncFilterClasses();
+  if(!cur)return;const ef=effSrc(cur);
+  if(!a.src.endsWith('/'+ef)){a.pause();a.src='model_matrix/'+ef;seekAndPlay(ph);
+   dl.href='model_matrix/'+ef;dl.setAttribute('download',ef);}});});
+// _ptm labels with a base sibling are reached via the post-trained checkbox, not the dropdown;
+// a _ptm label with no base row on this board stays listed so its clips are not orphaned.
+const labels=Object.keys(MM.models).filter(m=>!(m.endsWith('_ptm')&&MM.models[m.slice(0,-4)]));
 function ckptsFor(m){return MM.models[m]?MM.models[m].ckpts:[]}
 // "models by date" (Kim 2026-09-23, replacing an earlier per-checkpoint version that
 // wasn't the useful one): sort the MODEL dropdown by earliest-render mtime, newest first,
@@ -554,7 +571,11 @@ function applyURL(){
  const q={}; h.split('&').forEach(kv=>{const i=kv.indexOf('=');if(i>0)q[kv.slice(0,i)]=kv.slice(i+1);});
  if(q.c){q.c.split('|').forEach((seg,i)=>{
    if(i>3||!seg)return; const [m,k]=seg.split('~');
-   colState[i].model=decodeURIComponent(m||'')||null;
+   let mm=decodeURIComponent(m||'')||null;
+   // old links that selected a _ptm row directly: open its base row with post-trained checked
+   if(mm&&mm.endsWith('_ptm')&&MM.models[mm.slice(0,-4)]){mm=mm.slice(0,-4);
+    const pb=document.getElementById('mptm'); if(pb)pb.checked=true;}
+   colState[i].model=mm;
    colState[i].ckpt=decodeURIComponent(k||'')||null;});}
  if(q.nat==='1'){const nb=document.getElementById('mnative'); if(nb)nb.checked=true;}
  if(q.ptm==='1'){const pb=document.getElementById('mptm'); if(pb)pb.checked=true;}
