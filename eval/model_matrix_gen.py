@@ -147,6 +147,48 @@ def merge_adapters(wrapper) -> int:
     return n
 
 
+def sf_averaged_adapter_ckpt(ckpt_path, tmp_dir):
+    """If `ckpt_path` was trained with Schedule-Free, return a slim {state_dict, lora_config}
+    file with the AVERAGED ("x") iterate swapped in for every adapter tensor; otherwise
+    return `ckpt_path` unchanged (no SF state, the raw state_dict is already what you want).
+
+    WHY (WINTERMUTE review of 662b4af, 2026-09-25): Schedule-Free keeps two iterates -- the
+    raw/instantaneous one ("y", what state_dict holds) and the running average ("x", stored
+    per-parameter in optimizer_states because it's the OPTIMIZER's bookkeeping, not a model
+    weight). demo_cfg_sweep.py's adapter_state() already renders from "x" for exactly this
+    reason; model_matrix_gen calling model.load_lora() straight on the checkpoint file loads
+    "y" -- for an SF-trained arm (the current shampoo flagship among them) that is the WRONG
+    model, independent of the live-adapter render fault this file's merge fix addresses.
+    Vendored/adapted from stable-audio-3/scripts/demo_cfg_sweep.py::adapter_state (same
+    repo-boundary rationale as merge_adapters above) -- extraction only, no CLI weights arg,
+    since here we always want the averaged iterate when one exists."""
+    import torch as _t
+    ck = _t.load(str(ckpt_path), map_location="cpu", mmap=True, weights_only=False)
+    sd = dict(ck["state_dict"])
+    cfg = ck.get("lora_config", {})
+    opt_states = ck.get("optimizer_states")
+    if not opt_states:
+        return Path(ckpt_path)
+    opt = opt_states[0]
+    swapped = 0
+    for g in opt["param_groups"]:
+        for name, idx in zip(g["param_names"], g["params"]):
+            key = name.split(".", 1)[1]  # optimizer names are rooted one level above state_dict
+            st = opt["state"].get(idx)
+            if key not in sd or st is None or "x" not in st:
+                continue
+            sd[key] = st["x"].to(sd[key].dtype)
+            swapped += 1
+    if swapped == 0:
+        return Path(ckpt_path)  # optimizer_states present but no "x" -- not Schedule-Free
+    slim = Path(tmp_dir) / f"_mmg_sf_averaged_{Path(ckpt_path).stem}.ckpt"
+    _t.save({"state_dict": sd, "lora_config": cfg}, str(slim))
+    print(f"[sf-average] {ckpt_path}: swapped in the Schedule-Free averaged iterate for "
+          f"{swapped} adapter tensors (raw state_dict is the wrong model for an SF-trained "
+          f"run) -> {slim}", flush=True)
+    return slim
+
+
 def native_len_seconds(label: str) -> float | None:
     """Trained context length in seconds for `label`, if known (from
     --native-frames-file first, else the recipe override's 'T=<frames>' text) --
@@ -883,68 +925,85 @@ def main():
             # per checkpoint); correctness over speed given the fault silently corrupts data.
             del model
             torch.cuda.empty_cache()
-            for w in strengths_to_render:
-                if over_budget():
-                    stopped = True
-                    break
-                model = StableAudioModel.from_pretrained(
-                    "medium" if args.pt_medium else "medium-base", device="cuda")
-                model.load_lora([str(ckpt_path)])
-                model.set_lora_strength(w)
-                n_merged = merge_adapters(model.model)
-                print(f"[merge] {label}/{tag} w{w}: merged {n_merged} adapter "
-                      f"parametrizations (avoids the live-adapter render fault)", flush=True)
-                for prompt in prompts:
+            # Schedule-Free check ONCE per checkpoint (not per w -- the averaged iterate
+            # does not depend on strength): loads the raw ckpt, and if it carries SF
+            # optimizer state, writes a slim {state_dict, lora_config} file with the
+            # averaged tensors swapped in, reused for every w below. Falls back to the
+            # original ckpt_path untouched when there's no SF state to average.
+            _tmp_dir = Path(os.environ.get("TMPDIR", "/tmp"))
+            _load_path = sf_averaged_adapter_ckpt(ckpt_path, _tmp_dir)
+            try:
+                for w in strengths_to_render:
                     if over_budget():
                         stopped = True
                         break
-                    for cfg in cfgs:
-                        if over_budget():
-                            stopped = True
-                            break
-                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
-                        wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
-                                             duration=duration, weights=_wset)
-                        m4a_name = wav_name.replace(".wav", ".m4a")
-                        if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
-                            wav_path = RENDER_DIR / wav_name
-                            if not wav_path.exists():
-                                t0 = time.time()
-                                # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
-                                # the model's internal peak-normalize + truncation, so we do both here.
-                                z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
-                                                    cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
-                                                    return_latents=True, sample_size=duration_sample_size)
-                                if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
-                                                        f"{prompt['id']} st{steps}"):
-                                    continue
-                                if save_latents:
-                                    # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
-                                    np.save(wav_path.with_suffix(".z0.npy"),
-                                            z0.detach().to(torch.float16).cpu().numpy())
-                                with torch.no_grad():
-                                    audio = model.same.decode(z0.to(decode_dtype))
-                                # truncate to the requested duration (the model would have, pre-decode),
-                                # then save_audio peak-normalizes -> matches the old internal-decode path.
-                                audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
-                                save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
-                                print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
-                            m4a_path = RENDER_DIR / m4a_name
-                            if not m4a_path.exists():
-                                transcode(wav_path, m4a_path)
-                            append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
-                                             "prompt_id": prompt["id"], "prompt_text": prompt["text"],
-                                             "seed": prompt["seed"], "steps": steps, "file": m4a_name,
-                                             "render_path": "merged"})
-                            existing.add(key)
+                    model = None
+                    try:
+                        model = StableAudioModel.from_pretrained(
+                            "medium" if args.pt_medium else "medium-base", device="cuda")
+                        model.load_lora([str(_load_path)])
+                        model.set_lora_strength(w)
+                        n_merged = merge_adapters(model.model)
+                        print(f"[merge] {label}/{tag} w{w}: merged {n_merged} adapter "
+                              f"parametrizations (avoids the live-adapter render fault)", flush=True)
+                        for prompt in prompts:
+                            if over_budget():
+                                stopped = True
+                                break
+                            for cfg in cfgs:
+                                if over_budget():
+                                    stopped = True
+                                    break
+                                key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                                wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
+                                                     duration=duration, weights=_wset)
+                                m4a_name = wav_name.replace(".wav", ".m4a")
+                                if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
+                                    wav_path = RENDER_DIR / wav_name
+                                    if not wav_path.exists():
+                                        t0 = time.time()
+                                        # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
+                                        # the model's internal peak-normalize + truncation, so we do both here.
+                                        z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
+                                                            cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
+                                                            return_latents=True, sample_size=duration_sample_size)
+                                        if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
+                                                                f"{prompt['id']} st{steps}"):
+                                            continue
+                                        if save_latents:
+                                            # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
+                                            np.save(wav_path.with_suffix(".z0.npy"),
+                                                    z0.detach().to(torch.float16).cpu().numpy())
+                                        with torch.no_grad():
+                                            audio = model.same.decode(z0.to(decode_dtype))
+                                        # truncate to the requested duration (the model would have, pre-decode),
+                                        # then save_audio peak-normalizes -> matches the old internal-decode path.
+                                        audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
+                                        save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
+                                        print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
+                                    m4a_path = RENDER_DIR / m4a_name
+                                    if not m4a_path.exists():
+                                        transcode(wav_path, m4a_path)
+                                    append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
+                                                     "prompt_id": prompt["id"], "prompt_text": prompt["text"],
+                                                     "seed": prompt["seed"], "steps": steps, "file": m4a_name,
+                                                     "render_path": "merged"})
+                                    existing.add(key)
+                            if stopped:
+                                break
+                        if not stopped:
+                            render_native_cells(model, (w,), "merged")
+                    finally:
+                        # a render exception must still free the card before the next w
+                        # tries to load -- otherwise it competes with a half-torn-down model.
+                        if model is not None:
+                            del model
+                        torch.cuda.empty_cache()
                     if stopped:
                         break
-                if not stopped:
-                    render_native_cells(model, (w,), "merged")
-                del model
-                torch.cuda.empty_cache()
-                if stopped:
-                    break
+            finally:
+                if _load_path != Path(ckpt_path) and _load_path.exists():
+                    _load_path.unlink()
         else:
             # base model (no adapter, strength n/a) and fullft (whole-model, no separate
             # adapter to merge) -- unchanged from before the fault fix, since neither goes
