@@ -221,6 +221,23 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     (`stable_audio_3/training/flight_recorder.py`, `--flight-recorder`, on by default). *Status:*
     built and CPU-tested, **not yet run on a real training**. Whether our batches spike at all is
     still unknown.
+13c. **LoRA-TSD silently ignored an LR scheduler (cloud review, 2026-09-25).** `BatchedLoRATSD.step()`
+    read lr, momentum, clip and the other settings from copies made in `__init__`, not from
+    `param_groups`. A torch scheduler writes `param_groups[i]["lr"]`, so a warmup or decay schedule
+    would have been accepted and done nothing, and so would changed settings restored by
+    `load_state_dict`: the run trains at the starting lr with no error. *Status:* latent, never
+    hit, because `train_lora_modular.py` attaches no scheduler. Fixed in stable-audio-tools `018ae1a`,
+    which reads them from `param_groups[0]` every step. Test: half the lr gives exactly half the step,
+    zero lr gives no step. Rule: a custom optimizer must read its hyperparameters from
+    `param_groups` in `step()`, or schedulers are placebo.
+13d. **A resumed optimizer could rewrite the checkpoint it was loaded from (2026-09-25).** torch's
+    `Optimizer.load_state_dict` deep-copies `param_groups` but adopts same-device/dtype state tensors
+    BY REFERENCE, so an optimizer that updates momentum in place then writes into the caller's
+    state dict. It was found in `BatchedLoRATSD` by the second Opus critic and then in
+    `LoRATSDReference` by the cloud review; both now clone on load (`fdff0ea`, `018ae1a`). A real
+    Lightning GPU resume is not affected, because the CPU checkpoint tensors get copied to the GPU.
+    It bites when one state dict is loaded twice (CPU tests, A/B from one snapshot). Same class of
+    trap as the aliasing that `state_dict()` needed a deepcopy for.
 
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).
