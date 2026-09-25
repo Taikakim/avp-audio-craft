@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from build_model_index import collect_models, OVERRIDES  # noqa: E402
+from build_model_index import collect_models, OVERRIDES, LORA, CTRL  # noqa: E402
 from build_site import redact  # noqa: E402  (shared redaction; one-way dep, no cycle)
 
 # Commentary-JSON schema fields that ship to the PUBLIC payload (docs/experiment-commentary-spec.md).
@@ -227,6 +227,38 @@ def main():
                                   if lab.endswith("_ptm") else "manifest-only"),
                        "n_ckpts": 0})
 
+    try:   # per-arm run roots (runs saved outside Mantu, e.g. LUMI pulls on the UUID drive)
+        _BRACKET = json.loads((Path(__file__).resolve().parents[1] / "eval/rarity_bracket_manifest.json")
+                              .read_text()).get("models", {})
+    except Exception:
+        _BRACKET = {}
+
+    def run_meta_recipe(label):
+        """Recipe line from the run's own run_meta.json, for runs with no hand-written override
+        (W 2026-09-26: every recent run showed "recipe: --" because the board only ever read
+        models_index_overrides.json). Strings pass through; dicts become "key value" pairs of
+        their short scalar fields (long free-text notes are left to the override/commentary)."""
+        base = label.removesuffix("_ptm")
+        _br = _BRACKET.get(base, {})
+        for root in ([Path(_br["root"])] if _br.get("root") else []) + [LORA, CTRL]:
+            f = root / base / "run_meta.json"
+            if not f.exists():
+                continue
+            try:
+                rm = json.loads(f.read_text())
+            except Exception:
+                return ""
+            r = rm.get("recipe")
+            if isinstance(r, str):
+                return r
+            if isinstance(r, dict):
+                parts = [f"{k.replace('_', ' ')} {v}" for k, v in r.items()
+                         if v not in (None, "", [], {}) and not isinstance(v, (dict, list))
+                         and len(str(v)) <= 60 and k not in ("notes", "note")]
+                return " · ".join(parts)
+            return ""
+        return ""
+
     meta = {}
     for m in models:
         ov = overrides.get(m["label"], {})
@@ -236,6 +268,8 @@ def main():
         # "[object Object]". redact() the public strings (labels-only convention is no longer
         # enough now the schema carries provenance + scale).
         _recipe = ov.get("recipe", "")
+        if not _recipe:
+            _recipe = run_meta_recipe(m["label"])
         meta[m["label"]] = {
             "family": m["family"], "n_ckpts": m["n_ckpts"],
             "recipe": redact(_recipe) if isinstance(_recipe, str) else "",
