@@ -3146,6 +3146,9 @@
 <p>user-facing generation. Root cause of a separate crash (NaN in <code>newton_schulz_cubic5</code>, no</p>
 <p>finiteness guard anywhere in <code>modular_opt</code>) also not yet fixed.</p>
 <p>Files: <code>eval/audio_corruption_scan.py</code>, <code>eval/corruption_base_vs_ptm.py</code> (SAO); <code>scripts/{train_lora_modular,eval_demo_callback,decode_latents_cpu}.py</code>, <code>stable_audio_3/training/diffusion.py</code> (stable-audio-3); <code>stable_audio_tools/training/modular_opt/</code> (stable-audio-tools). Commits: <code>f6bcf3c</code>/<code>697a2e4</code> (GHOST-NOTE, SAO), <code>44ae8cd</code> (Kim, SAO docs), <code>f3a4c05</code> (Kim, stable-audio-3), <code>1ad9980</code> (Kim, stable-audio-tools). Not pushed.</p>
+<ul class="wl">
+<li>[2026-09-25 08:31] (CONTINUITY) 2026-09-25 CONTINUITY: (1) LoRA-TSD batched optimizer committed (SAT fdff0ea, SA3 ea829f0; --optimizer lora_tsd, manual 5e), GPU speed unmeasured. (2) New default-on diagnostic in train_lora_modular: --flight-recorder logs raw pre-clip grad norms grad/raw_norm_* and dumps spike incidents to &amp;lt;run&amp;gt;/incidents/ (read: eval/inspect_flight_incident.py). (3) Step-governor proposal reviewed, not adopted (update norm is blind to bad batches under normalised optimizers): docs/PROPOSAL_ADAPTIVE_P95_STEP_GOVERNOR.md.</li>
+</ul>
 <footer class="colophon">
   <span>71 entries</span><span>·</span><span>append-only</span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> shared findings ledger</span>
