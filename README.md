@@ -67,6 +67,11 @@ trying to do:
   training failures we've already diagnosed (symptom → cause → fix). Worth a check
   before assuming you've found something new.
 
+- **Turning a finished checkpoint into ranked, listenable results** →
+  **[`docs/render-analyze-publish.md`](docs/render-analyze-publish.md)** — register the
+  checkpoint, render the standard set of test clips, score them, and rebuild the local
+  comparison pages, in order, with exact commands.
+
 - **Going deeper** — **[`MASTER.md`](MASTER.md)** (facts shared across all three repos:
   data paths, hardware quirks) and **[`ARCHITECTURE.md`](ARCHITECTURE.md)** (how the
   three repos fit together, and its **doc map** at the bottom, which indexes everything

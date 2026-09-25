@@ -198,6 +198,9 @@ VERIFY: `rocm-smi --showpids` is empty. Then `Misc/gpu_guard.sh release KIM`.
 
 ## 7. Render the canonical clip set
 
+*(§7 + §12 together are the render→score→publish pipeline; `docs/render-analyze-publish.md` walks
+through both in order with the why attached, if you want the full picture in one read.)*
+
 **First register the arm** in `eval/rarity_bracket_manifest.json` under `models` — an unregistered arm
 renders nothing at all, silently:
 
@@ -374,6 +377,8 @@ sibling OOM'd.
 ⚠ The allocation was **closed** at 4765/5000 GPU-h (2026-08-23). Transfers only until a new one lands.
 
 ## 12. Score clips
+
+*(continues from §7 — see `docs/render-analyze-publish.md` for the full walkthrough)*
 
 ```bash
 cd /home/kim/Projects/SAO

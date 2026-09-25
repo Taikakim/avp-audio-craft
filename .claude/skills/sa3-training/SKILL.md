@@ -198,3 +198,8 @@ Full rule in `CLAUDE.md` ("Training runs — write the notes AT LAUNCH"). The sh
   that descriptor suites could not. Cost-order the LISTEN, not just the compute.
 - `--no_demos` on every multitorch LUMI training job (the demo callback needs torchcodec and
   crashes the run ~4 min in).
+- **The standard local-instrument checklist** — clip-scan for crackle/NaN, checkpoint-trajectory
+  velocity + path-efficiency (with reference numbers, incl. the DoRA-runaway family's 0.14–0.23
+  vs healthy ~0.75–0.78), LoRA A/B gauge drift, a DSP disintegration spot-check, and how to read
+  the `[MECHANISM AUDIT]` log lines — lives in `docs/train_lora_modular.md` §8 (finished run) /
+  §8b (while it's still running). No GPU needed; works on any run dir.
