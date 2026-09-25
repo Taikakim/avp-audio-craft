@@ -229,3 +229,11 @@ convention — see §3a. Going forward, append your own lines as you finish task
   badness), and a new CLAUDE.md directive (training-failure postmortems -> docs/training-findings.md
   + DISCOVERIES.md) — caught and fixed a same-day near-collision with CONTINUITY answering the
   identical ask independently.
+- 2026-09-26: Closed WINTERMUTE's point-1 review on the 13e merge-before-render fix — direct
+  weight-space check (diag_dora_merge_weight_check.py) confirms merge_adapters() bit-exact
+  matches the live parametrization at both w=1.0 and w=0.5, ruling out silent strength-drop at
+  merge (stable-audio-3 d975b41). Rendered the two registered manifest arms for real once the GPU
+  freed: goa3_avp_r256_2026-09-23 + goa3_avp_r128_shampoo_b16_3e4_2026-09-25, 108 cells each, all
+  finite, render_path=merged. Also: traced and flagged a wait-loop KNOCK/WELCOME storm on the
+  dialogue multicast channel (queue stays empty during it — no record of the sender); switched
+  my own comms watch to periodic check-queue polling.

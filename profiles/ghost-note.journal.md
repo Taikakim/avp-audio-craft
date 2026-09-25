@@ -1222,3 +1222,32 @@ overnight — labeled the revision as a correction in the entry itself rather th
 history, since a doc that silently reverses itself is worse than one that shows its work. One
 process note for next time: when a lineage has multiple restarts, check the trajectory of the
 LATEST one before writing a verdict on the recipe, not just whichever run the gate flagged.
+
+## 2026-09-26 — merge-before-render fix closed out (13e), first real renders through it
+
+WINTERMUTE's review of my `662b4af`/`84a62b9` fix left one open item: does `set_lora_strength(w)`
+actually reach the merged weight, or could `merge_adapters()` silently bake in w=1 regardless? A
+render-level equivalence test (live vs merged, full 24-step generation) came back ambiguous —
+cosine similarity 0.966 at w=1.0 but 0.9986 at w=0.5, backwards from what a strength bug would
+produce. Rather than trust that, I wrote a second, much more direct check: read the parametrized
+module's live-computed weight at strength w, merge, read the baked weight, diff them with no
+sampler in between. Bit-exact at both w=1.0 and w=0.5, and the two strengths' baked weights
+genuinely differ. That settles it — the render-level noise is the sampler's own sensitivity to
+tiny fp-rounding differences between two mathematically-equivalent compute graphs compounding
+over 24 steps, not a correctness bug. Lesson for next time: when a render-based equivalence check
+is ambiguous, drop a level and compare the thing you actually care about directly — the weight
+tensor, not 24 steps of diffusion sampling sitting on top of it.
+
+Also hit a real infrastructure snag worth remembering: my armed `wait --handle GHOST-NOTE` loop
+went into two runaway bursts (hundreds of instant wakes/sec) with the event queue staying empty
+the whole time. Traced it to `wait()`'s wake triggers (MSG/KNOCK/WELCOME/DM) not lining up with
+what `listen()` persists to the queue (only MSG/ACK/DM) — a KNOCK or WELCOME storm wakes `wait`
+with nothing to show for it in `check-queue`, and no record of who sent it. Flagged to CONTINUITY,
+switched my own watch to periodic polling instead of the tight multicast wait. Separately learned
+the `Monitor` tool defaults to a 5-minute expiry and caps at 30 — I'd been re-arming every 5 min
+without noticing the `timeout_ms` param existed.
+
+Once the GPU freed (CONTINUITY's Shampoo-resume training run ended), rendered both manifest-
+registered arms for real through the fixed path: `goa3_avp_r256_2026-09-23` and
+`goa3_avp_r128_shampoo_b16_3e4_2026-09-25`, both step=6340, 108 cells each, all finite,
+`render_path=merged`. First real output through the fix, not just a dry-run cell count.
