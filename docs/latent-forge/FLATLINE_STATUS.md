@@ -366,9 +366,13 @@ a log that is short and starts with a fresh header when the conversation is long
 - **Never use the M365 / Outlook / Teams / SharePoint tools** on this work, and say so in every
   subagent brief.
 
-**2026-09-25, stopped at 92% by Kim.** A critic over the reconcile pass found 12 issues (2 blocking) —
-`docs/latent-forge/RECONCILE_CRITIC_FINDINGS.md`. The fix agent was stopped mid-way; its **partial,
-unverified** edits are on branch `wip/reconcile-followup` (not merged — `latent-forge` is still exactly
-`80e92f9` for the plans). **Resume:** diff that branch against `latent-forge`, finish or redo the fixes,
-recount every plan, then merge. #1 needs WINTERMUTE (which `/models` family identifies FiLM ckpts);
-#7 (keep legacy Inspector/ServerPanel?) needs Kim or W.
+**2026-09-25 — reconcile-critic follow-up done and merged.** The critic over the reconcile pass found
+12 issues (2 blocking; `docs/latent-forge/RECONCILE_CRITIC_FINDINGS.md`). WINTERMUTE answered the two
+that needed him (log 21:05, M2 `ebaf823`): FiLM ckpts are `family: "control_adapter"` +
+`control_mode: "scalar"` (client filter required); keep the legacy Inspector/ServerPanel mounted through
+M1, removed later in an explicit task once M7's replacements pass Playwright; clamp crossed START/END in
+`wireSlot` as `end = max(start, end)`; M2 T15 now records `models_control_adapters` and the
+session/preset fixtures. All 12 applied (the interrupted WIP was finished, not redone; the
+`wip/reconcile-followup` branch is retired). `recordedContract.test.ts` now has 9 `it.skipIf` tests,
+skipping until real recordings exist and never passing on empty ones. Counts: M1 180, M4 236, M5 172,
+M7 166 `it()` + 9 `it.skipIf` + 10 Playwright. **M7 is ready for M9.** **Next action: M9's brief.**

@@ -129,6 +129,16 @@ FLATLINE's reconcile pass over the M4 defects found while writing M7 (M7 plan Op
   under POST an untouched session lights it (flagged in M7 Open questions 19).
 - Status table corrected (Task 10 was 21, is 22; Task 9 21 → 22).
 
+**Critic follow-up (2026-09-25, `docs/latent-forge/RECONCILE_CRITIC_FINDINGS.md`):** no M4 code or
+count changes; two M4 claims are corrected. (#2) T8/T10's "M5 wires them" for TargetBar's clip
+props could never happen — M5 may not import this component (§12) and `BottomPane` mounts
+`<PromptSigmaTab />` propless, so the A2A toggle stayed M4's `() => {}`. M7 T9 Step 5 now sources
+`lane`, `a2a`, `clipHasLatent`, `onA2AToggle` (M5's `ensureA2A`) and `onNoise` from the selected
+clip inside `PromptSigmaTab.svelte`, a passed prop still winning; `clipName` and `op` stay unwired
+(`ForgeClip` has neither field). (#3) M7's `SessionController` now holds `stageLocked` past its
+load while a rebuild it started is still pending, so a superseded load's `setBackbone` never runs
+beside a STAGE switch here. M4's 236 `it()` blocks are unchanged.
+
 Three things an implementing agent should know before starting:
 
 1. **Task 4 does not use `forgeApi.schedule`.** M1's client cannot carry `duration`, takes no
@@ -6204,7 +6214,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M4 T12: settings presets and
 
 | Spec section | Covered by | Note |
 |---|---|---|
-| 4.5 target bar (tag, name, A2A + NOISE, OP) | T8 | clip data arrives as props; M5 wires them |
+| 4.5 target bar (tag, name, A2A + NOISE, OP) | T8 | clip data arrives as props; M7 T9 wires them from M5's `arrangement` (not M5 — §12; critic follow-up #2 to the reconcile pass) |
 | 4.5 SETTINGS PRESET select | T12 | render + prompt levels, one select, `prompt only` group |
 | 4.5 prompt + negative prompt | T9 | writes through the target's own settings |
 | 4.5 MODEL STAGE, STEPS, CFG, notes, LENGTH, SEED | T9 | stage confirms, then rebuilds, then moves the store |

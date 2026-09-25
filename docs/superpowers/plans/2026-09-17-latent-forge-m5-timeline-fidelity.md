@@ -5931,12 +5931,23 @@ write, only assertions against Tasks 1–2, 8–11's work and Tasks 3–7's time
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx playwright test
 ```
 
-Expected, with M4 landed: every test in `tests/layout.spec.ts` (11) and M4's
-`tests/sampling.spec.ts` (4) passes, and four of `tests/timeline.spec.ts`'s five — `1 failed, 19
-passed`. The failure is "a clip drags and lands snapped", at its first line:
-`[data-testid="snap-select"]` has no emitter in any plan (see this plan's reconcile note); once a
-SNAP select with that test id exists, nothing fails. Without M4 the envelope-overlay test fails too
-(its A2A toggle is M4 T8's) — `2 failed, 14 passed`.
+Expected, counted over these three files — `tests/layout.spec.ts` (11), M4's
+`tests/sampling.spec.ts` (4) and `tests/timeline.spec.ts` (5), 20 tests:
+
+- **At this milestone's end state, M4 landed, M7 not yet: `2 failed, 18 passed`.** (1) "a clip drags
+  and lands snapped", at its first line: `[data-testid="snap-select"]` has no emitter in any plan
+  (see this plan's reconcile note). (2) "the envelope overlay is inert until A2A is on", at
+  `toHaveAttribute("data-active", "true")`: the toggle renders, but M4 T10's `BottomPane` edit
+  mounts `<PromptSigmaTab />` with no props, so TargetBar's `onA2AToggle` is M4's `() => {}` default and
+  nothing calls this plan's `ensureA2A` (critic follow-up #2 to the reconcile pass). M5 cannot wire
+  it — §12 keeps it from importing M4's component — so M7 T9 does.
+- **After M7 T9** (which sources TargetBar's clip props from `arrangement`, `onA2AToggle` through
+  `ensureA2A`): `1 failed, 19 passed` — only the SNAP test. Once a SNAP select with that test id
+  exists, nothing fails.
+- **Without M4** (no `sampling.spec.ts`, no A2A toggle at all): `2 failed, 14 passed` — the same two.
+
+(The whole-suite run also picks up any later milestone's specs; the counts above are for these
+three files.)
 
 - [ ] **Step 5: Commit**
 
@@ -5988,6 +5999,15 @@ FLATLINE's reconcile pass over the M5 defects found while writing M7 (M7 plan Op
 `setSnap`, but no SNAP select calls it — so Task 12's "a clip drags and lands snapped" fails at
 its first line, and Step 4's gate says so. Tasks 3 and 7 have only file-count gates, so nothing
 pins their 35 and 7 blocks (Task 8's `9 passed | 1 skipped (10)` does hold).
+
+**Critic follow-up (2026-09-25, `docs/latent-forge/RECONCILE_CRITIC_FINDINGS.md` #2):** Task 12's
+envelope-overlay test cannot pass at this milestone's end either — M4's `PromptSigmaTab` is mounted
+propless, so the A2A toggle it clicks is inert. Step 4's gate now says `2 failed, 18 passed` until
+M7 T9 wires TargetBar's clip props through `ensureA2A`, and `1 failed, 19 passed` after. Related
+(#4): M7 T3 replaces `addClip`'s `render: cloneRenderSettings(BASE_DEFAULTS)` with a `renderSeed`
+hook that defaults to exactly that line, and M7 T9's App points it at `settings.defaults`, so a clip
+added under POST starts from POST's sampling fields. No M5 code or test count changed here (172
+`it()`, 5 Playwright tests).
 
 ## Self-review against the spec
 

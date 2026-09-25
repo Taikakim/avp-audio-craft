@@ -3792,10 +3792,15 @@ The bottom pane's internal budget follows from that: `248 − 1 (border-top) −
 8 (padding-bottom) = 233`, and `233 − 162 (tab body, spec §4.5) − 44 (preview container,
 spec §4.5) = 27` for the tab row. Task 11 fills those three boxes; this task builds them.
 
-Every component in `src/ui/shell/` is **props-driven and store-free, except `ModuleShell`**. Only
-`App.svelte` and `ModuleShell` touch the view store, whose singleton is **`view`** (Task 7:
-`export const view = new ViewStore();` — there is no `viewStore` binding anywhere). `ModuleShell`
-is the exception because the Normative-names table says so: its props are `{ id, title, lit,
+Every component **this task creates** in `src/ui/shell/` is **props-driven and store-free, except
+`ModuleShell`**; here only `App.svelte` and `ModuleShell` touch the view store, whose singleton is
+**`view`** (Task 7: `export const view = new ViewStore();` — there is no `viewStore` binding
+anywhere). Later tasks add store readers to the directory, each for a reason stated where it lands:
+Task 11's `BottomPane` (`logStore`, the live TERMINAL), Task 12's `RightPaneModules` (`view`),
+Task 13's `CentreColumn` (`view.screen`), Task 14's `HelpTooltip` (`view`) and Task 15's `TopBar`
+(the legacy `project` store, for the temporary SAVE/LOAD). (Critic follow-up to the reconcile pass,
+#10: this paragraph used to say the whole directory stayed store-free.) `ModuleShell`
+is the exception here because the Normative-names table says so: its props are `{ id, title, lit,
 children }` and it reads `view.isModuleOpen(id)` / `view.toggleModule(id)` itself, so a module's
 open state is the one persisted into `ui.modules` and can never disagree with it. (An earlier draft
 of this task gave `ModuleShell` label/open/ontoggle props instead; every consumer — T12's
@@ -4859,7 +4864,7 @@ name held in `App.svelte` and nothing else.
 - Consumes: `TopBar.svelte` from Task 9 (props `view`, `onview`, `helpMode`, `onhelp`, `theme`,
   `ontheme`).
 - Produces: `BACKBONE_IDS: readonly ["medium", "medium-base", "small-music", "small-music-base"]`,
-  `interface AdapterEntry { path: string; name: string; label?: string; family?: string }`,
+  `interface AdapterEntry { path: string; name?: string; label?: string; family?: string }`,
   `interface ModelOption { value: string; label: string; group: "backbone" | "adapter";
   ckptPath: string | null }`, `buildModelOptions(adapters: AdapterEntry[]): ModelOption[]`;
   `MIXDOWN_IDLE_LABEL: "▸ MIXDOWN"`, `mixdownLabel(busy: boolean, stepsLeft: number | null):
@@ -5086,10 +5091,12 @@ export const BACKBONE_IDS = [
 
 export type BackboneId = (typeof BACKBONE_IDS)[number];
 
-/** One row of the existing server's /models response (a CkptEntry). */
+/** One row of the existing server's /models response (a CkptEntry). The real model_db rows
+ *  carry `label` (the run's arm) and no `name` (eval/model_db.py), so `name` is optional and a
+ *  display reads `label || name || path` (critic follow-up to the reconcile pass, #6). */
 export interface AdapterEntry {
   path: string;
-  name: string;
+  name?: string;
   label?: string;
   family?: string;
 }
@@ -7471,9 +7478,12 @@ export function panelColour(canvas: HTMLCanvasElement, token: string): string {
 ```
 
 `latent-forge/src/ui/shell/CentreColumn.svelte` — switch on the view and hide the bottom pane in
-STATISTICS (spec §4.1, §4.4). Add the import and replace the column's body with:
+STATISTICS (spec §4.1, §4.4). Add the two imports (the body below reads `view.screen`, and Task 9's
+`CentreColumn` imports no store — critic follow-up to the reconcile pass, #10) and replace the
+column's body with:
 
 ```svelte
+  import { view } from "../../lib/stores/view.svelte";
   import StatisticsView from "../stats/StatisticsView.svelte";
 ```
 
@@ -8122,8 +8132,8 @@ what shows the re-homing did not break a region.
 | `src/lib/TransportBar.svelte` | split and deleted: ▶/❚❚, ■ and the bar/clock/frame readout become `src/ui/timeline/RulerTransport.svelte` in the ruler's left cell (spec §4.3, §10 X1); SAVE / LOAD move to the top bar until M7's SESSION select replaces them |
 | `src/lib/CropLibrary.svelte` | deleted; its content becomes the FILES module body over `/forge/files` |
 | `src/lib/store.svelte.ts` | **kept in place** as the arrangement store. M5 takes it over and turns it into `lib/stores/arrangement.svelte.ts`; M1 does not reshape it |
-| `src/lib/Inspector.svelte` | **deleted.** Every part of it is superseded by a designed pane: RENDER OP + PROMPT + STEPS/CFG/SEED by PROMPT + SIGMA (M4), the clip metadata rows by the lane headers (M5), BEND OPS by the OP select (§10 X11, M4), the RENDER button and its `renderBlock` message by the render preview container (M9). Its store methods (`renderClip`, `renderBlock`, `setRenderOp`, `duplicateClip`) stay in `store.svelte.ts` for M9 to re-wire. Between this task and M4/M9 the app cannot start a render — that is expected: M1's deliverable is the shell against the mock server |
-| `src/lib/ServerPanel.svelte` | **deleted.** Its log tail is the TERMINAL tab (§4.5) and its busy dot is that tab's status dot; the `/status` poll that feeds both stays in `store.svelte.ts` |
+| `src/lib/Inspector.svelte` | **kept in place, still mounted** as the `legacy-inspector` module Task 12 left in App (Normative "legacy components" row; WINTERMUTE 2026-09-25, critic follow-up #7). Every part of it will be superseded by a designed pane — RENDER OP + PROMPT + STEPS/CFG/SEED by PROMPT + SIGMA (M4), the clip metadata rows by the lane headers (M5), BEND OPS by the OP select (§10 X11, M4), the RENDER button and its `renderBlock` message by the render preview container (M9) — and it is removed in an explicit later task, once those replacements have passed their Playwright gates. Until then the app can still start a render. It imports only `musictime`, `store.svelte` and `types`, none of which this task moves |
+| `src/lib/ServerPanel.svelte` | **kept in place, still mounted** as the `legacy-server` module, on the same ruling. Its log tail becomes the TERMINAL tab (§4.5) and its busy dot that tab's status dot; it imports only `store.svelte`, so the moves below do not touch it |
 | `src/lib/api.ts`, `src/lib/types.ts`, `src/lib/musictime.ts` | untouched; `lib/forge/*` is the new contract and the two coexist until M5/M9 retire the old one |
 
 **Behaviour that must survive (spec §9.6), and how it is proved:** space = play/pause, Home =
@@ -8135,7 +8145,7 @@ rewind, Delete removes the selected clip, +/− zoom. The handler moves out of `
 - Create: `latent-forge/src/ui/timeline/RulerTransport.svelte`
 - Create: `latent-forge/playwright.config.ts`, `latent-forge/tests/layout.spec.ts`
 - Move: `src/lib/transport.ts` → `src/lib/audio/transport.ts`; `src/lib/waveform.ts` → `src/lib/audio/waveform.ts`; `src/lib/Timeline.svelte` → `src/ui/timeline/Timeline.svelte`; `src/lib/ClipView.svelte` → `src/ui/timeline/ClipView.svelte`; `src/lib/MasterStrip.svelte` → `src/ui/master/MasterStrip.svelte`
-- Delete: `src/lib/TransportBar.svelte`, `src/lib/CropLibrary.svelte`, `src/lib/Inspector.svelte`, `src/lib/ServerPanel.svelte`
+- Delete: `src/lib/TransportBar.svelte`, `src/lib/CropLibrary.svelte` (`Inspector.svelte` and `ServerPanel.svelte` stay — see the table above)
 - Modify: `latent-forge/src/lib/store.svelte.ts` (two import paths), `latent-forge/src/ui/modules/Files.svelte`, `latent-forge/src/ui/shell/TopBar.svelte`, `latent-forge/src/App.svelte` (extended, not replaced — Step 5), `latent-forge/package.json`, `latent-forge/.gitignore`
 
 **Interfaces:**
@@ -8517,8 +8527,11 @@ git mv src/lib/waveform.ts src/lib/audio/waveform.ts
 git mv src/lib/Timeline.svelte src/ui/timeline/Timeline.svelte
 git mv src/lib/ClipView.svelte src/ui/timeline/ClipView.svelte
 git mv src/lib/MasterStrip.svelte src/ui/master/MasterStrip.svelte
-git rm -q src/lib/TransportBar.svelte src/lib/CropLibrary.svelte src/lib/Inspector.svelte src/lib/ServerPanel.svelte
+git rm -q src/lib/TransportBar.svelte src/lib/CropLibrary.svelte
 ```
+
+(`src/lib/Inspector.svelte` and `src/lib/ServerPanel.svelte` are **not** removed: both stay mounted
+as the legacy modules through M1 — critic follow-up #7, step 4 below.)
 
 Fix the import paths the moves broke — three edits, no other change to those files:
 
@@ -8925,9 +8938,9 @@ block holding only the keyboard wiring. Read literally that dropped Task 10's bl
 view-store import the markup still uses, and did not type-check; M7 had to restate the intended
 starting state. The edits below are that intended reading.)
 
-1. **Imports.** Delete the imports of the four files this task deletes or splits —
-   `CropLibrary`, `Inspector`, `ServerPanel`, `TransportBar` — and of `ModuleShell` (App renders
-   none after step 4 below). Point the two moved components at their new homes, and add the
+1. **Imports.** Delete the imports of the two files this task deletes or splits — `CropLibrary`,
+   `TransportBar`. **Keep** the `Inspector`, `ServerPanel` and `ModuleShell` imports: step 4 keeps
+   the two legacy modules. Point the two moved components at their new homes, and add the
    keyboard module:
 
 ```ts
@@ -8973,13 +8986,15 @@ starting state. The edits below are that intended reading.)
           </section>
 ```
 
-4. **Right pane.** This task deletes `Inspector.svelte` and `ServerPanel.svelte` (Files, above), so
-   delete the two legacy `<ModuleShell>` children Task 12 left in `<RightPane>`; the pane's
-   modules all come from `RightPaneModules` now:
-
-```svelte
-    <RightPane open={view.sideOpen} ontoggle={() => view.toggleSide()} />
-```
+4. **Right pane — unchanged.** Keep the two legacy `<ModuleShell>` children Task 12 left in
+   `<RightPane>` (`legacy-inspector` around `<Inspector />`, `legacy-server` around
+   `<ServerPanel />`) exactly as they are; the five spec modules come from `RightPaneModules`
+   above them. This follows the Normative "legacy components" row and the self-review ("stay
+   mounted … through M1"). An earlier version of this step deleted both shells; WINTERMUTE ruled on
+   2026-09-25 (critic follow-up #7) that they stay until an explicit later task removes them, once
+   M7's replacements have passed their Playwright gates — deleting working shells before the
+   replacements are proven buys nothing. The layout spec's module sweep ("each right-pane module
+   opens") iterates only the four always-present spec modules, so the legacy ones change no count.
 
 `latent-forge/src/ui/shell/CentreColumn.svelte` is **not** edited by this task: `App.svelte` owns
 the `centre` snippet (Task 13's rule for `bottom` applies to both), and step 3 above already puts
@@ -9103,7 +9118,7 @@ selecting that clip and pressing Delete removes it. Stop the server with Ctrl-C.
 - [ ] **Step 7: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M1 T15: re-home transport/waveform/timeline/master/library into the designed regions (spec 9.6 behaviour intact, keyboard extracted to lib/actions/keyboard.ts); Inspector and ServerPanel superseded and removed; Playwright layout spec at 1800x900 asserting every region size, no h-scroll, tabs, modules, HELP and DARK, plus the side-by-side screenshots"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M1 T15: re-home transport/waveform/timeline/master/library into the designed regions (spec 9.6 behaviour intact, keyboard extracted to lib/actions/keyboard.ts); Inspector and ServerPanel kept as the two legacy modules until an explicit later task; Playwright layout spec at 1800x900 asserting every region size, no h-scroll, tabs, modules, HELP and DARK, plus the side-by-side screenshots"
 ```
 
 ---
@@ -9178,19 +9193,31 @@ WINTERMUTE's contract answers of 16:20. What changed, each at its source:
   25, T8's cumulative 94 → 98, T14 19 → 20, T15's whole-suite line 8 files → 20 files / 183 tests.
   T9 (10), T10 (12) and T12 (10) are unchanged.
 
+**Critic follow-up (2026-09-25, `docs/latent-forge/RECONCILE_CRITIC_FINDINGS.md`; WINTERMUTE's
+answers of 21:05):** #7 — T15 keeps `Inspector`/`ServerPanel` mounted as the two legacy modules
+(its table, Files list, `git rm` line, App step 1 and step 4 and commit message now agree with the
+Normative row and the self-review); **open item:** they are removed in an explicit later task once
+M7's replacements have passed their Playwright gates, and no plan holds that task yet (M7 Open
+questions 37). #10 — T9's "store-free" paragraph names the real exceptions (T11 `BottomPane`, T12
+`RightPaneModules`, T13 `CentreColumn`, T14 `HelpTooltip`, T15 `TopBar`), and T13 adds
+`CentreColumn`'s missing `view` import. #6 — T10's `AdapterEntry.name` is optional: real
+`model_db` rows carry `label`, not `name`, and `buildModelOptions` already reads `label || name ||
+path`. No test count changes (still 180 `it()` + the T15 loop = 183, and 11 Playwright tests).
+
 **Found while applying, not fixed here (outside the listed defects — each needs a decision):**
-1. The Normative "legacy components" row and the self-review above say `Inspector` and
-   `ServerPanel` stay mounted through M1; T15's own table and `git rm` line delete them. T15's App
-   edits follow T15's explicit instructions (delete); M4 never removes `legacy-inspector` either.
-   Kim or WINTERMUTE should say which is meant.
+1. ~~The Normative "legacy components" row and the self-review say `Inspector` and `ServerPanel`
+   stay mounted through M1; T15's table and `git rm` line deleted them.~~ **Decided (WINTERMUTE,
+   2026-09-25):** they stay mounted through M1 — see the critic follow-up above. M4 never removes
+   `legacy-inspector`, so the row's "removed by M4 and M9" is superseded by that later task.
 2. T9 creates a props-driven `HelpTooltip.svelte` that the Normative table says only T14 may create,
    and T14 then re-creates it prop-less and adds a second `import HelpTooltip` to App. Whichever
    runs second must replace T9's `<HelpTooltip on=… />` element and its `rootEl`/`onRootMove`
    machinery, or `npm run check` fails at T14.
 3. The mock accepts what the server refuses: `session_put` stores any body (the server 400s on
    anything but `version: 2` and on `.`/`..`), and `preset_delete` answers 200 for a missing name
-   (the server 404s). M7 T10's recorded-response contract tests cannot catch these, because M2's
-   `record_fixtures.py` records no session or preset route.
+   (the server 404s). M7 T10's recorded-response contract tests cannot catch these: M2 T15 now
+   records the session and preset GETs (`ebaf823`, tested by M7 T10), but no refused PUT and no
+   missing-name DELETE.
 
 ## Open questions
 
