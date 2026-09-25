@@ -28,6 +28,31 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⬜ cfg sweep of a run's milestone checkpoints — is the checkpoint broken, or only its demos? (C, 2026-09-25)
+**WHAT:** re-renders the trainer's six demo clips per checkpoint at cfg 1 / 3 / 7 from the
+Schedule-Free AVERAGED weights (the ones the demos use, which the milestone .ckpt's state_dict
+does NOT hold), with the DoRA adapter merged into the weights, and logs the raw pre-clamp latent
+std per clip. **WHY:** the shampoo run's demos went to 1e10 at step 3804 and NaN at 6340 while
+its weights stayed finite and smooth. Traced 2026-09-25 to a ROCm-stack fault in the live-DoRA
+forward path (history-dependent NaN/1e11; base model and merged adapter are bit-deterministic).
+Merging sidesteps it, so this sweep measures the MODEL. First run already done by C on
+goa3_avp_r128_shampoo (steps 3804/5072/6340); rerun it for any other run whose demos look broken.
+**RUN** (any shell; GPU must be free — `rocm-smi --showpids` empty):
+```
+cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 && .venv/bin/python stable-audio-3/scripts/demo_cfg_sweep.py --run-dir /run/media/kim/Mantu/sa3_lora_runs/<RUN> --steps-ckpt <STEP> <STEP> --cfgs 1 3 7 2>&1 | tee /tmp/cfg_sweep.log
+```
+**TAKES:** ~1 min model load + ~6 s per clip; 3 checkpoints × 18 clips ≈ 8 min.
+**VERIFY:** `<RUN>/cfg_sweep/step<N>_x/` holds 18 `.z0.npy` per checkpoint, plus a `.wav` for every
+finite clip with std < 5; `<RUN>/cfg_sweep/sweep_results.jsonl` gains one line per clip.
+**REPORT BACK:**
+```
+python3 -c "import json;[print(r['step'],r['prompt'],r['frames'],r['cfg'],r['finite_frac'],r['pre_clamp_std']) for r in map(json.loads,open('/run/media/kim/Mantu/sa3_lora_runs/<RUN>/cfg_sweep/sweep_results.jsonl'))]"
+```
+**READ IT:** finite at every cfg with std ~0.9–1.3 ⇒ the checkpoint is usable, and the demo failure
+was the render bug. Divergent at cfg 7 only ⇒ guidance sensitivity. Divergent at cfg 1 too ⇒ the model.
+**ROLLBACK:** writes only `<RUN>/cfg_sweep/`; delete that dir to undo. `--no-merge` reproduces the
+bug (diagnostic only; its outputs are tagged `_live`).
+
 ### ⬜ Matrix UI: add the weight-set (online/EMA) checkbox — the render half is done, this half isn't
 **VERIFIED 2026-09-24 (THE-FINN, weekly-routine patrol):** the naming decision below WAS made and
 shipped — `model_matrix_gen.py:394` writes `__ema` suffix, and both plain (81 files) and `__ema`

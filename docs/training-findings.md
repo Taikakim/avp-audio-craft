@@ -238,6 +238,38 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     Lightning GPU resume is not affected, because the CPU checkpoint tensors get copied to the GPU.
     It bites when one state dict is loaded twice (CPU tests, A/B from one snapshot). Same class of
     trap as the aliasing that `state_dict()` needed a deepcopy for.
+13e. **Live-DoRA renders are history-dependent on our ROCm stack; the shampoo run's "step-6340 crash"
+    was that, not the model (CONTINUITY, 2026-09-25).**
+    *Symptom:* `goa3_avp_r128_shampoo_b16_3e4_2026-09-25` demos went to pre-clamp std 1.7e10 / 4.3e8 /
+    6.6e6 / 3.7e6 on 5 of 6 clips at step 3804 (`--demo-latent-clamp` scaled them to 1.25 before decode,
+    so they looked survivable), were fine at 5072, and were all-NaN at 6340, followed by a GPU page
+    fault in `exponential_` (`training/utils.py:372`) as training resumed.
+    *Evidence the model is healthy:* all 687 adapter tensors finite at 3804/5072/6340; `|lora_B|`
+    11.46 → 13.64 → 15.54, `|lora_A|` ~99.5, `|magnitude|` ~2323, smooth. Re-rendering the same six
+    demo clips offline from the averaged iterate x with the adapter MERGED: **54/54 finite, std
+    0.78–1.41 at cfg 1, 3 and 7, at all three checkpoints** (`<run>/cfg_sweep/`).
+    *Cause, isolated on a solo card:* with the DoRA parametrization live (weight rebuilt from B·A on
+    every forward), the first render in a process is bit-exact (std 0.9581015706 every time) and
+    same-shape repeats stay exact, but once calls of different shapes interleave (cfg 1 = batch 1,
+    cfg ≠ 1 = batch 2, a decode) later renders of IDENTICAL inputs come back NaN, 1e11, or clean at
+    random, differing between two runs of the same script. Base model: deterministic on the same
+    sequence. Same adapter merged once (`parametrize.remove_parametrizations(..., leave_parametrized=True)`):
+    deterministic and clean. CK flash-attention on or off makes no difference. Plain ops returning
+    history-dependent values means a backend fault (ROCm 7.15-alpha / torch 2.14a stack: kernel,
+    allocator or stream ordering), not our maths; hardware is unlikely, since the fault follows one
+    code path and a fresh process is always exact. The op is not yet narrowed.
+    *What it touches:* every in-training demo of a DoRA run (the callback renders a live adapter
+    after training steps: exactly the interleaving that triggers it), and plausibly the unexplained
+    non-deterministic NaN cells in MASTER §5 (`lion_lr1e-5` "rendered finite in a direct probe, not
+    in batches"). Whether TRAINING steps are also hit is **open**: training is the same live path.
+    *Also learned:* (a) a milestone `.ckpt`'s state_dict holds the Schedule-Free training point y
+    (|y−x|/|x| on lora_B = 0.047 at 3804), while the demos render x from `optimizer_states`: offline
+    renderers see different weights than the demos did. (b) The clamp at the renderer is a censor,
+    not a guard: the 1e10 reading was in the log 2,500 steps early. (c) The P95 step governor and a
+    rewired VADD tier 2 would both have been blind to this, since neither sees the render.
+    *Fix / status:* `stable-audio-3/scripts/demo_cfg_sweep.py` merges by default (runnable block on
+    KIM-TASKLIST). Not yet done: merge-before-render in the demo callback, `model_matrix_gen` and the
+    :8056 server; narrowing the faulting op for an upstream report.
 
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).
