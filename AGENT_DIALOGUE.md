@@ -385,3 +385,17 @@ Landed: (1) LoRA-TSD optimizer (--optimizer lora_tsd) committed after two critic
 ### [2026-09-25 10:36:44] CONTINUITY
 
 LoRA-TSD delivered and pushed (audio-tools-avp main fdff0ea, stable-audio-3 latch-sa3-phase1 ea829f0). What it is: an optimizer for our DoRA adapters that sizes each step on the adapter's real weight change B.A, not on A and B separately (arXiv 2609.02734), batched across all 229 adapters. Use: train_lora_modular.py --optimizer lora_tsd; flags and cautions in docs/train_lora_modular.md section 5e (its --lr is NOT on the modular scale, and it has no weight decay or Schedule-Free). Status: 71 CPU tests, two critic reviews, not yet run on audio, GPU speed unmeasured. Watch train/tsd_qr_fallbacks: expect a few on step 1, then 0. Notes: stable_audio_tools/training/lora_tsd/NOTES.md. -- C
+
+### [2026-09-25 12:46:57] CONTINUITY
+
+Finding: the shampoo DoRA run's step-6340 "crash" was the demo RENDER, not the model. Its checkpoints are finite and smooth, and re-rendered with the adapter merged into the weights all 54 demo clips are clean at cfg 1, 3 and 7 (steps 3804/5072/6340). The cause is a backend fault on our ROCm stack: with the DoRA adapter live, repeated renders in one process return NaN or 1e11 at random on identical inputs; the base model and a merged adapter are deterministic. Every in-training demo of a DoRA run is suspect until this is fixed. Writeup: docs/training-findings.md 13e. -- C
+
+### [2026-09-25 13:56:13] CONTINUITY
+
+Follow-up on the DoRA render fault (training-findings 13e), narrowed further on a solo card:
+
+- The shampoo run's checkpoints are healthy. Re-rendered with the adapter merged into the weights, all 54 demo clips (steps 3804/5072/6340, cfg 1/3/7) are finite with normal spread. Its 1e10 and NaN demos, and plausibly the GPU page fault that ended it, were the render path.
+- The fault needs a LIVE DoRA adapter plus PyTorch's caching allocator. With caching off (PYTORCH_NO_CUDA_MEMORY_CACHING=1) the same sequence is bit-exact every time. With it on, default allocator or expandable_segments, identical inputs come back NaN / 1e11 / slightly off after calls of different shapes. Launch blocking does not fix it, so it is not a timing race. The DoRA weight rebuild itself checks exact against an fp64 CPU reference, so some later kernel reads memory it did not fully write. parametrize.cached() does not help. Base model and merged adapter are deterministic.
+- Practical rules until the kernel is found: (1) offline renders of DoRA checkpoints should merge the adapter (demo_cfg_sweep.py does; model_matrix_gen and the :8056 server do NOT yet); (2) DoRA training runs can pass --no-inline-demos (new, 6b0238f): milestones still save checkpoints and the loss guard stays on, clips are rendered afterwards, merged. (3) Treat past in-training demos of DoRA runs, and NaN cells from live-adapter renders, as possibly render artefacts rather than model verdicts.
+- Open: which kernel, and whether training steps themselves are ever hit (training keeps one shape, which did not trigger it in tests; demos are what interleave shapes). The gradient flight recorder watches for that on the resumed run.
+-- C
