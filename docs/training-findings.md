@@ -293,6 +293,13 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     amdgpu driver or HIP runtime memory management (shared by both ROCm stacks), or GPU page tables.
     The display-crash episodes (2026-09-25 12:38 and 14:34) were both triggered by these repro runs
     faulting on the card that also drove the display.
+    *When it started (2026-09-26):* 0 NaN latents in 48,606 board renders before 2026-07-27, including
+    many rank-128 adapter arms; 2.6–7 % on adapter arms after it; 0 % on full fine-tunes in every period
+    (retroactive scan, so not a detection artefact). First NaN 07-29; the kernel went linux-zen 7.1.3 →
+    7.1.5 on 07-27, and no other compute-relevant change (same ROCm 7.2.3 venv until 08-02, no renderer
+    or adapter commits 07-21..07-30). Likely an amdgpu kernel regression; `linux-lts` 6.18.53 is the
+    test. It also explains the 2026-09-08 `lion_lr1e-5` anomaly in MASTER §5 (NaN in batches, finite in
+    a direct probe): that was this, not a marginal model.
 
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).

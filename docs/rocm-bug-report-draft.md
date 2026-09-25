@@ -130,6 +130,19 @@ present or supervisor privilege.`, with the faulting kernel reported as
 feed-forward layer, and that tensor's checksum **changes between two hooks that read the same tensor**:
 it is overwritten after it was produced.
 
+## When it started: a likely regression window (linux 7.1.3 → 7.1.5)
+
+A retroactive scan of every latent our eval renderer saved (all ages scanned alike, so detection is not
+time-biased) shows **zero NaN outputs in 48,606 renders before 2026-07-27, and a 2.6–7 % NaN rate on
+adapter checkpoints after it; full fine-tunes (no adapter) stayed at 0 % throughout.** Renders before
+07-27 included many rank-128 adapter checkpoints, the class that fails now. The first NaN output is
+dated **2026-07-29**. On **2026-07-27** the kernel moved `linux-zen 7.1.3 → 7.1.5` (and `linux 7.1.3 →
+7.1.5`). Nothing else compute-relevant changed: the other upgrades that day were Mesa/Vulkan and system
+LLVM, which the self-contained ROCm wheels do not use; the PyTorch/ROCm stack was the same ROCm 7.2.3
+venv until 08-02; our renderer and adapter code had no commits between 07-21 and 07-30. So this looks
+like an **amdgpu regression between kernel 7.1.3 and 7.1.5**, still present in 7.2.6. Not yet proven:
+see TODO 2.
+
 ## Suspected area
 
 amdgpu VM / HIP runtime memory management on gfx1201: memory handed back and reused (or unmapped)
@@ -144,7 +157,8 @@ or page-table mappings are affected too, not only data buffers.
    `B`, `mag = ‖W0‖`) on the public `medium-base` checkpoint, and confirm it still fails. Our adapter
    weights cannot be attached. Better still, reduce it further: a stack of large `nn.Linear` layers
    with a live parametrization, alternating batch sizes, no Stable Audio code at all.
-2. **Driver test.** Boot `linux-lts` (a different amdgpu) and rerun. It tells AMD whether to look at
-   the kernel driver or the runtime.
+2. **Driver test.** Boot `linux-lts` (6.18.53, i.e. before the suspected 7.1.3 → 7.1.5 window) and
+   rerun. Clean there ⇒ a kernel regression, reportable to the amdgpu kernel tracker
+   (gitlab.freedesktop.org/drm/amd) with the version window, which matters more than the ROCm report.
 3. Attach `rocminfo`, `dmesg` for one crash, and the repro script. Scrub local paths and checkpoint
    names.
