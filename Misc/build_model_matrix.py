@@ -511,8 +511,11 @@ function render(){
      for(const k in cm.recipe){if(cm.recipe[k])h+='<li><b>'+k+':</b> '+cm.recipe[k]+'</li>';}h+='</ul></div>';}
     else if(info.recipe)h+='<div class=cmt-row><b>recipe:</b> '+info.recipe+'</div>';
     if(info.training_data)h+='<div class=cmt-row><b>training data:</b> '+info.training_data+'</div>';
-    if(cm.compare_against&&cm.compare_against.length){h+='<div class=cmt-row><b>compare vs:</b> '+
-     cm.compare_against.map(function(c){return c.target+' <span class=cmt-ax>('+(c.axis||'')+')</span>';}).join(', ')+'</div>';}
+    // compare_against is a list of {target, axis} in the commentary schema, but 10 overrides
+    // carry a plain string -- .map() on that threw and blanked every later column (W 2026-09-26).
+    const ca=cm.compare_against, cal=Array.isArray(ca)?ca:(ca?[ca]:[]);
+    if(cal.length){h+='<div class=cmt-row><b>compare vs:</b> '+
+     cal.map(function(c){return (typeof c==='string')?c:(c.target+' <span class=cmt-ax>('+(c.axis||'')+')</span>');}).join(', ')+'</div>';}
     if(cm.verdict)h+='<div class=cmt-row><b>verdict:</b> '+cm.verdict+'</div>';
     if(st.ckpt)h+='<div class=cmt-row><b>checkpoint:</b> '+st.ckpt+'</div>';
     if(cm.status)h+='<div class=cmt-status>'+cm.status+'</div>';
