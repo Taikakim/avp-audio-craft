@@ -375,4 +375,9 @@ M1, removed later in an explicit task once M7's replacements pass Playwright; cl
 session/preset fixtures. All 12 applied (the interrupted WIP was finished, not redone; the
 `wip/reconcile-followup` branch is retired). `recordedContract.test.ts` now has 9 `it.skipIf` tests,
 skipping until real recordings exist and never passing on empty ones. Counts: M1 180, M4 236, M5 172,
-M7 166 `it()` + 9 `it.skipIf` + 10 Playwright. **M7 is ready for M9.** **Next action: M9's brief.**
+M7 166 `it()` + 9 `it.skipIf` + 10 Playwright. **M7 is ready for M9.**
+
+**2026-09-26 — M9 brief written and committed:** `docs/latent-forge/M9_WRITER_BRIEFS.md` (two
+research passes; Writer A = job layer, Writer B = preview container and consumers; parallel, with the
+jobs/history store interfaces pre-declared). **Next action: dispatch both M9 writers from the brief,**
+then assemble, critic ×2 (+ narrow pass over any fix round), recount, DM W.
