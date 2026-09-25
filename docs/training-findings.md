@@ -311,6 +311,18 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     and SOAP `L`/`R` stayed on the CPU. Fix: `ModularOptimizer.load_state_dict` moves them
     (stable-audio-tools `3449d4b`, `tests/test_modular_resume_device.py`, fails on the old code for
     both preconditioners). Any new optimizer state held as an OBJECT needs the same care.
+    (3) Then it trained, but WRONGLY: `ModularOptimizer._step_count` was a plain attribute, not
+    saved state, so the resume restarted it at 0. It drives LR warmup, the Schedule-Free
+    `sf_c_warmup` burn-in and the momentum bias corrections. The step-6500 mechanism audit caught it:
+    Schedule-Free averaging INERT (ck = 1, the averaged iterate overwritten by the fast one every
+    step) where it had read ACTIVE 0.9996 before the crash, NorMuon deviation 0.42 against 0.24.
+    Stopped after ~160 steps, nothing saved past 6340. Fix: `state_dict` now carries
+    `modular_step_count` (stable-audio-tools `646259b`), and `ModularTrainingWrapper.on_train_start`
+    sets the counter from Lightning's `global_step` for older checkpoints (stable-audio-3 `cb5517d`,
+    log line `[resume] ModularOptimizer step count 0 -> 6340`). Verified on the relaunch: audit at
+    6500 reads Schedule-Free ACTIVE 0.9996, NorMuon 0.2396. The mechanism audit is what made this
+    visible at all: a silent resume would have handed back a "step 7608" checkpoint whose averaged
+    weights were ~1300 steps old.
 
 21. **DoRA rank-128 `dora128_mix3` lineage: TWO runs ran away, a THIRD (drop D-Adaptation
     entirely) genuinely fixed it — a 4-attempt story, not a single bad checkpoint (GHOST-NOTE,
