@@ -37,24 +37,40 @@ commits via `git pull`.
 
 ---
 
-## Read the docs first
+## Manuals — what to read for what
 
-- **`MASTER.md`** — single source of truth for cross-repo facts (data paths,
-  venv-per-task table, gotchas). Imported by each repo's `CLAUDE.md`.
-- **`WORKLOG.md`** — reverse-chronological "what landed / what broke" log.
-- **`ARCHITECTURE.md`** — how the three repos fit together.
-- **`docs/`** —
-  - `venvs.md` — which venv to use for which task (the #1 source of wasted time)
-  - `commands.md` — copy-paste reference for the commands you actually run
-  - `flash-attn-ck-rdna4.md` — building FA with the CK backend on RDNA4 (the
-    real ROCm 7.14 path, no aiter/Triton workaround)
-  - `latch.md` — LatCH heads pipeline, end-to-end
-  - `training-findings.md` — what we've learned from training runs
-  - `train_lora_modular.md` — **operator manual for the modular LoRA trainer**: every
-    command-line option, its default, the values tried and what they do; copy-paste recipes;
-    how to check a finished run yourself
-  - `lessons-learned.md` — cross-cutting gotchas worth remembering
-  - `todos.md` — open work items
+This repo covers three different jobs (installing, running, training), so there isn't
+one manual — there's a short one for each. Start with whichever matches what you're
+trying to do:
+
+- **Actually running something** — start/resume/kill a training run, render a batch of
+  test clips, start the inference servers, score results → **[`RUNBOOK.md`](RUNBOOK.md)**.
+  Every entry is a command you can copy-paste, with what it costs (roughly how long it
+  takes) and how to tell whether it actually worked. No background reading required.
+
+- **Training a LoRA** → **[`docs/train_lora_modular.md`](docs/train_lora_modular.md)**.
+  What each training option does (plain-language, not just the flag name), a few
+  known-good starting recipes to copy rather than guess at, and — once a run has some
+  checkpoints, even before it finishes — a small toolkit for telling whether it actually
+  learned something or quietly went wrong: does the generated audio have glitches, did
+  the model's weights move a sane amount, is it still improving or just wandering.
+
+- **Picking the right Python environment** → **[`docs/venvs.md`](docs/venvs.md)**. This
+  project has three separate Python setups for three different jobs, and using the wrong
+  one is the single biggest time-waster here. This doc says which one to use when.
+
+- **Quick command lookup** → **[`docs/commands.md`](docs/commands.md)** — a flat list of
+  the commands people actually run day to day, no explanation needed.
+
+- **"Why did my training run blow up / sound wrong?"** →
+  **[`docs/training-findings.md`](docs/training-findings.md)** — a running list of
+  training failures we've already diagnosed (symptom → cause → fix). Worth a check
+  before assuming you've found something new.
+
+- **Going deeper** — **[`MASTER.md`](MASTER.md)** (facts shared across all three repos:
+  data paths, hardware quirks) and **[`ARCHITECTURE.md`](ARCHITECTURE.md)** (how the
+  three repos fit together, and its **doc map** at the bottom, which indexes everything
+  else in `docs/` — build recipes, the steering/control-head pipeline, and more).
 
 ---
 
