@@ -73,18 +73,8 @@
    "seed": 1234
   },
   {
-   "id": "trig2",
-   "text": "aavepyora",
-   "seed": 1234
-  },
-  {
    "id": "techno",
    "text": "techno music",
-   "seed": 1234
-  },
-  {
-   "id": "housestyle",
-   "text": "bittersweet eclectic house, aavepyora style",
    "seed": 1234
   },
   {
@@ -122,5 +112,6 @@
    "text": "suomisoundi, 2020s, hypnotic, 157.9 bpm, arpeggiated leads, deep sub-bass, intricate percussive elements, energetic, atmospheric, melancholic, euphoric",
    "seed": 424242423
   }
- ]
+ ],
+ "misspelled_trigger_retired": "RETIRED 2026-09-26 (W, on request): the misspelled 'trig2'/'housestyle' ids (\"aavepyora\", a token the training captions never contain) are no longer rendered for new runs; their correctly spelled twins trig2_uml/housestyle_uml (same seed) carry the trigger-word test. Existing clips stay on the board. lumi/trigger_ab_prompts.json keeps both, since it IS the spelling A/B."
 }

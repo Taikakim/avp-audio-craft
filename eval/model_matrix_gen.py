@@ -219,9 +219,15 @@ EXTRA_PROMPTS = {
     "kimlong": ("bittersweet synth music with influences from goa trance and 80s retro "
                 "videogame music, dorian scale, BPM 138, steady 90s trance beat, punchy "
                 "bright kick, 16th octave bass runs, tight snares every second beat"),
-    "trig2": "aavepyora",
+    # trigger word spelled as the training captions spell it (W 2026-09-26, on request): the
+    # old "trig2"/"housestyle" ids asked for "aavepyora", a token that occurs ZERO times in the
+    # captions, so they are no longer rendered for new runs. The _uml ids keep the same seed
+    # (EXTRA_SEED) as their retired twins, so old-vs-new cells differ only in the spelling.
+    # Existing trig2/housestyle clips stay on the board; --prompts-from-manifest can still
+    # re-render them by id if ever needed. Rationale: lumi/matrix_prompts_snapshot.json.
+    "trig2_uml": "aavepyörä",
     "techno": "techno music",
-    "housestyle": "bittersweet eclectic house, aavepyora style",
+    "housestyle_uml": "bittersweet eclectic house, aavepyörä style",
 }
 EXTRA_SEED = 1234  # matches the established avp-board seed convention
 
@@ -506,7 +512,7 @@ def main():
     ap.add_argument("--n-per-band", type=int, default=3, help="rarity prompts per band (x3 bands)")
     ap.add_argument("--n-kimlong", type=int, default=3, help="kimlong-style detailed prompts")
     ap.add_argument("--extra-prompts", action="store_true",
-                     help="use EXTRA_PROMPTS (kimlong/trig2/techno/housestyle) instead of the "
+                     help="use EXTRA_PROMPTS (kimlong/trig2_uml/techno/housestyle_uml) instead of the "
                           "rarity-band+pool sample -- additive extension pass")
     ap.add_argument("--all-prompts", action="store_true",
                      help="UNION every prompt source (rarity+pool build_prompts + EXTRA_PROMPTS + "

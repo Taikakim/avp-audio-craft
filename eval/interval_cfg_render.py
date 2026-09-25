@@ -76,7 +76,7 @@ ARMS = {
 # kl_0 / kl_1 / kl_bracket_0 / rb_mid_3 / techno / housestyle. The brief said
 # "rb_mid_0" but no such id exists in the snapshot or the matrix -- rb_mid_3 is the
 # first mid-band prompt (ids are globally indexed across bands), noted in REPORT.md.
-PROMPT_IDS = ["kl_0", "kl_1", "kl_bracket_0", "rb_mid_3", "techno", "housestyle"]
+PROMPT_IDS = ["kl_0", "kl_1", "kl_bracket_0", "rb_mid_3", "techno", "housestyle_uml"]  # housestyle -> _uml 2026-09-26: misspelled trigger retired
 
 MODELS = [
     ("base", None, "base"),
