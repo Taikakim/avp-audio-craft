@@ -143,6 +143,31 @@ venv until 08-02; our renderer and adapter code had no commits between 07-21 and
 like an **amdgpu regression between kernel 7.1.3 and 7.1.5**, still present in 7.2.6. Not yet proven:
 see TODO 2.
 
+## Related public reports (read 2026-09-26)
+
+- **ROCm/rocm-libraries PR #8909** (merged to develop 2026-08-14), "fix(tensilelite): bound GLTr
+  transpose-load to tensor end": on RDNA4, `global_load_tr` for DirectToVgpr operands has no hardware
+  bounds check, so a GEMM whose free dim or K-tail does not fill the macro tile reads past the tensor
+  end, faulting when it abuts unmapped pages. Fixes #7992 and legacy-rocm-build #6413. **Our first crash
+  kernel was of this class:** `Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT128x128x32_..._DTVA0_DTVB1_..._ISA1201`.
+  An unbounded read of neighbouring memory would explain the history dependence, the NaNs (K-tail
+  garbage enters real outputs), the faults, and why disabling allocator caching hides it.
+- **ROCm/rocm-libraries #7992** (open, 06-03): gfx1201 Tensile GEMM MT64x64x64 computes an OOB address
+  on a column-major B operand (`DTVB1`); rocBLAS falls back to the same kernel, which fits our rocBLAS
+  test failing too. Kernel 7.0.10, i.e. before our suspected 07-27 window.
+- **ROCm/legacy-rocm-build #6413** (07-14, "fix submitted" via #8909): gfx1201 page fault + GPU reset
+  during PyTorch LoRA fine-tuning of a large diffusion transformer.
+- **pytorch/pytorch #195202** (open, 08-28, assigned to an AMD maintainer): gfx1201 bf16 training goes
+  NaN at step 1, "a state/history-dependent allocator defect", avoided by NOT using expandable_segments.
+  Possibly the same root cause under a different memory layout.
+- **ROCm/rocm-libraries #6166** (closed): rocBLAS `dot_ex` page-faults on gfx1201, `MAPPING_ERROR: 0x1`.
+
+Open questions this raises: (a) does our ROCm 10.1 alpha (built 2026-08-22) contain #8909? It still
+fails; either it lacks the fix, or the fix does not cover our kernel variant (MT128x128x32 with fused
+bias vs the narrow tiles #8909 names). (b) If #8909 is the cause, the 07-27 kernel update may have
+EXPOSED it (changed memory placement) rather than caused it; `linux-lts` separates the two.
+**Better route than a new issue: add our data to #7992 or pytorch #195202.**
+
 ## Suspected area
 
 amdgpu VM / HIP runtime memory management on gfx1201: memory handed back and reused (or unmapped)
