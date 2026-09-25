@@ -3247,6 +3247,8 @@ EXPECTED = (
     "forge_dataset_scalars", "forge_job_submit", "forge_job_running", "status_busy",
     "forge_job_generate_done", "forge_chroma_render", "forge_stretch_render", "forge_log",
     "forge_error_cap", "forge_audio_ref_example",
+    "models_control_adapters", "forge_sessions_list", "forge_session_get",
+    "forge_presets_latch_list", "forge_preset_latch_get",
 )
 RECORDED = set()
 
@@ -3276,7 +3278,24 @@ def main():
     if isinstance(models, dict) and isinstance(models.get("models"), list):
         models = {**models, "models": models["models"][:20]}
     save("models_adapters", s, models)
+    # FiLM checkpoints are family "control_adapter" with control_mode "scalar" -- the only mode
+    # the server's _install_film (ScalarAttributeEncoder) can load. There is no "film" family.
+    s, ctrl = call("GET", "/models?family=control_adapter")
+    if isinstance(ctrl, dict) and isinstance(ctrl.get("models"), list):
+        ctrl = {**ctrl, "models": ctrl["models"][:20]}
+    save("models_control_adapters", s, ctrl)
     save("slots", *call("GET", "/slots"))
+    # Session + preset stores (M7). Round-trip a throwaway name so the GET fixtures are real
+    # server bodies (raw object, no {ok} envelope). The preset is deleted afterwards; sessions have
+    # no DELETE route, so "_fixture_probe" stays in the store (harmless, and named to say so).
+    probe = {"version": 2, "clips": []}
+    call("PUT", "/forge/sessions/_fixture_probe", probe)
+    save("forge_sessions_list", *call("GET", "/forge/sessions"))
+    save("forge_session_get", *call("GET", "/forge/sessions/_fixture_probe"))
+    call("PUT", "/forge/presets/latch/_fixture_probe", {"latch_on": False})
+    save("forge_presets_latch_list", *call("GET", "/forge/presets/latch"))
+    save("forge_preset_latch_get", *call("GET", "/forge/presets/latch/_fixture_probe"))
+    call("DELETE", "/forge/presets/latch/_fixture_probe")
     save("schedule_model", *call("POST", "/schedule", {"steps": 24, "duration": 47.0}))
     save("forge_backbone", *call("GET", "/forge/backbone"))
     s, crops = call("GET", "/forge/files?root=crops&limit=5")
