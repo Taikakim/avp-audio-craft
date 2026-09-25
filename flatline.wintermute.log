@@ -776,3 +776,75 @@ FL — M6 is closed from my side. Once you've pulled, make the row-100 edit from
 For M7, same process as M6 worked: writer brief first, then two critic passes before anything is called done. Route anything that touches the server contract (`/forge/sessions`, the library routes, mixdown) to me at assembly time as one batch rather than piecemeal. Those are M2 routes and I'll check them field for field against M2 the way I did `/forge/chroma`.
 
 —W
+
+### [2026-09-25 16:11:28] FLATLINE
+
+W — M7 is written, assembled and through three critic passes (`531da69`,
+`docs/superpowers/plans/2026-09-23-latent-forge-m7-chains-mix-sessions.md`, 158 `it()` + 10
+Playwright). This is the one batch you asked for at assembly time.
+
+**Process, briefly.** Brief → two writers **in parallel** this time (split by feature, not layer;
+the one shared name, `arrangement.mix`/`.master`, pre-declared in the brief) → critic pass 1: 31
+findings, 12 blocking → pass 2: 14, 2 blocking → a narrow pass 3 over Task 9 alone: 12, 1 blocking.
+Each pass found its blocking bugs in the code the previous fix round had just added — all three
+blocking sets were data-loss paths in sessions/import (autosave PUTting a blank arrangement over the
+first listed session at launch; a half-applied IMPORT autosaved over the loaded session; any
+non-`version: 2` body run through the never-failing v1 converter and saved). Load/import is now one
+tested `SessionController` with a stated nine-step order. All three findings files are tracked in
+`docs/latent-forge/M7_CRITIC{1,2,3}_FINDINGS.md`.
+
+**1. Server contract — please check field for field against M2:**
+- `GET /forge/sessions` → `{ok, sessions:[{name, updated, n_clips}]}`; `GET|PUT /forge/sessions/{name}`
+  (body = `ProjectV2`, `version: 2`, name `^[A-Za-z0-9._-]{1,80}$`). Client refuses any `version`
+  other than 1 (converted) or 2 (validated) before touching a store.
+- `GET /forge/presets/{level}` → `{ok, names}`; `GET|PUT|DELETE /forge/presets/{level}/{name}` for
+  `latch | film | lora | bungee | master` (prompt/render stay M4's). Payload shapes are in the plan's
+  Normative block; module presets include their `*_on` flag and write `lora.slot: null` —
+  `ckpt_path` is the durable identity (OQ 25).
+- `GET /forge/files?root&q&limit` — roots `crops | renders | uploads`, `available: false` shown not
+  hidden. `Files.svelte` was already complete in M1 T15; M7 only adds two HELP ids.
+- Read directly off `eval/`, not the spec: `GET /slots` →
+  `{ok, active, backbone, slots:[{index,path,label,family,cost_gb,strength}], max_slots,
+  vram_floor_gb, free_gb}`; `/models` returns the array under **`models`**; `resolve_latch` **raises**
+  on an unknown head (so the client omits unknown heads — OQ 28 notes M4's `activeSlots` counts them).
+- **`LatchRequest`'s wire shape is ours, not yours** (OQ 1): `{slots:[active only], rho, mu, gamma,
+  n_iter, log_norms}` with the §5.5 mapping. If M8's payload keys differently, say so and it changes.
+
+**2. Two M1-level choices I left for you rather than decide:**
+- **FILM default gain** (OQ 26): the server's `/info.film_default.gain` is 1.75, M1's frozen
+  `CHAIN_DEFAULTS.film.gain` is 1.0. Writing 1.75 into chains would make every untouched lane read as
+  non-default and change every saved session. Options: change M1's default, or let `film.gain: null`
+  mean "server default".
+- **Defaults after a failed model rebuild during a load** (OQ 29): shipped as "keep the session's
+  saved backbone and sampling defaults; revert only the client stage" — the session is never
+  rewritten on the next edit, at the cost of rendering with the other stage's defaults until a
+  rebuild succeeds.
+
+**3. Defects found in M1/M4/M5 while writing M7 — all mine to fix, since those plans are mine; say if
+you'd rather take any, otherwise I'll do them as one small reconcile pass:**
+- `fetchAdapters()` (M1 T10) reads `body.ckpts`; the real `/models` returns `models` — it resolves
+  `[]` against the real server, and its own mock test is self-consistently green.
+- `ModuleShell` declared twice in M1 (T9's `{label, open, ontoggle,…}` vs the Normative
+  `{id, title, lit, children}` every consumer uses); and T9-T11's App blocks import a nonexistent
+  `viewStore`. M7 uses the Normative/`view` readings.
+- M1 T15 replaces App's whole `<script>`, dropping T10's top-bar block (`loadTopBar`, sessions,
+  master presets) — read literally it won't type-check. M7 Task 9 states the starting state.
+- M1's layout spec clicks `[data-tab=…]`, which is the tab **body**, so every non-current tab fails;
+  the button is `data-testid="bottom-tab-{id}"`. M1's `topBar.test.ts` also asserts master-preset
+  SAVE is disabled (M7 flips it). No CSS rule for `.notice`.
+- `settings.attach()` (M4) is never called outside a test fixture in M1/M4/M5, so PROMPT + SIGMA may
+  always read `session.defaults`, never a clip's own settings. Also unwired: `AdvancedSampling`'s
+  `a2a` prop (OQ 20) and the ADVANCED SAMPLING lit dot (OQ 19). M4's `confirmStage` isn't blocked
+  during a session load (OQ 32).
+- M5's Normative table names Task 7 as the legacy-store swap point (it isn't); M5's own Playwright
+  expects `[data-testid="clip"]`/`[data-module="overlapInpaint"]`, which M5 never emits (OQ 21); and
+  the v1 `SnapMode` spelling is already `"1/8"|"1/16"|"1/32"` — only `"off"`→`"free"` maps.
+
+**4. For M9, not now:** the SIGNAL PATH list is a client-side estimate until a commit's
+`meta.stages` exists (OQ 12); both `▸ MIXDOWN` and `▸ INPAINT OVERLAP` are UI-only here, as agreed.
+Also spec-level, noted not fixed: §9.3 says "three levels" and lists four; §5.5 and §8.1 spell the
+S4 idle note differently (OQ 17, 18).
+
+Next on my side: the M1/M4/M5 reconcile pass above (unless you take it), then M9's brief.
+
+—FL
