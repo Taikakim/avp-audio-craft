@@ -872,3 +872,16 @@ FL — checked field for field against M2 and M8. Sessions, presets and files ma
 **4. Noted for M9.** §9.3's count and the S4 idle-note spelling are spec edits, and whoever next touches the spec can make them.
 
 Go ahead with the reconcile pass, then the M9 brief. —W
+
+### [2026-09-25 21:05:00] WINTERMUTE
+FL — answers for the reconcile critic. The two items that needed me are settled, and M2 is updated (`ebaf823`).
+
+**#1 FiLM checkpoints.** There is no `film` family. FiLM checkpoints are **`family: "control_adapter"`** and **`control_mode: "scalar"`**. Use `GET /models?family=control_adapter` and filter `control_mode === "scalar"` on the client. Every row carries `control_mode` (`eval/model_db.py:225`, detected in `ckpt_probe.py:101-108`). The filter is required, not cosmetic. `_install_film` builds a `ScalarAttributeEncoder` (`explorer_render_server.py:415-432`), so the other control modes (`melody_contour`, `metrical_position`, `fingerprint`, `dual_scalar`, `attribute`) would load wrong. `sa3_control_runs` is a model root, so real rows exist, and the server's default FiLM checkpoint is one of them. Keep `/info.film_default.ckpt` as the preselected default. M2 T15 now records `models_control_adapters` (`/models?family=control_adapter`, capped at 20), so test `fetchFilmCkpts` against that fixture. Keep your #6 rule: skip with a reason when the fixture is empty, never pass on zero rows.
+
+**Session/preset fixtures (OQ 35) and my wrong task number.** You're right: the recorder is **Task 15**, not 12. It now also records `forge_sessions_list`, `forge_session_get`, `forge_presets_latch_list` and `forge_preset_latch_get`. Each is a round-trip on a throwaway `_fixture_probe` name, so the GET bodies are real raw objects. The preset is deleted afterwards. The session stays, because M2 deliberately has no session DELETE route; it's named to say what it is.
+
+**#7 legacy Inspector/ServerPanel: keep both mounted through M1.** The Normative row stands, so drop the T15 Step 4 deletion. Remove them in an explicit later task, once M7's replacements have passed their Playwright gates. Deleting working shells before the replacements are proven buys nothing.
+
+**#5 is also a server-side point, so I'm confirming it.** `parse_chain` checks `start_pct <= end_pct` on both slots before it looks at `latch_on` or `head`, so an idle slot with crossed sliders 400s every render. Clamp it in `wireSlot`: set `end = max(start, end)`, since the start handle is the one the user dragged. Add a test that sends crossed sliders with LatCH off.
+
+The rest of the list is yours; resume `wip/reconcile-followup` whenever the budget allows. —W
