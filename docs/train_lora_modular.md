@@ -260,6 +260,13 @@ All from the SAO root with the SAO venv; no GPU needed, safe while another run t
 
 # 4. Gradient-spike incidents (only if the log printed [flight-recorder] lines)
 python3 eval/inspect_flight_incident.py /run/media/kim/Mantu/sa3_lora_runs/MYRUN
+
+# 5. DSP spot-check (flatness / zero-crossing rate / HF energy) on one demo clip. No baseline is
+#    available for a training demo, so this is a raw-numbers look, not a pass/fail gate -- the
+#    ratio-based flags in disintegration_metrics.py need a same-recipe UNSTEERED clip, which is a
+#    control-head-eval concept (control_head_disintegration_eval.py), not a training-run one. Use
+#    it to eyeball whether HF energy/flatness is climbing between milestones on the SAME prompt.
+.venv/bin/python -c "import sys,json; sys.path.insert(0,'eval'); from disintegration_metrics import measure; print(json.dumps(measure(sys.argv[1]), indent=2))" /run/media/kim/Mantu/sa3_lora_runs/MYRUN/demos/stepN/CLIP.wav
 ```
 
 **Reading them:**
@@ -268,6 +275,13 @@ python3 eval/inspect_flight_incident.py /run/media/kim/Mantu/sa3_lora_runs/MYRUN
 - **Trajectory velocity** (the `velocity` column ÷ steps between checkpoints × 1000): **30–50 per 1000
   steps is the band our good-sounding runs sat in**; the run that collapsed rhythm was at 142. Falling
   velocity + `step_cos` rising toward 0.7+ = settling into a direction.
+- **Path efficiency** (net displacement ÷ total path length, printed in the trajectory `.md`): higher
+  = more direct, lower = wandering/oscillating in a basin. Two references logged so far:
+  `audition_160ep_20260922b` **0.748**, the Shampoo+SNR-gate+radial-brake+schedule-free stack
+  (`goa3_avp_r128_shampoo_b16_3e4_2026-09-25`) **0.784** — both well clear of the **0.14–0.23** range
+  the DoRA weight-scale-runaway family sits at (`docs/training-findings.md` #21, `MASTER.md` §5:
+  `dora128_mix3_nodas_20260918_231123` 0.141, `dora128_mix3_overnight` 0.230), where the run wanders
+  in a blown-up basin instead of converging.
 - **Incidents:** a lone spike after calm steps = one bad batch (note the prompt and file, and
   listen to that item). Norms rising over the previous steps = drift, i.e. the model, not the data.
   All items at t < 0.05 or t > 0.95 = the timestep sampler. `trigger=nonfinite_grad` = the step
@@ -280,6 +294,29 @@ python3 eval/inspect_flight_incident.py /run/media/kim/Mantu/sa3_lora_runs/MYRUN
 ```
 python3 -c "import json,sys;p=sys.argv[1];d=json.load(open(p));d['kim_feedback']=sys.argv[2];json.dump(d,open(p,'w'),indent=1)" /run/media/kim/Mantu/sa3_lora_runs/MYRUN/run_meta.json 'step 5072: ...'
 ```
+
+### 8b. While it's still running
+
+You don't have to wait for the run to finish to sanity-check it. Same venv, same "no GPU needed":
+
+```
+# is it actually advancing, and how fast per checkpoint?
+ls -la --time-style=full-iso /run/media/kim/Mantu/sa3_lora_runs/MYRUN/*.ckpt
+
+# what did the log say about the mechanisms and any diverged demo, since the last checkpoint?
+grep -A20 '\[MECHANISM AUDIT\]' /tmp/MYRUN.log | tail -25
+grep -E '\[DEMO WARNING\]|nan|inf' /tmp/MYRUN.log
+
+# clip-scan whatever demos exist so far (same tool as step 1 above)
+.venv/bin/python eval/demo_clip_scan.py /run/media/kim/Mantu/sa3_lora_runs/MYRUN
+```
+
+Steps 2–3 above (trajectory, gauge drift) work on a partial checkpoint set too — point `--ckpt-dir`
+at the run dir as it stands and re-run them as more checkpoints land, rather than waiting for the
+run to finish. **A run that looks healthy at every milestone checked so far is not proof it stays
+that way** — the DoRA mix3 lineage (`docs/training-findings.md` #21) ran away between two
+checkpoints that were each individually fine at the time. Keep re-checking; don't check once and
+walk away.
 
 ## 9. Traps, in one place
 - `--lr` default is useless for `modular`; always set it.

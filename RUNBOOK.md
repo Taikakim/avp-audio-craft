@@ -171,6 +171,11 @@ grep -Ein "nan|inf" <save_dir>/train_rank0.log            # read the matches; a 
 **`pgrep -f train_lora` matches its own wrapper's command line** and reports "alive" forever, including
 after the real process died. Match the executable (`-x`) or check the pid directly.
 
+**Deeper diagnostic pass** — trajectory velocity/path-efficiency, LoRA A/B gauge drift, a DSP
+disintegration spot-check, and how to read the `[MECHANISM AUDIT]` log lines. No GPU needed, works
+on a partial or finished checkpoint set: `docs/train_lora_modular.md` §8 (finished run) / §8b
+(while it's still running) has the exact commands and how to read the numbers.
+
 ## 6. Kill a run cleanly
 
 **Kill the process group, not the pid.** Orphaned Lightning dataloader workers keep GPU contexts
