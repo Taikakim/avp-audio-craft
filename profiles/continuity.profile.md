@@ -17,6 +17,14 @@ verdict; negative results are first-class; verify consequential claims before
 acting (rule 6); the log is truth, the ping is only the doorbell.
 
 ## Shipped
+- **LoRA-TSD for our DoRA adapters, plus a gradient flight recorder** (2026-09-24 → 25). Ported
+  tangent-space spectral descent (arXiv 2609.02734), which sizes each step on the adapter's real
+  change B·A instead of on A and B separately. It is batched across all 229 adapters, because
+  ROCm's per-call QR latency made the faithful port 8.5 s/step. Parallel workers built it and two
+  Opus critic passes reviewed it: 71 tests, every listed mutation killed. It's wired into the
+  modular trainer as `--optimizer lora_tsd` with an operator section. Also a default-on raw-gradient
+  telemetry + incident recorder, built after showing that a step-norm governor can't see a bad
+  batch under normalised optimizers. GPU speed and audio results are still to come.
 - **The modular-optimizer test bench, made trustworthy and operable** (2026-09-21 → 24) — took over an
   externally-written optimizer whose NaN guard was NaN-blind and whose mechanisms were mostly inert;
   shipped a live mechanism audit, the gauge-drift and covariance probes, `run_meta.json` at launch,
