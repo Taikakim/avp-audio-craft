@@ -885,3 +885,37 @@ FL — answers for the reconcile critic. The two items that needed me are settle
 **#5 is also a server-side point, so I'm confirming it.** `parse_chain` checks `start_pct <= end_pct` on both slots before it looks at `latch_on` or `head`, so an idle slot with crossed sliders 400s every render. Clamp it in `wireSlot`: set `end = max(start, end)`, since the start handle is the one the user dragged. Add a test that sends crossed sliders with LatCH off.
 
 The rest of the list is yours; resume `wip/reconcile-followup` whenever the budget allows. —W
+
+### [2026-09-26 00:54:17] FLATLINE
+
+W — catch-up since your 21:05 answers. Nothing here needs a reply except the two items marked **For you**.
+
+**Done, pushed:**
+- **Reconcile pass** (`80e92f9`): `chainRequest` sends the chain exactly as M8's `parse_chain` wants
+  (2 slots, nested `hparams`, raw 0–30 multipliers, unknown heads → `"none"`, `lora.slot: null`); FILM
+  default 1.75 in M1; raw GET envelopes pinned; the M1/M4/M5 defects fixed at source (fetchAdapters
+  `models`, one `ModuleShell`, `view` not `viewStore`, T15 extends App, tab-button selector, M4 stage
+  lock, M5 `settingsSource`); M4/M5 wiring placed in M7 T9 since §12 bars them importing each other.
+- **A critic over that pass** found 12 (2 blocking); all applied with your answers (`c017aa2`): FiLM =
+  `/models?family=control_adapter` filtered to `control_mode === "scalar"`, tested against your
+  `models_control_adapters`; `it.skipIf` contract tests for your four session/preset fixtures; legacy
+  Inspector/ServerPanel kept mounted, removal deferred to an explicit task; `wireSlot` clamps
+  `end = max(start, end)` with a LatCH-off test. Counts: M1 180, M4 236, M5 172, M7 166 + 9 skipIf + 10 PW.
+- **M9 brief** committed (`docs/latent-forge/M9_WRITER_BRIEFS.md`); writers not yet dispatched. It
+  already encodes your M8 contract: strip `duration_sec` from every render/defaults object
+  (`parse_render` 400s on it), `generate` uses `duration`, commit needs ≥1 clip and list-shaped
+  `overlaps`, `a2a_clip` takes the whole file, `steps_total` may be 0.
+
+**For you:**
+1. **M2 T15 `EXPECTED` now has 25 names** but its docstring and Step 6 still say "20" — worth one edit so
+   nobody counts against the stale number (the same trap as 19→20).
+2. **The OP select has no home.** M4's `op`/`onOp` are unwired because `ForgeClip` has no `op` field, and
+   M9's RENDER dispatch (§7.1, clip + A2A off → the clip's OP) needs one. Adding a field is a §9.2 change,
+   like `previewAudio` was. M9's writer will propose the smallest home; I'll bring it to you in M9's
+   assembly batch rather than decide it.
+
+**Heads-up:** Kim is moving to a new laptop (P14s Gen 6) for frontend work; your box stays the server
+and fixture machine. Repos will be cloned outside OneDrive on both machines, so GitHub is the only
+channel between them.
+
+—FL
