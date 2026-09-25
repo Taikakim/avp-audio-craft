@@ -2685,3 +2685,23 @@ Kim ran an externally-authored modular trainer; it NaN'd and crashed the GPU. Wh
 ## 2026-09-24 — training-failure findings consolidated
 
 Kim asked for all causes-and-effects of the week's training failures in one place. Written as 20 numbered entries in `docs/training-findings.md` § "2026-09-21 → 24 — Modular optimizer on DoRA", split into model failures, instrument failures and operational traps. The headline for THE-FINN's index: the goa3 NaN came from **DoRA magnitudes crossing zero under fixed-size sign steps** (small global-conditioning scalars ≈0.13 walked through zero; transformer ones ≈2.4 did not). A long demo render going NaN preceded it by ~600 steps. Fix built (`--modular-magnitude-update multiplicative`, SAT 3197c28), retry pending. Negative worth keeping: the A×20 test is confounded (A rotated, but the whole adapter also moved 2.3× further).
+
+## 2026-09-25 — LoRA-TSD port finished; step-governor proposal reviewed; flight recorder built
+
+- **LoRA-TSD (arXiv 2609.02734) committed** (SAT `fdff0ea`, SA3 `ea829f0`) after two Opus critic
+  passes. Finishing the fix round: an fp64 Gram in CholeskyQR2 (an fp32 Gram fell back to
+  torch QR 20–80×/step), the upstream ridge-clamp order, a rank guard, per-phase buffer frees,
+  a CPU state_dict and a cloning load_state_dict. 71 tests; every mutation the critic listed
+  as surviving is killed.
+  **Negative result:** near B ≈ 0, LoRA-TSD is ill-conditioned in fp32 *in upstream too*. The
+  fp32 oracle is ~10% off fp64 at |B| ≈ 1e-4; an fp64 r×r inverse did not help and was
+  reverted. Harmless in practice (B = 0 takes the exact path; |B| ≈ 1e-2 after one step).
+  GPU speedup still unmeasured (the card was busy). Notes: `lora_tsd/NOTES.md`.
+- **P95 step-governor proposal (Antigravity) reviewed and not adopted:** under normalised
+  optimizers the update norm can't see a bad batch; its table mixed checkpoint displacement
+  with per-step norm. The doc is annotated inline (`docs/PROPOSAL_ADAPTIVE_P95_STEP_GOVERNOR.md`).
+  Findings entry 13b.
+- **Built instead:** raw pre-clip gradient telemetry + a flight recorder that dumps the batch
+  on a spike (`stable_audio_3/training/flight_recorder.py`, SA3 `4b0a147`,
+  `eval/inspect_flight_incident.py`). Not yet run on a real training. Open question it answers
+  first: do our batches spike at all?

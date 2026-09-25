@@ -206,6 +206,21 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     loss-guard stop was recorded as `done`. Both fixed.
 13. **Checkpoint duplication:** Lightning's periodic save plus milestone saves wrote 9.3 GB of duplicates.
     Use `--checkpoint_every 100000` with milestones.
+13a. **`train/lr` is stale during warmup (CONTINUITY/worker C, 2026-09-24).** ModularOptimizer, FusionOpt
+    and LoRA-TSD all apply their warmup ramp inside `step()` and never write it back to
+    `param_groups`, so the logged lr sits at the target value from step 0. Fixed for LoRA-TSD only
+    (`diffusion.py::_optimizer_current_lr`, which also reads the lr of the step about to run, not
+    the previous one). **Still open for modular/FusionOpt:** don't read warmup behaviour off `train/lr`.
+13b. **The update norm cannot see a bad batch (CONTINUITY, 2026-09-25).** Under normalised optimizers
+    (Muon/NS, sign steps, LoRA-TSD's msign), `comp/spectral_update_norm` is set by lr and layer shapes;
+    a gradient spike is normalised away before it reaches the step. So a flat update norm is no
+    evidence that batches are well behaved. That was the flaw in the P95 step-governor proposal
+    (`docs/PROPOSAL_ADAPTIVE_P95_STEP_GOVERNOR.md`, reviewed). Where a spike does act is the momentum
+    buffer (~1/(1−β) steps of steered direction). *Fix:* raw pre-clip grad norms are now logged
+    per kind (`grad/raw_norm_*`), and a flight recorder dumps the batch on a spike
+    (`stable_audio_3/training/flight_recorder.py`, `--flight-recorder`, on by default). *Status:*
+    built and CPU-tested, **not yet run on a real training**. Whether our batches spike at all is
+    still unknown.
 
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).
