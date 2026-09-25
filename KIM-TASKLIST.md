@@ -28,7 +28,7 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### ⬜ AFTER the shampoo training finishes: re-render r256 at 5072/6340, merged (C, 2026-09-25)
+### ✅ DONE 2026-09-26 (C ran it): r256 6340 is healthy — its NaN was the render fault. Was: re-render r256 at 5072/6340, merged (C, 2026-09-25)
 **WHAT:** the merged cfg sweep for `goa3_avp_r256_2026-09-23` (the rank-128 run abandoned on a NaN loss
 at ~step 6900). **WHY:** its step-6340 `rb_mid_4` clips were all-NaN, and training-findings reads that as
 "6340 is suspect". But they were in-training live-adapter demos, and the shampoo run's identical 6340 NaN

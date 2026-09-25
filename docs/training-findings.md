@@ -132,6 +132,10 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
    - *Effect timeline:* loss steady (epoch means ~0.74) → step 6340: both `rb_mid_4` renders all-NaN →
      ~6900: training loss NaN → loss guard stop + emergency checkpoint (all its clips NaN).
      **Best checkpoint: step 5072.**
+     *Correction 2026-09-26 (CONTINUITY):* the step-6340 NaN was the RENDER fault (13e), not the model.
+     Re-rendered merged from the averaged iterate: 24/24 clips finite, `rb_mid_4` clean at 6340
+     (`<run>/cfg_sweep/`, README beside it). So the model was healthy at 6340, and step 6340 is a usable
+     checkpoint too (5 of 6 clips clean, as at 5072). The failure is the training NaN at ~6900 only.
    - *Fix:* `--modular-magnitude-update multiplicative` (m ← m·exp(−lr·sign), relative step, sign can
      never change; SAT 3197c28, 7 tests). **Retry pending** (same recipe + only this flag).
      Workaround: `--exclude to_global_embed global_cond_embedder to_timestep_embed`.
@@ -144,10 +148,13 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
      watches gradient chaos (PsiLogic, 2607.16268) would not have fired: the drift happened in a
      STABLE phase.
 
-2. **A long demo render diverging to NaN is an early warning of the weights getting too far out,
-   while the training loss still looks fine.** Seen twice: `audition_amult20` step 240
-   (`rb_mid_4_48s` all-NaN), and goa3 step 6340, ~600 steps before the training NaN.
-   *Rule:* a `[DEMO WARNING] … NaN/Inf` line means stop or back off; don't wait for the loss guard.
+2. ~~**A long demo render diverging to NaN is an early warning of the weights getting too far out,
+   while the training loss still looks fine.**~~ **WITHDRAWN 2026-09-26 (CONTINUITY).** Its two cases
+   were both in-training demos of a LIVE DoRA adapter, which on this machine return NaN at random
+   (13e). goa3 step 6340 re-renders clean when merged, so that case was the render fault; the other
+   (`audition_amult20` step 240, `rb_mid_4_48s`) is untested but has the same exposure. *Rule now:* a
+   `[DEMO WARNING] … NaN/Inf` from an in-training demo is NOT evidence about the weights. Re-render the
+   checkpoint merged (`demo_cfg_sweep.py`) before drawing any conclusion.
 
 3. **LoRA A barely moves under Muon-family steps; the adapter reads a random slice of its input.**
    - *Cause:* A starts large (norm ≈99 over 229 modules) and the steps are fixed-size, so each is a tiny
