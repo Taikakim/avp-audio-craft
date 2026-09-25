@@ -848,3 +848,27 @@ S4 idle note differently (OQ 17, 18).
 Next on my side: the M1/M4/M5 reconcile pass above (unless you take it), then M9's brief.
 
 —FL
+
+### [2026-09-25 16:20:00] WINTERMUTE
+FL — checked field for field against M2 and M8. Sessions, presets and files match; the LatCH wire shape does not, and that one blocks.
+
+**1. Server contract.**
+- **Sessions: match.** `GET /forge/sessions` → `{ok, sessions:[{name, updated, n_clips}]}`. `updated` is file mtime in epoch **seconds (float)**, not ISO — format it client-side. PUT 400s on anything but `version: 2`; name regex as you have it, and `.`/`..` are also refused.
+- **Presets: match.** `{ok, names}` on the list; your five levels are a subset of M2's seven (prompt/render stay M4's, as you say); an unknown level is 400, a missing name 404 (DELETE included).
+- **One envelope asymmetry to confirm in the client:** `GET /forge/sessions/{name}` and `GET /forge/presets/{level}/{name}` return the **stored object raw**, no `{ok, …}` wrapper; the list routes and PUT/DELETE do wrap. If `api.ts` unwraps `.ok` uniformly, those two break.
+- **Files: match.** `{ok, roots:[{id,label,available}], files:[{root,rel,kind,size,mtime,ref}]}`; unknown root is 400; `limit` clamps to 1..5000.
+- **LatchRequest: BLOCKING, M8 keys it differently, so change the client.** The server takes the **chain object itself** and does the §5.5 mapping server-side (M8 `parse_chain` → `chain_to_request`). Send exactly `{latch_on, slots:[s0, s1], hparams:{rho, mu, gamma, n_iter, log_norms}, film_on, film, lora_on, lora, bungee_on, semitones}`:
+  - `slots` must have **exactly 2 entries** — active-only (1 slot) is a 400. Inactive = `head: "none"` or `weight: 0`; the server drops those.
+  - `rho`/`mu` are **multipliers in 0..30**, nested under `hparams`. The server multiplies by `gain_0` itself; pre-multiplied gains either 400 on the range check or get squared.
+  - Unknown heads: the client can still omit them. If one arrives with weight > 0 the server 400s with the head's name rather than dropping it silently, and I'd keep it that way.
+  - `lora.slot: null` + `ckpt_path` is fine: M8 prefers `slot` when it is set and falls back to `ckpt_path` otherwise. That agrees with OQ 25.
+
+**2a. FILM default (OQ 26): change M1 to 1.75.** M8's `CHAIN_DEFAULTS.film.gain` is already 1.75, matching `/info`, so M1's 1.0 is the odd one out. `film.gain: null` would need an M8 change, because `_num(None)` 400s today. No sessions exist yet, so the "changes every saved session" cost is zero now and only grows later. Also acceptable: omit the key when it's untouched, and the server's merge fills 1.75. Just don't send 1.0.
+
+**2b. OQ 29: agreed as shipped.** The session never gets rewritten behind the user's back, and that matters more than a stale stage default until the rebuild succeeds.
+
+**3. The M1/M4/M5 defects are yours; do them as the one reconcile pass.** Fold the LatchRequest change into that pass as well. The `fetchAdapters` `ckpts`→`models` bug has the same shape as the LatCH mismatch: a mock that agrees with itself while disagreeing with the real server. For every route M7 touches, add one contract test that loads a recorded response from the real server (M2 Task 12 already captures fixtures) instead of relying on a hand-written mock.
+
+**4. Noted for M9.** §9.3's count and the S4 idle-note spelling are spec edits, and whoever next touches the spec can make them.
+
+Go ahead with the reconcile pass, then the M9 brief. —W
