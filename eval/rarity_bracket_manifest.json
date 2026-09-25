@@ -1979,73 +1979,93 @@
     },
     "fa_adamw_lr1e-4": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW lr=1e-4, the reference baseline -- steady monotonic loss, no instability.",
+      "picks_withdrawn": [
         "adamw_lr1e-4/epoch=162-step=6000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW lr=1e-4, the reference baseline -- steady monotonic loss, no instability."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'adamw_lr1e-4' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_adamw_lr3e-4_step2000": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW lr=3e-4.",
+      "picks_withdrawn": [
         "adamw_lr3e-4_step2000/epoch=54-step=2000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW lr=3e-4."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'adamw_lr3e-4_step2000' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_adamw_scratch_step5000": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW from scratch.",
+      "picks_withdrawn": [
         "adamw_scratch_step5000/epoch=135-step=5000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: AdamW from scratch."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'adamw_scratch_step5000' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_fusion_autoscale_lr1e-4": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=1e-4 -- NEGATIVE RESULT per run_meta (worse+unstable than AdamW throughout, recurring loss spikes to 1.61, two near-silent degenerate clips found on the DSP screen). Audiobox already measured: CE 5.76, PQ 7.35, widest spread of the three.",
+      "picks_withdrawn": [
         "fusion_autoscale_lr1e-4/epoch=81-step=3000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=1e-4 -- NEGATIVE RESULT per run_meta (worse+unstable than AdamW throughout, recurring loss spikes to 1.61, two near-silent degenerate clips found on the DSP screen). Audiobox already measured: CE 5.76, PQ 7.35, widest spread of the three."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'fusion_autoscale_lr1e-4' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_fusion_autoscale_lr1e-6_full": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=1e-6, full-window follow-up.",
+      "picks_withdrawn": [
         "fusion_autoscale_lr1e-6_full/epoch=81-step=3000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=1e-6, full-window follow-up."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'fusion_autoscale_lr1e-6_full' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_fusion_autoscale_lr5e-6_full3h": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6, extended to the full 3h window -- CONFIRMED POSITIVE per run_meta (held up clean the whole run, CE 6.65/PQ 7.90, narrowest spread of the three arms, corroborates Kim's ear: sounds excellent + too similar across prompts).",
+      "picks_withdrawn": [
         "fusion_autoscale_lr5e-6_full3h/epoch=81-step=3000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6, extended to the full 3h window -- CONFIRMED POSITIVE per run_meta (held up clean the whole run, CE 6.65/PQ 7.90, narrowest spread of the three arms, corroborates Kim's ear: sounds excellent + too similar across prompts)."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'fusion_autoscale_lr5e-6_full3h' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_fusion_autoscale_lr5e6_bs2": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6, batch2, extended to 12000 steps -- the longest run in the campaign.",
+      "picks_withdrawn": [
         "fusion_autoscale_lr5e6_bs2/epoch=79-step=12000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6, batch2, extended to 12000 steps -- the longest run in the campaign."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'fusion_autoscale_lr5e6_bs2' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_fusion_autoscale_lr5e6_control2": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6 control/replicate, 2026-09-02 round.",
+      "picks_withdrawn": [
         "fusion_autoscale_lr5e6_control2/epoch=81-step=3000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: FusionOpt+autoscale lr=5e-6 control/replicate, 2026-09-02 round."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'fusion_autoscale_lr5e6_control2' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_lion_lr1e-5": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: Lion optimizer lr=1e-5. Referenced in MASTER.md sec5 as a NaN-investigation control: no diffusion_ema keys, global L2 2327 (normal), surviving renders z0 std 1.057 (normal).",
+      "picks_withdrawn": [
         "lion_lr1e-5/epoch=399-step=6000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: Lion optimizer lr=1e-5. Referenced in MASTER.md sec5 as a NaN-investigation control: no diffusion_ema keys, global L2 2327 (normal), surviving renders z0 std 1.057 (normal)."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'lion_lr1e-5' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fa_lion_lr5e-5-batch32": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
-      "picks": [
+      "picks": [],
+      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: Lion optimizer lr=5e-5, batch32.",
+      "picks_withdrawn": [
         "lion_lr5e-5-batch32/epoch=666-step=6000.ckpt"
       ],
-      "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: Lion optimizer lr=5e-5, batch32."
+      "withdrawn": "WINTERMUTE 2026-09-26: DUPLICATE of 'lion_lr5e-5-batch32' (same checkpoint file, on the board since 2026-09-08). Withdrawn from the board, not deleted -- clips/rows held in ~/evals_hold/fa_duplicates_2026-09-26/."
     },
     "fullft_fa_autoscale_20260904": {
       "dir": "fusion_autoscale_vs_adamw_2026-09-01",
