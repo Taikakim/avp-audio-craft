@@ -51,7 +51,8 @@ from pathlib import Path
 SAO = Path("/home/kim/Projects/SAO")
 STAGE = Path("/home/kim/evals_aac")
 MATRIX = STAGE / "model_matrix"
-MANIFEST = MATRIX / "manifest_live.jsonl"
+MANIFEST = MATRIX / "manifest_live.jsonl"   # the SERVED copy; written by build_model_matrix.py
+RAW_MANIFEST = MATRIX / "manifest.jsonl"    # what renderers/ingests append to
 DB = SAO / "eval/clip_metrics.db"
 AGG = SAO / "eval/clap_dora_aggregate.csv"
 CLAP_SCAN = SAO / "eval/clap_degen_model_matrix.csv"
@@ -133,12 +134,37 @@ def db_counts(pattern):
         con.close()
 
 
+def staged_lines():
+    """Manifest lines for every cell whose m4a is staged -- the same rule build_model_matrix.py
+    uses to write manifest_live.jsonl, computed HERE from the raw manifest instead of read back
+    from the served copy.
+
+    WHY (W, 2026-09-26): manifest_live.jsonl is only rewritten by leg_tables, which runs LAST.
+    Every earlier leg that read it saw the board as it was BEFORE this campaign's cells landed:
+    on the goa3_avp_r256 step=6340 pass, leg_sanity checked 28 old clips and none of the 108 new
+    ones (reported green), and leg_gpu's CLAP scope held 0 of the 108 (CE scored, CLAP silently
+    skipped). Deriving the view from the raw manifest + the files on disk removes the ordering
+    dependency instead of papering over it with a second pass."""
+    src = RAW_MANIFEST if RAW_MANIFEST.exists() else MANIFEST
+    out = []
+    for ln in src.read_text().splitlines():
+        if not ln.strip():
+            continue
+        try:
+            e = json.loads(ln)
+        except Exception:
+            continue
+        if (MATRIX / e.get("file", "")).exists():
+            out.append(ln)
+    return out
+
+
 def manifest_models(pattern):
-    if not MANIFEST.exists():
+    if not (RAW_MANIFEST.exists() or MANIFEST.exists()):
         return []
     out = set()
-    for ln in MANIFEST.read_text().splitlines():
-        if ln.strip() and pattern in ln:
+    for ln in staged_lines():
+        if pattern in ln:
             try:
                 out.add(json.loads(ln)["model"])
             except Exception:
@@ -148,8 +174,8 @@ def manifest_models(pattern):
 
 def scoped_manifest(pattern, dest):
     """A manifest containing only this campaign's non-native cells, for a scoped CLAP pass."""
-    keep = [l for l in MANIFEST.read_text().splitlines()
-            if l.strip() and pattern in l and '"duration_mode": "native"' not in l]
+    keep = [l for l in staged_lines()
+            if pattern in l and '"duration_mode": "native"' not in l]
     dest.write_text("\n".join(keep) + "\n")
     return len(keep)
 
@@ -236,8 +262,7 @@ def leg_sanity(pattern, dry, skip) -> Step:
     except ImportError:
         return s.done(False, "numpy unavailable -- cannot verify, refusing to call it clean")
 
-    matched = [e for e in (json.loads(l) for l in
-               MANIFEST.read_text().splitlines() if l.strip())
+    matched = [e for e in (json.loads(l) for l in staged_lines())
                if e.get("model", "").startswith(pattern)]
     op_entries = [e for e in matched if is_op_point(e)]
     clips = [e["file"] for e in op_entries]
