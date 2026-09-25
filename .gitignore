@@ -162,6 +162,8 @@ eval/musicology/**
 !eval/musicology/**/*.json
 !eval/musicology/**/*.py
 eval/clip_metrics.db
+eval/clip_metrics.db-shm
+eval/clip_metrics.db-wal
 .*.log
 *.npz
 *.npy
