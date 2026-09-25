@@ -28,6 +28,25 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⬜ AFTER the shampoo training finishes: re-render r256 at 5072/6340, merged (C, 2026-09-25)
+**WHAT:** the merged cfg sweep for `goa3_avp_r256_2026-09-23` (the rank-128 run abandoned on a NaN loss
+at ~step 6900). **WHY:** its step-6340 `rb_mid_4` clips were all-NaN, and training-findings reads that as
+"6340 is suspect". But they were in-training live-adapter demos, and the shampoo run's identical 6340 NaN
+turned out to be the render bug (13e), not the model. This decides whether r256 was already failing at
+6340, and fills the missing `rb_mid_4` board cell if it wasn't. 5072 is the known-good control.
+**RUN** (only after `rocm-smi --showpids` is empty; the shampoo run holds the card until ~step 10144):
+```
+cd /home/kim/Projects/SAO && export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 && .venv/bin/python stable-audio-3/scripts/demo_cfg_sweep.py --run-dir /run/media/kim/Mantu/sa3_lora_runs/goa3_avp_r256_2026-09-23 --steps-ckpt 5072 6340 --cfgs 1 7
+```
+**TAKES:** ~5 min. **VERIFY:** `goa3_avp_r256_2026-09-23/cfg_sweep/step6340_x/` holds 12 `.z0.npy`
+files. **REPORT BACK:**
+```
+python3 -c "import json;[print(r['step'],r['prompt'],r['frames'],r['cfg'],r['finite_frac'],r['pre_clamp_std']) for r in map(json.loads,open('/run/media/kim/Mantu/sa3_lora_runs/goa3_avp_r256_2026-09-23/cfg_sweep/sweep_results.jsonl'))]"
+```
+**READ IT:** `rb_mid_4` finite at 6340 ⇒ the NaN was the render bug and 6340 is usable (tell W, who can
+publish it). Still NaN merged ⇒ the model really was failing by 6340, earlier than the loss guard saw.
+**ROLLBACK:** writes only `<run>/cfg_sweep/`; delete it to undo.
+
 ### ⬜ cfg sweep of a run's milestone checkpoints — is the checkpoint broken, or only its demos? (C, 2026-09-25)
 **WHAT:** re-renders the trainer's six demo clips per checkpoint at cfg 1 / 3 / 7 from the
 Schedule-Free AVERAGED weights (the ones the demos use, which the milestone .ckpt's state_dict
