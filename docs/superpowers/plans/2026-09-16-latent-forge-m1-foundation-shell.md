@@ -36,7 +36,8 @@ text is the stale one. Nothing else in the milestone is ambiguous.
 | help mode flag | `view.helpOn: boolean` (toggle `view.toggleHelp()`) | T7 |
 | terminal mode | `view.terminal: "collapsed" \| "pane" \| "full"` — the middle mode is `"pane"`, matching the button's own copy | T7 |
 | bottom tab id type | `BottomTabId`, declared **once, in the view store** (T7) and re-exported by `src/ui/shell/bottomTabs.ts` (T11) for the tab table's convenience. T7 is built first, so declaring it there keeps each task's own vitest run green in task order | T7 declares, T11 re-exports |
-| module open state | owned by the view store (`view.isModuleOpen(id)` / `view.toggleModule(id)`); `ModuleShell` props are `{ id, title, lit, children }` and it reads the store itself | T9 builds, T12 uses |
+| module open state | owned by the view store (`view.isModuleOpen(id)` / `view.toggleModule(id)`); `ModuleShell` props are `{ id, title, lit, children }` and it reads the store itself. Its DOM hooks are pinned: `[data-module=<id>]`, `[data-module-toggle=<id>]`, `[data-module-dot=<id>]` with `data-lit="true"\|"false"`, `[data-module-body=<id>]` (open only) | T9 builds, T12 uses |
+| view store singleton | **`view`** (`export const view = new ViewStore();`). There is no `viewStore` binding; every App block imports `{ view }` | T7 |
 | module ids | **kebab-case, declared ONCE** in the view store: `"overlap" \| "files" \| "lane-chain" \| "advanced-sampling" \| "master-chain" \| "legacy-inspector" \| "legacy-server"`. This is both the `data-module-toggle` value and the vocabulary persisted into `ui.modules` (§9.2), so a DOM id that disagrees with the saved state cannot happen. T12 imports it and narrows to `SpecModuleId` (the five, no legacy) for `MODULE_ORDER` and `litModules` | T7 declares, T12 imports |
 | view-store setters | `setView(v: ViewName)` writes `view.screen`; `setActiveLane(n)` writes `view.activeLane`. The method keeps the name every task already calls; only the field is `screen` | T7 |
 | `RenderSettings.duration_sec` | §4.5 LENGTH lives in the per-target settings, not in the pane's own state, because §9.3 says a `render` preset recalls every txt2audio parameter. **Wire name is `duration`** — the existing server reads that on `/generate` and `/schedule` | T3/T4 declare, M4 edits, M9 sends |
@@ -820,8 +821,9 @@ describe("lane chain defaults (spec §5.5)", () => {
     expect(CHAIN_DEFAULTS.hparams).toEqual({ rho: 1, mu: 1, gamma: 0.3, n_iter: 4, log_norms: false });
   });
 
-  it("defaults FiLM target to 4.0 onsets/s and master gain to 64 (spec §4.6, §5.5)", () => {
+  it("defaults FiLM target to 4.0 onsets/s, FiLM gain to the server's 1.75, and master gain to 64 (spec §4.6, §5.5)", () => {
     expect(CHAIN_DEFAULTS.film.value).toBe(4.0);
+    expect(CHAIN_DEFAULTS.film.gain).toBe(1.75);   // = /info.film_default.gain (FILM_DEFAULT_GAIN)
     expect(MASTER_DEFAULT.gain).toBe(64);
     expect(MASTER_DEFAULT.norm_on).toBe(true);
   });
@@ -950,7 +952,10 @@ export const CHAIN_DEFAULTS: LaneChain = {
   ],
   hparams: { rho: 1, mu: 1, gamma: 0.3, n_iter: 4, log_norms: false },
   film_on: false,
-  film: { ckpt: null, gain: 1.0, value: 4.0 },   // TARGET = onsets/s (X9)
+  // gain 1.75 = the server's FILM_DEFAULT_GAIN, which /info.film_default reports and M8's own
+  // CHAIN_DEFAULTS already uses (WINTERMUTE 2026-09-25). 1.0 made every untouched lane disagree
+  // with the server. TARGET = onsets/s (X9).
+  film: { ckpt: null, gain: 1.75, value: 4.0 },
   lora_on: false,
   lora: { ckpt_path: null, slot: null, strength: 1.0 },
   bungee_on: false,
@@ -998,7 +1003,8 @@ export function cloneRenderSettings(s: RenderSettings): RenderSettings {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/defaults.test.ts
 ```
 
-Expected: `Tests  11 passed (11)`.
+Expected: `Tests  12 passed (12)`. (The file holds 12 `it()` blocks; the gate said 11 until the
+reconcile pass of 2026-09-25 recounted it.)
 
 - [ ] **Step 5: Commit**
 
@@ -1066,6 +1072,17 @@ describe("request building", () => {
     await forgeApi.saveSession("my set", { version: 2 } as never);
     expect(fetchMock.mock.calls[0][0]).toBe("/forge/sessions/my%20set");
     expect(fetchMock.mock.calls[0][1].method).toBe("PUT");
+  });
+
+  it("hands back GET /forge/sessions/{name} and /forge/presets/{level}/{name} RAW -- no {ok} envelope", async () => {
+    // WINTERMUTE 2026-09-25: those two GETs return the STORED OBJECT as-is; the list routes and
+    // PUT/DELETE wrap theirs in {ok, ...}. request() must neither unwrap nor require `ok`.
+    const stored = { version: 2, name: "take1", clips: [] };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(stored)));
+    await expect(forgeApi.session("take1")).resolves.toEqual(stored);
+    const preset = { latch_on: true, slots: [] };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(preset)));
+    await expect(forgeApi.preset("latch", "warm")).resolves.toEqual(preset);
   });
 });
 
@@ -1174,6 +1191,10 @@ async function parseBody(res: Response, path: string): Promise<unknown> {
   }
 }
 
+/** Returns the body as the server sent it. It never unwraps an envelope and never REQUIRES `ok`:
+ *  GET /forge/sessions/{name} and GET /forge/presets/{level}/{name} return the stored object raw,
+ *  with no {ok, ...} wrapper, while the list routes and PUT/DELETE do wrap (WINTERMUTE 2026-09-25).
+ *  Only an explicit `ok: false` or a non-2xx status is an error. */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
   const body = (await parseBody(res, path)) as { ok?: boolean; error?: string };
@@ -1243,10 +1264,14 @@ export const forgeApi = {
     getJSON<{ ok: true; fields: string[]; points: { crop_id: string; x: number; y: number; label: string }[] }>(`/forge/dataset_scalars${qs({ x, y })}`),
 
   // ------------------------------------------------------------ sessions, presets
+  // `updated` is the file mtime in epoch SECONDS (a float), not ms and not ISO -- format it with
+  // `new Date(updated * 1000)` wherever it is shown (WINTERMUTE 2026-09-25).
   sessions: () => getJSON<{ ok: true; sessions: { name: string; updated: number; n_clips: number }[] }>("/forge/sessions"),
+  // Raw: the stored ProjectV2 itself, no {ok} wrapper (see request()).
   session: (name: string) => getJSON<ProjectV2>(`/forge/sessions/${encodeURIComponent(name)}`),
   saveSession: (name: string, project: ProjectV2) => sendJSON<{ ok: true }>(`/forge/sessions/${encodeURIComponent(name)}`, "PUT", project),
   presets: (level: string) => getJSON<{ ok: true; names: string[] }>(`/forge/presets/${encodeURIComponent(level)}`),
+  // Raw: the stored payload itself, no {ok} wrapper (see request()).
   preset: (level: string, name: string) => getJSON<Record<string, unknown>>(`/forge/presets/${encodeURIComponent(level)}/${encodeURIComponent(name)}`),
   savePreset: (level: string, name: string, payload: unknown) => sendJSON<{ ok: true }>(`/forge/presets/${encodeURIComponent(level)}/${encodeURIComponent(name)}`, "PUT", payload),
   deletePreset: (level: string, name: string) => sendJSON<{ ok: true }>(`/forge/presets/${encodeURIComponent(level)}/${encodeURIComponent(name)}`, "DELETE"),
@@ -1311,7 +1336,8 @@ export const forgeApi = {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/api.test.ts
 ```
 
-Expected: `Tests  8 passed (8)`.
+Expected: `Tests  10 passed (10)`. (Nine `it()` blocks before the reconcile pass of 2026-09-25 —
+the gate said 8 — plus its raw-envelope test.)
 
 - [ ] **Step 5: Commit**
 
@@ -2392,7 +2418,7 @@ absolute path is `/SERVER/...`.
       }
     ],
     "dora": {},
-    "film_default": { "ckpt": null, "gain": 1.0 }
+    "film_default": { "ckpt": null, "gain": 1.75 }
   }
 }
 ```
@@ -2628,7 +2654,7 @@ forge job id (spec §6.2):
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run mock
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  24 passed (24)`.
+Expected: `Test Files  2 passed (2)` / `Tests  25 passed (25)` (jobs 13 + plugin 12; the gate said 24 until the reconcile pass of 2026-09-25 recounted it).
 
 Then prove the server itself answers, with no render server running:
 
@@ -3745,8 +3771,8 @@ Then the whole suite, to prove Tasks 1–8 hold together:
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npm test && npm run check
 ```
 
-Expected: `Test Files  9 passed (9)` / `Tests  94 passed (94)` — harness 3, guards 10, defaults 11,
-api 8, mock jobs 12, mock plugin 12, view 19, dragScale math 11, dragScale action 8 — then
+Expected: `Test Files  9 passed (9)` / `Tests  98 passed (98)` — harness 3, guards 10, defaults 12,
+api 10, mock jobs 13, mock plugin 12, view 19, dragScale math 11, dragScale action 8 — then
 `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 6: Commit**
@@ -3766,9 +3792,15 @@ The bottom pane's internal budget follows from that: `248 − 1 (border-top) −
 8 (padding-bottom) = 233`, and `233 − 162 (tab body, spec §4.5) − 44 (preview container,
 spec §4.5) = 27` for the tab row. Task 11 fills those three boxes; this task builds them.
 
-Every component in `src/ui/shell/` is **props-driven and store-free**. Only `App.svelte` touches
-`viewStore`. That is what makes the shell testable without a store and what lets M4–M10 reuse
-`ModuleShell` inside panes that have their own state.
+Every component in `src/ui/shell/` is **props-driven and store-free, except `ModuleShell`**. Only
+`App.svelte` and `ModuleShell` touch the view store, whose singleton is **`view`** (Task 7:
+`export const view = new ViewStore();` — there is no `viewStore` binding anywhere). `ModuleShell`
+is the exception because the Normative-names table says so: its props are `{ id, title, lit,
+children }` and it reads `view.isModuleOpen(id)` / `view.toggleModule(id)` itself, so a module's
+open state is the one persisted into `ui.modules` and can never disagree with it. (An earlier draft
+of this task gave `ModuleShell` label/open/ontoggle props instead; every consumer — T12's
+`RightPaneModules.svelte`, T15's Playwright spec, M4, M7 — uses the Normative version, and the
+reconcile pass of 2026-09-25 made this task's code match.)
 
 `TopBar.svelte` is created here with the wordmark and the four shell-level controls that need no
 server data (WORKSPACE / STATISTICS / HELP / DARK). Task 10 adds the SESSION, MODEL, model folder,
@@ -3793,14 +3825,15 @@ props-driven frame; Task 11 mounts it in the bottom pane and gives it a live log
   export type ModuleId =
     | "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"
     | "legacy-inspector" | "legacy-server";
-  export const viewStore: {
-    theme: "light" | "dark"; helpOn: boolean; screen: ForgeView; activeLane: 0 | 1 | 2 | 3;
-    bottomTab: BottomTabId; sideOpen: boolean; terminal: TerminalMode;
-    toggleTheme(): void; toggleHelp(): void;
-    setView(v: ForgeView): void; setActiveLane(n: 0 | 1 | 2 | 3): void; setBottomTab(t: BottomTabId): void;
-    toggleSide(): void; setTerminal(m: TerminalMode): void;
-    isModuleOpen(id: ModuleId): boolean; toggleModule(id: ModuleId): void;
-  };
+  export const view: ViewStore;   // `export const view = new ViewStore();` -- never `viewStore`
+  // ViewStore's members this task and Tasks 10-11 use:
+  //   theme: "light" | "dark"; helpOn: boolean; screen: ForgeView; activeLane: 0 | 1 | 2 | 3;
+  //   bottomTab: BottomTabId; sideOpen: boolean; terminal: TerminalMode;
+  //   toggleTheme(): void; toggleHelp(): void;
+  //   setView(v: ForgeView): void; setActiveLane(n: 0 | 1 | 2 | 3): void; setBottomTab(t: BottomTabId): void;
+  //   toggleSide(): void; setTerminal(m: TerminalMode): void;
+  //   isModuleOpen(id: ModuleId): boolean; openModule(id: ModuleId): void;
+  //   closeModule(id: ModuleId): void; toggleModule(id: ModuleId): void;
   ```
 - Consumes, from the existing app (unchanged in this task): `project` from
   `latent-forge/src/lib/store.svelte.ts`, and the components `TransportBar.svelte`,
@@ -3813,17 +3846,20 @@ props-driven frame; Task 11 mounts it in the bottom pane and gives it a live log
   `helpMode: boolean`, `onhelp: () => void`, `theme: "light" | "dark"`, `ontheme: () => void`),
   `CentreColumn` (props `centre: Snippet`, `bottom?: Snippet`), `BottomPane` (prop
   `visible?: boolean`), `RightPane` (props `open: boolean`, `ontoggle: () => void`,
-  `children: Snippet`), `ModuleShell` (props `label: string`, `open: boolean`,
-  `ontoggle: () => void`, `lit?: boolean`, `accent?: string`, `help?: string`,
-  `children: Snippet`), `HelpTooltip` (props `on: boolean`, `text: string | null`, `x: number`,
+  `children: Snippet`), `ModuleShell` (the Normative props `{ id: ModuleId; title: string;
+  lit: boolean; children: Snippet }`, open state read from `view`), `HelpTooltip` (props `on: boolean`, `text: string | null`, `x: number`,
   `y: number`), `Terminal` (props `mode: TerminalMode`, `busy: boolean`,
   `lines: { seq: number; text: string; tone: string }[]`, `onmode: (m: TerminalMode) => void`).
 - Produces, for the Playwright spec a later task writes, these stable selectors:
   `[data-region="topbar"]` 42, `[data-region="right-pane"]` 296 open / 24 collapsed,
   `[data-region="bottom-pane"]` 248, `[data-region="bottom-tab-row"]` 27,
   `[data-region="bottom-tab-body"]` 162, `[data-region="preview-container"]` 44,
-  `[data-region="centre"]`, `[data-region="raster-border"]`, `[data-testid="side-toggle"]`,
-  `[data-testid="module-head"]`, `[data-testid="module-dot"]`.
+  `[data-region="centre"]`, `[data-region="raster-border"]`, `[data-testid="side-toggle"]`, and
+  `ModuleShell`'s **pinned** hooks: `[data-module="<id>"]` (wrapper),
+  `[data-module-toggle="<id>"]` (the header button, also `data-testid="module-head"`),
+  `[data-module-dot="<id>"]` carrying `data-lit="true" | "false"` (the lit dot, also
+  `data-testid="module-dot"`), `[data-module-body="<id>"]` (the body, present only while open).
+  Later milestones select the lit dot by `[data-module-dot="<id>"]`, never by class.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3832,7 +3868,8 @@ props-driven frame; Task 11 mounts it in the bottom pane and gives it a live log
 ```ts
 // @vitest-environment jsdom
 //
-// Shell components are props-driven, so they are testable without the view store.
+// Shell components are props-driven, so they are testable without the view store --
+// except ModuleShell, whose open state IS the view store's (Normative names).
 // Geometry (42 / 248 / 296 / 24 / 162 / 44 px) is asserted by the Playwright spec;
 // what is asserted here is the behaviour those boxes carry: the accordion opens and
 // closes, the lit dot follows `lit`, the side pane collapses to its strip, and help
@@ -3841,6 +3878,7 @@ props-driven frame; Task 11 mounts it in the bottom pane and gives it a live log
 import { createRawSnippet } from "svelte";
 import { cleanup, render } from "@testing-library/svelte";
 import { afterEach, describe, expect, it } from "vitest";
+import { view } from "../../../lib/stores/view.svelte";
 import { helpTextAt } from "../helpLookup";
 import ModuleShell from "../ModuleShell.svelte";
 import RightPane from "../RightPane.svelte";
@@ -3878,42 +3916,55 @@ describe("helpTextAt finds the nearest data-help ancestor", () => {
   });
 });
 
+// ModuleShell's Normative props are {id, title, lit, children}; its open state is the view
+// store's, so these tests drive `view` directly and put it back afterwards.
 describe("ModuleShell is a collapsible accordion with a lit dot", () => {
-  it("shows ▸ and hides its body when closed", () => {
-    const { getByTestId, queryByTestId } = render(ModuleShell, {
-      props: { label: "MASTER CHAIN", open: false, ontoggle: () => {}, children: body },
-    });
-    expect(getByTestId("module-head").textContent).toContain("▸ MASTER CHAIN");
-    expect(queryByTestId("body")).toBeNull();
+  afterEach(() => {
+    view.closeModule("master-chain");
+    view.openModule("files");   // the view store's own default (Task 7)
   });
 
-  it("shows ▾ and renders its body when open", () => {
-    const { getByTestId } = render(ModuleShell, {
-      props: { label: "MASTER CHAIN", open: true, ontoggle: () => {}, children: body },
+  it("shows ▸ and hides its body while the view store has it closed", () => {
+    view.closeModule("master-chain");
+    const { getByTestId, queryByTestId, container } = render(ModuleShell, {
+      props: { id: "master-chain", title: "MASTER CHAIN", lit: false, children: body },
+    });
+    expect(getByTestId("module-head").textContent).toContain("▸ MASTER CHAIN");
+    expect(container.querySelector('[data-module="master-chain"] [data-module-toggle="master-chain"]')).not.toBeNull();
+    expect(queryByTestId("body")).toBeNull();
+    expect(container.querySelector('[data-module-body="master-chain"]')).toBeNull();
+  });
+
+  it("shows ▾ and renders its body while the view store has it open", () => {
+    view.openModule("master-chain");
+    const { getByTestId, container } = render(ModuleShell, {
+      props: { id: "master-chain", title: "MASTER CHAIN", lit: false, children: body },
     });
     expect(getByTestId("module-head").textContent).toContain("▾ MASTER CHAIN");
     expect(getByTestId("body").textContent).toBe("module body");
+    expect(container.querySelector('[data-module-body="master-chain"]')).not.toBeNull();
   });
 
-  it("lights the dot only when the module holds non-default settings", () => {
+  it("lights the dot only when `lit` is true, on the pinned [data-module-dot] hook", () => {
     const off = render(ModuleShell, {
-      props: { label: "FILES", open: false, ontoggle: () => {}, children: body },
+      props: { id: "files", title: "FILES", lit: false, children: body },
     });
-    expect(off.getByTestId("module-dot").getAttribute("data-lit")).toBe("false");
+    expect(off.container.querySelector('[data-module-dot="files"]')!.getAttribute("data-lit")).toBe("false");
     cleanup();
     const on = render(ModuleShell, {
-      props: { label: "FILES", open: false, lit: true, ontoggle: () => {}, children: body },
+      props: { id: "files", title: "FILES", lit: true, children: body },
     });
-    expect(on.getByTestId("module-dot").getAttribute("data-lit")).toBe("true");
+    expect(on.container.querySelector('[data-module-dot="files"]')!.getAttribute("data-lit")).toBe("true");
   });
 
-  it("calls ontoggle when the header is clicked", async () => {
-    let hits = 0;
-    const { getByTestId } = render(ModuleShell, {
-      props: { label: "FILES", open: false, ontoggle: () => (hits += 1), children: body },
+  it("toggles the view store's open state when the header is clicked", async () => {
+    view.closeModule("files");
+    const { getByTestId, findByTestId } = render(ModuleShell, {
+      props: { id: "files", title: "FILES", lit: false, children: body },
     });
     getByTestId("module-head").click();
-    expect(hits).toBe(1);
+    expect(view.isModuleOpen("files")).toBe(true);
+    expect((await findByTestId("body")).textContent).toBe("module body");
   });
 });
 
@@ -4025,50 +4076,59 @@ export function helpTextAt(node: EventTarget | null, root?: Element | null): str
 ```svelte
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { view, type ModuleId } from "../../lib/stores/view.svelte";
 
   // Spec §4.6: right-pane modules are collapsible and keep a lit dot while they
   // hold non-default settings. Geometry and colours are v3's `menuHead` / `dot`
   // helpers (lines 1649-1650). Whether the dot is lit is the owning milestone's
-  // decision, so it arrives as a prop — M1 lights only FILES.
+  // decision (litModules, Task 12), so it arrives as a prop.
+  //
+  // NORMATIVE (Normative-names table): props {id, title, lit, children}; open
+  // state is the view store's, so it is what ui.modules persists (§9.2).
+  //
+  // PINNED DOM CONTRACT -- later milestones select on these, never on a class:
+  //   [data-module={id}]                          the wrapper
+  //   [data-module-toggle={id}]                   the header button (data-testid="module-head")
+  //   [data-module-dot={id}][data-lit=true|false] the lit dot      (data-testid="module-dot")
+  //   [data-module-body={id}]                     the body, rendered only while open
   interface Props {
-    label: string;
-    open: boolean;
-    ontoggle: () => void;
-    lit?: boolean;
-    accent?: string;
-    help?: string;
+    id: ModuleId;
+    title: string;
+    lit: boolean;
     children: Snippet;
   }
-  let {
-    label,
-    open,
-    ontoggle,
-    lit = false,
-    accent = "var(--border)",
-    help,
-    children,
-  }: Props = $props();
+  let { id, title, lit, children }: Props = $props();
+
+  // The drawing's accents: purple for OVERLAP, lane 1's colour for LANE CHAIN.
+  const ACCENT: Partial<Record<ModuleId, string>> = {
+    overlap: "var(--purple-strong)",
+    "lane-chain": "var(--lane1)",
+  };
+  const accent = $derived(ACCENT[id] ?? "var(--border)");
+  const dotColour = $derived(ACCENT[id] ?? "var(--turq-strong)");
+  const open = $derived(view.isModuleOpen(id));
 </script>
 
-<section class="module" data-module={label}>
+<section class="module" data-module={id}>
   <button
     class="head"
     data-testid="module-head"
-    data-help={help}
+    data-module-toggle={id}
     style:border-left-color={accent}
-    onclick={ontoggle}
+    onclick={() => view.toggleModule(id)}
   >
-    <span>{open ? "▾" : "▸"} {label}</span>
+    <span>{open ? "▾" : "▸"} {title}</span>
     <span
       class="dot"
       data-testid="module-dot"
+      data-module-dot={id}
       data-lit={lit ? "true" : "false"}
-      style:background={lit ? accent : "transparent"}
-      style:border-color={lit ? accent : "var(--border)"}
+      style:background={lit ? dotColour : "transparent"}
+      style:border-color={lit ? dotColour : "var(--border)"}
     ></span>
   </button>
   {#if open}
-    <div class="body" style:border-left-color={accent}>
+    <div class="body" data-module-body={id} style:border-left-color={accent}>
       {@render children()}
     </div>
   {/if}
@@ -4549,7 +4609,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
   import MasterStrip from "./lib/MasterStrip.svelte";
   import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
-  import { viewStore } from "./lib/stores/view.svelte";
+  import { view } from "./lib/stores/view.svelte";
   import Timeline from "./lib/Timeline.svelte";
   import TransportBar from "./lib/TransportBar.svelte";
   import BottomPane from "./ui/shell/BottomPane.svelte";
@@ -4568,11 +4628,11 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
   // Spec §9.1: the theme lives on the document element, so tokens.css's
   // `:root[data-theme="dark"]` block also reaches the root-level overlays.
   $effect(() => {
-    document.documentElement.setAttribute("data-theme", viewStore.theme);
+    document.documentElement.setAttribute("data-theme", view.theme);
   });
 
   function onRootMove(e: MouseEvent) {
-    if (!viewStore.helpOn) {
+    if (!view.helpOn) {
       if (helpText !== null) helpText = null;
       return;
     }
@@ -4615,18 +4675,18 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
 
 <div class="forge-root" bind:this={rootEl} onmousemove={onRootMove}>
   <TopBar
-    view={viewStore.screen}
-    onview={(v) => viewStore.setView(v)}
-    helpMode={viewStore.helpOn}
-    onhelp={() => viewStore.toggleHelp()}
-    theme={viewStore.theme}
-    ontheme={() => viewStore.toggleTheme()}
+    view={view.screen}
+    onview={(v) => view.setView(v)}
+    helpMode={view.helpOn}
+    onhelp={() => view.toggleHelp()}
+    theme={view.theme}
+    ontheme={() => view.toggleTheme()}
   />
 
   <div class="main-row">
     <CentreColumn>
       {#snippet centre()}
-        {#if viewStore.screen === "workspace"}
+        {#if view.screen === "workspace"}
           <section class="centre-stack" data-region="workspace-centre">
             <TransportBar />
             <MasterStrip />
@@ -4639,71 +4699,42 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
       {/snippet}
 
       {#snippet bottom()}
-        <BottomPane visible={viewStore.screen === "workspace"} />
+        <BottomPane visible={view.screen === "workspace"} />
       {/snippet}
     </CentreColumn>
 
-    <RightPane open={viewStore.sideOpen} ontoggle={() => viewStore.toggleSide()}>
-      <ModuleShell
-        label="OVERLAP — INPAINT"
-        accent="var(--purple-strong)"
-        open={viewStore.isModuleOpen("overlap")}
-        ontoggle={() => viewStore.toggleModule("overlap")}
-      >
+    <RightPane open={view.sideOpen} ontoggle={() => view.toggleSide()}>
+      <!-- ModuleShell's Normative props {id, title, lit}; ids are the view store's kebab
+           ModuleId. Task 12 moves the first five into RightPaneModules.svelte. -->
+      <ModuleShell id="overlap" title="OVERLAP — INPAINT" lit={false}>
         <!-- body: M7 (spec §4.6.1); its render button is wired in M9 -->
         <div class="module-empty"></div>
       </ModuleShell>
 
-      <ModuleShell
-        label="FILES"
-        open={viewStore.isModuleOpen("files")}
-        lit={project.clips.length > 0}
-        ontoggle={() => viewStore.toggleModule("files")}
-      >
+      <ModuleShell id="files" title="FILES" lit={project.clips.length > 0}>
         <CropLibrary />
       </ModuleShell>
 
-      <ModuleShell
-        label="LANE 1 CHAIN"
-        accent="var(--lane1)"
-        open={viewStore.isModuleOpen("chain")}
-        ontoggle={() => viewStore.toggleModule("chain")}
-      >
+      <ModuleShell id="lane-chain" title="LANE 1 CHAIN" lit={false}>
         <!-- body: M7 (spec §5.5); the header follows the active lane from M5 -->
         <div class="module-empty"></div>
       </ModuleShell>
 
-      <ModuleShell
-        label="ADVANCED SAMPLING"
-        open={viewStore.isModuleOpen("advanced")}
-        ontoggle={() => viewStore.toggleModule("advanced")}
-      >
+      <ModuleShell id="advanced-sampling" title="ADVANCED SAMPLING" lit={false}>
         <!-- body: M4 (spec §5.3) -->
         <div class="module-empty"></div>
       </ModuleShell>
 
-      <ModuleShell
-        label="MASTER CHAIN"
-        open={viewStore.isModuleOpen("master")}
-        ontoggle={() => viewStore.toggleModule("master")}
-      >
+      <ModuleShell id="master-chain" title="MASTER CHAIN" lit={false}>
         <!-- body: M7 (spec §4.6.5) -->
         <div class="module-empty"></div>
       </ModuleShell>
 
-      <ModuleShell
-        label="INSPECTOR (legacy — M4 removes)"
-        open={viewStore.isModuleOpen("legacy-inspector")}
-        ontoggle={() => viewStore.toggleModule("legacy-inspector")}
-      >
+      <ModuleShell id="legacy-inspector" title="INSPECTOR (legacy — M4 removes)" lit={false}>
         <Inspector />
       </ModuleShell>
 
-      <ModuleShell
-        label="SERVER (legacy — M9 removes)"
-        open={viewStore.isModuleOpen("legacy-server")}
-        ontoggle={() => viewStore.toggleModule("legacy-server")}
-      >
+      <ModuleShell id="legacy-server" title="SERVER (legacy — M9 removes)" lit={false}>
         <ServerPanel />
       </ModuleShell>
     </RightPane>
@@ -4719,7 +4750,7 @@ rendered unconditionally here; M5 owns overlap selection and gates it then.
     aria-hidden="true"
   ></canvas>
 
-  <HelpTooltip on={viewStore.helpOn} text={helpText} x={helpX} y={helpY} />
+  <HelpTooltip on={view.helpOn} text={helpText} x={helpX} y={helpY} />
 </div>
 
 <style>
@@ -4822,9 +4853,9 @@ name held in `App.svelte` and nothing else.
   `ForgeApiError { status, message }` from the same module.
 - Consumes: `Progress` from `latent-forge/src/lib/forge/types.ts` (only its `steps_left_total`
   field, which M9 feeds to `mixdownLabel`).
-- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `viewStore.screen`,
-  `viewStore.setView`, `viewStore.helpOn`, `viewStore.toggleHelp`, `viewStore.theme`,
-  `viewStore.toggleTheme` (surface repeated in full in Task 9).
+- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `view.screen`,
+  `view.setView`, `view.helpOn`, `view.toggleHelp`, `view.theme`,
+  `view.toggleTheme` (surface repeated in full in Task 9).
 - Consumes: `TopBar.svelte` from Task 9 (props `view`, `onview`, `helpMode`, `onhelp`, `theme`,
   `ontheme`).
 - Produces: `BACKBONE_IDS: readonly ["medium", "medium-base", "small-music", "small-music-base"]`,
@@ -4896,8 +4927,14 @@ describe("the MODEL select lists backbones first, then adapters (spec §4.2)", (
 });
 
 describe("fetchAdapters", () => {
-  it("asks for loadable adapters only", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ ok: true, ckpts: [{ path: "/SERVER/x.ckpt", name: "x.ckpt" }] }));
+  it("asks for loadable adapters only, and reads the array the real route returns under `models`", async () => {
+    // The real /models answers {ok, count, models, stale_root_ids} (eval/explorer_render_server.py,
+    // the /models route). This mock said `ckpts` until the reconcile pass of 2026-09-25, so it agreed
+    // with a client that read the wrong key and resolved [] against the real server. M7 T10's
+    // recorded-response contract test checks the same key against the RECORDED models_adapters.json.
+    const fetchMock = vi.fn(async () => jsonResponse({
+      ok: true, count: 1, models: [{ path: "/SERVER/x.ckpt", name: "x.ckpt" }], stale_root_ids: [],
+    }));
     vi.stubGlobal("fetch", fetchMock);
     const out = await fetchAdapters();
     expect(fetchMock.mock.calls[0][0]).toBe("/models?family=adapter&loadable=1");
@@ -5012,6 +5049,9 @@ describe("the top bar carries spec §4.2 left to right", () => {
     const { getByTestId } = render(TopBar, {
       props: { ...base, masterPresets: ["live set A"], masterPreset: "live set A" },
     });
+    // True at M1's end state, so it lives here. M7 T9 owns the flip: when it wires master-preset
+    // SAVE it retitles this test and changes this one assertion to `.toBe(false)` (M7 plan,
+    // Task 9 Step 4) -- the test file stays M1's, the behaviour change is M7's.
     expect((getByTestId("master-preset-save") as HTMLButtonElement).disabled).toBe(true);
     expect(getByTestId("mixdown-button").textContent?.trim()).toBe("▸ MIXDOWN");
   });
@@ -5095,6 +5135,10 @@ export function buildModelOptions(adapters: AdapterEntry[]): ModelOption[] {
 // An unmounted adapter root is a normal state on this box, not an error: the
 // server answers `{ok: false, error: ...}` and the select simply shows the four
 // backbones.
+//
+// The real route answers `{ok, count, models, stale_root_ids}` -- the array is
+// under `models` (eval/explorer_render_server.py's /models route). An earlier
+// draft read `ckpts` and always resolved [] against the real server.
 
 import type { AdapterEntry } from "../../ui/topbar/modelOptions";
 
@@ -5102,14 +5146,14 @@ export async function fetchAdapters(): Promise<AdapterEntry[]> {
   const res = await fetch("/models?family=adapter&loadable=1");
   const text = await res.text();
   if (!text) return [];
-  let body: { ok?: boolean; ckpts?: AdapterEntry[] };
+  let body: { ok?: boolean; models?: AdapterEntry[] };
   try {
-    body = JSON.parse(text) as { ok?: boolean; ckpts?: AdapterEntry[] };
+    body = JSON.parse(text) as { ok?: boolean; models?: AdapterEntry[] };
   } catch {
     return [];
   }
-  if (!res.ok || body.ok === false || !Array.isArray(body.ckpts)) return [];
-  return body.ckpts;
+  if (!res.ok || body.ok === false || !Array.isArray(body.models)) return [];
+  return body.models;
 }
 ```
 
@@ -5240,6 +5284,7 @@ Replace the whole of `latent-forge/src/ui/shell/TopBar.svelte` with:
 
   interface SessionSummary {
     name: string;
+    /** File mtime in epoch SECONDS (float) -- `new Date(updated * 1000)` if it is ever shown. */
     updated: number;
     n_clips: number;
   }
@@ -5474,7 +5519,7 @@ Replace the whole of `latent-forge/src/ui/shell/TopBar.svelte` with:
 </style>
 ```
 
-In `latent-forge/src/App.svelte`, add these imports below the existing `import { viewStore }` line:
+In `latent-forge/src/App.svelte`, add these imports below the existing `import { view }` line:
 
 ```ts
   import { forgeApi } from "./lib/forge/api";
@@ -5526,12 +5571,12 @@ and replace the `<TopBar ... />` element with:
 
 ```svelte
   <TopBar
-    view={viewStore.screen}
-    onview={(v) => viewStore.setView(v)}
-    helpMode={viewStore.helpOn}
-    onhelp={() => viewStore.toggleHelp()}
-    theme={viewStore.theme}
-    ontheme={() => viewStore.toggleTheme()}
+    view={view.screen}
+    onview={(v) => view.setView(v)}
+    helpMode={view.helpOn}
+    onhelp={() => view.toggleHelp()}
+    theme={view.theme}
+    ontheme={() => view.toggleTheme()}
     {sessions}
     {session}
     onsession={(name) => (session = name)}
@@ -5608,9 +5653,9 @@ session makes no requests. The log store is where this milestone's `$state` prox
   → `{ ok: true; seq: number; lines: { seq: number; text: string }[] }` and `forgeApi.status()`
   → `{ ok: true; busy: boolean; job_id: string | null; log_tail: string[]; progress: Progress | null }`;
   `ForgeApiError { status, message }` from the same module.
-- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `viewStore.bottomTab`,
-  `viewStore.setBottomTab(t: BottomTabId)`, `viewStore.terminal`,
-  `viewStore.setTerminal(m: TerminalMode)`, `viewStore.screen` (surface repeated in full in Task 9).
+- Consumes, from `latent-forge/src/lib/stores/view.svelte.ts`: `view.bottomTab`,
+  `view.setBottomTab(t: BottomTabId)`, `view.terminal`,
+  `view.setTerminal(m: TerminalMode)`, `view.screen` (surface repeated in full in Task 9).
 - Consumes: `BottomPane.svelte` and `Terminal.svelte` from Task 9 (`Terminal` props `mode`,
   `busy`, `lines`, `onmode`).
 - Produces: `BottomTabId` **re-exported** from the view store (Task 7 declares it);
@@ -6224,11 +6269,11 @@ In `latent-forge/src/App.svelte`, replace the `bottom` snippet with:
 ```svelte
       {#snippet bottom()}
         <BottomPane
-          visible={viewStore.screen === "workspace"}
-          tab={viewStore.bottomTab}
-          ontab={(t) => viewStore.setBottomTab(t)}
-          terminalMode={viewStore.terminal}
-          onterminalmode={(m) => viewStore.setTerminal(m)}
+          visible={view.screen === "workspace"}
+          tab={view.bottomTab}
+          ontab={(t) => view.setBottomTab(t)}
+          terminalMode={view.terminal}
+          onterminalmode={(m) => view.setTerminal(m)}
         />
       {/snippet}
 ```
@@ -6289,7 +6334,7 @@ contents later and the implementing agent must not anticipate them:
 - Create: `latent-forge/src/lib/forge/nonDefault.ts`, `latent-forge/src/lib/forge/__tests__/nonDefault.test.ts`
 - Create: `latent-forge/src/ui/shell/RightPaneModules.svelte`
 - Create: `latent-forge/src/ui/modules/OverlapInpaint.svelte`, `latent-forge/src/ui/modules/Files.svelte`, `latent-forge/src/ui/modules/LaneChain.svelte`, `latent-forge/src/ui/modules/AdvancedSampling.svelte`, `latent-forge/src/ui/modules/MasterChain.svelte`
-- Modify: `latent-forge/src/ui/shell/RightPane.svelte`
+- Modify: `latent-forge/src/ui/shell/RightPane.svelte`, `latent-forge/src/App.svelte` (drops its five spec-module shells)
 
 **Interfaces:**
 - Consumes from `src/lib/forge/types.ts` (Task 3): `LaneChain`, `MasterChain`, `OverlapParams`, `RenderSettings`, `Target`.
@@ -6699,19 +6744,31 @@ with the existing CropLibrary's content over `/forge/files`:
 </style>
 ```
 
-`latent-forge/src/ui/shell/RightPane.svelte` — replace the placeholder body with the accordion.
-Keep the 296 px width, the 24 px collapsed strip and the `overflow-y: auto` already in the
-component (spec §4.1); only the content changes:
+`latent-forge/src/ui/shell/RightPane.svelte` — mount the accordion. Keep the 296 px width, the
+24 px collapsed strip and the `overflow-y: auto` already in the component (spec §4.1); only the
+content changes. Add the import:
 
 ```svelte
   import RightPaneModules from "./RightPaneModules.svelte";
 ```
 
-and, inside the expanded branch, in place of whatever placeholder markup is there:
+make `children` optional in `Props` (`children?: Snippet;`), and replace the expanded branch's
+`{@render children()}` with the accordion followed by whatever the caller still passes — from here
+on that is only App's two legacy modules:
 
 ```svelte
-    <RightPaneModules />
+      <RightPaneModules />
+      {@render children?.()}
 ```
+
+`latent-forge/src/App.svelte` — the five spec modules now come from `RightPaneModules`, so
+**delete** the `overlap`, `files`, `lane-chain`, `advanced-sampling` and `master-chain`
+`<ModuleShell>` elements (and the comment above them) from `<RightPane>`'s children, keeping only
+the `legacy-inspector` and `legacy-server` ones. Leaving them would render every spec module twice,
+with duplicate `data-module` ids. `CropLibrary` is then unused in App; leave its import until Task
+15 deletes the file (an unused import is not a `svelte-check` error). (Reconcile pass 2026-09-25:
+this App edit was missing, and "the placeholder markup" the old text named does not exist — the
+branch held `{@render children()}`.)
 
 - [ ] **Step 4: Run it, expect pass**
 
@@ -8021,7 +8078,8 @@ Expected: `extract_help: wrote 87 strings (80 extracted, 14 rewritten, 7 new) to
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/help
 ```
 
-Expected: `Test Files  1 passed (1)` / `Tests  19 passed (19)`.
+Expected: `Test Files  1 passed (1)` / `Tests  20 passed (20)`. (The file holds 20 `it()` blocks; the
+gate said 19 until the reconcile pass of 2026-09-25 recounted it.)
 
 Prove the generator is idempotent — a second run must not change the file:
 
@@ -8078,7 +8136,7 @@ rewind, Delete removes the selected clip, +/− zoom. The handler moves out of `
 - Create: `latent-forge/playwright.config.ts`, `latent-forge/tests/layout.spec.ts`
 - Move: `src/lib/transport.ts` → `src/lib/audio/transport.ts`; `src/lib/waveform.ts` → `src/lib/audio/waveform.ts`; `src/lib/Timeline.svelte` → `src/ui/timeline/Timeline.svelte`; `src/lib/ClipView.svelte` → `src/ui/timeline/ClipView.svelte`; `src/lib/MasterStrip.svelte` → `src/ui/master/MasterStrip.svelte`
 - Delete: `src/lib/TransportBar.svelte`, `src/lib/CropLibrary.svelte`, `src/lib/Inspector.svelte`, `src/lib/ServerPanel.svelte`
-- Modify: `latent-forge/src/lib/store.svelte.ts` (two import paths), `latent-forge/src/ui/modules/Files.svelte`, `latent-forge/src/ui/shell/TopBar.svelte`, `latent-forge/src/ui/shell/CentreColumn.svelte`, `latent-forge/src/App.svelte`, `latent-forge/package.json`, `latent-forge/.gitignore`
+- Modify: `latent-forge/src/lib/store.svelte.ts` (two import paths), `latent-forge/src/ui/modules/Files.svelte`, `latent-forge/src/ui/shell/TopBar.svelte`, `latent-forge/src/App.svelte` (extended, not replaced — Step 5), `latent-forge/package.json`, `latent-forge/.gitignore`
 
 **Interfaces:**
 - Consumes `project` from `src/lib/store.svelte.ts` (existing): `togglePlay()`, `stop()`, `seek(sec)`, `zoomBy(factor)`, `removeClip(id)`, `selectedClipId`, `playing`, `playheadSec`, `meter`, `clips`, `lanes`, `pxPerSec`, `toJSON()`, `loadJSON(text)`, `addClipFromCrop(cropId, laneId, startSec)`.
@@ -8086,7 +8144,7 @@ rewind, Delete removes the selected clip, +/− zoom. The handler moves out of `
 - Consumes `forgeApi.files({root, q, limit})` from `src/lib/forge/api.ts` (Task 5) and `AudioRef`, `LatentRef` from `src/lib/forge/types.ts` (Task 3).
 - Consumes `HELP` from `src/lib/help/strings.ts` (Task 14).
 - Consumes the npm script `dev:mock` (Tasks 6–8) serving the app on `http://127.0.0.1:5173` with the fixtures of `docs/latent-forge/contract/fixtures/`, including `forge_files_crops` for `GET /forge/files`.
-- Consumes the shell's region attributes (Tasks 9–13). The layout spec addresses regions by attribute, never by CSS class: `[data-region="topbar"]`, `[data-region="bottom-pane"]`, `[data-region="right-pane"]`, `[data-region="ruler-canvas"]`, `[data-region="lane-canvas"]`, `[data-region="master-canvas"]`, `[data-region="ruler-transport"]`; tabs `[data-tab="<id>"]` / `[data-tab-body="<id>"]`; modules `[data-module="<id>"]` / `[data-module-toggle="<id>"]` / `[data-module-body="<id>"]`; `[data-testid="help-toggle"]`, `[data-testid="help-box"]`, `[data-testid="dark-toggle"]`. **If a region is missing its attribute, add it in the component that owns it — it is an attribute, not a redesign.**
+- Consumes the shell's region attributes (Tasks 9–13). The layout spec addresses regions by attribute, never by CSS class: `[data-region="topbar"]`, `[data-region="bottom-pane"]`, `[data-region="right-pane"]`, `[data-region="ruler-canvas"]`, `[data-region="lane-canvas"]`, `[data-region="master-canvas"]`, `[data-region="ruler-transport"]`; tab buttons `[data-testid="bottom-tab-<id>"]` (Task 11) and the tab body `[data-region="bottom-tab-body"]` carrying `data-tab="<id>"` (Task 11 — there is no `[data-tab-body]` in M1; M4/M7 add one inside their own tab contents); modules `[data-module="<id>"]` / `[data-module-toggle="<id>"]` / `[data-module-body="<id>"]`; `[data-testid="help-toggle"]`, `[data-testid="help-box"]`, `[data-testid="dark-toggle"]`. **If a region is missing its attribute, add it in the component that owns it — it is an attribute, not a redesign.**
 - Produces: `handleKey(e, actions) => boolean`, `installGlobalKeys(actions) => () => void`, `ZOOM_STEP`; the component `RulerTransport`; the npm script `test:e2e`.
 
 - [ ] **Step 1: Write the failing keyboard test**
@@ -8331,9 +8389,15 @@ test("the page never scrolls horizontally", async ({ page }) => {
 });
 
 test("each bottom tab opens", async ({ page }) => {
+  // The tab BUTTONS are data-testid="bottom-tab-<id>"; the one tab BODY is
+  // [data-region="bottom-tab-body"] with data-tab set to the current tab (Task 11). An earlier
+  // draft clicked [data-tab="<id>"] -- the body, so only the current tab ever matched -- and
+  // waited for a [data-tab-body] M1 never emits (reconcile pass 2026-09-25).
+  const body = page.locator('[data-region="bottom-tab-body"]');
   for (const id of ["chroma", "prompt", "mix", "terminal"]) {
-    await page.locator(`[data-tab="${id}"]`).click();
-    await expect(page.locator(`[data-tab-body="${id}"]`)).toBeVisible();
+    await page.locator(`[data-testid="bottom-tab-${id}"]`).click();
+    await expect(body).toHaveAttribute("data-tab", id);
+    await expect(body).toBeVisible();
     expectPx(await height(page.locator('[data-region="bottom-pane"]')), 248, `bottom pane on ${id}`);
   }
 });
@@ -8852,18 +8916,30 @@ export function installGlobalKeys(a: KeyActions): () => void {
 ```
 
 `latent-forge/src/App.svelte` — the shell mounts the keyboard through the new module and keeps
-the store's connect/disconnect. Its `<script>` becomes:
+the store's connect/disconnect. **This EXTENDS the App that Tasks 9-14 built; it does not replace
+its `<script>`.** Everything not named below stays exactly as those tasks left it: Task 9's theme
+`$effect` and help handlers, **Task 10's top-bar block** (its three imports, the seven `$state`s,
+`loadTopBar()` and the full `<TopBar …>` element), Task 11's `bottom` snippet and Task 14's
+`<HelpTooltip />`. (Reconcile pass 2026-09-25: this step used to say App's `<script>` "becomes" a
+block holding only the keyboard wiring. Read literally that dropped Task 10's block and the
+view-store import the markup still uses, and did not type-check; M7 had to restate the intended
+starting state. The edits below are that intended reading.)
 
-```svelte
-<script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+1. **Imports.** Delete the imports of the four files this task deletes or splits —
+   `CropLibrary`, `Inspector`, `ServerPanel`, `TransportBar` — and of `ModuleShell` (App renders
+   none after step 4 below). Point the two moved components at their new homes, and add the
+   keyboard module:
+
+```ts
   import { installGlobalKeys } from "./lib/actions/keyboard";
-  import { project } from "./lib/store.svelte";
-  import CentreColumn from "./ui/shell/CentreColumn.svelte";
-  import HelpTooltip from "./ui/shell/HelpTooltip.svelte";
-  import RightPane from "./ui/shell/RightPane.svelte";
-  import TopBar from "./ui/shell/TopBar.svelte";
+  import MasterStrip from "./ui/master/MasterStrip.svelte";
+  import Timeline from "./ui/timeline/Timeline.svelte";
+```
 
+2. **Keyboard.** Delete Task 9's `onKeydown` function, and replace the `onMount` / `onDestroy`
+   pair with the version below. `void loadTopBar();` is Task 10's line and stays inside `onMount`:
+
+```ts
   let disposeKeys: (() => void) | null = null;
 
   onMount(() => {
@@ -8876,6 +8952,7 @@ the store's connect/disconnect. Its `<script>` becomes:
       },
       zoomBy: (f) => project.zoomBy(f),
     });
+    void loadTopBar();
   });
 
   onDestroy(() => {
@@ -8883,24 +8960,31 @@ the store's connect/disconnect. Its `<script>` becomes:
     disposeKeys?.();
     disposeKeys = null;
   });
-</script>
 ```
 
-`latent-forge/src/ui/shell/CentreColumn.svelte` — the scrolling centre's workspace content is
-the master strip above the timeline (spec §4.3). Add the imports and render them in that order
-inside the scrolling centre:
-
-```svelte
-  import MasterStrip from "../master/MasterStrip.svelte";
-  import Timeline from "../timeline/Timeline.svelte";
-```
+3. **Centre.** In the `centre` snippet, delete `<TransportBar />` — the transport now lives in the
+   ruler's left cell (`RulerTransport`, inside `Timeline`) — leaving the master strip above the
+   timeline (spec §4.3):
 
 ```svelte
-  <div class="scrolling-centre">
-    <MasterStrip />
-    <Timeline />
-  </div>
+          <section class="centre-stack" data-region="workspace-centre">
+            <MasterStrip />
+            <Timeline />
+          </section>
 ```
+
+4. **Right pane.** This task deletes `Inspector.svelte` and `ServerPanel.svelte` (Files, above), so
+   delete the two legacy `<ModuleShell>` children Task 12 left in `<RightPane>`; the pane's
+   modules all come from `RightPaneModules` now:
+
+```svelte
+    <RightPane open={view.sideOpen} ontoggle={() => view.toggleSide()} />
+```
+
+`latent-forge/src/ui/shell/CentreColumn.svelte` is **not** edited by this task: `App.svelte` owns
+the `centre` snippet (Task 13's rule for `bottom` applies to both), and step 3 above already puts
+the master strip above the timeline in it. (An earlier draft rendered `<MasterStrip />` and
+`<Timeline />` inside `CentreColumn` as well, which would have drawn both twice.)
 
 `latent-forge/src/ui/shell/TopBar.svelte` — SAVE and LOAD, carried over from the deleted
 `TransportBar.svelte` so a project can still be saved and reloaded between M1 and M7. Add to the
@@ -8949,6 +9033,22 @@ after the SESSION select:
   {#if notice}<span class="notice">{notice}</span>{/if}
 ```
 
+and give that span a rule in the same file's `<style>` — without one it inherited the bar's 12 px
+text and pushed the row (reconcile pass 2026-09-25; M7 T9 reuses `class="notice"` for its
+`loading <name>…` note, so the rule outlives the span it was written for):
+
+```css
+  .notice {
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+```
+
 - [ ] **Step 6: Run everything, expect pass**
 
 ```bash
@@ -8961,7 +9061,10 @@ Expected: `Test Files  1 passed (1)` / `Tests  11 passed (11)`.
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npm test
 ```
 
-Expected: every suite of this plan green — `Test Files  8 passed (8)`, with no failures listed.
+Expected: every suite of this plan green — `Test Files  20 passed (20)` / `Tests  183 passed (183)`,
+with no failures listed. (Recounted by the reconcile pass of 2026-09-25: T2 3, T3 10, T4 12, T5 10,
+T6 25, T7 19, T8 19, T9 10, T10 12, T11 11, T12 10, T13 11, T14 20, T15 11 — T15's keyboard file
+has 8 `it()` blocks, one of them a loop over three tags. The old gate said 8 files.)
 
 ```bash
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npm run check && npm run build
@@ -9039,6 +9142,55 @@ of the right pane, so the app can still start a render at every commit of this m
 frozen — no new work goes into them — and they are removed by the milestone that supersedes each:
 `legacy-inspector` by M4, `legacy-server` by M9. Without this the app would be a shell over the mock
 server, unable to start a job, from here until M9.
+
+### Reconcile pass 2026-09-25
+
+FLATLINE's reconcile pass over the M1 defects found while writing M7 (M7 plan Global Constraints
+3-5 and Open questions 8, 9, 27; FLATLINE → WINTERMUTE DM of 2026-09-25 16:11, §3) and
+WINTERMUTE's contract answers of 16:20. What changed, each at its source:
+
+- **FILM default gain 1.0 → 1.75** (T4 `CHAIN_DEFAULTS.film.gain` and its test; T6
+  `handmade-info.json`'s `film_default.gain`). 1.75 is the server's `FILM_DEFAULT_GAIN`
+  (`eval/explorer_render_server.py:150`) and M8's own default; W's decision.
+- **Envelope asymmetry pinned, not changed** (T5). `request()` already neither unwrapped nor
+  required `ok`, which is right: `GET /forge/sessions/{name}` and `GET /forge/presets/{level}/{name}`
+  return the stored object raw, the list routes and PUT/DELETE wrap. A doc comment and one test now
+  say so; `sessions()` notes that `updated` is epoch **seconds** (float). Nothing in M1 or M7 displays
+  `updated`.
+- **`fetchAdapters()` reads `models`, not `ckpts`** (T10), and its mock test now seeds the real
+  route's `{ok, count, models, stale_root_ids}` — the old mock agreed with the bug.
+- **`ModuleShell` has one declaration** (T9): the Normative `{id, title, lit, children}` version,
+  self-driven off `view`, with its DOM hooks pinned — `data-module`, `data-module-toggle`,
+  `data-module-dot` + `data-lit`, `data-module-body`. T9's four shell tests drive the view store.
+  M7's `ModuleShellProbe` workaround is gone as a result (M7 Open questions 27).
+- **`viewStore` → `view`** everywhere (T9-T11's App blocks and Interfaces), and T9's App uses the
+  kebab `ModuleId`s (`lane-chain`, `advanced-sampling`, `master-chain`), not `chain`/`advanced`/`master`.
+- **T12 now says what happens to App's module shells** (it deletes the five spec ones, which
+  `RightPaneModules` renders; `RightPane.children` becomes optional).
+- **T15 extends App instead of replacing its `<script>`**: Task 10's top-bar block survives, and
+  T15's `CentreColumn` edit (which would have drawn the master strip and timeline twice) is dropped.
+- **Layout spec's tab test** clicks `[data-testid="bottom-tab-<id>"]` and checks the body's
+  `data-tab`; it clicked the tab body and waited for a `[data-tab-body]` M1 never emits.
+- **`.notice`** has a style rule (T15's TopBar; M7 T9 reuses the class).
+- **`topBar.test.ts`'s master-preset SAVE assertion stays in M1**, where it is true; M7 T9 owns the
+  flip, and the test now says so.
+- **Gates recounted mechanically**: T4 11 → 12, T5 8 → 10 (9 existing + the envelope test), T6 24 →
+  25, T8's cumulative 94 → 98, T14 19 → 20, T15's whole-suite line 8 files → 20 files / 183 tests.
+  T9 (10), T10 (12) and T12 (10) are unchanged.
+
+**Found while applying, not fixed here (outside the listed defects — each needs a decision):**
+1. The Normative "legacy components" row and the self-review above say `Inspector` and
+   `ServerPanel` stay mounted through M1; T15's own table and `git rm` line delete them. T15's App
+   edits follow T15's explicit instructions (delete); M4 never removes `legacy-inspector` either.
+   Kim or WINTERMUTE should say which is meant.
+2. T9 creates a props-driven `HelpTooltip.svelte` that the Normative table says only T14 may create,
+   and T14 then re-creates it prop-less and adds a second `import HelpTooltip` to App. Whichever
+   runs second must replace T9's `<HelpTooltip on=… />` element and its `rootEl`/`onRootMove`
+   machinery, or `npm run check` fails at T14.
+3. The mock accepts what the server refuses: `session_put` stores any body (the server 400s on
+   anything but `version: 2` and on `.`/`..`), and `preset_delete` answers 200 for a missing name
+   (the server 404s). M7 T10's recorded-response contract tests cannot catch these, because M2's
+   `record_fixtures.py` records no session or preset route.
 
 ## Open questions
 

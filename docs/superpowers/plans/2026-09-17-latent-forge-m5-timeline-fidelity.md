@@ -68,7 +68,7 @@ Everything later in this milestone reads from here, so it is built first and alo
 
 **Interfaces:**
 - Consumes: `ForgeClip`, `ForgeLane`, `OverlapParams`, `Envelope`, `Target`, `AudioRef`, `RenderSettings` from `src/lib/forge/types`; `BASE_DEFAULTS`, `CHAIN_DEFAULTS`, `A2A_ENVELOPE_DEFAULT`, `OVERLAP_DEFAULT`, `cloneRenderSettings` from `src/lib/forge/defaults`; `view` from `src/lib/stores/view.svelte`.
-- Produces, from `src/lib/stores/arrangement.svelte.ts`: constants `MIN_PX_PER_SEC = 4`, `MAX_PX_PER_SEC = 600`, `LANE_COUNT = 4`; class `ArrangementStore` with fields `bpm`, `beatsPerBar`, `snap`, `lanes`, `clips`, `pxPerSec`, `scrollSec`, derived `overlaps`, `arrangementEndSec`, `selectedClip`, `selectedOverlap`, and methods `addClip`, `removeClip`, `duplicateClip`, `moveClip`, `moveClipToLane`, `trimClip`, `setLoop`, `setClipBpm`, `setDetune`, `setLaneGain`, `toggleMute`, `toggleSolo`, `setTargetLane`, `setBpm`, `setSnap`, `zoomBy`, `setScrollSec`, `overlapParams`, `setOverlapParams`, `ensureA2A`, `setNoise`, `setEnvelope`; and the singleton `arrangement`.
+- Produces, from `src/lib/stores/arrangement.svelte.ts`: constants `MIN_PX_PER_SEC = 4`, `MAX_PX_PER_SEC = 600`, `LANE_COUNT = 4`; class `ArrangementStore` with fields `bpm`, `beatsPerBar`, `snap`, `lanes`, `clips`, `pxPerSec`, `scrollSec`, derived `overlaps`, `arrangementEndSec`, `selectedClip`, `selectedOverlap`, and methods `addClip`, `removeClip`, `duplicateClip`, `moveClip`, `moveClipToLane`, `trimClip`, `setLoop`, `setClipBpm`, `setDetune`, `setLaneGain`, `toggleMute`, `toggleSolo`, `setTargetLane`, `setBpm`, `setSnap`, `zoomBy`, `setScrollSec`, `overlapParams`, `setOverlapParams`, `ensureA2A`, `setNoise`, `setEnvelope`; the read-only, never-seeding `settingsSource: { clipSettings(id): RenderSettings | null; overlapSettings(key): RenderSettings | null }` (M4's `TargetSettingsSource`, structurally — M7 T9's App attaches it; reconcile pass 2026-09-25); and the singleton `arrangement`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -213,6 +213,18 @@ describe("overlaps are derived, per lane, and keyed stably", () => {
     expect(arrangement.overlapParams(key).chroma_xfade).toBe(true);
     arrangement.setOverlapParams(key, { steps: 40 });
     expect(arrangement.overlapParams(key).steps).toBe(40);
+  });
+
+  it("exposes M4's settings seam without ever seeding: a clip's own render, an overlap's only once created", () => {
+    const a = arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF });
+    const b = arrangement.addClip({ lane: 0, startSec: 6, durSec: 8, audio: REF });
+    const key = `${a.id}-${b.id}`;
+    expect(arrangement.settingsSource.clipSettings(a.id)).toBe(a.render);   // the owner's object, not a copy
+    expect(arrangement.settingsSource.clipSettings("nope")).toBeNull();
+    expect(arrangement.settingsSource.overlapSettings(key)).toBeNull();      // not created yet --
+    expect(arrangement.settingsSource.overlapSettings(key)).toBeNull();      // and reading did not create it
+    const params = arrangement.overlapParams(key);                         // what OverlapBox's click does
+    expect(arrangement.settingsSource.overlapSettings(key)).toBe(params.render);
   });
 });
 
@@ -563,6 +575,24 @@ class ArrangementStore {
     Object.assign(this.overlapParams(key), patch);
   }
 
+  // ---------------------------------------------------------------- the M4 settings seam
+
+  /**
+   * M4's `TargetSettingsSource`, structurally (M4 plan T1: `clipSettings(id)` /
+   * `overlapSettings(key)`, each returning the OWNER's settings object or null). Typed from M1's
+   * own types, so this store imports nothing of M4 -- M4 and M5 are siblings (§12). M7 T9's
+   * App.svelte attaches it: `settings.attach(arrangement.settingsSource)` (reconcile pass
+   * 2026-09-25 -- until then `settings.attach` was called only in test fixtures).
+   *
+   * NEVER seeds: settings.current() runs inside $derived and templates, where a $state write
+   * throws state_unsafe_mutation. An overlap whose params were never created resolves to null
+   * (session defaults); OverlapBox creates them in the click handler that selects it (Task 7).
+   */
+  readonly settingsSource = {
+    clipSettings: (id: string): ForgeClip["render"] | null => this.find(id)?.render ?? null,
+    overlapSettings: (key: string): OverlapParams["render"] | null => this.overlapStore[key]?.render ?? null,
+  };
+
   // ---------------------------------------------------------------- transport-facing
 
   /**
@@ -611,7 +641,7 @@ Then remove from `src/lib/stores/view.svelte.ts`: the fields `pxPerSec` and `scr
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/stores/__tests__/arrangement.test.ts
 ```
 
-Expected: `Tests  22 passed (22)`.
+Expected: `Tests  23 passed (23)` (22, plus the settings-seam test the reconcile pass of 2026-09-25 added).
 
 Then confirm nothing else broke:
 
@@ -3489,7 +3519,7 @@ export function bpmLabel(clip: ForgeClip, projectBpm: number): string | null {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/math/__tests__/clipBox.test.ts
 ```
 
-Expected: `Tests  15 passed (15)`.
+Expected: `Tests  16 passed (16)` (recounted by the reconcile pass of 2026-09-25).
 
 - [ ] **Step 5: Extend the transport store for scrub, and test it**
 
@@ -3549,7 +3579,7 @@ Run it, expect pass:
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/stores/__tests__/transport.test.ts
 ```
 
-Expected: `Tests  19 passed (19)`.
+Expected: `Tests  17 passed (17)` (Task 3's 15 plus these 2 (recounted by the reconcile pass of 2026-09-25)).
 
 - [ ] **Step 6: Build the component**
 
@@ -4062,6 +4092,11 @@ through a different name).
   function select(e: PointerEvent) {
     if (e.button !== 0) return;
     e.stopPropagation();
+    // Create this overlap's params HERE, in an event handler, before it becomes the render target:
+    // `arrangement.settingsSource` never seeds (a $state write inside M4's $derived reads throws
+    // state_unsafe_mutation), so an overlap that was never created would resolve to the session
+    // defaults and PROMPT + SIGMA would edit the wrong object (reconcile pass 2026-09-25).
+    arrangement.overlapParams(overlap.key);
     view.select({ kind: "overlap", key: overlap.key });
   }
 </script>
@@ -4931,7 +4966,7 @@ Replace `latent-forge/src/ui/master/MasterStrip.svelte` in full:
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/audio/__tests__/clipMarks.test.ts src/ui/master/__tests__/EnvelopeEditor.test.ts
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  9 passed (9)`.
+Expected: `Test Files  2 passed (2)` / `Tests  7 passed (7)` (2 in `clipMarks.test.ts`, 5 in `EnvelopeEditor.test.ts` (recounted by the reconcile pass of 2026-09-25)).
 
 Then confirm the whole app still type-checks (MasterStrip's imports changed wholesale):
 
@@ -5702,9 +5737,9 @@ and, next to `setBpm`, the two store actions:
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/math/__tests__/tempoMatch.test.ts src/lib/stores/__tests__/arrangement.test.ts
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  27 passed (27)` (10 new in `tempoMatch.test.ts`, 3
-new in `arrangement.test.ts` on top of T1's 16, one of T1's own — `starts with no a2a and no
-detune` — unaffected).
+Expected: `Test Files  2 passed (2)` / `Tests  37 passed (37)` (11 in `tempoMatch.test.ts`, and
+`arrangement.test.ts`'s 26: T1's 23 plus these 3; one of T1's own — `starts with no a2a and no
+detune` — unaffected (recounted by the reconcile pass of 2026-09-25)).
 
 - [ ] **Step 5: Commit**
 
@@ -5721,30 +5756,32 @@ This is a new file, `latent-forge/tests/timeline.spec.ts`, sitting alongside M1'
 not that `layout.spec.ts` (which asserts chrome regions with an empty timeline) gets edited or
 deleted. Both files share the same `playwright.config.ts` (1800×900, `dev:mock`, built by M1 T15).
 
-Tasks 3–7 (written in parallel, by a different agent) own `ClipBox.svelte`, `OverlapBox.svelte`
-and the SNAP select, so their exact markup is not visible here. The selectors below are the
-**assumed contract**, following the `data-region`/`data-testid` convention `layout.spec.ts`
-already established: `[data-testid="clip"]` (with the clip's own bounding box), `[data-testid=
-"overlap"]`, `[data-testid="snap-select"]` (a `<select>` whose option values are `lib/math/snap.ts`'s
-`SnapMode` strings — `bar, beat, 1/8, 1/16, 1/32, lane, edge, free`, per M5 T2), and
-`[data-testid="a2a-toggle"]`. If Tasks 3–7 named these differently, fix the selector strings here
-— the assertions' intent does not change. `[data-module="overlapInpaint"]` and `[data-file-row]`
-are **not** assumed: they are M1 T15's own, already-passing hooks (`layout.spec.ts`'s "OVERLAP is
-absent without an overlap selected" and "the FILES module lists the mock server's files" tests),
-reused here rather than invented. `[data-region="envelope-overlay"]` and its `data-active`
-attribute are this milestone's own (Task 9, above).
+Tasks 3–7 own `ClipBox.svelte`, `OverlapBox.svelte` and the SNAP select. The selectors below are
+**their real markup**, reconciled on 2026-09-25 (M7 Open questions 21): a clip box is
+`<div class="clip" role="button">` (Task 6) and an overlap box `<div class="overlap"
+role="button">` (Task 7) — neither carries a `data-testid`, so this spec selects
+`.clip[role="button"]` / `.overlap[role="button"]`, exactly as M7 T10 does. The OVERLAP module's
+id is `overlap` (M1's kebab `ModuleId`; `layout.spec.ts`'s count-0 assertion), so it is
+`[data-module="overlap"]` — an earlier draft asserted `[data-module="overlapInpaint"]`, which
+nothing emits. The A2A toggle is M4 T8's `[data-testid="target-a2a-toggle"]` in the PROMPT + SIGMA
+tab (the default bottom tab). **`[data-testid="snap-select"]` is still assumed**: no M5 task emits a
+SNAP select (Task 1's `setSnap` exists, but no markup calls it), so "a clip drags and lands
+snapped" fails at its first line until some task adds one — recorded in this plan's reconcile note,
+not invented here. `[data-file-row]` is M1 T15's own hook. `[data-region="envelope-overlay"]` and
+its `data-active` attribute are this milestone's own (Task 9, above).
 
 **Files:**
 - Create: `latent-forge/tests/timeline.spec.ts`
 
 **Interfaces:**
 - Consumes: `[data-region="lane-canvas"]`, `[data-region="ruler-canvas"]`, `[data-region=
-  "master-canvas"]`, `[data-region="topbar"]`, `[data-module="overlapInpaint"]`, `[data-module-
-  toggle="files"]`, `[data-module-body="files"]`, `[data-file-row]` (M1 T15, `tests/layout.spec.ts`);
-  `[data-region="envelope-overlay"]`, `data-active` (M5 T9); default viewport 1800×900 and
-  `dev:mock` web server (`latent-forge/playwright.config.ts`, M1 T15). Assumed from Tasks 3–7 (fix
-  the strings, not the intent, if these differ): `[data-testid="clip"]`, `[data-testid="overlap"]`,
-  `[data-testid="snap-select"]`, `[data-testid="a2a-toggle"]`.
+  "master-canvas"]`, `[data-region="topbar"]`, `[data-module="overlap"]`, `[data-module-
+  toggle="files"]`, `[data-module-body="files"]`, `[data-file-row]` (M1 T12/T15, `tests/layout.spec.ts`);
+  `[data-region="envelope-overlay"]`, `data-active` (M5 T9); `.clip[role="button"]` (M5 T6's
+  `ClipBox`), `.overlap[role="button"]` (M5 T7's `OverlapBox`); `[data-testid="target-a2a-toggle"]`
+  (M4 T8's `TargetBar`); default viewport 1800×900 and `dev:mock` web server
+  (`latent-forge/playwright.config.ts`, M1 T15). Still assumed, no emitter in any plan yet:
+  `[data-testid="snap-select"]`.
 - Produces: `latent-forge/tests/timeline.spec.ts`, five new `test()` blocks.
 
 - [ ] **Step 1: Write the failing test**
@@ -5759,11 +5796,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 // the master strip's envelope overlay. Same 1800x900 viewport, same
 // dev:mock server (playwright.config.ts, M1 T15).
 //
-// The clip/overlap/snap selectors below are the ASSUMED contract for Tasks
-// 3-7's ClipBox.svelte / OverlapBox.svelte / snap select, following the
-// data-region/data-testid convention layout.spec.ts already established. If
-// their actual markup names these differently, fix the selector strings
-// here -- not what each test asserts.
+// Clip and overlap boxes are selected by their REAL markup -- ClipBox and
+// OverlapBox emit class + role="button", no data-testid (reconcile pass
+// 2026-09-25). The OVERLAP module id is "overlap". snap-select is still an
+// assumed hook: no task emits a SNAP select yet.
 
 function expectPx(actual: number, expected: number, what: string) {
   expect(Math.abs(actual - expected), `${what}: expected ${expected}px, measured ${actual}px`).toBeLessThanOrEqual(1);
@@ -5811,7 +5847,7 @@ test("a clip drags and lands snapped", async ({ page }) => {
 
   const canvas = page.locator('[data-region="lane-canvas"]').first();
   const canvasBox = await box(canvas);
-  const clip = page.locator('[data-testid="clip"]').first();
+  const clip = page.locator('.clip[role="button"]').first();
   const before = await box(clip);
 
   // Drag the clip's body (well clear of either edge, so this moves rather
@@ -5834,7 +5870,7 @@ test("a clip drags and lands snapped", async ({ page }) => {
 
 test("a trim changes width but not the left edge", async ({ page }) => {
   await dropClip(page, 1, 10);
-  const clip = page.locator('[data-testid="clip"]').first();
+  const clip = page.locator('.clip[role="button"]').first();
   const before = await box(clip);
 
   // Spec §4.3: a drag within 6px of the RIGHT edge trims instead of moving.
@@ -5849,25 +5885,25 @@ test("a trim changes width but not the left edge", async ({ page }) => {
 });
 
 test("an overlap region appears where two clips intersect, and clicking it selects it", async ({ page }) => {
-  await expect(page.locator('[data-module="overlapInpaint"]')).toHaveCount(0);
+  await expect(page.locator('[data-module="overlap"]')).toHaveCount(0);
   await dropClip(page, 2, 10);
   await dropClip(page, 2, 60); // close enough to overlap the first
 
-  const overlap = page.locator('[data-testid="overlap"]').first();
+  const overlap = page.locator('.overlap[role="button"]').first();
   await expect(overlap).toBeVisible();
   await overlap.click();
-  await expect(page.locator('[data-module="overlapInpaint"]')).toHaveCount(1);
+  await expect(page.locator('[data-module="overlap"]')).toHaveCount(1);
 });
 
 test("the envelope overlay is inert until A2A is on", async ({ page }) => {
   await dropClip(page, 3, 10);
-  await page.locator('[data-testid="clip"]').first().click(); // select it
+  await page.locator('.clip[role="button"]').first().click(); // select it
 
   const overlay = page.locator('[data-region="envelope-overlay"]');
   await expect(overlay).toHaveAttribute("data-active", "false");
   expect(await overlay.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe("none");
 
-  await page.locator('[data-testid="a2a-toggle"]').click();
+  await page.locator('[data-testid="target-a2a-toggle"]').click();
   await expect(overlay).toHaveAttribute("data-active", "true");
   expect(await overlay.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe("auto");
 });
@@ -5881,7 +5917,7 @@ cd /home/kim/Projects/sa3-studio-review/latent-forge && npx playwright test test
 
 Expected, before this file exists: `Error: No tests found`. After it is written, if Tasks 3–7's
 actual selectors differ from the assumed contract above, the failures name exactly which locator
-did not resolve (e.g. `Locator: locator('[data-testid="clip"]')` never became visible) — fix the
+did not resolve (e.g. `Locator: locator('.clip[role="button"]')` never became visible) — fix the
 selector strings in this file to match their real markup, not the assertions themselves.
 
 - [ ] **Step 3: (nothing to implement — this task only writes the spec above)**
@@ -5895,8 +5931,12 @@ write, only assertions against Tasks 1–2, 8–11's work and Tasks 3–7's time
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx playwright test
 ```
 
-Expected: every test in both `tests/layout.spec.ts` and `tests/timeline.spec.ts` passes —
-`X passed (Xs)`, zero failed.
+Expected, with M4 landed: every test in `tests/layout.spec.ts` (11) and M4's
+`tests/sampling.spec.ts` (4) passes, and four of `tests/timeline.spec.ts`'s five — `1 failed, 19
+passed`. The failure is "a clip drags and lands snapped", at its first line:
+`[data-testid="snap-select"]` has no emitter in any plan (see this plan's reconcile note); once a
+SNAP select with that test id exists, nothing fails. Without M4 the envelope-overlay test fails too
+(its A2A toggle is M4 T8's) — `2 failed, 14 passed`.
 
 - [ ] **Step 5: Commit**
 
@@ -5918,12 +5958,36 @@ defects. Where a task body disagrees with this block, **this block is correct**.
 |---|---|---|
 | overlap detection | **all pairs within a lane**, not sorted-adjacent. Task 7's extracted `findOverlaps` was corrected during assembly | the drawing only painted a box; here a missed overlap is summed instead of equal-power crossfaded (8.1 S3) and gets no inpaint pass |
 | `downbeatColor` | takes **only `t`** and returns an `oklch(...)` string it builds itself; it does NOT read or parse a custom property | an unregistered custom property's computed value is its literal token stream, so there is nothing to parse into channels |
-| `snap` field | typed `SnapMode`, default `"lane"`. The v1 spelling `"off"` maps to `"free"`, and v1 `"8"/"16"/"32"` to `"1/8"/"1/16"/"1/32"` — M7's converter owns that mapping | an untyped field let the wrong literal past svelte-check |
+| `snap` field | typed `SnapMode`, default `"lane"`. The v1 spelling `"off"` maps to `"free"`; that is the **only** spelling change — v1 already spells the grid modes `"1/8"\|"1/16"\|"1/32"` (`sa3-studio/src/lib/musictime.ts:52`: `"bar" \| "beat" \| "1/8" \| "1/16" \| "1/32" \| "edge" \| "off"`). An earlier row said v1 wrote bare `"8"/"16"/"32"`; it never did (reconcile pass 2026-09-25, M7 Open questions 4). M7's converter owns the mapping | an untyped field let the wrong literal past svelte-check |
 | `setBpm` | rescales **both** `offset_sec` and `dur_sec` | 7.3 puts both in the stretched domain |
 | tempo-match helpers | live in `lib/math/tempoMatch.ts` (Task 11). `musictime.ts`'s `meanBpm`/`circularMeanPhase`/`shortestPhaseDelta` are **moved**, not copied | two implementations of a circular mean is one too many |
 | snapping | `snapSec`/`SNAP_MODES`/`gridInterval` **move** from `src/lib/musictime.ts` into `lib/math/snap.ts`; the legacy call sites in `store.svelte.ts` move with them | otherwise the magnetic default silently does nothing on any drag still routed through the old store |
-| legacy `store.svelte.ts` | **Task 7 is the swap point**: once `overlaps.ts` is extracted and `arrangement` is complete, `App.svelte`, `keyboard.ts` and every re-homed timeline component rewire to `arrangement` and the v1 `project` store is deleted | M1 T15 handed it over to M5 and no task had claimed it |
+| legacy `store.svelte.ts` | **No M5 task is the swap point.** This row used to say Task 7 was; Task 7's body (overlap regions) never touches `App.svelte`, `keyboard.ts` or `TopBar.svelte`, and no other M5 task edits them (verified by a full grep, reconcile pass 2026-09-25; M7 Open questions 3). So after M5 the v1 `project` store is still what M1 T15's `App.svelte` keyboard actions (`installGlobalKeys` over `project.togglePlay`/`seek`/`removeClip`/`zoomBy`) and its `project.connect()` read and write, beside `arrangement` (Task 3 replaces `RulerTransport` with its own `Ruler`, so the transport cell is no longer one of them). M7 T9 removes the one `TopBar.svelte` reference; **the keyboard rewire and the store's deletion are unowned** — flagged for Kim/WINTERMUTE, not assigned here | M1 T15 handed it over to M5 and no task claimed it; claiming it silently in a Normative row is what hid that |
 | `ForgeClip.previewAudio` | added by Task 10 for the stretched preview; **a project-JSON change**, so it is a question for the server side, not a silent client addition | 9.2 pins the project shape and M7's v1 to v2 converter reads it |
+
+### Reconcile pass 2026-09-25
+
+FLATLINE's reconcile pass over the M5 defects found while writing M7 (M7 plan Open questions 2,
+3, 4, 20, 21; FLATLINE → WINTERMUTE DM of 2026-09-25, §3):
+
+- **The Normative table no longer names Task 7 as the legacy-store swap point** — it is not one,
+  and no M5 task is. The keyboard rewire and the v1 store's deletion are recorded as unowned.
+- **The v1 `SnapMode` claim is corrected**: v1 already spells `"1/8"|"1/16"|"1/32"`
+  (`sa3-studio/src/lib/musictime.ts:52`); only `"off"` → `"free"` maps.
+- **M4's settings seam has its source** (Task 1): `arrangement.settingsSource`, a structural
+  `TargetSettingsSource` built from M1 types only, never seeding; one new Task 1 test (22 → 23).
+  Task 7's `OverlapBox` creates an overlap's params in the click handler that selects it. The
+  `settings.attach(...)` call itself, and ADVANCED SAMPLING's `a2a` prop, are M7 T9's: M7 is the
+  first plan that depends on both M4 and M5, and §12 keeps these two from importing each other.
+- **Task 12's Playwright selectors match the real markup** (`.clip[role="button"]`,
+  `.overlap[role="button"]`, `[data-module="overlap"]`, M4's `target-a2a-toggle`).
+- **Gates recounted mechanically**: T6's `clipBox.test.ts` 15 → 16 and `transport.test.ts` 19 → 17;
+  T9 9 → 7; T11 27 → 37 (it runs all of `arrangement.test.ts`, 26 blocks, beside `tempoMatch.test.ts`'s 11).
+
+**Found, not fixed (needs an owner):** no task emits `[data-testid="snap-select"]` — Task 1 has
+`setSnap`, but no SNAP select calls it — so Task 12's "a clip drags and lands snapped" fails at
+its first line, and Step 4's gate says so. Tasks 3 and 7 have only file-count gates, so nothing
+pins their 35 and 7 blocks (Task 8's `9 passed | 1 skipped (10)` does hold).
 
 ## Self-review against the spec
 
@@ -6035,6 +6099,7 @@ Carried up from the parallel drafts, deduplicated where two agents found the sam
   almost invisible. **T2 above is updated**: `COINCIDENCE_RAMP_EXP = 0.7`, applied in `coincidence`,
   with two tests replacing the one that asserted a linear midpoint. `downbeatColor(t)` is unchanged
   — only the `t` its caller feeds it — and its endpoints (hue 95, not the drawing's 100) stand.
-- **Task 12's clip/overlap/snap selectors are unverified against Tasks 3–7's actual output**,
-  since that work happens in parallel by a different agent and was not visible while this file was
-  written. The task text says explicitly to fix selector strings, not test intent, if they differ.
+- ~~**Task 12's clip/overlap/snap selectors are unverified against Tasks 3–7's actual output.**~~
+  **Mostly resolved by the reconcile pass (2026-09-25):** clip, overlap, OVERLAP-module and A2A-toggle
+  selectors now match the real markup. `[data-testid="snap-select"]` is still unowned — see the
+  reconcile note above.

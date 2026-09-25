@@ -46,7 +46,7 @@ Tasks 4–6 and 7–10 are drafted in parallel by agents that cannot see each ot
 | Thing | Normative form | Why |
 |---|---|---|
 | settings resolution | `settings.current(t)` **reads**, `settings.editable(t)` **returns the object a write must mutate**, `settings.scope(t)` says whose it is. There is no per-target map in this store | §7.2/§9.2 put `render` on the clip and on `OverlapParams`; a second copy here would be the one that drifts |
-| the M5 seam | `settings.attach(source: TargetSettingsSource)`. Until M5 attaches one, every target resolves to `session.defaults` and `scope()` returns `"session"` | M4 and M5 are siblings (§12); neither may import the other's store |
+| the M5 seam | `settings.attach(source: TargetSettingsSource)`. Until one is attached, every target resolves to `session.defaults` and `scope()` returns `"session"`. **Wired in production by M7 T9's `App.svelte`** — `settings.attach(arrangement.settingsSource)`, the source being M5 T1's (reconcile pass 2026-09-25) | M4 and M5 are siblings (§12); neither may import the other's store |
 | σ max | `sigmaMaxFor(a2a: A2AState \| null)` in `lib/sampling/sigmaMax.ts`, **not** a field of `ScheduleSpec`. It takes the clip's A2A block, not a `Target` — the store that maps a target to its clip is M5's, and this module must not depend on it | WINTERMUTE 2026-09-17 |
 | `/schedule` request | `{steps, duration, sigma_max, sampler_type, schedule}` — `duration` is **required**. `schedule` and `sampler_type` are **sent but ignored by today's server**, exactly like the response's missing fields: M3 adds them | the model shape's dist shift is length-dependent, and sending the full body now means M3 lands without a client change |
 | `RenderSettings.duration_sec` | §4.5 LENGTH lives in the **per-target settings**, not in the tab's own state. Range 1–184 (`RANGES.length_sec`, `LENGTH_CAP_SEC`); `BASE_DEFAULTS.duration_sec` = `POST_DEFAULTS.duration_sec` = **47.556** (T=512 exactly). **Wire name is `duration`** on both `/generate` and `/schedule`. Ignored on an A2A target, where the clip supplies the length | Added to M1 by WINTERMUTE on 2026-09-21 in answer to this milestone's own finding, because §9.3 says a `render` preset recalls every txt2audio parameter and the length a render was made at is one of them. T9's `ModelStageColumn` still takes `{length, onLength}` rather than touching the store, so that T10 is the single owner reading it and writing it back |
@@ -97,13 +97,37 @@ every stated gate:
 |---|---|---|---|
 | 1 settings store and the M5 seam | 17 | 7 `SigmaGraph.svelte` | 15 |
 | 2 sampler availability, LatCH forces Euler | 13 | 8 target bar | 16 |
-| 3 schedule validation, flat-plateau, sigma max | 21 | 9 prompt + model stage columns | 21 |
-| 4 `/schedule` client | 26 | 10 sigma column + tab assembly | 21 |
+| 3 schedule validation, flat-plateau, sigma max | 21 | 9 prompt + model stage columns | 22 |
+| 4 `/schedule` client | 26 | 10 sigma column + tab assembly | 22 |
 | 5 CFG interval conversion | 21 | 11 ADVANCED SAMPLING module | 18 |
 | 6 sigma graph geometry | 17 | 12 presets, Playwright, self-review | 27 |
 
 Task 3's gate is cumulative (34 = Task 2's 13 plus its own 21). Task 12's section holds 28 `it(`
-blocks, one of which replaces a test in Task 8's suite rather than adding one of its own.
+blocks, one of which replaces a test in Task 8's suite rather than adding one of its own. **236
+`it()` blocks in all** (recounted by the reconcile pass below; the table had Task 10 at 21, its own
+gate and body say 22).
+
+### Reconcile pass 2026-09-25
+
+FLATLINE's reconcile pass over the M4 defects found while writing M7 (M7 plan Open questions 2,
+19, 20, 32; FLATLINE → WINTERMUTE DM of 2026-09-25, §3):
+
+- **`confirmStage` is now blocked during a session load** (M7 Open questions 32). T1's store gains
+  the pair `stageLocked` (M7's `SessionController` holds it for a whole load/IMPORT) and
+  `stageRebuilding` (T9's `ModelStageColumn` holds it while its own rebuild runs); T9 offers no
+  STAGE switch while locked, and M7 refuses to start a load while a rebuild is in flight, so the
+  two never overlap in either order. One new T9 test (21 → 22).
+- **`settings.attach()` is wired in production — by M7 T9, not here.** It was called only in test
+  fixtures across M1/M4/M5. The source is M5's (`arrangement.settingsSource`, M5 T1, built from M1
+  types only so M5 still imports nothing of M4); the one `settings.attach(arrangement.settingsSource)`
+  call is in M7 T9's `App.svelte`, because M7 is the first plan that depends on both M4 and M5 and
+  §12 keeps M4 and M5 from importing each other. M4's code does not change.
+- **ADVANCED SAMPLING's `a2a` prop and lit dot are wired — by M7 T9 Step 5**, the same step that
+  already passes `latch`. `RightPaneModules.svelte` needs both M4's `settings` and M5's
+  `arrangement`, so it is edited once, in M7. `sampling: settings.current(view.selection)` lights
+  the dot. Known limit, not fixed: M1's `litModules` compares sampling against `BASE_DEFAULTS`, so
+  under POST an untouched session lights it (flagged in M7 Open questions 19).
+- Status table corrected (Task 10 was 21, is 22; Task 9 21 → 22).
 
 Three things an implementing agent should know before starting:
 
@@ -134,7 +158,7 @@ The one decision worth understanding before writing it: **this store does not ow
 - Consumes from `src/lib/forge/types.ts` (M1 T3): `RenderSettings`, `ScheduleSpec`, and
   `Target = { kind: "none" } | { kind: "clip"; id: string } | { kind: "overlap"; key: string }`.
 - Consumes from `src/lib/forge/defaults.ts` (M1 T4): `BASE_DEFAULTS`, `POST_DEFAULTS`, `cloneRenderSettings(s: RenderSettings): RenderSettings` (a deep copy — nothing may share a `schedule` object).
-- Produces, from `src/lib/stores/settings.svelte.ts`: types `ModelStage = "POST" | "BASE"`, `Objective = "rf_denoiser" | "rectified_flow"`, `SettingsScope = "session" | "clip" | "overlap"`, `TargetSettingsSource`; constants `STAGE_BACKBONE`, `STAGE_OBJECTIVE`, `STAGE_FIELDS`; class `SettingsStore` with fields `defaults`, `stage`, `ckptPath`, getters `objective`, `backboneId`, `cfgDisabled`, and methods `attach`, `detach`, `scope`, `current`, `editable`, `patch`, `patchSchedule`, `resetSampling`, `setStage`, `effectiveCfg`; and the singleton `settings`.
+- Produces, from `src/lib/stores/settings.svelte.ts`: types `ModelStage = "POST" | "BASE"`, `Objective = "rf_denoiser" | "rectified_flow"`, `SettingsScope = "session" | "clip" | "overlap"`, `TargetSettingsSource`; constants `STAGE_BACKBONE`, `STAGE_OBJECTIVE`, `STAGE_FIELDS`; class `SettingsStore` with fields `defaults`, `stage`, `ckptPath`, `stageLocked`, `stageRebuilding` (the stage-lock pair, reconcile pass 2026-09-25 — set by M7's SessionController and by T9's `ModelStageColumn` respectively), getters `objective`, `backboneId`, `cfgDisabled`, and methods `attach`, `detach`, `scope`, `current`, `editable`, `patch`, `patchSchedule`, `resetSampling`, `setStage`, `effectiveCfg`; and the singleton `settings`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -409,6 +433,18 @@ export class SettingsStore {
 
   /** Set from `/info`; displayed by the top bar, carried in the project JSON (9.2). */
   ckptPath = $state<string | null>(null);
+
+  /**
+   * Set while something else owns the session-level stage: M7's SessionController holds it for
+   * the whole of a session load or IMPORT (M7 plan, Task 9). While it is set, T9's MODEL STAGE
+   * offers no switch, so a rebuild can never finish mid-load and `setStage` over the defaults the
+   * load just applied (reconcile pass 2026-09-25; M7 Open questions 32).
+   */
+  stageLocked = $state(false);
+
+  /** True while T9's own POST/BASE rebuild is in flight. M7 refuses to START a load meanwhile, so a
+   *  stage switch and a session load never overlap in either order. */
+  stageRebuilding = $state(false);
 
   #source: TargetSettingsSource | null = null;
 
@@ -3333,7 +3369,7 @@ that. The clamp to `LENGTH_CAP_SEC` and the store write both live one level up.
 - Consumes from `src/lib/forge/api.ts` (M1 T5): `forgeApi.setBackbone(id: string): Promise<{ ok: true; active: string; objective: string; rebuild_sec: number; warnings: string[] }>`, `ForgeApiError { status: number; message: string }`.
 - Consumes from `src/lib/actions/dragScale.ts` (M1 T8): `use:dragScale={{ min, max, int, value, onValue }}`.
 - Consumes from `src/lib/help/strings.ts` (M1 T14): `HELP: Record<HelpId, string>`, ids `prompt`, `negativePrompt`, `modelStagePost`, `modelStageBase`, `steps`, `cfg`, `length`, `seed`, `seedRandom`.
-- Consumes from `src/lib/stores/settings.svelte.ts` (M4 T1): the singleton `settings` with `stage: "POST" | "BASE"`, `cfgDisabled: boolean`, `current(t: Target): RenderSettings`, `patch(t: Target, p: Partial<RenderSettings>): void`, `setStage(s: "POST" | "BASE"): void`; type `ModelStage = "POST" | "BASE"`; constant `STAGE_BACKBONE: Record<ModelStage, string>` (`{ POST: "medium", BASE: "medium-base" }`).
+- Consumes from `src/lib/stores/settings.svelte.ts` (M4 T1): the singleton `settings` with `stage: "POST" | "BASE"`, `cfgDisabled: boolean`, `stageLocked: boolean` (read: no switch offered while set), `stageRebuilding: boolean` (written: true while this column's rebuild runs), `current(t: Target): RenderSettings`, `patch(t: Target, p: Partial<RenderSettings>): void`, `setStage(s: "POST" | "BASE"): void`; type `ModelStage = "POST" | "BASE"`; constant `STAGE_BACKBONE: Record<ModelStage, string>` (`{ POST: "medium", BASE: "medium-base" }`).
 - Consumes from `src/lib/sampling/scheduleRules.ts` (M4 T3): `RANGES` (this task reads `steps`, `cfg_scale`, `length_sec`, `seed`, each `{min, max, int?}`), `POST_CFG_NOTE`, `flatPlateauNote(spec: ScheduleSpec, samplerType: string | null): string | null`.
 - Produces, from `latent-forge/src/ui/prompt/modelStage.ts`: `randomSeed(rand?: () => number): number` (a fresh integer within `RANGES.seed`), `stageConfirmMessage(next: "POST" | "BASE"): string` (spec 5.3's exact wording, `"rebuilds the model — continue?"`, the same for both directions).
 - Produces, from `latent-forge/src/ui/prompt/PromptColumn.svelte`: props `{ target: Target }`. Reads and writes `settings.current(target).prompt` / `.negative_prompt` through `settings.patch(target, {...})` on every input.
@@ -3466,6 +3502,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   settings.detach();
+  settings.stageLocked = false;
+  settings.stageRebuilding = false;
   cleanup();
   vi.restoreAllMocks();
 });
@@ -3607,6 +3645,34 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
     await fireEvent.click(getByTestId("stage-confirm-continue"));
     await waitFor(() => expect(getByTestId("stage-error").textContent).toBe("render server unreachable"));
     expect(settings.stage).toBe("BASE");
+  });
+
+  it("offers no switch while settings.stageLocked, and flags stageRebuilding while its own rebuild runs", async () => {
+    // M7's SessionController holds stageLocked for a whole session load and refuses to START one
+    // while stageRebuilding is set, so a rebuild can never setStage over a load's defaults
+    // (reconcile pass 2026-09-25; M7 Open questions 32).
+    let finish!: () => void;
+    type Rebuilt = Awaited<ReturnType<typeof forgeApi.setBackbone>>;
+    const setBackbone = vi.spyOn(forgeApi, "setBackbone").mockReturnValue(new Promise<Rebuilt>((resolve) => {
+      finish = () => resolve({ ok: true, active: "medium", objective: "rf_denoiser", rebuild_sec: 9.4, warnings: [] });
+    }));
+    const { getByTestId, queryByTestId } = render(ModelStageColumn, {
+      props: { target: CLIP, length: 30, onLength: () => {} },
+    });
+    settings.stageLocked = true;
+    await tick();
+    expect((getByTestId("stage-post") as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(getByTestId("stage-post"));
+    expect(queryByTestId("stage-confirm")).toBeNull();   // clickStage refuses too, disabled or not
+    settings.stageLocked = false;
+    await tick();
+    await fireEvent.click(getByTestId("stage-post"));
+    await fireEvent.click(getByTestId("stage-confirm-continue"));
+    expect(settings.stageRebuilding).toBe(true);
+    expect(setBackbone).toHaveBeenCalledTimes(1);
+    finish();
+    await waitFor(() => expect(settings.stage).toBe("POST"));
+    expect(settings.stageRebuilding).toBe(false);
   });
 });
 ```
@@ -3771,16 +3837,20 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
   let rebuilding = $state(false);
   let rebuildError = $state<string | null>(null);
 
+  // settings.stageLocked: a session load owns the stage (M7 SessionController) -- no switch is
+  // offered or started. settings.stageRebuilding: this column's rebuild is in flight -- M7 will
+  // not start a load until it clears. Together they keep a rebuild and a load from overlapping.
   function clickStage(next: ModelStage): void {
-    if (settings.stage === next || rebuilding) return;
+    if (settings.stage === next || rebuilding || settings.stageLocked) return;
     pendingStage = next;
     rebuildError = null;
   }
 
   async function confirmStage(): Promise<void> {
     const next = pendingStage;
-    if (next === null) return;
+    if (next === null || settings.stageLocked) return;
     rebuilding = true;
+    settings.stageRebuilding = true;
     try {
       await forgeApi.setBackbone(STAGE_BACKBONE[next]);
       settings.setStage(next);
@@ -3789,6 +3859,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
       rebuildError = e instanceof Error ? e.message : String(e);
     } finally {
       rebuilding = false;
+      settings.stageRebuilding = false;
     }
   }
 
@@ -3820,12 +3891,12 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
       <div class="buttons">
         <button
           type="button" class="stage-btn" class:on={settings.stage === "POST"}
-          data-testid="stage-post" data-help={HELP.modelStagePost} disabled={rebuilding}
+          data-testid="stage-post" data-help={HELP.modelStagePost} disabled={rebuilding || settings.stageLocked}
           onclick={() => clickStage("POST")}
         >POST</button>
         <button
           type="button" class="stage-btn" class:on={settings.stage === "BASE"}
-          data-testid="stage-base" data-help={HELP.modelStageBase} disabled={rebuilding}
+          data-testid="stage-base" data-help={HELP.modelStageBase} disabled={rebuilding || settings.stageLocked}
           onclick={() => clickStage("BASE")}
         >BASE</button>
       </div>
@@ -3857,7 +3928,7 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
   {#if pendingStage !== null}
     <div class="stage-confirm" data-testid="stage-confirm">
       <span>{stageConfirmMessage(pendingStage)}</span>
-      <button type="button" data-testid="stage-confirm-continue" disabled={rebuilding} onclick={confirmStage}>CONTINUE</button>
+      <button type="button" data-testid="stage-confirm-continue" disabled={rebuilding || settings.stageLocked} onclick={confirmStage}>CONTINUE</button>
       <button type="button" data-testid="stage-confirm-cancel" disabled={rebuilding} onclick={cancelStage}>CANCEL</button>
     </div>
   {/if}
@@ -4011,8 +4082,9 @@ export function stageConfirmMessage(next: "POST" | "BASE"): string {
 cd latent-forge && npx vitest run src/ui/prompt/__tests__/modelStage.test.ts src/ui/prompt/__tests__/PromptColumn.test.ts src/ui/prompt/__tests__/ModelStageColumn.test.ts && npm run check
 ```
 
-Expected: `Test Files  3 passed (3)` / `Tests  21 passed (21)` (5 in `modelStage.test.ts`, 4 in
-`PromptColumn.test.ts`, 12 in `ModelStageColumn.test.ts`), and `svelte-check found 0 errors and 0 warnings`.
+Expected: `Test Files  3 passed (3)` / `Tests  22 passed (22)` (5 in `modelStage.test.ts`, 4 in
+`PromptColumn.test.ts`, 13 in `ModelStageColumn.test.ts` — the stage-lock test is the reconcile
+pass's, 2026-09-25), and `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 5: Commit**
 

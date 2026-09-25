@@ -203,11 +203,22 @@ master-preset recall moved into the controller with post-fetch seq checks, injec
 guard unsaved work and overwrites, failed autosaves retry and PUTs chain per name, the controller
 tracks the server's real stage. Now **158 `it()` + 10 Playwright**, recounted mechanically.
 
-**Next action:** one batched DM to WINTERMUTE: the
-server-contract routes (`/forge/sessions`, `/forge/presets`, FILES), the seven M1/M4/M5 defects in
-the plan's Global Constraints and Open questions, and the two M1-level choices pass 2 left for him —
-FILM's default gain (server 1.75 vs M1's frozen 1.0, Open question 26) and the defaults kept after a
-failed rebuild (Open question 29).
+**2026-09-25 — W checked the contract (log 16:20) and one thing blocked:** LatCH must send the chain
+object (2 slots, nested `hparams` multipliers), mapped server-side by M8. **Reconcile pass done** across
+M1/M4/M5/M7: `chainRequest` replaces `resolveLatch`; FILM default 1.75 (W's decision); raw GET
+envelopes pinned; the M1/M4/M5 defects fixed at source (fetchAdapters `models`, one `ModuleShell` with
+a pinned lit dot, `view` not `viewStore`, T15 extends App, tab-button selector, `.notice`, M4 stage lock,
+M5 `settingsSource`, M5 Playwright selectors, SnapMode); M4/M5 wiring (`settings.attach`, `a2a`,
+`sampling`) placed in M7 T9 because §12 bars M4/M5 importing each other; and `recordedContract.test.ts`
+(4 `it.skipIf` tests that load only recorded fixtures). Counts: M1 180, M4 236, M5 172, M7 164 + 10 PW.
+
+**Next action:** (1) a narrow critic over the reconcile pass's new code — `chainRequest`, the M4 stage
+lock, `settingsSource`/`attach` wiring, the contract tests — never reviewed; (2) then M9's brief. **For W,
+next DM:** M2's `record_fixtures.py` records no session/preset routes (M7 OQ 35; M1's mock disagrees
+with the server exactly there); his "M2 Task 12" fixture recorder is Task 15. **For Kim/FLATLINE:**
+nobody owns rewiring the keyboard off the v1 `project` store; M1 contradicts itself on keeping the
+legacy Inspector/ServerPanel; no plan emits M5's `snap-select`; M1 T9 and T14 both create
+`HelpTooltip`; `litModules` lights ADVANCED SAMPLING on an untouched POST session.
 
 ## After M7 — M9 is last
 

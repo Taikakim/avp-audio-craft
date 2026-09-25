@@ -49,40 +49,34 @@ writers found and independently verified while researching it.**
 2. **An abort listener added after the signal already fired never runs.** Check `signal.aborted`
    first if a fetch (session load, in particular) can be superseded by a second click before it
    resolves.
-3. **Two M1 internal contradictions, already resolved for you — use the second reading in each
-   pair, do not re-derive:**
-   - **`ModuleShell` is declared twice and disagrees with itself.** Task 9's own code block takes
-     props `{label, open, ontoggle, lit, accent, help, children}` and emits `data-module={label}`;
-     M1's own Normative-names table and every real consumer (`RightPaneModules.svelte`, the frozen
-     Playwright e2e spec) assume props `{id, title, lit, children}`, self-driven off
-     `view.isModuleOpen(id)`/`view.toggleModule(id)`, emitting `data-module={id}`,
-     `data-module-toggle={id}`, `data-module-body={id}`. **Use the second version.** Both writers did.
-   - **The view store singleton is `view`, not `viewStore`.** Some of M1 Task 9-11's own `App.svelte`
-     code blocks import a `viewStore` binding that does not exist anywhere in the real module (Task
-     7's actual export is `export const view = new ViewStore();`). Import `view`.
-4. **`fetchAdapters()` (M1, `src/lib/forge/models.ts`) reads the wrong field and always resolves to
-   `[]` against the real server.** Verified directly against `eval/explorer_render_server.py:975-993`:
-   the real `/models` route returns `{"ok", "count", "models": [...], "stale_root_ids"}` — the array
-   is under `models`, never `ckpts`. M1's own mock test seeds `{ok:true, ckpts:[...]}`, so it stays
-   green and never catches this. **Do not copy the bug forward** — this milestone's own
-   `fetchFilmCkpts()`/`fetchSlots()` read the real fields. `fetchAdapters()` itself is not edited
-   here (it is M1's, frozen) but is flagged to WINTERMUTE; if it is fixed before this milestone is
-   implemented, LORA/DORA's model select gets adapters for the first time as a side effect, which is
-   the point.
-5. **M1's own Playwright layout spec clicks the wrong element.** Its "each bottom tab opens" test
-   clicks `[data-tab="${id}"]` (M1 plan line 8335); the tab BUTTONS carry
-   `data-testid="bottom-tab-{id}"` (M1 plan line 6134) and no `data-tab` at all. The only element
-   with a `data-tab` attribute is the tab BODY, `data-tab={tab}` (M1 plan line 6143), so the locator
-   matches the current tab's body and nothing else — it fails for every non-current tab, starting
-   with the very first iteration (`chroma`, while the default tab is `prompt`). **That test is red
-   before and after this milestone**; T10's whole-suite gate states it as the one expected failure.
-   M4's own later e2e fragment already clicks the real attribute. This milestone's own Playwright
-   specs use the real attribute.
-6. **`settings.attach()` (M4) is never called anywhere outside a test file, across M1, M4 and M5.**
-   Verified by a full grep of both plans. This means PROMPT + SIGMA / ADVANCED SAMPLING may currently
-   always resolve to `session.defaults`, never a clip's own `render` settings — a real M4/M5
-   integration gap this milestone does not need to close (clip/overlap `render` fields serialise
-   independently of whether `settings` reads them) but that is flagged below for WINTERMUTE.
+3. **Two M1 internal contradictions — fixed at source by the reconcile pass (2026-09-25); M1 now
+   reads the way this milestone uses it:**
+   - **`ModuleShell` has one declaration**: M1 T9's code is the Normative `{id, title, lit,
+     children}` version, self-driven off `view.isModuleOpen(id)`/`view.toggleModule(id)`, emitting
+     `data-module={id}`, `data-module-toggle={id}`, `data-module-body={id}` and the now-pinned lit
+     dot `data-module-dot={id}` with `data-lit="true" | "false"` (M1 T9's Interfaces). T9's
+     `rightPaneModules.test.ts` reads that dot directly; the `ModuleShellProbe` it used to mock
+     `ModuleShell` with is gone (Open questions 27).
+   - **The view store singleton is `view`** (`export const view = new ViewStore();`, M1 T7). M1
+     T9-T11's `App.svelte` blocks import `{ view }` now; there is no `viewStore` binding anywhere.
+4. **`fetchAdapters()` (M1, `src/lib/forge/models.ts`) reads `models`** — fixed at source by the
+   reconcile pass. The real `/models` route returns `{"ok", "count", "models": [...],
+   "stale_root_ids"}` (`eval/explorer_render_server.py`, the `/models` route); M1 read `ckpts` and
+   its own mock seeded `ckpts`, so it agreed with itself and resolved `[]` against the real server.
+   This milestone's `fetchFilmCkpts()`/`fetchSlots()` read the real fields, and **Task 10's
+   recorded-response contract test** checks `fetchAdapters()` against the recorded
+   `models_adapters.json` — the kind of mock/server disagreement WINTERMUTE asked every route this
+   milestone touches to be tested for. LORA/DORA's model select now gets adapters.
+5. **M1's Playwright tab test is fixed at source** (reconcile pass): it clicks
+   `[data-testid="bottom-tab-<id>"]` and checks the tab body's `data-tab`, instead of clicking
+   `[data-tab="<id>"]` (the body) and waiting for a `[data-tab-body]` M1 never emits. Task 10's
+   whole-suite gate therefore expects **no** failure. This milestone's own specs click the same
+   buttons.
+6. **`settings.attach()` (M4) is wired in production by this milestone** (reconcile pass). It was
+   called only in test fixtures across M1, M4 and M5, so PROMPT + SIGMA / ADVANCED SAMPLING always
+   resolved to `session.defaults`. M5 T1 now provides the source (`arrangement.settingsSource`,
+   never seeding) and Task 9 Step 4's `App.svelte` attaches it; M7 does it because it is the first
+   plan that depends on both M4 and M5, which §12 keeps from importing each other.
 7. **Serialise `$state` with `$state.snapshot`, never `structuredClone`.** `structuredClone` of a
    `$state` proxy (`arrangement.lanes`, `.clips`, `.mix`, `.master`, an overlap's params,
    `settings.defaults`) throws `DataCloneError` (verified by the critic on Svelte 5.57.0). M5's own
@@ -167,14 +161,16 @@ still literally `null` and stays `null` here (see Open questions). Task 9 Step 5
 constant with a `$derived` over `chain` (T2's expression), `master` (T4's) and `overlap` (T7's, read
 through the non-seeding `peekOverlapParams`), makes `lit` a `$derived` too, and passes the active
 lane's LatCH state to `<AdvancedSampling latch=…>` (M4's own handoff, M4 plan line 4741) — only the
-slots whose head `/info.latch_heads` lists, so it agrees with `resolveLatch` (critic pass 2 #8). The
-full code is in that step.
+slots whose head `/info.latch_heads` lists, so it agrees with `chainRequest` (critic pass 2 #8). The
+same step also carries M4's other two handoffs, moved here by the reconcile pass (2026-09-25):
+`sampling: settings.current(view.selection)` (Open questions 19) and `<AdvancedSampling a2a=…>`
+(Open questions 20). The full code is in that step.
 
 ## The `data-*` / `data-testid` / `HELP` contract
 
 | selector / id | owner | note |
 |---|---|---|
-| `[data-module-toggle="lane-chain"\|"master-chain"\|"files"\|"overlap"]`, `[data-module-body=...]` | pre-existing (M1 T9/T12) | not re-emitted by this milestone — the modules mount inside them |
+| `[data-module-toggle="lane-chain"\|"master-chain"\|"files"\|"overlap"]`, `[data-module-body=...]`, the lit dot `[data-module-dot=...]` + `data-lit` | pre-existing (M1 T9/T12; the dot pinned by the reconcile pass 2026-09-25) | not re-emitted by this milestone — the modules mount inside them |
 | `HELP.modulePreset`, `.latchHead`, `.latchTargetKind`, `.latchTargetValue`, `.latchWeight`, `.latchStartPct`, `.latchEndPct`, `.latchRho`, `.latchMu`, `.latchGamma`, `.latchMeanIter`, `.latchLogNorms`, `.bungeeSemitones` | pre-existing (M1 T14) | LANE CHAIN, T2 |
 | `HELP.latchToggle`, `.filmToggle`, `.filmPreset`, `.filmCkpt`, `.filmScale`, `.loraToggle`, `.loraPreset`, `.loraModel`, `.loraScale`, `.bungeeToggle`, `.bungeePreset`, `.modulePresetSave`, `.modulePresetDelete` (13); `.filmTarget` pre-existing (M1 `NEW_STRINGS`) | **new, T2** | LANE CHAIN; none of the 13 existed anywhere before |
 | `data-testid="latch-toggle"`/`"film-toggle"`/`"lora-toggle"`/`"bungee-toggle"`, `"<level>-preset-save"`, `"<level>-preset-delete"` for `level` ∈ `latch`/`film`/`lora`/`bungee` | **new, T2** | LANE CHAIN |
@@ -190,12 +186,15 @@ full code is in that step.
 
 ## The numbers §5.5 and §9.x pin — copy them exactly, do not re-derive
 
-- **LatCH mapping** (verbatim): `gain_k = head.default_gain · weight_k`; `rho = ρ·gain_0`,
-  `mu = μ·gain_0`, `gamma`/`n_iter`/`log_norms` passed through unmodified. A slot whose head is
-  `"none"` or whose weight is 0 is **omitted from the request entirely**, not sent at zero. A slot
-  whose head is not in `/info.latch_heads` is treated the same way (inactive, omitted): the real
-  `resolve_latch` raises `unknown latch head` for any name it does not know
-  (`eval/explorer_render_server.py:602-604`), so sending it would fail the whole job.
+- **LatCH mapping — the SERVER's, not the client's** (WINTERMUTE 2026-09-25; M8 `parse_chain` →
+  `chain_to_request`, M8 plan lines 331-395). §5.5's `gain_k = head.default_gain · weight_k`,
+  `rho = ρ·gain_0`, `mu = μ·gain_0` is computed server-side. The client sends the chain object
+  itself, exactly `{latch_on, slots:[s0, s1], hparams:{rho, mu, gamma, n_iter, log_norms}, film_on,
+  film, lora_on, lora, bungee_on, semitones}` (Task 1's `chainRequest`): **always two slots** (one is
+  a 400), `rho`/`mu` the raw **0–30 multipliers** (pre-multiplied values 400 or get squared), an
+  inactive slot sent in place as `head: "none"` or `weight: 0` (the server drops it), a head
+  `/info.latch_heads` does not list rewritten to `"none"` in place (the server 400s on an unknown
+  head with weight > 0, and W keeps that), and `lora.slot: null` beside `ckpt_path`.
 - Slot ranges: TARGET over `[head.slider_min, head.slider_max]` starting at `head.value_default`
   (a **60–200 BPM** slider when the kind is `beat_grid`); WEIGHT 0–50 (1), START%/END% 0–1
   (0/0.6); ρ 0–30 (1), μ 0–30 (1), γ 0–20 (0.3), MEAN ITER 1–80 (4). FILM: SCALE 0–2, TARGET 0–16
@@ -221,19 +220,22 @@ full code is in that step.
    already declared and defaulted by M1; every store field either already exists or is the one
    pre-declared addition (`arrangement.mix`/`.master`); the entire API client already exists.
 2. **Several real defects in already-approved milestones (M1, M4, M5) were found while researching
-   and writing this plan, verified independently, none of them M7's to fix.** They are listed in
-   Global Constraints (`fetchAdapters`'s wrong field, the stale Playwright locator, `ModuleShell`'s
-   duplicate declaration, `viewStore`/`view`) and in Open Questions (`settings.attach` never called
-   in production, M5's Normative table wrongly naming Task 7 as the v1-store swap point, the real
-   v1 `SnapMode` spelling, the TopBar MODEL select never wired to `settings`). All are flagged for
-   WINTERMUTE as one batch at assembly, per his own instruction after M6.
+   and writing this plan, verified independently.** They were flagged to WINTERMUTE as one batch at
+   assembly; W handed them back (2026-09-25), and **the reconcile pass fixed them at their source
+   plans** — `fetchAdapters`'s wrong field, the stale Playwright locator, `ModuleShell`'s duplicate
+   declaration, `viewStore`/`view`, M1 T15's App replacement, `.notice`, M4's unblocked
+   `confirmStage`, M5's Normative table and `SnapMode` claim, M5's Playwright selectors. The M4/M5
+   handoffs that need both stores (`settings.attach`, ADVANCED SAMPLING's `a2a` prop and lit dot)
+   landed here, in Task 9, because M7 is the first plan that depends on both. Still open: the TopBar
+   MODEL select never wired to `settings` (Open questions 7), and the v1 store's keyboard rewire,
+   which no plan owns (Open questions 3). See "Reconcile pass 2026-09-25" below.
 
 ---
 ## File structure
 
 | file | what it is |
 |---|---|
-| `latent-forge/src/lib/chains/latch.ts` | `resolveLatch`, `chainIsIdle`, `fetchLatchHeads` (T1) |
+| `latent-forge/src/lib/chains/latch.ts` | `chainRequest` (the wire chain M8 takes), `chainIsIdle`, `fetchLatchHeads` (T1) |
 | `latent-forge/src/test-setup.ts`, `latent-forge/vitest.config.ts` | **new / modified**: registers `@testing-library/jest-dom/vitest` through a `setupFiles` entry (T2) |
 | `latent-forge/src/lib/forge/models.ts` | **modified**: adds `fetchFilmCkpts`, `fetchSlots` beside the existing `fetchAdapters` (T2) |
 | `latent-forge/src/lib/chains/modulePresets.ts` | the four module-preset slices (`latch`/`film`/`lora`/`bungee`): payload builder + in-place recall, and `durableChain` (a plain copy with the transient `lora.slot` cleared) (T2) |
@@ -256,9 +258,9 @@ full code is in that step.
 | `latent-forge/src/lib/forge/autosave.ts` | the 2 s debounce, and the snapshot-gated session autosave that never writes before a load or an explicit SAVE (T9) |
 | `latent-forge/src/ui/shell/TopBar.svelte` | **modified**: real SESSION load/save with an `unsaved` option (the select keeps the committed name until a load succeeds), a `loading <name>…` note with SAVE disabled mid-load, IMPORT (v1/v2 project file), MASTER PRESET load/save (that select also snaps back until a recall applies), M1 T15's temporary SAVE/LOAD buttons removed (T9) |
 | `latent-forge/src/ui/shell/__tests__/topBar.test.ts` | **modified** (M1 T10's file): its "SAVE disabled until M7" assertion flips (T9) |
-| `latent-forge/src/App.svelte` | **modified**: hands session load/save/import and master preset recall/save to `SessionController`, the autosave `$effect`, M1's `sessions[0]` auto-select removed; its required starting state is stated in T9 Step 4 (T9) |
-| `latent-forge/src/ui/shell/RightPaneModules.svelte` | **modified**: live `litModules` snapshot, `<AdvancedSampling latch=…>` with registry-known slots only (T9) |
-| `latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` | **test-only**: a `ModuleShell` double with exactly M1's Normative props, so `rightPaneModules.test.ts` asserts the `lit` value passed rather than an unpinned dot selector (T9) |
+| `latent-forge/src/App.svelte` | **modified**: hands session load/save/import and master preset recall/save to `SessionController`, the autosave `$effect`, M1's `sessions[0]` auto-select removed, and `settings.attach(arrangement.settingsSource)` — M4's seam, wired in production for the first time (T9) |
+| `latent-forge/src/ui/shell/RightPaneModules.svelte` | **modified**: live `litModules` snapshot (including `sampling`), `<AdvancedSampling latch=… a2a=…>` with registry-known slots only (T9) |
+| `latent-forge/src/lib/forge/__tests__/recordedContract.test.ts` | **new, T10**: one contract test per route this milestone touches that M2 T15 records, against the RECORDED fixture (skipped, with the reason, until recorded) |
 | `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` | **modified** (M4 T10's file): passes the active lane's LatCH slots to `<SigmaColumn slots=…>` (T9) |
 | `latent-forge/tests/sessionsFilesOverlap.spec.ts` | Playwright, Writer B's half (T10) |
 | `docs/latent-forge/extract_help.mjs` | **modified**: `NEW_STRINGS` entries appended by T2, T4, T5, T6, T9, `help:extract` re-run by each |
@@ -275,17 +277,19 @@ separately (Playwright specs don't use `it(`):
 
 | task | `it()` | task | `it()` |
 |---|---|---|---|
-| 1 `latch.ts` | 14 | 6 FILES HELP ids | 8 |
+| 1 `latch.ts` (`chainRequest`) | 14 | 6 FILES HELP ids | 8 |
 | 2 `LaneChain.svelte` + `modulePresets` + `models` | 28 (5 + 3 + 20) | 7 `OverlapInpaint.svelte` | 16 (8 + 8) |
 | 3 `mixMath`/`signalPath`/arrangement | 19 (6 + 10 + 3) | 8 v1→v2 converter | 13 |
-| 4 `MasterChain.svelte` | 6 | 9 sessions/preset/autosave/wiring | 46 (3 + 8 + 9 + 14 + 2 + 7 + 3) |
-| 5 `MixSignalPath.svelte` + Playwright | 8 (+ 4 Playwright) | 10 Playwright + self-review | 0 (+ 6 Playwright) |
+| 4 `MasterChain.svelte` | 6 | 9 sessions/preset/autosave/wiring | 48 (3 + 8 + 9 + 15 + 2 + 7 + 4) |
+| 5 `MixSignalPath.svelte` + Playwright | 8 (+ 4 Playwright) | 10 Playwright + contract tests + self-review | 4 (+ 6 Playwright) |
 
-**158 `it()` blocks across nine vitest-bearing tasks, plus 10 Playwright `test()`s (4 in
-`tests/chains.spec.ts`, 6 in `tests/sessionsFilesOverlap.spec.ts`) — 168 total.** (Before critic
-pass 1: 115 + 9 = 124; before critic pass 2: 132 + 10 = 142; before critic pass 3: 147 + 10 = 157.)
-Counted mechanically after pass 3: `it(` at exactly two-space indent per `### Task N` section, and
-top-level `test(` per task; every task's `Tests N passed (N)` gate matches. M1's `strings.test.ts`
+**164 `it()` blocks across all ten tasks, plus 10 Playwright `test()`s (4 in
+`tests/chains.spec.ts`, 6 in `tests/sessionsFilesOverlap.spec.ts`) — 174 total.** (Before critic
+pass 1: 115 + 9 = 124; before critic pass 2: 132 + 10 = 142; before critic pass 3: 147 + 10 = 157;
+before the reconcile pass: 158 + 10 = 168.) Counted mechanically after the reconcile pass: `it(` at
+exactly two-space indent per `### Task N` section, and top-level `test(` per task; every task's
+`Tests N passed (N)` gate matches. Task 10's 4 are `it.skipIf` contract tests, reported as skipped
+until M2 T15 has recorded their fixtures. M1's `strings.test.ts`
 total goes 87 → **112** across Tasks 2, 4, 5, 6 and 9 (passes 2 and 3 added no HELP string).
 
 **Critic pass 1 applied (2026-09-24) — see "Critic pass 1" below.** 31 findings, 12 blocking, all 31
@@ -294,7 +298,10 @@ applied after each was checked against its cited source. **Critic pass 2 applied
 14 applied. **Critic pass 3 applied (2026-09-25) — see "Critic pass 3" below.** 12 findings, all in
 Task 9, 1 blocking; all 12 applied. Every pass has found its blocking bug in code the previous fix
 round had just added, so the pass-3 additions (the rebuild chain, the PUT chain, the prompts) are
-where a fourth look would start.
+where a fourth look would start. **Reconcile pass applied (2026-09-25) — see "Reconcile pass
+2026-09-25" below:** WINTERMUTE's contract answers, and the M1/M4/M5 defects fixed at source; the
+new code it added (`chainRequest`, the stage lock, the M4/M5 wiring, the contract tests) has had no
+critic yet.
 
 ### Critic pass 1 (2026-09-24)
 
@@ -324,7 +331,8 @@ all 31 held (the two unconfirmed ones were confirmed on inspection). What change
    in the SESSION select.
 10. **T10's Playwright gates were wrong both ways.** `beforeEach` PUTs a real session into the
     mock's (empty) store; Step 2 is an honest verification run (`6 passed`); Step 3 expects
-    `1 failed, 16 passed`, the failure being M1's own `each bottom tab opens`.
+    `1 failed, 16 passed`, the failure being M1's own `each bottom tab opens` (`17 passed` since the
+    reconcile pass fixed that test at source).
 11. **Unmocked `forgeApi.info()`.** Stubbed in T2's `beforeEach`; every fetch in T2's/T4's effects
     `.catch()`es.
 12. **Autosave missed in-place edits and overwrote an unloaded session at launch.** Replaced by
@@ -492,21 +500,89 @@ same stage reconcile as #6. The mid-load indicator's `class="notice"` has no M1 
 removed span had none either). Test counts moved 147 → 158 `it()` (T9 +11: autosave +1,
 projectSerializer +1, sessionController +8, topBarSessions +1); Playwright unchanged at 10.
 
+### Reconcile pass 2026-09-25
+
+FLATLINE's one reconcile pass after WINTERMUTE's contract check (`flatline.wintermute.log`,
+2026-09-25 16:20 — authoritative for the server contract) handed the M1/M4/M5 defects back. Each
+claim was re-checked against its source first (M8's `parse_chain`/`chain_to_request`, M2 T15's
+`record_fixtures.py`, `eval/explorer_render_server.py`, `sa3-studio/src/lib/musictime.ts`, the
+M1/M4/M5 plan text). Where W's reply and a source disagreed, the source won: the fixture recorder
+is M2 **Task 15**, not Task 12. What changed:
+
+**A — blocking: the lane chain goes to the server as the chain object.** `resolveLatch` (client-side
+§5.5 gains, active slots only) is replaced by Task 1's `chainRequest`, which sends exactly
+`{latch_on, slots:[s0, s1], hparams:{rho, mu, gamma, n_iter, log_norms}, film_on, film, lora_on,
+lora, bungee_on, semitones}`: two slots always, `rho`/`mu` as the raw 0–30 multipliers, an unknown
+head rewritten to `"none"` in place, `lora.slot: null`, built key by key because `parse_chain`
+400s on unknown keys. No display used the gain math, so it is gone from the client. Task 1 keeps
+14 tests (the 8 mapping tests rewritten for the new shape); Open questions 1 resolved; the §5.5
+numbers block, Task 2's Interfaces and Task 9's comments follow.
+
+**B — FILM default 1.75** (W's decision): M1 T4's `CHAIN_DEFAULTS.film.gain`, its test, M1 T6's
+`handmade-info.json`, Task 2's `/info` mock, the SCALE comment and `HELP.filmScale`. Open questions
+26 and Known incomplete 4 resolved.
+
+**C — envelope asymmetry:** M1 T5's `request()` never unwrapped or required `ok`, which is right —
+`GET /forge/sessions/{name}` and `GET /forge/presets/{level}/{name}` are raw. M1 now documents and
+tests it; this plan's consumers already read both raw (restated in Task 2's and Task 9's
+Interfaces). `updated` is epoch seconds: nothing here displays it; App's one write uses seconds.
+
+**D — M1/M4/M5 defects, at source:** M1 — `fetchAdapters` reads `models`; one `ModuleShell` with
+its lit dot pinned; `view` everywhere; T12 and T15 say what happens to App (T15 extends it); the
+tab test clicks the tab buttons; `.notice` has a rule; the master-preset SAVE assertion stays in M1
+with this plan's T9 owning the flip. M4 — `stageLocked`/`stageRebuilding` stop a STAGE rebuild and a
+session load overlapping (Task 9's controller holds the lock and refuses a load mid-rebuild). M5 —
+Normative table corrected (no Task 7 swap point; `SnapMode` spelling), Playwright selectors match
+the markup, and `arrangement.settingsSource` is the M4 seam's source. `settings.attach` and
+ADVANCED SAMPLING's `a2a` prop and lit dot land in Task 9 here, because this is the first plan that
+depends on both M4 and M5. This plan's workarounds for them (the `ModuleShellProbe`, the "App's
+required starting state" restore, the red-test gate, Global Constraints 3-6's "not ours to fix")
+are removed; Open questions 2-4, 8, 9, 19-21, 27, 32 resolved.
+
+**E — contract tests against recorded responses:** Task 10 Step 4, `recordedContract.test.ts` —
+one test each for `/info`, `/models`, `/slots` and `/forge/files`, loading the **recorded** fixture
+through M1 T6's `preferRecorded` and skipping, with the reason in the title, until M2 T15 has
+recorded it. M2 records no session or preset route, so those have no test (Open questions 35).
+
+Test counts moved 158 → 164 `it()` (T9 +2: sessionController +1, rightPaneModules +1; T10 +4);
+Playwright unchanged at 10. The code this pass added has not been through a critic.
+
 ---
 
-### Task 1: `src/lib/chains/latch.ts` — LatCH request mapping (pure)
+### Task 1: `src/lib/chains/latch.ts` — the lane-chain request (pure)
 
-**WHY.** Spec §5.5's mapping from a lane's `LaneChain` to the server's LatCH request is the one
-piece of real math LANE CHAIN needs, and §8.1 S4's idle note (`chain idle — no A2A clip in lane`)
-depends on knowing whether a chain has anything on at all. Both are pure functions of data already
-declared (M1 T3's `LaneChain`/`LatchSlot`), so they are written and hand-verified before any Svelte
-component touches them — Task 2's component only wires fields to `arrangement.lanes[n].chain` and
-never re-derives this arithmetic. `fetchLatchHeads()` lives in the same file because it produces
-the exact `Record<string, LatchHeadInfo>` shape `resolveLatch` consumes, even though — unlike
-`resolveLatch`/`chainIsIdle` — it is not pure (it calls `forgeApi.info()`); it is co-located for
-that reason, not because this file stops being "the pure module." Both Task 2 (LaneChain.svelte)
-and Task 4 (MasterChain.svelte) import `fetchLatchHeads` and `LatchHeadInfo` from here so the head
-list is fetched once per shape, not redeclared per component.
+**WHY.** A lane's `LaneChain` goes to the server as **the chain object itself**: the server does
+spec §5.5's gain mapping (`gain_k = head.default_gain · weight_k`, `rho = ρ·gain_0`, `mu = μ·gain_0`)
+server-side, in M8's `parse_chain` → `chain_to_request` (M8 plan lines 331-395; WINTERMUTE,
+2026-09-25, `flatline.wintermute.log`). The client therefore sends exactly
+`{latch_on, slots:[s0, s1], hparams:{rho, mu, gamma, n_iter, log_norms}, film_on, film, lora_on,
+lora, bungee_on, semitones}` and does **no** gain arithmetic: `rho`/`mu` are the 0–30 multipliers the
+sliders hold (`parse_chain` range-checks them at 0..30, so a pre-multiplied value either 400s or is
+squared), `slots` always has **exactly two** entries (`parse_chain` 400s on any other length), and an
+inactive slot stays in place as `head: "none"` or `weight: 0`, which `chain_to_request` drops. The
+one thing the client still does is omit a head `/info.latch_heads` does not list, by rewriting that
+slot's head to `"none"` in place: `chain_to_request` 400s on an unknown head with weight > 0
+(M8 plan lines 377-379), and W keeps it that way on purpose. `lora.slot` is always sent `null` and
+`ckpt_path` carries the adapter (Open questions 25; M8 prefers `slot` when set, falls back to
+`ckpt_path`). `parse_chain`'s `_merge` 400s on a key `CHAIN_DEFAULTS` does not declare (M8 plan
+lines 284-292), so the request is built key by key from the chain, never spread from it.
+
+This used to be `resolveLatch`, which did the §5.5 mapping client-side and sent active slots only;
+that wire shape was FLATLINE's own invention (old Open questions 1) and W's check against M8 found
+it would 400 on every request with one active slot. **No display in this milestone needs the gain
+math**, so it is gone from the client entirely, not kept beside the wire path.
+
+§8.1 S4's idle note (`chain idle — no A2A clip in lane`) depends on knowing whether a chain has
+anything on at all. Both are pure functions of data already declared (M1 T3's
+`LaneChain`/`LatchSlot`), so they are written and hand-verified before any Svelte component touches
+them — Task 2's component only wires fields to `arrangement.lanes[n].chain`. `fetchLatchHeads()`
+lives in the same file because it produces the exact `Record<string, LatchHeadInfo>` shape
+`chainRequest` consumes, even though — unlike `chainRequest`/`chainIsIdle` — it is not pure (it
+calls `forgeApi.info()`); it is co-located for that reason, not because this file stops being "the
+pure module." Both Task 2 (LaneChain.svelte) and Task 4 (MasterChain.svelte) import
+`fetchLatchHeads` and `LatchHeadInfo` from here so the head list is fetched once per shape, not
+redeclared per component. **Nothing in M7 submits a job**: `chainRequest` is what M9 puts under a
+lane's `chain` key in the `commit` / `a2a_clip` payload (M8 plan lines 1422, 1980).
 
 **Files:**
 - Create: `latent-forge/src/lib/chains/latch.ts`, `latent-forge/src/lib/chains/__tests__/latch.test.ts`
@@ -517,21 +593,25 @@ list is fetched once per shape, not redeclared per component.
   `interface LatchSlot { head: string; kind: string; value: number; weight: number; start_pct:
   number; end_pct: number }` and `interface LaneChain { latch_on: boolean; slots: [LatchSlot,
   LatchSlot]; hparams: { rho: number; mu: number; gamma: number; n_iter: number; log_norms:
-  boolean }; film_on: boolean; film: {...}; lora_on: boolean; lora: {...}; bungee_on: boolean;
-  semitones: number }`.
+  boolean }; film_on: boolean; film: { ckpt: string | null; gain: number; value: number };
+  lora_on: boolean; lora: { ckpt_path: string | null; slot: number | null; strength: number };
+  bungee_on: boolean; semitones: number }` — key for key the same as M8's `CHAIN_DEFAULTS`
+  (M8 plan lines 265-270).
+- Consumes from `src/lib/forge/defaults.ts` (M1 T4, test only): `CHAIN_DEFAULTS` — `film.gain` is
+  **1.75**, the server's `/info.film_default.gain` (reconcile pass 2026-09-25, Open questions 26).
 - Consumes `forgeApi.info(): Promise<Record<string, unknown>>` from `src/lib/forge/api.ts` (M1 T5,
   verified at m1 plan:1211 — `info: () => getJSON<Record<string, unknown>>("/info")`). `/info` is
   untyped in M1; there is no existing `LatchHeadInfo` type anywhere in M1, so it is declared fresh
   here, restated from spec §5.5/§6.4 and cross-checked against the real fixture
   `docs/latent-forge/contract/fixtures/handmade-info.json`'s `latch_heads` array (m1 plan:2374-2393,
   reproduced in Step 1 below) — **not** from the spec text alone, which never enumerates every
-  field. The fixture is the ground truth used here.
-- Produces: `interface LatchHeadInfo`, `interface LatchRequestSlot`, `interface LatchRequest`,
-  `resolveLatch(chain: LaneChain, heads: Record<string, LatchHeadInfo>): LatchRequest | null`,
+  field. Task 10's recorded-response contract test checks the same fields against the recorded
+  `info.json` once M2 T15 has recorded it.
+- Produces: `interface LatchHeadInfo`, `interface ChainRequest`,
+  `chainRequest(chain: LaneChain, heads: Record<string, LatchHeadInfo>): ChainRequest`,
   `chainIsIdle(chain: LaneChain, hasA2AClip: boolean): boolean`,
-  `fetchLatchHeads(): Promise<Record<string, LatchHeadInfo>>`. `LatchRequest`'s shape (an array of
-  only the ACTIVE slots, in original order, plus five hyperparameter fields) is not pre-named
-  anywhere — see Open Questions.
+  `fetchLatchHeads(): Promise<Record<string, LatchHeadInfo>>`. `ChainRequest` is the server's own
+  shape (W 2026-09-25), not a client choice — Open questions 1 is resolved.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -539,7 +619,7 @@ list is fetched once per shape, not redeclared per component.
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
-import { chainIsIdle, fetchLatchHeads, resolveLatch, type LatchHeadInfo } from "../latch";
+import { chainIsIdle, chainRequest, fetchLatchHeads, type LatchHeadInfo } from "../latch";
 import { CHAIN_DEFAULTS } from "../../forge/defaults";
 import type { LaneChain } from "../../forge/types";
 
@@ -561,107 +641,98 @@ const CHROMA_OTHER: LatchHeadInfo = {
 };
 const HEADS: Record<string, LatchHeadInfo> = { rms_energy_bass: RMS_BASS, chroma_other: CHROMA_OTHER };
 
-describe("resolveLatch — null cases", () => {
-  it("returns null when latch_on is false, even with two fully-configured slots", () => {
-    const chain = clone(CHAIN_DEFAULTS);
-    chain.slots[0] = { head: "rms_energy_bass", kind: "constant", value: -10, weight: 2, start_pct: 0, end_pct: 0.6 };
-    expect(resolveLatch(chain, HEADS)).toBeNull();
+// M8's CHAIN_DEFAULTS keys (M8 plan lines 265-270). parse_chain's _merge 400s on any other key.
+const CHAIN_KEYS = ["bungee_on", "film", "film_on", "hparams", "latch_on", "lora", "lora_on", "semitones", "slots"];
+
+describe("chainRequest — the chain object M8's parse_chain takes (W 2026-09-25)", () => {
+  it("sends exactly the chain's nine keys and two slots for an untouched chain, FILM gain 1.75", () => {
+    const req = chainRequest(clone(CHAIN_DEFAULTS), HEADS);
+    expect(Object.keys(req).sort()).toEqual(CHAIN_KEYS);
+    expect(req.slots).toHaveLength(2);
+    expect(Object.keys(req.hparams).sort()).toEqual(["gamma", "log_norms", "mu", "n_iter", "rho"]);
+    expect(req.film).toEqual({ ckpt: null, gain: 1.75, value: 4.0 });   // the server's own default
+    expect(req).toEqual(CHAIN_DEFAULTS);                                 // nothing else changed
   });
 
-  it("returns null when latch_on is true but every slot is inactive (head none or weight 0)", () => {
+  it("sends the chain even while latch_on is false -- the server ignores the slots then", () => {
+    const chain = clone(CHAIN_DEFAULTS);
+    chain.slots[0] = { head: "rms_energy_bass", kind: "constant", value: -10, weight: 2, start_pct: 0, end_pct: 0.6 };
+    const req = chainRequest(chain, HEADS);
+    expect(req.latch_on).toBe(false);
+    expect(req.slots[0]).toEqual(chain.slots[0]);
+  });
+
+  it("keeps an inactive slot in place -- head none or weight 0 is sent, never dropped (one slot is a 400)", () => {
     const chain = clone(CHAIN_DEFAULTS);
     chain.latch_on = true;
     chain.slots[0] = { head: "none", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
     chain.slots[1] = { head: "rms_energy_bass", kind: "constant", value: -10, weight: 0, start_pct: 0, end_pct: 0.6 };
-    expect(resolveLatch(chain, HEADS)).toBeNull();
+    const req = chainRequest(chain, HEADS);
+    expect(req.slots).toHaveLength(2);
+    expect(req.slots.map((s) => s.head)).toEqual(["none", "rms_energy_bass"]);
+    expect(req.slots[1].weight).toBe(0);   // the server drops it; the client does not
   });
-});
 
-describe("resolveLatch — the mapping, hand-verified (spec §5.5, verbatim 468-471)", () => {
-  it("computes gain_k = head.default_gain * weight_k for a single active slot", () => {
+  it("sends rho/mu as the 0..30 multipliers the sliders hold -- no gain is computed client-side", () => {
+    // Hand-check: with weight 2 on rms_energy_bass (default_gain 512) the OLD client sent
+    // rho = 2 * (512 * 2) = 2048, which parse_chain's 0..30 range check refuses. The server now
+    // computes gain_0 = 512 * 2 = 1024 and rho = 2 * 1024 = 2048 itself (M8 chain_to_request; its
+    // own test_chain_latch_gains pins the same arithmetic at rho 1.0 -> 1024, mu 0.5 -> 512).
     const chain = clone(CHAIN_DEFAULTS);
     chain.latch_on = true;
     chain.slots[0] = { head: "rms_energy_bass", kind: "constant", value: -10, weight: 2, start_pct: 0, end_pct: 0.6 };
-    chain.slots[1] = { head: "none", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
     chain.hparams = { rho: 2, mu: 3, gamma: 0.5, n_iter: 5, log_norms: true };
-    const req = resolveLatch(chain, HEADS)!;
-    // gain_0 = 512.0 * 2 = 1024
-    expect(req.slots).toEqual([
-      { head: "rms_energy_bass", kind: "constant", value: -10, gain: 1024, start_pct: 0, end_pct: 0.6 },
-    ]);
-    // rho_req = rho * gain_0 = 2 * 1024 = 2048 ; mu_req = mu * gain_0 = 3 * 1024 = 3072
-    expect(req.rho).toBe(2048);
-    expect(req.mu).toBe(3072);
-    // gamma, n_iter, log_norms pass through UNMODIFIED, not gain-scaled.
-    expect(req.gamma).toBe(0.5);
-    expect(req.n_iter).toBe(5);
-    expect(req.log_norms).toBe(true);
+    const req = chainRequest(chain, HEADS);
+    expect(req.hparams).toEqual({ rho: 2, mu: 3, gamma: 0.5, n_iter: 5, log_norms: true });
+    expect(req.slots[0]).toEqual({ head: "rms_energy_bass", kind: "constant", value: -10, weight: 2, start_pct: 0, end_pct: 0.6 });
+    expect(JSON.stringify(req)).not.toContain('"gain":1024');
+    expect(req.slots[0]).not.toHaveProperty("gain");
+    expect(req).not.toHaveProperty("rho");   // nested under hparams only
   });
 
-  it("with rho = mu = weight = 1 reproduces the server's own default_gain exactly (spec's own identity)", () => {
-    const chain = clone(CHAIN_DEFAULTS);
-    chain.latch_on = true;
-    chain.slots[0] = { head: "chroma_other", kind: "constant", value: 0.5, weight: 1, start_pct: 0, end_pct: 0.6 };
-    chain.slots[1] = { head: "none", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
-    // hparams at CHAIN_DEFAULTS is already rho: 1, mu: 1.
-    const req = resolveLatch(chain, HEADS)!;
-    expect(req.slots[0].gain).toBe(2048); // = chroma_other.default_gain * 1
-    expect(req.rho).toBe(2048);
-    expect(req.mu).toBe(2048);
-  });
-
-  it("omits an inactive slot ENTIRELY — not present at all, not a zero-weight entry", () => {
-    const chain = clone(CHAIN_DEFAULTS);
-    chain.latch_on = true;
-    chain.slots[0] = { head: "none", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
-    chain.slots[1] = { head: "chroma_other", kind: "constant", value: 0.5, weight: 4, start_pct: 0, end_pct: 0.6 };
-    const req = resolveLatch(chain, HEADS)!;
-    // Strong form of "entirely omitted": the head string "none" never appears anywhere in the
-    // serialised request, and the array literally has one element, not two with a hole.
-    expect(JSON.stringify(req)).not.toContain('"none"');
-    expect(req.slots).toHaveLength(1);
-    expect(req.slots[0]).not.toHaveProperty("weight"); // weight itself is never sent, only the derived gain
-  });
-
-  it("renumbers so gain_0 is the FIRST ACTIVE slot, not literal slot index 0", () => {
-    // slot 0 inactive, slot 1 active and alone: k=0 in "for the active slots in order" is slot 1.
-    const chain = clone(CHAIN_DEFAULTS);
-    chain.latch_on = true;
-    chain.slots[0] = { head: "none", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
-    chain.slots[1] = { head: "chroma_other", kind: "constant", value: 0.5, weight: 4, start_pct: 0, end_pct: 0.6 };
-    chain.hparams = { ...CHAIN_DEFAULTS.hparams, rho: 1, mu: 1 };
-    const req = resolveLatch(chain, HEADS)!;
-    // gain_0 = 2048 * 4 = 8192, from slot 1, because slot 0 dropped out of the enumeration.
-    expect(req.rho).toBe(8192);
-    expect(req.mu).toBe(8192);
-  });
-
-  it("keeps both slots, in order, when both are active", () => {
-    const chain = clone(CHAIN_DEFAULTS);
-    chain.latch_on = true;
-    chain.slots[0] = { head: "rms_energy_bass", kind: "constant", value: -10, weight: 1, start_pct: 0, end_pct: 0.6 };
-    chain.slots[1] = { head: "chroma_other", kind: "constant", value: 0.5, weight: 1, start_pct: 0, end_pct: 0.6 };
-    const req = resolveLatch(chain, HEADS)!;
-    expect(req.slots.map((s) => s.head)).toEqual(["rms_energy_bass", "chroma_other"]);
-    // rho/mu still key off slot 0's gain only (512), not slot 1's.
-    expect(req.rho).toBe(512);
-  });
-
-  it("treats a head the registry does not know as inactive and omits it (the server raises on unknown names)", () => {
-    // eval/explorer_render_server.py:602-604: resolve_latch raises `unknown latch head` for any
-    // name not in HEADS, so sending it -- even at gain 0 -- would fail the whole job.
+  it("rewrites a head the registry does not list to none, in place -- both slots stay (the server 400s on it)", () => {
+    // M8 plan lines 377-379: chain_to_request raises `unknown LatCH head` for a name it does not
+    // know with weight > 0, so sending it would fail the whole job.
     const chain = clone(CHAIN_DEFAULTS);
     chain.latch_on = true;
     chain.slots[0] = { head: "deleted_head", kind: "constant", value: 0, weight: 3, start_pct: 0, end_pct: 0.6 };
     chain.slots[1] = { head: "chroma_other", kind: "constant", value: 0.5, weight: 1, start_pct: 0, end_pct: 0.6 };
-    const req = resolveLatch(chain, HEADS)!;
-    expect(req.slots.map((s) => s.head)).toEqual(["chroma_other"]);
+    const req = chainRequest(chain, HEADS);
+    expect(req.slots.map((s) => s.head)).toEqual(["none", "chroma_other"]);
     expect(JSON.stringify(req)).not.toContain("deleted_head");
-    // gain_0 is the first SURVIVING slot's: 2048 * 1
-    expect(req.rho).toBe(2048);
-    // and with nothing else active, the whole request is null rather than an empty slot list
-    chain.slots[1].head = "none";
-    expect(resolveLatch(chain, HEADS)).toBeNull();
+    expect(req.slots[0].weight).toBe(3);                // only the head changes
+    expect(chain.slots[0].head).toBe("deleted_head");   // and the live chain is not touched
+  });
+
+  it("writes lora.slot null and keeps ckpt_path -- the path is the durable identity (Open questions 25)", () => {
+    const chain = clone(CHAIN_DEFAULTS);
+    chain.lora_on = true;
+    chain.lora = { ckpt_path: "/SERVER/lora/x.ckpt", slot: 3, strength: 0.8 };
+    expect(chainRequest(chain, HEADS).lora).toEqual({ ckpt_path: "/SERVER/lora/x.ckpt", slot: null, strength: 0.8 });
+    expect(chain.lora.slot).toBe(3);
+  });
+
+  it("returns plain data: editing the request never reaches the chain, and it survives structuredClone", () => {
+    const chain = clone(CHAIN_DEFAULTS);
+    const req = chainRequest(chain, HEADS);
+    req.slots[0].weight = 9;
+    req.hparams.rho = 9;
+    req.film.gain = 0;
+    expect(chain.slots[0].weight).toBe(1);
+    expect(chain.hparams.rho).toBe(1);
+    expect(chain.film.gain).toBe(1.75);
+    expect(() => structuredClone(req)).not.toThrow();
+  });
+
+  it("drops any key the chain type does not declare (parse_chain's _merge 400s on unknown fields)", () => {
+    const chain = clone(CHAIN_DEFAULTS) as LaneChain & { stray?: number };
+    chain.stray = 1;
+    (chain.slots[0] as unknown as Record<string, unknown>).gain = 512;
+    (chain.film as unknown as Record<string, unknown>).target = 4;
+    const req = chainRequest(chain, HEADS);
+    expect(Object.keys(req).sort()).toEqual(CHAIN_KEYS);
+    expect(Object.keys(req.slots[0]).sort()).toEqual(["end_pct", "head", "kind", "start_pct", "value", "weight"]);
+    expect(Object.keys(req.film).sort()).toEqual(["ckpt", "gain", "value"]);
   });
 });
 
@@ -727,10 +798,9 @@ Expected: `Failed to resolve import "../latch"`.
 `latent-forge/src/lib/chains/latch.ts`:
 
 ```ts
-// Spec §5.5 — LANE CHAIN's mapping to the server's LatCH request, and the SIGNAL PATH idle note
-// (§8.1 S4). Pure except fetchLatchHeads (network); everything here is hand-verified against the
-// spec's own worked example ("with rho = mu = weight = 1 this reproduces today's server defaults
-// exactly") in the test file, not just shape-checked.
+// The lane chain as the server takes it (WINTERMUTE 2026-09-25; M8 parse_chain -> chain_to_request)
+// and the SIGNAL PATH idle note (spec §8.1 S4). The §5.5 gain mapping is the SERVER's: nothing
+// here multiplies a head gain. Pure except fetchLatchHeads (network).
 
 import { forgeApi } from "../forge/api";
 import type { LaneChain, LatchSlot } from "../forge/types";
@@ -739,9 +809,10 @@ import type { LaneChain, LatchSlot } from "../forge/types";
  * The subset of /info.latch_heads' element shape LANE CHAIN actually reads (M1's own /info typing
  * is `Record<string, unknown>` -- there is no existing LatchHeadInfo anywhere in M1). Restated from
  * spec §5.5/§6.4 and cross-checked field-for-field against
- * docs/latent-forge/contract/fixtures/handmade-info.json's two real entries. The real payload
- * carries more fields (path, out_channels, loss_type, target_kind_default, standardized, schema) --
- * they exist on the wire but nothing in this milestone reads them, so they are not declared here.
+ * docs/latent-forge/contract/fixtures/handmade-info.json's two real entries (Task 10's contract
+ * test re-checks them against the RECORDED info.json). The real payload carries more fields (path,
+ * out_channels, loss_type, target_kind_default, standardized, schema) -- they exist on the wire but
+ * nothing in this milestone reads them, so they are not declared here.
  */
 export interface LatchHeadInfo {
   name: string;
@@ -754,56 +825,54 @@ export interface LatchHeadInfo {
   value_default: number;
 }
 
-export interface LatchRequestSlot {
-  head: string;
-  kind: string;
-  value: number;
-  gain: number;
-  start_pct: number;
-  end_pct: number;
+/**
+ * Exactly M8's CHAIN_DEFAULTS keys (parse_chain's _merge 400s on any other), exactly two slots
+ * (parse_chain 400s on any other length), rho/mu as the 0..30 multipliers, lora.slot always null.
+ */
+export interface ChainRequest {
+  latch_on: boolean;
+  slots: [LatchSlot, LatchSlot];
+  hparams: { rho: number; mu: number; gamma: number; n_iter: number; log_norms: boolean };
+  film_on: boolean;
+  film: { ckpt: string | null; gain: number; value: number };
+  lora_on: boolean;
+  lora: { ckpt_path: string | null; slot: null; strength: number };
+  bungee_on: boolean;
+  semitones: number;
 }
 
 /**
- * The server's LatCH request (resolve_latch semantics unchanged, spec §5.5/§6.6.4). `slots`
- * holds ONLY the active slots, in their original relative order -- an inactive slot (head "none",
- * weight 0, or a head the registry does not list) does not appear at all. rho/mu are computed from
- * `slots[0]`'s gain, i.e. from gain_0 = the first slot that SURVIVED the filter, not literal
- * LaneChain.slots[0].
+ * One slot, key by key. "none" and weight 0 pass through untouched -- chain_to_request drops them
+ * (M8 plan line 375). A head the registry does not list becomes "none": chain_to_request 400s on it
+ * with weight > 0 (M8 plan lines 377-379). Callers must therefore pass the fetched heads, not `{}`,
+ * or every slot is sent as "none".
  */
-export interface LatchRequest {
-  slots: LatchRequestSlot[];
-  rho: number;
-  mu: number;
-  gamma: number;
-  n_iter: number;
-  log_norms: boolean;
-}
-
-/**
- * Spec §5.5: head "none" or weight 0 is omitted. A head the registry does not list is omitted too:
- * the real resolve_latch raises `unknown latch head` for it (eval/explorer_render_server.py:602-604),
- * so it can never be sent. Callers must therefore pass the fetched heads, not `{}`.
- */
-function isActive(slot: LatchSlot, heads: Record<string, LatchHeadInfo>): boolean {
-  return slot.head !== "none" && slot.weight !== 0 && Object.prototype.hasOwnProperty.call(heads, slot.head);
-}
-
-/** null when the module is off, or on but every slot is inactive (spec §5.5, verbatim 468-471). */
-export function resolveLatch(chain: LaneChain, heads: Record<string, LatchHeadInfo>): LatchRequest | null {
-  if (!chain.latch_on) return null;
-  const active = chain.slots.filter((s) => isActive(s, heads)).map((slot): LatchRequestSlot => {
-    const gain = heads[slot.head].default_gain * slot.weight;
-    return { head: slot.head, kind: slot.kind, value: slot.value, gain, start_pct: slot.start_pct, end_pct: slot.end_pct };
-  });
-  if (active.length === 0) return null;
-  const gain0 = active[0].gain;
+function wireSlot(slot: LatchSlot, heads: Record<string, LatchHeadInfo>): LatchSlot {
+  const known = slot.head === "none" || Object.prototype.hasOwnProperty.call(heads, slot.head);
   return {
-    slots: active,
-    rho: chain.hparams.rho * gain0,
-    mu: chain.hparams.mu * gain0,
-    gamma: chain.hparams.gamma,
-    n_iter: chain.hparams.n_iter,
-    log_norms: chain.hparams.log_norms,
+    head: known ? slot.head : "none",
+    kind: slot.kind,
+    value: slot.value,
+    weight: slot.weight,
+    start_pct: slot.start_pct,
+    end_pct: slot.end_pct,
+  };
+}
+
+/** The chain object for a job payload's `chain` key (M8 plan lines 1422, 1980). Always a plain copy. */
+export function chainRequest(chain: LaneChain, heads: Record<string, LatchHeadInfo>): ChainRequest {
+  const hp = chain.hparams;
+  return {
+    latch_on: chain.latch_on,
+    slots: [wireSlot(chain.slots[0], heads), wireSlot(chain.slots[1], heads)],
+    hparams: { rho: hp.rho, mu: hp.mu, gamma: hp.gamma, n_iter: hp.n_iter, log_norms: hp.log_norms },
+    film_on: chain.film_on,
+    film: { ckpt: chain.film.ckpt, gain: chain.film.gain, value: chain.film.value },
+    lora_on: chain.lora_on,
+    // ckpt_path is the durable identity; a /slots index is transient (Open questions 25).
+    lora: { ckpt_path: chain.lora.ckpt_path, slot: null, strength: chain.lora.strength },
+    bungee_on: chain.bungee_on,
+    semitones: chain.semitones,
   };
 }
 
@@ -839,7 +908,7 @@ Expected: `Test Files  1 passed (1)` / `Tests  14 passed (14)`.
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T1: resolveLatch/chainIsIdle (spec 5.5, 8.1 S4), hand-verified against the spec's own rho=mu=weight=1 identity and the fixture's two real heads"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T1: chainRequest (the chain object M8 parse_chain takes: two slots, hparams multipliers, lora.slot null) and chainIsIdle (spec 8.1 S4)"
 ```
 
 ---
@@ -874,9 +943,10 @@ full, not extended.
 - Consumes from `src/lib/forge/types.ts` (M1 T3): `LaneChain`, `LatchSlot`.
 - Consumes from `src/lib/forge/defaults.ts` (M1 T4): `CHAIN_DEFAULTS` (test fixtures only — the
   component itself never constructs a default, it only ever reads the live store's object).
-- Consumes from `src/lib/chains/latch.ts` (Task 1): `LatchHeadInfo`, `fetchLatchHeads()`. (Task 1
-  does not export `resolveLatch`/`chainIsIdle` for this component to call directly — those are
-  Task 3's `signalPath.ts` concern, at commit-preview time, not at edit time.)
+- Consumes from `src/lib/chains/latch.ts` (Task 1): `LatchHeadInfo`, `fetchLatchHeads()`. (This
+  component calls neither `chainRequest` nor `chainIsIdle` — `chainRequest` is M9's, at submit
+  time, and `chainIsIdle` is Task 3's `signalPath.ts` concern. It writes the chain's raw fields:
+  `hparams.rho`/`.mu` are the 0–30 multipliers the server scales itself, never a gain.)
 - Consumes from `src/lib/stores/arrangement.svelte.ts` (M5, current file verified at
   `docs/superpowers/plans/2026-09-17-latent-forge-m5-timeline-fidelity.md:330-348`):
   `arrangement.lanes: ForgeLane[]`, where `ForgeLane.chain: LaneChain` is already seeded
@@ -887,7 +957,8 @@ full, not extended.
   lane's chain this module edits and follows when the active lane changes).
 - Consumes `forgeApi` from `src/lib/forge/api.ts` (M1 T5, verified at m1 plan:1249-1252):
   `forgeApi.presets(level: string): Promise<{ok:true; names:string[]}>`,
-  `forgeApi.preset(level, name): Promise<Record<string, unknown>>`,
+  `forgeApi.preset(level, name): Promise<Record<string, unknown>>` — the stored payload **raw**, no
+  `{ok}` wrapper (WINTERMUTE 2026-09-25; M1 T5 pins it),
   `forgeApi.savePreset(level, name, payload): Promise<{ok:true}>`,
   `forgeApi.deletePreset(level, name): Promise<{ok:true}>` — called directly by the component for
   each of the four levels (`latch`, `film`, `lora`, `bungee`): `presets` lists, `preset` recalls,
@@ -980,9 +1051,9 @@ describe("fetchFilmCkpts", () => {
   });
 
   // Verified directly against eval/explorer_render_server.py:977-997 (the real /models route):
-  // the response key is "models", not "ckpts". M1's own fetchAdapters (models.ts) reads
-  // body.ckpts and would silently return [] against the real server -- see Open Questions. This
-  // new function does NOT copy that key.
+  // the response key is "models", not "ckpts". M1's fetchAdapters read body.ckpts until the
+  // reconcile pass of 2026-09-25 fixed it at source; this function reads `models` too, and Task 10's
+  // recorded-response contract test checks both against the real server's recording.
   it("reads the 'models' key, not 'ckpts' (the real server's field name)", async () => {
     vi.stubGlobal("fetch", async () => jsonResponse({ ok: true, models: [{ path: "/SERVER/g.ckpt", name: "g.ckpt" }] }));
     const out = await fetchFilmCkpts();
@@ -1123,7 +1194,7 @@ describe("FILM", () => {
     // A non-null default ckpt, so the assertion can only pass if the component actually read
     // /info.film_default -- chain.film.ckpt is null by default, so checking the select's value
     // alone would pass with or without the fallback.
-    vi.spyOn(forgeApi, "info").mockResolvedValue({ ok: true, film_default: { ckpt: "/SERVER/film_default.ckpt", gain: 1.0 } });
+    vi.spyOn(forgeApi, "info").mockResolvedValue({ ok: true, film_default: { ckpt: "/SERVER/film_default.ckpt", gain: 1.75 } });
     render(LaneChain);
     const ckpt = await screen.findByLabelText("FILM CKPT");
     expect(await screen.findByRole("option", { name: "server default (/SERVER/film_default.ckpt)" })).toBeTruthy();
@@ -1465,7 +1536,7 @@ do not touch the seven entries already there — `transportPlay`, `transportStop
   filmPreset:
     "Module preset — recalls just this FiLM slot's settings.",
   filmScale:
-    "How hard the FiLM conditioning is applied, scaling the head's own default gain. Safe value: 1.0.",
+    "How hard the FiLM conditioning is applied, scaling the head's own default gain. Safe value: 1.75, the server's default.",
   loraToggle:
     "Turns the resident LoRA/DORA adapter on for this lane. Safe value: off.",
   loraPreset:
@@ -1554,10 +1625,9 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
   $effect(() => {
     fetchLatchHeads().then((h) => (heads = h)).catch(() => {});
     fetchFilmCkpts().then((c) => (filmCkpts = c)).catch(() => {});
-    // Known gap (critic pass 2 #10, Open questions 26): spec §5.5 says SCALE defaults to
-    // /info.film_default.gain, but only the ckpt is read here. The server's gain (1.75) differs from
-    // M1's frozen CHAIN_DEFAULTS.film.gain (1.0), and writing it into a chain would make every lane
-    // non-default (M5's lane dot, this module's lit dot) and change every loaded session.
+    // Only the ckpt is read here. SCALE already starts at the server's gain: M1's
+    // CHAIN_DEFAULTS.film.gain is 1.75, the same FILM_DEFAULT_GAIN /info.film_default reports
+    // (reconcile pass 2026-09-25, Open questions 26), so an untouched lane stays default.
     forgeApi.info().then((info) => {
       const fd = (info as { film_default?: { ckpt: string | null } }).film_default;
       filmDefaultCkpt = fd?.ckpt ?? null;
@@ -2659,8 +2729,8 @@ describe("HELP ids", () => {
 import { expect, test } from "@playwright/test";
 
 // Same testid convention M4's own e2e fragment verified against the real BottomPane.svelte
-// (data-testid="bottom-tab-<id>" to click, tests/sampling.spec.ts:beforeEach) -- M1 T14's layout
-// spec instead clicks `[data-tab="${id}"]`, which matches nothing real; see Open Questions.
+// (data-testid="bottom-tab-<id>" to click, tests/sampling.spec.ts:beforeEach) -- and, since the
+// reconcile pass of 2026-09-25, the one M1's own layout spec uses too (Global Constraint #5).
 
 test("LANE CHAIN and MASTER CHAIN modules open from the right pane", async ({ page }) => {
   await page.goto("/");
@@ -2920,13 +2990,10 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T5: MIX + SIGNAL PATH tab
 
 ## Open questions
 
-1. **`LatchRequest`'s shape is not pre-named anywhere** (spec §5.5 only gives the formula, not a
-   wire shape). I shipped `{slots: LatchRequestSlot[]; rho; mu; gamma; n_iter; log_norms}` with
-   `slots` holding only the active entries in original relative order (so "omitted" = absent from
-   the array, verified in the test both by length and by a `JSON.stringify` substring check, not
-   just a falsy value). If M8's real server-side LatCH payload shape turns out to be keyed
-   differently (e.g. per-slot dict), this type and `resolveLatch`'s return need a matching change
-   at that point — flagged for WINTERMUTE.
+1. ~~**`LatchRequest`'s shape is not pre-named anywhere.**~~ **Resolved by WINTERMUTE
+   (2026-09-25):** M8 keys it differently — the server takes the chain object and does §5.5's
+   mapping itself. Task 1 now ships `chainRequest` (two slots, nested `hparams` multipliers,
+   `lora.slot: null`); see the merged Open questions 1 at the end of the plan.
 
 2. **Two toggle buttons the brief's own "Controls with NO id anywhere" table omitted, verified
    directly against the real v3 file**: LATCH GUIDANCE's own toggle (v3:507) and BUNGEE's own
@@ -2946,7 +3013,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T5: MIX + SIGNAL PATH tab
    conceptually the same commit action rather than a genuinely new control — flag if a distinct
    `mixMixdown` string is wanted instead.
 
-4. **`fetchAdapters()`'s real server mismatch, verified, not mine to fix.** M1's `fetchAdapters()`
+4. **[Reconcile pass 2026-09-25: fixed at source — M1 T10 now reads `models`, its mock test seeds the real envelope, and T10's contract test checks it against the recording.]** **`fetchAdapters()`'s real server mismatch, verified, not mine to fix.** M1's `fetchAdapters()`
    (`src/lib/forge/models.ts`) reads `body.ckpts`, but the real `/models` route
    (`eval/explorer_render_server.py:977-997`) returns `{"ok", "count", "models", "stale_root_ids"}`
    — the array is under `models`, not `ckpts`. Against the real server this makes `fetchAdapters()`
@@ -2956,7 +3023,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T5: MIX + SIGNAL PATH tab
    defect like the two the brief already named (`ModuleShell`, `viewStore`/`view`) — worth a line
    in WINTERMUTE's DM alongside them, and a real, if small, fix for whoever next touches M1.
 
-5. **M1 T14's own Playwright layout spec has a third, previously-unflagged internal defect.**
+5. **[Reconcile pass 2026-09-25: fixed at source — M1's tab test clicks `[data-testid="bottom-tab-<id>"]` and checks the body's `data-tab`.]** **M1 T14's own Playwright layout spec has a third, previously-unflagged internal defect.**
    `docs/superpowers/plans/2026-09-16-latent-forge-m1-foundation-shell.md:8335` clicks
    `[data-tab="${id}"]` to open a bottom tab, but the real `BottomPane.svelte`
    (m1 plan:6128-6159) gives its tab BUTTONS `data-testid="bottom-tab-{t.id}"` and no `data-tab`;
@@ -3001,7 +3068,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T5: MIX + SIGNAL PATH tab
 
 10. **`fetchLatchHeads()` lives in `src/lib/chains/latch.ts` (Task 1) rather than
     `src/lib/forge/models.ts`** (where `fetchAdapters`/`fetchFilmCkpts` live), because it shapes
-    `/info.latch_heads` into the exact `Record<string, LatchHeadInfo>` `resolveLatch` consumes, and
+    `/info.latch_heads` into the exact `Record<string, LatchHeadInfo>` `chainRequest` consumes, and
     both Task 2 and Task 4 need the identical shape. This is a name the brief did not pre-declare;
     flag if a different placement (e.g. beside the other `/info`-adjacent fetchers) is preferred.
 
@@ -3015,7 +3082,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T5: MIX + SIGNAL PATH tab
     reproduced as found, per the brief's own instruction — not mine to silently correct. Noted here
     again for WINTERMUTE's DM batch alongside the other cross-cutting flags in items 4 and 5.
 
-13. **`ModuleShell`'s duplicate declaration and the `viewStore`/`view` mismatch**, both already
+13. **[Reconcile pass 2026-09-25: both fixed at source in M1 T9-T11; the dot is pinned too.]** **`ModuleShell`'s duplicate declaration and the `viewStore`/`view` mismatch**, both already
     named in the M7 brief's shared preamble, were relied on exactly as the brief resolved them (the
     second version — `{id, title, lit, children}`, self-driven off `view.isModuleOpen`/
     `view.toggleModule`) throughout Tasks 2 and 4's Interfaces; I did not re-verify M1's Task 9 code
@@ -4234,7 +4301,9 @@ handlers and transport buttons — may still be reading/writing the orphaned v1 
 `arrangement`.** This is a real defect spanning M1/M5, not something Tasks 6-10 can fix (rewiring
 `App.svelte`'s keyboard actions and the transport is well outside "sessions, master preset,
 autosave"), so I flag it in Open Questions for FLATLINE to route to WINTERMUTE, same as the
-`ModuleShell`/`viewStore` defects the brief already flags. What I *can* guarantee is that **my own
+`ModuleShell`/`viewStore` defects the brief already flags. (Reconcile pass 2026-09-25: M5's
+Normative table now says no M5 task is the swap point; the rewire is still unowned — Open
+questions 3.) What I *can* guarantee is that **my own
 session/autosave code never touches `project`** — it reads and writes only `arrangement`, `view`
 and `settings` (below), and removing `saveProject`/`loadProject` from `TopBar.svelte` removes the
 only place in that file that referenced the orphaned store.
@@ -4305,7 +4374,11 @@ writing A's content to B. Both now run through **one** class, `SessionController
    stops at its next check and never names or arms anything. `loading` stays true until the latest
    one ends, the TopBar says `loading <name>…` beside the SESSION select (`loadingName`), and **SAVE
    is refused, its button disabled, while it is** — so no SAVE can write the arriving project under
-   the previous name, or anything under the target name before it is armed.
+   the previous name, or anything under the target name before it is armed. **M4's stage lock**
+   (reconcile pass 2026-09-25, Open questions 32): a load or import is refused outright, before this
+   step, while M4's own POST/BASE rebuild is in flight (`settings.stageRebuilding`), and
+   `settings.stageLocked` is held for exactly as long as `loading`, so M4's MODEL STAGE offers no
+   switch mid-load — a stage rebuild and a load never overlap in either order.
 2. **Fetch** (session load only), after any PUT to that same name still in flight has landed: PUTs
    are chained per name, so a quick re-load never reads the server before the flush that step 4 of
    the previous load sent (critic pass 3 #5). The stores are untouched and the previous session
@@ -4422,15 +4495,15 @@ convert, anything else refused — step 3), so a hand-copied v1 file on the serv
   and the same snap-back on the MASTER PRESET select (critic pass 3 #2, #11).
 - Modify: `latent-forge/src/ui/shell/__tests__/topBar.test.ts` (M1 T10) — its one assertion that
   `master-preset-save` is disabled "until M7 owns presets" flips; M7 is that milestone.
-- Modify: `latent-forge/src/App.svelte` — first checks the starting state Step 4 states (M1 T15 may
-  have dropped M1 T10's top-bar block; critic pass 3 #10), then removes M1's `sessions[0]`
+- Modify: `latent-forge/src/App.svelte` — at M1 T15's end state (T15 now extends App, so M1
+  T10's top-bar block is there; reconcile pass 2026-09-25), removes M1's `sessions[0]`
   auto-select and its own `session` `$state` (the controller owns it), wires
   `onsession`/`onsessionsave`/`onimportv1` and `onmasterpreset`/`onmasterpresetsave` to
-  `SessionController`, starts the autosave `$effect`.
+  `SessionController`, starts the autosave `$effect`, and attaches M4's settings seam to M5's
+  source (`settings.attach(arrangement.settingsSource)`).
 - Modify: `latent-forge/src/ui/shell/RightPaneModules.svelte` (M1 T12) — the live `litModules`
-  snapshot and `<AdvancedSampling latch=…>` with registry-known slots only (Step 5).
-- Create: `latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` (test-only `ModuleShell`
-  double for `rightPaneModules.test.ts` — see that file's header comment).
+  snapshot (`sampling: settings.current(view.selection)` included) and `<AdvancedSampling latch=…
+  a2a=…>` with registry-known slots only (Step 5).
 - Modify: `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` (M4 T10) — `<SigmaColumn slots=…>`
   (Step 5).
 - Modify: `docs/latent-forge/extract_help.mjs` (append `masterPresetSave`, `sessionSave`,
@@ -4441,16 +4514,23 @@ convert, anything else refused — step 3), so a hand-copied v1 file on the serv
 - Create: `latent-forge/src/ui/shell/__tests__/rightPaneModules.test.ts`
 
 **Interfaces:**
-- Consumes `forgeApi.sessions()`, `forgeApi.session(name): Promise<ProjectV2>`,
-  `forgeApi.saveSession(name, project: ProjectV2)`, `forgeApi.presets(level)`,
-  `forgeApi.preset(level, name)`, `forgeApi.savePreset(level, name, payload)`,
+- Consumes `forgeApi.sessions()` (`{ok, sessions:[{name, updated, n_clips}]}` — `updated` is the
+  file mtime in epoch **seconds**, a float; nothing in this milestone displays it, and anything
+  that ever does formats it client-side as `new Date(updated * 1000)`),
+  `forgeApi.session(name): Promise<ProjectV2>` (the stored object **raw** — no `{ok}` wrapper;
+  WINTERMUTE 2026-09-25, pinned by M1 T5's test),
+  `forgeApi.saveSession(name, project: ProjectV2)` (wrapped `{ok}`; 400 on anything but
+  `version: 2`), `forgeApi.presets(level)`,
+  `forgeApi.preset(level, name)` (raw, like `session`), `forgeApi.savePreset(level, name, payload)`,
   `forgeApi.setBackbone(id)` from `src/lib/forge/api.ts` (M1 T5, frozen — restated verbatim per
   "an implementing agent sees ONE task").
 - Consumes `convertProjectV1(raw: unknown): ProjectV2` from `src/lib/forge/convertProjectV1.ts`
   (this milestone's Task 8).
 - Consumes `arrangement` (`bpm, beatsPerBar, snap, lanes, clips, pxPerSec, scrollSec, mix, master,
   overlaps: Overlap[], peekOverlapParams(key), clearOverlapParams(), setOverlapParams(key, patch),
-  setBpm, setSnap, setScrollSec, setDetune, setPreviewAudio, moveClip(id, startSec)`) and the constants
+  setBpm, setSnap, setScrollSec, setDetune, setPreviewAudio, moveClip(id, startSec), ensureA2A(id),
+  setNoise(id, noise)`, and the never-seeding `settingsSource: {clipSettings(id); overlapSettings(key)}`
+  — M4's `TargetSettingsSource`, structurally, added to M5 T1 by the reconcile pass) and the constants
   `MIN_PX_PER_SEC`/`MAX_PX_PER_SEC` from `src/lib/stores/arrangement.svelte.ts` (M5 T1/T10, extended
   by Task 3). **There is no `arrangement.setPxPerSec`** — `applyProject` assigns `pxPerSec`
   directly, clamped the way M5's own `zoomBy` clamps.
@@ -4458,7 +4538,10 @@ convert, anything else refused — step 3), so a hand-copied v1 file on the serv
   `activeLane`, `select`, `clearSelection`, `openModule`, `closeModule`) from
   `src/lib/stores/view.svelte.ts` (M1 T7 — the export is `view`, Global Constraint #3).
 - Consumes `settings` (`defaults: RenderSettings`, `stage: ModelStage`, `ckptPath: string | null`,
-  getter `backboneId: string`), `STAGE_BACKBONE: Record<ModelStage, string>`,
+  getter `backboneId: string`, `current(t: Target): RenderSettings`, `attach(source)`/`detach()`,
+  and the stage-lock pair `stageLocked: boolean` — the controller sets it for a whole load/import —
+  and `stageRebuilding: boolean` — M4 T9's own rebuild is in flight, so no load may start; both
+  added to M4 T1 by the reconcile pass of 2026-09-25), `STAGE_BACKBONE: Record<ModelStage, string>`,
   `STAGE_FIELDS` (`["steps", "sampler_type", "schedule"]`, M4 plan line 365) and
   `type ModelStage` from `src/lib/stores/settings.svelte.ts` (M4 T1, M4 plan lines 332-487).
 - Consumes `ProjectV2`, `ForgeLane`, `ForgeClip`, `OverlapParams`, `MixSpec`, `MasterChain`,
@@ -4474,8 +4557,9 @@ convert, anything else refused — step 3), so a hand-copied v1 file on the serv
 - Consumes `fetchLatchHeads(): Promise<Record<string, LatchHeadInfo>>` and `type LatchHeadInfo` from
   `src/lib/chains/latch.ts` (Task 1).
 - Consumes `litModules`, `MODULE_ORDER`, `moduleTitle`, `type ModuleStateSnapshot` from
-  `src/lib/forge/nonDefault.ts` (M1 T12); `AdvancedSampling`'s `latch?: LatchState` prop (M4 plan
-  line 4741 — `LatchState = {latch_on: boolean; slots: readonly LatchSlot[]}`, M4 plan lines 515-516) and
+  `src/lib/forge/nonDefault.ts` (M1 T12); `AdvancedSampling`'s `latch?: LatchState` and
+  `a2a?: {on: boolean; noise: number} | null` props (M4 T11's Produces line —
+  `LatchState = {latch_on: boolean; slots: readonly LatchSlot[]}`, M4 T2) and
   `SigmaColumn`'s `slots?: readonly LatchSlot[]` prop (M4 plan line 4076).
 - Produces, from `src/lib/forge/sessionName.ts`: `SESSION_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/`
   (spec §6.3, verbatim), `isValidSessionName(name: string): boolean`.
@@ -4515,8 +4599,10 @@ convert, anything else refused — step 3), so a hand-copied v1 file on the serv
   confirm(message: string): boolean; exists(kind: "session" | "master", name: string): boolean;
   scheduleStretch?: (clipId: string) => void; delayMs?: number}` (`forgeApi` satisfies `api`
   structurally; tests pass fakes) and `class SessionController` — `constructor(deps: SessionDeps)`,
-  `session: string`, `loading: boolean` and `loadingName: string` (all `$state`), `observe(): void`
-  (App's `$effect` body), `loadSession(name: string): Promise<void>`, `importProjectFile(file:
+  `session: string`, `loading: boolean` and `loadingName: string` (all `$state`; `settings.stageLocked`
+  mirrors `loading`), `observe(): void`
+  (App's `$effect` body), `loadSession(name: string): Promise<void>` (refused, with a log line, while
+  `settings.stageRebuilding`), `importProjectFile(file:
   {name: string; text(): Promise<string>}): Promise<void>` (a `File` satisfies it), `saveSession():
   Promise<string | null>` (the name saved under, or `null`), `recallMasterPreset(name: string):
   Promise<boolean>` (true when applied), `saveMasterPreset(current: string): Promise<string | null>`.
@@ -4874,6 +4960,8 @@ function resetStores() {
   for (const lane of arrangement.lanes) lane.chain = structuredClone(CHAIN_DEFAULTS);
   arrangement.master = structuredClone(MASTER_DEFAULT);
   settings.stage = "BASE";
+  settings.stageLocked = false;
+  settings.stageRebuilding = false;
   view.clearSelection();
 }
 
@@ -5227,6 +5315,30 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     expect(await ctl.recallMasterPreset("live A")).toBe(true);
     expect(arrangement.master.gain).toBe(99);
   });
+
+  it("a load never overlaps M4's STAGE rebuild: refused while one runs, and it holds settings.stageLocked throughout (reconcile pass, OQ 32)", async () => {
+    const { api, deps, ctl } = harness();
+    settings.stageRebuilding = true;                  // M4 T9's confirmStage is awaiting setBackbone
+    try {
+      await ctl.loadSession("take1");
+      await ctl.importProjectFile({ name: "x.json", text: async () => "{}" });
+      expect(api.session).not.toHaveBeenCalled();     // refused before the fetch
+      expect(ctl.loading).toBe(false);
+      expect(settings.stageLocked).toBe(false);
+      expect(deps.log).toHaveBeenCalledWith(expect.stringContaining("MODEL STAGE is rebuilding"), "error");
+    } finally {
+      settings.stageRebuilding = false;
+    }
+    const take1 = project("take1", "T1");
+    const pending = deferred<unknown>();
+    api.session.mockReturnValueOnce(pending.promise);
+    const loading = ctl.loadSession("take1");
+    expect(settings.stageLocked).toBe(true);          // M4's MODEL STAGE offers no switch now
+    pending.resolve(take1);
+    await loading;
+    expect(ctl.session).toBe("take1");
+    expect(settings.stageLocked).toBe(false);         // released when the load settles
+  });
 });
 ```
 
@@ -5353,16 +5465,15 @@ import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CHAIN_DEFAULTS } from "../../../lib/forge/defaults";
 import { arrangement } from "../../../lib/stores/arrangement.svelte";
+import { settings } from "../../../lib/stores/settings.svelte";
 import { view } from "../../../lib/stores/view.svelte";
 import RightPaneModules from "../RightPaneModules.svelte";
 
-// ModuleShell is swapped for a probe with exactly M1's Normative props -- {id, title, lit,
-// children}, open state from view.isModuleOpen(id) (M1 plan lines 39, 6297-6301). No plan pins the
-// reconciled {id,title,lit} ModuleShell's DOT markup: M1's `module-dot`/`data-lit` hooks (M1 plan
-// lines 4062-4066) belong to the label-prop version Global Constraint #3 says not to use. So this
-// suite asserts what THIS plan guarantees -- the `lit` value RightPaneModules passes each shell --
-// not a selector nothing guarantees (critic pass 2 #13, Open questions 27).
-vi.mock("../ModuleShell.svelte", async () => ({ default: (await import("./ModuleShellProbe.svelte")).default }));
+// The REAL ModuleShell. Its lit dot is pinned by M1 T9 since the reconcile pass of 2026-09-25:
+// [data-module-dot=<id>] carrying data-lit="true"|"false" (Open questions 27). The probe this suite
+// used to mock ModuleShell with, because no plan pinned that markup, is gone.
+const lit = (container: HTMLElement, id: string) =>
+  container.querySelector(`[data-module-dot="${id}"]`)!.getAttribute("data-lit");
 
 const RMS_BASS = { name: "rms_energy_bass", family: "medium", default_gain: 512, health: "ok",
   supports_kinds: ["constant"], slider_min: -35.2, slider_max: -0.13, value_default: -12 };
@@ -5390,12 +5501,11 @@ describe("RightPaneModules after M7 T9", () => {
   it("lights LANE CHAIN's dot from the active lane's live chain, and relights on an in-place edit", async () => {
     view.setActiveLane(0);
     const { container } = render(RightPaneModules);
-    const lit = (id: string) => container.querySelector(`[data-module="${id}"]`)!.getAttribute("data-probe-lit");
-    expect(lit("lane-chain")).toBe("false");
+    expect(lit(container, "lane-chain")).toBe("false");
     arrangement.lanes[0].chain.latch_on = true;   // in place -- Global Constraint #1
     await tick();
-    expect(lit("lane-chain")).toBe("true");
-    expect(lit("master-chain")).toBe("false");
+    expect(lit(container, "lane-chain")).toBe("true");
+    expect(lit(container, "master-chain")).toBe("false");
   });
 
   it("renders a never-edited overlap's module without seeding it (no state_unsafe_mutation from the lit snapshot or the body)", () => {
@@ -5412,9 +5522,9 @@ describe("RightPaneModules after M7 T9", () => {
   });
 
   it("hands ADVANCED SAMPLING only registry-known LatCH slots, so a deleted head does not force Euler", async () => {
-    // M4's activeSlots counts any non-"none", non-zero-weight head; resolveLatch (T1) omits a head
-    // /info does not list (the server raises on it). Passing it through would show "euler (forced
-    // by LatCH)" for a request that sends no LatCH at all (critic pass 2 #8).
+    // M4's activeSlots counts any non-"none", non-zero-weight head; chainRequest (T1) sends a head
+    // /info does not list as "none" (the server 400s on it). Passing it through would show "euler
+    // (forced by LatCH)" for a request that sends no active LatCH slot at all (critic pass 2 #8).
     view.setActiveLane(0);
     const chain = arrangement.lanes[0].chain;
     chain.latch_on = true;
@@ -5426,25 +5536,29 @@ describe("RightPaneModules after M7 T9", () => {
     chain.slots[0].head = "rms_energy_bass";   // a head the registry lists: now it really forces Euler
     await waitFor(() => expect(sampler.disabled).toBe(true));
   });
+
+  it("wires M4 to M5: a selected clip's OWN render lights ADVANCED SAMPLING, and its A2A NOISE reaches σ MAX (reconcile pass, OQ 19/20)", async () => {
+    settings.attach(arrangement.settingsSource);   // App.svelte does this once at startup (Step 4)
+    try {
+      const clip = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: { kind: "crop", crop_id: "A" } });
+      arrangement.ensureA2A(clip.id);
+      arrangement.setNoise(clip.id, 0.4);
+      view.select({ kind: "clip", id: clip.id });
+      view.openModule("advanced-sampling");
+      const { container, findByLabelText } = render(RightPaneModules);
+      expect(lit(container, "advanced-sampling")).toBe("false");
+      // M4 T11: σ MAX mirrors the selected A2A clip's NOISE -- only if `a2a` reaches the module.
+      expect(((await findByLabelText("σ MAX")) as HTMLInputElement).value).toBe("0.40");
+      const before = settings.defaults.steps;
+      clip.render.steps = 40;                      // the CLIP's settings, in place, not session.defaults
+      await tick();
+      expect(lit(container, "advanced-sampling")).toBe("true");
+      expect(settings.defaults.steps).toBe(before);
+    } finally {
+      settings.detach();
+    }
+  });
 });
-```
-
-`latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` (test-only; never imported by app code):
-
-```svelte
-<script lang="ts">
-  // ModuleShell's Normative contract (M1 plan lines 39, 6297-6301) and nothing else: props
-  // {id, title, lit, children}, open state read from the view store. Exposes what it was given as
-  // data-probe-* attributes so rightPaneModules.test.ts can assert the values RightPaneModules passes.
-  import type { Snippet } from "svelte";
-  import { view, type ModuleId } from "../../../lib/stores/view.svelte";
-
-  let { id, title, lit, children }: { id: ModuleId; title: string; lit: boolean; children: Snippet } = $props();
-</script>
-
-<section data-module={id} data-probe-title={title} data-probe-lit={lit ? "true" : "false"}>
-  {#if view.isModuleOpen(id)}{@render children()}{/if}
-</section>
 ```
 
 - [ ] **Step 2: Run them, expect failure**
@@ -5459,7 +5573,10 @@ the seven `topBarSessions.test.ts` cases fail against the pre-T9 `TopBar.svelte`
 buttons still present, no `unsaved` option, no `session-save`/`session-import`/`session-loading`
 test ids, `master-preset-save` still hard-disabled, the selects left on the picked name);
 `rightPaneModules.test.ts` fails its lit-dot case (M1's constant snapshot passes `lit=false` to every
-shell) and its LatCH case (M1 renders `<AdvancedSampling />`, so a known head never forces Euler).
+shell), its LatCH case (M1 renders `<AdvancedSampling />`, so a known head never forces Euler) and
+its M4/M5 wiring case (no `a2a` reaches the module, so σ MAX reads 1.00; `sampling` is `null`, so
+the dot never lights). `sessionController.test.ts`'s stage-lock case fails with the rest of that
+file (no controller yet).
 Its overlap case already passes at this point, because Task 7's body already reads through
 `peekOverlapParams` — it is the regression guard for Step 5's snapshot, which is the other place that
 must never call the seeding `overlapParams`. Summary: `Test Files  7 failed (7)`.
@@ -6041,11 +6158,24 @@ export class SessionController {
     this.autosave.observe(this.session, JSON.stringify(this.current(this.session)));
   }
 
-  async loadSession(name: string): Promise<void> {
-    if (!name) return;                       // the `unsaved` option is never a load
-    const mySeq = ++this.seq;                // (1) any earlier load/import is stale from here
+  /** M4's stage lock (reconcile pass 2026-09-25, Open questions 32): a load never starts while M4's
+   *  own POST/BASE rebuild is in flight, and holds settings.stageLocked for as long as `loading`,
+   *  so MODEL STAGE offers no switch mid-load. True when the load may start. */
+  private begin(name: string): boolean {
+    if (settings.stageRebuilding) {
+      this.deps.log(`[forge] MODEL STAGE is rebuilding -- load ${name} again once it finishes`, "error");
+      return false;
+    }
     this.loading = true;
     this.loadingName = name;
+    settings.stageLocked = true;
+    return true;
+  }
+
+  async loadSession(name: string): Promise<void> {
+    if (!name) return;                       // the `unsaved` option is never a load
+    if (!this.begin(name)) return;           //     refused before (1): nothing is superseded
+    const mySeq = ++this.seq;                // (1) any earlier load/import is stale from here
     try {
       const inflight = this.puts.get(name);
       if (inflight) await inflight;          // (2) a PUT to this name still in flight lands first
@@ -6065,9 +6195,8 @@ export class SessionController {
   }
 
   async importProjectFile(file: { name: string; text(): Promise<string> }): Promise<void> {
+    if (!this.begin(file.name)) return;
     const mySeq = ++this.seq;                // (1)
-    this.loading = true;
-    this.loadingName = file.name;
     try {
       let raw: unknown;
       try {
@@ -6190,6 +6319,7 @@ export class SessionController {
     if (mySeq !== this.seq) return;
     this.loading = false;
     this.loadingName = "";
+    settings.stageLocked = false;            //     M4's MODEL STAGE is offered again
     if (!this.orphaned) return;
     this.orphaned = false;
     this.session = "";
@@ -6389,8 +6519,9 @@ span needs no such claim.
     accept="application/json,.json" onchange={onImportPicked} hidden />
 ```
 
-(`class="notice"` is the class M1 T15's removed status span used; M1 defines no rule for it, so the
-note inherits the top bar's text style — styling it is not this task's.)
+(`class="notice"` is the class M1 T15's removed status span used; M1 T15 now gives it a style rule
+in `TopBar.svelte`'s `<style>` — reconcile pass 2026-09-25 — which this note reuses unchanged. Keep
+that rule when the span it was written for is removed above.)
 Replace the MASTER PRESET select's `onchange` (M1 plan line 5334) the same way, so a recall that is
 refused or fails never leaves the picked name highlighted — App moves `masterPreset` only once
 `recallMasterPreset` applied (critic pass 3 #2):
@@ -6412,31 +6543,20 @@ and change the MASTER PRESET `SAVE` button from hard-`disabled` to:
 (also delete the `<!-- Saving a master preset is M7 (spec §9.3); the copy is final here. -->`
 comment above it).
 
-In `latent-forge/src/ui/shell/__tests__/topBar.test.ts` (M1 T10, M1 plan lines 5010-5017), the
-test titled `"disables SAVE on the master preset until M7 owns presets, and keeps the MIXDOWN frame"`
-is retitled `"enables SAVE on the master preset now that M7 owns presets, and keeps the MIXDOWN
-frame"`, and in its body `.disabled).toBe(true);` becomes `.disabled).toBe(false);`. Nothing else in
-that file changes (it keeps its 3 tests).
+In `latent-forge/src/ui/shell/__tests__/topBar.test.ts` (M1 T10), the test titled `"disables SAVE
+on the master preset until M7 owns presets, and keeps the MIXDOWN frame"` is retitled `"enables
+SAVE on the master preset now that M7 owns presets, and keeps the MIXDOWN frame"`, and in its body
+`.disabled).toBe(true);` becomes `.disabled).toBe(false);` (delete the three-line comment above it
+that says this task will do exactly that). Nothing else in that file changes (it keeps its 3 tests).
+The assertion lives in M1's file because it is true at M1's end state; this task owns the flip.
 
-**`App.svelte`'s required starting state (critic pass 3 #10, confirmed).** M1 T15 says App's
-`<script>` "becomes" a block holding only the keyboard and v1-store wiring (M1 plan lines
-8854-8887). Read literally, that drops everything M1 T10 Step 4 added (M1 plan lines 5477-5551):
-the `forgeApi`/`fetchAdapters`/`buildModelOptions` imports, the `sessions`/`session`/`models`/
-`model`/`modelFolder`/`masterPresets`/`masterPreset` `$state`s, `loadTopBar()` and its
-`void loadTopBar();` call — and the view-store import that T9-T14's markup still uses. T15 restates
-no markup, so its `<TopBar {sessions} {session} …>` would still reference all of them: the literal
-reading does not type-check, and the intended one is "T15 replaces the keydown handler with
-`installGlobalKeys`". Before the edits below, `App.svelte` must therefore hold:
-1. T15's `onMount` (`project.connect()`, `disposeKeys = installGlobalKeys({…})`) and `onDestroy`;
-2. M1 T10 Step 4's three imports, seven `$state`s and `loadTopBar()`, verbatim (M1 plan lines
-   5477-5512);
-3. `void loadTopBar();` inside that same `onMount`, after `installGlobalKeys` (M1 T10's own
-   `onMount`, lines 5518-5522, is the one T15 replaced);
-4. one view-store import (made `view` below);
-5. M1 T10's `<TopBar …>` element with every binding it lists (M1 plan lines 5528-5551).
-
-If any of 2-5 is missing, restore it from M1 T10 Step 4 verbatim first, merging `onMount` as in 1
-and 3, and run `npm run check` — it must pass on that restored, not-yet-edited file. Then:
+**`App.svelte`'s starting state is M1 T15's end state.** The reconcile pass of 2026-09-25 made M1
+T15 *extend* App instead of replacing its `<script>`, so App already holds M1 T15's `onMount`
+(`project.connect()`, `installGlobalKeys({…})`, `void loadTopBar();`) and `onDestroy`; M1 T10 Step
+4's three imports, seven `$state`s and `loadTopBar()`; the view-store import, as `view` (M1 uses
+that name throughout now); and M1 T10's `<TopBar …>` element with every binding it lists. (Critic
+pass 3 #10 found that the old literal T15 dropped all of that; this step used to restate it and say
+to restore it. Nothing needs restoring now — `npm run check` passes on the unedited file.) Then:
 
 In `latent-forge/src/App.svelte`, inside `loadTopBar()`, **delete** the auto-select line (M1 plan
 line 5502) — this is what makes `unsaved` reachable and keeps launch from ever naming a session:
@@ -6449,15 +6569,20 @@ and **delete** M1's own `let session = $state("");` (M1 plan line 5491): the ses
 lives in `SessionController` (step 9 is the only place it moves), and a second copy in App would
 be exactly the "select says B, stores hold A" split critic pass 2 found.
 
-Make sure `App.svelte` imports the view store as `view` exactly once (Global Constraint #3: if the
-file still says `import { viewStore } …`, that is the same singleton under a name that does not
-exist — change the import to `import { view } from "./lib/stores/view.svelte";` and its uses to
-`view`). `forgeApi` is imported by item 2 above. Then add — App holds **no** load/import/save or
-master-preset logic of its own; every step of Task 9's order is `SessionController`'s:
+`forgeApi` is imported by M1 T10's block. Then add — App holds **no** load/import/save or
+master-preset logic of its own; every step of Task 9's order is `SessionController`'s — and attach
+M4's settings seam to M5's source, which nothing did in production before (Global Constraint #6):
 
 ```ts
   import { SessionController } from "./lib/forge/sessionController.svelte";
   import { arrangement } from "./lib/stores/arrangement.svelte";
+  import { settings } from "./lib/stores/settings.svelte";
+
+  // M4's seam (M4 T1 `attach`) + M5's source (M5 T1 `settingsSource`, never seeding): PROMPT +
+  // SIGMA and ADVANCED SAMPLING now read and write the selected clip's / overlap's own `render`,
+  // not always session.defaults. Once, at startup; M4 and M5 cannot import each other (§12), so
+  // the composition root joins them (reconcile pass 2026-09-25).
+  settings.attach(arrangement.settingsSource);
 
   // Task 9's load/import/save order lives here, unit-tested (sessionController.test.ts).
   const sessionCtl = new SessionController({
@@ -6480,6 +6605,7 @@ master-preset logic of its own; every step of Task 9's order is `SessionControll
   async function saveSession() {
     const name = await sessionCtl.saveSession();
     if (name && !sessions.some((s) => s.name === name)) {
+      // `updated` in epoch SECONDS (a float), the server's own unit (file mtime; WINTERMUTE 2026-09-25).
       sessions = [...sessions, { name, updated: Date.now() / 1000, n_clips: arrangement.clips.length }];
     }
   }
@@ -6511,14 +6637,17 @@ Then replace the `{session}` / `onsession` / `onmasterpreset` bindings on `<TopB
     onmasterpresetsave={saveMasterPreset}
 ```
 
-- [ ] **Step 5: Wire `RightPaneModules.svelte`'s lit snapshot and M4's two LatCH handoffs**
+- [ ] **Step 5: Wire `RightPaneModules.svelte`'s lit snapshot and M4's three handoffs**
 
-This is the edit Tasks 2, 4 and 7 each stated an expression for. In
+This is the edit Tasks 2, 4 and 7 each stated an expression for, plus the two M4 handoffs that need
+M5's `arrangement` and so could land in neither M4 nor M5 (§12 keeps the two from importing each
+other; reconcile pass 2026-09-25, Open questions 19/20). In
 `latent-forge/src/ui/shell/RightPaneModules.svelte` (M1 T12, M1 plan lines 6641-6693 — M4 never
 changed it, M4 plan line 4712), add the imports:
 
 ```ts
   import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { settings } from "../../lib/stores/settings.svelte";
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
 ```
 
@@ -6545,21 +6674,23 @@ with
   // the proxies), so a module's dot relights on any in-place edit.
   //  - overlap: peekOverlapParams, NEVER overlapParams -- that one seeds the store, and a write
   //    during a $derived throws state_unsafe_mutation (Global Constraint #8).
-  //  - sampling: still null. M4 never wired it (M4 plan line 4712); see Open questions.
+  //  - sampling: the selected target's own settings. settings.current() reads through M5's
+  //    never-seeding settingsSource once App has attached it (Step 4), so it is safe in a $derived.
+  //    M4 never wired this (M4 plan line 4712); the reconcile pass put it here (Open questions 19).
   const snapshot = $derived<ModuleStateSnapshot>({
     overlap: view.selection.kind === "overlap" ? arrangement.peekOverlapParams(view.selection.key) : null,
     chain: arrangement.lanes[view.activeLane].chain,
-    sampling: null,
+    sampling: settings.current(view.selection),
     master: arrangement.master,
   });
   const lit = $derived(litModules(snapshot));
 
-  // M4's handoff (M4 plan line 4741): ADVANCED SAMPLING's `latch` prop is the active lane's LatCH
-  // state -- but ONLY the slots whose head /info.latch_heads lists (critic pass 2 #8). M4's
-  // activeSlots counts any non-"none", non-zero-weight head; resolveLatch (T1) omits a head the
-  // registry does not list, because the server raises on it. Passing the raw slots would show
-  // "euler (forced by LatCH)" for a request that sends no LatCH at all. Before the heads arrive
-  // nothing is known, which is also what resolveLatch would send.
+  // M4's handoff (M4 T11): ADVANCED SAMPLING's `latch` prop is the active lane's LatCH state --
+  // but ONLY the slots whose head /info.latch_heads lists (critic pass 2 #8). M4's activeSlots
+  // counts any non-"none", non-zero-weight head; chainRequest (T1) sends a head the registry does
+  // not list as "none", because the server 400s on it. Passing the raw slots would show "euler
+  // (forced by LatCH)" for a request that sends no active LatCH slot at all. Before the heads
+  // arrive nothing is known, which is also what chainRequest would send.
   let latchHeads = $state<Record<string, LatchHeadInfo>>({});
   $effect(() => {
     fetchLatchHeads().then((h) => (latchHeads = h)).catch(() => {});
@@ -6571,15 +6702,26 @@ with
       slots: chain.slots.filter((s) => Object.prototype.hasOwnProperty.call(latchHeads, s.head)),
     };
   });
+
+  // M4's other handoff (M4 T11 `a2a` prop; "M5 and M7 exist to wire them"): the selected clip's
+  // A2A state, which sets σ MAX. Only a clip has one; null otherwise (Open questions 20).
+  const selectedA2A = $derived.by(() => {
+    const sel = view.selection;
+    if (sel.kind !== "clip") return null;
+    const clip = arrangement.clips.find((c) => c.id === sel.id);
+    return clip?.a2a ? { on: clip.a2a.on, noise: clip.a2a.noise } : null;
+  });
 ```
 
 and in the markup replace `<AdvancedSampling />` with:
 
 ```svelte
-        <AdvancedSampling latch={activeLatch} />
+        <AdvancedSampling latch={activeLatch} a2a={selectedA2A} />
 ```
 
-Nothing else in the file changes (`lit[id]` is already what `<ModuleShell>` reads).
+Nothing else in the file changes (`lit[id]` is already what `<ModuleShell>` reads). Known limit,
+not fixed: M1's `litModules` compares `sampling` against `BASE_DEFAULTS`, so while the stage is
+POST an untouched session's defaults (POST's) light ADVANCED SAMPLING (Open questions 19).
 
 In `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` (M4 T10, M4 plan lines 4575-4633), M4's
 other handoff (M4 plan line 4076: "M7 passes the active lane's real two slots"): add the import
@@ -6613,12 +6755,13 @@ and change `<SigmaColumn {target} {length} {a2a} />` to:
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/sessionName.test.ts src/lib/forge/__tests__/autosave.test.ts src/lib/forge/__tests__/projectSerializer.test.ts src/lib/forge/__tests__/sessionController.test.ts src/lib/help/__tests__/sessionHelp.test.ts src/ui/shell/__tests__/topBarSessions.test.ts src/ui/shell/__tests__/rightPaneModules.test.ts
 ```
 
-Expected: `Test Files  7 passed (7)` / `Tests  46 passed (46)` — 3 in `sessionName.test.ts`, 8 in
+Expected: `Test Files  7 passed (7)` / `Tests  48 passed (48)` — 3 in `sessionName.test.ts`, 8 in
 `autosave.test.ts`, 9 in `projectSerializer.test.ts` (3 `serializeProject` + 2 `applyProject` + 2
-`validateProjectV2` + 2 `buildMasterPresetPayload`/`applyMasterPreset`), 14 in
-`sessionController.test.ts` (6 from critic pass 2 + 8 from critic pass 3), 2 in
-`sessionHelp.test.ts`, 7 in `topBarSessions.test.ts`, 3 in `rightPaneModules.test.ts`:
-3+8+9+14+2+7+3 = 46, counted mechanically with `grep -c '^  it('` over this task's own test blocks.
+`validateProjectV2` + 2 `buildMasterPresetPayload`/`applyMasterPreset`), 15 in
+`sessionController.test.ts` (6 from critic pass 2 + 8 from critic pass 3 + 1 stage-lock test from
+the reconcile pass), 2 in `sessionHelp.test.ts`, 7 in `topBarSessions.test.ts`, 4 in
+`rightPaneModules.test.ts` (3 + the reconcile pass's M4/M5 wiring test):
+3+8+9+15+2+7+4 = 48, counted mechanically with `grep -c '^  it('` over this task's own test blocks.
 
 Then the files this task modified that already had suites — M1's `strings.test.ts` (now 112) and
 `topBar.test.ts` (the flipped assertion), M4's `PromptSigmaTab` tests — and the whole project's
@@ -6634,11 +6777,11 @@ warnings`.
 - [ ] **Step 7: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T9: sessions load/save/import through one SessionController sequence (validate before any store write, disarm before apply, name+arm only after apply and rebuild, SAVE refused mid-load, failed rebuild pinned out of the session, stretches re-derived, v1 keeps the stage and its sampling fields, unsupported versions refused, unsaved work and listed names not replaced without confirm, PUTs chained per name, rebuilds serialised against the server's stage), snapshot-gated 2s autosave with failed saves kept pending that never writes before a load or SAVE, M1's sessions[0] auto-select removed, master preset recall/save against spec 9.3's literal slice (validated whole, dropped if a load overtakes it), RightPaneModules lit snapshot + M4's two LatCH handoffs wired, removes M1 T15's temporary SAVE/LOAD project buttons, HELP total 112"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T9: sessions load/save/import through one SessionController sequence (validate before any store write, disarm before apply, name+arm only after apply and rebuild, SAVE refused mid-load, failed rebuild pinned out of the session, stretches re-derived, v1 keeps the stage and its sampling fields, unsupported versions refused, unsaved work and listed names not replaced without confirm, PUTs chained per name, rebuilds serialised against the server's stage), snapshot-gated 2s autosave with failed saves kept pending that never writes before a load or SAVE, M1's sessions[0] auto-select removed, master preset recall/save against spec 9.3's literal slice (validated whole, dropped if a load overtakes it), RightPaneModules lit snapshot + M4's LatCH/a2a/sampling handoffs wired, settings.attach(arrangement.settingsSource) in App, loads refused mid-STAGE-rebuild and holding settings.stageLocked, removes M1 T15's temporary SAVE/LOAD project buttons, HELP total 112"
 ```
 ---
 
-### Task 10: Playwright fragment and self-review
+### Task 10: Playwright fragment, recorded-response contract tests, and self-review
 
 **WHY.** Every prior milestone's own Playwright fragment extends M1 T15's `tests/layout.spec.ts`
 rather than replacing it, and none of them may weaken M1's frozen assertion that
@@ -6649,6 +6792,8 @@ Incomplete note every milestone plan ends with (M6's own Task 11 is the template
 
 **Files:**
 - Create: `latent-forge/tests/sessionsFilesOverlap.spec.ts`
+- Create: `latent-forge/src/lib/forge/__tests__/recordedContract.test.ts` (Step 4 — reconcile pass
+  2026-09-25, WINTERMUTE's recorded-response requirement)
 
 **Interfaces:**
 - Consumes the mock server's `/forge/sessions`, `/forge/presets/*`, `/forge/files` routes (M1 T6,
@@ -6670,11 +6815,17 @@ Incomplete note every milestone plan ends with (M6's own Task 11 is the template
   `data-module-toggle="files"`/`"lane-chain"`/`"overlap"`, `[data-file-row]`, `data-module="overlap"`.
 - Consumes M5's `dropClip` helper (M5 plan lines 5779-5794), copied verbatim with its `box`/
   `openFiles` helpers, and M5's own premise that dropping at x = 10 and x = 60 on one lane overlaps
-  (M5 plan lines 5853-5854). **M5's `ClipBox`/`OverlapBox` emit no `data-testid`** (M5 plan lines
-  3659-3667, 4069-4076) even though M5's own `timeline.spec.ts` assumes `[data-testid="clip"]`/
-  `[data-testid="overlap"]`, so this spec selects `.clip[role="button"]`/`.overlap[role="button"]`
-  — the markup those components actually have (the `role` keeps `.overlap` from also matching
-  OverlapInpaint's own root `<div class="overlap">`).
+  (M5 plan lines 5853-5854). **M5's `ClipBox`/`OverlapBox` emit no `data-testid`**, so this spec
+  selects `.clip[role="button"]`/`.overlap[role="button"]` — the markup those components actually
+  have (the `role` keeps `.overlap` from also matching OverlapInpaint's own root `<div
+  class="overlap">`). M5's own `timeline.spec.ts` now uses the same selectors (fixed at source by
+  the reconcile pass of 2026-09-25; Open questions 21).
+- Consumes, for Step 4's contract tests (vitest, not Playwright): `FIXTURE_DIR` and
+  `preferRecorded(available, name)` from `latent-forge/mock/plugin.ts` (M1 T6 — a recorded
+  `<name>.json` beats `handmade-<name>.json`; fixture shape `{status, body}`), and the recorded
+  fixture names M2 T15's `record_fixtures.py` `EXPECTED` writes: `info`, `models_adapters`, `slots`,
+  `forge_files_crops`, `forge_files_renders`. `EXPECTED` records **no** session or preset route,
+  so there is nothing recorded to test those against (see Step 4).
 
 - [ ] **Step 1: Write the spec**
 
@@ -6836,19 +6987,180 @@ if OVERLAP-INPAINT's body throws or seeds on first render.
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx playwright test tests/layout.spec.ts tests/sessionsFilesOverlap.spec.ts
 ```
 
-Expected: **`1 failed, 16 passed`** — M1 T15's 11 layout tests plus this task's 6 = 17. The one
-failure is M1's own `each bottom tab opens`, which is red before and after this milestone (Global
-Constraint #5: it clicks `[data-tab="chroma"]`, which matches no button and not the current tab's
-body either). None of the other 10 layout tests changed. Do not "fix" it from here — it is M1's
-frozen file and is flagged for WINTERMUTE.
+Expected: **`17 passed`** — M1 T15's 11 layout tests plus this task's 6. M1's `each bottom tab
+opens`, which used to be the one expected failure here, was fixed at source by the reconcile pass
+of 2026-09-25 (it now clicks `[data-testid="bottom-tab-<id>"]`; Global Constraint #5).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Recorded-response contract tests (vitest)**
 
-```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FILES/OVERLAP Playwright fragment against dev:mock (seeded session, real autosave round trip, positive OVERLAP-INPAINT case via M5's dropClip); self-review below"
+WINTERMUTE's requirement (2026-09-25): for every route this milestone touches, one contract test
+that loads the response **recorded from the real server** instead of a hand-written mock —
+`fetchAdapters()` read `ckpts` through two milestones because its mock agreed with it. The
+recordings are M2 **Task 15**'s `eval/forge/record_fixtures.py` (W's DM says "Task 12"; M2's Task 12
+is SAME chroma, and the recorder is Task 15 — the source wins), written to
+`docs/latent-forge/contract/fixtures/<name>.json` as `{status, body}`. The loader is M1 T6's own
+recorded-wins rule, `preferRecorded(available, name)`; a hand-made hit counts as **not recorded**,
+because the hand-made file is exactly what these tests check the client against, so every test
+**skips, with the reason in its title,** until M2 T15 has run — it never passes against the mock.
+
+Which routes have a recording (M2 T15's `EXPECTED`) — one test each:
+
+| route this milestone touches | recorded fixture | client code under test |
+|---|---|---|
+| `GET /info` (`latch_heads`, `film_default`) | `info` | `fetchLatchHeads` (T1), `CHAIN_DEFAULTS.film.gain` |
+| `GET /models` | `models_adapters` (`?family=adapter&loadable=1`) | `fetchAdapters` (M1), `fetchFilmCkpts` (T2 — same envelope; `?family=film` is not recorded separately) |
+| `GET /slots` | `slots` | `fetchSlots` (T2) |
+| `GET /forge/files` | `forge_files_crops`, `forge_files_renders` | `forgeApi.files` (M1 T5, T6's module) |
+| `GET /forge/sessions`, `GET`/`PUT /forge/sessions/{name}` | **none** — `EXPECTED` records no session route | no test (none invented) |
+| `GET /forge/presets/{level}`, `GET`/`PUT`/`DELETE /forge/presets/{level}/{name}` | **none** | no test (none invented) |
+
+The session and preset routes are the ones W's reply described most precisely (raw GETs, wrapped
+lists and PUT/DELETE, epoch-seconds `updated`, 400 on a non-v2 PUT, 404 on a missing preset), and
+the ones M1's mock disagrees with most (M1's reconcile note: its `session_put` accepts any body, its
+`preset_delete` answers 200 for a missing name). Recording them needs `record_fixtures.py` to grow
+entries — an M2 change, so it is asked of WINTERMUTE, not made here (Open questions 35).
+
+`latent-forge/src/lib/forge/__tests__/recordedContract.test.ts`:
+
+```ts
+// The client against RESPONSES RECORDED FROM THE REAL SERVER (WINTERMUTE 2026-09-25), never the
+// hand-written mock: a mock that agrees with its client is how fetchAdapters read `ckpts` for two
+// milestones. Recordings: M2 T15's record_fixtures.py -> docs/latent-forge/contract/fixtures/<name>.json.
+// Only a RECORDED file counts; preferRecorded()'s hand-made fallback is the thing under test, so a
+// hand-made hit skips -- with the reason in the title -- and never passes.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { FIXTURE_DIR, preferRecorded } from "../../../../mock/plugin";
+import { fetchLatchHeads } from "../../chains/latch";
+import { forgeApi } from "../api";
+import { CHAIN_DEFAULTS } from "../defaults";
+import { isAudioRef, isLatentRef } from "../guards";
+import { fetchAdapters, fetchFilmCkpts, fetchSlots } from "../models";
+
+interface Fixture { status: number; body: unknown }
+
+function recorded(name: string): Fixture | null {
+  const available = existsSync(FIXTURE_DIR) ? readdirSync(FIXTURE_DIR) : [];
+  if (preferRecorded(available, name) !== `${name}.json`) return null;
+  return JSON.parse(readFileSync(resolve(FIXTURE_DIR, `${name}.json`), "utf8")) as Fixture;
+}
+
+/** The test title, plus why it is skipped while any of its recordings is missing. */
+function title(desc: string, ...names: string[]): string {
+  const missing = names.filter((n) => recorded(n) === null);
+  return missing.length === 0
+    ? desc
+    : `${desc} [SKIPPED: ${missing.map((n) => `${n}.json`).join(", ")} not recorded yet -- run M2 T15's ` +
+      `record_fixtures.py against the live server; a hand-made mock is not a contract]`;
+}
+
+/** Answer every fetch with the recorded response, status and all. */
+function serve(f: Fixture): void {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(f.body), {
+    status: f.status, headers: { "content-type": "application/json" },
+  })));
+}
+
+const INFO = recorded("info");
+const MODELS = recorded("models_adapters");
+const SLOTS = recorded("slots");
+const CROPS = recorded("forge_files_crops");
+const RENDERS = recorded("forge_files_renders");
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("the client against recorded real-server responses (M2 T15 fixtures)", () => {
+  it.skipIf(!INFO)(title("GET /info: every latch head has the fields LatchHeadInfo reads, and film_default.gain is CHAIN_DEFAULTS.film.gain", "info"), async () => {
+    serve(INFO!);
+    const heads = Object.values(await fetchLatchHeads());
+    expect(heads.length).toBeGreaterThan(0);
+    for (const h of heads) {
+      expect(typeof h.name).toBe("string");
+      expect(typeof h.family).toBe("string");
+      expect(typeof h.default_gain).toBe("number");
+      expect(typeof h.health).toBe("string");
+      expect(Array.isArray(h.supports_kinds)).toBe(true);
+      expect(typeof h.slider_min).toBe("number");
+      expect(typeof h.slider_max).toBe("number");
+      expect(typeof h.value_default).toBe("number");
+    }
+    const info = (await forgeApi.info()) as { film_default?: { gain?: unknown } };
+    expect(info.film_default?.gain).toBe(CHAIN_DEFAULTS.film.gain);   // 1.75 on both sides
+  });
+
+  it.skipIf(!MODELS)(title("GET /models: the rows are under `models`, and fetchAdapters/fetchFilmCkpts return every one", "models_adapters"), async () => {
+    const body = MODELS!.body as { models?: { path?: unknown }[] };
+    expect(Array.isArray(body.models)).toBe(true);   // not `ckpts` -- M1's old mock
+    serve(MODELS!);
+    const adapters = await fetchAdapters();
+    expect(adapters).toHaveLength(body.models!.length);
+    for (const a of adapters) expect(typeof a.path).toBe("string");
+    expect(await fetchFilmCkpts()).toHaveLength(body.models!.length);   // same /models envelope
+  });
+
+  it.skipIf(!SLOTS)(title("GET /slots: fetchSlots keeps every resident slot, with the fields LORA/DORA reads", "slots"), async () => {
+    const body = SLOTS!.body as Record<string, unknown>;
+    for (const k of ["active", "backbone", "slots", "max_slots", "vram_floor_gb", "free_gb"]) {
+      expect(Object.prototype.hasOwnProperty.call(body, k), `/slots has no ${k}`).toBe(true);
+    }
+    serve(SLOTS!);
+    const out = await fetchSlots();
+    expect(out.ok).toBe(true);
+    expect(out.slots).toHaveLength((body.slots as unknown[]).length);
+    for (const s of out.slots) {
+      expect(typeof s.index).toBe("number");
+      expect(typeof s.path).toBe("string");
+      expect(typeof s.label).toBe("string");
+      expect(typeof s.family).toBe("string");
+      expect(typeof s.cost_gb).toBe("number");
+      expect(typeof s.strength).toBe("number");
+    }
+  });
+
+  it.skipIf(!CROPS || !RENDERS)(title("GET /forge/files (crops, renders): roots are {id,label,available}, rows are {root,rel,kind,size,mtime,ref} with a real ref", "forge_files_crops", "forge_files_renders"), async () => {
+    for (const f of [CROPS!, RENDERS!]) {
+      serve(f);
+      const res = await forgeApi.files({ root: "crops", limit: 5 });   // the query is not what is under test
+      expect(res.roots.length).toBeGreaterThan(0);
+      for (const r of res.roots) {
+        expect(typeof r.id).toBe("string");
+        expect(typeof r.label).toBe("string");
+        expect(typeof r.available).toBe("boolean");
+      }
+      for (const row of res.files) {
+        expect(typeof row.root).toBe("string");
+        expect(typeof row.rel).toBe("string");
+        expect(["audio", "latent"]).toContain(row.kind);
+        expect(typeof row.size).toBe("number");
+        expect(typeof row.mtime).toBe("number");
+        expect(isAudioRef(row.ref) || isLatentRef(row.ref)).toBe(true);
+      }
+    }
+  });
+});
 ```
 
-- [ ] **Step 5: Self-review**
+Run it:
+
+```bash
+cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/recordedContract.test.ts
+```
+
+Expected **before M2 T15 has recorded** (the state on 2026-09-25 — no recorded fixture exists
+yet; `docs/latent-forge/contract/fixtures/` itself only appears with M1 T6's hand-made files): `Test Files  1 skipped (1)` /
+`Tests  4 skipped (4)`, each title naming the missing recording. **After** it has: `Test Files  1
+passed (1)` / `Tests  4 passed (4)`. A **failure** is the point of the file — the client disagrees
+with the real server — and is fixed in the client (or raised with WINTERMUTE), never by editing the
+recorded fixture.
+
+- [ ] **Step 5: Commit**
+
+```bash
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FILES/OVERLAP Playwright fragment against dev:mock (seeded session, real autosave round trip, positive OVERLAP-INPAINT case via M5's dropClip); recorded-response contract tests for /info, /models, /slots, /forge/files (skipped until M2 T15 records); self-review below"
+```
+
+- [ ] **Step 6: Self-review**
 
 | Requirement | Where | State |
 |---|---|---|
@@ -6856,7 +7168,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 | §4.6.2 FILES: root header, root select, filter field, draggable list | T15 (M1) real body; T6 adds the two missing `data-help`s | done |
 | §6.3 FILES roots `crops`/`renders`/`uploads`, unavailable shown not hidden | T15 (M1), verified by T6's own test | done |
 | §9.2 sessions: SESSION select loads through `convertProjectV1` when it says `version: 1` (v2 validated whole first; any other version refused) | T9 `SessionController.loadSession`; T10 test 1 | done |
-| §9.2 no load or import can autosave or SAVE a half-applied or mismatched project | T9's numbered order in `SessionController`; `sessionController.test.ts` (14 cases: critic pass 2's 6, plus pass 3's unsupported version, superseded-then-failed load, SAVE outliving a load, apply that throws, ordered PUTs) | done |
+| §9.2 no load or import can autosave or SAVE a half-applied or mismatched project | T9's numbered order in `SessionController`; `sessionController.test.ts` (15 cases: critic pass 2's 6, plus pass 3's unsupported version, superseded-then-failed load, SAVE outliving a load, apply that throws, ordered PUTs, plus the reconcile pass's M4 stage lock) | done |
 | (authored guard) unsaved work and listed names are not replaced without asking; a failed autosave is retried | T9 `confirm`/`exists` deps, `createSnapshotAutosave`'s pending retry; `sessionController.test.ts`, `autosave.test.ts` | done (placeholders: `window.confirm`, Open questions 31) |
 | §9.2 v1 files load through a converter | T9 IMPORT button → `SessionController.importProjectFile` → `convertProjectV1` | done (file import; the server only ever stores v2; the stage is kept) |
 | §9.2 `previewAudio` re-derived on load | T9 step 6, M5's `scheduleStretch` per clip | done |
@@ -6869,8 +7181,12 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 | §9.3 master recall replaces the whole slice — never half of it, never into a session loaded meanwhile | T9 `validateMasterPreset` + `SessionController.recallMasterPreset` (seq re-check after the fetch) | done |
 | §6.3 session name regex validated client-side before the PUT | T9 `sessionName.ts` | done |
 | M1's frozen `[data-module="overlap"]` count-0 assertion | T10 test 5, untouched | done |
-| RightPaneModules' lit dots (`chain`, `master`, `overlap`) | T9 Step 5 | done; `sampling` stays `null` (M4 never wired it) |
-| M4 → M7 handoff: `SigmaColumn slots`, `AdvancedSampling latch` | T9 Step 5 | done |
+| RightPaneModules' lit dots (`chain`, `master`, `overlap`, `sampling`) | T9 Step 5 | done; `sampling` added by the reconcile pass (POST lights it while untouched — Open questions 19) |
+| M4 → M7 handoffs: `SigmaColumn slots`, `AdvancedSampling latch` and `a2a` | T9 Step 5 | done (`a2a` by the reconcile pass) |
+| M4's settings seam wired in production (`settings.attach`) | T9 Step 4, M5 T1's `settingsSource` | done (reconcile pass) |
+| a session load and M4's STAGE rebuild never overlap | T9 `SessionController.begin` + M4 T9's `stageLocked`/`stageRebuilding` | done (reconcile pass) |
+| the lane chain goes to the server as M8's `parse_chain` takes it | T1 `chainRequest` | done (reconcile pass; M9 submits it) |
+| every route this milestone touches is checked against a RECORDED real-server response | T10 Step 4 `recordedContract.test.ts` | `/info`, `/models`, `/slots`, `/forge/files` done (skipped until M2 T15 records); sessions and presets have no recording to check (Open questions 35) |
 
 **Known incomplete.**
 
@@ -6881,25 +7197,25 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 2. **The v1 store's orphaned state (`App.svelte`/`keyboard.ts`/transport possibly still reading
    `sa3-studio`'s `project` singleton instead of `arrangement`)** is a verified cross-milestone gap
    (see Task 9's WHY) that this task cannot close — rewiring the keyboard/transport is outside
-   "FILES, OVERLAP-INPAINT, sessions, presets, autosave, v1→v2." Flagged for FLATLINE to route to
-   WINTERMUTE alongside the `ModuleShell`/`viewStore` defects the brief already names.
-3. **M1's `each bottom tab opens` stays red** (Global Constraint #5) — M1's file, not this
-   milestone's to edit.
-4. **FILM SCALE does not start at `/info.film_default.gain`** (spec §5.5) — a recorded gap, not a
-   fix (Open questions 26).
-5. **The lit dot's real markup is untested.** `rightPaneModules.test.ts` swaps `ModuleShell` for a
-   probe and asserts the `lit` value RightPaneModules passes; nothing in any plan pins how the
-   reconciled `{id, title, lit}` shell renders it (Open questions 27).
+   "FILES, OVERLAP-INPAINT, sessions, presets, autosave, v1→v2." M5's Normative table now says so
+   instead of naming its Task 7 (reconcile pass 2026-09-25); the rewire itself is still unowned
+   (Open questions 3).
+3. ~~**M1's `each bottom tab opens` stays red**~~ — **fixed at source by the reconcile pass
+   (2026-09-25)** (Global Constraint #5); Step 3 expects no failure.
+4. ~~**FILM SCALE does not start at `/info.film_default.gain`**~~ — **closed by the reconcile pass
+   (2026-09-25):** M1's `CHAIN_DEFAULTS.film.gain` is now 1.75, the server's value (Open questions 26).
+5. ~~**The lit dot's real markup is untested.**~~ — **closed by the reconcile pass:** M1 T9 pins
+   the dot (`[data-module-dot=<id>]` + `data-lit`), and `rightPaneModules.test.ts` reads it off the
+   real `ModuleShell`; the probe is gone (Open questions 27).
 6. **Two loads racing through a model rebuild are now reconciled (critic pass 3 #6), but only the
    superseded-then-failed case is tested.** Rebuilds are serialised, the newer load compares
    against the server's stage once the older rebuild settled, and a latest load that ends without
    committing lets STAGE follow the server. The "older rebuild succeeds, newer load rebuilds back"
    ordering is covered by reasoning, not by its own test.
-7. **M4's own STAGE control is not guarded against a load in flight** (critic pass 3 #6, related).
-   `ModelStageColumn`'s `confirmStage` (M4 plan lines 3780-3792) can finish during steps 5-8 and
-   `setStage` over the loaded session's defaults, which then count as an edit and autosave. The
-   controller treats a stage M4 set between loads as the server's (`serverStage` is null then), so
-   nothing mismatches afterwards, but the mid-load case is M4's file: Open questions 32.
+7. ~~**M4's own STAGE control is not guarded against a load in flight**~~ — **closed by the
+   reconcile pass:** M4 T1's `stageLocked`/`stageRebuilding` pair; M4 T9 offers no switch while a load
+   holds the lock, and `SessionController` refuses to start a load while M4's rebuild runs (Open
+   questions 32). Not covered: a rebuild M4 starts in another browser tab — the lock is per tab.
 8. **A step-4 flush that fails is logged, not retried.** Once the outgoing session is disarmed, its
    flushed PUT has no armed name to fall back to (`autosave.ts`); the edit is lost if that one PUT
    fails. An in-session failure is retried (critic pass 3 #5).
@@ -6907,6 +7223,9 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
    project** (critic pass 3 #3). It ignores the name, viewport, `ui` slice and model, so anything
    that writes another saved field at mount would make every first pick ask; T10 tests 1-2 would
    fail on it (see Step 2).
+10. **The recorded-response contract tests skip until M2 T15 runs** (Step 4), and the session and
+    preset routes have no recording at all, so the mock's known disagreements there (M1's reconcile
+    note) stay uncaught until `record_fixtures.py` records them (Open questions 35).
 
 ## Open questions
 
@@ -6917,7 +7236,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
    assertion to its cumulative total in execution order — 100, 104, 107, 109, **112** — and the
    `RightPaneModules.svelte` edit is a real step (Task 9 Step 5), not an assembly note.
 
-2. **M5's own Normative-names table is wrong about where the v1 `project` store gets rewired/
+2. **[Reconcile pass 2026-09-25: M5's row is corrected at source; the rewire stays unowned.]** **M5's own Normative-names table is wrong about where the v1 `project` store gets rewired/
    deleted.** It says "Task 7 is the swap point" (`2026-09-17-latent-forge-m5-timeline-fidelity.md
    :5925`); I read M5 Task 7's actual body in full and it never touches `App.svelte`, `TopBar.svelte`
    or `keyboard.ts`, and a full-file grep of the M5 plan for edits to those three files returns
@@ -6928,7 +7247,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
    verified defect worth a line to WINTERMUTE, the same class as the `ModuleShell`/`viewStore`
    defects the brief already flags.
 
-3. **`settings.attach(source: TargetSettingsSource)` (M4) is never called in production code
+3. **[Reconcile pass 2026-09-25: wired — M5 T1's `settingsSource`, attached by Task 9 Step 4's App.]** **`settings.attach(source: TargetSettingsSource)` (M4) is never called in production code
    anywhere across M1/M4/M5** — every occurrence outside a `__tests__` file is zero, checked by a
    full grep of both plans. This means PROMPT + SIGMA / ADVANCED SAMPLING may currently always
    resolve to `session.defaults` regardless of the selected clip/overlap, never actually reading or
@@ -6936,7 +7255,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
    serialise independently of whether `settings` is wired to edit them), but it is a real
    integration gap between M4 and M5 worth flagging to WINTERMUTE.
 
-4. **The v1 `SnapMode` spelling the brief and M5's own Normative table cite ("8"/"16"/"32" bare
+4. **[Reconcile pass 2026-09-25: M5's Normative row is corrected at source; Task 8's defensive table is harmless and stays.]** **The v1 `SnapMode` spelling the brief and M5's own Normative table cite ("8"/"16"/"32" bare
    digits) does not match the real source.** `sa3-studio/src/lib/musictime.ts:52` already spells
    `SnapMode` as `"1/8"|"1/16"|"1/32"` — the only real v1→v2 mapping needed is `"off"` → `"free"`.
    `convertProjectV1`'s `SNAP_V1_TO_V2` table (Task 8) handles both the claimed and the real
@@ -7004,27 +7323,35 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 want Kim's or WINTERMUTE's answer rather than a default; the rest are recorded as each writer found
 them, in full, in the two per-writer "Open questions" sections above (after Task 5 and after
 Task 10). Items 18-24 were added by critic pass 1, items 25-30 by critic pass 2, items 31-34 by
-critic pass 3.
+critic pass 3, item 35 by the reconcile pass of 2026-09-25, which also resolved items 1-4, 8, 9,
+19-21, 26, 27 and 32 at their source plans.
 
-1. **`LatchRequest`'s wire shape is FLATLINE's writer's own invention** — spec §5.5 gives only the
-   mapping formula, not a request shape. Shipped `{slots: LatchRequestSlot[]; rho; mu; gamma; n_iter;
-   log_norms}`, `slots` holding only active entries. If M8's real server-side payload is keyed
-   differently, this and `resolveLatch`'s return need a matching change.
-2. **`settings.attach()` (M4) is never called anywhere outside a test file, across M1, M4 and M5** —
-   verified by a full grep of both plans; every real occurrence is inside a `beforeEach` test fixture.
-   PROMPT + SIGMA / ADVANCED SAMPLING may currently always resolve to `session.defaults`, never a
-   clip's own settings. Does not block this milestone (clip/overlap `render` serialises
-   independently) but is a real M4/M5 integration gap.
-3. **M5's own Normative-names table wrongly names Task 7 as where the legacy v1 `project` store is
-   rewired or removed** — M5 Task 7's actual body never touches `App.svelte`, `TopBar.svelte` or
-   `keyboard.ts` (verified by a full grep of the M5 plan). The legacy store may still be what
-   keyboard actions and the transport buttons read/write, disconnected from `arrangement`. This
-   milestone's Task 9 does not depend on it (it removes the one `TopBar.svelte` reference), but it's
-   worth a line to WINTERMUTE.
-4. **The real v1 `SnapMode` spelling is not what the brief (and M5's own table) claimed.** The actual
-   source (`sa3-studio/src/lib/musictime.ts:52`) already spells it `"1/8"|"1/16"|"1/32"` — only
-   `"off"` → `"free"` needs mapping. The converter (Task 8) handles both the claimed and the real
-   spelling defensively; the claim itself should be corrected wherever it's repeated next.
+1. **RESOLVED (WINTERMUTE, 2026-09-25; reconcile pass).** The old `LatchRequest`
+   (`{slots: active only; rho; mu; gamma; n_iter; log_norms}` with §5.5's gains applied client-side)
+   was FLATLINE's own invention, and M8 keys the request differently: `parse_chain` →
+   `chain_to_request` (M8 plan lines 331-395) take **the chain object** and do the mapping
+   server-side. An active-only slot list is a 400 (`chain.slots must have exactly 2 entries`), and a
+   pre-multiplied `rho`/`mu` fails `parse_chain`'s 0..30 check or is scaled twice. Task 1's
+   `chainRequest` now sends exactly `{latch_on, slots:[s0, s1], hparams:{rho, mu, gamma, n_iter,
+   log_norms}, film_on, film, lora_on, lora, bungee_on, semitones}`, built key by key (an unknown key
+   is also a 400), with an unknown head rewritten to `"none"` in place and `lora.slot: null`. No
+   client display needed the gain math, so none is kept. M9 puts `chainRequest(...)` under each
+   lane's `chain` key.
+2. **RESOLVED (reconcile pass): `settings.attach()` is wired in production.** It was called only
+   in test fixtures across M1, M4 and M5, so PROMPT + SIGMA / ADVANCED SAMPLING always resolved to
+   `session.defaults`. M5 T1 now exposes `arrangement.settingsSource` (M4's `TargetSettingsSource`,
+   structurally, never seeding; M5 T7's `OverlapBox` creates an overlap's params in its select
+   handler), and Task 9 Step 4's `App.svelte` calls `settings.attach(arrangement.settingsSource)`.
+   It lands in M7 rather than M4 or M5 because M7 is the first plan that depends on both, and §12
+   keeps those two from importing each other. Tested in `rightPaneModules.test.ts`.
+3. **Half resolved (reconcile pass).** M5's Normative table no longer names its Task 7 as the
+   legacy v1 `project` store's swap point — no M5 task is. The store is still what M1 T15's
+   keyboard actions (`installGlobalKeys`) and `project.connect()` use, beside `arrangement`; this
+   milestone's Task 9 removes the one `TopBar.svelte` reference. **The keyboard rewire and the
+   store's deletion have no owner** — for Kim/WINTERMUTE to assign (M9 is the obvious candidate).
+4. **RESOLVED (reconcile pass).** v1 already spells `SnapMode` `"1/8"|"1/16"|"1/32"`
+   (`sa3-studio/src/lib/musictime.ts:52`, re-verified); only `"off"` → `"free"` maps. M5's Normative
+   row is corrected at source. Task 8's converter still accepts both spellings — harmless.
 5. **No text-entry affordance exists in the drawing for naming a new session or master preset** —
    both selects only ever list existing names. Task 9 uses `window.prompt()` as a placeholder
    (asked only when nothing is currently named). Confirm with Kim, or design an inline field, before
@@ -7046,11 +7373,11 @@ critic pass 3.
    session's own backbone stays in what is saved, so an edit no longer rewrites it; items 29-30.)
    Wiring `App.svelte`'s model state through
    `settings` is a follow-up — not attempted here, outside "sessions, master preset, autosave."
-8. **`fetchAdapters()`'s real server mismatch** (Global Constraints #4) — flagged again here as it's
-   the kind of cross-milestone defect WINTERMUTE asked to hear about as one batch.
-9. **M1's own Playwright layout spec clicks the tab body, not the tab button** (Global Constraints
-   #5) — `each bottom tab opens` is red before and after M7, and Task 10's whole-suite gate says so.
-   Same batch.
+8. **RESOLVED (reconcile pass): `fetchAdapters()` reads `models`** (Global Constraints #4), its
+   M1 mock test seeds the real envelope, and Task 10's contract test checks it against the recorded
+   `models_adapters.json`.
+9. **RESOLVED (reconcile pass): M1's tab test clicks the tab button** (Global Constraints #5), so
+   Task 10's whole-suite gate expects no failure.
 10. **Two toggle buttons the brief's own HELP-gap table omitted**: LATCH GUIDANCE's own toggle
     (v3:507) and BUNGEE's own toggle (v3:557), verified directly against the real v3 file, carry no
     `data-help` exactly like FILM's and LORA/DORA's toggles which the brief did flag. Added
@@ -7078,7 +7405,7 @@ critic pass 3.
     drag-payload formats. The only gap against §4.6.2 was the two missing HELP ids, closed by Task 6.
 16. **`fetchLatchHeads()` lives in `src/lib/chains/latch.ts`** rather than `src/lib/forge/models.ts`
     (where the other `/models`/`/slots` fetchers live), since it shapes `/info.latch_heads` into the
-    exact type `resolveLatch` consumes and both LaneChain and MasterChain need the identical shape.
+    exact type `chainRequest` consumes and both LaneChain and MasterChain need the identical shape.
     Flag if a different placement is preferred.
 17. **§9.3's "three levels, four bullets" slip** — reproduced as found, shipped against the four
     bullets (matching the HTTP contract's `level` enum), not silently corrected.
@@ -7086,19 +7413,22 @@ critic pass 3.
     lane`, §8.1 S4 (spec line 788) `chain idle — no A2A clip`. Shipped §5.5's, since §5.5 is the
     normative LANE CHAIN section and the longer form says which thing lacks the clip. The spec should
     be made to agree with itself; `signalPath.ts` and its test change one string if §8.1 wins.
-19. **ADVANCED SAMPLING's lit dot stays dark.** M1 T12's comment promised "M4 replaces `sampling`
-    with render.settingsFor(view.selection)", but M4 never edited `RightPaneModules.svelte` (M4 plan
-    line 4712). Task 9 Step 5 keeps `sampling: null` rather than silently doing M4's wiring; the
-    one-line fix would be `sampling: settings.current(view.selection)`. Flag for WINTERMUTE.
-20. **`AdvancedSampling`'s other handoff prop, `a2a`, is still unwired** (M4 plan line 4741 says "M5
-    and M7 exist to wire them"). Task 9 wires `latch` (M7's half); `a2a` is the selected clip's A2A
-    state, M5's half, and no M5 task passes it. Same batch.
-21. **M5's own Playwright selectors do not match M5's own markup.** `tests/timeline.spec.ts` assumes
-    `[data-testid="clip"]`/`[data-testid="overlap"]` (M5 plan lines 5727, 5746), but `ClipBox`/
-    `OverlapBox` emit no `data-testid` (M5 plan lines 3659-3667, 4069-4076); and it asserts
-    `[data-module="overlapInpaint"]`, while the module id is `overlap` (M1 plan line 8342, the frozen
-    count-0 assertion). Task 10 selects `.clip[role="button"]`/`.overlap[role="button"]` and
-    `[data-module="overlap"]`. Not M7's file to fix — same batch.
+19. **RESOLVED (reconcile pass): ADVANCED SAMPLING's lit dot is live.** M4 never edited
+    `RightPaneModules.svelte` (M4 plan line 4712), and wiring it needs M5's store too, so Task 9
+    Step 5 now passes `sampling: settings.current(view.selection)` — safe in a `$derived` because
+    M5's `settingsSource` never seeds. **Known limit, not fixed:** M1's `litModules` compares
+    `sampling` against `BASE_DEFAULTS`, so while the stage is POST an untouched session (whose
+    defaults are POST's) lights the dot. The fix would be a stage-aware default in M1's
+    `nonDefault.ts` (M1 T12 is frozen here; flagged).
+20. **RESOLVED (reconcile pass): `AdvancedSampling`'s `a2a` prop is wired** in Task 9 Step 5 from
+    the selected clip's `a2a` (`{on, noise}`), so σ MAX mirrors an A2A clip's NOISE. It needs M5's
+    store and M4's component, so it lands here, beside `latch`. PromptSigmaTab's own clip-shaped
+    props (`clipName`, `lane`, `a2a`, `clipHasLatent` — M4 T10, "M5 wires them") are **still
+    unwired**; not in this pass's list, flagged.
+21. **RESOLVED (reconcile pass): M5's Playwright selectors match M5's markup** — `.clip[role=
+    "button"]`, `.overlap[role="button"]`, `[data-module="overlap"]`, M4's `target-a2a-toggle` — as
+    Task 10's already did. M5's `[data-testid="snap-select"]` still has no emitter in any plan (M5's
+    reconcile note).
 22. **v1 files come in through an IMPORT button, not a server session.** Task 9 removes M1 T15's
     LOAD button with the v1 store it read, and server sessions are always v2, so §9.2's "version 1
     files … load through a converter" needed a new way in. IMPORT (a hidden file input) is the
@@ -7117,22 +7447,21 @@ critic pass 3.
     LORA/DORA re-resolves it by path on a pick or a preset recall. **M9 must resolve from `ckpt_path`
     at submit and treat `slot` as a hint at most**; if M9 wants a stable slot handle, the server's
     `/slots` would need one keyed by path. M1's `LaneChain` type keeps the field (frozen).
-26. **FILM SCALE ignores the server's default gain** (critic pass 2 #10, recorded as a gap). Spec
+26. **RESOLVED (WINTERMUTE, 2026-09-25; reconcile pass): M1's FILM default is now 1.75.** Spec
     §5.5 says SCALE defaults to `/info.film_default.gain`; the server's is `FILM_DEFAULT_GAIN = 1.75`
-    (`eval/explorer_render_server.py:150`), M1's frozen `CHAIN_DEFAULTS.film.gain` is 1.0, and
-    `HELP.filmScale` says "Safe value: 1.0". Applying 1.75 into a chain would make every lane
-    non-default (M5's lane dot and this module's lit dot light for an untouched chain) and change
-    every loaded session. Either M1's default moves to the server's value, or `film.gain: null`
-    comes to mean "server default" — both are M1-type decisions for WINTERMUTE.
-27. **The reconciled `ModuleShell`'s dot markup is not pinned anywhere** (critic pass 2 #13,
-    unconfirmed → confirmed). M1's `module-dot`/`data-lit` hooks (M1 plan lines 4062-4066) exist
-    only on the label-prop version Global Constraint #3 rules out; the `{id, title, lit}` contract
-    (M1 plan lines 39, 6297-6301) names only `data-module`/`-toggle`/`-body`. T9's
-    `rightPaneModules.test.ts` therefore mocks `ModuleShell` with a probe and asserts the `lit`
-    value passed. Whoever reconciles M1's two `ModuleShell`s should pin the dot's attribute.
-28. **M4's `activeSlots` and T1's `isActive` disagree on an unknown head** (critic pass 2 #8). M4
-    counts any non-`none`, non-zero-weight head (M4 plan lines 657-660); T1 omits a head
-    `/info.latch_heads` does not list, since the server raises on it. T9 passes ADVANCED SAMPLING only
+    (`eval/explorer_render_server.py:150`, re-verified), and M8's `CHAIN_DEFAULTS.film.gain` is
+    already 1.75 (M8 plan line 268), so M1's 1.0 was the odd one out. `film.gain: null` was rejected
+    because M8's `_num(None)` 400s. No session exists yet, so the "changes every saved session" cost
+    is zero now. M1 T4's `CHAIN_DEFAULTS` and its test, M1 T6's `handmade-info.json`, Task 1's
+    tests, Task 2's `/info` mock and `HELP.filmScale` ("Safe value: 1.75") all moved together;
+    `litModules`/M5's lane dot compare against `CHAIN_DEFAULTS` itself, so an untouched lane stays dark.
+27. **RESOLVED (reconcile pass): the lit dot is pinned.** M1 T9 now has one `ModuleShell`, the
+    Normative `{id, title, lit, children}` one, and its dot is `[data-module-dot=<id>]` with
+    `data-lit="true" | "false"` (M1 T9's Interfaces and code). T9's `rightPaneModules.test.ts`
+    reads that selector off the real component; `ModuleShellProbe.svelte` is deleted from this plan.
+28. **M4's `activeSlots` and T1's `chainRequest` disagree on an unknown head** (critic pass 2 #8). M4
+    counts any non-`none`, non-zero-weight head (M4 plan lines 657-660); T1 sends a head
+    `/info.latch_heads` does not list as `"none"`, since the server 400s on it. T9 passes ADVANCED SAMPLING only
     registry-known slots, so the forced-Euler label matches what is sent; `SigmaColumn` still gets
     the raw slots (drawing only — at worst one lane drawn that is not sent). The clean fix is one
     shared predicate taking the registry — an M4 change, flagged.
@@ -7155,10 +7484,13 @@ critic pass 3.
     overwritten — `forgeApi.saveSession`/`savePreset` send a plain PUT with no create-only
     condition (M1 plan lines 1248-1251). The "unsaved work" check ignores the
     name, viewport, `ui` slice and model. Confirm the wording and whether a real dialog is wanted.
-32. **M4's `confirmStage` is not blocked during a session load** (critic pass 3 #6, related). It can
-    finish mid-load and `setStage` over the loaded defaults (then autosaved), and it moves the server
-    behind the controller's `serverStage`. The fix is in M4's `ModelStageColumn`: disable STAGE while
-    `sessionCtl.loading` (it would need the flag passed in). Flagged, not changed here.
+32. **RESOLVED (reconcile pass): a load and M4's STAGE rebuild never overlap.** M4 cannot import
+    this milestone's controller, so the flag lives on M4's own store: `settings.stageLocked` (held by
+    `SessionController` exactly as long as `loading`; M4 T9 offers no switch and starts no rebuild
+    while it is set) and `settings.stageRebuilding` (held by M4 T9 while its rebuild runs;
+    `SessionController.begin` refuses to start a load or import meanwhile, with a log line). One M4
+    T9 test and one `sessionController.test.ts` test. Not covered: a STAGE change in another browser
+    tab (the lock is per tab).
 33. **The mid-load indicator is a `loading <name>…` span, not a transient option in the SESSION
     select** (critic pass 3 #11 offered either, or rewording Global Constraint #10). Chosen because
     the critic verified the select's snap-back on Svelte 5.57.0, not an option that appears and must
@@ -7167,6 +7499,16 @@ critic pass 3.
 34. **A project whose `version` is neither 1 nor 2 is refused, not converted** (critic pass 3 #1).
     That includes a hand-edited v1 file that lost its `version` field; v1's own `loadJSON` refuses
     it too (`sa3-studio/src/lib/store.svelte.ts:633`), so no working v1 file is newly rejected.
+35. **For WINTERMUTE: record the session and preset routes** (reconcile pass). Task 10 Step 4's
+    contract tests cover `/info`, `/models`, `/slots` and `/forge/files` against M2 T15's recorded
+    fixtures, but M2's `record_fixtures.py` `EXPECTED` records no `/forge/sessions` or
+    `/forge/presets` route, so none of this milestone's heaviest routes can be checked against the
+    real server — and M1's mock is known to disagree there (it stores a non-v2 session PUT, and 200s
+    a DELETE of a missing preset). Asked of W: add e.g. `forge_sessions`, `forge_session_get`,
+    `forge_session_put_v1_refused`, `forge_presets_latch`, `forge_preset_get`,
+    `forge_preset_delete_missing` to `EXPECTED` (names are W's to choose); the tests follow the same
+    pattern. Also noted: W's DM calls the recorder "M2 Task 12"; it is M2 **Task 15** (Task 12 is
+    SAME chroma).
 
 *Two writers, dispatched in parallel this time (the split is by feature area, not by layer — see
 "Architecture" above), each independently re-verified every v3 line number and HELP id their tasks
