@@ -303,3 +303,5 @@ convention — see §3a. Going forward, append your own lines as you finish task
 - [2026-09-23] Caption routine ported to train_lora_modular (bigset sidecar never matched; source_weights inert in train_lora.py); run_meta into run dir; A-lr-mult arm (confounded; Audiobox says worse).
 - [2026-09-24] goa3 NaN root cause (DoRA magnitude zero-crossing) + multiplicative magnitude fix; operator manual + drift check; Gemini triage x2; papers filed with depth sidecars; LoRA-TSD batched port started (4 workers).
 - [2026-09-25] LoRA-TSD fix round finished + committed (71 tests, fp32 near-B=0 conditioning is upstream's too); P95 step-governor proposal reviewed (premise fails under normalised optimizers), annotated; raw-grad telemetry + flight recorder + inspector built, CPU-tested, unrun on GPU.
+
+- 2026-09-25 shampoo-run "6340 crash" settled: checkpoints healthy (merged cfg sweep 54/54 finite, cfg 1/3/7, steps 3804/5072/6340); demo failures = history-dependent live-DoRA render on ROCm (base + merged adapter deterministic). training-findings 13e, demo_cfg_sweep.py.

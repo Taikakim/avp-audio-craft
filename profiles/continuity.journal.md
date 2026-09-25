@@ -2705,3 +2705,6 @@ Kim asked for all causes-and-effects of the week's training failures in one plac
   on a spike (`stable_audio_3/training/flight_recorder.py`, SA3 `4b0a147`,
   `eval/inspect_flight_incident.py`). Not yet run on a real training. Open question it answers
   first: do our batches spike at all?
+
+### 2026-09-25 — the step-6340 "crash" was the render, not the model
+The shampoo run's demos (1e10 at 3804, NaN at 6340) looked like a training failure. The weights say otherwise: finite and smooth. On a solo card, a live DoRA adapter renders bit-exact once per process and then returns NaN / 1e11 / clean at random on identical inputs once call shapes interleave; the base model and the merged adapter are deterministic. Merged, all 54 demo re-renders are clean at cfg 1, 3 and 7. First read (guidance sensitivity) was wrong; an early test was also confounded by another instance sharing the card, so the decisive runs were redone solo. Open: which op, and whether training steps are hit. Writeup: `docs/training-findings.md` 13e.
