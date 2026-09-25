@@ -123,6 +123,30 @@ def z0_is_finite(z0, where: str) -> bool:
     return False
 
 
+def merge_adapters(wrapper) -> int:
+    """Bake every DoRA/LoRA parametrization into its weight, once, in place.
+
+    WHY (training-findings.md 13e, 2026-09-25): with the parametrization LIVE (the adapted
+    weight rebuilt from B.A on every forward, which is what model.set_lora_strength() then
+    varying strengths across a render grid relies on), our ROCm 7.15-alpha/10.1 stacks
+    return HISTORY-DEPENDENT results once calls of different shapes interleave in one
+    process -- the first render is bit-exact, later ones of the same input come back NaN,
+    huge, or slightly off at random. Base model and a MERGED adapter are both deterministic.
+    Vendored from stable-audio-3/scripts/demo_cfg_sweep.py::merge_adapters (identical logic;
+    kept as a plain copy here rather than a cross-repo import, same rationale as
+    inference/chroma_losses.py's vendoring)."""
+    import torch.nn.utils.parametrize as P
+    n = 0
+    for mod in list(wrapper.model.modules()) + list(wrapper.conditioner.modules()):
+        if P.is_parametrized(mod):
+            for name in list(mod.parametrizations.keys()):
+                import torch
+                with torch.no_grad():
+                    P.remove_parametrizations(mod, name, leave_parametrized=True)
+                n += 1
+    return n
+
+
 def native_len_seconds(label: str) -> float | None:
     """Trained context length in seconds for `label`, if known (from
     --native-frames-file first, else the recipe override's 'T=<frames>' text) --
@@ -696,6 +720,7 @@ def main():
             print(f"[skip-all] {label}/{tag}")
             continue
 
+        is_adapter = bool(ckpt_path) and not is_fullft
         model = StableAudioModel.from_pretrained(
             "medium" if args.pt_medium else "medium-base", device="cuda")
         sr = model.model.sample_rate
@@ -768,91 +793,14 @@ def main():
                 f"fullft ckpt covers only {_cov:.1%} of the model — refusing to "
                 f"render a part-loaded model ({len(_missing)} missing keys, e.g. {_missing[:3]})")
             del _ck, _sd
-        elif ckpt_path:
-            model.load_lora([str(ckpt_path)])
         # STANDING DIRECTIVE: decode the pre-decode latent z0 ourselves through the pretransform
         # (aliased model.same). LoRA never touches pretransform, so base + DoRA decode through
         # identical decoder weights. decode_dtype = the pretransform's own param dtype.
         decode_dtype = next(model.same.parameters()).dtype
         print(f"[load] {label}/{tag}", flush=True)
 
-        for prompt in prompts:
-            if over_budget():
-                stopped = True
-                break
-            for cfg in cfgs:
-                if over_budget():
-                    stopped = True
-                    break
-                base_m4a_name = None
-                for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
-                    wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
-                                         duration=duration, weights=_wset)
-                    m4a_name = wav_name.replace(".wav", ".m4a")
-                    if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
-                        if ckpt_path:
-                            try:
-                                model.set_lora_strength(w)
-                            except Exception:
-                                pass
-                        wav_path = RENDER_DIR / wav_name
-                        if not wav_path.exists():
-                            t0 = time.time()
-                            # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
-                            # the model's internal peak-normalize + truncation, so we do both here.
-                            z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
-                                                cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
-                                                return_latents=True, sample_size=duration_sample_size)
-                            if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
-                                                    f"{prompt['id']} st{steps}"):
-                                continue
-                            if save_latents:
-                                # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
-                                np.save(wav_path.with_suffix(".z0.npy"),
-                                        z0.detach().to(torch.float16).cpu().numpy())
-                            with torch.no_grad():
-                                audio = model.same.decode(z0.to(decode_dtype))
-                            # truncate to the requested duration (the model would have, pre-decode),
-                            # then save_audio peak-normalizes -> matches the old internal-decode path.
-                            audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
-                            save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
-                            print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
-                        m4a_path = RENDER_DIR / m4a_name
-                        if not m4a_path.exists():
-                            transcode(wav_path, m4a_path)
-                        append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
-                                         "prompt_id": prompt["id"], "prompt_text": prompt["text"],
-                                         "seed": prompt["seed"], "steps": steps, "file": m4a_name})
-                        existing.add(key)
-                    if base_m4a_name is None:
-                        base_m4a_name = m4a_name
-                if ckpt_path is None and only_strengths is None and base_m4a_name is not None:
-                    # base_m4a_name is None only if the single base render was DROPPED for a
-                    # non-finite latent -- mirroring then would write manifest lines pointing at
-                    # a file that does not exist. Skip; the resume re-renders the real cell.
-                    # base: strength n/a -- mirror the one render across the other strength
-                    # cells so the grid lights up without 3x-redundant compute. Skipped under
-                    # --only-strengths: the caller asked for an exact strength set (e.g. the
-                    # PT-medium cfg7/w1-only pass) and synthetic mirror cells would misrepresent
-                    # coverage at strengths that were never actually requested.
-                    for w in STRENGTHS:
-                        if w in strengths_to_render:
-                            continue
-                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
-                        if key in existing:
-                            continue
-                        append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
-                                         "prompt_id": prompt["id"], "prompt_text": prompt["text"],
-                                         "seed": prompt["seed"], "steps": steps, "file": base_m4a_name})
-                        existing.add(key)
-
-        # native-training-length audition cell (additive; see NATIVE_LEN_* above) --
-        # one prompt, one setting, at whatever T this checkpoint actually trained on.
-        # T>=2048 natives are BANNED locally (Kim direct 2026-07-21: a fullft native
-        # render's long-sequence attention VRAM starved the compositor -> display
-        # crash, forced logout). Those cells render on LUMI (64GB headless GCDs) via
-        # lumi/render_native_cells.py + W's ingest. SA3_ALLOW_LONG_NATIVE=1 overrides.
+        # native-cell setup is shared by both branches below (doesn't depend on which
+        # strength's model is loaded) -- see NATIVE_LEN_* above.
         native_dur = native_len_seconds(label)
         if native_dur is None:
             # no-silent-caps: this skip cost the 2026-08-03 run 30/37 labels' native
@@ -863,34 +811,31 @@ def main():
                 and os.environ.get("SA3_ALLOW_LONG_NATIVE") != "1"):
             print(f"[native-skip] {label}/{tag} T~{native_dur*FPS:.0f} >= 2048 -> LUMI lane")
             native_dur = None
-        if native_dur is not None and prompts:
-            native_frames = int(round(native_dur * FPS))
+        native_frames = int(round(native_dur * FPS)) if native_dur is not None else None
+        if native_frames is not None:
             assert native_frames % 256 == 0, (label, native_frames)
-            # Default: ONE audition cell (native_cfg/w1, one prompt). --native-grid: the FULL
-            # prompt x cfg x strength grid at this model's trained T (bounded by --only-cfgs/
-            # --only-strengths; e.g. cfg1/w1 for the ptm pass). native_cfg's cfg7->cfg1 pt_medium
-            # override applies to the single-cell default; the grid uses each loop's own cfg.
+
+        def render_native_cells(model, w_list, render_path_tag):
+            """One prompt/setting native-length cell(s) for `w_list`, against `model`."""
+            nonlocal stopped
+            if native_dur is None or not prompts:
+                return
             if args.native_grid:
-                native_cells = [(pr, c, w) for pr in prompts for c in cfgs for w in strengths_to_render]
+                native_cells = [(pr, c, w) for pr in prompts for c in cfgs for w in w_list]
             else:
                 np0 = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
-                nw0 = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
-                native_cells = [(np0, native_cfg, nw0)]
+                nw0 = NATIVE_LEN_STRENGTH if is_adapter else 1.0
+                native_cells = [(np0, native_cfg, nw0)] if nw0 in w_list else []
             for np_, ncfg, nw in native_cells:
                 if over_budget():
                     stopped = True
-                    break
+                    return
                 nkey = f'{label}|{tag}|{ncfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
                 nwav_name = clip_name(label, tag, ncfg, nw, np_["id"], np_["seed"],
                                       steps, duration=native_dur, weights=_wset)
                 nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
                 if nkey in existing and not (args.require_file and not nm4a_path.exists()):
                     continue
-                if ckpt_path and not is_fullft:
-                    try:
-                        model.set_lora_strength(nw)
-                    except Exception:
-                        pass
                 nwav_path = RENDER_DIR / nwav_name
                 if not nwav_path.exists():
                     t0 = time.time()
@@ -917,14 +862,163 @@ def main():
                          f"w{nw} {np_['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
                 if not nm4a_path.exists():
                     transcode(nwav_path, nm4a_path)
-                append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": ncfg, "strength": nw,
-                                 "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
-                                 "steps": steps, "duration": native_dur, "duration_mode": "native",
-                                 "file": nm4a_path.name})
+                entry = {"model": label, "ckpt": tag, "weights": _wset, "cfg": ncfg, "strength": nw,
+                         "prompt_id": np_["id"], "prompt_text": np_["text"], "seed": np_["seed"],
+                         "steps": steps, "duration": native_dur, "duration_mode": "native",
+                         "file": nm4a_path.name}
+                if render_path_tag:
+                    entry["render_path"] = render_path_tag
+                append_manifest(entry)
                 existing.add(nkey)
 
-        del model
-        torch.cuda.empty_cache()
+        if is_adapter:
+            # LIVE-ADAPTER RENDER FAULT (training-findings.md 13e, 2026-09-25): on this box,
+            # a DoRA/LoRA adapter kept LIVE (weight rebuilt from B.A every forward, which is
+            # what varying model.set_lora_strength() across a strength sweep needs) returns
+            # HISTORY-DEPENDENT results once calls of different shapes interleave in one
+            # process -- first render exact, later ones NaN/huge/slightly-off at random.
+            # Base model and a MERGED adapter are both deterministic. So: one FRESH model,
+            # loaded + merged at a fixed strength, per w -- never live-swept. Costs one
+            # extra base-model load per extra strength value (a few seconds x 2 more loads
+            # per checkpoint); correctness over speed given the fault silently corrupts data.
+            del model
+            torch.cuda.empty_cache()
+            for w in strengths_to_render:
+                if over_budget():
+                    stopped = True
+                    break
+                model = StableAudioModel.from_pretrained(
+                    "medium" if args.pt_medium else "medium-base", device="cuda")
+                model.load_lora([str(ckpt_path)])
+                model.set_lora_strength(w)
+                n_merged = merge_adapters(model.model)
+                print(f"[merge] {label}/{tag} w{w}: merged {n_merged} adapter "
+                      f"parametrizations (avoids the live-adapter render fault)", flush=True)
+                for prompt in prompts:
+                    if over_budget():
+                        stopped = True
+                        break
+                    for cfg in cfgs:
+                        if over_budget():
+                            stopped = True
+                            break
+                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                        wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
+                                             duration=duration, weights=_wset)
+                        m4a_name = wav_name.replace(".wav", ".m4a")
+                        if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
+                            wav_path = RENDER_DIR / wav_name
+                            if not wav_path.exists():
+                                t0 = time.time()
+                                # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
+                                # the model's internal peak-normalize + truncation, so we do both here.
+                                z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
+                                                    cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
+                                                    return_latents=True, sample_size=duration_sample_size)
+                                if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
+                                                        f"{prompt['id']} st{steps}"):
+                                    continue
+                                if save_latents:
+                                    # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
+                                    np.save(wav_path.with_suffix(".z0.npy"),
+                                            z0.detach().to(torch.float16).cpu().numpy())
+                                with torch.no_grad():
+                                    audio = model.same.decode(z0.to(decode_dtype))
+                                # truncate to the requested duration (the model would have, pre-decode),
+                                # then save_audio peak-normalizes -> matches the old internal-decode path.
+                                audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
+                                save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
+                                print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
+                            m4a_path = RENDER_DIR / m4a_name
+                            if not m4a_path.exists():
+                                transcode(wav_path, m4a_path)
+                            append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
+                                             "prompt_id": prompt["id"], "prompt_text": prompt["text"],
+                                             "seed": prompt["seed"], "steps": steps, "file": m4a_name,
+                                             "render_path": "merged"})
+                            existing.add(key)
+                    if stopped:
+                        break
+                if not stopped:
+                    render_native_cells(model, (w,), "merged")
+                del model
+                torch.cuda.empty_cache()
+                if stopped:
+                    break
+        else:
+            # base model (no adapter, strength n/a) and fullft (whole-model, no separate
+            # adapter to merge) -- unchanged from before the fault fix, since neither goes
+            # through a live parametrization.
+            for prompt in prompts:
+                if over_budget():
+                    stopped = True
+                    break
+                for cfg in cfgs:
+                    if over_budget():
+                        stopped = True
+                        break
+                    base_m4a_name = None
+                    for w in strengths_to_render:
+                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                        wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
+                                             duration=duration, weights=_wset)
+                        m4a_name = wav_name.replace(".wav", ".m4a")
+                        if key not in existing or (args.require_file and not (RENDER_DIR / m4a_name).exists()):
+                            wav_path = RENDER_DIR / wav_name
+                            if not wav_path.exists():
+                                t0 = time.time()
+                                # return_latents=True -> the pre-decode z0 (B,C,T); this path SKIPS
+                                # the model's internal peak-normalize + truncation, so we do both here.
+                                z0 = model.generate(prompt=prompt["text"], duration=duration, steps=steps,
+                                                    cfg_scale=float(cfg), seed=int(prompt["seed"]), batch_size=1,
+                                                    return_latents=True, sample_size=duration_sample_size)
+                                if not z0_is_finite(z0, f"{label}/{tag} cfg{cfg} w{w} "
+                                                        f"{prompt['id']} st{steps}"):
+                                    continue
+                                if save_latents:
+                                    # compact fp16 z0 next to the wav (base + DoRA share decoder weights)
+                                    np.save(wav_path.with_suffix(".z0.npy"),
+                                            z0.detach().to(torch.float16).cpu().numpy())
+                                with torch.no_grad():
+                                    audio = model.same.decode(z0.to(decode_dtype))
+                                # truncate to the requested duration (the model would have, pre-decode),
+                                # then save_audio peak-normalizes -> matches the old internal-decode path.
+                                audio = audio.to(torch.float32)[:, :, :int(duration * sr)]
+                                save_audio(wav_path, audio[0].cpu(), sr, normalize=True)
+                                print(f"  [{label}/{tag} cfg{cfg} w{w} {prompt['id']} st{steps}] {time.time() - t0:5.1f}s", flush=True)
+                            m4a_path = RENDER_DIR / m4a_name
+                            if not m4a_path.exists():
+                                transcode(wav_path, m4a_path)
+                            append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
+                                             "prompt_id": prompt["id"], "prompt_text": prompt["text"],
+                                             "seed": prompt["seed"], "steps": steps, "file": m4a_name})
+                            existing.add(key)
+                        if base_m4a_name is None:
+                            base_m4a_name = m4a_name
+                    if ckpt_path is None and only_strengths is None and base_m4a_name is not None:
+                        # base_m4a_name is None only if the single base render was DROPPED for a
+                        # non-finite latent -- mirroring then would write manifest lines pointing at
+                        # a file that does not exist. Skip; the resume re-renders the real cell.
+                        # base: strength n/a -- mirror the one render across the other strength
+                        # cells so the grid lights up without 3x-redundant compute. Skipped under
+                        # --only-strengths: the caller asked for an exact strength set (e.g. the
+                        # PT-medium cfg7/w1-only pass) and synthetic mirror cells would misrepresent
+                        # coverage at strengths that were never actually requested.
+                        for w in STRENGTHS:
+                            if w in strengths_to_render:
+                                continue
+                            key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                            if key in existing:
+                                continue
+                            append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
+                                             "prompt_id": prompt["id"], "prompt_text": prompt["text"],
+                                             "seed": prompt["seed"], "steps": steps, "file": base_m4a_name})
+                            existing.add(key)
+
+            if not stopped:
+                render_native_cells(model, strengths_to_render, None)
+            del model
+            torch.cuda.empty_cache()
         if stopped:
             break
     if stopped:
