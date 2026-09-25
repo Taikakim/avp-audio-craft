@@ -299,7 +299,18 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     512–2048.
 20. *Open, not fixed:* the demo callback calls `torch.manual_seed(seed)` per clip, which reseeds the
     GLOBAL RNG that training draws noise from. It's suspected in earlier NaN episodes. An RNG
-    save/restore around the render is designed but not implemented.
+    save/restore around the render is designed but not implemented. (`--no-inline-demos`, 13e,
+    sidesteps it too: no render, no reseed.)
+20a. **A Shampoo (or SOAP) modular run could not be resumed, twice over (CONTINUITY, 2026-09-25).**
+    Found resuming `goa3_avp_r128_shampoo_b16_3e4_2026-09-25` at step 6340, the first such resume.
+    (1) `UnpicklingError: Weights only load failed ... ShampooPreconditioner`: torch's safe loader
+    refuses the optimizer state's own classes. Fix: `trainer.fit(..., weights_only=False)` on resume
+    (stable-audio-3 `7073a14`). (2) Then `Expected all tensors to be on the same device` at
+    `preconditioners.py:155` on the first step: torch's `Optimizer.load_state_dict` moves tensors held
+    directly in the state, not tensors that are attributes of objects stored there, so Shampoo `C`/`P`
+    and SOAP `L`/`R` stayed on the CPU. Fix: `ModularOptimizer.load_state_dict` moves them
+    (stable-audio-tools `3449d4b`, `tests/test_modular_resume_device.py`, fails on the old code for
+    both preconditioners). Any new optimizer state held as an OBJECT needs the same care.
 
 21. **DoRA rank-128 `dora128_mix3` lineage: TWO runs ran away, a THIRD (drop D-Adaptation
     entirely) genuinely fixed it — a 4-attempt story, not a single bad checkpoint (GHOST-NOTE,
