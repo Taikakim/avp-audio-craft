@@ -196,11 +196,14 @@ presets`, the FILES routes — all M2's).
 paths in pass 1's session/import code), all applied (`docs/latent-forge/M7_CRITIC2_FINDINGS.md`). Pass 2's
 fixes collapse load/import into one tested `SessionController` (`sessionController.svelte.ts`) with a
 single nine-step order stated in Task 9's WHY, and add Global Constraint #10 ("never name or arm a
-session the stores do not hold"). Now **147 `it()` + 10 Playwright**, recounted mechanically.
+session the stores do not hold"). Pass 3 (narrow, Task 9 only): 12 findings (1 blocking — any
+non-`version: 2` body went through the never-failing v1 converter and could be autosaved over the real
+session), all applied (`docs/latent-forge/M7_CRITIC3_FINDINGS.md`): only `version === 1` converts,
+master-preset recall moved into the controller with post-fetch seq checks, injected `confirm`/`exists`
+guard unsaved work and overwrites, failed autosaves retry and PUTs chain per name, the controller
+tracks the server's real stage. Now **158 `it()` + 10 Playwright**, recounted mechanically.
 
-**Next action:** (1) a narrow third critic over Task 9's new `SessionController` and its tests only —
-it is substantial new code no critic has read, and this milestone's second pass found its blocking
-bugs in exactly the code the first fix round added; (2) then one batched DM to WINTERMUTE: the
+**Next action:** one batched DM to WINTERMUTE: the
 server-contract routes (`/forge/sessions`, `/forge/presets`, FILES), the seven M1/M4/M5 defects in
 the plan's Global Constraints and Open questions, and the two M1-level choices pass 2 left for him —
 FILM's default gain (server 1.75 vs M1's frozen 1.0, Open question 26) and the defaults kept after a
