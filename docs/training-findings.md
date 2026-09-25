@@ -268,8 +268,24 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     not a guard: the 1e10 reading was in the log 2,500 steps early. (c) The P95 step governor and a
     rewired VADD tier 2 would both have been blind to this, since neither sees the render.
     *Fix / status:* `stable-audio-3/scripts/demo_cfg_sweep.py` merges by default (runnable block on
-    KIM-TASKLIST). Not yet done: merge-before-render in the demo callback, `model_matrix_gen` and the
-    :8056 server; narrowing the faulting op for an upstream report.
+    KIM-TASKLIST); `train_lora_modular.py --no-inline-demos` (6b0238f) keeps milestone checkpoints and
+    the loss guard but renders nothing in-process. Not yet done: merge-before-render in
+    `model_matrix_gen` and the :8056 server.
+    *Narrowing, same day (repro: `stable-audio-3/scripts/diag_dora_render_determinism.py`, exit 1 = fault):*
+    exact with `PYTORCH_NO_CUDA_MEMORY_CACHING=1`; still faulty under expandable_segments, launch
+    blocking, `parametrize.cached()`, rocBLAS instead of hipBLASLt, SDPA math backend, CK flash-attn,
+    FlexAttention disabled, the ROCm 7.2.3 venv, and linux 7.2.6-arch (was -zen) with the display moved
+    to the iGPU. NaN-poisoning free memory does NOT trigger it, so it is not a read of never-written
+    memory. A per-layer checksum trace (exact process vs normal process) puts the first divergence at
+    the DoRA weight of `layers.0.ff.ff.0.proj` (12288x1536), which then CHANGES between two hooks on the
+    same tensor: something writes into it after it is produced. Rebuilding that weight standalone is
+    exact (600 iterations), so it is the victim. Failing runs GPU-fault ("page not present") in
+    unrelated kernels: a hipBLASLt bf16 bias GEMM, a PyTorch fp32 elementwise mul, `exponential_` in
+    training. A 6-pass VRAM pattern test over 11.9 GB is clean. No unsafe tensor ops (as_strided,
+    set_, untyped_storage, data_ptr, cpp extensions) in the SA3 render path. Remaining suspects: the
+    amdgpu driver or HIP runtime memory management (shared by both ROCm stacks), or GPU page tables.
+    The display-crash episodes (2026-09-25 12:38 and 14:34) were both triggered by these repro runs
+    faulting on the card that also drove the display.
 
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).

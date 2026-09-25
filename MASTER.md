@@ -916,6 +916,13 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   (2026-07-21, job 20068082 — 4/100+ cells rendered). LUMI GCD pinning = `ROCR_VISIBLE_DEVICES=$SLURM_PROCID`
   ALONE (the proven muscriptor block). Local single-card is different: there you must not set
   `HIP_VISIBLE_DEVICES=""` either (flash_attn import crash, see §5 eval-server bullet).
+- **TWO GPUs are visible since 2026-09-25: the desktop now runs on the Ryzen iGPU (gfx1036), and the
+  RX 9070 XT (gfx1201) is compute-only.** Unpinned, torch sees 2 devices (`cuda:0` = the 9070 XT), and
+  `train_lora_modular.py` builds its Trainer with `devices="auto"`, so Lightning would try to train
+  across BOTH cards. **Export `ROCR_VISIBLE_DEVICES=0` for every GPU job** (verified: 1 device,
+  flash-attn loads, matmuls run). Not `HIP_VISIBLE_DEVICES=""` (still banned), and not both variables
+  at once (they stack). This also closes the job-vs-display failure mode above: a GPU fault on the
+  9070 XT no longer takes the compositor down.
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
