@@ -191,20 +191,20 @@ project store gets rewired (it never touches `App.svelte`/`TopBar.svelte`); and 
 WINTERMUTE's next read, alongside the usual server-contract items (`/forge/sessions`, `/forge/
 presets`, the FILES routes — all M2's).
 
-**Status 2026-09-24 — paused by Kim until the next 5-hour window.** Critic pass 1 (31 findings, 12
-blocking) is applied and pushed (`11560e7`; now 132 `it()` + 10 Playwright). Critic pass 2 ran on the
-corrected file: **14 findings, 2 blocking** (both data-loss paths in the code pass 1's fixes added:
-IMPORT's failure path autosaves a half-imported project over the loaded session; `loadSession` renames
-the session before the content arrives). Findings are tracked in `docs/latent-forge/M7_CRITIC2_FINDINGS.md`
-(pass 1's, applied, in `M7_CRITIC1_FINDINGS.md`). The fix agent was stopped before it edited anything; the plan is exactly
-`11560e7`.
+**Status 2026-09-25 — both critic passes applied.** Pass 1: 31 findings (12 blocking), applied in
+`11560e7` (`docs/latent-forge/M7_CRITIC1_FINDINGS.md`). Pass 2: 14 findings (2 blocking, both data-loss
+paths in pass 1's session/import code), all applied (`docs/latent-forge/M7_CRITIC2_FINDINGS.md`). Pass 2's
+fixes collapse load/import into one tested `SessionController` (`sessionController.svelte.ts`) with a
+single nine-step order stated in Task 9's WHY, and add Global Constraint #10 ("never name or arm a
+session the stores do not hold"). Now **147 `it()` + 10 Playwright**, recounted mechanically.
 
-**Next action:** dispatch a fix agent on `docs/latent-forge/M7_CRITIC2_FINDINGS.md` — all 14, with the two blocking
-ones plus #3/#5/#6/#7 resolved as ONE ordered load/import sequence in Task 9 (bump load seq → disarm
-autosave → validate → apply → clear selection/overlapStore → rebuild stage (v2 only) → schedule
-stretches → arm with the project as loaded), each data-loss path proven by a test. Then recount,
-commit, and batch everything for WINTERMUTE. The writer drafts `scratchpad/m7_part_a.md`/`m7_part_b.md`
-(gitignored) are fully merged into the plan and no longer needed.
+**Next action:** (1) a narrow third critic over Task 9's new `SessionController` and its tests only —
+it is substantial new code no critic has read, and this milestone's second pass found its blocking
+bugs in exactly the code the first fix round added; (2) then one batched DM to WINTERMUTE: the
+server-contract routes (`/forge/sessions`, `/forge/presets`, FILES), the seven M1/M4/M5 defects in
+the plan's Global Constraints and Open questions, and the two M1-level choices pass 2 left for him —
+FILM's default gain (server 1.75 vs M1's frozen 1.0, Open question 26) and the defaults kept after a
+failed rebuild (Open question 29).
 
 ## After M7 — M9 is last
 

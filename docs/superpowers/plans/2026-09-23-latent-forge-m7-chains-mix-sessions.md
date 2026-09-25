@@ -96,6 +96,11 @@ writers found and independently verified while researching it.**
 9. **`@testing-library/jest-dom` is installed by M1 but never registered.** M1's `vitest.config.ts`
    has no `setupFiles`, so `toHaveValue`/`toHaveClass`/`toHaveAttribute` fail with "Invalid Chai
    property". T2 adds `setupFiles: ["@testing-library/jest-dom/vitest"]`; every later task relies on it.
+10. **Never name or arm a session the stores do not hold** (critic pass 2). A session load or IMPORT
+    validates before it touches a store, disarms autosave before it applies, and names/arms the
+    target only after apply (and the model rebuild) finished and no newer load superseded it; SAVE is
+    refused while one is in flight. The whole order is stated once, in Task 9's WHY, and lives in one
+    unit-tested class (`SessionController`), not in `App.svelte`.
 
 ---
 ## Names inherited from M1, M4 and M5 — do not redeclare them
@@ -122,7 +127,8 @@ writers found and independently verified while researching it.**
   one (`defaultLanes()`). **`arrangement.mix: MixSpec`** and **`arrangement.master: MasterChain`**
   are two NEW fields this milestone adds (Task 3), seeded `structuredClone(MIX_DEFAULT)` /
   `structuredClone(MASTER_DEFAULT)`, plus one non-seeding reader, `peekOverlapParams(key)`
-  (Global Constraint #8) — nothing else in `ArrangementStore` changes. The viewport is
+  (Global Constraint #8), and one reset, `clearOverlapParams()` (T9's load empties the private
+  overlap store through it) — nothing else in `ArrangementStore` changes. The viewport is
   `arrangement.pxPerSec`/`scrollSec` with `zoomBy`/`setScrollSec` and the exported
   `MIN_PX_PER_SEC`/`MAX_PX_PER_SEC` (M5 plan lines 300-301, 593-599); there is **no
   `setPxPerSec`** (M5 T1 removed it from the view store and did not add one to `arrangement`).
@@ -133,6 +139,8 @@ writers found and independently verified while researching it.**
 - **`ForgeClip.previewAudio: AudioRef | null`** (M5 T10) — required on the type, **in-memory only**
   (spec §9.2 "Not serialised", M1 Normative row, M5 plan lines 6004-6008). Every `ForgeClip` this
   milestone constructs sets it to `null`, and the serialiser writes `null` rather than the live ref.
+  It is "re-derived on load" (M5 plan lines 6004-6005): T9's load calls M5's
+  `scheduleStretch(clipId)` (`src/lib/clips/lifecycle.ts`, M5 T10) for every loaded clip.
 - **`view.activeLane: 0|1|2|3`**, **`view.selection: Target`**, **`view.isModuleOpen(id)`** /
   **`view.toggleModule(id)`** (M1 T7, current — the export is `view`, never `viewStore`).
 - **`ModuleId`** — kebab, declared once in the view store, seven members (five spec modules +
@@ -155,8 +163,9 @@ need `RightPaneModules.svelte` touched at all" and no M4 task changes `sampling`
 still literally `null` and stays `null` here (see Open questions). Task 9 Step 5 replaces the
 constant with a `$derived` over `chain` (T2's expression), `master` (T4's) and `overlap` (T7's, read
 through the non-seeding `peekOverlapParams`), makes `lit` a `$derived` too, and passes the active
-lane's chain to `<AdvancedSampling latch=…>` (M4's own handoff, M4 plan line 4741). The full code is
-in that step.
+lane's LatCH state to `<AdvancedSampling latch=…>` (M4's own handoff, M4 plan line 4741) — only the
+slots whose head `/info.latch_heads` lists, so it agrees with `resolveLatch` (critic pass 2 #8). The
+full code is in that step.
 
 ## The `data-*` / `data-testid` / `HELP` contract
 
@@ -171,6 +180,7 @@ in that step.
 | `HELP.filesRoot`, `.filesFilter` (2) | **new, T6** | FILES — `filesRow` (pre-existing) is untouched |
 | `HELP.overlapChromaXfade`, `.overlapOverride`, `.overlapSteps`, `.overlapCfg` (all pre-existing) | T7 | OVERLAP-INPAINT — no new ids; `data-testid="overlap-chroma-xfade"`/`"overlap-override"`/`"overlap-steps"`/`"overlap-cfg"`/`"inpaint-overlap-button"` |
 | `HELP.masterPresetSave`, `.sessionSave`, `.sessionImportV1` (3) | **new, T9** | top bar: on `data-testid="master-preset-save"`, `"session-save"`, `"session-import"` (+ hidden `"session-import-file"` input) |
+| `LaneChain.lora.ckpt_path` is the adapter's **durable identity**; `LaneChain.lora.slot` is a **transient resolution** of that path against the current `GET /slots` | **rule, T2/T9** (critic pass 2 #14) | a `/slots` index names whatever is resident *now*, so it is never persisted: every saved payload (module preset, session, master preset) writes `slot: null` through `durableChain`/`modulePresetPayload` (T2), and the live value is re-resolved by path when LORA/DORA picks or recalls a model. M9 must resolve from `ckpt_path` at submit and treat `slot` as a hint at most (Open questions 25) |
 | `docs/latent-forge/extract_help.mjs`'s `NEW_STRINGS` and `strings.test.ts`'s total | **T2, T4, T5, T6, T9 each add entries and each updates `strings.test.ts`** | cumulative totals in execution order: M1 T14 87 → T2 **100** → T4 **104** → T5 **107** → T6 **109** → T9 **112** (80 extracted + 7 M1 new + 25 M7 new) |
 
 ---
@@ -223,12 +233,12 @@ in that step.
 | `latent-forge/src/lib/chains/latch.ts` | `resolveLatch`, `chainIsIdle`, `fetchLatchHeads` (T1) |
 | `latent-forge/src/test-setup.ts`, `latent-forge/vitest.config.ts` | **new / modified**: registers `@testing-library/jest-dom/vitest` through a `setupFiles` entry (T2) |
 | `latent-forge/src/lib/forge/models.ts` | **modified**: adds `fetchFilmCkpts`, `fetchSlots` beside the existing `fetchAdapters` (T2) |
-| `latent-forge/src/lib/chains/modulePresets.ts` | the four module-preset slices (`latch`/`film`/`lora`/`bungee`): payload builder + in-place recall (T2) |
+| `latent-forge/src/lib/chains/modulePresets.ts` | the four module-preset slices (`latch`/`film`/`lora`/`bungee`): payload builder + in-place recall, and `durableChain` (a plain copy with the transient `lora.slot` cleared) (T2) |
 | `latent-forge/src/ui/modules/LaneChain.svelte` | **modified**: full LatCH/FiLM/LoRA/Bungee UI with module preset recall/SAVE/DEL, replacing M1's stub (T2) |
 | `latent-forge/src/lib/help/__tests__/strings.test.ts` | **modified** (M1 T14's file): the total-count assertion, updated by every string-adding task (T2, T4, T5, T6, T9) |
 | `latent-forge/src/lib/mix/mixMath.ts` | MIX ORDER node-tree resolution (T3) |
 | `latent-forge/src/lib/mix/signalPath.ts` | the nine §8.1 stage rows, lit/dimmed derivation (T3) |
-| `latent-forge/src/lib/stores/arrangement.svelte.ts` | **modified**: adds `mix`/`master` fields and the non-seeding `peekOverlapParams` (T3) |
+| `latent-forge/src/lib/stores/arrangement.svelte.ts` | **modified**: adds `mix`/`master` fields, the non-seeding `peekOverlapParams` and the in-place `clearOverlapParams` (T3) |
 | `latent-forge/src/ui/modules/MasterChain.svelte` | **modified**: LATCH HEAD + GAIN + NORMALISE, replacing M1's stub (T4) |
 | `latent-forge/src/ui/mix/MixSignalPath.svelte` | the MIX + SIGNAL PATH tab (T5) |
 | `latent-forge/src/ui/shell/BottomPane.svelte` | **modified**: mounts `MixSignalPath` into the `mix` tab body (T5) |
@@ -237,13 +247,15 @@ in that step.
 | `latent-forge/src/ui/modules/OverlapInpaint.svelte` | **modified**: crossfade curve, CHROMA CROSSFADE, LOCAL STEPS/CFG, the button, replacing M1's stub (T7) |
 | `latent-forge/src/lib/forge/overlapLabel.ts` | the OVERLAP-INPAINT info line's label logic (T7) |
 | `latent-forge/src/lib/forge/convertProjectV1.ts` | the v1→v2 converter (T8) |
-| `latent-forge/src/lib/forge/projectSerializer.svelte.ts` | `ProjectV2` ⇄ live-store (de)serialisation via `$state.snapshot` (a rune, hence `.svelte.ts`) (T9) |
+| `latent-forge/src/lib/forge/projectSerializer.svelte.ts` | `ProjectV2` ⇄ live-store (de)serialisation via `$state.snapshot` (a rune, hence `.svelte.ts`), and `validateProjectV2`, the whole-shape check run before any store is touched (T9) |
+| `latent-forge/src/lib/forge/sessionController.svelte.ts` | `SessionController`: the ONE load/import/save sequence (Task 9's numbered order), the session name as `$state`, the autosave it arms (T9) |
 | `latent-forge/src/lib/forge/sessionName.ts` | session-name validation/prompt logic (T9) |
 | `latent-forge/src/lib/forge/autosave.ts` | the 2 s debounce, and the snapshot-gated session autosave that never writes before a load or an explicit SAVE (T9) |
-| `latent-forge/src/ui/shell/TopBar.svelte` | **modified**: real SESSION load/save with an `unsaved` option, IMPORT (v1/v2 project file), MASTER PRESET load/save, M1 T15's temporary SAVE/LOAD buttons removed (T9) |
+| `latent-forge/src/ui/shell/TopBar.svelte` | **modified**: real SESSION load/save with an `unsaved` option (the select keeps the committed name until a load succeeds), IMPORT (v1/v2 project file), MASTER PRESET load/save, M1 T15's temporary SAVE/LOAD buttons removed (T9) |
 | `latent-forge/src/ui/shell/__tests__/topBar.test.ts` | **modified** (M1 T10's file): its "SAVE disabled until M7" assertion flips (T9) |
-| `latent-forge/src/App.svelte` | **modified**: session load/save/import, master preset load/save, autosave hookup, M1's `sessions[0]` auto-select removed (T9) |
-| `latent-forge/src/ui/shell/RightPaneModules.svelte` | **modified**: live `litModules` snapshot, `<AdvancedSampling latch=…>` (T9) |
+| `latent-forge/src/App.svelte` | **modified**: hands session load/save/import to `SessionController`, master preset load/save, the autosave `$effect`, M1's `sessions[0]` auto-select removed (T9) |
+| `latent-forge/src/ui/shell/RightPaneModules.svelte` | **modified**: live `litModules` snapshot, `<AdvancedSampling latch=…>` with registry-known slots only (T9) |
+| `latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` | **test-only**: a `ModuleShell` double with exactly M1's Normative props, so `rightPaneModules.test.ts` asserts the `lit` value passed rather than an unpinned dot selector (T9) |
 | `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` | **modified** (M4 T10's file): passes the active lane's LatCH slots to `<SigmaColumn slots=…>` (T9) |
 | `latent-forge/tests/sessionsFilesOverlap.spec.ts` | Playwright, Writer B's half (T10) |
 | `docs/latent-forge/extract_help.mjs` | **modified**: `NEW_STRINGS` entries appended by T2, T4, T5, T6, T9, `help:extract` re-run by each |
@@ -261,21 +273,23 @@ separately (Playwright specs don't use `it(`):
 | task | `it()` | task | `it()` |
 |---|---|---|---|
 | 1 `latch.ts` | 14 | 6 FILES HELP ids | 8 |
-| 2 `LaneChain.svelte` + `modulePresets` + `models` | 26 (5 + 3 + 18) | 7 `OverlapInpaint.svelte` | 15 |
-| 3 `mixMath`/`signalPath`/arrangement | 18 (6 + 10 + 2) | 8 v1→v2 converter | 12 |
-| 4 `MasterChain.svelte` | 6 | 9 sessions/preset/autosave/wiring | 25 (3 + 7 + 6 + 2 + 5 + 2) |
+| 2 `LaneChain.svelte` + `modulePresets` + `models` | 28 (5 + 3 + 20) | 7 `OverlapInpaint.svelte` | 16 (8 + 8) |
+| 3 `mixMath`/`signalPath`/arrangement | 19 (6 + 10 + 3) | 8 v1→v2 converter | 13 |
+| 4 `MasterChain.svelte` | 6 | 9 sessions/preset/autosave/wiring | 35 (3 + 7 + 8 + 6 + 2 + 6 + 3) |
 | 5 `MixSignalPath.svelte` + Playwright | 8 (+ 4 Playwright) | 10 Playwright + self-review | 0 (+ 6 Playwright) |
 
-**132 `it()` blocks across nine vitest-bearing tasks, plus 10 Playwright `test()`s (4 in
-`tests/chains.spec.ts`, 6 in `tests/sessionsFilesOverlap.spec.ts`) — 142 total.** (Before critic
-pass 1: 115 + 9 = 124.) Counted mechanically after the pass: `it(` at exactly two-space indent per
-`### Task N` section, and top-level `test(` per task; every task's `Tests N passed (N)` gate matches.
-M1's `strings.test.ts` total goes 87 → **112** across Tasks 2, 4, 5, 6 and 9.
+**147 `it()` blocks across nine vitest-bearing tasks, plus 10 Playwright `test()`s (4 in
+`tests/chains.spec.ts`, 6 in `tests/sessionsFilesOverlap.spec.ts`) — 157 total.** (Before critic
+pass 1: 115 + 9 = 124; before critic pass 2: 132 + 10 = 142.) Counted mechanically after pass 2:
+`it(` at exactly two-space indent per `### Task N` section, and top-level `test(` per task; every
+task's `Tests N passed (N)` gate matches. M1's `strings.test.ts` total goes 87 → **112** across
+Tasks 2, 4, 5, 6 and 9 (pass 2 added no HELP string).
 
 **Critic pass 1 applied (2026-09-24) — see "Critic pass 1" below.** 31 findings, 12 blocking, all 31
-applied after each was checked against its cited source. Every earlier milestone's pass has found
-something, and no pass on this project has ever come back clean on a second, independent look —
-**run a second pass before this plan is treated as done**, per the lesson M6 cost this project.
+applied after each was checked against its cited source. **Critic pass 2 applied (2026-09-25) — see
+"Critic pass 2" below.** 14 findings, 2 blocking (both data-loss paths in session load/import), all
+14 applied. Every pass on this project has found something; a third, independent look at Task 9's
+load sequence in particular is cheap insurance before implementation.
 
 ### Critic pass 1 (2026-09-24)
 
@@ -351,6 +365,68 @@ all 31 held (the two unconfirmed ones were confirmed on inspection). What change
 selectors (`[data-testid="clip"]`, `[data-module="overlapInpaint"]`) match nothing M5 renders;
 T10 uses the real markup and this is flagged (Open questions 21). `AdvancedSampling`'s `a2a` prop
 is still unwired by M5 (Open questions 20). Test counts moved 115 → 132 `it()`, 9 → 10 Playwright.
+
+### Critic pass 2 (2026-09-24 findings, applied 2026-09-25)
+
+A second, independent read-only critic against the plan at commit 11560e7
+(`docs/latent-forge/M7_CRITIC2_FINDINGS.md`), which compiled the four new components on Svelte
+5.57.0 and runtime-checked the `peekOverlapParams` pattern. **14 findings, 2 blocking, 2
+unconfirmed.** The fix agent re-checked each against its cited source (M1/M4/M5 plan lines, the spec,
+`sa3-studio/src/lib/types.ts` and `store.svelte.ts`, `eval/explorer_render_server.py`); all 14 held.
+The blocking pair and #3, #5, #6, #7 all touch one path, so they were fixed together as **one
+load/import sequence**, stated once as a numbered order in Task 9's WHY and implemented in one new,
+unit-tested class (`SessionController`) instead of `App.svelte` closures (Global Constraint #10).
+
+**Blocking.**
+1. **IMPORT could autosave a half-imported project over the loaded session.** `applyProject` ran
+   before `session` was cleared, with no validation of a v2 file. Now: a v2 object passes
+   `validateProjectV2` (every field `applyProject` and its readers dereference) before any store is
+   touched; autosave is disarmed and an IMPORT's `session` cleared before `applyProject`.
+   `sessionController.test.ts` proves a v2 file missing its last-read field PUTs nothing, leaves
+   `session` and the stores alone, and keeps the old session armed.
+2. **`loadSession` renamed the session before the content arrived.** Now the previous name stays
+   (and stays armed) until apply, rebuild and arm succeed; a fetch/validation failure changes
+   nothing; SAVE is refused while a load is in flight; the TopBar select snaps back to the committed
+   name after a pick. Tests: a failed load keeps the previous name and its autosave; a SAVE mid-load
+   writes nothing to either name; the select stays on the committed name.
+
+**Non-blocking.**
+3. **A failed rebuild rewrote the saved session's backbone, and edits during the rebuild were folded
+   into the baseline.** The baseline is now the project as loaded, taken before the rebuild wait; a
+   failed rebuild reverts the client stage but pins the session's backbone into what is saved;
+   `observe()` runs once after arming. Tested; the defaults choice is Open question 29.
+4. **Module-preset selection was shared by all lanes, and recall wrote to whichever lane was active
+   when the response arrived.** `presetPicked` is per lane; recall/save capture the lane before the
+   await. Two new T2 tests.
+5. **A load kept the old selection and old overlap params.** `applyProject` clears the selection
+   and calls T3's new `clearOverlapParams()`; OverlapInpaint renders only `{#if overlap && params}`.
+   One T3, one T7 and one T9 test.
+6. **Stretched previews were not rebuilt on load.** Step 6 schedules M5's `scheduleStretch` per
+   loaded clip; tested.
+7. **v1 IMPORT forced the BASE stage.** Converted v1 input is applied with `restoreModel: false` and
+   never rebuilds; the converter's `backbone` is a documented placeholder. Tested.
+8. **M4 and M7 disagreed on an active LatCH slot.** ADVANCED SAMPLING now gets only registry-known
+   slots (a new T9 test); `SigmaColumn` keeps raw slots (drawing only) — Open question 28.
+9. **The signal-path test title overclaimed.** Retitled; stages 3, 7, 8 and 9 now asserted.
+10. **FILM SCALE ignores `/info.film_default.gain`.** Recorded as a known gap, with the reason
+    (M1's frozen default, lit dots) — Open question 26, Known incomplete 4.
+11. **The converter dropped v1 `audio-file` clips with a `serverPath`.** They now become `path`
+    refs; one new T8 test.
+12. **T3's import-block edit would have dropped `import type { SnapMode }`.** The step now says
+    "extend the first two imports" and shows the third, unchanged.
+13. (unconfirmed → confirmed) **The RightPaneModules test relied on `module-dot`,** which only the
+    ruled-out label-prop `ModuleShell` emits; no plan pins the `{id, title, lit}` version's dot. The
+    test now mocks `ModuleShell` with a probe carrying exactly the Normative props and asserts the
+    `lit` value passed — Open question 27.
+14. (unconfirmed → decided) **`lora.slot` was saved as if stable.** `ckpt_path` is now the durable
+    identity and `slot` a transient resolution: contract-table row, `durableChain`/`modulePresetPayload`
+    write `slot: null`, LORA/DORA re-resolves by path — Open question 25.
+
+**Found while applying, not in the critic's list:** a SAVE whose PUT was still in flight when a load
+started would have armed its name over the newly loaded stores (now guarded by the load sequence);
+a master-preset recall during a load would patch half-replaced stores (now refused while loading);
+a load superseded after it applied left stores no session owns (now shown as `unsaved`). Test counts
+moved 132 → 147 `it()` (T2 +2, T3 +1, T7 +1, T8 +1, T9 +10); Playwright unchanged at 10.
 
 ---
 
@@ -764,9 +840,14 @@ full, not extended.
   `bungee_on, semitones` — every level carries its own `*_on` flag, so a recalled preset restores
   on/off as well as values), `modulePresetPayload(chain: LaneChain, level: ModuleLevel):
   Partial<LaneChain>` (a plain deep copy of exactly those fields, safe on a `$state` proxy because
-  it copies through JSON rather than `structuredClone`), `applyModulePreset(chain: LaneChain, level:
-  ModuleLevel, payload: Record<string, unknown>): void` (writes ONLY that level's fields, in place,
-  into the chain it is given — the component passes the active lane's).
+  it copies through JSON rather than `structuredClone`; the `lora` level writes `lora.slot: null`),
+  `applyModulePreset(chain: LaneChain, level: ModuleLevel, payload: Record<string, unknown>): void`
+  (writes ONLY that level's fields, in place, into the chain it is given — the component passes the
+  lane the preset was picked on, captured before the fetch), and `durableChain(chain: LaneChain):
+  LaneChain` (a plain JSON copy with `lora.slot` set to `null` — T9's serialiser and master preset
+  write every lane's chain through it). **`lora.ckpt_path` is the durable identity, `lora.slot` a
+  transient `/slots` resolution** (contract table; critic pass 2 #14): no saved payload carries a
+  slot index, and the component re-resolves it by path.
 - Produces, added to `src/lib/forge/models.ts`: `fetchFilmCkpts(): Promise<AdapterEntry[]>` (reads
   `/models?family=film`) and `fetchSlots(): Promise<SlotsResponse>` (reads `/slots`, shape verified
   directly against `eval/adapter_slots.py:51-60,156-160` and
@@ -1084,6 +1165,42 @@ describe("module presets — direct forgeApi calls, no intermediate client", () 
     await waitFor(() => expect(del).toHaveBeenCalledWith("film", "tight"));
     await waitFor(() => expect(screen.queryByRole("option", { name: "tight" })).toBeNull());
   });
+
+  it("the picked preset belongs to the lane it was picked on: another lane shows none, and SAVE there asks for a new name", async () => {
+    vi.spyOn(forgeApi, "presets").mockImplementation(async (level) =>
+      level === "latch" ? { ok: true, names: ["dub"] } : { ok: true, names: [] });
+    vi.spyOn(forgeApi, "preset").mockResolvedValue({ latch_on: true, slots: CHAIN_DEFAULTS.slots, hparams: CHAIN_DEFAULTS.hparams });
+    const save = vi.spyOn(forgeApi, "savePreset").mockResolvedValue({ ok: true });
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue(null);   // the user cancels the name prompt
+    render(LaneChain);
+    const select = await screen.findByLabelText("LATCH GUIDANCE preset");
+    await screen.findByRole("option", { name: "dub" });
+    await fireEvent.change(select, { target: { value: "dub" } });
+    await waitFor(() => expect(arrangement.lanes[0].chain.latch_on).toBe(true));
+    view.setActiveLane(1);
+    await waitFor(() => expect(select).toHaveValue(""));
+    expect(screen.getByTestId("latch-preset-delete")).toBeDisabled();   // DEL cannot delete lane 1's non-pick
+    await fireEvent.click(screen.getByTestId("latch-preset-save"));
+    expect(prompt).toHaveBeenCalledTimes(1);   // a NEW name for lane 2 -- "dub" is never overwritten
+    expect(save).not.toHaveBeenCalled();
+    view.setActiveLane(0);
+    await waitFor(() => expect(select).toHaveValue("dub"));
+  });
+
+  it("a recall still in flight when the active lane changes lands in the lane it was picked on", async () => {
+    vi.spyOn(forgeApi, "presets").mockImplementation(async (level) =>
+      level === "latch" ? { ok: true, names: ["dub"] } : { ok: true, names: [] });
+    let answer!: (payload: Record<string, unknown>) => void;
+    vi.spyOn(forgeApi, "preset").mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    render(LaneChain);
+    const select = await screen.findByLabelText("LATCH GUIDANCE preset");
+    await screen.findByRole("option", { name: "dub" });
+    await fireEvent.change(select, { target: { value: "dub" } });
+    view.setActiveLane(1);   // switch lanes BEFORE the preset arrives
+    answer({ latch_on: true, slots: CHAIN_DEFAULTS.slots, hparams: CHAIN_DEFAULTS.hparams });
+    await waitFor(() => expect(arrangement.lanes[0].chain.latch_on).toBe(true));
+    expect(arrangement.lanes[1].chain.latch_on).toBe(false);
+  });
 });
 
 describe("following the active lane", () => {
@@ -1116,20 +1233,24 @@ describe("HELP ids on the controls this task adds (docs/latent-forge/extract_hel
 import { describe, expect, it } from "vitest";
 import { CHAIN_DEFAULTS } from "../../forge/defaults";
 import type { LaneChain } from "../../forge/types";
-import { applyModulePreset, MODULE_PRESET_FIELDS, modulePresetPayload } from "../modulePresets";
+import { applyModulePreset, durableChain, MODULE_PRESET_FIELDS, modulePresetPayload } from "../modulePresets";
 
 function clone(c: LaneChain): LaneChain {
   return JSON.parse(JSON.stringify(c)) as LaneChain;
 }
 
 describe("module presets (spec 9.3: module level = that module's settings object)", () => {
-  it("each level's payload is exactly its own fields, *_on flag included", () => {
+  it("each level's payload is exactly its own fields, *_on flag included -- and never a resident slot index", () => {
     const chain = clone(CHAIN_DEFAULTS);
     chain.film_on = true;
     chain.semitones = -5;
+    chain.lora = { ckpt_path: "/SERVER/a.safetensors", slot: 2, strength: 1 };   // slot 2 is only true NOW
     expect(Object.keys(modulePresetPayload(chain, "latch")).sort()).toEqual(["hparams", "latch_on", "slots"]);
     expect(modulePresetPayload(chain, "film")).toEqual({ film_on: true, film: CHAIN_DEFAULTS.film });
-    expect(modulePresetPayload(chain, "lora")).toEqual({ lora_on: false, lora: CHAIN_DEFAULTS.lora });
+    // ckpt_path is the durable identity; slot is a transient /slots resolution (critic pass 2 #14)
+    expect(modulePresetPayload(chain, "lora")).toEqual({ lora_on: false, lora: { ckpt_path: "/SERVER/a.safetensors", slot: null, strength: 1 } });
+    expect(durableChain(chain).lora.slot).toBeNull();
+    expect(chain.lora.slot).toBe(2);   // the live chain keeps its resolution
     expect(modulePresetPayload(chain, "bungee")).toEqual({ bungee_on: false, semitones: -5 });
     expect(MODULE_PRESET_FIELDS.bungee).toEqual(["bungee_on", "semitones"]);
   });
@@ -1237,11 +1358,22 @@ export const MODULE_PRESET_FIELDS: Record<ModuleLevel, readonly (keyof LaneChain
 };
 
 /** A plain deep copy of the level's fields. JSON, not structuredClone: `chain` is normally a
- *  $state proxy, and structuredClone throws DataCloneError on one (Global Constraint #7). */
+ *  $state proxy, and structuredClone throws DataCloneError on one (Global Constraint #7).
+ *  `lora.slot` is written null: a /slots index names whatever is resident NOW, so only
+ *  `lora.ckpt_path` is durable (contract table, critic pass 2 #14). */
 export function modulePresetPayload(chain: LaneChain, level: ModuleLevel): Partial<LaneChain> {
   const out: Record<string, unknown> = {};
   for (const k of MODULE_PRESET_FIELDS[level]) out[k] = JSON.parse(JSON.stringify(chain[k]));
+  if (level === "lora") (out.lora as LaneChain["lora"]).slot = null;
   return out as Partial<LaneChain>;
+}
+
+/** The whole chain as it may be SAVED (session, master preset): a plain copy with the transient
+ *  `lora.slot` cleared. The live chain is never modified. */
+export function durableChain(chain: LaneChain): LaneChain {
+  const copy = JSON.parse(JSON.stringify(chain)) as LaneChain;
+  copy.lora.slot = null;
+  return copy;
 }
 
 /** Writes ONLY the level's own fields into `chain`, in place (the $state proxy rule). Anything else
@@ -1344,7 +1476,12 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
   let residentSlots = $state<SlotEntry[]>([]);
   let loraOptions = $state<AdapterEntry[]>([]);
   let presetNames = $state<Record<ModuleLevel, string[]>>({ latch: [], film: [], lora: [], bungee: [] });
-  let presetPicked = $state<Record<ModuleLevel, string>>({ latch: "", film: "", lora: "", bungee: "" });
+  // The picked preset per LANE, not per component (critic pass 2 #4): recall "dub" on lane 1,
+  // switch to lane 2, and SAVE must not overwrite "dub" with lane 2's settings, nor DEL delete a
+  // preset lane 2 never used. Indexed by view.activeLane.
+  const blankPicked = (): Record<ModuleLevel, string> => ({ latch: "", film: "", lora: "", bungee: "" });
+  let presetPicked = $state<Record<ModuleLevel, string>[]>([blankPicked(), blankPicked(), blankPicked(), blankPicked()]);
+  const picked = $derived(presetPicked[view.activeLane]);
 
   const LEVELS: readonly ModuleLevel[] = ["latch", "film", "lora", "bungee"];
 
@@ -1353,6 +1490,10 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
   $effect(() => {
     fetchLatchHeads().then((h) => (heads = h)).catch(() => {});
     fetchFilmCkpts().then((c) => (filmCkpts = c)).catch(() => {});
+    // Known gap (critic pass 2 #10, Open questions 26): spec §5.5 says SCALE defaults to
+    // /info.film_default.gain, but only the ckpt is read here. The server's gain (1.75) differs from
+    // M1's frozen CHAIN_DEFAULTS.film.gain (1.0), and writing it into a chain would make every lane
+    // non-default (M5's lane dot, this module's lit dot) and change every loaded session.
     forgeApi.info().then((info) => {
       const fd = (info as { film_default?: { ckpt: string | null } }).film_default;
       filmDefaultCkpt = fd?.ckpt ?? null;
@@ -1402,47 +1543,62 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
   }
 
   // --- LORA / DORA ----------------------------------------------------------------------------
+  /** ckpt_path is the durable identity; the slot index is resolved from it against what /slots
+   *  says is resident NOW (contract table, critic pass 2 #14), never trusted from a saved payload. */
+  function slotFor(path: string | null): number | null {
+    return path ? (residentSlots.find((s) => s.path === path)?.index ?? null) : null;
+  }
+
   function setLoraModel(path: string) {
     chain.lora.ckpt_path = path || null;
     // a resident /slots entry also records its slot index, so switching to it is the cheap path
-    chain.lora.slot = residentSlots.find((s) => s.path === path)?.index ?? null;
+    chain.lora.slot = slotFor(chain.lora.ckpt_path);
   }
 
   // --- module presets (spec §9.3: recall applies to the ACTIVE lane) -----------------------------
+  // Every handler captures the lane (and its chain) BEFORE its first await: a response must land
+  // in the lane the user acted on, even if view.activeLane changed while it was in flight.
   async function recallModulePreset(level: ModuleLevel, name: string) {
-    presetPicked[level] = name;
+    const lane = view.activeLane;
+    const target = arrangement.lanes[lane].chain;
+    presetPicked[lane][level] = name;
     if (!name) return;
     try {
       const payload = await forgeApi.preset(level, name);
-      applyModulePreset(chain, level, payload);
+      applyModulePreset(target, level, payload);
+      if (level === "lora") target.lora.slot = slotFor(target.lora.ckpt_path);
     } catch {
       // a preset deleted elsewhere, or a dead server: the lane keeps what it has
     }
   }
 
   async function saveModulePreset(level: ModuleLevel) {
-    let name = presetPicked[level];
+    const lane = view.activeLane;
+    const source = arrangement.lanes[lane].chain;
+    let name = presetPicked[lane][level];
     if (!name) {
       const typed = window.prompt(`${level} preset name:`, "");
       if (!typed) return;
       name = typed;
     }
+    const payload = modulePresetPayload(source, level);   // taken before the await, from that lane
     try {
-      await forgeApi.savePreset(level, name, modulePresetPayload(chain, level));
+      await forgeApi.savePreset(level, name, payload);
       if (!presetNames[level].includes(name)) presetNames[level] = [...presetNames[level], name];
-      presetPicked[level] = name;
+      presetPicked[lane][level] = name;
     } catch {
       // the server's refusal (bad name, disk) is surfaced by forgeApi's own error; nothing to undo
     }
   }
 
   async function deleteModulePreset(level: ModuleLevel) {
-    const name = presetPicked[level];
+    const name = presetPicked[view.activeLane][level];
     if (!name) return;
     try {
       await forgeApi.deletePreset(level, name);
       presetNames[level] = presetNames[level].filter((n) => n !== name);
-      presetPicked[level] = "";
+      // gone from the server, so gone from every lane that had it picked
+      for (const p of presetPicked) if (p[level] === name) p[level] = "";
     } catch {
       // leave the list as it is if the server refused
     }
@@ -1450,14 +1606,14 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
 </script>
 
 {#snippet presetControls(level: ModuleLevel, label: string, help: string)}
-  <select aria-label="{label} preset" data-help={help} value={presetPicked[level]}
+  <select aria-label="{label} preset" data-help={help} value={picked[level]}
     onchange={(e) => recallModulePreset(level, (e.currentTarget as HTMLSelectElement).value)}>
     <option value=""></option>
     {#each presetNames[level] as name (name)}<option value={name}>{name}</option>{/each}
   </select>
   <button data-testid="{level}-preset-save" data-help={HELP.modulePresetSave} onclick={() => saveModulePreset(level)}>SAVE</button>
   <button data-testid="{level}-preset-delete" data-help={HELP.modulePresetDelete}
-    disabled={!presetPicked[level]} onclick={() => deleteModulePreset(level)}>DEL</button>
+    disabled={!picked[level]} onclick={() => deleteModulePreset(level)}>DEL</button>
 {/snippet}
 
 <div class="lane-chain">
@@ -1598,14 +1754,14 @@ becomes `expect(Object.keys(HELP)).toHaveLength(100);`. Nothing else in that fil
 cd latent-forge && npx vitest run src/lib/forge/__tests__/models.test.ts src/lib/chains/__tests__/modulePresets.test.ts src/ui/modules/__tests__/LaneChain.component.test.ts && npx vitest run src/lib/help && npm run check
 ```
 
-Expected: `Test Files  3 passed (3)` / `Tests  26 passed (26)` (5 in `models.test.ts`, 3 in
-`modulePresets.test.ts`, 18 in `LaneChain.component.test.ts`); then M1's own `src/lib/help` suite
+Expected: `Test Files  3 passed (3)` / `Tests  28 passed (28)` (5 in `models.test.ts`, 3 in
+`modulePresets.test.ts`, 20 in `LaneChain.component.test.ts`); then M1's own `src/lib/help` suite
 passes with the updated total of 100; then `svelte-check found 0 errors and 0 warnings`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T2: LANE CHAIN (spec 5.5) -- LatCH/FiLM/LoRA/Bungee wired through arrangement.lanes[activeLane].chain in place, module presets recall/SAVE/DEL on the active lane, fetchFilmCkpts/fetchSlots added, jest-dom registered, 13 new HELP strings (total 100)"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T2: LANE CHAIN (spec 5.5) -- LatCH/FiLM/LoRA/Bungee wired through arrangement.lanes[activeLane].chain in place, module presets recall/SAVE/DEL on the active lane (pick kept per lane, lane captured before each await), lora.slot never saved (ckpt_path is the identity), fetchFilmCkpts/fetchSlots added, jest-dom registered, 13 new HELP strings (total 100)"
 ```
 
 ---
@@ -1622,8 +1778,8 @@ serialiser read: `arrangement.mix`/`.master`, seeded from M1's own frozen defaul
 **Files:**
 - Create: `latent-forge/src/lib/mix/mixMath.ts`, `latent-forge/src/lib/mix/__tests__/mixMath.test.ts`
 - Create: `latent-forge/src/lib/mix/signalPath.ts`, `latent-forge/src/lib/mix/__tests__/signalPath.test.ts`
-- Modify: `latent-forge/src/lib/stores/arrangement.svelte.ts` (M5, current file — add two fields
-  and one read-only method, nothing else changes)
+- Modify: `latent-forge/src/lib/stores/arrangement.svelte.ts` (M5, current file — add two fields,
+  one read-only method and one in-place reset, and extend the first two imports; nothing else changes)
 - Create: `latent-forge/src/lib/stores/__tests__/arrangementMixMaster.test.ts`
 
 **Interfaces:**
@@ -1639,7 +1795,9 @@ serialiser read: `arrangement.mix`/`.master`, seeded from M1's own frozen defaul
   the class is `ArrangementStore`, its current import block is
   `import { A2A_ENVELOPE_DEFAULT, BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings,
   OVERLAP_DEFAULT } from "../forge/defaults"; import type { AudioRef, Envelope, ForgeClip,
-  ForgeLane, OverlapParams } from "../forge/types";`, its `lanes = $state<ForgeLane[]>
+  ForgeLane, OverlapParams } from "../forge/types"; import type { SnapMode } from "../math/snap";`
+  (three statements — M5 plan lines 291-297; this task extends the first two and **keeps the
+  third**), its `lanes = $state<ForgeLane[]>
   (defaultLanes())` field already carries `chain: LaneChain` per lane, and `overlaps` is a
   `$derived.by` over `clips` — **untouched by this task**.
 - Produces, from `mixMath.ts`: `interface MixTreeNode { id: "M1"|"M2"|"MX"; a: string; b: string }`,
@@ -1662,7 +1820,10 @@ serialiser read: `arrangement.mix`/`.master`, seeded from M1's own frozen defaul
   otherwise a fresh `OVERLAP_DEFAULT`-shaped copy that is **not stored**. It never writes, so it is
   the only overlap reader allowed inside a `$derived`, a template or a `$derived.by` snapshot
   (Global Constraint #8: M5's `overlapParams` seeds on first read, and a write during a derived
-  throws `state_unsafe_mutation`, verified on Svelte 5.57.0). Nothing else in the file changes.
+  throws `state_unsafe_mutation`, verified on Svelte 5.57.0). And **`clearOverlapParams(): void`**
+  — empties the private `overlapStore` in place, for T9's `applyProject` (critic pass 2 #5: a load
+  must not let the previous project's overlap edits survive under a key the next project reuses; a
+  v1 import keeps its clip ids, so its derived keys can repeat). Nothing else in the file changes.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1742,13 +1903,17 @@ describe("buildSignalPath — the nine §8.1 stages, in order", () => {
     expect(stages.map((s) => s.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
-  it("dims everything except MIX and the final DECODE when nothing is on and there are no clips", () => {
+  it("with no clips and nothing on, dims every stage except MASTER CHAIN (norm_on defaults true)", () => {
     const stages = buildSignalPath(baseInput());
     expect(stages[0].lit).toBe(false); // S1 DECODE: no crop-ref clips
     expect(stages[1].lit).toBe(false); // S2 BUNGEE
+    expect(stages[2].lit).toBe(false); // S3 ENCODE: no clips
     expect(stages[3].lit).toBe(false); // S4 LANE CHAINS
     expect(stages[4].lit).toBe(false); // S5 A2A
     expect(stages[5].lit).toBe(false); // S6 INPAINT OVERLAPS
+    expect(stages[6].lit).toBe(false); // S7 MIX: nothing to mix
+    expect(stages[7].lit).toBe(true);  // S8 MASTER CHAIN: MASTER_DEFAULT.norm_on is true
+    expect(stages[8].lit).toBe(false); // S9 DECODE: nothing to decode
   });
 
   it("lights S1 DECODE when a clip's audio is a crop ref", () => {
@@ -1846,6 +2011,15 @@ describe("arrangement.peekOverlapParams (non-seeding; Global Constraint #8)", ()
     expect(arrangement.peekOverlapParams(key)).toBe(arrangement.overlapParams(key));
     expect(arrangement.peekOverlapParams(key).steps).toBe(40);
   });
+
+  it("clearOverlapParams drops every seeded entry, in place, so peek is back to an unstored default", () => {
+    const key = "clear-a-clear-b";
+    arrangement.setOverlapParams(key, { steps: 40 });
+    expect(arrangement.peekOverlapParams(key)).toBe(arrangement.peekOverlapParams(key)); // seeded: one live object
+    arrangement.clearOverlapParams();
+    expect(arrangement.peekOverlapParams(key).steps).toBe(OVERLAP_DEFAULT.steps);
+    expect(arrangement.peekOverlapParams(key)).not.toBe(arrangement.peekOverlapParams(key)); // unstored again
+  });
 });
 ```
 
@@ -1856,7 +2030,8 @@ cd latent-forge && npx vitest run src/lib/mix/__tests__/mixMath.test.ts src/lib/
 ```
 
 Expected: `Failed to resolve import "../mixMath"` and `"../signalPath"`; `arrangementMixMaster.test.ts`
-fails on `arrangement.mix` being `undefined` and `peekOverlapParams` not being a function.
+fails on `arrangement.mix` being `undefined` and `peekOverlapParams`/`clearOverlapParams` not
+being functions.
 
 - [ ] **Step 3: Implement**
 
@@ -1974,8 +2149,12 @@ export function buildSignalPath(input: SignalPathInput): SignalPathStage[] {
 }
 ```
 
-Modify `latent-forge/src/lib/stores/arrangement.svelte.ts` — change only the import block, add
-two fields and one method to `ArrangementStore`; nothing else in the file changes:
+Modify `latent-forge/src/lib/stores/arrangement.svelte.ts` — **extend the first two import
+statements** (the `../forge/defaults` value import and the `../forge/types` type import) to the
+form below, **keep the third, `import type { SnapMode } from "../math/snap";`, exactly as it is**
+(M5 plan line 297 — `snap = $state<SnapMode>(…)` needs it; replacing the whole block with only these
+two statements fails `svelte-check`), and add two fields and two methods to `ArrangementStore`;
+nothing else in the file changes:
 
 ```ts
 import {
@@ -1985,6 +2164,7 @@ import {
 import type {
   AudioRef, Envelope, ForgeClip, ForgeLane, MasterChain, MixSpec, OverlapParams,
 } from "../forge/types";
+import type { SnapMode } from "../math/snap";   // unchanged -- M5's own third import
 ```
 
 and, inside `class ArrangementStore`, immediately after `lanes = $state<ForgeLane[]>(defaultLanes());`:
@@ -2012,6 +2192,15 @@ and, immediately after the existing `setOverlapParams` method:
       render: cloneRenderSettings(OVERLAP_DEFAULT.render),
     };
   }
+
+  /**
+   * M7 -- empties overlapStore IN PLACE (the field is private, and M5 has no way to drop an entry).
+   * T9's applyProject calls it before writing a loaded project's overlaps: without it a previous
+   * project's edits survive under any key the next one reuses (a v1 import keeps its clip ids).
+   */
+  clearOverlapParams(): void {
+    for (const k of Object.keys(this.overlapStore)) delete this.overlapStore[k];
+  }
 ```
 
 - [ ] **Step 4: Run it, expect pass**
@@ -2020,11 +2209,11 @@ and, immediately after the existing `setOverlapParams` method:
 cd latent-forge && npx vitest run src/lib/mix/__tests__/mixMath.test.ts src/lib/mix/__tests__/signalPath.test.ts src/lib/stores/__tests__/arrangementMixMaster.test.ts
 ```
 
-Expected: `Test Files  3 passed (3)` / `Tests  18 passed (18)` (6 in `mixMath.test.ts`, 10 in
-`signalPath.test.ts`, 2 in `arrangementMixMaster.test.ts`).
+Expected: `Test Files  3 passed (3)` / `Tests  19 passed (19)` (6 in `mixMath.test.ts`, 10 in
+`signalPath.test.ts`, 3 in `arrangementMixMaster.test.ts`).
 
 Then confirm the modified store file still passes its own, pre-existing suite untouched (this
-task's own diff is additive-only — two new fields and one new read-only method, no changed method — so no specific count is
+task's own diff is additive-only — two new fields and two new methods, no changed method — so no specific count is
 asserted here beyond "still green"; M5's own plan is the source of truth for that file's count):
 
 ```bash
@@ -2037,7 +2226,7 @@ Expected: every existing test in `arrangement.test.ts` passes unchanged, then `s
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T3: mixMath (node tree wiring, quad normalisation) and signalPath (the nine spec 8.1 stages, live), arrangement.mix/.master fields seeded from M1's frozen defaults, non-seeding peekOverlapParams for derived/template reads"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T3: mixMath (node tree wiring, quad normalisation) and signalPath (the nine spec 8.1 stages, live), arrangement.mix/.master fields seeded from M1's frozen defaults, non-seeding peekOverlapParams for derived/template reads, in-place clearOverlapParams for T9's load"
 ```
 
 ---
@@ -3244,6 +3433,15 @@ describe("OverlapInpaint.svelte (spec §4.6.1)", () => {
     expect(getByTestId("overlap-steps").getAttribute("data-help")).toBeTruthy();
     expect(getByTestId("overlap-cfg").getAttribute("data-help")).toBeTruthy();
   });
+
+  it("renders nothing for a selected overlap key that no longer exists (a load or a clip move removed it)", () => {
+    // peekOverlapParams never returns null, so `{#if params}` alone would render a body for a
+    // stale key; the body is gated on the overlap itself too (critic pass 2 #5).
+    view.select({ kind: "overlap", key: "gone-a-gone-b" });
+    const { container, queryByTestId } = render(OverlapInpaint);
+    expect(queryByTestId("inpaint-overlap-button")).toBeNull();
+    expect(container.querySelector(".overlap")).toBeNull();
+  });
 });
 ```
 
@@ -3254,7 +3452,9 @@ cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/f
 ```
 
 Expected: `Failed to resolve import "../overlapLabel"`, and every `OverlapInpaint.test.ts` case
-fails against the M1 stub's `<p class="pending">` markup (no `data-testid`s exist yet). Summary:
+but the last fails against the M1 stub's `<p class="pending">` markup (no `data-testid`s exist yet).
+The last one — a stale overlap key renders nothing — already passes against the stub, which renders
+no `.overlap`; it is the regression guard for Step 4's `{#if overlap && params}` gate. Summary:
 `Test Files  2 failed (2)`.
 
 - [ ] **Step 3: Write `overlapLabel.ts`**
@@ -3328,7 +3528,9 @@ export function overlapInfoLine(
   }
 </script>
 
-{#if params}
+<!-- Both, not `params` alone: peekOverlapParams never returns null, so a selected key that no
+     longer names an overlap (after a load or a clip move) would otherwise still render a body. -->
+{#if overlap && params}
   <div class="overlap">
     <p class="info">{info}</p>
 
@@ -3481,13 +3683,13 @@ export function overlapInfoLine(
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/overlapLabel.test.ts src/ui/modules/__tests__/OverlapInpaint.test.ts
 ```
 
-Expected: `Test Files  2 passed (2)` / `Tests  15 passed (15)` (8 in `overlapLabel.test.ts`, 7 in
+Expected: `Test Files  2 passed (2)` / `Tests  16 passed (16)` (8 in `overlapLabel.test.ts`, 8 in
 `OverlapInpaint.test.ts`).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T7: OVERLAP -- INPAINT module (spec 4.6.1) -- info line, 64px crossfade curve reusing M5's EnvelopeEditor, chroma crossfade + local STEPS/CFG override through arrangement.overlapParams/setOverlapParams, INPAINT OVERLAP button a no-op until M9"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T7: OVERLAP -- INPAINT module (spec 4.6.1) -- info line, 64px crossfade curve reusing M5's EnvelopeEditor, chroma crossfade + local STEPS/CFG override through arrangement.peekOverlapParams/setOverlapParams, body gated on the overlap existing, INPAINT OVERLAP button a no-op until M9"
 ```
 
 ---
@@ -3546,10 +3748,13 @@ promptRegion?; schedule?; windowSec?; overlapSec?; xfadeSec?; bendOps?}` (`types
    v1's own `toJSON()` already drops `previewUrl` for an `"audio-file"` clip
    (`store.svelte.ts:622`), and its own `loadJSON()` already reports these as needing a manual
    relink (`relinkNeeded`, `store.svelte.ts:648`) — so v1 itself treats these as not durably saved.
-   **Decision:** clips whose v1 source is `"empty"` or `"audio-file"` are dropped from the
-   converted project rather than given a synthetic/invalid `AudioRef`; `crop` and `render` sources
-   convert cleanly since their identifiers (`cropId`, `jobId`/`filename`) are exactly `AudioRef`'s
-   own `crop`/`render` shapes.
+   **Except when v1 recorded where the server has the audio** (critic pass 2 #11): a v1 `Clip` can
+   carry `serverPath` (`sa3-studio/src/lib/types.ts:150-158` — set from a job's returned files or
+   typed in by hand), and `{kind: "path", path}` is a valid v2 `AudioRef`. **Decision:** `crop` and
+   `render` sources convert cleanly (their identifiers — `cropId`, `jobId`/`filename` — are exactly
+   `AudioRef`'s own `crop`/`render` shapes); any other source with a non-empty `serverPath` becomes
+   a `path` ref; only a clip with neither is dropped, rather than given a synthetic/invalid
+   `AudioRef`.
 
 **Files:**
 - Create: `latent-forge/src/lib/forge/convertProjectV1.ts`,
@@ -3621,7 +3826,7 @@ describe("snap: off -> free, digits or 1/n pass through as 1/n (M5's own table c
   });
 });
 
-describe("clips: crop and render sources convert; empty and audio-file are dropped (no v2 AudioRef exists for them)", () => {
+describe("clips: crop and render sources convert; empty and audio-file are dropped unless v1 recorded a serverPath", () => {
   it("a crop clip converts with defaults filled into render", () => {
     const out = convertProjectV1({
       ...v1Base(),
@@ -3666,7 +3871,7 @@ describe("clips: crop and render sources convert; empty and audio-file are dropp
     expect(out.clips[0].audio).toEqual({ kind: "render", job_id: "forge-1", file: "out_00.wav" });
   });
 
-  it("drops empty and audio-file clips, since v1 itself never durably saved their audio", () => {
+  it("drops empty and audio-file clips with no serverPath, since v1 itself never durably saved their audio", () => {
     const out = convertProjectV1({
       ...v1Base(),
       clips: [
@@ -3675,6 +3880,22 @@ describe("clips: crop and render sources convert; empty and audio-file are dropp
       ],
     });
     expect(out.clips).toHaveLength(0);
+  });
+
+  it("keeps an audio-file clip whose v1 serverPath says where the server has its audio, as a path ref", () => {
+    const out = convertProjectV1({
+      ...v1Base(),
+      clips: [{
+        id: "g", laneId: "other", startSec: 2, durationSec: 4, offsetSec: 0,
+        source: { kind: "audio-file", name: "take.wav", url: "blob:y" },
+        serverPath: "/SERVER/renders/take.wav",   // types.ts:150-158 -- a job's file, or typed in
+        latentState: "none", render: { op: "generate", prompt: "", steps: 24, cfgScale: 6, seed: -1, noiseLevel: 0.4 },
+      }],
+    });
+    expect(out.clips).toHaveLength(1);
+    expect(out.clips[0].audio).toEqual({ kind: "path", path: "/SERVER/renders/take.wav" });
+    expect(out.clips[0].lane).toBe(2);
+    expect(JSON.stringify(out)).not.toContain("blob:");
   });
 });
 
@@ -3744,10 +3965,10 @@ Expected: `Failed to resolve import "../convertProjectV1"`.
 // op-specific fields (mixBPath, promptRegion, the longform arc-grammar
 // `schedule` STRING, windowSec/overlapSec/xfadeSec, bendOps) -- ForgeClip has no
 // `op` field at all (verified against M1 T3 and M4/M5's own plans); and a v1
-// clip whose source is "empty" or "audio-file", which has no representable
-// AudioRef (v1 itself never durably saved either -- its own toJSON() drops
-// previewUrl for audio-file clips and loadJSON() already flags them for manual
-// relink).
+// clip whose source is "empty" or "audio-file" AND which has no `serverPath`,
+// which has no representable AudioRef (v1 itself never durably saved it -- its
+// own toJSON() drops previewUrl for audio-file clips and loadJSON() already
+// flags them for manual relink). With a serverPath it becomes a `path` ref.
 //
 // Never throws: this is the ONLY project-load path for an old save, so a
 // garbage or partial input degrades to defaults rather than blocking the load.
@@ -3791,10 +4012,19 @@ function convertAudio(source: unknown): AudioRef | null {
       return typeof source.jobId === "string" && typeof source.filename === "string"
         ? { kind: "render", job_id: source.jobId, file: source.filename }
         : null;
-    // "empty" and "audio-file" have no v2 AudioRef -- see this task's WHY.
+    // "empty" and "audio-file" have no v2 AudioRef of their own -- see this task's WHY and
+    // serverPathRef below.
     default:
       return null;
   }
+}
+
+/** v1's `serverPath` (types.ts:150-158): an absolute path ON THE SERVER, from a job's returned
+ *  files or typed in by hand -- exactly v2's `{kind: "path"}` ref. */
+function serverPathRef(clip: Record<string, unknown>): AudioRef | null {
+  return typeof clip.serverPath === "string" && clip.serverPath !== ""
+    ? { kind: "path", path: clip.serverPath }
+    : null;
 }
 
 function convertRender(v1render: unknown, fallbackDurationSec: number): RenderSettings {
@@ -3837,8 +4067,8 @@ function convertClips(raw: unknown): ForgeClip[] {
   const out: ForgeClip[] = [];
   for (const c of asArray(raw)) {
     if (!isObj(c)) continue;
-    const audio = convertAudio(c.source);
-    if (!audio) continue;   // "empty" / "audio-file" / malformed -- dropped, see WHY
+    const audio = convertAudio(c.source) ?? serverPathRef(c);
+    if (!audio) continue;   // "empty" / "audio-file" with no serverPath, or malformed -- dropped, see WHY
     const laneIndex = V1_LANE_IDS.indexOf((c.laneId as (typeof V1_LANE_IDS)[number]) ?? "drums");
     const durSec = typeof c.durationSec === "number" ? c.durationSec : 0;
     out.push({
@@ -3883,9 +4113,11 @@ export function convertProjectV1(raw: unknown): ProjectV2 {
     mix: structuredClone(MIX_DEFAULT),
     master: structuredClone(MASTER_DEFAULT),
     defaults: cloneRenderSettings(BASE_DEFAULTS),
-    // v1 records no backbone. "medium-base" is STAGE_BACKBONE.BASE (M4 T1), the stage
-    // settings.svelte.ts starts in, so importing a v1 file never triggers the model rebuild
-    // that Task 9's loader performs when a project's backbone differs from the current stage.
+    // v1 records no backbone (and no ckpt). This value only fills the required field -- it is NOT
+    // a stage request: Task 9's loader applies converted v1 input with `restoreModel: false`, so
+    // the current stage and ckpt stay, no model rebuild runs, and a later SAVE records whatever
+    // backbone is actually loaded (critic pass 2 #7 -- emitting a fixed value here used to flip a
+    // POST session to BASE and rebuild the server model on every v1 import).
     backbone: "medium-base",
     ckpt_path: null,
     renders: [],
@@ -3902,12 +4134,12 @@ export function convertProjectV1(raw: unknown): ProjectV2 {
 cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/convertProjectV1.test.ts
 ```
 
-Expected: `Tests  12 passed (12)`.
+Expected: `Tests  13 passed (13)`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T8: v1 -> v2 project converter, built against the real legacy shape (sa3-studio/src/lib/store.svelte.ts), not the spec's one paragraph -- drops what ProjectV2 structurally cannot represent (per-clip op, empty/audio-file sources) rather than forcing it"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T8: v1 -> v2 project converter, built against the real legacy shape (sa3-studio/src/lib/store.svelte.ts), not the spec's one paragraph -- drops what ProjectV2 structurally cannot represent (per-clip op, empty/audio-file sources without a serverPath) rather than forcing it; serverPath becomes a path ref"
 ```
 
 ---
@@ -3958,10 +4190,12 @@ backbone back through `STAGE_BACKBONE` (`{POST: "medium", BASE: "medium-base"}`,
 restored right after and must win. A backbone outside that map (`small-music`, `small-music-base`
 — reachable only through the MODEL select, which nothing wires to `settings`, see below) leaves the
 stage unchanged. Because the stage is **session-level and rebuilds the model** (M4 T9's
-`confirmStage` calls `forgeApi.setBackbone` before `setStage`), `loadSession` does the same when the
+`confirmStage` calls `forgeApi.setBackbone` before `setStage`), a v2 load does the same when the
 restored stage differs from the current one: it calls `forgeApi.setBackbone(STAGE_BACKBONE[stage])`,
 and on failure puts `settings.stage` back so the client never claims a model the server did not
-load. **Note, not fixed here:** `TopBar.svelte`'s own `model`/
+load — **without letting that revert reach the saved session** (step 8 of the order below). A
+converted v1 file restores neither stage nor ckpt: v1 records no model (critic pass 2 #7).
+**Note, not fixed here:** `TopBar.svelte`'s own `model`/
 `modelFolder` `$state` (M1 T10, local to `App.svelte`) is a *different* piece of state that is
 never wired to `settings` by any milestone I can find — another gap, flagged below, not this
 task's to fix.
@@ -3988,8 +4222,56 @@ mockable in a test. Flagged as an authored decision, open for a real name-entry 
 there is nothing to abort. The HANDOUT's rule ("an abort listener added after the signal already
 fired never runs") is about a promise that never settles; the analogous risk here is a **stale
 response applied after a second, newer selection**, which I guard with a monotonic sequence number
-captured before the fetch and checked after it resolves — the same "check first, don't rely on
+captured before the fetch and checked after every await — the same "check first, don't rely on
 a callback firing later" discipline, adapted to an API with no signal to check.
+
+**One load/import sequence, stated once (critic pass 2 #1-#3, #5-#7).** The first draft had two
+data-loss paths: IMPORT applied the file store by store and only then cleared `session`, so a v2
+file missing a later field threw half-way with the old session still armed, and the next autosave
+PUT the mixed state over it; and `loadSession` renamed the session before its content arrived, so a
+failed fetch left the select on B, the stores on A, A's later edits unsaved, and an explicit SAVE
+writing A's content to B. Both now run through **one** class, `SessionController`
+(`sessionController.svelte.ts`), in this order — App only calls it:
+
+1. **Bump the load sequence.** Any earlier load or import still in flight is stale from here: it
+   stops at its next check and never names or arms anything. `loading` stays true until the latest
+   one ends, and **SAVE is refused while it is** — so no SAVE can write the arriving project under
+   the previous name, or anything under the target name before it is armed.
+2. **Fetch** (session load only). The stores are untouched and the previous session stays named and
+   armed; a failed or superseded fetch changes nothing.
+3. **Validate.** A `version: 2` object goes through `validateProjectV2`, which checks every field
+   `applyProject` and its readers dereference and throws naming the first bad one; anything else
+   goes through `convertProjectV1`, which never throws. A malformed file or session stops here —
+   nothing is PUT, `session` is unchanged, the previous session is still armed.
+4. **Disarm autosave** (`arm("", "")`, which flushes the outgoing session's pending save under its
+   own name, with its own content — no store has been touched yet). An IMPORT clears `session`
+   here; a session load keeps the previous name on screen until step 9.
+5. **Apply** (`applyProject`), which first **clears the selection and every overlap's params**
+   (`clearOverlapParams`, T3), then writes the stores; converted v1 input keeps the current stage and
+   ckpt (`restoreModel: false`). If apply throws anyway, `session` becomes `""`: the stores then match
+   no session, so no name may be armed or saved to.
+6. **Schedule a stretch per loaded clip** (M5's `scheduleStretch`): `previewAudio` is re-derived on
+   load, never read from the file (M5 plan lines 6004-6005).
+7. **Snapshot the baseline** — the project as loaded, under its own saved backbone (v2; a converted
+   v1 file takes the current one) — *before* the rebuild
+   wait, so an edit made during that wait is a change to save, not part of the baseline.
+8. **Rebuild the model** (v2 only) if the restored stage differs. On failure the client stage
+   reverts (M4: never claim a model the server did not load) and the session's own backbone is
+   **pinned**: `serializeProject` writes it instead of `settings.backboneId` while the stage stays
+   reverted, so the revert never reaches the saved session, and the loaded `defaults` stay exactly as
+   saved (logged — Open questions 29). A saved backbone with no stage (`small-music*`) is pinned the
+   same way. Changing STAGE drops the pin.
+9. **Check the sequence, then commit:** name the session (a load) or leave it `unsaved` (an import),
+   `arm` with step 7's baseline, and `observe()` once, so an edit made during steps 5-8 autosaves.
+
+A load superseded after step 5 leaves stores that no session owns; if the latest load or import
+then ends without committing, `session` becomes `""`. A SAVE whose PUT is still in flight when a
+load or import starts saves, but neither names nor arms anything. The TopBar's SESSION select keeps
+showing the committed name until step 9 moves it, so a failed pick never displays the name it
+failed to load. `sessionController.test.ts` proves the coupled cases: a malformed v2 IMPORT PUTs
+nothing and keeps the session; a failed load keeps the previous name armed; a SAVE mid-load writes
+nothing; a failed rebuild saves the loaded backbone plus the edits made during it; a load schedules
+one stretch per clip; a v1 IMPORT never touches the stage.
 
 **Launch must never overwrite a saved session — M1's auto-select is removed.** M1 T10's
 `loadTopBar` does `if (!session && sessions.length > 0) session = sessions[0].name` (M1 plan line
@@ -4004,7 +4286,8 @@ by a successful load or an explicit SAVE (`createSnapshotAutosave` below).
 **Autosave tracks the serialised project, not a few references.** Every control in this milestone
 mutates in place (Global Constraint #1), so an effect that reads `arrangement.lanes`/`.mix`/`.master`
 as bare references plus `clips.length` never re-runs for a chain slot, a mix node, a clip move or a
-prompt edit. The effect instead computes `JSON.stringify(serializeProject({name}))`; `$state.snapshot`
+prompt edit. The effect instead calls `SessionController.observe()`, which computes
+`JSON.stringify(serializeProject({name}))`; `$state.snapshot`
 reads every field through the proxies, so the effect depends on all of them, and the autosave
 compares that string with the last one saved (or loaded), so an effect re-run that changed nothing
 saves nothing.
@@ -4014,9 +4297,9 @@ saves nothing.
 are always v2. Spec §9.2 still says "Version 1 files (the existing app) load through a converter",
 so this task keeps a minimal replacement: an **IMPORT** button beside the SESSION select opening a
 hidden `<input type="file" accept="application/json">`. The chosen file goes through
-`convertProjectV1` (or straight to `applyProject` if it already says `version: 2`), and the result
+`convertProjectV1` (or through `validateProjectV2` if it already says `version: 2`), and the result
 is `unsaved` until SAVE names it — an imported file belongs to no server session yet, so autosave
-stays off for it. `forgeApi.session()` results take the same `version === 2 ? … : convertProjectV1`
+stays off for it. `forgeApi.session()` results take the same `version === 2 ? validate : convert`
 branch, so a hand-copied v1 file on the server loads too.
 
 **Files:**
@@ -4027,21 +4310,27 @@ branch, so a hand-copied v1 file on the server loads too.
   `latent-forge/src/lib/forge/__tests__/autosave.test.ts`
 - Create: `latent-forge/src/lib/forge/sessionName.ts`,
   `latent-forge/src/lib/forge/__tests__/sessionName.test.ts`
+- Create: `latent-forge/src/lib/forge/sessionController.svelte.ts` (`.svelte.ts`: `session`/`loading`
+  are `$state` the TopBar reads), `latent-forge/src/lib/forge/__tests__/sessionController.test.ts`
 - Modify: `latent-forge/src/ui/shell/TopBar.svelte` — **removes** the M1 T15 `saveProject`/
   `loadProject` functions, their hidden `<input type="file">`, the `notice` state and the
   `data-testid="save-project"`/`"load-project"` buttons (the file loses
   `import { project } from "../../lib/store.svelte"` and every reference to `project`); **adds** an
   `unsaved` option to the SESSION select while no session is named, `data-testid="session-save"`
   and `data-testid="session-import"` (+ its hidden `"session-import-file"` input) beside the SESSION
-  select, and enables the existing `data-testid="master-preset-save"` button (hard-`disabled` in
-  M1 T10) with a `data-help`.
+  select, enables the existing `data-testid="master-preset-save"` button (hard-`disabled` in
+  M1 T10) with a `data-help`, and makes the SESSION select snap back to the committed `session`
+  prop after a pick (a load that fails or is still in flight never shows the picked name).
 - Modify: `latent-forge/src/ui/shell/__tests__/topBar.test.ts` (M1 T10) — its one assertion that
   `master-preset-save` is disabled "until M7 owns presets" flips; M7 is that milestone.
-- Modify: `latent-forge/src/App.svelte` — removes M1's `sessions[0]` auto-select, wires
-  `onsession`/`onmasterpreset` to real loads, adds the session save/import and master-preset save
-  handlers, starts the autosave watcher.
+- Modify: `latent-forge/src/App.svelte` — removes M1's `sessions[0]` auto-select and its own
+  `session` `$state` (the controller owns it), wires `onsession`/`onsessionsave`/`onimportv1` to
+  `SessionController` and `onmasterpreset` to a real load, adds the master-preset save handler,
+  starts the autosave `$effect`.
 - Modify: `latent-forge/src/ui/shell/RightPaneModules.svelte` (M1 T12) — the live `litModules`
-  snapshot and `<AdvancedSampling latch=…>` (Step 5).
+  snapshot and `<AdvancedSampling latch=…>` with registry-known slots only (Step 5).
+- Create: `latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` (test-only `ModuleShell`
+  double for `rightPaneModules.test.ts` — see that file's header comment).
 - Modify: `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` (M4 T10) — `<SigmaColumn slots=…>`
   (Step 5).
 - Modify: `docs/latent-forge/extract_help.mjs` (append `masterPresetSave`, `sessionSave`,
@@ -4060,8 +4349,8 @@ branch, so a hand-copied v1 file on the server loads too.
 - Consumes `convertProjectV1(raw: unknown): ProjectV2` from `src/lib/forge/convertProjectV1.ts`
   (this milestone's Task 8).
 - Consumes `arrangement` (`bpm, beatsPerBar, snap, lanes, clips, pxPerSec, scrollSec, mix, master,
-  overlaps: Overlap[], peekOverlapParams(key), setOverlapParams(key, patch), setBpm, setSnap,
-  setScrollSec, setDetune, setPreviewAudio, moveClip(id, startSec)`) and the constants
+  overlaps: Overlap[], peekOverlapParams(key), clearOverlapParams(), setOverlapParams(key, patch),
+  setBpm, setSnap, setScrollSec, setDetune, setPreviewAudio, moveClip(id, startSec)`) and the constants
   `MIN_PX_PER_SEC`/`MAX_PX_PER_SEC` from `src/lib/stores/arrangement.svelte.ts` (M5 T1/T10, extended
   by Task 3). **There is no `arrangement.setPxPerSec`** — `applyProject` assigns `pxPerSec`
   directly, clamped the way M5's own `zoomBy` clamps.
@@ -4073,18 +4362,29 @@ branch, so a hand-copied v1 file on the server loads too.
   `type ModelStage` from `src/lib/stores/settings.svelte.ts` (M4 T1, M4 plan lines 332-487).
 - Consumes `ProjectV2`, `ForgeLane`, `ForgeClip`, `OverlapParams`, `MixSpec`, `MasterChain`,
   `LaneChain`, `RenderSettings` from `src/lib/forge/types.ts` (M1 T3, M5 T10's `previewAudio`).
-- Consumes `CHAIN_DEFAULTS`, `cloneRenderSettings` from `src/lib/forge/defaults.ts` (M1 T4).
+- Consumes `CHAIN_DEFAULTS`, `cloneRenderSettings` from `src/lib/forge/defaults.ts` (M1 T4), and
+  `durableChain(chain): LaneChain` from `src/lib/chains/modulePresets.ts` (Task 2 — every saved lane
+  chain goes through it, so no `lora.slot` index is ever persisted).
+- Consumes `scheduleStretch(clipId: string, onError?): void` from `src/lib/clips/lifecycle.ts` (M5
+  T10, M5 plan lines 4977, 5341-5351 — debounced 400 ms, re-derives `previewAudio`).
+- Consumes `fetchLatchHeads(): Promise<Record<string, LatchHeadInfo>>` and `type LatchHeadInfo` from
+  `src/lib/chains/latch.ts` (Task 1).
 - Consumes `litModules`, `MODULE_ORDER`, `moduleTitle`, `type ModuleStateSnapshot` from
   `src/lib/forge/nonDefault.ts` (M1 T12); `AdvancedSampling`'s `latch?: LatchState` prop (M4 plan
-  line 4741 — a `LaneChain` satisfies `LatchState` structurally, M4 plan line 515) and
+  line 4741 — `LatchState = {latch_on: boolean; slots: readonly LatchSlot[]}`, M4 plan lines 515-516) and
   `SigmaColumn`'s `slots?: readonly LatchSlot[]` prop (M4 plan line 4076).
 - Produces, from `src/lib/forge/sessionName.ts`: `SESSION_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/`
   (spec §6.3, verbatim), `isValidSessionName(name: string): boolean`.
 - Produces, from `src/lib/forge/projectSerializer.svelte.ts`: `serializeProject(opts: {name:
-  string}): ProjectV2` (plain data — every `$state` read goes through `$state.snapshot`, every clip's
-  `previewAudio` is written as `null`, overlaps are read with the non-seeding `peekOverlapParams`),
-  `applyProject(project: ProjectV2): void` (also restores `settings.stage` from `backbone`, and sets
-  every clip's `previewAudio` to `null`), `type MasterPresetPayload = {lanes: {chain:
+  string; backbone?: string}): ProjectV2` (plain data — every `$state` read goes through
+  `$state.snapshot`, every clip's `previewAudio` is written as `null`, every lane chain through
+  `durableChain`, overlaps are read with the non-seeding `peekOverlapParams`; `backbone` overrides
+  `settings.backboneId` — the controller's pin, step 8), `validateProjectV2(raw: unknown): ProjectV2`
+  (throws `Error("not a v2 project: <field> …")` naming the first missing or mistyped field; checks
+  every field `applyProject` and its readers dereference), `applyProject(project: ProjectV2, opts?:
+  {restoreModel?: boolean}): void` (first clears `view` selection and `clearOverlapParams()`; restores
+  `settings.stage` from `backbone` and `settings.ckptPath` unless `restoreModel === false`; sets every
+  clip's `previewAudio` to `null`), `type MasterPresetPayload = {lanes: {chain:
   LaneChain}[]; clips: {id: string; lane: 0|1|2|3; start_sec: number; offset_sec: number; dur_sec:
   number; loop: boolean; native_bpm: number|null; detune_cents: number; a2a: ForgeClip["a2a"]}[];
   mix: MixSpec; master: MasterChain; defaults: {schedule: RenderSettings["schedule"]; prompt:
@@ -4097,6 +4397,16 @@ branch, so a hand-copied v1 file on the server loads too.
   `arm` has named that session (an empty name disarms), saves only a snapshot that differs from the
   last armed/saved one, and `arm`ing a different name first flushes a still-pending save under its
   own, old name.
+- Produces, from `src/lib/forge/sessionController.svelte.ts`: `interface SessionDeps {api:
+  {session(name: string): Promise<unknown>; saveSession(name: string, project: ProjectV2):
+  Promise<unknown>; setBackbone(id: string): Promise<unknown>}; log(text: string, level?: "info" |
+  "error"): void; prompt(message: string): string | null; scheduleStretch?: (clipId: string) => void;
+  delayMs?: number}` (`forgeApi` satisfies `api` structurally; tests pass fakes) and `class
+  SessionController` — `constructor(deps: SessionDeps)`, `session: string` and `loading: boolean`
+  (both `$state`), `observe(): void` (App's `$effect` body), `loadSession(name: string):
+  Promise<void>`, `importProjectFile(file: {name: string; text(): Promise<string>}): Promise<void>`
+  (a `File` satisfies it), `saveSession(): Promise<string | null>` (the name saved under, or `null`).
+  The order of operations inside is the WHY's numbered list, verbatim.
 - **Master preset's exact scope** (spec §9.3, quoted): "the whole project minus `clips[*].audio`
   refs and `renders` — every lane chain, clip layout (positions, trims, BPM, detune, A2A settings),
   mix order and node values, master chain, sampling schedule and default prompt." The opening
@@ -4242,13 +4552,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { arrangement } from "../../stores/arrangement.svelte";
 import { settings } from "../../stores/settings.svelte";
 import { view } from "../../stores/view.svelte";
-import { CHAIN_DEFAULTS, MASTER_DEFAULT, MIX_DEFAULT } from "../defaults";
+import { CHAIN_DEFAULTS, MASTER_DEFAULT, MIX_DEFAULT, OVERLAP_DEFAULT } from "../defaults";
 import {
-  applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject,
+  applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, validateProjectV2,
 } from "../projectSerializer.svelte";
 
 beforeEach(() => {
   arrangement.clips.splice(0, arrangement.clips.length);
+  for (const lane of arrangement.lanes) lane.chain = structuredClone(CHAIN_DEFAULTS);
+  arrangement.clearOverlapParams();
   settings.stage = "BASE";
   view.clearSelection();
   view.restoreUi({ bottomTab: "prompt", modules: ["files", "lane-chain"], sideOpen: true, terminal: "pane" });
@@ -4257,6 +4569,7 @@ beforeEach(() => {
 describe("serializeProject reads the live stores into ProjectV2 (spec §9.2)", () => {
   it("carries meter, snap, viewport, lanes, clips, mix, master, defaults and ui", () => {
     arrangement.addClip({ lane: 0, startSec: 1, durSec: 3, audio: { kind: "crop", crop_id: "X" } });
+    arrangement.lanes[0].chain.lora = { ckpt_path: "/SERVER/a.safetensors", slot: 2, strength: 1 };
     const p = serializeProject({ name: "my-session" });
     expect(p.version).toBe(2);
     expect(p.name).toBe("my-session");
@@ -4264,6 +4577,9 @@ describe("serializeProject reads the live stores into ProjectV2 (spec §9.2)", (
     expect(p.snap).toBe(arrangement.snap);
     expect(p.view).toEqual({ pxPerSec: arrangement.pxPerSec, scrollSec: arrangement.scrollSec });
     expect(p.lanes).toHaveLength(4);
+    // ckpt_path is the durable identity; the resident slot index is never saved (critic pass 2 #14)
+    expect(p.lanes[0].chain.lora).toEqual({ ckpt_path: "/SERVER/a.safetensors", slot: null, strength: 1 });
+    expect(arrangement.lanes[0].chain.lora.slot).toBe(2);   // the live chain keeps its resolution
     expect(p.clips).toHaveLength(1);
     expect(p.mix).toEqual(arrangement.mix);
     expect(p.master).toEqual(arrangement.master);
@@ -4312,6 +4628,34 @@ describe("applyProject writes a loaded ProjectV2 back into the live stores", () 
     expect(settings.stage).toBe("POST");   // backboneId is a getter over stage (M4 plan line 427)
     expect(view.snapshotUi()).toEqual(saved.ui);
   });
+
+  it("clears the selection and every previous overlap's params -- nothing from the last project survives", () => {
+    arrangement.addClip({ lane: 0, startSec: 0, durSec: 10, audio: { kind: "crop", crop_id: "A" } });
+    arrangement.addClip({ lane: 0, startSec: 6, durSec: 10, audio: { kind: "crop", crop_id: "B" } });
+    const [ov] = arrangement.overlaps;
+    const saved = serializeProject({ name: "same-clips" });
+    saved.overlaps = {};   // as a converted v1 file has it: same clip ids, so the same overlap key
+    arrangement.setOverlapParams(ov.key, { steps: 40 });   // an edit the loaded project does not have
+    view.select({ kind: "overlap", key: ov.key });
+    applyProject(saved);
+    expect(view.selection).toEqual({ kind: "none" });
+    expect(arrangement.overlaps.map((o) => o.key)).toEqual([ov.key]);   // the key is back ...
+    expect(arrangement.peekOverlapParams(ov.key).steps).toBe(OVERLAP_DEFAULT.steps);   // ... its old edit is not
+  });
+});
+
+describe("validateProjectV2 checks a v2 object as a whole, before anything is applied (critic pass 2 #1)", () => {
+  it("passes serializeProject's own output, and names the first missing field of anything else", () => {
+    const good = JSON.parse(JSON.stringify(serializeProject({ name: "ok" }))) as Record<string, unknown>;
+    expect(validateProjectV2(good)).toBe(good);
+    for (const field of ["meter", "view", "lanes", "clips", "overlaps", "mix", "master", "defaults", "ui"]) {
+      const broken = JSON.parse(JSON.stringify(good)) as Record<string, unknown>;
+      delete broken[field];
+      expect(() => validateProjectV2(broken)).toThrow(`not a v2 project: ${field}`);
+    }
+    expect(() => validateProjectV2({ version: 2 })).toThrow("not a v2 project: meter");
+    expect(() => validateProjectV2(null)).toThrow("not a v2 project: version");
+  });
 });
 
 describe("buildMasterPresetPayload / applyMasterPreset (spec §9.3 master scope)", () => {
@@ -4336,6 +4680,184 @@ describe("buildMasterPresetPayload / applyMasterPreset (spec §9.3 master scope)
     payload.clips.push({ id: "ghost", lane: 0, start_sec: 0, offset_sec: 0, dur_sec: 1, loop: false, native_bpm: null, detune_cents: 0, a2a: null });
     expect(() => applyMasterPreset(payload)).not.toThrow();
     expect(arrangement.clips.find((c) => c.id === clip.id)?.start_sec).toBe(0);
+  });
+});
+```
+
+`latent-forge/src/lib/forge/__tests__/sessionController.test.ts`:
+
+```ts
+// The load/import/save order (Task 9's WHY, steps 1-9), proven on the coupled cases. The App
+// $effect is simulated by calling ctl.observe() wherever a store edit would re-run it.
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { CHAIN_DEFAULTS, MASTER_DEFAULT } from "../defaults";
+import { arrangement } from "../../stores/arrangement.svelte";
+import { settings, type ModelStage } from "../../stores/settings.svelte";
+import { view } from "../../stores/view.svelte";
+import { serializeProject } from "../projectSerializer.svelte";
+import { SessionController, type SessionDeps } from "../sessionController.svelte";
+import type { ProjectV2 } from "../types";
+
+function resetStores() {
+  arrangement.clips.splice(0, arrangement.clips.length);
+  for (const lane of arrangement.lanes) lane.chain = structuredClone(CHAIN_DEFAULTS);
+  arrangement.master = structuredClone(MASTER_DEFAULT);
+  settings.stage = "BASE";
+  view.clearSelection();
+}
+
+/** Plain data holding one crop clip, built through the real serialiser; the stores are reset
+ *  afterwards, so a test starts from a different arrangement than the one it will load. */
+function project(name: string, cropId: string, stage: ModelStage = "BASE"): ProjectV2 {
+  resetStores();
+  settings.stage = stage;
+  arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: { kind: "crop", crop_id: cropId } });
+  const p = JSON.parse(JSON.stringify(serializeProject({ name }))) as ProjectV2;
+  resetStores();
+  return p;
+}
+
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+function harness(promptAnswer: string | null = null) {
+  const api = {
+    session: vi.fn<(name: string) => Promise<unknown>>(),
+    saveSession: vi.fn(async (_name: string, _project: ProjectV2): Promise<unknown> => ({ ok: true })),
+    setBackbone: vi.fn(async (_id: string): Promise<unknown> => ({ ok: true })),
+  };
+  const deps: SessionDeps = { api, log: vi.fn(), prompt: vi.fn(() => promptAnswer), scheduleStretch: vi.fn() };
+  return { api, deps, ctl: new SessionController(deps) };
+}
+
+const loadedCrops = () => arrangement.clips.map((c) => (c.audio as { crop_id: string }).crop_id);
+const savedCrops = (p: ProjectV2) => p.clips.map((c) => (c.audio as { crop_id: string }).crop_id);
+
+afterEach(() => {
+  vi.useRealTimers();
+  resetStores();
+});
+
+describe("SessionController: one load/import sequence (critic pass 2 #1-#3, #6, #7)", () => {
+  it("IMPORT of a malformed v2 file PUTs nothing and leaves the session, its autosave and the stores alone", async () => {
+    vi.useFakeTimers();
+    const { api, ctl } = harness();
+    const take1 = project("take1", "T1");
+    const broken = JSON.parse(JSON.stringify(project("broken", "X"))) as Record<string, unknown>;
+    delete broken.ui;   // the LAST field applyProject reads: the old code had written every store by then
+    api.session.mockResolvedValue(take1);
+    await ctl.loadSession("take1");
+    await ctl.importProjectFile({ name: "broken.json", text: async () => JSON.stringify(broken) });
+    ctl.observe();                                    // the App effect re-running after the attempt
+    vi.advanceTimersByTime(10_000);
+    expect(api.saveSession).not.toHaveBeenCalled();   // nothing PUT anywhere
+    expect(ctl.session).toBe("take1");                // not cleared: nothing was touched
+    expect(loadedCrops()).toEqual(["T1"]);            // not half-applied
+    arrangement.lanes[0].chain.latch_on = true;       // and take1 is still armed on take1's content
+    ctl.observe();
+    vi.advanceTimersByTime(2000);
+    expect(api.saveSession).toHaveBeenCalledTimes(1);
+    expect(api.saveSession.mock.calls[0][0]).toBe("take1");
+    expect(savedCrops(api.saveSession.mock.calls[0][1])).toEqual(["T1"]);
+  });
+
+  it("a session that fails to load keeps the previous name, still armed -- nothing renamed, nothing lost", async () => {
+    vi.useFakeTimers();
+    const { api, ctl } = harness();
+    api.session.mockResolvedValueOnce(project("take1", "T1")).mockRejectedValueOnce(new Error("404 take2"));
+    await ctl.loadSession("take1");
+    await ctl.loadSession("take2");
+    expect(ctl.session).toBe("take1");
+    expect(ctl.loading).toBe(false);
+    expect(loadedCrops()).toEqual(["T1"]);
+    arrangement.lanes[0].chain.latch_on = true;       // take1's own edit, after the failed pick
+    ctl.observe();
+    vi.advanceTimersByTime(2000);
+    expect(api.saveSession).toHaveBeenCalledTimes(1);
+    expect(api.saveSession.mock.calls[0][0]).toBe("take1");   // autosaved to take1, not dropped
+    expect(await ctl.saveSession()).toBe("take1");            // an explicit SAVE goes to take1 too
+    expect(api.saveSession.mock.calls[1][0]).toBe("take1");
+  });
+
+  it("SAVE while a load is in flight writes nothing -- neither to the session being loaded nor to the previous one", async () => {
+    const { api, ctl } = harness();
+    const take1 = project("take1", "T1");
+    const take2 = project("take2", "T2");
+    const pending = deferred<unknown>();
+    api.session.mockResolvedValueOnce(take1).mockReturnValueOnce(pending.promise);
+    await ctl.loadSession("take1");
+    const loading = ctl.loadSession("take2");
+    expect(ctl.loading).toBe(true);
+    expect(ctl.session).toBe("take1");                // the previous name until take2 is applied AND armed
+    expect(await ctl.saveSession()).toBeNull();
+    pending.resolve(take2);
+    await loading;
+    expect(api.saveSession).not.toHaveBeenCalled();
+    expect(ctl.session).toBe("take2");
+    expect(loadedCrops()).toEqual(["T2"]);
+    expect(await ctl.saveSession()).toBe("take2");    // once armed, SAVE writes take2's content to take2
+    expect(savedCrops(api.saveSession.mock.calls[0][1])).toEqual(["T2"]);
+  });
+
+  it("a failed model rebuild reverts the client stage but not the session's backbone, and edits made during the rebuild are saved", async () => {
+    vi.useFakeTimers();
+    const { api, ctl } = harness();
+    const post = project("post-set", "P", "POST");
+    expect(post.backbone).toBe("medium");
+    const rebuild = deferred<unknown>();
+    api.session.mockResolvedValue(post);
+    api.setBackbone.mockReturnValue(rebuild.promise);
+    const loading = ctl.loadSession("post-set");
+    await vi.waitFor(() => expect(api.setBackbone).toHaveBeenCalledWith("medium"));
+    arrangement.lanes[0].chain.latch_on = true;       // edited while the rebuild is still running
+    ctl.observe();                                    // disarmed: nothing is queued yet
+    rebuild.reject(new Error("rebuild failed"));
+    await loading;
+    expect(settings.stage).toBe("BASE");              // M4: never claim a model the server did not load
+    expect(ctl.session).toBe("post-set");
+    vi.advanceTimersByTime(2000);                     // the mid-rebuild edit was not folded into the baseline
+    expect(api.saveSession).toHaveBeenCalledTimes(1);
+    const saved = api.saveSession.mock.calls[0][1];
+    expect(saved.backbone).toBe("medium");            // the revert did not reach the session
+    expect(saved.defaults).toEqual(post.defaults);    // nor did it touch the loaded sampling defaults
+    expect(saved.lanes[0].chain.latch_on).toBe(true);
+  });
+
+  it("a successful load schedules one stretch per loaded clip, then arms: only a later edit autosaves, under the loaded name", async () => {
+    vi.useFakeTimers();
+    const { api, deps, ctl } = harness();
+    api.session.mockResolvedValue(project("take1", "T1"));
+    await ctl.loadSession("take1");
+    expect(deps.scheduleStretch).toHaveBeenCalledTimes(1);
+    expect(deps.scheduleStretch).toHaveBeenCalledWith(arrangement.clips[0].id);
+    ctl.observe();                                    // the effect re-running on what was just loaded
+    vi.advanceTimersByTime(5000);
+    expect(api.saveSession).not.toHaveBeenCalled();
+    arrangement.master.gain = 90;
+    ctl.observe();
+    vi.advanceTimersByTime(2000);
+    expect(api.saveSession).toHaveBeenCalledTimes(1);
+    expect(api.saveSession.mock.calls[0][0]).toBe("take1");
+    expect(api.saveSession.mock.calls[0][1].master.gain).toBe(90);
+  });
+
+  it("a v1 IMPORT keeps the loaded stage (v1 records no backbone): no rebuild, and SAVE records the current backbone", async () => {
+    const { api, ctl } = harness("from-v1");
+    settings.stage = "POST";
+    await ctl.importProjectFile({
+      name: "old-set.json",
+      text: async () => JSON.stringify({ version: 1, meter: { bpm: 100, beatsPerBar: 4 }, lanes: [], clips: [] }),
+    });
+    expect(arrangement.bpm).toBe(100);                // it did load
+    expect(settings.stage).toBe("POST");
+    expect(api.setBackbone).not.toHaveBeenCalled();
+    expect(ctl.session).toBe("");                     // unsaved until SAVE names it
+    expect(await ctl.saveSession()).toBe("from-v1");
+    expect(api.saveSession.mock.calls[0][1].backbone).toBe("medium");
   });
 });
 ```
@@ -4393,6 +4915,18 @@ describe("TopBar.svelte after M7 T9 (spec §9.2/§9.3)", () => {
     expect(select.value).toBe("take1");
   });
 
+  it("a pick leaves the select on the committed session until the parent changes it (a failed load never shows the picked name)", async () => {
+    const onsession = vi.fn();
+    const two = [...SESSIONS, { name: "take2", updated: 2, n_clips: 1 }];
+    const { getByTestId, rerender } = render(TopBar, { props: { ...base, sessions: two, session: "take1", onsession } });
+    const select = getByTestId("session-select") as HTMLSelectElement;
+    await fireEvent.change(select, { target: { value: "take2" } });
+    expect(onsession).toHaveBeenCalledWith("take2");
+    expect(select.value).toBe("take1");   // take2 is not loaded yet -- maybe never
+    await rerender({ ...base, sessions: two, session: "take2", onsession });
+    expect(select.value).toBe("take2");   // the controller committed it (step 9)
+  });
+
   it("calls onsessionsave from the session SAVE button, which carries HELP.sessionSave", async () => {
     const onsessionsave = vi.fn();
     const { getByTestId } = render(TopBar, { props: { ...base, sessions: SESSIONS, session: "take1", onsessionsave } });
@@ -4427,7 +4961,7 @@ describe("TopBar.svelte after M7 T9 (spec §9.2/§9.3)", () => {
 
 ```ts
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/svelte";
+import { cleanup, render, waitFor } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CHAIN_DEFAULTS } from "../../../lib/forge/defaults";
@@ -4435,15 +4969,22 @@ import { arrangement } from "../../../lib/stores/arrangement.svelte";
 import { view } from "../../../lib/stores/view.svelte";
 import RightPaneModules from "../RightPaneModules.svelte";
 
-// The dot is found by M1 T9's own hooks, `data-testid="module-dot"` + `data-lit` (M1 plan lines
-// 4062-4066), inside the `data-module={id}` wrapper the reconciled ModuleShell emits (Global
-// Constraint #3). If the reconciled shell renamed the dot's testid, fix the selector, not the intent.
+// ModuleShell is swapped for a probe with exactly M1's Normative props -- {id, title, lit,
+// children}, open state from view.isModuleOpen(id) (M1 plan lines 39, 6297-6301). No plan pins the
+// reconciled {id,title,lit} ModuleShell's DOT markup: M1's `module-dot`/`data-lit` hooks (M1 plan
+// lines 4062-4066) belong to the label-prop version Global Constraint #3 says not to use. So this
+// suite asserts what THIS plan guarantees -- the `lit` value RightPaneModules passes each shell --
+// not a selector nothing guarantees (critic pass 2 #13, Open questions 27).
+vi.mock("../ModuleShell.svelte", async () => ({ default: (await import("./ModuleShellProbe.svelte")).default }));
+
+const RMS_BASS = { name: "rms_energy_bass", family: "medium", default_gain: 512, health: "ok",
+  supports_kinds: ["constant"], slider_min: -35.2, slider_max: -0.13, value_default: -12 };
 
 beforeEach(() => {
-  // Every module body fetches on mount (FILES, LANE CHAIN, MASTER CHAIN); answer all of them with
-  // one empty-but-valid body so nothing rejects on jsdom's relative URLs.
+  // Every module body fetches on mount (FILES, LANE CHAIN, MASTER CHAIN), and so does this file's
+  // own head list; answer all of them with one valid body so nothing rejects on jsdom's relative URLs.
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
-    ok: true, roots: [], files: [], names: [], latch_heads: [], models: [], slots: [],
+    ok: true, roots: [], files: [], names: [], latch_heads: [RMS_BASS], models: [], slots: [],
   }))));
   arrangement.clips.splice(0, arrangement.clips.length);
 });
@@ -4452,6 +4993,7 @@ afterEach(() => {
   cleanup();
   view.clearSelection();
   view.closeModule("overlap");
+  view.closeModule("advanced-sampling");
   arrangement.clips.splice(0, arrangement.clips.length);
   for (const lane of arrangement.lanes) lane.chain = structuredClone(CHAIN_DEFAULTS);
   vi.unstubAllGlobals();
@@ -4461,12 +5003,12 @@ describe("RightPaneModules after M7 T9", () => {
   it("lights LANE CHAIN's dot from the active lane's live chain, and relights on an in-place edit", async () => {
     view.setActiveLane(0);
     const { container } = render(RightPaneModules);
-    const dot = () => container.querySelector('[data-module="lane-chain"] [data-testid="module-dot"]')!;
-    expect(dot().getAttribute("data-lit")).toBe("false");
+    const lit = (id: string) => container.querySelector(`[data-module="${id}"]`)!.getAttribute("data-probe-lit");
+    expect(lit("lane-chain")).toBe("false");
     arrangement.lanes[0].chain.latch_on = true;   // in place -- Global Constraint #1
     await tick();
-    expect(dot().getAttribute("data-lit")).toBe("true");
-    expect(container.querySelector('[data-module="master-chain"] [data-testid="module-dot"]')!.getAttribute("data-lit")).toBe("false");
+    expect(lit("lane-chain")).toBe("true");
+    expect(lit("master-chain")).toBe("false");
   });
 
   it("renders a never-edited overlap's module without seeding it (no state_unsafe_mutation from the lit snapshot or the body)", () => {
@@ -4481,26 +5023,61 @@ describe("RightPaneModules after M7 T9", () => {
     // still unseeded: two peeks are two different objects (Task 3's own contract)
     expect(arrangement.peekOverlapParams(ov.key)).not.toBe(arrangement.peekOverlapParams(ov.key));
   });
+
+  it("hands ADVANCED SAMPLING only registry-known LatCH slots, so a deleted head does not force Euler", async () => {
+    // M4's activeSlots counts any non-"none", non-zero-weight head; resolveLatch (T1) omits a head
+    // /info does not list (the server raises on it). Passing it through would show "euler (forced
+    // by LatCH)" for a request that sends no LatCH at all (critic pass 2 #8).
+    view.setActiveLane(0);
+    const chain = arrangement.lanes[0].chain;
+    chain.latch_on = true;
+    chain.slots[0] = { head: "deleted_head", kind: "constant", value: 0, weight: 1, start_pct: 0, end_pct: 0.6 };
+    view.openModule("advanced-sampling");
+    const { findByTestId } = render(RightPaneModules);
+    const sampler = (await findByTestId("adv-sampler")) as HTMLSelectElement;   // M4's own testid
+    expect(sampler.disabled).toBe(false);
+    chain.slots[0].head = "rms_energy_bass";   // a head the registry lists: now it really forces Euler
+    await waitFor(() => expect(sampler.disabled).toBe(true));
+  });
 });
+```
+
+`latent-forge/src/ui/shell/__tests__/ModuleShellProbe.svelte` (test-only; never imported by app code):
+
+```svelte
+<script lang="ts">
+  // ModuleShell's Normative contract (M1 plan lines 39, 6297-6301) and nothing else: props
+  // {id, title, lit, children}, open state read from the view store. Exposes what it was given as
+  // data-probe-* attributes so rightPaneModules.test.ts can assert the values RightPaneModules passes.
+  import type { Snippet } from "svelte";
+  import { view, type ModuleId } from "../../../lib/stores/view.svelte";
+
+  let { id, title, lit, children }: { id: ModuleId; title: string; lit: boolean; children: Snippet } = $props();
+</script>
+
+<section data-module={id} data-probe-title={title} data-probe-lit={lit ? "true" : "false"}>
+  {#if view.isModuleOpen(id)}{@render children()}{/if}
+</section>
 ```
 
 - [ ] **Step 2: Run them, expect failure**
 
 ```bash
-cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/sessionName.test.ts src/lib/forge/__tests__/autosave.test.ts src/lib/forge/__tests__/projectSerializer.test.ts src/lib/help/__tests__/sessionHelp.test.ts src/ui/shell/__tests__/topBarSessions.test.ts src/ui/shell/__tests__/rightPaneModules.test.ts
+cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/sessionName.test.ts src/lib/forge/__tests__/autosave.test.ts src/lib/forge/__tests__/projectSerializer.test.ts src/lib/forge/__tests__/sessionController.test.ts src/lib/help/__tests__/sessionHelp.test.ts src/ui/shell/__tests__/topBarSessions.test.ts src/ui/shell/__tests__/rightPaneModules.test.ts
 ```
 
-Expected: `Failed to resolve import "../sessionName"`, `"../autosave"`, `"../projectSerializer.svelte"`;
-`HELP.masterPresetSave`/`.sessionSave`/`.sessionImportV1` undefined; the five `topBarSessions.test.ts`
-cases fail against the pre-T9 `TopBar.svelte` (SAVE/LOAD project buttons still present, no
-`unsaved` option, no `session-save`/`session-import` test ids, `master-preset-save` still
-hard-disabled); `rightPaneModules.test.ts` fails its lit-dot case (M1's constant snapshot keeps
-every dot at `data-lit="false"`). Its overlap case already passes at this point, because Task 7's
-body already reads through `peekOverlapParams` — it is the regression guard for Step 5's snapshot,
-which is the other place that must never call the seeding `overlapParams`. Summary:
-`Test Files  6 failed (6)`.
+Expected: `Failed to resolve import "../sessionName"`, `"../autosave"`, `"../projectSerializer.svelte"`,
+`"../sessionController.svelte"`; `HELP.masterPresetSave`/`.sessionSave`/`.sessionImportV1` undefined;
+the six `topBarSessions.test.ts` cases fail against the pre-T9 `TopBar.svelte` (SAVE/LOAD project
+buttons still present, no `unsaved` option, no `session-save`/`session-import` test ids,
+`master-preset-save` still hard-disabled, the select left on the picked name);
+`rightPaneModules.test.ts` fails its lit-dot case (M1's constant snapshot passes `lit=false` to every
+shell) and its LatCH case (M1 renders `<AdvancedSampling />`, so a known head never forces Euler).
+Its overlap case already passes at this point, because Task 7's body already reads through
+`peekOverlapParams` — it is the regression guard for Step 5's snapshot, which is the other place that
+must never call the seeding `overlapParams`. Summary: `Test Files  7 failed (7)`.
 
-- [ ] **Step 3: Write `sessionName.ts`, `autosave.ts`, `projectSerializer.svelte.ts`**
+- [ ] **Step 3: Write `sessionName.ts`, `autosave.ts`, `projectSerializer.svelte.ts`, `sessionController.svelte.ts`**
 
 `latent-forge/src/lib/forge/sessionName.ts`:
 
@@ -4618,12 +5195,15 @@ import {
 } from "../stores/arrangement.svelte";
 import { settings, STAGE_BACKBONE, type ModelStage } from "../stores/settings.svelte";
 import { view } from "../stores/view.svelte";
+import { durableChain } from "../chains/modulePresets";
 import { CHAIN_DEFAULTS, cloneRenderSettings } from "./defaults";
 import type {
   ForgeClip, ForgeLane, LaneChain, MasterChain, MixSpec, OverlapParams, ProjectV2, RenderSettings,
 } from "./types";
 
-export function serializeProject(opts: { name: string }): ProjectV2 {
+/** `backbone` overrides settings.backboneId: SessionController's pin (Task 9 WHY, step 8) keeps a
+ *  loaded session's own backbone in what is saved while a failed rebuild has the client reverted. */
+export function serializeProject(opts: { name: string; backbone?: string }): ProjectV2 {
   const overlaps: Record<string, OverlapParams> = {};
   // peek, not overlapParams: this runs inside App's autosave $effect, and must not write.
   for (const o of arrangement.overlaps) {
@@ -4636,7 +5216,8 @@ export function serializeProject(opts: { name: string }): ProjectV2 {
     meter: { bpm: arrangement.bpm, beatsPerBar: arrangement.beatsPerBar },
     snap: arrangement.snap,
     view: { pxPerSec: arrangement.pxPerSec, scrollSec: arrangement.scrollSec },
-    lanes: $state.snapshot(arrangement.lanes) as ForgeLane[],
+    // durableChain: lora.slot is a transient /slots resolution, never saved (contract table).
+    lanes: ($state.snapshot(arrangement.lanes) as ForgeLane[]).map((l) => ({ ...l, chain: durableChain(l.chain) })),
     // previewAudio is in-memory only (spec §9.2 "Not serialised", M1 Normative row): the field is
     // required on ForgeClip, so it is written as null -- the live ref never reaches the JSON.
     clips: ($state.snapshot(arrangement.clips) as ForgeClip[]).map((c) => ({ ...c, previewAudio: null })),
@@ -4644,7 +5225,7 @@ export function serializeProject(opts: { name: string }): ProjectV2 {
     mix: $state.snapshot(arrangement.mix) as MixSpec,
     master: $state.snapshot(arrangement.master) as MasterChain,
     defaults: $state.snapshot(settings.defaults) as RenderSettings,
-    backbone: settings.backboneId,
+    backbone: opts.backbone ?? settings.backboneId,
     ckpt_path: settings.ckptPath,
     renders: [],       // M9 owns render history; nothing exists to serialise yet
     mixdown: null,
@@ -4659,8 +5240,63 @@ function stageForBackbone(backbone: string): ModelStage | null {
   return hit ?? null;
 }
 
-/** `project` is plain data (a server response, a parsed file, or serializeProject's output). */
-export function applyProject(project: ProjectV2): void {
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isNum(v: unknown): boolean {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+/**
+ * A `version: 2` object from the server or a file, checked as a WHOLE before applyProject touches
+ * any store (critic pass 2 #1). Every field applyProject -- or a reader it hands data to
+ * (cloneRenderSettings, view.restoreUi, the lane-chain and clip components) -- dereferences is
+ * checked, so an object that passes cannot throw half-way through the apply. Throws naming the
+ * first bad field; returns the same object, typed.
+ */
+export function validateProjectV2(raw: unknown): ProjectV2 {
+  const bad = (field: string) => new Error(`not a v2 project: ${field} is missing or the wrong type`);
+  if (!isObj(raw) || raw.version !== 2) throw bad("version");
+  const p = raw;
+  if (!isObj(p.meter) || !isNum(p.meter.bpm) || !isNum(p.meter.beatsPerBar)) throw bad("meter");
+  if (typeof p.snap !== "string") throw bad("snap");
+  if (!isObj(p.view) || !isNum(p.view.pxPerSec) || !isNum(p.view.scrollSec)) throw bad("view");
+  if (!Array.isArray(p.lanes) || p.lanes.length !== 4) throw bad("lanes");
+  p.lanes.forEach((l: unknown, i: number) => {
+    const c = isObj(l) ? l.chain : undefined;
+    if (!isObj(c) || !Array.isArray(c.slots) || c.slots.length !== 2 || !isObj(c.hparams) || !isObj(c.film) || !isObj(c.lora)) {
+      throw bad(`lanes[${i}].chain`);
+    }
+  });
+  if (!Array.isArray(p.clips)) throw bad("clips");
+  p.clips.forEach((c: unknown, i: number) => {
+    if (!isObj(c) || typeof c.id !== "string" || ![0, 1, 2, 3].includes(c.lane as number)
+      || !isNum(c.start_sec) || !isNum(c.dur_sec) || !isObj(c.audio) || typeof c.audio.kind !== "string"
+      || !isObj(c.render)) {
+      throw bad(`clips[${i}]`);
+    }
+  });
+  if (!isObj(p.overlaps)) throw bad("overlaps");
+  if (!isObj(p.mix) || typeof p.mix.order !== "string" || !isObj(p.mix.nodes) || !Array.isArray(p.mix.quad_weights)) throw bad("mix");
+  if (!isObj(p.master)) throw bad("master");
+  if (!isObj(p.defaults) || !isObj(p.defaults.schedule) || !Array.isArray(p.defaults.cfg_interval_progress)) throw bad("defaults");
+  if (typeof p.backbone !== "string") throw bad("backbone");
+  if (p.ckpt_path !== null && typeof p.ckpt_path !== "string") throw bad("ckpt_path");
+  if (!isObj(p.ui)) throw bad("ui");
+  return raw as unknown as ProjectV2;
+}
+
+/** `project` is plain data (a server response, a parsed file, or serializeProject's output) that
+ *  has already passed validateProjectV2 or come out of convertProjectV1. `restoreModel: false`
+ *  (converted v1 input) keeps the current stage and ckpt: v1 records neither (critic pass 2 #7). */
+export function applyProject(project: ProjectV2, opts: { restoreModel?: boolean } = {}): void {
+  // Nothing selected survives a load: the old selection's clip/overlap key may not exist here, and a
+  // stale overlap key would keep OVERLAP-INPAINT mounted (critic pass 2 #5).
+  view.clearSelection();
+  // Overlap params are replaced wholesale, not merged: a key this project does not set must not
+  // inherit the previous project's edits (a v1 import keeps its clip ids, so keys can repeat).
+  arrangement.clearOverlapParams();
   arrangement.setBpm(project.meter.bpm);
   arrangement.beatsPerBar = project.meter.beatsPerBar;
   arrangement.setSnap(project.snap as Parameters<typeof arrangement.setSnap>[0]);
@@ -4680,11 +5316,13 @@ export function applyProject(project: ProjectV2): void {
   // backboneId is a getter over settings.stage (M4 plan line 427), so restoring `backbone` means
   // restoring the stage. Assigned directly, NOT via setStage(): setStage overwrites defaults'
   // steps/sampler/schedule with the stage defaults, and the saved defaults (next line) must win.
-  // The caller (App's loadSession/importProjectFile) rebuilds the server model if this changed it.
-  const stage = stageForBackbone(project.backbone);
-  if (stage) settings.stage = stage;
+  // The caller (SessionController, step 8) rebuilds the server model if this changed it.
+  if (opts.restoreModel ?? true) {
+    const stage = stageForBackbone(project.backbone);
+    if (stage) settings.stage = stage;
+    settings.ckptPath = project.ckpt_path;
+  }
   settings.defaults = cloneRenderSettings(project.defaults);
-  settings.ckptPath = project.ckpt_path;
   view.restoreUi(project.ui);
 }
 
@@ -4710,7 +5348,7 @@ export interface MasterPresetPayload {
  */
 export function buildMasterPresetPayload(): MasterPresetPayload {
   return {
-    lanes: arrangement.lanes.map((l) => ({ chain: $state.snapshot(l.chain) as LaneChain })),
+    lanes: arrangement.lanes.map((l) => ({ chain: durableChain($state.snapshot(l.chain) as LaneChain) })),
     clips: arrangement.clips.map((c) => ({
       id: c.id, lane: c.lane, start_sec: c.start_sec, offset_sec: c.offset_sec,
       dur_sec: c.dur_sec, loop: c.loop, native_bpm: c.native_bpm, detune_cents: c.detune_cents,
@@ -4750,6 +5388,234 @@ export function applyMasterPreset(payload: MasterPresetPayload): void {
   arrangement.master = structuredClone(payload.master);
   settings.defaults.schedule = structuredClone(payload.defaults.schedule);
   settings.defaults.prompt = payload.defaults.prompt;
+}
+```
+
+`latent-forge/src/lib/forge/sessionController.svelte.ts` — the numbered comments are the WHY's
+steps; keep them in this order:
+
+```ts
+// The ONE session load / IMPORT / SAVE sequence (spec §9.2), outside App.svelte so every ordering
+// guarantee is unit-tested (sessionController.test.ts). Task 9's WHY states the order as steps
+// 1-9; the numbered comments below are those steps. Invariant, whenever `loading` is false: either
+// `session` is "" and autosave is disarmed, or `session` is X, autosave is armed on X, and the
+// stores hold X's content (possibly edited).
+import { scheduleStretch as m5ScheduleStretch } from "../clips/lifecycle";
+import { arrangement } from "../stores/arrangement.svelte";
+import { settings, STAGE_BACKBONE, type ModelStage } from "../stores/settings.svelte";
+import { createSnapshotAutosave, type SnapshotAutosave } from "./autosave";
+import { convertProjectV1 } from "./convertProjectV1";
+import { applyProject, serializeProject, validateProjectV2 } from "./projectSerializer.svelte";
+import { isValidSessionName } from "./sessionName";
+import type { ProjectV2 } from "./types";
+
+export interface SessionDeps {
+  api: {
+    session(name: string): Promise<unknown>;
+    saveSession(name: string, project: ProjectV2): Promise<unknown>;
+    setBackbone(id: string): Promise<unknown>;
+  };
+  log(text: string, level?: "info" | "error"): void;
+  prompt(message: string): string | null;
+  /** M5 T10's debounced per-clip stretch; defaults to the real one, tests pass a spy. */
+  scheduleStretch?: (clipId: string) => void;
+  delayMs?: number;
+}
+
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+interface Loaded { project: ProjectV2; kind: "v1" | "v2" }
+
+/** Step 3. v2 is validated as a whole (throws on a malformed object, before anything is touched);
+ *  anything else goes through the converter, which never throws (Task 8). */
+function toLoaded(raw: unknown): Loaded {
+  return (raw as { version?: unknown } | null)?.version === 2
+    ? { project: validateProjectV2(raw), kind: "v2" }
+    : { project: convertProjectV1(raw), kind: "v1" };
+}
+
+export class SessionController {
+  /** The session the TopBar shows. See the invariant above. */
+  session = $state("");
+  /** A load or import is in flight. SAVE is refused meanwhile. */
+  loading = $state(false);
+
+  private seq = 0;
+  /** A superseded load wrote its project into the stores and never armed: they belong to no one. */
+  private orphaned = false;
+  /** Step 8's pin: a loaded session's own backbone, serialised in place of settings.backboneId
+   *  while the stage is still `underStage` (a failed rebuild, or a backbone with no stage). */
+  private pin: { backbone: string; underStage: ModelStage } | null = null;
+  private autosave: SnapshotAutosave;
+  // A plain field, not a `constructor(private deps)` parameter property: that is TS-only emit,
+  // which Svelte's type-stripping of rune modules does not promise to support.
+  private deps: SessionDeps;
+
+  constructor(deps: SessionDeps) {
+    this.deps = deps;
+    this.autosave = createSnapshotAutosave((name, json) => {
+      deps.api.saveSession(name, JSON.parse(json) as ProjectV2)
+        .catch((e) => deps.log(`[forge] autosave of ${name} failed: ${errText(e)}`, "error"));
+    }, deps.delayMs);
+  }
+
+  /** The project as it would be saved under `name` right now. */
+  private current(name: string): ProjectV2 {
+    if (this.pin && settings.stage !== this.pin.underStage) this.pin = null;   // the user changed STAGE
+    return serializeProject({ name, backbone: this.pin?.backbone });
+  }
+
+  /** App's $effect body. serializeProject reads every saved field through $state.snapshot, so the
+   *  effect re-runs on ANY in-place edit (Global Constraint #1); observe() compares strings, so a
+   *  re-run that changed nothing saves nothing. */
+  observe(): void {
+    this.autosave.observe(this.session, JSON.stringify(this.current(this.session)));
+  }
+
+  async loadSession(name: string): Promise<void> {
+    if (!name) return;                       // the `unsaved` option is never a load
+    const mySeq = ++this.seq;                // (1) any earlier load/import is stale from here
+    this.loading = true;
+    try {
+      let raw: unknown;
+      try {
+        raw = await this.deps.api.session(name);   // (2) stores untouched, previous session still armed
+      } catch (e) {
+        if (mySeq === this.seq) this.deps.log(`[forge] failed to load session ${name}: ${errText(e)}`, "error");
+        return;
+      }
+      if (mySeq !== this.seq) return;
+      await this.commit(mySeq, raw, name, `session ${name}`);
+    } finally {
+      this.settle(mySeq);
+    }
+  }
+
+  async importProjectFile(file: { name: string; text(): Promise<string> }): Promise<void> {
+    const mySeq = ++this.seq;                // (1)
+    this.loading = true;
+    try {
+      let raw: unknown;
+      try {
+        raw = JSON.parse(await file.text());
+      } catch (e) {
+        if (mySeq === this.seq) this.deps.log(`[forge] could not import ${file.name}: ${errText(e)}`, "error");
+        return;
+      }
+      if (mySeq !== this.seq) return;
+      if (await this.commit(mySeq, raw, "", file.name)) {
+        this.deps.log(`[forge] imported ${file.name} -- unsaved until you SAVE it under a session name`);
+      }
+    } finally {
+      this.settle(mySeq);
+    }
+  }
+
+  /** Steps 3-9. `target` is the session to name and arm ("" for an IMPORT). True when committed. */
+  private async commit(mySeq: number, raw: unknown, target: string, what: string): Promise<boolean> {
+    let loaded: Loaded;
+    try {
+      loaded = toLoaded(raw);                // (3) validate -- nothing touched yet
+    } catch (e) {
+      this.deps.log(`[forge] ${what} was not loaded: ${errText(e)}`, "error");
+      return false;                          //     session, autosave and stores all unchanged
+    }
+    this.autosave.arm("", "");               // (4) disarm; flushes the outgoing session's pending
+                                             //     save under ITS name, with ITS (untouched) content
+    if (!target) this.session = "";          //     an IMPORT belongs to no session from here on
+    this.orphaned = true;                    //     the stores are about to hold content nobody is armed on
+    this.pin = null;
+    const prevStage = settings.stage;
+    try {
+      applyProject(loaded.project, { restoreModel: loaded.kind === "v2" });   // (5) clears selection + overlap params first
+    } catch (e) {
+      this.orphaned = false;
+      this.session = "";                     //     half-applied: the stores match no session, never name one
+      this.deps.log(`[forge] ${what} failed part-way and is now unsaved: ${errText(e)}`, "error");
+      return false;
+    }
+    const stretch = this.deps.scheduleStretch ?? ((id: string) => m5ScheduleStretch(id));
+    for (const c of arrangement.clips) stretch(c.id);   // (6) previewAudio is re-derived on load
+    const savedBackbone = loaded.kind === "v2" ? loaded.project.backbone : undefined;
+    const baseline = JSON.stringify(serializeProject({ name: target, backbone: savedBackbone }));   // (7)
+    if (loaded.kind === "v2") await this.syncBackbone(mySeq, prevStage);                           // (8)
+    if (mySeq !== this.seq) return false;    // (9) superseded during the rebuild: the newer one owns the stores
+    this.pin = savedBackbone !== undefined && savedBackbone !== settings.backboneId
+      ? { backbone: savedBackbone, underStage: settings.stage }
+      : null;
+    this.orphaned = false;
+    this.session = target;
+    this.autosave.arm(target, baseline);
+    this.observe();                          //     an edit made during steps 5-8 differs from the baseline
+    return true;
+  }
+
+  /** Step 8. Stage is session-level and rebuilds the model (M4 T9 confirmStage). applyProject moved
+   *  the client stage; move the server to match, or put the client back if the rebuild fails (M4:
+   *  never claim a model the server did not load). The pin, set by commit(), keeps the revert out
+   *  of the saved session. */
+  private async syncBackbone(mySeq: number, prevStage: ModelStage): Promise<void> {
+    if (settings.stage === prevStage) return;
+    const wanted = settings.stage;
+    try {
+      await this.deps.api.setBackbone(STAGE_BACKBONE[wanted]);
+    } catch (e) {
+      if (mySeq !== this.seq) return;        // superseded: the newer load decides the stage
+      settings.stage = prevStage;
+      this.deps.log(
+        `[forge] project wants backbone ${STAGE_BACKBONE[wanted]}; rebuild failed, staying on ` +
+        `${STAGE_BACKBONE[prevStage]}. The session keeps ${STAGE_BACKBONE[wanted]} and its own sampling ` +
+        `defaults; change STAGE to retry: ${errText(e)}`,
+        "error",
+      );
+    }
+  }
+
+  /** End of the LATEST load/import only. If it did not commit after a superseded load had already
+   *  written the stores, those stores match no session: show `unsaved`, keep autosave off. */
+  private settle(mySeq: number): void {
+    if (mySeq !== this.seq) return;
+    this.loading = false;
+    if (!this.orphaned) return;
+    this.orphaned = false;
+    this.session = "";
+    this.autosave.arm("", "");
+    this.deps.log("[forge] an interrupted load left its project in the timeline -- unsaved until you SAVE it", "error");
+  }
+
+  /** SAVE. Returns the name saved under, or null. */
+  async saveSession(): Promise<string | null> {
+    if (this.loading) {
+      // Step 1's rule: mid-load the stores are either the previous session's or not yet armed as
+      // the target's, so a SAVE could write the wrong content under either name. Refuse, say why.
+      this.deps.log("[forge] a session is still loading -- SAVE again once it has", "error");
+      return null;
+    }
+    let name = this.session;
+    if (!name) {
+      const typed = this.deps.prompt("Session name (letters, numbers, . _ - only):");
+      if (!typed) return null;
+      name = typed;
+    }
+    if (!isValidSessionName(name)) {
+      this.deps.log(`[forge] "${name}" is not a valid session name (spec §6.3)`, "error");
+      return null;
+    }
+    const mySeq = this.seq;
+    const project = this.current(name);
+    try {
+      await this.deps.api.saveSession(name, project);
+    } catch (e) {
+      this.deps.log(`[forge] session save failed: ${errText(e)}`, "error");
+      return null;
+    }
+    // A load or import that started during the PUT owns the stores and the name now.
+    if (mySeq !== this.seq) return name;
+    this.session = name;
+    this.autosave.arm(name, JSON.stringify(project));
+    this.observe();                          // an edit made during the PUT is saved, not lost
+    return name;
+  }
 }
 ```
 
@@ -4822,6 +5688,18 @@ select shows `unsaved` until named"):
     {#if !session}<option value="">unsaved</option>{/if}
 ```
 
+and replace the SESSION select's `onchange` (M1 plan line 5299) so the select snaps back to the
+committed `session` prop after a pick — the controller moves that prop only at step 9, so a load
+that fails, or is still in flight, never shows the name it has not loaded (critic pass 2 #2):
+
+```svelte
+    onchange={(e) => {
+      const el = e.currentTarget as HTMLSelectElement;
+      onsession(el.value);
+      el.value = session;   // the committed name; a successful load changes the prop and the select follows
+    }}
+```
+
 and, immediately after the SESSION select (the exact spot the removed buttons occupied):
 
 ```svelte
@@ -4854,123 +5732,54 @@ line 5502) — this is what makes `unsaved` reachable and keeps launch from ever
       if (!session && sessions.length > 0) session = sessions[0].name;
 ```
 
+and **delete** M1's own `let session = $state("");` (M1 plan line 5491): the session name now
+lives in `SessionController` (step 9 is the only place it moves), and a second copy in App would
+be exactly the "select says B, stores hold A" split critic pass 2 found.
+
 Make sure `App.svelte` imports the view store as `view` exactly once (Global Constraint #3: if the
 file still says `import { viewStore } …`, that is the same singleton under a name that does not
 exist — change the import to `import { view } from "./lib/stores/view.svelte";` and its uses to
-`view`). `forgeApi` is already imported by M1 T10. Then add:
+`view`). `forgeApi` is already imported by M1 T10. Then add — App holds **no** load/import/save
+logic of its own; every step of Task 9's order is `SessionController`'s:
 
 ```ts
   import {
-    applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject,
-    type MasterPresetPayload,
+    applyMasterPreset, buildMasterPresetPayload, type MasterPresetPayload,
   } from "./lib/forge/projectSerializer.svelte";
-  import { convertProjectV1 } from "./lib/forge/convertProjectV1";
-  import { isValidSessionName } from "./lib/forge/sessionName";
-  import { createSnapshotAutosave } from "./lib/forge/autosave";
-  import type { ProjectV2 } from "./lib/forge/types";
+  import { SessionController } from "./lib/forge/sessionController.svelte";
   import { arrangement } from "./lib/stores/arrangement.svelte";
-  import { settings, STAGE_BACKBONE, type ModelStage } from "./lib/stores/settings.svelte";
 
   const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-  /** A server session or an imported file: v2 as-is, anything else through the converter. */
-  function toV2(raw: unknown): ProjectV2 {
-    return (raw as { version?: number } | null)?.version === 2 ? (raw as ProjectV2) : convertProjectV1(raw);
-  }
-
-  /** Stage is session-level and rebuilds the model (M4 T9 confirmStage). applyProject moved the
-   *  client-side stage; move the server to match, or put the client back if the rebuild fails. */
-  async function syncBackbone(prevStage: ModelStage): Promise<void> {
-    if (settings.stage === prevStage) return;
-    const wanted = settings.stage;
-    try {
-      await forgeApi.setBackbone(STAGE_BACKBONE[wanted]);
-    } catch (e) {
-      settings.stage = prevStage;
-      view.appendLog(`[forge] project wants backbone ${STAGE_BACKBONE[wanted]}; rebuild failed, staying on ${STAGE_BACKBONE[prevStage]}: ${errText(e)}`, "error");
-    }
-  }
-
-  // Autosave (spec §9.2): 2 s after the last change, to the current session -- but only once that
-  // session has been loaded or explicitly saved (createSnapshotAutosave's arm()).
-  const autosave = createSnapshotAutosave((name, json) => {
-    forgeApi.saveSession(name, JSON.parse(json) as ProjectV2)
-      .catch((e) => view.appendLog(`[forge] autosave of ${name} failed: ${errText(e)}`, "error"));
+  // Task 9's load/import/save order lives here, unit-tested (sessionController.test.ts).
+  const sessionCtl = new SessionController({
+    api: forgeApi,
+    log: (text, level) => view.appendLog(text, level),
+    prompt: (message) => window.prompt(message, ""),
   });
+
+  // Autosave (spec §9.2): 2 s after the last change, to the current session -- only once that
+  // session has been loaded or explicitly saved. observe() reads every saved field through
+  // serializeProject's $state.snapshot, so this re-runs on ANY in-place edit (Global Constraint #1).
   $effect(() => {
-    // serializeProject reads every saved field through $state.snapshot, which reads through the
-    // proxies: this re-runs on ANY in-place edit (Global Constraint #1) -- a chain slot, a mix node,
-    // a clip move, the prompt -- and observe() compares the string, so a re-run that changed
-    // nothing saves nothing.
-    autosave.observe(session, JSON.stringify(serializeProject({ name: session })));
+    sessionCtl.observe();
   });
-
-  // Guards a stale response from a superseded session load. forgeApi.session()
-  // has no AbortSignal parameter (M1 T5) -- there is nothing to abort -- so a
-  // monotonic sequence number stands in for the HANDOUT's abort-listener check.
-  let sessionLoadSeq = 0;
-
-  async function loadSession(name: string) {
-    session = name;
-    if (!name) return;
-    const mySeq = ++sessionLoadSeq;
-    try {
-      const raw = await forgeApi.session(name);
-      if (mySeq !== sessionLoadSeq) return;   // superseded by a later pick
-      const prevStage = settings.stage;
-      applyProject(toV2(raw));
-      await syncBackbone(prevStage);
-      if (mySeq !== sessionLoadSeq) return;
-      // Baseline = what is loaded now; only a later change autosaves.
-      autosave.arm(name, JSON.stringify(serializeProject({ name })));
-    } catch (e) {
-      // Not armed: a session that failed to load is never autosaved over.
-      view.appendLog(`[forge] failed to load session ${name}: ${errText(e)}`, "error");
-    }
-  }
 
   async function saveSession() {
-    let name = session;
-    if (!name) {
-      const typed = window.prompt("Session name (letters, numbers, . _ - only):", "");
-      if (!typed) return;
-      name = typed;
-    }
-    if (!isValidSessionName(name)) {
-      view.appendLog(`[forge] "${name}" is not a valid session name (spec §6.3)`, "error");
-      return;
-    }
-    const project = serializeProject({ name });
-    try {
-      await forgeApi.saveSession(name, project);
-      session = name;
-      autosave.arm(name, JSON.stringify(project));
-      if (!sessions.some((s) => s.name === name)) sessions = [...sessions, { name, updated: Date.now() / 1000, n_clips: project.clips.length }];
-    } catch (e) {
-      view.appendLog(`[forge] session save failed: ${errText(e)}`, "error");
-    }
-  }
-
-  /** IMPORT: a v1 (or v2) project file from disk. It belongs to no server session yet, so it
-   *  is `unsaved` and autosave is disarmed until SAVE names it. */
-  async function importProjectFile(file: File) {
-    try {
-      const raw: unknown = JSON.parse(await file.text());
-      sessionLoadSeq++;              // any in-flight session load is now stale
-      const prevStage = settings.stage;
-      applyProject(toV2(raw));
-      session = "";
-      autosave.arm("", "");          // empty name = disarmed (flushes a pending save of the old session)
-      await syncBackbone(prevStage);
-      view.appendLog(`[forge] imported ${file.name} -- unsaved until you SAVE it under a session name`);
-    } catch (e) {
-      view.appendLog(`[forge] could not import ${file.name}: ${errText(e)}`, "error");
+    const name = await sessionCtl.saveSession();
+    if (name && !sessions.some((s) => s.name === name)) {
+      sessions = [...sessions, { name, updated: Date.now() / 1000, n_clips: arrangement.clips.length }];
     }
   }
 
   async function loadMasterPreset(name: string) {
     masterPreset = name;
     if (!name) return;
+    if (sessionCtl.loading) {
+      // same rule as SAVE: never patch stores a session load is still replacing
+      view.appendLog(`[forge] a session is still loading -- pick ${name} again once it has`, "error");
+      return;
+    }
     try {
       applyMasterPreset((await forgeApi.preset("master", name)) as unknown as MasterPresetPayload);
     } catch (e) {
@@ -4995,15 +5804,13 @@ exist — change the import to `import { view } from "./lib/stores/view.svelte";
   }
 ```
 
-(`autosave.arm("", "")` in `importProjectFile` runs before `applyProject`'s changes reach the
-effect, which re-runs on the next microtask — by then the autosave is disarmed and `session` is
-`""`, so the imported project is never written anywhere until SAVE.) Then replace the
-`onsession`/`onmasterpreset` bindings on `<TopBar>` with:
+Then replace the `{session}` / `onsession` / `onmasterpreset` bindings on `<TopBar>` with:
 
 ```svelte
-    onsession={loadSession}
+    session={sessionCtl.session}
+    onsession={(name) => sessionCtl.loadSession(name)}
     onsessionsave={saveSession}
-    onimportv1={importProjectFile}
+    onimportv1={(file) => sessionCtl.importProjectFile(file)}
     onmasterpreset={loadMasterPreset}
     onmasterpresetsave={saveMasterPreset}
 ```
@@ -5012,10 +5819,11 @@ effect, which re-runs on the next microtask — by then the autosave is disarmed
 
 This is the edit Tasks 2, 4 and 7 each stated an expression for. In
 `latent-forge/src/ui/shell/RightPaneModules.svelte` (M1 T12, M1 plan lines 6641-6693 — M4 never
-changed it, M4 plan line 4712), add the import:
+changed it, M4 plan line 4712), add the imports:
 
 ```ts
   import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
 ```
 
 and replace M1's constant block
@@ -5051,14 +5859,28 @@ with
   const lit = $derived(litModules(snapshot));
 
   // M4's handoff (M4 plan line 4741): ADVANCED SAMPLING's `latch` prop is the active lane's LatCH
-  // state. A LaneChain satisfies LatchState structurally (M4 plan line 515) -- no adapter.
-  const activeChain = $derived(arrangement.lanes[view.activeLane].chain);
+  // state -- but ONLY the slots whose head /info.latch_heads lists (critic pass 2 #8). M4's
+  // activeSlots counts any non-"none", non-zero-weight head; resolveLatch (T1) omits a head the
+  // registry does not list, because the server raises on it. Passing the raw slots would show
+  // "euler (forced by LatCH)" for a request that sends no LatCH at all. Before the heads arrive
+  // nothing is known, which is also what resolveLatch would send.
+  let latchHeads = $state<Record<string, LatchHeadInfo>>({});
+  $effect(() => {
+    fetchLatchHeads().then((h) => (latchHeads = h)).catch(() => {});
+  });
+  const activeLatch = $derived.by(() => {
+    const chain = arrangement.lanes[view.activeLane].chain;
+    return {
+      latch_on: chain.latch_on,
+      slots: chain.slots.filter((s) => Object.prototype.hasOwnProperty.call(latchHeads, s.head)),
+    };
+  });
 ```
 
 and in the markup replace `<AdvancedSampling />` with:
 
 ```svelte
-        <AdvancedSampling latch={activeChain} />
+        <AdvancedSampling latch={activeLatch} />
 ```
 
 Nothing else in the file changes (`lit[id]` is already what `<ModuleShell>` reads).
@@ -5075,6 +5897,8 @@ and, below `const target = $derived(view.selection);`:
 ```ts
   // M7 T9: the active lane's LatCH slots for the sigma graph's slot lanes -- only while that lane's
   // LATCH GUIDANCE is on (M4 plan line 1982: the caller passes slots when there is something to draw).
+  // Unfiltered by the head registry, unlike RightPaneModules' `activeLatch`: here it only decides
+  // what is DRAWN, so a deleted head can at worst draw one lane that will not be sent (Open questions 28).
   const latchSlots = $derived.by(() => {
     const chain = arrangement.lanes[view.activeLane].chain;
     return chain.latch_on ? chain.slots : [];
@@ -5090,14 +5914,15 @@ and change `<SigmaColumn {target} {length} {a2a} />` to:
 - [ ] **Step 6: Run them, expect pass**
 
 ```bash
-cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/sessionName.test.ts src/lib/forge/__tests__/autosave.test.ts src/lib/forge/__tests__/projectSerializer.test.ts src/lib/help/__tests__/sessionHelp.test.ts src/ui/shell/__tests__/topBarSessions.test.ts src/ui/shell/__tests__/rightPaneModules.test.ts
+cd /home/kim/Projects/sa3-studio-review/latent-forge && npx vitest run src/lib/forge/__tests__/sessionName.test.ts src/lib/forge/__tests__/autosave.test.ts src/lib/forge/__tests__/projectSerializer.test.ts src/lib/forge/__tests__/sessionController.test.ts src/lib/help/__tests__/sessionHelp.test.ts src/ui/shell/__tests__/topBarSessions.test.ts src/ui/shell/__tests__/rightPaneModules.test.ts
 ```
 
-Expected: `Test Files  6 passed (6)` / `Tests  25 passed (25)` — 3 in `sessionName.test.ts`, 7 in
-`autosave.test.ts`, 6 in `projectSerializer.test.ts` (3 `serializeProject` + 1 `applyProject` + 2
-`buildMasterPresetPayload`/`applyMasterPreset`), 2 in `sessionHelp.test.ts`, 5 in
-`topBarSessions.test.ts`, 2 in `rightPaneModules.test.ts`: 3+7+6+2+5+2 = 25, counted mechanically
-with `grep -c '^  it('` over this task's own test blocks.
+Expected: `Test Files  7 passed (7)` / `Tests  35 passed (35)` — 3 in `sessionName.test.ts`, 7 in
+`autosave.test.ts`, 8 in `projectSerializer.test.ts` (3 `serializeProject` + 2 `applyProject` + 2
+`buildMasterPresetPayload`/`applyMasterPreset` + 1 `validateProjectV2`), 6 in
+`sessionController.test.ts`, 2 in `sessionHelp.test.ts`, 6 in `topBarSessions.test.ts`, 3 in
+`rightPaneModules.test.ts`: 3+7+8+6+2+6+3 = 35, counted mechanically with `grep -c '^  it('` over
+this task's own test blocks.
 
 Then the files this task modified that already had suites — M1's `strings.test.ts` (now 112) and
 `topBar.test.ts` (the flipped assertion), M4's `PromptSigmaTab` tests — and the whole project's
@@ -5113,7 +5938,7 @@ warnings`.
 - [ ] **Step 7: Commit**
 
 ```bash
-Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T9: sessions load/save/import through convertProjectV1 (backbone restored to settings.stage), snapshot-gated 2s autosave that never writes before a load or SAVE, M1's sessions[0] auto-select removed, master preset recall/save against spec 9.3's literal slice, RightPaneModules lit snapshot + M4's two LatCH handoffs wired, removes M1 T15's temporary SAVE/LOAD project buttons, HELP total 112"
+Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T9: sessions load/save/import through one SessionController sequence (validate before any store write, disarm before apply, name+arm only after apply and rebuild, SAVE refused mid-load, failed rebuild pinned out of the session, stretches re-derived, v1 keeps the stage), snapshot-gated 2s autosave that never writes before a load or SAVE, M1's sessions[0] auto-select removed, master preset recall/save against spec 9.3's literal slice, RightPaneModules lit snapshot + M4's two LatCH handoffs wired, removes M1 T15's temporary SAVE/LOAD project buttons, HELP total 112"
 ```
 ---
 
@@ -5331,11 +6156,13 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 | §4.6.1 OVERLAP-INPAINT: info line, 64px curve, chroma xfade, local STEPS/CFG, INPAINT OVERLAP button (no-op) | T7 `OverlapInpaint.svelte`; T10 test 6 in the real app | done |
 | §4.6.2 FILES: root header, root select, filter field, draggable list | T15 (M1) real body; T6 adds the two missing `data-help`s | done |
 | §6.3 FILES roots `crops`/`renders`/`uploads`, unavailable shown not hidden | T15 (M1), verified by T6's own test | done |
-| §9.2 sessions: SESSION select loads through `convertProjectV1` when not already v2 | T9 `loadSession`/`toV2`; T10 test 1 | done |
-| §9.2 v1 files load through a converter | T9 IMPORT button → `importProjectFile` → `convertProjectV1` | done (file import; the server only ever stores v2) |
+| §9.2 sessions: SESSION select loads through `convertProjectV1` when not already v2 (v2 validated whole first) | T9 `SessionController.loadSession`; T10 test 1 | done |
+| §9.2 no load or import can autosave or SAVE a half-applied or mismatched project | T9's numbered order in `SessionController`; `sessionController.test.ts` (6 coupled cases) | done |
+| §9.2 v1 files load through a converter | T9 IMPORT button → `SessionController.importProjectFile` → `convertProjectV1` | done (file import; the server only ever stores v2; the stage is kept) |
+| §9.2 `previewAudio` re-derived on load | T9 step 6, M5's `scheduleStretch` per clip | done |
 | §9.2 autosave 2s after the last change, `unsaved` until named | T9 `createSnapshotAutosave` + the `unsaved` option; T10 tests 1-2 | done |
 | §9.2 `previewAudio` not serialised | T9 `serializeProject` writes `null`; T8 converter writes `null` | done |
-| §9.2 `backbone` restored on load | T9 `applyProject` → `settings.stage`, `syncBackbone` rebuilds | done (`small-music*` backbones leave the stage alone — see Open questions) |
+| §9.2 `backbone` restored on load | T9 `applyProject` → `settings.stage`, `SessionController` step 8 rebuilds, a failed rebuild is pinned out of the saved session | done (`small-music*` backbones leave the stage alone and are pinned — see Open questions 7, 29) |
 | §9.2 v1→v2: lane rename, `RenderSettings` default-fill | T8 `convertProjectV1` | done |
 | §9.3 module presets (`latch`/`film`/`lora`/`bungee`): recall, SAVE, DEL, active lane only | T2 `modulePresets.ts` + `LaneChain.svelte` | done |
 | §9.3 master scope: lane chains, clip layout+A2A (no audio), mix, master chain, schedule+prompt | T9 `buildMasterPresetPayload`/`applyMasterPreset` | done, against the literal enumeration (see Open Questions on the two-reading conflict) |
@@ -5357,6 +6184,15 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
    WINTERMUTE alongside the `ModuleShell`/`viewStore` defects the brief already names.
 3. **M1's `each bottom tab opens` stays red** (Global Constraint #5) — M1's file, not this
    milestone's to edit.
+4. **FILM SCALE does not start at `/info.film_default.gain`** (spec §5.5) — a recorded gap, not a
+   fix (Open questions 26).
+5. **The lit dot's real markup is untested.** `rightPaneModules.test.ts` swaps `ModuleShell` for a
+   probe and asserts the `lit` value RightPaneModules passes; nothing in any plan pins how the
+   reconciled `{id, title, lit}` shell renders it (Open questions 27).
+6. **Two loads racing through a model rebuild are ordered, not reconciled.** A load superseded while
+   its rebuild is in flight never reverts the stage or names anything (the newer one decides), but
+   the newer one's own rebuild starts from the client stage the older one applied, whatever the
+   server ended up on. Covered by reasoning (step 1/8/9 checks), not by a test.
 
 ## Open questions
 
@@ -5453,7 +6289,7 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M7 T10: sessions/presets/FIL
 **Every one has a shipped reading, so nothing here blocks an implementer.** The load-bearing ones
 want Kim's or WINTERMUTE's answer rather than a default; the rest are recorded as each writer found
 them, in full, in the two per-writer "Open questions" sections above (after Task 5 and after
-Task 10). Items 18-24 were added by critic pass 1.
+Task 10). Items 18-24 were added by critic pass 1, items 25-30 by critic pass 2.
 
 1. **`LatchRequest`'s wire shape is FLATLINE's writer's own invention** — spec §5.5 gives only the
    mapping formula, not a request shape. Shipped `{slots: LatchRequestSlot[]; rho; mu; gamma; n_iter;
@@ -5491,7 +6327,9 @@ Task 10). Items 18-24 were added by critic pass 1.
    getter over `settings.stage`, which `applyProject` never set. Critic pass 1 fixed that:
    `applyProject` now restores `stage` through `STAGE_BACKBONE`, and `loadSession`/IMPORT rebuild the
    server model when it changes, reverting on failure. A saved `small-music`/`small-music-base`
-   backbone has no stage and leaves `stage` alone.) Wiring `App.svelte`'s model state through
+   backbone has no stage and leaves `stage` alone. Critic pass 2 added the pin — in both cases the
+   session's own backbone stays in what is saved, so an edit no longer rewrites it; items 29-30.)
+   Wiring `App.svelte`'s model state through
    `settings` is a follow-up — not attempted here, outside "sessions, master preset, autosave."
 8. **`fetchAdapters()`'s real server mismatch** (Global Constraints #4) — flagged again here as it's
    the kind of cross-milestone defect WINTERMUTE asked to hear about as one batch.
@@ -5550,12 +6388,49 @@ Task 10). Items 18-24 were added by critic pass 1.
     LOAD button with the v1 store it read, and server sessions are always v2, so §9.2's "version 1
     files … load through a converter" needed a new way in. IMPORT (a hidden file input) is the
     smallest one: the drawing has no such control, so it is spec-only, like FILES' root select. An
-    imported file stays `unsaved` until SAVE names it.
+    imported file stays `unsaved` until SAVE names it. A v1 clip with a `serverPath` now converts to
+    a `path` ref instead of being dropped (critic pass 2 #11).
 23. **The client does not validate module- or master-preset names**, only session names (spec §6.3's
     regex is stated for sessions). A bad preset name comes back as the server's refusal. If §6.3
     means the same pattern for presets, `isValidSessionName` is the check to reuse.
 24. **The `unsaved` label is an option inside the SESSION select**, not a span beside it — §9.2 says
     the select itself "shows `unsaved` until named". Picking a real session removes the option.
+25. **`LaneChain.lora.ckpt_path` is the durable adapter identity; `lora.slot` is a transient
+    resolution** (critic pass 2 #14, unconfirmed → decided here). A `/slots` index depends on what
+    the server has resident now, so a saved one could point at a different adapter than `ckpt_path`
+    after a restart. Every saved payload writes `slot: null` (`durableChain`, `modulePresetPayload`);
+    LORA/DORA re-resolves it by path on a pick or a preset recall. **M9 must resolve from `ckpt_path`
+    at submit and treat `slot` as a hint at most**; if M9 wants a stable slot handle, the server's
+    `/slots` would need one keyed by path. M1's `LaneChain` type keeps the field (frozen).
+26. **FILM SCALE ignores the server's default gain** (critic pass 2 #10, recorded as a gap). Spec
+    §5.5 says SCALE defaults to `/info.film_default.gain`; the server's is `FILM_DEFAULT_GAIN = 1.75`
+    (`eval/explorer_render_server.py:150`), M1's frozen `CHAIN_DEFAULTS.film.gain` is 1.0, and
+    `HELP.filmScale` says "Safe value: 1.0". Applying 1.75 into a chain would make every lane
+    non-default (M5's lane dot and this module's lit dot light for an untouched chain) and change
+    every loaded session. Either M1's default moves to the server's value, or `film.gain: null`
+    comes to mean "server default" — both are M1-type decisions for WINTERMUTE.
+27. **The reconciled `ModuleShell`'s dot markup is not pinned anywhere** (critic pass 2 #13,
+    unconfirmed → confirmed). M1's `module-dot`/`data-lit` hooks (M1 plan lines 4062-4066) exist
+    only on the label-prop version Global Constraint #3 rules out; the `{id, title, lit}` contract
+    (M1 plan lines 39, 6297-6301) names only `data-module`/`-toggle`/`-body`. T9's
+    `rightPaneModules.test.ts` therefore mocks `ModuleShell` with a probe and asserts the `lit`
+    value passed. Whoever reconciles M1's two `ModuleShell`s should pin the dot's attribute.
+28. **M4's `activeSlots` and T1's `isActive` disagree on an unknown head** (critic pass 2 #8). M4
+    counts any non-`none`, non-zero-weight head (M4 plan lines 657-660); T1 omits a head
+    `/info.latch_heads` does not list, since the server raises on it. T9 passes ADVANCED SAMPLING only
+    registry-known slots, so the forced-Euler label matches what is sent; `SigmaColumn` still gets
+    the raw slots (drawing only — at worst one lane drawn that is not sent). The clean fix is one
+    shared predicate taking the registry — an M4 change, flagged.
+29. **A failed model rebuild during a load keeps the session's backbone and sampling defaults**
+    (critic pass 2 #3). The client stage reverts (M4's rule), the saved backbone is pinned into what
+    autosave writes, and the loaded `defaults` (e.g. POST's steps 8 / `pingpong`) stay as saved — so
+    until the rebuild succeeds the client renders the reverted backbone with the other stage's
+    defaults, the mismatch M4 plan lines 463-470 warn about. Chosen over resetting them to the
+    reverted stage's defaults, because that would rewrite the user's session on the first edit;
+    M4's `resetSampling` is the explicit way out. Logged when it happens. Confirm the choice.
+30. **A v1 IMPORT keeps the current stage and ckpt** (critic pass 2 #7). v1 records no model;
+    `convertProjectV1` still writes `backbone: "medium-base"` to fill the required field, and the
+    loader ignores it (`restoreModel: false`). A later SAVE records the backbone actually loaded.
 
 *Two writers, dispatched in parallel this time (the split is by feature area, not by layer — see
 "Architecture" above), each independently re-verified every v3 line number and HELP id their tasks
