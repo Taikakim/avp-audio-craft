@@ -97,7 +97,11 @@ train on a placeholder or a constant label — stop and add a sidecar.
 | `--warmup-steps` | 0 | Linear LR ramp at the start. 75 tested. Protects the first steps, when B is still near zero. |
 | `--weight_decay` = `--modular-wd` | 0.01 | Pulls the adapter back toward zero, i.e. toward the base model's sound. **0.02 tested.** Higher = more conservative, stays closer to medium-base; lower = drifts further. |
 | `--modular-wd-overtraining` | off | Grows weight decay as √(epochs) (Everett & Qiu 2026) — 4× by epoch 16, 12.6× by epoch 160. Tested on (both runs). Suspected of pulling long runs back toward the base's modern-psy sound — *hypothesis, untested*; the test is one run without it. |
-| `--gradient_clip_val` | 1.0 | Caps the global gradient size each step. Leave it. |
+| `--gradient_clip_val` | 1.0 | Caps the global gradient size each step. Used only in `--grad-clip-mode norm`. |
+| `--grad-clip-mode` | norm | `norm`: the global clip above. `adagc` (2026-09-26): clips each tensor against an average of its own recent (already clipped) gradient sizes, before the gradient reaches momentum and the Shampoo statistics; aimed at the lone per-tensor spikes the flight recorder catches. **Replaces** the global clip. `agc`: the older NFNets weight-relative clip; don't use it with LoRA (zero-initialised `B`). |
+| `--adagc-lambda` | 1.04 | How far above its running average a tensor's gradient may go before it is trimmed. 1.04 is the paper's default (trims almost every oversized step); about 3 only catches outliers. Untested on our runs: compare both. |
+| `--adagc-beta` | 0.99 | How slowly each tensor's running average moves. |
+| `--adagc-warmup` | 100 | Steps spent only building the averages; nothing is clipped during them. |
 | `--modular-beta1` | 0.9 | Momentum: how much of past gradients carries into the step. Higher (0.95) = smoother, slower to turn; lower = more reactive, noisier. Only 0.9 tested. |
 
 ### 5b. The mechanisms (mix and match)
