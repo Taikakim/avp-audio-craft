@@ -622,11 +622,20 @@ function currentSel(model){return {pid:pprompt.value,
 // was selected before. Kim's ask is the opposite -- the dropdown should SHOW 1/1, not hide the
 // pin -- so this now writes the value (only if "1" is actually an available option; a corpus
 // that never rendered cfg1 would otherwise get pinned to a value its own dropdown doesn't have).
-// Deactivating just re-enables the controls; it does not attempt to restore a prior selection.
+// 2026-09-27 (Kim: "CFG 1 is carried on from PTM plays"): deactivating now RESTORES the cfg/w
+// that was selected when the pin engaged, so auditioning a ptm row and then a normal one returns
+// to e.g. cfg7 instead of leaving the normal row on the ptm-only cfg1. The saved pair is taken
+// only on the off->on transition, so repeated ptm plays don't overwrite it with 1/1.
+let ptmSavedSel=null;
 function applyPtmLock(model){const on=ptmActive(model);
+ if(on&&!ptmSavedSel)ptmSavedSel={cfg:pcfg.value,w:pstrength.value};
  pcfg.disabled=on;pstrength.disabled=on;
  if(on){if([...pcfg.options].some(o=>o.value==='1'))pcfg.value='1';
         if([...pstrength.options].some(o=>o.value==='1'))pstrength.value='1';}
+ else if(ptmSavedSel){
+  if([...pcfg.options].some(o=>o.value===ptmSavedSel.cfg))pcfg.value=ptmSavedSel.cfg;
+  if([...pstrength.options].some(o=>o.value===ptmSavedSel.w))pstrength.value=ptmSavedSel.w;
+  ptmSavedSel=null;}
  const t=on?'pinned to cfg1 / w1 (post-trained)':'';
  pcfg.title=t;pstrength.title=t;}
 // GRACEFUL CELL RESOLUTION (Kim 2026-08-02): the global cfg/weight/prompt picker can request
