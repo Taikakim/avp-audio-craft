@@ -88,12 +88,17 @@ def log(msg):
 
 def main():
     only = set(sys.argv[1:])
-    log("chain start; waiting for the reference run to exit")
-    while subprocess.run(["pgrep", "-f", WAIT_FOR], capture_output=True).returncode == 0:
-        time.sleep(60)
+    # Math-thread cap per training process. 4 was the shared-box oversubscription guard (MASTER s5);
+    # this chain runs ONE training at a time, so 16 by default (raised 2026-09-26 on request).
+    threads = os.environ.get("ABLATION_THREADS", "16")
+    log(f"chain start (threads={threads}); waiting for the reference run and any running arm to exit")
+    # also wait for an arm started by an EARLIER instance of this chain (hand-over without overlap)
+    for pat in (WAIT_FOR, "name ablation_goa5k_a"):
+        while subprocess.run(["pgrep", "-f", pat], capture_output=True).returncode == 0:
+            time.sleep(60)
     env = dict(os.environ, FLASH_ATTENTION_TRITON_AMD_ENABLE="FALSE", ROCR_VISIBLE_DEVICES="0",
-               PYTORCH_TUNABLEOP_ENABLED="0", MIOPEN_FIND_MODE="2", OMP_NUM_THREADS="4",
-               MKL_NUM_THREADS="4", OPENBLAS_NUM_THREADS="4", NUMEXPR_NUM_THREADS="4")
+               PYTORCH_TUNABLEOP_ENABLED="0", MIOPEN_FIND_MODE="2", OMP_NUM_THREADS=threads,
+               MKL_NUM_THREADS=threads, OPENBLAS_NUM_THREADS=threads, NUMEXPR_NUM_THREADS=threads)
     for name, args in ARMS:
         if only and name not in only:
             continue
