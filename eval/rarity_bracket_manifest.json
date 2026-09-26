@@ -520,10 +520,12 @@
     "fullft_avp_t256": {
       "tier": "full",
       "picks": [
-        "epoch=7-step=4784.weights.ckpt"
+        "epoch=7-step=4784.weights.ckpt",
+        "epoch=153-step=90598.weights.ckpt"
       ],
       "witness": [],
-      "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=256 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment."
+      "reason": "LUMI FULL fine-tune campaign (Kim direct 2026-07-17/20): whole-1.4B-DiT full-finetune, bf16, FusionOpt lr 1e-4, 8 epochs, avp-only crops, T=256 latent frames -- ckpt every epoch but only epoch=7 (final) synced to Mantu (Kim, 2026-07-20: pulling only the last checkpoint going forward -- 'universally been the best', full multi-epoch pulls take too long to eval). GHOST-NOTE entry, C owns judgment. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal ep153 full clip set requested ('excellent. We need a full clip set').",
+      "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fullft"
     },
     "fullft_avp_t512": {
       "tier": "full",
@@ -573,11 +575,12 @@
       "picks": [
         "epoch=19-step=5980.ckpt",
         "epoch=10-step=3289.ckpt",
-        "epoch=15-step=4784.ckpt"
+        "epoch=15-step=4784.ckpt",
+        "epoch=228-step=68471.weights.ckpt"
       ],
       "witness": [],
       "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=228-step=68471.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
     },
     "winning_avp_t512_a45_bf16": {
       "tier": "full",
@@ -595,11 +598,12 @@
       "picks": [
         "epoch=19-step=5980.ckpt",
         "epoch=10-step=3289.ckpt",
-        "epoch=15-step=4784.ckpt"
+        "epoch=15-step=4784.ckpt",
+        "epoch=59-step=17940.ckpt"
       ],
       "witness": [],
       "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=59-step=17940.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
     },
     "winning_avpaug10_t512_a45_fp32": {
       "tier": "full",
@@ -617,11 +621,12 @@
       "picks": [
         "epoch=19-step=13500.ckpt",
         "epoch=10-step=7425.ckpt",
-        "epoch=15-step=10800.ckpt"
+        "epoch=15-step=10800.ckpt",
+        "epoch=134-step=91125.weights.ckpt"
       ],
       "witness": [],
       "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=134-step=91125.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
     },
     "winning_goa_t512_a45_bf16": {
       "tier": "full",
@@ -639,11 +644,12 @@
       "picks": [
         "epoch=19-step=13500.ckpt",
         "epoch=10-step=7425.ckpt",
-        "epoch=15-step=10800.ckpt"
+        "epoch=15-step=10800.ckpt",
+        "epoch=59-step=40500.ckpt"
       ],
       "witness": [],
       "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes."
+      "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=59-step=40500.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
     },
     "xftlora16_fullft_avp_t1024": {
       "tier": "full",
@@ -2168,6 +2174,30 @@
         "step=8088.ckpt"
       ],
       "reason": "WINTERMUTE 2026-09-26: shampoo-run recipe + melody-subspace loss K=5 (v3 basis) on latents_sa3 (5,400 crops), 24 epochs overnight; terminal checkpoint. NB the recipe's SNR gate is an uncalibrated ~x0.2 lr cut (ablation 2026-09-26), so its effective lr was ~6e-5."
+    },
+    "subloss_v3sel_k5": {
+      "tier": "single",
+      "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subspace_loss_v3sel_grid_mt",
+      "picks": [
+        "epoch=19-step=27000.ckpt"
+      ],
+      "reason": "2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). ptm renders requested ('We need to try the ptm model with these'). ep19 = terminal; k12's ep15 is not on disk."
+    },
+    "subloss_v3sel_k2": {
+      "tier": "single",
+      "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subspace_loss_v3sel_grid_mt",
+      "picks": [
+        "epoch=19-step=27000.ckpt"
+      ],
+      "reason": "2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). ptm renders requested ('We need to try the ptm model with these'). ep19 = terminal; k12's ep15 is not on disk."
+    },
+    "subloss_v3sel_k12": {
+      "tier": "single",
+      "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subspace_loss_v3sel_grid_mt",
+      "picks": [
+        "epoch=19-step=27000.ckpt"
+      ],
+      "reason": "2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). ptm renders requested ('We need to try the ptm model with these'). ep19 = terminal; k12's ep15 is not on disk."
     }
   },
   "legacy_goa_dora_nested": {

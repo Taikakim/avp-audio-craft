@@ -1994,7 +1994,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep7 x rb_mid_3 cfg7 w1: \"This too seems like a good clean full ft\"."
   },
   "fullft_avp_t2048": {
     "recipe": {
@@ -7818,5 +7819,8 @@
   },
   "fullft_avp_t256_sweep": {
     "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\"."
+  },
+  "fullft_mixed_avp_goa_t4096": {
+    "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_rare_8 cfg7 w1: \"potentially a good start for some tests with using this instead of Base Medium as a starting point\"."
   }
 }
