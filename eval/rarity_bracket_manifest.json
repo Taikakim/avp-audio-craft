@@ -2073,6 +2073,101 @@
         "fullft_autoscale_2026-09-04/C_dual/epoch=39-step=3000.ckpt"
       ],
       "note": "Part of the fusion_autoscale_vs_adamw_2026-09-01 optimizer-comparison campaign -- FusionOpt autoscale (D-Adaptation-style auto-LR) vs plain AdamW vs Lion, on a 300-item subset of the 5400-track goa corpus (deliberately small+repeated for a single-night GPU budget). Full hypotheses/per-arm verdicts/kim_feedback in the campaign dir's own run_meta.json (dated 09-01 through 09-02, several follow-up rounds). Was deliberately kept off the shared board originally (one-off scratch, not permanent) -- graduating onto it now per Kim's 2026-09-23 ask. This arm: full-finetune (not LoRA) with FusionOpt autoscale, 2026-09-04 follow-up."
+    },
+    "ablation_goa5k_a00_full": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a00_full of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a01_no_snr": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a01_no_snr of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a02_no_brake": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a02_no_brake of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a03_no_vadd": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a03_no_vadd of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a04_additive_mag": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a04_additive_mag of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a05_no_shampoo": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a05_no_shampoo of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a06_no_sf": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a06_no_sf of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a07_no_normuon": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a07_no_normuon of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a08_no_subspace": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a08_no_subspace of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a09_plain_adamw": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a09_plain_adamw of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "ablation_goa5k_a10_full_lr5e-4": {
+      "tier": "single",
+      "root": "/run/media/kim/Mantu/sa3_lora_runs/ablation_goa5k_2026-09-26",
+      "picks": [
+        "step=1011.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: cumulative ablation arm a10_full_lr5e-4 of the shampoo-run recipe on latents_sa3 (5,400 crops), 1011 steps (3 epochs), T256 bs16 seed 42. Each arm drops one more component than the previous (eval/ablation_goa5k_chain.py); a10 = full recipe at lr 5e-4. Rendered to hear what the removals do to the SOUND, since weight-space distance only sees step length."
+    },
+    "goa5k_r128_shampoo_subloss_k5_2026-09-26": {
+      "tier": "full",
+      "picks": [
+        "step=8088.ckpt"
+      ],
+      "reason": "WINTERMUTE 2026-09-26: shampoo-run recipe + melody-subspace loss K=5 (v3 basis) on latents_sa3 (5,400 crops), 24 epochs overnight; terminal checkpoint. NB the recipe's SNR gate is an uncalibrated ~x0.2 lr cut (ablation 2026-09-26), so its effective lr was ~6e-5."
     }
   },
   "legacy_goa_dora_nested": {
