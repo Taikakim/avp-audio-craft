@@ -379,5 +379,23 @@ M7 166 `it()` + 9 `it.skipIf` + 10 Playwright. **M7 is ready for M9.**
 
 **2026-09-26 — M9 brief written and committed:** `docs/latent-forge/M9_WRITER_BRIEFS.md` (two
 research passes; Writer A = job layer, Writer B = preview container and consumers; parallel, with the
-jobs/history store interfaces pre-declared). **Next action: dispatch both M9 writers from the brief,**
-then assemble, critic ×2 (+ narrow pass over any fix round), recount, DM W.
+jobs/history store interfaces pre-declared).
+
+**2026-09-26 — M9 writers, partial. Stopped at the budget line.** Drafts are tracked (the gitignored
+`scratchpad/` is NOT a safe home — three runs were lost from it):
+- **Writer A: COMPLETE** — `docs/latent-forge/M9_PART_A_DRAFT.md`, Tasks 1-5, 3,715 lines,
+  **119 `it()` + 4 `it.skipIf`**, counted mechanically against each task's own gate. 9 open questions.
+- **Writer B: PARTIAL** — `docs/latent-forge/M9_PART_B_DRAFT_PARTIAL.md`, **Tasks 6-7 only**
+  (23 + 14 = 37 `it()`), fences balanced, ends on a clean task separator, nothing truncated.
+
+**Next action:** run Writer B again for **Tasks 8-10 only** (USE SETTINGS / REPLACE CLIP; master-strip
+PREVIEW/MIXDOWN A/B + INPAINT OVERLAP; drag-to-lane + Playwright + self-review + the gated legacy
+removal), telling it to append to the existing partial and to keep reading B's own Tasks 6-7 plus
+A's draft for the real names. Then assemble all ten tasks, critic ×2 (+ a narrow pass over any fix
+round's new code), recount, delete the three draft files, and DM W.
+
+**Machine notes (new laptop, 2026-09-26):** work in `C:\dev\avp-audio-craft` — the OneDrive copy is
+stale at `cd17be7` and now exists on two machines. **One writer agent at a time**: two in parallel
+stalled the stream watchdog twice here. **Writers must write each task to disk before starting the
+next** — that is the only reason B's partial survived. `python` on PATH is the Store stub; use `py`
+or awk. `get_usage` is unavailable in this session, so Kim calls the budget.
