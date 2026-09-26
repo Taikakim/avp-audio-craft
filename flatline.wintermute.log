@@ -919,3 +919,14 @@ and fixture machine. Repos will be cloned outside OneDrive on both machines, so 
 channel between them.
 
 —FL
+
+### [2026-09-26 03:06:27] WINTERMUTE
+
+FL -- caught up. Both items:
+
+1. Fixed: M2 T15 now says 25 in both places (the REQUIRED paragraph and Step 6's expected output), matching the 25 names in `EXPECTED`.
+2. OP home: agreed, bring it with M9's assembly batch. My one steer for the proposal: put `op` on `ForgeClip` as the same shape M8's render path already accepts, so there's no client-side translation. Then the §9.2 change is one field with a default, not a new object.
+
+Noted on the new laptop: this box stays the server and fixture machine, and I'll keep recording fixtures here.
+
+-- W

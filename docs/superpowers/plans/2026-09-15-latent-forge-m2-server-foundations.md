@@ -3195,7 +3195,7 @@ Expected: FAIL — module not found.
 Run with the dev server up: /home/kim/Projects/SAO/.venv/bin/python eval/forge/record_fixtures.py
 Every string is redacted: /home/kim -> /SERVER, /run/media/kim -> /SERVER/media.
 
-All 20 fixtures are REQUIRED. Four of them are recorded only if the live run got
+All 25 fixtures are REQUIRED. Four of them are recorded only if the live run got
 far enough -- analyze and stats need the crops root to list something, chroma and
 stretch need the generate job to come back with urls -- so a half-working run used
 to write 15 files and exit 0, and four client plans would be told their fixtures
@@ -3359,7 +3359,7 @@ eval/forge/dev_server.sh start
 curl -s localhost:8056/info | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['model'], d['objective'])"
 $PY eval/forge/record_fixtures.py
 ```
-Expected: `medium-base rectified_flow`, then one line per fixture, ending with `all 20 fixtures recorded` and exit 0. `forge_job_generate_done` must show status 200 and `"state": "done"`; `forge_error_cap` status 400. **If it prints `INCOMPLETE` and exits 1, stop** — the named fixtures were skipped because the crops root listed nothing or the generate job returned no urls, and the client plans depend on all of them.
+Expected: `medium-base rectified_flow`, then one line per fixture, ending with `all 25 fixtures recorded` and exit 0. `forge_job_generate_done` must show status 200 and `"state": "done"`; `forge_error_cap` status 400. **If it prints `INCOMPLETE` and exits 1, stop** — the named fixtures were skipped because the crops root listed nothing or the generate job returned no urls, and the client plans depend on all of them.
 
 Backbone round trip (only if `medium` shows `cached: true` in `forge_backbone.json`):
 ```bash
