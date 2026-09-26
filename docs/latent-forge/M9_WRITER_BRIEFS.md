@@ -157,8 +157,11 @@ Reply: `A: tasks=1-5 lines=<n> its=T1:<n>,…,T5:<n> skipif=<n> openq=<n>`.
    disabled with `turn A2A on or choose an op` when it has neither; overlap → `inpaint`. Uses
    `jobs.submit` + Writer A's builders and `renderBlock`. Label `SAMPLING · N steps left` on the
    control that started the job; all render controls disabled while `jobs.busy`. **The OP has no home**
-   (`ForgeClip` has no `op`; M4's `op`/`onOp` unwired): propose the smallest home, state it as an open
-   question for WINTERMUTE (a `ForgeClip` field is a §9.2 spec change, as `previewAudio` was).
+   (`ForgeClip` has no `op`; M4's `op`/`onOp` unwired). **WINTERMUTE's steer (log 2026-09-26 03:06):**
+   put `op` on `ForgeClip` **in the same shape M8's render path already accepts, so there is no
+   client-side translation** — then the §9.2 change is one field with a default, not a new object.
+   Write it that way; still carry it as an open question for M9's assembly batch, since §9.2 is the
+   spec and the field lands in `ProjectV2` (the `previewAudio` precedent).
 7. **HISTORY, waveform, play, length, drag handle.** HISTORY newest first, tagged GEN/A2A/INPAINT/MIX
    with length; selecting loads audio only (X15). Waveform with click/drag scrub and playhead; play/stop
    independent of the timeline transport — starting one stops the other (§4.5, M1 `transportPlay` help).
