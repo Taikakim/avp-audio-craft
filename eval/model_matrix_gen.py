@@ -172,6 +172,11 @@ def sf_averaged_adapter_ckpt(ckpt_path, tmp_dir):
     opt = opt_states[0]
     swapped = 0
     for g in opt["param_groups"]:
+        # Plain torch optimizers (AdamW, Lion) do not record param_names -- and they carry no
+        # Schedule-Free "x" either, so a nameless group has nothing to swap (W 2026-09-26: this
+        # KeyError'd the plain-AdamW ablation arm instead of rendering its raw weights).
+        if "param_names" not in g:
+            continue
         for name, idx in zip(g["param_names"], g["params"]):
             key = name.split(".", 1)[1]  # optimizer names are rooted one level above state_dict
             st = opt["state"].get(idx)
