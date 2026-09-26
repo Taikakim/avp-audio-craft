@@ -657,7 +657,8 @@
     ],
     "purpose": "Part of the 2026-06/07 DoRA/LoRA rank x alpha x LR sweep on the AVP/GOA sets, audited in docs/dora-alpha-audit-2026-07-12.md \u2014 whose question was whether the rank sweep was CONFOUNDED by a fixed alpha (scaling is linear alpha/rank, `lora/model.py:38`, so holding alpha while raising rank silently damps effective adapter scale). This arm's rank/alpha/lr are in that table, read off the checkpoint's own `lora_config` rather than the launch script. \u26a0 The audit recovers PARAMETERS and the campaign, not launch INTENT \u2014 no line names who asked for this specific point or why. \u2b50 This is the arm docs/canonical-eval-spec.md:42 calls \"the canonical run Kim asked about\" \u2014 the 1x point of the everything-set LR ladder.",
     "purpose_confidence": "strong",
-    "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02"
+    "purpose_evidence": "Tier-2 (local docs: dora-alpha-audit / DISCOVERIES / model_index / WORKLOG), C 2026-09-02",
+    "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_mid_5 cfg7 w1: \"WTF? It's ep0 and already has an excellent style\"."
   },
   "dora16_avp_freeform_8ep": {
     "note": "Freeform-caption arm \u2014 a single descriptive caption did NOT fix conditioning collapse (prompt/seed ratio 0.22, same as the trigger-token baseline's 0.92); showed caption diversity, not caption quality, is what matters.",
@@ -1662,7 +1663,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"good, but sounds like it has the EMA thing since the style develops slowly.\" ep19 x rb_mid_5 cfg7 w1: \"very good melodie on this ckpt but sound is quite hot (very sharp, lacks bass) But mixing this 50/50 with Base Medium might yield good stuff.\""
   },
   "fullft_goa_t512": {
     "recipe": {
@@ -1897,7 +1899,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"is excellent. We need a full clip set.\""
   },
   "fullft_avp_t512": {
     "recipe": {
@@ -2383,7 +2386,8 @@
         "target": "winning_goa_t512_a45_fp32",
         "axis": "precision (goa control)"
       }
-    ]
+    ],
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep50 x kl_2 cfg7 w1: \"very good melodies, but very hot and thin sound\" (\"problem territory\")."
   },
   "winning_goa_t512_a45_fp32": {
     "recipe": {
@@ -2434,7 +2438,8 @@
         "target": "winning_avp_t512_a45_fp32",
         "axis": "corpus generality (goa vs avp)"
       }
-    ]
+    ],
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep50 x kl_2 cfg7 w1: \"very dark, very good.\" \"this winning_ streak is very cool, for r128 DoRAs especially\" (8x more epochs than recent runs)."
   },
   "winning_avp_t1024_a45_fp32": {
     "recipe": {
@@ -6770,7 +6775,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep3 x kl_bracket_0 cfg7 w1 \"sounds very good. maybe slightly harsh, but very excellent style.\" Cited as the example that old Schedule-Free trains learned the oldschool goa style + 90s production aesthetic in 3-4 epochs."
   },
   "fp32frames_goa_t512_bs1_lr1e4": {
     "recipe": {
@@ -6942,21 +6948,24 @@
     "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x kl_2 cfg7 w1: \"This is also just superb, more aggressive, maybe a bit more saturated\". \"We need to try the ptm model with these.\""
   },
   "subloss_v3sel_k5": {
     "purpose": "B1 / #59 \u2014 subspace-weighted rectified-flow loss on the v3 melody-selective basis (lumi/melody_subspace15_selective_v3.npz), K in {2,5,12}. An attack on the melody wall.",
     "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x kl_2 cfg7 w1: \"This just... Superb\". \"We need to try the ptm model with these.\""
   },
   "subloss_v3sel_k12": {
     "purpose": "B1 / #59 \u2014 subspace-weighted rectified-flow loss on the v3 melody-selective basis (lumi/melody_subspace15_selective_v3.npz), K in {2,5,12}. An attack on the melody wall.",
     "purpose_source": "EXPERIMENTS.md:335 heading \"B1 - #59 subspace-weighted RF loss, v3 melody-selective basis, K in {2,5,12}\" + EXPERIMENTS.md:339 (sbatch + basis path)",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep15 x kl_2 cfg7 w1: \"coool, also ep19 is good. With this the kick is also very weak like with some subloss tracks.\" \"We need to try the ptm model with these.\""
   },
   "fullft_wd_ab_adamw_wd0p1": {
     "purpose": "The weight-decay-fix A/B that decides whether the fix for the full-FT latent-scale runaway -> spectral drone actually works (3 arms, 8h wall, job 20940322).",
@@ -7021,7 +7030,8 @@
   "dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep159 x rb_bracket_0 cfg7 w1: listed among the \"_excellent_\" dorlor ckpts."
   },
   "dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7031,7 +7041,8 @@
   "dorlor_avpaug_dora_fusion_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep127 x rb_bracket_0 cfg7 w1: listed among the \"_excellent_\" dorlor ckpts."
   },
   "dorlor_avpaug_lora_adamw_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7051,7 +7062,8 @@
   "dorlor_avpaug_lora_fusion_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep159 x rb_bracket_0 cfg7 w1: listed among the \"_excellent_\" dorlor ckpts."
   },
   "dorlor_biggoa_dora_adamw_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7091,7 +7103,8 @@
   "dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep63 x rb_bracket_0 cfg7 w1: \"_excellent_\" (\"even AdamW learns with time\")."
   },
   "dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7106,12 +7119,14 @@
   "dorlor_goa_dora_fusion_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep55 x rb_bracket_0 cfg7 w1: listed among the \"_excellent_\" goa dorlor ckpts."
   },
   "dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep63 x rb_bracket_0 cfg7 w1: listed among the \"_excellent_\" goa dorlor ckpts."
   },
   "dorlor_goa_lora_adamw_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7126,7 +7141,8 @@
   "dorlor_goa_lora_fusion_r128a45_t256_bf16_bs128_s2": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dorlor_ab.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep63 x rb_bracket_0 cfg7 w1: listed among \"_excellent_ ckpts for goa from the dorlor series\"."
   },
   "dorlor_lora_adamw_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7181,7 +7197,8 @@
   "aug8ddp_ddp_smoke_dora": {
     "purpose": "Stage 2 of the aug8 campaign (spec docs/superpowers/specs/2026-07-23-aug8-15ep-campaign.md; renamed aug10->aug8 per Kim so the variant set matches mir/src/tools/augment_tracks.py exactly, 8 not 10 variants/crop). Crosses the aug8-augmented GOA corpus x existing AVP aug set x {DoRA-r128, full-FT} x {fp32, bf16}, all T512 beat-aware, at 15 EPOCHS \u2014 the new default after Kim's 2026-07-23 listening verdict that models \"start to sound fine after ep5, often ep7 is first really good\", i.e. the prior 8-ep runs stopped at the threshold of good. \u26a0 Header marks this DRAFT/unsubmitted for review \u2014 verify it actually ran before citing results.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/aug8_train.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/aug8_train.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep1 x rb_rare_8: \"which is ep 1, but has already developed a goa sound, although sounds harsh on many clips.\" Caveat: some early eps might be continuations counted from 0 again."
   },
   "dora128_300trk": {
     "purpose": "Stage 2 of the aug8 campaign (spec docs/superpowers/specs/2026-07-23-aug8-15ep-campaign.md; renamed aug10->aug8 per Kim so the variant set matches mir/src/tools/augment_tracks.py exactly, 8 not 10 variants/crop). Crosses the aug8-augmented GOA corpus x existing AVP aug set x {DoRA-r128, full-FT} x {fp32, bf16}, all T512 beat-aware, at 15 EPOCHS \u2014 the new default after Kim's 2026-07-23 listening verdict that models \"start to sound fine after ep5, often ep7 is first really good\", i.e. the prior 8-ep runs stopped at the threshold of good. \u26a0 Header marks this DRAFT/unsubmitted for review \u2014 verify it actually ran before citing results.",
@@ -7501,12 +7518,14 @@
   "x0eq_goa": {
     "purpose": "E1a, the x0-EQUIVALENT LOSS arms (CONTINUITY 2026-07-31, Kim \"go on with the tests\"). JLT port (arXiv 2605.27102): sigma^2-weighted v-loss == x0-space MSE for a v-output head, removing the isotropic covariance floor that swamps low-variance eigendirections. The mechanism was MEASURED live before the run \u2014 the v-trained base recovers low-lambda eigendirections 2-8x worse per unit signal, worst at sigma 0.2. Arms: --x0-equiv-loss alone (the parameterization lever solo), and combined with subspace K=5. Recipe = lreq_goa_lr1e4 exactly, so the three melody-wall attacks compare on one axis system.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/x0equiv_grid.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/x0equiv_grid.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x kl_2 cfg7 w1: \"This is superb, like Power-Gen from Astral Projection, or 1994-1996 hoover hard trance, just fantastic\"."
   },
   "x0eq_sub5_goa": {
     "purpose": "E1a, the x0-EQUIVALENT LOSS arms (CONTINUITY 2026-07-31, Kim \"go on with the tests\"). JLT port (arXiv 2605.27102): sigma^2-weighted v-loss == x0-space MSE for a v-output head, removing the isotropic covariance floor that swamps low-variance eigendirections. The mechanism was MEASURED live before the run \u2014 the v-trained base recovers low-lambda eigendirections 2-8x worse per unit signal, worst at sigma 0.2. Arms: --x0-equiv-loss alone (the parameterization lever solo), and combined with subspace K=5. Recipe = lreq_goa_lr1e4 exactly, so the three melody-wall attacks compare on one axis system.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/x0equiv_grid.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/x0equiv_grid.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x kl_2 cfg7 w1: \"not bad either, less goa-ish though\"."
   },
   "fullft_avpaug_t1024_fp32_lr1e-4_s1": {
     "purpose": "Kim direct 2026-08-21: \"suomisoundi full ft over both our best avp and (old) goa full ft. T1024, Fusion (all damping bells and whistles) + the subspace k5 scaling. Spectral WD larger than we're used to, cosine schedule over 32 epochs.\" Two warm-start arms: avpaug19 (the vetted B9 backbone, fullft_avpaug t1024 fp32 ep19 EMA) and goaft (fullft_goa_t4096 at its MID checkpoint \u2014 goa full-FTs DEGRADE with training per W/G 2026-08-21, so warm-starting from \"last\" would bake in a near-worst base). Spectral WD 0.2, deliberately above the usual 0.1 because the runaway lesson showed 0.01 was too weak for NS5.",
@@ -7546,7 +7565,8 @@
   "lreq_goa_lr5e5": {
     "purpose": "LR x epoch x weight EQUIVALENCE GRID (CONTINUITY 2026-07-30, Kim greenlit via W; spec docs/superpowers/specs/2026-07-30-lr-steps-weight-equivalence-grid.md). Question: are inference-weight / LR / steps interchangeable along a cumulative-learning axis? The param-space half was already done (\u2016dW\u2016 proportional to LR \u2014 magnitude invariant; direction cos 0.17-0.47 \u2014 flavour diverges). This run supplies the missing pieces: the DIRECTION-MATURITY curve, which needs intermediate checkpoints the adamw sweep never saved, plus the perceptual grid of matched-cumulative triples and weight-for-steps substitution. || The multitorch migration of lr_equiv_grid (CONTINUITY 2026-08-03), moved off sa3.sif because its ROCm 6.2 MIOpen gfx90a find-fallback HANGS. Same experiment as lr_equiv_grid. NOTE arm 1 (lr1e-4) is the shared K=1 BASELINE for the whole melody-wall campaign (subspace / x0-equiv / combined) \u2014 do not treat it as a standalone arm. \u26a0 AMBIGUOUS KEY: this run-directory name occurs under more than one campaign (lumi/sbatch/lr_equiv_grid.sbatch, lumi/sbatch/lr_equiv_grid_mt.sbatch); the variants above are the candidates and are usually the same experiment ported between containers. Disambiguate by the parent directory before relying on one.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/lr_equiv_grid.sbatch + lumi/sbatch/lr_equiv_grid_mt.sbatch headers (Tier-1, ambiguous leaf key)"
+    "purpose_evidence": "lumi/sbatch/lr_equiv_grid.sbatch + lumi/sbatch/lr_equiv_grid_mt.sbatch headers (Tier-1, ambiguous leaf key)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep31 x kimlong cfg7 w1: \"Very cool\"."
   },
   "repaired": {
     "purpose": "The \"winning fp32 run\" (WINTERMUTE 2026-07-22, out of the DoRA hyperparameter x metric analysis; plan docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md). Flagship arms take the top-CLAP recipe levers (alpha<rank \"adj\", augmentation, fp32) on the FULL corpus, plus ablations that isolate each lever from the 320-crop small-set confound Kim caught. rank 128, lr 1e-4, FusionOpt, medium-base, 20 epochs.",
@@ -7566,7 +7586,8 @@
   "subloss_v3sel_k5_tgate": {
     "purpose": "CONTINUITY 2026-08-15, Kim direct: scale the subspace-weighted RF loss (#59) up from its lightweight DoRA+AdamW grid (K in {2,5,12}, T512) to the full-FT + FusionOpt + EMA + warmup + AGC recipe \u2014 on GOA, K=20 (past the old grid's max), T1024, fp32 (Kim: \"actually, make it fp32\"). \u26a0 Flagged at write time as a bigger change than \"K12 -> K20\": warmup only has meaning under --optimizer fusion, and --use-ema is full-finetune only (LoRA/DoRA force-disable it), so asking for EMA+warmup+AGC necessarily switched off the original K-grid's adapter/optimizer configuration \u2014 the arms are NOT a clean continuation of that grid.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/subloss_goa_k20_fullft.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/subloss_goa_k20_fullft.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep11 x rb_bracket_0 cfg7 w1: \"also very cool goa sound. The earlier EPs sound less developed. This is another thing we could continue with the new trainer?\""
   },
   "e3_metrical": {
     "purpose": "The metrical-tree positional-encoding experiment, run as a REAL vs SHUFFLED control pair (both arms present: e3_metrical/real and e3_metrical/shuffled). The shuffled arm destroys metrical structure while preserving everything else, so the real-minus-shuffled delta is the whole measurement \u2014 read these two together or not at all. \u26a0 WEAK: I could not find a doc naming who commissioned it or when; EXPERIMENTS.md's 'E3' is a DIFFERENT item (LatCH head re-validation), so do not resolve the label that way.",
@@ -7580,7 +7601,8 @@
     "note": "AdamW baseline, lr 1e-4. Steps 1000-4000 clean; RESUMED to 6000 and the resume introduced a discontinuity (step_cos -0.4993 at step 5000, net displacement DROPPED 65.6->45.9 and never recovered) -- Lightning restores model+optimizer but not dataloader/shuffle position. Superseded by adamw_scratch_step5000; use that instead. Kim: s6000 'not entirely bad'.",
     "recipe": "adamw \u00b7 lr 1e-4 \u00b7 rank 128 \u00b7 bs 8 \u00b7 T512 \u00b7 bf16 \u00b7 warmup 200 \u00b7 clip 1.0 \u00b7 seed 42 \u00b7 6000 steps (4000 + resumed 2000)",
     "hypothesis": "Baseline; expected smooth monotonic displacement.",
-    "status": "done -- steps 5000/6000 compromised, use the scratch arm"
+    "status": "done -- steps 5000/6000 compromised, use the scratch arm",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep162 x rb_rare_8: \"is hopeless. I can't believe people trained with AdamW.\""
   },
   "adamw_scratch_step5000": {
     "purpose": "Clean uninterrupted AdamW baseline to 5000 steps, run specifically to avoid the resume discontinuity in adamw_lr1e-4. Smooth 34-36/1000-step velocity, path_eff 0.550, step_cos 0.087. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
@@ -7607,7 +7629,8 @@
     "note": "FusionOpt + autoscale at a deliberately LOW lr 1e-6, testing whether autoscale grows the step itself. It does: step_cos 0.591, path_eff 0.893 -- the same trajectory shape as 5e-6 at half the displacement. Kim: 'also good but not quite, maybe learned some things [less]'. Audiobox CE 6.64.",
     "recipe": "fusion + autoscale \u00b7 lr 1e-6 \u00b7 rank 128 \u00b7 bs 8 \u00b7 T512 \u00b7 bf16 \u00b7 warmup 200 \u00b7 clip 1.0 \u00b7 seed 42 \u00b7 3000 steps",
     "hypothesis": "If autoscale works, a 1e-6 start still reaches a useful step size.",
-    "status": "done -- yes; same trajectory SHAPE as 5e-6 (step_cos 0.591) at half the displacement"
+    "status": "done -- yes; same trajectory SHAPE as 5e-6 (step_cos 0.591) at half the displacement",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep81 x rb_rare_8: \"also good, maybe cleaner, not so stylistically aggressive.\""
   },
   "fusion_autoscale_lr5e-6_full3h": {
     "purpose": "The headline FusionOpt+autoscale arm, 3h at lr 5e-6. Clip ladder rendered at steps 1000/2000/3000. Part of the FusionOpt-autoscale vs AdamW A/B (LoRA r128 on medium-base, T512, bf16, 300-track Goa subset; all seed-42 arms saw IDENTICAL batches). Owner GHOST-NOTE 2026-09-01/02; full manifest + verbatim listening notes in the run dir's run_meta.json.",
@@ -7616,7 +7639,8 @@
     "note": "THE PICK. Kim 2026-09-02: 'the clips sound excellent, and seem to have learned the dataset style very well ... in your face and forest-punk ... slightly saturated like tape'. step_cos 0.539, path_eff 0.879, net 283.0; highest onset density of all arms (8.09/s). Clip ladder rendered at steps 1000/2000/3000. Kim also notes it 'starts to sound similar-ish to the from-scratch s5000 AdamW'.",
     "recipe": "fusion + autoscale \u00b7 lr 5e-6 \u00b7 rank 128 \u00b7 bs 8 \u00b7 T512 \u00b7 bf16 \u00b7 warmup 200 \u00b7 clip 1.0 \u00b7 seed 42 \u00b7 3000 steps",
     "hypothesis": "Autoscale at a low-but-not-tiny LR gives character without instability.",
-    "status": "done -- BEST SOUNDING of every arm by ear; step_cos 0.539, path_eff 0.879, highest onset density (8.09/s)"
+    "status": "done -- BEST SOUNDING of every arm by ear; step_cos 0.539, path_eff 0.879, highest onset density (8.09/s)",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep81 x rb_rare_8: \"sounds cleaner\" (than lr5e6_bs2); differences between the two 5e-6 arms are only the different 300-track dataset, \"so the sound difference is luck probably.\""
   },
   "onset_Fusion_lr1e-4_randomcrop_L13-15": {
     "purpose": "Injection-SITE ablation of the onset-density FiLM control: layer band 13-15, the narrower/later counterpart to the L8-15 arm.",
@@ -7653,16 +7677,19 @@
     "hypothesis": "If autoscale truly sets the effective step, the sample-matched bs2 trajectory lands on top of the bs8 one.",
     "status": "done -- IT DOES NOT: path 590.1 vs 322.1, ~1.8x further in weight space for the same samples; step_cos 0.453",
     "purpose_evidence": "GHOST-NOTE, first-hand (fusion_autoscale vs AdamW A/B, 2026-09-01/02)",
-    "purpose_confidence": "strong"
+    "purpose_confidence": "strong",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep79 x rb_rare_8: \"sounds superb in style, but somewhat harsh and distorted.\""
   },
   "lion_lr1e-5": {
     "purpose": "Lion optimizer arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01). NOTE: this run has NO run_meta.json on disk -- purpose reconstructed 2026-09-07 by CONTINUITY from the run dir and checkpoint-stats/lion_lr1e-5_trajectory.md, NOT from a launcher record.",
     "recipe": "LoRA r128, T=512, bf16, lr 1e-5, optimizer Lion; 300-item constrained goa/psytrance subset of latents_sa3, seed42 -- same training recipe as the AdamW/Fusion arms of this campaign per its standard_clips run_meta.",
-    "note": "Trajectory (checkpoint-stats/lion_lr1e-5_trajectory.md, computed over steps 1000-4000 only -- 2 later ckpts exist): path efficiency 0.664 = wandering within a basin, so soup-averaging should help; centroid at step 2000. \u26a0 T=512 here is what makes the d48 native cell render; it is asserted from the campaign recipe, not read off the checkpoint."
+    "note": "Trajectory (checkpoint-stats/lion_lr1e-5_trajectory.md, computed over steps 1000-4000 only -- 2 later ckpts exist): path efficiency 0.664 = wandering within a basin, so soup-averaging should help; centroid at step 2000. \u26a0 T=512 here is what makes the d48 native cell render; it is asserted from the campaign recipe, not read off the checkpoint.",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep399 x rb_rare_8: \"sounds very very excellent, a bit more Israeli some influences from Chakra maybe, and change-of-the millennium with detuned sharp sounds.\""
   },
   "lion_lr5e-5-batch32": {
     "purpose": "Second Lion arm of the FusionOpt-autoscale vs AdamW comparison (fusion_autoscale_vs_adamw_2026-09-01): Lion at lr 5e-5 with batch 32, against lion_lr1e-5's lr 1e-5 / batch 8. Same 300-item constrained goa/psytrance subset of latents_sa3 as the rest of the campaign. Trained to 6000 steps (epoch 666); constant LR, no warmup decay visible in metrics.csv. Recipe read from the checkpoint's lora_config + lightning metrics, not from a launcher record -- this run has no run_meta.json on disk.",
-    "recipe": "DoRA-rows r128, alpha 128, T=512, lr 5e-5, optimizer Lion, batch 32, 6000 steps; 300-item constrained goa/psytrance subset of latents_sa3. No EMA in the checkpoint (LoRA runs force-disable it), so renders load the online weights."
+    "recipe": "DoRA-rows r128, alpha 128, T=512, lr 5e-5, optimizer Lion, batch 32, 6000 steps; 300-item constrained goa/psytrance subset of latents_sa3. No EMA in the checkpoint (LoRA runs force-disable it), so renders load the online weights.",
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep444 x rb_rare_8: \"sounds like goa actually, albeit with a modern vibe, but dark, could be 1998-early 2000s Phantasm Records or some other UK post-goa, pre-full on stuff\" ... \"444 sounds like a new model for certain.\" ep222: \"also good but can be still vaguely heard it's coming from the same style neighbourhood than the ablation ckpts.\" (300-track dataset.)"
   },
   "modular_sfswap_20260921__step2500": {
     "recipe": "LoRA training with the Modular Stage-Based Optimizer (ModularOptimizer) on the canonical 300-track subset (latents_sa3_subset300). medium-base, dora-rows rank128 alpha128, lr4e-4, wd0.02, bs32, T=256 crops. SF-swap verification run -- terminal checkpoint so far (ep277/step2500) (in progress 2026-09-21/22, target 10000 steps).",
@@ -7704,5 +7731,92 @@
     "verdict": "Five of six demo clips on the board. The rb_mid_4 48 s render diverged to NaN and is withheld. rb_rare_7 20 s and kl_2 20 s show mild crackle (82 and 55 sample jumps).",
     "status": "probe",
     "compare_against": "audition_160ep_2026-09-22-b at step 240"
+  },
+  "ablation_goa5k_a00_full": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"quite close to base, not too different but still noticeably has moved to the right direction, starting to have the kind of 4/4 kick and beat, but melodically still very club trancey.\" rb_mid_4: \"quite punchy sound and an off beat 'ride' comp (0xx0 with the 16ths: tikkidi, tikkidi...)\"; \"normal production balance\". rb_rare_8: \"brings more hihats and mid-bass energy\" vs base. \"sounds very different from the rest\" of the ablation arms."
+  },
+  "ablation_goa5k_a01_no_snr": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"immediately different and sounds more mature.\" rb_mid_4: has the ride comp \"but the kick sounds highbassed, and the rhythmic subbass below the mid-bass rhythm is lost altogether.\" rb_rare_8: \"a bit more energetic, but the base elements stay the same than 00.\""
+  },
+  "ablation_goa5k_a02_no_brake": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: very close to no_snr (\"more punchy kicks and percussion and rhythmic 16ths-based sound\"). rb_mid_4: \"a quite genre-accurate midrangey phrygian bass melody, pads and atmosphere, but barely any kick, it might be constructing a buildup though.\""
+  },
+  "ablation_goa5k_a03_no_vadd": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: very close to no_snr/no_brake. rb_mid_4: \"has the ride comp again, a bit heavier than 01, but still less than 00 full\"."
+  },
+  "ablation_goa5k_a04_additive_mag": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"sighly more aggressive and snappy.\" rb_mid_4: \"between the ride comp and the phrygian bass melody, no kick really, but has the pads and cymbals like the others\"."
+  },
+  "ablation_goa5k_a05_no_shampoo": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: rb_mid_4 \"quite goa-styled, could almost be old Prana or some other Japanese stuff. There's a (thin) kick, rhythm bass but not subbass, and the sound is kind of building up.\""
+  },
+  "ablation_goa5k_a06_no_sf": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: rb_mid_4 \"the most sparse with just a rhythm bass, on-beat this time without a kick, playing a repeating 16ths barrage with syncopated rests.\""
+  },
+  "ablation_goa5k_a07_no_normuon": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"suddenly is more sparse, with very distinctive goa kick, melodies more subdued, and less percussion events.\" rb_mid_4: like 06 \"but with kick on every other downbeat\"."
+  },
+  "ablation_goa5k_a08_no_subspace": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"almost similar [to 07] with the more sparse sound.\" rb_mid_4: \"like 07 with a constant kick rhythm but with a quite thin sound again. but sounding closer to a rolling track-section.\" Melody similar-ish to the subloss run."
+  },
+  "ablation_goa5k_a09_plain_adamw": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"very different, like always poorly learns the goa style.\" rb_rare_8: \"some kind of psytechno with sloppy bongo-house influences, I mean, just cheap sounds.\""
+  },
+  "ablation_goa5k_a10_full_lr5e-4": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=1011: \"sounds like 00_full.\""
+  },
+  "goa5k_r128_shampoo_subloss_k5_2026-09-26": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=8088: \"has the most distinct melody\"; \"practically a kickless section, although a very thin upper end of a kick can be heard on some downbeats.\" rb_rare_8: \"more synth energy, but the kick is thinner and in the background ... sounds like a buildup section.\" kl_2: \"an example that the subloss can also have a punchy beat and still melodies, it is noticeably more melodic than of the ablation runs.\" \"the subspace thingy actually seems to work, although at the cost of bass sometimes.\" Asked for ptm renders."
+  },
+  "base": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): rb_rare_8 cfg7: \"not too bad (soundwise very clean), could be some minimalistic progressive psytrance from modern times.\" Asked for static base + base_ptm rows pinned at the top of the player."
+  },
+  "goa3_avp_r128_shampoo_b16_3e4_2026-09-25": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=10144 x rb_rare_8 cfg7 w1 \"sounds close to AdamW, not the other ablation runs.\""
+  },
+  "fullft_ladder_A_control": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"good too, although not as exciting as that Lion 1e-5, although clean sounds.\""
+  },
+  "fullft_ladder_B_autoscale": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"good too, although not as exciting as that Lion 1e-5, although clean sounds.\""
+  },
+  "dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep319 x rb_bracket_0 cfg7 w1: \"special mention from these continuations, many of which are useless, this is fun actually, almost falling apart but keeping it's own\". (The avpaug19 and goaft7 continuations \"are broken more or less\".)"
+  },
+  "dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_avpaug19": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"broken more or less\" (vs the avpft153 continuation, which is the special mention)."
+  },
+  "dorlor_suomi_dora_fusion_r128a45_t256_bf16_bs128_s1_ep319_on_goaft7": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"broken more or less\" (vs the avpft153 continuation, which is the special mention)."
+  },
+  "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128_s1_ep319_on_avpft153": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep319 x rb_mid_3 cfg7 w1: \"if the eps are rolled back, it does really good twisted goa, although a bit saturated sound like pushed tape or something at times\". \"ep191 sounds the same than 319 for these AdamW clips. But these might have had the EMA issue?\""
+  },
+  "suomi_r32_lr1e-4": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep4 x kl_0 cfg7 w0.6: \"from the unlucky Suomi older trains, early eps with a low weight, some good can be pulled\"."
+  },
+  "terminal_winning_goa_t512_a45_fp32": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"The terminal_winning ckpts deserve full clip set renders maybe, they seem promising, render also at w 0.5.\""
+  },
+  "terminal_winning_goa_t512_a128_fp32": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"The terminal_winning ckpts deserve full clip set renders maybe, they seem promising, render also at w 0.5.\""
+  },
+  "terminal_winning_avp_t512_a45_fp32": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"The terminal_winning ckpts deserve full clip set renders maybe, they seem promising, render also at w 0.5.\""
+  },
+  "terminal_winning_avp_t512_a128_fp32": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"The terminal_winning ckpts deserve full clip set renders maybe, they seem promising, render also at w 0.5.\""
+  },
+  "soup_fp32cmp_goa_t512_uniform": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): native x rb_common_1 cfg7 w1: \"sounded very good\" -- but likely had the EMA issue (little difference between members) and were deleted; cannot easily be re-souped now that the LUMI folders are gone."
+  },
+  "soup_winning_goa_t512_a45_fp32_uniform": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): native x rb_common_1 cfg7 w1: \"sounded very good\" -- but likely had the EMA issue and was deleted; cannot easily be re-souped now that the LUMI folders are gone."
+  },
+  "soup_fp32cmp_goa_t4096_bs4_lr1e4_bell_late": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): 20s x rb_common_1 cfg7 w1: \"good.\" \"basically these all sounded quite good on the minimum.\""
+  },
+  "fullft_avp_t256_sweep": {
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\"."
   }
 }

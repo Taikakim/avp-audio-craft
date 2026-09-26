@@ -52,3 +52,40 @@ a decay). Confirms the early-stop + low-ish-LR direction; the usable window for 
 is very early (ep0 at 2e-4, ep3–7 at 1e-4). "Vertical movement + pitches, solid beat" is
 the quality axis the meters miss (the interval-homing failure = the conditioning/energy
 collapse; solid-beat-with-moving-layers = what we want).
+
+## 2026-09-27 — goa-style listening pass over the DoRA rows (Kim's ear, relayed in chat)
+
+Verbatim per-model verdicts are in each label's `kim_feedback` (`Misc/models_index_overrides.json`,
+surfaced in the census). The picks and the pattern:
+
+**HoF picks (goa style)**
+- `lion_lr1e-5` ep399 × rb_rare_8 — "very very excellent ... Chakra ... change-of-the-millennium with detuned sharp sounds"
+- `x0eq_goa` ep19 × kl_2 — "superb, like Power-Gen from Astral Projection, or 1994-1996 hoover hard trance, just fantastic"
+- `subloss_v3sel_k5` ep19 × kl_2 — "This just... Superb"; `subloss_v3sel_k2` ep19 — "also just superb, more aggressive"
+- `fp32frames_goa_t4096_bs4_lr1e4` ep3 × kl_bracket_0 — "very excellent style" (slightly harsh)
+- `lion_lr5e-5-batch32` ep444 × rb_rare_8 — "1998-early 2000s Phantasm Records ... UK post-goa"
+- `winning_goa_t512_a45_fp32` ep50 × kl_2 — "very dark, very good" (the bf16 twin: great melodies, hot/thin)
+- `fullft_avp_t256` / `fullft_avp_t256_sweep` ep153 — "excellent" / "fabulous" (full clip sets requested)
+- dorlor "_excellent_" goa set: goa lora/dora × fusion/adamw (ep55-63), avpaug lora/dora (ep127-159) × rb_bracket_0;
+  special mention `dorlor_suomi_dora_fusion_..._ep319_on_avpft153` ("almost falling apart but keeping its own")
+- `dora128_everything_8ep_lr1x` ep0 × rb_mid_5 — "WTF? It's ep0 and already has an excellent style"
+- `goa5k_r128_shampoo_subloss_k5_2026-09-26` step 8088 — "the most distinct melody ... the subspace thingy actually seems to work, although at the cost of bass sometimes"
+
+**Pattern (Kim):** the old Schedule-Free / fp32frames / Lion / Fusion trains beat the new modular/shampoo ones at the
+oldschool goa style AND the 90s production aesthetic; many learned it in 3-4 epochs. `goa3_avp_r128_shampoo` step
+10144 "sounds close to AdamW". Plain AdamW at short horizons is "hopeless" (though dorlor AdamW at ep63 is excellent:
+"even AdamW learns with time"). Direction: "drive our learning harder _and_ somehow control the issues we have."
+
+**Measured explanation (W, same day):** "epoch" is not comparable. By latent frames seen: ablation a00 @1011 ≈ 4.1 M,
+overnight goa5k @8088 ≈ 33 M, fp32frames_goa_t4096_bs4 "ep3" ≈ 88 M (~21x a00) — T4096 samples a whole track per
+item, T256 one 23.8 s window. Plus the SNR gate cut the modular recipe's effective lr ~5x (ablation 2026-09-26,
+`ablation_goa5k_2026-09-26/REPORT.md`).
+
+**Ablation arms by ear (step 1011, rb_mid_4 / rb_rare_8):** a00 full = normal production balance, off-beat ride comp,
+still club-trancey; a01 no_snr "more mature" but loses the sub-bass; a02/a03 ≈ a01; a04 more aggressive/snappy; a05
+no_shampoo "could almost be old Prana"; a06 no_sf most sparse; a07 no_normuon sparse with a distinctive goa kick; a08
+thin, rolling; a09 AdamW "cheap sounds"; a10 ≈ a00. Out-of-scope house prompt (rb_rare_6) ≈ identical everywhere.
+
+**Requests from this pass:** ptm renders for goa5k subloss and the subloss_v3sel k2/k5/k12 arms; full clip sets for
+fullft_avp_t256(_sweep) last ep and the terminal_winning ckpts (+ w0.5); a similarity metric over the ablation clips;
+base + base_ptm rows pinned at the top of the player.
