@@ -61,6 +61,18 @@ CFGS = (1.0, 7.0, 16.0)
 # the grid up), add 2.0 (1.5 is well-handled by many models, worth seeing past it).
 # Existing 0.6 cells in the manifest are NOT deleted -- they just stop growing.
 STRENGTHS = (1.0, 1.5, 2.0)
+
+
+def strength_sweep(pinned: bool, only_strengths):
+    """Strengths to render for one (model, ckpt). Base/full-FT rows have no adapter, so they
+    are pinned to 1.0 and --only-strengths can only FILTER that. For adapter arms
+    --only-strengths REPLACES the standard sweep, as its help always said -- it used to only
+    intersect with STRENGTHS, so a value outside it (e.g. w0.5, requested 2026-09-27) could
+    never render and the run silently produced 0 cells (W)."""
+    if pinned:
+        base = (1.0,)
+        return base if only_strengths is None else tuple(w for w in base if w in only_strengths)
+    return STRENGTHS if only_strengths is None else tuple(only_strengths)
 STRENGTHS_LEGACY = (0.6, 1.0, 1.5)  # the old axis, kept for reference / any tooling that reads it
 STEPS = 24
 DURATION = 20.0
@@ -696,9 +708,7 @@ def main():
         jobs = list(best.values())
     n_cells = 0
     for label, ckpt_path, _tag in jobs:
-        _sw = (1.0,) if (ckpt_path is None or label.startswith("fullft_")) else STRENGTHS
-        if only_strengths is not None:
-            _sw = tuple(w for w in _sw if w in only_strengths)
+        _sw = strength_sweep(ckpt_path is None or label.startswith("fullft_"), only_strengths)
         n_cells += len(prompts) * len(cfgs) * len(_sw)
     print(f"[model_matrix] {len(jobs)} (model,ckpt) jobs x {len(prompts)} prompts -> "
           f"{n_cells} manifest cells ({n_cells - sum(len(prompts) * len(cfgs) * 2 for l, c, t in jobs if c is None)} "
@@ -737,9 +747,7 @@ def main():
         is_fullft = label.startswith("fullft_")
         # fullft arms are whole-model fine-tunes: no adapter, no strength sweep —
         # the w axis collapses to 1.0 (W's loader recommendation 2026-07-18)
-        strengths_to_render = (1.0,) if (ckpt_path is None or is_fullft) else STRENGTHS
-        if only_strengths is not None:
-            strengths_to_render = tuple(w for w in strengths_to_render if w in only_strengths)
+        strengths_to_render = strength_sweep(ckpt_path is None or is_fullft, only_strengths)
         # skip the whole (model,ckpt) load if every cell is already done
         need_any = False
         for prompt in prompts:

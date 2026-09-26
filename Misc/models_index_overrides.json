@@ -1900,7 +1900,7 @@
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
     },
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"is excellent. We need a full clip set.\""
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"is excellent. We need a full clip set.\" | 2026-09-27 (listening pass, relayed in chat): ep47 x rb_mid_3 cfg7 w1: \"This too, as well as the ep7 variant, maybe a good starting point\" (i.e. as a base to start new training from, instead of Base Medium)."
   },
   "fullft_avp_t512": {
     "recipe": {
