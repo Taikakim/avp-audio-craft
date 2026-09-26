@@ -2089,7 +2089,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-27: ep7 x kl_bracket_0 cfg7 w1: \"another possible starter\" (candidate starting point instead of Base Medium)."
   },
   "fp32cmp_goa_t4096_bs4_lr1e4_ptm": {
     "recipe": "SAME adapter file as fp32cmp_goa_t4096_bs4_lr1e4 (DoRA-rows r128 \u03b1128, fp32, T=4096, bs4, lr 1e-4, trained on medium-BASE) -- here applied to the POST-TRAINED medium (rf_denoiser / ping-pong sampler) at its native config: steps 8, cfg 1. Tests the Discord/Dadabots claim (+ Zach@Stability's layer argument: adapters concentrate in the middle 'knowledge' layers, ARC post-training rewrites the last decoder layers, so they compose) that base-trained L/DoRAs transfer to the post-trained model. Compare against the medium-base rows of the same label.",
@@ -7818,7 +7819,7 @@
     "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): 20s x rb_common_1 cfg7 w1: \"good.\" \"basically these all sounded quite good on the minimum.\""
   },
   "fullft_avp_t256_sweep": {
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\"."
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\". | 2026-09-27: ep20_20s x rb_common_2 cfg7 w1: \"This also, maybe a clean starter\" (candidate starting point instead of Base Medium)."
   },
   "fullft_mixed_avp_goa_t4096": {
     "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_rare_8 cfg7 w1: \"potentially a good start for some tests with using this instead of Base Medium as a starting point\"."

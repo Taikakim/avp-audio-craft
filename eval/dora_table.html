@@ -25,6 +25,9 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
 #pp{background:#1b1c22;color:#dde;border:1px solid #333;border-radius:4px;width:26px;height:22px;cursor:pointer}
 #pseek{width:140px}
 tbody tr{cursor:pointer}
+tbody tr.pinned td{background:#141d2a}
+tbody tr.pinlast td{border-bottom:2px solid #468}
+.pinbox{margin:0 5px 0 0;vertical-align:middle;cursor:pointer}
 tbody tr.nomatch{opacity:.35}
 tbody tr.approx{opacity:.72}   /* plays a nearest-match clip, NOT dead -- see markAvailability */
 tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{background:#1c3c2c !important;color:#9fe}
@@ -190,19 +193,37 @@ function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
  if(sortCol==='hybrid')hth.innerHTML+=' <span class=arrow>'+(sortDir<0?'▼':'▲')+'</span>';
  hth.onclick=()=>{if(sortCol==='hybrid')sortDir*=-1;else{sortCol='hybrid';sortDir=-1;}render();};
  tr.appendChild(hth);}
+// PINNED ROWS (Kim 2026-09-27: "a static base and base ptm row ... freeze it on top of the list with
+// base and base_ptm frozen by default"). The pin box in each model cell keeps that model's rows in
+// a block at the top, outside the sort AND the filters, so a reference row is always one click away.
+// Stored per-browser (a viewing convenience, not shared state); defaults when nothing is stored.
+const PIN_KEY='dora_table_pins_v1',PIN_DEFAULT=['base','base_ptm'];
+let pinned;
+try{const s=localStorage.getItem(PIN_KEY);pinned=new Set(s?JSON.parse(s):PIN_DEFAULT);}catch(e){pinned=new Set(PIN_DEFAULT);}
+function savePins(){try{localStorage.setItem(PIN_KEY,JSON.stringify([...pinned]));}catch(e){}}
 function render(){
  const ds=fds.value,rk=frank.value,ar=farch.value,tx=ftext.value.toLowerCase();
- let rs=rows.filter(r=>inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
+ let rs=rows.filter(r=>!pinned.has(r.model)&&inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
+ const pinRows=rows.filter(r=>pinned.has(r.model));
  const hy=hybridScores(rs);
  for(const r of rs)r.hybrid=hy.get(r);
  const val=(r,c)=>c==='hybrid'?r.hybrid:mv(r,c);
  rs.sort((a,b)=>{let x=val(a,sortCol),y=val(b,sortCol);if(x==null)return 1;if(y==null)return -1;
   if(typeof x==='number')return (x-y)*sortDir;return String(x).localeCompare(String(y))*sortDir;});
  const body=document.getElementById('body');body.innerHTML='';
- for(const r of rs){const tr=document.createElement('tr');
+ const nPin=pinRows.length;
+ for(const r of [...pinRows,...rs]){const tr=document.createElement('tr');
   tr.dataset.model=r.model;tr.dataset.ckpt=r.ckpt;
+  const isPin=pinned.has(r.model);
+  if(isPin)tr.classList.add('pinned');
+  if(isPin&&r===pinRows[nPin-1])tr.classList.add('pinlast');
   for(const c of cols){const td=document.createElement('td');const v=mv(r,c);
    if(c==='model'){td.className='model';td.textContent=nfmt(c,v)+(r.default_is_fallback?' †':'');
+    const pb=document.createElement('input');pb.type='checkbox';pb.className='pinbox';pb.checked=isPin;
+    pb.title=isPin?'unpin this model from the top':'pin this model to the top (stays there regardless of sort/filters)';
+    pb.addEventListener('click',ev=>{ev.stopPropagation();
+     if(pb.checked)pinned.add(r.model);else pinned.delete(r.model);savePins();render();});
+    td.prepend(pb);
     if(r.default_is_fallback)td.title='no cfg7/w1 (ptm rows: cfg1/w1) cells rendered for this model -- showing the all-cells mean instead';}
    else{if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);}
    const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
@@ -211,7 +232,7 @@ function render(){
   const hh=heatHybrid(r.hybrid);if(hh)htd.style.cssText=hh;
   tr.appendChild(htd);
   body.appendChild(tr);}
- hdr();count.textContent=rs.length+' / '+rows.length+' rows';
+ hdr();count.textContent=rs.length+' / '+rows.length+' rows'+(nPin?' + '+nPin+' pinned':'');
  markAvailability();markPlaying();}
 
 // ---- cell picker + click-a-row player (Kim 2026-07-22: pick a prompt×cfg×weight cell up
