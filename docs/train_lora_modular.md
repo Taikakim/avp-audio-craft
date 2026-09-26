@@ -122,7 +122,7 @@ anything — several have turned out to be inert in practice.
 | `--modular-radial-brake` | 1.0 (off) | Each step, keep only this fraction of any growth in weight size (0.8 = keep 80%). Brakes runaway growth. | tried by Antigravity, not listened |
 | `--modular-escape-velocity` (= `--modular-ev`) | off | Prodigy-style automatic step enlargement. **Inert in our runs** (the multiplier never left 1.0) and adds ~0.6 GB to every checkpoint. | inert |
 | `--modular-ev-beta` / `--modular-ev-max` | 0.999 / 2.0 | Its memory and its maximum multiplier. | — |
-| `--modular-snr-gate` | off | Shrinks the step when the gradient looks like pure noise. Never run. | untested |
+| `--modular-snr-gate` | off | **Do not use as built — it is an uncalibrated ~×0.2 lr cut, not an adaptive brake.** Its statistic (per-element \|EMA(g)\|/√EMA(g²), β 0.9) sits at its own pure-noise floor 0.183, and DiT per-element gradient SNR barely lifts it (logged 0.211). Measured 2026-09-26 (goa5k ablation, `eval/ablation_goa5k_chain.py`): removing it alone moves the adapter ×4.4 further in 1011 steps, loss slightly better. So any gated run's `--lr` was effectively ~0.2× that. If you want the damping, set a lower `--lr` honestly. | used in the shampoo runs; measured |
 | `--modular-split-qkv` / `--modular-no-split-qkv` | split | Treat the fused attention query/key/value matrix as separate blocks when orthogonalising. Leave on. | default |
 | `--modular-split-adaln` / `--modular-no-split-adaln` | split | Same for the fused conditioning (AdaLN) emitters. Leave on. | default |
 
@@ -196,6 +196,17 @@ the raw gradient's magnitude) — so Lightning's global-norm gradient clip only 
 momentum buffer's contribution going INTO that normalisation, it does not bound the applied
 step the way it does for modular/fusion/adamw/lion. Leave it at its default; don't expect it
 to be a safety net here the way it is for the other optimizers.
+
+### 5f. Melody-subspace loss (the subloss arms)
+
+Weights the part of the RF error that lies in a measured latent subspace K× (spectral-bias counter). Ported from `train_lora.py` 2026-09-26 (W, stable-audio-3 `6223be1`); same flags, both spellings.
+
+| flag | default | what it does |
+|---|---|---|
+| `--subspace-loss-basis` | none | npz with orthonormal rows (`basis15`). The melody basis in use: `lumi/melody_subspace15_selective_v3.npz`. |
+| `--subspace-loss-weight` | 1.0 (off) | K. The logged `train/loss` INCLUDES the extra (K−1)×`train/subspace_loss`, so runs with different K are not loss-comparable (K=5: +~0.15). K=5 was best of the earlier K-grid by metrics; K=24 was the LUMI subloss_k24 arms. |
+
+Computed on the raw error, so it needs `loss_normalization="none"` — this trainer never sets it, so the default holds. At 3 epochs it changed WHERE lora_B ends up by ~38% (cos 0.93) but not the melody-subspace energy of generated latents (`eval/latent_stats_by_arm.py`); first run: `goa5k_r128_shampoo_subloss_k5_2026-09-26`.
 
 ## 6. Length, batch, checkpoints, demos
 
