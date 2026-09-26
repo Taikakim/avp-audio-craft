@@ -47,3 +47,19 @@ VR-Sampling (OpenReview), PolarGrad 2505.21799, 2503.12645.
 4. DoRA magnitudes under sign steps: no paper validates it; options are a separate much smaller lr,
    trust-ratio scaling, or m = softplus(u) + m_min (positivity by construction). Our multiplicative
    update already guarantees positivity.
+
+## After reading the three papers in full (C, 2026-09-26, later the same day)
+Notes: `papers/arxiv-2602.03001 …`, `arxiv-2602.22610 …`, `arxiv-2606.08783 …` (+ knowledge.md rows).
+- **2602.03001:** as reported, but sharper: the Muon-geometry noise scale is the NUCLEAR-norm GNS, it
+  controls batch size, and the authors list momentum as an open problem. Needs many independent
+  sub-batches; our two half-batches are weak. Diagnostic only.
+- **2602.22610:** as reported. The tail effect is visible without DP; 8-layer d=256 model from scratch;
+  the fix changes the forward pass. Support for our finding, not a transferable fix.
+- **2606.08783 (OptMuon): the report over-rated it.** Theory only, no experiments, assumes bounded
+  gradients; its running max protects its own coefficient, not momentum, and its step scales with ‖M‖_F,
+  so a spike makes the step larger. Low relevance.
+- **The report missed a precedent we already hold: AdaGC (2502.11034)**, deep-read 2026-08-11 in the
+  drone cluster (knowledge.md). Per-tensor clipping against an EMA (β 0.99) of each tensor's CLIPPED norm,
+  global-clip warm-up, λ_rel = 1.04 by default; Muon-compatible; spike score → 0 on Llama-2 7B / Mixtral.
+  It is exactly experiment #2 of the ranked list, with evidence at scale. Set aside in August because
+  the drone was drift, not spikes; the shampoo run's failure mode is spikes, so it now applies.
