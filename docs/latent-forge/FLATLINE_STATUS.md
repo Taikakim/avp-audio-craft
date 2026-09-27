@@ -381,6 +381,70 @@ M7 166 `it()` + 9 `it.skipIf` + 10 Playwright. **M7 is ready for M9.**
 research passes; Writer A = job layer, Writer B = preview container and consumers; parallel, with the
 jobs/history store interfaces pre-declared).
 
+**2026-09-27 — M9 assembled, critic passes partial. Stopped at the budget line (84%).**
+
+**The plan exists**: `docs/superpowers/plans/2026-09-27-latent-forge-m9-rendering.md`, 8,476 lines,
+all ten tasks in order, fences balanced. Mechanically **234 `it()` + 8 `it.skipIf` + 6 Playwright**;
+**233 tests actually run** — Task 9's 27th `it()` is a quotation of an existing M7 test inside its
+WHY section (file line 26, well above Step 1 at 202), so a naive `grep -c` overcounts by one. The
+in-file gate of 26 is correct.
+
+**Do not treat the plan as finished.** Two critic passes were stopped mid-run with **7+ BLOCKING
+findings already on disk**. The plan is assembled, not yet corrected.
+
+**Findings files, all tracked and committed:**
+- `docs/latent-forge/M9_CRITIC1_FINDINGS.md` — 529 lines, contracts and cross-writer seams,
+  5 blocking written before the stop (F1-F5).
+- `docs/latent-forge/M9_CRITIC2_FINDINGS.md` — 454 lines, gate arithmetic and Svelte 5 correctness,
+  2 blocking + 5 non-blocking, including a complete mechanical gate recount. Its section A confirms
+  no further gate off-by-one beyond the one already fixed.
+- `docs/latent-forge/M9_ASSEMBLY_FINDINGS.md` — my own 7, two fixed in place, one **withdrawn**.
+
+**The two critics independently agreed on the top two blockers**, which is the strongest signal in
+the pile:
+1. **Task 4 Step 8's `drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height)`** — a 2D context where
+   an `HTMLCanvasElement` belongs and two numbers where a colour string belongs. Real signature, from
+   `sa3-studio/src/lib/waveform.ts:80-84`: `(canvas, peaks, color, opts = {})`. The MIXDOWN waveform
+   never draws and `npm run check` fails. Fix to M5 T10's three-arg form.
+2. **Writer B calls the seeding `arrangement.overlapParams(key)` from inside a `$derived`** — selecting
+   an unedited overlap throws `state_unsafe_mutation`. Must read through M7 T3's non-seeding
+   `peekOverlapParams`.
+
+**A correction to carry forward:** I filed blocker 1 as a false alarm in an earlier revision of
+`M9_ASSEMBLY_FINDINGS.md` (finding A3, now marked WITHDRAWN with the reasoning kept). I checked that
+`drawPeaks` tolerates four arguments, saw the optional fourth parameter, and never looked at what
+Writer A actually passes. **Arity tolerance is not call-site correctness** — check the arguments, not
+the signature.
+
+**Next action, in order:**
+1. **Re-run both critic passes to completion** — they were stopped, not finished, so the finding
+   lists are partial and there is no way to know what the last third of the plan holds.
+2. Apply the fix round. Expect it to introduce new defects: on M7, critic pass 2 found two data-loss
+   paths that the *first* fix round had just added, and pass 3 found a third. Budget a narrow pass
+   over whatever the fix round touches.
+3. Apply the three pending assembly findings: reconstruct Writer B's open questions 1-6 (cited by
+   number throughout Tasks 6-7, never enumerated — B's first run ended at the budget line before
+   writing the list); prefix the two colliding open-question sequences `A1-A9` and `B1-B15` and add a
+   consolidated index **without renumbering in place**, since the cross-references are load-bearing;
+   add task totals to Tasks 3, 4, 5 and 7.
+4. Fill the plan's two placeholder sections, `## File structure` and `## Status of this plan`.
+5. Recount mechanically, delete the six draft files (`M9_PART_A_DRAFT.md`,
+   `M9_PART_B_DRAFT_PARTIAL.md`, `M9_PART_B_TASK{8,9,10}.md`, `M9_ASSEMBLY_HEADER.md`), and DM W the
+   batched questions: the OP's home on `ForgeClip`, `longform`'s `schedule` key meaning two different
+   things on one request (A1 — the item with the most consequence), M2 T15's `EXPECTED` listing 25
+   fixtures while its docstring says 20, and the A/B toggle's deliberate departure from the spec's
+   visibility wording.
+
+**Machine notes, corrected 2026-09-27:** the earlier note here blamed parallel agents for stalling the
+stream watchdog. That was wrong — one stall was a WiFi drop and the next was the laptop sleeping.
+**Two agents in parallel are fine on this machine.** What actually saves work is the rule that each
+agent writes every task to disk before starting the next: it is why Task 8 survived a sleep mid-Task-9,
+and why both critics survived being stopped. Keep that rule regardless of agent count. Also: work in
+`C:\dev\avp-audio-craft`, never the OneDrive copy; `python` on PATH is the Store stub, so use `py` or
+`awk`; and **`get_usage` is unavailable in this session — Kim calls the budget.**
+
+---
+
 **2026-09-26 — M9 writers, partial. Stopped at the budget line.** Drafts are tracked (the gitignored
 `scratchpad/` is NOT a safe home — three runs were lost from it):
 - **Writer A: COMPLETE** — `docs/latent-forge/M9_PART_A_DRAFT.md`, Tasks 1-5, 3,715 lines,
