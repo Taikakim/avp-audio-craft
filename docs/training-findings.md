@@ -404,3 +404,24 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
       (`recipe.notes`) added to both `_nodas_231123` and `_overnight`'s `run_meta.json` (a fresh
       file for `_overnight`, which had none) recording the diagnosis and pointing at `_231801` as
       the arm that actually works.
+
+## 2026-09-27 — Melody-subspace loss WORKS by ear (Kim's first listen across all his models)
+
+**Verdict (Kim, 2026-09-27 ~03:00, verbatim):** "now that I listened for the first time across all of my
+models, I have to say the subspace stuff really seems to work." Earlier in the same pass: "the subspace thingy
+actually seems to work, although at the cost of bass sometimes"; `goa5k_r128_shampoo_subloss_k5_2026-09-26`
+step 8088 "has the most distinct melody" and on kl_2 "can also have a punchy beat and still melodies, it is
+noticeably more melodic than of the ablation runs"; `subloss_v3sel_k5` ep19 "This just... Superb",
+`subloss_v3sel_k2` ep19 "also just superb, more aggressive", `subloss_v3sel_k12` ep15/19 "coool";
+`subloss_v3sel_k5_tgate` ep11 "very cool goa sound".
+
+**Known cost:** the kick/bass tends to get thinner ("the kick is also very weak like with some subloss
+tracks"; several renders read as a buildup/kickless section). Worth a counter-measure (e.g. a low-band term or a
+lower K) rather than abandoning the loss.
+
+**Measurement agrees but is weak:** in generated latents the v3 melody-subspace energy share is 0.029 ± 0.011
+for the 24-epoch K=5 run vs 0.023-0.025 for every 3-epoch ablation arm (`eval/latent_stats_by_arm.py`); at 3
+epochs the loss changes WHERE lora_B ends up (cos 0.93 vs no-subspace) but not yet the generated melody energy.
+**Policy consequence:** keep the subspace loss in the recipe going forward (K=5, v3 basis
+`lumi/melody_subspace15_selective_v3.npz`); it is now available in `train_lora_modular.py` (stable-audio-3
+`6223be1`, manual §5f). Also: `subloss_*` arms deserve ptm renders (queued 2026-09-27).
