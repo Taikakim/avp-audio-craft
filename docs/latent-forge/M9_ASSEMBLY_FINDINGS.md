@@ -16,15 +16,17 @@ Task 6 would have edited a file that does not exist. All three rewritten to `for
 said `Tests 39 passed (39)` against a breakdown of 22 + 6 + 5 + 7 = 40. Both corrected, and the
 per-file expectation line updated from 21 to 22.
 
-## Resolved — no change needed
+## Corrected
 
-**A3. The `drawPeaks` signature disagreement is a false alarm. Task 10's "Known incomplete" item 5
-should be struck.**
-It claims M5 T10's three-arg `drawPeaks(canvas, peaks, color)` and Writer A T4's four-arg call
-contradict each other, and that "one of the two is wrong and only the reconcile can say which."
-Neither is wrong. The real v1 source, `sa3-studio/src/lib/waveform.ts:80-84`, declares:
+**A3. WITHDRAWN. My first reading of this was wrong; the critics are right. Task 4's `drawPeaks`
+call is a real bug and Known-incomplete item 5 must NOT be struck.**
+
+I originally resolved Task 10's Known-incomplete item 5 — "`drawPeaks`' signature disagreement
+between M5 T10's three-arg call and Writer A T4's four-arg one, one of the two is wrong" — as a
+false alarm, on the grounds that the real v1 source declares a fourth parameter with a default:
 
 ```ts
+// sa3-studio/src/lib/waveform.ts:80-84
 export function drawPeaks(
   canvas: HTMLCanvasElement,
   peaks: Peaks,
@@ -32,10 +34,29 @@ export function drawPeaks(
   opts: { background?: string } = {},
 ```
 
-The fourth parameter has a default, so the three-arg call is valid and the four-arg call is valid.
-Task 7's Open question 5 and Task 10's Known-incomplete item 5 both go away. **Fix:** delete both,
-and state the signature once in the plan's inherited-names section so it is not re-litigated.
+That much is true, and it does mean M5 T10's `drawPeaks(canvas, peaks, color)` is valid. But I
+checked only the **arity** and never looked at what Writer A actually passes. Writer A's Task 4,
+Step 8 writes:
 
+```ts
+    if (peaks !== null) drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height);
+```
+
+That is a `CanvasRenderingContext2D` where an `HTMLCanvasElement` belongs, and two numbers where a
+colour string and an options object belong. It is wrong on the first argument and on the last two —
+the optional fourth parameter rescues nothing. Both critic passes found it independently, and both
+ranked it BLOCKING: the MIXDOWN waveform never draws and `npm run check` fails.
+
+**Correct resolution:** Task 4 Step 8's call is the defect. Fix it to M5 T10's form,
+`drawPeaks(canvas, peaks, color)`, passing `canvasEl` rather than its context. Item 5 stays in
+Known incomplete until that fix lands, then goes away because the disagreement is settled — not
+because it was imaginary. Writer B's open question 5 is likewise a real question with a real answer,
+not a question to strike.
+
+**The lesson worth keeping:** "the signature tolerates N arguments" is not the same claim as "this
+call site is correct". Checking arity alone let me file a live blocking bug as resolved.
+
+## Resolved — no change needed
 **A4. Known-incomplete item 7 is already satisfied.**
 It asks the assembly to check that Writer A T3 *stated* the `workKey`-includes-`renders` decision
 rather than only implementing it. A's Open question 5 states it explicitly, with the rationale in
@@ -58,7 +79,7 @@ Reconstructed from the citation sites:
 - **B2** — preview playback vs the timeline transport keeping the playhead (Task 7).
 - **B3** — no bend-op editor, so `bendOps` is `[]` and `renderBlock` honestly refuses `bend` (Task 6).
 - **B4** — never used.
-- **B5** — the `drawPeaks` signature. Superseded by A3 above: struck, not carried.
+- **B5** — the `drawPeaks` signature. A real question with a real answer (see A3): Writer A T4 calls it wrongly. Carried, not struck.
 - **B6** — the `strings.test.ts` total must be recounted by the assembly, not asserted by a writer
   (Task 6's HELP step). This is the same question as Writer A's Open question 6.
 
