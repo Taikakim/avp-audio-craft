@@ -445,3 +445,47 @@ that caveat with real numbers, not a correction to it.
 of subspace-on and subspace-off arms (e.g. `ablation_goa5k_2026-09-26/REPORT.md`), subtract
 (K-1) x subspace_loss before comparing, or compare `mse_loss` directly. Worth a header note on
 that report and any future one; not fixing retroactively here, flagging so nobody re-derives it.
+
+## 2026-09-28 — b0x AdaGC/gate ablation arms by ear against Base itself, and a jump at b04
+
+**First direct A/B against Base (Kim, 2026-09-28):** listening to the recent goa5k ablation
+arms, Kim "just now realised I should check against [Base]." At `kl_2 cfg7 w1`, `step=1011`:
+`ablation_goa5k_b01_adagc104`, `b02_adagc3`, `b03_nogate_6e-5` all sound **close to Base itself**
+— not just to each other. At `rb_rare_7 cfg7 w1` the same three arms have "a more snappy
+psytrancey sound compared to base," so the closeness is **prompt-dependent**, not a blanket "b01-03
+haven't moved."
+
+**b04 is where the sound leaves Base's neighbourhood:** `ablation_goa5k_b04_nogate_6e-4` at the
+same `kl_2 cfg7 w1` "takes a jump in a new direction." `b05_nogate_6e-4_adagc3` "sounds identical"
+to b04 rhythmically/spectrally at that prompt. `b06_full_3e-3` "sounds rhythmically etc similar to
+b05, but has lusher, richer sound with more of atmospheres and pads, whereas 05 is often more
+constrained" — and b04 is in turn "even more constrained" than b05. So on the
+constrained-to-lush axis: **b04 < b05 < b06(full_3e-3)**, while b04/b05/b06 share the same rhythmic
+identity and all three sit apart from the close-to-Base b01/b02/b03 cluster.
+
+Cross-reference with CONTINUITY's quantitative b0x direction/velocity read
+(`ablation_goa5k_2026-09-26/REPORT.md`) is open — this session flagged it to CONTINUITY
+(2026-09-28 DM) as a qualitative complement to check against whatever distance/direction the
+b01-b06 series shows numerically; not yet reconciled here.
+
+**Standing anomaly, cross-cutting (not b0x-specific):** the `kl_1` prompt is persistently odd.
+Base renders it as fast psytrance; every other model tested, **including `base_ptm`**, renders it
+as chill downbeat material. Recorded on `base`'s `kim_feedback` (`Misc/models_index_overrides.json`)
+rather than here alone, since it isn't a training-recipe finding — it's a prompt/model interaction
+nobody has explained yet.
+
+**Also this pass, unrelated one-offs worth a note:** `e2_phm` (the PHM-adapter tier-1 experiment)
+sounds "quite good" already at `ep0`/step 0 — early for a from-scratch adapter architecture to
+sound coherent at all. `stereo_sweep_w0.0` (the w=0 control arm of the mid/side stereo-loss
+sweep, whose treatment siblings OOM'd on launch per `docs/fleet-audit-2026-07-19.md`) is "not too
+bad" at `ep1 x kl_2 cfg7 w1` — the first independent listening confirmation that this control arm's
+own checkpoint is usable, separate from the provenance question about its treatment siblings.
+
+**Open question from Kim, not yet answered:** the two new 3e-3 warm-started DoRA runs (plain and
+K=5-subspace, both off `fullft_avp_t4096` ep7) are "overtrained already" by ~step 1516-2022 at
+this 3e-3 / no-SNR-gate recipe, but Kim called the run itself "interesting" and floated a target
+shape for a slower version: velocity around 50-70 by step ~1500, dropping below 50 by step ~3000.
+Whether the b0x/a0x trajectory data already collected (`checkpoint-trajectory-stats`,
+`ablation_velocity_report.py`) is enough to back out an lr/gate/AdaGC combination that would hit
+that curve is open — referred to CONTINUITY (2026-09-28 DM) as an analysis question, not answered
+here.
