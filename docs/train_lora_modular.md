@@ -85,6 +85,7 @@ train on a placeholder or a constant label — stop and add a sidecar.
 | `--dropout` | 0.0 | Dropout inside the adapter. Untested. |
 | `--include` / `--exclude` | all | Name SUBSTRINGS selecting which layers get an adapter (not regex). Default = every eligible layer (229 on medium). E.g. `--exclude to_global_embed global_cond_embedder to_timestep_embed` leaves the global-conditioning path untouched. |
 | `--lora_checkpoint` | none | Start from an existing adapter's weights (optimizer starts fresh). |
+| `--init_state_ckpt` | none | **Warm-start the BASE DiT** (not the adapter) from a finished full-FT checkpoint before the adapter is injected — fresh optimizer/schedule/epoch counters, unlike `--resume_ckpt`. Ported verbatim from `train_lora.py` 2026-09-28 (added there 2026-08-21); same prefix-matching/`>99%` coverage assert, same **silent EMA-shadow preference when the checkpoint carries one** (⚠ see `sa3-training` skill §1c and `RUNBOOK.md` §4 — a low-turnover run rendered/warm-started from an EMA-carrying checkpoint is largely working from its own starting point). `eval/model_matrix_gen.py` has the matching RENDER-side loader (`load_adapter_base_weights`, keyed off the arm's own `run_meta.json`), so rendering a `--init_state_ckpt`-trained adapter against plain `medium-base` is refused loudly (>99% coverage assert) rather than silently producing the wrong sound — first exercised by `goa5k_fullft_avp_dora_3e-3_*` (warm-started from `fullft_avp_t4096` ep7). |
 
 ## 5. The optimizer
 
@@ -342,3 +343,7 @@ walk away.
   is rejected item by item (the audit warns).
 - `--checkpoint_every` left at 500 with milestones ⇒ duplicate checkpoints.
 - The run NAME is free text — `goa3_avp_r256_2026-09-23` is rank 128. Trust `run_meta.json`, not names.
+- `--init_state_ckpt` silently prefers the EMA shadow when the source checkpoint carries one — same
+  trap as `train_lora.py`'s and `model_matrix_gen.py --weights auto`'s. Check with the `data.pkl`
+  grep in `sa3-training` §1c before warm-starting from a checkpoint you haven't already confirmed is
+  EMA-free (or that you specifically want the EMA sound).

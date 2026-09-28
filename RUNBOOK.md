@@ -153,7 +153,9 @@ Greater than 0, or the run had no EMA and you will be rendering the online weigh
 
 ⚠ `--init_state_ckpt` **silently prefers the EMA shadow when the checkpoint carries one.** So does
 `model_matrix_gen --weights auto`. A low-turnover run rendered that way is largely a render of its
-own starting point.
+own starting point. `train_lora.py` and `train_lora_modular.py` both have this flag (same logic);
+`model_matrix_gen.py` has the matching render-side loader so a `--init_state_ckpt`-trained adapter
+gets rendered against the SAME base it was trained on, not plain `medium-base`.
 
 VERIFY: the first logged epoch is (resumed epoch + 1), **and** the checkpoint mtime is newer than the
 job start. A reused run dir auto-resumes an old checkpoint and fakes fast progress convincingly.

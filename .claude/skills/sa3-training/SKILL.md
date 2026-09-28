@@ -64,6 +64,17 @@ epochs are a poor unit here (random crops, weighted mixtures, oversampling).
 Anything loading a checkpoint **prefers the EMA shadow when the file carries one**, silently:
 - `eval/model_matrix_gen.py --weights auto` (**the default**) = EMA if present
 - `train_lora.py --init_state_ckpt` = `("diffusion_ema.ema_model.",) if _has_ema else (...)`
+- `train_lora_modular.py --init_state_ckpt` — same flag, same logic, ported 2026-09-28 (verbatim
+  copy, same prefix-matching + `>99%` coverage assert). First real use:
+  `goa5k_fullft_avp_dora_3e-3_*`, warm-started from `fullft_avp_t4096` ep7 — that source checkpoint
+  has NO EMA branch (confirmed: `model_matrix_gen.py`'s render-side loader logged `cov 100.0%` at
+  the non-EMA prefix), so this trap did not bite it, but check any FUTURE `--init_state_ckpt`
+  source the same way before trusting which weights you're actually starting from.
+- `eval/model_matrix_gen.py`'s render-side counterpart (`load_adapter_base_weights`, added
+  2026-09-28) applies the SAME EMA preference when re-loading a warm-started arm's base weights for
+  rendering — it has to match whatever the training run actually used, or the adapter's deltas (
+  trained against one base) get baked onto a different one. It fails LOUD (>99% coverage assert,
+  not caught) rather than silently rendering the wrong base if the match ever comes up short.
 
 So a low-`R` run rendered on `auto` is largely a render of its *starting point*: the arms of a
 ladder come out looking alike and the experiment reads as a null.
