@@ -2600,8 +2600,10 @@ transport and **starting one stops the other** (§4.5); `previewPlayer` is where
 registers on `soloBus` as `AUDIO_SOURCE_PREVIEW`. M5's `playback` store is the **arrangement**
 transport: its `seek` moves the timeline playhead and its `preload` starts no sound, so neither is
 what the MIXDOWN slot's `▶` and scrub want. **Ordering:** this makes Task 4 Step 8 depend on Task 7
-Steps 3-4, which produce `soloBus.ts` and `previewPlayer.svelte.ts`. Build those two files before
-Task 4 Step 8 — they are pure additions with no dependency of their own on the rest of Task 7, so
+Steps 3 and 5 — Step 3 produces `soloBus.ts`, Step 5 produces `previewPlayer.svelte.ts` and registers
+the solo bus in M5's `transport.svelte.ts`. Build those before
+Task 4 Step 8. Step 3 is a pure addition; Step 5 also modifies M5's `transport.svelte.ts`, so it is not.
+Neither depends on the rest of Task 7, so
 either land them early or run Task 7 before Task 4. Task 4's own gate (Step 12, `npm run check`)
 cannot pass until they exist.
 
@@ -3156,7 +3158,8 @@ gets peaks, scrub, and `draggable`.
   // `.catch` is not optional: `mixdownSlotWired.test.ts` stubs no fetch.
   $effect(() => {
     const u = url;
-    if (u === null) { buffer = null; return; }
+    buffer = null;                 // a new url invalidates the old buffer, not merely supersedes it:
+    if (u === null) return;        // peaksFor memoises on a url-derived key, so a stale pair poisons it
     let live = true;
     decoder()?.preload(u).then((b) => { if (live) buffer = b; }).catch(() => { if (live) buffer = null; });
     return () => { live = false; };
@@ -5660,7 +5663,8 @@ Add to the script, below Task 6's block:
 
   $effect(() => {
     const url = previewUrl;
-    if (url === null) { buffer = null; return; }
+    buffer = null;                 // same invalidation as the MIXDOWN slot — keep the two copies identical
+    if (url === null) return;
     let live = true;
     decoder()?.preload(url).then((b) => { if (live) buffer = b; }).catch(() => { if (live) buffer = null; });
     return () => { live = false; };
@@ -6827,11 +6831,12 @@ Added to the component's `<script>` (Tasks 6 and 7 already put `entry`, `target`
     // would then save it 2 s later; this is M7 critic pass 3 #2's shape, and the fix there was
     // the same superseded check.
     const forTarget = view.selection;
+    const forKey = view.selectionKey;      // compare by KEY: every selection click builds a fresh object
     const forEntry = entry;
     acting = true;
     try {
       const record = await history.jobRecord(forEntry);
-      if (view.selection !== forTarget || entry !== forEntry) return;   // superseded
+      if (view.selectionKey !== forKey || entry !== forEntry) return;   // superseded
       const ps = payloadSettings(record.op, record.payload);
       if (ps.body === null && ps.durationSec === null) {
         useSettingsNote = NO_SETTINGS_HINT;
@@ -6847,7 +6852,7 @@ Added to the component's `<script>` (Tasks 6 and 7 already put `entry`, `target`
       }
     } catch (e) {
       // §9.7: the job fetch is the failure the operator must see, and jobs.lastError is that surface.
-      jobs.lastError = { targetKey: view.selectionKey, message: e instanceof Error ? e.message : String(e) };
+      jobs.lastError = { targetKey: forKey, message: e instanceof Error ? e.message : String(e) };
     } finally {
       acting = false;
     }
