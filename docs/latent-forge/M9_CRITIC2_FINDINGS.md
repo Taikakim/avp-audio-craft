@@ -1,6 +1,9 @@
 # M9 critic pass 2 — test gates and Svelte 5 correctness (2026-09-27)
 
-**9 findings, 3 blocking** (1, 1b, 2 — all three are compile-or-throw defects in Tasks 4, 6 and 9).
+**11 findings, 4 blocking** (1, 1b, 2, 9 — all four are compile-or-throw defects, in Tasks 4, 6 and 9,
+and three of them sit under a step whose own gate says `npm run check` clean).
+
+Coverage: all ten tasks. Section 0 says which parts were read in which of the two sittings.
 
 Target: `docs/superpowers/plans/2026-09-27-latent-forge-m9-rendering.md`, 8 476 lines, ten tasks.
 Lens: per-file test-gate arithmetic, Svelte 5 runes traps, canvas/jsdom traps, `steps_total` division
@@ -8,6 +11,42 @@ guards, and the "fix round introduces a new defect" class from M7 critics 2 and 
 Read-only pass — no file in the repo was edited except this one.
 
 Line numbers refer to the plan as of this pass. Every finding quotes the text it rests on.
+
+---
+
+## 0. Coverage — what was actually read
+
+This pass ran in two sittings; the second resumed after a budget stop. Stating the gap plainly so
+nobody reads silence as a clean bill.
+
+**Section A (gate arithmetic) is complete for all ten tasks.** It was produced mechanically: a script
+walked every fenced block in the whole 8 476-line file, counted `it(` / `it.skipIf(` per fence, and
+every count was matched against the `Tests  N passed (N)` line that follows it. Nothing was sampled
+and nothing stopped partway. Base counts inherited from M7 (`projectSerializer.test.ts` 9,
+`signalPath.test.ts` 10, `MixSignalPath.component.test.ts` 8, `strings.test.ts` 112) were each
+verified against the M7 plan rather than taken on trust. Per-fence `it(` lines were eyeballed for
+false positives; one was found and discarded (L3514, the phrase "the whole of it (open question 3)"
+inside a comment in `renderBlock.ts`).
+
+**The deeper lens — runes, canvas/jsdom, division guards, M7 data-loss shapes — did not reach
+everything in the first sitting.** Read in full then: Tasks 2, 3, 4, 7, 8. Read in part: Tasks 1, 5,
+6, 9, 10. Specifically not read in the first sitting:
+
+| task | what was not read in sitting 1 |
+|---|---|
+| 1 | `payloads.ts`'s body — the six builders (L640-995) |
+| 5 | `renderBlock.ts`'s body (L3471-3563) and `renderBlock.test.ts` (L3370-3463) |
+| 6 | `dispatch.ts`'s body (L4230-4450) and `dispatch.test.ts` (L4053-4218) |
+| 9 | the MasterStrip toggle wiring and the `▸ INPAINT OVERLAP` handler (L7330-7470, L7550-7640) |
+| 10 | `laneHeader.ts`'s new drag helpers and `lifecycle.addClip`'s length resolution (L7840-8120) |
+
+Findings 1, 1b, 2, 3, 4, 5, 6, 7, 8 and section C come from sitting 1. **Findings 9 and 10, and
+section C2, come from sitting 2 and cover exactly the rows in that table.** Where sitting 2 found
+nothing in a file it is recorded in section C2 rather than left silent, so every one of the ten
+tasks is now either the subject of a finding or explicitly declared clean.
+
+Note that finding 9 (blocking) and finding 10 both came out of regions sitting 1 had not reached —
+`dispatchWorld`'s import block and `payloads.test.ts`'s commit titles — so the gap was not empty.
 
 ---
 
@@ -288,6 +327,69 @@ does the same.
 
 ---
 
+**9. `PAD_SEC` is a component-local `const` in Task 6, and Task 9 imports it from `./dispatch`, which
+never exports it.**
+
+BLOCKING. Task 9, Step 13 — search `dispatchWorld.ts` for `import { PAD_SEC`. Task 6, Step 15 —
+search `PreviewContainer.svelte` for `const PAD_SEC`.
+
+Task 9's new module opens (plan L7430-7434):
+
+```ts
+import { fetchLatchHeads, type LatchHeadInfo } from "../chains/latch";
+import type { Target } from "../forge/types";
+import { arrangement } from "../stores/arrangement.svelte";
+import { settings } from "../stores/settings.svelte";
+import { PAD_SEC, type DispatchWorld } from "./dispatch";
+```
+
+and uses it at L7460 (`padSec: PAD_SEC,`). Task 9's Interfaces block asserts the same thing, L6890:
+
+> `PREVIEW_RENDER_IDLE_LABEL`, `renderLabel(busy, stepsLeft)`, `kindOf(op)`, `PAD_SEC`.
+
+But `PAD_SEC` is not in `dispatch.ts`. Task 6 declares it inside `PreviewContainer.svelte`'s
+`<script>`, L4786-4787:
+
+```ts
+  // §6.8's default context each side. M9 has no UI for it; when one lands it reads from here.
+  const PAD_SEC = 8;
+```
+
+and Task 6's **Produces** list for the module is explicit about what `dispatch.ts` exports
+(L4043-4046):
+
+> **Produces:** `src/lib/render/dispatch.ts` — `type ClipOp` (re-export), `PREVIEW_RENDER_IDLE_LABEL =
+> "▸ RENDER"`, `renderLabel(busy: boolean, stepsLeft: number | null): string`,
+> `interface DispatchWorld`, `renderRequest(target: Target, w: DispatchWorld): SubmitRequest`,
+> `kindOf(op: JobOp): RenderKind`.
+
+No `PAD_SEC`. Task 6's `dispatch.ts` body (L4290-4437) does not declare it either — the only two uses
+of the name in that task are the component-local `const` and the two places the component reads it
+(L4805, L4818).
+
+So Task 9 Step 13 produces `TS2305: Module '"./dispatch"' has no exported member 'PAD_SEC'`, and
+Step 17's gate (L7642-7645, *"`npx vitest run && npm run check`"*, expecting this task's suites green)
+is unreachable — the same shape as finding 1. It also leaves the constant orphaned: Task 9 deletes
+the literal world from `PreviewContainer` (L7467-7468, *"`const world = $derived.by(() => ({ … }))`
+becomes `const world = $derived.by(() => dispatchWorld(target, heads))`, deleting the literal"*), so
+after Task 9 `PAD_SEC` sits unused in a component while the module that needs it cannot see it.
+
+FIX (smallest): move the declaration into `dispatch.ts` in **Task 6**, where the rest of the §7.1
+vocabulary already lives, and have the component import it —
+
+in `dispatch.ts`:
+
+```ts
+/** §6.8's default context each side. M9 has no UI for it; when one lands it reads from here. */
+export const PAD_SEC = 8;
+```
+
+in `PreviewContainer.svelte`, add `PAD_SEC` to the existing
+`import { … } from "../../lib/render/dispatch";` line and delete the local `const`. Task 6's
+Produces list then needs `PAD_SEC` added to it, and Task 9 needs no change at all.
+
+---
+
 ### NON-BLOCKING
 
 **3. `peekOverlapParams` is documented in M9 as returning `OverlapParams | undefined`; it never
@@ -455,6 +557,51 @@ FIX: add a `**`Tests N passed (N)`** for this task's M new files` line to Tasks 
 
 ---
 
+**10. Two `commitPayload` test titles miscount M8's key sets by one; the assertions beneath them are
+correct, so the wrong number is the only thing a reconciler would read.**
+
+Not blocking — both tests pass, because the arrays they assert are right. But each title is a claim
+about `validate_commit`'s contract, stated in the one place someone checking the client against the
+server would look. Task 1, Step 3 — search `payloads.test.ts` for `ten top-level keys` and for
+`eleven clip keys`.
+
+Plan L546-553:
+
+```ts
+  it("emits exactly validate_commit's ten top-level keys with duration_sec at the top", () => {
+    const p = commitPayload(commitArgs());
+    expect(Object.keys(p).sort()).toEqual([
+      "clips", "decode_lanes", "defaults", "duration_sec", "lanes", "master", "mix", "overlaps", "project_bpm",
+    ]);
+```
+
+That array has **nine** entries, and the builder emits nine (L962-989). M8 agrees — `validate_commit`'s
+return, M8 plan L1485-1491, is
+`{"project_bpm", "duration_sec", "defaults", "lanes", "clips", "overlaps", "mix", "master", "decode_lanes"}`,
+nine keys. The title should say nine.
+
+Plan L581-586:
+
+```ts
+  it("emits each clip with exactly validate_commit's eleven clip keys", () => {
+    const p = commitPayload(commitArgs());
+    expect(Object.keys((p.clips as object[])[0]).sort()).toEqual([
+      "a2a", "audio", "detune_cents", "dur_sec", "id", "lane", "loop", "native_bpm", "offset_sec", "start_sec",
+    ]);
+```
+
+**Ten** entries, and the builder emits ten (L930-944). M8's normalised clip dict, M8 plan L1443-1449,
+is `{"id", "lane", "start_sec", "offset_sec", "dur_sec", "loop", "audio", "native_bpm", "detune_cents", "a2a"}`
+— ten. The title should say ten.
+
+For contrast the third one is right: L588's *"a LIST of nine-key rows"* matches both its array
+(L595-597) and M8's overlap dict (M8 plan L1466-1469), nine keys each.
+
+FIX: change "ten top-level keys" to "nine top-level keys" (L546) and "eleven clip keys" to "ten clip
+keys" (L581). No code or assertion changes.
+
+---
+
 **8. Task 7 draws the preview playhead in device pixels under the CSS-pixel transform `drawPeaks`
 leaves behind, so on any display with `devicePixelRatio > 1` the playhead is drawn off the canvas.**
 
@@ -578,3 +725,86 @@ Recorded so a later pass does not re-derive them.
 - **Playwright counts.** `render.spec.ts` contains exactly 6 `test(` rows (L8213-8316), matching
   L7830, L8329, L8341 and L8344. M7's `chains.spec.ts` 4 (M7 plan L3118: *"Expected: `4 passed`"*) and
   `sessionsFilesOverlap.spec.ts` 6 agree with L8340-8341.
+
+---
+
+## C2. Checked and clean — the five regions sitting 1 did not reach
+
+Each row of the sitting-1 gap table was read in sitting 2. What follows is what was checked and
+found sound, so these are declared clean rather than merely unread. Findings 9 and 10 came out of
+this same sweep.
+
+**Task 1 — `payloads.ts`'s six builders (L640-995).** Checked against M8's own source rather than
+against the plan's summary of it. `renderWire` (L726-743) emits exactly `RENDER_WIRE_KEYS` (L673-676)
+key by key and never spreads `RenderSettings`, which is the whole point of the file given
+`_merge`'s unknown-key rejection; `duration_sec` never reaches a `render` object, and `generate`
+alone carries a length under the wire name `duration` (L758). Every builder's refusal matches the
+server's: `cap` quotes `check_cap`'s sentence verbatim (L670), `commitPayload` quotes
+`validate_commit`'s empty-arrangement message (L916, identical to M8 plan L1452), the lane-index
+rule (L918-921) matches M8 plan L1417-1419, the master-head rule (L958-960) matches M8 plan
+L1481-1483, and the a2a mapping `{on, noise, envelope}` + `clip.render` → `null | {render, envelope}`
+(L941-943) with a flat envelope rather than a null (L906-910) matches `validate_envelope`'s refusal.
+There is **one division in this file** and it is safe: `const ratio = a.bpm / c.native_bpm;` (L925)
+runs only under `if (c.native_bpm != null)`, and a zero `native_bpm` yields `Infinity`, which fails
+the `ratio >= 0.5 && ratio <= 2` test and throws a named `PayloadError` — no `NaN` and no silent
+pass. `num` (L691-696) rejects non-finite input before any range test, so no builder can put `NaN` on
+the wire. No rune, no store read, no `structuredClone` — the file is pure, as its header claims.
+- **`settings.current(target)` vs `clip.render` is not a divergence.** `clipRequest` sends
+  `render: w.settings` (L4356) while `commitPayload` sends `renderWire(c.render, …)` (L942), which
+  would be two different objects if M4 kept a per-target map. It does not: M4 plan L48 — *"There is
+  no per-target map in this store"* — and L162, *"this store does not own clip or overlap settings …
+  §7.2 says each clip owns `clip.render`"*. `current(t)` resolves to that same object, so a clip's
+  ▸ RENDER and that clip inside MIXDOWN use one set of settings.
+
+**Task 5 — `renderBlock.ts` (L3471-3563) and `renderBlock.test.ts` (L3370-3459).** The three-way
+dispatch is exhaustive: `Target` has exactly three kinds (M1 plan L637-640,
+`{kind:"none"} | {kind:"clip"; id} | {kind:"overlap"; key}`), so nothing falls through to the clip
+branch by accident, and the `switch (state.clipOp)` after the `=== null` guard covers all four
+`ClipOp` members. Length guards are NaN-safe by construction — `if (!(s.duration_sec > 0) || s.duration_sec > CAP_SEC)`
+(L3521) refuses `NaN` rather than admitting it. `CAP_SEC` is a real export of `payloads.ts` (L669).
+All eleven test cases match the implementation, including the ordering the code comments claim: the
+GPU line outranks the busy line (L3528-3529, pinned by L3406-3408, which sets `busy: true` *and*
+`gpuBusyOther` and expects the GPU sentence), and the padded-span arithmetic checks out
+(`180 + 2*8 = 196 > 184` refuses at L3456; `4 + 2*8 = 20` passes at L3455). Pure, no store import,
+as the header claims. The only untested branch is `clip === null` → `"the selected clip is gone"`
+(L3541); not worth a finding, since Task 6's `renderRequest` throws the same sentence (L4426) and
+that path *is* covered.
+
+**Task 6 — `dispatch.ts` (L4290-4437) and its test.** `renderRequest`'s precedence matches §7.1:
+overlap, then clip, then the session default (L4423-4437), and inside a clip A2A-on wins over the OP
+select (L4348), which is what the plan says row 2 does to row 3. The two throw paths are states
+`renderBlock` already refuses, and each throws the sentence `renderBlock` shows for it
+(`"turn A2A on or choose an op"` L4370 vs L3545; `"the selected clip is gone"` L4426 vs L3541), so
+the belt and the braces say the same thing. `kindOf`'s table (L4329-4332) maps every `JobOp` M9
+submits, and `latentSourceOf` (L4338-4342) uses `renderBlock`'s own `hasLatent` rule, so the gate and
+the builder cannot disagree about what a latent is. No division, no rune, no store read — `dispatch.ts`
+is pure and the world is handed in, which is what makes finding 2 a problem in the *caller* rather
+than here.
+
+**Task 9 — the MasterStrip toggle (L7340-7414) and the `▸ INPAINT OVERLAP` handler (L7550-7624).**
+The toggle's decode `$effect` (L7371-7384) reads `masterSource.url` and writes only `mixBuffer`,
+which no derivation inside that effect reads, and it carries both a `cancelled` flag and a `.catch`,
+so a superseded decode cannot land on a newer one. `chooseSource` (L7364-7369) is an event handler,
+not a derivation, so `masterSource.set` is safe. `masterSource`'s gating is a getter rather than an
+effect (L7152-7168) — the comment at L7152-7154 gives exactly the right reason, and `effective`
+(L7166-7168) means a session whose `mixdown` index no longer addresses a row reads as "preview"
+rather than pointing `refOf` at `undefined`. The inpaint handler's `mine` test compares
+`jobs.active.targetKey === view.selectionKey` (L7600) and its catch writes `jobs.lastError` rather
+than throwing out of a handler (L7607-7612), both matching Task 6's shape. `dispatchWorld` really is
+its own module (L7426), so the two-path import at L7572-7573 is correct — the only thing wrong in
+that import block is `PAD_SEC`, which is finding 9.
+
+**Task 10 — `laneHeader.ts`'s drag helpers and `lifecycle.addClip`'s length resolution (L7840-8120).**
+`writeForgeDrag` (L8017-8022) only sets the duration MIME for a finite positive number, and
+`readForgeDrag` (L8024-8033) re-checks with `Number.isFinite(raw) && raw > 0` — the `raw > 0` half is
+what makes an absent type (`Number("") === 0`, not `NaN`) read as "no length" rather than as a
+zero-length clip, and the plan says so at L8036-8037. `resolveDuration` (L8050-8062) tries the given
+length, then the URL-keyed decode, then a floor it *logs* rather than passes off as a measurement,
+and that log goes through `view.appendLog(…, "error")`, which Task 5 has by then made visible in
+TERMINAL. The length travels beside the ref rather than inside `AudioRef`, so nothing transient
+reaches `ProjectV2` (L7707-7713). Task 7's existing drag-handle assertion survives the change:
+it asserts `expect(setData).toHaveBeenCalledWith("application/x-forge-ref", JSON.stringify(...))`
+(L5455-5458), and `writeForgeDrag` still makes exactly that call as its first statement. Both
+rewritten `writeForgeDrag(e.dataTransfer, …)` call sites are inside an existing
+`e.dataTransfer === null` guard (L3117, L5591), so the non-null parameter type is satisfied. `atSec`
+is read before the first `await` and the plan says why (L8103-8105). No division, no rune trap.
