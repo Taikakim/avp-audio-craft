@@ -161,7 +161,12 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   find . -maxdepth 1 -name '<label>__*.m4a' -exec cp {} /home/kim/evals_aac/model_matrix/ \;
   ```
   (`.wav`/`.z0.npy` stay on Mantu — `leg_sanity`'s z0 check and `Z0_ROOTS` already read from
-  there directly, only the `.m4a` needs to be in the served copy.) Then `score_and_publish.py`
+  there directly, only the `.m4a` needs to be in the served copy.) **Re-hit this the very next
+  day (W, 2026-09-29) on a 25-label, ~700-cell local render** — do the `cp` (or a loop over every
+  touched label) EVERY time you finish a local render batch, not just once per session; it is
+  easy to forget precisely because most of the pipeline (scoring, board rebuild, HTTP publish)
+  reports success regardless, so nothing visibly complains until you go looking for why a cell
+  you just rendered won't play. Then `score_and_publish.py`
   proceeds normally.
 
 ## 4. ⛔ Verify the OUTPUT, not the exit code
