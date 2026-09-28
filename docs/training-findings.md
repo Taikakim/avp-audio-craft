@@ -489,3 +489,42 @@ Whether the b0x/a0x trajectory data already collected (`checkpoint-trajectory-st
 `ablation_velocity_report.py`) is enough to back out an lr/gate/AdaGC combination that would hit
 that curve is open — referred to CONTINUITY (2026-09-28 DM) as an analysis question, not answered
 here.
+
+## 2026-09-29 — full-FT online-vs-EMA audit: a real code bug found along the way, and the results
+
+Kim's question, "did we check that all our full-FTs are rendered from online, not EMA weights?",
+had never been checked. Full audit: every full-FT/fp32cmp checkpoint on disk (107 across 40 run
+dirs) scanned for EMA presence (23 carry one — only runs from 2026-08-04 onward, when EMA was
+added to the trainer), then every full-FT arm (25 labels, fp32cmp excluded once found to actually
+be DoRA adapters, not full-FTs — see `eval/rarity_bracket_manifest.json`'s commit history)
+rendered at cfg7 both online and EMA (where available), so both sit on the board side by side.
+
+**A real bug surfaced doing this, now fixed (`model_matrix_gen.py`, commit `b3db38a`).** The
+2026-09-11 fix that taught `manifest_key()` to treat weights (online/ema) as part of a cell's
+identity only touched the READ side — every live skip-check in the render loop still built its
+own bare key with no weights suffix, so once an online cell existed for a (label,ckpt,cfg,w,
+prompt), an `--weights ema` request for the SAME combo silently collided with it and skip-all'd,
+reporting success while rendering nothing. All 11 first-pass EMA renders in this audit did
+exactly that before the fix landed. Added `cell_key()` as the one place the key format is
+defined; every skip-check and `manifest_key()` itself now call it.
+
+**A second, unrelated process gap also bit this pass** (see the `sa3-canonical-clips` skill,
+2026-09-29 note): local renders don't auto-stage their `.m4a` into the served copy, so ~640 of
+the ~1860 rendered cells sat on Mantu unpublished until caught by spot-checking the live site.
+
+**Results.** `fullft_avp_t256` (ep153) and `fullft_goa_t256` (ep38/69) both compare cleanly.
+Two arms hit a **legitimate, guard-caught failure mode, not a rendering bug**: `fullft_avpaug_
+t1024_fp32_lr1e-4_s1` ep11 and `fullft_suomi_t1024_fp32_lr1e-4_s1` ep11 both have an EMA shadow
+at only ~1-2 half-lives (24% and 47% still its starting weights) — rendering with it produced
+non-finite latents, and `z0_is_finite()` correctly dropped those cells rather than publish
+garbage. This is exactly the "UNCONVERGED EMA" hazard `sa3-training` skill §1c/1d already warns
+about, now with a concrete instance: an early-epoch EMA shadow isn't just "not fully learned
+yet," it can be numerically unstable to sample from at all. The later epoch of both arms (ep19,
+3.45 and 1.82 half-lives respectively) rendered clean.
+
+Per-arm online-vs-EMA availability is now on the board for: `fullft_avp_t256`,
+`fullft_goa_t256`, `fullft_avpaug_t1024_fp32_lr1e-4_s1`, `fullft_biggoa_t1024_fp32_lr1e-4_s1`,
+`fullft_mix3_t1024_fp32_lr1e-4_s1`, `fullft_mixed_avp_goa_t4096`, `fullft_mixed_wd03`,
+`fullft_mixed_wdfix_ddpbug`, `fullft_suomi_t1024_fp32_lr1e-4_s1`, `fullft_suomift_warm_
+avpaug19_t1024_bf16_k5_s1`, `fullft_suomift_warm_goaft_t1024_bf16_k5_s1` — use the dora_table
+`weights` filter or the model_matrix picker to A/B any of them by ear.
