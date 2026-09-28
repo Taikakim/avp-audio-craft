@@ -131,6 +131,27 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   different-steps pass lands as a sibling file and never overwrites.
 - Useful narrowing: `--only-ckpts`, `--only-prompts`, `--only-cfgs`, `--only-strengths`,
   `--limit`, `--time-budget-hours`, `--terminal-only`.
+- **A LOCAL render (this box, `model_matrix_gen.py` run directly) does NOT stage its `.m4a`
+  into the served copy — you must copy it yourself.** (W, 2026-09-28.) `model_matrix_gen.py`
+  writes `.wav`/`.m4a`/`.z0.npy` to `RENDER_DIR` (`Mantu/sa3_lora_runs/model_matrix/`) only; the
+  manifest line lands in the real `manifest.jsonl` (`STAGING` = `~/.cache/evals_aac/model_matrix`,
+  a symlink to `~/evals_aac/model_matrix` since 2026-08-04 — same file either way), but the
+  **served `.m4a`** is never copied there by the renderer itself. `score_and_publish.py`'s
+  `leg_ingest` looks like the fix but is a decoy for this case: it calls
+  `eval/ingest_matrix_cells.py`, which is built for **LUMI** render batches (`*.mmline.json`
+  sidecars per clip) and exits/no-ops on a plain local Mantu dir with none — `leg_ingest` then
+  reports "OK" regardless (it gates on the manifest already having the label, not on whether
+  the ingest actually did anything), so a fresh local-only render publishes a manifest full of
+  entries whose audio 404s. Symptom: `clip_metrics.db` shows 0 rows for the new cells no matter
+  how many times you re-run scoring, because `staged_lines()` filters on the `.m4a` actually
+  existing under `~/evals_aac/model_matrix/`. Fix, after a local `model_matrix_gen.py` render:
+  ```bash
+  cd /run/media/kim/Mantu/sa3_lora_runs/model_matrix
+  find . -maxdepth 1 -name '<label>__*.m4a' -exec cp {} /home/kim/evals_aac/model_matrix/ \;
+  ```
+  (`.wav`/`.z0.npy` stay on Mantu — `leg_sanity`'s z0 check and `Z0_ROOTS` already read from
+  there directly, only the `.m4a` needs to be in the served copy.) Then `score_and_publish.py`
+  proceeds normally.
 
 ## 4. ⛔ Verify the OUTPUT, not the exit code
 
