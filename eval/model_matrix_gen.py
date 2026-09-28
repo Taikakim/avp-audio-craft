@@ -57,10 +57,14 @@ OVERRIDES_PATH = ROOT / "Misc/models_index_overrides.json"
 MODELS_OVERRIDES = json.load(open(OVERRIDES_PATH)) if OVERRIDES_PATH.exists() else {}
 
 CFGS = (1.0, 7.0, 16.0)
-# Kim direct 2026-07-20: drop 0.6 from NEW renders (most models don't need it; speeds
-# the grid up), add 2.0 (1.5 is well-handled by many models, worth seeing past it).
-# Existing 0.6 cells in the manifest are NOT deleted -- they just stop growing.
-STRENGTHS = (1.0, 1.5, 2.0)
+# Kim direct 2026-09-28 (superseding the 2026-07-20 note below): for adapters, only
+# render at w1.0 and w0.6 going forward -- back to including 0.6, dropping 1.5/2.0.
+# Existing 1.5/2.0 cells in the manifest are NOT deleted -- they just stop growing.
+#   (2026-07-20, superseded: "drop 0.6 from NEW renders (most models don't need it;
+#    speeds the grid up), add 2.0 (1.5 is well-handled by many models, worth seeing
+#    past it). Existing 0.6 cells in the manifest are NOT deleted -- they just stop
+#    growing.")
+STRENGTHS = (1.0, 0.6)
 
 
 def strength_sweep(pinned: bool, only_strengths):
