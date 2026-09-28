@@ -35,12 +35,26 @@ def test_no_run_meta_is_a_silent_noop(tmp_path):
     assert mmg.load_adapter_base_weights(_fake_model(torch.nn.Linear(4, 4)), ckpt) is False
 
 
-def test_init_ckpt_path_missing_on_this_machine_is_a_silent_noop(tmp_path):
+def test_no_init_state_ckpt_configured_is_a_silent_noop(tmp_path):
+    """An arm that never used --init_state_ckpt at all -- nothing to load, nothing to warn about."""
+    run_dir = tmp_path / "run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run_meta.json").write_text(json.dumps({"args": {}}))
+    ckpt = run_dir / "step=10.ckpt"
+    ckpt.touch()
+    assert mmg.load_adapter_base_weights(_fake_model(torch.nn.Linear(4, 4)), ckpt) is False
+
+
+def test_init_ckpt_path_missing_on_this_machine_raises(tmp_path):
+    """CONTINUITY's catch (2026-09-28): an arm whose run_meta.json DOES say it was warm-started,
+    but whose init_ckpt is absent (e.g. an unmounted drive), must not silently fall through to
+    rendering against stock medium-base -- that is indistinguishable from bug 1 in spirit."""
     run_dir = tmp_path / "run"
     _write_run_meta(run_dir, tmp_path / "does_not_exist.ckpt")
     ckpt = run_dir / "step=10.ckpt"
     ckpt.touch()
-    assert mmg.load_adapter_base_weights(_fake_model(torch.nn.Linear(4, 4)), ckpt) is False
+    with pytest.raises(FileNotFoundError, match="does not exist on this machine"):
+        mmg.load_adapter_base_weights(_fake_model(torch.nn.Linear(4, 4)), ckpt)
 
 
 def test_good_coverage_loads_and_returns_true(tmp_path):

@@ -231,8 +231,15 @@ def load_adapter_base_weights(model, ckpt_path):
             print(f"[init_state] Warning: couldn't parse {meta_file}: {e}", flush=True)
             continue
         init_ckpt = meta.get("args", {}).get("init_state_ckpt")
-        if not init_ckpt or not Path(init_ckpt).exists():
-            continue
+        if not init_ckpt:
+            continue  # this arm never used warm-start -- nothing to load, silently fine
+        if not Path(init_ckpt).exists():
+            # CONTINUITY's catch (2026-09-28): this arm's run_meta.json SAYS it needs a warm-start
+            # base -- an unmounted drive is not the same case as "never used one" above, and must
+            # not fall through to a silent stock-medium-base render.
+            raise FileNotFoundError(
+                f"[init_state] {ckpt_path} was warm-started from {init_ckpt}, which does not exist "
+                f"on this machine (unmounted drive?) -- refusing to render against stock medium-base")
         import torch as _t
         print(f"[init_state] Loading warm-start base weights from {init_ckpt}...", flush=True)
         _ck = _t.load(str(init_ckpt), map_location="cpu", weights_only=False)
