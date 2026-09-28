@@ -539,12 +539,20 @@ function render(){
     // (compact, uniform height -> preserves the constant-header / aligned-prompt-grid invariant,
     // Kim 2026-07-22); the reader clicks to expand to full height. The empty legacy recipe/tdata
     // labels are folded IN here (G eyeball 2026-07-30: don't show two empty labels above a real box).
+    //
+    // training data moved OUT of cmt-body (W 2026-09-28): it used to live inside the collapsed
+    // <details>, so a commentary column showed NO training-data line at rest while a legacy
+    // (non-commentary) column always showed one via the always-visible .tdata div below -- read
+    // as "training data missing" on the one column that happens to be curated, and the two
+    // branches' different total heights (collapsed one-liner vs. recipe+tdata) also broke the
+    // aligned-prompt-grid invariant this collapse was built to protect. Now BOTH branches end in
+    // the identical fixed-height .tdata div with the identical '—' fallback, so presence and
+    // height match regardless of which branch a model takes.
     h+='<details class=cmt><summary class=cmt-one>'+(cm.one_liner||'commentary')+'</summary><div class=cmt-body>';
     if(cm.why)h+='<div class=cmt-row><b>why:</b> '+cm.why+'</div>';
     if(cm.recipe&&typeof cm.recipe==="object"){h+='<div class=cmt-row><b>recipe:</b><ul class=cmt-rec>';
      for(const k in cm.recipe){if(cm.recipe[k])h+='<li><b>'+k+':</b> '+cm.recipe[k]+'</li>';}h+='</ul></div>';}
     else if(info.recipe)h+='<div class=cmt-row><b>recipe:</b> '+info.recipe+'</div>';
-    if(info.training_data)h+='<div class=cmt-row><b>training data:</b> '+info.training_data+'</div>';
     // compare_against is a list of {target, axis} in the commentary schema, but 10 overrides
     // carry a plain string -- .map() on that threw and blanked every later column (W 2026-09-26).
     const ca=cm.compare_against, cal=Array.isArray(ca)?ca:(ca?[ca]:[]);
@@ -554,6 +562,7 @@ function render(){
     if(st.ckpt)h+='<div class=cmt-row><b>checkpoint:</b> '+st.ckpt+'</div>';
     if(cm.status)h+='<div class=cmt-status>'+cm.status+'</div>';
     h+='</div></details>';
+    h+='<div class=tdata><b>training data:</b> '+(info.training_data||'—')+'</div>';
    }else{
     h+='<div class=recipe><b>recipe:</b> '+(info.recipe||'—')+(st.ckpt?('<br><b>checkpoint:</b> '+st.ckpt):'')+
        (info.note?('<br><i>'+info.note+'</i>'):'')+'</div>';
