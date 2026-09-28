@@ -377,6 +377,16 @@ def build_prompts(n_per_band=3, n_kimlong=3):
         rnd.shuffle(pool)
         for i, p in enumerate(pool[:n_kimlong]):
             prompts.append({"id": f"kl_{i}", "text": p["prompt"], "seed": 1000 + i})
+    # BRACKET_PROMPTS folded into the DEFAULT grid (Kim direct 2026-09-28, choosing between two
+    # agents' judgment calls after a same-day revert/re-add): kl_bracket_0 is the single
+    # most-rated prompt on the whole board (2289 ratings, 2026-09-27 listening pass) and earns a
+    # permanent slot. rb_bracket_0's TEXT is identical to rb_common_0's (same prompt, different
+    # seed 1102008041) -- kept anyway, since it's the seed that carries its own rating history.
+    # This is now 14 prompts -> 127 cells/LoRA-DoRA ckpt (was 109), 42/full-FT (was 36); see the
+    # doc updates alongside this commit (CLAUDE.md, RUNBOOK.md, sa3-canonical-clips skill).
+    for p in BRACKET_PROMPTS:
+        if p["id"] not in {x["id"] for x in prompts}:
+            prompts.append(dict(p))
     return prompts
 
 

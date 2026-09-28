@@ -20,7 +20,7 @@ it had 26, and a whole `_BROKEN` directory was believed all-broken when a third 
 
 | convention | where | what | for |
 |---|---|---|---|
-| **model matrix** (the board) | `/home/kim/evals_aac/model_matrix/` + `manifest.jsonl` | **109 cells** per LoRA ckpt, **36** per full-FT ckpt | the shared board, census, scoring |
+| **model matrix** (the board) | `/home/kim/evals_aac/model_matrix/` + `manifest.jsonl` | **127 cells** per LoRA ckpt, **42** per full-FT ckpt | the shared board, census, scoring |
 | **standard_clips** (sanity listen) | **`<run_root>/<arm>/standard_clips/`** — inside the checkpoint dir | **13 clips** per ckpt | a campaign's own quick A/B, often rendered by whoever ran the campaign |
 
 **Coverage check, both at once:**
@@ -36,13 +36,18 @@ find <run_root> -name standard_clips -type d -exec sh -c 'echo "$1: $(ls "$1" | 
 Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 16.0)`,
 `STRENGTHS = (1.0, 1.5, 2.0)`, `STEPS = 24`, `DURATION = 20.0`, `FPS = 44100/4096 = 10.7666 Hz`.
 
-**The 12 canonical prompts** (`build_prompts(n_per_band=3, n_kimlong=3)`) — 9 rarity-band +
-3 long-form. Ids are stable and are what every board row keys on:
-`rb_common_0/1/2`, `rb_mid_3/4/5`, `rb_rare_6/7/8`, `kl_0/1/2`.
+**The 14 canonical prompts** (`build_prompts(n_per_band=3, n_kimlong=3)`) — 9 rarity-band +
+3 long-form + **2 bracket** (`BRACKET_PROMPTS`, folded into the default grid 2026-09-28, Kim
+direct: `kl_bracket_0` is the single most-rated prompt on the whole board, 2289 ratings as of the
+2026-09-27 listening pass; `rb_bracket_0` shares `rb_common_0`'s TEXT — same prompt, different
+seed `1102008041` — kept anyway for its own separate rating history). Was 12/109/36 before that
+date; if you see those numbers in an older doc, journal entry or commit message, they predate the
+change. Ids are stable and are what every board row keys on:
+`rb_common_0/1/2`, `rb_mid_3/4/5`, `rb_rare_6/7/8`, `kl_0/1/2`, `rb_bracket_0`, `kl_bracket_0`.
 
 **Cell counts — match the arm's SIBLINGS, don't invent a set:**
-- **LoRA/DoRA arm:** 12 prompts × 3 cfgs × 3 strengths = **108**, **+1 native** = **109**
-- **Full-FT arm:** 12 × 3 × **1** = **36** — no adapter, so no strength axis. Switched on by
+- **LoRA/DoRA arm:** 14 prompts × 3 cfgs × 3 strengths = **126**, **+1 native** = **127**
+- **Full-FT arm:** 14 × 3 × **1** = **42** — no adapter, so no strength axis. Switched on by
   `label.startswith("fullft_")`, so **a full fine-tune's label MUST start with `fullft_`**
   or it gets a meaningless 3× strength sweep and a wrong cell count.
 - **`_ptm` arm (adapter on the POST-TRAINED `medium`):** rendered at **8 steps, cfg 1,
@@ -61,6 +66,14 @@ Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 16.0)
   differ in `__st<N>` are therefore not automatically an unfair pair; a clip rendered off its
   model's native config is. And `medium` samples ping-pong (`rf_denoiser`) while `medium-base`
   samples euler (`rectified_flow`) — compare only within a sampler.
+- **A `_ptm` arm is NOT its own board row** (spec `docs/superpowers/specs/2026-08-02-eval-native-ptm-length-render-design.md`
+  §10). It is the base row's post-trained VARIANT: on `model_matrix.html` and `dora_table.html`
+  the listener selects the base model and ticks **`post-trained`**, which plays the `_ptm` clip at
+  that same cfg/w/prompt (cells without one are dimmed). `native` works the same way, and the
+  two combine (ptm+native). So render ptm under the SAME label + `_ptm` (the renderer does that
+  for you with `--pt-medium`) and the SAME checkpoint tag as the base cells, or the checkbox
+  finds nothing. model_matrix only swapped playback from 2026-09-26 (W): before that it dimmed
+  and listed `_ptm` labels as separate models, which is why the directive looked missing.
 
 **The native cell** — rendered by DEFAULT, with **no flag**: one full trained-context-length render, `kl_0`, cfg 7,
 w100. Length = `frames / FPS` → T512 = 47.55 s (files tagged `__d48`), T256 = 23.78 s,
@@ -174,6 +187,12 @@ Used by optimizer/LR campaigns for a fast listen without touching the board. Wri
   interpretable later, and how this convention was reconstructed at all.
 
 ## 6. After rendering
+
+- **Checkpoint tags must match across a model's cells.** The board keys cells on
+  `model|ckpt|cfg|w|pid`, so a batch ingested under `step6340` sits in a DIFFERENT picker entry
+  from grid cells under `step=6340` (model_matrix_gen's tag). Demo/sweep ingests that reuse a
+  canonical prompt id with a different text or seed must keep a distinct tag on purpose, and
+  should say so in the name (`demoNNNN`), not differ by one `=`.
 
 - Clips stage to `evals_aac/` (AAC 192k, the serving codec); `manifest.jsonl` gains one line
   per cell. Boards derive per-model cfg/strength availability **from the manifest** — never
