@@ -136,7 +136,7 @@ These are verified against WINTERMUTE's M8 (`parse_render`, `parse_chain`, `vali
 
 | frame | owner | testids |
 |---|---|---|
-| `MixdownSlot` | M1 | `mixdown-button`, `mixdown-canvas` (220×26), `mixdown-play`; `mixdownLabel(busy, stepsLeft)` → `SAMPLING · N steps left`. Props `busy`/`stepsLeft` exist on TopBar but App does not pass them |
+| `MixdownSlot` | M1 | `mixdown-button`, `mixdown-canvas` (220×26), `mixdown-play`; `mixdownLabel(busy, stepsLeft)` → `SAMPLING · N steps left`. Props `mixdownBusy`/`mixdownStepsLeft` exist on TopBar, which already forwards them to `MixdownSlot` as `busy`/`stepsLeft`; App passes neither |
 | `PreviewContainer` | M1 | `preview-render`, `preview-history`, `preview-wave` (900×30), `preview-play`, `preview-length`, `preview-drag-handle`, `preview-use-settings`, `preview-replace-clip`. Mounted propless in BottomPane |
 | root raster border | M1 | `canvas.raster-border`, 300×170, `data-region="raster-border"` |
 | master strip A/B toggle | M5 | `master-source-preview`, `master-source-mixdown` — MIXDOWN disabled, always visible |
@@ -239,7 +239,10 @@ Consumed from `src/lib/forge/types.ts` (M1 T3, verified against the file — quo
 - `interface ForgeLane { index: 0|1|2|3; name: string; muted: boolean; solo: boolean; gain: number; chain: LaneChain }`
 - `interface ForgeClip { id; lane: 0|1|2|3; start_sec; offset_sec; dur_sec; loop; audio: AudioRef;
   native_bpm: number|null; detune_cents; downbeats_sec: number[]; render: RenderSettings;
-  a2a: null | { on: boolean; noise: number; envelope: Envelope }; latentState; history: AudioRef[] }`
+  a2a: null | { on: boolean; noise: number; envelope: Envelope }; latentState; history: AudioRef[];
+  previewAudio: AudioRef | null; encodedAtSec?: number }` — `previewAudio` is **required** on the
+  type (M5 T10, restated at m7:147-149), in-memory only and never serialised (§9.2), so every clip
+  literal this milestone constructs sets it to `null`
   — note the **client** `a2a` shape is `{on, noise, envelope}`; the **wire** shape is
   `null | {render, envelope}`. Mapping them is this task's job (Fact 2).
 - `interface OverlapParams { curve: Envelope; chroma_xfade: boolean; override: boolean;
@@ -276,7 +279,9 @@ semitones}` — key for key M8's `CHAIN_DEFAULTS`, and `fetchLatchHeads(): Promi
 Consumed from `src/lib/stores/arrangement.svelte.ts` (M5 T1, extended by M7 T3):
 `arrangement.bpm: number`, `.lanes: ForgeLane[]`, `.clips: ForgeClip[]`,
 `.overlaps: Overlap[]` (**derived**, `interface Overlap {key; lane: 0|1|2|3; start_sec; end_sec; a_id; b_id}` —
-no params on it), `.peekOverlapParams(key): OverlapParams | undefined` (non-seeding, M7 T3),
+no params on it), `.peekOverlapParams(key): OverlapParams` (non-seeding, M7 T3 — it never returns
+`undefined`; for an unstored key it returns a fresh `OVERLAP_DEFAULT`-shaped copy that is **not**
+written back, m7 plan:2460-2465),
 `.mix: MixSpec`, `.master: MasterChain`, `.arrangementEndSec: number`.
 
 Consumed from `src/lib/stores/settings.svelte.ts` (M4 T?, verified —
@@ -434,7 +439,9 @@ describe("generatePayload", () => {
   });
 
   it("refuses a length over the 184 s cap before the round trip", () => {
-    expect(() => generatePayload(settings({ duration_sec: CAP_SEC + 1 }))).toThrow(/184/);
+    // The prompt guard runs before the cap (the server's own precedence in `_generate_impl`), so
+    // this case must carry a prompt or it throws `prompt is required` and never reaches /184/.
+    expect(() => generatePayload(settings({ prompt: "dub", duration_sec: CAP_SEC + 1 }))).toThrow(/184/);
   });
 
   it("refuses an empty prompt -- _generate_impl raises `prompt is required`", () => {
@@ -521,7 +528,7 @@ describe("inpaintPayload -- spec 6.8, validated by M8 validate_inpaint", () => {
     cfgScale: 6,
   };
 
-  it("emits exactly the eight keys validate_inpaint reads, with pad_sec defaulting to 8", () => {
+  it("emits exactly the seven keys validate_inpaint reads, with pad_sec defaulting to 8", () => {
     const p = inpaintPayload(args);
     expect(Object.keys(p).sort()).toEqual(["a", "b", "chroma_xfade", "curve", "pad_sec", "region", "render"]);
     expect(p.pad_sec).toBe(8);
@@ -543,7 +550,7 @@ describe("inpaintPayload -- spec 6.8, validated by M8 validate_inpaint", () => {
 });
 
 describe("commitPayload -- spec 6.9, validated by M8 validate_commit", () => {
-  it("emits exactly validate_commit's ten top-level keys with duration_sec at the top", () => {
+  it("emits exactly validate_commit's nine top-level keys with duration_sec at the top", () => {
     const p = commitPayload(commitArgs());
     expect(Object.keys(p).sort()).toEqual([
       "clips", "decode_lanes", "defaults", "duration_sec", "lanes", "master", "mix", "overlaps", "project_bpm",
@@ -578,7 +585,7 @@ describe("commitPayload -- spec 6.9, validated by M8 validate_commit", () => {
     expect(wired.envelope).toEqual({ points: [0.25, 0.25, 0.25, 0.25], curves: [0, 0, 0] });
   });
 
-  it("emits each clip with exactly validate_commit's eleven clip keys", () => {
+  it("emits each clip with exactly validate_commit's ten clip keys", () => {
     const p = commitPayload(commitArgs());
     expect(Object.keys((p.clips as object[])[0]).sort()).toEqual([
       "a2a", "audio", "detune_cents", "dur_sec", "id", "lane", "loop", "native_bpm", "offset_sec", "start_sec",
@@ -1157,6 +1164,10 @@ describe("submit", () => {
       .mockImplementationOnce(() => new Promise<JobRecord>((res) => { release = res; }))
       .mockImplementationOnce(async () => done({ job_id: "forge-2" }));
     const first = jobs.submit(SUBMIT);
+    // `submit` suspends at `await forgeApi.submitJob(...)`, so the first call has not reached
+    // `pollJob` yet -- start the second only once it has, or the second consumes the first mock
+    // (the never-resolving one) and `await second` hangs.
+    await vi.waitFor(() => expect(jobs.active?.forgeJobId).toBe("forge-1"));
     const second = jobs.submit({ ...SUBMIT, targetKey: "clip:c9" });
     release(done({ job_id: "forge-1" }));
     await expect(first).resolves.toBeNull();
@@ -2016,7 +2027,9 @@ still *serialised* and *restored*, so a saved-and-reloaded session keeps its his
 - Create: `latent-forge/src/lib/render/history.svelte.ts`,
   `latent-forge/src/lib/render/__tests__/history.test.ts`
 - Modify: `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (M7 T9 — `serializeProject`,
-  `validateProjectV2`, `applyProject`, `workKey`),
+  `validateProjectV2`, `applyProject`),
+  `latent-forge/src/lib/forge/sessionController.svelte.ts` (M7 T9 — `workKey` lives here, not in
+  the serialiser; Step 7 (f) moves it out and rewrites its four call sites),
   `latent-forge/src/lib/forge/__tests__/projectSerializer.test.ts` (M7 T9)
 
 **Interfaces.**
@@ -2040,8 +2053,11 @@ below): `serializeProject(opts: {name: string; backbone?: string}): ProjectV2`,
 `validateProjectV2(raw: unknown): ProjectV2` (its local `bad(field)` helper throws
 `` new Error(`not a v2 project: ${field} is missing or the wrong type`) ``, and its local guards are
 `isObj`, `isNum`, `isBool`, `isStrOrNull`, `isLaneIndex`), `applyProject(project: ProjectV2,
-opts?: {restoreModel?: boolean}): void`, and the module-private `workKey(p: ProjectV2): string`
-used by `SessionController`.
+opts?: {restoreModel?: boolean}): void`.
+
+Consumed from `src/lib/forge/sessionController.svelte.ts` (M7 T9, verified): the module-private
+`workKey(p: ProjectV2): string` (m7 plan:6258-6264) — it is declared **in this file**, beside
+`class SessionController`, **not** in `projectSerializer.svelte.ts`. Step 7 (f) moves it.
 
 Produced by this task, for Task 1, Task 4 and Writer B: `class HistoryStore`, `const history`,
 exactly as the brief pre-declares:
@@ -2416,8 +2432,13 @@ function isRenderIndex(v: unknown, renders: unknown[]): boolean {
   history.restore(project.renders, project.mixdown, project.preview);
 ```
 
-(f) Change `workKey` and export it under a name the test can reach. It is module-private today and
-`SessionController` is its only caller, so renaming the export costs nothing:
+(f) **Move** `workKey` out of `latent-forge/src/lib/forge/sessionController.svelte.ts` — where M7 T9
+declares it (m7 plan:6258-6264), module-private, directly above `class SessionController` — into
+`projectSerializer.svelte.ts`, exported as `unsavedWorkKey`, and delete the original. Do not add a
+second copy: an `unsavedWorkKey` written here while `SessionController` keeps its own `workKey`
+leaves the Fact-11 decision with no effect and a passing test against dead code. The direction is
+safe — `sessionController.svelte.ts` already imports from `./projectSerializer.svelte`
+(m7:6216-6220), so no cycle is created; import `unsavedWorkKey` back alongside those names:
 
 ```ts
 /**
@@ -2439,8 +2460,10 @@ export function unsavedWorkKey(p: ProjectV2): string {
 }
 ```
 
-and replace the four `workKey(` call sites in `SessionController` (m7 plan:6301, 6408, 6424, 6434)
-with `unsavedWorkKey(`.
+and in `sessionController.svelte.ts` delete the old `function workKey(…)` and replace its four call
+sites (m7 plan:6301, 6408, 6424, 6434) with `unsavedWorkKey(`, adding the name to the existing
+`import { … } from "./projectSerializer.svelte";`. After this step `grep -n 'function workKey'
+latent-forge/src` must return nothing.
 
 - [ ] **Step 8: Run the serialiser and session suites, expect pass**
 
@@ -2513,8 +2536,9 @@ the same thing**.
 - Modify: `latent-forge/src/lib/mix/signalPath.ts` (M7 T3 — append two pure functions),
   `latent-forge/src/lib/mix/__tests__/signalPath.test.ts` (M7 T3)
 - Modify: `latent-forge/src/ui/topbar/MixdownSlot.svelte` (M1 T10),
-  `latent-forge/src/ui/shell/TopBar.svelte` + `latent-forge/src/App.svelte` (M1 T9/T10 — pass
-  `busy`/`stepsLeft`, which exist as props but are never passed),
+  `latent-forge/src/App.svelte` (M1 T9 — pass `mixdownBusy`/`mixdownStepsLeft`, which exist as
+  props on `TopBar` and are already forwarded by it, but which App never passes; `TopBar.svelte`
+  itself is **not** modified),
   `latent-forge/src/ui/mix/MixSignalPath.svelte` (M7 T5),
   `latent-forge/src/ui/mix/__tests__/MixSignalPath.component.test.ts` (M7 T5)
 - Modify: `docs/latent-forge/extract_help.mjs` (two `NEW_STRINGS` entries), the regenerated
@@ -2554,15 +2578,29 @@ Consumed from `src/lib/stores/arrangement.svelte.ts` (M5 T1 + M7 T3): `arrangeme
 Consumed from `src/lib/stores/settings.svelte.ts` (M4): `settings.defaults: RenderSettings`,
 `settings.effectiveCfg(t: Target): number`.
 
-Consumed from `src/lib/audio/waveform.ts` (M1 T15, re-homed unchanged, used by M5 T? exactly this
-way): `peaksFor(url: string, buffer: AudioBuffer | null, columns: number, fromSec: number,
-toSec: number): Promise<Peaks>` and `drawPeaks(...)`; `interface Peaks { columns: number;
-data: Float32Array }` (pairs of lo/hi per column).
+Consumed from `src/lib/audio/waveform.ts` (M1 T15, re-homed unchanged from
+`sa3-studio/src/lib/waveform.ts`, verified against that file — it is in this repo):
+`peaksFor(url: string, buffer: AudioBuffer, columns: number, fromSec?: number, toSec?: number): Peaks`
+— **synchronous**, and `buffer` is **not** nullable; its first statement reads `buffer.duration`
+(waveform.ts:56-70), and M5's only caller guards the buffer and calls it synchronously.
+`drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string, opts?: {background?: string}): void`
+— **canvas first, three required arguments**, and it resizes the backing store and installs the DPR
+transform itself (waveform.ts:80-97), so the width and height are values it computes, not values a
+caller passes. `interface Peaks { columns: number; data: Float32Array }` (pairs of lo/hi per column).
 
-Consumed from `src/lib/stores/transport.svelte.ts` (M5 T3): `playback.preload(url)`,
-`playback.seek(sec)`. Preview playback is independent of the timeline transport and **starting one
-stops the other** (§4.5) — Writer B owns that rule for the preview container; this task applies the
-same rule to the MIXDOWN slot's `▶`.
+Consumed from `src/lib/audio/transport.ts` (M5): `class Transport` — used here only as a lazy
+**decode-only** engine, to get the `AudioBuffer` `peaksFor` requires.
+
+Consumed from `src/lib/render/previewPlayer.svelte.ts` (**Task 7**): `previewPlayer.load(url, durSec)`,
+`.toggle()`, `.scrubAt(sec)`, `.playing`, `.url`. Preview playback is independent of the timeline
+transport and **starting one stops the other** (§4.5); `previewPlayer` is where that rule lives — it
+registers on `soloBus` as `AUDIO_SOURCE_PREVIEW`. M5's `playback` store is the **arrangement**
+transport: its `seek` moves the timeline playhead and its `preload` starts no sound, so neither is
+what the MIXDOWN slot's `▶` and scrub want. **Ordering:** this makes Task 4 Step 8 depend on Task 7
+Steps 3-4, which produce `soloBus.ts` and `previewPlayer.svelte.ts`. Build those two files before
+Task 4 Step 8 — they are pure additions with no dependency of their own on the rest of Task 7, so
+either land them early or run Task 7 before Task 4. Task 4's own gate (Step 12, `npm run check`)
+cannot pass until they exist.
 
 Consumed from `src/lib/forge/api.ts` (M1 T5): `forgeApi.audioUrl(ref: AudioRef): string`.
 
@@ -2571,7 +2609,9 @@ its payload is a bare `JSON.stringify(AudioRef)` — `parseForgeRefPayload(raw)`
 `JSON.parse(raw)` then `isAudioRef(parsed) ? parsed : null`.
 
 Produced: `MIXDOWN_TARGET_KEY`, `mixdownBlock()`, `runMixdown()`, `mixdown` (the store holding the
-last commit's stages), `signalKeyOf`, `mergeSignalPath`, `HELP.mixdownButton`, `HELP.mixdownWave`.
+last commit's stages), `signalInputNow()` (exported from `mixdown.svelte.ts`, per Step 5 — one
+builder for the key the commit is stamped with and the key the component compares against),
+`signalKeyOf`, `mergeSignalPath`, `HELP.mixdownButton`, `HELP.mixdownWave`.
 
 - [ ] **Step 1: Write the failing tests for the action module and the merge**
 
@@ -2580,14 +2620,26 @@ last commit's stages), `signalKeyOf`, `mergeSignalPath`, `HELP.mixdownButton`, `
 ```ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { arrangement } from "../../stores/arrangement.svelte";
+import { forgeApi } from "../../forge/api";
+import type { JobRecord } from "../../forge/types";
+import { signalKeyOf } from "../../mix/signalPath";
 import { jobs } from "../jobs.svelte";
 import { history } from "../history.svelte";
-import { MIXDOWN_TARGET_KEY, mixdown, mixdownBlock, runMixdown } from "../mixdown.svelte";
+import { MIXDOWN_TARGET_KEY, mixdown, mixdownBlock, runMixdown, signalInputNow } from "../mixdown.svelte";
 
 const REF = { kind: "upload", sha256: "a".repeat(64) } as const;
 
 function addClip() {
   return arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF, nativeBpm: 120 });
+}
+
+/** A finished JobRecord, the same shape `jobs.test.ts`'s own `done()` builds. */
+function done(patch: Partial<JobRecord> = {}): JobRecord {
+  return {
+    ok: true, job_id: "forge-1", op: "commit", payload: {}, state: "done", position: 0,
+    progress: null, result: { urls: ["/files/renders/mix.wav"], meta: {} }, error: null,
+    created: 1, started: 1, finished: 2, ...patch,
+  } as JobRecord;
 }
 
 beforeEach(() => {
@@ -2655,14 +2707,20 @@ describe("runMixdown", () => {
   it("stores a finished commit's meta.stages with the signal key of the arrangement it described", async () => {
     addClip();
     vi.spyOn(mixdown, "heads").mockResolvedValue({});
-    const entry = { job_id: "mix-1", forge_job_id: "forge-1", file: "mix.wav", label: "MIX", kind: "mix" as const, dur_sec: 40, source_clip_id: null, created: 1 };
-    vi.spyOn(jobs, "submit").mockImplementation(async () => {
-      mixdown.acceptStages([{ label: "MIX", on: true, note: "(1+2) + (3+4)", seconds: 2.5 }]);
-      return entry;
-    });
+    // Mock the TRANSPORT, not `jobs.submit`: the key is stamped by Step 5's `jobs.onDone` hook,
+    // which only fires from inside a real `submit`. A `jobs.submit` mock that calls
+    // `acceptStages([...])` with one argument defaults `key` to `this.key`, which `reset()` just
+    // set to null -- the test would then assert the very wiring it had stubbed out.
+    vi.spyOn(forgeApi, "submitJob").mockResolvedValue({ ok: true, job_id: "forge-1", position: 0 });
+    vi.spyOn(forgeApi, "pollJob").mockResolvedValue(done({
+      job_id: "forge-1",
+      op: "commit",
+      result: { urls: ["/files/renders/mix.wav"], meta: { stages: [{ label: "MIX", on: true, note: "(1+2) + (3+4)", seconds: 2.5 }] } },
+    }));
+    const expected = signalKeyOf(signalInputNow());
     await runMixdown();
     expect(mixdown.stages).toHaveLength(1);
-    expect(mixdown.key).not.toBeNull();
+    expect(mixdown.key).toBe(expected);
   });
 
   it("leaves the stages untouched when the commit fails", async () => {
@@ -2893,7 +2951,7 @@ export async function runMixdown(): Promise<void> {
       lanes: arrangement.lanes,
       clips: arrangement.clips,
       overlaps: arrangement.overlaps,
-      overlapParamsOf: (key) => arrangement.peekOverlapParams(key) ?? OVERLAP_FALLBACK(),
+      overlapParamsOf: (key) => arrangement.peekOverlapParams(key),
       mix: arrangement.mix,
       master: arrangement.master,
       decodeLanes: false,
@@ -2915,14 +2973,12 @@ export async function runMixdown(): Promise<void> {
 }
 ```
 
-`OVERLAP_FALLBACK()` is M1 T4's `OVERLAP_DEFAULT` cloned — `peekOverlapParams` is the
-**non-seeding** read (M7 T3), so a derived overlap whose params were never edited returns
-`undefined` and must fall back rather than seed the store from inside a submit path:
-
-```ts
-import { OVERLAP_DEFAULT } from "../forge/defaults";
-const OVERLAP_FALLBACK = () => structuredClone(OVERLAP_DEFAULT);
-```
+`peekOverlapParams` is the **non-seeding** read (M7 T3) and **supplies the default itself**: for an
+overlap whose params were never edited it returns a fresh `OVERLAP_DEFAULT`-shaped copy that is not
+written back (m7 plan:2460-2465, and M7's own test at m7:2259 asserts the unstored key reads as a
+usable object). So there is nothing to fall back to — no `?? OVERLAP_FALLBACK()`, no
+`OVERLAP_DEFAULT` import here. The reason to use the peek at all is the same either way: the
+seeding `overlapParams(key)` would write to the store from inside a submit path.
 
 - [ ] **Step 5: Store the finished commit's stages**
 
@@ -3057,10 +3113,11 @@ gets peaks, scrub, and `draggable`.
   // the MIX tab's button (§7.1: "same as the row above").
   import { HELP } from "../../lib/help/strings";
   import { forgeApi } from "../../lib/forge/api";
-  import { drawPeaks, peaksFor, type Peaks } from "../../lib/audio/waveform";
+  import { drawPeaks, peaksFor } from "../../lib/audio/waveform";
+  import { Transport } from "../../lib/audio/transport";
   import { history } from "../../lib/render/history.svelte";
   import { mixdownBlock, runMixdown } from "../../lib/render/mixdown.svelte";
-  import { playback } from "../../lib/stores/transport.svelte";
+  import { previewPlayer } from "../../lib/render/previewPlayer.svelte";
   import { mixdownLabel } from "./mixdown";
 
   interface Props {
@@ -3070,47 +3127,73 @@ gets peaks, scrub, and `draggable`.
   let { busy = false, stepsLeft = null }: Props = $props();
 
   let canvasEl = $state<HTMLCanvasElement>();
-  let peaks = $state<Peaks | null>(null);
-  let playing = $state(false);
+  let buffer = $state<AudioBuffer | null>(null);
 
   const label = $derived(mixdownLabel(busy, stepsLeft));
   const block = $derived(mixdownBlock());
   const entry = $derived(history.mixdown === null ? null : history.renders[history.mixdown] ?? null);
   const url = $derived(entry === null ? null : forgeApi.audioUrl(history.refOf(entry)));
 
-  // Reads url, writes `peaks` -- an $effect, NOT a $derived (M7 Global Constraint: no writes
-  // inside a $derived), and guarded so a superseded load cannot overwrite a newer one.
+  // ■ only when THIS slot's audio is the loaded one -- the preview container drives the same
+  // singleton, and a mix playing is not the same thing as a preview playing.
+  const playing = $derived(previewPlayer.playing && previewPlayer.url === url);
+
+  /** Decode-only Transport, the same lazy accessor Task 7's PreviewContainer uses: a module-level
+   *  `new Transport()` throws at IMPORT time under jsdom. `peaksFor` needs a real `AudioBuffer`. */
+  let _decoder: Transport | null | undefined;
+  function decoder(): Transport | null {
+    if (_decoder === undefined) {
+      try { _decoder = new Transport(); } catch { _decoder = null; }
+    }
+    return _decoder;
+  }
+
+  // Reads url, writes `buffer` -- an $effect, NOT a $derived (Global constraint 4: no writes
+  // inside a $derived), and guarded so a superseded load cannot overwrite a newer one. The
+  // `.catch` is not optional: `mixdownSlotWired.test.ts` stubs no fetch.
   $effect(() => {
     const u = url;
-    const dur = entry?.dur_sec ?? 0;
-    if (u === null || canvasEl === undefined) { peaks = null; return; }
+    if (u === null) { buffer = null; return; }
     let live = true;
-    void peaksFor(u, null, canvasEl.width, 0, dur).then((p) => { if (live) peaks = p; });
+    decoder()?.preload(u).then((b) => { if (live) buffer = b; }).catch(() => { if (live) buffer = null; });
     return () => { live = false; };
   });
 
   $effect(() => {
     if (canvasEl === undefined) return;
+    const b = buffer;
     const ctx = canvasEl.getContext("2d");
     if (ctx === null) return;
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-    if (peaks !== null) drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height);
+    if (b === null || url === null) return;
+    // `drawPeaks(canvas, peaks, color)` -- canvas first, three args, and `peaksFor` is
+    // SYNCHRONOUS and takes a non-null AudioBuffer (sa3-studio/src/lib/waveform.ts:56-84, the
+    // file M1 T15 re-homes verbatim). Global constraint 5: a token can come back "", so the
+    // colour carries a literal fallback or `fillStyle = ""` is a silent no-op.
+    drawPeaks(
+      canvasEl,
+      peaksFor(url, b, Math.max(1, canvasEl.width), 0, entry?.dur_sec ?? 0),
+      getComputedStyle(canvasEl).getPropertyValue("--accent").trim() || "#4ec9b0",
+    );
   });
 
   function scrub(e: MouseEvent) {
-    if (entry === null || canvasEl === undefined) return;
+    if (entry === null || url === null || canvasEl === undefined) return;
     const rect = canvasEl.getBoundingClientRect();
     // rect.width, not canvas.width: the backing store is 220 px but CSS may size it otherwise.
     const frac = rect.width > 0 ? Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) : 0;
-    playback.seek(frac * entry.dur_sec);
+    previewPlayer.load(url, entry.dur_sec);
+    void previewPlayer.scrubAt(frac * entry.dur_sec);
   }
 
   function togglePlay() {
-    if (url === null) return;
-    // §4.5: preview playback is independent of the timeline transport; starting one stops the other.
-    playing = !playing;
-    if (playing) void playback.preload(url);
-    else playback.seek(0);
+    if (url === null || entry === null) return;
+    // §4.5: preview playback is independent of the timeline transport, and starting one stops the
+    // other. Writer B's `previewPlayer` owns that rule (it registers on the solo bus); M5's
+    // `playback` is the ARRANGEMENT transport, so driving it from here would rewind the
+    // operator's timeline instead of playing the mix.
+    previewPlayer.load(url, entry.dur_sec);
+    void previewPlayer.toggle();
   }
 
   function onDragStart(e: DragEvent) {
@@ -3148,12 +3231,16 @@ gets peaks, scrub, and `draggable`.
 The `<style>` block is unchanged — Fact 12: *"No drawing for the MIXDOWN slot … the spec text and
 M1/M5 frames are the design."*
 
-Then pass the two props that already exist but are never passed. In
-`latent-forge/src/ui/shell/TopBar.svelte` (M1 T10) forward `busy`/`stepsLeft` to `<MixdownSlot>`,
-and in `latent-forge/src/App.svelte` (M1 T9) pass them from the store:
+Then pass the two props that already exist but are never passed. **`TopBar.svelte` needs no change**
+— M1 T10 already declares `mixdownBusy` / `mixdownStepsLeft` (m1 plan:5317-5318, 5338-5339) and
+already forwards them as `<MixdownSlot busy={mixdownBusy} stepsLeft={mixdownStepsLeft} />`
+(m1:5396). `busy`/`stepsLeft` are **MixdownSlot's** prop names, not TopBar's; passing them to
+`<TopBar>` would be dropped silently by `$props()` destructuring and reported by `svelte-check` as
+excess props, failing Step 12's `npm run check` gate. Only `latent-forge/src/App.svelte` (M1 T9)
+changes, and it uses M1's own names:
 
 ```svelte
-  <TopBar … busy={jobs.busy} stepsLeft={jobs.stepsLeft} />
+  <TopBar … mixdownBusy={jobs.busy} mixdownStepsLeft={jobs.stepsLeft} />
 ```
 
 - [ ] **Step 9: Wire M7's two MIX-tab buttons**
@@ -3774,19 +3861,15 @@ Mount it in `latent-forge/src/ui/prompt/PromptSigmaTab.svelte` (M4), immediately
 bar, with the key the pane's own target uses:
 
 ```svelte
-  <InlineError targetKey={targetKeyOf(view.selection)} />
+  <InlineError targetKey={view.selectionKey} />
 ```
 
-where `targetKeyOf` is the shared spelling of a target as a string — declared once in
-`renderBlock.ts` beside `renderBlock`, because `jobs.submit`, `InlineError` and Writer B's RENDER
-all need the same one:
-
-```ts
-/** The string `jobs.lastError.targetKey` is keyed by. One spelling, used by every render control. */
-export function targetKeyOf(t: Target): string {
-  return t.kind === "none" ? "session" : t.kind === "clip" ? `clip:${t.id}` : `overlap:${t.key}`;
-}
-```
+`view.selectionKey` is M1 T7's existing derived, `targetKey(view.selection)` (m1 plan:3183), and
+`targetKey` is M1 T3's exported spelling of a target as a string (m1 plan:712-719). **Do not declare
+a second one.** The whole §9.7 surface is a string match between the key `jobs.submit` stored and
+the key `InlineError` compares, so one spelling is the point; the header's *"Names inherited — do
+not redeclare them"* rule covers exactly this, and Writer B's `▸ RENDER` already imports `targetKey`
+from `../forge/types`. `renderBlock.ts` adds nothing here.
 
 (Task 4's `MIXDOWN_TARGET_KEY = "mixdown"` sits outside this scheme on purpose — a commit has no
 target.)
@@ -3948,10 +4031,13 @@ half-works between commits.
   `latent-forge/src/lib/stores/__tests__/clipOp.test.ts`,
   `latent-forge/src/ui/prompt/__tests__/previewRender.test.ts`,
   `latent-forge/src/ui/prompt/__tests__/promptSigmaTabOp.test.ts`
-- Modify: `latent-forge/src/lib/forge/types.ts` (`ClipOp`; `ForgeClip.op`),
+- Modify: `latent-forge/src/lib/forge/types.ts` (`ClipOp`; `CLIP_OPS`, moved here from M4's
+  `targetBar.ts`; `ForgeClip.op`),
+  `latent-forge/src/ui/prompt/targetBar.ts` (M4 T8 — its `CLIP_OPS` becomes a re-export of the
+  one in `forge/types.ts`, so the OP select and `validateProjectV2` read one array),
   `latent-forge/src/lib/render/renderBlock.ts` (Writer A T5 — re-export `ClipOp` instead of
   declaring it), `latent-forge/src/lib/stores/arrangement.svelte.ts` (seed `op: null` in `addClip`,
-  add `setClipOp`), `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (M7 T8 — `isClip`
+  add `setClipOp`), `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (M7 T9 — `isClip`
   tolerates a missing `op`; `applyProject` defaults it), `latent-forge/src/ui/prompt/PromptSigmaTab.svelte`
   (M4 T10 / M7 T9 — source `op`/`onOp` from the selected clip),
   `latent-forge/src/ui/prompt/PreviewContainer.svelte` (M1 T11 — `▸ RENDER` wired),
@@ -3969,7 +4055,8 @@ from inside this task):
   `interface ForgeClip { id; lane: 0|1|2|3; start_sec; offset_sec; dur_sec; loop; audio: AudioRef;
   native_bpm: number|null; detune_cents; downbeats_sec: number[]; render: RenderSettings;
   a2a: null | {on: boolean; noise: number; envelope: Envelope}; latentState: "none"|"valid"|"stale";
-  history: AudioRef[] }`;
+  history: AudioRef[]; previewAudio: AudioRef | null; encodedAtSec?: number }` — `previewAudio` is
+  **required** (M5 T10; m7:147-149), in-memory only, always constructed as `null`;
   `interface ForgeLane { index: 0|1|2|3; name; muted; solo; gain; chain: LaneChain }`;
   `interface OverlapParams { curve: Envelope; chroma_xfade: boolean; override: boolean; steps: number;
   cfg: number; render: RenderSettings }`; `RenderSettings`, `AudioRef`, `Envelope`.
@@ -4011,10 +4098,12 @@ from inside this task):
   `view.activeLane`.
 - From `latent-forge/src/lib/stores/arrangement.svelte.ts` (**M5 T1**): `arrangement.clips: ForgeClip[]`,
   `arrangement.lanes: ForgeLane[]`, derived `arrangement.overlaps: {key; lane; start_sec; end_sec;
-  a_id; b_id}[]`, `arrangement.overlapParams(key): OverlapParams`, `arrangement.addClip({lane, startSec,
+  a_id; b_id}[]`, `arrangement.peekOverlapParams(key): OverlapParams` (**non-seeding**, M7 T3 — the
+  only overlap reader allowed inside a `$derived`; `overlapParams(key)` seeds and must not be used
+  here, Global constraint 4), `arrangement.addClip({lane, startSec,
   durSec, audio, nativeBpm?}): ForgeClip`, `arrangement.ensureA2A(id)`, `arrangement.setNoise(id, v)`.
   **This task adds `setClipOp(id, op)`.**
-- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T2**): `settings.current(t: Target):
+- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T1**): `settings.current(t: Target):
   RenderSettings` (the owner's object, not a copy), `settings.effectiveCfg(t): number` (1.0 under
   POST), `settings.ckptPath: string | null`, `settings.defaults`.
 - From `latent-forge/src/lib/chains/latch.ts` (**M7 T1**): `interface LatchHeadInfo`,
@@ -4033,7 +4122,9 @@ from inside this task):
   `preview-drag-handle`, `preview-use-settings`, `preview-replace-clip`, and the root
   `[data-region="preview-container"]` (44 px). M1's props `lengthSec?`, `history?` exist and are
   unused by the only call site; this task leaves them alone (Task 7 retires them).
-- From `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (**M7 T8**): `isClip(c: unknown):
+- From `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (**M7 T9** — *Sessions, master
+  preset and autosave*, m7 plan:4417, which creates the file at m7:4617; M7 T8 is the v1→v2
+  converter and owns `convertProjectV1.ts` instead): `isClip(c: unknown):
   boolean` (used by `validateProjectV2`), `applyProject(project, opts)` — its clip restore is
   `...structuredClone(project.clips).map((c) => ({ ...c, previewAudio: null }))`.
 - From `docs/latent-forge/extract_help.mjs` (**M1 T5**): the `NEW_STRINGS` map, regenerated by
@@ -4041,7 +4132,7 @@ from inside this task):
   Task 4 is **114**.
 
 **Produces:** `src/lib/render/dispatch.ts` — `type ClipOp` (re-export), `PREVIEW_RENDER_IDLE_LABEL =
-"▸ RENDER"`, `renderLabel(busy: boolean, stepsLeft: number | null): string`,
+"▸ RENDER"`, `PAD_SEC = 8`, `renderLabel(busy: boolean, stepsLeft: number | null): string`,
 `interface DispatchWorld`, `renderRequest(target: Target, w: DispatchWorld): SubmitRequest`,
 `kindOf(op: JobOp): RenderKind`. For the Playwright spec: `[data-testid="preview-render"]` gains
 `data-blocked="<reason>"` when disabled for a reason, and `title` carrying the same string.
@@ -4240,7 +4331,22 @@ Below the `JobOp` declaration (m1 plan:488-490), add:
  */
 export type ClipOp = Extract<JobOp, "generate" | "decode" | "longform" | "bend">;
 
+/**
+ * MOVED here from M4 T8's `src/ui/prompt/targetBar.ts` (m4 plan:3151), not re-declared. M4's copy
+ * gates **what the operator can pick** (`TargetBar.svelte` renders the OP select from it,
+ * m4:3244-3248); this one gates **what a loaded project is allowed to contain** (`isClipOp` in
+ * `validateProjectV2`, Step 8). Two copies that drift make an op the select offers into an op that
+ * refuses to load its own saved session, with no obvious cause — so there is one array.
+ */
 export const CLIP_OPS: readonly ClipOp[] = ["generate", "decode", "longform", "bend"] as const;
+```
+
+and in `latent-forge/src/ui/prompt/targetBar.ts` (M4 T8), delete the local
+`export const CLIP_OPS = [...] as const;` and replace it with a re-export, so `TargetBar.svelte`'s
+existing import keeps working unchanged:
+
+```ts
+export { CLIP_OPS } from "../../lib/forge/types";
 ```
 
 and in `ForgeClip`, beside `render`:
@@ -4287,6 +4393,11 @@ export type { ClipOp } from "../forge/types";
 
 /** M1's MIXDOWN copy on the other render control, so both say the same sentence. */
 export const PREVIEW_RENDER_IDLE_LABEL = "▸ RENDER";
+
+/** §6.8's default context each side of an inpaint region. M9 has no UI for it; when one lands it
+ *  reads from here. Exported rather than component-local because Task 9's `dispatchWorld.ts`
+ *  imports it — a `const` inside `PreviewContainer.svelte` is not importable. */
+export const PAD_SEC = 8;
 
 /** `stepsLeft` may legitimately be 0 (Fact 5: a commit with no sampling passes, decode, bend), so
  *  `?? 0` is for the null case only and the 0 is printed, never swallowed. */
@@ -4453,6 +4564,7 @@ Expected: `Test Files  1 passed (1)` / `Tests  11 passed (11)`.
 import { beforeEach, describe, expect, it } from "vitest";
 import type { AudioRef } from "../../forge/types";
 import { CLIP_OPS } from "../../forge/types";
+import { CLIP_OPS as TARGET_BAR_CLIP_OPS } from "../../../ui/prompt/targetBar";
 import { arrangement } from "../arrangement.svelte";
 
 const REF: AudioRef = { kind: "upload", sha256: "b".repeat(64) };
@@ -4476,6 +4588,9 @@ describe("ForgeClip.op — §7.1 row 3's OP, in M8's own wire vocabulary", () =>
 
   it("every op is a JobOp the server's POST /forge/jobs already accepts (no translation)", () => {
     expect([...CLIP_OPS]).toEqual(["generate", "decode", "longform", "bend"]);
+    // One array, not two: M4 T8's `targetBar.ts` re-exports this one, so the OP select and
+    // `validateProjectV2`'s `isClipOp` cannot drift apart.
+    expect(TARGET_BAR_CLIP_OPS).toBe(CLIP_OPS);
   });
 });
 ```
@@ -4506,7 +4621,7 @@ add `op: null,` and add the setter beside `setNoise`:
 
 with `ClipOp` added to the `import type { … } from "../forge/types"` line already at the top.
 
-In `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (M7 T8), `isClip` must **tolerate a
+In `latent-forge/src/lib/forge/projectSerializer.svelte.ts` (M7 T9), `isClip` must **tolerate a
 missing `op`** — every v2 file written before M9 lacks it, and `validateProjectV2` throwing on those
 would make M9 unable to open its own earlier sessions:
 
@@ -4532,7 +4647,7 @@ the existing `projectSerializer` round-trip test rather than adding one.
 - [ ] **Step 9: Run it, expect pass**
 
 ```bash
-cd latent-forge && npx vitest run src/lib/stores/__tests__/clipOp.test.ts src/lib/stores/__tests__/projectSerializer.test.ts
+cd latent-forge && npx vitest run src/lib/stores/__tests__/clipOp.test.ts src/lib/forge/__tests__/projectSerializer.test.ts
 ```
 
 Expected: `Tests  3 passed (3)` for `clipOp.test.ts`, and `projectSerializer.test.ts` unchanged and
@@ -4754,7 +4869,7 @@ Keep M1's markup, its `data-testid`s and its `data-help` copy. Add the script bo
 
 ```ts
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
-  import { renderLabel, renderRequest } from "../../lib/render/dispatch";
+  import { PAD_SEC, renderLabel, renderRequest } from "../../lib/render/dispatch";
   import { jobs } from "../../lib/render/jobs.svelte";
   import { MIXDOWN_TARGET_KEY } from "../../lib/render/mixdown.svelte";
   import { renderBlock } from "../../lib/render/renderBlock";
@@ -4783,9 +4898,6 @@ Keep M1's markup, its `data-testid`s and its `data-help` copy. Add the script bo
     return sel.kind === "overlap" ? (arrangement.overlaps.find((o) => o.key === sel.key) ?? null) : null;
   });
 
-  // §6.8's default context each side. M9 has no UI for it; when one lands it reads from here.
-  const PAD_SEC = 8;
-
   const world = $derived({
     settings: settings.current(target),
     cfgScale: settings.effectiveCfg(target),
@@ -4794,7 +4906,11 @@ Keep M1's markup, its `data-testid`s and its `data-help` copy. Add the script bo
     heads,
     ckptPath: settings.ckptPath,
     overlap,
-    overlapParams: overlap ? arrangement.overlapParams(overlap.key) : null,
+    // `peekOverlapParams`, NOT `overlapParams`: the latter SEEDS `OVERLAP_DEFAULT` into the store
+    // on first read, and this is a $derived -- Global constraint 4, `state_unsafe_mutation`, the
+    // first time an operator selects an overlap they have never opened in INPAINT. The peek
+    // returns a fresh default-shaped copy for an unstored key, so no fallback is needed.
+    overlapParams: overlap ? arrangement.peekOverlapParams(overlap.key) : null,
     clipById: (id: string) => arrangement.clips.find((c) => c.id === id) ?? null,
     // No prompt-ARC field exists in M9's UI: `longform` reads the target's prompt as its arc, which
     // is what _longform_impl falls back to on the server (`req["schedule"] or req["prompt"]`).
@@ -5532,11 +5648,18 @@ Add to the script, below Task 6's block:
     const color = getComputedStyle(canvas).getPropertyValue("--accent").trim() || "#4ec9b0";
     drawPeaks(canvas, computePeaks(buffer, Math.max(1, canvas.width)), color);
     // Playhead. A LINE, not a label: nothing a test reads is ever painted here (M4's finding).
+    // CSS pixels, not device pixels: `drawPeaks` resizes the backing store to `clientWidth * dpr`
+    // and leaves `setTransform(dpr, 0, 0, dpr, 0, 0)` installed (waveform.ts:85-97), drawing its
+    // own body in CSS pixels. Using `canvas.width` here would multiply the position by dpr a
+    // second time and walk the playhead off the canvas at 25% on a dpr:2 display. M5's own
+    // post-drawPeaks overlay stays in CSS pixels for the same reason (m5 plan:4813-4817).
     const total = previewPlayer.durationSec;
     if (total > 0) {
-      const x = Math.round((previewPlayer.playheadSec / total) * canvas.width);
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      const x = Math.round((previewPlayer.playheadSec / total) * cssW);
       ctx.fillStyle = getComputedStyle(canvas).getPropertyValue("--fg").trim() || "#fff";
-      ctx.fillRect(x, 0, 1, canvas.height);
+      ctx.fillRect(x, 0, 1, cssH);
     }
   }
 
@@ -5810,9 +5933,11 @@ No new HELP ids: Task 6 already added `previewUseSettings` and `previewReplaceCl
   `interface RenderSettings { prompt; negative_prompt; steps; cfg_scale; seed; apg_scale;
   cfg_interval_progress: [number, number]; schedule: ScheduleSpec; scale_phi; sampler_type: string | null;
   duration_sec: number }`; `AudioRef`; `interface ForgeClip { …; audio: AudioRef; native_bpm: number|null;
-  downbeats_sec: number[]; previewAudio?: AudioRef | null; latentState: "none"|"valid"|"stale";
+  downbeats_sec: number[]; previewAudio: AudioRef | null; latentState: "none"|"valid"|"stale";
   history: AudioRef[]; op: ClipOp | null }`.
-- From `latent-forge/src/lib/presets/renderPresets.ts` (**M4 T13**):
+- From `latent-forge/src/lib/presets/renderPresets.ts` (**M4 T12** — M4 has twelve tasks; T12 is
+  *The SETTINGS PRESET select, and the milestone's layout spec*, m4 plan:5478, and it creates this
+  file at m4:5485):
   `applyRenderPreset(into: RenderSettings, body: unknown): PresetApplyResult` where
   `interface PresetApplyResult { applied: string[]; rejected: string[] }`. It returns
   `{ applied: [], rejected: ["<body>"] }` for a non-object body (m4 plan asserts exactly
@@ -5820,7 +5945,7 @@ No new HELP ids: Task 6 already added `previewUseSettings` and `previewReplaceCl
   before it lands, ignores unknown keys and is `__proto__`-safe (m4 plan:
   `applyRenderPreset(s, { steps: 40, nonsense: 1, __proto__: { polluted: true } })`).
   **It never touches `duration_sec`** — see WHY item 3.
-- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T2**): `settings.current(t: Target):
+- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T1**): `settings.current(t: Target):
   RenderSettings` (**reads** — the owner's object, not a copy), `settings.editable(t: Target):
   RenderSettings` (**returns the object a write must mutate** — m4 plan's Normative row:
   *"`settings.current(t)` **reads**, `settings.editable(t)` **returns the object a write must mutate**"*),
@@ -6612,19 +6737,28 @@ Added to the component's `<script>` (Tasks 6 and 7 already put `entry`, `target`
 
   async function onUseSettings(): Promise<void> {
     if (entry === null || useBlock !== null) return;
+    // Capture BEFORE the await. `history.jobRecord` is a real round trip (GET /forge/jobs/<id>),
+    // `target` is `view.selection` itself, and `entry` is a $derived over HISTORY -- either can
+    // change while the fetch is in flight. `acting` only stops a second CLICK. Writing the
+    // render's settings into a target the operator did not pick is an edit, so M7's autosave
+    // would then save it 2 s later; this is M7 critic pass 3 #2's shape, and the fix there was
+    // the same superseded check.
+    const forTarget = view.selection;
+    const forEntry = entry;
     acting = true;
     try {
-      const record = await history.jobRecord(entry);
+      const record = await history.jobRecord(forEntry);
+      if (view.selection !== forTarget || entry !== forEntry) return;   // superseded
       const ps = payloadSettings(record.op, record.payload);
       if (ps.body === null && ps.durationSec === null) {
         useSettingsNote = NO_SETTINGS_HINT;
         return;
       }
-      const out = applyPayloadSettings(view.selection, ps);
+      const out = applyPayloadSettings(forTarget, ps);
       useSettingsNote = null;
       const parts = [`${out.applied.length} field(s)`];
       if (out.lengthSec !== null) parts.push(`LENGTH ${out.lengthSec.toFixed(3)} s`);
-      view.appendLog(`[render] USE SETTINGS: ${parts.join(", ")} from ${entry.label}`);
+      view.appendLog(`[render] USE SETTINGS: ${parts.join(", ")} from ${forEntry.label}`);
       if (out.rejected.length > 0) {
         view.appendLog(`[render] USE SETTINGS ignored: ${out.rejected.join(", ")}`, "error");
       }
@@ -6905,10 +7039,12 @@ stays at 119**, the total Task 6 set.
   itself too"*), and that gate stays.
 - From `latent-forge/src/lib/stores/arrangement.svelte.ts` (**M5 T1**): `arrangement.clips`,
   `arrangement.lanes`, `arrangement.overlaps` (derived `{key, lane, start_sec, end_sec, a_id, b_id}[]`),
-  `arrangement.overlapParams(key): OverlapParams`, `arrangement.isAudible(lane)`.
+  `arrangement.peekOverlapParams(key): OverlapParams` (**non-seeding**, M7 T3 — `dispatchWorld` runs
+  inside a `$derived.by`, so the seeding `overlapParams(key)` must not be used, Global constraint 4),
+  `arrangement.isAudible(lane)`.
 - From `latent-forge/src/lib/stores/view.svelte.ts` (**M1 T7**): `view.selection`, `view.selectionKey`,
   `view.select(t)`, `view.appendLog(text, level?)`.
-- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T2**): `settings.current(t)`,
+- From `latent-forge/src/lib/stores/settings.svelte.ts` (**M4 T1**): `settings.current(t)`,
   `settings.effectiveCfg(t)`, `settings.ckptPath`.
 - From `latent-forge/src/lib/chains/latch.ts` (**M7 T1**): `interface LatchHeadInfo`,
   `fetchLatchHeads(): Promise<Record<string, LatchHeadInfo>>` (resolves `{}` on failure).
@@ -7453,7 +7589,8 @@ export function dispatchWorld(
     heads,
     ckptPath: settings.ckptPath,
     overlap,
-    overlapParams: overlap ? arrangement.overlapParams(overlap.key) : null,
+    // Non-seeding read -- this function runs inside a $derived.by (Global constraint 4).
+    overlapParams: overlap ? arrangement.peekOverlapParams(overlap.key) : null,
     clipById: (id: string) => arrangement.clips.find((c) => c.id === id) ?? null,
     arcPrompt: settings.current(target).prompt,
     bendOps: [] as unknown[],
@@ -8203,6 +8340,17 @@ async function openPrompt(page: Page) {
   return page.locator('[data-tab-body="prompt"]');
 }
 
+/** Opens PROMPT and types one, which every `▸ RENDER` test needs: `BASE_DEFAULTS.prompt` is `""`
+ *  (m1 plan:898-899), so on a fresh `page.goto("/")` `renderBlock` returns
+ *  `"needs a prompt — /generate requires a non-empty prompt."` and the button is `disabled` with
+ *  that as its `title`. The field's testid is M4 T9's (`m4 plan:3765`). */
+async function seedPrompt(page: Page) {
+  const body = await openPrompt(page);
+  await page.locator('[data-testid="prompt-text"]').fill("dub techno, tape hiss");
+  await expect(page.locator('[data-testid="preview-render"]')).toBeEnabled();
+  return body;
+}
+
 const CLIP = '.clip[role="button"]';
 
 test.beforeEach(async ({ page }) => {
@@ -8211,7 +8359,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("▸ RENDER submits, labels itself SAMPLING, and lands one HISTORY entry", async ({ page }) => {
-  await openPrompt(page);
+  await seedPrompt(page);
   const render = page.locator('[data-testid="preview-render"]');
   await expect(render).toBeEnabled();
   await expect(page.locator('[data-testid="preview-history"]')).toBeDisabled();
@@ -8229,7 +8377,7 @@ test("▸ RENDER submits, labels itself SAMPLING, and lands one HISTORY entry", 
 });
 
 test("the previewed render drags onto a lane as a clip of its own length, not four seconds", async ({ page }) => {
-  await openPrompt(page);
+  await seedPrompt(page);
   await page.locator('[data-testid="preview-render"]').click();
   await expect(page.locator('[data-testid="preview-history"]')).toBeEnabled({ timeout: 30_000 });
 
@@ -8251,7 +8399,7 @@ test("the previewed render drags onto a lane as a clip of its own length, not fo
 
 test("MIXDOWN commits and lights the SIGNAL PATH", async ({ page }) => {
   // A commit needs a non-empty arrangement (validate_commit), so seed one from a render.
-  await openPrompt(page);
+  await seedPrompt(page);
   await page.locator('[data-testid="preview-render"]').click();
   await expect(page.locator('[data-testid="preview-history"]')).toBeEnabled({ timeout: 30_000 });
   const canvas = page.locator('[data-region="lane-canvas"]').first();
@@ -8287,7 +8435,7 @@ test("a rejected render shows §9.7's inline error, and the next render clears i
       body: JSON.stringify({ ok: false, error: "unknown render field(s): duration_sec" }),
     });
   });
-  await openPrompt(page);
+  await seedPrompt(page);
   await page.locator('[data-testid="preview-render"]').click();
 
   const err = page.locator('[data-testid="render-error"]');
@@ -8300,7 +8448,7 @@ test("a rejected render shows §9.7's inline error, and the next render clears i
 });
 
 test("USE SETTINGS copies the render's own settings into the pane; HISTORY alone does not", async ({ page }) => {
-  const body = await openPrompt(page);
+  const body = await seedPrompt(page);
   const steps = body.getByLabel("STEPS");
   await steps.fill("31");
   await page.locator('[data-testid="preview-render"]').click();
