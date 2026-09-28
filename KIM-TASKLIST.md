@@ -39,6 +39,7 @@ cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTO
 ```
 **TAKES:** ~15 min (126 renders, ~2-3 s each). **VERIFY:** `ls /run/media/kim/Mantu/sa3_lora_runs/model_matrix/ | grep fullft_soup_fp32cmp_avp_t4096_bs1_no35 | grep -c m4a$` gives 126
 (renders land on Mantu; `~/evals_aac/model_matrix` only gets the cfg-7 subset).
+**THEN, to see them on the page:** `bash /home/kim/Projects/SAO/Misc/stage_matrix_clips.sh` (copies new renders into the page's folder and rebuilds `~/.cache/evals_aac/model_matrix.html`; nothing does this automatically).
 **REPORT BACK:** that count; C checks the latent sizes before you listen.
 
 ### ✅ DONE 2026-09-26 (C ran it): r256 6340 is healthy — its NaN was the render fault. Was: re-render r256 at 5072/6340, merged (C, 2026-09-25)

@@ -219,6 +219,8 @@ Misc/gpu_guard.sh acquire KIM $$ || exit 1
 Misc/gpu_guard.sh release KIM
 ```
 
+**Renders land on Mantu (`/run/media/kim/Mantu/sa3_lora_runs/model_matrix/`), not on the page.** The model-matrix page only lists clips present in `~/.cache/evals_aac/model_matrix/`, and nothing copies them there automatically. After a render, run `bash /home/kim/Projects/SAO/Misc/stage_matrix_clips.sh` (idempotent: copies only missing clips, rebuilds the page and the evaluator pool). Count clips on Mantu to verify a render, not in staging.
+
 Grid: **127 cells per LoRA checkpoint, 42 per full-FT** (14 prompts × cfg 1/7/12 × strength
 0.5/1.0/1.5, 24 steps, 20 s — 12 canonical + 2 bracket since 2026-09-28, was 109/36 on 12
 prompts; cfg/strength sweep changed from 1/7/16 + 1.0/1.5/2.0 to 1/7/12 + 0.5/1.0/1.5 same

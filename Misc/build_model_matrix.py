@@ -76,12 +76,16 @@ def _public_commentary(ov):
 STAGING = Path.home() / ".cache/evals_aac"
 MANIFEST = STAGING / "model_matrix" / "manifest.jsonl"
 OUT = STAGING / "model_matrix.html"
-CFGS = (1, 7, 16)
+# union of the legacy cfg axis (1/7/16) and the current one (1/7/12, W 2026-09-28 in
+# model_matrix_gen.CFGS) -- without the union every cfg-12 clip rendered since then is
+# invisible on the page (Kim 2026-09-29: "the soup rendered only" part of its grid)
+CFGS = (1, 7, 12, 16)
 # union of the legacy axis (0.6/1.0/1.5, pre-2026-07-20) and the current one
 # (1.0/1.5/2.0, Kim 2026-07-20: drop 0.6 from new renders, add 2.0) -- keeps
 # old 0.6 cells visible (their columns just render empty on new checkpoints)
 # rather than dropping them off the grid.
-STRENGTHS = (0.6, 1.0, 1.5, 2.0)
+# + 0.5 for the current adapter axis 0.5/1.0/1.5 (W 2026-09-28)
+STRENGTHS = (0.5, 0.6, 1.0, 1.5, 2.0)
 
 
 def jsnum(x):
