@@ -53,9 +53,10 @@ against `explorer_render_server.py` and all held. Kim held the run until two fix
 2. **M2 Task 15's `record_fixtures.py` now has an `EXPECTED` tuple, a `RECORDED` set and a non-zero
    exit naming what it skipped.** Four of the fixtures are conditional — they skip silently when no
    crops are listed or the generate job returns no `urls` — so a half-working run used to exit 0
-   looking like success. **It is TWENTY fixtures, not nineteen**; the earlier count here was wrong
-   when written. Step 6's expected output says twenty. Do not tell the client side the fixtures have
-   landed without counting 20.
+   looking like success. **It is TWENTY-FIVE fixtures, not twenty**; the plan's own EXPECTED tuple
+   and Step 6 expected-output were corrected to 25 on 2026-09-26 (commit `8596b1c`), this paragraph
+   was the one spot that missed that pass. Do not tell the client side the fixtures have landed
+   without counting 25.
 
 ---
 

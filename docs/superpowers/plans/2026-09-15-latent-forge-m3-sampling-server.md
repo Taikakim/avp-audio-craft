@@ -564,7 +564,23 @@ In the final `build_response(...)` call replace the `[]` warnings argument with 
 ```
 and in the `_a2a_pass(...)` call add `scale_phi=scale_phi,`.
 
-(h) `_longform_impl` a2a branch: replace `cfg_interval = resolve_cfg_interval(req)` with `cfg_interval = resolve_cfg_interval(req, sigma_max=nl)` and `dist_shift = resolve_dist_shift(req)` with `dist_shift = resolve_shift(req, steps, nl, warnings)`; add `scale_phi=resolve_scale_phi(req),` to its `_a2a_pass(...)` call. In the t2a `else:` branch, first line:
+(h) **First, the key collision this edit would otherwise create.** `_longform_impl`'s existing
+top-of-function line (already shipped, unrelated to this plan) is
+`schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()` — it reads `schedule`
+as the prompt-ARC string (`"0:promptA|45:promptB|..."`), parsed by `_parse_prompt_arc`. Every
+other edit in this task reads `req.get("schedule")` through `parse_spec` as a `ScheduleSpec`
+object, and `parse_spec` raises on a non-dict/non-None value (line 84's test). Wiring `resolve_shift`
+into `_longform_impl` without first separating these two readers means every longform call with
+an arc string 400s the instant `resolve_shift`/`parse_spec` sees it. Fix: rename the ARC reader's
+key to `prompt_arc`, freeing `schedule` for exclusive use as the `ScheduleSpec` shape everywhere,
+including on this endpoint. Change the existing line to
+`schedule_arg = (req.get("prompt_arc") or req.get("prompt") or "").strip()`. This is a breaking
+change to `_longform_impl`'s existing contract — grep for any caller sending `schedule` as an arc
+string (`Misc/`, `eval/`, any saved request bodies) before shipping M3, and update them to
+`prompt_arc`. (2026-09-28, W, in answer to KUANG's M9 handoff item 1 — the client's M9
+`opPayload("longform", ...)` should send the arc string under `prompt_arc`, not `schedule`.)
+
+Then: `_longform_impl` a2a branch: replace `cfg_interval = resolve_cfg_interval(req)` with `cfg_interval = resolve_cfg_interval(req, sigma_max=nl)` and `dist_shift = resolve_dist_shift(req)` with `dist_shift = resolve_shift(req, steps, nl, warnings)`; add `scale_phi=resolve_scale_phi(req),` to its `_a2a_pass(...)` call. In the t2a `else:` branch, first line:
 ```python
             if forge_schedule.parse_spec(req.get("schedule"))["shape"] != "model":
                 raise ForgeError(400, "schedule shapes are not supported on the t2a longform path")
