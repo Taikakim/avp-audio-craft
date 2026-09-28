@@ -2482,6 +2482,9 @@ cd latent-forge && npx vitest run && npm run check
 
 Expected: the whole suite green, `npm run check` clean.
 
+**`Tests 17 passed (17)`** for this task's own rows — 11 in the new `history.test.ts` plus the 6
+appended to `projectSerializer.test.ts` (which therefore reads 15, M7's 9 + 6).
+
 - [ ] **Step 10: Commit**
 
 ```bash
@@ -3343,6 +3346,10 @@ Expected: `mixdown.test.ts` 8, `signalPath.test.ts` 15, `mixdownSlotWired.test.t
 `MixSignalPath.component.test.ts` 11, `strings.test.ts` green at 114, the rest of the suite
 unchanged, `npm run check` clean.
 
+**`Tests 21 passed (21)`** for this task's own rows — 8 in the new `mixdown.test.ts`, 5 in the new
+`mixdownSlotWired.test.ts`, plus the 5 appended to `signalPath.test.ts` and the 3 appended to
+`MixSignalPath.component.test.ts` (which therefore read 15 and 11).
+
 - [ ] **Step 13: Commit**
 
 ```bash
@@ -3880,9 +3887,11 @@ target.)
 cd latent-forge && npx vitest run && npm run check
 ```
 
-Expected: `renderBlock.test.ts` 11, `terminalLog.test.ts` 4, `inlineError.test.ts` 3 — 18 for this
-task — with M1 T7's `view.test.ts`, M1 T11's log suite, M6's, M7's and M10's suites all unchanged
-and green, and `npm run check` clean.
+Expected: `renderBlock.test.ts` 11, `terminalLog.test.ts` 4, `inlineError.test.ts` 3, with M1 T7's
+`view.test.ts`, M1 T11's log suite, M6's, M7's and M10's suites all unchanged and green, and
+`npm run check` clean.
+
+**`Tests 18 passed (18)`** for this task's three new files.
 
 - [ ] **Step 12: Commit**
 
@@ -3892,13 +3901,22 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M9 T5: view.appendLog mirror
 
 ---
 
-## Open questions (Writer A, Tasks 1-5)
+## Open questions (Writer A, Tasks 1-5) — the `A` namespace
 
 Each of these is **shipped with a reading** — the tasks above build one answer and say why. They
 are listed so the assembly pass and WINTERMUTE can overrule any of them cheaply, not because
 anything is left unbuilt.
 
-1. **`longform`'s `schedule` key means two different things on the same request.**
+> **Numbering convention — read this once.** This plan has **two independent open-question
+> sequences**, because the two writers numbered in parallel. Writer A's, below, runs `A1`-`A9` and
+> is cited from Tasks 1-5. Writer B's runs `B1`-`B15` and is cited from Tasks 6-10; `B1`-`B6` are
+> listed at the end of Task 7 and `B7`-`B15` under the tasks that raised them. **A bare "Open
+> question 7" is ambiguous** — `A7` is M2 T15's fixture-count discrepancy, `B7` is `dur_sec` on a
+> REPLACE CLIP — so every citation in this plan carries its letter. The consolidated index is at
+> the end of the plan. The two sequences are *not* merged: renumbering in place would silently
+> break load-bearing cross-references.
+
+1. **A1 — `longform`'s `schedule` key means two different things on the same request.**
    `_longform_impl` reads it as the prompt-ARC string — `eval/explorer_render_server.py:1366`:
    `schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()`, then
    `arc = _parse_prompt_arc(schedule_arg)`. But M3 Task 2 edit (h) puts `resolve_shift(req, steps,
@@ -3912,7 +3930,7 @@ anything is left unbuilt.
    `resolve_shift` ignoring a string `schedule`. Until then longform charts and samples the model
    shape only. This is the batched-DM item with the most consequence.
 
-2. **Who owns `/status` (M1 open question 16).** The brief says *"if M9's poller owns `/status`,
+2. **A2 — who owns `/status` (M1 open question 16).** The brief says *"if M9's poller owns `/status`,
    the log store drops its own `/status` call."* **Shipped: both keep calling it**, 1000 ms each,
    because they read different fields for different consumers — `logStore.busy` drives the
    TERMINAL status dot and is polled *only while the TERMINAL tab is visible*
@@ -3923,7 +3941,7 @@ anything is left unbuilt.
    judged wasteful, the merge is `logStore` reading `jobs.gpuBusyOther` and dropping its own call —
    one edit, no behaviour change.
 
-3. **`a2a_track`, `a2a_mix`, and where a clip's latent lives.** §6.2 lists both ops and M2
+3. **A3 — `a2a_track`, `a2a_mix`, and where a clip's latent lives.** §6.2 lists both ops and M2
    registers them, but both need a server-side `audio_path` and there is no upload-to-path route
    (v1's own `renderBlock` hint says exactly this). §7.1's OP column lists only
    `generate`/`decode`/`longform`/`bend`, so `opPayload` builds those four and `renderBlock` blocks
@@ -3933,7 +3951,7 @@ anything is left unbuilt.
    (`meta.latents`) and is **not** reachable from a `RenderHistoryEntry` — so DECODE and BEND work
    on library crops only. Worth a field on `ForgeClip` or `RenderHistoryEntry` if that matters.
 
-4. **`a2a_clip` takes the whole file, and REPLACE CLIP has to cope** (Fact 3). M8:
+4. **A4 — `a2a_clip` takes the whole file, and REPLACE CLIP has to cope** (Fact 3). M8:
    `duration = check_cap(audio.shape[1] / SR, "a2a_clip")` — no offset, no dur, no stretch. So a
    clip trimmed to 4 s of a 40 s source is A2A'd across all 40 s, and the returned render is 40 s.
    **Shipped:** the builder sends the clip's `audio` ref unchanged and says so. **For Writer B:**
@@ -5026,6 +5044,8 @@ Expected: `dispatch.test.ts` 11, `clipOp.test.ts` 3, `promptSigmaTabOp.test.ts` 
 `npm run check` clean — the `ForgeClip.op` addition compiles everywhere because `addClip` seeds it
 and `applyProject` defaults it; nothing else constructs a `ForgeClip` literal.
 
+**`Tests 23 passed (23)`** for this task's four new files.
+
 - [ ] **Step 20: Commit**
 
 ```bash
@@ -5117,10 +5137,16 @@ actually matters (the two never sound together) and keeps the playhead. **Open q
   `computePeaks(buffer: AudioBuffer, columns: number): Peaks`,
   `drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string): void`,
   `interface Peaks { columns: number; data: Float32Array }`.
-  **Note the signature**: M5 T10 calls `drawPeaks(canvas, peaks, color)` (three args, canvas first).
-  Writer A's Task 4 draft writes `drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height)` — a
-  four-arg call against a 2D context. One of the two is wrong and it is not this one; **Open
-  question 5** carries it to the reconcile.
+  **Note the signature — settled, see B5.** The real source is in this repo,
+  `sa3-studio/src/lib/waveform.ts:80-84`, the file M1 T15 re-homes verbatim:
+  `drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string, opts: {background?: string} = {})`.
+  Canvas first, three required arguments, and the body reads `canvas.clientWidth`/`clientHeight`
+  and assigns `canvas.width`/`canvas.height` itself — so a caller passing a width and a height is
+  passing the two values the function computes. M5 T10's `drawPeaks(canvas, peaks, color)` is
+  correct, and so is this task's call. Writer A's Task 4 draft wrote
+  `drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height)` — wrong on the first argument and on the
+  last two — and **that call site is now fixed** to the canvas-first three-arg form. Nothing here
+  waits on a reconcile.
 - From `latent-forge/src/lib/stores/transport.svelte.ts` (**M5 T3**): `playback.play()`,
   `playback.pause()`, `playback.stop()`, `playback.togglePlay()`, `playback.seek(sec)`,
   `playback.playing: boolean`, `playback.playheadSec: number`, `playback.preload(url)`.
@@ -5790,11 +5816,66 @@ cd latent-forge && npx vitest run && npm run check
 Expected: `soloBus.test.ts` 2, `historyLabel.test.ts` 4, `previewHistory.test.ts` 8, Task 6's four
 files unchanged, `strings.test.ts` still 119, everything else unchanged, `npm run check` clean.
 
+**`Tests 14 passed (14)`** for this task's three new files.
+
 - [ ] **Step 11: Commit**
 
 ```bash
 Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M9 T7: preview HISTORY newest-first with lengths, waveform with scrub and playhead, play/stop mutually exclusive with the timeline transport, drag handle carrying the render ref"
 ```
+
+**Open questions raised by Tasks 6 and 7** (Writer B's `B1`-`B6`; Task 8 continues the sequence at
+`B7`). These six were cited by number throughout Tasks 6 and 7 before they were ever enumerated —
+Writer B's first run ended at a budget line before writing the list, and the continuation run
+started at `B7`. Reconstructed here from the citation sites, each of which states the question in
+prose where it is raised, so the numbering the in-text references already use is preserved exactly.
+
+**B1 — `ForgeClip.op`'s home, and its §9.2 serialisation.** Shipped: `type ClipOp` and the `op`
+field live on `ForgeClip` in `src/lib/forge/types.ts` (Task 6, Step 3), narrowed out of `JobOp`
+rather than declared as a parallel enum, and `op` is serialised into `ProjectV2.clips[]` — a
+**§9.2 amendment**, since §9.2's clip list predates the field. A v2 file written before M9 has no
+`op` key and loads as `null`. The alternative was a separate per-clip render-op map beside the
+arrangement, which would have shipped two structurally identical types across the two halves of M9.
+Cited at Task 6's WHY and at the `op:` field's own docstring.
+
+**B2 — preview playback vs the timeline transport.** Shipped: `PreviewPlayerStore` is a second,
+independent transport that registers on `soloBus` as `AUDIO_SOURCE_PREVIEW`, so starting either one
+stops the other (§4.5) while each keeps **its own playhead** — stopping the preview does not move
+the arrangement playhead, and M5's `playback` keeps `playheadSec = this.loopOn ? this.loopStartSec : 0`
+on stop. The alternative was one shared transport with a source switch, which is simpler but loses
+the operator's timeline position every time they audition a render. What actually matters is that
+the two never sound together, and that is what the solo bus enforces. Cited at Task 7's WHY and by
+Task 9's transport-routing Interfaces.
+
+**B3 — no bend-op editor, so `bendOps` is `[]`.** Shipped: `dispatchWorld` passes an empty
+`bendOps` list and `renderBlock` **refuses** `bend` with an honest reason rather than inventing a
+default op list. The OP select still offers `bend`, so choosing it produces a refusal, not a render.
+The alternative — a default single bend op — would sample something the operator never asked for.
+Carried into Known-incomplete item 1. Cited at Task 6, Step 15's `bendOps` line.
+
+**B4 — never used.** No citation anywhere in the plan refers to `B4`. It is recorded here as a
+deliberate hole rather than silently renumbered, because renumbering would invalidate every
+in-text `B5`/`B6` reference. Nothing is missing.
+
+**B5 — `drawPeaks`' signature. ANSWERED, not open.** The question as raised was: M5 T10 calls
+`drawPeaks(canvas, peaks, color)` while Writer A's Task 4 draft wrote
+`drawPeaks(ctx, peaks, canvasEl.width, canvasEl.height)`, and one of the two must be wrong.
+**Answer:** the real source is in this repo — `sa3-studio/src/lib/waveform.ts:80-84`, the file M1
+T15 re-homes verbatim — and it declares
+`drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string, opts: {background?: string} = {})`.
+Canvas first, three required arguments; the body reads `canvas.clientWidth`/`clientHeight` and
+assigns `canvas.width`/`height` itself, so the two numbers Writer A passed are values the function
+computes. M5's call is correct, Writer A's was the defect, and **Task 4's call site is fixed**. This
+needed no reconcile; it needed the source file. (The general lesson, worth keeping: *"the signature
+tolerates N arguments"* is not the same claim as *"this call site is correct"*.)
+
+**B6 — the final `strings.test.ts` total is the assembly's to count, not a writer's to assert.**
+Each task states its own running total in execution order (M7 ends at 112 → Task 4's 114 → Task 6's
+119, and Tasks 7-10 add no ids), but no writer can see the others' additions while writing, so the
+final number must be **recounted mechanically at assembly** rather than carried forward on trust.
+This is the same question as Writer A's `A6`; they are one item, recorded in both namespaces
+because both writers raised it independently. Cited at Task 6's HELP step and at Task 4's
+`npm run help:extract` step.
 
 ---
 
@@ -7014,8 +7095,9 @@ stays at 119**, the total Task 6 set.
   store. Testids that must survive: `master-source-preview`, `master-source-mixdown`, the wrapper
   `data-region="preview-mixdown-toggle"`, `data-region="master-canvas"`.
 - From `latent-forge/src/lib/audio/waveform.ts` (**M1 T15, re-homed by M5**): `computePeaks(buffer, columns)`,
-  `drawPeaks(canvas, peaks, color)` — **three args, canvas first**, M5 T10's call (Task 7's Open question 5
-  carries Writer A's four-arg variant to the reconcile; this task uses M5's, which is the one that exists),
+  `drawPeaks(canvas, peaks, color)` — **three args, canvas first**, M5 T10's call, and the settled
+  one (B5: `sa3-studio/src/lib/waveform.ts:80-84`; Writer A's four-arg variant was the defect and is
+  fixed),
   `peakLevel(buffer)`, `mixdownToBuffer(parts, sampleRate)`, `clipMarkColumns(peaks)` (M5 T10).
 - From `latent-forge/src/lib/help/strings.ts` (**M1 T5 / M1 T14's `NEW_STRINGS`**): `HELP.previewMixdownToggle`,
   quoted in full in the WHY. **Pre-existing — this task attaches it, it does not add it.**
@@ -8593,8 +8675,11 @@ proof.
 3. **`ForgeClip.history` is written and never read** (Task 8, Open question 9) — no UNDO for a REPLACE
    CLIP.
 4. **The committed mix has no staleness indicator** (Task 9, Open question 12).
-5. **`drawPeaks`' signature disagreement** between M5 T10's three-arg call and Writer A T4's four-arg one
-   (Task 7, Open question 5) — one of the two is wrong and only the reconcile can say which.
+5. **RESOLVED, not carried — `drawPeaks`' signature** (B5). The real source is in this repo,
+   `sa3-studio/src/lib/waveform.ts:80-84`, which M1 T15 re-homes verbatim:
+   `drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string, opts = {})`. M5 T10's
+   three-arg `drawPeaks(canvas, peaks, color)` is correct; Writer A's Task 4 four-arg call against a
+   2D context was the defect and **is fixed**. Left on this list only so nobody re-opens it.
 6. **The recorded-contract rows are skipped** until M2 T15 and M8 T11 have been run against a live server.
    Four of them are Writer B's; they prove nothing today and are designed to say so out loud.
 7. **`workKey` includes `renders`** (Fact 11), so history entries count as unsaved work. Writer A T3 was
