@@ -425,3 +425,23 @@ epochs the loss changes WHERE lora_B ends up (cos 0.93 vs no-subspace) but not y
 **Policy consequence:** keep the subspace loss in the recipe going forward (K=5, v3 basis
 `lumi/melody_subspace15_selective_v3.npz`); it is now available in `train_lora_modular.py` (stable-audio-3
 `6223be1`, manual §5f). Also: `subloss_*` arms deserve ptm renders (queued 2026-09-27).
+
+## 2026-09-28 — melody-subspace loss's raw diffusion MSE is unchanged; the higher "loss" is pure arithmetic
+
+Antigravity measured the decomposition directly (relayed by Kim), W cross-checked against
+`ablation_goa5k_a00_full`'s own metrics.csv: `train/loss` = `train/mse_loss` + (K-1) x
+`train/subspace_loss` + `train/var_barrier_loss` -- confirmed to within rounding (0.9565
+reported vs 0.9558 = mse 0.804 + 4x0.0379, the residual being var_barrier_loss).
+
+**So the raw generative objective (`mse_loss`) is essentially IDENTICAL with K=5 on (0.805) vs
+off (0.808, a08_no_subspace) or plain AdamW (0.798)** -- every "K=5 runs read ~0.16 higher" number
+anyone has looked at (a00 0.957 vs a08 0.811, goa5k subloss 0.971, the new 3e-3 warm-start
+continuation 0.959) is the additive (K-1) x subspace penalty inflating the REPORTED total, not
+the model fitting the denoising objective worse. Confirms/quantifies the qualitative note already
+in `docs/train_lora_modular.md` 5f ("runs with different K are not loss-comparable") -- this is
+that caveat with real numbers, not a correction to it.
+
+**Practical consequence:** when reading any table that includes a bare `loss` column across a mix
+of subspace-on and subspace-off arms (e.g. `ablation_goa5k_2026-09-26/REPORT.md`), subtract
+(K-1) x subspace_loss before comparing, or compare `mse_loss` directly. Worth a header note on
+that report and any future one; not fixing retroactively here, flagging so nobody re-derives it.
