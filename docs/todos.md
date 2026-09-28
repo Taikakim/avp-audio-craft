@@ -12,6 +12,25 @@ Keep this honest and current. Move done items to `WORKLOG.md`. Newest concerns n
 
 ## Now / next
 
+- [ ] **SAME-L high-frequency reconstruction — possible complement via a second codec's latent
+      (Kim, 2026-09-29, parked — no tokens right now).**
+      Kim has a vague idea about complementing/recovering SAME-L's HF reconstruction loss. Ties
+      directly to the existing 2026-08-06 codec-clarity finding (DISCOVERIES.md, WORKLOG.md
+      2026-08-06, `hf_clarity/index.html`): ~100% of audible HF-clarity loss traces to the SAME
+      codec itself, not the m4a serving step — so this is the right axis to push on if we ever do.
+      Bookmarking a candidate tool for exploring it: **github.com/MTAI-HMU/NAC_audio_tools**
+      (Apache-2.0, new 2026-09-21, 21★) — one `encode()/decode()/plot()` interface across DAC,
+      EnCodec, SNAC, Stable Audio Open VAE, SAME-L, Music2Latent, DACVAE, ACE-Step 1.5/v1
+      DCAE, εar-VAE. Loads SAME-L via stock `stable-audio-tools==0.0.20` +
+      `get_pretrained_model("stabilityai/SAME-L")` — no dependency on our fork, safe to try in a
+      throwaway venv (its pinned deps would clobber our ROCm torch if installed into `SAO/.venv`
+      or `sat-venv`). Useful for two things once budget allows: (1) an independent perceptual eval
+      instrument not derived from SAME-L itself (audit-the-instrument rule, CLAUDE.md); (2) a
+      side-by-side HF-fidelity comparison against another codec (candidates: DAC 44.1kHz, εar-VAE
+      48kHz/50fps — both denser than SAME-L's 10.8fps) as the first real step before designing any
+      HF-recovery mechanism. No design yet, no EXPERIMENTS.md entry — just a bookmark so this
+      doesn't have to be re-found.
+
 - [ ] **Inertness guard on LatCH guidance — "did the output ever differ from doing nothing?"**
       (W, 2026-09-22, deferred for budget; ~30 lines + a test, no GPU needed to write.)
       Adopts CONTINUITY's dynamic-inertness half (AGENT_DIALOGUE 2026-09-22 00:33): a run launched
