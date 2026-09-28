@@ -566,6 +566,26 @@ def clip_name(label, ckpt, cfg, strength, pid, seed, steps=STEPS, duration=DURAT
     return f"{label}__{ckpt}__cfg{int(cfg)}__w{int(round(strength * 100)):03d}__{pid}__s{seed}{st}{du}{wt}.wav"
 
 
+def cell_key(label, tag, cfg, w, prompt_id, steps, duration, weights):
+    """THE canonical resume-check key -- manifest_key() (below) and every live skip-check in the
+    render loop must use exactly this, or they silently disagree with each other.
+
+    Found 2026-09-29 (W): the 2026-09-11 fix below taught manifest_key() (used to build
+    `existing` from the ON-DISK manifest) that weights is part of the identity, but every LIVE
+    skip-check in the render loop -- the pre-flight need_any scan AND the per-cell "if key not
+    in existing" gates -- still built their own bare f-string key with no weights suffix at all.
+    Consequence: once ANY online cell exists for a (label,ckpt,cfg,w,prompt) combo, an
+    `--weights ema` pass's bare-key lookup collides with that online entry (both hash to the
+    same suffix-less string) and reads as "already done" -- [skip-all], zero cells written, exit
+    0. Bit an entire online-then-ema two-pass full-FT audit: 11/11 per-label EMA invocations
+    skip-all'd, having genuinely rendered nothing, while reporting success. Root cause was the
+    SAME shape as the 2026-09-11 note two paragraphs up describes for manifest_key() itself --
+    that fix updated the READ side only and never touched the render loop's own key building.
+    """
+    _wk = "" if (not weights or weights == "online") else f"|{weights}"
+    return f'{label}|{tag}|{cfg}|{w}|{prompt_id}|st{steps}|d{duration}{_wk}'
+
+
 def manifest_key(e):
     # legacy entries predate the "steps"/"duration" fields -> default to STEPS(24)/
     # DURATION(20s), which is also what a default render produces, so resume stays
@@ -574,10 +594,8 @@ def manifest_key(e):
     # SKIPPED as already-rendered against an EMA row -- which is exactly what happened the first
     # time the suomi re-render ran: 0 cells, exit 0, "done". Suffix-when-non-default keeps every
     # pre-existing key byte-identical (absent weights -> "online" -> no suffix).
-    _w = e.get("weights") or "online"
-    _wk = "" if _w == "online" else f"|{_w}"
-    return (f'{e["model"]}|{e["ckpt"]}|{e["cfg"]}|{e["strength"]}|{e["prompt_id"]}|'
-           f'st{e.get("steps", STEPS)}|d{e.get("duration", DURATION)}{_wk}')
+    return cell_key(e["model"], e["ckpt"], e["cfg"], e["strength"], e["prompt_id"],
+                    e.get("steps", STEPS), e.get("duration", DURATION), e.get("weights"))
 
 
 def load_existing_keys():
@@ -830,13 +848,25 @@ def main():
         # fullft arms are whole-model fine-tunes: no adapter, no strength sweep —
         # the w axis collapses to 1.0 (W's loader recommendation 2026-07-18)
         strengths_to_render = strength_sweep(ckpt_path is None or is_fullft, only_strengths)
+        # Which weight suffix(es) THIS preflight scan should check for (see cell_key()'s
+        # docstring for why this can't be a bare unsuffixed key). Adapters never carry one
+        # (EMA is full-FT only). An explicit --weights ema/online tells us exactly what this
+        # run will resolve to; --weights auto doesn't resolve until the checkpoint's own EMA
+        # presence is inspected (inside the per-checkpoint load below), so check BOTH candidate
+        # keys here and only skip if neither is missing -- never skip on uncertainty.
+        if is_fullft and args.weights in ("online", "ema"):
+            weight_candidates = [args.weights]
+        elif is_fullft:
+            weight_candidates = ["online", "ema"]
+        else:
+            weight_candidates = [None]
         # skip the whole (model,ckpt) load if every cell is already done
         need_any = False
         for prompt in prompts:
             for cfg in cfgs:
                 for w in strengths_to_render:
-                    key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
-                    if key not in existing:
+                    if any(cell_key(label, tag, cfg, w, prompt["id"], steps, duration, wt) not in existing
+                           for wt in weight_candidates):
                         need_any = True
         # the skip-all key set above covers STANDARD cells only — a label whose standard
         # grid is complete would skip its NATIVE cell forever (bit the 6 fullft T<2048
@@ -851,13 +881,14 @@ def main():
                     for pr in prompts:
                         for c in cfgs:
                             for w in strengths_to_render:
-                                if f'{label}|{tag}|{c}|{w}|{pr["id"]}|st{steps}|d{nd}' not in existing:
+                                if any(cell_key(label, tag, c, w, pr["id"], steps, nd, wt) not in existing
+                                       for wt in weight_candidates):
                                     need_any = True
                 else:
                     np_chk = next((p for p in prompts if p["id"].startswith("kl_")), prompts[0])
                     nw_chk = NATIVE_LEN_STRENGTH if (ckpt_path and not is_fullft) else 1.0
-                    nkey = f'{label}|{tag}|{native_cfg}|{nw_chk}|{np_chk["id"]}|st{steps}|d{nd}'
-                    if nkey not in existing:
+                    if any(cell_key(label, tag, native_cfg, nw_chk, np_chk["id"], steps, nd, wt) not in existing
+                           for wt in weight_candidates):
                         need_any = True
         if not need_any:
             print(f"[skip-all] {label}/{tag}")
@@ -987,7 +1018,7 @@ def main():
                 if over_budget():
                     stopped = True
                     return
-                nkey = f'{label}|{tag}|{ncfg}|{nw}|{np_["id"]}|st{steps}|d{native_dur}'
+                nkey = cell_key(label, tag, ncfg, nw, np_["id"], steps, native_dur, _wset)
                 nwav_name = clip_name(label, tag, ncfg, nw, np_["id"], np_["seed"],
                                       steps, duration=native_dur, weights=_wset)
                 nm4a_path = RENDER_DIR / nwav_name.replace(".wav", ".m4a")
@@ -1070,7 +1101,7 @@ def main():
                                 if over_budget():
                                     stopped = True
                                     break
-                                key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                                key = cell_key(label, tag, cfg, w, prompt["id"], steps, duration, _wset)
                                 wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
                                                      duration=duration, weights=_wset)
                                 m4a_name = wav_name.replace(".wav", ".m4a")
@@ -1134,7 +1165,7 @@ def main():
                         break
                     base_m4a_name = None
                     for w in strengths_to_render:
-                        key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                        key = cell_key(label, tag, cfg, w, prompt["id"], steps, duration, _wset)
                         wav_name = clip_name(label, tag, cfg, w, prompt["id"], prompt["seed"], steps,
                                              duration=duration, weights=_wset)
                         m4a_name = wav_name.replace(".wav", ".m4a")
@@ -1182,7 +1213,7 @@ def main():
                         for w in STRENGTHS:
                             if w in strengths_to_render:
                                 continue
-                            key = f'{label}|{tag}|{cfg}|{w}|{prompt["id"]}|st{steps}|d{duration}'
+                            key = cell_key(label, tag, cfg, w, prompt["id"], steps, duration, _wset)
                             if key in existing:
                                 continue
                             append_manifest({"model": label, "ckpt": tag, "weights": _wset, "cfg": cfg, "strength": w,
