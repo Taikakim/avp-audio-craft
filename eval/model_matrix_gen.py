@@ -466,6 +466,10 @@ def build_jobs(only=None, avp_only=False, base_full=False, only_labels=None, onl
     for label, spec in sections.items():
         if only and label != only:
             continue
+        # filter BEFORE the on-disk check, or every run of --only-labels X prints a
+        # [skip-missing] line for every other registered arm whose ckpts are gone (Kim 2026-09-29)
+        if only_labels and label not in only_labels:
+            continue
         if avp_only and ("avp" not in label.lower() or "everything" in label.lower()):
             continue
         # optional per-model "root" override for runs saved outside the usual
