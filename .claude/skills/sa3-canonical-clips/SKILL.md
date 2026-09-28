@@ -20,7 +20,7 @@ it had 26, and a whole `_BROKEN` directory was believed all-broken when a third 
 
 | convention | where | what | for |
 |---|---|---|---|
-| **model matrix** (the board) | `/home/kim/evals_aac/model_matrix/` + `manifest.jsonl` | **85 cells** per LoRA ckpt, **42** per full-FT ckpt | the shared board, census, scoring |
+| **model matrix** (the board) | `/home/kim/evals_aac/model_matrix/` + `manifest.jsonl` | **127 cells** per LoRA ckpt, **42** per full-FT ckpt | the shared board, census, scoring |
 | **standard_clips** (sanity listen) | **`<run_root>/<arm>/standard_clips/`** — inside the checkpoint dir | **13 clips** per ckpt | a campaign's own quick A/B, often rendered by whoever ran the campaign |
 
 **Coverage check, both at once:**
@@ -33,10 +33,17 @@ find <run_root> -name standard_clips -type d -exec sh -c 'echo "$1: $(ls "$1" | 
 
 ## 1. The canonical grid
 
-Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 16.0)`,
-`STRENGTHS = (1.0, 0.6)` (Kim direct 2026-09-28, superseding the earlier `(1.0, 1.5, 2.0)` —
-existing 1.5/2.0 cells stay on the board, they just stop growing), `STEPS = 24`,
-`DURATION = 20.0`, `FPS = 44100/4096 = 10.7666 Hz`.
+Source of truth: `eval/model_matrix_gen.py`. Constants: `CFGS = (1.0, 7.0, 12.0)` (Kim direct
+2026-09-28, superseding `(1.0, 7.0, 16.0)` — "not everything needs to be 1:1 comparable; 16 is
+often too much"), `STRENGTHS = (0.5, 1.0, 1.5)` (same day, superseding `(1.0, 1.5, 2.0)`) —
+in both cases the OLD cells (cfg16, w2.0) stay on the board, they just stop growing, same
+pattern as every prior policy change here. `STEPS = 24`, `DURATION = 20.0`,
+`FPS = 44100/4096 = 10.7666 Hz`.
+
+**Note (2026-09-28): a same-day message about "adapters render at w1.0/w0.6 only" was NOT this
+policy** — Kim scoped that to one batch (the fp32cmp overtrained-edge arms specifically), not a
+standing default. The standing default is the 3-point sweep above. Don't conflate a batch-scoped
+ask with a `STRENGTHS`/`CFGS` change again — confirm scope before editing the constant.
 
 **The 14 canonical prompts** (`build_prompts(n_per_band=3, n_kimlong=3)`) — 9 rarity-band +
 3 long-form + **2 bracket** (`BRACKET_PROMPTS`, folded into the default grid 2026-09-28, Kim
@@ -48,14 +55,14 @@ change. Ids are stable and are what every board row keys on:
 `rb_common_0/1/2`, `rb_mid_3/4/5`, `rb_rare_6/7/8`, `kl_0/1/2`, `rb_bracket_0`, `kl_bracket_0`.
 
 **Cell counts — match the arm's SIBLINGS, don't invent a set:**
-- **LoRA/DoRA arm:** 14 prompts × 3 cfgs × 2 strengths (w1.0, w0.6) = **84**, **+1 native** = **85**
-  (was 127 before 2026-09-28's `STRENGTHS` change to `(1.0, 0.6)` — an older arm rendered under
-  the previous `(1.0, 1.5, 2.0)` sweep keeps its 1.5/2.0 cells on the board; they just stop growing).
+- **LoRA/DoRA arm:** 14 prompts × 3 cfgs (1/7/12) × 3 strengths (0.5/1.0/1.5) = **126**,
+  **+1 native** = **127**. An older arm rendered under the previous `(1.0, 7.0, 16.0)` /
+  `(1.0, 1.5, 2.0)` sweeps keeps its cfg16/w2.0 cells on the board; they just stop growing.
 - **Full-FT arm:** 14 × 3 × **1** = **42** — no adapter, so no strength axis. Switched on by
   `label.startswith("fullft_")`, so **a full fine-tune's label MUST start with `fullft_`**
   or it gets a meaningless strength sweep and a wrong cell count.
 - **`_ptm` arm (adapter on the POST-TRAINED `medium`):** rendered at **8 steps, cfg 1,
-  strength 1.0** — **not** the 24-step / cfg 1-7-16 grid. Stability post-trained/distilled
+  strength 1.0** — **not** the 24-step / cfg 1-7-12 grid. Stability post-trained/distilled
   `medium` to that operating point, so it is a property of the model, not a render choice
   (Kim direct 2026-09-08):
   ```

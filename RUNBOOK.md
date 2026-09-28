@@ -219,9 +219,10 @@ Misc/gpu_guard.sh acquire KIM $$ || exit 1
 Misc/gpu_guard.sh release KIM
 ```
 
-Grid: **85 cells per LoRA checkpoint, 42 per full-FT** (14 prompts × cfg 1/7/16 × strength
-1.0/0.6, 24 steps, 20 s — 12 canonical + 2 bracket since 2026-09-28, was 109/36 on 12 prompts;
-strength sweep changed from 1.0/1.5/2.0 to 1.0/0.6 same day, Kim direct — was 127/42 briefly).
+Grid: **127 cells per LoRA checkpoint, 42 per full-FT** (14 prompts × cfg 1/7/12 × strength
+0.5/1.0/1.5, 24 steps, 20 s — 12 canonical + 2 bracket since 2026-09-28, was 109/36 on 12
+prompts; cfg/strength sweep changed from 1/7/16 + 1.0/1.5/2.0 to 1/7/12 + 0.5/1.0/1.5 same
+day, Kim direct — cell count is unchanged at 127/42, only which cfg/strength values are hit).
 
 **⚠ The post-trained `medium` (`_ptm` labels) is the exception: it runs at 8 steps and cfg 1.**
 That is the model's native operating point, set by Stability — not a render preference. Use:

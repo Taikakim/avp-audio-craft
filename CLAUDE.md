@@ -77,9 +77,10 @@ with its own `ARCHITECTURE.md` + `CLAUDE.md`.
    - **`sa3-canonical-clips`** — rendering/checking the standard clip set. Starts with the rule
      that **clips live in TWO places** (`evals_aac/model_matrix/` AND `<run_root>/<arm>/standard_clips/`)
      and that checking one and declaring "no clips" has now been wrong twice; then the exact grid
-     (14 canonical prompt ids, cfg 1/7/16, strengths 1.0/0.6, 24 steps, 20 s ⇒ **85 cells per LoRA
-     ckpt, 42 per full-FT** — 12+2 bracket since 2026-09-28, was 109/36 before; strengths changed
-     from 1.0/1.5/2.0 to 1.0/0.6 same day, Kim direct — was briefly 127/42), how to register an
+     (14 canonical prompt ids, cfg 1/7/12, strengths 0.5/1.0/1.5, 24 steps, 20 s ⇒ **127 cells per
+     LoRA ckpt, 42 per full-FT** — 12+2 bracket since 2026-09-28, was 109/36 before; cfg/strength
+     values changed from 1/7/16 + 1.0/1.5/2.0 same day, Kim direct — cell count stays 127/42), how
+     to register an
      arm in `eval/rarity_bracket_manifest.json`, and how
      to verify OUTPUT rather than exit code (renders segfault at teardown AFTER writing every file).
    **These two supersede re-deriving any of it from source.** When you learn something new about

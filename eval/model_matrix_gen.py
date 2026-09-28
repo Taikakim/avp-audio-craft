@@ -56,15 +56,21 @@ def _existing_manifest():
 OVERRIDES_PATH = ROOT / "Misc/models_index_overrides.json"
 MODELS_OVERRIDES = json.load(open(OVERRIDES_PATH)) if OVERRIDES_PATH.exists() else {}
 
-CFGS = (1.0, 7.0, 16.0)
-# Kim direct 2026-09-28 (superseding the 2026-07-20 note below): for adapters, only
-# render at w1.0 and w0.6 going forward -- back to including 0.6, dropping 1.5/2.0.
-# Existing 1.5/2.0 cells in the manifest are NOT deleted -- they just stop growing.
+# Kim direct 2026-09-28 (superseding the 2026-07-20 note below): cfg16 dropped for cfg12 --
+# "not everything needs to be 1:1 comparable; 16 is often too much." Existing cfg16 cells in
+# the manifest are NOT deleted, they just stop growing (same pattern as every prior strength/
+# cfg policy change here). ptm rows are unaffected -- they stay pinned to cfg1, their own
+# native operating point, never this grid.
+CFGS = (1.0, 7.0, 12.0)
+# Kim direct 2026-09-28 (superseding the 2026-07-20 note below): back to a 3-point adapter
+# sweep, 0.5/1.0/1.5 (his earlier "w1.0 and w0.6 only" same day was scoped to ONE batch --
+# the fp32cmp overtrained-edge arms specifically -- not a standing default; don't re-read it
+# as one). Existing 0.6/2.0 cells in the manifest are NOT deleted, they just stop growing.
 #   (2026-07-20, superseded: "drop 0.6 from NEW renders (most models don't need it;
 #    speeds the grid up), add 2.0 (1.5 is well-handled by many models, worth seeing
 #    past it). Existing 0.6 cells in the manifest are NOT deleted -- they just stop
 #    growing.")
-STRENGTHS = (1.0, 0.6)
+STRENGTHS = (0.5, 1.0, 1.5)
 
 
 def strength_sweep(pinned: bool, only_strengths):
