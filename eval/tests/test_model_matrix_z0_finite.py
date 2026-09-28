@@ -67,11 +67,17 @@ def test_message_names_the_cell_and_says_nothing_was_written(capsys):
 
 
 def test_guard_is_wired_into_both_render_paths():
-    """A helper nothing calls is worthless. Both the grid cell and the native cell must
-    consult it, and both must `continue` -- writing NO wav, m4a or manifest line, so the
-    cell stays missing and a later resume re-renders it rather than skipping it forever."""
+    """A helper nothing calls is worthless. The native cell AND every grid-cell render path must
+    consult it, and each call must `continue` -- writing NO wav, m4a or manifest line, so the
+    cell stays missing and a later resume re-renders it rather than skipping it forever.
+
+    Was 2 sites (grid + native) until 662b4af (2026-09-25, merge-before-render) split the single
+    grid loop into two structurally separate ones -- a per-strength loop that merges the adapter
+    fresh per w, and a shared-model loop for base/full-FT rows that carry no adapter at all -- so
+    the count went to 3 without anyone updating this assertion; this test stayed silently RED from
+    that commit until 2026-09-28 (W's review), never run as part of the change that broke it."""
     src = SRC.read_text()
-    assert src.count("if not z0_is_finite(") == 2, "expected the grid path AND the native path"
+    assert src.count("if not z0_is_finite(") == 3, "expected native + the merged-adapter grid loop + the no-adapter grid loop"
     for chunk in src.split("if not z0_is_finite(")[1:]:
         head = chunk[:400]
         assert "continue" in head

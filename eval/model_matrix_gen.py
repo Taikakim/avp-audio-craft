@@ -206,6 +206,61 @@ def sf_averaged_adapter_ckpt(ckpt_path, tmp_dir):
     return slim
 
 
+def load_adapter_base_weights(model, ckpt_path):
+    """If adapter was warm-started from a fullft/init_state_ckpt, load those base weights into DiT.
+
+    W 2026-09-28 review: coverage/load failures AFTER an init_state_ckpt is confirmed to apply are
+    NOT swallowed. An arm registered with one (e.g. goa5k_fullft_avp_dora_3e-3_*'s manifest note
+    "CRITICAL: invalid on vanilla medium-base") renders silently WRONG -- adapter deltas trained
+    against a warm-started base, baked onto stock medium-base instead -- if this step quietly
+    no-ops on error; the original broad `except Exception: print(warning)` around the whole load
+    would do exactly that. Only the run_meta.json LOOKUP itself (missing file, unparseable JSON,
+    an init_ckpt path that doesn't exist on this machine) is tolerated -- once a real init_ckpt is
+    found on disk, a failure past that point fails loud, matching train_lora.py/train_lora_modular.py's
+    own --init_state_ckpt convention (assert-and-crash, not warn-and-continue)."""
+    if not ckpt_path:
+        return False
+    p = Path(ckpt_path)
+    for parent in (p.parent, p.parent.parent):
+        meta_file = parent / "run_meta.json"
+        if not meta_file.exists():
+            continue
+        try:
+            meta = json.loads(meta_file.read_text())
+        except Exception as e:
+            print(f"[init_state] Warning: couldn't parse {meta_file}: {e}", flush=True)
+            continue
+        init_ckpt = meta.get("args", {}).get("init_state_ckpt")
+        if not init_ckpt or not Path(init_ckpt).exists():
+            continue
+        import torch as _t
+        print(f"[init_state] Loading warm-start base weights from {init_ckpt}...", flush=True)
+        _ck = _t.load(str(init_ckpt), map_location="cpu", weights_only=False)
+        _sd_raw = _ck.get("state_dict", _ck)
+        _tgt = model.model.model
+        _tgt_keys = set(dict(_tgt.named_parameters())) | set(dict(_tgt.named_buffers()))
+        _has_ema = any(k.startswith("diffusion_ema.ema_model.") for k in _sd_raw)
+        _prefixes = ("diffusion_ema.ema_model.",) if _has_ema else ("diffusion.model.", "model.")
+        _best = None
+        for _pfx in _prefixes:
+            _sd = {(k[len(_pfx):] if k.startswith(_pfx) else k): v for k, v in _sd_raw.items()}
+            _n = sum(1 for k in _sd if k in _tgt_keys)
+            if _best is None or _n > _best[0]:
+                _best = (_n, _sd, _pfx)
+        _, _sd, _pfx = _best
+        _missing, _ = _tgt.load_state_dict(
+            {k: v.to(next(_tgt.parameters()).dtype) for k, v in _sd.items() if k in _tgt_keys},
+            strict=False)
+        _cov = 1 - len(_missing) / max(1, len(list(_tgt.state_dict())))
+        assert _cov > 0.99, (f"--init_state_ckpt warm-start base ({init_ckpt}) covers only {_cov:.1%} "
+                             f"of the DiT ({len(_missing)} missing keys, prefix tried '{_pfx}') -- "
+                             f"refusing to render this adapter against the wrong base")
+        print(f"[init_state] warm-start base loaded (prefix '{_pfx}', cov {_cov:.1%})", flush=True)
+        del _ck, _sd_raw, _sd
+        return True
+    return False
+
+
 def native_len_seconds(label: str) -> float | None:
     """Trained context length in seconds for `label`, if known (from
     --native-frames-file first, else the recipe override's 'T=<frames>' text) --
@@ -960,6 +1015,7 @@ def main():
                     try:
                         model = StableAudioModel.from_pretrained(
                             "medium" if args.pt_medium else "medium-base", device="cuda")
+                        load_adapter_base_weights(model, ckpt_path)
                         model.load_lora([str(_load_path)])
                         model.set_lora_strength(w)
                         n_merged = merge_adapters(model.model)
