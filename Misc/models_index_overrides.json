@@ -7017,12 +7017,14 @@
   "e2_phm": {
     "purpose": "CONTINUITY (spec owner, 2026-07-31), THE-FINN (metrical-tree design pass): E2 'free-PHM drift' -- one of 4 tier-1 adapter experiments in the reality-structured-model-experiments research program (docs/superpowers/specs/2026-07-31-reality-structured-model-experiments.md), testing a PHM (parameterized hypercomplex multiplication) adapter as an alternative adapter architecture. Built + param-parity verified per docs/audit-open-tails-2026-08-07.md:140, flagged there as 'mis-scoped local' (status caveat, not fully resolved as of that audit). Same code identified during tonight's git-attribution archaeology (spec-citation leg) as C's.",
     "purpose_evidence": "docs/superpowers/specs/2026-07-31-reality-structured-model-experiments.md; docs/open-threads.md:137; docs/audit-open-tails-2026-08-07.md:140",
-    "purpose_confidence": "strong"
+    "purpose_confidence": "strong",
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): ep0 (step 0): \"sounds quite good\" -- interesting this early."
   },
   "stereo_sweep_w0.0": {
     "purpose": "~2026-07-17/18 (exact asker/launch date not directly pinned): the BASELINE (w=0.0, no mid/side stereo-loss term) arm of a stereo mid/side-loss weight sweep (w0.0/w0.1/w0.3). CAUTION: the w0.1/w0.3 TREATMENT arms both OOM'd on launch and were falsely reported DONE rc=0 by a masking bug in stereo_sweep_driver.log (docs/fleet-audit-2026-07-19.md, HIGH-priority, CONTINUITY-owned) -- this w0.0 arm is the CONTROL and is not named among the failed arms, but its own checkpoint has not been independently re-verified here; confirm before trusting it as a clean baseline given the sibling arms' provenance problem.",
     "purpose_evidence": "docs/fleet-audit-2026-07-19.md:18-21",
-    "purpose_confidence": "weak"
+    "purpose_confidence": "weak",
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): ep1 x kl_2 cfg7 w1: \"not too bad\"."
   },
   "dorlor_avpaug_dora_adamw_r128a45_t256_bf16_bs128_s1": {
     "purpose": "Kim direct 2026-08-21 (\"I'm mystified why we are getting so bad results now again\"): the diagnostic A/B^2 \u2014 adapter (DoRA-rows vs plain LoRA) x optimizer (AdamW-WSD vs braked Fusion) \u2014 with everything else pinned at the healthiest known settings: TRUE 8-way DDP via torchrun, bf16 (FA2 on multitorch), T256, rank 128, goa big set, 32 epochs. Isolates which of the two axes was costing quality.",
@@ -7771,7 +7773,7 @@
     "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=8088: \"has the most distinct melody\"; \"practically a kickless section, although a very thin upper end of a kick can be heard on some downbeats.\" rb_rare_8: \"more synth energy, but the kick is thinner and in the background ... sounds like a buildup section.\" kl_2: \"an example that the subloss can also have a punchy beat and still melodies, it is noticeably more melodic than of the ablation runs.\" \"the subspace thingy actually seems to work, although at the cost of bass sometimes.\" Asked for ptm renders."
   },
   "base": {
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): rb_rare_8 cfg7: \"not too bad (soundwise very clean), could be some minimalistic progressive psytrance from modern times.\" Asked for static base + base_ptm rows pinned at the top of the player."
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): rb_rare_8 cfg7: \"not too bad (soundwise very clean), could be some minimalistic progressive psytrance from modern times.\" Asked for static base + base_ptm rows pinned at the top of the player. | 2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): the kl_1 prompt is a persistent anomaly: Base renders it as super-fast psytrance, while EVERY other model tested, including base_ptm, renders it as chill downbeat material -- quite persistent across arms, of all the prompts to behave this way."
   },
   "goa3_avp_r128_shampoo_b16_3e4_2026-09-25": {
     "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): step=10144 x rb_rare_8 cfg7 w1 \"sounds close to AdamW, not the other ablation runs.\""
@@ -7823,5 +7825,23 @@
   },
   "fullft_mixed_avp_goa_t4096": {
     "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_rare_8 cfg7 w1: \"potentially a good start for some tests with using this instead of Base Medium as a starting point\"."
+  },
+  "ablation_goa5k_b01_adagc104": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: sounds very close to how the Base model sounds (Kim realised he should check against Base directly). rb_rare_7 cfg7 w1: has a more snappy psytrancey sound compared to base -- so the base-similarity is prompt-dependent, not universal."
+  },
+  "ablation_goa5k_b02_adagc3": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: sounds very close to how the Base model sounds (Kim realised he should check against Base directly). rb_rare_7 cfg7 w1: has a more snappy psytrancey sound compared to base -- so the base-similarity is prompt-dependent, not universal."
+  },
+  "ablation_goa5k_b03_nogate_6e-5": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: sounds very close to how the Base model sounds (Kim realised he should check against Base directly). rb_rare_7 cfg7 w1: has a more snappy psytrancey sound compared to base -- so the base-similarity is prompt-dependent, not universal."
+  },
+  "ablation_goa5k_b04_nogate_6e-4": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: the sound takes a jump in a new direction, away from Base -- unlike b01/b02/b03 which stayed close to Base at this prompt. Constrained/atmosphere comparison: b04 is even MORE constrained than b05 (the least lush of the b04/b05/b06 trio)."
+  },
+  "ablation_goa5k_b05_nogate_6e-4_adagc3": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: sounds identical to b04 rhythmically/spectrally. Constrained/atmosphere comparison: b05 is often more constrained than b06 (full_3e-3), which has lusher, richer sound with more atmospheres and pads; b05 sits between b04 (most constrained) and b06 (lushest)."
+  },
+  "ablation_goa5k_b06_full_3e-3": {
+    "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): sounds rhythmically similar to b05 (nogate_6e-4_adagc3), but has a lusher, richer sound with more atmospheres and pads -- b05 is often more constrained by comparison, and b04 is even more constrained than b05. So the constrained-to-lush gradient across this trio is b04 < b05 < b06(full_3e-3)."
   }
 }
