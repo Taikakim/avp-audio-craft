@@ -33,7 +33,8 @@
   },
   "soups_dora": {
     "note": "Best DoRA soup overall is r128f_expasc (exponential-ascending blend) \u2014 base run Fr\u00e9chet distance 0.0750, the baseline winner in the cautious A/B.",
-    "recipe": "rank 64 \u00b7 alpha 64 \u00b7 dora-rows \u00b7 epoch -1/step -1 (this ckpt) \u00b7 batch/duration not recorded in checkpoint"
+    "recipe": "rank 64 \u00b7 alpha 64 \u00b7 dora-rows \u00b7 epoch -1/step -1 (this ckpt) \u00b7 batch/duration not recorded in checkpoint",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): r64_expasc x rb_common_1 cfg7 w1: good soup."
   },
   "dora16_glitchheal_5ep_2xlr": {
     "note": "Weight-mutation \"healing\" experiment \u2014 a 5-epoch LoRA trained on a glitched base neither heals nor compensates; the adapter simply dominates (~5x more shift than the glitch itself), and the glitch survives underneath as an accent.",
@@ -1319,7 +1320,8 @@
     "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) \u2014 quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep7 is the best."
   },
   "fp32cmp_goa_t4096_bs4_lr5e5": {
     "recipe": {
@@ -1368,7 +1370,8 @@
     "purpose_source": "WORKLOG.md:2066 (2026-07-20, WINTERMUTE) \u2014 quoted: \"fp32 campaign ... Arms: {avp,goa} x {t512_bs8, t4096_bs1, t4096_bs4_lr1e4, t4096_bs4_lr5e5}; bf16 twins only at t512.\"",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep7 is the best, ep6 is also good."
   },
   "fp32cmp_goa_t512_bs8_lr1e4": {
     "recipe": {
@@ -1609,7 +1612,8 @@
     "status": "in-progress",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep7 very good trajectory and learning speed."
   },
   "smoke_r256_a256_lr1e4_f512_bs8": {
     "recipe": "LUMI pipeline smoke run: DoRA r256 \u03b1256, T=512 crops, batch 8, lr 1e-4 \u2014 sanity artifact, not a model candidate.",
@@ -1805,7 +1809,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep1 is the good one."
   },
   "fullft_goa_t4096": {
     "recipe": {
@@ -1852,7 +1857,8 @@
     "status": "done",
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
-    }
+    },
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep3 seems to be the best, although this also shows maybe some issues with low-salience details. Also, interesting how ep0 was already blown, then it settles at ep3 to a quite good groove, and then starts to degrade again. Kim's question: \"do I read this correctly that we passed a good solution which was completely different from Base Medium, and then Schedule-Free kept pressing gas?\""
   },
   "fullft_avp_t256": {
     "recipe": {
@@ -1900,7 +1906,7 @@
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
     },
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"is excellent. We need a full clip set.\" | 2026-09-27 (listening pass, relayed in chat): ep47 x rb_mid_3 cfg7 w1: \"This too, as well as the ep7 variant, maybe a good starting point\" (i.e. as a base to start new training from, instead of Base Medium)."
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): \"is excellent. We need a full clip set.\" | 2026-09-27 (listening pass, relayed in chat): ep47 x rb_mid_3 cfg7 w1: \"This too, as well as the ep7 variant, maybe a good starting point\" (i.e. as a base to start new training from, instead of Base Medium). | 2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): still ok at ep153, ep46/47 maybe better."
   },
   "fullft_avp_t512": {
     "recipe": {
@@ -2090,7 +2096,7 @@
     "provenance": {
       "verdict_by": "CONTINUITY 2026-07-30 (deferred judgment per manifest flag)"
     },
-    "kim_feedback": "2026-09-27: ep7 x kl_bracket_0 cfg7 w1: \"another possible starter\" (candidate starting point instead of Base Medium)."
+    "kim_feedback": "2026-09-27: ep7 x kl_bracket_0 cfg7 w1: \"another possible starter\" (candidate starting point instead of Base Medium). | 2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep2, not sure if any ep is really good."
   },
   "fp32cmp_goa_t4096_bs4_lr1e4_ptm": {
     "recipe": "SAME adapter file as fp32cmp_goa_t4096_bs4_lr1e4 (DoRA-rows r128 \u03b1128, fp32, T=4096, bs4, lr 1e-4, trained on medium-BASE) -- here applied to the POST-TRAINED medium (rf_denoiser / ping-pong sampler) at its native config: steps 8, cfg 1. Tests the Discord/Dadabots claim (+ Zach@Stability's layer argument: adapters concentrate in the middle 'knowledge' layers, ARC post-training rewrites the last decoder layers, so they compose) that base-trained L/DoRAs transfer to the post-trained model. Compare against the medium-base rows of the same label.",
@@ -2110,7 +2116,8 @@
       }
     ],
     "verdict": "Kim's preliminary ear verdict (fp32 > bf16 in most ways) stands, not comprehensively audited. Native-length (T4096, 380s) DSP+CLAP metering completed 2026-07-30 (task #79) after finding + fixing a stale-duration bug affecting several of these arms' native cells -- see WORKLOG 2026-07-29/30. bs1-vs-bs4 still undecided; no dedicated side-by-side listening pass has been done on it.",
-    "status": "in-progress"
+    "status": "in-progress",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): quite badly degraded, sounds like a broken radio, very thin and distorted."
   },
   "base_ptm": {
     "recipe": "stabilityai stable-audio-3-medium POST-TRAINED (ARC few-step), NO adapter -- steps 8, cfg 1 (native). The control row for the *_ptm adapter rows: if an adapter-on-PT row sounds like THIS row, the adapter is not expressing on the post-trained model.",
@@ -2157,7 +2164,8 @@
         "target": "winning_avp_t512_a45_fp32",
         "axis": "alpha damping \u2014 this arm is the a128 control isolating the 'adj' benefit"
       }
-    ]
+    ],
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep 50/59 are the last good ones, 19 for sure. \"We don't have more anymore?\""
   },
   "winning_avp_t512_a45_bf16": {
     "recipe": {
@@ -2345,7 +2353,8 @@
         "target": "winning_goa_t512_a45_fp32",
         "axis": "alpha damping (goa control)"
       }
-    ]
+    ],
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): \"Same for goa\" -- see winning_avp_t512_a128_fp32's note (ep 50/59 last good, 19 for sure, asked if more exist)."
   },
   "winning_goa_t512_a45_bf16": {
     "recipe": {
@@ -6337,7 +6346,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep5 the first reasonable one. ep9 is notably the best."
   },
   "fp32frames_avp_t2048_bs4_lr1e4": {
     "recipe": {
@@ -6377,7 +6387,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep0 is good, then 1/2/3 the rhythms fall apart, ep4 is good again. Between ep6 and ep7 the style changes. ep8 rhythms fall apart. ep9, yet again a new style, steady and clean."
   },
   "fp32frames_avp_t4096_bs1_lr1e4": {
     "recipe": {
@@ -6457,7 +6468,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep3 is the first good one, then seems ok until ep9."
   },
   "fp32frames_avp_t512_bs1_lr1e4": {
     "recipe": {
@@ -6657,7 +6669,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): does not really have a good ep, 1 is the closest, but still not very usable."
   },
   "fp32frames_goa_t2048_bs4_lr1e4": {
     "recipe": {
@@ -6697,7 +6710,8 @@
       }
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
-    "status": "done"
+    "status": "done",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep0 is good, then starts to degrade."
   },
   "fp32frames_goa_t4096_bs1_lr1e4": {
     "recipe": {
@@ -6778,7 +6792,7 @@
     ],
     "verdict": "T-trend synthesized (CONTINUITY, 2026-07-30, from the audiobox+clap backfill -- task #83): (1) SHORT-render quality is training-length-INVARIANT -- grid-20s PQ spread <=0.2 across T512-T4096, direction inconsistent; mechanically sensible since a 20s render is ~T215 regardless of the checkpoint's trained context. (2) Long-form IS where T matters, but the current data is DURATION-CONFOUNDED: native T4096@380s beats native T2048@190s on PQ in 6/8 cells (biggest: goa bs1 cfg7 6.21->7.14), but render length varies WITH training length in this comparison -- the decisive test (both checkpoints rendering the SAME duration) hasn't been run yet, and it's the same missing comparison the longctx family needs; one render design would settle both. (3) Anomaly flagged for Kim's ear: goa_t2048_bs1 dips on both PQ and CLAP in both length buckets -- possible weak arm or bad epoch, not yet investigated further.",
     "status": "done",
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep3 x kl_bracket_0 cfg7 w1 \"sounds very good. maybe slightly harsh, but very excellent style.\" Cited as the example that old Schedule-Free trains learned the oldschool goa style + 90s production aesthetic in 3-4 epochs."
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep3 x kl_bracket_0 cfg7 w1 \"sounds very good. maybe slightly harsh, but very excellent style.\" Cited as the example that old Schedule-Free trains learned the oldschool goa style + 90s production aesthetic in 3-4 epochs. | 2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): same story as the t2048 sibling: early ep0 is just grating noises, ep1 starts to have kind of kaleidoscopic glitch beats, ep2 rocks great, 3 is better, 4 more so."
   },
   "fp32frames_goa_t512_bs1_lr1e4": {
     "recipe": {
@@ -6874,7 +6888,8 @@
     "why": "Drone-recipe fp32 full-FT sweep (LUMI, 4 recipes x 2 seeds, T1024/bs4/20ep, one arm per GCD): which recipe survives fp32 full-FT WITHOUT the latent runaway that produces the spectral drone.",
     "verdict": "DIVERGED TO NaN - all 54 clips have entirely non-finite latents. The audio decodes to a FULL-SCALE SQUARE WAVE (peak = rms = 1.0). Do not audition; do not read any metric from it. A training failure, NOT a sound-quality result.",
     "status": "failed-diverged",
-    "compare_against": "the other three dronesweep recipes at the same seed"
+    "compare_against": "the other three dronesweep recipes at the same seed",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep9 x rb_common_0 cfg7 w1: clipped."
   },
   "dronesweep_bf16_plain_s1": {
     "one_liner": "clean - median z0 std 0.83",
@@ -6929,7 +6944,8 @@
     "purpose_source": "WORKLOG.md:2140 (2026-08-04, continuity) \u2014 quoted: \"precision_ladder (job 20682678, 3 arms fp32/bf16-mixed/fp16-mixed, T256/10ep full-FT/Fusion/EMA, 1 node/3GCD -- picks big-FT precision)\"",
     "purpose_added": "2026-08-25 backfill (Misc/backfill_run_meta_sidecars.py residue; mined from EXPERIMENTS.md/WORKLOG.md, quoted not inferred)",
     "purpose_evidence": "UNRECORDED \u2014 predates the purpose_evidence convention (adopted 2026-09-02). The text may well be correct; its source was simply never written down. Do not cite it as verified, and replace this line if you establish where it came from.",
-    "purpose_confidence": "unrecorded"
+    "purpose_confidence": "unrecorded",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep9 x rb_common_0 cfg7 w1: this one glitch noise."
   },
   "precision_ladder_t256_bf16mixed": {
     "purpose": "3-arm training-PRECISION A/B that picks the precision for the big full-FT run: fp32 vs bf16-mixed vs fp16-mixed, T256 / 10 ep, full-FT + Fusion + EMA, 1 node / 3 GCD (job 20682678).",
@@ -7012,7 +7028,8 @@
   "fullft_bigset": {
     "purpose": "CONTINUITY 2026-08-09, Kim direct: \"stage an AVP aug set x8 with the same recipe, 60eps.\" Full-finetune of medium-base on the AVP x8 set for 60 epochs, mirroring #68's fullft_bigset recipe (full-FT, FusionOpt, EMA) on pre-encoded latents. No separate encode stage: latents_avp IS already the x8 set (verified 2026-08-09 \u2014 2394 crops = 289 base + 2105 bungee-augmented across the 8 variants pitch\u00b11/\u00b12, tempo\u00b15/\u00b110).",
     "purpose_evidence": "lumi/sbatch/fullft_avp_aug.sbatch header (Tier-1, eval/mine_purposes.py join)",
-    "purpose_confidence": "strong"
+    "purpose_confidence": "strong",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): degraded."
   },
   "e2_phm": {
     "purpose": "CONTINUITY (spec owner, 2026-07-31), THE-FINN (metrical-tree design pass): E2 'free-PHM drift' -- one of 4 tier-1 adapter experiments in the reality-structured-model-experiments research program (docs/superpowers/specs/2026-07-31-reality-structured-model-experiments.md), testing a PHM (parameterized hypercomplex multiplication) adapter as an alternative adapter architecture. Built + param-parity verified per docs/audit-open-tails-2026-08-07.md:140, flagged there as 'mis-scoped local' (status caveat, not fully resolved as of that audit). Same code identified during tonight's git-attribution archaeology (spec-citation leg) as C's.",
@@ -7362,7 +7379,8 @@
   "dora256_mixed_a196_lr1e4": {
     "purpose": "CONTINUITY 2026-08-17, Kim direct after the full-FT DDP-bug saga (\"with all the trouble we're having with full finetunes, let's also run rank 256 DoRA, FP32, alpha 196... why single GPU? Run on four. And another four with 5e-5 but alpha 128... EMA and warmup on, and Adagc\"). Two DoRA arms on ONE 8-GPU node, 4 real DDP-synced GPUs each, mixed avp+goa T4096: arm A r256/a196/lr1e-4, arm B r256/a128/lr5e-5. VERIFIED forming both 4-way DDP groups (smoke 21330059); full run 21330736.",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/dora256_mixed_2x4gpu.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/dora256_mixed_2x4gpu.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep3 x rb_common_1 cfg7 w1: noisy, some vestige of music left."
   },
   "lreq_goa_lr1e4": {
     "purpose": "The R2(t)-gate mode A/B + seed pairs (CONTINUITY 2026-08-06, burn-day 2026-08-21). Identical to the subspace-loss grid EXCEPT the basis: melody_subspace15_selective_v3 instead of v2. Motivated by the melody machinery-audit \u2014 the v2 basis (top-15 melody VARIANCE) had ~ZERO melody-vs-codec-noise selectivity on held-out data (SNR 1.0x), so upweighting it boosted codec hiss as much as melody, the probable reason #59 came back weak. v3 (whitened CSP) is 5.1x melody-over-codec-noise held-out. K in {2,5,12}, matched to the v2 grid so arms compare directly. || The original SUBSPACE-WEIGHTED RF LOSS grid (CONTINUITY 2026-07-30, Kim direct). Counter to diffusion spectral bias (tau ~ 1/lambda, arXiv 2503.03206): melody is a measured 15-dim latent subspace holding only 9.3% of corpus variance, so plain RF gradient-starves it. Upweights the RF error's melody-subspace component by K (loss = mse + (K-1)*subspace_share; K=1 is byte-identical to off). K in {2,5,12}. Recipe = lreq_goa_lr1e4 EXACTLY, so the lr-equiv middle arm IS the K=1 baseline and no extra baseline burn was needed. \u26a0 This grid used the v2 (melody-VARIANCE) basis later shown to have ~zero held-out selectivity \u2014 see subloss_tgate_modes for the v3 replacement. \u26a0 AMBIGUOUS KEY: this run-directory name occurs under more than one campaign (lumi/sbatch/subloss_tgate_modes.sbatch, lumi/sbatch/subspace_loss_grid.sbatch); the variants above are the candidates and are usually the same experiment ported between containers. Disambiguate by the parent directory before relying on one.",
@@ -7447,7 +7465,8 @@
   "wfleet_mix3_t1024_a45_fp32_s1": {
     "purpose": "B7 MIR-timeseries conditioner bracket (CONTINUITY 2026-08-21, Kim direct: \"train some really traditional models, using our mir data as conditioners, probably rank 32 DoRAs... target is every feature we have... goa+avp aug mixed set\"). Each arm = medium-base + DoRA-rows r32 + a zero-init per-frame additive control projection on the DiT's native modular local-cond inlet (blocks 12-23 = W's layer-map union), fed REAL MIR curves from the target crop, teacher-forced, per-item control dropout 0.2 as the CFG null. The PACK knob selects the feature family; 'all' = 36 channels (band-RMS 4, stem RMS/onset 8, rhythm 3, HPCP 12, spectral 4, position 1, f0 4 goa-only).",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x rb_mid_3 cfg7 w1: just spectral glitches."
   },
   "wfleet_suomi_t1024_a128_fp32_s1": {
     "purpose": "B7 MIR-timeseries conditioner bracket (CONTINUITY 2026-08-21, Kim direct: \"train some really traditional models, using our mir data as conditioners, probably rank 32 DoRAs... target is every feature we have... goa+avp aug mixed set\"). Each arm = medium-base + DoRA-rows r32 + a zero-init per-frame additive control projection on the DiT's native modular local-cond inlet (blocks 12-23 = W's layer-map union), fed REAL MIR curves from the target crop, teacher-forced, per-item control dropout 0.2 as the CFG null. The PACK knob selects the feature family; 'all' = 36 channels (band-RMS 4, stem RMS/onset 8, rhythm 3, HPCP 12, spectral 4, position 1, f0 4 goa-only).",
@@ -7472,12 +7491,14 @@
   "wfleet_suomi_t512_a45_fp32_s1": {
     "purpose": "B7 MIR-timeseries conditioner bracket (CONTINUITY 2026-08-21, Kim direct: \"train some really traditional models, using our mir data as conditioners, probably rank 32 DoRAs... target is every feature we have... goa+avp aug mixed set\"). Each arm = medium-base + DoRA-rows r32 + a zero-init per-frame additive control projection on the DiT's native modular local-cond inlet (blocks 12-23 = W's layer-map union), fed REAL MIR curves from the target crop, teacher-forced, per-item control dropout 0.2 as the CFG null. The PACK knob selects the feature family; 'all' = 36 channels (band-RMS 4, stem RMS/onset 8, rhythm 3, HPCP 12, spectral 4, position 1, f0 4 goa-only).",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep19 x rb_mid_3 cfg7 w1: just spectral glitches."
   },
   "wfleet_suomi_t512_a45_fp32_s2": {
     "purpose": "B7 MIR-timeseries conditioner bracket (CONTINUITY 2026-08-21, Kim direct: \"train some really traditional models, using our mir data as conditioners, probably rank 32 DoRAs... target is every feature we have... goa+avp aug mixed set\"). Each arm = medium-base + DoRA-rows r32 + a zero-init per-frame additive control projection on the DiT's native modular local-cond inlet (blocks 12-23 = W's layer-map union), fed REAL MIR curves from the target crop, teacher-forced, per-item control dropout 0.2 as the CFG null. The PACK knob selects the feature family; 'all' = 36 channels (band-RMS 4, stem RMS/onset 8, rhythm 3, HPCP 12, spectral 4, position 1, f0 4 goa-only).",
     "purpose_confidence": "weak",
-    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)"
+    "purpose_evidence": "lumi/sbatch/mirctrl_bracket.sbatch header (Tier-1, eval/mine_purposes.py join)",
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep1 x rb_mid_3 cfg7 w1: just spectral glitches."
   },
   "lr5e5mix_r128a128_t512_bf16_bs8_s1": {
     "purpose": "Kim direct 2026-08-22 after auditioning the length_variant renders: \"the 5e-5 clips sound better than 1e-4, 2e-4 shows degradation, and where 1e-4/2e-4 MELT at cfg16/w2 the 5e-5 can take that push and still sound musical \u2014 which speaks to some deeper very healthy structure.\" So: replicate that run's recipe IN FULL across every sound set we have, to ep48. Replicated run = runs/adamw_bf16_sweep/adamw_goa_t512_bs4_lr5e5 (dora-rows r128 ALPHA 128, AdamW wd0.01, lr 5e-5 CONSTANT, bf16, T512 beat-aware, goa longform sidecar t3 only).",
@@ -7821,10 +7842,10 @@
     "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): 20s x rb_common_1 cfg7 w1: \"good.\" \"basically these all sounded quite good on the minimum.\""
   },
   "fullft_avp_t256_sweep": {
-    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\". | 2026-09-27: ep20_20s x rb_common_2 cfg7 w1: \"This also, maybe a clean starter\" (candidate starting point instead of Base Medium)."
+    "kim_feedback": "2026-09-27 (listening pass, dora_table/model_matrix, relayed in chat): ep153_20s x rb_common_1 cfg7 w1: \"very cool. I'd like to hear a full clip render set for this run, it sounds fabulous. But the last ep is enough\". | 2026-09-27: ep20_20s x rb_common_2 cfg7 w1: \"This also, maybe a clean starter\" (candidate starting point instead of Base Medium). | 2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): \"are these from the online or EMA weights?\" -- W: CONFIRMED ONLINE. Re-rendered ep153 fresh with --weights online and compared z0 latents against the original sweep clip (same seed/prompt/cfg): cosine 0.998 match (vs only 0.61 against a same-checkpoint EMA render; same-weights determinism baseline on this box is exactly 1.0)."
   },
   "fullft_mixed_avp_goa_t4096": {
-    "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_rare_8 cfg7 w1: \"potentially a good start for some tests with using this instead of Base Medium as a starting point\"."
+    "kim_feedback": "2026-09-27 (listening pass, relayed in chat): ep0 x rb_rare_8 cfg7 w1: \"potentially a good start for some tests with using this instead of Base Medium as a starting point\". | 2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): \"are these from the online or EMA weights?\" -- W: can't verify ep0 specifically (the only checkpoint on the board so far) -- its source .ckpt no longer exists on disk (only epoch=1 survives). ep1 DOES carry an EMA shadow; the running full-FT audit is rendering both an online and an EMA pass of ep1, so a real comparison will exist once that finishes, but ep0's original provenance is unrecoverable."
   },
   "ablation_goa5k_b01_adagc104": {
     "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): step=1011 x kl_2 cfg7 w1: sounds very close to how the Base model sounds (Kim realised he should check against Base directly). rb_rare_7 cfg7 w1: has a more snappy psytrancey sound compared to base -- so the base-similarity is prompt-dependent, not universal."
@@ -7843,5 +7864,92 @@
   },
   "ablation_goa5k_b06_full_3e-3": {
     "kim_feedback": "2026-09-28 (listening pass, dora_table/model_matrix, relayed in chat): sounds rhythmically similar to b05 (nogate_6e-4_adagc3), but has a lusher, richer sound with more atmospheres and pads -- b05 is often more constrained by comparison, and b04 is even more constrained than b05. So the constrained-to-lush gradient across this trio is b04 < b05 < b06(full_3e-3)."
+  },
+  "dora128_mix3_nodas_20260918_231123": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep0 x kl_1 cfg7 w1 -- flagged in the degraded batch (no further detail given)."
+  },
+  "dora128_mix3_overnight_20260918_084329": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep1 x rb_common_1 cfg7 w1: glitched."
+  },
+  "wfleet_suomi_t1024_a128_fp32_s1_rtsoup": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): soup x rb_common_1 cfg7 w1: clipped at 1."
+  },
+  "wfleet_suomi_t1024_a128_fp32_s1_rsoup19": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): soup x rb_common_1 cfg7 w1: clipped at 1."
+  },
+  "melodychroma_r32_hpcp": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep5 x rb_common_0 cfg7 w1: \"I'm not sure if this should even be in the list.\""
+  },
+  "suomi_r256_lr3e-5": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep59 x rb_common_1 cfg7 w1: this ep at least is blown up to noise."
+  },
+  "suomift_goaft": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): nearly useless quality, \"I wouldn't waste time on this.\""
+  },
+  "suomift_avpaug19": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): spectral noise."
+  },
+  "bb_avpaug19": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): noisy glitches."
+  },
+  "bb_goaft": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): plays music but low quality."
+  },
+  "subloss_k24_suomi_s1": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): all glitched."
+  },
+  "dorlor_suomi_dora_adamw_r128a45_t256_bf16_bs128": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): destroyed."
+  },
+  "dorlor_suomi_lora_adamw_r128a45_t256_bf16_bs128": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): this family all sound the same."
+  },
+  "dorlor_goa_dora_adamw_r128a45_t256_bf16_bs128": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): with this family AdamW and Fusion are closer to each other, so maybe AdamW caught up? The seeds sound quite different. Fusion does sound more punchy and accomplished still."
+  },
+  "wfleet_suomi_t1024_a128_fp32": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): both seeds just spectral noise."
+  },
+  "suomi_r32_lr3e-5": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): ep4 is still healthy, ep14 is degraded kind of, but actually makes quite cool droning sounds, it's still holding together. \"With these it's evident how the rank just linearly seems to increase quality.\""
+  },
+  "terminal_bf16cmp_avp_t512_bs8_lr1e4": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): \"what is this whole family? what eps are these?\" -- W: this is bf16cmp_avp_t512_bs8_lr1e4 (+ _repr, + _ptm), the bf16 precision twin of fp32cmp_avp_t512_bs8_lr1e4 (same T512/bs8/lr1e4 recipe), 8 epochs (ep0-7). Kim's own 2026-07-20 preliminary verdict on this exact comparison is already on file: fp32 preferred by ear (better separation, less noisy high end)."
+  },
+  "fullft_goa_t256_sweep": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): \"are these from the online or EMA weights?\" -- W: same rendering convention as fullft_avp_t256_sweep (weights field unrecorded, pre-dates that tracking), and empirically almost certainly ONLINE by the same pattern, but not independently z0-verified for this specific arm the way avp was. Will confirm once the running fullft online-vs-EMA audit's EMA pass for fullft_goa_t256 (ep38/ep69) completes and gives a real EMA reference to compare against."
+  },
+  "fullft_avp_t4096_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_avp_t2048_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_avp_t1024_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_avp_t512_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_avp_t256_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_goa_t4096_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_goa_t2048_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_goa_t1024_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_goa_t512_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "fullft_goa_t256_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): these are all just noise (ptm variants of the fullft_avp/goa_t*/t*_ptm family)."
+  },
+  "longctx_t2048_r128_ptm": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): has a very nice trajectory, each ep learns a sensible amount. \"Crazy stuff\"; ep0 is already good."
   }
 }
