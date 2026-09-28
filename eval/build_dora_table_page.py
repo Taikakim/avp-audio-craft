@@ -31,6 +31,7 @@ from pathlib import Path
 
 ROOT = Path("/home/kim/Projects/SAO/eval")
 AGG = ROOT / "clap_dora_aggregate.csv"
+CLEANED_CKPTS = ROOT / "cleaned_checkpoints.txt"
 REF = ROOT / "corpus_reference.json"
 OUT = ROOT / "dora_table.html"
 OUT_PUBLIC = ROOT / "dora_table_public.html"
@@ -232,6 +233,25 @@ def family(label):
     return label.split("_")[0]
 
 
+def builtin_presets():
+    """Server-shipped row presets (Kim 2026-09-29: 'this set could be saved as a check-boxed
+    preset'). Each line in CLEANED_CKPTS is '<model>:<ckpt>' -- Kim's own hand-curated list of
+    good checkpoints, 'not all eps are good though' (i.e. a real filter, not just terminal
+    epochs). Row key format 'model|ckpt' matches the client's rowKey() exactly. Built-ins are
+    read-only in the UI (can't be deleted/overwritten from the browser) -- user-saved presets
+    are a separate, localStorage-only layer on top."""
+    if not CLEANED_CKPTS.exists():
+        return {}
+    keys = []
+    for line in CLEANED_CKPTS.read_text().splitlines():
+        line = line.strip()
+        if not line or ":" not in line:
+            continue
+        model, ckpt = line.split(":", 1)
+        keys.append(f"{model}|{ckpt}")
+    return {"Kim's cleaned checkpoints": keys} if keys else {}
+
+
 def derive_model_sets(models):
     """{set_name: [model_labels]} over the VISIBLE (post-HIDE) models. 'all' first, then each
     campaign family. Returns the dict in the canonical order used to seed the dropdown too:
@@ -324,6 +344,7 @@ def main(public=False):
                "hide": list(HIDE_MODEL_PREFIXES),   # JS guards the live-fetch index on these
                "hidecfg": [15, 24],   # non-standard cfgs (2 stray models) -- dropdown clutter, hidden
                "model_sets": model_sets,   # {set_name:[labels]} campaign families for the ?set= filter
+               "presets": builtin_presets(),   # {preset_name:[rowKeys]} server-shipped, read-only in UI
                "cf": cell_fallback()}   # embedded cell-index so the picker works on file://
     html = _PAGE.replace("__DATA__", json.dumps(payload))
     OUT.write_text(html)
@@ -404,6 +425,9 @@ Hyperparameters parsed from the checkpoint recipes.</p>
  <label>arch <select id=farch><option value="">all</option></select></label>
  <label>find <input id=ftext placeholder="model substring" size=18></label>
  <label title="Default scores every metric column to the cfg7/w1 cell mean (ptm rows: cfg1/w1, their only native config) -- the real operating point, not diluted by off-config renders (cfg1/cfg16/w2...). Check this to go back to the old behaviour: every rendered cfg×strength×prompt cell averaged in."><input type=checkbox id=fallscores> all scores <span style="color:#667">(ignore cfg7/w1 default)</span></label>
+ <label title="Load a saved set of favourited (pinned) rows. Built-in presets come from eval/cleaned_checkpoints.txt and can't be edited here; your own saved sets (★) are stored in this browser only."><select id=presetSel onchange="if(this.value)loadPreset(this.value);this.value='';"></select></label>
+ <button title="save the currently-favourited rows (checked via the box beside each checkpoint) as a named preset, in this browser" onclick="saveCurrentAsPreset()">save favourites as preset</button>
+ <button title="delete one of YOUR saved presets (not a built-in one)" onclick="const n=prompt('Delete which saved preset? (yours only, not built-in)');if(n)deleteUserPreset(n);">delete a saved preset</button>
  <span id=count style=color:#9a9></span>
 </div>
 <div class=pbar>
@@ -532,18 +556,62 @@ function hdr(){const tr=document.getElementById('hrow');tr.innerHTML='';
  if(sortCol==='hybrid')hth.innerHTML+=' <span class=arrow>'+(sortDir<0?'▼':'▲')+'</span>';
  hth.onclick=()=>{if(sortCol==='hybrid')sortDir*=-1;else{sortCol='hybrid';sortDir=-1;}render();};
  tr.appendChild(hth);}
-// PINNED ROWS (Kim 2026-09-27: "a static base and base ptm row ... freeze it on top of the list with
-// base and base_ptm frozen by default"). The pin box in each model cell keeps that model's rows in
-// a block at the top, outside the sort AND the filters, so a reference row is always one click away.
-// Stored per-browser (a viewing convenience, not shared state); defaults when nothing is stored.
-const PIN_KEY='dora_table_pins_v1',PIN_DEFAULT=['base','base_ptm'];
+// PINNED ROWS / FAVOURITES (Kim 2026-09-27: "a static base and base ptm row ... freeze it on
+// top of the list with base and base_ptm frozen by default"). The checkbox keeps a row in a
+// block at the top, outside the sort AND the filters, so a reference row is always one click
+// away. Stored per-browser (a viewing convenience, not shared state); defaults when nothing is
+// stored.
+//
+// REKEYED 2026-09-29 (Kim: "the checkbox should select individual rows, not models"). The old
+// PIN_KEY stored bare model names, so checking ANY epoch of a model pinned EVERY epoch of it --
+// wrong granularity, since this table is one row per (model, checkpoint). rowKey() below is the
+// unit everything now keys on; PIN_DEFAULT's two entries carry base/base_ptm's actual ckpt value
+// ('base', not an epoch number -- see clap_dora_aggregate.csv). The checkbox itself also moved
+// from the model cell to the ckpt cell ("besides the ep number column", Kim's own suggested
+// spot) since that's the column whose value it now scopes to.
+function rowKey(r){return r.model+'|'+r.ckpt;}
+const PIN_KEY='dora_table_pins_v1',PIN_DEFAULT=['base|base','base_ptm|base'];
 let pinned;
 try{const s=localStorage.getItem(PIN_KEY);pinned=new Set(s?JSON.parse(s):PIN_DEFAULT);}catch(e){pinned=new Set(PIN_DEFAULT);}
 function savePins(){try{localStorage.setItem(PIN_KEY,JSON.stringify([...pinned]));}catch(e){}}
+
+// NAMED PRESETS (Kim 2026-09-29: "this set could be saved as a check-boxed preset, and a
+// button added ... to save/remove the row from the list of favourites, which can be selected
+// from a button in the upper part of the UI"). Two layers, both keyed on rowKey() strings (not
+// row index/order, which the CSV doesn't guarantee stable across a rebuild): D.presets are
+// server-shipped from eval/cleaned_checkpoints.txt and READ-ONLY here -- editing them client-
+// side would just be silently discarded on the next page build, so saveCurrentAsPreset() below
+// refuses to overwrite one. userPresets is the browser's own saved-set layer, fully editable.
+const PRESETS_KEY='dora_table_presets_v1';
+let userPresets;
+try{const s=localStorage.getItem(PRESETS_KEY);userPresets=s?JSON.parse(s):{};}catch(e){userPresets={};}
+function saveUserPresets(){try{localStorage.setItem(PRESETS_KEY,JSON.stringify(userPresets));}catch(e){}}
+function loadPreset(name){
+ const keys=(D.presets&&D.presets[name])||userPresets[name];
+ if(!keys)return;
+ pinned=new Set(keys);savePins();render();}
+function saveCurrentAsPreset(){
+ if(!pinned.size){alert('No favourited rows to save -- check some rows first.');return;}
+ const name=prompt('Save the '+pinned.size+' currently-favourited row(s) as a preset named:');
+ if(!name)return;
+ if(D.presets&&D.presets[name]){alert('"'+name+'" is a built-in preset and can\'t be overwritten from here.');return;}
+ userPresets[name]=[...pinned];saveUserPresets();refreshPresetSelect(name);}
+function deleteUserPreset(name){
+ if(!(name in userPresets))return;
+ if(!confirm('Delete the saved preset "'+name+'"? (Does not touch which rows are currently favourited.)'))return;
+ delete userPresets[name];saveUserPresets();refreshPresetSelect();}
+function refreshPresetSelect(selectName){
+ const sel=document.getElementById('presetSel');if(!sel)return;
+ sel.innerHTML='<option value="">— load favourites preset —</option>';
+ for(const name of Object.keys(D.presets||{})){
+  const o=document.createElement('option');o.value=name;o.textContent=name+' ('+D.presets[name].length+')';sel.appendChild(o);}
+ for(const name of Object.keys(userPresets)){
+  const o=document.createElement('option');o.value=name;o.textContent='★ '+name+' ('+userPresets[name].length+')';sel.appendChild(o);}
+ if(selectName&&[...sel.options].some(o=>o.value===selectName))sel.value=selectName;}
 function render(){
  const ds=fds.value,rk=frank.value,ar=farch.value,tx=ftext.value.toLowerCase();
- let rs=rows.filter(r=>!pinned.has(r.model)&&inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
- const pinRows=rows.filter(r=>pinned.has(r.model));
+ let rs=rows.filter(r=>!pinned.has(rowKey(r))&&inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
+ const pinRows=rows.filter(r=>pinned.has(rowKey(r)));
  const hy=hybridScores(rs);
  for(const r of rs)r.hybrid=hy.get(r);
  const val=(r,c)=>c==='hybrid'?r.hybrid:mv(r,c);
@@ -553,17 +621,19 @@ function render(){
  const nPin=pinRows.length;
  for(const r of [...pinRows,...rs]){const tr=document.createElement('tr');
   tr.dataset.model=r.model;tr.dataset.ckpt=r.ckpt;
-  const isPin=pinned.has(r.model);
+  const isPin=pinned.has(rowKey(r));
   if(isPin)tr.classList.add('pinned');
   if(isPin&&r===pinRows[nPin-1])tr.classList.add('pinlast');
   for(const c of cols){const td=document.createElement('td');const v=mv(r,c);
    if(c==='model'){td.className='model';td.textContent=nfmt(c,v)+(r.default_is_fallback?' †':'');
-    const pb=document.createElement('input');pb.type='checkbox';pb.className='pinbox';pb.checked=isPin;
-    pb.title=isPin?'unpin this model from the top':'pin this model to the top (stays there regardless of sort/filters)';
-    pb.addEventListener('click',ev=>{ev.stopPropagation();
-     if(pb.checked)pinned.add(r.model);else pinned.delete(r.model);savePins();render();});
-    td.prepend(pb);
     if(r.default_is_fallback)td.title='no cfg7/w1 (ptm rows: cfg1/w1) cells rendered for this model -- showing the all-cells mean instead';}
+   else if(c==='ckpt'){if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);
+    const pb=document.createElement('input');pb.type='checkbox';pb.className='pinbox';pb.checked=isPin;
+    pb.title=isPin?'remove this checkpoint from favourites':'favourite this checkpoint (pins it to the top, regardless of sort/filters -- save the current set as a named preset above the table)';
+    pb.addEventListener('click',ev=>{ev.stopPropagation();
+     const k=rowKey(r);
+     if(pb.checked)pinned.add(k);else pinned.delete(k);savePins();render();});
+    td.appendChild(pb);}
    else{if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);}
    const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
   const htd=document.createElement('td');htd.className='hytd';
@@ -1036,6 +1106,7 @@ function setNoteScope(){
  if(window.CommentWidget)CommentWidget.init(box);}
 function noteFromPlay(model,ckpt,file){noteCtx={model:model,ckpt:ckpt,clip:file};setNoteScope();}
 document.querySelectorAll('input[name=nlvl]').forEach(r=>r.addEventListener('change',setNoteScope));
+refreshPresetSelect();
 render();
 loadManifest();
 </script>
