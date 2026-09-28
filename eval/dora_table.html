@@ -27,7 +27,10 @@ tr:hover td{background:#191a22 !important}tr:hover td.model{background:#1c1e28 !
 tbody tr{cursor:pointer}
 tbody tr.pinned td{background:#141d2a}
 tbody tr.pinlast td{border-bottom:2px solid #468}
+tbody tr.degraded td{background:#2a1416;color:#c77}
+tbody tr.degraded td.model{color:#e88}
 .pinbox{margin:0 5px 0 0;vertical-align:middle;cursor:pointer}
+.degbox{margin:0 0 0 5px;vertical-align:middle;cursor:pointer;accent-color:#e55}
 tbody tr.nomatch{opacity:.35}
 tbody tr.approx{opacity:.72}   /* plays a nearest-match clip, NOT dead -- see markAvailability */
 tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{background:#1c3c2c !important;color:#9fe}
@@ -215,6 +218,15 @@ let pinned;
 try{const s=localStorage.getItem(PIN_KEY);pinned=new Set(s?JSON.parse(s):PIN_DEFAULT);}catch(e){pinned=new Set(PIN_DEFAULT);}
 function savePins(){try{localStorage.setItem(PIN_KEY,JSON.stringify([...pinned]));}catch(e){}}
 
+// DEGRADED ROWS (Kim 2026-09-29: "the degraded ckpts and models can be dropped sticky to the
+// bottom of the list and coloured red"). The mirror image of pinned -- same rowKey() unit, same
+// per-browser localStorage persistence, opposite end of the list. A row can't be both pinned AND
+// degraded (contradictory: "keep as reference" vs "ignore this") -- checking one clears the other.
+const DEG_KEY='dora_table_degraded_v1';
+let degraded;
+try{const s=localStorage.getItem(DEG_KEY);degraded=new Set(s?JSON.parse(s):[]);}catch(e){degraded=new Set();}
+function saveDegraded(){try{localStorage.setItem(DEG_KEY,JSON.stringify([...degraded]));}catch(e){}}
+
 // NAMED PRESETS (Kim 2026-09-29: "this set could be saved as a check-boxed preset, and a
 // button added ... to save/remove the row from the list of favourites, which can be selected
 // from a button in the upper part of the UI"). Two layers, both keyed on rowKey() strings (not
@@ -250,8 +262,10 @@ function refreshPresetSelect(selectName){
  if(selectName&&[...sel.options].some(o=>o.value===selectName))sel.value=selectName;}
 function render(){
  const ds=fds.value,rk=frank.value,ar=farch.value,tx=ftext.value.toLowerCase();
- let rs=rows.filter(r=>!pinned.has(rowKey(r))&&inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx)));
+ const inFilter=r=>inSet(r.model)&&(!ds||r.dataset===ds)&&(!rk||String(r.rank)===rk)&&(!ar||r.arch===ar)&&(!tx||String(r.model).toLowerCase().includes(tx));
+ let rs=rows.filter(r=>!pinned.has(rowKey(r))&&!degraded.has(rowKey(r))&&inFilter(r));
  const pinRows=rows.filter(r=>pinned.has(rowKey(r)));
+ const degRows=rows.filter(r=>degraded.has(rowKey(r))&&inFilter(r));
  const hy=hybridScores(rs);
  for(const r of rs)r.hybrid=hy.get(r);
  const val=(r,c)=>c==='hybrid'?r.hybrid:mv(r,c);
@@ -259,11 +273,13 @@ function render(){
   if(typeof x==='number')return (x-y)*sortDir;return String(x).localeCompare(String(y))*sortDir;});
  const body=document.getElementById('body');body.innerHTML='';
  const nPin=pinRows.length;
- for(const r of [...pinRows,...rs]){const tr=document.createElement('tr');
+ for(const r of [...pinRows,...rs,...degRows]){const tr=document.createElement('tr');
   tr.dataset.model=r.model;tr.dataset.ckpt=r.ckpt;
   const isPin=pinned.has(rowKey(r));
+  const isDeg=degraded.has(rowKey(r));
   if(isPin)tr.classList.add('pinned');
   if(isPin&&r===pinRows[nPin-1])tr.classList.add('pinlast');
+  if(isDeg)tr.classList.add('degraded');
   for(const c of cols){const td=document.createElement('td');const v=mv(r,c);
    if(c==='model'){td.className='model';td.textContent=nfmt(c,v)+(r.default_is_fallback?' †':'');
     if(r.default_is_fallback)td.title='no cfg7/w1 (ptm rows: cfg1/w1) cells rendered for this model -- showing the all-cells mean instead';}
@@ -272,8 +288,16 @@ function render(){
     pb.title=isPin?'remove this checkpoint from favourites':'favourite this checkpoint (pins it to the top, regardless of sort/filters -- save the current set as a named preset above the table)';
     pb.addEventListener('click',ev=>{ev.stopPropagation();
      const k=rowKey(r);
-     if(pb.checked)pinned.add(k);else pinned.delete(k);savePins();render();});
-    td.appendChild(pb);}
+     if(pb.checked){pinned.add(k);degraded.delete(k);saveDegraded();}else pinned.delete(k);
+     savePins();render();});
+    td.appendChild(pb);
+    const db=document.createElement('input');db.type='checkbox';db.className='degbox';db.checked=isDeg;
+    db.title=isDeg?'this checkpoint is no longer marked degraded':'mark degraded (drops it to the bottom of the list, coloured red -- glitched/blown-up/not worth auditioning)';
+    db.addEventListener('click',ev=>{ev.stopPropagation();
+     const k=rowKey(r);
+     if(db.checked){degraded.add(k);pinned.delete(k);savePins();}else degraded.delete(k);
+     saveDegraded();render();});
+    td.appendChild(db);}
    else{if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);}
    const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
   const htd=document.createElement('td');htd.className='hytd';
@@ -281,7 +305,7 @@ function render(){
   const hh=heatHybrid(r.hybrid);if(hh)htd.style.cssText=hh;
   tr.appendChild(htd);
   body.appendChild(tr);}
- hdr();count.textContent=rs.length+' / '+rows.length+' rows'+(nPin?' + '+nPin+' pinned':'');
+ hdr();count.textContent=rs.length+' / '+rows.length+' rows'+(nPin?' + '+nPin+' pinned':'')+(degRows.length?' + '+degRows.length+' degraded':'');
  markAvailability();markPlaying();}
 
 // ---- cell picker + click-a-row player (Kim 2026-07-22: pick a prompt×cfg×weight cell up
