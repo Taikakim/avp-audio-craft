@@ -48,6 +48,20 @@ def loo_residuals(X, t):
     return R
 
 
+def single_outlier_mask(R, k=8.0):
+    """R (E, N) LOO residuals. Per value, flag AT MOST ONE epoch: the one with the largest
+    |residual| in units of its own epoch-matrix robust scale, and only if that exceeds k.
+    One spike also bends the LOO lines used to judge the OTHER epochs, so an any-epoch-over-k
+    rule flags innocent epochs alongside it (and a mean over the survivors keeps the spike)."""
+    s = 1.4826 * R.abs().median(dim=1, keepdim=True).values
+    z = R.abs() / s.clamp_min(1e-30)
+    zmax, arg = z.max(0)
+    M = torch.zeros_like(R, dtype=torch.bool)
+    hit = zmax > k
+    M[arg[hit], hit.nonzero().flatten()] = True
+    return M
+
+
 def tail_stats(r, k=8.0):
     """Heavy-tail summary of a residual vector: robust scale s = 1.4826·median|r|; outliers are
     |r| > k·s (k=8 is ~never for Gaussian noise). energy = outliers' share of Σr²."""
@@ -108,12 +122,12 @@ def main():
             nout = W2.shape[0]
             rec = {"key": key, "site": site_of(key), "block": block_of(key), "top1": top1,
                    "el": [], "row": [], "filter_drop": 0.0}
-            flags = torch.zeros_like(R, dtype=torch.bool)
+            flags = single_outlier_mask(R, a.k)
             for e in range(E):
-                st = tail_stats(R[e], a.k)
-                rec["el"].append(st)
-                s = 1.4826 * R[e].abs().median()
-                flags[e] = R[e].abs() > a.k * s
+                rn_all = (R[e] ** 2).sum()
+                fe = flags[e]
+                rec["el"].append({"n_out": int(fe.sum()), "frac_out": float(fe.double().mean()),
+                                  "energy_out": float((R[e][fe] ** 2).sum() / rn_all) if rn_all > 0 else 0.0})
                 rn = R[e].reshape(nout, -1).norm(dim=1)
                 ro = rn > a.row_k * rn.median()
                 rec["row"].append({"n_out": int(ro.sum()), "of": nout,
@@ -129,7 +143,7 @@ def main():
               open(os.path.join(a.out, "ladder_outlier_probe.json"), "w"))
     med = lambda v: sorted(v)[len(v) // 2]
     L = [f"# Ladder outlier probe: {run}", "",
-         f"epochs {eps}; {len(rows)} adapted matrices; value outlier = |LOO-detrended residual| > "
+         f"epochs {eps}; {len(rows)} adapted matrices; value outlier = the ONE epoch per value whose |LOO-detrended residual| is largest, if > "
          f"{a.k:g}x robust scale of that epoch's matrix; channel outlier = residual row norm > "
          f"{a.row_k:g}x median row.", "",
          "| epoch | value outliers (median frac / matrix) | total value outliers | outliers' share of residual energy (median) | "

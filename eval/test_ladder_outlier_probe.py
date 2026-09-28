@@ -32,3 +32,12 @@ def test_tail_stats_counts_only_the_spikes():
     s = tail_stats(r, k=8.0)
     assert s["n_out"] == 10
     assert s["frac_out"] == 10 / 100000
+
+
+def test_single_outlier_mask_flags_only_the_spiking_epoch():
+    from eval.ladder_outlier_probe import single_outlier_mask
+    X = 0.01 * torch.randn(5, 10000, dtype=torch.float64) + 1.0
+    X[4, 5] = 100.0
+    M = single_outlier_mask(loo_residuals(X, T), 8.0)
+    assert M[:, 5].tolist() == [False, False, False, False, True]
+    assert int(M.sum()) < 10

@@ -925,6 +925,20 @@ def main():
             assert _cov > 0.99, (
                 f"fullft ckpt covers only {_cov:.1%} of the model — refusing to "
                 f"render a part-loaded model ({len(_missing)} missing keys, e.g. {_missing[:3]})")
+            # Conditioner tensors, when the checkpoint carries them. LUMI full-FTs never do; a
+            # merged adapter soup (eval/ladder_soup_fullft.py, 2026-09-28) does, because DoRA
+            # runs also adapt conditioners.seconds_total's embedder — dropping it here would
+            # render a model that differs from the soup in its duration conditioning.
+            _csd = {k[len("conditioner."):]: v for k, v in _sd_raw.items()
+                    if k.startswith("conditioner.")}
+            if _csd:
+                _ctgt = model.model.conditioner
+                _cparams = dict(_ctgt.named_parameters())
+                _unk = [k for k in _csd if k not in _cparams]
+                assert not _unk, f"fullft ckpt conditioner keys not in the model: {_unk[:3]}"
+                _ctgt.load_state_dict({k: v.to(_cparams[k].dtype) for k, v in _csd.items()},
+                                      strict=False)
+                print(f"[weights] {label}/{tag}: +{len(_csd)} conditioner tensor(s)", flush=True)
             del _ck, _sd
         # STANDING DIRECTIVE: decode the pre-decode latent z0 ourselves through the pretransform
         # (aliased model.same). LoRA never touches pretransform, so base + DoRA decode through

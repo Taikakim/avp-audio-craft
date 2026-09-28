@@ -28,6 +28,19 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### Render the three fp32cmp_avp_t4096_bs1 epoch soups when the GPU is free (C, 2026-09-28)
+**WHAT:** 42 cells each for `soup_mean` (plain mean of ep3/7/14/21/35, mean epoch 16), `soup_filtered` (same, per
+value drops at most one outlier epoch — changes ~10 edge layers by 13-37%, the rest <1%), `soup_ep14_ep21`.
+**WHY:** your ask — average the glitchy-but-good epochs into one usable checkpoint. mean vs filtered is the by-ear test
+of whether the outliers are the glitches. Detail: `run_meta.json` in the soup dir.
+**RUN** (cwd SAO, when W is off the GPU):
+```bash
+cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True ROCR_VISIBLE_DEVICES=0 && Misc/gpu_guard.sh acquire KIM $$ && .venv/bin/python eval/model_matrix_gen.py --only-labels fullft_soup_fp32cmp_avp_t4096_bs1 --weights online --native-grid; Misc/gpu_guard.sh release KIM
+```
+**TAKES:** ~1-1.5 h (126 renders at 20 s). **VERIFY:** `ls ~/evals_aac/model_matrix/ | grep -c fullft_soup_fp32cmp_avp_t4096_bs1` gives 126
+(it may segfault at teardown after writing every file — count, don't trust the exit code).
+**REPORT BACK:** that count. Listen: `soup_mean` vs `soup_filtered` first.
+
 ### ✅ DONE 2026-09-26 (C ran it): r256 6340 is healthy — its NaN was the render fault. Was: re-render r256 at 5072/6340, merged (C, 2026-09-25)
 **WHAT:** the merged cfg sweep for `goa3_avp_r256_2026-09-23` (the rank-128 run abandoned on a NaN loss
 at ~step 6900). **WHY:** its step-6340 `rb_mid_4` clips were all-NaN, and training-findings reads that as
