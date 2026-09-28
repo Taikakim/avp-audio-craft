@@ -606,11 +606,17 @@
     "epoch=19-step=5980.ckpt",
     "epoch=10-step=3289.ckpt",
     "epoch=15-step=4784.ckpt",
-    "epoch=228-step=68471.weights.ckpt"
+    "epoch=228-step=68471.weights.ckpt",
+    "epoch=20-step=6279.weights.ckpt",
+    "epoch=30-step=9269.weights.ckpt",
+    "epoch=40-step=12259.weights.ckpt",
+    "epoch=50-step=15249.weights.ckpt",
+    "epoch=59-step=17940.ckpt",
+    "epoch=114-step=34385.weights.ckpt"
    ],
    "witness": [],
    "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=228-step=68471.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=228-step=68471.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders). | 2026-09-29 W: added missing epoch picks (epoch=20-step=6279.weights.ckpt, epoch=30-step=9269.weights.ckpt, epoch=40-step=12259.weights.ckpt, epoch=50-step=15249.weights.ckpt, epoch=59-step=17940.ckpt, epoch=114-step=34385.weights.ckpt) for full clip-set render (Kim's ask, this batch)."
   },
   "winning_avp_t512_a45_bf16": {
    "tier": "full",
@@ -652,11 +658,17 @@
     "epoch=19-step=13500.ckpt",
     "epoch=10-step=7425.ckpt",
     "epoch=15-step=10800.ckpt",
-    "epoch=134-step=91125.weights.ckpt"
+    "epoch=134-step=91125.weights.ckpt",
+    "epoch=20-step=14175.weights.ckpt",
+    "epoch=30-step=20925.weights.ckpt",
+    "epoch=40-step=27675.weights.ckpt",
+    "epoch=50-step=34425.weights.ckpt",
+    "epoch=59-step=40500.ckpt",
+    "epoch=67-step=45900.weights.ckpt"
    ],
    "witness": [],
    "root": "/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/fp32_winning",
-   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=134-step=91125.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders)."
+   "reason": "WINTERMUTE's flagship fp32 run + ablations (Kim direct 2026-07-24, docs/superpowers/specs/2026-07-22-winning-fp32-run-plan.md): dora-rows r128, FusionOpt, T512 beat-aware crops (t1024 arm = T1024), 20 epochs, full-corpus augmented training. Ablates alpha 45(adj, alpha<rank) vs 128(standard alpha=rank), fp32 vs bf16 precision, avp vs goa corpus, +aug10 variant. Rsync from LUMI in progress as of 2026-07-24; render standard grid + pt-medium pass as each checkpoint's transfer completes. | 2026-09-27 W: registered for Kim's listening-pass requests (HoF 2026-09-27). terminal epoch=134-step=91125.weights.ckpt full clip set + w0.5 requested (the terminal_winning renders). | 2026-09-29 W: added missing epoch picks (epoch=20-step=14175.weights.ckpt, epoch=30-step=20925.weights.ckpt, epoch=40-step=27675.weights.ckpt, epoch=50-step=34425.weights.ckpt, epoch=59-step=40500.ckpt, epoch=67-step=45900.weights.ckpt) for full clip-set render (Kim's ask, this batch)."
   },
   "winning_goa_t512_a45_bf16": {
    "tier": "full",
