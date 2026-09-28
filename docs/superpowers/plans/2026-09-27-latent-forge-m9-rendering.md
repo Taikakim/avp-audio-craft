@@ -788,7 +788,7 @@ function latentSource(a: OpArgs): Record<string, unknown> {
 /**
  * `decode`, `longform`, `bend` -- the three of §7.1's OP column M9 can reach. `a2a_track`/`a2a_mix`
  * need a server-side audio PATH rather than an AudioRef and have no UI in this milestone; they stay
- * unbuilt rather than half-built (open question 3).
+ * unbuilt rather than half-built (open question A3).
  *
  * The `longform` collision is real and is why `arc` is a separate field: `_longform_impl` reads
  * `req["schedule"]` as the PROMPT-ARC STRING (server:1366,
@@ -831,7 +831,7 @@ export interface A2AClipArgs {
  * Six keys, exactly validate_a2a_clip's (m8 plan:1944-1954). The source is the WHOLE FILE: M8 takes
  * no offset, dur or stretch here (`duration = check_cap(audio.shape[1] / SR, "a2a_clip")`), so a
  * trimmed clip is A2A'd whole. That is the server's behaviour, not a client simplification --
- * Writer B's REPLACE CLIP has to keep the clip's own trim afterwards (open question 4).
+ * Writer B's REPLACE CLIP has to keep the clip's own trim afterwards (open question A4).
  */
 export function a2aClipPayload(a: A2AClipArgs): Record<string, unknown> {
   return {
@@ -1388,7 +1388,7 @@ export class JobsStore {
   /**
    * One `/status` read. M1 OQ 16 asked who owns `/status`: BOTH may call it and the answers are
    * independent (`logStore.busy` drives the TERMINAL dot, this drives render-control disabling), so
-   * nothing is removed from the log store -- see open question 2. A dead render server is a normal
+   * nothing is removed from the log store -- see open question A2. A dead render server is a normal
    * state on this box, so a failure clears the flag rather than surfacing anything.
    */
   async pollStatusOnce(): Promise<void> {
@@ -2021,7 +2021,7 @@ user is about to drag onto a lane. **Decision: `renders`/`mixdown`/`preview` are
 `workKey`.** They are output, not edits: a render is a file the server already wrote, reachable
 through `/forge/jobs/{id}` and the FILES `renders` root whether or not the entry survives. They are
 still *serialised* and *restored*, so a saved-and-reloaded session keeps its history; only the
-"is this worth protecting?" question ignores them. Recorded as open question 5.
+"is this worth protecting?" question ignores them. Recorded as open question A5.
 
 **Files:**
 - Create: `latent-forge/src/lib/render/history.svelte.ts`,
@@ -2450,7 +2450,7 @@ safe — `sessionController.svelte.ts` already imports from `./projectSerializer
  * history entry points at is a file the server already wrote, reachable through /forge/jobs/{id}
  * and the FILES `renders` root whether or not the entry survives. Counting them would make the
  * prompt fire after every single render -- including the render the user is about to drag onto a
- * lane. They are still serialised and restored; only this question ignores them. (M9 open question 5.)
+ * lane. They are still serialised and restored; only this question ignores them. (M9 open question A5.)
  */
 export function unsavedWorkKey(p: ProjectV2): string {
   return JSON.stringify({
@@ -3334,7 +3334,7 @@ Expected: `extract_help: wrote 114 strings (80 extracted, 14 rewritten, 34 new)`
 `latent-forge/src/lib/help/__tests__/strings.test.ts`, change
 `expect(Object.keys(HELP)).toHaveLength(112);` to `114` and the title's count to match. **Writer B's
 Tasks 6-10 add more; 114 is this task's running total, not M9's final one** — the assembly step
-recounts (open question 6).
+recounts (open question A6).
 
 - [ ] **Step 12: Run everything**
 
@@ -3411,7 +3411,7 @@ argument and imports no store. The v1 reasons it extends are in
 hint. §9.7's surface is **one line**, so the reason and the hint are joined the way v1's own
 `renderClip` already joined them: `` throw new Error(`${blocked.reason} — ${blocked.hint}`) ``.
 `a2a_track`/`a2a_mix` are not carried over: they need a server-side `audio_path` and there is no
-UI for them in M9 (open question 3).
+UI for them in M9 (open question A3).
 
 **Files:**
 - Create: `latent-forge/src/lib/render/renderBlock.ts`,
@@ -3574,7 +3574,7 @@ Expected: `Error: Failed to resolve import "../renderBlock"`.
 //
 // a2a_track and a2a_mix are deliberately absent: both need a server-side `audio_path` and there is
 // no upload-to-path route (v1's own hint says so), and §7.1's OP column lists only
-// generate/decode/longform/bend. See open question 3.
+// generate/decode/longform/bend. See open question A3.
 
 import type { ForgeClip, RenderSettings, Target } from "../forge/types";
 import { CAP_SEC } from "./payloads";
@@ -3605,7 +3605,7 @@ export interface RenderBlockState {
 const CAP_LINE = `over the 184 s cap — forge passes are capped at 184 s locally (T<2048).`;
 
 /** v1's rule, unchanged: a latent exists if the clip's own audio is a crop ref. M9 has no
- *  `latentPath` on ForgeClip, so the crop ref is the whole of it (open question 3). */
+ *  `latentPath` on ForgeClip, so the crop ref is the whole of it (open question A3). */
 function hasLatent(clip: ForgeClip): boolean {
   return clip.audio.kind === "crop";
 }
@@ -3959,13 +3959,14 @@ anything is left unbuilt.
    new audio (they still address the same timebase, so yes) or is re-fitted to the render. Flagged
    here because the payload builder is where the constraint is visible.
 
-5. **Render history and the "replace unsaved work?" prompt** (Task 3). `renders`/`mixdown`/
+5. **A5 — render history and the "replace unsaved work?" prompt** (Task 3). `renders`/`mixdown`/
    `preview` are serialised and restored but **excluded from `unsavedWorkKey`**, so a finished
    render does not make a session count as edited. Rationale in Task 3's WHY. The opposite reading
    — that losing a session's history list is a real loss worth a prompt — is defensible; it just
    makes the prompt fire after every render.
 
-6. **The final `strings.test.ts` total is not knowable from this half of the plan.** Task 4 takes
+6. **A6 — the final `strings.test.ts` total is not knowable from this half of the plan.** (Writer B
+   raised the same question independently as `B6`; they are one item.) Task 4 takes
    M7's 112 to **114**. Writer B's Tasks 6-10 add the preview-container ids (Fact 9 lists
    `preview-render`, HISTORY, drag, USE SETTINGS, REPLACE CLIP and `previewMixdownToggle`'s
    attachment). The two writers cannot see each other's running totals, so **the assembly pass must
@@ -3973,19 +3974,19 @@ anything is left unbuilt.
    round had to (M7's finding 1: *"`strings.test.ts` never updated. M1's suite went red at Task 2's
    first new string."*).
 
-7. **M2 T15's `EXPECTED` has 25 names; its docstring and Step 6 still say 20**
+7. **A7 — M2 T15's `EXPECTED` has 25 names; its docstring and Step 6 still say 20**
    (m2 plan:3198-3201, 3244-3252, 3362 — the tuple lists 25 entries while the text says *"All 25
    fixtures are REQUIRED"* in one place and *"it is TWENTY fixtures, not nineteen"* in `HANDOUT.md`).
    Nothing here depends on the count — the four job fixtures this plan uses are named individually
    and each test skips on its own missing file — but the recorder's success line and its docstring
    disagree, so a run that records 20 of 25 could be read as complete. One for the batched DM.
 
-8. **`jobs.onDone` is a plain field, not a rune** (Task 4 Step 5). It exists so the job layer never
+8. **A8 — `jobs.onDone` is a plain field, not a rune** (Task 4 Step 5). It exists so the job layer never
    imports the mix layer. If a second consumer ever wants a finished job (Writer B's assembly is
    the likely one), it needs to become a small subscriber list rather than a single slot — cheap
    to change, worth noticing before two things fight over it.
 
-9. **Cancel is offered but nothing in M9 mounts a CANCEL control.** `JobsStore.cancel()` is in the
+9. **A9 — cancel is offered but nothing in M9 mounts a CANCEL control.** `JobsStore.cancel()` is in the
    brief's pre-declared interface and is built and tested, but §4.2/§4.5 draw no cancel button, and
    §6.2 only cancels a *queued* job — the queue exists "for the Dash explorer and scripted use"
    (§7.1), and M9 never queues a second job. So `cancel()` is reachable only from code. Left as is
@@ -4028,7 +4029,7 @@ asked for. `null` is not a nicety: §7.1 row 3 *needs* a representable "has neit
 `turn A2A on or choose an op` hint can never fire. Writer A already declared the same four-member
 type as `ClipOp` inside `renderBlock.ts` for its `RenderBlockState.clipOp`; this task moves the
 declaration down into `types.ts` (where the `JobOp` it narrows lives) and leaves a re-export behind,
-so the two halves of M9 do not ship two structurally identical types. **Open question 1** carries
+so the two halves of M9 do not ship two structurally identical types. **Open question B1** carries
 the §9.2 spec-text amendment to the assembly batch, on the `previewAudio` precedent (§9.2 names one
 field as deliberately *not* serialised, so §9.2 is where a new serialised clip field is ruled on).
 
@@ -4373,7 +4374,7 @@ and in `ForgeClip`, beside `render`:
   /**
    * §7.1 row 3's OP, or null when the clip has none. `null` is load-bearing: it is what makes
    * "disabled with the hint `turn A2A on or choose an op` when the clip has neither" reachable.
-   * Serialised into ProjectV2's `clips[]` (§9.2 amendment — Open question 1); a v2 file written
+   * Serialised into ProjectV2's `clips[]` (§9.2 amendment — Open question B1); a v2 file written
    * before M9 has no `op` key and loads as null.
    */
   op: ClipOp | null;
@@ -4934,7 +4935,7 @@ Keep M1's markup, its `data-testid`s and its `data-help` copy. Add the script bo
     // is what _longform_impl falls back to on the server (`req["schedule"] or req["prompt"]`).
     arcPrompt: settings.current(target).prompt,
     // No bend-op editor exists either -- renderBlock refuses `bend` with an empty list, so this is
-    // the honest empty rather than an invented default (Open question 3).
+    // the honest empty rather than an invented default (Open question B3).
     bendOps: [] as unknown[],
     padSec: PAD_SEC,
   });
@@ -5023,7 +5024,8 @@ Expected: `extract_help: wrote 119 strings (80 extracted, 14 rewritten, 39 new)`
 `latent-forge/src/lib/help/__tests__/strings.test.ts`, change
 `expect(Object.keys(HELP)).toHaveLength(114);` to `119` and the title's count to match.
 **114 is Writer A's Task 4 total; 119 is M9's, and no later task of either writer adds another id**
-— Task 9 attaches the *existing* `previewMixdownToggle`. The assembly step recounts (Open question 6).
+— Task 9 attaches the *existing* `previewMixdownToggle`. The assembly step recounts (Open question B6,
+the same item as Writer A's A6).
 
 - [ ] **Step 18: Run it, expect pass**
 
@@ -5095,7 +5097,7 @@ the whole import graph down under jsdom.
 `playheadSec = this.loopOn ? this.loopStartSec : 0` — so the literal reading rewinds the operator's
 timeline every time they audition a render, which no DAW does and which §9.6's "same-playhead
 behaviour" argues against. This task calls `playback.pause()`, which satisfies the requirement that
-actually matters (the two never sound together) and keeps the playhead. **Open question 2.**
+actually matters (the two never sound together) and keeps the playhead. **Open question B2.**
 
 **Files:**
 - Create: `latent-forge/src/lib/audio/soloBus.ts`,
@@ -5972,7 +5974,7 @@ analysis degrades honestly instead of losing the clip.
 silence and the timeline lies). Growing it would silently move every clip's neighbours' overlap geometry, which
 is §7.2's business and not a side effect an audio swap may have. So: **`dur_sec` shrinks to the render's
 length when the render is shorter, and is left alone when it is longer.** The clip never claims audio it does
-not have, and no overlap is ever created by a replace. **Open question 7** carries the alternative (offer the
+not have, and no overlap is ever created by a replace. **Open question B7** carries the alternative (offer the
 operator a "fit clip to render" affordance instead) to the assembly batch.
 
 **Why the blocking rules are pure.** Both buttons are disabled for four different reasons between them and
@@ -6924,16 +6926,17 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M9 T8: USE SETTINGS reads th
 
 ---
 
-**Open questions raised by this task** (numbering continues from Task 7; the assembly batch collects them):
+**Open questions raised by this task** (Writer B's `B` namespace, continuing from `B6` at the end of
+Task 7; the assembly batch collects them):
 
-7. **`dur_sec` on a REPLACE CLIP.** Shipped: shrink when the render is shorter, leave alone when longer,
+7. **B7 — `dur_sec` on a REPLACE CLIP.** Shipped: shrink when the render is shorter, leave alone when longer,
    never grow. The alternative is an explicit "fit clip to render" affordance so the operator chooses. §4.5
    describes the button in one clause and does not say.
-8. **`RENDER_RUNNING_HINT` is this task's own string**, not Writer A's `renderBlock` busy text. Two controls
+8. **B8 — `RENDER_RUNNING_HINT` is this task's own string**, not Writer A's `renderBlock` busy text. Two controls
    should not have two sentences for one condition; the reconcile should pick one. (`GPU busy — <id>` is
    already A's and is not duplicated here — while a GPU job runs, `jobs.busy` is true and these two buttons
    are blocked by the running-job rule before the GPU rule is reached.)
-9. **`ForgeClip.history` is now written but still never read.** Nothing offers the operator a way back to an
+9. **B9 — `ForgeClip.history` is now written but still never read.** Nothing offers the operator a way back to an
    archived ref, and §9.2's serialisation of `history` was settled before anything wrote to it. A one-line
    UNDO on the clip inspector is the obvious follow-up and is M10's, not M9's.
 
@@ -6997,7 +7000,7 @@ disabled and an honest title until `history.mixdown !== null`.** Three reasons, 
   it without a conditional wait, and a future regression that never enables it fails as a *disabled* check
   rather than as a flaky missing-element timeout.
 
-**Open question 10** carries the departure to the assembly batch: this is a deliberate deviation from the
+**Open question B10** carries the departure to the assembly batch: this is a deliberate deviation from the
 spec's wording and the reconcile should confirm it rather than discover it.
 
 **3. The transport half has an import cycle in it, and Task 7 already established the way out.** §9.6 wants
@@ -7084,7 +7087,7 @@ stays at 119**, the total Task 6 set.
   `snapshotClips()` → `toPlaybackClips(arrangement.clips)` and `snapshotLanes()` →
   `toPlaybackLanes(arrangement.lanes)`, both called by `play()` and `seek()`; `playback.playing: boolean`,
   `playback.playheadSec: number`, `playback.play()`, `playback.pause()`, `playback.stop()`
-  (`playheadSec = this.loopOn ? this.loopStartSec : 0` — Task 7's Open question 2), `playback.seek(sec)`,
+  (`playheadSec = this.loopOn ? this.loopStartSec : 0` — Task 7's Open question B2), `playback.seek(sec)`,
   and the constructor's injectable `engine: PlaybackEngine = new Transport()`, which is what every test
   below drives.
 - From `latent-forge/src/ui/master/MasterStrip.svelte` (**M5 T10**): the component. Its locals that this
@@ -7881,16 +7884,16 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M9 T9: the master strip's PR
 
 ---
 
-**Open questions raised by this task:**
+**Open questions raised by this task** (Writer B's `B` namespace, continuing from `B9` in Task 8):
 
-10. **The toggle's visibility is a deliberate departure from the spec's wording.** Spec: appears only when
+10. **B10 — the toggle's visibility is a deliberate departure from the spec's wording.** Spec: appears only when
     the MIXDOWN slot holds a render. Shipped: always present, MIXDOWN disabled with
     `"nothing has been committed yet"`. Reasons in WHY item 2. The reconcile should confirm or overturn it.
-11. **The dBFS/CLIPPING readout now describes whichever source is shown.** That is the A/B's whole purpose,
+11. **B11 — the dBFS/CLIPPING readout now describes whichever source is shown.** That is the A/B's whole purpose,
     but it means the number beside "Master — mix result" changes without the arrangement changing, and M5's
     label does not say which source it is reading. A two-word suffix on that label would settle it; it is a
     string change and belongs with the assembly's HELP/label pass, not here.
-12. **The committed mix has no staleness indicator.** M5's `stale` dot tracks the *preview* mix only. A
+12. **B12 — the committed mix has no staleness indicator.** M5's `stale` dot tracks the *preview* mix only. A
     commit made before the last three clip moves is exactly as stale and there is nowhere that says so;
     Writer A T4's `mixdown.key` (`signalKeyOf` of the arrangement the stages described) already holds the
     information needed to compute it, so this is a display decision, not a missing mechanism.
@@ -8325,7 +8328,7 @@ await and the bounding box would be measured against the wrong element.
 
 The OS-file branch below it is left alone. Its `arrangement.addClip` could also become
 `lifecycle.addClip({file})`, which would give it analyze and stretch too; that is a second behaviour
-change in a function this task is already editing and it is **Open question 13**, not a silent extra.
+change in a function this task is already editing and it is **Open question B13**, not a silent extra.
 
 Task 7's `onHandleDragStart` and Writer A T4's MIXDOWN drag handler each change one line, from
 `e.dataTransfer?.setData("application/x-forge-ref", JSON.stringify(ref))` to
@@ -8637,13 +8640,13 @@ either half catches it, because both test the slot directly.
 
 **§4.3 (timeline).** Drops now carry length, analysis and stretch. Loop, trim, move, detune, lane
 mute/solo/gain all M5's and untouched. **Known gap:** the OS-file branch of `onLaneBodyDrop` still calls
-the store directly and so still skips analyze/stretch (Open question 13).
+the store directly and so still skips analyze/stretch (Open question B13).
 
 **§4.5 (preview container).** RENDER (T6), HISTORY newest-first with tags and lengths (T7), waveform with
 scrub and playhead (T7), play/stop mutually exclusive with the transport (T7), length label (T7), drag
 handle (T7 + this task), USE SETTINGS (T8), REPLACE CLIP (T8). All eight controls M1 framed are live.
 **Departure:** §4.5 says starting one player "stops" the other; Task 7 pauses the timeline instead, to
-keep the playhead (Open question 2).
+keep the playhead (Open question B2).
 
 **§7 (render controls).** §7.1's four rows are one pure `renderRequest` (T6) with one blocked-reason
 function (`renderBlock`, Writer A T5), used by `▸ RENDER` and by `▸ INPAINT OVERLAP` (T9) through the
@@ -8658,7 +8661,7 @@ through its driver's start/stop, not its pixels. **Noted as untested end-to-end 
 **§9.6 (transport and preview).** Task 9: MIXDOWN switches both the master strip and the transport to
 `mix.wav`, at the same playhead, over a synthetic unmuted lane so the commit's own mute/solo/gain are not
 applied twice. **Departure:** the toggle is always visible with MIXDOWN disabled, rather than appearing
-only when a mix exists (Open question 10).
+only when a mix exists (Open question B10).
 
 **§9.7 (error surfaces).** One inline line under the target bar from `jobs.lastError`, cleared by the next
 render (Writer A T5); `GPU busy — <job_id>`; TERMINAL fixed in one place (Fact 8). Writer B's three
@@ -8668,13 +8671,13 @@ proof.
 
 **Known incomplete** (carried into M10 / the assembly, not hidden in a step):
 
-1. **No bend-op editor**, so `bendOps` is `[]` and `renderBlock` refuses `bend` (Task 6, Open question 3).
+1. **No bend-op editor**, so `bendOps` is `[]` and `renderBlock` refuses `bend` (Task 6, Open question B3).
    The OP select offers it; choosing it produces an honest refusal rather than a render.
 2. **No ARC editor for `longform`**: the target's prompt is used as the arc, which is what
    `_longform_impl` falls back to server-side. A real `0:a|45:b` grammar has no UI.
-3. **`ForgeClip.history` is written and never read** (Task 8, Open question 9) — no UNDO for a REPLACE
+3. **`ForgeClip.history` is written and never read** (Task 8, Open question B9) — no UNDO for a REPLACE
    CLIP.
-4. **The committed mix has no staleness indicator** (Task 9, Open question 12).
+4. **The committed mix has no staleness indicator** (Task 9, Open question B12).
 5. **RESOLVED, not carried — `drawPeaks`' signature** (B5). The real source is in this repo,
    `sa3-studio/src/lib/waveform.ts:80-84`, which M1 T15 re-homes verbatim:
    `drawPeaks(canvas: HTMLCanvasElement, peaks: Peaks, color: string, opts = {})`. M5 T10's
@@ -8684,7 +8687,7 @@ proof.
    Four of them are Writer B's; they prove nothing today and are designed to say so out loud.
 7. **`workKey` includes `renders`** (Fact 11), so history entries count as unsaved work. Writer A T3 was
    asked to state the decision; the assembly must check it was stated, not just implemented.
-8. **The OS-file drop path** still bypasses `lifecycle` (Open question 13).
+8. **The OS-file drop path** still bypasses `lifecycle` (Open question B13).
 
 - [ ] **Step 15: Commit the review**
 
@@ -8694,16 +8697,58 @@ Misc/agent_commit.sh <YOUR-HANDLE> -m "latent-forge M9 T10 review: self-review a
 
 ---
 
-**Open questions raised by this task:**
+**Open questions raised by this task** (Writer B's `B` namespace, continuing from `B12` in Task 9;
+these are the last three):
 
-13. **The OS-file branch of `onLaneBodyDrop` still calls `arrangement.addClip` directly.** Routing it
+13. **B13 — the OS-file branch of `onLaneBodyDrop` still calls `arrangement.addClip` directly.** Routing it
     through `lifecycle.addClip({file})` would give a dropped file analysis and stretch too, and would make
     one function have one path instead of two. It is a behaviour change to a path this task did not
     otherwise touch, so it is named rather than slipped in.
-14. **`render.spec.ts` asserts the dropped clip's WIDTH, not its `dur_sec`.** Playwright can only see the
+14. **B14 — `render.spec.ts` asserts the dropped clip's WIDTH, not its `dur_sec`.** Playwright can only see the
     DOM, and M5's `ClipBox` renders no length. A `data-dur-sec` attribute on `.clip` would make the
     assertion exact instead of geometric; that is a markup addition to M5's component and belongs to
     whoever owns `ClipBox`, not to M9's last task.
-15. **Removing a `ModuleId` member changes a persisted vocabulary.** Step 13 adds the
+15. **B15 — removing a `ModuleId` member changes a persisted vocabulary.** Step 13 adds the
     drop-unknown-ids migration, but nothing versions the UI state, so an id removed later has to repeat
     the same reasoning. A `ui.version` field would settle it once — M10's, if anyone's.
+
+---
+
+## Consolidated open-questions index
+
+**Two namespaces, not one sequence.** Writer A numbered `A1`-`A9` while writing Tasks 1-5; Writer B
+numbered `B1`-`B15` while writing Tasks 6-10. They ran in parallel, so the numbers collide: a bare
+"Open question 7" could mean `A7` (M2 T15's fixture count) or `B7` (`dur_sec` on a REPLACE CLIP).
+Every citation in this plan therefore carries its letter. The two lists are **not** merged and must
+not be renumbered in place — the cross-references are load-bearing.
+
+Where to find the full entries: `A1`-`A9` in *Open questions (Writer A, Tasks 1-5)* after Task 5;
+`B1`-`B6` at the end of Task 7; `B7`-`B9` under Task 8; `B10`-`B12` under Task 9; `B13`-`B15` under
+Task 10.
+
+| id | asks | status |
+|---|---|---|
+| A1 | `longform`'s `schedule` key is read as a prompt-ARC string by `_longform_impl` and as a ScheduleSpec by `resolve_shift` | **Open, for WINTERMUTE.** Shipped: send the arc string only, so the client cannot trip `parse_spec`. Costs longform every ADVANCED SAMPLING shape; the fix is server-side |
+| A2 | who owns the `/status` poll, M9's job poller or M1's log store | **Answered.** Both keep polling: they read different fields for different consumers and one is tab-gated. Merge is one edit if judged wasteful |
+| A3 | `a2a_track`/`a2a_mix`, and where a clip's latent lives | **Open.** Both ops need a server-side `audio_path` and no upload-to-path route exists, so they are unreachable rather than half-built. DECODE and BEND work on library crops only |
+| A4 | `a2a_clip` takes the whole source file, so a trimmed clip is A2A'd across all of it | **Answered for the builder** (send the ref unchanged); the REPLACE CLIP half is `B7` |
+| A5 | should render history count as unsaved work | **Answered.** `renders`/`mixdown`/`preview` are serialised and restored but excluded from `unsavedWorkKey`, so the prompt does not fire after every render. Rationale in Task 3's WHY |
+| A6 | the final `strings.test.ts` total is not knowable from one half of the plan | **Open until assembly.** Must be set from a re-run of `npm run help:extract`, not carried forward. Same item as `B6` |
+| A7 | M2 T15's `EXPECTED` lists 25 fixtures while its docstring and `HANDOUT.md` say 20 | **Open, for the batched DM.** Nothing here depends on the count; each contract test skips on its own missing file |
+| A8 | `jobs.onDone` is a single callback slot, not a subscriber list | **Answered for now.** One consumer exists; it needs to become a list before a second one wants it |
+| A9 | `cancel()` is built and tested but no CANCEL control is mounted | **Answered.** §4.2/§4.5 draw no such button and M9 never queues a second job, so it is reachable only from code (Fact 12) |
+| B1 | where `ForgeClip.op` lives and whether it serialises | **Answered.** On `ForgeClip` in `forge/types.ts`, narrowed out of `JobOp`, serialised into `ProjectV2.clips[]` as a §9.2 amendment; pre-M9 v2 files load it as `null` |
+| B2 | preview playback vs the timeline transport | **Answered.** A second independent transport on the solo bus: starting one stops the other, each keeps its own playhead |
+| B3 | no bend-op editor, so `bendOps` is `[]` | **Open by design.** `renderBlock` refuses `bend` honestly rather than inventing a default op list. Known-incomplete item 1 |
+| B4 | — | **Never used.** No citation anywhere refers to `B4`; recorded as a deliberate hole so the later numbers stay valid |
+| B5 | `drawPeaks`' signature — M5's three-arg call vs Writer A's four-arg one | **ANSWERED.** `sa3-studio/src/lib/waveform.ts:80-84` declares `(canvas, peaks, color, opts = {})`. M5's call is correct; Writer A's was the defect and Task 4's call site is fixed. Not a reconcile item |
+| B6 | the final `strings.test.ts` total must be recounted at assembly | **Open until assembly.** The same item as `A6`; both writers raised it independently |
+| B7 | should REPLACE CLIP re-fit `dur_sec` to the render | **Answered.** Shrink when shorter, leave alone when longer, never grow. An explicit "fit clip to render" affordance is the alternative; §4.5 does not say |
+| B8 | two controls carry two different sentences for "a job is running" | **Open for the reconcile.** `RENDER_RUNNING_HINT` is Task 8's own string, not Writer A's `renderBlock` busy text; one should win |
+| B9 | `ForgeClip.history` is written but never read | **Open.** No UNDO path back to an archived ref. M10's, not M9's. Known-incomplete item 3 |
+| B10 | the A/B toggle is always visible, where the spec shows it only once a mix exists | **Open for the reconcile.** A deliberate, stated departure: always present with MIXDOWN disabled and an honest reason |
+| B11 | the dBFS/CLIPPING readout now describes whichever source is shown, and the label does not say which | **Open.** A two-word label suffix settles it; belongs to the assembly's HELP/label pass |
+| B12 | the committed mix has no staleness indicator | **Open.** M5's `stale` dot tracks the preview mix only. Known-incomplete item 4 |
+| B13 | the OS-file drop branch still calls `arrangement.addClip` directly, skipping analyze/stretch | **Open by design.** Named rather than slipped into a path this task did not otherwise touch. Known-incomplete item 8 |
+| B14 | `render.spec.ts` asserts the dropped clip's width, not its `dur_sec` | **Open.** Needs a `data-dur-sec` attribute on M5's `ClipBox`; that component's owner, not M9's last task |
+| B15 | removing a `ModuleId` member changes a persisted vocabulary with no version field | **Open.** Step 13's drop-unknown-ids migration handles today's case; a `ui.version` field would settle it once — M10's |
