@@ -528,3 +528,23 @@ Per-arm online-vs-EMA availability is now on the board for: `fullft_avp_t256`,
 `fullft_mixed_wdfix_ddpbug`, `fullft_suomi_t1024_fp32_lr1e-4_s1`, `fullft_suomift_warm_
 avpaug19_t1024_bf16_k5_s1`, `fullft_suomift_warm_goaft_t1024_bf16_k5_s1` — use the dora_table
 `weights` filter or the model_matrix picker to A/B any of them by ear.
+
+## 2026-09-29 — an epoch soup across a regime change renders broken (CONTINUITY)
+
+**Symptom.** Merged soups of `fp32cmp_avp_t4096_bs1_lr1e4` (DoRA r128) over ep3/7/14/21/35 (`fullft_soup_fp32cmp_avp_t4096_bs1`:
+`soup_mean`, and `soup_filtered` with a per-value outlier filter) render with z0 std **2.2–2.7** at every cfg. Every single
+epoch of the run sits at 0.75–1.1 at w1, and the ep14+ep21 pair soup is 0.82–0.89.
+**Cause.** ep35 is in a different regime in the latent-facing layers. ||ΔW_eff|| at ep14 / ep21 / ep35 is:
+- `preprocess_conv`: 1.2 / 3.3 / **29.0**
+- `postprocess_conv`: 0.35 / 1.34 / **9.8**
+- L22 `to_local_embed`: 3.8 / 4.8 / **33.3**
+
+The median matrix only doubles (30 → 63). ep35 renders normally on its own, so the rest of the network compensates for those
+edge changes. A 1/5 share of them mixed into epochs without the compensation does not.
+**Evidence.** `eval/ladder_soup_fullft.py` `soup_stats.json` (per-matrix epoch norms), and the z0 files in `Mantu/sa3_lora_runs/model_matrix/`.
+The within-run direction check also flagged ep21→ep35 as the least coherent step (lora_B cos 0.80, versus 0.88–0.92 before).
+**Why the filter did not help.** It drops single values that are outliers against the trend. A whole layer that moved is the trend.
+**Fix / rule.** Average only within one regime. Check per-matrix ||ΔW_eff|| across the ladder first, especially
+pre/postprocess_conv. A jump of several times the neighbouring growth marks a boundary. Rebuilt without ep35 as
+`fullft_soup_fp32cmp_avp_t4096_bs1_no35`. There, filtered vs mean differs by a median of 0.06% per matrix (22% in preprocess_conv),
+so nearly all of the first filter's effect had been ep35.

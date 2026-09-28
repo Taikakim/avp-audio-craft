@@ -28,18 +28,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### Render the three fp32cmp_avp_t4096_bs1 epoch soups when the GPU is free (C, 2026-09-28)
-**WHAT:** 42 cells each for `soup_mean` (plain mean of ep3/7/14/21/35, mean epoch 16), `soup_filtered` (same, per
-value drops at most one outlier epoch — changes ~10 edge layers by 13-37%, the rest <1%), `soup_ep14_ep21`.
-**WHY:** your ask — average the glitchy-but-good epochs into one usable checkpoint. mean vs filtered is the by-ear test
-of whether the outliers are the glitches. Detail: `run_meta.json` in the soup dir.
-**RUN** (cwd SAO, when W is off the GPU):
+### Render the fp32cmp_avp_t4096_bs1 soups WITHOUT ep35 (C, 2026-09-29)
+**WHAT:** 42 cells each for `soup_mean` (mean of ep3/7/14/21), `soup_filtered` (same, per value drops at most one
+outlier epoch), `soup_ep7_ep14`, under label `fullft_soup_fp32cmp_avp_t4096_bs1_no35`.
+**WHY:** your epoch-average ask. The first 5-epoch soups rendered broken (latent std ~2.4 vs ~0.85): ep35's
+latent-facing layers moved 8-28x after ep21. `soup_ep14_ep21` from that first batch is fine and worth a listen already.
+**RUN** (cwd SAO, when the GPU is free):
 ```bash
-cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True ROCR_VISIBLE_DEVICES=0 && Misc/gpu_guard.sh acquire KIM $$ && .venv/bin/python eval/model_matrix_gen.py --only-labels fullft_soup_fp32cmp_avp_t4096_bs1 --weights online --native-grid; Misc/gpu_guard.sh release KIM
+cd /home/kim/Projects/SAO && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True ROCR_VISIBLE_DEVICES=0 && Misc/gpu_guard.sh acquire KIM $$ && .venv/bin/python eval/model_matrix_gen.py --only-labels fullft_soup_fp32cmp_avp_t4096_bs1_no35 --weights online --native-grid; Misc/gpu_guard.sh release KIM
 ```
-**TAKES:** ~1-1.5 h (126 renders at 20 s). **VERIFY:** `ls ~/evals_aac/model_matrix/ | grep -c fullft_soup_fp32cmp_avp_t4096_bs1` gives 126
-(it may segfault at teardown after writing every file — count, don't trust the exit code).
-**REPORT BACK:** that count. Listen: `soup_mean` vs `soup_filtered` first.
+**TAKES:** ~15 min (126 renders, ~2-3 s each). **VERIFY:** `ls /run/media/kim/Mantu/sa3_lora_runs/model_matrix/ | grep fullft_soup_fp32cmp_avp_t4096_bs1_no35 | grep -c m4a$` gives 126
+(renders land on Mantu; `~/evals_aac/model_matrix` only gets the cfg-7 subset).
+**REPORT BACK:** that count; C checks the latent sizes before you listen.
 
 ### ✅ DONE 2026-09-26 (C ran it): r256 6340 is healthy — its NaN was the render fault. Was: re-render r256 at 5072/6340, merged (C, 2026-09-25)
 **WHAT:** the merged cfg sweep for `goa3_avp_r256_2026-09-23` (the rank-128 run abandoned on a NaN loss

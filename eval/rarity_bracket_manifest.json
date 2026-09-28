@@ -2312,6 +2312,17 @@
    "witness": [],
    "reason": "CONTINUITY 2026-09-28, Kim's ask: epoch soups of fp32cmp_avp_t4096_bs1_lr1e4 (DoRA r128, only ep3/7/14/21/35 still on disk), merged to full weights by eval/ladder_soup_fullft.py. soup_mean = plain mean of the 5 (mean epoch 16); soup_filtered = same, dropping at most one detrended-outlier epoch per value (changes ~10 edge matrices 13-37%, rest <1%); soup_ep14_ep21 = pair mean. mean vs filtered is the by-ear test of whether those outliers are the glitches.",
    "root": "/run/media/kim/Mantu/sa3_lora_runs/fullft"
+  },
+  "fullft_soup_fp32cmp_avp_t4096_bs1_no35": {
+   "tier": "full",
+   "picks": [
+    "soup_mean.ckpt",
+    "soup_filtered.ckpt",
+    "soup_ep7_ep14.ckpt"
+   ],
+   "witness": [],
+   "reason": "CONTINUITY 2026-09-29: the fp32cmp_avp_t4096_bs1_lr1e4 epoch soups WITHOUT ep35. The 5-epoch soups (fullft_soup_fp32cmp_avp_t4096_bs1) rendered with z0 std ~2.4: ep35's latent-facing layers (preprocess/postprocess_conv, late to_local_embed) moved 8-28x between ep21 and ep35, which ep35 compensates internally but an average does not. soup_mean = mean of ep3/7/14/21 (mean epoch 11), soup_filtered = same with the at-most-one-epoch filter, soup_ep7_ep14 = pair.",
+   "root": "/run/media/kim/Mantu/sa3_lora_runs/fullft"
   }
  },
  "legacy_goa_dora_nested": {
