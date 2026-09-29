@@ -12,6 +12,7 @@ import type {
 } from "../forge/types";
 import { findOverlaps, type Overlap } from "../math/overlaps";
 import type { SnapMode } from "../math/snap";
+import { downbeatPhaseShifts, meanNativeBpm } from "../math/tempoMatch";
 
 export const MIN_PX_PER_SEC = 4;
 export const MAX_PX_PER_SEC = 600;
@@ -299,6 +300,32 @@ class ArrangementStore {
       c.dur_sec = c.dur_sec * ratio;
     }
     this.bpm = next;
+  }
+
+  /** MATCH BPM (spec §4.3): meet at the mean of the clips' native tempos --
+   *  least stretch for all of them. Sets project tempo only; setBpm already
+   *  leaves start_sec alone (spec §7.3), so nothing moves in time. */
+  matchBpm(): number | null {
+    const mean = meanNativeBpm(this.clips);
+    if (mean === null) return null;
+    const rounded = Math.round(mean * 10) / 10;
+    this.setBpm(rounded);
+    return rounded;
+  }
+
+  /** MATCH DOWNBEATS (spec §4.3): shift every participating clip by the
+   *  shortest path onto the common phase. Tempo is left alone. Returns how
+   *  many clips moved. */
+  matchDownbeats(): number {
+    const shifts = downbeatPhaseShifts(this.clips, this.bpm, this.beatsPerBar);
+    let moved = 0;
+    for (const [id, delta] of shifts) {
+      const c = this.find(id);
+      if (!c) continue;
+      this.moveClip(id, c.start_sec + delta);
+      moved += 1;
+    }
+    return moved;
   }
 
   setSnap(mode: SnapMode) {

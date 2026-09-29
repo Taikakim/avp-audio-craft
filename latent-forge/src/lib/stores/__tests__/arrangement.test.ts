@@ -204,3 +204,30 @@ describe("solo and mute decide audibility together", () => {
     expect(arrangement.isAudible(0)).toBe(true);
   });
 });
+
+describe("MATCH BPM / MATCH DOWNBEATS (spec §4.3) -- thin store actions over lib/math/tempoMatch", () => {
+  it("MATCH BPM sets project tempo to the mean native BPM and rounds to 0.1", () => {
+    arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF, nativeBpm: 120 });
+    arrangement.addClip({ lane: 1, startSec: 0, durSec: 4, audio: REF, nativeBpm: 133 });
+    const meet = arrangement.matchBpm();
+    expect(meet).toBeCloseTo(126.5, 9);
+    expect(arrangement.bpm).toBeCloseTo(126.5, 9);
+  });
+
+  it("MATCH BPM does nothing when no clip has a native tempo", () => {
+    arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    expect(arrangement.matchBpm()).toBeNull();
+    expect(arrangement.bpm).toBe(120);
+  });
+
+  it("MATCH DOWNBEATS moves clips onto their common phase and leaves tempo alone", () => {
+    const a = arrangement.addClip({ lane: 0, startSec: 2, durSec: 8, audio: REF, downbeatsSec: [0.1] });
+    const b = arrangement.addClip({ lane: 1, startSec: 2, durSec: 8, audio: REF, downbeatsSec: [1.9] });
+    const bpmBefore = arrangement.bpm;
+    const moved = arrangement.matchDownbeats();
+    expect(moved).toBe(2);
+    expect(a.start_sec).toBeCloseTo(1.9, 6);
+    expect(b.start_sec).toBeCloseTo(2.1, 6);
+    expect(arrangement.bpm).toBe(bpmBefore);
+  });
+});
