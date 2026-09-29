@@ -13,12 +13,41 @@
   import ModuleShell from "./ui/shell/ModuleShell.svelte";
   import RightPane from "./ui/shell/RightPane.svelte";
   import TopBar from "./ui/shell/TopBar.svelte";
+  import { forgeApi } from "./lib/forge/api";
+  import { fetchAdapters } from "./lib/forge/models";
+  import { buildModelOptions, type ModelOption } from "./ui/topbar/modelOptions";
 
   // Spec §9.1: the theme lives on the document element, so tokens.css's
   // `:root[data-theme="dark"]` block also reaches the root-level overlays.
   $effect(() => {
     document.documentElement.setAttribute("data-theme", view.theme);
   });
+
+  // Top-bar contents (spec §4.2). Loading a session and recalling a preset are
+  // M7's; M1 lists what the server has and remembers the selection.
+  let sessions = $state<{ name: string; updated: number; n_clips: number }[]>([]);
+  let session = $state("");
+  let models = $state<ModelOption[]>(buildModelOptions([]));
+  let model = $state("medium");
+  let modelFolder = $state("");
+  let masterPresets = $state<string[]>([]);
+  let masterPreset = $state("");
+
+  async function loadTopBar() {
+    try {
+      const s = await forgeApi.sessions();
+      sessions = s.sessions;
+      if (!session && sessions.length > 0) session = sessions[0].name;
+    } catch {
+      sessions = [];
+    }
+    try {
+      masterPresets = (await forgeApi.presets("master")).names;
+    } catch {
+      masterPresets = [];
+    }
+    models = buildModelOptions(await fetchAdapters());
+  }
 
   function onKeydown(e: KeyboardEvent) {
     const t = e.target as HTMLElement | null;
@@ -45,6 +74,7 @@
   onMount(() => {
     project.connect();
     window.addEventListener("keydown", onKeydown);
+    void loadTopBar();
   });
   onDestroy(() => {
     project.disconnect();
@@ -60,6 +90,21 @@
     onhelp={() => view.toggleHelp()}
     theme={view.theme}
     ontheme={() => view.toggleTheme()}
+    {sessions}
+    {session}
+    onsession={(name) => (session = name)}
+    {models}
+    {model}
+    onmodel={(value) => {
+      model = value;
+      const picked = models.find((m) => m.value === value);
+      if (picked?.ckptPath) modelFolder = picked.ckptPath;
+    }}
+    {modelFolder}
+    onmodelfolder={(value) => (modelFolder = value)}
+    {masterPresets}
+    {masterPreset}
+    onmasterpreset={(name) => (masterPreset = name)}
   />
 
   <div class="main-row">
