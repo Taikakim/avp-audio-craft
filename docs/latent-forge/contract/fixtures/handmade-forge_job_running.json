@@ -1,0 +1,42 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "job_id": "forge-20260916-120000-1",
+    "op": "generate",
+    "payload": {
+      "prompt": "dub techno, deep sub, tape hiss",
+      "negative_prompt": "",
+      "steps": 24,
+      "cfg_scale": 6.0,
+      "seed": -1,
+      "apg_scale": 1.0,
+      "cfg_interval_progress": [0, 1],
+      "schedule": {
+        "shape": "model", "rho": 1.0, "sigma_min": 0.01, "lam_min": -6.2,
+        "lam_max": 2.0, "stepped": false, "plateaus": 6, "tilt": 0.15
+      },
+      "scale_phi": 0,
+      "sampler_type": "euler",
+      "duration": 45.0
+    },
+    "state": "running",
+    "position": null,
+    "progress": {
+      "job_id": "forge-20260916-120000-1",
+      "op": "generate",
+      "stage": "SAMPLE",
+      "stage_index": 0,
+      "stage_count": 1,
+      "step": 8,
+      "steps": 24,
+      "steps_left_total": 16,
+      "steps_total": 24
+    },
+    "result": null,
+    "error": null,
+    "created": 1789560000,
+    "started": 1789560001,
+    "finished": null
+  }
+}

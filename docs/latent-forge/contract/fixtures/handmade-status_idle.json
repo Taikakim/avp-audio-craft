@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "busy": false,
+    "job_id": null,
+    "log_tail": [
+      "[server] backbone medium-base (rectified_flow) resident",
+      "[forge] queue ready, 0 jobs"
+    ],
+    "progress": null
+  }
+}

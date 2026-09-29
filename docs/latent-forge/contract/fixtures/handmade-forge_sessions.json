@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "sessions": [
+      { "name": "dub-sketch", "updated": 1789480000, "n_clips": 6 },
+      { "name": "goa-transitions", "updated": 1789390000, "n_clips": 4 },
+      { "name": "scratch", "updated": 1789200000, "n_clips": 1 }
+    ]
+  }
+}

@@ -7,7 +7,7 @@ export default defineConfig({
     // jsdom only where a test asks for it via a // @vitest-environment docblock;
     // pure math and store tests run in node, which is ~4x faster to start.
     environment: "node",
-    include: ["src/**/__tests__/**/*.test.ts"],
+    include: ["src/**/__tests__/**/*.test.ts", "mock/__tests__/**/*.test.ts"],
     restoreMocks: true,
   },
   resolve: {

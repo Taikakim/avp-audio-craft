@@ -6,6 +6,7 @@
   "description": "Latent Forge — four-lane latent arrangement compositor for SA3. The timeline is audio; MIXDOWN commits.",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "vite --mode mock",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
