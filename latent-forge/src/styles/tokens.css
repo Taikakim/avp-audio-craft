@@ -1,0 +1,130 @@
+/* Theme tokens, spec §9.1.
+ *
+ * The light block is the design handoff's root style verbatim
+ * (docs/sa3-studio/design_handoff/SA3 Studio v3.dc.html, line 23), extended with the
+ * lane colours from LANE_META (line 660) and DOWNBEAT / CLIP_RED / SLOT_COLORS
+ * (lines 666-669). --downbeat-hit is the t = 1 end of the handoff's _dbColor()
+ * ramp (line 1155): L 78 -> 85, C 0.08 -> 0.17, H 250 -> 100.
+ *
+ * The dark block redefines LIGHTNESS AND CHROMA ONLY -- every hue is the light
+ * value's. Its starting numbers are the existing app's dark block, extended to the
+ * tokens that block did not have; they are tuned by eye in M5/M9.
+ *
+ * There is NO prefers-color-scheme rule. The DARK toggle sets data-theme on <html>
+ * and nothing else changes the theme (spec §9.1).
+ *
+ * Canvas code never reads a literal from this file: it resolves each colour with
+ * getComputedStyle(el).getPropertyValue("--token") once per frame, so DARK works
+ * inside <canvas> too.
+ *
+ * No border radius anywhere, no shadows (spec §4.1) -- neither has a token, on
+ * purpose: there is nothing to reach for.
+ */
+
+:root {
+  /* --- handoff root style, verbatim ------------------------------------ */
+  --bg: oklch(96% 0.006 240);
+  --panel: oklch(93% 0.008 240);
+  --panel2: oklch(90% 0.012 240);
+  --border: oklch(80% 0.014 240);
+  --text: oklch(27% 0.02 250);
+  --text-dim: oklch(52% 0.016 250);
+  --turq-strong: oklch(55% 0.11 195);
+  --purple-strong: oklch(54% 0.10 300);
+  --green-strong: oklch(56% 0.11 150);
+  --red: oklch(55% 0.20 25);
+  --warm: oklch(72% 0.15 75);
+
+  /* --- LANE_META (handoff line 660) ------------------------------------ */
+  --lane1: oklch(54% 0.10 300);
+  --lane2: oklch(56% 0.11 150);
+  --lane3: oklch(55% 0.11 195);
+  --lane4: oklch(50% 0.02 250);
+  --lane1-soft: oklch(54% 0.10 300 / 0.10);
+  --lane2-soft: oklch(56% 0.11 150 / 0.10);
+  --lane3-soft: oklch(55% 0.11 195 / 0.10);
+  --lane4-soft: oklch(50% 0.02 250 / 0.10);
+
+  /* --- DOWNBEAT / SLOT_COLORS (handoff lines 666-669, 1155) ------------- */
+  --downbeat: oklch(78% 0.08 250);
+  --downbeat-hit: oklch(85% 0.17 100);
+  --slot1: oklch(72% 0.15 75);
+  --slot2: oklch(62% 0.14 330);
+
+  /* --- region sizes, exact (spec §4.1, asserted by tests/layout.spec.ts) - */
+  --h-topbar: 42px;
+  --h-bottom-pane: 248px;
+  --h-tab-body: 162px;
+  --h-preview: 44px;
+  --h-ruler: 30px;
+  --h-lane: 62px;
+  --h-master: 56px;
+  --w-right-pane: 296px;
+  --w-right-strip: 24px;
+  --pad-centre: 10px;
+  --gap-centre: 8px;
+  --pad-bottom-pane: 6px 10px 8px;
+
+  /* --- compatibility aliases -------------------------------------------
+   * Timeline, ClipView, MasterStrip, CropLibrary, Inspector, ServerPanel and
+   * TransportBar still use the old names. They are re-homed into ui/shell/* later
+   * in M1 and these aliases go with them; nothing new may use them. */
+  --panel-bg: var(--panel);
+  --track-bg: var(--panel2);
+  --fg: var(--text);
+  --fg-dim: var(--text-dim);
+  --accent: var(--turq-strong);
+  --accent-fg: oklch(98% 0.01 195);
+  --purple: var(--purple-strong);
+  --green: var(--green-strong);
+  --neutral-lane: var(--lane4);
+  --btn-bg: var(--panel2);
+  --clip-bg: oklch(90% 0.012 240 / 0.6);
+  --clip-border: var(--border);
+  --ok: var(--green-strong);
+  --ok-fg: oklch(98% 0.02 150);
+  --warn: var(--warm);
+  --warn-fg: oklch(20% 0.02 75);
+}
+
+:root[data-theme="dark"] {
+  --bg: oklch(17% 0.012 240);
+  --panel: oklch(22% 0.014 240);
+  --panel2: oklch(26% 0.016 240);
+  --border: oklch(34% 0.018 240);
+  --text: oklch(92% 0.008 250);
+  --text-dim: oklch(65% 0.02 250);
+  --turq-strong: oklch(72% 0.13 195);
+  --purple-strong: oklch(72% 0.12 300);
+  --green-strong: oklch(72% 0.13 150);
+  --red: oklch(68% 0.18 25);
+  --warm: oklch(78% 0.14 75);
+
+  --lane1: oklch(72% 0.12 300);
+  --lane2: oklch(72% 0.13 150);
+  --lane3: oklch(72% 0.13 195);
+  --lane4: oklch(70% 0.015 250);
+  --lane1-soft: oklch(72% 0.12 300 / 0.10);
+  --lane2-soft: oklch(72% 0.13 150 / 0.10);
+  --lane3-soft: oklch(72% 0.13 195 / 0.10);
+  --lane4-soft: oklch(70% 0.015 250 / 0.10);
+
+  --downbeat: oklch(74% 0.09 250);
+  --downbeat-hit: oklch(88% 0.18 100);
+  --slot1: oklch(78% 0.14 75);
+  --slot2: oklch(70% 0.15 330);
+
+  --accent-fg: oklch(15% 0.02 195);
+  --clip-bg: oklch(26% 0.016 240 / 0.6);
+  --ok-fg: oklch(15% 0.02 150);
+  --warn-fg: oklch(18% 0.02 75);
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Space Grotesk", ui-monospace, monospace;
+  font-size: 12px;
+}
