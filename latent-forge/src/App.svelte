@@ -5,8 +5,20 @@
   import MasterStrip from "./lib/MasterStrip.svelte";
   import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
+  import { view } from "./lib/stores/view.svelte";
   import Timeline from "./lib/Timeline.svelte";
   import TransportBar from "./lib/TransportBar.svelte";
+  import BottomPane from "./ui/shell/BottomPane.svelte";
+  import CentreColumn from "./ui/shell/CentreColumn.svelte";
+  import ModuleShell from "./ui/shell/ModuleShell.svelte";
+  import RightPane from "./ui/shell/RightPane.svelte";
+  import TopBar from "./ui/shell/TopBar.svelte";
+
+  // Spec §9.1: the theme lives on the document element, so tokens.css's
+  // `:root[data-theme="dark"]` block also reaches the root-level overlays.
+  $effect(() => {
+    document.documentElement.setAttribute("data-theme", view.theme);
+  });
 
   function onKeydown(e: KeyboardEvent) {
     const t = e.target as HTMLElement | null;
@@ -40,77 +52,124 @@
   });
 </script>
 
-<main>
-  <header>
-    <h1>LATENT FORGE</h1>
-    <span class="tagline">the timeline is audio — MIXDOWN commits</span>
-  </header>
+<div class="forge-root">
+  <TopBar
+    view={view.screen}
+    onview={(v) => view.setView(v)}
+    helpMode={view.helpOn}
+    onhelp={() => view.toggleHelp()}
+    theme={view.theme}
+    ontheme={() => view.toggleTheme()}
+  />
 
-  <TransportBar />
+  <div class="main-row">
+    <CentreColumn>
+      {#snippet centre()}
+        {#if view.screen === "workspace"}
+          <section class="centre-stack" data-region="workspace-centre">
+            <TransportBar />
+            <MasterStrip />
+            <Timeline />
+          </section>
+        {:else}
+          <!-- filled by the statistics-shell task of this milestone (spec §4.4) -->
+          <section class="centre-stack" data-region="statistics-centre"></section>
+        {/if}
+      {/snippet}
 
-  <div class="workspace">
-    <div class="stack">
-      <MasterStrip />
-      <Timeline />
-    </div>
-    <aside>
-      <ServerPanel />
-      <CropLibrary />
-      <Inspector />
-    </aside>
+      {#snippet bottom()}
+        <BottomPane visible={view.screen === "workspace"} />
+      {/snippet}
+    </CentreColumn>
+
+    <RightPane open={view.sideOpen} ontoggle={() => view.toggleSide()}>
+      <!-- ModuleShell's Normative props {id, title, lit}; ids are the view store's kebab
+           ModuleId. Task 12 moves the first five into RightPaneModules.svelte. -->
+      <ModuleShell id="overlap" title="OVERLAP — INPAINT" lit={false}>
+        <!-- body: M7 (spec §4.6.1); its render button is wired in M9 -->
+        <div class="module-empty"></div>
+      </ModuleShell>
+
+      <ModuleShell id="files" title="FILES" lit={project.clips.length > 0}>
+        <CropLibrary />
+      </ModuleShell>
+
+      <ModuleShell id="lane-chain" title="LANE 1 CHAIN" lit={false}>
+        <!-- body: M7 (spec §5.5); the header follows the active lane from M5 -->
+        <div class="module-empty"></div>
+      </ModuleShell>
+
+      <ModuleShell id="advanced-sampling" title="ADVANCED SAMPLING" lit={false}>
+        <!-- body: M4 (spec §5.3) -->
+        <div class="module-empty"></div>
+      </ModuleShell>
+
+      <ModuleShell id="master-chain" title="MASTER CHAIN" lit={false}>
+        <!-- body: M7 (spec §4.6.5) -->
+        <div class="module-empty"></div>
+      </ModuleShell>
+
+      <ModuleShell id="legacy-inspector" title="INSPECTOR (legacy — M4 removes)" lit={false}>
+        <Inspector />
+      </ModuleShell>
+
+      <ModuleShell id="legacy-server" title="SERVER (legacy — M9 removes)" lit={false}>
+        <ServerPanel />
+      </ModuleShell>
+    </RightPane>
   </div>
-</main>
+
+  <!-- Spec §9.5: the raster border is a root-level overlay. M9 copies
+       phosphor-border.js in and drives this canvas from steps_left_total. -->
+  <canvas
+    class="raster-border"
+    data-region="raster-border"
+    width="300"
+    height="170"
+    aria-hidden="true"
+  ></canvas>
+
+  <!-- HelpTooltip (spec §9.4) is Task 14's component; it and the rootEl/onRootMove
+       mousemove machinery that feeds it are not built here (T9-T11 must not create
+       HelpTooltip.svelte -- Normative-names table). Task 14 wires both together. -->
+</div>
 
 <style>
-  /* Theme tokens (--bg, --panel-bg, --border, --fg, --accent, etc.) and the
-     html/body base rule now live in src/styles/tokens.css, imported once in
-     main.ts before this component mounts. That file also owns the dark theme
-     via :root[data-theme="dark"] -- there is no prefers-color-scheme query
-     (spec §9.1: the DARK toggle is the only thing that changes the theme). */
-  main {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  header {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    height: 42px;
-    padding: 0 12px;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
-  }
-  h1 {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    color: var(--accent);
+  :global(body) {
     margin: 0;
   }
-  .tagline {
-    color: var(--fg-dim);
-    font-size: 11px;
-  }
-  .workspace {
+  .forge-root {
+    height: 100vh;
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Space Grotesk", ui-monospace, monospace;
+    font-size: 12px;
   }
-  .stack {
+  .main-row {
     flex: 1;
-    min-width: 0;
+    min-height: 0;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
-  aside {
+  .centre-stack {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    flex: 0 0 280px;
+    gap: 8px;
+    min-width: 0;
+  }
+  .module-empty {
+    min-height: 0;
+  }
+  .raster-border {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    image-rendering: pixelated;
+    pointer-events: none;
+    z-index: 90;
   }
 </style>
