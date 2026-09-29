@@ -11,7 +11,7 @@
 // at an arbitrary future AudioContext time, which is required once more than
 // one clip can overlap on a lane or clips must line up across lanes.
 
-import type { Clip, Lane, LaneId } from "./types";
+import type { Clip, Lane, LaneId } from "../types";
 
 interface ScheduledSource {
   node: AudioBufferSourceNode;
