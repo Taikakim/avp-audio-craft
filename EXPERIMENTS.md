@@ -1362,6 +1362,22 @@ exactly this reason.)*
 
 ### E4 — Guided-gen eval + disintegration gate for the f0 heads — **PLANNED** (no "works" claim before this).
 
+### E5 — LatCH + FiLM density bracket under the ModularOptimizer, goa bigset — **RUNNING (C, 2026-09-30, Kim direct)**
+- Kim: "launch LATCH and MuseControlLite (FiLM) bracketing using the 12k goa set ... check that the findings about
+  dimensions, batch, lr, etc still hold with our trainer ... then start trying out likely good combinations. At least
+  Shampoo is good." Target = the density head (onsets per beat).
+- **Phase A** (running): the May LatCH findings (LATCH_RESULTS.txt §3/4/6/21/22: d256 best, small batch better, lr 1e-3 >
+  3e-4 at short budgets, SF-NorMuon ship) re-checked under `train_latch --optimizer modular` on `latents_sa3`
+  onset_envelope_ts (targets already exist), 10 ep, 14 arms incl. two repeat-seed noise-floor arms.
+  Driver `latch/run_modular_bracket.sh`; results `Mantu/latch_sweep/modular_2026-09-30/phaseA/SUMMARY.tsv`.
+- **Phase B** (queued on targets): the bigset had no targets; `latch/extract_density_targets.py` computes
+  onset_per_beat_ts (running, ~2 h). Then the best Phase A settings + combinations on the bigset, grouped split by track.
+- **FiLM** (`control/sa3_control/train.py --optimizer modular --control-mode scalar --scalar-from-timeseries
+  onset_per_beat_ts`): needs the full DiT (~10+ GB) — only when W is off the GPU.
+- Kill-criterion: an arm is only "better" if it beats the repeat-seed spread.
+- ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
+  scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**

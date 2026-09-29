@@ -548,3 +548,19 @@ The within-run direction check also flagged ep21→ep35 as the least coherent st
 pre/postprocess_conv. A jump of several times the neighbouring growth marks a boundary. Rebuilt without ep35 as
 `fullft_soup_fp32cmp_avp_t4096_bs1_no35`. There, filtered vs mean differs by a median of 0.06% per matrix (22% in preprocess_conv),
 so nearly all of the first filter's effect had been ep35.
+
+## 2026-09-30 — the `onset_per_beat` density target is doubled on 45% of latents_sa3's goa crops (madmom half-tempo) (CONTINUITY)
+
+**Symptom.** Found while building density targets for the goa bigset: madmom's top tempo candidate came back as 65.9–69 BPM
+on three of four goa tracks. In `latents_sa3`, **2,430 of 5,401** crops have `bpm_madmom` < 95; `bpm_essentia` has only 122 under 95 (median 142). madmom and essentia
+disagree by more than 20% on 2,437 crops.
+**Cause.** `mir/src/rhythm/bpm.py::estimate_bpm_madmom` returns `tempos[0,0]`, the STRONGEST candidate. On goa the strongest
+RNN tempo peak is often the half-tempo one (e.g. [68.97, 0.267] above [136.4, 0.205]).
+**Effect.** `onset_per_beat = onset_density * 60 / bpm_madmom` (the crop .json scalar) is **2x too large** on those crops. The
+June density control runs (`onset_Fusion_opb_*`) trained on it. W's 2026-06-26 corr(onset_per_beat, bpm) = −0.81 is
+plausibly dominated by this: a halved bpm and a doubled opb on the same crop is a built-in negative correlation.
+**Evidence.** A count over `latents_sa3/*.json` (bpm_madmom vs bpm_essentia). The candidate lists come from `madmom.features.tempo.TempoEstimationProcessor`.
+**Fix / status.** New targets (`latch/extract_density_targets.py`) take the strongest candidate inside [95,190) BPM, else
+octave-fold. The existing `latents_sa3` scalars are NOT rewritten — whoever next trains on `onset_per_beat` there should
+recompute it from `bpm_essentia`, or from the folded madmom value. Not yet checked: whether the June opb heads' learned
+behaviour reflects the doubling.
