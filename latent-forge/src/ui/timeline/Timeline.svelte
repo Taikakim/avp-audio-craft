@@ -12,6 +12,7 @@
   import { pxToSec } from "../../lib/math/viewport";
   import { LANE_IDS } from "../../lib/types";
   import ClipBox from "./ClipBox.svelte";
+  import OverlapBox from "./OverlapBox.svelte";
   import Ruler from "./Ruler.svelte";
 
   // ------------------------------------------------------------- lane body
@@ -167,6 +168,9 @@
           <LaneCanvas lane={aLane} />
           {#each arrangement.clips.filter((c) => c.lane === aLane.index) as clip (clip.id)}
             <ClipBox {clip} />
+          {/each}
+          {#each arrangement.overlaps.filter((o) => o.lane === aLane.index) as overlap (overlap.key)}
+            <OverlapBox {overlap} />
           {/each}
         </div>
       </div>

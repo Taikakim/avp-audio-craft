@@ -10,6 +10,7 @@ import {
 import type {
   AudioRef, Envelope, ForgeClip, ForgeLane, OverlapParams,
 } from "../forge/types";
+import { findOverlaps, type Overlap } from "../math/overlaps";
 import type { SnapMode } from "../math/snap";
 
 export const MIN_PX_PER_SEC = 4;
@@ -17,14 +18,7 @@ export const MAX_PX_PER_SEC = 600;
 export const LANE_COUNT = 4;
 
 /** A derived overlap region; its editable parameters live in `overlapParams`. */
-export interface Overlap {
-  key: string;
-  lane: 0 | 1 | 2 | 3;
-  start_sec: number;
-  end_sec: number;
-  a_id: string;
-  b_id: string;
-}
+export type { Overlap };
 
 export interface AddClipArgs {
   lane: 0 | 1 | 2 | 3;
@@ -67,39 +61,12 @@ class ArrangementStore {
 
   private overlapStore = $state<Record<string, OverlapParams>>({});
 
-  /** Overlaps are DERIVED from clip spans -- never stored, so they cannot go stale. */
-  overlaps = $derived.by<Overlap[]>(() => {
-    const out: Overlap[] = [];
-    for (let lane = 0; lane < LANE_COUNT; lane++) {
-      const inLane = this.clips
-        .filter((c) => c.lane === lane)
-        .sort((a, b) => a.start_sec - b.start_sec);
-      // ALL pairs, not sorted-adjacent ones. The drawing's _overlaps (v3:1601-1611)
-      // checks adjacency only, but there an overlap was a purple box; here it becomes
-      // 6.9's commit payload, and 8.1 S3 equal-power-crossfades an overlap instead of
-      // summing it, so a missed overlap is a louder, possibly clipping render with no
-      // inpaint pass. A [0,10) with B [2,3) and C [5,6) is the case adjacency misses.
-      // n is tens; the cost is irrelevant.
-      for (let i = 0; i < inLane.length; i++) {
-        for (let j = i + 1; j < inLane.length; j++) {
-        const a = inLane[i];
-        const b = inLane[j];
-        const aEnd = a.start_sec + a.dur_sec;
-        if (aEnd > b.start_sec + 1e-9) {
-          out.push({
-            key: `${a.id}-${b.id}`,
-            lane: lane as 0 | 1 | 2 | 3,
-            start_sec: b.start_sec,
-            end_sec: Math.min(aEnd, b.start_sec + b.dur_sec),
-            a_id: a.id,
-            b_id: b.id,
-          });
-        }
-        }
-      }
-    }
-    return out;
-  });
+  /**
+   * Overlaps are DERIVED from clip spans -- never stored, so they cannot go stale.
+   * The scan itself lives in `../math/overlaps` (Task 7) -- see that module's
+   * docstring for why it is ALL pairs per lane, not just sorted-adjacent ones.
+   */
+  overlaps = $derived.by<Overlap[]>(() => findOverlaps(this.clips));
 
   arrangementEndSec = $derived(
     this.clips.reduce((m, c) => Math.max(m, c.start_sec + c.dur_sec), 0),
