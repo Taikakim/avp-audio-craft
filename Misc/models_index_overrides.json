@@ -7951,5 +7951,8 @@
   },
   "longctx_t2048_r128_ptm": {
     "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): has a very nice trajectory, each ep learns a sensible amount. \"Crazy stuff\"; ep0 is already good."
+  },
+  "goa5k_fullft_avp_dora_lr7e-4_subloss_k5_12132st": {
+    "kim_feedback": "2026-09-29 (listening pass, dora_table/model_matrix, relayed in chat): cfg 12 / w 0.5 sounded the most genre-accurate vs the training set."
   }
 }
