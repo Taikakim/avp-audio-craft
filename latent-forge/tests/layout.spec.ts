@@ -165,6 +165,20 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   const total = await controls.count();
   expect(total, "no [data-help] controls rendered at all").toBeGreaterThanOrEqual(10);
 
+  // Guard the exclusion itself: today exactly 4 hosts are excluded (one
+  // `.header` per lane, per LaneHeader.svelte). If that count changes, a
+  // *new* container-with-nested-override was added -- which silently drops
+  // out of this generic sample (see the exclusion comment above) and needs
+  // its own explicit hover-position assertion, the way `.header` gets one
+  // below. Fail loudly here rather than letting the sample just shrink.
+  const excludedContainers = page.locator("[data-help]:has([data-help])");
+  expect(
+    await excludedContainers.count(),
+    "the set of [data-help] containers with a nested override changed -- " +
+      "add explicit coverage for the new one (see the `.header` assertion " +
+      "below) before updating this count",
+  ).toBe(4);
+
   const stride = Math.max(1, Math.floor(total / 10));
   const indices = new Set<number>();
   for (let i = 0; i < total; i += stride) indices.add(i);
@@ -183,6 +197,27 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
     checked++;
   }
   expect(checked, "fewer than ten visible [data-help] controls").toBe(10);
+
+  // The exclusion above drops `.header` from the generic sample entirely,
+  // which would otherwise leave HELP.laneHeader -- the one data-help string
+  // out of 26 in the app -- with zero coverage. Test it directly with a
+  // position-targeted hover instead of the default bbox-center hover: land
+  // inside row 1 (`.row.identity`), which carries no data-help of its own
+  // and sits above `.slot`'s band, so `closest()` must bubble up to
+  // `.header`'s own text. This is exactly the "hovering anywhere on
+  // `.header` that is NOT specifically over `.slot`" scenario the bug this
+  // test caught was about.
+  const header = page.locator(".header").first();
+  await expect(header).toBeVisible();
+  const headerHelp = await header.getAttribute("data-help");
+  expect(headerHelp, "`.header` lost its own data-help").toBeTruthy();
+  const headerBox = await header.boundingBox();
+  const identityBox = await header.locator(".row.identity").boundingBox();
+  if (!headerBox || !identityBox) throw new Error("`.header`/`.row.identity` has no bounding box");
+  const identityCenterY = identityBox.y + identityBox.height / 2 - headerBox.y;
+  await header.hover({ position: { x: headerBox.width / 2, y: identityCenterY } });
+  await expect(box).toBeVisible();
+  await expect(box).toHaveText(headerHelp ?? "");
 });
 
 test("DARK flips data-theme and flips back", async ({ page }) => {
