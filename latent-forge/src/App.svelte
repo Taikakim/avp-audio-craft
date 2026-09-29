@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import CropLibrary from "./lib/CropLibrary.svelte";
+  import { installGlobalKeys } from "./lib/actions/keyboard";
   import Inspector from "./lib/Inspector.svelte";
-  import MasterStrip from "./lib/MasterStrip.svelte";
   import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
   import { view } from "./lib/stores/view.svelte";
-  import Timeline from "./lib/Timeline.svelte";
-  import TransportBar from "./lib/TransportBar.svelte";
+  import MasterStrip from "./ui/master/MasterStrip.svelte";
+  import Timeline from "./ui/timeline/Timeline.svelte";
   import BottomPane from "./ui/shell/BottomPane.svelte";
   import CentreColumn from "./ui/shell/CentreColumn.svelte";
   import HelpTooltip from "./ui/shell/HelpTooltip.svelte";
@@ -50,36 +49,25 @@
     models = buildModelOptions(await fetchAdapters());
   }
 
-  function onKeydown(e: KeyboardEvent) {
-    const t = e.target as HTMLElement | null;
-    // Never steal keys from a field the user is typing in.
-    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
-    if (e.key === " ") {
-      e.preventDefault();
-      project.togglePlay();
-    } else if (e.key === "Delete" || e.key === "Backspace") {
-      if (project.selectedClipId) {
-        e.preventDefault();
-        project.removeClip(project.selectedClipId);
-      }
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      project.seek(0);
-    } else if (e.key === "+" || e.key === "=") {
-      project.zoomBy(1.4);
-    } else if (e.key === "-") {
-      project.zoomBy(1 / 1.4);
-    }
-  }
+  let disposeKeys: (() => void) | null = null;
 
   onMount(() => {
     project.connect();
-    window.addEventListener("keydown", onKeydown);
+    disposeKeys = installGlobalKeys({
+      togglePlay: () => project.togglePlay(),
+      rewind: () => project.seek(0),
+      deleteSelected: () => {
+        if (project.selectedClipId) project.removeClip(project.selectedClipId);
+      },
+      zoomBy: (f) => project.zoomBy(f),
+    });
     void loadTopBar();
   });
+
   onDestroy(() => {
     project.disconnect();
-    window.removeEventListener("keydown", onKeydown);
+    disposeKeys?.();
+    disposeKeys = null;
   });
 </script>
 
@@ -113,7 +101,6 @@
       {#snippet centre()}
         {#if view.screen === "workspace"}
           <section class="centre-stack" data-region="workspace-centre">
-            <TransportBar />
             <MasterStrip />
             <Timeline />
           </section>

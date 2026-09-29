@@ -11,8 +11,8 @@ import {
   type StatusResponse,
 } from "./api";
 import { circularMeanPhase, meanBpm, secPerBar, shortestPhaseDelta, type Meter, type SnapMode, DEFAULT_METER, snapSec } from "./musictime";
-import { Transport } from "./transport";
-import { invalidatePeaks, mixdownToBuffer, peakLevel } from "./waveform";
+import { Transport } from "./audio/transport";
+import { invalidatePeaks, mixdownToBuffer, peakLevel } from "./audio/waveform";
 import {
   DEFAULT_RENDER_PARAMS,
   defaultLanes,

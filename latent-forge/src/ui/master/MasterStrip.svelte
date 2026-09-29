@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { project } from "./store.svelte";
-  import { computePeaks, drawPeaks } from "./waveform";
+  import { project } from "../../lib/store.svelte";
+  import { computePeaks, drawPeaks } from "../../lib/audio/waveform";
 
   let canvasEl = $state<HTMLCanvasElement>();
   let busy = $state(false);
@@ -61,7 +61,7 @@
     {/if}
     <button onclick={refresh} disabled={busy}>{busy ? "MIXING…" : "▸ MIX PREVIEW"}</button>
   </div>
-  <canvas bind:this={canvasEl} class="wave"></canvas>
+  <canvas bind:this={canvasEl} class="wave" data-region="master-canvas"></canvas>
   {#if error}
     <p class="error">{error}</p>
   {:else if !project.masterBuffer}

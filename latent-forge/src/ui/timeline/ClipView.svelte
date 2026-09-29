@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { project } from "./store.svelte";
-  import { sourceLabel, type Clip } from "./types";
-  import { drawPeaks, peaksFor } from "./waveform";
+  import { project } from "../../lib/store.svelte";
+  import { sourceLabel, type Clip } from "../../lib/types";
+  import { drawPeaks, peaksFor } from "../../lib/audio/waveform";
 
   interface Props {
     clip: Clip;

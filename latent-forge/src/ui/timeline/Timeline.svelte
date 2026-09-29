@@ -1,8 +1,9 @@
 <script lang="ts">
   import ClipView from "./ClipView.svelte";
-  import { gridLines, LATENT_FPS, secPerBar, SNAP_MODES } from "./musictime";
-  import { project } from "./store.svelte";
-  import type { LaneId } from "./types";
+  import { gridLines, LATENT_FPS, secPerBar, SNAP_MODES } from "../../lib/musictime";
+  import { project } from "../../lib/store.svelte";
+  import type { LaneId } from "../../lib/types";
+  import RulerTransport from "./RulerTransport.svelte";
 
   const LANE_HEADER_PX = 150;
 
@@ -237,8 +238,8 @@
 
   <div class="scroller" onwheel={onWheel}>
     <div class="ruler-row">
-      <div class="ruler-gutter"></div>
-      <canvas class="ruler" bind:this={rulerEl} style="width: {contentPx}px"></canvas>
+      <RulerTransport />
+      <canvas class="ruler" data-region="ruler-canvas" bind:this={rulerEl} style="width: {contentPx}px"></canvas>
     </div>
 
     {#each project.lanes as lane (lane.id)}
@@ -289,7 +290,7 @@
           onpointermove={(e) => onLanePointerMove(e, lane.id)}
           onpointerup={onLanePointerUp}
         >
-          <canvas class="grid" bind:this={gridEl[lane.id]} style="width: {contentPx}px"></canvas>
+          <canvas class="grid" data-region="lane-canvas" bind:this={gridEl[lane.id]} style="width: {contentPx}px"></canvas>
           <div class="playhead" style="left: {project.playheadSec * project.pxPerSec}px"></div>
           {#each project.clips.filter((c) => c.laneId === lane.id) as clip (clip.id)}
             <ClipView
@@ -378,11 +379,6 @@
     align-items: stretch;
     border-bottom: 1px solid var(--border);
   }
-  .ruler-gutter {
-    width: 150px;
-    flex: 0 0 150px;
-    border-right: 1px solid var(--border);
-  }
   .ruler {
     height: 30px;
     display: block;
@@ -443,7 +439,7 @@
   }
   .lane-track {
     position: relative;
-    height: 68px;
+    height: 62px;
     background: var(--track-bg);
     cursor: pointer;
   }
