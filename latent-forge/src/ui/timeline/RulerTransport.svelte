@@ -6,11 +6,12 @@
   import { HELP } from "../../lib/help/strings";
   import { formatBarsBeats, formatClock, frameAt } from "../../lib/musictime";
   import { project } from "../../lib/store.svelte";
+  import { RULER_GUTTER_PX } from "../../lib/timelineLayout";
 
   let loop = $state(false);
 </script>
 
-<div class="cell" data-region="ruler-transport">
+<div class="cell" data-region="ruler-transport" style="width: {RULER_GUTTER_PX}px; flex: 0 0 {RULER_GUTTER_PX}px">
   <div class="buttons">
     <button
       class="primary"
@@ -34,8 +35,7 @@
 
 <style>
   .cell {
-    width: 250px;
-    flex: 0 0 250px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 6px;

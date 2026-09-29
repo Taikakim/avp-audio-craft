@@ -4,6 +4,7 @@
   // through getComputedStyle so DARK works), play/stop, click-to-scrub, and
   // `draggable` + a dragstart payload so the waveform drops onto a lane like a clip.
   import { mixdownLabel } from "./mixdown";
+  import { HELP } from "../../lib/help/strings";
 
   interface Props {
     busy?: boolean;
@@ -20,12 +21,12 @@
     class="commit"
     class:busy
     data-testid="mixdown-button"
-    data-help="Mixes the four lanes in the latent domain and decodes the result — the commit that turns the arrangement into audio. While it samples, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count."
+    data-help={HELP.mixdownCommit}
     disabled>{label}</button>
   <canvas
     class="wave"
     data-testid="mixdown-canvas"
-    data-help="The latest mixdown. Click to scrub it, and drag it onto a lane to use it as a clip. Earlier mixdowns stay in the render history at the bottom of the screen."
+    data-help={HELP.mixdownWave}
     bind:this={canvasEl}
     width="220"
     height="26"

@@ -9,6 +9,8 @@
   // onto a lane, USE SETTINGS copying the previewed render's job payload into the
   // current target, and REPLACE CLIP swapping a clip's audio while keeping the
   // previous ref in clip.history.
+  import { HELP } from "../../lib/help/strings";
+
   interface Props {
     lengthSec?: number | null;
     history?: { id: string; label: string }[];
@@ -22,13 +24,13 @@
   <button
     class="render"
     data-testid="preview-render"
-    data-help="Renders the current target with the settings in this pane. The result lands here to be auditioned; drag it onto a lane if you want it."
+    data-help={HELP.previewRender}
     disabled>▸ RENDER</button>
 
   <select
     class="history"
     data-testid="preview-history"
-    data-help="Every render of this session, newest first. Loading one plays it here — it does not change the settings in this pane."
+    data-help={HELP.previewHistory}
     disabled
   >
     {#if history.length === 0}
@@ -51,18 +53,18 @@
   <span
     class="handle"
     data-testid="preview-drag-handle"
-    data-help="Drag the previewed render onto a lane to add it as a clip at the drop position."
+    data-help={HELP.previewDragToLane}
     >⠿ drag to lane</span>
 
   <button
     class="action"
     data-testid="preview-use-settings"
-    data-help="Copies the settings the previewed render was made with into the current target. Loading a render from HISTORY never does this on its own."
+    data-help={HELP.previewUseSettings}
     disabled>USE SETTINGS</button>
   <button
     class="action"
     data-testid="preview-replace-clip"
-    data-help="Swaps the selected clip's audio for the previewed render, keeping the previous audio in the clip's history. Enabled only when the render was made from that clip."
+    data-help={HELP.previewReplaceClip}
     disabled>REPLACE CLIP</button>
 </div>
 

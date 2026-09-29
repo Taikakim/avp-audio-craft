@@ -93,11 +93,19 @@ export type HelpId =
   | "filmTarget"
   | "opSelect"
   | "previewMixdownToggle"
+  | "mixdownCommit"
+  | "mixdownWave"
+  | "previewRender"
+  | "previewHistory"
+  | "previewDragToLane"
+  | "previewUseSettings"
+  | "previewReplaceClip"
   ;
 
 export const HELP: Record<HelpId, string> = {
   session: "Session — clips rendered in one working session.",
-  model: "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip.",
+  // handoff: "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip."
+  model: "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip. The first four entries are backbones and switching one rebuilds the model; the rest are adapters and set the session's default checkpoint path.",
   modelFolder: "Direct checkpoint folder — any path the loader can read.",
   masterPreset: "Master preset — every lane chain, the clip layout, mix order and node values, master chain, sigma schedule and prompt in one recall.",
   renderButton: "Runs the current target. While sampling, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count.",
@@ -195,8 +203,15 @@ export const HELP: Record<HelpId, string> = {
   transportPlay: "Play or pause the arrangement from the playhead. Space does the same from anywhere outside a text field. Preview playback in the render container is separate: starting one stops the other.",
   transportStop: "Stop and leave the playhead where it is. Home rewinds it to zero.",
   transportLoop: "Loop the marked region instead of running on to the end of the arrangement — the fastest way to hear whether a join actually lands.",
-  darkToggle: "Dark theme. It re-maps lightness and chroma on the same tokens, so the waveforms and the sigma graph follow it too. The choice is remembered in this browser.",
+  darkToggle: "Light or dark ground. The choice is kept in this browser. Canvases read their colours from the theme, so the waveforms, the ruler and the sigma graph follow it too.",
   filmTarget: "The value the FiLM head steers this lane toward, in onsets per second. The GAIN beside it scales how hard the conditioning is applied. Safe value: 4.0.",
   opSelect: "What RENDER does with the selected clip: A2A re-noises and re-denoises it at the noise amount above, DECODE just runs its latent back through the decoder, BEND applies the latent operations. The prompt and settings in this pane belong to whichever op is chosen.",
   previewMixdownToggle: "A/B the audio-domain preview mix against the committed mixdown. PREVIEW is what the timeline sounds like now; MIXDOWN is what the server actually rendered. They should agree — where they do not, the commit changed something the preview cannot see.",
+  mixdownCommit: "Mixes the four lanes in the latent domain and decodes the result — the commit that turns the arrangement into audio. While it samples, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count.",
+  mixdownWave: "The latest mixdown. Click to scrub it, and drag it onto a lane to use it as a clip. Earlier mixdowns stay in the render history at the bottom of the screen.",
+  previewRender: "Renders the current target with the settings in this pane. The result lands here to be auditioned; drag it onto a lane if you want it.",
+  previewHistory: "Every render of this session, newest first. Loading one plays it here — it does not change the settings in this pane.",
+  previewDragToLane: "Drag the previewed render onto a lane to add it as a clip at the drop position.",
+  previewUseSettings: "Copies the settings the previewed render was made with into the current target. Loading a render from HISTORY never does this on its own.",
+  previewReplaceClip: "Swaps the selected clip's audio for the previewed render, keeping the previous audio in the clip's history. Enabled only when the render was made from that clip.",
 };

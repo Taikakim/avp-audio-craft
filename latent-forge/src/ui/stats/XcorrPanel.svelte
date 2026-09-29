@@ -4,12 +4,14 @@
   // `xcorr: {shape, data_b64}`.
   import { niceTicks, xcorrCellSize } from "../../lib/math/axis";
   import { fitPanelCanvas, panelColour } from "./panelCanvas";
+  import { view } from "../../lib/stores/view.svelte";
 
   const DIMS = 256;
   let canvasEl = $state<HTMLCanvasElement>();
 
   $effect(() => {
     const canvas = canvasEl;
+    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
     if (!canvas) return;
     const ctx = fitPanelCanvas(canvas);
     if (!ctx) return;

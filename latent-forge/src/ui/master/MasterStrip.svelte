@@ -1,5 +1,6 @@
 <script lang="ts">
   import { project } from "../../lib/store.svelte";
+  import { view } from "../../lib/stores/view.svelte";
   import { computePeaks, drawPeaks } from "../../lib/audio/waveform";
 
   let canvasEl = $state<HTMLCanvasElement>();
@@ -38,10 +39,14 @@
     drawPeaks(canvas, computePeaks(buffer, cols), color);
   }
 
-  // Redraw (not re-render) when the buffer or the element size changes.
+  // Redraw (not re-render) when the buffer, the element size, or the theme
+  // changes -- `draw()` reads --accent off getComputedStyle, which only picks
+  // up a new value once the DARK toggle flips [data-theme], so `view.theme`
+  // must be a tracked dependency here or the strip keeps its stale-theme colour.
   $effect(() => {
     void project.masterBuffer;
     void canvasEl;
+    void view.theme;
     draw();
   });
 </script>

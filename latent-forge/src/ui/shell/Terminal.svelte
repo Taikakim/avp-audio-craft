@@ -13,13 +13,30 @@
   let { mode, busy, lines, onmode }: Props = $props();
 
   let bodyEl = $state<HTMLDivElement>();
+  let stickToBottom = true;
 
-  // Follow the tail unless the operator has scrolled up to read something.
+  // "Am I near the bottom" has to be measured BEFORE the DOM grows with the new lines, or the
+  // check is comparing against geometry that already includes them -- scrollHeight has already
+  // grown, so a poll that adds more than ~2-3 lines (over ~40px) reads as "not near the bottom"
+  // even though the operator genuinely was, and auto-follow silently stops. $effect.pre runs
+  // before that DOM update (unlike a plain $effect, which runs after), so it captures the real
+  // pre-growth answer. `stickToBottom` starts true, which also covers the very first render --
+  // bodyEl may not be bound yet the first time this runs, and "not yet scrolled" should stick.
+  $effect.pre(() => {
+    void lines.length;
+    const el = bodyEl;
+    stickToBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  });
+
+  // Runs after the DOM has updated. Follows the tail -- including on mount, where scrollTop
+  // otherwise defaults to 0 and a remount with a full backlog (e.g. switching back to the
+  // TERMINAL tab with up to 400 lines already loaded) would land on the OLDEST lines instead
+  // of jumping to the newest.
   $effect(() => {
     const el = bodyEl;
     if (!el) return;
     void lines.length;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) el.scrollTop = el.scrollHeight;
+    if (stickToBottom) el.scrollTop = el.scrollHeight;
   });
 </script>
 

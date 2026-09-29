@@ -4,6 +4,7 @@
   // M10 loads /forge/stats and adds the crop `*_ts` fields to the select.
   import { linScale, niceTicks } from "../../lib/math/axis";
   import { fitPanelCanvas, panelColour } from "./panelCanvas";
+  import { view } from "../../lib/stores/view.svelte";
 
   /** Computed for renders and uploads, so always offered (spec §4.4). */
   const FEATURES = ["rms", "onset_strength", "spectral_centroid"];
@@ -16,6 +17,7 @@
   $effect(() => {
     const canvas = canvasEl;
     void feature;
+    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
     if (!canvas) return;
     const ctx = fitPanelCanvas(canvas);
     if (!ctx) return;

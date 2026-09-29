@@ -4,8 +4,8 @@
   import { project } from "../../lib/store.svelte";
   import type { LaneId } from "../../lib/types";
   import RulerTransport from "./RulerTransport.svelte";
-
-  const LANE_HEADER_PX = 150;
+  import { RULER_GUTTER_PX } from "../../lib/timelineLayout";
+  import { view } from "../../lib/stores/view.svelte";
 
   let laneEl = $state<Record<string, HTMLDivElement>>({});
   let rulerEl = $state<HTMLCanvasElement>();
@@ -57,6 +57,7 @@
     const pxPerSec = project.pxPerSec;
     const meter = project.meter;
     void contentPx;
+    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
     if (!canvas) return;
     const ctx = fitCanvas(canvas);
     if (!ctx) return;
@@ -114,6 +115,7 @@
     const pxPerSec = project.pxPerSec;
     const meter = project.meter;
     void contentPx;
+    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
     for (const lane of project.lanes) {
       const canvas = gridEl[lane.id];
       if (!canvas) continue;
@@ -244,7 +246,7 @@
 
     {#each project.lanes as lane (lane.id)}
       <div class="lane-row" style="border-left: 3px solid {lane.color}">
-        <div class="lane-header">
+        <div class="lane-header" style="width: {RULER_GUTTER_PX}px; flex: 0 0 {RULER_GUTTER_PX}px">
           <span class="lane-chip" style="background: {lane.color}"></span>
           <span class="lane-label">{lane.label}</span>
           <span class="lane-count">{project.clips.filter((c) => c.laneId === lane.id).length}</span>
@@ -378,6 +380,11 @@
     display: flex;
     align-items: stretch;
     border-bottom: 1px solid var(--border);
+    /* Every .lane-row below carries a 3px lane-color border-left (inline style).
+       This transparent match keeps the ruler-transport/ruler-canvas gutter the
+       same width as the lane-header/lane-canvas gutter -- otherwise the ruler
+       and the lane grid start 3px apart. */
+    border-left: 3px solid transparent;
   }
   .ruler {
     height: 30px;
@@ -389,8 +396,7 @@
     border-bottom: 1px solid var(--border);
   }
   .lane-header {
-    width: 150px;
-    flex: 0 0 150px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 5px;

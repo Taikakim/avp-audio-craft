@@ -6,8 +6,8 @@ import { HELP } from "../strings";
 const SOURCE = fileURLToPath(new URL("../strings.ts", import.meta.url));
 
 describe("the extractor captured the whole drawing", () => {
-  it("has the 80 handoff strings plus the 7 new controls", () => {
-    expect(Object.keys(HELP)).toHaveLength(87);
+  it("has the 80 handoff strings plus the 14 new controls (fix wave 2026-09-29 added 7 more)", () => {
+    expect(Object.keys(HELP)).toHaveLength(94);
   });
 
   it("has no empty string", () => {
@@ -68,7 +68,7 @@ describe("strings taken verbatim from the drawing", () => {
   });
 });
 
-describe("the fourteen strings spec §9.4 requires rewritten", () => {
+describe("the fourteen strings spec §9.4 requires rewritten, plus the fix-wave reconciliation", () => {
   it("rewrites all of them away from the handoff wording", () => {
     const rewritten = [
       "steps", "cfg", "modelStagePost", "modelStageBase", "sampler", "scheduleShape",
@@ -119,10 +119,19 @@ describe("the fourteen strings spec §9.4 requires rewritten", () => {
 
   it("keeps every rewritten original in a handoff comment beside it", () => {
     const src = readFileSync(SOURCE, "utf8");
-    expect(src.match(/\/\/ handoff: "/g) ?? []).toHaveLength(14);
+    // 14 from spec §9.4 + 1 more (`model`) reconciled in the 2026-09-29 fix wave, see below.
+    expect(src.match(/\/\/ handoff: "/g) ?? []).toHaveLength(15);
     expect(src).toContain(
       '// handoff: "Number of denoising steps. More steps cost time and give diminishing returns. Safe value: 100 for v/eps models, 50 for rectified_flow, 8 for rf_denoiser. Drag to scale; hold shift for 1/100th detail."',
     );
+  });
+
+  it("MODEL was reconciled to TopBar's live text (fix wave 2026-09-29, finding #4)", () => {
+    // Task 14's extractor and TopBar.svelte's inline data-help had already drifted -- TopBar's
+    // was more likely what users actually saw, so it won and is now what the drawing's raw text
+    // gets rewritten to. Confirms the drift-added sentence is present and it's still marked as
+    // a rewrite (handoff comment retained above it in strings.ts).
+    expect(HELP.model).toContain("The first four entries are backbones");
   });
 });
 
@@ -135,6 +144,23 @@ describe("new controls this build has and the drawing did not", () => {
       expect(HELP[id].length, `HELP.${id} missing`).toBeGreaterThan(20);
     }
     expect(HELP.transportPlay).toContain("Space");
-    expect(HELP.darkToggle).toContain("remembered in this browser");
+  });
+
+  it("DARK was reconciled to TopBar's live text (fix wave 2026-09-29, finding #4)", () => {
+    // Was "Dark theme. It re-maps lightness ... remembered in this browser." (generated) vs
+    // "Light or dark ground. ... kept in this browser." (TopBar's live inline literal) -- fully
+    // different wording, not just a drifted sentence. TopBar's live text won, same rationale as
+    // MODEL above.
+    expect(HELP.darkToggle).toContain("kept in this browser");
+    expect(HELP.darkToggle).toContain("the ruler and the sigma graph follow it too");
+  });
+
+  it("covers the 7 controls the fix wave found with no HELP entry at all (MixdownSlot x2, PreviewContainer x5)", () => {
+    for (const id of [
+      "mixdownCommit", "mixdownWave", "previewRender", "previewHistory",
+      "previewDragToLane", "previewUseSettings", "previewReplaceClip",
+    ] as const) {
+      expect(HELP[id].length, `HELP.${id} missing`).toBeGreaterThan(20);
+    }
   });
 });

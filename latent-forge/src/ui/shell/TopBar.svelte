@@ -12,6 +12,7 @@
   import { project } from "../../lib/store.svelte";
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
   import type { ModelOption } from "../topbar/modelOptions";
+  import { HELP } from "../../lib/help/strings";
 
   type ForgeView = "workspace" | "statistics";
 
@@ -103,7 +104,7 @@
   <select
     class="session"
     data-testid="session-select"
-    data-help="Session — clips rendered in one working session."
+    data-help={HELP.session}
     value={session}
     onchange={(e) => onsession((e.currentTarget as HTMLSelectElement).value)}
   >
@@ -120,7 +121,7 @@
   <select
     class="model"
     data-testid="model-select"
-    data-help="Checkpoint used for generation, a2a, inpainting and the encode/decode round trip. The first four entries are backbones and switching one rebuilds the model; the rest are adapters and set the session's default checkpoint path."
+    data-help={HELP.model}
     value={model}
     onchange={(e) => onmodel((e.currentTarget as HTMLSelectElement).value)}
   >
@@ -133,7 +134,7 @@
     class="folder"
     type="text"
     data-testid="model-folder"
-    data-help="Direct checkpoint folder — any path the loader can read."
+    data-help={HELP.modelFolder}
     value={modelFolder}
     onchange={(e) => onmodelfolder((e.currentTarget as HTMLInputElement).value)}
   />
@@ -143,7 +144,7 @@
     <select
       class="preset"
       data-testid="master-preset-select"
-      data-help="Master preset — every lane chain, the clip layout, mix order and node values, master chain, sigma schedule and prompt in one recall."
+      data-help={HELP.masterPreset}
       value={masterPreset}
       onchange={(e) => onmasterpreset((e.currentTarget as HTMLSelectElement).value)}
     >
@@ -166,13 +167,13 @@
       class="toggle"
       class:on={helpMode}
       data-testid="help-toggle"
-      data-help="Help mode. While on, hovering a control shows what it does."
+      data-help={HELP.helpToggle}
       onclick={onhelp}>HELP</button>
     <button
       class="toggle"
       class:on={theme === "dark"}
       data-testid="dark-toggle"
-      data-help="Light or dark ground. The choice is kept in this browser. Canvases read their colours from the theme, so the waveforms, the ruler and the sigma graph follow it too."
+      data-help={HELP.darkToggle}
       onclick={ontheme}>DARK</button>
   </div>
 </header>

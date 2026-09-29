@@ -177,6 +177,13 @@ const REWRITES = {
     "Target kind. constant holds one value; ramp_up / ramp_down sweep it over the window; " +
     "beat_grid takes a BPM instead of a feature value. chroma_major and chroma_minor are not " +
     "offered here — chroma is matched against the TARGET lane in the CHROMA tab instead.",
+  // Fix wave 2026-09-29 (finding #4): TopBar.svelte's live data-help had already drifted from
+  // the generated string by an extra sentence -- reconciled here using the LIVE text as source
+  // of truth, per the fix-wave instruction (what's on screen now is more likely what users saw).
+  model:
+    "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip. The " +
+    "first four entries are backbones and switching one rebuilds the model; the rest are " +
+    "adapters and set the session's default checkpoint path.",
 };
 
 // ------------------------------------------------- controls the drawing lacks
@@ -189,9 +196,12 @@ const NEW_STRINGS = {
   transportLoop:
     "Loop the marked region instead of running on to the end of the arrangement — the fastest " +
     "way to hear whether a join actually lands.",
+  // Fix wave 2026-09-29 (finding #4): TopBar.svelte's live data-help had diverged completely
+  // from the generated string. Reconciled using the LIVE text as source of truth (same rationale
+  // as `model` in REWRITES above -- it is what users have actually been shown).
   darkToggle:
-    "Dark theme. It re-maps lightness and chroma on the same tokens, so the waveforms and the " +
-    "sigma graph follow it too. The choice is remembered in this browser.",
+    "Light or dark ground. The choice is kept in this browser. Canvases read their colours " +
+    "from the theme, so the waveforms, the ruler and the sigma graph follow it too.",
   filmTarget:
     "The value the FiLM head steers this lane toward, in onsets per second. The GAIN beside it " +
     "scales how hard the conditioning is applied. Safe value: 4.0.",
@@ -203,6 +213,30 @@ const NEW_STRINGS = {
     "A/B the audio-domain preview mix against the committed mixdown. PREVIEW is what the " +
     "timeline sounds like now; MIXDOWN is what the server actually rendered. They should agree — " +
     "where they do not, the commit changed something the preview cannot see.",
+  // Fix wave 2026-09-29 (finding #4): seven controls (MixdownSlot x2, PreviewContainer x5) were
+  // built in Tasks 9-11, before this module existed, and carried their own inline data-help
+  // literals that never got an entry here. Text below is taken verbatim from those live literals.
+  mixdownCommit:
+    "Mixes the four lanes in the latent domain and decodes the result — the commit that turns " +
+    "the arrangement into audio. While it samples, the window border runs a C64 loader raster " +
+    "bar whose sweep rate falls with the remaining step count.",
+  mixdownWave:
+    "The latest mixdown. Click to scrub it, and drag it onto a lane to use it as a clip. " +
+    "Earlier mixdowns stay in the render history at the bottom of the screen.",
+  previewRender:
+    "Renders the current target with the settings in this pane. The result lands here to be " +
+    "auditioned; drag it onto a lane if you want it.",
+  previewHistory:
+    "Every render of this session, newest first. Loading one plays it here — it does not " +
+    "change the settings in this pane.",
+  previewDragToLane:
+    "Drag the previewed render onto a lane to add it as a clip at the drop position.",
+  previewUseSettings:
+    "Copies the settings the previewed render was made with into the current target. Loading " +
+    "a render from HISTORY never does this on its own.",
+  previewReplaceClip:
+    "Swaps the selected clip's audio for the previewed render, keeping the previous audio in " +
+    "the clip's history. Enabled only when the render was made from that clip.",
 };
 
 // ------------------------------------------------------------------ extract

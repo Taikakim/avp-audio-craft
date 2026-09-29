@@ -140,14 +140,27 @@ test("each right-pane module opens, and OVERLAP is absent without an overlap sel
 });
 
 test("HELP shows the control's own string for ten sampled controls", async ({ page }) => {
+  // Sample by STRIDE across the whole [data-help] list, not the first ten in DOM order --
+  // the first ten always land inside TopBar (spec §4.2 puts a run of them right at the top),
+  // so a from-index-0 sample never reaches RightPane/MixdownSlot/PreviewContainer controls
+  // further down the tree. That's exactly why this test never caught finding #4 (2026-09-29
+  // fix wave): 14 controls across those regions carried their own inline data-help literal
+  // instead of importing HELP, and a from-index-0 sample of ten never touched any of them.
   await page.locator('[data-testid="help-toggle"]').click();
   const box = page.locator('[data-testid="help-box"]');
   const controls = page.locator("[data-help]");
   const total = await controls.count();
   expect(total, "no [data-help] controls rendered at all").toBeGreaterThanOrEqual(10);
 
+  const stride = Math.max(1, Math.floor(total / 10));
+  const indices = new Set<number>();
+  for (let i = 0; i < total; i += stride) indices.add(i);
+  // Top up from the front if the stride alone landed on fewer than ten indices (small `total`).
+  for (let i = 0; indices.size < 10 && i < total; i++) indices.add(i);
+
   let checked = 0;
-  for (let i = 0; i < total && checked < 10; i++) {
+  for (const i of [...indices].sort((a, b) => a - b)) {
+    if (checked >= 10) break;
     const c = controls.nth(i);
     if (!(await c.isVisible())) continue;
     const expected = await c.getAttribute("data-help");
@@ -167,6 +180,43 @@ test("DARK flips data-theme and flips back", async ({ page }) => {
   await expect(html).not.toHaveAttribute("data-theme", "dark");
 });
 
+/** Pull a small sample of pixels out of a canvas so we can tell its drawn
+ *  colours actually changed, not just that [data-theme] flipped (spec §9.1's
+ *  own help text promises "the waveforms, the ruler ... follow it too"). */
+async function canvasPixelSample(loc: Locator): Promise<string> {
+  return loc.evaluate((el) => {
+    const canvas = el as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    const w = Math.max(1, Math.min(canvas.width, 64));
+    const h = Math.max(1, Math.min(canvas.height, 64));
+    return Array.from(ctx.getImageData(0, 0, w, h).data).join(",");
+  });
+}
+
+test("DARK toggle actually redraws the canvases, not just the CSS tokens", async ({ page }) => {
+  const ruler = page.locator('[data-region="ruler-canvas"]').first();
+  const laneGrid = page.locator('[data-region="lane-canvas"]').first();
+  await expect(ruler).toBeVisible();
+  await expect(laneGrid).toBeVisible();
+
+  const rulerLight = await canvasPixelSample(ruler);
+  const laneLight = await canvasPixelSample(laneGrid);
+  expect(rulerLight.length, "ruler canvas sampled empty").toBeGreaterThan(0);
+
+  await page.locator('[data-testid="dark-toggle"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  // The draw effects run on the next microtask/frame after the theme flips.
+  await page.waitForTimeout(50);
+
+  const rulerDark = await canvasPixelSample(ruler);
+  const laneDark = await canvasPixelSample(laneGrid);
+  expect(rulerDark, "ruler canvas pixels unchanged after DARK toggle").not.toBe(rulerLight);
+  expect(laneDark, "lane grid canvas pixels unchanged after DARK toggle").not.toBe(laneLight);
+
+  await page.locator('[data-testid="dark-toggle"]').click();
+});
+
 test("the transport lives in the ruler's left cell (spec §4.3, §10 X1)", async ({ page }) => {
   const transport = page.locator('[data-region="ruler-transport"]');
   await expect(transport).toBeVisible();
@@ -179,6 +229,13 @@ test("the transport lives in the ruler's left cell (spec §4.3, §10 X1)", async
   const ruler = await page.locator('[data-region="ruler-canvas"]').first().boundingBox();
   expect(cell && ruler).toBeTruthy();
   expect(cell!.x + cell!.width).toBeLessThanOrEqual(ruler!.x + 1);
+});
+
+test("the ruler canvas and the lane grid start at the same x (Task 15 gutter/header mismatch)", async ({ page }) => {
+  const ruler = await page.locator('[data-region="ruler-canvas"]').first().boundingBox();
+  const lane = await page.locator('[data-region="lane-canvas"]').first().boundingBox();
+  expect(ruler && lane).toBeTruthy();
+  expectPx(ruler!.x, lane!.x, "ruler canvas x vs lane canvas x");
 });
 
 test("the FILES module lists the mock server's files and they are draggable", async ({ page }) => {

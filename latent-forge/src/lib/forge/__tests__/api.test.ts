@@ -109,8 +109,9 @@ describe("pollJob", () => {
     vi.stubGlobal("fetch", async () =>
       jsonResponse({ ok: true, job_id: "forge-1", op: "commit", state: "error", error: "non-finite latents in lane 2" }));
     const p = forgeApi.pollJob("forge-1", () => {});
+    const pending = expect(p).rejects.toThrow(/non-finite latents/);
     await vi.advanceTimersByTimeAsync(600);
-    await expect(p).rejects.toThrow(/non-finite latents/);
+    await pending;
     vi.useRealTimers();
   });
 });

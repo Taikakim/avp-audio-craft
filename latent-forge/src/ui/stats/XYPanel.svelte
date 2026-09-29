@@ -4,6 +4,7 @@
   // crop-sidecar scalar to the selects, and highlights the selected lane's clips.
   import { linScale, niceTicks } from "../../lib/math/axis";
   import { fitPanelCanvas, panelColour } from "./panelCanvas";
+  import { view } from "../../lib/stores/view.svelte";
 
   /** The three the contract always provides (spec §4.4). M10 appends the rest. */
   const FIELDS = ["bpm", "lufs", "rel_pos"];
@@ -18,6 +19,7 @@
     const canvas = canvasEl;
     void x;
     void y;
+    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
     if (!canvas) return;
     const ctx = fitPanelCanvas(canvas);
     if (!ctx) return;

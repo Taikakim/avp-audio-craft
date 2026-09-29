@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import RightPaneModules from "./RightPaneModules.svelte";
+  import { HELP } from "../../lib/help/strings";
 
   // Spec §4.1: 296 px, collapsible to a 24 px strip holding the ▸/◂ toggle,
   // overflow-y auto. box-sizing: border-box so the 1 px left border is inside
@@ -27,7 +28,7 @@
     class="side-toggle"
     class:collapsed={!open}
     data-testid="side-toggle"
-    data-help="Collapse or expand the context pane. Menus keep a lit marker when something inside them is active."
+    data-help={HELP.sidePaneToggle}
     onclick={ontoggle}
   >{open ? "◂ CONTEXT" : "▸"}</button>
   {#if open}
