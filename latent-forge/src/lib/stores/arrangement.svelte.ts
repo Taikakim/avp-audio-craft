@@ -83,6 +83,7 @@ class ArrangementStore {
       dur_sec: args.durSec,
       loop: false,
       audio: args.audio,
+      previewAudio: null,
       native_bpm: args.nativeBpm ?? null,
       detune_cents: 0,
       downbeats_sec: args.downbeatsSec ?? [],
@@ -162,6 +163,16 @@ class ArrangementStore {
   setDetune(id: string, cents: number) {
     const c = this.find(id);
     if (c) c.detune_cents = Math.max(-100, Math.min(100, Math.round(cents)));
+  }
+
+  setDownbeats(id: string, downbeatsSec: number[]) {
+    const c = this.find(id);
+    if (c) c.downbeats_sec = downbeatsSec;
+  }
+
+  setPreviewAudio(id: string, ref: AudioRef | null) {
+    const c = this.find(id);
+    if (c) c.previewAudio = ref;
   }
 
   private refreshStale(c: ForgeClip) {

@@ -138,6 +138,9 @@ export interface ForgeClip {
   dur_sec: number;
   loop: boolean;
   audio: AudioRef;
+  /** The debounced /forge/stretch result once native_bpm differs from the
+   *  project tempo or detune != 0 (spec §7.3); null = play `audio` as-is. */
+  previewAudio: AudioRef | null;
   native_bpm: number | null;
   detune_cents: number;
   /**

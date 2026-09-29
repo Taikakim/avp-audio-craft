@@ -44,7 +44,7 @@
       const parts: { buffer: AudioBuffer; startSec: number; gain: number }[] = [];
       for (const clip of arrangement.clips) {
         if (!arrangement.isAudible(clip.lane)) continue;
-        const buf = await decoder.preload(forgeApi.audioUrl(clip.audio));
+        const buf = await decoder.preload(forgeApi.audioUrl(clip.previewAudio ?? clip.audio));
         parts.push({ buffer: buf, startSec: clip.start_sec, gain: arrangement.lanes[clip.lane].gain });
       }
       masterBuffer = await mixdownToBuffer(parts, decoder.ctx.sampleRate);
