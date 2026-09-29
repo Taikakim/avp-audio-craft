@@ -1,10 +1,11 @@
 <script lang="ts">
   import ClipView from "./ClipView.svelte";
+  import LaneHeader from "./LaneHeader.svelte";
   import { gridLines, SNAP_MODES } from "../../lib/musictime";
   import { project } from "../../lib/store.svelte";
-  import type { LaneId } from "../../lib/types";
+  import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { LANE_IDS, type LaneId } from "../../lib/types";
   import Ruler from "./Ruler.svelte";
-  import { RULER_GUTTER_PX } from "../../lib/timelineLayout";
   import { view } from "../../lib/stores/view.svelte";
 
   let laneEl = $state<Record<string, HTMLDivElement>>({});
@@ -180,22 +181,16 @@
 
     {#each project.lanes as lane (lane.id)}
       <div class="lane-row" style="border-left: 3px solid {lane.color}">
-        <div class="lane-header" style="width: {RULER_GUTTER_PX}px; flex: 0 0 {RULER_GUTTER_PX}px">
-          <span class="lane-chip" style="background: {lane.color}"></span>
-          <span class="lane-label">{lane.label}</span>
-          <span class="lane-count">{project.clips.filter((c) => c.laneId === lane.id).length}</span>
-          <button class:active={lane.muted} onclick={() => project.toggleMute(lane.id)} title="Mute">M</button>
-          <button class:active={lane.solo} onclick={() => project.toggleSolo(lane.id)} title="Solo">S</button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={lane.gain}
-            oninput={(e) => project.setLaneGain(lane.id, +(e.target as HTMLInputElement).value)}
-            title="preview gain (audio-domain only — never sent to the server)"
-          />
-        </div>
+        <!--
+          arrangement.lanes is Task 1's own fixed-order ForgeLane[] (index
+          0-3), and project.lanes (this loop) is the still-alive v1 store's
+          own array -- both are built from LANE_IDS' fixed order (M5 T3's
+          store.svelte.ts shim uses the same LANE_IDS.indexOf mapping), so
+          this is a lossless lookup, not a coincidence. The rest of this row
+          (lane-track, ClipView, drag handling) is still v1/project -- that
+          migration is M5 T5-T7's job, not this task's (M5 progress ledger).
+        -->
+        <LaneHeader lane={arrangement.lanes[LANE_IDS.indexOf(lane.id)]} />
         <div
           class="lane-track"
           role="slider"
@@ -314,54 +309,6 @@
     display: flex;
     align-items: stretch;
     border-bottom: 1px solid var(--border);
-  }
-  .lane-header {
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 8px;
-    background: var(--panel2);
-    border-right: 1px solid var(--border);
-    position: sticky;
-    left: 0;
-    z-index: 6;
-  }
-  .lane-chip {
-    display: inline-block;
-    width: 9px;
-    height: 9px;
-    flex-shrink: 0;
-  }
-  .lane-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--fg);
-  }
-  .lane-count {
-    font-size: 9px;
-    color: var(--fg-dim);
-    margin-right: auto;
-  }
-  .lane-header button {
-    width: 17px;
-    height: 17px;
-    font-size: 9px;
-    padding: 0;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
-    color: var(--fg-dim);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .lane-header button.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-fg);
-  }
-  .lane-header input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
   }
   .lane-track {
     position: relative;
