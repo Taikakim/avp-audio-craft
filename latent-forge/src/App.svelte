@@ -10,6 +10,7 @@
   import TransportBar from "./lib/TransportBar.svelte";
   import BottomPane from "./ui/shell/BottomPane.svelte";
   import CentreColumn from "./ui/shell/CentreColumn.svelte";
+  import HelpTooltip from "./ui/shell/HelpTooltip.svelte";
   import ModuleShell from "./ui/shell/ModuleShell.svelte";
   import RightPane from "./ui/shell/RightPane.svelte";
   import TopBar from "./ui/shell/TopBar.svelte";
@@ -157,9 +158,11 @@
     aria-hidden="true"
   ></canvas>
 
-  <!-- HelpTooltip (spec §9.4) is Task 14's component; it and the rootEl/onRootMove
-       mousemove machinery that feeds it are not built here (T9-T11 must not create
-       HelpTooltip.svelte -- Normative-names table). Task 14 wires both together. -->
+  <!-- HelpTooltip (spec §9.4) is self-contained: it owns its own window mousemove
+       listener and reads view.helpOn directly, so no rootEl/onRootMove wiring is
+       needed here (T9-T11 must not create HelpTooltip.svelte -- Normative-names
+       table; T14 owns and mounts it). -->
+  <HelpTooltip />
 </div>
 
 <style>

@@ -11,13 +11,15 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "help:extract": "node ../docs/latent-forge/extract_help.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.4.2",
     "@tsconfig/svelte": "^5.0.4",
+    "@types/node": "^26.6.3",
     "jsdom": "^25.0.1",
     "svelte": "^5.1.0",
     "svelte-check": "^4.0.5",
