@@ -1,129 +1,99 @@
 <script lang="ts">
-  import ClipView from "./ClipView.svelte";
+  import LaneCanvas from "./LaneCanvas.svelte";
   import LaneHeader from "./LaneHeader.svelte";
-  import { gridLines, SNAP_MODES } from "../../lib/musictime";
+  import { SNAP_MODES } from "../../lib/musictime";
   import { project } from "../../lib/store.svelte";
   import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { playback } from "../../lib/stores/transport.svelte";
+  import { view } from "../../lib/stores/view.svelte";
+  import { forgeApi } from "../../lib/forge/api";
+  import { parseForgeRefPayload } from "../../lib/math/laneHeader";
+  import { middleDragScrollDeltaSec, middleDragZoomFactor } from "../../lib/math/ruler";
+  import { pxToSec } from "../../lib/math/viewport";
   import { LANE_IDS, type LaneId } from "../../lib/types";
   import Ruler from "./Ruler.svelte";
-  import { view } from "../../lib/stores/view.svelte";
 
-  let laneEl = $state<Record<string, HTMLDivElement>>({});
-  let gridEl = $state<Record<string, HTMLCanvasElement>>({});
+  // ------------------------------------------------------------- lane body
 
-  type DragMode = "move" | "trim-start" | "trim-end";
-  let drag: { clipId: string; mode: DragMode; grabOffsetSec: number; moved: boolean } | null = null;
+  let laneBodyEl = $state<Record<number, HTMLDivElement>>({});
+  type LaneDrag =
+    | { mode: "seek" }
+    | { mode: "zoom"; startX: number; startY: number; startPxPerSec: number; startScrollSec: number };
+  let laneDrag: LaneDrag | null = null;
 
-  const contentSec = $derived(Math.max(60, project.arrangementEndSec + 20));
-  const contentPx = $derived(contentSec * project.pxPerSec);
-
-  function pxToSec(px: number) {
-    return Math.max(0, px / project.pxPerSec);
-  }
-
-  function secAtClientX(clientX: number, laneId: LaneId): number {
-    const rect = laneEl[laneId].getBoundingClientRect();
-    return pxToSec(clientX - rect.left);
-  }
-
-  // ------------------------------------------------------------- ruler + grid
-
-  function cssVar(name: string, el: HTMLElement): string {
-    return getComputedStyle(el).getPropertyValue(name).trim();
-  }
-
-  function fitCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (w <= 0 || h <= 0) return null;
-    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-    }
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    return ctx;
-  }
-
-  // Per-lane background grid.
-  $effect(() => {
-    const pxPerSec = project.pxPerSec;
-    const meter = project.meter;
-    void contentPx;
-    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
-    for (const lane of project.lanes) {
-      const canvas = gridEl[lane.id];
-      if (!canvas) continue;
-      const ctx = fitCanvas(canvas);
-      if (!ctx) continue;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      const border = cssVar("--border", canvas);
-      for (const line of gridLines(0, w / pxPerSec, meter, pxPerSec)) {
-        const x = Math.round(line.sec * pxPerSec) + 0.5;
-        ctx.strokeStyle = border;
-        ctx.globalAlpha = line.kind === "bar" ? 0.9 : line.kind === "beat" ? 0.45 : 0.2;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-    }
-  });
-
-  // ------------------------------------------------------------- interaction
-
-  function onLaneClick(e: MouseEvent, laneId: LaneId) {
-    if (drag?.moved) return; // finished a drag, not a seek click
-    project.seek(secAtClientX(e.clientX, laneId));
-  }
-
-  function onLaneKeydown(e: KeyboardEvent) {
-    const step = e.shiftKey ? 5 : 1;
-    if (e.key === "ArrowRight") {
+  function onLaneBodyPointerDown(e: PointerEvent, laneIndex: 0 | 1 | 2 | 3) {
+    const el = e.currentTarget as HTMLElement;
+    if (e.button === 1) {
       e.preventDefault();
-      project.seek(project.playheadSec + step);
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      project.seek(project.playheadSec - step);
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      project.togglePlay();
+      laneDrag = {
+        mode: "zoom",
+        startX: e.clientX,
+        startY: e.clientY,
+        startPxPerSec: arrangement.pxPerSec,
+        startScrollSec: arrangement.scrollSec,
+      };
+      el.setPointerCapture(e.pointerId);
+      return;
     }
+    if (e.button !== 0) return;
+    // ClipBox/OverlapBox (Tasks 6/7) stopPropagation their own pointerdown,
+    // so reaching here means the click landed on bare canvas.
+    view.activeLane = laneIndex;
+    const rect = el.getBoundingClientRect();
+    void playback.seek(pxToSec(e.clientX - rect.left, arrangement.scrollSec, arrangement.pxPerSec));
+    laneDrag = { mode: "seek" };
+    el.setPointerCapture(e.pointerId);
   }
 
-  function onGrab(e: PointerEvent, clipId: string, laneId: LaneId, mode: DragMode) {
-    const clip = project.clips.find((c) => c.id === clipId);
-    if (!clip) return;
-    project.selectClip(clipId);
-    drag = { clipId, mode, grabOffsetSec: secAtClientX(e.clientX, laneId) - clip.startSec, moved: false };
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-  }
-
-  function onLanePointerMove(e: PointerEvent, laneId: LaneId) {
-    if (!drag) return;
-    const at = secAtClientX(e.clientX, laneId);
-    drag.moved = true;
-    if (drag.mode === "move") {
-      project.moveClip(drag.clipId, at - drag.grabOffsetSec, !e.altKey);
-      const clip = project.clips.find((c) => c.id === drag!.clipId);
-      if (clip && clip.laneId !== laneId) project.moveClipToLane(drag.clipId, laneId);
-    } else {
-      project.trimClip(drag.clipId, drag.mode === "trim-start" ? "start" : "end", at);
+  function onLaneBodyPointerMove(e: PointerEvent) {
+    if (!laneDrag) return;
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    if (laneDrag.mode === "zoom") {
+      const targetPxPerSec = laneDrag.startPxPerSec * middleDragZoomFactor(e.clientY - laneDrag.startY);
+      arrangement.zoomBy(targetPxPerSec / arrangement.pxPerSec);
+      arrangement.setScrollSec(
+        laneDrag.startScrollSec + middleDragScrollDeltaSec(e.clientX - laneDrag.startX, laneDrag.startPxPerSec),
+      );
+      return;
     }
+    void playback.seek(pxToSec(e.clientX - rect.left, arrangement.scrollSec, arrangement.pxPerSec));
   }
 
-  function onLanePointerUp() {
-    // Defer so the click handler that fires right after can see `moved`.
-    const finished = drag;
-    setTimeout(() => {
-      if (drag === finished) drag = null;
-    }, 0);
+  function onLaneBodyWheel(e: WheelEvent) {
+    if (!e.shiftKey) return;
+    e.preventDefault();
+    arrangement.setScrollSec(arrangement.scrollSec + e.deltaY / arrangement.pxPerSec);
   }
+
+  async function onLaneBodyDrop(e: DragEvent, laneIndex: 0 | 1 | 2 | 3) {
+    e.preventDefault();
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const atSec = pxToSec(e.clientX - rect.left, arrangement.scrollSec, arrangement.pxPerSec);
+    const raw = e.dataTransfer?.getData("application/x-forge-ref");
+    const ref = raw ? parseForgeRefPayload(raw) : null;
+    if (ref) {
+      const c = arrangement.addClip({ lane: laneIndex, startSec: atSec, durSec: 4, audio: ref });
+      view.select({ kind: "clip", id: c.id });
+      return;
+    }
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    const uploaded = await forgeApi.upload(file);
+    const c = arrangement.addClip({
+      lane: laneIndex,
+      startSec: atSec,
+      durSec: uploaded.duration_sec,
+      audio: uploaded.ref,
+    });
+    view.select({ kind: "clip", id: c.id });
+  }
+
+  // ------------------------------------------------------------- top bar / scroller
+  // (Still driven by the v1 `project` store -- BPM/SNAP/MATCH/zoom-readout
+  // migration off `project` is not in this task's file scope, only the lane
+  // body wrapper is. See the task report for what remains.)
 
   function onWheel(e: WheelEvent) {
     // Ctrl/⌘+wheel zooms around the pointer, like every DAW and map. Plain
@@ -180,57 +150,20 @@
     <Ruler />
 
     {#each project.lanes as lane (lane.id)}
+      {@const aLane = arrangement.lanes[LANE_IDS.indexOf(lane.id)]}
       <div class="lane-row" style="border-left: 3px solid {lane.color}">
-        <!--
-          arrangement.lanes is Task 1's own fixed-order ForgeLane[] (index
-          0-3), and project.lanes (this loop) is the still-alive v1 store's
-          own array -- both are built from LANE_IDS' fixed order (M5 T3's
-          store.svelte.ts shim uses the same LANE_IDS.indexOf mapping), so
-          this is a lossless lookup, not a coincidence. The rest of this row
-          (lane-track, ClipView, drag handling) is still v1/project -- that
-          migration is M5 T5-T7's job, not this task's (M5 progress ledger).
-        -->
-        <LaneHeader lane={arrangement.lanes[LANE_IDS.indexOf(lane.id)]} />
+        <LaneHeader lane={aLane} />
         <div
-          class="lane-track"
-          role="slider"
-          aria-label="{lane.label} lane — click to move the playhead, drop audio or a crop to add a clip"
-          aria-valuenow={project.playheadSec}
-          tabindex="0"
-          bind:this={laneEl[lane.id]}
-          style="width: {contentPx}px"
-          onclick={(e) => onLaneClick(e, lane.id)}
-          ondblclick={(e) => project.addEmptyClip(lane.id, secAtClientX(e.clientX, lane.id))}
-          onkeydown={onLaneKeydown}
+          class="lane-body"
+          bind:this={laneBodyEl[aLane.index]}
+          onpointerdown={(e) => onLaneBodyPointerDown(e, aLane.index)}
+          onpointermove={(e) => onLaneBodyPointerMove(e)}
+          onpointerup={() => (laneDrag = null)}
+          onwheel={onLaneBodyWheel}
           ondragover={(e) => e.preventDefault()}
-          ondrop={async (e) => {
-            e.preventDefault();
-            const startSec = secAtClientX(e.clientX, lane.id);
-            const cropId = e.dataTransfer?.getData("text/sa3-crop-id");
-            if (cropId) {
-              await project.addClipFromCrop(cropId, lane.id, startSec);
-              return;
-            }
-            for (const file of Array.from(e.dataTransfer?.files ?? [])) {
-              if (!file.type.startsWith("audio/")) continue;
-              // Length is corrected as soon as the buffer decodes; this is just
-              // a placeholder so the clip has a box to draw in.
-              project.addClipFromFile(file, lane.id, startSec, 8);
-            }
-          }}
-          onpointermove={(e) => onLanePointerMove(e, lane.id)}
-          onpointerup={onLanePointerUp}
+          ondrop={(e) => onLaneBodyDrop(e, aLane.index)}
         >
-          <canvas class="grid" data-region="lane-canvas" bind:this={gridEl[lane.id]} style="width: {contentPx}px"></canvas>
-          <div class="playhead" style="left: {project.playheadSec * project.pxPerSec}px"></div>
-          {#each project.clips.filter((c) => c.laneId === lane.id) as clip (clip.id)}
-            <ClipView
-              {clip}
-              laneColor={lane.color}
-              pxPerSec={project.pxPerSec}
-              onGrab={(e, mode) => onGrab(e, clip.id, lane.id, mode)}
-            />
-          {/each}
+          <LaneCanvas lane={aLane} />
         </div>
       </div>
     {/each}
@@ -310,26 +243,13 @@
     align-items: stretch;
     border-bottom: 1px solid var(--border);
   }
-  .lane-track {
+  .lane-body {
     position: relative;
+    flex: 1;
+    min-width: 0;
     height: 62px;
-    background: var(--track-bg);
-    cursor: pointer;
-  }
-  .grid {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-    display: block;
-    pointer-events: none;
-  }
-  .playhead {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--accent);
-    pointer-events: none;
-    z-index: 5;
+    overflow: hidden;
+    touch-action: none;
+    cursor: crosshair;
   }
 </style>
