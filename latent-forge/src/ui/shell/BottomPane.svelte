@@ -1,20 +1,75 @@
 <script lang="ts">
-  // Spec §4.1/§4.5. The three boxes are empty here; Task 11 fills them with the
-  // tab row, the four tab bodies and the render preview container frame.
-  //
-  // Height budget, asserted by the layout test:
+  // Spec §4.5. Height budget, asserted by the layout test:
   //   248 − 1 (border-top) − 6 (padding-top) − 8 (padding-bottom) = 233
   //   233 − 162 (tab body) − 44 (preview container)               = 27 (tab row)
+  //
+  // The tab bodies for CHROMA, PROMPT + SIGMA and MIX + SIGNAL PATH are empty here
+  // and are built by M6, M4 and M7 respectively. TERMINAL is live in M1.
+  import { logStore } from "../../lib/stores/log.svelte";
+  import PreviewContainer from "../prompt/PreviewContainer.svelte";
+  import { BOTTOM_TABS, bottomHint, type BottomTabId } from "./bottomTabs";
+  import Terminal from "./Terminal.svelte";
+
+  type TerminalMode = "collapsed" | "pane" | "full";
+
   interface Props {
     visible?: boolean;
+    tab?: BottomTabId;
+    ontab?: (t: BottomTabId) => void;
+    terminalMode?: TerminalMode;
+    onterminalmode?: (m: TerminalMode) => void;
   }
-  let { visible = true }: Props = $props();
+  let {
+    visible = true,
+    tab = "prompt",
+    ontab = () => {},
+    terminalMode = "pane",
+    onterminalmode = () => {},
+  }: Props = $props();
+
+  // Poll /forge/log only while the TERMINAL tab is the one on screen: an idle
+  // CHROMA session makes no requests at all.
+  $effect(() => {
+    if (!visible || tab !== "terminal") return;
+    logStore.start(1000);
+    return () => logStore.stop();
+  });
 </script>
 
 <div class="bottom-pane" class:hidden={!visible} data-region="bottom-pane">
-  <div class="tab-row" data-region="bottom-tab-row"></div>
-  <div class="tab-body" data-region="bottom-tab-body"></div>
-  <div class="preview-slot" data-region="preview-container"></div>
+  <div class="tab-row" data-region="bottom-tab-row">
+    {#each BOTTOM_TABS as t (t.id)}
+      <button
+        class="tab"
+        class:on={tab === t.id}
+        data-testid="bottom-tab-{t.id}"
+        onclick={() => ontab(t.id)}>{t.label}</button>
+    {/each}
+    <div class="spacer"></div>
+    <span class="hint" data-testid="bottom-hint">{bottomHint(tab)}</span>
+  </div>
+
+  <div class="tab-body" data-region="bottom-tab-body" data-tab={tab}>
+    {#if tab === "chroma"}
+      <!-- body: M6 (spec §5.4) -->
+      <div class="tab-empty"></div>
+    {:else if tab === "prompt"}
+      <!-- body: M4 (spec §4.5 three columns, §5.3) -->
+      <div class="tab-empty"></div>
+    {:else if tab === "mix"}
+      <!-- body: M7 (spec §4.5 MIX ORDER + SIGNAL PATH, §8.1 stage labels) -->
+      <div class="tab-empty"></div>
+    {:else}
+      <Terminal
+        mode={terminalMode}
+        busy={logStore.busy}
+        lines={logStore.lines}
+        onmode={onterminalmode}
+      />
+    {/if}
+  </div>
+
+  <PreviewContainer />
 </div>
 
 <style>
@@ -40,14 +95,36 @@
     gap: 3px;
     padding-bottom: 5px;
   }
+  .tab {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 0 10px;
+    height: 22px;
+    cursor: pointer;
+  }
+  .tab.on {
+    background: var(--panel2);
+    border-color: var(--turq-strong);
+    color: var(--turq-strong);
+  }
+  .spacer {
+    flex: 1;
+  }
+  .hint {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
   .tab-body {
     box-sizing: border-box;
     flex: 0 0 162px;
     min-height: 0;
     overflow: hidden;
   }
-  .preview-slot {
-    box-sizing: border-box;
-    flex: 0 0 44px;
+  .tab-empty {
+    height: 100%;
   }
 </style>

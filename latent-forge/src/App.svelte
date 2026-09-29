@@ -123,7 +123,13 @@
       {/snippet}
 
       {#snippet bottom()}
-        <BottomPane visible={view.screen === "workspace"} />
+        <BottomPane
+          visible={view.screen === "workspace"}
+          tab={view.bottomTab}
+          ontab={(t) => view.setBottomTab(t)}
+          terminalMode={view.terminal}
+          onterminalmode={(m) => view.setTerminal(m)}
+        />
       {/snippet}
     </CentreColumn>
 
