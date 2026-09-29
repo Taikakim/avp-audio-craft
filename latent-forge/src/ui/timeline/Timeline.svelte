@@ -1,14 +1,13 @@
 <script lang="ts">
   import ClipView from "./ClipView.svelte";
-  import { gridLines, LATENT_FPS, secPerBar, SNAP_MODES } from "../../lib/musictime";
+  import { gridLines, SNAP_MODES } from "../../lib/musictime";
   import { project } from "../../lib/store.svelte";
   import type { LaneId } from "../../lib/types";
-  import RulerTransport from "./RulerTransport.svelte";
+  import Ruler from "./Ruler.svelte";
   import { RULER_GUTTER_PX } from "../../lib/timelineLayout";
   import { view } from "../../lib/stores/view.svelte";
 
   let laneEl = $state<Record<string, HTMLDivElement>>({});
-  let rulerEl = $state<HTMLCanvasElement>();
   let gridEl = $state<Record<string, HTMLCanvasElement>>({});
 
   type DragMode = "move" | "trim-start" | "trim-end";
@@ -47,68 +46,6 @@
     ctx.clearRect(0, 0, w, h);
     return ctx;
   }
-
-  // Ruler: bars/beats from the project meter, seconds, and the latent frame
-  // clock (10.767 Hz). The latent row is informational -- placement is NOT
-  // quantised to it (ORIENTATION.md §3) -- but it shows where a commit-time
-  // encode will land.
-  $effect(() => {
-    const canvas = rulerEl;
-    const pxPerSec = project.pxPerSec;
-    const meter = project.meter;
-    void contentPx;
-    void view.theme; // re-draw on DARK toggle -- colours are read via getComputedStyle below
-    if (!canvas) return;
-    const ctx = fitCanvas(canvas);
-    if (!ctx) return;
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    const dim = cssVar("--fg-dim", canvas);
-    const fg = cssVar("--fg", canvas);
-    const accent = cssVar("--accent", canvas);
-
-    ctx.font = "9px 'Space Grotesk', ui-monospace, monospace";
-    ctx.textBaseline = "top";
-
-    // Bars
-    const bar = secPerBar(meter);
-    if (bar * pxPerSec > 22) {
-      ctx.strokeStyle = dim;
-      ctx.fillStyle = fg;
-      for (let i = 0, t = 0; t * pxPerSec < w; i++, t = i * bar) {
-        const x = Math.round(t * pxPerSec) + 0.5;
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 8);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        ctx.fillText(String(i + 1), x + 2, 0);
-      }
-    }
-
-    // Seconds
-    const secStep = pxPerSec > 40 ? 1 : pxPerSec > 12 ? 5 : 15;
-    ctx.fillStyle = dim;
-    for (let t = 0; t * pxPerSec < w; t += secStep) {
-      ctx.fillText(`${t}s`, Math.round(t * pxPerSec) + 2, 11);
-    }
-
-    // Latent frames -- only once they are far enough apart to read.
-    const framePx = pxPerSec / LATENT_FPS;
-    if (framePx > 5) {
-      ctx.strokeStyle = accent;
-      ctx.globalAlpha = 0.45;
-      ctx.beginPath();
-      for (let f = 0; (f / LATENT_FPS) * pxPerSec < w; f++) {
-        const x = Math.round((f / LATENT_FPS) * pxPerSec) + 0.5;
-        ctx.moveTo(x, h - (f % 10 === 0 ? 7 : 4));
-        ctx.lineTo(x, h);
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  });
 
   // Per-lane background grid.
   $effect(() => {
@@ -239,10 +176,7 @@
   </div>
 
   <div class="scroller" onwheel={onWheel}>
-    <div class="ruler-row">
-      <RulerTransport />
-      <canvas class="ruler" data-region="ruler-canvas" bind:this={rulerEl} style="width: {contentPx}px"></canvas>
-    </div>
+    <Ruler />
 
     {#each project.lanes as lane (lane.id)}
       <div class="lane-row" style="border-left: 3px solid {lane.color}">
@@ -375,20 +309,6 @@
   .scroller {
     overflow-x: auto;
     overflow-y: hidden;
-  }
-  .ruler-row {
-    display: flex;
-    align-items: stretch;
-    border-bottom: 1px solid var(--border);
-    /* Every .lane-row below carries a 3px lane-color border-left (inline style).
-       This transparent match keeps the ruler-transport/ruler-canvas gutter the
-       same width as the lane-header/lane-canvas gutter -- otherwise the ruler
-       and the lane grid start 3px apart. */
-    border-left: 3px solid transparent;
-  }
-  .ruler {
-    height: 30px;
-    display: block;
   }
   .lane-row {
     display: flex;

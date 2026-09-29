@@ -11,11 +11,12 @@ import {
   type StatusResponse,
 } from "./api";
 import { circularMeanPhase, meanBpm, secPerBar, shortestPhaseDelta, type Meter, type SnapMode, DEFAULT_METER, snapSec } from "./musictime";
-import { Transport } from "./audio/transport";
+import { Transport, type PlaybackClip, type PlaybackLane } from "./audio/transport";
 import { invalidatePeaks, mixdownToBuffer, peakLevel } from "./audio/waveform";
 import {
   DEFAULT_RENDER_PARAMS,
   defaultLanes,
+  LANE_IDS,
   nextId,
   toLatentOffset,
   type Clip,
@@ -28,6 +29,32 @@ import {
 export interface RenderBlock {
   reason: string;
   hint: string;
+}
+
+/**
+ * TODO: remove once `store.svelte.ts` / the v1 "project" store is retired --
+ * no M5 task currently owns that (flagged in the M5 plan's pre-flight ledger,
+ * "legacy store.svelte.ts" row). `Transport` was retyped in M5 T3 to speak
+ * the structural `PlaybackClip`/`PlaybackLane` interfaces instead of this
+ * file's own `Clip`/`Lane` (`laneId: LaneId` here vs `laneIndex: number`
+ * there) so it stops depending on `../types` at all. This is the minimal
+ * adapter that keeps this v1 store compiling against that new shape with
+ * zero behaviour change -- `LANE_IDS`' order is fixed, so `indexOf` is a
+ * stable, lossless lane-id-to-index mapping.
+ */
+function toPlaybackClipsV1(clips: Clip[]): PlaybackClip[] {
+  return clips.map((c) => ({
+    id: c.id,
+    laneIndex: LANE_IDS.indexOf(c.laneId as LaneId),
+    startSec: c.startSec,
+    durationSec: c.durationSec,
+    offsetSec: c.offsetSec,
+    previewUrl: c.previewUrl ?? null,
+  }));
+}
+
+function toPlaybackLanesV1(lanes: Lane[]): PlaybackLane[] {
+  return lanes.map((l) => ({ index: LANE_IDS.indexOf(l.id), muted: l.muted, solo: l.solo, gain: l.gain }));
 }
 
 class ProjectStore {
@@ -528,7 +555,7 @@ class ProjectStore {
   // ---------------------------------------------------------------- transport
 
   async play() {
-    await this.transport.play(this.clips, this.lanes, this.playheadSec);
+    await this.transport.play(toPlaybackClipsV1(this.clips), toPlaybackLanesV1(this.lanes), this.playheadSec);
     this.playing = true;
     this.startPlayheadLoop();
   }
@@ -554,14 +581,14 @@ class ProjectStore {
 
   async seek(sec: number) {
     this.playheadSec = Math.max(0, sec);
-    if (this.playing) await this.transport.seek(this.playheadSec, this.clips, this.lanes);
+    if (this.playing) await this.transport.seek(this.playheadSec, toPlaybackClipsV1(this.clips), toPlaybackLanesV1(this.lanes));
   }
 
   setLaneGain(laneId: LaneId, gain: number) {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     lane.gain = gain;
-    this.transport.updateLanes(this.lanes);
+    this.transport.updateLanes(toPlaybackLanesV1(this.lanes));
     this.markMasterStale();
   }
 
@@ -569,7 +596,7 @@ class ProjectStore {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     lane.muted = !lane.muted;
-    this.transport.updateLanes(this.lanes);
+    this.transport.updateLanes(toPlaybackLanesV1(this.lanes));
     this.markMasterStale();
   }
 
@@ -577,7 +604,7 @@ class ProjectStore {
     const lane = this.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     lane.solo = !lane.solo;
-    this.transport.updateLanes(this.lanes);
+    this.transport.updateLanes(toPlaybackLanesV1(this.lanes));
     this.markMasterStale();
   }
 
