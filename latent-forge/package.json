@@ -1,9 +1,9 @@
 {
-  "name": "sa3-studio",
+  "name": "latent-forge",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Four-lane audio arrangement compositor for SA3. Timeline is audio; RENDER commits to the real latent op on the explorer_render_server.",
+  "description": "Latent Forge — four-lane latent arrangement compositor for SA3. The timeline is audio; MIXDOWN commits.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

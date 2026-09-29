@@ -42,8 +42,8 @@
 
 <main>
   <header>
-    <h1>SA3 Studio</h1>
-    <span class="tagline">the timeline is audio — RENDER commits</span>
+    <h1>LATENT FORGE</h1>
+    <span class="tagline">the timeline is audio — MIXDOWN commits</span>
   </header>
 
   <TransportBar />

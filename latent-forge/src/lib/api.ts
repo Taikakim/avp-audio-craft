@@ -7,6 +7,8 @@
 //
 // Source: avp-audio-craft/eval/explorer_render_server.py (2292 lines, 27 routes).
 
+import type { BendOp } from "./types";
+
 export interface InfoResponse {
   ok: true;
   model: string;
@@ -159,7 +161,7 @@ export interface LongformRequest {
 
 /** POST /bend -- op vocabulary from eval/latent_bend.py's apply_bends(). */
 export interface BendRequest {
-  ops: { op: string; amount?: number; [k: string]: unknown }[];
+  ops: BendOp[];
   latent_path?: string;
   crop_id?: string;
   latent_dir?: string;

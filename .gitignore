@@ -127,11 +127,11 @@ __pycache__/
 # OSC event queue (ephemeral, not tracked)
 /.osc-queue.jsonl
 
-# SA3 Studio: the new cross-platform frontend (Vite + Svelte 5 + TS) against
-# eval/explorer_render_server.py, replacing the mir-feature-extraction Dash
-# explorer (Kim 2026-09-12: "start implementing the code now"). Has its own
-# .gitignore for node_modules/dist.
-!/sa3-studio/
+# Latent Forge (formerly sa3-studio, renamed M1 T1): the cross-platform frontend
+# (Vite + Svelte 5 + TS) against eval/explorer_render_server.py, replacing the
+# mir-feature-extraction Dash explorer (Kim 2026-09-12: "start implementing the
+# code now"). Has its own .gitignore for node_modules/dist.
+!/latent-forge/
 
 eval/clap_degen_model_matrix.csv
 eval/clap_full_table.csv
