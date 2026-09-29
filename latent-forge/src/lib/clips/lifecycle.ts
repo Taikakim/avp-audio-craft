@@ -37,8 +37,10 @@ const analyzeCache = new Map<string, Promise<{ bpm: number | null; downbeats_sec
 const stretchCache = new Map<string, Promise<{ ref: AudioRef; duration_sec: number }>>();
 const stretchTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-/** Another live clip already analyzed to the same AudioRef -- reuse its
- *  result instead of re-asking the server (spec §7.3 "cached"). */
+/** Another LIVE clip already analyzed to the same AudioRef -- reuse its
+ *  result instead of re-asking the server (spec §7.3 "cached"). Scoped to
+ *  the live timeline, not a permanent cache: returns null once no clip using
+ *  this ref remains, so the next clip added against it re-analyzes fresh. */
 function analyzedSibling(ref: AudioRef, excludeId: string): { bpm: number | null; downbeats_sec: number[] } | null {
   const key = JSON.stringify(ref);
   const sibling = arrangement.clips.find(
@@ -139,7 +141,10 @@ export async function addClip(input: AddClipInput): Promise<AddClipOutcome> {
 }
 
 /** forgeApi.analyze fills native_bpm and downbeats_sec unless already known
- *  (spec §7.3); cached per AudioRef so two clips sharing one source ask once. */
+ *  (spec §7.3). Cached while a LIVE sibling clip on the timeline already
+ *  shares the same AudioRef -- not cached forever: once every clip using
+ *  that ref has been removed, re-adding it (e.g. from FILES/history) pays a
+ *  fresh round trip rather than serving a stale (or nonexistent) entry. */
 export async function ensureAnalysis(clipId: string): Promise<void> {
   const clip = arrangement.clips.find((c) => c.id === clipId);
   if (!clip || clip.native_bpm != null) return;
