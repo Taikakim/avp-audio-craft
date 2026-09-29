@@ -2323,6 +2323,14 @@
    "witness": [],
    "reason": "CONTINUITY 2026-09-29: the fp32cmp_avp_t4096_bs1_lr1e4 epoch soups WITHOUT ep35. The 5-epoch soups (fullft_soup_fp32cmp_avp_t4096_bs1) rendered with z0 std ~2.4: ep35's latent-facing layers (preprocess/postprocess_conv, late to_local_embed) moved 8-28x between ep21 and ep35, which ep35 compensates internally but an average does not. soup_mean = mean of ep3/7/14/21 (mean epoch 11), soup_filtered = same with the at-most-one-epoch filter, soup_ep7_ep14 = pair.",
    "root": "/run/media/kim/Mantu/sa3_lora_runs/fullft"
+  },
+  "goa5k_fullft_avp_dora_lr7e-4_subloss_k5_12132st": {
+   "tier": "full",
+   "picks": [
+    "step=12132.ckpt"
+   ],
+   "witness": [],
+   "reason": "WINTERMUTE 2026-09-29: lr7e-4 replicate of goa5k_fullft_avp_dora_3e-3_subloss_k5_3033st (same warm start from fullft_avp_t4096 ep7, gate off, k5 melody subspace loss) -- single-variable LR change (3e-3->7e-4) aimed at a target weight-space velocity band (~50-70 units/1k steps by step 1500, <50 by step 3000, Kim direct). Trained 12132 steps (36 epochs) to completion; velocity landed close to target (82 at 1500, 51 at 3000, 22.5 by step 12000, direction cosine held 0.5-0.7 throughout, never collapsed). Process crashed at teardown (glibc free() heap corruption) AFTER the final checkpoint was confirmed saved and Trainer.fit reported max_steps reached -- not a training failure. Kim requested a full clip-set render at cfg 1/4/7/12, w 0.5/1.0/1.5 (2026-09-29)."
   }
  },
  "legacy_goa_dora_nested": {
