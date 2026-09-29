@@ -1,13 +1,18 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import RightPaneModules from "./RightPaneModules.svelte";
 
   // Spec §4.1: 296 px, collapsible to a 24 px strip holding the ▸/◂ toggle,
   // overflow-y auto. box-sizing: border-box so the 1 px left border is inside
   // the 296 the layout test measures.
+  //
+  // `children` is optional: Task 12 moved the five spec modules into
+  // RightPaneModules (always mounted below); a caller only supplies children
+  // for anything extra it still owns (App's two legacy modules).
   interface Props {
     open: boolean;
     ontoggle: () => void;
-    children: Snippet;
+    children?: Snippet;
   }
   let { open, ontoggle, children }: Props = $props();
 </script>
@@ -27,7 +32,8 @@
   >{open ? "◂ CONTEXT" : "▸"}</button>
   {#if open}
     <div class="modules" data-region="right-pane-modules">
-      {@render children()}
+      <RightPaneModules />
+      {@render children?.()}
     </div>
   {/if}
 </aside>

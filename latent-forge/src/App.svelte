@@ -135,31 +135,8 @@
 
     <RightPane open={view.sideOpen} ontoggle={() => view.toggleSide()}>
       <!-- ModuleShell's Normative props {id, title, lit}; ids are the view store's kebab
-           ModuleId. Task 12 moves the first five into RightPaneModules.svelte. -->
-      <ModuleShell id="overlap" title="OVERLAP — INPAINT" lit={false}>
-        <!-- body: M7 (spec §4.6.1); its render button is wired in M9 -->
-        <div class="module-empty"></div>
-      </ModuleShell>
-
-      <ModuleShell id="files" title="FILES" lit={project.clips.length > 0}>
-        <CropLibrary />
-      </ModuleShell>
-
-      <ModuleShell id="lane-chain" title="LANE 1 CHAIN" lit={false}>
-        <!-- body: M7 (spec §5.5); the header follows the active lane from M5 -->
-        <div class="module-empty"></div>
-      </ModuleShell>
-
-      <ModuleShell id="advanced-sampling" title="ADVANCED SAMPLING" lit={false}>
-        <!-- body: M4 (spec §5.3) -->
-        <div class="module-empty"></div>
-      </ModuleShell>
-
-      <ModuleShell id="master-chain" title="MASTER CHAIN" lit={false}>
-        <!-- body: M7 (spec §4.6.5) -->
-        <div class="module-empty"></div>
-      </ModuleShell>
-
+           ModuleId. Task 12 moved the five spec modules into RightPaneModules.svelte
+           (mounted inside RightPane itself); only the two legacy modules stay here. -->
       <ModuleShell id="legacy-inspector" title="INSPECTOR (legacy — M4 removes)" lit={false}>
         <Inspector />
       </ModuleShell>
