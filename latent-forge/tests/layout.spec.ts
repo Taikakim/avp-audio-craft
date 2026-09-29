@@ -149,35 +149,46 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   await page.locator('[data-testid="help-toggle"]').click();
   const box = page.locator('[data-testid="help-box"]');
   // Exclude [data-help] hosts that themselves nest a more-specific [data-help]
-  // descendant (currently only LaneHeader's `.header`, which wraps `.slot`).
-  // helpLookup.ts's `closest()` lookup deliberately lets a nested child's text
-  // win over its ancestor's when the cursor is genuinely over that child --
-  // that's the documented mechanism, not a bug. But `.hover()` targets an
-  // element's bounding-box CENTER by default, and `.header`'s three-row
-  // flex-column layout puts that center inside `.slot` (the middle row,
-  // full width) -- so hovering "`.header`'s own center" is actually hovering
-  // the visible drop-slot widget, and correctly resolves to `.slot`'s text,
-  // not `.header`'s. That's a real point on screen where the nested override
-  // is the right answer, so it isn't a valid case for "own center -> own
-  // text". Restrict the sample to leaf-ish hosts, for which own-center hover
-  // unambiguously tests their own string.
+  // descendant. The selector is a DOM-structural check (`:has()`), not a
+  // geometric one -- it excludes any container with a nested override
+  // regardless of whether own-center hover would actually land on that
+  // nested child. Two such containers exist today:
+  //  - LaneHeader's `.header` (wraps `.slot`): a REAL center collision --
+  //    `.header`'s three-row flex-column layout puts its bounding-box
+  //    center inside `.slot` (the middle row, full width), so hovering
+  //    "`.header`'s own center" is actually hovering the visible drop-slot
+  //    widget and correctly resolves to `.slot`'s text via helpLookup.ts's
+  //    documented `closest()` mechanism, not `.header`'s.
+  //  - MasterStrip's `.master` (wraps `.source-toggle`): NOT a center
+  //    collision -- measured, `.master`'s bounding-box center sits inside
+  //    `.canvas-wrap` (the 56px waveform strip), nowhere near
+  //    `.source-toggle` (a small PREVIEW/MIXDOWN pair pinned to the top-right
+  //    of the `.head` bar). Own-center hover on `.master` would in fact
+  //    resolve correctly today -- it's excluded here only because the
+  //    selector is structural, not because the center is ambiguous.
+  // Either way, a `:has([data-help])` host drops out of the generic sample,
+  // so both need their own explicit position-targeted assertion (below) or
+  // HELP.laneHeader / HELP.masterStrip silently lose coverage. Restrict the
+  // sample to leaf-ish hosts, for which own-center hover unambiguously tests
+  // their own string.
   const controls = page.locator("[data-help]:not(:has([data-help]))");
   const total = await controls.count();
   expect(total, "no [data-help] controls rendered at all").toBeGreaterThanOrEqual(10);
 
-  // Guard the exclusion itself: today exactly 4 hosts are excluded (one
-  // `.header` per lane, per LaneHeader.svelte). If that count changes, a
-  // *new* container-with-nested-override was added -- which silently drops
-  // out of this generic sample (see the exclusion comment above) and needs
-  // its own explicit hover-position assertion, the way `.header` gets one
-  // below. Fail loudly here rather than letting the sample just shrink.
+  // Guard the exclusion itself: today exactly 5 hosts are excluded (4x
+  // LaneHeader's `.header`, one per lane, + 1x MasterStrip's `.master`). If
+  // that count changes, a *new* container-with-nested-override was added --
+  // which silently drops out of this generic sample (see the exclusion
+  // comment above) and needs its own explicit hover-position assertion, the
+  // way `.header` and `.master` get below. Fail loudly here rather than
+  // letting the sample just shrink.
   const excludedContainers = page.locator("[data-help]:has([data-help])");
   expect(
     await excludedContainers.count(),
     "the set of [data-help] containers with a nested override changed -- " +
-      "add explicit coverage for the new one (see the `.header` assertion " +
-      "below) before updating this count",
-  ).toBe(4);
+      "add explicit coverage for the new one (see the `.header`/`.master` " +
+      "assertions below) before updating this count",
+  ).toBe(5);
 
   const stride = Math.max(1, Math.floor(total / 10));
   const indices = new Set<number>();
@@ -218,6 +229,27 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   await header.hover({ position: { x: headerBox.width / 2, y: identityCenterY } });
   await expect(box).toBeVisible();
   await expect(box).toHaveText(headerHelp ?? "");
+
+  // Same reasoning for MasterStrip's `.master`/`.source-toggle` pair (see the
+  // exclusion comment above): `.master` is excluded from the generic sample
+  // by DOM structure alone, even though its own bounding-box center does NOT
+  // actually land inside `.source-toggle` (measured -- the center sits in
+  // `.canvas-wrap`, well below `.source-toggle`'s position in `.head`). Test
+  // it directly anyway, the same way `.header` is, by landing on
+  // `.section-label` -- a plain-text sibling of `.source-toggle` inside
+  // `.head` that carries no data-help of its own, so `closest()` must bubble
+  // up to `.master`'s own text. This gives HELP.masterStrip explicit,
+  // position-targeted coverage rather than relying on the generic sample
+  // (from which it is unconditionally excluded).
+  const master = page.locator(".master").first();
+  await expect(master).toBeVisible();
+  const masterHelp = await master.getAttribute("data-help");
+  expect(masterHelp, "`.master` lost its own data-help").toBeTruthy();
+  const label = master.locator(".section-label").first();
+  await expect(label).toBeVisible();
+  await label.hover();
+  await expect(box).toBeVisible();
+  await expect(box).toHaveText(masterHelp ?? "");
 });
 
 test("DARK flips data-theme and flips back", async ({ page }) => {
