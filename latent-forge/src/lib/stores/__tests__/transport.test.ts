@@ -17,8 +17,8 @@ function fakeEngine(): PlaybackEngine & { calls: string[]; time: number } {
     async seek(sec: number) { eng.calls.push(`seek:${sec}`); eng.time = sec; },
     async preload() { return {} as AudioBuffer; },
     invalidate() {},
-    scrub() {},
-    stopScrub() {},
+    scrub(_buffer: AudioBuffer, atSec: number) { eng.calls.push(`scrub:${atSec}`); },
+    stopScrub() { eng.calls.push("stopScrub"); },
   };
   return eng;
 }
@@ -156,5 +156,21 @@ describe("syncPlayhead", () => {
     engine.time = 3;
     p.syncPlayhead();
     expect(engine.calls).toContain("seek:1");
+  });
+});
+
+describe("scrubClip (Task 6: Alt+drag audition, spec §10 X2)", () => {
+  it("preloads the clip's audio, then scrubs the engine to the given offset", async () => {
+    const engine = fakeEngine();
+    const p = new PlaybackStore(engine);
+    await p.scrubClip("/forge/audio?ref=x", 1.25);
+    expect(engine.calls).toEqual(["scrub:1.25"]);
+  });
+
+  it("stopScrub passes straight through to the engine", () => {
+    const engine = fakeEngine();
+    const p = new PlaybackStore(engine);
+    p.stopScrub();
+    expect(engine.calls).toEqual(["stopScrub"]);
   });
 });

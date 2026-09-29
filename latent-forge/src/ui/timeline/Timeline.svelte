@@ -11,6 +11,7 @@
   import { middleDragScrollDeltaSec, middleDragZoomFactor } from "../../lib/math/ruler";
   import { pxToSec } from "../../lib/math/viewport";
   import { LANE_IDS } from "../../lib/types";
+  import ClipBox from "./ClipBox.svelte";
   import Ruler from "./Ruler.svelte";
 
   // ------------------------------------------------------------- lane body
@@ -164,6 +165,9 @@
           ondrop={(e) => onLaneBodyDrop(e, aLane.index)}
         >
           <LaneCanvas lane={aLane} />
+          {#each arrangement.clips.filter((c) => c.lane === aLane.index) as clip (clip.id)}
+            <ClipBox {clip} />
+          {/each}
         </div>
       </div>
     {/each}
