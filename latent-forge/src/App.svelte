@@ -188,9 +188,6 @@
     gap: 8px;
     min-width: 0;
   }
-  .module-empty {
-    min-height: 0;
-  }
   .raster-border {
     position: fixed;
     inset: 0;
