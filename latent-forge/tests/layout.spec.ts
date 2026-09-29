@@ -148,7 +148,20 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   // instead of importing HELP, and a from-index-0 sample of ten never touched any of them.
   await page.locator('[data-testid="help-toggle"]').click();
   const box = page.locator('[data-testid="help-box"]');
-  const controls = page.locator("[data-help]");
+  // Exclude [data-help] hosts that themselves nest a more-specific [data-help]
+  // descendant (currently only LaneHeader's `.header`, which wraps `.slot`).
+  // helpLookup.ts's `closest()` lookup deliberately lets a nested child's text
+  // win over its ancestor's when the cursor is genuinely over that child --
+  // that's the documented mechanism, not a bug. But `.hover()` targets an
+  // element's bounding-box CENTER by default, and `.header`'s three-row
+  // flex-column layout puts that center inside `.slot` (the middle row,
+  // full width) -- so hovering "`.header`'s own center" is actually hovering
+  // the visible drop-slot widget, and correctly resolves to `.slot`'s text,
+  // not `.header`'s. That's a real point on screen where the nested override
+  // is the right answer, so it isn't a valid case for "own center -> own
+  // text". Restrict the sample to leaf-ish hosts, for which own-center hover
+  // unambiguously tests their own string.
+  const controls = page.locator("[data-help]:not(:has([data-help]))");
   const total = await controls.count();
   expect(total, "no [data-help] controls rendered at all").toBeGreaterThanOrEqual(10);
 
