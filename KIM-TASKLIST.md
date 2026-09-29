@@ -28,7 +28,7 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### Render the fp32cmp_avp_t4096_bs1 soups WITHOUT ep35 (C, 2026-09-29)
+### ✅ RENDERED 2026-09-30 (126/126, latents normal) — now LISTEN: soup_mean vs soup_filtered vs soup_ep7_ep14. Was: render the fp32cmp_avp_t4096_bs1 soups WITHOUT ep35 (C, 2026-09-29)
 **WHAT:** 42 cells each for `soup_mean` (mean of ep3/7/14/21), `soup_filtered` (same, per value drops at most one
 outlier epoch), `soup_ep7_ep14`, under label `fullft_soup_fp32cmp_avp_t4096_bs1_no35`.
 **WHY:** your epoch-average ask. The first 5-epoch soups rendered broken (latent std ~2.4 vs ~0.85): ep35's
