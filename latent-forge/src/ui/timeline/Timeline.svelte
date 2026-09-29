@@ -10,7 +10,7 @@
   import { parseForgeRefPayload } from "../../lib/math/laneHeader";
   import { middleDragScrollDeltaSec, middleDragZoomFactor } from "../../lib/math/ruler";
   import { pxToSec } from "../../lib/math/viewport";
-  import { LANE_IDS, type LaneId } from "../../lib/types";
+  import { LANE_IDS } from "../../lib/types";
   import Ruler from "./Ruler.svelte";
 
   // ------------------------------------------------------------- lane body
