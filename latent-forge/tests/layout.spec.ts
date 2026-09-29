@@ -13,6 +13,11 @@ const REGION_HEIGHT: Record<string, number> = {
   "ruler-canvas": 30,
   "lane-canvas": 62,
   "master-canvas": 56,
+  // Both visible on the default beforeEach page load: the bottom pane's
+  // default tab is "prompt" (view store default), and the preview container
+  // is always mounted regardless of tab -- neither needs a click first.
+  "preview-container": 44,
+  "bottom-tab-body": 162,
 };
 
 async function height(loc: Locator): Promise<number> {
@@ -32,6 +37,30 @@ function expectPx(actual: number, expected: number, what: string) {
     .toBeLessThanOrEqual(1);
 }
 
+interface BoxSpacing {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  gap: number;
+}
+
+/** getComputedStyle's padding box + gap, for the two elements spec §4.1 fixes
+ *  by padding/gap rather than by a plain bounding-box height. */
+async function spacing(loc: Locator): Promise<BoxSpacing> {
+  return loc.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    const gap = parseFloat(cs.gap || cs.columnGap || cs.rowGap || "0") || 0;
+    return {
+      top: parseFloat(cs.paddingTop) || 0,
+      right: parseFloat(cs.paddingRight) || 0,
+      bottom: parseFloat(cs.paddingBottom) || 0,
+      left: parseFloat(cs.paddingLeft) || 0,
+      gap,
+    };
+  });
+}
+
 test.beforeEach(async ({ page }: { page: Page }) => {
   await page.goto("/");
   await expect(page.locator('[data-region="topbar"]')).toBeVisible();
@@ -43,6 +72,25 @@ test("every region has the height spec §4.1 fixes", async ({ page }) => {
     await expect(loc).toBeVisible();
     expectPx(await height(loc), px, region);
   }
+});
+
+test("centre column padding/gap and bottom pane padding match spec §4.1", async ({ page }) => {
+  // Centre column: padding 10px all round, gap 8px between its children (spec §4.1).
+  const centre = page.locator('[data-region="centre"]');
+  const c = await spacing(centre);
+  expectPx(c.top, 10, "centre column padding-top");
+  expectPx(c.right, 10, "centre column padding-right");
+  expectPx(c.bottom, 10, "centre column padding-bottom");
+  expectPx(c.left, 10, "centre column padding-left");
+  expectPx(c.gap, 8, "centre column gap");
+
+  // Bottom pane: padding 6px 10px 8px (top / right+left / bottom) (spec §4.1).
+  const bottomPane = page.locator('[data-region="bottom-pane"]');
+  const b = await spacing(bottomPane);
+  expectPx(b.top, 6, "bottom pane padding-top");
+  expectPx(b.right, 10, "bottom pane padding-right");
+  expectPx(b.bottom, 8, "bottom pane padding-bottom");
+  expectPx(b.left, 10, "bottom pane padding-left");
 });
 
 test("all four lane canvases are 62 px, not just the first", async ({ page }) => {
