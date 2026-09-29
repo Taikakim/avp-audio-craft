@@ -152,6 +152,10 @@ export interface ForgeClip {
   render: RenderSettings;
   a2a: null | { on: boolean; noise: number; envelope: Envelope };
   latentState: "none" | "valid" | "stale";
+  /** The `start_sec` this clip's latent was encoded at, when `latentState` is
+   * not "none" -- undefined until the first successful encode. Compared
+   * against the live `start_sec` to decide whether a move made it stale. */
+  encodedAtSec?: number;
   history: AudioRef[];
 }
 
