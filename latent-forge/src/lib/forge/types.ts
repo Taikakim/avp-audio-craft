@@ -96,7 +96,7 @@ export interface Progress {
   job_id: string;
   op: string;
   stage: string;
-  stage_index: number;
+  stage_index: number;  // 1-based; 0 = not started
   stage_count: number;
   step: number;
   steps: number;
