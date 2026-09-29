@@ -14,7 +14,7 @@
 <div class="bottom-pane" class:hidden={!visible} data-region="bottom-pane">
   <div class="tab-row" data-region="bottom-tab-row"></div>
   <div class="tab-body" data-region="bottom-tab-body"></div>
-  <div class="preview-slot" data-region="preview-slot"></div>
+  <div class="preview-slot" data-region="preview-container"></div>
 </div>
 
 <style>
