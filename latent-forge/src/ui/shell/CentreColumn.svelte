@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { view } from "../../lib/stores/view.svelte";
+  import StatisticsView from "../stats/StatisticsView.svelte";
 
   // Spec §4.1: centre column = scrolling centre (flex 1, padding 10, gap 8) plus,
   // in WORKSPACE, the 248 px bottom pane.
@@ -19,10 +21,14 @@
 </script>
 
 <div class="centre-column" data-region="centre-column">
-  <div class="scrolling-centre" data-region="centre">
-    {@render centre()}
-  </div>
-  {#if bottom}{@render bottom()}{/if}
+  {#if view.screen === "statistics"}
+    <StatisticsView />
+  {:else}
+    <div class="scrolling-centre" data-region="centre">
+      {@render centre()}
+    </div>
+    {#if bottom}{@render bottom()}{/if}
+  {/if}
 </div>
 
 <style>
