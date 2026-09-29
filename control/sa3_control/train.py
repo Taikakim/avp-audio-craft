@@ -317,7 +317,11 @@ def main():
                          "FusionOpt detects that and falls back to the ordinary update for "
                          "those params, so hyperball only really binds a --base-state-ckpt's "
                          "own weights if you ever unfreeze them.")
-    ap.add_argument("--optimizer", choices=["adamw", "fusion", "sfadamw", "fusion_nm", "fusion_full", "lion"], default="adamw",
+    ap.add_argument("--mod-whitening", choices=["none", "shampoo", "soap"], default="shampoo",
+                    help="--optimizer modular: preconditioner on the spectral group")
+    ap.add_argument("--mod-normuon", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--mod-sf", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--optimizer", choices=["adamw", "fusion", "sfadamw", "fusion_nm", "fusion_full", "lion", "modular"], default="adamw",
                     help="adamw (default); fusion (SF-NorMuon = ns5+normuon+sf); sfadamw (sf-only = "
                          "ScheduleFree-AdamW); fusion_nm (mona+ns5+normuon+sf — everything EXCEPT KL-Shampoo, "
                          "now viable on large adapters thanks to component-gated state alloc); fusion_full "
@@ -654,6 +658,27 @@ def main():
         if _sf:
             opt.train()
         print(f"[opt] {args.optimizer} (components={sorted(comps)}, SF={_sf})", flush=True)
+    elif args.optimizer == "modular":
+        # The ModularOptimizer of stable-audio-3/scripts/train_lora_modular.py on the control
+        # adapter (C, 2026-09-30, Kim: bracket FiLM under the new trainer). Same trainable set as
+        # the fusion path above (adapters + conditioner, + dit when --dora-rank > 0). Only the parts
+        # that apply outside DoRA: whitening, NorMuon, Schedule-Free, warmup; the SNR gate / brake /
+        # variance damping / magnitude mode stay at their no-op defaults.
+        from stable_audio_tools.training.modular_opt import (
+            ModularOptimizer, build_modular_param_groups, summarise_modular_groups,
+        )
+        trainable_mod = torch.nn.ModuleList(
+            [w.adapter for w in wrappers] + [cond_enc] + ([dit] if _lora_params else []))
+        groups = build_modular_param_groups(trainable_mod, default_whitening=args.mod_whitening,
+                                            spectral_wd=0.01)
+        print(summarise_modular_groups(groups), flush=True)
+        opt = ModularOptimizer(groups, lr=args.lr, warmup_steps=args.warmup_steps,
+                               normuon=args.mod_normuon, schedule_free=args.mod_sf)
+        _sf = bool(opt.uses_sf_averaging)
+        if _sf:
+            opt.train()
+        print(f"[opt] modular whitening={args.mod_whitening} normuon={args.mod_normuon} "
+              f"SF={_sf}", flush=True)
     elif args.optimizer == "lion":
         from stable_audio_3.training.lion_optimizer import LionSR
         opt = LionSR(params, lr=args.lr, betas=tuple(args.lion_betas),
