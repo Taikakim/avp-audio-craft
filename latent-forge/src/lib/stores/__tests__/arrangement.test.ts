@@ -63,6 +63,62 @@ describe("project tempo is non-elastic (spec §7.3)", () => {
   });
 });
 
+
+describe("native_bpm becoming known moves the clip into the stretched domain (spec §7.3)", () => {
+  // The invariant lifecycle.ts's stretchSpeed documents: once native_bpm is
+  // known, dur_sec = nativeDur * (native_bpm / projectBpm). Until it is known,
+  // dur_sec is still in SOURCE seconds. setBpm already rescales for a PROJECT
+  // tempo change; these cover the first-time-known case, which it cannot see.
+
+  it("rescales dur_sec when analysis first supplies native_bpm", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    arrangement.setClipBpm(c.id, 140);               // project is 120
+    expect(c.dur_sec).toBeCloseTo(4 * (140 / 120), 9);
+  });
+
+  it("rescales a prior trim's offset_sec along with it", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF });
+    arrangement.trimClip(c.id, "start", 2);          // offset_sec = 2, dur_sec = 6
+    arrangement.setClipBpm(c.id, 240);               // project 120: source doubles
+    expect(c.offset_sec).toBeCloseTo(4, 9);
+    expect(c.dur_sec).toBeCloseTo(12, 9);
+  });
+
+  it("a slower native tempo shortens the stretched clip", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    arrangement.setClipBpm(c.id, 60);                // project 120
+    expect(c.dur_sec).toBeCloseTo(2, 9);
+  });
+
+  it("a CLIP BPM edit rescales from the old native tempo, not from source", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF, nativeBpm: 120 });
+    expect(c.dur_sec).toBe(4);
+    arrangement.setClipBpm(c.id, 240);               // 120 -> 240 doubles the stretch
+    expect(c.dur_sec).toBeCloseTo(8, 9);
+  });
+
+  it("clearing native_bpm returns the clip to the source domain", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    arrangement.setClipBpm(c.id, 240);               // -> 8 in the stretched domain
+    arrangement.setClipBpm(c.id, null);              // -> back to 4 source seconds
+    expect(c.dur_sec).toBeCloseTo(4, 9);
+    expect(c.native_bpm).toBeNull();
+  });
+
+  it("re-setting the same native tempo does not rescale twice", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 0, durSec: 4, audio: REF });
+    arrangement.setClipBpm(c.id, 140);
+    const once = c.dur_sec;
+    arrangement.setClipBpm(c.id, 140);
+    expect(c.dur_sec).toBe(once);
+  });
+
+  it("leaves start_sec alone — the clip does not move in time", () => {
+    const c = arrangement.addClip({ lane: 0, startSec: 8, durSec: 4, audio: REF });
+    arrangement.setClipBpm(c.id, 140);
+    expect(c.start_sec).toBe(8);
+  });
+});
 describe("trim (spec §7.3 — offset and start move together at the head)", () => {
   it("head trim moves start and offset by the same amount", () => {
     const c = arrangement.addClip({ lane: 0, startSec: 4, durSec: 8, audio: REF });

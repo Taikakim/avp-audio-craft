@@ -12,8 +12,8 @@ set -eu
 
 HANDLE="${1:-}"; shift || true
 case "$HANDLE" in
-  WINTERMUTE|CONTINUITY|GHOST-NOTE|THE-FINN) ;;
-  *) echo "usage: agent_commit.sh <WINTERMUTE|CONTINUITY|GHOST-NOTE|THE-FINN> <git commit args...>" >&2
+  WINTERMUTE|CONTINUITY|GHOST-NOTE|THE-FINN|KUANG) ;;
+  *) echo "usage: agent_commit.sh <WINTERMUTE|CONTINUITY|GHOST-NOTE|THE-FINN|KUANG> <git commit args...>" >&2
      echo "  (got: '${HANDLE}') -- handle must match your session name; see MASTER.md 'Picking your handle'" >&2
      exit 2 ;;
 esac

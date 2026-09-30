@@ -44,7 +44,15 @@ describe("adding a clip from an OS file drop (spec §7.3)", () => {
     const { clip, analyzeError } = await addClip({ lane: 0, startSec: 0, file });
 
     expect(analyzeError).toBeNull();
-    expect(clip.dur_sec).toBe(5.5);
+    // 5.5 is the SOURCE duration the upload reported. Analysis then supplies
+    // native_bpm 128 against a 120 bpm project, which moves the clip into the
+    // stretched domain -- lifecycle.ts's own stretchSpeed doc pins the rule:
+    //   dur_sec = nativeDur * (native_bpm / projectBpm) = 5.5 * 128/120
+    // This assertion used to expect the raw 5.5, which is what the missing
+    // rescale in setClipBpm actually produced. It was encoding the bug: a
+    // 128 bpm clip in a 120 bpm project needs MORE than 5.5 s of timeline to
+    // play whole, so the old value cut its stretched preview short.
+    expect(clip.dur_sec).toBeCloseTo(5.5 * (128 / 120), 9);
     expect(clip.native_bpm).toBe(128);
     expect(clip.audio).toEqual({ kind: "upload", sha256: "abc" });
     expect(fetchMock.mock.calls[0][0]).toBe("/forge/upload?filename=kick.wav");

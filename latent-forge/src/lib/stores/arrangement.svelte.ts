@@ -55,6 +55,18 @@ function defaultLanes(): ForgeLane[] {
   }));
 }
 
+/** 7.3 keeps offset_sec and dur_sec in the STRETCHED domain, so anything that
+ *  changes a clip's stretch has to move that pair with it. Both tempo paths --
+ *  a PROJECT tempo change (setBpm) and a clip's own native tempo becoming
+ *  known, changing or being cleared (setClipBpm) -- funnel through here rather
+ *  than writing the same multiply a third time. Rescaling only dur_sec would
+ *  make a trimmed clip point at different material. */
+function rescaleTimebase(c: ForgeClip, ratio: number): void {
+  if (!Number.isFinite(ratio) || ratio <= 0 || ratio === 1) return;
+  c.offset_sec = c.offset_sec * ratio;
+  c.dur_sec = c.dur_sec * ratio;
+}
+
 class ArrangementStore {
   bpm = $state(120);
   beatsPerBar = $state(4);
@@ -166,7 +178,24 @@ class ArrangementStore {
 
   setClipBpm(id: string, bpm: number | null) {
     const c = this.find(id);
-    if (c) c.native_bpm = bpm;
+    if (!c) return;
+    const prev = c.native_bpm;
+    if (prev === bpm) return;
+    c.native_bpm = bpm;
+    // 7.3 puts offset_sec and dur_sec in the STRETCHED domain, but until
+    // native_bpm is known they are still in SOURCE seconds (the upload's raw
+    // duration, or a placeholder for a file-row drop). The moment it becomes
+    // known -- or changes, or is cleared -- the pair has to move domains, so
+    // that lifecycle.ts's stretchSpeed invariant holds:
+    //     dur_sec = nativeDur * (native_bpm / projectBpm)
+    // setBpm does the same rescale for a PROJECT tempo change; this is the
+    // first-time-known case it cannot see, and it was the gap that made a
+    // tempo-mismatched clip's stretched preview play cut-short (native >
+    // project) or run into trailing silence (native < project).
+    // A null on either side means "that side is plain source seconds".
+    const from = prev ?? this.bpm;
+    const to = bpm ?? this.bpm;
+    rescaleTimebase(c, to / from);
   }
 
   setDetune(id: string, cents: number) {
@@ -329,9 +358,7 @@ class ArrangementStore {
       // BOTH move: 7.3 puts offset_sec and dur_sec in the stretched domain, so a
       // change of stretch rescales the whole timebase. Rescaling only dur_sec makes
       // a trimmed clip point at different material after a tempo nudge.
-      const ratio = prev / next;
-      c.offset_sec = c.offset_sec * ratio;
-      c.dur_sec = c.dur_sec * ratio;
+      rescaleTimebase(c, prev / next);
       // I1 fix wave: this clip's required stretch SPEED (native_bpm/bpm) just
       // changed along with the project tempo -- re-arm its debounced stretch,
       // same as a direct CLIP BPM/DETUNE edit does. Without this its
