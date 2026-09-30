@@ -1375,6 +1375,9 @@ exactly this reason.)*
 - **FiLM** (`control/sa3_control/train.py --optimizer modular --control-mode scalar --scalar-from-timeseries
   onset_per_beat_ts`): needs the full DiT (~10+ GB) — only when W is off the GPU.
 - Kill-criterion: an arm is only "better" if it beats the repeat-seed spread.
+- **Phase A result:** the modular lr is ~30x AdamW's (best 1e-2; 3e-2 diverges; 3e-4 under-trains). At 1e-2 + 500-step warmup,
+  modular+Shampoo gives 0.357 vs AdamW 0.408/0.411 and Fusion 0.407 (~12% better). Phase B (bigset) runs unattended until ~13:30;
+  full write-up + how to read it: `Mantu/latch_sweep/modular_2026-09-30/REPORT.md`.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
