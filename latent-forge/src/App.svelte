@@ -4,6 +4,8 @@
   import Inspector from "./lib/Inspector.svelte";
   import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
+  import { arrangement } from "./lib/stores/arrangement.svelte";
+  import { playback } from "./lib/stores/transport.svelte";
   import { view } from "./lib/stores/view.svelte";
   import MasterStrip from "./ui/master/MasterStrip.svelte";
   import Timeline from "./ui/timeline/Timeline.svelte";
@@ -52,14 +54,20 @@
   let disposeKeys: (() => void) | null = null;
 
   onMount(() => {
+    // project.connect() is unrelated to C1: it is the legacy ServerPanel's
+    // render-server connectivity poll, not arrangement/clip state, so it stays.
     project.connect();
+    // C1 fix wave: these four were still driving the v1 `project` store (an
+    // always-empty transport/selection since Task 5) instead of the stores
+    // this milestone actually built -- Space/Home controlled a transport with
+    // no clips, and Delete checked a selectedClipId that is never set.
     disposeKeys = installGlobalKeys({
-      togglePlay: () => project.togglePlay(),
-      rewind: () => project.seek(0),
+      togglePlay: () => playback.togglePlay(),
+      rewind: () => playback.seek(0),
       deleteSelected: () => {
-        if (project.selectedClipId) project.removeClip(project.selectedClipId);
+        if (view.selection.kind === "clip") arrangement.removeClip(view.selection.id);
       },
-      zoomBy: (f) => project.zoomBy(f),
+      zoomBy: (f) => arrangement.zoomBy(f),
     });
     void loadTopBar();
   });

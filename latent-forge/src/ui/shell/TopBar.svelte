@@ -9,7 +9,7 @@
   //
   // Every prop after `ontheme` has a default, so the bar renders before the three
   // fetches in App.svelte have answered.
-  import { project } from "../../lib/store.svelte";
+  import { arrangement } from "../../lib/stores/arrangement.svelte";
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
   import type { ModelOption } from "../topbar/modelOptions";
   import { HELP } from "../../lib/help/strings";
@@ -72,8 +72,12 @@
   // TEMPORARY: M7 replaces both with the SESSION select over /forge/sessions
   // (spec §4.2). Until then this is the only way a project survives a reload,
   // so it is carried over rather than dropped.
+  //
+  // C1 fix wave: this used to serialize/deserialize the v1 `project` store,
+  // which has held zero clips since Task 5 -- SAVE silently produced a file
+  // with no clips in it. `arrangement` is the store with real clip data.
   function saveProject() {
-    const blob = new Blob([project.toJSON()], { type: "application/json" });
+    const blob = new Blob([arrangement.toJSON()], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `latent-forge-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "")}.json`;
@@ -86,10 +90,8 @@
     const file = input.files?.[0];
     if (!file) return;
     try {
-      const { relinkNeeded } = project.loadJSON(await file.text());
-      notice = relinkNeeded
-        ? `loaded — ${relinkNeeded} clip(s) need audio relinked`
-        : "loaded";
+      arrangement.loadJSON(await file.text());
+      notice = "loaded";
     } catch (err) {
       notice = `load failed: ${err instanceof Error ? err.message : String(err)}`;
     }

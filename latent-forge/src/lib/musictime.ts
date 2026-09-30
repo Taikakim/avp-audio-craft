@@ -10,6 +10,8 @@
 // see where a commit-time encode will land.
 
 import { LATENT_HOP, SAMPLE_RATE } from "./types";
+// I3 fix wave: the canonical SnapMode now lives in math/snap.ts (below).
+import type { SnapMode } from "./math/snap";
 
 export const LATENT_FPS = SAMPLE_RATE / LATENT_HOP; // 10.7666...
 
@@ -49,17 +51,14 @@ export function formatClock(sec: number): string {
   return `${sign}${mm}:${(s % 60).toFixed(2).padStart(5, "0")}`;
 }
 
-export type SnapMode = "bar" | "beat" | "1/8" | "1/16" | "1/32" | "edge" | "off";
-
-export const SNAP_MODES: { value: SnapMode; label: string }[] = [
-  { value: "bar", label: "bar" },
-  { value: "beat", label: "beat" },
-  { value: "1/8", label: "1/8" },
-  { value: "1/16", label: "1/16" },
-  { value: "1/32", label: "1/32" },
-  { value: "edge", label: "clip edges" },
-  { value: "off", label: "free" },
-];
+// I3 fix wave (2026-09-30): `SnapMode`/`SNAP_MODES` used to be declared here
+// too -- a second, DIFFERENT list from lib/math/snap.ts's (missing "lane"
+// magnetic-downbeats and "free", spec 4.3's two most-used modes) that could,
+// and did, silently disagree with the one the UI actually renders. Deleted;
+// `store.svelte.ts` below imports the type from math/snap.ts now. `snapSec`
+// just below still takes a plain SnapMode string, so it keeps working
+// unchanged against the unified type -- "bar"/"beat"/"1/8"/"1/16"/"1/32"/"edge"
+// exist in both; store.svelte.ts's own default ("bar") is one of them.
 
 /** Grid interval in seconds for the divisions that are pure meter maths. */
 function gridInterval(mode: SnapMode, m: Meter): number | null {
@@ -91,7 +90,7 @@ export function snapSec(
   edges: number[] = [],
   toleranceSec = 0.12,
 ): number {
-  if (mode === "off") return Math.max(0, sec);
+  if (mode === "free") return Math.max(0, sec);
   if (mode === "edge") {
     let best = sec;
     let bestDist = toleranceSec;
@@ -109,32 +108,22 @@ export function snapSec(
   return Math.max(0, Math.round(sec / interval) * interval);
 }
 
-/** Grid lines to draw across a visible span, coarsest first so bars can be drawn stronger. */
-export function gridLines(
-  fromSec: number,
-  toSec: number,
-  m: Meter,
-  pxPerSec: number,
-): { sec: number; kind: "bar" | "beat" | "sub" }[] {
-  const out: { sec: number; kind: "bar" | "beat" | "sub" }[] = [];
-  const bar = secPerBar(m);
-  const beat = secPerBeat(m);
-  // Don't draw a grid finer than ~8px or it turns into a grey wash.
-  const drawBeats = beat * pxPerSec > 8;
-  const drawSubs = (beat / 4) * pxPerSec > 8;
-  const step = drawSubs ? beat / 4 : drawBeats ? beat : bar;
-  const start = Math.floor(fromSec / step) * step;
-  for (let t = start; t <= toSec; t += step) {
-    if (t < 0) continue;
-    const inBar = Math.abs((t / bar) % 1);
-    const inBeat = Math.abs((t / beat) % 1);
-    const isBar = inBar < 1e-6 || inBar > 1 - 1e-6;
-    const isBeat = inBeat < 1e-6 || inBeat > 1 - 1e-6;
-    out.push({ sec: t, kind: isBar ? "bar" : isBeat ? "beat" : "sub" });
-  }
-  return out;
-}
+// I3 fix wave: `gridLines` used to live here, computed from this module's own
+// secPerBar/secPerBeat. LaneCanvas.svelte's background grid now uses the copy
+// in lib/math/snap.ts, built on that module's own gridIntervalSec -- one
+// canonical source for "how long is a bar/beat" instead of two.
 
+// I3 fix wave: meanBpm/circularMeanPhase/shortestPhaseDelta below are NOT
+// deleted, unlike SnapMode/SNAP_MODES/gridLines above -- lib/math/tempoMatch.ts
+// has its own circularMeanPhase/shortestPhaseDelta (identical bodies) plus
+// meanNativeBpm, but meanNativeBpm takes ForgeClip[] (reads .native_bpm),
+// while store.svelte.ts's OWN matchBpm/matchDownbeats (below, still compiled,
+// though unreachable from any live-mounted UI once C1's rewire moved the
+// header/keyboard/Save off this store) operate on the v1 `Clip[]` shape
+// (`.bpm`) from lib/types.ts -- a genuinely different domain, not just a
+// copy-paste. Retiring store.svelte.ts's clip-arrangement surface entirely is
+// a bigger, separate call (flagged in this store's own TODO at the top of the
+// file) than this fix wave's scope.
 /**
  * The least-stretch meeting tempo: the mean of the clips' native BPMs.
  * Mirrors MATCH BPM in the design handoff -- "the clips meet at their mean

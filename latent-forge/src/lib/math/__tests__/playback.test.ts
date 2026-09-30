@@ -23,6 +23,20 @@ describe("toPlaybackClips resolves audio through forgeApi.audioUrl, never a stor
         previewUrl: `/forge/audio?ref=${encodeURIComponent('{"kind":"crop","crop_id":"000412"}')}` },
     ]);
   });
+
+  // I2 fix wave: previewAudio (lib/clips/lifecycle.ts's debounced /forge/stretch
+  // result) must win over the raw source `audio` once one exists -- the plan's
+  // Open Questions require every consumer to read `previewAudio ?? audio`.
+  it("prefers previewAudio over the raw source once a stretch has resolved", () => {
+    const c = clip({
+      id: "c1",
+      audio: { kind: "crop", crop_id: "raw" },
+      previewAudio: { kind: "path", path: "/tmp/stretched.wav" },
+    });
+    expect(toPlaybackClips([c])[0].previewUrl).toBe(
+      `/forge/audio?ref=${encodeURIComponent('{"kind":"path","path":"/tmp/stretched.wav"}')}`,
+    );
+  });
 });
 
 describe("toPlaybackLanes carries only what the engine's gain logic needs", () => {

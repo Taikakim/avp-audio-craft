@@ -77,4 +77,25 @@ describe("MATCH DOWNBEATS shifts by the shortest path onto the common phase (spe
     ];
     expect(downbeatPhaseShifts(clips, 120, 4).has("c")).toBe(false);
   });
+
+  // C2 fix wave: this is the real consumer path clipDownbeats' own tests don't
+  // cover -- a clip whose native_bpm differs from the project bpm must have
+  // its downbeat phase computed in the STRETCHED (scaled) domain, not the raw
+  // source-second value straight from /forge/analyze.
+  it("scales a clip's downbeat by native_bpm/projectBpm before computing its phase", () => {
+    // 120 BPM project, 4/4 -> bar = 2s. Clip "a" native 120 (no scaling, phase
+    // stays 0.05 at raw 0.1s). Clip "b" native 240 in a 120 project (scale
+    // 240/120 = 2): a RAW source downbeat at 0.95s would misread as phase
+    // 0.475 (barely moves); scaled to 1.9s in the timeline it is phase 0.95,
+    // the mirror of a's 0.05 -- exactly the "two clips converge" case the
+    // plain (unscaled) tempoMatch.test.ts case above already covers, just
+    // reached through a native_bpm that actually needs scaling to get there.
+    const clips = [
+      clip({ id: "a", native_bpm: 120, start_sec: 0, downbeats_sec: [0.1] }),
+      clip({ id: "b", native_bpm: 240, start_sec: 0, downbeats_sec: [0.95] }),
+    ];
+    const shifts = downbeatPhaseShifts(clips, 120, 4);
+    expect(shifts.get("a")).toBeCloseTo(-0.1, 9);
+    expect(shifts.get("b")).toBeCloseTo(0.1, 9);
+  });
 });

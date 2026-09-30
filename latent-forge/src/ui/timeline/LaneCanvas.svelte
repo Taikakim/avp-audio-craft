@@ -11,7 +11,9 @@
   import { coincidence, downbeatColor, laneDownbeats } from "../../lib/math/downbeats";
   import { darkenInk, isClipping, overlapSpansInLane } from "../../lib/math/laneCanvas";
   import { clipSpanPx, secToPx } from "../../lib/math/viewport";
-  import { gridLines } from "../../lib/musictime";
+  // I3 fix wave: was lib/musictime.ts's gridLines (retired there) -- this is
+  // the canonical copy, built on this module's own gridIntervalSec.
+  import { gridLines } from "../../lib/math/snap";
   import type { Peaks } from "../../lib/audio/waveform";
   import { peaksFor } from "../../lib/audio/waveform";
   import type { ForgeLane } from "../../lib/forge/types";
@@ -111,8 +113,7 @@
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    const meter = { bpm: arrangement.bpm, beatsPerBar: arrangement.beatsPerBar };
-    for (const line of gridLines(scrollSec, scrollSec + w / pxPerSec, meter, pxPerSec)) {
+    for (const line of gridLines(scrollSec, scrollSec + w / pxPerSec, arrangement.bpm, arrangement.beatsPerBar, pxPerSec)) {
       const x = Math.round(secToPx(line.sec, scrollSec, pxPerSec)) + 0.5;
       ctx.strokeStyle = border;
       ctx.globalAlpha = line.kind === "bar" ? 0.9 : line.kind === "beat" ? 0.45 : 0.2;
@@ -128,7 +129,10 @@
     const darkColor = darkenInk(laneColor, 0.75);
 
     for (const clip of laneClips) {
-      const url = forgeApi.audioUrl(clip.audio);
+      // I2 fix wave: draw the stretched preview's waveform once one exists,
+      // not the raw source -- otherwise the ink shows the WRONG material once
+      // a clip's tempo/detune has ever diverged from its native values.
+      const url = forgeApi.audioUrl(clip.previewAudio ?? clip.audio);
       const buffer = bufferCache.get(url);
       if (!buffer) continue;
       const { left, width } = clipSpanPx(clip.start_sec, clip.dur_sec, scrollSec, pxPerSec);
@@ -145,9 +149,9 @@
 
     // downbeatColor is built directly in OKLCH (see lib/math/downbeats.ts) --
     // it does not read a CSS var, so there is nothing to resolve for it here.
-    const mine = laneDownbeats(arrangement.clips, lane.index);
+    const mine = laneDownbeats(arrangement.clips, lane.index, arrangement.bpm);
     const otherLaneIndices = arrangement.lanes.map((l) => l.index).filter((i) => i !== lane.index);
-    const others = otherLaneIndices.flatMap((i) => laneDownbeats(arrangement.clips, i));
+    const others = otherLaneIndices.flatMap((i) => laneDownbeats(arrangement.clips, i, arrangement.bpm));
     for (const sec of mine) {
       const x = secToPx(sec, scrollSec, pxPerSec);
       if (x < 0 || x > w) continue;
@@ -167,7 +171,9 @@
   $effect(() => {
     let cancelled = false;
     for (const clip of arrangement.clips.filter((c) => c.lane === lane.index)) {
-      const url = forgeApi.audioUrl(clip.audio);
+      // I2 fix wave: preload/cache the stretched preview when one exists, so
+      // the key here matches the one `redraw()` looks up above.
+      const url = forgeApi.audioUrl(clip.previewAudio ?? clip.audio);
       if (bufferCache.has(url)) continue;
       playback
         .preload(url)

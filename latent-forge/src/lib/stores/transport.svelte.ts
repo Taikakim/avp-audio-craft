@@ -96,6 +96,20 @@ export class PlaybackStore {
   stopScrub() {
     this.engine.stopScrub();
   }
+
+  /** I7 fix wave: push a live mute/solo/gain edit to the engine immediately,
+   *  even mid-playback. Called via arrangement's externally-attached
+   *  `attachLiveLaneUpdater` hook (see arrangement.svelte.ts for why that is
+   *  a hook rather than this module being imported the other way around). */
+  updateLiveLanes() {
+    this.engine.updateLanes(this.snapshotLanes());
+  }
 }
 
 export const playback = new PlaybackStore();
+// I7 fix wave: the v1 store called `this.transport.updateLanes(...)` directly
+// from within toggleMute/toggleSolo/setLaneGain; this store's split into two
+// singletons means arrangement cannot import playback back (see the long
+// comment on arrangement's `onLaneChange` field), so this module attaches
+// itself as the live-update hook instead, once, here.
+arrangement.attachLiveLaneUpdater(() => playback.updateLiveLanes());

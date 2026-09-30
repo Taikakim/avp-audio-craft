@@ -17,23 +17,36 @@ export const COINCIDENCE_DIVISION = 32;
 export const COINCIDENCE_RAMP_EXP = 0.7;
 
 /**
- * A clip's analysed downbeats in TIMELINE seconds: shifted by the clip's
- * position, moved by its trim, and cropped to what is actually visible.
+ * A clip's analysed downbeats in TIMELINE seconds: scaled from SOURCE seconds
+ * (clip.downbeats_sec, unstretched, at the clip's own native_bpm -- forge/types.ts's
+ * doc comment on `downbeats_sec`) into the STRETCHED timeline domain that
+ * start_sec/offset_sec/dur_sec live in, THEN shifted by the clip's position and
+ * cropped to what its trim actually leaves visible.
+ *
+ * The scale factor is native_bpm/projectBpm (arrangement.setBpm's own ratio,
+ * generalised to an absolute native->current conversion): a clip native to a
+ * faster tempo than the project is stretched slower, i.e. longer in time, so
+ * its downbeats land later than their raw SOURCE-second value. `native_bpm ==
+ * null` (never analysed, or analysis found nothing) is the identity -- there
+ * is nothing to scale against, so the raw value already IS the timeline value
+ * (this is also why every existing fixture with `native_bpm: null` could not
+ * have caught this scaling bug).
  */
-export function clipDownbeats(clip: ForgeClip): number[] {
+export function clipDownbeats(clip: ForgeClip, projectBpm: number): number[] {
+  const scale = clip.native_bpm == null || clip.native_bpm <= 0 ? 1 : clip.native_bpm / projectBpm;
   const out: number[] = [];
   for (const d of clip.downbeats_sec ?? []) {
-    const rel = d - clip.offset_sec;
+    const rel = d * scale - clip.offset_sec;
     if (rel < -1e-9 || rel > clip.dur_sec + 1e-9) continue;
     out.push(clip.start_sec + rel);
   }
   return out;
 }
 
-export function laneDownbeats(clips: ForgeClip[], lane: number): number[] {
+export function laneDownbeats(clips: ForgeClip[], lane: number, projectBpm: number): number[] {
   return clips
     .filter((c) => c.lane === lane)
-    .flatMap(clipDownbeats)
+    .flatMap((c) => clipDownbeats(c, projectBpm))
     .sort((a, b) => a - b);
 }
 

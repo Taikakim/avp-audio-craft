@@ -10,7 +10,10 @@ import {
   type JobResponse,
   type StatusResponse,
 } from "./api";
-import { circularMeanPhase, meanBpm, secPerBar, shortestPhaseDelta, type Meter, type SnapMode, DEFAULT_METER, snapSec } from "./musictime";
+import { circularMeanPhase, meanBpm, secPerBar, shortestPhaseDelta, type Meter, DEFAULT_METER, snapSec } from "./musictime";
+// I3 fix wave: SnapMode is now canonically declared in math/snap.ts (musictime.ts's
+// own copy, missing "lane"/"free", was deleted -- see musictime.ts's comment).
+import type { SnapMode } from "./math/snap";
 import { Transport, type PlaybackClip, type PlaybackLane } from "./audio/transport";
 import { invalidatePeaks, mixdownToBuffer, peakLevel } from "./audio/waveform";
 import {

@@ -42,6 +42,9 @@ export interface PlaybackEngine {
   invalidate(url: string): void;
   scrub(buffer: AudioBuffer, atSec: number, windowSec?: number): void;
   stopScrub(): void;
+  /** Push mute/solo/gain edits live, without restarting playback (I7 fix wave --
+   *  `Transport` already implemented this; it just wasn't on the interface). */
+  updateLanes(lanes: PlaybackLane[]): void;
   readonly currentTimeSec: number;
   readonly playing: boolean;
   onEnded?: () => void;

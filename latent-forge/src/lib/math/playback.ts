@@ -14,12 +14,11 @@ export function toPlaybackClips(clips: ForgeClip[]): PlaybackClip[] {
     durationSec: c.dur_sec,
     offsetSec: c.offset_sec,
     // /forge/audio serves any AudioRef directly (spec 6.3) -- no upload/analyze
-    // round trip needed just to hear it. A clip whose stretched preview has
-    // been resolved by lib/clips/lifecycle.ts (outside this milestone's four
-    // tasks) will get that better URL once that task exists; until then this
-    // plays the clip's raw audio, which is exactly right at the clip's own
-    // native tempo and an approximation off it.
-    previewUrl: forgeApi.audioUrl(c.audio),
+    // round trip needed just to hear it. I2 fix wave: prefer the debounced
+    // /forge/stretch result (lib/clips/lifecycle.ts) once one exists -- it is
+    // the clip resampled to the project's tempo/detune; the raw `audio` ref is
+    // only exactly right when the clip has never needed stretching.
+    previewUrl: forgeApi.audioUrl(c.previewAudio ?? c.audio),
   }));
 }
 

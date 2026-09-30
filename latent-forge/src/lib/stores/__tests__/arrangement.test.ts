@@ -231,3 +231,63 @@ describe("MATCH BPM / MATCH DOWNBEATS (spec §4.3) -- thin store actions over li
     expect(arrangement.bpm).toBe(bpmBefore);
   });
 });
+
+// C1 fix wave: TopBar's SAVE/LOAD used to serialize the v1 `project` store,
+// which has held zero clips since Task 5 -- SAVE silently produced a file
+// with no clips. These exercise arrangement's own toJSON/loadJSON directly;
+// ui/shell/__tests__/topBar.test.ts covers the real SAVE button producing a
+// non-empty blob through the actual component.
+describe("persistence -- toJSON/loadJSON round-trip the arrangement (C1 fix wave)", () => {
+  it("round-trips clips, lanes, tempo, snap and viewport", () => {
+    arrangement.addClip({ lane: 2, startSec: 3, durSec: 5, audio: REF, nativeBpm: 128 });
+    arrangement.setBpm(128);
+    arrangement.setSnap("bar");
+    arrangement.zoomBy(2);
+    arrangement.setScrollSec(7);
+    arrangement.toggleMute(1);
+
+    const json = arrangement.toJSON();
+    expect(JSON.parse(json).kind).toBe("latent-forge-arrangement");
+
+    // A fresh save/load pair: clear, then reload from the JSON just captured.
+    for (const c of [...arrangement.clips]) arrangement.removeClip(c.id);
+    arrangement.loadJSON(json);
+
+    expect(arrangement.clips).toHaveLength(1);
+    expect(arrangement.clips[0].lane).toBe(2);
+    expect(arrangement.clips[0].start_sec).toBe(3);
+    expect(arrangement.clips[0].native_bpm).toBe(128);
+    expect(arrangement.bpm).toBe(128);
+    expect(arrangement.snap).toBe("bar");
+    expect(arrangement.scrollSec).toBe(7);
+    expect(arrangement.lanes[1].muted).toBe(true);
+
+    arrangement.toggleMute(1); // undo, so it doesn't leak into other tests
+  });
+
+  it("rejects a file that isn't a latent-forge arrangement (e.g. the old v1 project export)", () => {
+    expect(() => arrangement.loadJSON(JSON.stringify({ version: 1, clips: [] }))).toThrow();
+  });
+});
+
+describe("live playback lane updates reach an attached updater (I7 fix wave)", () => {
+  it("calls the attached updater on mute, solo and gain, not just on state", () => {
+    const calls: string[] = [];
+    arrangement.attachLiveLaneUpdater(() => calls.push("update"));
+    arrangement.toggleMute(0);
+    arrangement.toggleSolo(0);
+    arrangement.setLaneGain(0, 0.5);
+    expect(calls).toEqual(["update", "update", "update"]);
+    // undo + detach so this doesn't leak into other tests in this file
+    arrangement.toggleMute(0);
+    arrangement.toggleSolo(0);
+    arrangement.setLaneGain(0, 1);
+    arrangement.attachLiveLaneUpdater(null);
+  });
+
+  it("is a no-op when nothing is attached", () => {
+    arrangement.attachLiveLaneUpdater(null);
+    expect(() => arrangement.toggleMute(3)).not.toThrow();
+    arrangement.toggleMute(3);
+  });
+});

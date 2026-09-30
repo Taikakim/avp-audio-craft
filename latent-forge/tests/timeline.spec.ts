@@ -100,6 +100,46 @@ test("a trim changes width but not the left edge", async ({ page }) => {
   expect(after.width, "trim did not change the width").toBeGreaterThan(before.width + 10);
 });
 
+// I4 fix wave (2026-09-30): a clip dragged across a lane boundary used to
+// stop responding to further pointer movement after exactly one crossing --
+// arrangement.moveClipToLane remounts ClipBox into the new lane's {#each}
+// block, which destroyed the old instance's local drag state and its
+// setPointerCapture target along with it. The fix moved drag state + the
+// pointermove/pointerup listeners to module scope (ClipBox.svelte's <script
+// module>) with window-level listeners, which survive the remount. This
+// drags a clip down across TWO lane boundaries in one continuous gesture --
+// if the old per-instance bug were still present, the clip would freeze
+// partway through the first crossing and never reach the third lane.
+test("a clip drags across two lane boundaries in one gesture without freezing", async ({ page }) => {
+  await dropClip(page, 0, 10);
+
+  const canvas0 = page.locator('[data-region="lane-canvas"]').nth(0);
+  const canvas2 = page.locator('[data-region="lane-canvas"]').nth(2);
+  const row0 = await box(canvas0);
+  const row2 = await box(canvas2);
+
+  const clip = page.locator('.clip[role="button"]').first();
+  const before = await box(clip);
+
+  await clip.hover({ position: { x: 30, y: 10 } });
+  await page.mouse.down();
+  // One continuous move from lane 0's row down past lane 1's into lane 2's --
+  // many steps so Playwright dispatches intermediate pointermove events the
+  // old per-instance handler (destroyed after the first remount) would have
+  // missed.
+  await page.mouse.move(before.x + 30, row2.y + row2.height / 2, { steps: 24 });
+  await page.mouse.up();
+
+  const after = await box(clip);
+  // Landed in lane 2, not frozen at lane 1's boundary: within one lane row's
+  // height of lane 2's canvas, and clearly past lane 0's.
+  expect(
+    Math.abs(after.y - row2.y),
+    `clip y ${after.y} should be near lane 2's canvas y ${row2.y} (row height ${row2.height})`,
+  ).toBeLessThanOrEqual(row2.height);
+  expect(after.y - row0.y, "clip should have moved well past lane 0").toBeGreaterThan(row2.height);
+});
+
 test("an overlap region appears where two clips intersect, and clicking it selects it", async ({ page }) => {
   await expect(page.locator('[data-module="overlap"]')).toHaveCount(0);
   await dropClip(page, 2, 10);

@@ -57,7 +57,7 @@ export function downbeatPhaseShifts(
 ): Map<string, number> {
   const barSec = (60 / bpm) * beatsPerBar;
   const entries = clips
-    .map((c) => ({ id: c.id, downbeats: clipDownbeats(c) }))
+    .map((c) => ({ id: c.id, downbeats: clipDownbeats(c, bpm) }))
     .filter((e) => e.downbeats.length > 0);
   if (entries.length < 2) return new Map();
 

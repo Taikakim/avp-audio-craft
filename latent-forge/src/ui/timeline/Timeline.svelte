@@ -1,12 +1,12 @@
 <script lang="ts">
   import LaneCanvas from "./LaneCanvas.svelte";
   import LaneHeader from "./LaneHeader.svelte";
-  import { SNAP_MODES } from "../../lib/musictime";
+  import { SNAP_MODES, type SnapMode } from "../../lib/math/snap";
   import { project } from "../../lib/store.svelte";
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { playback } from "../../lib/stores/transport.svelte";
   import { view } from "../../lib/stores/view.svelte";
-  import { forgeApi } from "../../lib/forge/api";
+  import { addClip } from "../../lib/clips/lifecycle";
   import { parseForgeRefPayload } from "../../lib/math/laneHeader";
   import { middleDragScrollDeltaSec, middleDragZoomFactor } from "../../lib/math/ruler";
   import { pxToSec } from "../../lib/math/viewport";
@@ -68,6 +68,13 @@
     arrangement.setScrollSec(arrangement.scrollSec + e.deltaY / arrangement.pxPerSec);
   }
 
+  // I1 fix wave: both branches used to call `arrangement.addClip` directly,
+  // bypassing lib/clips/lifecycle.ts's upload -> analyze -> debounced-stretch
+  // pipeline entirely (Task 10, built and tested, never actually wired in).
+  // Consequence: native_bpm/downbeats_sec were always empty on every real
+  // clip, which makes the downbeat glow, magnetic snap and both MATCH actions
+  // inert even after C1's rewire. `addClip` here is lifecycle.ts's entry
+  // point, not arrangement's method of the same name.
   async function onLaneBodyDrop(e: DragEvent, laneIndex: 0 | 1 | 2 | 3) {
     e.preventDefault();
     const el = e.currentTarget as HTMLElement;
@@ -76,33 +83,34 @@
     const raw = e.dataTransfer?.getData("application/x-forge-ref");
     const ref = raw ? parseForgeRefPayload(raw) : null;
     if (ref) {
-      const c = arrangement.addClip({ lane: laneIndex, startSec: atSec, durSec: 4, audio: ref });
-      view.select({ kind: "clip", id: c.id });
+      // A ref dropped from FILES/preview/MIXDOWN carries no duration of its
+      // own (application/x-forge-ref is just the AudioRef) -- 4s is the same
+      // placeholder the old direct-addClip call used until analysis returns.
+      const { clip } = await addClip({ lane: laneIndex, startSec: atSec, ref, durationSec: 4 });
+      view.select({ kind: "clip", id: clip.id });
       return;
     }
     const file = e.dataTransfer?.files?.[0];
     if (!file) return;
-    const uploaded = await forgeApi.upload(file);
-    const c = arrangement.addClip({
-      lane: laneIndex,
-      startSec: atSec,
-      durSec: uploaded.duration_sec,
-      audio: uploaded.ref,
-    });
-    view.select({ kind: "clip", id: c.id });
+    const { clip } = await addClip({ lane: laneIndex, startSec: atSec, file });
+    view.select({ kind: "clip", id: clip.id });
   }
 
   // ------------------------------------------------------------- top bar / scroller
-  // (Still driven by the v1 `project` store -- BPM/SNAP/MATCH/zoom-readout
-  // migration off `project` is not in this task's file scope, only the lane
-  // body wrapper is. See the task report for what remains.)
+  // C1 fix wave (2026-09-30): the header/SNAP/zoom row was still reading and
+  // writing the v1 `project` store, which has held zero clips since Task 5 --
+  // nothing downstream (grid/ruler/stretch/ClipBox snap) ever read it. Rewired
+  // onto `arrangement`, the only store with real clip data. `project.lanes` is
+  // still used below purely as a static id/color source for the lane loop --
+  // it never gets clips, mute/solo, or gain from here, so leaving that alone
+  // loses nothing.
 
   function onWheel(e: WheelEvent) {
     // Ctrl/⌘+wheel zooms around the pointer, like every DAW and map. Plain
     // wheel is left to the page so the timeline never traps scrolling.
     if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
-    project.zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15);
+    arrangement.zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15);
   }
 </script>
 
@@ -117,14 +125,18 @@
         step="0.1"
         min="20"
         max="300"
-        value={project.meter.bpm}
-        oninput={(e) => (project.meter = { ...project.meter, bpm: +(e.target as HTMLInputElement).value || 120 })}
+        value={arrangement.bpm}
+        oninput={(e) => arrangement.setBpm(+(e.target as HTMLInputElement).value || 120)}
       />
     </label>
 
     <label class="inline">
       SNAP
-      <select value={project.snap} onchange={(e) => (project.snap = (e.target as HTMLSelectElement).value as typeof project.snap)}>
+      <select
+        data-testid="snap-select"
+        value={arrangement.snap}
+        onchange={(e) => arrangement.setSnap((e.target as HTMLSelectElement).value as SnapMode)}
+      >
         {#each SNAP_MODES as m}
           <option value={m.value}>{m.label}</option>
         {/each}
@@ -134,18 +146,18 @@
     <button
       class="ghost"
       title="Meet at the mean of the clips' native tempos — least stretch for all of them. Needs a BPM set on at least one clip."
-      onclick={() => project.matchBpm()}>MATCH BPM</button
+      onclick={() => arrangement.matchBpm()}>MATCH BPM</button
     >
     <button
       class="ghost purple"
       title="Shift every clip by the shortest path so its downbeat lands on the common phase. Needs a downbeat set on at least two clips."
-      onclick={() => project.matchDownbeats()}>MATCH DOWNBEATS</button
+      onclick={() => arrangement.matchDownbeats()}>MATCH DOWNBEATS</button
     >
 
     <span class="spacer"></span>
-    <button class="ghost" onclick={() => project.zoomBy(1 / 1.4)} aria-label="zoom out">−</button>
-    <span class="zoom">{Math.round(project.pxPerSec)} px/s</span>
-    <button class="ghost" onclick={() => project.zoomBy(1.4)} aria-label="zoom in">+</button>
+    <button class="ghost" onclick={() => arrangement.zoomBy(1 / 1.4)} aria-label="zoom out">−</button>
+    <span class="zoom">{Math.round(arrangement.pxPerSec)} px/s</span>
+    <button class="ghost" onclick={() => arrangement.zoomBy(1.4)} aria-label="zoom in">+</button>
   </div>
 
   <div class="scroller" onwheel={onWheel}>

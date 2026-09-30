@@ -13,6 +13,14 @@ import type {
 import { findOverlaps, type Overlap } from "../math/overlaps";
 import type { SnapMode } from "../math/snap";
 import { downbeatPhaseShifts, meanNativeBpm } from "../math/tempoMatch";
+// I1 fix wave: a project-tempo change must re-arm every affected clip's
+// debounced stretch (its required /forge/stretch speed = native_bpm/bpm
+// changed), same as a CLIP BPM/DETUNE edit does. Safe circular import (unlike
+// the transport.svelte one avoided below with an attached hook): lifecycle.ts
+// has no eager module-load side effects -- its Transport decoder is
+// constructed lazily on first actual use, well after both modules finish
+// loading -- so it can be imported directly here.
+import { scheduleStretch } from "../clips/lifecycle";
 
 export const MIN_PX_PER_SEC = 4;
 export const MAX_PX_PER_SEC = 600;
@@ -220,14 +228,40 @@ class ArrangementStore {
 
   setLaneGain(lane: number, gain: number) {
     this.lanes[lane].gain = Math.max(0, Math.min(1, gain));
+    this.onLaneChange?.();
   }
 
   toggleMute(lane: number) {
     this.lanes[lane].muted = !this.lanes[lane].muted;
+    this.onLaneChange?.();
   }
 
   toggleSolo(lane: number) {
     this.lanes[lane].solo = !this.lanes[lane].solo;
+    this.onLaneChange?.();
+  }
+
+  /**
+   * I7 fix wave: mute/solo/gain edits must reach the audio engine LIVE, even
+   * mid-playback (the v1 store did this via a direct `this.transport.updateLanes(...)`
+   * call in each of the three methods above; this store has no such handle).
+   *
+   * Deliberately NOT `import { playback } from "./transport.svelte"` here:
+   * transport.svelte.ts already imports `arrangement` (to snapshot clips/lanes),
+   * and importing back would make `playback`'s singleton -- which eagerly
+   * constructs a real `Transport`/`AudioContext` as a default constructor
+   * parameter -- load as a side effect of merely importing `arrangement`,
+   * including from node-environment test files (arrangement.test.ts has no
+   * jsdom, and vitest.setup.ts's AudioContext stub is scoped to
+   * `typeof window !== "undefined"`) that never touch playback at all. Same
+   * externally-attached seam as `settingsSource` above (the M4 settings seam):
+   * transport.svelte.ts attaches the real hook at its own module bottom; tests
+   * that want to observe it attach a fake one directly.
+   */
+  private onLaneChange: (() => void) | null = null;
+
+  attachLiveLaneUpdater(fn: (() => void) | null) {
+    this.onLaneChange = fn;
   }
 
   /** Spec §8.1 S3: if any lane is soloed, only soloed lanes are audible. */
@@ -298,6 +332,11 @@ class ArrangementStore {
       const ratio = prev / next;
       c.offset_sec = c.offset_sec * ratio;
       c.dur_sec = c.dur_sec * ratio;
+      // I1 fix wave: this clip's required stretch SPEED (native_bpm/bpm) just
+      // changed along with the project tempo -- re-arm its debounced stretch,
+      // same as a direct CLIP BPM/DETUNE edit does. Without this its
+      // previewAudio silently keeps playing at the OLD tempo's stretch.
+      scheduleStretch(c.id);
     }
     this.bpm = next;
   }
@@ -338,6 +377,52 @@ class ArrangementStore {
 
   setScrollSec(sec: number) {
     this.scrollSec = Math.max(0, sec);
+  }
+
+  // ---------------------------------------------------------------- persistence
+  //
+  // C1 fix wave: TopBar's SAVE/LOAD serialized the v1 `project` store, which
+  // has held zero clips since Task 5 -- SAVE silently produced a file with no
+  // clips in it. This is the local-file save/load (TopBar's own TEMPORARY
+  // mechanism per its comment, ahead of M7's real /forge/sessions integration,
+  // which already has its own ProjectV2 wire contract in forge/types.ts --
+  // not reused here since this is a different, narrower, local-only shape).
+
+  /** Every piece of state a reload needs to reconstruct the arrangement. */
+  toJSON(): string {
+    return JSON.stringify(
+      {
+        kind: "latent-forge-arrangement",
+        version: 1,
+        bpm: this.bpm,
+        beatsPerBar: this.beatsPerBar,
+        snap: this.snap,
+        pxPerSec: this.pxPerSec,
+        scrollSec: this.scrollSec,
+        targetLane: this.targetLane,
+        lanes: $state.snapshot(this.lanes),
+        clips: $state.snapshot(this.clips),
+        overlaps: $state.snapshot(this.overlapStore),
+      },
+      null,
+      2,
+    );
+  }
+
+  loadJSON(text: string): void {
+    const data = JSON.parse(text);
+    if (data.kind !== "latent-forge-arrangement") {
+      throw new Error(`not a latent-forge arrangement file (kind: ${data.kind ?? "missing"})`);
+    }
+    this.bpm = typeof data.bpm === "number" ? data.bpm : 120;
+    this.beatsPerBar = typeof data.beatsPerBar === "number" ? data.beatsPerBar : 4;
+    this.snap = data.snap ?? "lane";
+    this.pxPerSec = typeof data.pxPerSec === "number" ? data.pxPerSec : 80;
+    this.scrollSec = typeof data.scrollSec === "number" ? data.scrollSec : 0;
+    this.targetLane = data.targetLane ?? null;
+    this.lanes = data.lanes ?? defaultLanes();
+    this.clips = data.clips ?? [];
+    this.overlapStore = data.overlaps ?? {};
   }
 }
 

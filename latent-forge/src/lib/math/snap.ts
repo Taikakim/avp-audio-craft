@@ -82,3 +82,42 @@ export function snapDelta(sec: number, mode: SnapMode, ctx: SnapContext): SnapRe
 export function snapSec(sec: number, mode: SnapMode, ctx: SnapContext): number {
   return snapDelta(sec, mode, ctx).sec;
 }
+
+export interface GridLine {
+  sec: number;
+  kind: "bar" | "beat" | "sub";
+}
+
+/**
+ * Grid lines to draw across a visible span, coarsest first so bars can be
+ * drawn stronger. I3 fix wave: ported from lib/musictime.ts (retired there)
+ * onto THIS module's own gridIntervalSec, so LaneCanvas.svelte's background
+ * grid and the drag-snap grid above share one source of bar/beat-interval
+ * truth. Same algorithm, same numbers (gridIntervalSec("bar"/"beat", ...) is
+ * exactly secPerBar/secPerBeat) -- only where it lives changed.
+ */
+export function gridLines(
+  fromSec: number,
+  toSec: number,
+  bpm: number,
+  beatsPerBar: number,
+  pxPerSec: number,
+): GridLine[] {
+  const out: GridLine[] = [];
+  const bar = gridIntervalSec("bar", bpm, beatsPerBar)!;
+  const beat = gridIntervalSec("beat", bpm, beatsPerBar)!;
+  // Don't draw a grid finer than ~8px or it turns into a grey wash.
+  const drawBeats = beat * pxPerSec > 8;
+  const drawSubs = (beat / 4) * pxPerSec > 8;
+  const step = drawSubs ? beat / 4 : drawBeats ? beat : bar;
+  const start = Math.floor(fromSec / step) * step;
+  for (let t = start; t <= toSec; t += step) {
+    if (t < 0) continue;
+    const inBar = Math.abs((t / bar) % 1);
+    const inBeat = Math.abs((t / beat) % 1);
+    const isBar = inBar < 1e-6 || inBar > 1 - 1e-6;
+    const isBeat = inBeat < 1e-6 || inBeat > 1 - 1e-6;
+    out.push({ sec: t, kind: isBar ? "bar" : isBeat ? "beat" : "sub" });
+  }
+  return out;
+}

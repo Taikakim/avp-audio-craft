@@ -3,6 +3,7 @@
   // only the 62px canvas is fixed).
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { view } from "../../lib/stores/view.svelte";
+  import { addClip, scheduleStretch } from "../../lib/clips/lifecycle";
   import { dragScale } from "../../lib/actions/dragScale";
   import { CHAIN_DEFAULTS } from "../../lib/forge/defaults";
   import { deepEqual } from "../../lib/forge/nonDefault";
@@ -36,14 +37,30 @@
     view.activeLane = lane.index;
   }
 
-  function onDrop(e: DragEvent) {
+  // I1 fix wave: a CLIP BPM/DETUNE edit must re-arm the debounced stretch
+  // (lifecycle.ts's scheduleStretch) -- arrangement.setClipBpm/setDetune only
+  // update the store's numbers, they never touch previewAudio themselves.
+  function setClipBpm(id: string, bpm: number) {
+    arrangement.setClipBpm(id, bpm);
+    scheduleStretch(id);
+  }
+
+  function setClipDetune(id: string, cents: number) {
+    arrangement.setDetune(id, cents);
+    scheduleStretch(id);
+  }
+
+  // I1 fix wave: routed through lifecycle.ts's addClip (upload/analyze/stretch)
+  // instead of calling arrangement.addClip directly -- see Timeline.svelte's
+  // onLaneBodyDrop for the same fix and why it matters.
+  async function onDrop(e: DragEvent) {
     e.preventDefault();
     const raw = e.dataTransfer?.getData("application/x-forge-ref");
     const ref = raw ? parseForgeRefPayload(raw) : null;
     if (!ref) return;
-    const c = arrangement.addClip({ lane: lane.index, startSec: playback.playheadSec, durSec: 4, audio: ref });
+    const { clip } = await addClip({ lane: lane.index, startSec: playback.playheadSec, ref, durationSec: 4 });
     view.activeLane = lane.index;
-    view.select({ kind: "clip", id: c.id });
+    view.select({ kind: "clip", id: clip.id });
   }
 </script>
 
@@ -107,10 +124,10 @@
       value={bpmClip?.native_bpm ?? 0}
       data-help={HELP.clipBpm}
       onclick={(e) => e.stopPropagation()}
-      onchange={(e) => bpmClip && arrangement.setClipBpm(bpmClip.id, +(e.target as HTMLInputElement).value || 0)}
+      onchange={(e) => bpmClip && setClipBpm(bpmClip.id, +(e.target as HTMLInputElement).value || 0)}
       use:dragScale={{
         min: 60, max: 200, value: bpmClip?.native_bpm ?? 0,
-        onValue: (v) => bpmClip && arrangement.setClipBpm(bpmClip.id, v),
+        onValue: (v) => bpmClip && setClipBpm(bpmClip.id, v),
       }}
     />
     <span class="label">DETUNE ¢</span>
@@ -121,10 +138,10 @@
       value={bpmClip?.detune_cents ?? 0}
       data-help={HELP.clipDetune}
       onclick={(e) => e.stopPropagation()}
-      onchange={(e) => bpmClip && arrangement.setDetune(bpmClip.id, +(e.target as HTMLInputElement).value || 0)}
+      onchange={(e) => bpmClip && setClipDetune(bpmClip.id, +(e.target as HTMLInputElement).value || 0)}
       use:dragScale={{
         min: -100, max: 100, int: true, value: bpmClip?.detune_cents ?? 0,
-        onValue: (v) => bpmClip && arrangement.setDetune(bpmClip.id, v),
+        onValue: (v) => bpmClip && setClipDetune(bpmClip.id, v),
       }}
     />
   </div>

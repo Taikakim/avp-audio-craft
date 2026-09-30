@@ -19,6 +19,7 @@ function fakeEngine(): PlaybackEngine & { calls: string[]; time: number } {
     invalidate() {},
     scrub(_buffer: AudioBuffer, atSec: number) { eng.calls.push(`scrub:${atSec}`); },
     stopScrub() { eng.calls.push("stopScrub"); },
+    updateLanes(_lanes: unknown) { eng.calls.push("updateLanes"); },
   };
   return eng;
 }
@@ -156,6 +157,27 @@ describe("syncPlayhead", () => {
     engine.time = 3;
     p.syncPlayhead();
     expect(engine.calls).toContain("seek:1");
+  });
+});
+
+describe("updateLiveLanes pushes mute/solo/gain to the engine mid-playback (I7 fix wave)", () => {
+  it("calls the engine's updateLanes, and does so via arrangement's attached hook", async () => {
+    const engine = fakeEngine();
+    const p = new PlaybackStore(engine);
+    arrangement.attachLiveLaneUpdater(() => p.updateLiveLanes());
+    try {
+      await p.play();
+      arrangement.toggleMute(0);
+      arrangement.toggleSolo(1);
+      arrangement.setLaneGain(2, 0.4);
+      expect(engine.calls.filter((c) => c === "updateLanes")).toHaveLength(3);
+    } finally {
+      // undo the lane edits and detach so this doesn't leak into other tests
+      arrangement.toggleMute(0);
+      arrangement.toggleSolo(1);
+      arrangement.setLaneGain(2, 1);
+      arrangement.attachLiveLaneUpdater(null);
+    }
   });
 });
 
