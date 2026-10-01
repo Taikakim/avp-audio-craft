@@ -1614,7 +1614,7 @@ def _a2a_mix_impl(req):
     cfg = _f(req, "cfg_scale", 6.0)
     apg = _f(req, "apg_scale", 1.0)
     cfg_interval = resolve_cfg_interval(req)
-    dist_shift = resolve_dist_shift(req)
+    resolve_dist_shift(req)  # validate early, before any GPU work; each pass resolves its own shift
     seed = resolve_seed(_i(req, "seed", -1))
     film_req = req.get("film")
     # crossfade-lab knobs (parity-audit 3c / item 6, Kim 2026-07-12)
@@ -1902,9 +1902,11 @@ def _a2a_mix_impl(req):
             starts = [max(ws_sec - S / 2, 0), we_sec - S / 2]
             ends = [ws_sec + S / 2, min(we_sec + S / 2, y.shape[1] / SR)]
             log(f"  [pass] seam-inpaint {seam_inpaint}f strips")
+            # Starts from full noise, so cfg_interval at sigma_max=1.0 is right; the schedule shape
+            # must still be honoured (resolve_dist_shift ignores it) -- review 2026-10-01.
             kw3 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
                        cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                       dist_shift=dist_shift, seed=seed, batch_size=1,
+                       dist_shift=resolve_shift(req, steps, 1.0, warnings), seed=seed, batch_size=1,
                        sample_size=budget_for(y.shape[1] / SR),
                        inpaint_audio=(SR, torch.tensor(y)),
                        inpaint_mask_start_seconds=starts,
@@ -1989,9 +1991,13 @@ def _a2a_mix_impl(req):
                     ref_t = ((1 - tt) * _z[..., :nn] + tt * _e[..., :nn]).to(x.device, x.dtype)
                     x[..., :nn].copy_(torch.where(hold.to(x.device), ref_t, x[..., :nn]))
 
+                # Spec 6.6: progress is relative to THIS pass's starting noise (seam_nl), not 1.0 --
+                # at 1.0 a cfg_interval_progress window could sit wholly above seam_nl and CFG would
+                # never apply (review 2026-10-01).
                 kw2 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
-                           cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                           dist_shift=dist_shift, seed=seed, batch_size=1,
+                           cfg_scale=cfg, apg_scale=apg,
+                           cfg_interval=resolve_cfg_interval(req, sigma_max=seam_nl),
+                           dist_shift=resolve_shift(req, steps, seam_nl, warnings), seed=seed, batch_size=1,
                            sample_size=budget_for(y.shape[1] / SR),
                            init_audio=(SR, torch.tensor(y)),
                            init_noise_level=seam_nl,
@@ -2008,8 +2014,10 @@ def _a2a_mix_impl(req):
             wt_prompt = (whole.get("prompt") or prompt).strip()
             log(f"  [pass] whole-track a2a nl={wt_nl:.2f}")
             dur2 = y.shape[1] / SR
+            # Same rule as the seam pass: resolve against this pass's own starting noise (wt_nl).
             kw4 = dict(prompt=wt_prompt, duration=dur2, steps=steps, cfg_scale=cfg,
-                       apg_scale=apg, cfg_interval=cfg_interval, dist_shift=dist_shift,
+                       apg_scale=apg, cfg_interval=resolve_cfg_interval(req, sigma_max=wt_nl),
+                       dist_shift=resolve_shift(req, steps, wt_nl, warnings),
                        seed=seed, batch_size=1, sample_size=budget_for(dur2),
                        init_audio=(SR, torch.tensor(y)), init_noise_level=wt_nl,
                        callback=make_log_cb(steps))
