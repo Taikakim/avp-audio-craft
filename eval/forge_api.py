@@ -10,10 +10,12 @@ import traceback
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma, stats
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma, stats, backbone
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
+import time as _time
+import gc
 import numpy as np
 from forge.hashing import file_sha256
 import json
@@ -450,3 +452,59 @@ async def dataset_scalars(x: str = "bpm", y: str = "lufs"):
         _DATASET["dir"] = ld
     idx = _DATASET["index"]
     return ok(fields=idx.fields(), points=idx.points(x, y))
+
+
+def _active_backbone():
+    return getattr(SRV.ARGS, "model", None)
+
+
+@router.get("/forge/backbone")
+@forge_route
+async def backbone_get():
+    active = _active_backbone()
+    objective = getattr(getattr(SRV.MODEL, "model", None), "diffusion_objective", None)
+    if objective is None and active in backbone.BACKBONES:
+        objective = backbone.objective_of(active)
+    return ok(active=active, objective=objective, available=backbone.listing())
+
+
+def _switch_backbone(model_id):
+    srv = SRV
+    previous = srv.ARGS.model
+    before = len(srv.SLOTS.slots)
+    t0 = _time.time()
+    warnings = []
+    with srv.GPU_LOCK:
+        srv.ARGS.model = model_id
+        srv.MODEL = None
+        gc.collect()
+        srv.prepare_model(None, None)
+        ds = srv.MODEL.model.pretransform.downsampling_ratio
+        if ds != srv.DS or srv.MODEL.model.sample_rate != srv.SR:
+            srv.ARGS.model = previous
+            srv.MODEL = None
+            gc.collect()
+            srv.prepare_model(None, None)
+            raise ForgeError(400, f"backbone {model_id} has a different latent rate (ds={ds}); restored {previous}")
+    after = len(srv.SLOTS.slots)
+    if after < before:
+        warnings.append(f"{before - after} resident adapter slot(s) could not be re-applied on {model_id}")
+    srv.log(f"[forge] backbone {previous} -> {model_id} in {_time.time() - t0:.1f}s")
+    return {"active": model_id, "objective": srv.MODEL.model.diffusion_objective,
+            "rebuild_sec": round(_time.time() - t0, 1), "warnings": warnings}
+
+
+@router.post("/forge/backbone")
+@forge_route
+async def backbone_post(request: Request):
+    body = await request.json() or {}
+    model_id = body.get("id")
+    if model_id not in backbone.BACKBONES:
+        raise ForgeError(400, f"unknown backbone {model_id!r} (have {', '.join(backbone.BACKBONES)})")
+    if SRV.GPU_LOCK.locked():
+        raise ForgeError(409, "a pass is running — try again when the GPU is idle")
+    if backbone.cached_config(model_id) is None:
+        raise ForgeError(400, f"{model_id} is not in the local HF cache — download it first")
+    if SRV.ARGS is None:
+        raise ForgeError(409, "model not loaded yet")
+    return ok(**await run_in_threadpool(_switch_backbone, model_id))

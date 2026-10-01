@@ -28,6 +28,8 @@ def make_stub_server(out_dir):
     srv.OUT_DIR = out_dir
     srv.GPU_LOCK = threading.Lock()
     srv.PLAYER_CFG = {}
+    srv.ARGS = types.SimpleNamespace(model="medium-base")   # /forge/backbone reads the active model
+    srv.MODEL = None                                         # ...and the resident model, if any
 
     def log(msg):
         logseq.append(f"00:00:00 {msg}")
