@@ -10,7 +10,7 @@ import traceback
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from forge import contract, jobs as jobs_mod, logseq, progress
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
@@ -279,3 +279,36 @@ async def presets_put(level: str, name: str, request: Request):
 async def presets_delete(level: str, name: str):
     _presets(level).delete(name)
     return ok()
+
+
+# ------------------------------------------------------------------ analyze
+def _crop_meta(crop_id):
+    try:
+        return SRV._player_meta(crop_id)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _analyze_ref(ref):
+    svc = services()
+    if isinstance(ref, dict) and ref.get("kind") == "crop":
+        svc.resolve_audio(ref)                                  # validates + caches the decode
+        meta = _crop_meta(ref["crop_id"]) or {}
+        hint = meta.get("bpm_madmom") or meta.get("bpm_essentia")
+        src = meta.get("source_path")
+        if src and Path(src).is_file():
+            import soundfile as sf
+            a, sr = sf.read(src, dtype="float32", always_2d=True,
+                            start=int(meta["start_sample"]), stop=int(meta["end_sample"]))
+            return analysis.analyze_audio(a.T, sr, bpm_hint=hint)
+        a = svc.load_audio(svc.decode_crop(ref["crop_id"]))
+        return analysis.analyze_audio(a, SRV.SR, bpm_hint=hint)
+    path = svc.resolve_audio(ref)
+    return analysis.analyze_audio(svc.load_audio(path), SRV.SR)
+
+
+@router.post("/forge/analyze")
+@forge_route
+async def analyze(request: Request):
+    body = await request.json()
+    return ok(**await run_in_threadpool(_analyze_ref, (body or {}).get("audio")))
