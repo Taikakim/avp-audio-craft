@@ -20,13 +20,43 @@
   let error = $state<string | null>(null);
   let masterBuffer = $state<AudioBuffer | null>(null);
   let masterStale = $state(true);
-  let source = $state<"preview" | "mixdown">("preview");
 
   /** Decode-only use of Transport: fetch + decode, cached by URL. Not the
    *  playback engine -- this only warms the same cache other consumers read. */
   const decoder = new Transport();
 
-  const peakNow = $derived(masterBuffer ? peakLevel(masterBuffer) : 0);
+  import { masterSource, MIXDOWN_UNAVAILABLE_HINT } from "../../lib/render/masterSource.svelte";
+  import { playback } from "../../lib/stores/transport.svelte";
+
+  /** The mix as a buffer, decoded through the same cache M5's preview mix uses. */
+  let mixBuffer = $state<AudioBuffer | null>(null);
+
+  const showing = $derived(masterSource.effective);
+  const shownBuffer = $derived(showing === "mixdown" ? mixBuffer : masterBuffer);
+
+  async function chooseSource(v: "preview" | "mixdown") {
+    masterSource.set(v);
+    // The two sources share a timebase, so the comparison happens at a moment, not from the top
+    // (§9.6). A seek re-snapshots the clip list, which is what actually swaps what is heard.
+    if (playback.playing) await playback.seek(playback.playheadSec);
+  }
+
+  $effect(() => {
+    // Decode the committed mix when there is one. Reads masterSource.url; writes only mixBuffer,
+    // which no derivation in this effect reads -- never write what you read (state_unsafe_mutation).
+    const url = masterSource.url;
+    if (url === null) {
+      mixBuffer = null;
+      return;
+    }
+    let cancelled = false;
+    void decoder.preload(url)
+      .then((b) => { if (!cancelled) mixBuffer = b; })
+      .catch((e) => { if (!cancelled) error = e instanceof Error ? e.message : String(e); });
+    return () => { cancelled = true; };
+  });
+
+  const peakNow = $derived(shownBuffer ? peakLevel(shownBuffer) : 0);
   const clipping = $derived(peakNow >= 0.999);
   const dbfs = $derived(peakNow > 0 ? (20 * Math.log10(peakNow)).toFixed(1) : null);
 
@@ -61,13 +91,13 @@
     const canvas = canvasEl;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    if (!masterBuffer) {
+    if (!shownBuffer) {
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
     const cols = Math.max(1, Math.round(canvas.clientWidth));
     const color = getComputedStyle(canvas).getPropertyValue("--accent").trim();
-    const peaks = computePeaks(masterBuffer, cols);
+    const peaks = computePeaks(shownBuffer, cols);
     drawPeaks(canvas, peaks, color);
     if (!ctx) return;
     const red = getComputedStyle(canvas).getPropertyValue("--red").trim() || "red";
@@ -85,7 +115,7 @@
   // marks) keep their stale-theme colour (the same class of bug as the M1
   // same-day regression fix -- see this milestone's canvas colour rule).
   $effect(() => {
-    void masterBuffer;
+    void shownBuffer;
     void canvasEl;
     void view.theme;
     draw();
@@ -113,15 +143,16 @@
     <span class="spacer"></span>
     <div class="source-toggle" data-region="preview-mixdown-toggle" data-help={HELP.previewMixdownToggle}>
       <button
-        class:active={source === "preview"}
+        class:active={showing === "preview"}
         data-testid="master-source-preview"
-        onclick={() => (source = "preview")}
+        onclick={() => void chooseSource("preview")}
       >PREVIEW</button>
       <button
-        class:active={source === "mixdown"}
+        class:active={showing === "mixdown"}
         data-testid="master-source-mixdown"
-        disabled
-        title="MIXDOWN — wired to the committed mix in M9; nothing has been committed yet"
+        disabled={!masterSource.available}
+        title={masterSource.available ? "" : MIXDOWN_UNAVAILABLE_HINT}
+        onclick={() => void chooseSource("mixdown")}
       >MIXDOWN</button>
     </div>
   </div>

@@ -9,7 +9,8 @@
 // `syncPlayhead()` every frame while mounted, so this file has nothing that
 // needs `vi.useFakeTimers()` gymnastics to test.
 
-import { toPlaybackClips, toPlaybackLanes, loopWrap } from "../math/playback";
+import { toPlaybackClips, toPlaybackLanes, loopWrap, mixPlaybackClips, MIX_PLAYBACK_LANES } from "../math/playback";
+import { masterSource } from "../render/masterSource.svelte";
 import { Transport, type PlaybackEngine } from "../audio/transport";
 import { AUDIO_SOURCE_TIMELINE, registerAudioSource, takeAudio } from "../audio/soloBus";
 import { arrangement } from "./arrangement.svelte";
@@ -32,10 +33,14 @@ export class PlaybackStore {
   }
 
   private snapshotClips() {
+    if (masterSource.effective === "mixdown") {
+      return mixPlaybackClips(masterSource.url, masterSource.durSec);
+    }
     return toPlaybackClips(arrangement.clips);
   }
 
   private snapshotLanes() {
+    if (masterSource.effective === "mixdown") return MIX_PLAYBACK_LANES;
     return toPlaybackLanes(arrangement.lanes);
   }
 

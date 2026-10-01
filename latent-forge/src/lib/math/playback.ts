@@ -40,3 +40,19 @@ export function loopWrap(
   if (!loopOn || loopEndSec <= loopStartSec) return null;
   return sec >= loopEndSec ? loopStartSec : null;
 }
+
+/** §9.6's MIXDOWN source. The commit already applied every lane's mute, solo and gain, so replaying
+ *  the arrangement's lane state over the finished file would apply them a second time. */
+export const MIX_PLAYBACK_LANES: PlaybackLane[] = [{ index: 0, muted: false, solo: false, gain: 1 }];
+
+export function mixPlaybackClips(url: string | null, durSec: number): PlaybackClip[] {
+  if (url === null) return [];
+  return [{
+    id: "mixdown",
+    laneIndex: 0,
+    startSec: 0,
+    durationSec: Math.max(0, durSec),
+    offsetSec: 0,
+    previewUrl: url,
+  }];
+}

@@ -12,6 +12,7 @@
   import { HELP } from "../../lib/help/strings";
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
   import { PAD_SEC, renderLabel, renderRequest } from "../../lib/render/dispatch";
+  import { dispatchWorld } from "../../lib/render/dispatchWorld";
   import { jobs } from "../../lib/render/jobs.svelte";
   import { MIXDOWN_TARGET_KEY } from "../../lib/render/mixdown.svelte";
   import { renderBlock } from "../../lib/render/renderBlock";
@@ -40,28 +41,7 @@
     return sel.kind === "overlap" ? (arrangement.overlaps.find((o) => o.key === sel.key) ?? null) : null;
   });
 
-  const world = $derived({
-    settings: settings.current(target),
-    cfgScale: settings.effectiveCfg(target),
-    clip,
-    lane: clip ? (arrangement.lanes[clip.lane] ?? null) : null,
-    heads,
-    ckptPath: settings.ckptPath,
-    overlap,
-    // `peekOverlapParams`, NOT `overlapParams`: the latter SEEDS `OVERLAP_DEFAULT` into the store
-    // on first read, and this is a $derived -- Global constraint 4, `state_unsafe_mutation`, the
-    // first time an operator selects an overlap they have never opened in INPAINT. The peek
-    // returns a fresh default-shaped copy for an unstored key, so no fallback is needed.
-    overlapParams: overlap ? arrangement.peekOverlapParams(overlap.key) : null,
-    clipById: (id: string) => arrangement.clips.find((c) => c.id === id) ?? null,
-    // No prompt-ARC field exists in M9's UI: `longform` reads the target's prompt as its arc, which
-    // is what _longform_impl falls back to on the server (`req["schedule"] or req["prompt"]`).
-    arcPrompt: settings.current(target).prompt,
-    // No bend-op editor exists either -- renderBlock refuses `bend` with an empty list, so this is
-    // the honest empty rather than an invented default (Open question B3).
-    bendOps: [] as unknown[],
-    padSec: PAD_SEC,
-  });
+  const world = $derived.by(() => dispatchWorld(target, heads));
 
   const blocked = $derived(
     renderBlock(target, {

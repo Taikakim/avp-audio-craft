@@ -57,7 +57,7 @@ describe("the timeline transport follows the A/B toggle (spec §9.6)", () => {
   });
 
   it("is not silenced by a muted lane 0 — the commit already applied the mute", async () => {
-    arrangement.setLaneMuted(0, true);
+    arrangement.lanes[0].muted = true; // M5 has toggleMute, no setLaneMuted; the field is what the snapshot reads
     history.add(mixEntry());
     history.mixdown = 0;
     masterSource.set("mixdown");

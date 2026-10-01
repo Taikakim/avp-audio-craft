@@ -6,6 +6,11 @@
   import { overlapInfoLine } from "../../lib/forge/overlapLabel";
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { view } from "../../lib/stores/view.svelte";
+  import { renderLabel, renderRequest } from "../../lib/render/dispatch";
+  import { dispatchWorld } from "../../lib/render/dispatchWorld";
+  import { renderBlock } from "../../lib/render/renderBlock";
+  import { jobs } from "../../lib/render/jobs.svelte";
+  import { PayloadError } from "../../lib/render/payloads";
   import { dragScale } from "../../lib/actions/dragScale";
   import { HELP } from "../../lib/help/strings";
   import EnvelopeEditor from "../master/EnvelopeEditor.svelte";
@@ -22,6 +27,42 @@
 
   function patch(p: Parameters<typeof arrangement.setOverlapParams>[1]) {
     if (key) arrangement.setOverlapParams(key, p);
+  }
+
+  const target = $derived(view.selection);
+  // inpaintPayload has no `chain` field, so the LatCH head registry is not read on this path and
+  // fetching it here would be a network call whose result is discarded.
+  const world = $derived.by(() => dispatchWorld(target, {}));
+
+  const blocked = $derived(
+    renderBlock(target, {
+      busy: jobs.active !== null,
+      gpuBusyOther: jobs.gpuBusyOther,
+      settings: world.settings,
+      clip: null,
+      clipOp: null,
+      arcPrompt: world.arcPrompt,
+      bendOpCount: 0,
+      overlapSpanSec: world.overlap ? world.overlap.end_sec - world.overlap.start_sec : 0,
+      padSec: world.padSec,
+    }),
+  );
+
+  /** Same rule as Task 6's `mine`: the SAMPLING count belongs to the control that started the job,
+   *  identified by targetKey so selecting elsewhere mid-render does not move the label. */
+  const mine = $derived(jobs.active !== null && jobs.active.targetKey === view.selectionKey);
+  const label = $derived(renderLabel(mine, jobs.stepsLeft));
+
+  async function onInpaint(): Promise<void> {
+    if (blocked !== null) return;
+    try {
+      await jobs.submit(renderRequest(target, world));
+    } catch (e) {
+      jobs.lastError = {
+        targetKey: view.selectionKey,
+        message: e instanceof PayloadError ? e.message : String(e),
+      };
+    }
   }
 </script>
 
@@ -91,8 +132,9 @@
     <button
       class="inpaint"
       data-testid="inpaint-overlap-button"
-      onclick={() => { /* no-op: M9 submits the inpaint job */ }}
-    >▸ INPAINT OVERLAP</button>
+      title={blocked ?? ""}
+      disabled={blocked !== null}
+      onclick={onInpaint}>{mine ? label : "▸ INPAINT OVERLAP"}</button>
   </div>
 {/if}
 
