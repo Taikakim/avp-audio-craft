@@ -14,6 +14,12 @@ from forge import contract, jobs as jobs_mod, logseq, progress
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
+import json
+from pathlib import Path
+from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
+from forge import library, uploads
+from forge.store import JsonStore
 
 router = APIRouter()
 SRV = None
@@ -162,3 +168,114 @@ async def jobs_cancel(job_id: str):
 async def log_since(since: int = 0):
     last, lines = logseq.since(since)
     return ok(seq=last, lines=lines)
+
+
+# ------------------------------------------------------------------ library
+_MEDIA = {".wav": "audio/wav", ".flac": "audio/flac", ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
+          ".ogg": "audio/ogg", ".aif": "audio/aiff", ".aiff": "audio/aiff"}
+
+
+def parse_ref_param(raw):
+    try:
+        ref = json.loads(raw)
+    except (TypeError, ValueError):
+        raise ForgeError(400, "ref must be URL-encoded JSON")
+    return ref
+
+
+@router.put("/forge/upload")
+@forge_route
+async def upload(request: Request, filename: str = ""):
+    w = uploads.UploadWriter(filename, paths().uploads, contract.UPLOAD_MAX_BYTES)
+    try:
+        async for chunk in request.stream():
+            w.feed(chunk)
+        dst, sha, n = w.finish()
+    except BaseException:
+        w.abort()
+        raise
+    try:
+        info = await run_in_threadpool(uploads.probe_audio, dst)
+    except ForgeError:
+        dst.unlink(missing_ok=True)
+        raise
+    return ok(ref={"kind": "upload", "sha256": sha}, path=str(dst), bytes=n, **info)
+
+
+@router.get("/forge/files")
+@forge_route
+async def files(root: str = "crops", q: str = "", limit: int = 500):
+    ctx = services().ref_context()
+    roots = {"crops": ctx.roots.get("crops"), "renders": ctx.roots.get("renders"), "uploads": ctx.roots.get("uploads")}
+    return ok(**await run_in_threadpool(library.list_files, roots, root, q, limit))
+
+
+@router.get("/forge/audio")
+@forge_route
+async def audio(ref: str):
+    path = await run_in_threadpool(services().resolve_audio, parse_ref_param(ref))
+    return FileResponse(path, media_type=_MEDIA.get(Path(path).suffix.lower(), "application/octet-stream"))
+
+
+def _sessions():
+    return JsonStore(paths().sessions, contract.SESSION_MAX_BYTES)
+
+
+@router.get("/forge/sessions")
+@forge_route
+async def sessions_list():
+    store = _sessions()
+    rows = []
+    for row in store.listing():
+        try:
+            n = len(store.get(row["name"]).get("clips") or [])
+        except (ValueError, ForgeError):
+            n = 0
+        rows.append({**row, "n_clips": n})
+    return ok(sessions=rows)
+
+
+@router.get("/forge/sessions/{name}")
+@forge_route
+async def sessions_get(name: str):
+    return _sessions().get(name)
+
+
+@router.put("/forge/sessions/{name}")
+@forge_route
+async def sessions_put(name: str, request: Request):
+    body = await request.json()
+    if not isinstance(body, dict) or body.get("version") != 2:
+        raise ForgeError(400, "session must be a JSON object with \"version\": 2")
+    _sessions().put(name, body)
+    return ok()
+
+
+def _presets(level):
+    return JsonStore(paths().preset_dir(level), contract.PRESET_MAX_BYTES)
+
+
+@router.get("/forge/presets/{level}")
+@forge_route
+async def presets_list(level: str):
+    return ok(names=_presets(level).names())
+
+
+@router.get("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_get(level: str, name: str):
+    return _presets(level).get(name)
+
+
+@router.put("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_put(level: str, name: str, request: Request):
+    _presets(level).put(name, await request.json())
+    return ok()
+
+
+@router.delete("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_delete(level: str, name: str):
+    _presets(level).delete(name)
+    return ok()

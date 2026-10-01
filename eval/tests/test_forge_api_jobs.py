@@ -9,13 +9,8 @@ fastapi_testclient = pytest.importorskip("fastapi.testclient")
 
 @pytest.fixture(scope="module")
 def srv(tmp_path_factory):
-    # Prefer the REAL server (GPU box). On a CPU-only box (no torch) fall back to the stub that
-    # mirrors the three M2 T8 hooks, so the /forge routes are still exercised end to end.
-    try:
-        import explorer_render_server as srv
-        return srv
-    except ModuleNotFoundError:
-        return forge_testutil.make_stub_server(tmp_path_factory.mktemp("stub_out"))
+    # Real server on a GPU box, a faithful stub elsewhere (see forge_testutil.get_server).
+    return forge_testutil.get_server(tmp_path_factory)
 
 
 @pytest.fixture

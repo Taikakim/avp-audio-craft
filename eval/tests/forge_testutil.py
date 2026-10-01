@@ -59,3 +59,22 @@ def make_stub_server(out_dir):
     forge_api.bind(srv)
     srv.app.include_router(forge_api.router)
     return srv
+
+
+_STUB = None
+
+
+def get_server(tmp_path_factory):
+    """The real explorer_render_server when it imports (GPU box), else ONE shared stub per process.
+
+    One shared stub because forge_api keeps module-level state (SRV, QUEUE): binding a second stub
+    would orphan the first test module's routes.
+    """
+    global _STUB
+    try:
+        import explorer_render_server as real
+        return real
+    except ModuleNotFoundError:
+        if _STUB is None:
+            _STUB = make_stub_server(tmp_path_factory.mktemp("stub_out"))
+        return _STUB
