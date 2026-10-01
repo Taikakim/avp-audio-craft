@@ -3,6 +3,10 @@
 // milestones. Recordings: M2 T15's record_fixtures.py -> docs/latent-forge/contract/fixtures/<name>.json.
 // Only a RECORDED file counts; preferRecorded()'s hand-made fallback is the thing under test, so a
 // hand-made hit skips -- with the reason in the title -- and never passes.
+import type { JobOp } from "../types";
+import { BASE_DEFAULTS, cloneRenderSettings } from "../defaults";
+import { payloadSettings } from "../../render/previewActions";
+import { applyRenderPreset } from "../../presets/renderPresets";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -273,5 +277,46 @@ describe("the client against recorded real-server responses (M2 T15 fixtures)", 
     const s = await forgeApi.status();
     expect(s.busy).toBe(true);
     expect(typeof s.job_id).toBe("string");
+  });
+});
+
+const GEN_DONE = recorded("forge_job_generate_done");
+const A2A_DONE = recorded("forge_job_a2a_clip_done");
+const INPAINT_DONE = recorded("forge_job_inpaint_done");
+const COMMIT_DONE = recorded("forge_job_commit_done");
+
+describe("USE SETTINGS against real submitted payloads (M2 T15 / M8 T11 fixtures)", () => {
+  it.skipIf(!GEN_DONE)(title("a recorded generate payload reduces to settings plus a real LENGTH, and `duration` never leaks into the preset body", "forge_job_generate_done"), () => {
+    const rec = GEN_DONE!.body as { op: JobOp; payload: unknown };
+    const ps = payloadSettings(rec.op, rec.payload);
+    expect(ps.body).not.toBeNull();
+    expect("duration" in ps.body!).toBe(false);
+    expect("duration_sec" in ps.body!).toBe(false);
+    expect(ps.durationSec).toBeGreaterThan(0);
+    // The reduction must be applicable, not merely non-null.
+    const into = cloneRenderSettings(BASE_DEFAULTS);
+    expect(applyRenderPreset(into, ps.body).applied.length).toBeGreaterThan(0);
+  });
+
+  it.skipIf(!A2A_DONE)(title("a recorded a2a_clip payload yields its nested render block and no length", "forge_job_a2a_clip_done"), () => {
+    const rec = A2A_DONE!.body as { op: JobOp; payload: unknown };
+    const ps = payloadSettings(rec.op, rec.payload);
+    expect(ps.body).not.toBeNull();
+    expect(ps.durationSec).toBeNull();
+    expect(Object.keys(ps.body!)).toContain("steps");
+  });
+
+  it.skipIf(!INPAINT_DONE)(title("a recorded inpaint payload yields its nested render block, with the region supplying the span", "forge_job_inpaint_done"), () => {
+    const rec = INPAINT_DONE!.body as { op: JobOp; payload: unknown };
+    const ps = payloadSettings(rec.op, rec.payload);
+    expect(ps.body).not.toBeNull();
+    expect(ps.durationSec).toBeNull();
+  });
+
+  it.skipIf(!COMMIT_DONE)(title("a recorded commit payload offers a top-level duration_sec and no session-wide settings", "forge_job_commit_done"), () => {
+    const rec = COMMIT_DONE!.body as { op: JobOp; payload: unknown };
+    const ps = payloadSettings(rec.op, rec.payload);
+    expect(ps.body).toBeNull();
+    expect(ps.durationSec).toBeGreaterThan(0);
   });
 });

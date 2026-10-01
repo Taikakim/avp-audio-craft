@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlaybackClip, PlaybackEngine, PlaybackLane } from "../../audio/transport";
 import type { AudioRef, RenderHistoryEntry } from "../../forge/types";

@@ -79,6 +79,7 @@
   import { computePeaks, drawPeaks } from "../../lib/audio/waveform";
   import { Transport } from "../../lib/audio/transport";
   import { forgeApi } from "../../lib/forge/api";
+  import { writeForgeDrag } from "../../lib/math/laneHeader";
   import { history } from "../../lib/render/history.svelte";
   import { HISTORY_EMPTY_LABEL, historyOptions, lengthLabel } from "../../lib/render/historyLabel";
   import { previewPlayer } from "../../lib/render/previewPlayer.svelte";
@@ -195,7 +196,7 @@
 
   function onHandleDragStart(e: DragEvent): void {
     if (!entry || !e.dataTransfer) return;
-    e.dataTransfer.setData("application/x-forge-ref", JSON.stringify(history.refOf(entry)));
+    writeForgeDrag(e.dataTransfer, history.refOf(entry), entry.dur_sec || null);
     e.dataTransfer.effectAllowed = "copy";
   }
 
@@ -320,6 +321,7 @@
 
   <span
     class="handle"
+    role="presentation"
     data-testid="preview-drag-handle"
     data-help={HELP.previewDragToLane}
     draggable={entry !== null}

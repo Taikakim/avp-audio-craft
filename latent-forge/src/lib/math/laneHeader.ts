@@ -48,3 +48,30 @@ export function parseForgeRefPayload(raw: string): AudioRef | null {
     return null;
   }
 }
+
+export const FORGE_REF_MIME = "application/x-forge-ref";
+
+/** The length rides BESIDE the ref, never inside it: an AudioRef is an identity that gets serialised
+ *  into ProjectV2, and a measurement has no business in it. A drop with no length is still a valid
+ *  drop (a FILES row does not know one) -- lifecycle.addClip resolves it. (M9 T10) */
+export const FORGE_DUR_MIME = "application/x-forge-dur";
+
+export function writeForgeDrag(dt: DataTransfer, ref: AudioRef, durSec: number | null): void {
+  dt.setData(FORGE_REF_MIME, JSON.stringify(ref));
+  if (durSec !== null && Number.isFinite(durSec) && durSec > 0) {
+    dt.setData(FORGE_DUR_MIME, String(durSec));
+  }
+}
+
+/** `Number("")` is 0, not NaN, so the `raw > 0` half of the guard is what makes an absent length
+ *  read as null rather than as zero. Both halves are load-bearing. */
+export function readForgeDrag(
+  dt: DataTransfer | null,
+): { ref: AudioRef; durationSec: number | null } | null {
+  if (!dt) return null;
+  const ref = parseForgeRefPayload(dt.getData(FORGE_REF_MIME));
+  if (!ref) return null;
+  const raw = Number(dt.getData(FORGE_DUR_MIME));
+  const durationSec = Number.isFinite(raw) && raw > 0 ? raw : null;
+  return { ref, durationSec };
+}

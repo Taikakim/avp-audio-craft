@@ -50,8 +50,16 @@ function fileOf(rec: JobRecord): string {
 
 function durationOf(rec: JobRecord): number {
   const meta = (rec.result?.meta ?? {}) as Record<string, unknown>;
-  const d = meta.duration_sec;
-  return typeof d === "number" && Number.isFinite(d) ? d : 0;
+  const ok = (d: unknown): d is number => typeof d === "number" && Number.isFinite(d) && d > 0;
+  if (ok(meta.duration_sec)) return meta.duration_sec;
+  // Fallback (Electro-Sheep 1): a result that carries no length of its own (the mock's does not;
+  // not every op's server meta is guaranteed to) still has the length the job was ASKED for -- a
+  // generate's `duration`, a commit's `duration_sec`. Better a close number than "—" and a clip
+  // that lands at the 4 s floor; 0 stays the honest answer when neither exists.
+  const payload = (rec.payload ?? {}) as Record<string, unknown>;
+  if (ok(payload.duration)) return payload.duration;
+  if (ok(payload.duration_sec)) return payload.duration_sec;
+  return 0;
 }
 
 export class JobsStore {

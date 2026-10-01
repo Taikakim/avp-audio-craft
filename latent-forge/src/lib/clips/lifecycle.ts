@@ -8,6 +8,7 @@ import { forgeApi, ForgeApiError } from "../forge/api";
 import { arrangement } from "../stores/arrangement.svelte";
 import { Transport } from "../audio/transport";
 import type { AudioRef, ForgeClip } from "../forge/types";
+import { view } from "../stores/view.svelte";
 
 const STRETCH_DEBOUNCE_MS = 400;
 
@@ -100,6 +101,26 @@ function asApiError(e: unknown): ForgeApiError {
   return e instanceof ForgeApiError ? e : new ForgeApiError(0, e instanceof Error ? e.message : String(e));
 }
 
+/** Spec 4.1: a clip is as long as its audio. A drag source that knows its length sends it; a FILES
+ *  row does not, so the audio is decoded through the same URL-keyed cache every other consumer
+ *  reads. The 4 s floor is M5's old hardcoded default, kept ONLY for the case where there is no Web
+ *  Audio at all -- and it says so in the log rather than pretending to be a measurement. (M9 T10) */
+const DROP_FALLBACK_SEC = 4;
+
+async function resolveDuration(ref: AudioRef, given: number | undefined): Promise<number> {
+  if (given !== undefined && Number.isFinite(given) && given > 0) return given;
+  const d = decoder();
+  if (d) {
+    try {
+      return (await d.preload(forgeApi.audioUrl(ref))).duration;
+    } catch {
+      // fall through to the floor
+    }
+  }
+  view.appendLog(`[clip] could not measure the dropped audio; using ${DROP_FALLBACK_SEC} s`, "error");
+  return DROP_FALLBACK_SEC;
+}
+
 /** Adding a clip (spec §7.3): resolve ref (upload first for OS files) ->
  *  analyze unless already known -> schedule the debounced stretch -> peaks
  *  warm. */
@@ -113,6 +134,7 @@ export async function addClip(input: AddClipInput): Promise<AddClipOutcome> {
     durSec = up.duration_sec;
   } else if (input.ref) {
     ref = input.ref;
+    durSec = await resolveDuration(ref, input.durationSec);
   } else {
     throw new Error("addClip needs a file or a ref");
   }

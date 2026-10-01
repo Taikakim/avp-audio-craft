@@ -7,7 +7,7 @@
   import { playback } from "../../lib/stores/transport.svelte";
   import { view } from "../../lib/stores/view.svelte";
   import { addClip } from "../../lib/clips/lifecycle";
-  import { parseForgeRefPayload } from "../../lib/math/laneHeader";
+  import { readForgeDrag } from "../../lib/math/laneHeader";
   import { middleDragScrollDeltaSec, middleDragZoomFactor } from "../../lib/math/ruler";
   import { pxToSec } from "../../lib/math/viewport";
   import { LANE_IDS } from "../../lib/types";
@@ -80,13 +80,13 @@
     const el = e.currentTarget as HTMLElement;
     const rect = el.getBoundingClientRect();
     const atSec = pxToSec(e.clientX - rect.left, arrangement.scrollSec, arrangement.pxPerSec);
-    const raw = e.dataTransfer?.getData("application/x-forge-ref");
-    const ref = raw ? parseForgeRefPayload(raw) : null;
-    if (ref) {
-      // A ref dropped from FILES/preview/MIXDOWN carries no duration of its
-      // own (application/x-forge-ref is just the AudioRef) -- 4s is the same
-      // placeholder the old direct-addClip call used until analysis returns.
-      const { clip } = await addClip({ lane: laneIndex, startSec: atSec, ref, durationSec: 4 });
+    const drag = readForgeDrag(e.dataTransfer ?? null);
+    if (drag) {
+      // M9 T10: the drag source's own length rides beside the ref (FORGE_DUR_MIME); a FILES row has
+      // none, and lifecycle.addClip then decodes the audio for it instead of assuming 4 s.
+      const { clip } = await addClip({
+        lane: laneIndex, startSec: atSec, ref: drag.ref, durationSec: drag.durationSec ?? undefined,
+      });
       view.select({ kind: "clip", id: clip.id });
       return;
     }

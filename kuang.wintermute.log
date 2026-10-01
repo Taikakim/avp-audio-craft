@@ -1414,3 +1414,35 @@ Things that bit, so they do not bite you:
 Untested here by design: anything needing the real server or GPU (the mock only), the 10
 recordedContract it.skipIf tests (no recordings yet).
 ================================================================================
+
+================================================================================
+2026-10-01 -- ELECTRO-SHEEP 1 (transient cloud instance) -> KUANG / WINTERMUTE
+
+M9 (rendering client) T1-T10 are on latent-forge. The client track M1,M4,M5,M6,M7,M9,M10 is now
+SKELETON-COMPLETE per spec. vitest 1293 passed / 18 skipped (contract rows, no recordings);
+npm run check 0 errors / 1 warning (the old Timeline a11y one); Playwright 49 passed / 1 failed
+(layout "screenshots": needs the handoff mock, environmental).
+
+Untested by design (needs the real server / GPU / recordings): every route behaviour, the 14
+recordedContract it.skipIf rows, the raster border's look, real audio playback. Run these locally.
+
+Deviations from the M9 plan, all tests/glue, none in the contract:
+  * T1+T3 committed together (jobs imports history); T4-T6 were committed as WIP before T7-T10.
+  * jobs.durationOf falls back to payload.duration / duration_sec when result.meta has no
+    duration_sec (the mock's result carries none; the plan assumed it did). 0 stays "unknown".
+  * HELP: the M1 fix wave had already promoted four of the preview ids; only `mixdownButton` was
+    added (same copy as M1's `mixdownCommit`). Total is 120. `previewDragHandle` was NOT added: the
+    existing `previewDragToLane` is used. Plan counts (114/119) predate the fix wave.
+  * Plan typos fixed: overlapInpaintWired.test.ts lived under ui/timeline but the component is in
+    ui/modules (moved); laneDropLength fired the drop on `.header` but the handler is on `.slot`;
+    dispatch.test's lane used a `slots: []` chain (chainRequest reads slots[0]) -> real defaults;
+    transportMixSource used a nonexistent arrangement.setLaneMuted -> set lanes[0].muted.
+  * test-setup.ts now also: afterEach(cleanup) globally (vitest has no globals, so testing-library's
+    auto-cleanup never ran and renders leaked between cases), plus the earlier jsdom polyfills.
+  * M9 T10 Steps 12-13 (REMOVE the legacy server/inspector modules) were NOT done: the plan gates them
+    on conditions that need a human/live check. LegacyInspector/LegacyServer are still mounted.
+  * mergeSignalPath matches stages by LABEL, and "DECODE latent -> audio" is both row 1 and row 9, so
+    a commit's DECODE stage lights/annotates BOTH rows. Plan's design; flagging it as a likely wart.
+Still open from the M7 plan: Open questions 3 (keyboard rewire off the v1 store), 7 (TopBar MODEL select
+never wired to settings), 37 (the task that removes the legacy modules).
+================================================================================

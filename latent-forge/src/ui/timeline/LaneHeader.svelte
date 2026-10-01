@@ -8,7 +8,7 @@
   import { CHAIN_DEFAULTS } from "../../lib/forge/defaults";
   import { deepEqual } from "../../lib/forge/nonDefault";
   import { HELP } from "../../lib/help/strings";
-  import { bpmTargetClip, laneCountLabel, parseForgeRefPayload } from "../../lib/math/laneHeader";
+  import { bpmTargetClip, laneCountLabel, readForgeDrag } from "../../lib/math/laneHeader";
   import { playback } from "../../lib/stores/transport.svelte";
   import { RULER_GUTTER_PX } from "../../lib/timelineLayout";
   import type { ForgeLane } from "../../lib/forge/types";
@@ -55,10 +55,11 @@
   // onLaneBodyDrop for the same fix and why it matters.
   async function onDrop(e: DragEvent) {
     e.preventDefault();
-    const raw = e.dataTransfer?.getData("application/x-forge-ref");
-    const ref = raw ? parseForgeRefPayload(raw) : null;
-    if (!ref) return;
-    const { clip } = await addClip({ lane: lane.index, startSec: playback.playheadSec, ref, durationSec: 4 });
+    const drag = readForgeDrag(e.dataTransfer ?? null);
+    if (!drag) return;
+    const { clip } = await addClip({
+      lane: lane.index, startSec: playback.playheadSec, ref: drag.ref, durationSec: drag.durationSec ?? undefined,
+    });
     view.activeLane = lane.index;
     view.select({ kind: "clip", id: clip.id });
   }

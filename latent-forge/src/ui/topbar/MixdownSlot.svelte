@@ -5,6 +5,7 @@
   import { forgeApi } from "../../lib/forge/api";
   import { drawPeaks, peaksFor } from "../../lib/audio/waveform";
   import { Transport } from "../../lib/audio/transport";
+  import { writeForgeDrag } from "../../lib/math/laneHeader";
   import { history } from "../../lib/render/history.svelte";
   import { mixdownBlock, runMixdown } from "../../lib/render/mixdown.svelte";
   import { previewPlayer } from "../../lib/render/previewPlayer.svelte";
@@ -89,7 +90,7 @@
 
   function onDragStart(e: DragEvent) {
     if (entry === null || e.dataTransfer === null) return;
-    e.dataTransfer.setData("application/x-forge-ref", JSON.stringify(history.refOf(entry)));
+    writeForgeDrag(e.dataTransfer, history.refOf(entry), entry.dur_sec || null);
     e.dataTransfer.effectAllowed = "copy";
   }
 </script>

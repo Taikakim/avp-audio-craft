@@ -39,7 +39,7 @@ describe("a drop onto a lane gets the render's real length, not M5's four second
   it("lands a clip as long as the dragged render says it is", async () => {
     vi.stubGlobal("fetch", analyzeOk(null));
     const { container } = render(LaneHeader, { props: { lane: arrangement.lanes[0] } });
-    const slot = container.querySelector(".header") as HTMLElement;
+    const slot = container.querySelector(".slot") as HTMLElement;
 
     await fireEvent(slot, Object.assign(new Event("drop", { bubbles: true }), dropEvent({
       [FORGE_REF_MIME]: JSON.stringify(REF), [FORGE_DUR_MIME]: "96",
@@ -53,7 +53,7 @@ describe("a drop onto a lane gets the render's real length, not M5's four second
   it("runs the analysis the old path skipped, so CLIP BPM is no longer blank", async () => {
     vi.stubGlobal("fetch", analyzeOk(96));
     const { container } = render(LaneHeader, { props: { lane: arrangement.lanes[0] } });
-    const slot = container.querySelector(".header") as HTMLElement;
+    const slot = container.querySelector(".slot") as HTMLElement;
 
     await fireEvent(slot, Object.assign(new Event("drop", { bubbles: true }), dropEvent({
       [FORGE_REF_MIME]: JSON.stringify(REF), [FORGE_DUR_MIME]: "96",
@@ -66,7 +66,7 @@ describe("a drop onto a lane gets the render's real length, not M5's four second
   it("decodes the audio for its length when the drag source did not know one (a FILES row)", async () => {
     vi.stubGlobal("fetch", analyzeOk(null));
     const { container } = render(LaneHeader, { props: { lane: arrangement.lanes[0] } });
-    const slot = container.querySelector(".header") as HTMLElement;
+    const slot = container.querySelector(".slot") as HTMLElement;
 
     await fireEvent(slot, Object.assign(new Event("drop", { bubbles: true }), dropEvent({
       [FORGE_REF_MIME]: JSON.stringify({ kind: "crop", crop_id: "000412" }),
@@ -79,7 +79,7 @@ describe("a drop onto a lane gets the render's real length, not M5's four second
 
   it("ignores a drop with no forge ref, exactly as M5 did", async () => {
     const { container } = render(LaneHeader, { props: { lane: arrangement.lanes[0] } });
-    const slot = container.querySelector(".header") as HTMLElement;
+    const slot = container.querySelector(".slot") as HTMLElement;
     await fireEvent(slot, Object.assign(new Event("drop", { bubbles: true }), dropEvent({})));
     expect(arrangement.clips).toHaveLength(0);
   });
