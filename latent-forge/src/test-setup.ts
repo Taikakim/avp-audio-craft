@@ -30,3 +30,21 @@ if (typeof window !== "undefined" && typeof window.getComputedStyle === "functio
     });
   }) as typeof window.getComputedStyle;
 }
+
+// jsdom (25.x) has no PointerEvent, so @testing-library's fireEvent.pointerDown/Move/Up falls back
+// to a bare Event that carries NO button/clientX/clientY -- a handler reading `e.button` or
+// `e.clientY` then sees undefined and silently does nothing (found by the CHROMA middle-drag
+// tests, Electro-Sheep 1). A MouseEvent subclass with pointerId is the standard polyfill: pointer
+// handlers get real coordinates and buttons, which is all these tests exercise.
+if (typeof window !== "undefined" && typeof (window as unknown as { PointerEvent?: unknown }).PointerEvent === "undefined") {
+  class PointerEventPolyfill extends MouseEvent {
+    readonly pointerId: number;
+    readonly pointerType: string;
+    constructor(type: string, init: MouseEventInit & { pointerId?: number; pointerType?: string } = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.pointerType = init.pointerType ?? "mouse";
+    }
+  }
+  (window as unknown as { PointerEvent: unknown }).PointerEvent = PointerEventPolyfill;
+}
