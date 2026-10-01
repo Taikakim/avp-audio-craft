@@ -30,4 +30,4 @@ export function targetTagColorVar(tag: TargetTag, lane: 0 | 1 | 2 | 3): string {
  * informational (badge) and no longer blocks anything". A per-option latent gate here would
  * be a rule this app has invented for itself.
  */
-export const CLIP_OPS = ["generate", "decode", "longform", "bend"] as const;
+export { CLIP_OPS } from "../../lib/forge/types";

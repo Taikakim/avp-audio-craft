@@ -128,6 +128,9 @@ function convertClips(raw: unknown): ForgeClip[] {
       downbeats_sec: typeof c.downbeatSec === "number" ? [c.downbeatSec] : [],
       render: convertRender(c.render, durSec),
       a2a: null,   // v1 has no per-clip A2A state
+      // M9 T6: v1 clips carry render.op inside `render`, not as the clip-level OP; the converter
+      // leaves the OP unset (null) rather than guess which op a v1 clip would have run.
+      op: null,
       latentState: c.latentState === "valid" || c.latentState === "stale" ? c.latentState : "none",
       history: [],
       // previewUrl is intentionally never read (spec §9.2: previewAudio is

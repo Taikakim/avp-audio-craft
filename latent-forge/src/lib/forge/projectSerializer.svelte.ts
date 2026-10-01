@@ -12,6 +12,7 @@ import {
 import { settings, STAGE_BACKBONE, STAGE_FIELDS, type ModelStage } from "../stores/settings.svelte";
 import { view } from "../stores/view.svelte";
 import { history } from "../render/history.svelte";
+import { CLIP_OPS } from "./types";
 import type { RenderHistoryEntry } from "./types";
 import { durableChain } from "../chains/modulePresets";
 import { SNAP_MODES } from "../math/snap";
@@ -124,8 +125,13 @@ function isClipLayout(c: Record<string, unknown>): boolean {
     && isNum(c.detune_cents) && isA2A(c.a2a);
 }
 
+/** A v2 file written before M9 has no `op`; refusing it would stop M9 opening its own earlier sessions. */
+function isClipOp(v: unknown): boolean {
+  return v === undefined || v === null || (typeof v === "string" && (CLIP_OPS as readonly string[]).includes(v));
+}
+
 function isClip(c: unknown): boolean {
-  return isObj(c) && isClipLayout(c) && isAudioRef(c.audio) && isRender(c.render)
+  return isObj(c) && isClipLayout(c) && isAudioRef(c.audio) && isRender(c.render) && isClipOp(c.op)
     && Array.isArray(c.downbeats_sec) && c.downbeats_sec.every(isNum)
     && ["none", "valid", "stale"].includes(c.latentState as string)
     && Array.isArray(c.history) && c.history.every(isAudioRef);
@@ -224,7 +230,7 @@ export function applyProject(project: ProjectV2, opts: { restoreModel?: boolean 
   arrangement.lanes.splice(0, arrangement.lanes.length, ...structuredClone(project.lanes));
   arrangement.clips.splice(
     0, arrangement.clips.length,
-    ...structuredClone(project.clips).map((c) => ({ ...c, previewAudio: null })),
+    ...structuredClone(project.clips).map((c) => ({ ...c, op: c.op ?? null, previewAudio: null })),
   );
   arrangement.mix = structuredClone(project.mix);
   arrangement.master = structuredClone(project.master);

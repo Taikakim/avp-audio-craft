@@ -10,6 +10,7 @@
 // deep-proxies it, so the local reference you pushed is a dead handle. Every method
 // here that appends returns the array's LIVE element -- see lastLogLine().
 
+import { logStore, logTone } from "./log.svelte";
 import { targetKey } from "../forge/guards";
 import type { Target } from "../forge/types";
 
@@ -188,6 +189,11 @@ export class ViewStore {
     if (this.logLines.length > LOG_RING) {
       this.logLines.splice(0, this.logLines.length - LOG_RING);
     }
+    // Fact 8 / M9 T5: TERMINAL renders logStore.lines (BottomPane passes `lines={logStore.lines}`),
+    // so a line written only here was invisible -- M6's chroma errors, M7's session errors and
+    // M10's stats errors all were. Mirrored rather than moved: this method's return type is part
+    // of M1 T7's tested contract. appendLocal never advances the server log cursor.
+    logStore.appendLocal(text, level === "error" ? "error" : logTone(text));
     return this.lastLogLine();
   }
 

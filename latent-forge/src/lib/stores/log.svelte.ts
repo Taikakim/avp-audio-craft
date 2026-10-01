@@ -43,6 +43,16 @@ class LogStore {
    * Svelte 5 proxy rule: pushing an object into a `$state` array deep-proxies it,
    * so the literal built here is a dead handle. Return the array's live element.
    */
+  /**
+   * A line the CLIENT produced, not the server. It goes in the same ring TERMINAL renders, at the
+   * current cursor -- never past it. `poll()` fetches `forgeApi.log(this.seq)`, i.e. lines SINCE
+   * the cursor, so a client line appended at an invented sequence number would skip real server
+   * lines forever. This is the same trick poll()'s own failure path already uses. (M9 T5)
+   */
+  appendLocal(text: string, tone: LogTone = logTone(text)): LogLine {
+    return this.append(text, this.seq, tone);
+  }
+
   append(text: string, seq: number, tone: LogTone = logTone(text)): LogLine {
     this.lines.push({ seq, text, tone });
     if (this.lines.length > LOG_RING) this.lines.splice(0, this.lines.length - LOG_RING);

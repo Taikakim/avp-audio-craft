@@ -180,6 +180,8 @@
     {masterPreset}
     onmasterpreset={loadMasterPreset}
     onmasterpresetsave={saveMasterPreset}
+    mixdownBusy={jobs.busy}
+    mixdownStepsLeft={jobs.stepsLeft}
   />
 
   <div class="main-row">

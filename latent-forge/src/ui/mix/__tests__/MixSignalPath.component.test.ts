@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MASTER_DEFAULT, MIX_DEFAULT } from "../../../lib/forge/defaults";
 import { arrangement } from "../../../lib/stores/arrangement.svelte";
 import { forgeApi } from "../../../lib/forge/api";
+import { HELP } from "../../../lib/help/strings";
+import { jobs } from "../../../lib/render/jobs.svelte";
+import * as mixdownModule from "../../../lib/render/mixdown.svelte";
 import MixSignalPath from "../MixSignalPath.svelte";
+
+const REF = { kind: "upload", sha256: "a".repeat(64) } as const;
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
@@ -87,5 +92,30 @@ describe("HELP ids", () => {
     await fireEvent.change(await screen.findByLabelText("MIX ORDER"), { target: { value: "tree" } });
     expect((await screen.findByTestId("m1-lerp")).getAttribute("data-help")).toBe(HELP.mixLerp);
     expect((await screen.findByTestId("m1-slerp")).getAttribute("data-help")).toBe(HELP.mixSlerp);
+  });
+});
+
+describe("the MIX-tab MIXDOWN buttons (M9 T4)", () => {
+  it("carry a testid and the MIXDOWN help id, not HELP.renderButton", () => {
+    const { getByTestId } = render(MixSignalPath, { props: {} });
+    const button = getByTestId("mix-mixdown");
+    expect(button.getAttribute("data-help")).toBe(HELP.mixdownButton);
+    expect(button.getAttribute("data-help")).not.toBe(HELP.renderButton);
+  });
+
+  it("run the same commit action as the top bar's button", () => {
+    arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF, nativeBpm: 120 });
+    const run = vi.spyOn(mixdownModule, "runMixdown").mockResolvedValue(undefined);
+    const { getByTestId } = render(MixSignalPath, { props: {} });
+    (getByTestId("mix-mixdown") as HTMLButtonElement).click();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("read SAMPLING · N steps left while a commit runs, like the top bar's", async () => {
+    arrangement.addClip({ lane: 0, startSec: 0, durSec: 8, audio: REF, nativeBpm: 120 });
+    jobs.active = { forgeJobId: "forge-1", op: "commit", kind: "mix", sourceClipId: null, targetKey: "mixdown", progress: null };
+    jobs.active.progress = { job_id: "forge-1", op: "commit", stage: "MIX", stage_index: 7, stage_count: 9, step: 0, steps: 0, steps_left_total: 12, steps_total: 24 };
+    const { getByTestId } = render(MixSignalPath, { props: {} });
+    expect(getByTestId("mix-mixdown").textContent?.trim()).toBe("SAMPLING · 12 steps left");
   });
 });

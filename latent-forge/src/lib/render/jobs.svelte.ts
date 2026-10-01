@@ -64,6 +64,9 @@ export class JobsStore {
   /** `/status.busy` with a job id that is not ours → "GPU busy — <job_id>". */
   gpuBusyOther = $state<string | null>(null);
 
+  /** Called with a finished job's record. M9 T4 registers one to capture a commit's meta.stages. */
+  onDone: ((rec: JobRecord) => void) | null = null;
+
   #token = 0;
   #abort: AbortController | null = null;
   #statusTimer: ReturnType<typeof setInterval> | null = null;
@@ -101,6 +104,7 @@ export class JobsStore {
       }, ac.signal);
       if (token !== this.#token) return null;
       this.active = null;
+      this.onDone?.(rec);
       return history.add({
         job_id: rec.result?.job_id ?? rec.job_id,
         forge_job_id: rec.job_id,
@@ -116,7 +120,7 @@ export class JobsStore {
       this.active = null;
       const text = message(e);
       this.lastError = { targetKey: req.targetKey, message: text };
-      logStore.append(`[forge] ${req.op} failed: ${text}`, logStore.seq, "error");
+      logStore.appendLocal(`[forge] ${req.op} failed: ${text}`, "error");
       return null;
     } finally {
       if (token === this.#token) this.#abort = null;

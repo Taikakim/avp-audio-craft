@@ -77,6 +77,22 @@ export type JobOp =
   | "generate" | "a2a_track" | "a2a_mix" | "longform" | "decode" | "bend"
   | "a2a_clip" | "inpaint" | "commit";
 
+/**
+ * The OP a clip renders with when A2A is off (spec 7.1 row 3, 10 X11's "compact OP select in the
+ * target bar"). A NARROWING of `JobOp`, not a parallel enum: the field carries the shape M8's render
+ * path already accepts, so `jobs.submit({ op: clip.op, ... })` passes the string through with no
+ * translation. a2a_track/a2a_mix are outside it (both need a server-side audio_path and there is no
+ * upload-to-path route); commit, a2a_clip and inpaint are not per-clip ops at all. (M9 T6)
+ */
+export type ClipOp = Extract<JobOp, "generate" | "decode" | "longform" | "bend">;
+
+/**
+ * MOVED here from M4 T8's targetBar.ts, not re-declared. M4's copy gated what the operator can PICK;
+ * this one also gates what a loaded project may CONTAIN (isClipOp in validateProjectV2). Two copies
+ * that drift would make an op the select offers refuse to load its own saved session.
+ */
+export const CLIP_OPS: readonly ClipOp[] = ["generate", "decode", "longform", "bend"] as const;
+
 export type JobState = "queued" | "running" | "done" | "error" | "cancelled";
 
 /** = build_response() of the existing server. */
@@ -153,6 +169,12 @@ export interface ForgeClip {
    */
   downbeats_sec: number[];
   render: RenderSettings;
+  /**
+   * 7.1 row 3's OP, or null when the clip has none. `null` is load-bearing: it makes "disabled with
+   * the hint `turn A2A on or choose an op`" reachable. Serialised into ProjectV2's clips[]; a v2
+   * file written before M9 has no `op` key and loads as null. (M9 T6)
+   */
+  op: ClipOp | null;
   a2a: null | { on: boolean; noise: number; envelope: Envelope };
   latentState: "none" | "valid" | "stale";
   /** The `start_sec` this clip's latent was encoded at, when `latentState` is

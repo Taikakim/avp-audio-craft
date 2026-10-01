@@ -27,6 +27,8 @@ export interface SignalPathStage {
   label: string;
   lit: boolean;
   note: string;
+  /** Present only on a row a finished commit reported (spec §6.9 meta.stages). */
+  seconds?: number;
 }
 
 const MIX_ORDER_NOTE: Record<MixSpec["order"], string> = {
@@ -63,4 +65,56 @@ export function buildSignalPath(input: SignalPathInput): SignalPathStage[] {
     { n: 8, label: "MASTER CHAIN", lit: input.master.latch_on || input.master.norm_on, note: "" },
     { n: 9, label: "DECODE latent → audio", lit: input.clips.length > 0, note: "" },
   ];
+}
+
+/** From a commit job's `meta.stages` (spec §6.9: "meta.stages (label, on, note, seconds)"). */
+export interface CommitStage {
+  label: string;
+  on: boolean;
+  note: string;
+  seconds: number;
+}
+
+/** The last commit's ground truth, plus the arrangement it described. */
+export interface CommitStages {
+  key: string;
+  stages: CommitStage[];
+}
+
+/**
+ * The estimate is a pure function of SignalPathInput, so the input IS the identity of what a
+ * commit's stages describe. Field order is fixed by construction here rather than by
+ * JSON.stringify's insertion order, which differs between a live $state proxy and a structuredClone.
+ */
+export function signalKeyOf(input: SignalPathInput): string {
+  return JSON.stringify([
+    input.lanes.map((l) => [l.index, chainActive(l.chain), l.chain.bungee_on]),
+    input.clips.map((c) => [c.lane, c.isCropAudio, c.needsStretch, c.a2aOn]),
+    input.overlapCount,
+    input.mix.order,
+    [input.master.latch_on, input.master.norm_on],
+  ]);
+}
+
+/**
+ * M7 open question 7, decided in M9 T4: RECONCILE, not replace. The estimate is always computed;
+ * a finished commit's stages override it only while `commit.key` still equals the current input's
+ * key. The moment the arrangement changes, the commit describes something else and is dropped --
+ * a confidently wrong lit row is worse than an honest estimate (signalPath.ts's own header).
+ * Rows are matched by LABEL, so a server that adds or reorders stages degrades to the estimate for
+ * the rows the client does not recognise instead of producing a short or renumbered list.
+ */
+export function mergeSignalPath(
+  estimate: SignalPathStage[],
+  commit: CommitStages | null,
+  currentKey: string,
+): SignalPathStage[] {
+  if (commit === null || commit.key !== currentKey) return estimate;
+  const byLabel = new Map(commit.stages.map((s) => [s.label, s]));
+  return estimate.map((row) => {
+    const real = byLabel.get(row.label);
+    return real === undefined
+      ? row
+      : { ...row, lit: real.on, note: real.note || row.note, seconds: real.seconds };
+  });
 }

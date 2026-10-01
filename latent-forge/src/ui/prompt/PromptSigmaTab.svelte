@@ -7,9 +7,11 @@
   // from `view.selection` (an M1 store every milestone reads, not M5's), matching M1 T12's
   // own RightPaneModules.svelte precedent.
   import { LENGTH_CAP_SEC } from "../../lib/forge/defaults";
+  import type { ClipOp } from "../../lib/forge/types";
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { settings } from "../../lib/stores/settings.svelte";
   import { view } from "../../lib/stores/view.svelte";
+  import InlineError from "./InlineError.svelte";
   import ModelStageColumn from "./ModelStageColumn.svelte";
   import PromptColumn from "./PromptColumn.svelte";
   import SigmaColumn from "./SigmaColumn.svelte";
@@ -27,7 +29,7 @@
   }
   let {
     clipName = null, lane, a2a, clipHasLatent,
-    onA2AToggle, onNoise, op = null, onOp = () => {},
+    onA2AToggle, onNoise, op, onOp,
   }: Props = $props();
 
   const target = $derived(view.selection);
@@ -67,6 +69,13 @@
   const barOnA2AToggle = $derived(onA2AToggle ?? toggleA2A);
   const barOnNoise = $derived(onNoise ?? setClipNoise);
 
+  // M9 T6: the clip's OP (7.1 row 3), sourced like the five above -- a passed prop still wins.
+  function setClipOpFromBar(next: string): void {
+    if (clip) arrangement.setClipOp(clip.id, next as ClipOp);
+  }
+  const barOp = $derived(op ?? clip?.op ?? null);
+  const barOnOp = $derived(onOp ?? setClipOpFromBar);
+
   // LENGTH is settings.duration_sec, and this component is its single owner: Task 9's column
   // displays it and Task 10's sigma column sends it as /schedule's `duration`, so exactly one
   // place reads the store and writes it back. It is PER TARGET -- selecting another clip shows
@@ -81,8 +90,9 @@
   <div class="col" data-col="prompt">
     <TargetBar
       {target} {clipName} lane={barLane} a2a={barA2A} clipHasLatent={barHasLatent}
-      onA2AToggle={barOnA2AToggle} onNoise={barOnNoise} {op} {onOp}
+      onA2AToggle={barOnA2AToggle} onNoise={barOnNoise} op={barOp} onOp={barOnOp}
     />
+    <InlineError targetKey={view.selectionKey} />
     <PromptColumn {target} />
   </div>
   <div class="col-fixed" data-col="model-stage">

@@ -9,7 +9,7 @@ import {
   MIX_DEFAULT, OVERLAP_DEFAULT,
 } from "../forge/defaults";
 import type {
-  AudioRef, Envelope, ForgeClip, ForgeLane, MasterChain, MixSpec, OverlapParams, RenderSettings,
+  AudioRef, ClipOp, Envelope, ForgeClip, ForgeLane, MasterChain, MixSpec, OverlapParams, RenderSettings,
 } from "../forge/types";
 import { findOverlaps, type Overlap } from "../math/overlaps";
 import type { SnapMode } from "../math/snap";
@@ -125,6 +125,7 @@ class ArrangementStore {
       a2a: null,
       latentState: "none",
       history: [],
+      op: null,
     };
     this.clips.push(clip);
     // $state deep-proxies on push: the object above is a DEAD handle. Hand back the live one.
@@ -247,6 +248,13 @@ class ArrangementStore {
   }
 
   /** Spec §5.2: editing NOISE afterwards scales all four points proportionally. */
+  /** 7.1 row 3's OP. `$state` rule: the array element is the live proxy, so the write goes through
+   *  `this.clips.find(...)`, never through a caller's captured reference. (M9 T6) */
+  setClipOp(id: string, op: ClipOp | null): void {
+    const clip = this.clips.find((c) => c.id === id);
+    if (clip) clip.op = op;
+  }
+
   setNoise(id: string, noise: number) {
     const c = this.find(id);
     if (!c?.a2a) return;

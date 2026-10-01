@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHAIN_DEFAULTS, MASTER_DEFAULT, MIX_DEFAULT } from "../../forge/defaults";
-import { buildSignalPath, type SignalPathInput } from "../signalPath";
+import { buildSignalPath, mergeSignalPath, signalKeyOf, type SignalPathInput } from "../signalPath";
 
 function baseInput(): SignalPathInput {
   return {
@@ -95,5 +95,56 @@ describe("buildSignalPath — the nine §8.1 stages, in order", () => {
     const bothOff = baseInput();
     bothOff.master = { ...bothOff.master, latch_on: false, norm_on: false };
     expect(buildSignalPath(bothOff)[7].lit).toBe(false);
+  });
+});
+
+describe("meta.stages reconciled with the estimate (M9 T4; M7 open question 7)", () => {
+  function input(patch: Partial<SignalPathInput> = {}): SignalPathInput {
+    return {
+      lanes: [0, 1, 2, 3].map((i) => ({ index: i as 0 | 1 | 2 | 3, chain: structuredClone(CHAIN_DEFAULTS) })),
+      clips: [{ lane: 0, isCropAudio: false, needsStretch: false, a2aOn: false }],
+      overlapCount: 0,
+      mix: { order: "tree", nodes: { M1: { interp: "lerp", t: 0.5 }, M2: { interp: "lerp", t: 0.5 }, MX: { interp: "lerp", t: 0.5 } }, quad_weights: [1, 1, 1, 1] },
+      master: { latch_on: false, head: "none", gain: 64, norm_on: true },
+      ...patch,
+    };
+  }
+
+  it("signalKeyOf is stable for equal input and changes when the arrangement does", () => {
+    expect(signalKeyOf(input())).toBe(signalKeyOf(input()));
+    expect(signalKeyOf(input({ overlapCount: 1 }))).not.toBe(signalKeyOf(input()));
+  });
+
+  it("returns the estimate untouched when no commit has run", () => {
+    const est = buildSignalPath(input());
+    expect(mergeSignalPath(est, null, signalKeyOf(input()))).toEqual(est);
+  });
+
+  it("takes on/note/seconds from the commit when the key still matches", () => {
+    const key = signalKeyOf(input());
+    const merged = mergeSignalPath(buildSignalPath(input()), {
+      key,
+      stages: [{ label: "DECODE latent → audio", on: true, note: "3 crops", seconds: 1.5 }],
+    }, key);
+    expect(merged[0]).toMatchObject({ n: 1, lit: true, note: "3 crops", seconds: 1.5 });
+    expect(merged).toHaveLength(9);
+  });
+
+  it("falls back to the estimate once the arrangement has moved on", () => {
+    const est = buildSignalPath(input({ overlapCount: 2 }));
+    const merged = mergeSignalPath(est, {
+      key: signalKeyOf(input()),
+      stages: [{ label: "INPAINT OVERLAPS", on: false, note: "", seconds: 0 }],
+    }, signalKeyOf(input({ overlapCount: 2 })));
+    expect(merged).toEqual(est);
+  });
+
+  it("keeps the nine rows when the server sends fewer, or a label the client does not have", () => {
+    const key = signalKeyOf(input());
+    const merged = mergeSignalPath(buildSignalPath(input()), {
+      key, stages: [{ label: "SOMETHING NEW", on: true, note: "", seconds: 9 }],
+    }, key);
+    expect(merged).toHaveLength(9);
+    expect(merged.map((s) => s.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 });

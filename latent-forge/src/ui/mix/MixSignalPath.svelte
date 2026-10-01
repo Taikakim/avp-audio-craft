@@ -4,9 +4,11 @@
   // render button (M1 plan:6282).
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { isQuad, mixTree, normalizedQuadWeights } from "../../lib/mix/mixMath";
-  import { buildSignalPath, type SignalPathClip } from "../../lib/mix/signalPath";
+  import { buildSignalPath, mergeSignalPath, signalKeyOf } from "../../lib/mix/signalPath";
+  import { jobs } from "../../lib/render/jobs.svelte";
+  import { mixdown, mixdownBlock, runMixdown, signalInputNow } from "../../lib/render/mixdown.svelte";
   import { HELP } from "../../lib/help/strings";
-  import { MIXDOWN_IDLE_LABEL } from "../topbar/mixdown";
+  import { mixdownLabel } from "../topbar/mixdown";
 
   const mix = $derived(arrangement.mix);
   const master = $derived(arrangement.master);
@@ -14,28 +16,15 @@
   const quad = $derived(isQuad(mix.order));
   const normalisedWeights = $derived(normalizedQuadWeights(mix.quad_weights));
 
-  const signalClips = $derived<SignalPathClip[]>(
-    arrangement.clips.map((c) => ({
-      lane: c.lane,
-      isCropAudio: c.audio.kind === "crop",
-      needsStretch: (c.native_bpm !== null && c.native_bpm !== arrangement.bpm) || c.detune_cents !== 0,
-      a2aOn: c.a2a?.on ?? false,
-    })),
-  );
-  const stages = $derived(
-    buildSignalPath({
-      lanes: arrangement.lanes.map((l) => ({ index: l.index, chain: l.chain })),
-      clips: signalClips,
-      overlapCount: arrangement.overlaps.length,
-      mix, master,
-    }),
-  );
+  // M9 T4: one shared builder (signalInputNow) so the key a commit is stamped with and the key
+  // compared here cannot disagree; the commit's real meta.stages reconcile with the estimate.
+  const input = $derived(signalInputNow());
+  const commitStages = () =>
+    mixdown.stages === null || mixdown.key === null ? null : { key: mixdown.key, stages: mixdown.stages };
+  const stages = $derived(mergeSignalPath(buildSignalPath(input), commitStages(), signalKeyOf(input)));
+  const block = $derived(mixdownBlock());
 
   let expanded = $state(true);
-
-  function onMixdown() {
-    // M9 wires the real `commit` job submission (spec §6.9, §7.1). No-op here on purpose.
-  }
 </script>
 
 <div class="mix-signal-path" data-tab-body="mix">
@@ -97,7 +86,9 @@
             </div>
           {/each}
         </div>
-        <button class="mixdown" onclick={onMixdown} data-help={HELP.renderButton}>{MIXDOWN_IDLE_LABEL}</button>
+        <button class="mixdown" data-testid="mix-mixdown" data-help={HELP.mixdownButton}
+          title={block ?? ""} disabled={jobs.busy || block !== null}
+          onclick={() => void runMixdown()}>{mixdownLabel(jobs.busy, jobs.stepsLeft)}</button>
       </div>
     </div>
   {:else}
@@ -107,7 +98,9 @@
       <span>{mix.order}</span>
       <span class="dim">{stages.filter((s) => s.lit).length}/{stages.length} lit</span>
       <div class="spacer"></div>
-      <button class="mixdown" onclick={onMixdown} data-help={HELP.renderButton}>{MIXDOWN_IDLE_LABEL}</button>
+      <button class="mixdown" data-testid="mix-mixdown-folded" data-help={HELP.mixdownButton}
+          title={block ?? ""} disabled={jobs.busy || block !== null}
+          onclick={() => void runMixdown()}>{mixdownLabel(jobs.busy, jobs.stepsLeft)}</button>
     </div>
   {/if}
 </div>

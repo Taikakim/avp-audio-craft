@@ -125,6 +125,7 @@ export type HelpId =
   | "masterPresetSave"
   | "sessionSave"
   | "sessionImportV1"
+  | "mixdownButton"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -264,4 +265,5 @@ export const HELP: Record<HelpId, string> = {
   masterPresetSave: "Saves the current master slice under the highlighted name, or asks for a new one if nothing is named yet. Recall replaces the whole slice (spec §9.3): every lane chain, clip layout, mix order and node values, master chain, sampling schedule and default prompt.",
   sessionSave: "Saves the whole project to the server under the selected session name, or asks for a name while it is still unsaved. After that, every change autosaves to it 2 s later.",
   sessionImportV1: "Opens a project file from disk. A v1 file from the old app is converted (lanes renamed LANE 1-4, missing settings filled with defaults); it stays unsaved until you SAVE it.",
+  mixdownButton: "Mixes the four lanes in the latent domain and decodes the result — the commit that turns the arrangement into audio. While it samples, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count.",
 };

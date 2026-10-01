@@ -6,7 +6,7 @@ function clip(over: Partial<ForgeClip> & { audio: ForgeClip["audio"] }): ForgeCl
   return {
     id: "clip_x", lane: 0, start_sec: 0, offset_sec: 0, dur_sec: 4, loop: false,
     native_bpm: null, detune_cents: 0, downbeats_sec: [], latentState: "none", history: [],
-    a2a: null, previewAudio: null,   // required on ForgeClip since M5 T10 (in-memory only)
+    a2a: null, previewAudio: null, op: null,   // required on ForgeClip since M5 T10 (in-memory only)
     render: {} as ForgeClip["render"],
     ...over,
   };

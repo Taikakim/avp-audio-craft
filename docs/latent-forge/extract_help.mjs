@@ -302,6 +302,10 @@ const NEW_STRINGS = {
   sessionImportV1:
     "Opens a project file from disk. A v1 file from the old app is converted (lanes renamed " +
     "LANE 1-4, missing settings filled with defaults); it stays unsaved until you SAVE it.",
+  mixdownButton:
+    "Mixes the four lanes in the latent domain and decodes the result — the commit that turns " +
+    "the arrangement into audio. While it samples, the window border runs a C64 loader raster " +
+    "bar whose sweep rate falls with the remaining step count.",
 };
 
 // ------------------------------------------------------------------ extract
