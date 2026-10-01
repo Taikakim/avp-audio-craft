@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Transport } from "../../../lib/audio/transport";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { flushSync } from "svelte";
 import type { PlaybackEngine, PlaybackClip, PlaybackLane } from "../../../lib/audio/transport";
 import { history } from "../../../lib/render/history.svelte";
 import { previewPlayer } from "../../../lib/render/previewPlayer.svelte";
@@ -63,6 +64,17 @@ describe("HISTORY, the waveform and the handle — spec §4.5", () => {
       "A2A 12:01:00 · 8.0 s",
       "GEN 12:00:00 · 30.0 s",
     ]);
+  });
+
+  it("does not take the shared player back when MIXDOWN loads the mix into it (review 2026-10-01)", () => {
+    entry({ label: "GEN 12:00:00" });
+    render(PreviewContainer);
+    flushSync();
+    const genUrl = previewPlayer.url;
+    expect(genUrl).not.toBeNull();
+    previewPlayer.load("/forge/audio?mix", 47);
+    flushSync();
+    expect(previewPlayer.url).toBe("/forge/audio?mix");
   });
 
   it("loading from HISTORY loads audio only — the target's settings are untouched (X15)", async () => {

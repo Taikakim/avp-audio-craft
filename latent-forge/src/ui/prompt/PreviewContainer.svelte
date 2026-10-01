@@ -9,6 +9,7 @@
   // onto a lane, USE SETTINGS copying the previewed render's job payload into the
   // current target, and REPLACE CLIP swapping a clip's audio while keeping the
   // previous ref in clip.history.
+  import { untrack } from "svelte";
   import { HELP } from "../../lib/help/strings";
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
   import { PAD_SEC, renderLabel, renderRequest } from "../../lib/render/dispatch";
@@ -94,8 +95,13 @@
 
   // §4.5: "A finished render lands here" -- history.add already moved `preview`, so this effect is
   // what makes a finished render audible without the operator touching HISTORY.
+  // load() reads previewPlayer.url ($state). Untracked, or this effect re-runs whenever MixdownSlot
+  // loads the mix into the same singleton and snaps the player straight back to the preview entry
+  // (review 2026-10-01). Only a new preview entry should re-load.
   $effect(() => {
-    if (previewUrl !== null && entry !== null) previewPlayer.load(previewUrl, entry.dur_sec);
+    const url = previewUrl;
+    const dur = entry?.dur_sec;
+    if (url !== null && dur !== undefined) untrack(() => previewPlayer.load(url, dur));
   });
 
   let canvasEl = $state<HTMLCanvasElement>();        // M1 already declares this; keep the one line
