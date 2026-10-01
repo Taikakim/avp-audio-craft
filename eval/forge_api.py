@@ -10,10 +10,11 @@ import traceback
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from forge import analysis, contract, jobs as jobs_mod, logseq, progress
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
+from forge.hashing import file_sha256
 import json
 from pathlib import Path
 from fastapi.responses import FileResponse
@@ -312,3 +313,31 @@ def _analyze_ref(ref):
 async def analyze(request: Request):
     body = await request.json()
     return ok(**await run_in_threadpool(_analyze_ref, (body or {}).get("audio")))
+
+
+def _stretch_ref(ref, speed, semitones):
+    import soundfile as sf
+    speed, semitones = stretch.validate(speed, semitones)
+    svc = services()
+    src = svc.resolve_audio(ref)
+    if stretch.is_identity(speed, semitones):
+        return {"ref": ref, "duration_sec": round(sf.info(str(src)).duration, 3)
+                if src.suffix.lower() in (".wav", ".flac") else uploads.probe_audio(src)["duration_sec"]}
+    sha = file_sha256(src)
+    dst = paths().cache_dir("stretch") / f"{stretch.cache_key(sha, speed, semitones)}.wav"
+    if not dst.exists():
+        readable = src
+        if src.suffix.lower() not in (".wav", ".flac"):
+            readable = paths().cache_dir("decode") / f"{sha}.wav"
+            if not readable.exists():
+                sf.write(readable, svc.load_audio(src).T, SRV.SR, subtype="FLOAT")
+        stretch.stretch_file(readable, dst, speed, semitones)
+    return {"ref": {"kind": "path", "path": str(dst)}, "duration_sec": round(sf.info(str(dst)).duration, 3)}
+
+
+@router.post("/forge/stretch")
+@forge_route
+async def stretch_route(request: Request):
+    body = await request.json() or {}
+    return ok(**await run_in_threadpool(_stretch_ref, body.get("audio"), body.get("speed", 1.0),
+                                        body.get("semitones", 0.0)))
