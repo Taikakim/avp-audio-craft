@@ -45,6 +45,18 @@ def make_stub_server(out_dir):
             raise RuntimeError(f"{name} is not available on the stub server")
         return impl
 
+    srv.SR = 44100
+
+    def load_audio(path):
+        # The real one resamples to SR and returns (2, N) float32; the stub only needs the shape
+        # contract (no resampling: test fixtures are written at 44.1 kHz).
+        import numpy as np
+        import soundfile as sf
+        a, _sr = sf.read(path, dtype="float32", always_2d=True)
+        a = a.T
+        return np.ascontiguousarray(a if a.shape[0] == 2 else np.repeat(a[:1], 2, axis=0))
+
+    srv.load_audio = load_audio
     srv.log = log
     srv.make_log_cb = make_log_cb
     for n in ("_generate_impl", "_a2a_track_impl", "_a2a_mix_impl", "_longform_impl", "_decode_impl", "_bend_impl"):

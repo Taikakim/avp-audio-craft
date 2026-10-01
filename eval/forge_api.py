@@ -10,10 +10,11 @@ import traceback
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma, stats
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
+import numpy as np
 from forge.hashing import file_sha256
 import json
 from pathlib import Path
@@ -359,3 +360,93 @@ def _chroma_ref(ref):
 async def chroma_route(request: Request):
     body = await request.json() or {}
     return ok(**await run_in_threadpool(_chroma_ref, body.get("audio")))
+
+
+_DATASET = {"dir": None, "index": None}
+
+
+def _latent_entry(ref):
+    """LatentRef -> (z (256,T) float32, npz Path|None, audio_fn () -> (np (2,N), sr) | None)."""
+    svc = services()
+    if not isinstance(ref, dict):
+        raise ForgeError(400, "latent ref must be an object")
+    kind = ref.get("kind")
+    if kind == "crop":
+        from forge.refs import check_crop_id
+        cid = check_crop_id(ref.get("crop_id"))
+        ld = svc.latent_dir()
+        if ld is None or not (ld / f"{cid}.npy").is_file():
+            raise ForgeError(404, f"no crop {cid}")
+        z = np.load(ld / f"{cid}.npy").astype(np.float32)
+        z = z[0] if z.ndim == 3 else z
+        meta = _crop_meta(cid) or {}
+        content = int(sum(meta.get("padding_mask") or [])) or z.shape[1]
+        npz = ld / f"{cid}.TIMESERIES.npz"
+        return z[:, :content], (npz if npz.is_file() else None), \
+            (lambda: (svc.load_audio(svc.decode_crop(cid)), SRV.SR))
+    if kind == "path":
+        p = Path(str(ref.get("path") or ""))
+        if not p.is_absolute() or p.suffix != ".npy" or not p.is_file():
+            raise ForgeError(404, f"no latent file {p}")
+        z = np.load(p).astype(np.float32)
+        z = z[0] if z.ndim == 3 else z
+        wav = p.with_name(p.name[: -len(".z0.npy")] + ".wav") if p.name.endswith(".z0.npy") else None
+        return z, None, ((lambda: (svc.load_audio(wav), SRV.SR)) if wav and wav.is_file() else None)
+    if kind == "audio":
+        path = svc.resolve_audio(ref.get("audio"))
+        a = svc.load_audio(path)
+        z = svc.encode_cached(a)[0].numpy()
+        return z, None, (lambda: (a, SRV.SR))
+    raise ForgeError(400, f"unknown latent ref kind {kind!r}")
+
+
+def _stats(body):
+    refs_in = body.get("latents") or []
+    if not isinstance(refs_in, list) or not refs_in:
+        raise ForgeError(400, "latents must be a non-empty list")
+    features = body.get("features") or []
+    max_frames = int(body.get("max_frames", 20000))
+    max_points = int(body.get("max_points", 2000))
+    entries = [_latent_entry(r) for r in refs_in]
+    n, xc = stats.xcorr_payload([e[0] for e in entries], max_frames=max_frames)
+    available = set(stats.LIBROSA_FEATURES)
+    series = []
+    for i, (z, npz, audio_fn) in enumerate(entries):
+        ts = {}
+        if npz is not None:
+            with np.load(npz) as d:
+                ts = {k: d[k] for k in d.files if k.endswith("_ts") and d[k].ndim == 1}
+            available.update(ts)
+        cached_audio = None
+        for f in features:
+            T = z.shape[1]
+            if f in ts:
+                vals = stats._fit(ts[f], T)
+            elif f in stats.LIBROSA_FEATURES and audio_fn is not None:
+                if cached_audio is None:
+                    cached_audio = audio_fn()
+                vals = stats.audio_feature(cached_audio[0], cached_audio[1], f, T)
+            else:
+                vals = [None] * T
+            series.append({"index": i, "feature": f, "fps": contract.FPS,
+                           "values": stats.resample_points(list(vals), max_points)})
+    return {"n_frames": n, "xcorr": xc, "timeseries": series, "features_available": sorted(available)}
+
+
+@router.post("/forge/stats")
+@forge_route
+async def stats_route(request: Request):
+    return ok(**await run_in_threadpool(_stats, await request.json() or {}))
+
+
+@router.get("/forge/dataset_scalars")
+@forge_route
+async def dataset_scalars(x: str = "bpm", y: str = "lufs"):
+    ld = services().latent_dir()
+    if ld is None or not ld.is_dir():
+        raise ForgeError(404, "latent_dir not configured or not mounted")
+    if _DATASET["dir"] != ld:
+        _DATASET["index"] = await run_in_threadpool(stats.DatasetIndex, ld)
+        _DATASET["dir"] = ld
+    idx = _DATASET["index"]
+    return ok(fields=idx.fields(), points=idx.points(x, y))
