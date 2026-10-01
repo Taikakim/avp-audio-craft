@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/__tests__/**/*.test.ts", "mock/__tests__/**/*.test.ts"],
     restoreMocks: true,
-    setupFiles: ["./vitest.setup.ts"],
+    setupFiles: ["./vitest.setup.ts", "./src/test-setup.ts"],
   },
   resolve: {
     // Svelte 5 runes in .svelte.ts modules need the browser condition to resolve

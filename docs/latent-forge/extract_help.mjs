@@ -237,6 +237,38 @@ const NEW_STRINGS = {
   previewReplaceClip:
     "Swaps the selected clip's audio for the previewed render, keeping the previous audio in " +
     "the clip's history. Enabled only when the render was made from that clip.",
+  latchToggle:
+    "Turns LatCH guidance on for this lane. Both slots keep their settings while off; nothing is " +
+    "unloaded. Safe value: off.",
+  filmToggle:
+    "Turns the FiLM density adapter on for this lane. Safe value: off.",
+  filmPreset:
+    "Module preset — recalls just this FiLM slot's settings.",
+  filmScale:
+    "How hard the FiLM conditioning is applied, scaling the head's own default gain. Safe value: 1.75, the server's default.",
+  loraToggle:
+    "Turns the resident LoRA/DORA adapter on for this lane. Safe value: off.",
+  loraPreset:
+    "Module preset — recalls just this LoRA/DORA slot's settings.",
+  loraModel:
+    "Which adapter to apply. Resident slots (already loaded, from /slots) are listed first because " +
+    "switching to one is instant; anything else is loaded from disk on first use.",
+  loraScale:
+    "Adapter strength. Safe value: 1.0.",
+  bungeeToggle:
+    "Turns Bungee pitch-shifting on for this lane, applied during the Bungee stage before " +
+    "re-encoding. Safe value: off.",
+  bungeePreset:
+    "Module preset — recalls just this Bungee slot's settings. Undrawn in the handoff; the level " +
+    "exists in the frozen preset contract (spec §9.3, §6.3's level enum), so it needs a place to live.",
+  filmCkpt:
+    "Which FiLM checkpoint this lane uses. Server default is whatever /info reports as the film " +
+    "default; anything else is loaded from the film model root on first use.",
+  modulePresetSave:
+    "Saves this module's current settings, on/off state included, as a module preset -- under the " +
+    "selected name, or a new one you are asked for. Recall applies to the active lane only.",
+  modulePresetDelete:
+    "Deletes the selected module preset from the server. The lane's current settings are not changed.",
 };
 
 // ------------------------------------------------------------------ extract
