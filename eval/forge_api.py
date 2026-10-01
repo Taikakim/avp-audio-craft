@@ -110,6 +110,14 @@ def bind(srv):
     for op, impl in EXISTING_OPS.items():
         register_runner(op, _existing_runner(op, impl),
                         validator=lambda p, _op=op: _validate_existing(_op, p))
+    # Latent Forge's own ops (M8 T10): a2a_clip, the single-overlap inpaint preview, and the commit.
+    from forge import clip_jobs, commit as commit_mod
+    register_runner("a2a_clip", lambda jid, p: clip_jobs.run_a2a_clip(SRV, services(), jid, p),
+                    validator=lambda p: clip_jobs.validate_a2a_clip(p, SRV.HEADS))
+    register_runner("inpaint", lambda jid, p: clip_jobs.run_inpaint_preview(SRV, services(), jid, p),
+                    validator=clip_jobs.validate_inpaint)
+    register_runner("commit", lambda jid, p: commit_mod.run_commit(SRV, services(), jid, p),
+                    validator=lambda p: commit_mod.validate_commit(p, SRV.HEADS))
     reset_queue()
 
 
