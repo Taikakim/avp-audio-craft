@@ -11,6 +11,7 @@
   import { coincidence, downbeatColor, laneDownbeats } from "../../lib/math/downbeats";
   import { darkenInk, isClipping, overlapSpansInLane } from "../../lib/math/laneCanvas";
   import { clipSpanPx, secToPx } from "../../lib/math/viewport";
+  import { chromaLink, markerSecFor } from "../../lib/chroma/chromaLink.svelte";
   // I3 fix wave: was lib/musictime.ts's gridLines (retired there) -- this is
   // the canonical copy, built on this module's own gridIntervalSec.
   import { gridLines } from "../../lib/math/snap";
@@ -163,6 +164,24 @@
       ctx.lineTo(x + 0.5, h);
       ctx.stroke();
     }
+    // Spec §5.4: hovering the chroma heatmap draws a red vertical line at that
+    // frame on the selected clip, in its own lane. Last, so it sits over the
+    // waveform and the downbeats.
+    const mark = chromaLink.hover;
+    if (mark) {
+      const marked = laneClips.find((c) => c.id === mark.clipId);
+      if (marked) {
+        const x = Math.round(secToPx(markerSecFor(marked, mark.frac), scrollSec, pxPerSec)) + 0.5;
+        if (x >= 0 && x <= w) {
+          ctx.strokeStyle = red;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+      }
+    }
   }
 
   // Preload every clip's audio once; a fresh buffer triggers its own redraw
@@ -205,6 +224,7 @@
     void arrangement.overlaps;
     void arrangement.lanes;
     void view.theme;
+    void chromaLink.hover;
     redraw();
   });
 </script>

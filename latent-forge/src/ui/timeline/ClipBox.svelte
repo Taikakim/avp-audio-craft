@@ -144,7 +144,8 @@
 
 <script lang="ts">
   import { view } from "../../lib/stores/view.svelte";
-  import { bpmLabel, SCORE_PLACEHOLDER } from "../../lib/math/clipBox";
+  import { bpmLabel } from "../../lib/math/clipBox";
+  import { chromaLink, clipScoreLabel } from "../../lib/chroma/chromaLink.svelte";
   import { clipSpanPx } from "../../lib/math/viewport";
   import type { ForgeClip } from "../../lib/forge/types";
 
@@ -189,7 +190,7 @@
   onpointerdown={onPointerDown}
 >
   <div class="row">
-    <span class="score">{SCORE_PLACEHOLDER}</span>
+    <span class="score" data-testid="clip-score">{clipScoreLabel(chromaLink.scores[clip.id])}</span>
     {#if showLoop}
       <button
         class="loop"
