@@ -161,6 +161,10 @@ export class ChromaClient {
     this.#controller = controller;
     this.pending = true;
     this.error = null;
+    // The previous ref's analysis must not outlive the request for a new one: ChromaTab scores
+    // `result` under the SELECTED clip, so a stale result was stored as the new clip's χ (and kept
+    // for good if the new request failed), and the heatmap showed the old clip (review 2026-10-01).
+    this.result = null;
 
     const run = (async () => {
       try {

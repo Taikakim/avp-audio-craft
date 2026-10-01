@@ -162,6 +162,22 @@ describe("the per-AudioRef cache", () => {
   });
 });
 
+describe("a new ref never shows the previous ref's result (review 2026-10-01)", () => {
+  it("clears result while the new ref is in flight, and keeps it null if that request fails", async () => {
+    const client = new ChromaClient();
+    vi.stubGlobal("fetch", async () => jsonResponse(chromaBody(2)));
+    await client.request(REF);
+    expect(client.result).not.toBeNull();
+
+    vi.stubGlobal("fetch", async () => jsonResponse({ ok: false, error: "drive unmounted" }, 404));
+    const p = client.request({ kind: "crop", crop_id: "000413" });
+    expect(client.result).toBeNull();
+    await p;
+    expect(client.result).toBeNull();
+    expect(client.error).toBe("drive unmounted");
+  });
+});
+
 describe("supersession, flush and dispose", () => {
   it("discards a superseded result even if it resolves after the latest one", async () => {
     const client = new ChromaClient();
