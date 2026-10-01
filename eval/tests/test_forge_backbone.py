@@ -44,3 +44,29 @@ def test_routes(monkeypatch, tmp_path, tmp_path_factory):
         assert c.post("/forge/backbone", json={"id": "medium-base"}).status_code == 409
     finally:
         srv.GPU_LOCK.release()
+
+
+def test_failed_switch_restores_previous(monkeypatch):
+    """Review 2026-10-01: a prepare_model failure must not leave ARGS.model on the bad id with no
+    model loaded. The previous backbone is rebuilt and the error names both."""
+    import threading
+    from types import SimpleNamespace
+    import forge_api
+    from forge.contract import ForgeError
+
+    loaded = []
+
+    def prepare_model(_dora, _film):
+        if srv.ARGS.model == "medium-base":
+            raise RuntimeError("partial snapshot")
+        loaded.append(srv.ARGS.model)
+        srv.MODEL = object()
+
+    srv = SimpleNamespace(ARGS=SimpleNamespace(model="medium"), MODEL=object(), GPU_LOCK=threading.Lock(),
+                          SLOTS=SimpleNamespace(slots=[]), prepare_model=prepare_model, log=lambda *_: None)
+    monkeypatch.setattr(forge_api, "SRV", srv)
+    with pytest.raises(ForgeError) as ei:
+        forge_api._switch_backbone("medium-base")
+    assert "restored medium" in str(ei.value)
+    assert srv.ARGS.model == "medium" and srv.MODEL is not None and loaded == ["medium"]
+    assert not srv.GPU_LOCK.locked()

@@ -486,7 +486,21 @@ def _switch_backbone(model_id):
         srv.ARGS.model = model_id
         srv.MODEL = None
         gc.collect()
-        srv.prepare_model(None, None)
+        try:
+            srv.prepare_model(None, None)
+        except Exception as e:
+            # A partial HF snapshot or an OOM must not leave the server pinned to an unloadable id
+            # with no model -- every later render would retry it and the UI cannot switch back
+            # (review 2026-10-01). Restore the previous backbone, then report.
+            srv.ARGS.model = previous
+            srv.MODEL = None
+            gc.collect()
+            try:
+                srv.prepare_model(None, None)
+            except Exception as e2:
+                raise ForgeError(500, f"backbone {model_id} failed to load ({e}); "
+                                      f"restoring {previous} also failed ({e2})") from e2
+            raise ForgeError(500, f"backbone {model_id} failed to load ({e}); restored {previous}") from e
         ds = srv.MODEL.model.pretransform.downsampling_ratio
         if ds != srv.DS or srv.MODEL.model.sample_rate != srv.SR:
             srv.ARGS.model = previous
