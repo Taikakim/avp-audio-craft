@@ -69,3 +69,20 @@ def test_queue_full_positions_and_cancel():
     assert listed[0]["job_id"] == queued[2][0]            # newest first
     assert "payload" not in listed[0] and "result" not in listed[0]
     q.stop()
+
+
+def test_finished_records_survive_a_restart(tmp_path):
+    """Review 2026-10-01: USE SETTINGS reads the payload via GET /forge/jobs/{id}; a session's history
+    outlives the in-memory queue, so finished records are archived and read back by a NEW queue."""
+    q = JobQueue({"echo": lambda jid, p: {"x": p["x"]}}, archive_dir=lambda: tmp_path)
+    jid, _ = q.submit("echo", {"x": 7})
+    wait_state(q, jid, {"done"})
+    t0 = time.time()
+    while not (tmp_path / f"{jid}.json").exists() and time.time() - t0 < 5:
+        time.sleep(0.01)
+    q.stop()
+    fresh = JobQueue({}, archive_dir=lambda: tmp_path)
+    rec = fresh.get(jid)
+    assert rec["state"] == "done" and rec["payload"] == {"x": 7} and rec["result"] == {"x": 7}
+    assert fresh.get("forge-../../etc") is None and fresh.get("nope") is None
+    fresh.stop()

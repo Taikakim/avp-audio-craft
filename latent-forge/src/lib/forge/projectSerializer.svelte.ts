@@ -356,8 +356,10 @@ export function applyMasterPreset(payload: MasterPresetPayload): void {
  * STAGE revert is not work anyone would lose.
  *
  * M9 T3 adds `renders`/`mixdown`/`preview` to that list. They are OUTPUT, not edits: the audio a
- * history entry points at is a file the server already wrote, reachable through /forge/jobs/{id}
- * and the FILES `renders` root whether or not the entry survives. Counting them would make the
+ * history entry points at is a file the server already wrote: its job record (payload included) is
+ * archived under OUT_DIR/_forge_jobs and served by /forge/jobs/{id} across restarts, and the audio by
+ * /forge/audio with a `render` ref. (The FILES `renders` root lists only out_*.wav, so a commit's
+ * mix.wav is NOT browsable there -- corrected in review 2026-10-01.) Counting them would make the
  * prompt fire after every single render -- including the render the user is about to drag onto a
  * lane. They are still serialised and restored; only this question ignores them. (M9 open question A5.)
  */

@@ -99,8 +99,11 @@ def reset_queue():
     global QUEUE
     if QUEUE is not None:
         QUEUE.stop()
+    # "_forge_jobs" under OUT_DIR: library.py skips "_"-prefixed dirs, so it is never listed as a render.
     QUEUE = jobs_mod.JobQueue(_RUNNERS, max_pending=contract.MAX_PENDING_JOBS,
-                              log=lambda m: SRV.log(m))
+                              log=lambda m: SRV.log(m),
+                              archive_dir=lambda: (Path(SRV.OUT_DIR) / "_forge_jobs")
+                              if SRV is not None and getattr(SRV, "OUT_DIR", None) else None)
     return QUEUE
 
 
