@@ -668,6 +668,9 @@ Result: `JobResponse` with one wav, its z0, and `meta.op = "a2a_clip"`,
 ```
 Result: `JobResponse` with the audio of
 `[region.start − pad, region.end + pad]`, its z0, and `meta.span_start_sec`.
+Each side's `audio` is the clip's STRETCHED file (`previewAudio`, else `audio` when unstretched);
+its seconds are timeline seconds and the server does not stretch for a preview. The meta also
+carries `duration_sec`.
 
 ### 6.9 `commit` job payload
 ```ts

@@ -131,8 +131,11 @@ function overlapRequest(w: DispatchWorld): SubmitRequest {
   const b = w.clipById(o.b_id);
   if (!a || !b) throw new PayloadError("the overlap is gone");
 
+  // start/offset/dur are TIMELINE (stretched-domain) seconds, and run_inpaint_preview does not
+  // stretch (commit's S2 does). So send the stretched file the timeline already plays; the raw
+  // source would be sliced at the wrong place, tempo and pitch (review 2026-10-01).
   const side = (c: ForgeClip) => ({
-    audio: c.audio, start_sec: c.start_sec, offset_sec: c.offset_sec, dur_sec: c.dur_sec,
+    audio: c.previewAudio ?? c.audio, start_sec: c.start_sec, offset_sec: c.offset_sec, dur_sec: c.dur_sec,
   });
 
   return {
