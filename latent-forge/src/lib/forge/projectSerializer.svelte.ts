@@ -11,6 +11,8 @@ import {
 } from "../stores/arrangement.svelte";
 import { settings, STAGE_BACKBONE, STAGE_FIELDS, type ModelStage } from "../stores/settings.svelte";
 import { view } from "../stores/view.svelte";
+import { history } from "../render/history.svelte";
+import type { RenderHistoryEntry } from "./types";
 import { durableChain } from "../chains/modulePresets";
 import { SNAP_MODES } from "../math/snap";
 import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, POST_DEFAULTS } from "./defaults";
@@ -45,9 +47,11 @@ export function serializeProject(opts: { name: string; backbone?: string }): Pro
     defaults: $state.snapshot(settings.defaults) as RenderSettings,
     backbone: opts.backbone ?? settings.backboneId,
     ckpt_path: settings.ckptPath,
-    renders: [],       // M9 owns render history; nothing exists to serialise yet
-    mixdown: null,
-    preview: null,
+    // M9 T3 owns these. $state.snapshot, like every other store read here (Global Constraint #7:
+    // `$state.snapshot` only in a .svelte.ts file -- which is why this module is one).
+    renders: $state.snapshot(history.renders) as RenderHistoryEntry[],
+    mixdown: history.mixdown,
+    preview: history.preview,
     ui: $state.snapshot(view.snapshotUi()) as ProjectV2["ui"],
   };
 }
@@ -60,6 +64,22 @@ function stageForBackbone(backbone: string): ModelStage | null {
 
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+const RENDER_KINDS = ["gen", "a2a", "inpaint", "mix"];
+
+/** Every field the preview container, the MIXDOWN slot and refOf dereference. */
+function isRenderEntry(v: unknown): boolean {
+  return isObj(v) && typeof v.job_id === "string" && typeof v.forge_job_id === "string"
+    && typeof v.file === "string" && typeof v.label === "string"
+    && RENDER_KINDS.includes(v.kind as string) && isNum(v.dur_sec)
+    && isStrOrNull(v.source_clip_id) && isNum(v.created);
+}
+
+/** null, or an integer that addresses a row of `renders`. A float or an out-of-range index would
+ *  leave the MIXDOWN slot pointing at nothing. */
+function isRenderIndex(v: unknown, renders: unknown[]): boolean {
+  return v === null || (typeof v === "number" && Number.isInteger(v) && v >= 0 && v < renders.length);
 }
 
 function isNum(v: unknown): boolean {
@@ -169,6 +189,12 @@ export function validateProjectV2(raw: unknown): ProjectV2 {
   if (typeof p.backbone !== "string") throw bad("backbone");
   if (!isStrOrNull(p.ckpt_path)) throw bad("ckpt_path");
   // M1's restoreUi calls `.filter` on modules; the other three it reads through includes()/Boolean().
+  if (!Array.isArray(p.renders)) throw bad("renders");
+  p.renders.forEach((r: unknown, i: number) => {
+    if (!isRenderEntry(r)) throw bad(`renders[${i}]`);
+  });
+  if (!isRenderIndex(p.mixdown, p.renders)) throw bad("mixdown");
+  if (!isRenderIndex(p.preview, p.renders)) throw bad("preview");
   if (!isObj(p.ui) || !Array.isArray(p.ui.modules)) throw bad("ui");
   return raw as unknown as ProjectV2;
 }
@@ -222,6 +248,9 @@ export function applyProject(project: ProjectV2, opts: { restoreModel?: boolean 
     const stageDefaults = cloneRenderSettings(settings.stage === "POST" ? POST_DEFAULTS : BASE_DEFAULTS);
     for (const k of STAGE_FIELDS) copyField(settings.defaults, stageDefaults, k);
   }
+  // Wholesale, like overlaps: a previous session's renders must not survive into this one, and
+  // `restore` drops an index the loaded list cannot address.
+  history.restore(project.renders, project.mixdown, project.preview);
   view.restoreUi(project.ui);
 }
 
@@ -313,4 +342,22 @@ export function applyMasterPreset(payload: MasterPresetPayload): void {
   arrangement.master = structuredClone(payload.master);
   settings.defaults.schedule = structuredClone(payload.defaults.schedule);
   settings.defaults.prompt = payload.defaults.prompt;
+}
+
+/**
+ * What counts as work for step 3's "replace unsaved work?" (critic pass 3 #3): everything saved
+ * except the name, the viewport, the ui slice and the model -- scrolling, opening a module or a
+ * STAGE revert is not work anyone would lose.
+ *
+ * M9 T3 adds `renders`/`mixdown`/`preview` to that list. They are OUTPUT, not edits: the audio a
+ * history entry points at is a file the server already wrote, reachable through /forge/jobs/{id}
+ * and the FILES `renders` root whether or not the entry survives. Counting them would make the
+ * prompt fire after every single render -- including the render the user is about to drag onto a
+ * lane. They are still serialised and restored; only this question ignores them. (M9 open question A5.)
+ */
+export function unsavedWorkKey(p: ProjectV2): string {
+  return JSON.stringify({
+    ...p, name: "", view: null, ui: null, backbone: "", ckpt_path: null,
+    renders: null, mixdown: null, preview: null,
+  });
 }

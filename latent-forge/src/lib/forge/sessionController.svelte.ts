@@ -10,8 +10,7 @@ import { createSnapshotAutosave, type SnapshotAutosave } from "./autosave";
 import { convertProjectV1 } from "./convertProjectV1";
 import {
   applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, validateMasterPreset,
-  validateProjectV2, type MasterPresetPayload,
-} from "./projectSerializer.svelte";
+  validateProjectV2, type MasterPresetPayload, unsavedWorkKey } from "./projectSerializer.svelte";
 import { isValidSessionName } from "./sessionName";
 import type { ProjectV2 } from "./types";
 
@@ -49,13 +48,6 @@ function toLoaded(raw: unknown): Loaded {
   throw new Error(`unsupported project version ${JSON.stringify(version) ?? "(none)"}`);
 }
 
-/** What counts as work for step 3's "replace unsaved work?" (critic pass 3 #3): everything saved
- *  except the name, the viewport, the ui slice and the model -- scrolling, opening a module or a
- *  STAGE revert is not work anyone would lose. */
-function workKey(p: ProjectV2): string {
-  return JSON.stringify({ ...p, name: "", view: null, ui: null, backbone: "", ckpt_path: null });
-}
-
 export class SessionController {
   /** The session the TopBar shows. See the invariant above. */
   session = $state("");
@@ -91,7 +83,7 @@ export class SessionController {
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
-    this.unsavedKey = workKey(serializeProject({ name: "" }));   // the blank launch project
+    this.unsavedKey = unsavedWorkKey(serializeProject({ name: "" }));   // the blank launch project
     this.autosave = createSnapshotAutosave(
       (name, json) =>
         this.put(name, JSON.parse(json) as ProjectV2).catch((e) => {
@@ -198,7 +190,7 @@ export class SessionController {
       return false;                          //     session, autosave and stores all unchanged
     }
     //     ... then ask before replacing work no session owns: autosave never wrote it (critic pass 3 #3)
-    if ((!this.session || this.orphaned) && workKey(this.current("")) !== this.unsavedKey
+    if ((!this.session || this.orphaned) && unsavedWorkKey(this.current("")) !== this.unsavedKey
       && !this.deps.confirm(`Replace the unsaved timeline with ${what}? Its edits were never saved.`)) {
       this.deps.log(`[forge] kept the unsaved timeline; ${what} was not loaded`);
       return false;                          //     a refusal touches nothing either
@@ -214,7 +206,7 @@ export class SessionController {
     } catch (e) {
       this.orphaned = false;
       this.session = "";                     //     half-applied: the stores match no session, never name one
-      this.unsavedKey = workKey(this.current(""));   //     and half-applied content is not work to protect
+      this.unsavedKey = unsavedWorkKey(this.current(""));   //     and half-applied content is not work to protect
       this.deps.log(`[forge] ${what} failed part-way and is now unsaved: ${errText(e)}`, "error");
       void this.reconcileStage(mySeq);       //     STAGE follows the server, not the half-applied file
       return false;
@@ -224,7 +216,7 @@ export class SessionController {
     const savedBackbone = loaded.kind === "v2" ? loaded.project.backbone : undefined;
     const loadedSnap = serializeProject({ name: target, backbone: savedBackbone });   // (7)
     const baseline = JSON.stringify(loadedSnap);
-    this.unsavedKey = workKey(loadedSnap);   //     step 3's "was it edited?" reference from now on
+    this.unsavedKey = unsavedWorkKey(loadedSnap);   //     step 3's "was it edited?" reference from now on
     if (loaded.kind === "v2") await this.syncBackbone(mySeq);   // (8) rebuild to the saved stage
     else await this.reconcileStage(mySeq);   //     v1 keeps the model the server holds
     if (mySeq !== this.seq) return false;    // (9) superseded during the wait: the newer one owns the stores

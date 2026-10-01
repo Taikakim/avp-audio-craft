@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { history } from "../../render/history.svelte";
 import { arrangement } from "../../stores/arrangement.svelte";
 import { settings } from "../../stores/settings.svelte";
 import { view } from "../../stores/view.svelte";
 import { CHAIN_DEFAULTS, MASTER_DEFAULT, MIX_DEFAULT, OVERLAP_DEFAULT } from "../defaults";
 import {
-  applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, validateProjectV2,
+  applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, unsavedWorkKey, validateProjectV2,
 } from "../projectSerializer.svelte";
-import type { ProjectV2 } from "../types";
+import type { ProjectV2, RenderHistoryEntry } from "../types";
 
 beforeEach(() => {
   arrangement.clips.splice(0, arrangement.clips.length);
@@ -155,5 +156,74 @@ describe("buildMasterPresetPayload / applyMasterPreset (spec §9.3 master scope)
     payload.clips.push({ id: "ghost", lane: 0, start_sec: 0, offset_sec: 0, dur_sec: 1, loop: false, native_bpm: null, detune_cents: 0, a2a: null });
     expect(() => applyMasterPreset(payload)).not.toThrow();
     expect(arrangement.clips.find((c) => c.id === clip.id)?.start_sec).toBe(0);
+  });
+});
+
+describe("render history round-trips through ProjectV2 (M9 T3)", () => {
+  function makeEntry(patch: Partial<RenderHistoryEntry> = {}): RenderHistoryEntry {
+    return {
+      job_id: "gen-1", forge_job_id: "forge-1", file: "out_00.wav", label: "GEN 12:00:00",
+      kind: "gen", dur_sec: 45, source_clip_id: null, created: 1_759_000_000, ...patch,
+    };
+  }
+
+  it("serializeProject writes the live history instead of the hardcoded empty triple", () => {
+    history.clear();
+    history.add(makeEntry());
+    history.add(makeEntry({ forge_job_id: "forge-2", kind: "mix", job_id: "mix-1" }));
+    const p = serializeProject({ name: "s" });
+    expect(p.renders).toHaveLength(2);
+    expect(p.renders[1].kind).toBe("mix");
+    expect(p.mixdown).toBe(1);
+    expect(p.preview).toBe(1);
+  });
+
+  it("serializeProject writes a SNAPSHOT -- a later render does not mutate an already-saved project", () => {
+    history.clear();
+    history.add(makeEntry());
+    const p = serializeProject({ name: "s" });
+    history.add(makeEntry({ forge_job_id: "forge-2" }));
+    expect(p.renders).toHaveLength(1);
+  });
+
+  it("validateProjectV2 refuses a bad renders array and a mixdown that is not an index or null", () => {
+    const base = serializeProject({ name: "s" });
+    expect(() => validateProjectV2({ ...base, renders: "nope" })).toThrow(/renders/);
+    expect(() => validateProjectV2({ ...base, renders: [{ job_id: "x" }] })).toThrow(/renders\[0\]/);
+    expect(() => validateProjectV2({ ...base, mixdown: "1" })).toThrow(/mixdown/);
+    expect(() => validateProjectV2({ ...base, preview: 1.5 })).toThrow(/preview/);
+    expect(() => validateProjectV2({ ...base, mixdown: null, preview: null })).not.toThrow();
+  });
+
+  it("applyProject restores all three fields", () => {
+    history.clear();
+    const project = {
+      ...serializeProject({ name: "s" }),
+      renders: [makeEntry(), makeEntry({ forge_job_id: "forge-2", kind: "mix" })],
+      mixdown: 1,
+      preview: 0,
+    };
+    applyProject(validateProjectV2(project));
+    expect(history.renders.map((r) => r.forge_job_id)).toEqual(["forge-1", "forge-2"]);
+    expect(history.mixdown).toBe(1);
+    expect(history.preview).toBe(0);
+  });
+
+  it("applyProject clears a previous session's history when the loaded project has none", () => {
+    history.clear();
+    history.add(makeEntry({ forge_job_id: "stale", kind: "mix" }));
+    applyProject(validateProjectV2({ ...serializeProject({ name: "s" }), renders: [], mixdown: null, preview: null }));
+    expect(history.renders).toEqual([]);
+    expect(history.mixdown).toBeNull();
+    expect(history.preview).toBeNull();
+  });
+
+  it("a finished render is NOT unsaved work -- workKey ignores renders/mixdown/preview", () => {
+    history.clear();
+    const before = unsavedWorkKey(serializeProject({ name: "" }));
+    history.add(makeEntry({ kind: "mix" }));
+    expect(unsavedWorkKey(serializeProject({ name: "" }))).toBe(before);
+    arrangement.setBpm(arrangement.bpm + 1);
+    expect(unsavedWorkKey(serializeProject({ name: "" }))).not.toBe(before);
   });
 });

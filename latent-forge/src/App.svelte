@@ -19,6 +19,8 @@
   import RightPane from "./ui/shell/RightPane.svelte";
   import TopBar from "./ui/shell/TopBar.svelte";
   import { forgeApi } from "./lib/forge/api";
+  import { createRasterDriver, type RasterDriver } from "./lib/fx/rasterBorder";
+  import { jobs } from "./lib/render/jobs.svelte";
   import { fetchAdapters } from "./lib/forge/models";
   import { buildModelOptions, type ModelOption } from "./ui/topbar/modelOptions";
 
@@ -101,6 +103,24 @@
     masterPreset = name;
     if (!masterPresets.includes(name)) masterPresets = [...masterPresets, name];
   }
+
+  // M9 T2: the C64 raster border (spec 9.5). Reads jobs.active and writes nothing reactive -- the
+  // only state this effect touches is the non-rune `raster` handle and the canvas itself.
+  let rasterCanvas = $state<HTMLCanvasElement | null>(null);
+  let raster: RasterDriver | null = null;
+  // A job that is accepted but has not reported yet must still light the border, and
+  // sweepHzFor maps a zero steps_total to SWEEP_START (never NaN).
+  const EMPTY_PROGRESS = {
+    job_id: "", op: "", stage: "", stage_index: 0, stage_count: 0,
+    step: 0, steps: 0, steps_left_total: 0, steps_total: 0,
+  } as const;
+  $effect(() => {
+    const active = jobs.active;
+    if (rasterCanvas === null) return;
+    raster ??= createRasterDriver(rasterCanvas);
+    raster.update(active === null ? null : active.progress ?? { ...EMPTY_PROGRESS });
+  });
+  $effect(() => () => { raster?.stop(); raster = null; });
 
   let disposeKeys: (() => void) | null = null;
 
@@ -204,6 +224,7 @@
   <!-- Spec §9.5: the raster border is a root-level overlay. M9 copies
        phosphor-border.js in and drives this canvas from steps_left_total. -->
   <canvas
+    bind:this={rasterCanvas}
     class="raster-border"
     data-region="raster-border"
     width="300"

@@ -234,4 +234,44 @@ describe("the client against recorded real-server responses (M2 T15 fixtures)", 
     serve(PRESET!);
     expect(await forgeApi.preset("latch", PROBE)).toEqual(body);
   });
+
+  const JOB_SUBMIT = recorded("forge_job_submit");
+  const JOB_DONE = recorded("forge_job_generate_done");
+  const JOB_CAP = recorded("forge_error_cap");
+  const STATUS_BUSY = recorded("status_busy");
+
+  it.skipIf(!JOB_SUBMIT)(title("POST /forge/jobs: 202 with {ok, job_id, position}, and forgeApi.submitJob returns the id", "forge_job_submit"), async () => {
+    serve(JOB_SUBMIT!);
+    expect(JOB_SUBMIT!.status).toBe(202);
+    const out = await forgeApi.submitJob("generate", { prompt: "probe", duration: 8 });
+    expect(typeof out.job_id).toBe("string");
+    expect(out.job_id.length).toBeGreaterThan(0);
+    expect(Number.isInteger(out.position)).toBe(true);
+  });
+
+  it.skipIf(!JOB_DONE)(title("GET /forge/jobs/{id} done: urls[0]'s basename is the history entry's file, and result.job_id is the output-dir id", "forge_job_generate_done"), async () => {
+    serve(JOB_DONE!);
+    const rec = await forgeApi.job("probe");
+    expect(rec.state).toBe("done");
+    expect(rec.result).not.toBeNull();
+    expect(rec.result!.urls.length).toBeGreaterThan(0);
+    const file = rec.result!.urls[0].split("/").pop()!;
+    expect(file).toMatch(/\.wav$/);
+    expect(rec.result!.job_id).not.toBe(rec.job_id);   // output-dir id vs forge queue id
+    expect(typeof rec.created).toBe("number");
+  });
+
+  it.skipIf(!JOB_CAP)(title("a refused over-cap render is a 400 whose message ForgeApiError carries verbatim", "forge_error_cap"), async () => {
+    serve(JOB_CAP!);
+    expect(JOB_CAP!.status).toBe(400);
+    await expect(forgeApi.submitJob("generate", { prompt: "x", duration: 300 }))
+      .rejects.toMatchObject({ status: 400, message: expect.stringContaining("184") });
+  });
+
+  it.skipIf(!STATUS_BUSY)(title("GET /status busy: job_id is a string, which is what `GPU busy — <job_id>` prints", "status_busy"), async () => {
+    serve(STATUS_BUSY!);
+    const s = await forgeApi.status();
+    expect(s.busy).toBe(true);
+    expect(typeof s.job_id).toBe("string");
+  });
 });
