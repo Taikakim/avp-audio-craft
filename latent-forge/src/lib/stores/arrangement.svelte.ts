@@ -5,10 +5,11 @@
 // shape, not an ownership claim.
 
 import {
-  A2A_ENVELOPE_DEFAULT, BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, OVERLAP_DEFAULT,
+  A2A_ENVELOPE_DEFAULT, BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, MASTER_DEFAULT,
+  MIX_DEFAULT, OVERLAP_DEFAULT,
 } from "../forge/defaults";
 import type {
-  AudioRef, Envelope, ForgeClip, ForgeLane, OverlapParams,
+  AudioRef, Envelope, ForgeClip, ForgeLane, MasterChain, MixSpec, OverlapParams, RenderSettings,
 } from "../forge/types";
 import { findOverlaps, type Overlap } from "../math/overlaps";
 import type { SnapMode } from "../math/snap";
@@ -74,6 +75,18 @@ class ArrangementStore {
   // svelte-check. SnapMode comes from lib/math/snap (Task 2), so Task 2 lands first.
   snap = $state<SnapMode>("lane");          // spec 4.3 default: downbeats (magnetic)
   lanes = $state<ForgeLane[]>(defaultLanes());
+
+  /** M7 — spec §4.5/§4.6.5. Seeded from M1's own frozen defaults; nothing else about the store changes. */
+  mix = $state<MixSpec>(structuredClone(MIX_DEFAULT));
+  master = $state<MasterChain>(structuredClone(MASTER_DEFAULT));
+
+  /**
+   * M7 (critic follow-up #4) -- what a NEW clip's `render` starts from. BASE until App sets it to
+   * `() => cloneRenderSettings(settings.defaults)` (Task 9 Step 4): M4's defaults "seed new targets"
+   * (spec §7.2) and follow STAGE, but this store may not import M4 (§12). A plain field, not $state:
+   * it is read only inside addClip. Must return a fresh object every call.
+   */
+  renderSeed: () => RenderSettings = () => cloneRenderSettings(BASE_DEFAULTS);
   clips = $state<ForgeClip[]>([]);
   pxPerSec = $state(80);
   scrollSec = $state(0);
@@ -108,7 +121,7 @@ class ArrangementStore {
       native_bpm: args.nativeBpm ?? null,
       detune_cents: 0,
       downbeats_sec: args.downbeatsSec ?? [],
-      render: cloneRenderSettings(BASE_DEFAULTS),
+      render: this.renderSeed(),
       a2a: null,
       latentState: "none",
       history: [],
@@ -317,6 +330,30 @@ class ArrangementStore {
 
   setOverlapParams(key: string, patch: Partial<OverlapParams>) {
     Object.assign(this.overlapParams(key), patch);
+  }
+
+  /**
+   * M7 -- a NON-SEEDING read. `overlapParams` writes OVERLAP_DEFAULT into overlapStore on first
+   * read, which throws state_unsafe_mutation when it runs inside a $derived or a template. This is
+   * the reader for those places: the live entry once one exists, otherwise a fresh default-shaped
+   * copy that is NOT stored (mutating it reaches nothing; write through setOverlapParams).
+   * Reading `this.overlapStore[key]` still registers the dependency, so a derived that peeked an
+   * unseeded key re-runs when setOverlapParams later seeds it.
+   */
+  peekOverlapParams(key: string): OverlapParams {
+    return this.overlapStore[key] ?? {
+      ...structuredClone(OVERLAP_DEFAULT),
+      render: cloneRenderSettings(OVERLAP_DEFAULT.render),
+    };
+  }
+
+  /**
+   * M7 -- empties overlapStore IN PLACE (the field is private, and M5 has no way to drop an entry).
+   * T9's applyProject calls it before writing a loaded project's overlaps: without it a previous
+   * project's edits survive under any key the next one reuses (a v1 import keeps its clip ids).
+   */
+  clearOverlapParams(): void {
+    for (const k of Object.keys(this.overlapStore)) delete this.overlapStore[k];
   }
 
   // ---------------------------------------------------------------- the M4 settings seam
