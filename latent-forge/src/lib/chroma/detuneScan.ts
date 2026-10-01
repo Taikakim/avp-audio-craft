@@ -118,10 +118,15 @@ export function meanMatchAtDetune(
   T: number,
   target: Float32Array,
   cents: number,
+  range: [number, number] = [0, T],
 ): number {
-  if (T <= 0) return 0;
+  // `range` limits the mean to the frames the clip actually plays (its trim); the default is
+  // every frame, as before (review 2026-10-01).
+  const t0 = Math.max(0, range[0]);
+  const t1 = Math.min(T, range[1]);
+  if (t1 <= t0) return 0;
   const semis = cents / 100;
   let sum = 0;
-  for (let t = 0; t < T; t++) sum += matchFrame(rotate(fold12Column(fold12, T, t), semis), target);
-  return sum / T;
+  for (let t = t0; t < t1; t++) sum += matchFrame(rotate(fold12Column(fold12, T, t), semis), target);
+  return sum / (t1 - t0);
 }

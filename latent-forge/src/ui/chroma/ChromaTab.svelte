@@ -33,7 +33,7 @@
   // defined in its code (M5's own self-review says so), so the selected clip is
   // computed locally from view.selection, exactly as M5 T9 does.
   import { chromaClient } from "../../lib/chroma/chromaClient.svelte";
-  import { chromaLink } from "../../lib/chroma/chromaLink.svelte";
+  import { chromaLink, clipFrameRange } from "../../lib/chroma/chromaLink.svelte";
   import { meanMatchAtDetune, type ScanCriterion } from "../../lib/chroma/detuneScan";
   import {
     CHROMA_VIEWS,
@@ -115,7 +115,8 @@
     const clip = selectedClip;
     const res = result;
     if (!clip || !res) return;
-    chromaLink.setScore(clip.id, meanMatchAtDetune(res.fold12, res.T, target, analysisDetuneCents));
+    chromaLink.setScore(clip.id, meanMatchAtDetune(res.fold12, res.T, target, analysisDetuneCents,
+      clipFrameRange(clip, res.T, res.fps)));
   });
 
   // 6. §9.7: a server error is a red TERMINAL line as well as an inline one.
@@ -144,7 +145,7 @@
       detuneCents: analysisDetuneCents,
     });
     hover = h;
-    if (h) chromaLink.setHover(clip.id, h.frac);
+    if (h) chromaLink.setHover(clip.id, h.frac, (h.frac * Math.max(0, res.T - 1)) / res.fps);
     else chromaLink.clearHover();
   }
 

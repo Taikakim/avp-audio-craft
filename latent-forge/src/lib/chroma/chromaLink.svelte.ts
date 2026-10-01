@@ -19,12 +19,13 @@
 import { SCORE_PLACEHOLDER } from "../math/clipBox";
 
 export class ChromaLink {
-  hover = $state<{ clipId: string; frac: number } | null>(null);
+  /** `fileSec` is the hovered position in the ANALYSED FILE (seconds), when the tab knows it. */
+  hover = $state<{ clipId: string; frac: number; fileSec?: number } | null>(null);
   scores = $state<Record<string, number>>({});
 
-  setHover(clipId: string, frac: number): void {
+  setHover(clipId: string, frac: number, fileSec?: number): void {
     const f = Number.isFinite(frac) ? (frac < 0 ? 0 : frac > 1 ? 1 : frac) : 0;
-    this.hover = { clipId, frac: f };
+    this.hover = fileSec !== undefined && Number.isFinite(fileSec) ? { clipId, frac: f, fileSec } : { clipId, frac: f };
   }
 
   clearHover(): void {
@@ -57,7 +58,30 @@ export function clipScoreLabel(score: number | undefined): string {
   return score === undefined || !Number.isFinite(score) ? SCORE_PLACEHOLDER : `χ ${score.toFixed(2)}`;
 }
 
-/** Timeline seconds for a hover fraction into a clip. */
-export function markerSecFor(clip: { start_sec: number; dur_sec: number }, frac: number): number {
-  return clip.start_sec + frac * clip.dur_sec;
+/**
+ * Timeline seconds for a hover into a clip, or null when that point of the file is not on the
+ * timeline. With `fileSec` (the hovered second of the analysed file) the clip's trim is honoured:
+ * the analysed file is the stretched previewAudio (or the unstretched source), so its seconds are
+ * timeline-scale and `offset_sec` is where the clip starts reading it. A looping clip shows the
+ * first repeat. Without `fileSec` it falls back to frac x dur_sec, which assumes an untrimmed clip
+ * -- the old behaviour, wrong for any trimmed clip (review 2026-10-01).
+ */
+export function markerSecFor(
+  clip: { start_sec: number; dur_sec: number; offset_sec?: number },
+  frac: number,
+  fileSec?: number,
+): number | null {
+  if (fileSec === undefined) return clip.start_sec + frac * clip.dur_sec;
+  const into = fileSec - (clip.offset_sec ?? 0);
+  if (into < 0 || into > clip.dur_sec) return null;
+  return clip.start_sec + into;
+}
+
+/** The analysed file's frame range [t0, t1) that a trimmed clip actually plays (clamped to T). */
+export function clipFrameRange(
+  clip: { dur_sec: number; offset_sec?: number }, T: number, fps: number,
+): [number, number] {
+  const t0 = Math.max(0, Math.min(T, Math.floor((clip.offset_sec ?? 0) * fps)));
+  const t1 = Math.max(t0, Math.min(T, Math.ceil(((clip.offset_sec ?? 0) + clip.dur_sec) * fps)));
+  return t1 > t0 ? [t0, t1] : [0, T];
 }

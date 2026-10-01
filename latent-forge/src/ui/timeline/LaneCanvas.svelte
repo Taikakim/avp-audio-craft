@@ -171,7 +171,8 @@
     if (mark) {
       const marked = laneClips.find((c) => c.id === mark.clipId);
       if (marked) {
-        const x = Math.round(secToPx(markerSecFor(marked, mark.frac), scrollSec, pxPerSec)) + 0.5;
+        const sec = markerSecFor(marked, mark.frac, mark.fileSec);
+        const x = sec === null ? -1 : Math.round(secToPx(sec, scrollSec, pxPerSec)) + 0.5;
         if (x >= 0 && x <= w) {
           ctx.strokeStyle = red;
           ctx.lineWidth = 1.5;
