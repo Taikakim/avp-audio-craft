@@ -74,3 +74,21 @@ class Services:
         z = z[..., :frames].contiguous()
         np.save(path, z.numpy().astype(np.float16))
         return z
+
+    def stretched_path(self, src, speed, semitones):
+        from . import stretch
+        from .hashing import file_sha256
+        src = Path(src)
+        if stretch.is_identity(speed, semitones):
+            return src
+        stretch.validate(speed, semitones)
+        sha = file_sha256(src)
+        dst = self._paths().cache_dir("stretch") / f"{stretch.cache_key(sha, speed, semitones)}.wav"
+        if not dst.exists():
+            readable = src
+            if src.suffix.lower() not in (".wav", ".flac"):
+                readable = self._paths().cache_dir("decode") / f"{sha}.wav"
+                if not readable.exists():
+                    sf.write(readable, self.load_audio(src).T, self.srv.SR, subtype="FLOAT")
+            stretch.stretch_file(readable, dst, speed, semitones)
+        return dst

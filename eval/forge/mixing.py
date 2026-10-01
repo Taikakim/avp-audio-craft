@@ -11,9 +11,29 @@ def lerp(a, b, t):
     return (1.0 - float(t)) * a + float(t) * b
 
 
+def _fallback_slerp(a, b, t, eps=1e-7):
+    """Spherical interpolation of two (B, C, T) latents, flattened per batch row to (B, C*T), with
+    a lerp fallback for near-parallel vectors (the latent_crossfader.py math spec). Used ONLY where
+    the SA3 package is not installed (a CPU-only skeleton box); the dev box uses the fork's own."""
+    shape = a.shape
+    af, bf = a.reshape(shape[0], -1), b.reshape(shape[0], -1)
+    an = af / af.norm(dim=-1, keepdim=True).clamp_min(eps)
+    bn = bf / bf.norm(dim=-1, keepdim=True).clamp_min(eps)
+    dot = (an * bn).sum(-1, keepdim=True).clamp(-1.0, 1.0)
+    omega = torch.acos(dot)
+    so = torch.sin(omega)
+    near = so.abs() < 1e-4
+    w_a = torch.where(near, torch.full_like(so, 1.0 - float(t)), torch.sin((1.0 - float(t)) * omega) / so.clamp_min(eps))
+    w_b = torch.where(near, torch.full_like(so, float(t)), torch.sin(float(t) * omega) / so.clamp_min(eps))
+    return (w_a * af + w_b * bf).reshape(shape)
+
+
 def _default_slerp():
-    from stable_audio_3.inference.longform import slerp
-    return slerp
+    try:
+        from stable_audio_3.inference.longform import slerp
+        return slerp
+    except ModuleNotFoundError:
+        return _fallback_slerp
 
 
 def mix_latents(lanes, mix, slerp_fn=None):

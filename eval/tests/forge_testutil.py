@@ -8,6 +8,12 @@ if str(EVAL) in sys.path:
 sys.path.insert(0, str(EVAL))
 
 
+import itertools
+from pathlib import Path
+
+_JOB_COUNTER = itertools.count(1)
+
+
 def make_stub_server(out_dir):
     """A minimal stand-in for explorer_render_server, for boxes with no torch / GPU.
 
@@ -59,6 +65,34 @@ def make_stub_server(out_dir):
         return np.ascontiguousarray(a if a.shape[0] == 2 else np.repeat(a[:1], 2, axis=0))
 
     srv.load_audio = load_audio
+    # Minimal versions of the helpers run_commit calls on the real server (job dirs, wav writing, the
+    # response envelope). Shape-compatible, not behaviour-compatible: the real ones live in the GPU box.
+    srv.HEADS = {}
+    srv.resolve_seed = lambda s: int(s) if int(s) >= 0 else 1234
+
+    def new_job(kind):
+        import itertools
+        n = next(_JOB_COUNTER)
+        job_id = f"{kind}-{n:04d}"
+        jd = Path(srv.OUT_DIR) / job_id
+        jd.mkdir(parents=True, exist_ok=True)
+        return job_id, jd
+
+    def save_audio(path, tensor, sr, normalize=True):
+        import soundfile as sf
+        arr = tensor.detach().cpu().numpy().T if hasattr(tensor, "detach") else tensor.T
+        sf.write(str(path), arr, sr)
+
+    def build_response(job_id, jd, files, seed, t0, stages, warnings, meta, req, rebuilt):
+        return {"status": "ok", "job_id": job_id, "files": [str(f) for f in files],
+                "latents": list(meta.get("latents") or []),
+                "urls": [f"/audio/{job_id}/{Path(f).name}" for f in files], "seed": seed,
+                "timings": {"total_sec": 0.0, "per_stage": dict(stages)}, "warnings": list(warnings),
+                "meta": meta}
+
+    srv.new_job = new_job
+    srv.save_audio = save_audio
+    srv.build_response = build_response
     srv.log = log
     srv.make_log_cb = make_log_cb
     for n in ("_generate_impl", "_a2a_track_impl", "_a2a_mix_impl", "_longform_impl", "_decode_impl", "_bend_impl"):

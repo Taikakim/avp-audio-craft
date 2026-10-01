@@ -1,7 +1,22 @@
 """MIXDOWN commit: payload validation, pass planning and orchestration (spec §6.9, §8)."""
-from .contract import CAP_SEC, ForgeError, check_cap
+import time
+
+import numpy as np
+
+try:  # torch is only needed by run_commit; validation/planning stay importable on a CPU-only box
+    import torch
+except ImportError:  # pragma: no cover
+    torch = None
+
+from . import passes, progress
+from .chroma import chroma_384
+from .contract import CAP_SEC, FPS, HOP, SR, ForgeError, check_cap, latent_frames
 from .envelope import validate_envelope
-from .render_settings import _num, canonical_key, chain_to_request, parse_chain, parse_render
+from .holdpass import clip_frame_span, depth_for_spans
+from .lanes import place_lanes, place_single
+from .mixing import mix_latents, normalise
+from .overlap import chroma_target, region_frames
+from .render_settings import _num, canonical_key, chain_to_request, parse_chain, parse_render, to_request
 
 STAGES = ["DECODE latent → audio", "BUNGEE stretch / pitch", "ENCODE audio → latent", "LANE CHAINS",
           "A2A RE-NOISE", "INPAINT OVERLAPS", "MIX", "MASTER CHAIN", "DECODE latent → audio"]
@@ -126,3 +141,143 @@ def plan_passes(v):
             inpaint.append({"lane": lane, "key": f"lane{lane}:inpaint:{n}", "render": members[0]["render"],
                             "overlap_keys": [o["key"] for o in members], "chroma": False})
     return {"a2a": a2a, "inpaint": inpaint, "steps_total": sum(g["render"]["steps"] for g in a2a + inpaint)}
+
+
+def _seed(srv, render):
+    return int(render["seed"]) if render["seed"] >= 0 else int(srv.resolve_seed(-1))
+
+
+def run_commit(srv, svc, job_id, payload):
+    v = validate_commit(payload, srv.HEADS)
+    plan = plan_passes(v)
+    seeds = {g["key"]: _seed(srv, g["render"]) for g in plan["a2a"] + plan["inpaint"]}
+    flags = [{"label": s, "on": False, "note": "", "seconds": 0.0} for s in STAGES]
+    timings, warnings, passes_meta = {}, [], []
+    t0 = time.time()
+    progress.begin(job_id, "commit", plan["steps_total"], STAGES)
+
+    def enter(i):
+        progress.stage(i + 1, STAGES[i])
+        return time.time()
+
+    def leave(i, ts, on, note):
+        flags[i].update(on=bool(on), note=note, seconds=round(time.time() - ts, 2))
+        timings[f"S{i + 1}"] = flags[i]["seconds"]
+
+    try:
+        out_id, jd = srv.new_job("forgecommit")
+        T = latent_frames(v["duration_sec"])
+        n_samples = T * HOP
+        clips = {c["id"]: c for c in v["clips"]}
+        lanes = v["lanes"]
+
+        ts = enter(0)
+        paths = {cid: svc.resolve_audio(c["audio"]) for cid, c in clips.items()}
+        crops = [cid for cid, c in clips.items() if c["audio"].get("kind") == "crop"]
+        leave(0, ts, crops, f"{len(crops)} crop(s)" if crops else "no latents")
+
+        ts = enter(1)
+        audio, stretched = {}, []
+        for cid, c in clips.items():
+            chain = lanes[c["lane"]]["chain"]
+            speed = v["project_bpm"] / c["native_bpm"] if c["native_bpm"] else 1.0
+            semis = (chain["semitones"] if chain["bungee_on"] else 0.0) + c["detune_cents"] / 100.0
+            path = svc.stretched_path(paths[cid], speed, semis)
+            if path != paths[cid]:
+                stretched.append(cid)
+            audio[cid] = svc.load_audio(path)
+        leave(1, ts, stretched, f"{len(stretched)} clip(s)" if stretched else "at tempo")
+
+        ts = enter(2)
+        bufs = place_lanes(v["clips"], lanes, v["overlaps"], n_samples, SR, lambda c: audio[c["id"]])
+        z = [None if b is None else svc.encode_cached(b)[..., :T].float() for b in bufs]
+        used = [i for i in range(4) if z[i] is not None]
+        leave(2, ts, used, ", ".join(f"L{i + 1}" for i in used) or "idle")
+        if not used:
+            raise ForgeError(400, "nothing to commit — every lane is empty or muted")
+
+        ts = enter(3)
+        a2a_lanes = sorted({g["lane"] for g in plan["a2a"] if z[g["lane"]] is not None})
+        chain_lanes = [i for i in used
+                       if any(chain_to_request(lanes[i]["chain"], srv.HEADS)[k] for k in ("latch", "film", "dora"))]
+        notes = [f"L{i + 1}" + ("" if i in a2a_lanes else " (idle — no A2A clip)") for i in chain_lanes]
+        leave(3, ts, set(chain_lanes) & set(a2a_lanes), ", ".join(notes) or "all bypassed")
+
+        ts = enter(4)
+        for g in plan["a2a"]:
+            lane = g["lane"]
+            if z[lane] is None:
+                continue
+            spans = []
+            for cid in g["clip_ids"]:
+                f0, n = clip_frame_span(clips[cid]["start_sec"], clips[cid]["dur_sec"], FPS)
+                spans.append((f0, clips[cid]["a2a"]["envelope"], n))
+            req = {**to_request(g["render"], seeds[g["key"]]), **chain_to_request(lanes[lane]["chain"], srv.HEADS)}
+            tp = time.time()
+            z[lane] = passes.run_hold_pass(srv, z[lane], depth_for_spans(spans, T), req, warnings, label=g["key"])
+            passes_meta.append({"lane": lane, "kind": "a2a", "key": g["key"], "seed": seeds[g["key"]],
+                                "steps": g["render"]["steps"], "seconds": round(time.time() - tp, 2)})
+        leave(4, ts, a2a_lanes, " ".join(f"L{i + 1}" for i in a2a_lanes) or "none")
+
+        ts = enter(5)
+        ovs = {o["key"]: o for o in v["overlaps"]}
+        for g in plan["inpaint"]:
+            lane = g["lane"]
+            if z[lane] is None:
+                continue
+            group = [ovs[k] for k in g["overlap_keys"]]
+            target = None
+            if g["chroma"]:
+                o = group[0]
+                c_a = chroma_384(place_single(clips[o["a_id"]], n_samples, SR, audio[o["a_id"]]), SR, T)
+                c_b = chroma_384(place_single(clips[o["b_id"]], n_samples, SR, audio[o["b_id"]]), SR, T)
+                f0, f1 = region_frames(o["start_sec"], o["end_sec"], FPS, T)
+                target = chroma_target(c_a, c_b, f0, f1, o["curve"])
+            tp = time.time()
+            z[lane] = passes.run_inpaint_pass(srv, z[lane], [(o["start_sec"], o["end_sec"]) for o in group],
+                                              to_request(g["render"], seeds[g["key"]]), warnings,
+                                              chroma_target=target, label=g["key"])
+            passes_meta.append({"lane": lane, "kind": "inpaint", "key": g["key"], "seed": seeds[g["key"]],
+                                "steps": g["render"]["steps"], "seconds": round(time.time() - tp, 2)})
+        n_ov = len(v["overlaps"])
+        leave(5, ts, plan["inpaint"], f"{n_ov} region{'s' if n_ov != 1 else ''}" if n_ov else "none")
+
+        ts = enter(6)
+        mixed, weff = mix_latents(z, v["mix"])
+        note = "lerp" if v["mix"]["order"] == "quad" else "·".join(v["mix"]["nodes"][k]["interp"][0] for k in ("M1", "M2", "MX"))
+        leave(6, ts, len(used) > 1, note)
+
+        ts = enter(7)
+        m = v["master"]
+        if m["norm_on"]:
+            mixed = normalise(mixed, z, weff)
+        if m["latch_on"]:
+            mixed = passes.steer_master(srv, mixed, m["head"], m["gain"])
+        leave(7, ts, m["latch_on"] or m["norm_on"],
+              " + ".join(x for x in ("latch" if m["latch_on"] else "", "norm" if m["norm_on"] else "") if x) or "bypassed")
+
+        ts = enter(8)
+        n_out = int(round(v["duration_sec"] * SR))
+        mix_wav, mix_z = jd / "mix.wav", jd / "mix.z0.npy"
+        srv.save_audio(mix_wav, passes.decode_latent(srv, mixed, n_out), SR, normalize=True)
+        np.save(mix_z, mixed.squeeze(0).to(torch.float16).numpy())
+        files, lanes_meta = [mix_wav], []
+        for i in range(4):
+            if z[i] is None:
+                lanes_meta.append({"index": i, "used": False, "z0_path": None, "wav_path": None})
+                continue
+            zp = jd / f"lane{i}.z0.npy"
+            np.save(zp, z[i].squeeze(0).to(torch.float16).numpy())
+            wp = None
+            if v["decode_lanes"]:
+                wp = jd / f"lane{i}.wav"
+                srv.save_audio(wp, passes.decode_latent(srv, z[i], n_out), SR, normalize=True)
+                files.append(wp)
+            lanes_meta.append({"index": i, "used": True, "z0_path": str(zp), "wav_path": str(wp) if wp else None})
+        leave(8, ts, True, f"{v['duration_sec']:g}s")
+
+        meta = {"op": "commit", "latents": [str(mix_z)], "stages": flags, "lanes": lanes_meta,
+                "passes": passes_meta, "resolved_seeds": seeds, "mix_weights": weff}
+        return srv.build_response(out_id, jd, files, None, t0, timings, warnings, meta, payload, False)
+    finally:
+        progress.end()
