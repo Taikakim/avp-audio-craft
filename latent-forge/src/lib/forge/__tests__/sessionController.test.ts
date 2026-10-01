@@ -370,6 +370,19 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     expect(arrangement.master.gain).toBe(99);
   });
 
+  it("MASTER PRESET recall re-arms every clip's stretch, since it can move native_bpm/detune (review 2026-10-01)", async () => {
+    const { api, deps, ctl } = harness();
+    api.session.mockResolvedValueOnce(project("take1", "T1"));
+    await ctl.loadSession("take1");
+    (deps.scheduleStretch as ReturnType<typeof vi.fn>).mockClear();
+    const payload = buildMasterPresetPayload();
+    payload.clips[0].detune_cents = 50;
+    api.preset.mockResolvedValueOnce(payload);
+    expect(await ctl.recallMasterPreset("live A")).toBe(true);
+    expect(arrangement.clips[0].detune_cents).toBe(50);
+    expect(deps.scheduleStretch).toHaveBeenCalledWith(arrangement.clips[0].id);
+  });
+
   it("a load never overlaps M4's STAGE rebuild: refused while one runs, and it holds settings.stageLocked throughout (reconcile pass, OQ 32)", async () => {
     const { api, deps, ctl } = harness();
     settings.stageRebuilding = true;                  // M4 T9's confirmStage is awaiting setBackbone

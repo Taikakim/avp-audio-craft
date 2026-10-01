@@ -370,6 +370,11 @@ export class SessionController {
       return false;
     }
     applyMasterPreset(payload);
+    // A preset can move native_bpm / detune_cents; previewAudio must follow, exactly as on a session
+    // load (step 6 above), or the timeline plays the old stretch while MIXDOWN renders the new one
+    // (review 2026-10-01).
+    const stretch = this.deps.scheduleStretch ?? ((id: string) => m5ScheduleStretch(id));
+    for (const c of arrangement.clips) stretch(c.id);
     return true;
   }
 
