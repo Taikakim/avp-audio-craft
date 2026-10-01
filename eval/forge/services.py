@@ -71,9 +71,14 @@ class Services:
             z = z.unsqueeze(0)
         if z.shape[-1] < frames:
             z = torch.nn.functional.pad(z, (0, frames - z.shape[-1]))
-        z = z[..., :frames].contiguous()
-        np.save(path, z.numpy().astype(np.float16))
-        return z
+        z16 = z[..., :frames].contiguous().numpy().astype(np.float16)
+        # Write to a temp file and rename: a /forge/stats read in the threadpool must never see a
+        # half-written cache file. Return the SAME float16 round-trip a hit returns, so a fixed seed
+        # gives identical audio on the first run and every later one (review 2026-10-01).
+        tmp = path.with_name(path.stem + ".part.npy")
+        np.save(tmp, z16)
+        os.replace(tmp, path)
+        return torch.from_numpy(z16.astype(np.float32))
 
     def stretched_path(self, src, speed, semitones):
         from . import stretch
