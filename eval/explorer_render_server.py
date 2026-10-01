@@ -47,7 +47,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+# Self-locating: a worktree copy of this server must import ITS OWN eval/ helpers,
+# not the shared checkout's (Latent Forge dev runs from a worktree).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chroma_morph_transitions as cmt  # noqa: E402  (inserts control + mir-same-chroma paths)
 import a2a_fulltrack as a2a_mod  # noqa: E402
 

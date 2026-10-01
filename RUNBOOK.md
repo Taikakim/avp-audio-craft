@@ -500,3 +500,38 @@ absence is visible rather than discovered mid-task.
   standalone command, and server access is WINTERMUTE's lane.
 - **G7. `lumi/run_params_extracted.json`** was hand-read from the sbatch corpus. **There is no
   extractor and it cannot be regenerated — do not delete it.** Extend it by hand.
+
+## 17. Latent Forge (the arrangement / render app)
+
+Two processes: the render server on **:8056** (the only model process) and the Latent Forge
+server on **:5180** (built app + proxy + password). Until the `latent-forge` branch is merged,
+every path below is the worktree `/home/kim/Projects/sa3-studio-review`; after the merge,
+substitute `/home/kim/Projects/SAO`.
+
+**Start the render server** (takes the GPU lock as `KIND=server`, ~40 s to ready). *Note (2026-10-01): `eval/forge/dev_server.sh` is created by M2 Task 1 and does not exist on the branch yet; until it does, start `eval/explorer_render_server.py` the way section 2 of this runbook says.*:
+
+    cd /home/kim/Projects/sa3-studio-review
+    eval/forge/dev_server.sh start
+
+**Build and serve the app** (~20 s build):
+
+    cd /home/kim/Projects/sa3-studio-review/latent-forge
+    npm ci && npm run build
+    export LATENT_FORGE_PASS='<pick one; do not write it down in the repo>'
+    npm run serve            # leave running; Ctrl+C stops it
+
+**Remote access** (a second shell; prints an https://…trycloudflare.com URL — share it only with yourself):
+
+    ~/.local/bin/cloudflared tunnel --url http://127.0.0.1:5180
+
+VERIFY:
+- `curl -s -o /dev/null -w '%{http_code}\n' localhost:5180/` prints `401`.
+- `curl -s -u kim:"$LATENT_FORGE_PASS" localhost:5180/forge/backbone` prints JSON with `"ok": true`.
+- In the browser, the top bar reads `LATENT FORGE` and the MODEL select lists the backbones.
+- Long renders keep going past 100 s through the tunnel: RENDER/MIXDOWN are background jobs, the page polls.
+
+**Stop:** Ctrl+C the tunnel and the serve process, then `eval/forge/dev_server.sh stop`
+(releases the GPU lock). `eval/forge/dev_server.sh status` shows what is still running.
+
+**Local-only work** skips the password and tunnel: `npm run dev` in `latent-forge/` (Vite on :5173
+proxies to :8056).
