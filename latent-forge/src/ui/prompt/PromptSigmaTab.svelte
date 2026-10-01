@@ -7,6 +7,7 @@
   // from `view.selection` (an M1 store every milestone reads, not M5's), matching M1 T12's
   // own RightPaneModules.svelte precedent.
   import { LENGTH_CAP_SEC } from "../../lib/forge/defaults";
+  import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { settings } from "../../lib/stores/settings.svelte";
   import { view } from "../../lib/stores/view.svelte";
   import ModelStageColumn from "./ModelStageColumn.svelte";
@@ -25,11 +26,46 @@
     onOp?: (op: string) => void;
   }
   let {
-    clipName = null, lane = 0, a2a = null, clipHasLatent = false,
-    onA2AToggle = () => {}, onNoise = () => {}, op = null, onOp = () => {},
+    clipName = null, lane, a2a, clipHasLatent,
+    onA2AToggle, onNoise, op = null, onOp = () => {},
   }: Props = $props();
 
   const target = $derived(view.selection);
+
+  // M7 T9: the active lane's LatCH slots for the sigma graph's slot lanes -- only while that lane's
+  // LATCH GUIDANCE is on (M4 plan line 1982: the caller passes slots when there is something to draw).
+  // Unfiltered by the head registry, unlike RightPaneModules' `activeLatch`: here it only decides
+  // what is DRAWN, so a deleted head can at worst draw one lane that will not be sent (Open questions 28).
+  const latchSlots = $derived.by(() => {
+    const chain = arrangement.lanes[view.activeLane].chain;
+    return chain.latch_on ? chain.slots : [];
+  });
+
+  // M7 T9 (critic follow-up #2): the selected clip, read from M5's store -- never seeded.
+  const clip = $derived.by(() => {
+    const sel = view.selection;
+    return sel.kind === "clip" ? (arrangement.clips.find((c) => c.id === sel.id) ?? null) : null;
+  });
+
+  /** A2A on/off through M5 (T1 `ensureA2A(id)`: creates {on: true, noise, envelope} once, a no-op
+   *  if the clip already has one), then the flag in place (Global Constraint #1). */
+  function toggleA2A(on: boolean): void {
+    const c = clip;
+    if (!c) return;
+    if (on) arrangement.ensureA2A(c.id);
+    if (c.a2a) c.a2a.on = on;
+  }
+
+  function setClipNoise(v: number): void {
+    if (clip) arrangement.setNoise(clip.id, v);   // M5 T1: rescales the envelope proportionally
+  }
+
+  const barLane = $derived(lane ?? clip?.lane ?? 0);
+  const barA2A = $derived(a2a !== undefined ? a2a : clip?.a2a ? { on: clip.a2a.on, noise: clip.a2a.noise } : null);
+  // "has a latent" = one exists at all; staleness is informational only (spec §7.3).
+  const barHasLatent = $derived(clipHasLatent ?? (clip ? clip.latentState !== "none" : false));
+  const barOnA2AToggle = $derived(onA2AToggle ?? toggleA2A);
+  const barOnNoise = $derived(onNoise ?? setClipNoise);
 
   // LENGTH is settings.duration_sec, and this component is its single owner: Task 9's column
   // displays it and Task 10's sigma column sends it as /schedule's `duration`, so exactly one
@@ -44,8 +80,8 @@
 <div class="prompt-sigma-tab" data-tab-body="prompt">
   <div class="col" data-col="prompt">
     <TargetBar
-      {target} {clipName} {lane} {a2a} {clipHasLatent}
-      {onA2AToggle} {onNoise} {op} {onOp}
+      {target} {clipName} lane={barLane} a2a={barA2A} clipHasLatent={barHasLatent}
+      onA2AToggle={barOnA2AToggle} onNoise={barOnNoise} {op} {onOp}
     />
     <PromptColumn {target} />
   </div>
@@ -53,7 +89,7 @@
     <ModelStageColumn {target} {length} {onLength} />
   </div>
   <div class="col" data-col="sigma">
-    <SigmaColumn {target} {length} {a2a} />
+    <SigmaColumn {target} {length} a2a={barA2A} slots={latchSlots} />
   </div>
 </div>
 

@@ -9,9 +9,6 @@
   //
   // Every prop after `ontheme` has a default, so the bar renders before the three
   // fetches in App.svelte have answered.
-  import { arrangement } from "../../lib/stores/arrangement.svelte";
-  import { playback } from "../../lib/stores/transport.svelte";
-  import { view as viewStore } from "../../lib/stores/view.svelte";
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
   import type { ModelOption } from "../topbar/modelOptions";
   import { HELP } from "../../lib/help/strings";
@@ -35,6 +32,11 @@
     sessions?: SessionSummary[];
     session?: string;
     onsession?: (name: string) => void;
+    onsessionsave?: () => void;
+    onimportv1?: (file: File) => void;
+    onmasterpresetsave?: () => void;
+    /** The session or file a load/import is fetching or applying; "" when idle (critic pass 3 #11). */
+    loadingName?: string;
     models?: ModelOption[];
     model?: string;
     onmodel?: (value: string) => void;
@@ -56,6 +58,10 @@
     sessions = [],
     session = "",
     onsession = () => {},
+    onsessionsave = () => {},
+    onimportv1 = () => {},
+    onmasterpresetsave = () => {},
+    loadingName = "",
     models = [],
     model = "",
     onmodel = () => {},
@@ -68,40 +74,13 @@
     mixdownStepsLeft = null,
   }: Props = $props();
 
-  let fileInput = $state<HTMLInputElement>();
-  let notice = $state<string | null>(null);
+  let importInput = $state<HTMLInputElement>();
 
-  // TEMPORARY: M7 replaces both with the SESSION select over /forge/sessions
-  // (spec §4.2). Until then this is the only way a project survives a reload,
-  // so it is carried over rather than dropped.
-  //
-  // C1 fix wave: this used to serialize/deserialize the v1 `project` store,
-  // which has held zero clips since Task 5 -- SAVE silently produced a file
-  // with no clips in it. `arrangement` is the store with real clip data.
-  function saveProject() {
-    const blob = new Blob([arrangement.toJSON()], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `latent-forge-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "")}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  async function loadProject(e: Event) {
-    const input = e.target as HTMLInputElement;
+  function onImportPicked(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      playback.stop();
-      viewStore.select({ kind: "none" });
-      arrangement.loadJSON(text);
-      notice = "loaded";
-    } catch (err) {
-      notice = `load failed: ${err instanceof Error ? err.message : String(err)}`;
-    }
-    input.value = "";
-    setTimeout(() => (notice = null), 6000);
+    if (file) onimportv1(file);
+    input.value = ""; // picking the same file twice still fires change
   }
 </script>
 
@@ -113,17 +92,25 @@
     data-testid="session-select"
     data-help={HELP.session}
     value={session}
-    onchange={(e) => onsession((e.currentTarget as HTMLSelectElement).value)}
+    onchange={(e) => {
+      const el = e.currentTarget as HTMLSelectElement;
+      onsession(el.value);
+      el.value = session; // the committed name; a successful load changes the prop and the select follows
+    }}
   >
+    {#if !session}<option value="">unsaved</option>{/if}
     {#each sessions as s (s.name)}
       <option value={s.name}>{s.name}</option>
     {/each}
   </select>
 
-  <button data-testid="save-project" onclick={saveProject}>SAVE</button>
-  <button data-testid="load-project" onclick={() => fileInput?.click()}>LOAD</button>
-  <input bind:this={fileInput} type="file" accept="application/json" onchange={loadProject} hidden />
-  {#if notice}<span class="notice">{notice}</span>{/if}
+  {#if loadingName}<span class="notice" data-testid="session-loading">loading {loadingName}…</span>{/if}
+  <button class="save" data-testid="session-save" data-help={HELP.sessionSave}
+    disabled={!!loadingName} onclick={onsessionsave}>SAVE</button>
+  <button class="save" data-testid="session-import" data-help={HELP.sessionImportV1}
+    onclick={() => importInput?.click()}>IMPORT</button>
+  <input bind:this={importInput} data-testid="session-import-file" type="file"
+    accept="application/json,.json" onchange={onImportPicked} hidden />
 
   <select
     class="model"
@@ -153,14 +140,17 @@
       data-testid="master-preset-select"
       data-help={HELP.masterPreset}
       value={masterPreset}
-      onchange={(e) => onmasterpreset((e.currentTarget as HTMLSelectElement).value)}
+      onchange={(e) => {
+        const el = e.currentTarget as HTMLSelectElement;
+        onmasterpreset(el.value);
+        el.value = masterPreset; // the applied preset; a successful recall changes the prop
+      }}
     >
       {#each masterPresets as name (name)}
         <option value={name}>{name}</option>
       {/each}
     </select>
-    <!-- Saving a master preset is M7 (spec §9.3); the copy is final here. -->
-    <button class="save" data-testid="master-preset-save" disabled>SAVE</button>
+    <button class="save" data-testid="master-preset-save" data-help={HELP.masterPresetSave} onclick={onmasterpresetsave}>SAVE</button>
   </div>
 
   <MixdownSlot busy={mixdownBusy} stepsLeft={mixdownStepsLeft} />

@@ -122,6 +122,9 @@ export type HelpId =
   | "mixSlerp"
   | "filesRoot"
   | "filesFilter"
+  | "masterPresetSave"
+  | "sessionSave"
+  | "sessionImportV1"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -258,4 +261,7 @@ export const HELP: Record<HelpId, string> = {
   mixSlerp: "Spherical interpolation between this node's two inputs -- the default, since SAME's latent space is strongly anisotropic and a straight lerp can cut through low-energy regions a slerp arcs around.",
   filesRoot: "Which server root to browse: crops (extracted latents), renders (past commits) or uploads (files dropped or picked from disk). An unmounted root is listed, greyed, rather than hidden.",
   filesFilter: "Filters the file list by substring match on its path. Clears to show every file under the selected root again.",
+  masterPresetSave: "Saves the current master slice under the highlighted name, or asks for a new one if nothing is named yet. Recall replaces the whole slice (spec §9.3): every lane chain, clip layout, mix order and node values, master chain, sampling schedule and default prompt.",
+  sessionSave: "Saves the whole project to the server under the selected session name, or asks for a name while it is still unsaved. After that, every change autosaves to it 2 s later.",
+  sessionImportV1: "Opens a project file from disk. A v1 file from the old app is converted (lanes renamed LANE 1-4, missing settings filled with defaults); it stays unsaved until you SAVE it.",
 };

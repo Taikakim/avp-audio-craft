@@ -4,7 +4,10 @@
   import Inspector from "./lib/Inspector.svelte";
   import ServerPanel from "./lib/ServerPanel.svelte";
   import { project } from "./lib/store.svelte";
+  import { cloneRenderSettings } from "./lib/forge/defaults";
+  import { SessionController } from "./lib/forge/sessionController.svelte";
   import { arrangement } from "./lib/stores/arrangement.svelte";
+  import { settings } from "./lib/stores/settings.svelte";
   import { playback } from "./lib/stores/transport.svelte";
   import { view } from "./lib/stores/view.svelte";
   import MasterStrip from "./ui/master/MasterStrip.svelte";
@@ -25,10 +28,9 @@
     document.documentElement.setAttribute("data-theme", view.theme);
   });
 
-  // Top-bar contents (spec §4.2). Loading a session and recalling a preset are
-  // M7's; M1 lists what the server has and remembers the selection.
+  // Top-bar contents (spec §4.2). The session name and every load/import/save/recall live in
+  // SessionController (M7 T9); this holds only the lists the TopBar shows.
   let sessions = $state<{ name: string; updated: number; n_clips: number }[]>([]);
-  let session = $state("");
   let models = $state<ModelOption[]>(buildModelOptions([]));
   let model = $state("medium");
   let modelFolder = $state("");
@@ -39,7 +41,6 @@
     try {
       const s = await forgeApi.sessions();
       sessions = s.sessions;
-      if (!session && sessions.length > 0) session = sessions[0].name;
     } catch {
       sessions = [];
     }
@@ -49,6 +50,56 @@
       masterPresets = [];
     }
     models = buildModelOptions(await fetchAdapters());
+  }
+
+  // M4's seam (M4 T1 `attach`) + M5's source (M5 T1 `settingsSource`, never seeding): PROMPT +
+  // SIGMA and ADVANCED SAMPLING now read and write the selected clip's / overlap's own `render`,
+  // not always session.defaults. Once, at startup; M4 and M5 cannot import each other (§12), so
+  // the composition root joins them (reconcile pass 2026-09-25).
+  settings.attach(arrangement.settingsSource);
+  // ... and a new clip starts from the session defaults, which follow STAGE (M4 setStage), not from
+  // BASE_DEFAULTS: under POST a BASE-seeded clip showed and saved BASE's steps/sampler/schedule
+  // (critic follow-up #4; Task 3's hook, tested in arrangementMixMaster.test.ts).
+  arrangement.renderSeed = () => cloneRenderSettings(settings.defaults);
+
+  // Task 9's load/import/save order lives here, unit-tested (sessionController.test.ts).
+  const sessionCtl = new SessionController({
+    api: forgeApi,
+    log: (text, level) => view.appendLog(text, level),
+    prompt: (message) => window.prompt(message, ""),
+    confirm: (message) => window.confirm(message),
+    // The lists the TopBar shows; a name created in another tab since they loaded is not known here.
+    exists: (kind, name) =>
+      kind === "session" ? sessions.some((s) => s.name === name) : masterPresets.includes(name),
+  });
+
+  // Autosave (spec §9.2): 2 s after the last change, to the current session -- only once that
+  // session has been loaded or explicitly saved. observe() reads every saved field through
+  // serializeProject's $state.snapshot, so this re-runs on ANY in-place edit (Global Constraint #1).
+  $effect(() => {
+    sessionCtl.observe();
+  });
+
+  async function saveSession() {
+    const name = await sessionCtl.saveSession();
+    if (name && !sessions.some((s) => s.name === name)) {
+      // `updated` in epoch SECONDS (a float), the server's own unit (file mtime; WINTERMUTE 2026-09-25).
+      sessions = [...sessions, { name, updated: Date.now() / 1000, n_clips: arrangement.clips.length }];
+    }
+  }
+
+  // The recall is refused mid-load, dropped if a load started during its fetch, and validated whole
+  // before its first write -- all in the controller (critic pass 3 #2, #12). The name is highlighted
+  // only once it applied; the TopBar select snaps back until then.
+  async function loadMasterPreset(name: string) {
+    if (await sessionCtl.recallMasterPreset(name)) masterPreset = name;
+  }
+
+  async function saveMasterPreset() {
+    const name = await sessionCtl.saveMasterPreset(masterPreset);
+    if (!name) return;
+    masterPreset = name;
+    if (!masterPresets.includes(name)) masterPresets = [...masterPresets, name];
   }
 
   let disposeKeys: (() => void) | null = null;
@@ -91,8 +142,11 @@
     theme={view.theme}
     ontheme={() => view.toggleTheme()}
     {sessions}
-    {session}
-    onsession={(name) => (session = name)}
+    session={sessionCtl.session}
+    loadingName={sessionCtl.loadingName}
+    onsession={(name) => sessionCtl.loadSession(name)}
+    onsessionsave={saveSession}
+    onimportv1={(file) => sessionCtl.importProjectFile(file)}
     {models}
     {model}
     onmodel={(value) => {
@@ -104,7 +158,8 @@
     onmodelfolder={(value) => (modelFolder = value)}
     {masterPresets}
     {masterPreset}
-    onmasterpreset={(name) => (masterPreset = name)}
+    onmasterpreset={loadMasterPreset}
+    onmasterpresetsave={saveMasterPreset}
   />
 
   <div class="main-row">
