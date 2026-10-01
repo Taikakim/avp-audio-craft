@@ -12,6 +12,8 @@
 // silently ignored").
 
 import { chainRequest, type ChainRequest, type LatchHeadInfo } from "../chains/latch";
+import { SAMPLERS_BY_OBJECTIVE } from "../forge/defaults";
+import { settings, type Objective } from "../stores/settings.svelte";
 import type {
   AudioRef, Envelope, ForgeClip, ForgeLane, JobOp, MasterChain, MixSpec, OverlapParams,
   RenderSettings, ScheduleSpec,
@@ -84,7 +86,19 @@ function scheduleWire(s: ScheduleSpec): ScheduleSpec {
  * mutating the target the user is editing. Ranges mirror parse_render's `_num` calls so a bad field
  * is named here instead of coming back as an opaque 400 a minute later.
  */
-export function renderWire(s: RenderSettings, cfgScale: number = s.cfg_scale): RenderWire {
+/** The sampler the SAMPLER select shows (samplers.ts resolveSampler, minus the LatCH case, which the
+ *  server forces itself). A target's stored sampler survives a POST/BASE switch -- setStage only
+ *  rewrites the session defaults -- so sending it raw put e.g. `dpmpp` on rf_denoiser while the UI
+ *  showed `pingpong` (review 2026-10-01). Empty/null stays null: the server's per-objective default. */
+export function wireSampler(requested: string | null | undefined, objective: Objective): string | null {
+  if (requested === "" || requested == null) return null;
+  const options: readonly string[] = SAMPLERS_BY_OBJECTIVE[objective] ?? [];
+  return options.includes(requested) ? requested : (options[0] ?? null);
+}
+
+export function renderWire(
+  s: RenderSettings, cfgScale: number = s.cfg_scale, objective: Objective = settings.objective,
+): RenderWire {
   const cip = s.cfg_interval_progress;
   const lo = num(cip?.[0] ?? 0, 0, 1, "cfg_interval_progress[0]");
   const hi = num(cip?.[1] ?? 1, 0, 1, "cfg_interval_progress[1]");
@@ -99,7 +113,7 @@ export function renderWire(s: RenderSettings, cfgScale: number = s.cfg_scale): R
     cfg_interval_progress: [lo, hi],
     schedule: scheduleWire(s.schedule),
     scale_phi: num(s.scale_phi, 0, 1, "render.scale_phi"),
-    sampler_type: s.sampler_type === "" ? null : s.sampler_type,
+    sampler_type: wireSampler(s.sampler_type, objective),
   };
 }
 
