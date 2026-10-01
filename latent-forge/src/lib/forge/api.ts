@@ -96,7 +96,7 @@ export const forgeApi = {
   chroma: (audio: AudioRef) =>
     sendJSON<{ ok: true; frames: number; fps: number; bands: { shape: [number, number, number]; scale: [number, number, number]; data_b64: string }; fold12: { shape: [number, number]; scale: number; data_b64: string } }>("/forge/chroma", "POST", { audio }),
   stats: (latents: LatentRef[], features: string[], max_frames = 20000, max_points = 2000) =>
-    sendJSON<{ ok: true; n_frames: number; xcorr: { shape: [number, number]; data_b64: string }; timeseries: { index: number; feature: string; fps: number; values: (number | null)[] }[]; features_available: string[] }>("/forge/stats", "POST", { latents, features, max_frames, max_points }),
+    sendJSON<{ ok: true; n_frames: number; xcorr: { shape: [number, number]; data_b64: string }; timeseries: { index: number; feature: string; fps: number; n_frames?: number; values: (number | null)[] }[]; features_available: string[] }>("/forge/stats", "POST", { latents, features, max_frames, max_points }),
   datasetScalars: (x: string, y: string) =>
     getJSON<{ ok: true; fields: string[]; points: { crop_id: string; x: number; y: number; label: string }[] }>(`/forge/dataset_scalars${qs({ x, y })}`),
 

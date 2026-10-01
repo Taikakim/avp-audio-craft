@@ -80,4 +80,5 @@ def test_stats_route_with_path_latents(monkeypatch, tmp_path, tmp_path_factory):
     assert body["n_frames"] == 80 and body["xcorr"]["shape"] == [256, 256]
     assert [s["index"] for s in body["timeseries"]] == [0, 1]
     assert len(body["timeseries"][0]["values"]) == 10
+    assert [s["n_frames"] for s in body["timeseries"]] == [40, 40]   # each latent's own length
     assert c.post("/forge/stats", json={"latents": []}).status_code == 400

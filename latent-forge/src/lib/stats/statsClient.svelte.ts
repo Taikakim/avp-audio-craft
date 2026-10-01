@@ -37,7 +37,8 @@ export interface StatsResult {
   xcorr: Float32Array;
   /** xcorr's side length: xcorr.length === n*n, cell(r, c) = xcorr[r*n + c]. */
   n: number;
-  timeseries: { index: number; feature: string; fps: number; values: (number | null)[] }[];
+  /** `n_frames`: this latent's own length (absent from servers before 2026-10-01). */
+  timeseries: { index: number; feature: string; fps: number; n_frames?: number; values: (number | null)[] }[];
   features_available: string[];
 }
 

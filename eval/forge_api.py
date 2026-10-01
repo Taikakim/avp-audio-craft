@@ -438,7 +438,9 @@ def _stats(body):
                 vals = stats.audio_feature(cached_audio[0], cached_audio[1], f, T)
             else:
                 vals = [None] * T
-            series.append({"index": i, "feature": f, "fps": contract.FPS,
+            # n_frames per series: the top-level n_frames is POOLED over every latent (xcorr), so a
+            # client that drew each series across it stretched short clips (review 2026-10-01).
+            series.append({"index": i, "feature": f, "fps": contract.FPS, "n_frames": int(T),
                            "values": stats.resample_points(list(vals), max_points)})
     return {"n_frames": n, "xcorr": xc, "timeseries": series, "features_available": sorted(available)}
 

@@ -52,7 +52,11 @@
     const border = panelColour(canvas, "--border");
     const dim = panelColour(canvas, "--text-dim");
 
-    const nFrames = res?.n_frames ?? 1;
+    // The x axis is the LONGEST series, each drawn over its own length. res.n_frames is pooled over
+    // every latent (the xcorr's count), so using it for each series stretched short clips; it is
+    // only the fallback for a server that does not send per-series n_frames (review 2026-10-01).
+    const lenOf = (s: { n_frames?: number }) => s.n_frames ?? res?.n_frames ?? 1;
+    const nFrames = ser.length ? Math.max(...ser.map(lenOf)) : (res?.n_frames ?? 1);
     let yLo = Infinity;
     let yHi = -Infinity;
     for (const s of ser) {
@@ -99,7 +103,7 @@
       for (const run of segments(s.values)) {
         ctx.beginPath();
         run.forEach(([i, v], j) => {
-          const px = sx(frameOf(i, s.values.length, nFrames));
+          const px = sx(frameOf(i, s.values.length, lenOf(s)));
           const py = sy(v);
           if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         });
