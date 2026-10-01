@@ -10,7 +10,7 @@ import traceback
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma
 from forge.contract import ForgeError
 from forge.paths import ForgePaths
 from forge.services import Services
@@ -341,3 +341,21 @@ async def stretch_route(request: Request):
     body = await request.json() or {}
     return ok(**await run_in_threadpool(_stretch_ref, body.get("audio"), body.get("speed", 1.0),
                                         body.get("semitones", 0.0)))
+
+
+def _chroma_ref(ref):
+    svc = services()
+    src = svc.resolve_audio(ref)
+    cache = paths().cache_dir("chroma") / f"{file_sha256(src)}.json"
+    if cache.exists():
+        return json.loads(cache.read_text())
+    payload = chroma.chroma_payload(svc.load_audio(src), SRV.SR)
+    cache.write_text(json.dumps(payload))
+    return payload
+
+
+@router.post("/forge/chroma")
+@forge_route
+async def chroma_route(request: Request):
+    body = await request.json() or {}
+    return ok(**await run_in_threadpool(_chroma_ref, body.get("audio")))
