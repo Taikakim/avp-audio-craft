@@ -199,12 +199,24 @@ describe("gpuBusyOther (§9.7 `GPU busy — <job_id>`)", () => {
 
   it("stays null for this client's own job and clears when the GPU goes idle", async () => {
     jobs.active = { forgeJobId: "forge-1", op: "generate", kind: "gen", sourceClipId: null, targetKey: "session", progress: null };
-    vi.spyOn(forgeApi, "status").mockResolvedValue({ ok: true, busy: true, job_id: "forge-1", log_tail: [], progress: null });
+    // The real shape: /status.job_id is the server's output-dir id; the queue id is in progress.
+    vi.spyOn(forgeApi, "status").mockResolvedValue({
+      ok: true, busy: true, job_id: "20261001-120000-forgecommit", log_tail: [], progress: progress({ job_id: "forge-1" }),
+    });
     await jobs.pollStatusOnce();
     expect(jobs.gpuBusyOther).toBeNull();
     vi.spyOn(forgeApi, "status").mockResolvedValue({ ok: true, busy: false, job_id: null, log_tail: [], progress: null });
     await jobs.pollStatusOnce();
     expect(jobs.gpuBusyOther).toBeNull();
+  });
+
+  it("names another forge client's job by its queue id (review 2026-10-01)", async () => {
+    jobs.active = { forgeJobId: "forge-1", op: "generate", kind: "gen", sourceClipId: null, targetKey: "session", progress: null };
+    vi.spyOn(forgeApi, "status").mockResolvedValue({
+      ok: true, busy: true, job_id: "20261001-120000-forgeinpaint", log_tail: [], progress: progress({ job_id: "forge-9" }),
+    });
+    await jobs.pollStatusOnce();
+    expect(jobs.gpuBusyOther).toBe("forge-9");
   });
 
   it("swallows a dead server -- a stopped render server is a normal state on this box", async () => {

@@ -125,6 +125,9 @@
   let disposeKeys: (() => void) | null = null;
 
   onMount(() => {
+    // §9.7 "GPU busy — <job_id>": jobs.gpuBusyOther only updates while this runs. The method
+    // existed but nothing started it (review 2026-10-01).
+    jobs.startStatusPolling();
     // project.connect() is unrelated to C1: it is the legacy ServerPanel's
     // render-server connectivity poll, not arrangement/clip state, so it stays.
     project.connect();
@@ -147,6 +150,7 @@
   });
 
   onDestroy(() => {
+    jobs.stopStatusPolling();
     project.disconnect();
     disposeKeys?.();
     disposeKeys = null;

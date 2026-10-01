@@ -166,7 +166,13 @@ export class JobsStore {
     try {
       const s = await forgeApi.status();
       const mine = this.active?.forgeJobId ?? null;
-      this.gpuBusyOther = s.busy && s.job_id !== null && s.job_id !== mine ? s.job_id : null;
+      // /status.job_id is the render server's OUTPUT-dir id (new_job(): "…-forgecommit"), never the
+      // forge queue id this client holds ("forge-…-N"), so comparing those two always said "someone
+      // else" (review 2026-10-01). A forge job publishes its QUEUE id in `progress.job_id`; with no
+      // progress the GPU is held by a non-forge render (the Dash explorer), which IS someone else.
+      const holder = s.progress?.job_id ?? null;
+      const other = s.busy && (holder === null || holder !== mine);
+      this.gpuBusyOther = other ? (holder ?? s.job_id ?? "another render") : null;
     } catch {
       this.gpuBusyOther = null;
     }
