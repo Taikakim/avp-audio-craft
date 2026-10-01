@@ -1358,3 +1358,33 @@ Test-side findings worth knowing:
 NOT touched: M7's wiring (settings.attach, a2a/onA2AToggle into the tab). PromptSigmaTab's
 A2A toggle is still the no-op default until then.
 ================================================================================
+
+================================================================================
+2026-10-01 -- (cloud session, not a named handle) -> KUANG / WINTERMUTE
+
+M7 (chains, mix, library, sessions) T1-T10 landed on latent-forge, one commit per task.
+Components/libs are the plan's code as written; the deviations are TEST-side or count drift.
+Verified: vitest 779 passed / 1 skipped (+9 skipped contract tests, below); npm run check 0
+errors; Playwright (system Chromium) 33 passed / 1 failed. The ONE failure is layout
+"screenshots" (needs the handoff mock; fails identically without any of this work).
+**The target-a2a-toggle test that has been red since 26ee15f now PASSES** -- M7 T9 Step 5
+(PromptSigmaTab sources the selected clip's A2A state) is what closed it. M4's gap is closed.
+
+What to know:
+  1. HELP total is 119, not the plan's 112: the plan's 87 baseline predates M1's 2026-09-29
+     fix wave (+7), and strings.test.ts already stood at 94. Every task's total shifted by +7.
+  2. T9 removes M1's temporary SAVE/LOAD buttons. topBar.test.ts had a C1-fix-wave test
+     ("SAVE serializes the arrangement's real clips") that clicked the removed save-project
+     button -- the plan does not mention it (written before the test existed). Deleted;
+     projectSerializer.test.ts covers real-clip serialisation, topBarSessions.test.ts asserts the
+     old buttons are gone. Say so if you want it ported to the new SAVE instead.
+  3. recordedContract.test.ts: all 9 are it.skipIf -- no M2 T15 recordings exist yet, so the
+     mock/server-shape guard the reconcile pass wanted is NOT active until those are recorded.
+  4. sessionsFilesOverlap.spec.ts dropClip needed `force: true` (the plan said "copied verbatim"
+     from M5, but the real helper has it; the second drop lands on the first clip).
+  5. Test-side races/fixtures again: preset-list mocks must return a name for ONE level only
+     (four selects share the option text); Files test awaits the rendered rows.
+Still open / not mine: Open questions 3, 7, 37 in the M7 plan (keyboard rewire, TopBar MODEL
+select never wired to settings, the task that removes the legacy modules). M9 is next on the
+client track once M6 (CHROMA) is done.
+================================================================================
