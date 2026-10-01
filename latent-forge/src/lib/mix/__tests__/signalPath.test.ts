@@ -130,6 +130,19 @@ describe("meta.stages reconciled with the estimate (M9 T4; M7 open question 7)",
     expect(merged).toHaveLength(9);
   });
 
+  it("keeps S1 and S9 apart although both are 'DECODE latent → audio' (review 2026-10-01)", () => {
+    const key = signalKeyOf(input());
+    const merged = mergeSignalPath(buildSignalPath(input()), {
+      key,
+      stages: [
+        { label: "DECODE latent → audio", on: false, note: "no latents", seconds: 0 },
+        { label: "DECODE latent → audio", on: true, note: "47s", seconds: 2.5 },
+      ],
+    }, key);
+    expect(merged[0]).toMatchObject({ n: 1, lit: false, note: "no latents" });
+    expect(merged[8]).toMatchObject({ n: 9, lit: true, note: "47s", seconds: 2.5 });
+  });
+
   it("falls back to the estimate once the arrangement has moved on", () => {
     const est = buildSignalPath(input({ overlapCount: 2 }));
     const merged = mergeSignalPath(est, {

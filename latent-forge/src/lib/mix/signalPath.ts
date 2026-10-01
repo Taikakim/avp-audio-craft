@@ -110,9 +110,16 @@ export function mergeSignalPath(
   currentKey: string,
 ): SignalPathStage[] {
   if (commit === null || commit.key !== currentKey) return estimate;
-  const byLabel = new Map(commit.stages.map((s) => [s.label, s]));
+  // Labels repeat: S1 and S9 are both "DECODE latent → audio". A Map keyed by label kept only S9 and
+  // lit row 1 with S9's state (review 2026-10-01), so the k-th row with a label takes the k-th
+  // commit stage with that label -- order within a label, label across the list.
+  const byLabel = new Map<string, CommitStage[]>();
+  for (const s of commit.stages) {
+    const q = byLabel.get(s.label);
+    if (q) q.push(s); else byLabel.set(s.label, [s]);
+  }
   return estimate.map((row) => {
-    const real = byLabel.get(row.label);
+    const real = byLabel.get(row.label)?.shift();
     return real === undefined
       ? row
       : { ...row, lit: real.on, note: real.note || row.note, seconds: real.seconds };
