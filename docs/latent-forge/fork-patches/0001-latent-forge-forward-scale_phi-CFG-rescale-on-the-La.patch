@@ -1,0 +1,89 @@
+From 280e4e89329a8ec649bb9bfaec2efe08946e6cf8 Mon Sep 17 00:00:00 2001
+From: Electro-Sheep 1 <electro-sheep-1@aavepyora.online>
+Date: Thu, 1 Oct 2026 08:44:36 +0000
+Subject: [PATCH 1/2] latent-forge: forward scale_phi (CFG rescale) on the
+ LatCH-guided path
+
+---
+ stable_audio_3/model.py          |  7 +++++++
+ tests/test_latent_forge_hooks.py | 36 ++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+)
+ create mode 100644 tests/test_latent_forge_hooks.py
+
+diff --git a/stable_audio_3/model.py b/stable_audio_3/model.py
+index 30b3d2d..4af59c2 100644
+--- a/stable_audio_3/model.py
++++ b/stable_audio_3/model.py
+@@ -387,6 +387,9 @@ class StableAudioModel:
+                 # generate()-level sampler_type reaches the guided path too, so a
+                 # caller does not need a second dialect to say the same thing.
+                 sampler_type=sampler_type,
++                # CFG rescale rides **sampler_kwargs on the sample_diffusion path; the latch
++                # path passes explicit kwargs only (Latent Forge, 2026-09-15).
++                scale_phi=sampler_kwargs.pop("scale_phi", 0.0),
+             )
+         else:
+             result = sample_diffusion(
+@@ -462,6 +465,7 @@ class StableAudioModel:
+         latents_sink=None,
+         callback=None,
+         sampler_type=None,
++        scale_phi=0.0,
+     ):
+         """Run flow-matching Euler sampling with one or more LatCH guides.
+ 
+@@ -615,6 +619,9 @@ class StableAudioModel:
+                 # (cfg_interval[0] <= sigma <= cfg_interval[1]) — native sigma semantics
+                 cfg_interval=tuple(cfg_interval),
+                 callback=callback, **hp, **cond_inputs,
++                # Latent Forge CFG RESCALE: only forwarded when non-zero, so a default request
++                # reaches the sampler byte-identical to before.
++                **({"scale_phi": float(scale_phi)} if scale_phi else {}),
+             )
+ 
+             # Non-invasive capture: same audio out, z0 also handed to the caller.
+diff --git a/tests/test_latent_forge_hooks.py b/tests/test_latent_forge_hooks.py
+new file mode 100644
+index 0000000..279d6a8
+--- /dev/null
++++ b/tests/test_latent_forge_hooks.py
+@@ -0,0 +1,36 @@
++"""Latent Forge hooks in the fork (avp-audio-craft spec 2026-09-15 §6.6)."""
++import types
++
++import torch
++
++import stable_audio_3.model as m
++
++
++def _stub():
++    return types.SimpleNamespace(
++        device="cpu",
++        model=types.SimpleNamespace(pretransform=types.SimpleNamespace(downsampling_ratio=4096),
++                                    sample_rate=44100, model=object(), diffusion_objective="rectified_flow"))
++
++
++def _run(monkeypatch, **extra):
++    seen = {}
++
++    def fake_sampler(model, x, sigmas, guides, **kw):
++        seen.update(kw)
++        return x
++
++    monkeypatch.setattr(m, "sample_flow_euler_multi_latch_guided", fake_sampler)
++    m.StableAudioModel._latch_guided_generate(
++        _stub(), noise=torch.zeros(1, 4, 8), cond_inputs={}, latch_configs=[], latch_hparams={},
++        steps=4, cfg_scale=1.0, apg_scale=1.0, batch_size=1, latent_sample_size=8, dist_shift=None,
++        return_latents=True, **extra)
++    return seen
++
++
++def test_latch_path_forwards_scale_phi(monkeypatch):
++    assert _run(monkeypatch, scale_phi=0.7)["scale_phi"] == 0.7
++
++
++def test_latch_path_omits_zero_scale_phi(monkeypatch):
++    assert "scale_phi" not in _run(monkeypatch)
+-- 
+2.43.0
+

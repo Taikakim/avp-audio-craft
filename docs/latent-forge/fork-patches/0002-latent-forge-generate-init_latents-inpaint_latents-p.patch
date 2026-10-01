@@ -1,0 +1,118 @@
+From c5e9d9d5db09aeb08c4271b926e722343adfa2cd Mon Sep 17 00:00:00 2001
+From: Electro-Sheep 1 <electro-sheep-1@aavepyora.online>
+Date: Thu, 1 Oct 2026 08:44:49 +0000
+Subject: [PATCH 2/2] latent-forge: generate(init_latents=, inpaint_latents=)
+ -- passes without a decode round-trip
+
+---
+ stable_audio_3/model.py          | 32 ++++++++++++++++++++++++++++++++
+ tests/test_latent_forge_hooks.py | 25 +++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
+
+diff --git a/stable_audio_3/model.py b/stable_audio_3/model.py
+index 4af59c2..16be824 100644
+--- a/stable_audio_3/model.py
++++ b/stable_audio_3/model.py
+@@ -26,6 +26,20 @@ from stable_audio_3.models.lora import (
+ )
+ 
+ 
++
++def _fit_latents(latents, frames, device, dtype):
++    """(C,T') or (1,C,T') -> (1,C,frames), zero-padded or cropped at the end (Latent Forge, 2026-09-15)."""
++    z = torch.as_tensor(latents)
++    if z.dim() == 2:
++        z = z.unsqueeze(0)
++    if z.dim() != 3 or z.shape[0] != 1:
++        raise ValueError(f"latents must be (C,T) or (1,C,T), got {tuple(z.shape)}")
++    z = z.to(device=device, dtype=dtype)
++    if z.shape[-1] < frames:
++        z = torch.nn.functional.pad(z, (0, frames - z.shape[-1]))
++    return z[..., :frames].contiguous()
++
++
+ class StableAudioModel:
+     def __init__(self, model, model_config, device, model_half):
+         self.model = model
+@@ -111,6 +125,8 @@ class StableAudioModel:
+         inpaint_mask=None,
+         inpaint_mask_start_seconds: tp.Optional[tp.Union[float, tp.List[float]]] = None,
+         inpaint_mask_end_seconds: tp.Optional[tp.Union[float, tp.List[float]]] = None,
++        init_latents: tp.Optional[torch.Tensor] = None,
++        inpaint_latents: tp.Optional[torch.Tensor] = None,
+         # Schedule options
+         duration_padding_sec: float = 6.0,
+         apg_scale: float = 1.0,
+@@ -173,6 +189,11 @@ class StableAudioModel:
+             **sampler_kwargs: Additional keyword arguments to pass to the sampler.
+         """
+ 
++        if init_latents is not None and init_audio is not None:
++            raise ValueError("pass init_audio or init_latents, not both")
++        if inpaint_latents is not None and inpaint_audio is not None:
++            raise ValueError("pass inpaint_audio or inpaint_latents, not both")
++
+         device = str(self.device)
+ 
+         # Build conditioning from prompt string if not provided directly
+@@ -294,6 +315,10 @@ class StableAudioModel:
+                 init_audio, audio_sample_size, inpaint_mask
+             )
+             init_audio = init_audio.repeat(batch_size, 1, 1)
++        elif init_latents is not None:
++            # Latent Forge: successive passes over one latent never round-trip the decoder.
++            init_audio = _fit_latents(init_latents, latent_sample_size, device,
++                                      next(self.model.pretransform.parameters()).dtype).repeat(batch_size, 1, 1)
+ 
+         # Process inpaint audio
+         if inpaint_audio is not None:
+@@ -301,6 +326,13 @@ class StableAudioModel:
+                 inpaint_audio, audio_sample_size, inpaint_mask
+             )
+             inpaint_audio = inpaint_audio.repeat(batch_size, 1, 1)
++        elif inpaint_latents is not None:
++            inpaint_audio = _fit_latents(inpaint_latents, latent_sample_size, device,
++                                         next(self.model.pretransform.parameters()).dtype).repeat(batch_size, 1, 1)
++            if inpaint_mask is not None:
++                inpaint_mask = interpolate(
++                    inpaint_mask.unsqueeze(1), size=latent_sample_size, mode="nearest"
++                ).squeeze(1)
+         else:
+             if inpaint_mask is not None:
+                 inpaint_mask = interpolate(
+diff --git a/tests/test_latent_forge_hooks.py b/tests/test_latent_forge_hooks.py
+index 279d6a8..312d8c2 100644
+--- a/tests/test_latent_forge_hooks.py
++++ b/tests/test_latent_forge_hooks.py
+@@ -34,3 +34,28 @@ def test_latch_path_forwards_scale_phi(monkeypatch):
+ 
+ def test_latch_path_omits_zero_scale_phi(monkeypatch):
+     assert "scale_phi" not in _run(monkeypatch)
++
++
++import pytest
++
++
++def test_fit_latents_pads_crops_and_casts():
++    z = torch.arange(12, dtype=torch.float32).reshape(2, 6)
++    out = m._fit_latents(z, 8, "cpu", torch.float16)
++    assert out.shape == (1, 2, 8) and out.dtype == torch.float16
++    assert float(out[0, 1, 5]) == 11.0 and float(out[0, 0, 7]) == 0.0
++    assert m._fit_latents(z.unsqueeze(0), 4, "cpu", torch.float32).shape == (1, 2, 4)
++    with pytest.raises(ValueError):
++        m._fit_latents(torch.zeros(2, 2, 2, 2), 4, "cpu", torch.float32)
++
++
++def test_generate_rejects_both_init_forms():
++    with pytest.raises(ValueError, match="init_audio or init_latents"):
++        m.StableAudioModel.generate(_stub(), prompt="x", init_audio=(44100, torch.zeros(2, 10)),
++                                    init_latents=torch.zeros(1, 4, 2))
++
++
++def test_generate_rejects_both_inpaint_forms():
++    with pytest.raises(ValueError, match="inpaint_audio or inpaint_latents"):
++        m.StableAudioModel.generate(_stub(), prompt="x", inpaint_audio=(44100, torch.zeros(2, 10)),
++                                    inpaint_latents=torch.zeros(1, 4, 2))
+-- 
+2.43.0
+

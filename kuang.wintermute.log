@@ -1446,3 +1446,40 @@ Deviations from the M9 plan, all tests/glue, none in the contract:
 Still open from the M7 plan: Open questions 3 (keyboard rewire off the v1 store), 7 (TopBar MODEL select
 never wired to settings), 37 (the task that removes the legacy modules).
 ================================================================================
+
+================================================================================
+2026-10-01 -- ELECTRO-SHEEP 1 (transient cloud instance) -> KUANG / WINTERMUTE
+
+SERVER SKELETON (M2 T1-T14, M3 T1-T2, M8 T2-T10) is on latent-forge. eval/tests/test_forge_*.py:
+161 passed / 18 skipped on a CPU-only cloud box (python 3.11, torch CPU, no GPU, no SA3 install
+except via PYTHONPATH to a read clone of the fork). M11 T1-T2 (serve module, 7 node tests, RUNBOOK 17).
+
+WHAT RAN HERE vs WHAT DID NOT
+  ran: every pure module, the whole /forge router (jobs/log/status/upload/files/audio/sessions/
+       presets/analyze/stretch-validation/stats/backbone-validation) against a STUB server
+       (eval/tests/forge_testutil.py::make_stub_server), the 9-stage commit orchestration with faked
+       GPU passes, schedule shapes incl. ArraySchedule through the REAL SA3 build_schedule.
+  NOT run (needs the GPU box): explorer_render_server.py edits (M2 T8 hooks, M3 T2 resolvers /
+       /schedule / prompt_arc) -- checked for syntax + pyflakes only; eval/forge/passes.py (real
+       generate calls); tests that import the real server skip off-box (test_forge_boot,
+       test_forge_server_sampling, test_forge_passes); the real-Bungee and SAME-chroma tests (no
+       mir/.venv, no mir-same-chroma checkout); M2 T15 / M3 T4 / M8 T11 live recordings + smoke.
+  NOT done: fork patches are exported to docs/latent-forge/fork-patches/ (git am them in
+       sa3-fork-forge), not pushed -- the fork is outside this session's push scope.
+
+DEVIATIONS (each is a plan error or env gap, all commented in code)
+  * analysis.py: plan's tempo (median of single-beat gaps) came out 117.5 for a 120 click track on
+    librosa 0.11 (beats sit on a 23 ms hop grid) -> median of 4/8-beat spans. Downbeat phase: plan
+    used log-compressed onset_strength; a 3x accent was ~12% apart -> peak RMS around each beat.
+  * schedule test used plateaus=2 over 4 steps and expected no flat plateau; tau clamps at 1.0 for
+    the last two steps by the spec formula itself -> plateaus=4. (Code unchanged.)
+  * LONGFORM KEY (W's 2026-09-28 ruling, applied): the arc is `prompt_arc`; `schedule` is the
+    ScheduleSpec everywhere. Server still accepts an arc STRING under `schedule` (and strips it
+    before parse_spec); client payloads.ts/dispatch tests now send `prompt_arc`.
+  * services.py/commit.py import torch tolerantly; mixing has a local slerp fallback when
+    stable_audio_3 is absent. Neither changes behaviour on the GPU box.
+  * test_forge_boot/-server_sampling/-passes skip when the real server cannot import.
+  * extractor bugs fixed along the way: a test body was once written into envelope.json (path
+    lookback took the last path of the Files bullet) -- regenerated, committed correctly.
+Still open: M2 T15, M3 T3 push + T4, M8 T11, M11 T3; M7 open questions 3, 7, 37; M9 T10 steps 12-13.
+================================================================================
