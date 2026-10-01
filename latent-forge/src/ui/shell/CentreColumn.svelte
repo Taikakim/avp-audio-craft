@@ -1,7 +1,25 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { view } from "../../lib/stores/view.svelte";
+  import type { LatentRef } from "../../lib/forge/types";
+  import { arrangement } from "../../lib/stores/arrangement.svelte";
   import StatisticsView from "../stats/StatisticsView.svelte";
+  import type { LaneSel } from "../stats/statsHeader";
+
+  // M10's ANALYSE asks "which latents does this lane hold?" through a prop (M10 may not import the
+  // arrangement store, M5/M7 may), and this shell file is the first place allowed to know both.
+  // Skeleton rule: a clip is analysed by whatever identifies its audio -- a crop id when it came
+  // from the crop library (the server resolves that to its stored latent), otherwise the audio ref.
+  // A clip with no latent yet is still listed; the server reports what it cannot resolve (spec 9.7).
+  // LaneSel is 1-based (LANE 1..4) or "all"; ForgeClip.lane is 0-based.
+  function laneLatents(sel: LaneSel): LatentRef[] {
+    return arrangement.clips
+      .filter((c) => sel === "all" || c.lane === sel - 1)
+      .map((c): LatentRef =>
+        c.audio.kind === "crop"
+          ? { kind: "crop", crop_id: c.audio.crop_id }
+          : { kind: "audio", audio: c.audio });
+  }
 
   // Spec §4.1: centre column = scrolling centre (flex 1, padding 10, gap 8) plus,
   // in WORKSPACE, the 248 px bottom pane.
@@ -22,7 +40,7 @@
 
 <div class="centre-column" data-region="centre-column">
   {#if view.screen === "statistics"}
-    <StatisticsView />
+    <StatisticsView {laneLatents} />
   {:else}
     <div class="scrolling-centre" data-region="centre">
       {@render centre()}
