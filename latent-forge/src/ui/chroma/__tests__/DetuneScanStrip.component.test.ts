@@ -120,6 +120,22 @@ describe("clicking and dragging the strip sets detune (spec §5.4)", () => {
     expect(arrangement.clips[0].detune_cents).toBe(100);
   });
 
+  it("tracks the pointer during a drag instead of compounding the offset (review 2026-10-01)", async () => {
+    const { getByTestId } = render(DetuneScanStrip, {
+      props: { clip, result: result(12), target: TARGET, criterion: "highest" },
+    });
+    const canvas = getByTestId("chroma-scan-strip");
+    rect(canvas);
+    // x = 300 is +20 ¢ from the centre. Holding still must leave it at +20, not walk 20 -> 40 -> 60.
+    await fireEvent.pointerDown(canvas, { button: 0, clientX: 300, clientY: 15, pointerId: 1 });
+    expect(arrangement.clips[0].detune_cents).toBe(20);
+    await fireEvent.pointerMove(canvas, { clientX: 300, clientY: 15, pointerId: 1 });
+    await fireEvent.pointerMove(canvas, { clientX: 300, clientY: 15, pointerId: 1 });
+    expect(arrangement.clips[0].detune_cents).toBe(20);
+    await fireEvent.pointerMove(canvas, { clientX: 325, clientY: 15, pointerId: 1 });
+    expect(arrangement.clips[0].detune_cents).toBe(30);
+  });
+
   it("ignores a middle or right button, which are not the strip's gesture", async () => {
     const { getByTestId } = render(DetuneScanStrip, {
       props: { clip, result: result(12), target: TARGET, criterion: "highest" },

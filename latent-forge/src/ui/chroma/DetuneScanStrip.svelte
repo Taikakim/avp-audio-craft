@@ -60,6 +60,10 @@
 
   let canvasEl = $state<HTMLCanvasElement>();
   let dragging = false;
+  /** The clip's detune when the drag began. A drag sets start + pointer offset (absolute within
+   *  the drag); adding the offset to the LIVE detune on every move compounded it to ±100 within a
+   *  few events (review 2026-10-01). */
+  let dragStartCents = 0;
 
   const scan = $derived<DetuneScan | null>(
     result ? scanDetune(result.fold12, result.T, target, detuneCents) : null,
@@ -129,13 +133,15 @@
     const canvas = canvasEl;
     if (!canvas || !clip) return;
     const rect = canvas.getBoundingClientRect();
-    applyOffset(centsAtX(e.clientX - rect.left, rect.width));
+    const next = dragStartCents + centsAtX(e.clientX - rect.left, rect.width);
+    arrangement.setDetune(clip.id, Math.min(DETUNE_MAX, Math.max(DETUNE_MIN, next)));
   }
 
   function onPointerDown(e: PointerEvent): void {
     if (e.button !== 0 || !clip) return;
     e.preventDefault();
     dragging = true;
+    dragStartCents = clip.detune_cents;
     canvasEl?.setPointerCapture?.(e.pointerId);
     setFromPointer(e);
   }
