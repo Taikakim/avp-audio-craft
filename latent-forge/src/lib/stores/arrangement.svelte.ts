@@ -140,6 +140,23 @@ class ArrangementStore {
     this.clips = this.clips.filter((c) => c.id !== id);
   }
 
+  /** Spec §4.5 REPLACE CLIP. The previous audio is archived on the clip rather than dropped:
+   *  ForgeClip.history has existed since M1 T3 for exactly this and nothing has written it until now.
+   *  $state.snapshot, not the live proxy and not structuredClone — a proxy in the array would alias
+   *  the clip's current audio, and structuredClone on a proxy throws DataCloneError. */
+  replaceClipAudio(id: string, ref: AudioRef) {
+    const c = this.find(id);
+    if (!c) return;
+    c.history.push($state.snapshot(c.audio) as AudioRef);
+    c.audio = ref;
+    c.offset_sec = 0;          // the new file starts where it starts
+    c.previewAudio = null;     // a stretched copy of the file we just replaced
+    c.native_bpm = null;       // and its analysis
+    c.downbeats_sec = [];
+    // A latent is valid only for the audio it was encoded from (M5 duplicateClip's rule).
+    if (c.latentState !== "none") c.latentState = "stale";
+  }
+
   duplicateClip(id: string): ForgeClip | undefined {
     const c = this.find(id);
     if (!c) return undefined;

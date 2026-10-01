@@ -231,3 +231,38 @@ async function runStretch(clipId: string, onError?: (e: ForgeApiError) => void):
     onError?.(asApiError(e));
   }
 }
+
+export interface ReplaceAudioInput {
+  clipId: string;
+  ref: AudioRef;
+  /** The render's own length, from RenderHistoryEntry.dur_sec. null when it is not known. */
+  durationSec: number | null;
+}
+
+export interface ReplaceAudioOutcome {
+  /** Set when re-analysis failed; the swap stands regardless (spec §7.3). */
+  analyzeError: ForgeApiError | null;
+}
+
+/** The async half of REPLACE CLIP, mirroring addClip: the store swaps the refs, then the analysis
+ *  and the stretch are re-derived for the new file. */
+export async function replaceAudio(input: ReplaceAudioInput): Promise<ReplaceAudioOutcome> {
+  const clip = arrangement.clips.find((c) => c.id === input.clipId);
+  if (!clip) return { analyzeError: null };
+
+  arrangement.replaceClipAudio(clip.id, input.ref);
+
+  // A clip must never claim audio that is not there; growing it is §7.2's business, not a swap's.
+  if (input.durationSec !== null && input.durationSec > 0 && input.durationSec < clip.dur_sec) {
+    arrangement.trimClip(clip.id, "end", clip.start_sec + input.durationSec);
+  }
+
+  let analyzeError: ForgeApiError | null = null;
+  try {
+    await ensureAnalysis(clip.id);
+  } catch (e) {
+    analyzeError = asApiError(e);
+  }
+  scheduleStretch(clip.id);
+  return { analyzeError };
+}

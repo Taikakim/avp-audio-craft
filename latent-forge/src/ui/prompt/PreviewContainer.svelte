@@ -218,6 +218,77 @@
     e.dataTransfer.setData("application/x-forge-ref", JSON.stringify(history.refOf(entry)));
     e.dataTransfer.effectAllowed = "copy";
   }
+
+  import {
+    applyPayloadSettings, NO_SETTINGS_HINT, payloadSettings, replaceClipBlock, useSettingsBlock,
+  } from "../../lib/render/previewActions";
+  import { replaceAudio } from "../../lib/clips/lifecycle";
+
+  /** Post-click state, not a block reason: what the last USE SETTINGS actually did. Cleared the
+   *  moment the previewed render changes, so the hint can never describe a different render. */
+  let useSettingsNote = $state<string | null>(null);
+  let acting = $state(false);
+
+  $effect(() => {
+    // Read `entry` so this re-runs on a HISTORY change; never write state that this same effect
+    // reads, or Svelte throws state_unsafe_mutation.
+    void entry;
+    useSettingsNote = null;
+  });
+
+  const useBlock = $derived(useSettingsBlock(entry, jobs.busy || acting));
+  const replaceBlock = $derived(replaceClipBlock(entry, target, jobs.busy || acting));
+
+  async function onUseSettings(): Promise<void> {
+    if (entry === null || useBlock !== null) return;
+    // Capture BEFORE the await. `history.jobRecord` is a real round trip (GET /forge/jobs/<id>),
+    // `target` is `view.selection` itself, and `entry` is a $derived over HISTORY -- either can
+    // change while the fetch is in flight. `acting` only stops a second CLICK. Writing the
+    // render's settings into a target the operator did not pick is an edit, so M7's autosave
+    // would then save it 2 s later; this is M7 critic pass 3 #2's shape, and the fix there was
+    // the same superseded check.
+    const forTarget = view.selection;
+    const forKey = view.selectionKey;      // compare by KEY: every selection click builds a fresh object
+    const forEntry = entry;
+    acting = true;
+    try {
+      const record = await history.jobRecord(forEntry);
+      if (view.selectionKey !== forKey || entry !== forEntry) return;   // superseded
+      const ps = payloadSettings(record.op, record.payload);
+      if (ps.body === null && ps.durationSec === null) {
+        useSettingsNote = NO_SETTINGS_HINT;
+        return;
+      }
+      const out = applyPayloadSettings(forTarget, ps);
+      useSettingsNote = null;
+      const parts = [`${out.applied.length} field(s)`];
+      if (out.lengthSec !== null) parts.push(`LENGTH ${out.lengthSec.toFixed(3)} s`);
+      view.appendLog(`[render] USE SETTINGS: ${parts.join(", ")} from ${forEntry.label}`);
+      if (out.rejected.length > 0) {
+        view.appendLog(`[render] USE SETTINGS ignored: ${out.rejected.join(", ")}`, "error");
+      }
+    } catch (e) {
+      // §9.7: the job fetch is the failure the operator must see, and jobs.lastError is that surface.
+      jobs.lastError = { targetKey: forKey, message: e instanceof Error ? e.message : String(e) };
+    } finally {
+      acting = false;
+    }
+  }
+
+  async function onReplaceClip(): Promise<void> {
+    if (entry === null || replaceBlock !== null || target.kind !== "clip") return;
+    acting = true;
+    try {
+      const out = await replaceAudio({
+        clipId: target.id, ref: history.refOf(entry), durationSec: entry.dur_sec || null,
+      });
+      if (out.analyzeError) {
+        view.appendLog(`[render] REPLACE CLIP: analysis failed — ${out.analyzeError.message}`, "error");
+      }
+    } finally {
+      acting = false;
+    }
+  }
 </script>
 
 <div class="preview" data-region="preview-container">
@@ -279,12 +350,16 @@
     class="action"
     data-testid="preview-use-settings"
     data-help={HELP.previewUseSettings}
-    disabled>USE SETTINGS</button>
+    title={useSettingsNote ?? useBlock ?? ""}
+    disabled={useBlock !== null}
+    onclick={onUseSettings}>USE SETTINGS</button>
   <button
     class="action"
     data-testid="preview-replace-clip"
     data-help={HELP.previewReplaceClip}
-    disabled>REPLACE CLIP</button>
+    title={replaceBlock ?? ""}
+    disabled={replaceBlock !== null}
+    onclick={onReplaceClip}>REPLACE CLIP</button>
 </div>
 
 <style>
