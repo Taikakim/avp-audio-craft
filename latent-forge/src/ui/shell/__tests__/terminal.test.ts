@@ -9,12 +9,12 @@ afterEach(() => {
 });
 
 const lines = [
-  { seq: 1, text: "$ player /status → ok", tone: "dim" },
-  { seq: 2, text: "lane 2  decode 000412.npy", tone: "text" },
+  { key: 0, seq: 1, text: "$ player /status → ok", tone: "dim" },
+  { key: 1, seq: 2, text: "lane 2  decode 000412.npy", tone: "text" },
 ];
 
 function manyLines(n: number) {
-  return Array.from({ length: n }, (_, i) => ({ seq: i, text: `line ${i}`, tone: "text" }));
+  return Array.from({ length: n }, (_, i) => ({ key: i, seq: i, text: `line ${i}`, tone: "text" }));
 }
 
 /** jsdom does no real layout -- scrollHeight/clientHeight always read 0 -- so every autoscroll
@@ -51,6 +51,23 @@ describe("the TERMINAL tab (spec §4.5)", () => {
       props: { mode: "full" as const, busy: false, lines, onmode: () => {} },
     });
     expect(container.querySelector('[data-region="terminal"]')?.getAttribute("data-mode")).toBe("full");
+  });
+});
+
+describe("TERMINAL keys rows by a unique key, not by seq (review 2026-10-01)", () => {
+  it("renders every row when client lines share the server's seq", () => {
+    // appendLocal stamps client lines with the current server cursor, so several rows can carry
+    // the same seq. Keying {#each} by seq threw each_key_duplicate here.
+    const dup = [
+      { key: 0, seq: 41, text: "server line", tone: "text" },
+      { key: 1, seq: 41, text: "[stats] analysed", tone: "text" },
+      { key: 2, seq: 41, text: "[forge] autosave failed", tone: "error" },
+    ];
+    const { container } = render(Terminal, {
+      props: { mode: "pane" as const, busy: false, lines: dup, onmode: () => {} },
+    });
+    expect([...container.querySelectorAll(".line")].map((e) => e.textContent)).toEqual(
+      ["server line", "[stats] analysed", "[forge] autosave failed"]);
   });
 });
 

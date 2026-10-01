@@ -7,7 +7,7 @@
   interface Props {
     mode: TerminalMode;
     busy: boolean;
-    lines: { seq: number; text: string; tone: string }[];
+    lines: { key: number; seq: number; text: string; tone: string }[];
     onmode: (m: TerminalMode) => void;
   }
   let { mode, busy, lines, onmode }: Props = $props();
@@ -51,7 +51,7 @@
   </div>
   {#if mode !== "collapsed"}
     <div class="body" data-testid="terminal-body" bind:this={bodyEl}>
-      {#each lines as line (line.seq)}
+      {#each lines as line (line.key)}
         <div class="line" data-tone={line.tone}>{line.text}</div>
       {/each}
     </div>

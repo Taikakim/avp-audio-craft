@@ -13,6 +13,9 @@ import { forgeApi } from "../forge/api";
 export type LogTone = "text" | "dim" | "accent" | "error";
 
 export interface LogLine {
+  /** Render key, unique per line. `seq` is NOT unique: client lines (appendLocal, poll failures)
+   *  reuse the server cursor, so keying TERMINAL's {#each} by seq collided (review 2026-10-01). */
+  key: number;
   seq: number;
   text: string;
   tone: LogTone;
@@ -38,6 +41,7 @@ class LogStore {
 
   #timer: ReturnType<typeof setInterval> | null = null;
   #reported: string | null = null;
+  #nextKey = 0;
 
   /**
    * Svelte 5 proxy rule: pushing an object into a `$state` array deep-proxies it,
@@ -54,7 +58,7 @@ class LogStore {
   }
 
   append(text: string, seq: number, tone: LogTone = logTone(text)): LogLine {
-    this.lines.push({ seq, text, tone });
+    this.lines.push({ key: this.#nextKey++, seq, text, tone });
     if (this.lines.length > LOG_RING) this.lines.splice(0, this.lines.length - LOG_RING);
     if (seq > this.seq) this.seq = seq;
     return this.lines[this.lines.length - 1];
