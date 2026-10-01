@@ -6,6 +6,7 @@
   // The tab bodies for CHROMA, PROMPT + SIGMA and MIX + SIGNAL PATH are empty here
   // and are built by M6, M4 and M7 respectively. TERMINAL is live in M1.
   import { logStore } from "../../lib/stores/log.svelte";
+  import MixSignalPath from "../mix/MixSignalPath.svelte";
   import PromptSigmaTab from "../prompt/PromptSigmaTab.svelte";
   import PreviewContainer from "../prompt/PreviewContainer.svelte";
   import { BOTTOM_TABS, bottomHint, type BottomTabId } from "./bottomTabs";
@@ -57,8 +58,7 @@
     {:else if tab === "prompt"}
       <PromptSigmaTab />
     {:else if tab === "mix"}
-      <!-- body: M7 (spec §4.5 MIX ORDER + SIGNAL PATH, §8.1 stage labels) -->
-      <div class="tab-empty"></div>
+      <MixSignalPath />
     {:else}
       <Terminal
         mode={terminalMode}

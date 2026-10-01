@@ -117,6 +117,9 @@ export type HelpId =
   | "masterLatchHeadLabel"
   | "masterHead"
   | "masterGain"
+  | "mixQuadWeight"
+  | "mixLerp"
+  | "mixSlerp"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -248,4 +251,7 @@ export const HELP: Record<HelpId, string> = {
   masterLatchHeadLabel: "Which head steers the mixed latent (spec §8.1 S8 -- the existing /steer math).",
   masterHead: "The LatCH head applied to the mix. Uses the same registry as the lane chains' slots.",
   masterGain: "How hard the head's gradient is applied to the mixed latent. Safe value: 64.",
+  mixQuadWeight: "This lane's share of the weighted 4-way mix. All four are renormalised together; leaving every one at zero mixes the lanes equally.",
+  mixLerp: "Linear interpolation between this node's two inputs.",
+  mixSlerp: "Spherical interpolation between this node's two inputs -- the default, since SAME's latent space is strongly anisotropic and a straight lerp can cut through low-energy regions a slerp arcs around.",
 };
