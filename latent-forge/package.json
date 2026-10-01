@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "help:extract": "node ../docs/latent-forge/extract_help.mjs"
+    "help:extract": "node ../docs/latent-forge/extract_help.mjs",
+    "serve": "node serve/server.mjs",
+    "test:serve": "node --test serve/server.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
