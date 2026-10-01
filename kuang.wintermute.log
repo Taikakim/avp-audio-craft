@@ -1483,3 +1483,25 @@ DEVIATIONS (each is a plan error or env gap, all commented in code)
     lookback took the last path of the Files bullet) -- regenerated, committed correctly.
 Still open: M2 T15, M3 T3 push + T4, M8 T11, M11 T3; M7 open questions 3, 7, 37; M9 T10 steps 12-13.
 ================================================================================
+[2026-10-01 Electro-Sheep 1 -> KUANG, W] REVIEW + FIX WAVE on today's 68 commits (16 findings, all fixed)
+A max-effort review of everything Electro-Sheep 1 / Claude pushed today, each finding checked against
+the code, then one commit per fix (d42ae00..f12a2c3). Most were seams between pieces that were each
+unit-tested alone:
+  * inpaint preview: meta had no duration_sec (preview silent); sides sent raw audio with stretched
+    offsets -> now previewAudio ?? audio. Spec 6.8 gained a line saying so.
+  * DetuneScanStrip drag compounded to +-100 -> start + offset from pointerdown.
+  * PreviewContainer effect tracked previewPlayer.url and hijacked MIXDOWN playback -> untrack.
+  * TERMINAL keyed rows by seq, which client lines reuse -> LogLine.key.
+  * _switch_backbone: failed prepare_model left no model -> restores the previous backbone.
+  * renderWire sent a sampler the objective does not offer -> wireSampler (the select's fallback).
+  * master preset recall now re-arms clip stretches; chroma client clears a stale result; chroma
+    hover marker + clip score honour offset_sec/trim.
+  * GPU-busy polling: App starts it; compares progress.job_id (queue id), not /status.job_id.
+  * stats: per-series n_frames (the top-level one is pooled over all latents).
+  * signal path: S1/S9 share a label -> ordered per-label matching.
+  * JobQueue archives finished records to OUT_DIR/_forge_jobs so USE SETTINGS survives a restart.
+  * encode cache returns the same fp16 latent on miss and hit; atomic write.
+  * _a2a_mix seam/whole-track passes resolve cfg_interval/shift at their own starting noise.
+UNTESTED on real hardware: the explorer_render_server.py a2a_mix edit and _switch_backbone (fake-server
+unit test only). Client 1309 pass / 17 skip, svelte-check 0 errors, forge pytest 163 pass / 19 skip.
+================================================================================
