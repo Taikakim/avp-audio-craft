@@ -450,6 +450,12 @@ class ArrangementStore {
     this.lanes = data.lanes ?? defaultLanes();
     this.clips = data.clips ?? [];
     this.overlapStore = data.overlaps ?? {};
+    // A loaded clip's previewAudio ref may have been evicted server-side, and
+    // lane gain/mute/solo may differ from what the engine is holding. Re-arm
+    // the (cached, debounced) stretch for every analysed clip and push the
+    // lanes live. Playback and selection belong to the caller (see TopBar).
+    this.onLaneChange?.();
+    for (const c of this.clips) if (c.native_bpm != null) scheduleStretch(c.id);
   }
 }
 

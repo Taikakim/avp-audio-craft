@@ -113,10 +113,10 @@ export function snapSec(
 // in lib/math/snap.ts, built on that module's own gridIntervalSec -- one
 // canonical source for "how long is a bar/beat" instead of two.
 
-// I3 fix wave: meanBpm/circularMeanPhase/shortestPhaseDelta below are NOT
-// deleted, unlike SnapMode/SNAP_MODES/gridLines above -- lib/math/tempoMatch.ts
-// has its own circularMeanPhase/shortestPhaseDelta (identical bodies) plus
-// meanNativeBpm, but meanNativeBpm takes ForgeClip[] (reads .native_bpm),
+// I3 fix wave: meanBpm below is NOT deleted, unlike SnapMode/SNAP_MODES/gridLines
+// above (circularMeanPhase/shortestPhaseDelta now live only in
+// lib/math/tempoMatch.ts) -- tempoMatch has meanNativeBpm, but it takes
+// ForgeClip[] (reads .native_bpm),
 // while store.svelte.ts's OWN matchBpm/matchDownbeats (below, still compiled,
 // though unreachable from any live-mounted UI once C1's rewire moved the
 // header/keyboard/Save off this store) operate on the v1 `Clip[]` shape
@@ -133,31 +133,4 @@ export function meanBpm(bpms: number[]): number | null {
   const valid = bpms.filter((b) => Number.isFinite(b) && b > 0);
   if (!valid.length) return null;
   return valid.reduce((a, b) => a + b, 0) / valid.length;
-}
-
-/**
- * Circular mean of downbeat phases (each in [0,1) of a bar), and the shift that
- * moves a given phase onto it by the shortest path. MATCH DOWNBEATS in the
- * handoff shifts every clip by this, leaving tempo alone.
- */
-export function circularMeanPhase(phases: number[]): number | null {
-  if (!phases.length) return null;
-  let x = 0;
-  let y = 0;
-  for (const p of phases) {
-    const a = p * 2 * Math.PI;
-    x += Math.cos(a);
-    y += Math.sin(a);
-  }
-  if (Math.abs(x) < 1e-12 && Math.abs(y) < 1e-12) return null;
-  const mean = Math.atan2(y / phases.length, x / phases.length) / (2 * Math.PI);
-  return (mean + 1) % 1;
-}
-
-/** Shortest signed distance from phase `from` to phase `to`, in [-0.5, 0.5). */
-export function shortestPhaseDelta(from: number, to: number): number {
-  let d = (to - from) % 1;
-  if (d >= 0.5) d -= 1;
-  if (d < -0.5) d += 1;
-  return d;
 }

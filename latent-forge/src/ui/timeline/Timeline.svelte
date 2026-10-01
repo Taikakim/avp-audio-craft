@@ -126,7 +126,16 @@
         min="20"
         max="300"
         value={arrangement.bpm}
-        oninput={(e) => arrangement.setBpm(+(e.target as HTMLInputElement).value || 120)}
+        onchange={(e) => {
+          // Commit once (Enter/blur), clamped to the input's own range: an
+          // oninput handler rescaled every clip through each keystroke's
+          // transient value ("1", "14", "140") and left a nonsense live BPM
+          // if the field was cleared or abandoned mid-entry.
+          const el = e.target as HTMLInputElement;
+          const v = Math.min(300, Math.max(20, +el.value || arrangement.bpm));
+          el.value = String(v);
+          arrangement.setBpm(v);
+        }}
       />
     </label>
 

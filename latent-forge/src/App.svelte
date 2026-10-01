@@ -65,7 +65,10 @@
       togglePlay: () => playback.togglePlay(),
       rewind: () => playback.seek(0),
       deleteSelected: () => {
-        if (view.selection.kind === "clip") arrangement.removeClip(view.selection.id);
+        if (view.selection.kind === "clip") {
+          arrangement.removeClip(view.selection.id);
+          view.select({ kind: "none" });
+        }
       },
       zoomBy: (f) => arrangement.zoomBy(f),
     });

@@ -130,10 +130,15 @@
     stopDrag();
   }
 
+  // A cancelled pointer (touch/pen, OS stealing the gesture) never sends
+  // pointerup; without this the drag stays live with no button held.
+  const onWindowPointerCancel = onWindowPointerUp;
+
   function stopDrag() {
     activeDrag = null;
     window.removeEventListener("pointermove", onWindowPointerMove);
     window.removeEventListener("pointerup", onWindowPointerUp);
+    window.removeEventListener("pointercancel", onWindowPointerCancel);
   }
 </script>
 
@@ -171,6 +176,7 @@
     // instance (if any) is currently mounted for this clip.
     window.addEventListener("pointermove", onWindowPointerMove);
     window.addEventListener("pointerup", onWindowPointerUp);
+    window.addEventListener("pointercancel", onWindowPointerCancel);
   }
 </script>
 

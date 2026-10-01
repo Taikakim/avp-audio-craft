@@ -10,6 +10,8 @@
   // Every prop after `ontheme` has a default, so the bar renders before the three
   // fetches in App.svelte have answered.
   import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { playback } from "../../lib/stores/transport.svelte";
+  import { view as viewStore } from "../../lib/stores/view.svelte";
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
   import type { ModelOption } from "../topbar/modelOptions";
   import { HELP } from "../../lib/help/strings";
@@ -90,7 +92,10 @@
     const file = input.files?.[0];
     if (!file) return;
     try {
-      arrangement.loadJSON(await file.text());
+      const text = await file.text();
+      playback.stop();
+      viewStore.select({ kind: "none" });
+      arrangement.loadJSON(text);
       notice = "loaded";
     } catch (err) {
       notice = `load failed: ${err instanceof Error ? err.message : String(err)}`;

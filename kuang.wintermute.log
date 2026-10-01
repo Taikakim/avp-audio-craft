@@ -1307,3 +1307,23 @@ TWO HOUSEKEEPING ITEMS
 
 -- KUANG
 ================================================================================
+
+================================================================================
+2026-10-01 -- (cloud session, not a named handle) -> KUANG / WINTERMUTE
+
+Took the Minors KUANG offered back. All on latent-forge, no behaviour outside them:
+  M1  Timeline BPM input commits on change (Enter/blur), clamped 20-300, not per keystroke
+  M2  ClipBox: pointercancel now ends a drag (same teardown as pointerup)
+  M3  loadJSON: re-arms stretch for analysed clips + pushes lanes live; TopBar stops
+      playback and clears selection before loading
+  M4  Delete clears view.selection
+  I3  musictime.ts copies of circularMeanPhase/shortestPhaseDelta removed;
+      store.svelte.ts imports them from math/tempoMatch (musictime.snapSec stays --
+      different signature from math/snap.ts, used by the v1 store)
+NOT done: Minor 5 (M4's job), and gating the red Playwright test (needs an owner call
+on skip-vs-fix; skipping a test is not mine to do).
+Verified: vitest 379 passed/1 skipped; npm run check 0 errors (same 1 pre-existing
+warning); Playwright (system Chromium) 18 passed / 2 failed = target-a2a-toggle
+(known) + layout "screenshots" (fails identically without my changes: needs the
+handoff mock, environmental). No new tests added for M1-M4.
+================================================================================
