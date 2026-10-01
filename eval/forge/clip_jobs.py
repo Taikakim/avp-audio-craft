@@ -132,7 +132,10 @@ def run_inpaint_preview(srv, svc, job_id, payload):
                                         chroma_target=target, label="inpaint")
         wav, zp = _save(srv, jd, z_new, int(round(duration * SR)))
         meta = {"op": "inpaint", "latents": [str(zp)], "span_start_sec": round(s0, 4),
-                "span_end_sec": round(v["span_end"], 4)}
+                "span_end_sec": round(v["span_end"], 4),
+                # The client's history/preview player needs a length; without it the entry is 0 s
+                # and the preview never plays (review 2026-10-01).
+                "duration_sec": round(duration, 3)}
         return srv.build_response(out_id, jd, [wav], seed, t0, {}, warnings, meta, payload, False)
     finally:
         progress.end()
