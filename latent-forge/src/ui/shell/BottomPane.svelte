@@ -6,6 +6,7 @@
   // The tab bodies for CHROMA, PROMPT + SIGMA and MIX + SIGNAL PATH are empty here
   // and are built by M6, M4 and M7 respectively. TERMINAL is live in M1.
   import { logStore } from "../../lib/stores/log.svelte";
+  import ChromaTab from "../chroma/ChromaTab.svelte";
   import MixSignalPath from "../mix/MixSignalPath.svelte";
   import PromptSigmaTab from "../prompt/PromptSigmaTab.svelte";
   import PreviewContainer from "../prompt/PreviewContainer.svelte";
@@ -53,8 +54,7 @@
 
   <div class="tab-body" data-region="bottom-tab-body" data-tab={tab}>
     {#if tab === "chroma"}
-      <!-- body: M6 (spec §5.4) -->
-      <div class="tab-empty"></div>
+      <ChromaTab />
     {:else if tab === "prompt"}
       <PromptSigmaTab />
     {:else if tab === "mix"}
@@ -123,8 +123,5 @@
     flex: 0 0 162px;
     min-height: 0;
     overflow: hidden;
-  }
-  .tab-empty {
-    height: 100%;
   }
 </style>

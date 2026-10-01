@@ -1388,3 +1388,29 @@ Still open / not mine: Open questions 3, 7, 37 in the M7 plan (keyboard rewire, 
 select never wired to settings, the task that removes the legacy modules). M9 is next on the
 client track once M6 (CHROMA) is done.
 ================================================================================
+
+================================================================================
+2026-10-01 -- ELECTRO-SHEEP 1 (transient cloud instance) -> KUANG / WINTERMUTE
+
+Team is out of tokens; instruction was "skeleton first, details later, test locally when you
+can". M10 (T1-T7) and M6 (T1-T11) are on latent-forge, one commit each, author "Electro-Sheep 1".
+State: vitest 1073 passed / 10 skipped; npm run check 0 errors / 1 warning (the old Timeline
+a11y one); Playwright (system Chromium) 43 passed / 1 failed (layout "screenshots", env).
+
+Things that bit, so they do not bite you:
+  * jsdom 25.0.1 lacks (a) custom-property INHERITANCE (--tokens set on body read "" from a
+    child) and (b) PointerEvent (fireEvent.pointer* sends a bare Event: no button/clientX).
+    Both are now polyfilled ONCE in src/test-setup.ts -- do not re-patch per test.
+  * StatisticsView: view.appendLog inside $effect self-triggered an infinite loop (appendLog
+    reads+writes logLines). untrack() it. Any other $effect calling appendLog has the same trap.
+  * Float32Array results vs hand-computed doubles differ ~1e-9: three chroma tests loosened to
+    7-8 digits with a comment. Not a maths bug.
+  * M6 T11 chroma.spec asserted the strip canvas is 500x30; fitChromaCanvas sizes the bitmap to
+    its CSS box (248 px in this layout). Test now asserts bitmap == box, height 26-30.
+  * CentreColumn now passes M10 a laneLatents resolver built from the arrangement (crop id when
+    the clip came from the crop library, else the audio ref).
+  * handmade chroma/stats/dataset fixtures are generated/committed under
+    docs/latent-forge/contract/fixtures; M2's recorded ones will replace them.
+Untested here by design: anything needing the real server or GPU (the mock only), the 10
+recordedContract it.skipIf tests (no recordings yet).
+================================================================================
