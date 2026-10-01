@@ -11,6 +11,7 @@
 
 import { toPlaybackClips, toPlaybackLanes, loopWrap } from "../math/playback";
 import { Transport, type PlaybackEngine } from "../audio/transport";
+import { AUDIO_SOURCE_TIMELINE, registerAudioSource, takeAudio } from "../audio/soloBus";
 import { arrangement } from "./arrangement.svelte";
 
 export class PlaybackStore {
@@ -24,6 +25,10 @@ export class PlaybackStore {
     this.engine.onEnded = () => {
       this.playing = false;
     };
+    // 4.5: preview and timeline transports are independent AND mutually exclusive. pause() (not
+    // stop()) on this side: the requirement is that they never sound together, and stop() would also
+    // rewind the operator's playhead to 0 on every audition (M9 T7, open question 2).
+    registerAudioSource(AUDIO_SOURCE_TIMELINE, () => this.pause());
   }
 
   private snapshotClips() {
@@ -36,6 +41,7 @@ export class PlaybackStore {
 
   async play() {
     if (this.playing) return;
+    takeAudio(AUDIO_SOURCE_TIMELINE);           // 4.5: starting one stops the other
     await this.engine.play(this.snapshotClips(), this.snapshotLanes(), this.playheadSec);
     this.playing = true;
   }

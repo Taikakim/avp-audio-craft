@@ -95,13 +95,129 @@
     }
   }
 
-  interface Props {
-    lengthSec?: number | null;
-    history?: { id: string; label: string }[];
-  }
-  let { lengthSec = null, history = [] }: Props = $props();
 
-  let canvasEl = $state<HTMLCanvasElement>();
+  import { computePeaks, drawPeaks } from "../../lib/audio/waveform";
+  import { Transport } from "../../lib/audio/transport";
+  import { forgeApi } from "../../lib/forge/api";
+  import { history } from "../../lib/render/history.svelte";
+  import { HISTORY_EMPTY_LABEL, historyOptions, lengthLabel } from "../../lib/render/historyLabel";
+  import { previewPlayer } from "../../lib/render/previewPlayer.svelte";
+
+  const options = $derived(historyOptions(history.renders));
+
+  const entry = $derived(
+    history.preview !== null ? (history.renders[history.preview] ?? null) : null,
+  );
+
+  const previewUrl = $derived(entry ? forgeApi.audioUrl(history.refOf(entry)) : null);
+
+  // §4.5: "A finished render lands here" -- history.add already moved `preview`, so this effect is
+  // what makes a finished render audible without the operator touching HISTORY.
+  $effect(() => {
+    if (previewUrl !== null && entry !== null) previewPlayer.load(previewUrl, entry.dur_sec);
+  });
+
+  let canvasEl = $state<HTMLCanvasElement>();        // M1 already declares this; keep the one line
+  let buffer = $state<AudioBuffer | null>(null);
+  let scrubbing = $state(false);
+
+  /** Decode-only Transport, M5's own pattern -- this warms the same URL-keyed cache the player
+   *  reads, and never plays. Lazily built so jsdom's missing AudioContext costs a waveform, not
+   *  the component. */
+  let _decoder: Transport | null | undefined;
+  function decoder(): Transport | null {
+    if (_decoder === undefined) {
+      try { _decoder = new Transport(); } catch { _decoder = null; }
+    }
+    return _decoder;
+  }
+
+  $effect(() => {
+    const url = previewUrl;
+    buffer = null;                 // same invalidation as the MIXDOWN slot — keep the two copies identical
+    if (url === null) return;
+    let live = true;
+    decoder()?.preload(url).then((b) => { if (live) buffer = b; }).catch(() => { if (live) buffer = null; });
+    return () => { live = false; };
+  });
+
+  function draw(): void {
+    const canvas = canvasEl;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!buffer) return;
+    const color = getComputedStyle(canvas).getPropertyValue("--accent").trim() || "#4ec9b0";
+    drawPeaks(canvas, computePeaks(buffer, Math.max(1, canvas.width)), color);
+    // Playhead. A LINE, not a label: nothing a test reads is ever painted here (M4's finding).
+    // CSS pixels, not device pixels: `drawPeaks` resizes the backing store to `clientWidth * dpr`
+    // and leaves `setTransform(dpr, 0, 0, dpr, 0, 0)` installed (waveform.ts:85-97), drawing its
+    // own body in CSS pixels. Using `canvas.width` here would multiply the position by dpr a
+    // second time and walk the playhead off the canvas at 25% on a dpr:2 display. M5's own
+    // post-drawPeaks overlay stays in CSS pixels for the same reason (m5 plan:4813-4817).
+    const total = previewPlayer.durationSec;
+    if (total > 0) {
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      const x = Math.round((previewPlayer.playheadSec / total) * cssW);
+      ctx.fillStyle = getComputedStyle(canvas).getPropertyValue("--fg").trim() || "#fff";
+      ctx.fillRect(x, 0, 1, cssH);
+    }
+  }
+
+  $effect(() => {
+    void buffer;
+    void canvasEl;
+    void previewPlayer.playheadSec;
+    draw();
+  });
+
+  // The playhead clock, the same shape as M5's Ruler loop and stopped with the component.
+  $effect(() => {
+    if (!previewPlayer.playing) return;
+    let frame = 0;
+    const tick = () => { previewPlayer.syncPlayhead(); frame = requestAnimationFrame(tick); };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  });
+
+  function secAt(e: { clientX: number }): number {
+    const canvas = canvasEl;
+    if (!canvas || previewPlayer.durationSec <= 0) return 0;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+    return Math.max(0, Math.min(1, ratio)) * previewPlayer.durationSec;
+  }
+
+  function onWavePointerDown(e: PointerEvent): void {
+    if (previewUrl === null) return;
+    scrubbing = true;
+    (e.currentTarget as HTMLCanvasElement).setPointerCapture?.(e.pointerId);
+    void previewPlayer.scrubAt(secAt(e));
+  }
+
+  function onWavePointerMove(e: PointerEvent): void {
+    if (scrubbing) void previewPlayer.scrubAt(secAt(e));
+  }
+
+  function onWavePointerUp(): void {
+    if (!scrubbing) return;
+    scrubbing = false;
+    previewPlayer.stop();
+  }
+
+  function onHistoryChange(e: Event): void {
+    // Audio only (§4.5, §10 X15). `history.select` sets exactly one field, and this handler
+    // deliberately calls nothing else -- a settings write here is the regression X15 exists to stop.
+    history.select(Number((e.currentTarget as HTMLSelectElement).value));
+  }
+
+  function onHandleDragStart(e: DragEvent): void {
+    if (!entry || !e.dataTransfer) return;
+    e.dataTransfer.setData("application/x-forge-ref", JSON.stringify(history.refOf(entry)));
+    e.dataTransfer.effectAllowed = "copy";
+  }
 </script>
 
 <div class="preview" data-region="preview-container">
@@ -118,29 +234,45 @@
     class="history"
     data-testid="preview-history"
     data-help={HELP.previewHistory}
-    disabled
+    disabled={options.length === 0}
+    value={history.preview === null ? "" : String(history.preview)}
+    onchange={onHistoryChange}
   >
-    {#if history.length === 0}
-      <option value="">no renders yet</option>
+    {#if options.length === 0}
+      <option value="">{HISTORY_EMPTY_LABEL}</option>
     {:else}
-      {#each history as h (h.id)}
-        <option value={h.id}>{h.label}</option>
+      {#each options as o (o.index)}
+        <option value={String(o.index)}>{o.label}</option>
       {/each}
     {/if}
   </select>
 
-  <canvas class="wave" data-testid="preview-wave" bind:this={canvasEl} width="900" height="30"
+  <canvas
+    class="wave"
+    data-testid="preview-wave"
+    bind:this={canvasEl}
+    width="900"
+    height="30"
+    onpointerdown={onWavePointerDown}
+    onpointermove={onWavePointerMove}
+    onpointerup={onWavePointerUp}
+    onpointercancel={onWavePointerUp}
   ></canvas>
 
-  <button class="transport" data-testid="preview-play" aria-label="play the previewed render" disabled
-    >▶</button>
-  <span class="length" data-testid="preview-length"
-    >{lengthSec === null ? "—" : `${lengthSec.toFixed(1)} s`}</span>
+  <button
+    class="transport"
+    data-testid="preview-play"
+    aria-label="play the previewed render"
+    disabled={previewUrl === null}
+    onclick={() => void previewPlayer.toggle()}>{previewPlayer.playing ? "■" : "▶"}</button>
+  <span class="length" data-testid="preview-length">{lengthLabel(entry?.dur_sec ?? null)}</span>
 
   <span
     class="handle"
     data-testid="preview-drag-handle"
     data-help={HELP.previewDragToLane}
+    draggable={entry !== null}
+    ondragstart={onHandleDragStart}
     >⠿ drag to lane</span>
 
   <button

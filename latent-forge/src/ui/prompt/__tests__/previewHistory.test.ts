@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Transport } from "../../../lib/audio/transport";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import type { PlaybackEngine, PlaybackClip, PlaybackLane } from "../../../lib/audio/transport";
 import { history } from "../../../lib/render/history.svelte";
@@ -15,7 +16,7 @@ function fakeEngine(): PlaybackEngine {
     pause: vi.fn(), stop: vi.fn(),
     seek: vi.fn(async () => {}),
     preload: vi.fn(async () => ({ duration: 30 }) as unknown as AudioBuffer),
-    invalidate: vi.fn(), scrub: vi.fn(), stopScrub: vi.fn(),
+    invalidate: vi.fn(), scrub: vi.fn(), stopScrub: vi.fn(), updateLanes: vi.fn(),
     currentTimeSec: 0, playing: false,
   };
 }
@@ -96,6 +97,10 @@ describe("HISTORY, the waveform and the handle — spec §4.5", () => {
     const { getByTestId } = render(PreviewContainer);
     await fireEvent.click(getByTestId("preview-play"));
     expect(previewPlayer.playing).toBe(true);
+    // The arrangement's engine is a real Transport on jsdom's AudioContext stub, which has no
+    // gain.setValueAtTime; stub only its play() so this exercises the SOLO BUS (takeAudio runs
+    // before engine.play), not Web Audio.
+    vi.spyOn(Transport.prototype, "play").mockResolvedValue(undefined);
     await playback.play();
     expect(previewPlayer.playing).toBe(false);
     expect(engine.stop).toHaveBeenCalled();

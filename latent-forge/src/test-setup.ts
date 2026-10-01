@@ -1,6 +1,14 @@
 // Registers @testing-library/jest-dom's matchers (toHaveValue, toHaveClass, toHaveAttribute, ...)
 // on vitest's expect, for every test file. Importing it in a node-environment test is harmless.
 import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/svelte";
+import { afterEach } from "vitest";
+
+// vitest runs without `globals`, so @testing-library/svelte does NOT register its own auto-cleanup.
+// Several plan-written DOM tests omit `afterEach(cleanup)`, so a render leaks into the next case in
+// the file ("Found multiple elements"). cleanup() is idempotent, so a global one is harmless to the
+// tests that already call it and fixes the ones that do not. (Electro-Sheep 1, M9 T5)
+afterEach(() => cleanup());
 
 // jsdom (25.x) returns a custom property from getComputedStyle only for the element that declares
 // it -- it does NOT inherit `--tokens` down to descendants, which every real browser does and
