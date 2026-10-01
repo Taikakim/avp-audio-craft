@@ -72,12 +72,15 @@ describe("shared vectors with the server -- TS and Python must agree (spec §5.2
   if (!existsSync(vectorPath)) {
     it.skip("vector file not recorded yet", () => {});
   } else {
+    // The server's write_vectors.py (M2 T3) names the envelope key `env`; this test used to read
+    // `envelope`, so the first time the file existed it threw on undefined.points. The generated file
+    // is the contract (spec 5.2), so the reader follows it. (Electro-Sheep 1, 2026-10-01)
     const vectors = JSON.parse(readFileSync(vectorPath, "utf-8")) as {
-      envelope: Envelope; n: number; values: number[];
+      name?: string; env: Envelope; n: number; values: number[];
     }[];
     it("matches every recorded (envelope, n) -> values vector", () => {
       for (const v of vectors) {
-        const got = sampleEnvelope(v.envelope, v.n);
+        const got = sampleEnvelope(v.env, v.n);
         for (let k = 0; k < v.n; k++) expect(got[k]).toBeCloseTo(v.values[k], 5);
       }
     });
