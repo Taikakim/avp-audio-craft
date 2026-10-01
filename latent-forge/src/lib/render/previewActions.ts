@@ -57,7 +57,8 @@ export function payloadSettings(op: JobOp, payload: unknown): PayloadSettings {
       // Lanes, clips and overlaps each carry their own render block; there is no session-wide one.
       return { body: null, durationSec: durationOf(payload.duration_sec) };
     case "longform": {
-      // `schedule` here is the ARC STRING, not a ScheduleSpec. It must not reach applyRenderPreset.
+      // The ARC string is `prompt_arc` (formerly `schedule`); neither is a ScheduleSpec, and neither
+      // is picked below, so no arc string can reach applyRenderPreset.
       const body = pick(payload, ["steps", "cfg_scale", "seed"]);
       return {
         body: Object.keys(body).length > 0 ? body : null,

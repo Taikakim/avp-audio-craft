@@ -144,11 +144,9 @@ function latentSource(a: OpArgs): Record<string, unknown> {
  * need a server-side audio PATH rather than an AudioRef and have no UI in this milestone; they stay
  * unbuilt rather than half-built (open question A3).
  *
- * The `longform` collision is real and is why `arc` is a separate field: `_longform_impl` reads
- * `req["schedule"]` as the PROMPT-ARC STRING (server:1366,
- * `schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()`), while M3 T2 makes
- * `resolve_shift(req, ...)` read `req["schedule"]` as a ScheduleSpec OBJECT on the same path. One
- * key, two meanings. This builder therefore sends the arc string and NO ScheduleSpec on longform.
+ * The `longform` key collision (the arc string vs a ScheduleSpec object, both once under
+ * `schedule`) is resolved server-side by M3 T2 (h): the ARC is `prompt_arc` now, and this builder
+ * sends it there and NO ScheduleSpec on longform (the t2a longform path refuses non-model shapes).
  */
 export function opPayload(op: Extract<JobOp, "decode" | "longform" | "bend">, a: OpArgs): Record<string, unknown> {
   if (op === "decode") return latentSource(a);
@@ -159,9 +157,11 @@ export function opPayload(op: Extract<JobOp, "decode" | "longform" | "bend">, a:
     return { ...latentSource(a), ops: a.ops, seed: a.seed ?? -1 };
   }
   const arc = (a.arc ?? "").trim();
-  if (!arc) throw new PayloadError("schedule is required ('0:promptA|45:promptB|...' arc grammar)");
+  if (!arc) throw new PayloadError("prompt_arc is required ('0:promptA|45:promptB|...' arc grammar)");
   return {
-    schedule: arc,
+    // M3 T2 (h): the ARC moved off `schedule` to `prompt_arc`, so `schedule` stays free for the
+    // ScheduleSpec on every path (the server still accepts an arc STRING under `schedule` for old callers).
+    prompt_arc: arc,
     steps: num(a.steps ?? 24, 1, 150, "steps"),
     cfg_scale: num(a.cfgScale ?? 6, 0, 64, "cfg_scale"),
     seed: a.seed ?? -1,

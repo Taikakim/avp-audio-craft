@@ -129,12 +129,13 @@ describe("opPayload -- the clip's OP when A2A is off (spec 7.1)", () => {
     expect(() => opPayload("bend", { cropId: "000412", ops: [] })).toThrow(/ops/);
   });
 
-  it("longform sends the prompt-ARC STRING under `schedule` and no ScheduleSpec object", () => {
-    // _longform_impl reads req["schedule"] as the arc grammar
-    // (eval/explorer_render_server.py:1366 `schedule_arg = (req.get("schedule") or req.get("prompt") or "")`).
+  it("longform sends the prompt-ARC STRING under `prompt_arc` and no ScheduleSpec object", () => {
+    // M3 T2 (h): _longform_impl reads the arc grammar from req["prompt_arc"]; `schedule` is the
+    // ScheduleSpec key everywhere, so the arc must not be sent there any more.
     const p = opPayload("longform", { arc: "0:pad|45:break", steps: 24, cfgScale: 6, seed: -1, durationSec: 120 });
-    expect(p.schedule).toBe("0:pad|45:break");
-    expect(typeof p.schedule).toBe("string");
+    expect(p.prompt_arc).toBe("0:pad|45:break");
+    expect(typeof p.prompt_arc).toBe("string");
+    expect(p.schedule).toBeUndefined();
     expect(p.duration).toBe(120);
   });
 

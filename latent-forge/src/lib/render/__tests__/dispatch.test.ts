@@ -94,14 +94,15 @@ describe("renderRequest — spec §7.1's dispatch table, one row per test", () =
     expect(req.payload).toEqual({ crop_id: "000412" });
   });
 
-  it("op `longform` sends the prompt ARC under `schedule`, not a ScheduleSpec", () => {
+  it("op `longform` sends the prompt ARC under `prompt_arc`, not a ScheduleSpec", () => {
     const c = clip({ op: "longform" });
     const req = renderRequest(
       { kind: "clip", id: c.id },
       world({ clip: c, lane: lane(0), arcPrompt: "0:opening pad|45:driving bass" }),
     );
     expect(req.op).toBe("longform");
-    expect((req.payload as Record<string, unknown>).schedule).toBe("0:opening pad|45:driving bass");
+    expect((req.payload as Record<string, unknown>).prompt_arc).toBe("0:opening pad|45:driving bass");
+    expect((req.payload as Record<string, unknown>).schedule).toBeUndefined();
   });
 
   it("a clip with neither A2A nor an OP is a caller error, not a silent generate", () => {
