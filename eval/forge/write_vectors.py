@@ -26,10 +26,31 @@ def envelope_vectors():
             for c in ENVELOPE_CASES]
 
 
+from forge.schedule import parse_spec, sigmas as schedule_sigmas  # noqa: E402
+
+SCHEDULE_CASES = [
+    {"name": "logsnr_8", "spec": {"shape": "logsnr"}, "steps": 8, "sigma_max": 1.0},
+    {"name": "logsnr_a2a", "spec": {"shape": "logsnr"}, "steps": 8, "sigma_max": 0.4},
+    {"name": "geometric_12", "spec": {"shape": "geometric", "sigma_min": 0.01}, "steps": 12, "sigma_max": 1.0},
+    {"name": "linear_rho", "spec": {"shape": "linear", "sigma_min": 0.1, "rho": 2.0}, "steps": 6, "sigma_max": 1.0},
+    {"name": "log_10", "spec": {"shape": "log", "sigma_min": 0.02}, "steps": 10, "sigma_max": 1.0},
+    {"name": "exponential_10", "spec": {"shape": "exponential", "sigma_min": 0.02}, "steps": 10, "sigma_max": 1.0},
+    {"name": "cosine_stepped", "spec": {"shape": "cosine", "stepped": True, "plateaus": 4, "tilt": 0.15}, "steps": 16, "sigma_max": 1.0},
+    {"name": "linear_flat", "spec": {"shape": "linear", "sigma_min": 0.1, "stepped": True, "plateaus": 2, "tilt": 0.0}, "steps": 4, "sigma_max": 1.0},
+]
+
+
+def schedule_vectors():
+    return [{**c, "sigmas": [round(float(v), 9) for v in schedule_sigmas(parse_spec(c["spec"]), c["steps"], c["sigma_max"])]}
+            for c in SCHEDULE_CASES]
+
+
 def main():
     VECTOR_DIR.mkdir(parents=True, exist_ok=True)
     (VECTOR_DIR / "envelope.json").write_text(json.dumps(envelope_vectors(), indent=2) + "\n")
     print(f"wrote {VECTOR_DIR / 'envelope.json'}")
+    (VECTOR_DIR / "schedule.json").write_text(json.dumps(schedule_vectors(), indent=2) + "\n")
+    print(f"wrote {VECTOR_DIR / 'schedule.json'}")
 
 
 if __name__ == "__main__":
