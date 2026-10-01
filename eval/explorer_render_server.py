@@ -52,6 +52,8 @@ from starlette.concurrency import run_in_threadpool
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chroma_morph_transitions as cmt  # noqa: E402  (inserts control + mir-same-chroma paths)
 import a2a_fulltrack as a2a_mod  # noqa: E402
+from forge import logseq as forge_logseq, progress as forge_progress  # noqa: E402  (Latent Forge, M2 T8)
+from forge.contract import ForgeError  # noqa: E402
 
 from sa3_control.audio_io import save_audio  # noqa: E402  (boot check: must resolve)
 from sa3_control.adapters import ControlContext, use_control_context  # noqa: E402
@@ -186,6 +188,7 @@ app = FastAPI()
 def log(msg):
     line = f"{time.strftime('%H:%M:%S')} {msg}"
     LOG_RING.append(line)
+    forge_logseq.append(line)              # Latent Forge: the sequenced log /forge/log serves
     print(line, flush=True)
     if JOB_LOG_PATH is not None:
         try:
@@ -295,6 +298,7 @@ def make_log_cb(steps, extra=None, every=4):
             extra(d)
         i = counter["i"]
         counter["i"] += 1
+        forge_progress.on_step(i + 1, steps)   # Latent Forge: per-step progress for /forge/jobs
         if i % every == 0 or i == steps - 1:
             log(f"  step {i + 1}/{steps}  t={float(d['t'][0]):.3f}")
 
@@ -706,14 +710,15 @@ def info():
             "max_duration_sec": MAX_DURATION_SEC, "out_dir": str(OUT_DIR),
             "latch_heads": list(HEADS.values()),
             "dora": dict(DORA_REGISTRY),
-            "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN}}
+            "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN},
+            "objective": getattr(getattr(MODEL, "model", None), "diffusion_objective", None)}
 
 
 @app.get("/status")
 def status():
     busy = GPU_LOCK.locked()
     return {"ok": True, "busy": busy, "job_id": CURRENT_JOB if busy else None,
-            "log_tail": list(LOG_RING)[-20:]}
+            "log_tail": list(LOG_RING)[-20:], "progress": forge_progress.snapshot()}
 
 
 def _scan_ckpts(root: Path):
@@ -1080,6 +1085,8 @@ async def _run(impl, request: Request):
         return JSONResponse({"error": f"bad JSON body: {e}"}, status_code=400)
     try:
         return await run_in_threadpool(impl, req)
+    except ForgeError as e:                 # Latent Forge: a typed refusal keeps its status code
+        return JSONResponse({"error": e.message}, status_code=e.status)
     except Exception as e:
         log(f"[error] {e}")
         return JSONResponse({"error": str(e), "traceback": traceback.format_exc()},
@@ -2251,6 +2258,11 @@ def player_steer(crop: str = None, head: str = None, gain: float = 48.0,
         return wav_bytes(audio, SR)
     return _player_run(run)
 
+
+# ---------------------------------------------------------------- Latent Forge
+import forge_api  # noqa: E402
+forge_api.bind(sys.modules[__name__])
+app.include_router(forge_api.router)
 
 # ---------------------------------------------------------------- boot
 def main():
