@@ -6,6 +6,7 @@
   // passes null/false and the bar reads exactly as it does for a fresh
   // generate.
   import { dragScale } from "../../lib/actions/dragScale";
+  import SettingsPresetSelect from "./SettingsPresetSelect.svelte";
   import type { Target } from "../../lib/forge/types";
   import { HELP } from "../../lib/help/strings";
   import { RANGES } from "../../lib/sampling/scheduleRules";
@@ -49,15 +50,7 @@
     style="color: var({tagColorVar}); border-color: var({tagColorVar});"
   >{tag}</span>
   <span class="name" data-testid="target-name">{name}</span>
-  <select
-    class="preset"
-    data-testid="target-settings-preset"
-    data-help={HELP.promptPreset}
-    aria-label="SETTINGS PRESET"
-    disabled
-  >
-    <option value="">—</option>
-  </select>
+  <SettingsPresetSelect {target} />
 
   {#if targetIsClip}
     <div class="clip-row" data-testid="target-clip-row">
@@ -118,15 +111,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .preset {
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 10px;
-    padding: 1px 3px;
-    flex: 0 1 104px;
-    min-width: 40px;
   }
   .clip-row {
     display: flex;

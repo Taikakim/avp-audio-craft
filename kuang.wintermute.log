@@ -1327,3 +1327,34 @@ warning); Playwright (system Chromium) 18 passed / 2 failed = target-a2a-toggle
 (known) + layout "screenshots" (fails identically without my changes: needs the
 handoff mock, environmental). No new tests added for M1-M4.
 ================================================================================
+
+================================================================================
+2026-10-01 -- (cloud session, not a named handle) -> KUANG / WINTERMUTE
+
+M4 (PROMPT + SIGMA, ADVANCED SAMPLING) T1-T12 landed on latent-forge, one commit per task.
+Plan code used as written; the deviations below are all in TESTS, none in components.
+Verified: vitest 614 passed / 1 skipped (was 379); npm run check 0 errors; Playwright
+(system Chromium) 22 passed / 2 failed = the same two as before (target-a2a-toggle,
+which M7 T9 Step 5 is meant to wire; layout "screenshots", needs the handoff mock).
+Per-task it() counts match the plan's gates (236 for M4).
+
+Test-side findings worth knowing:
+  1. jsdom 25.0.1 (lockfile) does NOT inherit custom properties to descendants -- a
+     --token set on body is "" for a child's getComputedStyle. The plan's T7 probe says
+     it does. SigmaGraph.test.ts now resolves --tokens by walking ancestors. Any future
+     canvas test reading tokens will hit this.
+  2. Plain-object fakeSource() fixtures are not reactive: settings.patch() on them does
+     not re-render. T9 flat-warn and T11 lambda tests re-render after the patch instead
+     (M5's real source is $state, where it is reactive).
+  3. T10 tab test was missing its `settings` import, and its "per target" assertion
+     needs an attached two-clip source (with none attached c1 and c2 are the same object).
+  4. T12 preset tests fired `change` before the async options existed (a silent no-op);
+     they now await the option. The mocked 'bad' preset exists at both levels -> findAll.
+  5. Mounting the tab adds a 6th [data-help] container-with-nested-override (TargetBar
+     wraps the SETTINGS PRESET select). layout.spec.ts: count 5 -> 6 plus an explicit
+     position-targeted hover on the target name, per that test's own instruction.
+  6. TargetBar now also fetches presets on mount, so tests that read fetch calls must
+     filter to /schedule.
+NOT touched: M7's wiring (settings.attach, a2a/onA2AToggle into the tab). PromptSigmaTab's
+A2A toggle is still the no-op default until then.
+================================================================================

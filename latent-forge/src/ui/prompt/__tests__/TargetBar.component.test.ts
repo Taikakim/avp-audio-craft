@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { forgeApi } from "../../../lib/forge/api";
 import TargetBar from "../TargetBar.svelte";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 const noop = () => {};
 
@@ -20,18 +24,17 @@ describe("TargetBar with nothing selected (spec 4.5)", () => {
     expect(queryByTestId("target-clip-row")).toBeNull();
   });
 
-  it("renders the SETTINGS PRESET slot disabled with one dash option", () => {
-    const { getByTestId } = render(TargetBar, {
+  it("renders the live SETTINGS PRESET select, enabled, with the dash option first", async () => {
+    vi.spyOn(forgeApi, "presets").mockResolvedValue({ ok: true as const, names: [] });
+    const { findByLabelText } = render(TargetBar, {
       props: {
         target: { kind: "none" }, clipName: null, lane: 0 as const, a2a: null,
         clipHasLatent: false, onA2AToggle: noop, onNoise: noop, op: null, onOp: noop,
       },
     });
-    const select = getByTestId("target-settings-preset") as HTMLSelectElement;
-    expect(select.disabled).toBe(true);
-    expect(select.options).toHaveLength(1);
+    const select = (await findByLabelText("SETTINGS PRESET")) as HTMLSelectElement;
+    expect(select.disabled).toBe(false);
     expect(select.options[0].value).toBe("");
-    expect(select.getAttribute("aria-label")).toBe("SETTINGS PRESET");
   });
 });
 

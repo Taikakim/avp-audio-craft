@@ -73,7 +73,10 @@ describe("PromptSigmaTab assembles the three columns (spec 4.5)", () => {
     const { getByTestId } = render(PromptSigmaTab);
     await fireEvent.change(getByTestId("stage-length"), { target: { value: "77" } });
     await vi.advanceTimersByTimeAsync(200);
-    const bodies = fetchMock.mock.calls.map(
+    // TargetBar's SETTINGS PRESET select also fetches (GET presets, no body): keep /schedule only.
+    const bodies = fetchMock.mock.calls
+      .filter((c) => String((c as [string, RequestInit])[0]).includes("/schedule"))
+      .map(
       (c) => JSON.parse(String((c as [string, RequestInit])[1].body)) as Record<string, unknown>,
     );
     expect(bodies).toContainEqual(expect.objectContaining({ duration: 77 }));

@@ -175,8 +175,10 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   const total = await controls.count();
   expect(total, "no [data-help] controls rendered at all").toBeGreaterThanOrEqual(10);
 
-  // Guard the exclusion itself: today exactly 5 hosts are excluded (4x
-  // LaneHeader's `.header`, one per lane, + 1x MasterStrip's `.master`). If
+  // Guard the exclusion itself: today exactly 6 hosts are excluded (4x
+  // LaneHeader's `.header`, one per lane, + 1x MasterStrip's `.master` + 1x
+  // M4's TargetBar `.target-bar`, which wraps the SETTINGS PRESET select's own
+  // string). If
   // that count changes, a *new* container-with-nested-override was added --
   // which silently drops out of this generic sample (see the exclusion
   // comment above) and needs its own explicit hover-position assertion, the
@@ -188,7 +190,7 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
     "the set of [data-help] containers with a nested override changed -- " +
       "add explicit coverage for the new one (see the `.header`/`.master` " +
       "assertions below) before updating this count",
-  ).toBe(5);
+  ).toBe(6);
 
   const stride = Math.max(1, Math.floor(total / 10));
   const indices = new Set<number>();
@@ -250,6 +252,18 @@ test("HELP shows the control's own string for ten sampled controls", async ({ pa
   await label.hover();
   await expect(box).toBeVisible();
   await expect(box).toHaveText(masterHelp ?? "");
+
+  // M4's TargetBar: `.target-bar` carries HELP.targetBar and wraps the SETTINGS PRESET select,
+  // which carries its own (HELP.promptPreset), so the bar is excluded from the generic sample
+  // like `.header` and `.master`. Land on the target NAME -- a plain span with no data-help of its
+  // own -- so `closest()` must bubble up to the bar's text.
+  const bar = page.locator(".target-bar").first();
+  await expect(bar).toBeVisible();
+  const barHelp = await bar.getAttribute("data-help");
+  expect(barHelp, "`.target-bar` lost its own data-help").toBeTruthy();
+  await bar.locator('[data-testid="target-name"]').hover();
+  await expect(box).toBeVisible();
+  await expect(box).toHaveText(barHelp ?? "");
 });
 
 test("DARK flips data-theme and flips back", async ({ page }) => {
