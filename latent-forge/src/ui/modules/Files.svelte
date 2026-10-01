@@ -57,7 +57,7 @@
 <div class="files">
   <div class="root-head">{rootLabel}</div>
   <div class="controls">
-    <select bind:value={root} aria-label="file root">
+    <select bind:value={root} aria-label="file root" data-help={HELP.filesRoot}>
       {#each roots as r}
         <option value={r.id} disabled={!r.available}>{r.label}{r.available ? "" : " (unmounted)"}</option>
       {/each}
@@ -65,7 +65,7 @@
         <option value={root}>{root}</option>
       {/if}
     </select>
-    <input type="text" placeholder="filter" bind:value={q} aria-label="filter files" />
+    <input type="text" placeholder="filter" bind:value={q} aria-label="filter files" data-help={HELP.filesFilter} />
   </div>
 
   {#if error}

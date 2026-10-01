@@ -286,6 +286,12 @@ const NEW_STRINGS = {
     "Spherical interpolation between this node's two inputs -- the default, since SAME's latent " +
     "space is strongly anisotropic and a straight lerp can cut through low-energy regions a slerp " +
     "arcs around.",
+  filesRoot:
+    "Which server root to browse: crops (extracted latents), renders (past commits) or uploads " +
+    "(files dropped or picked from disk). An unmounted root is listed, greyed, rather than hidden.",
+  filesFilter:
+    "Filters the file list by substring match on its path. Clears to show every file under the " +
+    "selected root again.",
 };
 
 // ------------------------------------------------------------------ extract

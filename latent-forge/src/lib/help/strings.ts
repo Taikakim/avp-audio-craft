@@ -120,6 +120,8 @@ export type HelpId =
   | "mixQuadWeight"
   | "mixLerp"
   | "mixSlerp"
+  | "filesRoot"
+  | "filesFilter"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -254,4 +256,6 @@ export const HELP: Record<HelpId, string> = {
   mixQuadWeight: "This lane's share of the weighted 4-way mix. All four are renormalised together; leaving every one at zero mixes the lanes equally.",
   mixLerp: "Linear interpolation between this node's two inputs.",
   mixSlerp: "Spherical interpolation between this node's two inputs -- the default, since SAME's latent space is strongly anisotropic and a straight lerp can cut through low-energy regions a slerp arcs around.",
+  filesRoot: "Which server root to browse: crops (extracted latents), renders (past commits) or uploads (files dropped or picked from disk). An unmounted root is listed, greyed, rather than hidden.",
+  filesFilter: "Filters the file list by substring match on its path. Clears to show every file under the selected root again.",
 };
