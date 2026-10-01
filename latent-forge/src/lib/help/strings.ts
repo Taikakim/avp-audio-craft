@@ -113,6 +113,10 @@ export type HelpId =
   | "filmCkpt"
   | "modulePresetSave"
   | "modulePresetDelete"
+  | "masterLatchToggle"
+  | "masterLatchHeadLabel"
+  | "masterHead"
+  | "masterGain"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -240,4 +244,8 @@ export const HELP: Record<HelpId, string> = {
   filmCkpt: "Which FiLM checkpoint this lane uses. Server default is whatever /info reports as the film default; anything else is loaded from the film model root on first use.",
   modulePresetSave: "Saves this module's current settings, on/off state included, as a module preset -- under the selected name, or a new one you are asked for. Recall applies to the active lane only.",
   modulePresetDelete: "Deletes the selected module preset from the server. The lane's current settings are not changed.",
+  masterLatchToggle: "Turns LatCH steering on for the mixed latent, after the lane chains. Safe value: off.",
+  masterLatchHeadLabel: "Which head steers the mixed latent (spec §8.1 S8 -- the existing /steer math).",
+  masterHead: "The LatCH head applied to the mix. Uses the same registry as the lane chains' slots.",
+  masterGain: "How hard the head's gradient is applied to the mixed latent. Safe value: 64.",
 };
