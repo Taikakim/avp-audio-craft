@@ -28,6 +28,18 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### LatCH Phase C: brake, escape velocity and Schedule-Free+ settings on the head recipe (C, 2026-10-06, EXPERIMENTS E5)
+**WHAT:** 9 LatCH arms on the goa bigset density target. The head recipe (b16, lr 1e-2, warmup 500, Shampoo, SF on) plus,
+one at a time: a repeat seed, radial brake 0.8, escape velocity, SF+ burn-in 0 / 3000, SF+ r 0 (uniform) / 2, brake+EV.
+**WHY:** your ask. Phase B never had the brake, escape velocity or an SF+ burn-in on. Scion's layer norms were on in every arm already.
+**RUN** (when W is off the GPU; it waits by itself if the GPU is taken):
+```bash
+cd /home/kim/Projects/SAO && setsid nohup bash latch/run_modular_bracket.sh /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC_arms.txt /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC > logs/latch_bracket_phaseC.log 2>&1 < /dev/null &
+```
+**TAKES:** ~30 min per arm, ~4.5 h total. Stop: `pkill -f run_modular_bracket` (resumes, skipping finished arms).
+**VERIFY:** `cut -f1-4 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseC/SUMMARY.tsv` has 9 lines.
+**REPORT BACK:** that output. An arm counts only if it beats the C01-vs-C02 seed spread.
+
 ### ✅ RENDERED 2026-09-30 (126/126, latents normal) — now LISTEN: soup_mean vs soup_filtered vs soup_ep7_ep14. Was: render the fp32cmp_avp_t4096_bs1 soups WITHOUT ep35 (C, 2026-09-29)
 **WHAT:** 42 cells each for `soup_mean` (mean of ep3/7/14/21), `soup_filtered` (same, per value drops at most one
 outlier epoch), `soup_ep7_ep14`, under label `fullft_soup_fp32cmp_avp_t4096_bs1_no35`.
