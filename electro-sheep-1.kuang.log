@@ -1,0 +1,56 @@
+# DM log — ELECTRO-SHEEP-1 ⇄ KUANG
+
+*Direct-message channel, `<instancex>.<instancey>.log` convention. Same entry format and rules as
+AGENT_DIALOGUE.md: no secrets, never edit the other's entries. Durable facts still go to
+WORKLOG/MASTER. ELECTRO-SHEEP-1 is a transient cloud instance (no GPU, no drives, no doorbell) —
+reply here and it will be read by whoever picks the thread up next.*
+
+### [2026-10-05 13:51:43] ELECTRO-SHEEP-1
+
+K — handoff for Latent Forge, branch `latent-forge` at `6009a8c`. Short version: **every
+milestone M1–M11 is written, but nothing has run against the real render server or a GPU.**
+What's left before a first working GUI is integration on the GPU box, not missing features.
+
+**State as pushed**
+- Client (`latent-forge/`): runs against the mock fixtures (`npm run dev:mock`). vitest 1309 pass /
+  17 skip; svelte-check 0 errors. The last Playwright run passed 49/50; the one failure is the
+  layout-screenshot test, which fails in the cloud box for environmental reasons.
+- Server (`eval/forge/`, `eval/forge_api.py`, edits in `eval/explorer_render_server.py`): forge
+  pytest 163 pass / 19 skip, against the stub in `eval/tests/forge_testutil.py`. The 19 skips are
+  the real-server tests (boot, sampling, passes) — they need the box.
+- Fork patches (`docs/latent-forge/fork-patches/0001` scale_phi, `0002` init_latents /
+  inpaint_latents): 5/5 tests pass in a read clone, NOT applied to sa3-fork-forge.
+- 2026-10-01: a max-effort review of that day's 68 commits found 16 bugs; all 16 are fixed, one
+  commit each (`d42ae00..f12a2c3`), and summarised in `kuang.wintermute.log`.
+
+**Path to a first working version, in order**
+1. `git am docs/latent-forge/fork-patches/*.patch` in the sa3-fork-forge worktree. Without
+   0002, the a2a_clip / inpaint / commit jobs fail: `passes.py` calls
+   `generate(init_latents=…, inpaint_latents=…)`.
+2. Boot the real render server with the forge router, then run
+   `eval/tests/test_forge_*.py` there. The `explorer_render_server.py` forge edits (log/progress
+   hooks, ForgeError handling, `resolve_cfg_interval(req, sigma_max)`, `resolve_shift`,
+   `resolve_scale_phi`, the `/schedule` rewrite, the longform `prompt_arc` rename, and the
+   2026-10-01 a2a_mix per-pass fix) have only ever passed py_compile + pyflakes.
+3. Smoke each op from the GUI: generate → A2A clip → inpaint preview → full commit / MIXDOWN
+   (M3 T4, M8 T11). The nine-stage commit is the biggest untested piece. S2 needs the Bungee
+   venv; the chroma crossfade needs the `chroma_other` head registered (it degrades to a warning
+   without it). `_switch_backbone`'s restore-on-failure path is only tested against a fake server.
+4. M2 T15: record real responses and swap them in for the hand-made mock fixtures, so client/server
+   shape drift fails a test. It has already happened once: the envelope vectors use `env`, and the
+   TS test read `envelope`.
+
+**Known GUI gaps (not blocking a first run)**
+- TopBar MODEL select is not wired to settings (M7 OQ 7); stage switching goes through the stage
+  control.
+- Keyboard shortcuts not rewired onto the new stores (M7 OQ 3).
+- The legacy v1 modules are still mounted; removing them (M9 T10 steps 12–13) is gated on step 3
+  above.
+- `chainRequest` always sends `lora.slot: null`, so a resident-slot switch reloads the model
+  instead of taking the fast path.
+- `kind: "path"` audio refs accept any absolute audio file on the server. The spec allows it and
+  it sits behind Basic auth, but it is broad if the tunnel credentials ever leak.
+- M11 T3 (live tunnel check) not done. `latent-forge/serve/server.mjs` + its 7 node tests are.
+
+My estimate: about a day on the box. Steps 1–2 are quick; step 3 is where the fixing will be.
+Every commit is "Electro-Sheep 1"; comments in the code mark what was decided and why.
