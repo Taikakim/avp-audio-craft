@@ -1362,7 +1362,7 @@ exactly this reason.)*
 
 ### E4 — Guided-gen eval + disintegration gate for the f0 heads — **PLANNED** (no "works" claim before this).
 
-### E5 — LatCH + FiLM density bracket under the ModularOptimizer, goa bigset — **RUNNING (C, 2026-09-30, Kim direct)**
+### E5 — LatCH + FiLM density bracket under the ModularOptimizer, goa bigset — **LatCH DONE 2026-09-30 (read 10-06); FiLM NOT STARTED**
 - Kim: "launch LATCH and MuseControlLite (FiLM) bracketing using the 12k goa set ... check that the findings about
   dimensions, batch, lr, etc still hold with our trainer ... then start trying out likely good combinations. At least
   Shampoo is good." Target = the density head (onsets per beat).
@@ -1378,6 +1378,9 @@ exactly this reason.)*
 - **Phase A result:** the modular lr is ~30x AdamW's (best 1e-2; 3e-2 diverges; 3e-4 under-trains). At 1e-2 + 500-step warmup,
   modular+Shampoo gives 0.357 vs AdamW 0.408/0.411 and Fusion 0.407 (~12% better). Phase B (bigset) runs unattended until ~13:30;
   full write-up + how to read it: `Mantu/latch_sweep/modular_2026-09-30/REPORT.md`.
+- **Phase B verdict (bigset, 11 arms):** Schedule-Free is the winning part (modular 0.20-0.21 vs AdamW 0.25-0.26; modular without SF 0.255);
+  Shampoo adds nothing measurable for heads; d512 no gain; b16 best (0.194, one seed); AdamW 1e-3 is not better than 3e-4.
+  Head recipe: modular lr 1e-2 + 500 warmup, b16, d256, SF on. Next: one b16 repeat seed, then FiLM (needs captions joined or a deliberate empty-prompt run).
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
