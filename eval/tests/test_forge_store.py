@@ -61,6 +61,7 @@ def test_upload_writer_rejects(tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
+@forge_testutil.needs_ffprobe
 def test_probe_audio(tmp_path):
     p = tmp_path / "t.wav"
     sf.write(p, np.zeros((22050, 2), dtype=np.float32), 44100)
@@ -70,6 +71,19 @@ def test_probe_audio(tmp_path):
     bad.write_bytes(b"not audio")
     with pytest.raises(ForgeError):
         probe_audio(bad)
+
+
+def test_probe_audio_names_a_missing_ffprobe(monkeypatch, tmp_path):
+    """Kuang 2026-10-05: a missing binary must surface as a clear 500, not a FileNotFoundError."""
+    import subprocess
+
+    def missing(*_a, **_k):
+        raise FileNotFoundError(2, "No such file or directory", "ffprobe")
+
+    monkeypatch.setattr(subprocess, "run", missing)
+    with pytest.raises(ForgeError) as ei:
+        probe_audio(tmp_path / "t.wav")
+    assert ei.value.status == 500 and "ffprobe" in str(ei.value)
 
 
 def test_file_sha256(tmp_path):

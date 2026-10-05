@@ -62,7 +62,16 @@ from sa3_control.inject import install_adapters  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402
 from sa3_control.generate import load_adapter_state  # noqa: E402
 from sa3_control.steered_longform import _parse_prompt_arc  # noqa: E402  (arc grammar '0:A|45:B')
-from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+try:  # mir-same-chroma is only needed by the chroma-morph paths. A module-scope hard import made
+    # every test that imports this module fail to COLLECT on a box without the checkout (8 unrelated
+    # test files; Kuang 2026-10-05). Fail at call time instead, naming what is missing.
+    from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+except ImportError as _same_chroma_err:  # noqa: E402
+    _SAME_CHROMA_MISSING = str(_same_chroma_err)
+
+    def compute_same_chroma(*_a, **_k):
+        raise RuntimeError("compute_same_chroma unavailable: mir-same-chroma is not importable "
+                           f"(expected under /home/kim/Projects/mir-same-chroma/src): {_SAME_CHROMA_MISSING}")
 sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3/scripts")
 from weight_mutations import Condition, apply_condition  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402

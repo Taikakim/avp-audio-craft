@@ -13,6 +13,16 @@ from pathlib import Path
 
 _JOB_COUNTER = itertools.count(1)
 
+# Uploads shell out to ffprobe (forge/uploads.py probe_audio). On a box without ffmpeg the tests
+# that need it SKIP with this reason instead of failing with FileNotFoundError (Kuang 2026-10-05).
+# The render server itself still needs ffmpeg installed.
+import shutil as _shutil
+
+import pytest as _pytest
+
+needs_ffprobe = _pytest.mark.skipif(_shutil.which("ffprobe") is None,
+                                    reason="ffprobe not installed (install ffmpeg; uploads need it)")
+
 
 def make_stub_server(out_dir):
     """A minimal stand-in for explorer_render_server, for boxes with no torch / GPU.

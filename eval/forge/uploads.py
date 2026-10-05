@@ -56,7 +56,13 @@ class UploadWriter:
 def probe_audio(path) -> dict:
     cmd = ["ffprobe", "-v", "error", "-select_streams", "a:0",
            "-show_entries", "stream=sample_rate,channels:format=duration", "-of", "json", str(path)]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except FileNotFoundError:
+        # A missing BINARY is a server setup fault, not a bad upload: name it instead of letting
+        # FileNotFoundError escape as an opaque 500 traceback (Kuang 2026-10-05). The render server
+        # needs ffmpeg (ffprobe) installed for uploads.
+        raise ForgeError(500, "ffprobe not found on the render server -- install ffmpeg (uploads need it)")
     if r.returncode != 0:
         raise ForgeError(400, f"not a readable audio file: {r.stderr.strip()[:200]}")
     d = json.loads(r.stdout or "{}")

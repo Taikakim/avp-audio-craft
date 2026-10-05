@@ -24,6 +24,7 @@ def ctx(tmp_path):
                       roots={"crops": lat, "renders": out, "uploads": up})
 
 
+@forge_testutil.needs_ffprobe
 def test_resolve_each_kind(ctx, tmp_path):
     assert resolve_audio({"kind": "upload", "sha256": SHA}, ctx) == ctx.uploads / f"{SHA}.flac"
     assert resolve_audio({"kind": "render", "job_id": "job1", "file": "out_00.wav"}, ctx) == ctx.out_dir / "job1" / "out_00.wav"

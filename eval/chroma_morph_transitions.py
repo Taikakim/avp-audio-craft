@@ -38,7 +38,16 @@ import torch
 sys.path.insert(0, "/home/kim/Projects/SAO/control")
 sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
 from sa3_control.audio_io import save_audio  # noqa: E402
-from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+try:  # mir-same-chroma is only needed by the chroma-morph paths. A module-scope hard import made
+    # every test that imports this module fail to COLLECT on a box without the checkout (8 unrelated
+    # test files; Kuang 2026-10-05). Fail at call time instead, naming what is missing.
+    from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+except ImportError as _same_chroma_err:  # noqa: E402
+    _SAME_CHROMA_MISSING = str(_same_chroma_err)
+
+    def compute_same_chroma(*_a, **_k):
+        raise RuntimeError("compute_same_chroma unavailable: mir-same-chroma is not importable "
+                           f"(expected under /home/kim/Projects/mir-same-chroma/src): {_SAME_CHROMA_MISSING}")
 from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.inference.longform import slerp  # noqa: E402
 

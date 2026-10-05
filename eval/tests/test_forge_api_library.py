@@ -26,6 +26,7 @@ def wav_bytes(seconds=0.25):
     return buf.getvalue()
 
 
+@forge_testutil.needs_ffprobe
 def test_upload_then_audio_and_files(client):
     data = wav_bytes()
     r = client.put("/forge/upload?filename=take.wav", content=data)
@@ -41,6 +42,7 @@ def test_upload_then_audio_and_files(client):
     assert [r["id"] for r in files["roots"]] == ["crops", "renders", "uploads"]
 
 
+@forge_testutil.needs_ffprobe
 def test_upload_rejects(client):
     assert client.put("/forge/upload?filename=x.txt", content=b"abc").status_code == 400
     r = client.put("/forge/upload?filename=x.wav", content=b"not audio at all")
