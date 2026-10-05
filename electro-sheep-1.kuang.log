@@ -54,3 +54,96 @@ What's left before a first working GUI is integration on the GPU box, not missin
 
 My estimate: about a day on the box. Steps 1–2 are quick; step 3 is where the fixing will be.
 Every commit is "Electro-Sheep 1"; comments in the code mark what was decided and why.
+
+### [2026-10-05 KUANG]
+
+Handoff received, thanks -- it is the clearest one I have been handed on this project. Picking it
+up. I am on Kim's P14s laptop, not the GPU box, so steps 1-3 are not mine yet: the sa3-fork-forge
+worktree and the real server both live elsewhere, and Kim's Documents/py tree is mid-move to local
+disk, which is where mir-same-chroma lives. What follows is everything I could verify without it.
+
+**Your client numbers reproduce exactly, on different hardware.**
+
+    npx vitest run     143 files, 1309 passed, 17 skipped   <- identical to yours
+    npm run check      598 files, 0 ERRORS, 1 warning        <- identical
+
+That is worth more than it looks: a cloud Linux box and a Windows laptop agreeing to the test means
+your server-side numbers are probably sound too, and that the suite is not quietly environment
+dependent.
+
+**Forge pytest here: 159 passed, 19 skipped, 4 FAILED.** You reported 163/19. All four failures are
+one missing binary, not a code defect:
+
+    FAILED test_forge_store.py::test_probe_audio
+    FAILED test_forge_refs.py::test_resolve_each_kind
+    FAILED test_forge_api_library.py::test_upload_then_audio_and_files
+    FAILED test_forge_api_library.py::test_upload_rejects
+    -> FileNotFoundError: [WinError 2] from subprocess
+
+`eval/forge/uploads.py:57` shells out to **ffprobe**, which is not installed on this machine and is
+not named as a dependency anywhere I could find. It was on your cloud box, so the suite looked
+clean there. **Whoever boots the real server needs ffmpeg installed** or uploads will fail --
+worth adding to the step-2 checklist.
+
+TWO SMALL THINGS WORTH FIXING BEFORE INTEGRATION DAY. Both are mine to do if you want, but they
+touch your code so I am asking rather than committing.
+
+1. **`probe_audio` crashes opaquely when ffprobe is absent.** It handles a bad *file* well --
+   non-zero return code becomes `ForgeError(400, "not a readable audio file: ...")`. But a missing
+   *binary* raises FileNotFoundError out of `subprocess.run` uncaught, so the operator gets a stack
+   trace instead of "ffprobe not installed". One try/except around the call, raising a 500 that
+   names the missing binary, turns a confusing failure into an obvious one.
+
+2. **Eight unrelated test files cannot be COLLECTED without mir-same-chroma.** Not skipped --
+   collection errors, which abort the whole run:
+
+       eval/explorer_render_server.py:53  import chroma_morph_transitions
+       eval/chroma_morph_transitions.py:41  from harmonic.same_chroma import compute_same_chroma
+       -> ModuleNotFoundError: No module named 'harmonic'
+
+   The casualties are test_adapter_slots, test_z0_sidecars, test_gpu_lock_sidecar,
+   test_ckpt_probe_slim, test_build_sweep_page, test_continuation_provenance,
+   test_latch_window_budget, test_target_raw_passthrough -- none of which have anything to do with
+   chroma. You knew the SAME-chroma tests would skip; this is stronger, because a module-scope
+   import takes the neighbours down with it. Making that import lazy (inside the function that
+   needs it) or guarded would let `pytest eval/tests` run on a box without the checkout. On step 2
+   that is the difference between "19 skips, all understood" and "8 errors, suite aborted".
+
+**ON THE HARDWARE, which may change your assumption about needing the box.**
+
+Last week I characterised this laptop properly (RTX PRO 500 6 GB + Arc Pro 140T 16 GB). SA3
+inference runs here, correctly, with the parameters the models themselves recommend:
+
+    small-music  (distilled)  cfg 1,  8 steps   RTX  0.16 s/step
+    medium-base  (base)       cfg 7, 50 steps   Arc  0.99 s/step, valid audio
+
+Notes that matter for whoever does step 3:
+  * `small-music` and `medium` are the DISTILLED checkpoints -- their own model_config carries
+    `demo_cfg_scales [1]`, `demo_steps 8`. The `-base` ones carry `[2,4,7]` and 50. The server's
+    defaults (`steps 24`, `cfg_scale 6.0`, explorer_render_server.py:1181-1182) are base-model
+    settings; point it at a distilled checkpoint and it produces audibly over-driven output with no
+    warning. Sourcing those two defaults from the loaded model_config would make the GUI genuinely
+    model-agnostic across the family, which is what Kim wants.
+  * medium at fp16 needs 8.7 GB and spills on the 6 GB card -> 3.1 s/step. The Arc holds it
+    resident and is 3-4x faster despite lower raw throughput. Fitting beats computing.
+  * Reduced precision on the Intel XPU backend produces **NaN** for medium-class models (fp16 AND
+    bf16; fp32 is fine; small-music fp16 is fine). bf16 has fp32's exponent range, so this is a
+    backend bug, not overflow. Do not "fix" `model.py`'s `model_half = False`-off-CUDA guard: it is
+    accidentally the thing preventing silent NaN output.
+  * Seeds do not reproduce across precision or device (same seed, fp32 vs fp16: correlation 0.65 on
+    CUDA, 0.39 on XPU). Both valid audio, different takes. The GUI shows a seed; it should say what
+    that seed is bound to.
+
+Full measurements, the harness, and the eval clips are at
+`C:\dev\private\eval-clips\2026-10-01-sa3-hardware\` on Kim's laptop -- local only, not in the
+repo, since it is 27 MB of wav.
+
+The practical upshot: **a first demo may not need the GPU box at all.** This laptop renders
+medium-base correctly. What it lacks is the forge fork (the SA3 checkout here is upstream -- no
+`models/latch.py`, no `inference/longform.py`, both of which explorer_render_server imports). If
+Kim wants the demo sooner than the box is free, cloning sa3-fork-forge here and applying your two
+patches is a shorter path than it looks.
+
+Nothing committed to your code yet. Say the word on items 1 and 2 and I will do them.
+
+-- KUANG
