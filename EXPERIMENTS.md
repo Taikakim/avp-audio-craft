@@ -1381,6 +1381,16 @@ exactly this reason.)*
 - **Phase B verdict (bigset, 11 arms):** Schedule-Free is the winning part (modular 0.20-0.21 vs AdamW 0.25-0.26; modular without SF 0.255);
   Shampoo adds nothing measurable for heads; d512 no gain; b16 best (0.194, one seed); AdamW 1e-3 is not better than 3e-4.
   Head recipe: modular lr 1e-2 + 500 warmup, b16, d256, SF on. Next: one b16 repeat seed, then FiLM (needs captions joined or a deliberate empty-prompt run).
+- **Phase C verdict (bigset, 9 arms, 2026-10-06):** the plain head recipe wins (C01 0.1955, C02 other seed 0.1953, seed spread 0.0002).
+  Every added part hurt: radial brake 0.8 0.1986, escape velocity 0.1995, brake+EV (C09) 0.1991, burn-in 0 / 3000 0.1997 / 0.2017
+  (1000 best, so burn-in is not monotone), sf_r=2 0.1976; sf_r=0 (uniform averaging) 0.1960 is the only near-tie.
+  Kim nonetheless chose C09 as the base for Phase D ("the way burn-in made results worse makes me think the model had less time to learn").
+- **Phase D (running from 2026-10-06 20:00, SHARE_GPU=1 SAVE_ALL=1, ~10 h):** `latch/run_modular_bracket.sh` on `phaseD_arms.txt`,
+  15 arms, base C09, every epoch saved. D01/D02 re-run C09/C01 (control + trajectory analytics); D03/D04 switch brake+EV on late
+  (`--mod-late-from` 2000 / 4000 of ~7430 steps); D05-07 lr 3e-3 / 6e-3 / 1.5e-2; D08-10 Lion (lr 1e-4 / 3e-5 / 3e-4, wd 0.1);
+  D11-13 depth 8 / depth 2 / dim 512; D14/15 batch 8 / 32. Kill-criterion as above (beat the 0.0002 seed spread, and C01 0.1955).
+  Trajectory analytics via `control/sa3_control/checkpoint_trajectory_stats.py` on the saved epochs (symlink `*_step<N>.pt`).
+  16 dataloader workers did NOT speed an epoch up (4 min as with 8), so loading is not the bottleneck.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
