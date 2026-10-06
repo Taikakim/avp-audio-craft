@@ -1600,6 +1600,8 @@ latent along it and decodes. Plausible because SAME's semantics are trained in a
 noise-robust; H1's ladder batches (one knob varied, rest fixed) are exactly the minimal pairs that define a direction.
 *Limits:* 10.77 Hz latent (93 ms/frame) ⇒ attack/short-decay are largely invisible; isolated-note → full-mix domain gap;
 knobs may be linear only over part of their range (cutoff likely to bend).
+*Variant to keep in view (2026-10-06):* the direction may depend on the source latent (a tangent field v_k(z) rather than one
+vector per knob). The gate's cross-patch consistency measure tells which: low consistency ⇒ one vector is not enough.
 *Gate (cheap, CPU via SAME-S):* encode ~50 ladders/knob; per knob measure (1) cross-patch direction consistency (cosine of
 per-ladder displacement vectors vs chance), (2) ladder straightness (cf. H2 / STP). *Then:* apply the cutoff/resonance
 directions to a few of the 24 real bass stems and listen. *Kills it:* directions not consistent across patches, or edited
