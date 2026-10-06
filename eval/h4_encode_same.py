@@ -20,6 +20,7 @@ def main():
     ap.add_argument("--model", default="same-s")
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--shard", type=int, default=1024)
+    ap.add_argument("--device", default="cpu", help="cuda:0 once the GPU is free (minutes instead of an hour)")
     a = ap.parse_args()
     torch.set_num_threads(int(os.environ["OMP_NUM_THREADS"]))
     stem = a.npz[:-4]
@@ -29,7 +30,7 @@ def main():
     d = np.load(a.npz, mmap_mode="r")
     audio, sr, n = d["audio"], int(d["sample_rate"]), len(d["audio"])
     from stable_audio_3 import AutoencoderModel
-    ae = AutoencoderModel.from_pretrained(a.model, device="cpu")
+    ae = AutoencoderModel.from_pretrained(a.model, device=a.device)
     t0 = time.time()
     for s0 in range(0, n, a.shard):
         p = f"{parts}/{s0:07d}.npy"
@@ -38,7 +39,7 @@ def main():
         zs = []
         for s in range(s0, min(n, s0 + a.shard), a.batch):
             x = torch.from_numpy(np.asarray(audio[s:min(s + a.batch, s0 + a.shard, n)], dtype=np.float32))
-            zs.append(ae.encode(torch.stack([x, x], 1), sr).float().numpy().astype(np.float16))
+            zs.append(ae.encode(torch.stack([x, x], 1).to(a.device), sr).float().cpu().numpy().astype(np.float16))
         np.save(p + ".tmp.npy", np.concatenate(zs))
         os.replace(p + ".tmp.npy", p)
         done = min(n, s0 + a.shard)

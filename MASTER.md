@@ -345,6 +345,8 @@ the channel only covers the while-alive case. Never edit another agent's entries
 > rule; author scans at write-time, transferrer at ship-time, the dialogue colorizer redacts as backstop).
 > If a task ever needs an external read, surface it to Kim first. *(private again 2026-07-02; doc-fixed 2026-07-03)*
 
+**Paper-derived experiments report back to the paper's verdict page (Kim direct, 2026-10-06).** An experiment built on an idea lifted from a paper is not finished until its result — positive, partial or negative — is on that paper's entry in `Misc/paper_verdicts_data.json` and the page is rebuilt (`Misc/build_paper_verdicts.py`) and deployed (files/evals/paper_verdicts.html; leak gate runs at build). Move the row out of `untested`, set the verdict section, cite the internal log. Several papers behind one experiment → update each. Also update the paper's row in `papers/knowledge.md` and its sidecar. Content owner THE-FINN, generator/deploy WINTERMUTE, but whoever lands the result writes the row.
+
 **Public comment fields are WRITE-ONLY — agent-forbidden (Kim direct, 2026-07-15).** The
 eval-board note widget (`web/comment.php` + `comments.js`) accepts public, unauthenticated text —
 an injection surface by construction. Boundary: notes append to a plain UTF-8 JSONL on the server
@@ -916,6 +918,14 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   (2026-07-21, job 20068082 — 4/100+ cells rendered). LUMI GCD pinning = `ROCR_VISIBLE_DEVICES=$SLURM_PROCID`
   ALONE (the proven muscriptor block). Local single-card is different: there you must not set
   `HIP_VISIBLE_DEVICES=""` either (flash_attn import crash, see §5 eval-server bullet).
+- **On `SAO/.venv` (ROCm 7.14) every process that has touched the GPU spins one thread at 100% CPU,
+  even when idle (W, 2026-10-07).** Reproduced with a 5-line script: `import torch` alone is quiet; one
+  matmul on `cuda`, then `time.sleep`, pins a thread for the life of the process (pure userspace). Not
+  cured by `HSA_ENABLE_INTERRUPT=1`, `AMD_DIRECT_DISPATCH=0`, `HIP_HOST_COHERENT=0`, `GPU_MAX_HW_QUEUES=1`
+  or `HSA_ENABLE_SDMA=0`. Consequence: an IDLE resident server (`:8056`, eval servers) costs one full core
+  forever, and N GPU processes cost N cores before any work. `renice` does not help: a spinning thread runs
+  flat out whenever nothing else wants the CPU. For a quiet machine, stop idle GPU processes rather than
+  renicing them. (Seen at night, when the fans mattered.)
 - **TWO GPUs are visible since 2026-09-25: the desktop now runs on the Ryzen iGPU (gfx1036), and the
   RX 9070 XT (gfx1201) is compute-only.** Unpinned, torch sees 2 devices (`cuda:0` = the 9070 XT), and
   `train_lora_modular.py` builds its Trainer with `devices="auto"`, so Lightning would try to train
