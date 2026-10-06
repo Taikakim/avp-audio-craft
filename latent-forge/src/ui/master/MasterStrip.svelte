@@ -27,12 +27,21 @@
 
   import { masterSource, MIXDOWN_UNAVAILABLE_HINT } from "../../lib/render/masterSource.svelte";
   import { playback } from "../../lib/stores/transport.svelte";
+  import { mixdown, signalInputNow } from "../../lib/render/mixdown.svelte";
+  import { signalKeyOf } from "../../lib/mix/signalPath";
 
   /** The mix as a buffer, decoded through the same cache M5's preview mix uses. */
   let mixBuffer = $state<AudioBuffer | null>(null);
 
   const showing = $derived(masterSource.effective);
   const shownBuffer = $derived(showing === "mixdown" ? mixBuffer : masterBuffer);
+  // The badge describes what is SHOWN: the mixdown is stale when the arrangement has moved off the
+  // signal key its commit was stamped with, the preview by its own flag below.
+  const shownStale = $derived(
+    showing === "mixdown"
+      ? mixdown.key !== null && mixdown.key !== signalKeyOf(signalInputNow())
+      : masterStale,
+  );
 
   async function chooseSource(v: "preview" | "mixdown") {
     masterSource.set(v);
@@ -136,7 +145,7 @@
     {#if dbfs}
       <span class="peak" class:clipping>peak {dbfs} dBFS{clipping ? " · CLIPPING" : ""}</span>
     {/if}
-    {#if masterStale}
+    {#if shownStale}
       <span class="stale-dot" title="the arrangement changed since this was rendered">stale</span>
     {/if}
     <button onclick={refresh} disabled={busy}>{busy ? "MIXING…" : "▸ MIX PREVIEW"}</button>
@@ -166,7 +175,7 @@
   </div>
   {#if error}
     <p class="error">{error}</p>
-  {:else if !masterBuffer}
+  {:else if !shownBuffer}
     <p class="empty">no mix yet — add clips, then hit MIX PREVIEW</p>
   {/if}
 </div>

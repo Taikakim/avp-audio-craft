@@ -113,3 +113,20 @@ describe("runMixdown", () => {
     expect(mixdown.key).toBeNull();
   });
 });
+
+describe("a finished commit shows its result", () => {
+  it("switches the MASTER pane to MIXDOWN", async () => {
+    const { masterSource } = await import("../masterSource.svelte");
+    masterSource.set("preview");
+    jobs.onDone?.({ op: "commit", result: { meta: {} } } as unknown as JobRecord);
+    expect(masterSource.value).toBe("mixdown");
+    masterSource.set("preview");
+  });
+
+  it("leaves it alone for any other job", async () => {
+    const { masterSource } = await import("../masterSource.svelte");
+    masterSource.set("preview");
+    jobs.onDone?.({ op: "generate", result: { meta: {} } } as unknown as JobRecord);
+    expect(masterSource.value).toBe("preview");
+  });
+});

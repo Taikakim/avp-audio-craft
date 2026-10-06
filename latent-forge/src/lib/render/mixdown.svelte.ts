@@ -9,6 +9,7 @@ import { arrangement } from "../stores/arrangement.svelte";
 import { settings } from "../stores/settings.svelte";
 import { commitPayload, PayloadError } from "./payloads";
 import { jobs } from "./jobs.svelte";
+import { masterSource } from "./masterSource.svelte";
 
 /**
  * The ONE builder of the signal-path input -- MixSignalPath.svelte renders from it and runMixdown
@@ -38,6 +39,9 @@ let pendingKey: string | null = null;
 // the signal key of the arrangement it described, so mergeSignalPath can tell when it has gone stale.
 jobs.onDone = (rec) => {
   if (rec.op !== "commit") return;
+  // Pressing MIXDOWN is the operator asking to hear the mixdown: show the result they just made.
+  // (Before this, the MASTER pane stayed on PREVIEW and read "no mix yet" after a good commit.)
+  masterSource.set("mixdown");
   const raw = (rec.result?.meta as { stages?: unknown } | undefined)?.stages;
   if (!Array.isArray(raw)) return;
   mixdown.acceptStages(raw as CommitStage[], pendingKey);
