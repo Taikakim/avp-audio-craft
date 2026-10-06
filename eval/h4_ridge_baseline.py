@@ -38,6 +38,17 @@ def features(Z, kind):
     return (F - F.mean(0)) / (F.std(0) + 1e-6)             # blocks have different scales; the cosine would follow the loudest one
 
 
+def archetype_folds(dir_, key, ladder, folds=4, seed=0):
+    """Fold index per row, grouping by W's recovered base-preset archetype (archetype_ids.json): the v2 sets reuse only
+    16 archetypes, so folding by ladder lets a model memorise families (W, 2026-10-06). key = 'ladders_v2' | 'ladders_v2c'."""
+    import json
+    arch = {int(k): v for k, v in json.load(open(f"{dir_}/archetype_ids.json"))[key].items()}
+    g = np.array([arch[int(l)] for l in ladder])
+    ids = np.random.default_rng(seed).permutation(np.unique(g))
+    fo = {a: i % folds for i, a in enumerate(ids)}
+    return np.array([fo[a] for a in g]), g
+
+
 def ridge_dir(M, y, alpha):
     """Ridge weight vector for y ~ M (both centred); returns (w, mean_M, mean_y)."""
     mu, my = M.mean(0), y.mean()
@@ -46,13 +57,16 @@ def ridge_dir(M, y, alpha):
     return w, mu, my
 
 
-def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0, val=None):
+def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0, val=None, fold=None):
     """M [N,256] pooled latents; ax/an/rg knob axis, anchor id, rung per row. Returns per-method dict.
     val: optional exact knob value per row (v2 ladders have 8 or 16 rungs, so the rung is not a common scale); it is
     z-scored per axis on the training rows and replaces the rung as the ridge target."""
-    anchors = np.unique(an)
-    fold_of = dict(zip(np.random.default_rng(seed).permutation(anchors), np.arange(len(anchors)) % folds))
-    f = np.array([fold_of[a] for a in an])
+    if fold is not None:                                       # caller-supplied folds (e.g. by archetype family)
+        f, folds = np.asarray(fold), int(np.max(fold)) + 1
+    else:
+        anchors = np.unique(an)
+        fold_of = dict(zip(np.random.default_rng(seed).permutation(anchors), np.arange(len(anchors)) % folds))
+        f = np.array([fold_of[a] for a in an])
     S = int(rg.max()) + 1
     out = {m: {"hit": [], "rho": [], "axis": [], "anchor": []} for m in ("mean", "ridge")}
     r2 = {k: [[], []] for k in range(n_axes)}                      # [sum sq err, sum sq tot] per axis
