@@ -19,9 +19,15 @@ cd /tmp || exit 1
 while read -r name rest; do
   [[ -z "${name:-}" || "$name" == \#* ]] && continue
   if grep -q "^${name}	" "$OUT/SUMMARY.tsv"; then echo "[bracket] skip $name (done)"; continue; fi
-  until "$SAO/Misc/gpu_guard.sh" acquire CONTINUITY $$ >/dev/null 2>&1; do
-    echo "[bracket] GPU busy, waiting 120 s before $name"; sleep 120
-  done
+  # SHARE_GPU=1: Kim's explicit OK to run beside another instance's job (enough VRAM free, 2026-10-06).
+  # Skips the lock entirely -- the lock exists because two concurrent GPU jobs hard-crashed the box in July.
+  if [ "${SHARE_GPU:-0}" != "1" ]; then
+    until "$SAO/Misc/gpu_guard.sh" acquire CONTINUITY $$ >/dev/null 2>&1; do
+      echo "[bracket] GPU busy, waiting 120 s before $name"; sleep 120
+    done
+  else
+    echo "[bracket] SHARE_GPU=1: not taking the GPU lock for $name"
+  fi
   mkdir -p "$OUT/$name"
   echo "[bracket] start $name: $rest"
   t0=$(date +%s)
@@ -29,7 +35,7 @@ while read -r name rest; do
   $PY "$TRAIN" $rest --save-dir "$OUT/$name" --run-name "$name" --save-best-only > "$OUT/$name/train.log" 2>&1
   rc=$?
   t1=$(date +%s)
-  "$SAO/Misc/gpu_guard.sh" release CONTINUITY >/dev/null 2>&1
+  [ "${SHARE_GPU:-0}" != "1" ] && "$SAO/Misc/gpu_guard.sh" release CONTINUITY >/dev/null 2>&1
   best=$(grep -oE "val=[0-9.]+" "$OUT/$name/train.log" | cut -d= -f2 | sort -g | head -1)
   last=$(grep -oE "val=[0-9.]+" "$OUT/$name/train.log" | tail -1 | cut -d= -f2)
   printf '%s\t%s\t%s\t%s\trc=%s\t%s\n' "$name" "$((t1 - t0))" "${best:-NA}" "${last:-NA}" "$rc" "$rest" >> "$OUT/SUMMARY.tsv"
