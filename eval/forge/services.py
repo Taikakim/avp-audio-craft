@@ -64,8 +64,13 @@ class Services:
         if path.exists():
             return torch.from_numpy(np.load(path).astype(np.float32))
         srv = self.srv
-        with srv.GPU_LOCK:
-            z = srv.MODEL.encode(torch.from_numpy(a), srv.SR, chunked=True)
+        # StableAudioModel has no encode(); only the standalone AutoencoderModel does. Go through the
+        # resident model's own pretransform, as the server's other encode paths do (chunking comes
+        # from the pretransform's config). Found on the first real-server run, 2026-10-06.
+        pre = srv.MODEL.model.pretransform
+        p0 = next(pre.parameters())
+        with srv.GPU_LOCK, torch.inference_mode():
+            z = pre.encode(torch.from_numpy(a).to(p0.device, p0.dtype).unsqueeze(0))
         z = z.detach().float().cpu()
         if z.dim() == 2:
             z = z.unsqueeze(0)

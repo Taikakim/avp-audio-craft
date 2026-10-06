@@ -218,6 +218,25 @@ def _i(req, key, default):
     return int(default) if v is None else int(v)
 
 
+def model_defaults():
+    """(steps, cfg_scale) defaults for the LOADED backbone.
+
+    Distilled checkpoints (rf_denoiser: medium, small-music) are trained for few steps at cfg 1 --
+    their own model_config says so under training.demo (8 steps, cfg [1]) -- and come out audibly
+    over-driven at base-model settings (KUANG, 2026-10-05). Base models keep the project's 24 / 6.0
+    (their demo default is 50 steps; 24 is the deliberate team choice). Explicit request values win.
+    """
+    cfg = getattr(MODEL, "model_config", None) if MODEL is not None else None
+    if not isinstance(cfg, dict):
+        return 24, 6.0
+    objective = cfg.get("model", {}).get("diffusion", {}).get("diffusion_objective")
+    if objective == "rf_denoiser":
+        demo = cfg.get("training", {}).get("demo", {})
+        scales = demo.get("demo_cfg_scales") or [1]
+        return int(demo.get("demo_steps", 8)), float(max(scales))
+    return 24, 6.0
+
+
 def _b(req, key, default):
     v = req.get(key)
     return bool(default) if v is None else bool(v)
@@ -1074,7 +1093,7 @@ async def schedule(request: Request):
     else:
         req = dict(request.query_params)
     try:
-        steps = max(1, _i(req, "steps", 24))
+        steps = max(1, _i(req, "steps", model_defaults()[0]))
         duration = _f(req, "duration", 47.0)
         sigma_max = _f(req, "sigma_max", 1.0)
         spec = forge_schedule.parse_spec(req.get("schedule") if request.method == "POST" else None)
@@ -1187,8 +1206,8 @@ def _generate_impl(req):
     duration = _f(req, "duration", 47.0)
     if not (1.0 <= duration <= MAX_DURATION_SEC):
         raise ValueError(f"duration {duration} outside 1..{MAX_DURATION_SEC}")
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     batch = max(1, _i(req, "batch_size", 1))
     seed = resolve_seed(_i(req, "seed", -1))
     with GPU_LOCK:
@@ -1338,8 +1357,8 @@ def _a2a_track_impl(req):
         raise ValueError("prompt is required")
     nls = req.get("noise_levels") or [_f(req, "noise_level", 0.4)]
     nls = [float(x) for x in nls]
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     apg = _f(req, "apg_scale", 1.0)
     seed = resolve_seed(_i(req, "seed", -1))
     with GPU_LOCK:
@@ -1450,8 +1469,8 @@ def _longform_impl(req):
         raise ValueError("prompt_arc is required ('0:promptA|45:promptB|...' arc grammar)")
     arc = _parse_prompt_arc(schedule_arg)
     arc_echo = arc if isinstance(arc, list) else [(0.0, arc)]
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     seed = resolve_seed(_i(req, "seed", -1))
     audio_path = req.get("audio_path")
     window_sec = _f(req, "window_sec", 30.0)
@@ -1619,8 +1638,8 @@ def _a2a_mix_impl(req):
     chroma_gain = _f(req, "chroma_gain", cmt.CHROMA_GAIN)
     guid_end = _f(req, "guidance_end_pct", 0.6)
     whole = req.get("whole_track")
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     apg = _f(req, "apg_scale", 1.0)
     cfg_interval = resolve_cfg_interval(req)
     resolve_dist_shift(req)  # validate early, before any GPU work; each pass resolves its own shift

@@ -478,7 +478,9 @@ async def backbone_get():
     objective = getattr(getattr(SRV.MODEL, "model", None), "diffusion_objective", None)
     if objective is None and active in backbone.BACKBONES:
         objective = backbone.objective_of(active)
-    return ok(active=active, objective=objective, available=backbone.listing())
+    steps, cfg = SRV.model_defaults() if hasattr(SRV, "model_defaults") else (24, 6.0)
+    return ok(active=active, objective=objective, available=backbone.listing(),
+              defaults={"steps": steps, "cfg_scale": cfg})
 
 
 def _switch_backbone(model_id):
@@ -517,8 +519,10 @@ def _switch_backbone(model_id):
     if after < before:
         warnings.append(f"{before - after} resident adapter slot(s) could not be re-applied on {model_id}")
     srv.log(f"[forge] backbone {previous} -> {model_id} in {_time.time() - t0:.1f}s")
+    steps, cfg = srv.model_defaults() if hasattr(srv, "model_defaults") else (24, 6.0)
     return {"active": model_id, "objective": srv.MODEL.model.diffusion_objective,
-            "rebuild_sec": round(_time.time() - t0, 1), "warnings": warnings}
+            "rebuild_sec": round(_time.time() - t0, 1), "warnings": warnings,
+            "defaults": {"steps": steps, "cfg_scale": cfg}}
 
 
 @router.post("/forge/backbone")
