@@ -167,6 +167,18 @@ decision — and never assume two optimizers at matched loss produce interchange
   Schedule-Free's contribution**, and Schedule-Free is the component Kim associates with the
   weight-growth pathology. Say so in `run_meta.recipe.notes`.
 
+- **ModularOptimizer on SMALL from-scratch nets (LatCH heads, 2026-09-30, E5):** its lr is NOT on AdamW's scale.
+  At 3e-4 a d256 head barely trains (normalised steps, and the 1x256 output layer is routed to the `sign` group,
+  which moves 0.06 x lr). Good range **6e-3 to 1e-2** (+500 warmup); 3e-2 diverges. What wins over AdamW (~17% on the goa
+  bigset density head) is **Schedule-Free**, not Shampoo (no measurable Shampoo gain). b16 > b32; d512 no gain.
+  Recipe: `train_latch.py --optimizer modular --lr 1e-2 --mod-warmup 500 --batch-size 16`. Full table:
+  `Mantu/latch_sweep/modular_2026-09-30/REPORT.md`.
+  **⚠ NOISE FLOOR (2026-10-07 audit): a head-bracket difference under ~0.004 is NOT a result.** Two seeds at the same
+  `--num-workers` differed by 0.0002, but re-running the same recipe at 16 workers instead of 8 moved it 0.1955 -> 0.1995
+  (D02 vs C01; D16 at 8 workers reproduced C01 bit-for-bit). Hold `--num-workers` fixed inside a comparison, record it, and
+  repeat before reading brake / escape velocity / burn-in effects. Effects >> 0.004 (modular vs AdamW, SF on/off) stand.
+  Detail: `docs/training-findings.md` 2026-10-07.
+
 ## 5. Multi-GPU (LUMI) — read `lumi-ops` first
 
 One fact too expensive to re-learn: **`srun --gpus-per-task=1` + Lightning's
