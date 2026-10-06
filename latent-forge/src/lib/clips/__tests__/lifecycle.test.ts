@@ -16,6 +16,12 @@ function reset() {
 }
 
 beforeEach(reset);
+
+/** A tempo-known clip already on the timeline, so the project tempo (120) is
+ *  the user's and a later clip is stretched to it instead of setting it. */
+function anchorAt120() {
+  arrangement.addClip({ lane: 3, startSec: 0, durSec: 4, audio: { kind: "crop", crop_id: "000001" }, nativeBpm: 120 });
+}
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -40,6 +46,7 @@ describe("adding a clip from an OS file drop (spec §7.3)", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
+    anchorAt120();
     const file = new File([new Uint8Array([1, 2, 3])], "kick.wav", { type: "audio/wav" });
     const { clip, analyzeError } = await addClip({ lane: 0, startSec: 0, file });
 
@@ -101,6 +108,49 @@ describe("analysis (spec §7.3: fills native_bpm and downbeats_sec unless alread
   });
 });
 
+describe("first clip sets the project tempo (no silent stretch to the default)", () => {
+  function analyzeAt(bpm: number) {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/forge/analyze") {
+        return jsonResponse({
+          ok: true, bpm, bpm_candidates: [], beats_sec: [], downbeats_sec: [], duration_sec: 4,
+          source: "librosa",
+        });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    }));
+  }
+
+  it("an analysed first clip on an empty timeline adopts its own tempo, duration unchanged", async () => {
+    analyzeAt(145);
+    const { clip } = await addClip({ lane: 0, startSec: 0, ref: REF, durationSec: 4 });
+    expect(arrangement.bpm).toBe(145);
+    expect(clip.native_bpm).toBe(145);
+    expect(clip.dur_sec).toBeCloseTo(4, 9);
+    expect(stretchSpeed(clip.native_bpm!, arrangement.bpm)).toBe(1);
+  });
+
+  it("a first clip with a caller-known tempo adopts it too", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("must not be called"); }));
+    const { clip } = await addClip({
+      lane: 0, startSec: 0, ref: REF, durationSec: 4, nativeBpm: 145, downbeatsSec: [0],
+    });
+    expect(arrangement.bpm).toBe(145);
+    expect(clip.dur_sec).toBe(4);
+  });
+
+  it("a second clip does not move the project tempo", async () => {
+    analyzeAt(145);
+    await addClip({ lane: 0, startSec: 0, ref: REF, durationSec: 4 });
+    analyzeAt(90);
+    const { clip } = await addClip({
+      lane: 1, startSec: 0, ref: { kind: "crop", crop_id: "000413" }, durationSec: 4,
+    });
+    expect(arrangement.bpm).toBe(145);
+    expect(clip.native_bpm).toBe(90);
+  });
+});
+
 describe("stretch speed and cache key", () => {
   it("speed is projectBpm / nativeBpm, matching the non-elastic duration math in T1", () => {
     expect(stretchSpeed(120, 140)).toBeCloseTo(140 / 120, 9);
@@ -119,6 +169,7 @@ describe("stretch (spec §7.3: debounced 400ms, cached, non-blocking on failure)
       throw new Error(`unexpected fetch ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
+    anchorAt120();
     const { clip } = await addClip({ lane: 0, startSec: 0, ref: REF, durationSec: 4, nativeBpm: 100 });
     // addClip already armed one stretch at t=0; a further edit at t=200 must push it out.
     await vi.advanceTimersByTimeAsync(200);
@@ -139,6 +190,7 @@ describe("stretch (spec §7.3: debounced 400ms, cached, non-blocking on failure)
       }
       throw new Error(`unexpected fetch ${url}`);
     }));
+    anchorAt120();
     const a = await addClip({ lane: 0, startSec: 0, ref: REF, durationSec: 4, nativeBpm: 100 });
     const b = await addClip({ lane: 1, startSec: 0, ref: REF, durationSec: 4, nativeBpm: 100 });
     await vi.advanceTimersByTimeAsync(400);
@@ -164,6 +216,7 @@ describe("stretch (spec §7.3: debounced 400ms, cached, non-blocking on failure)
       if (url === "/forge/stretch") return jsonResponse({ ok: false, error: "bungee crashed" }, 500);
       throw new Error(`unexpected fetch ${url}`);
     }));
+    anchorAt120();
     const { clip } = await addClip({ lane: 0, startSec: 0, ref: REF, durationSec: 4, nativeBpm: 100 });
     const onError = vi.fn();
     scheduleStretch(clip.id, onError); // re-arm with the callback attached

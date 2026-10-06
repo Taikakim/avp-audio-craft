@@ -139,6 +139,7 @@ export async function addClip(input: AddClipInput): Promise<AddClipOutcome> {
     throw new Error("addClip needs a file or a ref");
   }
 
+  if (input.nativeBpm != null) adoptTempoIfFirst(input.nativeBpm, null);
   const clip = arrangement.addClip({
     lane: input.lane,
     startSec: input.startSec,
@@ -160,6 +161,15 @@ export async function addClip(input: AddClipInput): Promise<AddClipOutcome> {
 
   scheduleStretch(clip.id);
   return { clip, analyzeError };
+}
+
+/** The first tempo-known clip on an empty timeline sets the project tempo, so
+ *  it plays at its own speed instead of being silently stretched to the 120
+ *  default (a 145 BPM render showed "145.1->120 -17%" on first drop). Once any
+ *  other clip has a known tempo, the project tempo is the user's and stays. */
+function adoptTempoIfFirst(bpm: number, selfId: string | null): void {
+  if (arrangement.clips.some((c) => c.id !== selfId && c.native_bpm != null)) return;
+  arrangement.setBpm(bpm);
 }
 
 /** forgeApi.analyze fills native_bpm and downbeats_sec unless already known
@@ -194,6 +204,7 @@ export async function ensureAnalysis(clipId: string): Promise<void> {
 
   const live = arrangement.clips.find((c) => c.id === clipId);
   if (!live) return; // removed while analysis was in flight
+  if (result.bpm != null) adoptTempoIfFirst(result.bpm, live.id);
   arrangement.setClipBpm(live.id, result.bpm);
   arrangement.setDownbeats(live.id, result.downbeats_sec);
 }
