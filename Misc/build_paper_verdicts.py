@@ -20,6 +20,9 @@ own rectified-flow / DiT stack, and the original authors, who should be able to 
 is accurate and fair. Every row cites the internal log/doc it's backed by.
 
 Run: python3 Misc/build_paper_verdicts.py   (then rsync the landing + the paper_verdicts/ dir)
+
+DIRECTIVE (Kim, 2026-10-06): an experiment built on an idea lifted from a paper is not finished until its
+result is on that paper's entry (paper_verdicts_data.json) and the page is rebuilt + deployed.
 """
 import html
 import json
@@ -230,14 +233,16 @@ def render_landing(d: dict) -> str:
     doc += PV_CSS
     doc += '<h1>Paper Verdicts</h1>\n'
     doc += ('<p class="pv-intro">For every research paper the team reviewed with an eye toward '
-            '<b>SA3</b> (our rectified-flow music model) or <b>SAME</b> (its latent autoencoder), '
+            '<b>SA3</b> (our rectified-flow music model), <b>SAME</b> (its latent autoencoder) or our '
+            '<b>synth-inversion</b> models (audio → Surge XT patch), '
             'this tracks whether its claim was actually tested against our own model and what '
             'happened — <b>confirmed</b>, <b>nulled</b> (a real negative result despite theoretical '
             'compatibility), <b>partial</b>, <b>convergence</b> (we built the same mechanism before '
             'finding the paper), or <b>declined</b> (a reasoned decision to skip it). Each tested '
             'paper has its own page with our results and, where audio exists, eval clips. The '
-            'untested shelf at the bottom is reviewed-for-landscape, one line each. Maintained by '
-            'THE-FINN.</p>\n')
+            'untested shelf at the bottom is reviewed-for-landscape, one line each. Whenever an '
+            'experiment built on a paper\'s idea finishes, its result is added to that paper\'s '
+            'entry here, negative results included. Maintained by THE-FINN.</p>\n')
 
     # tested sections (cards, most-load-bearing first — data order)
     for s in secs:
