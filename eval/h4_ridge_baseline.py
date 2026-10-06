@@ -23,6 +23,21 @@ def unit(v):
     return v / (np.linalg.norm(v, axis=-1, keepdims=True) + 1e-12)
 
 
+def features(Z, kind):
+    """Per-render feature vector from per-frame latents Z [N,256,T]. mean = the original time-mean; meanstd adds the
+    per-channel std over time; temporal adds the last-quarter minus first-quarter mean (a filter/amp sweep shows there)."""
+    Z = Z.astype(np.float32)
+    m = Z.mean(-1)
+    if kind == "mean":
+        return m
+    q = max(1, Z.shape[-1] // 4)
+    parts = [m, Z.std(-1)]
+    if kind == "temporal":
+        parts.append(Z[..., -q:].mean(-1) - Z[..., :q].mean(-1))
+    F = np.concatenate(parts, axis=1)
+    return (F - F.mean(0)) / (F.std(0) + 1e-6)             # blocks have different scales; the cosine would follow the loudest one
+
+
 def ridge_dir(M, y, alpha):
     """Ridge weight vector for y ~ M (both centred); returns (w, mean_M, mean_y)."""
     mu, my = M.mean(0), y.mean()
@@ -79,10 +94,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default=DIR)
     ap.add_argument("--alpha", type=float, default=1.0)
+    ap.add_argument("--features", choices=["mean", "meanstd", "temporal"], default="mean")
     a = ap.parse_args()
     d = np.load(f"{a.dir}/ladders.npz", allow_pickle=True)
     Z = np.load(f"{a.dir}/latents_same_s.npz")["z"].astype(np.float32)
-    M = Z.mean(-1)
+    M = features(Z, a.features)
     axes = [str(x) for x in d["axes"]]
     res = evaluate(M, d["axis_ids"], d["anchor_ids"], d["rung"], len(axes), alpha=a.alpha)
     res["axes"] = axes
@@ -90,8 +106,9 @@ def main():
         print(f"{n:12s} identify mean {res['mean']['per_axis'][k]['identify']:.2f} ridge {res['ridge']['per_axis'][k]['identify']:.2f}"
               f" | monotone mean {res['mean']['per_axis'][k]['monotone_rho']:+.2f} ridge {res['ridge']['per_axis'][k]['monotone_rho']:+.2f}"
               f" | ridge held-out R2 {res['ridge_heldout_r2'][k]:+.2f}")
+    print(f"features={a.features} dir={a.dir.split('/')[-1]}")
     print(f"overall identify: mean {res['mean']['identify_overall']:.2f}  ridge {res['ridge']['identify_overall']:.2f}  (chance {1/len(axes):.2f})")
-    json.dump(res, open(f"{a.dir}/ridge_baseline.json", "w"), indent=1)
+    json.dump(res, open(f"{a.dir}/ridge_baseline_{a.features}.json", "w"), indent=1)
 
 
 if __name__ == "__main__":
