@@ -7,10 +7,11 @@ model census told us 32 arms had no resumable copy, and the LUMI pull was sized
 4x too small.
 """
 import pickle
+import os
 import sys
 import zipfile
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 import ckpt_probe
 
 

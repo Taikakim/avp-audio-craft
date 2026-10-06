@@ -5,11 +5,12 @@ it, so /generate could only request constant/ramp/beat_grid. That made the decis
 question about trajectory conditioning -- "does a REAL envelope transfer its rhythm
 to a differently-prompted render?" -- unaskable through the server.
 """
+import os
 import sys
 
 import pytest
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 import explorer_render_server as srv
 
 

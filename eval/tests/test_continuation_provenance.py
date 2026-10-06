@@ -7,9 +7,10 @@ different from the prefix, nothing warns. Either way the tail can be a different
 model than the head, with no record. This tests the recovery.
 """
 import json
+import os
 import sys
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 import continuation as cont
 
 

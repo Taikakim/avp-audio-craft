@@ -1,6 +1,7 @@
+import os
 import sys
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 
 
 def test_chroma_head_path_is_resolved_against_the_live_mount_not_a_literal():
