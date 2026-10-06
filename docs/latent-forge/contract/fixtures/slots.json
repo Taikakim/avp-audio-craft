@@ -1,0 +1,12 @@
+{
+ "status": 200,
+ "body": {
+  "slots": [],
+  "max_slots": 4,
+  "vram_floor_gb": 6.0,
+  "free_gb": 5.55,
+  "ok": true,
+  "active": null,
+  "backbone": "small-music-base"
+ }
+}

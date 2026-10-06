@@ -1,0 +1,9 @@
+{
+ "status": 200,
+ "body": {
+  "ok": true,
+  "names": [
+   "_fixture_probe"
+  ]
+ }
+}
