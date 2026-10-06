@@ -1660,8 +1660,79 @@ local steps much less. The v1 "source-dependent" reading came from testing only 
 cutoff control: a global ridge direction is enough. A learned map g(z) is justified only for FINE (local) moves, and
 must beat ~0.2-0.3 local consistency, not the 0.56 global ceiling. Statements above that cutoff "needs v_k(z)" are
 superseded by this entry.
+*CONTEXT, MATRICES, LEAKS (W + C, 2026-10-07 00:00-02:30, CPU).* Data in `Mantu/surge_200k_models/h4_gate_v2/`:
+v2 (10 knobs x 200 ladders x 4 rhythms, val prior = only **17 base presets**), v2c (800 cutoff), v2t (same as v2 from the
+**105-preset train prior**, exact `archetype_id` per ladder), v2w (fm_depth/aeg_release/aeg_sustain x 600, train prior),
+v2f (cutoff/resonance/feg_amount x 400, filter TYPE round-robin over all 10 LP types), v2s (release/decay/sustain x 300 in
+a sparse syncopated rhythm, 310-520 ms gaps). SAME-S latents exist for v2/v2c/v2t/v2w; **v2f and v2s still to encode** (GPU
+chain queued 2026-10-07 ~01:55 after H1's training exits; `h4_encode_same.py --device cuda:0`; includes a 64-clip CPU-vs-GPU
+agreement check because the earlier sets were CPU-encoded).
+(1) **Preset leak:** the val prior has 17 presets, so "held-out patches" share families; folding by archetype the cutoff
+headline holds (cross-archetype pair cos 0.57 vs same 0.65; ridge R2 0.71 -> 0.65, rho 0.98), and LOCAL cutoff directions
+are family-dependent (cross 0.18-0.27 vs same 0.35-0.46). Always fold by `archetype_id`.
+(2) **Family transfer** (C, `h4_transfer.py`): ridge directions fitted on val families transfer to train families almost
+as well as within (cutoff named 0.52-0.65, feg_amount 0.60). fm_depth, aeg_release, aeg_sustain stay at chance even fitted
+on 105 families or with 600 ladders (v2w).
+(3) **Context gates the envelope knobs** (`eval/h4_context_dependence.py`, v2t; audible effect = log-mel L1 first vs last
+rung): sustain is readable only with a SHORT decay (consistency 0.42 vs 0.01-0.07); decay only with sustain near 0 (0.42 vs
+~0.01, even within 0-0.2); feg_decay vs feg_amount effect rho 0.85; feg_amount vs feg_decay rho 0.75 AND its direction rotates
+(low/high tercile cos 0.47); resonance consistency 0.09 -> 0.36 with feg_amount. Cutoff is context-robust (direction cos
+0.89-0.97 across context extremes). "Sustain unreadable" was a context artefact, not absence from SAME.
+(4) **Filter type** (v2t, only LP 12 dB / 24 dB / Legacy Ladder have >= 12 ladders): cutoff and feg directions match across
+them (cos 0.93-0.99 to pooled); resonance does NOT: on 24 dB effect 1.95 and consistency 0.32 vs 1.1-1.3 and 0.11-0.12. The
+other 7 types need v2f.
+(5) **Conditioned fits** (`eval/h4_conditioned_fit.py`, held-out archetypes, temporal features): fitting within the gating
+knob's tercile barely changes the DIRECTION (sustain given short decay: 0.64 pooled vs 0.64 conditioned) — context decides
+WHETHER a knob is audible, not where it points. Exception: feg_amount given feg_decay (0.52 -> 0.62 and 0.64 -> 0.72 in the
+outer terciles). Readout gains small except cutoff in the low-feg tercile (R2 0.66 -> 0.77). Readable terciles: sustain|short
+decay R2 0.21, decay|low sustain 0.55-0.57, feg_decay|high feg_amount 0.64-0.68.
+(6) **Matrices** (`eval/h4_param_matrices.py`, v2t): knob directions are far from disentangled — cutoff/resonance/feg_amount/
+feg_decay pairwise cos 0.71-0.87, aeg_decay ~ aeg_sustain 0.93, fm_depth ~ amp envelope 0.56; a direction-based UI would
+confuse knobs within each group. Pairwise is not the whole truth: cutoff's audible effect is explained by single params
+R2 0.15 / additive linear 0.13 / trees with interactions **0.62** (held-out archetypes); envelope knobs are mostly one-partner
+(decay|sustain single 0.45). Preset-level correlations in the prior are weak except unison~detune 0.94, waveshaper~drive 0.71.
+(7) **Release needs gaps.** In r16/e8/q4/leg the gate gap is 8-124 ms, so the next note cuts the tail; v2s uses the sparse
+rhythm. Audio meter `h4_gate_envelope_meter.py` (smoke, 4 ladders/knob): release moves the post-gate tail by ~200 ms per
+ladder (rho 0.96) and leaves pre-gate decay flat; sustain moves pre-gate decay, tail barely. Kim's point to test on v2s: a
+release can sound like a longer decay, so separate them by the gate-to-ramp timing, i.e. compare release vs decay direction
+in the latent and check the tail meter. **Pending: v2s encode + meter + latent comparison.**
+(8) **Ops lesson:** SAME-S on CPU (8 threads, hours) is what made the box loud at night; use the GPU when free. ROCm 7.14
+idle spin thread: MASTER section 5.
 *UI, only after the gate:* NOT a new app — new controls in the inference explorer's **bend tab** (mir `plots/explorer_sa3`),
 backed by the existing :8056 render server (`/bend`, `/decode`); see docs/INFERENCE-SURFACE.md.
+
+**H5. Noisy-reference conditioning on the CURRENT flow inverter (no training) — POTENTIAL** (from Synth-JDF 2609.29320, W
+2026-10-07). Synth-JDF shows conditioning on partially noised reference audio helps off-manifold; even its clean-trained
+"Conditional" baseline improved slightly off-manifold. Test on the 24 real stems with the held-out-half protocol
+(`eval_refine_phrase.py` style): mix noise into the inverter's mel input at tau in {1, 0.9, 0.7, 0.5, 0.3, 0.1} (in the
+model's normalised mel space), report MSS / wMFCC / env-cos on the held-out half, with and without refinement. Minutes of
+CPU. Expectation per the paper: a clean-only model degrades or barely moves; if it IMPROVES, the gap is input-detail
+sensitivity. Caveat to carry: the paper's best points may be test-tuned; pick tau on half the stems, report the other half.
+
+**H6. Is it the JOINT objective or just noisy conditioning? — POTENTIAL, the ablation Synth-JDF did not run.** Train our
+conditional flow with the audio input noised at a random t_y ~ logit-normal (conditioning-noise augmentation, still no
+audio-velocity loss) vs H1's clean conditioning; same steps/data. If it closes most of the real-stem gap, the joint
+distribution is not what matters; if not, build the joint DiT (H7b). Needs the GPU (one H1-sized arm).
+
+**H7. Inverter architecture from the Hayes papers — POTENTIAL.** (a) One-token-per-parameter feature tokenizer with the
+grouped inverse projection (Synth-JDF supp. §3.1.2) in a small DiT over parameter tokens, replacing the ResMLP's single
+whole-vector linear; (b) full joint DiT (mel patches + parameter tokens, per-modality times) if H6 says the joint objective
+matters; (c) cheap riders on any new arm: MAE velocity loss (supp.: slight gain), CFG via 10% conditioning dropout (2506.07199)
+or the free bottom-edge branch (JDF), RK4 sampling. Synth-JEPA side already uses the per-parameter tokenizer form (Ben Hayes,
+2026-10-06: it beats Param2Tok there). Param2Tok (learned mixing assignment) only becomes interesting with permutation
+symmetry, i.e. after H3 adds a second oscillator / LFOs.
+
+**H8. MLDR envelope loss (DiffVox 2504.14735) — POTENTIAL.** LDR = log(RMS_short / RMS_long) compared L1 across scales;
+targets microdynamics. (a) Replace or add to the 10*(1 - rms_env_cos) term in `refine.py`'s objective and re-run the
+held-out-half refinement on the 24 stems (compare to the 11.24 -> 7.78 MSS baseline); (b) add MLDR as an envelope meter
+next to `h4_gate_envelope_meter.py` for the envelope-knob ladders (v2s). CPU only.
+
+**H9. Differentiable FX stage after the synth (DiffVox-style) — POTENTIAL.** Real bass stems carry chorus/delay/reverb, but
+Surge FX are disabled (state leak across renders). After inverting the DRY patch, fit a small differentiable delay + reverb
++ EQ (DiffVox components or GRAFx) to the residual by gradient descent per stem. Gives FX back without Surge's FX, and is a
+per-stem optimisation (no training). Caveat from DiffVox: some FX params are non-identifiable (delay time stuck at init);
+initialise from several points.
+
 
 **Done in this line:** phrase-level renderer-in-the-loop refinement (`refine.py`), fitted on the first half of
 each of 24 real phrases and judged on the held-out half: paper MSS 11.24 → 7.78 (better on 23/24), wMFCC
