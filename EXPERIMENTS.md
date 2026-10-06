@@ -1616,6 +1616,44 @@ vector per knob). The gate's cross-patch consistency measure tells which: low co
 per-ladder displacement vectors vs chance), (2) ladder straightness (cf. H2 / STP). *Then:* apply the cutoff/resonance
 directions to a few of the 24 real bass stems and listen. *Kills it:* directions not consistent across patches, or edited
 stems decode as artefacts rather than as the knob.
+*GATE RESULT (W, 2026-10-06, CPU) — PARTIAL PASS: 2 of 4 knobs have one shared direction.* 200 ladders (4 knobs x
+50 val-prior anchors x 8 rungs), each rung the same 4 s 145 BPM bass roll, SAME-S encoded and time-pooled; d = last
+rung minus first. Within-knob pair cosine vs the label-SHUFFLED null (mean 0.17, p95 0.22; random 256-d directions
+~0.00): **feg_amount 0.62** (identified from its direction alone on 90% of held-out ladders, chance 25%) and
+**aeg_decay 0.36** (62%) PASS; **aeg_sustain 0.18** sits at the null (38%), and **cutoff (0.08-0.30 range) 0.09 is BELOW
+it** (32%), i.e. no shared cutoff direction at all. Distance tertiles (near/mid/far anchors): cutoff 0.12/0.09/0.05,
+sustain 0.28/0.18/0.09, feg_amount 0.74/0.63/0.49, so the shared part fades with source distance (tangent-field
+variant). aeg_decay alone is distance-flat (0.39/0.34/0.37), the closest to one global vector. Paths are curved
+(straightness median 0.25-0.36), and per-ladder monotonicity along the knob direction (median rho 0.76-0.95) is
+only modestly above a random direction (|rho| 0.38-0.63), so it does not count as evidence. Kill criterion met for cutoff
+(the knob the gate meant to try first) as a single vector; a cutoff control would need v_k(z). Next, if pursued:
+apply the feg_amount and aeg_decay directions to real stems and listen; fit v_k(z) locally for cutoff.
+Scripts `stable-audio-tools/scripts/synth_inversion/h4_render_ladders.py` (stage 1, SAT venv) and
+`eval/h4_same_directions.py` (stage 2); data and run_meta in `Mantu/surge_200k_models/h4_gate/`.
+*FOLLOW-UPS (W + C, 2026-10-06 evening, CPU).* (1) **Note length decides which knobs are readable.** Same 200
+ladders re-rendered as quarter notes (~4 frames each, vs ~1 for the 16th roll): sustain null -> clear (cons 0.18 -> 0.50,
+pooled-ridge held-out R2 0.23 -> 0.52), cutoff below null -> above (0.09 -> 0.27, R2 0.08 -> 0.18), decay pass -> null
+(0.36 -> 0.22; its bracket is short, so on long notes it shapes only the first frame). C, keeping time structure in the
+features (mean + std + last-minus-first quarter): sustain and decay recover fully (named 0.92 / 0.84 on quarters), cutoff
+does not (R2 <= 0.16 everywhere). (2) **Loudness:** decay is NOT the loudness axis (3% of its displacement on the RMS
+direction; consistency survives removal, 0.35, p=0.002); filter-envelope amount is ~40% loudness plus a real remainder.
+(3) **SAME-S speaks for SAME-L:** latent cos 0.995, knob-displacement cos ~0.985. (4) **Energy-head gradients** (rms_energy_*,
+d head/dz) vs knob displacement, other-knob null in brackets: decay vs bass 0.27 (-0.03), sustain vs bass 0.24 (-0.03),
+feg_amount vs mid 0.39 (0.08); cutoff above null on no head. **Net:** sustain/decay/feg are readable linearly once the
+phrase and time structure are right; cutoff alone has a source-dependent direction, so it is the target of a learned
+map g(z) (C, GPU) vs a cutoff LatCH head baseline, graded by W's held-out-patch + held-out-knob eval with the decode check.
+Data for that: `Mantu/surge_200k_models/h4_gate_v2/` (v2: 10 knobs x 200 ladders x 4 rhythms x 8/16 rungs; v2c: 800 cutoff
+ladders; SAME-S per-frame latents beside each). Scripts `h4_render_ladders_v2.py`, `eval/h4_encode_same.py`,
+`eval/h4_same_directions.py`, `eval/h4_head_alignment.py`, C's `eval/h4_ridge_baseline.py`.
+*CORRECTION (C finding, W replicated, 2026-10-06 23:30) — cutoff is NOT simply source-dependent; it is CURVED.* On v2c
+(800 cutoff ladders, full 0.08-0.92 range): end-to-end displacement consistency **0.57** (C: 0.56; ~equal for all 4
+rhythms), a pooled ridge direction scores 0.51 against it and orders held-out ladders at rho 0.94, beating a cutoff LatCH
+head's gradient (0.27) as an edit direction. But per THIRD of the range it falls to 0.19 / 0.29 / 0.27 (low / mid / high;
+the low third reproduces v1's 0.09-0.27). So the cutoff path bends: the full-sweep chord is shared across sources,
+local steps much less. The v1 "source-dependent" reading came from testing only the low third over 50 patches. Coarse
+cutoff control: a global ridge direction is enough. A learned map g(z) is justified only for FINE (local) moves, and
+must beat ~0.2-0.3 local consistency, not the 0.56 global ceiling. Statements above that cutoff "needs v_k(z)" are
+superseded by this entry.
 *UI, only after the gate:* NOT a new app — new controls in the inference explorer's **bend tab** (mir `plots/explorer_sa3`),
 backed by the existing :8056 render server (`/bend`, `/decode`); see docs/INFERENCE-SURFACE.md.
 
