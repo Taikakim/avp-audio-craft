@@ -1555,6 +1555,64 @@ is precisely the hole) and a column on the eval pages. Runner would follow
 HEAD, and neither result should be read as evidence for the other. Prerequisite data already exists:
 madmom beat/downbeat activations are in the whole-track timeseries (100 Hz, MASTER §2).
 
+## H. Synth inversion (Surge XT bass: flow + Synth-JEPA)
+
+Code: `stable-audio-tools/scripts/synth_inversion/` (branch `feature/surge-xt-neural-inversion`). Paper:
+`papers/arxiv-2609.31024 - Synth-JEPA …` (sidecar has the implementation review). Results of paper-derived
+experiments go to the paper's verdict page (directive in `papers/knowledge.md`).
+
+**H1. FX-leak-fixed rerun with in-training accuracy controls — RUNNING** (W, launched 2026-10-06 02:43,
+`Mantu/surge_200k_models/fxfix_ladder_ema_b64`, launcher `run_fxfix_ladder_ema.sh`).
+*Why:* the previous run (`modular_shampoo_sf_b64`) trained on poisoned renders — Surge keeps hidden
+chorus/delay state across renders in one instance, and the 5% random patches carried FX, so every
+persistent worker was altered within a few dozen samples (train JEPA 0.13 vs 2.8 on clean renders;
+held-out whole-set retrieval 3%). Fixed (`surge_spec.FX_RENDER_ENABLED=False`, regression test).
+*What:* same recipe and 78,416 steps; 1.5× peak LR with linear decay to 1/3 over the last 30%; ladder
+("bracketed minimal-pair") batches every 4th step on cutoff-low / AEG sustain / FEG amount / AEG decay with a
+JEPA ordinal loss (SIGReg skipped on ladders); minibatch OT coupling for the flow; EMA half-life 2000
+(online, SF-x and EMA validated + exported); held-out ladder validation. Then the 24 real stems are
+inverted with old / online / EMA models through the identical pipeline (`clips_AB/`).
+*So far (step 23k):* held-out JEPA 0.46 (old run 2.68), held-out retrieval@512 65.6% (old 3.1%),
+train-preset val ≈ train loss (no gap), ladder ρ flow 0.62 / JEPA 0.89; EMA ≈ online.
+*Kills it:* real-stem A/B not better than the old model through the same pipeline.
+
+**H2. Ladder-straightness term (from Semantic Tube Prediction, 2602.22617) — POTENTIAL** (W, 2026-10-06).
+*Idea:* STP keeps an LM's hidden-state trajectory locally straight with `1 − cos(h_t − h_r, h_r − h_s)` on
+random triples (λ 0.01–0.08; 1/16 data for equal accuracy on Llama 1–8B structured-text fine-tunes). The
+synth-inversion analogue: along a single-control ladder the audio embeddings should lie on a locally straight
+path — the stronger version of H1's monotonic-distance ordinal loss, and the geometry the JEPA search's Adam
+stage and the bracketed refinement assume. *How:* add the term on random ladder triples at λ≈0.02 next to (or
+instead of) the ordinal loss; A/B on the held-out ladder metrics and on real-stem refinement. *Gated on* H1's
+result. *Not* for the SA3 DiT: non-causal, and musical states should revisit (loops/sections) — the paper's
+premise does not hold there. Result → the STP row on the paper-verdicts page.
+
+**H3. Parameter-space extension (AEG/FEG attack, FEG release; later beyond bass) — PLANNED** (W, 2026-10-06).
+Needs a versioned parameter spec (codec, prior/manifold re-extraction, both models, inference) so the existing
+23-d models keep loading; the ladder recipe's "random attack" needs it. Also: more than the 105 training
+presets (held-out gap at step 23k: 0.46 vs 0.25). After H1.
+
+**H4. Synth-knob DIRECTIONS in SAME latent space → knob controls for ANY sound — POTENTIAL** (proposed by C to W, Kim direct 2026-10-06).
+*Idea (Kim):* "train this on SAME latents directly, to learn the general directions for the knobs in the latent space, and then
+build a synth UI for inference, which could hopefully at least coarsely proxy the knob settings for any sound." Two parts:
+(a) **inversion** — SAME latent → Surge knob values (a variant of the current models with SAME latents as input);
+(b) **directions** — per knob, one latent-space vector that means "this knob up" whatever the source sound; the UI moves a
+latent along it and decodes. Plausible because SAME's semantics are trained in as LINEAR readouts and its decoder is
+noise-robust; H1's ladder batches (one knob varied, rest fixed) are exactly the minimal pairs that define a direction.
+*Limits:* 10.77 Hz latent (93 ms/frame) ⇒ attack/short-decay are largely invisible; isolated-note → full-mix domain gap;
+knobs may be linear only over part of their range (cutoff likely to bend).
+*Gate (cheap, CPU via SAME-S):* encode ~50 ladders/knob; per knob measure (1) cross-patch direction consistency (cosine of
+per-ladder displacement vectors vs chance), (2) ladder straightness (cf. H2 / STP). *Then:* apply the cutoff/resonance
+directions to a few of the 24 real bass stems and listen. *Kills it:* directions not consistent across patches, or edited
+stems decode as artefacts rather than as the knob.
+*UI, only after the gate:* NOT a new app — new controls in the inference explorer's **bend tab** (mir `plots/explorer_sa3`),
+backed by the existing :8056 render server (`/bend`, `/decode`); see docs/INFERENCE-SURFACE.md.
+
+**Done in this line:** phrase-level renderer-in-the-loop refinement (`refine.py`), fitted on the first half of
+each of 24 real phrases and judged on the held-out half: paper MSS 11.24 → 7.78 (better on 23/24), wMFCC
+13.77 → 11.46 (22/24); single-note refinement does not generalise (fits a truncated 16th). Cutoff was the
+model's biggest miss (moved on 24/24 stems, median ~9 semitones). Now the default last step of
+`invert_stem_collection.py`.
+
 ## Done / superseded (this week)
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2
