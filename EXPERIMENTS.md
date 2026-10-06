@@ -1550,6 +1550,116 @@ on XPU), so every regenerate-and-compare design below pins ONE device and ONE pr
 - Read: if effects vanish at the cluster level too, provenance claims for this model should stop at
   "resembles" (H3) and concept-level evidence (H6).
 
+### H9–H14 — EleutherAI instruments for the melody wall (KUANG, October 6, 2026)
+*Assessment, verification status, cost arithmetic and sources:
+`docs/ai-research/eleutherai-interpretability-tools-assessment-2026-10-06.md`. Only the IDEAS port; no repo's
+code drops into SA3. H9–H11 share ONE forward-only harness (checkpoint or ladder, fixed eval crops, sampled
+(t, ε), hooks on the SA3 blocks, ONE device and precision pinned); H14 should gate any meter H10/H11 rely on.
+KUANG's ranking by decision value per cost: H10 ≈ H9 > H14 > H11 > H12 > H13. All cost figures are
+arithmetic (2·N FLOP per token, 1.4B parameters, 512 frames per crop, 30 TFLOP/s effective), untested.*
+
+### H9 — Tuned lens on the DiT residual stream: where in depth does melody commit? — **POTENTIAL (cheap; forward-only)**
+- Source: `EleutherAI/tuned-lens` (affine per-layer translators, KL to the final distribution, through the
+  unembedding; HF-LM coupling inferred, source not read). Port the idea, not the code. The SA3-Medium DiT (from
+  Stability's MLX port): 24 blocks, d = 1 536, readout `project_out` + 1×1 conv, no final norm stated.
+- Build: per-block residual-form translator `h + A_ℓ(t)·h + b_ℓ`, with A_ℓ per timestep bin or FiLM from the
+  timestep embedding (adaLN makes residual coordinates mean different things at different t); frozen readout;
+  loss = MSE to the model's own final output (self-distillation), also reported against the ground-truth
+  target; train on conditional AND null-conditioned passes (CFG); position-wise over latent frames, skipping the
+  64 memory-token positions at readout.
+- Output: R²_melody(block, t) via the linear chroma readout (extends B2's t-curve with depth; fold into
+  `eval/melody_r2_vs_t.py`), a per-frame "prediction depth", and block-ℓ x̂₀ predictions decoded through SAME
+  to listen to.
+- Cost: ≈ 57M translator parameters; ≈ 1.3 h per 100 000 crops at 512 frames. Pin device and precision — XPU
+  fp16/bf16 gives NaN for medium-class models, so use fp32 on the Arc.
+- Informs: B4's melody-first noising vs injection at chosen blocks (per-block `local_add_cond` inlets); B7
+  adapter placement.
+- Kill: translators fail to beat the identity-translator (plain logit-lens) baseline at early blocks, or
+  R²(block, t) is flat — melody decodes only at the final block — so the depth axis adds nothing.
+- Related: B2, B4, B7, D8–D10, H6.
+
+### H10 — Training-time statistics test ("features across time" for SA3) — **POTENTIAL (forward-only; surrogate design is the open work)**
+- Source: `EleutherAI/features-across-time` (Pythia n-gram scripts, plots, vision scripts; MIT; "sloppy code"
+  per its authors). Appears to accompany arXiv 2402.04362 — inferred. Method as I understand it, not read
+  here: per checkpoint, compare model behavior on real data against synthetic data matched to order-k
+  statistics; the gap opens when the model learns structure beyond order k.
+- Port: in SAME latent space, velocity/denoising MSE at a few timesteps on real crops vs surrogates: (a)
+  per-channel Gaussian matched to mean and covariance, frame-iid; (b) frame-shuffled (D11); (c)
+  phase-randomized (keeps the power spectrum); (d) beat-block-shuffled (beat-aware crops exist); optionally (e)
+  chroma-transition-matched resampling. Run across A12's 24 rungs and the A10 replica ladders.
+- Cost: 256 crops × 4 timesteps × 5 conditions ≈ 7.3 PFLOP ≈ 4 min per checkpoint; 24 rungs ≈ 1.6 h.
+- Why: judges arms WITHOUT rendering (B2's three checkpoints were never rendered); tests B1–B5 as a family
+  (does reweighting open a melody-level gap earlier?); a structure term for soup selection (C2); A12's
+  "lightly-trained property" question.
+- Gate / kill: the curves must separate arms Kim has already labeled (good vs corrupted, as in G1) and beat a
+  trivial baseline (training loss alone). If gaps open early on spectrum statistics and never discriminate,
+  file the negative result. Kim's ears remain the arbiter.
+- Related: A10, A12, B1–B5, C2, D11, G1.
+
+### H11 — Attention-pooled concept probes, MIR-labelled — **POTENTIAL (reimplement; do NOT vendor)**
+- Source: `EleutherAI/attention-probes` (`train_probe()`, `AttentionProbeTrainConfig`; input tensors
+  `[N, T, D]` + mask + labels, so model-agnostic). Based on MOSAIC, which its README calls unlicensed; GitHub's
+  license endpoint returned 404 (normally: no license file). Reimplement the small attention-pooling probe
+  rather than copy the code; any use beyond private is a Legal question (third-party terms).
+- Use: clip-level concept labels with time localization (attention weights), on SAME latents (D = 256) and DiT
+  blocks (D = 1 536): acid sweep, bassline, rhythm integrity (G1), modal vs chromatic. Labels from the existing
+  MIR features (about 23 000 tracks), which inherit their classifiers' errors (genre-blind and ungrounded
+  captions were found before).
+- Storage: 10 000 clips × 512 frames × 1 536 dimensions in 16-bit ≈ 15.7 GB per (block, timestep) — pool,
+  subsample or stream.
+- Gate: grouped splits (artist / release / duplicate cluster); must beat trivial baselines (onset density,
+  beat-activation mean for G1); a decodable feature is not a used one, so causal checks per H6.
+- Possible landing: concept readouts in the Latent Forge statistics panel (M10).
+- Related: G1, H3, H6, E3, E4.
+
+### H12 — Behavioral-basin / sharpness proxy for "healthier optimum" — **POTENTIAL (cheap first step; tyche only if it discriminates)**
+- Source: `EleutherAI/tyche` (Monte Carlo basin-volume estimator; HF CausalLM, Pythia and ConvNeXt/CIFAR-10
+  adapters; Apache-2.0). Its README warns it "can lead to dramatic underestimates of basin size"; the more
+  precise `palamedes` module is work in progress. SA3 would need a model adapter and MSE-on-velocity behavior
+  in place of token KL.
+- Step 1 (own code, about 50 lines): behavior/loss drift vs random-perturbation scale and along checkpoint
+  interpolation paths, for A12's rungs (5e-5 vs 1e-4/2e-4), DoRA vs full-FT, and A10 replica pairs. Step 2,
+  only if step 1 discriminates: tyche volume, for a defensible figure in DISCOVERIES.
+- Cost: 1 000 perturbations × 16 crops × 512 frames ≈ 23 PFLOP ≈ 13 min, forward-only (perturb adapter
+  parameters only for adapter arms).
+- Why: A12 selected on "robustness under guidance overdrive" with no quantitative proxy; soupability might
+  track basin overlap (my inference, untested).
+- Kill: perturbation curves do not separate arms Kim has heard as healthy vs melting.
+- Related: A1, A2, A6, A12, B12, C1–C7.
+
+### H13 — Cross-layer transcoders (CLT) — **GATED on H6's per-layer SAEs (POTENTIAL, expensive)**
+- Source: `EleutherAI/clt-training` (fork of `sparsify`, MIT; HF decoder-only LMs; activations on the fly via
+  module-name hooks; TopK; `torchrun` DDP / `--distribute_modules`; CUDA PyTorch — ROCm and kernel support
+  unverified). Another donor: CLT-Forge (arXiv 2603.21014).
+- Use as a DONOR only (TopK transcoder modules, FVU loss, trainer). New work: data layer = our pre-encoded
+  crops at sampled (t, ε, prompt); hooks = SA3 modules; target = the feed-forward output BEFORE the adaLN gate
+  (the gate depends on t); input = what the FF sees after modulation; time-binned training (features vary
+  with t).
+- Size: decoder = F × 1 536 × 300 layer pairs ≈ 1.4B parameters at F = 3 072 (2× d) and ≈ 5.7B at F = 12 288
+  (8× d).
+- Limits: it decomposes feed-forward layers only; melody is "relational" (B2) and I infer it lives in
+  attention, which a CLT does not decompose; attribution graphs through signed differential attention, the 64
+  memory-token hubs and text cross-attention are an open problem (header briefing).
+- Gate: build only if H6's per-layer SAEs show features duplicated across layers AND feature-level steering
+  results justify circuits. Kill: per-layer SAEs already deliver the steering and probe results we need.
+- Related: H6, H9.
+
+### H14 — Red-team our meters before steering on them — **POTENTIAL (cheap insurance; gate before AID / FK-Flow)**
+- Source idea: `EleutherAI/classifier-latent-diffusion` (CIFAR-10/MNIST: DDIM inversion → classifier →
+  adversarial search in latent space; 6 commits, dormant, no stated license). The repo is not usable; the
+  notion is.
+- Test: for each meter we plan to steer or select on (whitened-chroma recurrence, PQ, the R²(t) gate, the G1
+  rhythm meter), run a latent-space search that maximizes the meter score — gradient through decoder and meter
+  where differentiable, else CMA-ES or random restarts over latent/noise perturbations — then check Kim's ears
+  and the disintegration gate. If a cheap search maxes the meter while the clip degrades, the meter is not
+  safe as a reward.
+- Why: meter history (onset-timing metric read 0.795–1.000 on every arm including the foreign control; PQ
+  sparse-material blind spot; CE about zero correlation with Kim's judgment), and AID / FK-Flow use the
+  recurrence meter as their reward (Gemini assessment, 2026-07-15).
+- Gate: a meter passes if its maximized clips are still judged musical; a meter that fails becomes a SCREEN,
+  not a reward.
+- Related: B2, D6, G1.
+
 ## Done / superseded (this week)
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2
