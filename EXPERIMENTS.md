@@ -1590,6 +1590,14 @@ JEPA ordinal loss (SIGReg skipped on ladders); minibatch OT coupling for the flo
 inverted with old / online / EMA models through the identical pipeline (`clips_AB/`).
 *So far (step 23k):* held-out JEPA 0.46 (old run 2.68), held-out retrieval@512 65.6% (old 3.1%),
 train-preset val ≈ train loss (no gap), ladder ρ flow 0.62 / JEPA 0.89; EMA ≈ online.
+*Final-ish (step 78k of 78,416, 2026-10-07 02:39):* held-out flow loss online 0.235 / EMA 0.236 / schedule-free
+average (x) 0.283; JEPA 0.380 / 0.378 / 0.378; retrieval 78.7-79.5% a2p, 83.8% p2a (chance 0.2%); ladder rho flow
+0.66 / JEPA 0.94. **EMA and online are TIED; the schedule-free average is the weaker one on the flow.** (W misreported
+this in chat once as "EMA clearly better than online, 0.24 vs 0.30" — the 0.28-0.30 was the SF average, which
+`training.log`'s plain "VAL step" line prints; per-kind numbers live in `val_kinds.jsonl`.) Train-preset vs held-out
+JEPA gap +0.19 throughout: with 105 train presets, mostly preset-family generalisation (see H4 leak finding).
+Real-stem A/B clips + eval page: aavepyora.online/files/evals/synth_inversion.html (built by
+`Misc/build_synth_inversion_page.py`; a watcher rebuilds/uploads it as clips land; verdict pending listening).
 *Kills it:* real-stem A/B not better than the old model through the same pipeline.
 
 **H2. Ladder-straightness term (from Semantic Tube Prediction, 2602.22617) — POTENTIAL** (W, 2026-10-06).
