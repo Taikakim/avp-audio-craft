@@ -1391,6 +1391,12 @@ exactly this reason.)*
   D11-13 depth 8 / depth 2 / dim 512; D14/15 batch 8 / 32. Kill-criterion as above (beat the 0.0002 seed spread, and C01 0.1955).
   Trajectory analytics via `control/sa3_control/checkpoint_trajectory_stats.py` on the saved epochs (symlink `*_step<N>.pt`).
   16 dataloader workers did NOT speed an epoch up (4 min as with 8), so loading is not the bottleneck.
+- **AUDIT 2026-10-07 (supersedes the Phase C ranking above):** D02 (the C01 recipe again) scored 0.1995, not 0.1955; D16 (C01 with
+  8 workers) reproduced C01 at every epoch, so the cause is `--num-workers 16` (C01: 8), not SAVE_ALL or the new code. The 0.0002 "seed
+  spread" was not the noise floor: worker count moved the plain recipe by 0.004 and C09 by only 0.0005. **Treat differences < ~0.004
+  as noise;** Phase C's brake / escape velocity / burn-in / sf_r verdicts are NOT established; Phase A/B effects > 0.004 (modular vs
+  AdamW, SF on/off) stand. Phase D arms D03+ run at 16 workers and compare only against D01/D02. Next: repeat seeds before reading any
+  Phase D arm. Postmortem: docs/training-findings.md 2026-10-07.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 

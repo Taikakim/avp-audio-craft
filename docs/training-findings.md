@@ -564,3 +564,24 @@ plausibly dominated by this: a halved bpm and a doubled opb on the same crop is 
 octave-fold. The existing `latents_sa3` scalars are NOT rewritten — whoever next trains on `onset_per_beat` there should
 recompute it from `bpm_essentia`, or from the folded madmom value. Not yet checked: whether the June opb heads' learned
 behaviour reflects the doubling.
+
+## 2026-10-07 — LatCH head bracket: the "noise floor" was 20x too small, because the data-worker count changes the run (CONTINUITY)
+
+**Symptom.** Phase C (density head on the goa bigset, 10 epochs, 9 arms; `Mantu/latch_sweep/modular_2026-09-30/REPORT.md`) ranked arms by
+differences of 0.003–0.006 against a seed-to-seed spread of 0.0002 (C01 0.1955 vs C02 other seed 0.1953) and concluded "the plain
+recipe wins": radial brake 0.1986, escape velocity 0.1995, brake+EV (C09) 0.1991, burn-in 0 / 3000 0.1997 / 0.2017, sf_r=2 0.1976.
+Phase D's anchor re-run D02 (the C01 recipe again) scored **0.1995**.
+**Cause (narrowed, mechanism not found).** D02 differed from C01 in exactly two things: `--num-workers 16` (C01: 8) and `SAVE_ALL=1` (a
+checkpoint per epoch instead of best-only). **D16 = C01 with 8 workers and SAVE_ALL=1 reproduced C01 at every epoch** (val 0.3382, 0.2583,
+0.2350 … 0.1987, 0.1955), so SAVE_ALL and the new Lion / `--mod-late-from` code are innocent, runs are bit-reproducible at a fixed worker
+count, and **the worker count changes the realisation**. Why (per-worker data order / augmentation draws?) is NOT established.
+The 0.0002 "noise floor" compared two seeds at the SAME worker count: it measured one source of variation and was read as all of it.
+**Evidence.** Per-epoch val curves of C01 / D02 / D16 (`phaseC/C01_recipe/train.log`, `phaseD/D02_C01_anchor`, `phaseD/D16_C01_w8_audit`).
+The worker effect is arm-dependent: C09 moved 0.1991 → 0.1986 (8 → 16 workers) but the plain recipe moved 0.1955 → 0.1995. Within one
+worker count the brake+EV effect flips sign: 8 workers C09 − C01 = +0.0036; 16 workers = −0.0009. Phase D so far (all 16 workers):
+D01 C09 0.1986, D02 C01 0.1995, D03 late-switch@2000 0.1969, D04 late@4000 0.1984, D05 lr 3e-3 0.1969, D06 lr 6e-3 0.1993 — all inside ±0.004.
+**Effect.** Phase C's ranking of brake / escape velocity / burn-in / sf_r is **not established** below ~0.004; Phase B's single-seed b16
+0.194 likewise. What stands: effects well above 0.004 — modular-vs-AdamW (Phase A 0.357 vs 0.408), Schedule-Free on/off (0.203 vs 0.255).
+**Fix / status.** Hold `--num-workers` fixed within a comparison and record it in the run meta; treat Δ < 0.004 as noise until repeats at ≥ 2
+worker counts say otherwise; Phase D arms D03+ compare only against D01 / D02 (same 16 workers), not against Phase C. Instrument rule
+(CLAUDE.md "audit the instrument"): a noise floor must be measured under every nuisance setting a comparison may differ in, not only the seed.

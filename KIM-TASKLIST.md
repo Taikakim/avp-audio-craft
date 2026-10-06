@@ -28,7 +28,13 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### LatCH Phase C: brake, escape velocity and Schedule-Free+ settings on the head recipe (C, 2026-10-06, EXPERIMENTS E5)
+### LatCH Phase D is RUNNING unattended (C, 2026-10-07, EXPERIMENTS E5) — and the Phase C verdict below was WITHDRAWN by an audit
+**WHAT:** 15+1 LatCH arms on C09 (brake + escape velocity): late-switch, lr, Lion, depth/dim, batch, each saving every epoch. Started 2026-10-06 ~20:00, ~10 h, `SHARE_GPU=1`.
+**WHY:** your ask. The audit found `--num-workers` changes the result by ~0.004, 20x the "seed noise" Phase C used, so differences under ~0.004 are not results (docs/training-findings.md 2026-10-07).
+**RUN:** nothing, it is running. **CHECK:** `cut -f1-4 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`. **STOP:** `pkill -f run_modular_bracket` (resumable).
+**YOUR DECISIONS (nothing else needs you):** (1) mir `bpm.py` fix at source + import in `latch/extract_density_targets.py` instead of my copy: go / no-go. (2) FiLM bracket: join the granite captions to the bigset, or train with empty prompts on purpose?
+
+### ✅ DONE 2026-10-06 (verdict withdrawn 10-07, see Phase D above) — LatCH Phase C: brake, escape velocity and Schedule-Free+ settings on the head recipe (C, 2026-10-06, EXPERIMENTS E5)
 **WHAT:** 9 LatCH arms on the goa bigset density target. The head recipe (b16, lr 1e-2, warmup 500, Shampoo, SF on) plus,
 one at a time: a repeat seed, radial brake 0.8, escape velocity, SF+ burn-in 0 / 3000, SF+ r 0 (uniform) / 2, brake+EV.
 **WHY:** your ask. Phase B never had the brake, escape velocity or an SF+ burn-in on. Scion's layer norms were on in every arm already.

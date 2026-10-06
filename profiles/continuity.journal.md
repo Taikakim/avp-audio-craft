@@ -2708,3 +2708,27 @@ Kim asked for all causes-and-effects of the week's training failures in one plac
 
 ### 2026-09-25 — the step-6340 "crash" was the render, not the model
 The shampoo run's demos (1e10 at 3804, NaN at 6340) looked like a training failure. The weights say otherwise: finite and smooth. On a solo card, a live DoRA adapter renders bit-exact once per process and then returns NaN / 1e11 / clean at random on identical inputs once call shapes interleave; the base model and the merged adapter are deterministic. Merged, all 54 demo re-renders are clean at cfg 1, 3 and 7. First read (guidance sensitivity) was wrong; an early test was also confounded by another instance sharing the card, so the decisive runs were redone solo. Open: which op, and whether training steps are hit. Writeup: `docs/training-findings.md` 13e.
+
+### 2026-10-07 — the LatCH "noise floor" was a seed-only number; worker count moved the plain recipe by 0.004
+Phase C of the head bracket (bigset density head, 9 arms) ranked arms by 0.003–0.006 differences against a seed spread of 0.0002 and
+said the plain recipe wins. Phase D's anchor re-run of that same recipe (D02) scored 0.1995, not 0.1955. I stopped the driver, put one
+audit arm first (D16 = C01 with Phase C's 8 workers): it reproduced C01 at every epoch, so SAVE_ALL and my new Lion / late-switch code
+are innocent and runs are bit-reproducible at fixed workers; `--num-workers 16` is what changed the run. The effect is arm-dependent
+(C09 barely moved, the plain recipe moved 0.004), so Phase C's brake / escape-velocity / burn-in verdicts are not established.
+Negatives and misses worth keeping: (1) I had READ the 0.0002 seed spread as the instrument's noise floor without asking what else a
+second run changes — the audit-the-instrument rule, applied one phase too late; (2) I told Kim "16 workers made no speed difference" and
+did not notice the same change was altering the result; (3) the cause (per-worker data order or augmentation draws) is unverified.
+Full entry: docs/training-findings.md 2026-10-07. Phase D continues at 16 workers, compared only against its own anchors.
+
+### 2026-10-07 — what the last week of work added (09-28 → 10-07)
+Soups: DoRA ΔW_eff averaged across epochs in merged full-weight space, with a leave-one-out outlier rule; an epoch ladder spanning a
+regime change (ep35 latent-facing layers moved 8–28×) renders broken, so the ep35-free soups are the usable ones (126/126 clips and
+z0 latents each, awaiting Kim's ears). Density targets: madmom's top tempo is half-tempo on 45% of latents_sa3 goa crops; the new
+`latch/extract_density_targets.py` picks the strongest candidate in [95,190) — and Kim rightly flagged that I re-implemented mir's
+tempo code instead of importing it (still open: his go for the fix at source). LatCH under the modular optimizer: Schedule-Free is the
+winning part (0.20 vs AdamW 0.25), Shampoo adds nothing for heads, modular lr is ~30x AdamW's. Latent Forge: drove render → drag → MIXDOWN on
+the real model twice; W fixed the three findings (BPM silently stretched to 120, stale master pane, console noise). H4 (synth-knob
+directions in SAME): pooled-ridge directions are family-general for cutoff / feg_amount / feg_decay / sub_mix / aeg_decay; cutoff alone is
+curved; a nonlinear head adds nothing; fm_depth / aeg_release / aeg_sustain unreadable so far but W flags audibility-in-context as the
+untested explanation. Scripts: eval/h4_ridge_baseline.py, h4_v2_baselines.py, h4_v2_segments.py, h4_v2_heads.py, h4_cutoff_head.py,
+h4_transfer.py. Decode check (does a ridge edit change the knob in the audio) still open.
