@@ -492,6 +492,27 @@
           "link": "https://arxiv.org/abs/2602.22617",
           "claim": "Keeping an autoregressive LM's hidden-state trajectory locally straight, via an auxiliary 1 − cos(h_t − h_r, h_r − h_s) loss on random token triples (λ 0.01–0.08), lets 1–8B models match full-data fine-tuning accuracy with 1/16 of the data on structured-text tasks. No audio or diffusion experiments. Planned here as a straightness term along single-control parameter sweeps in the synth-inversion JEPA; judged not applicable to the non-causal music DiT, whose hidden states should revisit earlier states (loops, sections).",
           "one_liner": "A JEPA-style straightness regulariser on LM hidden-state trajectories (16× data efficiency on structured text) — planned as a ladder-straightness term for our synth-inversion JEPA; not applicable to the music DiT."
+        },
+        {
+          "id": "2609.29320",
+          "title": "Off-manifold robustness in synthesizer inversion with joint distribution flow matching (Synth-JDF)",
+          "link": "https://arxiv.org/abs/2609.29320",
+          "claim": "One flow over the joint distribution of synth parameters and audio, with an independent noise level per modality, makes conditional inversion, the audio marginal (trainable on unlabelled real audio) and classifier-free guidance edges of one model. Because training mostly sees partially-noised audio, real recordings are less of an extrapolation: Surge XT real-audio MSS 15.50 to 7.68, and the joint objective, not the architecture, carries it; adding 617k real recordings changes nothing. Our read: the inference noise level and CFG behind the tables are not stated and were swept on the test sets, the best real-audio point sits at about 90% conditioning noise, and the energy-invariant SOT metric favours the baseline off-manifold, so part of the gain may be envelope matching. Planned here: a no-training noisy-conditioning test on our clean-trained flow inverter, and the ablation the paper did not run (noisy-conditioning augmentation without the joint objective).",
+          "one_liner": "Joint parameter-audio flow with per-modality noise for off-manifold synth inversion — strong real-audio gains, with tuning and metric caveats; planned as a no-training test plus an ablation on our bass inverter."
+        },
+        {
+          "id": "2506.07199",
+          "title": "Audio synthesizer inversion in symmetric parameter spaces with approximately equivariant flow matching (Param2Tok)",
+          "link": "https://arxiv.org/abs/2506.07199",
+          "claim": "Synths with repeated units are permutation-symmetric, so inversion is multi-modal; regression averages across the modes, while a generative flow with relaxed equivariance (Param2Tok: a learned sparse assignment of parameters into tokens) discovers the symmetry groups and wins on Surge XT in-domain, although every model degrades heavily out of domain. Source of the MSS / wMFCC / SOT / RMS metric suite, which our evaluation reproduces (SOT not yet). Single training seed per model. Little permutation symmetry exists in our current 23-parameter bass space, so equivariance is deferred until the parameter space grows; the flow recipe details (OT coupling, CFG with conditioning dropout) are already in use or planned.",
+          "one_liner": "Equivariant flow matching for symmetric synth parameter spaces and the Param2Tok tokenizer — metrics adopted; equivariance deferred until our parameter space has symmetries."
+        },
+        {
+          "id": "2504.14735",
+          "title": "DiffVox: A Differentiable Model for Capturing and Analysing Vocal Effects Distributions",
+          "link": "https://arxiv.org/abs/2504.14735",
+          "claim": "A 152-parameter differentiable vocal chain (EQ, compressor/expander, ping-pong delay, FDN reverb; GPU parallel-scan filters) fitted per track to paired dry/processed stems, plus a correlation and PCA analysis of 435 fitted presets (first component spaciousness, second bandwidth; the distribution is non-Gaussian). Introduces the MLDR loss for microdynamics. Our read: results are fit quality only, and several parameters look non-identifiable (the delay time piles up at its initial value), so some correlations reflect the optimiser. Planned here: MLDR as the envelope term for synth-patch refinement and as an envelope meter, and a differentiable FX stage after the inverted dry synth patch to recover FX on real stems.",
+          "one_liner": "Differentiable vocal FX chain + preset-distribution analysis; its MLDR dynamics loss and a post-synth differentiable FX stage are planned for our synth inversion."
         }
       ]
     }
