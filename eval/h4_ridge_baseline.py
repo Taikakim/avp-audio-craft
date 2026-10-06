@@ -46,20 +46,22 @@ def ridge_dir(M, y, alpha):
     return w, mu, my
 
 
-def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0):
-    """M [N,256] pooled latents; ax/an/rg knob axis, anchor id, rung per row. Returns per-method dict."""
+def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0, val=None):
+    """M [N,256] pooled latents; ax/an/rg knob axis, anchor id, rung per row. Returns per-method dict.
+    val: optional exact knob value per row (v2 ladders have 8 or 16 rungs, so the rung is not a common scale); it is
+    z-scored per axis on the training rows and replaces the rung as the ridge target."""
     anchors = np.unique(an)
     fold_of = dict(zip(np.random.default_rng(seed).permutation(anchors), np.arange(len(anchors)) % folds))
     f = np.array([fold_of[a] for a in an])
     S = int(rg.max()) + 1
-    out = {m: {"hit": [], "rho": [], "axis": []} for m in ("mean", "ridge")}
+    out = {m: {"hit": [], "rho": [], "axis": [], "anchor": []} for m in ("mean", "ridge")}
     r2 = {k: [[], []] for k in range(n_axes)}                      # [sum sq err, sum sq tot] per axis
     for fo in range(folds):
         tr, te = f != fo, f == fo
         W, U, mus, mys = [], [], [], []
         for k in range(n_axes):
             m = tr & (ax == k)
-            y = (rg[m] - (S - 1) / 2) / ((S - 1) / 2)
+            y = (rg[m] - (S - 1) / 2) / ((S - 1) / 2) if val is None else (val[m] - val[m].mean()) / (val[m].std() + 1e-9)
             w, mu, my = ridge_dir(M[m], y, alpha)
             W.append(unit(w)); mus.append(mu); mys.append(my)
             Dk = []
@@ -68,7 +70,7 @@ def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0):
                 Dk.append(unit(M[i[-1]] - M[i[0]]))
             U.append(unit(np.mean(Dk, 0)))
             mt = te & (ax == k)
-            yt = (rg[mt] - (S - 1) / 2) / ((S - 1) / 2)
+            yt = (rg[mt] - (S - 1) / 2) / ((S - 1) / 2) if val is None else (val[mt] - val[m].mean()) / (val[m].std() + 1e-9)
             pred = (M[mt] - mu) @ w + my
             r2[k][0].append(((pred - yt) ** 2).sum()); r2[k][1].append(((yt - yt.mean()) ** 2).sum())
         W, U = np.array(W), np.array(U)
@@ -79,11 +81,12 @@ def evaluate(M, ax, an, rg, n_axes, alpha=1.0, folds=5, seed=0):
                 for name, V in (("mean", U), ("ridge", W)):
                     out[name]["hit"].append(int(np.argmax(V @ d) == k))
                     out[name]["rho"].append(spearmanr(rg[i], M[i] @ V[k])[0])
-                    out[name]["axis"].append(k)
+                    out[name]["axis"].append(k); out[name]["anchor"].append(int(a))
     res = {}
     for name, o in out.items():
         ax_ = np.array(o["axis"]); hit = np.array(o["hit"]); rho = np.array(o["rho"])
-        res[name] = {"identify_overall": float(hit.mean()),
+        res[name] = {"ladder_hits": dict(zip(o["anchor"], map(int, hit))) if len(set(o["anchor"])) == len(o["anchor"]) else None,
+                     "identify_overall": float(hit.mean()),
                      "per_axis": {int(k): {"identify": float(hit[ax_ == k].mean()),
                                            "monotone_rho": float(np.nanmean(rho[ax_ == k]))} for k in range(n_axes)}}
     res["ridge_heldout_r2"] = {int(k): float(1 - sum(r2[k][0]) / sum(r2[k][1])) for k in range(n_axes)}
