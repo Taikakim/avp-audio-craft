@@ -19,6 +19,7 @@
   import RightPane from "./ui/shell/RightPane.svelte";
   import TopBar from "./ui/shell/TopBar.svelte";
   import { forgeApi } from "./lib/forge/api";
+  import { logStore } from "./lib/stores/log.svelte";
   import { createRasterDriver, type RasterDriver } from "./lib/fx/rasterBorder";
   import { jobs } from "./lib/render/jobs.svelte";
   import { fetchAdapters } from "./lib/forge/models";
@@ -52,6 +53,48 @@
       masterPresets = [];
     }
     models = buildModelOptions(await fetchAdapters());
+    try {
+      // Show the backbone the server really runs. At start-up (no session load owns the stage yet)
+      // also put MODEL STAGE on the matching side, so POST/BASE defaults match the loaded model.
+      const b = await forgeApi.backbone();
+      settings.activeBackbone = b.active;
+      if (!settings.stageLocked && !settings.stageRebuilding) {
+        const stage = b.objective === "rf_denoiser" ? "POST" : "BASE";
+        if (stage !== settings.stage) settings.setStage(stage);
+      }
+    } catch {
+      /* server down: the select keeps its last value */
+    }
+  }
+
+  // Follow every successful backbone switch (top bar, MODEL STAGE, session load).
+  $effect(() => {
+    if (settings.activeBackbone) model = settings.activeBackbone;
+  });
+
+  /** A backbone picked in the top bar is a real switch: POST /forge/backbone, then MODEL STAGE
+   *  follows the model's objective (distilled rf_denoiser -> POST defaults, base -> BASE). Refused
+   *  while a session load or a STAGE rebuild owns the stage -- the same locks MODEL STAGE honours. */
+  async function switchBackbone(id: string): Promise<void> {
+    const previous = settings.activeBackbone ?? model;
+    if (settings.stageLocked || settings.stageRebuilding) {
+      model = previous;
+      logStore.appendLocal("[forge] backbone switch refused: a session load or STAGE rebuild is in flight", "error");
+      return;
+    }
+    settings.stageRebuilding = true;
+    try {
+      const r = await forgeApi.setBackbone(id);
+      settings.activeBackbone = r.active;
+      const stage = r.objective === "rf_denoiser" ? "POST" : "BASE";
+      if (stage !== settings.stage) settings.setStage(stage);
+      logStore.appendLocal(`[forge] backbone ${previous} -> ${r.active} (${r.rebuild_sec}s)`);
+    } catch (e) {
+      model = previous;
+      logStore.appendLocal(`[forge] backbone switch to ${id} failed: ${e instanceof Error ? e.message : String(e)}`, "error");
+    } finally {
+      settings.stageRebuilding = false;
+    }
   }
 
   // M4's seam (M4 T1 `attach`) + M5's source (M5 T1 `settingsSource`, never seeding): PROMPT +
@@ -176,7 +219,8 @@
     onmodel={(value) => {
       model = value;
       const picked = models.find((m) => m.value === value);
-      if (picked?.ckptPath) modelFolder = picked.ckptPath;
+      if (picked?.group === "backbone") void switchBackbone(value);
+      else if (picked?.ckptPath) modelFolder = picked.ckptPath;
     }}
     {modelFolder}
     onmodelfolder={(value) => (modelFolder = value)}

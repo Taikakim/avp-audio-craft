@@ -247,6 +247,7 @@ export class SessionController {
     const rebuild = this.deps.api.setBackbone(STAGE_BACKBONE[wanted]).then(
       () => {
         this.serverStage = wanted;
+        settings.activeBackbone = STAGE_BACKBONE[wanted];
       },
       (e) => {
         if (mySeq !== this.seq) return;      // superseded: the newer load, or settle(), reconciles

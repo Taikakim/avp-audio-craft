@@ -79,6 +79,12 @@ export class SettingsStore {
   /** Session-level, not per target (spec 10 X4): switching rebuilds the model. */
   stage = $state<ModelStage>("BASE");
 
+  /** The backbone the render server actually has loaded (GET /forge/backbone at start-up, then
+   *  every successful switch -- top-bar MODEL, MODEL STAGE, session load). null until known. The
+   *  top bar shows it, so the select can no longer read "medium" while the server runs medium-base
+   *  or small-music-base (M7 OQ 7; first real-server run, 2026-10-06). */
+  activeBackbone = $state<string | null>(null);
+
   /** Set from `/info`; displayed by the top bar, carried in the project JSON (9.2). */
   ckptPath = $state<string | null>(null);
 

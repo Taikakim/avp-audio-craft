@@ -55,7 +55,9 @@
       })
       .catch(() => {});
     for (const level of LEVELS) {
-      forgeApi.presets(level).then((r) => (presetNames[level] = r.names)).catch(() => {});
+      // Block body, not `(r) => (presetNames[level] = r.names)`: returning an assignment to $state
+      // makes Svelte warn assignment_value_stale (one warning per level at mount).
+      forgeApi.presets(level).then((r) => { presetNames[level] = r.names; }).catch(() => {});
     }
   });
 

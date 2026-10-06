@@ -51,6 +51,7 @@
     try {
       await forgeApi.setBackbone(STAGE_BACKBONE[next]);
       settings.setStage(next);
+      settings.activeBackbone = STAGE_BACKBONE[next];
       pendingStage = null;
     } catch (e) {
       rebuildError = e instanceof Error ? e.message : String(e);
