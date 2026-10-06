@@ -14,6 +14,8 @@ SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
+# SAVE_ALL=1: keep every epoch checkpoint (needed for weight-trajectory analytics) instead of only the best.
+SAVE_FLAG="--save-best-only"; [ "${SAVE_ALL:-0}" = "1" ] && SAVE_FLAG=""
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"
 cd /tmp || exit 1
 while read -r name rest; do
@@ -32,7 +34,7 @@ while read -r name rest; do
   echo "[bracket] start $name: $rest"
   t0=$(date +%s)
   # shellcheck disable=SC2086
-  $PY "$TRAIN" $rest --save-dir "$OUT/$name" --run-name "$name" --save-best-only > "$OUT/$name/train.log" 2>&1
+  $PY "$TRAIN" $rest --save-dir "$OUT/$name" --run-name "$name" $SAVE_FLAG > "$OUT/$name/train.log" 2>&1
   rc=$?
   t1=$(date +%s)
   [ "${SHARE_GPU:-0}" != "1" ] && "$SAO/Misc/gpu_guard.sh" release CONTINUITY >/dev/null 2>&1
