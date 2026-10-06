@@ -1425,6 +1425,131 @@ is precisely the hole) and a column on the eval pages. Runner would follow
 HEAD, and neither result should be read as evidence for the other. Prerequisite data already exists:
 madmom beat/downbeat activations are in the whole-track timeseries (100 Hz, MASTER §2).
 
+## H. Provenance, attribution & interpretability (from the SA3 attribution report, KUANG, October 6, 2026)
+
+*Assessment, verification status and sources: `docs/ai-research/sa3-attribution-report-assessment-2026-10-06.md`.
+Every entry is POTENTIAL (proposed, not agreed). The report's own rule governs all of them: **retrieval,
+probe activation, memorization and counterfactual influence are four different quantities — never collapse
+them into one "percentage influence" number.** A defensible claim is a rank plus an effect under
+intervention, with an interval, against matched controls. The header's reviewer briefing applies (linear
+chroma readout, signed differential attention, 64 memory-token hubs). Seeds do not reproduce across device
+or precision (October 1 laptop characterization: same seed, fp32 vs fp16, correlation 0.65 on CUDA and 0.39
+on XPU), so every regenerate-and-compare design below pins ONE device and ONE precision.*
+
+### H1 — Log training events in the next run — **POTENTIAL (cheap; the only item whose value is lost by waiting)**
+- Why: the formal-influence and retraining-calibration tiers need to know exactly what the model saw. For a
+  finished run that cannot be recovered; every run launched without it can only ever be explained by
+  retrieval and probes.
+- What: per step — global step, checkpoint id, batch membership as crop keys (source sidecar + index), the
+  per-source sampling weight and caption tier drawn, timestep and noise seeds, data-order seed. At
+  checkpoints — optimizer-state reference, EMA shadow; 8–16 log-spaced plus milestone checkpoints, denser
+  around loss transitions. On the pre-encoded path crop identity is static (A12), so the crop → track →
+  duplicate-cluster map comes from the dataset manifest; what is probably missing is batch membership and the
+  timestep/noise seeds. **NOT checked** — the training scripts were not read in this pass; confirm before
+  building.
+- Gate: on a probe run, rebuild one batch from the log and reproduce its loss to tolerance, same device and
+  precision.
+- Related: A12 (`run_meta.json` already records settings), A10 (`-vN` ladders), F3.
+
+### H2 — Retrain noise floor from the EXISTING 8-replica DoRA ladders — **POTENTIAL (cheap if the checkpoints survived)**
+- The suomi `wfleet` DoRA arms are 8 independent single-GCD replicas of one recipe with full ladders to ep19
+  (A10): an 8-seed ensemble per arm, i.e. the retrain-variance sample the report never measures. Pick concept
+  metrics we already trust (chroma / onset / PQ on the eval clips), render fixed prompts and seeds from each
+  replica at one epoch on one device and precision, and report the between-replica spread.
+- Use: sets the minimum detectable effect for every removal experiment (H7, H8). The attribution-decay study
+  says single-example effects can sit under the noise; this tells us where our floor is before GPU hours are
+  spent.
+- Kill: if the between-replica spread is at least as large as the effect we hope to detect from removing a
+  cluster, single-run removal tests are uninformative at this scale — use replica ensembles as the unit, or
+  drop the retraining tier.
+- Unchecked: whether those ladders survived the LUMI scratch purge (A10 notes they needed slimming before the
+  pull), and whether the replicas differ in data order or only in seed.
+- Related: A10, C3 (replica soups), D11 (frame-shuffle null — the same logic: a null before a claim).
+
+### H3 — Retrieval + duplicate-cluster index — **POTENTIAL (Tier 1: CPU, local)**
+- Build on the existing curation outputs (MAEST cosine clusters at 0.97 same-work / 0.995 near-identical,
+  master variants kept; `docs/goa-archive-buildout-plan.md`) instead of redoing duplicate clustering. Add a
+  windowed SAME-latent index (pooled plus token-level), CLAP/MERT, factor-specific MIR (chroma, bass contour,
+  beat-relative onsets, stereo width) and fingerprint/landmark hashes for memorization. FAISS exact flat on CPU
+  is enough at this scale. Rank at crop/segment level; aggregate to tracks by max, top-k mean and coverage,
+  never a plain mean. Keep pitch-shift, time-stretch, EQ and transcode variants as separate search views.
+- Output is labelled "resemblance, not influence".
+- Gate: a transformed self-copy (e.g. ±2 semitones, ±8% tempo, re-EQ, MP3 re-encode) must be retrieved at a
+  recall@10 target set from the first pilot (not invented here). If it is not, the index cannot serve as a
+  memorization detector.
+- Caveat: much of the big goa set comes from mp3 sources (A12, F4), so latent-space neighbours can reflect the
+  codec chain rather than the music.
+- Related: F3, F4.
+
+### H4 — Base-vs-fine-tune delta control — **POTENTIAL (cheap; run alongside H3)**
+- Every provenance statement is made as a DELTA: render the un-fine-tuned base with identical prompt, seed,
+  device and precision, and attribute only what the fine-tune changed. The base model's pretraining data is not
+  in any corpus we hold, so "nothing in the corpus resembles this" is not "novel", and "matches a corpus
+  segment" is not "learned from it" if the base already does it.
+- For adapter arms the delta is the adapter on/off pair; for full-FT arms it is base vs checkpoint.
+- Kill: if base and fine-tune are indistinguishable on the metric, there is nothing to attribute for that
+  concept.
+
+### H5 — Retrieval-is-not-influence test (duplicate vs upweight) — **POTENTIAL, GATED on H3 + H2**
+- The report's best idea. On a small adapter arm: hold out a close duplicate D of a probe segment (excluded
+  from training), and upweight a less similar segment U (1×/4×/16×). Retrieval should prefer D; a valid
+  influence estimator should prefer U, with the right sign and a monotonic dose-response in the measured
+  change. Repeat with pitch-shifted, re-EQed and time-stretched D. Add canary concepts (a synthetic marker
+  absent from the corpus, injected at controlled multiplicity) to check that the right source and ordering are
+  recovered.
+- Natural duplicate material already exists: master variants (curation) and the avp/avpaug split (F3).
+- Kill: if no estimator we can run separates U from D at 16×, the formal tier is not usable on this model.
+  Report that and stop at retrieval + probes.
+
+### H6 — Concept probes and causal steering on SAME / DiT activations — **POTENTIAL**
+- Probes first, on SAME latents: 12-bin chroma (we hold the exact decoded SAME chroma recipe and a linear
+  readout), bass pitch contour, stereo ILD (interaural level difference), beat-relative onset phase,
+  spectral-centroid trajectory. Splits grouped by artist, release and duplicate cluster so a probe cannot score
+  by memorizing a cluster. A probe only shows decodability; causal use needs an intervention — edit a direction
+  in SAME latent space and decode directly, then patch the matching DiT representation.
+- DiT hooks: residual before/after attention and MLP, differential-attention outputs (SIGNED — thresholding is
+  invalid), cross-attention, AdaLN scale/shift; treat the 64 memory tokens as hubs. Time-conditioned top-k SAEs
+  per diffusion-time bin; train at least three dictionaries and test feature matching, since SAE features are
+  not canonical across runs.
+- Goa concepts to operationalize: bassline (low-band pitch contour, 16th-note periodicity), acid sweep
+  (resonant spectral-peak trajectory), rolling/offbeat rhythm (beat-relative onset histogram), modal melody
+  (tonic-relative intervals), harmonic movement (beat-synchronous chroma transitions).
+- Gate per concept, in order: held-out probe accuracy → specificity control → dose-response steering →
+  necessity by ablation → reconstruction check → Kim's ears.
+- Kill: the probe does not beat a trivial baseline on held-out groups, or steering moves the metric without
+  Kim hearing it.
+- Related: D8, D9, D10 (same readout-direction family).
+
+### H7 — Formal influence on a shortlist, validated by removal — **POTENTIAL, GATED on H1 + H2 + H5**
+- Only after H5 shows an estimator can tell exposure from resemblance: projected-gradient similarity (TRAK /
+  Journey-TRAK style; flow-matching velocity MSE with COMMON timestep and noise draws for train and query
+  gradients, integrated over timestep bins) and EK-FAC on retrieval- or feature-shortlisted candidates, on an
+  ADAPTER arm first (small trainable set). The measurement is a defined scalar (a concept metric, or a
+  contrastive "acid sweep minus matched control"), not whole-output loss.
+- Validate by intervention: top-k vs matched-random removal (matched on artist, duration, key and embedding
+  density) and leave-cluster-out regeneration at fixed device and precision; score with LDS (linear
+  datamodeling score) if subset retrains are affordable.
+- Cost note (my arithmetic, untested): full-FT per-example gradients come to about 456 PFLOP per checkpoint
+  and timestep draw over 168 000 half-minute segments (≈ 4.2 GPU-hours at 30 TFLOP/s effective); 16
+  checkpoints × 8 draws ≈ 540 GPU-hours — LUMI-scale, not 9070 XT-scale. Adapter arms skip the weight-gradient
+  part of the backward pass.
+- Kill: the estimator's top-k removal does not beat matched-random removal by more than the H2 noise floor.
+- Report form: rank, sign, effect under intervention, seed stability, bootstrap interval, method agreement.
+  Never "Track X contributed 12%".
+- Unconfirmed: the report's cost and accuracy claims for MAGIC / EK-FAC / TrackStar conflict with a search
+  summary (assessment §3); read the Bergson paper before choosing an estimator.
+
+### H8 — Attribution decay at our scale; the cluster as the unit — **POTENTIAL, GATED on H2**
+- The Nature Communications 2026 finding (image diffusion, from-scratch ensembles, 256 to over 160 000 images)
+  is that individual-example removal effects vanish with data scale. Our setting is a fine-tune on a few
+  thousand to about 12 500 crops with deliberate near-duplicates, which that study does not cover. Measure it:
+  vary corpus size and the removal unit (crop / track / duplicate cluster / artist).
+- Possible design (my adaptation, untested): train K adapters on disjoint shards and "remove" a shard by
+  dropping the adapters that saw it, after the diffusion-ensemble idea. Costs: K small trainings up front, and
+  members that are weaker than one adapter trained on everything.
+- Read: if effects vanish at the cluster level too, provenance claims for this model should stop at
+  "resembles" (H3) and concept-level evidence (H6).
+
 ## Done / superseded (this week)
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2
