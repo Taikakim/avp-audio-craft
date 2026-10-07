@@ -147,7 +147,7 @@ async function flush(){
  }
  save(rest); badge();
 }
-function badge(){const n=queue().length;document.getElementById('djunsent').textContent=n?(n+' unsent'):'';}
+function badge(){const n=queue().length,e=document.getElementById('djunsent');if(e)e.textContent=n?(n+' unsent'):'';}
 let last={k:'',ms:0};
 document.querySelectorAll('.djb').forEach(b=>b.addEventListener('click',()=>{
  if(!cur){say('press play on a mix first');return;}
@@ -158,10 +158,10 @@ document.querySelectorAll('.djb').forEach(b=>b.addEventListener('click',()=>{
  last={k:key,ms:Date.now()};
  const rec={type:'mixflag',mix:w.mix.split('_')[0].replace(/[^A-Za-z0-9._-]/g,'_'),variant:(w.mix.split('_').slice(1).join('_')||'full').replace(/[^A-Za-z0-9._-]/g,'_'),flag:flag,
    t:Math.round(w.t*10)/10,clip:(w.clip||'').replace(/[^A-Za-z0-9._-]/g,'_').slice(0,120),clip_idx:w.clip_idx,trans_idx:w.trans_idx,source:'kone-mixtape'};
- const q=queue(); q.push(rec); save(q); badge();
+ const q=queue(); q.push(rec); save(q);
  if(navigator.vibrate)navigator.vibrate(40);
  b.classList.add('hit'); setTimeout(()=>b.classList.remove('hit'),350);
- say(b.dataset.say+' \\u2014 '+label(w)); flush();
+ say(b.dataset.say+' \\u2014 '+label(w)); flush(); badge();
 }));
 window.addEventListener('online',flush); badge(); flush();
 })();
@@ -171,8 +171,8 @@ window.addEventListener('online',flush); badge(); flush();
 def bar():
     btns = "\n".join(f'    <button class="djb" data-flag="{f}" data-say="{short_}"><b>{L}</b><span>{t}</span></button>'
                      for L, f, short_, t in FLAGS)
-    return (f'<div id="djtoast"></div>\n<div id="djbar">\n  <p id="djnow">press play on a mix, then tap while it plays '
-            f'<span id="djunsent"></span></p>\n  <div id="djgrid">\n{btns}\n  </div>\n</div>')
+    return (f'<div id="djtoast"></div>\n<div id="djbar">\n  <p id="djnow">press play on a mix, then tap while it plays</p>'
+            f'<span id="djunsent"></span>\n  <div id="djgrid">\n{btns}\n  </div>\n</div>')
 
 
 def main():
