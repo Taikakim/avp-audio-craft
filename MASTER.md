@@ -225,6 +225,8 @@ mir's `.venv` (3.12, numpy 2.x) **lacks essentia and silently degrades madmom→
 
 ## 4. Cross-cutting topics
 
+**⛔ Training: read `docs/TRAINING.md` before launching or interpreting any training run** (standing directives, general findings with confidence, required per-run logging). Dated evidence: `docs/training-findings.md`.
+
 **Fleet roles + models (Kim, canonical 2026-07-03) — route work by capability, spend tokens by lane.**
 - **CONTINUITY** — Fable 5. The thread: hard theoretical / frontier work, results analysis,
   translating Kim's intuitions into ML and back. Fable tokens are precious — do NOT spend C

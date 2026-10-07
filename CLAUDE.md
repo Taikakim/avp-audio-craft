@@ -5,6 +5,8 @@ pipeline. It holds the shared coordination docs and all first-party tooling; the
 model repos are nested **thin forks** (`stable-audio-3/`, `stable-audio-tools/`), each
 with its own `ARCHITECTURE.md` + `CLAUDE.md`.
 
+**⛔ Before launching or interpreting ANY training run, read `docs/TRAINING.md`** — the standing training directives, cross-run findings (with confidence) and the required per-run logging spec (Kim/W 2026-10-07). `docs/training-findings.md` is the dated log it cites.
+
 **Read these first, in order — they exist so parallel instances don't repeat work:**
 1. **`MASTER.md`** — single source of truth for cross-repo facts (data paths,
    venv-per-task, ROCm/RDNA4 gotchas). Start here for anything spanning repos. Update
