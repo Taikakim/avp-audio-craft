@@ -6,6 +6,10 @@
 //   POST {type:'ab', question_id, prompt_id, length,
 //         model_a, ckpt_a, cfg_a, w_a, file_a, model_b, ckpt_b, cfg_b, w_b, file_b, choice}
 //     choice: 'A' | 'B' | 'EVEN' (Kim 2026-08-15, "closely matching ones")
+//   POST {type:'mixflag', mix, variant, flag, t, clip, clip_idx, trans_idx, source}   (Kim 2026-10-07, the
+//     "Kone mixtape" page's four phone buttons: flag = bright | punch (about the clip under the playhead) or
+//     sync | unfit (about the transition that last played); t = seconds into the mix; clip_idx / trans_idx are
+//     indices into that mix's timelines.json (-1 = unknown, e.g. an older version with no timeline).
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
 //   GET  (anything else)          write_only:true, no data
 //
@@ -177,6 +181,18 @@ if ($method === 'POST') {
                 'model_a' => $model_a, 'ckpt_a' => $ckpt_a, 'cfg_a' => (float)$in['cfg_a'], 'w_a' => (float)$in['w_a'], 'file_a' => $file_a,
                 'model_b' => $model_b, 'ckpt_b' => $ckpt_b, 'cfg_b' => (float)$in['cfg_b'], 'w_b' => (float)$in['w_b'], 'file_b' => $file_b,
                 'choice' => $choice, 'source' => $source];
+    } elseif ($type === 'mixflag') {
+        $flag = (string)($in['flag'] ?? '');
+        $mix = (string)($in['mix'] ?? ''); $variant = (string)($in['variant'] ?? ''); $clip = (string)($in['clip'] ?? '');
+        if (!in_array($flag, ['bright', 'punch', 'sync', 'unfit'], true) || !valid_file($mix) || !valid_file($variant)
+            || ($clip !== '' && !valid_file($clip))
+            || !valid_num($in['t'] ?? null, 0, 36000)
+            || !valid_num($in['clip_idx'] ?? null, -1, 2000) || !valid_num($in['trans_idx'] ?? null, -1, 2000)) {
+            http_response_code(400); echo json_encode(['error' => 'invalid mixflag payload']); exit;
+        }
+        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'mixflag', 'mix' => $mix, 'variant' => $variant,
+                'flag' => $flag, 't' => round((float)$in['t'], 1), 'clip' => $clip,
+                'clip_idx' => (int)$in['clip_idx'], 'trans_idx' => (int)$in['trans_idx'], 'source' => $source];
     } else {
         http_response_code(400); echo json_encode(['error' => 'unknown type']); exit;
     }
