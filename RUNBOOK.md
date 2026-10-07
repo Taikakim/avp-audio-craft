@@ -456,6 +456,11 @@ VERIFY: `git log -5 --format='%h %an %s'` — not `--oneline`, which hides the a
 
 ## 14. Other routine operations
 
+**Encode review/audition audio at 256 kbps AAC** (Kim, standing ask; mixtape v6 re-encoded to it
+2026-10-07), not the lower rates used earlier. Say the size cost out loud if it conflicts with a
+many-clip batch (a 25 min mix is ~48 MB per file), and print the MEASURED rate (`ffprobe -show_entries
+format=bit_rate`) on any page, never a nominal one — v6 first claimed 192k and was 204k.
+
 **Record a run's purpose at launch** — into `run_meta.json` in the run dir, from the submit script
 itself (copy the pattern at `lumi/sbatch/fullft_fleet.sbatch:91`). The fields nothing else can
 reconstruct: `purpose` (what question this answers, and the EXPERIMENTS.md id), `hypothesis` and its
