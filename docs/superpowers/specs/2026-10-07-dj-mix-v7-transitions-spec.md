@@ -48,14 +48,13 @@ fix the *order* (re-sort, drop the outlier clip; drop the lone 120 BPM head clip
 Stretch engine: bungee only (never sox); keep the factor within ±6 %. After the stretch recompute *every* grid
 (beats, downbeats, quiet points) on the stretched audio.
 
-**R0.3 Phase alignment.** Pick B's entry so that a B downbeat lands on an A downbeat (shared bar grid). Estimate
+**R0.3 Phase alignment.** Use SSM structural analysis (`eval/mixtape_structural_bounds.py`) to find macro-structural boundaries. The transition overlap window must be **centered exactly on the structural boundary**, and the bass handover ($H$) must trigger precisely on this boundary. Estimate
 the residual by cross-correlating the kick/bass band (40–150 Hz) over the whole window with a search of ±¼ beat
 (≈ ±100–200 ms; today's ±80 ms is too small), mild penalty on large shifts, and apply it as ONE constant shift
 (never time-varying). Store residual, shift and the tempo schedule in the run_meta.
 
 **R0.4 Window length in bars, not seconds.** `TRANSITION_BARS` parameter. Arithmetic to respect: a 47.55 s clip is
-27.7 bars at 140 BPM, so an entry window plus an exit window of 16 bars (≈ 27 s each) do not fit. Options (a
-**KIM** decision, default b): (a) lengthen every clip ≥ 2× with the existing outpaint tool
+27.7 bars at 140 BPM, so an entry window plus an exit window of 16 bars (≈ 27 s each) do not fit. Decision (KIM): Lengthen every clip ≥ 2× with the existing outpaint tool
 (`eval/mixtape_lengthen_and_prep.py` / `outpaint_lengthen.py`; needs the GPU, and every latent it produces must
 be decoded with the adaptive ceiling, `eval/decode_z0_clamped.py`), then use 16 bars; (b) keep the clips and use
 `bars = min(12, (clip_bars - 4) // 2)` (≈ 20 s, the clip is nearly always in a blend, which is normal DJ practice).
@@ -149,7 +148,7 @@ the in- and outgoing clips. **Review: the structure is sound; three parts are un
 
 On the Phase 0 timeline, window = N bars at constant tempo:
 * **kick:** crossfade, kicks on the shared grid (latent crossfade via the existing machinery or audio equal-power).
-* **bass, percussion:** per S2 (inpainted, or the hard hand-over fallback). Never two basslines at once.
+* **bass, percussion:** Asymmetric swap. Bass drops exactly on the structural boundary $H$ (which is now exactly at the center of the mixing window).
 * **other:** complementary **Linkwitz-Riley 4th-order crossover with one moving crossover `fc(t)`**: outgoing gets
   `LP(fc)`, incoming gets `HP(fc)`; `fc` sweeps exponentially (log-frequency) from ≈ 16 kHz to ≈ 40 Hz over the window,
   so the incoming first plays only the extreme highs, then more and more, while the outgoing keeps only the
@@ -200,3 +199,10 @@ with interpolation; check a spectrogram for zipper noise.
 *Tools committed with this spec:* `eval/mixtape_audit_continuity.py` (the replay detector, validated on v6),
 `eval/decode_z0_clamped.py`, `eval/build_dj_mixes_section.py`, `eval/mixtape_assemble_continuous.py` (the old
 concatenating assembler — reference for what NOT to keep).
+
+## 4b. Phase 2 Generative Mechanics (KIM's LoRA & CLAP Interpolation)
+
+For the SA3 generative paths (masked inpainting on drums/bass, or latent A2A mixing of the "other" stems), the model must smoothly transition its generation space from Track A to Track B:
+* **Model Crossfading:** Do not use a static model. Linearly interpolate (lerp) the LoRA weights from Track A's generating LoRA to Track B's generating LoRA across the transition window.
+* **Prompt/CLAP Interpolation:** Do not use static text prompts. Extract the CLAP audio embeddings for Clip A and Clip B, and spherically interpolate (slerp) them across the transition window to drive the conditioning.
+* **Chroma Steering (LatCH):** Integrate the Chroma LatCH head to explicitly morph the harmonic content (chroma) during the A2A pass. This forces the generative mid-range to bridge the harmonic gap seamlessly, creating a true timbre morph with zero glitches.
