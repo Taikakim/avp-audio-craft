@@ -28,6 +28,15 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### ⚠ Mantu (3.6 TB external, all runs / mixes / latents) dropped off the USB bus — REMOUNT NEEDS YOU (C, 2026-10-07 16:50)
+**WHAT:** at **14:11:28** the USB link of the Seagate "BUP BK" (serial NA9FBP3Y) glitched and re-enumerated within the same second; btrfs hit an emergency shutdown (2 write errors). `/run/media/kim/Mantu` is now a stale mount ("<missing disk>"): listings work from cache, every file read fails with an I/O error. The drive is back as `/dev/sdd1`, unmounted. W's retrain died with it (restarts by itself once Mantu reads again); G's v7c and my Phase E resume are blocked. The website, the Kone page and everything under `/home` (incl. `~/staging`) are unaffected.
+**WHY it matters:** writes in flight at 14:11 are lost (btrfs keeps the last committed state); nothing should write to Mantu until it is remounted.
+**RUN** (at the desk, a terminal; needs sudo): `sudo umount -l /run/media/kim/Mantu && udisksctl mount -b /dev/sdd1 && findmnt /run/media/kim/Mantu && ls /run/media/kim/Mantu | head`
+**TAKES:** seconds (btrfs replays its log on mount). If it mounts as `Mantu1` instead of `Mantu`, unmount it and mount again so the label path matches (scripts hard-code `/run/media/kim/Mantu`).
+**VERIFY:** `ls /run/media/kim/Mantu/sa3_lora_runs | head` lists AND `head -c 200 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/REPORT.md` reads (a read, not just a listing); `sudo btrfs device stats /run/media/kim/Mantu` shows zeros; `journalctl -k --since "-10min" | grep -i btrfs` shows no new errors. Optional integrity pass (hours on this drive): `sudo btrfs scrub start -B /run/media/kim/Mantu`.
+**REPORT BACK:** the output of the VERIFY lines. **ROLLBACK:** none needed (nothing is deleted); if it will not mount, replug the cable (try a rear USB 3 port) and send me `lsblk` + the last 20 lines of `journalctl -k`.
+**LIKELY CAUSE (my reading, not proven):** a bus-power or cable glitch on a bus-powered USB drive under sustained writes (W's retrain had started at 14:00). A powered hub or a different port would be the first thing to try.
+
 ### 🛠 DJ mix v7 spec handed to G; two decisions for you (C, 2026-10-07)
 **WHAT:** your v6 listening found a temporal gap and short transitions. Measured: all 39 splices replay the incoming clip from its entry point (~10 s back); the BPM stretching is a second, smaller cause. Spec for G: `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md` (Phase 0 fix + longer windows, Phase 1 spikes for your stem idea, Phase 2 build). Gate tool: `eval/mixtape_audit_continuity.py`.
 **YOUR DECISIONS:** (1) Window length: lengthen every clip 2x with the outpaint tool and use 16-bar transitions (needs the GPU, which W holds ~24 h), or keep the 47 s clips and use ~12-bar blends (default). (2) Whether a kick-less 4-stem separation is acceptable: BS-RoFormer gives drums/bass/other/vocals only, so "kick" would be a low-band split of the drums stem.
