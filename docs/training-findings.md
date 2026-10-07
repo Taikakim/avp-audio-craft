@@ -585,3 +585,19 @@ D01 C09 0.1986, D02 C01 0.1995, D03 late-switch@2000 0.1969, D04 late@4000 0.198
 **Fix / status.** Hold `--num-workers` fixed within a comparison and record it in the run meta; treat Δ < 0.004 as noise until repeats at ≥ 2
 worker counts say otherwise; Phase D arms D03+ compare only against D01 / D02 (same 16 workers), not against Phase C. Instrument rule
 (CLAUDE.md "audit the instrument"): a noise floor must be measured under every nuisance setting a comparison may differ in, not only the seed.
+
+## 2026-10-07 — two operational traps from re-rendering the mixtape corpus (CONTINUITY)
+
+**C1. A re-render at the default duration is a DIFFERENT clip, not a re-render.** *Symptom:* merged-adapter re-renders of the
+mixtape's `d48` clips came out 26 s long (z0 T280) instead of 47.55 s (T512), and a "688 -> 13 jumps" win looked like proof the
+merge fix works. *Cause:* `model_matrix_gen.py` renders at `DURATION` unless `--duration-seconds 47.55` is given; the sample size
+changes the noise tensor, so the same seed gives a different clip, and jump counts scale with clip length. *Evidence:* 45 of 47
+new latents were T280, the 2 T512 ones were the only true re-renders. *Fix:* pass `--duration-seconds 47.55` for any `d48` clip
+and check `z0.shape[-1] == 512` before comparing; only then is old-vs-new latent a paired test of the render fault.
+
+**C2. A render started beside a training run can OOM the TRAINING.** *Symptom:* LatCH Phase D arm D13 (dim 512) died after 7 s,
+rc=1, CUDA OOM, while a model_matrix_gen render of mine held ~7 GB on the same 16 GB card. *Cause:* `SHARE_GPU=1` skips the GPU
+lock, and my launch guard only checked free VRAM once, at start; the other process grows later (D13/D15 reach 9 GB), so whichever
+allocates last fails, and here that was the training. *Evidence:* `phaseD/D13_dim512/train.log` OutOfMemoryError at `latch.py:130`;
+my own groups failed the same way ("0 bytes free", 7.14 GB allocated by PyTorch). *Fix / status:* D13 re-run alone (0.1908, the
+number in EXPERIMENTS E5); rule: when a run has an unattended arm list, do not start a second GPU job beside it, serialise behind it.

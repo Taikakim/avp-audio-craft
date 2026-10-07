@@ -2732,3 +2732,26 @@ directions in SAME): pooled-ridge directions are family-general for cutoff / feg
 curved; a nonlinear head adds nothing; fm_depth / aeg_release / aeg_sustain unreadable so far but W flags audibility-in-context as the
 untested explanation. Scripts: eval/h4_ridge_baseline.py, h4_v2_baselines.py, h4_v2_segments.py, h4_v2_heads.py, h4_cutoff_head.py,
 h4_transfer.py. Decode check (does a ridge edit change the knob in the audio) still open.
+
+## 2026-10-07 (late) — LatCH Phase D read; mixtape v6 started (Kim: "one faultless mix")
+
+**Phase D (16 arms, 16 workers, anchors D01 0.1986 / D02 0.1995, noise ~0.004).** dim 512 0.1908 is the only clear win (curve under
+the anchor from epoch 5, 1.46x wall; same sign as Phase B's B13, larger). depth 8 0.1946 borderline, depth 2 0.2145 / batch 32 0.2067 /
+lr 1.5e-2 0.2040 worse; batch 8, lr 3e-3..1e-2 and late brake+EV (2000/4000) are inside noise. Lion 0.228-0.262, far behind modular,
+best at the lowest lr tried so its bracket is open. Negative result worth keeping: the "burn-in made it worse because less time to
+learn" idea is not supported either way (late switching = noise). Single seed each: D13/D11 need a repeat before they become defaults.
+Written to EXPERIMENTS E5, KIM-TASKLIST, REPORT.md (Mantu). Still open: repeat seeds, head_trajectory on D13/D11/D08.
+
+**My mistake, recorded:** a render I started beside Phase D OOM-killed D13 at 7 s (guard checked VRAM once at launch; training grows).
+Re-run alone, clean. training-findings 2026-10-07 C2.
+
+**Mixtape v6 (Kim: find the DJ work, re-render the latents with the fixes, one faultless mix).** Found: GHOST-NOTE's mixtape reached v5
+(51 clips, 33.8 min) on 09-17; 13 of its 51 source clips still had >50 single-sample jumps (m4a floor). Source clips were all rendered
+BEFORE the 09-25 merge-before-render fix (13e) and the a2a seams (chain_simple_crossfade) were rendered with a LIVE adapter.
+Built: chain_simple_crossfade merges the adapter; eval/decode_z0_clamped.py (VADD tier-3 std ceiling, adaptive per clip: gentlest
+ceiling giving <=5 jumps; at ceiling 1.0 total jumps over 47 clips 2985 -> 426); build_pairs/assemble take argv, assemble does
+bass-swap variants. Trap C1 (training-findings): my first re-render used the default duration (T280, 26 s), which is a different clip
+for the same seed, so the "688 -> 13" number was NOT a paired test. Redo at --duration-seconds 47.55 is running; then compare old vs
+new z0 (a real measure of the live-adapter fault), re-decode with the adaptive ceiling, rebuild order/bounds/pairs (the old ones were
+in a wiped session scratchpad), render merged crossfades, assemble, scan. Tempo: madmom read ~158 for four kl_0 clips whose prompt says
+150 (librosa 152): dropped them and a 98.8 outlier; kept 41. Not yet listened to by anyone.

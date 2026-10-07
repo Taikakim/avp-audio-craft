@@ -1397,6 +1397,18 @@ exactly this reason.)*
   as noise;** Phase C's brake / escape velocity / burn-in / sf_r verdicts are NOT established; Phase A/B effects > 0.004 (modular vs
   AdamW, SF on/off) stand. Phase D arms D03+ run at 16 workers and compare only against D01/D02. Next: repeat seeds before reading any
   Phase D arm. Postmortem: docs/training-findings.md 2026-10-07.
+- **Phase D RESULT (2026-10-07, all 16 arms done; one repeat of D13 needed, see below).** Held-out loss, 16 workers, reference = anchors
+  D01 0.1986 / D02 0.1995 (noise ~0.004, single seed each, so arms within 0.004 of the anchor are NOT results):
+  **dim 512 0.1908** (beyond noise, its curve sits under the anchor's from epoch 5 on; 1.46x wall; same sign as Phase B's B13 but
+  larger); depth 8 0.1946 (borderline), depth 2 0.2145 (worse); batch 8 0.1955 (noise), batch 32 0.2067 (worse); lr 3e-3 0.1969 /
+  6e-3 0.1993 / 1e-2 ~0.199 (flat), 1.5e-2 0.2040 (worse); brake+EV switched on late at 2000 / 4000: 0.1969 / 0.1984 (noise, so the
+  timing does not matter, nor the burn-in question it was meant to settle); **Lion** lr 1e-4 / 3e-5 / 3e-4: 0.237 / 0.228 / 0.262, far
+  behind the modular optimizer (~0.20) and its best lr was the LOWEST tried, so that bracket is open below 3e-5 (it sits near AdamW's
+  0.25 only at the edge). Read: for the head recipe lr, batch and damping timing barely matter; **width is the only lever that paid**.
+  NOT done: repeat seeds of D13 / D11 (needed before calling them settled), weight-path analytics on the new arms
+  (`latch/head_trajectory.sh`), the FiLM half of E5. Incident: D13 was OOM-killed at 7 s by a render of mine on the same card
+  (my VRAM guard only checked at launch; training grows later), then re-run alone: the 0.1908 is that clean re-run. Data:
+  `/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`, REPORT.md there.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 

@@ -28,10 +28,9 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### LatCH Phase D is RUNNING unattended (C, 2026-10-07, EXPERIMENTS E5) — and the Phase C verdict below was WITHDRAWN by an audit
-**WHAT:** 15+1 LatCH arms on C09 (brake + escape velocity): late-switch, lr, Lion, depth/dim, batch, each saving every epoch. Started 2026-10-06 ~20:00, ~10 h, `SHARE_GPU=1`.
-**WHY:** your ask. The audit found `--num-workers` changes the result by ~0.004, 20x the "seed noise" Phase C used, so differences under ~0.004 are not results (docs/training-findings.md 2026-10-07).
-**RUN:** nothing, it is running. **CHECK:** `cut -f1-4 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`. **STOP:** `pkill -f run_modular_bracket` (resumable).
+### ✅ DONE 2026-10-07 — LatCH Phase D (16 arms): width is the only lever that paid; Lion loses (C, EXPERIMENTS E5)
+**RESULT:** vs the anchor (~0.199, noise ~0.004): **dim 512 0.1908 (better)**, depth 8 0.1946 (borderline), depth 2 / batch 32 / lr 1.5e-2 worse, batch 8, lr 3e-3..1e-2 and late brake/EV switching all within noise, Lion 0.228-0.262 (far behind; its best lr was the lowest tried). Head recipe stays `--optimizer modular --lr 1e-2 --mod-warmup 500 --batch-size 16`; try `--dim 512` as the next default after one repeat seed.
+**CHECK:** `cut -f1,3,4,5 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`. **Incident:** a render of mine OOM-killed D13 at 7 s; it was re-run alone and the number above is that run.
 **YOUR DECISIONS (nothing else needs you):** (1) mir `bpm.py` fix at source + import in `latch/extract_density_targets.py` instead of my copy: go / no-go. (2) FiLM bracket: join the granite captions to the bigset, or train with empty prompts on purpose?
 
 ### ✅ DONE 2026-10-06 (verdict withdrawn 10-07, see Phase D above) — LatCH Phase C: brake, escape velocity and Schedule-Free+ settings on the head recipe (C, 2026-10-06, EXPERIMENTS E5)
