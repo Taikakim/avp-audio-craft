@@ -1706,6 +1706,22 @@ release can sound like a longer decay, so separate them by the gate-to-ramp timi
 in the latent and check the tail meter. **Pending: v2s encode + meter + latent comparison.**
 (8) **Ops lesson:** SAME-S on CPU (8 threads, hours) is what made the box loud at night; use the GPU when free. ROCm 7.14
 idle spin thread: MASTER section 5.
+(9) **v2s / v2f results (2026-10-07 03:10-03:40, GPU-encoded; CPU vs GPU SAME-S agree: time-mean cos 0.99999,
+per-frame rel err 1.3%, so all sets are comparable).**
+*Release (v2s, sparse rhythm):* AUDIBLE and correctly separated in audio — the tail meter shows release moves only the
+post-gate tail (+88 ms per ladder, rho 0.93) and leaves the pre-gate level alone. In the SAME-S latent it has NO shared
+direction (consistency ~0.08 at every sustain tercile) and its mean direction lies on top of decay's and sustain's (cos
+0.83 / 0.86; decay vs sustain 0.97). So the latent reads release as "longer decay", as predicted: an ~88 ms tail is about
+one 93 ms frame. A release control needs either finer time resolution than SAME or an audio-side (gate-relative) target.
+Sustain/decay gating replicates in the sparse rhythm (sustain consistency 0.48 with short decay vs ~0; decay 0.31 with
+low sustain vs ~0). Meter gap: decay showed no change in either meter measure — its pre-gate level at gate-off equals
+sustain once short notes have finished decaying, so a decay-TIME measure (time to fall N dB after the peak) is needed.
+*Filter type (v2f, all 10 LP types x 40 ladders per knob):* cutoff points the SAME way on every type (cos to pooled
+0.96-0.99, consistency ~0.5 everywhere); pole count/topology changes its STRENGTH (24 dB, ladders, diode ~8-9 vs 12 dB,
+K35, warp types ~5-7 log-mel L1). FEG amount likewise shared (0.93-0.99) except Cutoff Warp (0.80). Resonance is the
+type-dependent knob, as expected musically: weak everywhere (effect 1-2 vs cutoff 7), consistency from 0.03 (K35) /
+0.07 (OB-Xd 12 dB) to 0.37 (Cutoff Warp), direction 0.84-0.97 to pooled (Diode Ladder loudest and most different).
+Caveat: time-mean latent; "does a different thing" may show more in temporal features.
 *UI, only after the gate:* NOT a new app — new controls in the inference explorer's **bend tab** (mir `plots/explorer_sa3`),
 backed by the existing :8056 render server (`/bend`, `/decode`); see docs/INFERENCE-SURFACE.md.
 

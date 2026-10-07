@@ -58,6 +58,9 @@ def main():
     first = {l: np.where((lid == l) & (rung == 0))[0][0] for l in L}
     last = {l: np.where((lid == l) & (rung == nr[first[l]] - 1))[0][0] for l in L}
     lk = np.array([kid[first[l]] for l in L])
+    present = sorted(set(lk.tolist()))              # files like v2s/v2f render only a subset of the knobs
+    knobs = [knobs[k] for k in present]
+    lk = np.array([present.index(k) for k in lk])
     U = unit(np.stack([M[last[l]] - M[first[l]] for l in L]))
     mean_dir = np.stack([unit(U[lk == k].mean(0)) for k in range(len(knobs))])
     dcos = mean_dir @ mean_dir.T
