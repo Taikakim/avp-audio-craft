@@ -2772,3 +2772,13 @@ Asked W to publish (DM). Nothing here has been listened to by anyone.
 ## 2026-10-07 (morning) — W's correction of my Phase D batch readings; Phase E queued
 
 W, from the epoch checkpoints: D15 b32 and D14 b8 were compared at 10 FIXED epochs, i.e. half and twice the optimiser steps. Verified: at equal steps b32 ep10 0.2122 vs anchor ep5 0.2149 (parity at ~60% wall time), b8 ep5 0.2069 vs anchor ep10 0.1986 (worse). So two of my Phase D lines ("batch 32 worse", "batch 8 within noise") were step-count artefacts, and every curve was still falling at ep10 (dim 512 leads only from ep8): the table ranked learning speed. I reported both to Kim as results before checking steps; the instrument audit I ran on workers did not cover epochs-vs-steps. Corrected in EXPERIMENTS E5, KIM-TASKLIST, REPORT, training-findings B1 and the sa3-training skill. Phase E (E01 anchor 20 ep, dim512 x2 seeds, b32 20 ep, depth 8, lr 3e-3; same flags otherwise) is queued behind W's H6 GPU lock (~24 h), unattended, driver log in phaseE/driver.log.
+
+## 2026-10-07 (midday) — Kim's v6 listening: the "gap" is a 10 s replay at every splice, not BPM
+
+Kim: temporal gap at transitions + short transitions (a2a and smoothed alike); guessed uncompensated BPM stretching. Measured with the new eval/mixtape_audit_continuity.py
+(low-band normalised cross-correlation of each mix window against its source clips): 39/39 splices put the incoming clip back at its entry point (found to 10 ms; splice 0
+expected 12.24 s, found 2.34 s). Mechanism: chain_simple_crossfade renders [A_head|crossfade|B_post] per pair; the assembler cuts pair i at a_head+overlap and appends pair i+1
+whose A_head restarts at the clip's entry. v5's a_start_sec "fix" stopped only the sample-0 replay. My v6 "clean" claim rested on sample-jump scans, which cannot see misplaced but
+clean audio: an instrument blind spot I did not audit (I checked corruption and level, never continuity). BPM bending is real (tempo changes inside the window, +-80 ms alignment bound
+saturated on 16/40) but second. Wrote the v7 spec for G (one placement timeline, constant tempo in the window, bar windows, spikes for the stem/inpaint/latent-mix idea with
+my risk review: no kick stem in BS-RoFormer, isolated-stem inpainting off-distribution, zero latent != silence, stems do not sum back to the clip). Nothing built; G starts Phase 0.
