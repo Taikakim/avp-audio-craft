@@ -8,7 +8,7 @@ bright, B this clip lacks punch, C the transition that last played felt out of s
 sound elements unfitting to a good transition, so I can rate these on the go. Then ask W to publish it."
 
 WHAT IT DOES
-  1. transcodes each mix wav to AAC 192k m4a in the staging dir (skips files that exist);
+  1. transcodes each mix wav to AAC 256k m4a in the staging dir (skips files that exist);
   2. computes a TIMELINE per mix from the pair renders' run_meta sidecars (clip i is current until the
      midpoint of transition i, transition i = [segment start + a_head, segment end]), so a tap on the
      page can say WHICH clip / transition was under the playhead, and writes only clip/transition
@@ -76,14 +76,14 @@ def timeline(render_dir, pairs_json, mix_wav):
     return {"dur": round(dur, 2), "clips": [short(n) for n in names], "clip_bounds": bounds, "trans": trans}
 
 
-def player(mix_id, label, desc, fname, tl):
+def player(mix_id, label, desc, fname, tl, kbps):
     n = len(tl["clips"])
     return f"""  <div class="version">
     <h3>{label}</h3>
     <p class="desc">{desc}</p>
     <div class="player">
       <audio controls preload="none" data-mix="{mix_id}" src="{fname}"></audio>
-      <div class="stat">{tl['dur'] / 60:.1f} min &middot; {n} clips &middot; {len(tl['trans'])} transitions &middot; AAC 192kbps</div>
+      <div class="stat">{tl['dur'] / 60:.1f} min &middot; {n} clips &middot; {len(tl['trans'])} transitions &middot; AAC {kbps} kbps</div>
     </div>
   </div>"""
 
@@ -182,6 +182,7 @@ def main():
                     help="id|label|desc|wav|render_dir|pairs_json   (pairs_json may be empty)")
     ap.add_argument("--heading", default="DJ mixes: beat-aware, built from the retrained models")
     ap.add_argument("--intro", default="")
+    ap.add_argument("--bitrate", default="256k", help="AAC bitrate (review-audio standard 256k; the page prints the MEASURED rate)")
     ap.add_argument("--private-out", type=Path, default=None,
                     help="write the full timelines (WITH clip names) here; the public timelines.json carries no "
                          "model/checkpoint names, only 'clip N' (W's leak-scan refuses checkpoint filenames)")
@@ -193,9 +194,10 @@ def main():
         fname = f"dj_{mid}.m4a"
         out = a.stage / fname
         if not out.exists():
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-c:a", "aac", "-b:a", "192k", str(out)], check=True)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-c:a", "aac", "-b:a", a.bitrate, str(out)], check=True)
         tls[mid] = timeline(rdir, pj or None, wav)
-        cards.append(player(mid, label, desc, fname, tls[mid]))
+        kbps = round(float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=bit_rate', '-of', 'csv=p=0', str(out)]).decode().strip()) / 1000)
+        cards.append(player(mid, label, desc, fname, tls[mid], kbps))
         print(f"[mix] {mid}: {tls[mid]['dur'] / 60:.1f} min, {len(tls[mid]['clips'])} clips, {out.stat().st_size / 1e6:.0f} MB", flush=True)
     if a.private_out:
         a.private_out.write_text(json.dumps(tls, indent=1))
