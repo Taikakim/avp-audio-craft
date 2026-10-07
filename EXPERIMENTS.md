@@ -1819,6 +1819,12 @@ SF (tau 1) and EMA at tau 0.4 / 0.1, next to the Oct-5 model and H1 EMA RE-RENDE
 sets render now, on CPU, `v3_clean_b64/clips_ref_*`, and are also scored against their delayed versions in
 `clips_AB_refs/` to measure what the delay cost). Page: `synth_inversion_v3.html`; the old page carries a banner.
 **Kill:** v3 real-stem MSS not better than the Oct-5 model re-rendered with FX off.
+*Update 2026-10-07 17:34:* the first v3 start (14:00) died at 14:10 when Mantu dropped off the bus (it came back as
+/run/media/kim/Mantu1; a stale mount still blocks /Mantu until cleared with sudo). Restarted from
+`run_v3_clean_home.sh`: identical recipe, outputs in `/home/kim/sao_runs/v3_clean_b64`, manifold read from Mantu1
+at startup. Training since 17:34, ~19 h. The FX-off reference clips (`clips_ref_*`, `clips_AB_refs/`) were
+finished on Mantu before the drop. The post-step reads real-stem data from /Mantu, so the stale mount must be
+cleared before it runs (else rerun v3_post.sh with OUT_DIR=/home/kim/sao_runs/v3_clean_b64).
 **H6 — STOPPED 2026-10-07 ~12:40 (trained on delayed renders; superseded by v3).** Original entry:
 **H6 — RUNNING (W, launched 2026-10-07 08:44, authorised for the 48 h away window).** `run_h6_condnoise.sh` =
 `run_fxfix_ladder_ema.sh` with ONE change, `--cond_noise --cond_noise_clean_frac 0.3`: the flow sees its mel condition
