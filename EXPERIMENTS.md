@@ -1409,6 +1409,16 @@ exactly this reason.)*
   (`latch/head_trajectory.sh`), the FiLM half of E5. Incident: D13 was OOM-killed at 7 s by a render of mine on the same card
   (my VRAM guard only checked at launch; training grows later), then re-run alone: the 0.1908 is that clean re-run. Data:
   `/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`, REPORT.md there.
+- **CORRECTION to the Phase D batch readings (W, 2026-10-07, from the epoch curves; verified by C).** D15 (b32) changed only `--batch-size`
+  with 10 FIXED epochs, so it took half the optimiser steps at the same lr: at EQUAL steps b32 ep10 0.2122 vs anchor ep5 0.2149 (parity or better, at
+  ~60% of the wall time), so "batch 32 worse" is a step-count confound, not a finding. The reverse holds for D14 (b8): twice the steps; at equal
+  steps b8 ep5 0.2069 vs anchor ep10 0.1986 (worse), so its "within noise" 0.1955 was bought with 2x steps. Also: every curve is still falling at
+  ep10, so a fixed-10-epoch ranking measures learning SPEED, not the ceiling; dim 512 leads only from ep8 (leaders at ep2-7 are b8 and lr 3e-3); the
+  losers (Lion, depth 2, lr 1.5e-2) are clear by ep2-3. Arms with the same batch (lr, depth, dim, late switching) have equal steps, but are still
+  10-epoch single-seed readings. The arms ran without wandb, so no per-step telemetry exists. **Phase E queued** (below) to settle it: 20 epochs, equal-step batch arm, one repeat seed.
+- **Phase E (queued 2026-10-07, waits on the GPU lock; W's H6 holds it ~24 h):** `phaseE_arms.txt` in the same dir, 16 workers, base C09, best-checkpoint only:
+  E01 anchor 20 ep (the new control), E02 dim 512 20 ep, E03 dim 512 20 ep seed 1 (the repeat), E04 b32 20 ep (= the anchor's 10-epoch step count at
+  ~half the wall time), E05 depth 8 20 ep, E06 lr 3e-3 20 ep. Reading rule: compare only within 20 epochs and, for batch, at equal steps; Delta < 0.004 is noise.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 

@@ -612,3 +612,10 @@ The WORST corrupted clips (688, 232, 174, 99, 90 jumps) reproduce at cos 1.0000,
 (eval/decode_z0_clamped.py): jumps over 47 clips 2985 -> 426 at ceiling 1.0. *Result:* v6 (41 clips, 25.3 min) a2a = 4.5 jumps/min vs v5 43.5/min,
 no 30 s window above 20, 9 jumps inside the 40 transitions. Merging the a2a adapter in chain_simple_crossfade is still right (13e is real for ~1 in 5 adapter clips).
 *Family:* a finite latent at std 1.3-2.3 is the early stage of the runaway family (DISCOVERIES 2026-08-10: z0 std 5.6 vs 1.13), so read this with 13e as two different faults, not one; a clip can be fine in the live render and still need the ceiling. *Cost of the ceiling:* the 11 clamped v6 clips decode 3-14% lower in spectral centroid and +-12% in RMS vs unclamped (peak-normalised), so a 'too bright' / 'lacks punch' tap should be checked against the clip's ceiling (run_meta.json of the v6 dir).
+
+**B1. A fixed-epoch comparison across batch sizes compares STEP COUNTS, not batch sizes (W, 2026-10-07; CONTINUITY).** *Symptom:* LatCH Phase D read
+"batch 32 worse" and "batch 8 within noise". *Cause:* D14/D15 changed only `--batch-size` with 10 fixed epochs, so b32 took half and b8 twice the
+optimiser steps of the anchor at the same lr. *Evidence:* at equal steps b32 ep10 0.2122 vs anchor ep5 0.2149 (parity at ~60% of the wall time);
+b8 ep5 0.2069 vs anchor ep10 0.1986 (worse). Also every curve was still falling at ep10, so a short fixed-epoch table ranks learning speed, not the
+ceiling. *Fix / status:* verdicts corrected in EXPERIMENTS E5, KIM-TASKLIST and REPORT; Phase E (20 epochs, equal-step b32, a repeat seed) queued.
+Rule: when an arm changes batch size, match optimiser STEPS (or scale epochs), and run long enough that the leaders have stopped changing.
