@@ -2766,3 +2766,5 @@ v6: 47 clips first (4.5x fewer jumps/min than v5, transitions clean), then 6 cli
 (tempo-warp? mixing level?), not investigated. Dropped by rule: 5 clips with doubtful tempo / still corrupt; madmom's ~158 for kl_0 clips was a T280 artifact (now 150).
 Page: eval/build_dj_mixes_section.py adds a DJ section + four phone buttons to ~/staging/kone-mixtape (public timelines carry no model names); web/ratings.php 'mixflag' (unlinted).
 Asked W to publish (DM). Nothing here has been listened to by anyone.
+
+**v7 candidates from G's audit of the v6 transitions (2026-10-07 08:31, measured fields only, nothing heard):** (1) polarity_diff_align max_shift 0.08 s is too short: 16/40 offsets > 40 ms, 10 > 60, pairs 6 and 36 sit at the bound (-79.7, +79.2 ms); use ~+-1/4 beat with a mild penalty, and store the null residual + nudge schedule in the pair run_meta (not stored today); (2) transition 0 is 120 -> 132 BPM, B must slow 7.6% inside the ramp (cap +-2): drop the lone 120 BPM head clip; (3) zero-crossing snap only on the END point, 5/47 clips used the div4 fallback. Decision: do NOT rebuild v6; wait for Kim's C/D taps. v7 = all three in one rebuild.
