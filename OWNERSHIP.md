@@ -36,9 +36,9 @@ owner per subject keeps the thread, the data and the open questions in one head.
 | Latent Forge (GUI, worktree `sa3-studio-review`) | WINTERMUTE | claimed | C re-drives GUI tests on request | `ARCHITECTURE.md`, branch `latent-forge` |
 | Kim's website, hosting, publish pipeline, leak-scan, `ratings.php` | WINTERMUTE | claimed (`CONSTRUCTS.md`) | everyone stages, W publishes | `MASTER.md` §4, `web/` |
 | Audio-feature subsystem, training data, precalculated latents (mir, `docs/data.md`) | WINTERMUTE | claimed (`CONSTRUCTS.md`) | | `docs/data.md`, `mir/` |
-| DJ mixtape pipeline (clips -> BPM -> bounds -> crossfade -> mix -> Kone page) | GHOST-NOTE | proposed: G built v1-v5; C rebuilt v6 on Kim's ask and hands it back | C for latent / decode questions; v7 waits for Kim's taps | `eval/mixtape_*`, `eval/chain_simple_crossfade.py`, `eval/build_dj_mixes_section.py`, Mantu `mixtape_v6_rerender/run_meta.json` |
-| Model matrix, canonical clips, eval boards and tables | GHOST-NOTE | proposed | W deploys the pages | skill `sa3-canonical-clips`, `eval/model_matrix_gen.py` |
-| LUMI operations (submit, monitor, pull, render) | GHOST-NOTE | proposed (`lumi-ops` skill: daily runs moved to G 2026-08-10) | C / W craft the configs | skill `lumi-ops`, `RUNBOOK.md` |
+| DJ mixtape pipeline (clips -> BPM -> bounds -> crossfade -> mix -> Kone page) | GHOST-NOTE | claimed 2026-10-07: G built v1-v5; C rebuilt v6 on Kim's ask and hands it back | C for latent / decode questions; v7 waits for Kim's taps | `eval/mixtape_*`, `eval/chain_simple_crossfade.py`, `eval/build_dj_mixes_section.py`, Mantu `mixtape_v6_rerender/run_meta.json` |
+| Model matrix, canonical clips, eval boards and tables | GHOST-NOTE | claimed 2026-10-07 | W deploys the pages | skill `sa3-canonical-clips`, `eval/model_matrix_gen.py` |
+| LUMI operations (submit, monitor, pull, render) | GHOST-NOTE | claimed 2026-10-07; compute is closed (allocation used up), so transfers and pulls only until a new one (`lumi-ops` skill: daily runs moved to G 2026-08-10) | C / W craft the configs | skill `lumi-ops`, `RUNBOOK.md` |
 | Bitwig and other external software / services (except the website) | GHOST-NOTE | claimed (`CONSTRUCTS.md`) | | `CONSTRUCTS.md` |
 | Papers: reading, verdicts, `papers/knowledge.md`, the verdict page | THE-FINN | claimed 2026-10-07 | W deploys the verdict page | `papers/`, `Misc/build_paper_verdicts.py` |
 | Fleet comms, staleness patrol, doc-index health (`ARCHITECTURE.md`, `DISCOVERIES.md`, this file) | THE-FINN | claimed (`CONSTRUCTS.md`) | | `CONSTRUCTS.md`, `MASTER.md` §4 |
