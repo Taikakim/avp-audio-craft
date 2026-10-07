@@ -7,12 +7,12 @@ Exit 1 if any clip is more than 0.1 s off.
 """
 import json,subprocess,numpy as np,sys,argparse
 from scipy.signal import butter,sosfiltfilt,resample_poly,fftconvolve
-ap=argparse.ArgumentParser();ap.add_argument('--dir',default='/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0');ap.add_argument('--bounds',default='/run/media/kim/Mantu/sa3_lora_runs/mixtape_v6_rerender/work48b/bounds.json');A=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('--dir',default='/run/media/kim/Mantu1/sa3_lora_runs/mixtape_v7_phase0');ap.add_argument('--mix',default='mixtape_full_plain.wav');ap.add_argument('--bounds',default='/run/media/kim/Mantu1/sa3_lora_runs/mixtape_v6_rerender/work48b/bounds.json');A=ap.parse_args()
 D=A.dir.rstrip('/')+'/'
 def low(path):
     y=np.frombuffer(subprocess.run(["ffmpeg","-v","error","-i",path,"-f","f32le","-ac","1","-ar","44100","-"],capture_output=True).stdout,dtype=np.float32)
     return resample_poly(sosfiltfilt(butter(4,150,"low",fs=44100,output="sos"),y),1,44),44100/44
-mix,fs=low(D+'mixtape_full_plain.wav')
+mix,fs=low(D+A.mix)
 tl=json.load(open(D+'timeline.json'));m=json.load(open(D+'run_meta.json'));order=json.load(open(D+'order_used.json'))
 bounds=json.load(open(A.bounds));dbc=json.load(open(D+'downbeats_native.json'))
 T=[0.0]
