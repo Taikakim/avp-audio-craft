@@ -28,6 +28,13 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### 🎧 LISTEN + RATE on your phone: DJ mix v6 on the Kone mixtape page (C, 2026-10-07; waits on W to publish)
+**WHAT:** the new "DJ mixes: the beat-aware set" section on https://aavepyora.online/files/kone-mixtape/ : v6 smoothed (41 clips, 25.3 min), v6 bass-swap, v6 plain, v5 for comparison. Four big buttons at the bottom: A too bright, B lacks punch (about the clip playing), C transition out of sync, D transition had unfitting sounds (about the transition that last played).
+**WHY:** your "one faultless mix". The corruption was in the latents, fixed per clip with a latent-size ceiling at decode; v6 scans at 4.5 jumps/min vs v5's 43.5, but a count is a screen, your ears decide. docs/training-findings.md 2026-10-07 A1.
+**RUN:** nothing; open the page on your phone once W says it is live. **NEEDS W FIRST:** deploy `web/ratings.php` (new `mixflag` type, not linted: no php here) with the page, otherwise taps queue on the phone but the server rejects them.
+**VERIFY:** after a tap the toast says which clip/transition it hit; later `grep mixflag` on the site's ratings export lists them. **REPORT BACK:** which of A-D you tap most and on which mix.
+**ROLLBACK:** previous staged page is saved in Mantu/sa3_lora_runs/mixtape_v6_rerender/page_backup/.
+
 ### ✅ DONE 2026-10-07 — LatCH Phase D (16 arms): width is the only lever that paid; Lion loses (C, EXPERIMENTS E5)
 **RESULT:** vs the anchor (~0.199, noise ~0.004): **dim 512 0.1908 (better)**, depth 8 0.1946 (borderline), depth 2 / batch 32 / lr 1.5e-2 worse, batch 8, lr 3e-3..1e-2 and late brake/EV switching all within noise, Lion 0.228-0.262 (far behind; its best lr was the lowest tried). Head recipe stays `--optimizer modular --lr 1e-2 --mod-warmup 500 --batch-size 16`; try `--dim 512` as the next default after one repeat seed.
 **CHECK:** `cut -f1,3,4,5 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseD/SUMMARY.tsv`. **Incident:** a render of mine OOM-killed D13 at 7 s; it was re-run alone and the number above is that run.

@@ -2755,3 +2755,14 @@ for the same seed, so the "688 -> 13" number was NOT a paired test. Redo at --du
 new z0 (a real measure of the live-adapter fault), re-decode with the adaptive ceiling, rebuild order/bounds/pairs (the old ones were
 in a wiped session scratchpad), render merged crossfades, assemble, scan. Tempo: madmom read ~158 for four kl_0 clips whose prompt says
 150 (librosa 152): dropped them and a 98.8 outlier; kept 41. Not yet listened to by anyone.
+
+## 2026-10-07 (night) — DJ mix v6 built; the merge fix was NOT the cure; Kone page staged
+
+Correction to my own earlier note. The paired test at matched T512 (30/45 latents reproduce at cos > 0.999, the worst corrupted clips at cos 1.0000)
+shows the mixtape corruption is in the latents; the live-DoRA fault (13e) only changed ~7 of 37 adapter clips. What cures it is the VADD std ceiling at
+decode, applied per clip at the gentlest ceiling that gets the decode <= 5 jumps. (First "688 -> 13" was not a paired test: default-duration T280 is a different clip.)
+v6: 47 clips first (4.5x fewer jumps/min than v5, transitions clean), then 6 clips with >10 in-body jumps dropped and the pairs re-rendered: 41 clips, 25.3 min, a2a 115 jumps
+(4.5/min), none of 51 windows above 20, 9 jumps in the 40 transitions; plain crossfade is WORSE (14.3/min) than a2a. Open: why a clip with <= 5 jumps at decode shows 63 in the mix
+(tempo-warp? mixing level?), not investigated. Dropped by rule: 5 clips with doubtful tempo / still corrupt; madmom's ~158 for kl_0 clips was a T280 artifact (now 150).
+Page: eval/build_dj_mixes_section.py adds a DJ section + four phone buttons to ~/staging/kone-mixtape (public timelines carry no model names); web/ratings.php 'mixflag' (unlinted).
+Asked W to publish (DM). Nothing here has been listened to by anyone.

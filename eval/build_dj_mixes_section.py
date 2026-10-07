@@ -182,6 +182,9 @@ def main():
                     help="id|label|desc|wav|render_dir|pairs_json   (pairs_json may be empty)")
     ap.add_argument("--heading", default="DJ mixes: beat-aware, built from the retrained models")
     ap.add_argument("--intro", default="")
+    ap.add_argument("--private-out", type=Path, default=None,
+                    help="write the full timelines (WITH clip names) here; the public timelines.json carries no "
+                         "model/checkpoint names, only 'clip N' (W's leak-scan refuses checkpoint filenames)")
     a = ap.parse_args()
     a.stage.mkdir(parents=True, exist_ok=True)
     tls, cards = {}, []
@@ -194,7 +197,10 @@ def main():
         tls[mid] = timeline(rdir, pj or None, wav)
         cards.append(player(mid, label, desc, fname, tls[mid]))
         print(f"[mix] {mid}: {tls[mid]['dur'] / 60:.1f} min, {len(tls[mid]['clips'])} clips, {out.stat().st_size / 1e6:.0f} MB", flush=True)
-    (a.stage / "timelines.json").write_text(json.dumps(tls, separators=(",", ":")))
+    if a.private_out:
+        a.private_out.write_text(json.dumps(tls, indent=1))
+    pub = {k: {**v, "clips": [f"clip {i + 1}" for i in range(len(v["clips"]))]} for k, v in tls.items()}
+    (a.stage / "timelines.json").write_text(json.dumps(pub, separators=(",", ":")))
     block = (f"{BEGIN}\n{CSS}\n<section id=\"djmixes\" style=\"margin-bottom:40px\">\n  <h2>{a.heading}</h2>\n"
              f"  <p class=\"note\">{a.intro}</p>\n" + "\n".join(cards) + f"\n</section>\n{bar()}\n{JS}\n{END}")
     idx = a.stage / "index.html"

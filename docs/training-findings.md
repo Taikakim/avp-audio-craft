@@ -601,3 +601,13 @@ lock, and my launch guard only checked free VRAM once, at start; the other proce
 allocates last fails, and here that was the training. *Evidence:* `phaseD/D13_dim512/train.log` OutOfMemoryError at `latch.py:130`;
 my own groups failed the same way ("0 bytes free", 7.14 GB allocated by PyTorch). *Fix / status:* D13 re-run alone (0.1908, the
 number in EXPERIMENTS E5); rule: when a run has an unattended arm list, do not start a second GPU job beside it, serialise behind it.
+
+**A1. The mixtape's sample-corruption is a property of the saved LATENTS, not of the live-adapter render fault (CONTINUITY, 2026-10-07).**
+*Symptom:* 13 of the 51 source clips of the v5 DJ mix had >50 single-sample jumps. *Hypothesis tested:* the 13e live-DoRA fault.
+*Test (paired, same seed and T512, 45 clips):* re-rendered with the adapter merged: 30 clips reproduce the old latent to cos > 0.999, 15 differ
+(all 8 full-FT clips, which have no adapter, so those differ for another reason, probably which weights load; 7 of 37 adapter clips).
+The WORST corrupted clips (688, 232, 174, 99, 90 jumps) reproduce at cos 1.0000, so merging does not touch them.
+*Cause:* the latents themselves (std up to 2.3 on several ptm clips); decoder nonlinearity answers an over-wide latent with jumps (EXPERIMENTS A14).
+*Fix that works:* the VADD tier-3 std ceiling at decode, applied per clip at the gentlest ceiling that gets the decode <= 5 jumps
+(eval/decode_z0_clamped.py): jumps over 47 clips 2985 -> 426 at ceiling 1.0. *Result:* v6 (41 clips, 25.3 min) a2a = 4.5 jumps/min vs v5 43.5/min,
+no 30 s window above 20, 9 jumps inside the 40 transitions. Merging the a2a adapter in chain_simple_crossfade is still right (13e is real for ~1 in 5 adapter clips).
