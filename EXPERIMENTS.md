@@ -1629,6 +1629,13 @@ gap between models; MSS is coarse (see the Synth-JDF sidecar on what MSS rewards
 being added to the same page (Oct-3 run, new run's schedule-free average) — `clips_AB/comparison.json` is re-scored
 with all five when they finish. Read with H5/H6: the domain gap (real vs synth audio), not the FX fix, is the binding
 constraint, which is exactly what Synth-JDF targets.
+**All five models, same pipeline (2026-10-07 07:53, metrics):** Oct-3 run MSS 7.51 / wMFCC **10.62** / env 0.913,
+best MSS on **9/24**; Oct-5 (old) **7.31** / 10.84 / 0.911, 6/24; H1 online 7.84 / 10.85 / 0.920, 3/24; H1 EMA 7.76 /
+11.27 / 0.916, 1/24; H1 schedule-free average 7.58 / 11.39 / 0.910, 5/24. The two OLDER runs (both trained before the
+FX fix) lead on real stems; H1's best held-out synth numbers come with its worst real-stem numbers. Within H1, the SF
+average beats online/EMA on real stems although it is the weakest on held-out synth flow loss (0.283 vs 0.235). Read:
+fitting the synth distribution better is not moving real-stem quality (and may hurt it); the domain gap dominates.
+Page: aavepyora.online/files/evals/synth_inversion.html (complete, 120 clips).
 
 **H2. Ladder-straightness term (from Semantic Tube Prediction, 2602.22617) — POTENTIAL** (W, 2026-10-06).
 *Idea:* STP keeps an LM's hidden-state trajectory locally straight with `1 − cos(h_t − h_r, h_r − h_s)` on
@@ -1763,6 +1770,16 @@ model's normalised mel space), report MSS / wMFCC / env-cos on the held-out half
 CPU. Expectation per the paper: a clean-only model degrades or barely moves; if it IMPROVES, the gap is input-detail
 sensitivity. Caveat to carry: the paper's best points may be test-tuned; pick tau on half the stems, report the other half.
 
+**H6 — RUNNING (W, launched 2026-10-07 08:44, authorised for the 48 h away window).** `run_h6_condnoise.sh` =
+`run_fxfix_ladder_ema.sh` with ONE change, `--cond_noise --cond_noise_clean_frac 0.3`: the flow sees its mel condition
+partly noised in standardised space ((1-tau) eps + tau mel; 30% clean, else tau ~ logit-normal(0,1)), tau embedded as
+an input; mel stats stored as model buffers (also written into the EMA shadow). Old checkpoints load unchanged; tests
+`test_cond_noise_*` (44/44 pass). Out: `Mantu/surge_200k_models/h6_condnoise_b64/`. GPU power-capped at 225 W this week
+(~20% slower than H1): if the 30 h wall cap stops it short of 78,416 steps, `h6_post.sh` re-takes the GPU lock and
+resumes to the full count (the modular optimizer's LR decay is step-based, so the schedule is unchanged), then inverts
+the 24 real stems (CPU) with H6 online/EMA at tau 1.0 and EMA at tau 0.7/0.4/0.1, scores them next to old + H1 EMA
+(`h6_condnoise_b64/clips_AB/`), and rebuilds the same eval page. `invert_stem_collection.py --cond_tau` exposes tau.
+**Kill:** real-stem MSS not better than the Oct-5 model (7.31) at any tau. **Second day:** decided on H6's result.
 **H6. Is it the JOINT objective or just noisy conditioning? — POTENTIAL, the ablation Synth-JDF did not run.** Train our
 conditional flow with the audio input noised at a random t_y ~ logit-normal (conditioning-noise augmentation, still no
 audio-velocity loss) vs H1's clean conditioning; same steps/data. If it closes most of the real-stem gap, the joint

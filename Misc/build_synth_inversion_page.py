@@ -20,11 +20,24 @@ RUN = Path("/run/media/kim/Mantu/surge_200k_models/fxfix_ladder_ema_b64")
 CATALOG = Path("/run/media/kim/Mantu/surge_200k_models/real_stems_eval/real_stems_summary.json")
 OUT = Path.home() / ".cache/evals_aac"
 PAGE, CLIPS = OUT / "synth_inversion.html", OUT / "synth_inversion"
-SETS = [("v2", "Oct 3 run", "the realistic-bass run before 'old' (trained before the FX-state fix)"),
-        ("old", "Oct 5 run (old)", "the previous run, trained before the FX-state fix"),
-        ("online", "New · online", "this run's final weights"),
-        ("ema", "New · EMA", "this run's exponential moving average of the weights (half-life 2000 steps)"),
-        ("sf", "New · SF average", "this run's schedule-free averaged weights (the optimizer's own average)")]
+H6 = Path("/run/media/kim/Mantu/surge_200k_models/h6_condnoise_b64")
+# (key, label, description, clips dir). Sets whose clips dir does not exist yet are left off the page.
+ALL_SETS = [("v2", "Oct 3 run", "the realistic-bass run before 'old' (trained before the FX-state fix)", RUN / "clips_v2"),
+            ("old", "Oct 5 run (old)", "the previous run, trained before the FX-state fix", RUN / "clips_old"),
+            ("online", "New · online", "this run's final weights", RUN / "clips_online"),
+            ("ema", "New · EMA", "this run's exponential moving average of the weights (half-life 2000 steps)",
+             RUN / "clips_ema"),
+            ("sf", "New · SF average", "this run's schedule-free averaged weights (the optimizer's own average)",
+             RUN / "clips_sf"),
+            ("h6_online", "H6 · online", "the noisy-conditioning run (EXPERIMENTS H6), final weights, clean condition",
+             H6 / "clips_h6_online"),
+            ("h6_ema", "H6 · EMA", "H6 EMA weights, clean condition", H6 / "clips_h6_ema"),
+            ("h6_ema_t07", "H6 · EMA τ0.7", "H6 EMA conditioned on the reference with 30% noise", H6 / "clips_h6_ema_t07"),
+            ("h6_ema_t04", "H6 · EMA τ0.4", "H6 EMA conditioned on the reference with 60% noise", H6 / "clips_h6_ema_t04"),
+            ("h6_ema_t01", "H6 · EMA τ0.1", "H6 EMA conditioned on the reference with 90% noise (Synth-JDF's best "
+             "off-manifold point)", H6 / "clips_h6_ema_t01")]
+SETS = [s[:3] for s in ALL_SETS if s[3].exists()]
+SET_DIR = {s[0]: s[3] for s in ALL_SETS}
 BUILD_EVALS = Path(__file__).parent / "build_evals.py"
 
 
@@ -61,20 +74,34 @@ def main():
     be = load_build_evals()
     CLIPS.mkdir(parents=True, exist_ok=True)
     catalog = {d["id"]: d for d in json.load(open(CATALOG))} if CATALOG.exists() else {}
-    comp_p = RUN / "clips_AB" / "comparison.json"
-    comp = json.load(open(comp_p)) if comp_p.exists() else {"summary": {}, "rows": []}
-    rows_by = {r["stem_id"]: r for r in comp["rows"]}
+    # Merge per-stem scores from both runs' comparison files (same metric code, same real clips); the summary is
+    # recomputed over the merged rows so "best on" counts across every set shown.
+    rows_by = {}
+    for comp_p in (RUN / "clips_AB" / "comparison.json", H6 / "clips_AB" / "comparison.json"):
+        if comp_p.exists():
+            for r in json.load(open(comp_p))["rows"]:
+                rows_by.setdefault(r["stem_id"], {"stem_id": r["stem_id"]}).update(
+                    {k: v for k, v in r.items() if k != "stem_id"})
+    keys = [k for k, _, _ in SETS]
+    comp = {"summary": {}}
+    for k in keys:
+        rs = [r for r in rows_by.values() if k in r]
+        if rs:
+            comp["summary"][k] = {m: round(sum(r[k][m] for r in rs) / len(rs), 3) for m in ("mss", "wmfcc", "env_cos")}
+            comp["summary"][k]["best_mss_stems"] = sum(
+                1 for r in rs if all(r[k]["mss"] <= r[o]["mss"] for o in keys if o in r))
+            comp["summary"][k]["n"] = len(rs)
     ids = sorted(catalog) or sorted(rows_by)
     meta_p = RUN / "clips_AB" / "run_meta.json"
     feedback = json.load(open(meta_p)).get("kim_feedback") if meta_p.exists() else None
 
     have = {}
     for sid in ids:
-        real_src = next((RUN / f"clips_{k}" / "audio" / f"{sid}_real.wav" for k, _, _ in SETS
-                         if (RUN / f"clips_{k}" / "audio" / f"{sid}_real.wav").exists()), None)
+        real_src = next((SET_DIR[k] / "audio" / f"{sid}_real.wav" for k, _, _ in SETS
+                         if (SET_DIR[k] / "audio" / f"{sid}_real.wav").exists()), None)
         have[(sid, "real")] = bool(real_src) and to_m4a(real_src, CLIPS / f"{sid}_real.m4a")
         for k, _, _ in SETS:
-            have[(sid, k)] = to_m4a(RUN / f"clips_{k}" / "audio" / f"{sid}_midi_playback.wav", CLIPS / f"{sid}_{k}.m4a")
+            have[(sid, k)] = to_m4a(SET_DIR[k] / "audio" / f"{sid}_midi_playback.wav", CLIPS / f"{sid}_{k}.m4a")
     n_ready = sum(have[(s, k)] for s in ids for k, _, _ in SETS)
     complete = n_ready == len(ids) * len(SETS)
 
@@ -114,7 +141,7 @@ def main():
             s = summ.get(k)
             if s:
                 doc += (f'<tr><td>{lab}</td><td>{fmt(s["mss"])}</td><td>{fmt(s["wmfcc"])}</td>'
-                        f'<td>{fmt(s["env_cos"], 3)}</td><td>{s.get("best_mss_stems", "—")} / {len(rows_by)}</td></tr>')
+                        f'<td>{fmt(s["env_cos"], 3)}</td><td>{s.get("best_mss_stems", "—")} / {s.get("n", len(rows_by))}</td></tr>')
         doc += ('</table><p class="faint">Metrics follow Hayes et al. (ISMIR 2025): MSS = multi-scale log-mel '
                 'distance, warped MFCC = DTW-aligned MFCC distance, envelope cos = similarity of loudness envelopes. '
                 'Measured on the whole phrase, refinement saw only the first half.</p>')
