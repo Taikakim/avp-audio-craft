@@ -78,7 +78,10 @@ def main():
         print(f"[wait] {len(missing)}/{len(pairs)} pair renders not done yet: {missing[:3]}...", flush=True)
         sys.exit(1)
 
-    for variant in ("plain", "a2a"):
+    for variant in ("plain", "a2a", "bassswap", "bassswap_a2a"):
+        if not all((render_dir / f"{p['out_name']}_{variant}.wav").exists() for p in pairs):
+            print(f"[skip] {variant}: not rendered for every pair", flush=True)
+            continue
         dur = assemble(pairs, render_dir, variant, out_dir / f"mixtape_full_{variant}.wav")
         print(f"[done] mixtape_full_{variant}.wav -- {dur / 60:.1f} min", flush=True)
 

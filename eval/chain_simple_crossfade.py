@@ -360,6 +360,12 @@ def main():
     print(f"[load] model, {len(pairs)} pairs", flush=True)
     model = StableAudioModel.from_pretrained("medium-base", device="cuda")
     model.load_lora([args.ckpt])
+    # Bake the adapter into the weights (training-findings.md 13e, 2026-09-25): a LIVE DoRA/LoRA
+    # parametrization returns history-dependent garbage (NaN / 1e10 / slightly off) once calls of
+    # different shapes interleave in one process -- this loop is exactly that (encode, generate,
+    # decode per pair). The v3-v5 mixtape a2a seams were rendered live. Merged = deterministic.
+    from model_matrix_gen import merge_adapters
+    print(f"[merge] merged {merge_adapters(model.model)} adapter parametrizations", flush=True)
     sr = model.model.sample_rate
 
     for p in pairs:

@@ -21,8 +21,11 @@ OUT = Path(
 
 
 def main():
-    clips = json.loads(ORDER.read_text())
-    bounds = json.loads(BOUNDS.read_text())
+    # usage: mixtape_build_pairs.py [order.json bounds.json pairs.json]  (2026-10-07: argv added so the
+    # work files can live somewhere durable -- the old defaults were a session scratchpad that got wiped)
+    order, bounds_p, out = (Path(x) for x in sys.argv[1:4]) if len(sys.argv) >= 4 else (ORDER, BOUNDS, OUT)
+    clips = json.loads(order.read_text())
+    bounds = json.loads(bounds_p.read_text())
 
     missing = [c["file"] for c in clips if c["file"] not in bounds]
     if missing:
@@ -52,8 +55,8 @@ def main():
             "out_name": f"{i:02d}_{a['id'][:40]}_TO_{b['id'][:40]}",
         })
 
-    OUT.write_text(json.dumps(pairs, indent=2))
-    print(f"[done] {len(pairs)} pairs -> {OUT}", flush=True)
+    out.write_text(json.dumps(pairs, indent=2))
+    print(f"[done] {len(pairs)} pairs -> {out}", flush=True)
 
 
 if __name__ == "__main__":
