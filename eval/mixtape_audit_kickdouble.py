@@ -8,6 +8,11 @@ beat-grid detector reports the grid, not the extra hits. This audit counts kick-
       (a clean four-on-the-floor window is ~1.0x its bodies; extra/doubled kicks push it up);
   M2  OFF-GRID fraction: share of kick onsets farther than TOL ms from the nearest point of the window's own beat grid
       (grid = median onset phase at the local tempo, fitted per window).
+STATUS: NOT VALIDATED, do not use as a gate. On the staged v7b pair the result FLIPS with the peak threshold: default thresholds
+(distance 0.12 s, height 0.5 x p85) gave a2a higher than plain in 26/31 windows (median +0.07 onsets/beat); a more sensitive
+setting (0.09 s, 0.3 x p80) gave 12/31, and on synthetic four-on-the-floor with six extra hits it detects only 1-2 of them. A
+detector whose verdict depends on a free threshold has no dynamic range here (kick and rolling bass overlap in 40-120 Hz). The
+G1 rhythm-integrity meter (EXPERIMENTS G1) is the proper route; this stays as a documented dead end.
 It is an INSTRUMENT, so it is validated on a known pair before use: the plain v7b mix (clean per the owner) must score
 lower than its a2a twin (glitchy per the owner) at the transitions. Run it on both and compare; a number is only a
 finding if plain and a2a separate.
