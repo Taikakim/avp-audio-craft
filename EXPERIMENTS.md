@@ -1517,6 +1517,7 @@ psytrance bass. A kick-only stem would also serve any later per-element control.
 stem exists, no kick label), synthetic mixtures from one-shot kicks + our own drum loops, and Surge/drum-machine renders where
 the kick is known exactly (W's renderer can give clean ground truth). **Kill criterion** (to fix before launching): kick stem SDR
 vs the low-band split on a held-out set of real goa clips, and Kim's ear on 10 transitions.
+**EVIDENCE 2026-10-07 (G measured, C confirmed with `eval/stem_bass_capture.py`):** BS-RoFormer 4-stem puts the psytrance bassline in `other`/`drums`, not `bass` (median bass capture 0.00 over 7 clips of the v7 corpus). So the useful separator is not only kick-vs-drums but kick vs BASS vs rest in the low band; the fine-tune's target should be a 3-way low-band split. Cheap baselines first: other checkpoints in mir/models/bs-roformer, Demucs, and an HPSS split of the <150 Hz band.
 **Status.** Not started, no owner (`OWNERSHIP.md`: unclaimed; the mir / audio-feature lane is W's, the DJ pipeline is G's).
 Gate: free GPU time (W's H6 holds it until ~2026-10-08) and a token budget decision from Kim.
 **Related note (Kim 2026-10-07):** SA3 itself was trained on many stems and single-instrument sounds (the paper note records the

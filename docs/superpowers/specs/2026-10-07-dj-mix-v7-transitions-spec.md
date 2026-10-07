@@ -99,6 +99,17 @@ the in- and outgoing clips. **Review: the structure is sound; three parts are un
   bleed). BS-RoFormer and madmom run in the mir venv, SA3 in the SAO venv: exchange files, do not mix venvs.
 * **S1 Separation quality.** On 10 clips: residual `mix − Σ stems` must be ≤ −20 dB re the mix; kick/bass bleed
   (low-band energy of `other` and of percussion) reported; Kim listens to 3 clips' stems.
+* **S1 RESULT (G 2026-10-07, confirmed by C with `eval/stem_bass_capture.py`): BS-RoFormer's bass stem does NOT contain the
+  psytrance bassline.** G: the bass stem holds 0.4 % of the sub-150 Hz energy. C: splitting each stem's low band into harmonic
+  (bassline) and percussive (kick) parts, the harmonic low band lands in `other` or `drums` on 6 of 7 sampled clips (median bass
+  capture 0.00; only clip 25 reaches 0.70). Consequence: the bassline cannot be handled as "the bass stem" with this separator, so
+  S2 (bass inpainting) is blocked until a separator passes **S1b** (below). **S1b separator bake-off (new spike, before S2):**
+  score every candidate with `stem_bass_capture.py` on the same 7 clips: the other checkpoints already in `mir/models/bs-roformer/`
+  (`jarredou-BS-ROFO-SW-Fixed-drums`, `SYH99999-bs_roformer_4stems_ft`, `LayerNorm-BS-Roformer-Inst-FNO-drums`, `pcunwa-*`), Demucs
+  (`htdemucs_ft`, mir venv), and a DSP baseline with no model at all: HPSS of the full mix's <150 Hz band (harmonic = bassline,
+  percussive = kick). Pass: median capture >= 0.60 and no clip < 0.30. If none passes, the stem plan for bass is closed for now
+  and the transition uses the hard bass hand-over (never two basslines at once); Kim's kick/bass separator fine-tune (EXPERIMENTS
+  F6) becomes the real fix, now with evidence.
 * **S2 Stem inpainting.** *(Corrected 2026-10-07 after Kim: SA3 was trained on loads of stems and single-instrument
   sounds, and our paper note agrees: the AudioSparx caption language has `TrackType: Instrument` (stems) / `SFX`,
   present in about half the training captions. My first draft called isolated stems "off-distribution"; that was
