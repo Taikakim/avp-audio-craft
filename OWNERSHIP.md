@@ -44,6 +44,7 @@ owner per subject keeps the thread, the data and the open questions in one head.
 | Fleet comms, staleness patrol, doc-index health (`ARCHITECTURE.md`, `DISCOVERIES.md`, this file) | THE-FINN | claimed (`CONSTRUCTS.md`) | | `CONSTRUCTS.md`, `MASTER.md` §4 |
 | Melody-subspace loss and the `sa3_control` adapters | *unclaimed* | | | `control/`, `EXPERIMENTS.md` |
 | SA3 ONNX suite, SAME-S export | *unclaimed* | | | `onnx/` |
+| Stem separation (BS-RoFormer in mir) and the future kick-separator fine-tune (EXPERIMENTS F6) | *unclaimed* | | G / W use the separator as a service | `mir/models/bs-roformer/`, `EXPERIMENTS.md` F6 |
 
 ## Handoff log
 

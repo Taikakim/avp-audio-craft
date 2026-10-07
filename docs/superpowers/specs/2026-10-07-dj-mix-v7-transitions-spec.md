@@ -90,7 +90,7 @@ and the incoming one in with a sweeping filter (outgoing low-passed down, incomi
 the extreme highs and then sweeps down to full range, then the filter switches off), gate the two "other" stems with
 the downbeat activation map of the full mix and mix them in **latent space**; the incoming "other" may start one
 bar early (pre-roll); compile it all to one master transition that is audio-crossfaded with some overlap into
-the in- and outgoing clips. **Review: the structure is sound, three parts are unproven and each gets a spike.**
+the in- and outgoing clips. **Review: the structure is sound; three parts are unproven and each gets a spike (S2 is a hope worth testing, not a presumed failure).**
 
 * **Tools that already exist:** BS-RoFormer lives in the mir venv (`/home/kim/Projects/mir/mir/bin/python`, weights in
   `mir/models/bs-roformer/`, wrapper `mir/src/preprocessing/bs_roformer_sep.py`, ≈ 5.6× realtime, ≈ 3 GB VRAM).
@@ -99,13 +99,20 @@ the in- and outgoing clips. **Review: the structure is sound, three parts are un
   bleed). BS-RoFormer and madmom run in the mir venv, SA3 in the SAO venv: exchange files, do not mix venvs.
 * **S1 Separation quality.** On 10 clips: residual `mix − Σ stems` must be ≤ −20 dB re the mix; kick/bass bleed
   (low-band energy of `other` and of percussion) reported; Kim listens to 3 clips' stems.
-* **S2 Stem inpainting (the biggest risk).** SA3 was trained on full mixes; an isolated bass or percussion stem is
-  off-distribution for it and for SAME. Spike on 5 transitions: inpaint the masked bass stem (the existing inpaint
-  path, mask over the window, both ends as context). Pass: bass f0 track has no jump > 1 semitone at the mask edges,
-  kick/bass phase relationship preserved, latent std ≤ 1.25 (else ceiling), Kim says it is not worse than a plain
-  hand-over. **Fail ⇒ do not build inpainting.** Fallback: no overlap of basslines at all (the core DJ rule): outgoing
-  bass plays to a downbeat, incoming bass starts on the next one (the existing `bass_swap_crossfade` idea,
-  made hard), percussion crossfades; kick crossfades.
+* **S2 Stem inpainting.** *(Corrected 2026-10-07 after Kim: SA3 was trained on loads of stems and single-instrument
+  sounds, and our paper note agrees: the AudioSparx caption language has `TrackType: Instrument` (stems) / `SFX`,
+  present in about half the training captions. My first draft called isolated stems "off-distribution"; that was
+  wrong.)* Isolated stems are therefore in-distribution for SA3 and SAME. The remaining risks are different:
+  (a) **separator output is not a studio stem** (bleed, phasey high end, residual of the other stems), so it is a
+  different distribution from the clean stems SA3 saw; (b) the model should be **told it is a stem**: put
+  `TrackType: Instrument` and `Instruments: bass` (or percussion) in the prompt, using the field-prefixed caption
+  forms the paper documents; (c) the masked window has two real ends as context, which is the easy case.
+  Spike on 5 transitions: inpaint the masked bass stem (the existing inpaint path, mask over the window) with and
+  without the stem tags. Pass: bass f0 track has no jump > 1 semitone at the mask edges, kick/bass phase
+  relationship preserved, latent std <= 1.25 (else ceiling), and Kim says it is not worse than a plain hand-over.
+  **Fail => do not build inpainting.** Fallback: no overlap of basslines at all (the core DJ rule): outgoing bass
+  plays to a downbeat, incoming bass starts on the next one (the existing `bass_swap_crossfade` idea, made hard),
+  percussion crossfades; kick crossfades.
 * **S3 Latent mixing is not audio mixing.** SAME is a non-linear autoencoder: `z(a+b) ≠ z(a)+z(b)`, and the
   **zero latent is not silence**. Kim's "do not let the zero values affect the product" is therefore a hard
   requirement: build all level ramps and filter sweeps in the AUDIO domain before encoding; mix latents with a

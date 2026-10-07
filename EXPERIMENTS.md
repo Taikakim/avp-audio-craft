@@ -1506,6 +1506,23 @@ CLEANUP: the junk outputs are the ones whose directory basename is a stem name �
 `find aimusic_stems -type d \( -name bass -o -name drums -o -name other -o -name vocals -o -name
 full_mix \) -prune` locates them; the real per-track outputs sit one level up.
 
+### F6 — Fine-tune a KICK separator (BS-RoFormer) — **POTENTIAL (Kim 2026-10-07: "one day when we have the compute and tokens")**
+
+**Why.** The DJ mix v7 stem-transition plan (`docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md`) wants the kick
+to crossfade while bass and percussion are handled separately, but every separator we have (BS-RoFormer 4-stem, Demucs) stops
+at drums / bass / other / vocals. Today "kick" would be a low-band DSP split of the drums stem, with bleed into the rolling
+psytrance bass. A kick-only stem would also serve any later per-element control.
+**Idea.** Fine-tune a BS-RoFormer (weights and wrapper in `mir/models/bs-roformer/`, `mir/src/preprocessing/bs_roformer_sep.py`,
+~5.6x realtime inference) to output kick vs the rest of the drums. Training data candidates: our `Goa_Separated` stems (drums
+stem exists, no kick label), synthetic mixtures from one-shot kicks + our own drum loops, and Surge/drum-machine renders where
+the kick is known exactly (W's renderer can give clean ground truth). **Kill criterion** (to fix before launching): kick stem SDR
+vs the low-band split on a held-out set of real goa clips, and Kim's ear on 10 transitions.
+**Status.** Not started, no owner (`OWNERSHIP.md`: unclaimed; the mir / audio-feature lane is W's, the DJ pipeline is G's).
+Gate: free GPU time (W's H6 holds it until ~2026-10-08) and a token budget decision from Kim.
+**Related note (Kim 2026-10-07):** SA3 itself was trained on many stems and single-instrument sounds (the paper note records the
+`TrackType: Instrument` caption field on about half the captions), so inpainting an isolated stem is in-distribution; the open
+question is separator bleed, not the model.
+
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
 - Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **More
