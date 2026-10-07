@@ -1525,6 +1525,18 @@ Gate: free GPU time (W's H6 holds it until ~2026-10-08) and a token budget decis
 `TrackType: Instrument` caption field on about half the captions), so inpainting an isolated stem is in-distribution; the open
 question is separator bleed, not the model.
 
+### F7 — DJ mix v8: extended clips + staged band/stem transition — **PLANNED (owner GHOST-NOTE; guidance from the 2026-10-07 listening of v7b)**
+**Why.** Listening to v7b: the plain audio crossfade is clean (kicks, bass, drums, other blend almost unnoticeably); the a2a-smoothed versions add a
+stutter / misplaced extra kick onsets, so smoothing is out; remaining faults are few (hi-hat "galloping", rare pitch mismatch). The wish: longer clips (2-3x)
+and a more gradual, staged transition. Detail: `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md`; separator result: F6 / S1b (no learned
+separator gives a usable bass stem on this material; htdemucs_ft median capture 0.44).
+**Steps, each gated by `mixtape_replaycheck_v7.py` (source position) + kick-envelope ncc >= 0.4 + jump screen:** (1) v7c = full-mix band split, LR4 at 150 Hz: bass/kick hand-over on a
+downbeat late in the window (`--bandswap --handover-frac 0.8`, code + synthetic tests in `eval/mixtape_assemble_v7.py`, `eval/tests/test_mixtape_v7c_bandswap.py`), the rest
+swept (outgoing LP / incoming HP, 16 kHz -> 60 Hz). (2) lengthen clips 2-3x with `eval/outpaint_lengthen.py` / `mixtape_lengthen_and_prep.py` (GPU; decode with
+`decode_z0_clamped.py`), then 16-bar windows. (3) multi-band asymmetry on the full mix: percussion highs (> ~800-1000 Hz) first, kick lows last. (4) latent slerp of the overlaid
+parts (zero latent is not silence: validity-weighted) and the chroma head to blend pitch. **Kill criterion:** a stage is dropped when the owner's ear finds it no better than v7b plain.
+**Status 2026-10-07:** (1) built, synthetic tests pass, NOT yet run on real clips (the clip drive dropped off the bus at 14:11; remount needs root).
+
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
 - Auto-render on training finish is STILL not implemented (docs/todos.md "Now / next"). **More

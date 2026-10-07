@@ -124,6 +124,122 @@ def phase_shift(a_seg, b_seg, beat_samples, penalty=0.05):
     return best, ncc[best], ncc[0]
 
 
+FC_LOW = 150.0
+
+
+def lr4_sos(fc, kind):
+    """Linkwitz-Riley 4th order = two cascaded 2nd-order Butterworths (LP + HP of the same fc sum magnitude-flat)."""
+    return np.vstack([butter(2, fc, kind, fs=SR, output="sos")] * 2)
+
+
+def lr4_static(x, fc, kind):
+    from scipy.signal import sosfilt
+    return sosfilt(lr4_sos(fc, kind), x, axis=-1).astype(np.float32)
+
+
+def tv_filter(x, fc_of_n, kind, block=256):
+    """time-varying LR4 with the filter state carried across blocks (sosfilt, never filtfilt); fc updated per block,
+    quantised to 1 % steps so the design is cached. x (C, N); fc_of_n(n_samples_array) -> fc per sample."""
+    from scipy.signal import sosfilt
+    out = np.empty_like(x)
+    cache, zi = {}, None
+    for lo in range(0, x.shape[1], block):
+        hi = min(lo + block, x.shape[1])
+        fc = float(fc_of_n(np.array([(lo + hi) // 2]))[0])
+        key = int(round(np.log(fc) / 0.01))
+        if key not in cache:
+            cache[key] = lr4_sos(float(np.exp(key * 0.01)), kind)
+        sos = cache[key]
+        if zi is None or zi.shape[0] != sos.shape[0]:
+            zi = np.zeros((sos.shape[0], x.shape[0], 2))
+        y, zi = sosfilt(sos, x[:, lo:hi], axis=-1, zi=zi)
+        out[:, lo:hi] = y
+    return out
+
+
+def render_bandswap(clips, place, trans, n, total, blend_sec=0.1, handover_sec=0.04, handover_frac=0.8):
+    """v7c: per transition a 'master' M over [window start - 1 bar, window end]:
+         low band (<150 Hz, kick + bass): ONE clip at a time, handed A -> B on the downbeat nearest the window middle
+           with a 40 ms equal-power blend (never two basslines);
+         rest (> 150 Hz): outgoing LP(fc(t)), incoming HP(fc(t)), fc swept exponentially 16 kHz -> 60 Hz over M (stops
+           below the crossover so the incoming is untouched at the end), incoming gain-ramped over the pre-roll bar.
+       The clip bodies play at unit gain outside the masters; M is blended into/out of them with 100 ms equal-power ramps.
+       Highs/lows are split by SUBTRACTION (A_hi = A - LP150(A)), so low + high reconstructs the clip exactly."""
+    mix = np.zeros((2, total + SR), dtype=np.float32)
+    info = []
+    # master spans in timeline samples
+    spans = []
+    for i in range(n - 1):
+        pl, c, B = place[i], clips[i], clips[i + 1]
+        t_w = pl["T"] + pl["p"] - pl["in_pos"]
+        bar = int(round(4 * 60.0 / B["bpm"] * SR))
+        pre = min(bar, place[i + 1]["in_pos"])               # pre-roll available before B's entry downbeat
+        spans.append((t_w - pre, t_w + pl["L"], t_w, pre))
+    nb = int(round(blend_sec * SR))
+    for i, c in enumerate(clips):
+        pl = place[i]
+        seg = c["X"][:, pl["in_pos"]:pl["end_pos"]].astype(np.float32)
+        g = np.ones(seg.shape[1], dtype=np.float32)
+        t0 = pl["T"]
+        if i > 0:                                            # previous master covers this clip's head up to its end
+            e = spans[i - 1][1] - t0
+            g[:max(e, 0)] = 0.0
+            ramp = np.sin(np.linspace(0, np.pi / 2, nb, dtype=np.float32))
+            g[max(e, 0):max(e, 0) + nb] = ramp[:max(0, min(nb, len(g) - max(e, 0)))]
+        if i < n - 1:
+            s0 = spans[i][0] - t0
+            ramp = np.cos(np.linspace(0, np.pi / 2, nb, dtype=np.float32))
+            g[s0:s0 + nb] *= ramp[:max(0, min(nb, len(g) - s0))]
+            g[s0 + nb:] = 0.0
+        mix[:, t0:t0 + seg.shape[1]] += seg * g
+    for i in range(n - 1):
+        A, B = clips[i], clips[i + 1]
+        pa, pb = place[i], place[i + 1]
+        m0, m1, t_w, pre = spans[i]
+        L = m1 - m0
+        a_idx = pa["in_pos"] + (m0 - pa["T"])
+        b_idx = pb["in_pos"] + (m0 - pb["T"])
+        a = A["X"][:, a_idx:a_idx + L].astype(np.float32)
+        b = np.zeros_like(a)
+        src = B["X"][:, max(b_idx, 0):b_idx + L].astype(np.float32)
+        b[:, L - src.shape[1]:] = src if b_idx >= 0 else src
+        a_low, b_low = lr4_static(a, FC_LOW, "low"), lr4_static(b, FC_LOW, "low")
+        a_hi, b_hi = a - a_low, b - b_low
+        # handover downbeat: A's own (stretched) grid, nearest the window middle, in timeline samples
+        mid = t_w + int(handover_frac * pa["L"])             # late in the window: the kick/bass move last
+        a_db = (A["Xdb"] * SR).astype(np.int64) - pa["in_pos"] + pa["T"]
+        cand = a_db[(a_db > t_w) & (a_db < t_w + pa["L"])]
+        h = int(cand[np.argmin(abs(cand - mid))]) if len(cand) else mid
+        hn = h - m0
+        th = np.clip((np.arange(L) - (hn - int(handover_sec * SR / 2))) / (handover_sec * SR), 0, 1)
+        wb = np.sin(th * np.pi / 2).astype(np.float32)
+        wa = np.cos(th * np.pi / 2).astype(np.float32)
+        low = a_low * wa + b_low * wb
+        fc = lambda k: 16000.0 * (60.0 / 16000.0) ** (np.asarray(k, dtype=np.float64) / L)
+        a_hs = tv_filter(a_hi, fc, "low")
+        b_hs = tv_filter(b_hi, fc, "high")
+        ramp_in = np.minimum(np.arange(L) / max(pre, 1), 1.0).astype(np.float32)
+        M = low + a_hs + b_hs * ramp_in
+        gin = np.sin(np.linspace(0, np.pi / 2, nb, dtype=np.float32))
+        gout = np.cos(np.linspace(0, np.pi / 2, nb, dtype=np.float32))
+        env = np.ones(L, dtype=np.float32)
+        env[:nb] = gin
+        env[L - nb:] = gout
+        mix[:, m0:m1] += M * env
+        # next clip's body already starts blending in at m1 (previous master covers up to m1): add its blend-in complement
+        # no-two-basslines evidence: <150 Hz of M against each source's own low band, 2 s before / after the handover
+        k = int(2 * SR)
+        def ncc(x, y):
+            x, y = x.mean(0), y.mean(0)
+            return float((x * y).sum() / (np.linalg.norm(x) * np.linalg.norm(y) + 1e-12))
+        lo_b4, lo_af = slice(max(hn - k, 0), max(hn - 2000, 1)), slice(hn + 2000, min(hn + k, L))
+        info.append({"handover_sample": int(h), "handover_dist_to_A_downbeat_ms": float(1000 * np.min(abs(a_db - h)) / SR),
+                     "ncc_low_before_A": ncc(low[:, lo_b4], a_low[:, lo_b4]), "ncc_low_before_B": ncc(low[:, lo_b4], b_low[:, lo_b4]),
+                     "ncc_low_after_A": ncc(low[:, lo_af], a_low[:, lo_af]), "ncc_low_after_B": ncc(low[:, lo_af], b_low[:, lo_af]),
+                     "master_sec": L / SR, "preroll_sec": pre / SR})
+    return mix, info
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--order", required=True)
@@ -135,6 +251,10 @@ def main():
     ap.add_argument("--max-gap", type=float, default=5.0)
     ap.add_argument("--min-bars", type=int, default=16,
                     help="drop clips with fewer usable bars (a ~20 s canonical clip is 11 bars: its window would be 3)")
+    ap.add_argument("--bandswap", action="store_true",
+                    help="v7c render: low band (<150 Hz) hands over on a downbeat, the rest sweeps (LR4, fc 16 kHz -> 60 Hz)")
+    ap.add_argument("--handover-frac", type=float, default=0.8,
+                    help="bandswap: the low band moves on the downbeat nearest this fraction of the window (0.8 = late)")
     ap.add_argument("--exclude", action="append", default=[],
                     help="drop clips whose id starts with this (e.g. the incoming clip of a transition whose "
                          "kick-envelope correlation was ~0: no alignment exists, so none is faked)")
@@ -272,32 +392,33 @@ def main():
             T = T + (p - in_pos) + int(s)
         # NOTE: s>0 delays B relative to A (B enters later), matching phase_shift's sign convention
 
-    # ---- render by overlap-add (integers only) ------------------------------------------------------
     total = place[-1]["T"] + (place[-1]["end_pos"] - place[-1]["in_pos"])
-    mix = np.zeros((2, total + SR), dtype=np.float32)
-    for i, c in enumerate(clips):
-        pl = place[i]
-        seg = c["X"][:, pl["in_pos"]:pl["end_pos"]].astype(np.float32).copy()
-        g = np.ones(seg.shape[1], dtype=np.float32)
-        Lin = clips[i]["Wprev"] and place[i - 1]["L"]
-        if i > 0 and Lin:
-            g[:Lin] *= np.linspace(0, 1, Lin, endpoint=False, dtype=np.float32)
-        if i < n - 1:
-            off = pl["p"] - pl["in_pos"]
-            g[off:off + pl["L"]] *= np.linspace(1, 0, pl["L"], endpoint=False, dtype=np.float32)
-        mix[:, pl["T"]:pl["T"] + seg.shape[1]] += seg * g
-        # R0.1 assert: this clip contributes source samples [in_pos, end_pos) at timeline [T, T+len): a constant
-        # offset T - in_pos, so source position advances 1:1 with the timeline in the rendered time base.
-        assert seg.shape[1] == pl["end_pos"] - pl["in_pos"]
-        if i < n - 1:
-            nxt = place[i + 1]
-            assert nxt["T"] == pl["T"] + (pl["p"] - pl["in_pos"]) + pl["shift"], f"splice {i}: placement drift"
+    bs_info = None
+    if a.bandswap:
+        mix, bs_info = render_bandswap(clips, place, trans, n, total, handover_frac=a.handover_frac)
+    else:
+        mix = np.zeros((2, total + SR), dtype=np.float32)
+        for i, c in enumerate(clips):
+            pl = place[i]
+            seg = c["X"][:, pl["in_pos"]:pl["end_pos"]].astype(np.float32).copy()
+            g = np.ones(seg.shape[1], dtype=np.float32)
+            Lin = clips[i]["Wprev"] and place[i - 1]["L"]
+            if i > 0 and Lin:
+                g[:Lin] *= np.linspace(0, 1, Lin, endpoint=False, dtype=np.float32)
+            if i < n - 1:
+                off = pl["p"] - pl["in_pos"]
+                g[off:off + pl["L"]] *= np.linspace(1, 0, pl["L"], endpoint=False, dtype=np.float32)
+            mix[:, pl["T"]:pl["T"] + seg.shape[1]] += seg * g
+            assert seg.shape[1] == pl["end_pos"] - pl["in_pos"]
+    for i in range(n - 1):
+        nxt, pl = place[i + 1], place[i]
+        assert nxt["T"] == pl["T"] + (pl["p"] - pl["in_pos"]) + pl["shift"], f"splice {i}: placement drift"
     mix = mix[:, :total]
     tail = min(total, 4 * SR)                               # the last clip has no exit window: 4 s fade-out
     mix[:, -tail:] *= np.linspace(1, 0, tail, dtype=np.float32)
     peak = float(np.abs(mix).max())
     mix *= 0.891 / max(peak, 1e-9)
-    sf.write(out / "mixtape_full_plain.wav", mix.T, SR, subtype="PCM_16")
+    sf.write(out / ("mixtape_full_bandswap.wav" if a.bandswap else "mixtape_full_plain.wav"), mix.T, SR, subtype="PCM_16")
 
     # ---- timeline.json (format of build_dj_mixes_section::timeline) + run_meta + placement ------------
     clip_bounds, trans_t = [0.0], []
@@ -328,6 +449,7 @@ def main():
                          "shift_samples": place[t["i"]]["shift"], "shift_ms": 1000 * place[t["i"]]["shift"] / SR,
                          "align": place[t["i"]]["resid"], "out_tempo_schedule": clips[t["i"]]["sched"]} for t in trans],
         "kim_feedback": None,
+        "bandswap": bs_info,
     }
     (out / "run_meta.json").write_text(json.dumps(meta, indent=1))
     sh = np.array([abs(p["shift"]) / SR * 1000 for p in place[:-1]])
