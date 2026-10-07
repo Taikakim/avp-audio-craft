@@ -135,6 +135,9 @@ def main():
     ap.add_argument("--max-gap", type=float, default=5.0)
     ap.add_argument("--min-bars", type=int, default=16,
                     help="drop clips with fewer usable bars (a ~20 s canonical clip is 11 bars: its window would be 3)")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="drop clips whose id starts with this (e.g. the incoming clip of a transition whose "
+                         "kick-envelope correlation was ~0: no alignment exists, so none is faked)")
     ap.add_argument("--limit", type=int, default=0, help="only the first N clips (smoke test)")
     a = ap.parse_args()
     out = Path(a.out_dir)
@@ -149,6 +152,10 @@ def main():
     if a.drop_first:
         dropped.append(order[0]["id"])
         order = order[1:]
+    for ex in a.exclude:
+        gone = [o["id"] for o in order if o["id"].startswith(ex)]
+        dropped += gone
+        order = [o for o in order if not o["id"].startswith(ex)]
     if a.limit:
         order = order[:a.limit]
     n = len(order)

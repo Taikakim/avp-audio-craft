@@ -195,7 +195,8 @@ def main():
         out = a.stage / fname
         if not out.exists():
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-c:a", "aac", "-b:a", a.bitrate, str(out)], check=True)
-        tls[mid] = timeline(rdir, pj or None, wav)
+        # a *.json in place of the render dir is a ready timeline (v7: eval/mixtape_assemble_v7.py writes one)
+        tls[mid] = json.loads(Path(rdir).read_text()) if rdir.endswith('.json') else timeline(rdir, pj or None, wav)
         kbps = round(float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=bit_rate', '-of', 'csv=p=0', str(out)]).decode().strip()) / 1000)
         cards.append(player(mid, label, desc, fname, tls[mid], kbps))
         print(f"[mix] {mid}: {tls[mid]['dur'] / 60:.1f} min, {len(tls[mid]['clips'])} clips, {out.stat().st_size / 1e6:.0f} MB", flush=True)
