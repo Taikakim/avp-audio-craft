@@ -1416,7 +1416,7 @@ exactly this reason.)*
   ep10, so a fixed-10-epoch ranking measures learning SPEED, not the ceiling; dim 512 leads only from ep8 (leaders at ep2-7 are b8 and lr 3e-3); the
   losers (Lion, depth 2, lr 1.5e-2) are clear by ep2-3. Arms with the same batch (lr, depth, dim, late switching) have equal steps, but are still
   10-epoch single-seed readings. The arms ran without wandb, so no per-step telemetry exists. **Phase E queued** (below) to settle it: 20 epochs, equal-step batch arm, one repeat seed.
-- **Phase E (queued 2026-10-07, waits on the GPU lock; W's H6 holds it ~24 h):** `phaseE_arms.txt` in the same dir, 16 workers, base C09, best-checkpoint only:
+- **Phase E STOPPED 2026-10-07 13:0x at Kim's request ("stop the LatCH training, let G BS-RoFormer our mix clips first"); it had only reached epoch 1 of E01, no arm finished, nothing lost. RESUME (waits for the GPU lock itself):** `cd /home/kim/Projects/SAO && PD=/run/media/kim/Mantu/latch_sweep/modular_2026-09-30 && SAVE_ALL=0 setsid nohup bash latch/run_modular_bracket.sh $PD/phaseE_arms.txt $PD/phaseE > $PD/phaseE/driver.log 2>&1 &` (resumable from SUMMARY.tsv; E01 restarts from epoch 0). Original plan: (queued 2026-10-07; first held up by W's H6 lock): `phaseE_arms.txt` in the same dir, 16 workers, base C09, best-checkpoint only:
   E01 anchor 20 ep (the new control), E02 dim 512 20 ep, E03 dim 512 20 ep seed 1 (the repeat), E04 b32 20 ep (= the anchor's 10-epoch step count at
   ~half the wall time), E05 depth 8 20 ep, E06 lr 3e-3 20 ep. Reading rule: compare only within 20 epochs and, for batch, at equal steps; Delta < 0.004 is noise.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
