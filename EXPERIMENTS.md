@@ -1787,6 +1787,25 @@ model's normalised mel space), report MSS / wMFCC / env-cos on the held-out half
 CPU. Expectation per the paper: a clean-only model degrades or barely moves; if it IMPROVES, the gap is input-detail
 sensitivity. Caveat to carry: the paper's best points may be test-tuned; pick tau on half the stems, report the other half.
 
+**⛔ RENDERER BUG, found 2026-10-07 by ear on the eval page: Surge's delay was NEVER off.** The 10-06 "FX fix" set
+the FX slots' Output-Mix (and delay feedback) to 0, but with the init preset's FX A2 = Delay a zero mix does not
+silence it: a single 8th note repeats at -11 dB re peak every ~250 ms (a staircase to -100 dB), identical in fresh
+and batch-like instances, so it is not state but a permanently live delay. Setting the slot TYPE to Off removes it
+(-67 dB at 120 ms). Every render since 10-06 (H1 and H6 training data, refinement, all eval-page clips, old models'
+re-renders too) carried it; real stems do not, so it is a built-in domain gap. **Consequences (call made 2026-10-07):
+H1 / H6 / the 10-06 checkpoints are treated as near-useless and their real-stem scores as indicative only; retrain
+once with everything learned (v3 below) instead of an ablation chain.** Fix: `surge_spec.apply_patch` sets
+fx_a1/fx_a2 TYPE to Off unless FX_RENDER_ENABLED (pedalboard drops an Off slot's mix params, so they are only set
+when on); test `test_fx_off_single_note_has_no_delay_trail` (46/46 pass). `surge_139_spec.py` has the same mix-only
+code (Synth-JEPA 139-param path) and is NOT yet fixed. H6 was stopped at ~step 14k.
+**v3 CLEAN RETRAIN — QUEUED (W, 2026-10-07 12:47).** `run_v3_clean.sh`: H1 recipe + `--cond_noise` (H6) +
+`--flow_loss mae` (Synth-JDF supp.), FX truly off, 78,416 steps (~19 h at the 225 W cap). Waits behind C's Phase E
+until the GPU lock has been free 30 min (G may go first). `v3_post.sh` then inverts the 24 stems with v3 online / EMA /
+SF (tau 1) and EMA at tau 0.4 / 0.1, next to the Oct-5 model and H1 EMA RE-RENDERED WITH FX OFF (those two reference
+sets render now, on CPU, `v3_clean_b64/clips_ref_*`, and are also scored against their delayed versions in
+`clips_AB_refs/` to measure what the delay cost). Page: `synth_inversion_v3.html`; the old page carries a banner.
+**Kill:** v3 real-stem MSS not better than the Oct-5 model re-rendered with FX off.
+**H6 — STOPPED 2026-10-07 ~12:40 (trained on delayed renders; superseded by v3).** Original entry:
 **H6 — RUNNING (W, launched 2026-10-07 08:44, authorised for the 48 h away window).** `run_h6_condnoise.sh` =
 `run_fxfix_ladder_ema.sh` with ONE change, `--cond_noise --cond_noise_clean_frac 0.3`: the flow sees its mel condition
 partly noised in standardised space ((1-tau) eps + tau mel; 30% clean, else tau ~ logit-normal(0,1)), tau embedded as

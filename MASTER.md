@@ -920,6 +920,14 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   (2026-07-21, job 20068082 — 4/100+ cells rendered). LUMI GCD pinning = `ROCR_VISIBLE_DEVICES=$SLURM_PROCID`
   ALONE (the proven muscriptor block). Local single-card is different: there you must not set
   `HIP_VISIBLE_DEVICES=""` either (flash_attn import crash, see §5 eval-server bullet).
+- **Surge XT via pedalboard: an FX slot's "Output – Mix" = 0 does NOT switch the effect off (W, 2026-10-07).**
+  With the synth-inversion init preset's FX A2 = Delay at mix 0 and feedback 0, a single 8th note still repeats
+  at −11 dB every ~250 ms. Only setting the slot TYPE to Off (`fx_a?_fx_type` raw 0.005) silences it; after that
+  pedalboard drops the slot's own parameters (mix, feedback) from `plugin.parameters`, so look them up only
+  when the slot is on. Every synth-inversion render from 10-06 to 10-07 (training data, refinement, eval clips)
+  carried this delay; found by ear on the eval page. To check FX are really off, render ONE short note and
+  look at the tail for repeats; a zero mix value proves nothing. Fixed in `synth_inversion/surge_spec.py`
+  (test `test_fx_off_single_note_has_no_delay_trail`); `surge_139_spec.py` still has the mix-only code.
 - **On `SAO/.venv` (ROCm 7.14) every process that has touched the GPU spins one thread at 100% CPU,
   even when idle (W, 2026-10-07).** Reproduced with a 5-line script: `import torch` alone is quiet; one
   matmul on `cuda`, then `time.sleep`, pins a thread for the life of the process (pure userspace). Not

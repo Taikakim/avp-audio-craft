@@ -16,10 +16,12 @@ import os
 import subprocess
 from pathlib import Path
 
-RUN = Path("/run/media/kim/Mantu/surge_200k_models/fxfix_ladder_ema_b64")
+VARIANT = os.environ.get("SYNTH_PAGE", "")      # "" = the H1/H6 page; "v3" = the clean (FX truly off) retrain
+RUN = Path("/run/media/kim/Mantu/surge_200k_models/" + ("v3_clean_b64" if VARIANT == "v3" else "fxfix_ladder_ema_b64"))
 CATALOG = Path("/run/media/kim/Mantu/surge_200k_models/real_stems_eval/real_stems_summary.json")
 OUT = Path.home() / ".cache/evals_aac"
-PAGE, CLIPS = OUT / "synth_inversion.html", OUT / "synth_inversion"
+SLUG = "synth_inversion_v3" if VARIANT == "v3" else "synth_inversion"
+PAGE, CLIPS = OUT / f"{SLUG}.html", OUT / SLUG
 H6 = Path("/run/media/kim/Mantu/surge_200k_models/h6_condnoise_b64")
 # (key, label, description, clips dir). Sets whose clips dir does not exist yet are left off the page.
 ALL_SETS = [("v2", "Oct 3 run", "the realistic-bass run before 'old' (trained before the FX-state fix)", RUN / "clips_v2"),
@@ -36,6 +38,16 @@ ALL_SETS = [("v2", "Oct 3 run", "the realistic-bass run before 'old' (trained be
             ("h6_ema_t04", "H6 · EMA τ0.4", "H6 EMA conditioned on the reference with 60% noise", H6 / "clips_h6_ema_t04"),
             ("h6_ema_t01", "H6 · EMA τ0.1", "H6 EMA conditioned on the reference with 90% noise (Synth-JDF's best "
              "off-manifold point)", H6 / "clips_h6_ema_t01")]
+if VARIANT == "v3":
+    ALL_SETS = [("ref_old", "Oct 5 model, FX off", "the old Oct-5 model's inversions re-rendered with the delay truly off",
+                 RUN / "clips_ref_old"),
+                ("ref_h1_ema", "H1 EMA, FX off", "H1's EMA weights, re-rendered with the delay truly off",
+                 RUN / "clips_ref_h1_ema"),
+                ("v3_online", "v3 · online", "clean retrain, final weights, clean condition", RUN / "clips_v3_online"),
+                ("v3_ema", "v3 · EMA", "clean retrain, EMA weights, clean condition", RUN / "clips_v3_ema"),
+                ("v3_sf", "v3 · SF average", "clean retrain, schedule-free averaged weights", RUN / "clips_v3_sf"),
+                ("v3_ema_t04", "v3 · EMA τ0.4", "EMA conditioned on the reference with 60% noise", RUN / "clips_v3_ema_t04"),
+                ("v3_ema_t01", "v3 · EMA τ0.1", "EMA conditioned on the reference with 90% noise", RUN / "clips_v3_ema_t01")]
 SETS = [s[:3] for s in ALL_SETS if s[3].exists()]
 SET_DIR = {s[0]: s[3] for s in ALL_SETS}
 BUILD_EVALS = Path(__file__).parent / "build_evals.py"
@@ -77,7 +89,9 @@ def main():
     # Merge per-stem scores from both runs' comparison files (same metric code, same real clips); the summary is
     # recomputed over the merged rows so "best on" counts across every set shown.
     rows_by = {}
-    for comp_p in (RUN / "clips_AB" / "comparison.json", H6 / "clips_AB" / "comparison.json"):
+    comp_files = ((RUN / "clips_AB_refs" / "comparison.json", RUN / "clips_AB" / "comparison.json") if VARIANT == "v3"
+                  else (RUN / "clips_AB" / "comparison.json", H6 / "clips_AB" / "comparison.json"))
+    for comp_p in comp_files:
         if comp_p.exists():
             for r in json.load(open(comp_p))["rows"]:
                 rows_by.setdefault(r["stem_id"], {"stem_id": r["stem_id"]}).update(
@@ -106,20 +120,36 @@ def main():
     complete = n_ready == len(ids) * len(SETS)
 
     v = last_val()
-    doc = be.head("Synth inversion · real bass stems · FX-fixed rerun", 0)
-    doc += ('<h1>Synth inversion — 24 real bass phrases, five models from the last three runs'
+    doc = be.head("Synth inversion · real bass stems" + (" · clean retrain" if VARIANT == "v3" else " · FX-fixed rerun"), 0)
+    doc += (('<h1>Synth inversion — 24 real bass phrases, the clean retrain (Surge FX truly off)' if VARIANT == "v3"
+             else '<h1>Synth inversion — 24 real bass phrases, five models from the last three runs')
             + ('' if feedback else ' <span title="not yet audited by ear" style="color:#f44">&#10071;</span>') + '</h1>')
+    if VARIANT != "v3":
+        doc += ('<p style="border:1px solid #a33;background:#2a1212;padding:10px 14px;border-radius:6px">'
+                '<b>⚠ These clips carry a renderer bug.</b> Surge\'s delay was never actually switched off in our '
+                'renders: we set its mix to 0, which does not silence it, so every clip here (and every model\'s '
+                'training audio) has a loud fixed delay that the real phrases do not. Found by ear on this page, fixed '
+                '2026-10-07. Treat the scores as indicative only; the clean retrain\'s page replaces this one: '
+                '<a href="synth_inversion_v3.html">synth_inversion_v3.html</a>.</p>')
+    else:
+        doc += ('<p><b>Why this page.</b> The earlier page\'s clips, and every model\'s training audio, carried a loud '
+                'Surge delay that "mix 0" never switched off. This retrain is the first with the delay truly off, and '
+                'uses everything learned so far: one-knob ladder batches with an ordering loss, optimal-transport '
+                'coupling, an EMA of the weights, training on partly noised audio (so the model can also take a '
+                'deliberately blurred reference), and an absolute-error flow loss. The two reference columns are older '
+                'models re-rendered with the delay off, so every column here is delay-free.</p>')
     doc += ('<p><b>What this is.</b> Each row is a bass phrase taken from a separated stem of a real track. A model '
             'listens to it and proposes Surge XT synth settings; the phrase is then re-played with those settings '
             '(notes from a MuScriptor transcription), after a short render-in-the-loop refinement fitted on the first '
             'half of the phrase. <b>Real</b> is the original; the other cells are re-creations. Click a cell to play; '
             'switching cells keeps the playhead, clicking again stops.</p>')
-    doc += ('<p><b>Why this run.</b> The previous model looked fine in training but failed to generalise. The cause '
-            'was a rendering bug: Surge kept hidden chorus/delay state between renders, so training audio leaked '
-            'the previous patch. This run fixes the renderer and adds: one-knob "ladder" batches with an ordering '
-            'loss, optimal-transport coupling for the flow, an EMA of the weights, 1.5× the initial learning rate, '
-            'same number of steps (78,416). Question: do the re-creations get closer to the real phrases, and do '
-            'the averaged (EMA) weights beat the final ones?</p>')
+    if VARIANT != "v3":
+        doc += ('<p><b>Why this run.</b> The previous model looked fine in training but failed to generalise. The cause '
+                'was a rendering bug: Surge kept hidden chorus/delay state between renders, so training audio leaked '
+                'the previous patch. This run fixes the renderer and adds: one-knob "ladder" batches with an ordering '
+                'loss, optimal-transport coupling for the flow, an EMA of the weights, 1.5× the initial learning rate, '
+                'same number of steps (78,416). Question: do the re-creations get closer to the real phrases, and do '
+                'the averaged (EMA) weights beat the final ones?</p>')
     if v:
         doc += ('<h2>Training result (held-out synth presets)</h2><table class="t"><tr><th></th><th>flow loss ↓</th>'
                 '<th>JEPA loss ↓</th><th>retrieval audio→patch</th><th>patch→audio</th></tr>')
