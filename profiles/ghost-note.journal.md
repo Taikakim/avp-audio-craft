@@ -1251,3 +1251,9 @@ Once the GPU freed (CONTINUITY's Shampoo-resume training run ended), rendered bo
 registered arms for real through the fixed path: `goa3_avp_r256_2026-09-23` and
 `goa3_avp_r128_shampoo_b16_3e4_2026-09-25`, both step=6340, 108 cells each, all finite,
 `render_path=merged`. First real output through the fix, not just a dry-run cell count.
+
+## 2026-10-07 — DJ mix v7 phase 0 (GHOST-NOTE)
+- Built the single-placement-timeline assembler; the v6 "temporal gap" was a REPLAY of the incoming clip at every splice (pair composites concatenated), not the stretch. Verified with my own direct check, not the audit tool (it still prints 12 noisy findings).
+- Waveform null test aligned poorly (median improvement 0.14, shift size correlated 0.69 with beat-grid trouble); kick-envelope correlation halved the damage (8/34 vs 12/34 transitions with an outlier). Still not clean; the beat detector is on a 10 ms grid so part of it is meter noise.
+- NEGATIVE/trap: the mir BS-RoFormer wrapper normalises each stem, so the residual is meaningless through it; and the bass stem carries 0.4% of sub-150 Hz energy (the bassline is in drums/other) — a kick split from drums is kick + bass. Both go to the S2 spike.
+- Traps hit: a 3-bar window came from five ~20 s clips (usable bars 11); madmom on stretched audio can land half a bar off (up to 860 ms), so trust the analytic stretch map and snap only within 30 ms.

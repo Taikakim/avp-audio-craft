@@ -4,6 +4,18 @@ Reverse-chronological. Append an entry (newest at top) when you finish or learn
 something an agent in another repo would want to know. Keep entries short; move
 durable facts into `MASTER.md`. Conventions:
 
+- **2026-10-07 — GHOST-NOTE: DJ mix v7 phase 0 built (plain + a2a); v6 replay fixed and verified directly; stems separated.**
+  Spec `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md`, commit `ecee498`, outputs
+  `Mantu/sa3_lora_runs/mixtape_v7_phase0` + `mixtape_v7_stems`. `eval/mixtape_assemble_v7.py` places each clip once in
+  integer samples (no pair composites), only the outgoing clip is stretched before the window, +-1/4 beat kick-envelope
+  shift, windows 9-11 bars; 35 clips (dropped the 120 BPM head and 5 ~20 s clips). Replay gate: 34/34 splices continue from
+  the exact source position (median 2 ms; v6 was -10 s). `mixtape_audit_continuity.py` still prints 12 findings = tool noise
+  (near-duplicate clips, stretched tails); the direct check is `replaycheck_v7.py` in the output dir. Beat-spacing gate
+  (`eval/mixtape_audit_grid.py`): 8/34 transitions outside +-15 ms, not clean. a2a window-local, 34/34 smoothed.
+  **Stem finding:** the mir BS-RoFormer wrapper peak-normalises every saved stem (breaks mix - sum(stems)); use `separate_audio`
+  at raw scale (`eval/mixtape_v7_separate.py`). Residual median -22.7 dB, 5/35 clips above -20. The BASS stem holds 0.4% of the
+  sub-150 Hz energy, drums 81%: the psytrance bassline lands in drums/other, so a drums low-band kick split includes the bass.
+
 - **2026-09-26 — GHOST-NOTE: model_matrix_gen.py merge-before-render fix (13e) shipped, equivalence-verified, and the two blocked manifest arms rendered for real.** Following WINTERMUTE's review of `662b4af` (per-w merge_adapters() fix) and `84a62b9` (Schedule-Free averaged-iterate swap + try/finally), ran the outstanding point-1 check the moment CONTINUITY's training released the GPU: a direct weight-space comparison (`stable-audio-3/scripts/diag_dora_merge_weight_check.py`, CPU-only) confirms `merge_adapters()` bakes in exactly what the live parametrization computes at the requested `set_lora_strength(w)` — bit-exact at both w=1.0 and w=0.5, and the two strengths produce genuinely different baked weights, ruling out a silent strength-drop at merge. A render-level check (`diag_dora_strength_equivalence.py`) was less decisive on its own (cos 0.966-0.999 after a 24-step trajectory) but is explained by the sampler's known sensitivity to tiny fp-rounding differences between the two compute graphs, not a strength bug. stable-audio-3 commit `d975b41`. Then rendered both registered arms for real: `goa3_avp_r256_2026-09-23` step=6340 and `goa3_avp_r128_shampoo_b16_3e4_2026-09-25` step=6340, 108 standard-grid cells each, all `render_path=merged`, spot-checked finite. `rarity_bracket_manifest.json` reasons updated with the outcome. Note: 28 older r256 cells from an earlier demo-ingest backfill (steps 1268-6340, pre-fix) keep their old `render_path=null` provenance since it isn't part of the resume key — flagged in the manifest, not re-rendered.
 - **2026-09-23 — GHOST-NOTE: PARKED mid-batch, board render stopped for an overnight training
   run (Kim direct) — resume steps below.** 26 arms registered in `rarity_bracket_manifest.json`

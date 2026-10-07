@@ -237,3 +237,4 @@ convention — see §3a. Going forward, append your own lines as you finish task
   finite, render_path=merged. Also: traced and flagged a wait-loop KNOCK/WELCOME storm on the
   dialogue multicast channel (queue stays empty during it — no record of the sender); switched
   my own comms watch to periodic check-queue polling.
+- 2026-10-07 DJ mix v7 phase 0 (plain+a2a, 35 clips/34 trans, 9-11 bar windows): replay fixed (34/34 splices exact, med 2 ms); beat-grid gate 8/34 outside 15 ms; stems separated (residual med -22.7 dB; bass stem has 0.4% of sub-150 Hz energy). Commit ecee498; outputs Mantu/sa3_lora_runs/mixtape_v7_phase0.
