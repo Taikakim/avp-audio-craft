@@ -20,9 +20,11 @@ RUN = Path("/run/media/kim/Mantu/surge_200k_models/fxfix_ladder_ema_b64")
 CATALOG = Path("/run/media/kim/Mantu/surge_200k_models/real_stems_eval/real_stems_summary.json")
 OUT = Path.home() / ".cache/evals_aac"
 PAGE, CLIPS = OUT / "synth_inversion.html", OUT / "synth_inversion"
-SETS = [("old", "Old model", "the previous run, trained before the FX-state fix"),
+SETS = [("v2", "Oct 3 run", "the realistic-bass run before 'old' (trained before the FX-state fix)"),
+        ("old", "Oct 5 run (old)", "the previous run, trained before the FX-state fix"),
         ("online", "New · online", "this run's final weights"),
-        ("ema", "New · EMA", "this run's exponential moving average of the weights (half-life 2000 steps)")]
+        ("ema", "New · EMA", "this run's exponential moving average of the weights (half-life 2000 steps)"),
+        ("sf", "New · SF average", "this run's schedule-free averaged weights (the optimizer's own average)")]
 BUILD_EVALS = Path(__file__).parent / "build_evals.py"
 
 
@@ -78,7 +80,7 @@ def main():
 
     v = last_val()
     doc = be.head("Synth inversion · real bass stems · FX-fixed rerun", 0)
-    doc += ('<h1>Synth inversion — 24 real bass phrases, old model vs the FX-fixed rerun'
+    doc += ('<h1>Synth inversion — 24 real bass phrases, five models from the last three runs'
             + ('' if feedback else ' <span title="not yet audited by ear" style="color:#f44">&#10071;</span>') + '</h1>')
     doc += ('<p><b>What this is.</b> Each row is a bass phrase taken from a separated stem of a real track. A model '
             'listens to it and proposes Surge XT synth settings; the phrase is then re-played with those settings '
@@ -101,7 +103,8 @@ def main():
                     f'<td>{fmt((g("r_p2a") or 0) * 100 if g("r_p2a") is not None and g("r_p2a") <= 1 else g("r_p2a"), 1)}%</td></tr>')
         doc += ('</table><p class="faint">Retrieval chance 0.2%. Held-out presets are synth patches never seen in '
                 'training; the real stems below are a harder, different test. Online and EMA are tied on held-out '
-                'presets; the schedule-free average is weaker on the flow. Only online and EMA are re-created below.</p>')
+                'presets; the schedule-free average is weaker on the flow. All three are re-created below, next to '
+                'the two earlier runs.</p>')
     summ = comp.get("summary", {})
     doc += '<h2>Re-creation quality (24 phrases, mean)</h2>'
     if summ:

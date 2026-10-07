@@ -2794,10 +2794,10 @@ def build_landing(control, renders):
     # list buries recent work in "other". A hand-curated "Recently added" strip at the
     # top surfaces the newest important pages directly (maintain this list as work lands).
     _highlights = [
-        ("synth_inversion.html", "Synth inversion — 24 real bass phrases, old vs FX-fixed rerun",
+        ("synth_inversion.html", "Synth inversion — 24 real bass phrases, five models from the last three runs",
          "A model hears a bass phrase from a real track and proposes Surge XT settings; each phrase "
-         "re-played by the old model, the new online weights and the new EMA weights, next to the "
-         "original. Same-playhead cells, per-phrase MSS. Fills in as the clips render."),
+         "re-played by the Oct 3 and Oct 5 models and the new run's online, EMA and schedule-free-average "
+         "weights, next to the original. Same-playhead cells, per-phrase MSS. Fills in as the clips render."),
         # Kim 2026-08-17: one page for both audiences now (was rate.html + a near-identical
         # public evaluator.html). ?goa=1 is the internal pool -- without it you get only the
         # avp models the public link serves. /files/evals/rate.html redirects here.

@@ -1611,6 +1611,14 @@ JEPA gap +0.19 throughout: with 105 train presets, mostly preset-family generali
 Real-stem A/B clips + eval page: aavepyora.online/files/evals/synth_inversion.html (built by
 `Misc/build_synth_inversion_page.py`; a watcher rebuilds/uploads it as clips land; verdict pending listening).
 *Kills it:* real-stem A/B not better than the old model through the same pipeline.
+**REAL-STEM A/B RESULT (2026-10-07 03:50, metrics; ears pending) — KILL CRITERION MET ON METRICS.** 24 real phrases,
+identical pipeline (flow rerank + phrase refinement + MuScriptor playback), whole-phrase scores: old Oct-5 model MSS
+**7.31** / wMFCC 10.84 / env cos 0.911, best MSS on 13/24; new online 7.84 / 10.85 / 0.920 (7/24); new EMA 7.76 / 11.27 /
+0.916 (4/24). Far better held-out synth-preset numbers did NOT transfer to real stems. Caveats: refinement narrows the
+gap between models; MSS is coarse (see the Synth-JDF sidecar on what MSS rewards); n = 24, one seed. Two more models
+being added to the same page (Oct-3 run, new run's schedule-free average) — `clips_AB/comparison.json` is re-scored
+with all five when they finish. Read with H5/H6: the domain gap (real vs synth audio), not the FX fix, is the binding
+constraint, which is exactly what Synth-JDF targets.
 
 **H2. Ladder-straightness term (from Semantic Tube Prediction, 2602.22617) — POTENTIAL** (W, 2026-10-06).
 *Idea:* STP keeps an LM's hidden-state trajectory locally straight with `1 − cos(h_t − h_r, h_r − h_s)` on
