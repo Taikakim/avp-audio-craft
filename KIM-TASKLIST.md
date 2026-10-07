@@ -37,10 +37,10 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 **REPORT BACK:** the output of the VERIFY lines. **ROLLBACK:** none needed (nothing is deleted); if it will not mount, replug the cable (try a rear USB 3 port) and send me `lsblk` + the last 20 lines of `journalctl -k`.
 **LIKELY CAUSE (my reading, not proven):** a bus-power or cable glitch on a bus-powered USB drive under sustained writes (W's retrain had started at 14:00). A powered hub or a different port would be the first thing to try.
 
-### 🛠 DJ mix v7 spec handed to G; two decisions for you (C, 2026-10-07)
-**WHAT:** your v6 listening found a temporal gap and short transitions. Measured: all 39 splices replay the incoming clip from its entry point (~10 s back); the BPM stretching is a second, smaller cause. Spec for G: `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md` (Phase 0 fix + longer windows, Phase 1 spikes for your stem idea, Phase 2 build). Gate tool: `eval/mixtape_audit_continuity.py`.
-**YOUR DECISIONS:** (1) Window length: lengthen every clip 2x with the outpaint tool and use 16-bar transitions (needs the GPU, which W holds ~24 h), or keep the 47 s clips and use ~12-bar blends (default). (2) Whether a kick-less 4-stem separation is acceptable: BS-RoFormer gives drums/bass/other/vocals only, so "kick" would be a low-band split of the drums stem.
-**NOT DONE:** nothing is built yet; G starts with Phase 0.
+### ✅ RESOLVED 2026-10-07 (relayed by G from your listening of v7b; correct me if it is wrong) — DJ mix: both open decisions answered, plan is F7
+**Your verdict as G recorded it:** plain audio crossfade is the best and very clean (kicks, bass, drums, other blend almost unnoticeably); the a2a-smoothed versions stutter / add misplaced extra kick onsets, so smoothing is OUT; remaining faults are few (hi-hats "galloping", rare pitch mismatch).
+**Decisions closed:** (1) lengthen the clips 2-3x with a more gradual crossfade: YES (needs the GPU and Mantu). (2) the stem-separated version: tried, no separator gives a usable bass stem on this material (htdemucs_ft best at 0.44), so the transition is the stem-free band split.
+**Plan:** `EXPERIMENTS.md` F7 (owner GHOST-NOTE): v7c band-swap built and tested on synthetic signals, NOT yet on real clips because Mantu is down (see the Mantu item above); then lengthening; then a staged multi-band transition. v7b stays on the Kone page.
 
 ### 🎧 LISTEN + RATE on your phone: DJ mix v6 on the Kone mixtape page (C, 2026-10-07; waits on W to publish)
 **WHAT:** the new "DJ mixes: the beat-aware set" section on https://aavepyora.online/files/kone-mixtape/ : v6 smoothed (41 clips, 25.3 min), v6 bass-swap, v6 plain, v5 for comparison. Four big buttons at the bottom: A too bright, B lacks punch (about the clip playing), C transition out of sync, D transition had unfitting sounds (about the transition that last played).
