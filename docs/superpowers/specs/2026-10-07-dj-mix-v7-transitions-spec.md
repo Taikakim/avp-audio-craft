@@ -110,6 +110,15 @@ the in- and outgoing clips. **Review: the structure is sound; three parts are un
   percussive = kick). Pass: median capture >= 0.60 and no clip < 0.30. If none passes, the stem plan for bass is closed for now
   and the transition uses the hard bass hand-over (never two basslines at once); Kim's kick/bass separator fine-tune (EXPERIMENTS
   F6) becomes the real fix, now with evidence.
+* **S1b RESULT (G 2026-10-07, `eval/mixtape_v7_bakeoff.py`, 7 clips, bar: median >= 0.60 and none < 0.30): NO learned separator passes.**
+  Medians (min..max): BS-RoFormer 4-stem SYH99999 0.00 (0.00..0.70); BS-RoFormer SW 6-stem 0.07 (0.00..0.75); htdemucs_ft 0.44
+  (0.08..0.76, the best, misses on 4 of 7). The other mir checkpoints are 1-stem models and cannot make a bass stem. Clip 30's
+  bassline sits 92 % in drums for every model. **My "no-model HPSS baseline" was a bad test:** it scores ~1 by construction (the
+  metric uses the same HPSS split), so it says nothing about quality (G caught it). **Consequence: S2 (bass-stem inpainting) is
+  closed for this material; the written fallback applies.** The stem-free version of Kim's design is **v7c**: split the FULL MIX at
+  ~150 Hz; (low) hand the low band over on a downbeat, never two basslines (the kick moves with it, both on the shared grid, with
+  a <= 50 ms equal-power blend against clicks); (high, > 150 Hz) the complementary LR4 sweep of section 4 with the incoming
+  pre-roll. No separator is needed. Kim's kick/bass separator fine-tune (EXPERIMENTS F6) remains the route to a true bass-stem build.
 * **S2 Stem inpainting.** *(Corrected 2026-10-07 after Kim: SA3 was trained on loads of stems and single-instrument
   sounds, and our paper note agrees: the AudioSparx caption language has `TrackType: Instrument` (stems) / `SFX`,
   present in about half the training captions. My first draft called isolated stems "off-distribution"; that was
