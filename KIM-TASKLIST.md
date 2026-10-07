@@ -28,6 +28,11 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### 🛠 DJ mix v7 spec handed to G; two decisions for you (C, 2026-10-07)
+**WHAT:** your v6 listening found a temporal gap and short transitions. Measured: all 39 splices replay the incoming clip from its entry point (~10 s back); the BPM stretching is a second, smaller cause. Spec for G: `docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md` (Phase 0 fix + longer windows, Phase 1 spikes for your stem idea, Phase 2 build). Gate tool: `eval/mixtape_audit_continuity.py`.
+**YOUR DECISIONS:** (1) Window length: lengthen every clip 2x with the outpaint tool and use 16-bar transitions (needs the GPU, which W holds ~24 h), or keep the 47 s clips and use ~12-bar blends (default). (2) Whether a kick-less 4-stem separation is acceptable: BS-RoFormer gives drums/bass/other/vocals only, so "kick" would be a low-band split of the drums stem.
+**NOT DONE:** nothing is built yet; G starts with Phase 0.
+
 ### 🎧 LISTEN + RATE on your phone: DJ mix v6 on the Kone mixtape page (C, 2026-10-07; waits on W to publish)
 **WHAT:** the new "DJ mixes: the beat-aware set" section on https://aavepyora.online/files/kone-mixtape/ : v6 smoothed (41 clips, 25.3 min), v6 bass-swap, v6 plain, v5 for comparison. Four big buttons at the bottom: A too bright, B lacks punch (about the clip playing), C transition out of sync, D transition had unfitting sounds (about the transition that last played).
 **WHY:** your "one faultless mix". The corruption was in the latents, fixed per clip with a latent-size ceiling at decode; v6 scans at 4.5 jumps/min vs v5's 43.5, but a count is a screen, your ears decide. docs/training-findings.md 2026-10-07 A1.
