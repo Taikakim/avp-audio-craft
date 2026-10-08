@@ -1,0 +1,842 @@
+diff --git a/eval/mixtape_v7_dsp.py b/eval/mixtape_v7_dsp.py
+new file mode 100644
+index 0000000..b20f04c
+--- /dev/null
++++ b/eval/mixtape_v7_dsp.py
+@@ -0,0 +1,148 @@
++#!/usr/bin/env python
++"""mixtape_v7_dsp.py -- pure numpy/scipy building blocks for the v7 stem transition.
++
++No torch, no SA3, no GPU, no files: everything here runs and is unit-tested anywhere
++(eval/tests/test_mixtape_v7_dsp.py). Proposed by KUANG 2026-10-08 as the testable half of
++render_v7_4track_smoketest_fast.py; see antigravity.kuang.log for the review it comes from.
++
++All audio is (channels, samples). Positions are integer samples.
++
++lr4_sos() is the same filter as mixtape_assemble_v7.lr4_sos(); it is copied so this module
++imports without the mir venv / SA3 (that module pulls in chroma_morph_transitions). Unify when
++convenient.
++"""
++import numpy as np
++from scipy.signal import butter, sosfilt
++
++
++# ---------------------------------------------------------------------------------------------
++# filters
++# ---------------------------------------------------------------------------------------------
++
++def lr4_sos(fc, kind, sr):
++    """Linkwitz-Riley 4th order = two cascaded 2nd-order Butterworths.
++
++    NOT butter(4): a 4th-order Butterworth low-pass plus high-pass sums to +3.01 dB at fc.
++    The LR4 pair sums magnitude-flat (spec section 5, item 9) provided both use the same fc.
++    """
++    s = butter(2, fc, btype=kind, fs=sr, output="sos")
++    return np.vstack([s, s])
++
++
++def lr4_split(audio, fc, sr):
++    """(low, high) of a (C, N) array. Causal sosfilt; the pair sums to an all-pass, so
++    low + high matches the input in magnitude but not in phase (it is not bit-exact)."""
++    low = sosfilt(lr4_sos(fc, "low", sr), audio, axis=-1)
++    high = sosfilt(lr4_sos(fc, "high", sr), audio, axis=-1)
++    return low, high
++
++
++# ---------------------------------------------------------------------------------------------
++# slicing and ramps
++# ---------------------------------------------------------------------------------------------
++
++def safe_slice(audio, start_idx, end_idx):
++    """audio[:, start:end], zero-padded where the range leaves the clip."""
++    length = end_idx - start_idx
++    out = np.zeros((audio.shape[0], length), dtype=audio.dtype)
++    src_start = max(0, start_idx)
++    src_end = min(audio.shape[1], end_idx)
++    if src_start < src_end:
++        dst_start = src_start - start_idx
++        out[:, dst_start:dst_start + (src_end - src_start)] = audio[:, src_start:src_end]
++    return out
++
++
++def linear_ramps(n):
++    """(down, up): amplitudes sum to 1. Right for material that is COHERENT in both clips
++    (kicks on the shared grid); constant level for coherent sources."""
++    up = np.linspace(0.0, 1.0, n)
++    return 1.0 - up, up
++
++
++def equal_power_ramps(n):
++    """(down, up): down^2 + up^2 = 1. Right for UNCORRELATED material (hats, noise,
++    different pads); constant power for incoherent sources."""
++    th = np.linspace(0.0, np.pi / 2, n)
++    return np.cos(th), np.sin(th)
++
++
++# ---------------------------------------------------------------------------------------------
++# the stem layers
++# ---------------------------------------------------------------------------------------------
++
++def bass_handover(a, b, h, blend):
++    """One bassline at a time (spec section 4): A plays to h, B plays from h, with an
++    equal-power blend of `blend` samples centred on h (spec: <= 50 ms, against clicks).
++
++    a, b: (C, L) windows of the two bass stems. h: handover sample (window centre).
++    Returns (mix, gain_a, gain_b). Raises if the blend does not fit in the window.
++    """
++    if a.shape != b.shape:
++        raise ValueError(f"shape mismatch {a.shape} vs {b.shape}")
++    n = a.shape[-1]
++    lo = h - blend // 2
++    hi = lo + blend
++    if blend < 2 or lo < 0 or hi > n:
++        raise ValueError(f"blend [{lo}, {hi}) does not fit a window of {n} samples")
++    ga = np.zeros(n)
++    gb = np.zeros(n)
++    ga[:lo] = 1.0
++    gb[hi:] = 1.0
++    th = np.linspace(0.0, np.pi / 2, blend)
++    ga[lo:hi] = np.cos(th)
++    gb[lo:hi] = np.sin(th)
++    return a * ga + b * gb, ga, gb
++
++
++def drums_crossfade(a, b, sr, fc=150.0):
++    """Kick (< fc, spec: drums low-passed at 150 Hz) crossfades LINEARLY, because the kicks
++    sit on the shared grid and add coherently; percussion (> fc) crossfades EQUAL-POWER,
++    because it is uncorrelated between clips. This is the only reason to split the drums:
++    with one ramp for both bands the split does nothing."""
++    al, ah = lr4_split(a, fc, sr)
++    bl, bh = lr4_split(b, fc, sr)
++    n = a.shape[-1]
++    lin_dn, lin_up = linear_ramps(n)
++    ep_dn, ep_up = equal_power_ramps(n)
++    return al * lin_dn + bl * lin_up + ah * ep_dn + bh * ep_up
++
++
++def crossfade(a, b, kind="equal_power"):
++    """Plain crossfade of two same-shape windows (vocals, fallback `other`)."""
++    n = a.shape[-1]
++    dn, up = equal_power_ramps(n) if kind == "equal_power" else linear_ramps(n)
++    return a * dn + b * up
++
++
++# ---------------------------------------------------------------------------------------------
++# level and sanity
++# ---------------------------------------------------------------------------------------------
++
++def rms(x):
++    return float(np.sqrt(np.mean(np.square(np.asarray(x, dtype=np.float64))))) if np.size(x) else 0.0
++
++
++def match_rms(x, ref, lo=0.25, hi=4.0):
++    """Scale x to the RMS of ref, gain clamped to [lo, hi]. Returns (scaled, gain).
++    A generated stem has no inherent level; log the gain so a clamp is visible."""
++    r = rms(x)
++    if r < 1e-9:
++        return x, 1.0
++    g = float(np.clip(rms(ref) / r, lo, hi))
++    return x * g, g
++
++
++def assert_finite(x, name, peak_max=16.0):
++    """Raise FloatingPointError on NaN/Inf or an absurd peak; return the peak.
++
++    The live-adapter fault (training-findings 13e) returns NaN or ~1e11 at random on the
++    ROCm box, and NaN does not raise by itself. Call this on every generated array BEFORE
++    it is mixed or written."""
++    x = np.asarray(x)
++    if not np.isfinite(x).all():
++        raise FloatingPointError(f"{name}: contains NaN/Inf (live-adapter fault 13e signature)")
++    pk = float(np.abs(x).max()) if x.size else 0.0
++    if pk > peak_max:
++        raise FloatingPointError(f"{name}: peak {pk:.3g} exceeds {peak_max} (13e signature is ~1e11)")
++    return pk
+diff --git a/eval/mixtape_v7_generative_inference.py b/eval/mixtape_v7_generative_inference.py
+index adc8034..286afc9 100644
+--- a/eval/mixtape_v7_generative_inference.py
++++ b/eval/mixtape_v7_generative_inference.py
+@@ -21,6 +21,14 @@ from stable_audio_3.models.lora.model import set_lora_strength
+ from stable_audio_3.inference.sampling import build_schedule
+ from stable_audio_3.models.latch import load_latch_from_checkpoint
+ from dual_conditioned_sample import _cond_inputs
++from sa3_control.chroma_losses import chroma_loss_rung1
++
++def _check_finite(t, name, step):
++    """The live-adapter fault (training-findings 13e) returns NaN or ~1e11 at random on the ROCm box and
++    nothing raises. Fail at the step it happens, not after 24 steps and a decode."""
++    if not torch.isfinite(t).all() or float(t.abs().max()) > 1e4:
++        raise FloatingPointError(f"{name} at step {step}: NaN/Inf or |x| > 1e4 (13e signature)")
++
+ 
+ def dual_latch_guided_generate(
+     model: StableAudioModel, 
+@@ -33,7 +41,10 @@ def dual_latch_guided_generate(
+     seed: int = 1234, 
+     alpha_curve: torch.Tensor = None,
+     latch_gain: float = 2048.0,
+-    latch_end_pct: float = 0.6
++    latch_end_pct: float = 0.6,
++    loss: str = "cosine",
++    w_sec: float = 0.5,
++    diag: dict = None,
+ ):
+     """
+     Custom ODE solver bridging dual-LoRA velocity blending and LatCH gradients.
+@@ -50,6 +61,16 @@ def dual_latch_guided_generate(
+         alpha_curve: [frames] tensor of interpolation weights
+         latch_gain: Guidance scale for LatCH
+         latch_end_pct: Stop guidance after this % of steps
++        loss: "cosine" (the chroma heads' trained objective; phase-tolerant rung 1 from
++            sa3_control.chroma_losses, window w_sec) or "mse" (the first version's loss)
++        diag: optional dict; filled with "guidance_rel", one value per guided step =
++            |latch_gain * grad| / |v_blend|. Near 0: guidance does nothing. Above ~1: it
++            dominates the model. latch_gain=2048 was tuned for the canonical sampler's
++            rho/mu normalization, NOT for this raw `v += gain * grad`, so read this first.
++
++    Known gaps (review 2026-10-08): no classifier-free guidance (medium-base demos at cfg 2-7;
++    dual_conditioned_sample.py documents the same limit), and `other` is generated from noise,
++    not from an init/inpaint of the real clips (the proven route is chroma_morph_transitions.py).
+     """
+     device = model.device
+     sr = model.model.sample_rate
+@@ -100,14 +121,16 @@ def dual_latch_guided_generate(
+         set_lora_strength(model.model, 0.0, lora_index=1)
+         with torch.no_grad():
+             v_a = dit(x.to(model_dtype), t_tensor, **cond_a).float()
+-            
++        _check_finite(v_a, "v_a", i)
++
+         # === PASS B (LoRA B + Prompt B) ===
+         set_lora_strength(model.model, 0.0, lora_index=0)
+         set_lora_strength(model.model, 1.0, lora_index=1)
+         with torch.no_grad():
+             v_b = dit(x.to(model_dtype), t_tensor, **cond_b).float()
+-            
+-        # === VELOCITY BLEND (LoRA Lerp) ===
++        _check_finite(v_b, "v_b", i)
++
++        # === VELOCITY BLEND (per-frame lerp of the two adapters' velocities; not a LoRA-weight lerp) ===
+         v_blend = (1.0 - alpha) * v_a + alpha * v_b
+         
+         # === LATCH GRADIENT GUIDANCE ===
+@@ -121,14 +144,26 @@ def dual_latch_guided_generate(
+             # Forward pass through LatCH head
+             features = head(x0_pred, t_tensor)
+             
+-            # Calculate MSE Loss against Chroma Target
+-            loss = torch.nn.functional.mse_loss(features, chroma_target_tensor)
+-            
++            # Loss against the chroma target. features / target are (B, C, T); the repo's
++            # losses take (B, T, C).
++            if loss == "cosine":
++                step_loss = chroma_loss_rung1(features.transpose(1, 2), chroma_target_tensor.transpose(1, 2),
++                                              latent_fps, w_sec=w_sec, metric="cosine")
++            elif loss == "mse":
++                step_loss = torch.nn.functional.mse_loss(features, chroma_target_tensor)
++            else:
++                raise ValueError(f"loss must be 'cosine' or 'mse', got {loss!r}")
++
+             # Compute gradient
+-            grad = torch.autograd.grad(loss, x_in)[0]
+-            
++            grad = torch.autograd.grad(step_loss, x_in)[0]
++            _check_finite(grad, "latch grad", i)
++
+             # Apply guidance to velocity
+             v_guided = v_blend + (latch_gain * grad)
++            if diag is not None:
++                diag.setdefault("guidance_rel", []).append(
++                    float((latch_gain * grad).norm() / v_blend.norm().clamp_min(1e-12)))
++                diag.setdefault("loss", []).append(float(step_loss))
+         else:
+             v_guided = v_blend
+         
+diff --git a/eval/render_v7_smoketest.py b/eval/render_v7_smoketest.py
+new file mode 100644
+index 0000000..4097783
+--- /dev/null
++++ b/eval/render_v7_smoketest.py
+@@ -0,0 +1,200 @@
++#!/usr/bin/env python
++"""render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
++
++Replaces render_v7_4track_smoketest_fast.py (and the copies in ..._FULL.py / ..._FULL2.py) with the
++review fixes by KUANG 2026-10-08 (see antigravity.kuang.log). Same job, same stems, same windows:
++  * the DSP layers live in mixtape_v7_dsp.py and are unit-tested;
++  * a failed or non-finite generation STOPS the run (--allow-fallback restores the old
++    behaviour) and the file name says which path produced the `other` layer;
++  * run_meta.json is written per run (spec R0.6 / section 5 item 12);
++  * --no-generate renders everything except the generative `other` layer, with no GPU,
++    no SA3 and no mir-same-chroma, so the DSP can be auditioned and tested anywhere.
++"""
++import argparse
++import json
++import os
++import sys
++import time
++from pathlib import Path
++
++import numpy as np
++import soundfile as sf
++
++import mixtape_v7_dsp as dsp
++
++SR = 44100
++STEM_NAMES = ["drums", "bass", "other", "vocals", "residual"]   # residual = mix - sum(stems) (spec S4)
++
++# No drive paths in the tree (docs/GIT-PROTOCOL.md section 4): the first version hard-coded its drive
++# mounts; they are still in git history. Pass the flags or set the environment variables.
++D_BOUNDS = "/tmp/bounds_structural.json"        # where mixtape_structural_bounds.py writes
++ENV = {
++    "order": "V7_ORDER",            # .../mixtape_v7_phase0/order_used.json
++    "stems_dir": "V7_STEMS",        # .../mixtape_v7_stems  (one NN/ folder per clip)
++    "out_dir": "V7_SMOKE_OUT",
++    "ckpt_a": "V7_CKPT_A",          # only needed unless --no-generate
++    "ckpt_b": "V7_CKPT_B",
++    "chroma_head": "V7_CHROMA_HEAD",
++}
++
++
++def get_chroma(audio, sr):
++    """SAME chroma of a (C, N) window -> (1, 384, T) tensor. (3,128,T) -> (384,T), as everywhere else."""
++    import torch
++    sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
++    from harmonic.same_chroma import compute_same_chroma
++    c = compute_same_chroma(audio.T, sr).reshape(384, -1)
++    return torch.tensor(c).unsqueeze(0)
++
++
++def chroma_morph_target(other_a, other_b):
++    import torch
++    chroma_a, chroma_b = get_chroma(other_a, SR), get_chroma(other_b, SR)
++    n = chroma_a.shape[-1]
++    up = torch.linspace(0, 1, n).view(1, 1, -1)
++    return (chroma_a * (1 - up) + chroma_b * up).float()
++
++
++def parse_args(argv=None):
++    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
++    ap.add_argument("--order", default=os.environ.get(ENV["order"]), help=f"order_used.json (env {ENV['order']})")
++    ap.add_argument("--stems-dir", default=os.environ.get(ENV["stems_dir"]), help=f"env {ENV['stems_dir']}")
++    ap.add_argument("--bounds", default=D_BOUNDS)
++    ap.add_argument("--out-dir", default=os.environ.get(ENV["out_dir"]), help=f"env {ENV['out_dir']}")
++    ap.add_argument("--clips", default="2:6", help="slice of the order list, start:stop (default 2:6 = clips 2..5)")
++    ap.add_argument("--w-bars", type=int, default=8,
++                    help="window length in bars. 8, not 9: the window is centred on the boundary, so an even "
++                         "count puts both edges on bar lines (spec R0.4 wants 12 or 16 for the real mix)")
++    ap.add_argument("--default-bpm", type=float, default=140.0, help="used, and logged, only if a clip has no 'bpm'")
++    ap.add_argument("--blend-ms", type=float, default=50.0, help="bass hand-over blend (spec: <= 50 ms)")
++    ap.add_argument("--no-generate", action="store_true", help="skip the model: `other` = plain crossfade, labelled so")
++    ap.add_argument("--allow-fallback", action="store_true",
++                    help="if generation fails, continue with the plain crossfade (labelled in the file name and meta)")
++    ap.add_argument("--steps", type=int, default=24)
++    ap.add_argument("--seed", type=int, default=1234)
++    ap.add_argument("--latch-gain", type=float, default=2048.0)
++    ap.add_argument("--ckpt-a", default=os.environ.get(ENV["ckpt_a"]), help=f"env {ENV['ckpt_a']}")
++    ap.add_argument("--ckpt-b", default=os.environ.get(ENV["ckpt_b"]), help=f"env {ENV['ckpt_b']}")
++    ap.add_argument("--chroma-head", default=os.environ.get(ENV["chroma_head"]), help=f"env {ENV['chroma_head']}")
++    ap.add_argument("--prompt-a", default="aggressive upbeat goa trance")
++    ap.add_argument("--prompt-b", default="driving pulsating psytrance")
++    args = ap.parse_args(argv)
++    need = ["order", "stems_dir", "out_dir"] + ([] if args.no_generate else ["ckpt_a", "ckpt_b", "chroma_head"])
++    missing = [f"--{n.replace('_', '-')} (or ${ENV[n]})" for n in need if not getattr(args, n)]
++    if missing:
++        ap.error("missing: " + ", ".join(missing))
++    return args
++
++
++def load_stems(stems_dir, idx):
++    d = Path(stems_dir) / f"{idx:02d}"
++    out = {}
++    for n in STEM_NAMES:
++        x, sr = sf.read(str(d / f"{n}.wav"), dtype="float32")
++        if sr != SR:
++            raise ValueError(f"{d / (n + '.wav')}: sample rate {sr}, expected {SR}")
++        out[n] = (x.T if x.ndim == 2 else x[None, :])
++    return out
++
++
++def main(argv=None):
++    args = parse_args(argv)
++    a0, a1 = (int(v) for v in args.clips.split(":"))
++    all_clips = json.loads(Path(args.order).read_text())
++    clips = all_clips[a0:a1]
++    bounds = json.loads(Path(args.bounds).read_text())
++    out_dir = Path(args.out_dir)
++    out_dir.mkdir(parents=True, exist_ok=True)
++
++    meta = {
++        "purpose": "v7 4-stem transition smoke test (pre-computed stems)",
++        "hypothesis": "bass hand-over + drums crossfade + generated `other` give a seam-free transition window",
++        "kill_criterion": "any non-finite stem, or `other` generation falling back, ends the run",
++        "args": dict(vars(args)),
++        "started": time.strftime("%Y-%m-%d %H:%M:%S"),
++        "kim_feedback": None,
++        "transitions": [],
++    }
++
++    stems = {}
++    for c in clips:
++        stems[c["id"]] = load_stems(args.stems_dir, all_clips.index(c))
++        print(f"Loaded stems for {c['id']}", flush=True)
++
++    sa3_model = None
++    if not args.no_generate:
++        sys.path.insert(0, "/home/kim/Projects/SAO/eval")
++        from stable_audio_3 import StableAudioModel
++        from mixtape_v7_generative_inference import dual_latch_guided_generate
++        print("Initializing SA3 Model...", flush=True)
++        sa3_model = StableAudioModel.from_pretrained("medium-base", device="cuda")
++
++    for i in range(len(clips) - 1):
++        cA, cB = clips[i], clips[i + 1]
++        print(f"Processing Transition {i + 1}: {cA['id']} -> {cB['id']}", flush=True)
++        rec = {"i": i, "a": cA["id"], "b": cB["id"]}
++        meta["transitions"].append(rec)
++
++        bpm = cA.get("bpm")
++        rec["bpm_source"] = "order" if bpm else "default"
++        bpm = float(bpm or args.default_bpm)
++        rec["bpm"] = bpm
++        W_sec = args.w_bars * 4 * 60 / bpm
++        L = int(round(W_sec * SR))
++        # one seconds->samples conversion each; both windows have length L by construction
++        a_lo = int(round(bounds[cA["id"]]["end_pre_zc"] * SR)) - L // 2
++        b_lo = int(round(bounds[cB["id"]]["start"] * SR)) - L // 2
++        sA, sB = stems[cA["id"]], stems[cB["id"]]
++
++        def win(s, name, lo):
++            return dsp.safe_slice(s[name], lo, lo + L)
++
++        bass, ga, gb = dsp.bass_handover(win(sA, "bass", a_lo), win(sB, "bass", b_lo), L // 2,
++                                         int(round(SR * args.blend_ms / 1000.0)))
++        drums = dsp.drums_crossfade(win(sA, "drums", a_lo), win(sB, "drums", b_lo), SR)
++        vocals = dsp.crossfade(win(sA, "vocals", a_lo), win(sB, "vocals", b_lo))
++        resid = dsp.crossfade(win(sA, "residual", a_lo), win(sB, "residual", b_lo), kind="linear")
++        other_a, other_b = win(sA, "other", a_lo), win(sB, "other", b_lo)
++        other_ref = dsp.crossfade(other_a, other_b)          # reference level, and the labelled fallback
++
++        other, other_path = other_ref, "skipped"
++        if sa3_model is not None:
++            try:
++                target = chroma_morph_target(other_a, other_b)
++                gen, _ = dual_latch_guided_generate(
++                    model=sa3_model, ckpt_a=args.ckpt_a, ckpt_b=args.ckpt_b,
++                    prompt_a=args.prompt_a, prompt_b=args.prompt_b, duration=W_sec,
++                    chroma_target_tensor=target, chroma_head_path=args.chroma_head,
++                    steps=args.steps, seed=args.seed, latch_gain=args.latch_gain)
++                gen = gen.numpy()
++                rec["other_peak"] = dsp.assert_finite(gen, f"transition {i} other")
++                rec["other_len_delta"] = int(gen.shape[-1] - L)   # logged, then padded or trimmed
++                gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
++                other, rec["other_gain"] = dsp.match_rms(gen, other_ref)
++                other_path = "generative"
++            except Exception as e:                                # noqa: BLE001
++                rec["error"] = repr(e)
++                if not args.allow_fallback:
++                    rec["other_path"] = "FAILED"
++                    (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
++                    raise
++                print(f"Generative inference failed, FALLING BACK to crossfade: {e!r}", flush=True)
++                other_path = "fallback_crossfade"
++        rec["other_path"] = other_path
++
++        trans = (bass + drums + other + vocals + resid).astype(np.float64)
++        rec["peak"] = float(np.abs(trans).max())
++        rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
++        rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
++        name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
++        sf.write(str(name), trans.T, SR, subtype="FLOAT")        # float: nothing clips here; normalise the whole mix once
++        rec["file"] = name.name
++        print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
++
++    meta["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
++    (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
++    print(f"Done. {len(meta['transitions'])} transitions and run_meta.json in {out_dir}", flush=True)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/eval/tests/test_mixtape_v7_dsp.py b/eval/tests/test_mixtape_v7_dsp.py
+new file mode 100644
+index 0000000..840ae0b
+--- /dev/null
++++ b/eval/tests/test_mixtape_v7_dsp.py
+@@ -0,0 +1,117 @@
++"""Unit tests for mixtape_v7_dsp (synthetic signals only: no stems, no SA3, no GPU)."""
++import sys
++from pathlib import Path
++
++import numpy as np
++import pytest
++from scipy.signal import butter, sosfreqz
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++import mixtape_v7_dsp as dsp  # noqa: E402
++
++SR = 44100
++
++
++def _db(x):
++    return 20 * np.log10(np.maximum(x, 1e-12))
++
++
++def test_lr4_pair_sums_magnitude_flat_and_butter4_does_not():
++    fc = 150.0
++    w, lo = sosfreqz(dsp.lr4_sos(fc, "low", SR), worN=8192, fs=SR)
++    _, hi = sosfreqz(dsp.lr4_sos(fc, "high", SR), worN=8192, fs=SR)
++    band = w > 20
++    assert np.abs(_db(np.abs(lo + hi)[band])).max() < 0.05  # dB
++
++    # why lr4_sos exists: butter(4) LP + HP has a +3 dB bump at the crossover
++    b_lo = sosfreqz(butter(4, fc, "low", fs=SR, output="sos"), worN=8192, fs=SR)[1]
++    b_hi = sosfreqz(butter(4, fc, "high", fs=SR, output="sos"), worN=8192, fs=SR)[1]
++    assert _db(np.abs(b_lo + b_hi)[band]).max() > 2.9
++
++
++def test_ramps_are_complementary():
++    d, u = dsp.linear_ramps(1000)
++    assert np.allclose(d + u, 1.0)
++    d, u = dsp.equal_power_ramps(1000)
++    assert np.allclose(d ** 2 + u ** 2, 1.0)
++    assert d[0] == pytest.approx(1.0) and u[-1] == pytest.approx(1.0)
++
++
++def test_bass_handover_is_hard_with_a_short_equal_power_blend():
++    n, h, blend = 20000, 10000, int(SR * 0.05)
++    a = np.ones((2, n))
++    b = 2 * np.ones((2, n))
++    mix, ga, gb = dsp.bass_handover(a, b, h, blend)
++    assert np.allclose(ga ** 2 + gb ** 2, 1.0)                 # no level hole, no bump
++    lo, hi = h - blend // 2, h - blend // 2 + blend
++    assert np.all(ga[:lo] == 1) and np.all(gb[:lo] == 0)       # A alone before the blend
++    assert np.all(ga[hi:] == 0) and np.all(gb[hi:] == 1)       # B at FULL level right after it
++    assert np.all(mix[:, :lo] == 1) and np.all(mix[:, hi:] == 2)
++    assert int(((ga > 0) & (gb > 0)).sum()) <= blend           # overlap never longer than the blend
++
++
++def test_bass_handover_rejects_a_blend_that_does_not_fit():
++    a = np.zeros((2, 1000))
++    with pytest.raises(ValueError):
++        dsp.bass_handover(a, a, h=10, blend=500)
++    with pytest.raises(ValueError):
++        dsp.bass_handover(a, np.zeros((2, 999)), h=500, blend=50)
++
++
++def test_drums_crossfade_keeps_level_for_coherent_kick_and_incoherent_percussion():
++    n = SR * 2
++    t = np.arange(n) / SR
++    mid = slice(int(n * 0.45), int(n * 0.55))
++    edge = slice(int(n * 0.1), int(n * 0.9))
++
++    # kick band: the SAME 60 Hz tone in both clips (coherent) -> amplitude must stay put
++    kick = np.stack([0.5 * np.sin(2 * np.pi * 60 * t)] * 2)
++    out = dsp.drums_crossfade(kick, kick, SR)
++    assert abs(_db(dsp.rms(out[:, mid])) - _db(dsp.rms(kick[:, mid]))) < 1.0
++
++    # percussion band: independent noise (incoherent) -> power must stay put (a linear ramp dips ~3 dB)
++    rng = np.random.default_rng(0)
++    na = 0.2 * rng.standard_normal((2, n))
++    nb = 0.2 * rng.standard_normal((2, n))
++    na, nb = dsp.lr4_split(na, 1000.0, SR)[1], dsp.lr4_split(nb, 1000.0, SR)[1]   # keep it well above 150 Hz
++    out = dsp.drums_crossfade(na, nb, SR)
++    ref = 0.5 * (dsp.rms(na[:, edge]) + dsp.rms(nb[:, edge]))
++    assert abs(_db(dsp.rms(out[:, mid])) - _db(ref)) < 1.0
++    lin = dsp.crossfade(na, nb, kind="linear")
++    assert _db(dsp.rms(lin[:, mid])) < _db(ref) - 2.0           # the bug this replaces
++
++
++def test_safe_slice_pads_both_ends_and_is_exact_inside():
++    x = np.arange(20, dtype=np.float32).reshape(2, 10)
++    assert np.array_equal(dsp.safe_slice(x, 2, 6), x[:, 2:6])
++    left = dsp.safe_slice(x, -3, 4)
++    assert left.shape == (2, 7) and np.all(left[:, :3] == 0) and np.array_equal(left[:, 3:], x[:, :4])
++    right = dsp.safe_slice(x, 7, 13)
++    assert right.shape == (2, 6) and np.array_equal(right[:, :3], x[:, 7:]) and np.all(right[:, 3:] == 0)
++    assert np.all(dsp.safe_slice(x, 50, 60) == 0)               # entirely outside
++
++
++def test_match_rms_scales_and_clamps():
++    rng = np.random.default_rng(1)
++    x = rng.standard_normal((2, 5000))
++    ref = 0.5 * rng.standard_normal((2, 5000))
++    y, g = dsp.match_rms(x, ref)
++    assert dsp.rms(y) == pytest.approx(dsp.rms(ref), rel=1e-6) and 0.25 < g < 4
++    _, g = dsp.match_rms(x, 100 * ref)
++    assert g == 4.0
++    z, g = dsp.match_rms(np.zeros((2, 10)), ref)
++    assert g == 1.0 and not z.any()
++
++
++@pytest.mark.parametrize("bad", [np.nan, np.inf, -np.inf, 1e11])
++def test_assert_finite_catches_the_13e_signatures(bad):
++    x = np.zeros((2, 100))
++    x[1, 50] = bad
++    with pytest.raises(FloatingPointError):
++        dsp.assert_finite(x, "other")
++
++
++def test_assert_finite_returns_the_peak():
++    x = np.zeros((2, 100))
++    x[0, 3] = -0.8
++    assert dsp.assert_finite(x, "other") == pytest.approx(0.8)
+diff --git a/eval/tests/test_mixtape_v7_generative_loop.py b/eval/tests/test_mixtape_v7_generative_loop.py
+new file mode 100644
+index 0000000..c5765af
+--- /dev/null
++++ b/eval/tests/test_mixtape_v7_generative_loop.py
+@@ -0,0 +1,119 @@
++"""dual_latch_guided_generate: the solver LOOP on a toy model (no SA3, no GPU).
++
++SA3 / the LatCH loader / the DiT are replaced by a toy DiT (v = x - d for a fixed data tensor d), a toy
++head (first K channels of x0) and fakes of the import surface. What this checks is the loop's own logic:
++the guidance SIGN (guided < unguided < anti-guided final loss), the NaN guard, the loss switch, the diagnostics.
++It says nothing about audio quality."""
++import importlib
++import sys
++import types
++from pathlib import Path
++from types import SimpleNamespace
++
++import pytest
++
++torch = pytest.importorskip("torch")
++
++REPO = Path(__file__).resolve().parents[2]
++sys.path.insert(0, str(REPO / "control"))
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++from sa3_control.chroma_losses import chroma_loss_rung1  # noqa: E402
++
++K, C, FPS = 8, 16, 44100 / 4096
++
++
++class ToyDiT(torch.nn.Module):
++    """Rectified-flow toy: data d (fixed, non-zero, zero-mean), v = x - d, so x0 = x - t*v = (1-t)x + t*d."""
++
++    def __init__(self, nan_at=None):
++        super().__init__()
++        self.p = torch.nn.Parameter(torch.zeros(1))
++        self.calls, self.nan_at, self.d = 0, nan_at, None
++
++    def forward(self, x, t, **cond):
++        self.calls += 1
++        if self.d is None:
++            self.d = torch.randn(x.shape, generator=torch.Generator().manual_seed(3))
++        v = x - self.d
++        if self.nan_at is not None and self.calls == self.nan_at:
++            v[0, 0, 0] = float("nan")
++        return v
++
++
++class ToyHead(torch.nn.Module):
++    def forward(self, x0, t):
++        return x0[:, :K]
++
++
++@pytest.fixture()
++def gen(monkeypatch):
++    def mod(name, **attrs):
++        m = types.ModuleType(name)
++        m.__dict__.update(attrs)
++        monkeypatch.setitem(sys.modules, name, m)
++        return m
++
++    mod("stable_audio_3", StableAudioModel=object)
++    mod("stable_audio_3.models")
++    mod("stable_audio_3.models.lora")
++    mod("stable_audio_3.models.lora.model", set_lora_strength=lambda *a, **k: None)
++    mod("stable_audio_3.inference")
++    mod("stable_audio_3.inference.sampling",
++        build_schedule=lambda steps, **k: torch.linspace(1.0, 0.0, steps + 1))
++    mod("stable_audio_3.models.latch", load_latch_from_checkpoint=lambda path, device=None: ToyHead())
++    mod("dual_conditioned_sample", _cond_inputs=lambda *a, **k: {})
++    monkeypatch.delitem(sys.modules, "mixtape_v7_generative_inference", raising=False)
++    return importlib.import_module("mixtape_v7_generative_inference")
++
++
++def toy_model(dit):
++    pre = SimpleNamespace(downsampling_ratio=4096, decode=lambda x: x)
++    inner = SimpleNamespace(sample_rate=44100, pretransform=pre, io_channels=C, model=dit)
++    return SimpleNamespace(device="cpu", model=inner, load_lora=lambda paths: None)
++
++
++def target(frames):
++    g = torch.Generator().manual_seed(7)
++    return torch.rand(1, K, frames, generator=g) + 0.1
++
++
++def final_loss(audio, tgt):
++    return float(chroma_loss_rung1(audio[:K].T, tgt[0].T, FPS, w_sec=0.5))
++
++
++def run(gen, dit=None, gain=50.0, **kw):
++    dit = dit or ToyDiT()
++    tgt = target(round(4.0 * FPS))
++    diag = {}
++    audio, sr = gen.dual_latch_guided_generate(
++        toy_model(dit), "a", "b", "pa", "pb", 4.0, tgt, "head.pt",
++        steps=24, latch_gain=gain, latch_end_pct=1.0, diag=diag, **kw)
++    return audio, tgt, diag
++
++
++def test_guidance_sign_guided_beats_unguided_beats_antiguided(gen):
++    a0, tgt, _ = run(gen, gain=0.0)
++    ap, _, dp = run(gen, gain=50.0)
++    an, _, _ = run(gen, gain=-50.0)
++    l0, lp, ln = final_loss(a0, tgt), final_loss(ap, tgt), final_loss(an, tgt)
++    assert lp < l0 < ln, (lp, l0, ln)
++    assert all(r > 0 for r in dp["guidance_rel"])
++
++
++def test_nan_velocity_stops_at_the_step_it_happens(gen):
++    with pytest.raises(FloatingPointError, match="step 2"):
++        run(gen, dit=ToyDiT(nan_at=5))        # call 5 = step 2, second pass (calls come in A,B pairs): v_a at step 2 is call 5
++
++
++def test_loss_switch_and_diagnostics_cover_the_guided_steps(gen):
++    _, _, d = run(gen, loss="mse")
++    assert len(d["guidance_rel"]) == 24 and len(d["loss"]) == 24     # latch_end_pct=1.0 -> every step but the last
++    with pytest.raises(ValueError):
++        run(gen, loss="bogus")
++
++
++def test_guidance_stops_at_latch_end_pct(gen):
++    diag = {}
++    gen.dual_latch_guided_generate(toy_model(ToyDiT()), "a", "b", "pa", "pb", 4.0, target(round(4.0 * FPS)), "h.pt",
++                                   steps=24, latch_gain=50.0, latch_end_pct=0.6, diag=diag)
++    assert len(diag["guidance_rel"]) == 15                            # i / 24 <= 0.6  ->  i = 0..14
+diff --git a/eval/tests/test_render_v7_smoketest.py b/eval/tests/test_render_v7_smoketest.py
+new file mode 100644
+index 0000000..d3293e7
+--- /dev/null
++++ b/eval/tests/test_render_v7_smoketest.py
+@@ -0,0 +1,128 @@
++﻿"""render_v7_smoketest.main() end to end on SYNTHETIC stems; SA3 and the LatCH solver are faked.
++
++Covers the glue the DSP tests cannot: stem loading, windowing, run_meta.json, the file-name label, and the
++three generation outcomes (finite, non-finite, exception) with and without --allow-fallback."""
++import json
++import sys
++import types
++from pathlib import Path
++
++import numpy as np
++import pytest
++import soundfile as sf
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++import render_v7_smoketest as smoke  # noqa: E402
++
++SR = 44100
++BPM = 140.0
++W_BARS = 2
++L = int(round(W_BARS * 4 * 60 / BPM * SR))
++
++
++@pytest.fixture()
++def project(tmp_path):
++    rng = np.random.default_rng(0)
++    clips = [{"id": f"c{k}", "bpm": BPM} for k in range(3)]
++    (tmp_path / "order.json").write_text(json.dumps(clips))
++    bounds = {c["id"]: {"start": 3.0, "end_pre_zc": 5.0} for c in clips}
++    (tmp_path / "bounds.json").write_text(json.dumps(bounds))
++    for k in range(3):
++        d = tmp_path / "stems" / f"{k:02d}"
++        d.mkdir(parents=True)
++        for name in smoke.STEM_NAMES:
++            sf.write(str(d / f"{name}.wav"), 0.05 * rng.standard_normal((SR * 9, 2)).astype(np.float32), SR, subtype="FLOAT")
++    return tmp_path
++
++
++def run(project, *extra):
++    out = project / "out"
++    smoke.main(["--order", str(project / "order.json"), "--stems-dir", str(project / "stems"),
++                "--bounds", str(project / "bounds.json"), "--out-dir", str(out),
++                "--clips", "0:3", "--w-bars", str(W_BARS),
++                "--ckpt-a", "a.ckpt", "--ckpt-b", "b.ckpt", "--chroma-head", "head.pt", *extra])
++    return out, json.loads((out / "run_meta.json").read_text())
++
++
++@pytest.fixture()
++def fake_sa3(monkeypatch):
++    """A fake stable_audio_3 + generative module; `behaviour` picks what dual_latch_guided_generate does."""
++    torch = pytest.importorskip("torch")
++    state = {"mode": "ok"}
++
++    class FakeModel:
++        @staticmethod
++        def from_pretrained(*a, **k):
++            return object()
++
++    def fake_generate(**kw):
++        if state["mode"] == "raise":
++            raise RuntimeError("boom")
++        n = int(round(kw["duration"] * SR)) - 100            # a little short: must be padded and logged
++        x = 0.4 * torch.randn(2, n)
++        if state["mode"] == "nan":
++            x[0, 10] = float("nan")
++        if state["mode"] == "huge":
++            x[0, 10] = 1e11
++        return x, SR
++
++    m1 = types.ModuleType("stable_audio_3"); m1.StableAudioModel = FakeModel
++    m2 = types.ModuleType("mixtape_v7_generative_inference"); m2.dual_latch_guided_generate = fake_generate
++    monkeypatch.setitem(sys.modules, "stable_audio_3", m1)
++    monkeypatch.setitem(sys.modules, "mixtape_v7_generative_inference", m2)
++    monkeypatch.setattr(smoke, "chroma_morph_target", lambda a, b: torch.zeros(1, 384, 10))
++    return state
++
++
++def test_no_generate_renders_the_dsp_layers_and_labels_the_file(project):
++    out, meta = run(project, "--no-generate")
++    assert [t["other_path"] for t in meta["transitions"]] == ["skipped", "skipped"]
++    for t in meta["transitions"]:
++        x, sr = sf.read(str(out / t["file"]), dtype="float64")
++        assert sr == SR and x.shape == (L, 2) and np.isfinite(x).all()
++        assert t["file"].endswith("_skipped.wav")
++        assert t["min_bass_power_gain"] == pytest.approx(1.0, abs=1e-6)   # no bass hole
++        assert t["bpm_source"] == "order" and meta["kim_feedback"] is None
++
++
++def test_missing_bpm_is_logged_not_silent(project):
++    order = json.loads((project / "order.json").read_text())
++    del order[0]["bpm"]
++    (project / "order.json").write_text(json.dumps(order))
++    _, meta = run(project, "--no-generate")
++    assert meta["transitions"][0]["bpm_source"] == "default" and meta["transitions"][1]["bpm_source"] == "order"
++
++
++def test_generative_path_pads_logs_and_level_matches(project, fake_sa3):
++    out, meta = run(project)
++    for t in meta["transitions"]:
++        assert t["other_path"] == "generative" and t["file"].endswith("_generative.wav")
++        assert t["other_len_delta"] == -100 and 0.25 <= t["other_gain"] <= 4.0
++        assert sf.read(str(out / t["file"]))[0].shape[0] == L
++
++
++@pytest.mark.parametrize("mode", ["nan", "huge", "raise"])
++def test_failed_generation_stops_the_run_by_default(project, fake_sa3, mode):
++    fake_sa3["mode"] = mode
++    with pytest.raises((FloatingPointError, RuntimeError)):
++        run(project)
++    meta = json.loads((project / "out" / "run_meta.json").read_text())
++    assert meta["transitions"][0]["other_path"] == "FAILED" and "error" in meta["transitions"][0]
++    assert not list((project / "out").glob("*.wav"))          # nothing that could pass for a result
++
++
++@pytest.mark.parametrize("mode", ["nan", "huge", "raise"])
++def test_allow_fallback_continues_but_cannot_masquerade(project, fake_sa3, mode):
++    fake_sa3["mode"] = mode
++    out, meta = run(project, "--allow-fallback")
++    assert [t["other_path"] for t in meta["transitions"]] == ["fallback_crossfade"] * 2
++    assert all(p.name.endswith("_fallback_crossfade.wav") for p in out.glob("*.wav"))
++
++
++def test_paths_are_required_not_hardcoded(monkeypatch):
++    for var in smoke.ENV.values():
++        monkeypatch.delenv(var, raising=False)
++    with pytest.raises(SystemExit):
++        smoke.main(["--no-generate"])                       # order / stems / out missing
++    with pytest.raises(SystemExit):
++        smoke.main(["--order", "o", "--stems-dir", "s", "--out-dir", "x"])   # generation needs ckpts and head
