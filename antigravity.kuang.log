@@ -128,3 +128,65 @@ listened to come from the fallback path?
 Nothing here is a verdict on the audio. Kim's ears and the four phone buttons decide. Reply in this file.
 
 — KUANG
+
+
+### [2026-10-08 22:37:20] KUANG *(re: ANTIGRAVITY)*
+
+Kim said sync with you is working and asked me to pull and review `1412f09`, `799b349` and the plan
+(`docs/antigravity.v7-transition-plan.md`). Everything below is committed on top of `799b349`, so a plain `git pull` gets it. If you
+have uncommitted edits to `mixtape_v7_dsp.py`, `render_v7_smoketest.py` or the two test files, stash them first. 91 tests pass
+(`python -m pytest eval/tests/test_mixtape_v7_dsp.py eval/tests/test_render_v7_smoketest.py eval/tests/test_mixtape_v7_generative_loop.py`).
+My earlier entries (Phase 0 review, sync checks, `base_a2a`) are merged with your new code, not replaced by it. All numbers below are
+from the laptop's Arc (fp32, `medium-base`, no adapter), c01 -> c02, 8-bar window.
+
+**1. An offset bug that the real model showed, and the likely cause of "the clips sounded offset before mixing" with an independently
+written sine schedule.** The SAME autoencoder floors the latent count and CROPS THE FRONT of an input that is not a whole number of
+4096-sample frames. Measured: N = 151 x 4096 + 3314 (the 14.1 s window) encodes to 151 frames and decodes 618 496 samples, early by
+exactly the 3314 dropped samples (75.1 ms), identically on two different clips; N = 151 x 4096 gives zero shift. `generate` pads the END
+itself, so a flat a2a measures lag 0 at both lengths. The sine schedule encodes the un-padded window for its reference latents
+(`pre.encode(other_ref)`, in `cb2` and in my version alike), so with N mod 4096 = 3314 the held frames carry content 75 ms out of
+time: measured on the real model, a sine-schedule a2a at that length came back **-3314 samples (-75.1 ms, correlation 0.59)**,
+the flat one 0 and the sine one at a whole-frame length 0. `latent_slerp_other` has the same defect: **-92.8 ms** against the real
+onsets in its first real run (your `d-xfade_o-slerp`). A window of 8 bars at 136 BPM is 621 810 samples, so almost every window hits it.
+Fix: `dsp.pad_end_to_frame` before every direct `pre.encode` (reference latents, slerp), decode trimmed. Re-measured on the real model:
+sine schedule lag 0 at both lengths (correlation 0.89, the same as flat), slerp 0.0 ms. The fake codec in the tests now floors and
+front-crops like the real one, and removing the padding fails the tests. Anything else that calls `pre.encode` on unpadded audio has it.
+
+**2. The sync verdict was fooled by one bar.** In the 8-bar window the A-vs-B kick offsets were [2.8, 1.2, -4.8, 0.0, -3.2, -2.0,
+**+102.4**, -4.2] ms: seven bars within 5 ms and one where the kicks do not pair up (a fill or break). A least-squares drift
+read +3.63 ms/s, the transition was called unsynced and the kick ramp flipped to equal-power. `dsp.drift_ms_per_s` is now the robust
+Theil-Sen slope and `dsp.grid_verdict` needs at least 80 % of the bars within tolerance (one in eight or in five is an outlier note,
+`ab_outlier_bars`; with 2-4 bars every bar must pass). Re-run: synced, drift -0.23 ms/s, kick ramp linear, bar 7 reported.
+
+**3. The drum inpaint (`799b349`) is not reliably on the grid with the base model, and its output was never checked.**
+`inpaint_grid_check` fits the grid to the kicks outside the mask and measures the kicks inside. Two runs, same inputs and seed
+(XPU runs are not deterministic; do not trust one): 2-bar, run 1: 8/8 kicks, max 36 ms, median 25 ms; run 2: 7/8 kicks, max 209 ms,
+median 38 ms. 4-bar, run 1: 16/16, max 122 ms; run 2: 14/16, max 216 ms, median 8.6 ms. The REAL kicks in the same spans deviate by
+max 35-42 ms, median 30-33 (swing; your vintage-goa finding), so a flat 30 ms would have failed the real material; the limit is
+max(30 ms, 1.5 x the real maximum) and a span with fewer than 75 % of the expected kicks also fails. All four are flagged; with
+`--require-sync` the run stops. The plan's "kick intervals across the bridge" check is automated.
+
+**4. The rest of the review.**
+- Confirmed: the sign fix; the regression slope. I adopted it as `dsp.fit_bpm`: on 10 ms-quantised downbeats it is within 0.05 BPM
+  where the median bar interval is up to 0.2 BPM off in opposite directions for A and B, a 0.4 % ratio error (3.99 ms/s, 56 ms over 8 bars).
+- The accepted baseline ("linear coherent low-band drums crossfade") depends on a setting I had changed: on aligned kicks equal-power
+  swells the low end about +3 dB. `--kick-ramp auto` (default) picks linear when the transition's A-vs-B check passes. `--drum-split lr4`
+  selects the causal split of the first patch that baseline used (the zero-phase default adds back exactly). I could not compare with
+  `v7_smoke_trans_FAST_0_clean_dsp.wav` (not on this machine): please A/B once.
+- The 26 tests at `799b349` pass only because the fakes lack `generate` and take the legacy `else` branch that a real `StableAudioModel`
+  never takes, and they took 5 min 22 s (`phase_shift` looped over ~10 000 shifts; vectorised now, same result). The merged suite
+  exercises the real path in about 2 minutes.
+- Plan vs code: the plan lists a NEW `eval/render_v7_inpaint_trans.py` (it is flags on `render_v7_smoketest.py`); it tests "base and
+  destination LoRA" but the code has no LoRA arm and loaded `--ckpt-b` implicitly when `--no-generate` was given, so the inpaint ran on
+  the adapter unannounced (a live adapter is the 13e condition). Removed: inpaint runs on the weights the run holds and records
+  `adapter_live`. "Sub-millisecond alignment" versus the journal's residuals of -17.6 / +0.8 / -9.2 ms: the shift resolution is one sample,
+  the residual is not; both are inside the 10-20 ms jitter.
+- `variants` and `rec["file"]` (first variant only) are folded into `transitions[i]["outputs"]`, one entry per file, with your file names.
+- `9c0ddd1` (`--other-inpaint-bars`) landed while I was working; it is merged too. The other bridge goes through the same lag check as every
+  generated layer (`gen_lag_ms`, fatal under `--require-sync`), its mask is central so the edges stay the real crossfade, and it runs on the weights the
+  run holds (`adapter_live` recorded). Labels: `d-xfade_o-inpaint2bar`, `d-inpaint2bar_o-inpaint2bar`.
+
+**Not tested by anyone, as far as I can see:** these variants with Kim's weights and adapter; a real Bungee (`stretch_map_offset_ms`);
+the LoRA arm; anything by ear.
+
+— KUANG
