@@ -55,6 +55,47 @@ def chroma_morph_target(other_a, other_b):
     return (chroma_a * (1 - up) + chroma_b * up).float()
 
 
+def latent_slerp_other(model, other_a, other_b, L):
+    """Latent crossfade of the `other` stem: encode both windows, slerp across the whole window, decode."""
+    import torch
+    from stable_audio_3.inference.longform import slerp
+    pre = model.model.pretransform
+    p = next(pre.parameters())
+    with torch.inference_mode():
+        za = pre.encode(torch.tensor(other_a, device=p.device, dtype=p.dtype).unsqueeze(0)).float()
+        zb = pre.encode(torch.tensor(other_b, device=p.device, dtype=p.dtype).unsqueeze(0)).float()
+        n = min(za.shape[-1], zb.shape[-1])
+        t = torch.linspace(0, 1, n, device=za.device).view(1, 1, -1)
+        z = slerp(za[..., :n], zb[..., :n], t)
+        out = pre.decode(z.to(p.dtype))[0].float().cpu().numpy()
+    return np.pad(out, ((0, 0), (0, max(0, L - out.shape[-1]))))[:, :L]
+
+
+def drum_inpaint(model, drums_xf, n_bars, bpm, L, args):
+    """Masked inpaint of the central n_bars of the (already crossfaded) drum window; the real drums are
+    the context on both sides. Only the masked span is taken from the generation (50 ms edge fades)."""
+    import torch
+    W_sec = L / SR
+    bar = 240.0 / bpm
+    lo = W_sec / 2 - n_bars * bar / 2
+    hi = lo + n_bars * bar
+    out = model.generate(
+        prompt=args.drum_prompt, duration=W_sec, steps=args.steps, cfg_scale=args.drum_cfg,
+        seed=args.seed, batch_size=1, sample_size=int((W_sec + 8) * SR),
+        inpaint_audio=(SR, torch.tensor(drums_xf, dtype=torch.float32)),
+        inpaint_mask_start_seconds=float(lo), inpaint_mask_end_seconds=float(hi))
+    gen = out[0].float().cpu().numpy()
+    dsp.assert_finite(gen, f"drum inpaint {n_bars} bar")
+    gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
+    gen, _ = dsp.match_rms(gen, drums_xf)
+    i0, i1 = int(lo * SR), int(hi * SR)
+    f = int(0.05 * SR)
+    w = np.zeros(L, dtype=np.float32)
+    w[i0:i1] = 1.0
+    w = np.convolve(w, np.hanning(2 * f + 1) / np.hanning(2 * f + 1).sum(), mode="same").astype(np.float32)
+    return drums_xf * (1 - w) + gen * w
+
+
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--order", default=os.environ.get(ENV["order"]), help=f"order_used.json (env {ENV['order']})")
@@ -80,6 +121,11 @@ def parse_args(argv=None):
     ap.add_argument("--chroma-head", default=os.environ.get(ENV["chroma_head"]), help=f"env {ENV['chroma_head']}")
     ap.add_argument("--prompt-a", default="aggressive upbeat goa trance")
     ap.add_argument("--prompt-b", default="driving pulsating psytrance")
+    ap.add_argument("--drum-inpaint-bars", type=int, nargs="*", default=[],
+                    help="masked drum inpaint variants, e.g. 2 4 (central N bars of the window); needs GPU+SA3")
+    ap.add_argument("--drum-prompt", default="goa trance drum loop, kick, hi-hats, percussion, no melody")
+    ap.add_argument("--drum-cfg", type=float, default=6.0)
+    ap.add_argument("--other-slerp", action="store_true", help="also render a latent-slerp `other` variant")
     args = ap.parse_args(argv)
     need = ["order", "stems_dir", "out_dir"] + ([] if args.no_generate else ["ckpt_a", "ckpt_b", "chroma_head"])
     missing = [f"--{n.replace('_', '-')} (or ${ENV[n]})" for n in need if not getattr(args, n)]
@@ -124,12 +170,13 @@ def main(argv=None):
         print(f"Loaded stems for {c['id']}", flush=True)
 
     sa3_model = None
-    if not args.no_generate:
+    if (not args.no_generate) or args.drum_inpaint_bars or args.other_slerp:
         sys.path.insert(0, "/home/kim/Projects/SAO/eval")
         from stable_audio_3 import StableAudioModel
-        from mixtape_v7_generative_inference import dual_latch_guided_generate
         print("Initializing SA3 Model...", flush=True)
         sa3_model = StableAudioModel.from_pretrained("medium-base", device="cuda")
+        if args.no_generate and args.ckpt_b and hasattr(sa3_model, "load_lora"):
+            sa3_model.load_lora([args.ckpt_b])
 
     dbs = {}
     if args.downbeats and Path(args.downbeats).exists():
@@ -215,7 +262,7 @@ def main(argv=None):
         other_ref = dsp.crossfade(other_a, other_b)          # reference level, and the labelled fallback
 
         other, other_path = other_ref, "skipped"
-        if sa3_model is not None:
+        if sa3_model is not None and not args.no_generate:
             try:
                 import torch
                 target = chroma_morph_target(other_a, other_b)
@@ -309,14 +356,35 @@ def main(argv=None):
                 print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
         else:
             rec["other_path"] = other_path
-            trans = (bass + drums + other + vocals + resid).astype(np.float64)
-            rec["peak"] = float(np.abs(trans).max())
-            rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
+            # (drums_variant, other_variant) renders; baseline first
+            variants = [("xfade", "skipped", drums, other)]
+            if sa3_model is not None:
+                other_sl = other
+                if args.other_slerp:
+                    other_sl = latent_slerp_other(sa3_model, other_a, other_b, L)
+                    other_sl, _ = dsp.match_rms(other_sl, other_ref)
+                    variants.append(("xfade", "slerp", drums, other_sl))
+                for nb in args.drum_inpaint_bars:
+                    dr_in = drum_inpaint(sa3_model, drums, nb, bpm_b, L, args)
+                    variants.append((f"inpaint{nb}bar", "skipped", dr_in, other))
+                    if args.other_slerp:
+                        variants.append((f"inpaint{nb}bar", "slerp", dr_in, other_sl))
+            rec["variants"] = []
+            for dn, on, d_, o_ in variants:
+                trans = (bass + d_ + o_ + vocals + resid).astype(np.float64)
+                v = {"drums": dn, "other": on, "peak": float(np.abs(trans).max())}
+                v["clipped_if_pcm16"] = bool(v["peak"] > 1.0)
+                fname = (f"v7_smoke_trans_FAST_{i}_skipped.wav" if (dn, on) == ("xfade", "skipped")
+                         else f"v7_smoke_trans_FAST_{i}_d-{dn}_o-{on}.wav")
+                name = out_dir / fname
+                sf.write(str(name), trans.T, SR, subtype="FLOAT")
+                v["file"] = name.name
+                rec["variants"].append(v)
+                print(f"  wrote {name.name} (peak {v['peak']:.2f})", flush=True)
+            rec["peak"] = rec["variants"][0]["peak"]
+            rec["clipped_if_pcm16"] = rec["variants"][0]["clipped_if_pcm16"]
             rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
-            name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
-            sf.write(str(name), trans.T, SR, subtype="FLOAT")
-            rec["file"] = name.name
-            print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
+            rec["file"] = rec["variants"][0]["file"]
 
     meta["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
     (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))

@@ -10,11 +10,14 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*275 entries from 4 journals.*
+*288 entries from 5 journals.*
 
 ---
 
 ## Long-form generation · transitions · crossfade
+- **v7 transition tempo: 10 ms-quantised bar intervals cause the hi-hat gallop; use a regression slope.** → `eval/render_v7_smoketest.py::get_exact_bpm` — ANTIGRAVITY, 2026-10-08
+- **clean DSP baseline accepted by Kim ("finally! the transitions were perfect").** — ANTIGRAVITY, 2026-10-08
+- [plan] **masked drum inpaint and latent slerp trials (rendered 2026-10-08, not yet auditioned).** → `~/staging/kone-mixtape/smoke/inpaint_trials/` — ANTIGRAVITY, 2026-10-08
 - **B7: from Kim's one-liner to an 8-arm LUMI bracket in one sitting.** — CONTINUITY, 2026-08-21
 - **longform "bursts" are windows resetting, not drift — and gap re-inpainting fixes it, RMS-guidance doesn't.** → `longform.py`, `mir/src/rhythm/beat_grid.py`, `explorer_render_server.py`, `/longform` — GHOST-NOTE, 2026-08-21
 - **goa_archive statistics + clustering (task #85, Kim direct).** → `goa_archive_curate.py`, `clusters_summary.json`, `mir/src/tools/statistical_analysis.py`, `whole_track_expanded.py`, `mir/src/tools/goa_archive_stats_export.py`, `statistical_analysis.py`, `STATISTICAL_ANALYSIS_MANUAL.md`, `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/{info/,stats.json}`, `/home/kim/Projects/lsdj`, `stable_audio_3/inference/longform.py`, `optimized/mlx/` — GHOST-NOTE, 2026-08-02
@@ -75,6 +78,8 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- **the LatCH "noise floor" was a seed-only number; worker count moved the plain recipe by 0.004.** — CONTINUITY, 2026-10-07
+- **what the last week of work added (09-28 → 10-07).** → `latch/extract_density_targets.py` — CONTINUITY, 2026-10-07
 - **the LatCH panel stops lying (inference-UI roadmap, Tasks 1-3).** → `docs/superpowers/plans/2026-08-24-inference-ui-batch-sweep-and-head-metadata.md`, `scripts/latch/train_latch.py`, `eval/head_meta.py`, `/roots`, `/info`, `/run/media/kim/`, `docs/INFERENCE-SURFACE.md`, `train_latch.py` — CONTINUITY, 2026-08-26
 - **Same day, later — presets, and the callback race that shapes them.** → `test_preset_form_partition.py`, `/info` — CONTINUITY, 2026-08-26
 - **Later still — the control arm is the test that finds the bug.** — CONTINUITY, 2026-08-26
@@ -171,6 +176,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **chroma correlation is a mode-collapse trap — it declared wins twice.** — WINTERMUTE, 2026-06-19
 
 ## Data pipeline · corpus prep · augmentation
+- **v7 kick phase alignment: sign of the shift (b_lo -= shift).** → `trans0_bungee_aligned_overlay_track0/1.wav` — ANTIGRAVITY, 2026-10-08
 - **D3 Part B: f0 into training crops (the crop-encoder resampler wiring).** → `mir/src/tools/crop_timeseries_resample.py`, `.TIMESERIES.npz`, `<idx>.json`, `track_folder/<name>.npz`, `--timeseries-root/<name>.npz` — CONTINUITY, 2026-08-12
 - **two nulls that could not fail, in one afternoon.** — WINTERMUTE, 2026-08-12
 - [decision] **augmented-set f0: SCALE, and why the a-priori argument beat every statistic we ran.** — THE-FINN, 2026-08-12
@@ -185,6 +191,8 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **the ±16 BPM augmentation is too mild to disentangle — caught before the full run.** — WINTERMUTE, 2026-06-26
 
 ## Fleet process · dialogue protocol · presence
+- **merge-before-render fix closed out (13e), first real renders through it.** — GHOST-NOTE, 2026-09-26
+- **2026-09-22→24 — three checks that each caught something the green light didn't.** → `Misc/agent_dialogue.py` — WINTERMUTE, 2026-09-17
 - [lesson] **a null controls for chance, not for circularity (the "check that cannot fail" family).** — THE-FINN, 2026-08-12
 - **doc-oversight skill + first pass — DISCOVERIES was 74% stale (the "clueless agents" cause).** → `build_discoveries.py`, `Misc/build_model_index_page.py` — THE-FINN, 2026-08-05
 - [RULED OUT] **same-handle GPU-mutex collision defeats the lock silently (task #74).** → `Misc/filelock.py` — GHOST-NOTE, 2026-07-25
@@ -208,6 +216,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **Bitwig calls middle C "C3".** — GHOST-NOTE, 2026-07-02
 
 ## Infra gotchas · venvs · ROCm/CK · storage
+- [lesson] **env: `transformers/audio_utils.py` raises PackageNotFoundError for torchcodec.** — ANTIGRAVITY, 2026-10-08
 - **We were pulling the weights and leaving the logs.** → `lightning_logs/`, `metrics.csv`, `runs/`, `/project/.../code`, `hparams.yaml`, `run_meta.json` — GHOST-NOTE, 2026-09-09
 - **RUNBOOK.md: the operator manual, and a workflow inversion.** → `RUNBOOK.md`, `filelock.py`, `gpu_guard.sh`, `agent_commit.sh`, `docs/commands.md`, `/tmp`, `CLAUDE.md`, `MASTER.md`, `KIM-TASKLIST.md` — GHOST-NOTE, 2026-09-08
 - **Filling the clip gaps in the last week's autoscale campaign.** → `eval/rarity_bracket_manifest.json`, `lightning_logs/metrics.csv`, `/home/kim/fullft_autoscale_2026-09-04` — GHOST-NOTE, 2026-09-08
@@ -233,6 +242,10 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- **vintage 1990s Goa sequencer timing: swing and 10-20 ms jitter are in the data.** → `measure_ikis.py`, `measure_goa_vintage.py` — ANTIGRAVITY, 2026-10-08
+- **DJ mix v7 phase 0 (GHOST-NOTE).** — GHOST-NOTE, 2026-10-07
+- **LoRA-TSD port finished; step-governor proposal reviewed; flight recorder built.** → `lora_tsd/NOTES.md`, `docs/PROPOSAL_ADAPTIVE_P95_STEP_GOVERNOR.md`, `stable_audio_3/training/flight_recorder.py`, `eval/inspect_flight_incident.py` — CONTINUITY, 2026-09-25
+- **the step-6340 "crash" was the render, not the model.** → `docs/training-findings.md` — CONTINUITY, 2026-09-25
 - **training-failure findings consolidated.** → `docs/training-findings.md` — CONTINUITY, 2026-09-24
 - **2026-09-07, later — the correction: I generalised one cell to the whole question.** — CONTINUITY, 2026-09-07
 - **2026-09-07, close — Kim's ears closed C6 in one sentence, and I should have asked for them first.** → `soup_descriptors.py` — CONTINUITY, 2026-09-07
