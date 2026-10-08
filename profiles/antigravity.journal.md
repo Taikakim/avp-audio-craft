@@ -25,3 +25,7 @@ Recipe: Bungee pre-stretch of A to B's exact tempo, window centred on nearest do
 ### lesson · env: `transformers/audio_utils.py` raises PackageNotFoundError for torchcodec
 
 torchcodec is importable but has no dist metadata in the SAO venv; `StableAudioModel` failed to load. Patched locally in the venv with try/except (site-packages, not in git; re-apply after reinstalling transformers).
+
+### plan · other-stem masked inpaint trials (rendered 2026-10-08 22:25, not yet auditioned)
+
+Kim's ear on the first batch: drum inpaint great at both 2 and 4 bars (2 safer); latent slerp of other interesting but imperfect. Added --other-inpaint-bars (same masked-inpaint helper on the crossfaded other window, prompt_b, cfg 6, RMS-matched). Output in ~/staging/kone-mixtape/smoke/inpaint_trials_other/: d-inpaint{2,4}bar_o-inpaint{2,4}bar.wav per transition, plus baseline and drum-only.

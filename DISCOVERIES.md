@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*288 entries from 5 journals.*
+*289 entries from 5 journals.*
 
 ---
 
@@ -18,6 +18,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **v7 transition tempo: 10 ms-quantised bar intervals cause the hi-hat gallop; use a regression slope.** → `eval/render_v7_smoketest.py::get_exact_bpm` — ANTIGRAVITY, 2026-10-08
 - **clean DSP baseline accepted by Kim ("finally! the transitions were perfect").** — ANTIGRAVITY, 2026-10-08
 - [plan] **masked drum inpaint and latent slerp trials (rendered 2026-10-08, not yet auditioned).** → `~/staging/kone-mixtape/smoke/inpaint_trials/` — ANTIGRAVITY, 2026-10-08
+- [plan] **other-stem masked inpaint trials (rendered 2026-10-08 22:25, not yet auditioned).** — ANTIGRAVITY, 2026-10-08
 - **B7: from Kim's one-liner to an 8-arm LUMI bracket in one sitting.** — CONTINUITY, 2026-08-21
 - **longform "bursts" are windows resetting, not drift — and gap re-inpainting fixes it, RMS-guidance doesn't.** → `longform.py`, `mir/src/rhythm/beat_grid.py`, `explorer_render_server.py`, `/longform` — GHOST-NOTE, 2026-08-21
 - **goa_archive statistics + clustering (task #85, Kim direct).** → `goa_archive_curate.py`, `clusters_summary.json`, `mir/src/tools/statistical_analysis.py`, `whole_track_expanded.py`, `mir/src/tools/goa_archive_stats_export.py`, `statistical_analysis.py`, `STATISTICAL_ANALYSIS_MANUAL.md`, `/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/goa_archive_features/{info/,stats.json}`, `/home/kim/Projects/lsdj`, `stable_audio_3/inference/longform.py`, `optimized/mlx/` — GHOST-NOTE, 2026-08-02

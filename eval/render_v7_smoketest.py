@@ -71,7 +71,7 @@ def latent_slerp_other(model, other_a, other_b, L):
     return np.pad(out, ((0, 0), (0, max(0, L - out.shape[-1]))))[:, :L]
 
 
-def drum_inpaint(model, drums_xf, n_bars, bpm, L, args):
+def drum_inpaint(model, drums_xf, n_bars, bpm, L, args, prompt=None, cfg=None):
     """Masked inpaint of the central n_bars of the (already crossfaded) drum window; the real drums are
     the context on both sides. Only the masked span is taken from the generation (50 ms edge fades)."""
     import torch
@@ -80,7 +80,7 @@ def drum_inpaint(model, drums_xf, n_bars, bpm, L, args):
     lo = W_sec / 2 - n_bars * bar / 2
     hi = lo + n_bars * bar
     out = model.generate(
-        prompt=args.drum_prompt, duration=W_sec, steps=args.steps, cfg_scale=args.drum_cfg,
+        prompt=prompt or args.drum_prompt, duration=W_sec, steps=args.steps, cfg_scale=cfg or args.drum_cfg,
         seed=args.seed, batch_size=1, sample_size=int((W_sec + 8) * SR),
         inpaint_audio=(SR, torch.tensor(drums_xf, dtype=torch.float32)),
         inpaint_mask_start_seconds=float(lo), inpaint_mask_end_seconds=float(hi))
@@ -126,6 +126,9 @@ def parse_args(argv=None):
     ap.add_argument("--drum-prompt", default="goa trance drum loop, kick, hi-hats, percussion, no melody")
     ap.add_argument("--drum-cfg", type=float, default=6.0)
     ap.add_argument("--other-slerp", action="store_true", help="also render a latent-slerp `other` variant")
+    ap.add_argument("--other-inpaint-bars", type=int, nargs="*", default=[],
+                    help="masked inpaint of the `other` stem over the central N bars, e.g. 2 4")
+    ap.add_argument("--other-cfg", type=float, default=6.0)
     args = ap.parse_args(argv)
     need = ["order", "stems_dir", "out_dir"] + ([] if args.no_generate else ["ckpt_a", "ckpt_b", "chroma_head"])
     missing = [f"--{n.replace('_', '-')} (or ${ENV[n]})" for n in need if not getattr(args, n)]
@@ -170,7 +173,7 @@ def main(argv=None):
         print(f"Loaded stems for {c['id']}", flush=True)
 
     sa3_model = None
-    if (not args.no_generate) or args.drum_inpaint_bars or args.other_slerp:
+    if (not args.no_generate) or args.drum_inpaint_bars or args.other_slerp or args.other_inpaint_bars:
         sys.path.insert(0, "/home/kim/Projects/SAO/eval")
         from stable_audio_3 import StableAudioModel
         print("Initializing SA3 Model...", flush=True)
@@ -369,6 +372,17 @@ def main(argv=None):
                     variants.append((f"inpaint{nb}bar", "skipped", dr_in, other))
                     if args.other_slerp:
                         variants.append((f"inpaint{nb}bar", "slerp", dr_in, other_sl))
+                    for ob in args.other_inpaint_bars:
+                        ot_in = drum_inpaint(sa3_model, other_ref, ob, bpm_b, L, args,
+                                             prompt=args.prompt_b, cfg=args.other_cfg)
+                        ot_in, _ = dsp.match_rms(ot_in, other_ref)
+                        variants.append((f"inpaint{nb}bar", f"inpaint{ob}bar", dr_in, ot_in))
+                if not args.drum_inpaint_bars:
+                    for ob in args.other_inpaint_bars:
+                        ot_in = drum_inpaint(sa3_model, other_ref, ob, bpm_b, L, args,
+                                             prompt=args.prompt_b, cfg=args.other_cfg)
+                        ot_in, _ = dsp.match_rms(ot_in, other_ref)
+                        variants.append(("xfade", f"inpaint{ob}bar", drums, ot_in))
             rec["variants"] = []
             for dn, on, d_, o_ in variants:
                 trans = (bass + d_ + o_ + vocals + resid).astype(np.float64)
