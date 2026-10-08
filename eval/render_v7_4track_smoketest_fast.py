@@ -40,10 +40,12 @@ def safe_slice(audio, start_idx, end_idx):
         
     return out
 
+sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
+from harmonic.same_chroma import compute_same_chroma
+
 def get_chroma(audio, sr):
-    y = librosa.to_mono(audio)
-    chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=4096)
-    return torch.tensor(chroma).unsqueeze(0)
+    c = compute_same_chroma(audio.T, sr).reshape(384, -1)
+    return torch.tensor(c).unsqueeze(0)
 
 def main():
     print("Starting V7 4-Track Smoke Test Pipeline (Fast Native Mode)...")
@@ -85,15 +87,15 @@ def main():
         bB = bounds[cB['id']]
         W_sec = W_bars * 4 * 60 / cA.get("bpm", 140)
         
+        L = int(W_sec * SR)
         A_start_idx = int((bA["end_pre_zc"] - W_sec/2) * SR)
-        A_end_idx = int((bA["end_pre_zc"] + W_sec/2) * SR)
+        A_end_idx = A_start_idx + L
         B_start_idx = int((bB["start"] - W_sec/2) * SR)
-        B_end_idx = int((bB["start"] + W_sec/2) * SR)
+        B_end_idx = B_start_idx + L
         
         sA = stems[cA['id']]
         sB = stems[cB['id']]
         
-        L = int(W_sec * SR)
         
         ramp_up = np.linspace(0, 1, L)
         ramp_down = np.linspace(1, 0, L)
@@ -127,7 +129,12 @@ def main():
         print("Extracting Chroma Targets...")
         chroma_A = get_chroma(other_A_sliced, SR)
         chroma_B = get_chroma(other_B_sliced, SR)
-        chroma_target = (chroma_A * torch.tensor(ramp_down).unsqueeze(0).unsqueeze(0) + chroma_B * torch.tensor(ramp_up).unsqueeze(0).unsqueeze(0)).float()
+        
+        chroma_len = chroma_A.shape[-1]
+        ramp_up_chroma = torch.linspace(0, 1, chroma_len)
+        ramp_down_chroma = torch.linspace(1, 0, chroma_len)
+        chroma_target = (chroma_A * ramp_down_chroma.unsqueeze(0).unsqueeze(0) + chroma_B * ramp_up_chroma.unsqueeze(0).unsqueeze(0)).float()
+
         
         ckpt_a = "/run/media/kim/Mantu/sa3_lora_runs/dora128adj_avp_8ep_final/epoch=0-step=299.weights.ckpt"
         ckpt_b = "/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt"
@@ -149,7 +156,13 @@ def main():
             print(f"Generative inference failed, falling back to crossfade: {e}")
             other_out = other_A_sliced * ramp_down + other_B_sliced * ramp_up
             
+        
+        if other_out.shape[-1] < L:
+            other_out = np.pad(other_out, ((0,0), (0, L - other_out.shape[-1])))
+        else:
+            other_out = other_out[:, :L]
         trans_out = bass_out + drums_out + other_out
+
         
         sf.write(f"/home/kim/staging/kone-mixtape/smoke/v7_smoke_trans_FAST_{i}.wav", trans_out.T, SR)
         
