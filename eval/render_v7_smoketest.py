@@ -160,18 +160,53 @@ def main(argv=None):
         other, other_path = other_ref, "skipped"
         if sa3_model is not None:
             try:
+                import torch
                 target = chroma_morph_target(other_a, other_b)
-                gen, _ = dual_latch_guided_generate(
-                    model=sa3_model, ckpt_a=args.ckpt_a, ckpt_b=args.ckpt_b,
-                    prompt_a=args.prompt_a, prompt_b=args.prompt_b, duration=W_sec,
-                    chroma_target_tensor=target, chroma_head_path=args.chroma_head,
-                    steps=args.steps, seed=args.seed, latch_gain=args.latch_gain)
-                gen = gen.numpy()
-                rec["other_peak"] = dsp.assert_finite(gen, f"transition {i} other")
-                rec["other_len_delta"] = int(gen.shape[-1] - L)   # logged, then padded or trimmed
-                gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
-                other, rec["other_gain"] = dsp.match_rms(gen, other_ref)
-                other_path = "generative"
+                sa3_model.load_lora([args.ckpt_b])
+                
+                for nl in [0.5, 0.6, 0.7]:
+                    Tz2 = int(np.ceil(W_sec * sa3_model.model.sample_rate / sa3_model.model.pretransform.downsampling_ratio))
+                    dshape = torch.sin(torch.linspace(0, torch.pi, Tz2))
+                    depth2 = (dshape * nl).view(1, 1, -1)
+                    
+                    pre2 = sa3_model.model.pretransform
+                    pp = next(pre2.parameters())
+                    with torch.inference_mode():
+                        z_ref2 = pre2.encode(torch.tensor(other_ref, device=pp.device, dtype=pp.dtype).unsqueeze(0)).float().cpu()
+                    torch.manual_seed(args.seed)
+                    eps2 = torch.randn_like(z_ref2)
+                    
+                    def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
+                        x, tt = d["x"], float(d["t"][0])
+                        nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
+                        hold = (_d[..., :nn] < tt)
+                        ref_t = _z[..., :nn] * (1 - tt) + _e[..., :nn] * tt
+                        x[..., :nn] = torch.where(hold.to(x.device), ref_t.to(x.dtype).to(x.device), x[..., :nn])
+                    
+                    kw = dict(prompt=args.prompt_b, duration=W_sec, steps=args.steps, cfg_scale=6.0,
+                              seed=args.seed, batch_size=1, sample_size=int((W_sec + 8) * SR),
+                              init_audio=(SR, torch.tensor(other_ref, dtype=torch.float32)), init_noise_level=nl,
+                              latch_configs=[{"model_path": args.chroma_head, "target_raw": target, "weight": 1.0, "end_pct": 0.6}],
+                              latch_hparams={"rho": args.latch_gain, "mu": args.latch_gain}, callback=cb2)
+                    gen = sa3_model.generate(**kw)[0].float().cpu().numpy()
+                    
+                    rec_nl = rec.copy()
+                    rec_nl["nl"] = nl
+                    rec_nl["other_peak"] = dsp.assert_finite(gen, f"transition {i} other nl{nl}")
+                    rec_nl["other_len_delta"] = int(gen.shape[-1] - L)
+                    gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
+                    other, rec_nl["other_gain"] = dsp.match_rms(gen, other_ref)
+                    other_path = f"nl{int(nl*100)}"
+                    rec_nl["other_path"] = other_path
+                    
+                    trans = (bass + drums + other + vocals + resid).astype(np.float64)
+                    rec_nl["peak"] = float(np.abs(trans).max())
+                    rec_nl["clipped_if_pcm16"] = bool(rec_nl["peak"] > 1.0)
+                    rec_nl["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
+                    name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
+                    sf.write(str(name), trans.T, SR, subtype="FLOAT")
+                    rec_nl["file"] = name.name
+                    print(f"  wrote {name.name} (peak {rec_nl['peak']:.2f}, other: {other_path})", flush=True)
             except Exception as e:                                # noqa: BLE001
                 rec["error"] = repr(e)
                 if not args.allow_fallback:
@@ -180,16 +215,24 @@ def main(argv=None):
                     raise
                 print(f"Generative inference failed, FALLING BACK to crossfade: {e!r}", flush=True)
                 other_path = "fallback_crossfade"
-        rec["other_path"] = other_path
-
-        trans = (bass + drums + other + vocals + resid).astype(np.float64)
-        rec["peak"] = float(np.abs(trans).max())
-        rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
-        rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
-        name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
-        sf.write(str(name), trans.T, SR, subtype="FLOAT")        # float: nothing clips here; normalise the whole mix once
-        rec["file"] = name.name
-        print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
+                
+                trans = (bass + drums + other + vocals + resid).astype(np.float64)
+                rec["peak"] = float(np.abs(trans).max())
+                rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
+                rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
+                name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
+                sf.write(str(name), trans.T, SR, subtype="FLOAT")
+                rec["file"] = name.name
+                print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
+        else:
+            trans = (bass + drums + other + vocals + resid).astype(np.float64)
+            rec["peak"] = float(np.abs(trans).max())
+            rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
+            rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
+            name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
+            sf.write(str(name), trans.T, SR, subtype="FLOAT")
+            rec["file"] = name.name
+            print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
 
     meta["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
     (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
