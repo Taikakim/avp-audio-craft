@@ -146,3 +146,77 @@ def assert_finite(x, name, peak_max=16.0):
     if pk > peak_max:
         raise FloatingPointError(f"{name}: peak {pk:.3g} exceeds {peak_max} (13e signature is ~1e11)")
     return pk
+
+
+# ---------------------------------------------------------------------------------------------
+# tempo matching and phase alignment
+# ---------------------------------------------------------------------------------------------
+
+MIR_BUNGEE_PY = "/home/kim/Projects/mir/pitch_venv/bin/python"
+
+
+def bungee_stretch(audio, speed, sr=44100):
+    """Time-stretch audio (C, N) using Bungee (in pitch_venv).
+    speed > 1.0 speeds up (shortens duration, raises tempo).
+    """
+    import subprocess
+    import tempfile
+
+    if abs(float(speed) - 1.0) < 0.001:
+        return audio
+
+    with tempfile.TemporaryDirectory() as td:
+        src, dst = f"{td}/in.npy", f"{td}/out.npy"
+        np.save(src, audio.T)
+        code = f"""
+import numpy as np
+from bungee_python import bungee as B
+d = np.load({src!r}).astype(np.float32)
+st = B.Bungee(sample_rate={sr}, channels=d.shape[1])
+st.set_speed({float(speed)})
+chunk = int(0.25 * {sr})
+outs = []
+for lo in range(0, d.shape[0], chunk):
+    y = np.asarray(st.process(d[lo:lo + chunk]), dtype=np.float32)
+    if y.ndim == 1: y = y.reshape(-1, d.shape[1])
+    outs.append(y)
+np.save({dst!r}, np.concatenate(outs, axis=0))
+"""
+        subprocess.run([MIR_BUNGEE_PY, "-c", code], check=True, capture_output=True)
+        return np.load(dst).T
+
+
+def kick_env(audio, sr=44100, band=(40.0, 150.0)):
+    """40-150 Hz band -> Hilbert envelope -> low-passed at 40 Hz -> zero-mean.
+    Isolates kick drum transient pulses across clips."""
+    from scipy.signal import hilbert, sosfiltfilt
+    mono = audio.mean(0) if audio.ndim > 1 else audio
+    sos_bp = butter(4, band, "bandpass", fs=sr, output="sos")
+    b = sosfiltfilt(sos_bp, mono)
+    e = np.abs(hilbert(b))
+    sos_lp = butter(2, 40.0, "low", fs=sr, output="sos")
+    e = sosfiltfilt(sos_lp, e)
+    return e - e.mean()
+
+
+def phase_shift(a_seg, b_seg, beat_samples, sr=44100, penalty=0.05):
+    """B delayed by s samples (s>0) maximises normalised correlation of kick envelopes
+    over +-1/4 beat. Returns (shift_samples, ncc_best, ncc_zero)."""
+    from scipy.signal import fftconvolve
+    a, b = kick_env(a_seg, sr=sr), kick_env(b_seg, sr=sr)
+    n = min(len(a), len(b))
+    a, b = a[:n], b[:n]
+    m = int(round(beat_samples / 4))
+    c = fftconvolve(a, b[::-1], mode="full")
+    best, best_score, ncc = 0, -np.inf, {}
+    for s in range(-m, m + 1):
+        ov = n - abs(s)
+        lo_a, lo_b = max(0, s), max(0, -s)
+        na = np.sqrt((a[lo_a:lo_a + ov] ** 2).sum()) * np.sqrt((b[lo_b:lo_b + ov] ** 2).sum())
+        v = float(c[n - 1 + s] / max(na, 1e-12))
+        ncc[s] = v
+        score = v - penalty * abs(s) / m
+        if score > best_score:
+            best, best_score = s, score
+    return best, ncc.get(best, 0.0), ncc.get(0, 0.0)
+

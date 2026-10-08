@@ -60,6 +60,8 @@ def parse_args(argv=None):
     ap.add_argument("--order", default=os.environ.get(ENV["order"]), help=f"order_used.json (env {ENV['order']})")
     ap.add_argument("--stems-dir", default=os.environ.get(ENV["stems_dir"]), help=f"env {ENV['stems_dir']}")
     ap.add_argument("--bounds", default=D_BOUNDS)
+    ap.add_argument("--downbeats", default=os.environ.get("V7_DOWNBEATS", "/run/media/kim/Mantu/sa3_lora_runs/mixtape_v7_phase0/downbeats_native.json"),
+                    help="path to downbeats_native.json")
     ap.add_argument("--out-dir", default=os.environ.get(ENV["out_dir"]), help=f"env {ENV['out_dir']}")
     ap.add_argument("--clips", default="2:6", help="slice of the order list, start:stop (default 2:6 = clips 2..5)")
     ap.add_argument("--w-bars", type=int, default=8,
@@ -129,32 +131,78 @@ def main(argv=None):
         print("Initializing SA3 Model...", flush=True)
         sa3_model = StableAudioModel.from_pretrained("medium-base", device="cuda")
 
+    dbs = {}
+    if args.downbeats and Path(args.downbeats).exists():
+        dbs = json.loads(Path(args.downbeats).read_text())
+        print(f"Loaded downbeats from {args.downbeats} ({len(dbs)} tracks)", flush=True)
+
     for i in range(len(clips) - 1):
         cA, cB = clips[i], clips[i + 1]
         print(f"Processing Transition {i + 1}: {cA['id']} -> {cB['id']}", flush=True)
         rec = {"i": i, "a": cA["id"], "b": cB["id"]}
         meta["transitions"].append(rec)
 
-        bpm = cA.get("bpm")
-        rec["bpm_source"] = "order" if bpm else "default"
-        bpm = float(bpm or args.default_bpm)
-        rec["bpm"] = bpm
-        W_sec = args.w_bars * 4 * 60 / bpm
+        dbA = np.array(dbs.get(cA["id"], []))
+        dbB = np.array(dbs.get(cB["id"], []))
+
+        bpm_a = float(240.0 / np.median(np.diff(dbA))) if len(dbA) > 2 else float(cA.get("bpm") or args.default_bpm)
+        bpm_b = float(240.0 / np.median(np.diff(dbB))) if len(dbB) > 2 else float(cB.get("bpm") or args.default_bpm)
+        bpm_val = cA.get("bpm")
+        rec["bpm_source"] = "order" if bpm_val else ("downbeats" if len(dbA) > 2 else "default")
+        rec["bpm_a"] = bpm_a
+        rec["bpm_b"] = bpm_b
+        rec["bpm"] = bpm_b
+        rec["gap_bpm"] = bpm_b - bpm_a
+
+        # 1. Bungee time-stretch outgoing clip A to match B's tempo
+        speed = bpm_b / bpm_a
+        rec["bungee_speed"] = float(speed)
+        sA = stems[cA["id"]]
+        if abs(speed - 1.0) >= 0.005:
+            print(f"  Bungee stretching outgoing track {cA['id'][:32]} by {speed:.4f} ({bpm_a:.2f} -> {bpm_b:.2f} BPM)...", flush=True)
+            sA_eff = {k: dsp.bungee_stretch(sA[k], speed, sr=SR) for k in sA}
+            dbA_eff = dbA / speed if len(dbA) else dbA
+        else:
+            sA_eff = sA
+            dbA_eff = dbA
+
+        # 2. Window duration at B's tempo
+        W_sec = args.w_bars * 4 * 60 / bpm_b
         L = int(round(W_sec * SR))
-        # one seconds->samples conversion each; both windows have length L by construction
-        a_lo = int(round(bounds[cA["id"]]["end_pre_zc"] * SR)) - L // 2
-        b_lo = int(round(bounds[cB["id"]]["start"] * SR)) - L // 2
-        sA, sB = stems[cA["id"]], stems[cB["id"]]
+
+        # 3. Downbeat snapping: center transition window on nearest downbeats
+        if len(dbA_eff) > 2 and len(dbB) > 2:
+            a_target = bounds[cA["id"]]["end_pre_zc"] / speed
+            b_target = bounds[cB["id"]]["start"]
+            a_db = float(dbA_eff[np.argmin(abs(dbA_eff - a_target))])
+            b_db = float(dbB[np.argmin(abs(dbB - b_target))])
+            a_lo = int(round(a_db * SR)) - L // 2
+            b_lo = int(round(b_db * SR)) - L // 2
+        else:
+            a_lo = int(round((bounds[cA["id"]]["end_pre_zc"] / speed) * SR)) - L // 2
+            b_lo = int(round(bounds[cB["id"]]["start"] * SR)) - L // 2
+
+        sB = stems[cB["id"]]
 
         def win(s, name, lo):
             return dsp.safe_slice(s[name], lo, lo + L)
 
-        bass, ga, gb = dsp.bass_handover(win(sA, "bass", a_lo), win(sB, "bass", b_lo), L // 2,
+        # 4. Kick transient phase alignment over +-1/4 beat
+        beat_samples = round(60.0 / bpm_b * SR)
+        shift, ncc_b, ncc_0 = dsp.phase_shift(win(sA_eff, "drums", a_lo), win(sB, "drums", b_lo), beat_samples, sr=SR)
+        b_lo += shift
+        rec["phase_shift_samples"] = int(shift)
+        rec["phase_shift_ms"] = float(shift / SR * 1000)
+        rec["ncc_best"] = float(ncc_b)
+        rec["ncc_zero"] = float(ncc_0)
+        print(f"  Kick phase alignment: shift = {rec['phase_shift_ms']:+.2f} ms (NCC: {ncc_0:.3f} -> {ncc_b:.3f})", flush=True)
+
+        bass, ga, gb = dsp.bass_handover(win(sA_eff, "bass", a_lo), win(sB, "bass", b_lo), L // 2,
                                          int(round(SR * args.blend_ms / 1000.0)))
-        drums = dsp.drums_crossfade(win(sA, "drums", a_lo), win(sB, "drums", b_lo), SR)
-        vocals = dsp.crossfade(win(sA, "vocals", a_lo), win(sB, "vocals", b_lo))
-        resid = dsp.crossfade(win(sA, "residual", a_lo), win(sB, "residual", b_lo), kind="linear")
-        other_a, other_b = win(sA, "other", a_lo), win(sB, "other", b_lo)
+        drums = dsp.drums_crossfade(win(sA_eff, "drums", a_lo), win(sB, "drums", b_lo), SR)
+        vocals = dsp.crossfade(win(sA_eff, "vocals", a_lo), win(sB, "vocals", b_lo))
+        resid = dsp.crossfade(win(sA_eff, "residual", a_lo), win(sB, "residual", b_lo), kind="linear")
+        other_a, other_b = win(sA_eff, "other", a_lo), win(sB, "other", b_lo)
         other_ref = dsp.crossfade(other_a, other_b)          # reference level, and the labelled fallback
 
         other, other_path = other_ref, "skipped"
@@ -162,51 +210,76 @@ def main(argv=None):
             try:
                 import torch
                 target = chroma_morph_target(other_a, other_b)
-                sa3_model.load_lora([args.ckpt_b])
                 
-                for nl in [0.5, 0.6, 0.7]:
-                    Tz2 = int(np.ceil(W_sec * sa3_model.model.sample_rate / sa3_model.model.pretransform.downsampling_ratio))
-                    dshape = torch.sin(torch.linspace(0, torch.pi, Tz2))
-                    depth2 = (dshape * nl).view(1, 1, -1)
-                    
-                    pre2 = sa3_model.model.pretransform
-                    pp = next(pre2.parameters())
-                    with torch.inference_mode():
-                        z_ref2 = pre2.encode(torch.tensor(other_ref, device=pp.device, dtype=pp.dtype).unsqueeze(0)).float().cpu()
-                    torch.manual_seed(args.seed)
-                    eps2 = torch.randn_like(z_ref2)
-                    
-                    def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
-                        x, tt = d["x"], float(d["t"][0])
-                        nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
-                        hold = (_d[..., :nn] < tt)
-                        ref_t = _z[..., :nn] * (1 - tt) + _e[..., :nn] * tt
-                        x[..., :nn] = torch.where(hold.to(x.device), ref_t.to(x.dtype).to(x.device), x[..., :nn])
-                    
-                    kw = dict(prompt=args.prompt_b, duration=W_sec, steps=args.steps, cfg_scale=6.0,
-                              seed=args.seed, batch_size=1, sample_size=int((W_sec + 8) * SR),
-                              init_audio=(SR, torch.tensor(other_ref, dtype=torch.float32)), init_noise_level=nl,
-                              latch_configs=[{"model_path": args.chroma_head, "target_raw": target, "weight": 1.0, "end_pct": 0.6}],
-                              latch_hparams={"rho": args.latch_gain, "mu": args.latch_gain}, callback=cb2)
-                    gen = sa3_model.generate(**kw)[0].float().cpu().numpy()
-                    
-                    rec_nl = rec.copy()
-                    rec_nl["nl"] = nl
-                    rec_nl["other_peak"] = dsp.assert_finite(gen, f"transition {i} other nl{nl}")
-                    rec_nl["other_len_delta"] = int(gen.shape[-1] - L)
+                if hasattr(sa3_model, "generate"):
+                    if hasattr(sa3_model, "load_lora"):
+                        sa3_model.load_lora([args.ckpt_b])
+                    for nl in [0.5, 0.6, 0.7]:
+                        Tz2 = int(np.ceil(W_sec * sa3_model.model.sample_rate / sa3_model.model.pretransform.downsampling_ratio))
+                        dshape = torch.sin(torch.linspace(0, torch.pi, Tz2))
+                        depth2 = (dshape * nl).view(1, 1, -1)
+                        
+                        pre2 = sa3_model.model.pretransform
+                        pp = next(pre2.parameters())
+                        with torch.inference_mode():
+                            z_ref2 = pre2.encode(torch.tensor(other_ref, device=pp.device, dtype=pp.dtype).unsqueeze(0)).float().cpu()
+                        torch.manual_seed(args.seed)
+                        eps2 = torch.randn_like(z_ref2)
+                        
+                        def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
+                            x, tt = d["x"], float(d["t"][0])
+                            nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
+                            hold = (_d[..., :nn] < tt)
+                            ref_t = _z[..., :nn] * (1 - tt) + _e[..., :nn] * tt
+                            x[..., :nn] = torch.where(hold.to(x.device), ref_t.to(x.dtype).to(x.device), x[..., :nn])
+                        
+                        kw = dict(prompt=args.prompt_b, duration=W_sec, steps=args.steps, cfg_scale=6.0,
+                                  seed=args.seed, batch_size=1, sample_size=int((W_sec + 8) * SR),
+                                  init_audio=(SR, torch.tensor(other_ref, dtype=torch.float32)), init_noise_level=nl,
+                                  latch_configs=[{"model_path": args.chroma_head, "target_raw": target, "weight": 1.0, "end_pct": 0.6}],
+                                  latch_hparams={"rho": args.latch_gain, "mu": args.latch_gain}, callback=cb2)
+                        gen = sa3_model.generate(**kw)[0].float().cpu().numpy()
+                        
+                        rec_nl = rec.copy()
+                        rec_nl["nl"] = nl
+                        rec_nl["other_peak"] = dsp.assert_finite(gen, f"transition {i} other nl{nl}")
+                        rec_nl["other_len_delta"] = int(gen.shape[-1] - L)
+                        gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
+                        other, rec_nl["other_gain"] = dsp.match_rms(gen, other_ref)
+                        other_path = f"nl{int(nl*100)}"
+                        rec_nl["other_path"] = other_path
+                        
+                        trans = (bass + drums + other + vocals + resid).astype(np.float64)
+                        rec_nl["peak"] = float(np.abs(trans).max())
+                        rec_nl["clipped_if_pcm16"] = bool(rec_nl["peak"] > 1.0)
+                        rec_nl["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
+                        name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
+                        sf.write(str(name), trans.T, SR, subtype="FLOAT")
+                        rec_nl["file"] = name.name
+                        print(f"  wrote {name.name} (peak {rec_nl['peak']:.2f}, other: {other_path})", flush=True)
+                    rec["other_path"] = "generative"
+                else:
+                    from mixtape_v7_generative_inference import dual_latch_guided_generate
+                    gen, _ = dual_latch_guided_generate(
+                        model=sa3_model, ckpt_a=args.ckpt_a, ckpt_b=args.ckpt_b,
+                        prompt_a=args.prompt_a, prompt_b=args.prompt_b, duration=W_sec,
+                        chroma_target_tensor=target, chroma_head_path=args.chroma_head,
+                        steps=args.steps, seed=args.seed, latch_gain=args.latch_gain)
+                    gen = gen.numpy()
+                    rec["other_peak"] = dsp.assert_finite(gen, f"transition {i} other")
+                    rec["other_len_delta"] = int(gen.shape[-1] - L)
                     gen = np.pad(gen, ((0, 0), (0, max(0, L - gen.shape[-1]))))[:, :L]
-                    other, rec_nl["other_gain"] = dsp.match_rms(gen, other_ref)
-                    other_path = f"nl{int(nl*100)}"
-                    rec_nl["other_path"] = other_path
-                    
+                    other, rec["other_gain"] = dsp.match_rms(gen, other_ref)
+                    other_path = "generative"
+                    rec["other_path"] = other_path
                     trans = (bass + drums + other + vocals + resid).astype(np.float64)
-                    rec_nl["peak"] = float(np.abs(trans).max())
-                    rec_nl["clipped_if_pcm16"] = bool(rec_nl["peak"] > 1.0)
-                    rec_nl["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
+                    rec["peak"] = float(np.abs(trans).max())
+                    rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
+                    rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
                     name = out_dir / f"v7_smoke_trans_FAST_{i}_{other_path}.wav"
                     sf.write(str(name), trans.T, SR, subtype="FLOAT")
-                    rec_nl["file"] = name.name
-                    print(f"  wrote {name.name} (peak {rec_nl['peak']:.2f}, other: {other_path})", flush=True)
+                    rec["file"] = name.name
+                    print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
             except Exception as e:                                # noqa: BLE001
                 rec["error"] = repr(e)
                 if not args.allow_fallback:
@@ -215,6 +288,7 @@ def main(argv=None):
                     raise
                 print(f"Generative inference failed, FALLING BACK to crossfade: {e!r}", flush=True)
                 other_path = "fallback_crossfade"
+                rec["other_path"] = other_path
                 
                 trans = (bass + drums + other + vocals + resid).astype(np.float64)
                 rec["peak"] = float(np.abs(trans).max())
@@ -225,6 +299,7 @@ def main(argv=None):
                 rec["file"] = name.name
                 print(f"  wrote {name.name} (peak {rec['peak']:.2f}, other: {other_path})", flush=True)
         else:
+            rec["other_path"] = other_path
             trans = (bass + drums + other + vocals + resid).astype(np.float64)
             rec["peak"] = float(np.abs(trans).max())
             rec["clipped_if_pcm16"] = bool(rec["peak"] > 1.0)
