@@ -145,8 +145,15 @@ def main(argv=None):
         dbA = np.array(dbs.get(cA["id"], []))
         dbB = np.array(dbs.get(cB["id"], []))
 
-        bpm_a = float(240.0 / np.median(np.diff(dbA))) if len(dbA) > 2 else float(cA.get("bpm") or args.default_bpm)
-        bpm_b = float(240.0 / np.median(np.diff(dbB))) if len(dbB) > 2 else float(cB.get("bpm") or args.default_bpm)
+        def get_exact_bpm(db, fallback):
+            if len(db) > 2:
+                # Linear regression over downbeats for exact bar duration without 10ms detection noise
+                slope, _ = np.polyfit(np.arange(len(db)), db, 1)
+                return float(240.0 / slope)
+            return float(fallback)
+
+        bpm_a = get_exact_bpm(dbA, cA.get("bpm") or args.default_bpm)
+        bpm_b = get_exact_bpm(dbB, cB.get("bpm") or args.default_bpm)
         bpm_val = cA.get("bpm")
         rec["bpm_source"] = "order" if bpm_val else ("downbeats" if len(dbA) > 2 else "default")
         rec["bpm_a"] = bpm_a
@@ -190,7 +197,9 @@ def main(argv=None):
         # 4. Kick transient phase alignment over +-1/4 beat
         beat_samples = round(60.0 / bpm_b * SR)
         shift, ncc_b, ncc_0 = dsp.phase_shift(win(sA_eff, "drums", a_lo), win(sB, "drums", b_lo), beat_samples, sr=SR)
-        b_lo += shift
+        # Note: phase_shift returns s where delaying B by +s samples aligns with A.
+        # To delay B within the slice, the slice into B must start earlier: b_lo -= shift.
+        b_lo -= shift
         rec["phase_shift_samples"] = int(shift)
         rec["phase_shift_ms"] = float(shift / SR * 1000)
         rec["ncc_best"] = float(ncc_b)
