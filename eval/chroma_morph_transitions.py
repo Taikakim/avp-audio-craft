@@ -171,9 +171,11 @@ def fine_align_shift(A_seg, B_seg, sr, span_sec, max_shift_sec):
 
 
 def encode(model, audio, sr):
+    from mixtape_v7_dsp import pad_end_to_frame
     pre = model.model.pretransform
     p = next(pre.parameters())
-    a = torch.tensor(audio, device=p.device, dtype=p.dtype).unsqueeze(0)
+    padded = pad_end_to_frame(np.asarray(audio), pre.downsampling_ratio)
+    a = torch.tensor(padded, device=p.device, dtype=p.dtype).unsqueeze(0)
     with torch.inference_mode():
         return pre.encode(a).clone()
 

@@ -11,9 +11,22 @@ lr4_sos() is the same filter as mixtape_assemble_v7.lr4_sos(); it is copied so t
 imports without the mir venv / SA3 (that module pulls in chroma_morph_transitions). Unify when
 convenient.
 """
+import os
 import numpy as np
 from scipy.signal import butter, fftconvolve, find_peaks, hilbert, sosfilt, sosfiltfilt, stft
 from scipy.stats import theilslopes
+
+
+def resolve_mantu(p):
+    """Dynamically remap broken /run/media/kim/Mantu mount paths to /run/media/kim/Mantu2."""
+    if not p:
+        return p
+    p_str = str(p)
+    if "/run/media/kim/Mantu/" in p_str or p_str == "/run/media/kim/Mantu":
+        p2 = p_str.replace("/run/media/kim/Mantu", "/run/media/kim/Mantu2", 1)
+        if os.path.exists(p2) or not os.path.exists(p_str):
+            return p2
+    return p_str
 
 
 # ---------------------------------------------------------------------------------------------

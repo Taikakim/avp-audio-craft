@@ -157,7 +157,12 @@ def parse_args(argv=None):
     ap.add_argument("--chroma-head", default=os.environ.get(ENV["chroma_head"]), help=f"lora_latch. env {ENV['chroma_head']}")
     ap.add_argument("--prompt-a", default="aggressive upbeat goa trance", help="unused since 1307106")
     ap.add_argument("--prompt-b", default="driving pulsating psytrance", help="lora_latch prompt")
+    ap.add_argument("--assemble-mix", action="store_true", help="assemble full continuous mix across all clips for each variant")
     args = ap.parse_args(argv)
+    for attr in ("order", "stems_dir", "bounds", "downbeats", "out_dir", "ckpt_a", "ckpt_b", "chroma_head"):
+        val = getattr(args, attr, None)
+        if val:
+            setattr(args, attr, dsp.resolve_mantu(val))
     try:
         args.noise_levels = [float(v) for v in str(args.noise_levels).split(",") if v.strip()]
         assert args.noise_levels and all(0.0 < v <= 1.0 for v in args.noise_levels)
@@ -427,6 +432,7 @@ def main(argv=None):
     for c in clips:
         stems[c["id"]] = load_stems(args.stems_dir, all_clips.index(c), args.drum_split)
         print(f"Loaded stems for {c['id']}", flush=True)
+    effective_stems = dict(stems)
     dbs = {}
     if args.downbeats and Path(args.downbeats).exists():
         dbs = json.loads(Path(args.downbeats).read_text())
@@ -503,7 +509,10 @@ def main(argv=None):
         shift, ncc_b, ncc_0 = dsp.phase_shift(win(sA, "drums", a_lo), win(sB, "drums", b_lo),
                                               round(60.0 / bpm_b * SR), sr=SR, span=args.phase_span)
         b_lo -= shift
-        rec.update(phase_shift_samples=int(shift), phase_shift_ms=float(shift / SR * 1000), ncc_best=ncc_b, ncc_zero=ncc_0)
+        rec.update(phase_shift_samples=int(shift), phase_shift_ms=float(shift / SR * 1000), ncc_best=ncc_b, ncc_zero=ncc_0,
+                   a_lo=int(a_lo), b_lo=int(b_lo), L=int(L))
+        effective_stems[cA["id"]] = sA
+        effective_stems[cB["id"]] = sB
         print(f"  Kick phase alignment: shift = {rec['phase_shift_ms']:+.2f} ms (NCC {ncc_0:.3f} -> {ncc_b:.3f})", flush=True)
 
         bar = int(round(4 * 60 / bpm * SR))
@@ -667,6 +676,62 @@ def main(argv=None):
                 if not args.allow_fallback:
                     raise
                 print(f"Variant {tag} failed, continuing (--allow-fallback): {e!r}", flush=True)
+
+    if args.assemble_mix and len(clips) >= 2:
+        import subprocess
+        print("\nAssembling full continuous mixes across clips...", flush=True)
+        variant_sets = []
+        for r in meta["transitions"]:
+            outs = {out["other_path"] for out in r.get("outputs", []) if out.get("other_path") not in ("FAILED", None)}
+            variant_sets.append(outs)
+        common_variants = sorted(list(set.intersection(*variant_sets))) if variant_sets else []
+        meta["assembled_mixes"] = []
+
+        def get_clip_sum(stem_dict):
+            res = None
+            for sn in STEM_NAMES:
+                st = stem_dict[sn]
+                res = st.copy() if res is None else res + st
+            return res
+
+        for v in common_variants:
+            pieces = []
+            c0_sum = get_clip_sum(effective_stems[clips[0]["id"]])
+            a_lo_0 = meta["transitions"][0]["a_lo"]
+            pieces.append(dsp.safe_slice(c0_sum, 0, a_lo_0))
+
+            for j in range(len(clips) - 1):
+                rec_j = meta["transitions"][j]
+                match_out = next(o for o in rec_j["outputs"] if o["other_path"] == v)
+                t_wav, _ = sf.read(str(out_dir / match_out["file"]), dtype="float32")
+                t_wav = t_wav.T if t_wav.ndim == 2 else t_wav[None, :]
+                pieces.append(t_wav)
+
+                nxt_id = clips[j + 1]["id"]
+                nxt_sum = get_clip_sum(effective_stems[nxt_id])
+                start_body = rec_j["b_lo"] + rec_j["L"]
+                if j < len(clips) - 2:
+                    end_body = meta["transitions"][j + 1]["a_lo"]
+                    pieces.append(dsp.safe_slice(nxt_sum, start_body, end_body))
+                else:
+                    end_body = nxt_sum.shape[-1]
+                    tail = dsp.safe_slice(nxt_sum, start_body, end_body)
+                    fade_samps = int(2.0 * SR)
+                    if tail.shape[-1] > fade_samps:
+                        tail[:, -fade_samps:] *= np.linspace(1.0, 0.0, fade_samps, dtype=np.float32)
+                    pieces.append(tail)
+
+            full_mix = np.concatenate(pieces, axis=-1)
+            pk = float(np.max(np.abs(full_mix)))
+            if pk > 0:
+                full_mix = full_mix * (0.96 / max(pk, 1.0))
+            mix_name = f"v7_smoke_mix_{len(clips)}clips_{v}.wav"
+            mix_path = out_dir / mix_name
+            sf.write(str(mix_path), full_mix.T, SR, subtype="FLOAT")
+            m4a_path = mix_path.with_suffix(".m4a")
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mix_path), "-c:a", "aac", "-b:a", "192k", str(m4a_path)], check=False)
+            print(f"  Assembled {mix_name} ({full_mix.shape[-1]/SR:.1f}s, peak {pk:.2f})", flush=True)
+            meta["assembled_mixes"].append({"variant": v, "wav": mix_name, "m4a": m4a_path.name, "duration_s": round(full_mix.shape[-1]/SR, 2)})
 
     meta["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
     (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
