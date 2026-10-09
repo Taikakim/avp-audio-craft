@@ -32,7 +32,7 @@ def latent_similarity(a, b):
     strong guidance can overpower a lightly noised source and the result then no longer resembles it."""
     n = min(a.shape[-1], b.shape[-1])
     c = torch.nn.functional.cosine_similarity(a[..., :n].float(), b[..., :n].float(), dim=1)
-    return float(c.mean())
+    import math; m = float(c.mean()); return 0.0 if math.isnan(m) else m
 
 
 def validate_a2a_clip(payload, heads):
