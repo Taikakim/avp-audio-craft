@@ -82,3 +82,33 @@ def test_commit_all_muted_is_400(rig):
         C.run_commit(srv, FakeSvc(), "forge-test-2", p)
     assert e.value.status == 400 and "every lane is empty or muted" in e.value.message
     assert progress.snapshot() is None
+
+
+def test_a_master_with_slots_runs_a_guided_pass_on_the_mix_and_not_the_old_steer(rig):
+    from test_forge_commit import master_chain
+    srv, calls = rig
+    p = payload()
+    p["master"] = master_chain(noise=0.3)
+    res = C.run_commit(srv, FakeSvc(), "forge-test-m", p)
+    assert [c[0] for c in calls["hold"]] == ["lane0:a2a:0", "lane2:a2a:0", "master"]
+    label, depth, req = calls["hold"][-1]
+    T = math.ceil(40 * 44100 / 4096)
+    assert depth.shape == (T,) and np.allclose(depth, 0.3)
+    assert req["latch"][0]["head"] == "rms_energy_bass" and req["latch"][0]["target_raw"][0][0] == -30.0
+    assert req["latch"][0]["gain"] == 1024.0 and req["rho"] == 1024.0
+    assert calls["steer"] == []                                                # the single-head step is not used
+    meta = res["meta"]
+    assert "master" in meta["resolved_seeds"]
+    assert meta["passes"][-1]["kind"] == "master"
+    assert meta["stages"][7]["on"] is True and meta["stages"][7]["note"] == "latch + norm"
+
+
+def test_a_master_with_slots_but_no_active_head_runs_nothing(rig):
+    from test_forge_commit import master_chain
+    srv, calls = rig
+    p = payload()
+    p["master"] = master_chain()
+    p["master"]["slots"][0]["head"] = "none"
+    res = C.run_commit(srv, FakeSvc(), "forge-test-m2", p)
+    assert [c[0] for c in calls["hold"]] == ["lane0:a2a:0", "lane2:a2a:0"] and calls["steer"] == []
+    assert res["meta"]["stages"][7]["note"] == "norm"

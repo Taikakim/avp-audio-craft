@@ -22,6 +22,10 @@ STAGES = ["DECODE latent → audio", "BUNGEE stretch / pitch", "ENCODE audio →
           "A2A RE-NOISE", "INPAINT OVERLAPS", "MIX", "MASTER CHAIN", "DECODE latent → audio"]
 
 
+# How much of the mix the MASTER CHAIN's LatCH pass re-noises when the request does not say.
+MASTER_NOISE_DEFAULT = 0.25
+
+
 def _bool(v, what):
     if not isinstance(v, bool):
         raise ForgeError(400, f"{what} must be true or false")
@@ -105,7 +109,16 @@ def validate_commit(payload, heads):
         raise ForgeError(400, "mix.quad_weights must have 4 numbers")
     master = payload.get("master") or {}
     latch_on = _bool(master.get("latch_on", False), "master.latch_on")
-    if latch_on and master.get("head") not in heads:
+    # Two shapes. With `slots` / `hparams` the master LatCH is the SAME chain a lane has -- up to two
+    # heads with kind, target, weight and window, plus rho / mu / gamma / iterations -- and runs as a
+    # guided re-noise of the mix (`noise` deep), because a target, a weight and a window only mean
+    # something inside a sampler. Without them it is the older single-head gradient step
+    # (head + gain), kept so a session or client written before this still commits.
+    mchain, guided = None, False
+    if "slots" in master or "hparams" in master:
+        mchain = parse_chain({"latch_on": latch_on, **{k: master[k] for k in ("slots", "hparams") if k in master}})
+        guided = bool(chain_to_request(mchain, heads)["latch"])
+    elif latch_on and master.get("head") not in heads:
         raise ForgeError(400, f"unknown master head {master.get('head')!r}")
     return {"project_bpm": bpm, "duration_sec": duration, "defaults": defaults, "lanes": lanes, "clips": clips,
             "overlaps": overlaps,
@@ -113,7 +126,9 @@ def validate_commit(payload, heads):
                     "quad_weights": [_num(w, 0, 1e6, "quad weight") for w in weights]},
             "master": {"latch_on": latch_on, "head": master.get("head"),
                        "gain": _num(master.get("gain", 64), 0, 120, "master.gain"),
-                       "norm_on": _bool(master.get("norm_on", True), "master.norm_on")},
+                       "norm_on": _bool(master.get("norm_on", True), "master.norm_on"),
+                       "chain": mchain, "guided": guided,
+                       "noise": _num(master.get("noise", MASTER_NOISE_DEFAULT), 0, 1, "master.noise")},
             "decode_lanes": _bool(payload.get("decode_lanes", False), "decode_lanes")}
 
 
@@ -140,7 +155,12 @@ def plan_passes(v):
         for n, members in enumerate(plain.values()):
             inpaint.append({"lane": lane, "key": f"lane{lane}:inpaint:{n}", "render": members[0]["render"],
                             "overlap_keys": [o["key"] for o in members], "chroma": False})
-    return {"a2a": a2a, "inpaint": inpaint, "steps_total": sum(g["render"]["steps"] for g in a2a + inpaint)}
+    # The master LatCH pass samples too, with the session defaults' render settings.
+    m = v["master"]
+    master = ({"key": "master", "render": v["defaults"]}
+              if m["latch_on"] and m["guided"] and m["noise"] > 0 else None)
+    steps = sum(g["render"]["steps"] for g in a2a + inpaint) + (master["render"]["steps"] if master else 0)
+    return {"a2a": a2a, "inpaint": inpaint, "master": master, "steps_total": steps}
 
 
 def _seed(srv, render):
@@ -150,7 +170,7 @@ def _seed(srv, render):
 def run_commit(srv, svc, job_id, payload):
     v = validate_commit(payload, srv.HEADS)
     plan = plan_passes(v)
-    seeds = {g["key"]: _seed(srv, g["render"]) for g in plan["a2a"] + plan["inpaint"]}
+    seeds = {g["key"]: _seed(srv, g["render"]) for g in plan["a2a"] + plan["inpaint"] + ([plan["master"]] if plan["master"] else [])}
     flags = [{"label": s, "on": False, "note": "", "seconds": 0.0} for s in STAGES]
     timings, warnings, passes_meta = {}, [], []
     t0 = time.time()
@@ -251,10 +271,20 @@ def run_commit(srv, svc, job_id, payload):
         m = v["master"]
         if m["norm_on"]:
             mixed = normalise(mixed, z, weff)
-        if m["latch_on"]:
+        latched = False
+        if m["latch_on"] and m["chain"] is None:                       # the older single-head gradient step
             mixed = passes.steer_master(srv, mixed, m["head"], m["gain"])
-        leave(7, ts, m["latch_on"] or m["norm_on"],
-              " + ".join(x for x in ("latch" if m["latch_on"] else "", "norm" if m["norm_on"] else "") if x) or "bypassed")
+            latched = True
+        elif plan["master"] is not None:                               # the lane's own chain, on the mix
+            req = {**to_request(plan["master"]["render"], seeds["master"]), **chain_to_request(m["chain"], srv.HEADS)}
+            tp = time.time()
+            mixed = passes.run_hold_pass(srv, mixed, np.full(T, m["noise"], dtype=np.float32), req, warnings,
+                                         label="master")
+            passes_meta.append({"lane": None, "kind": "master", "key": "master", "seed": seeds["master"],
+                                "steps": plan["master"]["render"]["steps"], "seconds": round(time.time() - tp, 2)})
+            latched = True
+        leave(7, ts, latched or m["norm_on"],
+              " + ".join(x for x in ("latch" if latched else "", "norm" if m["norm_on"] else "") if x) or "bypassed")
 
         ts = enter(8)
         n_out = int(round(v["duration_sec"] * SR))

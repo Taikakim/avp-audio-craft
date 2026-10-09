@@ -88,3 +88,58 @@ def test_plan_merges_identical_renders_and_skips_inaudible():
     p["lanes"][0]["solo"] = True
     p["lanes"][2]["muted"] = False
     assert [g["lane"] for g in C.plan_passes(C.validate_commit(p, HEADS))["a2a"]] == [0]
+
+
+# --- the master chain's LatCH is the lane's chain (slots + hparams), run as a guided pass on the mix ---
+
+def master_chain(**kw):
+    m = {"latch_on": True, "norm_on": True, "noise": 0.3,
+         "slots": [{"head": "rms_energy_bass", "kind": "ramp_up", "value": -12.0, "value_from": -30.0, "weight": 2.0,
+                    "start_pct": 0.0, "end_pct": 0.6},
+                   {"head": "none", "kind": "constant", "value": 0.0, "weight": 1.0, "start_pct": 0.0, "end_pct": 0.6}],
+         "hparams": {"rho": 1.0, "mu": 1.0, "gamma": 0.3, "n_iter": 4, "log_norms": False}}
+    m.update(kw)
+    return m
+
+
+def test_master_with_slots_is_the_lane_chain_and_a_guided_pass():
+    p = payload()
+    p["master"] = master_chain()
+    v = C.validate_commit(p, HEADS)
+    m = v["master"]
+    assert m["guided"] is True and m["noise"] == 0.3
+    assert m["chain"]["slots"][0]["value_from"] == -30.0 and m["chain"]["hparams"]["rho"] == 1.0
+    plan = C.plan_passes(v)
+    assert plan["master"]["key"] == "master" and plan["master"]["render"] is v["defaults"]
+    assert plan["steps_total"] == 8 + 8 + 12 + v["defaults"]["steps"]       # the master pass samples too
+
+
+def test_master_pass_is_planned_only_when_something_will_run():
+    for mutate in (lambda m: m.update(latch_on=False),                      # latch off
+                   lambda m: m.update(noise=0.0),                           # nothing re-noised
+                   lambda m: m["slots"][0].update(head="none"),             # no head
+                   lambda m: m["slots"][0].update(weight=0.0)):             # no weight
+        p = payload()
+        p["master"] = master_chain()
+        mutate(p["master"])
+        assert C.plan_passes(C.validate_commit(p, HEADS))["master"] is None
+
+
+def test_master_slots_get_the_lane_validation():
+    for mutate, needle in ((lambda m: m["slots"][0].update(head="nope"), "unknown LatCH head"),
+                           (lambda m: m["slots"][0].update(weight=51), "weight"),
+                           (lambda m: m["hparams"].update(rho=31), "rho"),
+                           (lambda m: m.update(noise=1.5), "noise"),
+                           (lambda m: m["slots"].pop(), "exactly 2")):
+        p = payload()
+        p["master"] = master_chain()
+        mutate(p["master"])
+        with pytest.raises(ForgeError) as e:
+            C.validate_commit(p, HEADS)
+        assert needle in e.value.message
+
+
+def test_the_older_single_head_master_still_validates_and_plans_no_pass():
+    v = C.validate_commit(payload(), HEADS)                                   # head + gain, no slots
+    assert v["master"]["chain"] is None and v["master"]["guided"] is False
+    assert C.plan_passes(v)["master"] is None

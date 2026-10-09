@@ -274,8 +274,12 @@ PANE / FULL SCREEN (full screen covers the centre column).
    files draggable onto lanes (audio and latent crops).
 3. **LANE n CHAIN** (header shows the active lane): §5.5.
 4. **ADVANCED SAMPLING**: §5.3.
-5. **MASTER CHAIN**: `applied to the mixed latent, after the lane chains` · LATCH HEAD toggle
-   + head select + GAIN (0–120, default 64) · LATENT NORMALISE toggle (default on).
+5. **MASTER CHAIN**: `applied to the mixed latent, after the lane chains` · LATCH GUIDANCE: the
+   same toggle, two slots (head, kind, target or ramp ends, weight, window) and hyperparameters
+   as a lane's LatCH (§5.5; one component, `LatchGuidance.svelte`, serves both) · NOISE (0–1,
+   default 0.25: how deep the guided pass re-noises the mix) · LATENT NORMALISE toggle (default
+   on). *(2026-10-09: this was one head + a GAIN, a single gradient step; a session saved that
+   way loads with the LatCH off.)*
 
 ---
 
@@ -815,7 +819,10 @@ All times in timeline seconds; `SR = 44100`, `HOP = 4096`, `T = ceil(duration_se
 7. **S8 `MASTER CHAIN`** —
    - `norm_on`: per frame, `target(f) = Σ w_eff_i · ‖L_i(:, f)‖₂`; `z(:, f) *= target(f) /
      max(‖z(:, f)‖₂, 1e-8)`.
-   - `latch_on`: the existing `/steer` step — load `HEADS[head]`,
+   - `latch_on`: a guided hold pass over the mix — `run_hold_pass` with a flat depth of
+     `master.noise`, the session `defaults` render settings and the master's own slots and
+     hyperparameters through `chain_to_request` (the lane's path; seed key `master`). A request
+     that still carries the old `head` + `gain` and no `slots` runs the previous `/steer` step —
      `z += gain · ∂ mean(head(z, t = 0.001)) / ∂z` (the `player_steer` math, lines 2239–2246).
    - Non-finite check again.
 8. **S9 `DECODE latent → audio`** — `pretransform.decode(z, chunked=True, chunk_size=128,
