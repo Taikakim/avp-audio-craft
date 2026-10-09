@@ -114,8 +114,8 @@ describe("the MODEL select lists a run once and its epochs beside it", () => {
 
   it("groups Windows-style paths by folder too", () => {
     const win = buildModelOptions([
-      { path: "D:\runs\a\e1.ckpt", label: "a", epoch: 1 },
-      { path: "D:\runs\a\e2.ckpt", label: "a", epoch: 2 },
+      { path: "D:\\runs\\a\\e1.ckpt", label: "a", epoch: 1 },
+      { path: "D:\\runs\\a\\e2.ckpt", label: "a", epoch: 2 },
     ]);
     expect(modelMenu(win, "medium").primary.filter((o) => o.group === "adapter")).toHaveLength(1);
   });
