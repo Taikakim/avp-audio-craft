@@ -105,6 +105,12 @@ describe("generatePayload", () => {
     expect(p.prompt).toBe("dub");
   });
 
+  it("carries the picked adapter as top-level ckpt_path, null when none", () => {
+    expect(generatePayload(settings({ prompt: "dub" })).ckpt_path).toBeNull();
+    const p = generatePayload(settings({ prompt: "dub" }), 6, "/runs/x/epoch=1.ckpt");
+    expect(p.ckpt_path).toBe("/runs/x/epoch=1.ckpt");
+  });
+
   it("refuses a length over the 184 s cap before the round trip", () => {
     // The prompt guard runs before the cap (the server's own precedence in `_generate_impl`), so
     // this case must carry a prompt or it throws `prompt is required` and never reaches /184/.

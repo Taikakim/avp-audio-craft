@@ -219,8 +219,16 @@
     onmodel={(value) => {
       model = value;
       const picked = models.find((m) => m.value === value);
-      if (picked?.group === "backbone") void switchBackbone(value);
-      else if (picked?.ckptPath) modelFolder = picked.ckptPath;
+      // settings.ckptPath is what dispatchWorld sends as ckpt_path; modelFolder alone only fed the
+      // folder field, so an adapter pick never reached a render (2026-10-09). The select shows one
+      // value, so picking a backbone means "no adapter".
+      if (picked?.group === "backbone") {
+        settings.ckptPath = null;
+        void switchBackbone(value);
+      } else if (picked?.ckptPath) {
+        modelFolder = picked.ckptPath;
+        settings.ckptPath = picked.ckptPath;
+      }
     }}
     {modelFolder}
     onmodelfolder={(value) => (modelFolder = value)}

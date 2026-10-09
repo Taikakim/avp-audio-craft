@@ -123,9 +123,12 @@ STEER_HEADS: dict = {}             # feature -> loaded LatCH head (lazy, GPU-res
 # mount order. Hardcoding either breaks DoRA loading when it flips (C bug 2026-07-13).
 # Resolve to whichever mount actually holds sa3_lora_runs.
 def _mantu_root():
-    for d in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1"):
-        if Path(d, "sa3_lora_runs").is_dir():
-            return d
+    for d in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1", "/run/media/kim/Mantu2", "/run/media/kim/Mantu3"):
+        try:
+            if Path(d, "sa3_lora_runs").is_dir():
+                return d
+        except OSError:
+            pass
     return "/run/media/kim/Mantu"
 _MANTU = _mantu_root()
 
@@ -195,6 +198,15 @@ app = FastAPI()
 
 
 # ---------------------------------------------------------------- utilities
+def step_t(t):
+    """The sampler callback's `t` as a float. The euler/rf samplers pass a [B] tensor, the
+    pingpong sampler (post-trained `medium`) a 0-dim one, so `t[0]` crashed every medium
+    generate (2026-10-09)."""
+    if hasattr(t, "reshape"):
+        return float(t.reshape(-1)[0])
+    return float(t[0]) if isinstance(t, (list, tuple)) else float(t)
+
+
 def log(msg):
     line = f"{time.strftime('%H:%M:%S')} {msg}"
     LOG_RING.append(line)
@@ -356,7 +368,7 @@ def make_log_cb(steps, extra=None, every=4):
         counter["i"] += 1
         forge_progress.on_step(i + 1, steps)   # Latent Forge: per-step progress for /forge/jobs
         if i % every == 0 or i == steps - 1:
-            log(f"  step {i + 1}/{steps}  t={float(d['t'][0]):.3f}")
+            log(f"  step {i + 1}/{steps}  t={step_t(d['t']):.3f}")
 
     return cb
 
@@ -1904,7 +1916,7 @@ def _a2a_mix_impl(req):
                 depth = (depth_shape * nl).view(1, 1, -1)
 
                 def cb(d, _z=z_ref, _e=eps_ref, _d=depth):
-                    x, tt = d["x"], float(d["t"][0])
+                    x, tt = d["x"], step_t(d["t"])
                     n = min(x.shape[-1], _z.shape[-1])
                     hold = (_d[..., :n] < tt)    # not yet released
                     ref_t = ((1 - tt) * _z[..., :n] + tt * _e[..., :n]).to(x.device, x.dtype)
@@ -2013,7 +2025,7 @@ def _a2a_mix_impl(req):
                 depth2 = (dshape * seam_nl).view(1, 1, -1)
 
                 def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
-                    x, tt = d["x"], float(d["t"][0])
+                    x, tt = d["x"], step_t(d["t"])
                     nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
                     hold = (_d[..., :nn] < tt)
                     ref_t = ((1 - tt) * _z[..., :nn] + tt * _e[..., :nn]).to(x.device, x.dtype)

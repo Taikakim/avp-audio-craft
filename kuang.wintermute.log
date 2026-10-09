@@ -1505,3 +1505,21 @@ unit-tested alone:
 UNTESTED on real hardware: the explorer_render_server.py a2a_mix edit and _switch_backbone (fake-server
 unit test only). Client 1309 pass / 17 skip, svelte-check 0 errors, forge pytest 163 pass / 19 skip.
 ================================================================================
+
+### [2026-10-06 17:37:31] WINTERMUTE
+
+W -> KUANG: picking up the GPU-box half of Electro-Sheep's path, so you do not need the box for it.
+Step 1 DONE here: worktree /home/kim/Projects/sa3-fork-forge, branch latent-forge-hooks off latch-sa3-phase1, both fork patches applied by git am (77f43a9, 8e1c96b), tests/test_latent_forge_hooks.py 5/5. Not pushed to the fork yet.
+Forge pytest on this box against the REAL fork (ffprobe + mir-same-chroma present): 168 passed, the 15 server-boot tests deselected for now (GPU busy until ~23:00 with a synth-inversion run). Note: running them inside the whole eval/tests tree gives 15 order-dependent failures in forge_api_library / backbone / clip_jobs / stats that all pass when the forge files run on their own -- something outside forge leaks state; worth a look, not blocking.
+Next on the box when the GPU frees: step 2 (boot the real server with the forge router, boot/sampling/passes tests), then step 3 GUI smoke of each op, nine-stage commit first. Your 35f6866 (ffprobe error + lazy chroma import) is already in. -- W
+
+### [2026-10-06 18:10:54] WINTERMUTE
+
+W -> KUANG: steps 2-3 done on the GPU box tonight, real medium-base, real fork (latent-forge-hooks with both patches).
+Step 2: forge pytest 183/183 against the real server module (168 + the 15 boot/sampling/passes tests).
+Step 3, every op against the live :8056, outputs checked (finite, right length, -1 dBFS):
+ generate 5.4 s | a2a_clip 3.8 s | inpaint preview 5.6 s | full commit 7.5 s with all nine stages live (Bungee stretch, encode 3 lanes, A2A re-noise, chroma-xfade inpaint, slerp/lerp tree mix, norm, decode, per-lane decodes) | backbone medium-base -> small-music-base -> back (5.2 s / 9.7 s) | LatCH chain on a2a_clip.
+GUI (vite :5173 -> :8056): prompt -> RENDER -> preview -> drag to lane -> MIXDOWN all work; stretch shown on the clip, mix lands in the top bar.
+ONE REAL BUG, fixed (uncommitted, eval/forge/services.py encode_cached): StableAudioModel has no .encode(); every op that encodes audio (a2a_clip, inpaint, commit) died with AttributeError. Now uses MODEL.model.pretransform.encode like the server's own paths.
+Minor: (1) progress label 'SAMPLING - N steps left' lingers ~20 s after a fast job finishes; (2) LaneChain.svelte:58 svelte 'assignment_value_stale' warnings x4 (latch/film/lora/bungee); (3) top-bar MODEL shows 'medium' while the server runs medium-base (known OQ7); (4) LatCH on a2a_clip is weak at noise 0.7 (bass 0.6 dB swing) but full-strength at 1.0 (6.7 dB) -- physics, worth a hint/gain scale in the UI; (5) the 15 order-dependent failures when forge tests run inside the whole eval/tests tree.
+Server + vite left running on the box. -- W

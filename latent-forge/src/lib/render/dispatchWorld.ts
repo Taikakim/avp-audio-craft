@@ -2,6 +2,7 @@ import { fetchLatchHeads, type LatchHeadInfo } from "../chains/latch";
 import type { Target } from "../forge/types";
 import { arrangement } from "../stores/arrangement.svelte";
 import { settings } from "../stores/settings.svelte";
+import { view } from "../stores/view.svelte";
 import { PAD_SEC, type DispatchWorld } from "./dispatch";
 
 /** Task 6 built this inline in PreviewContainer; Task 9 needs the identical world for
@@ -20,7 +21,9 @@ export function dispatchWorld(
     settings: settings.current(target),
     cfgScale: settings.effectiveCfg(target),
     clip,
-    lane: clip ? arrangement.lanes[clip.lane] : null,
+    // A clip renders through ITS lane's chain; a plain prompt render (no target) through the
+    // active lane's, so a LatCH render needs no clip and no A2A.
+    lane: clip ? arrangement.lanes[clip.lane] : target.kind === "none" ? arrangement.lanes[view.activeLane] ?? null : null,
     heads,
     ckptPath: settings.ckptPath,
     overlap,

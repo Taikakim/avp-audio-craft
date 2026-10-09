@@ -127,10 +127,17 @@ export function renderWire(
  * ALREADY-MAPPED shape, which needs the head gains the client deliberately does not compute
  * (M7 T1's WHY). §7.1 row 1 is session defaults only, so nothing is lost.
  */
-export function generatePayload(s: RenderSettings, cfgScale: number = s.cfg_scale): Record<string, unknown> {
+export function generatePayload(
+  s: RenderSettings, cfgScale: number = s.cfg_scale, ckptPath: string | null = null,
+  chain: ChainRequest | null = null,
+): Record<string, unknown> {
   const wire = renderWire(s, cfgScale);
   if (!wire.prompt.trim()) throw new PayloadError("prompt is required");
-  return { ...wire, duration: cap(s.duration_sec, "generate") };
+  // The server folds a top-level ckpt_path into its dora request (resolve_dora_req); without it the
+  // top bar's adapter pick never reached a generate (dora=none in the server log, 2026-10-09).
+  // `chain` is the lane's LatCH/FiLM/LoRA; forge_api turns it into latch/film/dora (a lane LoRA
+  // that is ON wins over the top-bar pick).
+  return { ...wire, duration: cap(s.duration_sec, "generate"), ckpt_path: ckptPath || null, chain };
 }
 
 // ------------------------------------------------------------------ the clip's OP (spec §7.1 row 3)

@@ -53,6 +53,45 @@ def test_generate_job_roundtrip(srv, client, monkeypatch):
     assert listed["ok"] and listed["jobs"][0]["job_id"] == body["job_id"]
 
 
+def test_generate_folds_lane_chain(srv, client, monkeypatch):
+    """A plain generate is steered by its lane chain (no A2A needed); a lane LoRA that is ON goes
+    in as `dora` and so wins over the top-bar ckpt_path."""
+    seen = {}
+
+    def fake_generate(req):
+        seen.update(req)
+        return {"status": "ok", "job_id": "j", "files": [], "latents": [], "urls": [], "seed": 1,
+                "timings": {"total_sec": 0.0, "per_stage": {}}, "warnings": [], "meta": {}}
+
+    monkeypatch.setattr(srv, "_generate_impl", fake_generate)
+    monkeypatch.setitem(srv.HEADS, "rms_energy_bass", {"default_gain": 512.0})
+    chain = {"latch_on": True, "lora_on": True, "film_on": False, "bungee_on": False,
+             "slots": [{"head": "rms_energy_bass", "kind": "constant", "value": 1.0, "weight": 1.0,
+                        "start_pct": 0.0, "end_pct": 1.0}, {"head": None, "weight": 0}],
+             "lora": {"ckpt_path": "/lane.ckpt", "slot": None, "strength": 0.5}}
+    payload = {"prompt": "x", "duration": 8, "steps": 4, "ckpt_path": "/top.ckpt", "chain": chain}
+    jid = client.post("/forge/jobs", json={"op": "generate", "payload": payload}).json()["job_id"]
+    assert poll(client, jid)["state"] == "done"
+    assert "chain" not in seen
+    assert seen["latch"][0]["head"] == "rms_energy_bass" and seen["latch"][0]["gain"] == 512.0
+    assert seen["dora"] == {"ckpt_path": "/lane.ckpt", "strength": 0.5}
+    assert srv.resolve_dora_req(seen)["ckpt_path"] == "/lane.ckpt"
+
+    seen.clear()
+    jid = client.post("/forge/jobs", json={"op": "generate", "payload": {
+        "prompt": "x", "duration": 8, "steps": 4, "ckpt_path": "/top.ckpt", "chain": None}}).json()["job_id"]
+    poll(client, jid)
+    assert seen.get("latch") is None and srv.resolve_dora_req(seen)["ckpt_path"] == "/top.ckpt"
+
+
+def test_step_t_accepts_scalar_and_batched_t():
+    import torch
+    import explorer_render_server as s
+    assert s.step_t(torch.tensor(0.25)) == 0.25        # pingpong (medium): 0-dim
+    assert s.step_t(torch.tensor([0.5, 0.5])) == 0.5   # euler/rf: [B]
+    assert s.step_t([0.75]) == 0.75 and s.step_t(0.1) == 0.1
+
+
 @pytest.mark.parametrize("body,status,needle", [
     ({"op": "generate", "payload": {"prompt": "x", "duration": 200}}, 400, "capped at 184 s"),
     ({"op": "nope", "payload": {}}, 400, "unknown op"),

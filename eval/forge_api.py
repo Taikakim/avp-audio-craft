@@ -68,8 +68,25 @@ def services() -> Services:
     return _SERVICES
 
 
+def _fold_chain(payload):
+    """A generate carries its lane's chain (2026-10-09: LatCH/FiLM/LoRA must steer a plain render,
+    not only A2A). Turn it into the latch/film/dora keys _generate_impl already reads. A lane LoRA
+    that is ON goes in as `dora` and so wins over the top-bar `ckpt_path` (resolve_dora_req)."""
+    from forge.render_settings import chain_to_request, parse_chain
+    chain = parse_chain(payload.pop("chain", None))
+    if chain is None:
+        return payload
+    req = chain_to_request(chain, SRV.HEADS)
+    for k, v in req.items():
+        if v is not None:
+            payload[k] = v
+    return payload
+
+
 def _existing_runner(op, impl_name):
     def run(job_id, payload):
+        if op == "generate":
+            payload = _fold_chain(dict(payload))
         steps = 0 if op in ("decode", "bend") else int(payload.get("steps", 24))
         passes = len(payload.get("noise_levels") or [1]) if op == "a2a_track" else 1
         progress.begin(job_id, op, steps * passes)
@@ -83,6 +100,8 @@ def _existing_runner(op, impl_name):
 def _validate_existing(op, payload):
     if op == "generate":
         contract.check_cap(payload.get("duration", 47.0), "generate")
+        # Reject a bad chain (unknown head, out-of-range weight) at submit, not mid-queue.
+        _fold_chain(dict(payload))
     if op == "longform" and not payload.get("audio_path"):
         contract.check_cap(payload.get("duration", 120.0), "longform")
 

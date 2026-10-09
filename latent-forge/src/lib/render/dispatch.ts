@@ -11,7 +11,7 @@ import type {
   AudioRef, ClipOp, ForgeClip, ForgeLane, JobOp, OverlapParams, RenderSettings, Target,
 } from "../forge/types";
 import { targetKey } from "../forge/guards";
-import type { LatchHeadInfo } from "../chains/latch";
+import { chainRequest, type LatchHeadInfo } from "../chains/latch";
 import type { RenderKind, SubmitRequest } from "./jobs.svelte";
 import { a2aClipPayload, generatePayload, inpaintPayload, opPayload, PayloadError } from "./payloads";
 
@@ -68,6 +68,12 @@ const KIND_OF: Record<string, RenderKind> = {
   a2a_clip: "a2a", inpaint: "inpaint", commit: "mix",
 };
 
+/** A generate is steered by its lane's chain (LatCH / FiLM / LoRA) whether or not A2A is on: the
+ *  chain acts during sampling, and a plain generate samples too (2026-10-09). */
+function laneChain(w: DispatchWorld) {
+  return w.lane ? chainRequest(w.lane.chain, w.heads) : null;
+}
+
 export function kindOf(op: JobOp): RenderKind {
   return KIND_OF[op] ?? "gen";
 }
@@ -109,7 +115,7 @@ function clipRequest(clip: ForgeClip, w: DispatchWorld): SubmitRequest {
 
   const payload =
     op === "generate"
-      ? generatePayload(w.settings, w.cfgScale)
+      ? generatePayload(w.settings, w.cfgScale, w.ckptPath, laneChain(w))
       : opPayload(op, {
           ...latentSourceOf(clip.audio),
           ops: w.bendOps,
@@ -172,6 +178,6 @@ export function renderRequest(target: Target, w: DispatchWorld): SubmitRequest {
     kind: "gen",
     sourceClipId: null,
     targetKey: targetKey({ kind: "none" }),
-    payload: generatePayload(w.settings, w.cfgScale),
+    payload: generatePayload(w.settings, w.cfgScale, w.ckptPath, laneChain(w)),
   };
 }

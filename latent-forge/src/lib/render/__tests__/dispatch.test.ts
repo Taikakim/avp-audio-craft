@@ -56,6 +56,16 @@ describe("renderRequest — spec §7.1's dispatch table, one row per test", () =
     expect(req.targetKey).toBe("session");
   });
 
+  it("a plain generate carries the lane chain (LatCH steers without A2A) and the top-bar ckpt", () => {
+    const l = lane(1);
+    l.chain.latch_on = true;
+    const req = renderRequest({ kind: "none" }, world({ lane: l, ckptPath: "/top.ckpt" }));
+    const payload = req.payload as Record<string, unknown>;
+    expect((payload.chain as { latch_on: boolean }).latch_on).toBe(true);
+    expect(payload.ckpt_path).toBe("/top.ckpt");
+    expect((renderRequest({ kind: "none" }, world()).payload as Record<string, unknown>).chain).toBeNull();
+  });
+
   it("sends LENGTH as the wire name `duration`, never `duration_sec` (Fact 1)", () => {
     const req = renderRequest({ kind: "none" }, world({ settings: settings({ duration_sec: 30 }) }));
     const payload = req.payload as Record<string, unknown>;
