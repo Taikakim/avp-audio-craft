@@ -5,7 +5,8 @@ import { settings } from "../../stores/settings.svelte";
 import { view } from "../../stores/view.svelte";
 import { CHAIN_DEFAULTS, MASTER_DEFAULT, MIX_DEFAULT, OVERLAP_DEFAULT } from "../defaults";
 import {
-  applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, unsavedWorkKey, validateProjectV2,
+  applyMasterPreset, applyProject, buildMasterPresetPayload, normalizeMaster, serializeProject, unsavedWorkKey,
+  validateProjectV2,
 } from "../projectSerializer.svelte";
 import type { ProjectV2, RenderHistoryEntry } from "../types";
 
@@ -130,7 +131,7 @@ describe("validateProjectV2 checks a v2 object as a whole, before anything is ap
     expect(() => validateProjectV2(broken((p) => { p.clips[0].offset_sec = "0"; }))).toThrow("not a v2 project: clips[0]");
     expect(() => validateProjectV2(broken((p) => { p.overlaps[ov.key].curve = null; }))).toThrow(`not a v2 project: overlaps.${ov.key}`);
     expect(() => validateProjectV2(broken((p) => { delete p.mix.nodes.MX; }))).toThrow("not a v2 project: mix");
-    expect(() => validateProjectV2(broken((p) => { p.master.gain = null; }))).toThrow("not a v2 project: master");
+    expect(() => validateProjectV2(broken((p) => { p.master.noise = null; }))).toThrow("not a v2 project: master");
   });
 });
 
@@ -225,5 +226,42 @@ describe("render history round-trips through ProjectV2 (M9 T3)", () => {
     expect(unsavedWorkKey(serializeProject({ name: "" }))).toBe(before);
     arrangement.setBpm(arrangement.bpm + 1);
     expect(unsavedWorkKey(serializeProject({ name: "" }))).not.toBe(before);
+  });
+});
+
+describe("a master saved before the lane-style LatCH (one head, one gain)", () => {
+  const legacy = { latch_on: true, head: "rms_energy_bass", gain: 80, norm_on: false };
+
+  it("is still a valid file, and a session with the new master shape is valid too", () => {
+    const good = JSON.parse(JSON.stringify(serializeProject({ name: "ok" }))) as Record<string, unknown>;
+    expect(() => validateProjectV2({ ...good, master: legacy })).not.toThrow();
+    expect(() => validateProjectV2({ ...good, master: structuredClone(MASTER_DEFAULT) })).not.toThrow();
+    // neither shape: slots present but one is malformed, or noise is not a number
+    const m = structuredClone(MASTER_DEFAULT) as unknown as Record<string, any>;
+    m.slots[1] = null;
+    expect(() => validateProjectV2({ ...good, master: m })).toThrow("not a v2 project: master");
+  });
+
+  it("loads as the defaults with its LatCH off and its normalise toggle kept -- a gradient step has no target to carry over", () => {
+    const out = normalizeMaster(legacy);
+    expect(out).toEqual({ ...MASTER_DEFAULT, norm_on: false });
+    expect(out.latch_on).toBe(false);
+    expect("head" in out || "gain" in out).toBe(false);
+  });
+
+  it("leaves a current master untouched, as a copy", () => {
+    const current = structuredClone(MASTER_DEFAULT);
+    current.latch_on = true;
+    current.noise = 0.4;
+    current.slots[0].head = "hardness";
+    const out = normalizeMaster(current);
+    expect(out).toEqual(current);
+    expect(out).not.toBe(current);
+  });
+
+  it("applyProject writes the normalised master into the store", () => {
+    const good = JSON.parse(JSON.stringify(serializeProject({ name: "ok" }))) as ProjectV2;
+    applyProject({ ...good, master: legacy as unknown as ProjectV2["master"] });
+    expect(arrangement.master).toEqual({ ...MASTER_DEFAULT, norm_on: false });
   });
 });

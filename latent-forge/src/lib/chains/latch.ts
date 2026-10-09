@@ -4,7 +4,7 @@
 
 import { forgeApi } from "../forge/api";
 import { isRamp } from "./latchScale";
-import type { LaneChain, LatchSlot } from "../forge/types";
+import type { LaneChain, LatchBlock, LatchSlot } from "../forge/types";
 
 /**
  * The subset of /info.latch_heads' element shape LANE CHAIN actually reads (M1's own /info typing
@@ -74,13 +74,22 @@ function wireSlot(slot: LatchSlot, heads: Record<string, LatchHeadInfo>): LatchS
   return out;
 }
 
+/** The wire shape of the LatCH part of a chain; a lane's chain and the master's both send it. */
+export type LatchBlockRequest = Pick<ChainRequest, "latch_on" | "slots" | "hparams">;
+
+export function latchBlockRequest(block: LatchBlock, heads: Record<string, LatchHeadInfo>): LatchBlockRequest {
+  const hp = block.hparams;
+  return {
+    latch_on: block.latch_on,
+    slots: [wireSlot(block.slots[0], heads), wireSlot(block.slots[1], heads)],
+    hparams: { rho: hp.rho, mu: hp.mu, gamma: hp.gamma, n_iter: hp.n_iter, log_norms: hp.log_norms },
+  };
+}
+
 /** The chain object for a job payload's `chain` key (M8 plan lines 1422, 1980). Always a plain copy. */
 export function chainRequest(chain: LaneChain, heads: Record<string, LatchHeadInfo>): ChainRequest {
-  const hp = chain.hparams;
   return {
-    latch_on: chain.latch_on,
-    slots: [wireSlot(chain.slots[0], heads), wireSlot(chain.slots[1], heads)],
-    hparams: { rho: hp.rho, mu: hp.mu, gamma: hp.gamma, n_iter: hp.n_iter, log_norms: hp.log_norms },
+    ...latchBlockRequest(chain, heads),
     film_on: chain.film_on,
     film: { ckpt: chain.film.ckpt, gain: chain.film.gain, value: chain.film.value },
     lora_on: chain.lora_on,

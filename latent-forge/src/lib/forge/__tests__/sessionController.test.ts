@@ -158,12 +158,12 @@ describe("SessionController: one load/import sequence (critic pass 2 #1-#3, #6, 
     ctl.observe();                                    // the effect re-running on what was just loaded
     vi.advanceTimersByTime(5000);
     expect(api.saveSession).not.toHaveBeenCalled();
-    arrangement.master.gain = 90;
+    arrangement.master.noise = 90;
     ctl.observe();
     vi.advanceTimersByTime(2000);
     expect(api.saveSession).toHaveBeenCalledTimes(1);
     expect(api.saveSession.mock.calls[0][0]).toBe("take1");
-    expect(api.saveSession.mock.calls[0][1].master.gain).toBe(90);
+    expect(api.saveSession.mock.calls[0][1].master.noise).toBe(90);
   });
 
   it("a v1 IMPORT keeps the loaded stage (v1 records no backbone) and that stage's sampling fields: no rebuild, and SAVE records the current backbone", async () => {
@@ -201,7 +201,7 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     expect(api.saveSession).not.toHaveBeenCalled();   // nothing PUT: the converter would have emptied take2
     expect(ctl.session).toBe("take1");
     expect(loadedCrops()).toEqual(["T1"]);
-    arrangement.master.gain = 90;                     // take1 is still armed on take1's content
+    arrangement.master.noise = 90;                     // take1 is still armed on take1's content
     ctl.observe();
     vi.advanceTimersByTime(2000);
     expect(api.saveSession).toHaveBeenCalledTimes(1);
@@ -256,10 +256,10 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     await ctl.loadSession("take1");
     const first = deferred<unknown>();
     api.saveSession.mockReturnValueOnce(first.promise);
-    arrangement.master.gain = 90;
+    arrangement.master.noise = 90;
     ctl.observe();
     vi.advanceTimersByTime(2000);                     // PUT #1 in flight
-    arrangement.master.gain = 91;
+    arrangement.master.noise = 91;
     ctl.observe();
     vi.advanceTimersByTime(2000);                     // PUT #2 due -- queued behind #1, not sent
     expect(api.saveSession).toHaveBeenCalledTimes(1);
@@ -268,7 +268,7 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     first.resolve({ ok: true });
     await reload;
     expect(api.saveSession).toHaveBeenCalledTimes(2);
-    expect(api.saveSession.mock.calls[1][1].master.gain).toBe(91);
+    expect(api.saveSession.mock.calls[1][1].master.noise).toBe(91);
     expect(api.session).toHaveBeenCalledTimes(2);
   });
 
@@ -294,7 +294,7 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     rebuild.reject(new Error("rebuild failed"));
     await loadA;
     await vi.waitFor(() => expect(settings.stage).toBe("BASE"));   // the server never left BASE
-    arrangement.master.gain = 90;
+    arrangement.master.noise = 90;
     ctl.observe();
     vi.advanceTimersByTime(10_000);
     expect(api.saveSession).not.toHaveBeenCalled();   // nothing armed: neither take1 nor post-set
@@ -313,7 +313,7 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     put.resolve({ ok: true });
     expect(await saving).toBe("take1");               // it did save, under its own name ...
     expect(ctl.session).toBe("take2");                // ... and renamed nothing
-    arrangement.master.gain = 90;
+    arrangement.master.noise = 90;
     ctl.observe();
     vi.advanceTimersByTime(2000);
     expect(api.saveSession).toHaveBeenCalledTimes(2);
@@ -333,7 +333,7 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     restoreUi.mockRestore();
     expect(ctl.session).toBe("");
     expect(ctl.loading).toBe(false);
-    arrangement.master.gain = 90;
+    arrangement.master.noise = 90;
     ctl.observe();
     vi.advanceTimersByTime(10_000);
     expect(api.saveSession).not.toHaveBeenCalled();   // not take1 (its content is gone), not take2 (half-applied)
@@ -354,20 +354,20 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     api.preset.mockReturnValueOnce(preset.promise);
     const recall = ctl.recallMasterPreset("live A");
     await ctl.loadSession("take2");                   // picked while the preset was in flight
-    const late: MasterPresetPayload = { ...buildMasterPresetPayload(), master: { ...MASTER_DEFAULT, gain: 99 } };
+    const late: MasterPresetPayload = { ...buildMasterPresetPayload(), master: { ...MASTER_DEFAULT, noise: 99 } };
     preset.resolve(late);
     expect(await recall).toBe(false);                 // take1's pick never lands on take2's stores
-    expect(arrangement.master.gain).toBe(MASTER_DEFAULT.gain);
+    expect(arrangement.master.noise).toBe(MASTER_DEFAULT.noise);
     const broken = JSON.parse(JSON.stringify(late)) as Record<string, unknown>;
     (broken.lanes as MasterPresetPayload["lanes"])[0].chain.latch_on = true;
     delete broken.defaults;                           // read LAST by applyMasterPreset
     api.preset.mockResolvedValueOnce(broken);
     expect(await ctl.recallMasterPreset("broken")).toBe(false);
     expect(arrangement.lanes[0].chain.latch_on).toBe(false);   // not half-applied
-    expect(arrangement.master.gain).toBe(MASTER_DEFAULT.gain);
+    expect(arrangement.master.noise).toBe(MASTER_DEFAULT.noise);
     api.preset.mockResolvedValueOnce(late);
     expect(await ctl.recallMasterPreset("live A")).toBe(true);
-    expect(arrangement.master.gain).toBe(99);
+    expect(arrangement.master.noise).toBe(99);
   });
 
   it("MASTER PRESET recall re-arms every clip's stretch, since it can move native_bpm/detune (review 2026-10-01)", async () => {

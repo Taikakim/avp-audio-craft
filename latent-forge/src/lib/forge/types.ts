@@ -66,10 +66,15 @@ export interface LatchSlot {
   value_from?: number | null;
 }
 
-export interface LaneChain {
+/** The LatCH part of a chain, shared by a lane's chain and the master chain: LatchGuidance.svelte edits
+ *  this shape and neither host owns it. */
+export interface LatchBlock {
   latch_on: boolean;
   slots: [LatchSlot, LatchSlot];
   hparams: { rho: number; mu: number; gamma: number; n_iter: number; log_norms: boolean };
+}
+
+export interface LaneChain extends LatchBlock {
   film_on: boolean;
   film: { ckpt: string | null; gain: number; value: number };
   lora_on: boolean;
@@ -208,11 +213,16 @@ export interface MixSpec {
   quad_weights: [number, number, number, number];
 }
 
-export interface MasterChain {
-  latch_on: boolean;
-  head: string;
-  gain: number;
+/**
+ * The chain on the mixed latent. Its LatCH is a lane's LatCH (LatchBlock) run as a guided pass over the
+ * mix, `noise` deep -- a target, a weight and a window only mean something inside a sampler. Before
+ * 2026-10-09 it was one head and one gain (a single gradient step); a saved master of that shape is
+ * normalised on load (normalizeMaster).
+ */
+export interface MasterChain extends LatchBlock {
   norm_on: boolean;
+  /** How much of the mix the LatCH pass re-noises, 0..1; 0 runs nothing. */
+  noise: number;
 }
 
 export interface RenderHistoryEntry {

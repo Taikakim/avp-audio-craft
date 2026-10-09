@@ -88,12 +88,17 @@ export const CHAIN_DEFAULTS: LaneChain = {
   semitones: 0,
 };
 
-/** spec §4.6 — MASTER CHAIN: GAIN 0–120 default 64, LATENT NORMALISE on. */
+/** How much of the mix the master LatCH pass re-noises when nothing says otherwise (the server's
+ *  MASTER_NOISE_DEFAULT). A quarter keeps the mix recognisable; a lane's A2A defaults to 0.4. */
+export const MASTER_NOISE_DEFAULT = 0.25;
+
+/** spec §4.6 — MASTER CHAIN: the lane's LatCH block (same defaults), LATENT NORMALISE on. */
 export const MASTER_DEFAULT: MasterChain = {
   latch_on: false,
-  head: "none",
-  gain: 64,
+  slots: structuredClone(CHAIN_DEFAULTS.slots),
+  hparams: { ...CHAIN_DEFAULTS.hparams },
   norm_on: true,
+  noise: MASTER_NOISE_DEFAULT,
 };
 
 /** spec §4.5 — MIX ORDER default with every node at slerp t = 0.5. */

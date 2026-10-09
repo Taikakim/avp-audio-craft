@@ -16,7 +16,7 @@ import { CLIP_OPS } from "./types";
 import type { RenderHistoryEntry } from "./types";
 import { durableChain } from "../chains/modulePresets";
 import { SNAP_MODES } from "../math/snap";
-import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, POST_DEFAULTS } from "./defaults";
+import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, MASTER_DEFAULT, POST_DEFAULTS } from "./defaults";
 import { isAudioRef, isEnvelope } from "./guards";
 import type {
   ForgeClip, ForgeLane, LaneChain, MasterChain, MixSpec, OverlapParams, ProjectV2, RenderSettings,
@@ -101,15 +101,10 @@ function isRender(r: unknown): boolean {
 }
 
 function isLaneChain(c: unknown): boolean {
-  if (!isObj(c) || !Array.isArray(c.slots) || !isObj(c.hparams) || !isObj(c.film) || !isObj(c.lora)) return false;
-  const h = c.hparams;
+  if (!isObj(c) || !isLatchBlock(c) || !isObj(c.film) || !isObj(c.lora)) return false;
   const film = c.film;
   const lora = c.lora;
-  return c.slots.length === 2
-    && c.slots.every((s: unknown) => isObj(s) && typeof s.head === "string" && typeof s.kind === "string"
-      && isNum(s.value) && isNum(s.weight) && isNum(s.start_pct) && isNum(s.end_pct))
-    && isBool(c.latch_on) && isBool(c.film_on) && isBool(c.lora_on) && isBool(c.bungee_on) && isNum(c.semitones)
-    && isNum(h.rho) && isNum(h.mu) && isNum(h.gamma) && isNum(h.n_iter) && isBool(h.log_norms)
+  return isBool(c.film_on) && isBool(c.lora_on) && isBool(c.bungee_on) && isNum(c.semitones)
     && isStrOrNull(film.ckpt) && isNum(film.gain) && isNum(film.value)
     && isStrOrNull(lora.ckpt_path) && (lora.slot === null || isNum(lora.slot)) && isNum(lora.strength);
 }
@@ -153,8 +148,37 @@ function isMix(m: unknown): boolean {
     && m.quad_weights.length === 4 && m.quad_weights.every(isNum);
 }
 
+/** The LatCH part a lane's chain and the master's chain share. */
+function isLatchBlock(b: Record<string, unknown>): boolean {
+  const h = b.hparams;
+  return isBool(b.latch_on) && Array.isArray(b.slots) && b.slots.length === 2
+    && b.slots.every((s: unknown) => isObj(s) && typeof s.head === "string" && typeof s.kind === "string"
+      && isNum(s.value) && isNum(s.weight) && isNum(s.start_pct) && isNum(s.end_pct))
+    && isObj(h) && isNum(h.rho) && isNum(h.mu) && isNum(h.gamma) && isNum(h.n_iter) && isBool(h.log_norms);
+}
+
+/** A master saved before 2026-10-09: one head and one gain, no slots. Still a valid file. */
+function isLegacyMaster(m: Record<string, unknown>): boolean {
+  return isBool(m.latch_on) && typeof m.head === "string" && isNum(m.gain) && isBool(m.norm_on) && m.slots === undefined;
+}
+
 function isMaster(m: unknown): boolean {
-  return isObj(m) && isBool(m.latch_on) && typeof m.head === "string" && isNum(m.gain) && isBool(m.norm_on);
+  if (!isObj(m)) return false;
+  if (isLegacyMaster(m)) return true;
+  return isLatchBlock(m) && isBool(m.norm_on) && isNum(m.noise);
+}
+
+/**
+ * The master chain as the app holds it. A legacy master (one head, one gain) has nothing to carry into
+ * the lane-style slots -- a gradient step has no target or window -- so it comes back as the defaults
+ * with its LatCH switched off and its normalise toggle kept; the LatCH it had would otherwise have
+ * silently changed meaning into a guided pass.
+ */
+export function normalizeMaster(raw: MasterChain | Record<string, unknown>): MasterChain {
+  if (isLegacyMaster(raw as Record<string, unknown>)) {
+    return { ...structuredClone(MASTER_DEFAULT), norm_on: (raw as { norm_on: boolean }).norm_on };
+  }
+  return structuredClone(raw as MasterChain);
 }
 
 /**
@@ -233,7 +257,7 @@ export function applyProject(project: ProjectV2, opts: { restoreModel?: boolean 
     ...structuredClone(project.clips).map((c) => ({ ...c, op: c.op ?? null, previewAudio: null })),
   );
   arrangement.mix = structuredClone(project.mix);
-  arrangement.master = structuredClone(project.master);
+  arrangement.master = normalizeMaster(project.master);
   for (const [key, params] of Object.entries(project.overlaps)) {
     arrangement.setOverlapParams(key, structuredClone(params));
   }
@@ -345,7 +369,7 @@ export function applyMasterPreset(payload: MasterPresetPayload): void {
     clip.a2a = structuredClone(saved.a2a);
   }
   arrangement.mix = structuredClone(payload.mix);
-  arrangement.master = structuredClone(payload.master);
+  arrangement.master = normalizeMaster(payload.master);
   settings.defaults.schedule = structuredClone(payload.defaults.schedule);
   settings.defaults.prompt = payload.defaults.prompt;
 }

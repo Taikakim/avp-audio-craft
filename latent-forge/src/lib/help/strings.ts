@@ -119,6 +119,7 @@ export type HelpId =
   | "masterLatchHeadLabel"
   | "masterHead"
   | "masterGain"
+  | "masterNoise"
   | "mixQuadWeight"
   | "mixLerp"
   | "mixSlerp"
@@ -257,10 +258,11 @@ export const HELP: Record<HelpId, string> = {
   filmCkpt: "Which FiLM checkpoint this lane uses. Server default is whatever /info reports as the film default; anything else is loaded from the film model root on first use.",
   modulePresetSave: "Saves this module's current settings, on/off state included, as a module preset -- under the selected name, or a new one you are asked for. Recall applies to the active lane only.",
   modulePresetDelete: "Deletes the selected module preset from the server. The lane's current settings are not changed.",
-  masterLatchToggle: "Turns LatCH steering on for the mixed latent, after the lane chains. Safe value: off.",
+  masterLatchToggle: "Turns LatCH guidance on for the mixed latent, after the lane chains. It has the same slots and hyperparameters as a lane's LatCH, and runs as a guided re-noise of the whole mix, NOISE deep, using the session's prompt, steps and seed. Safe value: off.",
   masterLatchHeadLabel: "Which head steers the mixed latent (spec §8.1 S8 -- the existing /steer math).",
   masterHead: "The LatCH head applied to the mix. Uses the same registry as the lane chains' slots.",
   masterGain: "How hard the head's gradient is applied to the mixed latent. Safe value: 64.",
+  masterNoise: "How much of the mix the master LatCH pass re-noises before guiding it, 0 to 1. 0 runs nothing; the higher it is, the more of the mix the guidance may rewrite -- a lane's A2A defaults to 0.4, a quarter keeps the mix recognisable. Safe value: 0.25.",
   mixQuadWeight: "This lane's share of the weighted 4-way mix. All four are renormalised together; leaving every one at zero mixes the lanes equally.",
   mixLerp: "Linear interpolation between this node's two inputs.",
   mixSlerp: "Spherical interpolation between this node's two inputs -- the default, since SAME's latent space is strongly anisotropic and a straight lerp can cut through low-energy regions a slerp arcs around.",

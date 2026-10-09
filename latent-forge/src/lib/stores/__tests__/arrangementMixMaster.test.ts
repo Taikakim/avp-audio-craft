@@ -26,9 +26,9 @@ describe("arrangement.mix / .master (M7 T3)", () => {
   it("are seeded from M1's frozen defaults, as copies rather than the constants themselves", () => {
     expect(arrangement.mix).toEqual(MIX_DEFAULT);
     expect(arrangement.master).toEqual(MASTER_DEFAULT);
-    arrangement.master.gain = 99;
-    expect(MASTER_DEFAULT.gain).toBe(64);
-    arrangement.master.gain = 64;
+    arrangement.master.noise = 99;
+    expect(MASTER_DEFAULT.noise).toBe(0.25);
+    arrangement.master.noise = 0.25;
   });
 });
 

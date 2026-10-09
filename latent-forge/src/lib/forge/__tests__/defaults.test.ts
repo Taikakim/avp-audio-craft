@@ -68,10 +68,12 @@ describe("lane chain defaults (spec §5.5)", () => {
     expect(CHAIN_DEFAULTS.hparams).toEqual({ rho: 1, mu: 1, gamma: 0.3, n_iter: 4, log_norms: false });
   });
 
-  it("defaults FiLM target to 4.0 onsets/s, FiLM gain to the server's 1.75, and master gain to 64 (spec §4.6, §5.5)", () => {
+  it("defaults FiLM target to 4.0 onsets/s, FiLM gain to the server's 1.75, and the master to the lane's LatCH defaults with a 0.25 re-noise (spec §4.6, §5.5)", () => {
     expect(CHAIN_DEFAULTS.film.value).toBe(4.0);
     expect(CHAIN_DEFAULTS.film.gain).toBe(1.75);   // = /info.film_default.gain (FILM_DEFAULT_GAIN)
-    expect(MASTER_DEFAULT.gain).toBe(64);
+    expect(MASTER_DEFAULT.slots).toEqual(CHAIN_DEFAULTS.slots);
+    expect(MASTER_DEFAULT.hparams).toEqual(CHAIN_DEFAULTS.hparams);
+    expect(MASTER_DEFAULT.noise).toBe(0.25);
     expect(MASTER_DEFAULT.norm_on).toBe(true);
   });
 });

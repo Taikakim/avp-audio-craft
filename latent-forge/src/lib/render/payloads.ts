@@ -11,7 +11,7 @@
 // is silently ignored and renders 47 s -- HANDOUT, "A payload key the server does not read is
 // silently ignored").
 
-import { chainRequest, type ChainRequest, type LatchHeadInfo } from "../chains/latch";
+import { chainRequest, latchBlockRequest, type ChainRequest, type LatchHeadInfo } from "../chains/latch";
 import { SAMPLERS_BY_OBJECTIVE } from "../forge/defaults";
 import { settings, type Objective } from "../stores/settings.svelte";
 import type {
@@ -337,10 +337,6 @@ export function commitPayload(a: CommitArgs): Record<string, unknown> {
     };
   });
 
-  if (a.master.latch_on && !Object.prototype.hasOwnProperty.call(a.heads, a.master.head)) {
-    throw new PayloadError(`unknown master head ${JSON.stringify(a.master.head)}`);
-  }
-
   return {
     project_bpm: a.bpm,
     duration_sec: a.durationSec,              // top level, NOT inside `defaults` (Fact 1)
@@ -364,8 +360,10 @@ export function commitPayload(a: CommitArgs): Record<string, unknown> {
       quad_weights: a.mix.quad_weights,
     },
     master: {
-      latch_on: a.master.latch_on === true, head: a.master.head,
-      gain: num(a.master.gain, 0, 120, "master.gain"), norm_on: a.master.norm_on === true,
+      // the lane's own LatCH block (an unlisted head goes out as "none", as on a lane), then what is the
+      // master's alone: how deep the pass re-noises the mix, and the normalise toggle
+      ...latchBlockRequest(a.master, a.heads),
+      noise: num(a.master.noise, 0, 1, "master.noise"), norm_on: a.master.norm_on === true,
     },
     decode_lanes: a.decodeLanes === true,
   };

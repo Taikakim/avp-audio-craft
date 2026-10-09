@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Envelope, ForgeClip, ForgeLane, OverlapParams, RenderSettings } from "../../forge/types";
-import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings } from "../../forge/defaults";
-import type { LatchHeadInfo } from "../../chains/latch";
+import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, MASTER_DEFAULT } from "../../forge/defaults";
+import { chainRequest, type LatchHeadInfo } from "../../chains/latch";
 import {
   CAP_SEC, PayloadError, RENDER_WIRE_KEYS, a2aClipPayload, commitPayload,
   generatePayload, inpaintPayload, opPayload, renderWire,
@@ -63,7 +63,7 @@ function commitArgs(patch: Record<string, unknown> = {}) {
       nodes: { M1: { interp: "lerp" as const, t: 0.5 }, M2: { interp: "lerp" as const, t: 0.5 }, MX: { interp: "lerp" as const, t: 0.5 } },
       quad_weights: [1, 1, 1, 1] as [number, number, number, number],
     },
-    master: { latch_on: false, head: "none", gain: 64, norm_on: true },
+    master: structuredClone(MASTER_DEFAULT),
     decodeLanes: false,
     heads: HEADS,
     cfgOf: (s: RenderSettings) => s.cfg_scale,
@@ -296,9 +296,36 @@ describe("commitPayload -- spec 6.9, validated by M8 validate_commit", () => {
     expect(() => commitPayload(commitArgs({ clips: [clip({ detune_cents: 150 })] }))).toThrow(/detune/);
   });
 
-  it("refuses a master head the registry does not list while latch_on", () => {
-    expect(() => commitPayload(commitArgs({ master: { latch_on: true, head: "ghost", gain: 64, norm_on: true } }))).toThrow(/master head/);
-    expect(() => commitPayload(commitArgs({ master: { latch_on: false, head: "ghost", gain: 64, norm_on: true } }))).not.toThrow();
+  it("sends the master's LatCH as the lane's block -- slots, hparams -- plus noise and norm_on", () => {
+    const master = structuredClone(MASTER_DEFAULT);
+    master.latch_on = true;
+    master.noise = 0.4;
+    master.slots[0] = { head: "density", kind: "ramp_up", value: 6, value_from: 2, weight: 1.5, start_pct: 0.1, end_pct: 0.5 };
+    const wire = commitPayload(commitArgs({ master })).master as Record<string, unknown>;
+    expect(Object.keys(wire).sort()).toEqual(["hparams", "latch_on", "noise", "norm_on", "slots"]);
+    expect((wire.slots as unknown[])[0]).toEqual(
+      { head: "density", kind: "ramp_up", value: 6, value_from: 2, weight: 1.5, start_pct: 0.1, end_pct: 0.5 },
+    );
+    expect(wire.noise).toBe(0.4);
+    expect(wire.hparams).toEqual({ rho: 1, mu: 1, gamma: 0.3, n_iter: 4, log_norms: false });
+  });
+
+  it("the master block is exactly what a lane's chain sends for the same fields", () => {
+    const block = structuredClone(MASTER_DEFAULT);
+    block.slots[1] = { head: "recurrence", kind: "constant", value: 3, weight: 2, start_pct: 0, end_pct: 0.6 };
+    const lane = chainRequest({ ...structuredClone(CHAIN_DEFAULTS), slots: block.slots, hparams: block.hparams, latch_on: true }, HEADS);
+    const wire = commitPayload(commitArgs({ master: { ...block, latch_on: true } })).master as Record<string, unknown>;
+    expect({ latch_on: wire.latch_on, slots: wire.slots, hparams: wire.hparams })
+      .toEqual({ latch_on: lane.latch_on, slots: lane.slots, hparams: lane.hparams });
+  });
+
+  it("a master head the registry does not list goes out as none, as on a lane; noise outside 0..1 is refused", () => {
+    const master = structuredClone(MASTER_DEFAULT);
+    master.latch_on = true;
+    master.slots[0] = { head: "ghost", kind: "constant", value: 1, weight: 1, start_pct: 0, end_pct: 0.6 };
+    const wire = commitPayload(commitArgs({ master })).master as { slots: { head: string }[] };
+    expect(wire.slots[0].head).toBe("none");
+    expect(() => commitPayload(commitArgs({ master: { ...structuredClone(MASTER_DEFAULT), noise: 1.5 } }))).toThrow(/master\.noise/);
   });
 
   it("refuses a duration over the cap", () => {

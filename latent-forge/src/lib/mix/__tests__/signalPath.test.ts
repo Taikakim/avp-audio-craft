@@ -105,7 +105,7 @@ describe("meta.stages reconciled with the estimate (M9 T4; M7 open question 7)",
       clips: [{ lane: 0, isCropAudio: false, needsStretch: false, a2aOn: false }],
       overlapCount: 0,
       mix: { order: "tree", nodes: { M1: { interp: "lerp", t: 0.5 }, M2: { interp: "lerp", t: 0.5 }, MX: { interp: "lerp", t: 0.5 } }, quad_weights: [1, 1, 1, 1] },
-      master: { latch_on: false, head: "none", gain: 64, norm_on: true },
+      master: structuredClone(MASTER_DEFAULT),
       ...patch,
     };
   }

@@ -6,8 +6,8 @@ import { HELP } from "../strings";
 const SOURCE = fileURLToPath(new URL("../strings.ts", import.meta.url));
 
 describe("the extractor captured the whole drawing", () => {
-  it("has the 80 handoff strings plus the 14 new controls (fix wave 2026-09-29 added 7 more; M7 T2 added 13; the epoch select and the ramp start added 2)", () => {
-    expect(Object.keys(HELP)).toHaveLength(122);
+  it("has the 80 handoff strings plus the 14 new controls (fix wave 2026-09-29 added 7 more; M7 T2 added 13; the epoch select, the ramp start and the master noise added 3)", () => {
+    expect(Object.keys(HELP)).toHaveLength(123);
   });
 
   it("has no empty string", () => {

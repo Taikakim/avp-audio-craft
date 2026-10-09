@@ -66,9 +66,9 @@ describe("litModules lights a module exactly when its settings differ from the d
     expect(litModules({ ...EMPTY, chain })["lane-chain"]).toBe(true);
   });
 
-  it("leaves the master chain dark at MASTER_DEFAULT and lights it on a gain change", () => {
+  it("leaves the master chain dark at MASTER_DEFAULT and lights it on a noise change", () => {
     expect(litModules({ ...EMPTY, master: clone(MASTER_DEFAULT) })["master-chain"]).toBe(false);
-    expect(litModules({ ...EMPTY, master: { ...MASTER_DEFAULT, gain: 80 } })["master-chain"]).toBe(true);
+    expect(litModules({ ...EMPTY, master: { ...MASTER_DEFAULT, noise: 0.8 } })["master-chain"]).toBe(true);
   });
 
   it("leaves the overlap dark at OVERLAP_DEFAULT and lights it on a steps change", () => {
