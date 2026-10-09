@@ -174,3 +174,32 @@ describe("fetchLatchHeads", () => {
     await expect(fetchLatchHeads()).resolves.toEqual({});
   });
 });
+
+describe("chainRequest — a ramp's explicit start (value_from)", () => {
+  function withSlot(slot: Partial<LaneChain["slots"][0]>): LaneChain {
+    const chain = clone(CHAIN_DEFAULTS);
+    chain.slots[0] = { head: "rms_energy_bass", kind: "ramp_up", value: -12, weight: 1, start_pct: 0, end_pct: 0.6, ...slot };
+    return chain;
+  }
+
+  it("sends value_from for a ramp that has one", () => {
+    const req = chainRequest(withSlot({ value_from: -30 }), HEADS);
+    expect(req.slots[0]).toEqual({ head: "rms_energy_bass", kind: "ramp_up", value: -12, weight: 1, start_pct: 0, end_pct: 0.6, value_from: -30 });
+  });
+
+  it("leaves it off for a ramp without one, so an older server still accepts the chain", () => {
+    expect("value_from" in chainRequest(withSlot({}), HEADS).slots[0]).toBe(false);
+    expect("value_from" in chainRequest(withSlot({ value_from: null }), HEADS).slots[0]).toBe(false);
+  });
+
+  it("leaves it off for every kind that is not a ramp, even if a stale value_from is still on the slot", () => {
+    for (const kind of ["constant", "beat_grid"]) {
+      expect("value_from" in chainRequest(withSlot({ kind, value_from: -30 }), HEADS).slots[0]).toBe(false);
+    }
+  });
+
+  it("still rewrites an unlisted head to none on a ramp that has a start", () => {
+    const req = chainRequest(withSlot({ head: "ghost_head", value_from: -30 }), HEADS);
+    expect(req.slots[0].head).toBe("none");
+  });
+});

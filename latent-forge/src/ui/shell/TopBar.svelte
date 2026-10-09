@@ -10,7 +10,7 @@
   // Every prop after `ontheme` has a default, so the bar renders before the three
   // fetches in App.svelte have answered.
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
-  import type { ModelOption } from "../topbar/modelOptions";
+  import { epochLabel, modelMenu, type ModelOption } from "../topbar/modelOptions";
   import { HELP } from "../../lib/help/strings";
 
   type ForgeView = "workspace" | "statistics";
@@ -74,6 +74,9 @@
     mixdownStepsLeft = null,
   }: Props = $props();
 
+  // One entry per adapter RUN in the MODEL select, its epochs in the select beside it.
+  const menu = $derived(modelMenu(models, model));
+
   let importInput = $state<HTMLInputElement>();
 
   function onImportPicked(e: Event) {
@@ -119,10 +122,25 @@
     value={model}
     onchange={(e) => onmodel((e.currentTarget as HTMLSelectElement).value)}
   >
-    {#each models as m (m.value)}
+    {#each menu.primary as m (m.value)}
       <option value={m.value}>{m.label}</option>
     {/each}
   </select>
+
+  {#if menu.epochs.length > 0}
+    <select
+      class="epoch"
+      aria-label="EPOCH"
+      data-testid="epoch-select"
+      data-help={HELP.modelEpoch}
+      value={model}
+      onchange={(e) => onmodel((e.currentTarget as HTMLSelectElement).value)}
+    >
+      {#each menu.epochs as m (m.value)}
+        <option value={m.value}>{epochLabel(m)}</option>
+      {/each}
+    </select>
+  {/if}
 
   <input
     class="folder"
@@ -197,6 +215,7 @@
   }
   .session,
   .model,
+  .epoch,
   .preset {
     background: var(--panel2);
     color: var(--text);
@@ -213,6 +232,11 @@
   .model {
     flex: 1;
     max-width: 170px;
+  }
+  .epoch {
+    flex: 0 1 112px;
+    max-width: 112px;
+    border-color: var(--turq-strong);
   }
   .folder {
     flex: 2;

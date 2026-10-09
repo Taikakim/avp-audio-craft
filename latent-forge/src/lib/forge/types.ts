@@ -59,6 +59,11 @@ export interface RenderSettings {
 export interface LatchSlot {
   head: string; kind: string; value: number;
   weight: number; start_pct: number; end_pct: number;
+  /**
+   * Where a ramp starts; `value` is where it ends. Absent/null = the sampler's own ramp, which runs
+   * from 0 (so unusable on a head whose range is nowhere near 0). Read for ramp_up / ramp_down only.
+   */
+  value_from?: number | null;
 }
 
 export interface LaneChain {

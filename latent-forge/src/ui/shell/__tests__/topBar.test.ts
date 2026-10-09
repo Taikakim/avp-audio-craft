@@ -59,3 +59,40 @@ describe("the top bar carries spec §4.2 left to right", () => {
     expect(getByTestId("mixdown-button").textContent?.trim()).toBe("▸ MIXDOWN");
   });
 });
+
+describe("the EPOCH select beside MODEL", () => {
+  const A = "/SERVER/runs/arm_a";
+  const models = buildModelOptions([
+    { path: `${A}/e10.ckpt`, label: "arm_a", epoch: 10, step: 100 },
+    { path: `${A}/e20.ckpt`, label: "arm_a", epoch: 20, step: 200 },
+    { path: "/SERVER/runs/arm_b/e5.ckpt", label: "arm_b", epoch: 5, step: 50 },
+  ]);
+
+  it("is absent while a backbone is selected, and MODEL lists each run once", () => {
+    const { getByTestId, queryByTestId } = render(TopBar, { props: { ...base, models, model: "medium" } });
+    expect(queryByTestId("epoch-select")).toBeNull();
+    const select = getByTestId("model-select") as HTMLSelectElement;
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      "medium", "medium-base", "small-music", "small-music-base", "arm_a (2 ep)", "arm_b",
+    ]);
+  });
+
+  it("appears for an adapter, lists its epochs newest first and shows the loaded one", () => {
+    const { getByTestId } = render(TopBar, { props: { ...base, models, model: `${A}/e10.ckpt` } });
+    const epoch = getByTestId("epoch-select") as HTMLSelectElement;
+    expect([...epoch.options].map((o) => o.textContent)).toEqual(["ep 20 · 200", "ep 10 · 100"]);
+    expect(epoch.value).toBe(`${A}/e10.ckpt`);
+    expect((getByTestId("model-select") as HTMLSelectElement).value).toBe(`${A}/e10.ckpt`);
+  });
+
+  it("choosing an epoch reports that checkpoint's path, as choosing the run does", () => {
+    const picked: string[] = [];
+    const { getByTestId } = render(TopBar, {
+      props: { ...base, models, model: `${A}/e10.ckpt`, onmodel: (v: string) => picked.push(v) },
+    });
+    const epoch = getByTestId("epoch-select") as HTMLSelectElement;
+    epoch.value = `${A}/e20.ckpt`;
+    epoch.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(picked).toEqual([`${A}/e20.ckpt`]);
+  });
+});

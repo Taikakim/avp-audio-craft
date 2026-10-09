@@ -42,7 +42,7 @@ describe("MASTER CHAIN (spec §4.6.5)", () => {
   it("GAIN drags over 0-120 with default 64", async () => {
     render(MasterChain);
     const gain = await screen.findByLabelText("GAIN");
-    expect(gain).toHaveValue("64");
+    expect(gain).toHaveValue(64);                       // the text field beside the slider
     await fireEvent.input(gain, { target: { value: "80" } });
     expect(arrangement.master.gain).toBe(80);
   });

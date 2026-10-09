@@ -3,6 +3,7 @@
 // here multiplies a head gain. Pure except fetchLatchHeads (network).
 
 import { forgeApi } from "../forge/api";
+import { isRamp } from "./latchScale";
 import type { LaneChain, LatchSlot } from "../forge/types";
 
 /**
@@ -23,6 +24,13 @@ export interface LatchHeadInfo {
   slider_min: number;
   slider_max: number;
   value_default: number;
+  /** The fields below arrive with eval/head_meta.py's schema-1 additions; an older server omits them. */
+  units?: string;
+  std_mean?: number | null;
+  std_std?: number | null;
+  /** Highest guidance gain that stayed clean on every test prompt (eval/latch_bracket_quality.json). */
+  usable_max_gain?: number | null;
+  usable_max_weight?: number | null;
 }
 
 /**
@@ -52,7 +60,7 @@ export interface ChainRequest {
  */
 function wireSlot(slot: LatchSlot, heads: Record<string, LatchHeadInfo>): LatchSlot {
   const known = slot.head === "none" || Object.prototype.hasOwnProperty.call(heads, slot.head);
-  return {
+  const out: LatchSlot = {
     head: known ? slot.head : "none",
     kind: slot.kind,
     value: slot.value,
@@ -60,6 +68,10 @@ function wireSlot(slot: LatchSlot, heads: Record<string, LatchHeadInfo>): LatchS
     start_pct: slot.start_pct,
     end_pct: Math.max(slot.start_pct, slot.end_pct),
   };
+  // Only a ramp with an explicit start sends value_from: parse_chain 400s on a key it does not know,
+  // so every other slot stays byte-for-byte what a server without the field accepts.
+  if (isRamp(slot.kind) && typeof slot.value_from === "number") out.value_from = slot.value_from;
+  return out;
 }
 
 /** The chain object for a job payload's `chain` key (M8 plan lines 1422, 1980). Always a plain copy. */

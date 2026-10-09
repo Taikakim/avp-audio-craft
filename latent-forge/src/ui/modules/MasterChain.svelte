@@ -4,6 +4,7 @@
   import { arrangement } from "../../lib/stores/arrangement.svelte";
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
   import { HELP } from "../../lib/help/strings";
+  import ParamField from "./ParamField.svelte";
 
   const master = $derived(arrangement.master);
   let heads = $state<Record<string, LatchHeadInfo>>({});
@@ -31,10 +32,8 @@
     {/each}
   </select>
 
-  <label>GAIN
-    <input type="range" aria-label="GAIN" data-help={HELP.masterGain} min="0" max="120"
-      value={master.gain} oninput={(e) => (master.gain = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
+  <ParamField label="GAIN" name="GAIN" help={HELP.masterGain}
+    value={master.gain} onValue={(v) => (master.gain = v)} min={0} max={120} step={1} decimals={1} />
 
   <div class="row">
     <button data-testid="master-norm-toggle" class:on={master.norm_on}

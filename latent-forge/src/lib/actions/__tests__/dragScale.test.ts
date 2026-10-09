@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dragScale } from "../dragScale";
 
 /**
@@ -100,6 +100,110 @@ describe("the action", () => {
     handle.destroy();
     node.dispatchEvent(pointer("pointerdown", { clientX: 500 }));
     window.dispatchEvent(pointer("pointermove", { clientX: 630 }));
+    expect(onValue).not.toHaveBeenCalled();
+  });
+});
+
+describe("inertia", () => {
+  // A hand-driven animation clock: nothing moves until frame() is called.
+  let now = 0;
+  let queue: FrameRequestCallback[] = [];
+  function frame(ms = 16): void {
+    now += ms;
+    const run = queue;
+    queue = [];
+    run.forEach((cb) => cb(now));
+  }
+  function settle(): void {
+    for (let i = 0; i < 400 && queue.length; i++) frame();
+  }
+
+  beforeEach(() => {
+    now = 0;
+    queue = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => (queue.push(cb), queue.length));
+    vi.stubGlobal("cancelAnimationFrame", () => { queue = []; });
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("does not jump: a seed drag has moved only part-way after one frame and ends on the pointer's value", () => {
+    const node = field();
+    const onValue = vi.fn();
+    dragScale(node, { min: 0, max: 999999, int: true, value: 1000, onValue });
+    node.dispatchEvent(pointer("pointerdown", { clientX: 0 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 26 }));       // asks for 1000 + 500
+    expect(onValue).not.toHaveBeenCalled();                              // nothing before the first frame
+    frame(16);
+    const first = onValue.mock.calls.at(-1)![0] as number;
+    expect(first).toBeGreaterThan(1000);
+    expect(first).toBeLessThan(1500);
+    settle();
+    expect(onValue).toHaveBeenLastCalledWith(1500);
+    const seen = onValue.mock.calls.map((c) => c[0] as number);
+    expect(seen).toEqual([...seen].sort((a, b) => a - b));               // eased, never backwards
+    expect(new Set(seen).size).toBe(seen.length);                        // and each value emitted once
+    window.dispatchEvent(pointer("pointerup", { clientX: 26 }));
+  });
+
+  it("keeps gliding after release and lands on the release point", () => {
+    const node = field();
+    const onValue = vi.fn();
+    dragScale(node, { min: 0, max: 999999, int: true, value: 0, onValue });
+    node.dispatchEvent(pointer("pointerdown", { clientX: 0 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 52 }));       // asks for 1000
+    window.dispatchEvent(pointer("pointerup", { clientX: 52 }));
+    frame(16);
+    expect(onValue).toHaveBeenCalled();
+    expect(onValue).not.toHaveBeenLastCalledWith(1000);
+    settle();
+    expect(onValue).toHaveBeenLastCalledWith(1000);
+    expect(queue).toHaveLength(0);                                       // the loop stops by itself
+  });
+
+  it("a narrow field is untouched by default: exactly under the pointer, no frame needed", () => {
+    const node = field();
+    const onValue = vi.fn();
+    dragScale(node, { min: 60, max: 200, value: 120, onValue });
+    node.dispatchEvent(pointer("pointerdown", { clientX: 500 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 630 }));
+    expect(onValue).toHaveBeenLastCalledWith(190);
+    expect(queue).toHaveLength(0);
+    window.dispatchEvent(pointer("pointerup", { clientX: 630 }));
+  });
+
+  it("a field can ask for it, and inertia: 0 switches the wide-range default off", () => {
+    const node = field();
+    const onValue = vi.fn();
+    dragScale(node, { min: 0, max: 64, value: 6, inertia: 100, onValue });
+    node.dispatchEvent(pointer("pointerdown", { clientX: 0 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 130 }));
+    expect(onValue).not.toHaveBeenCalled();
+    settle();
+    expect(onValue).toHaveBeenLastCalledWith(38);
+    window.dispatchEvent(pointer("pointerup", { clientX: 130 }));
+
+    const wide = field();
+    const onWide = vi.fn();
+    dragScale(wide, { min: 0, max: 999999, int: true, value: 0, inertia: 0, onValue: onWide });
+    wide.dispatchEvent(pointer("pointerdown", { clientX: 0 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 26 }));
+    expect(onWide).toHaveBeenLastCalledWith(500);
+    window.dispatchEvent(pointer("pointerup", { clientX: 26 }));
+  });
+
+  it("destroy() cancels a glide that is still running", () => {
+    const node = field();
+    const onValue = vi.fn();
+    const handle = dragScale(node, { min: 0, max: 999999, int: true, value: 0, onValue });
+    node.dispatchEvent(pointer("pointerdown", { clientX: 0 }));
+    window.dispatchEvent(pointer("pointermove", { clientX: 52 }));
+    window.dispatchEvent(pointer("pointerup", { clientX: 52 }));
+    handle.destroy();
+    frame(16);
     expect(onValue).not.toHaveBeenCalled();
   });
 });

@@ -15,6 +15,12 @@
   import { applyModulePreset, modulePresetPayload, type ModuleLevel } from "../../lib/chains/modulePresets";
   import { HELP } from "../../lib/help/strings";
   import { dragScale } from "../../lib/actions/dragScale";
+  import {
+    defaultRamp, isRamp, posToWeight, rampEnds, roundWeight, setRampFrom, setRampTo,
+    targetReadout, targetScale, unitsOf, usableMaxWeight, weightReadout, weightToPos, WEIGHT_MAX,
+  } from "../../lib/chains/latchScale";
+  import type { LatchSlot } from "../../lib/forge/types";
+  import ParamField from "./ParamField.svelte";
 
   const chain = $derived(arrangement.lanes[view.activeLane].chain);
 
@@ -62,25 +68,51 @@
   });
 
   // --- LatCH slot helpers (spec §5.5) ---------------------------------------------------------
-  function targetRange(i: number): { min: number; max: number; step: number } {
-    const slot = chain.slots[i];
-    if (slot.kind === "beat_grid") return { min: 60, max: 200, step: 1 };   // "a BPM slider 60–200"
-    const h = heads[slot.head];
-    const min = h?.slider_min ?? 0;
-    const max = h?.slider_max ?? 1;
-    return { min, max, step: (max - min) / 200 || 0.01 };
+  // The scale of TARGET / WEIGHT, their units and the ramp ends live in lib/chains/latchScale.ts.
+
+  /** The ends of a ramp are explicit (value_from -> value) and inside the head's range; anything
+   *  else drops value_from, which is only read for a ramp. */
+  function applyRampDefaults(slot: LatchSlot, was: string) {
+    if (!isRamp(slot.kind)) {
+      delete slot.value_from;
+      return;
+    }
+    if (!isRamp(was)) {
+      const r = defaultRamp(heads[slot.head], slot.kind);
+      if (r) {
+        slot.value_from = r.from;
+        slot.value = r.to;
+      } else {
+        delete slot.value_from;   // head not known: the sampler's own 0 -> value ramp
+      }
+    } else if (was !== slot.kind && typeof slot.value_from === "number") {
+      // ramp_up <-> ramp_down with explicit ends: flip the direction
+      const { from, to } = rampEnds(slot);
+      slot.value_from = to;
+      slot.value = from;
+    }
   }
 
-  /** New head: kind falls back to the head's first supported kind, value starts at value_default. */
+  /** New head: kind falls back to the head's first supported kind, value starts at value_default. A
+   *  weight above the head's clean limit comes down to it: hardness at the default weight 1 is the
+   *  gain-512 setting that buzzed on goa (WORKLOG 2026-07-10), and its limit is 0.25. */
   function setHead(i: number, name: string) {
     const slot = chain.slots[i];
+    const was = slot.kind;
     slot.head = name;
     const h = heads[name];
-    if (!h) return;   // "none"
+    if (!h) {   // "none"
+      delete slot.value_from;
+      return;
+    }
     if (!h.supports_kinds.includes(slot.kind)) slot.kind = h.supports_kinds[0] ?? "constant";
     slot.value = slot.kind === "beat_grid"
       ? Math.max(60, Math.min(200, Math.round(arrangement.bpm)))
       : h.value_default;
+    delete slot.value_from;
+    applyRampDefaults(slot, isRamp(slot.kind) ? "constant" : was);
+    const limit = usableMaxWeight(h);
+    if (limit !== null && slot.weight > limit) slot.weight = roundWeight(limit);
   }
 
   function setKind(i: number, kind: string) {
@@ -89,6 +121,13 @@
     slot.kind = kind;
     if (kind === "beat_grid" && was !== "beat_grid") slot.value = Math.max(60, Math.min(200, Math.round(arrangement.bpm)));
     else if (kind !== "beat_grid" && was === "beat_grid") slot.value = heads[slot.head]?.value_default ?? slot.value;
+    applyRampDefaults(slot, was);
+  }
+
+  /** The line under a target field: its distance from the head's mean, or the out-of-range warning. */
+  function targetNote(i: number, v: number) {
+    const slot = chain.slots[i];
+    return targetReadout(v, heads[slot.head], slot.kind);
   }
 
   // --- LORA / DORA ----------------------------------------------------------------------------
@@ -177,60 +216,74 @@
   </div>
 
   {#each [0, 1] as i (i)}
-    {@const range = targetRange(i)}
+    {@const slot = chain.slots[i]}
+    {@const head = heads[slot.head]}
+    {@const scale = targetScale(head, slot.kind)}
+    {@const units = unitsOf(head, slot.kind)}
+    {@const ramp = isRamp(slot.kind)}
+    {@const ends = rampEnds(slot)}
+    {@const limit = usableMaxWeight(head)}
+    {@const wr = weightReadout(head, slot.weight, chain.hparams)}
+    {@const toNote = targetNote(i, ramp ? ends.to : slot.value)}
+    {@const fromNote = ramp ? targetNote(i, ends.from) : null}
     <fieldset class="slot">
-      <select aria-label="HEAD — slot {i + 1}" data-help={HELP.latchHead}
-        value={chain.slots[i].head} onchange={(e) => setHead(i, (e.currentTarget as HTMLSelectElement).value)}>
-        <option value="none">none</option>
-        {#each Object.values(heads) as h (h.name)}
-          <option value={h.name}>{h.name} · {h.family}{h.health !== "ok" ? " ⚠" : ""}</option>
-        {/each}
-      </select>
-      <select aria-label="KIND — slot {i + 1}" data-help={HELP.latchTargetKind}
-        value={chain.slots[i].kind} onchange={(e) => setKind(i, (e.currentTarget as HTMLSelectElement).value)}>
-        {#each (heads[chain.slots[i].head]?.supports_kinds ?? ["constant"]) as k (k)}<option value={k}>{k}</option>{/each}
-      </select>
-      <!-- min/max/step BEFORE value: an <input type=range> clamps value to the range it has when
-           value is applied, so the range attributes must already be the head's. -->
-      <label>TARGET{chain.slots[i].kind === "beat_grid" ? " (BPM)" : ""}
-        <input type="range" aria-label="TARGET — slot {i + 1}" data-help={HELP.latchTargetValue}
-          min={range.min} max={range.max} step={range.step}
-          value={chain.slots[i].value} oninput={(e) => (chain.slots[i].value = Number((e.currentTarget as HTMLInputElement).value))} />
-      </label>
-      <label>WEIGHT — slot {i + 1}
-        <input type="range" aria-label="WEIGHT — slot {i + 1}" data-help={HELP.latchWeight} min="0" max="50" step="0.1"
-          value={chain.slots[i].weight} oninput={(e) => (chain.slots[i].weight = Number((e.currentTarget as HTMLInputElement).value))} />
-      </label>
+      <legend>SLOT {i + 1}</legend>
+      <div class="pair">
+        <select aria-label="HEAD — slot {i + 1}" data-help={HELP.latchHead}
+          value={slot.head} onchange={(e) => setHead(i, (e.currentTarget as HTMLSelectElement).value)}>
+          <option value="none">none</option>
+          {#each Object.values(heads) as h (h.name)}
+            <option value={h.name}>{h.name} · {h.family}{h.health !== "ok" ? " ⚠" : ""}</option>
+          {/each}
+        </select>
+        <select aria-label="KIND — slot {i + 1}" data-help={HELP.latchTargetKind}
+          value={slot.kind} onchange={(e) => setKind(i, (e.currentTarget as HTMLSelectElement).value)}>
+          {#each (head?.supports_kinds ?? ["constant"]) as k (k)}<option value={k}>{k}</option>{/each}
+        </select>
+      </div>
+      {#if ramp}
+        <!-- A ramp has two ends. The sampler's own ramp runs 0 -> value, which is a wall of noise on a
+             head whose range is nowhere near 0 (hardness: 66 +/- 3.5), so both ends are shown and
+             both are in the head's unit. -->
+        <ParamField label="FROM" name="FROM — slot {i + 1}" help={HELP.latchTargetFrom}
+          value={ends.from} onValue={(v) => setRampFrom(slot, v)}
+          min={scale.min} max={scale.max} step={scale.step} lo={-1e6} hi={1e6}
+          unit={units} decimals={scale.decimals}
+          note={fromNote ? fromNote.text : ""} warn={fromNote?.warn ?? false} />
+      {/if}
+      <ParamField label={ramp ? "TO" : "TARGET"} name="TARGET — slot {i + 1}" help={HELP.latchTargetValue}
+        value={ramp ? ends.to : slot.value}
+        onValue={(v) => (ramp ? setRampTo(slot, v) : (slot.value = v))}
+        min={scale.min} max={scale.max} step={scale.step} lo={-1e6} hi={1e6}
+        unit={units} decimals={scale.decimals}
+        note={toNote ? toNote.text : ""} warn={toNote?.warn ?? false} />
+      <ParamField label="WEIGHT" name="WEIGHT — slot {i + 1}" help={HELP.latchWeight}
+        value={slot.weight} onValue={(v) => (slot.weight = v)}
+        min={0} max={WEIGHT_MAX} step={0.01} decimals={2}
+        toPos={weightToPos} fromPos={posToWeight}
+        mark={limit} markTitle="the weight past which this head's output breaks up"
+        note={wr.text} warn={wr.warn} />
       <!-- The two sliders are independent; Task 1's wireSlot sends end_pct = max(start_pct, end_pct),
-           so crossed sliders never reach parse_chain's start <= end check (critic follow-up #5). -->
-      <label>START %
-        <input type="range" aria-label="START % — slot {i + 1}" data-help={HELP.latchStartPct} min="0" max="1" step="0.01"
-          value={chain.slots[i].start_pct} oninput={(e) => (chain.slots[i].start_pct = Number((e.currentTarget as HTMLInputElement).value))} />
-      </label>
-      <label>END %
-        <input type="range" aria-label="END % — slot {i + 1}" data-help={HELP.latchEndPct} min="0" max="1" step="0.01"
-          value={chain.slots[i].end_pct} oninput={(e) => (chain.slots[i].end_pct = Number((e.currentTarget as HTMLInputElement).value))} />
-      </label>
+           so crossed sliders never reach parse_chain's start <= end check (critic follow-up #5).
+           Stored as a fraction of the step schedule, shown as a percentage. -->
+      <ParamField label="START" name="START % — slot {i + 1}" help={HELP.latchStartPct}
+        value={slot.start_pct} onValue={(v) => (slot.start_pct = v)}
+        min={0} max={1} step={0.01} factor={100} decimals={0} unit="%" />
+      <ParamField label="END" name="END % — slot {i + 1}" help={HELP.latchEndPct}
+        value={slot.end_pct} onValue={(v) => (slot.end_pct = v)}
+        min={0} max={1} step={0.01} factor={100} decimals={0} unit="%" />
     </fieldset>
   {/each}
 
   <p class="section">GUIDANCE HYPERPARAMETERS</p>
-  <label>ρ VARIANCE
-    <input type="range" aria-label="ρ VARIANCE" data-help={HELP.latchRho} min="0" max="30" step="0.1"
-      value={chain.hparams.rho} oninput={(e) => (chain.hparams.rho = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
-  <label>μ MEAN
-    <input type="range" aria-label="μ MEAN" data-help={HELP.latchMu} min="0" max="30" step="0.1"
-      value={chain.hparams.mu} oninput={(e) => (chain.hparams.mu = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
-  <label>γ NOISE
-    <input type="range" aria-label="γ NOISE" data-help={HELP.latchGamma} min="0" max="20" step="0.05"
-      value={chain.hparams.gamma} oninput={(e) => (chain.hparams.gamma = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
-  <label>MEAN ITER
-    <input type="range" aria-label="MEAN ITER" data-help={HELP.latchMeanIter} min="1" max="80" step="1"
-      value={chain.hparams.n_iter} oninput={(e) => (chain.hparams.n_iter = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
+  <ParamField label="ρ VAR" name="ρ VARIANCE" help={HELP.latchRho}
+    value={chain.hparams.rho} onValue={(v) => (chain.hparams.rho = v)} min={0} max={30} step={0.1} decimals={2} />
+  <ParamField label="μ MEAN" name="μ MEAN" help={HELP.latchMu}
+    value={chain.hparams.mu} onValue={(v) => (chain.hparams.mu = v)} min={0} max={30} step={0.1} decimals={2} />
+  <ParamField label="γ NOISE" name="γ NOISE" help={HELP.latchGamma}
+    value={chain.hparams.gamma} onValue={(v) => (chain.hparams.gamma = v)} min={0} max={20} step={0.05} decimals={2} />
+  <ParamField label="ITER" name="MEAN ITER" help={HELP.latchMeanIter}
+    value={chain.hparams.n_iter} onValue={(v) => (chain.hparams.n_iter = Math.round(v))} min={1} max={80} step={1} decimals={0} />
   <button data-help={HELP.latchLogNorms} class:on={chain.hparams.log_norms}
     onclick={() => (chain.hparams.log_norms = !chain.hparams.log_norms)}>LOG GRADIENT NORMS</button>
 
@@ -246,14 +299,10 @@
     <option value="">server default{filmDefaultCkpt ? ` (${filmDefaultCkpt})` : ""}</option>
     {#each filmCkpts as c (c.path)}<option value={c.path}>{c.label || c.name || c.path}</option>{/each}
   </select>
-  <label>FILM SCALE
-    <input type="range" aria-label="FILM SCALE" data-help={HELP.filmScale} min="0" max="2" step="0.05"
-      value={chain.film.gain} oninput={(e) => (chain.film.gain = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
-  <label>TARGET
-    <input type="range" aria-label="FILM TARGET" data-help={HELP.filmTarget} min="0" max="16" step="0.1"
-      value={chain.film.value} oninput={(e) => (chain.film.value = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
+  <ParamField label="SCALE" name="FILM SCALE" help={HELP.filmScale}
+    value={chain.film.gain} onValue={(v) => (chain.film.gain = v)} min={0} max={2} step={0.05} decimals={2} />
+  <ParamField label="TARGET" name="FILM TARGET" help={HELP.filmTarget}
+    value={chain.film.value} onValue={(v) => (chain.film.value = v)} min={0} max={16} step={0.1} decimals={1} />
 
   <!-- LORA / DORA -->
   <div class="row">
@@ -268,10 +317,8 @@
     <option value="">none</option>
     {#each loraOptions as o (o.path)}<option value={o.path}>{o.label || o.name || o.path}</option>{/each}
   </select>
-  <label>LORA / DORA SCALE
-    <input type="range" aria-label="LORA / DORA SCALE" data-help={HELP.loraScale} min="0" max="1" step="0.01"
-      value={chain.lora.strength} oninput={(e) => (chain.lora.strength = Number((e.currentTarget as HTMLInputElement).value))} />
-  </label>
+  <ParamField label="SCALE" name="LORA / DORA SCALE" help={HELP.loraScale}
+    value={chain.lora.strength} onValue={(v) => (chain.lora.strength = v)} min={0} max={1} step={0.01} decimals={2} />
 
   <!-- BUNGEE -->
   <div class="row">
@@ -296,4 +343,8 @@
   .hint, .section { margin: 0; font-size: 10px; color: var(--text-dim); }
   button.on { background: var(--turq-strong); color: white; border-color: var(--turq-strong); }
   select, input, button { background: var(--panel2); border: 1px solid var(--border); color: var(--text); font-size: 10px; }
+  .slot { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 4px 6px 6px; border: 1px solid var(--border); min-width: 0; }
+  .slot legend { font-size: 9px; letter-spacing: 0.08em; color: var(--text-dim); padding: 0 3px; }
+  .pair { display: flex; gap: 4px; min-width: 0; }
+  .pair select { flex: 1 1 0; min-width: 0; }
 </style>

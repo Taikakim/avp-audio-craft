@@ -8,6 +8,7 @@
 export type HelpId =
   | "session"
   | "model"
+  | "modelEpoch"
   | "modelFolder"
   | "masterPreset"
   | "renderButton"
@@ -62,6 +63,7 @@ export type HelpId =
   | "latchHead"
   | "latchTargetKind"
   | "latchTargetValue"
+  | "latchTargetFrom"
   | "latchWeight"
   | "latchStartPct"
   | "latchEndPct"
@@ -132,6 +134,7 @@ export const HELP: Record<HelpId, string> = {
   session: "Session — clips rendered in one working session.",
   // handoff: "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip."
   model: "Checkpoint used for generation, a2a, inpainting and the encode/decode round trip. The first four entries are backbones and switching one rebuilds the model; the rest are adapters and set the session's default checkpoint path.",
+  modelEpoch: "Which saved epoch of the selected adapter run to load, newest first. Shown as the epoch number and the training step. Picking another epoch sets the session's default checkpoint path, the same as picking the run.",
   modelFolder: "Direct checkpoint folder — any path the loader can read.",
   masterPreset: "Master preset — every lane chain, the clip layout, mix order and node values, master chain, sigma schedule and prompt in one recall.",
   renderButton: "Runs the current target. While sampling, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count.",
@@ -192,9 +195,10 @@ export const HELP: Record<HelpId, string> = {
   latchHead: "LatCH head checkpoint, listed from latch_weights/*.pt. The target slider's bounds come from the head's own feature_stats / p1–p99 metadata.",
   // handoff: "Target kind. constant holds one value; ramp_up / ramp_down sweep it over the window; beat_grid takes a BPM instead of a feature value; chroma_major / chroma_minor target a key."
   latchTargetKind: "Target kind. constant holds one value; ramp_up / ramp_down sweep it over the window; beat_grid takes a BPM instead of a feature value. chroma_major and chroma_minor are not offered here — chroma is matched against the TARGET lane in the CHROMA tab instead.",
-  latchTargetValue: "The value this head steers the feature toward. Its range comes from the head's own training statistics (p1–p99), so mid-slider is roughly the training mean; for beat_grid it is a BPM instead. Safe value: the head's mean, or 120 BPM for beat_grid.",
+  latchTargetValue: "The value this head steers the feature toward, in the feature's own unit (dB for the rms heads, BPM for beat_grid). The slider spans the head's training mean ± 2 standard deviations, so mid-slider is roughly the training mean; a typed value may go outside it, and the readout beside it gives the distance from the mean in standard deviations (σ). A target several σ out is not a target the head was trained on. For a ramp this is where the ramp ends. Safe value: the head's mean, or 120 BPM for beat_grid.",
+  latchTargetFrom: "Where a ramp starts, in the same unit as the target. The ramp runs from this value to TARGET across the whole clip, in the head's own range; the sampler's built-in ramp starts from 0, which for a head such as hardness (mean 66) is about 19σ outside anything it was trained on and drives the render to noise. Untouched, a ramp keeps that old 0 start.",
   // handoff: "How much this slot contributes relative to the other. 0 disables the slot without unloading it; past roughly 10 the head tends to dominate the prompt. Safe value: 1.0."
-  latchWeight: "How much this slot contributes relative to the other. 0 disables the slot without unloading it; past roughly 10 the head tends to dominate the prompt. The two slots are summed, and the result applies to this lane's latent only. Safe value: 1.0.",
+  latchWeight: "How much this slot contributes. 0 disables the slot without unloading it. The strength actually applied is ρ (and μ) × the head's default gain (512) × this weight, and the readout beside the slider shows it. Each head has its own limit past which the output breaks up (eval/latch_bracket_quality.json, the lowest of the goa and ambient test prompts, at ρ = 1): most heads stay clean to weight 16, rms_energy_air to 1 and spectral_flatness to 1, hardness only to 0.25 -- it broke up at weight 1 on goa. The slider is not linear, so the low end has room; the marker on the slider is the head's limit. The two slots are summed, and the result applies to this lane's latent only. Safe value: 1.0, or the head's limit if that is lower.",
   latchStartPct: "Window start as a fraction of the step schedule. Each slot gets its own colour and its own lane on the sigma graph; hatching marks where the window overlaps the CFG-active region.",
   latchEndPct: "Window end as a fraction of the step schedule. Guidance late in the schedule fights the detail steps, so keeping the window early is usually better. Safe value: 0.20.",
   // handoff: "Weight on the variance term of the LatCH guidance objective — how strongly the latent's spread is pushed toward the head's target. High values wash out transients. Safe value: 1.0."

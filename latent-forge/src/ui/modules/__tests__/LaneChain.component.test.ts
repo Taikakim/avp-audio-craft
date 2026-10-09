@@ -275,3 +275,144 @@ describe("HELP ids on the controls this task adds (docs/latent-forge/extract_hel
     expect((await screen.findByTestId("bungee-preset-delete")).getAttribute("data-help")).toBe(HELP.modulePresetDelete);
   });
 });
+
+describe("LATCH slot controls: unit and value, text fields, the head's weight limit, ramps with two ends", () => {
+  const HARDNESS = {
+    name: "hardness", family: "medium", default_gain: 512, health: "ok",
+    supports_kinds: ["constant", "ramp_up", "ramp_down"], slider_min: 59.2, slider_max: 73.2, value_default: 66.2,
+    std_mean: 66.2, std_std: 3.5, usable_max_gain: 128, usable_max_weight: 0.25,
+  };
+  const RMS = {
+    name: "rms_energy_bass", family: "medium", default_gain: 512, health: "ok",
+    supports_kinds: ["constant", "ramp_up", "ramp_down", "beat_grid"], slider_min: -35.2, slider_max: -0.13,
+    value_default: -17.7, std_mean: -17.67, std_std: 8.77, usable_max_gain: 8192, usable_max_weight: 16,
+  };
+  const slot0 = () => arrangement.lanes[0].chain.slots[0];
+
+  beforeEach(() => {
+    vi.mocked(latch.fetchLatchHeads).mockResolvedValue({ hardness: HARDNESS, rms_energy_bass: RMS });
+  });
+
+  async function pickHead(name: string) {
+    render(LaneChain);
+    const head = await screen.findByLabelText("HEAD — slot 1");
+    await screen.findAllByRole("option", { name: `${name} · medium` });
+    await fireEvent.change(head, { target: { value: name } });
+  }
+
+  async function pickKind(kind: string) {
+    const select = await screen.findByLabelText("KIND — slot 1");
+    await screen.findAllByRole("option", { name: kind });
+    await fireEvent.change(select, { target: { value: kind } });
+  }
+
+  it("shows the target's value in a text field with its unit beside it", async () => {
+    await pickHead("rms_energy_bass");
+    const target = (await screen.findByLabelText("TARGET — slot 1")) as HTMLInputElement;
+    expect(target.type).toBe("number");
+    expect(target.value).toBe("-17.7");
+    expect(target.parentElement?.textContent).toContain("dB");
+  });
+
+  it("a typed target outside the slider's range is kept, and its distance from the mean is shown", async () => {
+    await pickHead("hardness");
+    expect(screen.getByText("+0.0σ")).toBeTruthy();
+    await fireEvent.input(await screen.findByLabelText("TARGET — slot 1"), { target: { value: "55" } });
+    expect(slot0().value).toBe(55);
+    expect(screen.getByText(/outside the trained range/)).toBeTruthy();
+  });
+
+  it("choosing hardness brings the default weight 1 down to its clean limit, 0.25; rms keeps 1", async () => {
+    await pickHead("hardness");
+    expect(slot0().weight).toBe(0.25);
+    expect(screen.getByText("gain 128 · limit 128")).toBeTruthy();
+    await fireEvent.input(await screen.findByLabelText("WEIGHT — slot 1"), { target: { value: "1" } });
+    expect(slot0().weight).toBe(1);                                              // typing past the limit is allowed ...
+    expect(screen.getByText("gain 512 · past 128, breaks up")).toBeTruthy();     // ... and says what it costs
+    cleanup();
+    arrangement.lanes[0].chain = structuredClone(CHAIN_DEFAULTS);
+    await pickHead("rms_energy_bass");
+    expect(slot0().weight).toBe(1);
+  });
+
+  it("the weight slider is cubic: a sixth of the travel is 0.25, not 8", async () => {
+    render(LaneChain);
+    const slider = await screen.findByLabelText("WEIGHT — slot 1 slider");
+    await fireEvent.input(slider, { target: { value: "0.171" } });
+    expect(slot0().weight).toBe(0.25);
+    await fireEvent.input(slider, { target: { value: "1" } });
+    expect(slot0().weight).toBe(50);
+  });
+
+  it("START and END are shown as percentages and stored as fractions", async () => {
+    render(LaneChain);
+    const end = (await screen.findByLabelText("END % — slot 1")) as HTMLInputElement;
+    expect(end.value).toBe("60");
+    await fireEvent.input(end, { target: { value: "25" } });
+    expect(slot0().end_pct).toBe(0.25);
+  });
+
+  it("every slider has a text field: rho, mu, gamma, iterations, FILM and LORA", async () => {
+    render(LaneChain);
+    await fireEvent.input(await screen.findByLabelText("ρ VARIANCE"), { target: { value: "2.5" } });
+    await fireEvent.input(await screen.findByLabelText("μ MEAN"), { target: { value: "3" } });
+    await fireEvent.input(await screen.findByLabelText("γ NOISE"), { target: { value: "0.4" } });
+    await fireEvent.input(await screen.findByLabelText("MEAN ITER"), { target: { value: "12" } });
+    await fireEvent.input(await screen.findByLabelText("FILM TARGET"), { target: { value: "8" } });
+    const c = arrangement.lanes[0].chain;
+    expect([c.hparams.rho, c.hparams.mu, c.hparams.gamma, c.hparams.n_iter, c.film.value]).toEqual([2.5, 3, 0.4, 12, 8]);
+  });
+
+  it("a typed number is clamped to the server's own bounds", async () => {
+    render(LaneChain);
+    await fireEvent.input(await screen.findByLabelText("WEIGHT — slot 1"), { target: { value: "500" } });
+    expect(slot0().weight).toBe(50);
+    await fireEvent.input(await screen.findByLabelText("ρ VARIANCE"), { target: { value: "99" } });
+    expect(arrangement.lanes[0].chain.hparams.rho).toBe(30);
+  });
+
+  it("a half-typed number does not touch the chain", async () => {
+    render(LaneChain);
+    const w = await screen.findByLabelText("WEIGHT — slot 1");
+    await fireEvent.input(w, { target: { value: "" } });
+    expect(slot0().weight).toBe(1);
+  });
+
+  it("a new ramp starts with both ends inside the head's range, not at 0", async () => {
+    await pickHead("hardness");
+    await pickKind("ramp_up");
+    expect(slot0().kind).toBe("ramp_up");
+    expect(slot0().value_from).toBeCloseTo(62.7, 5);
+    expect(slot0().value).toBeCloseTo(69.7, 5);
+    expect(((await screen.findByLabelText("FROM — slot 1")) as HTMLInputElement).value).toBe("62.7");
+    expect(((await screen.findByLabelText("TARGET — slot 1")) as HTMLInputElement).value).toBe("69.7");
+  });
+
+  it("ramp_up <-> ramp_down swaps the ends; editing FROM changes only the start", async () => {
+    await pickHead("hardness");
+    await pickKind("ramp_up");
+    await pickKind("ramp_down");
+    expect(slot0().value_from).toBeCloseTo(69.7, 5);
+    expect(slot0().value).toBeCloseTo(62.7, 5);
+    await fireEvent.input(await screen.findByLabelText("FROM — slot 1"), { target: { value: "71" } });
+    expect(slot0().value_from).toBe(71);
+    expect(slot0().value).toBeCloseTo(62.7, 5);
+  });
+
+  it("going back to constant drops the start, so the request carries no value_from", async () => {
+    await pickHead("hardness");
+    await pickKind("ramp_up");
+    await pickKind("constant");
+    expect("value_from" in slot0()).toBe(false);
+    expect(screen.queryByLabelText("FROM — slot 1")).toBeNull();
+  });
+
+  it("a session saved before the change shows its ramp as the old 0 -> value, and warns that 0 is far outside hardness", async () => {
+    arrangement.lanes[0].chain.slots[0] = { head: "hardness", kind: "ramp_up", value: 66.2, weight: 0.25, start_pct: 0, end_pct: 0.6 };
+    render(LaneChain);
+    const from = (await screen.findByLabelText("FROM — slot 1")) as HTMLInputElement;
+    expect(from.value).toBe("0");
+    await waitFor(() => expect(screen.getByText(/outside the trained range/)).toBeTruthy());
+    expect("value_from" in slot0()).toBe(false);                                  // looking at it changes nothing
+  });
+});

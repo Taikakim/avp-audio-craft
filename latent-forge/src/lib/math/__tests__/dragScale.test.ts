@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  clamp, decimalsFor, DRAG_PX_PER_RANGE, dragValue, hasMoved, MOVE_THRESHOLD_PX, SHIFT_FACTOR,
+  clamp, decimalsFor, DRAG_PX_PER_RANGE, dragRaw, dragValue, hasMoved, INERTIA_AUTO_MS, inertiaMs,
+  MAX_DRAG_RANGE, MOVE_THRESHOLD_PX, quantize, settleDistance, SHIFT_FACTOR,
 } from "../dragScale";
 
 describe("the constants of spec §5.1", () => {
@@ -82,5 +83,45 @@ describe("clamp", () => {
     expect(clamp(-1, 0, 1)).toBe(0);
     expect(clamp(2, 0, 1)).toBe(1);
     expect(clamp(0.5, 0, 1)).toBe(0.5);
+  });
+});
+
+describe("wide ranges (SEED 0..999999)", () => {
+  it("never maps more than MAX_DRAG_RANGE onto one drag, so a pixel is a few seeds and not thousands", () => {
+    expect(MAX_DRAG_RANGE).toBe(5000);
+    // 26 px is a tenth of the 260 px drag: 500 seeds, where the old rule gave 99 999
+    expect(dragValue({ startVal: 1000, dx: 26, min: 0, max: 999999, int: true })).toBe(1500);
+    expect(dragRaw({ startVal: 0, dx: 260, min: 0, max: 999999 })).toBe(5000);
+  });
+
+  it("leaves every range of the spec table alone", () => {
+    expect(dragRaw({ startVal: 120, dx: 130, min: 60, max: 200 })).toBe(190);
+    expect(dragRaw({ startVal: 24, dx: 26, min: 1, max: 150 })).toBeCloseTo(38.9, 5);
+  });
+
+  it("still clamps to the field's own range", () => {
+    expect(dragValue({ startVal: 999000, dx: 5000, min: 0, max: 999999, int: true })).toBe(999999);
+    expect(dragValue({ startVal: 10, dx: -5000, min: 0, max: 999999, int: true })).toBe(0);
+  });
+
+  it("dragValue is quantize(dragRaw)", () => {
+    const i = { startVal: 24, dx: 26, min: 1, max: 150, int: true };
+    expect(dragValue(i)).toBe(quantize(dragRaw(i), i));
+  });
+});
+
+describe("inertia", () => {
+  it("glides only on ranges wider than 1 000 unless a field asks for it", () => {
+    expect(inertiaMs({ min: 0, max: 999999 })).toBe(INERTIA_AUTO_MS);
+    expect(inertiaMs({ min: 1, max: 184 })).toBe(0);
+    expect(inertiaMs({ min: 0, max: 1000 })).toBe(0);
+    expect(inertiaMs({ min: 0, max: 64, inertia: 120 })).toBe(120);
+    expect(inertiaMs({ min: 0, max: 999999, inertia: 0 })).toBe(0);
+    expect(inertiaMs({ min: 0, max: 64, inertia: -5 })).toBe(0);
+  });
+
+  it("settles within half a unit on integers and 0.01 % of the range otherwise", () => {
+    expect(settleDistance(0, 999999, true)).toBe(0.5);
+    expect(settleDistance(0, 64)).toBeCloseTo(0.0064, 10);
   });
 });
