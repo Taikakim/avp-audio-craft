@@ -64,3 +64,38 @@ def test_chain_rejects():
         chain(hparams={"rho": 31, "mu": 1, "gamma": 0.3, "n_iter": 4, "log_norms": False})
     with pytest.raises(ForgeError):
         chain(semitones=30)
+
+
+def _ramp_slot(**kw):
+    return {"head": "rms_energy_bass", "kind": "ramp_up", "value": -12.0, "weight": 1.0,
+            "start_pct": 0.0, "end_pct": 0.6, **kw}
+
+
+def _ramp_chain(slot):
+    return chain(slots=[slot, {"head": "none", "kind": "constant", "value": 0.0, "weight": 1.0,
+                               "start_pct": 0.0, "end_pct": 0.6}])
+
+
+def test_a_ramp_with_value_from_is_sent_as_target_raw_inside_the_head_range():
+    out = R.chain_to_request(_ramp_chain(_ramp_slot(value_from=-30.0)), HEADS)
+    raw = out["latch"][0]["target_raw"]
+    assert len(raw) == 1 and len(raw[0]) == R.RAMP_POINTS          # [C, T] with C == 1
+    assert raw[0][0] == -30.0 and raw[0][-1] == -12.0              # value_from -> value, both ends included
+    assert all(b >= a for a, b in zip(raw[0], raw[0][1:]))
+    down = R.chain_to_request(_ramp_chain(_ramp_slot(kind="ramp_down", value=-30.0, value_from=-12.0)), HEADS)
+    assert down["latch"][0]["target_raw"][0][0] == -12.0 and down["latch"][0]["target_raw"][0][-1] == -30.0
+
+
+def test_a_ramp_without_value_from_is_the_old_request_unchanged():
+    out = R.chain_to_request(_ramp_chain(_ramp_slot()), HEADS)
+    assert out["latch"] == [{"head": "rms_energy_bass", "kind": "ramp_up", "value": -12.0, "gain": 512.0,
+                             "start_pct": 0.0, "end_pct": 0.6}]
+
+
+def test_value_from_is_read_only_for_ramps_and_must_be_a_number():
+    out = R.chain_to_request(_ramp_chain(_ramp_slot(kind="constant", value_from=-30.0)), HEADS)
+    assert "target_raw" not in out["latch"][0]
+    with pytest.raises(ForgeError):
+        _ramp_chain(_ramp_slot(value_from="low"))
+    with pytest.raises(ForgeError):
+        _ramp_chain(_ramp_slot(value_from=float("nan")))

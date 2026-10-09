@@ -107,3 +107,40 @@ def test_a_future_checkpoint_that_records_its_readout_is_believed():
                            overrides={})
     assert h["readout"] == "full_mix"
     assert h["readout_source"] == "checkpoint"
+
+
+def _bracket(tmp_path, result):
+    p = tmp_path / "bracket.json"
+    p.write_text(json.dumps({"result": result}))
+    return p
+
+
+def test_usable_gain_is_the_lowest_gain_that_was_clean_on_every_prompt(tmp_path):
+    p = _bracket(tmp_path, {
+        "hardness": {"p0": {"usable_max_gain": 128}, "p1": {"usable_max_gain": 512}},
+        "rms_energy_bass": {"p0": {"usable_max_gain": 8192}, "p1": {"usable_max_gain": 8192}},
+    })
+    assert head_meta.load_usable_gains(p) == {"hardness": 128.0, "rms_energy_bass": 8192.0}
+
+
+def test_usable_gain_is_empty_when_the_bracket_file_is_absent_or_broken(tmp_path):
+    assert head_meta.load_usable_gains(tmp_path / "nope.json") == {}
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json")
+    assert head_meta.load_usable_gains(bad) == {}
+
+
+def test_describe_reports_the_usable_gain_and_the_matching_weight():
+    h = head_meta.describe("hardness", "medium", "/tmp/h.pt", 512.0,
+                           metadata=_md(feature_name="hardness", std_mean=66.2, std_std=3.5),
+                           overrides={}, usable_gains={"hardness": 128.0})
+    assert h["usable_max_gain"] == 128.0
+    assert h["usable_max_weight"] == 0.25                      # weight 1.0 is gain 512, past the usable range
+    none = head_meta.describe("hpcp", "medium", "/tmp/h.pt", 512.0, metadata=_md(), overrides={}, usable_gains={})
+    assert none["usable_max_gain"] is None and none["usable_max_weight"] is None
+
+
+def test_the_committed_bracket_file_marks_hardness_as_the_narrow_head():
+    g = head_meta.load_usable_gains()
+    assert g["hardness"] == 128.0 and g["rms_energy_air"] == 512.0
+    assert g["rms_energy_bass"] == 8192.0

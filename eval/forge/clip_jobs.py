@@ -26,6 +26,15 @@ def _save(srv, jd, z, n_samples):
     return wav, zp
 
 
+def latent_similarity(a, b):
+    """Mean over frames of the cosine between two (1, C, T) latents: 1.0 is the same latent, about 0 is
+    unrelated. Logged for every a2a_clip so "did the render pick the file up" has a number: with LatCH on,
+    strong guidance can overpower a lightly noised source and the result then no longer resembles it."""
+    n = min(a.shape[-1], b.shape[-1])
+    c = torch.nn.functional.cosine_similarity(a[..., :n].float(), b[..., :n].float(), dim=1)
+    return float(c.mean())
+
+
 def validate_a2a_clip(payload, heads):
     if not isinstance(payload, dict) or not isinstance(payload.get("audio"), dict):
         raise ForgeError(400, "a2a_clip needs an audio AudioRef object")
@@ -61,8 +70,13 @@ def run_a2a_clip(srv, svc, job_id, payload):
         out_id, jd = srv.new_job("forgea2a")
         z_new = passes.run_hold_pass(srv, z, depth, req, warnings, label="a2a_clip")
         wav, zp = _save(srv, jd, z_new, audio.shape[1])
+        sim = latent_similarity(z, z_new)
+        latch = req.get("latch") or []
+        srv.log(f"[forge] a2a_clip: result vs source latent cosine {sim:.3f} "
+                f"(noise {float(depth.max()) if depth.size else 0.0:.2f}, {len(latch)} LatCH slot(s)"
+                + (f", rho {req.get('rho'):g} mu {req.get('mu'):g}" if latch else "") + ")")
         meta = {"op": "a2a_clip", "latents": [str(zp)], "depth_max": float(depth.max()) if depth.size else 0.0,
-                "duration_sec": round(duration, 3)}
+                "duration_sec": round(duration, 3), "source_similarity": round(sim, 4)}
         return srv.build_response(out_id, jd, [wav], seed, t0, {}, warnings, meta, payload, False)
     finally:
         progress.end()

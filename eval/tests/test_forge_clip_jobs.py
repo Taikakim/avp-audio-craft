@@ -107,3 +107,21 @@ def test_submit_validation_for_new_ops(monkeypatch, tmp_path, tmp_path_factory):
                      ("inpaint", inpaint_payload(pad_sec=100))):
         r = c.post("/forge/jobs", json={"op": op, "payload": body})
         assert r.status_code == 400, (op, r.text)
+
+
+def test_latent_similarity_is_one_for_the_same_latent_and_low_for_an_unrelated_one():
+    z = torch.randn(1, 8, 50)
+    assert J.latent_similarity(z, z) == pytest.approx(1.0, abs=1e-5)
+    assert J.latent_similarity(z, -z) == pytest.approx(-1.0, abs=1e-5)
+    assert abs(J.latent_similarity(z, torch.randn(1, 8, 50))) < 0.4
+    assert J.latent_similarity(z, z[..., :20]) == pytest.approx(1.0, abs=1e-5)     # compares the common frames
+
+
+def test_run_a2a_clip_reports_how_close_the_result_stayed_to_the_source(rig, monkeypatch):
+    srv, calls = rig
+    res = J.run_a2a_clip(srv, FakeSvc(), "forge-t", {"audio": REF_A, "render": {"prompt": "acid"}, "noise_level": 0.4})
+    assert res["meta"]["source_similarity"] == pytest.approx(1.0, abs=1e-5)         # the hold stub returns z untouched
+    # a pass that throws the source away: the number says so
+    monkeypatch.setattr(passes, "run_hold_pass", lambda s, z, d, r, w, label: -torch.ones_like(z))
+    res = J.run_a2a_clip(srv, FakeSvc(), "forge-t2", {"audio": REF_A, "render": {"prompt": "acid"}, "noise_level": 0.4})
+    assert res["meta"]["source_similarity"] == pytest.approx(-1.0, abs=1e-5)

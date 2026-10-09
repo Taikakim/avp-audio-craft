@@ -8,7 +8,14 @@ from .schedule import RF_SAMPLERS, parse_spec
 RENDER_DEFAULTS = {"prompt": "", "negative_prompt": "", "steps": 24, "cfg_scale": 6.0, "seed": -1,
                    "apg_scale": 1.0, "cfg_interval_progress": [0.0, 1.0], "schedule": {"shape": "model"},
                    "scale_phi": 0.0, "sampler_type": None}
-SLOT_DEFAULT = {"head": "none", "kind": "constant", "value": 0.0, "weight": 1.0, "start_pct": 0.0, "end_pct": 0.6}
+SLOT_DEFAULT = {"head": "none", "kind": "constant", "value": 0.0, "weight": 1.0, "start_pct": 0.0, "end_pct": 0.6,
+                "value_from": None}
+# A ramp is built here, not by the model's own ramp_up/ramp_down. Those run 0 -> value in RAW feature units
+# (stable_audio_3/inference/latch_targets.py), which is a sane sweep for a dB head near -30 and an
+# impossible one for hardness (66.2 +/- 3.5): the target starts 19 sigma below the data and the guidance
+# drives the render to noise. With `value_from` the ramp runs value_from -> value inside the head's own range.
+RAMP_KINDS = ("ramp_up", "ramp_down")
+RAMP_POINTS = 257
 CHAIN_DEFAULTS = {"latch_on": False, "slots": [dict(SLOT_DEFAULT), dict(SLOT_DEFAULT)],
                   "hparams": {"rho": 1.0, "mu": 1.0, "gamma": 0.3, "n_iter": 4, "log_norms": False},
                   "film_on": False, "film": {"ckpt": None, "gain": 1.75, "value": 4.0},
@@ -91,6 +98,8 @@ def parse_chain(obj):
         s["start_pct"] = _num(s["start_pct"], 0, 1, f"slots[{i}].start_pct")
         s["end_pct"] = _num(s["end_pct"], 0, 1, f"slots[{i}].end_pct")
         s["value"] = _num(s["value"], -1e6, 1e6, f"slots[{i}].value")
+        if s["value_from"] is not None:
+            s["value_from"] = _num(s["value_from"], -1e6, 1e6, f"slots[{i}].value_from")
         if s["start_pct"] > s["end_pct"]:
             raise ForgeError(400, f"slots[{i}] start_pct must be <= end_pct")
         parsed.append(s)
@@ -111,6 +120,11 @@ def parse_chain(obj):
     return c
 
 
+def ramp_points(start, end, n=RAMP_POINTS):
+    """`n` evenly spaced values from start to end, first and last included."""
+    return [start + (end - start) * i / (n - 1) for i in range(n)]
+
+
 def chain_to_request(chain, heads) -> dict:
     out = {"latch": None, "film": None, "dora": None}
     if chain is None:
@@ -123,9 +137,13 @@ def chain_to_request(chain, heads) -> dict:
             entry = heads.get(s["head"])
             if entry is None:
                 raise ForgeError(400, f"unknown LatCH head {s['head']!r}")
-            latch.append({"head": s["head"], "kind": s["kind"], "value": s["value"],
-                          "gain": float(entry["default_gain"]) * s["weight"],
-                          "start_pct": s["start_pct"], "end_pct": s["end_pct"]})
+            item = {"head": s["head"], "kind": s["kind"], "value": s["value"],
+                    "gain": float(entry["default_gain"]) * s["weight"],
+                    "start_pct": s["start_pct"], "end_pct": s["end_pct"]}
+            if s["kind"] in RAMP_KINDS and s["value_from"] is not None:
+                # [C, T] in raw feature units, which resolve_latch hands on as target_raw (it drops kind/value)
+                item["target_raw"] = [ramp_points(s["value_from"], s["value"])]
+            latch.append(item)
         if latch:
             g0, hp = latch[0]["gain"], chain["hparams"]
             out.update(latch=latch, rho=hp["rho"] * g0, mu=hp["mu"] * g0, gamma=hp["gamma"],
