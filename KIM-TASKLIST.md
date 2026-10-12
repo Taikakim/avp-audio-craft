@@ -28,11 +28,11 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
-### ⚠ Mantu: data is SAFE and readable at /run/media/kim/Mantu1; the stale mount still blocks the real path — one sudo command left (C, 2026-10-07 17:10)
-**STATE:** the USB glitch at 14:11:28 shut the filesystem down; at **16:56:50** something mounted the drive again as `/run/media/kim/Mantu1` (clean mount, `btrfs` logged no replay or errors; a read of `latch_sweep/.../REPORT.md` and the 203 run dirs under `sa3_lora_runs` both work; G confirms everything she had written survived). The OLD dead mount is still sitting on `/run/media/kim/Mantu` ("<missing disk>", every read = I/O error). Scripts hard-code `/run/media/kim/Mantu`, so W's retrain watcher and anything not path-mapped keep failing.
-**RUN** (at the desk, needs sudo; stop anything using the drive first, W's retrain may be running from Mantu1): `udisksctl unmount -b /dev/sdd1 ; sudo umount -l /run/media/kim/Mantu ; udisksctl mount -b /dev/sdd1 ; findmnt /run/media/kim/Mantu`
-**VERIFY:** `findmnt /run/media/kim/Mantu` shows `/dev/sdd1` (not `<missing disk>`), `head -c 200 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/REPORT.md` reads, and no `Mantu1` mount remains. Optional integrity pass (hours): `sudo btrfs scrub start -B /run/media/kim/Mantu`.
-**UNTIL THEN:** agents work from `Mantu1` with path mapping (G does; no writes to the stale path). **LIKELY CAUSE (not proven):** a bus-power or cable glitch on this bus-powered USB drive under sustained writes; a powered hub or a rear USB 3 port is the first thing to try.
+### ⚠ Mantu: FIXED (loose cable, Kim 2026-10-12), but mounted as /run/media/kim/Mantu2 and 98 % FULL (C, 2026-10-12 22:05)
+**STATE:** the drive is healthy and mounted at `/run/media/kim/Mantu2` (the earlier dead mounts used the names `Mantu` / `Mantu1`, so udisks took `Mantu2`). Scripts hard-code `/run/media/kim/Mantu`, which does not exist right now, so anything not path-mapped fails. **DO NOT unmount it tonight:** Antigravity's JEPA predictor training has files open on it until morning (fuser shows his python + data workers).
+**WARNING, new:** `df` says 3.7 TB, **3.6 TB used, 91 GB free (98 %)**. A multi-day training or a render batch can fill it; plan space (the old model_matrix wavs / duplicate checkpoint slims are the usual candidates) before the next big run.
+**RUN (in the morning, when his training is done; no sudo needed now that the dead mounts are gone):** `udisksctl unmount -b /dev/sdd1 && udisksctl mount -b /dev/sdd1 && findmnt /run/media/kim/Mantu`
+**VERIFY:** `findmnt /run/media/kim/Mantu` shows `/dev/sdd1`, and `head -c 100 /run/media/kim/Mantu/latch_sweep/modular_2026-09-30/REPORT.md` reads. If it mounts as `Mantu3` again, a stale entry is still around: `findmnt | grep -i mantu`.
 
 ### ✅ RESOLVED 2026-10-07 (relayed by G from your listening of v7b; correct me if it is wrong) — DJ mix: both open decisions answered, plan is F7
 **Your verdict as G recorded it:** plain audio crossfade is the best and very clean (kicks, bass, drums, other blend almost unnoticeably); the a2a-smoothed versions stutter / add misplaced extra kick onsets, so smoothing is OUT; remaining faults are few (hi-hats "galloping", rare pitch mismatch).
