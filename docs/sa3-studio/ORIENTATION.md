@@ -202,3 +202,21 @@ critic was aimed at exactly the class of error found in `PLAN_CORRECTIONS.md` §
 map's contract section from source.** Highest value per token available: it converts ~10
 inferred response shapes into fact, settles the dead-surface question, answers open
 questions 2 and 3, and re-scopes milestones M5 and M7. Runs fine on this laptop.
+
+## 10. What the venvs actually import (2026-09-16, WINTERMUTE)
+
+Several packages exist in more than one copy in this tree. Authority is decided by what the venvs
+import, not by what a grep finds first — checked on the GPU box:
+
+| Import | Resolves to | How |
+|---|---|---|
+| `stable_audio_3` | `/home/kim/Projects/SAO/stable-audio-3` | plain `.pth` in `SAO/.venv`, so `PYTHONPATH` can shadow it — which is how a fork worktree gets tested |
+| `stable_audio_tools` | `/home/kim/Projects/SAO/stable-audio-tools/stable_audio_tools` | editable finder in `sat-venv` |
+| `sa3_control` | `/home/kim/Projects/SAO/control/sa3_control` | `eval/chroma_morph_transitions.py:38` inserts `/home/kim/Projects/SAO/control`, and it is the superset: 45 modules against 26 in `stable-audio-tools/avp_sa3/sa3_control`, with `conditioner.py`, `dataset.py`, `generate.py`, `comprehensive_merit.py` and `checkpoint_trajectory_stats.py` all diverged. **Treat `avp_sa3/sa3_control` as stale by default.** |
+| `apply_attn` | `stable-audio-3/stable_audio_3/models/transformer.py:617` | the only copy on this box; takes `padding_mask` / `varlen_metadata` |
+
+`target_raw` (a raw per-frame LatCH target) IS handled, at `stable_audio_3/model.py:539-550` of that
+first checkout, and is **linearly interpolated** to `latent_sample_size` — so a target built shorter
+than the pass's padded window is stretched over it. See the 2026-09-16 dialogue entry on the
+`/a2a_mix` chroma-morph. (The comment above that block says "nearest-resampled"; the code says
+`mode="linear"`.)

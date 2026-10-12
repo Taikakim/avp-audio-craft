@@ -1,0 +1,560 @@
+"""Latent Forge HTTP routes (spec §6). Thin: parse, validate, dispatch into eval/forge/*.
+
+The server imports this module and calls bind(sys.modules[__name__]) — NEVER
+`import explorer_render_server` from here: run as a script the server is `__main__`,
+and a second import would build a second, model-less copy of every global.
+"""
+import functools
+import traceback
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+
+from forge import analysis, contract, jobs as jobs_mod, logseq, progress, stretch, chroma, stats, backbone
+from forge.contract import ForgeError
+from forge.paths import ForgePaths
+from forge.services import Services
+import time as _time
+import gc
+import numpy as np
+from forge.hashing import file_sha256
+import json
+from pathlib import Path
+from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
+from forge import library, uploads
+from forge.store import JsonStore
+
+router = APIRouter()
+SRV = None
+QUEUE = None
+_RUNNERS = {}
+_VALIDATORS = {}
+_SERVICES = None
+
+EXISTING_OPS = {"generate": "_generate_impl", "a2a_track": "_a2a_track_impl", "a2a_mix": "_a2a_mix_impl",
+                "longform": "_longform_impl", "decode": "_decode_impl", "bend": "_bend_impl"}
+
+
+def ok(**kw):
+    return {"ok": True, **kw}
+
+
+def err(status, message, **extra):
+    return JSONResponse({"ok": False, "error": message, **extra}, status_code=status)
+
+
+def forge_route(fn):
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await fn(*args, **kwargs)
+        except ForgeError as e:
+            return err(e.status, e.message)
+        except Exception as e:  # noqa: BLE001
+            SRV.log(f"[forge] error {e}")
+            return err(500, str(e), traceback=traceback.format_exc())
+    return wrapper
+
+
+def paths() -> ForgePaths:
+    return ForgePaths(SRV.OUT_DIR).ensure()
+
+
+def services() -> Services:
+    global _SERVICES
+    if _SERVICES is None or _SERVICES.srv is not SRV:
+        _SERVICES = Services(SRV, paths)
+    return _SERVICES
+
+
+def _fold_chain(payload):
+    """A generate carries its lane's chain (2026-10-09: LatCH/FiLM/LoRA must steer a plain render,
+    not only A2A). Turn it into the latch/film/dora keys _generate_impl already reads. A lane LoRA
+    that is ON goes in as `dora` and so wins over the top-bar `ckpt_path` (resolve_dora_req)."""
+    from forge.render_settings import chain_to_request, parse_chain
+    chain = parse_chain(payload.pop("chain", None))
+    if chain is None:
+        return payload
+    req = chain_to_request(chain, SRV.HEADS)
+    for k, v in req.items():
+        if v is not None:
+            payload[k] = v
+    return payload
+
+
+def _existing_runner(op, impl_name):
+    def run(job_id, payload):
+        if op == "generate":
+            payload = _fold_chain(dict(payload))
+        steps = 0 if op in ("decode", "bend") else int(payload.get("steps", 24))
+        passes = len(payload.get("noise_levels") or [1]) if op == "a2a_track" else 1
+        progress.begin(job_id, op, steps * passes)
+        try:
+            return getattr(SRV, impl_name)(payload)          # looked up per call: monkeypatchable
+        finally:
+            progress.end()
+    return run
+
+
+def _validate_existing(op, payload):
+    if op == "generate":
+        contract.check_cap(payload.get("duration", 47.0), "generate")
+        # Reject a bad chain (unknown head, out-of-range weight) at submit, not mid-queue.
+        _fold_chain(dict(payload))
+    if op == "longform" and not payload.get("audio_path"):
+        contract.check_cap(payload.get("duration", 120.0), "longform")
+
+
+def register_runner(op, fn, validator=None):
+    _RUNNERS[op] = fn
+    if validator is not None:
+        _VALIDATORS[op] = validator
+    if QUEUE is not None:
+        QUEUE.set_runner(op, fn)
+
+
+def reset_queue():
+    global QUEUE
+    if QUEUE is not None:
+        QUEUE.stop()
+    # "_forge_jobs" under OUT_DIR: library.py skips "_"-prefixed dirs, so it is never listed as a render.
+    QUEUE = jobs_mod.JobQueue(_RUNNERS, max_pending=contract.MAX_PENDING_JOBS,
+                              log=lambda m: SRV.log(m),
+                              archive_dir=lambda: (Path(SRV.OUT_DIR) / "_forge_jobs")
+                              if SRV is not None and getattr(SRV, "OUT_DIR", None) else None)
+    return QUEUE
+
+
+def bind(srv):
+    global SRV
+    SRV = srv
+    for op, impl in EXISTING_OPS.items():
+        register_runner(op, _existing_runner(op, impl),
+                        validator=lambda p, _op=op: _validate_existing(_op, p))
+    # Latent Forge's own ops (M8 T10): a2a_clip, the single-overlap inpaint preview, and the commit.
+    from forge import clip_jobs, commit as commit_mod
+    register_runner("a2a_clip", lambda jid, p: clip_jobs.run_a2a_clip(SRV, services(), jid, p),
+                    validator=lambda p: clip_jobs.validate_a2a_clip(p, SRV.HEADS))
+    register_runner("inpaint", lambda jid, p: clip_jobs.run_inpaint_preview(SRV, services(), jid, p),
+                    validator=clip_jobs.validate_inpaint)
+    register_runner("commit", lambda jid, p: commit_mod.run_commit(SRV, services(), jid, p),
+                    validator=lambda p: commit_mod.validate_commit(p, SRV.HEADS))
+    reset_queue()
+
+
+# ------------------------------------------------------------------ jobs
+@router.post("/forge/jobs")
+@forge_route
+async def jobs_submit(request: Request):
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        raise ForgeError(400, "body must be JSON {op, payload}")
+    if not isinstance(body, dict) or not isinstance(body.get("op"), str):
+        raise ForgeError(400, "body needs an 'op' string")
+    op, payload = body["op"], body.get("payload")
+    if op not in _RUNNERS:
+        raise ForgeError(400, f"unknown op {op!r} (have {', '.join(sorted(_RUNNERS))})")
+    if not isinstance(payload, dict):
+        raise ForgeError(400, "payload must be a JSON object")
+    if op in _VALIDATORS:
+        _VALIDATORS[op](payload)
+    try:
+        jid, ahead = QUEUE.submit(op, payload)
+    except jobs_mod.QueueFull:
+        raise ForgeError(409, "job queue full")
+    return JSONResponse({"ok": True, "job_id": jid, "position": ahead}, status_code=202)
+
+
+@router.get("/forge/jobs")
+@forge_route
+async def jobs_list(limit: int = 50):
+    return ok(jobs=QUEUE.list(limit))
+
+
+@router.get("/forge/jobs/{job_id}")
+@forge_route
+async def jobs_get(job_id: str):
+    rec = QUEUE.get(job_id)
+    if rec is None:
+        raise ForgeError(404, f"no job {job_id}")
+    snap = progress.snapshot()
+    prog = snap if (snap and snap["job_id"] == job_id and rec["state"] == "running") else None
+    return ok(**rec, progress=prog)
+
+
+@router.delete("/forge/jobs/{job_id}")
+@forge_route
+async def jobs_cancel(job_id: str):
+    try:
+        rec = QUEUE.cancel(job_id)
+    except KeyError:
+        raise ForgeError(404, f"no job {job_id}")
+    except jobs_mod.CannotCancel:
+        raise ForgeError(409, "cannot cancel a running pass")
+    return ok(**rec, progress=None)
+
+
+# ------------------------------------------------------------------ log
+@router.get("/forge/log")
+@forge_route
+async def log_since(since: int = 0):
+    last, lines = logseq.since(since)
+    return ok(seq=last, lines=lines)
+
+
+# ------------------------------------------------------------------ library
+_MEDIA = {".wav": "audio/wav", ".flac": "audio/flac", ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
+          ".ogg": "audio/ogg", ".aif": "audio/aiff", ".aiff": "audio/aiff"}
+
+
+def parse_ref_param(raw):
+    try:
+        ref = json.loads(raw)
+    except (TypeError, ValueError):
+        raise ForgeError(400, "ref must be URL-encoded JSON")
+    return ref
+
+
+@router.put("/forge/upload")
+@forge_route
+async def upload(request: Request, filename: str = ""):
+    w = uploads.UploadWriter(filename, paths().uploads, contract.UPLOAD_MAX_BYTES)
+    try:
+        async for chunk in request.stream():
+            w.feed(chunk)
+        dst, sha, n = w.finish()
+    except BaseException:
+        w.abort()
+        raise
+    try:
+        info = await run_in_threadpool(uploads.probe_audio, dst)
+    except ForgeError:
+        dst.unlink(missing_ok=True)
+        raise
+    return ok(ref={"kind": "upload", "sha256": sha}, path=str(dst), bytes=n, **info)
+
+
+@router.get("/forge/files")
+@forge_route
+async def files(root: str = "crops", q: str = "", limit: int = 500):
+    ctx = services().ref_context()
+    roots = {"crops": ctx.roots.get("crops"), "renders": ctx.roots.get("renders"), "uploads": ctx.roots.get("uploads")}
+    return ok(**await run_in_threadpool(library.list_files, roots, root, q, limit))
+
+
+@router.get("/forge/audio")
+@forge_route
+async def audio(ref: str):
+    path = await run_in_threadpool(services().resolve_audio, parse_ref_param(ref))
+    return FileResponse(path, media_type=_MEDIA.get(Path(path).suffix.lower(), "application/octet-stream"))
+
+
+def _sessions():
+    return JsonStore(paths().sessions, contract.SESSION_MAX_BYTES)
+
+
+@router.get("/forge/sessions")
+@forge_route
+async def sessions_list():
+    store = _sessions()
+    rows = []
+    for row in store.listing():
+        try:
+            n = len(store.get(row["name"]).get("clips") or [])
+        except (ValueError, ForgeError):
+            n = 0
+        rows.append({**row, "n_clips": n})
+    return ok(sessions=rows)
+
+
+@router.get("/forge/sessions/{name}")
+@forge_route
+async def sessions_get(name: str):
+    return _sessions().get(name)
+
+
+@router.put("/forge/sessions/{name}")
+@forge_route
+async def sessions_put(name: str, request: Request):
+    body = await request.json()
+    if not isinstance(body, dict) or body.get("version") != 2:
+        raise ForgeError(400, "session must be a JSON object with \"version\": 2")
+    _sessions().put(name, body)
+    return ok()
+
+
+def _presets(level):
+    return JsonStore(paths().preset_dir(level), contract.PRESET_MAX_BYTES)
+
+
+@router.get("/forge/presets/{level}")
+@forge_route
+async def presets_list(level: str):
+    return ok(names=_presets(level).names())
+
+
+@router.get("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_get(level: str, name: str):
+    return _presets(level).get(name)
+
+
+@router.put("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_put(level: str, name: str, request: Request):
+    _presets(level).put(name, await request.json())
+    return ok()
+
+
+@router.delete("/forge/presets/{level}/{name}")
+@forge_route
+async def presets_delete(level: str, name: str):
+    _presets(level).delete(name)
+    return ok()
+
+
+# ------------------------------------------------------------------ analyze
+def _crop_meta(crop_id):
+    try:
+        return SRV._player_meta(crop_id)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _analyze_ref(ref):
+    svc = services()
+    if isinstance(ref, dict) and ref.get("kind") == "crop":
+        svc.resolve_audio(ref)                                  # validates + caches the decode
+        meta = _crop_meta(ref["crop_id"]) or {}
+        hint = meta.get("bpm_madmom") or meta.get("bpm_essentia")
+        src = meta.get("source_path")
+        if src and Path(src).is_file():
+            import soundfile as sf
+            a, sr = sf.read(src, dtype="float32", always_2d=True,
+                            start=int(meta["start_sample"]), stop=int(meta["end_sample"]))
+            return analysis.analyze_audio(a.T, sr, bpm_hint=hint)
+        a = svc.load_audio(svc.decode_crop(ref["crop_id"]))
+        return analysis.analyze_audio(a, SRV.SR, bpm_hint=hint)
+    path = svc.resolve_audio(ref)
+    return analysis.analyze_audio(svc.load_audio(path), SRV.SR)
+
+
+@router.post("/forge/analyze")
+@forge_route
+async def analyze(request: Request):
+    body = await request.json()
+    return ok(**await run_in_threadpool(_analyze_ref, (body or {}).get("audio")))
+
+
+def _stretch_ref(ref, speed, semitones):
+    import soundfile as sf
+    speed, semitones = stretch.validate(speed, semitones)
+    svc = services()
+    src = svc.resolve_audio(ref)
+    if stretch.is_identity(speed, semitones):
+        return {"ref": ref, "duration_sec": round(sf.info(str(src)).duration, 3)
+                if src.suffix.lower() in (".wav", ".flac") else uploads.probe_audio(src)["duration_sec"]}
+    sha = file_sha256(src)
+    dst = paths().cache_dir("stretch") / f"{stretch.cache_key(sha, speed, semitones)}.wav"
+    if not dst.exists():
+        readable = src
+        if src.suffix.lower() not in (".wav", ".flac"):
+            readable = paths().cache_dir("decode") / f"{sha}.wav"
+            if not readable.exists():
+                sf.write(readable, svc.load_audio(src).T, SRV.SR, subtype="FLOAT")
+        stretch.stretch_file(readable, dst, speed, semitones)
+    return {"ref": {"kind": "path", "path": str(dst)}, "duration_sec": round(sf.info(str(dst)).duration, 3)}
+
+
+@router.post("/forge/stretch")
+@forge_route
+async def stretch_route(request: Request):
+    body = await request.json() or {}
+    return ok(**await run_in_threadpool(_stretch_ref, body.get("audio"), body.get("speed", 1.0),
+                                        body.get("semitones", 0.0)))
+
+
+def _chroma_ref(ref):
+    svc = services()
+    src = svc.resolve_audio(ref)
+    cache = paths().cache_dir("chroma") / f"{file_sha256(src)}.json"
+    if cache.exists():
+        return json.loads(cache.read_text())
+    payload = chroma.chroma_payload(svc.load_audio(src), SRV.SR)
+    cache.write_text(json.dumps(payload))
+    return payload
+
+
+@router.post("/forge/chroma")
+@forge_route
+async def chroma_route(request: Request):
+    body = await request.json() or {}
+    return ok(**await run_in_threadpool(_chroma_ref, body.get("audio")))
+
+
+_DATASET = {"dir": None, "index": None}
+
+
+def _latent_entry(ref):
+    """LatentRef -> (z (256,T) float32, npz Path|None, audio_fn () -> (np (2,N), sr) | None)."""
+    svc = services()
+    if not isinstance(ref, dict):
+        raise ForgeError(400, "latent ref must be an object")
+    kind = ref.get("kind")
+    if kind == "crop":
+        from forge.refs import check_crop_id
+        cid = check_crop_id(ref.get("crop_id"))
+        ld = svc.latent_dir()
+        if ld is None or not (ld / f"{cid}.npy").is_file():
+            raise ForgeError(404, f"no crop {cid}")
+        z = np.load(ld / f"{cid}.npy").astype(np.float32)
+        z = z[0] if z.ndim == 3 else z
+        meta = _crop_meta(cid) or {}
+        content = int(sum(meta.get("padding_mask") or [])) or z.shape[1]
+        npz = ld / f"{cid}.TIMESERIES.npz"
+        return z[:, :content], (npz if npz.is_file() else None), \
+            (lambda: (svc.load_audio(svc.decode_crop(cid)), SRV.SR))
+    if kind == "path":
+        p = Path(str(ref.get("path") or ""))
+        if not p.is_absolute() or p.suffix != ".npy" or not p.is_file():
+            raise ForgeError(404, f"no latent file {p}")
+        z = np.load(p).astype(np.float32)
+        z = z[0] if z.ndim == 3 else z
+        wav = p.with_name(p.name[: -len(".z0.npy")] + ".wav") if p.name.endswith(".z0.npy") else None
+        return z, None, ((lambda: (svc.load_audio(wav), SRV.SR)) if wav and wav.is_file() else None)
+    if kind == "audio":
+        path = svc.resolve_audio(ref.get("audio"))
+        a = svc.load_audio(path)
+        z = svc.encode_cached(a)[0].numpy()
+        return z, None, (lambda: (a, SRV.SR))
+    raise ForgeError(400, f"unknown latent ref kind {kind!r}")
+
+
+def _stats(body):
+    refs_in = body.get("latents") or []
+    if not isinstance(refs_in, list) or not refs_in:
+        raise ForgeError(400, "latents must be a non-empty list")
+    features = body.get("features") or []
+    max_frames = int(body.get("max_frames", 20000))
+    max_points = int(body.get("max_points", 2000))
+    entries = [_latent_entry(r) for r in refs_in]
+    n, xc = stats.xcorr_payload([e[0] for e in entries], max_frames=max_frames)
+    available = set(stats.LIBROSA_FEATURES)
+    series = []
+    for i, (z, npz, audio_fn) in enumerate(entries):
+        ts = {}
+        if npz is not None:
+            with np.load(npz) as d:
+                ts = {k: d[k] for k in d.files if k.endswith("_ts") and d[k].ndim == 1}
+            available.update(ts)
+        cached_audio = None
+        for f in features:
+            T = z.shape[1]
+            if f in ts:
+                vals = stats._fit(ts[f], T)
+            elif f in stats.LIBROSA_FEATURES and audio_fn is not None:
+                if cached_audio is None:
+                    cached_audio = audio_fn()
+                vals = stats.audio_feature(cached_audio[0], cached_audio[1], f, T)
+            else:
+                vals = [None] * T
+            # n_frames per series: the top-level n_frames is POOLED over every latent (xcorr), so a
+            # client that drew each series across it stretched short clips (review 2026-10-01).
+            series.append({"index": i, "feature": f, "fps": contract.FPS, "n_frames": int(T),
+                           "values": stats.resample_points(list(vals), max_points)})
+    return {"n_frames": n, "xcorr": xc, "timeseries": series, "features_available": sorted(available)}
+
+
+@router.post("/forge/stats")
+@forge_route
+async def stats_route(request: Request):
+    return ok(**await run_in_threadpool(_stats, await request.json() or {}))
+
+
+@router.get("/forge/dataset_scalars")
+@forge_route
+async def dataset_scalars(x: str = "bpm", y: str = "lufs"):
+    ld = services().latent_dir()
+    if ld is None or not ld.is_dir():
+        raise ForgeError(404, "latent_dir not configured or not mounted")
+    if _DATASET["dir"] != ld:
+        _DATASET["index"] = await run_in_threadpool(stats.DatasetIndex, ld)
+        _DATASET["dir"] = ld
+    idx = _DATASET["index"]
+    return ok(fields=idx.fields(), points=idx.points(x, y))
+
+
+def _active_backbone():
+    return getattr(SRV.ARGS, "model", None)
+
+
+@router.get("/forge/backbone")
+@forge_route
+async def backbone_get():
+    active = _active_backbone()
+    objective = getattr(getattr(SRV.MODEL, "model", None), "diffusion_objective", None)
+    if objective is None and active in backbone.BACKBONES:
+        objective = backbone.objective_of(active)
+    steps, cfg = SRV.model_defaults() if hasattr(SRV, "model_defaults") else (24, 6.0)
+    return ok(active=active, objective=objective, available=backbone.listing(),
+              defaults={"steps": steps, "cfg_scale": cfg})
+
+
+def _switch_backbone(model_id):
+    srv = SRV
+    previous = srv.ARGS.model
+    before = len(srv.SLOTS.slots)
+    t0 = _time.time()
+    warnings = []
+    with srv.GPU_LOCK:
+        srv.ARGS.model = model_id
+        srv.MODEL = None
+        gc.collect()
+        try:
+            srv.prepare_model(None, None)
+        except Exception as e:
+            # A partial HF snapshot or an OOM must not leave the server pinned to an unloadable id
+            # with no model -- every later render would retry it and the UI cannot switch back
+            # (review 2026-10-01). Restore the previous backbone, then report.
+            srv.ARGS.model = previous
+            srv.MODEL = None
+            gc.collect()
+            try:
+                srv.prepare_model(None, None)
+            except Exception as e2:
+                raise ForgeError(500, f"backbone {model_id} failed to load ({e}); "
+                                      f"restoring {previous} also failed ({e2})") from e2
+            raise ForgeError(500, f"backbone {model_id} failed to load ({e}); restored {previous}") from e
+        ds = srv.MODEL.model.pretransform.downsampling_ratio
+        if ds != srv.DS or srv.MODEL.model.sample_rate != srv.SR:
+            srv.ARGS.model = previous
+            srv.MODEL = None
+            gc.collect()
+            srv.prepare_model(None, None)
+            raise ForgeError(400, f"backbone {model_id} has a different latent rate (ds={ds}); restored {previous}")
+    after = len(srv.SLOTS.slots)
+    if after < before:
+        warnings.append(f"{before - after} resident adapter slot(s) could not be re-applied on {model_id}")
+    srv.log(f"[forge] backbone {previous} -> {model_id} in {_time.time() - t0:.1f}s")
+    steps, cfg = srv.model_defaults() if hasattr(srv, "model_defaults") else (24, 6.0)
+    return {"active": model_id, "objective": srv.MODEL.model.diffusion_objective,
+            "rebuild_sec": round(_time.time() - t0, 1), "warnings": warnings,
+            "defaults": {"steps": steps, "cfg_scale": cfg}}
+
+
+@router.post("/forge/backbone")
+@forge_route
+async def backbone_post(request: Request):
+    body = await request.json() or {}
+    model_id = body.get("id")
+    if model_id not in backbone.BACKBONES:
+        raise ForgeError(400, f"unknown backbone {model_id!r} (have {', '.join(backbone.BACKBONES)})")
+    if SRV.GPU_LOCK.locked():
+        raise ForgeError(409, "a pass is running — try again when the GPU is idle")
+    if backbone.cached_config(model_id) is None:
+        raise ForgeError(400, f"{model_id} is not in the local HF cache — download it first")
+    if SRV.ARGS is None:
+        raise ForgeError(409, "model not loaded yet")
+    return ok(**await run_in_threadpool(_switch_backbone, model_id))

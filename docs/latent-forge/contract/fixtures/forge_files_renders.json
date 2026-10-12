@@ -1,0 +1,85 @@
+{
+ "status": 200,
+ "body": {
+  "ok": true,
+  "roots": [
+   {
+    "id": "crops",
+    "label": "latent crops",
+    "available": true
+   },
+   {
+    "id": "renders",
+    "label": "renders",
+    "available": true
+   },
+   {
+    "id": "uploads",
+    "label": "uploads",
+    "available": true
+   }
+  ],
+  "files": [
+   {
+    "root": "renders",
+    "rel": "20261006-202823-gen/out_00.wav",
+    "kind": "audio",
+    "size": 1411244,
+    "mtime": 1791307704.8612418,
+    "ref": {
+     "kind": "render",
+     "job_id": "20261006-202823-gen",
+     "file": "out_00.wav"
+    }
+   },
+   {
+    "root": "renders",
+    "rel": "20261006-202128-gen/out_00.wav",
+    "kind": "audio",
+    "size": 8388920,
+    "mtime": 1791307295.0915565,
+    "ref": {
+     "kind": "render",
+     "job_id": "20261006-202128-gen",
+     "file": "out_00.wav"
+    }
+   },
+   {
+    "root": "renders",
+    "rel": "20261006-201343-gen/out_00.wav",
+    "kind": "audio",
+    "size": 1411244,
+    "mtime": 1791306828.3231547,
+    "ref": {
+     "kind": "render",
+     "job_id": "20261006-201343-gen",
+     "file": "out_00.wav"
+    }
+   },
+   {
+    "root": "renders",
+    "rel": "20261006-180847-gen/out_00.wav",
+    "kind": "audio",
+    "size": 8388920,
+    "mtime": 1791299331.2745254,
+    "ref": {
+     "kind": "render",
+     "job_id": "20261006-180847-gen",
+     "file": "out_00.wav"
+    }
+   },
+   {
+    "root": "renders",
+    "rel": "20261006-180800-gen/out_00.wav",
+    "kind": "audio",
+    "size": 3528044,
+    "mtime": 1791299281.8009036,
+    "ref": {
+     "kind": "render",
+     "job_id": "20261006-180800-gen",
+     "file": "out_00.wav"
+    }
+   }
+  ]
+ }
+}

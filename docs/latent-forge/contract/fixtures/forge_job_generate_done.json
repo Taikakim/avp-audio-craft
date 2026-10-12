@@ -1,0 +1,74 @@
+{
+ "status": 200,
+ "body": {
+  "ok": true,
+  "job_id": "forge-20261006-203136-4",
+  "op": "generate",
+  "payload": {
+   "prompt": "driving psytrance, rolling bassline, acid lead",
+   "negative_prompt": "",
+   "steps": 8,
+   "cfg_scale": 6.0,
+   "seed": 7,
+   "apg_scale": 1,
+   "cfg_interval_progress": [
+    0,
+    1
+   ],
+   "scale_phi": 0,
+   "duration": 8
+  },
+  "state": "done",
+  "result": {
+   "status": "ok",
+   "job_id": "20261006-203136-gen",
+   "files": [
+    "/home/kim/Projects/sa3_render_out/20261006-203136-gen/out_00.wav"
+   ],
+   "latents": [
+    "/home/kim/Projects/sa3_render_out/20261006-203136-gen/out_00.z0.npy"
+   ],
+   "urls": [
+    "/audio/20261006-203136-gen/out_00.wav"
+   ],
+   "seed": 7,
+   "timings": {
+    "total_sec": 0.7,
+    "per_stage": {
+     "prepare": 0.0,
+     "generate": 0.7
+    }
+   },
+   "warnings": [],
+   "meta": {
+    "op": "generate",
+    "latents": [
+     "/home/kim/Projects/sa3_render_out/20261006-203136-gen/out_00.z0.npy"
+    ],
+    "dora_loaded": "none",
+    "film_loaded": null,
+    "model_rebuilt": false,
+    "params_echo": {
+     "prompt": "driving psytrance, rolling bassline, acid lead",
+     "negative_prompt": "",
+     "steps": 8,
+     "cfg_scale": 6.0,
+     "seed": 7,
+     "apg_scale": 1,
+     "cfg_interval_progress": [
+      0,
+      1
+     ],
+     "scale_phi": 0,
+     "duration": 8
+    }
+   }
+  },
+  "error": null,
+  "created": 1791307896.3039753,
+  "started": 1791307896.3040512,
+  "finished": 1791307897.0096972,
+  "position": null,
+  "progress": null
+ }
+}

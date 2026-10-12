@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "n_frames": 431,
+    "xcorr": { "shape": [4, 4], "data_b64": "/7RkPLT/jFpkjP+qPFqq/w==" },
+    "timeseries": [
+      { "index": 0, "feature": "rms", "fps": 10.767, "values": [0.12, 0.34, null, 0.41, 0.28] },
+      { "index": 1, "feature": "rms", "fps": 10.767, "values": [0.09, 0.31, 0.36, null, 0.22] }
+    ],
+    "features_available": ["rms", "onset_strength", "spectral_centroid"]
+  }
+}

@@ -6,12 +6,13 @@ init_latent_path` only worked on output from the batch renderers. The fix is a
 non-invasive `latents_sink` in the fork's generate() (same audio out, z0 also
 handed back), consumed here.
 """
+import os
 import sys
 
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 import explorer_render_server as srv
 
 

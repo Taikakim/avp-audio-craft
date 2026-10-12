@@ -48,9 +48,12 @@ def resolve_mounts(cfg: dict) -> dict[str, str | None]:
         chosen = None
         for cand in spec.get("candidates") or []:
             probe = Path(cand, marker) if marker else Path(cand)
-            if probe.is_dir():
-                chosen = cand
-                break
+            try:
+                if probe.is_dir():
+                    chosen = cand
+                    break
+            except OSError:
+                pass
         out[name] = chosen
     return out
 

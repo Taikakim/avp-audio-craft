@@ -21,6 +21,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 OVERRIDES_PATH = Path("/home/kim/Projects/SAO/Misc/latch_head_overrides.json")
+BRACKET_PATH = Path(__file__).resolve().parent / "latch_bracket_quality.json"
 _FALLBACK = (-80.0, 20.0, -30.0)       # explorer_render_server.py:277, kept for parity
 UNDERTRAINED_EPOCHS = 10               # others reach 18-20; spectral_kurtosis stopped at 3
 UNSTABLE_SIGMA = 100.0                 # next-largest real sigma is 35.4 (rms_energy_body)
@@ -51,6 +52,25 @@ def load_overrides(path=None):
         return {}
 
 
+def load_usable_gains(path=None):
+    """{head: highest guidance gain that stayed clean on EVERY test prompt}, from
+    latch_bracket_quality.json (eval/latch_bracket_quality_gate.py). The lowest of the prompts is
+    used: hardness reaches 512 on the ambient prompt but breaks at 512 on goa, and the UI cannot know
+    which one the render will be. Absent or unreadable file == {}."""
+    p = Path(path) if path is not None else BRACKET_PATH
+    try:
+        result = json.loads(p.read_text()).get("result", {})
+    except (OSError, ValueError, AttributeError):
+        return {}
+    out = {}
+    for head, prompts in result.items():
+        gains = [_num(v.get("usable_max_gain")) for v in (prompts or {}).values() if isinstance(v, dict)]
+        gains = [g for g in gains if g is not None]
+        if gains:
+            out[head] = min(gains)
+    return out
+
+
 def _health(epoch, std_std):
     e, s = _num(epoch), _num(std_std)
     bits = []
@@ -75,7 +95,7 @@ def _units(name, kind_default):
 
 
 def describe(name, family, path, default_gain, *, metadata=None,
-             overrides=None, sigma_k=2.0):
+             overrides=None, sigma_k=2.0, usable_gains=None):
     """The server's existing /info head dict, every legacy key kept, plus the truth."""
     md = dict(metadata or {})
     ov = (overrides if overrides is not None else load_overrides()).get(name, {})
@@ -84,6 +104,7 @@ def describe(name, family, path, default_gain, *, metadata=None,
     kind_default = md.get("target_kind_default", "constant")
     smin, smax, sval = slider_bounds(md.get("std_mean"), md.get("std_std"), sigma_k)
     health, reason = _health(md.get("epoch"), md.get("std_std"))
+    usable = (usable_gains if usable_gains is not None else load_usable_gains()).get(name)
     scalar_ok = out_ch == 1
     if not scalar_ok:
         readout = ov.get("readout") or md.get("chroma_key") or md.get("target_source")
@@ -108,6 +129,8 @@ def describe(name, family, path, default_gain, *, metadata=None,
         "supports_scalar_target": scalar_ok,
         "supports_loss_select": loss != "cosine",
         "supports_kinds": ["constant", "ramp_up", "ramp_down", "beat_grid"] if scalar_ok else [],
+        "usable_max_gain": usable,
+        "usable_max_weight": None if usable is None or float(default_gain) <= 0 else usable / float(default_gain),
         "readout": readout, "readout_source": src,
         "gain_scale_note": (f"auto rho/mu = this slot's gain ({float(default_gain):g}); "
                             f"per-slot weight = slot_gain / slot-1 gain"),

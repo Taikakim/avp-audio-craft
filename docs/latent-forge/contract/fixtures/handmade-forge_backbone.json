@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "active": "medium-base",
+    "objective": "rectified_flow",
+    "available": [
+      { "id": "medium", "objective": "rf_denoiser", "cached": true },
+      { "id": "medium-base", "objective": "rectified_flow", "cached": true },
+      { "id": "small-music", "objective": "rf_denoiser", "cached": false },
+      { "id": "small-music-base", "objective": "rectified_flow", "cached": false }
+    ]
+  }
+}

@@ -48,9 +48,14 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+# Self-locating: a worktree copy of this server must import ITS OWN eval/ helpers,
+# not the shared checkout's (Latent Forge dev runs from a worktree).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chroma_morph_transitions as cmt  # noqa: E402  (inserts control + mir-same-chroma paths)
 import a2a_fulltrack as a2a_mod  # noqa: E402
+from forge import logseq as forge_logseq, progress as forge_progress  # noqa: E402  (Latent Forge, M2 T8)
+from forge.contract import ForgeError  # noqa: E402
+from forge import schedule as forge_schedule  # noqa: E402  (Latent Forge, M3 T2)
 
 from sa3_control.audio_io import save_audio  # noqa: E402  (boot check: must resolve)
 from sa3_control.adapters import ControlContext, use_control_context  # noqa: E402
@@ -58,7 +63,16 @@ from sa3_control.inject import install_adapters  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402
 from sa3_control.generate import load_adapter_state  # noqa: E402
 from sa3_control.steered_longform import _parse_prompt_arc  # noqa: E402  (arc grammar '0:A|45:B')
-from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+try:  # mir-same-chroma is only needed by the chroma-morph paths. A module-scope hard import made
+    # every test that imports this module fail to COLLECT on a box without the checkout (8 unrelated
+    # test files; Kuang 2026-10-05). Fail at call time instead, naming what is missing.
+    from harmonic.same_chroma import compute_same_chroma  # noqa: E402
+except ImportError as _same_chroma_err:  # noqa: E402
+    _SAME_CHROMA_MISSING = str(_same_chroma_err)
+
+    def compute_same_chroma(*_a, **_k):
+        raise RuntimeError("compute_same_chroma unavailable: mir-same-chroma is not importable "
+                           f"(expected under /home/kim/Projects/mir-same-chroma/src): {_SAME_CHROMA_MISSING}")
 sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3/scripts")
 from weight_mutations import Condition, apply_condition  # noqa: E402
 from stable_audio_3 import StableAudioModel  # noqa: E402
@@ -110,14 +124,28 @@ STEER_HEADS: dict = {}             # feature -> loaded LatCH head (lazy, GPU-res
 # mount order. Hardcoding either breaks DoRA loading when it flips (C bug 2026-07-13).
 # Resolve to whichever mount actually holds sa3_lora_runs.
 def _mantu_root():
-    for d in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1"):
-        if Path(d, "sa3_lora_runs").is_dir():
-            return d
+    for d in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1", "/run/media/kim/Mantu2", "/run/media/kim/Mantu3"):
+        try:
+            if Path(d, "sa3_lora_runs").is_dir():
+                return d
+        except OSError:
+            pass
     return "/run/media/kim/Mantu"
 _MANTU = _mantu_root()
 
 import model_db                                   # noqa: E402
 import model_roots                                # noqa: E402
+from forge.fullft import load_fullft              # noqa: E402
+
+
+def ckpt_family(path):
+    """The model database's family for a checkpoint path ("adapter", "fullft", ...), or None when
+    the path is not in the database (it is then treated as an adapter, the old behaviour)."""
+    p = str(path)
+    for m in model_db.load_or_build(rescan=False)["models"]:
+        if m["path"] == p or p in (m.get("also_at") or []):
+            return m["family"]
+    return None
 
 _ROOTS_CFG = model_roots.load_config()
 _LIMITS = model_roots.limits(_ROOTS_CFG)
@@ -170,6 +198,7 @@ HEADS: dict = {}                   # name -> registry entry (metadata only)
 
 LOADED_DORA = "none"               # registry name or ckpt path currently merged
 LOADED_STRENGTH = 1.0
+LOADED_FULLFT = False              # the loaded ckpt replaced the DiT (no LoRA strength / interval)
 FILM_LOADED = None                 # ckpt path of installed FiLM adapter, or None
 FILM_STATE = None                  # {"mean","std","enc","dtype"}
 
@@ -182,9 +211,19 @@ app = FastAPI()
 
 
 # ---------------------------------------------------------------- utilities
+def step_t(t):
+    """The sampler callback's `t` as a float. The euler/rf samplers pass a [B] tensor, the
+    pingpong sampler (post-trained `medium`) a 0-dim one, so `t[0]` crashed every medium
+    generate (2026-10-09)."""
+    if hasattr(t, "reshape"):
+        return float(t.reshape(-1)[0])
+    return float(t[0]) if isinstance(t, (list, tuple)) else float(t)
+
+
 def log(msg):
     line = f"{time.strftime('%H:%M:%S')} {msg}"
     LOG_RING.append(line)
+    forge_logseq.append(line)              # Latent Forge: the sequenced log /forge/log serves
     print(line, flush=True)
     if JOB_LOG_PATH is not None:
         try:
@@ -204,6 +243,25 @@ def _i(req, key, default):
     return int(default) if v is None else int(v)
 
 
+def model_defaults():
+    """(steps, cfg_scale) defaults for the LOADED backbone.
+
+    Distilled checkpoints (rf_denoiser: medium, small-music) are trained for few steps at cfg 1 --
+    their own model_config says so under training.demo (8 steps, cfg [1]) -- and come out audibly
+    over-driven at base-model settings (KUANG, 2026-10-05). Base models keep the project's 24 / 6.0
+    (their demo default is 50 steps; 24 is the deliberate team choice). Explicit request values win.
+    """
+    cfg = getattr(MODEL, "model_config", None) if MODEL is not None else None
+    if not isinstance(cfg, dict):
+        return 24, 6.0
+    objective = cfg.get("model", {}).get("diffusion", {}).get("diffusion_objective")
+    if objective == "rf_denoiser":
+        demo = cfg.get("training", {}).get("demo", {})
+        scales = demo.get("demo_cfg_scales") or [1]
+        return int(demo.get("demo_steps", 8)), float(max(scales))
+    return 24, 6.0
+
+
 def _b(req, key, default):
     v = req.get(key)
     return bool(default) if v is None else bool(v)
@@ -219,10 +277,18 @@ def require_path(p, what):
     return str(pp)
 
 
-def resolve_cfg_interval(req):
+def resolve_cfg_interval(req, sigma_max=1.0):
     """(lo, hi) tuple in native SIGMA semantics — the DiT gates CFG on
     cfg_interval[0] <= sigma <= cfg_interval[1] (dit.py), NOT on step index.
-    Accepts cfg_interval=[lo,hi] or cfg_interval_min/cfg_interval_max."""
+    Accepts cfg_interval=[lo,hi], cfg_interval_min/cfg_interval_max, or (Latent Forge)
+    cfg_interval_progress=[p_lo,p_hi] where progress = 1 - sigma/sigma_max."""
+    cp = req.get("cfg_interval_progress")
+    if cp is not None:
+        if any(req.get(k) is not None for k in ("cfg_interval", "cfg_interval_min", "cfg_interval_max")):
+            raise ForgeError(400, "send cfg_interval_progress or cfg_interval, not both")
+        if not isinstance(cp, (list, tuple)) or len(cp) != 2:
+            raise ForgeError(400, "cfg_interval_progress must be [lo, hi]")
+        return forge_schedule.progress_to_cfg_interval(cp[0], cp[1], sigma_max)
     ci = req.get("cfg_interval")
     if ci is not None:
         lo, hi = float(ci[0]), float(ci[1])
@@ -251,6 +317,25 @@ def resolve_dist_shift(req):
     if a <= 0:
         raise ValueError(f"dist_shift must be > 0 (got {a})")
     return FluxDistributionShift(alpha_min=a, alpha_max=a)
+
+
+def resolve_shift(req, steps, sigma_max, warnings):
+    """Schedule-shape object (Latent Forge) or today's dist_shift resolution, unchanged."""
+    obj, w = forge_schedule.resolve_schedule(req, steps, sigma_max, req.get("sampler_type"))
+    warnings.extend(w)
+    return obj if obj is not None else resolve_dist_shift(req)
+
+
+def resolve_scale_phi(req):
+    v = _f(req, "scale_phi", 0.0)
+    if not 0.0 <= v <= 1.0:
+        raise ForgeError(400, f"scale_phi {v} outside 0..1")
+    return v
+
+
+def latch_sampler_warning(latch_cfgs, req, warnings):
+    if latch_cfgs and req.get("sampler_type") not in (None, "", "euler"):
+        warnings.append("LatCH guidance forces the euler sampler; sampler_type ignored")
 
 
 def resolve_dora_req(req):
@@ -294,8 +379,9 @@ def make_log_cb(steps, extra=None, every=4):
             extra(d)
         i = counter["i"]
         counter["i"] += 1
+        forge_progress.on_step(i + 1, steps)   # Latent Forge: per-step progress for /forge/jobs
         if i % every == 0 or i == steps - 1:
-            log(f"  step {i + 1}/{steps}  t={float(d['t'][0]):.3f}")
+            log(f"  step {i + 1}/{steps}  t={step_t(d['t']):.3f}")
 
     return cb
 
@@ -477,7 +563,7 @@ def with_lora_interval(kw):
         kw.setdefault("lora_configs",
                       SLOTS.lora_configs(ACTIVE_SLOT, interval=CURRENT_LORA_INTERVAL))
         return kw
-    if LOADED_DORA not in (None, "none") and CURRENT_LORA_INTERVAL != (0.0, 1.0):
+    if LOADED_DORA not in (None, "none") and not LOADED_FULLFT and CURRENT_LORA_INTERVAL != (0.0, 1.0):
         kw.setdefault("lora_configs", [{"lora_index": 0,
                                         "interval": CURRENT_LORA_INTERVAL}])
     return kw
@@ -486,7 +572,7 @@ def with_lora_interval(kw):
 def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
-    global CURRENT_LORA_INTERVAL, ACTIVE_SLOT
+    global CURRENT_LORA_INTERVAL, ACTIVE_SLOT, LOADED_FULLFT
     CURRENT_LORA_INTERVAL = (
         _f(dora_req or {}, "interval_min", 0.0),
         _f(dora_req or {}, "interval_max", 1.0))
@@ -505,6 +591,12 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         # model" was quietly still the last adapter. Same failure class as trap 1.
         ACTIVE_SLOT = None
         key, ckpt, strength = _resolve_dora(dora_req, default_dora)
+    # A full finetune replaces the DiT instead of attaching an adapter (2026-10-09). The weight set
+    # is part of its identity: online and EMA are different models.
+    full_weights = None
+    if ckpt and ckpt_family(ckpt) == "fullft":
+        full_weights = "ema" if (dora_req or {}).get("weights") == "ema" else "online"
+        key = f"{key}#{full_weights}"
     film_ckpt = None
     if film_req:
         film_ckpt = require_path(film_req.get("ckpt") or FILM_DEFAULT_CKPT, "FiLM checkpoint")
@@ -537,9 +629,12 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
             summary = apply_condition(MODEL.dit, cond)
             log(f"[mutate] {mop} amount={mutate_req['amount']} target={mutate_req['target']} "
                 f"seed={mutate_req['seed']} -> {summary}")
-        if ckpt:
+        if ckpt and full_weights:
+            load_fullft(MODEL, ckpt, weights=full_weights, log=log)
+        elif ckpt:
             MODEL.load_lora([str(ckpt)])
         LOADED_DORA, LOADED_STRENGTH = key, 1.0
+        LOADED_FULLFT = full_weights is not None
         LOADED_MUT = mut_key
         if SLOTS.slots:
             # The rebuild threw the resident adapters away with the old MODEL. The
@@ -553,7 +648,7 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         # ACTIVE_SLOT is None outside slot mode, so this zeroes every slot.
         SLOTS.push_strengths(MODEL, ACTIVE_SLOT,
                              strength if slot is not None else 0.0)
-    if ckpt and strength != LOADED_STRENGTH:
+    if ckpt and not LOADED_FULLFT and strength != LOADED_STRENGTH:
         MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
         LOADED_STRENGTH = strength
     if film_ckpt and FILM_LOADED != film_ckpt:
@@ -647,7 +742,8 @@ def resolve_latch(latch_list, req, extra_first=None):
     configs = [{**cfg, "weight": float(gain) / g0} for cfg, gain in slots]
     # rho/mu accept explicit overrides; default stays tied to slot-1 gain
     hparams = {"rho": _f(req, "rho", g0), "mu": _f(req, "mu", g0),
-               "gamma": _f(req, "gamma", 0.3), "n_iter": _i(req, "n_iter", 4)}
+               "gamma": _f(req, "gamma", 0.3), "n_iter": _i(req, "n_iter", 4),
+               "log_norms": _b(req, "log_norms", False)}
     return configs, hparams
 
 
@@ -705,14 +801,15 @@ def info():
             "max_duration_sec": MAX_DURATION_SEC, "out_dir": str(OUT_DIR),
             "latch_heads": list(HEADS.values()),
             "dora": dict(DORA_REGISTRY),
-            "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN}}
+            "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN},
+            "objective": getattr(getattr(MODEL, "model", None), "diffusion_objective", None)}
 
 
 @app.get("/status")
 def status():
     busy = GPU_LOCK.locked()
     return {"ok": True, "busy": busy, "job_id": CURRENT_JOB if busy else None,
-            "log_tail": list(LOG_RING)[-20:]}
+            "log_tail": list(LOG_RING)[-20:], "progress": forge_progress.snapshot()}
 
 
 def _scan_ckpts(root: Path):
@@ -1016,10 +1113,12 @@ async def schedule(request: Request):
 
     POST JSON (the render_client contract): {"steps": int, "duration": float,
     "dist_shift": float|null (null/absent = model default; float = constant-alpha
-    Flux shift, matching resolve_dist_shift on /generate), "sigma_max": float}.
-    GET keeps the same keys as query params, plus the legacy shift=0 flag
-    (-> linear, no warp). For a2a previews pass sigma_max=init_noise_level
-    (schedule truncates there)."""
+    Flux shift, matching resolve_dist_shift on /generate), "sigma_max": float,
+    "schedule": ScheduleSpec|null, "sampler_type": str|null}. A schedule whose
+    shape is not "model" replaces dist_shift entirely and is computed here without
+    the model. GET keeps the same keys as query params, plus the legacy shift=0
+    flag (-> linear, no warp); GET never carries a schedule spec. For a2a previews
+    pass sigma_max=init_noise_level (schedule truncates there)."""
     if request.method == "POST":
         try:
             req = json.loads((await request.body()) or b"{}")
@@ -1027,14 +1126,29 @@ async def schedule(request: Request):
             return JSONResponse({"error": f"bad JSON body: {e}"}, status_code=400)
     else:
         req = dict(request.query_params)
+    try:
+        steps = max(1, _i(req, "steps", model_defaults()[0]))
+        duration = _f(req, "duration", 47.0)
+        sigma_max = _f(req, "sigma_max", 1.0)
+        spec = forge_schedule.parse_spec(req.get("schedule") if request.method == "POST" else None)
+        if spec["shape"] != "model":
+            if req.get("dist_shift") not in (None, "", "default"):
+                raise ForgeError(400, "schedule.shape replaces dist_shift — send one or the other")
+            arr = forge_schedule.sigmas(spec, steps, sigma_max)
+            return {"ok": True, "steps": steps, "duration": duration, "sigma_max": sigma_max,
+                    "dist_shift": None, "shape": spec["shape"],
+                    "latent_len": max(1, math.ceil(duration * SR / DS)),
+                    "sigmas": [float(s) for s in arr],
+                    "warnings": forge_schedule.sampler_warnings(arr, spec, req.get("sampler_type"))}
+    except ForgeError as e:
+        return JSONResponse({"error": e.message}, status_code=e.status)
+    except (TypeError, ValueError) as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
     m = MODEL
     if m is None:
         return JSONResponse({"error": "model not loaded (rebuild in progress?)"},
                             status_code=503)
     try:
-        steps = max(1, _i(req, "steps", 24))
-        duration = _f(req, "duration", 47.0)
-        sigma_max = _f(req, "sigma_max", 1.0)
         if str(req.get("shift", "1")) in ("0", "false", "False"):  # legacy GET flag
             ds_obj, ds_echo = None, "linear"
         else:
@@ -1058,7 +1172,8 @@ async def schedule(request: Request):
     sigmas = [float(s) for s in sched]
     return {"ok": True, "steps": steps, "duration": duration,
             "sigma_max": sigma_max, "dist_shift": ds_echo,
-            "latent_len": latent_len, "sigmas": sigmas}
+            "shape": "model", "latent_len": latent_len,
+            "sigmas": sigmas, "warnings": []}
 
 
 @app.get("/audio/{job_id}/{filename}")
@@ -1079,6 +1194,8 @@ async def _run(impl, request: Request):
         return JSONResponse({"error": f"bad JSON body: {e}"}, status_code=400)
     try:
         return await run_in_threadpool(impl, req)
+    except ForgeError as e:                 # Latent Forge: a typed refusal keeps its status code
+        return JSONResponse({"error": e.message}, status_code=e.status)
     except Exception as e:
         log(f"[error] {e}")
         return JSONResponse({"error": str(e), "traceback": traceback.format_exc()},
@@ -1123,8 +1240,8 @@ def _generate_impl(req):
     duration = _f(req, "duration", 47.0)
     if not (1.0 <= duration <= MAX_DURATION_SEC):
         raise ValueError(f"duration {duration} outside 1..{MAX_DURATION_SEC}")
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     batch = max(1, _i(req, "batch_size", 1))
     seed = resolve_seed(_i(req, "seed", -1))
     with GPU_LOCK:
@@ -1136,6 +1253,8 @@ def _generate_impl(req):
                                 mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
+        warnings = []                                   # Latent Forge: schedule/sampler warnings
+        latch_sampler_warning(latch_cfgs, req, warnings)
         # kw-dict lifted from density_control_eval.py:141-155 + schedule extras
         kw = dict(prompt=prompt, duration=duration, steps=steps, cfg_scale=cfg,
                   seed=seed, batch_size=batch,
@@ -1145,13 +1264,16 @@ def _generate_impl(req):
                   # (latch path: explicit passthrough in model.py _latch_guided_generate)
                   cfg_interval=resolve_cfg_interval(req),
                   # None -> generate() falls back to model.sampling_dist_shift
-                  dist_shift=resolve_dist_shift(req),
+                  dist_shift=resolve_shift(req, steps, 1.0, warnings),
                   duration_padding_sec=_f(req, "duration_padding_sec", 6.0),
                   callback=make_log_cb(steps))
         if req.get("negative_prompt"):
             kw["negative_prompt"] = req["negative_prompt"]
         if req.get("sampler_type"):
             kw["sampler_type"] = req["sampler_type"]
+        scale_phi = resolve_scale_phi(req)
+        if scale_phi > 0:                                # only forwarded when > 0: default requests stay byte-identical
+            kw["scale_phi"] = scale_phi
         apply_latch(kw, latch_cfgs, latch_hp)
         tg = time.time()
         # latents_sink is a NON-INVASIVE capture added to the fork 2026-08-26: the
@@ -1176,7 +1298,7 @@ def _generate_impl(req):
                 if zp:
                     latents.append(zp)
         log(f"[gen {job_id}] done {time.time()-t0:.1f}s")
-        return build_response(job_id, jd, files, seed, t0, stages, [],
+        return build_response(job_id, jd, files, seed, t0, stages, warnings,
                               {"op": "generate", "latents": latents}, req, rebuilt)
 
 
@@ -1235,7 +1357,7 @@ def make_preserve_hook(req, chunk_np, steps):
 
 def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film_req,
               apg_scale=1.0, cfg_interval=(0.0, 1.0), dist_shift=None,
-              renoise_hook=None, sampler_type=None):
+              renoise_hook=None, sampler_type=None, scale_phi=0.0):
     """a2a_fulltrack.py:34-49 inlined (its signature is too narrow for latch/film).
     apg_scale/cfg_interval/dist_shift mirror the /generate kwargs (same
     generate() plumbing: cfg_interval rides **sampler_kwargs to the DiT gate)."""
@@ -1251,6 +1373,8 @@ def _a2a_pass(audio_np, nl, prompt, seed, steps, cfg, latch_cfgs, latch_hp, film
         kw["sampler_type"] = sampler_type or "pingpong"   # selection needs stochasticity
     elif sampler_type:
         kw["sampler_type"] = sampler_type
+    if scale_phi > 0:                                    # Latent Forge CFG RESCALE; default requests unchanged
+        kw["scale_phi"] = scale_phi
     apply_latch(kw, latch_cfgs, latch_hp)
     with film_context(film_req):
         out = MODEL.generate(**with_lora_interval(kw))
@@ -1267,11 +1391,9 @@ def _a2a_track_impl(req):
         raise ValueError("prompt is required")
     nls = req.get("noise_levels") or [_f(req, "noise_level", 0.4)]
     nls = [float(x) for x in nls]
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     apg = _f(req, "apg_scale", 1.0)
-    cfg_interval = resolve_cfg_interval(req)
-    dist_shift = resolve_dist_shift(req)
     seed = resolve_seed(_i(req, "seed", -1))
     with GPU_LOCK:
         t0 = time.time()
@@ -1282,6 +1404,7 @@ def _a2a_track_impl(req):
                                 mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
+        scale_phi = resolve_scale_phi(req)
         audio = load_audio(audio_path)
         total_sec = audio.shape[1] / SR
         # window plan — a2a_fulltrack.py:72-75 / 106-114 semantics intact
@@ -1290,11 +1413,16 @@ def _a2a_track_impl(req):
         else:
             wins = [(0.0, a2a_mod.MAX_SEC), (a2a_mod.MAX_SEC - a2a_mod.OVERLAP, total_sec)]
         files, warnings = [], []
+        latch_sampler_warning(latch_cfgs, req, warnings)
         if len(wins) > 1:
             warnings.append(f"track {total_sec:.0f}s > {a2a_mod.MAX_SEC:.0f}s: "
                             f"two windows joined by {a2a_mod.OVERLAP:.0f}s crossfade")
         for nl in nls:
             tnl = time.time()
+            # Latent Forge: the CFG interval (progress form) and a schedule shape both depend on the
+            # pass's own starting noise level, so they are resolved per noise level, not once.
+            cfg_interval = resolve_cfg_interval(req, sigma_max=nl)
+            dist_shift = resolve_shift(req, steps, nl, warnings)
             pieces = []
             for lo, hi in wins:
                 chunk = audio[:, int(lo * SR):int(hi * SR)]
@@ -1303,7 +1431,7 @@ def _a2a_track_impl(req):
                               latch_cfgs, latch_hp, req.get("film"),
                               apg_scale=apg, cfg_interval=cfg_interval,
                               dist_shift=dist_shift,
-                              renoise_hook=hook)[:, :chunk.shape[1]]
+                              renoise_hook=hook, scale_phi=scale_phi)[:, :chunk.shape[1]]
                 pieces.append(y)
             if len(pieces) == 1:
                 full = pieces[0]
@@ -1346,7 +1474,7 @@ def _arc_prompt_at(arc, t_sec):
 
 
 def _longform_impl(req):
-    """Prompt-ARC rendering. schedule = '0:promptA|45:promptB|...' — the
+    """Prompt-ARC rendering. prompt_arc = '0:promptA|45:promptB|...' — the
     steered_longform.py arc grammar (its _parse_prompt_arc, imported; colon-safe,
     a single prompt stays a bare string). Two paths:
       - audio_path given: /a2a_track-style window loop over the source, prompt
@@ -1362,13 +1490,21 @@ def _longform_impl(req):
         (2026-08-23, GHOST-NOTE/CONTINUITY: parameter plumbing onto the existing
         InpaintContinuationGenerator.generate(prefix_latents=...) primitive, not
         new machinery)."""
-    schedule_arg = (req.get("schedule") or req.get("prompt") or "").strip()
+    # Latent Forge (M3 T2 h): `schedule` is now exclusively the ScheduleSpec SHAPE object, read by
+    # resolve_shift/parse_spec on every render path, so the prompt ARC moved to `prompt_arc`.
+    # Backwards compatibility: an older caller that still sends the arc as a STRING under `schedule`
+    # keeps working -- the string is taken as the arc and removed from the request so parse_spec
+    # never sees it (it rejects a non-dict, non-null `schedule`).
+    legacy_arc = req.get("schedule") if isinstance(req.get("schedule"), str) else None
+    if legacy_arc is not None:
+        req = {**req, "schedule": None}
+    schedule_arg = (req.get("prompt_arc") or legacy_arc or req.get("prompt") or "").strip()
     if not schedule_arg:
-        raise ValueError("schedule is required ('0:promptA|45:promptB|...' arc grammar)")
+        raise ValueError("prompt_arc is required ('0:promptA|45:promptB|...' arc grammar)")
     arc = _parse_prompt_arc(schedule_arg)
     arc_echo = arc if isinstance(arc, list) else [(0.0, arc)]
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     seed = resolve_seed(_i(req, "seed", -1))
     audio_path = req.get("audio_path")
     window_sec = _f(req, "window_sec", 30.0)
@@ -1393,8 +1529,9 @@ def _longform_impl(req):
             audio_path = require_path(audio_path, "audio_path")
             nl = _f(req, "noise_level", 0.4)
             apg = _f(req, "apg_scale", 1.0)
-            cfg_interval = resolve_cfg_interval(req)
-            dist_shift = resolve_dist_shift(req)
+            cfg_interval = resolve_cfg_interval(req, sigma_max=nl)
+            dist_shift = resolve_shift(req, steps, nl, warnings)
+            scale_phi = resolve_scale_phi(req)
             audio = load_audio(audio_path)
             total_sec = audio.shape[1] / SR
             win = min(window_sec, a2a_mod.MAX_SEC)
@@ -1421,7 +1558,7 @@ def _longform_impl(req):
                               latch_cfgs, latch_hp, req.get("film"),
                               apg_scale=apg, cfg_interval=cfg_interval,
                               dist_shift=dist_shift,
-                              renoise_hook=hook)[:, :chunk.shape[1]]
+                              renoise_hook=hook, scale_phi=scale_phi)[:, :chunk.shape[1]]
                 if full is None:
                     full = y
                 else:                            # equal-power cos/sin join (a2a_track)
@@ -1436,6 +1573,8 @@ def _longform_impl(req):
                     "windows": [[round(a, 2), round(b, 2)] for a, b in wins],
                     "noise_level": nl, "arc": prompts_used}
         else:
+            if forge_schedule.parse_spec(req.get("schedule"))["shape"] != "model":
+                raise ForgeError(400, "schedule shapes are not supported on the t2a longform path")
             duration = _f(req, "duration", 120.0)
             if latch_cfgs:
                 warnings.append("latch ignored on the t2a longform path "
@@ -1533,11 +1672,11 @@ def _a2a_mix_impl(req):
     chroma_gain = _f(req, "chroma_gain", cmt.CHROMA_GAIN)
     guid_end = _f(req, "guidance_end_pct", 0.6)
     whole = req.get("whole_track")
-    steps = _i(req, "steps", 24)
-    cfg = _f(req, "cfg_scale", 6.0)
+    steps = _i(req, "steps", model_defaults()[0])
+    cfg = _f(req, "cfg_scale", model_defaults()[1])
     apg = _f(req, "apg_scale", 1.0)
     cfg_interval = resolve_cfg_interval(req)
-    dist_shift = resolve_dist_shift(req)
+    resolve_dist_shift(req)  # validate early, before any GPU work; each pass resolves its own shift
     seed = resolve_seed(_i(req, "seed", -1))
     film_req = req.get("film")
     # crossfade-lab knobs (parity-audit 3c / item 6, Kim 2026-07-12)
@@ -1772,9 +1911,16 @@ def _a2a_mix_impl(req):
         elif construction == "audio_xfade":
             log("  [pass] audio_xfade — no model pass")
         else:
+            # Latent Forge (M3 T2 i): the model pass resolves its CFG interval and schedule shape
+            # against ITS OWN starting noise (1.0 for an inpaint pass, `nl` otherwise).
+            pass_sigma_max = 1.0 if mode == "inpaint" else nl
             kw = dict(prompt=prompt, duration=dur, steps=steps, cfg_scale=cfg,
-                      apg_scale=apg, cfg_interval=cfg_interval, dist_shift=dist_shift,
+                      apg_scale=apg,
+                      cfg_interval=resolve_cfg_interval(req, sigma_max=pass_sigma_max),
+                      dist_shift=resolve_shift(req, steps, pass_sigma_max, warnings),
                       seed=seed, batch_size=1, sample_size=budget_for(dur))
+            if resolve_scale_phi(req) > 0:
+                kw["scale_phi"] = resolve_scale_phi(req)
             apply_latch(kw, latch_cfgs, latch_hp)
             if mode == "inpaint":                # cmt.main 342-345
                 kw["inpaint_audio"] = (SR, audio_ref.float())
@@ -1792,7 +1938,7 @@ def _a2a_mix_impl(req):
                 depth = (depth_shape * nl).view(1, 1, -1)
 
                 def cb(d, _z=z_ref, _e=eps_ref, _d=depth):
-                    x, tt = d["x"], float(d["t"][0])
+                    x, tt = d["x"], step_t(d["t"])
                     n = min(x.shape[-1], _z.shape[-1])
                     hold = (_d[..., :n] < tt)    # not yet released
                     ref_t = ((1 - tt) * _z[..., :n] + tt * _e[..., :n]).to(x.device, x.dtype)
@@ -1818,9 +1964,11 @@ def _a2a_mix_impl(req):
             starts = [max(ws_sec - S / 2, 0), we_sec - S / 2]
             ends = [ws_sec + S / 2, min(we_sec + S / 2, y.shape[1] / SR)]
             log(f"  [pass] seam-inpaint {seam_inpaint}f strips")
+            # Starts from full noise, so cfg_interval at sigma_max=1.0 is right; the schedule shape
+            # must still be honoured (resolve_dist_shift ignores it) -- review 2026-10-01.
             kw3 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
                        cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                       dist_shift=dist_shift, seed=seed, batch_size=1,
+                       dist_shift=resolve_shift(req, steps, 1.0, warnings), seed=seed, batch_size=1,
                        sample_size=budget_for(y.shape[1] / SR),
                        inpaint_audio=(SR, torch.tensor(y)),
                        inpaint_mask_start_seconds=starts,
@@ -1899,15 +2047,19 @@ def _a2a_mix_impl(req):
                 depth2 = (dshape * seam_nl).view(1, 1, -1)
 
                 def cb2(d, _z=z_ref2, _e=eps2, _d=depth2):
-                    x, tt = d["x"], float(d["t"][0])
+                    x, tt = d["x"], step_t(d["t"])
                     nn = min(x.shape[-1], _z.shape[-1], _d.shape[-1])
                     hold = (_d[..., :nn] < tt)
                     ref_t = ((1 - tt) * _z[..., :nn] + tt * _e[..., :nn]).to(x.device, x.dtype)
                     x[..., :nn].copy_(torch.where(hold.to(x.device), ref_t, x[..., :nn]))
 
+                # Spec 6.6: progress is relative to THIS pass's starting noise (seam_nl), not 1.0 --
+                # at 1.0 a cfg_interval_progress window could sit wholly above seam_nl and CFG would
+                # never apply (review 2026-10-01).
                 kw2 = dict(prompt=prompt, duration=y.shape[1] / SR, steps=steps,
-                           cfg_scale=cfg, apg_scale=apg, cfg_interval=cfg_interval,
-                           dist_shift=dist_shift, seed=seed, batch_size=1,
+                           cfg_scale=cfg, apg_scale=apg,
+                           cfg_interval=resolve_cfg_interval(req, sigma_max=seam_nl),
+                           dist_shift=resolve_shift(req, steps, seam_nl, warnings), seed=seed, batch_size=1,
                            sample_size=budget_for(y.shape[1] / SR),
                            init_audio=(SR, torch.tensor(y)),
                            init_noise_level=seam_nl,
@@ -1924,8 +2076,10 @@ def _a2a_mix_impl(req):
             wt_prompt = (whole.get("prompt") or prompt).strip()
             log(f"  [pass] whole-track a2a nl={wt_nl:.2f}")
             dur2 = y.shape[1] / SR
+            # Same rule as the seam pass: resolve against this pass's own starting noise (wt_nl).
             kw4 = dict(prompt=wt_prompt, duration=dur2, steps=steps, cfg_scale=cfg,
-                       apg_scale=apg, cfg_interval=cfg_interval, dist_shift=dist_shift,
+                       apg_scale=apg, cfg_interval=resolve_cfg_interval(req, sigma_max=wt_nl),
+                       dist_shift=resolve_shift(req, steps, wt_nl, warnings),
                        seed=seed, batch_size=1, sample_size=budget_for(dur2),
                        init_audio=(SR, torch.tensor(y)), init_noise_level=wt_nl,
                        callback=make_log_cb(steps))
@@ -2250,6 +2404,11 @@ def player_steer(crop: str = None, head: str = None, gain: float = 48.0,
         return wav_bytes(audio, SR)
     return _player_run(run)
 
+
+# ---------------------------------------------------------------- Latent Forge
+import forge_api  # noqa: E402
+forge_api.bind(sys.modules[__name__])
+app.include_router(forge_api.router)
 
 # ---------------------------------------------------------------- boot
 def main():

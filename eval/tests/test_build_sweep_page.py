@@ -1,7 +1,8 @@
 import json
+import os
 import sys
 
-sys.path.insert(0, "/home/kim/Projects/SAO/eval")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # this checkout's eval/
 import build_sweep_page as B
 
 

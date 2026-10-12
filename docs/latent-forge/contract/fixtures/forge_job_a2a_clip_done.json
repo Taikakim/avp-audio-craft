@@ -1,0 +1,89 @@
+{
+ "status": 200,
+ "body": {
+  "ok": true,
+  "job_id": "forge-20261006-203137-5",
+  "op": "a2a_clip",
+  "payload": {
+   "audio": {
+    "kind": "render",
+    "job_id": "20261006-203136-gen",
+    "file": "out_00.wav"
+   },
+   "render": {
+    "prompt": "driving psytrance, rolling bassline, acid lead",
+    "negative_prompt": "",
+    "steps": 8,
+    "cfg_scale": 6.0,
+    "seed": 7,
+    "apg_scale": 1,
+    "cfg_interval_progress": [
+     0,
+     1
+    ],
+    "scale_phi": 0
+   },
+   "noise_level": 0.5,
+   "chain": null
+  },
+  "state": "done",
+  "result": {
+   "status": "ok",
+   "job_id": "20261006-203137-forgea2a",
+   "files": [
+    "/home/kim/Projects/sa3_render_out/20261006-203137-forgea2a/out_00.wav"
+   ],
+   "latents": [
+    "/home/kim/Projects/sa3_render_out/20261006-203137-forgea2a/out_00.z0.npy"
+   ],
+   "urls": [
+    "/audio/20261006-203137-forgea2a/out_00.wav"
+   ],
+   "seed": 7,
+   "timings": {
+    "total_sec": 0.9,
+    "per_stage": {}
+   },
+   "warnings": [],
+   "meta": {
+    "op": "a2a_clip",
+    "latents": [
+     "/home/kim/Projects/sa3_render_out/20261006-203137-forgea2a/out_00.z0.npy"
+    ],
+    "depth_max": 0.5,
+    "duration_sec": 8.0,
+    "dora_loaded": "none",
+    "film_loaded": null,
+    "model_rebuilt": false,
+    "params_echo": {
+     "audio": {
+      "kind": "render",
+      "job_id": "20261006-203136-gen",
+      "file": "out_00.wav"
+     },
+     "render": {
+      "prompt": "driving psytrance, rolling bassline, acid lead",
+      "negative_prompt": "",
+      "steps": 8,
+      "cfg_scale": 6.0,
+      "seed": 7,
+      "apg_scale": 1,
+      "cfg_interval_progress": [
+       0,
+       1
+      ],
+      "scale_phi": 0
+     },
+     "noise_level": 0.5,
+     "chain": null
+    }
+   }
+  },
+  "error": null,
+  "created": 1791307897.3119612,
+  "started": 1791307897.3120346,
+  "finished": 1791307898.1886213,
+  "position": null,
+  "progress": null
+ }
+}

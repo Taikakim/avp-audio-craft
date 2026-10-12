@@ -5,7 +5,9 @@
   "MANTU": {
    "candidates": [
     "/run/media/kim/Mantu",
-    "/run/media/kim/Mantu1"
+    "/run/media/kim/Mantu1",
+    "/run/media/kim/Mantu2",
+    "/run/media/kim/Mantu3"
    ],
    "marker": "sa3_lora_runs"
   },

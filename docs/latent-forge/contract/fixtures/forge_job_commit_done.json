@@ -1,0 +1,685 @@
+{
+ "status": 200,
+ "body": {
+  "ok": true,
+  "job_id": "forge-20261006-202845-3",
+  "op": "commit",
+  "payload": {
+   "project_bpm": 144.559,
+   "duration_sec": 8,
+   "defaults": {
+    "prompt": "driving psytrance, 145 bpm, rolling bassline, acid lead, goa",
+    "negative_prompt": "",
+    "steps": 24,
+    "cfg_scale": 6,
+    "seed": -1,
+    "apg_scale": 1,
+    "cfg_interval_progress": [
+     0,
+     1
+    ],
+    "schedule": {
+     "shape": "model",
+     "rho": 1,
+     "sigma_min": 0.01,
+     "lam_min": -6.2,
+     "lam_max": 2,
+     "stepped": false,
+     "plateaus": 6,
+     "tilt": 0.15
+    },
+    "scale_phi": 0,
+    "sampler_type": "euler"
+   },
+   "lanes": [
+    {
+     "index": 0,
+     "muted": false,
+     "solo": false,
+     "gain": 1,
+     "chain": {
+      "latch_on": false,
+      "slots": [
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       },
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       }
+      ],
+      "hparams": {
+       "rho": 1,
+       "mu": 1,
+       "gamma": 0.3,
+       "n_iter": 4,
+       "log_norms": false
+      },
+      "film_on": false,
+      "film": {
+       "ckpt": null,
+       "gain": 1.75,
+       "value": 4
+      },
+      "lora_on": false,
+      "lora": {
+       "ckpt_path": null,
+       "slot": null,
+       "strength": 1
+      },
+      "bungee_on": false,
+      "semitones": 0
+     }
+    },
+    {
+     "index": 1,
+     "muted": false,
+     "solo": false,
+     "gain": 1,
+     "chain": {
+      "latch_on": false,
+      "slots": [
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       },
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       }
+      ],
+      "hparams": {
+       "rho": 1,
+       "mu": 1,
+       "gamma": 0.3,
+       "n_iter": 4,
+       "log_norms": false
+      },
+      "film_on": false,
+      "film": {
+       "ckpt": null,
+       "gain": 1.75,
+       "value": 4
+      },
+      "lora_on": false,
+      "lora": {
+       "ckpt_path": null,
+       "slot": null,
+       "strength": 1
+      },
+      "bungee_on": false,
+      "semitones": 0
+     }
+    },
+    {
+     "index": 2,
+     "muted": false,
+     "solo": false,
+     "gain": 1,
+     "chain": {
+      "latch_on": false,
+      "slots": [
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       },
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       }
+      ],
+      "hparams": {
+       "rho": 1,
+       "mu": 1,
+       "gamma": 0.3,
+       "n_iter": 4,
+       "log_norms": false
+      },
+      "film_on": false,
+      "film": {
+       "ckpt": null,
+       "gain": 1.75,
+       "value": 4
+      },
+      "lora_on": false,
+      "lora": {
+       "ckpt_path": null,
+       "slot": null,
+       "strength": 1
+      },
+      "bungee_on": false,
+      "semitones": 0
+     }
+    },
+    {
+     "index": 3,
+     "muted": false,
+     "solo": false,
+     "gain": 1,
+     "chain": {
+      "latch_on": false,
+      "slots": [
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       },
+       {
+        "head": "none",
+        "kind": "constant",
+        "value": 1,
+        "weight": 1,
+        "start_pct": 0,
+        "end_pct": 0.6
+       }
+      ],
+      "hparams": {
+       "rho": 1,
+       "mu": 1,
+       "gamma": 0.3,
+       "n_iter": 4,
+       "log_norms": false
+      },
+      "film_on": false,
+      "film": {
+       "ckpt": null,
+       "gain": 1.75,
+       "value": 4
+      },
+      "lora_on": false,
+      "lora": {
+       "ckpt_path": null,
+       "slot": null,
+       "strength": 1
+      },
+      "bungee_on": false,
+      "semitones": 0
+     }
+    }
+   ],
+   "clips": [
+    {
+     "id": "clip_muwyd7ze_1",
+     "lane": 0,
+     "start_sec": 0,
+     "offset_sec": 0,
+     "dur_sec": 8,
+     "loop": false,
+     "audio": {
+      "kind": "render",
+      "job_id": "20261006-202823-gen",
+      "file": "out_00.wav"
+     },
+     "native_bpm": 144.559,
+     "detune_cents": 0,
+     "a2a": null
+    }
+   ],
+   "overlaps": [],
+   "mix": {
+    "order": "tree",
+    "nodes": {
+     "M1": {
+      "interp": "slerp",
+      "t": 0.5
+     },
+     "M2": {
+      "interp": "slerp",
+      "t": 0.5
+     },
+     "MX": {
+      "interp": "slerp",
+      "t": 0.5
+     }
+    },
+    "quad_weights": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "master": {
+    "latch_on": false,
+    "head": "none",
+    "gain": 64,
+    "norm_on": true
+   },
+   "decode_lanes": false
+  },
+  "state": "done",
+  "result": {
+   "status": "ok",
+   "job_id": "20261006-202845-forgecommit",
+   "files": [
+    "/home/kim/Projects/sa3_render_out/20261006-202845-forgecommit/mix.wav"
+   ],
+   "latents": [
+    "/home/kim/Projects/sa3_render_out/20261006-202845-forgecommit/mix.z0.npy"
+   ],
+   "urls": [
+    "/audio/20261006-202845-forgecommit/mix.wav"
+   ],
+   "seed": null,
+   "timings": {
+    "total_sec": 0.0,
+    "per_stage": {
+     "S1": 0.0,
+     "S2": 0.0,
+     "S3": 0.0,
+     "S4": 0.0,
+     "S5": 0.0,
+     "S6": 0.0,
+     "S7": 0.0,
+     "S8": 0.0,
+     "S9": 0.0
+    }
+   },
+   "warnings": [],
+   "meta": {
+    "op": "commit",
+    "latents": [
+     "/home/kim/Projects/sa3_render_out/20261006-202845-forgecommit/mix.z0.npy"
+    ],
+    "stages": [
+     {
+      "label": "DECODE latent \u2192 audio",
+      "on": false,
+      "note": "no latents",
+      "seconds": 0.0
+     },
+     {
+      "label": "BUNGEE stretch / pitch",
+      "on": false,
+      "note": "at tempo",
+      "seconds": 0.0
+     },
+     {
+      "label": "ENCODE audio \u2192 latent",
+      "on": true,
+      "note": "L1",
+      "seconds": 0.01
+     },
+     {
+      "label": "LANE CHAINS",
+      "on": false,
+      "note": "all bypassed",
+      "seconds": 0.0
+     },
+     {
+      "label": "A2A RE-NOISE",
+      "on": false,
+      "note": "none",
+      "seconds": 0.0
+     },
+     {
+      "label": "INPAINT OVERLAPS",
+      "on": false,
+      "note": "none",
+      "seconds": 0.0
+     },
+     {
+      "label": "MIX",
+      "on": false,
+      "note": "s\u00b7s\u00b7s",
+      "seconds": 0.0
+     },
+     {
+      "label": "MASTER CHAIN",
+      "on": true,
+      "note": "norm",
+      "seconds": 0.0
+     },
+     {
+      "label": "DECODE latent \u2192 audio",
+      "on": true,
+      "note": "8s",
+      "seconds": 0.01
+     }
+    ],
+    "lanes": [
+     {
+      "index": 0,
+      "used": true,
+      "z0_path": "/home/kim/Projects/sa3_render_out/20261006-202845-forgecommit/lane0.z0.npy",
+      "wav_path": null
+     },
+     {
+      "index": 1,
+      "used": false,
+      "z0_path": null,
+      "wav_path": null
+     },
+     {
+      "index": 2,
+      "used": false,
+      "z0_path": null,
+      "wav_path": null
+     },
+     {
+      "index": 3,
+      "used": false,
+      "z0_path": null,
+      "wav_path": null
+     }
+    ],
+    "passes": [],
+    "resolved_seeds": {},
+    "mix_weights": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "dora_loaded": "none",
+    "film_loaded": null,
+    "model_rebuilt": false,
+    "params_echo": {
+     "project_bpm": 144.559,
+     "duration_sec": 8,
+     "defaults": {
+      "prompt": "driving psytrance, 145 bpm, rolling bassline, acid lead, goa",
+      "negative_prompt": "",
+      "steps": 24,
+      "cfg_scale": 6,
+      "seed": -1,
+      "apg_scale": 1,
+      "cfg_interval_progress": [
+       0,
+       1
+      ],
+      "schedule": {
+       "shape": "model",
+       "rho": 1,
+       "sigma_min": 0.01,
+       "lam_min": -6.2,
+       "lam_max": 2,
+       "stepped": false,
+       "plateaus": 6,
+       "tilt": 0.15
+      },
+      "scale_phi": 0,
+      "sampler_type": "euler"
+     },
+     "lanes": [
+      {
+       "index": 0,
+       "muted": false,
+       "solo": false,
+       "gain": 1,
+       "chain": {
+        "latch_on": false,
+        "slots": [
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         },
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         }
+        ],
+        "hparams": {
+         "rho": 1,
+         "mu": 1,
+         "gamma": 0.3,
+         "n_iter": 4,
+         "log_norms": false
+        },
+        "film_on": false,
+        "film": {
+         "ckpt": null,
+         "gain": 1.75,
+         "value": 4
+        },
+        "lora_on": false,
+        "lora": {
+         "ckpt_path": null,
+         "slot": null,
+         "strength": 1
+        },
+        "bungee_on": false,
+        "semitones": 0
+       }
+      },
+      {
+       "index": 1,
+       "muted": false,
+       "solo": false,
+       "gain": 1,
+       "chain": {
+        "latch_on": false,
+        "slots": [
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         },
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         }
+        ],
+        "hparams": {
+         "rho": 1,
+         "mu": 1,
+         "gamma": 0.3,
+         "n_iter": 4,
+         "log_norms": false
+        },
+        "film_on": false,
+        "film": {
+         "ckpt": null,
+         "gain": 1.75,
+         "value": 4
+        },
+        "lora_on": false,
+        "lora": {
+         "ckpt_path": null,
+         "slot": null,
+         "strength": 1
+        },
+        "bungee_on": false,
+        "semitones": 0
+       }
+      },
+      {
+       "index": 2,
+       "muted": false,
+       "solo": false,
+       "gain": 1,
+       "chain": {
+        "latch_on": false,
+        "slots": [
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         },
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         }
+        ],
+        "hparams": {
+         "rho": 1,
+         "mu": 1,
+         "gamma": 0.3,
+         "n_iter": 4,
+         "log_norms": false
+        },
+        "film_on": false,
+        "film": {
+         "ckpt": null,
+         "gain": 1.75,
+         "value": 4
+        },
+        "lora_on": false,
+        "lora": {
+         "ckpt_path": null,
+         "slot": null,
+         "strength": 1
+        },
+        "bungee_on": false,
+        "semitones": 0
+       }
+      },
+      {
+       "index": 3,
+       "muted": false,
+       "solo": false,
+       "gain": 1,
+       "chain": {
+        "latch_on": false,
+        "slots": [
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         },
+         {
+          "head": "none",
+          "kind": "constant",
+          "value": 1,
+          "weight": 1,
+          "start_pct": 0,
+          "end_pct": 0.6
+         }
+        ],
+        "hparams": {
+         "rho": 1,
+         "mu": 1,
+         "gamma": 0.3,
+         "n_iter": 4,
+         "log_norms": false
+        },
+        "film_on": false,
+        "film": {
+         "ckpt": null,
+         "gain": 1.75,
+         "value": 4
+        },
+        "lora_on": false,
+        "lora": {
+         "ckpt_path": null,
+         "slot": null,
+         "strength": 1
+        },
+        "bungee_on": false,
+        "semitones": 0
+       }
+      }
+     ],
+     "clips": [
+      {
+       "id": "clip_muwyd7ze_1",
+       "lane": 0,
+       "start_sec": 0,
+       "offset_sec": 0,
+       "dur_sec": 8,
+       "loop": false,
+       "audio": {
+        "kind": "render",
+        "job_id": "20261006-202823-gen",
+        "file": "out_00.wav"
+       },
+       "native_bpm": 144.559,
+       "detune_cents": 0,
+       "a2a": null
+      }
+     ],
+     "overlaps": [],
+     "mix": {
+      "order": "tree",
+      "nodes": {
+       "M1": {
+        "interp": "slerp",
+        "t": 0.5
+       },
+       "M2": {
+        "interp": "slerp",
+        "t": 0.5
+       },
+       "MX": {
+        "interp": "slerp",
+        "t": 0.5
+       }
+      },
+      "quad_weights": [
+       1,
+       1,
+       1,
+       1
+      ]
+     },
+     "master": {
+      "latch_on": false,
+      "head": "none",
+      "gain": 64,
+      "norm_on": true
+     },
+     "decode_lanes": false
+    }
+   }
+  },
+  "error": null,
+  "created": 1791307725.8269181,
+  "started": 1791307725.82704,
+  "finished": 1791307725.8558226,
+  "position": null,
+  "progress": null
+ }
+}

@@ -1868,6 +1868,241 @@ each of 24 real phrases and judged on the held-out half: paper MSS 11.24 → 7.7
 model's biggest miss (moved on 24/24 stems, median ~9 semitones). Now the default last step of
 `invert_stem_collection.py`.
 
+## I. Provenance, attribution & interpretability (from the SA3 attribution report, KUANG, October 6, 2026)
+
+*Assessment, verification status and sources: `docs/ai-research/sa3-attribution-report-assessment-2026-10-06.md`.
+Every entry is POTENTIAL (proposed, not agreed). The report's own rule governs all of them: **retrieval,
+probe activation, memorization and counterfactual influence are four different quantities — never collapse
+them into one "percentage influence" number.** A defensible claim is a rank plus an effect under
+intervention, with an interval, against matched controls. The header's reviewer briefing applies (linear
+chroma readout, signed differential attention, 64 memory-token hubs). Seeds do not reproduce across device
+or precision (October 1 laptop characterization: same seed, fp32 vs fp16, correlation 0.65 on CUDA and 0.39
+on XPU), so every regenerate-and-compare design below pins ONE device and ONE precision.*
+
+### I1 — Log training events in the next run — **POTENTIAL (cheap; the only item whose value is lost by waiting)**
+- Why: the formal-influence and retraining-calibration tiers need to know exactly what the model saw. For a
+  finished run that cannot be recovered; every run launched without it can only ever be explained by
+  retrieval and probes.
+- What: per step — global step, checkpoint id, batch membership as crop keys (source sidecar + index), the
+  per-source sampling weight and caption tier drawn, timestep and noise seeds, data-order seed. At
+  checkpoints — optimizer-state reference, EMA shadow; 8–16 log-spaced plus milestone checkpoints, denser
+  around loss transitions. On the pre-encoded path crop identity is static (A12), so the crop → track →
+  duplicate-cluster map comes from the dataset manifest; what is probably missing is batch membership and the
+  timestep/noise seeds. **NOT checked** — the training scripts were not read in this pass; confirm before
+  building.
+- Gate: on a probe run, rebuild one batch from the log and reproduce its loss to tolerance, same device and
+  precision.
+- Related: A12 (`run_meta.json` already records settings), A10 (`-vN` ladders), F3.
+
+### I2 — Retrain noise floor from the EXISTING 8-replica DoRA ladders — **POTENTIAL (cheap if the checkpoints survived)**
+- The suomi `wfleet` DoRA arms are 8 independent single-GCD replicas of one recipe with full ladders to ep19
+  (A10): an 8-seed ensemble per arm, i.e. the retrain-variance sample the report never measures. Pick concept
+  metrics we already trust (chroma / onset / PQ on the eval clips), render fixed prompts and seeds from each
+  replica at one epoch on one device and precision, and report the between-replica spread.
+- Use: sets the minimum detectable effect for every removal experiment (I7, I8). The attribution-decay study
+  says single-example effects can sit under the noise; this tells us where our floor is before GPU hours are
+  spent.
+- Kill: if the between-replica spread is at least as large as the effect we hope to detect from removing a
+  cluster, single-run removal tests are uninformative at this scale — use replica ensembles as the unit, or
+  drop the retraining tier.
+- Unchecked: whether those ladders survived the LUMI scratch purge (A10 notes they needed slimming before the
+  pull), and whether the replicas differ in data order or only in seed.
+- Related: A10, C3 (replica soups), D11 (frame-shuffle null — the same logic: a null before a claim).
+
+### I3 — Retrieval + duplicate-cluster index — **POTENTIAL (Tier 1: CPU, local)**
+- Build on the existing curation outputs (MAEST cosine clusters at 0.97 same-work / 0.995 near-identical,
+  master variants kept; `docs/goa-archive-buildout-plan.md`) instead of redoing duplicate clustering. Add a
+  windowed SAME-latent index (pooled plus token-level), CLAP/MERT, factor-specific MIR (chroma, bass contour,
+  beat-relative onsets, stereo width) and fingerprint/landmark hashes for memorization. FAISS exact flat on CPU
+  is enough at this scale. Rank at crop/segment level; aggregate to tracks by max, top-k mean and coverage,
+  never a plain mean. Keep pitch-shift, time-stretch, EQ and transcode variants as separate search views.
+- Output is labelled "resemblance, not influence".
+- Gate: a transformed self-copy (e.g. ±2 semitones, ±8% tempo, re-EQ, MP3 re-encode) must be retrieved at a
+  recall@10 target set from the first pilot (not invented here). If it is not, the index cannot serve as a
+  memorization detector.
+- Caveat: much of the big goa set comes from mp3 sources (A12, F4), so latent-space neighbours can reflect the
+  codec chain rather than the music.
+- Related: F3, F4.
+
+### I4 — Base-vs-fine-tune delta control — **POTENTIAL (cheap; run alongside I3)**
+- Every provenance statement is made as a DELTA: render the un-fine-tuned base with identical prompt, seed,
+  device and precision, and attribute only what the fine-tune changed. The base model's pretraining data is not
+  in any corpus we hold, so "nothing in the corpus resembles this" is not "novel", and "matches a corpus
+  segment" is not "learned from it" if the base already does it.
+- For adapter arms the delta is the adapter on/off pair; for full-FT arms it is base vs checkpoint.
+- Kill: if base and fine-tune are indistinguishable on the metric, there is nothing to attribute for that
+  concept.
+
+### I5 — Retrieval-is-not-influence test (duplicate vs upweight) — **POTENTIAL, GATED on I3 + I2**
+- The report's best idea. On a small adapter arm: hold out a close duplicate D of a probe segment (excluded
+  from training), and upweight a less similar segment U (1×/4×/16×). Retrieval should prefer D; a valid
+  influence estimator should prefer U, with the right sign and a monotonic dose-response in the measured
+  change. Repeat with pitch-shifted, re-EQed and time-stretched D. Add canary concepts (a synthetic marker
+  absent from the corpus, injected at controlled multiplicity) to check that the right source and ordering are
+  recovered.
+- Natural duplicate material already exists: master variants (curation) and the avp/avpaug split (F3).
+- Kill: if no estimator we can run separates U from D at 16×, the formal tier is not usable on this model.
+  Report that and stop at retrieval + probes.
+
+### I6 — Concept probes and causal steering on SAME / DiT activations — **POTENTIAL**
+- Probes first, on SAME latents: 12-bin chroma (we hold the exact decoded SAME chroma recipe and a linear
+  readout), bass pitch contour, stereo ILD (interaural level difference), beat-relative onset phase,
+  spectral-centroid trajectory. Splits grouped by artist, release and duplicate cluster so a probe cannot score
+  by memorizing a cluster. A probe only shows decodability; causal use needs an intervention — edit a direction
+  in SAME latent space and decode directly, then patch the matching DiT representation.
+- DiT hooks: residual before/after attention and MLP, differential-attention outputs (SIGNED — thresholding is
+  invalid), cross-attention, AdaLN scale/shift; treat the 64 memory tokens as hubs. Time-conditioned top-k SAEs
+  per diffusion-time bin; train at least three dictionaries and test feature matching, since SAE features are
+  not canonical across runs.
+- Goa concepts to operationalize: bassline (low-band pitch contour, 16th-note periodicity), acid sweep
+  (resonant spectral-peak trajectory), rolling/offbeat rhythm (beat-relative onset histogram), modal melody
+  (tonic-relative intervals), harmonic movement (beat-synchronous chroma transitions).
+- Gate per concept, in order: held-out probe accuracy → specificity control → dose-response steering →
+  necessity by ablation → reconstruction check → Kim's ears.
+- Kill: the probe does not beat a trivial baseline on held-out groups, or steering moves the metric without
+  Kim hearing it.
+- Related: D8, D9, D10 (same readout-direction family).
+
+### I7 — Formal influence on a shortlist, validated by removal — **POTENTIAL, GATED on I1 + I2 + I5**
+- Only after I5 shows an estimator can tell exposure from resemblance: projected-gradient similarity (TRAK /
+  Journey-TRAK style; flow-matching velocity MSE with COMMON timestep and noise draws for train and query
+  gradients, integrated over timestep bins) and EK-FAC on retrieval- or feature-shortlisted candidates, on an
+  ADAPTER arm first (small trainable set). The measurement is a defined scalar (a concept metric, or a
+  contrastive "acid sweep minus matched control"), not whole-output loss.
+- Validate by intervention: top-k vs matched-random removal (matched on artist, duration, key and embedding
+  density) and leave-cluster-out regeneration at fixed device and precision; score with LDS (linear
+  datamodeling score) if subset retrains are affordable.
+- Cost note (my arithmetic, untested): full-FT per-example gradients come to about 456 PFLOP per checkpoint
+  and timestep draw over 168 000 half-minute segments (≈ 4.2 GPU-hours at 30 TFLOP/s effective); 16
+  checkpoints × 8 draws ≈ 540 GPU-hours — LUMI-scale, not 9070 XT-scale. Adapter arms skip the weight-gradient
+  part of the backward pass.
+- Kill: the estimator's top-k removal does not beat matched-random removal by more than the I2 noise floor.
+- Report form: rank, sign, effect under intervention, seed stability, bootstrap interval, method agreement.
+  Never "Track X contributed 12%".
+- Unconfirmed: the report's cost and accuracy claims for MAGIC / EK-FAC / TrackStar conflict with a search
+  summary (assessment §3); read the Bergson paper before choosing an estimator.
+
+### I8 — Attribution decay at our scale; the cluster as the unit — **POTENTIAL, GATED on I2**
+- The Nature Communications 2026 finding (image diffusion, from-scratch ensembles, 256 to over 160 000 images)
+  is that individual-example removal effects vanish with data scale. Our setting is a fine-tune on a few
+  thousand to about 12 500 crops with deliberate near-duplicates, which that study does not cover. Measure it:
+  vary corpus size and the removal unit (crop / track / duplicate cluster / artist).
+- Possible design (my adaptation, untested): train K adapters on disjoint shards and "remove" a shard by
+  dropping the adapters that saw it, after the diffusion-ensemble idea. Costs: K small trainings up front, and
+  members that are weaker than one adapter trained on everything.
+- Read: if effects vanish at the cluster level too, provenance claims for this model should stop at
+  "resembles" (I3) and concept-level evidence (I6).
+
+### I9–I14 — EleutherAI instruments for the melody wall (KUANG, October 6, 2026)
+*Assessment, verification status, cost arithmetic and sources:
+`docs/ai-research/eleutherai-interpretability-tools-assessment-2026-10-06.md`. Only the IDEAS port; no repo's
+code drops into SA3. I9–I11 share ONE forward-only harness (checkpoint or ladder, fixed eval crops, sampled
+(t, ε), hooks on the SA3 blocks, ONE device and precision pinned); I14 should gate any meter I10/I11 rely on.
+KUANG's ranking by decision value per cost: I10 ≈ I9 > I14 > I11 > I12 > I13. All cost figures are
+arithmetic (2·N FLOP per token, 1.4B parameters, 512 frames per crop, 30 TFLOP/s effective), untested.*
+
+### I9 — Tuned lens on the DiT residual stream: where in depth does melody commit? — **POTENTIAL (cheap; forward-only)**
+- Source: `EleutherAI/tuned-lens` (affine per-layer translators, KL to the final distribution, through the
+  unembedding; HF-LM coupling inferred, source not read). Port the idea, not the code. The SA3-Medium DiT (from
+  Stability's MLX port): 24 blocks, d = 1 536, readout `project_out` + 1×1 conv, no final norm stated.
+- Build: per-block residual-form translator `h + A_ℓ(t)·h + b_ℓ`, with A_ℓ per timestep bin or FiLM from the
+  timestep embedding (adaLN makes residual coordinates mean different things at different t); frozen readout;
+  loss = MSE to the model's own final output (self-distillation), also reported against the ground-truth
+  target; train on conditional AND null-conditioned passes (CFG); position-wise over latent frames, skipping the
+  64 memory-token positions at readout.
+- Output: R²_melody(block, t) via the linear chroma readout (extends B2's t-curve with depth; fold into
+  `eval/melody_r2_vs_t.py`), a per-frame "prediction depth", and block-ℓ x̂₀ predictions decoded through SAME
+  to listen to.
+- Cost: ≈ 57M translator parameters; ≈ 1.3 h per 100 000 crops at 512 frames. Pin device and precision — XPU
+  fp16/bf16 gives NaN for medium-class models, so use fp32 on the Arc.
+- Informs: B4's melody-first noising vs injection at chosen blocks (per-block `local_add_cond` inlets); B7
+  adapter placement.
+- Kill: translators fail to beat the identity-translator (plain logit-lens) baseline at early blocks, or
+  R²(block, t) is flat — melody decodes only at the final block — so the depth axis adds nothing.
+- Related: B2, B4, B7, D8–D10, I6.
+
+### I10 — Training-time statistics test ("features across time" for SA3) — **POTENTIAL (forward-only; surrogate design is the open work)**
+- Source: `EleutherAI/features-across-time` (Pythia n-gram scripts, plots, vision scripts; MIT; "sloppy code"
+  per its authors). Appears to accompany arXiv 2402.04362 — inferred. Method as I understand it, not read
+  here: per checkpoint, compare model behavior on real data against synthetic data matched to order-k
+  statistics; the gap opens when the model learns structure beyond order k.
+- Port: in SAME latent space, velocity/denoising MSE at a few timesteps on real crops vs surrogates: (a)
+  per-channel Gaussian matched to mean and covariance, frame-iid; (b) frame-shuffled (D11); (c)
+  phase-randomized (keeps the power spectrum); (d) beat-block-shuffled (beat-aware crops exist); optionally (e)
+  chroma-transition-matched resampling. Run across A12's 24 rungs and the A10 replica ladders.
+- Cost: 256 crops × 4 timesteps × 5 conditions ≈ 7.3 PFLOP ≈ 4 min per checkpoint; 24 rungs ≈ 1.6 h.
+- Why: judges arms WITHOUT rendering (B2's three checkpoints were never rendered); tests B1–B5 as a family
+  (does reweighting open a melody-level gap earlier?); a structure term for soup selection (C2); A12's
+  "lightly-trained property" question.
+- Gate / kill: the curves must separate arms Kim has already labeled (good vs corrupted, as in G1) and beat a
+  trivial baseline (training loss alone). If gaps open early on spectrum statistics and never discriminate,
+  file the negative result. Kim's ears remain the arbiter.
+- Related: A10, A12, B1–B5, C2, D11, G1.
+
+### I11 — Attention-pooled concept probes, MIR-labelled — **POTENTIAL (reimplement; do NOT vendor)**
+- Source: `EleutherAI/attention-probes` (`train_probe()`, `AttentionProbeTrainConfig`; input tensors
+  `[N, T, D]` + mask + labels, so model-agnostic). Based on MOSAIC, which its README calls unlicensed; GitHub's
+  license endpoint returned 404 (normally: no license file). Reimplement the small attention-pooling probe
+  rather than copy the code; any use beyond private is a Legal question (third-party terms).
+- Use: clip-level concept labels with time localization (attention weights), on SAME latents (D = 256) and DiT
+  blocks (D = 1 536): acid sweep, bassline, rhythm integrity (G1), modal vs chromatic. Labels from the existing
+  MIR features (about 23 000 tracks), which inherit their classifiers' errors (genre-blind and ungrounded
+  captions were found before).
+- Storage: 10 000 clips × 512 frames × 1 536 dimensions in 16-bit ≈ 15.7 GB per (block, timestep) — pool,
+  subsample or stream.
+- Gate: grouped splits (artist / release / duplicate cluster); must beat trivial baselines (onset density,
+  beat-activation mean for G1); a decodable feature is not a used one, so causal checks per I6.
+- Possible landing: concept readouts in the Latent Forge statistics panel (M10).
+- Related: G1, I3, I6, E3, E4.
+
+### I12 — Behavioral-basin / sharpness proxy for "healthier optimum" — **POTENTIAL (cheap first step; tyche only if it discriminates)**
+- Source: `EleutherAI/tyche` (Monte Carlo basin-volume estimator; HF CausalLM, Pythia and ConvNeXt/CIFAR-10
+  adapters; Apache-2.0). Its README warns it "can lead to dramatic underestimates of basin size"; the more
+  precise `palamedes` module is work in progress. SA3 would need a model adapter and MSE-on-velocity behavior
+  in place of token KL.
+- Step 1 (own code, about 50 lines): behavior/loss drift vs random-perturbation scale and along checkpoint
+  interpolation paths, for A12's rungs (5e-5 vs 1e-4/2e-4), DoRA vs full-FT, and A10 replica pairs. Step 2,
+  only if step 1 discriminates: tyche volume, for a defensible figure in DISCOVERIES.
+- Cost: 1 000 perturbations × 16 crops × 512 frames ≈ 23 PFLOP ≈ 13 min, forward-only (perturb adapter
+  parameters only for adapter arms).
+- Why: A12 selected on "robustness under guidance overdrive" with no quantitative proxy; soupability might
+  track basin overlap (my inference, untested).
+- Kill: perturbation curves do not separate arms Kim has heard as healthy vs melting.
+- Related: A1, A2, A6, A12, B12, C1–C7.
+
+### I13 — Cross-layer transcoders (CLT) — **GATED on I6's per-layer SAEs (POTENTIAL, expensive)**
+- Source: `EleutherAI/clt-training` (fork of `sparsify`, MIT; HF decoder-only LMs; activations on the fly via
+  module-name hooks; TopK; `torchrun` DDP / `--distribute_modules`; CUDA PyTorch — ROCm and kernel support
+  unverified). Another donor: CLT-Forge (arXiv 2603.21014).
+- Use as a DONOR only (TopK transcoder modules, FVU loss, trainer). New work: data layer = our pre-encoded
+  crops at sampled (t, ε, prompt); hooks = SA3 modules; target = the feed-forward output BEFORE the adaLN gate
+  (the gate depends on t); input = what the FF sees after modulation; time-binned training (features vary
+  with t).
+- Size: decoder = F × 1 536 × 300 layer pairs ≈ 1.4B parameters at F = 3 072 (2× d) and ≈ 5.7B at F = 12 288
+  (8× d).
+- Limits: it decomposes feed-forward layers only; melody is "relational" (B2) and I infer it lives in
+  attention, which a CLT does not decompose; attribution graphs through signed differential attention, the 64
+  memory-token hubs and text cross-attention are an open problem (header briefing).
+- Gate: build only if I6's per-layer SAEs show features duplicated across layers AND feature-level steering
+  results justify circuits. Kill: per-layer SAEs already deliver the steering and probe results we need.
+- Related: I6, I9.
+
+### I14 — Red-team our meters before steering on them — **POTENTIAL (cheap insurance; gate before AID / FK-Flow)**
+- Source idea: `EleutherAI/classifier-latent-diffusion` (CIFAR-10/MNIST: DDIM inversion → classifier →
+  adversarial search in latent space; 6 commits, dormant, no stated license). The repo is not usable; the
+  notion is.
+- Test: for each meter we plan to steer or select on (whitened-chroma recurrence, PQ, the R²(t) gate, the G1
+  rhythm meter), run a latent-space search that maximizes the meter score — gradient through decoder and meter
+  where differentiable, else CMA-ES or random restarts over latent/noise perturbations — then check Kim's ears
+  and the disintegration gate. If a cheap search maxes the meter while the clip degrades, the meter is not
+  safe as a reward.
+- Why: meter history (onset-timing metric read 0.795–1.000 on every arm including the foreign control; PQ
+  sparse-material blind spot; CE about zero correlation with Kim's judgment), and AID / FK-Flow use the
+  recurrence meter as their reward (Gemini assessment, 2026-07-15).
+- Gate: a meter passes if its maximized clips are still judged musical; a meter that fails becomes a SCREEN,
+  not a reward.
+- Related: B2, D6, G1.
+
 ## Done / superseded (this week)
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2

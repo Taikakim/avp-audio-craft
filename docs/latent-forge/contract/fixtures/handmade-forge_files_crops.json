@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "roots": [
+      { "id": "crops", "label": "latent crops", "available": true },
+      { "id": "renders", "label": "renders", "available": true },
+      { "id": "uploads", "label": "uploads", "available": false }
+    ],
+    "files": [
+      { "root": "crops", "rel": "000412.npy", "kind": "latent", "size": 2097280, "mtime": 1789300000, "ref": { "kind": "crop", "crop_id": "000412" } },
+      { "root": "crops", "rel": "000413.npy", "kind": "latent", "size": 2097280, "mtime": 1789300100, "ref": { "kind": "crop", "crop_id": "000413" } },
+      { "root": "crops", "rel": "001077.npy", "kind": "latent", "size": 1572928, "mtime": 1789301200, "ref": { "kind": "crop", "crop_id": "001077" } },
+      { "root": "crops", "rel": "001078.npy", "kind": "latent", "size": 1572928, "mtime": 1789301300, "ref": { "kind": "crop", "crop_id": "001078" } }
+    ]
+  }
+}

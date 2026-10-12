@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "ok": true,
+    "seq": 8,
+    "lines": [
+      { "seq": 1, "text": "[server] listening on 127.0.0.1:8056" },
+      { "seq": 2, "text": "[server] backbone medium-base (rectified_flow) resident" },
+      { "seq": 3, "text": "[forge] queue ready, 0 jobs" },
+      { "seq": 4, "text": "[forge] GPU_LOCK held by KIND=server" },
+      { "seq": 5, "text": "[forge] job forge-20260916-120000-1 generate queued" },
+      { "seq": 6, "text": "[forge] job forge-20260916-120000-1 running" },
+      { "seq": 7, "text": "[sample] step 8/24  sigma 0.857" },
+      { "seq": 8, "text": "[forge] job forge-20260916-120000-1 done in 12.5 s" }
+    ]
+  }
+}
