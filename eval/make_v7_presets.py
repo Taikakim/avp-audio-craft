@@ -42,7 +42,7 @@ def main():
                  f"kick-phase alignment, LR4 bass hand-over, drum crossfade or masked drum inpaint, other-stem slerp/inpaint, sample-exact assembly) "
                  f"is NOT a GUI knob: rebuild with eval/render_v7_smoketest.py "
                  f"--drum-inpaint-bars {' '.join(map(str, ar.get('drum_inpaint_bars', [])))} --other-inpaint-bars {' '.join(map(str, ar.get('other_inpaint_bars', [])))}"
-                 f"{' --other-slerp' if ar.get('other_slerp') else ''}. Source run: {Path(a.run_meta).parent.name}. Drum prompt: {ar['drum_prompt']!r}; other prompt: {ar['a2a_prompt']!r}.")
+                 f"{' --other-slerp' if ar.get('other_slerp') else ''}{' --local-tempo' if ar.get('local_tempo') else ''}. Source run: {Path(a.run_meta).parent.name}. Drum prompt: {ar['drum_prompt']!r}; other prompt: {ar['a2a_prompt']!r}.")
         p = presets.save(f"{a.folder}/{tag}", payload, notes=notes, dir=a.dir)
         print("wrote", p)
 
