@@ -192,3 +192,7 @@ traj_sketch_bundle.tgz
 # pipeline and superseded by the "_bylatent" re-keyed file. Keep them on the
 # eval drive, not in git (GHOST-NOTE flagged 2026-09-21).
 lumi/goa_bigset_sidecar_*.json
+
+# ROCm/PyTorch TunableOp kernel-tuning cache: written wherever a GPU job starts, tied to the
+# local torch/HIP/hipBLASLt versions, regenerated on demand. Not source.
+tunableop_results*.csv

@@ -383,6 +383,17 @@ sets `GIT_AUTHOR_*` per commit (committer stays Kim, the tree owner) and validat
 the four known ones so a typo fails loudly rather than inventing a fifth author. Use it for every
 commit from now on; plain `git commit` silently reverts to the unattributable default.
 
+**Script ownership header — mark it the moment you touch a script (Kim direct, 2026-10-12).**
+Creating a script: put `# Owner: <HANDLE> (created YYYY-MM-DD)` in its top comment block before
+writing anything else. Editing a script someone else wrote: keep every existing line (the lineage) and
+add `# Last edited: <HANDLE> YYYY-MM-DD — <what changed>` under them. Applies to every agent in the
+tree, external ones too (Antigravity, Kuang, remote sessions): a handle, not "Claude". Generated
+outputs (html/csv/json tables) are exempt; their generator script carries the line. **Why:** git
+authorship only exists once something is committed, and the 2026-10-12 repo sync found five
+tracked-dirty files and five untracked scripts nobody could claim. Two had been sitting since
+September. `agent_commit.sh` fixes attribution at commit time; this fixes the weeks before it. **Also:
+commit your own work at the end of the task** — an uncommitted file is the one place ownership is lost.
+
 **Editing shared files — per-file locks.** *(2026-07-02)* The working tree is shared by every
 instance, so a `git add`/edit can silently clobber another's in-flight work. Before editing a
 COMMON file (`MASTER.md`, a shared spec, a doc another instance may touch), hold a lock:
