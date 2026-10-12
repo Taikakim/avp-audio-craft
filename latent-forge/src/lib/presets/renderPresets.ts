@@ -211,3 +211,36 @@ export function applyRenderPreset(into: RenderSettings, body: unknown): PresetAp
 
   return { applied, rejected };
 }
+
+/**
+ * Presets from the render server's own store (GET /presets, eval/presets/*.json), e.g. the
+ * v7 transition recipes. They carry a /generate payload, not RenderSettings: `duration`
+ * instead of `duration_sec`, and the adapter as `dora: {ckpt_path, strength}`.
+ */
+export const SERVER_GROUP_LABEL = "server recipes";
+
+export interface ServerPresetApplyResult extends PresetApplyResult {
+  /** The adapter the recipe was rendered with; undefined when the recipe names none. */
+  ckptPath?: string;
+}
+
+export function applyServerPreset(into: RenderSettings, body: unknown): ServerPresetApplyResult {
+  if (!isPlainObject(body) || !isPlainObject(body.payload)) return { applied: [], rejected: ["<body>"] };
+  const payload = body.payload;
+  const r: ServerPresetApplyResult = applyRenderPreset(into, payload);
+  if ("duration" in payload) {
+    const d = payload.duration;
+    if (typeof d === "number" && Number.isFinite(d) && d > 0 && d <= 184) {
+      into.duration_sec = d;
+      r.applied.push("duration");
+    } else {
+      r.rejected.push("duration");
+    }
+  }
+  const dora = payload.dora;
+  if (isPlainObject(dora) && typeof dora.ckpt_path === "string" && dora.ckpt_path !== "") {
+    r.ckptPath = dora.ckpt_path;
+    r.applied.push("dora.ckpt_path");
+  }
+  return r;
+}

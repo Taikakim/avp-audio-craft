@@ -57,7 +57,7 @@ export interface CkptsResponse {
 
 export interface PresetsResponse {
   ok: true;
-  presets: string[];
+  presets: { name: string; folder?: string; notes?: string }[];
 }
 
 // build_response() (explorer_render_server.py:682) -- the shape shared by

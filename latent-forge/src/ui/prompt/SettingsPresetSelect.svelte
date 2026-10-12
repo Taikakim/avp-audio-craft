@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { api } from "../../lib/api";
   import { forgeApi, ForgeApiError } from "../../lib/forge/api";
   import { HELP } from "../../lib/help/strings";
   import {
-    applyPromptPreset, applyRenderPreset, presetOptions,
-    PROMPT_GROUP_LABEL, RENDER_GROUP_LABEL, type PresetOption,
+    applyPromptPreset, applyRenderPreset, applyServerPreset, presetOptions,
+    PROMPT_GROUP_LABEL, RENDER_GROUP_LABEL, SERVER_GROUP_LABEL, type PresetOption,
   } from "../../lib/presets/renderPresets";
   import { settings } from "../../lib/stores/settings.svelte";
   import type { Target } from "../../lib/forge/types";
@@ -11,6 +12,7 @@
   let { target, disabled = false }: { target: Target; disabled?: boolean } = $props();
 
   let options = $state<PresetOption[]>([]);
+  let serverOptions = $state<{ name: string; notes?: string }[]>([]);
   let value = $state("");
   let message = $state<string | null>(null);
 
@@ -18,6 +20,9 @@
   const promptOptions = $derived(options.filter((o) => o.level === "prompt"));
 
   async function load(): Promise<void> {
+    // The server's own recipe store (GET /presets) is separate from the Forge one and
+    // best-effort: a failure there must not hide the Forge presets.
+    void api.presets().then((r) => { serverOptions = r.presets; }).catch(() => {});
     try {
       const [r, p] = await Promise.all([forgeApi.presets("render"), forgeApi.presets("prompt")]);
       options = presetOptions(r.names, p.names);
@@ -40,6 +45,16 @@
     const sep = v.indexOf(":");
     const level = v.slice(0, sep);
     const name = v.slice(sep + 1);
+    if (level === "server") {
+      try {
+        const r = applyServerPreset(settings.editable(target), await api.presetGet(name));
+        if (r.ckptPath !== undefined) settings.ckptPath = r.ckptPath;
+        message = r.rejected.length > 0 ? `ignored: ${r.rejected.join(", ")}` : null;
+      } catch (e) {
+        message = e instanceof Error ? e.message : String(e);
+      }
+      return;
+    }
     try {
       // `forgeApi.preset` resolves to the preset payload itself (M1 T5), so `res` IS the
       // body to validate. There is no `{ok, preset}` envelope to unwrap.
@@ -72,6 +87,13 @@
       <optgroup label={PROMPT_GROUP_LABEL}>
         {#each promptOptions as o (o.name)}
           <option value={`prompt:${o.name}`}>{o.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if serverOptions.length > 0}
+      <optgroup label={SERVER_GROUP_LABEL}>
+        {#each serverOptions as o (o.name)}
+          <option value={`server:${o.name}`} title={o.notes ?? ""}>{o.name}</option>
         {/each}
       </optgroup>
     {/if}

@@ -8,6 +8,7 @@ import {
   type CkptEntry,
   type InfoResponse,
   type JobResponse,
+  type PresetsResponse,
   type StatusResponse,
 } from "./api";
 import { meanBpm, secPerBar, type Meter, DEFAULT_METER, snapSec } from "./musictime";
@@ -79,7 +80,7 @@ class ProjectStore {
   serverError = $state<string | null>(null);
   availableCrops = $state<string[]>([]);
   ckpts = $state<CkptEntry[]>([]);
-  presets = $state<string[]>([]);
+  presets = $state<PresetsResponse["presets"]>([]);
 
   // --- master strip
   masterPeakLevel = $state(0);
