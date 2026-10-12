@@ -381,8 +381,8 @@ preference fit.
 - **Docs, in reading order** — `README.md` (toolchain, commands) → `DESIGN_BRIEF_V4.md` → `V4_COMPONENTS.md` → `EVAL_PARADIGM_V4.md` → `V4_EXPERIMENT_REPORT.md`; `HANDOVER_2026-10-02_realistic_prior.md`, `GPU_SYNTH_ROADMAP.md`; spec `docs/superpowers/specs/2026-10-07-synth-inversion-v4-spec.md`. Tests: `test_synth_inversion.py`, `test_v4_components.py` (CPU, no Surge).
 - **Not built yet** — Surge-dependent parts (enveloped sync/FM, `surge_spec_v4`, Pedalboard-vs-surgepy equivalence, any Surge probe run); GUI wiring.
 
-### H · Latent Forge (GUI, SAO branch `latent-forge`, worktree `sa3-studio-review`) — owner WINTERMUTE
-Branch `origin/latent-forge` (241 commits ahead of `main` as of 2026-10-12; **not merged**, the working tree on `sa3-style-adapter` does not contain it): `latent-forge/` UI, `eval/forge/`, contract fixtures in `docs/latent-forge/`. Drives the same render server as the latent-explorer (`eval/explorer_render_server.py`, see the Doc map). One shared `LatchGuidance` component serves both lane chains and the master chain (KUANG, 2026-10-09). Synth inversion (G) is the intended next module.
+### H · Latent Forge (GUI; code now on SAO `main`, worktree `sa3-studio-review` on branch `latent-forge`) — owner WINTERMUTE
+Merged into the trunk 2026-10-12 (merge `f2cd4a7`; `main` = `sa3-style-adapter` = `cac7008`): `latent-forge/` UI, `eval/forge/`, contract fixtures in `docs/latent-forge/`. Drives the same render server as the latent-explorer (`eval/explorer_render_server.py`, see the Doc map). One shared `LatchGuidance` component serves both lane chains and the master chain (KUANG, 2026-10-09). The SA3-side hooks (`generate(init_latents=, inpaint_latents=)`, `scale_phi`) are on `stable-audio-3` `latch-sa3-phase1` (merge `c597447`), no longer only in `docs/latent-forge/fork-patches/`. Synth inversion (G) is the intended next module. **Trunk rule (2026-10-12): the shared SAO checkout sits on `main`; commit there or branch off it.** `sa3-style-adapter` is kept identical until retired.
 
 ## Doc map
 
