@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
 
 Replaces render_v7_4track_smoketest_fast.py (and the copies in ..._FULL.py / ..._FULL2.py) with the
@@ -157,6 +158,8 @@ def parse_args(argv=None):
     ap.add_argument("--chroma-head", default=os.environ.get(ENV["chroma_head"]), help=f"lora_latch. env {ENV['chroma_head']}")
     ap.add_argument("--prompt-a", default="aggressive upbeat goa trance", help="unused since 1307106")
     ap.add_argument("--prompt-b", default="driving pulsating psytrance", help="lora_latch prompt")
+    ap.add_argument("--local-tempo", action="store_true",
+                    help="estimate each clip's tempo from the kick onsets inside its transition window instead of the whole-clip downbeat fit")
     ap.add_argument("--assemble-mix", action="store_true", help="assemble full continuous mix across all clips for each variant")
     args = ap.parse_args(argv)
     for attr in ("order", "stems_dir", "bounds", "downbeats", "out_dir", "ckpt_a", "ckpt_b", "chroma_head"):
@@ -206,6 +209,32 @@ def clip_tempo(downbeats, clip, default_bpm):
     if clip.get("bpm"):
         return float(clip["bpm"]), "order"
     return float(default_bpm), "default"
+
+
+def local_kick_bpm(drums, lo, hi, bpm0, tol=0.03):
+    """Tempo from the KICK ONSETS inside [lo, hi] seconds (Theil-Sen slope of onset time against beat index), or None if there are
+    too few kicks or the answer is more than `tol` (3 %) from the downbeat fit bpm0. Why: the whole-clip downbeat fit is an
+    average and madmom's grid is rigid, while diffusion output can wander; the window only cares about the kicks it contains
+    (GHOST-NOTE 2026-10-12, weak transitions drifted 11.5 ms/s although their fitted BPMs were equal)."""
+    from scipy.stats import theilslopes
+    lo = max(0.0, lo)
+    seg = drums[..., int(lo * SR):int(hi * SR)]
+    if seg.shape[-1] < SR:
+        return None
+    on = dsp.kick_onsets(seg, SR) + lo
+    if len(on) < 8:
+        return None
+    beat = 60.0 / bpm0
+    k = np.round((on - on[0]) / beat)
+    near = np.abs((on - on[0]) - k * beat) < 0.25 * beat
+    k, t = k[near], on[near]
+    _, first = np.unique(k, return_index=True)
+    k, t = k[first], t[first]
+    if len(k) < 8:
+        return None
+    slope = theilslopes(t, k)[0]
+    bpm = 60.0 / slope
+    return float(bpm) if abs(bpm / bpm0 - 1.0) <= tol else None
 
 
 def stretch_clip(raw, downbeats, speed, args, rec):
@@ -461,6 +490,16 @@ def main(argv=None):
         dbB = np.array(dbs.get(cB["id"], []), dtype=float)
         bpm_a, rec["bpm_source"] = clip_tempo(dbA, cA, args.default_bpm)
         bpm_b, rec["bpm_source_b"] = clip_tempo(dbB, cB, args.default_bpm)
+        if args.local_tempo:
+            # tempo from the kicks the window actually contains (A: its last w_bars + 2 bars; B: its first w_bars + 2 bars)
+            span = (args.w_bars + 2) * 4 * 60 / bpm_b
+            la = local_kick_bpm(stems[cA["id"]]["drums"], bounds[cA["id"]]["end_pre_zc"] - span, bounds[cA["id"]]["end_pre_zc"] + 1.0, bpm_a)
+            lb = local_kick_bpm(stems[cB["id"]]["drums"], bounds[cB["id"]]["start"] - 1.0, bounds[cB["id"]]["start"] + span, bpm_b)
+            rec["bpm_a_fit"], rec["bpm_b_fit"], rec["bpm_a_local"], rec["bpm_b_local"] = bpm_a, bpm_b, la, lb
+            bpm_a = la if la is not None else bpm_a
+            bpm_b = lb if lb is not None else bpm_b
+            rec["bpm_source"] = "kicks-local" if la is not None else rec["bpm_source"]
+            rec["bpm_source_b"] = "kicks-local" if lb is not None else rec["bpm_source_b"]
         bpm = bpm_b                                           # the window runs at B's tempo
         rec.update(bpm=bpm_b, bpm_a=bpm_a, bpm_b=bpm_b, gap_bpm=bpm_b - bpm_a)
 
