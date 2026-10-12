@@ -396,3 +396,25 @@ def test_pad_end_to_frame_pads_the_end_to_a_whole_number_of_frames():
     assert y.shape == (1, 12) and np.array_equal(y[0, :10], x[0]) and not y[0, 10:].any()
     assert dsp.pad_end_to_frame(x, 5) is x and dsp.pad_end_to_frame(x, 10) is x           # already whole: untouched
     assert dsp.pad_end_to_frame(np.zeros((2, 3, 7)), 4).shape == (2, 3, 8)
+
+
+def test_tv_stretch_plan_puts_wandering_kicks_on_a_constant_grid():
+    # Owner: GHOST-NOTE (2026-10-13). A clip whose beat period drifts 0.40 -> 0.41 s must come out on a 0.40 s grid.
+    k = np.arange(40)
+    t = 2.0 + 0.4 * k + 0.0003 * k ** 2
+    plan = dsp.tv_stretch_plan(t, 0.405, 0.4, 1.0, 20.0)
+    assert plan is not None and np.all(np.diff(plan["out"]) > 0) and np.all(np.diff(plan["src"]) > 0)
+    out = np.interp(t, plan["src"], plan["out"])
+    assert np.abs(np.diff(out)[2:-3] - 0.4).max() < 0.004
+
+
+def test_tv_stretch_plan_refuses_too_few_kicks():
+    assert dsp.tv_stretch_plan(np.arange(5) * 0.4, 0.4, 0.4, 1.0, 10.0) is None
+
+
+def test_follow_targets_lands_a_on_b_kicks():
+    # B's beats run 0.40 s apart then 0.42 s; A (constant 0.40) must be asked to follow that.
+    b = 10.0 + np.concatenate([np.arange(12) * 0.40, 4.4 + np.arange(1, 13) * 0.42])
+    a = 5.0 + np.arange(20) * 0.40
+    tg = dsp.follow_targets(b, 10.0, 0.4, 5.0, a, 5.0, 1.0)
+    assert tg is not None and np.abs(np.diff(tg)[14:] - 0.42).max() < 0.02

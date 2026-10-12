@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
+# Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
 
 Replaces render_v7_4track_smoketest_fast.py (and the copies in ..._FULL.py / ..._FULL2.py) with the
@@ -160,6 +161,13 @@ def parse_args(argv=None):
     ap.add_argument("--prompt-b", default="driving pulsating psytrance", help="lora_latch prompt")
     ap.add_argument("--local-tempo", action="store_true",
                     help="estimate each clip's tempo from the kick onsets inside its transition window instead of the whole-clip downbeat fit")
+    ap.add_argument("--tv-stretch", default="",
+                    help="comma list of clip indices (positions in the order file) whose OUTGOING transition gets a time-varying stretch: "
+                         "A's kicks, numbered by beat and smoothed, are mapped onto B's constant grid across the window, instead of one "
+                         "constant speed (for clips whose tempo wanders). Implies --local-tempo for those transitions.")
+    ap.add_argument("--tv-follow-b", action="store_true",
+                    help="with --tv-stretch: A's beats are mapped onto B's own measured kick times in the window (B's tempo wanders), not "
+                         "onto a constant grid at B's tempo. B itself is never stretched.")
     ap.add_argument("--assemble-mix", action="store_true", help="assemble full continuous mix across all clips for each variant")
     args = ap.parse_args(argv)
     for attr in ("order", "stems_dir", "bounds", "downbeats", "out_dir", "ckpt_a", "ckpt_b", "chroma_head"):
@@ -237,7 +245,7 @@ def local_kick_bpm(drums, lo, hi, bpm0, tol=0.03):
     return float(bpm) if abs(bpm / bpm0 - 1.0) <= tol else None
 
 
-def stretch_clip(raw, downbeats, speed, args, rec):
+def stretch_clip(raw, downbeats, speed, args, rec, tv=None):
     """Bungee-stretch every stem of the outgoing clip A by `speed` (A's tempo -> B's) and make sure the maps still describe
     the audio. Returns (stretched clip incl. drum bands, downbeats on the stretched audio).
 
@@ -247,14 +255,19 @@ def stretch_clip(raw, downbeats, speed, args, rec):
     snapped to the scaled downbeats would then be off by that latency. If the median offset exceeds --map-tol-ms the
     stretched stems are shifted to match and re-measured; if it cannot be verified under --require-sync, stop."""
     out = {}
+    to_out = (lambda t: np.interp(t, tv["src"], tv["out"])) if tv else (lambda t: np.asarray(t) / speed)
     for n in STEM_NAMES:
-        y = dsp.bungee_stretch(raw[n], speed, SR, python=args.bungee_python)
-        expect = raw[n].shape[-1] / speed
+        if tv:
+            y = dsp.bungee_stretch_schedule(raw[n], tv["times"], tv["speeds"], SR, python=args.bungee_python)
+            expect = float(to_out(raw[n].shape[-1] / SR)) * SR
+        else:
+            y = dsp.bungee_stretch(raw[n], speed, SR, python=args.bungee_python)
+            expect = raw[n].shape[-1] / speed
         if abs(y.shape[-1] - expect) > 0.01 * expect:
             raise RuntimeError(f"bungee returned {y.shape[-1]} samples for {raw[n].shape[-1]} at speed {speed:.4f} "
                                f"(expected about {expect:.0f}) on stem {n}")
         out[n] = y
-    predicted = dsp.kick_onsets(raw["drums"], SR) / speed
+    predicted = to_out(dsp.kick_onsets(raw["drums"], SR))
     _, off = dsp.grid_offsets_ms(predicted, dsp.kick_onsets(out["drums"], SR))
     lat = float(np.median(off)) if off.size else None
     rec["stretch_map_offset_ms"] = None if lat is None else round(lat, 1)
@@ -284,7 +297,7 @@ def stretch_clip(raw, downbeats, speed, args, rec):
     # The map is the scaled prediction. When the stems had to be shifted, they were moved ONTO that prediction, so the
     # map stays as it is; adding the shift would move it away from the corrected audio (a test pins this with the
     # kick alignment off, because the alignment would otherwise hide a stale map).
-    db_eff = downbeats / speed if len(downbeats) else downbeats
+    db_eff = to_out(downbeats) if len(downbeats) else downbeats
     return add_drum_bands(out, args.drum_split), db_eff
 
 
@@ -490,7 +503,9 @@ def main(argv=None):
         dbB = np.array(dbs.get(cB["id"], []), dtype=float)
         bpm_a, rec["bpm_source"] = clip_tempo(dbA, cA, args.default_bpm)
         bpm_b, rec["bpm_source_b"] = clip_tempo(dbB, cB, args.default_bpm)
-        if args.local_tempo:
+        tv_set = {int(v) for v in str(args.tv_stretch).split(",") if v.strip()}
+        use_tv = (a0 + i) in tv_set
+        if args.local_tempo or use_tv:
             # tempo from the kicks the window actually contains (A: its last w_bars + 2 bars; B: its first w_bars + 2 bars)
             span = (args.w_bars + 2) * 4 * 60 / bpm_b
             la = local_kick_bpm(stems[cA["id"]]["drums"], bounds[cA["id"]]["end_pre_zc"] - span, bounds[cA["id"]]["end_pre_zc"] + 1.0, bpm_a)
@@ -512,13 +527,30 @@ def main(argv=None):
                   f"(gap <= 5 BPM, factor within 6 %), not to stretch harder (R0.2)", flush=True)
         sA, sB = stems[cA["id"]], stems[cB["id"]]
         dbA_eff, rec["stretched"] = dbA, False
-        if abs(speed - 1.0) >= 0.005:
+        tv = None
+        if use_tv:
+            c = bounds[cA["id"]]["end_pre_zc"]
+            half = (args.w_bars * 4 * 60 / bpm_a) / 2 + 2 * 4 * 60 / bpm_a      # window half-length + 2 bars before it
+            lo, hi = max(0.0, c - half), c + half
+            on = dsp.kick_onsets(sA["drums"][..., int(lo * SR):int(hi * SR)], SR) + lo
+            target_fn = None
+            if args.tv_follow_b:
+                cb = bounds[cB["id"]]["start"]
+                c_src = float(dbA[np.argmin(np.abs(dbA - c))]) if len(dbA) > 2 else c
+                c_b = float(dbB[np.argmin(np.abs(dbB - cb))]) if len(dbB) > 2 else cb
+                on_b = dsp.kick_onsets(sB["drums"][..., int(max(0.0, c_b - half) * SR):int((c_b + half) * SR)], SR) + max(0.0, c_b - half)
+                target_fn = lambda ts: dsp.follow_targets(on_b, c_b, 60.0 / bpm_b, c_src / speed, ts, c_src, speed)  # noqa: E731
+            tv = dsp.tv_stretch_plan(on, 60.0 / bpm_a, 60.0 / bpm_b, speed, sA["drums"].shape[-1] / SR, target_fn=target_fn)
+            rec["tv_stretch"] = None if tv is None else {k: tv[k] for k in ("n_kicks", "v_min", "v_max")}
+            rec["tv_region_s"] = [round(lo, 2), round(hi, 2)]
+            print(f"  time-varying stretch: {'no plan (too few kicks), constant speed' if tv is None else rec['tv_stretch']}", flush=True)
+        if tv is not None or abs(speed - 1.0) >= 0.005:
             if args.no_stretch:
                 print(f"  --no-stretch: A stays at {bpm_a:.2f} BPM, B at {bpm_b:.2f}; the kick grids WILL drift", flush=True)
             else:
                 print(f"  Bungee stretching outgoing clip {cA['id'][:32]} x{speed:.4f} ({bpm_a:.2f} -> {bpm_b:.2f} BPM)...", flush=True)
                 try:
-                    sA, dbA_eff = stretch_clip(sA, dbA, speed, args, rec)
+                    sA, dbA_eff = stretch_clip(sA, dbA, speed, args, rec, tv=tv)
                 except Exception as e:                        # noqa: BLE001  (SyncError, wrong length, Bungee missing)
                     rec["error"] = repr(e)
                     (out_dir / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
@@ -528,14 +560,15 @@ def main(argv=None):
         W_sec = args.w_bars * 4 * 60 / bpm_b
         L = int(round(W_sec * SR))
         scale = speed if rec["stretched"] else 1.0            # the bounds are in A's ORIGINAL time base
+        to_out = (lambda t: float(np.interp(t, tv["src"], tv["out"]))) if (tv is not None and rec["stretched"]) else (lambda t: t / scale)
         # PHASE 0 step 2: centre both windows on downbeats of the audio they will be cut from (dbA_eff is on the
         # stretched time base). One seconds->samples conversion each; both windows have length L by construction.
         if len(dbA_eff) > 2 and len(dbB) > 2:
-            a_db = float(dbA_eff[np.argmin(np.abs(dbA_eff - bounds[cA["id"]]["end_pre_zc"] / scale))])
+            a_db = float(dbA_eff[np.argmin(np.abs(dbA_eff - to_out(bounds[cA["id"]]["end_pre_zc"])))])
             b_db = float(dbB[np.argmin(np.abs(dbB - bounds[cB["id"]]["start"]))])
             rec["snapped_to_downbeats"] = True
         else:
-            a_db, b_db = bounds[cA["id"]]["end_pre_zc"] / scale, bounds[cB["id"]]["start"]
+            a_db, b_db = to_out(bounds[cA["id"]]["end_pre_zc"]), bounds[cB["id"]]["start"]
             rec["snapped_to_downbeats"] = False
         a_lo = int(round(a_db * SR)) - L // 2
         b_lo = int(round(b_db * SR)) - L // 2

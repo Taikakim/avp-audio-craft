@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: GHOST-NOTE 2026-10-13 -- tv_stretch_plan / bungee_stretch_schedule (time-varying stretch)
 """mixtape_v7_dsp.py -- pure numpy/scipy building blocks for the v7 stem transition.
 
 No torch, no SA3, no GPU, no files: everything here runs and is unit-tested anywhere
@@ -369,6 +370,119 @@ np.save({dst!r}, np.concatenate(outs, axis=0))
         if r.returncode != 0:
             raise RuntimeError(f"bungee failed (exit {r.returncode}): {r.stderr.strip()[-600:]}")
         return np.load(dst).T
+
+
+def bungee_stretch_schedule(audio, times, speeds, sr=44100, python=None):
+    """Like bungee_stretch, but the speed follows a piecewise-linear schedule over OUTPUT time (times in s, ascending;
+    held constant outside them). Same streaming loop as dj_beatmatch._bungee_stretch_schedule: speed re-read every 0.25 s
+    chunk of processed output."""
+    import subprocess
+    import tempfile
+
+    py = python or os.environ.get("V7_BUNGEE_PY") or MIR_BUNGEE_PY
+    with tempfile.TemporaryDirectory() as td:
+        src, dst = f"{td}/in.npy", f"{td}/out.npy"
+        np.save(src, np.asarray(audio, dtype=np.float32).T)
+        code = f"""
+import numpy as np
+from bungee_python import bungee as B
+d = np.load({src!r}).astype(np.float32)
+sr = {sr}
+st = B.Bungee(sample_rate=sr, channels=d.shape[1])
+times = np.array({[float(t) for t in times]!r}, dtype=np.float64)
+speeds = np.array({[float(v) for v in speeds]!r}, dtype=np.float64)
+chunk = int(0.25 * sr)
+outs, out_sec = [], 0.0
+for lo in range(0, d.shape[0], chunk):
+    st.set_speed(float(np.interp(out_sec, times, speeds)))
+    y = np.asarray(st.process(d[lo:lo + chunk]), dtype=np.float32)
+    if y.ndim == 1: y = y.reshape(-1, d.shape[1])
+    outs.append(y)
+    out_sec += y.shape[0] / sr
+np.save({dst!r}, np.concatenate(outs, axis=0))
+"""
+        try:
+            r = subprocess.run([py, "-c", code], capture_output=True, text=True)
+        except FileNotFoundError as e:
+            raise RuntimeError(f"Bungee interpreter not found: {py!r}") from e
+        if r.returncode != 0:
+            raise RuntimeError(f"bungee failed (exit {r.returncode}): {r.stderr.strip()[-600:]}")
+        return np.load(dst).T
+
+
+def number_kicks(onsets, beat, smooth=5):
+    """Kick onsets -> (beat indices kk, smoothed times ts) or None (<8 beats). An onset is kept only if its interval to the last
+    kept one is a whole number of beats +-20 %; missed kicks are filled on the line between neighbours; the residual from the
+    straight line is median(smooth)+mean(3) filtered (same end points and overall slope)."""
+    on = np.sort(np.asarray(onsets, dtype=float))
+    if len(on) < 8:
+        return None
+    kept, ks = [on[0]], [0]
+    for t in on[1:]:
+        n = int(round((t - kept[-1]) / beat))
+        if n >= 1 and abs((t - kept[-1]) - n * beat) < 0.2 * beat:
+            kept.append(t)
+            ks.append(ks[-1] + n)
+    if len(kept) < 8:
+        return None
+    kk = np.arange(int(ks[0]), int(ks[-1]) + 1)
+    tt = np.interp(kk, np.array(ks, float), np.array(kept))
+    res = tt - (tt[0] + (kk - kk[0]) * (tt[-1] - tt[0]) / max(len(kk) - 1, 1))
+    from scipy.ndimage import median_filter, uniform_filter1d
+    res_s = uniform_filter1d(median_filter(res, size=smooth, mode="nearest"), size=3, mode="nearest")
+    return kk, tt - res + res_s, len(kept)
+
+
+def follow_targets(on_b, c_b, beat_b, c_out, tt_a, c_src, v_g):
+    """Target OUTPUT times (s) for A's numbered beats `tt_a` (smoothed source times) so that they land on B's own kicks: B's
+    kicks (`on_b`, source s, its window centred at c_b) are numbered/smoothed, extended with beat_b outside the measured span;
+    A beat k (nominal output time relative to the centre (tt-c_src)/v_g) takes the B kick nearest in that timing; the
+    result is placed at c_out + that B time. Returns None when B has <8 numberable kicks."""
+    nb = number_kicks(on_b, beat_b)
+    if nb is None:
+        return None
+    mb, ub, _ = nb
+    ub = ub - c_b
+    oa = (tt_a - c_src) / v_g
+    f = np.round((oa - ub[0]) / beat_b).astype(int)
+    m = np.clip(f, 0, len(ub) - 1)
+    g = ub[m] + (f - m) * beat_b                                  # beyond B's measured span: continue at beat_b
+    return c_out + g
+
+
+def tv_stretch_plan(onsets, beat_a, beat_b, v_g, n_src_sec, v_clip=0.08, smooth=5, target_fn=None):
+    """Time-varying stretch for a clip whose tempo WANDERS (a constant stretch leaves a drift that grows through the window).
+    `onsets`: kick onset times (s, source) of the region that must land on B's grid; beat_a/beat_b: nominal beat period of the clip
+    and of the target; v_g: the constant speed used outside the region. Onsets are numbered by beat (an onset is kept only if
+    its interval to the last kept one is a whole number of beats +-20 %), the numbered times are smoothed, and the output
+    time of beat k is made T0 + k*beat_b. Speed between knots = source interval / beat_b, clipped to v_g*(1+-v_clip).
+    Returns {"times","speeds" (output-time schedule for bungee_stretch_schedule), "src","out" (the realised monotone map, 1 ms),
+    "n_kicks"} or None when fewer than 8 beats can be numbered. out_of_src(s) = np.interp(s, plan["src"], plan["out"])."""
+    nk = number_kicks(onsets, beat_a, smooth)
+    if nk is None:
+        return None
+    kk, ts, n_kept = nk
+    kept = range(n_kept)
+    T_k = ts[0] / v_g + (kk - kk[0]) * beat_b                   # default: a constant grid at B's tempo
+    if target_fn is not None:                                    # or: wherever B's own kicks are (target_fn(ts) -> output s)
+        tg = target_fn(ts)
+        if tg is None:
+            return None
+        T_k = np.maximum.accumulate(np.asarray(tg, float) + np.arange(len(tg)) * 1e-6)
+    d = np.diff(ts)
+    v_int = np.clip(d / np.maximum(np.diff(T_k), 1e-3), v_g * (1 - v_clip), v_g * (1 + v_clip))
+    v_knot = np.concatenate([[v_int[0]], 0.5 * (v_int[:-1] + v_int[1:]), [v_int[-1]]])
+    T0 = float(T_k[0])                                          # constant speed (ts[0]/T0) up to the first knot
+    v_pre = float(np.clip(ts[0] / max(T0, 1e-3), v_g * (1 - v_clip), v_g * (1 + v_clip)))
+    T0 = ts[0] / v_pre
+    T = np.concatenate([[0.0], T0 + np.concatenate([[0.0], np.cumsum(d / v_int)])])
+    times = T.tolist() + []
+    speeds = [v_pre] + v_knot.tolist()
+    grid = np.arange(0.0, T[-1] + n_src_sec / v_g + 1.0, 0.001)
+    sp = np.interp(grid, times, speeds)
+    src = np.concatenate([[0.0], np.cumsum(sp[:-1] * np.diff(grid))])
+    return {"times": times, "speeds": speeds, "src": src, "out": grid, "n_kicks": int(len(kept)),
+            "v_min": float(v_int.min()), "v_max": float(v_int.max())}
 
 
 def shift_samples(x, s):
