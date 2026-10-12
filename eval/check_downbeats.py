@@ -1,4 +1,4 @@
-# Owner: unconfirmed (found untracked 2026-10-12; written 2026-10-08, kone-mixtape v7 debugging)
+# Owner: unconfirmed, likely Antigravity/KUANG (kone-mixtape v7 stem pipeline, 2026-10-08); not W, C or G
 # One-off check of downbeat alignment between two adjacent mixtape_v7_phase0 clips.
 import json
 from pathlib import Path

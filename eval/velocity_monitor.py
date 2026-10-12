@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Owner: unconfirmed (found untracked 2026-10-12; written 2026-09-29 during WINTERMUTE's goa5k ablation work)
+# Owner: WINTERMUTE (created 2026-09-29, goa5k ablation work; confirmed by CONTINUITY 2026-10-12)
 """Live/post-hoc weight-velocity + direction report for a train_lora_modular.py run.
 
 Same convention as the ad hoc VELOCITIES.md this fleet has been writing by hand for the
