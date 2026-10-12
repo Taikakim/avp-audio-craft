@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: CONTINUITY (created 2026-10-07)
 """decode_z0_clamped.py — re-decode saved z0 latents with the VADD tier-3 std ceiling and score the result.
 
 WHY (CONTINUITY, 2026-10-07; Kim's ask: one faultless DJ mixtape). Merged-adapter re-renders removed the

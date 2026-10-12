@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: CONTINUITY (created 2026-10-07)
 """mixtape_audit_continuity.py — does the assembled DJ mix play every clip FORWARD without jumps?
 
 WHY (CONTINUITY, 2026-10-07). Kim listened to the v6 mix: "as the clips transition into each other there is a

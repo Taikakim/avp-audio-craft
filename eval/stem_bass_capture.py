@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: CONTINUITY (created 2026-10-07)
 """stem_bass_capture.py — does a separator's BASS stem actually contain the bassline? (psytrance trap)
 
 WHY (CONTINUITY, 2026-10-07; finding by G, confirmed here). For the DJ mix v7 stem-transition plan we separated 35
