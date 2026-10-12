@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Start / stop / inspect the Latent Forge dev render server (this worktree) on :8056.
 # The server is the ONLY model process; it announces itself on the GPU lock as KIND=server.
+# Owner: Electro-Sheep 1 (created 2026-10-01)
+# Last edited: WINTERMUTE 2026-10-12 — dropped the sa3-fork-forge PYTHONPATH override
 set -euo pipefail
 WT="$(cd "$(dirname "$0")/../.." && pwd)"
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
-FORK=/home/kim/Projects/sa3-fork-forge
+# stable_audio_3 comes from the main SA3 checkout (SAO/stable-audio-3, the venv's editable
+# install). The Forge hooks (init_latents/inpaint_latents, guided scale_phi) are merged into
+# latch-sa3-phase1 (c597447, 2026-10-12), so the separate sa3-fork-forge checkout is retired.
 PORT=8056
 LOG="${FORGE_SERVER_LOG:-$HOME/.cache/latent-forge/server.log}"
 mkdir -p "$(dirname "$LOG")"
@@ -32,7 +36,6 @@ case "${1:-status}" in
       echo "GPU lock is held — run: (cd $SAO && Misc/gpu_guard.sh who WINTERMUTE)"; exit 1
     fi
     envs=(FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2)
-    if [ -d "$FORK" ]; then envs+=("PYTHONPATH=$FORK"); fi
     cd "$WT"
     setsid nohup env "${envs[@]}" "$PY" eval/explorer_render_server.py --port "$PORT" </dev/null >"$LOG" 2>&1 &
     spid=$!
