@@ -555,3 +555,135 @@ def plan_tempo(bpm_a, bpm_b, threshold=5.0, up_share=0.65, slew=0.5):
     slow_b = abs(dev_b) - sudden
     return {"t_star": float(t), "dev_a": float(dev_a), "dev_b": float(dev_b), "sudden_b": float(sudden),
             "slow_a_bars": abs(dev_a) / slew, "slow_b_bars": slow_b / slew, "big_gap": bool(big)}
+
+
+def fit_window(a_db, b_db, a_len, b_len, bar, w_max, w_min=4, step=2):
+    """Largest even bar count w <= w_max (>= w_min) whose window fits BOTH clips, plus the (a_lo, b_lo) sample starts.
+    GHOST-NOTE 2026-10-13: the owner heard B 'start out of the blue' -- the window was centred on the structural boundary, and for
+    11 of 31 transitions that put B's window start before sample 0 of B (zero-padded, up to 7 s), so B began hard mid-window.
+    a_db/b_db: snapped downbeats (samples) of A (stretched time base) and B; a_len/b_len: clip lengths (samples); bar: samples/bar.
+    Both windows are shifted together by a whole number of bars (so both stay on downbeats) when one would leave its clip; if a
+    shift would push the other out, w shrinks. Returns (w, a_lo, b_lo) or None."""
+    for w in range(int(w_max), int(w_min) - 1, -int(step)):
+        L = int(round(w * bar))
+        a_lo, b_lo = int(a_db) - L // 2, int(b_db) - L // 2
+        late = max(0, -b_lo, -a_lo)                              # one of them starts before sample 0
+        early = max(0, a_lo + L - a_len, b_lo + L - b_len)       # one of them ends after the clip
+        if late and early:
+            continue
+        s = int(np.ceil(late / bar)) * int(round(bar)) if late else -int(np.ceil(early / bar)) * int(round(bar))
+        a2, b2 = a_lo + s, b_lo + s
+        if min(a2, b2) >= 0 and a2 + L <= a_len and b2 + L <= b_len:
+            return w, a2, b2
+    return None
+
+
+# ---------------------------------------------------------------------------------------------
+# per-clip tempo curve (shared-tempo plan): ramps in quiet bars, constant through the windows
+# ---------------------------------------------------------------------------------------------
+
+def bar_energy(x, db, sr=44100):
+    """Mean-square energy of (C, N) or (N,) audio in each bar between consecutive downbeats `db` (s). len(db)-1 values."""
+    m = np.asarray(x, dtype=np.float64)
+    m = m.mean(0) if m.ndim == 2 else m
+    e = []
+    for a, b in zip(db[:-1], db[1:]):
+        seg = m[int(a * sr):int(b * sr)]
+        e.append(float((seg ** 2).mean()) if len(seg) else 0.0)
+    return np.array(e)
+
+
+def quiet_run(energy, lo, hi, n):
+    """First bar of the n-bar run inside bars [lo, hi) with the lowest mean energy. A zone shorter than n returns lo (the caller
+    then ramps faster than the slew limit and says so)."""
+    lo, hi = max(0, int(lo)), min(len(energy), int(hi))
+    if hi - lo <= n:
+        return lo
+    c = np.convolve(energy[lo:hi], np.ones(n) / n, mode="valid")
+    return lo + int(np.argmin(c))
+
+
+def build_tempo_curve(native, db, energy, in_plan=None, out_plan=None, w_bars=8, margin=2, slew=0.5, i_in=None, i_out=None, bounded=True):
+    """Breakpoints [(source s, bpm)] for ONE clip. native: its tempo; db: downbeats (s); energy: per-bar energy (len(db)-1).
+    out_plan / in_plan: plan_tempo() results for the transition where this clip is A / B (None for the first / last clip).
+    i_out / i_in: downbeat index of the window centre for those transitions. Rules (the owner's design): constant at the
+    shared tempo through each window (+margin bars); A's ramp native -> t* in the QUIETEST bars of the clip's last half, ending
+    before the window; B's ramp t* -> native in the quietest bars of the first half, starting after the window; when B's
+    deviation exceeds the threshold, a sudden one-bar bend of plan['sudden_b'] at the first downbeat after the window precedes
+    the slow ramp. Returns (breakpoints, notes) with notes = {'a_ramp': (start_bar, n), 'b_ramp': ..., 'compressed': bool}."""
+    nb = len(db) - 1
+    half = w_bars // 2
+    pts = [(float(db[0]), native)]
+    notes = {"compressed": False}
+    b_end = None
+    if in_plan is not None and i_in is not None:
+        t_in = in_plan["t_star"]
+        b_end = min(nb - 1, (i_in + w_bars if bounded else max(i_in, half) + half) + margin)   # first bar after the window's constant zone
+        pts = [(float(db[0]), t_in), (float(db[b_end]), t_in)]
+        cur, dev = t_in, in_plan["dev_b"]
+        if in_plan["sudden_b"] > 0:
+            cur = t_in - np.sign(dev) * in_plan["sudden_b"]
+            pts.append((float(db[min(b_end + 1, nb)]), cur))
+            b_end = min(b_end + 1, nb)
+        n = max(1, int(np.ceil(abs(cur - native) / slew)))
+        hi = max(b_end + 1, nb // 2)
+        j = quiet_run(energy, b_end, hi, n)
+        if hi - b_end < n:
+            notes["compressed"] = True
+        j2 = max(j + 1, min(nb, j + n))
+        if j > b_end:
+            pts.append((float(db[j]), cur))
+        pts.append((float(db[j2]), native))
+        notes["b_ramp"] = (j, j2 - j)
+    if out_plan is not None and i_out is not None:
+        t_out = out_plan["t_star"]
+        a_start = max(0, i_out - (w_bars if bounded else half) - margin)   # the constant zone starts here
+        n = max(1, int(np.ceil(abs(t_out - native) / slew)))
+        last_bar = int(np.searchsorted(db, pts[-1][0])) if pts[-1][0] > db[0] else 0   # after any ramp already placed (B role)
+        lo = max(nb // 2, last_bar)
+        if a_start - lo >= n:
+            j = quiet_run(energy, lo, a_start, n)
+        else:                                   # no room in the last half: use the bars just before the window, back to the B ramp
+            notes["compressed"] = True
+            j = max(last_bar, a_start - n)
+        j2 = max(j + 1, min(nb, j + n))
+        notes["a_in_window_bars"] = int(max(0, j2 - a_start))   # ramp bars that overlap the constant zone: the clip is too short
+        if pts[-1][0] < db[j]:
+            pts.append((float(db[j]), native))
+        pts.append((float(db[j2]), t_out))
+        pts.append((float(db[-1]) + 600.0, t_out))                    # held to the end of the clip
+        notes["a_ramp"] = (j, j2 - j)
+    else:
+        pts.append((float(db[-1]) + 600.0, pts[-1][1]))
+    return pts, notes
+
+
+def curve_to_plan(points, native, n_src_sec):
+    """Source-time tempo breakpoints -> the plan dict of tv_stretch_plan (times/speeds over OUTPUT time for
+    bungee_stretch_schedule, and the realised monotone src<->out map at 1 ms). speed = bpm / native; linear in source time
+    between breakpoints, constant before the first and after the last."""
+    s = np.array([p[0] for p in points], float)
+    v = np.array([p[1] for p in points], float) / native
+    grid_s = np.arange(0.0, n_src_sec + 1.0, 0.001)
+    vs = np.interp(grid_s, s, v)
+    out = np.concatenate([[0.0], np.cumsum(np.diff(grid_s) / vs[:-1])])              # output time of each source instant
+    ks = np.unique(np.round(np.linspace(0, len(grid_s) - 1, 400)).astype(int))
+    times, speeds = out[ks].tolist(), vs[ks].tolist()
+    # realised map on an output grid, consistent with how bungee_stretch_schedule reads the speed (linear over OUTPUT time)
+    og = np.arange(0.0, out[-1] + 1.0, 0.001)
+    sp = np.interp(og, times, speeds)
+    src = np.concatenate([[0.0], np.cumsum(sp[:-1] * np.diff(og))])
+    return {"times": times, "speeds": speeds, "src": src, "out": og, "n_kicks": 0,
+            "v_min": float(vs.min()), "v_max": float(vs.max())}
+
+
+def fit_window_bounded(a_end, b_start, a_len, b_len, bar, w_max, w_min=4, step=2):
+    """Window placement without centring: A's window ENDS at its end bound (downbeat-snapped, samples), B's window STARTS at its
+    start bound, so each clip contributes only music it is allowed to use and nothing is zero-padded (the centred layout needed
+    L/2 of B before its start, which most clips do not have). Largest even w <= w_max that fits; returns (w, a_lo, b_lo) or None."""
+    for w in range(int(w_max), int(w_min) - 1, -int(step)):
+        L = int(round(w * bar))
+        a_lo, b_lo = int(a_end) - L, int(b_start)
+        if a_lo >= 0 and b_lo + L <= b_len and int(a_end) <= a_len:
+            return w, a_lo, b_lo
+    return None

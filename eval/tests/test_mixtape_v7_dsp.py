@@ -431,3 +431,33 @@ def test_plan_tempo_big_gap_bends_b_suddenly_after_the_window():
     p = dsp.plan_tempo(140.0, 150.0)               # gap 10: A up 3.25 (cap), B down 6.75 -> sudden 1.75 then 5 slow
     assert p["big_gap"] and abs(p["dev_a"] - 3.25) < 1e-9 and abs(p["sudden_b"] - 1.75) < 1e-9
     assert abs(p["slow_b_bars"] - 10.0) < 1e-9
+
+
+def test_fit_window_moves_b_into_its_clip_and_shrinks_when_needed():
+    bar = 80000.0
+    # B's boundary is only 3.7 s (163170 samples) into its clip; an 8-bar window centred there would start 2.8 s before sample 0
+    w, a_lo, b_lo = dsp.fit_window(40.0 * 44100, 3.71 * 44100, 47.5 * 44100, 47.5 * 44100, bar, 8)
+    assert b_lo >= 0 and a_lo >= 0 and a_lo + w * bar <= 47.5 * 44100 + 1 and w in (4, 6, 8)
+    assert (a_lo - (40.0 * 44100 - w * bar / 2)) == (b_lo - (3.71 * 44100 - w * bar / 2)) or w != 8   # shifted together
+    assert dsp.fit_window(5 * 44100, 5 * 44100, 8 * 44100, 8 * 44100, bar, 8) is None             # clips too short for 4 bars
+
+
+def test_fit_window_bounded_keeps_both_windows_inside_their_clips():
+    bar = 80000.0
+    w, a_lo, b_lo = dsp.fit_window_bounded(40.0 * 44100, 3.71 * 44100, 47.5 * 44100, 47.5 * 44100, bar, 8)
+    assert w == 8 and a_lo == int(40.0 * 44100) - int(8 * bar) and b_lo == int(3.71 * 44100)
+    assert dsp.fit_window_bounded(5 * 44100, 1 * 44100, 8 * 44100, 8 * 44100, bar, 8) is None
+
+
+def test_tempo_curve_is_constant_through_the_windows_and_ramps_in_quiet_bars():
+    nat = 140.0
+    db = np.arange(0, 80, 60 / nat * 4)
+    en = np.ones(len(db) - 1)
+    en[14:18] = 0.1
+    ip, op = dsp.plan_tempo(137.0, 140.0), dsp.plan_tempo(140.0, 144.0)
+    pts, notes = dsp.build_tempo_curve(nat, db, en, ip, op, 8, 2, 0.5, 2, len(db) - 5)
+    s = np.array([p[0] for p in pts]); v = np.array([p[1] for p in pts])
+    at = lambda t: float(np.interp(t, s, v))       # noqa: E731
+    assert abs(at(db[2 + 8]) - ip["t_star"]) < 1e-9                       # B's window (bar 2..10) at the shared tempo
+    assert abs(at(db[len(db) - 5 - 8]) - op["t_star"]) < 1e-9             # A's window (last 8 bars before the bound) too
+    assert notes["b_ramp"][0] >= 10 and 14 <= notes["b_ramp"][0] + notes["b_ramp"][1] and abs(at(db[-1]) - op["t_star"]) < 1e-9

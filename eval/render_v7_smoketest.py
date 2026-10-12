@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
+# Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
 
@@ -168,6 +169,17 @@ def parse_args(argv=None):
     ap.add_argument("--tv-follow-b", action="store_true",
                     help="with --tv-stretch: A's beats are mapped onto B's own measured kick times in the window (B's tempo wanders), not "
                          "onto a constant grid at B's tempo. B itself is never stretched.")
+    ap.add_argument("--tempo-plan", action="store_true",
+                    help="the owner's design (2026-10-13): BOTH clips move to a shared tempo (slower one more, --up-share), smooth ramps in the "
+                         "quietest bars of A's last half / B's first half, constant through the window; gap > --bend-threshold gives B a sudden "
+                         "bend after the window. Each clip is stretched ONCE, so bodies and windows share one time base. Replaces the "
+                         "outgoing-only stretch.")
+    ap.add_argument("--window-mode", choices=("bounded", "centred"), default="bounded",
+                    help="bounded (default): A's window ENDS at its end bound, B's STARTS at its start bound, nothing zero-padded. centred: "
+                         "the old layout, window centred on both boundaries (needs L/2 of B before its start; 11 of 31 had less, so B began abruptly)")
+    ap.add_argument("--bend-threshold", type=float, default=5.0, help="BPM gap above which B bends suddenly after the window (default 5)")
+    ap.add_argument("--up-share", type=float, default=0.65, help="share of the gap the SLOWER clip is sped up by (default 0.65)")
+    ap.add_argument("--slew", type=float, default=0.5, help="slow ramp rate, BPM per bar")
     ap.add_argument("--assemble-mix", action="store_true", help="assemble full continuous mix across all clips for each variant")
     args = ap.parse_args(argv)
     for attr in ("order", "stems_dir", "bounds", "downbeats", "out_dir", "ckpt_a", "ckpt_b", "chroma_head"):
@@ -480,6 +492,41 @@ def main(argv=None):
         dbs = json.loads(Path(args.downbeats).read_text())
         print(f"Loaded downbeats for {len(dbs)} clips from {args.downbeats}", flush=True)
 
+    tplan, stems_eff, db_eff, map_eff = {}, {}, {}, {}
+    if args.tempo_plan:
+        ids = [c["id"] for c in clips]
+        nat = {}
+        for c in clips:
+            d_ = np.array(dbs.get(c["id"], []), dtype=float)
+            nat[c["id"]] = clip_tempo(d_, c, args.default_bpm)[0]
+        plans = [dsp.plan_tempo(nat[ids[k]], nat[ids[k + 1]], args.bend_threshold, args.up_share, args.slew) for k in range(len(ids) - 1)]
+        meta["tempo_plan"] = {"threshold": args.bend_threshold, "up_share": args.up_share, "slew": args.slew, "clips": {}}
+        for k, c in enumerate(clips):
+            cid = c["id"]
+            d_ = np.array(dbs.get(cid, []), dtype=float)
+            if len(d_) < 6:
+                raise SystemExit(f"--tempo-plan needs downbeats for every clip; {cid} has {len(d_)}")
+            raw = stems[cid]
+            en = dsp.bar_energy(sum(raw[n] for n in STEM_NAMES), d_, SR)
+            i_in = int(np.argmin(np.abs(d_ - bounds[cid]["start"])))
+            i_out = int(np.argmin(np.abs(d_ - bounds[cid]["end_pre_zc"])))
+            pts, notes = dsp.build_tempo_curve(nat[cid], d_, en, plans[k - 1] if k > 0 else None, plans[k] if k < len(ids) - 1 else None,
+                                               args.w_bars, 2, args.slew, i_in, i_out, args.window_mode == "bounded")
+            n_sec = raw["drums"].shape[-1] / SR
+            pl = dsp.curve_to_plan(pts, nat[cid], n_sec)
+            crec = {"native_bpm": nat[cid], "points": [(round(a, 2), round(b, 2)) for a, b in pts[:-1]], "notes": notes,
+                    "v_min": pl["v_min"], "v_max": pl["v_max"]}
+            meta["tempo_plan"]["clips"][cid] = crec
+            if abs(pl["v_max"] - 1.0) < 5e-4 and abs(pl["v_min"] - 1.0) < 5e-4:
+                stems_eff[cid], db_eff[cid] = raw, d_
+                map_eff[cid] = lambda t: np.asarray(t, float)
+            else:
+                print(f"  tempo plan {k}: {cid[:28]} native {nat[cid]:.2f} BPM, speed {pl['v_min']:.4f}..{pl['v_max']:.4f}, ramps {notes}", flush=True)
+                stems_eff[cid], db_eff[cid] = stretch_clip(raw, d_, 1.0, args, crec, tv=pl)
+                map_eff[cid] = (lambda pl_: (lambda t: np.interp(np.asarray(t, float), pl_["src"], pl_["out"])))(pl)
+        tplan = {i: plans[i] for i in range(len(plans))}
+        effective_stems.update(stems_eff)
+
     sa3_model = None
     generating = not args.no_generate                          # the generative `other` layer
     variants_wanted = bool(args.other_slerp or args.drum_inpaint_bars or args.other_inpaint_bars)
@@ -492,6 +539,10 @@ def main(argv=None):
             # ONCE per run: 1307106 loaded it again on every transition. Note a live adapter is the 13e fault
             # condition on the ROCm box (training-findings 13e): the finite guards below make a hit visible.
             sa3_model.load_lora([args.ckpt_b])
+        import gc
+        import torch
+        gc.collect()
+        torch.cuda.empty_cache()      # loading leaves ~5 GB reserved-but-unused; hipBLASLt allocates outside torch's pool and OOMs without it
 
     for i in range(len(clips) - 1):
         cA, cB = clips[i], clips[i + 1]
@@ -503,9 +554,17 @@ def main(argv=None):
         dbB = np.array(dbs.get(cB["id"], []), dtype=float)
         bpm_a, rec["bpm_source"] = clip_tempo(dbA, cA, args.default_bpm)
         bpm_b, rec["bpm_source_b"] = clip_tempo(dbB, cB, args.default_bpm)
+        plan_mode = bool(args.tempo_plan)
+        b_start = bounds[cB["id"]]["start"]
+        if plan_mode:
+            dbA, dbB = db_eff[cA["id"]], db_eff[cB["id"]]
+            b_start = float(map_eff[cB["id"]](b_start))
+            rec["tempo_plan"] = tplan[i]
+            bpm_a = bpm_b = tplan[i]["t_star"]
+            rec["bpm_source"] = rec["bpm_source_b"] = "tempo-plan"
         tv_set = {int(v) for v in str(args.tv_stretch).split(",") if v.strip()}
         use_tv = (a0 + i) in tv_set
-        if args.local_tempo or use_tv:
+        if not plan_mode and (args.local_tempo or use_tv):
             # tempo from the kicks the window actually contains (A: its last w_bars + 2 bars; B: its first w_bars + 2 bars)
             span = (args.w_bars + 2) * 4 * 60 / bpm_b
             la = local_kick_bpm(stems[cA["id"]]["drums"], bounds[cA["id"]]["end_pre_zc"] - span, bounds[cA["id"]]["end_pre_zc"] + 1.0, bpm_a)
@@ -525,7 +584,7 @@ def main(argv=None):
         if not rec["stretch_within_spec"]:
             print(f"  WARNING tempo gap {bpm_b - bpm_a:+.1f} BPM, stretch x{speed:.3f}: the spec says to fix the ORDER "
                   f"(gap <= 5 BPM, factor within 6 %), not to stretch harder (R0.2)", flush=True)
-        sA, sB = stems[cA["id"]], stems[cB["id"]]
+        sA, sB = (stems_eff[cA["id"]], stems_eff[cB["id"]]) if plan_mode else (stems[cA["id"]], stems[cB["id"]])
         dbA_eff, rec["stretched"] = dbA, False
         tv = None
         if use_tv:
@@ -561,17 +620,38 @@ def main(argv=None):
         L = int(round(W_sec * SR))
         scale = speed if rec["stretched"] else 1.0            # the bounds are in A's ORIGINAL time base
         to_out = (lambda t: float(np.interp(t, tv["src"], tv["out"]))) if (tv is not None and rec["stretched"]) else (lambda t: t / scale)
+        if plan_mode:
+            to_out = lambda t, m=map_eff[cA["id"]]: float(m(t))     # noqa: E731  (A's own stretch map; B's start is already mapped)
         # PHASE 0 step 2: centre both windows on downbeats of the audio they will be cut from (dbA_eff is on the
         # stretched time base). One seconds->samples conversion each; both windows have length L by construction.
         if len(dbA_eff) > 2 and len(dbB) > 2:
             a_db = float(dbA_eff[np.argmin(np.abs(dbA_eff - to_out(bounds[cA["id"]]["end_pre_zc"])))])
-            b_db = float(dbB[np.argmin(np.abs(dbB - bounds[cB["id"]]["start"]))])
+            b_db = float(dbB[np.argmin(np.abs(dbB - b_start))])
             rec["snapped_to_downbeats"] = True
         else:
-            a_db, b_db = to_out(bounds[cA["id"]]["end_pre_zc"]), bounds[cB["id"]]["start"]
+            a_db, b_db = to_out(bounds[cA["id"]]["end_pre_zc"]), b_start
             rec["snapped_to_downbeats"] = False
         a_lo = int(round(a_db * SR)) - L // 2
         b_lo = int(round(b_db * SR)) - L // 2
+        if args.window_mode == "bounded":
+            fw = dsp.fit_window_bounded(a_db * SR, b_db * SR, sA["drums"].shape[-1], sB["drums"].shape[-1], 4 * 60.0 / bpm_b * SR, args.w_bars)
+        else:
+            fw = dsp.fit_window(a_db * SR, b_db * SR, sA["drums"].shape[-1], sB["drums"].shape[-1], 4 * 60.0 / bpm_b * SR, args.w_bars)
+        rec["w_bars_requested"] = int(args.w_bars)
+        rec["window_fits_clips"] = fw is not None
+        if fw is None:
+            print(f"  WARNING no window of >= 4 bars fits both clips (A {sA['drums'].shape[-1] / SR:.1f} s, B {sB['drums'].shape[-1] / SR:.1f} s): "
+                  f"keeping the centred window, the part outside a clip is silence (B will start abruptly)", flush=True)
+            w_eff = args.w_bars
+        else:
+            w_eff, a_lo, b_lo = fw
+            if w_eff != args.w_bars or args.window_mode == "centred" and (a_lo, b_lo) != (int(round(a_db * SR)) - L // 2, int(round(b_db * SR)) - L // 2):
+                print(f"  window fitted into both clips: {w_eff} bars (asked {args.w_bars}), shifted by "
+                      f"{(b_lo - (int(round(b_db * SR)) - L // 2)) / SR:+.2f} s", flush=True)
+            if w_eff != args.w_bars:
+                L = int(round(w_eff * 4 * 60.0 / bpm_b * SR))
+                W_sec = L / SR
+        rec["w_bars"] = int(w_eff)
 
         def win(s, name, lo):
             return dsp.safe_slice(s[name], lo, lo + L)
@@ -598,7 +678,7 @@ def main(argv=None):
         # two misaligned grids.
         ta, off = dsp.grid_offsets_ms(dsp.kick_onsets(win(sA, "drums", a_lo), SR), dsp.kick_onsets(win(sB, "drums", b_lo), SR))
         per_bar = []
-        for k in range(args.w_bars):
+        for k in range(w_eff):
             sel = (ta >= k * bar / SR) & (ta < (k + 1) * bar / SR)
             per_bar.append(float(np.median(off[sel])) if sel.any() else None)
         drift = dsp.drift_ms_per_s(ta, off)
@@ -606,7 +686,7 @@ def main(argv=None):
         rec["ab_drift_ms_per_s"] = round(drift, 2)
         rec["ab_grid_synced"], rec["ab_outlier_bars"] = dsp.grid_verdict(per_bar, drift, W_sec, args.sync_tol_ms)
         if rec["ab_outlier_bars"] and rec["ab_grid_synced"]:
-            print(f"  note: bar(s) {rec['ab_outlier_bars']} of {args.w_bars} are off the grid (a fill or a break?), the rest agree; "
+            print(f"  note: bar(s) {rec['ab_outlier_bars']} of {w_eff} are off the grid (a fill or a break?), the rest agree; "
                   f"offsets {rec['ab_kick_offsets_ms']}", flush=True)
         if not rec["ab_grid_synced"]:
             print(f"  WARNING clips {cA['id']} -> {cB['id']} are NOT on one kick grid (B re A per bar, ms: "
@@ -637,7 +717,7 @@ def main(argv=None):
         def check_gen(layer, label):
             """SYNC CHECK 2 (after generation or slerp): does the layer still sit on the onsets of the real crossfade it
             came from? Per bar, trusted only where the two share onsets (correlation >= 0.2)."""
-            lag = generated_layer_lag(layer, other_ref, bar, args.w_bars)
+            lag = generated_layer_lag(layer, other_ref, bar, w_eff)
             synced = lag is not None and abs(lag) <= args.gen_lag_tol_ms
             if not synced:
                 print(f"  WARNING generated `other` ({label}) is not verified on the real onsets "

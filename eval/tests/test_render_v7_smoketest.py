@@ -729,7 +729,7 @@ def test_one_bar_without_kicks_is_an_outlier_note_not_a_failed_transition(tmp_pa
     """The real 8-bar case on the Arc: seven bars agree and one (a fill / break) does not pair up. A least-squares drift and an
     all-bars rule called the whole transition unsynced and flipped the kick ramp to equal-power."""
     proj, _ = make_click_project(tmp_path, seconds=40, centre_a=26.0, blank=(21.9, 23.7))
-    _, meta = run(proj, "--no-generate", "--w-bars", "8", "--require-sync")          # must not raise
+    _, meta = run(proj, "--no-generate", "--w-bars", "8", "--window-mode", "centred", "--require-sync")          # must not raise
     t0 = meta["transitions"][0]
     assert t0["ab_grid_synced"] is True and len(t0["ab_outlier_bars"]) == 1, (t0["ab_kick_offsets_ms"], t0["ab_outlier_bars"])
     assert t0["kick_ramp_used"] == "linear" and abs(t0["ab_drift_ms_per_s"]) < 1.5
