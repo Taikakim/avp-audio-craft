@@ -21,6 +21,15 @@ describe("the MODEL select lists backbones first, then adapters (spec §4.2)", (
     expect(options.every((o) => o.group === "backbone" && o.ckptPath === null)).toBe(true);
   });
 
+  it("marks a full finetune in its label and asks /models for that family", async () => {
+    const options = buildModelOptions([{ path: "/r/fullft_goa_t1024/epoch=3.ckpt", label: "fullft_goa_t1024", family: "fullft" }]);
+    expect(options[4].label).toBe("fullft_goa_t1024 (full FT)");
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true, models: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchAdapters("fullft");
+    expect(fetchMock).toHaveBeenCalledWith("/models?family=fullft&loadable=1");
+  });
+
   it("appends adapters after the backbones and carries their checkpoint path", () => {
     const options = buildModelOptions([
       { path: "/SERVER/ckpts/custom_v3.safetensors", name: "custom_v3.safetensors", label: "custom_v3 (LatCH medium)" },

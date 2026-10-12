@@ -134,6 +134,17 @@ _MANTU = _mantu_root()
 
 import model_db                                   # noqa: E402
 import model_roots                                # noqa: E402
+from forge.fullft import load_fullft              # noqa: E402
+
+
+def ckpt_family(path):
+    """The model database's family for a checkpoint path ("adapter", "fullft", ...), or None when
+    the path is not in the database (it is then treated as an adapter, the old behaviour)."""
+    p = str(path)
+    for m in model_db.load_or_build(rescan=False)["models"]:
+        if m["path"] == p or p in (m.get("also_at") or []):
+            return m["family"]
+    return None
 
 _ROOTS_CFG = model_roots.load_config()
 _LIMITS = model_roots.limits(_ROOTS_CFG)
@@ -186,6 +197,7 @@ HEADS: dict = {}                   # name -> registry entry (metadata only)
 
 LOADED_DORA = "none"               # registry name or ckpt path currently merged
 LOADED_STRENGTH = 1.0
+LOADED_FULLFT = False              # the loaded ckpt replaced the DiT (no LoRA strength / interval)
 FILM_LOADED = None                 # ckpt path of installed FiLM adapter, or None
 FILM_STATE = None                  # {"mean","std","enc","dtype"}
 
@@ -550,7 +562,7 @@ def with_lora_interval(kw):
         kw.setdefault("lora_configs",
                       SLOTS.lora_configs(ACTIVE_SLOT, interval=CURRENT_LORA_INTERVAL))
         return kw
-    if LOADED_DORA not in (None, "none") and CURRENT_LORA_INTERVAL != (0.0, 1.0):
+    if LOADED_DORA not in (None, "none") and not LOADED_FULLFT and CURRENT_LORA_INTERVAL != (0.0, 1.0):
         kw.setdefault("lora_configs", [{"lora_index": 0,
                                         "interval": CURRENT_LORA_INTERVAL}])
     return kw
@@ -559,7 +571,7 @@ def with_lora_interval(kw):
 def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
-    global CURRENT_LORA_INTERVAL, ACTIVE_SLOT
+    global CURRENT_LORA_INTERVAL, ACTIVE_SLOT, LOADED_FULLFT
     CURRENT_LORA_INTERVAL = (
         _f(dora_req or {}, "interval_min", 0.0),
         _f(dora_req or {}, "interval_max", 1.0))
@@ -578,6 +590,12 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         # model" was quietly still the last adapter. Same failure class as trap 1.
         ACTIVE_SLOT = None
         key, ckpt, strength = _resolve_dora(dora_req, default_dora)
+    # A full finetune replaces the DiT instead of attaching an adapter (2026-10-09). The weight set
+    # is part of its identity: online and EMA are different models.
+    full_weights = None
+    if ckpt and ckpt_family(ckpt) == "fullft":
+        full_weights = "ema" if (dora_req or {}).get("weights") == "ema" else "online"
+        key = f"{key}#{full_weights}"
     film_ckpt = None
     if film_req:
         film_ckpt = require_path(film_req.get("ckpt") or FILM_DEFAULT_CKPT, "FiLM checkpoint")
@@ -610,9 +628,12 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
             summary = apply_condition(MODEL.dit, cond)
             log(f"[mutate] {mop} amount={mutate_req['amount']} target={mutate_req['target']} "
                 f"seed={mutate_req['seed']} -> {summary}")
-        if ckpt:
+        if ckpt and full_weights:
+            load_fullft(MODEL, ckpt, weights=full_weights, log=log)
+        elif ckpt:
             MODEL.load_lora([str(ckpt)])
         LOADED_DORA, LOADED_STRENGTH = key, 1.0
+        LOADED_FULLFT = full_weights is not None
         LOADED_MUT = mut_key
         if SLOTS.slots:
             # The rebuild threw the resident adapters away with the old MODEL. The
@@ -626,7 +647,7 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         # ACTIVE_SLOT is None outside slot mode, so this zeroes every slot.
         SLOTS.push_strengths(MODEL, ACTIVE_SLOT,
                              strength if slot is not None else 0.0)
-    if ckpt and strength != LOADED_STRENGTH:
+    if ckpt and not LOADED_FULLFT and strength != LOADED_STRENGTH:
         MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
         LOADED_STRENGTH = strength
     if film_ckpt and FILM_LOADED != film_ckpt:

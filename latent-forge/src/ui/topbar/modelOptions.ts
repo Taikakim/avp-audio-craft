@@ -49,7 +49,7 @@ export function buildModelOptions(adapters: AdapterEntry[]): ModelOption[] {
     seen.add(a.path);
     options.push({
       value: a.path,
-      label: a.label || a.name || a.path,
+      label: (a.label || a.name || a.path) + (a.family === "fullft" ? " (full FT)" : ""),
       group: "adapter",
       ckptPath: a.path,
       ...(typeof a.epoch === "number" ? { epoch: a.epoch } : {}),

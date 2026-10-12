@@ -52,7 +52,9 @@
     } catch {
       masterPresets = [];
     }
-    models = buildModelOptions(await fetchAdapters());
+    // Adapters and full finetunes: together they are every loadable run in the model census.
+    const [adapters, fullft] = await Promise.all([fetchAdapters("adapter"), fetchAdapters("fullft")]);
+    models = buildModelOptions([...adapters, ...fullft]);
     try {
       // Show the backbone the server really runs. At start-up (no session load owns the stage yet)
       // also put MODEL STAGE on the matching side, so POST/BASE defaults match the loaded model.

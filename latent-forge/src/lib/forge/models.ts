@@ -13,8 +13,11 @@
 
 import type { AdapterEntry } from "../../ui/topbar/modelOptions";
 
-export async function fetchAdapters(): Promise<AdapterEntry[]> {
-  const res = await fetch("/models?family=adapter&loadable=1");
+/** `family` "fullft" lists the full finetunes; the render server loads those over the DiT
+ *  (eval/forge/fullft.py) instead of attaching them, so they belong in the top bar but not in a
+ *  lane's LORA select. */
+export async function fetchAdapters(family: "adapter" | "fullft" = "adapter"): Promise<AdapterEntry[]> {
+  const res = await fetch(`/models?family=${family}&loadable=1`);
   const text = await res.text();
   if (!text) return [];
   let body: { ok?: boolean; models?: AdapterEntry[] };
