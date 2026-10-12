@@ -532,3 +532,26 @@ def phase_shift(a_seg, b_seg, beat_samples, sr=44100, penalty=0.05, span=0.25):
     v = c[n - 1 + ss] / np.maximum(na, 1e-12)
     k = int(np.argmax(v - penalty * np.abs(ss) / m))
     return int(ss[k]), float(v[k]), float(v[m])
+
+
+def plan_tempo(bpm_a, bpm_b, threshold=5.0, up_share=0.65, slew=0.5):
+    """Shared-tempo plan for one transition (GHOST-NOTE 2026-10-13, from the owner's design). BOTH clips move, the slower one more
+    (speeding up sounds better than slowing down): shared tempo t* = lo + up_share*gap. Smooth ramps (<= `slew` BPM/bar) in A's
+    last half / B's first half, constant through the crossfade window. If gap > `threshold`, A's total bend is capped at its share
+    of `threshold` (up_share*threshold if A is the slower clip, else (1-up_share)*threshold) and B takes the rest: B plays the
+    window at t*, then bends SUDDENLY by (|dev_B| - threshold) at its first downbeat after the window and ramps slowly through the
+    last `threshold` BPM to native. Returns dict(t_star, dev_a, dev_b, sudden_b, slow_a_bars, slow_b_bars, big_gap)."""
+    gap = abs(bpm_a - bpm_b)
+    lo = min(bpm_a, bpm_b)
+    big = gap > threshold
+    if not big:
+        t = lo + up_share * gap
+    else:
+        a_slower = bpm_a < bpm_b
+        da = (up_share if a_slower else 1.0 - up_share) * threshold
+        t = bpm_a + da if a_slower else bpm_a - da
+    dev_a, dev_b = t - bpm_a, t - bpm_b
+    sudden = max(0.0, abs(dev_b) - threshold) if big else 0.0
+    slow_b = abs(dev_b) - sudden
+    return {"t_star": float(t), "dev_a": float(dev_a), "dev_b": float(dev_b), "sudden_b": float(sudden),
+            "slow_a_bars": abs(dev_a) / slew, "slow_b_bars": slow_b / slew, "big_gap": bool(big)}

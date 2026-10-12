@@ -418,3 +418,16 @@ def test_follow_targets_lands_a_on_b_kicks():
     a = 5.0 + np.arange(20) * 0.40
     tg = dsp.follow_targets(b, 10.0, 0.4, 5.0, a, 5.0, 1.0)
     assert tg is not None and np.abs(np.diff(tg)[14:] - 0.42).max() < 0.02
+
+
+def test_plan_tempo_small_gap_slower_clip_moves_more():
+    p = dsp.plan_tempo(140.0, 146.0 - 2.0)         # gap 4 <= 5: shared tempo 142.6, A up 2.6, B down 1.4
+    assert abs(p["t_star"] - 142.6) < 1e-9 and p["dev_a"] > abs(p["dev_b"]) and not p["big_gap"] and p["sudden_b"] == 0
+    q = dsp.plan_tempo(144.0, 140.0)               # A is the faster: it moves down by the smaller share
+    assert abs(q["dev_a"]) < abs(q["dev_b"])
+
+
+def test_plan_tempo_big_gap_bends_b_suddenly_after_the_window():
+    p = dsp.plan_tempo(140.0, 150.0)               # gap 10: A up 3.25 (cap), B down 6.75 -> sudden 1.75 then 5 slow
+    assert p["big_gap"] and abs(p["dev_a"] - 3.25) < 1e-9 and abs(p["sudden_b"] - 1.75) < 1e-9
+    assert abs(p["slow_b_bars"] - 10.0) < 1e-9
