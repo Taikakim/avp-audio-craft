@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_assemble_v7.py — DJ mix v7, Phase 0: ONE integer-sample placement timeline, constant tempo
 inside every crossfade window, windows in bars, one constant phase shift per transition.
 

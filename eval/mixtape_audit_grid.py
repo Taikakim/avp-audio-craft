@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_audit_grid.py — v7 phase 0 gate 2: do the beats keep their spacing across every transition?
 
 WHY (GHOST-NOTE 2026-10-07, spec docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md gate 2).

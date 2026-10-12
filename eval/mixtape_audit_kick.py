@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_audit_kick.py — v7 gate 2 at ~1 ms: kick spacing across every transition, with clip bodies as control.
 
 WHY (GHOST-NOTE 2026-10-07, C's item B): mixtape_audit_grid.py reads madmom beats, which sit on a 10 ms grid, so

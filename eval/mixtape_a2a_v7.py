@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_a2a_v7.py — window-local a2a smoothing on the v7 plain mix (spec R0.5).
 
 WHY (GHOST-NOTE 2026-10-07; project guidance: do the a2a transitions for good measure while the GPU is held).

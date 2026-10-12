@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Owner: CONTINUITY (created 2026-10-07)
+# Last edited: GHOST-NOTE 2026-10-07 -- accepts a ready timeline.json in place of a pair render dir
 """build_dj_mixes_section.py — add the DJ-style continuous mixes (+ four phone rating buttons) to the
 "The Mixtape" page staged at ~/staging/kone-mixtape/ (live: aavepyora.online/files/kone-mixtape/).
 

@@ -1,3 +1,4 @@
+# Owner: GHOST-NOTE (created 2026-10-07)
 """v7c band-swap render on SYNTHETIC clips (no Mantu data, no GPU): LR4 flatness, one bassline at a time, hand-over on
 A's downbeat, finite output. Written while the clip drive was offline; real clips are the next check (replaycheck + gates)."""
 import sys

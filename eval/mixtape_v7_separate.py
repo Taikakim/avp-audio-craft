@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_v7_separate.py — BS-RoFormer 4-stem separation of the v7 mix clips (spec S1/S4 input).
 
 WHY (GHOST-NOTE 2026-10-07, project guidance via CONTINUITY): the v7 stem-transition idea needs drums / bass /

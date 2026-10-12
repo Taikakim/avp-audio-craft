@@ -1,3 +1,4 @@
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_replaycheck_v7.py — gate 1 for DJ mix v7: does every incoming clip CONTINUE from the exact source position
 after its entry window (the v6 replay put it ~10 s back)? Direct, no tracking ambiguity: for each clip, take 3 s of the
 mix just after its entry window, find the best-matching position in the clip's own low band, compare with where the

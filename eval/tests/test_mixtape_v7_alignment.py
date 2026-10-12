@@ -1,3 +1,4 @@
+# Owner: GHOST-NOTE (created 2026-10-07)
 """Sign convention and map of eval/mixtape_assemble_v7.py: a regression guard for the phase shift (B delayed by +s
 lines up with A) and the stretched-source -> output map. No GPU, no madmom, ~1 s."""
 import sys

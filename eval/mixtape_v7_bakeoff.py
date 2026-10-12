@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_v7_bakeoff.py — spec S1b: which separator puts the BASSLINE in its bass stem? (psytrance trap)
 
 WHY (GHOST-NOTE 2026-10-07, C's item A): the 4-stem BS-RoFormer we used (SYH99999) leaves the bass stem with ~0 % of the

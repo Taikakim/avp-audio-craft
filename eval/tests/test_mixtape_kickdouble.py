@@ -1,3 +1,4 @@
+# Owner: GHOST-NOTE (created 2026-10-07)
 """Kick-doubling detector on synthetic four-on-the-floor: extra hits inside a window raise onsets-per-beat."""
 import sys
 from pathlib import Path

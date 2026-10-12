@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Owner: GHOST-NOTE (created 2026-10-07)
 """mixtape_audit_kickdouble.py — does a transition ADD kick onsets that are not on the beat? (the a2a stutter)
 
 WHY (GHOST-NOTE 2026-10-07). The owner heard the a2a-smoothed v7b mixes stutter between clips: kicks misplaced or firing extra
