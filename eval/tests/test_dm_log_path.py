@@ -9,13 +9,32 @@ fresh, near-empty log there -- and she reads the branch, so she would never have
 seen it. It happened twice on 2026-09-21; both were caught by eye and moved by
 hand. An unnoticed one is simply a lost message, with no error anywhere.
 """
+import importlib.util
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Misc"))
-agent_dialogue = pytest.importorskip("agent_dialogue")
+
+def _load_agent_dialogue():
+    """Load Misc/agent_dialogue.py BY PATH and restore sys.path. Prepending Misc/ for the
+    whole session (as this file used to) made Misc/filelock.py shadow the pip `filelock`,
+    and every later test that imports huggingface_hub failed at collection with
+    `cannot import name 'BaseFileLock'` (58 Latent Forge tests on the 2026-10-12 trunk merge)."""
+    path = Path(__file__).resolve().parents[2] / "Misc" / "agent_dialogue.py"
+    if not path.exists():
+        pytest.skip("Misc/agent_dialogue.py not in this checkout", allow_module_level=True)
+    spec = importlib.util.spec_from_file_location("agent_dialogue", path)
+    mod = importlib.util.module_from_spec(spec)
+    saved = list(sys.path)
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.path[:] = saved
+    return mod
+
+
+agent_dialogue = _load_agent_dialogue()
 
 
 @pytest.fixture
