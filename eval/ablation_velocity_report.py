@@ -10,7 +10,9 @@ Run (CPU is fine): .venv/bin/python eval/ablation_velocity_report.py [--out repo
 """
 import argparse
 import csv
+import json
 import math
+import re
 from pathlib import Path
 
 import torch
@@ -30,6 +32,14 @@ def norms(ckpt):
     return {k: math.sqrt(v) for k, v in acc.items()}
 
 
+def mean_col(run_dir, col):
+    f = next(iter(sorted(run_dir.rglob("metrics.csv"))), None) if run_dir else None
+    if not f:
+        return None
+    vals = [float(r[col]) for r in csv.DictReader(open(f)) if r.get(col)]
+    return sum(vals) / len(vals) if vals else None
+
+
 def last_loss(run_dir, n=100):
     f = next(iter(sorted(run_dir.rglob("metrics.csv"))), None)
     if not f:
@@ -40,27 +50,78 @@ def last_loss(run_dir, n=100):
     return sum(vals[-n:]) / len(vals[-n:]) if vals else None
 
 
+def perf_info(run_dir):
+    if not run_dir:
+        return {}
+    pfile = run_dir / "resource_profile.json"
+    if pfile.exists():
+        try:
+            return json.loads(pfile.read_text())
+        except Exception:
+            pass
+    # Fallback to train.log for older runs
+    tlog = run_dir / "train.log"
+    if tlog.exists():
+        try:
+            text = tlog.read_text(errors="ignore")
+            matches = re.findall(r"(\d+:\d+:\d+)\s*•\s*\d+:\d+:\d+\s*([\d\.]+)it/s", text)
+            if matches:
+                speed = float(matches[-1][1])
+                return {
+                    "train_it_s": speed,
+                    "sec_per_it": round(1.0 / speed, 2) if speed > 0 else None,
+                }
+            matches_simple = re.findall(r"([\d\.]+)it/s", text)
+            if matches_simple:
+                speed = float(matches_simple[-1])
+                return {
+                    "train_it_s": speed,
+                    "sec_per_it": round(1.0 / speed, 2) if speed > 0 else None,
+                }
+        except Exception:
+            pass
+    return {}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT / "REPORT.md")
     a = ap.parse_args()
     entries = [("ref (overnight run @1011)", REF, None)]
-    for d in sorted(OUT.glob("ablation_goa5k_a*")):
+    for d in sorted(OUT.glob("ablation_goa5k_[ab]*")):
         entries.append((d.name.removeprefix("ablation_goa5k_"), d / "step=1011.ckpt", d))
-    lines = ["| arm | ‖lora_B‖ (= distance moved) | ‖lora_A‖ | ‖magnitude‖ | loss, last 100 |",
-             "|---|---|---|---|---|"]
+    lines = ["| arm | ‖lora_B‖ (= distance moved) | ‖lora_A‖ | ‖magnitude‖ | loss, last 100 | adagc clipped frac | it/s | s/step | peak VRAM | peak RAM |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for name, ck, d in entries:
         if not ck.exists():
-            lines.append(f"| {name} | (no checkpoint) | | | |")
+            lines.append(f"| {name} | (no checkpoint) | | | | | | | | |")
             continue
         n = norms(ck)
         lo = last_loss(d) if d else None
+        cf = mean_col(d, "adagc/clipped_frac")
+        perf = perf_info(d)
+        it_s = perf.get("train_it_s") or perf.get("overall_it_s")
+        sec_it = perf.get("sec_per_it")
+        vram = perf.get("peak_vram_gb")
+        ram = perf.get("peak_rss_gb")
+
+        it_str = f"{it_s:.2f}" if it_s is not None else ""
+        sec_str = f"{sec_it:.2f}" if sec_it is not None else ""
+        vram_str = f"{vram:.1f} GB" if vram is not None else ""
+        ram_str = f"{ram:.1f} GB" if ram is not None else ""
+
         lines.append(f"| {name} | {n['lora_B']:.2f} | {n['lora_A']:.2f} | {n['magnitude']:.2f} | "
-                     f"{'' if lo is None else f'{lo:.4f}'} |")
-    txt = ("# Shampoo-recipe ablation: distance moved by step 1011\n\n"
+                     f"{'' if lo is None else f'{lo:.4f}'} | {'' if cf is None else f'{cf:.3f}'} | "
+                     f"{it_str} | {sec_str} | {vram_str} | {ram_str} |")
+    extra = ""
+    if a.out.exists():
+        existing = a.out.read_text()
+        if "## Direction:" in existing:
+            extra = "\n" + existing[existing.index("## Direction:"):]
+    txt = ("# Shampoo-recipe ablation: distance moved and resource cost by step 1011\n\n"
            "Cumulative: each arm drops one more component than the one above it "
            "(see eval/ablation_goa5k_chain.py). a10 is the FULL recipe at lr 5e-4.\n\n"
-           + "\n".join(lines) + "\n")
+           + "\n".join(lines) + "\n" + extra)
     a.out.write_text(txt)
     print(txt)
 

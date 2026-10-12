@@ -14,9 +14,13 @@ skipped. Waits for the reference run to exit first, and holds the GPU lock per a
 
 Analysis: eval/ablation_velocity_report.py.
 """
+import glob
+import json
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -77,7 +81,116 @@ ARMS = [  # (name, args) -- cumulative: each arm drops one more component than t
     ("a09_plain_adamw",   ["--optimizer", "adamw", "--lr", "1e-4"]),
     # lr A/B on the FULL recipe (the other suspect besides the SNR gate)
     ("a10_full_lr5e-4",   modular("5e-4")),
+    # 2026-09-27 round b (operator request via CONTINUITY): gradient-spike clipping, the lr-matched
+    # gate-off control, and 10x-effective-lr arms (older runs sound more mature even at ep0; the gate
+    # made the nominal 3e-4 an effective ~6e-5). b04-b06 may go unstable -- that is a result too.
+    ("b01_adagc104",           modular("3e-4") + ["--grad-clip-mode", "adagc", "--adagc-lambda", "1.04"]),
+    ("b02_adagc3",             modular("3e-4") + ["--grad-clip-mode", "adagc", "--adagc-lambda", "3"]),
+    ("b03_nogate_6e-5",        modular("6e-5", snr=False)),
+    ("b04_nogate_6e-4",        modular("6e-4", snr=False)),
+    ("b05_nogate_6e-4_adagc3", modular("6e-4", snr=False) + ["--grad-clip-mode", "adagc", "--adagc-lambda", "3"]),
+    ("b06_full_3e-3",          modular("3e-3")),
 ]
+
+
+class ResourceTracker:
+    """Samples VRAM (via sysfs) and host process-tree RSS (via /proc) every poll_interval seconds."""
+    def __init__(self, pid: int, poll_interval: float = 2.0):
+        self.pid = pid
+        self.interval = poll_interval
+        self.stop_event = threading.Event()
+        self.peak_vram_bytes = 0
+        self.peak_rss_bytes = 0
+        self.peak_sys_ram_bytes = 0
+        self.vram_samples = []
+        self.thread = threading.Thread(target=self._poll_loop, daemon=True)
+
+    def _get_vram_bytes(self):
+        for path in ("/sys/class/drm/card1/device/mem_info_vram_used",
+                     "/sys/class/drm/card0/device/mem_info_vram_used"):
+            if os.path.exists(path):
+                try:
+                    with open(path) as f:
+                        return int(f.read().strip())
+                except Exception:
+                    pass
+        return 0
+
+    def _get_tree_rss_bytes(self):
+        pids = {self.pid}
+        queue = [self.pid]
+        while queue:
+            curr = queue.pop(0)
+            for cf in glob.glob(f"/proc/{curr}/task/*/children"):
+                try:
+                    with open(cf) as f:
+                        for c in f.read().split():
+                            c_pid = int(c)
+                            if c_pid not in pids:
+                                pids.add(c_pid)
+                                queue.append(c_pid)
+                except Exception:
+                    pass
+        total = 0
+        for p in pids:
+            try:
+                with open(f"/proc/{p}/status") as f:
+                    for line in f:
+                        if line.startswith("VmRSS:"):
+                            total += int(line.split()[1]) * 1024
+                            break
+            except Exception:
+                pass
+        return total
+
+    def _get_sys_ram_used_bytes(self):
+        try:
+            mem = {}
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    parts = line.split(":")
+                    if len(parts) == 2:
+                        k = parts[0].strip()
+                        v = parts[1].strip().split()[0]
+                        if k in ("MemTotal", "MemAvailable"):
+                            mem[k] = int(v) * 1024
+            if "MemTotal" in mem and "MemAvailable" in mem:
+                return mem["MemTotal"] - mem["MemAvailable"]
+        except Exception:
+            pass
+        return 0
+
+    def _poll_loop(self):
+        while not self.stop_event.is_set():
+            vram = self._get_vram_bytes()
+            if vram > 0:
+                self.vram_samples.append(vram)
+                if vram > self.peak_vram_bytes:
+                    self.peak_vram_bytes = vram
+            rss = self._get_tree_rss_bytes()
+            if rss > self.peak_rss_bytes:
+                self.peak_rss_bytes = rss
+            sys_ram = self._get_sys_ram_used_bytes()
+            if sys_ram > self.peak_sys_ram_bytes:
+                self.peak_sys_ram_bytes = sys_ram
+            self.stop_event.wait(self.interval)
+
+    def start(self):
+        self.thread.start()
+
+    def stop(self):
+        self.stop_event.set()
+        self.thread.join(timeout=2.0)
+        mean_vram = (sum(self.vram_samples) / len(self.vram_samples)) if self.vram_samples else 0
+        return {
+            "peak_vram_bytes": self.peak_vram_bytes,
+            "mean_vram_bytes": int(mean_vram),
+            "peak_rss_bytes": self.peak_rss_bytes,
+            "peak_sys_ram_bytes": self.peak_sys_ram_bytes,
+            "peak_vram_gb": round(self.peak_vram_bytes / (1024**3), 2),
+            "peak_rss_gb": round(self.peak_rss_bytes / (1024**3), 2),
+            "peak_sys_ram_gb": round(self.peak_sys_ram_bytes / (1024**3), 2),
+        }
 
 
 def log(msg):
@@ -93,7 +206,7 @@ def main():
     threads = os.environ.get("ABLATION_THREADS", "16")
     log(f"chain start (threads={threads}); waiting for the reference run and any running arm to exit")
     # also wait for an arm started by an EARLIER instance of this chain (hand-over without overlap)
-    for pat in (WAIT_FOR, "name ablation_goa5k_a"):
+    for pat in (WAIT_FOR, "name ablation_goa5k_", *filter(None, os.environ.get("ABLATION_WAIT_EXTRA", "").split(";"))):
         while subprocess.run(["pgrep", "-f", pat], capture_output=True).returncode == 0:
             time.sleep(60)
     env = dict(os.environ, FLASH_ATTENTION_TRITON_AMD_ENABLE="FALSE", ROCR_VISIBLE_DEVICES="0",
@@ -113,13 +226,49 @@ def main():
         try:
             log(f"{name}: start  {' '.join(args)}")
             (OUT / run).mkdir(parents=True, exist_ok=True)
+            t0 = time.time()
             with open(OUT / run / "train.log", "a") as lf:
-                rc = subprocess.run([PY, TRAIN, *COMMON, "--name", run, *args,
-                                     "--purpose", f"cumulative ablation arm {name} of the shampoo-run recipe",
-                                     "--hypothesis", "attribute the 5-15x low weight-space velocity to a component"],
-                                    cwd=SAO, env=env, stdout=lf, stderr=subprocess.STDOUT).returncode
+                proc = subprocess.Popen([PY, TRAIN, *COMMON, "--name", run, *args,
+                                         "--purpose", f"cumulative ablation arm {name} of the shampoo-run recipe",
+                                         "--hypothesis", "attribute the 5-15x low weight-space velocity to a component"],
+                                        cwd=SAO, env=env, stdout=lf, stderr=subprocess.STDOUT)
+                tracker = ResourceTracker(proc.pid, poll_interval=2.0)
+                tracker.start()
+                rc = proc.wait()
+                res = tracker.stop()
+            elapsed = time.time() - t0
             ok = (OUT / run / f"step={STEPS}.ckpt").exists()
-            log(f"{name}: exit rc={rc} checkpoint={'yes' if ok else 'MISSING'}")
+
+            # Parse it/s from train.log if available
+            train_it_s = None
+            try:
+                tlog = (OUT / run / "train.log").read_text(errors="ignore")
+                matches = re.findall(r"([\d\.]+)it/s", tlog)
+                if matches:
+                    train_it_s = float(matches[-1])
+            except Exception:
+                pass
+
+            overall_it_s = round(STEPS / elapsed, 4) if elapsed > 0 else None
+            sec_per_it = round(elapsed / STEPS, 2) if elapsed > 0 else None
+
+            profile = {
+                "arm": name,
+                "rc": rc,
+                "checkpoint": ok,
+                "elapsed_sec": round(elapsed, 1),
+                "overall_it_s": overall_it_s,
+                "sec_per_it": sec_per_it,
+                "train_it_s": train_it_s,
+                **res
+            }
+            with open(OUT / run / "resource_profile.json", "w") as pf:
+                json.dump(profile, pf, indent=2)
+
+            speed_str = f"{overall_it_s:.3f} it/s ({sec_per_it:.2f} s/step)" if overall_it_s else "N/A"
+            vram_str = f"{res['peak_vram_gb']:.2f} GB"
+            ram_str = f"{res['peak_rss_gb']:.2f} GB (sys: {res['peak_sys_ram_gb']:.2f} GB)"
+            log(f"{name}: exit rc={rc} checkpoint={'yes' if ok else 'MISSING'} | {speed_str} | peak VRAM {vram_str} | peak RAM {ram_str}")
         finally:
             subprocess.run([GUARD, "release", "WINTERMUTE", str(os.getpid())], capture_output=True)
     log("chain done")
