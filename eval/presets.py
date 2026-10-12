@@ -1,3 +1,4 @@
+# Last edited: GHOST-NOTE 2026-10-12 -- folder support (rel_path, rglob listing)
 """A preset is a /generate payload with a name. Nothing more.
 
 Deliberately NOT a new parameter model: the payload is passed to the render
@@ -27,6 +28,15 @@ def slug(name: str) -> str:
     return s or "preset"
 
 
+def rel_path(name: str) -> Path:
+    """FOLDERS (ComfyUI-style): a name like 'v7-full/d4-o2' lives at <dir>/v7-full/d4-o2.json. Each path component is slugged
+    on its own, so '..', absolute paths and odd characters can never leave the preset dir. A name without '/' is unchanged."""
+    parts = [x for x in str(name).replace("\\", "/").split("/") if x.strip() and x.strip() not in (".", "..")]
+    if not parts:
+        return Path("preset.json")
+    return Path(*[slug(x) for x in parts[:-1]]) / f"{slug(parts[-1])}.json"
+
+
 def _dir(d) -> Path:
     p = Path(d) if d is not None else PRESET_DIR
     p.mkdir(parents=True, exist_ok=True)
@@ -52,13 +62,17 @@ def save(name, payload, *, notes="", form=None, dir=None) -> Path:
            "created": time.time(), "payload": body}
     if form:
         rec["form"] = dict(form)
-    p = _dir(dir) / f"{slug(name)}.json"
+    p = _dir(dir) / rel_path(name)
+    p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(rec, indent=2, sort_keys=True))
     return p
 
 
 def load(name, *, dir=None) -> dict:
-    p = _dir(dir) / f"{slug(name)}.json"
+    p = _dir(dir) / rel_path(name)
+    if not p.exists():                                       # legacy flat file saved before folders ('Goa / lead' -> goa-lead.json)
+        legacy = _dir(dir) / f"{slug(name)}.json"
+        p = legacy if legacy.exists() else p
     if not p.exists():
         raise FileNotFoundError(f"no preset {name!r} at {p}")
     return json.loads(p.read_text())
@@ -68,10 +82,12 @@ def list_presets(dir=None) -> list[dict]:
     """Newest first. A corrupt file is skipped, not fatal -- one bad hand-edit
     must not take the whole picker down."""
     out = []
-    for p in _dir(dir).glob("*.json"):
+    root = _dir(dir)
+    for p in root.rglob("*.json"):
         try:
             d = json.loads(p.read_text())
-            out.append({"name": d["name"], "notes": d.get("notes", ""),
+            out.append({"name": d["name"], "folder": "/".join(p.relative_to(root).parts[:-1]),
+                        "notes": d.get("notes", ""),
                         "created": d.get("created", 0.0),
                         "prompt": d.get("payload", {}).get("prompt", ""),
                         "path": str(p)})

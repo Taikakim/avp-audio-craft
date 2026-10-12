@@ -41,8 +41,15 @@ def test_a_preset_round_trips_with_its_notes_and_schema(tmp_path):
 
 
 def test_names_are_slugged_for_the_filename_but_kept_verbatim_inside(tmp_path):
+    # a '/' is a FOLDER since 2026-10-12 (ComfyUI-style); the leaf is still slugged and the name kept verbatim inside
     path = presets.save("Goa / lead #2", PAYLOAD, dir=tmp_path)
-    assert path.name == "goa-lead-2.json"
+    assert path.parent.name == "goa" and path.name == "lead-2.json"
+    assert presets.load("Goa / lead #2", dir=tmp_path)["name"] == "Goa / lead #2"
+
+
+def test_legacy_flat_file_for_a_slash_name_still_loads(tmp_path):
+    import json
+    (tmp_path / "goa-lead-2.json").write_text(json.dumps({"schema": 1, "name": "Goa / lead #2", "payload": PAYLOAD}))
     assert presets.load("Goa / lead #2", dir=tmp_path)["name"] == "Goa / lead #2"
 
 

@@ -1,0 +1,16 @@
+{
+  "created": 1791831397.0318089,
+  "name": "v7-smoke-4clips/d-inpaint2bar_o-skipped",
+  "notes": "v7 transition variant 'd-inpaint2bar_o-skipped' (4 clips, 3 transitions, window 14.11 s = 8 bars). Recipe of the GENERATED part only: prompt/cfg/steps/DoRA as rendered. The offline stem pipeline (tempo lock via bungee, kick-phase alignment, LR4 bass hand-over, drum crossfade or masked drum inpaint, other-stem slerp/inpaint, sample-exact assembly) is NOT a GUI knob: rebuild with eval/render_v7_smoketest.py --drum-inpaint-bars 2 4 --other-inpaint-bars 2 4 --other-slerp. Source run: kuang_smoke_4clips. Drum prompt: 'goa trance drum loop, kick, hi-hats, percussion, no melody'; other prompt: 'goa trance, psytrance, rolling bassline'.",
+  "payload": {
+    "cfg_scale": 6.0,
+    "dora": {
+      "ckpt_path": "/run/media/kim/Mantu2/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
+      "strength": 1.0
+    },
+    "duration": 14.11,
+    "prompt": "goa trance drum loop, kick, hi-hats, percussion, no melody",
+    "steps": 24
+  },
+  "schema": 1
+}

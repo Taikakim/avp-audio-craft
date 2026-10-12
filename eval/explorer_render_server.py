@@ -1,3 +1,4 @@
+# Last edited: GHOST-NOTE 2026-10-12 -- /presets/{name:path} so folder presets resolve
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
 FastAPI on :8056 (SAO/.venv). Holds medium-base resident on the GPU; endpoints
@@ -814,7 +815,7 @@ def presets_list():
     return {"ok": True, "presets": presets.list_presets()}
 
 
-@app.get("/presets/{name}")
+@app.get("/presets/{name:path}")
 def presets_get(name: str):
     try:
         return presets.load(name)
