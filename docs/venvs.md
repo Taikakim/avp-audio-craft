@@ -136,9 +136,15 @@ Recipe that worked (index `https://stable.repo.amd.com/rocm/whl-next/`):
   `fusion_optimiser` (editable from `/home/kim/Projects/fusion-optimiser`), torchdiffeq, torchsde, torchmetrics,
   torchlibrosa, `laion_clap` import fine; bungee: `pip install --no-deps bungee-python==0.2.1`, import as
   `from bungee_python import bungee`. NOT done: `bitsandbytes` (not functional on ROCm), `onnxruntime-migraphx`.
-  UNTESTED: a real LatCH step, `eval_latch.py`, guided generation, CLAP scoring end to end. The SAO-Small
-  `train_latch.py` finds 0 latents here: its 64-dim latents were retired 2026-09-23, so the SAO-Small path has no data
-  on this machine; SA3 heads train through the SA3 scripts.
+  UNTESTED at time of writing: a real LatCH step, `eval_latch.py`, guided generation, CLAP scoring end to end.
+  **Correction (2026-10-14):** an earlier draft of this note said the training data was gone. It is not: it moved
+  (Kosmos, `/run/media/kim/Kosmos/`, see MASTER §2 / ARCHITECTURE). What failed was running the WRONG script:
+  `stable-audio-tools/scripts/train_latch.py` (SAO-Small) still defaults to removed Lehto/Mantu paths; the SA3
+  head trainer is `stable-audio-3/scripts/latch/train_latch.py` (default `--latent-dir /home/kim/Projects/latents_sa3`).
+  Kosmos is 95% full (14 GB free of 233 GB): plan any further moves accordingly.
+- **Which 10.1 venv to keep (GHOST-NOTE recommendation, pending owner's decision):** `.venv-rocm10-amd` (torch 2.14
+  release, native CK built locally, sat deps). Retire `.venv-rocm10` (torch 2.16 nightly, no CK) and `sa3-rocm10-test`.
+  `SAO/.venv` (7.14) retires only after a 10.1 render check against the 7.2.3 corpus.
 
 ### torchcodec and ffmpeg (pointers, not repeated here)
 `SAO/torchcodec/` source clone shadows the real package when python runs from the SAO root (MASTER §5); mir's
