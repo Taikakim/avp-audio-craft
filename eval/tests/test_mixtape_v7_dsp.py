@@ -501,3 +501,26 @@ def test_kick_grid_trusts_the_kicks_not_a_rigid_downbeat_file():
     assert np.min(np.abs(downs[3] - beats)) < 0.01                          # bar starts sit on kicks
     assert abs(((downs[0] - (0.31 + 2 * period)) / period + 0.5) % 4 - 0.5) < 0.05      # same beat-of-bar as the file's first downbeat
     assert dsp.kick_grid(np.vstack([x, x]), sr, 0.31 + np.arange(20) * (240.0 / 100.0)) is None   # 100 vs 143: not trusted
+
+
+def test_bandswap_master_hands_the_low_band_over_late_and_sweeps_the_rest():
+    """GHOST-NOTE 2026-10-13, v7c master: the window opens as A and ends as B, the low band (kick + bass) changes hands late on
+    one of A's downbeats, and B's highs arrive before B's lows."""
+    sr, bar = 44100, 44100
+    L = 8 * bar
+    t = np.arange(L) / sr
+    tone = lambda f: np.vstack([np.sin(2 * np.pi * f * t)] * 2)
+    a = tone(80) + tone(3000)                                   # A: bass + highs
+    b = tone(100) * 0 + np.vstack([np.sin(2 * np.pi * 60 * t + 1.0)] * 2) + np.vstack([np.sin(2 * np.pi * 7000 * t)] * 2)
+    downs = np.arange(0, L, bar)
+    m, h = dsp.bandswap_master(a, b, downs, bar, sr)
+    assert m.shape == a.shape and abs(h / L - 0.8) < 0.13 and h in set(downs.tolist())
+    def seg(x, f, i0, i1):
+        y = x[0, int(i0 * L):int(i1 * L)]
+        return float(np.abs(np.fft.rfft(y * np.hanning(len(y)))[int(round(f * len(y) / sr))]))
+    assert seg(m, 80, 0.55, 0.65) > 100 * seg(m, 60, 0.55, 0.65)         # A's bass only, before the hand-over
+    assert seg(m, 60, 0.85, 0.97) > 100 * seg(m, 60, 0.55, 0.65)         # B's bass arrives after it
+    assert seg(m, 80, 0.9, 1.0) < 0.7 * seg(m, 80, 0.55, 0.65)           # A's fades (what stays is the subtraction split's residue,
+    #                                                                       the same in mixtape_assemble_v7.render_bandswap)
+    assert seg(m, 7000, 0.1, 0.4) > 3 * seg(m, 7000, 0.0, 0.1) - 1e-9    # B's highs are in before the sweep ends
+    assert np.allclose(m[:, :50], a[:, :50], atol=0.2) and np.allclose(m[:, -50:], b[:, -50:], atol=0.2)   # joins the bodies

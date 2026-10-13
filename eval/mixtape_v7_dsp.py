@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_stretch_plan / bungee_stretch_schedule (time-varying stretch)
 # Last edited: GHOST-NOTE 2026-10-13 -- kick_grid_shift (onset-based phase alignment, +-1/2 beat)
+# Last edited: GHOST-NOTE 2026-10-13 -- bandswap_master (the v7c master: late low-band hand-over + LP/HP sweep of the rest)
 # Last edited: GHOST-NOTE 2026-10-13 -- kick_grid (kick-measured tempo + beat grid; the downbeat file's BPM was up to 5 BPM off)
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_filter / other_sweep (the assembler's moving-crossover `other` crossfade, for the smoke renderer)
 """mixtape_v7_dsp.py -- pure numpy/scipy building blocks for the v7 stem transition.
@@ -600,6 +601,39 @@ def kick_grid(drums, sr, db_ref, tol=0.08, min_kicks=20):
     downs = first + 4 * slope * np.arange(-int(np.floor(first / (4 * slope))), int(np.ceil((dur - first) / (4 * slope))) + 1)
     downs = downs[(downs >= 0) & (downs <= dur)]
     return float(bpm), downs, {"n_kicks": int(len(on)), "resid_mad_ms": mad_ms, "bpm_downbeat_file": float(bpm_ref)}
+
+
+def bandswap_master(a, b, downs, bar, sr=44100, handover_frac=0.8, handover_sec=0.04, edge_sec=0.1,
+                    fc_hi=16000.0, fc_lo=60.0, split_fc=150.0):
+    """The v7c transition master (mixtape_assemble_v7.render_bandswap, ported onto the smoke renderer's time base so it gets the
+    tempo plan, bounded windows and kick phase). a, b: (C, L) FULL mixes of the outgoing / incoming clip over the window.
+      low band (< split_fc: kick + bass): ONE clip at a time, handed A -> B on the downbeat of A nearest `handover_frac` of the
+        window, with a `handover_sec` equal-power blend (never two basslines; the hand-over is late: kick and bass move last);
+      the rest (> split_fc): outgoing LP(fc(t)), incoming HP(fc(t)), ONE LR4 crossover swept exponentially fc_hi -> fc_lo over
+        the window, so B first plays only the extreme highs and its lows arrive last; B is gain-ramped in over the first bar;
+      the master is blended into / out of A / B's own continuing audio over `edge_sec` (equal-power) so it joins the clip bodies.
+    `downs`: A's downbeats in window samples. Highs/lows are split by SUBTRACTION, so low + high rebuild the clip exactly.
+    Returns (master (C, L) float32, handover sample)."""
+    L = a.shape[-1]
+    lp = lambda x: sosfilt(lr4_sos(split_fc, "low", sr), np.asarray(x, dtype=np.float64), axis=-1)   # noqa: E731
+    a64, b64 = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    a_low, b_low = lp(a64), lp(b64)
+    a_hi, b_hi = a64 - a_low, b64 - b_low
+    mid = int(handover_frac * L)
+    downs = np.asarray(downs, dtype=np.float64)
+    cand = downs[(downs > L // 2) & (downs < L - bar)]
+    h = int(cand[np.argmin(np.abs(cand - mid))]) if len(cand) else mid
+    th = np.clip((np.arange(L) - (h - int(handover_sec * sr / 2))) / (handover_sec * sr), 0.0, 1.0)
+    wb, wa = np.sin(th * np.pi / 2), np.cos(th * np.pi / 2)
+    fc = lambda k: fc_hi * (fc_lo / fc_hi) ** (np.asarray(k, dtype=np.float64) / L)                   # noqa: E731
+    ramp_in = np.minimum(np.arange(L) / max(bar, 1), 1.0)
+    m = a_low * wa + b_low * wb + tv_filter(a_hi, fc, "low", sr) + tv_filter(b_hi, fc, "high", sr) * ramp_in
+    nb = min(int(edge_sec * sr), L // 2)
+    gin, gout = np.sin(np.linspace(0, np.pi / 2, nb)), np.cos(np.linspace(0, np.pi / 2, nb))
+    out = m.copy()
+    out[:, :nb] = m[:, :nb] * gin + a64[:, :nb] * gout
+    out[:, L - nb:] = m[:, L - nb:] * gout + b64[:, L - nb:] * gin
+    return out.astype(np.float32), h
 
 
 def kick_grid_shift(a_seg, b_seg, beat_samples, sr=44100, span=0.5):

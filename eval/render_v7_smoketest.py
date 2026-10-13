@@ -2,6 +2,7 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
+# Last edited: GHOST-NOTE 2026-10-13 -- --band-swap (the v7c master: late bass/kick hand-over + LP/HP sweep of the rest)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-source kicks (default): tempo and bar grid from the clips' kicks, not the downbeat file
 # Last edited: GHOST-NOTE 2026-10-13 -- --dump-ab (A and B on one time base, silence outside each clip, for overlaying in a DAW)
 # Last edited: GHOST-NOTE 2026-10-13 -- --other-sweep (the assembler's LP/HP moving-crossover `other` crossfade as the a2a init audio)
@@ -99,6 +100,10 @@ def parse_args(argv=None):
                     help="kicks: each clip's tempo and bar grid come from its own kick onsets (dsp.kick_grid; the downbeat file only "
                          "picks which beat starts a bar). The downbeat file's BPM was up to 5 BPM off (clip 24: 148 vs 143.0), "
                          "which hid real gaps from --tempo-plan. Falls back to the downbeat file per clip when the kicks are unclear")
+    ap.add_argument("--band-swap", action="store_true",
+                    help="v7c master instead of the per-stem recipe: low band (<150 Hz) one clip at a time, handed over late on A's "
+                         "downbeat nearest 80 %% of the window; the rest swept (A low-passed, B high-passed, one crossover "
+                         "16 kHz -> 60 Hz); B ramped in over the first bar. Plain (no generation); writes ..._bandswap.wav")
     ap.add_argument("--dump-ab", type=float, default=0.0, metavar="BARS",
                     help="also write, per transition, A and B as separate files on ONE time base (the window plus BARS bars each "
                          "side; silence where a clip has no audio) for overlaying in a DAW: ab_<i>_{A,B}_{full,drums,bass}.wav. "
@@ -211,6 +216,8 @@ def parse_args(argv=None):
         assert args.noise_levels and all(0.0 < v <= 1.0 for v in args.noise_levels)
     except (ValueError, AssertionError):
         ap.error("--noise-levels must be a comma list of numbers in (0, 1]")
+    if args.band_swap and not args.no_generate:
+        ap.error("--band-swap is the plain v7c master; add --no-generate")
     lora = not args.no_generate and args.other_mode == "lora_latch"
     need = ["order", "stems_dir", "out_dir"] + (["ckpt_b", "chroma_head"] if lora else [])
     missing = [f"--{n.replace('_', '-')} (or ${ENV[n]})" for n in need if not getattr(args, n)]
@@ -788,7 +795,17 @@ def main(argv=None):
             rec["outputs"].append(out)
             print(f"  wrote {name.name} (peak {out['peak']:.2f}, other: {other_path})", flush=True)
 
-        if not generating:
+        if args.band_swap:
+            a_full = sum(win(sA, n_, a_lo) for n_ in STEM_NAMES)
+            b_full = sum(win(sB, n_, b_lo) for n_ in STEM_NAMES)
+            downs_w = np.asarray(dbA_eff, dtype=float) * SR - a_lo
+            master, h_ = dsp.bandswap_master(a_full, b_full, downs_w, bar, SR)
+            name = out_dir / f"v7_smoke_trans_FAST_{i}_bandswap.wav"
+            sf.write(str(name), master.T, SR, subtype="FLOAT")
+            rec["bandswap_handover_sample"], rec["bandswap_handover_frac"] = int(h_), round(h_ / L, 3)
+            rec["outputs"].append({"nl": None, "other_path": "bandswap", "peak": float(np.abs(master).max()), "file": name.name})
+            print(f"  wrote {name.name} (low band hands over at {h_ / L:.0%} of the window)", flush=True)
+        elif not generating:
             emit(other_ref, "skipped", {"nl": None})              # the plain crossfade: the baseline (and the benchmark)
         target = chroma_morph_target(other_a, other_b) if generating and args.other_mode == "lora_latch" else None
         for nl in (args.noise_levels if generating else []):
