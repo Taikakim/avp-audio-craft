@@ -5,7 +5,10 @@ eval/bench_attention_256.py: medium-base, T=512, B=1, bf16 autocast, 48 trainabl
 CK fwd+bwd loop (--mode ckraw) to reproduce the GPU memory fault seen in the 10.1 CK kernel benchmark at T=512.
 WHY: CK is ~1.45x slower than SDPA per step on every stack tried; the trace says which kernels the time goes to.
 RUN: rocprofv3 --kernel-trace --stats -d OUT -- <venv>/bin/python eval/trace_dit_step.py --attn ck|native  (from a scratch cwd)"""
-import argparse, os, sys, time
+import argparse, os, platform, sys, time
+# platform.architecture() forks `file`; a fork inside a process rocprofv3 is tracing deadlocks (seen 2026-10-13: main thread in wait4 on a
+# child that never exec'd, both CK and SDPA runs). Nothing here needs it.
+platform.architecture = lambda *a, **k: ("64bit", "ELF")
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 import torch
 import torch.nn.functional as F

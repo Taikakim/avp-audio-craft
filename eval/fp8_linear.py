@@ -32,6 +32,7 @@ class _Fp8Matmul(torch.autograd.Function):
             y = y + bias.to(y.dtype)
         ctx.save_for_backward(w8t, sw)
         ctx.x_dtype = x.dtype
+        y = y.to(x.dtype)                                    # the stock model may be fp16 (model_half); bf16 out broke its convs
         return y.reshape(*shp[:-1], y.shape[-1])
 
     @staticmethod
