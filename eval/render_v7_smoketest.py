@@ -2,6 +2,7 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
+# Last edited: GHOST-NOTE 2026-10-13 -- --dump-ab (A and B on one time base, silence outside each clip, for overlaying in a DAW)
 # Last edited: GHOST-NOTE 2026-10-13 -- --other-sweep (the assembler's LP/HP moving-crossover `other` crossfade as the a2a init audio)
 # Last edited: GHOST-NOTE 2026-10-13 -- --phase-mode kicks (default): onset-based B->A phase alignment over +-1/2 beat, replaces the NCC shift that hit its 1/4-beat limit
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
@@ -93,6 +94,10 @@ def parse_args(argv=None):
     ap.add_argument("--phase-span", type=float, default=None,
                     help="kick phase alignment searches +-this fraction of a beat (default: 0.25 for --phase-mode ncc, "
                          "0.5 for kicks)")
+    ap.add_argument("--dump-ab", type=float, default=0.0, metavar="BARS",
+                    help="also write, per transition, A and B as separate files on ONE time base (the window plus BARS bars each "
+                         "side; silence where a clip has no audio) for overlaying in a DAW: ab_<i>_{A,B}_{full,drums,bass}.wav. "
+                         "Sample 0 = a_lo - BARS bars; B sits where the render puts it (kick phase shift applied)")
     ap.add_argument("--other-sweep", action="store_true",
                     help="`other` crossfade = the assembler's moving LR4 crossover (outgoing low-passed, incoming high-passed, fc "
                          "16 kHz -> 60 Hz over the window) instead of the plain equal-power crossfade. It is the reference the "
@@ -687,6 +692,13 @@ def main(argv=None):
               f"({'NCC %.3f -> %.3f' % (ncc_0, ncc_b) if args.phase_mode == 'ncc' else '%d kicks, spread %.1f ms' % (rec['phase_kicks_used'], rec['phase_spread_ms'])})", flush=True)
 
         bar = int(round(4 * 60 / bpm * SR))
+        if args.dump_ab > 0:
+            pad = int(round(args.dump_ab * bar))
+            for tag, st, lo in (("A", sA, a_lo), ("B", sB, b_lo)):
+                parts = {n: dsp.safe_slice(st[n], lo - pad, lo + L + pad) for n in STEM_NAMES}
+                for nm, x in (("full", sum(parts.values())), ("drums", parts["drums"]), ("bass", parts["bass"])):
+                    sf.write(str(out_dir / f"ab_{i}_{tag}_{nm}.wav"), np.asarray(x).T.astype(np.float32), SR, subtype="FLOAT")
+            rec["dump_ab"] = {"pad_samples": pad, "window_start_sample": pad, "window_len": int(L), "bar_samples": bar}
 
         # SYNC CHECK 1 (after the stretch, the snap and the alignment, before the layers are built and anything is
         # generated): are A and B on ONE kick grid inside the window? Measured on the audio the window is actually cut
