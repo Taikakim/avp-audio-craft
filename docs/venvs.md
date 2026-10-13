@@ -46,6 +46,8 @@ absolute python path. See MASTER §3 for the per-task quick table.
 
 ## flash-attn on ROCm — current reality
 
+> **SUPERSEDED IN PART (2026-10-14): the "30–100% faster" claim below holds only against SDPA's math fallback or Triton FA2. Against the native SDPA of torch 2.14 CK ties on forward and is ~1.45x SLOWER on a training step. See the 2026-10-13/14 section at the end of this file.**
+
 > **UPDATE (2026-06-23): native CK flash-attn is now BUILT, VALIDATED, and the recommended
 > path on all three torch-2.10/2.12 ROCm venvs** (`sat-venv`, `stable-audio-3/.venv`,
 > `sa3-rocm7.13-test`), which ship a **CK-backend `flash_attn 2.8.4`** for RDNA4/gfx1201
@@ -91,3 +93,79 @@ largely obsolete.
   build with `GPU_ARCHS="gfx1201" FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`. Likely no system
   ROCm upgrade needed (CK compiles from source into the extension). Full detail: SA3 memory
   `rocm-flash-attn-env.md`.
+
+## 2026-10-13/14 — AMD-index ROCm 10.1 venv, native CK vs SDPA, FP8, full-FT memory (GHOST-NOTE)
+
+Written after a day of measurement; every number below is from `~/staging/attn-bench/` (JSONs + `trace/`
+rocprofv3 CSVs) unless marked untested. Scripts: `eval/bench_attention_256.py` (ANTIGRAVITY's CK-vs-SDPA
+proxy), `eval/trace_dit_step.py` (rocprofv3 workload, `--mode dit|fwd|ckraw`), `eval/bench_fp8_dit.py`,
+`eval/fp8_linear.py`, `eval/render_fp8_clips.py`, `eval/bench_fullft_vram.py`.
+
+### Native CK flash-attn vs native SDPA — the corrected picture
+- **Rendering (forward only): CK = SDPA.** T=512 64.0 vs 64.3 ms, T=2048 171.9 vs 170.7 ms on the 7.14 venv;
+  the 7.2.3 venv is within 3-6% either way. Forward kernels are 32 us (CK) vs 34 us (SDPA `flyc_attn_fwd`).
+- **Training (backward): CK is much SLOWER.** Same DiT proxy step, T=512, 48 trainable `to_out`: **CK 293 ms vs
+  SDPA 203 ms** (7.14). The whole gap is one kernel: CK `FmhaBwdDQDKDVKernel` 845 us/call (31% of all GPU time)
+  vs SDPA `flyc_bwd_dkdv` + `flyc_bwd_dq` ~83 us/call. GEMMs, layer norms, copies are identical within 1%.
+- **Same on every stack tried** (7.2.3/torch 2.10, 7.14/torch 2.14, AMD-index 10.1): CK step ~278-293 ms, and the
+  CK .so files are three different builds, so this is the kernel, not a regression. The old "CK is 30-100% faster"
+  / "2-4x" statements compared CK against SDPA's MATH fallback (CK is ~2.0-2.3x faster than math only) or against
+  Triton FA2, and mostly measured the STACK (7.14 vs 2.10 ~1.66x with TunableOp on both), not the flash kernel
+  (1.18x). **Unreproduced:** the 1.39x CK-over-SDPA case on torch 2.12 (that venv no longer exists).
+  ⇒ the line in `CLAUDE.md`/the sections below saying CK is 30-100% faster is TRUE only against the fallback.
+  Do not use CK for training backward on this card; for rendering it is harmless, not helpful.
+- **Reproducing the trace:** `rocprofv3 --kernel-trace --stats -d OUT -- <venv>/python eval/trace_dit_step.py
+  --attn ck|native` from a scratch cwd. A profiled process that forks deadlocks (`platform.architecture()` forks
+  `file`); the script stubs it. Exit-time "corrupted double-linked list" is a known teardown segfault.
+
+### AMD-index venv (`SAO/.venv-rocm10-amd`, py3.13, torch 2.14.0+rocm10.1.0)
+Recipe that worked (index `https://stable.repo.amd.com/rocm/whl-next/`):
+1. Install BOTH `amd-torch-device-gfx1201` AND the family package `amd-torch-device-gfx12-0` (the latter holds
+   `aotriton.images`). Without it flash/mem-efficient SDPA fail with `hipErrorInvalidImage`; it looks like a 10.1 bug, it is not.
+2. To compile anything (flash-attn): install `rocm[devel]`, run `rocm-sdk init` (expands `_rocm_sdk_devel`), and use
+   `rocm-sdk path --root` as `ROCM_PATH`. The shell's `ROCM_PATH=/opt/rocm` (7.2.4) is a tripwire.
+3. **torchvision must be the MATCHING build, and `pip index versions` hides it: it is a prerelease.** TheRock's
+   compatibility matrix: torch 2.14 / torchaudio 2.11 / torchvision **0.29**; 2.13/0.28; 2.12/0.27; 2.11/0.26.
+   torchvision declares a bare `Requires-Dist: torch`, so a mismatch (0.27/0.28 with torch 2.14) installs and
+   imports, then dies with `torchvision::nms does not exist` (undefined `c10::cuda` symbol in `_C.so`). Fix:
+   `uv pip install --prerelease=allow --no-deps --index-url <index> "torchvision==0.29.0a0+rocm10.1.0"`.
+   (`rocm-cli`'s `install sdk --version 10.1.0 --family gfx1201` automates this check: it resolves torch, torchvision and
+   torchaudio together and refuses unless all carry the same ROCm build id. Not built here yet.)
+4. Resolver trouble (dctorch numpy cap, protobuf): install from a freeze with `--no-deps`.
+- **As an `sat-venv` replacement (py3.10, 20 GB):** `stable_audio_tools`, its LatCH model/training modules,
+  `fusion_optimiser` (editable from `/home/kim/Projects/fusion-optimiser`), torchdiffeq, torchsde, torchmetrics,
+  torchlibrosa, `laion_clap` import fine; bungee: `pip install --no-deps bungee-python==0.2.1`, import as
+  `from bungee_python import bungee`. NOT done: `bitsandbytes` (not functional on ROCm), `onnxruntime-migraphx`.
+  UNTESTED: a real LatCH step, `eval_latch.py`, guided generation, CLAP scoring end to end. The SAO-Small
+  `train_latch.py` finds 0 latents here: its 64-dim latents were retired 2026-09-23, so the SAO-Small path has no data
+  on this machine; SA3 heads train through the SA3 scripts.
+
+### torchcodec and ffmpeg (pointers, not repeated here)
+`SAO/torchcodec/` source clone shadows the real package when python runs from the SAO root (MASTER §5); mir's
+torchcodec needs the `ffmpeg8-compat` SONAME shim (MASTER §5); the multitorch demo callback needs torchcodec
+(`--no_demos`, lumi-ops skill). One more trap seen today: do not benchmark from the SAO root for that same reason.
+
+### FP8 / BF8 (RDNA4 has the instructions; `torch._scaled_mm` runs them)
+- E4M3 forward / E5M2 input-gradient on FROZEN linears, dynamic per-tensor scale: **1.05-1.08x per DiT step**, not
+  worth it for speed; 1.8 s vs 1.56 s for a 20 s render (slower). Waveform cosine vs bf16 for same-seed renders
+  0.75-0.99 (diffusion drift decorrelates waveforms; listening is the real test; clips in `~/staging/fp8-clips/`).
+- `_scaled_mm` needs contiguous operands and its output dtype must equal the input dtype (model_half is fp16).
+  `-DCK_ENABLE_FP8/BF8` in the CK build are generic setup.py flags; the CK glue does not use FP8 attention.
+- **FP8 does not help full fine-tuning:** it shrinks matmul operands, not weights, gradients or optimizer state.
+
+### Full fine-tune peak VRAM, medium-base, T=512, activation checkpointing (`eval/bench_fullft_vram.py`)
+| weights | optimizer | state | peak | |
+|---|---|---|---|---|
+| bf16 | Lion | bf16 | 10.6 GiB | fits |
+| bf16 | Lion | fp32 | 13.3 | fits |
+| bf16 | AdamW | bf16 | 13.3 | fits |
+| bf16 | AdamW | fp32 | >14.8 | OOM |
+| fp32 | Lion | fp32 | 15.0 | OOM (2nd step) |
+| fp32 | AdamW | fp32 | >14.9 | OOM |
+~2.2 GiB of the baseline is the text encoder + autoencoder, which a real run can keep off the card. Memory only:
+untested whether plain bf16 updates at lr 1e-6 move the weights (needs stochastic rounding / compensation). T=1024 untested.
+
+### GPU etiquette learned the hard way
+`Misc/gpu_guard.sh` refuses if any process holds >512 MB; the filelock handle is re-entrant per handle (two scripts of
+one handle overlapped once); resident servers (`kind=server`) can be asked to yield by DM. Serialise your own chained
+runs by PID, not by lock alone.
