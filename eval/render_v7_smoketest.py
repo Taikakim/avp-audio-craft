@@ -2,6 +2,7 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
+# Last edited: GHOST-NOTE 2026-10-13 -- --tempo-source kicks (default): tempo and bar grid from the clips' kicks, not the downbeat file
 # Last edited: GHOST-NOTE 2026-10-13 -- --dump-ab (A and B on one time base, silence outside each clip, for overlaying in a DAW)
 # Last edited: GHOST-NOTE 2026-10-13 -- --other-sweep (the assembler's LP/HP moving-crossover `other` crossfade as the a2a init audio)
 # Last edited: GHOST-NOTE 2026-10-13 -- --phase-mode kicks (default): onset-based B->A phase alignment over +-1/2 beat, replaces the NCC shift that hit its 1/4-beat limit
@@ -94,6 +95,10 @@ def parse_args(argv=None):
     ap.add_argument("--phase-span", type=float, default=None,
                     help="kick phase alignment searches +-this fraction of a beat (default: 0.25 for --phase-mode ncc, "
                          "0.5 for kicks)")
+    ap.add_argument("--tempo-source", choices=("kicks", "downbeats"), default="kicks",
+                    help="kicks: each clip's tempo and bar grid come from its own kick onsets (dsp.kick_grid; the downbeat file only "
+                         "picks which beat starts a bar). The downbeat file's BPM was up to 5 BPM off (clip 24: 148 vs 143.0), "
+                         "which hid real gaps from --tempo-plan. Falls back to the downbeat file per clip when the kicks are unclear")
     ap.add_argument("--dump-ab", type=float, default=0.0, metavar="BARS",
                     help="also write, per transition, A and B as separate files on ONE time base (the window plus BARS bars each "
                          "side; silence where a clip has no audio) for overlaying in a DAW: ab_<i>_{A,B}_{full,drums,bass}.wav. "
@@ -506,6 +511,20 @@ def main(argv=None):
     if args.downbeats and Path(args.downbeats).exists():
         dbs = json.loads(Path(args.downbeats).read_text())
         print(f"Loaded downbeats for {len(dbs)} clips from {args.downbeats}", flush=True)
+
+    if args.tempo_source == "kicks" and dbs:
+        meta["kick_grid"] = {}
+        for c in clips:
+            cid = c["id"]
+            kg = dsp.kick_grid(stems[cid]["drums"], SR, dbs.get(cid, [])) if len(dbs.get(cid, [])) > 2 else None
+            if kg is None:
+                meta["kick_grid"][cid] = {"used": False}
+                print(f"  kick grid {cid[:28]}: unclear kicks, keeping the downbeat file", flush=True)
+                continue
+            bpm_k, downs_k, info = kg
+            meta["kick_grid"][cid] = dict(info, used=True, bpm=bpm_k)
+            print(f"  kick grid {cid[:28]}: {bpm_k:.2f} BPM from {info['n_kicks']} kicks (downbeat file said {info['bpm_downbeat_file']:.2f})", flush=True)
+            dbs[cid] = downs_k.tolist()
 
     tplan, stems_eff, db_eff, map_eff = {}, {}, {}, {}
     if args.tempo_plan:

@@ -642,7 +642,7 @@ def test_the_tempo_ratio_from_quantised_downbeats_does_not_drift(tmp_path, monke
     proj2, dbs2 = make_click_project(tmp_path / "med", **kw)
     median_bpm = lambda db, clip, default: (float(240.0 / np.median(np.diff(db))), "downbeats") if len(db) > 2 else (float(clip["bpm"]), "order")
     monkeypatch.setattr(smoke, "clip_tempo", median_bpm)                           # the pre-1412f09 method
-    _, meta2 = run(proj2, "--no-generate", "--w-bars", "8", *dbs2)
+    _, meta2 = run(proj2, "--no-generate", "--w-bars", "8", "--tempo-source", "downbeats", *dbs2)
     t = meta2["transitions"][0]
     assert abs(t["ab_drift_ms_per_s"]) > 2.0 and t["ab_grid_synced"] is False       # the gallop, caught
 

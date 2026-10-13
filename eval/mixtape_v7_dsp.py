@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_stretch_plan / bungee_stretch_schedule (time-varying stretch)
 # Last edited: GHOST-NOTE 2026-10-13 -- kick_grid_shift (onset-based phase alignment, +-1/2 beat)
+# Last edited: GHOST-NOTE 2026-10-13 -- kick_grid (kick-measured tempo + beat grid; the downbeat file's BPM was up to 5 BPM off)
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_filter / other_sweep (the assembler's moving-crossover `other` crossfade, for the smoke renderer)
 """mixtape_v7_dsp.py -- pure numpy/scipy building blocks for the v7 stem transition.
 
@@ -564,6 +565,41 @@ def phase_shift(a_seg, b_seg, beat_samples, sr=44100, penalty=0.05, span=0.25):
     v = c[n - 1 + ss] / np.maximum(na, 1e-12)
     k = int(np.argmax(v - penalty * np.abs(ss) / m))
     return int(ss[k]), float(v[k]), float(v[m])
+
+
+def kick_grid(drums, sr, db_ref, tol=0.08, min_kicks=20):
+    """Kick-measured tempo and bar grid of a clip (GHOST-NOTE 2026-10-13). The Phase 0 downbeat file (madmom) is a rigid grid at a
+    nominal tempo and was up to 5 BPM off the clips' kicks (clip 24: 148.0 against kicks at 143.00; 22 and 23 likewise), which
+    made the tempo plan see 'gap 0' where the real gap was 4 BPM. Diffusion clips are generated at a constant tempo, so a robust
+    fit over ALL kick onsets is the truth: Theil-Sen of onset time against beat index gives the period, the median residual the
+    phase. `db_ref` (the madmom downbeats) only chooses WHICH beat is a bar start: the beat nearest its first downbeat.
+    Returns (bpm, downbeats seconds, info) or None when there are < `min_kicks` kicks, the kick tempo is > `tol` from the
+    downbeat fit, or the fit leaves large residuals (then the caller keeps the downbeat file)."""
+    from scipy.stats import theilslopes
+    db_ref = np.asarray(db_ref, float)
+    on = kick_onsets(drums, sr)
+    if len(on) < min_kicks or len(db_ref) < 3:
+        return None
+    ib = np.diff(on)
+    ib = ib[(ib > 0.25) & (ib < 0.7)]
+    if len(ib) < min_kicks // 2:
+        return None
+    p0 = float(np.median(ib))
+    idx = np.round((on - on[0]) / p0)
+    slope, icpt = theilslopes(on, idx)[:2]
+    res = on - (icpt + slope * idx)
+    mad_ms = float(np.median(np.abs(res - np.median(res)))) * 1000.0
+    bpm, bpm_ref = 60.0 / slope, fit_bpm(db_ref)
+    if abs(bpm / bpm_ref - 1.0) > tol or mad_ms > 25.0:
+        return None
+    phase = float(np.median(res))
+    t0 = icpt + phase                                   # a beat time
+    dur = drums.shape[-1] / sr
+    n0 = int(round((db_ref[0] - t0) / slope))           # the beat nearest madmom's first downbeat is a bar start
+    first = t0 + n0 * slope
+    downs = first + 4 * slope * np.arange(-int(np.floor(first / (4 * slope))), int(np.ceil((dur - first) / (4 * slope))) + 1)
+    downs = downs[(downs >= 0) & (downs <= dur)]
+    return float(bpm), downs, {"n_kicks": int(len(on)), "resid_mad_ms": mad_ms, "bpm_downbeat_file": float(bpm_ref)}
 
 
 def kick_grid_shift(a_seg, b_seg, beat_samples, sr=44100, span=0.5):

@@ -479,3 +479,25 @@ def test_other_sweep_keeps_level_and_hands_over_from_a_to_b():
     q = L // 4
     rms = lambda z, i: float(np.sqrt((z[:, i * q:(i + 1) * q] ** 2).mean()))
     assert rms(ya, 0) > 3 * rms(ya, 3) and rms(yb, 3) > 3 * rms(yb, 0)
+
+
+def test_kick_grid_trusts_the_kicks_not_a_rigid_downbeat_file():
+    """GHOST-NOTE 2026-10-13: clip 24's downbeat file said 148.0 BPM while its kicks run at 143.00. The kick fit must return the
+    kick tempo, put the bar starts on the kicks, and keep madmom's choice of WHICH beat starts a bar."""
+    sr, bpm = 44100, 143.0
+    period = 60.0 / bpm
+    t = np.arange(0, 40.0, 1.0 / sr)
+    x = np.zeros(len(t))
+    for n in range(int((40.0 - 0.5) / period)):
+        i = int((0.31 + n * period) * sr)
+        x[i:i + 2000] += np.exp(-np.arange(2000) / 300.0) * np.sin(2 * np.pi * 55 * np.arange(2000) / sr)
+    db_file = 0.31 + 2 * period + np.arange(20) * (240.0 / 148.0)           # rigid, wrong tempo, first bar start = beat 2
+    out = dsp.kick_grid(np.vstack([x, x]), sr, db_file)
+    assert out is not None
+    bpm_k, downs, info = out
+    assert abs(bpm_k - 143.0) < 0.1
+    assert abs(np.diff(downs).mean() - 4 * period) < 2e-3
+    beats = 0.31 + np.arange(80) * period
+    assert np.min(np.abs(downs[3] - beats)) < 0.01                          # bar starts sit on kicks
+    assert abs(((downs[0] - (0.31 + 2 * period)) / period + 0.5) % 4 - 0.5) < 0.05      # same beat-of-bar as the file's first downbeat
+    assert dsp.kick_grid(np.vstack([x, x]), sr, 0.31 + np.arange(20) * (240.0 / 100.0)) is None   # 100 vs 143: not trusted
