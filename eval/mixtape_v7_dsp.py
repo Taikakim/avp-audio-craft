@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_stretch_plan / bungee_stretch_schedule (time-varying stretch)
+# Last edited: GHOST-NOTE 2026-10-13 -- kick_grid_shift (onset-based phase alignment, +-1/2 beat)
+# Last edited: GHOST-NOTE 2026-10-13 -- tv_filter / other_sweep (the assembler's moving-crossover `other` crossfade, for the smoke renderer)
 """mixtape_v7_dsp.py -- pure numpy/scipy building blocks for the v7 stem transition.
 
 No torch, no SA3, no GPU, no files: everything here runs and is unit-tested anywhere
@@ -53,6 +55,36 @@ def lr4_split(audio, fc, sr):
     low = sosfilt(lr4_sos(fc, "low", sr), audio, axis=-1)
     high = sosfilt(lr4_sos(fc, "high", sr), audio, axis=-1)
     return low, high
+
+
+def tv_filter(x, fc_of_n, kind, sr=44100, block=256):
+    """Time-varying LR4 with the filter state carried across blocks (sosfilt, never filtfilt); fc is updated per block and
+    quantised to 1 % steps so the design is cached. Same as mixtape_assemble_v7.tv_filter. x (C, N);
+    fc_of_n(array of sample indices) -> fc per sample."""
+    out = np.empty_like(x, dtype=np.float64)
+    cache, zi = {}, None
+    for lo in range(0, x.shape[1], block):
+        hi = min(lo + block, x.shape[1])
+        fc = float(fc_of_n(np.array([(lo + hi) // 2]))[0])
+        key = int(round(np.log(fc) / 0.01))
+        if key not in cache:
+            cache[key] = lr4_sos(float(np.exp(key * 0.01)), kind, sr)
+        sos = cache[key]
+        if zi is None or zi.shape[0] != sos.shape[0]:
+            zi = np.zeros((sos.shape[0], x.shape[0], 2))
+        y, zi = sosfilt(sos, x[:, lo:hi], axis=-1, zi=zi)
+        out[:, lo:hi] = y
+    return out
+
+
+def other_sweep(a, b, sr=44100, fc_hi=16000.0, fc_lo=60.0):
+    """The `other` crossfade of the v7c assembler (spec section 4): the outgoing clip is low-passed and the incoming clip
+    high-passed at ONE moving LR4 crossover that sweeps exponentially from `fc_hi` to `fc_lo` over the window, so the incoming
+    first plays only the extreme highs, then more and more, while the outgoing keeps only the lows, then nothing. The LR4 pair
+    sums magnitude-flat, so the level does not dip. a, b: (C, L). Returns (C, L) float64."""
+    L = a.shape[-1]
+    fc = lambda k: fc_hi * (fc_lo / fc_hi) ** (np.asarray(k, dtype=np.float64) / L)
+    return tv_filter(np.asarray(a, dtype=np.float64), fc, "low", sr) + tv_filter(np.asarray(b, dtype=np.float64), fc, "high", sr)
 
 
 def split_zero_phase(audio, fc, sr):
@@ -532,6 +564,25 @@ def phase_shift(a_seg, b_seg, beat_samples, sr=44100, penalty=0.05, span=0.25):
     v = c[n - 1 + ss] / np.maximum(na, 1e-12)
     k = int(np.argmax(v - penalty * np.abs(ss) / m))
     return int(ss[k]), float(v[k]), float(v[m])
+
+
+def kick_grid_shift(a_seg, b_seg, beat_samples, sr=44100, span=0.5):
+    """Phase alignment from the kick ONSETS themselves (GHOST-NOTE 2026-10-13). phase_shift() correlates kick envelopes over
+    +-1/4 beat; on 21 it returned exactly the 1/4-beat limit at NCC 0.26, i.e. it hit its edge instead of finding a peak,
+    and B's kicks stayed ~60 ms off a perfectly clean A grid. Here: for every A kick the signed offset to the nearest B kick
+    (grid_offsets_ms, wrapped to +-half an inter-onset interval, positive = B late); the shift is minus the median offset.
+    Returns (s, n_kicks_used, spread_ms) with phase_shift's sign (s > 0: B is early, delay it; apply as b_lo -= s). s is
+    clipped to +-`span` of a beat; spread_ms = median absolute deviation of the offsets about their median (small = one grid,
+    large = the kicks do not form a common grid at any shift). Returns (0, 0, nan) with < 3 kicks in either clip."""
+    ta, tb = kick_onsets(a_seg, sr), kick_onsets(b_seg, sr)
+    ta, off = grid_offsets_ms(ta, tb)
+    if len(off) < 3:
+        return 0, 0, float("nan")
+    med = float(np.median(off))
+    spread = float(np.median(np.abs(off - med)))
+    m = span * beat_samples
+    s = int(round(np.clip(-med / 1000.0 * sr, -m, m)))
+    return s, int(len(off)), spread
 
 
 def plan_tempo(bpm_a, bpm_b, threshold=5.0, up_share=0.65, slew=0.5):

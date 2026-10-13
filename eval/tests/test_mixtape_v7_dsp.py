@@ -461,3 +461,21 @@ def test_tempo_curve_is_constant_through_the_windows_and_ramps_in_quiet_bars():
     assert abs(at(db[2 + 8]) - ip["t_star"]) < 1e-9                       # B's window (bar 2..10) at the shared tempo
     assert abs(at(db[len(db) - 5 - 8]) - op["t_star"]) < 1e-9             # A's window (last 8 bars before the bound) too
     assert notes["b_ramp"][0] >= 10 and 14 <= notes["b_ramp"][0] + notes["b_ramp"][1] and abs(at(db[-1]) - op["t_star"]) < 1e-9
+
+
+def test_other_sweep_keeps_level_and_hands_over_from_a_to_b():
+    """GHOST-NOTE 2026-10-13: the moving-crossover `other` crossfade. Identical inputs must come out at the same level (the LR4
+    pair is magnitude-flat), and with A = low tone, B = high tone the early window is A-dominant in the lows... i.e. the
+    incoming clip's lows arrive late and the outgoing clip's highs leave early."""
+    sr, L = 44100, 44100 * 4
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((2, L))
+    y = dsp.other_sweep(x, x, sr)
+    assert abs(10 * np.log10((y ** 2).mean() / (x ** 2).mean())) < 1.0
+    t = np.arange(L) / sr
+    lo_tone, hi_tone = np.sin(2 * np.pi * 200 * t)[None], np.sin(2 * np.pi * 5000 * t)[None]
+    ya = dsp.other_sweep(np.vstack([lo_tone, lo_tone]), np.zeros((2, L)), sr)       # A's 200 Hz: kept until fc falls below it
+    yb = dsp.other_sweep(np.zeros((2, L)), np.vstack([hi_tone, hi_tone]), sr)       # B's 5 kHz: arrives once fc falls below it
+    q = L // 4
+    rms = lambda z, i: float(np.sqrt((z[:, i * q:(i + 1) * q] ** 2).mean()))
+    assert rms(ya, 0) > 3 * rms(ya, 3) and rms(yb, 3) > 3 * rms(yb, 0)

@@ -2,6 +2,8 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
+# Last edited: GHOST-NOTE 2026-10-13 -- --other-sweep (the assembler's LP/HP moving-crossover `other` crossfade as the a2a init audio)
+# Last edited: GHOST-NOTE 2026-10-13 -- --phase-mode kicks (default): onset-based B->A phase alignment over +-1/2 beat, replaces the NCC shift that hit its 1/4-beat limit
 """render_v7_smoketest.py -- 4-stem v7 transition smoke test, pre-computed stems.
 
 Replaces render_v7_4track_smoketest_fast.py (and the copies in ..._FULL.py / ..._FULL2.py) with the
@@ -88,8 +90,16 @@ def parse_args(argv=None):
     ap.add_argument("--max-stretch-shift-ms", type=float, default=100.0,
                     help="the largest stretcher latency the kick check will correct (about 1/4 beat at 140 BPM). Beyond it "
                          "the offset is ambiguous modulo the beat, so it is reported as unverified instead of corrected")
-    ap.add_argument("--phase-span", type=float, default=0.25,
-                    help="kick phase alignment searches +-this fraction of a beat (spec R0.3: 0.25)")
+    ap.add_argument("--phase-span", type=float, default=None,
+                    help="kick phase alignment searches +-this fraction of a beat (default: 0.25 for --phase-mode ncc, "
+                         "0.5 for kicks)")
+    ap.add_argument("--other-sweep", action="store_true",
+                    help="`other` crossfade = the assembler's moving LR4 crossover (outgoing low-passed, incoming high-passed, fc "
+                         "16 kHz -> 60 Hz over the window) instead of the plain equal-power crossfade. It is the reference the "
+                         "a2a starts from and the fallback, so with --noise-schedule flat the target fades in with the sweep")
+    ap.add_argument("--phase-mode", choices=("kicks", "ncc"), default="kicks",
+                    help="kicks: shift B by minus the median offset of its kick onsets to A's (dsp.kick_grid_shift; 21 had "
+                         "its NCC shift pinned at the 1/4-beat limit, NCC 0.26). ncc: the kick-envelope correlation (spec R0.3)")
     ap.add_argument("--out-dir", default=os.environ.get(ENV["out_dir"]), help=f"env {ENV['out_dir']}")
     ap.add_argument("--clips", default="2:6", help="slice of the order list, start:stop (default 2:6 = clips 2..5)")
     ap.add_argument("--w-bars", type=int, default=8,
@@ -658,14 +668,23 @@ def main(argv=None):
 
         # PHASE 0 step 3: kick-envelope phase alignment. phase_shift returns the delay to apply to B (> 0 = B is early);
         # a window START moves the other way: b_lo -= shift. (8a72197 added it; the sign is pinned by a test.)
-        shift, ncc_b, ncc_0 = dsp.phase_shift(win(sA, "drums", a_lo), win(sB, "drums", b_lo),
-                                              round(60.0 / bpm_b * SR), sr=SR, span=args.phase_span)
+        if args.phase_mode == "kicks":
+            shift, n_k, spread = dsp.kick_grid_shift(win(sA, "drums", a_lo), win(sB, "drums", b_lo),
+                                                     round(60.0 / bpm_b * SR), sr=SR,
+                                                     span=0.5 if args.phase_span is None else args.phase_span)
+            ncc_b, ncc_0 = float("nan"), float("nan")
+            rec.update(phase_kicks_used=n_k, phase_spread_ms=spread)
+        else:
+            shift, ncc_b, ncc_0 = dsp.phase_shift(win(sA, "drums", a_lo), win(sB, "drums", b_lo),
+                                                  round(60.0 / bpm_b * SR), sr=SR,
+                                                  span=0.25 if args.phase_span is None else args.phase_span)
         b_lo -= shift
         rec.update(phase_shift_samples=int(shift), phase_shift_ms=float(shift / SR * 1000), ncc_best=ncc_b, ncc_zero=ncc_0,
                    a_lo=int(a_lo), b_lo=int(b_lo), L=int(L))
         effective_stems[cA["id"]] = sA
         effective_stems[cB["id"]] = sB
-        print(f"  Kick phase alignment: shift = {rec['phase_shift_ms']:+.2f} ms (NCC {ncc_0:.3f} -> {ncc_b:.3f})", flush=True)
+        print(f"  Kick phase alignment ({args.phase_mode}): shift = {rec['phase_shift_ms']:+.2f} ms "
+              f"({'NCC %.3f -> %.3f' % (ncc_0, ncc_b) if args.phase_mode == 'ncc' else '%d kicks, spread %.1f ms' % (rec['phase_kicks_used'], rec['phase_spread_ms'])})", flush=True)
 
         bar = int(round(4 * 60 / bpm * SR))
 
@@ -709,7 +728,8 @@ def main(argv=None):
         vocals = dsp.crossfade(win(sA, "vocals", a_lo), win(sB, "vocals", b_lo))
         resid = dsp.crossfade(win(sA, "residual", a_lo), win(sB, "residual", b_lo), kind="linear")
         other_a, other_b = win(sA, "other", a_lo), win(sB, "other", b_lo)
-        other_ref = dsp.crossfade(other_a, other_b)          # reference level, and the labelled fallback
+        other_ref = (dsp.other_sweep(other_a, other_b, SR).astype(np.float32) if args.other_sweep
+                     else dsp.crossfade(other_a, other_b))        # reference level, and the labelled fallback
 
         rec["min_bass_power_gain"] = float(np.sqrt(ga ** 2 + gb ** 2).min())
         rec["outputs"] = []                                   # one entry per file written for this transition

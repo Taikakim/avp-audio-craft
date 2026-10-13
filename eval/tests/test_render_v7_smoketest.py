@@ -430,10 +430,10 @@ def test_without_alignment_a_late_clip_is_detected_with_its_size_and_sign(tmp_pa
 def test_an_offset_beyond_the_search_span_is_not_hidden(tmp_path):
     """200 ms late is ~0.47 beat at 140 BPM: outside +-1/4 beat in either direction. Alignment cannot fix it, the check must say so."""
     proj, _ = make_click_project(tmp_path, late={1: 0.20})
-    out, meta = run(proj, "--no-generate")
+    out, meta = run(proj, "--no-generate", "--phase-mode", "ncc")
     assert meta["transitions"][0]["ab_grid_synced"] is False
     with pytest.raises(smoke.SyncError):
-        run(proj, "--no-generate", "--require-sync")
+        run(proj, "--no-generate", "--require-sync", "--phase-mode", "ncc")
     meta = json.loads((proj / "out" / "run_meta.json").read_text())
     assert meta["transitions"][0]["error"] == "ab grid not synced"
 
@@ -590,7 +590,7 @@ def test_kick_ramp_auto_is_linear_on_one_grid_and_equal_power_when_the_grids_dif
     assert all(t["ab_grid_synced"] for t in meta["transitions"])
 
     proj2, _ = make_click_project(tmp_path / "off", late={1: 0.20})                # 0.47 beat late: alignment cannot fix it
-    _, meta = run(proj2, "--no-generate")
+    _, meta = run(proj2, "--no-generate", "--phase-mode", "ncc")
     assert meta["transitions"][0]["ab_grid_synced"] is False
     assert meta["transitions"][0]["kick_ramp_used"] == "equal_power"
 
@@ -649,9 +649,18 @@ def test_the_tempo_ratio_from_quantised_downbeats_does_not_drift(tmp_path, monke
 
 def test_a_pure_phase_error_is_not_reported_as_drift(tmp_path):
     proj, _ = make_click_project(tmp_path, late={1: 0.20})                           # constant offset, beyond the alignment span
-    _, meta = run(proj, "--no-generate")
+    _, meta = run(proj, "--no-generate", "--phase-mode", "ncc")
     t = meta["transitions"][0]
     assert abs(t["ab_drift_ms_per_s"]) < 1.5 and t["ab_grid_synced"] is False
+
+
+def test_kick_phase_mode_fixes_an_offset_the_ncc_search_cannot_reach(tmp_path):
+    """GHOST-NOTE 2026-10-13: 21's NCC shift sat at the 1/4-beat limit (NCC 0.26) with B's kicks ~60 ms off a clean A grid.
+    The default kick-onset mode searches +-1/2 beat: 0.47 beat late (200 ms at 140 BPM) is aligned and the grids agree."""
+    proj, _ = make_click_project(tmp_path, late={1: 0.20})
+    _, meta = run(proj, "--no-generate")
+    t = meta["transitions"][0]
+    assert t["ab_grid_synced"] is True and abs(t["phase_shift_ms"]) > 150 and t["phase_kicks_used"] >= 3
 
 
 # --- the variants: latent-slerp other, masked drum inpaint
