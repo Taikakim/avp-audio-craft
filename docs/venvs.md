@@ -146,6 +146,15 @@ Recipe that worked (index `https://stable.repo.amd.com/rocm/whl-next/`):
   release, native CK built locally, sat deps). Retire `.venv-rocm10` (torch 2.16 nightly, no CK) and `sa3-rocm10-test`.
   `SAO/.venv` (7.14) retires only after a 10.1 render check against the 7.2.3 corpus.
 
+- **Added to `.venv-rocm10-amd` 2026-10-14 (each dry-run first; torch, numpy, protobuf untouched):**
+  `stable-audio-tools` and `sao-tooling` editable `--no-deps` (note `sao-tooling` provides the modules
+  `sa3_control` and `latch`, there is NO module called `sao_tooling`; an import check by that name always fails),
+  `muscriptor` editable from `/home/kim/Projects/muscriptor` WITH deps (adds only httptools, python-dotenv, uvloop,
+  watchfiles, websockets), `onnxruntime-migraphx 1.27.1` (providers MIGraphX + CPU; the ~9-40 min AOT compile per
+  session still applies, untested here), and the `my_wheels/rocm10.1/torchcodec-0.18.0a0` wheel (decode,
+  `torchaudio.load/save` work on torch 2.14). Verified: `muscriptor transcribe -m medium` on a 12 s clip wrote a MIDI
+  (8 s, weights from the HF cache, `HF_HUB_OFFLINE=1`).
+
 ### torchcodec and ffmpeg (pointers, not repeated here)
 `SAO/torchcodec/` source clone shadows the real package when python runs from the SAO root (MASTER §5); mir's
 torchcodec needs the `ffmpeg8-compat` SONAME shim (MASTER §5); the multitorch demo callback needs torchcodec
