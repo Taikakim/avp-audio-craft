@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Owner: GHOST-NOTE (created 2026-10-13)
+# Last edited: GHOST-NOTE 2026-10-13 -- --mode fwd (forward-only timing, the inference path)
 """trace_dit_step.py -- the workload for `rocprofv3 --kernel-trace --stats`: a few SA3 DiT training steps (same proxy as
 eval/bench_attention_256.py: medium-base, T=512, B=1, bf16 autocast, 48 trainable to_out) with CK flash-attn or native SDPA, or a raw
 CK fwd+bwd loop (--mode ckraw) to reproduce the GPU memory fault seen in the 10.1 CK kernel benchmark at T=512.
@@ -15,7 +16,7 @@ import torch.nn.functional as F
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--attn", choices=("native", "ck"), default="native")
-ap.add_argument("--mode", choices=("dit", "ckraw"), default="dit")
+ap.add_argument("--mode", choices=("dit", "ckraw", "fwd"), default="dit")
 ap.add_argument("--steps", type=int, default=6)
 ap.add_argument("--t", type=int, default=512)
 a = ap.parse_args()
@@ -51,6 +52,16 @@ g = torch.Generator(device="cpu").manual_seed(0)
 z0, noise = torch.randn(1, 256, T, generator=g).to(dev), torch.randn(1, 256, T, generator=g).to(dev)
 t = torch.tensor([0.5], device=dev)
 x = z0 * (1 - t)[:, None, None] + noise * t[:, None, None]
+if a.mode == "fwd":                                  # inference: forward only, no grad, timed (CK vs SDPA on the render path)
+    ts = []
+    with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+        for i in range(a.steps):
+            torch.cuda.synchronize(); t0 = time.perf_counter()
+            diff(x, t, cond=cond, cfg_dropout_prob=0.0)
+            torch.cuda.synchronize(); ts.append((time.perf_counter() - t0) * 1000)
+    ts = sorted(ts[3:])
+    print(f"fwd {a.attn} T={T}: median {ts[len(ts)//2]:.1f} ms (n={len(ts)})")
+    sys.exit(0)
 for i in range(a.steps):
     t0 = time.perf_counter()
     with torch.autocast("cuda", dtype=torch.bfloat16):
