@@ -2,6 +2,7 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
+# Last edited: GHOST-NOTE 2026-10-13 -- bounded windows share a clip's start->end span between its incoming and outgoing window (11 of 32 clips are < 2 windows long)
 # Last edited: GHOST-NOTE 2026-10-13 -- --band-swap (the v7c master: late bass/kick hand-over + LP/HP sweep of the rest)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-source kicks (default): tempo and bar grid from the clips' kicks, not the downbeat file
 # Last edited: GHOST-NOTE 2026-10-13 -- --dump-ab (A and B on one time base, silence outside each clip, for overlaying in a DAW)
@@ -674,8 +675,25 @@ def main(argv=None):
             rec["snapped_to_downbeats"] = False
         a_lo = int(round(a_db * SR)) - L // 2
         b_lo = int(round(b_db * SR)) - L // 2
+        w_max = args.w_bars
         if args.window_mode == "bounded":
-            fw = dsp.fit_window_bounded(a_db * SR, b_db * SR, sA["drums"].shape[-1], sB["drums"].shape[-1], 4 * 60.0 / bpm_b * SR, args.w_bars)
+            # A clip's start->end span holds its incoming window AND its outgoing window. 11 of the 32 mix clips are shorter than two
+            # 8-bar windows (clip 4: 15.9 s = 9 bars), the windows overlapped and the assembly died on a negative body. Each
+            # window may use half of the span (minus a bar for the downbeat snap and the kick shift); the first/last clip of
+            # the run has only one window.
+            bar_s = 4 * 60.0 / bpm_b
+            sp_a = (to_out(bounds[cA["id"]]["end_pre_zc"]) - to_out(bounds[cA["id"]]["start"])) / bar_s
+            sp_b = (float(map_eff[cB["id"]](bounds[cB["id"]]["end_pre_zc"])) - b_start if plan_mode
+                    else bounds[cB["id"]]["end_pre_zc"] - b_start) / bar_s
+            cap_a = int(sp_a) if i == 0 else int(sp_a - 1) // 2
+            cap_b = int(sp_b) if i == len(clips) - 2 else int(sp_b - 1) // 2
+            w_cap = max(4, min(cap_a, cap_b))
+            w_cap -= w_cap % 2
+            if w_cap < args.w_bars:
+                print(f"  window capped to {w_cap} bars: the clips' structural spans are {sp_a:.1f} / {sp_b:.1f} bars", flush=True)
+            w_max = min(args.w_bars, w_cap)
+            rec["w_bars_cap"] = int(w_cap)
+            fw = dsp.fit_window_bounded(a_db * SR, b_db * SR, sA["drums"].shape[-1], sB["drums"].shape[-1], 4 * 60.0 / bpm_b * SR, w_max)
         else:
             fw = dsp.fit_window(a_db * SR, b_db * SR, sA["drums"].shape[-1], sB["drums"].shape[-1], 4 * 60.0 / bpm_b * SR, args.w_bars)
         rec["w_bars_requested"] = int(args.w_bars)
