@@ -91,7 +91,7 @@ def test_moved_hits_are_flagged_by_rhythm_sim():
         assert "rhythm_sim" in res["rows"][0]["flags"] and "rhythm_sim" not in res["rows"][1]["flags"]
 
 
-def test_changed_notes_are_flagged_by_chroma_sim():
+def test_chroma_sim_orders_same_above_shifted_but_does_not_flag():
     def melody(notes, dur=8.0):
         t = np.arange(int(dur * SR)) / SR
         seg = len(t) // len(notes)
@@ -104,5 +104,7 @@ def test_changed_notes_are_flagged_by_chroma_sim():
         a, b = melody([60, 64, 67, 72]), melody([61, 65, 68, 73])      # every note a semitone up: same rhythm, different pitch classes
         same = d.compare([{"id": "x", "base": write(td, "a", a), "steered": write(td, "a2", a * 0.5)}], 1.0)
         diff = d.compare([{"id": "y", "base": write(td, "a3", a), "steered": write(td, "b", b)}], 1.0)
-        assert same["rows"][0]["sims"]["chroma_sim"] > 0.95 and "chroma_sim" not in same["rows"][0]["flags"]
-        assert diff["rows"][0]["sims"]["chroma_sim"] < 0.5 and "chroma_sim" in diff["rows"][0]["flags"]
+        # chroma_sim is report-only until calibrated on real renders: this asserts only that identical notes score ~1 and shifted notes score lower.
+        assert same["rows"][0]["sims"]["chroma_sim"] > 0.95
+        assert diff["rows"][0]["sims"]["chroma_sim"] < same["rows"][0]["sims"]["chroma_sim"] - 0.2
+        assert "chroma_sim" not in diff["rows"][0]["flags"]

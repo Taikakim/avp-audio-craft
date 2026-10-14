@@ -5,7 +5,7 @@
 REVISED SAME DAY (Kim): steering legitimately changes MORE than the steered axis -- a grainy thin render fixed with the bass/mid heads kept its melodies and
 lost its graininess while the whole timbre/dynamics/balance changed, and that is a WIN. So change is not harm. The meter therefore splits features:
   CONTENT (should survive; flagged when it moves): tempo (kick-band, continuous), onset rate, hat onset rate, chroma_sim (framewise cosine of 12-bin chroma,
-          base vs steered = 'are the notes the same'), rhythm_sim (correlation of the kick-band onset envelopes = 'do the hits land in the same places').
+          REPORTED ONLY, not yet calibrated -- see compare()), rhythm_sim (correlation of the kick-band onset envelopes = 'do the hits land in the same places').
   TIMBRE/BALANCE (allowed to move; reported, never flagged): centroid, rms_db, band balance.
 It says nothing about whether the result is BETTER (graininess gone is invisible here) -- that is a quality meter's job (Audiobox CE/PQ, clip_metrics.db,
 the disintegration gate), run alongside.
@@ -37,7 +37,7 @@ from scipy.signal import stft, find_peaks
 FEATURES = ("onset_rate", "hat_rate", "bpm", "centroid", "rms_db")
 CONTENT = ("onset_rate", "hat_rate", "bpm")          # flagged on change
 FREE = ("centroid", "rms_db")                        # timbre/balance: reported, never flagged
-SIMS = ("chroma_sim", "rhythm_sim")                  # pairwise, 1.0 = unchanged; flagged below --min-sim
+SIMS = ("chroma_sim", "rhythm_sim")                  # pairwise, 1.0 = unchanged; only rhythm_sim flags (below --min-sim)
 
 
 def _mono(x):
@@ -127,7 +127,10 @@ def compare(pairs, flag=1.0, min_sim=0.7):
             else:      # a single pair has no across-clip spread -> unit-free relative change
                 r["z"][k] = r["delta"][k] / (abs(r["base"][k]) + 1e-9)
         r["flags"] = [k for k in CONTENT if np.isfinite(r["z"][k]) and abs(r["z"][k]) >= flag and k != r.get("target")]
-        r["flags"] += [k for k in SIMS if np.isfinite(r["sims"][k]) and r["sims"][k] < min_sim]
+        # rhythm_sim is flagged; chroma_sim is REPORTED ONLY: on synthetic pairs it scored an EQ'd (same notes) clip 0.73-0.80 and a one-semitone shift 0.70,
+        # i.e. no usable gap. It needs calibrating on real renders (same-seed steered vs a DIFFERENT-seed render as the negative control) before it may flag.
+        if np.isfinite(r["sims"]["rhythm_sim"]) and r["sims"]["rhythm_sim"] < min_sim:
+            r["flags"].append("rhythm_sim")
     summ = {k: {"mean_delta": float(np.nanmean([r["delta"][k] for r in rows])), "mean_abs_z": float(np.nanmean([abs(r["z"][k]) for r in rows])),
                 "n_flagged": sum(k in r["flags"] for r in rows), "kind": "content" if k in CONTENT else "free (never flagged)"} for k in FEATURES}
     for k in SIMS:
