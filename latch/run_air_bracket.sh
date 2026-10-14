@@ -19,6 +19,7 @@ ARMS=(
 "A4_d512dp8_lr1e-3|$MOD --lr 1e-3 --dim 512 --depth 8"
 "A5_d256dp8_lr1e-2|$MOD --lr 1e-2 --dim 256 --depth 8"
 "A6_d512dp8_lr1e-2_soap|${MOD/--mod-whitening shampoo/--mod-whitening soap} --lr 1e-2 --dim 512 --depth 8"
+"A8_d512dp8_lr1.0|$MOD --lr 1.0 --dim 512 --depth 8"
 "A7_d512dp8_lr1e-2_mona_fusion|--optimizer fusion --components ns5,normuon,sf,shampoo,mona --lr 1e-2 --dim 512 --depth 8 --ema-halflife-epochs 0.5"
 )
 for a in "${ARMS[@]}"; do
