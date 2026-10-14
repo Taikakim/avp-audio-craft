@@ -960,7 +960,7 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
 - **SA3-medium LatCH guidance needs gain ≈ 48–96**, not the SAO-Small default of 8 (SAME-L's
   256-d latent is ~10× less gain-sensitive). At gain 8 heads steer the right way with ~2%
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²
-  predicts per-head control. `latch_guided.head_loss` now supports `smooth_l1`/`huber`/`l1`
+  predicts per-head control. **[Correction 2026-10-14, GHOST-NOTE: NOT reliable — a 3000-crop linear probe (`eval/latch_probe_r2.py`) scored the strongly-steering rms_energy_bass/mid/body heads 0.32/0.23/0.14, below the dead beat_activation head at 0.47; it measures linear readability only.]** `latch_guided.head_loss` now supports `smooth_l1`/`huber`/`l1`
   (was mse/bce_logits only — smooth_l1-trained heads previously raised `Unknown loss_type`). *(2026-06-01)*
   **UPDATE 2026-06-28 — the systematic 14-head sweep puts the operating gain at ≈512 for the energy
   heads (~10× higher than the 48–96 above; gain 128 is a dead zone).** At 512 (CE holds): `rms_energy_bass`
