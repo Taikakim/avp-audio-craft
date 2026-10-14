@@ -15,9 +15,11 @@ import { PALETTES, createPhosphorBorder, type PhosphorBorder, type PhosphorOptio
 export const SWEEP_START = 95;
 export const SWEEP_END = 0;
 
-/** Spec §9.5's settled config. `sweepHz` starts at SWEEP_START; the driver rewrites it per tick. */
+/** Spec §9.5's settled config. `sweepHz` starts at SWEEP_START; the driver rewrites it per tick.
+ *  2026-10-13 (W): no longer a window border but the bottom pane's background -- a thickness of at
+ *  least half the canvas height makes the module fill the whole canvas (phosphor-border.js:11). */
 export const RASTER_CONFIG: PhosphorOptions = {
-  thickness: 4,
+  thickness: 999,
   linesPerColour: 3,
   jitter: 0.59,
   persistence: 0.002,

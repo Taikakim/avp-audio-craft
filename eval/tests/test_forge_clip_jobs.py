@@ -78,8 +78,8 @@ def test_validate_inpaint():
     with pytest.raises(ForgeError):
         J.validate_inpaint(inpaint_payload(region={"start_sec": 20.0, "end_sec": 16.0}))
     with pytest.raises(ForgeError) as e:
-        J.validate_inpaint(inpaint_payload(region={"start_sec": 0.0, "end_sec": 180.0}))
-    assert "capped at 184 s" in e.value.message
+        J.validate_inpaint(inpaint_payload(region={"start_sec": 0.0, "end_sec": 370.0}))
+    assert "capped at 374.43 s" in e.value.message
 
 
 def test_run_inpaint_preview_shifts_to_span(rig):
@@ -125,3 +125,40 @@ def test_run_a2a_clip_reports_how_close_the_result_stayed_to_the_source(rig, mon
     monkeypatch.setattr(passes, "run_hold_pass", lambda s, z, d, r, w, label: -torch.ones_like(z))
     res = J.run_a2a_clip(srv, FakeSvc(), "forge-t2", {"audio": REF_A, "render": {"prompt": "acid"}, "noise_level": 0.4})
     assert res["meta"]["source_similarity"] == pytest.approx(-1.0, abs=1e-5)
+
+
+# ---------------------------------------------------------------- outpaint (WINTERMUTE 2026-10-14)
+def test_outpaint_windows_respect_the_cap_and_grow_their_context():
+    w = J.outpaint_windows(20.0, pre=10.0, post=400.0, context=30.0, cap=184.0)  # cap passed in, any value
+    assert [s for s, _, _ in w] == ["post", "post", "post", "pre"]
+    assert all(c + n <= 184.0 + 1e-9 for _, c, n in w)
+    assert w[0] == ("post", 20.0, 164.0)                  # context limited to the clip that exists
+    assert w[1][1] == 30.0 and sum(n for s, _, n in w if s == "post") == pytest.approx(400.0)
+    assert w[-1] == ("pre", 30.0, 10.0)
+
+
+def test_validate_outpaint_rejects():
+    with pytest.raises(ForgeError):
+        J.validate_outpaint({"audio": REF_A, "pre_sec": 0, "post_sec": 0}, HEADS)
+    with pytest.raises(ForgeError):
+        J.validate_outpaint({"audio": REF_A, "post_sec": 9999}, HEADS)
+    with pytest.raises(ForgeError):
+        J.validate_outpaint({"post_sec": 5}, HEADS)
+
+
+def test_run_outpaint_extends_both_sides_keeping_the_clip_samples(rig, monkeypatch):
+    srv, calls = rig
+    monkeypatch.setattr(passes, "decode_latent", lambda s, z, n: torch.full((2, n), 0.5))
+    saved = {}
+    monkeypatch.setattr(srv, "save_audio", lambda p, a, sr, normalize=True: (saved.update(a=a.numpy()), Path(p).write_bytes(b"x")))
+    res = J.run_outpaint(srv, FakeSvc(), "forge-t", {
+        "audio": REF_A, "offset_sec": 5.0, "dur_sec": 20.0, "pre_sec": 4.0, "post_sec": 6.0,
+        "context_sec": 10.0, "render": {"prompt": "goa", "steps": 8, "seed": 11}, "chain": None})
+    a = saved["a"]
+    assert a.shape[1] == 30 * 44100
+    assert np.allclose(a[:, :4 * 44100], 0.5)                            # new audio before
+    assert np.allclose(a[:, 5 * 44100:23 * 44100], 0.1)                  # the clip, untouched inside
+    assert np.allclose(a[:, -6 * 44100:], 0.5)                           # new audio after
+    regs = [r for r, _ in calls["inpaint"]]
+    assert regs == [[(10.0, 16.0)], [(0.0, 4.0)]]                        # post first, then pre
+    assert res["meta"]["windows"] == 2 and res["meta"]["duration_sec"] == pytest.approx(30.0)

@@ -1,3 +1,5 @@
+// Last edited: WINTERMUTE 2026-10-13 — census verdict flags, notes key, generic 'checkpoints' labels
+// Last edited: WINTERMUTE 2026-10-14 — the MODEL NOTES 1..5 rating and its colours
 // Spec §4.2: the MODEL select lists the four backbones, then the adapters from
 // /models?family=adapter&loadable=1. Choosing a backbone posts to /forge/backbone
 // (M7); choosing an adapter sets the session-default ckpt_path, which is why each
@@ -23,7 +25,23 @@ export interface AdapterEntry {
   /** model_db's own fields: every checkpoint of one run shares `label` and sits in the run's folder. */
   epoch?: number | null;
   step?: number | null;
+  /** model_db's curation flags (eval/model_db.py `_join_quality`): the run has a checkpoint on Kim's
+   *  cleaned-checkpoints list / THIS checkpoint is on it / the run's status is failed-*. */
+  good_run?: boolean;
+  good_ckpt?: boolean;
+  broken?: boolean;
+  /** The census key this run's notes live under (eval/model_db.py `notes_key`): the run folder
+   *  when the checkpoint's own folder is a generic `checkpoints/`. */
+  notes_key?: string;
+  /** The MODEL NOTES 1..5 rating of the run (overrides `forge_rating`), null when unrated. */
+  rating?: number | null;
 }
+
+/** wandb-style runs save to <run>/<id>/checkpoints/, so their `label` is just "checkpoints". */
+const GENERIC_LABELS = new Set(["checkpoints", "runs"]);
+
+/** green = on the cleaned-checkpoints list, red = a failed run, "" = no verdict. */
+export type ModelQuality = "good" | "broken" | "";
 
 export interface ModelOption {
   value: string;
@@ -34,24 +52,73 @@ export interface ModelOption {
   /** adapters only, and only when the server recorded them. */
   epoch?: number;
   step?: number;
+  /** The run's own label, the key MODEL NOTES reads and writes (the backbone id for a backbone). */
+  run: string;
+  /** The run's verdict (MODEL select) ... */
+  quality: ModelQuality;
+  /** ... and this checkpoint's (EPOCH select). */
+  ckptGood: boolean;
+  /** The run's MODEL NOTES rating, 1..5, or null. Overrides `quality` for the run's colour. */
+  rating: number | null;
 }
 
-export function buildModelOptions(adapters: AdapterEntry[]): ModelOption[] {
+/** 1 red, 2 orange, 3 yellow, 4 light green, 5 turquoise (tokens.css --rate1..5). */
+export function ratingColor(r: number | null | undefined): string {
+  return typeof r === "number" && r >= 1 && r <= 5 ? `var(--rate${Math.round(r)})` : "";
+}
+
+/** The MODEL select's colour for a run: its rating when it has one, else the census verdict. */
+export function runColor(o: Pick<ModelOption, "rating" | "quality">): string {
+  return ratingColor(o.rating) || (o.quality === "good" ? "var(--green-strong)" : o.quality === "broken" ? "var(--red)" : "");
+}
+
+/** The EPOCH select's colour: the checkpoint's own verdict (cleaned list / failed run). The rating is
+ *  per run, so it does not tell one epoch from another. */
+export function ckptColor(o: Pick<ModelOption, "quality" | "ckptGood">): string {
+  return o.quality === "broken" ? "var(--red)" : o.ckptGood ? "var(--green-strong)" : "";
+}
+
+/** A rating just saved from MODEL NOTES, applied to every option of that run without a refetch. */
+export function withRating(options: ModelOption[], run: string, rating: number | null): ModelOption[] {
+  return options.map((o) => (o.run === run ? { ...o, rating } : o));
+}
+
+function validRating(r: unknown): number | null {
+  return typeof r === "number" && Number.isInteger(r) && r >= 1 && r <= 5 ? r : null;
+}
+
+export function runQuality(a: { good_run?: boolean; broken?: boolean }): ModelQuality {
+  return a.broken ? "broken" : a.good_run ? "good" : "";
+}
+
+export function buildModelOptions(
+  adapters: AdapterEntry[], goodBackbones: string[] = [], backboneRatings: Record<string, number> = {},
+): ModelOption[] {
   const options: ModelOption[] = BACKBONE_IDS.map((id) => ({
     value: id,
     label: id,
     group: "backbone" as const,
     ckptPath: null,
+    run: id,
+    quality: goodBackbones.includes(id) ? ("good" as const) : ("" as const),
+    ckptGood: false,
+    rating: validRating(backboneRatings[id]),
   }));
   const seen = new Set<string>();
   for (const a of adapters) {
     if (!a.path || seen.has(a.path)) continue;
     seen.add(a.path);
+    const generic = !!a.label && GENERIC_LABELS.has(a.label) && !!a.notes_key;
+    const name = generic ? (a.notes_key as string) : a.label || a.name || a.path;
     options.push({
       value: a.path,
-      label: (a.label || a.name || a.path) + (a.family === "fullft" ? " (full FT)" : ""),
+      label: name + (a.family === "fullft" ? " (full FT)" : ""),
       group: "adapter",
       ckptPath: a.path,
+      run: a.notes_key || a.label || a.name || a.path,
+      quality: runQuality(a),
+      ckptGood: !!a.good_ckpt && !a.broken,
+      rating: validRating(a.rating),
       ...(typeof a.epoch === "number" ? { epoch: a.epoch } : {}),
       ...(typeof a.step === "number" ? { step: a.step } : {}),
     });

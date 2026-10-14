@@ -111,10 +111,10 @@ describe("generatePayload", () => {
     expect(p.ckpt_path).toBe("/runs/x/epoch=1.ckpt");
   });
 
-  it("refuses a length over the 184 s cap before the round trip", () => {
+  it("refuses a length over the 374.43 s cap before the round trip", () => {
     // The prompt guard runs before the cap (the server's own precedence in `_generate_impl`), so
-    // this case must carry a prompt or it throws `prompt is required` and never reaches /184/.
-    expect(() => generatePayload(settings({ prompt: "dub", duration_sec: CAP_SEC + 1 }))).toThrow(/184/);
+    // this case must carry a prompt or it throws `prompt is required` and never reaches the cap.
+    expect(() => generatePayload(settings({ prompt: "dub", duration_sec: CAP_SEC + 1 }))).toThrow(/374\.43/);
   });
 
   it("refuses an empty prompt -- _generate_impl raises `prompt is required`", () => {
@@ -147,7 +147,7 @@ describe("opPayload -- the clip's OP when A2A is off (spec 7.1)", () => {
 
   it("longform refuses an empty arc and a length over the cap", () => {
     expect(() => opPayload("longform", { arc: "  ", steps: 24, cfgScale: 6, seed: -1, durationSec: 60 })).toThrow(/arc/);
-    expect(() => opPayload("longform", { arc: "0:pad", steps: 24, cfgScale: 6, seed: -1, durationSec: CAP_SEC + 1 })).toThrow(/184/);
+    expect(() => opPayload("longform", { arc: "0:pad", steps: 24, cfgScale: 6, seed: -1, durationSec: CAP_SEC + 1 })).toThrow(/374\.43/);
   });
 });
 
@@ -219,7 +219,7 @@ describe("inpaintPayload -- spec 6.8, validated by M8 validate_inpaint", () => {
 
   it("refuses start >= end, and a padded span over the cap, before the round trip", () => {
     expect(() => inpaintPayload({ ...args, region: { start_sec: 20, end_sec: 16 } })).toThrow(/start_sec/);
-    expect(() => inpaintPayload({ ...args, region: { start_sec: 0, end_sec: 180 } })).toThrow(/184/);
+    expect(() => inpaintPayload({ ...args, region: { start_sec: 0, end_sec: 370 } })).toThrow(/374\.43/);
   });
 });
 
@@ -329,6 +329,6 @@ describe("commitPayload -- spec 6.9, validated by M8 validate_commit", () => {
   });
 
   it("refuses a duration over the cap", () => {
-    expect(() => commitPayload(commitArgs({ durationSec: CAP_SEC + 0.1 }))).toThrow(/184/);
+    expect(() => commitPayload(commitArgs({ durationSec: CAP_SEC + 0.1 }))).toThrow(/374\.43/);
   });
 });

@@ -43,9 +43,9 @@ describe("renderBlock -- §9.7's blocked-target reasons, extended to M9's ops", 
     expect(renderBlock(NONE, state())).toBeNull();
   });
 
-  it("nothing selected: refuses a LENGTH over the 184 s cap", () => {
+  it("nothing selected: refuses a LENGTH over the 374.43 s cap", () => {
     const over = { ...state().settings, duration_sec: CAP_SEC + 1 };
-    expect(renderBlock(NONE, state({ settings: over }))).toMatch(/184/);
+    expect(renderBlock(NONE, state({ settings: over }))).toMatch(/374\.43/);
   });
 
   it("clip with A2A on is never blocked for a prompt -- a2a_clip needs no prompt", () => {
@@ -83,6 +83,6 @@ describe("renderBlock -- §9.7's blocked-target reasons, extended to M9's ops", 
 
   it("overlap: passes normally, refuses a padded span over the cap", () => {
     expect(renderBlock(OVERLAP, state())).toBeNull();
-    expect(renderBlock(OVERLAP, state({ overlapSpanSec: 180, padSec: 8 }))).toMatch(/184/);
+    expect(renderBlock(OVERLAP, state({ overlapSpanSec: 370, padSec: 8 }))).toMatch(/374\.43/);
   });
 });

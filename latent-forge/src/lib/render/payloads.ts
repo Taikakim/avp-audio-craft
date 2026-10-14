@@ -12,7 +12,7 @@
 // silently ignored").
 
 import { chainRequest, latchBlockRequest, type ChainRequest, type LatchHeadInfo } from "../chains/latch";
-import { SAMPLERS_BY_OBJECTIVE } from "../forge/defaults";
+import { LENGTH_CAP_SEC, SAMPLERS_BY_OBJECTIVE } from "../forge/defaults";
 import { settings, type Objective } from "../stores/settings.svelte";
 import type {
   AudioRef, Envelope, ForgeClip, ForgeLane, JobOp, MasterChain, MixSpec, OverlapParams,
@@ -28,9 +28,9 @@ export class PayloadError extends Error {
   }
 }
 
-/** eval/forge/contract.py:301 `CAP_SEC = 184.0`. check_cap's message is quoted verbatim below. */
-export const CAP_SEC = 184;
-const CAP_MESSAGE = "forge passes are capped at 184 s locally (T<2048)";
+/** eval/forge/contract.py `CAP_SEC` (374.43 since 2026-10-14). check_cap's message is mirrored below. */
+export const CAP_SEC = LENGTH_CAP_SEC;
+const CAP_MESSAGE = `forge passes are capped at ${LENGTH_CAP_SEC} s (4096 latent frames)`;
 
 /** M8 RENDER_DEFAULTS' key set, in the spec's field order (m8 plan:262-264). */
 export const RENDER_WIRE_KEYS = [
@@ -214,6 +214,41 @@ export function a2aClipPayload(a: A2AClipArgs): Record<string, unknown> {
     render: renderWire(a.render, a.cfgScale ?? a.render.cfg_scale),
     envelope: a.a2a.envelope ?? null,
     noise_level: num(a.a2a.noise, 0, 1, "noise_level"),
+    chain: a.chain === null ? null : chainRequest(a.chain, a.heads),
+    ckpt_path: a.ckptPath || null,
+  };
+}
+
+// ------------------------------------------------------------------ outpaint (WINTERMUTE 2026-10-14)
+
+export interface OutpaintArgs {
+  audio: AudioRef;
+  offset_sec: number;
+  dur_sec: number;
+  pre_sec: number;
+  post_sec: number;
+  render: RenderSettings;
+  chain: ForgeLane["chain"] | null;
+  heads: Record<string, LatchHeadInfo>;
+  ckptPath: string | null;
+  cfgScale?: number;
+  contextSec?: number;
+}
+
+/** eval/forge/clip_jobs.py validate_outpaint. The clip's own window (offset/dur, timeline seconds) is
+ *  the context; pre/post are the seconds to generate. No length cap here: the server windows it. */
+export function outpaintPayload(a: OutpaintArgs): Record<string, unknown> {
+  const pre = num(a.pre_sec, 0, 600, "pre_sec");
+  const post = num(a.post_sec, 0, 600, "post_sec");
+  if (!(pre > 0 || post > 0)) throw new PayloadError("drag an outpaint handle out first");
+  return {
+    audio: a.audio,
+    offset_sec: num(a.offset_sec, 0, 1e5, "offset_sec"),
+    dur_sec: num(a.dur_sec, 1e-3, 1e5, "dur_sec"),
+    pre_sec: pre,
+    post_sec: post,
+    context_sec: num(a.contextSec ?? 30, 2, 90, "context_sec"),
+    render: renderWire(a.render, a.cfgScale ?? a.render.cfg_scale),
     chain: a.chain === null ? null : chainRequest(a.chain, a.heads),
     ckpt_path: a.ckptPath || null,
   };

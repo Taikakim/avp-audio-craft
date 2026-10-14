@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — outpaint (JobOp, ForgeClip.outpaint, history kind)
 // TS mirror of the frozen HTTP contract, spec §6.1, field for field.
 // eval/forge/contract.py is the Python side of the same shapes; if one changes,
 // both change in the same commit.
@@ -45,7 +46,7 @@ export interface RenderSettings {
   scale_phi: number;
   sampler_type: string | null;               // null = objective default
   /**
-   * §4.5 LENGTH, in seconds, <= 184. It belongs here and not in the tab's own
+   * §4.5 LENGTH, in seconds, <= LENGTH_CAP_SEC (374.43). It belongs here and not in the tab's own
    * state because §9.3 says a `render` preset recalls every txt2audio parameter,
    * and the length a render was made at is one of them. On an A2A target the
    * clip supplies the length and this field is ignored.
@@ -54,6 +55,12 @@ export interface RenderSettings {
    * so whoever builds a job payload sends `duration: settings.duration_sec`.
    */
   duration_sec: number;
+  /**
+   * The prompt pane's NOTES box for this target (session default or clip). Saved with the
+   * session like every other field here; never sent to the server (payloads.ts builds the
+   * wire body field by field) and never overwritten by a preset recall.
+   */
+  notes?: string;
 }
 
 export interface LatchSlot {
@@ -85,7 +92,7 @@ export interface LaneChain extends LatchBlock {
 
 export type JobOp =
   | "generate" | "a2a_track" | "a2a_mix" | "longform" | "decode" | "bend"
-  | "a2a_clip" | "inpaint" | "commit";
+  | "a2a_clip" | "inpaint" | "outpaint" | "commit";
 
 /**
  * The OP a clip renders with when A2A is off (spec 7.1 row 3, 10 X11's "compact OP select in the
@@ -128,6 +135,20 @@ export interface Progress {
   steps: number;
   steps_left_total: number;
   steps_total: number;
+}
+
+/** GET /status `model_load` (eval/forge/modelload.py): a model (re)load in flight, else null.
+ *  `fraction` is time-based on the last same-stage load and null the first time (indeterminate). */
+export interface ModelLoad {
+  target: string;
+  stage: string;
+  stage_index: number;  // 1-based
+  stage_count: number;
+  elapsed_sec: number;
+  expected_sec: number | null;
+  /** Seconds left on the estimate; 0 once the load runs over it. null = no estimate. */
+  eta_sec: number | null;
+  fraction: number | null;
 }
 
 export interface JobRecord {
@@ -192,6 +213,10 @@ export interface ForgeClip {
    * against the live `start_sec` to decide whether a move made it stale. */
   encodedAtSec?: number;
   history: AudioRef[];
+  /** Pending OUTPAINT (WINTERMUTE 2026-10-14): seconds to generate before the clip's start and after
+   *  its end, set by dragging the clip's outpaint handles. While either is above 0 the clip's render
+   *  is an outpaint; REPLACE CLIP with the result grows the clip and clears this. Absent = none. */
+  outpaint?: { pre_sec: number; post_sec: number } | null;
 }
 
 export interface OverlapParams {
@@ -230,8 +255,11 @@ export interface RenderHistoryEntry {
   forge_job_id: string;
   file: string;
   label: string;
-  kind: "gen" | "a2a" | "inpaint" | "mix";
+  kind: "gen" | "a2a" | "inpaint" | "outpaint" | "mix";
   dur_sec: number;
+  /** outpaint results only: seconds the render added before the clip (meta.pre_sec), which REPLACE
+   *  CLIP moves the clip's start back by. */
+  outpaint_pre_sec?: number;
   source_clip_id: string | null;
   created: number;
 }

@@ -22,8 +22,11 @@
   import { logStore } from "./lib/stores/log.svelte";
   import { createRasterDriver, type RasterDriver } from "./lib/fx/rasterBorder";
   import { jobs } from "./lib/render/jobs.svelte";
-  import { fetchAdapters } from "./lib/forge/models";
-  import { buildModelOptions, type ModelOption } from "./ui/topbar/modelOptions";
+  import { fetchAdapters, fetchBackboneInfo } from "./lib/forge/models";
+  import {
+    confirmText, describeModel, modelChanges, setPresetModelRequester, type PresetModel,
+  } from "./lib/forge/presetModel";
+  import { buildModelOptions, withRating, type ModelOption } from "./ui/topbar/modelOptions";
 
   // Spec §9.1: the theme lives on the document element, so tokens.css's
   // `:root[data-theme="dark"]` block also reaches the root-level overlays.
@@ -53,8 +56,10 @@
       masterPresets = [];
     }
     // Adapters and full finetunes: together they are every loadable run in the model census.
-    const [adapters, fullft] = await Promise.all([fetchAdapters("adapter"), fetchAdapters("fullft")]);
-    models = buildModelOptions([...adapters, ...fullft]);
+    const [adapters, fullft, backbones] = await Promise.all([
+      fetchAdapters("adapter"), fetchAdapters("fullft"), fetchBackboneInfo(),
+    ]);
+    models = buildModelOptions([...adapters, ...fullft], backbones.good, backbones.ratings);
     try {
       // Show the backbone the server really runs. At start-up (no session load owns the stage yet)
       // also put MODEL STAGE on the matching side, so POST/BASE defaults match the loaded model.
@@ -110,8 +115,33 @@
   arrangement.renderSeed = () => cloneRenderSettings(settings.defaults);
 
   // Task 9's load/import/save order lives here, unit-tested (sessionController.test.ts).
+  /** A recalled preset names the model it was made with (2026-10-13). Same model: nothing. Other:
+   *  ask; yes switches the backbone (awaited, it moves MODEL STAGE) and points renders at the
+   *  preset's checkpoint, which the server loads on the next render. No keeps the loaded model. */
+  async function ensurePresetModel(want: PresetModel, presetName: string): Promise<void> {
+    const have = { backbone: settings.activeBackbone, ckpt_path: settings.ckptPath };
+    if (modelChanges(want, have).length === 0) return;
+    if (!window.confirm(confirmText(want, have, presetName))) {
+      logStore.appendLocal(`[forge] ${presetName}: kept ${describeModel(have)}`);
+      return;
+    }
+    if (want.backbone && want.backbone !== settings.activeBackbone) {
+      model = want.backbone;
+      await switchBackbone(want.backbone);
+      if (settings.activeBackbone !== want.backbone) return;   // refused or failed; already logged
+    }
+    settings.ckptPath = want.ckpt_path ?? null;
+    if (want.ckpt_path) {
+      model = want.ckpt_path;
+      modelFolder = want.ckpt_path;
+    }
+    logStore.appendLocal(`[forge] ${presetName}: model -> ${describeModel(want)} (loads on the next render)`);
+  }
+  setPresetModelRequester(ensurePresetModel);
+
   const sessionCtl = new SessionController({
     api: forgeApi,
+    ensureModel: ensurePresetModel,
     log: (text, level) => view.appendLog(text, level),
     prompt: (message) => window.prompt(message, ""),
     confirm: (message) => window.confirm(message),
@@ -232,7 +262,9 @@
         settings.ckptPath = picked.ckptPath;
       }
     }}
+    onrated={(run, rating) => (models = withRating(models, run, rating))}
     {modelFolder}
+    modelLoad={jobs.modelLoad}
     onmodelfolder={(value) => (modelFolder = value)}
     {masterPresets}
     {masterPreset}
@@ -258,6 +290,7 @@
 
       {#snippet bottom()}
         <BottomPane
+          bind:rasterCanvas
           visible={view.screen === "workspace"}
           tab={view.bottomTab}
           ontab={(t) => view.setBottomTab(t)}
@@ -280,17 +313,6 @@
       </ModuleShell>
     </RightPane>
   </div>
-
-  <!-- Spec §9.5: the raster border is a root-level overlay. M9 copies
-       phosphor-border.js in and drives this canvas from steps_left_total. -->
-  <canvas
-    bind:this={rasterCanvas}
-    class="raster-border"
-    data-region="raster-border"
-    width="300"
-    height="170"
-    aria-hidden="true"
-  ></canvas>
 
   <!-- HelpTooltip (spec §9.4) is self-contained: it owns its own window mousemove
        listener and reads view.helpOn directly, so no rootEl/onRootMove wiring is
@@ -324,14 +346,5 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
-  }
-  .raster-border {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    image-rendering: pixelated;
-    pointer-events: none;
-    z-index: 90;
   }
 </style>

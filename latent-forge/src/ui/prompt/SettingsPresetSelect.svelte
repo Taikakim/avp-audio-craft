@@ -1,11 +1,14 @@
 <script lang="ts">
   import { api } from "../../lib/api";
   import { forgeApi, ForgeApiError } from "../../lib/forge/api";
+  import { requestPresetModel } from "../../lib/forge/presetModel";
   import { HELP } from "../../lib/help/strings";
   import {
-    applyPromptPreset, applyRenderPreset, applyServerPreset, presetOptions,
-    PROMPT_GROUP_LABEL, RENDER_GROUP_LABEL, SERVER_GROUP_LABEL, type PresetOption,
+    applyPromptPreset, applyRenderPreset, applyServerPreset, presetComment, presetOptions,
+    PROMPT_GROUP_LABEL, RENDER_GROUP_LABEL, SERVER_GROUP_LABEL, TEST_GROUP_LABEL, TEST_PREFIX, type PresetOption,
   } from "../../lib/presets/renderPresets";
+  import { promptNotes } from "../../lib/stores/promptNotes.svelte";
+  // Last edited: WINTERMUTE 2026-10-13 — test prompts group; a recalled preset's comment is shown
   import { settings } from "../../lib/stores/settings.svelte";
   import type { Target } from "../../lib/forge/types";
 
@@ -16,8 +19,9 @@
   let value = $state("");
   let message = $state<string | null>(null);
 
-  const renderOptions = $derived(options.filter((o) => o.level === "render"));
+  const renderOptions = $derived(options.filter((o) => o.group === RENDER_GROUP_LABEL));
   const promptOptions = $derived(options.filter((o) => o.level === "prompt"));
+  const testOptions = $derived(options.filter((o) => o.group === TEST_GROUP_LABEL));
 
   async function load(): Promise<void> {
     // The server's own recipe store (GET /presets) is separate from the Forge one and
@@ -47,8 +51,12 @@
     const name = v.slice(sep + 1);
     if (level === "server") {
       try {
-        const r = applyServerPreset(settings.editable(target), await api.presetGet(name));
-        if (r.ckptPath !== undefined) settings.ckptPath = r.ckptPath;
+        const body = await api.presetGet(name);
+        const r = applyServerPreset(settings.editable(target), body);
+        const notes = (body as { notes?: unknown }).notes;
+        promptNotes.showComment(name, typeof notes === "string" ? notes : "");
+        // Asks before switching, like a master preset (presetModel.ts); backbone unknown here.
+        if (r.ckptPath !== undefined) await requestPresetModel({ backbone: null, ckpt_path: r.ckptPath }, name);
         message = r.rejected.length > 0 ? `ignored: ${r.rejected.join(", ")}` : null;
       } catch (e) {
         message = e instanceof Error ? e.message : String(e);
@@ -63,6 +71,7 @@
       const r = level === "prompt"
         ? applyPromptPreset(into, res)
         : applyRenderPreset(into, res);
+      promptNotes.showComment(name, presetComment(res));
       message = r.rejected.length > 0 ? `ignored: ${r.rejected.join(", ")}` : null;
     } catch (e) {
       message = e instanceof ForgeApiError ? e.message : String(e);
@@ -87,6 +96,13 @@
       <optgroup label={PROMPT_GROUP_LABEL}>
         {#each promptOptions as o (o.name)}
           <option value={`prompt:${o.name}`}>{o.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if testOptions.length > 0}
+      <optgroup label={TEST_GROUP_LABEL}>
+        {#each testOptions as o (o.name)}
+          <option value={`render:${o.name}`}>{o.name.slice(TEST_PREFIX.length)}</option>
         {/each}
       </optgroup>
     {/if}

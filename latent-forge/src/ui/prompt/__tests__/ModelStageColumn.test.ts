@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { forgeApi } from "../../../lib/forge/api";
 import { BASE_DEFAULTS, cloneRenderSettings } from "../../../lib/forge/defaults";
 import type { RenderSettings, Target } from "../../../lib/forge/types";
-import { FLAT_PLATEAU_NOTE, POST_CFG_NOTE } from "../../../lib/sampling/scheduleRules";
+import { FLAT_PLATEAU_NOTE, POST_CFG_NOTE, RANGES } from "../../../lib/sampling/scheduleRules";
 import { settings, STAGE_BACKBONE } from "../../../lib/stores/settings.svelte";
 import ModelStageColumn from "../ModelStageColumn.svelte";
 
@@ -120,7 +120,7 @@ describe("ModelStageColumn (spec 4.5 item 2)", () => {
     await fireEvent.click(getByTestId("stage-seed-rnd"));
     expect(Number.isInteger(src.clips.c1.seed)).toBe(true);
     expect(src.clips.c1.seed).toBeGreaterThanOrEqual(0);
-    expect(src.clips.c1.seed).toBeLessThanOrEqual(999999);
+    expect(src.clips.c1.seed).toBeLessThanOrEqual(RANGES.seed.max);
   });
 
   it("changing LENGTH calls onLength, never settings.patch", async () => {

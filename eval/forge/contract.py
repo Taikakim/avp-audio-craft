@@ -1,3 +1,4 @@
+# Last edited: WINTERMUTE 2026-10-14 -- cap raised from 184 s (T<2048) to 374.43 s (4096 frames)
 """Constants and validation shared by every /forge route (spec §2, §6)."""
 import math
 import re
@@ -5,7 +6,11 @@ import re
 SR = 44100
 HOP = 4096
 FPS = SR / HOP
-CAP_SEC = 184.0
+# One forge pass may use up to CAP_FRAMES latent frames, SA3's native T=4096. A generate pads 6 s of
+# silence before allocating, so the requested length is capped 6 s below the 4096-frame length.
+# (Was 184 s = T<2048 while the desktop shared the card; it has run on the iGPU since 2026-09-25.)
+CAP_FRAMES = 4096
+CAP_SEC = 374.43
 AUDIO_EXTS = {".wav", ".flac", ".mp3", ".m4a", ".ogg", ".aif", ".aiff"}
 PRESET_LEVELS = ("prompt", "render", "latch", "film", "lora", "bungee", "master")
 MAX_PENDING_JOBS = 4
@@ -34,7 +39,7 @@ def check_cap(duration_sec, what="request") -> float:
     if not math.isfinite(d) or d <= 0:
         raise ForgeError(400, f"{what}: duration must be a positive number")
     if d > CAP_SEC:
-        raise ForgeError(400, "forge passes are capped at 184 s locally (T<2048)")
+        raise ForgeError(400, f"forge passes are capped at {CAP_SEC:g} s ({CAP_FRAMES} latent frames)")
     return d
 
 

@@ -1,3 +1,4 @@
+import { LENGTH_CAP_SEC } from "../forge/defaults";
 import type { ScheduleSpec } from "../forge/types";
 
 export const SCHEDULE_SHAPES = [
@@ -20,8 +21,10 @@ export const RANGES = {
   steps: { min: 1, max: 150, int: true },
   cfg_scale: { min: 0, max: 64 },
   scale_phi: { min: 0, max: 1 },
-  length_sec: { min: 1, max: 184 },
-  seed: { min: 0, max: 999999, int: true },
+  length_sec: { min: 1, max: LENGTH_CAP_SEC },
+  // 2^31-1, the server's own random-seed range (resolve_seed). Was 999999, which refused the 8-9 digit
+  // seeds of every model_matrix clip a DJ-mix preset recalls (2026-10-13, W).
+  seed: { min: 0, max: 2147483647, int: true },
   // 4.5's own fields, kept here so tasks 4-11 do not each re-read 5.1's table.
   // The CFG interval is STORED as progress; its step-unit range is 0..steps and
   // is therefore computed, not constant (see cfgInterval.ts).

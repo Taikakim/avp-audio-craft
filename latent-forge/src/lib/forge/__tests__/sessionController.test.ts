@@ -5,7 +5,7 @@ import { CHAIN_DEFAULTS, MASTER_DEFAULT, POST_DEFAULTS } from "../defaults";
 import { arrangement } from "../../stores/arrangement.svelte";
 import { settings, type ModelStage } from "../../stores/settings.svelte";
 import { view } from "../../stores/view.svelte";
-import { buildMasterPresetPayload, serializeProject, type MasterPresetPayload } from "../projectSerializer.svelte";
+import { buildMasterPresetPayload, serializeProject, type FullMasterPresetPayload } from "../projectSerializer.svelte";
 import { SessionController, type SessionDeps } from "../sessionController.svelte";
 import type { ProjectV2 } from "../types";
 
@@ -354,13 +354,13 @@ describe("SessionController after critic pass 3: versions, prompts, PUT order, r
     api.preset.mockReturnValueOnce(preset.promise);
     const recall = ctl.recallMasterPreset("live A");
     await ctl.loadSession("take2");                   // picked while the preset was in flight
-    const late: MasterPresetPayload = { ...buildMasterPresetPayload(), master: { ...MASTER_DEFAULT, noise: 99 } };
+    const late: FullMasterPresetPayload = { ...buildMasterPresetPayload(), master: { ...MASTER_DEFAULT, noise: 99 } };
     preset.resolve(late);
     expect(await recall).toBe(false);                 // take1's pick never lands on take2's stores
     expect(arrangement.master.noise).toBe(MASTER_DEFAULT.noise);
     const broken = JSON.parse(JSON.stringify(late)) as Record<string, unknown>;
-    (broken.lanes as MasterPresetPayload["lanes"])[0].chain.latch_on = true;
-    delete broken.defaults;                           // read LAST by applyMasterPreset
+    (broken.lanes as FullMasterPresetPayload["lanes"])[0].chain.latch_on = true;
+    broken.defaults = 5;                              // read LAST by applyMasterPreset; wrong type
     api.preset.mockResolvedValueOnce(broken);
     expect(await ctl.recallMasterPreset("broken")).toBe(false);
     expect(arrangement.lanes[0].chain.latch_on).toBe(false);   // not half-applied

@@ -7,7 +7,7 @@
 export const DRAG_PX_PER_RANGE = 260;
 
 /**
- * One 260 px drag never maps more than this much range. SEED runs 0..999999, so the plain rule moved
+ * One 260 px drag never maps more than this much range. SEED once ran 0..999999 (now 0..2^31-1), and the plain rule moved
  * it about 3 850 per pixel -- every pixel of mouse travel landed on an unrelated seed. A field wider
  * than this is reached by typing; the drag stays usable for nearby values.
  */

@@ -8,7 +8,7 @@ describe("randomSeed (spec 5.1's seed range, RANGES.seed)", () => {
   });
 
   it("returns the range's maximum when rand returns just under 1", () => {
-    expect(randomSeed(() => 0.999999999)).toBe(RANGES.seed.max);
+    expect(randomSeed(() => 1 - Number.EPSILON)).toBe(RANGES.seed.max);
   });
 
   it("stays within range for a value in between", () => {

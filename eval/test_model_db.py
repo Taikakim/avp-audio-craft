@@ -170,3 +170,83 @@ def test_run_params_absent_arm_is_a_noop(tmp_path):
     p = _adapter_ckpt(tmp_path / "fam" / "other" / "epoch=0-step=1.weights.ckpt")
     rec = model_db.record_for(str(p), _root(tmp_path), {}, run_params=_RP)
     assert rec["optimizer"] is None and rec["lr"] is None
+
+
+# --- good / broken flags and the Forge's forge_notes key (WINTERMUTE 2026-10-13) ---
+
+def test_ckpt_tag_key_folds_render_variants_but_keeps_replicas():
+    assert model_db.ckpt_tag_key("ep3_native") == "ep3"
+    assert model_db.ckpt_tag_key("ep5_20s") == "ep5"
+    assert model_db.ckpt_tag_key("ep3_iv0.2-0.8") == "ep3"
+    assert model_db.ckpt_tag_key("ep19v1") == "ep19v1"
+    assert model_db.ckpt_tag_key("step=1011") == model_db.ckpt_tag_key("step1011") == "step1011"
+    assert model_db.ckpt_tag_key("base") == "base"
+
+
+def test_good_list_marks_the_run_and_only_the_listed_checkpoint(tmp_path):
+    good = tmp_path / "cleaned.txt"
+    good.write_text("armA:ep2_native\narmA:step=99\n")
+    g = model_db.load_good(good)
+    p2 = _adapter_ckpt(tmp_path / "fam" / "armA" / "epoch=2-step=10.weights.ckpt", epoch=2, step=10)
+    p3 = _adapter_ckpt(tmp_path / "fam" / "armA" / "epoch=3-step=99.weights.ckpt", epoch=3, step=99)
+    p4 = _adapter_ckpt(tmp_path / "fam" / "armA" / "epoch=4-step=120.weights.ckpt", epoch=4, step=120)
+    r2, r3, r4 = (model_db.record_for(str(p), _root(tmp_path), {}, None, g) for p in (p2, p3, p4))
+    assert r2["good_run"] and r2["good_ckpt"]
+    assert r3["good_ckpt"]                       # matched by step
+    assert r4["good_run"] and not r4["good_ckpt"]
+    assert not r2["broken"]
+
+
+def test_a_failed_status_is_broken_and_beats_the_good_list(tmp_path):
+    p = _adapter_ckpt(tmp_path / "fam" / "armB" / "epoch=1-step=5.weights.ckpt", epoch=1, step=5)
+    rec = model_db.record_for(str(p), _root(tmp_path), {"armB": {"status": "failed-runaway"}},
+                              None, {"armB": {"ep1"}})
+    assert rec["broken"] and not rec["good_run"] and not rec["good_ckpt"]
+
+
+def test_save_forge_notes_touches_only_its_own_key_and_keeps_the_format(tmp_path):
+    p = tmp_path / "ov.json"
+    orig = {"_doc": "d—x", "armA": {"purpose": "auto purpose", "kim_feedback": "verbatim"}}
+    p.write_text(json.dumps(orig, indent=2, ensure_ascii=True) + "\n")
+    model_db.save_forge_notes("armA", "sounds dark at cfg 7", p)
+    d = json.loads(p.read_text())
+    assert d["armA"]["purpose"] == "auto purpose" and d["armA"]["kim_feedback"] == "verbatim"
+    assert d["armA"]["forge_notes"] == "sounds dark at cfg 7"
+    assert "\\u2014" in p.read_text() and p.read_text().endswith("}\n")
+    n = model_db.notes_for("armA", p)
+    assert n["fields"]["purpose"] == "auto purpose" and n["forge_notes"] == "sounds dark at cfg 7"
+    model_db.save_forge_notes("armA", "", p)                  # clearing removes only our keys
+    assert json.loads(p.read_text())["armA"] == orig["armA"]
+    model_db.save_forge_notes("medium-base", "new label", p)  # a label with no entry gets one
+    assert json.loads(p.read_text())["medium-base"]["forge_notes"] == "new label"
+    with pytest.raises(ValueError):
+        model_db.save_forge_notes("_doc", "x", p)
+
+
+def test_notes_key_never_lands_on_a_generic_checkpoints_folder(tmp_path):
+    p = _adapter_ckpt(tmp_path / "sa3-run-r64" / "i8nygj4y" / "checkpoints" / "epoch=1-step=5.weights.ckpt",
+                      epoch=1, step=5)
+    rec = model_db.record_for(str(p), _root(tmp_path), {})
+    assert rec["arm"] == "checkpoints" and rec["notes_key"] == "sa3-run-r64"
+    q = _adapter_ckpt(tmp_path / "fam" / "armA" / "epoch=0-step=1.weights.ckpt")
+    assert model_db.record_for(str(q), _root(tmp_path), {"fam": {"note": "x"}})["notes_key"] == "fam"
+    assert model_db.record_for(str(q), _root(tmp_path), {"armA": {}, "fam": {}})["notes_key"] == "armA"
+
+
+def test_save_forge_rating_sets_clears_and_validates(tmp_path):
+    p = tmp_path / "ov.json"
+    orig = {"armA": {"purpose": "auto purpose", "forge_notes": "keep me"}}
+    p.write_text(json.dumps(orig, indent=2, ensure_ascii=True) + "\n")
+    assert model_db.save_forge_rating("armA", 4, p)["forge_rating"] == 4
+    d = json.loads(p.read_text())["armA"]
+    assert d["forge_rating"] == 4 and d["purpose"] == "auto purpose" and d["forge_notes"] == "keep me"
+    assert model_db.notes_for("armA", p)["forge_rating"] == 4
+    for bad in (6, -1, "3", True, 2.5):
+        with pytest.raises(ValueError):
+            model_db.save_forge_rating("armA", bad, p)
+    model_db.save_forge_rating("armA", None, p)               # clearing removes only our keys
+    assert json.loads(p.read_text())["armA"] == orig["armA"]
+    model_db.save_forge_rating("armA", 2, p)
+    q = _adapter_ckpt(tmp_path / "fam" / "armA" / "epoch=0-step=1.weights.ckpt")
+    rec = model_db.record_for(str(q), _root(tmp_path), json.loads(p.read_text()))
+    assert rec["rating"] == 2

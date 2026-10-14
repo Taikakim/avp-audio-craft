@@ -4,7 +4,7 @@
 // server, so every path is site-relative.
 
 import type {
-  AudioRef, JobOp, JobRecord, LatentRef, Progress, ProjectV2, ScheduleSpec,
+  AudioRef, JobOp, JobRecord, LatentRef, ModelLoad, Progress, ProjectV2, ScheduleSpec,
 } from "./types";
 
 export class ForgeApiError extends Error {
@@ -67,7 +67,7 @@ const POLL_MS = 500;   // spec §9.5
 export const forgeApi = {
   // ------------------------------------------------------------ status, log
   info: () => getJSON<Record<string, unknown>>("/info"),
-  status: () => getJSON<{ ok: true; busy: boolean; job_id: string | null; log_tail: string[]; progress: Progress | null }>("/status"),
+  status: () => getJSON<{ ok: true; busy: boolean; job_id: string | null; log_tail: string[]; progress: Progress | null; model_load?: ModelLoad | null }>("/status"),
   log: (since = 0) => getJSON<{ ok: true; seq: number; lines: { seq: number; text: string }[] }>(`/forge/log${qs({ since })}`),
 
   // ------------------------------------------------------------ backbone

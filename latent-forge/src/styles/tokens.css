@@ -34,6 +34,12 @@
   --green-strong: oklch(56% 0.11 150);
   --red: oklch(55% 0.20 25);
   --warm: oklch(72% 0.15 75);
+  /* MODEL NOTES rating 1..5 (red, orange, yellow, light green, turquoise) -- WINTERMUTE 2026-10-14 */
+  --rate1: var(--red);
+  --rate2: oklch(62% 0.17 50);
+  --rate3: oklch(66% 0.15 95);
+  --rate4: oklch(62% 0.15 140);
+  --rate5: var(--turq-strong);
 
   /* --- LANE_META (handoff line 660) ------------------------------------ */
   --lane1: oklch(54% 0.10 300);
@@ -99,6 +105,9 @@
   --green-strong: oklch(72% 0.13 150);
   --red: oklch(68% 0.18 25);
   --warm: oklch(78% 0.14 75);
+  --rate2: oklch(74% 0.16 50);
+  --rate3: oklch(85% 0.16 98);
+  --rate4: oklch(80% 0.17 140);
 
   --lane1: oklch(72% 0.12 300);
   --lane2: oklch(72% 0.13 150);

@@ -23,8 +23,8 @@ describe("ranges are the spec's 5.1 table", () => {
     expect(RANGES.tilt).toEqual({ min: 0, max: 1 });
     expect(RANGES.steps).toEqual({ min: 1, max: 150, int: true });
     expect(RANGES.cfg_scale).toEqual({ min: 0, max: 64 });
-    expect(RANGES.length_sec).toEqual({ min: 1, max: 184 });
-    expect(RANGES.seed).toEqual({ min: 0, max: 999999, int: true });
+    expect(RANGES.length_sec).toEqual({ min: 1, max: 374.43 });
+    expect(RANGES.seed).toEqual({ min: 0, max: 2147483647, int: true });
     expect(RANGES.cfg_interval).toEqual({ min: 0, max: 1 });
     expect(RANGES.noise).toEqual({ min: 0, max: 1 });
     expect(RANGES.detune_cents).toEqual({ min: -100, max: 100, int: true });

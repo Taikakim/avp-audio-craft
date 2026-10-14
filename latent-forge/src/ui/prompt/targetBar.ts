@@ -1,14 +1,16 @@
+// Last edited: WINTERMUTE 2026-10-14 — OUTPAINT tag
 // Pure parts of the target bar (spec 4.5 item 1, 10 X11). Kept out of the
 // component so the tag/colour/op rules are covered without mounting anything.
 
 import type { Target } from "../../lib/forge/types";
 
-export type TargetTag = "GENERATE" | "CLIP" | "A2A" | "INPAINT";
+export type TargetTag = "GENERATE" | "CLIP" | "A2A" | "INPAINT" | "OUTPAINT";
 
 /** Spec 4.5: GENERATE turq, CLIP lane colour, A2A purple, INPAINT purple. */
-export function targetTag(t: Target, a2aOn: boolean): TargetTag {
+export function targetTag(t: Target, a2aOn: boolean, outpaintOn = false): TargetTag {
   if (t.kind === "none") return "GENERATE";
   if (t.kind === "overlap") return "INPAINT";
+  if (outpaintOn) return "OUTPAINT";
   return a2aOn ? "A2A" : "CLIP";
 }
 
@@ -20,7 +22,7 @@ export function targetTag(t: Target, a2aOn: boolean): TargetTag {
 export function targetTagColorVar(tag: TargetTag, lane: 0 | 1 | 2 | 3): string {
   if (tag === "GENERATE") return "--turq-strong";
   if (tag === "CLIP") return `--lane${lane + 1}`;
-  return "--purple-strong"; // A2A and INPAINT
+  return "--purple-strong"; // A2A, INPAINT and OUTPAINT
 }
 
 /**

@@ -1,4 +1,5 @@
 <script module lang="ts">
+  // Last edited: WINTERMUTE 2026-10-14 — OUTPAINT handles + hatched ghost regions
   // I4 fix wave: the drag gesture's state and its pointermove/pointerup
   // handlers live at MODULE scope (shared by every ClipBox instance, and
   // outliving any one of them), not as per-instance fields.
@@ -39,6 +40,7 @@
         wrapperLeftPx: number; laneHeightPx: number;
       }
     | { mode: "trim-start" | "trim-end"; wrapperLeftPx: number }
+    | { mode: "outpaint-start" | "outpaint-end"; wrapperLeftPx: number }
     | { mode: "scrub"; boxEl: HTMLElement };
 
   let activeDrag: { clipId: string; state: DragState } | null = null;
@@ -119,10 +121,22 @@
       arrangement.moveClip(clipId, target);
       const newLane = laneForDrag(state.startLane, e.clientY - state.startY, state.laneHeightPx);
       if (newLane !== clip.lane) arrangement.moveClipToLane(clipId, newLane);
+    } else if (state.mode === "outpaint-start" || state.mode === "outpaint-end") {
+      const target = snapDelta(pointerSec, mode, snapCtxFor(clipId)).sec;
+      arrangement.setOutpaintEdge(clipId, state.mode === "outpaint-start" ? "start" : "end", target);
     } else {
       const target = snapDelta(pointerSec, mode, snapCtxFor(clipId)).sec;
       arrangement.trimClip(clipId, state.mode === "trim-start" ? "start" : "end", target);
     }
+  }
+
+  /** OUTPAINT handle drag (WINTERMUTE 2026-10-14). The handles sit OUTSIDE the clip box (which clips
+   *  its overflow), so the lane body's left edge comes from the handle's own rect and css left. */
+  function startOutpaintDrag(clipId: string, edge: "start" | "end", wrapperLeftPx: number) {
+    activeDrag = { clipId, state: { mode: edge === "start" ? "outpaint-start" : "outpaint-end", wrapperLeftPx } };
+    window.addEventListener("pointermove", onWindowPointerMove);
+    window.addEventListener("pointerup", onWindowPointerUp);
+    window.addEventListener("pointercancel", onWindowPointerCancel);
   }
 
   function onWindowPointerUp() {
@@ -148,6 +162,7 @@
   import { chromaLink, clipScoreLabel } from "../../lib/chroma/chromaLink.svelte";
   import { clipSpanPx } from "../../lib/math/viewport";
   import type { ForgeClip } from "../../lib/forge/types";
+  import { HELP } from "../../lib/help/strings";
 
   interface Props {
     clip: ForgeClip;
@@ -159,6 +174,21 @@
   const label = $derived(bpmLabel(clip, arrangement.bpm));
   const showBpmLabel = $derived(span.width > 150);
   const showLoop = $derived(span.width > 70);
+  // OUTPAINT: hatched ghosts for the pending seconds, and a grip just outside each edge.
+  const HANDLE_PX = 10;
+  const prePx = $derived((clip.outpaint?.pre_sec ?? 0) * arrangement.pxPerSec);
+  const postPx = $derived((clip.outpaint?.post_sec ?? 0) * arrangement.pxPerSec);
+  const showHandles = $derived(selected || prePx > 0 || postPx > 0);
+
+  function onHandleDown(e: PointerEvent, edge: "start" | "end", cssLeftPx: number) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    view.select({ kind: "clip", id: clip.id });
+    view.activeLane = clip.lane;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    startOutpaintDrag(clip.id, edge, rect.left - cssLeftPx);
+  }
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
@@ -210,6 +240,27 @@
     <span class="stale" title="latent validity at this offset (spec §10 X13)">stale</span>
   {/if}
 </div>
+
+{#if prePx > 0}
+  <div class="outpaint-ghost" data-testid="outpaint-ghost-start"
+    style="left:{span.left - prePx}px;width:{prePx}px;--lane-color:var(--lane{clip.lane + 1})"></div>
+{/if}
+{#if postPx > 0}
+  <div class="outpaint-ghost" data-testid="outpaint-ghost-end"
+    style="left:{span.left + span.width}px;width:{postPx}px;--lane-color:var(--lane{clip.lane + 1})"></div>
+{/if}
+{#if showHandles}
+  {@const startLeft = span.left - prePx - HANDLE_PX}
+  {@const endLeft = span.left + span.width + postPx}
+  <div class="outpaint-handle" role="slider" aria-label="outpaint before" aria-valuenow={clip.outpaint?.pre_sec ?? 0}
+    tabindex="-1" data-testid="outpaint-handle-start" data-help={HELP.outpaintHandle}
+    style="left:{startLeft}px;width:{HANDLE_PX}px"
+    onpointerdown={(e) => onHandleDown(e, "start", startLeft)}>◂</div>
+  <div class="outpaint-handle" role="slider" aria-label="outpaint after" aria-valuenow={clip.outpaint?.post_sec ?? 0}
+    tabindex="-1" data-testid="outpaint-handle-end" data-help={HELP.outpaintHandle}
+    style="left:{endLeft}px;width:{HANDLE_PX}px"
+    onpointerdown={(e) => onHandleDown(e, "end", endLeft)}>▸</div>
+{/if}
 
 <style>
   .clip {
@@ -268,6 +319,37 @@
     font-size: 9px;
     color: var(--text);
     white-space: nowrap;
+  }
+  .outpaint-ghost {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px dashed var(--purple-strong);
+    background: repeating-linear-gradient(
+      135deg, transparent 0 5px, color-mix(in oklch, var(--purple-strong) 22%, transparent) 5px 7px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .outpaint-handle {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 9px;
+    color: white;
+    background: var(--purple-strong);
+    opacity: 0.75;
+    cursor: ew-resize;
+    touch-action: none;
+    user-select: none;
+    z-index: 3;
+  }
+  .outpaint-handle:hover {
+    opacity: 1;
   }
   .stale {
     position: absolute;

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-13 -- "good / broken" column (model_db flags) and the Forge notes column
+# Last edited: WINTERMUTE 2026-10-14 -- "rating 1-5" column (the Forge's forge_rating)
 """Model census — every checkpoint we own, local and on LUMI, in one reviewable table.
 
 WHY (Kim 2026-08-25): "I'm not going to resume from everything, and some of the older
@@ -50,7 +52,7 @@ MATRIX_URL_PUBLIC = "model_matrix.html"
 
 RECIPE_FIELDS = ("corpus", "crop_frames", "optimizer", "lr", "precision", "seed",
                  "n_files", "slurm_job")
-NOTE_FIELDS = ("purpose", "hypothesis", "status", "kim_feedback")
+NOTE_FIELDS = ("purpose", "hypothesis", "status", "kim_feedback", "forge_notes")
 
 
 def human(n: float) -> str:
@@ -92,7 +94,8 @@ def load_local(rescan: bool = False) -> dict[str, dict]:
     arms: dict[str, dict] = defaultdict(lambda: {
         "local_fat_n": 0, "local_fat_b": 0, "local_slim_n": 0, "local_slim_b": 0,
         "recipe": {}, "notes": {}, "family": "", "rank": None, "alpha": None,
-        "provenance": "", "roots": set()})
+        "provenance": "", "roots": set(), "good": False, "broken": False, "good_ckpts": set(),
+        "rating": None})
     for m in out["models"]:
         # Prefer the record's own root: arm_of()'s marker trick only works for the
         # lumi_runs trees. sa3_control_runs / sa3_lora_runs have no such marker, and
@@ -126,6 +129,12 @@ def load_local(rescan: bool = False) -> dict[str, dict]:
             prov = ", ".join(sorted({str(x) for x in prov.values() if x}))
         a["provenance"] = a["provenance"] or (prov or "")
         a["roots"].add(m.get("root_id") or "?")
+        # good/broken: model_db's flags (eval/cleaned_checkpoints.txt + a failed-* status)
+        a["good"] = a["good"] or bool(m.get("good_run"))
+        a["broken"] = a["broken"] or bool(m.get("broken"))
+        a["rating"] = a["rating"] or m.get("rating")
+        if m.get("good_ckpt") and m.get("epoch") is not None:
+            a["good_ckpts"].add(int(m["epoch"]))
         for f in RECIPE_FIELDS:
             if m.get(f) not in (None, "") and f not in a["recipe"]:
                 a["recipe"][f] = m[f]
@@ -355,6 +364,14 @@ def build_rows(local: dict, remote: dict, meta: dict,
         for k in ("remote_fat_n", "remote_fat_b", "remote_slim_n", "remote_slim_b"):
             row[k] = r.get(k, 0)
         row["where"] = status_of(row)
+        if l.get("broken"):
+            row["quality"] = "broken"
+        elif l.get("good"):
+            eps = sorted(l.get("good_ckpts") or ())
+            row["quality"] = "good" + (": " + ", ".join(f"ep{e}" for e in eps) if eps else "")
+        else:
+            row["quality"] = ""
+        row["rating"] = l.get("rating") or ""
         row["matrix"] = matrix_links(arm, ckpts or {}, matrix_url)
         row["resumable"] = "yes" if row["local_fat_n"] else (
             "on LUMI" if row["remote_fat_n"] else "NO")
@@ -442,7 +459,10 @@ t.tHead.addEventListener('click',e=>{
 </script>
 """
 
-COLUMNS = [("arm", "arm"), ("matrix", "epochs \u2192 matrix"),
+# The Forge MODEL NOTES rating colours: 1 red, 2 orange, 3 yellow, 4 light green, 5 turquoise.
+RATING_COLORS = {1: "#c0392b", 2: "#e67e22", 3: "#c9a400", 4: "#5cb85c", 5: "#16a2a2"}
+
+COLUMNS = [("arm", "arm"), ("rating", "rating 1\u20135"), ("quality", "good / broken"), ("matrix", "epochs \u2192 matrix"),
            ("board", "other board"),
            ("family", "family"), ("where", "where"),
            ("resumable", "resumable"), ("local_fat_n", "loc fat"), ("local_fat_b", "loc fat B"),
@@ -453,7 +473,7 @@ COLUMNS = [("arm", "arm"), ("matrix", "epochs \u2192 matrix"),
            ("lr", "lr"), ("precision", "prec"), ("rank", "rank"), ("alpha", "alpha"),
            ("seed", "seed"), ("newest", "newest"), ("provenance", "provenance"),
            ("purpose", "purpose"), ("run_status", "run status"),
-           ("kim_feedback", "Kim's note")]
+           ("kim_feedback", "Kim's note"), ("forge_notes", "Forge notes")]
 
 
 def write_html(rows: list[dict], out: Path) -> None:
@@ -473,7 +493,13 @@ def write_html(rows: list[dict], out: Path) -> None:
                 parts.append(f'<td class="{cls}">{html.escape(str(v))}</td>')
             elif key == "provenance":
                 parts.append(f'<td class="prov">{html.escape(str(v))}</td>')
-            elif key in ("purpose", "kim_feedback", "run_status"):
+            elif key == "rating":
+                col = RATING_COLORS.get(v, "")
+                parts.append(f'<td style="color:{col};font-weight:700;text-align:center">{html.escape(str(v))}</td>')
+            elif key == "quality":
+                col = "#c0392b" if v == "broken" else ("#1e9e50" if v else "")
+                parts.append(f'<td style="color:{col};font-weight:600">{html.escape(str(v))}</td>')
+            elif key in ("purpose", "kim_feedback", "run_status", "forge_notes"):
                 parts.append(f'<td class="note"><div class="clip">'
                              f'{html.escape(str(v))}</div></td>')
             elif key in ("matrix", "board"):

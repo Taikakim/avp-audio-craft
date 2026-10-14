@@ -8,7 +8,9 @@ from forge.paths import ForgePaths
 
 def test_constants():
     assert contract.FPS == 44100 / 4096
-    assert contract.CAP_SEC == 184.0
+    assert contract.CAP_SEC == 374.43 and contract.CAP_FRAMES == 4096
+    # a generate pads 6 s before allocating: the capped request is exactly the 4096-frame latent
+    assert contract.latent_frames(contract.CAP_SEC + 6.0) == 4096
     assert contract.PRESET_LEVELS == ("prompt", "render", "latch", "film", "lora", "bungee", "master")
     assert contract.AUDIO_EXTS == {".wav", ".flac", ".mp3", ".m4a", ".ogg", ".aif", ".aiff"}
     assert contract.MAX_PENDING_JOBS == 4
@@ -16,11 +18,11 @@ def test_constants():
 
 
 def test_cap():
-    assert contract.check_cap(184.0) == 184.0
+    assert contract.check_cap(374.43) == 374.43
     with pytest.raises(ForgeError) as e:
-        contract.check_cap(184.01)
+        contract.check_cap(374.44)
     assert e.value.status == 400
-    assert e.value.message == "forge passes are capped at 184 s locally (T<2048)"
+    assert e.value.message == "forge passes are capped at 374.43 s (4096 latent frames)"
     with pytest.raises(ForgeError):
         contract.check_cap(0)
     with pytest.raises(ForgeError):

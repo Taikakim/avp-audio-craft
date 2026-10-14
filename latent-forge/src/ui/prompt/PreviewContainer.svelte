@@ -9,6 +9,7 @@
   // onto a lane, USE SETTINGS copying the previewed render's job payload into the
   // current target, and REPLACE CLIP swapping a clip's audio while keeping the
   // previous ref in clip.history.
+  // Last edited: WINTERMUTE 2026-10-14 — REPLACE CLIP grows the clip for an OUTPAINT result
   import { untrack } from "svelte";
   import { HELP } from "../../lib/help/strings";
   import { fetchLatchHeads, type LatchHeadInfo } from "../../lib/chains/latch";
@@ -268,6 +269,8 @@
     try {
       const out = await replaceAudio({
         clipId: target.id, ref: history.refOf(entry), durationSec: entry.dur_sec || null,
+        // An outpaint result is longer than the clip and starts earlier: grow the clip to it.
+        ...(entry.kind === "outpaint" ? { outpaintPreSec: entry.outpaint_pre_sec ?? 0 } : {}),
       });
       if (out.analyzeError) {
         view.appendLog(`[render] REPLACE CLIP: analysis failed — ${out.analyzeError.message}`, "error");

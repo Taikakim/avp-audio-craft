@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — REPLACE CLIP grows the clip for an outpaint result
 // Clip lifecycle (spec §7.3, §6.3): resolve an AudioRef, analyze for tempo
 // and downbeats, stretch to the project's tempo/detune, warm the peak cache.
 // Every step degrades honestly -- a clip that fails analysis still lands on
@@ -270,6 +271,9 @@ export interface ReplaceAudioInput {
   ref: AudioRef;
   /** The render's own length, from RenderHistoryEntry.dur_sec. null when it is not known. */
   durationSec: number | null;
+  /** An OUTPAINT result: the seconds it added before the clip. The clip then grows to the whole
+   *  file instead of keeping its old trim. */
+  outpaintPreSec?: number;
 }
 
 export interface ReplaceAudioOutcome {
@@ -285,8 +289,11 @@ export async function replaceAudio(input: ReplaceAudioInput): Promise<ReplaceAud
 
   arrangement.replaceClipAudio(clip.id, input.ref);
 
-  // A clip must never claim audio that is not there; growing it is §7.2's business, not a swap's.
-  if (input.durationSec !== null && input.durationSec > 0 && input.durationSec < clip.dur_sec) {
+  if (input.outpaintPreSec !== undefined && input.durationSec !== null && input.durationSec > 0) {
+    // Before the analysis below: a detected tempo rescales dur_sec, so it must be the new length.
+    arrangement.growClipForOutpaint(clip.id, input.outpaintPreSec, input.durationSec);
+  } else if (input.durationSec !== null && input.durationSec > 0 && input.durationSec < clip.dur_sec) {
+    // A clip must never claim audio that is not there; growing it is §7.2's business, not a swap's.
     arrangement.trimClip(clip.id, "end", clip.start_sec + input.durationSec);
   }
 

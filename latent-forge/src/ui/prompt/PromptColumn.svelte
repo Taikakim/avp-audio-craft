@@ -6,7 +6,9 @@
   // is correct until M5 attaches a source.
   import type { Target } from "../../lib/forge/types";
   import { HELP } from "../../lib/help/strings";
+  import { promptNotes } from "../../lib/stores/promptNotes.svelte";
   import { settings } from "../../lib/stores/settings.svelte";
+  // Last edited: WINTERMUTE 2026-10-13 — NOTES mode: one notes box in place of the two prompts
 
   interface Props {
     target: Target;
@@ -21,9 +23,23 @@
   function onNegPrompt(e: Event): void {
     settings.patch(target, { negative_prompt: (e.target as HTMLTextAreaElement).value });
   }
+  // Saved by the session autosave like the prompt (it serialises every target's settings).
+  function onNotes(e: Event): void {
+    settings.patch(target, { notes: (e.target as HTMLTextAreaElement).value });
+  }
 </script>
 
 <div class="prompt-column">
+  {#if promptNotes.open}
+  <textarea
+    class="prompt notes"
+    data-testid="prompt-notes"
+    data-help={HELP.promptNotes}
+    placeholder="notes for this target — saved with the session"
+    value={current.notes ?? ""}
+    oninput={onNotes}
+  ></textarea>
+  {:else}
   <textarea
     class="prompt"
     data-testid="prompt-text"
@@ -40,6 +56,7 @@
     value={current.negative_prompt}
     oninput={onNegPrompt}
   ></textarea>
+  {/if}
 </div>
 
 <style>
@@ -64,6 +81,9 @@
   .prompt {
     flex: 1;
     min-height: 44px;
+  }
+  .notes {
+    border-color: var(--warm);
   }
   .negative {
     flex: 0 0 34px;

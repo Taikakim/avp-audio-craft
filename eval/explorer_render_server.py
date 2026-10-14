@@ -1,4 +1,7 @@
 # Last edited: GHOST-NOTE 2026-10-12 -- /presets/{name:path} so folder presets resolve
+# Last edited: WINTERMUTE 2026-10-13 -- model-load progress (forge.modelload) in /status
+# Last edited: WINTERMUTE 2026-10-13 -- /models good_backbones + GET/POST /models/notes (Forge MODEL NOTES box)
+# Last edited: WINTERMUTE 2026-10-14 -- POST /models/rating + /models backbone_ratings
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
 FastAPI on :8056 (SAO/.venv). Holds medium-base resident on the GPU; endpoints
@@ -136,6 +139,7 @@ _MANTU = _mantu_root()
 import model_db                                   # noqa: E402
 import model_roots                                # noqa: E402
 from forge.fullft import load_fullft              # noqa: E402
+from forge import modelload as forge_modelload    # noqa: E402
 
 
 def ckpt_family(path):
@@ -608,42 +612,19 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         if ckpt:
             require_path(ckpt, f"DoRA checkpoint {key!r}")
         log(f"[model] rebuild: dora={key}")
-        MODEL = None
-        FILM_STATE, FILM_LOADED = None, None
-        gc.collect()
-        torch.cuda.empty_cache()
-        MODEL = StableAudioModel.from_pretrained(ARGS.model, device=ARGS.device)
-        if mutate_req:
-            # weight-garden mutation on the frozen base DiT, BEFORE adapter attach
-            # (train_lora --glitch order). Reset = rebuild without mutate.
-            mop = mutate_req.get("op", "shuffle")
-            op_spec = {"op": mop, "amount": mutate_req["amount"]}
-            if mop == "life":
-                op_spec["quantile"] = mutate_req.get("quantile", 0.75)
-            cond = Condition(name=f"ui_{mop}",
-                             ops=[op_spec],
-                             target=mutate_req["target"],
-                             decay_rate=mutate_req["decay_rate"],
-                             decay_direction=mutate_req["decay_direction"],
-                             mutation_seed=mutate_req["seed"])
-            summary = apply_condition(MODEL.dit, cond)
-            log(f"[mutate] {mop} amount={mutate_req['amount']} target={mutate_req['target']} "
-                f"seed={mutate_req['seed']} -> {summary}")
-        if ckpt and full_weights:
-            load_fullft(MODEL, ckpt, weights=full_weights, log=log)
-        elif ckpt:
-            MODEL.load_lora([str(ckpt)])
+        weights_stage = "full finetune" if full_weights else ("adapter" if ckpt else None)
+        load_stages = ["free", "base model"] + ([weights_stage] if weights_stage else []) \
+            + (["adapter slots"] if SLOTS.slots else [])
+        forge_modelload.begin(ARGS.model, load_stages)
+        loaded = False
+        try:
+            _rebuild(ckpt, full_weights, mutate_req, weights_stage)
+            loaded = True
+        finally:
+            forge_modelload.end(ok=loaded)
         LOADED_DORA, LOADED_STRENGTH = key, 1.0
         LOADED_FULLFT = full_weights is not None
         LOADED_MUT = mut_key
-        if SLOTS.slots:
-            # The rebuild threw the resident adapters away with the old MODEL. The
-            # table still believes they are loaded, so clear its belief first or
-            # apply() sees an unchanged set and skips the reload.
-            want = [sl.as_dict() for sl in SLOTS.slots]
-            SLOTS.slots = []
-            SLOTS.apply(MODEL, want)
-            log(f"[slots] re-applied {len(want)} after model rebuild")
     if SLOTS.slots:
         # ACTIVE_SLOT is None outside slot mode, so this zeroes every slot.
         SLOTS.push_strengths(MODEL, ACTIVE_SLOT,
@@ -654,6 +635,48 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     if film_ckpt and FILM_LOADED != film_ckpt:
         _install_film(film_ckpt)
     return rebuild
+
+
+def _rebuild(ckpt, full_weights, mutate_req, weights_stage):
+    """prepare_model's rebuild body, staged for forge.modelload (the top-bar load bar)."""
+    global MODEL, FILM_STATE, FILM_LOADED
+    MODEL = None
+    FILM_STATE, FILM_LOADED = None, None
+    gc.collect()
+    torch.cuda.empty_cache()
+    forge_modelload.stage("base model")
+    MODEL = StableAudioModel.from_pretrained(ARGS.model, device=ARGS.device)
+    if mutate_req:
+        # weight-garden mutation on the frozen base DiT, BEFORE adapter attach
+        # (train_lora --glitch order). Reset = rebuild without mutate.
+        mop = mutate_req.get("op", "shuffle")
+        op_spec = {"op": mop, "amount": mutate_req["amount"]}
+        if mop == "life":
+            op_spec["quantile"] = mutate_req.get("quantile", 0.75)
+        cond = Condition(name=f"ui_{mop}",
+                         ops=[op_spec],
+                         target=mutate_req["target"],
+                         decay_rate=mutate_req["decay_rate"],
+                         decay_direction=mutate_req["decay_direction"],
+                         mutation_seed=mutate_req["seed"])
+        summary = apply_condition(MODEL.dit, cond)
+        log(f"[mutate] {mop} amount={mutate_req['amount']} target={mutate_req['target']} "
+            f"seed={mutate_req['seed']} -> {summary}")
+    if weights_stage:
+        forge_modelload.stage(weights_stage)
+    if ckpt and full_weights:
+        load_fullft(MODEL, ckpt, weights=full_weights, log=log)
+    elif ckpt:
+        MODEL.load_lora([str(ckpt)])
+    if SLOTS.slots:
+        forge_modelload.stage("adapter slots")
+        # The rebuild threw the resident adapters away with the old MODEL. The
+        # table still believes they are loaded, so clear its belief first or
+        # apply() sees an unchanged set and skips the reload.
+        want = [sl.as_dict() for sl in SLOTS.slots]
+        SLOTS.slots = []
+        SLOTS.apply(MODEL, want)
+        log(f"[slots] re-applied {len(want)} after model rebuild")
 
 
 def film_context(film_req):
@@ -809,7 +832,8 @@ def info():
 def status():
     busy = GPU_LOCK.locked()
     return {"ok": True, "busy": busy, "job_id": CURRENT_JOB if busy else None,
-            "log_tail": list(LOG_RING)[-20:], "progress": forge_progress.snapshot()}
+            "log_tail": list(LOG_RING)[-20:], "progress": forge_progress.snapshot(),
+            "model_load": forge_modelload.snapshot()}
 
 
 def _scan_ckpts(root: Path):
@@ -1091,8 +1115,46 @@ def models(root_ids: str = None, family: str = None, corpus: str = None,
         ql = q.lower()
         ms = [m for m in ms
               if ql in m["path"].lower() or ql in (m.get("label") or "").lower()]
+    # The bare backbones are not checkpoints, so their good flag comes from the list's 'base'
+    # rows directly ('base' = medium-base, 'base_ptm' = medium; load_good folds _ptm into base).
+    good = model_db.load_good()
+    ov = model_db._load_overrides(model_db.OVERRIDES_PATH)
+    ratings = {b: r for b in ("medium", "medium-base", "small-music", "small-music-base")
+               if (r := model_db.rating_of(ov.get(b) or {}))}
     return {"ok": True, "count": len(ms), "models": ms,
+            "good_backbones": ["medium-base", "medium"] if "base" in good else [],
+            "backbone_ratings": ratings,
             "stale_root_ids": out["stale_root_ids"]}
+
+
+@app.get("/models/notes")
+def model_notes_get(label: str):
+    """What the census holds about one run label (read-only fields) plus the Forge's own
+    `forge_notes`. A backbone id (medium-base, ...) is a label too."""
+    return {"ok": True, **model_db.notes_for(label)}
+
+
+@app.post("/models/notes")
+async def model_notes_post(request: Request):
+    """Save the MODEL NOTES box. Writes only `forge_notes` in Misc/models_index_overrides.json;
+    every field written at training/eval time is left exactly as it was."""
+    body = await request.json()
+    try:
+        out = model_db.save_forge_notes(str(body.get("label") or ""), str(body.get("text") or ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, **out}
+
+
+@app.post("/models/rating")
+async def model_rating_post(request: Request):
+    """Save the MODEL NOTES 1..5 rating (null/0 clears it). Writes only `forge_rating`."""
+    body = await request.json()
+    try:
+        out = model_db.save_forge_rating(str(body.get("label") or ""), body.get("rating"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, **out}
 
 
 @app.get("/models/{model_id}")

@@ -129,6 +129,11 @@ export type HelpId =
   | "sessionSave"
   | "sessionImportV1"
   | "mixdownButton"
+  | "modelNotes"
+  | "promptNotes"
+  | "testPrompts"
+  | "outpaintHandle"
+  | "outpaint"
   ;
 
 export const HELP: Record<HelpId, string> = {
@@ -181,7 +186,7 @@ export const HELP: Record<HelpId, string> = {
   // handoff: "Classifier-free guidance scale — how hard the prompt is enforced. Too high burns the output and flattens dynamics. Safe value: 7.0 (1.0 for rf_denoiser, which is effectively guidance-free). Drag to scale; hold shift for 1/100th detail."
   cfg: "Classifier-free guidance scale — how hard the prompt is enforced. Too high burns the output and flattens dynamics. POST ignores it: guidance is distilled into the checkpoint, so the field greys out and 1.0 is sent. Range 0–64. Safe value: 6.0 on BASE.",
   // handoff: "Requested duration. This is not just a buffer size — SA3 conditions on it through both cross-attention and AdaLN, and allocates a variable-length latent of ceil((d + 6 s) · 44100 / 4096) embeddings, the trailing 6 s being silence padding that is trimmed after generation. Ceiling is the checkpoint's own maximum (2 min for small, 6 min 20 s for medium and large). Safe value: anything under that. Drag to scale."
-  length: "Requested duration. This is not just a buffer size — SA3 conditions on it through both cross-attention and AdaLN, and allocates a variable-length latent of ceil((d + 6 s) · 44100 / 4096) embeddings, the trailing 6 s being silence padding that is trimmed after generation. A forge pass is capped at 184 s, which is what the display card holds; longer arrangements are built from several clips. Safe value: anything under 184 s. Drag to scale.",
+  length: "Requested duration. This is not just a buffer size — SA3 conditions on it through both cross-attention and AdaLN, and allocates a variable-length latent of ceil((d + 6 s) · 44100 / 4096) embeddings, the trailing 6 s being silence padding that is trimmed after generation. A forge pass is capped at 374.43 s, i.e. 4096 latent frames with the padding, SA3's native maximum; longer arrangements are built from several clips. Long renders take most of the card's 16 GB. Safe value: up to 184 s; up to 374 s when nothing else is on the GPU. Drag to scale.",
   seed: "RNG seed for the initial noise. Same seed, same settings, same result. Safe value: any integer, or RND for a fresh one — there is no wrong seed.",
   seedRandom: "New random seed.",
   sigmaGraph: "Sigma over the sampler steps, with a tick per step — where the ticks bunch up, more steps are spent in that noise band. The turquoise band is the interval where CFG is applied.",
@@ -272,4 +277,9 @@ export const HELP: Record<HelpId, string> = {
   sessionSave: "Saves the whole project to the server under the selected session name, or asks for a name while it is still unsaved. After that, every change autosaves to it 2 s later.",
   sessionImportV1: "Opens a project file from disk. A v1 file from the old app is converted (lanes renamed LANE 1-4, missing settings filled with defaults); it stays unsaved until you SAVE it.",
   mixdownButton: "Mixes the four lanes in the latent domain and decodes the result — the commit that turns the arrangement into audio. While it samples, the window border runs a C64 loader raster bar whose sweep rate falls with the remaining step count.",
+  modelNotes: "What the model census says about the selected run (purpose, status, Kim's feedback, recipe), read-only, plus your own notes. Your notes save themselves to the census under their own key, forge_notes, and never change anything written at training time. In the MODEL and EPOCH selects, green = on the cleaned-checkpoints list, red = a failed run. RATING 1-5 is your rough overall verdict on the run (usefulness, sound, everything); it saves on click as forge_rating, clicking it again clears it, and it colours the run in the MODEL select: 1 red, 2 orange, 3 yellow, 4 light green, 5 turquoise.",
+  promptNotes: "Swaps the prompt boxes for a notes box belonging to this target (the session default or the selected clip). The notes are saved with the session, so they autosave once the session has a name. Click again to get the prompt back.",
+  testPrompts: "The model-matrix test prompts, each with the exact text and seed the board rendered, at CFG 7 and 20 s. Picking one sets prompt, negative prompt, seed, steps, CFG and length; the line under it says what else the board rendered (other CFGs, lengths, seeds).",
+  outpaintHandle: "Drag outward to OUTPAINT: the hatched region before or after the clip is generated from the clip's own audio, with this clip's prompt, settings, adapter and its lane's LatCH chain. Drag back onto the clip to remove it. Then RENDER, listen in the preview, and REPLACE CLIP to grow the clip. Up to 600 s per side; long extensions render in windows of up to 374 s, each continuing from the last 30 s of audio.",
+  outpaint: "This clip has a pending OUTPAINT, so its RENDER generates the hatched seconds instead of an A2A or the OP. REPLACE CLIP with the result grows the clip to the new file; CLEAR drops the pending region.",
 };

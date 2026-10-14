@@ -1,3 +1,5 @@
+// Last edited: WINTERMUTE 2026-10-13 — render presets recall duration_sec; test-prompt group; preset comments
+import { LENGTH_CAP_SEC } from "../forge/defaults";
 import { RANGES, SCHEDULE_SHAPES } from "../sampling/scheduleRules";
 import type { RenderSettings, ScheduleSpec } from "../forge/types";
 
@@ -14,6 +16,9 @@ export const PRESET_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
 export const RENDER_GROUP_LABEL = "render";
 export const PROMPT_GROUP_LABEL = "prompt only";
+/** Render presets written by eval/forge/make_test_prompt_presets.py: one per model-matrix test prompt. */
+export const TEST_PREFIX = "test-";
+export const TEST_GROUP_LABEL = "test prompts";
 
 export interface PresetOption {
   level: PresetLevel;
@@ -30,12 +35,22 @@ export function isValidPresetName(name: string): boolean {
   return PRESET_NAME_RE.test(name) && !name.includes("..");
 }
 
-/** 4.5: render presets, then prompt presets under a `prompt only` group. */
+/** 4.5: render presets, then prompt presets under a `prompt only` group. The model-matrix test
+ *  prompts are render presets too, listed last under their own group. */
 export function presetOptions(renderNames: string[], promptNames: string[]): PresetOption[] {
+  const isTest = (n: string) => n.startsWith(TEST_PREFIX);
   return [
-    ...renderNames.map((name) => ({ level: "render" as const, name, group: RENDER_GROUP_LABEL })),
+    ...renderNames.filter((n) => !isTest(n)).map((name) => ({ level: "render" as const, name, group: RENDER_GROUP_LABEL })),
     ...promptNames.map((name) => ({ level: "prompt" as const, name, group: PROMPT_GROUP_LABEL })),
+    ...renderNames.filter(isTest).map((name) => ({ level: "render" as const, name, group: TEST_GROUP_LABEL })),
   ];
+}
+
+/** A preset's comment: its `notes` string, "" when it has none. Shown beside the select after a
+ *  recall. It is NOT copied into the target's own notes (RenderSettings.notes), which a recall
+ *  must never overwrite. */
+export function presetComment(body: unknown): string {
+  return isPlainObject(body) && typeof body.notes === "string" ? body.notes : "";
 }
 
 export function renderPresetBody(s: RenderSettings): RenderSettings {
@@ -142,6 +157,18 @@ export function applyRenderPreset(into: RenderSettings, body: unknown): PresetAp
     }
   }
 
+  // duration_sec: 9.3 says a render preset recalls every txt2audio parameter, and LENGTH is one.
+  // It was missing here, so a master preset's render length never landed (found 2026-10-13).
+  if ("duration_sec" in body) {
+    const d = body.duration_sec;
+    if (typeof d === "number" && Number.isFinite(d) && d > 0 && d <= LENGTH_CAP_SEC) {
+      into.duration_sec = d;
+      applied.push("duration_sec");
+    } else {
+      rejected.push("duration_sec");
+    }
+  }
+
   if ("apg_scale" in body) {
     if (typeof body.apg_scale === "number" && Number.isFinite(body.apg_scale)) {
       into.apg_scale = body.apg_scale;
@@ -230,7 +257,7 @@ export function applyServerPreset(into: RenderSettings, body: unknown): ServerPr
   const r: ServerPresetApplyResult = applyRenderPreset(into, payload);
   if ("duration" in payload) {
     const d = payload.duration;
-    if (typeof d === "number" && Number.isFinite(d) && d > 0 && d <= 184) {
+    if (typeof d === "number" && Number.isFinite(d) && d > 0 && d <= LENGTH_CAP_SEC) {
       into.duration_sec = d;
       r.applied.push("duration");
     } else {

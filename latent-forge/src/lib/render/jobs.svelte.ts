@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — outpaint render kind + outpaint_pre_sec on its history entry
 // The one place that knows a render is in flight (spec §7.1: "While any job runs, every render
 // control is disabled; the control that started it reads SAMPLING · N steps left").
 //
@@ -12,11 +13,11 @@
 // stop a promise that is already resolving.
 
 import { forgeApi, ForgeApiError } from "../forge/api";
-import type { JobOp, JobRecord, Progress, RenderHistoryEntry } from "../forge/types";
+import type { JobOp, JobRecord, ModelLoad, Progress, RenderHistoryEntry } from "../forge/types";
 import { logStore } from "../stores/log.svelte";
 import { history } from "./history.svelte";
 
-export type RenderKind = "gen" | "a2a" | "inpaint" | "mix";
+export type RenderKind = "gen" | "a2a" | "inpaint" | "outpaint" | "mix";
 
 export interface ActiveJob {
   forgeJobId: string;
@@ -35,7 +36,7 @@ export interface SubmitRequest {
   targetKey: string;
 }
 
-const KIND_LABEL: Record<RenderKind, string> = { gen: "GEN", a2a: "A2A", inpaint: "INPAINT", mix: "MIX" };
+const KIND_LABEL: Record<RenderKind, string> = { gen: "GEN", a2a: "A2A", inpaint: "INPAINT", outpaint: "OUTPAINT", mix: "MIX" };
 
 function message(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -46,6 +47,12 @@ function message(e: unknown): string {
 function fileOf(rec: JobRecord): string {
   const url = rec.result?.urls?.[0];
   return url ? (url.split("/").pop() ?? "") : "";
+}
+
+/** The seconds an outpaint added before the clip, from its result meta; 0 when absent. */
+function outpaintPreOf(rec: JobRecord): number {
+  const pre = ((rec.result?.meta ?? {}) as Record<string, unknown>).pre_sec;
+  return typeof pre === "number" && Number.isFinite(pre) && pre > 0 ? pre : 0;
 }
 
 function durationOf(rec: JobRecord): number {
@@ -71,6 +78,9 @@ export class JobsStore {
 
   /** `/status.busy` with a job id that is not ours → "GPU busy — <job_id>". */
   gpuBusyOther = $state<string | null>(null);
+
+  /** `/status.model_load`: a backbone / adapter / full-FT load in flight (the top-bar load bar). */
+  modelLoad = $state<ModelLoad | null>(null);
 
   /** Called with a finished job's record. M9 T4 registers one to capture a commit's meta.stages. */
   onDone: ((rec: JobRecord) => void) | null = null;
@@ -121,6 +131,7 @@ export class JobsStore {
         kind: req.kind,
         dur_sec: durationOf(rec),
         source_clip_id: req.sourceClipId,
+        ...(req.kind === "outpaint" ? { outpaint_pre_sec: outpaintPreOf(rec) } : {}),
         created: Math.floor(Date.now() / 1000),       // epoch SECONDS, like the server's own fields
       });
     } catch (e) {
@@ -173,8 +184,10 @@ export class JobsStore {
       const holder = s.progress?.job_id ?? null;
       const other = s.busy && (holder === null || holder !== mine);
       this.gpuBusyOther = other ? (holder ?? s.job_id ?? "another render") : null;
+      this.modelLoad = s.model_load ?? null;
     } catch {
       this.gpuBusyOther = null;
+      this.modelLoad = null;
     }
   }
 

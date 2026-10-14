@@ -93,7 +93,7 @@ def test_step_t_accepts_scalar_and_batched_t():
 
 
 @pytest.mark.parametrize("body,status,needle", [
-    ({"op": "generate", "payload": {"prompt": "x", "duration": 200}}, 400, "capped at 184 s"),
+    ({"op": "generate", "payload": {"prompt": "x", "duration": 400}}, 400, "capped at 374.43 s"),
     ({"op": "nope", "payload": {}}, 400, "unknown op"),
     ({"op": "generate", "payload": [1]}, 400, "payload"),
     ({"payload": {}}, 400, "op"),

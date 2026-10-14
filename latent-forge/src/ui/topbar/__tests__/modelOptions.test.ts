@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchAdapters } from "../../../lib/forge/models";
-import { BACKBONE_IDS, buildModelOptions, epochLabel, modelMenu } from "../modelOptions";
+import {
+  BACKBONE_IDS, buildModelOptions, ckptColor, epochLabel, modelMenu, ratingColor, runColor, withRating,
+} from "../modelOptions";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -41,8 +43,54 @@ describe("the MODEL select lists backbones first, then adapters (spec §4.2)", (
       label: "custom_v3 (LatCH medium)",
       group: "adapter",
       ckptPath: "/SERVER/ckpts/custom_v3.safetensors",
+      run: "custom_v3 (LatCH medium)",
+      quality: "",
+      ckptGood: false,
+      rating: null,
     });
     expect(options[5].label).toBe("custom_v2.ckpt");
+  });
+
+  it("carries the census verdicts: green run / green checkpoint / red run, broken beating good", () => {
+    const options = buildModelOptions([
+      { path: "/r/armA/epoch=2.ckpt", label: "armA", epoch: 2, good_run: true, good_ckpt: true },
+      { path: "/r/armA/epoch=3.ckpt", label: "armA", epoch: 3, good_run: true, good_ckpt: false },
+      { path: "/r/armB/epoch=1.ckpt", label: "armB", epoch: 1, good_run: true, good_ckpt: true, broken: true },
+    ], ["medium-base"]);
+    const by = (v: string) => options.find((o) => o.value === v)!;
+    expect(by("medium-base").quality).toBe("good");
+    expect(by("medium").quality).toBe("");
+    expect(by("/r/armA/epoch=2.ckpt")).toMatchObject({ quality: "good", ckptGood: true, run: "armA" });
+    expect(by("/r/armA/epoch=3.ckpt")).toMatchObject({ quality: "good", ckptGood: false });
+    expect(by("/r/armB/epoch=1.ckpt")).toMatchObject({ quality: "broken", ckptGood: false });
+  });
+
+  it("colours a rated run by its 1..5 rating over the census verdict; epochs keep the checkpoint verdict", () => {
+    const options = buildModelOptions([
+      { path: "/r/armA/epoch=2.ckpt", label: "armA", epoch: 2, good_run: true, good_ckpt: true, rating: 2 },
+      { path: "/r/armB/epoch=1.ckpt", label: "armB", epoch: 1, broken: true },
+      { path: "/r/armC/epoch=1.ckpt", label: "armC", epoch: 1, rating: 9 },
+    ], [], { "medium-base": 5 });
+    const by = (v: string) => options.find((o) => o.value === v)!;
+    expect(runColor(by("medium-base"))).toBe("var(--rate5)");
+    expect(runColor(by("/r/armA/epoch=2.ckpt"))).toBe("var(--rate2)");
+    expect(ckptColor(by("/r/armA/epoch=2.ckpt"))).toBe("var(--green-strong)");
+    expect(runColor(by("/r/armB/epoch=1.ckpt"))).toBe("var(--red)");
+    expect(by("/r/armC/epoch=1.ckpt").rating).toBeNull();   // out of range is ignored
+    expect(runColor(by("medium"))).toBe("");
+  });
+
+  it("applies a saved rating to every option of that run", () => {
+    const options = buildModelOptions([
+      { path: "/r/armA/epoch=2.ckpt", label: "armA", epoch: 2 },
+      { path: "/r/armA/epoch=3.ckpt", label: "armA", epoch: 3 },
+      { path: "/r/armB/epoch=1.ckpt", label: "armB", epoch: 1 },
+    ]);
+    const next = withRating(options, "armA", 4);
+    expect(next.filter((o) => o.run === "armA").map((o) => o.rating)).toEqual([4, 4]);
+    expect(next.find((o) => o.run === "armB")!.rating).toBeNull();
+    expect(ratingColor(4)).toBe("var(--rate4)");
+    expect(ratingColor(null)).toBe("");
   });
 
   it("drops duplicates and entries with no path", () => {
@@ -132,5 +180,15 @@ describe("the MODEL select lists a run once and its epochs beside it", () => {
   it("every option the primary select offers is a real checkpoint path, so onmodel() needs no translation", () => {
     const values = new Set(options.map((o) => o.value));
     for (const o of modelMenu(options, "medium").primary) expect(values.has(o.value)).toBe(true);
+  });
+});
+
+describe("census notes key", () => {
+  it("names a wandb run by its run folder, not 'checkpoints', and keys its notes there", () => {
+    const [o] = buildModelOptions([
+      { path: "/r/sa3-run-r64/i8ny/checkpoints/epoch=1.ckpt", label: "checkpoints", notes_key: "sa3-run-r64", epoch: 1 },
+    ]).filter((x) => x.group === "adapter");
+    expect(o.label).toBe("sa3-run-r64");
+    expect(o.run).toBe("sa3-run-r64");
   });
 });

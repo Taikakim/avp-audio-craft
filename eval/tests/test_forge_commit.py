@@ -47,7 +47,7 @@ def test_validate_normalises():
 
 
 @pytest.mark.parametrize("mutate,needle", [
-    (lambda p: p.update(duration_sec=200), "capped at 184 s"),
+    (lambda p: p.update(duration_sec=400), "capped at 374.43 s"),
     (lambda p: p["lanes"].pop(), "indexes 0, 1, 2, 3"),
     (lambda p: p.update(clips=[]), "no clips"),
     (lambda p: p["clips"][1].update(id="a"), "unique"),

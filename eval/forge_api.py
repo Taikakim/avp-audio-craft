@@ -1,3 +1,4 @@
+# Last edited: WINTERMUTE 2026-10-14 -- registered the outpaint job
 """Latent Forge HTTP routes (spec §6). Thin: parse, validate, dispatch into eval/forge/*.
 
 The server imports this module and calls bind(sys.modules[__name__]) — NEVER
@@ -138,6 +139,8 @@ def bind(srv):
                     validator=lambda p: clip_jobs.validate_a2a_clip(p, SRV.HEADS))
     register_runner("inpaint", lambda jid, p: clip_jobs.run_inpaint_preview(SRV, services(), jid, p),
                     validator=clip_jobs.validate_inpaint)
+    register_runner("outpaint", lambda jid, p: clip_jobs.run_outpaint(SRV, services(), jid, p),
+                    validator=lambda p: clip_jobs.validate_outpaint(p, SRV.HEADS))
     register_runner("commit", lambda jid, p: commit_mod.run_commit(SRV, services(), jid, p),
                     validator=lambda p: commit_mod.validate_commit(p, SRV.HEADS))
     reset_queue()

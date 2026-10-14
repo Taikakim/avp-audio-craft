@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — outpaint history kind
 // Turns the live stores into ProjectV2 (spec §9.2) and back, and the narrower
 // master-preset slice (spec §9.3). Reads/writes the real singletons directly,
 // the same pattern every other store-adjacent module in this codebase uses.
@@ -10,13 +11,17 @@ import {
   arrangement, MAX_PX_PER_SEC, MIN_PX_PER_SEC,
 } from "../stores/arrangement.svelte";
 import { settings, STAGE_BACKBONE, STAGE_FIELDS, type ModelStage } from "../stores/settings.svelte";
+import { applyRenderPreset } from "../presets/renderPresets";
+import { isPresetModel, type PresetModel } from "./presetModel";
 import { view } from "../stores/view.svelte";
 import { history } from "../render/history.svelte";
 import { CLIP_OPS } from "./types";
 import type { RenderHistoryEntry } from "./types";
 import { durableChain } from "../chains/modulePresets";
 import { SNAP_MODES } from "../math/snap";
-import { BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, MASTER_DEFAULT, POST_DEFAULTS } from "./defaults";
+import {
+  BASE_DEFAULTS, CHAIN_DEFAULTS, cloneRenderSettings, LENGTH_CAP_SEC, MASTER_DEFAULT, POST_DEFAULTS,
+} from "./defaults";
 import { isAudioRef, isEnvelope } from "./guards";
 import type {
   ForgeClip, ForgeLane, LaneChain, MasterChain, MixSpec, OverlapParams, ProjectV2, RenderSettings,
@@ -67,7 +72,7 @@ function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-const RENDER_KINDS = ["gen", "a2a", "inpaint", "mix"];
+const RENDER_KINDS = ["gen", "a2a", "inpaint", "outpaint", "mix"];
 
 /** Every field the preview container, the MIXDOWN slot and refOf dereference. */
 function isRenderEntry(v: unknown): boolean {
@@ -286,15 +291,25 @@ export function applyProject(project: ProjectV2, opts: { restoreModel?: boolean 
 
 // ---------------------------------------------------------- master preset (§9.3)
 
+/**
+ * 2026-10-13 (W): every slice is OPTIONAL, and a preset may also carry the `model` it was made with
+ * and full `render` settings. A recall writes only the slices present, so a clip-recipe preset
+ * (eval/forge/make_dj_mix_presets.py: model + render, no layout) leaves the arrangement alone.
+ */
 export interface MasterPresetPayload {
-  lanes: { chain: LaneChain }[];
-  clips: {
+  lanes?: { chain: LaneChain }[];
+  clips?: {
     id: string; lane: 0 | 1 | 2 | 3; start_sec: number; offset_sec: number; dur_sec: number;
     loop: boolean; native_bpm: number | null; detune_cents: number; a2a: ForgeClip["a2a"];
   }[];
-  mix: MixSpec;
-  master: MasterChain;
-  defaults: { schedule: RenderSettings["schedule"]; prompt: string };
+  mix?: MixSpec;
+  master?: MasterChain;
+  defaults?: { schedule: RenderSettings["schedule"]; prompt: string };
+  model?: PresetModel;
+  /** RenderSettings fields (+ duration_sec), checked field by field by applyRenderPreset. */
+  render?: Record<string, unknown>;
+  /** Provenance, never applied. */
+  source?: Record<string, unknown>;
 }
 
 /**
@@ -302,9 +317,13 @@ export interface MasterPresetPayload {
  * two fields" (the two readings do not fully reconcile -- see this task's WHY).
  * No `audio`, no `render.steps`/`cfg_scale`/etc: those belong to the separate
  * `render`-level preset (M4), and re-including them here would make the two
- * levels redundant.
+ * levels redundant. `model` is the loaded backbone + checkpoint (2026-10-13).
  */
-export function buildMasterPresetPayload(): MasterPresetPayload {
+/** What SAVE writes: every layout slice plus the model, never partial. */
+export type FullMasterPresetPayload = MasterPresetPayload
+  & Required<Pick<MasterPresetPayload, "lanes" | "clips" | "mix" | "master" | "defaults" | "model">>;
+
+export function buildMasterPresetPayload(): FullMasterPresetPayload {
   return {
     lanes: arrangement.lanes.map((l) => ({ chain: durableChain($state.snapshot(l.chain) as LaneChain) })),
     clips: arrangement.clips.map((c) => ({
@@ -318,45 +337,58 @@ export function buildMasterPresetPayload(): MasterPresetPayload {
       schedule: $state.snapshot(settings.defaults.schedule) as RenderSettings["schedule"],
       prompt: settings.defaults.prompt,
     },
+    model: { backbone: settings.activeBackbone, ckpt_path: settings.ckptPath },
   };
 }
 
 /**
  * A master preset from the server, checked as a WHOLE before applyMasterPreset writes anything
- * (critic pass 3 #12): a payload missing `defaults` used to throw on the last two lines, after the
- * lanes, clips, mix and master were already recalled -- and an armed session then autosaved that
- * half recall. Every field applyMasterPreset writes is checked. Throws naming the first bad field.
+ * (critic pass 3 #12): a bad field used to throw after the lanes, clips, mix and master were
+ * already recalled -- and an armed session then autosaved that half recall. Every PRESENT field
+ * applyMasterPreset writes is checked; an absent one is skipped on recall. Throws naming the first
+ * bad field, or when nothing recallable is present at all.
  */
 export function validateMasterPreset(raw: unknown): MasterPresetPayload {
   const bad = (field: string) => new Error(`not a master preset: ${field} is missing or the wrong type`);
   if (!isObj(raw)) throw bad("payload");
-  if (!Array.isArray(raw.lanes) || raw.lanes.length !== 4) throw bad("lanes");
-  raw.lanes.forEach((l: unknown, i: number) => {
-    if (!isObj(l) || !isLaneChain(l.chain)) throw bad(`lanes[${i}].chain`);
-  });
-  if (!Array.isArray(raw.clips)) throw bad("clips");
-  raw.clips.forEach((c: unknown, i: number) => {
-    if (!isObj(c) || !isClipLayout(c)) throw bad(`clips[${i}]`);
-  });
-  if (!isMix(raw.mix)) throw bad("mix");
-  if (!isMaster(raw.master)) throw bad("master");
-  if (!isObj(raw.defaults) || !isObj(raw.defaults.schedule) || typeof raw.defaults.prompt !== "string") {
+  if ("lanes" in raw) {
+    if (!Array.isArray(raw.lanes) || raw.lanes.length !== 4) throw bad("lanes");
+    raw.lanes.forEach((l: unknown, i: number) => {
+      if (!isObj(l) || !isLaneChain(l.chain)) throw bad(`lanes[${i}].chain`);
+    });
+  }
+  if ("clips" in raw) {
+    if (!Array.isArray(raw.clips)) throw bad("clips");
+    raw.clips.forEach((c: unknown, i: number) => {
+      if (!isObj(c) || !isClipLayout(c)) throw bad(`clips[${i}]`);
+    });
+  }
+  if ("mix" in raw && !isMix(raw.mix)) throw bad("mix");
+  if ("master" in raw && !isMaster(raw.master)) throw bad("master");
+  if ("defaults" in raw
+    && (!isObj(raw.defaults) || !isObj(raw.defaults.schedule) || typeof raw.defaults.prompt !== "string")) {
     throw bad("defaults");
+  }
+  if ("model" in raw && !isPresetModel(raw.model)) throw bad("model");
+  if ("render" in raw && !isObj(raw.render)) throw bad("render");
+  if (!["lanes", "clips", "mix", "master", "defaults", "model", "render"].some((k) => k in raw)) {
+    throw bad("every field");
   }
   return raw as unknown as MasterPresetPayload;
 }
 
-/** Recall replaces the whole slice (spec §9.3): matched by clip id within the
+/** Recall replaces each PRESENT slice (spec §9.3): matched by clip id within the
  *  CURRENT session's arrangement, since a master preset is a snapshot of one
  *  session's layout, not a transplant of clips into a different one. A clip id
  *  the preset names that no longer exists is skipped, not an error.
  *  `payload` is plain data that passed validateMasterPreset (a server response),
- *  or buildMasterPresetPayload's output. */
-export function applyMasterPreset(payload: MasterPresetPayload): void {
-  payload.lanes.forEach((l, i) => {
+ *  or buildMasterPresetPayload's output. `model` is NOT applied here: switching it
+ *  is the caller's (SessionController asks first). Returns render fields refused. */
+export function applyMasterPreset(payload: MasterPresetPayload): string[] {
+  payload.lanes?.forEach((l, i) => {
     if (arrangement.lanes[i]) arrangement.lanes[i].chain = structuredClone(l.chain ?? CHAIN_DEFAULTS);
   });
-  for (const saved of payload.clips) {
+  for (const saved of payload.clips ?? []) {
     const clip = arrangement.clips.find((c) => c.id === saved.id);
     if (!clip) continue;
     clip.lane = saved.lane;
@@ -368,10 +400,22 @@ export function applyMasterPreset(payload: MasterPresetPayload): void {
     clip.detune_cents = saved.detune_cents;
     clip.a2a = structuredClone(saved.a2a);
   }
-  arrangement.mix = structuredClone(payload.mix);
-  arrangement.master = normalizeMaster(payload.master);
-  settings.defaults.schedule = structuredClone(payload.defaults.schedule);
-  settings.defaults.prompt = payload.defaults.prompt;
+  if (payload.mix) arrangement.mix = structuredClone(payload.mix);
+  if (payload.master) arrangement.master = normalizeMaster(payload.master);
+  if (payload.defaults) {
+    settings.defaults.schedule = structuredClone(payload.defaults.schedule);
+    settings.defaults.prompt = payload.defaults.prompt;
+  }
+  const rejected: string[] = [];
+  if (payload.render) {
+    rejected.push(...applyRenderPreset(settings.defaults, payload.render).rejected);
+    const d = payload.render.duration_sec;
+    if (d !== undefined) {
+      if (typeof d === "number" && Number.isFinite(d) && d > 0 && d <= LENGTH_CAP_SEC) settings.defaults.duration_sec = d;
+      else rejected.push("duration_sec");
+    }
+  }
+  return rejected;
 }
 
 /**

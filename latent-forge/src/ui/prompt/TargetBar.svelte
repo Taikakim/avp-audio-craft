@@ -7,10 +7,16 @@
   // generate.
   import { dragScale } from "../../lib/actions/dragScale";
   import SettingsPresetSelect from "./SettingsPresetSelect.svelte";
+  import TestPromptMenu from "./TestPromptMenu.svelte";
+  import { promptNotes } from "../../lib/stores/promptNotes.svelte";
+  // Last edited: WINTERMUTE 2026-10-13 — NOTES toggle, TEST prompts menu, recalled preset's comment
+  // Last edited: WINTERMUTE 2026-10-14 — OUTPAINT tag + pending-outpaint row with CLEAR
   import type { Target } from "../../lib/forge/types";
   import { HELP } from "../../lib/help/strings";
   import { RANGES } from "../../lib/sampling/scheduleRules";
   import { CLIP_OPS, targetTag, targetTagColorVar } from "./targetBar";
+  import { arrangement } from "../../lib/stores/arrangement.svelte";
+  import { hasOutpaint } from "../../lib/render/dispatch";
 
   interface Props {
     target: Target;
@@ -31,7 +37,14 @@
   }: Props = $props();
 
   const a2aOn = $derived(a2a?.on ?? false);
-  const tag = $derived(targetTag(target, a2aOn));
+  // A clip whose outpaint handles are dragged out renders as OUTPAINT (dispatch.ts clipRequest).
+  const outpaint = $derived.by(() => {
+    if (target.kind !== "clip") return null;
+    const id = target.id;
+    const c = arrangement.clips.find((x) => x.id === id);
+    return c && hasOutpaint(c) ? (c.outpaint ?? null) : null;
+  });
+  const tag = $derived(targetTag(target, a2aOn, outpaint !== null));
   const tagColorVar = $derived(targetTagColorVar(tag, lane));
   const targetIsClip = $derived(target.kind === "clip");
   const name = $derived(
@@ -49,10 +62,31 @@
     data-testid="target-tag"
     style="color: var({tagColorVar}); border-color: var({tagColorVar});"
   >{tag}</span>
+  <button
+    type="button"
+    class="notes-toggle"
+    class:on={promptNotes.open}
+    data-testid="prompt-notes-toggle"
+    data-help={HELP.promptNotes}
+    onclick={() => promptNotes.toggle()}
+  >NOTES</button>
   <span class="name" data-testid="target-name">{name}</span>
+  <TestPromptMenu {target} />
   <SettingsPresetSelect {target} />
+  {#if promptNotes.comment}
+    <span class="comment" data-testid="preset-comment" title={promptNotes.comment}>
+      <b>{promptNotes.commentFrom}:</b> {promptNotes.comment}
+    </span>
+  {/if}
 
   {#if targetIsClip}
+    {#if outpaint}
+      <div class="outpaint-row" data-testid="target-outpaint-row" data-help={HELP.outpaint}>
+        <span>OUTPAINT {outpaint.pre_sec > 0 ? `+${outpaint.pre_sec.toFixed(1)} s before` : ""}{outpaint.pre_sec > 0 && outpaint.post_sec > 0 ? " · " : ""}{outpaint.post_sec > 0 ? `+${outpaint.post_sec.toFixed(1)} s after` : ""} — RENDER, then REPLACE CLIP</span>
+        <button type="button" data-testid="target-outpaint-clear"
+          onclick={() => target.kind === "clip" && arrangement.clearOutpaint(target.id)}>CLEAR</button>
+      </div>
+    {/if}
     <div class="clip-row" data-testid="target-clip-row">
       <button
         type="button"
@@ -90,6 +124,23 @@
 </div>
 
 <style>
+  .outpaint-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    font-size: 10px;
+    color: var(--purple-strong);
+  }
+  .outpaint-row button {
+    background: var(--panel2);
+    border: 1px solid var(--purple-strong);
+    color: var(--purple-strong);
+    font-family: inherit;
+    font-size: 10px;
+    padding: 1px 5px;
+    cursor: pointer;
+  }
   .target-bar {
     display: flex;
     align-items: center;
@@ -102,6 +153,27 @@
     letter-spacing: 0.05em;
     padding: 1px 5px;
     border: 1px solid;
+  }
+  .notes-toggle {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 10px;
+    padding: 1px 5px;
+    cursor: pointer;
+  }
+  .notes-toggle.on {
+    border-color: var(--warm);
+    color: var(--warm);
+  }
+  .comment {
+    width: 100%;
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .name {
     font-size: 10px;

@@ -3,7 +3,8 @@ import { BASE_DEFAULTS, cloneRenderSettings } from "../../forge/defaults";
 import type { RenderSettings } from "../../forge/types";
 import {
   applyPromptPreset, applyRenderPreset, isValidPresetName, PROMPT_GROUP_LABEL,
-  presetOptions, promptPresetBody, RENDER_GROUP_LABEL, renderPresetBody, SEED_SENTINEL,
+  presetComment, presetOptions, promptPresetBody, RENDER_GROUP_LABEL, renderPresetBody, SEED_SENTINEL,
+  TEST_GROUP_LABEL,
 } from "../renderPresets";
 
 let s: RenderSettings;
@@ -193,5 +194,29 @@ describe("applyRenderPreset validates every field before it lands", () => {
     // -1 is M1's server-resolve sentinel and the value the app's own defaults carry.
     expect(applyRenderPreset(s, { seed: SEED_SENTINEL }).applied).toEqual(["seed"]);
     expect(s.seed).toBe(SEED_SENTINEL);
+  });
+});
+
+describe("test prompts, comments and length (2026-10-13)", () => {
+  it("lists test-* render presets last, under their own group", () => {
+    const o = presetOptions(["test-kl_0", "warm pad"], ["bright"]);
+    expect(o.map((x) => x.group)).toEqual([RENDER_GROUP_LABEL, PROMPT_GROUP_LABEL, TEST_GROUP_LABEL]);
+    expect(o[2]).toEqual({ level: "render", name: "test-kl_0", group: TEST_GROUP_LABEL });
+  });
+
+  it("recalls duration_sec within the length cap and rejects anything else", () => {
+    expect(applyRenderPreset(s, { duration_sec: 20 }).applied).toContain("duration_sec");
+    expect(s.duration_sec).toBe(20);
+    expect(applyRenderPreset(s, { duration_sec: 999 }).rejected).toContain("duration_sec");
+    expect(s.duration_sec).toBe(20);
+  });
+
+  it("reads a preset's comment but never writes it into the target's own notes", () => {
+    s.notes = "mine";
+    const body = { prompt: "techno music", seed: 1234, notes: "board seed 1234" };
+    applyRenderPreset(s, body);
+    expect(s.notes).toBe("mine");
+    expect(presetComment(body)).toBe("board seed 1234");
+    expect(presetComment({})).toBe("");
   });
 });

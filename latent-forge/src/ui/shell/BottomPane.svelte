@@ -21,6 +21,8 @@
     ontab?: (t: BottomTabId) => void;
     terminalMode?: TerminalMode;
     onterminalmode?: (m: TerminalMode) => void;
+    /** The C64 raster canvas (spec §9.5), bound out to App's driver. */
+    rasterCanvas?: HTMLCanvasElement | null;
   }
   let {
     visible = true,
@@ -28,6 +30,7 @@
     ontab = () => {},
     terminalMode = "pane",
     onterminalmode = () => {},
+    rasterCanvas = $bindable(null),
   }: Props = $props();
 
   // Poll /forge/log only while the TERMINAL tab is the one on screen: an idle
@@ -40,6 +43,16 @@
 </script>
 
 <div class="bottom-pane" class:hidden={!visible} data-region="bottom-pane">
+  <!-- Spec §9.5's C64 raster, moved from a window border to this pane's background (2026-10-13).
+       Low backing resolution + pixelated scaling keeps the bars chunky. -->
+  <canvas
+    bind:this={rasterCanvas}
+    class="raster-bg"
+    data-region="raster-border"
+    width="320"
+    height="62"
+    aria-hidden="true"
+  ></canvas>
   <div class="tab-row" data-region="bottom-tab-row">
     {#each BOTTOM_TABS as t (t.id)}
       <button
@@ -83,6 +96,21 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
+  }
+  .raster-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    pointer-events: none;
+    opacity: 0.45;
+    z-index: 0;
+  }
+  .bottom-pane > :not(.raster-bg) {
+    position: relative;
+    z-index: 1;
   }
   .bottom-pane.hidden {
     display: none;

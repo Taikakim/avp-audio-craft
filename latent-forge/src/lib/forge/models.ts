@@ -86,3 +86,80 @@ export async function fetchSlots(): Promise<SlotsResponse> {
     vram_floor_gb: body.vram_floor_gb ?? 0, free_gb: body.free_gb ?? 0,
   };
 }
+
+/** The backbones' census verdicts, from /models: the ones on Kim's cleaned-checkpoints list ('base'
+ *  rows, `good_backbones`) and their MODEL NOTES ratings (`backbone_ratings`). Asked with a family no
+ *  checkpoint has, so the answer carries no rows. Empty on any failure. */
+export async function fetchBackboneInfo(): Promise<{ good: string[]; ratings: Record<string, number> }> {
+  try {
+    const res = await fetch("/models?family=__backbones__");
+    const body = (await res.json()) as { good_backbones?: unknown; backbone_ratings?: unknown };
+    const good = Array.isArray(body.good_backbones) ? body.good_backbones.filter((x): x is string => typeof x === "string") : [];
+    const ratings: Record<string, number> = {};
+    if (body.backbone_ratings && typeof body.backbone_ratings === "object") {
+      for (const [k, v] of Object.entries(body.backbone_ratings as Record<string, unknown>)) {
+        if (typeof v === "number") ratings[k] = v;
+      }
+    }
+    return { good, ratings };
+  } catch {
+    return { good: [], ratings: {} };
+  }
+}
+
+/** GET/POST /models/notes (eval/explorer_render_server.py): the census entry for one run label. */
+export interface ModelNotes {
+  label: string;
+  /** false when the census has no entry for this label yet; a save creates one. */
+  known: boolean;
+  /** Read-only: one_liner, purpose, hypothesis, status, note, verdict, kim_feedback, recipe. */
+  fields: Record<string, string>;
+  forge_notes: string;
+  forge_notes_updated: string | null;
+  /** The 1..5 overall rating (forge_rating), null when unrated. */
+  forge_rating: number | null;
+}
+
+async function notesJSON(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text();
+  let body: Record<string, unknown> = {};
+  try {
+    body = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  } catch {
+    throw new Error(`render server answered non-JSON (${res.status})`);
+  }
+  if (!res.ok || body.ok === false) throw new Error(String(body.detail ?? body.error ?? `request failed (${res.status})`));
+  return body;
+}
+
+export async function fetchModelNotes(label: string): Promise<ModelNotes> {
+  const b = await notesJSON(await fetch(`/models/notes?label=${encodeURIComponent(label)}`));
+  return {
+    label: String(b.label ?? label),
+    known: !!b.known,
+    fields: (b.fields as Record<string, string>) ?? {},
+    forge_notes: typeof b.forge_notes === "string" ? b.forge_notes : "",
+    forge_notes_updated: typeof b.forge_notes_updated === "string" ? b.forge_notes_updated : null,
+    forge_rating: typeof b.forge_rating === "number" ? b.forge_rating : null,
+  };
+}
+
+/** Writes ONLY the census's `forge_notes` key for this label; returns the server's timestamp. */
+export async function saveModelNotes(label: string, text: string): Promise<string | null> {
+  const b = await notesJSON(await fetch("/models/notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label, text }),
+  }));
+  return typeof b.forge_notes_updated === "string" ? b.forge_notes_updated : null;
+}
+
+/** Writes ONLY the census's `forge_rating` key (1..5; null clears it); returns the saved rating. */
+export async function saveModelRating(label: string, rating: number | null): Promise<number | null> {
+  const b = await notesJSON(await fetch("/models/rating", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label, rating }),
+  }));
+  return typeof b.forge_rating === "number" ? b.forge_rating : null;
+}

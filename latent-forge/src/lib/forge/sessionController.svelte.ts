@@ -11,6 +11,7 @@ import { convertProjectV1 } from "./convertProjectV1";
 import {
   applyMasterPreset, applyProject, buildMasterPresetPayload, serializeProject, validateMasterPreset,
   validateProjectV2, type MasterPresetPayload, unsavedWorkKey } from "./projectSerializer.svelte";
+import type { PresetModel } from "./presetModel";
 import { isValidSessionName } from "./sessionName";
 import type { ProjectV2 } from "./types";
 
@@ -28,6 +29,9 @@ export interface SessionDeps {
   confirm(message: string): boolean;
   /** Whether the TopBar already lists a session / master preset of that name (App reads its lists). */
   exists(kind: "session" | "master", name: string): boolean;
+  /** A recalled preset names the model it was made with: App asks and, on yes, switches (2026-10-13).
+   *  Absent = the model is left alone. */
+  ensureModel?: (model: PresetModel, presetName: string) => Promise<void>;
   /** M5 T10's debounced per-clip stretch; defaults to the real one, tests pass a spy. */
   scheduleStretch?: (clipId: string) => void;
   delayMs?: number;
@@ -370,7 +374,17 @@ export class SessionController {
       this.deps.log(`[forge] a session load started while master preset ${name} was loading -- pick it again`, "error");
       return false;
     }
-    applyMasterPreset(payload);
+    // The model first: a backbone switch moves MODEL STAGE, and setStage rewrites the session
+    // defaults, so the preset's render settings must land after it, not before.
+    if (payload.model && this.deps.ensureModel) {
+      await this.deps.ensureModel(payload.model, name);
+      if (mySeq !== this.seq || this.loading) {
+        this.deps.log(`[forge] a session load started while master preset ${name} was loading -- pick it again`, "error");
+        return false;
+      }
+    }
+    const rejected = applyMasterPreset(payload);
+    if (rejected.length > 0) this.deps.log(`[forge] master preset ${name}: ignored ${rejected.join(", ")}`, "error");
     // A preset can move native_bpm / detune_cents; previewAudio must follow, exactly as on a session
     // load (step 6 above), or the timeline plays the old stretch while MIXDOWN renders the new one
     // (review 2026-10-01).

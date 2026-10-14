@@ -37,7 +37,7 @@ export interface RenderBlockState {
   padSec: number;
 }
 
-const CAP_LINE = `over the 184 s cap — forge passes are capped at 184 s locally (T<2048).`;
+const CAP_LINE = `over the ${CAP_SEC} s cap — forge passes are capped at ${CAP_SEC} s (4096 latent frames).`;
 
 /** v1's rule, unchanged: a latent exists if the clip's own audio is a crop ref. M9 has no
  *  `latentPath` on ForgeClip, so the crop ref is the whole of it (open question A3). */

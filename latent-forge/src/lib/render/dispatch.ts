@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — a clip with a pending outpaint renders as op outpaint
 // Spec §7.1's table, as a pure function. The twin of Writer A's renderBlock: the component reads
 // the stores and hands the world in, so every row of the table is a one-line test and none of them
 // needs a mounted component or a mocked fetch.
@@ -13,7 +14,7 @@ import type {
 import { targetKey } from "../forge/guards";
 import { chainRequest, type LatchHeadInfo } from "../chains/latch";
 import type { RenderKind, SubmitRequest } from "./jobs.svelte";
-import { a2aClipPayload, generatePayload, inpaintPayload, opPayload, PayloadError } from "./payloads";
+import { a2aClipPayload, generatePayload, inpaintPayload, opPayload, outpaintPayload, PayloadError } from "./payloads";
 
 export type { ClipOp } from "../forge/types";
 
@@ -65,7 +66,7 @@ export interface DispatchWorld {
 
 const KIND_OF: Record<string, RenderKind> = {
   generate: "gen", decode: "gen", longform: "gen", bend: "gen",
-  a2a_clip: "a2a", inpaint: "inpaint", commit: "mix",
+  a2a_clip: "a2a", inpaint: "inpaint", outpaint: "outpaint", commit: "mix",
 };
 
 /** A generate is steered by its lane's chain (LatCH / FiLM / LoRA) whether or not A2A is on: the
@@ -86,6 +87,31 @@ function latentSourceOf(audio: AudioRef): { cropId?: string; latentPath?: string
 
 function clipRequest(clip: ForgeClip, w: DispatchWorld): SubmitRequest {
   const key = targetKey({ kind: "clip", id: clip.id });
+
+  // A pending outpaint (the clip's handles dragged out) wins over A2A and the OP select: it is the
+  // most recent, most explicit thing the operator asked of this clip.
+  if (hasOutpaint(clip)) {
+    const o = clip.outpaint as { pre_sec: number; post_sec: number };
+    return {
+      op: "outpaint",
+      kind: "outpaint",
+      sourceClipId: clip.id,
+      targetKey: key,
+      payload: outpaintPayload({
+        // Timeline (stretched) seconds, like the overlap inpaint: send the file the timeline plays.
+        audio: clip.previewAudio ?? clip.audio,
+        offset_sec: clip.offset_sec,
+        dur_sec: clip.dur_sec,
+        pre_sec: o.pre_sec,
+        post_sec: o.post_sec,
+        render: w.settings,
+        chain: w.lane?.chain ?? null,
+        heads: w.heads,
+        ckptPath: w.ckptPath,
+        cfgScale: w.cfgScale,
+      }),
+    };
+  }
 
   // §7.1 row 2 wins over row 3: A2A on is a2a_clip whatever the OP select says.
   if (clip.a2a?.on) {
@@ -127,6 +153,10 @@ function clipRequest(clip: ForgeClip, w: DispatchWorld): SubmitRequest {
         });
 
   return { op, kind: "gen", sourceClipId: clip.id, targetKey: key, payload };
+}
+
+export function hasOutpaint(clip: ForgeClip | null | undefined): boolean {
+  return !!clip?.outpaint && (clip.outpaint.pre_sec > 0 || clip.outpaint.post_sec > 0);
 }
 
 function overlapRequest(w: DispatchWorld): SubmitRequest {

@@ -87,8 +87,9 @@ describe("mix defaults (spec §4.5)", () => {
 });
 
 describe("hard limits", () => {
-  it("caps forge passes at 184 s (spec §2.2, X12)", () => {
-    expect(LENGTH_CAP_SEC).toBe(184);
+  it("caps forge passes at 374.43 s = 4096 latent frames with the 6 s padding (was 184 s, spec §2.2 X12)", () => {
+    expect(LENGTH_CAP_SEC).toBe(374.43);
+    expect(Math.ceil((LENGTH_CAP_SEC + 6) * 44100 / 4096)).toBe(4096);
   });
 
   it("offers RF samplers only, and rf_denoiser gets the shorter list (spec §5.3, X5)", () => {

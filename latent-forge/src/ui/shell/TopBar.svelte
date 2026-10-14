@@ -6,11 +6,16 @@
   // the layout test measures. `overflow: hidden` plus `min-width: 0` on every
   // flexible child keeps the row from ever giving the page a horizontal scrollbar
   // (spec §11.3).
+  // Last edited: WINTERMUTE 2026-10-13 — census colours on MODEL/EPOCH, MODEL NOTES button
+  // Last edited: WINTERMUTE 2026-10-14 — MODEL select coloured by the 1..5 rating when set
   //
   // Every prop after `ontheme` has a default, so the bar renders before the three
   // fetches in App.svelte have answered.
   import MixdownSlot from "../topbar/MixdownSlot.svelte";
-  import { epochLabel, modelMenu, type ModelOption } from "../topbar/modelOptions";
+  import ModelLoadBar from "../topbar/ModelLoadBar.svelte";
+  import ModelNotes from "../topbar/ModelNotes.svelte";
+  import type { ModelLoad } from "../../lib/forge/types";
+  import { ckptColor, epochLabel, modelMenu, runColor, type ModelOption } from "../topbar/modelOptions";
   import { HELP } from "../../lib/help/strings";
 
   type ForgeView = "workspace" | "statistics";
@@ -40,6 +45,8 @@
     models?: ModelOption[];
     model?: string;
     onmodel?: (value: string) => void;
+    /** MODEL NOTES saved a rating for this run (null = cleared). */
+    onrated?: (run: string, rating: number | null) => void;
     modelFolder?: string;
     onmodelfolder?: (value: string) => void;
     masterPresets?: string[];
@@ -47,6 +54,8 @@
     onmasterpreset?: (name: string) => void;
     mixdownBusy?: boolean;
     mixdownStepsLeft?: number | null;
+    /** /status `model_load`; the load bar shows while it is non-null. */
+    modelLoad?: ModelLoad | null;
   }
   let {
     view,
@@ -65,6 +74,7 @@
     models = [],
     model = "",
     onmodel = () => {},
+    onrated = () => {},
     modelFolder = "",
     onmodelfolder = () => {},
     masterPresets = [],
@@ -72,10 +82,14 @@
     onmasterpreset = () => {},
     mixdownBusy = false,
     mixdownStepsLeft = null,
+    modelLoad = null,
   }: Props = $props();
 
   // One entry per adapter RUN in the MODEL select, its epochs in the select beside it.
   const menu = $derived(modelMenu(models, model));
+  // MODEL: the run's 1..5 rating colour, else the census verdict (green = on the cleaned-checkpoints
+  // list, red = failed run). EPOCH: the checkpoint's own verdict (modelOptions.ts runColor/ckptColor).
+  const selected = $derived(models.find((m) => m.value === model));
 
   let importInput = $state<HTMLInputElement>();
 
@@ -120,10 +134,11 @@
     data-testid="model-select"
     data-help={HELP.model}
     value={model}
+    style:color={selected ? runColor(selected) || null : null}
     onchange={(e) => onmodel((e.currentTarget as HTMLSelectElement).value)}
   >
     {#each menu.primary as m (m.value)}
-      <option value={m.value}>{m.label}</option>
+      <option value={m.value} style:color={runColor(m) || "var(--text)"}>{m.label}</option>
     {/each}
   </select>
 
@@ -134,13 +149,18 @@
       data-testid="epoch-select"
       data-help={HELP.modelEpoch}
       value={model}
+      style:color={selected ? ckptColor(selected) || null : null}
       onchange={(e) => onmodel((e.currentTarget as HTMLSelectElement).value)}
     >
       {#each menu.epochs as m (m.value)}
-        <option value={m.value}>{epochLabel(m)}</option>
+        <option value={m.value} style:color={ckptColor(m) || "var(--text)"}>{epochLabel(m)}</option>
       {/each}
     </select>
   {/if}
+
+  <ModelNotes label={selected?.run ?? model} {onrated} />
+
+  {#if modelLoad}<ModelLoadBar load={modelLoad} />{/if}
 
   <input
     class="folder"

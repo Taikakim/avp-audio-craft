@@ -44,7 +44,7 @@ describe("the copied module", () => {
 describe("RASTER_CONFIG -- spec §9.5's settled config, corrected for the module's real API", () => {
   it("passes the palette ARRAY, alphaOut true, and every other settled value", () => {
     expect(RASTER_CONFIG).toEqual({
-      thickness: 4, linesPerColour: 3, jitter: 0.59, persistence: 0.002, chromaBleed: 1.5,
+      thickness: 999, linesPerColour: 3, jitter: 0.59, persistence: 0.002, chromaBleed: 1.5,
       supersample: 8, gain: 0.8, spotSpread: 0.16, palette: PALETTES.teal, alphaOut: true,
       sweepHz: SWEEP_START,
     });

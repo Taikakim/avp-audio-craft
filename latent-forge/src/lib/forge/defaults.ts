@@ -6,7 +6,9 @@ import type {
 } from "./types";
 
 /** spec §2.2 / X12 — 16 GB display card, T < 2048. */
-export const LENGTH_CAP_SEC = 184;
+/** One forge pass: 4096 latent frames (SA3's native T) minus the 6 s generate padding. Mirrors
+ *  eval/forge/contract.py CAP_SEC. Was 184 (T<2048) until 2026-10-14. */
+export const LENGTH_CAP_SEC = 374.43;
 
 /** spec §5.3 — the ScheduleSpec block's stated defaults. */
 export const SCHEDULE_DEFAULT: ScheduleSpec = {

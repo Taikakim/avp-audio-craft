@@ -1,3 +1,4 @@
+// Last edited: WINTERMUTE 2026-10-14 — outpaint handles (setOutpaintEdge/clearOutpaint/growClipForOutpaint)
 // The arrangement: what is on the timeline and where. Chrome state (theme, tabs,
 // modules, help, selection) stays in view.svelte.ts; the viewport lives HERE
 // because every consumer of pxPerSec is a timeline surface (WINTERMUTE,
@@ -200,6 +201,36 @@ class ArrangementStore {
       c.dur_sec = dur;
     }
     this.refreshStale(c);
+  }
+
+  /** OUTPAINT handles (WINTERMUTE 2026-10-14): `sec` is the TIMELINE second the handle was dragged
+   *  to. Before the clip's start it sets pre_sec (never past 0 s on the timeline), after its end
+   *  post_sec; dragged back onto the clip it clears that side. Both 0 clears the pending outpaint. */
+  setOutpaintEdge(id: string, edge: "start" | "end", sec: number) {
+    const c = this.find(id);
+    if (!c) return;
+    const cur = c.outpaint ?? { pre_sec: 0, post_sec: 0 };
+    const MAX = 600;
+    const next = edge === "start"
+      ? { ...cur, pre_sec: Math.min(MAX, Math.max(0, c.start_sec - Math.max(0, sec))) }
+      : { ...cur, post_sec: Math.min(MAX, Math.max(0, sec - (c.start_sec + c.dur_sec))) };
+    c.outpaint = next.pre_sec > 0.05 || next.post_sec > 0.05 ? next : null;
+  }
+
+  clearOutpaint(id: string) {
+    const c = this.find(id);
+    if (c) c.outpaint = null;
+  }
+
+  /** REPLACE CLIP with an outpaint result: the new file starts `preSec` before the old clip and is
+   *  `durSec` long, so the clip moves back by preSec and spans the whole file. */
+  growClipForOutpaint(id: string, preSec: number, durSec: number) {
+    const c = this.find(id);
+    if (!c) return;
+    c.start_sec = Math.max(0, c.start_sec - preSec);
+    c.offset_sec = 0;
+    c.dur_sec = durSec;
+    c.outpaint = null;
   }
 
   setLoop(id: string, on: boolean) {

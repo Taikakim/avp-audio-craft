@@ -1,3 +1,5 @@
+# Last edited: WINTERMUTE 2026-10-13 -- good_run/good_ckpt/broken flags (cleaned_checkpoints.txt + failed status) and forge_notes read/save for the Forge MODEL NOTES box
+# Last edited: WINTERMUTE 2026-10-14 -- forge_rating (1..5 per run) read/save + record["rating"]
 """The model database behind the SA3 inference picker.
 
 A database of models keyed by ABSOLUTE CHECKPOINT PATH -- which is the piece that
@@ -19,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -47,7 +50,22 @@ def _journal_path() -> Path:
 
 
 JOURNAL_PATH = _journal_path()
-OVERRIDES_PATH = Path(__file__).resolve().parent.parent / "Misc" / "models_index_overrides.json"
+# SA3_MODEL_OVERRIDES / SA3_CLEANED_CKPTS: a server running from a git worktree (the Latent Forge
+# dev server) must read AND write the main checkout's copies, which are the census's own; the
+# worktree's copies are just whatever its branch last merged.
+OVERRIDES_PATH = Path(os.environ.get("SA3_MODEL_OVERRIDES") or
+                      Path(__file__).resolve().parent.parent / "Misc" / "models_index_overrides.json")
+# Kim's hand-curated good checkpoints, one '<arm>:<ckpt tag>' per line (also the DoRA table's
+# built-in "Kim's cleaned checkpoints" row preset). Tags are board tags: ep5, ep19v1, step=1011,
+# step8088, base, and render variants like ep3_native / ep5_20s that name the same checkpoint.
+CLEANED_CKPTS_PATH = Path(os.environ.get("SA3_CLEANED_CKPTS") or
+                          Path(__file__).resolve().parent / "cleaned_checkpoints.txt")
+# The key the Forge's MODEL NOTES box writes. Its own key on purpose: purpose / status /
+# kim_feedback / note are written by people and scripts at training time and the box must never
+# overwrite them.
+FORGE_NOTES_KEY = "forge_notes"
+# The Forge's 1..5 overall rating (usefulness + sound quality on one rough axis), per run.
+FORGE_RATING_KEY = "forge_rating"
 RUN_PARAMS_PATH = Path(__file__).resolve().parent.parent / "lumi" / "run_params_extracted.json"
 
 SCAN_SUFFIXES = (".ckpt", ".safetensors", ".pt")
@@ -200,8 +218,182 @@ def _load_cost_gb(family: str, rank: int | None) -> float:
     return 0.0
 
 
+def ckpt_tag_key(tag: str) -> str | None:
+    """A board/cleaned-list checkpoint tag -> the key a record is matched on.
+
+    'ep3_native', 'ep5_20s', 'ep3_iv0.2-0.8' are renders of 'ep3'; 'ep19v1' is a DIFFERENT
+    model from 'ep19' (a DDP replica, see model_matrix_gen.ckpt_tag) and keeps its suffix.
+    'step=1011' and 'step1011' are the same step."""
+    tag = (tag or "").strip()
+    m = re.match(r"ep(\d+)(v\d+)?(?:_|$)", tag)
+    if m:
+        return f"ep{int(m.group(1))}{m.group(2) or ''}"
+    m = re.match(r"step=?(\d+)(?:_|$)", tag)
+    if m:
+        return f"step{int(m.group(1))}"
+    return tag or None
+
+
+def record_ckpt_keys(rec: dict) -> set[str]:
+    """Every key one record answers to: its epoch (with a -vN replica marker) and its step."""
+    keys = set()
+    rep = re.search(r"-v(\d+)(?:\.|$)", Path(rec.get("path") or "").stem)
+    if rec.get("epoch") is not None:
+        keys.add(f"ep{rec['epoch']}" + (f"v{rep.group(1)}" if rep else ""))
+    if rec.get("step") is not None:
+        keys.add(f"step{rec['step']}")
+    return keys
+
+
+def load_good(path: str | Path | None = CLEANED_CKPTS_PATH) -> dict[str, set[str]]:
+    """{arm: {ckpt keys}} from the cleaned-checkpoints list; {} when it is missing."""
+    if path is None or not Path(path).is_file():
+        return {}
+    good: dict[str, set[str]] = {}
+    for line in Path(path).read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or ":" not in line:
+            continue
+        arm, tag = line.split(":", 1)
+        key = ckpt_tag_key(tag)
+        if key:
+            # _ptm = the same checkpoint rendered on the post-trained backbone
+            good.setdefault(arm.strip().removesuffix("_ptm"), set()).add(key)
+    return good
+
+
+def record_names(rec: dict) -> set[str]:
+    """Every name a board label may use for this record's run: the arm, each folder on the path,
+    and 'run__wandbid' for adjacent folders (the matrix's label for sa3_lora_runs/<run>/<id>/)."""
+    dirs = [d for d in Path(rec.get("path") or "").parent.parts if d not in ("/", "")]
+    names = set(dirs) | {f"{a}__{b}" for a, b in zip(dirs, dirs[1:])}
+    if rec.get("arm"):
+        names.add(rec["arm"])
+    return names
+
+
+# Folder names that say nothing about the run: wandb-style runs save to <run>/<id>/checkpoints/.
+_GENERIC_ARMS = {"checkpoints", "runs", ""}
+
+
+def notes_key(arm: str, family_dir: str, overrides: dict) -> str:
+    """The census key a run's notes live under: the same entry record_for reads (arm first, then
+    the run folder), and for a generic folder name the run folder even when it has no entry yet --
+    otherwise every wandb run would share one 'checkpoints' entry."""
+    if arm in overrides:
+        return arm
+    if family_dir and (family_dir in overrides or arm in _GENERIC_ARMS):
+        return family_dir
+    return arm
+
+
+def _join_quality(rec: dict, arm: str, ov: dict, good: dict | None) -> None:
+    """good_run / good_ckpt / broken, plus the Forge notes. Recomputed on every load, like
+    the rest of the curation, because the list and the overrides change by hand.
+
+    broken = an overrides `status` starting with 'failed' (failed-runaway, failed-diverged --
+    the model matrix's own label for a run whose clips are unusable) or `quality: broken`.
+    Broken beats good: a hand flag saying it is broken is newer information than a list."""
+    keys = set()
+    if good:
+        for n in record_names(rec) | {arm}:
+            keys |= good.get(n, set())
+    status = str(ov.get("status") or "")
+    quality = str(ov.get("quality") or "")
+    rec["broken"] = status.startswith("failed") or quality == "broken"
+    rec["good_run"] = not rec["broken"] and (bool(keys) or quality == "good")
+    rec["good_ckpt"] = not rec["broken"] and bool(keys & record_ckpt_keys(rec))
+    rec[FORGE_NOTES_KEY] = ov.get(FORGE_NOTES_KEY) or None
+    rec["rating"] = rating_of(ov)
+
+
+# Fields the MODEL NOTES box shows read-only, in this order: what was written about the run
+# at training/eval time, never edited from the Forge.
+CURATED_NOTE_FIELDS = ("one_liner", "purpose", "hypothesis", "status", "note", "verdict",
+                       "kim_feedback", "recipe")
+
+
+def notes_for(label: str, overrides_path: str | Path | None = None) -> dict:
+    """The overrides entry for one run label, as the MODEL NOTES box reads it."""
+    ov = _load_overrides(overrides_path or OVERRIDES_PATH).get(label) or {}
+    if not isinstance(ov, dict):
+        ov = {}
+    fields = {}
+    for k in CURATED_NOTE_FIELDS:
+        v = ov.get(k)
+        if v not in (None, "", [], {}):
+            fields[k] = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    return {"label": label, "known": bool(ov), "fields": fields,
+            "forge_notes": ov.get(FORGE_NOTES_KEY) or "",
+            "forge_notes_updated": ov.get(FORGE_NOTES_KEY + "_updated"),
+            "forge_rating": rating_of(ov),
+            "forge_rating_updated": ov.get(FORGE_RATING_KEY + "_updated")}
+
+
+_NOTES_LOCK = Path("/tmp/models_index_overrides.forge.lock")
+
+
+def _set_forge_key(label: str, key: str, value, overrides_path: str | Path | None) -> dict:
+    """Set (or, for None, remove) ONE Forge-owned key + its `_updated` stamp for one label,
+    keeping every other key.
+
+    Read-modify-write under an exclusive flock, then an atomic rename, so two Forge tabs cannot
+    interleave. The file's own format is kept byte-for-byte (indent 2, ASCII escapes, trailing
+    newline) so a save shows up in git as the one entry it changed."""
+    import fcntl
+    from datetime import datetime, timezone
+    p = Path(overrides_path or OVERRIDES_PATH)
+    if not label or label.startswith("_") or len(label) > 200:
+        raise ValueError(f"bad label {label!r}")
+    with open(_NOTES_LOCK, "w") as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        d = json.loads(p.read_text()) if p.is_file() else {}
+        entry = d.get(label)
+        if not isinstance(entry, dict):
+            entry = {}
+        if value is None:
+            entry.pop(key, None)
+            entry.pop(key + "_updated", None)
+        else:
+            entry[key] = value
+            entry[key + "_updated"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if entry:
+            d[label] = entry
+        else:
+            d.pop(label, None)
+        tmp = p.with_name(p.name + ".forge-tmp")
+        tmp.write_text(json.dumps(d, indent=2, ensure_ascii=True) + "\n")
+        os.replace(tmp, p)
+    return entry
+
+
+def save_forge_notes(label: str, text: str, overrides_path: str | Path | None = None) -> dict:
+    """Write ONLY `forge_notes` (+ its timestamp) for one label. Empty text removes the key."""
+    if len(text) > 50_000:
+        raise ValueError("notes longer than 50000 characters")
+    entry = _set_forge_key(label, FORGE_NOTES_KEY, text if text.strip() else None, overrides_path)
+    return {"label": label, "forge_notes": entry.get(FORGE_NOTES_KEY, ""),
+            "forge_notes_updated": entry.get(FORGE_NOTES_KEY + "_updated")}
+
+
+def rating_of(ov: dict) -> int | None:
+    r = ov.get(FORGE_RATING_KEY) if isinstance(ov, dict) else None
+    return r if isinstance(r, int) and not isinstance(r, bool) and 1 <= r <= 5 else None
+
+
+def save_forge_rating(label: str, rating, overrides_path: str | Path | None = None) -> dict:
+    """Write ONLY `forge_rating` (1..5, + its timestamp) for one label. None or 0 removes it."""
+    if rating in (None, 0):
+        rating = None
+    elif isinstance(rating, bool) or not isinstance(rating, int) or not 1 <= rating <= 5:
+        raise ValueError(f"rating must be 1..5 or empty, got {rating!r}")
+    entry = _set_forge_key(label, FORGE_RATING_KEY, rating, overrides_path)
+    return {"label": label, "forge_rating": rating_of(entry),
+            "forge_rating_updated": entry.get(FORGE_RATING_KEY + "_updated")}
+
+
 def record_for(path: str, root: Root, overrides: dict,
-               run_params: dict | None = None) -> dict:
+               run_params: dict | None = None, good: dict | None = None) -> dict:
     p = Path(path)
     base = Path(root.path)
     rel = p.relative_to(base)
@@ -251,6 +443,7 @@ def record_for(path: str, root: Root, overrides: dict,
             prov[k] = f"run_params.{k}"
 
     ov = overrides.get(arm) or overrides.get(family_dir) or {}
+    rec["notes_key"] = notes_key(arm, family_dir, overrides)
     if ov.get("note"):
         rec["verdict"] = ov["note"]
         prov["verdict"] = "overrides"
@@ -265,6 +458,7 @@ def record_for(path: str, root: Root, overrides: dict,
             rec[k] = ov[k]
             prov[k] = f"overrides.{k}"
 
+    _join_quality(rec, arm, ov, good)
     rec["loadable"] = rec["family"] in LOADABLE_FAMILIES
     rec["load_cost_gb"] = _load_cost_gb(rec["family"], rec["rank"])
     rec["provenance"] = prov
@@ -279,12 +473,13 @@ def build(roots: list[Root] | None = None,
     roots = roots if roots is not None else resolve_roots()
     overrides = _load_overrides(overrides_path)
     run_params = _load_run_params()
+    good = load_good()
     out: list[dict] = []
     for root in roots:
         if not root.enabled:
             continue
         for e in scan_root(root):
-            out.append(record_for(e["path"], root, overrides, run_params))
+            out.append(record_for(e["path"], root, overrides, run_params, good))
     return out
 
 
@@ -332,7 +527,7 @@ def _write_journal(j: dict) -> None:
 
 
 def reapply_curation(rec: dict, root: "Root", overrides: dict,
-                     run_params: dict | None = None) -> dict:
+                     run_params: dict | None = None, good: dict | None = None) -> dict:
     """Re-join the CHEAP, hand-edited layers onto an already-probed record.
 
     The journal caches probe output because probing is expensive (opening every
@@ -345,11 +540,16 @@ def reapply_curation(rec: dict, root: "Root", overrides: dict,
     -- run_params only fills None, overrides always win.
     """
     path = rec.get("path")
-    if not path:
-        return rec
     try:
-        rel = Path(path).relative_to(Path(root.path))
+        rel = Path(path).relative_to(Path(root.path)) if path else None
     except ValueError:
+        rel = None
+    if rel is None:
+        # The root moved since the scan: no family_dir to fall back on, but the record's own
+        # arm still joins, and every record must carry the flags the picker reads.
+        arm = rec.get("arm") or ""
+        rec.setdefault("notes_key", arm)
+        _join_quality(rec, arm, overrides.get(arm) or {}, good)
         return rec
     parts = rel.parts
     family_dir = parts[0] if len(parts) > 1 else ""
@@ -363,6 +563,7 @@ def reapply_curation(rec: dict, root: "Root", overrides: dict,
             prov[k] = f"run_params.{k}"
 
     ov = overrides.get(arm) or overrides.get(family_dir) or {}
+    rec["notes_key"] = notes_key(arm, family_dir, overrides)
     if ov.get("note"):
         rec["verdict"] = ov["note"]; prov["verdict"] = "overrides"
     if ov.get("recipe"):
@@ -370,6 +571,7 @@ def reapply_curation(rec: dict, root: "Root", overrides: dict,
     for k in ("purpose", "hypothesis", "status", "kim_feedback"):
         if ov.get(k):
             rec[k] = ov[k]; prov[k] = f"overrides.{k}"
+    _join_quality(rec, arm, ov, good)
     return rec
 
 
@@ -381,6 +583,7 @@ def load_or_build(root_ids: list[str] | None = None, rescan: bool = False) -> di
     by_root = journal.get("roots", {})
     overrides = _load_overrides(OVERRIDES_PATH)
     run_params = _load_run_params()
+    good = load_good()
     models: list[dict] = []
     stale: list[str] = []
     changed = False
@@ -390,7 +593,7 @@ def load_or_build(root_ids: list[str] | None = None, rescan: bool = False) -> di
         if not root.enabled:
             continue
         if root.available and (rescan or cached is None):
-            recs = [record_for(e["path"], root, overrides, run_params)
+            recs = [record_for(e["path"], root, overrides, run_params, good)
                     for e in scan_root(root)]
             by_root[root.id] = {"scanned_at": time.time(), "path": root.path,
                                 "models": recs}
@@ -401,7 +604,7 @@ def load_or_build(root_ids: list[str] | None = None, rescan: bool = False) -> di
                 stale.append(root.id)
             # Cached probe data is fine; its CURATION may be hours out of date -- re-join
             # overrides/run_params rather than serving a stale purpose (see reapply_curation).
-            models.extend(reapply_curation(m, root, overrides, run_params)
+            models.extend(reapply_curation(m, root, overrides, run_params, good)
                           for m in cached["models"])
         elif not root.available:
             stale.append(root.id)
