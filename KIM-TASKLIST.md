@@ -28,6 +28,14 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### 🎧 Air-band head: listen to the retrained heads, try them in the GUI, rate the 64-seed set (G, 2026-10-15)
+**WHAT / WHY:** your complaint that the old air head glitches and changes content. Four retrained heads (modular optimiser) vs the old one, plus a 64-seed punch set with the new head at weights 24k and 32k. EXPERIMENTS E6.
+**RUN:** (1) open `file:///home/kim/evals_aac/air_heads.html` (4 seeds x heads x two gains, with requested-vs-realised levels); (2) in the GUI pick head `rms_energy_air_a2` (or `_a5`), gain 8448-24000, value -10 dB; the render server `:8056` must be up (`cd /home/kim/Projects/SAO && eval/forge/dev_server.sh start GHOST-NOTE`; it is STOPPED overnight while the training runs); (3) rate at `http://localhost:8058` (presets `cleanest_a2g24`, `cleanest_a2g32`).
+**TAKES:** 10 min listening; 45 min for 64 pairs.
+**VERIFY:** `ls /home/kim/evals_aac/air_heads | wc -l` = 48; `wc -l /run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/ratings.jsonl`.
+**REPORT BACK:** `cd /home/kim/Projects/SAO && .venv/bin/python eval/punch_rating_analyze.py`; and tell the fleet which head and gain you prefer. The overnight results (`cat /run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight/SUMMARY.tsv`) are the next read.
+**ROLLBACK:** none; heads were copied (not moved) into `stable-audio-3/latch_weights_sa3_medium/` as `latch_sa3_rms_energy_air_{a2,a4,a5,a6soap}_best.pt` (git-excluded), delete those four to unregister.
+
 ### 🎧 Rate the punch-steering set: 64 seeds, original vs steered, 1-5 (G, 2026-10-14, you asked for this)
 **WHAT / WHY:** your point that two seeds prove nothing. 64 seeds of the punch DoRA render (seed 764 and 1337 first), unsteered original vs the `cleanest` bass+body RMS steering. You rate each pair 1 (worse) .. 3 (neutral) .. 5 (marked improvement of the overall sound). The steered clip plays LEVEL-MATCHED to the original, because louder/more compressed is not an improvement; `m` toggles raw. The page can also render NEW pairs with another latch weight (x), DoRA strength, preset or seed; they join the list at the top.
 **RUN:** open `http://localhost:8058` (a service started this session, running now). If it is down: `cd /home/kim/Projects/SAO && setsid nohup .venv/bin/python eval/punch_rating_server.py > /tmp/punch_rating_server.log 2>&1 &`. Requesting new clips needs the render server: `cd /home/kim/Projects/SAO && eval/forge/dev_server.sh start <HANDLE>` (it holds the GPU while it runs; `dev_server.sh stop` releases it). Keys: `a` original, `s` steered, `1`-`5` rate, `j`/`k` next/previous, `m` matched/raw.

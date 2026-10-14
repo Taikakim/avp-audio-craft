@@ -592,3 +592,15 @@ Local service on **:8058**, data in `/run/media/kim/Mantu2/sa3_control_runs/punc
 VERIFY: `curl -s localhost:8058/api/state | head -c 200` shows entries and `render_up`. A rating is one row in `ratings.jsonl`; a re-rating appends and the latest wins.
 The steered clip is played level-matched to the original (loudness and compression are not improvements). The latch weight multiplies both guidance gains and `rho`/`mu` (`rho` = 0.7 x gain of slot 0, `mu` = 0.6 x).
 
+## 19. Air-band LatCH head retrain and comparison — G, 2026-10-15
+
+    cd /home/kim/Projects/SAO && setsid nohup latch/run_air_bracket.sh > /tmp/air_bracket_train.log 2>&1 &     # 8-arm bracket, ~3 h; resumable via SUMMARY.tsv; arms need the GPU lock (stop the render server first: eval/forge/dev_server.sh stop)
+    setsid nohup latch/run_air_overnight.sh > /tmp/air_overnight.log 2>&1 &                                    # 5 overnight arms at 4x length (~6.5 h); restarts the render server at the end
+    .venv/bin/python eval/air_head_compare.py                    # old vs new heads, 4 seeds x 2 gains; needs the render server; writes air_head_2026-10-14/compare/
+    .venv/bin/python eval/air_head_grid.py                       # value x gain grid on A2/A5; then: /home/kim/Projects/mir/mir/bin/python eval/air_realised_levels.py <grid dir>
+    python3 Misc/build_air_heads_page.py                         # -> ~/evals_aac/air_heads.html (+ air_heads/*.m4a)
+    python3 Misc/build_punch_air_page.py                         # -> ~/evals_aac/punch_air.html (needs the punch rating data, 64 seeds of each preset)
+
+VERIFY: `cat /run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/SUMMARY.tsv` (one row per arm; `rc=0` and a best validation loss mean it trained; check the number of `latch_sa3_rms_energy_air_ep*.pt` files too).
+Traps: batch 32 at dim 512 / depth 8 runs out of the 16 GB card; use `--batch-size 16 --grad-accum 2`. lr >= 5e-2 diverges. A saved head is the EMA weights when `--ema` is on (the `ema` field in the file). Register a head for the GUI by copying it as `latch_sa3_<name>_best.pt` into `stable-audio-3/latch_weights_sa3_medium/` and restarting the render server.
+

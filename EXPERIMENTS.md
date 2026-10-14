@@ -1374,6 +1374,18 @@ exactly this reason.)*
 
 ### E4 — Guided-gen eval + disintegration gate for the f0 heads — **PLANNED** (no "works" claim before this).
 
+### E6 — Air-band RMS head retrained under the ModularOptimizer; stability at high lr — **BRACKET DONE 2026-10-15; OVERNIGHT RUNNING (G)**
+- **Why (project owner, 2026-10-14/15):** the production `rms_energy_air` head (AdamW, depth 4, no EMA, 20 ep) glitches at large guidance weights and changes content (onsets, hats), unlike bass/mid/body.
+- **Bracket** (`latch/run_air_bracket.sh`, 1000 steps, effective batch 32, Shampoo+SF, Muon on all 2-D, overtraining wd, brake armed after epoch 1, EMA half-life 0.5 ep, depth 8): lr 1e-2 trains
+  (dim512 0.0206, dim256 0.0207, lr 1e-3 0.0272, SOAP 0.0212); lr >= 5e-2 DIVERGES in epoch 1 (loss 0.81 vs 0.076) and Shampoo's eigh then fails on the NaN covariance; Mona (Fusion optimiser, no modular port) crashed the same way.
+  SOAP is slower (two-sided eigh) with no loss gain. d256 = d512 on val loss and by ear (the air band is a smooth low-information target; SA3 hallucinates the top end anyway).
+- **Listening (project owner):** new heads at gain 24000 sound brighter and (nearly) glitch free; the old head at 24000 sounds spectral and artifact-laden. Measured: clicks per 1e4 samples 2.12 (old) vs 0.13-0.20 (new); old loses 0.42 onsets/s vs bass+body.
+  CONFOUND: old = depth 4, no EMA, AdamW; new = depth 8, EMA, modular. Optimiser is not isolated.
+- **Requested vs realised:** asked bass -10.0 / body -4.3 / air -10 dB; renders land at about -16 / -19 / -24 dB (air); heads pull toward the target, they do not reach it. Air at the training median (-30.3 dB) made the 64 clips DARKER; -10 dB at gain 24000 restores the balance.
+- **Overnight (4000 steps = 25 ep, schedules in epochs):** `latch/run_air_overnight.sh` O1-O5: grad clip, halved SF-unchecked window, effective batch 64 at lr 3e-2, three EMA half-lives in one run (O2), dim512 long baseline. SNR gate dropped (it was an lr multiplier in the DoRA ablation).
+- **Pending:** value x gain grid on A2/A5 (`eval/air_head_grid.py`), punch air page rebuilt with the 24k/32k new-head columns, the overnight results, and the owner's ratings. Not claimed: that the retrained head sounds better in general, only on 4 seeds by ear.
+- Pages: `~/evals_aac/air_heads.html`, `~/evals_aac/punch_air.html`. Heads registered in the render server as `rms_energy_air_a2/a4/a5/a6soap`.
+
 ### E5 — LatCH + FiLM density bracket under the ModularOptimizer, goa bigset — **LatCH DONE 2026-09-30 (read 10-06); FiLM NOT STARTED**
 - Kim: "launch LATCH and MuseControlLite (FiLM) bracketing using the 12k goa set ... check that the findings about
   dimensions, batch, lr, etc still hold with our trainer ... then start trying out likely good combinations. At least
@@ -1452,7 +1464,20 @@ exactly this reason.)*
   of a louder, more compressed result; the loss of dynamics seen in the punch clips was an accepted side effect, NOT an improvement. Every Phase F verdict is therefore scored at matched loudness,
   with crest and envelope change counted as a cost. The improvement he describes is less coarseness plus the missing bass, 'a rounding of the sound to a more balanced whole'; punch itself
   comes from snappy envelopes and good spectral separation. Evidence set: the 64-seed rating set (`eval/punch_rating_server.py`, his 1-5 ratings).
-- ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
+- **Phase E LISTENED + GRIDDED (W, 2026-10-15) — the heads barely steer, and the guidance never acted early.** Listening verdict on
+  `latch_onset_compare.html` (recorded verbatim in the six `onset_eval_latchE_*/run_meta.json` `kim_feedback` fields): *"the LATCH heads barely
+  change the sound, except where it collapses."* The gain × density grid (gains 0-8192 × 2-10 onsets/s, `files/evals/latch_onset_grid.html`,
+  `Misc/build_latch_onset_grid_page.py`, gate per cell, quality leg = Audiobox PQ) agrees once effect size is read: at the gate-clean gains
+  128-512 the measured density spreads only 2-2.8 onsets/s around the unsteered 7.3, versus 2.3-11.2 for the FiLM adapter (strength ≥ 1.3) on
+  the same requests; a FiLM-like range appears only at 2048-8192, where cells start failing (7/150, six on PQ drift). Correlations of 0.83-1.0
+  there describe a small shift, so "passes the gate" meant "barely changed". **Likely cause, not yet tested:** TFG's per-step weight
+  `s(t) = alpha_t / sum(alpha)`, alpha = 1 - sigma (LatCH paper 2603.04366 Eq. 3) gives the first 20% of steps ~0.2% of the budget and the last
+  20% ~62%; every onset eval used the full window, so guidance acted almost only after rhythm was fixed (energy heads still work because what
+  they steer can change late). Opt-in fix landed: `latch_hparams["guide_schedule"] = "flat"` (`latch_guided._window_scale`, tests in
+  `tests/test_latch_multi_guided.py`). **Test queued:** `eval/latch_early_budget_bracket.py` via `eval/run_latch_early_budget.sh` (waits for the
+  GPU lock): 250 clips, onset head E04 alpha vs flat × windows 0-0.2/0.4/1 × gains 32-2048; early-weighted sigma schedules (flux a=3, logSNR
+  rho=2); the air head with constant weight; the post-trained model at 24 steps. Page builder `Misc/build_latch_early_budget_page.py`.
+  **Consequence for Phase F:** retraining on a better optimizer/arch is unlikely to help if the early-budget test is negative; run it first.
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
 ## F. Data, captions, corpora (experiments they gate)
