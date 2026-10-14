@@ -1420,6 +1420,22 @@ exactly this reason.)*
 - **Phase E STOPPED 2026-10-07 13:0x at Kim's request ("stop the LatCH training, let G BS-RoFormer our mix clips first"); it had only reached epoch 1 of E01, no arm finished, nothing lost. RESUME (waits for the GPU lock itself):** `cd /home/kim/Projects/SAO && PD=/run/media/kim/Mantu/latch_sweep/modular_2026-09-30 && SAVE_ALL=0 setsid nohup bash latch/run_modular_bracket.sh $PD/phaseE_arms.txt $PD/phaseE > $PD/phaseE/driver.log 2>&1 &` (resumable from SUMMARY.tsv; E01 restarts from epoch 0). Original plan: (queued 2026-10-07; first held up by W's H6 lock): `phaseE_arms.txt` in the same dir, 16 workers, base C09, best-checkpoint only:
   E01 anchor 20 ep (the new control), E02 dim 512 20 ep, E03 dim 512 20 ep seed 1 (the repeat), E04 b32 20 ep (= the anchor's 10-epoch step count at
   ~half the wall time), E05 depth 8 20 ep, E06 lr 3e-3 20 ep. Reading rule: compare only within 20 epochs and, for batch, at equal steps; Delta < 0.004 is noise.
+- **Phase E DONE 2026-10-14 (G; run finished 12:09, read 13:00).** Held-out loss, 20 epochs, anchor E01: best 0.1907 / last 0.1967. dim 512 0.1906 and
+  0.1887 (two seeds: 0.002 apart, so no gain), **depth 8 0.1844 (the only arm beyond the 0.004 rule)**, lr 3e-3 0.1874 (inside the noise), b32 0.1962
+  (aborted at teardown, rc 134, after all 20 epochs and the best save). Train loss was still falling at ep 20 in every arm while val had been flat since ep 6-8,
+  so val loss alone cannot say whether the heads kept learning something that matters for steering. Eval clips for all six arms (74 clips, 3 density targets x 2
+  gains x 2 prompts + shared baselines): `Mantu2/latch_sweep/modular_2026-09-30/phaseE_eval_clips/`, page `~/evals_aac/latch_phaseE.html`
+  (`Misc/build_latch_phaseE_page.py`); not yet listened to. DSP screen: steering DOWN (-1 sigma, g512) removes ~2 onsets/s; steering UP barely moves it
+  (+0.1..+0.5 onsets/s on ~6); g2048 at +2 sigma loses ~4.8 dB loudness (13 of 72 clips flagged for a listen). The arms do not separate on this screen
+  (prompt and seed move the result more than the arm does). New `SAVE_EVERY=1` in the driver keeps per-epoch checkpoints next to best.pt.
+- **Phase F (PROPOSED by Kim 2026-10-14, NOT STARTED, not authorised to launch): retrain the best setup "with the new controls".** My reading, to be confirmed by Kim before
+  anything runs: base = the depth-8 head (E05), dim 512 as the hedge; "new controls" = content-preservation checks on every head (melody/chroma kept, tempo and
+  rhythm kept, timbre allowed to move, because a good steer legitimately changes timbre: Kim's bass+mid RMS "punch" case kept the notes and lost the graininess).
+  Tools that exist now: `eval/latch_drift_check.py`, `eval/latch_melodic_tensor.py` (bass+mid only), `eval/latch_melody_check.py`, `eval/essentia_zoo_battery.py`,
+  `latch/run_modular_bracket.sh` with `SAVE_EVERY=1`. Open questions: (1) is the chroma lock a TRAINING-time term or an INFERENCE-time companion slot (SAME's chroma
+  readout is a linear 384-d map of a 256-ch latent, so it cannot be nulled exactly by projection; a soft penalty or a companion `same_chroma` head with the
+  source's own chroma as target are the options); (2) the gain for this head is unknown (512/2048 guessed); (3) the unsteered-baseline seed noise of every meter is
+  large (the 24-step control moved Audiobox enjoyment by +0.2..1.0), so each verdict needs >= 2 seeds. Gate before launching: listen to the Phase E page.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
