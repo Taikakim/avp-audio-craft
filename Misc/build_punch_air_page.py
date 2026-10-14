@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
+# Last edited: WINTERMUTE 2026-10-14 — floating transport bar (float_player.inject)
 """build_punch_air_page.py -- static listening page for the punch DoRA steering set: 64 seeds x {original, bass+body RMS heads, + air-band head at 4 targets}.
 
 Kim 2026-10-14: "add renders from all batches to the eval page and tell W to put it online". Built from the rating server's data dir (manifest.json, metrics.json,
@@ -13,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
+from float_player import inject
 
 DATA_DIR = "/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
@@ -20,8 +22,7 @@ OUT = os.path.join(STAGE, "punch_air")
 os.makedirs(OUT, exist_ok=True)
 man = json.load(open(f"{DATA_DIR}/manifest.json"))["entries"]
 met = json.load(open(f"{DATA_DIR}/metrics.json"))
-esc = json.load(open(f"{DATA_DIR}/air_escalate.json"))
-ARMS = [("cleanest", "bass+body"), ("cleanest_air", "+air −30 dB (median)"), ("cleanest_air2", "+air −10 dB"), ("cleanest_air3", "+air 0 dB"), ("cleanest_air4", "+air +10 dB")]
+ARMS = [("cleanest", "bass+body"), ("cleanest_air2", "+ OLD air head, −10 dB, weight 24k"), ("cleanest_a2g24", "+ NEW air head, −10 dB, weight 24k"), ("cleanest_a2g32", "+ NEW air head, −10 dB, weight 32k")]
 jobs, seeds = [], {}
 for e in man:
     if e.get("latch_scale") != 1 or e.get("dora_strength") != 0.45 or e.get("steps") != 30 or e["preset"] not in dict(ARMS):
@@ -44,10 +45,9 @@ def enc(j):
 
 with ThreadPoolExecutor(8) as ex:
     list(ex.map(enc, jobs))
-final = {int(k): v[-1]["preset"] for k, v in esc.items()}
 rows = []
 for sd in sorted(seeds):
-    r = {"seed": sd, "final": final.get(sd)}
+    r = {"seed": sd}
     for k, c in seeds[sd].items():
         r[k] = {x: c[x] for x in c if x != "src"}
     rows.append(r)
@@ -65,10 +65,10 @@ th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;c
 <div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> <span id=ld style="color:#fa5"></span> <span class=muted>· switching keeps the playhead · loops until stopped</span></div>
 <div id=wrap><h1>Punch steering: adding a high-frequency head</h1>
 <div class=explain><b>What this tests.</b> One DoRA-finetuned model, 64 seeds. Two LatCH guidance heads (bass and body band RMS) make the output rounder and fuller but also darker.
-A third head steers the <i>air band</i> (2.5&nbsp;kHz and up, RMS in dB) toward a target level; the columns raise that target from the training-set median (&minus;30&nbsp;dB) to +10&nbsp;dB.
-<b>How to read it.</b> Each row is one seed; every cell is the same seed and DoRA strength, steered clips are level-matched to the original so loudness is not what you hear. Under each cell:
-&Delta; spectral centroid (Hz), &Delta; flatness, &Delta; crest factor versus the original. <b>The green column is the target the automatic loop settled on</b> for that seed (first target whose
-high-band share is within 1&nbsp;dB of the original). <b>What the numbers cannot tell you:</b> whether it sounds better. Crest and flatness are screens; the judgement is by ear. Rated locally 1&ndash;5 by the project owner; <span class=un title="No listening verdict recorded yet (unaudited).">&#10071;</span> = no verdict recorded yet.</div>
+A third head steers the <i>air band</i> (2.5&nbsp;kHz and up) toward a requested level of &minus;10&nbsp;dB. The OLD column uses the original air head (plain AdamW training), which sounded spectral and
+artifact-prone at large weights; the NEW columns use the retrained head (modular optimiser, dim 512, depth 8) at guidance weights 24 000 and 32 000.
+<b>How to read it.</b> Each row is one seed; every cell shares the seed and DoRA strength, and steered clips are level-matched to the original so loudness is not what you hear. Under each cell:
+&Delta; spectral centroid (Hz), &Delta; flatness, &Delta; crest factor versus the original. <b>What the numbers cannot tell you:</b> whether it sounds better. The judgement is by ear; rated locally 1&ndash;5 by the project owner. <span class=un title="No listening verdict recorded yet (unaudited).">&#10071;</span> = no verdict recorded yet.</div>
 <div id=out></div></div><audio id=au_el></audio>
 <script>const D=__DATA__;
 const au=document.getElementById('au_el'),npx=document.getElementById('np');let cur=null;au.loop=true;
@@ -90,7 +90,7 @@ D.rows.forEach(r=>{
  h+=`<tr><td>${r.seed}</td><td class=c id="o${r.seed}" onclick="play('o${r.seed}','${r.orig.f}','${r.seed} original','${r.seed}_orig')">&#9654; original</td>`;
  D.arms.forEach(([k,l])=>{const c=r[k];if(!c){h+='<td>·</td>';return;}
   const id=`${k}_${r.seed}`;
-  h+=`<td class="c ${r.final===k?'fin':''}" id="${id}" onclick="play('${id}','${c.f}','${r.seed} ${l}','${r.seed}_${k}')">&#9654; ${l}<span class=num>${sg(c.centroid,0)} Hz · flat ${sg(c.flat,3)} · crest ${sg(c.crest,2)}</span></td>`;});
+  h+=`<td class="c " id="${id}" onclick="play('${id}','${c.f}','${r.seed} ${l}','${r.seed}_${k}')">&#9654; ${l}<span class=num>${sg(c.centroid,0)} Hz · flat ${sg(c.flat,3)} · crest ${sg(c.crest,2)}</span></td>`;});
  h+='</tr>';});
 document.getElementById('out').innerHTML=h+'</table>';
 </script>
@@ -98,6 +98,6 @@ __NOTES__
 <footer style="margin:18px 12px;color:#666;font-size:11px">evals &middot; punch steering air head &middot; clips and metrics: sa3_control_runs/punch_rating (internal)</footer>
 </body></html>"""
 T = T.replace("__NOTES__", notes_block("punch_air", levels=[("clip", "this clip"), ("page", "page")], hint="click a cell, then note what you hear"))
-open(os.path.join(STAGE, "punch_air.html"), "w").write(T.replace("__DATA__", DATA))
+open(os.path.join(STAGE, "punch_air.html"), "w").write(inject(T.replace("__DATA__", DATA)))
 sz = sum(os.path.getsize(f"{OUT}/{f}") for f in os.listdir(OUT)) / 1e6
 print(f"wrote punch_air.html: {len(rows)} seeds, {len(jobs)} clips, {sz:.0f} MB")
