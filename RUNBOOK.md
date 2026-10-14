@@ -547,10 +547,14 @@ server on **:5180** (built app + proxy + password). Until the `latent-forge` bra
 every path below is the worktree `/home/kim/Projects/sa3-studio-review`; after the merge,
 substitute `/home/kim/Projects/SAO`.
 
-**Start the render server** (takes the GPU lock as `KIND=server`, ~40 s to ready). *Note (2026-10-01): `eval/forge/dev_server.sh` is created by M2 Task 1 and does not exist on the branch yet; until it does, start `eval/explorer_render_server.py` the way section 2 of this runbook says.*:
+**Start the render server** (takes the GPU lock as `KIND=server`, ~40 s to ready). Give YOUR handle:
+the lock records whoever starts the server, so others know whom to ask to yield (2026-10-14; before
+that every start was recorded as WINTERMUTE). Kim starting it by hand: use `KIM`.
 
     cd /home/kim/Projects/sa3-studio-review
-    eval/forge/dev_server.sh start
+    eval/forge/dev_server.sh start <HANDLE>      # or FORGE_HANDLE=<HANDLE> eval/forge/dev_server.sh start
+    eval/forge/dev_server.sh status              # pids, http, and who started it
+    eval/forge/dev_server.sh stop                # anyone; releases the lock under the starter's handle
 
 **Build and serve the app** (~20 s build):
 
