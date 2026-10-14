@@ -3,7 +3,7 @@
 # Overnight air-RMS head runs at 4x the bracket length (4000 optimizer steps = 25 epochs of 160), Kim 2026-10-15: keep the lr>=5e-2 runs (which DIVERGED in epoch 1: loss 0.81 vs 0.076,
 # then Shampoo's eigh failed on the NaN covariance) in check with the untapped damping, a doubled minibatch, or a halved Schedule-Free-unchecked window. Schedules are in EPOCHS so they scale with the
 # run: warmup 1 ep (was 0.25), damping armed at 4 ep (was 1) or 2 ep ("halved"), EMA half-life 2 ep (was 0.5), cosine LR 17.5->25 (the 7->10 of a 10-epoch run), overtraining wd sqrt(epoch).
-# New guards: --grad-clip 1.0, --mod-snr-gate (O4 only), eigh failure keeps the previous preconditioner. Waits for /tmp/air_chain.done, stops the render server for the GPU, restarts it at the end.
+# New guards: --grad-clip 1.0 (SNR gate dropped: Kim, it behaved as a plain lr multiplier in the DoRA ablation), O2 tracks EMA half-lives 1/2/4 epochs in ONE run, b64 arms at lr 3e-2, eigh failure keeps the previous preconditioner. Waits for /tmp/air_chain.done, stops the render server for the GPU, restarts it at the end.
 SAO=/home/kim/Projects/SAO
 OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight
 PY=$SAO/.venv-rocm10-amd/bin/python
@@ -15,9 +15,9 @@ COMMON="--feature rms_energy_air --latent-dir /home/kim/Projects/latents_sa3 --v
 MOD="--optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 2 --cosine-epochs 17.5 25"
 ARMS=(
 "O1_d256_lr5e-2_clip_late2|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 5e-2 --dim 256 --depth 8 --batch-size 16 --grad-accum 2"
-"O2_d256_lr1e-1_clip_late2|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 1e-1 --dim 256 --depth 8 --batch-size 16 --grad-accum 2"
-"O3_d256_lr5e-2_clip_b64|$MOD --mod-late-from-epochs 4 --grad-clip 1.0 --lr 5e-2 --dim 256 --depth 8 --batch-size 16 --grad-accum 4"
-"O4_d256_lr1e-1_clip_b64_snr|$MOD --mod-late-from-epochs 4 --grad-clip 1.0 --mod-snr-gate --lr 1e-1 --dim 256 --depth 8 --batch-size 16 --grad-accum 4"
+"O2_d256_lr1e-1_clip_late2_3ema|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 1e-1 --dim 256 --depth 8 --batch-size 16 --grad-accum 2 --ema-extra-halflife-epochs 1 4"
+"O3_d256_lr3e-2_clip_b64|$MOD --mod-late-from-epochs 4 --grad-clip 1.0 --lr 3e-2 --dim 256 --depth 8 --batch-size 16 --grad-accum 4"
+"O4_d256_lr3e-2_clip_b64_late2|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 3e-2 --dim 256 --depth 8 --batch-size 16 --grad-accum 4"
 "O5_d512_lr1e-2_long|$MOD --mod-late-from-epochs 4 --lr 1e-2 --dim 512 --depth 8 --batch-size 16 --grad-accum 2"
 )
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
