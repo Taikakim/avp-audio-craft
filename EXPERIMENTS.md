@@ -399,6 +399,18 @@ trains without one becomes another unauditioned family — that is exactly how A
   row-space overlap. **Kill:** same sound and A still >0.95 overlap => A-subspace is not our bottleneck,
   drop LoRA-TSD. Clearly different/better => build the batched LoRA-TSD.
 
+### A15 — Does DoRA sound rougher than plain LoRA on our finetunes? (Stable Audio Discord hearsay, 2026-10-15) — **POTENTIAL (cheap A/B, GHOST-NOTE)**
+- **Origin:** Kim relayed that someone on the Stable Audio Discord prefers LoRAs to DoRAs because DoRAs "sound rough". Kim's own comment: that is exactly an issue we have on some occasions
+  (gradients that overgrow, squashed punch, coarseness the steering heads then have to repair). Unverified second-hand claim, no recipe or audio from the poster; recorded as a lead, not a finding.
+- **Why plausible here:** the DoRA magnitude vector is a per-column scale that the optimiser can drive freely; our own failure log already has DoRA magnitude zero-crossing NaN, the cautious-rescale norm
+  inflation and runaway-scale arms (docs/training-findings.md section A), all magnitude-path failures that a plain LoRA does not have. The punch steering results (bass+body heads fixing coarseness) are
+  a downstream symptom of the same family. None of this proves DoRA is rougher.
+- **Test:** same data, rank, steps, optimiser and seed, train `--adapter_type lora` vs `dora-rows` (train_lora_modular.py), equal EMA/horizon, render the canonical clip grid at matched strength; compare with the
+  level-matched metrics we already have (centroid, flatness, zero-crossing rate, crest, hf ratio) AND Kim's 1-5 ratings on the punch rating page (:8058), roughness being a listening judgement.
+  Also compare the multiplicative magnitude update (`--modular-magnitude-update multiplicative`) as a third arm, since it is the existing fix for the magnitude path.
+- **Kill-criterion:** no rating or roughness-metric difference beyond seed-to-seed spread on 4+ seeds.
+- **Instrument audit first:** roughness has no calibrated meter here (Audiobox and CLAP did not track the punch preference), so the ratings are the primary read.
+
 ## B. The melody wall
 
 ### B1 — #59 subspace-weighted RF loss, v3 melody-selective basis, K∈{2,5,12} — **READY (LUMI, Kim's next-night submit)**
