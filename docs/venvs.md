@@ -36,7 +36,7 @@ absolute python path. See MASTER §3 for the per-task quick table.
     accumulates via the training profile (TUNING=1). Has `tunableop_results0.csv` +
     `miopen/` + `triton_cache/` + `inductor_cache/`.
   - **`~/pytorch-tunings-7.14`** — experimental stack (torch 2.12 / ROCm 7.14, the
-    `sa3-rocm7.13-test` venv + CK flash-attn). Persistent home for that stack; same
+    old `sa3-rocm7.13-test` venv, now `SAO/.venv`, + CK flash-attn). Persistent home for that stack; same
     substructure. Point `PYTORCH_TUNABLEOP_FILENAME` / `TRITON_CACHE_DIR` /
     `MIOPEN_CUSTOM_CACHE_DIR` / `MIOPEN_USER_DB_PATH` here when running on 2.12.
   - `~/pytorch-tunings-7.2.2` is for torch 2.9.1 and **fails** the `PT_VERSION` validator
@@ -73,7 +73,7 @@ pinned aiter lacks that param → `varlen_fwd() takes 20-21 args but 22 given`. 
 
 ### Experimental: native CK (Composable Kernel) flash-attn for RDNA4
 
-`SAO/sa3-rocm7.13-test/` — building flash-attn with the **CK backend** (compiled `fwd`/
+`SAO/sa3-rocm7.13-test/` (no longer on disk; superseded by `SAO/.venv` and `.venv-rocm10-amd`) — building flash-attn with the **CK backend** (compiled `fwd`/
 `varlen_fwd` ops) instead of aiter/Triton, which would bypass the aiter version-skew
 entirely. RDNA4 (gfx1201) needs the **WMMA** FMHA path (CK's default targets CDNA MFMA);
 that work is now upstream in composable_kernel's `therock-7.13` branch
@@ -142,16 +142,24 @@ Recipe that worked (index `https://stable.repo.amd.com/rocm/whl-next/`):
   `stable-audio-tools/scripts/train_latch.py` (SAO-Small) still defaults to removed Lehto/Mantu paths; the SA3
   head trainer is `stable-audio-3/scripts/latch/train_latch.py` (default `--latent-dir /home/kim/Projects/latents_sa3`).
   Kosmos is 95% full (14 GB free of 233 GB): plan any further moves accordingly.
-- **Which 10.1 venv to keep (GHOST-NOTE recommendation, pending owner's decision):** `.venv-rocm10-amd` (torch 2.14
-  release, native CK built locally, sat deps). Retire `.venv-rocm10` (torch 2.16 nightly, no CK) and `sa3-rocm10-test`.
-  `SAO/.venv` (7.14) retires only after a 10.1 render check against the 7.2.3 corpus.
+- **Decision (Kim, 2026-10-14): keep `.venv-rocm10-amd` as THE ROCm 10.1 venv and start moving to it** (torch 2.14
+  release, freshly built native CK flash-attn, sat deps). **Deleted 2026-10-14:** `SAO/.venv-rocm10` (torch 2.16
+  nightly, no CK; its measurements are in WORKLOG 10-13 12:16/12:28), `SAO/sa3-rocm10-test` (torch 2.15 alpha),
+  `stable-audio-tools/.venv` (empty stub), `fa2-test/flash-attention/.venv`, `Projects/torchcodec/.venv`, and the
+  build leftovers `SAO/flash-attention-rocm10` and `my_wheels/rocm10.1`. **Kept:** `SAO/.venv` (7.14) and
+  `stable-audio-3/.venv` (7.2.3, the parity reference: the 61k eval corpus was rendered on it and a same-seed render
+  on another stack correlates 0.985-0.999, not 1.0) until a 10.1 render passes a check against that corpus.
+  `stable-audio-tools/sat-venv` (20 GB) goes after guided generation passes on the amd venv (CLAP already checked:
+  matched cosine 0.315 vs 0.319 on 20 clips); then ~18 docs plus `latch/eval_latch.py`, `latch_sweep.py`,
+  `render_audition*.py`, `eval/clap_score.py`, `clap_trainsim.py` need their python path edited in the same session.
+  The mir venv (`Projects/mir/mir`, essentia-tensorflow, madmom) stays: it cannot be merged into any of these.
 
 - **Added to `.venv-rocm10-amd` 2026-10-14 (each dry-run first; torch, numpy, protobuf untouched):**
   `stable-audio-tools` and `sao-tooling` editable `--no-deps` (note `sao-tooling` provides the modules
   `sa3_control` and `latch`, there is NO module called `sao_tooling`; an import check by that name always fails),
   `muscriptor` editable from `/home/kim/Projects/muscriptor` WITH deps (adds only httptools, python-dotenv, uvloop,
   watchfiles, websockets), `onnxruntime-migraphx 1.27.1` (providers MIGraphX + CPU; the ~9-40 min AOT compile per
-  session still applies, untested here), and the `my_wheels/rocm10.1/torchcodec-0.18.0a0` wheel (decode,
+  session still applies, untested here), and the `torchcodec-0.18.0a0` wheel (was `my_wheels/rocm10.1`, deleted after install; decode,
   `torchaudio.load/save` work on torch 2.14). Verified: `muscriptor transcribe -m medium` on a 12 s clip wrote a MIDI
   (8 s, weights from the HF cache, `HF_HUB_OFFLINE=1`).
 

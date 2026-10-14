@@ -90,12 +90,14 @@ Has its own `ARCHITECTURE.md` — don't re-derive its internal layout here. Top-
   LatCH (phase 1). The bigger/newer generation. **Kept upstream-syncable thin fork** —
   tooling moved to the master repo (`onnx/`, `control/`, `eval/`, `latch/`); only
   SA3-side package code (LatCH, ROCm, attn/APG patches) stays here.
-- **`SAO/sa3-rocm7.13-test/`** — the **ROCm 7.14 / CK flash-attn stack** (torch
-  2.12+rocm7.14, `.venv` + `flash-attention` rdna branch built with CK kernels for
+- **`SAO/.venv`** (formerly `SAO/sa3-rocm7.13-test/`, no longer on disk) — the **ROCm 7.14 / CK flash-attn stack** (torch
+  2.12+rocm7.14 then 2.14, `.venv` + `flash-attention` rdna branch built with CK kernels for
   gfx1201). CK FA validated for `sa3_control` **training** (2026-06-18) after the
   backward grad-count patch. Enable per `docs/flash-attn-ck-rdna4.md`
   (`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` + §5b patch). The 2× vs Triton FA2 is
-  still to be pilot-measured. See also `docs/venvs.md`.
+  still to be pilot-measured. See also `docs/venvs.md`. **Direction (2026-10-14):** new work moves to
+  `SAO/.venv-rocm10-amd` (ROCm 10.1, torch 2.14, native CK); `SAO/.venv` and `stable-audio-3/.venv` stay until a 10.1
+  render matches the 7.2.3 corpus; `sat-venv` retires after guided generation passes there.
 - **`SAO/torchcodec/`**, **`SAO/my_wheels/`** — custom torch+ROCm wheel/codec builds.
 
 ## Data & drives (all removable; see MASTER §2 for the historical detail)
@@ -348,7 +350,7 @@ preference fit.
 - **CPU control-adapter eval path (the default, GPU-freeing)** — `onnx/sa3_control_onnx.py` core + `control_eval_server.py` (resident T5-Gemma + ONNX DiT/decoder, queue `SAO/control_eval_queue`) + `submit_control_job.py`. 8-step grid ≈5.4 min CPU vs ~42 min GPU. See MASTER §5.
 - **CPU LatCH-guidance eval path** — `onnx/sa3_latch_onnx.py` + `latch_eval_server.py` (queue `SAO/latch_eval_queue`) + `submit_latch_job.py` + `latch_validate.py`. Autograd through the ~5-7 M head only, DiT stays ORT. **Device gotcha:** `device="cpu"` but keep GPU *visible* (do NOT set `HIP_VISIBLE_DEVICES=""`). See MASTER §5.
 - **SA3 latent explorer** — `mir/plots/explorer_sa3/` (Dash viewer) + `mir/scripts/latent_server_sa3.py` (SAME-L decode/mix/steer player, port 7892). mir branch `sa3-latent-explorer`.
-- **CK flash-attn (RDNA4/ROCm 7.14, faster than Triton FA2)** — built in `SAO/sa3-rocm7.13-test/`. `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before import; TRAINING needs the 1-line backward grad-count patch. Recipe: `docs/flash-attn-ck-rdna4.md`.
+- **CK flash-attn (RDNA4/ROCm 7.14, faster than Triton FA2)** — built in `SAO/.venv` (formerly `sa3-rocm7.13-test`) and now `SAO/.venv-rocm10-amd`. `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` before import; TRAINING needs the 1-line backward grad-count patch. Recipe: `docs/flash-attn-ck-rdna4.md`.
 
 ### E · LUMI & training toolchain (`lumi/`, project `465003186`)
 - **🚨 `MIOPEN_DISABLE_CACHE=1` + `--bind …,/tmp` is MANDATORY on gfx90a** — the MIOpen kernel-cache SQLite open fails on every LUMI filesystem; without it training dies at the first conv. Also `MIOPEN_FIND_MODE=2`, `PYTORCH_TUNABLEOP_ENABLED=0`.

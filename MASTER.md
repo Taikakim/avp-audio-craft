@@ -41,7 +41,7 @@ context you need is often already written down there; read before re-deriving.**
 | **stable-audio-tools** ("audio-tools-AVP" fork) | `/home/kim/Projects/SAO/stable-audio-tools` | LatCH heads, FusionOpt, SAO-Small train/finetune, audition renders | `sat-venv/bin/python` (3.10, torch 2.10 ROCm) |
 | **stable-audio-3** | `/home/kim/Projects/SAO/stable-audio-3` | SA3 medium model, LoRA finetune, SA3 LatCH (phase 1) | `.venv/bin/python` (3.13, torch 2.10 ROCm) |
 
-Supporting (no canonical venv of note): `SAO/sa3-rocm7.13-test` (FA/ROCm 7.13 build test),
+Supporting (no canonical venv of note): `SAO/.venv` (ROCm 7.14 + CK, ex-`sa3-rocm7.13-test`), `SAO/.venv-rocm10-amd` (ROCm 10.1 + native CK, the stack we are moving to, 2026-10-14),
 `SAO/torchcodec`, `SAO/my_wheels` (custom torch+ROCm wheels).
 
 Also ours, **siblings of SAO not nested in it** (so `git -C fusion-optimiser` from the SAO
@@ -806,7 +806,7 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
 
 - **Flash-Attention is BUILT but INACTIVE by default — `export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`
   to switch it on, and do it EVERYWHERE (30–100% faster).** *(2026-06-23)* The torch-2.10/2.12 ROCm
-  venvs (`sat-venv`, `stable-audio-3/.venv`, `sa3-rocm7.13-test`) ship a **CK-backend
+  venvs (`sat-venv`, `stable-audio-3/.venv`, ex-`sa3-rocm7.13-test` = now `SAO/.venv`) ship a **CK-backend
   `flash_attn 2.8.4`** built for RDNA4/gfx1201. But the wrapper auto-routes to the `aiter` Triton-AMD
   path unless this env var is set **before `import torch`/`flash_attn`** (shell `export`, or
   `os.environ["FLASH_ATTENTION_TRITON_AMD_ENABLE"]="FALSE"` at the very top of the script). Symptom of
@@ -815,7 +815,7 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   backward patch (`FlashAttnFunc.backward` → 13 grads) is applied, so FA **training** (adapter/LoRA
   backprop through the DiT) is safe (verified on our exact stack). Build recipe + verify:
   **`SAO/docs/flash-attn-ck-rdna4.md`**. *(`aiter` present in `stable-audio-3/.venv` only → there the
-  env var switches Triton→CK; in `sat-venv`/`sa3-rocm7.13-test`/`SAO/.venv` it switches SDPA→CK.)*
+  env var switches Triton→CK; in `sat-venv`/`SAO/.venv` it switches SDPA→CK.)*
   **UPDATE 2026-08-02 — the ROCm 7.14 venv `SAO/.venv` (HIP 7.14.60850, torch 2.14.0a0, native-CK
   `flash_attn 2.8.4`) is 100–200% faster than the 7.2.3 stack (Kim), and is now the SA3 render/inference
   default (§3). Same `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` rule applies (no `aiter` → SDPA→CK).**
