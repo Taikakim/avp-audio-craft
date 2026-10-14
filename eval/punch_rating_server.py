@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
+# Last edited: GHOST-NOTE 2026-10-14 -- run_meta.json is only written for the base preset (cleanest_air batch must not overwrite it)
 """punch_rating_server.py -- rate "did the steering improve the overall sound?" 1-5 on many seeds, and request new clips with other control weights.
 
 WHY (Kim 2026-10-14): outcomes differ so much between seeds that two seeds prove nothing; he wants a set of ~64 seeds and his own rating per clip
@@ -204,7 +205,7 @@ if __name__ == "__main__":
             t0 = time.time()
             e = make_pair(s, a.preset)
             print(f"[{i + 1}/{len(seeds)}] seed {s}  d_rms {e['d_rms_db']:+.1f} dB  d_crest {e['d_crest']:+.2f}  ({time.time() - t0:.0f}s)", flush=True)
-        json.dump({"purpose": "64 seeds of the punch DoRA render, original vs bass+body RMS steering ('cleanest' preset), for Kim's 1-5 ratings of the improvement in overall sound quality (2026-10-14).",
+        if a.preset == "cleanest": json.dump({"purpose": "64 seeds of the punch DoRA render, original vs bass+body RMS steering ('cleanest' preset), for Kim's 1-5 ratings of the improvement in overall sound quality (2026-10-14).",
                    "hypothesis": "Steering rounds the sound (less coarseness, bass restored) at most seeds; seed 764 and 1337 looked very different.",
                    "recipe": {"preset": a.preset, "prompt": load_presets()['_base']['prompt'] if 'prompt' in load_presets()['_base'] else 'see presets.json', "steps": 30}, "result": None, "kim_feedback": None},
                   open(f"{DATA}/run_meta.json", "w"), indent=1)
