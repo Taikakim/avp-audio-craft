@@ -37,10 +37,10 @@ button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
   <label>seed (blank = random)<input id="q_seed" type="number" placeholder="random"></label>
   <label>preset<select id="q_preset"></select></label>
   <label>latch weight &times;<input id="q_scale" type="number" step="0.05" value="1.0"></label>
-  <label>DoRA strength<input id="q_dora" type="number" step="0.05" value="0.51"></label>
+  <label>DoRA strength (both clips)<input id="q_dora" type="number" step="0.05" value="0.45"></label>
   <label>steps<input id="q_steps" type="number" step="1" value="30"></label>
   <button id="q_go">Render pair</button><span id="q_msg" class="mute"></span></div>
-  <div class="mute" style="margin-top:6px;font-size:12px">Renders the unsteered original and the steered clip on the render server (about 20&ndash;40 s) and adds the pair to the top of the list. The latch weight scales both guidance gains (bass + body); the preset sets their targets and windows.</div></div>
+  <div class="mute" style="margin-top:6px;font-size:12px">Renders the unsteered original and the steered clip on the render server (about 20&ndash;40 s) and adds the pair to the top of the list. The latch weight scales both guidance gains (bass + body); the preset sets their targets and windows. The original and the steered clip always share one DoRA strength, so only the latch heads differ (the set uses 0.45; the original jobs used 0.45 / 0.51 / 0.61 depending on the job).</div></div>
  <div class="row" style="margin:8px 0"><button id="f_all" class="on">all</button><button id="f_un">unrated</button><button id="f_done">rated</button>
   <button id="mt" class="on" title="m">level-matched playback</button><a class="pill" href="/api/export" target="_blank">export ratings</a><span id="msg"></span></div>
  <div id="list"></div>
