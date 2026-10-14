@@ -66,3 +66,43 @@ def test_identical_pairs_flag_nothing():
                  for i, b in enumerate((132, 146))]
         res = d.compare(pairs, 1.0)
         assert all(not r["flags"] for r in res["rows"])
+
+
+def test_timbre_change_with_same_notes_is_not_flagged():
+    """Kim's case: bass/mid steering changes balance and dynamics, melody and rhythm stay -> reported, not flagged."""
+    from scipy.signal import butter, sosfilt
+    with tempfile.TemporaryDirectory() as td:
+        pairs = []
+        for i, bpm in enumerate((132, 140, 146, 150)):
+            x = track(bpm, True, seed=i)
+            y = sosfilt(butter(2, 3000, "lowpass", fs=SR, output="sos"), x) * 2.0       # darker and louder, same hits
+            pairs.append({"id": f"c{i}", "base": write(td, f"b{i}", x), "steered": write(td, f"s{i}", y.astype(np.float32))})
+        res = d.compare(pairs, 1.0)
+        assert all(not r["flags"] for r in res["rows"]), [r["flags"] for r in res["rows"]]
+        assert abs(res["summary"]["rms_db"]["mean_delta"]) > 3.0            # it really did change -- just not as a defect
+        assert res["summary"]["rhythm_sim"]["min"] > 0.9
+
+
+def test_moved_hits_are_flagged_by_rhythm_sim():
+    with tempfile.TemporaryDirectory() as td:
+        pairs = [{"id": "c", "base": write(td, "b", track(140, False)), "steered": write(td, "s", np.roll(track(140, False), int(0.21 * SR)))},
+                 {"id": "c2", "base": write(td, "b2", track(132, False, seed=2)), "steered": write(td, "s2", track(132, False, seed=2))}]
+        res = d.compare(pairs, 1.0)
+        assert "rhythm_sim" in res["rows"][0]["flags"] and "rhythm_sim" not in res["rows"][1]["flags"]
+
+
+def test_changed_notes_are_flagged_by_chroma_sim():
+    def melody(notes, dur=8.0):
+        t = np.arange(int(dur * SR)) / SR
+        seg = len(t) // len(notes)
+        x = np.zeros(len(t), dtype=np.float32)
+        for n, m in enumerate(notes):
+            f = 440 * 2 ** ((m - 69) / 12)
+            x[n * seg:(n + 1) * seg] = 0.4 * np.sin(2 * np.pi * f * t[n * seg:(n + 1) * seg])
+        return x
+    with tempfile.TemporaryDirectory() as td:
+        a, b = melody([60, 64, 67, 72]), melody([61, 65, 68, 73])      # every note a semitone up: same rhythm, different pitch classes
+        same = d.compare([{"id": "x", "base": write(td, "a", a), "steered": write(td, "a2", a * 0.5)}], 1.0)
+        diff = d.compare([{"id": "y", "base": write(td, "a3", a), "steered": write(td, "b", b)}], 1.0)
+        assert same["rows"][0]["sims"]["chroma_sim"] > 0.95 and "chroma_sim" not in same["rows"][0]["flags"]
+        assert diff["rows"][0]["sims"]["chroma_sim"] < 0.5 and "chroma_sim" in diff["rows"][0]["flags"]
