@@ -55,7 +55,7 @@ async function load(){S=await (await fetch('/api/state')).json();
  $('render').textContent=S.render_up?'render server up':'render server DOWN';$('render').style.color=S.render_up?'var(--ok)':'var(--bad)';draw();}
 function src(e,side){return '/clips/'+(side==='o'?e.base:(matched?e.matched:e.steered));}
 function chips(e){const f=(v,d=1)=>(v>=0?'+':'')+v.toFixed(d);
- return `<span class="chips"><span class="${e.d_rms_db>1.5?'pos':''}" title="raw steered minus original">loudness ${f(e.d_rms_db)} dB</span><span class="${e.d_crest<-1?'pos':''}" title="peak/rms, lower = more compressed">crest ${f(e.d_crest,2)}</span><span title="spectral centroid">centroid ${f(e.d_centroid,0)} Hz</span></span>`;}
+ return `<span class="chips"><span class="${e.d_rms_db>1.5?'pos':''}" title="raw steered minus original">loudness ${f(e.d_rms_db)} dB</span><span class="${e.d_crest<-1?'pos':''}" title="peak/rms, lower = more compressed">crest ${f(e.d_crest,2)}</span><span title="spectral centroid">centroid ${f(e.d_centroid,0)} Hz</span>${e.m&&e.m.zcr!=null?`<span title="level-matched steered minus original; lower = smoother / less coarse">zcr ${f(e.m.zcr*1000,1)}m</span><span title="spectral flatness, lower = less noise-like">flat ${f(e.m.flatness*1000,1)}m</span>`:''}${e.m&&e.m.clap!=null?`<span title="CLAP match to the prompt (unreliable so far)">clap ${f(e.m.clap,3)}</span>`:''}</span>`;}
 function draw(){const L=$('list');const es=[...S.entries].sort((a,b)=>(b.source==='requested')-(a.source==='requested')||0);
  const n=es.length,r=es.filter(e=>S.ratings[e.id]).length;$('prog').textContent=`${r} / ${n} rated`;
  L.innerHTML=es.filter(e=>filter==='all'||(filter==='un'?!S.ratings[e.id]:!!S.ratings[e.id])).map(e=>{

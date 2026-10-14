@@ -578,3 +578,17 @@ VERIFY:
 
 **Local-only work** skips the password and tunnel: `npm run dev` in `latent-forge/` (Vite on :5173
 proxies to :8056).
+
+## 18. Punch rating tool (rate steering 1-5, request new pairs) — G, 2026-10-14
+Local service on **:8058**, data in `/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/` (clips as wav, `manifest.json`, `ratings.jsonl`, `presets.json`, `metrics.json`).
+
+    cd /home/kim/Projects/SAO
+    .venv/bin/python eval/punch_rating_server.py --batch 64        # (once) render 64 seeds; needs the render server up, ~20 min
+    setsid nohup .venv/bin/python eval/punch_rating_server.py > /tmp/punch_rating_server.log 2>&1 &    # serve http://localhost:8058
+    eval/forge/dev_server.sh start <HANDLE>                        # render server :8056, only needed to REQUEST new pairs; `stop` releases the GPU
+    .venv/bin/python eval/punch_rating_metrics.py dsp              # objective metrics (legs: dsp | clap | audiobox | merge; venvs in the file docstring)
+    .venv/bin/python eval/punch_rating_analyze.py                  # which metric tracks the ratings
+
+VERIFY: `curl -s localhost:8058/api/state | head -c 200` shows entries and `render_up`. A rating is one row in `ratings.jsonl`; a re-rating appends and the latest wins.
+The steered clip is played level-matched to the original (loudness and compression are not improvements). The latch weight multiplies both guidance gains and `rho`/`mu` (`rho` = 0.7 x gain of slot 0, `mu` = 0.6 x).
+

@@ -28,6 +28,17 @@ patrols it for staleness. (Repurposed from KIM-RETURN-NOTES.md, 2026-08-05.)*
 
 ## ▶️ Runnable now — queued for Kim
 
+### 🎧 Rate the punch-steering set: 64 seeds, original vs steered, 1-5 (G, 2026-10-14, you asked for this)
+**WHAT / WHY:** your point that two seeds prove nothing. 64 seeds of the punch DoRA render (seed 764 and 1337 first), unsteered original vs the `cleanest` bass+body RMS steering. You rate each pair 1 (worse) .. 3 (neutral) .. 5 (marked improvement of the overall sound). The steered clip plays LEVEL-MATCHED to the original, because louder/more compressed is not an improvement; `m` toggles raw. The page can also render NEW pairs with another latch weight (x), DoRA strength, preset or seed; they join the list at the top.
+**RUN:** open `http://localhost:8058` (a service started this session, running now). If it is down: `cd /home/kim/Projects/SAO && setsid nohup .venv/bin/python eval/punch_rating_server.py > /tmp/punch_rating_server.log 2>&1 &`. Requesting new clips needs the render server: `cd /home/kim/Projects/SAO && eval/forge/dev_server.sh start <HANDLE>` (it holds the GPU while it runs; `dev_server.sh stop` releases it). Keys: `a` original, `s` steered, `1`-`5` rate, `j`/`k` next/previous, `m` matched/raw.
+**TAKES:** about 45 min for 64 pairs; a requested pair renders in 20-40 s.
+**VERIFY:** `wc -l /run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/ratings.jsonl` (one row per rating; a re-rating appends, the latest wins) and `ls /run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/clips | wc -l` (about 64x3 wav + 64 originals).
+**REPORT BACK:** `cd /home/kim/Projects/SAO && .venv/bin/python eval/punch_rating_analyze.py` prints the rating distribution and which objective metric (zero-crossings, centroid, crest, CLAP, Audiobox ...) tracks your ratings. Paste it back. Metrics for all pairs were computed unattended while you were away (`metrics.json` beside the ratings).
+**ROLLBACK:** none; ratings are an append-only file.
+
+### 🎧 Also waiting for your ears: Phase E density-head clips, and the onset-response comparison (G, 2026-10-14)
+Pages (local files): `~/evals_aac/latch_phaseE.html` (74 clips, six trained density heads, each at three targets x two gains vs a same-seed baseline) and `~/evals_aac/latch_onset_compare.html` (the onset_eval grid for the FiLM adapter next to the six heads at the same requested densities; heads need gain ~8192 to follow low requests). Nothing is audited yet (red marks). Phase F (retrain the best setup with the new controls) is registered as PROPOSED in `EXPERIMENTS.md` E5 and waits for your answer on what "new controls" means.
+
 ### ⚠ Mantu: FIXED (loose cable, Kim 2026-10-12), but mounted as /run/media/kim/Mantu2 and 98 % FULL (C, 2026-10-12 22:05)
 **STATE:** the drive is healthy and mounted at `/run/media/kim/Mantu2` (the earlier dead mounts used the names `Mantu` / `Mantu1`, so udisks took `Mantu2`). Scripts hard-code `/run/media/kim/Mantu`, which does not exist right now, so anything not path-mapped fails. **DO NOT unmount it tonight:** Antigravity's JEPA predictor training has files open on it until morning (fuser shows his python + data workers).
 **WARNING, new:** `df` says 3.7 TB, **3.6 TB used, 91 GB free (98 %)**. A multi-day training or a render batch can fill it; plan space (the old model_matrix wavs / duplicate checkpoint slims are the usual candidates) before the next big run.

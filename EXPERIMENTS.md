@@ -1436,6 +1436,10 @@ exactly this reason.)*
   readout is a linear 384-d map of a 256-ch latent, so it cannot be nulled exactly by projection; a soft penalty or a companion `same_chroma` head with the
   source's own chroma as target are the options); (2) the gain for this head is unknown (512/2048 guessed); (3) the unsteered-baseline seed noise of every meter is
   large (the 24-step control moved Audiobox enjoyment by +0.2..1.0), so each verdict needs >= 2 seeds. Gate before launching: listen to the Phase E page.
+  (4) **Dynamics-stable control (Kim 2026-10-14, on the bass+body punch steering):** a control that keeps dynamics (crest factor / loudness envelope) stable would force real edits instead
+  of a louder, more compressed result; the loss of dynamics seen in the punch clips was an accepted side effect, NOT an improvement. Every Phase F verdict is therefore scored at matched loudness,
+  with crest and envelope change counted as a cost. The improvement he describes is less coarseness plus the missing bass, 'a rounding of the sound to a more balanced whole'; punch itself
+  comes from snappy envelopes and good spectral separation. Evidence set: the 64-seed rating set (`eval/punch_rating_server.py`, his 1-5 ratings).
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 

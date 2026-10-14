@@ -151,6 +151,11 @@ def serve(port):
     @app.get("/api/state")
     def state():
         man = json.load(open(f"{DATA}/manifest.json")) if os.path.exists(f"{DATA}/manifest.json") else {"entries": []}
+        mp = f"{DATA}/metrics.json"
+        met = json.load(open(mp)) if os.path.exists(mp) else {}
+        for e in man["entries"]:
+            if e["id"] in met:
+                e["m"] = met[e["id"]]["delta"]
         return {"entries": man["entries"], "ratings": ratings(), "render_up": render_up(), "presets": [k for k in load_presets() if not k.startswith("_")]}
 
     @app.get("/clips/{name}")
