@@ -18,6 +18,7 @@ STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUT = os.path.join(STAGE, "air_heads")
 os.makedirs(OUT, exist_ok=True)
 rows = json.load(open(f"{CMP}/compare.json"))
+REAL = json.load(open(f"{CMP}/realised.json"))   # band RMS (dB) of each RAW render, mir multiband_rms extractor = the training-target definition
 R = {(r["seed"], r["arm"]): r for r in rows}
 seeds = sorted({r["seed"] for r in rows})
 HEADS = [("old_adamw", "old head (AdamW, 20 ep)"), ("A2", "A2 modular, dim 512, lr 1e-2"), ("A5", "A5 modular, dim 256, lr 1e-2"),
@@ -35,7 +36,7 @@ for s in seeds:
         jobs.append((src, f"{STAGE}/{f}"))
         r, b, bb = R[(s, arm)], R[(s, "base")], R[(s, "bass_body")]
         cells[f"{s}|{arm}"] = {"f": f, "air": r["air_share_db"] - b["air_share_db"], "clk": r["clicks_per_1e4"], "crest": r["crest"],
-                               "on": r["onset_rate"] - bb["onset_rate"], "hat": r["hat_rate"] - bb["hat_rate"], "bpm": r["bpm"] - bb["bpm"]}
+                               "real_air": REAL[f"s{s}_{arm}"]["air"], "real_bass": REAL[f"s{s}_{arm}"]["bass"], "real_body": REAL[f"s{s}_{arm}"]["body"], "on": r["onset_rate"] - bb["onset_rate"], "hat": r["hat_rate"] - bb["hat_rate"], "bpm": r["bpm"] - bb["bpm"]}
 
 
 def enc(j):
@@ -64,6 +65,7 @@ overtraining-aware weight decay, damping switched on after epoch 1, EMA). Each c
 two guidance gains. <b>How to read the numbers</b> (level-matched; under each cell): <i>air</i> = change in the high-band share versus the original, in dB (0 means the brightness balance is back);
 <i>clk</i> = clicks per 10&nbsp;000 samples, a screen for glitches (higher is worse); <i>on/hat/bpm</i> = change in onset rate, hi-hat rate and tempo versus the bass+body clip, so it isolates what the
 air head itself changed. <b>What the numbers cannot tell you:</b> whether it sounds better, or whether a glitch is audible. Listen first. <span class=un title="No listening verdict recorded yet (unaudited).">&#10071;</span> = no verdict recorded yet.</div>
+<div class=explain><b>Requested versus realised.</b> The bass, body and air heads are asked for constant band levels of &minus;10.0, &minus;4.3 and &minus;10 dB (RMS, dB relative to full scale; the training set averages &minus;21.9, &minus;24.8 and &minus;33.0). <b>Realised</b> = the same band RMS, measured on the raw rendered clip with the project's feature extractor (the definition the heads were trained on). Absolute levels depend on how loud the render is, so read them as a comparison between cells, not as calibrated dB. The base, bass+body and head cells in a row show where each landed; none reaches its request, the guidance pulls toward it.</div>
 <h2>Training bracket</h2><div id=arms></div>
 <h2>Clips</h2><div id=out></div></div><audio id=au_el></audio>
 <script>const D=__DATA__;
@@ -87,10 +89,10 @@ const sg=(v,d)=>(v>=0?'+':'')+v.toFixed(d);
 let h='<table><tr><th>seed</th><th>original</th><th>bass+body</th>';
 D.heads.forEach(([k,l])=>D.gains.forEach(g=>{h+=`<th>${l}<br>gain ${g}</th>`;}));h+='</tr>';
 D.seeds.forEach(s=>{
- const cell=(arm,label,full)=>{const c=D.cells[s+'|'+arm];if(!c)return'<td>·</td>';const id=arm+'_'+s;
-  const nums=full?`<span class=num>air ${sg(c.air,1)} dB · clk ${c.clk.toFixed(2)}<br>on ${sg(c.on,2)} hat ${sg(c.hat,2)} bpm ${sg(c.bpm,1)}</span>`:'';
+ const cell=(arm,label,full,ref)=>{const c=D.cells[s+'|'+arm];if(!c)return'<td>·</td>';const id=arm+'_'+s;
+  const nums=ref?`<span class=num>got: bass ${c.real_bass.toFixed(1)} · body ${c.real_body.toFixed(1)} · air ${c.real_air.toFixed(1)} dB</span>`:full?`<span class=num><b>air asked −10 → got ${c.real_air.toFixed(1)} dB</b><br>air ${sg(c.air,1)} dB vs orig · clk ${c.clk.toFixed(2)}<br>on ${sg(c.on,2)} hat ${sg(c.hat,2)} bpm ${sg(c.bpm,1)}</span>`:'';
   return `<td class=c id="${id}" onclick="play('${id}','${c.f}','${s} ${label}','${s}_${arm}')">&#9654; ${full?'':label}${nums}</td>`;};
- h+=`<tr><td>${s}</td>${cell('base','original',false)}${cell('bass_body','bass+body',false)}`;
+ h+=`<tr><td>${s}</td>${cell('base','original',false,true)}${cell('bass_body','bass+body',false,true)}`;
  D.heads.forEach(([k,l])=>D.gains.forEach(g=>{h+=cell(k+'_g'+g,l+' g'+g,true);}));
  h+='</tr>';});
 document.getElementById('out').innerHTML=h+'</table>';
