@@ -1,9 +1,9 @@
-# Owner: GHOST-NOTE (created 2026-10-15) -- band RMS (dB) of the raw air_head_compare renders, mir venv; writes compare/realised.json
+# Owner: GHOST-NOTE (created 2026-10-15) -- band RMS (dB) of raw renders in a dir (argv[1], default compare/), mir venv; writes realised.json there
 import sys, json, glob, os
 sys.path.insert(0,"/home/kim/Projects/mir")
 import numpy as np, soundfile as sf
 from src.spectral.multiband_rms import calculate_band_rms
-CMP="/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/compare"
+CMP=sys.argv[1] if len(sys.argv)>1 else "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/compare"
 B={"bass":(20,120),"body":(120,600),"mid":(600,2500),"air":(2500,22000)}
 out={}
 for p in sorted(glob.glob(CMP+"/s*_*.wav")):
