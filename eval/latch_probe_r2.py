@@ -2,6 +2,12 @@
 # Owner: GHOST-NOTE (created 2026-10-14)
 """latch_probe_r2.py -- is this LatCH target even LINEARLY readable from the SA3 latent? (CPU only, run BEFORE spending GPU on a head)
 
+!! NOT A PREDICTOR OF STEERING (checked 2026-10-14, Kim: "those numbers just aren't very useful"). On 3000 goa crops it scores the heads known to
+steer well LOW (rms_energy_bass 0.32, mid 0.23, body 0.14) and a head known dead under guidance HIGHER (beat_activation 0.47), and a head that
+moves under guidance (spectral_kurtosis, 07-19) at 0.00. It has no dynamic range between works and doesn't-work. It measures only linear
+readability of the target from the latent. Use it to catch a target that is garbage (it did show the madmom half-tempo target: opb 0.07 vs
+0.42 once folded), never to decide whether a head is worth training.
+
 WHY (Kim 2026-10-14: "if we were comparing cake recipes it would not help to have sugar, eggs, flour and nails as the training ingredients").
 MASTER s5 records that probe R^2 predicts per-head control. latch/latch_probe_encodability.py did this for the retired SAO-Small latents
 (points at Lehto/latents); this is the SA3 / bigset version, per FRAME, since the heads are per-frame regressors.
