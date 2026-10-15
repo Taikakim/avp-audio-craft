@@ -960,3 +960,31 @@ target reads them as HF-deficient and would push generations brighter).
   to *judge*; it was never meant to decide what to *serve*. Quarantined before the push.
 - **Negative result:** `grit_index` (HPSS-residual texture) does not track the audible jumps (rho -0.155, p=0.18);
   low-mid energy does (rho -0.432, p=8.6e-5). Committed with its null.
+
+## 2026-10-15
+
+### negative · Phase E onset LatCH heads barely steer; the gate passed them because nothing changed
+- Listening on `latch_onset_compare.html`: "the LATCH heads barely change the sound, except where it collapses". The
+  gain x density grid (`Misc/build_latch_onset_grid_page.py`, page `latch_onset_grid.html`) agrees on effect size: at the
+  gate-clean gains 128-512 density spreads 2-2.8 onsets/s around 7.3, vs 2.3-11.2 for the FiLM adapter on the same requests.
+- Lesson: request-vs-measured correlation 0.83-1.0 over a small spread is an inaudible shift, and a disintegration-gate pass
+  then means "barely changed". Report effect size against a reference control next to the gate. Detail: EXPERIMENTS E5.
+
+### finding · LatCH guidance is back-loaded: TFG's alpha weighting gives the first 20% of steps ~0.2% of the budget
+- `latch_guided.py` weights each step by `alpha = 1 - sigma` (TFG, LatCH paper 2603.04366 Eq. 3), so a full window spends ~62%
+  in the last 20% of steps, after rhythm is fixed. Fits the record: energy/tonal-balance heads steer, onset/beat/hpcp heads do not.
+- Added opt-in `guide_schedule="flat"` (`latch_guided._window_scale`, `tests/test_latch_multi_guided.py`); render server takes
+  `guide_schedule` (not the Forge `schedule` field, which I nearly collided with). MASTER §5 entry.
+
+### plan · early-budget bracket queued on the GPU lock
+- `eval/latch_early_budget_bracket.py` + `eval/run_latch_early_budget.sh`: 250 clips, onset head alpha vs flat x early windows x
+  gains, early-weighted sigma schedules (flux a=3, logSNR rho=2), air head with constant weight, post-trained model at 24 steps.
+  Page `Misc/build_latch_early_budget_page.py`. If it is negative, the Phase F retrain plan should not go ahead as is.
+
+### finding · early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse
+- 250-clip bracket (`latch_early_budget.html`, EXPERIMENTS E5): onset head clean spread 2.9 (alpha) -> 4.2 onsets/s (flat), full
+  window, gain 512; still about half the FiLM adapter. Flat 0-0.2 / 0-0.4 windows reach 6-8 but only in cells that fail the gate:
+  the low request collapses to 0.1-1.5 onsets/s. The upward ceiling (~9.4) never moves. Early sigma shapes add little on the base model.
+- Air head: flat gives the same clean range (~10 dB) at ~1/4 the gain, not more range. Paper verdict 2603.04366 updated (partial).
+- Side note: the render process aborts at exit ("corrupted double-linked list", rc 134) after writing every cell; the runner
+  continued, so it is harmless here, but a runner that trusts rc would have thrown away a good run.

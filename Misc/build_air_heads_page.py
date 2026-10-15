@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-15 — floating transport bar (float_player.inject)
 """build_air_heads_page.py -- listening page: the retrained air-RMS heads vs the production AdamW head, 4 seeds x 2 guidance gains.
 
 Kim 2026-10-15: "build a listening page for them". Clips and numbers from eval/air_head_compare.py (compare/compare.json, level-matched wavs). Three-audience
@@ -11,6 +12,7 @@ import json, os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
+from float_player import inject
 
 AH = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14"
 CMP = f"{AH}/compare"
@@ -101,5 +103,5 @@ __NOTES__
 <footer style="margin:18px 12px;color:#666;font-size:11px">evals &middot; air-band head retrain &middot; clips and metrics: latch_sweep air_head (internal)</footer>
 </body></html>"""
 T = T.replace("__NOTES__", notes_block("air_heads", levels=[("clip", "this clip"), ("page", "page")], hint="click a cell, then note what you hear"))
-open(os.path.join(STAGE, "air_heads.html"), "w").write(T.replace("__DATA__", DATA))
+open(os.path.join(STAGE, "air_heads.html"), "w").write(inject(T.replace("__DATA__", DATA)))
 print(f"wrote air_heads.html: {len(seeds)} seeds, {len(jobs)} clips, {sum(os.path.getsize(f'{OUT}/{f}') for f in os.listdir(OUT))/1e6:.0f} MB")

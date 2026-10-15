@@ -957,6 +957,19 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
 - **Mantu + Lehto are removable** — both must be mounted or work stalls.
 - INT8/INT4 quantization is non-functional on ROCm (use bf16 + FA2).
 - SA3 base model id is **`small-music-base`** / `medium-base` — there is no `small-base`.
+- **LatCH guidance is back-loaded by default: TFG's step weight starves the early steps (W, 2026-10-15).**
+  `latch_guided.py` spends rho/mu per step as `s(t) = alpha_t / sum(alpha)` with alpha = 1 - sigma (TFG, as used by the LatCH paper
+  2603.04366 Eq. 3). Over a full window 0-1 the first 20% of steps get ~0.2% of the budget and the last 20% ~62%, so guidance acts
+  almost only after rhythm and arrangement are fixed. What LatCH steers well (band energy, tonal balance, slow loudness shape) can
+  still change late; event timing (onsets, beats) and pitch class cannot, which fits the record: the Phase E onset heads "barely change
+  the sound except where it collapses" (listening, 2026-10-15) and move density only 2-3 onsets/s at gate-clean gains vs ~9 for the FiLM
+  adapter. **Effect size, not correlation:** a 0.9+ request-vs-measured correlation over a 2 onsets/s spread is an inaudible shift, and
+  a gate pass at such a gain means "barely changed", not "usable" — report the spread against a reference control (the FiLM adapter).
+  Opt-in: `latch_hparams={"guide_schedule": "flat"}` = equal weight per active step (default `"alpha"` unchanged); the render
+  server takes `guide_schedule` in the request (NOT the Forge `schedule` field). Tested 2026-10-15
+  (`eval/latch_early_budget_bracket.py`, EXPERIMENTS E5): flat raises the onset head's gate-clean spread ~1.45x (2.9 -> 4.2 onsets/s at
+  gain 512, full window), still about half the FiLM adapter; early-only windows push density down until the clip collapses, and the
+  upward ceiling (~9.4 onsets/s) does not move. For the air head flat reaches the same clean range at ~1/4 the gain, no more.
 - **SA3-medium LatCH guidance needs gain ≈ 48–96**, not the SAO-Small default of 8 (SAME-L's
   256-d latent is ~10× less gain-sensitive). At gain 8 heads steer the right way with ~2%
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²

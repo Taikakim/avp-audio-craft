@@ -17,6 +17,8 @@ folders — clips untouched) and every folder becomes a player instead of a dump
 Same-playhead behaviour (MASTER §4): click a cell to play from the shared playhead;
 switching cells keeps the position; re-click stops.
 """
+# Last edited: WINTERMUTE 2026-10-15 — latch_onset_grid entry under LatCH
+# Last edited: WINTERMUTE 2026-10-14 — THEMATIC_PAGES: standalone pages listed under their stream
 import os, glob, json, html, shutil, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import eval_grid
@@ -30,7 +32,9 @@ def _resolve_mantu():
     not gone', now also true of the mount NAME). Probe candidates in order, pick
     the first that's actually readable (an I/O-erroring stale mount entry can
     still exist as a directory, so os.path.isdir alone isn't enough)."""
-    for cand in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1"):
+    # Mantu2 seen 2026-10-14: without it the landing silently dropped composed_sweep
+    # and _onset_control_audit (their sources are found via MANTU)
+    for cand in ("/run/media/kim/Mantu", "/run/media/kim/Mantu1", "/run/media/kim/Mantu2"):
         try:
             os.listdir(cand)
             return cand
@@ -104,6 +108,38 @@ THEMATIC = [
      "Does a trained control head actually steer the model, and by how much? "
      "Accumulating: newest test first, each with clips and what it does not establish."),
 ]
+
+# Standalone pages that belong to a stream, listed under it on the landing (2026-10-14:
+# the LatCH pages were scattered, and this is where they are collected). Newest first.
+# Hrefs are relative to /files/evals/. A new page for a theme gets a line here.
+THEMATIC_PAGES = {
+    "latch": [
+        ("air_heads.html", "Retrained air-band heads vs the production head",
+         "The air RMS head retrained under the modular optimizer, against the old AdamW head: "
+         "4 seeds × 2 guidance gains, level-matched."),
+        ("punch_air.html", "Punch steering + air head",
+         "64 seeds: original vs bass+body heads vs + the air-band head at 4 targets, "
+         "level-matched, with centroid / flatness / crest deltas per cell."),
+        ("latch_onset_compare.html", "Onset response: FiLM adapter vs LatCH heads",
+         "Does asking for 2-10 onsets/s get that density? The FiLM adapter against the "
+         "six Phase E density heads."),
+        ("latch_phaseE.html", "Phase E density heads",
+         "Six onsets-per-beat heads differing in width, depth, batch and LR, used as "
+         "gradient guides at generation time."),
+        ("latch_onset_grid.html", "Phase E density heads: gain × density matrix",
+         "The old onset_eval grid for the same six heads (gains 0–8192 × requested 2–10 "
+         "onsets/s), every cell through the disintegration gate."),
+        ("latch_early_budget.html", "LatCH early budget: flat vs alpha weighting",
+         "Does guidance steer onsets once the early sampling steps get a real share? "
+         "Weighting × window × gain for the onset and air heads, early-weighted sigma "
+         "schedules, base and post-trained model."),
+        ("latch_sa3_matrix.html", "SA3 LatCH head × gain matrix",
+         "All 14 SA3-medium guidance heads across the gain ladder: requested vs measured "
+         "per cell; which heads steer, which are dead."),
+        ("riffer/latch_sweep.html", "LatCH head sweep (2026-06)",
+         "The first 14-head gain sweep, MERT + Audiobox scored."),
+    ],
+}
 
 
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
@@ -2858,7 +2894,11 @@ def build_landing(control, renders):
         for _folder, _lbl, _desc in THEMATIC:
             doc += (f'<div class="run"><div class="name">'
                     f'<a href="{html.escape(_folder)}/">{html.escape(_lbl)}</a></div>'
-                    f'<div class="desc">{html.escape(_desc)}</div></div>')
+                    f'<div class="desc">{html.escape(_desc)}</div>')
+            for _href, _t, _d in THEMATIC_PAGES.get(_folder, []):
+                doc += (f'<div style="margin:6px 0 0 18px"><a href="{html.escape(_href)}">'
+                        f'{html.escape(_t)}</a> <span class="faint">— {html.escape(_d)}</span></div>')
+            doc += '</div>'
 
     doc += '<h2><span class="mark">§</span> Curated players</h2>'
     doc += ('<p class="dim">The measured, annotated grids — same-playhead, with per-run info boxes:</p>')

@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*289 entries from 5 journals.*
+*294 entries from 5 journals.*
 
 ---
 
@@ -45,6 +45,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **SAME + SA3 tech reports re-read against current knowledge (Kim's call).** → `interface/reprompt.py` — CONTINUITY, 2026-07-06
 
 ## Control adapters · FusionCC · guidance
+- **LatCH guidance is back-loaded: TFG's alpha weighting gives the first 20% of steps ~0.2% of the budget.** → `latch_guided.py`, `tests/test_latch_multi_guided.py` — WINTERMUTE, 2026-10-15
 - **Cross-validated an external agent's fix, found by asking "who else has looked at this".** — GHOST-NOTE, 2026-09-21
 - [tool] **onset-density control-adapter story page built (task #52, weeks overdue).** → `docs/onset-density-control-narrative.md`, `Misc/build_onset_narrative_page.py`, `onset_narrative.html`, `Misc/`, `build_latch_sa3_matrix_page.py`, `build_evals.py` — GHOST-NOTE, 2026-07-20
 - **2026-07-16 (cont) — Reverb artifact mechanism fully closed + #3 fix built.** — CONTINUITY, 2026-07-16
@@ -79,6 +80,10 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- [RULED OUT] **Phase E onset LatCH heads barely steer; the gate passed them because nothing changed.** → `latch_onset_compare.html`, `Misc/build_latch_onset_grid_page.py`, `latch_onset_grid.html` — WINTERMUTE, 2026-10-15
+- [plan] **early-budget bracket queued on the GPU lock.** → `eval/latch_early_budget_bracket.py`, `eval/run_latch_early_budget.sh`, `Misc/build_latch_early_budget_page.py` — WINTERMUTE, 2026-10-15
+- **early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse.** → `latch_early_budget.html` — WINTERMUTE, 2026-10-15
+- **head side-effect meters, the punch battery, Phase E clips, the rating tool (GHOST-NOTE).** — GHOST-NOTE, 2026-10-14
 - **the LatCH "noise floor" was a seed-only number; worker count moved the plain recipe by 0.004.** — CONTINUITY, 2026-10-07
 - **what the last week of work added (09-28 → 10-07).** → `latch/extract_density_targets.py` — CONTINUITY, 2026-10-07
 - **the LatCH panel stops lying (inference-UI roadmap, Tasks 1-3).** → `docs/superpowers/plans/2026-08-24-inference-ui-batch-sweep-and-head-metadata.md`, `scripts/latch/train_latch.py`, `eval/head_meta.py`, `/roots`, `/info`, `/run/media/kim/`, `docs/INFERENCE-SURFACE.md`, `train_latch.py` — CONTINUITY, 2026-08-26
