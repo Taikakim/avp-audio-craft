@@ -988,3 +988,10 @@ target reads them as HF-deficient and would push generations brighter).
 - Air head: flat gives the same clean range (~10 dB) at ~1/4 the gain, not more range. Paper verdict 2603.04366 updated (partial).
 - Side note: the render process aborts at exit ("corrupted double-linked list", rc 134) after writing every cell; the runner
   continued, so it is harmless here, but a runner that trusts rc would have thrown away a good run.
+
+### negative · per-step guidance rescale does not stop the LatCH loudness push
+- `latch_hparams["guide_rescale"]` (stable-audio-3 `1caa67f`): restore each sample's std after every guidance edit. 146-clip
+  test (`eval/latch_guide_rescale_test.py`): latent std and raw RMS of the distorting settings are unchanged at phi 0.7/1
+  (flat 0-1 g4096: std 2.0 -> 1.9, RMS -8.4 -> -8.8 dB vs unguided ~1.1 / -11.5 dB). Each edit redirects more than it enlarges;
+  the inflation accrues through the model's later steps. Next candidates: anchor std(x_t) to its expected value per sigma,
+  or a final-latent ceiling before decode. Side note: alpha 0-1 keeps normal level up to gain 4096 (spread 6.7 onsets/s).

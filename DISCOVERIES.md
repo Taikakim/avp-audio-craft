@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*294 entries from 5 journals.*
+*295 entries from 5 journals.*
 
 ---
 
@@ -83,6 +83,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **Phase E onset LatCH heads barely steer; the gate passed them because nothing changed.** → `latch_onset_compare.html`, `Misc/build_latch_onset_grid_page.py`, `latch_onset_grid.html` — WINTERMUTE, 2026-10-15
 - [plan] **early-budget bracket queued on the GPU lock.** → `eval/latch_early_budget_bracket.py`, `eval/run_latch_early_budget.sh`, `Misc/build_latch_early_budget_page.py` — WINTERMUTE, 2026-10-15
 - **early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse.** → `latch_early_budget.html` — WINTERMUTE, 2026-10-15
+- [RULED OUT] **per-step guidance rescale does not stop the LatCH loudness push.** → `eval/latch_guide_rescale_test.py` — WINTERMUTE, 2026-10-15
 - **head side-effect meters, the punch battery, Phase E clips, the rating tool (GHOST-NOTE).** — GHOST-NOTE, 2026-10-14
 - **the LatCH "noise floor" was a seed-only number; worker count moved the plain recipe by 0.004.** — CONTINUITY, 2026-10-07
 - **what the last week of work added (09-28 → 10-07).** → `latch/extract_density_targets.py` — CONTINUITY, 2026-10-07
