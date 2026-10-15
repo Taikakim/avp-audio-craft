@@ -186,6 +186,21 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
    goa3 velocity 46 → 37, cosine 0.29, path efficiency 0.81 (more turning: more varied data, higher LR).
    Band that sounds good: 30–50. The runaway that collapsed rhythm was at 142.
 
+7. **Air-RMS LatCH head (modular optimiser, Shampoo + Schedule-Free + Muon-all): every lr >= 3e-2 run blows up; clip, doubled batch and early damping only delay it (GHOST-NOTE, 2026-10-15).**
+   *Symptom:* train loss ~0.05-0.07 for several epochs, then within 1-3 epochs 0.4 -> 10 -> 50 -> NaN; Shampoo `linalg.eigh` then fails on the NaN covariance (a symptom, not the cause). Once NaN, every later checkpoint is NaN.
+   *Evidence* (25-epoch plan = 4000 steps, `--grad-clip 1.0`, d256 depth 8; val = held-out smooth-L1; `Mantu2/latch_sweep/air_head_2026-10-15_overnight/SUMMARY.tsv`):
+   | arm | lr | batch | damping armed | healthy until | blow-up |
+   |---|---|---|---|---|---|
+   | O1 | 5e-2 | 32 | ep 2 | ep 2 (val 0.0667) | ep 3 loss 8.77, NaN ep 4 |
+   | O2 | 1e-1 | 32 | ep 2 | never (ep 1 loss 0.61) | NaN ep 2 |
+   | O3 | 3e-2 | 64 | ep 4 | ep 9 (val 0.0372 best, ep 8) | ep 10 loss 0.44 -> 22.6 at ep 14, NaN ep 15 |
+   | O4 | 3e-2 | 64 | ep 2 | ep 15 (val 0.0272 best, ep 9) | ep 17 loss 4.4, 54 at ep 25, NaN ep 26 |
+   | O5 | 1e-2 | 32 | ep 4 | all 25 epochs | none; val 0.0201 best (ep 16-17), 0.0208 at ep 25 |
+   *Reading:* instability onset moves later as lr falls (ep 3 at 5e-2, ep 10-17 at 3e-2, none at 1e-2). The b64 arms ran fine for 9-15 epochs and then diverged slowly (val creeping 0.027 -> 0.06 before the jump), which looks like weight/preconditioner growth rather than an early spike. A doubled batch and an earlier damping window (O3 vs O4) moved the onset from ep 10 to ep 17, so they help, but they do not remove it. Grad clip 1.0 did not prevent any of it.
+   *Confound I introduced:* schedules are in EPOCHS, and the b64 arms hit 4000 steps in 50 epochs, so in STEPS their warmup, damping arming and EMA half-life were half as long as the b32 arms' (80 steps/epoch vs 160). The cosine window (17.5-25 ep) therefore ended at step 2000, and the 4x-length claim holds for samples seen, not steps.
+   *Not tested:* what in the optimiser grows (no weight-norm / preconditioner-norm trace was logged for these runs); the EMA half-life comparison (O2 died in epoch 2, nothing to compare); lr between 1e-2 and 3e-2 (e.g. 2e-2).
+   *Status / fix:* lr 1e-2 is the ceiling for this head. 4x length at 1e-2 (O5, d512) bought almost nothing: best val 0.0201 vs 0.0206 for the 1000-step bracket arm A2 (A2 is the registered head), and val rises slightly after epoch 17 while train loss keeps falling to 0.0191 (mild overfit). Do not read the faster arms as "better recipes that crashed": no arm below lr 1e-2 was ever beaten.
+
 ### B. Failures of the INSTRUMENTS (runs judged on wrong numbers)
 
 7. **Loss monitor reported half the true loss:** Lightning divides by `accumulate_grad_batches` before

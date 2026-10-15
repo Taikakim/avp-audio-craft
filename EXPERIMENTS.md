@@ -1374,7 +1374,7 @@ exactly this reason.)*
 
 ### E4 — Guided-gen eval + disintegration gate for the f0 heads — **PLANNED** (no "works" claim before this).
 
-### E6 — Air-band RMS head retrained under the ModularOptimizer; stability at high lr — **BRACKET DONE 2026-10-15; OVERNIGHT RUNNING (G)**
+### E6 — Air-band RMS head retrained under the ModularOptimizer; stability at high lr — **BRACKET + OVERNIGHT DONE 2026-10-15; lr 1e-2 is the ceiling (G)**
 - **Why (project owner, 2026-10-14/15):** the production `rms_energy_air` head (AdamW, depth 4, no EMA, 20 ep) glitches at large guidance weights and changes content (onsets, hats), unlike bass/mid/body.
 - **Bracket** (`latch/run_air_bracket.sh`, 1000 steps, effective batch 32, Shampoo+SF, Muon on all 2-D, overtraining wd, brake armed after epoch 1, EMA half-life 0.5 ep, depth 8): lr 1e-2 trains
   (dim512 0.0206, dim256 0.0207, lr 1e-3 0.0272, SOAP 0.0212); lr >= 5e-2 DIVERGES in epoch 1 (loss 0.81 vs 0.076) and Shampoo's eigh then fails on the NaN covariance; Mona (Fusion optimiser, no modular port) crashed the same way.
@@ -1383,7 +1383,10 @@ exactly this reason.)*
   CONFOUND: old = depth 4, no EMA, AdamW; new = depth 8, EMA, modular. Optimiser is not isolated.
 - **Requested vs realised:** asked bass -10.0 / body -4.3 / air -10 dB; renders land at about -16 / -19 / -24 dB (air); heads pull toward the target, they do not reach it. Air at the training median (-30.3 dB) made the 64 clips DARKER; -10 dB at gain 24000 restores the balance.
 - **Overnight (4000 steps = 25 ep, schedules in epochs):** `latch/run_air_overnight.sh` O1-O5: grad clip, halved SF-unchecked window, effective batch 64 at lr 3e-2, three EMA half-lives in one run (O2), dim512 long baseline. SNR gate dropped (it was an lr multiplier in the DoRA ablation).
-- **Pending:** value x gain grid on A2/A5 (`eval/air_head_grid.py`), punch air page rebuilt with the 24k/32k new-head columns, the overnight results, and the owner's ratings. Not claimed: that the retrained head sounds better in general, only on 4 seeds by ear.
+- **Value x gain grid (A2/A5, 4 seeds):** gain moves brightness more than value does; value +10 at gain 4096 (+0.84 dB air share vs original) is about the same as -10 at gain 8448 (+0.93). No free gain from higher value at lower weight. Realised air -24.5 to -27.8 dB for requests of -10..+10. A2 and A5 behave alike.
+- **64-seed punch set (level-matched, mean over seeds, change from original):** bass+body centroid -542 Hz; old air head -10 dB @24k +22 Hz; new head @24k +287 Hz; @32k +390 Hz (overshoots the original brightness). Crest stays 1.5-1.6 below the original in every arm. Click-rate metric is biased by brightness (relative to the signal's own first difference), so it flatters the bright new-head clips; ears and ratings are the judge.
+- **Overnight verdict (25 epochs, `--grad-clip 1.0`):** O1 lr 5e-2, O2 lr 1e-1, O3 lr 3e-2 b64, O4 lr 3e-2 b64 early damping ALL DIVERGED to NaN (ep 3, ep 2, ep 15, ep 26); onset moves later as lr falls, early damping and a doubled batch delay but do not cure. O5 (d512, lr 1e-2, 4x length) trained clean, best val 0.0201 vs bracket A2 0.0206 (no practical gain; slight overfit after ep 17). Full table + caveats: `docs/training-findings.md` section A item 7. The three-EMA-half-life question (O2) is UNANSWERED because O2 died in epoch 2.
+- **Open:** (1) owner ratings of the 64-seed punch air page (none yet); (2) lr 2e-2 and a weight-norm / preconditioner-norm trace if higher lr is worth pursuing; (3) old recipe retrained with EMA to isolate depth / EMA / optimiser (offered, not requested). Not claimed: that the retrained head sounds better in general, only on 4 seeds by ear.
 - Pages: `~/evals_aac/air_heads.html`, `~/evals_aac/punch_air.html`. Heads registered in the render server as `rms_energy_air_a2/a4/a5/a6soap`.
 
 ### E5 — LatCH + FiLM density bracket under the ModularOptimizer, goa bigset — **LatCH DONE 2026-09-30 (read 10-06); FiLM NOT STARTED**
