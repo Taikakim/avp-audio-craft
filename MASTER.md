@@ -152,6 +152,16 @@ below) before the source original was deleted.
 
 ### Dataset precalcs/sidecars — Kosmos (`/run/media/kim/Kosmos`) — new 256G NVMe (2026-09-22)
 
+> **CURRENT LAYOUT (Kim's reorganisation, 2026-10-15) — Kosmos is the home of the smaller caption and latent sets.**
+> Latents: `Kosmos/latents/{latents_sa3, latents_sa3_subset300, latents_avp, latents_goa_aug8, latents_goa_bigset,
+> latents_sa3_stem_chroma, suomisoundi_latents}`. **`latents_sa3` (the live training set) is no longer on
+> `/home/kim/Projects`** — that line further down is history. Captions: `Kosmos/captions/{goa_archive_captions,
+> goa_archive_captions_hinted, goa_src_captions, aimusic_captions}`; sidecars `Kosmos/{goa,suomisoundi}_caption_sidecar.json`.
+> Also on Kosmos: `timeseries`, `section_labels`, `muscriptor_full`, `models`, `surge_dataset`. The Kosmos copies of
+> `latents_sa3_melody` / `_metrical` are gone; read them from `Lehto/latents-all-backup/`. Code paths were rewritten the
+> same day (SAO d683140, stable-audio-3 42cc95e, audio-tools-avp ff14b1b, mir 30a83ec); the table below keeps the older
+> locations as history.
+
 | Path | What | Grid | Used by |
 |---|---|---|---|
 | `timeseries` (37 G, 4461) | **Whole-track MIR timeseries** — **50 fields** now = **20 legacy** (100 Hz) + **26 expanded** + **4 melody-height** (08-12, see below) (expanded-Essentia sweep 07-14/15: MAEST 768-d embeddings, sliding-window genre/mood/instrument, DEAM/emoMusic arousal-valence, attack-transient family, stereo width/corr, Bark/ERB bands, chroma_linmap (NNLS), chords, EBU-R128, dyn-complexity). Expanded fields land at **NATIVE per-field rates (0.2–100 Hz)**, not 100 Hz — consumers MUST read the sidecar's `field_rates`/`fields`/`expanded_version` meta. Producer `mir/src/spectral/whole_track_expanded.py`; incremental backfill via `whole_track_timeseries.py --add-fields`. Corpus-wide (avp 1516 + goa 4461 + genre corpora 574). *(OpenL3 was extracted then DROPPED 07-14 per C's retrieval gate — not in the frozen set.)* **+4 MELODY-HEIGHT fields (2026-08-12, goa corpus): `f0_{other,bass}_ts` + `f0_{other,bass}_voiced_ts`, 100 Hz, PredominantPitchMelodia+EqualLoudness on the SEPARATED stems** — the only pitch fields that are NOT octave-folded, and the prediction target for the pitch/melody control head. **Unvoiced frames are 0.0 Hz: MASK with the `_voiced_ts` field, never regress on raw values — 0 Hz is not a low note.** Two voices because a rolling bassline is its own melodic voice (Kim); map to SA3's 3-band chroma at the CONDITIONING stage (bass→low, other→mid+high), not in extraction. Known unresolved: `f0_bass_ts` may sit one octave above the true fundamental (melodia and YIN disagree by ~12 st on every bass stem; three tests failed to settle it — melodia chosen for contour stability, YIN flips octaves *within* a track). | native per-field | SAT LatCH, SA3 crop companions, **melody head** |
