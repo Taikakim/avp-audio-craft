@@ -1388,6 +1388,7 @@ exactly this reason.)*
 - **Overnight verdict (25 epochs, `--grad-clip 1.0`):** O1 lr 5e-2, O2 lr 1e-1, O3 lr 3e-2 b64, O4 lr 3e-2 b64 early damping ALL DIVERGED to NaN (ep 3, ep 2, ep 15, ep 26); onset moves later as lr falls, early damping and a doubled batch delay but do not cure. O5 (d512, lr 1e-2, 4x length) trained clean, best val 0.0201 vs bracket A2 0.0206 (no practical gain; slight overfit after ep 17). Full table + caveats: `docs/training-findings.md` section A item 7. The three-EMA-half-life question (O2) is UNANSWERED because O2 died in epoch 2.
 - **Per-epoch sweep (seed 764, gain 24000, -10 dB):** every finite checkpoint of O1-O5 + A2 rendered, page `~/evals_aac/air_epochs.html` (`eval/air_epoch_sweep.py`). Measured only: O5 air share vs original +0.9..+2.0 dB from epoch 2, peaking epoch 10 (+2.0) then settling at +1.6..+1.9, click screen rising from 0.07 (ep 2-5) to 0.3 (ep 16-25); O3/O4 render clean until ~epoch 5-9 then clicks 5-17 per 1e4 and silent/non-finite renders. Which epoch SOUNDS best is the owner's call.
 - **Listening verdict on the epoch sweep (owner, 2026-10-15):** O5 ep3 = last glitch-free epoch and about as bright as it gets (later epochs: sub-second spectral-smoothing dropouts from ep4, slight brightness gain to ep20); O3/O4 (lr 3e-2) glitchy from ep4-5, useless by ep8-12, O4 duller and collapses suddenly at ep12; O1 fine, 1-2 epochs brighter than O5; O2 indistinguishable from bass+body; A2 ep7 brightest, nearly clean. Fadeout glitches come from the bass/mid heads. The click meter and validation loss did NOT see the O5 ep4+ glitches (training-findings B). So: lower-lr / early-stopped heads, not longer training. Provenance + verbatim feedback: `epoch_sweep/run_meta.json`.
+- **O6 (O1 with damping from ep 1, cosine from ep 3; 2026-10-15):** DIVERGED anyway: loss 0.0691 / 0.0513 / 0.1187 / 1.63 at ep 1-4, NaN from ep 5 (val 0.0476, 0.0626, 0.0388, 0.0529 for ep 1-4). So at lr 5e-2 neither earlier damping nor an early cosine rescues the run; lr 1e-2 stays the ceiling. A2b (A2 re-run at batch 16 x 2) OOM-ed in epoch 2 on the 16 GB card (14.8 GB allocated); re-queued as A2c at batch 8 x 4 inside `latch/run_air_lowlr.sh`.
 - **Open:** (1) owner ratings of the 64-seed punch air page (none yet); (2) lr 2e-2 and a weight-norm / preconditioner-norm trace if higher lr is worth pursuing; (3) old recipe retrained with EMA to isolate depth / EMA / optimiser (offered, not requested). Not claimed: that the retrained head sounds better in general, only on 4 seeds by ear.
 - Pages: `~/evals_aac/air_heads.html`, `~/evals_aac/punch_air.html`. Heads registered in the render server as `rms_energy_air_a2/a4/a5/a6soap`.
 
@@ -1514,6 +1515,54 @@ exactly this reason.)*
   level. Not listened yet.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
+
+### E7–E11 — Transparent AND wide-range density control: combining LatCH (transparent, weak) with FiLM (wide, leaks training-set style) (Kim, 2026-10-15)
+*Context (Kim, 2026-10-15): today's tests show the onset LatCH heads DO steer, but transparently and not strongly (earlier read of
+"barely steer" — Phase E, DISCOVERIES 10-15 — was the gate passing on a no-change; the effect is real and small). FiLM has the range but
+brings the training set's style (goa). Question: how to get both. Prior: the ear-approved density control is plain-Fusion FiLM (DISCOVERIES,
+CONTINUITY 07-07); FiLM gain 6 = glitches, flat 1.75 canonical ("FiLM broken: overdrive, not wiring", continuity journal 07-07); the July
+LatCH/FiLM/both grid (`eval/density_control_eval.py`, newcap8_promptstyle arms, OLD onset_envelope head) predates the Phase-E head. Mechanically
+FiLM + LatCH compose on :8056 (`docs/INFERENCE-SURFACE.md` "What actually composes"). Kim recalls trouble making them work together — no logged
+conflict found in DISCOVERIES/journals; likely gain scaling, UNVERIFIED. Idea-ordering is cheapest-first (lightweight-tests-first).*
+*Shared instrument rule (AUDIT THE INSTRUMENT): every arm needs TWO readouts — (a) achieved onset density vs target, (b) CHARACTER DRIFT vs the
+same-seed same-prompt UNCONTROLLED base render (CLAP embedding distance; PQ alone is the best ear-proxy but is blind to sparse material, so
+don't use PQ as the drift meter). Before trusting (b): show it separates a known style-leaked FiLM render from a base render. FiLM-only is the
+positive control for (a) — Phase E's gate passed because nothing changed, so a meter with no dynamic range must fail loudly.*
+
+- **E7 — LatCH × FiLM combination grid with the drift meter — RUNNING (WINTERMUTE; driver `eval/latch_film_combo_e7.py render` started 13:55 on 10-15 — it appeared while this entry was being written).** Fixed
+  seeds/prompts; FiLM gain {0.5, 1.0, 1.75} × LatCH gain {off, mid, high} on the Phase-E E04-EMA onset head
+  (`.../phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt`, matrix driver precedent `eval/run_latch_onset_matrix_ema.sh`). Build as a
+  thin CLIENT of :8056 `/generate` (`film` + `latch` payloads compose) — NOT a new guidance driver (INFERENCE-SURFACE rule). The July
+  `density_control_eval.py` is the shape of the grid but loads the old head/arms in-process. No Kim-runnable block yet: the driver doesn't exist.
+  Kill: if "both" ≤ max(FiLM-only, LatCH-only) on density-vs-drift (Pareto), the combination adds nothing at these gains → go to E8/E9.
+- **E7a — LatCH-only high-gain extension (Kim, 10-15, after listening to `latch_onset_matrix_ema.html`) — READY, waits for a free GPU.** Observation: measured
+  density barely moves with gain; only >=2048 changes anything, and then it drags the whole clip elsewhere. Matrix data (seed 1234, EMA): response vs requested
+  density is ~gain-independent and SATURATES at ~9 on/s (target 12 -> 9.0 at g128, 9.2 at g4096); target 0 only moves at high gain (6.0 g128 -> 2.9 g4096);
+  unguided 7.3, yet target 7 already gives 8.15 at g128 (a bias — cf. the madmom half-tempo doubling on 45% of crops, training-findings 2026-09-30).
+  Test: target 7, gains 4608..8192 step 512, seed 1234, EMA+online (16 clips) via `eval/latch_onset_highgain.py` (thin wrapper over the matrix script; dry-run
+  verified: 16 cells). Expect little density headroom at target 7; `--targets 7,3,0` adds the downward axis (48 clips). Kill: if drift/disintegration appears
+  before density moves, LatCH alone has no wide-range regime -> E8/E9 are the path.
+- **E8 — Timestep-gated FiLM (full strength early, fade to 0 for the low-noise tail), optionally LatCH late — PLANNED (inference only).**
+  Rationale: rhythm/layout is committed at high noise, timbre/character at low noise. ⚠ The FiLM payload today is `{ckpt, value, gain}` — NO
+  start/end (verified `eval/explorer_render_server.py:662 film_context`), unlike the LatCH slots, so this needs a gain-by-t schedule added to
+  `film_context`/`ControlContext`. Doubles as a diagnostic: WHERE in the schedule does the style leak in? Kill: drift unchanged at matched density.
+- **E9 — Contrastive FiLM `v = v_base + w·(v_film(c) − v_film(c_neutral))` — PLANNED, GATED on E7 (or on E8 failing).** The adapter's constant
+  style shift appears in both terms and cancels; only the control-dependent delta rides on the base model (cost: +2 DiT passes/step).
+  ⚠ Needs the adapter to have seen a null control: `--cfg-dropout` in `control/sa3_control/train.py` is TEXT dropout; `--melody-dropout` /
+  `--metrical-dropout` exist for other modes but NO scalar-mode control-null dropout was found — verify or use a mid-value reference.
+- **E10 — Retrain FiLM with the leak removed at the source — POTENTIAL, GATED on E8/E9 showing residual leak.** (a) *Data-side first:*
+  cluster the corpus by CLAP, re-balance sampling so density is uncorrelated with cluster (backdoor adjustment; no differentiable CLAP needed).
+  (b) *Then optionally an in-loss constraint (Kim, 10-15: "keep the CLAP score constant"):* `L = L_flow + λ·max(0, ‖E(ẑ0|c) − sg[E(ẑ0|null)]‖ − margin)`
+  on the same x_t/noise, low-to-mid t only (x0-hat is blurry at high noise); margin set from how much CLAP legitimately moves between real
+  density variants (margin 0 trains the control to do nothing). E must be differentiable on latents: SAME's own contrastive latent↔text critic if
+  we can load it (UNCHECKED), else a linear latent→CLAP probe fit on precomputed embeddings (audit it — the adapter will learn to fool a weak
+  probe), else decode through SAME-L (MPGD route, expensive; `control/CONTROL_FINDINGS.md`). Counterfactual rhythm via BUNGEE time-stretch only,
+  never sox. Kill: drift drops but density range collapses with it.
+- **E11 — "Old-school" finetune with a baked-in onset conditioner, as the CEILING/reference arm — POTENTIAL.** Kim 10-15: baked-in is not always
+  optimal. Shows how far onset control goes when the backbone may adapt; expect the strongest style leak, no scalability, full-FT runaway risk.
+  Preferred form: a control-LoRA/DoRA trained jointly with the conditioner + control dropout, so null control = base behaviour and the existing
+  adapter strength knob (0.5/1.0/1.5) keeps the "baked" part dial-able. Reference, not main path. Needs the training-launch notes
+  (`run_meta.json` purpose/hypothesis/kill) per CLAUDE.md before any launch.
 
 ## F. Data, captions, corpora (experiments they gate)
 
