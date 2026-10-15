@@ -438,6 +438,48 @@
   <p>- <strong>A DM path that dropped messages silently.</strong> <code>dm-say</code> resolved the log under the SAO root only, so a pair whose log lives in a worktree got a fresh stub instead of the conversation - twice caught by eye, a third time would have been silence read as "no reply yet". Fixed with worktree discovery + 5 tests (<code>Misc/agent_dialogue.py</code>). - <strong>A ruling I gave with the wrong reason.</strong> I said directed INTERVAL_W indexing was the design drawing's; the drawing uses <code>|a-b|</code>. Directed is still right, for a stronger reason measured in node: <code>|a-b|</code> scores the same chord pair 0.651/0.624/0.624/0.640 across four transpositions, directed 0.654 at all four. The plan now says it overrules the drawing and why - otherwise the next reader "fixes" it back. - <strong>A publish the tool would have passed.</strong> 6,941 staged board cells, every label under the 20% op-point gate - and 52 of them full-scale DC files from non-finite latents, all off the operating point. The gate is right about what to <em>judge</em>; it was never meant to decide what to <em>serve</em>. Quarantined before the push. - <strong>Negative result:</strong> <code>grit_index</code> (HPSS-residual texture) does not track the audible jumps (rho -0.155, p=0.18); low-mid energy does (rho -0.432, p=8.6e-5). Committed with its null.</p>
 </div>
 
+<div class="jentry">
+  <div class="jdate">2026-10-15</div>
+  <div class="jtitle">Phase E onset LatCH heads barely steer; the gate passed them because nothing changed <span class="neg">NEGATIVE</span></div>
+  <p>- Listening on <code>latch_onset_compare.html</code>: "the LATCH heads barely change the sound, except where it collapses". The gain x density grid (<code>Misc/build_latch_onset_grid_page.py</code>, page <code>latch_onset_grid.html</code>) agrees on effect size: at the gate-clean gains 128-512 density spreads 2-2.8 onsets/s around 7.3, vs 2.3-11.2 for the FiLM adapter on the same requests. - Lesson: request-vs-measured correlation 0.83-1.0 over a small spread is an inaudible shift, and a disintegration-gate pass then means "barely changed". Report effect size against a reference control next to the gate. Detail: EXPERIMENTS E5.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">LatCH guidance is back-loaded: TFG's alpha weighting gives the first 20% of steps ~0.2% of the budget</div>
+  <p>- <code>latch_guided.py</code> weights each step by <code>alpha = 1 - sigma</code> (TFG, LatCH paper 2603.04366 Eq. 3), so a full window spends ~62% in the last 20% of steps, after rhythm is fixed. Fits the record: energy/tonal-balance heads steer, onset/beat/hpcp heads do not. - Added opt-in <code>guide_schedule="flat"</code> (<code>latch_guided._window_scale</code>, <code>tests/test_latch_multi_guided.py</code>); render server takes <code>guide_schedule</code> (not the Forge <code>schedule</code> field, which I nearly collided with). MASTER §5 entry.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · plan</div>
+  <div class="jtitle">early-budget bracket queued on the GPU lock</div>
+  <p>- <code>eval/latch_early_budget_bracket.py</code> + <code>eval/run_latch_early_budget.sh</code>: 250 clips, onset head alpha vs flat x early windows x gains, early-weighted sigma schedules (flux a=3, logSNR rho=2), air head with constant weight, post-trained model at 24 steps. Page <code>Misc/build_latch_early_budget_page.py</code>. If it is negative, the Phase F retrain plan should not go ahead as is.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse</div>
+  <p>- 250-clip bracket (<code>latch_early_budget.html</code>, EXPERIMENTS E5): onset head clean spread 2.9 (alpha) -&gt; 4.2 onsets/s (flat), full window, gain 512; still about half the FiLM adapter. Flat 0-0.2 / 0-0.4 windows reach 6-8 but only in cells that fail the gate: the low request collapses to 0.1-1.5 onsets/s. The upward ceiling (~9.4) never moves. Early sigma shapes add little on the base model. - Air head: flat gives the same clean range (~10 dB) at ~1/4 the gain, not more range. Paper verdict 2603.04366 updated (partial). - Side note: the render process aborts at exit ("corrupted double-linked list", rc 134) after writing every cell; the runner continued, so it is harmless here, but a runner that trusts rc would have thrown away a good run.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15</div>
+  <div class="jtitle">per-step guidance rescale does not stop the LatCH loudness push <span class="neg">NEGATIVE</span></div>
+  <p>- <code>latch_hparams["guide_rescale"]</code> (stable-audio-3 <code>1caa67f</code>): restore each sample's std after every guidance edit. 146-clip test (<code>eval/latch_guide_rescale_test.py</code>): latent std and raw RMS of the distorting settings are unchanged at phi 0.7/1 (flat 0-1 g4096: std 2.0 -&gt; 1.9, RMS -8.4 -&gt; -8.8 dB vs unguided ~1.1 / -11.5 dB). Each edit redirects more than it enlarges; the inflation accrues through the model's later steps. Next candidates: anchor std(x_t) to its expected value per sigma, or a final-latent ceiling before decode. Side note: alpha 0-1 keeps normal level up to gain 4096 (spread 6.7 onsets/s).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">trajectory anchor removes the LatCH loudness push, but not the content damage of early guidance</div>
+  <p>- <code>latch_hparams["guide_anchor"]</code> (stable-audio-3 <code>9913e69</code>): cap each sample's std after every step at the healthy level for its sigma. 146-clip test (<code>latch_guide_anchor.html</code>): every loud setting returns to the unguided level (flat 0-0.2 g2048: latent std 4.1 -&gt; 1.2, RMS -4.3 -&gt; -13.7 dB) and onset spread is kept or raised (5.6 -&gt; 7.2). But gate fails barely move (early windows still 3-4 of 4 per cell at g2048+, PQ drift / beat loss / hf blowout): early guidance breaks the content itself. Clean alpha 0-1 unchanged at g512/2048; at g4096 the cap trims its spread 6.7 -&gt; 4.5.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">onset head request x gain matrix: EMA = online, monotonic 5.5-9.3 onsets/s, gate-clean through gain 1560</div>
+  <p>- E04 recipe retrained with EMA (half-life 0.5 ep; best ep 19, val 0.1961 = original). EMA and online (SF-averaged) weights are indistinguishable at this half-life. Alpha 0-1, requests 0-12/s x gains 32-4096: corr 0.86-0.95 at every gain; range saturates ~5.5 to ~9.3 from gain 256 (unguided 6.3/7.3); first gate fails at 2048. Page <code>latch_onset_matrix_ema.html</code>.</p>
+</div>
+
 <footer class="colophon">
   <span>── end of journal ──</span><span>·</span><span>markdown source: <code>SAO/profiles/wintermute.journal.md</code></span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> felt more than heard</span>
