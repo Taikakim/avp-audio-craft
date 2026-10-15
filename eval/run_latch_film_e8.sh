@@ -11,7 +11,8 @@ STAGE=$HOME/evals_aac/latch_film_e8
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2
 
-while pgrep -f "run_latch_film_combo_e7.sh" >/dev/null; do
+# Anchored: a chain whose own command line merely MENTIONS the E7 runner must not count (that kept E8 waiting forever, 16:18).
+while pgrep -f "^bash (/home/kim/Projects/SAO/)?eval/run_latch_film_combo_e7\.sh$" >/dev/null; do
     echo "$(date +%H:%M) E7 still running, waiting"; sleep 120
 done
 until curl -sf -m 5 http://127.0.0.1:8056/status >/dev/null; do

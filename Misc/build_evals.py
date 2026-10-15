@@ -129,6 +129,12 @@ THEMATIC_PAGES = {
         ("latch_onset_grid.html", "Phase E density heads: gain × density matrix",
          "The old onset_eval grid for the same six heads (gains 0–8192 × requested 2–10 "
          "onsets/s), every cell through the disintegration gate."),
+        ("punch_air_film.html", "Punch combo + air head (gain × target) + FiLM",
+         "The bass+body punch render with the retrained air head mapped over gain and target, "
+         "with and without the FiLM density adapter on top; old air head for comparison."),
+        ("latch_film_combo.html", "Density control: onset LatCH + FiLM (E7/E8)",
+         "Onset LatCH and the FiLM density adapter alone and together, in three contexts, "
+         "plus FiLM gated to the early sampling steps: range vs character drift per cell."),
         ("latch_guide_anchor.html", "LatCH guidance without the loudness push",
          "Trajectory anchor vs per-edit rescale on the settings that pushed loudness into "
          "distortion: onset spread, raw loudness and gate per cell."),
