@@ -37,12 +37,13 @@ INFO = {"O1": ("O1", "d256, lr 5e-2, batch 32"), "O2": ("O2", "d256, lr 1e-1, ba
 VAL = {}
 for d in glob.glob(f"{ON}/O*") + [A2] + glob.glob(f"{FU}/O6*") + glob.glob(f"{FU}/A2b*") + glob.glob(f"{LL}/L*") + glob.glob(f"{SL}/S*") + glob.glob(f"{BG}/P*") + glob.glob(f"{NS}/Q*"):
     k = os.path.basename(d).split("_")[0]; tl, vl = logs(d); VAL[k] = {"train": tl, "val": vl}
+BASE_AIR = next(r["air_share_db"] for r in rows if r["name"] == "base")   # cells show the change in high-band share vs the ORIGINAL (the page text says so)
 jobs, cells = [], {}
 for r in rows:
     f = f"air_epochs/{r['name']}.m4a"
     src = f"{r['_dir']}/clips/{r['name']}" + ("" if r["name"] == "base" else "_matched") + ".wav"
     jobs.append((src, f"{STAGE}/{f}"))
-    cells[r["name"]] = {"f": f, "arm": r["arm"], "ep": r["epoch"], "tag": r["tag"], "air": r["air_share_db"], "clk": r["clicks_per_1e4"], "crest": r["crest"],
+    cells[r["name"]] = {"f": f, "arm": r["arm"], "ep": r["epoch"], "tag": r["tag"], "air": r["air_share_db"] - BASE_AIR, "clk": r["clicks_per_1e4"], "crest": r["crest"],
                         "cent": r.get("centroid", r.get("spectral_centroid", 0)), "on": r["onset_rate"], "hat": r["hat_rate"], "bpm": r["bpm"]}
 def enc(j):
     if not os.path.exists(j[1]): subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", j[0], "-c:a", "aac", "-b:a", "256k", j[1]], check=True)
