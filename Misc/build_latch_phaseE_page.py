@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
+# Last edited: WINTERMUTE 2026-10-14 — drop run_meta related.heads (drive path) from the page data; floating transport bar
 """build_latch_phaseE_page.py -- listening/evaluation page for the Phase E LatCH density heads (E5 bracket), built from eval/latch_phaseE_render.py's clips.
 
 Kim 2026-10-14: "prepare an evaluation page for the recent models with the clips generated". Follows the three-audience standard (eval-tables spec s14):
@@ -19,6 +20,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
+from float_player import inject
 
 BR = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30"
 CLIPS = f"{BR}/phaseE_eval_clips"
@@ -31,6 +33,8 @@ os.makedirs(OUTDIR, exist_ok=True)
 
 man = json.load(open(f"{CLIPS}/manifest.json"))["cells"]
 meta = json.load(open(f"{CLIPS}/run_meta.json"))
+# the sidecar's related.heads is an absolute drive path; it must not reach the public page
+meta.get("related", {}).pop("heads", None)
 drift = {r["id"]: r for r in json.load(open(DRIFT))["rows"]}
 summ = {l.split("\t")[0]: l.split("\t") for l in open(f"{BR}/phaseE/SUMMARY.tsv").read().splitlines() if l.strip()}
 
@@ -132,5 +136,5 @@ __NOTES__
 </body></html>"""
 T = T.replace("__NOTES__", notes_block("latch_phaseE", levels=[("clip", "this clip"), ("model", "this arm"), ("page", "page")], hint="click a cell, then note what you hear"))
 out = os.path.join(STAGE, "latch_phaseE.html")
-open(out, "w").write(T.replace("__DATA__", DATA))
+open(out, "w").write(inject(T.replace("__DATA__", DATA)))
 print(f"wrote {out}: {len(arms)} arms, {len(cells)} cells, {len(os.listdir(OUTDIR))} audio files")

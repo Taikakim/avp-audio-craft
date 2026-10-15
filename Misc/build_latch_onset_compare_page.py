@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
+# Last edited: WINTERMUTE 2026-10-14 — floating transport bar (float_player.inject)
 """build_latch_onset_compare_page.py -- onset_eval.html-style comparison: the FiLM control adapter (existing page data) vs the six Phase E LatCH density heads, same targets.
 
 Kim 2026-10-14: "create a comparison with the same targets as onset_eval.html ... how do the gain and target amounts used compare to what we are now using?"
@@ -20,6 +21,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.append("/home/kim/Projects/SAO")
 from comment_notes_block import notes_block
+from float_player import inject
 
 R = "/run/media/kim/Mantu2/sa3_control_runs"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
@@ -132,7 +134,7 @@ __NOTES__
 <footer style="margin:18px 12px;color:#666;font-size:11px">evals &middot; onset response comparison &middot; data: sa3_control_runs (internal)</footer></body></html>"""
 T = T.replace("__NOTES__", notes_block("latch_onset_compare", levels=[("clip", "this clip"), ("model", "this run"), ("page", "page")], hint="click a cell, then note what you hear"))
 op = os.path.join(STAGE, "latch_onset_compare.html")
-open(op, "w").write(T.replace("__DATA__", DATA))
+open(op, "w").write(inject(T.replace("__DATA__", DATA)))
 print(f"wrote {op}: {len(out)} runs, {len(jobs)} clips")
 for run in out:
     print(f"\n{run['label']}  (unguided {run['unguided'] if run['unguided'] is None else round(run['unguided'], 1)}/s)")

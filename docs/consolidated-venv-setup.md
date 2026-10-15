@@ -120,3 +120,43 @@ Deltas from the plan, learned during the install:
 - **Known smell:** a `corrupted double-linked list` message at interpreter *shutdown*
   (after all work completes) — a teardown-time heap issue in some C-extension, benign
   for actual runs. Investigate (bisect imports) only if it surfaces mid-run.
+
+## ROCm 10.1 venv — `SAO/.venv-rocm10` (WINTERMUTE, 2026-10-13; side by side, nothing repointed yet)
+
+Goal: one venv for SA3 + SAT + muscriptor + ONNX, replacing `sat-venv` and the SA3
+`.venv`s. **mir's `mir/bin/python` stays** for madmom and the MIR pipeline.
+
+1. **torch from PyTorch's own ROCm 10.1 nightly index** (bundles the ROCm runtime;
+   no TheRock `[device-gfx1201]` extras needed, gfx1201 kernels are in the wheel):
+   `uv venv --python 3.13 .venv-rocm10` then
+   `uv pip install --pre torch torchaudio torchvision --index-url https://download.pytorch.org/whl/nightly/rocm10.1`
+   → torch `2.16.0.dev20261012+rocm10.1` (reports HIP 7.16), torchaudio 2.11 dev, triton-rocm 3.9.
+   It pulls device libs for 24 GPU archs (24 GB venv); uninstall every
+   `rocm-sdk-device-gfx*` except `gfx1201` → 12 GB.
+2. **App deps:** the `SAO/.venv` freeze minus torch/rocm/amd-*/flash-attn lines, under
+   a constraints file pinning the torch stack + `numpy==2.4.4`. Then sat-venv's extras:
+   essentia (works on numpy 2.4), onnx, onnxscript, onnxruntime-migraphx 1.27,
+   bungee-python (imports as `bungee_python`), lion-pytorch, prodigyopt, schedulefree.
+   `dctorch` only `--no-deps` (its metadata caps numpy<2). onnx needs `ml-dtypes>=0.5`;
+   protobuf 7 needs `wandb>=0.27`. Forks + muscriptor + SAO editable `--no-deps`.
+3. **No CK flash-attn.** On torch 2.14+ SA3's no-FA path beats the CK build on gfx1201
+   (in-process A/B, WORKLOG 2026-10-13: 5 fwd+bwd steps T=512 1.34 s CK vs 0.94 s;
+   T=2048 6.45 s vs 2.89 s; renders equal). The CK build is not worth the 70-90 min.
+4. **torchcodec, built locally** against this torch and the system ffmpeg 9. The PyPI
+   wheel is a CUDA build (every .so links libtorch_cuda) and fails on ROCm torch.
+   Source: a worktree of `/home/kim/Projects/torchcodec` at upstream main
+   (`git worktree add --detach ../torchcodec-rocm10 origin/main`), then
+   ```bash
+   uv pip install --python $PY cmake ninja pybind11 scikit-build-core
+   PATH=$VENV/bin:$PATH ENABLE_CUDA=0 TORCHCODEC_BUILD_IMAGE=0 \
+     I_CONFIRM_THIS_IS_NOT_A_LICENSE_VIOLATION=1 CMAKE_BUILD_PARALLEL_LEVEL=8 \
+     uv build --python $PY --no-build-isolation --wheel --out-dir SAO/my_wheels/rocm10.1 .
+   uv pip install --python $PY --no-deps SAO/my_wheels/rocm10.1/torchcodec-*.whl
+   ```
+   Build takes ~1 min. The licence flag is needed because a wheel linked to system
+   (GPL) ffmpeg must not be redistributed; this one stays in the git-ignored `my_wheels/`.
+   Verify: `torchaudio.load` of an `.m4a`, wav/flac save→load round trip.
+   Fallback without building: `--pre torchcodec --index-url https://download.pytorch.org/whl/nightly/cpu`.
+   **Rebuild torchcodec whenever torch is bumped** (it links libtorch).
+5. Run python one-liners from a scratch cwd, not the SAO root (MASTER §5: `SAO/torchcodec`
+   shadows the package).
