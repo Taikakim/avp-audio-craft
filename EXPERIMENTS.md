@@ -1588,6 +1588,18 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   drift, gate). Runner `control/run_film_modular_bracket.sh` (queued behind GHOST-NOTE's air queue, `/tmp/air_nosf.done`), outputs
   `Mantu2/sa3_control_runs/film_modular_bracket_20261015/`. Kill: all arms diverge or show no density response at 6000 steps.
 
+### E13 — same_chroma LatCH head retrained under the ModularOptimizer — **QUEUED 2026-10-16 (W)**
+- **Why:** listening 2026-10-16 on the 06-25 all-C sweep (`riffer-evals/clips/chroma_steer/`, sidecar now carries the verdict): the production
+  head steers, transparently (pad chords change their notes), most audibly at gain 2048, so higher gain may pay. Production head = AdamW,
+  EMA 0.999, depth 4, 20 ep, train-loss selected (the E3 caveat).
+- **Runner** `latch/run_chroma_retrain.sh`: G's bass recipe (modular + SF, Shampoo, Muon all 2-D, d512 depth 8, grad clip 1.0, EMA 1 ep +
+  0.25 ep + online, every epoch saved, val by relpath), cosine loss, unstandardised targets, other-stem SAME chroma from
+  `Kosmos/latents/latents_sa3_stem_chroma`. Arms C3 lr 1e-3, C4 1e-4, C2 1e-2 (reference), 20 ep each, 20-step smoke first. Queued LAST
+  (after the E12 chain, the drone-sweep weights test and G's LatCH queue); output `Mantu/latch_sweep/chroma_retrain_2026-10-16/`.
+- **Still to build:** an epoch sweep for chroma (all-C / progression targets via `eval/chroma_steer_render.py`), with the gain ladder
+  extended above 2048 (3072, 4096, 6144) for both the production head and the retrained arms, through the disintegration gate.
+- **Kill:** no arm beats the production head's C-dominance at equal gain, or every arm's extra range fails the gate.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
