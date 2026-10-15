@@ -995,3 +995,15 @@ target reads them as HF-deficient and would push generations brighter).
   (flat 0-1 g4096: std 2.0 -> 1.9, RMS -8.4 -> -8.8 dB vs unguided ~1.1 / -11.5 dB). Each edit redirects more than it enlarges;
   the inflation accrues through the model's later steps. Next candidates: anchor std(x_t) to its expected value per sigma,
   or a final-latent ceiling before decode. Side note: alpha 0-1 keeps normal level up to gain 4096 (spread 6.7 onsets/s).
+
+### finding · trajectory anchor removes the LatCH loudness push, but not the content damage of early guidance
+- `latch_hparams["guide_anchor"]` (stable-audio-3 `9913e69`): cap each sample's std after every step at the healthy level for
+  its sigma. 146-clip test (`latch_guide_anchor.html`): every loud setting returns to the unguided level (flat 0-0.2 g2048:
+  latent std 4.1 -> 1.2, RMS -4.3 -> -13.7 dB) and onset spread is kept or raised (5.6 -> 7.2). But gate fails barely move
+  (early windows still 3-4 of 4 per cell at g2048+, PQ drift / beat loss / hf blowout): early guidance breaks the content
+  itself. Clean alpha 0-1 unchanged at g512/2048; at g4096 the cap trims its spread 6.7 -> 4.5.
+
+### finding · onset head request x gain matrix: EMA = online, monotonic 5.5-9.3 onsets/s, gate-clean through gain 1560
+- E04 recipe retrained with EMA (half-life 0.5 ep; best ep 19, val 0.1961 = original). EMA and online (SF-averaged) weights
+  are indistinguishable at this half-life. Alpha 0-1, requests 0-12/s x gains 32-4096: corr 0.86-0.95 at every gain; range
+  saturates ~5.5 to ~9.3 from gain 256 (unguided 6.3/7.3); first gate fails at 2048. Page `latch_onset_matrix_ema.html`.

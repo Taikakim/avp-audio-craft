@@ -970,6 +970,10 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   (`eval/latch_early_budget_bracket.py`, EXPERIMENTS E5): flat raises the onset head's gate-clean spread ~1.45x (2.9 -> 4.2 onsets/s at
   gain 512, full window), still about half the FiLM adapter; early-only windows push density down until the clip collapses, and the
   upward ceiling (~9.4 onsets/s) does not move. For the air head flat reaches the same clean range at ~1/4 the gain, no more.
+  By ear alpha 0-1 is the clean, transparent setting (gain 512 fine, 2048 possible); flat and early windows push loudness into distortion.
+  **Loudness fix:** `latch_hparams={"guide_anchor": 1.2}` caps the latent's std after every step at its healthy per-sigma level and returns
+  those renders to the unguided loudness; the per-edit `guide_rescale` does NOT (the inflation builds in the model's later steps, not in
+  the edits). The anchor does not repair early-window content damage (gate fails unchanged). EXPERIMENTS E5.
 - **SA3-medium LatCH guidance needs gain ≈ 48–96**, not the SAO-Small default of 8 (SAME-L's
   256-d latent is ~10× less gain-sensitive). At gain 8 heads steer the right way with ~2%
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²

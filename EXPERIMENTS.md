@@ -1497,6 +1497,21 @@ exactly this reason.)*
   the early steps the budget makes the head push density DOWN until the clip falls apart rather than giving clean groove control; the upward
   ceiling is unchanged. Not listened yet; the ear decides whether the flat/full-window g128-512 cells are musically different. Phase F: an
   early-budget fix alone does not close the gap to FiLM.
+  **Listening verdict (2026-10-15, run_meta kim_feedback):** alpha 0-1 is the cleanest; flat 0-1 pushes the volume up into clipping and
+  distortion at high weights; early windows distort loudly under both weightings; with alpha 0-1 the effect is noticeable, gain 512 quite
+  okay, 2048 not impossible, and above all transparent: the musical matter stays intact, where the FiLM adapter drags in the training-set style.
+- **Onset matrix, alpha 0-1, EMA vs online (W, 2026-10-15).** E04 recipe retrained with EMA half-life 0.5 ep + online weights saved from the
+  same run (best ep 19, val 0.1961 = original). Requests 0-12 onsets/s x gains 32-4096 x 2 seeds (626 clips, `files/evals/latch_onset_matrix_ema.html`,
+  `eval/latch_onset_matrix_ema.py`). EMA and online are indistinguishable at this half-life. Response monotonic at every gain (corr 0.86-0.95),
+  saturating at ~5.5 and ~9.3 onsets/s from gain 256 (unguided 6.3/7.3); gate-clean through gain 1560, first fails at 2048.
+- **Loudness fixes for hard LatCH guidance (W, 2026-10-15), page `files/evals/latch_guide_anchor.html`.** (1) Per-edit rescale
+  (`latch_hparams["guide_rescale"]`, restore std after each guidance edit, like CFG rescale): NEGATIVE, level unchanged (flat 0-1 g4096 latent
+  std 2.0 -> 1.9 vs ~1.1 unguided); each edit redirects rather than enlarges, the inflation builds through the model's own later steps.
+  (2) Trajectory anchor (`latch_hparams["guide_anchor"] = s0`, cap std(x_t) at sqrt(((1-t)s0)^2+t^2) after every step): POSITIVE on level,
+  every loud setting back to the unguided level (flat 0-0.2 g2048 std 4.1 -> 1.2, RMS -4.3 -> -13.7 dB) with onset spread kept or raised
+  (5.6 -> 7.2); clean alpha 0-1 unchanged at g512/2048, its g4096 spread trimmed 6.7 -> 4.5. But the gate barely moves (59 vs 63 of 144 fail;
+  early windows still 3-4 of 4 per cell at g2048+ on PQ drift / beat loss / hf blowout): early guidance damages the content, not only the
+  level. Not listened yet.
 - ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 

@@ -17,7 +17,7 @@ folders — clips untouched) and every folder becomes a player instead of a dump
 Same-playhead behaviour (MASTER §4): click a cell to play from the shared playhead;
 switching cells keeps the position; re-click stops.
 """
-# Last edited: WINTERMUTE 2026-10-15 — latch_onset_grid entry under LatCH
+# Last edited: WINTERMUTE 2026-10-15 — latch_onset_grid entry under LatCH; latch_early_budget + latch_onset_matrix_ema + latch_guide_anchor entries
 # Last edited: WINTERMUTE 2026-10-14 — THEMATIC_PAGES: standalone pages listed under their stream
 import os, glob, json, html, shutil, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -129,6 +129,12 @@ THEMATIC_PAGES = {
         ("latch_onset_grid.html", "Phase E density heads: gain × density matrix",
          "The old onset_eval grid for the same six heads (gains 0–8192 × requested 2–10 "
          "onsets/s), every cell through the disintegration gate."),
+        ("latch_guide_anchor.html", "LatCH guidance without the loudness push",
+         "Trajectory anchor vs per-edit rescale on the settings that pushed loudness into "
+         "distortion: onset spread, raw loudness and gate per cell."),
+        ("latch_onset_matrix_ema.html", "Onset head: request × gain, EMA vs online",
+         "Alpha weighting over the whole run, requested 0–12 onsets/s × gains 32–4096, "
+         "EMA and online weights of one retrained run, every clip through the gate."),
         ("latch_early_budget.html", "LatCH early budget: flat vs alpha weighting",
          "Does guidance steer onsets once the early sampling steps get a real share? "
          "Weighting × window × gain for the onset and air heads, early-weighted sigma "
