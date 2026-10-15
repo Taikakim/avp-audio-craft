@@ -83,6 +83,10 @@ invoke a venv by **absolute path** in commands; never assume `python` is the rig
 ## 2. Canonical data paths
 
 Both data drives are **removable** — if a path 404s, the drive is unmounted, not gone.
+**Mantu is PINNED at `/run/media/kim/Mantu` since 2026-10-15** (`/etc/fstab`, by UUID `eec55746-…`, `nofail,x-systemd.automount`).
+Before that udisks named it Mantu / Mantu1 / Mantu2 depending on a stale mount dir, and a mid-session move (Mantu2 -> Mantu)
+stopped every script with a hardcoded name; SAO `5fa002b` rewrote those paths. Write new paths as `/run/media/kim/Mantu/...`;
+a `Mantu1`/`Mantu2` path in a new script is a bug.
 
 ### Source audio — Mantu (`/run/media/kim/Mantu`)
 | Path | What | Used by |
