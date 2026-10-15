@@ -8,6 +8,30 @@
 WINTERMUTE's session transcript on 2026-07-09, as the one-time backfill for the new
 convention — see §3a. Going forward, append your own lines as you finish tasks.**
 
+## 2026-10-15 (LatCH steering day; list was stale since 09-24 — 09-25..10-14 see journal + WORKLOG)
+
+### done
+- **Phase E onset gain × density grid** published (`latch_onset_grid.html`, 150 cells, gate with PQ leg). Listening:
+  heads "barely change the sound except where it collapses"; effect size 2–2.8 onsets/s vs FiLM 2.3–11.2. `kim_feedback` ×6.
+- **Root cause found: TFG alpha weighting back-loads guidance** (first 20% of steps ≈ 0.2% of budget). Opt-in
+  `guide_schedule="flat"`. sa3 `8c87a23`.
+- **Early-budget bracket**, 250 clips (`latch_early_budget.html`): flat ≈1.45× onset spread at a clean gain; early windows
+  collapse; sigma shape adds little on base. Verdict recorded: alpha 0–1 cleanest, transparent; flat/early push loudness
+  into distortion. SAO `6b3d5f1`; paper verdict 2603.04366 → partial.
+- **E04 onset head retrained with EMA + online weights** (best ep19, val 0.1961); **626-clip matrix** alpha 0–1, requests
+  0–12 × 12 gains (`latch_onset_matrix_ema.html`): EMA = online at hl 0.5 ep; monotonic 5.5–9.3/s, gate-clean ≤1560.
+- **Per-edit `guide_rescale`**: NEGATIVE (level unchanged). sa3 `1caa67f`.
+- **Trajectory anchor `guide_anchor`**: fixes the loudness push, keeps spread; does not fix early-window content damage
+  (gate fails ~unchanged). sa3 `9913e69`; page `latch_guide_anchor.html`. SAO `c68ee2e` `f90f97a`.
+- **GUI**: schedule / anchor / rescale on the LatCH adv row, carried by LatCH sub-presets (N_STEER +3, 58 tests).
+- Published G's `air_heads` + rebuilt `punch_air`; coordinated GPU with G (server stop/restart, released 13:01).
+
+### waiting on someone
+- [ ] Ear: matrix + anchor pages (is anchored flat/early clean? usable gain ceiling?).
+- [ ] Production-preset design for tuned LatCH × FiLM combos (proposal to Kim 10-15).
+- [ ] E7 LatCH × FiLM grid (someone's new EXPERIMENTS block marks it ready for W) — awaiting go.
+- [ ] Render server :8056 needs a restart (G's queue does it) before the GUI's anchor/rescale reach it.
+
 ## 2026-09-24 (weekly; list was stale since 08-21)
 
 > Reconstructed from WINTERMUTE-authored commits. 08-22..08-31 predate per-agent git identities
