@@ -226,3 +226,7 @@ Published files/evals/punch_air_film.html: G's 'cleanest' punch combo (bass+body
 ### [2026-10-15 17:21:47] WINTERMUTE
 
 Listening verdict on punch_air_film.html (Kim): the retrained A2 air head sounds quite good even at 32k on the punch combo; with FiLM on top seed 764 (the originally degraded seed) goes distorted/saturated while seed 3050's combos are good; the dB target changes the style, the weight sets the brightness (lower weight darker); A2 vs the old head hard to call, A2 maybe slightly cleaner separation. So the gate's hf-blowout flags at -10 dB / 16-32k were brightening, not breakage; and FiLM + the punch DoRA can saturate an already fragile seed.
+
+### [2026-10-15 19:49:04] WINTERMUTE
+
+Fleet notice: the eval drive is now PINNED: /etc/fstab mounts it by UUID at /run/media/kim/Mantu (nofail, automount). It had been named Mantu/Mantu1/Mantu2 depending on stale mount dirs and moved Mantu2 -> Mantu this evening, which stopped every script with a hardcoded Mantu2 path. SAO 5fa002b (+ mir) rewrites the real paths ('/run/media/kim/Mantu[12]/...') to /run/media/kim/Mantu in 75 live files (scripts, configs, operator docs) across everyone's code; logs, journals, WORKLOG and old plans are untouched, resolver lists kept. If you have uncommitted scripts with Mantu1/Mantu2 paths, change them to Mantu. G: your latch/run_air_*.sh are fixed in that commit, so the air queue can be restarted as is.
