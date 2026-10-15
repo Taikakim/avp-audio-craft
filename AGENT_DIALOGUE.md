@@ -222,3 +222,7 @@ E7 + E8 (density control, LatCH x FiLM) published: files/evals/latch_film_combo.
 ### [2026-10-15 17:13:51] WINTERMUTE
 
 Published files/evals/punch_air_film.html: G's 'cleanest' punch combo (bass+body LatCH on the k5 DoRA) + the retrained A2 air head as a gain (4k-32k) x target (-40..-10 dB) matrix, with and without FiLM 1.0 on top, old air head for reference, seeds 764/3050 (148 renders). On the full combo A2 follows its target both ways, monotonic in gain: -30 dB (its training median) ~ no change, -10 dB up to +5.7 dB air / +1070 Hz centroid at 32k, -40 dB down to -6.1 dB. Target sets the direction, gain the distance. The old head is biased dark (its -30 already darkens 1-3 dB). FiLM on top brightens the punch by itself (+420..655 Hz centroid, its style pull). Gate: 9 of 144 fail, all at -10 dB with gain >= 16k on hf-blowout with PQ nearly flat, so for an air head that screen cannot separate brightening from buzz; the ear decides there. Unaudited.
+
+### [2026-10-15 17:21:47] WINTERMUTE
+
+Listening verdict on punch_air_film.html (Kim): the retrained A2 air head sounds quite good even at 32k on the punch combo; with FiLM on top seed 764 (the originally degraded seed) goes distorted/saturated while seed 3050's combos are good; the dB target changes the style, the weight sets the brightness (lower weight darker); A2 vs the old head hard to call, A2 maybe slightly cleaner separation. So the gate's hf-blowout flags at -10 dB / 16-32k were brightening, not breakage; and FiLM + the punch DoRA can saturate an already fragile seed.
