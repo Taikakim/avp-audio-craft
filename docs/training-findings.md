@@ -316,6 +316,12 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
     test. It also explains the 2026-09-08 `lion_lr1e-5` anomaly in MASTER §5 (NaN in batches, finite in
     a direct probe): that was this, not a marginal model.
 
+**Air-head epoch sweep: the click meter and the validation loss both missed the glitches that were audible (GHOST-NOTE, 2026-10-15).**
+   *Symptom:* `air_epochs.html` (seed 764, gain 24000). Listening: O5 (lr 1e-2, d512) is glitch-free through ep3 and from ep4 on has sub-second "spectral smoothing" dropouts that swallow a bit of the sound; brightness is about as high at ep3 as it ever gets. O3/O4 (lr 3e-2) are glitchy from ep4-5 and unusable by ep8-12. A2 ep7 (1000 steps) is the brightest and nearly clean.
+   *Meters:* the 8-sigma first-difference click rate was at its LOWEST for O5 ep2-5 (0.07-0.08) and only rose after ep13, so it ranks the clean ep3 and the glitchy ep4 the same. A smoothing/dropout glitch has no sample-level discontinuity, which is what that meter measures. Validation loss kept improving to ep16-17 (0.0201; ep3 was 0.0364), i.e. it points to the opposite end of the run from the ears. Audiobox PQ varied by 0.13 across O5 epochs and does not separate them either.
+   *Cause (partly open):* the LISTENER reports the fadeout glitch comes from the bass/mid heads, so some glitches in every arm are not the air head's; the meters never compared against bass+body for that. Whether the later-epoch O5 glitches come from the air head over-fitting (val loss still falling) or from the EMA (half-life 2 epochs vs 0.5 for A2) is not tested.
+   *Fix / status:* ratings and listening remain the judge; use early epochs (ep3 for O5) or A2 ep7 as the air head for now. For a meter that sees this: compare a short-window spectral-envelope dropout score against the bass+body clip of the same seed, then check it flags O5 ep4 and not ep3. Not built.
+
 ### C. Operational traps
 14. `--lr` defaults to 5e-6 (AdamW era): the modular optimizer barely moves. Always set it (5e-4 clean).
 15. Without `--eval_demos`, the stock demo callback crashes at step 1 (torchcodec).

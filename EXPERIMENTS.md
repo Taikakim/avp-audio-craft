@@ -1387,6 +1387,7 @@ exactly this reason.)*
 - **64-seed punch set (level-matched, mean over seeds, change from original):** bass+body centroid -542 Hz; old air head -10 dB @24k +22 Hz; new head @24k +287 Hz; @32k +390 Hz (overshoots the original brightness). Crest stays 1.5-1.6 below the original in every arm. Click-rate metric is biased by brightness (relative to the signal's own first difference), so it flatters the bright new-head clips; ears and ratings are the judge.
 - **Overnight verdict (25 epochs, `--grad-clip 1.0`):** O1 lr 5e-2, O2 lr 1e-1, O3 lr 3e-2 b64, O4 lr 3e-2 b64 early damping ALL DIVERGED to NaN (ep 3, ep 2, ep 15, ep 26); onset moves later as lr falls, early damping and a doubled batch delay but do not cure. O5 (d512, lr 1e-2, 4x length) trained clean, best val 0.0201 vs bracket A2 0.0206 (no practical gain; slight overfit after ep 17). Full table + caveats: `docs/training-findings.md` section A item 7. The three-EMA-half-life question (O2) is UNANSWERED because O2 died in epoch 2.
 - **Per-epoch sweep (seed 764, gain 24000, -10 dB):** every finite checkpoint of O1-O5 + A2 rendered, page `~/evals_aac/air_epochs.html` (`eval/air_epoch_sweep.py`). Measured only: O5 air share vs original +0.9..+2.0 dB from epoch 2, peaking epoch 10 (+2.0) then settling at +1.6..+1.9, click screen rising from 0.07 (ep 2-5) to 0.3 (ep 16-25); O3/O4 render clean until ~epoch 5-9 then clicks 5-17 per 1e4 and silent/non-finite renders. Which epoch SOUNDS best is the owner's call.
+- **Listening verdict on the epoch sweep (owner, 2026-10-15):** O5 ep3 = last glitch-free epoch and about as bright as it gets (later epochs: sub-second spectral-smoothing dropouts from ep4, slight brightness gain to ep20); O3/O4 (lr 3e-2) glitchy from ep4-5, useless by ep8-12, O4 duller and collapses suddenly at ep12; O1 fine, 1-2 epochs brighter than O5; O2 indistinguishable from bass+body; A2 ep7 brightest, nearly clean. Fadeout glitches come from the bass/mid heads. The click meter and validation loss did NOT see the O5 ep4+ glitches (training-findings B). So: lower-lr / early-stopped heads, not longer training. Provenance + verbatim feedback: `epoch_sweep/run_meta.json`.
 - **Open:** (1) owner ratings of the 64-seed punch air page (none yet); (2) lr 2e-2 and a weight-norm / preconditioner-norm trace if higher lr is worth pursuing; (3) old recipe retrained with EMA to isolate depth / EMA / optimiser (offered, not requested). Not claimed: that the retrained head sounds better in general, only on 4 seeds by ear.
 - Pages: `~/evals_aac/air_heads.html`, `~/evals_aac/punch_air.html`. Heads registered in the render server as `rms_energy_air_a2/a4/a5/a6soap`.
 
@@ -1482,6 +1483,21 @@ exactly this reason.)*
   GPU lock): 250 clips, onset head E04 alpha vs flat × windows 0-0.2/0.4/1 × gains 32-2048; early-weighted sigma schedules (flux a=3, logSNR
   rho=2); the air head with constant weight; the post-trained model at 24 steps. Page builder `Misc/build_latch_early_budget_page.py`.
   **Consequence for Phase F:** retraining on a better optimizer/arch is unlikely to help if the early-budget test is negative; run it first.
+- **Early-budget bracket RESULT (W, 2026-10-15) — partial support; flat helps, early-only windows collapse.** 250 clips rendered (0 non-finite),
+  page `files/evals/latch_early_budget.html` (`Misc/build_latch_early_budget_page.py`), numbers in the run's `run_meta.json` `result`. Gate as
+  above (vs the same leg/shape/seed unguided clip, PQ leg): 52/230 guided clips fail. Spread = measured(10 req) - measured(2 req), seed mean.
+  (A) Onset head, base model: widest gate-clean spread alpha/full window **2.9** (g512) -> flat/full window **4.2** (g512), i.e. ~1.45x at a
+  clean gain, still ~half the FiLM adapter (~9). Early-only windows: alpha 0-0.2/0-0.4 is inert below g2048 (as predicted); flat 0-0.2 reaches
+  6.2 (g512) and flat 0-0.4 7.8 (g2048) but those cells FAIL: the low request collapses to 0.1-1.5 onsets/s (hf-blowout, PQ drift). The high
+  request still caps at ~9-9.4 onsets/s, so the extra range is almost all downward. (B) Early-weighted sigma shapes (flux a=3, logSNR rho=2)
+  with flat: same picture as A-flat (clean 3.8-4.4), the shape adds little on the base model. (C) Air head A2: flat gives ~3-4x the spread per
+  gain (g8192 full: 31.8 dB vs 9.5) but the CLEAN range is about the same (alpha g8192 9.5 dB all pass; flat g2048 10.0 dB, 1/4 fail): flat buys
+  gain efficiency, not more usable range. (D) Post-trained model, one seed: on its own schedule an early window is inert under both weightings;
+  flux3 makes it respond (2-3 onsets/s) with many hf-blowout fails. **Reading:** the alpha weighting did hold the onset head back, but giving
+  the early steps the budget makes the head push density DOWN until the clip falls apart rather than giving clean groove control; the upward
+  ceiling is unchanged. Not listened yet; the ear decides whether the flat/full-window g128-512 cells are musically different. Phase F: an
+  early-budget fix alone does not close the gap to FiLM.
+- ⚠ Found on the way: madmom's top tempo is half-tempo on 45% of `latents_sa3` goa crops, so the June `onset_per_beat`
   scalar is doubled on those crops — see docs/training-findings.md 2026-09-30.
 
 ## F. Data, captions, corpora (experiments they gate)
