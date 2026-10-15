@@ -15,7 +15,8 @@ SW = f"{ON}/epoch_sweep"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac"); OUT = f"{STAGE}/air_epochs"; os.makedirs(OUT, exist_ok=True)
 FU = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_followup"
 LL = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_lowlr"
-SRC = [(SW, "overnight")] + [(f"{x}/epoch_sweep", n) for x, n in ((FU, "followup"), (LL, "lowlr")) if os.path.exists(f"{x}/epoch_sweep/sweep.json")]
+SL = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_slow"
+SRC = [(SW, "overnight")] + [(f"{x}/epoch_sweep", n) for x, n in ((FU, "followup"), (LL, "lowlr"), (SL, "slow")) if os.path.exists(f"{x}/epoch_sweep/sweep.json")]
 J = {"rows": [], "skipped": []}
 for d, _ in SRC:
     j = json.load(open(f"{d}/sweep.json"))
@@ -30,9 +31,9 @@ def logs(d):
     vl = re.findall(r"val=(\S+)", t)
     return tl, vl
 INFO = {"O1": ("O1", "d256, lr 5e-2, batch 32"), "O2": ("O2", "d256, lr 1e-1, batch 32"), "O3": ("O3", "d256, lr 3e-2, batch 64"), "O4": ("O4", "d256, lr 3e-2, batch 64, early damping"),
-        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "O6": ("O6", "d256, lr 5e-2, batch 32, damping from ep 1, cosine from ep 3"), "A2b": ("A2b", "A2 recipe re-run, d512, lr 1e-2, 1000 steps"), "A2c": ("A2c", "A2 recipe re-run at batch 8 x 4, d512, lr 1e-2, 1000 steps"), "L2": ("L2", "A2 recipe at lr 2e-3, d512, 1000 steps"), "L5": ("L5", "A2 recipe at lr 5e-3, d512, 1000 steps"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
+        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "O6": ("O6", "d256, lr 5e-2, batch 32, damping from ep 1, cosine from ep 3"), "A2b": ("A2b", "A2 recipe re-run, d512, lr 1e-2, 1000 steps"), "A2c": ("A2c", "A2 recipe re-run at batch 8 x 4, d512, lr 1e-2, 1000 steps"), "S1": ("S1", "O1 recipe at lr 5e-3, 15 ep"), "S2": ("S2", "O2 recipe at lr 1e-2, 15 ep"), "S3": ("S3", "O3 recipe at lr 3e-3, batch 64, 15 ep"), "S4": ("S4", "O4 recipe at lr 3e-3, batch 64, 15 ep"), "S5": ("S5", "O5 recipe at lr 1e-3, d512, 15 ep"), "L2": ("L2", "A2 recipe at lr 2e-3, d512, 1000 steps"), "L5": ("L5", "A2 recipe at lr 5e-3, d512, 1000 steps"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
 VAL = {}
-for d in glob.glob(f"{ON}/O*") + [A2] + glob.glob(f"{FU}/O6*") + glob.glob(f"{FU}/A2b*") + glob.glob(f"{LL}/L*"):
+for d in glob.glob(f"{ON}/O*") + [A2] + glob.glob(f"{FU}/O6*") + glob.glob(f"{FU}/A2b*") + glob.glob(f"{LL}/L*") + glob.glob(f"{SL}/S*"):
     k = os.path.basename(d).split("_")[0]; tl, vl = logs(d); VAL[k] = {"train": tl, "val": vl}
 jobs, cells = [], {}
 for r in rows:
@@ -51,12 +52,12 @@ for k, c in cells.items():
     AB = {"ab_production_quality": "ab_PQ", "ab_content_enjoyment": "ab_CE", "ab_content_usefulness": "ab_CU", "ab_production_complexity": "ab_PC"}
     c["m"] = {AB.get(x, x): y for x, y in (MET.get(k) or {}).items() if AB.get(x, x) in ("rms", "crest", "zcr", "centroid", "flatness", "flux") or x in AB}
 def lab(arm, tag):
-    main = "2" if arm.startswith("O") else "0.5"
+    main = "2" if arm[0] in "OS" else "0.5"
     if tag == "_online": return f"{arm} online (SF average)"
     if tag.startswith("_ema"): return f"{arm} EMA {tag[4:]} ep"
     return f"{arm} EMA {main} ep"
 ROWS = []
-for arm in ["O5", "O6", "A2", "A2b", "A2c", "L2", "L5", "O4", "O3", "O1", "O2"]:
+for arm in ["O5", "O6", "A2", "A2b", "A2c", "L2", "L5", "S5", "S1", "S2", "S3", "S4", "O4", "O3", "O1", "O2"]:
     tags = sorted({c["tag"] for c in cells.values() if c["arm"] == arm}, key=lambda t: (t != "", t))
     ROWS += [{"a": arm, "t": t, "label": lab(arm, t)} for t in tags]
 DATA = json.dumps({"rows": ROWS, "cells": cells, "val": VAL, "info": INFO, "skipped": J["skipped"]})
@@ -94,7 +95,7 @@ function startClip(id,f,l,clip){
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 function play(id,f,l,clip){if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}startClip(id,f,l,clip);}
 const sg=(v,d)=>(v>=0?'+':'')+v.toFixed(d);
-const arms=['O5','O6','A2','A2b','A2c','L2','L5','O4','O3','O1','O2'].filter(a=>D.info[a]);const rows=D.rows;
+const arms=['O5','O6','A2','A2b','A2c','L2','L5','S5','S1','S2','S3','S4','O4','O3','O1','O2'].filter(a=>D.info[a]);const rows=D.rows;
 let maxE=0;Object.values(D.cells).forEach(c=>{if(c.ep>maxE)maxE=c.ep;});
 const fv=x=>{const v=parseFloat(x);return isNaN(v)?'NaN':v.toFixed(4);};
 let v='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)v+=`<th>${e}</th>`;v+='</tr>';
