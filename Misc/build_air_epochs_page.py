@@ -13,32 +13,52 @@ ON = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight"
 A2 = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
 SW = f"{ON}/epoch_sweep"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac"); OUT = f"{STAGE}/air_epochs"; os.makedirs(OUT, exist_ok=True)
-J = json.load(open(f"{SW}/sweep.json")); rows = J["rows"]
+FU = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_followup"
+SRC = [(SW, "overnight")] + ([(f"{FU}/epoch_sweep", "followup")] if os.path.exists(f"{FU}/epoch_sweep/sweep.json") else [])
+J = {"rows": [], "skipped": []}
+for d, _ in SRC:
+    j = json.load(open(f"{d}/sweep.json"))
+    for r in j["rows"]:
+        if r["name"] in ("base", "bass_body") and J["rows"] and any(x["name"] == r["name"] for x in J["rows"]): continue
+        r["_dir"] = d; J["rows"].append(r)
+    J["skipped"] += j["skipped"]
+rows = J["rows"]
 def logs(d):
     t = re.sub(r"\x1b\[[0-9;]*m", "", open(f"{d}/train.log").read())
     tl = [float(x) for x in re.findall(r"^epoch \d+/\d+\s+loss=([0-9.na]+)", t, re.M) if x != "nan"] if False else re.findall(r"^epoch \d+/\d+\s+loss=(\S+)", t, re.M)
     vl = re.findall(r"val=(\S+)", t)
     return tl, vl
 INFO = {"O1": ("O1", "d256, lr 5e-2, batch 32"), "O2": ("O2", "d256, lr 1e-1, batch 32"), "O3": ("O3", "d256, lr 3e-2, batch 64"), "O4": ("O4", "d256, lr 3e-2, batch 64, early damping"),
-        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
+        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "O6": ("O6", "d256, lr 5e-2, batch 32, damping from ep 1, cosine from ep 3"), "A2b": ("A2b", "A2 recipe re-run, d512, lr 1e-2, 1000 steps"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
 VAL = {}
-for d in glob.glob(f"{ON}/O*") + [A2]:
+for d in glob.glob(f"{ON}/O*") + [A2] + glob.glob(f"{FU}/O6*") + glob.glob(f"{FU}/A2b*"):
     k = os.path.basename(d).split("_")[0]; tl, vl = logs(d); VAL[k] = {"train": tl, "val": vl}
 jobs, cells = [], {}
 for r in rows:
     f = f"air_epochs/{r['name']}.m4a"
-    src = f"{SW}/clips/{r['name']}" + ("" if r["name"] == "base" else "_matched") + ".wav"
+    src = f"{r['_dir']}/clips/{r['name']}" + ("" if r["name"] == "base" else "_matched") + ".wav"
     jobs.append((src, f"{STAGE}/{f}"))
     cells[r["name"]] = {"f": f, "arm": r["arm"], "ep": r["epoch"], "tag": r["tag"], "air": r["air_share_db"], "clk": r["clicks_per_1e4"], "crest": r["crest"],
                         "cent": r.get("centroid", r.get("spectral_centroid", 0)), "on": r["onset_rate"], "hat": r["hat_rate"], "bpm": r["bpm"]}
 def enc(j):
     if not os.path.exists(j[1]): subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", j[0], "-c:a", "aac", "-b:a", "256k", j[1]], check=True)
 with ThreadPoolExecutor(8) as ex: list(ex.map(enc, jobs))
-MET = json.load(open(f"{SW}/metrics.json")) if os.path.exists(f"{SW}/metrics.json") else {}
+MET = {}
+for d, _ in SRC:
+    if os.path.exists(f"{d}/metrics.json"): MET.update({k: v for k, v in json.load(open(f"{d}/metrics.json")).items() if k not in MET})
 for k, c in cells.items():
     AB = {"ab_production_quality": "ab_PQ", "ab_content_enjoyment": "ab_CE", "ab_content_usefulness": "ab_CU", "ab_production_complexity": "ab_PC"}
     c["m"] = {AB.get(x, x): y for x, y in (MET.get(k) or {}).items() if AB.get(x, x) in ("rms", "crest", "zcr", "centroid", "flatness", "flux") or x in AB}
-DATA = json.dumps({"cells": cells, "val": VAL, "info": INFO, "skipped": J["skipped"]})
+def lab(arm, tag):
+    main = "2" if arm.startswith("O") else "0.5"
+    if tag == "_online": return f"{arm} online (SF average)"
+    if tag.startswith("_ema"): return f"{arm} EMA {tag[4:]} ep"
+    return f"{arm} EMA {main} ep"
+ROWS = []
+for arm in ["O5", "O6", "A2", "A2b", "O4", "O3", "O1", "O2"]:
+    tags = sorted({c["tag"] for c in cells.values() if c["arm"] == arm}, key=lambda t: (t != "", t))
+    ROWS += [{"a": arm, "t": t, "label": lab(arm, t)} for t in tags]
+DATA = json.dumps({"rows": ROWS, "cells": cells, "val": VAL, "info": INFO, "skipped": J["skipped"]})
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Air Head Epochs</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0;max-width:1300px}
 #bar{position:sticky;top:0;background:#16181c;padding:7px 12px;border-bottom:1px solid #2a2a30;z-index:9}
@@ -73,7 +93,7 @@ function startClip(id,f,l,clip){
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 function play(id,f,l,clip){if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}startClip(id,f,l,clip);}
 const sg=(v,d)=>(v>=0?'+':'')+v.toFixed(d);
-const arms=['O5','O4','O3','O1','O2','A2'];
+const arms=['O5','O6','A2','A2b','O4','O3','O1','O2'].filter(a=>D.info[a]);const rows=D.rows;
 let maxE=0;Object.values(D.cells).forEach(c=>{if(c.ep>maxE)maxE=c.ep;});
 const fv=x=>{const v=parseFloat(x);return isNaN(v)?'NaN':v.toFixed(4);};
 let v='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)v+=`<th>${e}</th>`;v+='</tr>';
@@ -86,12 +106,12 @@ let h='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)h+=`<th>ep ${e}</th>`;h+
 const ref=['base','bass_body'];
 h+='<tr><td>references</td>';ref.forEach(r=>{const c=D.cells[r];if(c)h+=`<td class=c id="${r}" onclick="play('${r}','${c.f}','${r}','${r}')">&#9654; ${r==='base'?'original':'bass+body'}<span class=num>clk ${c.clk.toFixed(2)}</span></td>`;});h+='</tr></table>';
 h+='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)h+=`<th>ep ${e}</th>`;h+='</tr>';
-arms.forEach(a=>{h+=`<tr><td>${a}<br><span class=muted>${D.info[a][1]}</span></td>`;
- for(let e=1;e<=maxE;e++){const n=a+'_ep'+String(e).padStart(2,'0');const c=D.cells[n];
+rows.forEach(R=>{const a=R.a;h+=`<tr><td>${R.label}<br><span class=muted>${D.info[a][1]}</span></td>`;
+ for(let e=1;e<=maxE;e++){const n=a+'_ep'+String(e).padStart(2,'0')+R.t;const c=D.cells[n];
   if(!c){h+='<td class=muted>·</td>';continue;}
   const vv=((D.val[a]||{}).val||[])[e-1];
-  if(c.air<-100){h+=`<td class=c id="${n}" onclick="play('${n}','${c.f}','${a} ep ${e}','${n}')">&#9654;<span class="num bad">broken render (silent / non-finite)</span><span class=num>val ${fv(((D.val[a]||{}).val||[])[e-1])}</span></td>`;continue;}
-  h+=`<td class=c id="${n}" onclick="play('${n}','${c.f}','${a} ep ${e}','${n}')">&#9654;<span class=num>air ${sg(c.air,2)}</span><span class=num>clk ${c.clk.toFixed(2)}</span><span class=num>val ${fv(vv)}</span></td>`;}
+  if(c.air<-100){h+=`<td class=c id="${n}" onclick="play('${n}','${c.f}','${R.label} ep ${e}','${n}')">&#9654;<span class="num bad">broken render (silent / non-finite)</span><span class=num>val ${fv(((D.val[a]||{}).val||[])[e-1])}</span></td>`;continue;}
+  h+=`<td class=c id="${n}" onclick="play('${n}','${c.f}','${R.label} ep ${e}','${n}')">&#9654;<span class=num>air ${sg(c.air,2)}</span><span class=num>clk ${c.clk.toFixed(2)}</span><span class=num>val ${fv(vv)}</span></td>`;}
  h+='</tr>';});
 document.getElementById('out').innerHTML=h+'</table>';
 const MN={ab_PQ:['PQ (Audiobox production quality, higher = better)',2],ab_CE:['CE (content enjoyment)',2],ab_CU:['CU (content usefulness)',2],ab_PC:['PC (production complexity)',2],zcr:['zero-crossing rate',3],centroid:['spectral centroid, Hz',0],flux:['spectral flux',3],crest:['crest factor',2],rms:['RMS (linear, level-matched)',4],flatness:['whitening = spectral flatness (1 = white noise)',4]};
@@ -99,9 +119,9 @@ const ms=document.getElementById('msel');Object.keys(MN).forEach(k=>{ms.innerHTM
 function drawMet(){const k=ms.value,dg=MN[k][1];let t='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)t+=`<th>${e}</th>`;t+='</tr>';
  const rf=['base','bass_body'].map(r=>D.cells[r]).filter(Boolean);
  t+='<tr><td>original / bass+body</td><td colspan=4>'+['base','bass_body'].map(r=>{const c=D.cells[r];return c&&c.m&&c.m[k]!==undefined?r+' '+c.m[k].toFixed(dg):r+' ·';}).join(' &nbsp;|&nbsp; ')+'</td></tr>';
- arms.forEach(a=>{const vals=[];for(let e=1;e<=maxE;e++){const c=D.cells[a+'_ep'+String(e).padStart(2,'0')];vals.push(c&&c.air>-100&&c.m&&c.m[k]!==undefined?c.m[k]:null);}
+ rows.forEach(R=>{const a=R.a;const vals=[];for(let e=1;e<=maxE;e++){const c=D.cells[a+'_ep'+String(e).padStart(2,'0')+R.t];vals.push(c&&c.air>-100&&c.m&&c.m[k]!==undefined?c.m[k]:null);}
   const ok=vals.filter(x=>x!==null);const mx=Math.max(...ok),mn=Math.min(...ok);
-  t+=`<tr><td>${a}</td>`;vals.forEach(x=>{t+=x===null?'<td class=muted>·</td>':`<td class="${(k==='ab_PQ'&&x===mx)?'best':''}">${x.toFixed(dg)}</td>`;});t+='</tr>';});
+  t+=`<tr><td>${R.label}</td>`;vals.forEach(x=>{t+=x===null?'<td class=muted>·</td>':`<td class="${(k==='ab_PQ'&&x===mx)?'best':''}">${x.toFixed(dg)}</td>`;});t+='</tr>';});
  document.getElementById('met').innerHTML=t+'</table><div class=muted>Green = highest PQ of that run. Broken (silent / non-finite) renders are left blank.</div>';}
 ms.onchange=drawMet;ms.value='ab_PQ';drawMet();
 

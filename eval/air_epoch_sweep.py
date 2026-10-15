@@ -16,9 +16,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
 
+import argparse
+ap = argparse.ArgumentParser()
+ap.add_argument("--dirs", nargs="*", default=None, help="run dirs holding latch_sa3_rms_energy_air_ep*.pt (default: the overnight O1-O5 + bracket A2)")
+ap.add_argument("--out", default=None)
+ARGS = ap.parse_args()
 ON = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight"
 A2 = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
-OUT = f"{ON}/epoch_sweep"
+OUT = ARGS.out or f"{ON}/epoch_sweep"
+DIRS = ARGS.dirs if ARGS.dirs else sorted(glob.glob(f"{ON}/O*")) + [A2]
 os.makedirs(f"{OUT}/clips", exist_ok=True)
 SEED, GAIN, VALUE = 764, 24000.0, -10.0
 pre = P.load_presets()
@@ -51,11 +57,12 @@ def air_share(x, sr):
 
 
 jobs, skipped = [], []
-for d in sorted(glob.glob(f"{ON}/O*")) + [A2]:
-    arm = os.path.basename(d).split("_")[0]
+for d in DIRS:
+    arm = os.path.basename(d).split("_")[0]  # O1..O5, A2, O6, A2b
     for p in sorted(glob.glob(f"{d}/latch_sa3_rms_energy_air_ep*.pt"), key=lambda q: (int(re.search(r"_ep(\d+)", q).group(1)), q)):
-        ep = int(re.search(r"_ep(\d+)", p).group(1)); tag = re.search(r"_ep\d+(_ema\d+)?\.pt", p).group(1) or ""
+        ep = int(re.search(r"_ep(\d+)", p).group(1)); tag = re.search(r"_ep\d+(_ema[\d.]+?|_online)?\.pt", p).group(1) or ""
         if arm == "A2" and ep > 7: continue
+        if arm == "A2b" and ep > 7: continue
         (jobs if finite(p) else skipped).append((arm, ep, tag, p)) if True else None
 print(f"{len(jobs)} finite checkpoints, {len(skipped)} non-finite skipped", flush=True)
 base = render("base"); bm = render("bass_body")
