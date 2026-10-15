@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*297 entries from 5 journals.*
+*306 entries from 5 journals.*
 
 ---
 
@@ -80,12 +80,14 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - [RULED OUT] **ES v2 — dimension eats global norms.** — CONTINUITY, 2026-07-02
 
 ## LatCH · probing · layer-feature mapping
+- **the same_chroma LatCH head steers pitch class transparently; most audible at gain 2048.** → `riffer-evals/clips/chroma_steer/`, `latch/run_chroma_retrain.sh` — WINTERMUTE, 2026-10-16
 - [RULED OUT] **Phase E onset LatCH heads barely steer; the gate passed them because nothing changed.** → `latch_onset_compare.html`, `Misc/build_latch_onset_grid_page.py`, `latch_onset_grid.html` — WINTERMUTE, 2026-10-15
 - [plan] **early-budget bracket queued on the GPU lock.** → `eval/latch_early_budget_bracket.py`, `eval/run_latch_early_budget.sh`, `Misc/build_latch_early_budget_page.py` — WINTERMUTE, 2026-10-15
 - **early budget: flat weighting helps the onset head ~1.45x, early-only windows collapse.** → `latch_early_budget.html` — WINTERMUTE, 2026-10-15
 - [RULED OUT] **per-step guidance rescale does not stop the LatCH loudness push.** → `eval/latch_guide_rescale_test.py` — WINTERMUTE, 2026-10-15
 - **trajectory anchor removes the LatCH loudness push, but not the content damage of early guidance.** → `latch_guide_anchor.html` — WINTERMUTE, 2026-10-15
 - **onset head request x gain matrix: EMA = online, monotonic 5.5-9.3 onsets/s, gate-clean through gain 1560.** → `latch_onset_matrix_ema.html` — WINTERMUTE, 2026-10-15
+- **LatCH + FiLM beats FiLM alone (E7); gating FiLM by sigma keeps density but not less leak (E8); no LatCH range above 4096 (E7a).** → `latch_film_combo.html`, `run_meta.json` — WINTERMUTE, 2026-10-15
 - **head side-effect meters, the punch battery, Phase E clips, the rating tool (GHOST-NOTE).** — GHOST-NOTE, 2026-10-14
 - **the LatCH "noise floor" was a seed-only number; worker count moved the plain recipe by 0.004.** — CONTINUITY, 2026-10-07
 - **what the last week of work added (09-28 → 10-07).** → `latch/extract_density_targets.py` — CONTINUITY, 2026-10-07
@@ -251,6 +253,13 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **gfx1201 ROCm nightlies are the clean path.** — GHOST-NOTE, 2026-07-02
 
 ## Uncategorized · recent
+- [RULED OUT] **control trainer: Schedule-Free + --ema checkpoints held the SF average, not the EMA.** → `control/sa3_control/train.py` — WINTERMUTE, 2026-10-16
+- **E12 FiLM bracket under the modular optimizer: all three lrs stable, loss identical.** → `eval/film_bracket_density_check.py`, `eval/run_film_e12_night.sh` — WINTERMUTE, 2026-10-16
+- **AVP drone sweep: force_scalar runs the latent level to ~3 at every cfg; the EMA renders are ~60% base weights.** → `renders_pull/dronesweep/run_meta.json`, `eval/dronesweep_weights_test.py` — WINTERMUTE, 2026-10-16
+- [RULED OUT] **scaling a run-away latent back to a healthy level removes the distortion, not the drone.** → `dronesweep_rescale.html` — WINTERMUTE, 2026-10-16
+- **retrained air head A2 follows the dB target both ways; the anchor removes the seed-764 + FiLM saturation (by ear).** → `punch_air_film.html` — WINTERMUTE, 2026-10-15
+- [tool] **disintegration gate: optional latent-level leg (final std ratio > 1.3).** → `eval/control_head_disintegration_eval.py`, `docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md` — WINTERMUTE, 2026-10-15
+- **the punch DoRA shifts every seed the same way; seed 764 gets one of the largest shifts.** — WINTERMUTE, 2026-10-15
 - **vintage 1990s Goa sequencer timing: swing and 10-20 ms jitter are in the data.** → `measure_ikis.py`, `measure_goa_vintage.py` — ANTIGRAVITY, 2026-10-08
 - **DJ mix v7 phase 0 (GHOST-NOTE).** — GHOST-NOTE, 2026-10-07
 - **LoRA-TSD port finished; step-governor proposal reviewed; flight recorder built.** → `lora_tsd/NOTES.md`, `docs/PROPOSAL_ADAPTIVE_P95_STEP_GOVERNOR.md`, `stable_audio_3/training/flight_recorder.py`, `eval/inspect_flight_incident.py` — CONTINUITY, 2026-09-25

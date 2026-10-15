@@ -1007,3 +1007,60 @@ target reads them as HF-deficient and would push generations brighter).
 - E04 recipe retrained with EMA (half-life 0.5 ep; best ep 19, val 0.1961 = original). EMA and online (SF-averaged) weights
   are indistinguishable at this half-life. Alpha 0-1, requests 0-12/s x gains 32-4096: corr 0.86-0.95 at every gain; range
   saturates ~5.5 to ~9.3 from gain 256 (unguided 6.3/7.3); first gate fails at 2048. Page `latch_onset_matrix_ema.html`.
+
+### finding · LatCH + FiLM beats FiLM alone (E7); gating FiLM by sigma keeps density but not less leak (E8); no LatCH range above 4096 (E7a)
+- E7: in all three contexts (base, punch, house) LatCH + FiLM gives more onset spread per unit of CLAP drift than FiLM alone (punch: FiLM
+  1.75 alone 4.4/s @ drift 0.28 vs FiLM 1.0 + LatCH 512 5.5/s @ 0.15). Kill not met. E8: confining FiLM to early sigmas keeps the density but
+  not less drift (house 0.26 vs 0.22): the style pull enters early, with the density. E7a: LatCH alone above gain 4096 adds no range, only
+  damage (kill met). Page `latch_film_combo.html`; numbers in each run's `run_meta.json`. EXPERIMENTS E7/E8.
+
+### finding · retrained air head A2 follows the dB target both ways; the anchor removes the seed-764 + FiLM saturation (by ear)
+- `punch_air_film.html`: A2 is monotonic in gain, the target sets the direction (-40 dB darkens -6.1 dB air, -10 dB brightens +5.7 dB at
+  32k); the old head is biased dark (its neutral target already darkens 1-3 dB). Listening: A2 sounds good even at 32k; A2 + FiLM saturates
+  on seed 764 only (3050 fine); target sets the style, gain the brightness.
+- Final latent std is the cheap "blown cap" meter: seed 764 DoRA 0.98, + FiLM 1.56, + A2 -10 dB at 32k 2.01; the heard saturation tracks it
+  (threshold ~1.3x the seed's unguided level). Anchor 1.2 caps it and, by ear, removes the saturation practically completely; the sound
+  itself (a diffuse wall of sound at high target and gain) stays. Anchor sweep 0.8-1.2: the cap binds exactly (final std = s0 in all 90
+  cells), onsets flat (8.6-8.8), air -1.26 -> -0.64 dB and centroid 3514 -> 3563 Hz as s0 rises: lower anchors darken a little. No
+  listening verdict on the sweep yet.
+
+### tool · disintegration gate: optional latent-level leg (final std ratio > 1.3)
+- `eval/control_head_disintegration_eval.py` fails a clip whose final latent std exceeds 1.3x its baseline's when both carry `z_std`.
+  Added because the hf-blowout leg false-positives on air heads (brightening is their job) and none of the audio legs saw the saturation.
+  Spec addendum in `docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md`.
+
+### finding · the punch DoRA shifts every seed the same way; seed 764 gets one of the largest shifts
+- `punch_nodora_seeds_20261015`: the DoRA (k5 ep19 @ 0.45) lowers latent level (std 1.13 -> 0.96), smooths it in time, spreads energy over
+  more dimensions (eff rank 51 -> 63), same direction on every seed (shift cosine to the mean 0.81). Seed 764 is ordinary without the DoRA
+  but ranks 4/64 in smoothing shift; 3050 ranks 61. The "grainy mode" prediction (grainy 3062/3058/3005/3049/3009 vs clean
+  3022/3010/3046/3023/3032) waits for a listening pass.
+
+## 2026-10-16
+
+### negative · control trainer: Schedule-Free + --ema checkpoints held the SF average, not the EMA
+- `control/sa3_control/train.py` did `ema.copy_to()` then SF `opt.eval()`, which overwrote the EMA. Fixed (EMA xor SF eval, symmetric
+  restore, periodic + final save); `state_online` now saved too. Every SF + EMA control checkpoint before today is an SF-average checkpoint.
+
+### finding · E12 FiLM bracket under the modular optimizer: all three lrs stable, loss identical
+- 3e-4 / 1e-3 / 3e-3 x 6000 steps all train without divergence and with the same loss curve, so loss cannot pick; a render-based density
+  check (`eval/film_bracket_density_check.py`) picks the lr and the 54k run follows (night chain `eval/run_film_e12_night.sh`).
+
+### finding · AVP drone sweep: force_scalar runs the latent level to ~3 at every cfg; the EMA renders are ~60% base weights
+- Final latent std (healthy medium-base ~1.0-1.15): force_scalar ~3.0 at cfg 1/7/16 (model-level runaway, the 2026-08-10 family);
+  plain 0.57-0.92 and bf16_plain 0.59-0.93 (under level); adamw_fair s1 1.38 (2.9 at cfg 16); adamw_fair s2 all 54 latents NaN (DC files).
+- All LUMI clips are EMA renders at beta 0.9999 over 4784-5980 steps: half-life ~6900 steps, so the shadow still holds 55% (ep9) to 62%
+  (ep7) of its starting weights. They are mostly base model plus a trajectory average that includes earlier epochs.
+- Listening: plain runs clean but "oddly disjointed, like the LR was too large"; s1 thinner and more artifacty than s2; bf16 s2 cleaner
+  and more musical than fp32 (ep9 vs ep7 does not fully explain it), at cfg 1 fp32 breaks apart rhythmically and bf16 holds the rhythm;
+  AdamW = spectral noise. Provenance `renders_pull/dronesweep/run_meta.json`. Online vs EMA, base blends and the anchor:
+  `eval/dronesweep_weights_test.py` (queued).
+
+### negative · scaling a run-away latent back to a healthy level removes the distortion, not the drone
+- `dronesweep_rescale.html`: force_scalar latents (std ~3) decoded again at std 1.1 and at /3, no re-render. By ear: "what was distorted
+  droning is now smooth droning". It works exceptionally well for removing distortion, but the damage is in the activations and cannot be
+  fixed after the fact. Post-hoc latent scaling (or the anchor) cures level and saturation, not content.
+
+### finding · the same_chroma LatCH head steers pitch class transparently; most audible at gain 2048
+- Listening pass on the 06-25 all-C sweep (`riffer-evals/clips/chroma_steer/`, sidecar written today): "the chroma head does steer, and
+  even in a quite transparent way, pad chords beautifully change their notes", strongest at 2048, so higher gain may pay. Retrain under
+  the modular recipe queued as EXPERIMENTS E13 (`latch/run_chroma_retrain.sh`); the sweep will extend gains to 3072/4096/6144.
