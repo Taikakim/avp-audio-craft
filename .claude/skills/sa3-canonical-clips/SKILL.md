@@ -240,3 +240,6 @@ Used by optimizer/LR campaigns for a fast listen without touching the board. Wri
 - Anything public must go through `build_evals.redact()` — and reuse `PLAYER_JS` **by path**
   (`Misc/build_evals.py:21` prepends `Misc/` to `sys.path`, where a first-party `filelock.py`
   shadows the pip package importers need).
+
+## Review-audio encode rate (2026-10-07)
+Encode audition/review audio at **256 kbps AAC** (standing ask), and print the MEASURED bitrate (`ffprobe -show_entries format=bit_rate`) on any page, not a nominal one. See RUNBOOK section 14.
