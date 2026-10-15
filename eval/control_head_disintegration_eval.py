@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-15 -- optional latent-level leg (z_std ratio > 1.3 vs the baseline) when both dicts carry z_std
 """control_head_disintegration_eval.py — the MANDATORY disintegration gate for ANY control-head
 evaluation (Kim directive 2026-07-20). See docs/superpowers/specs/2026-07-20-control-head-
 disintegration-gate.md.
@@ -45,6 +46,7 @@ THR = {
     "onset_collapse": 0.4, "bpm_break": 20.0,        # beat-loss (rhythmic only)
     "ce_drift": 1.5,                                 # |ΔCE| quality collapse   (NEW — Kim's ask)
     "centroid_ratio_hi": 1.5, "centroid_ratio_lo": 0.6,  # corroborating spectral shift
+    "z_std_ratio": 1.3,      # latent-level runaway ('old radio / blown cap' saturation; W 2026-10-15)
 }
 NAME = re.compile(r"([a-z0-9_]+)__(base|g\d+)__(p\d+)\.\w+$")
 RHYTHMIC = {"p0"}
@@ -92,6 +94,15 @@ def gate(clip, base, rhythmic, thr=THR):
     ce, ceb = clip.get("ce"), base.get("ce")
     if ce is not None and ceb is not None and abs(ce - ceb) > thr["ce_drift"]:
         r.append(f"ce-drift({ceb:.2f}->{ce:.2f}, Δ{ce-ceb:+.2f})")
+    # Latent level (W 2026-10-15, optional: only when BOTH dicts carry the final latent's std as "z_std"). The audio
+    # meters above miss saturation heard as 'old radio / blown cap' distortion: on the punch combo + FiLM it was the
+    # final latent std running to 1.47-2.0 against ~1.0-1.15 unguided, and the trajectory anchor (s0 1.2) removed both
+    # the excess level and the heard distortion (listening, punch_air_film.html). Conversely hf_ratio flagged the air
+    # head's requested brightening as buzz; this leg judges level, not spectrum.
+    zs, zsb = clip.get("z_std"), base.get("z_std")
+    if zs is not None and zsb:
+        if zs / zsb > thr["z_std_ratio"]:
+            r.append(f"latent-level({zsb:.2f}->{zs:.2f}, x{zs / zsb:.2f})")
     # corroborating (non-fatal)
     cr = ratio("centroid")
     if cr and (cr > thr["centroid_ratio_hi"] or cr < thr["centroid_ratio_lo"]):

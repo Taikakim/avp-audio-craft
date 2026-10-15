@@ -108,7 +108,38 @@ if os.path.exists(f"{ANC_SRC}/cells.jsonl"):
     anchor = {"grid": agrid, "ref_anc": pick(aref) if aref else None,
               "ref_off": pick(orig["s764__punch_film"]) if "s764__punch_film" in orig else None}
     print(f"anchor section: {len(arows)} clips, {sum(c['fail'] for c in arows)} gate fails")
-DATA = json.dumps({"gains": gains, "tables": tables, "refs": refs, "pq": PQ_DRIFT, "anchor": anchor})
+# Anchor-value sweep (eval/punch_air_film_anchor_sweep.py): low air gains x -20/-10 dB with FiLM, anchor s0 1.2..0.8, both
+# seeds. Every clip carries z_std (the final latent's level); the gate gets it too (latent-level leg) vs the same seed's
+# combo + FiLM at the same anchor.
+SW_SRC = SRC.replace("punch_air_film_matrix_20261015", "punch_air_film_anchor_sweep_20261015")
+sweep = None
+if os.path.exists(f"{SW_SRC}/cells.jsonl"):
+    srows = [json.loads(l) for l in open(f"{SW_SRC}/cells.jsonl") if l.strip()]
+    smet = {os.path.basename(r[0])[:-4]: dict(zip(cols, r)) for r in con.execute("SELECT * FROM metrics WHERE path LIKE ?", ("%/punch_air_film_anchor_sweep/%",))}
+    sref = {(c["seed"], c["anchor"]): c for c in srows if c["head"] is None}
+    for c in srows:
+        c["f"] = f"punch_air_film_anchor_sweep/{c['id']}.m4a"
+        c["fail"], c["why"] = False, []
+        r = sref.get((c["seed"], c["anchor"]))
+        m, b = smet.get(c["id"]), smet.get(r["id"]) if r else None
+        if c["head"] and m and b:
+            bad, why, _ = gate({**m, "ce": None, "z_std": c.get("z_std")}, {**b, "ce": None, "z_std": r.get("z_std")}, rhythmic=True)
+            if m.get("pq") is not None and b.get("pq") is not None and abs(m["pq"] - b["pq"]) > PQ_DRIFT:
+                why.append(f"pq-drift({b['pq']:.2f}->{m['pq']:.2f})")
+                bad = True
+            c["fail"], c["why"] = bad, why
+    sk = lambda c: {k: c.get(k) for k in ("id", "f", "z_std", "air_db", "centroid_hz", "fail", "why", "gain", "target")}
+    sgains = sorted({c["gain"] for c in srows if c["head"]})
+    stargets = sorted({c["target"] for c in srows if c["head"]})
+    sweep = {"gains": sgains, "targets": stargets, "anchors": sorted({c["anchor"] for c in srows}, reverse=True),
+             "seeds": sorted({c["seed"] for c in srows}),
+             "rows": {f"{s}|{a:g}": {"ref": sk(sref[(s, a)]) if (s, a) in sref else None,
+                                      "cells": [sk(next(c for c in srows if c["seed"] == s and c["anchor"] == a and c["head"]
+                                                         and c["gain"] == g and c["target"] == t))
+                                                for t in stargets for g in sgains]}
+                      for s in {c["seed"] for c in srows} for a in {c["anchor"] for c in srows}}}
+    print(f"anchor sweep: {len(srows)} clips, {sum(c['fail'] for c in srows)} gate fails")
+DATA = json.dumps({"gains": gains, "tables": tables, "refs": refs, "pq": PQ_DRIFT, "anchor": anchor, "sweep": sweep})
 
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Punch + Air + FiLM</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0}
@@ -161,6 +192,17 @@ if(D.anchor){const A=D.anchor;
  h+='<table><tr><th>target ↓ · gain →</th>'+D.gains.map(g=>`<th>${g/1000}k</th>`).join('')+'</tr>';
  A.grid.forEach(r=>{h+=`<tr><td>${r.target} dB</td>`+r.cells.map(x=>`<td>${ab(x.off,'off')}<br>${ab(x.anc,'anc')}</td>`).join('')+'</tr>';});
  h+='</table>';}
+if(D.sweep){const S=D.sweep;
+ h+='<h2>Anchor value sweep: low air gains + FiLM, anchor 1.2 → 0.8</h2><div class=muted style="max-width:1000px">The combo + FiLM with the A2 air head at gains '+
+  S.gains.join(' / ')+' and targets '+S.targets.join(' / ')+' dB, at five anchor values. The anchor caps the final latent\'s level (z; an unguided render sits '+
+  'around 1.0-1.15), so below ~1.0 it pulls every render quieter/flatter, not only the saturating ones. Buttons: gain · air dB · z. Red = failed the gate '+
+  '(including the latent-level leg) against the same seed\'s combo + FiLM at the same anchor.</div>';
+ const sb=(c,l)=>c?btn(c,`${l} ${c.air_db.toFixed(1)} dB · z ${c.z_std!=null?c.z_std.toFixed(2):'–'}`):'–';
+ S.seeds.forEach(s=>{h+=`<h3 style="font-size:13px;color:#abc">seed ${s}</h3><table><tr><th>anchor</th><th>combo + FiLM</th>`+
+   S.targets.map(t=>`<th colspan=${S.gains.length}>air target ${t} dB</th>`).join('')+'</tr>';
+  S.anchors.forEach(a=>{const R=S.rows[`${s}|${a}`]; if(!R) return;
+   h+=`<tr><td>${a}</td><td>${sb(R.ref,'ref')}</td>`+R.cells.map(c=>`<td>${sb(c,c.gain)}</td>`).join('')+'</tr>';});
+  h+='</table>';});}
 document.getElementById('out').innerHTML=h;
 </script>
 __NOTES__

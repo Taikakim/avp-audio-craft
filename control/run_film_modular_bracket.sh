@@ -29,7 +29,10 @@ done
 echo "$(date +%H:%M) GPU acquired"
 trap '"$SAO/Misc/gpu_guard.sh" release WINTERMUTE >/dev/null 2>&1' EXIT
 
-COMMON=(--encoded-dirs /home/kim/Projects/latents_sa3 --model medium-base --precision bf16
+# latents_sa3 moved from /home/kim/Projects to Kosmos/latents on 2026-10-15 (~20:55); prefer that, fall back to the old place.
+LAT=$(for p in /run/media/kim/Kosmos/latents/latents_sa3 /home/kim/Projects/latents_sa3; do [ -d "$p" ] && { echo "$p"; break; }; done)
+[ -n "$LAT" ] || { echo "latents_sa3 not found"; exit 2; }
+COMMON=(--encoded-dirs "$LAT" --model medium-base --precision bf16
         --crop-frames 512 --random-crop --batch 1 --optimizer modular --mod-whitening shampoo --ema 0.999
         --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal
         --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256
@@ -52,7 +55,7 @@ for LR in 3e-4 1e-3 3e-3; do
  "status": "running", "started": "$(date -Is)",
  "recipe": {"optimizer": "modular", "mod_whitening": "shampoo", "lr": "$LR", "steps": 6000, "save_every": 2000, "ema": 0.999,
             "rest": "identical to the shipped FiLM onset_Fusion_lr1e-4_randomcrop args (batch 1, crop 512, random crop, cfg dropout 0.1, warmup 300, seed 42, logit_normal t, scalar onset_density, control_dim 768, n_tokens 256, bf16)"},
- "dataset": {"encoded_dir": "/home/kim/Projects/latents_sa3", "what": "goa corpus SA3 latents (5400 T=4096 crops + TIMESERIES companions), no augmentation"},
+ "dataset": {"encoded_dir": "$LAT", "what": "goa corpus SA3 latents (5400 T=4096 crops + TIMESERIES companions), no augmentation"},
  "reference": "$MANTU/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt (FusionOpt lr 1e-4, 54k steps)",
  "weights": "riffer_step*.pt / riffer_final.pt: 'state' = EMA, 'state_online' = online (SF-averaged), 'model_train' = raw training iterate",
  "related": ["control/run_film_modular_bracket.sh", "docs/TRAINING.md", "EXPERIMENTS E7/E8"],

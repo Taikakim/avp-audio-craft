@@ -99,3 +99,17 @@ beat steadiness may be drawn from this gate.**
 
 Registered as **EXPERIMENTS.md G1** (design sketch, dynamic-range kill-criterion, and the labelled
 good-breakbeat / known-corrupt sets it must separate before any number from it is trusted).
+
+## Addendum (WINTERMUTE, 2026-10-15): the latent-level leg, and an hf-blowout false positive
+
+- **New optional leg `latent-level`:** when both the clip and its baseline carry the final latent's std (`z_std`, read
+  from the render's `.z0.npy` as float64), the clip fails if `z_std / z_std_base > 1.3` (`THR["z_std_ratio"]`). Why:
+  the audio meters missed saturation heard as "old radio / blown cap" distortion. On the punch combo + FiLM (seed 764)
+  the final latent std ran to 1.47-2.0 against ~1.0-1.15 unguided; the trajectory anchor (`guide_anchor` 1.2) brought it
+  to 1.2 and the heard distortion went with it ("removes that practically completely", listening on punch_air_film.html).
+  Callers that do not pass `z_std` are unchanged. Drivers that record it: `eval/punch_air_film_matrix.py` (and the
+  scripts built on it). Threshold 1.3 is a first calibration from one seed's verdict; recalibrate when more are labelled.
+- **hf-blowout false positive for air-band heads:** on the same page the gate flagged the A2 air head at -10 dB /
+  16-32k as hf-blowout, but the clips were heard as fine ("the retrained A2 sounds actually quite good even on the 32k
+  clips"). For a head whose job is to raise the highs, hf_ratio growth is the requested effect; read that leg with the
+  head's target in mind, and prefer the latent-level leg for saturation.

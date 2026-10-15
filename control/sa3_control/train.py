@@ -1,4 +1,5 @@
 # Last edited: WINTERMUTE 2026-10-15 -- state_online (online/SF-averaged weights) saved beside the EMA state, periodic + final (TRAINING.md D6)
+# Last edited: WINTERMUTE 2026-10-16 -- EMA no longer overwritten by the SF opt.eval() at save time ("state" = EMA when --ema > 0)
 """Train the audio-reference (riffer) control adapter on pre-encoded SA3 latents.
 
 Loads medium-base (fp32, model_half=False), installs decoupled cross-attn adapters
@@ -1125,9 +1126,12 @@ def main():
                     _online = adapter_state_dict(wrappers, cond_enc)
                     if _sf:
                         opt.train()
+                # EMA and SF are exclusive for the "state" save (W 2026-10-16): opt.eval() rebuilds the SF averaged
+                # iterate from the optimizer's own state and OVERWROTE the EMA that copy_to() had just written, so every
+                # SF + --ema run before this saved the SF average as "state". The SF average is in "state_online".
                 if ema is not None:
                     ema.copy_to()                            # EMA: swap in averaged weights for the save
-                if _sf:
+                elif _sf:
                     opt.eval()                               # SF: save the averaged iterate
                 torch.save({"state": adapter_state_dict(wrappers, cond_enc), "args": vars(args),
                             "control_mode": args.control_mode, "scalar_field": getattr(args, "scalar_field", None),
@@ -1143,7 +1147,7 @@ def main():
                             **_resume_state}, p)
                 if ema is not None:
                     ema.restore()
-                if _sf:
+                elif _sf:
                     opt.train()
                 print(f"[save] {p}", flush=True)
                 if args.save_cooldown and not args.smoke:
@@ -1240,9 +1244,9 @@ def main():
             _online = adapter_state_dict(wrappers, cond_enc)
             if _sf:
                 opt.train()
-        if ema is not None:
+        if ema is not None:                                  # exclusive, see the periodic save (W 2026-10-16)
             ema.copy_to()                                    # EMA: final save = averaged weights
-        if _sf:
+        elif _sf:
             opt.eval()                                       # SF: final save = averaged iterate
         torch.save({"state": adapter_state_dict(wrappers, cond_enc), "args": vars(args),
                             "control_mode": args.control_mode, "scalar_field": getattr(args, "scalar_field", None),

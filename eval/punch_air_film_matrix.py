@@ -112,6 +112,9 @@ def render(a):
         y, sr = librosa.load(dst, sr=None, mono=True)
         S = np.abs(librosa.stft(y, n_fft=2048)) ** 2
         f = librosa.fft_frequencies(sr=sr, n_fft=2048)
+        if res.get("latents") and os.path.exists(res["latents"][0]):
+            # final latent std: the 'blown cap' meter (2026-10-15: tracks heard saturation; fp16 on disk -> float64)
+            c["z_std"] = round(float(np.load(res["latents"][0]).astype(np.float64).std()), 4)
         c.update(onsets=round(len(librosa.onset.onset_detect(y=y, sr=sr, units="time")) / (len(y) / sr), 3),
                  air_db=round(float(10 * np.log10(S[f >= 2500].sum(0).mean() / 2048 + 1e-12)), 2),
                  centroid_hz=round(float(librosa.feature.spectral_centroid(S=np.sqrt(S), sr=sr).mean()), 1),
