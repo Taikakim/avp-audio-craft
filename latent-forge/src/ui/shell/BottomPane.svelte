@@ -4,7 +4,9 @@
   //   233 − 162 (tab body) − 44 (preview container)               = 27 (tab row)
   //
   // The tab bodies for CHROMA, PROMPT + SIGMA and MIX + SIGNAL PATH are empty here
-  // and are built by M6, M4 and M7 respectively. TERMINAL is live in M1.
+  // and are built by M6, M4 and M7 respectively. TERMINAL is live in M1. ADAPTER MIX: adapter mixer
+  // phase 1 (KUANG 2026-10-15, docs/superpowers/plans/2026-10-15-adapter-mixer-phase1.md).
+  import AdapterMixTab from "../blend/AdapterMixTab.svelte";
   import { logStore } from "../../lib/stores/log.svelte";
   import ChromaTab from "../chroma/ChromaTab.svelte";
   import MixSignalPath from "../mix/MixSignalPath.svelte";
@@ -59,6 +61,8 @@
       <PromptSigmaTab />
     {:else if tab === "mix"}
       <MixSignalPath />
+    {:else if tab === "adapter-mix"}
+      <AdapterMixTab />
     {:else}
       <Terminal
         mode={terminalMode}

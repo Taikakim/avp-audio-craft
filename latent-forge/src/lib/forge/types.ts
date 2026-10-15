@@ -1,6 +1,7 @@
 // TS mirror of the frozen HTTP contract, spec §6.1, field for field.
 // eval/forge/contract.py is the Python side of the same shapes; if one changes,
 // both change in the same commit.
+// Last edited: KUANG 2026-10-15 — LaneChain.lora.blend (adapter mixer phase 1; Python side: eval/forge/render_settings.py)
 
 export type AudioRef =
   | { kind: "upload"; sha256: string }
@@ -74,11 +75,21 @@ export interface LatchBlock {
   hparams: { rho: number; mu: number; gamma: number; n_iter: number; log_norms: boolean };
 }
 
+/** Adapter mixer phase 1: how the lane's LoRA/DoRA acts per DiT block (spec 2026-10-15-adapter-mixer-design §3). */
+export type BlendMode = "amount" | "direction";
+export interface LoraBlend {
+  /** ADVANCED FX on: the curve replaces SCALE. */
+  on: boolean;
+  mode: BlendMode;
+  /** 24 values, -0.5..1.5, index = DiT block. */
+  curve: number[];
+}
+
 export interface LaneChain extends LatchBlock {
   film_on: boolean;
   film: { ckpt: string | null; gain: number; value: number };
   lora_on: boolean;
-  lora: { ckpt_path: string | null; slot: number | null; strength: number };
+  lora: { ckpt_path: string | null; slot: number | null; strength: number; blend?: LoraBlend | null };
   bungee_on: boolean;
   semitones: number;
 }

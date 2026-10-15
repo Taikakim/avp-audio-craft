@@ -1,4 +1,5 @@
 """RenderSettings / LaneChain (spec §6.1) -> request dicts for the server's resolvers (§5.5)."""
+# Last edited: KUANG 2026-10-15 — chain.lora block_strengths / blend (adapter mixer phase 1, plan Task 1)
 import json
 import math
 
@@ -19,7 +20,8 @@ RAMP_POINTS = 257
 CHAIN_DEFAULTS = {"latch_on": False, "slots": [dict(SLOT_DEFAULT), dict(SLOT_DEFAULT)],
                   "hparams": {"rho": 1.0, "mu": 1.0, "gamma": 0.3, "n_iter": 4, "log_norms": False},
                   "film_on": False, "film": {"ckpt": None, "gain": 1.75, "value": 4.0},
-                  "lora_on": False, "lora": {"ckpt_path": None, "slot": None, "strength": 1.0},
+                  "lora_on": False, "lora": {"ckpt_path": None, "slot": None, "strength": 1.0,
+                                             "block_strengths": None, "blend": None},
                   "bungee_on": False, "semitones": 0.0}
 _SAMPLERS = sorted({s for v in RF_SAMPLERS.values() for s in v})
 
@@ -81,6 +83,21 @@ def to_request(render, seed) -> dict:
     return {**{k: render[k] for k in keys}, "seed": int(seed)}
 
 
+N_BLOCKS = 24
+BLOCK_MULT_RANGE = (-0.5, 1.5)
+LORA_BLENDS = (None, "interp")
+
+
+def _block_strengths(v):
+    """Per-DiT-block strength multipliers (adapter mixer phase 1, 2026-10-15): None or 24 finite numbers."""
+    if v is None:
+        return None
+    if not isinstance(v, list) or len(v) != N_BLOCKS:
+        raise ForgeError(400, f"lora.block_strengths must be a list of {N_BLOCKS} numbers")
+    lo, hi = BLOCK_MULT_RANGE
+    return [_num(x, lo, hi, f"lora.block_strengths[{i}]") for i, x in enumerate(v)]
+
+
 def parse_chain(obj):
     if obj is None:
         return None
@@ -113,9 +130,13 @@ def parse_chain(obj):
     c["film"] = {"ckpt": film["ckpt"] or None, "gain": _num(film["gain"], 0, 2, "film.gain"),
                  "value": _num(film["value"], 0, 16, "film.value")}
     lora = _merge(CHAIN_DEFAULTS["lora"], c["lora"], "chain.lora")
+    if lora["blend"] not in LORA_BLENDS:
+        raise ForgeError(400, f"lora.blend {lora['blend']!r} not in {LORA_BLENDS}")
     c["lora"] = {"ckpt_path": lora["ckpt_path"] or None,
                  "slot": None if lora["slot"] is None else _num(lora["slot"], 0, 63, "lora.slot", integer=True),
-                 "strength": _num(lora["strength"], 0, 1, "lora.strength")}
+                 "strength": _num(lora["strength"], 0, 1, "lora.strength"),
+                 "block_strengths": _block_strengths(lora["block_strengths"]),
+                 "blend": lora["blend"]}
     c["semitones"] = _num(c["semitones"], -24, 24, "chain.semitones")
     return c
 
@@ -152,7 +173,15 @@ def chain_to_request(chain, heads) -> dict:
         out["film"] = dict(chain["film"])
     if chain["lora_on"]:
         lora = chain["lora"]
-        if lora["slot"] is not None:
+        if lora.get("block_strengths") is not None:
+            # The block profile is applied only to an adapter loaded by path (prepare_model), never a resident slot.
+            if not lora["ckpt_path"]:
+                raise ForgeError(400, "per-block LoRA blending needs the adapter's checkpoint path, not a resident slot")
+            out["dora"] = {"ckpt_path": lora["ckpt_path"], "strength": lora["strength"],
+                           "block_strengths": list(lora["block_strengths"])}
+            if lora.get("blend") is not None:
+                out["dora"]["blend"] = lora["blend"]
+        elif lora["slot"] is not None:
             out["dora"] = {"slot": lora["slot"], "strength": lora["strength"]}
         elif lora["ckpt_path"]:
             out["dora"] = {"ckpt_path": lora["ckpt_path"], "strength": lora["strength"]}

@@ -40,4 +40,15 @@ describe("module presets (spec 9.3: module level = that module's settings object
     expect(chain.latch_on).toBe(false);         // not bungee's field: untouched
     expect(chain.film_on).toBe(false);
   });
+
+  it("a lora module preset carries the blend curve and restores it (adapter mixer phase 1)", () => {
+    const chain = clone(CHAIN_DEFAULTS);
+    chain.lora = { ckpt_path: "/a.ckpt", slot: 3, strength: 1,
+                   blend: { on: true, mode: "amount", curve: Array.from({ length: 24 }, (_, i) => i / 23) } };
+    const payload = modulePresetPayload(chain, "lora") as Record<string, unknown>;
+    const target = clone(CHAIN_DEFAULTS);
+    applyModulePreset(target, "lora", payload);
+    expect(target.lora.blend).toEqual(chain.lora.blend);
+    expect(target.lora.slot).toBeNull();
+  });
 });

@@ -203,3 +203,16 @@ describe("chainRequest — a ramp's explicit start (value_from)", () => {
     expect(req.slots[0].head).toBe("none");
   });
 });
+
+describe("chainRequest — lora blend (adapter mixer phase 1)", () => {
+  it("an untouched chain's lora is byte-identical to before", () => {
+    const req = chainRequest(clone(CHAIN_DEFAULTS), HEADS);
+    expect(req.lora).toEqual({ ckpt_path: null, slot: null, strength: 1.0 });
+    expect(Object.keys(req.lora).sort()).toEqual(["ckpt_path", "slot", "strength"]);
+  });
+  it("sends slot null when blending", () => {
+    const c = clone(CHAIN_DEFAULTS);
+    c.lora = { ckpt_path: "/a.ckpt", slot: 1, strength: 0.4, blend: { on: true, mode: "direction", curve: Array(24).fill(0.5) } };
+    expect(chainRequest(c, HEADS).lora).toEqual({ ckpt_path: "/a.ckpt", slot: null, strength: 1, block_strengths: Array(24).fill(0.5) });
+  });
+});

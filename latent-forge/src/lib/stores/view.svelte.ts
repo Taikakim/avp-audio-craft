@@ -16,7 +16,7 @@ import type { Target } from "../forge/types";
 
 export type Theme = "light" | "dark";
 export type ViewName = "workspace" | "statistics";
-export type BottomTabId = "chroma" | "prompt" | "mix" | "terminal";
+export type BottomTabId = "chroma" | "prompt" | "mix" | "adapter-mix" | "terminal";
 export type ModuleId =
   | "overlap" | "files" | "lane-chain" | "advanced-sampling" | "master-chain"
   | "legacy-inspector" | "legacy-server";
@@ -45,7 +45,7 @@ export interface StorageLike {
 export const THEME_KEY = "latentforge.theme";
 
 /** spec §4.5 -- CHROMA · PROMPT + SIGMA · MIX + SIGNAL PATH · TERMINAL, in tab order. */
-export const BOTTOM_TAB_IDS: BottomTabId[] = ["chroma", "prompt", "mix", "terminal"];
+export const BOTTOM_TAB_IDS: BottomTabId[] = ["chroma", "prompt", "mix", "adapter-mix", "terminal"];
 
 /**
  * Every id a stored project may legally carry in `ui.modules` (spec §9.2) --

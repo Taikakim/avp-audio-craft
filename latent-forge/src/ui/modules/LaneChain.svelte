@@ -1,4 +1,5 @@
 <script lang="ts">
+  // Last edited: KUANG 2026-10-15 — LoRA: SCALE greyed under ADVANCED FX, blend status, open mixer (adapter mixer phase 1)
   // Spec §5.5. Every field below mutates arrangement.lanes[view.activeLane].chain IN PLACE -- it
   // is a $state-proxied object (M5's defaultLanes() seeds it from structuredClone(CHAIN_DEFAULTS)).
   // Never do `lane.chain = {...}` or capture `const chain = lane.chain` and mutate the capture only
@@ -16,8 +17,17 @@
   import { dragScale } from "../../lib/actions/dragScale";
   import LatchGuidance from "./LatchGuidance.svelte";
   import ParamField from "./ParamField.svelte";
+  import { blendIdea } from "../../lib/blend/registry";
+  import { N_BLOCKS } from "../../lib/blend/curves";
 
   const chain = $derived(arrangement.lanes[view.activeLane].chain);
+  const blendOn = $derived(!!chain.lora.blend?.on);
+  const blendStatus = $derived.by(() => {
+    const b = chain.lora.blend;
+    if (!b?.on) return "";
+    const shaped = b.curve.filter((v) => v !== 1).length;
+    return `blend: ${blendIdea(b.mode).label.split(" ")[0]} · ${shaped} of ${N_BLOCKS} blocks shaped`;
+  });
 
   let filmCkpts = $state<AdapterEntry[]>([]);
   let filmDefaultCkpt = $state<string | null>(null);
@@ -174,8 +184,15 @@
     <option value="">none</option>
     {#each loraOptions as o (o.path)}<option value={o.path}>{o.label || o.name || o.path}</option>{/each}
   </select>
-  <ParamField label="SCALE" name="LORA / DORA SCALE" help={HELP.loraScale}
-    value={chain.lora.strength} onValue={(v) => (chain.lora.strength = v)} min={0} max={1} step={0.01} decimals={2} />
+  <ParamField label="SCALE" name="LORA / DORA SCALE" help={blendOn ? HELP.loraBlend : HELP.loraScale}
+    value={chain.lora.strength} onValue={(v) => (chain.lora.strength = v)} min={0} max={1} step={0.01} decimals={2}
+    disabled={blendOn} />
+  {#if blendOn}
+    <div class="row">
+      <span data-testid="lora-blend-status">{blendStatus}</span>
+      <button data-testid="lora-open-mixer" onclick={() => view.setBottomTab("adapter-mix")}>open mixer</button>
+    </div>
+  {/if}
 
   <!-- BUNGEE -->
   <div class="row">
