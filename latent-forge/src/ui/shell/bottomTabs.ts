@@ -11,6 +11,7 @@ export const BOTTOM_TABS: { id: BottomTabId; label: string }[] = [
   { id: "chroma", label: "CHROMA" },
   { id: "prompt", label: "PROMPT + SIGMA" },
   { id: "mix", label: "MIX + SIGNAL PATH" },
+  { id: "adapter-mix", label: "ADAPTER MIX" },   // adapter mixer phase 1 (KUANG 2026-10-15)
   { id: "terminal", label: "TERMINAL" },
 ];
 
@@ -22,6 +23,8 @@ export function bottomHint(tab: BottomTabId): string {
       return "settings follow the selection";
     case "mix":
       return "lane order feeds the mix nodes";
+    case "adapter-mix":
+      return "draw how much of the adapter acts in each DiT block";
     case "terminal":
       return "stdout of the running job";
   }

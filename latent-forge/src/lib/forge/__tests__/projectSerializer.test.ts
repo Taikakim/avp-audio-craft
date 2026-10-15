@@ -265,3 +265,28 @@ describe("a master saved before the lane-style LatCH (one head, one gain)", () =
     expect(arrangement.master).toEqual({ ...MASTER_DEFAULT, norm_on: false });
   });
 });
+
+describe("lane chain lora.blend (adapter mixer phase 1)", () => {
+  const goodBlend = { on: true, mode: "amount", curve: Array(24).fill(1) };
+  function projectWithBlend(blend: unknown) {
+    arrangement.lanes[0].chain.lora = { ckpt_path: "/SERVER/a.safetensors", slot: null, strength: 1 };
+    const p = JSON.parse(JSON.stringify(serializeProject({ name: "b" })));
+    p.lanes[0].chain.lora.blend = blend;
+    return p;
+  }
+  it("accepts a project without blend (sessions saved before this change)", () => {
+    expect(() => validateProjectV2(projectWithBlend(undefined))).not.toThrow();
+  });
+  it("accepts null and a well-formed blend", () => {
+    expect(() => validateProjectV2(projectWithBlend(null))).not.toThrow();
+    expect(() => validateProjectV2(projectWithBlend(goodBlend))).not.toThrow();
+  });
+  it.each([
+    ["wrong length", { ...goodBlend, curve: Array(23).fill(1) }],
+    ["out of range", { ...goodBlend, curve: [...Array(23).fill(1), 2] }],
+    ["unknown mode", { ...goodBlend, mode: "lerp" }],
+    ["on not boolean", { ...goodBlend, on: "yes" }],
+  ])("rejects a malformed blend: %s", (_label, blend) => {
+    expect(() => validateProjectV2(projectWithBlend(blend))).toThrow();
+  });
+});

@@ -99,3 +99,40 @@ def test_value_from_is_read_only_for_ramps_and_must_be_a_number():
         _ramp_chain(_ramp_slot(value_from="low"))
     with pytest.raises(ForgeError):
         _ramp_chain(_ramp_slot(value_from=float("nan")))
+
+
+# --- adapter mixer phase 1 (Task 1): chain.lora.block_strengths / blend -----------------------------------------
+CURVE = [1.0] * 12 + [0.5] * 12
+
+
+def test_chain_lora_blend_forwarded_only_when_set():
+    plain = chain(latch_on=False, lora_on=True, lora={"ckpt_path": "/x.ckpt", "slot": None, "strength": 0.8})
+    assert R.chain_to_request(plain, HEADS)["dora"] == {"ckpt_path": "/x.ckpt", "strength": 0.8}
+    amt = chain(latch_on=False, lora_on=True,
+                lora={"ckpt_path": "/x.ckpt", "slot": None, "strength": 1.0, "block_strengths": CURVE, "blend": "interp"})
+    assert R.chain_to_request(amt, HEADS)["dora"] == {
+        "ckpt_path": "/x.ckpt", "strength": 1.0, "block_strengths": CURVE, "blend": "interp"}
+    direction = chain(latch_on=False, lora_on=True,
+                      lora={"ckpt_path": "/x.ckpt", "slot": None, "strength": 1.0, "block_strengths": CURVE})
+    assert R.chain_to_request(direction, HEADS)["dora"] == {
+        "ckpt_path": "/x.ckpt", "strength": 1.0, "block_strengths": CURVE}
+
+
+def test_chain_blend_needs_ckpt_path():
+    c = chain(latch_on=False, lora_on=True, lora={"ckpt_path": None, "slot": 1, "strength": 1.0, "block_strengths": CURVE})
+    with pytest.raises(ForgeError) as e:
+        R.chain_to_request(c, HEADS)
+    assert "checkpoint path" in str(e.value)
+
+
+@pytest.mark.parametrize("bad", [
+    {"block_strengths": [1.0] * 23},
+    {"block_strengths": [1.0] * 23 + [2.0]},
+    {"block_strengths": [1.0] * 23 + [float("nan")]},
+    {"block_strengths": "flat"},
+    {"blend": "lerp"},
+])
+def test_chain_blend_rejects(bad):
+    lora = {"ckpt_path": "/x.ckpt", "slot": None, "strength": 1.0, "block_strengths": CURVE, **bad}
+    with pytest.raises(ForgeError):
+        chain(lora_on=True, lora=lora)

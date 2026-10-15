@@ -110,6 +110,7 @@ export type HelpId =
   | "loraPreset"
   | "loraModel"
   | "loraScale"
+  | "loraBlend"
   | "bungeeToggle"
   | "bungeePreset"
   | "filmCkpt"
@@ -253,6 +254,7 @@ export const HELP: Record<HelpId, string> = {
   loraPreset: "Module preset — recalls just this LoRA/DORA slot's settings.",
   loraModel: "Which adapter to apply. Resident slots (already loaded, from /slots) are listed first because switching to one is instant; anything else is loaded from disk on first use.",
   loraScale: "Adapter strength. Safe value: 1.0.",
+  loraBlend: "ADVANCED FX is on: the ADAPTER MIX curve sets this adapter's strength per DiT block, so SCALE is off. Turn ADVANCED FX off in ADAPTER MIX to get SCALE back. Blending loads the adapter from disk, not from a resident slot.",
   bungeeToggle: "Turns Bungee pitch-shifting on for this lane, applied during the Bungee stage before re-encoding. Safe value: off.",
   bungeePreset: "Module preset — recalls just this Bungee slot's settings. Undrawn in the handoff; the level exists in the frozen preset contract (spec §9.3, §6.3's level enum), so it needs a place to live.",
   filmCkpt: "Which FiLM checkpoint this lane uses. Server default is whatever /info reports as the film default; anything else is loaded from the film model root on first use.",

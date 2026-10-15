@@ -1,3 +1,4 @@
+# Last edited: KUANG 2026-10-15 -- block profile: warn when blend "interp" meets adapter types that ignore it (adapter mixer phase 1)
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams "guide_schedule" (alpha|flat) passed through to the guided samplers
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_rescale (0..1 per-step std rescale) passed through
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_anchor (trajectory std ceiling) passed through
@@ -576,6 +577,17 @@ def with_lora_interval(kw):
 
 
 LOADED_PROFILE_KEY = "[null, null]"
+# Adapter types whose forward reads `lora_interp` (stable_audio_3 LoRAParametrization.dora_forward). Linear types
+# (lora, lora-xs, phm, phm2) need no interp: scaling their delta IS interpolation. The rest (bora, dora-*-xs, bora-xs)
+# silently ignore it and keep the stock per-block strength, so a blend:"interp" request on them is reported.
+INTERP_EXACT_TYPES = ("dora", "dora-rows", "dora-cols")
+INTERP_LINEAR_TYPES = ("lora", "lora-xs", "phm", "phm2")
+PROFILE_WARNINGS = []          # filled by _apply_block_profile, cleared by prepare_model, read via profile_warnings()
+
+
+def profile_warnings():
+    """Warnings from the last applied per-block profile (copied into the request's warnings list)."""
+    return list(PROFILE_WARNINGS)
 
 
 def _apply_block_profile(model, strength, block_strengths, blend):
@@ -593,6 +605,7 @@ def _apply_block_profile(model, strength, block_strengths, blend):
     elif isinstance(block_strengths, (list, tuple)):
         mult = {i: float(v) for i, v in enumerate(block_strengths)}
     n_set = 0
+    ignored = set()
     for name, mod in model.model.named_modules():
         plist = getattr(getattr(mod, "parametrizations", None), "weight", None)
         if plist is None:
@@ -603,9 +616,18 @@ def _apply_block_profile(model, strength, block_strengths, blend):
         for p in plist:
             if isinstance(p, LoRAParametrization):
                 p.lora_interp = (blend == "interp")
+                kind = getattr(p, "adapter_type", None)
+                if blend == "interp" and kind not in INTERP_EXACT_TYPES + INTERP_LINEAR_TYPES:
+                    ignored.add(str(kind))
                 if m and int(m.group(1)) in mult:
                     p.lora_strength.fill_(float(strength) * mult[int(m.group(1))])
                     n_set += 1
+    PROFILE_WARNINGS.clear()
+    if ignored:
+        msg = (f"blend 'amount' (true interpolation) is not implemented for adapter type(s) {', '.join(sorted(ignored))}; "
+               "those layers used the stock per-block strength ('direction') instead")
+        PROFILE_WARNINGS.append(msg)
+        log(f"[dora] WARNING {msg}")
     if mult or blend:
         log(f"[dora] block profile applied: blend={blend or 'direction'} strength={strength} blocks_set={n_set} mult={dict(sorted(mult.items()))}")
 
@@ -614,6 +636,7 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
     global CURRENT_LORA_INTERVAL, ACTIVE_SLOT, LOADED_FULLFT
+    PROFILE_WARNINGS.clear()                 # a request that applies no profile reports none
     CURRENT_LORA_INTERVAL = (
         _f(dora_req or {}, "interval_min", 0.0),
         _f(dora_req or {}, "interval_max", 1.0))
@@ -1313,7 +1336,7 @@ def _generate_impl(req):
                                 mutate_req=resolve_mutate(req))
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
-        warnings = []                                   # Latent Forge: schedule/sampler warnings
+        warnings = profile_warnings()                   # Latent Forge: schedule/sampler warnings (+ block profile)
         latch_sampler_warning(latch_cfgs, req, warnings)
         # kw-dict lifted from density_control_eval.py:141-155 + schedule extras
         kw = dict(prompt=prompt, duration=duration, steps=steps, cfg_scale=cfg,
@@ -1472,7 +1495,7 @@ def _a2a_track_impl(req):
             wins = [(0.0, total_sec)]
         else:
             wins = [(0.0, a2a_mod.MAX_SEC), (a2a_mod.MAX_SEC - a2a_mod.OVERLAP, total_sec)]
-        files, warnings = [], []
+        files, warnings = [], profile_warnings()
         latch_sampler_warning(latch_cfgs, req, warnings)
         if len(wins) > 1:
             warnings.append(f"track {total_sec:.0f}s > {a2a_mod.MAX_SEC:.0f}s: "
@@ -1581,6 +1604,7 @@ def _longform_impl(req):
             f"{'a2a ' + Path(audio_path).name if audio_path else 't2a'}")
         rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
                                 mutate_req=resolve_mutate(req))
+        warnings.extend(profile_warnings())
         stages["prepare"] = time.time() - t0
         latch_cfgs, latch_hp = resolve_latch(req.get("latch"), req)
         lat = None            # set only on the t2a branch, which decodes latents itself
@@ -1762,6 +1786,7 @@ def _a2a_mix_impl(req):
         rebuilt = prepare_model(resolve_dora_req(req), req.get("film"),
                                 default_dora="evr1x",    # op default per design
                                 mutate_req=resolve_mutate(req))
+        warnings.extend(profile_warnings())
         stages["prepare"] = time.time() - t0
 
         # 1. load

@@ -100,13 +100,24 @@ function isRender(r: unknown): boolean {
   return isObj(r) && isObj(r.schedule) && Array.isArray(r.cfg_interval_progress);
 }
 
+const BLEND_MODES = ["amount", "direction"];
+
+/** lora.blend (adapter mixer phase 1, KUANG 2026-10-15): absent / null, or {on, mode, curve[24] within -0.5..1.5}. */
+function isLoraBlend(b: unknown): boolean {
+  if (b === undefined || b === null) return true;
+  if (!isObj(b) || !isBool(b.on) || typeof b.mode !== "string" || !BLEND_MODES.includes(b.mode)) return false;
+  const c = b.curve;
+  return Array.isArray(c) && c.length === 24 && c.every((v) => isNum(v) && (v as number) >= -0.5 && (v as number) <= 1.5);
+}
+
 function isLaneChain(c: unknown): boolean {
   if (!isObj(c) || !isLatchBlock(c) || !isObj(c.film) || !isObj(c.lora)) return false;
   const film = c.film;
   const lora = c.lora;
   return isBool(c.film_on) && isBool(c.lora_on) && isBool(c.bungee_on) && isNum(c.semitones)
     && isStrOrNull(film.ckpt) && isNum(film.gain) && isNum(film.value)
-    && isStrOrNull(lora.ckpt_path) && (lora.slot === null || isNum(lora.slot)) && isNum(lora.strength);
+    && isStrOrNull(lora.ckpt_path) && (lora.slot === null || isNum(lora.slot)) && isNum(lora.strength)
+    && isLoraBlend(lora.blend);
 }
 
 function isA2A(a: unknown): boolean {

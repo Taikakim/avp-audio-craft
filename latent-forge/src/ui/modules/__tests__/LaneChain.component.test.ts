@@ -416,3 +416,23 @@ describe("LATCH slot controls: unit and value, text fields, the head's weight li
     expect("value_from" in slot0()).toBe(false);                                  // looking at it changes nothing
   });
 });
+
+describe("LORA / DORA with ADVANCED FX (adapter mixer phase 1)", () => {
+  it("greys out SCALE, shows the blend status and opens the mixer tab", async () => {
+    arrangement.lanes[0].chain.lora_on = true;
+    arrangement.lanes[0].chain.lora = { ckpt_path: "/SERVER/lora1.safetensors", slot: null, strength: 1,
+      blend: { on: true, mode: "amount", curve: [...Array(16).fill(1), ...Array(8).fill(0)] } };
+    render(LaneChain);
+    const scale = screen.getByLabelText("LORA / DORA SCALE") as HTMLInputElement;
+    expect(scale.disabled).toBe(true);
+    expect(screen.getByTestId("lora-blend-status").textContent).toBe("blend: amount · 8 of 24 blocks shaped");
+    await fireEvent.click(screen.getByTestId("lora-open-mixer"));
+    expect(view.bottomTab).toBe("adapter-mix");
+  });
+
+  it("without ADVANCED FX the LoRA block is unchanged", () => {
+    render(LaneChain);
+    expect(screen.queryByTestId("lora-blend-status")).toBeNull();
+    expect((screen.getByLabelText("LORA / DORA SCALE") as HTMLInputElement).disabled).toBe(false);
+  });
+});

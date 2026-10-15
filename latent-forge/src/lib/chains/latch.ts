@@ -1,7 +1,9 @@
 // The lane chain as the server takes it (WINTERMUTE 2026-09-25; M8 parse_chain -> chain_to_request)
+// Last edited: KUANG 2026-10-15 — lora via blend/registry loraWire (adapter mixer phase 1)
 // and the SIGNAL PATH idle note (spec §8.1 S4). The §5.5 gain mapping is the SERVER's: nothing
 // here multiplies a head gain. Pure except fetchLatchHeads (network).
 
+import { loraWire } from "../blend/registry";
 import { forgeApi } from "../forge/api";
 import { isRamp } from "./latchScale";
 import type { LaneChain, LatchBlock, LatchSlot } from "../forge/types";
@@ -44,7 +46,7 @@ export interface ChainRequest {
   film_on: boolean;
   film: { ckpt: string | null; gain: number; value: number };
   lora_on: boolean;
-  lora: { ckpt_path: string | null; slot: null; strength: number };
+  lora: { ckpt_path: string | null; slot: null; strength: number; block_strengths?: number[]; blend?: "interp" };
   bungee_on: boolean;
   semitones: number;
 }
@@ -94,7 +96,7 @@ export function chainRequest(chain: LaneChain, heads: Record<string, LatchHeadIn
     film: { ckpt: chain.film.ckpt, gain: chain.film.gain, value: chain.film.value },
     lora_on: chain.lora_on,
     // ckpt_path is the durable identity; a /slots index is transient (Open questions 25).
-    lora: { ckpt_path: chain.lora.ckpt_path, slot: null, strength: chain.lora.strength },
+    lora: loraWire(chain.lora),
     bungee_on: chain.bungee_on,
     semitones: chain.semitones,
   };

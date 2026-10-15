@@ -272,6 +272,11 @@ cd /home/kim/Projects/mir && /home/kim/Projects/mir/mir/bin/python -m plots.expl
 
 VERIFY: `curl -s localhost:8056/status` and `curl -s localhost:8051 | head -1`.
 
+- **Per-block LoRA/DoRA blending (ADAPTER MIX tab, 2026-10-15):** LANE CHAIN → LORA / DORA on + an adapter →
+  ADAPTER MIX → ADVANCED FX ON, draw or pick a shape. SCALE greys out; the curve is the strength per DiT block.
+  Needs a :8056 server started after SAO `5522423` (and after the adapter mixer phase-1 merge, for the
+  unsupported-adapter-type warning). Contract: `docs/latent-forge/contract/chain-lora-blend.md`.
+
 ## 9. Rebuild the model census
 
 **Mount every drive first.** A scan taken with a drive down reports that drive's arms as *absent*,
