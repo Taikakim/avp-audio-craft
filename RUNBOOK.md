@@ -601,6 +601,18 @@ The steered clip is played level-matched to the original (loudness and compressi
     python3 Misc/build_air_heads_page.py                         # -> ~/evals_aac/air_heads.html (+ air_heads/*.m4a)
     python3 Misc/build_punch_air_page.py                         # -> ~/evals_aac/punch_air.html (needs the punch rating data, 64 seeds of each preset)
 
+Follow-up chain, 2026-10-15 (each script waits on `/tmp/*.done` files from the one before it, queues on the GPU lock, and restarts the render server at the end; do not start two of them by hand):
+
+    latch/run_air_followup.sh   # O6 + A2b, per-epoch EMA 2 / EMA 0.5 / online weights, then renders eval/air_epoch_sweep.py + eval/air_epoch_metrics.py -> /tmp/air_followup.done
+    latch/run_air_lowlr.sh      # A2c (batch 8x4) + lr 2e-3 / 5e-3 -> /tmp/air_lowlr.done          (d512 at batch 16x2 runs out of memory: use 8 x 4)
+    latch/run_dora_blend.sh     # eval/dora_blend_bracket.py: per-DiT-block DoRA blend bracket (render server dora.block_strengths / dora.blend) -> /tmp/air_dora_blend.done
+    latch/run_air_big.sh        # O2 recipe at d512, batch 64/128, cosine to ep 8; waits for /tmp/air_dora_blend.done AND /tmp/air_w_window.done (W's GPU window)
+    latch/run_air_slow.sh       # lr 1e-3, 15 epochs;  latch/run_air_nosf.sh  # Schedule-Free OFF replicas (--no-mod-sf)
+    latch/run_crosstalk.sh      # eval/latch_crosstalk.py: how much does each band head's guidance step move the OTHER bands (heads as meters + decoded-audio audit)
+    python3 Misc/build_air_epochs_page.py                         # -> ~/evals_aac/air_epochs.html (merges every sweep it finds; run it again after each finishes)
+Per-epoch checkpoints: `ep<N>.pt` = EMA (main half-life), `ep<N>_ema<hl>.pt` = extra EMA, `ep<N>_online.pt` = live weights (Schedule-Free average) via `--save-online`. `train_latch.py` now stops at the first NaN epoch.
+Kill a driver by its PID from `ps -eo pid,cmd | grep "bash latch/run_"` -- never `pkill -f` with the script name in the same command line (it kills your own shell).
+
 VERIFY: `cat /run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/SUMMARY.tsv` (one row per arm; `rc=0` and a best validation loss mean it trained; check the number of `latch_sa3_rms_energy_air_ep*.pt` files too).
 Traps: batch 32 at dim 512 / depth 8 runs out of the 16 GB card; use `--batch-size 16 --grad-accum 2`. lr >= 5e-2 diverges. A saved head is the EMA weights when `--ema` is on (the `ema` field in the file). Register a head for the GUI by copying it as `latch_sa3_<name>_best.pt` into `stable-audio-3/latch_weights_sa3_medium/` and restarting the render server.
 
