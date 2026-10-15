@@ -9,7 +9,7 @@ OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_nosf
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
-until [ -f /tmp/air_slow.done ]; do sleep 120; done
+until [ -f /tmp/air_bass.done ]; do sleep 120; done   # after run_bass_lr.sh (Kim 2026-10-16 priority)
 BASE="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --no-mod-sf --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-radial-brake 0.8 --dim 512 --depth 8 --batch-size 8"
 BIG="$BASE --mod-warmup-epochs 1 --mod-late-from-epochs 2 --grad-clip 1.0 --epochs 8 --cosine-epochs 0 8 --ema-halflife-epochs 4 --ema-extra-halflife-epochs 2 0.5"
 ARMS=(
@@ -40,4 +40,4 @@ export SWEEP_DIR="$OUT/epoch_sweep"
 "$SAO/.venv/bin/python" "$SAO/eval/air_epoch_metrics.py" dsp >> "$OUT/sweep.log" 2>&1
 /home/kim/Projects/mir/mir/bin/python "$SAO/eval/air_epoch_metrics.py" audiobox >> "$OUT/sweep.log" 2>&1
 "$SAO/.venv/bin/python" "$SAO/eval/air_epoch_metrics.py" merge >> "$OUT/sweep.log" 2>&1
-echo NOSF DONE > /tmp/air_nosf.done
+grep -qE "rc=[1-9]" "$OUT/SUMMARY.tsv" || echo NOSF DONE > /tmp/air_nosf.done   # marker only if every arm exited 0 (a 2-s death once wrote a false marker)
