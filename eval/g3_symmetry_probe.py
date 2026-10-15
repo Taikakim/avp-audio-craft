@@ -39,7 +39,7 @@ import torch
 
 from stable_audio_3 import StableAudioModel
 
-LATENTS = Path("/home/kim/Projects/latents_sa3")
+LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/g3_symmetry")
 EIG = Path("/run/media/kim/Mantu/sa3_lora_runs/e1_pretest/corpus_eigbasis.npz")
 SIGMA = 0.5

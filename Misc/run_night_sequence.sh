@@ -27,7 +27,7 @@ note "transition_lab done (exit $?) -> newcap8_transitions"
 # 3. familiarity smoke: 12 steps on avp, must exit 0 AND log familiarity weights
 rm -f "$SAO/.familiarity_ready"
 timeout 1800 $PY scripts/train_lora.py \
-  --model medium-base --encoded_dir /home/kim/Projects/latents_avp \
+  --model medium-base --encoded_dir /run/media/kim/Kosmos/latents/latents_avp \
   --adapter_type dora-rows --rank 16 --lora_alpha 16 \
   --optimizer fusion --lr 2e-4 --steps 12 --batch_size 4 --duration 47 \
   --beat-aware-crop --familiarity_beta 1.0 --log_every 1 \

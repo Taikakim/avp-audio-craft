@@ -14,7 +14,7 @@
 set -uo pipefail
 VENV=/home/kim/Projects/SAO/.venv; CODE=/home/kim/Projects/SAO/stable-audio-3
 ROOT=${ROOT:-/home/kim/Projects/SAO/runs/traj_sketch}
-LAT=/home/kim/Projects/latents_sa3
+LAT=/run/media/kim/Kosmos/latents/latents_sa3
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=0
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 PYTHONPATH="${CODE}:${PYTHONPATH:-}"
 cd "${CODE}" || exit 1

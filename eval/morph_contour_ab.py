@@ -39,7 +39,7 @@ from src.conditioners.contour_streams import contour_stream, expand_to_frames  #
 
 FPS = 10.766
 STRIDE, TOL_ST, IOI_TOL = 4, 0.5, 0.15
-LAT = "/home/kim/Projects/latents_sa3"
+LAT = "/run/media/kim/Kosmos/latents/latents_sa3"
 SIDECARS = "/run/media/kim/Lehto/latents-all-backup/latents_sa3_morph{}"
 
 

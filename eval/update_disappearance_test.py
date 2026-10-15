@@ -43,7 +43,7 @@ from stable_audio_3 import StableAudioModel  # noqa: E402
 from stable_audio_3.training.stochastic_rounding import stochastic_round_to_bf16  # noqa: E402
 from sa3_control.train import build_train_cond, _sample_t  # noqa: E402
 
-LATENTS_DIR = "/home/kim/Projects/latents_sa3"
+LATENTS_DIR = "/run/media/kim/Kosmos/latents/latents_sa3"
 MELODY_NPZ = os.path.join(SAO, "lumi", "melody_subspace15_v2.npz")
 
 

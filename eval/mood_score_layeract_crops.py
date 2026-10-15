@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 
 DUMP_DIR = Path("/run/media/kim/Mantu/sa3_lora_runs/layer_activations_base")
-LATENT_DIR = Path("/home/kim/Projects/latents_sa3")
+LATENT_DIR = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 MODELS = Path("/home/kim/Projects/mir/models/essentia")
 OUT_CSV = DUMP_DIR / "crop_mood_scores.csv"
 

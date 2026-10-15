@@ -90,7 +90,7 @@ cd /home/kim/Projects/SAO/stable-audio-3
 
 LABEL=my_run_2026-09-08
 /home/kim/Projects/SAO/.venv/bin/python scripts/train_lora.py --model medium-base \
-  --encoded_dir /home/kim/Projects/latents_sa3 --beat-aware-crop --frames 512 \
+  --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 --beat-aware-crop --frames 512 \
   --adapter_type dora-rows --rank 16 --lora_alpha 16 --base_precision bf16 \
   --optimizer adamw --lr 1e-4 --batch_size 1 --accumulate_grad_batches 4 \
   --epochs 40 --checkpoint_every_epochs 1 --gradient_clip_val 1.0 --no_demos \

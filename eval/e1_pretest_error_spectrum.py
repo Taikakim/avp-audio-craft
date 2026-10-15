@@ -31,7 +31,7 @@ import torch
 
 from stable_audio_3 import StableAudioModel
 
-LATENTS = Path("/home/kim/Projects/latents_sa3")
+LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/run/media/kim/Mantu/sa3_lora_runs/e1_pretest")
 SIGMAS = [0.2, 0.5, 0.8]
 N_CROPS = 48

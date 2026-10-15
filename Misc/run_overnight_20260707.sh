@@ -23,7 +23,7 @@ note() { "$SAO/Misc/worklog_note.sh" overnight-0707 "$1 ($(date +%H:%M))"; }
 note "A START — goa r16 fusion, new dataset stack (tiered captions + TrackType 0.5), 8ep"
 $PY scripts/train_lora.py \
   --model medium-base \
-  --encoded_dir /home/kim/Projects/latents_sa3 \
+  --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 \
   --caption-sidecar "$FT/goa/captions.json" --caption_probs 0.6,0.3,0.1 \
   --track_type_prob 0.5 \
   --adapter_type dora-rows --rank 16 --lora_alpha 16 \
@@ -40,7 +40,7 @@ note "A done -> dora16_goa_newstack_8ep (exit $?)"
 note "B START — avp r16 dora-rows fusion lr2e-4 8ep (trigger prompts, full-mix crops)"
 $PY scripts/train_lora.py \
   --model medium-base \
-  --encoded_dir /home/kim/Projects/latents_avp \
+  --encoded_dir /run/media/kim/Kosmos/latents/latents_avp \
   --adapter_type dora-rows --rank 16 --lora_alpha 16 \
   --optimizer fusion --lr 2e-4 \
   --epochs 8 --batch_size 4 --duration 47 --beat-aware-crop \
@@ -56,7 +56,7 @@ note "B done -> dora16_avp_8ep (exit $?)"
 note "C START — avp r128 ADJUSTED (alpha 45 = rsLoRA alpha/sqrt(r) matched to r16) 8ep"
 $PY scripts/train_lora.py \
   --model medium-base \
-  --encoded_dir /home/kim/Projects/latents_avp \
+  --encoded_dir /run/media/kim/Kosmos/latents/latents_avp \
   --adapter_type dora-rows --rank 128 --lora_alpha 45 \
   --optimizer fusion --lr 2e-4 \
   --epochs 8 --batch_size 4 --duration 47 --beat-aware-crop \
@@ -73,7 +73,7 @@ if [ -f "$SAO/.familiarity_ready" ]; then
   note "D START — avp r16 + familiarity-normalized loss, 8ep (otherwise = B)"
   $PY scripts/train_lora.py \
     --model medium-base \
-    --encoded_dir /home/kim/Projects/latents_avp \
+    --encoded_dir /run/media/kim/Kosmos/latents/latents_avp \
     --adapter_type dora-rows --rank 16 --lora_alpha 16 \
     --optimizer fusion --lr 2e-4 \
     --epochs 8 --batch_size 4 --duration 47 --beat-aware-crop \

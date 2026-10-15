@@ -20,7 +20,7 @@ note() { "$SAO/Misc/worklog_note.sh" everything-dora "$1 ($(date +%H:%M))"; }
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
 cd "$SA3" || exit 1
 
-DIRS=/home/kim/Projects/latents_sa3,/home/kim/Projects/latents_organic_dance,/home/kim/Projects/latents_chill,/home/kim/Projects/latents_prog_trance_melodic_techno,/home/kim/Projects/latents_prog_psytechno
+DIRS=/run/media/kim/Kosmos/latents/latents_sa3,/home/kim/Projects/latents_organic_dance,/home/kim/Projects/latents_chill,/home/kim/Projects/latents_prog_trance_melodic_techno,/home/kim/Projects/latents_prog_psytechno
 SIDE=$FT/goa/captions.json,$FT/organic_dance/captions.json,$FT/chill/captions.json,$FT/prog_trance_melodic_techno/captions.json,$FT/prog_psytechno/captions.json
 
 run() {  # $1=lr  $2=tag

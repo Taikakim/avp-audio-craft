@@ -537,7 +537,7 @@ def stage4():
     print("variance share on renders: melody %.3f timbre %.3f" % (mel_var / tot_var, timb_var / tot_var))
 
     # ---- (e) corpus comparison: project corpus latents onto melody subspace ----
-    corpus_dir = Path("/home/kim/Projects/latents_sa3")
+    corpus_dir = Path("/run/media/kim/Kosmos/latents/latents_sa3")
     stats = None
     if corpus_dir.is_dir():
         files = sorted(corpus_dir.glob("*.npy"))[::250][:24]

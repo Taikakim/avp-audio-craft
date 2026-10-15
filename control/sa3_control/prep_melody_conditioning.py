@@ -30,8 +30,8 @@ import time
 import numpy as np
 
 TARGETS = "/home/kim/Projects/SAO/eval/musicology/head_a_ceiling/targets"
-LATENTS = "/home/kim/Projects/latents_sa3"
-OUT_DEFAULT = "/run/media/kim/Kosmos/latents_sa3_melody"
+LATENTS = "/run/media/kim/Kosmos/latents/latents_sa3"
+OUT_DEFAULT = "/run/media/kim/Lehto/latents-all-backup/latents_sa3_melody"
 FOLD_NAMES = ["rest", "pedal", "m1", "m2", "m3", "m5", "m7", "m12"]
 
 

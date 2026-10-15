@@ -18,7 +18,7 @@ import numpy as np
 
 sys.path.insert(0, "/home/kim/Projects/mir/src/tools")
 
-LATENTS = Path("/home/kim/Projects/latents_sa3")
+LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/home/kim/Projects/SAO/eval/corpus_bands.json")
 FPS = 10.767
 STATS = ["r_max", "r_median", "novelty_floor", "corr_dim", "det", "det_soft",

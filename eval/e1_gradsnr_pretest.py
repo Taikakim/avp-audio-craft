@@ -20,7 +20,7 @@ DEV = "cuda" if torch.cuda.is_available() else "cpu"
 EDGE = json.load(open("/home/kim/Projects/SAO/eval/corpus_bands.json"))["bands"]["r_max"]["q90"]
 head = RecurrenceHead().to(DEV)
 import glob
-lats = sorted(glob.glob("/home/kim/Projects/latents_sa3/*.npy"))[:4]
+lats = sorted(glob.glob("/run/media/kim/Kosmos/latents/latents_sa3/*.npy"))[:4]
 S_LEVELS = [0.0, 0.1, 0.2, 0.3, 0.5, 0.8]
 N_SEED = 4
 rows = []

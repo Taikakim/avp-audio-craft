@@ -25,7 +25,7 @@ if [ ! -f "$BEST" ]; then
     mkdir -p "$HEAD_DIR"
     # E04 recipe verbatim (phaseE/SUMMARY.tsv) + EMA half-life 0.5 epoch (the air A2 setting) + online weights per epoch
     "$PY" stable-audio-3/scripts/latch/train_latch.py --feature onset_per_beat_ts \
-        --latent-dir /run/media/kim/Kosmos/latents_goa_bigset --val-group-by relpath --epochs 20 --val-frac 0.05 \
+        --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath --epochs 20 --val-frac 0.05 \
         --val-seed 0 --seed 0 --standardize --num-workers 16 --optimizer modular --mod-whitening shampoo --lr 1e-2 \
         --mod-warmup 500 --batch-size 32 --mod-radial-brake 0.8 --mod-escape-velocity \
         --ema-halflife-epochs 0.5 --save-online --save-every-epoch --save-best-only \

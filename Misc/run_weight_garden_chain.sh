@@ -38,7 +38,7 @@ for PAIR in "A|$GLITCH_A|driftattn" "B|$GLITCH_B|tilttail"; do
     --dora-ckpt "$MANTU/sa3_lora_runs/soups_dora/r128f_expasc.ckpt" \
     --onset-ckpt "$MANTU/sa3_control_runs/onset_FUSION_lr2e5_40epoch/soup_exppeak.pt" \
     --style-ckpt "$MANTU/sa3_control_runs/style_fpC_genrecc/riffer_final.pt" \
-    --reference-latent /home/kim/Projects/latents_sa3/003231.npy \
+    --reference-latent /run/media/kim/Kosmos/latents/latents_sa3/003231.npy \
     --densities 7 --onset-gains 2.2 --style-gains 0.25,0.5 \
     --glitch "$RECIPE" \
     --notes "glitched-base ($TAG) x DoRA+onset+style stack — does guidance survive weight mutation?" \

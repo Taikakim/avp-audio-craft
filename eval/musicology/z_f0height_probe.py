@@ -21,7 +21,7 @@ os.environ.setdefault('FLASH_ATTENTION_TRITON_AMD_ENABLE', 'FALSE')
 import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
 
-LAT = '/home/kim/Projects/latents_sa3'
+LAT = '/run/media/kim/Kosmos/latents/latents_sa3'
 NF = 4096
 RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'z_f0height_probe_results.json')
 

@@ -30,7 +30,7 @@ def run():
     for h in heads.values():
         for p in h.parameters(): p.requires_grad_(False)
     std = {k: float(np.mean(np.asarray(getattr(h, "metadata", {}).get("std_std", [1.0])))) for k, h in heads.items()}
-    files = sorted(glob.glob("/home/kim/Projects/latents_sa3/*.npy"))[::27][:int(os.environ.get("CT_N", 200))]
+    files = sorted(glob.glob("/run/media/kim/Kosmos/latents/latents_sa3/*.npy"))[::27][:int(os.environ.get("CT_N", 200))]
     names = list(heads)
     cos_acc = {(i, j): [] for i in names for j in names}
     resp = {(f, i, j): [] for f in FRACS for i in names for j in names}

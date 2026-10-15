@@ -32,7 +32,7 @@ import argparse, glob, json, math, os, statistics as st, sys
 from collections import defaultdict
 import numpy as np
 
-LAT = "/home/kim/Projects/latents_sa3"
+LAT = "/run/media/kim/Kosmos/latents/latents_sa3"
 HEAD = ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/"
         "ftstack_heads/latch_f0_other_s1/latch_sa3_f0_other_ep30.pt")
 

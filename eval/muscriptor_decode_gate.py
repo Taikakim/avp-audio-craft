@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 
 SAMPLE = Path("/run/media/kim/Mantu/sa3_lora_runs/muscriptor_goa_midis")
-LATENTS = Path("/home/kim/Projects/latents_sa3")
+LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/home/kim/Projects/SAO/eval/muscriptor_gate.json")
 CROP_SEC = 4096 / 10.7666
 

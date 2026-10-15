@@ -39,7 +39,7 @@ from pathlib import Path
 
 import numpy as np
 
-LATENTS = Path("/home/kim/Projects/latents_sa3")
+LATENTS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 LATENT_CH = 256
 T_TOTAL = 1024      # context + free region, frames (multiples-of-256 rule, MASTER §5)
 SRC_T = 4096        # latents_sa3 crop length

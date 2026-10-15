@@ -68,7 +68,7 @@ from score_and_report import (  # noqa: E402
 
 HERE = Path(__file__).parent
 PRED_DIR = Path("/tmp/claude-1000/-home-kim-Projects-SAO/49cd5391-27e7-4545-8295-a1053db2a077/scratchpad/tier2_predicted")
-LATENT_DIR = Path("/home/kim/Projects/latents_sa3")
+LATENT_DIR = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 MUSCRIPTOR_DIR = Path("/run/media/kim/Kosmos/muscriptor_full")
 HEAD_CKPT = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_same_chroma_best.pt"
 CORR_CUTOFF = 0.30  # same as phase1_features.py

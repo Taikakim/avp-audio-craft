@@ -32,7 +32,7 @@ GUARD = str(SAO / "Misc/gpu_guard.sh")
 WAIT_FOR = "name goa5k_r128_shampoo_subloss_k5_2026-09-26"
 STEPS = 1011
 
-COMMON = ["--encoded_dir", "/home/kim/Projects/latents_sa3", "--caption_probs", "0,0.9,0.1",
+COMMON = ["--encoded_dir", "/run/media/kim/Kosmos/latents/latents_sa3", "--caption_probs", "0,0.9,0.1",
           "--frames", "256", "--model", "medium-base", "--rank", "128", "--lora_alpha", "128",
           "--adapter_type", "dora-rows", "--batch-size", "16", "--num-workers", "10",
           "--warmup-steps", "1000", "--steps", str(STEPS), "--checkpoint_every", "200000",

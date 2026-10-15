@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 
 MM = Path("/run/media/kim/Mantu/sa3_lora_runs/model_matrix")
-CORPUS = Path("/home/kim/Projects/latents_sa3")
+CORPUS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 DEC = Path("/home/kim/Projects/SAO/onnx/decode_onnx.py")
 ONNX = Path("/home/kim/Projects/SAO/stable-audio-3/same_decoder_L128.onnx")
 OUT = Path("/tmp/gate_a"); OUT.mkdir(exist_ok=True)

@@ -34,7 +34,7 @@ import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CEIL = os.path.join(os.path.dirname(HERE), 'head_a_ceiling')
-LATENTS = '/home/kim/Projects/latents_sa3'
+LATENTS = '/run/media/kim/Kosmos/latents/latents_sa3'
 OUT = Path(os.environ.get('HEADA2_ACTS_DIR',
                           '/run/media/kim/Mantu/sa3_lora_runs/head_a_ceiling_act'))
 

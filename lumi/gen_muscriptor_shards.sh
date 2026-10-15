@@ -2,7 +2,7 @@
 # Shard the 5401 crop ids into 50-crop shard files + the shards list for the sbatch.
 set -euo pipefail
 CODE=$(dirname "$0")
-LAT=${1:-/home/kim/Projects/latents_sa3}   # dir of <id>.npy; on LUMI pass $FLASH/<set>
+LAT=${1:-/run/media/kim/Kosmos/latents/latents_sa3}   # dir of <id>.npy; on LUMI pass $FLASH/<set>
 PREFIX=${2:-}                              # path root written INTO the list (must resolve on LUMI)
 SET=${3:-}                                 # name tag; shards land in muscriptor_shards_<SET>/
 PER=${PER:-50}                             # crops per shard

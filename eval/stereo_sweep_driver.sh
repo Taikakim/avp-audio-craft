@@ -23,7 +23,7 @@ for W in 0.0 0.1 0.3; do
   wait_gpu
   echo "[sweep] arm w=${W} START $(date +%H:%M)"
   ${PY} scripts/train_lora.py \
-    --model medium-base --encoded_dir /home/kim/Projects/latents_sa3 \
+    --model medium-base --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 \
     --frames 512 --beat-aware-crop --batch_size 2 \
     --adapter_type dora-rows --rank 128 --lora_alpha 128 \
     --optimizer fusion --lr 1e-4 --steps 4000 \

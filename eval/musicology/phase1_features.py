@@ -22,7 +22,7 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 CORPUS = '/run/media/kim/Kosmos/muscriptor_full'
-META_DIR = '/home/kim/Projects/latents_sa3'
+META_DIR = '/run/media/kim/Kosmos/latents/latents_sa3'
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 FEATURES = os.path.join(OUT_DIR, 'features.jsonl')
 MELODIES = os.path.join(OUT_DIR, 'melodies.jsonl')

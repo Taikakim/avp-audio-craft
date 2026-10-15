@@ -33,7 +33,7 @@ import hook_metric as HM
 
 MELODIES = os.path.join(HERE, 'melodies.jsonl')
 MIDI_DIR = '/run/media/kim/Kosmos/muscriptor_full'
-LATENTS = '/home/kim/Projects/latents_sa3'
+LATENTS = '/run/media/kim/Kosmos/latents/latents_sa3'
 OUT = '/run/media/kim/Lehto/latents-all-backup/latents_sa3_notegrid88'   # sidecar dir (moved off NVMe 2026-09-23, verified dupe of the Lehto-backup copy); NOT the repo tree
 
 N_FRAMES = 4096

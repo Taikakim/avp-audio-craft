@@ -19,7 +19,7 @@ bpm) next to the outputs, for a quick corpus-wide lookup / rename table.
 
     python eval/musicology/enrich_muscriptor_meta.py \
         --muscriptor-dir /run/media/kim/Kosmos/muscriptor_full \
-        [--crop-meta /home/kim/Projects/latents_sa3] [--dry-run] [--force]
+        [--crop-meta /run/media/kim/Kosmos/latents/latents_sa3] [--dry-run] [--force]
 """
 import argparse
 import json
@@ -41,7 +41,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--muscriptor-dir", required=True,
                     help="dir of <id>.stats.json (+ <id>.mid) pulled from LUMI")
-    ap.add_argument("--crop-meta", default="/home/kim/Projects/latents_sa3",
+    ap.add_argument("--crop-meta", default="/run/media/kim/Kosmos/latents/latents_sa3",
                     help="dir of <id>.json crop metadata carrying source_path (the "
                          "latents_sa3 sidecars)")
     ap.add_argument("--manifest", default=None,

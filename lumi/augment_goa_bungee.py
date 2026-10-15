@@ -17,7 +17,7 @@ DISCOVERY note at the bottom):
     which already validated this technique against `latents_sa3` crop metadata.
 
 INPUT: a directory of latents_sa3-style crop-metadata JSONs (`<id>.json`, one per
-crop, siblings of `<id>.npy`/`<id>.TIMESERIES.npz` — see /home/kim/Projects/latents_sa3
+crop, siblings of `<id>.npy`/`<id>.TIMESERIES.npz` — see /run/media/kim/Kosmos/latents/latents_sa3
 locally for the exact schema; pass the LUMI-staged equivalent dir via the positional
 arg). Each JSON carries `source_path` / `start_sample` / `end_sample` /
 `source_total_samples` / `bpm_madmom` describing a crop cut from a full-track source

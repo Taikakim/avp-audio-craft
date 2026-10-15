@@ -406,7 +406,7 @@ def stage4():
         res["variance_share_renders"]["v1_replica_6pats_5timbres_melody_frac"]))
 
     # corpus projection + CI over files
-    corpus_dir = Path("/home/kim/Projects/latents_sa3")
+    corpus_dir = Path("/run/media/kim/Kosmos/latents/latents_sa3")
     if corpus_dir.is_dir():
         files = sorted(corpus_dir.glob("*.npy"))[::100][:60]
         Q, _ = np.linalg.qr(RNG.standard_normal((256, Vm.shape[0])))

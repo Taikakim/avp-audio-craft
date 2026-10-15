@@ -31,7 +31,7 @@ from src.conditioners.contour_streams import contour_stream, expand_to_frames  #
 # be built identically or the two corpora carry different symbol semantics under one
 # vocab. Output dirs are always <lat>_morphL{2,3,4} / <lat>_morphIOI3, so a per-root
 # --melody-dirs list can point at each corpus's own. (CONTINUITY 2026-09-09)
-LAT = os.environ.get("MORPH_LAT", "/home/kim/Projects/latents_sa3")
+LAT = os.environ.get("MORPH_LAT", "/run/media/kim/Kosmos/latents/latents_sa3")
 STRIDE = 4
 TOL_SEMITONES = 0.5
 LS = (2, 3, 4)

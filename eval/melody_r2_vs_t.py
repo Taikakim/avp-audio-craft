@@ -37,7 +37,7 @@ import torch
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--latents", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--latents", default="/run/media/kim/Kosmos/latents/latents_sa3")
     ap.add_argument("--basis", default="/home/kim/Projects/SAO/lumi/melody_subspace15_selective_v3.npz")
     ap.add_argument("--model", default="medium-base")
     ap.add_argument("--lora", default=None, help="optional LoRA/DoRA ckpt to load on top")

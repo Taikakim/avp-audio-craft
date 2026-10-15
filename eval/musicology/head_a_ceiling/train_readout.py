@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TARGETS = os.path.join(HERE, 'targets')
-LATENTS = '/home/kim/Projects/latents_sa3'
+LATENTS = '/run/media/kim/Kosmos/latents/latents_sa3'
 RESULTS = os.path.join(HERE, 'results.json')
 SPLITS = os.path.join(HERE, 'splits.json')
 N_FRAMES = 4096

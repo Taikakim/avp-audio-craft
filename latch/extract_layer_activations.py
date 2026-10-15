@@ -97,7 +97,7 @@ def extract(model, z, prompt, seconds_total, sigmas, frame_idx, eps_seed=7):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--latent-dir", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--latent-dir", default="/run/media/kim/Kosmos/latents/latents_sa3")
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--n-crops", type=int, default=150)
     ap.add_argument("--n-frames", type=int, default=96, help="subsampled frames/crop")

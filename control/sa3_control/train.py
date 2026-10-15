@@ -10,7 +10,7 @@ own DiT forward (cfg_scale=1.0 -> no CFG batch-doubling).
 Run with the consolidated SAO/.venv (CK flash-attn; set the flag before import):
     PYTORCH_TUNABLEOP_ENABLED=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE \
         /home/kim/Projects/SAO/.venv/bin/python \
-        -m sa3_control.train --encoded_dir /home/kim/Projects/latents_sa3 --smoke
+        -m sa3_control.train --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 --smoke
 """
 
 import argparse
@@ -209,7 +209,7 @@ def export_control_onnx_on_finish(ckpt_path, save_dir, frames, field):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("--encoded_dir", default="/home/kim/Projects/latents_sa3",
+    ap.add_argument("--encoded_dir", default="/run/media/kim/Kosmos/latents/latents_sa3",
                     help="pre-encoded latent dir; ALSO accepts a comma-separated list of dirs "
                          "(goa,avp) for a combined multi-root dataset (full-path lists concatenated, "
                          "so the 000000.* stem collision between corpora is sidestepped).")
@@ -382,7 +382,7 @@ def main():
                          "4-level metrical tree (subdiv/beat/bar/phrase) hard-class streams + "
                          "coverage, via MetricalEncoder.")
     # --- melody_contour (Head B) args ---
-    ap.add_argument("--melody-dir", default="/run/media/kim/Kosmos/latents_sa3_melody",
+    ap.add_argument("--melody-dir", default="/run/media/kim/Lehto/latents-all-backup/latents_sa3_melody",
                     help="sidecar dir of <stem>.melody8.npy class streams (melody_contour mode)")
     ap.add_argument("--melody-dirs", nargs="+", default=None,
                     help="per-root form of --melody-dir, for a MULTI-CORPUS run: one contour "
@@ -403,7 +403,7 @@ def main():
                          "draws expose all four {text, melody} on/off states so per-source guidance "
                          "scales are calibratable at inference.")
     # --- metrical_position (E3) args ---
-    ap.add_argument("--metrical-dir", default="/run/media/kim/Kosmos/latents_sa3_metrical",
+    ap.add_argument("--metrical-dir", default="/run/media/kim/Lehto/latents-all-backup/latents_sa3_metrical",
                     help="sidecar dir of <stem>.metrical.npy (5,4096) tree-position streams + "
                          "<stem>.metrical_conf.npy confidences (metrical_position mode)")
     ap.add_argument("--metrical-dropout", type=float, default=0.15,

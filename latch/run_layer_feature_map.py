@@ -16,7 +16,7 @@ from probe_layer_feature_map import (FEATURE_NAMES, load_features,
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--acts-dir", type=Path, required=True)
-    ap.add_argument("--latent-dir", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--latent-dir", default="/run/media/kim/Kosmos/latents/latents_sa3")
     ap.add_argument("--out-json", type=Path, required=True)
     args = ap.parse_args()
 

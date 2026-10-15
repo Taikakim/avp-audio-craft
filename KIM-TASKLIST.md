@@ -283,7 +283,7 @@ ROLLBACK: `rm -rf $R/deconv` — nothing else is touched, originals are read-onl
 ### 2. Re-render the morph clips from the deconvolved weights (GPU, ~15 min)
 RUN:
 ```
-cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && for S in 4000 6000 8000 10000 12000; do .venv/bin/python lumi/render_morph.py --ckpt $R/deconv/riffer_step$S.pt --label morph_L3_deconv_step$S --melody-dir /home/kim/Projects/latents_sa3_morphL3 --latent-dir /home/kim/Projects/latents_sa3 --out $R/clips --n-refs 4 --gains 1.0,2.0 --cfg 7 --steps 24; done; Misc/gpu_guard.sh release KIM
+cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2 PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && for S in 4000 6000 8000 10000 12000; do .venv/bin/python lumi/render_morph.py --ckpt $R/deconv/riffer_step$S.pt --label morph_L3_deconv_step$S --melody-dir /home/kim/Projects/latents_sa3_morphL3 --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --out $R/clips --n-refs 4 --gains 1.0,2.0 --cfg 7 --steps 24; done; Misc/gpu_guard.sh release KIM
 ```
 TAKES ~15 min. **VERIFY THE ARTIFACT, NOT THE EXIT CODE** — renders segfault at teardown after
 writing every file (rc=134 happened on step6000 last time and all 12 clips were fine):

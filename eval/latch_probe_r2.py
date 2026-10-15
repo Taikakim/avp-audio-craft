@@ -20,7 +20,7 @@ audited rather than believed (AUDIT-THE-INSTRUMENT rule):
 Clip-level scalars (bpm_madmom, onset_density, onset_per_beat) are probed from time-pooled mean+std of the latent.
 
 RUN (any venv with numpy; no torch/GPU):
-    /home/kim/Projects/SAO/.venv/bin/python eval/latch_probe_r2.py --latent-dir /run/media/kim/Kosmos/latents_goa_bigset --n 1200
+    /home/kim/Projects/SAO/.venv/bin/python eval/latch_probe_r2.py --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --n 1200
 """
 import argparse
 import glob
@@ -130,7 +130,7 @@ def split_groups(groups, frac, seed):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--latent-dir", default="/run/media/kim/Kosmos/latents_goa_bigset")
+    ap.add_argument("--latent-dir", default="/run/media/kim/Kosmos/latents/latents_goa_bigset")
     ap.add_argument("--fields", nargs="+", default=["onset_per_beat_ts", "onset_envelope_ts"], help="or the single word ALL: every 1-D/2-D *_ts field in the first npz")
     ap.add_argument("--n", type=int, default=1200, help="crops to read")
     ap.add_argument("--stride", type=int, default=16, help="frame stride (decorrelates neighbours)")

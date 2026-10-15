@@ -167,5 +167,5 @@ def test_player_cfg_is_config_driven_not_hardcoded():
     cfg = ers.load_player_cfg()
     assert "latent_dir" in cfg and "chunk_size" in cfg and "overlap" in cfg
     src = Path(ers.__file__).read_text()
-    assert "/home/kim/Projects/latents_sa3" not in src, \
+    assert "/run/media/kim/Kosmos/latents/latents_sa3" not in src, \
         "latent_dir must come from the ini, not a hardcoded path"

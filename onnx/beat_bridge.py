@@ -11,7 +11,7 @@ from stable_audio_3 import StableAudioModel
 from sa3_control.audio_io import save_audio
 OUT="/home/kim/Projects/SAO/renders_beatbridge2"; os.makedirs(OUT, exist_ok=True)
 CKPT="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
-LD="/home/kim/Projects/latents_sa3"; A_ID,B_ID="002859","002500"; BPM=143.0
+LD="/run/media/kim/Kosmos/latents/latents_sa3"; A_ID,B_ID="002859","002500"; BPM=143.0
 sam=StableAudioModel.from_pretrained("medium-base", device="cuda"); sam.load_lora([CKPT])
 sr=sam.model.sample_rate; ds=int(sam.model.pretransform.downsampling_ratio)
 def save(p, a): save_audio(p, torch.from_numpy(np.ascontiguousarray(a.astype("float32"))), sr)

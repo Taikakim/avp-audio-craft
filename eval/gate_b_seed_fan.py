@@ -30,7 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
-CORPUS = Path("/home/kim/Projects/latents_sa3")
+CORPUS = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 OUT = Path("/run/media/kim/Mantu/sa3_control_runs/gate_b_20260719"); OUT.mkdir(parents=True, exist_ok=True)
 PROMPT = "aggressive upbeat goa trance"      # rhythmic; matches the real-goa corpus
 N_SEEDS = 24

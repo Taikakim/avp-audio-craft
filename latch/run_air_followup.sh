@@ -8,7 +8,7 @@ OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_followup
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
-COMMON="--feature rms_energy_air --latent-dir /home/kim/Projects/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-radial-brake 0.8 --batch-size 16 --grad-accum 2"
+COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-radial-brake 0.8 --batch-size 16 --grad-accum 2"
 ARMS=(
 "O6_d256_lr5e-2_late1_cos3|$COMMON --max-steps 4000 --epochs 25 --mod-warmup-epochs 1 --mod-late-from-epochs 1 --cosine-epochs 3 25 --ema-halflife-epochs 2 --ema-extra-halflife-epochs 0.5 --grad-clip 1.0 --lr 5e-2 --dim 256 --depth 8"
 "A2b_d512_lr1e-2_rerun|$COMMON --max-steps 1000 --epochs 10 --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --ema-halflife-epochs 0.5 --ema-extra-halflife-epochs 2 --lr 1e-2 --dim 512 --depth 8"

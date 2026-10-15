@@ -3,7 +3,7 @@
 
 Forwards the trained `same_chroma` LatCH head (the exact checkpoint scored in Tier-1,
 `same_chroma_readout_2026-08-11/`) on clean z0 latents (t=0, rectified-flow "clean"
-convention) for every real goa track in `/home/kim/Projects/latents_sa3` that has a
+convention) for every real goa track in `/run/media/kim/Kosmos/latents/latents_sa3` that has a
 matching MuScriptor transcription record (`{id}.stats.json` in muscriptor_full -- used
 only to locate the source audio for Stage B's audio-GT; transcription QUALITY doesn't
 gate this stage). Predicted 384-d chroma reshaped band-major to (3,128,T) -- same
@@ -36,7 +36,7 @@ sys.path.insert(0, "/home/kim/Projects/SAO/stable-audio-3")
 from stable_audio_3.models.latch import load_latch_from_checkpoint  # noqa: E402
 
 CKPT = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_same_chroma_best.pt"
-LATENT_DIR = Path("/home/kim/Projects/latents_sa3")
+LATENT_DIR = Path("/run/media/kim/Kosmos/latents/latents_sa3")
 MUSCRIPTOR_DIR = Path("/run/media/kim/Kosmos/muscriptor_full")
 OUT_DIR = Path("/home/kim/Projects/SAO/eval/musicology/tier2_predicted")  # DURABLE (D11): the 08-11 run cached to tmpfs and lost it
 

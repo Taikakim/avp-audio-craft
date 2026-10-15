@@ -12,7 +12,7 @@ Usage: python latent_dim_feature_xcorr.py [--n 1000] [--holdout 200] [--out CSV]
 import argparse, json, os, random
 import numpy as np
 
-LAT_DIR = "/home/kim/Projects/latents_sa3"
+LAT_DIR = "/run/media/kim/Kosmos/latents/latents_sa3"
 SKIP_FIELDS = {"__meta__", "hpcp_ts"}  # hpcp is (T,12); handle separately if ever needed
 FRAME_STRIDE = 8  # subsample frames for the ridge accumulation (4096/8 = 512/crop)
 

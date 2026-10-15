@@ -12,7 +12,7 @@ SAO/docs/superpowers/specs/2026-07-02-perceptual-signal-optimizer-directions.md
 
 CPU-friendly (~0.5M params):
     stable-audio-3/.venv/bin/python -m sa3_control.train_cc_probe \
-        --encoded_dir /home/kim/Projects/latents_sa3 --out cc_probe_onset.pt \
+        --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 --out cc_probe_onset.pt \
         --epochs 6 --crop-frames 512
 """
 from __future__ import annotations
@@ -53,7 +53,7 @@ class _WinDS(Dataset):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--encoded_dir", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--encoded_dir", default="/run/media/kim/Kosmos/latents/latents_sa3")
     ap.add_argument("--out", default="cc_probe_onset.pt")
     ap.add_argument("--scalar-field", default="onset_density")
     ap.add_argument("--vector-field", default="",

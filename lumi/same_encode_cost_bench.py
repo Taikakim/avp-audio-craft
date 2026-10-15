@@ -28,10 +28,10 @@ import torch
 from stable_audio_3 import AutoencoderModel
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--audio-src", default="/home/kim/Projects/latents_sa3/000000.json",
+ap.add_argument("--audio-src", default="/run/media/kim/Kosmos/latents/latents_sa3/000000.json",
                  help="any real audio file >=380s; default resolves the T4096 corpus's own "
                       "crop-0 source track via its sidecar JSON's source_path")
-ap.add_argument("--npy-src", default="/home/kim/Projects/latents_sa3/000000.npy")
+ap.add_argument("--npy-src", default="/run/media/kim/Kosmos/latents/latents_sa3/000000.npy")
 args = ap.parse_args()
 
 if args.audio_src.endswith(".json"):

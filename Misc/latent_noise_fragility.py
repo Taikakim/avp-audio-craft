@@ -20,7 +20,7 @@ Usage: python latent_noise_fragility.py [--sigmas 0,0.2,0.5,0.8] [--n 800] [--ho
 import argparse, os, random
 import numpy as np
 
-LAT_DIR = "/home/kim/Projects/latents_sa3"
+LAT_DIR = "/run/media/kim/Kosmos/latents/latents_sa3"
 SKIP_FIELDS = {"__meta__", "hpcp_ts"}
 FRAME_STRIDE = 8
 EPS_SEED = 7  # match C's extract_layer_activations.py fixed-eps convention

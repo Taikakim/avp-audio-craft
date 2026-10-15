@@ -34,7 +34,7 @@ import hook_metric as HM
 
 MELODIES = os.path.join(MUS, 'melodies.jsonl')
 MIDI_DIR = '/run/media/kim/Kosmos/muscriptor_full'
-LATENTS = '/home/kim/Projects/latents_sa3'
+LATENTS = '/run/media/kim/Kosmos/latents/latents_sa3'
 TARGETS = os.path.join(HERE, 'targets')
 
 N_FRAMES = 4096

@@ -20,7 +20,7 @@ stable-audio-3/scripts/latch/train_latch.py (--target-source npz) and control/sa
   + scalars bpm_madmom, onset_density, onset_per_beat (whole valid crop)
 Resumable: skips crops whose companion exists. Run with the mir venv (madmom lives there).
 USAGE  /home/kim/Projects/mir/mir/bin/python latch/extract_density_targets.py \
-         --latent-dir /run/media/kim/Kosmos/latents_goa_bigset \
+         --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset \
          --audio-root /run/media/kim/Mantu/goa_archive_extracted --workers 12
 """
 import argparse

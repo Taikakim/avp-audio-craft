@@ -39,7 +39,7 @@ fi
 "$SAO/Misc/worklog_note.sh" continued-goa "START — 3 more epochs on newcaptions ep4 (stable/CK venv) ($(date +%H:%M))"
 $PY scripts/train_lora.py \
   --model medium-base \
-  --encoded_dir /home/kim/Projects/latents_sa3 \
+  --encoded_dir /run/media/kim/Kosmos/latents/latents_sa3 \
   --caption-sidecar "$FT/goa/captions.json" \
   --adapter_type dora-rows --rank 128 --lora_alpha 128 \
   --optimizer fusion --lr 2e-4 \

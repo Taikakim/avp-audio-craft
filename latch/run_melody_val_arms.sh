@@ -34,7 +34,7 @@ set -uo pipefail
 
 SA3=/home/kim/Projects/SAO/stable-audio-3
 PY=/home/kim/Projects/SAO/.venv/bin/python
-LATENTS=${LATENTS:-/home/kim/Projects/latents_sa3}
+LATENTS=${LATENTS:-/run/media/kim/Kosmos/latents/latents_sa3}
 OUT=${OUT:-${SA3}/latch_weights_sa3_medium}
 LOGDIR=${LOGDIR:-/home/kim/Projects/SAO/latch/val_arm_logs}
 # 30 epochs is a budget, not a belief: it is what fits the unattended window at the measured

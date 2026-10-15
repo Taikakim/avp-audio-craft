@@ -25,8 +25,8 @@ from sa3_control.conditioner import MelodyContourEncoder
 from sa3_control.adapters import (ControlContext, ControlledCrossAttention,
                                   use_control_context)
 
-MELODY_DIR = "/run/media/kim/Kosmos/latents_sa3_melody"
-LATENTS = "/home/kim/Projects/latents_sa3"
+MELODY_DIR = "/run/media/kim/Lehto/latents-all-backup/latents_sa3_melody"
+LATENTS = "/run/media/kim/Kosmos/latents/latents_sa3"
 
 
 def test_prep_sidecars():

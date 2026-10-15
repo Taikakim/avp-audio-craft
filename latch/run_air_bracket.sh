@@ -9,7 +9,7 @@ OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
-COMMON="--feature rms_energy_air --latent-dir /home/kim/Projects/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --batch-size 16 --grad-accum 2 --max-steps 1000 --epochs 10 --save-every-epoch"
+COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --batch-size 16 --grad-accum 2 --max-steps 1000 --epochs 10 --save-every-epoch"
 MOD="--optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 0.5"
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
 ARMS=(

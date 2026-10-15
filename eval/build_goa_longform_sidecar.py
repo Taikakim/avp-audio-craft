@@ -15,7 +15,7 @@ rate is visible before the sidecar ships to LUMI.
 
 Usage:
   python3 eval/build_goa_longform_sidecar.py \
-    --latents /home/kim/Projects/latents_sa3 \
+    --latents /run/media/kim/Kosmos/latents/latents_sa3 \
     --pool eval/kimlong_pool.json \
     --out lumi/goa_kimlong_sidecar.json
 """

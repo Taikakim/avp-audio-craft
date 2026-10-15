@@ -188,7 +188,7 @@ def test_fingerprint_variant_c_shape():
 # Optional: real-latents integration test (skipped if NVMe mirror not present)
 # ---------------------------------------------------------------------------
 
-LAT = "/home/kim/Projects/latents_sa3"
+LAT = "/run/media/kim/Kosmos/latents/latents_sa3"
 GENRE_VOCAB_JSON = "/home/kim/Projects/SAO/control/sa3_control/genre_vocab.json"
 
 
