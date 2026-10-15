@@ -1,0 +1,61 @@
+# Owner: WINTERMUTE (created 2026-10-15)
+"""film_schedule.py -- per-step FiLM gain by noise level (EXPERIMENTS E8: timestep-gated FiLM).
+
+WHY. The FiLM density adapter has range but carries the training set's style; LatCH is transparent but narrow. On SA3,
+rhythm and arrangement are committed at high noise and timbre/character at low noise (2026-10-15 early-budget bracket),
+so FiLM at full strength EARLY and faded to 0 for the low-noise tail should keep the density it sets while leaving the
+character to the base model (and to late, alpha-weighted LatCH). It also locates WHERE in the schedule the leak enters.
+
+HOW. The control adapter reads its gain live from `sa3_control.adapters._ACTIVE["gain"]` on every forward. A forward
+pre-hook on the module the samplers call as `model(x, t, ...)` (StableAudioModel.model.model, both the guided and the
+unguided samplers) sets that gain from the step's sigma before each call. Sigma semantics match the DoRA interval:
+1 = pure noise (first step), 0 = clean (last). The FiLM tokens themselves are unchanged.
+
+    gain(sigma) = gain                       for sigma_min <= sigma <= sigma_max
+                  gain * linear ramp to 0    over `fade` sigma below sigma_min (and above sigma_max)
+                  0                          outside that
+
+The defaults (0, 1, fade 0) give the constant gain, so a request without the keys behaves as before.
+"""
+from __future__ import annotations
+
+import contextlib
+
+import torch
+
+
+def film_gain_at(sigma: float, gain: float, sigma_min: float = 0.0, sigma_max: float = 1.0, fade: float = 0.0) -> float:
+    if sigma_min <= sigma <= sigma_max:
+        return gain
+    d = (sigma_min - sigma) if sigma < sigma_min else (sigma - sigma_max)
+    if fade > 0 and d < fade:
+        return gain * (1.0 - d / fade)
+    return 0.0
+
+
+def is_scheduled(film_req: dict | None) -> bool:
+    if not film_req:
+        return False
+    return (float(film_req.get("sigma_min", 0.0)) > 0.0 or float(film_req.get("sigma_max", 1.0)) < 1.0)
+
+
+@contextlib.contextmanager
+def film_gain_schedule(module: torch.nn.Module, active: dict, gain: float, sigma_min: float, sigma_max: float,
+                       fade: float = 0.0, log: list | None = None):
+    """Set active["gain"] from each forward's sigma (positional arg 1, or kwarg t) for the duration."""
+    def pre(_mod, args, kwargs):
+        t = args[1] if len(args) > 1 else kwargs.get("t")
+        if t is None:
+            return None
+        s = float(t.flatten()[0]) if torch.is_tensor(t) else float(t)
+        g = film_gain_at(s, gain, sigma_min, sigma_max, fade)
+        active["gain"] = g
+        if log is not None:
+            log.append((round(s, 4), round(g, 4)))
+        return None
+
+    h = module.register_forward_pre_hook(pre, with_kwargs=True)
+    try:
+        yield
+    finally:
+        h.remove()

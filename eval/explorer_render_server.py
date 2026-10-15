@@ -1,6 +1,7 @@
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams "guide_schedule" (alpha|flat) passed through to the guided samplers
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_rescale (0..1 per-step std rescale) passed through
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_anchor (trajectory std ceiling) passed through
+# Last edited: WINTERMUTE 2026-10-15 -- film {sigma_min, sigma_max, fade}: FiLM gain by noise level (E8, eval/film_schedule.py)
 # Last edited: GHOST-NOTE 2026-10-12 -- /presets/{name:path} so folder presets resolve
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
@@ -62,6 +63,8 @@ from forge import schedule as forge_schedule  # noqa: E402  (Latent Forge, M3 T2
 
 from sa3_control.audio_io import save_audio  # noqa: E402  (boot check: must resolve)
 from sa3_control.adapters import ControlContext, use_control_context  # noqa: E402
+from sa3_control.adapters import _ACTIVE as _ADAPTER_ACTIVE  # noqa: E402  (E8 FiLM gain schedule)
+import film_schedule  # noqa: E402  (eval/, the script's own dir)
 from sa3_control.inject import install_adapters  # noqa: E402
 from sa3_control.conditioner import ScalarAttributeEncoder  # noqa: E402
 from sa3_control.generate import load_adapter_state  # noqa: E402
@@ -671,7 +674,17 @@ def film_context(film_req):
     s = torch.tensor([(value - st["mean"]) / st["std"]], device=ARGS.device, dtype=st["dtype"])
     ctrl = st["enc"](s)
     cc = torch.cat([ctrl, torch.zeros_like(ctrl)], 0)   # cond + trained-null uncond
-    return use_control_context(ControlContext(cc, gain=gain))
+    if not film_schedule.is_scheduled(film_req):
+        return use_control_context(ControlContext(cc, gain=gain))
+    # E8 (W 2026-10-15): gain by noise level -- film {"sigma_min", "sigma_max", "fade"}, sigma-native like the
+    # DoRA interval (1 = first step). The adapter reads _ACTIVE["gain"] live, so a pre-hook on the sampler-facing
+    # module re-sets it every forward; tokens are unchanged. See eval/film_schedule.py.
+    stack = contextlib.ExitStack()
+    stack.enter_context(use_control_context(ControlContext(cc, gain=gain)))
+    stack.enter_context(film_schedule.film_gain_schedule(
+        MODEL.model.model, _ADAPTER_ACTIVE, gain,
+        _f(film_req, "sigma_min", 0.0), _f(film_req, "sigma_max", 1.0), _f(film_req, "fade", 0.0)))
+    return stack
 
 
 # ---------------------------------------------------------------- LatCH configs (A.3.6)
@@ -808,6 +821,8 @@ def info():
             "latch_heads": list(HEADS.values()),
             "dora": dict(DORA_REGISTRY),
             "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN},
+            # clients that send film sigma_min/sigma_max/fade check this first: an older server ignores them silently
+            "film_schedule": True,
             "objective": getattr(getattr(MODEL, "model", None), "diffusion_objective", None)}
 
 
