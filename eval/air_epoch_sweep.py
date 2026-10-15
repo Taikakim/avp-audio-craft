@@ -21,8 +21,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--dirs", nargs="*", default=None, help="run dirs holding latch_sa3_rms_energy_air_ep*.pt (default: the overnight O1-O5 + bracket A2)")
 ap.add_argument("--out", default=None)
 ARGS = ap.parse_args()
-ON = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight"
-A2 = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
+ON = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight"
+A2 = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14/A2_d512dp8_lr1e-2"
 OUT = ARGS.out or f"{ON}/epoch_sweep"
 DIRS = ARGS.dirs if ARGS.dirs else sorted(glob.glob(f"{ON}/O*")) + [A2]
 os.makedirs(f"{OUT}/clips", exist_ok=True)

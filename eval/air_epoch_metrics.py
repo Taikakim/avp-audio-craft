@@ -9,7 +9,7 @@ Measured on the LEVEL-MATCHED wavs (original and bass+body unmatched), so loudne
 Audit note: PQ comes from a model that has not been validated against Kim's ratings here; treat as a screen.
 """
 import json, os, sys, glob
-SW = os.environ.get("SWEEP_DIR", "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_overnight/epoch_sweep")  # override for other sweeps
+SW = os.environ.get("SWEEP_DIR", "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_overnight/epoch_sweep")  # override for other sweeps
 def files():
     out = {}
     for p in sorted(glob.glob(f"{SW}/clips/*.wav")):

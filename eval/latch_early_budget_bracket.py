@@ -38,8 +38,8 @@ os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/latch_early_budget_20261015"
-ONSET = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_early_budget_20261015"
+ONSET = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 AIR = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_a2_best.pt"
 PROMPT, BPM, CFG, DUR = "psytrance, 140 bpm", 140.0, 7.0, 20.0
 SEEDS = (1234, 77)

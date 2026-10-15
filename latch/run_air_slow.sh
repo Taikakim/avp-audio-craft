@@ -5,7 +5,7 @@
 # TRIMMED 2026-10-15 (Kim: "only the runs with LRs lower than the lowest in the last runs, to save time"): only S5 (lr 1e-3) is below the lowest lr of the other queued runs (L2 2e-3); S1 5e-3, S2 1e-2, S3/S4 3e-3 dropped.
 # Each epoch saves EMA 2 ep, EMA 0.5 ep and online (Schedule-Free average) weights. d512 uses batch 8 x 4 (b16 x 2 ran out of memory in A2b). Runs after run_air_lowlr.sh.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_slow
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_slow
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

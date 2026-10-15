@@ -5,7 +5,7 @@
   "payload": {
     "cfg_scale": 6.0,
     "dora": {
-      "ckpt_path": "/run/media/kim/Mantu2/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
+      "ckpt_path": "/run/media/kim/Mantu/sa3_lora_runs/dora16_avp_familiarity_8ep/epoch=4-step=1495.weights.ckpt",
       "strength": 1.0
     },
     "duration": 14.11,

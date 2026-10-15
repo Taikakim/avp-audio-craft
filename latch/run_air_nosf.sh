@@ -5,7 +5,7 @@
 # at lr 1e-2 (SF-free runs need a far smaller lr than SF's, Phase A/B: modular 1e-2 trains; 1e-1 would be reckless); QP64h = the faithful lr 1e-1 twin of P64 (expected to diverge; train_latch now stops at the first NaN epoch).
 # Runs after run_air_slow.sh (waits for /tmp/air_slow.done).
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_nosf
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_nosf
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

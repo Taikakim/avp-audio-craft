@@ -26,8 +26,12 @@ import shutil
 import sys
 import time
 
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/punch_air_film_matrix_20261015"
-PRESETS = "/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/presets.json"
+# The eval drive is removable and udisks names it Mantu / Mantu1 / Mantu2 depending on label collisions at mount time
+# (it moved Mantu2 -> Mantu on 2026-10-15): resolve at run time, as explorer_render_server.py does.
+_MANTU = next((p for p in ("/run/media/kim/Mantu", "/run/media/kim/Mantu2", "/run/media/kim/Mantu1")
+               if os.path.isdir(f"{p}/sa3_control_runs")), "/run/media/kim/Mantu")
+OUT = f"{_MANTU}/sa3_control_runs/punch_air_film_matrix_20261015"
+PRESETS = f"{_MANTU}/sa3_control_runs/punch_rating_20261014/presets.json"
 SERVER = "http://127.0.0.1:8056"
 A2 = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_a2_best.pt"
 SEEDS = (764, 3050)

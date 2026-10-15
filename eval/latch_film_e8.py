@@ -27,7 +27,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import latch_film_combo_e7 as e7  # noqa: E402
 
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/latch_film_e8_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e8_20261015"
 CTXS = ("base", "house")
 FILM_GAINS = (1.0, 1.75)
 GATES = (0.8, 0.6, 0.4)

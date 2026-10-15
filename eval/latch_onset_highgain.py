@@ -21,8 +21,8 @@ import sys
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import latch_onset_matrix_ema as m  # noqa: E402
 
-HEAD = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20"
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/latch_onset_highgain_20261015"
+HEAD = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_onset_highgain_20261015"
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--targets", default="7", help="comma list of requested onsets/s (default 7)")

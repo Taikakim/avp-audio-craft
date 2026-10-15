@@ -24,7 +24,7 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/latch_onset_matrix_ema_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_onset_matrix_ema_20261015"
 PROMPT, BPM, CFG, DUR, STEPS = "psytrance, 140 bpm", 140.0, 7.0, 20.0, 50
 SEEDS = (1234, 77)
 TARGETS = tuple(range(0, 13))

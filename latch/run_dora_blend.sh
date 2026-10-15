@@ -6,6 +6,6 @@ until [ -f /tmp/air_lowlr.done ]; do sleep 60; done
 "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 "$SAO/eval/forge/dev_server.sh" start GHOST-NOTE > /dev/null 2>&1
 until curl -s localhost:8056/info >/dev/null 2>&1; do sleep 15; done
-mkdir -p /run/media/kim/Mantu2/latch_sweep/dora_blend_2026-10-15
-"$SAO/.venv/bin/python" "$SAO/eval/dora_blend_bracket.py" > /run/media/kim/Mantu2/latch_sweep/dora_blend_2026-10-15/run.log 2>&1
+mkdir -p /run/media/kim/Mantu/latch_sweep/dora_blend_2026-10-15
+"$SAO/.venv/bin/python" "$SAO/eval/dora_blend_bracket.py" > /run/media/kim/Mantu/latch_sweep/dora_blend_2026-10-15/run.log 2>&1
 echo DORA BLEND DONE > /tmp/air_dora_blend.done

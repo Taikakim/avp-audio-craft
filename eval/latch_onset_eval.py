@@ -22,8 +22,8 @@ os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
 
-PHASE = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/phaseE"
-OUT = "/run/media/kim/Mantu2/sa3_control_runs"
+PHASE = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE"
+OUT = "/run/media/kim/Mantu/sa3_control_runs"
 FEATURE = "onset_per_beat_ts"
 
 

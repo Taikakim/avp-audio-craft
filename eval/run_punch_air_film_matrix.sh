@@ -5,7 +5,7 @@
 #   bash eval/run_punch_air_film_matrix.sh
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/sa3_control_runs/punch_air_film_matrix_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/punch_air_film_matrix_20261015
 STAGE=$HOME/evals_aac/punch_air_film_matrix
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2

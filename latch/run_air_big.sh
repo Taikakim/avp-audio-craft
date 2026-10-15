@@ -5,7 +5,7 @@
 # P64m = insurance (2026-10-15, owner: "enough to get them to finish even the 8ep run cleanly"): the same recipe at lr 3e-2 in case lr 1e-1 diverges; train_latch now stops at the first NaN epoch.
 # Each epoch saves EMA 4 ep (main), EMA 2 ep, EMA 0.5 ep and online weights. Runs after run_air_lowlr.sh; run_air_slow.sh waits for /tmp/air_big.done.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_big
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_big
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

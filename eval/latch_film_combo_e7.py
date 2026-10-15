@@ -30,9 +30,9 @@ import shutil
 import sys
 import time
 
-OUT = "/run/media/kim/Mantu2/sa3_control_runs/latch_film_combo_e7_20261015"
+OUT = "/run/media/kim/Mantu/sa3_control_runs/latch_film_combo_e7_20261015"
 SERVER = "http://127.0.0.1:8056"
-HEAD = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
+HEAD = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20/latch_sa3_onset_per_beat_ts_best.pt"
 PUNCH_PROMPT = ("90s psytrance, mystical aggressive goa trance,hypnotic, energetic, 143 bpm, the music consists of  "
                 "polivoks and korg analog leads and enigmatic organics pads. the bassline is a beefy moog snappy saw wave "
                 "16ths bass, and the drums have classic 909 kick and open hihat sounds. under everything  roland 303 style "

@@ -43,9 +43,9 @@ FPS = 44100 / 4096            # latent frames per second
 # extra arms beyond eval_prompt_styles' registry (Kim 2026-07-07 round 2:
 # HoF pick + ~5400-step ckpts, "around 5400 probably can't go wrong")
 EXTRA_ARMS = {
-    "hof":      "/run/media/kim/Mantu1/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
-    "newstack": "/run/media/kim/Mantu1/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
-    "evr1x54":  "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=3-step=6108.ckpt",
+    "hof":      "/run/media/kim/Mantu/sa3_lora_runs/sa3-goa-dora-47s-b4-cont/x20b3ygb/checkpoints/epoch=3-step=5400.ckpt",
+    "newstack": "/run/media/kim/Mantu/sa3_lora_runs/dora16_goa_newstack_8ep/epoch=3-step=5400.ckpt",
+    "evr1x54":  "/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=3-step=6108.ckpt",
 }
 
 

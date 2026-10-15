@@ -7,8 +7,8 @@
 set -u
 SAO=/home/kim/Projects/SAO
 PY=$SAO/.venv/bin/python
-HEAD_DIR=/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20
-OUT=/run/media/kim/Mantu2/sa3_control_runs/latch_onset_matrix_ema_20261015
+HEAD_DIR=/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/phaseE/E04ema_b32_ep20
+OUT=/run/media/kim/Mantu/sa3_control_runs/latch_onset_matrix_ema_20261015
 STAGE=$HOME/evals_aac/latch_onset_matrix_ema
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 cd "$SAO" || exit 2

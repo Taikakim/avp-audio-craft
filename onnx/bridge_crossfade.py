@@ -9,7 +9,7 @@ import numpy as np, torch
 from stable_audio_3 import StableAudioModel
 from sa3_control.audio_io import save_audio
 OUT="/home/kim/Projects/SAO/renders_bridge"; os.makedirs(OUT, exist_ok=True)
-CKPT="/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
+CKPT="/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt"
 LAT_A="/home/kim/Projects/latents_sa3/000100.npy"; LAT_B="/home/kim/Projects/latents_sa3/001200.npy"
 PROMPT="goa trance"
 sam=StableAudioModel.from_pretrained("medium-base", device="cuda"); sam.load_lora([CKPT])

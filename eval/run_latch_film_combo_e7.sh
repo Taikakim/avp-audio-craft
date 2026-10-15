@@ -7,7 +7,7 @@
 #   bash eval/run_latch_film_combo_e7.sh        (run in background; exit = done)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/sa3_control_runs/latch_film_combo_e7_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/latch_film_combo_e7_20261015
 STAGE=$HOME/evals_aac/latch_film_combo_e7
 MIR_PY=/home/kim/Projects/mir/mir/bin/python
 cd "$SAO" || exit 2

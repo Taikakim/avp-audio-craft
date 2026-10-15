@@ -50,11 +50,11 @@ PROMPTS = [
 
 DEFAULT_ARMS = {
     "base":    None,
-    "newcap5": "/run/media/kim/Mantu1/sa3_lora_runs/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt",
+    "newcap5": "/run/media/kim/Mantu/sa3_lora_runs/dora128_47s_newcaptions_5ep/epoch=4-step=6750.ckpt",
     "newcap8": "/home/kim/Projects/sa3_local_runs/dora128_newcap_continued_3more/epoch=2-step=4050.ckpt",
     # the everything-corpus 8ep LR pair (normal vs 3x) — Kim's LR-sweep comparison
-    "evr1x":   "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
-    "evr3x":   "/run/media/kim/Mantu1/sa3_lora_runs/dora128_everything_8ep_lr3x/epoch=7-step=12216.ckpt",
+    "evr1x":   "/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr1x/epoch=7-step=12216.ckpt",
+    "evr3x":   "/run/media/kim/Mantu/sa3_lora_runs/dora128_everything_8ep_lr3x/epoch=7-step=12216.ckpt",
 }
 
 # per-arm adapter strength (set_lora_strength after load); "arm@S" in --arms also works.

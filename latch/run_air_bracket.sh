@@ -5,7 +5,7 @@
 # armed after epoch 1, EMA half-life 0.5 ep, batch 16 x accum 2 (= 32; b32 at dim512/depth8 OOMs the 16 GB card), 1000 optimizer steps (~6.25 ep of 160 steps).
 # Each arm takes the GPU through gpu_guard as GHOST-NOTE; resumable via SUMMARY.tsv. Run:  setsid nohup latch/run_air_bracket.sh > /tmp/air_bracket_train.log 2>&1 &
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

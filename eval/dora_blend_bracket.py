@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
 
-OUT = "/run/media/kim/Mantu2/latch_sweep/dora_blend_2026-10-15"
+OUT = "/run/media/kim/Mantu/latch_sweep/dora_blend_2026-10-15"
 os.makedirs(f"{OUT}/clips", exist_ok=True)
 SEEDS = [764, 1337, 3017, 3050]
 pre = P.load_presets()

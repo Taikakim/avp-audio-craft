@@ -5,7 +5,7 @@
 # at lr 2e-3 and 5e-3 (1e-2 = A2/A2b, 1e-3 = A4 already exist). Saves EMA 0.5 ep + EMA 2 ep + online weights every epoch. Question: does a lower lr stretch the glitch-free window past
 # the ~3 epochs the owner heard at lr 1e-2 (overnight O5)? Runs AFTER run_air_followup.sh (waits for /tmp/air_followup.done), stops the render server for the GPU, then restarts it and renders the epoch sweep.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_lowlr
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_lowlr
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

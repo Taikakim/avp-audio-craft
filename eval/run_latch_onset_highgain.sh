@@ -6,7 +6,7 @@
 #   bash eval/run_latch_onset_highgain.sh        (run in background; exit = done)
 set -u
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/sa3_control_runs/latch_onset_highgain_20261015
+OUT=/run/media/kim/Mantu/sa3_control_runs/latch_onset_highgain_20261015
 STAGE=$HOME/evals_aac/latch_onset_highgain
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
 cd "$SAO" || exit 2

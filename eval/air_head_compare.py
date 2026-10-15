@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_rating_server as P
 import latch_drift_check as DC
 
-AH = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14"
+AH = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14"
 OUT = f"{AH}/compare"
 os.makedirs(OUT, exist_ok=True)
 HEADS = {"old_adamw": "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/latch_sa3_rms_energy_air_best.pt"}

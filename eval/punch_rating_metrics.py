@@ -17,7 +17,7 @@ import json
 import os
 import sys
 
-DATA = "/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014"
+DATA = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
 CLIPS = f"{DATA}/clips"
 
 

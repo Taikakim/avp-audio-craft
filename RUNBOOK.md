@@ -585,7 +585,7 @@ VERIFY:
 proxies to :8056).
 
 ## 18. Punch rating tool (rate steering 1-5, request new pairs) — G, 2026-10-14
-Local service on **:8058**, data in `/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014/` (clips as wav, `manifest.json`, `ratings.jsonl`, `presets.json`, `metrics.json`).
+Local service on **:8058**, data in `/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014/` (clips as wav, `manifest.json`, `ratings.jsonl`, `presets.json`, `metrics.json`).
 
     cd /home/kim/Projects/SAO
     .venv/bin/python eval/punch_rating_server.py --batch 64        # (once) render 64 seeds; needs the render server up, ~20 min
@@ -618,6 +618,6 @@ Follow-up chain, 2026-10-15 (each script waits on `/tmp/*.done` files from the o
 Per-epoch checkpoints: `ep<N>.pt` = EMA (main half-life), `ep<N>_ema<hl>.pt` = extra EMA, `ep<N>_online.pt` = live weights (Schedule-Free average) via `--save-online`. `train_latch.py` now stops at the first NaN epoch.
 Kill a driver by its PID from `ps -eo pid,cmd | grep "bash latch/run_"` -- never `pkill -f` with the script name in the same command line (it kills your own shell).
 
-VERIFY: `cat /run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14/SUMMARY.tsv` (one row per arm; `rc=0` and a best validation loss mean it trained; check the number of `latch_sa3_rms_energy_air_ep*.pt` files too).
+VERIFY: `cat /run/media/kim/Mantu/latch_sweep/air_head_2026-10-14/SUMMARY.tsv` (one row per arm; `rc=0` and a best validation loss mean it trained; check the number of `latch_sa3_rms_energy_air_ep*.pt` files too).
 Traps: batch 32 at dim 512 / depth 8 runs out of the 16 GB card; use `--batch-size 16 --grad-accum 2`. lr >= 5e-2 diverges. A saved head is the EMA weights when `--ema` is on (the `ema` field in the file). Register a head for the GUI by copying it as `latch_sa3_<name>_best.pt` into `stable-audio-3/latch_weights_sa3_medium/` and restarting the render server.
 

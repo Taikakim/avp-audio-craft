@@ -45,7 +45,7 @@ from eval_prompt_styles import DEFAULT_ARMS, ARM_STRENGTH, PROMPTS  # noqa: E402
 
 LATCH_HEAD = ("/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium/"
               "latch_sa3_onset_envelope_best.pt")
-FILM_CKPT = ("/run/media/kim/Mantu1/sa3_control_runs/"
+FILM_CKPT = ("/run/media/kim/Mantu/sa3_control_runs/"
              "onset_FusionCC_lr1e-4_randomcrop/riffer_final.pt")
 LATCH_GAIN = 512.0
 # Kim 2026-07-07 (gain_knee + first grid): "gain 6 never worked" — flat 1.75 chosen

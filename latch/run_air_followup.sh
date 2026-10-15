@@ -4,7 +4,7 @@
 # (A2b) the A2 bracket recipe re-run. Both save, every epoch: EMA half-life 2 ep (the overnight setting), EMA half-life 0.5 ep (A2's setting) and ONLINE weights (Schedule-Free averaged iterate),
 # all from ONE trajectory, so the EMA-vs-online question is answered on identical training. Queues behind any GPU holder; stops the render server; then renders the epoch sweep.
 SAO=/home/kim/Projects/SAO
-OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_followup
+OUT=/run/media/kim/Mantu/latch_sweep/air_head_2026-10-15_followup
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0

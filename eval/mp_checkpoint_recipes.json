@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "Canonical training-recipe + script-link source for the multiprompt eval page (mp.html) checkpoint pulldown. Kim 2026-07-10: every model must show its training params as far as recoverable + link to the training script. Values with trailing '*' were reconstructed (inherited from sibling recipe / name-matched), not read directly; 'confidence' per run. script_path=null => scratchpad chain, not committed (recipe still recovered from run-dir README / logs/metrics.csv / ckpt lora_config).",
-    "path_caveat": "Run scripts write to /run/media/kim/Mantu1/... (stale mountpoint artifact); dirs currently mount at /run/media/kim/Mantu/...",
+    "path_caveat": "Run scripts write to /run/media/kim/Mantu/... (stale mountpoint artifact); dirs currently mount at /run/media/kim/Mantu/...",
     "evr1x_note": "'evr1x' (a2a workhorse) == dora128_everything_8ep_lr1x epoch=7-step=12216.ckpt == the goa in-dist baseline. Single checkpoint, not two."
   },
   "dora16_avp_originals_64ep": {"adapter_type":"dora-rows","rank":16,"lora_alpha":16,"optimizer":"fusion","lr":"2e-4","epochs":64,"steps":2304,"batch_size":4,"accumulate_grad_batches":2,"duration":47,"beat_aware_crop":true,"caption_sidecar":null,"base_model":"medium-base","corpus":"latents_avp_originals (288 originals, no augs)","seed":42,"script_path":null,"script_note":"scratchpad chain; run-dir README documents recipe (same as dora16_avp_8ep, step-matched to 64ep)","confidence":"found"},

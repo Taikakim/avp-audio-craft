@@ -12,7 +12,7 @@ Heads used: production bass/body/mid/air + the retrained air head A2. Latents: e
 """
 import glob, json, os, sys
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
-OUT = os.environ.get("CT_OUT", "/run/media/kim/Mantu2/latch_sweep/crosstalk_2026-10-15")
+OUT = os.environ.get("CT_OUT", "/run/media/kim/Mantu/latch_sweep/crosstalk_2026-10-15")
 W = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium"
 HEADS = {"bass": f"{W}/latch_sa3_rms_energy_bass_best.pt", "body": f"{W}/latch_sa3_rms_energy_body_best.pt", "mid": f"{W}/latch_sa3_rms_energy_mid_best.pt",
          "air_prod": f"{W}/latch_sa3_rms_energy_air_best.pt", "air_A2": f"{W}/latch_sa3_rms_energy_air_a2_best.pt"}

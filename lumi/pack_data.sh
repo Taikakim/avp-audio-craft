@@ -3,7 +3,7 @@
 # Doubles as the COLD BACKUP of the single-copy latents (the standing CONTINUITY risk):
 # the same tarballs are the backup — write them to Mantu1, ship them to LUMI-O later.
 #
-# Usage:  ./pack_data.sh [/run/media/kim/Mantu1/lumi_staging]
+# Usage:  ./pack_data.sh [/run/media/kim/Mantu/lumi_staging]
 #
 # Transfer (once project number exists):
 #   - big tarballs → LUMI-O object storage (rclone / s3cmd, keys from LUMI web UI),
@@ -11,7 +11,7 @@
 #   - code + configs → plain rsync to lumi.csc.fi:/project/<proj>/
 set -euo pipefail
 
-DEST=${1:-/run/media/kim/Mantu1/lumi_staging}
+DEST=${1:-/run/media/kim/Mantu/lumi_staging}
 mkdir -p "$DEST"
 cd /home/kim/Projects
 
