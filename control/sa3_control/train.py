@@ -1,3 +1,4 @@
+# Last edited: WINTERMUTE 2026-10-15 -- state_online (online/SF-averaged weights) saved beside the EMA state, periodic + final (TRAINING.md D6)
 """Train the audio-reference (riffer) control adapter on pre-encoded SA3 latents.
 
 Loads medium-base (fp32, model_half=False), installs decoupled cross-attn adapters
@@ -1115,6 +1116,15 @@ def main():
                 # capture exact-resume state in TRAIN mode (y iterate + opt state) BEFORE EMA/SF swap
                 _resume_state = {"model_train": adapter_state_dict(wrappers, cond_enc), "opt": opt.state_dict(),
                                  "step": step, "torch_rng": torch.get_rng_state()}
+                # TRAINING.md D6 (W 2026-10-15): with an EMA, ALSO keep the online weights (the SF-averaged
+                # iterate when SF is on, else the live weights) -- the EMA alone hides which of the two deploys better.
+                _online = None
+                if ema is not None:
+                    if _sf:
+                        opt.eval()
+                    _online = adapter_state_dict(wrappers, cond_enc)
+                    if _sf:
+                        opt.train()
                 if ema is not None:
                     ema.copy_to()                            # EMA: swap in averaged weights for the save
                 if _sf:
@@ -1129,6 +1139,7 @@ def main():
                             "genre_vocab": _fp_vocab,
                             "fp_in_dim": getattr(cond_enc, "in_dim", None),
                             **_extra_ckpt_fields(),
+                            **({"state_online": _online} if _online is not None else {}),
                             **_resume_state}, p)
                 if ema is not None:
                     ema.restore()
@@ -1222,6 +1233,13 @@ def main():
     else:
         _resume_state = {"model_train": adapter_state_dict(wrappers, cond_enc), "opt": opt.state_dict(),
                          "step": step, "torch_rng": torch.get_rng_state()}
+        _online = None                                       # D6: online weights too (see the periodic save)
+        if ema is not None:
+            if _sf:
+                opt.eval()
+            _online = adapter_state_dict(wrappers, cond_enc)
+            if _sf:
+                opt.train()
         if ema is not None:
             ema.copy_to()                                    # EMA: final save = averaged weights
         if _sf:
@@ -1236,6 +1254,7 @@ def main():
                             "genre_vocab": _fp_vocab,
                             "fp_in_dim": getattr(cond_enc, "in_dim", None),
                             **_extra_ckpt_fields(),
+                            **({"state_online": _online} if _online is not None else {}),
                             **_resume_state},
                    os.path.join(args.save_dir, "riffer_final.pt"))
         if ema is not None:

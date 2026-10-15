@@ -1565,6 +1565,17 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   Preferred form: a control-LoRA/DoRA trained jointly with the conditioner + control dropout, so null control = base behaviour and the existing
   adapter strength knob (0.5/1.0/1.5) keeps the "baked" part dial-able. Reference, not main path. Needs the training-launch notes
   (`run_meta.json` purpose/hypothesis/kill) per CLAUDE.md before any launch.
+- **E7 / E8 RESULTS (W, 2026-10-15), page `files/evals/latch_film_combo.html`.** E7: LatCH + FiLM beats FiLM alone on range vs CLAP drift in all
+  three contexts (e.g. punch FiLM 1.75 alone 4.4 onsets/s spread @ drift 0.28 vs FiLM 1.0 + LatCH 512 5.5 @ 0.15); kill NOT met; sweet spot FiLM
+  0.5-1.0 + LatCH 512. Drift meter audited (house: FiLM 1.75 0.22 vs LatCH alone 0.03). E8: FiLM gated to sigma >= 0.4..0.8 keeps 85-100% of its
+  spread but does not reduce drift in house (0.26 vs 0.22) -> the style pull enters early with the density; kill met for the leak; FiLM's late
+  steps add nothing. Next per plan: E9. Numbers in each run's `run_meta.json` `result`.
+- **E12 — FiLM density adapter retrained under the ModularOptimizer — RUNNING/QUEUED (W, asked in session 2026-10-15).** Reference = the shipped
+  FiLM `onset_Fusion_lr1e-4_randomcrop` (FusionOpt lr 1e-4, 54k steps). The modular optimizer has never trained a control adapter, so LR does not
+  transfer (TRAINING.md D4): stage 1 = LR bracket 3e-4 / 1e-3 / 3e-3 x 6000 steps, EMA 0.999 + online weights saved (`state_online`, added to
+  `control/sa3_control/train.py` today, D6), prune-only (D25). Stage 2 = the survivor at 54k, then the E7 contexts vs the shipped FiLM (range,
+  drift, gate). Runner `control/run_film_modular_bracket.sh` (queued behind GHOST-NOTE's air queue, `/tmp/air_nosf.done`), outputs
+  `Mantu2/sa3_control_runs/film_modular_bracket_20261015/`. Kill: all arms diverge or show no density response at 6000 steps.
 
 ## F. Data, captions, corpora (experiments they gate)
 
