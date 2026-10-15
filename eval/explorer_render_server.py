@@ -1,4 +1,5 @@
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams "guide_schedule" (alpha|flat) passed through to the guided samplers
+# Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_rescale (0..1 per-step std rescale) passed through
 # Last edited: GHOST-NOTE 2026-10-12 -- /presets/{name:path} so folder presets resolve
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
@@ -745,6 +746,7 @@ def resolve_latch(latch_list, req, extra_first=None):
     hparams = {"rho": _f(req, "rho", g0), "mu": _f(req, "mu", g0),
                "gamma": _f(req, "gamma", 0.3), "n_iter": _i(req, "n_iter", 4),
                "guide_schedule": str(req.get("guide_schedule") or "alpha"),
+               "guide_rescale": _f(req, "guide_rescale", 0.0),
                "log_norms": _b(req, "log_norms", False)}
     return configs, hparams
 
