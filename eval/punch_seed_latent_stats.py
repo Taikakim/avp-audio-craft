@@ -23,6 +23,7 @@ import numpy as np
 RENDER_OUT = "/home/kim/Projects/sa3_render_out"
 RATING = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
 OUT = f"{RATING}/seed_latent_stats_20261015.json"
+NODORA = "/run/media/kim/Mantu/sa3_control_runs/punch_nodora_seeds_20261015"   # eval/punch_nodora_seeds.py
 
 
 def arm_of(pe):
@@ -141,6 +142,41 @@ def main():
                 out[f"pca_{s}"] = [round(float(v), 2) for v in sc[idx[s], :5]]
         out["pca_score_std"] = [round(float(v), 2) for v in sc[:, :5].std(0)]
         report[arm] = out
+    # --- the DoRA's own shift per seed: same seeds rendered without the DoRA (eval/punch_nodora_seeds.py) ---
+    nd = NODORA if os.path.isdir(NODORA) else None
+    if nd:
+        seeds = sorted(s for (a, s) in lat if a == "dora" and os.path.exists(f"{nd}/nodora_s{s}.z0.npy"))
+        names = None
+        A, Bm, DMU = [], [], []
+        for s in seeds:
+            fa, mua, _ = features(np.load(lat[("dora", s)]))
+            fb, mub, _ = features(np.load(f"{nd}/nodora_s{s}.z0.npy"))
+            names = names or list(fa)
+            A.append([fa[n] for n in names])
+            Bm.append([fb[n] for n in names])
+            DMU.append(mua - mub)
+        A, Bm, DMU = np.array(A), np.array(Bm), np.array(DMU)
+        D = A - Bm
+        idx = {s: i for i, s in enumerate(seeds)}
+        sh = {"seeds": len(seeds), "features": names,
+              "mean_nodora": {n: round(float(Bm[:, j].mean()), 4) for j, n in enumerate(names)},
+              "mean_dora": {n: round(float(A[:, j].mean()), 4) for j, n in enumerate(names)},
+              "spread_nodora": {n: round(float(Bm[:, j].std()), 4) for j, n in enumerate(names)},
+              "spread_dora": {n: round(float(A[:, j].std()), 4) for j, n in enumerate(names)},
+              "shift_z": {n: round(float(D[:, j].mean() / (D[:, j].std() + 1e-12)), 2) for j, n in enumerate(names)}}
+        for s in (764, 3050):
+            if s in idx:
+                sh[f"nodora_z_{s}"] = {n: round(float((Bm[idx[s], j] - Bm[:, j].mean()) / (Bm[:, j].std() + 1e-12)), 2) for j, n in enumerate(names)}
+                sh[f"shift_z_{s}"] = {n: round(float((D[idx[s], j] - D[:, j].mean()) / (D[:, j].std() + 1e-12)), 2) for j, n in enumerate(names)}
+        # is 764's channel-offset shift unusual? norm of the per-channel mean shift, z across seeds
+        nrm = np.linalg.norm(DMU, axis=1)
+        sh["channel_mean_shift_norm_z"] = {str(s): round(float((nrm[idx[s]] - nrm.mean()) / (nrm.std() + 1e-12)), 2) for s in (764, 3050) if s in idx}
+        # does the DoRA pull every seed the same way? cosine of each seed's shift with the mean shift
+        u = DMU.mean(0)
+        cos = DMU @ u / (np.linalg.norm(DMU, axis=1) * np.linalg.norm(u) + 1e-12)
+        sh["shift_alignment_with_mean"] = {"mean": round(float(cos.mean()), 3), "min": round(float(cos.min()), 3),
+                                           **{str(s): round(float(cos[idx[s]]), 3) for s in (764, 3050) if s in idx}}
+        report["dora_shift"] = sh
     json.dump(report, open(OUT, "w"), indent=1)
     print(json.dumps(report, indent=1)[:6000])
     print(f"-> {OUT}")

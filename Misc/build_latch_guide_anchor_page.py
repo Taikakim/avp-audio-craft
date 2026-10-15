@@ -24,10 +24,10 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-RUNS = [("latch_guide_anchor", "/run/media/kim/Mantu2/sa3_control_runs/latch_guide_anchor_20261015", "anchor", "anchor s0",
+RUNS = [("latch_guide_anchor", "/run/media/kim/Mantu/sa3_control_runs/latch_guide_anchor_20261015", "anchor", "anchor s0",
          "Trajectory anchor: after every step the latent's std is capped at the healthy value for that noise level (s0 = target level "
          "of the finished latent; 0 = off). Normal states are untouched."),
-        ("latch_guide_rescale", "/run/media/kim/Mantu2/sa3_control_runs/latch_guide_rescale_20261015", "phi", "rescale φ",
+        ("latch_guide_rescale", "/run/media/kim/Mantu/sa3_control_runs/latch_guide_rescale_20261015", "phi", "rescale φ",
          "Per-edit rescale (negative result, kept for comparison): after each guidance edit the std is put back to its pre-edit value. "
          "Level and loudness barely move, because the inflation builds through the model's own later steps, not in the edits.")]
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")

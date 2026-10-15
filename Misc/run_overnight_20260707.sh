@@ -15,7 +15,7 @@ export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPE
 export PYTHONPATH=$SA3:$SA3/scripts:$SAO/control
 cd "$SA3" || exit 1
 FT=$SAO/../mir/data/feature_tables
-RUNS=/run/media/kim/Mantu1/sa3_lora_runs
+RUNS=/run/media/kim/Mantu/sa3_lora_runs
 
 note() { "$SAO/Misc/worklog_note.sh" overnight-0707 "$1 ($(date +%H:%M))"; }
 

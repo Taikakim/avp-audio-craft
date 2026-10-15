@@ -27,7 +27,7 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu2/sa3_control_runs/latch_onset_matrix_ema_20261015"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/latch_onset_matrix_ema_20261015"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = "latch_onset_matrix_ema"
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")

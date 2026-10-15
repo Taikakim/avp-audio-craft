@@ -23,7 +23,7 @@ sys.path.append("/home/kim/Projects/SAO")
 from comment_notes_block import notes_block
 from float_player import inject
 
-R = "/run/media/kim/Mantu2/sa3_control_runs"
+R = "/run/media/kim/Mantu/sa3_control_runs"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUTD = os.path.join(STAGE, "latch_onset_compare")
 os.makedirs(OUTD, exist_ok=True)

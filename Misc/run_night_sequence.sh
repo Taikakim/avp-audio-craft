@@ -20,7 +20,7 @@ note "g175 grid done; starting transition_lab"
 
 # 2. transitions (Kim listens in the morning)
 $PY ../eval/transition_lab.py \
-  --out-dir /run/media/kim/Mantu1/sa3_lora_runs/newcap8_transitions \
+  --out-dir /run/media/kim/Mantu/sa3_lora_runs/newcap8_transitions \
   > "$SAO/logs/transition_lab.log" 2>&1
 note "transition_lab done (exit $?) -> newcap8_transitions"
 

@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-DATA_DIR = "/run/media/kim/Mantu2/sa3_control_runs/punch_rating_20261014"
+DATA_DIR = "/run/media/kim/Mantu/sa3_control_runs/punch_rating_20261014"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUT = os.path.join(STAGE, "punch_air")
 os.makedirs(OUT, exist_ok=True)

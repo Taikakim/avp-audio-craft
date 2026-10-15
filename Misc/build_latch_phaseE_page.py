@@ -22,13 +22,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-BR = "/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30"
+BR = "/run/media/kim/Mantu/latch_sweep/modular_2026-09-30"
 CLIPS = f"{BR}/phaseE_eval_clips"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUTDIR = os.path.join(STAGE, "latch_phaseE")
 DRIFT = os.environ.get("PHASEE_DRIFT", "/tmp/battery/phaseE_drift.json")
 if not os.path.exists(DRIFT):
-    DRIFT = f"/run/media/kim/Mantu2/latch_sweep/modular_2026-09-30/head_checks_2026-10-14/phaseE_drift.json"
+    DRIFT = f"/run/media/kim/Mantu/latch_sweep/modular_2026-09-30/head_checks_2026-10-14/phaseE_drift.json"
 os.makedirs(OUTDIR, exist_ok=True)
 
 man = json.load(open(f"{CLIPS}/manifest.json"))["cells"]

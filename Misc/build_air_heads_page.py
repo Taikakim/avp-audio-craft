@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from comment_notes_block import notes_block
 from float_player import inject
 
-AH = "/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-14"
+AH = "/run/media/kim/Mantu/latch_sweep/air_head_2026-10-14"
 CMP = f"{AH}/compare"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 OUT = os.path.join(STAGE, "air_heads")

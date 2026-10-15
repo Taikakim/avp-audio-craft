@@ -23,7 +23,7 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-SRC = "/run/media/kim/Mantu2/sa3_control_runs/punch_air_film_matrix_20261015"
+SRC = "/run/media/kim/Mantu/sa3_control_runs/punch_air_film_matrix_20261015"
 SUB = "punch_air_film_matrix"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")
@@ -73,7 +73,42 @@ for head, film, title in (("a2", False, "Retrained air head (A2)"), ("a2", True,
 refs = [{"id": c["id"], "f": c["f"], "seed": c["seed"], "film": c["film"], "air_db": c["air_db"], "centroid_hz": c["centroid_hz"]}
         for c in sorted(ref.values(), key=lambda c: (c["film"], c["seed"]))]
 print(f"{len(rows)} clips, {sum(c['fail'] for c in rows)} gate fails")
-DATA = json.dumps({"gains": gains, "tables": tables, "refs": refs, "pq": PQ_DRIFT})
+
+# Seed 764 + FiLM with the trajectory anchor (eval/punch_air_film_anchor.py, Last edited WINTERMUTE 2026-10-15): the
+# listening verdict heard these cells distorted/saturated; the anchor caps the latent's level per step. Shown side by
+# side with the same cells without it; the gate for anchored clips is against the anchored combo + FiLM reference.
+ANC_SRC = SRC.replace("punch_air_film_matrix_20261015", "punch_air_film_anchor_20261015")
+anchor = None
+if os.path.exists(f"{ANC_SRC}/cells.jsonl"):
+    arows = [json.loads(l) for l in open(f"{ANC_SRC}/cells.jsonl") if l.strip()]
+    amet = {os.path.basename(r[0])[:-4]: dict(zip(cols, r)) for r in con.execute("SELECT * FROM metrics WHERE path LIKE ?", ("%/punch_air_film_anchor/%",))}
+    aref = next((c for c in arows if c["head"] is None), None)
+    orig = {c["id"]: c for c in rows}
+    for c in arows:
+        c["f"] = f"punch_air_film_anchor/{c['id']}.m4a"
+        c["fail"], c["why"], c["dpq"] = False, [], None
+        m, b = amet.get(c["id"]), amet.get(aref["id"]) if aref else None
+        if c["head"] and m and b:
+            bad, why, _ = gate({**m, "ce": None}, {**b, "ce": None}, rhythmic=True)
+            if m.get("pq") is not None and b.get("pq") is not None:
+                c["dpq"] = m["pq"] - b["pq"]
+                if abs(c["dpq"]) > PQ_DRIFT:
+                    why.append(f"pq-drift({b['pq']:.2f}->{m['pq']:.2f})")
+                    bad = True
+            c["fail"], c["why"] = bad, why
+    pick = lambda c: {k: c.get(k) for k in ("id", "f", "air_db", "centroid_hz", "dpq", "fail", "why")}
+    agrid = []
+    for t in targets:
+        line = []
+        for g in gains:
+            a = next((c for c in arows if c["head"] == "a2" and c["gain"] == g and c["target"] == t), None)
+            o = orig.get(a["id"][:-len("_anc")]) if a else None
+            line.append({"anc": pick(a) if a else None, "off": pick(o) if o else None})
+        agrid.append({"target": t, "cells": line})
+    anchor = {"grid": agrid, "ref_anc": pick(aref) if aref else None,
+              "ref_off": pick(orig["s764__punch_film"]) if "s764__punch_film" in orig else None}
+    print(f"anchor section: {len(arows)} clips, {sum(c['fail'] for c in arows)} gate fails")
+DATA = json.dumps({"gains": gains, "tables": tables, "refs": refs, "pq": PQ_DRIFT, "anchor": anchor})
 
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Punch + Air + FiLM</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0}
@@ -117,6 +152,15 @@ D.tables.forEach(T=>{
    x.clips.map(c=>btn(c,`s${c.seed} ${sg(c.d_air,1)}`)).join(' ')+'</td>';});
   h+='</tr>';});
  h+='</table>';});
+if(D.anchor){const A=D.anchor;
+ h+='<h2>Seed 764 + FiLM: trajectory anchor off vs on (s0 1.2)</h2><div class=muted style="max-width:1000px">The listening verdict heard these cells distorted/saturated on seed 764. '+
+  'The anchor caps the latent\'s level after every sampling step at its normal value for that noise level. Per cell: the same render without (off) and with (anc) the anchor; '+
+  'numbers = air-band level (dB) · centroid (Hz). Red = the anchored clip failed the gate against the anchored combo + FiLM.</div>';
+ const ab=(c,tag)=>c?btn(c,`${tag} ${c.air_db.toFixed(1)} dB · ${Math.round(c.centroid_hz)}`):'–';
+ h+='<div class=muted>references: '+ab(A.ref_off,'&#9654; combo+FiLM off')+' '+ab(A.ref_anc,'&#9654; combo+FiLM anc')+'</div>';
+ h+='<table><tr><th>target ↓ · gain →</th>'+D.gains.map(g=>`<th>${g/1000}k</th>`).join('')+'</tr>';
+ A.grid.forEach(r=>{h+=`<tr><td>${r.target} dB</td>`+r.cells.map(x=>`<td>${ab(x.off,'off')}<br>${ab(x.anc,'anc')}</td>`).join('')+'</tr>';});
+ h+='</table>';}
 document.getElementById('out').innerHTML=h;
 </script>
 __NOTES__

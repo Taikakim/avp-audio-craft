@@ -25,8 +25,8 @@ from comment_notes_block import notes_block
 from control_head_disintegration_eval import gate
 from float_player import inject
 
-E7 = "/run/media/kim/Mantu2/sa3_control_runs/latch_film_combo_e7_20261015"
-E8 = "/run/media/kim/Mantu2/sa3_control_runs/latch_film_e8_20261015"
+E7 = "/run/media/kim/Mantu/sa3_control_runs/latch_film_combo_e7_20261015"
+E8 = "/run/media/kim/Mantu/sa3_control_runs/latch_film_e8_20261015"
 STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")
 PQ_DRIFT = 1.5
