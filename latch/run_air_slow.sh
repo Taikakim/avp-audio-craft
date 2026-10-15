@@ -9,7 +9,7 @@ OUT=/run/media/kim/Mantu2/latch_sweep/air_head_2026-10-15_slow
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
-until [ -f /tmp/air_lowlr.done ]; do sleep 120; done
+until [ -f /tmp/air_big_sweep.done ]; do sleep 120; done   # after lowlr and big (their sweeps need the render server)
 COMMON="--feature rms_energy_air --latent-dir /home/kim/Projects/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 2 --ema-extra-halflife-epochs 0.5 --cosine-epochs 10.5 15 --epochs 15 --depth 8"
 ARMS=(
 "S5_d512_lr1e-3|$COMMON --mod-late-from-epochs 4 --lr 1e-3 --dim 512 --batch-size 8 --grad-accum 4"
