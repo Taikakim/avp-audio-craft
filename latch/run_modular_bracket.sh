@@ -16,6 +16,8 @@ TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 # SAVE_ALL=1: keep every epoch checkpoint (needed for weight-trajectory analytics) instead of only the best.
 SAVE_FLAG="--save-best-only"; [ "${SAVE_ALL:-0}" = "1" ] && SAVE_FLAG=""
+# SAVE_EVERY=1: keep best.pt AND write ep<N>.pt each epoch (train_latch --save-every-epoch; ~78 MB/epoch at dim 512).
+[ "${SAVE_EVERY:-0}" = "1" ] && SAVE_FLAG="$SAVE_FLAG --save-every-epoch"
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"
 cd /tmp || exit 1
 while read -r name rest; do
