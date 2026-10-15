@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-16 — anchors 1.3/1.4/1.5 added (listening: anchors below 1.2 drone and squash dynamics)
 """punch_air_film_anchor_sweep.py -- punch combo + A2 air head (low gains) + FiLM, across trajectory-anchor values.
 
 WHY. Listening verdict 2026-10-15: the anchor (s0 1.2) removes seed 764's saturation under FiLM "practically completely"
@@ -17,7 +18,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import punch_air_film_matrix as m  # noqa: E402
 
-ANCHORS = (1.2, 1.1, 1.0, 0.9, 0.8)
+ANCHORS = (1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8)
 GAINS = (500, 1000, 2000, 3000)
 TARGETS = (-20.0, -10.0)
 m.OUT = f"{m._MANTU}/sa3_control_runs/punch_air_film_anchor_sweep_20261015"

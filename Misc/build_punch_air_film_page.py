@@ -193,8 +193,8 @@ if(D.anchor){const A=D.anchor;
  A.grid.forEach(r=>{h+=`<tr><td>${r.target} dB</td>`+r.cells.map(x=>`<td>${ab(x.off,'off')}<br>${ab(x.anc,'anc')}</td>`).join('')+'</tr>';});
  h+='</table>';}
 if(D.sweep){const S=D.sweep;
- h+='<h2>Anchor value sweep: low air gains + FiLM, anchor 1.2 → 0.8</h2><div class=muted style="max-width:1000px">The combo + FiLM with the A2 air head at gains '+
-  S.gains.join(' / ')+' and targets '+S.targets.join(' / ')+' dB, at five anchor values. The anchor caps the final latent\'s level (z; an unguided render sits '+
+ h+='<h2>Anchor value sweep: low air gains + FiLM, anchor '+S.anchors[0]+' → '+S.anchors[S.anchors.length-1]+'</h2><div class=muted style="max-width:1000px">The combo + FiLM with the A2 air head at gains '+
+  S.gains.join(' / ')+' and targets '+S.targets.join(' / ')+' dB, at '+S.anchors.length+' anchor values. The anchor caps the final latent\'s level (z; an unguided render sits '+
   'around 1.0-1.15), so below ~1.0 it pulls every render quieter/flatter, not only the saturating ones. Buttons: gain · air dB · z. Red = failed the gate '+
   '(including the latent-level leg) against the same seed\'s combo + FiLM at the same anchor.</div>';
  const sb=(c,l)=>c?btn(c,`${l} ${c.air_db.toFixed(1)} dB · z ${c.z_std!=null?c.z_std.toFixed(2):'–'}`):'–';
