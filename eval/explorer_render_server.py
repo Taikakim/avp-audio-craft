@@ -575,6 +575,41 @@ def with_lora_interval(kw):
     return kw
 
 
+LOADED_PROFILE_KEY = "[null, null]"
+
+
+def _apply_block_profile(model, strength, block_strengths, blend):
+    """Per-DiT-block DoRA strength (GHOST-NOTE 2026-10-15; owner's idea: mix the base model back into the later layers where texture is made).
+    block_strengths: list of per-block multipliers (index = DiT block) or {"12-23": 0.4, ...}; effective strength of block i = strength * mult[i] (missing = 1).
+    blend: "interp" = true weight interpolation W + s*(W_dora - W) (default None = the stock behaviour: only the low-rank direction is scaled, magnitude stays full)."""
+    import re as _re
+    from stable_audio_3.models.lora.model import LoRAParametrization
+    mult = {}
+    if isinstance(block_strengths, dict):
+        for k, v in block_strengths.items():
+            a, _, b = str(k).partition("-")
+            for i in range(int(a), int(b or a) + 1):
+                mult[i] = float(v)
+    elif isinstance(block_strengths, (list, tuple)):
+        mult = {i: float(v) for i, v in enumerate(block_strengths)}
+    n_set = 0
+    for name, mod in model.model.named_modules():
+        plist = getattr(getattr(mod, "parametrizations", None), "weight", None)
+        if plist is None:
+            continue
+        if name.startswith("conditioner"):
+            continue                       # DiT blocks only (the T5 conditioner has its own `layers.N`)
+        m = _re.search(r"layers\.(\d+)\.", name)
+        for p in plist:
+            if isinstance(p, LoRAParametrization):
+                p.lora_interp = (blend == "interp")
+                if m and int(m.group(1)) in mult:
+                    p.lora_strength.fill_(float(strength) * mult[int(m.group(1))])
+                    n_set += 1
+    if mult or blend:
+        log(f"[dora] block profile applied: blend={blend or 'direction'} strength={strength} blocks_set={n_set} mult={dict(sorted(mult.items()))}")
+
+
 def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
     """DoRA/FiLM/mutation state machine. Returns True if the model was rebuilt."""
     global MODEL, LOADED_DORA, LOADED_STRENGTH, FILM_LOADED, FILM_STATE, LOADED_MUT
@@ -654,9 +689,13 @@ def prepare_model(dora_req, film_req, default_dora="none", mutate_req=None):
         # ACTIVE_SLOT is None outside slot mode, so this zeroes every slot.
         SLOTS.push_strengths(MODEL, ACTIVE_SLOT,
                              strength if slot is not None else 0.0)
-    if ckpt and not LOADED_FULLFT and strength != LOADED_STRENGTH:
-        MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
-        LOADED_STRENGTH = strength
+    if ckpt and not LOADED_FULLFT:
+        prof_key = json.dumps([(dora_req or {}).get("block_strengths"), (dora_req or {}).get("blend")], sort_keys=True, default=str)
+        if strength != LOADED_STRENGTH or prof_key != LOADED_PROFILE_KEY or prof_key != "[null, null]":
+            MODEL.set_lora_strength(strength)       # cheap; no reload for strength-only change
+            LOADED_STRENGTH = strength
+            _apply_block_profile(MODEL, strength, (dora_req or {}).get("block_strengths"), (dora_req or {}).get("blend"))
+            globals()["LOADED_PROFILE_KEY"] = prof_key
     if film_ckpt and FILM_LOADED != film_ckpt:
         _install_film(film_ckpt)
     return rebuild
