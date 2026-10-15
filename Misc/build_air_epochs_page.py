@@ -33,7 +33,7 @@ def logs(d):
     vl = re.findall(r"val=(\S+)", t)
     return tl, vl
 INFO = {"O1": ("O1", "d256, lr 5e-2, batch 32"), "O2": ("O2", "d256, lr 1e-1, batch 32"), "O3": ("O3", "d256, lr 3e-2, batch 64"), "O4": ("O4", "d256, lr 3e-2, batch 64, early damping"),
-        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "O6": ("O6", "d256, lr 5e-2, batch 32, damping from ep 1, cosine from ep 3"), "A2b": ("A2b", "A2 recipe re-run, d512, lr 1e-2, 1000 steps"), "A2c": ("A2c", "A2 recipe re-run at batch 8 x 4, d512, lr 1e-2, 1000 steps"), "QA2": ("QA2", "A2 recipe WITHOUT Schedule-Free, lr 1e-2"), "QP64": ("QP64", "big-batch cosine recipe WITHOUT Schedule-Free, batch 64, lr 1e-2"), "QP128": ("QP128", "big-batch cosine recipe WITHOUT Schedule-Free, batch 128, lr 1e-2"), "QP64h": ("QP64h", "faithful lr 1e-1 twin of P64, WITHOUT Schedule-Free"), "P64": ("P64", "O2 recipe (lr 1e-1) at d512, batch 64, EMA 4 ep, cosine to ep 8"), "P128": ("P128", "O2 recipe (lr 1e-1) at d512, batch 128, EMA 4 ep, cosine to ep 8"), "S1": ("S1", "O1 recipe at lr 5e-3, 15 ep"), "S2": ("S2", "O2 recipe at lr 1e-2, 15 ep"), "S3": ("S3", "O3 recipe at lr 3e-3, batch 64, 15 ep"), "S4": ("S4", "O4 recipe at lr 3e-3, batch 64, 15 ep"), "S5": ("S5", "O5 recipe at lr 1e-3, d512, 15 ep"), "L2": ("L2", "A2 recipe at lr 2e-3, d512, 1000 steps"), "L5": ("L5", "A2 recipe at lr 5e-3, d512, 1000 steps"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
+        "O5": ("O5", "d512, lr 1e-2, batch 32, 25 ep"), "O6": ("O6", "d256, lr 5e-2, batch 32, damping from ep 1, cosine from ep 3"), "A2b": ("A2b", "A2 recipe re-run, d512, lr 1e-2, 1000 steps"), "A2c": ("A2c", "A2 recipe re-run at batch 8 x 4, d512, lr 1e-2, 1000 steps"), "QA2": ("QA2", "A2 recipe WITHOUT Schedule-Free, lr 1e-2"), "QP64": ("QP64", "big-batch cosine recipe WITHOUT Schedule-Free, batch 64, lr 1e-2"), "QP128": ("QP128", "big-batch cosine recipe WITHOUT Schedule-Free, batch 128, lr 1e-2"), "QP64h": ("QP64h", "faithful lr 1e-1 twin of P64, WITHOUT Schedule-Free"), "P64m": ("P64m", "P64 recipe at lr 3e-2 (insurance), batch 64, EMA 4 ep, cosine to ep 8"), "P64": ("P64", "O2 recipe (lr 1e-1) at d512, batch 64, EMA 4 ep, cosine to ep 8"), "P128": ("P128", "O2 recipe (lr 1e-1) at d512, batch 128, EMA 4 ep, cosine to ep 8"), "S1": ("S1", "O1 recipe at lr 5e-3, 15 ep"), "S2": ("S2", "O2 recipe at lr 1e-2, 15 ep"), "S3": ("S3", "O3 recipe at lr 3e-3, batch 64, 15 ep"), "S4": ("S4", "O4 recipe at lr 3e-3, batch 64, 15 ep"), "S5": ("S5", "O5 recipe at lr 1e-3, d512, 15 ep"), "L2": ("L2", "A2 recipe at lr 2e-3, d512, 1000 steps"), "L5": ("L5", "A2 recipe at lr 5e-3, d512, 1000 steps"), "A2": ("A2", "d512, lr 1e-2, 1000-step bracket")}
 VAL = {}
 for d in glob.glob(f"{ON}/O*") + [A2] + glob.glob(f"{FU}/O6*") + glob.glob(f"{FU}/A2b*") + glob.glob(f"{LL}/L*") + glob.glob(f"{SL}/S*") + glob.glob(f"{BG}/P*") + glob.glob(f"{NS}/Q*"):
     k = os.path.basename(d).split("_")[0]; tl, vl = logs(d); VAL[k] = {"train": tl, "val": vl}
@@ -59,7 +59,7 @@ def lab(arm, tag):
     if tag.startswith("_ema"): return f"{arm} EMA {tag[4:]} ep"
     return f"{arm} EMA {main} ep"
 ROWS = []
-for arm in ["P64", "P128", "QA2", "QP64", "QP128", "QP64h", "O5", "O6", "A2", "A2b", "A2c", "L2", "L5", "S5", "S1", "S2", "S3", "S4", "O4", "O3", "O1", "O2"]:
+for arm in ["P64", "P64m", "P128", "QA2", "QP64", "QP128", "QP64h", "O5", "O6", "A2", "A2b", "A2c", "L2", "L5", "S5", "S1", "S2", "S3", "S4", "O4", "O3", "O1", "O2"]:
     tags = sorted({c["tag"] for c in cells.values() if c["arm"] == arm}, key=lambda t: (t != "", t))
     ROWS += [{"a": arm, "t": t, "label": lab(arm, t)} for t in tags]
 DATA = json.dumps({"rows": ROWS, "cells": cells, "val": VAL, "info": INFO, "skipped": J["skipped"]})
@@ -97,7 +97,7 @@ function startClip(id,f,l,clip){
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 function play(id,f,l,clip){if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';document.getElementById('ld').textContent='';return;}startClip(id,f,l,clip);}
 const sg=(v,d)=>(v>=0?'+':'')+v.toFixed(d);
-const arms=['P64','P128','QA2','QP64','QP128','QP64h','O5','O6','A2','A2b','A2c','L2','L5','S5','S1','S2','S3','S4','O4','O3','O1','O2'].filter(a=>D.info[a]);const rows=D.rows;
+const arms=['P64','P64m','P128','QA2','QP64','QP128','QP64h','O5','O6','A2','A2b','A2c','L2','L5','S5','S1','S2','S3','S4','O4','O3','O1','O2'].filter(a=>D.info[a]);const rows=D.rows;
 let maxE=0;Object.values(D.cells).forEach(c=>{if(c.ep>maxE)maxE=c.ep;});
 const fv=x=>{const v=parseFloat(x);return isNaN(v)?'NaN':v.toFixed(4);};
 let v='<table><tr><th>run</th>';for(let e=1;e<=maxE;e++)v+=`<th>${e}</th>`;v+='</tr>';
