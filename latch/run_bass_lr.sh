@@ -32,4 +32,8 @@ for a in "${ARMS[@]}"; do
   best=$(grep -oE "val=[0-9.]+" "$OUT/$name/train.log" | cut -d= -f2 | sort -g | head -1)
   printf '%s\t%s\t%s\t%s\trc=%s\n' "$name" "$((t1 - t0))" "${best:-NA}" "${last:-NA}" "$rc" >> "$OUT/SUMMARY.tsv"
 done
+"$SAO/eval/forge/dev_server.sh" start GHOST-NOTE > /dev/null 2>&1
+until curl -s localhost:8056/info >/dev/null 2>&1; do sleep 15; done
+"$SAO/.venv/bin/python" "$SAO/eval/bass_epoch_sweep.py" --dirs "$OUT"/B3_* "$OUT"/B4_* "$OUT"/B2_* --out "$OUT/epoch_sweep" > "$OUT/sweep.log" 2>&1
+"$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 grep -qE "rc=[1-9]" "$OUT/SUMMARY.tsv" || echo BASS DONE > /tmp/air_bass.done
