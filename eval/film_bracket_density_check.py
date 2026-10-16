@@ -27,7 +27,10 @@ OUT = f"{MANTU}/sa3_control_runs/film_bracket_density_check_20261016"
 BR = f"{MANTU}/sa3_control_runs/film_modular_bracket_20261015"
 ARMS = {"lr3e-4": f"{BR}/film_modular_lr3e-4_s6000/riffer_final.pt", "lr1e-3": f"{BR}/film_modular_lr1e-3_s6000/riffer_final.pt",
         "lr3e-3": f"{BR}/film_modular_lr3e-3_s6000/riffer_final.pt",
-        "shipped": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt"}
+        "shipped": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
+        # the shipped run's own early checkpoints: does its density response appear only with training length?
+        "shipped_s5400": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step5400.pt",
+        "shipped_s10800": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt"}
 SERVER = "http://127.0.0.1:8056"
 BASE = {"prompt": "psytrance, 140 bpm", "duration": 20.0, "steps": 50, "cfg_scale": 7.0, "sampler_type": "euler",
         "apg_scale": 1.0, "dora": {"name": "none", "strength": 1.0}}
@@ -36,7 +39,8 @@ SEEDS, GAINS, DENS = (1234, 77), (1.0, 1.75), (3, 9)
 # GAINS x DENS above; these grids add the rest. Shipped downward, lr3e-4 / lr1e-3 0.5-2.5, lr3e-3 0.1-1.0 in 0.1 steps.
 EXT_DENS = (3, 5, 7, 9, 12)
 EXT_GAINS = {"shipped": (0.1, 0.25, 0.5, 0.75, 1.0, 1.75), "lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5),
-             "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,)}
+             "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,),
+             "shipped_s5400": (1.0, 1.75), "shipped_s10800": (1.0, 1.75)}
 
 
 def cells():
@@ -94,9 +98,9 @@ def main():
             sp[f"g{g:g}"] = round(float(np.mean(hi) - np.mean(lo)), 3) if hi and lo else None
         zr = [c["z_std"] / base[c["seed"]]["z_std"] for c in cs if c.get("z_std") and base.get(c["seed"], {}).get("z_std")]
         summary[arm] = {"spread": sp, "max_z_ratio": round(max(zr), 3) if zr else None}
-    cand = {a: v for a, v in summary.items() if a != "shipped" and (v["max_z_ratio"] or 0) <= 1.3 and v["spread"]["g1"] is not None}
+    cand = {a: v for a, v in summary.items() if not a.startswith("shipped") and (v["max_z_ratio"] or 0) <= 1.3 and v["spread"]["g1"] is not None}
     if not cand:   # every arm over the latent screen: fall back to all bracket arms
-        cand = {a: v for a, v in summary.items() if a != "shipped" and v["spread"]["g1"] is not None}
+        cand = {a: v for a, v in summary.items() if not a.startswith("shipped") and v["spread"]["g1"] is not None}
     best = max(cand, key=lambda a: cand[a]["spread"]["g1"])
     if "lr1e-3" in cand and cand[best]["spread"]["g1"] - cand["lr1e-3"]["spread"]["g1"] < 0.2:
         best = "lr1e-3"
