@@ -181,8 +181,54 @@ attention-sink ratio on a few heads (needs explicit attention, not SDPA).
 - Dion3 row selection: only for DiT/DoRA/full-FT runs; heads gain nothing (Newton-Schulz is cheap there).
 - Running anything on the laptop.
 
+## T. Throughput: bf16 Newton-Schulz (WINTERMUTE, 2026-10-17)
+
+Measured 2026-10-16 (`control/time_film_optimizers.sh`, `train.py --step-times`, FiLM adapter 119.5M params, 400 steps per arm,
+results in `Mantu/sa3_control_runs/film_optimizer_timing_20261016/SUMMARY.tsv`):
+- Forward + backward without an optimizer update: 216-218 ms in every arm.
+- Extra per update: AdamW +14 ms, Lion +63, FusionOpt (ns5 + normuon + sf, `hot_dtype="bf16"`) +100, ModularOptimizer +320.
+- Switching off Shampoo, NorMuon, Schedule-Free or EMA each changes the modular cost by under 15 ms. The cost is the core
+  spectral update on 73 matrices, which `lmo.py` runs in fp32 (`G.float()`); FusionOpt runs the same iteration in bf16.
+- The shipped FiLM's 3.2 steps/s = FusionOpt at accum 1. The E12 54k modular run trained at 2.29 steps/s (2.61 in the timing run).
+- SOAP OOMs on the 16 GB card (a 2.25 GiB identity matrix for the 3072-wide layers).
+
+Proposed code change C7 (default off): `ModularOptimizer(ns_dtype="fp32"|"bf16")`, running only the Newton-Schulz iteration in
+bf16 and casting the result back. This is compatible with F28 (rounding matters where small updates are added to large
+weights, not inside the orthogonalisation) and with C1 (fp32 adapters and state): the target recipe is bf16 orthogonalisation,
+fp32 weights, fp32 optimizer state.
+
+| Arm | ns_dtype | adapters | note |
+|---|---|---|---|
+| T1 | fp32 | bf16 | today (= M1 above, 549 ms per update step) |
+| T2 | bf16 | bf16 | the speed change alone |
+| T3 | fp32 | fp32 (C1) | the precision fix alone: does fp32 storage cost time? |
+| T4 | bf16 | fp32 (C1) | the target recipe |
+
+- Readouts: the same `--step-times` summary (startup, first step, steady ms, update vs no-update step), peak VRAM; plus an
+  orthogonality check on 20 sampled update matrices, ||U^T U - I|| for bf16 vs fp32 NS on the same input (CPU or GPU, no training).
+- Prediction: T2/T4 cut the per-update cost from ~320 ms toward FusionOpt's ~100; T3 adds little.
+- Kill for C7: bf16 NS saves under ~30% of the per-update cost, or its orthogonality error is clearly worse than FusionOpt's.
+- Cost: ~20 min GPU (4 x 400 steps + model loads). Run before A, so A's arms can use the faster path if T4 holds.
+
+### WINTERMUTE comments on the plan (2026-10-17)
+
+- **A has a result to compare against already.** The E12 bracket's FiLM density grid (`files/evals/film_bracket_check.html`,
+  `film_bracket_density_check_20261016/run_meta.json`) found that the density response comes with training length: the shipped
+  FiLM at its own step 5400 barely steers (spread 3 -> 12 onsets/s = 0.2 at gain 1, 2.9 at 54k), the bf16 modular 6000-step arms
+  0-0.2, and the bf16 modular 54k run 1.4 at gain 1, 3.9 at gain 2.5. So a 6000-step A arm cannot be judged on density spread
+  alone; read A on loss and per-group relative update (C4), then take the winner to a longer run (or compare at matched steps
+  against the shipped run's own checkpoints, which exist every 5400 steps).
+- **A should also use `--grad-accum 1` in one arm.** The trainer's defaults became `--ema 0.999 --grad-accum 2` after the shipped
+  run, which used neither, so E12 vs shipped is also confounded by accumulation and EMA (on top of optimizer, precision, Shampoo).
+- **bf16 EMA elsewhere:** the LUMI full-FT trainer's `--base_precision bf16` trains the weights themselves in bf16 and its
+  EMA (0.9999) barely moves (1.4% from base vs 4.8% for fp32; AVP drone sweep, WORKLOG 2026-10-16). Same family as F21; the
+  precision question (item 3 of the planning rule) applies to `train_lora.py` full fine-tunes too, not only the FiLM trainer.
+- **Half-batch noise logging (N) on FiLM:** with `--grad-accum 2` the two micro-batches are the halves, but each is batch 1,
+  i.e. one crop; the cosine then mixes crop-to-crop variation with gradient noise. Worth stating in the reading, or logging on an
+  accum-4 run (2 + 2).
+
 ## Order and gates
 
-T0 + C1-C6 (KUANG, CPU) -> A -> B (N logs on during A and B) (in parallel with E if VRAM allows: E is inference only) -> C -> D.
+T0 + C1-C7 (KUANG, CPU) -> T (throughput, ~20 min GPU) -> A -> B (N logs on during A and B) (in parallel with E if VRAM allows: E is inference only) -> C -> D.
 Kim approves each launch. B overlaps the unlaunched Phase F (EXPERIMENTS E5: "not authorised to launch"), so B needs
 Kim's explicit go as well.
