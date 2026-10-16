@@ -51,6 +51,42 @@ Added to `tests/` next to the existing modular tests; tiny tensors only.
   per-neuron equalisation is what reaches the weights.
 - C4 Telemetry per group (only on log steps): update RMS, weight RMS, relative update ||dW||/||W|| per group, Shampoo
   `eigh_failures`. This is what tells a damped group from a hot one; today's telemetry sums all groups.
+- C6 Half-batch noise logging (section N), opt-in flag `--log-grad-noise N` (every N optimizer steps), all trainers.
+
+## N. Gradient-noise logging: a measured batch-size estimate (logging only, rides on A and B)
+
+Idea (Kim, 2026-10-17): instead of borrowing an LLM batch size, measure per matrix whether the batch carries more
+signal than noise. Split each step's batch into two independent halves, compute the gradient of each, compare.
+
+What is logged, per 2-D matrix, every N steps (C6):
+- `c_t = cos(G1, G2)`: cosine between the two half-batch gradients. Noise differs between the halves, the signal does not,
+  so c_t is the share of signal seen at HALF the batch.
+- `r_t = |G1 - G2|^2 / |G1 + G2|^2` and the derived **noise scale** `B_noise ~ B * tr(Sigma) / |G|^2` (McCandlish et al.
+  2018, "An Empirical Model of Large-Batch Training", estimated from the two halves: the difference measures the noise,
+  the sum the signal). Below B_noise a bigger batch gives nearly proportional progress per step; well above it, compute
+  is wasted. This is the number that answers "is batch 16 (or 64) enough for this model and data".
+- The same two quantities on the momentum buffer (the thing Muon actually orthogonalises).
+- **Null baseline:** the cosine between half-batch gradients from two UNRELATED steps (e.g. step t and t+N), so "near
+  zero" is read against what no shared signal looks like here, not against a guessed threshold.
+
+How the halves come for free:
+- FiLM: the standing recipe uses grad accumulation 2, so the two micro-batches are the two halves; keep their gradients
+  apart for one step every N (one extra gradient copy of the trainable params on log steps only).
+- LatCH: batch 16 = 8 + 8 (two backward passes on log steps only, or per-half accumulation).
+- Batch 1 with no accumulation: not measurable this way; log on an accumulation-2 run instead.
+
+Optional MONA version (FusionOpt only): the same test on MONA's term A_t (running sum of gradient differences).
+- Keep TWO separate A buffers, one fed by each half, or their shared history makes the cosine look good by itself.
+- Also log `|A_t| / |G_t|`: a large ratio with poor half-to-half alignment means noise is steering the update.
+- Prediction: near-zero alignment at batch 1-16 (the signal in a gradient difference is curvature x step, the noise about
+  twice a gradient's), i.e. MONA is not usable at our batch sizes. This settles F26 without a listening arm.
+
+Reading:
+- Convert the half-batch cosine to full-batch terms before comparing runs (a half has twice the noise variance).
+- B_noise grows as the loss falls: report it over the run (start / middle / end), not once.
+- It answers the efficiency question only. Whether a smaller batch SOUNDS or generalises better is a separate question
+  (F6, D26); listening decides that.
+- Cost: on log steps only; nothing changes the training trajectory (verify: same loss curve with the flag on/off at fixed seed).
 
 ## A. FiLM precision (first; tests H1)
 
@@ -147,6 +183,6 @@ attention-sink ratio on a few heads (needs explicit attention, not SDPA).
 
 ## Order and gates
 
-T0 + C1-C4 (KUANG, CPU) -> A -> B (in parallel with E if VRAM allows: E is inference only) -> C -> D.
+T0 + C1-C6 (KUANG, CPU) -> A -> B (N logs on during A and B) (in parallel with E if VRAM allows: E is inference only) -> C -> D.
 Kim approves each launch. B overlaps the unlaunched Phase F (EXPERIMENTS E5: "not authorised to launch"), so B needs
 Kim's explicit go as well.
