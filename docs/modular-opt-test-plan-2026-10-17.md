@@ -263,6 +263,19 @@ attention-sink ratio on a few heads (needs explicit attention, not SDPA).
 - Dion3 row selection: only for DiT/DoRA/full-FT runs; heads gain nothing (Newton-Schulz is cheap there).
 - Running anything on the laptop.
 
+### E2. Sensitive directions of the DiT: find, render, name (built 2026-10-17, KUANG; paper 2610.15724)
+
+`eval/sensitive_directions.py` (tests: `eval/tests/test_sensitive_directions.py`, CPU incl. an end-to-end run against a fake
+SA3; never run on the real model). Per prompt and seed: Euler-sample to the first step with sigma <= 0.6, take the top-k right
+singular vectors of d(block output)/d(latent) (or d/d text conditioning, `--wrt cond`) at one DiT block via SA3's
+`exit_layer_ix` early exit, render a +/- ladder along each (perturbation RMS = alpha x RMS of x_k), measure descriptors
+(onsets, hi-hat onsets, kick-band bpm, centroid, loudness, bass/mid/air level, crest; optional CLAP labels), propose a name
+from the descriptor slope z-scored against the spread of the unperturbed renders, report cosines with LatCH head gradients
+(`--heads`), count which names recur across seeds/prompts, and write a listening page. Names are proposals; listening
+decides. Suggested first run: 2 prompts x 3 seeds, block 12 and one early and one late block, k 8, both `--wrt` modes.
+Cost per seed and block: ~2 x iters x k/chunk partial forward passes + k/chunk backward passes for the directions, plus
+k x (len(alphas) - 1) renders of the remaining steps.
+
 ## T. Throughput: bf16 Newton-Schulz (WINTERMUTE, 2026-10-17)
 
 Measured 2026-10-16 (`control/time_film_optimizers.sh`, `train.py --step-times`, FiLM adapter 119.5M params, 400 steps per arm,
