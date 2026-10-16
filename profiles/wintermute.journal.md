@@ -1064,3 +1064,10 @@ target reads them as HF-deficient and would push generations brighter).
 - Listening pass on the 06-25 all-C sweep (`riffer-evals/clips/chroma_steer/`, sidecar written today): "the chroma head does steer, and
   even in a quite transparent way, pad chords beautifully change their notes", strongest at 2048, so higher gain may pay. Retrain under
   the modular recipe queued as EXPERIMENTS E13 (`latch/run_chroma_retrain.sh`); the sweep will extend gains to 3072/4096/6144.
+
+### finding · drone sweep: the latent runaway is in the EMA, not the trained weights; blending toward base re-inflates it
+- `dronesweep_weights.html` (`eval/dronesweep_weights_test.py`, 72 local renders, 4 prompts at the LUMI seeds, cfg 7). force_scalar_s1:
+  EMA z 3.02 (the LUMI drone) but ONLINE weights z 1.17, healthy. online + 25/33% base: z 2.21/2.40, i.e. mixing back toward base
+  brings the runaway back; the EMA is itself ~60% base, which fits. plain_s2: EMA under level (0.65), online 1.16. bf16_plain_s2 low
+  either way (0.63-0.68). Online renders are much busier (15-16 onsets/s vs 7-11). The anchor caps any of them at 1.2. Open: whether
+  the checkpoint's live weights are the Schedule-Free average or the raw iterate. Listening verdict pending.
