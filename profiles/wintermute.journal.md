@@ -1079,3 +1079,17 @@ target reads them as HF-deficient and would push generations brighter).
 - Listening 2026-10-16: plain s2 online "corrupted utterly", bf16 online not, force_scalar corrupted every way. A ~20% move in <6000 steps
   at lr 8e-5 fits LR too high. `--base_precision bf16` trains the weights themselves in bf16 and the bf16 EMA (beta 0.9999, steps of 1e-4)
   stays near base (1.4% vs 4.8%): bf16 EMA is effectively broken. Why bf16 ONLINE sounds fine at the same distance is open.
+
+### finding · FiLM density response comes with training length; the modular 54k run gets half of the shipped one at gain 1
+- `film_bracket_check.html` extended (412 clips). Spread request 3 -> 12 onsets/s: shipped 2.9 at gain 1 (4.5 at 1.75), but its own step 5400
+  only 0.2 and 10800 1.5; modular 6000-step arms 0-0.2; modular full run 27k 0.4, 54k 1.4 at gain 1, 2.6 at 1.75, 3.9 at 2.5. The response
+  sits almost entirely at the top request (12/s); 3-9 stay near the unguided level.
+
+### finding · the modular optimizer costs ~320 ms per update; Shampoo, NorMuon, SF and EMA are not the cost
+- `film_optimizer_timing_20261016/` (control/time_film_optimizers.sh, train.py --step-times). Forward + backward 216-218 ms in all arms.
+  Per-update extra: AdamW +14, Lion +63, Fusion +100, modular +320 ms with any of its toggles off. Shipped Fusion accum 1 = 3.19 steps/s,
+  matching June. Startup 14-19 s, step 1 ~4 s. SOAP OOMs on the 16 GB card.
+
+### result · same_chroma head retrained under the modular recipe (E13)
+- 20 epochs, d512 depth 8: best val (cosine) C2 lr 1e-2 0.0843, C3 lr 1e-3 0.0973, C4 lr 1e-4 0.1604. Not comparable to the production
+  head's train loss. Listening sweep (gains above 2048) not built yet.
