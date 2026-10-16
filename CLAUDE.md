@@ -394,6 +394,28 @@ The probe wins because it is what the run actually DID, not what a script asked 
 ⚠ `lumi/run_params_extracted.json` was **hand-read from the sbatch corpus — there is no
 extractor script and it cannot be regenerated.** Do not delete it; extend it by hand.
 
+## Planning a run: choose optimizer components against gradient noise and precision (Kim direct 2026-10-17)
+
+Kim's ask: when planning a run and deciding which optimizer components to switch on, think about how
+noisy the gradients are and whether the update size survives the chosen number precision, so we know
+which parts will cancel out or average away. **Kim works with these settings hands-on, not at the level
+of the maths: explain a component choice in one plain sentence (what it does to the step, and why it
+fits this run) in the plan and in `run_meta.recipe.notes`, never as jargon alone.**
+
+Before launch, for each component that is on (Shampoo/Mousse whitening, MONA, NorMuon, Schedule-Free,
+SNR gate, VADD, radial brake, escape velocity, sign/spectral routing, radius, lr multipliers):
+1. **Noise:** at this batch size, does it read gradient *differences* or *signal-to-noise*? At batch 1-16
+   those are mostly noise (MONA becomes noise injection, the SNR gate a fixed ~x0.2 lr cut).
+2. **Cancellation:** does a later stage undo it? Newton-Schulz and NorMuon erase any scale applied before
+   them (the routing radius is a no-op while NorMuon is on).
+3. **Precision:** are the trained weights AND the optimizer state fp32? In bf16 a step smaller than about
+   0.2-0.4% of the weight is rounded to nothing, and Schedule-Free's slowly moving average stops moving.
+   The FiLM trainer's default `--precision bf16` does this to ModularOptimizer (FusionOpt keeps fp32 state).
+4. **Balance:** do the groups move at comparable speed? (1-D params in the sign group step ~sqrt(d_in)
+   faster relative to matrices than in the published SF-NorMuon recipe.)
+
+Evidence and confidence for each: `docs/TRAINING.md` §2e (D33); test plan `docs/modular-opt-test-plan-2026-10-17.md`.
+
 ## Training-failure postmortems go in docs/training-findings.md + DISCOVERIES.md, with evidence (Kim direct 2026-09-24)
 
 This is the write-side counterpart to the AT-LAUNCH notes above: that rule stops a run from
