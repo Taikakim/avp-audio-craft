@@ -1,5 +1,6 @@
 # Last edited: WINTERMUTE 2026-10-15 -- state_online (online/SF-averaged weights) saved beside the EMA state, periodic + final (TRAINING.md D6)
 # Last edited: WINTERMUTE 2026-10-16 -- EMA no longer overwritten by the SF opt.eval() at save time ("state" = EMA when --ema > 0)
+# Last edited: WINTERMUTE 2026-10-16 -- --step-times TSV (per-micro-batch GPU-synced wall time + startup) for the optimizer timing bracket
 """Train the audio-reference (riffer) control adapter on pre-encoded SA3 latents.
 
 Loads medium-base (fp32, model_half=False), installs decoupled cross-attn adapters
@@ -22,6 +23,8 @@ import os
 import subprocess
 import sys
 import time
+
+_T_PROC = time.time()   # process start: --step-times reports the startup (model load, pre-compute) against it
 
 # append (not insert(0)) so site-packages resolves first — a wandb run-data dir that
 # wandb writes under the package root must not shadow the real `wandb` package on reimport.
@@ -262,6 +265,9 @@ def main():
     ap.add_argument("--run-name", default=None)
     ap.add_argument("--profile", action="store_true",
                     help="log a per-step timing breakdown (data/text/ref/fwd/bwd/opt)")
+    ap.add_argument("--step-times", default=None,
+                    help="write a TSV of every micro-batch's wall time (GPU-synchronised): step, seconds since process "
+                         "start, seconds for this step, optimizer step taken; the first row also records the startup time")
     ap.add_argument("--no-preencode-text", action="store_false", dest="preencode_text",
                     help="skip the upfront unique-prompt text pre-encode (cache lazily instead)")
     ap.add_argument("--no-checkpoint", action="store_false", dest="use_checkpointing",
@@ -940,6 +946,11 @@ def main():
     epochs_since_best = 0
     t0 = time.time()
     t_iter = time.time()
+    _st_f = None
+    if args.step_times:
+        _st_f = open(args.step_times, "w", buffering=1)
+        _st_f.write(f"# startup_s\t{t0 - _T_PROC:.3f}\n#step\tt_since_proc_s\tdt_s\topt_step\n")
+        _st_prev = t0
     cond_enc.train()
     while step < args.steps:
         for b in dl:
@@ -1077,6 +1088,11 @@ def main():
             else:
                 t_iter = time.time()
             step += 1
+            if _st_f is not None:
+                torch.cuda.synchronize()
+                _st_now = time.time()
+                _st_f.write(f"{step}\t{_st_now - _T_PROC:.4f}\t{_st_now - _st_prev:.4f}\t{int(step % args.grad_accum == 0)}\n")
+                _st_prev = _st_now
 
             if step % args.log_every == 0 or args.smoke:
                 rate = step / (time.time() - t0)
