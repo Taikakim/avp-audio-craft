@@ -30,7 +30,10 @@ ARMS = {"lr3e-4": f"{BR}/film_modular_lr3e-4_s6000/riffer_final.pt", "lr1e-3": f
         "shipped": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_final.pt",
         # the shipped run's own early checkpoints: does its density response appear only with training length?
         "shipped_s5400": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step5400.pt",
-        "shipped_s10800": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt"}
+        "shipped_s10800": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt",
+        # the E12 full run (modular lr 1e-3, 54k steps, finished 2026-10-16 13:12): final + its midpoint
+        "full_s54000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_final.pt",
+        "full_s27000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_step27000.pt"}
 SERVER = "http://127.0.0.1:8056"
 BASE = {"prompt": "psytrance, 140 bpm", "duration": 20.0, "steps": 50, "cfg_scale": 7.0, "sampler_type": "euler",
         "apg_scale": 1.0, "dora": {"name": "none", "strength": 1.0}}
@@ -40,7 +43,8 @@ SEEDS, GAINS, DENS = (1234, 77), (1.0, 1.75), (3, 9)
 EXT_DENS = (3, 5, 7, 9, 12)
 EXT_GAINS = {"shipped": (0.1, 0.25, 0.5, 0.75, 1.0, 1.75), "lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5),
              "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,),
-             "shipped_s5400": (1.0, 1.75), "shipped_s10800": (1.0, 1.75)}
+             "shipped_s5400": (1.0, 1.75), "shipped_s10800": (1.0, 1.75),
+             "full_s54000": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "full_s27000": (1.0, 1.75)}
 
 
 def cells():
