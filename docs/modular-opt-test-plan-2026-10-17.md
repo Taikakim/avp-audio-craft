@@ -32,15 +32,14 @@ Added to `tests/` next to the existing modular tests; tiny tensors only.
 2. `test_bf16_step_retention`: fp32 vs bf16 parameter, 600 steps; documents the retention numbers above (regression guard for the C1 fix).
 3. `test_normuon_dion_mode_matches_reference`: new `normuon_mode="dion"` equals a re-implementation of dion's
    `_normuon_normalization_core` + `adjust_lr_spectral_norm` to 1e-5.
-4. `test_vadd_damping_applied_once`: documents that today `var_damp` multiplies eta twice when VADD is active
-   (`optimizer.py` line 510 and line 516); test pins whichever behaviour Kim decides.
+4. `test_vadd_damping_is_applied_twice`: documents that today `var_damp` multiplies eta twice whenever VADD fires
+   (with or without escape velocity); test pins whichever behaviour Kim decides.
 5. `test_rms_scale_mode`: `update_scale="rms0.2"` gives update RMS = 0.2*lr on every 2D shape.
 
 ## Code changes (draft branch, all default-off so existing runs reproduce)
 
-- C1 `control/sa3_control/train.py --adapter-dtype {bf16,fp32}` (default bf16 = today). fp32 keeps the adapters,
-  `cond_enc` and therefore the optimizer state in fp32; the frozen DiT stays bf16; forward under bf16 autocast.
-  Dion3 lesson: one fp32 update per step, cast once.
+- C1 (as built: `--mod-state-dtype fp32`, see Build status) fp32 optimizer state and update arithmetic for bf16
+  adapters; the adapters and the frozen DiT stay bf16. Dion3 lesson: one fp32 update per step, cast once.
 - C2 `ModularOptimizer(normuon_mode="row_unit"|"dion")`: "dion" = per-row mean-square EMA, divide, then rescale to the
   pre-normalization Frobenius norm, step lr*sqrt(d_out/d_in) (dion's `spectral_norm` adjust).
 - C3 `ModularOptimizer(update_scale="native"|"rms0.2")` (SF-NorMuon line 13: step = 0.2*lr*sqrt(m*n)/||P||_F) and routing
@@ -52,6 +51,88 @@ Added to `tests/` next to the existing modular tests; tiny tensors only.
 - C4 Telemetry per group (only on log steps): update RMS, weight RMS, relative update ||dW||/||W|| per group, Shampoo
   `eigh_failures`. This is what tells a damped group from a hot one; today's telemetry sums all groups.
 - C6 Half-batch noise logging (section N), opt-in flag `--log-grad-noise N` (every N optimizer steps), all trainers.
+
+## Build status (KUANG, 2026-10-17): C1-C7 + T0 written and CPU-tested on the laptop
+
+**Branches** (all `feature/modular-opt-c-series`, none merged):
+| Repo (desktop path) | Base | What |
+|---|---|---|
+| audio-tools-avp (`SAO/stable-audio-tools`) | origin/fix/inharmonicity-aux 4af13b0 | `modular_opt/`: optimizer options, `grad_noise.py`, routing `scalar_opt`; `tests/test_modular_c_series.py`; `scripts/ns_orthogonality_check.py` |
+| stable-audio-3 (`SAO/stable-audio-3`) | origin/latch-sa3-phase1 42cc95e | `scripts/latch/train_latch.py` + `scripts/train_lora_modular.py` flags; `tests/test_latch_modular_c_series.py` |
+| avp-audio-craft (`SAO`) | origin/main acdedf5 | `control/sa3_control/train.py` flags; `control/sa3_control/tests/test_grad_noise_accum_halves.py`; this file; TRAINING.md |
+
+The trainer branches need the audio-tools-avp branch checked out in `SAO/stable-audio-tools` (the new keyword
+arguments raise `TypeError` on the old optimizer, so a mismatch fails loudly at launch, not silently).
+⚠ stable-audio-3: GHOST-NOTE's `train_latch.py --optimizer muon_ref` (used by `latch/run_bass_baselines.sh`) is not
+on origin/latch-sa3-phase1, so it is uncommitted on the desktop; merging this branch there may conflict in
+`make_optimizer` / argparse. Commit it first, then merge.
+
+**Verified on the laptop (CPU):**
+- All new options at their defaults reproduce the historical optimizer bit-for-bit: 24 configurations (whitening
+  none/shampoo/soap x SF off, NorMuon off, warmup+wd, brake, escape velocity, SNR gate, multiplicative magnitude),
+  25 steps each, max |difference| 0.0 vs origin/main's code.
+- `tests/test_modular_c_series.py` 22 tests + existing modular tests: 34 passed. Covers T0.1-T0.5, dion-mode equality
+  with a re-implementation of dion's NorMuon (1e-4), rms0.2 = 0.2*lr per element, bf16 NS direction (cos > 0.99),
+  NorMuon-after-unwhiten row equalisation, Adam group (= manual Adam; no momentum under SF), per-group telemetry,
+  fp32 state (recovers the bf16 loss: 1.00 +/- 0.05 of fp32 motion at lr 3e-4, survives a save/load), and the
+  noise meter recovering a known noise scale (within 25%).
+- stable-audio-3 `tests/test_latch_modular_c_series.py` (flags reach the optimizer; the half-batch reading leaves
+  `p.grad` and the RNG untouched) + existing latch tests: 7 passed. FiLM accumulation-halves arithmetic: 2 passed.
+- `scripts/ns_orthogonality_check.py` on CPU (Gaussian + low-rank 256-3072 wide): our bf16 NS = FusionOpt's bf16
+  `newton_schulz_5` exactly (same polynomial); cos to fp32 0.9997 on well-conditioned inputs, 0.91-0.96 on low-rank
+  ones (the noise directions differ). The GPU run on real momentum (`--ckpt`) is still the T readout.
+
+**Not verified:** anything on a GPU, any real training run, the FiLM and DoRA trainers end to end (they need the DiT).
+
+**Deviation from the plan: C1 is `--mod-state-dtype fp32`, not `--adapter-dtype fp32`.** Keeping bf16 adapters and
+giving the OPTIMIZER fp32 master state (momentum, Schedule-Free z/x, or an fp32 weight copy without SF; the bf16
+weight is written from it once per step) fixes the rounding (F21) without touching the forward pass, autocast or
+the adapters' dtype, and works in every trainer (FiLM, LatCH, DoRA, full-FT). It is what FusionOpt already does.
+torch's `load_state_dict` would cast that state back to bf16 on resume; `ModularOptimizer.load_state_dict` keeps it fp32
+(tested). In T3/T4 read "fp32 (C1)" as `--mod-state-dtype fp32`.
+
+**Found while building:**
+- `train_latch.py` set `opt._telem_on` only with `--wandb`, and ModularOptimizer's `_telem_on` defaults to True (FusionOpt's
+  to False), so every LatCH modular run WITHOUT wandb (Phases A-E) computed the per-parameter `.item()` telemetry on
+  every step. Fixed: telemetry now runs only on logged steps. Unmeasured speed effect; numerics unchanged.
+- VADD: `var_damp` is applied twice whenever VADD fires, with or without escape velocity (ev_mult *= var_damp, then
+  eta *= ev_mult * var_damp): the damping is var_damp squared. Pinned by `test_vadd_damping_is_applied_twice`; behaviour
+  unchanged pending Kim's decision.
+- Our NorMuon vs dion on a 32x512 matrix: 4.76x (sqrt(16) = 4 from the shape, the rest because ours rescales rows to
+  exactly unit length while dion keeps the Newton-Schulz output size). Matches GHOST-NOTE's 4-8% on square/tall.
+
+**Not built:** the momentum-buffer version of N (needs two shadow momentum buffers every step, not only on log steps);
+the MONA version of N (FusionOpt); Dion3 row selection; section E's representation script.
+
+### Flags per arm (desktop launch cheat sheet)
+
+FiLM (`control/sa3_control/train.py`, E12 recipe + these):
+| Arm | Flags |
+|---|---|
+| T1 / A1-A3 | (none: today) |
+| T2 | `--mod-ns-dtype bf16` |
+| T3 / A4-A6 | `--mod-state-dtype fp32` |
+| T4 | `--mod-state-dtype fp32 --mod-ns-dtype bf16` |
+| A, Wintermute's extra arm | add `--grad-accum 1 --ema 0` to the A winner (the shipped run used neither) |
+| N on FiLM | `--log-grad-noise 50` (needs even `--grad-accum`; accum 2 = halves of 1 crop, accum 4 = 2+2) |
+| C4 on any arm | `--log-opt-groups` (opt_groups.jsonl every `--log-every` steps) |
+
+LatCH (`stable-audio-3/scripts/latch/train_latch.py --optimizer modular`, E05 recipe + these):
+| Arm | Flags |
+|---|---|
+| B1 | `--mod-sign-lr 2e-3` |
+| B2 | `--lr 3e-2 --mod-sign-lr 2e-3` |
+| B3 | `--lr 3e-2` |
+| B4 | `--mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95 --mod-momentum 0.8 --mod-wd 0.05 --mod-warmup 1500` |
+| B5 | B4 with `--lr 2e-2` |
+| C (head) | `--mod-normuon-mode dion` |
+| S1 / S2 | `--mod-whitening none` / `--mod-normuon-after-unwhiten` |
+| N, C4 | `--log-grad-noise 50 --log-opt-groups` (2 extra passes on logged steps) |
+Note: in B4 `--mod-wd 0.05` decays at z for the matrices; the adam group's wd is `--mod-sign-wd` (default 0).
+
+DoRA (`stable-audio-3/scripts/train_lora_modular.py --optimizer modular`): C arms `--modular-normuon-mode dion`,
+`... dion --modular-lora-a-lr-mult 3.5`; also `--modular-update-scale`, `--modular-ns-dtype`, `--modular-state-dtype`,
+`--modular-scalar-opt`, `--modular-sign-lr`, `--modular-normuon-after-unwhiten`.
 
 ## N. Gradient-noise logging: a measured batch-size estimate (logging only, rides on A and B)
 
