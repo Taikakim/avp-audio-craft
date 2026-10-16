@@ -329,6 +329,33 @@ def main():
                     help="--optimizer modular: preconditioner on the spectral group")
     ap.add_argument("--mod-normuon", action=argparse.BooleanOptionalAction, default=True)
     ap.add_argument("--mod-sf", action=argparse.BooleanOptionalAction, default=True)
+    # C-series (KUANG 2026-10-17; docs/modular-opt-test-plan-2026-10-17.md, docs/TRAINING.md §2e). Defaults = historical.
+    ap.add_argument("--mod-state-dtype", choices=["param", "fp32"], default="param",
+                    help="--optimizer modular: 'fp32' keeps momentum and the Schedule-Free averages in fp32 for bf16 "
+                         "adapters (fp32 master copy; the bf16 weights are written from it). 'param' = historical, "
+                         "where bf16 storage rounds small steps away (TRAINING.md F21). Test plan A/T")
+    ap.add_argument("--mod-ns-dtype", choices=["fp32", "bf16", "fp16"], default="fp32",
+                    help="--optimizer modular: dtype of the Newton-Schulz iteration only (bf16 = FusionOpt's hot path). Test plan T")
+    ap.add_argument("--mod-momentum", type=float, default=0.9, help="--optimizer modular: momentum beta1")
+    ap.add_argument("--mod-sf-beta", type=float, default=0.9, help="--optimizer modular: Schedule-Free interpolation")
+    ap.add_argument("--mod-sign-lr", type=float, default=None,
+                    help="--optimizer modular: lr of the sign (or adam) group; default --lr")
+    ap.add_argument("--mod-sign-wd", type=float, default=0.0)
+    ap.add_argument("--mod-scalar-opt", choices=["sign", "adam"], default="sign",
+                    help="--optimizer modular: sign-routed parameters by sign descent (historical) or element-wise Adam")
+    ap.add_argument("--mod-scalar-sf-beta", type=float, default=None)
+    ap.add_argument("--mod-normuon-mode", choices=["row_unit", "dion"], default="row_unit")
+    ap.add_argument("--mod-update-scale", choices=["native", "rms0.2"], default="native")
+    ap.add_argument("--mod-normuon-after-unwhiten", action="store_true")
+    ap.add_argument("--mod-ns-batch", action="store_true",
+                    help="--optimizer modular: one batched Newton-Schulz call per matrix shape instead of one per matrix (speed)")
+    ap.add_argument("--log-grad-noise", type=int, default=0,
+                    help="every N optimizer steps, log the half-batch gradient cosine / noise scale per matrix to "
+                         "<save-dir>/grad_noise.jsonl; the halves are the first and second half of the --grad-accum "
+                         "micro-batches (needs an even --grad-accum; one gradient copy on those steps). 0 = off")
+    ap.add_argument("--log-opt-groups", action="store_true",
+                    help="--optimizer modular: every --log-every steps write per-group update RMS / weight RMS / "
+                         "relative update to <save-dir>/opt_groups.jsonl")
     ap.add_argument("--optimizer", choices=["adamw", "fusion", "sfadamw", "fusion_nm", "fusion_full", "lion", "modular"], default="adamw",
                     help="adamw (default); fusion (SF-NorMuon = ns5+normuon+sf); sfadamw (sf-only = "
                          "ScheduleFree-AdamW); fusion_nm (mona+ns5+normuon+sf — everything EXCEPT KL-Shampoo, "
@@ -677,16 +704,29 @@ def main():
         )
         trainable_mod = torch.nn.ModuleList(
             [w.adapter for w in wrappers] + [cond_enc] + ([dit] if _lora_params else []))
+        # C-series options (KUANG 2026-10-17, docs/modular-opt-test-plan-2026-10-17.md); defaults = historical.
         groups = build_modular_param_groups(trainable_mod, default_whitening=args.mod_whitening,
-                                            spectral_wd=0.01)
+                                            spectral_wd=0.01, sign_lr=args.mod_sign_lr,
+                                            sign_wd=args.mod_sign_wd, scalar_opt=args.mod_scalar_opt,
+                                            scalar_sf_beta=args.mod_scalar_sf_beta)
         print(summarise_modular_groups(groups), flush=True)
         opt = ModularOptimizer(groups, lr=args.lr, warmup_steps=args.warmup_steps,
-                               normuon=args.mod_normuon, schedule_free=args.mod_sf)
+                               normuon=args.mod_normuon, schedule_free=args.mod_sf,
+                               state_dtype=args.mod_state_dtype, ns_dtype=args.mod_ns_dtype,
+                               beta1=args.mod_momentum, sf_beta=args.mod_sf_beta,
+                               normuon_mode=args.mod_normuon_mode, update_scale=args.mod_update_scale,
+                               normuon_after_unwhiten=args.mod_normuon_after_unwhiten, ns_batch=args.mod_ns_batch)
         _sf = bool(opt.uses_sf_averaging)
         if _sf:
             opt.train()
         print(f"[opt] modular whitening={args.mod_whitening} normuon={args.mod_normuon} "
-              f"SF={_sf}", flush=True)
+              f"SF={_sf} state_dtype={args.mod_state_dtype} ns_dtype={args.mod_ns_dtype} "
+              f"scalar_opt={args.mod_scalar_opt} update_scale={args.mod_update_scale} "
+              f"normuon_mode={args.mod_normuon_mode}", flush=True)
+        if dtype != torch.float32 and args.mod_state_dtype == "param":
+            print(f"[opt] ⚠ {args.precision} adapters with --mod-state-dtype param: momentum and the Schedule-Free "
+                  f"averages are {args.precision} too and small steps round away (docs/TRAINING.md F21). "
+                  f"--mod-state-dtype fp32 keeps fp32 master state.", flush=True)
     elif args.optimizer == "lion":
         from stable_audio_3.training.lion_optimizer import LionSR
         opt = LionSR(params, lr=args.lr, betas=tuple(args.lion_betas),
@@ -951,6 +991,22 @@ def main():
         _st_f = open(args.step_times, "w", buffering=1)
         _st_f.write(f"# startup_s\t{t0 - _T_PROC:.3f}\n#step\tt_since_proc_s\tdt_s\topt_step\n")
         _st_prev = t0
+    # Half-batch gradient-noise meter (test plan section N, C6): half 1 = the first grad_accum/2 micro-batches
+    # of an optimizer step, half 2 = the rest. Reading only; measured before the clip, which rescales grads.
+    gn_meter, _gn_c1 = None, None
+    if args.log_grad_noise > 0:
+        if args.grad_accum < 2 or args.grad_accum % 2:
+            print(f"[grad-noise] ⚠ needs an even --grad-accum >= 2 (got {args.grad_accum}); disabled", flush=True)
+        else:
+            from stable_audio_tools.training.modular_opt import GradNoiseMeter
+            _gn_named = list(torch.nn.ModuleList([w.adapter for w in wrappers] + [cond_enc]).named_parameters())
+            _gn_named += [(f"dora.{i}", q) for i, q in enumerate(_lora_params)]
+            gn_meter = GradNoiseMeter(_gn_named, every=args.log_grad_noise,
+                                      out_path=os.path.join(args.save_dir, "grad_noise.jsonl"))
+            print(f"[grad-noise] every {args.log_grad_noise} optimizer steps, {len(gn_meter.params)} matrices, "
+                  f"halves of {args.batch * args.grad_accum // 2} sample(s)", flush=True)
+    opt_groups_path = (os.path.join(args.save_dir, "opt_groups.jsonl")
+                       if args.optimizer == "modular" and args.log_opt_groups else None)
     cond_enc.train()
     while step < args.steps:
         for b in dl:
@@ -1059,6 +1115,9 @@ def main():
                     _sync(); _tf = time.time(); prof["fwd"] += _tf - _tt
                 # grad-accum: divide BEFORE backward so each microbatch contributes 1/N of the step gradient
                 (loss / args.grad_accum).backward()
+                if (gn_meter is not None and gn_meter.due(step // args.grad_accum)
+                        and step % args.grad_accum == args.grad_accum // 2 - 1):
+                    _gn_c1 = gn_meter.capture()      # end of half 1: sum of its micro-batch grads / grad_accum
                 if args.smoke:      # grads are live here at ANY --grad-accum; the step
                     # block below runs only every Nth microbatch and clears them after
                     _smoke_adapter_g = [float(q.grad.norm()) for w in wrappers
@@ -1069,6 +1128,19 @@ def main():
                 _sync(); _tb = time.time(); prof["bwd"] += _tb - _tf
             # optimizer step only every grad_accum microbatches (standard gradient accumulation)
             if (step + 1) % args.grad_accum == 0:
+                if _gn_c1 is not None:
+                    # half means: 2*c1 and 2*(total - c1), since each micro-batch loss was divided by grad_accum
+                    _tot = gn_meter.capture()
+                    _h1 = [None if a is None else 2.0 * a for a in _gn_c1]
+                    _h2 = [None if (a is None or t_ is None) else 2.0 * (t_ - a) for a, t_ in zip(_gn_c1, _tot)]
+                    _gn = gn_meter.measure(step // args.grad_accum, _h1, _h2,
+                                           b_half=args.batch * args.grad_accum // 2)
+                    del _tot, _h1, _h2
+                    _gn_c1 = None
+                    if _gn:
+                        print(f"[grad-noise] opt step {step // args.grad_accum}: cos {_gn['grad_noise/cos_pooled']:.3f} "
+                              f"(null {_gn['grad_noise/cos_null']:.3f}) B_simple {_gn['grad_noise/b_simple_ema']:.1f} "
+                              f"full-batch cos est {_gn['grad_noise/cos_fullbatch_est']:.3f}", flush=True)
                 gnorm = torch.nn.utils.clip_grad_norm_(params, 1.0)
                 if _sched_external:
                     _m = lr_multiplier(step + 1, args.warmup_steps, args.lr_hold_steps,
@@ -1079,6 +1151,9 @@ def main():
                     opt._telem_on = ((step + 1) % args.log_every == 0)
                 opt.step()
                 opt.zero_grad(set_to_none=True)
+                if opt_groups_path is not None and getattr(opt, "_telem_on", False):
+                    with open(opt_groups_path, "a", encoding="utf-8") as _f:
+                        _f.write(json.dumps({"step": step + 1, **opt.component_telemetry}) + "\n")
                 if ema is not None:
                     ema.update()
                 if args.profile:
