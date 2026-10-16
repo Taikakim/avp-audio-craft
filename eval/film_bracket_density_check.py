@@ -44,7 +44,10 @@ EXT_DENS = (3, 5, 7, 9, 12)
 EXT_GAINS = {"shipped": (0.1, 0.25, 0.5, 0.75, 1.0, 1.75), "lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5),
              "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,),
              "shipped_s5400": (1.0, 1.75), "shipped_s10800": (1.0, 1.75),
-             "full_s54000": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "full_s27000": (1.0, 1.75)}
+             "full_s54000": tuple(round(0.25 * i, 2) for i in range(1, 21)), "full_s27000": (1.0, 1.75)}
+# 2026-10-16 listening: the full run may take higher weights below the top request; its ladder is 0.25-5.0 in 0.25 steps and adds
+# requests 1 and 2 onsets/s.
+ARM_DENS = {"full_s54000": (1, 2, 3, 5, 7, 9, 12)}
 
 
 def cells():
@@ -52,7 +55,7 @@ def cells():
     for arm in ARMS:
         for s in SEEDS:
             for g in EXT_GAINS[arm]:
-                for d in EXT_DENS:
+                for d in ARM_DENS.get(arm, EXT_DENS):
                     out.append(dict(arm=arm, seed=s, gain=g, dens=d, id=f"{arm}_s{s}_g{g:g}_d{d}"))
     return out
 

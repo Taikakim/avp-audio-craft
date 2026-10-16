@@ -20,7 +20,7 @@ done
 until curl -sf -m 5 http://127.0.0.1:8056/status >/dev/null; do sleep 20; done
 echo "$(date +%H:%M) server up: FiLM bracket extension"
 "$SAO/.venv/bin/python" eval/film_bracket_density_check.py > "$OUT/ext.log" 2>&1
-echo "$(date +%H:%M) cells written: $(wc -l < "$OUT/cells.jsonl") / 412"
+echo "$(date +%H:%M) cells written: $(wc -l < "$OUT/cells.jsonl") / 632"
 # only my own server (2026-10-16: an unconditional stop killed GHOST-NOTE's server mid-grid)
 grep -qs "^WINTERMUTE" "$HOME/.cache/latent-forge/server.8056.holder" && eval/forge/dev_server.sh stop
 python3 Misc/build_film_bracket_check_page.py && [ -f "$DEST_FILE" ] && D=$(cat "$DEST_FILE") && \
