@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-16)
+# Last edited: WINTERMUTE 2026-10-16 — per-arm gain x request grids for the extension
 """build_film_bracket_check_page.py -- listening page for eval/film_bracket_density_check.py (EXPERIMENTS E12).
 
 The three modular-optimizer FiLM bracket arms (lr 3e-4 / 1e-3 / 3e-3, 6000 steps) and the shipped FiLM, each as the FiLM adapter
@@ -43,7 +44,8 @@ th{background:#1c1c22;color:#aaa}td:first-child{text-align:left;color:#9ab}.pk{c
 <div class=explain><b>Why this page exists.</b> The FiLM density adapter was retrained under the modular optimizer at three learning rates (6000 steps each);
 the training loss is the same for all three and cannot see control, so this checks what each actually does to onset density. The arm with the largest clean
 spread at FiLM gain 1.0 was picked for the overnight 54 000-step run. <b>How to read it.</b> Per arm and FiLM gain: spread = measured onsets/s for the 9/s request
-minus the 3/s request (2 seeds), and the highest final-latent level vs the unguided seed (above about 1.3 = saturation risk). Buttons: seed · request → measured.
+minus the 3/s request (2 seeds). Below it, one grid per arm: FiLM gain down, request across; each button = seed · measured onsets/s · final-latent level
+vs the unguided seed (red above 1.3 = saturation risk). The grids were extended after the first listen (the weight, not the request, drives the change).
 <b>What it cannot tell you.</b> Whether the style pull is smaller than the shipped FiLM's: that needs the E7 contexts, after the full run. __UN__</div>
 <div id=out></div></div><audio id=au_el></audio>
 <script>const D=__DATA__;const au=document.getElementById('au_el'),npx=document.getElementById('np');let cur=null;
@@ -55,10 +57,17 @@ function play(id,f){if(cur===id){au.pause();cur=null;mark();npx.textContent='sto
 const btn=(c,l)=>`<span class=b id="${c.id}" onclick="play('${c.id}','${c.f}')">${l}</span>`;
 const S=(D.pick&&D.pick.summary)||{};let h='<div class=muted>unguided: '+D.rows.filter(r=>!r.arm).map(r=>btn(r,`&#9654; s${r.seed} → ${r.onsets}/s`)).join(' ')+'</div>';
 if(D.pick&&D.pick.pick)h+=`<p>Picked for the full run: <span class=pk>${D.label[D.pick.pick]}</span> (${D.pick.rule})</p>`;
-h+='<table><tr><th>arm</th><th>FiLM gain 1.0</th><th>FiLM gain 1.75</th></tr>';
-Object.keys(D.label).forEach(a=>{const s=S[a]||{spread:{}};h+=`<tr><td class="${D.pick.pick===a?'pk':''}">${D.label[a]}<br><span class=muted>max latent ×${s.max_z_ratio??'–'}</span></td>`;
- [1,1.75].forEach(g=>{const cs=D.rows.filter(r=>r.arm===a&&r.gain===g);h+=`<td><b>${(s.spread||{})['g'+g]??'–'}/s</b><br>`+cs.map(c=>btn(c,`s${c.seed} ${c.dens}→${c.onsets}`)).join(' ')+'</td>';});h+='</tr>';});
-document.getElementById('out').innerHTML=h+'</table>';</script>
+h+='<h2 style="font-size:14px">Summary: spread (9/s request minus 3/s)</h2><table><tr><th>arm</th><th>FiLM gain 1.0</th><th>FiLM gain 1.75</th></tr>';
+Object.keys(D.label).forEach(a=>{const s=S[a]||{spread:{}};h+=`<tr><td class="${D.pick.pick===a?'pk':''}">${D.label[a]}</td><td>${(s.spread||{}).g1??'–'}/s</td><td>${(s.spread||{})['g1.75']??'–'}/s</td></tr>`;});
+h+='</table>';
+const base={};D.rows.filter(r=>!r.arm).forEach(r=>base[r.seed]=r.z_std);
+Object.keys(D.label).forEach(a=>{const rs=D.rows.filter(r=>r.arm===a);if(!rs.length)return;
+ const gs=[...new Set(rs.map(r=>r.gain))].sort((x,y)=>x-y),ds=[...new Set(rs.map(r=>r.dens))].sort((x,y)=>x-y);
+ h+=`<h2 style="font-size:14px" class="${D.pick.pick===a?'pk':''}">${D.label[a]}</h2><table><tr><th>FiLM gain</th>`+ds.map(d=>`<th>request ${d}/s</th>`).join('')+'</tr>';
+ gs.forEach(g=>{h+=`<tr><td>${g}</td>`+ds.map(d=>'<td>'+rs.filter(r=>r.gain===g&&r.dens===d).sort((x,y)=>x.seed-y.seed).map(c=>{const z=c.z_std&&base[c.seed]?c.z_std/base[c.seed]:null;
+  return btn(c,`s${c.seed} ${c.onsets}/s`+(z?` ·<span style="color:${z>1.3?'#e66':'#888'}">×${z.toFixed(2)}</span>`:''));}).join('<br>')+'</td>').join('')+'</tr>';});
+ h+='</table>';});
+document.getElementById('out').innerHTML=h;</script>
 __NOTES__
 <footer style="margin:18px 12px;color:#666;font-size:11px">evals &middot; FiLM modular-optimizer bracket (EXPERIMENTS E12) &middot; clips: sa3_control_runs (internal)</footer></body></html>"""
 UN = "" if meta.get("kim_feedback") else '<span class=un>&#10071;</span> No listening verdict recorded yet.'

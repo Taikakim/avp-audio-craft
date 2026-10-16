@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-16)
+# Last edited: WINTERMUTE 2026-10-16 — extension grid: per-arm FiLM gain ladders x requests 3/5/7/9/12 (listening verdict on the first check)
 """film_bracket_density_check.py -- pick the full-run LR for EXPERIMENTS E12 by density response, not by loss.
 
 WHY. The E12 bracket (FiLM onset-density adapter under the ModularOptimizer, lr 3e-4 / 1e-3 / 3e-3, 6000 steps each) trained
@@ -31,14 +32,19 @@ SERVER = "http://127.0.0.1:8056"
 BASE = {"prompt": "psytrance, 140 bpm", "duration": 20.0, "steps": 50, "cfg_scale": 7.0, "sampler_type": "euler",
         "apg_scale": 1.0, "dora": {"name": "none", "strength": 1.0}}
 SEEDS, GAINS, DENS = (1234, 77), (1.0, 1.75), (3, 9)
+# Extension 2026-10-16 (listening: the weight, not the request, drives the change; extend the ladders): the pick summary still uses
+# GAINS x DENS above; these grids add the rest. Shipped downward, lr3e-4 / lr1e-3 0.5-2.5, lr3e-3 0.1-1.0 in 0.1 steps.
+EXT_DENS = (3, 5, 7, 9, 12)
+EXT_GAINS = {"shipped": (0.1, 0.25, 0.5, 0.75, 1.0, 1.75), "lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5),
+             "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,)}
 
 
 def cells():
     out = [dict(arm=None, seed=s, gain=0, dens=None, id=f"base_s{s}") for s in SEEDS]
     for arm in ARMS:
         for s in SEEDS:
-            for g in GAINS:
-                for d in DENS:
+            for g in EXT_GAINS[arm]:
+                for d in EXT_DENS:
                     out.append(dict(arm=arm, seed=s, gain=g, dens=d, id=f"{arm}_s{s}_g{g:g}_d{d}"))
     return out
 
