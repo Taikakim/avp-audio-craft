@@ -1071,3 +1071,11 @@ target reads them as HF-deficient and would push generations brighter).
   brings the runaway back; the EMA is itself ~60% base, which fits. plain_s2: EMA under level (0.65), online 1.16. bf16_plain_s2 low
   either way (0.63-0.68). Online renders are much busier (15-16 onsets/s vs 7-11). The anchor caps any of them at 1.2. Open: whether
   the checkpoint's live weights are the Schedule-Free average or the raw iterate. Listening verdict pending.
+
+### finding · drone sweep weights: online moved ~20% of the base norm; force_scalar's output projection grew 2.6x; bf16 EMA barely moved
+- CPU weight distance vs medium-base (all 2-D DiT tensors): online plain 0.20, bf16 0.23, force_scalar 0.20; EMA 0.048 / 0.014 / 0.049.
+  The timestep and global-conditioning embedders moved 50-100% in every arm. force_scalar's `transformer.project_out` norm 2.4 -> 6.3
+  (the scalar update on the output projection), which scales the velocity: corrupted however it is rendered (listening agrees).
+- Listening 2026-10-16: plain s2 online "corrupted utterly", bf16 online not, force_scalar corrupted every way. A ~20% move in <6000 steps
+  at lr 8e-5 fits LR too high. `--base_precision bf16` trains the weights themselves in bf16 and the bf16 EMA (beta 0.9999, steps of 1e-4)
+  stays near base (1.4% vs 4.8%): bf16 EMA is effectively broken. Why bf16 ONLINE sounds fine at the same distance is open.

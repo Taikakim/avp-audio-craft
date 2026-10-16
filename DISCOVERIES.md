@@ -10,7 +10,7 @@ add a finding, drop a journal line in your own journal; re-run the script.*
 understanding — it will occasionally misfile something. `[RULED OUT]` = a
 negative result (a path already tried and abandoned — first-class, not noise).
 
-*307 entries from 5 journals.*
+*308 entries from 5 journals.*
 
 ---
 
@@ -258,6 +258,7 @@ negative result (a path already tried and abandoned — first-class, not noise).
 - **AVP drone sweep: force_scalar runs the latent level to ~3 at every cfg; the EMA renders are ~60% base weights.** → `renders_pull/dronesweep/run_meta.json`, `eval/dronesweep_weights_test.py` — WINTERMUTE, 2026-10-16
 - [RULED OUT] **scaling a run-away latent back to a healthy level removes the distortion, not the drone.** → `dronesweep_rescale.html` — WINTERMUTE, 2026-10-16
 - **drone sweep: the latent runaway is in the EMA, not the trained weights; blending toward base re-inflates it.** → `dronesweep_weights.html`, `eval/dronesweep_weights_test.py` — WINTERMUTE, 2026-10-16
+- **drone sweep weights: online moved ~20% of the base norm; force_scalar's output projection grew 2.6x; bf16 EMA barely moved.** — WINTERMUTE, 2026-10-16
 - **retrained air head A2 follows the dB target both ways; the anchor removes the seed-764 + FiLM saturation (by ear).** → `punch_air_film.html` — WINTERMUTE, 2026-10-15
 - [tool] **disintegration gate: optional latent-level leg (final std ratio > 1.3).** → `eval/control_head_disintegration_eval.py`, `docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md` — WINTERMUTE, 2026-10-15
 - **the punch DoRA shifts every seed the same way; seed 764 gets one of the largest shifts.** — WINTERMUTE, 2026-10-15
