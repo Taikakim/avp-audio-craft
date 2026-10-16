@@ -16,6 +16,7 @@ OUT = os.environ.get("CT_OUT", "/run/media/kim/Mantu/latch_sweep/crosstalk_2026-
 W = "/home/kim/Projects/SAO/stable-audio-3/latch_weights_sa3_medium"
 HEADS = {"bass": f"{W}/latch_sa3_rms_energy_bass_best.pt", "body": f"{W}/latch_sa3_rms_energy_body_best.pt", "mid": f"{W}/latch_sa3_rms_energy_mid_best.pt",
          "air_prod": f"{W}/latch_sa3_rms_energy_air_best.pt", "air_A2": f"{W}/latch_sa3_rms_energy_air_a2_best.pt"}
+HEADS["bass"] = os.environ.get("CT_BASS", HEADS["bass"])   # 2026-10-16: measure a RETRAINED bass head (e.g. the decorrelation arms) against the production body/mid/air heads
 BANDS = {"bass": "bass", "body": "body", "mid": "mid", "air_prod": "air", "air_A2": "air"}
 FRACS = [0.02, 0.05]
 
