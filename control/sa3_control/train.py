@@ -347,6 +347,8 @@ def main():
     ap.add_argument("--mod-normuon-mode", choices=["row_unit", "dion"], default="row_unit")
     ap.add_argument("--mod-update-scale", choices=["native", "rms0.2"], default="native")
     ap.add_argument("--mod-normuon-after-unwhiten", action="store_true")
+    ap.add_argument("--mod-ns-batch", action="store_true",
+                    help="--optimizer modular: one batched Newton-Schulz call per matrix shape instead of one per matrix (speed)")
     ap.add_argument("--log-grad-noise", type=int, default=0,
                     help="every N optimizer steps, log the half-batch gradient cosine / noise scale per matrix to "
                          "<save-dir>/grad_noise.jsonl; the halves are the first and second half of the --grad-accum "
@@ -713,7 +715,7 @@ def main():
                                state_dtype=args.mod_state_dtype, ns_dtype=args.mod_ns_dtype,
                                beta1=args.mod_momentum, sf_beta=args.mod_sf_beta,
                                normuon_mode=args.mod_normuon_mode, update_scale=args.mod_update_scale,
-                               normuon_after_unwhiten=args.mod_normuon_after_unwhiten)
+                               normuon_after_unwhiten=args.mod_normuon_after_unwhiten, ns_batch=args.mod_ns_batch)
         _sf = bool(opt.uses_sf_averaging)
         if _sf:
             opt.train()

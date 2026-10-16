@@ -128,6 +128,7 @@ LatCH (`stable-audio-3/scripts/latch/train_latch.py --optimizer modular`, E05 re
 | C (head) | `--mod-normuon-mode dion` |
 | S1 / S2 | `--mod-whitening none` / `--mod-normuon-after-unwhiten` |
 | N, C4 | `--log-grad-noise 50 --log-opt-groups` (2 extra passes on logged steps) |
+| P0 / speed | `--save-opt-state`, `--log-mom-spectra 200`, `--mod-ns-batch` (section P) |
 Note: in B4 `--mod-wd 0.05` decays at z for the matrices; the adam group's wd is `--mod-sign-wd` (default 0).
 
 DoRA (`stable-audio-3/scripts/train_lora_modular.py --optimizer modular`): C arms `--modular-normuon-mode dion`,
@@ -308,8 +309,76 @@ fp32 weights, fp32 optimizer state.
   i.e. one crop; the cosine then mixes crop-to-crop variation with gradient noise. Worth stating in the reading, or logging on an
   accum-4 run (2 + 2).
 
+## P. Spectral probes, direction agreement, adapter audit (KUANG, 2026-10-17; papers: SAMuon 2608.25990, Evil Spectra 2606.31591)
+
+Gate for any new optimizer (SAMuon-lite, PolarAdamW, finite-r): does a bigger step along the NON-leading momentum
+directions lower HELD-OUT loss under our optimizer, precision, batch and parametrisation? "The bulk is noise at batch 16" is
+a hypothesis, not a conclusion. No new optimizer is justified before P1-P3 have read out.
+
+**Audit: loss reduction and effective batch** (code read, 2026-10-17):
+| Trainer | Loss reduction | Batch per optimizer step | Halves for N |
+|---|---|---|---|
+| LatCH `train_latch.py` | masked mean over all valid frames x channels of the whole batch (frame-weighted; `--voiced-field` adds a per-frame weight), divided by `--grad-accum` | `--batch-size` (16) x `--grad-accum` (1) | the micro-batch split 8 + 8, each half its own masked mean |
+| FiLM `control/sa3_control/train.py` | plain MSE mean over all elements (+ optional CC / fingerprint terms), divided by `--grad-accum` | `--batch` (1) x `--grad-accum` (2) = 2 crops | the two micro-batches (1 crop each; accum 4 gives 2 + 2) |
+| DoRA `train_lora_modular.py` | Lightning: masked, normalised MSE (diffusion.py `compute_normalized_mse`, per-sample mask) + subspace/aux terms | `--batch_size` (8 default; recipes 32) x `--accumulate_grad_batches` (1) | not wired (N is LatCH/FiLM only) |
+
+**Routing found in the LatCH head while building the probe (`build_modular_param_groups` on LatCH, d64 test model):**
+- `blocks.N.adaLN_mod.1.weight` does NOT match the AdaLN regex (`modulation | global_cond_embedder.2 | scale_shift_table`), so the
+  heads' AdaLN emitters go to the SPECTRAL group whole: not split into shift/scale/gate blocks and not sign, which is what the
+  routing docstring says AdaLN emitters should get. Effect on results unknown.
+- `t_embedder.mlp.0/2.weight` match the embedding regex (`embed`) and go to COLNORM, i.e. the time-embedding MLP is treated
+  like an embedding table.
+- `blocks.N.attn.qkv.weight` is NOT split into Q/K/V blocks: the split regex looks for `.to_qkv.` / `.to_kv.` / `.to_q.`
+  (DiT naming), the head says `attn.qkv`. So Q, K and V are orthogonalised as one matrix. (Verified at d256 depth 2:
+  spectral = latent_proj, qkv, proj, mlp.0, mlp.2, adaLN_mod, all with blocks = 1; colnorm = t_embedder.mlp.*; sign =
+  norm_final, out_proj and the 1-D tensors.)
+- `blocks.N.mlp.2.weight` (d x 4d) is WIDE, so our row_unit NorMuon steps it 2x dion's (F23); "heads are mostly square/tall"
+  (section C) is corrected: the MLP down-projections are wide.
+Decide whether to fix the regex (a routing change = new arms, not a silent default change).
+
+**Tools (built, CPU-tested; nothing run on real data):**
+- P1 `stable-audio-3/scripts/latch/spectral_probe.py` (tests: `tests/test_latch_spectral_probe.py`). Per checkpoint: probes =
+  single ranks 1..32, bands r1 / r2-4 / r5-16 / r17-32, the full polar direction, and `beyond_32` (residual bulk, labelled);
+  each matrix contributes -s_j u_i v_i^T with s_j = max(1, sqrt(d_out/d_in)) so alpha = 1 is the step the optimizer takes at
+  this lr. Held-out loss on alpha in {0, .25, .5, 1, 2, 4, 8, 16, 32} x lr, the diffusion time and noise FIXED per batch,
+  `--repeats` independent evaluation sets (other batches, other draws); plus SAMuon's local-quadratic estimate.
+  `--point y` (PRIMARY): the gradient point (1 - sf_beta) z + sf_beta x and the run's own momentum, from a checkpoint written
+  with `train_latch --save-opt-state` (new). `--point x`: the Schedule-Free average, read separately. `--point saved`: weights
+  as saved (EMA or x) and the momentum REBUILT from a third group C of training batches (disjoint from A, B and held-out).
+  Held-out = the checkpoint's own `val_split` (refuses to run without one unless given explicitly). Nothing is mutated
+  (functional calls); alpha = 0 must reproduce the reference loss and the module is checked unchanged at the end.
+- P2 direction-resolved agreement (`modular_opt.direction_agreement`, called by P1): gradients from two independent training
+  groups A, B projected on the FIXED momentum basis; per band the cosine of the band blocks (invariant to rotations inside a
+  band, so near-degenerate singular vectors need no identification; unstable band edges are flagged), each band's energy share,
+  the fraction of ranks whose coefficient agrees with the momentum's descent direction in both groups (SAMuon appendix I), and
+  the residual outside the top k.
+- P3 pre-polar momentum spectra: `train_latch --log-mom-spectra N` -> mom_spectra.jsonl (top-32 normalised singular values,
+  stable rank, top-1 energy per matrix; reading only). The update's own spectrum is flat by construction (up to NorMuon's row
+  scaling) and only verifies the implementation.
+- P4 `eval/adapter_spectrum_audit.py` (tests: `eval/tests/test_adapter_spectrum_audit.py`): stable rank, Frobenius/nuclear,
+  spectral entropy, condition of each adapter CHANGE (LoRA/DoRA: B @ A; FiLM: W - W_init with `--init`). Run on the shipped
+  FiLM, the E12 modular FiLMs, DoRA runs; set against the CLAP drift already measured in E7-E11. Shape, not size.
+- Speed (section T, add as T5/T6): `--mod-ns-batch` (FiLM, LatCH; `--modular-ns-batch` DoRA) runs the Newton-Schulz of all
+  same-shape matrices (and same-shape QKV/AdaLN blocks) as one batched call. Equal to the per-matrix result up to
+  floating-point reassociation (tests: 7 configurations + bf16/fp32-state, rtol 1e-5); off by default; speed unmeasured
+  (needs the GPU). T5 = T4 + `--mod-ns-batch`.
+
+**Runs (training interventions, need Kim's go; after P1-P3 read out):**
+| Arm | What | Flags (E05 recipe +) | Why |
+|---|---|---|---|
+| B7 | NorMuon off, nothing else changed | `--no-mod-normuon` | the missing isolated ablation; note the routing radius becomes live with NorMuon off (F22) |
+| B8 | SAMuon-lite (head held, bulk x gamma) | not built; build only if P1 shows the bulk tolerating > 1x at batch 16 | discriminates "head at the edge of stability" from "the fast sign group" (F24) for the lr ceiling |
+| P0 | one anchor re-run with `--save-opt-state --log-mom-spectra 200 --log-grad-noise 50` | E05 recipe | produces the checkpoints P1 `--point y` needs |
+
+Reading rule for P1: per probe, best alpha from the grid on each repeat; a band "tolerates more" only if best alpha > 1 on
+every repeat AND the held-out loss at that alpha is below alpha = 1 by more than the repeat-to-repeat spread. Where no metric
+tracks the factor of interest (detune: log-mel is blind to it, V5 ladder gate), the verdict comes from controlled examples
+and listening, never from spectral rank.
+
 ## Order and gates
 
-T0 + C1-C7 (KUANG, CPU) -> T (throughput, ~20 min GPU) -> A -> B (N logs on during A and B) (in parallel with E if VRAM allows: E is inference only) -> C -> D.
+T0 + C1-C7 (KUANG, CPU) -> T (throughput, ~20 min GPU; + T5 ns-batch) -> A -> P0 (anchor with optimizer state) -> P1-P4
+(read-only) -> B (N logs on during A and B; B7 NorMuon-off; B8 only if P1 says so) (in parallel with E if VRAM allows: E is
+inference only) -> C -> D.
 Kim approves each launch. B overlaps the unlaunched Phase F (EXPERIMENTS E5: "not authorised to launch"), so B needs
 Kim's explicit go as well.
