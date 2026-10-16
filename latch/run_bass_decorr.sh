@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner OK'd 2026-10-16: "the decorrelation test should be interesting". Bass head, the B2 recipe (modular+SF, lr 1e-2, d512 dp8, 10 epochs, EMA 1 ep, every epoch saved) plus a DeCov-style penalty on the
-# head's final hidden features (--decorr-lambda): D1 lambda 0.1, D2 lambda 1.0. B2 is the control (same seed/recipe, lambda 0). Judged by the cross-talk meter (eval/latch_crosstalk.py, CT_BASS = the bass
+# head's final hidden features (--decorr-lambda): D1 lambda 10, D2 lambda 100 (lambda 0.1/1 were dropped: the raw penalty is only ~0.007 at epoch 1, so they would not move the loss). B2 is the control (same seed/recipe, lambda 0). Judged by the cross-talk meter (eval/latch_crosstalk.py, CT_BASS = the bass
 # checkpoint under test): gradient cosine of the bass head with production body/mid/air heads, and the decoded-audio response of the other bands when bass is raised. Also val loss and, if worthwhile, the bass page/grid.
 # Order: 12-step smoke (aborts everything if the penalty does not run) -> D1, D2 -> cross-talk for B2, D1, D2 -> /tmp/bass_decorr.done (success only).
 SAO=/home/kim/Projects/SAO
@@ -14,12 +14,13 @@ mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
 "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 lock() { until "$SAO/Misc/gpu_guard.sh" acquire GHOST-NOTE $$ >/dev/null 2>&1; do sleep 120; done; }
 unlock() { "$SAO/Misc/gpu_guard.sh" release GHOST-NOTE >/dev/null 2>&1; }
+until [ -f /tmp/bass_baseline_sweep.done ]; do sleep 120; done   # owner 2026-10-17: the baseline render sweep goes first
 lock
 # shellcheck disable=SC2086
 $PY "$TRAIN" $COMMON --decorr-lambda 1.0 --max-steps 12 --epochs 1 --save-dir "$OUT/smoke" --run-name smoke > "$OUT/smoke.log" 2>&1
 unlock
 grep -qE "decorr=[0-9.]+" "$OUT/smoke.log" || { echo "SMOKE FAILED" > "$OUT/SMOKE_FAILED"; exit 1; }
-for a in "D1_bass_decorr0.1|0.1" "D2_bass_decorr1.0|1.0"; do
+for a in "D1_bass_decorr10|10" "D2_bass_decorr100|100"; do
   name=${a%%|*}; lam=${a#*|}
   grep -q "^${name}	" "$OUT/SUMMARY.tsv" && continue
   lock; mkdir -p "$OUT/$name"; t0=$(date +%s)
@@ -31,7 +32,7 @@ for a in "D1_bass_decorr0.1|0.1" "D2_bass_decorr1.0|1.0"; do
   printf '%s\t%s\t%s\t%s\trc=%s\n' "$name" "$((t1 - t0))" "${best:-NA}" "${last:-NA}" "$rc" >> "$OUT/SUMMARY.tsv"
 done
 B=/run/media/kim/Mantu/latch_sweep/bass_lr_2026-10-16
-for x in "B2|$B/B2_bass_d512_lr1e-2" "D1|$OUT/D1_bass_decorr0.1" "D2|$OUT/D2_bass_decorr1.0"; do
+for x in "B2|$B/B2_bass_d512_lr1e-2" "D1|$OUT/D1_bass_decorr10" "D2|$OUT/D2_bass_decorr100"; do
   n=${x%%|*}; d=${x#*|}
   [ -f "$OUT/ct_$n/audit/realised.json" ] && continue
   lock
