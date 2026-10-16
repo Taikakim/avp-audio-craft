@@ -24,7 +24,8 @@ ARMS=(
 "C2_chroma_d512_lr1e-2|$COMMON --lr 1e-2"
 )
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
-"$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
+# stop the render server only if WINTERMUTE started it (2026-10-16: an unconditional stop killed GHOST-NOTE's server mid-grid)
+grep -qs "^WINTERMUTE" "$HOME/.cache/latent-forge/server.8056.holder" && "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 until "$SAO/Misc/gpu_guard.sh" acquire WINTERMUTE $$ >/dev/null 2>&1; do sleep 120; done
 trap '"$SAO/Misc/gpu_guard.sh" release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired; smoke test (20 steps)"

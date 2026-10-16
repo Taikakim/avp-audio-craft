@@ -23,7 +23,8 @@ until curl -sf -m 5 http://127.0.0.1:8056/status >/dev/null; do sleep 20; done
 echo "$(date +%H:%M) server up: anchor sweep extension"
 "$SAO/.venv/bin/python" eval/punch_air_film_anchor_sweep.py render
 echo "$(date +%H:%M) cells written: $(wc -l < "$OUT/cells.jsonl") / 144"
-eval/forge/dev_server.sh stop
+# only my own server (2026-10-16: an unconditional stop here killed GHOST-NOTE's server mid-grid)
+grep -qs "^WINTERMUTE" "$HOME/.cache/latent-forge/server.8056.holder" && eval/forge/dev_server.sh stop
 mkdir -p "$STAGE"
 for w in "$OUT"/*.wav; do
     d="$STAGE/$(basename "$w" .wav).m4a"; [ -f "$d" ] || echo "$w $d"
