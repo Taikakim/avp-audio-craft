@@ -1093,3 +1093,9 @@ target reads them as HF-deficient and would push generations brighter).
 ### result · same_chroma head retrained under the modular recipe (E13)
 - 20 epochs, d512 depth 8: best val (cosine) C2 lr 1e-2 0.0843, C3 lr 1e-3 0.0973, C4 lr 1e-4 0.1604. Not comparable to the production
   head's train loss. Listening sweep (gains above 2048) not built yet.
+
+### finding · the modular 54k FiLM steers density over 3.6-9.3 onsets/s at weight 2.5-3.25, wider than the shipped FiLM, no saturation
+- `film_bracket_check.html` (632 clips), full run at weights 0.25-5.0 x requests 1-12. Below weight 2 only the top request moves; from
+  2.25 the whole range opens, including DOWNWARD (requests 1-2 -> 3.6-4.5 vs unguided ~6.3-7.3). Most graded at 2.5-3.25 (1: ~3.7,
+  3: ~5, 5: ~7, 7: ~8.3, 12: 9.3); above ~3.5 requests 7-12 all saturate at 9.3 and the response becomes step-like. Latent level
+  1.13-1.17x unguided at every weight. Shipped FiLM at 1.75 spans 4.8-9.3. Trained with bf16 adapters (F21), so possibly understated.
