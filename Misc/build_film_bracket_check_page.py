@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-16)
+# Last edited: WINTERMUTE 2026-10-20 — label for arm fp32_lr3e-4 (test plan A4)
 # Last edited: WINTERMUTE 2026-10-16 — per-arm gain x request grids for the extension
 """build_film_bracket_check_page.py -- listening page for eval/film_bracket_density_check.py (EXPERIMENTS E12).
 
@@ -32,7 +33,8 @@ pick = json.load(open(f"{SRC}/pick.json")) if os.path.exists(f"{SRC}/pick.json")
 meta = json.load(open(f"{SRC}/run_meta.json"))
 LABEL = {"lr3e-4": "modular lr 3e-4", "lr1e-3": "modular lr 1e-3", "lr3e-3": "modular lr 3e-3", "shipped": "shipped FiLM (FusionOpt, 54k steps)",
          "shipped_s5400": "shipped FiLM run at step 5400", "shipped_s10800": "shipped FiLM run at step 10800",
-         "full_s54000": "modular lr 1e-3, full 54k run (final)", "full_s27000": "modular lr 1e-3, full run at step 27000"}
+         "full_s54000": "modular lr 1e-3, full 54k run (final)", "full_s27000": "modular lr 1e-3, full run at step 27000",
+         "fp32_lr3e-4": "modular lr 3e-4, fp32 optimizer state (test plan A4)"}
 DATA = json.dumps({"rows": rows, "pick": pick, "label": LABEL})
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>FiLM Bracket Check</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0}#bar{position:sticky;top:0;background:#16181c;padding:7px 12px;border-bottom:1px solid #2a2a30;z-index:9}

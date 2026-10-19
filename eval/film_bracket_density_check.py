@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-16)
 # Last edited: WINTERMUTE 2026-10-16 — extension grid: per-arm FiLM gain ladders x requests 3/5/7/9/12 (listening verdict on the first check)
+# Last edited: WINTERMUTE 2026-10-20 — arm fp32_lr3e-4 (test plan A4, fp32 optimizer state), kept out of the pick
 """film_bracket_density_check.py -- pick the full-run LR for EXPERIMENTS E12 by density response, not by loss.
 
 WHY. The E12 bracket (FiLM onset-density adapter under the ModularOptimizer, lr 3e-4 / 1e-3 / 3e-3, 6000 steps each) trained
@@ -33,7 +34,9 @@ ARMS = {"lr3e-4": f"{BR}/film_modular_lr3e-4_s6000/riffer_final.pt", "lr1e-3": f
         "shipped_s10800": f"{MANTU}/sa3_control_runs/onset_Fusion_lr1e-4_randomcrop/riffer_step10800.pt",
         # the E12 full run (modular lr 1e-3, 54k steps, finished 2026-10-16 13:12): final + its midpoint
         "full_s54000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_final.pt",
-        "full_s27000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_step27000.pt"}
+        "full_s27000": f"{MANTU}/sa3_control_runs/film_modular_full_20261016/film_modular_lr1e-3_s54000/riffer_step27000.pt",
+        # test plan A4 (2026-10-19): the lr3e-4 arm retrained with fp32 optimizer state; same seed and data order as lr3e-4
+        "fp32_lr3e-4": f"{MANTU}/sa3_control_runs/film_precision_A_20261017/A4_fp32state_lr3e-4/riffer_final.pt"}
 SERVER = "http://127.0.0.1:8056"
 BASE = {"prompt": "psytrance, 140 bpm", "duration": 20.0, "steps": 50, "cfg_scale": 7.0, "sampler_type": "euler",
         "apg_scale": 1.0, "dora": {"name": "none", "strength": 1.0}}
@@ -44,7 +47,8 @@ EXT_DENS = (3, 5, 7, 9, 12)
 EXT_GAINS = {"shipped": (0.1, 0.25, 0.5, 0.75, 1.0, 1.75), "lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5),
              "lr1e-3": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5), "lr3e-3": tuple(round(0.1 * i, 1) for i in range(1, 11)) + (1.75,),
              "shipped_s5400": (1.0, 1.75), "shipped_s10800": (1.0, 1.75),
-             "full_s54000": tuple(round(0.25 * i, 2) for i in range(1, 21)), "full_s27000": (1.0, 1.75)}
+             "full_s54000": tuple(round(0.25 * i, 2) for i in range(1, 21)), "full_s27000": (1.0, 1.75),
+             "fp32_lr3e-4": (0.5, 1.0, 1.5, 1.75, 2.0, 2.5)}
 # 2026-10-16 listening: the full run may take higher weights below the top request; its ladder is 0.25-5.0 in 0.25 steps and adds
 # requests 1 and 2 onsets/s.
 ARM_DENS = {"full_s54000": (1, 2, 3, 5, 7, 9, 12)}
@@ -105,9 +109,9 @@ def main():
             sp[f"g{g:g}"] = round(float(np.mean(hi) - np.mean(lo)), 3) if hi and lo else None
         zr = [c["z_std"] / base[c["seed"]]["z_std"] for c in cs if c.get("z_std") and base.get(c["seed"], {}).get("z_std")]
         summary[arm] = {"spread": sp, "max_z_ratio": round(max(zr), 3) if zr else None}
-    cand = {a: v for a, v in summary.items() if not a.startswith("shipped") and (v["max_z_ratio"] or 0) <= 1.3 and v["spread"]["g1"] is not None}
+    cand = {a: v for a, v in summary.items() if not a.startswith(("shipped", "fp32")) and (v["max_z_ratio"] or 0) <= 1.3 and v["spread"]["g1"] is not None}
     if not cand:   # every arm over the latent screen: fall back to all bracket arms
-        cand = {a: v for a, v in summary.items() if not a.startswith("shipped") and v["spread"]["g1"] is not None}
+        cand = {a: v for a, v in summary.items() if not a.startswith(("shipped", "fp32")) and v["spread"]["g1"] is not None}
     best = max(cand, key=lambda a: cand[a]["spread"]["g1"])
     if "lr1e-3" in cand and cand[best]["spread"]["g1"] - cand["lr1e-3"]["spread"]["g1"] < 0.2:
         best = "lr1e-3"
