@@ -1099,3 +1099,17 @@ target reads them as HF-deficient and would push generations brighter).
   2.25 the whole range opens, including DOWNWARD (requests 1-2 -> 3.6-4.5 vs unguided ~6.3-7.3). Most graded at 2.5-3.25 (1: ~3.7,
   3: ~5, 5: ~7, 7: ~8.3, 12: 9.3); above ~3.5 requests 7-12 all saturate at 9.3 and the response becomes step-like. Latent level
   1.13-1.17x unguided at every weight. Shipped FiLM at 1.75 spans 4.8-9.3. Trained with bf16 adapters (F21), so possibly understated.
+
+### finding · bf16 Newton-Schulz removes most of the modular optimizer's cost; fp32 optimizer state is nearly free (2026-10-19)
+- Test plan section T, 400 FiLM steps per arm: update cost 323 ms (today) -> 101 ms with `--mod-ns-dtype bf16`; `--mod-state-dtype fp32`
+  adds 13-21 ms. Both together: 3.35 steps/s vs 2.35. Measured at the default GPU power limit, which was lowered afterwards.
+  `Mantu/sa3_control_runs/film_t_section_20261017/`.
+
+### finding · with bf16 adapter weights the FiLM cross-attention keys/values stop learning; fp32 optimizer state keeps them moving (2026-10-20)
+- Test plan A4 (lr 3e-4, fp32 state) vs its bf16 twin, same seed and data order: to_k/to_v moved 6.8/6.9 between steps 4k-6k vs
+  0.93/1.00 in the bf16 run (to_out, norm ~19, moves in both). Loss is the same within 0.003 in all three LR pairs (seed noise is
+  ~0.04), so loss cannot see it. Confirms KUANG F21 at the weight level. Density renders queued (`eval/run_a4_density_check.sh`).
+  Caveat: the "norm"/other groups in that quick script may include optimizer buffers; unchecked.
+
+### negative · fp32-state checkpoints are 2.4 GB (bf16 1.6 GB); Mantu filled and A5 died mid-save (2026-10-19 23:46)
+- Truncated `riffer_step4000.pt`. A7/A8/P moved to the UUID drive via symlinks; A5 reruns after the stream (`eval/run_kuang_plan_a5_rerun.sh`).
