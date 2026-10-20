@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-20)
+# Last edited: GHOST-NOTE 2026-10-20 -- --min-std/--out-name/--no-lim for the narrow 1.7->1.6/1.5/1.4 follow-up
 """mixtape_z0_clamp.py -- post-hoc latent-norm clamp for the Kim shortlist (eval/mixtape_audit_kim_shortlist_2026-09-15.json).
 
 WHY (owner ask 2026-10-20): "calculate the norm for all of these, and if it's past 1.4 or so, clamp/compress it". Each model_matrix clip has its z0 beside it
@@ -23,10 +24,10 @@ def meters(x, sr):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--caps", default="1.4,1.15"); ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--device", default="cpu"); ap.add_argument("--only-over", action="store_true", help="only clips with std > cap")
+    ap.add_argument("--device", default="cpu"); ap.add_argument("--min-std", type=float, default=0.0); ap.add_argument("--out-name", default="mixtape_z0_clamp_2026-10-20"); ap.add_argument("--no-lim", action="store_true"); ap.add_argument("--only-over", action="store_true", help="only clips with std > cap")
     a = ap.parse_args()
     caps = [float(c) for c in a.caps.split(",")]; lo = min(caps)
-    out = "/run/media/kim/Mantu/sa3_lora_runs/mixtape_z0_clamp_2026-10-20"; os.makedirs(out, exist_ok=True)
+    out = f"/run/media/kim/Mantu/sa3_lora_runs/{a.out_name}"; os.makedirs(out, exist_ok=True)
     jl = f"{out}/cells.jsonl"; done = {json.loads(l)["id"] for l in open(jl)} if os.path.exists(jl) else set()
     clips = []
     for x in json.load(open(SHORT)):
@@ -40,7 +41,7 @@ def main():
     for st, p in clips:
         if st in done: continue
         z = torch.from_numpy(np.load(p).astype(np.float32)); s = float(z.std())
-        if a.only_over and s <= lo: continue
+        if (a.only_over and s <= lo) or s <= a.min_std: continue
         if a.limit and n >= a.limit: break
         t0 = time.time(); row = dict(id=st, z0_std=round(s, 4))
         arms = [("orig", z)] + [(f"c{c:g}", z * (c / s)) for c in caps if s > c]
@@ -50,7 +51,7 @@ def main():
             pk = float(np.abs(x).max()) or 1e-9
             sf.write(f"{out}/{st}__{tag}.wav", (x / pk * 0.8913 if pk > 1 else x).T, 44100)
             row[tag] = meters(x, 44100)
-            if tag == "orig":   # soft-limited original: knee 0.6 raw, peaks <= 1 BEFORE normalisation -> tests level/overload vs latent std
+            if tag == "orig" and not a.no_lim:   # soft-limited original: knee 0.6 raw, peaks <= 1 BEFORE normalisation -> tests level/overload vs latent std
                 k = 0.6; ax = np.abs(x); y = np.where(ax > k, np.sign(x) * (k + (1 - k) * np.tanh((ax - k) / (1 - k))), x)
                 sf.write(f"{out}/{st}__lim.wav", (y / (np.abs(y).max() or 1) * 0.8913).T, 44100); row["lim"] = meters(y, 44100)
         row["secs"] = round(time.time() - t0, 1); open(jl, "a").write(json.dumps(row) + "\n"); n += 1
