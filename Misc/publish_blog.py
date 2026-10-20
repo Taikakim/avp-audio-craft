@@ -20,31 +20,79 @@ BLOG_DIR = SAO / "blog"
 
 def _inline(t: str) -> str:
     t = html.escape(t)
+    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)
     return t
 
 
+_UL = re.compile(r"^[-*]\s+(.*)$")
+_OL = re.compile(r"^\d+\.\s+(.*)$")
+
+
+def _cells(line: str):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
 def md_to_html(md: str) -> str:
+    """Headings, paragraphs, bullet/numbered lists (indented lines continue the item) and pipe
+    tables. Added 2026-10-20 (THE-FINN, Kim's go) so posts can carry result tables."""
     md = re.sub(r"^\s*<!--.*?-->\s*", "", md, flags=re.S)   # drop the draft-header comment
     out, para = [], []
+    lines = md.splitlines()
 
     def flush():
         if para:
             out.append("<p>" + " ".join(para).strip() + "</p>")
             para.clear()
 
-    for line in md.splitlines():
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         s = line.strip()
         if not s:
-            flush(); continue
+            flush(); i += 1; continue
         h = re.match(r"^(#{1,4})\s+(.*)$", s)
         if h:
             flush()
             lvl = len(h.group(1))
             out.append(f"<h{lvl}>{_inline(h.group(2))}</h{lvl}>")
-        else:
-            para.append(_inline(s))
+            i += 1; continue
+        # pipe table: header row, then a |---|---| separator row
+        if (s.startswith("|") and i + 1 < len(lines)
+                and re.match(r"^\|?\s*:?-{3,}", lines[i + 1].strip())):
+            flush()
+            head = _cells(s)
+            i += 2
+            rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                rows.append(_cells(lines[i])); i += 1
+            t = "<table class=\"listing\">\n<thead><tr>" + "".join(f"<th>{_inline(c)}</th>" for c in head) + "</tr></thead>\n<tbody>\n"
+            for r in rows:
+                t += "<tr>" + "".join(f"<td>{_inline(c)}</td>" for c in r) + "</tr>\n"
+            out.append(t + "</tbody>\n</table>")
+            continue
+        m = _UL.match(s) or _OL.match(s)
+        if m:
+            flush()
+            tag = "ul" if _UL.match(s) else "ol"
+            rx = _UL if tag == "ul" else _OL
+            items = []
+            while i < len(lines):
+                ls = lines[i].strip()
+                mm = rx.match(ls) if not lines[i][:1].isspace() else None
+                if mm:
+                    items.append([mm.group(1)])
+                elif ls and lines[i][:1].isspace() and items:
+                    items[-1].append(ls)          # indented continuation of the item
+                else:
+                    break
+                i += 1
+            out.append(f"<{tag}>\n" + "\n".join(
+                "<li>" + _inline(" ".join(it)) + "</li>" for it in items) + f"\n</{tag}>")
+            continue
+        para.append(_inline(s))
+        i += 1
     flush()
     return "\n".join(out)
 
