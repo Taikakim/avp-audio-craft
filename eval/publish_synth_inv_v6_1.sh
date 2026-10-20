@@ -2,7 +2,7 @@
 # Owner: WINTERMUTE (created 2026-10-20)
 # publish_synth_inv_v6_1.sh -- puts ANTIGRAVITY's V6.1 synth-inversion audition pages (real-stem consensus, arms occam / lexi4k /
 # decay4k) online. Waits until the decay4k page exists and the ANTIGRAVITY GPU lock is gone (step 6 of run_v6_1_pipeline.sh rewrites
-# all three index pages last), converts each arm's WAVs to 128k AAC, points the page at the .m4a files, leak-scans, writes a small
+# all three index pages last), converts each arm's WAVs to 192k AAC, points the page at the .m4a files, leak-scans, writes a small
 # landing page and rsyncs to the eval site under evals/synth_inv_v6_1/.
 #   setsid nohup bash eval/publish_synth_inv_v6_1.sh > <scratch>/publish_v6_1.log 2>&1 < /dev/null &
 set -u
@@ -19,7 +19,7 @@ for a in $ARMS; do
   mkdir -p "$dst"
   for w in "$src"/*.wav; do
     m=$dst/$(basename "${w%.wav}").m4a
-    [ -s "$m" ] || ffmpeg -nostdin -loglevel error -y -i "$w" -c:a aac -b:a 128k "$m"
+    [ -s "$m" ] || ffmpeg -nostdin -loglevel error -y -i "$w" -c:a aac -b:a 192k "$m"
   done
   sed 's/\.wav"/.m4a"/g' "$src/index.html" > "$dst/index.html"
   echo "$(date +%H:%M) ${a##*:}: $(ls "$dst"/*.m4a | wc -l) clips"
