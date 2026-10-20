@@ -1113,3 +1113,16 @@ target reads them as HF-deficient and would push generations brighter).
 
 ### negative · fp32-state checkpoints are 2.4 GB (bf16 1.6 GB); Mantu filled and A5 died mid-save (2026-10-19 23:46)
 - Truncated `riffer_step4000.pt`. A7/A8/P moved to the UUID drive via symlinks; A5 reruns after the stream (`eval/run_kuang_plan_a5_rerun.sh`).
+
+### negative · test plan P1: at the end of the E05 LatCH run no momentum direction tolerates a bigger step (2026-10-21)
+- P0 (E05 re-run with optimizer state) val 0.345 -> 0.182 over 20 epochs. P1 at ep20, gradient point y, 3 repeats: every probe
+  (ranks 1-24, all bands, full polar, the bulk beyond rank 32) raises held-out loss from the first grid point. Two independent
+  training-gradient groups agree with each other (r1 cosine 1.00) but point AGAINST the momentum on the leading ranks: the run has
+  overshot along them and the momentum lags. Gate for B8 SAMuon-lite fails at this checkpoint; ep10/ep5 probes queued.
+  Gradient-noise meter (N) unreadable on this run: the null cosine is as large as the signal. `latch_sweep/kuang_plan_P_20261017/run_meta.json`.
+
+### finding · fp32 optimizer state halves the stable rank of the FiLM conditioner's change (2026-10-21)
+- P4 audit on zero-init matrices only (to_out, FiLM output layer): conditioner layer stable rank bf16 -> fp32 82 -> 47 (lr 1e-3),
+  94 -> 48 (3e-3), 42 -> 27 (3e-4); seed-43 repeat 46. to_out rank follows LR, not precision. The shipped FusionOpt FiLM, the best
+  density steerer, is the most concentrated (conditioner rank 4.0): flatness does not predict control here.
+  `kuang_plan_P4_adapter_audit_20261021/run_meta.json`.
