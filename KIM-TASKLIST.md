@@ -725,7 +725,7 @@ thread (mostly C/G per the entries' own bylines) to confirm still-relevant vs. c
 ## ✅ Recently done (rolling — prune monthly)
 
 ### ✅ Kone mixtape audit: Kim's shortlist recovered (THE-FINN, 2026-10-20)
-The 09-15 audit page (`staging/kone-mixtape-audit/`, 249 clips) keeps ★ picks only in the browser, so no server-side results exist. Kim pasted the export into G's session on 2026-09-15 08:15; it is now saved as `eval/mixtape_audit_kim_shortlist_2026-09-15.json`: 141 clips (105 rated 5★, 36 unrated genre-fusion). It fed the AVP-only mixtape v1/v2 and the later DJ mixes. Kim's later by-hand harshness tagging (about 40 tracks, 09-16) is in `~/mixtape_harshness_review/`.
+The 09-15 audit page (`staging/kone-mixtape-audit/`, 249 clips) keeps ★ picks only in the browser, so no server-side results exist. Kim did the audit on his phone (Kim, 2026-10-20), so any picks beyond the exported 141 would still sit in the phone browser's localStorage (`kone_mixtape_stars_v1`, aavepyora.online origin), not on this machine. Kim pasted the export into G's session on 2026-09-15 08:15; it is now saved as `eval/mixtape_audit_kim_shortlist_2026-09-15.json`: 141 clips (105 rated 5★, 36 unrated genre-fusion). It fed the AVP-only mixtape v1/v2 and the later DJ mixes. Kim's later by-hand harshness tagging (about 40 tracks, 09-16) is in `~/mixtape_harshness_review/`.
 
 ### ✅ LUMI training logs pulled (was misfiled as still-open, moved here 2026-09-24 by THE-FINN)
 Done 2026-09-09 by GHOST-NOTE — `lightning_logs` 14→103, `metrics.csv` 6→123, `train*.log` 63→248,
