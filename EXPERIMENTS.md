@@ -2287,3 +2287,9 @@ arithmetic (2·N FLOP per token, 1.4B parameters, 512 frames per crop, 30 TFLOP
 - A1 local arms (bs1/accum8/fusion/cos/snr/cos+snr) — see A1/A2. · E1. · C5 rendered. · Weight-space
   forensics kit + Gram/spike result (DISCOVERIES 08-18). · Paper reads filed: 2605.10468, 2512.04926, EDM2
   §3, 2602.19512, 2608.15103, 2608.06717 (`papers/knowledge.md`).
+
+### M1. Mixtape shortlist: latent-norm clamp and guide_anchor re-render — GHOST-NOTE, 2026-10-20 (Kim's ask)
+Shortlist `eval/mixtape_audit_kim_shortlist_2026-09-15.json` (141 clips: 105 rated 5-star, 36 unrated genre-fusion, 26 of them from dora128adj_avp_8ep_ptm). 105 have a saved z0: median std 1.37 vs healthy ~1.13, 46 above 1.4; the 36 gf2 clips have none.
+- **z0 clamp (cap 1.4 / 1.15, whole-latent scale, plus soft-limited original): NEGATIVE.** Kim's blind audition (via W, 2026-10-20): the original is systematically cleanest; the clamp adds a tinny comb-filter colouring in the highs, worse at 1.15 than 1.4; the limiter arm is the same clip, just louder. The page was NOT loudness-matched (orig and lim both peak-normalised to 0.8913, lim plays ~3 dB louder), so "limiter sounds fine" proves nothing. Reading: a latent std of 1.4-1.8 is not the distortion; scaling it damages the decode. Only 8 of 74 clips exceed 1.8, 3 exceed 2.0. Links: `eval/mixtape_z0_clamp.py`, `Misc/build_mixtape_clamp_page.py`, `Mantu/sa3_lora_runs/mixtape_z0_clamp_2026-10-20/`.
+- **guide_anchor smoke (air head +/- anchor 1.2, 5 clips, 25 renders): meters only, NOT yet heard.** hf_ratio drops strongly with the head and further with the anchor (4 of 5 clips); crest falls 6-8 -> ~5 (a cost). Gain 8448 and 2112 arms are identical (server normalises gains). `eval/mixtape_anchor_smoke.py`, `Mantu/sa3_lora_runs/mixtape_anchor_smoke_2026-10-20/`.
+- Open: higher caps (1.8/2.0) on the few clips above, loudness-matched; an ear check of the smoke clips; the 3x outpainting and the full re-render are NOT queued.
