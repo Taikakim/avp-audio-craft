@@ -1,5 +1,6 @@
 #!/bin/bash
 # Owner: WINTERMUTE (created 2026-10-20)
+# Last edited: WINTERMUTE 2026-10-21 — P1 falls back to the last _epN.pt (P1 was skipped: no _best.pt is written)
 # run_kuang_plan_p.sh -- test plan section P (docs/modular-opt-test-plan-2026-10-17.md) on its own, after P0 crashed at step 0 inside
 # the stream (momentum_spectra: svdvals on the zero initial momentum; fixed in stable-audio-tools 1f5c58d). Same P0/P1 commands as
 # eval/run_kuang_plan_stream.sh; the crashed attempt is kept as P0_E05_anchor_crash1. Exit codes are captured on their own line (the
@@ -35,7 +36,9 @@ if [ ! -f "$POUT/P0_E05_anchor/DONE" ]; then
   echo "$(date +%H:%M) P0 rc=$rc, $(ls "$POUT"/P0_E05_anchor/*.pt 2>/dev/null | wc -l) checkpoints"
   [ "$rc" -eq 0 ] && touch "$POUT/P0_E05_anchor/DONE"
 fi
-CK=$(ls "$POUT"/P0_E05_anchor/*best*.pt 2>/dev/null | head -1)
+CK=${CK:-$(ls "$POUT"/P0_E05_anchor/*best*.pt 2>/dev/null | head -1)}
+# the trainer writes per-epoch snapshots (_epN.pt), not _best.pt, without --save-best-only: fall back to the last epoch
+[ -z "$CK" ] && CK=$(ls -v "$POUT"/P0_E05_anchor/*_ep*.pt 2>/dev/null | tail -1)
 if [ -n "$CK" ] && [ -f "$POUT/P0_E05_anchor/DONE" ]; then
   echo "$(date +%H:%M) P1: spectral probe on $(basename "$CK")"
   ( cd /tmp && "$LPY" "$SAO/stable-audio-3/scripts/latch/spectral_probe.py" --ckpt "$CK" \
