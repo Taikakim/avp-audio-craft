@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-20)
+# Last edited: WINTERMUTE 2026-10-20 — optional EVALS_ROOT / AAC_BITRATE env (192k publish copies; defaults unchanged)
 """build_mixtape_clamp_page.py -> ~/evals_aac/"+NAME+".html. Blind same-playhead A/B(/C/D) page for the latent-norm clamp test.
 Reads Mantu/sa3_lora_runs/mixtape_z0_clamp_2026-10-20/cells.jsonl; per clip the arms are orig, c1.4, c1.15 (clamped z0, std ceiling) and lim (soft-limited original).
 Arm order is shuffled per clip (fixed seed) and labels are hidden until 'reveal'. Ratings 1-5 per arm kept in localStorage; 'export' copies JSON for kim_feedback.
@@ -8,7 +9,9 @@ import json, os, random, subprocess, sys
 import numpy as np, soundfile as sf
 SRC = "/run/media/kim/Mantu/sa3_lora_runs/" + (sys.argv[1] if len(sys.argv) > 1 else "mixtape_z0_clamp_2026-10-20")
 NAME = sys.argv[2] if len(sys.argv) > 2 else "mixtape_clamp"
-OUT = os.path.expanduser(f"~/evals_aac/{NAME}"); os.makedirs(OUT, exist_ok=True)
+ROOT = os.path.expanduser(os.environ.get("EVALS_ROOT", "~/evals_aac"))   # publish copies: EVALS_ROOT=~/evals_aac/_pub192 AAC_BITRATE=192k
+BITRATE = os.environ.get("AAC_BITRATE", "256k")
+OUT = f"{ROOT}/{NAME}"; os.makedirs(OUT, exist_ok=True)
 rows = [json.loads(l) for l in open(f"{SRC}/cells.jsonl")]
 rows.sort(key=lambda r: -r["z0_std"])
 rnd = random.Random(20261020); clips = []
@@ -18,7 +21,7 @@ for r in rows:
     for k in arms:
         o = f"{OUT}/{r['id']}__{k}.m4a"
         if not os.path.exists(o):
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{SRC}/{r['id']}__{k}.wav", "-af", f"volume={20*np.log10(tgt/rms[k]):.3f}dB", "-c:a", "aac", "-b:a", "256k", o], check=True)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{SRC}/{r['id']}__{k}.wav", "-af", f"volume={20*np.log10(tgt/rms[k]):.3f}dB", "-c:a", "aac", "-b:a", BITRATE, o], check=True)
     order = arms[:]; rnd.shuffle(order)
     clips.append(dict(id=r["id"], std=r["z0_std"], order=order, m={k: r[k] for k in arms}))
 page = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Latent Norm Clamp A/B</title>
@@ -41,6 +44,6 @@ const L=document.getElementById('L');C.forEach(c=>{const d=document.createElemen
 c.order.forEach((k,i)=>{const m=c.m[k];h+='<div class="arm" onclick="pl(\\''+c.id+'\\',\\''+k+'\\',this)"><b>'+'ABCD'[i]+'</b><div class="lab">'+k+' · rms '+m.rms_db+' dB · crest '+m.crest+' · hf '+m.hf_ratio+'</div><select onclick="event.stopPropagation()" onchange="rate(\\''+c.id+'\\',\\''+k+'\\',this.value)"><option value="">rate</option>'+[1,2,3,4,5].map(v=>'<option'+(R[c.id+'|'+k]==v?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'});
 d.innerHTML=h+'</div>';L.appendChild(d)});setInterval(()=>{const a=document.getElementById('au');if(cur)cur.t=a.currentTime},300)</script>
 <audio id="au" controls style="position:sticky;bottom:0;width:100%%;margin-top:12px"></audio></body></html>""" % (json.dumps(clips), NAME)
-open(os.path.expanduser("~/evals_aac/"+NAME+".html"), "w").write(page)
+open(f"{ROOT}/{NAME}.html", "w").write(page)
 json.dump({"purpose": "blind A/B of latent-norm clamp (1.4, 1.15) and soft limiter vs original on the Kim shortlist 5-star clips", "script": "Misc/build_mixtape_clamp_page.py", "kim_feedback": None}, open(f"{OUT}/run_meta.json", "w"))
 print(len(clips), "clips -> ~/evals_aac/"+NAME+".html")
