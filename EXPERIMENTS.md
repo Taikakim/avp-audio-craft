@@ -1646,6 +1646,14 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   d256 head trained for ~thousands of steps may not. Cheap probe if P shows the non-leading momentum directions help: apply `S^p` in the probe, no run needed.
 - **Kill:** P shows the bulk directions do not lower held-out loss under our optimizer/precision/batch.
 
+### E16 — NAMO / NAMO-D (SNR-scaled Muon) — **PARKED 2026-10-21 (CONTINUITY); gated on test-plan sec. N/P**
+- **Paper:** arXiv 2602.17080 v2 (Zhang, Liu, Schaeffer; UCLA Mathematics), filed in `papers/` with a sidecar and a knowledge.md row. Muon update times a scalar `||M||_F / sqrt(EMA ||G||_F^2)` (NAMO) or a per-column,
+  clamped version (NAMO-D). Code: github.com/minxin-zhg/namo (MIT).
+- **Why parked, in one line:** it is the SNR gate `ModularOptimizer` already has (TRAINING.md F27: pure-noise floor 0.183, an uncalibrated ~x0.2 lr cut at small batch); NAMO's floor is 0.16 at momentum 0.95. Its GPT-2 evidence is
+  0.01-0.02 nats, one seed, constant lr (a self-shrinking step then acts as a decay), with an optimum lr 7-9x Muon's. Its convergence theorem needs a batch far above ours.
+- **Cheap check (no new run):** log NAMO's `alpha_t` next to `comp/snr_gate` on an existing LatCH/FiLM arm; if they track, there is nothing new. If alpha lifts well above the floor on some matrices, those are where the signal is.
+- **Kill:** alpha stays within about 0.1 of its noise floor on our batches.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
