@@ -159,9 +159,9 @@ of the first run's growth is only partly established.
 ![Same sweep, prompt and seed, a run whose latent level stayed in range, epoch 7.](assets/muon-survival-guide/drone_clean.m4a)
 
 Moonlight reports the same effect at large scale: without weight decay, the weights and layer outputs grew past the range
-bf16 represents well, and the advantage over AdamW shrank. [Muon-SW](https://arxiv.org/abs/2607.23777) shows that a
-constant weight decay makes the weight norm shrink once the learning rate decays, and scales the decay with the learning
-rate so that the norm settles. [Hyperball](https://arxiv.org/abs/2606.16899) fixes the norm outright; we found it is not a
+bf16 represents well, and the advantage over AdamW shrank. [Muon-SW](https://arxiv.org/abs/2607.23777) reports that with a
+constant weight decay Muon's weight norm shrinks steadily over training, and scales the decay with the learning rate so
+that the norm settles. (Under Schedule-Free, where the learning rate does not decay, that scaling has no effect.) [Hyperball](https://arxiv.org/abs/2606.16899) fixes the norm outright; we found it is not a
 drop-in for adapters, because a matrix that starts at zero has norm zero and does not move. Background on why weight
 decay sets the effective step size: [Rotational Equilibrium](https://arxiv.org/abs/2305.17212) and
 [Weight Decay may matter more than muP](https://arxiv.org/abs/2510.19093).
