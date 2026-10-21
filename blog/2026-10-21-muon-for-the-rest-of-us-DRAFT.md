@@ -85,6 +85,8 @@ The matrices moving at lr/16 is why Muon's learning rate looks so high next to A
 where AdamW wanted about 3e-4, roughly 30x. For the matrices that is mostly a change of units. For the biases and gains it
 is not: at lr 1e-2 they move about 30 times further per step than AdamW would move them.
 
+These numbers are for small heads trained from scratch with an unscaled Muon update, where "lr divided by 16" holds. Other implementations (the Moonlight variant, for one) already rescale the update to Adam's size; there the matrices move more per step at the same lr (about 3x at width 256), and AdamW-like learning rates carry over. And do not copy lr 1e-2 to a LoRA or a fine-tune: Stable Audio 3's own post-training used 1e-5 for its Muon matrices.
+
 **What that does.** In one test we ran the same head at lr 3e-2 twice. In run B2 the biases and gains had their own,
 lower learning rate (2e-3); in run B3 they shared the 3e-2. B2 trained cleanly (held-out loss 0.189 at the end; the same head at lr 1e-2 reached 0.182, so the higher
 rate bought nothing). B3 never got below 0.57: its held-out loss started at 0.57 against B2's 0.37, wandered between 0.57
@@ -144,7 +146,7 @@ stops a run by default when its held-out loss stays above 1.5 times its best for
 
 [Can Muon Fine-tune Adam-Pretrained Models?](https://arxiv.org/abs/2605.10468) answers: not as well as Adam, and the reverse
 is also true. A model pre-trained with one optimizer ends up in a solution shaped by it; fine-tuning with the other one is
-more sensitive to the learning rate, moves the weights further (5.6 to 7.4 times the cosine distance from the pretrained weights) and forgets more. Two things in that paper matter for hobbyists:
+more sensitive to the learning rate, forgets more, and on the math and code tasks Muon's full fine-tuning moves the weights 5.6 to 7.4 times further from the pretrained ones (cosine distance) than Adam's does. Under LoRA this reverses: Muon moves them only 0.2 to 0.8 times as far, and where the mismatch is mild (commonsense) it moves them less even in full fine-tuning. The paper's Muon is the Moonlight variant, whose update is already rescaled to Adam's size, so its learning rates are in Adam-like units (the unit change section 3 describes). Two things in that paper matter for hobbyists:
 
 - **LoRA mostly fixes it.** With LoRA the perplexity gap shrank by 78% for Adam-pretrained models (39% for Muon-pretrained
   ones). In their strongest-mismatch case LoRA with Muon beat LoRA with Adam at low and moderate ranks, and degraded at
@@ -154,7 +156,7 @@ more sensitive to the learning rate, moves the weights further (5.6 to 7.4 times
 Our own data agrees in a quieter way. In our LoRA runs under Muon-type steps, the LoRA "A" matrices hardly moved: about
 99% of A was unchanged between early and late checkpoints, and A received about 7% of the step's energy. The adapter mostly kept
 reading the random slice of its input it started with. Nothing audible went wrong, but it is worth knowing that the two
-LoRA factors do not learn evenly under Muon. In practice, if you pick a DoRA or LoRA checkpoint by ear, pick it from the first few epochs and compare it against the next two before trusting the last one.
+LoRA factors do not learn evenly under Muon. We have no Adam control for this, and the same imbalance is known from plain-Adam LoRA (the LoRA+ line of work: A acts as a fixed random projection and B does most of the learning), so do not read it as a Muon-specific effect. It does fit the paper's finding that Muon moves LoRA weights less than Adam does. In practice, if you pick a DoRA or LoRA checkpoint by ear, pick it from the first few epochs and compare it against the next two before trusting the last one.
 
 Which optimizer pre-trained Stable Audio 3 is not stated in its report; the post-training stage used Muon (lr 1e-5) on the
 attention and feed-forward matrices and AdamW (lr 1e-6) on the rest, with a decaying schedule
