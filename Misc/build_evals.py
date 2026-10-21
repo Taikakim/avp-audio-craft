@@ -17,6 +17,7 @@ folders — clips untouched) and every folder becomes a player instead of a dump
 Same-playhead behaviour (MASTER §4): click a cell to play from the shared playhead;
 switching cells keeps the position; re-click stops.
 """
+# Last edited: WINTERMUTE 2026-10-21 — TOPICS: every standalone page on the landing under its topic; LatCH air/bass/chroma pages
 # Last edited: WINTERMUTE 2026-10-15 — latch_onset_grid entry under LatCH; latch_early_budget + latch_onset_matrix_ema + latch_guide_anchor entries
 # Last edited: WINTERMUTE 2026-10-14 — THEMATIC_PAGES: standalone pages listed under their stream
 import os, glob, json, html, shutil, re, sys
@@ -150,8 +151,86 @@ THEMATIC_PAGES = {
          "per cell; which heads steer, which are dead."),
         ("riffer/latch_sweep.html", "LatCH head sweep (2026-06)",
          "The first 14-head gain sweep, MERT + Audiobox scored."),
+        ("air_epochs.html", "Air head: one checkpoint per epoch",
+         "One clip steered by every epoch of the overnight air-head runs (beside the bass and "
+         "body heads): where the head stops sounding clean."),
+        ("bass_lr.html", "Bass head: learning rates",
+         "The bass head retrained with the modular trainer at lr 1e-2 / 1e-3 / 1e-4, 10 epochs each."),
+        ("bass_grid.html", "Bass head: weight × target grid",
+         "Each retrained bass head across requested bass level and guidance gain."),
+        ("bass_baselines.html", "Bass head: plain Muon and AdamW baselines",
+         "What the modular optimizer has to beat: the bass head under plain Muon and plain AdamW."),
+        ("riffer/chroma_steer_orig.html", "Chroma head: all-C gain sweep",
+         "A chroma head trained on Goa trance steering toward an all-C palette at gain 0-2048."),
+        ("audition_0827/", "Audition 2026-08-27: window budget + note-roll",
+         "LatCH guidance-window budget, and the pianoroll note-roll test."),
     ],
 }
+
+# Every other standalone page, by topic (2026-10-21: all tests reachable from the landing,
+# under their topical category). Hrefs relative to /files/evals/. A new standalone page
+# gets a line here (or under THEMATIC_PAGES when it belongs to a stream). Newest first.
+TOPICS = [
+    ("Control adapters: FiLM, style, morph",
+     [("film_bracket_check.html", "FiLM bracket check",
+       "The FiLM density adapter trained with the modular-optimizer bracket, against the shipped FiLM."),
+      ("morph_d17_lion_r128/index_public.html", "Morph conditioner: training ladder",
+       "6 checkpoints × 4 source stems × 3 conditions."),
+      ("morph_conditioner/index_public.html", "Morph conditioner: 16-arm audition",
+       "Contour-stream conditioning on SA3."),
+      ("genre_steering/", "Genre steering",
+       "Does the genre fingerprint of the style adapter move the sound?"),
+      ("riffer/", "Riffer control evals: multi-lane compare",
+       "The riffer control-adapter evals side by side.")]),
+    ("Latent size, drone and loudness",
+     [("mixtape_relcut.html", "Latent scale: relative cuts",
+       "Hot clips decoded with the latent scaled flat (x0.92, x0.85) or per clip for a 5/10/15% "
+       "drop in energy above 8 kHz."),
+      ("mixtape_clamp_1p7.html", "Latent norm clamp 1.4-1.6",
+       "Clips above latent std 1.7, clamped at 1.6 / 1.5 / 1.4."),
+      ("mixtape_clamp.html", "Latent norm clamp 1.15-1.4 + soft limiter",
+       "The first clamp A/B on the top-rated clips."),
+      ("dronesweep_weights.html", "Drone sweep: EMA vs online weights",
+       "EMA vs online weights, base blends and an anchor on the drone runs."),
+      ("dronesweep_rescale.html", "Drone sweep: runaway latents rescaled",
+       "The runaway latents of a drone run scaled back down."),
+      ("bad_samples.html", "Bad-sample audit",
+       "Clips ranked by the audio-corruption scan.")]),
+    ("LoRA / DoRA training and model checks",
+     [("punch_grain_test.html", "Punch DoRA grain test",
+       "Does the punch DoRA make these seeds grainy?"),
+      ("soup_rewind/", "Post-training rewind: soup ladder",
+       "Weight soups from the post-trained model back toward base."),
+      ("listening_e0.html", "E0 listening test: blind loop check",
+       "Does each clip stay musically alive, or get stuck looping / static / droning?"),
+      ("mert_calib.html", "MERT similarity calibration",
+       "A goa AdamW learning-rate sweep scored by MERT mid-layer similarity."),
+      ("training_curves.html", "LUMI training curves (recovered)",
+       "Training curves recovered from local metrics."),
+      ("model_census.html", "SA3 model census",
+       "Every trained SA3 model in one table.")]),
+    ("Synth inversion and transcription",
+     [("idm_drums.html", "Drum separation + transcription (Inverse Drum Machine)",
+       "23 real drum mixes and 24 bass stems split into 9 kit pieces with onsets; solo/mute per piece. "
+       "On the bass stems it shows kick bleed in the separated ones."),
+      ("synth_inv_v6_1/", "Synth inversion V6.1",
+       "Surge XT patch inversion on 24 real stems, with and without Flow-DPO."),
+      ("synth_inversion_v3.html", "Synth inversion v3: clean retrain",
+       "Real bass stems after the FX-off retrain.")]),
+    ("Arrangement and structure",
+     [("section_check.html", "Section boundary check",
+       "Which lens hears real section changes? 24 s excerpts centred on claimed boundaries.")]),
+    ("Working notes (redacted)",
+     [("paper_verdicts.html", "Paper verdicts", "What we tested from each paper, and the result."),
+      ("docs/knowledge.html", "Papers knowledge file", "The never-reinvent-again file."),
+      ("docs/latch.html", "LatCH notes", "Latent-control heads: design and findings."),
+      ("docs/layer-feature-map.html", "DiT layer × feature map",
+       "Where musical features live inside SA3 medium."),
+      ("docs/findings-2026-07-02-perceptual-signal-night.html", "Findings 2026-07-01/02",
+       "Cautious-masking verdict and the perceptual-signal night."),
+      ("docs/gemini-report2-assessment-2026-07-15.html", "External report assessment (2026-07-15)",
+       "Our assessment of an external research report.")]),
+]
 
 
 CSS = """:root{--paper:#fafaf7;--paper-dim:#f2f3ef;--ink:#2b3538;--body:#3b4649;
@@ -2908,6 +2987,16 @@ def build_landing(control, renders):
                     f'<a href="{html.escape(_folder)}/">{html.escape(_lbl)}</a></div>'
                     f'<div class="desc">{html.escape(_desc)}</div>')
             for _href, _t, _d in THEMATIC_PAGES.get(_folder, []):
+                doc += (f'<div style="margin:6px 0 0 18px"><a href="{html.escape(_href)}">'
+                        f'{html.escape(_t)}</a> <span class="faint">— {html.escape(_d)}</span></div>')
+            doc += '</div>'
+
+    if TOPICS:
+        doc += '<h2><span class="mark">§</span> By topic</h2>'
+        doc += '<p class="dim">Every other standalone test page, grouped by what it tests.</p>'
+        for _lbl, _pages in TOPICS:
+            doc += f'<div class="run"><div class="name">{html.escape(_lbl)}</div>'
+            for _href, _t, _d in _pages:
                 doc += (f'<div style="margin:6px 0 0 18px"><a href="{html.escape(_href)}">'
                         f'{html.escape(_t)}</a> <span class="faint">— {html.escape(_d)}</span></div>')
             doc += '</div>'
