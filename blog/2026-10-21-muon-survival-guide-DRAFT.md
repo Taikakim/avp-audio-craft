@@ -52,8 +52,8 @@ by about 0.004, so we treat smaller differences as noise.
 AdamW updates each weight using that weight's own gradient history. Muon works on whole matrices. For each 2-D weight
 matrix it keeps a momentum (a running average of recent gradients), and replaces it with an approximately orthogonal
 matrix by running five Newton-Schulz iterations, a fixed polynomial with coefficients (3.4445, -4.7750, 2.0315). In
-plain terms: the gradient still decides in which directions the matrix changes, but the strong and the weak directions
-are given steps of similar size. The method was introduced in [Keller Jordan's Muon post](https://kellerjordan.github.io/posts/muon/)
+plain terms: the gradient still decides in which directions the matrix changes, and the directions the iteration
+reaches are given steps of similar size, however strong or weak the gradient was along them. The method was introduced in [Keller Jordan's Muon post](https://kellerjordan.github.io/posts/muon/)
 (December 2024), with results on CIFAR-10 and GPT-2-sized language models.
 
 Two details matter in practice. The result is only approximately orthogonal: the coefficients are chosen to put the
@@ -71,14 +71,15 @@ this (section 7).
 Muon is only defined for 2-D matrices, and the original post recommends it only for the hidden layers. Everything
 else goes to a second optimizer, usually AdamW:
 
-- embeddings and input projections;
+- embeddings (and, in our reading, other input projections);
 - the final output layer (classifier head), even though it is 2-D; the post says this rule came from experiments;
 - 1-D parameters: biases, normalisation gains, DoRA magnitude vectors;
 - scalars.
 
 Attention projections that are stored as one fused matrix (Q, K and V together, shape [3d, d]) should be split, so that
-each of Q, K and V is orthogonalised on its own. The same applies to fused modulation layers (AdaLN), which produce
-several scale and shift vectors from one matrix.
+each of Q, K and V is orthogonalised on its own; the Muon post reports that this works better (an experiment it credits to
+Vlado Boza). Fused modulation layers (AdaLN), which produce several scale and shift vectors from one matrix, are the same
+situation; splitting those is our reasoning, not a tested result.
 
 Trainers decide this from parameter names and shapes, and the rules can miss. Ours did:
 
@@ -94,16 +95,20 @@ parameter groups at start-up and read the list.
 This is the main difference from AdamW, and it caused most of our failures.
 
 An AdamW step moves each weight by about 0.2 to 0.4 times the learning rate ([Moonlight](https://arxiv.org/abs/2502.16982)
-measured this). A plain Muon step on an m x n matrix has a size per weight of about 1/sqrt(max(m, n)) times the learning
-rate: 1/16 of the learning rate for a 256-wide matrix. In our optimizer the 1-D parameters were moved by a sign step,
-which moves each of them by the full learning rate. One learning rate therefore produced three different step sizes:
+measured this). The orthogonalised Muon update for an m x n matrix has a size per weight of about 1/sqrt(max(m, n)) times
+the learning rate (Moonlight's Lemma 1): 1/16 of the learning rate for a square or tall 256-wide matrix. The original Muon
+code multiplies by sqrt(max(1, rows/cols)), which changes this for tall matrices, and in our own optimizer a row
+normalisation step gives wide matrices, including LoRA A, a step 2 to 3.6 times larger. In our optimizer the 1-D
+parameters were moved by a sign step, which moves each of them by the full learning rate. One learning rate therefore
+produced three different step sizes:
 
 ![Approximate change per weight per step, by parameter group (arithmetic). Red: our original recipe at lr 1e-2. Blue: the rescaled recipe at lr 3e-3. Grey: AdamW at lr 3e-4.](assets/muon-survival-guide/step_sizes.png)
 
-This is why Muon learning rates look high next to AdamW's: our best setting for the heads was lr 1e-2, against about
-3e-4 for AdamW. For the matrices that is a change of units. For the biases and gains it is not: at lr 1e-2 they moved
-about 30 times the AdamW learning rate per step, which is 80 to 170 times the size of an AdamW step (0.2 to 0.4 times
-3e-4).
+In numbers, per weight and per step: AdamW at its best setting for these heads (lr 3e-4) moves each weight by about
+0.6e-4 to 1.2e-4. Our Muon recipe at its best setting (lr 1e-2) moved the 256-wide matrices by about 6e-4, 5 to 10 times
+more than AdamW, and the biases and gains by 1e-2, 80 to 170 times more. So the learning-rate gap between the two
+optimizers (about 30x) is only partly a change of units: the matrices really took larger steps, and the biases and gains
+far larger ones.
 
 **What happened.** We trained the same head at lr 3e-2 twice. In run B2 the biases and gains had their own learning
 rate of 2e-3; in run B3 they used the shared 3e-2.
@@ -118,7 +123,9 @@ learned too slowly, because the matrices and the small output layer then moved o
 **The fix in the literature.** Moonlight scales the Muon update by 0.2 x sqrt(max(m, n)) so that every matrix moves
 about 0.2 times the learning rate per weight, the size of an AdamW step. The non-matrix parameters stay on AdamW with
 the same learning rate and weight decay. [SF-NorMuon](https://arxiv.org/abs/2605.23061) uses the same rule. After this
-rescale, AdamW-style learning rates can be used for both groups. Some implementations already include it; check yours.
+rescale, the papers use AdamW-style learning rates for both groups (in language-model pre-training). Some implementations
+already include it; check yours. Our heads still wanted larger steps than that: the best rescaled setting we have found
+so far is lr 3e-3, about 10 times AdamW's best lr, which is about 5 to 10 times AdamW's per-weight step.
 
 **Our first test of it.** On a small head that had diverged at every learning rate above 1e-2 we tried, the rescaled
 recipe at lr 3e-3 trained for all 25 epochs and reached the same held-out loss as the old recipe at its best setting
@@ -242,14 +249,17 @@ fine-tune.
 
 Two observations from our own LoRA and DoRA runs:
 
-- **LoRA A barely moves.** About 99% of the A matrices was unchanged between early and late checkpoints, and A received
-  about 7% of the update. We have no AdamW control for this, and the same imbalance is known for AdamW
-  ([LoRA+](https://arxiv.org/abs/2402.12354)), so it is not specific to Muon. A larger learning rate for A (20 times)
+- **LoRA A barely moves.** In one run, 99.2% of the space spanned by the rows of A was unchanged between steps 240 and
+  1,440, against 35% for the corresponding space of B. (We also counted A's share of the update, about 7%, but with every
+  row normalised that share mostly reflects A's row count, so it is not evidence.) We have no AdamW control for this; an
+  imbalance between A and B is also known for AdamW ([LoRA+](https://arxiv.org/abs/2402.12354)), though the mechanism
+  there differs, so do not read it as specific to Muon. A larger learning rate for A (20 times)
   rotated it, but also made the adapter 2.3 times larger and produced one NaN render, so the result is not clean.
 - **DoRA magnitudes can cross zero.** DoRA's per-row magnitude parameters started between 0.13 and 0.45. A fixed-size
   step (sign descent) moved 592 of them to zero or below by step 6,340, and the run became NaN near step 6,900. A
-  multiplicative update of the magnitudes fixed it. AdamW also moves each parameter by roughly a fixed amount per step, so
-  moving small positive scalars to AdamW alone does not protect them.
+  multiplicative update of the magnitudes fixed it. AdamW's steps are smaller (0.2 to 0.4 x lr) and their sign is noisy,
+  so a crossing is slower there, but moving small positive scalars to AdamW does not by itself guarantee they stay
+  positive.
 
 ## 8. Every optimizer change we tried
 
