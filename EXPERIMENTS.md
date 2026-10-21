@@ -1634,6 +1634,13 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   0.16 (1B: 14.33 vs 14.17), 0.26 (GPT-2 small); CIFAR/ViT gains 0.1-0.3 points. The gain shrinks with scale. Their own Fig. 1 shows
   Newton-Schulz Muon BEATS exact-SVD Muon, i.e. our NS5 is already a partly soft spectrum. All LLM/vision pretraining; no fine-tuning, no small control heads,
   no audio. The pasted claim "peer-reviewed ACL Findings" is not visible in the pages read: unverified.
+- **Code read 2026-10-21** (github.com/TDCSZ327/HTmuon, MIT, last commit 2026-05-02, `llama_pretraining/muon.py`): the exact form is `U * S**p @ Vh` on the
+  Nesterov-lerped momentum, in fp32, with the usual `max(1, rows/cols)**0.5` rescale; the fast form is `NS5(M) @ (M^T M)^(p/2)` (`muon_generalized_ht_update_v2_acc`).
+  The repo also carries several other experimental spectra (rank-index decay `idx**-p`, `1/sqrt(idx)`), and the launcher default is `--power 0.25`, not the paper's 0.125,
+  so check which variant a given result used. Because `S**p` is applied to RAW singular values, the update magnitude depends on the gradient scale (unlike Muon),
+  so the comparison is only fair at a tuned lr (the paper grid-searched every optimizer). My arithmetic, unverified by a run: at p = 0.125 a 100x spread of
+  singular values becomes only 100^0.125 = 1.8x, about the same spread NS5 already leaves (0.7-1.3), so the effect may be small next to an lr retune. For a d256 head the
+  per-step SVD cost is negligible; the open question is whether `torch.linalg.svd` is usable on our ROCm stack (else run it on CPU).
 - **Why parked:** plan sec. P says no new optimizer is justified before P1-P3 read out. HT-SR needs weights that have developed power-law spectra; a
   d256 head trained for ~thousands of steps may not. Cheap probe if P shows the non-leading momentum directions help: apply `S^p` in the probe, no run needed.
 - **Kill:** P shows the bulk directions do not lower held-out loss under our optimizer/precision/batch.
