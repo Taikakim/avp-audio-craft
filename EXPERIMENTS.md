@@ -1609,7 +1609,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   (composition) and WHAT SEQUENCE of batches the optimizer sees (ordering). Muon flattens the singular values, so a batch whose gradient has a few
   strong directions gets its weak tail promoted: composition may matter more under NorMuon than under AdamW (hypothesis, unmeasured).
 - **Arms, cheapest first:**
-  1. *Free changes:* low-discrepancy (stratified) timesteps within each batch (check first whether the LatCH/FiLM trainers already do it; unverified);
+  1. *Free changes:* low-discrepancy (stratified or antithetic) timesteps within each batch. **VERIFIED by W 2026-10-21: neither trainer stratifies t** (LatCH draws it independently per item, `train_latch.py` ~578; FiLM `control/sa3_control/train.py _sample_t`, iid per item, logit-normal by default), so this is a free arm on both; it also bears on the DoRA spike batches, which are high-t clumps (max-loss item had t > 0.85 in 39 of 48);
      density-stratified sampling (equal mass per onset-density bin; shifts the implied target distribution, which is wanted for a control head).
   2. *Within-song contrast batches:* several windows of one song at different densities, so style/timbre/key cancel in the gradient. Cost: windows of
      a song are correlated, so the effective batch is smaller than the nominal one. Ties to E9/E10.
@@ -1618,7 +1618,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   4. *Ordering (ascending/descending/nearest-neighbour walk) only as a STRESS TEST* of Muon vs AdamW under correlated batches. Momentum, EMA and
      Schedule-Free assume roughly stationary gradients, so a sorted stream makes them average the schedule; reshuffle every epoch. Herding / GraB
      (Lu and De Sa, cited from memory, NOT verified against the paper) is the principled ordering method; per-example gradients are affordable for a d256 head.
-- **Instrument rule:** any probe comparing a polarised update to a reference gradient needs its ceiling: `cos(polar(G), G) = ||G||_* / (||G||_F * sqrt(r)) < 1`
+- **Instrument rule (accepted by W, who will switch from `cos(polar(M), G_ref)` to `polar(G_ref)` plus principal angles, with a large-batch ceiling):** any probe comparing a polarised update to a reference gradient needs its ceiling: `cos(polar(G), G) = ||G||_* / (||G||_F * sqrt(r)) < 1`
   even for a perfect update, so compare against `polar(G_ref)` or use principal angles, and report the same number for a large-batch pair.
   Before any sampler stratifies on a feature, confirm the feature meter has range on our data.
 - **Gate:** after the overnight batch-scaled LatCH arms (`eval/run_overnight_dpo_batch_20261021.sh`, job B) and the sec. N/P reads of the test plan. Do not stack on
@@ -1651,6 +1651,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   clamped version (NAMO-D). Code: github.com/minxin-zhg/namo (MIT).
 - **Why parked, in one line:** it is the SNR gate `ModularOptimizer` already has (TRAINING.md F27: pure-noise floor 0.183, an uncalibrated ~x0.2 lr cut at small batch); NAMO's floor is 0.16 at momentum 0.95. Its GPT-2 evidence is
   0.01-0.02 nats, one seed, constant lr (a self-shrinking step then acts as a decay), with an optimum lr 7-9x Muon's. Its convergence theorem needs a batch far above ours.
+- **Floor at matched momentum (W):** `sqrt((1-b)/(1+b))` is 0.16 at 0.95 but 0.23 at our default 0.9, so compare with F27's 0.183 at equal beta.
 - **Cheap check (no new run):** log NAMO's `alpha_t` next to `comp/snr_gate` on an existing LatCH/FiLM arm; if they track, there is nothing new. If alpha lifts well above the floor on some matrices, those are where the signal is.
 - **Kill:** alpha stays within about 0.1 of its noise floor on our batches.
 
@@ -1661,6 +1662,8 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Probe 2:** at a fixed checkpoint store a pool of minibatch gradients (the paper used 8192, effective batch 64), resample stationary streams, and compute `R_K = tr Cov(sum T(m_k)) / tr Cov(sum J m_k)` for NS5 with and without Nesterov. Ceiling and baseline: isotropic Gaussian noise of the same covariance (the paper's control).
 - **Also checks:** whether sqrt(kappa) lr scaling is justified per matrix (noise-dominated only), against job B of the overnight batch-scaled arms.
 - **Kill:** R_K under about 1.1 on all matrices and `delta_beta` above 1 on most: the noise-floor effect is negligible for us; close E15/E16's noise rationale.
+- **W's review 2026-10-21 (DM, 23:31):** derivation confirmed with three corrections. Our default momentum is 0.9, so the factor is `sqrt2*sqrt(19) = 6.2` (not 8.8) and the noise-dominated threshold is `c < ~0.006`; the stationary-mean assumption overstates the buffer's signal when the mean rotates within the horizon, so read the figure as an UPPER bound; `modular_opt/optimizer.py` has no Nesterov term. Plugged into the measured EB64 half-batch `c` (0.37 falling to 0.08): `delta_beta` about 1.9-4.7, and about 0.9 even at batch 16 late (c ~0.023). On that reading no matrix is noise-dominated, so the kill condition looks met IN ADVANCE; R_K stays as a cheap confirmation. Caveat to check: that reading used run-level `c`, not per matrix. **Gap found:** `grad_noise.measure` logs `c` on half-batch GRADIENTS only; the plan asks for the buffer-level `c` and the code does not do it (W will add it).
+- **sqrt(kappa) rule, W's addition:** job B scales beta to keep the momentum horizon fixed in samples, which keeps `delta_beta` roughly invariant to B; with `delta_beta > 1` the polar step sits near its saturated size, so per-epoch progress falls about as 1/sqrt(kappa) under the sqrt rule and signal-dominated matrices want closer to linear scaling. First data point (W): EB256s (sqrt rule) best 0.1964, EB64 0.1802, unscaled EB128 0.1917; EB128s due about 00:30.
 
 ## F. Data, captions, corpora (experiments they gate)
 
