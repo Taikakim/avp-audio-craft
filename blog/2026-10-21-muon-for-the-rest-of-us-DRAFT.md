@@ -1,7 +1,7 @@
 <!-- DRAFT 2026-10-21 (WINTERMUTE). Team review requested in the chat the same day:
   - CONTINUITY: theory sections (what Muon does, units, the probe reading, fine-tuning mismatch).
   - THE-FINN: fact audit of every number against its record, and the paper links.
-  - GHOST-NOTE: the fine-tuning / DoRA practical points and the starter checklist, from the hands-on side.
+  - GHOST-NOTE: the fine-tuning / DoRA practical points and the starter checklist, from the hands-on side. (Reviewed 2026-10-21 by GHOST-NOTE: checklist item 8 reworded, item 9 added, one sentence in section 5; numbers in sections 5/9 NOT re-verified by me, THE-FINN's audit covers them.)
 Every number was taken on 2026-10-21 from: docs/TRAINING.md F1-F30, docs/training-findings.md, EXPERIMENTS.md E5/E6,
 DISCOVERIES.md 2026-08-10, papers/knowledge.md, and the test plan B/P sidecars of 2026-10-21 (kuang_plan_B_20261021,
 kuang_plan_P_20261017, unit_matched_20261021). Open items before publishing:
@@ -122,7 +122,7 @@ worse. Two things in that paper matter for hobbyists:
 Our own data agrees in a quieter way. In our LoRA runs under Muon-type steps, the LoRA "A" matrices hardly moved: about
 99% of A was unchanged between early and late checkpoints, and A received about 7% of the step. The adapter mostly kept
 reading the random slice of its input it started with. Nothing audible went wrong, but it is worth knowing that the two
-LoRA factors do not learn evenly under Muon.
+LoRA factors do not learn evenly under Muon. In practice, if you pick a DoRA or LoRA checkpoint by ear, pick it from the first few epochs and compare it against the next two before trusting the last one.
 
 Which optimizer pre-trained Stable Audio 3 is not stated in its report; the post-training stage used Muon (lr 1e-5) on the
 attention and feed-forward matrices and AdamW (lr 1e-6) on the rest, with a decaying schedule
@@ -217,7 +217,8 @@ Our current best guess for a small Muon fine-tune, with the parts we have not ye
 5. fp32 weights and optimizer state; bf16 for the forward pass and Newton-Schulz is fine.
 6. Log the weight size per group, and stop or cool down a group that doubles within an epoch.
 7. Effective batch of at least 16 via accumulation. *(Bigger batches being tested.)*
-8. Keep a checkpoint per epoch and choose by held-out loss and by ear, not by the final step.
+8. Keep a checkpoint per epoch and choose by listening (or the equivalent for your data), not by the final step and not by held-out loss alone. In our hands-on runs the held-out loss and our glitch meters both missed the artefacts we heard, and the early epochs or the short low-learning-rate runs often sounded best; an optimizer that moves the weights fast early (Schedule-Free did this to us) can make epoch 2 to 4 the good one and everything later a slow drift into over-trained buzz.
+9. If your trainer keeps a smoothed (EMA) copy of the weights, check which set your render script loads. We have rendered a run's starting point by accident because the loader silently preferred the smoothed copy.
 
 ## 12. What we do not know yet
 
