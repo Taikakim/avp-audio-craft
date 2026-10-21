@@ -9,7 +9,22 @@ kuang_plan_P_20261017, unit_matched_20261021). Open items before publishing:
   2. The unit-matched recipe (section 3's fix) is being tested today on two heads; the checklist marks it as our current
      best guess, not a validated default. Update when the onset/air arms read out.
   3. SA3's own pre-training optimizer is not stated in its report (only the post-training one); the text says so.
-No checkpoint names, paths or infrastructure below; arm labels (B2, B3) are kept because they are how the results are filed. -->
+No checkpoint names, paths or infrastructure below; arm labels (B2, B3) are kept because they are how the results are filed.
+Fact audit by THE-FINN 2026-10-21 (W's version is commit 65c5e98; the changes are listed below):
+  - Papers: all 14 arXiv ids resolve to the cited papers; titles in the list now match the arXiv titles. Hyperball is "Fantastic
+    Pretraining Optimizers ... II"; Muon-SW is "Scale Weight Decay and Train Better".
+  - Fixed: Muon-SW was described as showing a constant decay makes the norm settle; the paper says constant decay makes the norm
+    SHRINK and its scaled decay settles it. Section 2 mixed two datasets (0.357/0.408 is the 5,401-crop set; 0.203/0.255 is the
+    larger set). Section 3: B2 at lr 3e-2 (0.189) is not better than the same head at 1e-2 (0.182); B3's loss wandered 0.57-0.95
+    before the NaN; matrices stayed within ~a third of B2's, not "the same". Section 4: SA3 full-fine-tune drone came from weight
+    decay of ZERO, not "too weak". Section 6: P1 at epoch 10 had one of three held-out sets improve, so "no checkpoint" was
+    too strong; the 1e-2 "ceiling" has no tests between 1e-2 and 3e-2. Section 11 item 2 lr range is a guess, not from the paper.
+    The watchdog is optional and new; batch sizes were 1-64, not 1-16. Newton-Schulz bf16: we measured speed, not quality.
+  - Checked and correct: 1.4x/1.1x, 0.357/0.408, 0.203/0.255, lr/16 and 30x, B2/B3 sizes (1.8, 69, 170x), air-head 15x growth and
+    NaN in epoch 3, bf16 29/64/92%, 323->101 ms, 13-21 ms, noise floor 0.004, LoRA-A 99%/7%, cautious +37%, D-Adaptation 10-17x and
+    22,000 steps, SNR gate ~0.2x, SA3 post-training Muon 1e-5 / AdamW 1e-6, SF-NorMuon 0.2 x lr and wd 0.05, 78% and 5.6-7.4x.
+  - Not checked by THE-FINN: SAMuon "gain grows with batch" (from papers/knowledge.md only); the "13-21 ms" and "323 -> 101 ms"
+    figures (from WINTERMUTE's journal, not re-measured); anything in sections 7 and 12 that is a plan. -->
 
 # Training with Muon, for the Rest of Us: What Five Months of Small Runs Taught Us
 
@@ -19,7 +34,7 @@ several trainers. So it is natural to switch it on for your own LoRA or fine-tun
 
 We have been doing exactly that since May, on much smaller jobs than the papers: small "control heads" trained from scratch
 on music latents, LoRA and DoRA adapters on Stable Audio 3, and a few full fine-tunes, all on one 16 GB consumer GPU
-with batch sizes between 1 and 16. Muon helped. It also produced the strangest failures we have had: runs that look
+with batch sizes from 1 to 64 (the head runs mostly 16 to 32). Muon helped. It also produced the strangest failures we have had: runs that look
 fine on the loss curve and then turn to buzz, runs that never learn at all, and runs that are "cooked" by epoch 7.
 
 This post collects what we know so far, written for people who fine-tune models as a hobby and want to know what to
@@ -41,14 +56,17 @@ mind; it matters more than anything else in this post.
 
 ## 2. How much it helps, honestly
 
-A careful comparison of ten optimizers at four model sizes ([Fantastic Optimizers I](https://arxiv.org/abs/2509.02046))
+A careful comparison of ten optimizers at four model sizes ([Fantastic Pretraining Optimizers and Where to Find Them](https://arxiv.org/abs/2509.02046))
 found that matrix optimizers like Muon do beat AdamW, but by about 1.4x in training speed at 0.1B parameters and 1.1x at
-1.2B, once AdamW is tuned as carefully as Muon. Earlier claims of 2x came from under-tuned AdamW baselines.
+1.2B, once AdamW is tuned as carefully as Muon. Earlier claims of 1.4x to 2x came from baselines that were tuned less
+carefully.
 
-On our small from-scratch heads the gain was larger. Our Muon-based optimizer reached a held-out loss of 0.357 against
-AdamW's 0.408 in the same 10 epochs. But when we took it apart, the part doing the work was not the orthogonalisation: it
-was Schedule-Free averaging (section 6). With Schedule-Free on, 0.203; with it off, 0.255. A matrix preconditioner
-(Shampoo) on top added nothing we could measure.
+On our small from-scratch heads the gain was larger. On a first set of 5,401 music-latent crops (10 epochs, one seed), our
+Muon-based optimizer reached a held-out loss of 0.357 against AdamW's 0.408. But when we took it apart on a larger set
+(11 settings, 10 epochs), the part doing the work was not the orthogonalisation: it was Schedule-Free averaging
+(section 6). With Schedule-Free on, the held-out loss was 0.20 to 0.21. With it off it was 0.255, the same as AdamW's
+0.25 to 0.26. A matrix preconditioner (Shampoo) on top added nothing we could measure. All of these are single runs
+with a noise floor of about 0.004 (section 10).
 
 So: worth having, not magic, and the ingredient that helps may not be the one in the name.
 
@@ -68,18 +86,20 @@ where AdamW wanted about 3e-4, roughly 30x. For the matrices that is mostly a ch
 is not: at lr 1e-2 they move about 30 times further per step than AdamW would move them.
 
 **What that does.** In one test we ran the same head at lr 3e-2 twice. In run B2 the biases and gains had their own,
-lower learning rate (2e-3); in run B3 they shared the 3e-2. B2 trained cleanly (held-out loss 0.189). B3 never learned:
-its held-out loss started at 0.57 against B2's 0.37 and rose until the loss turned into NaN in epoch 13. The per-group logs
-put the whole failure in the biases and gains: their typical size went from 0.13 (where B2's sat) to 1.8 by step 600 and
-69 by step 8,400, while the weight matrices looked the same in both runs.
+lower learning rate (2e-3); in run B3 they shared the 3e-2. B2 trained cleanly (held-out loss 0.189 at the end; the same head at lr 1e-2 reached 0.182, so the higher
+rate bought nothing). B3 never got below 0.57: its held-out loss started at 0.57 against B2's 0.37, wandered between 0.57
+and 0.95, and turned into NaN in epoch 13. The per-group logs put the failure in the biases and gains: their typical size
+(RMS) went from 0.13 (where B2's sat) to 1.8 by step 600 and 69 by step 8,400, while the weight matrices stayed within
+about a third of B2's size. Each arm is one run, so this is a clear failure of one setting, not a measured effect size.
 
 And the opposite failure, from the same cause: when we lowered the learning rate to keep the biases calm (3e-4), the head
 barely learned, because the output layer was now moving 1/16 of an already small step.
 
 **The fix the literature uses.** The [SF-NorMuon paper](https://arxiv.org/abs/2605.23061) rescales the Muon update so
 that each weight moves about 0.2 x lr, the same size as an Adam step, and runs biases, gains and small layers on their own
-Adam. Then one learning rate means roughly the same thing everywhere, and your AdamW intuition (1e-4 to 1e-3 for a
-fine-tune) carries over. We are testing exactly this today.
+Adam. The aim is that one learning rate means roughly the same thing everywhere, so AdamW-style learning rates carry over. (The
+paper's own best setting was lr 0.01, for language-model pretraining at 125M and 772M parameters; what range suits a
+fine-tune is our guess.) We are testing this today.
 
 **For your trainer:** find out which optimizer handles the non-matrix parameters and at what learning rate. If the answer
 is "the same lr as Muon", give them their own, lower one.
@@ -92,35 +112,41 @@ loss showed anything:
 
 - The B3 run above: by step 8,400 its biases and gains were about 170 times the size they had in the healthy run at
   the same step, and the loss had not yet gone NaN.
-- A small "air band" head at lr 5e-2: its weight matrices grew 15 times in under three epochs, then NaN. Capping the
-  biases did not save this one; here the matrices themselves were stepping too far.
-- Full fine-tunes of Stable Audio 3: the weights grew steadily until the model's output latents were five times their
-  normal size (standard deviation 5.6 instead of about 1.1). By ear: a buzzing, droning sound under everything. The cause
-  was weight decay too weak for a Muon-type optimizer to hold the weight size steady.
+- A small "air band" head at lr 5e-2: in a rerun with the bias group capped, its weight matrices grew 15 times in about
+  three epochs (460 steps), then NaN in epoch 3. Capping the biases did not save this one; the matrices themselves were
+  stepping too far.
+- Full fine-tunes of Stable Audio 3: the model's output latents grew to five times their normal size (standard
+  deviation 5.6 instead of about 1.1). By ear: a buzzing, droning sound under everything. The cause was weight decay of
+  zero: the optimizer's default was 0, our full fine-tune path never set it, and nothing else held the weight size
+  steady.
 
-On that last point, [Muon-SW](https://arxiv.org/abs/2607.23777) shows that with the right constant weight decay Muon's
-weight norm settles instead of drifting, and [Hyperball](https://arxiv.org/abs/2606.16899) goes further and fixes the
-norm outright. Older background on why weight decay sets the effective step size:
+On that last point: weight decay is what holds the weight size in place, and with a Muon-type optimizer nothing else
+does. [Muon-SW](https://arxiv.org/abs/2607.23777) works out where the weight norm settles under decay and scales the
+decay with the learning rate so that it settles at a constant (their tests are language-model pretraining).
+[Hyperball](https://arxiv.org/abs/2606.16899) goes further and fixes the norm outright; on our adapters we measured that
+it does not work as a drop-in, because a zero-initialised adapter matrix has norm zero and so never moves. Older
+background on why weight decay sets the effective step size:
 [Rotational Equilibrium](https://arxiv.org/abs/2305.17212) and
-[Weight Decay matters more than muP for LR transfer](https://arxiv.org/abs/2510.19093).
+[Weight Decay may matter more than muP for LR transfer](https://arxiv.org/abs/2510.19093).
 
 **For your trainer:** log the typical size (RMS) of each parameter group every few hundred steps. A group that doubles
-within an epoch after warmup is on its way somewhere bad. Our trainer now halves that group's learning rate automatically
-when that happens, and stops a run whose held-out loss stays well above its best.
+within an epoch after warmup is on its way somewhere bad. Our head trainer has an option (off by default, added on 2026-10-21 and not yet used in a
+reported result) that halves a group's learning rate when its weight size grows by a set factor within an epoch. It also
+stops a run by default when its held-out loss stays above 1.5 times its best for two epochs.
 
 ## 5. Lesson three: fine-tuning a model that was pre-trained with Adam
 
 [Can Muon Fine-tune Adam-Pretrained Models?](https://arxiv.org/abs/2605.10468) answers: not as well as Adam, and the reverse
 is also true. A model pre-trained with one optimizer ends up in a solution shaped by it; fine-tuning with the other one is
-more sensitive to the learning rate, moves the weights 5-7 times further and forgets more, even when its final score is
-worse. Two things in that paper matter for hobbyists:
+more sensitive to the learning rate, moves the weights further (5.6 to 7.4 times the cosine distance from the pretrained weights) and forgets more. Two things in that paper matter for hobbyists:
 
-- **LoRA mostly fixes it.** With LoRA the gap shrank by 78%, and LoRA with Muon matched or beat LoRA with Adam. At ranks
-  of 128 and above, in their harder cases, it started to degrade again.
+- **LoRA mostly fixes it.** With LoRA the perplexity gap shrank by 78% for Adam-pretrained models (39% for Muon-pretrained
+  ones). In their strongest-mismatch case LoRA with Muon beat LoRA with Adam at low and moderate ranks, and degraded at
+  high ranks as the update starts to look like full fine-tuning.
 - **They never used a constant learning rate:** cosine decay with 3% warmup everywhere.
 
 Our own data agrees in a quieter way. In our LoRA runs under Muon-type steps, the LoRA "A" matrices hardly moved: about
-99% of A was unchanged between early and late checkpoints, and A received about 7% of the step. The adapter mostly kept
+99% of A was unchanged between early and late checkpoints, and A received about 7% of the step's energy. The adapter mostly kept
 reading the random slice of its input it started with. Nothing audible went wrong, but it is worth knowing that the two
 LoRA factors do not learn evenly under Muon. In practice, if you pick a DoRA or LoRA checkpoint by ear, pick it from the first few epochs and compare it against the next two before trusting the last one.
 
@@ -134,17 +160,20 @@ Schedule-Free ([Defazio et al.](https://arxiv.org/abs/2405.15682), and the
 [ScheduleFree+](https://arxiv.org/abs/2605.19095) version we ported) replaces the learning-rate schedule with an average
 of the weights along the way. It was the largest single improvement in our head training (section 2). Two cautions:
 
-- It needs weight decay applied in the right place (on the fast-moving copy of the weights); without it, long runs
-  diverge in the SF-NorMuon paper.
+- It needs weight decay applied in the right place (on the fast-moving copy of the weights); the SF-NorMuon paper finds
+  this essential for stability over long runs.
 - Combined with too high a learning rate it is still too high. Our air-band head diverged at every learning rate above
-  1e-2 that we tried (3e-2 to 1e-1), with gradient clipping, earlier damping, an early cosine decay or a doubled batch;
-  lr 1e-2 was the ceiling.
+  1e-2 that we tried (5e-2 and 1e-1 at batch 32, 3e-2 at batch 64), with gradient clipping, earlier damping, an early
+  cosine decay or a doubled batch; these delayed the blow-up but did not stop it. We never tried values between 1e-2 and
+  3e-2, so 1e-2 is the highest setting that worked, not a measured ceiling.
 
 A look inside one of our runs explains part of this. We probed the run's own momentum directions at epochs 5, 10 and 20
 (the method is from the [SAMuon paper](https://arxiv.org/abs/2608.25990)): would a bigger step along them have lowered the
-held-out loss? At no checkpoint did it, in any direction. At epochs 5 and 20 the fresh gradients pointed against the
-strongest momentum directions: the run had already overshot and the momentum was lagging. At epoch 10 they agreed again.
-The leading directions were swinging back and forth, which is what a step that is slightly too large looks like.
+held-out loss? At epochs 5 and 20, no: every direction we tried raised the held-out loss from the smallest step on,
+on all three held-out sets. At epoch 10, one of three held-out sets (64 crops each) improved along the momentum and the
+other two got worse. At epochs 5 and 20 the fresh gradients pointed against the strongest momentum directions; at epoch 10
+they agreed with them. That pattern, overshoot then catch-up then overshoot, fits a step that is too large on the leading
+directions. It is a reading of one run, not a tested explanation.
 
 ## 7. Lesson five: small batches and Muon
 
@@ -167,21 +196,24 @@ or more before deciding Muon does not suit your job.
   step gets rounded away. In a test on one matrix, bf16 kept only 29% of the weight change at lr 3e-4, 64% at 1e-3 and
   about 92% at 3e-3. That alone can make a high learning rate look "better" for the wrong reason. Schedule-Free's average
   is hit hardest, because it moves by a shrinking fraction each step. Keeping the optimizer state in fp32 cost us 13-21 ms
-  per step.
-- **Newton-Schulz itself is fine in bf16.** Rounding matters when small numbers are added to big ones (weight updates,
-  averages), not inside the orthogonalisation. On our card bf16 Newton-Schulz cut the optimizer step from 323 ms to 101 ms.
+  per step in the same test.
+- **Newton-Schulz in bf16 is probably fine.** Rounding matters when small numbers are added to big ones (weight updates,
+  averages), not inside the orthogonalisation, and other Muon implementations (Dion, the SF-NorMuon reference code) run
+  it in bf16. On our card, switching Newton-Schulz to bf16 cut the optimizer update from 323 ms to 101 ms per step in a
+  400-step test; we measured the speed there, not the effect on quality.
 
 ## 9. Gadgets that did not help at small batch
 
 Several add-ons are designed around large, clean gradients. At batch 1-16 they turned into something else:
 
 - **Signal-to-noise gates** sat at their own pure-noise level and acted as a fixed cut of the learning rate to about 0.2x.
-- **Momentum look-ahead terms** that use the difference between consecutive gradients (MONA) mostly add noise at small
-  batch. They come from huge-batch pre-training.
-- **Automatic step-size finders** (D-Adaptation) made our DoRA rank-128 runs run away (weight norm 10-17 times its healthy
-  value); the same run without it stayed healthy for all 22,000 steps.
-- **"Escape velocity"**, a Prodigy-style multiplier that grows the step size over time, kept growing it while a run was
-  diverging.
+- **Momentum look-ahead terms** that use the difference between consecutive gradients (MONA). Our reading is that at
+  small batch the difference is mostly noise; they come from huge-batch pre-training, and our one comparison was worse than
+  AdamW, but we never ran a clean test.
+- **Automatic step-size finders** (D-Adaptation) made our DoRA rank-128 runs run away (global norm 10-17 times its healthy
+  value, in three of four attempts); the one run without it stayed healthy for all 22,000 steps.
+- **"Escape velocity"**, a Prodigy-style multiplier that grows the step size over time, raised the
+  step by a factor of 1.0 to 1.6 in B3 while that run was diverging.
 - **A matrix preconditioner** (Shampoo, in the [Mousse](https://arxiv.org/abs/2603.09697) form) measured no gain on our heads;
   Newton-Schulz already equalises most of what it would.
 - **Cautious masking** (skip update elements whose sign disagrees with the gradient) with a rescale of the survivors
@@ -211,7 +243,7 @@ Our current best guess for a small Muon fine-tune, with the parts we have not ye
    their own learning rate.
 2. Make the learning rates comparable: scale the Muon update to Adam size (update RMS 0.2 x lr) so that one lr in the
    1e-4 to 1e-3 range works for both groups. *(Being tested.)*
-3. Weight decay on the matrices, around 0.05 in the SF-NorMuon recipe; zero on gains and biases.
+3. Weight decay on the matrices, around 0.05 in the SF-NorMuon recipe (applied to the fast copy of the weights); we use zero on gains and biases.
 4. A warmup of a few percent of the run, gradient clipping at 1.0, and either Schedule-Free or a decaying schedule. Never
    a constant learning rate without one of those.
 5. fp32 weights and optimizer state; bf16 for the forward pass and Newton-Schulz is fine.
@@ -230,17 +262,17 @@ Our current best guess for a small Muon fine-tune, with the parts we have not ye
 ## Papers
 
 - Keller Jordan, [Muon: An optimizer for hidden layers in neural networks](https://kellerjordan.github.io/posts/muon/) (blog post)
-- [Fantastic Optimizers and Where to Find Them, Part I](https://arxiv.org/abs/2509.02046), matrix vs scalar optimizers, fairly tuned
+- [Fantastic Pretraining Optimizers and Where to Find Them](https://arxiv.org/abs/2509.02046), matrix vs scalar optimizers, fairly tuned
 - [Anytime Training with Schedule-Free Spectral Optimization (SF-NorMuon)](https://arxiv.org/abs/2605.23061)
 - [Spectral Allocation: Why Muon Outperforms Adam and How to Improve Muon (SAMuon)](https://arxiv.org/abs/2608.25990)
 - [Can Muon Fine-tune Adam-Pretrained Models?](https://arxiv.org/abs/2605.10468)
-- [Muon-SW: scale weight decay](https://arxiv.org/abs/2607.23777)
-- [Hyperball: fixed-norm weight and update constraint for Muon](https://arxiv.org/abs/2606.16899)
+- [Scale Weight Decay and Train Better (Muon-SW)](https://arxiv.org/abs/2607.23777)
+- [Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization](https://arxiv.org/abs/2606.16899), fixed-norm weight and update constraint for Muon
 - [Adaptive Batch Sizes Using Non-Euclidean Gradient Noise Scales for Stochastic Sign and Spectral Descent](https://arxiv.org/abs/2602.03001)
 - McCandlish et al., [An Empirical Model of Large-Batch Training](https://arxiv.org/abs/1812.06162)
 - Defazio et al., [The Road Less Scheduled (Schedule-Free)](https://arxiv.org/abs/2405.15682)
 - [ScheduleFree+](https://arxiv.org/abs/2605.19095)
-- [Mousse: curvature-aware preconditioning for Muon](https://arxiv.org/abs/2603.09697)
+- [Mousse: Rectifying the Geometry of Muon with Curvature-Aware Preconditioning](https://arxiv.org/abs/2603.09697)
 - [Rotational Equilibrium: weight decay as effective learning rate](https://arxiv.org/abs/2305.17212)
-- [Weight Decay matters more than muP for learning-rate transfer](https://arxiv.org/abs/2510.19093)
+- [Weight Decay may matter more than muP for Learning Rate Transfer in Practice](https://arxiv.org/abs/2510.19093)
 - [Stable Audio 3 technical report](https://arxiv.org/abs/2605.17991)
