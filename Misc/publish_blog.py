@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links in posts
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -21,6 +22,8 @@ BLOG_DIR = SAO / "blog"
 def _inline(t: str) -> str:
     t = html.escape(t)
     t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    # [text](https://...) links; http(s) only, so a relative or local path in a draft stays visible text
+    t = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2">\1</a>', t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)
     return t
