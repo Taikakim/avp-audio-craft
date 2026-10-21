@@ -10,9 +10,8 @@ state; the step-size chart and the bf16 bars are labelled arithmetic / CPU probe
 Open before publishing:
   1. Audio: GHOST-NOTE picked and RMS-matched the four clips (provenance internal); WINTERMUTE stripped their metadata into
      blog/assets/. Nobody has listened to the selected excerpts yet; the picks rest on recorded verdicts.
-  2. Section 6 (batch): the sweep runs tonight; "pending" until then. Section 4: the AIR_U10 arm (unit-matched, lr 1e-2,
-     the real range test) runs before the sweep.
-  3. Onset-head unit-matched arms (ON_U1 lr 1e-3, ON_U3 lr 3e-3) read out this afternoon.
+  2. Section 6 (batch): the sweep runs from 13:34 (lr 1e-3); "pending" until then.
+  3. Done 13:40: AIR_U10, ON_U1 and ON_U3 are in section 4, the section 8 row and section 11.
   4. Final review round on this version.
 No checkpoint names, paths, infrastructure or names of people below; arm labels (B2, B3) are how the results are filed. -->
 
@@ -130,10 +129,23 @@ so far is lr 3e-3, about 10 times AdamW's best lr, which is about 5 to 10 times 
 **Our first test of it.** On a small head that had diverged at every learning rate above 1e-2 we tried, the rescaled
 recipe at lr 3e-3 trained for all 25 epochs and reached the same held-out loss as the old recipe at its best setting
 (0.0207 against 0.0206). This is an equal-step comparison: 0.2 x 3e-3 moves the matrices as far per step as 1e-2 / 16
-did. It shows that the conversion works, not that the usable range is wider. That test (the same recipe at lr 1e-2) is
-running.
+did. It shows that the conversion works, not that the usable range is wider.
 
-![Air-band head. Left: weight size of the matrices. Red: old recipe at lr 5e-2 with a separate rate for the biases; it became NaN in epoch 3. Blue: rescaled recipe at lr 3e-3. Right: held-out loss.](assets/muon-survival-guide/air_head.png)
+**The range test.** We then ran the same recipe at lr 1e-2, which moves the matrices as far per step as the old recipe at
+lr 3e-2. At that step size the old recipe became NaN on this head twice, in epochs 15 and 26. The rescaled run did not
+diverge: the weight size of the matrices levelled off at about 0.26 (0.11 at lr 3e-3), and no learning-rate cut was
+needed. Its best held-out loss, 0.0225, was worse than the 0.0207 at lr 3e-3, and the loss rose from epoch 17, so the stop
+rule (section 5) ended the run after epoch 19. Two limits: the old runs used a batch of 64 and this one 32, and the
+rescaled recipe changes two things at once (the matrix scale and AdamW for the biases and gains), so we cannot say which
+of the two prevents the divergence. What we can say: a learning rate 3 times too high now costs some loss instead of the
+run.
+
+**On a second head** (the onset head of section 1) the rescaled recipe at lr 1e-3 reached 0.1798 and was still improving
+at epoch 20; at lr 3e-3 it reached 0.1829 at epoch 14 and then drifted up. The old recipe's best on this head was 0.1822.
+These three differ by less than we would expect from changing the random seed. The best rate differed between the two
+heads (3e-3 for the air head, 1e-3 for the onset head), so we would start a new job at 1e-3 and try 3e-3.
+
+![Air-band head. Left: weight size of the matrices. Red: old recipe at lr 5e-2 with a separate rate for the biases; it became NaN in epoch 3. Blue: rescaled recipe at lr 3e-3. Green: rescaled recipe at lr 1e-2. Right: held-out loss.](assets/muon-survival-guide/air_head.png)
 
 ## 5. Weight size, weight decay, and how to see a run going wrong
 
@@ -276,7 +288,7 @@ control heads of section 1.
 | MONA | adds a term from the difference between consecutive gradients | worse than AdamW in one comparison; crashed at high lr on another head. At small batch that difference is mostly noise; not a clean test |
 | NorMuon | normalises each row of the update | in our version it cancels the shape-based radius exactly; on wide matrices our variant steps 2-3.6x larger than the reference implementation. No outcome test yet |
 | Separate lr for biases and gains | 1-D parameters on their own lr | B2 vs B3 (section 4): trains at lr 3e-2 where the shared lr does not; at lr 1e-2 no difference (0.1832 vs 0.1822) |
-| Update rescaled to AdamW size + AdamW for 1-D | Moonlight / SF-NorMuon rule | one head: same loss as the old best setting at equal step size, weights level; range test running |
+| Update rescaled to AdamW size + AdamW for 1-D | Moonlight / SF-NorMuon rule | two heads: same loss as the old best setting; at 3x the step size where the old recipe became NaN, it trained (somewhat worse loss, weights level) |
 | Radial brake, escape velocity, burn-in | limit weight-norm growth; grow the step over time; delay averaging | all within 0.001-0.006 of the plain recipe, i.e. inside the noise. Escape velocity was inactive in early runs and later raised the step from 1.0 to 1.6x while a run was diverging |
 | Variance damping (VADD) | lowers the step when the loss variance is high | applied its factor twice when it fired (a bug, fixed); in an ablation, removing it did not change the adapter's size |
 | Signal-to-noise gate | scales each element by its estimated signal-to-noise ratio | sat at its own noise floor (0.18-0.21), so it acted as a fixed cut of the lr to about 0.2x. Removing it from a DoRA run made the adapter 4.4x larger in 1,011 steps |
@@ -336,7 +348,8 @@ Our current suggestion for a small Muon fine-tune. Items marked as being tested 
 1. Muon on the hidden 2-D matrices only, with fused Q/K/V and AdaLN matrices split. Embeddings, the output layer, biases,
    gains and DoRA magnitudes on AdamW. Print the groups at start-up and check them.
 2. Rescale the Muon update to AdamW size (0.2 x sqrt(max(m, n)), or update RMS 0.2 x lr), so that one learning rate
-   works for both groups. *(Being tested by us.)* Then start from the learning rate you would use with AdamW.
+   works for both groups. On our heads the best rate after this rescale was 1e-3 to 3e-3, 3 to 10 times what AdamW
+   wanted on the same heads; start at the low end.
 3. Weight decay on the matrices (0.1 in Moonlight, 0.05 in SF-NorMuon); none on gains and biases.
 4. Warmup of a few percent of the run, and either Schedule-Free or a decaying schedule. Not a constant learning rate
    without one of them.
@@ -347,7 +360,7 @@ Our current suggestion for a small Muon fine-tune. Items marked as being tested 
 
 ## 12. Open questions
 
-- Whether the rescaled recipe widens the usable learning-rate range or only re-expresses it (test running).
+- Which part of the rescaled recipe (the matrix scale, or AdamW for the 1-D parameters) prevents the divergence.
 - What batch size Muon needs for our jobs (test running).
 - The effect of our routing errors (unsplit Q/K/V, AdaLN treated as a hidden matrix).
 - Whether the results on small heads carry over to full fine-tunes of large models.
