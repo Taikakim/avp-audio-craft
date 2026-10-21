@@ -1,0 +1,70 @@
+# Optimizer experiment catalog (input to the "Muon and derivatives" post)
+
+Owner: THE-FINN (created 2026-10-21 at WINTERMUTE's request). Every row below was read from the source named in its last column on 2026-10-21; where I only know a result from a table cell or a chat line and did not open the underlying run, the row says so. Numbers are single runs unless stated, and the noise floor of a head bracket is about 0.004 (TRAINING.md F4). "In TRAINING.md" means a finding row exists there (it was last updated 2026-10-17, so results after that date are marked "no").
+
+## 1. Optimizer families and add-ons
+
+| Item | Change tried | Result | In TRAINING.md | Recorded in |
+|---|---|---|---|---|
+| ModularOptimizer vs AdamW (LatCH density head) | Muon-family + Shampoo + Schedule-Free vs AdamW | Phase A (5,401 crops, 10 ep): 0.357 vs AdamW 0.408 / 0.411 and Fusion 0.407, at lr 1e-2 (about 30x AdamW's lr) | F1 | EXPERIMENTS E5 Phase A; `latch_sweep/modular_2026-09-30/REPORT.md` |
+| Schedule-Free on/off | SF averaging removed | Phase B (bigset, 11 arms): modular with SF 0.20-0.21, without SF 0.255, AdamW 0.25-0.26 | F1 | EXPERIMENTS E5 Phase B |
+| Fusion (NS5 + MONA + KL-Shampoo + SF) | LatCH head recipe | -12 to -20% raw MAE vs AdamW at equal wall-clock; full Fusion adds about 1% for +50% wall-clock | F2 | `LATCH_RESULTS.txt` sections 19-21 |
+| Shampoo / Mousse / KL-Shampoo | whitening on or off in the modular optimizer | no measurable gain on heads (Phase B); Mousse is the default of `train_latch.py` and `sa3_control/train.py`, so all modular head runs used it | F25 | EXPERIMENTS E5 Phase B |
+| SOAP | alternative preconditioner | air-head bracket: SOAP 0.0212 against 0.0206-0.0207 for dim 512 / 256; OOM on the 16 GB card in the FiLM cost test | no | EXPERIMENTS line ~1390; `wintermute.journal.md` "modular optimizer costs ~320 ms" |
+| MONA | gradient-difference look-ahead (FusionOpt only) | worse than AdamW in `LATCH_RESULTS.txt` section 20C; crashed at high lr in the air-head bracket; mechanism argument only (F26 is rated Weak) | F26 | `LATCH_RESULTS.txt`; EXPERIMENTS E6 |
+| NorMuon | row normalisation after Newton-Schulz | the routing radius cancels exactly while NorMuon is on (F22); on wide matrices ours steps sqrt(d_in/d_out) larger than dion's (2.08x at 256x1024, 3.57x at 128x1536, F23) | F22, F23 | CPU probes, TRAINING.md |
+| Sign / scalar group | 1-D gains, biases and 2-D layers routed to sign | they step about sqrt(d_in) faster than the matrices; test plan B2 vs B3 at lr 3e-2: B2 (sign lr 2e-3) 0.1889, B3 (sign group on the same lr) never below 0.57, NaN in epoch 13; B0 at lr 1e-2 0.1822 | F24 (hypothesis); B2/B3 result: no | `wintermute.journal.md` "test plan B (H2)"; `kuang_plan_B_20261021/run_meta.json` |
+| Unit-matched recipe | Muon update scaled to RMS 0.2 x lr, biases/gains/output layer on Adam, plus watchdog, clip 1.0, escape velocity off | air head, lr 3e-3, 25 epochs clean, best 0.0207 against 0.0206 for the old lr-1e-2 recipe; matrix RMS 0.026 to 0.107 and level, against 0.385 by step 460 at lr 5e-2 with the bias group capped. The rescaling alone is not isolated. A second head (onset) is running | no | `unit_matched_20261021/run_meta.json` |
+| Radial brake, escape velocity, burn-in, sf_r | Phase C head arms | brake 0.8: 0.1986; EV: 0.1995; brake + EV: 0.1991; burn-in 0 / 3000: 0.1997 / 0.2017; sf_r=2: 0.1976; sf_r=0: 0.1960; plain recipe 0.1955 / 0.1953. Differences are 0.001-0.006, so the ranking was withdrawn as inside the noise (F5) | F5 | EXPERIMENTS E5 Phase C |
+| Escape velocity in a failing run | high-lr head | ev_d rose from 1.0 to 1.6 in B3 while it diverged | no | `wintermute.journal.md` "test plan B (H2)" |
+| VADD | variance damping | the damping factor was applied twice whenever it fired (fixed 2026-10-17, test `test_vadd_damping_is_applied_twice`); the tier-3 latent-std ceiling at decode cut jumps over 47 clips from 2985 to 426 at a 3-14% lower centroid | F16, F27 | training-findings 2026-10-07 (A1); TRAINING.md F27 |
+| SNR gate | per-element signal-to-noise gate on the gradient | sits at its own noise floor (0.183, 0.211 logged), so about a x0.2 lr cut. Cumulative ablation on goa5k (1011 steps): removing only the gate raised ||lora_B|| from 4.68 to 20.50 (x4.4), train loss 0.9565 to 0.9511, subspace loss unchanged at 0.0378; removing radial brake next adds 13%, VADD 0, additive magnitudes 3% | F27 | `continuity.wintermute.log` ~line 1901; `eval/ablation_goa5k_chain.py` |
+| AdaGC | per-tensor clip against an EMA of clipped norms | goa5k arms b01 (lambda 1.04) clips 68% of steps and bends the lora_B path (cosine 0.961 against the base arm), b02 (lambda 3) is about neutral (0.991), b03 (gate off, lr 6e-5) 0.975 (gate = an lr knob at that lr); by ear close to Base on one prompt and "snappy" on another | no | `docs/training-findings.md` "2026-09-28 b0x"; `continuity.wintermute.log` ~1958 |
+| Gradient clip 1.0 | on the air head | did not prevent any of the O1-O4 divergences (lr 3e-2 to 1e-1) | partly (E6 note) | `docs/training-findings.md` item 7 (2026-10-15) |
+| Cautious masking | mask elements whose sign disagrees with the gradient, rescale survivors | on orthogonalised updates the mask keeps about 47-53% at random; the 1/keep rescale inflated the update norm by about 37% and a DoRA r128 run went NaN between epochs 2 and 3 while the same run without it trained 8 epochs clean. Rescale fixed to be norm-preserving | no | `docs/findings-2026-07-02-perceptual-signal-night.md` D1 |
+| D-Adaptation / autoscale | automatic step size | DoRA r128: three of four attempts ran away (global norm 4085-12189, 10-17x), the one without it stayed at 99-114 for 22,000 steps | F13 | TRAINING.md F13 |
+| Prodigy | only as the coupled escape velocity inside ModularOptimizer | 6 h production run trained clean to 13.5k steps (A14). I found no standalone Prodigy test; ask whoever ran LoRAs with it | no | EXPERIMENTS A14 (line ~567) |
+| Lion | Phase D arms and a morph conditioner arm | Lion arms were clear losers by epoch 2-3 of 10; Lion clips are fine but stylistically distinct from AdamW and Fusion (Kim); fixed-size steps are scale-blind on 1-D parameters. The morph Lion arm (D17) was trained but the A/B was never run | F6, F7, F12 | TRAINING.md; EXPERIMENTS D17 |
+| Cosine / WSD / damping schedules | decay schedules and early damping | cosine = a working brake (|update| 0.091 to 0.0087, late direction more coherent); air head O6 (damping from ep 1, cosine from ep 3) still diverged at lr 5e-2; A11 (DoRA/LoRA x AdamW-WSD / braked Fusion, 16 arms) trained, but I did not extract its verdict | no | EXPERIMENTS A2, A11, E6 |
+| Overtraining weight decay | Everett and Qiu scaling | in the 6 h production run the weight norm grew sub-linearly (1.34 to 33.58 over 13.5k steps) as the sqrt(t) prediction says | no | EXPERIMENTS A14 (line ~582) |
+| Weight decay of zero | the full fine-tune path never set decay; FusionOpt default is 0 | latent std 0.7 good, 1.3 at epoch 3, 5.6 at epoch 7 (drone); AdamW runs with decay 0.01 stayed healthy | F-section A, DISCOVERIES 2026-08-10 | `stable-audio-tools/tests/test_fusion_weight_decay.py` docstring |
+| Magnitude updates | DoRA magnitude parameters under fixed-size steps | init 0.13-0.45; 592 non-positive rows at step 6340, NaN at about 6900 in `goa3_avp_r256`; the `multiplicative` update fixes it | F12 | TRAINING.md F12 |
+| LoRA A learning-rate multiplier | `--modular-lora-a-lr-mult 20` | rotated A but confounded: |B.A| 2.3x, one NaN render. Under Muon-family steps A is about 99.2% unchanged and takes about 7% of the step energy | F14 | training-findings A3, A4 |
+| LoRA-TSD | ported as `lora_tsd` | never run | F14 | TRAINING.md |
+| Hyperball | fix Frobenius norms of weights and updates | not a drop-in on adapters: a zero-init parameter has R=0 and never moves (0.0 against -0.059 after 6 steps); Fusion + hyperball OOMs at 14.87 GiB on 16 GB (short by 144 MiB), fits with `ns5,normuon`; full fine-tune arm `fullft_3src_t512_hyperball` was staged, result not extracted | no | `papers/knowledge.md` row 2606.16899; `AGENT_DIALOGUE-2026-W37.md` |
+| EMA | horizon, convergence | horizon is counted in EMA updates, ours fire per micro-batch (F8); an unconverged EMA can be non-finite (F9); in the drone sweep the runaway sits in the EMA, and online weights moved about 20% of the base norm (force_scalar output projection grew 2.6x) | F8, F9, F10 | TRAINING.md; `wintermute.journal.md` drone sweep |
+| AdamW "fair" arm | full fine-tune drone sweep | ep9: seed 1 runaway on 18 of 54 clips (only at cfg 16; median latent std 1.38 at cfg 1/7 vs about 0.75 healthy), seed 2 NaN on 54 of 54. Confound: the arms were observed at different epochs (ep9 vs ep7) | no (covered in training-findings 325-328) | `continuity.wintermute.log` ~1125; `docs/training-findings.md` 325 |
+| fp32 optimizer state | momentum and SF z/x in fp32 instead of bf16 | bf16 keeps 29%/64%/92% of the fp32 weight change at lr 3e-4/1e-3/3e-3 (one 768x768 matrix, 600 steps, F21); in a FiLM run to_k/to_v moved 6.8/6.9 between steps 4k-6k against 0.93/1.00 in the bf16 twin, loss equal within 0.003; costs 13-21 ms per step; fp32 checkpoints are 2.4 GB against 1.6 GB; conditioner stable rank 82 to 47 (lr 1e-3) | F21; the later runs: no | `wintermute.journal.md` 2026-10-19 to 10-21 |
+| bf16 Newton-Schulz | `--mod-ns-dtype bf16` | update cost 323 ms to 101 ms; with fp32 state 3.35 against 2.35 steps/s (400 FiLM steps, default GPU power limit). Per-update cost of other optimizers on the same test: AdamW +14 ms, Lion +63, Fusion +100 | F28 (no speed numbers) | `wintermute.journal.md` 2026-10-19 |
+| Spectral probe (SAMuon test) | would a bigger step along the momentum directions lower held-out loss | ep5, ep20: no, every probe raises held-out loss from the smallest step; ep10: one of three held-out sets improved, two got worse | no | `kuang_plan_P_20261017/run_meta.json`; journal 2026-10-21 |
+| Gradient-noise meter | half-batch cosine estimate of the noise scale | unreadable on the E05 head run: the null cosine (0.45-0.82) is as large as the signal (0.10-0.31) | no | `kuang_plan_P_20261017/run_meta.json` |
+| LR watchdog and stop rules | per-group lr halving; stop when held-out > 1.5 x best for 2 epochs, or rising 3 epochs and >5% above best | added 2026-10-21 (`train_latch.py`); watchdog default off; used only in AIR_U3 so far | no | `train_latch.py` header, commit 02823ee |
+| Learning-rate brackets on heads | lr bracket on retrained heads | same_chroma head, 20 epochs, d512 depth 8: lr 1e-2 0.0843, 1e-3 0.0973, 1e-4 0.1604 (not comparable to the production head's loss); density head Phase A: 3e-4 under-trains because the 1x256 output layer moves 0.06 x lr | F1 (density only) | `wintermute.journal.md` "same_chroma head retrained (E13)" |
+| Width, depth, batch (Phase D, 16 arms) | head shape and batch | width helped (dim 512 0.1908 vs anchor about 0.1995), depth 8 0.1946; batch arms are step-count artefacts (b32 had half the steps, b8 twice) | F3, F5, F7 | TRAINING.md |
+| Noise floor | data-worker count | 8 vs 16 workers on the same recipe: 0.1955 vs 0.1995 | F4 | TRAINING.md |
+| Decorrelation | named in the request | I found no optimizer result under this word in the logs (the hits are stereo decorrelation and BPM decorrelation in other projects). WINTERMUTE: which experiment did you mean? | n/a | grep of dialogue archives and journals |
+
+## 2. Sweep result
+
+I compared decimal numbers in optimizer-related lines of the weekly dialogue archives, the DM logs and the instance journals (about 4.5 MB) with the numbers in TRAINING.md, training-findings, EXPERIMENTS, DISCOVERIES, `LATCH_RESULTS.txt`, WORKLOG and the other docs. Only two lines carried several numbers that appear in no document: the cumulative ablation (SNR gate x4.4; now in the table above) and the same_chroma lr bracket (now in the table above). The method misses results that were written up without exact numbers, so this does not prove nothing is missing. By recency, the gap is mainly the test-plan results of 2026-10-18 to 10-21 (rows marked "no" above), which TRAINING.md (updated 10-17) does not yet hold; these live only in `wintermute.journal.md` and the run sidecars.
+
+Two cautions for the post:
+- Phase C: the "every added part hurt" wording in EXPERIMENTS is withdrawn by TRAINING.md F5 (all differences are inside the 0.004 noise). The post should not rank brake, escape velocity or burn-in.
+- A11, the Hyperball full-fine-tune arm and the D17 Lion A/B exist as trained runs whose verdicts I did not extract. Ask the owners rather than leave them out.
+
+## 3. Papers the list may be missing
+
+Checked against `papers/` and `papers/knowledge.md` by name and, where I remembered one, by arXiv id. arXiv's API answered "rate exceeded" when I tried to confirm ids, so I give names only; whoever adds them should take the id from the paper page.
+
+Not in `papers/`, `knowledge.md`, or the draft's list as far as I can tell:
+- Liu et al., "Muon is Scalable for LLM Training" (Moonlight) and its update-RMS matching to AdamW; CONTINUITY has this reading already.
+- NorMuon (Li et al.), since we run a NorMuon variant and the post names it.
+- Dion (Microsoft); only Dion3 (2608.11612) is filed, though TRAINING.md F23 compares against dion's NorMuon.
+- Scion / norm-constrained linear minimisation oracles, and Bernstein and Newhouse, "Old Optimizer, New Norm" with the modular-duality follow-up: the theory behind "every direction gets the same step".
+- Essential AI, "Practical Efficiency of Muon for Pretraining".
+- Prodigy and D-Adaptation, which the post's readers will know and which our A14 and F13 rows relate to.
+- Lion, SOAP, Shampoo (the originals), since the catalog reports results for all three.
+- The WSD schedule (MiniCPM) for the "cosine / WSD" row.
+- Biderman et al., "LoRA Learns Less and Forgets Less", cited inside the Muon fine-tuning paper the post already uses.
+
+Already filed locally: AdaGC (2502.11034), Cautious Weight Decay (2510.12402), LionMuon (2605.19811), Dion3 (2608.11612), Cautious Optimizers (id 2411.16085 appears in `knowledge.md`).
