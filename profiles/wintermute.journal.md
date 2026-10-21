@@ -1132,3 +1132,9 @@ target reads them as HF-deficient and would push generations brighter).
   3e-2) never learns (val 0.57 at ep1, rising) and NaNs in epoch 13. Per-group logs: the sign group's weight RMS is 1.8 by step 600
   (B2 0.13) and 69 by step 8400; the spectral group is the same in both arms. Escape velocity raised the effective step (ev_d 1.0 -> 1.6)
   while the run diverged. `sa3_control_runs/film_precision_A_20261017_overflow/kuang_plan_B_20261021/run_meta.json`.
+
+### negative · test plan P1 at ep5 and ep10: no checkpoint tolerates a bigger step; the leading directions oscillate (2026-10-21)
+- ep5 looks like ep20 (every probe raises held-out loss; training gradients oppose the momentum on ranks 1-4). At ep10 the gradients
+  agree with the momentum and one held-out set descends along it, but the other two rise from the first grid point. Overshoot,
+  catch-up, overshoot: too much step on the leading ranks, not too little. B8 SAMuon-lite not warranted at any of the three points.
+  Sets are 64 crops each; a bigger rerun would sharpen ep10. `latch_sweep/kuang_plan_P_20261017/run_meta.json` (P1_mid).
