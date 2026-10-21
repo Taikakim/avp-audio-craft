@@ -2313,3 +2313,17 @@ Shortlist `eval/mixtape_audit_kim_shortlist_2026-09-15.json` (141 clips: 105 rat
 - Reading: by ear more creative / varied than S5, not uniformly better; the meters (mixed) agree on "not uniformly better".
   Next, per the verdict: a longer DPO run (on S5 or V6 C, not decided). Copy this verdict into the DPO runs' sidecars when the
   run dirs are reachable.
+
+### SJ2. On-policy Flow-DPO rounds 2-4 on V6_C (beta 100) — WINTERMUTE, 2026-10-21 evening
+- Why: the SJ1 verdict ("would benefit from longer training"); round 1 (dpo_v6c_b100) had used up its fixed pair set
+  (held-out DPO loss rising 0.91 -> 1.00 over its 2000 steps), so "longer" = fresh pairs from the current policy each
+  round, that policy as the reference. Round-1 recipe otherwise (metric mss=1,logmel_l1=0.5, lr 1e-5, 2000 steps).
+  Runner `eval/run_overnight_dpo_batch_20261021.sh`; runs `/home/kim/sao_runs/dpo_v6c_b100_r{2,3,4}`.
+- Held-out synthetic, 1 draw, MSS (lower better): V6C 6.14, R1 5.33, R2 6.15, R3 5.31, **R4 4.86**; modspec_dist R4 best
+  (0.549 vs 0.593). The rewarded metric keeps improving, not monotonically (R2 fell back to the base).
+- Real stems, mel_ssim (the metric that tracked the ear, rho +0.67): r1 +0.030 [-0.002, +0.063] p 0.07, r2 +0.018 p 0.13,
+  **r4 -0.006 p 0.71** vs V6_C. The proxy improves while the ear-aligned metric returns to baseline: more rounds of MSS
+  reward over-optimise a reward that does not track listening (MSS rho +0.08). Note r1's earlier +0.042 (p 0.004,
+  V6_1_RESULTS) did not replicate at that strength in this eval run.
+- Next if continued: rank pairs by mel_ssim_dist (stored in the pairs) instead of MSS. Listening page:
+  `/home/kim/sao_runs/stems_v6_c_dpo_rounds/listen/index.html` (local). kim_feedback: none yet.
