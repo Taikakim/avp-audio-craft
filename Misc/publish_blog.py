@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links in posts
+# Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links; ![caption](assets/...) figures and audio players; referenced assets uploaded with the post
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -27,6 +27,17 @@ def _inline(t: str) -> str:
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)
     return t
+
+
+# media must live under blog/assets/ (relative, no "..") so a post can only reference files the publisher uploads
+_MEDIA = re.compile(r"^!\[([^\]]*)\]\((assets/[A-Za-z0-9_./-]+)\)$")
+_AUDIO_EXT = (".m4a", ".mp3", ".wav", ".ogg")
+
+
+def _assets_of(md: str):
+    """Relative asset paths a post references (only these are uploaded with it)."""
+    return sorted({m.group(2) for m in (_MEDIA.match(l.strip()) for l in md.splitlines())
+                   if m and ".." not in m.group(2)})
 
 
 _UL = re.compile(r"^[-*]\s+(.*)$")
@@ -60,6 +71,18 @@ def md_to_html(md: str) -> str:
             flush()
             lvl = len(h.group(1))
             out.append(f"<h{lvl}>{_inline(h.group(2))}</h{lvl}>")
+            i += 1; continue
+        # a line of its own ![caption](assets/...) = figure; .m4a/.mp3/.wav = an audio player with a caption
+        fm = _MEDIA.match(s)
+        if fm:
+            flush()
+            cap, src = _inline(fm.group(1)), html.escape(fm.group(2), quote=True)
+            if src.lower().endswith(_AUDIO_EXT):
+                out.append(f'<figure class="audio"><audio controls preload="none" src="{src}"></audio>'
+                           f"<figcaption>{cap}</figcaption></figure>")
+            else:
+                out.append(f'<figure><img src="{src}" alt="{html.escape(fm.group(1), quote=True)}" '
+                           f'style="max-width:100%;height:auto" loading="lazy"><figcaption>{cap}</figcaption></figure>')
             i += 1; continue
         # pipe table: header row, then a |---|---| separator row
         if (s.startswith("|") and i + 1 < len(lines)
@@ -231,7 +254,22 @@ def main():
     if a.dry_run:
         Path("/tmp/blog_index.html").write_text(idx)
         print(f"[dry-run] {len(posts)} posts rendered to /tmp/blog_*.html (nothing pushed)")
+    assets = sorted({x for p in drafts for x in _assets_of(p.read_text())})
+    missing = [x for x in assets if not (BLOG_DIR / x).is_file()]
+    if missing:
+        sys.exit(f"REFUSING: referenced assets missing locally: {missing}")
+    print(f"assets: {len(assets)} referenced file(s)")
+    if a.dry_run:
+        pass
     else:
+        if assets:                               # only the files the published posts reference, one connection
+            with tempfile.NamedTemporaryFile("w", suffix=".lst") as fl:
+                fl.write("\n".join(assets) + "\n"); fl.flush()
+                r = subprocess.run(["rsync", "-az", "--chmod=D755,F644", f"--files-from={fl.name}",
+                                    "-e", f"ssh -o BatchMode=yes -i {KEY}",
+                                    f"{BLOG_DIR}/", f"{HOST}:{DEST_DIR}/blog/"], capture_output=True, text=True)
+            if r.returncode != 0:
+                sys.exit(f"ASSET PUSH FAILED: rsync rc={r.returncode} {r.stderr.strip()[-300:]}")
         pending["index.html"] = idx
         _push_all(pending)                       # one connection for posts + index
         print(f"published {len(posts)} posts + index ({len(known)} links) -> {DEST_DIR}/blog/")
