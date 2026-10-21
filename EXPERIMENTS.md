@@ -1654,6 +1654,14 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Cheap check (no new run):** log NAMO's `alpha_t` next to `comp/snr_gate` on an existing LatCH/FiLM arm; if they track, there is nothing new. If alpha lifts well above the floor on some matrices, those are where the signal is.
 - **Kill:** alpha stays within about 0.1 of its noise floor on our batches.
 
+### E17 — Which of our matrices are in Muon's noise-dominated regime? Covariance ratio and delta_beta probes (Xie 2609.32861) — **PLANNED 2026-10-21 (CONTINUITY); zero training, gated on test-plan sec. N logs**
+- **Why:** the paper bounds the extra fluctuation of Muon over response-matched momentum SGD at about 7-8% (isotropic) to 14-19% (attention, real gradients) of excess loss at beta 0.95, but gives no threshold for when a matrix counts as noise-dominated and tests no switch.
+  That sizes the worry behind E15/E16 and any late switch; we should measure it on OUR heads before building anything.
+- **Probe 1:** `delta_beta ~ 8.8 * sqrt(c/(1-c))` from the half-batch cosine `c` that sec. N already logs (derivation in the paper's sidecar, mine, unverified). Report per matrix at a few checkpoints.
+- **Probe 2:** at a fixed checkpoint store a pool of minibatch gradients (the paper used 8192, effective batch 64), resample stationary streams, and compute `R_K = tr Cov(sum T(m_k)) / tr Cov(sum J m_k)` for NS5 with and without Nesterov. Ceiling and baseline: isotropic Gaussian noise of the same covariance (the paper's control).
+- **Also checks:** whether sqrt(kappa) lr scaling is justified per matrix (noise-dominated only), against job B of the overnight batch-scaled arms.
+- **Kill:** R_K under about 1.1 on all matrices and `delta_beta` above 1 on most: the noise-floor effect is negligible for us; close E15/E16's noise rationale.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
