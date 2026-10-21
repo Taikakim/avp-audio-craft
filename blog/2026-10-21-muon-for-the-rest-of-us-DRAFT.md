@@ -44,9 +44,10 @@ watch for. It links the papers we used and says where our evidence is thin.
 
 A normal optimizer like AdamW moves each weight by an amount that depends on that weight's own gradient history. Muon
 works on whole weight matrices. It takes the momentum (a running average of recent gradients) for a matrix and replaces
-it with the nearest "orthogonal" matrix, using a few cheap iterations called Newton-Schulz. In plain terms: every
-direction in which the matrix could change gets the same step size, big or small, whatever the gradient said about how
-important it was. How far the matrix moves is then set almost entirely by the learning rate, not by the gradient. That is
+it with (approximately) the nearest "orthogonal" matrix, using a few cheap iterations called Newton-Schulz. In plain
+terms: the gradient still decides which directions the matrix changes in, but every one of those directions gets about
+the same step size, however strong or weak the gradient was along it. How far the matrix moves is then set almost entirely
+by the learning rate, not by the size of the gradient. That is
 the source of both its speed and most of the trouble below. The original write-up is
 [Keller Jordan's Muon post](https://kellerjordan.github.io/posts/muon/).
 
@@ -79,7 +80,7 @@ move at very different speeds:
 |---|---|---|
 | Weight matrices (Muon), width 256 | about lr divided by 16 | about 6e-4 |
 | Biases and norm gains (sign step) | about the full lr | about 1e-2 |
-| The tiny 256-to-1 output layer | about lr divided by 16 | about 6e-4 |
+| The tiny 256-to-1 output layer (our routing; the usual split hands it to the second optimizer) | about lr divided by 16 | about 6e-4 |
 
 The matrices moving at lr/16 is why Muon's learning rate looks so high next to AdamW's: our best head setting was lr 1e-2
 where AdamW wanted about 3e-4, roughly 30x. For the matrices that is mostly a change of units. For the biases and gains it
@@ -95,7 +96,7 @@ and 0.95, and turned into NaN in epoch 13. The per-group logs put the failure in
 about a third of B2's size. Each arm is one run, so this is a clear failure of one setting, not a measured effect size.
 
 And the opposite failure, from the same cause: when we lowered the learning rate to keep the biases calm (3e-4), the head
-barely learned, because the output layer was now moving 1/16 of an already small step.
+barely learned, because the matrices and the output layer were now each moving about 2e-5 per weight per step.
 
 **The fix the literature uses.** The [SF-NorMuon paper](https://arxiv.org/abs/2605.23061) rescales the Muon update so
 that each weight moves about 0.2 x lr, the same size as an Adam step, and runs biases, gains and small layers on their own
@@ -105,9 +106,13 @@ fine-tune is our guess.)
 
 First result, on the small head that used to diverge at every learning rate above 1e-2: with the update rescaled this way
 and the biases and gains on Adam, it trained cleanly for all 25 epochs at lr 3e-3 and matched the best loss of the old
-recipe (0.0207 against 0.0206). Its weight matrices grew from 0.026 to about 0.107 RMS and then levelled off; in the run at
-lr 5e-2 (bias group capped) they had reached 0.39 by step 460. The run also had the learning-rate watchdog, gradient clipping at 1.0
-and escape velocity switched off, so the rescaling alone is not isolated. One run, one head; the same test on a second head is running.
+recipe (0.0207 against 0.0206). Read the units before reading anything more into that: at lr 3e-3 the rescaled update moves
+the matrices 0.2 x 3e-3 = 6e-4 per weight, the same as the old recipe at lr 1e-2 (1e-2 / 16). So this is the old best
+setting expressed in new units, with the biases and gains now on Adam at 3e-3 instead of a sign step at 1e-2. It shows
+the conversion works, not that the usable range got wider. Its weight matrices grew from 0.026 to about 0.107 RMS and then
+levelled off (weight decay, the late cosine decay and Schedule-Free averaging all act there; we have not separated them).
+The run also had the learning-rate watchdog (it never fired), gradient clipping at 1.0 and escape velocity switched off. One
+run, one head; the same test on a second head is running.
 
 **For your trainer:** find out which optimizer handles the non-matrix parameters and at what learning rate. If the answer
 is "the same lr as Muon", give them their own, lower one.
@@ -172,16 +177,23 @@ of the weights along the way. It was the largest single improvement in our head 
   this essential for stability over long runs.
 - Combined with too high a learning rate it is still too high. Our air-band head diverged at every learning rate above
   1e-2 that we tried (5e-2 and 1e-1 at batch 32, 3e-2 at batch 64), with gradient clipping, earlier damping, an early
-  cosine decay or a doubled batch; these delayed the blow-up but did not stop it. We never tried values between 1e-2 and
+  cosine decay or a doubled batch; these delayed the blow-up but did not stop it. Giving the biases and gains their own
+  low learning rate (the fix from section 3) did not stop it either: there the weight matrices ran away (section 4). We never tried values between 1e-2 and
   3e-2, so 1e-2 is the highest setting that worked, not a measured ceiling.
 
-A look inside one of our runs explains part of this. We probed the run's own momentum directions at epochs 5, 10 and 20
-(the method is from the [SAMuon paper](https://arxiv.org/abs/2608.25990)): would a bigger step along them have lowered the
-held-out loss? At epochs 5 and 20, no: every direction we tried raised the held-out loss from the smallest step on,
-on all three held-out sets. At epoch 10, one of three held-out sets (64 crops each) improved along the momentum and the
-other two got worse. At epochs 5 and 20 the fresh gradients pointed against the strongest momentum directions; at epoch 10
-they agreed with them. That pattern, overshoot then catch-up then overshoot, fits a step that is too large on the leading
-directions. It is a reading of one run, not a tested explanation.
+We also looked inside one run, with a probe from the [SAMuon paper](https://arxiv.org/abs/2608.25990): at epochs 5, 10
+and 20, would a bigger step along the run's own momentum directions have lowered the held-out loss? At epochs 5 and 20,
+no: every direction we tried raised the held-out loss from the smallest step on, on all three held-out sets. At epoch 10,
+one of three held-out sets (64 crops each) improved and the other two got worse. And at epochs 5 and 20 the fresh
+gradients pointed against the strongest momentum directions, while at epoch 10 they agreed with them.
+
+We first read that as a step that is too large. It is weaker evidence than it looks. We probed at the point where
+Schedule-Free evaluates its gradient, which sits close to the averaged weights, and Schedule-Free is built so that its fast
+copy of the weights swings across the valley while the average sits near the bottom. "No bigger step helps from near the
+average" and "the gradient keeps changing sides" are what a working Schedule-Free run should look like, so this probe
+cannot tell "too large a step" from "the averaging doing its job". It also differs from the SAMuon paper, which found
+that only the strongest direction sits at its limit and the rest would tolerate about five times more; on our run no group
+of directions did. A probe from the fast copy of the weights would separate the two readings; we have not run it.
 
 ## 7. Lesson five: small batches and Muon
 
