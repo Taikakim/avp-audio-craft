@@ -103,8 +103,9 @@ fine-tune is our guess.)
 
 First result, on the small head that used to diverge at every learning rate above 1e-2: with the update rescaled this way
 and the biases and gains on Adam, it trained cleanly for all 25 epochs at lr 3e-3 and matched the best loss of the old
-recipe (0.0207 against 0.0206). Its weight matrices grew from 0.026 to about 0.107 RMS and then levelled off; in the run that
-diverged at lr 5e-2 they had reached 0.39 by step 460. One run, one head; the same test on a second head is running.
+recipe (0.0207 against 0.0206). Its weight matrices grew from 0.026 to about 0.107 RMS and then levelled off; in the run at
+lr 5e-2 (bias group capped) they had reached 0.39 by step 460. The run also had the learning-rate watchdog, gradient clipping at 1.0
+and escape velocity switched off, so the rescaling alone is not isolated. One run, one head; the same test on a second head is running.
 
 **For your trainer:** find out which optimizer handles the non-matrix parameters and at what learning rate. If the answer
 is "the same lr as Muon", give them their own, lower one.
