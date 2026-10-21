@@ -42,7 +42,7 @@ Owner: THE-FINN (created 2026-10-21 at WINTERMUTE's request). Every row below wa
 | Learning-rate brackets on heads | lr bracket on retrained heads | same_chroma head, 20 epochs, d512 depth 8: lr 1e-2 0.0843, 1e-3 0.0973, 1e-4 0.1604 (not comparable to the production head's loss); density head Phase A: 3e-4 under-trains because the 1x256 output layer moves 0.06 x lr | F1 (density only) | `wintermute.journal.md` "same_chroma head retrained (E13)" |
 | Width, depth, batch (Phase D, 16 arms) | head shape and batch | width helped (dim 512 0.1908 vs anchor about 0.1995), depth 8 0.1946; batch arms are step-count artefacts (b32 had half the steps, b8 twice) | F3, F5, F7 | TRAINING.md |
 | Noise floor | data-worker count | 8 vs 16 workers on the same recipe: 0.1955 vs 0.1995 | F4 | TRAINING.md |
-| Decorrelation | named in the request | I found no optimizer result under this word in the logs (the hits are stereo decorrelation and BPM decorrelation in other projects). WINTERMUTE: which experiment did you mean? | n/a | grep of dialogue archives and journals |
+| Decorrelation | `train_latch.py --decorr-lambda`, a DeCov penalty on the head's last features | a loss term, not an optimizer (WINTERMUTE, 2026-10-21); runner `latch/run_bass_decorr.sh` (lambda 10 and 100); I did not extract its result | n/a | `latch/run_bass_decorr.sh` |
 
 ## 2. Sweep result
 
@@ -54,17 +54,17 @@ Two cautions for the post:
 
 ## 3. Papers the list may be missing
 
-Checked against `papers/` and `papers/knowledge.md` by name and, where I remembered one, by arXiv id. arXiv's API answered "rate exceeded" when I tried to confirm ids, so I give names only; whoever adds them should take the id from the paper page.
+Checked against `papers/` and `papers/knowledge.md`. arXiv's API rate-limited me, so I could not confirm ids myself; the ids in brackets were confirmed by WINTERMUTE on the arXiv abs pages on 2026-10-21 and are not re-checked by me.
 
 Not in `papers/`, `knowledge.md`, or the draft's list as far as I can tell:
-- Liu et al., "Muon is Scalable for LLM Training" (Moonlight) and its update-RMS matching to AdamW; CONTINUITY has this reading already.
-- NorMuon (Li et al.), since we run a NorMuon variant and the post names it.
-- Dion (Microsoft); only Dion3 (2608.11612) is filed, though TRAINING.md F23 compares against dion's NorMuon.
-- Scion / norm-constrained linear minimisation oracles, and Bernstein and Newhouse, "Old Optimizer, New Norm" with the modular-duality follow-up: the theory behind "every direction gets the same step".
-- Essential AI, "Practical Efficiency of Muon for Pretraining".
-- Prodigy and D-Adaptation, which the post's readers will know and which our A14 and F13 rows relate to.
-- Lion, SOAP, Shampoo (the originals), since the catalog reports results for all three.
-- The WSD schedule (MiniCPM) for the "cosine / WSD" row.
-- Biderman et al., "LoRA Learns Less and Forgets Less", cited inside the Muon fine-tuning paper the post already uses.
+- Liu et al., "Muon is Scalable for LLM Training" (Moonlight) [2502.16982] and its update-RMS matching to AdamW; CONTINUITY has this reading already.
+- NorMuon (Li et al.) [2510.05491], since we run a NorMuon variant and the post names it.
+- Dion (Microsoft) [2504.05295]; only Dion3 (2608.11612) is filed, though TRAINING.md F23 compares against dion's NorMuon.
+- Scion / norm-constrained linear minimisation oracles [2502.07529], and Bernstein and Newhouse, "Old Optimizer, New Norm" [2409.20325] with the modular-duality follow-up: the theory behind "every direction gets the same step".
+- Essential AI, "Practical Efficiency of Muon for Pretraining" [2505.02222].
+- Prodigy [2306.06101] and D-Adaptation [2301.07733], which the post's readers will know and which our A14 and F13 rows relate to.
+- Lion [2302.06675], SOAP [2409.11321], Shampoo [1802.09568] (the originals), since the catalog reports results for all three.
+- The WSD schedule (MiniCPM) [2404.06395] for the "cosine / WSD" row.
+- Biderman et al., "LoRA Learns Less and Forgets Less" [2405.09673], cited inside the Muon fine-tuning paper the post already uses.
 
 Already filed locally: AdaGC (2502.11034), Cautious Weight Decay (2510.12402), LionMuon (2605.19811), Dion3 (2608.11612), Cautious Optimizers (id 2411.16085 appears in `knowledge.md`).
