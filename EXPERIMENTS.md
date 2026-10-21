@@ -1630,7 +1630,8 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Paper:** arXiv 2603.10067 v2 (Pang, Fang, Liu, Deng, Hsiung, Yu, Yang; Dartmouth, Microsoft, ICSI/UC Berkeley, Meta). Update `O = U S^p V^T`
   with p = 0.125 (p=0 is Muon, p=1 is SGDM), motivated by HT-SR theory (Martin and Mahoney) that better-trained nets have heavier-tailed weight spectra.
   Needs an SVD per step; the paper's cheaper variants are every-k-steps and an NS-root form (`HTMuon_NS`).
-- **Evidence read (pp. 1-11 of 37 only; NOT a full deep-read):** perplexity gain over Muon is 0.92 (LLaMA-60M), 0.98 (135M), **0.02 (350M: 16.81 vs 16.79)**,
+- **Filed 2026-10-21:** `papers/arxiv-2603.10067 - HTMuon - Improving Muon via Heavy-Tailed Spectral Correction.{md,pdf}` + knowledge.md row (read pp. 1-18 and 24-31; proofs and hyperparameter tables unread). Two further findings from that read: Muon's best learning rate is the LOWEST on their grid at both 60M and 135M (its optimum may lie below the grid), and the repo default p=0.25 is worse than Muon in their Table 14.
+- **Evidence (first pass):** perplexity gain over Muon is 0.92 (LLaMA-60M), 0.98 (135M), **0.02 (350M: 16.81 vs 16.79)**,
   0.16 (1B: 14.33 vs 14.17), 0.26 (GPT-2 small); CIFAR/ViT gains 0.1-0.3 points. The gain shrinks with scale. Their own Fig. 1 shows
   Newton-Schulz Muon BEATS exact-SVD Muon, i.e. our NS5 is already a partly soft spectrum. All LLM/vision pretraining; no fine-tuning, no small control heads,
   no audio. The pasted claim "peer-reviewed ACL Findings" is not visible in the pages read: unverified.
