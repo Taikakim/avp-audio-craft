@@ -99,7 +99,12 @@ barely learned, because the output layer was now moving 1/16 of an already small
 that each weight moves about 0.2 x lr, the same size as an Adam step, and runs biases, gains and small layers on their own
 Adam. The aim is that one learning rate means roughly the same thing everywhere, so AdamW-style learning rates carry over. (The
 paper's own best setting was lr 0.01, for language-model pretraining at 125M and 772M parameters; what range suits a
-fine-tune is our guess.) We are testing this today.
+fine-tune is our guess.)
+
+First result, on the small head that used to diverge at every learning rate above 1e-2: with the update rescaled this way
+and the biases and gains on Adam, it trained cleanly for all 25 epochs at lr 3e-3 and matched the best loss of the old
+recipe (0.0207 against 0.0206). Its weight matrices grew from 0.026 to about 0.107 RMS and then levelled off; in the run that
+diverged at lr 5e-2 they had reached 0.39 by step 460. One run, one head; the same test on a second head is running.
 
 **For your trainer:** find out which optimizer handles the non-matrix parameters and at what learning rate. If the answer
 is "the same lr as Muon", give them their own, lower one.
