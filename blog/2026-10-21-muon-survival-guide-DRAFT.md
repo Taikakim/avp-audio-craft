@@ -318,15 +318,19 @@ control heads of section 1.
 The small heads in this guide are not generators: they predict a feature (here, the energy in the highest frequency band)
 from the model's latents, and steer generation through their gradient. Loss curves and our automatic glitch detectors
 missed artefacts that were audible. On one air-band head (width 512,
-lr 1e-2, 25 epochs) the held-out loss kept improving until epoch 16 (0.0318 at epoch 4, 0.0201 at epoch 16), but by ear
-the last clean epoch was the third; from epoch 4 on, short dropouts appeared around a cymbal-like event in the test clip.
+lr 1e-2, 25 epochs) the held-out loss kept improving until epoch 16 (0.0364 at epoch 3, 0.0318 at epoch 4, 0.0201 at
+epoch 16), but by ear the last clean epoch was the third. From epoch 4 on, listeners heard sub-second dropouts in which
+part of the sound is smoothed away. (The renders were also steered by two other heads, for bass and body, held fixed
+across epochs; one dropout in the fade-out was attributed to those, and the excerpt below does not include it.) In runs of the same head at lr 3e-2 they gathered around a reverse-cymbal-like sound
+in the test clip. Whether the later-epoch dropouts come from the head over-fitting or from its EMA copy of the weights
+(half-life 2 epochs) we have not tested.
 
-Generation steered by the head from epoch 3 and from epoch 12, same seed and guidance gain (24000), an 18-second excerpt;
-the event is near 0:09.
+Generation steered by the head from epoch 3 and from epoch 12, same seed and guidance gain (24000), an 18-second excerpt
+chosen to contain that sound (near 0:09).
 
 ![Steered by the epoch-3 head.](assets/muon-survival-guide/air_ep3.m4a)
 
-![Steered by the epoch-12 head: short dropouts around the event near 0:09.](assets/muon-survival-guide/air_ep12.m4a)
+![Steered by the epoch-12 head.](assets/muon-survival-guide/air_ep12.m4a)
 
 For LoRA and DoRA, choose a checkpoint by listening (or by whatever check fits your data), not by the final step and not
 by held-out loss alone. An optimizer that moves the weights quickly early, as Schedule-Free did for us, can make
