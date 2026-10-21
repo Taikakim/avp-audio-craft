@@ -102,7 +102,8 @@ which moves each of them by the full learning rate. One learning rate therefore 
 
 This is why Muon learning rates look high next to AdamW's: our best setting for the heads was lr 1e-2, against about
 3e-4 for AdamW. For the matrices that is a change of units. For the biases and gains it is not: at lr 1e-2 they moved
-about 30 times further per step than AdamW would have moved them.
+about 30 times the AdamW learning rate per step, which is 80 to 170 times the size of an AdamW step (0.2 to 0.4 times
+3e-4).
 
 **What happened.** We trained the same head at lr 3e-2 twice. In run B2 the biases and gains had their own learning
 rate of 2e-3; in run B3 they used the shared 3e-2.
@@ -173,8 +174,9 @@ decay sets the effective step size: [Rotational Equilibrium](https://arxiv.org/a
 5. Finite checks on the saved weights and on test outputs, both. In one LoRA run, test renders had latents up to 10^10
    that a clamp in the demo code hid, while every saved tensor was finite. Neither check alone would have caught it.
 6. The path of the weights over the run: the distance from the start, the speed per step, and the path efficiency (the
-   straight-line distance divided by the length of the path). Runaways in our full fine-tunes showed low path efficiency
-   (0.14 to 0.23) and all layers moving in lockstep.
+   straight-line distance divided by the length of the path). In our DoRA full-rank runaways the layers moved in lockstep. Path efficiency
+   alone does not separate healthy from runaway runs: the DoRA runaways read 0.14 to 0.23, but one run that converged read 0.216.
+   The global norm (99-114 healthy against 4,085-12,189) and the speed per step did separate them.
 
 **Stops.** Our head trainer now stops at the first non-finite loss, and when the held-out loss stays above 1.5 times its
 best for two epochs, or rises three epochs in a row and is more than 5% above its best. Replayed on our recorded runs,
@@ -243,7 +245,7 @@ Two observations from our own LoRA and DoRA runs:
 - **LoRA A barely moves.** About 99% of the A matrices was unchanged between early and late checkpoints, and A received
   about 7% of the update. We have no AdamW control for this, and the same imbalance is known for AdamW
   ([LoRA+](https://arxiv.org/abs/2402.12354)), so it is not specific to Muon. A larger learning rate for A (20 times)
-  rotated it, but also doubled the size of the adapter and produced one NaN render, so the result is not clean.
+  rotated it, but also made the adapter 2.3 times larger and produced one NaN render, so the result is not clean.
 - **DoRA magnitudes can cross zero.** DoRA's per-row magnitude parameters started between 0.13 and 0.45. A fixed-size
   step (sign descent) moved 592 of them to zero or below by step 6,340, and the run became NaN near step 6,900. A
   multiplicative update of the magnitudes fixed it. AdamW also moves each parameter by roughly a fixed amount per step, so
@@ -257,7 +259,7 @@ control heads of section 1.
 | Change | What it does | What we found |
 |---|---|---|
 | Muon-type optimizer vs AdamW (heads) | orthogonalised matrix updates, with Schedule-Free | 0.357 against 0.408 at 10 epochs on 5,401 crops; best lr about 30x AdamW's |
-| Schedule-Free averaging | evaluates and saves an average of the weights instead of decaying the lr | the largest single effect: 0.20-0.21 with, 0.255 without, AdamW 0.25-0.26 (12,524 crops). Its burn-in and averaging weight (sf_r) changed results by less than the noise |
+| Schedule-Free averaging | evaluates and saves an average of the weights instead of decaying the lr | the largest single effect: 0.20-0.21 with, 0.255 without, AdamW 0.25-0.26 (12,524 crops). Its burn-in and averaging weight (sf_r) moved results by 0.0005 to 0.006 against a noise of about 0.004 |
 | Shampoo / Mousse preconditioner | rescales the gradient by its curvature before Newton-Schulz | no measurable gain on heads; it was on in all our head runs by default |
 | SOAP | a different curvature preconditioner | 0.0212 against 0.0206 on one head, slower; ran out of memory in our FiLM-adapter test |
 | Full Fusion stack (Newton-Schulz, MONA, KL-Shampoo, Schedule-Free) | our earlier combined optimizer | 12-20% lower error than AdamW at equal wall time on the older heads; MONA and KL-Shampoo on top added about 1% for 50% more time |
@@ -271,7 +273,7 @@ control heads of section 1.
 | Gradient clipping at 1.0 | caps the gradient norm | did not prevent any of four divergences at lr 3e-2 to 1e-1, and did not reduce loss spikes in a full fine-tune. Under Muon the step size comes from the lr, so clipping the gradient changes little |
 | AdaGC | per-tensor adaptive clipping | at a tight setting it clipped 68% of steps and bent the adapter's path; at a loose setting about neutral |
 | Cautious masking | drops update elements whose sign disagrees with the gradient | after Newton-Schulz about half the elements disagree at random, so the mask removes a random half. The rescale of the survivors increased the update by 37% and one DoRA run became NaN; fixed |
-| D-Adaptation / automatic step size | estimates the lr during training | three of four DoRA rank-128 runs ran away (weight norm 10-17x); the run without it stayed healthy for 22,000 steps |
+| D-Adaptation / automatic step size | estimates the lr during training | three of four DoRA rank-128 runs ran away (global norm 10-17x its healthy value); the run without it stayed healthy for 22,000 steps |
 | Prodigy | automatic lr for AdamW | not tested standalone with Muon; a Prodigy-style step growth inside our optimizer trained a 13,500-step run without problems. On our older (pre-Muon) heads Prodigy was about 3% better than AdamW (0.1486 vs 0.1534) at 35% more time |
 | Lion | sign of the momentum, fixed step | 0.228-0.262 against about 0.20 on heads, the best Lion setting was the lowest lr tried; outputs sound fine but stylistically different from AdamW |
 | Cosine decay / damping schedules | lower the lr over the run | cosine cut the update size 10x and made late steps more consistent; it did not prevent divergence at lr 5e-2. On the older AdamW heads cosine helped a too-high lr and hurt a good one. A 16-run comparison of WSD vs our braked optimizer on LoRA and DoRA was trained but not analysed |
