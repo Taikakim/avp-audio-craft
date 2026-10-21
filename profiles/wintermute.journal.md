@@ -1126,3 +1126,9 @@ target reads them as HF-deficient and would push generations brighter).
   94 -> 48 (3e-3), 42 -> 27 (3e-4); seed-43 repeat 46. to_out rank follows LR, not precision. The shipped FusionOpt FiLM, the best
   density steerer, is the most concentrated (conditioner rank 4.0): flatness does not predict control here.
   `kuang_plan_P4_adapter_audit_20261021/run_meta.json`.
+
+### finding · test plan B (H2): LatCH lr 3e-2 diverges only because the sign group rides it (2026-10-21)
+- E05 recipe at lr 3e-2: B2 (sign group capped at 2e-3) trains clean, best val 0.1889 (B0 at lr 1e-2: 0.1822); B3 (sign group at
+  3e-2) never learns (val 0.57 at ep1, rising) and NaNs in epoch 13. Per-group logs: the sign group's weight RMS is 1.8 by step 600
+  (B2 0.13) and 69 by step 8400; the spectral group is the same in both arms. Escape velocity raised the effective step (ev_d 1.0 -> 1.6)
+  while the run diverged. `sa3_control_runs/film_precision_A_20261017_overflow/kuang_plan_B_20261021/run_meta.json`.
