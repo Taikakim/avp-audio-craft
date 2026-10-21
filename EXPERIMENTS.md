@@ -1603,6 +1603,41 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   extended above 2048 (3072, 4096, 6144) for both the production head and the retrained arms, through the disintegration gate.
 - **Kill:** no arm beats the production head's C-dominance at equal gain, or every arm's extra range fails the gate.
 
+### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
+- **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file
+  covers batch composition. Within a batch the order is irrelevant (the gradient is a mean), so there are two real knobs: WHO shares a batch
+  (composition) and WHAT SEQUENCE of batches the optimizer sees (ordering). Muon flattens the singular values, so a batch whose gradient has a few
+  strong directions gets its weak tail promoted: composition may matter more under NorMuon than under AdamW (hypothesis, unmeasured).
+- **Arms, cheapest first:**
+  1. *Free changes:* low-discrepancy (stratified) timesteps within each batch (check first whether the LatCH/FiLM trainers already do it; unverified);
+     density-stratified sampling (equal mass per onset-density bin; shifts the implied target distribution, which is wanted for a control head).
+  2. *Within-song contrast batches:* several windows of one song at different densities, so style/timbre/key cancel in the gradient. Cost: windows of
+     a song are correlated, so the effective batch is smaller than the nominal one. Ties to E9/E10.
+  3. *Diverse vs clustered batches* (farthest-point or DPP on principal components, vs cluster-homogeneous) as a gradient-variance / subspace-stability
+     probe at a fixed checkpoint. NO training needed; reuse the half-batch machinery of `docs/modular-opt-test-plan-2026-10-17.md` sec. N and P.
+  4. *Ordering (ascending/descending/nearest-neighbour walk) only as a STRESS TEST* of Muon vs AdamW under correlated batches. Momentum, EMA and
+     Schedule-Free assume roughly stationary gradients, so a sorted stream makes them average the schedule; reshuffle every epoch. Herding / GraB
+     (Lu and De Sa, cited from memory, NOT verified against the paper) is the principled ordering method; per-example gradients are affordable for a d256 head.
+- **Instrument rule:** any probe comparing a polarised update to a reference gradient needs its ceiling: `cos(polar(G), G) = ||G||_* / (||G||_F * sqrt(r)) < 1`
+  even for a perfect update, so compare against `polar(G_ref)` or use principal angles, and report the same number for a large-batch pair.
+  Before any sampler stratifies on a feature, confirm the feature meter has range on our data.
+- **Gate:** after the overnight batch-scaled LatCH arms (`eval/run_overnight_dpo_batch_20261021.sh`, job B) and the sec. N/P reads of the test plan. Do not stack on
+  those results.
+- **Kill:** if iid, density-stratified and diverse batches give indistinguishable gradient variance and held-out control quality at equal samples seen,
+  drop composition and keep only the free changes in arm 1.
+
+### E15 — HTMuon (heavy-tailed spectral correction) as a Muon variant — **PARKED 2026-10-21 (CONTINUITY); gated on test-plan sec. P**
+- **Paper:** arXiv 2603.10067 v2 (Pang, Fang, Liu, Deng, Hsiung, Yu, Yang; Dartmouth, Microsoft, ICSI/UC Berkeley, Meta). Update `O = U S^p V^T`
+  with p = 0.125 (p=0 is Muon, p=1 is SGDM), motivated by HT-SR theory (Martin and Mahoney) that better-trained nets have heavier-tailed weight spectra.
+  Needs an SVD per step; the paper's cheaper variants are every-k-steps and an NS-root form (`HTMuon_NS`).
+- **Evidence read (pp. 1-11 of 37 only; NOT a full deep-read):** perplexity gain over Muon is 0.92 (LLaMA-60M), 0.98 (135M), **0.02 (350M: 16.81 vs 16.79)**,
+  0.16 (1B: 14.33 vs 14.17), 0.26 (GPT-2 small); CIFAR/ViT gains 0.1-0.3 points. The gain shrinks with scale. Their own Fig. 1 shows
+  Newton-Schulz Muon BEATS exact-SVD Muon, i.e. our NS5 is already a partly soft spectrum. All LLM/vision pretraining; no fine-tuning, no small control heads,
+  no audio. The pasted claim "peer-reviewed ACL Findings" is not visible in the pages read: unverified.
+- **Why parked:** plan sec. P says no new optimizer is justified before P1-P3 read out. HT-SR needs weights that have developed power-law spectra; a
+  d256 head trained for ~thousands of steps may not. Cheap probe if P shows the non-leading momentum directions help: apply `S^p` in the probe, no run needed.
+- **Kill:** P shows the bulk directions do not lower held-out loss under our optimizer/precision/batch.
+
 ## F. Data, captions, corpora (experiments they gate)
 
 ### F1 — goa_src caption chain (year pass → Granite → sidecar) and the `latents_sa3` key join — **GATED on Kim**
