@@ -2302,3 +2302,14 @@ Shortlist `eval/mixtape_audit_kim_shortlist_2026-09-15.json` (141 clips: 105 rat
 - **guide_anchor smoke (air head +/- anchor 1.2, 5 clips, 25 renders): meters only, NOT yet heard.** hf_ratio drops strongly with the head and further with the anchor (4 of 5 clips); crest falls 6-8 -> ~5 (a cost). Gain 8448 and 2112 arms are identical (server normalises gains). `eval/mixtape_anchor_smoke.py`, `Mantu/sa3_lora_runs/mixtape_anchor_smoke_2026-10-20/`.
 - **1.6/1.5/1.4 on the 17 clips above std 1.7: PARTIAL (Kim's verdict via W, 2026-10-21).** The timbre shift is not on every clip; target should be RELATIVE to the HF-ratio change (e.g. ~15% reduction), not a fixed cap. cells.jsonl: same cap moves hf_ratio -4..-21% at 1.6 and -9..-29% at 1.4. Next designs: (a) z0*0.85 (and 0.92) for every clip over threshold; (b) per-clip bisection on scale until hf_ratio falls 5/10/15%. Both run on CPU decode or GPU (~4 s) after W's lock ends ~06:45. BUILT 2026-10-21 (17 clips above std 1.7, arms orig/x0.92/x0.85/hf5/hf10/hf15): flat x0.92 drops hf_ratio 3.9-9.1% (median 5.5), x0.85 7.0-16.3% (median 10.7); the per-clip arms land 4.5-5.2 / 9.1-10.3 / 11.4-15.4% (one clip hit the 0.5 grid floor at hf15) with scales 0.90-0.96 / 0.70-0.92 / 0.50-0.86. Page ~/evals_aac/mixtape_relcut.html (loudness-matched, blind), run `Mantu/sa3_lora_runs/mixtape_z0_relcut_2026-10-21/`, script `eval/mixtape_z0_relcut.py`. Not yet heard.
 - Open: higher caps (1.8/2.0) on the few clips above, loudness-matched; an ear check of the smoke clips; the 3x outpainting and the full re-render are NOT queued.
+
+### SJ1. Synth-JEPA Flow-DPO on S5 (beta 30 / 100 / 300) — KUANG runs, 2026-10-19; Kim's verdict 2026-10-21
+- Trainer `stable-audio-tools/scripts/synth_inversion/train_flow_dpo_v5.py` (Diffusion-DPO for the flow inverter; pairs from
+  `dpo_pairs_v5.py`, rewards MSS + bass-energy + modulation-spectrum distance). Run dirs are not on this desktop's drives
+  (KUANG's laptop); numbers in `blog/2026-10-19-synth-jepa-from-day-one.md` section 10 (beta 300: phrase MSS 6.09 -> 5.99,
+  Mel-SSIM 0.278 -> 0.260, centroid error 778 -> 803 Hz; held-out synthetic best-of-8 3.38 -> 4.24).
+- **kim_feedback (2026-10-21, chat via WINTERMUTE, verbatim):** "I have audited the first dpo results very carefully, it was very
+  creative although not always universally better, I suspect it would benefit from longer training"
+- Reading: by ear more creative / varied than S5, not uniformly better; the meters (mixed) agree on "not uniformly better".
+  Next, per the verdict: a longer DPO run (on S5 or V6 C, not decided). Copy this verdict into the DPO runs' sidecars when the
+  run dirs are reachable.
