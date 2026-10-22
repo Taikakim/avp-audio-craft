@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-22)
+# Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
 #   A = the Muon / AdamW / batch-256 references + phase A heads (C1, AWc, AWcG); B = adds the phase B heads (AEMc, KSc) that exist.
@@ -84,7 +85,10 @@ python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --sub "$SUB" --pa
   || { echo "page build failed"; exit 4; }
 
 PAGE="$STAGE/$SUB.html"
-if grep -Eiq 'goa[_.[:space:]-]?archive|/home/[a-z]|/run/media/|\bMantu\b|\bLehto\b|\.pt\b|\.ckpt\b' "$PAGE"; then
+# The note widget's own JS uses the property names dataset.ckpt / noteCtx.ckpt; drop those two before scanning so a real
+# checkpoint filename still blocks the upload but the widget does not (it blocked both eval A and eval B on 2026-10-22).
+if sed -E 's/\b(dataset|noteCtx)\.ckpt\b//g' "$PAGE" \
+   | grep -Eiq 'goa[_.[:space:]-]?archive|/home/[a-z]|/run/media/|\bMantu\b|\bLehto\b|\.pt\b|\.ckpt\b'; then
   echo "LEAK GATE: $PAGE mentions a path or checkpoint; not uploaded"; exit 5
 fi
 eval "$(grep -E '^(KEY|HOST|DEST)=' "$HOME/bin/transcode_evals.sh")"
