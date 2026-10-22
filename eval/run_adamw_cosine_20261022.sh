@@ -8,7 +8,8 @@
 #   AWc    AdamW control with a schedule: lr 3e-4, warmup 0.68 epoch (as the Muon arm), cosine to 0 over 40 epochs.
 #   AWcG   AWc + AdaGC (per-tensor clip, paper defaults lambda 1.04 / beta 0.99, 100-step warmup). One variable vs AWc.
 #   AEMc   AdEMAMix with AWc's schedule (Adam + a slow gradient EMA; arXiv 2409.03137). One variable vs AWc.
-# Last edited: WINTERMUTE 2026-10-22 -- AEMc arm added
+#   KSc    KL-SOAP on the hidden matrices with AWc's schedule: does Adam in the Shampoo eigenbasis beat plain AdamW here?
+# Last edited: WINTERMUTE 2026-10-22 -- AEMc and KSc arms added
 SAO=/home/kim/Projects/SAO
 LPY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
@@ -58,4 +59,6 @@ arm AWcG "AWc + AdaGC per-tensor gradient clip (lambda 1.04, beta 0.99, 100-step
     --lr 3e-4 --epochs 40 --warmup-epochs 0.68 --cosine-epochs 0 40 --adagc 1.04
 arm AEMc "AdEMAMix (slow EMA beta3 0.999 ~5 epochs, alpha 5, both ramped over the run) with AWc's schedule: lr 3e-4, warmup 0.68 epoch, cosine to 0 over 40 epochs" \
     --optimizer ademamix --ademamix-beta3 0.999 --ademamix-alpha 5 --lr 3e-4 --epochs 40 --warmup-epochs 0.68 --cosine-epochs 0 40
+arm KSc "KL-SOAP (NVIDIA kl_soap: Adam in the KL-Shampoo eigenbasis) on the hidden matrices, AdamW on the rest, with AWc's schedule: lr 3e-4, warmup 0.68 epoch, cosine over 40 epochs. Rotation-only change vs AWc" \
+    --optimizer kl_soap --lr 3e-4 --epochs 40 --warmup-epochs 0.68 --cosine-epochs 0 40
 echo "$(date +%H:%M) queue done"
