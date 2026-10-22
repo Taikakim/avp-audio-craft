@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
+# Last edited: WINTERMUTE 2026-10-22 -- --heads name=path / --prefix / --notes / --device (render any checkpoints; skips arms already rendered)
 """latch_onset_eval.py -- the onset_eval.html measurement, but for LatCH density HEADS instead of the FiLM control adapter.
 
 WHY (Kim 2026-10-14: "create a comparison with the same targets as onset_eval.html ... how do the gain and target amounts compare to what we are now using?").
@@ -30,6 +31,10 @@ FEATURE = "onset_per_beat_ts"
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", default="")
+    ap.add_argument("--heads", default="", help="name=path.pt,... : render these checkpoints instead of the Phase E arms")
+    ap.add_argument("--prefix", default="onset_eval_latchE_", help="output dir prefix under sa3_control_runs/")
+    ap.add_argument("--notes", default="", help="purpose text written into each run_meta.json (with --heads)")
+    ap.add_argument("--device", default="cuda")
     ap.add_argument("--gains", default="128,512,2048,8192")
     ap.add_argument("--densities", default="2,4,6,8,10")
     ap.add_argument("--prompt", default="psytrance, 140 bpm")
@@ -46,9 +51,14 @@ def main():
     from stable_audio_3 import StableAudioModel
     dens = [float(x) for x in a.densities.split(",")]
     gains = [float(x) for x in a.gains.split(",")]
-    arms = [l.split("\t")[0] for l in open(f"{PHASE}/SUMMARY.tsv").read().splitlines() if l.strip()]
-    arms = [r for r in arms if not a.arms or any(r.startswith(p) for p in a.arms.split(","))]
-    model = StableAudioModel.from_pretrained("medium-base", device="cuda")
+    if a.heads:
+        paths = dict(kv.split("=", 1) for kv in a.heads.split(","))
+        arms = list(paths)
+    else:
+        arms = [l.split("\t")[0] for l in open(f"{PHASE}/SUMMARY.tsv").read().splitlines() if l.strip()]
+        arms = [r for r in arms if not a.arms or any(r.startswith(p) for p in a.arms.split(","))]
+        paths = {arm: f"{PHASE}/{arm}/latch_sa3_{FEATURE}_best.pt" for arm in arms}
+    model = StableAudioModel.from_pretrained("medium-base", device=a.device)
     sr = model.model.sample_rate
 
     def render(**kw):
@@ -73,12 +83,15 @@ def main():
     base_od = onset_density(base)
     print(f"[latch-onset-eval] unguided: {base_od:.2f} onsets/s", flush=True)
     for arm in arms:
-        ck = f"{PHASE}/{arm}/latch_sa3_{FEATURE}_best.pt"
+        ck = paths[arm]
         if not os.path.exists(ck):
             print("MISSING", ck)
             continue
         meta = torch.load(ck, map_location="cpu", weights_only=False)
-        d_out = f"{OUT}/onset_eval_latchE_{arm}"
+        d_out = f"{OUT}/{a.prefix}{arm}"
+        if os.path.exists(f"{d_out}/onset_eval.json"):
+            print(f"  {arm}: already rendered, skipped", flush=True)
+            continue
         os.makedirs(d_out, exist_ok=True)
         rows = []
         for d in dens:
@@ -101,7 +114,9 @@ def main():
                    "hypothesis": "A head trained on onsets-per-beat should follow a density request; gain is the guidance rho=mu, not the adapter strength.",
                    "eval": {"prompt": a.prompt, "gains": a.gains, "densities": a.densities, "seed": a.seed, "cfg": a.cfg, "duration": a.duration, "steps": a.steps, "bpm_for_conversion": a.bpm},
                    "arm": arm, "epoch": meta.get("epoch"), "val_loss": meta.get("val_loss"), "std_mean": meta.get("std_mean"), "std_std": meta.get("std_std"),
-                   "related": ["control/sa3_control/onset_eval.py", "eval/latch_onset_eval.py", "EXPERIMENTS.md E5"], "result": None, "kim_feedback": None},
+                   "related": ["control/sa3_control/onset_eval.py", "eval/latch_onset_eval.py", "EXPERIMENTS.md E5"], "result": None, "kim_feedback": None,
+                   **({"head_checkpoint": ck, "notes": a.notes, "train": {k: meta.get(k) for k in ("optimizer", "effective_batch", "init_from", "init_from_epoch")}}
+                      if a.heads else {})},
                   open(f"{d_out}/run_meta.json", "w"), indent=2)
     print("DONE")
 
