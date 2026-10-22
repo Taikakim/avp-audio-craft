@@ -231,8 +231,44 @@ Two practical points on batch size:
   steps as the batch-16 run in the same number of epochs, and the batch-8 run twice as many. Its result that "batch 8 is
   as good as 16" came from the extra steps; at equal steps batch 8 was worse.
 
-We are now training the same head at effective batches of 64, 128 and 256 for the same number of epochs, and measuring
-the noise from the two halves of each accumulated batch. **Result pending; this section will be updated.**
+We then trained the same head (onsets per beat, width 256, depth 8, same held-out split) at effective batches of 64,
+128 and 256 for the same number of epochs, and measured the noise from the two halves of each accumulated batch:
+
+| Effective batch | Learning rate | Best held-out loss |
+|---|---|---|
+| 64 | 1e-3 | **0.1802** |
+| 128 | unchanged | 0.1917 |
+| 128 | × √2 | 0.1935 |
+| 256 | × 2 (√ rule) | 0.1964 |
+| 256 | × 4 (linear rule) | 0.1900 |
+
+Batch 64 was best. Above it, the linear rule beat the square-root rule, and the noise measurement says why. The cosine
+between the two half-batch gradients was between 0.37 and 0.08 over the run. For a half-batch gradient made of signal
+plus independent noise, that cosine is δ²/(1 + δ²), where δ is the half-batch signal-to-noise ratio. The full batch has √2
+times that ratio, and a momentum buffer with β = 0.9 another √((1 + β)/(1 − β)) ≈ 4.4. That puts the momentum's ratio
+between about 1.9 and 4.7: signal-dominated. The square-root rule assumes the update is noise-dominated, which here it is
+not, so it under-steps. For a noise-dominated update at β = 0.9, the half-batch cosine would have to be below about 0.006.
+
+**What the held-out loss hides.** The optimizer comparisons in this guide differ by a few percent of held-out loss, and
+the curves track each other closely. Splitting the held-out loss by noise level t (the same crops and the same noise at
+10 fixed values of t; t near 1 is almost pure noise) shows why:
+
+| t | Muon, batch 64 | AdamW, constant lr | Muon, batch 256, linear lr |
+|---|---|---|---|
+| 0.05 | 0.090 | 0.124 | 0.098 |
+| 0.25 | 0.097 | 0.130 | 0.107 |
+| 0.45 | 0.123 | 0.153 | 0.135 |
+| 0.65 | 0.184 | 0.190 | 0.191 |
+| 0.75 | 0.236 | 0.243 | 0.244 |
+| 0.95 | 0.460 | 0.479 | 0.467 |
+
+(Predicting the target's mean scores 0.963 at every t.) For all three heads, about half the loss (51–55%) comes from
+t > 0.7, where the latent says little about the target and the heads differ by 4–8%. That half is a floor that the
+optimizer barely moves, and averaging over t dilutes everything else. On the cleaner latents (t ≤ 0.45), AdamW's loss is
+25–39% higher than Muon's. A 13% difference in the average is a 30%-plus difference where the latent carries the
+information. Sampling with guidance spends most of its budget on the late, low-noise steps, so this part probably matters
+more for steering than the average suggests; we have not yet checked that against listening. Our trainer now logs the
+held-out loss per t-bin every epoch, so we can see when each noise band stops improving.
 
 On dataset size: our heads trained on 5,401 and on 12,524 crops gave the same ranking of the Muon-type optimizer against
 AdamW. On the larger set every curve was still falling at 10 epochs, so a short run ranks learning speed, not final
@@ -365,7 +401,8 @@ Our current suggestion for a small Muon fine-tune. Items marked as being tested 
 ## 12. Open questions
 
 - Which part of the rescaled recipe (the matrix scale, or AdamW for the 1-D parameters) prevents the divergence.
-- What batch size Muon needs for our jobs (test running).
+- Whether the batch-64 optimum holds below 64 (we have not trained at 32 with the same horizons).
+- Whether the held-out loss on low-noise latents predicts steering better than the average over t does.
 - The effect of our routing errors (unsplit Q/K/V, AdaLN treated as a hidden matrix).
 - Whether the results on small heads carry over to full fine-tunes of large models.
 - Why changing only the number of data-loading workers moved one result by 0.004.
