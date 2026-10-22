@@ -646,3 +646,27 @@ optimiser steps of the anchor at the same lr. *Evidence:* at equal steps b32 ep1
 b8 ep5 0.2069 vs anchor ep10 0.1986 (worse). Also every curve was still falling at ep10, so a short fixed-epoch table ranks learning speed, not the
 ceiling. *Fix / status:* verdicts corrected in EXPERIMENTS E5, KIM-TASKLIST and REPORT; Phase E (20 epochs, equal-step b32, a repeat seed) queued.
 Rule: when an arm changes batch size, match optimiser STEPS (or scale epochs), and run long enough that the leaders have stopped changing.
+
+## 2026-10-22 — LatCH optimizer comparison at batch 64: the held-out loss average hides where optimizers differ (WINTERMUTE)
+
+**T1. Half of the held-out loss is a shared high-noise floor, so optimizer curves look alike.** *Measured:* held-out loss of the
+onset_per_beat head (goa_bigset, val_seed 0, 625 crops) at 10 fixed t with fixed noise (`stable-audio-3/scripts/latch/loss_by_t.py`).
+51-55% of each head's loss comes from t > 0.7, where Muon b64 / AdamW / Muon b256 differ by 4-8%; at t <= 0.45 AdamW is 25-39% worse
+than Muon (t 0.05: 0.090 vs 0.124). Mean 0.185 vs 0.209 (12.7%). *Consequence:* a few-percent val difference between optimizers can be
+a 30%+ difference on clean latents, which is where guidance spends most of its budget (the default TFG schedule is back-loaded).
+Whether low-t loss predicts steering better than the average is untested; the latch_opt_grid.html grids are the first check.
+*Tooling:* `train_latch.py --val-t-bins` (default 10, stable-audio-3 6441589) now logs the same split every epoch from the val pass's
+own fixed t draws (`val=` unchanged, no extra compute) to `<save-dir>/val_by_t.jsonl` and `val_loss_by_t` in the checkpoint.
+Caveat: each bin holds ~60 different crops, so a single bin mixes crop difficulty into the t effect (CPU test from EB64: bin 0.15 read
+0.148 vs 0.092 at a fixed t); compare a bin across epochs or across runs with the same split, not one bin against its neighbour.
+
+**T2. Batch above 64: the linear lr rule beats the square-root rule, because the momentum is signal-dominated.** EB64 0.1802; EB128
+0.1917 (lr unchanged) / 0.1935 (x sqrt2); EB256 0.1964 (x2, sqrt) / 0.1900 (x4, linear). Half-batch gradient cosine 0.37-0.08 ->
+momentum SNR (x sqrt2 for the full batch, x sqrt((1+b)/(1-b)) = 4.4 at b 0.9) about 1.9-4.7; noise-dominated would need c < ~0.006.
+Gap: grad_noise logs c only on raw gradients, not on the momentum buffer.
+
+**T3. AdamW at batch 64, same head (eval/run_adamw_cosine_20261022.sh).** Constant lr 3e-4 0.2080 (val swings 0.21-0.29); cosine to 0
+over 40 ep with 0.68-ep warmup (AWc) 0.2002; AWc + AdaGC lambda 1.04 (AWcG) 0.2511, stopped at epoch 12 by the rising-val rule.
+Muon -> AdamW switch from the epoch-27 Muon head: at lr 3e-4/1e-3 with no warmup the first epoch kicks the head 0.180 -> 0.338
+(lr 1e-3 diverged); at lr 1e-4 with a 1-epoch warmup and cosine (C1) 0.1839, i.e. no gain over the Muon head (0.1802).
+*Rule:* a fresh AdamW on a trained head needs warmup and a low lr — at step 1 every weight moves by about lr.
