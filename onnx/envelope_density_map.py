@@ -11,7 +11,7 @@ Standardization to the head's output space happens downstream in
 
 CLI (numpy-only, any venv):
     python3 onnx/envelope_density_map.py \
-        --corpus /home/kim/Projects/latents_sa3 --out onnx/envelope_density_map.json
+        --corpus /run/media/kim/Kosmos/latents/latents_sa3 --out onnx/envelope_density_map.json
 """
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ def scan_corpus(corpus_dir: str, ts_field: str = "onset_envelope_ts",
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--corpus", default="/home/kim/Projects/latents_sa3")
+    ap.add_argument("--corpus", default="/run/media/kim/Kosmos/latents/latents_sa3")
     ap.add_argument("--out", default="onnx/envelope_density_map.json")
     ap.add_argument("--n-bins", type=int, default=12)
     args = ap.parse_args()

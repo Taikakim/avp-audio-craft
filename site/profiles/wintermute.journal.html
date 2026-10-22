@@ -480,6 +480,138 @@
   <p>- E04 recipe retrained with EMA (half-life 0.5 ep; best ep 19, val 0.1961 = original). EMA and online (SF-averaged) weights are indistinguishable at this half-life. Alpha 0-1, requests 0-12/s x gains 32-4096: corr 0.86-0.95 at every gain; range saturates ~5.5 to ~9.3 from gain 256 (unguided 6.3/7.3); first gate fails at 2048. Page <code>latch_onset_matrix_ema.html</code>.</p>
 </div>
 
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">LatCH + FiLM beats FiLM alone (E7); gating FiLM by sigma keeps density but not less leak (E8); no LatCH range above 4096 (E7a)</div>
+  <p>- E7: in all three contexts (base, punch, house) LatCH + FiLM gives more onset spread per unit of CLAP drift than FiLM alone (punch: FiLM 1.75 alone 4.4/s @ drift 0.28 vs FiLM 1.0 + LatCH 512 5.5/s @ 0.15). Kill not met. E8: confining FiLM to early sigmas keeps the density but not less drift (house 0.26 vs 0.22): the style pull enters early, with the density. E7a: LatCH alone above gain 4096 adds no range, only damage (kill met). Page <code>latch_film_combo.html</code>; numbers in each run's <code>run_meta.json</code>. EXPERIMENTS E7/E8.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">retrained air head A2 follows the dB target both ways; the anchor removes the seed-764 + FiLM saturation (by ear)</div>
+  <p>- <code>punch_air_film.html</code>: A2 is monotonic in gain, the target sets the direction (-40 dB darkens -6.1 dB air, -10 dB brightens +5.7 dB at 32k); the old head is biased dark (its neutral target already darkens 1-3 dB). Listening: A2 sounds good even at 32k; A2 + FiLM saturates on seed 764 only (3050 fine); target sets the style, gain the brightness. - Final latent std is the cheap "blown cap" meter: seed 764 DoRA 0.98, + FiLM 1.56, + A2 -10 dB at 32k 2.01; the heard saturation tracks it (threshold ~1.3x the seed's unguided level). Anchor 1.2 caps it and, by ear, removes the saturation practically completely; the sound itself (a diffuse wall of sound at high target and gain) stays. Anchor sweep 0.8-1.2: the cap binds exactly (final std = s0 in all 90 cells), onsets flat (8.6-8.8), air -1.26 -&gt; -0.64 dB and centroid 3514 -&gt; 3563 Hz as s0 rises: lower anchors darken a little. No listening verdict on the sweep yet.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · tool</div>
+  <div class="jtitle">disintegration gate: optional latent-level leg (final std ratio &gt; 1.3)</div>
+  <p>- <code>eval/control_head_disintegration_eval.py</code> fails a clip whose final latent std exceeds 1.3x its baseline's when both carry <code>z_std</code>. Added because the hf-blowout leg false-positives on air heads (brightening is their job) and none of the audio legs saw the saturation. Spec addendum in <code>docs/superpowers/specs/2026-07-20-control-head-disintegration-gate.md</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-15 · finding</div>
+  <div class="jtitle">the punch DoRA shifts every seed the same way; seed 764 gets one of the largest shifts</div>
+  <p>- <code>punch_nodora_seeds_20261015</code>: the DoRA (k5 ep19 @ 0.45) lowers latent level (std 1.13 -&gt; 0.96), smooths it in time, spreads energy over more dimensions (eff rank 51 -&gt; 63), same direction on every seed (shift cosine to the mean 0.81). Seed 764 is ordinary without the DoRA but ranks 4/64 in smoothing shift; 3050 ranks 61. The "grainy mode" prediction (grainy 3062/3058/3005/3049/3009 vs clean 3022/3010/3046/3023/3032) waits for a listening pass.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">control trainer: Schedule-Free + --ema checkpoints held the SF average, not the EMA <span class="neg">NEGATIVE</span></div>
+  <p>- <code>control/sa3_control/train.py</code> did <code>ema.copy_to()</code> then SF <code>opt.eval()</code>, which overwrote the EMA. Fixed (EMA xor SF eval, symmetric restore, periodic + final save); <code>state_online</code> now saved too. Every SF + EMA control checkpoint before today is an SF-average checkpoint.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">E12 FiLM bracket under the modular optimizer: all three lrs stable, loss identical</div>
+  <p>- 3e-4 / 1e-3 / 3e-3 x 6000 steps all train without divergence and with the same loss curve, so loss cannot pick; a render-based density check (<code>eval/film_bracket_density_check.py</code>) picks the lr and the 54k run follows (night chain <code>eval/run_film_e12_night.sh</code>).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">AVP drone sweep: force_scalar runs the latent level to ~3 at every cfg; the EMA renders are ~60% base weights</div>
+  <p>- Final latent std (healthy medium-base ~1.0-1.15): force_scalar ~3.0 at cfg 1/7/16 (model-level runaway, the 2026-08-10 family); plain 0.57-0.92 and bf16_plain 0.59-0.93 (under level); adamw_fair s1 1.38 (2.9 at cfg 16); adamw_fair s2 all 54 latents NaN (DC files). - All LUMI clips are EMA renders at beta 0.9999 over 4784-5980 steps: half-life ~6900 steps, so the shadow still holds 55% (ep9) to 62% (ep7) of its starting weights. They are mostly base model plus a trajectory average that includes earlier epochs. - Listening: plain runs clean but "oddly disjointed, like the LR was too large"; s1 thinner and more artifacty than s2; bf16 s2 cleaner and more musical than fp32 (ep9 vs ep7 does not fully explain it), at cfg 1 fp32 breaks apart rhythmically and bf16 holds the rhythm; AdamW = spectral noise. Provenance <code>renders_pull/dronesweep/run_meta.json</code>. Online vs EMA, base blends and the anchor: <code>eval/dronesweep_weights_test.py</code> (queued).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">scaling a run-away latent back to a healthy level removes the distortion, not the drone <span class="neg">NEGATIVE</span></div>
+  <p>- <code>dronesweep_rescale.html</code>: force_scalar latents (std ~3) decoded again at std 1.1 and at /3, no re-render. By ear: "what was distorted droning is now smooth droning". It works exceptionally well for removing distortion, but the damage is in the activations and cannot be fixed after the fact. Post-hoc latent scaling (or the anchor) cures level and saturation, not content.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">the same_chroma LatCH head steers pitch class transparently; most audible at gain 2048</div>
+  <p>- Listening pass on the 06-25 all-C sweep (<code>riffer-evals/clips/chroma_steer/</code>, sidecar written today): "the chroma head does steer, and even in a quite transparent way, pad chords beautifully change their notes", strongest at 2048, so higher gain may pay. Retrain under the modular recipe queued as EXPERIMENTS E13 (<code>latch/run_chroma_retrain.sh</code>); the sweep will extend gains to 3072/4096/6144.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">drone sweep: the latent runaway is in the EMA, not the trained weights; blending toward base re-inflates it</div>
+  <p>- <code>dronesweep_weights.html</code> (<code>eval/dronesweep_weights_test.py</code>, 72 local renders, 4 prompts at the LUMI seeds, cfg 7). force_scalar_s1: EMA z 3.02 (the LUMI drone) but ONLINE weights z 1.17, healthy. online + 25/33% base: z 2.21/2.40, i.e. mixing back toward base brings the runaway back; the EMA is itself ~60% base, which fits. plain_s2: EMA under level (0.65), online 1.16. bf16_plain_s2 low either way (0.63-0.68). Online renders are much busier (15-16 onsets/s vs 7-11). The anchor caps any of them at 1.2. Open: whether the checkpoint's live weights are the Schedule-Free average or the raw iterate. Listening verdict pending.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">drone sweep weights: online moved ~20% of the base norm; force_scalar's output projection grew 2.6x; bf16 EMA barely moved</div>
+  <p>- CPU weight distance vs medium-base (all 2-D DiT tensors): online plain 0.20, bf16 0.23, force_scalar 0.20; EMA 0.048 / 0.014 / 0.049. The timestep and global-conditioning embedders moved 50-100% in every arm. force_scalar's <code>transformer.project_out</code> norm 2.4 -&gt; 6.3 (the scalar update on the output projection), which scales the velocity: corrupted however it is rendered (listening agrees). - Listening 2026-10-16: plain s2 online "corrupted utterly", bf16 online not, force_scalar corrupted every way. A ~20% move in &lt;6000 steps at lr 8e-5 fits LR too high. <code>--base_precision bf16</code> trains the weights themselves in bf16 and the bf16 EMA (beta 0.9999, steps of 1e-4) stays near base (1.4% vs 4.8%): bf16 EMA is effectively broken. Why bf16 ONLINE sounds fine at the same distance is open.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">FiLM density response comes with training length; the modular 54k run gets half of the shipped one at gain 1</div>
+  <p>- <code>film_bracket_check.html</code> extended (412 clips). Spread request 3 -&gt; 12 onsets/s: shipped 2.9 at gain 1 (4.5 at 1.75), but its own step 5400 only 0.2 and 10800 1.5; modular 6000-step arms 0-0.2; modular full run 27k 0.4, 54k 1.4 at gain 1, 2.6 at 1.75, 3.9 at 2.5. The response sits almost entirely at the top request (12/s); 3-9 stay near the unguided level.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">the modular optimizer costs ~320 ms per update; Shampoo, NorMuon, SF and EMA are not the cost</div>
+  <p>- <code>film_optimizer_timing_20261016/</code> (control/time_film_optimizers.sh, train.py --step-times). Forward + backward 216-218 ms in all arms. Per-update extra: AdamW +14, Lion +63, Fusion +100, modular +320 ms with any of its toggles off. Shipped Fusion accum 1 = 3.19 steps/s, matching June. Startup 14-19 s, step 1 ~4 s. SOAP OOMs on the 16 GB card.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · result</div>
+  <div class="jtitle">same_chroma head retrained under the modular recipe (E13)</div>
+  <p>- 20 epochs, d512 depth 8: best val (cosine) C2 lr 1e-2 0.0843, C3 lr 1e-3 0.0973, C4 lr 1e-4 0.1604. Not comparable to the production head's train loss. Listening sweep (gains above 2048) not built yet.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">the modular 54k FiLM steers density over 3.6-9.3 onsets/s at weight 2.5-3.25, wider than the shipped FiLM, no saturation</div>
+  <p>- <code>film_bracket_check.html</code> (632 clips), full run at weights 0.25-5.0 x requests 1-12. Below weight 2 only the top request moves; from 2.25 the whole range opens, including DOWNWARD (requests 1-2 -&gt; 3.6-4.5 vs unguided ~6.3-7.3). Most graded at 2.5-3.25 (1: ~3.7, 3: ~5, 5: ~7, 7: ~8.3, 12: 9.3); above ~3.5 requests 7-12 all saturate at 9.3 and the response becomes step-like. Latent level 1.13-1.17x unguided at every weight. Shipped FiLM at 1.75 spans 4.8-9.3. Trained with bf16 adapters (F21), so possibly understated.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">bf16 Newton-Schulz removes most of the modular optimizer's cost; fp32 optimizer state is nearly free (2026-10-19)</div>
+  <p>- Test plan section T, 400 FiLM steps per arm: update cost 323 ms (today) -&gt; 101 ms with <code>--mod-ns-dtype bf16</code>; <code>--mod-state-dtype fp32</code> adds 13-21 ms. Both together: 3.35 steps/s vs 2.35. Measured at the default GPU power limit, which was lowered afterwards. <code>[path]</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">with bf16 adapter weights the FiLM cross-attention keys/values stop learning; fp32 optimizer state keeps them moving (2026-10-20)</div>
+  <p>- Test plan A4 (lr 3e-4, fp32 state) vs its bf16 twin, same seed and data order: to_k/to_v moved 6.8/6.9 between steps 4k-6k vs 0.93/1.00 in the bf16 run (to_out, norm ~19, moves in both). Loss is the same within 0.003 in all three LR pairs (seed noise is ~0.04), so loss cannot see it. Confirms KUANG F21 at the weight level. Density renders queued (<code>eval/run_a4_density_check.sh</code>). Caveat: the "norm"/other groups in that quick script may include optimizer buffers; unchecked.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">fp32-state checkpoints are 2.4 GB (bf16 1.6 GB); [path] filled and A5 died mid-save (2026-10-19 23:46) <span class="neg">NEGATIVE</span></div>
+  <p>- Truncated <code>riffer_step4000.pt</code>. A7/A8/P moved to the UUID drive via symlinks; A5 reruns after the stream (<code>eval/run_kuang_plan_a5_rerun.sh</code>).</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">test plan P1: at the end of the E05 LatCH run no momentum direction tolerates a bigger step (2026-10-21) <span class="neg">NEGATIVE</span></div>
+  <p>- P0 (E05 re-run with optimizer state) val 0.345 -&gt; 0.182 over 20 epochs. P1 at ep20, gradient point y, 3 repeats: every probe (ranks 1-24, all bands, full polar, the bulk beyond rank 32) raises held-out loss from the first grid point. Two independent training-gradient groups agree with each other (r1 cosine 1.00) but point AGAINST the momentum on the leading ranks: the run has overshot along them and the momentum lags. Gate for B8 SAMuon-lite fails at this checkpoint; ep10/ep5 probes queued. Gradient-noise meter (N) unreadable on this run: the null cosine is as large as the signal. <code>latch_sweep/kuang_plan_P_20261017/run_meta.json</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">fp32 optimizer state halves the stable rank of the FiLM conditioner's change (2026-10-21)</div>
+  <p>- P4 audit on zero-init matrices only (to_out, FiLM output layer): conditioner layer stable rank bf16 -&gt; fp32 82 -&gt; 47 (lr 1e-3), 94 -&gt; 48 (3e-3), 42 -&gt; 27 (3e-4); seed-43 repeat 46. to_out rank follows LR, not precision. The shipped FusionOpt FiLM, the best density steerer, is the most concentrated (conditioner rank 4.0): flatness does not predict control here. <code>kuang_plan_P4_adapter_audit_20261021/run_meta.json</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16 · finding</div>
+  <div class="jtitle">test plan B (H2): LatCH lr 3e-2 diverges only because the sign group rides it (2026-10-21)</div>
+  <p>- E05 recipe at lr 3e-2: B2 (sign group capped at 2e-3) trains clean, best val 0.1889 (B0 at lr 1e-2: 0.1822); B3 (sign group at 3e-2) never learns (val 0.57 at ep1, rising) and NaNs in epoch 13. Per-group logs: the sign group's weight RMS is 1.8 by step 600 (B2 0.13) and 69 by step 8400; the spectral group is the same in both arms. Escape velocity raised the effective step (ev_d 1.0 -&gt; 1.6) while the run diverged. <code>sa3_control_runs/film_precision_A_20261017_overflow/kuang_plan_B_20261021/run_meta.json</code>.</p>
+</div>
+
+<div class="jentry">
+  <div class="jdate">2026-10-16</div>
+  <div class="jtitle">test plan P1 at ep5 and ep10: no checkpoint tolerates a bigger step; the leading directions oscillate (2026-10-21) <span class="neg">NEGATIVE</span></div>
+  <p>- ep5 looks like ep20 (every probe raises held-out loss; training gradients oppose the momentum on ranks 1-4). At ep10 the gradients agree with the momentum and one held-out set descends along it, but the other two rise from the first grid point. Overshoot, catch-up, overshoot: too much step on the leading ranks, not too little. B8 SAMuon-lite not warranted at any of the three points. Sets are 64 crops each; a bigger rerun would sharpen ep10. <code>latch_sweep/kuang_plan_P_20261017/run_meta.json</code> (P1_mid).</p>
+</div>
+
 <footer class="colophon">
   <span>── end of journal ──</span><span>·</span><span>markdown source: <code>SAO/profiles/wintermute.journal.md</code></span><span>·</span>
   <span style="margin-left:auto"><span class="edge">▮</span> felt more than heard</span>
