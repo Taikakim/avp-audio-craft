@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-22)
+# Last edited: WINTERMUTE 2026-10-22 -- FT=/FT_TAG=/FT_DESC= render the grid on a finetune; render rc captured before $(date)
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
@@ -17,6 +18,15 @@ F=latch_sa3_onset_per_beat_ts_best.pt
 SRC=/run/media/kim/Mantu/sa3_control_runs
 PREFIX=onset_eval_optcmp_
 SUB=latch_opt_grid
+# FT=<DoRA/LoRA ckpt> FT_TAG=<short name> FT_DESC=<one line for the page>: guide that finetune instead of plain medium-base;
+# clips go to their own dirs (onset_eval_optcmp_<tag>_<head>) and page (latch_opt_grid_<tag>.html).
+FT=${FT:-}; FT_TAG=${FT_TAG:-ft}; FT_DESC=${FT_DESC:-a finetune}
+FTARGS=(); TITLE_X=""; INTRO_X=""
+if [ -n "$FT" ]; then
+  PREFIX=onset_eval_optcmp_${FT_TAG}_; SUB=latch_opt_grid_$FT_TAG; FTARGS=(--finetune "$FT")
+  TITLE_X=" (on a finetune)"
+  INTRO_X=" On this page the heads guide $FT_DESC instead of the plain medium-base model, to see whether a model trained on the same data as the heads follows them differently. Compare with latch_opt_grid.html (same heads, prompt and seed on medium-base)."
+fi
 STAGE=$HOME/evals_aac
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
 cd "$SAO" || exit 2
@@ -49,9 +59,10 @@ NAMES="Muon_b64 AdamW_const Muon_b256_linlr C1_switch AWc AWcG_adagc"
 heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
-"$PY" eval/latch_onset_eval.py --heads "$heads" --prefix "$PREFIX" --gains 128,512,2048,8192 \
+"$PY" eval/latch_onset_eval.py "${FTARGS[@]}" --heads "$heads" --prefix "$PREFIX" --gains 128,512,2048,8192 \
     --notes "Batch-64 optimizer comparison on the LatCH onset_per_beat head (eval/run_adamw_cosine_20261022.sh): does the optimizer change how the head steers, not only its val loss?"
-echo "$(date +%H:%M) render rc=$?"
+rc=$?
+echo "$(date +%H:%M) render rc=$rc"
 
 # per-head summary row for the page (optimizer, batch, lr, best val) from the checkpoint itself
 for n in $NAMES; do
@@ -80,8 +91,8 @@ done | xargs -r -P 12 -n 2 sh -c 'ffmpeg -nostdin -y -loglevel error -i "$0" -c:
 "$MIR" control/sa3_control/clip_metrics_audiobox.py --roots "$SUB" 2>&1 | tail -1
 
 python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --sub "$SUB" --page "$SUB.html" --order "$ORDER" \
-  --title "LatCH onset head: which optimizer? gain &times; requested density" \
-  --intro "The same LatCH guidance head (onsets per beat, width 256, depth 8, same data and held-out split) trained with different optimizers at batch 64: our Muon setup, plain AdamW with and without a cosine schedule, AdamW with AdaGC gradient clipping, a warm switch from Muon to AdamW late in training, and (when trained) AdEMAMix and KL-SOAP, plus Muon at batch 256. The question: does the optimizer change how the head steers, not only its validation loss?" \
+  --title "LatCH onset head: which optimizer? gain &times; requested density$TITLE_X" \
+  --intro "The same LatCH guidance head (onsets per beat, width 256, depth 8, same data and held-out split) trained with different optimizers at batch 64: our Muon setup, plain AdamW with and without a cosine schedule, AdamW with AdaGC gradient clipping, a warm switch from Muon to AdamW late in training, and (when trained) AdEMAMix and KL-SOAP, plus Muon at batch 256. The question: does the optimizer change how the head steers, not only its validation loss?$INTRO_X" \
   || { echo "page build failed"; exit 4; }
 
 PAGE="$STAGE/$SUB.html"

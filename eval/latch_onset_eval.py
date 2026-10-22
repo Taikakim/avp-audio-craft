@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-22 -- --heads name=path / --prefix / --notes / --device (render any checkpoints; skips arms already rendered)
+# Last edited: WINTERMUTE 2026-10-22 -- --finetune <ckpt> / --finetune-strength: guide a DoRA/LoRA finetune instead of plain medium-base
 """latch_onset_eval.py -- the onset_eval.html measurement, but for LatCH density HEADS instead of the FiLM control adapter.
 
 WHY (Kim 2026-10-14: "create a comparison with the same targets as onset_eval.html ... how do the gain and target amounts compare to what we are now using?").
@@ -35,6 +36,8 @@ def main():
     ap.add_argument("--prefix", default="onset_eval_latchE_", help="output dir prefix under sa3_control_runs/")
     ap.add_argument("--notes", default="", help="purpose text written into each run_meta.json (with --heads)")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--finetune", default="", help="DoRA/LoRA .ckpt rendered instead of plain medium-base (loaded like model_matrix_gen)")
+    ap.add_argument("--finetune-strength", type=float, default=1.0)
     ap.add_argument("--gains", default="128,512,2048,8192")
     ap.add_argument("--densities", default="2,4,6,8,10")
     ap.add_argument("--prompt", default="psytrance, 140 bpm")
@@ -59,6 +62,15 @@ def main():
         arms = [r for r in arms if not a.arms or any(r.startswith(p) for p in a.arms.split(","))]
         paths = {arm: f"{PHASE}/{arm}/latch_sa3_{FEATURE}_best.pt" for arm in arms}
     model = StableAudioModel.from_pretrained("medium-base", device=a.device)
+    if a.finetune:
+        # Same load path as eval/model_matrix_gen.py: warm-start base (if the run had one) -> adapter -> strength -> merge
+        # (a live DoRA parametrization gives history-dependent NaN/garbage on our ROCm stacks; merged is deterministic).
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from model_matrix_gen import load_adapter_base_weights, merge_adapters
+        load_adapter_base_weights(model, a.finetune)
+        model.load_lora([a.finetune])
+        model.set_lora_strength(a.finetune_strength)
+        print(f"[latch-onset-eval] finetune {a.finetune} w{a.finetune_strength}: merged {merge_adapters(model.model)} adapter parametrizations", flush=True)
     sr = model.model.sample_rate
 
     def render(**kw):
@@ -113,12 +125,16 @@ def main():
         json.dump({"purpose": "LatCH density head (Phase E, onset_per_beat_ts) measured the way onset_eval.html measures the FiLM adapter: requested onsets/s -> opb target at 140 bpm, measured with librosa onset_detect.",
                    "hypothesis": "A head trained on onsets-per-beat should follow a density request; gain is the guidance rho=mu, not the adapter strength.",
                    "eval": {"prompt": a.prompt, "gains": a.gains, "densities": a.densities, "seed": a.seed, "cfg": a.cfg, "duration": a.duration, "steps": a.steps, "bpm_for_conversion": a.bpm},
+                   "base_model": {"name": "medium-base", "finetune": a.finetune or None, "finetune_strength": a.finetune_strength if a.finetune else None},
                    "arm": arm, "epoch": meta.get("epoch"), "val_loss": meta.get("val_loss"), "std_mean": meta.get("std_mean"), "std_std": meta.get("std_std"),
                    "related": ["control/sa3_control/onset_eval.py", "eval/latch_onset_eval.py", "EXPERIMENTS.md E5"], "result": None, "kim_feedback": None,
                    **({"head_checkpoint": ck, "notes": a.notes, "train": {k: meta.get(k) for k in ("optimizer", "effective_batch", "init_from", "init_from_epoch")}}
                       if a.heads else {})},
                   open(f"{d_out}/run_meta.json", "w"), indent=2)
-    print("DONE")
+    print("DONE", flush=True)
+    # Everything is on disk; skip interpreter teardown, which crashes on the ROCm 7.14 stack (segfault / "corrupted double-linked
+    # list" after DONE, 2026-10-22) and would turn a finished run into a non-zero rc.
+    os._exit(0)
 
 
 if __name__ == "__main__":
