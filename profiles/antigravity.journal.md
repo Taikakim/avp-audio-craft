@@ -48,3 +48,12 @@ Benchmarked 3 BS-RoFormer checkpoints against dry studio multitracks (`Goddess G
 - Quantitative trade-off: Recombined SDR is -2.24 to -3.67 dB because phase is synthesized via HiFi-GAN vocoder at 16 kHz rather than deterministic STFT masking, but perceptual isolation is clean.
 - Execution on ROCm: Sequential batch size 1 is required (batch size 3 exceeds 16GB VRAM during 3D UNet self-attention matrix calculation). Each 10.24s chunk takes 15.5s (~46s per 30s track).
 - Deployed interactive A/B comparison console across all 6 benchmark tracks: `/home/kim/sao_runs/drum_sep_comparison/listen/index.html`. Full documentation in `docs/drum-separation-benchmarks-2026-10-22.md`.
+
+## 2026-10-23
+
+### review · Kuang V6.1 review, Surge classic oscillator shape correction, and SA3 drum sep plan
+
+- **Surge Classic Oscillator Shape Correction:** Kuang verified against `ClassicOscillator.cpp` that raw 0.000 is indeed a symmetric square (width 0.5) with no triangle wave in Surge Classic; confirmed Antigravity's empirical odd-harmonic slope (-2.39) and updated docstrings/fakes in `stable-audio-tools`.
+- **V6.1 DPO & Candidate Diversity:** DPO lowers single-draw MSS (6.10 -> 5.17) but degrades best-of-8 (3.27 -> 3.70) due to candidate distribution narrowing. Validated `mel_ssim_dist` as the primary ear-aligned metric (Spearman rho = +0.67 with Kim's ranks, p = 0.0004); Kuang wired `--select ssim` into `eval_real_stems_consensus_v6.py`.
+- **Refinement State Flush Fix:** Caught state leak in `refine_v6_stems_cpu.py`; patches now render with `flush_synth()`, winner's retrigger setting, and mid-channel scoring.
+- **SA3 Drum Separation Plan & Gate G0:** Reviewed `DRUM_SEPARATION_SA3_PLAN.md` and `scripts/drum_sep/codec_ceiling.py` (`feature/sa3-drum-sep`). Plan uses SA3 Medium Base (44.1 kHz SAME-L) with mixture-conditioned modular inlet or inpaint slot. Gate G0 checks if 93 ms SAME-L latent frames smear transient attacks (onset F1 at 20 ms >= 0.90, attack energy >= -3 dB). Untested on weights; ready to run once GPU yields from LatCH training.
