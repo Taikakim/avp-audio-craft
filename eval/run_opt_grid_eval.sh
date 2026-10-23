@@ -2,6 +2,7 @@
 # Owner: WINTERMUTE (created 2026-10-22)
 # Last edited: WINTERMUTE 2026-10-22 -- FT=/FT_TAG=/FT_DESC= render the grid on a finetune; render rc captured before $(date)
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
+# Last edited: WINTERMUTE 2026-10-23 -- PAGE_ONLY=1 rebuilds + uploads the page without rendering or scoring (no GPU)
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
 #   A = the Muon / AdamW / batch-256 references + phase A heads (C1, AWc, AWcG); B = adds the phase B heads (AEMc, KSc) that exist.
@@ -76,6 +77,8 @@ if [ "$PHASE" = C ]; then
   INTRO_X=" This page is the follow-up after a listening pass: a wider grid (gains 32 to 4096, requested 1 to 16 onsets/s) for the Muon reference, AdaGC, AdEMAMix continued for 20 more epochs, and KL-SOAP retrained from scratch at 0.75x the learning rate (best and last epoch for both new runs). The first page is latch_opt_grid.html.$INTRO_X"
 fi
 
+# PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
+if [ -z "${PAGE_ONLY:-}" ]; then
 heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
@@ -109,6 +112,7 @@ for n in $NAMES; do
 done | xargs -r -P 12 -n 2 sh -c 'ffmpeg -nostdin -y -loglevel error -i "$0" -c:a aac -b:a 192k "$1"'
 "$MIR" control/sa3_control/clip_metrics.py --roots "$SUB" --workers 12 2>&1 | tail -1
 "$MIR" control/sa3_control/clip_metrics_audiobox.py --roots "$SUB" 2>&1 | tail -1
+fi
 
 python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --src "$SRC" --sub "$SUB" --page "$SUB.html" --order "$ORDER" \
   --title "LatCH onset head: which optimizer? gain &times; requested density$TITLE_X" \
