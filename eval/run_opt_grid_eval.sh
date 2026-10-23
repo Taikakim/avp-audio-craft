@@ -3,6 +3,7 @@
 # Last edited: WINTERMUTE 2026-10-22 -- FT=/FT_TAG=/FT_DESC= render the grid on a finetune; render rc captured before $(date)
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Last edited: WINTERMUTE 2026-10-23 -- PAGE_ONLY=1 rebuilds + uploads the page without rendering or scoring (no GPU)
+# Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
 #   A = the Muon / AdamW / batch-256 references + phase A heads (C1, AWc, AWcG); B = adds the phase B heads (AEMc, KSc) that exist.
@@ -55,7 +56,8 @@ declare -A DESC=(
 declare -A BATCH=([Muon_b256_linlr]=256)
 ORDER="Muon_b64,AdamW_const,AWc,AWcG_adagc,C1_switch,AEMc_ademamix,KSc_klsoap,Muon_b256_linlr"
 NAMES="Muon_b64 AdamW_const Muon_b256_linlr C1_switch AWc AWcG_adagc"
-[ "$PHASE" = B ] && NAMES="$NAMES AEMc_ademamix KSc_klsoap"
+[ "$PHASE" = B ] && NAMES="$NAMES AEMc_ademamix KSc_klsoap" \
+  && INTRO_X=" The wider grid (gains 32 to 4096, requested 1 to 16 onsets/s) for all these heads plus the continuation runs is on latch_opt_grid_c.html.$INTRO_X"
 GAINS=128,512,2048,8192; DENS=2,4,6,8,10
 # Phase C (2026-10-23, after the listening pass): the wider grid asked for (gains 32-4096, 8192 dropped; 1-16 onsets/s) on the
 # reference, the two heads judged interesting, and the continuation runs from eval/run_cont_20261023.sh. Own dirs + page, on the
@@ -68,13 +70,13 @@ if [ "$PHASE" = C ]; then
          [AEMc_cont_ep20]="as AEMc_cont_best, last epoch (20)"
          [KSc075_best]="KL-SOAP from scratch at 0.75x lr (2.25e-4), warmup 0.68 epoch, cosine over 40 epochs; best val"
          [KSc075_ep40]="as KSc075_best, last epoch (40)")
-  NAMES="Muon_b64 AWcG_adagc AEMc_ademamix AEMc_cont_best AEMc_cont_ep20 KSc_klsoap KSc075_best KSc075_ep40"
+  NAMES="Muon_b64 AWcG_adagc AEMc_ademamix AEMc_cont_best AEMc_cont_ep20 KSc_klsoap KSc075_best KSc075_ep40 AdamW_const AWc C1_switch Muon_b256_linlr"
   ORDER="${NAMES// /,}"
   GAINS=32,64,128,512,1024,2048,4096; DENS=1,2,4,6,8,10,12,16
   SRC=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs
   PREFIX=onset_eval_optcmpC${FT:+FT_${FT_TAG}}_; SUB=latch_opt_grid_c${FT:+_$FT_TAG}
   TITLE_X=", wider grid$TITLE_X"
-  INTRO_X=" This page is the follow-up after a listening pass: a wider grid (gains 32 to 4096, requested 1 to 16 onsets/s) for the Muon reference, AdaGC, AdEMAMix continued for 20 more epochs, and KL-SOAP retrained from scratch at 0.75x the learning rate (best and last epoch for both new runs). The first page is latch_opt_grid.html.$INTRO_X"
+  INTRO_X=" This page is the follow-up after a listening pass: a wider grid (gains 32 to 4096, requested 1 to 16 onsets/s) for every head of the first page, plus AdEMAMix continued for 20 more epochs and KL-SOAP retrained from scratch at 0.75x the learning rate (best and last epoch for both new runs). The first page is latch_opt_grid.html.$INTRO_X"
 fi
 
 # PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
