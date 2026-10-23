@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-23)
+# Last edited: WINTERMUTE 2026-10-23 -- MB/ACC env override; OOM retry halves the micro-batch
 # Second listening pass on latch_opt_grid_c.html (2026-10-23): KL-SOAP sounded about as good as Muon or better, AdEMAMix more
 # transient but less smooth, AdaGC cleaner. This queue, after eval/run_cont_20261023.sh (KSc075 + its eval) releases the GPU:
 #   1 soups (CPU): Muon_b64 + KSc075 50/50, Muon_b64 + KSc 50/50, Muon_b64 + KSc075 + AWcG 1/3 each, Gaussian epoch soups of
@@ -69,7 +70,7 @@ json.dump({"name": name, "purpose": purpose, "train_args": args, "script": "eval
            "continue": "same args + --resume-from <this dir>/resume.pt --epochs 40",
            "dataset": "latents_goa_bigset, onset_per_beat_ts, held-out 617 relpaths (val_seed 0)", "kim_feedback": None}, open(p, "w"), indent=1)
 EOF
-  local mb=32 acc=2 rc t0
+  local mb=${MB:-32} acc=${ACC:-2} rc t0   # MB/ACC override the first attempt (d512 needed 8 x 8)
   t0=$(date +%s)
   for try in 1 2; do
     echo "$(date +%H:%M) $name (micro-batch $mb x $acc): $*"
@@ -77,8 +78,8 @@ EOF
     ( cd /tmp && "$LPY" "$TRAIN" $COMMON "$@" --batch-size $mb --grad-accum $acc --save-dir "$d" > "$d/train.log" 2>&1 )
     rc=$?
     if [ $rc -ne 0 ] && grep -qiE 'out of memory|HIP error: out|OutOfMemory' "$d/train.log" && [ $try = 1 ]; then
-      echo "$(date +%H:%M) $name: out of memory at micro-batch 32, retrying at 16 x 4"; mv "$d/train.log" "$d/train_oom.log"
-      rm -f "$d"/*.jsonl "$d"/resume.pt; mb=16; acc=4; continue
+      echo "$(date +%H:%M) $name: out of memory at micro-batch $mb, retrying at half"; mv "$d/train.log" "$d/train_oom.log"
+      rm -f "$d"/*.jsonl "$d"/resume.pt; mb=$((mb/2)); acc=$((acc*2)); continue
     fi
     break
   done
