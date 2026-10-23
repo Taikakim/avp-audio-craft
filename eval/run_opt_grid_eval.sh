@@ -4,6 +4,7 @@
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Last edited: WINTERMUTE 2026-10-23 -- PAGE_ONLY=1 rebuilds + uploads the page without rendering or scoring (no GPU)
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
+# Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
 #   A = the Muon / AdamW / batch-256 references + phase A heads (C1, AWc, AWcG); B = adds the phase B heads (AEMc, KSc) that exist.
@@ -81,6 +82,38 @@ fi
 
 # PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
 if [ -z "${PAGE_ONLY:-}" ]; then
+# Phase D (2026-10-23, second listening pass): weight soups of the heads judged best, AdaGC on the Muon recipe, and width 512
+# for Muon and KL-SOAP (eval/run_soups_d512_20261023.sh). Same prefix + drive as phase C, so the Muon / KSc075 references are
+# not rendered again; own page latch_opt_grid_d.html. Heads that do not exist yet are left out until a re-run.
+if [ "$PHASE" = D ]; then
+  C=$R/cont_20261023; SP=$R/soups_20261023; N=$R/d512_20261023
+  CKPT+=([KSc075_best]=$C/KSc075/$F)
+  for s in MK50 MK50_ksc MKA33 bell_KSc075 bell_AEMc_cont bell_MuonG bell_Muon512 bell_KS512; do CKPT[$s]=$SP/$s/$F; done
+  for r in MuonG Muon512 KS512; do CKPT[${r}_best]=$N/$r/$F; CKPT[${r}_ep20]=$N/$r/latch_sa3_onset_per_beat_ts_ep20.pt; done
+  DESC+=([KSc075_best]="KL-SOAP from scratch at 0.75x lr (2.25e-4), cosine over 40 epochs; best val (reference)"
+         [MK50]="soup: 50/50 weight average of Muon_b64 and KSc075_best (same seed-0 start)"
+         [MK50_ksc]="soup: 50/50 weight average of Muon_b64 and the first KSc (the one auditioned)"
+         [MKA33]="soup: 1/3 each of Muon_b64, KSc075_best and AWcG (AdaGC)"
+         [bell_KSc075]="soup: Gaussian-weighted epochs of KSc075 around its best epoch (sigma 5; saved every 5 epochs)"
+         [bell_AEMc_cont]="soup: Gaussian-weighted epochs of AEMc_cont around its best epoch (sigma 3; saved every 5 epochs)"
+         [bell_MuonG]="soup: Gaussian-weighted epochs of MuonG around its best epoch (sigma 2)"
+         [bell_Muon512]="soup: Gaussian-weighted epochs of Muon512 around its best epoch (sigma 2)"
+         [bell_KS512]="soup: Gaussian-weighted epochs of KS512 around its best epoch (sigma 2)"
+         [MuonG_best]="Muon_b64's recipe + AdaGC per-tensor clip (lambda 1.04), lr 9e-4, 20 epochs; best val"
+         [MuonG_ep20]="as MuonG_best, epoch 20"
+         [Muon512_best]="Muon_b64's recipe at width 512, lr 9e-4, 20 epochs; best val"
+         [Muon512_ep20]="as Muon512_best, epoch 20"
+         [KS512_best]="KL-SOAP at width 512, lr 1.82e-4 (KSc075 x0.81), cosine planned over 40 epochs, first 20 trained; best val"
+         [KS512_ep20]="as KS512_best, epoch 20")
+  NAMES="Muon_b64 KSc075_best MK50 MK50_ksc MKA33 bell_KSc075 bell_AEMc_cont MuonG_best MuonG_ep20 bell_MuonG Muon512_best Muon512_ep20 bell_Muon512 KS512_best KS512_ep20 bell_KS512"
+  ORDER="${NAMES// /,}"
+  GAINS=32,64,128,512,1024,2048,4096; DENS=1,2,4,6,8,10,12,16
+  SRC=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs
+  PREFIX=onset_eval_optcmpC${FT:+FT_${FT_TAG}}_; SUB=latch_opt_grid_d${FT:+_$FT_TAG}
+  TITLE_X=", soups and width 512$TITLE_X"
+  INTRO_X=" This page follows the second listening pass: weight averages (soups) of the heads judged best (Muon with KL-SOAP, plus AdaGC; Gaussian-weighted epochs around a run's best epoch), the Muon recipe with AdaGC added, and Muon and KL-SOAP at width 512 (first 20 epochs; the runs can continue). A soup has no held-out loss of its own. Same grid as latch_opt_grid_c.html.$INTRO_X"
+fi
+
 heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
@@ -96,9 +129,10 @@ for n in $NAMES; do
 import json, sys, torch
 p, ck, desc, batch = sys.argv[1:5]
 m = json.load(open(p)); c = torch.load(ck, map_location="cpu", weights_only=False)
-lr = {"Muon_b256": "4e-3", "AdamW": "3e-4", "Muon_b64": "1e-3", "C1": "1e-4", "AEMc_cont": "1e-4", "KSc075": "2.25e-4"}
+lr = {"Muon_b256": "4e-3", "AdamW": "3e-4", "Muon_b64": "1e-3", "C1": "1e-4", "AEMc_cont": "1e-4", "KSc075": "2.25e-4",
+      "MuonG": "9e-4", "Muon512": "9e-4", "KS512": "1.82e-4", "MK": "soup", "bell_": "soup"}
 name = m.get("arm", "")
-m["summary"] = {"opt": desc, "dim": "256", "depth": "8", "batch": batch,
+m["summary"] = {"opt": desc, "dim": str(c["state_dict"]["latent_proj.weight"].shape[0]), "depth": "8", "batch": batch,
                 "lr": next((v for k, v in lr.items() if name.startswith(k)), "3e-4"), "seed": "0",
                 "best_val": f"{c['val_loss']:.4f}" if c.get("val_loss") is not None else ""}
 m["purpose"] = ("LatCH onset_per_beat head from the batch-64 optimizer comparison, rendered as an onset gain x density grid: "
