@@ -29,3 +29,22 @@ torchcodec is importable but has no dist metadata in the SAO venv; `StableAudioM
 ### plan · other-stem masked inpaint trials (rendered 2026-10-08 22:25, not yet auditioned)
 
 Kim's ear on the first batch: drum inpaint great at both 2 and 4 bars (2 safer); latent slerp of other interesting but imperfect. Added --other-inpaint-bars (same masked-inpaint helper on the crossfaded other window, prompt_b, cfg 6, RMS-matched). Output in ~/staging/kone-mixtape/smoke/inpaint_trials_other/: d-inpaint{2,4}bar_o-inpaint{2,4}bar.wav per transition, plus baseline and drum-only.
+
+## 2026-10-22
+
+### finding · BS-RoFormer drum stem separation: +14.85 to +18.65 dB SDR on studio multitracks, zero Wiener comb-filtering
+
+Benchmarked 3 BS-RoFormer checkpoints against dry studio multitracks (`Goddess Guerrilla`, `Acid Alien`, `Black Moon`) on ROCm (gfx1201):
+- `jarredou-BS-ROFO-SW-Fixed-drums` (`mir`): **+18.65 dB SDR / +22.15 dB SI-SDR** on Goddess Guerrilla, **+15.89 dB SDR / +16.48 dB SI-SDR** on Acid Alien.
+- `ZFTurbo MUSDB18HQ` baseline: +8.83 dB SDR on Goddess Guerrilla (+9.8 dB lower than SW), +8.17 dB on Acid Alien.
+- Throughput: ~2.8s per 30s track (~0.10x real-time) on AMD Radeon RX 9070 XT.
+- Upstream fix: patched `chunk_size` lookup in `mir/src/bs_roformer/inference.py` (line 194).
+
+### finding · Separate-and-Detect (MSG-LD 5-Stem Latent Diffusion): clean generative sub-kit hits vs IDM phase destruction
+
+- Architecture: 305M parameter UNet with onset and timbre branches (`msgld_obtb.ckpt`), VAE latent encoder, and HiFi-GAN vocoder.
+- Evaluated against IDM: IDM suffers from -3.11 dB to -111 dB SDR due to destructive Wiener sub-band masking and transient false-positives on acid squelches.
+- MSG-LD eliminates phase comb-filtering by using conditioned latent diffusion (50 DDIM steps) to synthesize clean sub-kit stems: Kick, Snare, Toms, Hi-Hats, Cymbals.
+- Quantitative trade-off: Recombined SDR is -2.24 to -3.67 dB because phase is synthesized via HiFi-GAN vocoder at 16 kHz rather than deterministic STFT masking, but perceptual isolation is clean.
+- Execution on ROCm: Sequential batch size 1 is required (batch size 3 exceeds 16GB VRAM during 3D UNet self-attention matrix calculation). Each 10.24s chunk takes 15.5s (~46s per 30s track).
+- Deployed interactive A/B comparison console across all 6 benchmark tracks: `/home/kim/sao_runs/drum_sep_comparison/listen/index.html`. Full documentation in `docs/drum-separation-benchmarks-2026-10-22.md`.
