@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Last edited: WINTERMUTE 2026-10-22 -- --heads name=path / --prefix / --notes / --device (render any checkpoints; skips arms already rendered)
+# Last edited: WINTERMUTE 2026-10-23 -- --out-root (renders off the full Mantu drive)
 # Last edited: WINTERMUTE 2026-10-22 -- --finetune <ckpt> / --finetune-strength: guide a DoRA/LoRA finetune instead of plain medium-base
 """latch_onset_eval.py -- the onset_eval.html measurement, but for LatCH density HEADS instead of the FiLM control adapter.
 
@@ -36,6 +37,7 @@ def main():
     ap.add_argument("--prefix", default="onset_eval_latchE_", help="output dir prefix under sa3_control_runs/")
     ap.add_argument("--notes", default="", help="purpose text written into each run_meta.json (with --heads)")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--out-root", default=OUT, help="parent of the per-head output dirs (default Mantu sa3_control_runs)")
     ap.add_argument("--finetune", default="", help="DoRA/LoRA .ckpt rendered instead of plain medium-base (loaded like model_matrix_gen)")
     ap.add_argument("--finetune-strength", type=float, default=1.0)
     ap.add_argument("--gains", default="128,512,2048,8192")
@@ -100,7 +102,7 @@ def main():
             print("MISSING", ck)
             continue
         meta = torch.load(ck, map_location="cpu", weights_only=False)
-        d_out = f"{OUT}/{a.prefix}{arm}"
+        d_out = f"{a.out_root}/{a.prefix}{arm}"
         if os.path.exists(f"{d_out}/onset_eval.json"):
             print(f"  {arm}: already rendered, skipped", flush=True)
             continue

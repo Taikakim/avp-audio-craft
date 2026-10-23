@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-23 -- grid sentence + unsteered density from the data (was hardcoded 7.3 / 128-8192 / 2-10); verdicts name their head
 # Last edited: WINTERMUTE 2026-10-22 -- --prefix/--sub/--page/--title/--intro/--order (any set of onset grids; defaults = the Phase E page), optimizer column from run_meta["summary"]
 """build_latch_onset_grid_page.py -- the old onset_eval-style gain x density matrix for the six Phase E
 LatCH density heads (onset_per_beat_ts), with the disintegration gate applied to every steered cell.
@@ -43,6 +44,7 @@ _ap.add_argument("--sub", default="latch_onset_grid", help="clip folder under ~/
 _ap.add_argument("--page", default="latch_onset_grid.html")
 _ap.add_argument("--title", default="LatCH onset-density heads: gain &times; requested density")
 _ap.add_argument("--intro", default=None, help="HTML replacing the 'Six small LatCH guidance heads (Phase E)...' sentence")
+_ap.add_argument("--src", default="/run/media/kim/Mantu/sa3_control_runs", help="where the grid dirs live (the FiLM reference stays on Mantu)")
 _ap.add_argument("--order", default="", help="comma list of head names in display order (others follow, sorted)")
 ARGS = _ap.parse_args()
 
@@ -75,7 +77,7 @@ cols = [r[1] for r in con.execute("PRAGMA table_info(metrics)")]
 rows = {r[0]: dict(zip(cols, r)) for r in con.execute("SELECT * FROM metrics WHERE path LIKE ?", (f"%/{SUB}/%",))}
 
 arms = []
-_dirs = sorted(glob.glob(f"{SRC}/{ARGS.prefix}*"))
+_dirs = sorted(glob.glob(f"{ARGS.src}/{ARGS.prefix}*"))
 _ord = [x for x in ARGS.order.split(",") if x]
 _dirs.sort(key=lambda d: (_ord.index(os.path.basename(d)[len(ARGS.prefix):]) if os.path.basename(d)[len(ARGS.prefix):] in _ord else len(_ord), d))
 for d in _dirs:
@@ -136,7 +138,10 @@ for d in _dirs:
 # the FiLM adapter on the same requested densities, for scale: measured span at strength >= 1.3
 film = [x for x in json.load(open(f"{SRC}/onset_eval_54000_g11to20/onset_eval.json")) if x["gain"] >= 1.3]
 film_span = [min(x["measured"] for x in film), max(x["measured"] for x in film)]
-DATA = json.dumps({"arms": arms, "pq_drift": PQ_DRIFT, "film_span": film_span})
+_g0 = [c["meas"] for a in arms for c in a["cells"] if c["gain"] == 0 and c["meas"] is not None]
+DATA = json.dumps({"arms": arms, "pq_drift": PQ_DRIFT, "film_span": film_span, "unsteered": sum(_g0) / len(_g0) if _g0 else 0.0})
+_GAINS = sorted({g for a in arms for g in a["gains"]})
+_REQS = sorted({q for a in arms for q in a["reqs"]})
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>LatCH Onset Density Matrix</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0}
 #bar{position:sticky;top:0;background:#16181c;padding:7px 12px;border-bottom:1px solid #2a2a30;z-index:9}
@@ -152,7 +157,7 @@ th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;c
 <div id=wrap><h1>LatCH onset-density heads: gain &times; requested density</h1>
 <div class=explain><b>What this tests.</b> Six small LatCH guidance heads (Phase E), all trained to read <i>onsets per beat</i> from the SA3 latent and differing only in width, depth, batch size, learning rate or seed.
 At generation time each head nudges the sampler toward a requested rhythmic density. This is the same grid the old <i>onset_eval</i> board used for the FiLM adapter:
-one prompt (&ldquo;psytrance, 140&nbsp;bpm&rdquo;), one seed, 20&nbsp;s clips, guidance gains 0 / 128 / 512 / 2048 / 8192 &times; requested 2&ndash;10 onsets per second
+one prompt (&ldquo;psytrance, 140&nbsp;bpm&rdquo;), one seed, 20&nbsp;s clips, guidance gains __GAINS__ &times; requested __REQS__ onsets per second
 (converted to onsets per beat at 140&nbsp;bpm). Gain 0 is the unsteered clip, identical across its row.
 <b>How to read a cell.</b> Big number = measured onsets per second (librosa); below it, Audiobox production quality (PQ, 1&ndash;10) and its change against the unsteered clip.
 <b>Red cells failed the disintegration gate</b>: compared with the unsteered clip they whitened, gained high-frequency buzz, got noisy, lost the beat, or PQ moved by more than __PQ__.
@@ -173,11 +178,12 @@ function play(id,f,l,arm,clip){
  const go=()=>{try{au.currentTime=Math.min(pos,(au.duration||1e9)-0.05);}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 const f2=(v,d)=>v==null?'–':v.toFixed(d),sg=(v,d)=>v==null?'':(v>=0?'+':'')+v.toFixed(d);
-{const vs=[...new Map(D.arms.flatMap(a=>a.verdicts).map(v=>[v.date+v.text,v])).values()];
- if(vs.length){const sp=a=>{const c=a.cells.filter(x=>x.gain>0&&x.gain<=512).map(x=>x.meas);return (Math.max(...c)-Math.min(...c)).toFixed(1);};
-  document.getElementById('verdict').innerHTML='<div class=explain style="border-left-color:#5c5;background:#0f1a10"><b style="color:#8e8">Listening verdict</b> '+vs.map(v=>`(${v.date}): &ldquo;${v.text}&rdquo;`).join(' ')+
+{const seen=new Set(),vs=[];D.arms.forEach(a=>a.verdicts.forEach(v=>{const k=v.date+v.text;if(seen.has(k))return;seen.add(k);
+  const who=D.arms.filter(b=>b.verdicts.some(w=>w.date+w.text===k)).map(b=>b.name);vs.push({...v,who:who.length===D.arms.length?'all heads':who.join(', ')});}));
+ if(vs.length){const sp=a=>{const c=a.cells.filter(x=>x.gain>0&&x.gain<=512).map(x=>x.meas);return c.length?(Math.max(...c)-Math.min(...c)).toFixed(1):'0';};
+  document.getElementById('verdict').innerHTML='<div class=explain style="border-left-color:#5c5;background:#0f1a10"><b style="color:#8e8">Listening verdict</b><br>'+vs.map(v=>`<b>${v.who}</b> (${v.date}): &ldquo;${v.text}&rdquo;`).join('<br>')+
   `<br><b style="color:#8e8">What the numbers say alongside it.</b> On the same requested densities the FiLM control adapter (strength 1.3&ndash;2) measures ${D.film_span[0].toFixed(1)}&ndash;${D.film_span[1].toFixed(1)} onsets/s.
-  These heads, at the gains that pass the gate cleanly (128&ndash;512), spread only ${Math.min(...D.arms.map(a=>+sp(a)))}&ndash;${Math.max(...D.arms.map(a=>+sp(a)))} onsets/s around the unsteered 7.3, and reach a FiLM-like range only at 2048&ndash;8192, where cells start to fail.
+  These heads, at gains up to 512, spread only ${Math.min(...D.arms.map(a=>+sp(a)))}&ndash;${Math.max(...D.arms.map(a=>+sp(a)))} onsets/s around the unsteered ${D.unsteered.toFixed(1)}, and reach a FiLM-like range only at higher gains, where cells start to fail.
   So &ldquo;passes the gate&rdquo; here mostly means &ldquo;barely changed&rdquo;, and the high correlations describe a small, sub-audible shift. Read the usable-ceiling column as an upper bound on safety, not as evidence of control.</div>`;}}
 const UN='<span class=un title="No listening verdict recorded yet (unaudited).">&#10071;</span>';
 const OPT=D.arms.some(a=>a.opt);
@@ -209,6 +215,7 @@ if ARGS.intro:
     T = T.replace(_INTRO, ARGS.intro)
 T = T.replace("<h1>LatCH onset-density heads: gain &times; requested density</h1>", f"<h1>{ARGS.title}</h1>")
 T = T.replace("model:'latch_onset_grid'", f"model:'{SUB}'")
+T = T.replace("__GAINS__", " / ".join(map(str, _GAINS))).replace("__REQS__", ", ".join(map(str, _REQS)))
 T = T.replace("__PQ__", str(PQ_DRIFT)).replace("__NOTES__", notes_block(SUB, levels=[("clip", "this clip"), ("page", "page")], hint="click a cell, then note what you hear"))
 out = os.path.join(STAGE, ARGS.page)
 open(out, "w").write(inject(T.replace("__DATA__", DATA)))
