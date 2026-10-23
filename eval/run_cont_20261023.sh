@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-23)
+# Last edited: WINTERMUTE 2026-10-23 -- WINDOW_END overridable from the env (KSc075 run past 09:00)
 # Follow-up to eval/run_adamw_cosine_20261022.sh after the listening pass on latch_opt_grid.html (6 h GPU window from ~03:00):
 #   AEMc_cont  AEMc's best head (epoch 28, val 0.1990) continued 20 epochs with AdEMAMix: fresh optimizer state (the run kept no
 #              optimizer state), lr 1e-4 (about where AEMc's own cosine stood at epoch 28), 1-epoch warmup, cosine to 0 over 20.
@@ -17,7 +18,7 @@ ROOT=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/film_p
 OUT=$ROOT/cont_20261023
 AEMC=$ROOT/adamw_cosine_20261022/AEMc/latch_sa3_onset_per_beat_ts_best.pt
 LOG=/home/kim/sao_runs/cont_20261023.log
-WINDOW_END=$(date -d "today 08:55" +%s)   # six hours from the request
+WINDOW_END=${WINDOW_END:-$(date -d "today 08:55" +%s)}   # six hours from the request; WINDOW_END=<epoch> overrides
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 export PYTORCH_TUNABLEOP_ENABLED=0 PYTORCH_TUNABLEOP_TUNING=0 MIOPEN_FIND_MODE=2
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4
