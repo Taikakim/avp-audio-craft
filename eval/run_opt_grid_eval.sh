@@ -4,6 +4,7 @@
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Last edited: WINTERMUTE 2026-10-23 -- PAGE_ONLY=1 rebuilds + uploads the page without rendering or scoring (no GPU)
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
+# Last edited: WINTERMUTE 2026-10-24 -- pages D and E list only their own heads (--only-order)
 # Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
@@ -81,12 +82,11 @@ if [ "$PHASE" = C ]; then
   INTRO_X=" This page is the follow-up after a listening pass: a wider grid (gains 32 to 4096, requested 1 to 16 onsets/s) for every head of the first page, plus AdEMAMix continued for 20 more epochs and KL-SOAP retrained from scratch at 0.75x the learning rate (best and last epoch for both new runs). The first page is latch_opt_grid.html.$INTRO_X"
 fi
 
-# PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
-if [ -z "${PAGE_ONLY:-}" ]; then
 # Phase D (2026-10-23, second listening pass): weight soups of the heads judged best, AdaGC on the Muon recipe, and width 512
 # for Muon and KL-SOAP (eval/run_soups_d512_20261023.sh). Same prefix + drive as phase C, so the Muon / KSc075 references are
 # not rendered again; own page latch_opt_grid_d.html. Heads that do not exist yet are left out until a re-run.
 if [ "$PHASE" = D ]; then
+  ONLY=1
   C=$R/cont_20261023; SP=$R/soups_20261023; N=$R/d512_20261023
   CKPT+=([KSc075_best]=$C/KSc075/$F)
   for s in MK50 MK50_ksc MKA33 bell_KSc075 bell_AEMc_cont bell_MuonG bell_Muon512 bell_KS512; do CKPT[$s]=$SP/$s/$F; done
@@ -118,6 +118,7 @@ fi
 # E (2026-10-24): MuonG / Muon512 / KS512 continued from their epoch-20 resume states to 40 epochs
 # (eval/run_cont40_20261024.sh). The 20-epoch bests were copied to *_best_ep1-20.pt first, so page D's heads stay as rendered.
 if [ "$PHASE" = E ]; then
+  ONLY=1
   C=$R/cont_20261023; SP=$R/soups_20261023; N=$R/d512_20261023
   CKPT+=([KSc075_best]=$C/KSc075/$F)
   NAMES="Muon_b64 KSc075_best"
@@ -128,7 +129,10 @@ if [ "$PHASE" = E ]; then
            [${r}_best40]="$r continued to 40 epochs from its epoch-20 state; best val over all 40 (may still be the epoch-20 best)"
            [${r}_ep40]="$r continued to 40 epochs; epoch 40"
            [bell40_$r]="soup: Gaussian-weighted epochs of $r (40 epochs) around its best epoch (sigma 2)")
-    NAMES="$NAMES ${r}_best20 ${r}_best40 ${r}_ep40 bell40_$r"
+    NAMES="$NAMES ${r}_best20"
+    # best40 = the live _best.pt, which is still the epoch-20 best until the continuation finishes: list it only after DONE40
+    [ -f "$N/$r/DONE40" ] && NAMES="$NAMES ${r}_best40"
+    NAMES="$NAMES ${r}_ep40 bell40_$r"
   done
   DESC+=([KSc075_best]="KL-SOAP from scratch at 0.75x lr (2.25e-4), cosine over 40 epochs; best val (reference)")
   ORDER="${NAMES// /,}"
@@ -139,6 +143,9 @@ if [ "$PHASE" = E ]; then
   INTRO_X=" This page continues three runs from latch_opt_grid_d.html from 20 to 40 epochs from their saved training state: the Muon recipe with AdaGC (MuonG), Muon at width 512 and KL-SOAP at width 512. For each: the best head of the first 20 epochs, the best over all 40, epoch 40 and a Gaussian epoch soup. Same grid as pages C and D.$INTRO_X"
 fi
 
+# PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
+# (Below the phase blocks: until 2026-10-24 phases D and E sat inside this if, so PAGE_ONLY=1 D/E would have built page A.)
+if [ -z "${PAGE_ONLY:-}" ]; then
 heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
@@ -175,7 +182,7 @@ done | xargs -r -P 12 -n 2 sh -c 'ffmpeg -nostdin -y -loglevel error -i "$0" -c:
 "$MIR" control/sa3_control/clip_metrics_audiobox.py --roots "$SUB" 2>&1 | tail -1
 fi
 
-python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --src "$SRC" --sub "$SUB" --page "$SUB.html" --order "$ORDER" \
+python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --src "$SRC" --sub "$SUB" --page "$SUB.html" --order "$ORDER" ${ONLY:+--only-order} \
   --title "LatCH onset head: which optimizer? gain &times; requested density$TITLE_X" \
   --intro "The same LatCH guidance head (onsets per beat, width 256, depth 8, same data and held-out split) trained with different optimizers at batch 64: our Muon setup, plain AdamW with and without a cosine schedule, AdamW with AdaGC gradient clipping, a warm switch from Muon to AdamW late in training, and (when trained) AdEMAMix and KL-SOAP, plus Muon at batch 256. The question: does the optimizer change how the head steers, not only its validation loss?$INTRO_X" \
   || { echo "page build failed"; exit 4; }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-24 -- --only-order (a page lists only its own heads; pages D/E share page C's prefix)
 # Last edited: WINTERMUTE 2026-10-23 -- grid sentence + unsteered density from the data (was hardcoded 7.3 / 128-8192 / 2-10); verdicts name their head
 # Last edited: WINTERMUTE 2026-10-22 -- --prefix/--sub/--page/--title/--intro/--order (any set of onset grids; defaults = the Phase E page), optimizer column from run_meta["summary"]
 """build_latch_onset_grid_page.py -- the old onset_eval-style gain x density matrix for the six Phase E
@@ -46,6 +47,7 @@ _ap.add_argument("--title", default="LatCH onset-density heads: gain &times; req
 _ap.add_argument("--intro", default=None, help="HTML replacing the 'Six small LatCH guidance heads (Phase E)...' sentence")
 _ap.add_argument("--src", default="/run/media/kim/Mantu/sa3_control_runs", help="where the grid dirs live (the FiLM reference stays on Mantu)")
 _ap.add_argument("--order", default="", help="comma list of head names in display order (others follow, sorted)")
+_ap.add_argument("--only-order", action="store_true", help="show only the heads named in --order")
 ARGS = _ap.parse_args()
 
 SRC = "/run/media/kim/Mantu/sa3_control_runs"
@@ -79,6 +81,8 @@ rows = {r[0]: dict(zip(cols, r)) for r in con.execute("SELECT * FROM metrics WHE
 arms = []
 _dirs = sorted(glob.glob(f"{ARGS.src}/{ARGS.prefix}*"))
 _ord = [x for x in ARGS.order.split(",") if x]
+if ARGS.only_order and _ord:   # pages C/D/E share one prefix; without this each page also listed every other page's heads
+    _dirs = [d for d in _dirs if os.path.basename(d)[len(ARGS.prefix):] in _ord]
 _dirs.sort(key=lambda d: (_ord.index(os.path.basename(d)[len(ARGS.prefix):]) if os.path.basename(d)[len(ARGS.prefix):] in _ord else len(_ord), d))
 for d in _dirs:
     name = os.path.basename(d)[len(ARGS.prefix):]
