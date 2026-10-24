@@ -4,6 +4,7 @@
 # Last edited: WINTERMUTE 2026-10-22 -- leak gate ignores the note widget's dataset.ckpt / noteCtx.ckpt JS (false positive)
 # Last edited: WINTERMUTE 2026-10-23 -- PAGE_ONLY=1 rebuilds + uploads the page without rendering or scoring (no GPU)
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
+# Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
@@ -114,6 +115,30 @@ if [ "$PHASE" = D ]; then
   INTRO_X=" This page follows the second listening pass: weight averages (soups) of the heads judged best (Muon with KL-SOAP, plus AdaGC; Gaussian-weighted epochs around a run's best epoch), the Muon recipe with AdaGC added, and Muon and KL-SOAP at width 512 (first 20 epochs; the runs can continue). A soup has no held-out loss of its own. Same grid as latch_opt_grid_c.html.$INTRO_X"
 fi
 
+# E (2026-10-24): MuonG / Muon512 / KS512 continued from their epoch-20 resume states to 40 epochs
+# (eval/run_cont40_20261024.sh). The 20-epoch bests were copied to *_best_ep1-20.pt first, so page D's heads stay as rendered.
+if [ "$PHASE" = E ]; then
+  C=$R/cont_20261023; SP=$R/soups_20261023; N=$R/d512_20261023
+  CKPT+=([KSc075_best]=$C/KSc075/$F)
+  NAMES="Muon_b64 KSc075_best"
+  for r in MuonG Muon512 KS512; do
+    CKPT[${r}_best20]=$N/$r/latch_sa3_onset_per_beat_ts_best_ep1-20.pt; CKPT[${r}_best40]=$N/$r/$F
+    CKPT[${r}_ep40]=$N/$r/latch_sa3_onset_per_beat_ts_ep40.pt; CKPT[bell40_$r]=$SP/bell40_$r/$F
+    DESC+=([${r}_best20]="$r, best val within the first 20 epochs (as on latch_opt_grid_d.html)"
+           [${r}_best40]="$r continued to 40 epochs from its epoch-20 state; best val over all 40 (may still be the epoch-20 best)"
+           [${r}_ep40]="$r continued to 40 epochs; epoch 40"
+           [bell40_$r]="soup: Gaussian-weighted epochs of $r (40 epochs) around its best epoch (sigma 2)")
+    NAMES="$NAMES ${r}_best20 ${r}_best40 ${r}_ep40 bell40_$r"
+  done
+  DESC+=([KSc075_best]="KL-SOAP from scratch at 0.75x lr (2.25e-4), cosine over 40 epochs; best val (reference)")
+  ORDER="${NAMES// /,}"
+  GAINS=32,64,128,512,1024,2048,4096; DENS=1,2,4,6,8,10,12,16
+  SRC=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs
+  PREFIX=onset_eval_optcmpC${FT:+FT_${FT_TAG}}_; SUB=latch_opt_grid_e${FT:+_$FT_TAG}
+  TITLE_X=", 40 epochs$TITLE_X"
+  INTRO_X=" This page continues three runs from latch_opt_grid_d.html from 20 to 40 epochs from their saved training state: the Muon recipe with AdaGC (MuonG), Muon at width 512 and KL-SOAP at width 512. For each: the best head of the first 20 epochs, the best over all 40, epoch 40 and a Gaussian epoch soup. Same grid as pages C and D.$INTRO_X"
+fi
+
 heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
@@ -130,7 +155,7 @@ import json, sys, torch
 p, ck, desc, batch = sys.argv[1:5]
 m = json.load(open(p)); c = torch.load(ck, map_location="cpu", weights_only=False)
 lr = {"Muon_b256": "4e-3", "AdamW": "3e-4", "Muon_b64": "1e-3", "C1": "1e-4", "AEMc_cont": "1e-4", "KSc075": "2.25e-4",
-      "MuonG": "9e-4", "Muon512": "9e-4", "KS512": "1.82e-4", "MK": "soup", "bell_": "soup"}
+      "MuonG": "9e-4", "Muon512": "9e-4", "KS512": "1.82e-4", "MK": "soup", "bell_": "soup", "bell40_": "soup"}
 name = m.get("arm", "")
 m["summary"] = {"opt": desc, "dim": str(c["state_dict"]["latent_proj.weight"].shape[0]), "depth": "8", "batch": batch,
                 "lr": next((v for k, v in lr.items() if name.startswith(k)), "3e-4"), "seed": "0",
