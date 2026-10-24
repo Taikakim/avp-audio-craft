@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-24)
+# Last edited: WINTERMUTE 2026-10-24 -- render epoch by epoch with the ringing cut (gain 256, ring >= 0.5, two consecutive epochs)
 # Muon_b64 epoch by epoch (listening pass on latch_opt_grid_biggoa.html, 2026-10-24): Muon_b64 already sounds spectral at gain 512
 # and is suspected to learn little after epoch 10-15, while its val kept falling to epoch 27. Its run (batch_sweep_20261021/EB64)
 # saved only the best epoch, so:
@@ -74,9 +75,42 @@ json.dump(m, open(p, "w"), indent=1)
 print(f"val curve vs original: max |diff| {diff}; best {min(vn):.4f} at epoch {vn.index(min(vn)) + 1} (original 0.1802 at 27)")
 EOF
 
-# 3 per-epoch grid on the biggoa finetune
-echo "$(date +%H:%M) eval EPS"
-FT=$FT FT_TAG=biggoa FT_DESC="our DoRA finetune trained on the same goa set as the heads (rank 128, 64 epochs, final epoch, strength 1)" \
+# 3 per-epoch grid on the biggoa finetune, one epoch at a time with the ringing cut: stop the series once a gain-256 cell
+#   rings >= 0.5 (eval/ring_score.py) in two consecutive epochs at the same requested density
+SRC=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs
+PFX=onset_eval_eb64epFT_biggoa_
+last=0; cut=""
+for e in $(seq 1 40); do
+  n=$(printf 'ep%02d' "$e")
+  ( cd "$SAO" && "$SAO/.venv/bin/python" eval/latch_onset_eval.py --finetune "$FT" \
+      --heads "$n=$d/latch_sa3_onset_per_beat_ts_ep$e.pt" --prefix "$PFX" --out-root "$SRC" \
+      --gains 64,128,192,256,384,512 --densities 0.5,1,2,4,8,16 \
+      --notes "Every epoch of the Muon_b64 onset head (retrained, same recipe and seed): where does it stop learning, and where does the spectral / ringing sound begin?" ) \
+      2>&1 | grep -E "^  $n g" | cut -c1-160
+  /home/kim/Projects/mir/mir/bin/python eval/ring_score.py --workers 6 "$SRC/$PFX$n" | tail -1
+  last=$e
+  cut=$("$LPY" - "$SRC" "$PFX" "$e" <<'EOF'
+import json, os, sys
+src, pfx, e = sys.argv[1], sys.argv[2], int(sys.argv[3])
+def hot(k):
+    p = f"{src}/{pfx}ep{k:02d}/ring_score.json"
+    return {c["requested"] for c in json.load(open(p))["cells"] if c["gain"] == 256 and c["ring"] >= 0.5} if os.path.exists(p) else set()
+both = sorted(hot(e - 1) & hot(e)) if e > 1 else []
+print(f"epochs {e - 1}-{e} ring >= 0.5 at gain 256, requested {', '.join(f'{q:g}' for q in both)}/s" if both else "")
+EOF
+)
+  [ -n "$cut" ] && { echo "$(date +%H:%M) RINGING CUT after epoch $e: $cut"; break; }
+done
+"$LPY" - "$d/run_meta.json" "$last" "$cut" <<'EOF'
+import json, sys
+p, last, cut = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+m = json.load(open(p))
+m["render_series"] = {"epochs_rendered": f"1-{last}", "ringing_cut": cut or None,
+                      "rule": "stop when a gain-256 cell rings >= 0.5 (eval/ring_score.py) in two consecutive epochs at the same requested density"}
+json.dump(m, open(p, "w"), indent=1)
+EOF
+echo "$(date +%H:%M) eval EPS (epochs 1-$last): scoring + page"
+EPS_MAX=$last FT=$FT FT_TAG=biggoa FT_DESC="our DoRA finetune trained on the same goa set as the heads (rank 128, 64 epochs, final epoch, strength 1)" \
   bash eval/run_opt_grid_eval.sh EPS
 rc=$?
 echo "$(date +%H:%M) eval EPS rc=$rc"

@@ -152,8 +152,9 @@ fi
 # ep27) and where the spectral sound starts. Rendered on the biggoa finetune (call with FT=... FT_TAG=biggoa) on the extended grid
 # asked for: gains 64-512 incl. 192/256/384, requested 0.5-16 onsets/s. Own prefix + page.
 if [ "$PHASE" = EPS ]; then
+  # EPS_MAX=<epoch>: list (and render) epochs 1..EPS_MAX only -- the series stops early when the ringing cut fires
   ONLY=1; N=$R/eb64_epochs_20261024/EB64r; NAMES=""
-  for e in $(seq 1 40); do
+  for e in $(seq 1 "${EPS_MAX:-40}"); do
     n=$(printf 'ep%02d' "$e"); CKPT[$n]=$N/latch_sa3_onset_per_beat_ts_ep$e.pt
     DESC[$n]="Muon_b64 (lr 1e-3, Schedule-Free, batch 64) retrained with the same recipe and seed; epoch $e"; NAMES="$NAMES $n"
   done
