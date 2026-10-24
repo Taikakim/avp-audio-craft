@@ -6,6 +6,7 @@
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
 # Last edited: WINTERMUTE 2026-10-24 -- pages D and E list only their own heads (--only-order)
 # Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
+# Last edited: WINTERMUTE 2026-10-24 -- phase EPS (Muon_b64 every epoch, biggoa, extended grid); NOTES/TITLE/INTRO overridable per phase
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
 # Called by that queue while it holds the GPU lock:  bash eval/run_opt_grid_eval.sh A|B
@@ -143,6 +144,25 @@ if [ "$PHASE" = E ]; then
   INTRO_X=" This page continues three runs from latch_opt_grid_d.html from 20 to 40 epochs from their saved training state: the Muon recipe with AdaGC (MuonG), Muon at width 512 and KL-SOAP at width 512. For each: the best head of the first 20 epochs, the best over all 40, epoch 40 and a Gaussian epoch soup. Same grid as pages C and D.$INTRO_X"
 fi
 
+# EPS (2026-10-24, listening pass on latch_opt_grid_biggoa.html): every epoch of Muon_b64, retrained with the same recipe and seed
+# with every epoch saved (eval/run_eb64_epochs_20261024.sh), to hear where it stops learning (by ear ~ep10-15, while val falls to
+# ep27) and where the spectral sound starts. Rendered on the biggoa finetune (call with FT=... FT_TAG=biggoa) on the extended grid
+# asked for: gains 64-512 incl. 192/256/384, requested 0.5-16 onsets/s. Own prefix + page.
+if [ "$PHASE" = EPS ]; then
+  ONLY=1; N=$R/eb64_epochs_20261024/EB64r; NAMES=""
+  for e in $(seq 1 40); do
+    n=$(printf 'ep%02d' "$e"); CKPT[$n]=$N/latch_sa3_onset_per_beat_ts_ep$e.pt
+    DESC[$n]="Muon_b64 (lr 1e-3, Schedule-Free, batch 64) retrained with the same recipe and seed; epoch $e"; NAMES="$NAMES $n"
+  done
+  NAMES=${NAMES# }; ORDER="${NAMES// /,}"
+  GAINS=64,128,192,256,384,512; DENS=0.5,1,2,4,8,16
+  SRC=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs
+  PREFIX=onset_eval_eb64ep${FT:+FT_${FT_TAG}}_; SUB=latch_eb64_epochs${FT:+_$FT_TAG}
+  NOTES="Every epoch of the Muon_b64 onset head (retrained, same recipe and seed): where does it stop learning, and where does the spectral / ringing sound begin?"
+  TITLE="LatCH onset head: Muon_b64 epoch by epoch, gain &times; requested density$TITLE_X"
+  INTRO="The Muon_b64 onset_per_beat head (width 256, depth 8, batch 64, lr 1e-3, Schedule-Free) retrained with the same recipe, data and seed, with every one of its 40 epochs saved. A listening pass found it already sounding spectral at gain 512 and suspected it learns little after epoch 10-15, while its validation loss kept falling to epoch 27. This page plays every epoch on a finer, lower grid (gains 64 to 512, requested 0.5 to 16 onsets/s) to hear where it stops improving and where the ringing starts.$INTRO_X"
+fi
+
 # PAGE_ONLY=1: rebuild + upload the page from what is on disk (e.g. after a new kim_feedback verdict); no render, no scoring, no GPU.
 # (Below the phase blocks: until 2026-10-24 phases D and E sat inside this if, so PAGE_ONLY=1 D/E would have built page A.)
 if [ -z "${PAGE_ONLY:-}" ]; then
@@ -150,24 +170,24 @@ heads=""
 for n in $NAMES; do [ -f "${CKPT[$n]}" ] && heads="$heads${heads:+,}$n=${CKPT[$n]}" || echo "eval $PHASE: no checkpoint for $n (not trained), left out"; done
 [ -n "$heads" ] || { echo "eval $PHASE: nothing to render"; exit 3; }
 "$PY" eval/latch_onset_eval.py "${FTARGS[@]}" --heads "$heads" --prefix "$PREFIX" --out-root "$SRC" --gains "$GAINS" --densities "$DENS" \
-    --notes "Batch-64 optimizer comparison on the LatCH onset_per_beat head (eval/run_adamw_cosine_20261022.sh): does the optimizer change how the head steers, not only its val loss?"
+    --notes "${NOTES:-Batch-64 optimizer comparison on the LatCH onset_per_beat head (eval/run_adamw_cosine_20261022.sh): does the optimizer change how the head steers, not only its val loss?}"
 rc=$?
 echo "$(date +%H:%M) render rc=$rc"
 
 # per-head summary row for the page (optimizer, batch, lr, best val) from the checkpoint itself
 for n in $NAMES; do
   d="$SRC/$PREFIX$n"; [ -f "$d/run_meta.json" ] || continue
-  "$PY" - "$d/run_meta.json" "${CKPT[$n]}" "${DESC[$n]}" "${BATCH[$n]:-64}" <<'EOF'
+  "$PY" - "$d/run_meta.json" "${CKPT[$n]}" "${DESC[$n]}" "${BATCH[$n]:-64}" "${NOTES:-}" <<'EOF'
 import json, sys, torch
-p, ck, desc, batch = sys.argv[1:5]
+p, ck, desc, batch, notes = sys.argv[1:6]
 m = json.load(open(p)); c = torch.load(ck, map_location="cpu", weights_only=False)
 lr = {"Muon_b256": "4e-3", "AdamW": "3e-4", "Muon_b64": "1e-3", "C1": "1e-4", "AEMc_cont": "1e-4", "KSc075": "2.25e-4",
-      "MuonG": "9e-4", "Muon512": "9e-4", "KS512": "1.82e-4", "MK": "soup", "bell_": "soup", "bell40_": "soup"}
+      "MuonG": "9e-4", "Muon512": "9e-4", "KS512": "1.82e-4", "MK": "soup", "bell_": "soup", "bell40_": "soup", "ep": "1e-3"}
 name = m.get("arm", "")
 m["summary"] = {"opt": desc, "dim": str(c["state_dict"]["latent_proj.weight"].shape[0]), "depth": "8", "batch": batch,
                 "lr": next((v for k, v in lr.items() if name.startswith(k)), "3e-4"), "seed": "0",
                 "best_val": f"{c['val_loss']:.4f}" if c.get("val_loss") is not None else ""}
-m["purpose"] = ("LatCH onset_per_beat head from the batch-64 optimizer comparison, rendered as an onset gain x density grid: "
+m["purpose"] = notes or ("LatCH onset_per_beat head from the batch-64 optimizer comparison, rendered as an onset gain x density grid: "
                 "does the optimizer change how the head steers (and when it breaks), not only its validation loss?")
 json.dump(m, open(p, "w"), indent=2)
 EOF
@@ -183,8 +203,8 @@ done | xargs -r -P 12 -n 2 sh -c 'ffmpeg -nostdin -y -loglevel error -i "$0" -c:
 fi
 
 python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --src "$SRC" --sub "$SUB" --page "$SUB.html" --order "$ORDER" ${ONLY:+--only-order} \
-  --title "LatCH onset head: which optimizer? gain &times; requested density$TITLE_X" \
-  --intro "The same LatCH guidance head (onsets per beat, width 256, depth 8, same data and held-out split) trained with different optimizers at batch 64: our Muon setup, plain AdamW with and without a cosine schedule, AdamW with AdaGC gradient clipping, a warm switch from Muon to AdamW late in training, and (when trained) AdEMAMix and KL-SOAP, plus Muon at batch 256. The question: does the optimizer change how the head steers, not only its validation loss?$INTRO_X" \
+  --title "${TITLE:-LatCH onset head: which optimizer? gain &times; requested density$TITLE_X}" \
+  --intro "${INTRO:-The same LatCH guidance head (onsets per beat, width 256, depth 8, same data and held-out split) trained with different optimizers at batch 64: our Muon setup, plain AdamW with and without a cosine schedule, AdamW with AdaGC gradient clipping, a warm switch from Muon to AdamW late in training, and (when trained) AdEMAMix and KL-SOAP, plus Muon at batch 256. The question: does the optimizer change how the head steers, not only its validation loss?$INTRO_X}" \
   || { echo "page build failed"; exit 4; }
 
 PAGE="$STAGE/$SUB.html"

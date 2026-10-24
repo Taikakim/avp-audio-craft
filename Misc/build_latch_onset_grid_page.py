@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-24 -- fractional gains/densities in clip names (0.5/s) via num(); whole numbers unchanged
 # Last edited: WINTERMUTE 2026-10-24 -- --only-order (a page lists only its own heads; pages D/E share page C's prefix)
 # Last edited: WINTERMUTE 2026-10-23 -- grid sentence + unsteered density from the data (was hardcoded 7.3 / 128-8192 / 2-10); verdicts name their head
 # Last edited: WINTERMUTE 2026-10-22 -- --prefix/--sub/--page/--title/--intro/--order (any set of onset grids; defaults = the Phase E page), optimizer column from run_meta["summary"]
@@ -56,7 +57,13 @@ STAGE = os.path.join(os.path.expanduser("~"), "evals_aac")
 SUB = ARGS.sub
 DB = os.path.join(HERE, "..", "eval", "clip_metrics.db")
 PQ_DRIFT = 1.5
-FN = re.compile(r"onset_g(\d+)_d(\d+)\.m4a$")
+FN = re.compile(r"onset_g(\d+(?:\.\d+)?)_d(\d+(?:\.\d+)?)\.m4a$")
+
+
+def num(x):
+    """Grid value as written in clip names ({d:g}): 2.0 -> 2, 0.5 -> 0.5 (whole numbers stay int, so old pages are unchanged)."""
+    x = float(x)
+    return int(x) if x.is_integer() else x
 
 
 def arm_flags(cmd):
@@ -89,12 +96,12 @@ for d in _dirs:
     meta = json.load(open(f"{d}/run_meta.json"))
     if name not in summ and meta.get("summary"):     # heads outside Phase E carry their own row in run_meta["summary"]
         summ[name] = meta["summary"]
-    meas = {(int(x["gain"]), int(x["requested"])): x["measured"] for x in json.load(open(f"{d}/onset_eval.json"))}
+    meas = {(num(x["gain"]), num(x["requested"])): x["measured"] for x in json.load(open(f"{d}/onset_eval.json"))}
     cells = {}
     for p, r in rows.items():
         m = FN.search(p)
         if m and f"/{SUB}/{name}/" in p:
-            cells[(int(m.group(1)), int(m.group(2)))] = r
+            cells[(num(m.group(1)), num(m.group(2)))] = r
     gains = sorted({g for g, _ in cells})
     reqs = sorted({q for _, q in cells})
     out = []
