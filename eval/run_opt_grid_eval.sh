@@ -7,6 +7,7 @@
 # Last edited: WINTERMUTE 2026-10-24 -- pages D and E list only their own heads (--only-order)
 # Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
 # Last edited: WINTERMUTE 2026-10-24 -- page C lists only its own heads too (ONLY=1)
+# Last edited: WINTERMUTE 2026-10-24 -- finetune intro names the medium-base twin page generically (not always page A)
 # Last edited: WINTERMUTE 2026-10-24 -- eval/ring_score.py per head after scoring (advisory ring column on the page)
 # Last edited: WINTERMUTE 2026-10-24 -- phase EPS (Muon_b64 every epoch, biggoa, extended grid); NOTES/TITLE/INTRO overridable per phase
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
@@ -33,7 +34,7 @@ FTARGS=(); TITLE_X=""; INTRO_X=""
 if [ -n "$FT" ]; then
   PREFIX=onset_eval_optcmpFT_${FT_TAG}_; SUB=latch_opt_grid_$FT_TAG; FTARGS=(--finetune "$FT")
   TITLE_X=" (on a finetune)"
-  INTRO_X=" On this page the heads guide $FT_DESC instead of the plain medium-base model, to see whether a model trained on the same data as the heads follows them differently. Compare with latch_opt_grid.html (same heads, prompt and seed on medium-base)."
+  INTRO_X=" On this page the heads guide $FT_DESC instead of the plain medium-base model, to see whether a model trained on the same data as the heads follows them differently. Compare with the same page without the _${FT_TAG} suffix (same heads, prompt and seed on medium-base)."
 fi
 STAGE=$HOME/evals_aac
 export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
