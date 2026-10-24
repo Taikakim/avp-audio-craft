@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-24)
+# Last edited: WINTERMUTE 2026-10-24 -- renderer runs in a clean env (the trainer's ROCm 10 profiler var aborted it)
 # Per-epoch ringing check for LatCH onset heads, called by train_latch.py --epoch-hook as: epoch_ring_hook.sh <epoch> <ep ckpt>
 # (project call 2026-10-24: render the gain-256 bracket after every epoch, on the finetuned model, and cut bad runs early).
 #   1 renders the head at gain 256 x requested 0.5/1/2/4/8/16 onsets/s (+ the unsteered clip) on the finetune
@@ -21,11 +22,15 @@ run=$(dirname "$ck"); TAG=${HOOK_TAG:-$(basename "$run")}
 RING=${HOOK_RING:-0.5}; GAIN=${HOOK_GAIN:-256}; DENS=${HOOK_DENS:-0.5,1,2,4,8,16}
 PFX=onset_eval_ring256FT_${FT_TAG}_${TAG}_
 n=$(printf 'ep%02d' "$ep")
-# the trainer's own env may carry training-profile settings; SA3 medium needs these (MASTER: find mode 6 crashes the DiT)
-export ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+# The trainer's env must NOT reach the renderer: a trainer on .venv-rocm10-amd exports ROCPROFILER_REGISTER_LIBRARY
+# pointing at its own ROCm 10 SDK, and the ROCm 7.14 renderer aborts on it at GPU init (rc 134, epoch 1 of EB64r,
+# 2026-10-24). So the renderer starts from a clean env; SA3 medium needs these (MASTER: find mode 6 crashes the DiT).
+CLEAN=(env -i HOME="$HOME" USER="$USER" PATH=/usr/local/bin:/usr/bin:/bin LANG="${LANG:-C.UTF-8}"
+       ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE PYTORCH_TUNABLEOP_ENABLED=0 MIOPEN_FIND_MODE=2
+       OMP_NUM_THREADS=4 MKL_NUM_THREADS=4)
 cd "$SAO" || exit 2
 
-out=$("$PY" eval/latch_onset_eval.py --finetune "$FT" --heads "$n=$ck" --prefix "$PFX" --out-root "$SRC" \
+out=$("${CLEAN[@]}" "$PY" eval/latch_onset_eval.py --finetune "$FT" --heads "$n=$ck" --prefix "$PFX" --out-root "$SRC" \
         --gains "$GAIN" --densities "$DENS" \
         --notes "Per-epoch ringing check during training (eval/epoch_ring_hook.sh): gain $GAIN on the finetune; the run stops when a cell rings >= $RING in two consecutive epochs at the same requested density." 2>&1)
 rc=$?
