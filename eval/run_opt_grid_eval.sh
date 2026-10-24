@@ -6,6 +6,7 @@
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
 # Last edited: WINTERMUTE 2026-10-24 -- pages D and E list only their own heads (--only-order)
 # Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
+# Last edited: WINTERMUTE 2026-10-24 -- page C lists only its own heads too (ONLY=1)
 # Last edited: WINTERMUTE 2026-10-24 -- eval/ring_score.py per head after scoring (advisory ring column on the page)
 # Last edited: WINTERMUTE 2026-10-24 -- phase EPS (Muon_b64 every epoch, biggoa, extended grid); NOTES/TITLE/INTRO overridable per phase
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
@@ -68,6 +69,7 @@ GAINS=128,512,2048,8192; DENS=2,4,6,8,10
 # reference, the two heads judged interesting, and the continuation runs from eval/run_cont_20261023.sh. Own dirs + page, on the
 # UUID drive (Mantu is 98% full).
 if [ "$PHASE" = C ]; then
+  ONLY=1   # pages D and E share this prefix; without it page C also lists their heads
   C=$R/cont_20261023
   CKPT+=([AEMc_cont_best]=$C/AEMc_cont/$F [AEMc_cont_ep20]=$C/AEMc_cont/latch_sa3_onset_per_beat_ts_ep20.pt
          [KSc075_best]=$C/KSc075/$F [KSc075_ep40]=$C/KSc075/latch_sa3_onset_per_beat_ts_ep40.pt)
