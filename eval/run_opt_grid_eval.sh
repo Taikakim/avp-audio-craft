@@ -6,6 +6,7 @@
 # Last edited: WINTERMUTE 2026-10-23 -- phase C renders all heads (adds AdamW_const, AWc, C1_switch, Muon_b256); page B links to page C
 # Last edited: WINTERMUTE 2026-10-24 -- pages D and E list only their own heads (--only-order)
 # Last edited: WINTERMUTE 2026-10-24 -- phase E (MuonG / Muon512 / KS512 continued to 40 epochs -> latch_opt_grid_e.html)
+# Last edited: WINTERMUTE 2026-10-24 -- eval/ring_score.py per head after scoring (advisory ring column on the page)
 # Last edited: WINTERMUTE 2026-10-24 -- phase EPS (Muon_b64 every epoch, biggoa, extended grid); NOTES/TITLE/INTRO overridable per phase
 # Last edited: WINTERMUTE 2026-10-23 -- phase D (soups, MuonG, width-512 Muon / KL-SOAP -> latch_opt_grid_d.html); dim read from the head
 # Onset gain x density grids for the batch-64 optimizer comparison (eval/run_adamw_cosine_20261022.sh), page latch_opt_grid.html.
@@ -200,6 +201,8 @@ for n in $NAMES; do
 done | xargs -r -P 12 -n 2 sh -c 'ffmpeg -nostdin -y -loglevel error -i "$0" -c:a aac -b:a 192k "$1"'
 "$MIR" control/sa3_control/clip_metrics.py --roots "$SUB" --workers 12 2>&1 | tail -1
 "$MIR" control/sa3_control/clip_metrics_audiobox.py --roots "$SUB" 2>&1 | tail -1
+# advisory ringing score per cell (page column, not part of the gate); skips dirs already scored
+for n in $NAMES; do [ -d "$SRC/$PREFIX$n" ] && echo "$SRC/$PREFIX$n"; done | xargs -r "$MIR" eval/ring_score.py --workers 6 2>&1 | tail -3
 fi
 
 python3 Misc/build_latch_onset_grid_page.py --prefix "$PREFIX" --src "$SRC" --sub "$SUB" --page "$SUB.html" --order "$ORDER" ${ONLY:+--only-order} \

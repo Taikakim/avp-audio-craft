@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-15)
+# Last edited: WINTERMUTE 2026-10-24 -- advisory ring column (eval/ring_score.py -> ring_score.json): per cell + max per gain; not in the gate
 # Last edited: WINTERMUTE 2026-10-24 -- fractional gains/densities in clip names (0.5/s) via num(); whole numbers unchanged
 # Last edited: WINTERMUTE 2026-10-24 -- --only-order (a page lists only its own heads; pages D/E share page C's prefix)
 # Last edited: WINTERMUTE 2026-10-23 -- grid sentence + unsteered density from the data (was hardcoded 7.3 / 128-8192 / 2-10); verdicts name their head
@@ -97,6 +98,9 @@ for d in _dirs:
     if name not in summ and meta.get("summary"):     # heads outside Phase E carry their own row in run_meta["summary"]
         summ[name] = meta["summary"]
     meas = {(num(x["gain"]), num(x["requested"])): x["measured"] for x in json.load(open(f"{d}/onset_eval.json"))}
+    ring = {}                             # advisory ringing score (eval/ring_score.py), absent for unscored dirs
+    if os.path.exists(f"{d}/ring_score.json"):
+        ring = {(num(x["gain"]), num(x["requested"])): (x["ring"], x["ring_hz"]) for x in json.load(open(f"{d}/ring_score.json"))["cells"]}
     cells = {}
     for p, r in rows.items():
         m = FN.search(p)
@@ -108,7 +112,8 @@ for d in _dirs:
     for (g, q), r in sorted(cells.items()):
         base = cells.get((0, q)) or cells[(0, reqs[0])]
         c = {"gain": g, "req": q, "meas": meas.get((g, q)), "pq": r["pq"], "ce": r["ce"],
-             "f": f"{SUB}/{name}/onset_g{g}_d{q}.m4a", "fail": False, "why": [], "corr": []}
+             "f": f"{SUB}/{name}/onset_g{g}_d{q}.m4a", "fail": False, "why": [], "corr": [],
+             "ring": ring.get((g, q), (None, None))[0], "ring_hz": ring.get((g, q), (None, None))[1]}
         if g > 0:
             # quality leg = PQ, not CE: blank ce on both so gate() skips its CE check
             bad, why, corr = gate({**r, "ce": None}, {**base, "ce": None}, rhythmic=True)
@@ -126,7 +131,8 @@ for d in _dirs:
         ok = [c for c in gc if not c["fail"] and c["meas"] is not None]
         r = float(np.corrcoef([c["req"] for c in ok], [c["meas"] for c in ok])[0, 1]) if len(ok) >= 3 else None
         span = (max(c["meas"] for c in ok) - min(c["meas"] for c in ok)) if len(ok) >= 2 else None
-        stats.append({"gain": g, "n_ok": len(ok), "n": len(gc), "r": r, "span": span})
+        rg = [c["ring"] for c in gc if c["ring"] is not None]
+        stats.append({"gain": g, "n_ok": len(ok), "n": len(gc), "r": r, "span": span, "ring": max(rg) if rg else None})
     clean_gains = [s["gain"] for s in stats if s["n_ok"] == s["n"]]
     ceiling = 0
     for s in stats:                       # highest gain with every lower gain also fully clean
@@ -162,7 +168,7 @@ table{border-collapse:collapse;font-size:12px;margin:4px 0;display:block;overflo
 th{background:#1c1c22;color:#aaa}td:first-child,th:first-child{text-align:left;color:#9ab}
 .c{cursor:pointer;font-variant-numeric:tabular-nums}.c:hover{outline:2px solid #7cf}.play{outline:2px solid #5d5 !important}
 .num{font-size:10.5px;color:#9a9;display:block}.bad{background:#2a1214}.bad .num{color:#d88}.x{color:#f66;font-weight:bold}
-.un{color:#e44;font-weight:bold;cursor:help}.ceil{color:#7d7;font-weight:bold}
+.un{color:#e44;font-weight:bold;cursor:help}.r1{color:#db6}.r2{color:#f93;font-weight:bold}.ceil{color:#7d7;font-weight:bold}
 </style></head><body>
 <div id=bar>&#9654; <b id=np>click a cell to play</b> <span id=pos class=muted></span> <span class=muted>· switching keeps the playhead · re-click stops</span></div>
 <div id=wrap><h1>LatCH onset-density heads: gain &times; requested density</h1>
@@ -189,6 +195,7 @@ function play(id,f,l,arm,clip){
  const go=()=>{try{au.currentTime=Math.min(pos,(au.duration||1e9)-0.05);}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 const f2=(v,d)=>v==null?'–':v.toFixed(d),sg=(v,d)=>v==null?'':(v>=0?'+':'')+v.toFixed(d);
+const RG=(v,hz)=>v==null?'':` · <span class="${v>=0.5?'r2':v>=0.3?'r1':''}" title="advisory ringing score: a new narrow peak held ${Math.round(v*100)}% of the clip${hz?' at '+(hz/1000).toFixed(2)+' kHz':''}, vs the unsteered clip">ring ${v.toFixed(2)}</span>`;
 {const seen=new Set(),vs=[];D.arms.forEach(a=>a.verdicts.forEach(v=>{const k=v.date+v.text;if(seen.has(k))return;seen.add(k);
   const who=D.arms.filter(b=>b.verdicts.some(w=>w.date+w.text===k)).map(b=>b.name);vs.push({...v,who:who.length===D.arms.length?'all heads':who.join(', ')});}));
  if(vs.length){const sp=a=>{const c=a.cells.filter(x=>x.gain>0&&x.gain<=512).map(x=>x.meas);return c.length?(Math.max(...c)-Math.min(...c)).toFixed(1):'0';};
@@ -199,11 +206,11 @@ const f2=(v,d)=>v==null?'–':v.toFixed(d),sg=(v,d)=>v==null?'':(v>=0?'+':'')+v.
 const UN='<span class=un title="No listening verdict recorded yet (unaudited).">&#10071;</span>';
 const OPT=D.arms.some(a=>a.opt);
 let s='<table><tr><th></th><th>head</th>'+(OPT?'<th>optimizer / schedule</th>':'')+'<th>width</th><th>depth</th><th>batch</th><th>lr</th><th>seed</th><th>best val</th>';
-const G=D.arms[0].stats.map(x=>x.gain);G.forEach(g=>s+=`<th>gain ${g}<br><span class=muted>clean · r · span</span></th>`);s+='<th>usable ceiling</th></tr>';
+const G=D.arms[0].stats.map(x=>x.gain);G.forEach(g=>s+=`<th>gain ${g}<br><span class=muted>clean · r · span${D.arms.some(a=>a.stats.some(x=>x.ring!=null))?' · max ring':''}</span></th>`);s+='<th>usable ceiling</th></tr>';
 D.arms.forEach(a=>{s+=`<tr><td>${a.audited?'':UN}</td><td><a href="#${a.name}" style="color:#9cf">${a.name}</a></td>${OPT?`<td style="text-align:left">${a.opt||''}</td>`:''}<td>${a.dim}</td><td>${a.depth}</td><td>${a.batch}</td><td>${a.lr}</td><td>${a.seed}</td><td>${a.best_val||''}</td>`;
- a.stats.forEach(x=>{s+=`<td class="${x.n_ok<x.n?'bad':''}">${x.n_ok}/${x.n} · ${f2(x.r,2)} · ${f2(x.span,1)}</td>`;});
+ a.stats.forEach(x=>{s+=`<td class="${x.n_ok<x.n?'bad':''}">${x.n_ok}/${x.n} · ${f2(x.r,2)} · ${f2(x.span,1)}${RG(x.ring)}</td>`;});
  s+=`<td class=ceil>${a.ceiling?('gain '+a.ceiling):'none'}</td></tr>`;});
-document.getElementById('sum').innerHTML=s+'</table><div class=muted style="font-size:11.5px">clean = cells passing the gate · r = correlation of requested vs measured over the clean cells · span = measured range (onsets/s) over the clean cells</div>';
+document.getElementById('sum').innerHTML=s+'</table><div class=muted style="font-size:11.5px">clean = cells passing the gate · r = correlation of requested vs measured over the clean cells · span = measured range (onsets/s) over the clean cells · ring = advisory ringing score (highest at that gain): share of the clip in which a narrow peak not in the unsteered clip is held, 0&ndash;1; <span class=r1>&ge;0.3</span> / <span class=r2>&ge;0.5</span> marked. Not part of the gate: on the first page it was checked against, the head heard clean read 0.14 and heads heard ringing 0.6&ndash;0.8.</div>';
 let h='';
 D.arms.forEach(a=>{
  h+=`<h2 id="${a.name}">${a.audited?'':UN} ${a.name} <span class=muted style="font-weight:normal">width ${a.dim}, depth ${a.depth}, batch ${a.batch}, lr ${a.lr}, seed ${a.seed}; checkpoint epoch ${a.epoch}</span></h2>`;
@@ -211,7 +218,7 @@ D.arms.forEach(a=>{
  a.gains.forEach(g=>{h+=`<tr><td>${g===0?'0 (unsteered)':g}</td>`;
   a.reqs.forEach(q=>{const c=a.cells.find(x=>x.gain===g&&x.req===q);if(!c){h+='<td>·</td>';return;}
    const id=`${a.name}_${g}_${q}`,tip=c.fail?c.why.join('; '):(c.corr.length?c.corr.join('; '):'');
-   h+=`<td class="c ${c.fail?'bad':''}" id="${id}" title="${tip}" onclick="play('${id}','${c.f}','${a.name} gain ${g} req ${q}/s','${a.name}','g${g}_d${q}')">${c.fail?'<span class=x>&#10007;</span> ':''}&#9654; ${f2(c.meas,2)}<span class=num>PQ ${f2(c.pq,2)}${g?' ('+sg(c.dpq,2)+')':''}</span></td>`;});
+   h+=`<td class="c ${c.fail?'bad':''}" id="${id}" title="${tip}" onclick="play('${id}','${c.f}','${a.name} gain ${g} req ${q}/s','${a.name}','g${g}_d${q}')">${c.fail?'<span class=x>&#10007;</span> ':''}&#9654; ${f2(c.meas,2)}<span class=num>PQ ${f2(c.pq,2)}${g?' ('+sg(c.dpq,2)+')':''}${g?RG(c.ring,c.ring_hz):''}</span></td>`;});
   h+='</tr>';});
  h+='</table>';});
 document.getElementById('out').innerHTML=h;
