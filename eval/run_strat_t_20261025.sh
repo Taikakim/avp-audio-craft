@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-25)
+# Last edited: WINTERMUTE 2026-10-25 -- free-card check ignores processes under 1 GiB VRAM (LibreOffice blocked the queue)
 # E14 first arm: stratified training t on the LatCH onset head (Muon_b64 recipe), against EB64 / EB64r.
 #   1 waits for the Granite caption pass (eval/granite_local_pass.py, GPU lock holder) to finish and the card to be free
 #   2 trains ST64 = eval/run_eb64_epochs_20261024.sh's EB64r recipe (seed 0, micro-batch 32 x 2, 40 epochs) with
@@ -19,7 +20,8 @@ cd "$SAO" || exit 2
 exec >>"$LOG" 2>&1
 echo "$(date +%H:%M) waiting for the Granite pass to finish"
 while pgrep -f '^/home/kim/Projects/mir/mir/bin/python eval/granite_local_pass\.py|granite_local_pass\.py --captions' >/dev/null; do sleep 60; done
-vram_free() { ! rocm-smi --showpids 2>/dev/null | grep -qE '^[0-9]+[[:space:]]'; }
+# free = no process holds >= 1 GiB of VRAM (desktop apps such as LibreOffice hold a few hundred MB and are not jobs)
+vram_free() { ! rocm-smi --showpids 2>/dev/null | awk '/^[0-9]+[[:space:]]/ && $4 >= 1073741824 {f=1} END {exit !f}'; }
 until vram_free && KIND=batch NOTE="WINTERMUTE LatCH onset head, stratified-t arm (E14), ~3 h" \
       Misc/gpu_guard.sh acquire WINTERMUTE $$ >/dev/null 2>&1; do sleep 60; done
 trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT

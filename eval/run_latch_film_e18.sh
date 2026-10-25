@@ -1,5 +1,6 @@
 #!/bin/bash
 # Owner: WINTERMUTE (created 2026-10-25)
+# Last edited: WINTERMUTE 2026-10-25 -- free-card check ignores processes under 1 GiB VRAM
 # run_latch_film_e18.sh -- EXPERIMENTS E18 (smooth FiLM -> LatCH hand-off) end to end.
 #   1 waits for the stratified-t training (eval/run_strat_t_20261025.sh) to finish and the card to be free, takes the lock
 #   2 starts the render server :8056 (needs the E18 fades: /info "fades"), renders 108 cells, stops the server
@@ -18,7 +19,8 @@ exec >>"$LOG" 2>&1
 
 echo "$(date +%H:%M) waiting for the stratified-t training"
 while pgrep -f "^bash (/home/kim/Projects/SAO/)?eval/run_strat_t_20261025\.sh$" >/dev/null; do sleep 120; done
-vram_free() { ! rocm-smi --showpids 2>/dev/null | grep -qE '^[0-9]+[[:space:]]'; }
+# free = no process holds >= 1 GiB of VRAM (desktop apps such as LibreOffice hold a few hundred MB and are not jobs)
+vram_free() { ! rocm-smi --showpids 2>/dev/null | awk '/^[0-9]+[[:space:]]/ && $4 >= 1073741824 {f=1} END {exit !f}'; }
 until vram_free && KIND=batch NOTE="WINTERMUTE E18 hand-off renders: own :8056 + 108 cells (~1 h)" \
       Misc/gpu_guard.sh acquire WINTERMUTE $$ >/dev/null 2>&1; do sleep 60; done
 SRV=
