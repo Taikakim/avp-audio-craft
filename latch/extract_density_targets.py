@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-25 -- crops with source_path (2026-07 per-source sets) + add the target to an existing companion instead of skipping it
 """extract_density_targets.py — onset-per-beat ("density") targets for a latent store that has none.
 
 WHY (C, 2026-09-30, Kim's ask): bracket LatCH and the FiLM control adapter on the 12.5k-crop goa
@@ -82,10 +83,17 @@ def _fit(x, T):
     return np.interp(np.linspace(0, len(x) - 1, T), np.arange(len(x)), x).astype(np.float32)
 
 
+def _has_target(out):
+    if not out.exists():
+        return False
+    with np.load(out) as z:
+        return "onset_per_beat_ts" in z.files
+
+
 def process(args):
     npy, audio_root = args
     out = npy.with_suffix(".TIMESERIES.npz")
-    if out.exists():
+    if _has_target(out):
         return npy.name, "skip", 0.0
     t0 = time.time()
     try:
@@ -95,7 +103,9 @@ def process(args):
         mask = np.asarray(meta.get("padding_mask") or [], dtype=np.float32)
         T = len(mask) if len(mask) else 4096
         valid = int(mask.sum()) if len(mask) else T
-        src = Path(audio_root) / meta["relpath"]
+        # bigset crops: <audio_root>/<relpath> is the source file; the 2026-07 per-source sets (chill, organic dance,
+        # prog) carry the source file as source_path and a relpath that is not a file
+        src = Path(meta["source_path"]) if meta.get("source_path") else Path(audio_root) / meta["relpath"]
         y, _ = librosa.load(str(src), sr=SR, mono=True, offset=float(meta.get("seconds_start", 0)),
                             duration=T * HOP_LATENT / SR)
         env = librosa.onset.onset_strength(y=y, sr=SR, hop_length=512)
@@ -116,12 +126,16 @@ def process(args):
         dens = float(np.sum(times < dur)) / dur
         env_ts = _fit(env, int(round(len(y) / HOP_LATENT)))
         env_ts = np.pad(env_ts, (0, max(0, T - len(env_ts))))[:T]
+        new = dict(onset_per_beat_ts=onset_per_beat_ts(times, bpm, T), onset_envelope_ts=env_ts,
+                   valid_ts=mask if len(mask) else np.ones(T, np.float32),
+                   bpm_madmom=np.float32(bpm), bpm_madmom_raw=np.float32(bpm_raw),
+                   onset_density=np.float32(dens),
+                   onset_per_beat=np.float32(dens * 60.0 / bpm))
+        if out.exists():  # an existing companion (encode-time fields) keeps every field it has; only new keys are added
+            with np.load(out) as z:
+                new = {**new, **{k: z[k] for k in z.files}}
         tmp = out.with_suffix(".tmp.npz")
-        np.savez(tmp, onset_per_beat_ts=onset_per_beat_ts(times, bpm, T), onset_envelope_ts=env_ts,
-                 valid_ts=mask if len(mask) else np.ones(T, np.float32),
-                 bpm_madmom=np.float32(bpm), bpm_madmom_raw=np.float32(bpm_raw),
-                 onset_density=np.float32(dens),
-                 onset_per_beat=np.float32(dens * 60.0 / bpm))
+        np.savez(tmp, **new)
         os.replace(tmp, out)
         return npy.name, "ok", time.time() - t0
     except Exception as e:  # keep going; the log lists failures
@@ -131,14 +145,14 @@ def process(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--latent-dir", required=True)
-    ap.add_argument("--audio-root", required=True)
+    ap.add_argument("--audio-root", default="", help="bigset: root the crop relpaths hang off (unused when a crop has source_path)")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0)
     a = ap.parse_args()
     items = sorted(p for p in Path(a.latent_dir).glob("*.npy") if not p.name.endswith(".z0.npy"))
     if a.limit:
         items = items[:a.limit]
-    todo = [(p, a.audio_root) for p in items if not p.with_suffix(".TIMESERIES.npz").exists()]
+    todo = [(p, a.audio_root) for p in items if not _has_target(p.with_suffix(".TIMESERIES.npz"))]
     print(f"[density] {len(items)} crops, {len(todo)} to do, {a.workers} workers", flush=True)
     n = 0
     t0 = time.time()
