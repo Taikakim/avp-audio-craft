@@ -737,6 +737,18 @@ def film_context(film_req):
     s = torch.tensor([(value - st["mean"]) / st["std"]], device=ARGS.device, dtype=st["dtype"])
     ctrl = st["enc"](s)
     cc = torch.cat([ctrl, torch.zeros_like(ctrl)], 0)   # cond + trained-null uncond
+    if film_schedule.is_step_scheduled(film_req):
+        # E18 (W 2026-10-25): a window in step fractions, the same rules as a LatCH slot, so FiLM can crossfade into
+        # LatCH on the same steps. Needs film["steps"] = the request's steps.
+        if not film_req.get("steps"):
+            raise ValueError("film start_pct/end_pct/fade_*_pct need film['steps'] (the request's step count)")
+        env = film_schedule.step_envelope(int(film_req["steps"]), _f(film_req, "start_pct", 0.0),
+                                          _f(film_req, "end_pct", 1.0), _f(film_req, "fade_in_pct", 0.0),
+                                          _f(film_req, "fade_out_pct", 0.0), str(film_req.get("fade_shape") or "linear"))
+        stack = contextlib.ExitStack()
+        stack.enter_context(use_control_context(ControlContext(cc, gain=gain)))
+        stack.enter_context(film_schedule.film_step_schedule(MODEL.model.model, _ADAPTER_ACTIVE, gain, env))
+        return stack
     if not film_schedule.is_scheduled(film_req):
         return use_control_context(ControlContext(cc, gain=gain))
     # E8 (W 2026-10-15): gain by noise level -- film {"sigma_min", "sigma_max", "fade"}, sigma-native like the
