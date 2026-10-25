@@ -49,3 +49,12 @@ def test_hook_sets_the_live_gain_per_step_and_cleans_up():
     m.seen.clear()
     m(torch.zeros(1), torch.tensor([0.2]))                             # hook removed
     assert m.seen == [1.0]
+
+
+def test_fade_shapes():
+    # E18: the same fade band, three shapes; all start at the full gain and fall to (near) 0 at the end of the fade
+    for shape in ("linear", "cosine", "exp"):
+        assert abs(fs.film_gain_at(0.5, 2.0, 0.5, 1.0, fade=0.2, shape=shape) - 2.0) < 1e-9
+        assert fs.film_gain_at(0.3001, 2.0, 0.5, 1.0, fade=0.2, shape=shape) < 0.05
+    assert abs(fs.film_gain_at(0.4, 2.0, 0.5, 1.0, fade=0.2, shape="cosine") - 1.0) < 1e-9
+    assert abs(fs.film_gain_at(0.4, 2.0, 0.5, 1.0, fade=0.2, shape="exp") - 0.2) < 1e-9   # exp(-ln100 / 2) = 0.1

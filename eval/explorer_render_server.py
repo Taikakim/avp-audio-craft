@@ -4,6 +4,7 @@
 # Last edited: WINTERMUTE 2026-10-15 -- latch_hparams guide_anchor (trajectory std ceiling) passed through
 # Last edited: WINTERMUTE 2026-10-15 -- film {sigma_min, sigma_max, fade}: FiLM gain by noise level (E8, eval/film_schedule.py)
 # Last edited: GHOST-NOTE 2026-10-12 -- /presets/{name:path} so folder presets resolve
+# Last edited: WINTERMUTE 2026-10-25 -- E18 fades: latch slot fade_in_pct/fade_out_pct/fade_shape, film fade_shape; /info "fades"
 """explorer_render_server.py — resident SA3 render server for the latent-explorer GUI.
 
 FastAPI on :8056 (SAO/.venv). Holds medium-base resident on the GPU; endpoints
@@ -745,7 +746,8 @@ def film_context(film_req):
     stack.enter_context(use_control_context(ControlContext(cc, gain=gain)))
     stack.enter_context(film_schedule.film_gain_schedule(
         MODEL.model.model, _ADAPTER_ACTIVE, gain,
-        _f(film_req, "sigma_min", 0.0), _f(film_req, "sigma_max", 1.0), _f(film_req, "fade", 0.0)))
+        _f(film_req, "sigma_min", 0.0), _f(film_req, "sigma_max", 1.0), _f(film_req, "fade", 0.0),
+        shape=str(film_req.get("fade_shape") or "linear")))
     return stack
 
 
@@ -790,6 +792,12 @@ def resolve_latch(latch_list, req, extra_first=None):
                "value": _f(s, "value", (entry or {}).get("value_default", -30.0)),
                "start_pct": _f(s, "start_pct", 0.0),
                "end_pct": _f(s, "end_pct", 0.6)}
+        # tapered window edges (E18): fractions of all steps inside [start_pct, end_pct), shape linear/cosine/exp
+        for k in ("fade_in_pct", "fade_out_pct"):
+            if s.get(k) is not None:
+                cfg[k] = _f(s, k, 0.0)
+        if s.get("fade_shape"):
+            cfg["fade_shape"] = str(s["fade_shape"])
         # full hyperparam pass-through (Kim 2026-07-12; parity-audit item 1 —
         # these were silently dropped before): per-slot loss shaping.
         if s.get("loss_type"):
@@ -885,6 +893,8 @@ def info():
             "film_default": {"ckpt": FILM_DEFAULT_CKPT, "gain": FILM_DEFAULT_GAIN},
             # clients that send film sigma_min/sigma_max/fade check this first: an older server ignores them silently
             "film_schedule": True,
+            # E18: latch slots take fade_in_pct/fade_out_pct/fade_shape, film takes fade_shape (older servers ignore them)
+            "fades": True,
             "objective": getattr(getattr(MODEL, "model", None), "diffusion_objective", None)}
 
 
