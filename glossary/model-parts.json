@@ -149,7 +149,7 @@
       },
       {
         "level": 3,
-        "q": "Muon's step per weight is about 1/sqrt(larger side) times the learning rate. At the same learning rate, how does a 1024 x 256 matrix compare with a 256 x 256 one?",
+        "q": "Muon's step per weight is about 1/sqrt(larger side) times the learning rate, before any rescaling. At the same learning rate, how does a 1024 x 256 matrix compare with a 256 x 256 one?",
         "options": [
           "Half as large per weight",
           "The same",

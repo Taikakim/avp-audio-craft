@@ -167,7 +167,7 @@
         "answer": 2,
         "why": "The factor is sqrt((1 + 0.9)/(1 - 0.9)) = 4.4. It is an upper bound if the signal drifts within the window.",
         "wrong": {
-          "3": "10 is the number of steps averaged. The signal-to-noise gain is its square-root-like factor, 4.4."
+          "3": "10 is roughly how many steps are averaged, but recent steps count more than old ones, so the noise shrinks by less than 10 times. It works out to 4.4."
         }
       },
       {
