@@ -136,3 +136,72 @@ export function muonStep(state, grad, opts = {}) {
   const update = scale(o, lr * muonScale(r, c, scaleMode));
   return { update, state: { buf } };
 }
+
+// ---------------------------------------------------------------- number formats
+// minExp = exponent of the smallest normal number (subnormals share its spacing).
+export const DTYPES = {
+  fp32: { mant: 23, minExp: -126, max: 3.4028234663852886e38, label: 'fp32' },
+  bf16: { mant: 7, minExp: -126, max: 3.3895313892515355e38, label: 'bf16' },
+  fp16: { mant: 10, minExp: -14, max: 65504, label: 'fp16' },
+  fp8e4m3: { mant: 3, minExp: -6, max: 448, label: 'fp8 (e4m3)' },
+};
+
+const f32 = new Float32Array(1);
+const u32 = new Uint32Array(f32.buffer);
+
+function roundHalfEven(x) {
+  const f = Math.floor(x);
+  const d = x - f;
+  if (d < 0.5) return f;
+  if (d > 0.5) return f + 1;
+  return f % 2 === 0 ? f : f + 1;
+}
+function exponentOf(a) {
+  let e = Math.floor(Math.log2(a));
+  while (Math.pow(2, e) > a) e--;
+  while (Math.pow(2, e + 1) <= a) e++;
+  return e;
+}
+// Generic round-to-nearest-even onto a (mant, minExp, max) grid. Overflow: fp8 saturates, others go to infinity.
+function quantize(x, dt, saturate) {
+  if (!Number.isFinite(x) || x === 0) return x;
+  const sign = x < 0 ? -1 : 1;
+  const a = Math.abs(x);
+  const e = Math.max(exponentOf(a), dt.minExp);
+  const spacing = Math.pow(2, e - dt.mant);
+  const q = roundHalfEven(a / spacing) * spacing;
+  if (q > dt.max) return sign * (saturate ? dt.max : Infinity);
+  return sign * q;
+}
+function roundBf16(x) {
+  f32[0] = x;
+  let b = u32[0];
+  if (((b >>> 23) & 0xff) === 0xff) return f32[0]; // inf / nan
+  b = (b + 0x7fff + ((b >>> 16) & 1)) >>> 0;
+  u32[0] = (b & 0xffff0000) >>> 0;
+  return f32[0];
+}
+
+export function roundTo(x, dtype) {
+  switch (dtype) {
+    case 'fp32': return Math.fround(x);
+    case 'bf16': return roundBf16(x);
+    case 'fp16': return quantize(x, DTYPES.fp16, false);
+    case 'fp8e4m3': return quantize(x, DTYPES.fp8e4m3, true);
+    default: throw new Error(`unknown dtype ${dtype}`);
+  }
+}
+// Spacing between representable numbers around |w|.
+export function ulp(w, dtype) {
+  const dt = DTYPES[dtype];
+  if (!dt) throw new Error(`unknown dtype ${dtype}`);
+  const a = Math.abs(w);
+  if (a === 0) return Math.pow(2, dt.minExp - dt.mant);
+  return Math.pow(2, Math.max(exponentOf(a), dt.minExp) - dt.mant);
+}
+// Does storing w + dw in this format change the stored weight at all?
+export function survivesUpdate(w, dw, dtype) {
+  if (dw === 0) return false;
+  const stored = roundTo(w, dtype);
+  return roundTo(stored + dw, dtype) !== stored;
+}
