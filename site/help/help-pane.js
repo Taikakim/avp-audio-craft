@@ -10,6 +10,12 @@ const PHONE_QUERY = '(max-width: 700px)';
 const SEEN = 'gl-seen';
 const isPhone = () => window.matchMedia(PHONE_QUERY).matches;
 
+const NON_TEXT_INPUTS = new Set(['radio', 'checkbox', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image']);
+function isTextEntry(n) {
+  if (n.closest('textarea, select, [contenteditable]:not([contenteditable="false"])')) return true;
+  return n instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(n.type);
+}
+
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -106,7 +112,7 @@ class HelpPane {
   onKey(e) {
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
     const tg = e.target;
-    if (tg instanceof Element && tg.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+    if (tg instanceof Element && isTextEntry(tg)) return;     // Escape belongs to the field, not the pane
     if (this.overlay) { e.preventDefault(); this.closeOverlay(true); return; }
     if (this.isOpen) { e.preventDefault(); this.close(); }
   }

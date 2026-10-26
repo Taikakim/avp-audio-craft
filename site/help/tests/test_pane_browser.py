@@ -741,14 +741,19 @@ def test_paper_links_must_be_http_or_https(make_page, page_url, fixture_only):
     expect(page.locator("#help-pane .hp-papers li").first).to_have_text("Evil")
 
 
-def test_escape_inside_a_form_control_does_not_close_the_pane(make_page, page_url, quiz_term):
+def test_escape_on_a_quiz_radio_closes_the_pane(make_page, page_url, quiz_term):
     page = make_page()
     open_via_click(page, page_url, quiz_term)
     page.locator("#help-pane .hp-quiz-start").click()
-    radio = page.locator("#help-pane input[type=radio]").first
-    radio.focus()
-    page.keyboard.press("Escape")
-    expect(page.locator("#help-pane")).to_be_visible()
-    page.locator("#hp-title").focus()
+    page.locator("#help-pane input[type=radio]").first.focus()
     page.keyboard.press("Escape")
     expect(page.locator("#help-pane")).to_be_hidden()
+
+
+def test_escape_in_a_text_field_does_not_close_the_pane(make_page, page_url, quiz_term):
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    page.evaluate("() => { const i = document.createElement('input'); i.type = 'search'; i.id = 'zz-search';"
+                  " document.querySelector('.wrap').append(i); i.focus(); }")
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_visible()
