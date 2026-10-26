@@ -148,3 +148,12 @@ def test_used_ids_lists_marked_terms_only():
     out = mark("<p>weight and bias and <a href='x'>amp</a></p>", GL)
     assert used_ids(out) == {"weight", "bias"}
     assert used_ids('<a class="other" data-term="weight" href="x">w</a>') == set()
+
+
+def test_unterminated_and_terminated_references_come_back_byte_identical():
+    for html in ("<p>AT&T weight</p>", "<p>R&D &copy 2020</p>", "<p>a&#38 b</p>", "<p>x &amp; y &#169; z</p>",
+                 "<p>line one\nAT&T &#x26 two\n&amp;</p>"):
+        out = mark(html, [{"id": "nomatch", "term": "zzz"}])
+        assert out == html
+    assert mark("<p>AT&T weight</p>", GL) == f"<p>AT&T {a('weight', 'weight')}</p>"
+    assert mark("<p>R&D &copy 2020 bias</p>", GL) == f"<p>R&D &copy 2020 {a('bias', 'bias')}</p>"

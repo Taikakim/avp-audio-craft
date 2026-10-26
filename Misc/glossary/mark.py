@@ -1,4 +1,5 @@
 # Owner: WINTERMUTE (created 2026-10-26)
+# Last edited: WINTERMUTE 2026-10-26 -- entity/charref re-emitted from source text (unterminated refs keep their missing ;)
 """Mark glossary terms in rendered HTML: every occurrence becomes <a class="gl" data-term=ID href=...>.
 
 Works on text nodes only (html.parser), so attributes, entities, URLs and skip zones are never touched.
@@ -62,11 +63,24 @@ class _Marker(HTMLParser):
         if tag in SKIP_TAGS and self.skip:
             self.skip -= 1
 
+    def _abs(self):
+        """Absolute index in the source of the construct being handled (parser position)."""
+        line, col = self.getpos()
+        return sum(len(l) for l in self.rawdata.split("\n")[:line - 1]) + (line - 1) + col
+
+    def _ref(self, prefix, name):
+        # html.parser hands over unterminated references (`AT&T`, `&copy 2020`) without the `;`:
+        # re-emit the exact source text so a missing `;` stays missing.
+        i = self._abs()
+        end = i + len(prefix) + len(name)
+        raw = self.rawdata
+        self.out.append(raw[i:end + 1] if raw[end:end + 1] == ";" else raw[i:end])
+
     def handle_entityref(self, name):
-        self.out.append(f"&{name};")
+        self._ref("&", name)
 
     def handle_charref(self, name):
-        self.out.append(f"&#{name};")
+        self._ref("&#", name)
 
     def handle_comment(self, data):
         self.out.append(f"<!--{data}-->")
