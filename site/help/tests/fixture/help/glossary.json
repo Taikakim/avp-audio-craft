@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "entries": {
+    "momentum": {
+      "term": "momentum",
+      "plain": "A running average of recent gradients, so one noisy batch cannot steer the training alone. Compare an <a class=\"gl\" data-term=\"ema\" href=\"glossary.html#ema\">EMA</a>, which averages weights.",
+      "ours": "Our heads keep one <code>momentum</code> buffer for every weight matrix.",
+      "deeper": "<code>m = beta * m + (1 - beta) * g</code>",
+      "papers": [{"title": "Muon (Jordan, 2024)", "url": "https://kellerjordan.github.io/posts/muon/"}],
+      "viz": null,
+      "quiz": [
+        {"level": 1, "q": "What does momentum average?",
+         "options": ["Recent gradients", "Recent weights", "The learning rate", "The loss", "The batch size"],
+         "answer": 0, "why": "Momentum keeps a running average of the <strong>gradients</strong>.",
+         "wrong": {"1": "That is what an EMA does: it averages the weights, not the gradients."}},
+        {"level": 1, "q": "Why keep a running average of gradients?",
+         "options": ["To use less memory", "So one noisy batch cannot steer training alone", "To make the model larger", "To skip the backward pass", "To raise the learning rate"],
+         "answer": 1, "why": "Averaging cancels batch noise, so the step follows the steady direction.",
+         "wrong": {"0": "The buffer costs extra memory, so this is the opposite."}},
+        {"level": 2, "q": "Which line updates the buffer?",
+         "options": ["<code>m = g</code>", "<code>m = g * g</code>", "<code>m = beta * m + (1 - beta) * g</code>", "<code>m = beta * g</code>", "<code>m = m + lr</code>"],
+         "answer": 2, "why": "The new buffer mixes the old buffer with the new gradient."},
+        {"level": 3, "q": "What does a beta close to 1 do?",
+         "options": ["The memory is short", "The update is instant", "Nothing is averaged", "The memory is long", "The loss is zero"],
+         "answer": 3, "why": "Most of the old buffer is kept each step, so the memory is long.",
+         "wrong": {"0": "It is the other way round."}}
+      ]
+    },
+    "ema": {
+      "term": "EMA",
+      "plain": "A running average of the weights, kept on the side. Not the same as <a class=\"gl\" data-term=\"momentum\" href=\"glossary.html#momentum\">momentum</a>.",
+      "ours": "We evaluate the averaged copy, not the raw weights.",
+      "deeper": "<code>w_ema = d * w_ema + (1 - d) * w</code>",
+      "papers": [{"title": "Polyak averaging", "url": "https://example.org/polyak"}],
+      "viz": {"module": "fixture-ok", "params": {"decay": 0.999}},
+      "quiz": [
+        {"level": 1, "q": "What does an EMA average?",
+         "options": ["Gradients", "Weights", "Batches", "Layers", "Prompts"],
+         "answer": 1, "why": "It averages the weights over recent steps, unlike <a class=\"gl\" data-term=\"momentum\" href=\"glossary.html#momentum\">momentum</a>.",
+         "wrong": {"0": "That is momentum."}},
+        {"level": 2, "q": "Which copy do we evaluate?",
+         "options": ["The raw weights", "The averaged copy", "The initial weights", "A random copy", "None"],
+         "answer": 1, "why": "The averaged copy is smoother and usually better."},
+        {"level": 3, "q": "A decay near 1 makes the average",
+         "options": ["Jumpy", "Instant", "Slow to change", "Negative", "Empty"],
+         "answer": 2, "why": "Most of the old average is kept each step."}
+      ]
+    },
+    "adamw": {
+      "term": "AdamW",
+      "plain": "An optimiser that scales each step by recent gradient size.",
+      "ours": "",
+      "deeper": "",
+      "papers": [],
+      "viz": {"module": "fixture-throws", "params": {}},
+      "quiz": [
+        {"level": 1, "q": "AdamW scales each step by",
+         "options": ["Recent gradient size", "The date", "The prompt", "The file name", "Nothing"],
+         "answer": 0, "why": "Each weight's step is divided by a running gradient size."},
+        {"level": 2, "q": "The W in AdamW stands for",
+         "options": ["Width", "Weight decay", "Warm-up", "Window", "Wait"],
+         "answer": 1, "why": "Weight decay is applied separately from the gradient step."},
+        {"level": 3, "q": "Two running averages are kept; they are of",
+         "options": ["Gradient and squared gradient", "Loss and time", "Width and depth", "Rank and alpha", "None"],
+         "answer": 0, "why": "One for the direction, one for the size."}
+      ]
+    },
+    "lora": {
+      "term": "LoRA",
+      "plain": "A small add-on that learns a low-rank change to a big weight matrix.",
+      "ours": "",
+      "deeper": "",
+      "papers": [],
+      "viz": {"module": "fixture-missing", "params": {}},
+      "quiz": [
+        {"level": 1, "q": "LoRA learns",
+         "options": ["A low-rank change", "A new tokenizer", "A new dataset", "A new GPU", "A new prompt"],
+         "answer": 0, "why": "Only two thin matrices are trained."},
+        {"level": 2, "q": "Rank controls",
+         "options": ["Colour", "Capacity of the change", "File size on disk only", "Speed of light", "Nothing"],
+         "answer": 1, "why": "A higher rank can express a bigger change."},
+        {"level": 3, "q": "The base weights are",
+         "options": ["Frozen", "Deleted", "Doubled", "Shuffled", "Printed"],
+         "answer": 0, "why": "They stay fixed while the add-on trains."}
+      ]
+    }
+  }
+}

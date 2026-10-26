@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-26 -- docstring note: site/help test-only files must never be mirrored wholesale
 """build_site.py — render the "Vibe on the Edg3 / The Ledger" site from sources.
 
 Live generation (NOT frozen copies): reads each construct's markdown sources under
@@ -11,6 +12,10 @@ What it LEAVES ALONE: index/artifacts/reference (hand-authored) and dialogue.htm
 (WINTERMUTE's mirror pipeline). It only writes a construct's pages when that
 construct has sources in the format below — so it never clobbers a hand-mockup for
 a construct that hasn't migrated yet.
+
+NOTE (help pane, 2026-10-26): site/help/tests/ (with a fixture glossary.json) and site/help/viz/dev.html are
+TEST-ONLY. site/ is not a deployable tree as a whole: never mirror it wholesale (no `rsync site/`). The help/
+directory is assembled by publish_blog.build_help_dir, which leaves those files out.
 
 ── Journal source: SAO/profiles/<slug>.journal.md ──────────────────────────────
     # HANDLE — journal

@@ -1,0 +1,236 @@
+/* Owner: WINTERMUTE (created 2026-10-26) */
+/* Last edited: WINTERMUTE 2026-10-26 -- dvh for the phone sheet, no body padding in print */
+/* Help pane. Reuses the tokens of site/edg3.css (--paper, --ink, --edge, ...) with the same values as fallbacks. */
+
+:root {
+  --hp-good: #2e7d4f;
+  --hp-bad: #b3412e;
+  --hp-w: max(40vw, 340px);
+}
+
+/* ---- marked terms in the article ---------------------------------------------------------------------- */
+a.gl {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--edge, #0f9e99);
+  text-underline-offset: 3px;
+  background: none;
+}
+a.gl:hover { text-decoration-style: solid; }
+a.gl.gl-seen { text-decoration-color: var(--rule, #c9d2d0); }
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  a.gl.gl-seen { text-decoration-color: color-mix(in srgb, var(--edge, #0f9e99) 35%, transparent); }
+}
+
+/* ---- docked column ------------------------------------------------------------------------------------- */
+body.help-pane-open { padding-right: var(--hp-w); }
+
+.hp-pane {
+  position: fixed;
+  z-index: 50;
+  top: 0; right: 0; bottom: 0;
+  width: var(--hp-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper, #fafaf7);
+  color: var(--body, #3b4649);
+  border-left: 1px solid var(--rule, #c9d2d0);
+  border-top: 3px solid var(--edge, #0f9e99);
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.hp-pane[hidden], .hp-reopen[hidden] { display: none; }
+
+.hp-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule, #c9d2d0);
+  touch-action: none;
+}
+.hp-grip { display: none; }
+.hp-pane h2.hp-title {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink, #2b3538);
+}
+.hp-pane h2.hp-title:focus { outline: none; }
+.hp-pane button, .hp-reopen {
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink, #2b3538);
+  background: var(--paper-dim, #f2f3ef);
+  border: 1px solid var(--rule, #c9d2d0);
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.hp-pane button:hover:not(:disabled), .hp-reopen:hover { border-color: var(--edge, #0f9e99); }
+.hp-pane button:disabled { color: var(--faint, #9aa7a9); cursor: default; }
+.hp-pane button:focus-visible, .hp-pane a:focus-visible, .hp-pane summary:focus-visible,
+.hp-pane input:focus-visible, .hp-reopen:focus-visible, .hp-pane .hp-feedback:focus-visible {
+  outline: 2px solid var(--edge, #0f9e99);
+  outline-offset: 2px;
+}
+
+.hp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 28px;
+  overscroll-behavior: contain;   /* contains scrolling inside the pane; it never locks the page */
+}
+.hp-body p { margin: 0 0 12px; }
+.hp-body h3 {
+  margin: 18px 0 6px;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--dim, #7a8a8e);
+}
+.hp-plain { font-size: 14px; color: var(--ink, #2b3538); }
+
+.hp-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hp-reopen {
+  position: fixed;
+  z-index: 40;
+  right: 14px; bottom: 14px;
+}
+
+@media print { .hp-pane, .hp-reopen { display: none; } body.help-pane-open { padding-right: 0; padding-bottom: 0; } }
+
+/* ---- entry layers ---------------------------------------------------------------------------------------- */
+.hp-text { margin: 0 0 12px; }
+.hp-text code { font-size: 12px; }
+.hp-deeper {
+  margin: 14px 0;
+  padding: 8px 12px;
+  background: var(--paper-dim, #f2f3ef);
+  border: 1px solid var(--rule-light, #e2e6e2);
+}
+.hp-deeper summary { cursor: pointer; color: var(--ink, #2b3538); }
+.hp-deeper[open] summary { margin-bottom: 8px; }
+.hp-papers ul { margin: 0 0 12px; padding-left: 18px; }
+.hp-papers a { color: var(--edge-ink, #0c807c); }
+.hp-pane .hp-quiz-start {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 9px 12px;
+  text-align: left;
+  color: #fff;
+  background: var(--edge-ink, #0c807c);
+  border-color: var(--edge-ink, #0c807c);
+}
+.hp-pane .hp-quiz-start:hover:not(:disabled) { background: var(--edge, #0f9e99); }
+
+/* ---- animation ---------------------------------------------------------------------------------------------- */
+.hp-viz { margin: 14px 0; border: 1px solid var(--rule-light, #e2e6e2); background: #fff; }
+.hp-viz-stage { min-height: 120px; padding: 6px; }
+.hp-viz-note { margin: 0; padding: 18px 8px; color: var(--dim, #7a8a8e); font-size: 12px; }
+.hp-viz .hp-enlarge { margin: 0 6px 6px; }
+.hp-viz .hp-narrow { display: none; }
+.hp-viz-failed .hp-enlarge { display: none; }
+
+.hp-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--paper, #fafaf7);
+}
+.hp-overlay-close {
+  align-self: flex-end;
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  color: var(--ink, #2b3538);
+  background: var(--paper-dim, #f2f3ef);
+  border: 1px solid var(--rule, #c9d2d0);
+  cursor: pointer;
+}
+.hp-viz-big { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.hp-viz-big .hp-viz-stage { flex: 1; min-height: 0; }
+.hp-viz-big .hp-enlarge { display: none; }
+
+/* ---- quiz ---------------------------------------------------------------------------------------------------- */
+.hp-progress { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--dim, #7a8a8e); }
+.hp-progress:focus, .hp-score-line:focus { outline: none; }
+.hp-q fieldset { border: 0; margin: 0 0 12px; padding: 0; min-width: 0; }
+.hp-qtext { padding: 0; margin: 0 0 10px; font-size: 14px; color: var(--ink, #2b3538); }
+.hp-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--rule-light, #e2e6e2);
+  background: #fff;
+  cursor: pointer;
+}
+.hp-opt:hover { border-color: var(--edge, #0f9e99); }
+.hp-opt input { margin-top: 4px; accent-color: var(--edge-ink, #0c807c); }
+.hp-opt:has(input:checked) { border-color: var(--edge-ink, #0c807c); background: var(--paper-dim, #f2f3ef); }
+.hp-pane .hp-answer, .hp-pane .hp-next, .hp-pane .hp-again, .hp-pane .hp-entry-back { padding: 6px 14px; }
+.hp-feedback { padding: 10px 12px; border-left: 4px solid var(--rule, #c9d2d0); background: #fff; }
+.hp-feedback.hp-right { border-left-color: var(--hp-good, #2e7d4f); }
+.hp-feedback.hp-wrong { border-left-color: var(--hp-bad, #b3412e); }
+.hp-feedback .hp-qtext { font-size: 12px; color: var(--dim, #7a8a8e); }
+.hp-verdict { font-weight: 600; font-size: 14px; }
+.hp-right .hp-verdict { color: var(--hp-good, #2e7d4f); }
+.hp-wrong .hp-verdict { color: var(--hp-bad, #b3412e); }
+.hp-score-line { font-size: 16px; color: var(--ink, #2b3538); }
+.hp-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- phones: bottom sheet --------------------------------------------------------------------------------------- */
+@keyframes hp-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (max-width: 700px) {
+  body.help-pane-open { padding-right: 0; padding-bottom: 70vh; }   /* article end stays reachable; no scroll lock */
+  @supports (height: 70dvh) { body.help-pane-open { padding-bottom: 70dvh; } }
+  @supports (height: 70dvh) { .hp-pane { height: 70dvh; } }
+  .hp-pane {
+    top: auto; left: 0; right: 0; bottom: 0;
+    width: auto;
+    height: 70vh;   /* dvh below, so a phone's collapsing toolbar does not hide the bottom of the sheet */
+    border-left: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, .12);
+    animation: hp-rise .18s ease-out;
+  }
+  .hp-grip {
+    display: block;
+    position: absolute;
+    top: 4px; left: 50%;
+    width: 36px; height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--rule, #c9d2d0);
+  }
+  .hp-head { padding-top: 14px; }
+  .hp-viz .hp-wide { display: none; }
+  .hp-viz .hp-narrow { display: inline; }
+  .hp-reopen { bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hp-pane { animation: none; }
+}
