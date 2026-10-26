@@ -145,18 +145,21 @@ class HelpPane {
     return true;
   }
 
-  // A span.gl-rep cannot take focus: closing returns to the first a.gl of the same term before it, else to the
+  // A span.gl-rep cannot take focus: closing returns to the NEAREST a.gl of the same term before it (normally the
+  // link at the start of the same section, so focus does not jump the reader back up the page), else to the
   // fallback close() already has (the reopen button). Never throws.
   focusTargetFor(trigger) {
     try {
       if (trigger.tagName === 'A') return trigger;
       const id = trigger.dataset && trigger.dataset.term;
       if (!id) return null;
+      let nearest = null;
       for (const a of document.querySelectorAll('a.gl')) {
-        if (this.pane.contains(a)) continue;
-        if (a.dataset.term !== id) continue;
-        if (a.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING) return a;
+        if (this.pane.contains(a) || a.dataset.term !== id) continue;
+        if (!(a.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING)) break;   // past the trigger
+        nearest = a;
       }
+      return nearest;
     } catch (_) { /* fall through to the default focus target */ }
     return null;
   }

@@ -822,3 +822,22 @@ def test_closing_after_a_span_click_returns_focus_to_the_first_link_of_that_term
     page.keyboard.press("Escape")
     expect(page.locator("#help-pane")).to_be_hidden()
     assert term_link(page, "momentum").evaluate("el => el === document.activeElement")
+
+
+def test_span_focus_returns_to_the_nearest_preceding_link_not_the_first_on_the_page(make_page, page_url, fixture_only):
+    # a second section with its own first link and a later span: closing must not jump back to section one
+    page = make_page()
+    load_page(page, page_url)
+    page.evaluate("""() => {
+      const sec = document.createElement('section');
+      sec.innerHTML = '<h2>Later section</h2><p><a class="gl" id="late-link" data-term="momentum"'
+        + ' href="../help/glossary.html#momentum">momentum</a> and then '
+        + '<span class="gl gl-rep" id="late-span" data-term="momentum">momentum</span> again.</p>';
+      (document.querySelector('main, article') || document.body).append(sec);
+    }""")
+    span = page.locator("#late-span")
+    span.scroll_into_view_if_needed()
+    span.click()
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
+    assert page.evaluate("document.activeElement && document.activeElement.id") == "late-link"
