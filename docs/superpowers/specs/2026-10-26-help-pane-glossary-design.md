@@ -19,7 +19,7 @@ gets tiring. The component should catch the gap at the moment it opens, and let 
 - The page **summary** must give the reader trust that the text is approachable for different levels of understanding.
 
 ## Terms Kim has named so far
-2-D weight matrices; weight; gradient history (the draft's section 3 phrase "that weight's own gradient history").
+2-D weight matrices; weight; gradient history (the draft's section 3 phrase "that weight's own gradient history"); momentum; orthogonal matrix (Kim, 2026-10-26).
 Candidate list from reading the page (not yet agreed): optimizer, AdamW, Muon, momentum, gradient, Newton-Schulz iteration,
 orthogonal matrix, singular value, learning rate, weight decay, batch size, gradient accumulation, gradient clipping,
 fine-tuning, pre-training, LoRA, DoRA, rank, embedding, diffusion model, latent, held-out loss, NaN, EMA, warmup and cosine decay.
