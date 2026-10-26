@@ -2,6 +2,7 @@
 # Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links; ![caption](assets/...) figures and audio players; referenced assets uploaded with the post
 # Last edited: WINTERMUTE 2026-10-26 -- _inline moved to glossary_lib (shared with the glossary entries), behaviour unchanged
 # Last edited: WINTERMUTE 2026-10-26 -- help pane: `help-pane: on` opt-in, glossary term marking, help/ bundle (dry-run root /tmp/blog_dryrun)
+# Last edited: WINTERMUTE 2026-10-26 -- SAO root derived from file location (worktree-safe)
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -20,7 +21,7 @@ from mirror_dialogue import redact, HOST, KEY, DEST_DIR   # noqa: E402
 from glossary import mark as gmark                        # noqa: E402
 from glossary import build_page as gbuild                 # noqa: E402
 
-SAO = Path("/home/kim/Projects/SAO")
+SAO = Path(__file__).resolve().parent.parent   # repo root from own location (worktree-safe)
 BLOG_DIR = SAO / "blog"
 SITE_HELP = SAO / "site" / "help"                  # help-pane.js/.css, viz/ (tracks 2 and 3)
 DRYRUN_ROOT = Path("/tmp/blog_dryrun")             # contract C1 layout for local browser checks

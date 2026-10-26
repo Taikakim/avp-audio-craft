@@ -1,4 +1,6 @@
-<!-- DRAFT 2026-10-21, round 2 (WINTERMUTE). Restructured as "Muon and derivatives: a DIY survival guide" on the project
+<!--
+help-pane: on
+DRAFT 2026-10-21, round 2 (WINTERMUTE). Restructured as "Muon and derivatives: a DIY survival guide" on the project
 call of 2026-10-21 (neutral, paper-like tone; answer "coming from AdamW/Prodigy LoRAs, what changes with Muon"; a section on
 every optimizer change we tried; routing diagrams; graphs and audio).
 Inputs: CONTINUITY (original Muon post + Moonlight read from the PDF; own results from its journal), THE-FINN
