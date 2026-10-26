@@ -3,6 +3,7 @@
 # Last edited: WINTERMUTE 2026-10-26 -- _inline moved to glossary_lib (shared with the glossary entries), behaviour unchanged
 # Last edited: WINTERMUTE 2026-10-26 -- help pane: `help-pane: on` opt-in, glossary term marking, help/ bundle (dry-run root /tmp/blog_dryrun)
 # Last edited: WINTERMUTE 2026-10-26 -- SAO root derived from file location (worktree-safe)
+# Last edited: WINTERMUTE 2026-10-26 -- final review: own dir first on sys.path; leak-scan every shipped help/ text file; --publish compiles only reachable entries; redact refusal names the snippet
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -10,10 +11,10 @@ and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan b
   publish_blog.py            # render + push every blog/*.md (+ index)
   publish_blog.py --dry-run  # render to /tmp, print redaction check, push nothing
 """
-import sys, re, html, glob, argparse, subprocess, tempfile, shutil
+import sys, re, html, json, glob, argparse, subprocess, tempfile, shutil
 from pathlib import Path
 
-sys.path.insert(0, "/home/kim/Projects/SAO/Misc")
+sys.path.insert(0, str(Path(__file__).resolve().parent))   # own Misc/ first (worktree-safe), never the main checkout's
 sys.path.insert(0, "/home/kim/bin")
 import build_site as bs                       # noqa: E402
 from mirror_dialogue import redact, HOST, KEY, DEST_DIR   # noqa: E402
@@ -262,21 +263,53 @@ def build_help_dir(out: Path, glossary_dir, publish: bool, page_used_ids) -> Non
         entries = gl.load_glossary(glossary_dir)
     except ValueError as exc:
         sys.exit(f"REFUSING: glossary unreadable: {exc}")
-    errors, _ = gl.validate(entries, gbuild.known_viz(viz_dir), publish)
+    errors, _ = gl.validate(entries, gbuild.known_viz(viz_dir), False)     # structure of every entry
     if errors:
         sys.exit("REFUSING: glossary errors:\n  " + "\n  ".join(errors))
-    used = gbuild.reachable(page_used_ids, gbuild.compile_entries(entries))
-    errors, warnings = gbuild.build(glossary_dir, viz_dir, out, publish=publish, used_ids=used)
+    compiled = gbuild.compile_entries(entries)
+    used = gbuild.reachable(page_used_ids, compiled)
+    # on --publish only the entries the pages can reach are validated and written, so an unreviewed
+    # quiz or an unbuilt animation elsewhere in the glossary never reaches the public files
+    errors, warnings = gbuild.build(glossary_dir, viz_dir, out, publish=publish, used_ids=used,
+                                    only_ids=used if publish else None)
     for w in warnings:
         print(f"WARNING (glossary): {w}")
     if errors:
         sys.exit("REFUSING: glossary errors:\n  " + "\n  ".join(errors))
-    for name in ("glossary.html", "glossary.json"):
-        text = (out / name).read_text(encoding="utf-8")
+    _scan_help_files(out, compiled, used)
+    print(f"help/: {len(used)} glossary entries used by the pane pages, help files CLEAN")
+
+
+_HELP_TEXT_EXT = {".js", ".mjs", ".css", ".html", ".json", ".md", ".txt"}
+
+
+def _first_diff(a: str, b: str) -> str:
+    i = next((k for k, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+    return f"...{a[max(0, i - 30):i + 40]!r} -> {b[max(0, i - 30):i + 40]!r}"
+
+
+def _scan_help_files(help_dir: Path, compiled=None, used=()) -> None:
+    """Leak-scan EVERY text file that would ship in help/ (js, css, html, json, md, txt), not just the
+    glossary: modules carry run provenance in comments. Refuses naming the file (and, for glossary.json
+    / glossary.html, the entry id and first differing snippet)."""
+    for f in sorted(Path(help_dir).rglob("*")):
+        if not f.is_file() or f.suffix.lower() not in _HELP_TEXT_EXT:
+            continue
+        rel = f.relative_to(help_dir)
+        text = f.read_text(encoding="utf-8", errors="replace")
         leaks = sorted({L for L in LEAK if L in text})
-        if leaks or redact(text) != text:
-            sys.exit(f"REFUSING: help/{name} leaks {leaks or 'text that redact() would change'}")
-    print(f"help/: {len(used)} glossary entries used by the pane pages, glossary.json + glossary.html CLEAN")
+        if leaks:
+            sys.exit(f"REFUSING: help/{rel} leaks {leaks}")
+        red = redact(text)
+        if red != text:
+            where = ""
+            if compiled:
+                for eid in sorted(used):
+                    blob = json.dumps(compiled[eid], ensure_ascii=False)
+                    if redact(blob) != blob:
+                        where = f" (entry '{eid}')"
+                        break
+            sys.exit(f"REFUSING: help/{rel} has text that redact() would change{where}: {_first_diff(text, red)}")
 
 
 def _push_help(help_dir: Path) -> None:

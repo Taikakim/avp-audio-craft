@@ -1,4 +1,5 @@
 # Owner: WINTERMUTE (created 2026-10-26)
+# Last edited: WINTERMUTE 2026-10-26 -- type checks for text fields, options, papers (bad entry = build error, not traceback)
 """Shared glossary pieces: the blog's inline renderer, entry loading and the build-time validator."""
 import html
 import json
@@ -61,6 +62,13 @@ def _check_question(label: str, n: int, q, errors: list) -> None:
     if opts not in (None, "", []) and not (isinstance(opts, list) and len(opts) == 5):
         got = len(opts) if isinstance(opts, list) else "not a list"
         errors.append(f"{where}: needs exactly 5 options, found {got}")
+    elif isinstance(opts, list):
+        for k, o in enumerate(opts):
+            if not isinstance(o, str):
+                errors.append(f"{where}: option {k} must be a string")
+    for f in ("q", "why"):
+        if f in q and q[f] not in (None, "", []) and not isinstance(q[f], str):
+            errors.append(f"{where}: '{f}' must be a string")
     ans = q.get("answer")
     if "answer" in q and ans is not None and not (_is_int(ans) and 0 <= ans <= 4):
         errors.append(f"{where}: answer {ans!r} is out of range (0-4)")
@@ -74,6 +82,8 @@ def _check_question(label: str, n: int, q, errors: list) -> None:
                 errors.append(f"{where}: 'wrong' key {k!r} is not an option index (0-4)")
             elif _is_int(ans) and int(k) == ans:
                 errors.append(f"{where}: 'wrong' is given for the correct option ({k})")
+            if not isinstance(wrong[k], str):
+                errors.append(f"{where}: 'wrong' text for {k!r} must be a string")
 
 
 def validate(entries, known_viz, publish: bool, used_ids=None):
@@ -121,6 +131,18 @@ def validate(entries, known_viz, publish: bool, used_ids=None):
                     errors.append(f"{label}: {kind} '{text}' collides with {prev_kind} of '{other}'")
             else:
                 owners[n] = (i, kind)
+        for f in ("plain", "ours", "deeper"):
+            if e.get(f) not in (None, "", []) and not isinstance(e[f], str):
+                errors.append(f"{label}: '{f}' must be a string")
+        papers = e.get("papers")
+        if papers not in (None, "", []):
+            if not isinstance(papers, list):
+                errors.append(f"{label}: papers must be a list")
+            else:
+                for k, pp in enumerate(papers):
+                    if not (isinstance(pp, dict) and isinstance(pp.get("title"), str) and pp.get("title")
+                            and isinstance(pp.get("url"), str) and pp.get("url")):
+                        errors.append(f"{label}: papers item {k} needs a 'title' and a 'url' (strings)")
         if isinstance(e.get("plain"), str) and _sentence_count(e["plain"]) > 1:
             warnings.append(f"{label}: 'plain' should be one sentence ({_sentence_count(e['plain'])} found)")
         quiz = e.get("quiz")

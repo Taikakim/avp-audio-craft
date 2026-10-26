@@ -144,3 +144,26 @@ def test_quiz_reviewed_rule_applies_only_to_entries_a_page_uses():
     assert len(errors) == 1 and "momentum" in errors[0]
     assert check([e, o], publish=True, used_ids=set()) == ([], [])    # page uses nothing
     assert check([make_entry(), o], publish=True, used_ids={"momentum"}) == ([], [])   # reviewed
+
+
+def _q_with(**kw):
+    q = make_q(1)
+    q.update(kw)
+    return q
+
+
+@pytest.mark.parametrize("entry,needle", [
+    (lambda: make_entry(plain=5), "'plain' must be a string"),
+    (lambda: make_entry(ours=["x"]), "'ours' must be a string"),
+    (lambda: make_entry(papers=[{"title": "T"}]), "papers item 0 needs"),
+    (lambda: make_entry(papers=[{"title": 1, "url": "https://x"}]), "papers item 0 needs"),
+    (lambda: make_entry(papers="x"), "papers must be a list"),
+    (lambda: make_entry(quiz=[_q_with(options=["a", "b", 3, "d", "e"]), make_q(2), make_q(3)]), "option 2 must be a string"),
+    (lambda: make_entry(quiz=[_q_with(q=7), make_q(2), make_q(3)]), "'q' must be a string"),
+    (lambda: make_entry(quiz=[_q_with(level="1"), make_q(2), make_q(3)]), "level must be 1, 2 or 3"),
+    (lambda: make_entry(quiz=[_q_with(answer="0"), make_q(2), make_q(3)]), "out of range"),
+    (lambda: make_entry(quiz=[_q_with(wrong={"1": 5}), make_q(2), make_q(3)]), "must be a string"),
+])
+def test_wrong_types_are_build_errors_not_tracebacks(entry, needle):
+    errors, _ = check([entry()])
+    assert any(needle in x for x in errors), errors

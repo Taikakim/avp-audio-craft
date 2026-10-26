@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Owner: WINTERMUTE (created 2026-10-26)
+# Last edited: WINTERMUTE 2026-10-26 -- build(only_ids=): publish compiles just the entries a page can reach
 """Validate the glossary and write help/glossary.json (what the pane fetches) and help/glossary.html
 (every entry readable without JavaScript, one anchor per entry id).
 
@@ -101,13 +102,16 @@ def render_glossary_html(entries, compiled) -> str:
     return doc + "\n".join(parts) + "\n</article>\n</div></body></html>\n"
 
 
-def build(glossary_dir, viz_dir, out, publish: bool = False, used_ids=None):
+def build(glossary_dir, viz_dir, out, publish: bool = False, used_ids=None, only_ids=None):
     """Validate and write glossary.json + glossary.html into `out`. Returns (errors, warnings);
-    nothing is written when there are errors."""
+    nothing is written when there are errors.
+    only_ids: keep just these entries (closed under marked terms, see reachable()) in both output files."""
     try:
         entries = load_glossary(glossary_dir)
     except ValueError as exc:
         return [str(exc)], []
+    if only_ids is not None:                    # publish: nothing but the reachable entries is compiled or validated
+        entries = [e for e in entries if isinstance(e, dict) and e.get("id") in only_ids]
     errors, warnings = validate(entries, known_viz(viz_dir), publish, used_ids)
     if errors:
         return errors, warnings

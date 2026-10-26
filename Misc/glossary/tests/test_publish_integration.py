@@ -98,7 +98,7 @@ def test_build_help_dir_assembles_pane_files_and_glossary(tmp_path, site_help):
                 "glossary.json", "glossary.html"):
         assert (out / rel).is_file(), rel
     assert not (out / "tests").exists()
-    assert set(json.loads((out / "glossary.json").read_text())["entries"]) == {"momentum", "weight-matrix", "weight"}
+    assert "weight" in json.loads((out / "glossary.json").read_text())["entries"]
 
 
 def test_unreviewed_entry_used_by_the_page_blocks_publishing_but_not_dry_run(tmp_path, site_help, capsys):
@@ -110,9 +110,47 @@ def test_unreviewed_entry_used_by_the_page_blocks_publishing_but_not_dry_run(tmp
     assert "WARNING (glossary): momentum: quiz_reviewed is empty" in capsys.readouterr().out
 
 
-def test_unreviewed_entry_the_page_does_not_use_is_fine(tmp_path, site_help):
-    g = write_glossary(tmp_path, [make_entry(quiz_reviewed=None), other_entry()])
+def test_unreviewed_entry_the_page_cannot_reach_is_absent_from_the_published_files(tmp_path, site_help):
+    g = write_glossary(tmp_path, [make_entry(quiz_reviewed=None, plain="Smooths the steps."), other_entry()])
     pb.build_help_dir(tmp_path / "a", g, publish=True, page_used_ids={"weight"})
+    assert set(json.loads((tmp_path / "a" / "glossary.json").read_text())["entries"]) == {"weight"}
+    page = (tmp_path / "a" / "glossary.html").read_text()
+    assert 'id="weight"' in page and 'id="momentum"' not in page
+    pb.build_help_dir(tmp_path / "b", g, publish=False, page_used_ids={"weight"})   # dry-run keeps everything
+    assert set(json.loads((tmp_path / "b" / "glossary.json").read_text())["entries"]) == {"momentum", "weight"}
+
+
+def test_unknown_viz_of_an_unreachable_entry_does_not_block_publishing(tmp_path, site_help):
+    g = write_glossary(tmp_path, [make_entry(viz={"module": "ghost", "params": {}}, plain="Smooths."), other_entry()])
+    pb.build_help_dir(tmp_path / "a", g, publish=True, page_used_ids={"weight"})
+
+
+def test_leak_in_a_shipped_js_file_is_refused_naming_the_file(tmp_path, site_help):
+    (site_help / "viz" / "step-size.js").write_text("// from /run/media/kim/Mantu/run42/log.txt\n")
+    g = write_glossary(tmp_path, GL)
+    with pytest.raises(SystemExit, match=r"help/viz/step-size\.js leaks"):
+        pb.build_help_dir(tmp_path / "a", g, publish=False, page_used_ids=set())
+
+
+@pytest.mark.parametrize("name,body", [("help-pane.css", "/* /home/kim/x */"), ("notes.md", "see Lehto"),
+                                       ("data.txt", "Goa.PsyTrance"), ("viz/lib/maths.js", "// goa_archive")])
+def test_leak_in_any_shipped_text_file_is_refused(tmp_path, site_help, name, body):
+    (site_help / name).write_text(body)
+    with pytest.raises(SystemExit, match="leaks"):
+        pb.build_help_dir(tmp_path / "a", write_glossary(tmp_path, GL), publish=False, page_used_ids=set())
+
+
+def test_redact_refusal_names_the_entry_and_the_snippet(tmp_path, site_help, monkeypatch):
+    monkeypatch.setattr(pb, "redact", lambda t: t.replace("QZXQ", "[x]"))
+    g = write_glossary(tmp_path, [make_entry(ours="It ran for QZXQ steps.")])
+    with pytest.raises(SystemExit) as ei:
+        pb.build_help_dir(tmp_path / "a", g, publish=False, page_used_ids={"momentum"})
+    msg = str(ei.value)
+    assert "momentum" in msg and "QZXQ" in msg and "[x]" in msg
+
+
+def test_script_dir_is_first_on_sys_path():
+    assert sys.path.index(str(Path(pb.__file__).resolve().parent)) < sys.path.index("/home/kim/bin")
 
 
 def test_unreviewed_entry_reachable_from_a_used_entry_blocks_publishing(tmp_path, site_help):
@@ -124,8 +162,8 @@ def test_unreviewed_entry_reachable_from_a_used_entry_blocks_publishing(tmp_path
 def test_unknown_viz_blocks_publishing_only(tmp_path, site_help):
     g = write_glossary(tmp_path, [make_entry(viz={"module": "ghost", "params": {}})])
     with pytest.raises(SystemExit, match="unknown viz module 'ghost'"):
-        pb.build_help_dir(tmp_path / "a", g, publish=True, page_used_ids=set())
-    pb.build_help_dir(tmp_path / "b", g, publish=False, page_used_ids=set())
+        pb.build_help_dir(tmp_path / "a", g, publish=True, page_used_ids={"momentum"})
+    pb.build_help_dir(tmp_path / "b", g, publish=False, page_used_ids={"momentum"})
 
 
 def test_glossary_that_leaks_a_path_is_refused(tmp_path, site_help):
