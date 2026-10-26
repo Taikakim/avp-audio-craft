@@ -887,7 +887,7 @@ That is the question that decides whether the pianoroll UI should promise rhythm
 
 ### B14 — Audio-stem control through a DiT-initialised KV template (DiffSynth-Music port) — **POTENTIAL (Kim 2026-10-26)**
 
-**Source.** DiffSynth-Music, Duan/Gao/Zhang/Chen, arXiv 2609.12774 (`papers/Prospective Unchecked/2609.12774v1.pdf`,
+**Source.** DiffSynth-Music, Duan/Gao/Zhang/Chen, arXiv 2609.12774 (`papers/arxiv-2609.12774 - DiffSynth-Music - ....pdf`,
 row in `papers/knowledge.md`; related: MuseTimbre 2609.30548, different authors, controls a frozen SA3 Medium
 through decoupled cross-attention). The paper: a copy of the backbone DiT (the "template", initialised from the DiT weights) reads the
 control audio's VAE latent; its per-block keys and values are concatenated with the generator's in self-attention.
