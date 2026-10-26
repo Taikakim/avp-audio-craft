@@ -767,3 +767,58 @@ def test_escape_in_a_text_field_does_not_close_the_pane(make_page, page_url, qui
                   " document.querySelector('.wrap').append(i); i.focus(); }")
     page.keyboard.press("Escape")
     expect(page.locator("#help-pane")).to_be_visible()
+
+
+# --------------------------------------------------------------------------- later occurrences: span.gl-rep
+# (changed 2026-10-26: first occurrence per section is a link, later ones are clickable spans)
+
+def rep_span(page, term):
+    return page.locator(f'span.gl-rep[data-term="{term}"]').first
+
+
+def test_rep_span_opens_the_pane_on_its_entry(make_page, page_url, fixture_only, entries):
+    page = make_page()
+    load_page(page, page_url)
+    span = rep_span(page, "momentum")
+    span.scroll_into_view_if_needed()
+    span.click()
+    expect(page.locator("#help-pane")).to_be_visible()
+    assert page.locator("#hp-title").inner_text().strip() == entries["momentum"]["term"]
+    assert page.evaluate("location.hash") == "#gl=momentum"
+
+
+def test_rep_span_is_not_a_link_and_not_in_the_tab_order(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, page_url)
+    span = rep_span(page, "momentum")
+    assert span.evaluate("e => e.tagName") == "SPAN"
+    assert span.get_attribute("href") is None and span.get_attribute("tabindex") is None
+    assert span.evaluate("e => e.matches(':any-link')") is False
+    reached = []
+    for _ in range(12):
+        page.keyboard.press("Tab")
+        reached.append(page.evaluate("(() => { const e = document.activeElement; "
+                                     "return e.tagName + '|' + (e.dataset.term || '') + '|' + e.className; })()"))
+    assert any(r.startswith("A|momentum|") for r in reached)          # the first-occurrence link is tabbable
+    assert not any(r.startswith("SPAN|") for r in reached)
+
+
+def test_seen_state_applies_to_rep_spans(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, page_url)
+    span = rep_span(page, "momentum")
+    assert "gl-seen" not in (span.get_attribute("class") or "")
+    term_link(page, "momentum").click()
+    page.keyboard.press("Escape")
+    assert "gl-seen" in span.get_attribute("class")
+
+
+def test_closing_after_a_span_click_returns_focus_to_the_first_link_of_that_term(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, page_url)
+    span = rep_span(page, "momentum")
+    span.scroll_into_view_if_needed()
+    span.click()
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
+    assert term_link(page, "momentum").evaluate("el => el === document.activeElement")

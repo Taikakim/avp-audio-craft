@@ -1,5 +1,6 @@
 // Owner: WINTERMUTE (created 2026-10-26)
 // Last edited: WINTERMUTE 2026-10-26 -- Tab stays inside the aria-modal enlarged-animation overlay
+// Last edited: WINTERMUTE 2026-10-26 -- first occurrence per section is a link, later ones span.gl-rep
 // help-pane.js: docked help pane for glossary terms (spec 2026-10-26-help-pane-design.md, section 6).
 // Plain ES module, no dependencies. Reads <script type="module" data-glossary data-viz-base> (contract C3),
 // fetches glossary.json (C4) once, and loads animation modules (C5) on demand.
@@ -102,10 +103,10 @@ class HelpPane {
 
   onDocClick(e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const a = e.target instanceof Element ? e.target.closest('a.gl') : null;
+    const a = e.target instanceof Element ? e.target.closest('.gl[data-term]') : null;
     if (!a) return;
     const id = a.dataset.term || (a.hash || '').replace(/^#/, '');
-    if (!this.has(id)) return;          // unknown term: let the link navigate to glossary.html
+    if (!this.has(id)) return;          // unknown term: a link navigates to glossary.html, a span does nothing
     e.preventDefault();
     this.open(id, a);
   }
@@ -136,12 +137,28 @@ class HelpPane {
   open(id, trigger) {
     if (!this.has(id)) return false;
     const fromPage = trigger && !this.pane.contains(trigger);
-    if (fromPage) this.lastTrigger = trigger;
+    if (fromPage) this.lastTrigger = this.focusTargetFor(trigger);
     const t = this.top();
     if (!(t && t.id === id && t.mode === 'entry')) this.trail.push({ id, mode: 'entry', quiz: null });
     this.show();
     if (fromPage) this.revealTrigger(trigger);
     return true;
+  }
+
+  // A span.gl-rep cannot take focus: closing returns to the first a.gl of the same term before it, else to the
+  // fallback close() already has (the reopen button). Never throws.
+  focusTargetFor(trigger) {
+    try {
+      if (trigger.tagName === 'A') return trigger;
+      const id = trigger.dataset && trigger.dataset.term;
+      if (!id) return null;
+      for (const a of document.querySelectorAll('a.gl')) {
+        if (this.pane.contains(a)) continue;
+        if (a.dataset.term !== id) continue;
+        if (a.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING) return a;
+      }
+    } catch (_) { /* fall through to the default focus target */ }
+    return null;
   }
 
   show() {
@@ -208,7 +225,7 @@ class HelpPane {
 
   markSeen(id) {
     this.seen.add(id);
-    document.querySelectorAll('a.gl').forEach((a) => {
+    document.querySelectorAll('.gl[data-term]').forEach((a) => {
       if (this.seen.has(a.dataset.term)) a.classList.add(SEEN);
     });
   }
