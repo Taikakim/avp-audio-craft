@@ -347,13 +347,13 @@ works as a whole. This is one family of fine-tunes and one extraction method; we
 
 ## 8. Every optimizer change we tried
 
-Results are single runs unless stated; differences under 0.004 on the heads are noise. "Head" means the from-scratch
+Results are single runs unless stated; differences under about 0.01 on the heads are noise (section 1). "Head" means the from-scratch
 control heads of section 1.
 
 | Change | What it does | What we found |
 |---|---|---|
 | Muon-type optimizer vs AdamW (heads) | orthogonalised matrix updates, with Schedule-Free | 0.357 against 0.408 at 10 epochs on 5,401 crops; best lr about 30x AdamW's |
-| Schedule-Free averaging | evaluates and saves an average of the weights instead of decaying the lr | the largest single effect: 0.20-0.21 with, 0.255 without, AdamW 0.25-0.26 (12,524 crops). Its burn-in and averaging weight (sf_r) moved results by 0.0005 to 0.006 against a noise of about 0.004 |
+| Schedule-Free averaging | evaluates and saves an average of the weights instead of decaying the lr | the largest single effect: 0.20-0.21 with, 0.255 without, AdamW 0.25-0.26 (12,524 crops). Its burn-in and averaging weight (sf_r) moved results by 0.0005 to 0.006 against a noise of about 0.01 |
 | Shampoo / Mousse preconditioner | rescales the gradient by its curvature before Newton-Schulz | no measurable gain on heads; it was on in all our head runs by default |
 | SOAP | a different curvature preconditioner | 0.0212 against 0.0206 on one head, slower; ran out of memory in our FiLM-adapter test |
 | Full Fusion stack (Newton-Schulz, MONA, KL-Shampoo, Schedule-Free) | our earlier combined optimizer | 12-20% lower error than AdamW at equal wall time on the older heads; MONA and KL-Shampoo on top added about 1% for 50% more time |
