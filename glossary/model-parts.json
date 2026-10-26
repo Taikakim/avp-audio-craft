@@ -77,7 +77,7 @@
         "why": "0.0005 is 0.1% of 0.5, below the rounding limit, so the addition does nothing. This is why small learning rates need 32-bit weights or other care (guide section 10)."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-26"
   },
   {
     "id": "weight-matrix",
@@ -164,7 +164,7 @@
         }
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-26"
   },
   {
     "id": "layer",

@@ -89,7 +89,7 @@
         }
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-26"
   },
   {
     "id": "momentum",
@@ -184,7 +184,7 @@
         "why": "The buffer remembers the old direction, so it lags for about 10 steps after a change."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-26"
   },
   {
     "id": "orthogonal-matrix",
@@ -280,6 +280,6 @@
         }
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-26"
   }
 ]
