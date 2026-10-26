@@ -1,0 +1,339 @@
+[
+  {
+    "id": "lora",
+    "term": "LoRA",
+    "aliases": [
+      "LoRAs",
+      "low-rank adapter",
+      "low-rank adapters",
+      "adapter",
+      "adapters"
+    ],
+    "plain": "LoRA keeps the original model frozen and trains a small add-on for each big matrix, so the change to the model is stored in far fewer numbers than the matrix itself.",
+    "ours": "Our LoRA and DoRA adapters on Stable Audio 3 have a rank of 128 to 256. For a matrix of m x n weights the add-on is two thin matrices, B (m x r) and A (r x n), and the model uses W + B x A. B starts at zero, so a fresh adapter changes nothing. Training updates only A and B, which is why LoRA fits where a full fine-tune does not.",
+    "deeper": "The add-on has r x (m + n) numbers instead of m x n. The optimizer treats A and B as ordinary 2-D matrices, so Muon applies to them, but they behave differently: in our run A barely moved (see LoRA A). LoRA reduces the gap between Muon and Adam when fine-tuning an Adam-pretrained model, according to the paper the guide cites.",
+    "papers": [
+      {
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "url": "https://arxiv.org/abs/2106.09685"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does LoRA train?",
+        "options": [
+          "A small add-on for each big matrix, with the original model frozen",
+          "A new model from scratch",
+          "Only the biases",
+          "The data",
+          "The decoder only"
+        ],
+        "answer": 0,
+        "why": "The base weights stay fixed; only the small add-on learns."
+      },
+      {
+        "level": 2,
+        "q": "For an m x n matrix, how many numbers does a rank-r LoRA add-on use?",
+        "options": [
+          "r x (m + n)",
+          "m x n",
+          "r x r",
+          "m + n",
+          "r"
+        ],
+        "answer": 0,
+        "why": "Two thin matrices, m x r and r x n."
+      },
+      {
+        "level": 2,
+        "q": "Why does a fresh LoRA adapter change nothing at the start?",
+        "options": [
+          "B starts at zero, so the add-on contributes zero",
+          "A is zero",
+          "It is not loaded",
+          "The rank is zero",
+          "The learning rate is zero"
+        ],
+        "answer": 0,
+        "why": "The add-on is B times A, and B is initialised to zero."
+      },
+      {
+        "level": 3,
+        "q": "Why does a LoRA fit on a GPU where a full fine-tune does not?",
+        "options": [
+          "Only the small add-on needs gradients and optimizer state",
+          "It uses a smaller dataset",
+          "It trains for fewer epochs",
+          "It has fewer layers",
+          "It runs on CPU"
+        ],
+        "answer": 0,
+        "why": "Memory goes mostly to gradients and optimizer state for trainable weights."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "dora",
+    "term": "DoRA",
+    "aliases": [
+      "DoRAs"
+    ],
+    "plain": "DoRA splits each adapted weight into a direction and a length per row, learns the direction with a LoRA-style add-on, and learns the lengths separately as a magnitude vector.",
+    "ours": "We trained DoRAs on Stable Audio 3. The magnitude vector is a list of small positive numbers (0.13 to 0.45 at the start), which made it fragile: a fixed-size step pushed 592 of them to zero or below, and a multiplicative update fixed it. Extracting a DoRA from a full fine-tune did not work either: the magnitudes came out exact but the direction stayed truncated.",
+    "deeper": "Splitting direction from length gives the adapter a cheap way to change a row's size without changing where it points, which tends to make it behave more like a full fine-tune. The cost is the extra 1-D parameters, which Muon cannot handle and which need their own optimizer and learning rate.",
+    "papers": [
+      {
+        "title": "DoRA: Weight-Decomposed Low-Rank Adaptation",
+        "url": "https://arxiv.org/abs/2402.09353"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does DoRA add to LoRA?",
+        "options": [
+          "A learned length (magnitude) for each row",
+          "A larger rank",
+          "A second model",
+          "More data",
+          "A new loss"
+        ],
+        "answer": 0,
+        "why": "It separates direction from magnitude."
+      },
+      {
+        "level": 2,
+        "q": "Why are DoRA magnitudes fragile with a sign step?",
+        "options": [
+          "They are small positive numbers that a fixed-size step can push below zero",
+          "They are huge",
+          "They have no gradient",
+          "They are not trained",
+          "They are 3-D"
+        ],
+        "answer": 0,
+        "why": "A fixed step comparable to the value crosses zero."
+      },
+      {
+        "level": 3,
+        "q": "Why does DoRA's exact magnitude not rescue extraction from a full fine-tune?",
+        "options": [
+          "The direction is still truncated to the low rank",
+          "Magnitudes are wrong",
+          "DoRA cannot be extracted",
+          "The magnitude vector is 2-D",
+          "Extraction needs more data"
+        ],
+        "answer": 0,
+        "why": "The magnitude is exact, but the direction can hold only rank-r of the change."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "rank",
+    "term": "rank",
+    "aliases": [
+      "adapter rank",
+      "rank-128",
+      "rank 128",
+      "low-rank",
+      "low rank"
+    ],
+    "plain": "The rank of a LoRA is the width of its narrow middle: it limits how many independent directions the add-on can change at once.",
+    "ours": "Our adapters have a rank of 128 to 256 inside matrices about 1,536 wide. A rank of 128 can adjust at most 128 directions per matrix. A full fine-tune moves attention and feed-forward matrices in nearly all of their directions: holding 90% of the change took a median rank of about 750 to 1,110 per matrix, so a rank-128 adapter kept about 26% of the energy over the whole model.",
+    "deeper": "A higher rank gives more capacity and costs more parameters (r x (m + n)). Trained directly at low rank, a LoRA finds a change that works as a whole; truncating a full fine-tune to low rank keeps the strongest directions only and leaves a lopsided update. In the paper the guide cites, LoRA with Muon beat LoRA with Adam at low and moderate ranks and did worse at high ranks, in the case with the largest mismatch.",
+    "papers": [
+      {
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "url": "https://arxiv.org/abs/2106.09685"
+      },
+      {
+        "title": "Can Muon Fine-tune Adam-Pretrained Models?",
+        "url": "https://arxiv.org/abs/2605.10468"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a LoRA's rank limit?",
+        "options": [
+          "How many independent directions it can change",
+          "The learning rate",
+          "The batch size",
+          "The number of epochs",
+          "The audio length"
+        ],
+        "answer": 0,
+        "why": "Rank is the width of the bottleneck."
+      },
+      {
+        "level": 2,
+        "q": "A full fine-tune's change needs a rank of about 750 to 1,110 to hold 90% of it. What does a rank-128 adapter keep over the whole model?",
+        "options": [
+          "About 26%",
+          "About 90%",
+          "About 100%",
+          "About 1%",
+          "Nothing"
+        ],
+        "answer": 0,
+        "why": "Measured across the full fine-tunes: about 26% of the energy."
+      },
+      {
+        "level": 3,
+        "q": "Why can a LoRA trained at rank 128 work well when an extracted rank-128 adapter does not?",
+        "options": [
+          "Training finds a low-rank change that works as a whole; truncation leaves a lopsided update",
+          "Training uses more data",
+          "Extraction cannot read weights",
+          "Rank 128 is too low for training",
+          "Extraction needs a larger batch"
+        ],
+        "answer": 0,
+        "why": "Direct training balances all matrices; truncation keeps more of some than others."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "lora-rank",
+      "params": {}
+    }
+  },
+  {
+    "id": "lora-a",
+    "term": "LoRA A",
+    "aliases": [
+      "LoRA B",
+      "rotation of A"
+    ],
+    "plain": "In a LoRA, A is the matrix that reads from the input and B is the matrix that writes the correction; A is the one that, in our runs, barely changed.",
+    "ours": "In one run, 99.2% of the space spanned by the rows of A was unchanged between steps 240 and 1,440, against 35% for the corresponding space of B. 'Rotation' means that set of directions turning toward new ones. A learning rate 20 times larger for A rotated it, but made the adapter 2.3 times larger and produced one NaN render, so the result is not clean. We have no AdamW control, and an imbalance between A and B is known for AdamW too (LoRA+).",
+    "deeper": "A starts random and B starts at zero, so in the first steps all the learning happens in B. With every row of the Muon update normalised, A's share of the update (about 7%) mostly reflects its row count and is not evidence. The mechanism for AdamW differs, so do not read this as specific to Muon. We have not checked whether an EMA copy affected that run.",
+    "papers": [
+      {
+        "title": "LoRA+: Efficient Low Rank Adaptation of Large Models",
+        "url": "https://arxiv.org/abs/2402.12354"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "In a LoRA, which matrix starts at zero?",
+        "options": [
+          "B",
+          "A",
+          "Both",
+          "Neither",
+          "The base weight"
+        ],
+        "answer": 0,
+        "why": "B is zero at the start, so the add-on contributes nothing."
+      },
+      {
+        "level": 2,
+        "q": "What did we find about A in one run?",
+        "options": [
+          "Its row space barely changed: 99.2% stayed the same",
+          "It changed completely",
+          "It was deleted",
+          "It grew without limit",
+          "It was identical to B"
+        ],
+        "answer": 0,
+        "why": "A barely moved, while B's space changed by 65%."
+      },
+      {
+        "level": 3,
+        "q": "What did raising A's learning rate 20 times do?",
+        "options": [
+          "It rotated A, but made the adapter 2.3 times larger and gave one NaN render",
+          "It fixed everything",
+          "It had no effect",
+          "It deleted B",
+          "It halved the adapter"
+        ],
+        "answer": 0,
+        "why": "The rotation came with a bigger adapter and an unstable result, so it is not a clean fix."
+      },
+      {
+        "level": 3,
+        "q": "Is the imbalance between A and B specific to Muon?",
+        "options": [
+          "No; it is also known for AdamW, though the mechanism differs",
+          "Yes, only Muon",
+          "Yes, only Lion",
+          "It has never been seen elsewhere",
+          "It is a bug in PyTorch"
+        ],
+        "answer": 0,
+        "why": "The guide cites LoRA+ for AdamW and warns against reading it as Muon-specific."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "lora-a-rotation",
+      "params": {}
+    }
+  },
+  {
+    "id": "adapter-extraction",
+    "term": "adapter extraction",
+    "aliases": [
+      "SVD extraction",
+      "extracted adapter",
+      "extracted adapters",
+      "extracting an adapter",
+      "extract an adapter",
+      "extraction"
+    ],
+    "plain": "Adapter extraction tries to turn a full fine-tune into a small adapter by keeping only the strongest directions of its weight change.",
+    "ours": "We tried it on 10 full fine-tunes of Stable Audio 3: 60 adapters of rank up to 128. All of them glitched when rendered. The extraction itself was correct (the rebuilt weights matched the full fine-tune with a cosine of 0.99, and DoRA's magnitudes came out exact). The cause is rank: a full fine-tune's change is close to full rank, and a rank-128 adapter kept about 26% of its energy overall and 40 to 68% in the attention matrices.",
+    "deeper": "The method is a singular value decomposition of the weight change, truncated to the chosen rank. About 1,000 would be needed to hold 90% overall, so no useful adapter rank exists for these fine-tunes. We tested one family of fine-tunes and one extraction method, and did not try choosing the rank per matrix.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does adapter extraction do?",
+        "options": [
+          "Keeps only the strongest directions of a full fine-tune's change as a small adapter",
+          "Trains an adapter from scratch",
+          "Deletes a fine-tune",
+          "Converts audio to latents",
+          "Raises the rank"
+        ],
+        "answer": 0,
+        "why": "It compresses the weight change into rank r."
+      },
+      {
+        "level": 2,
+        "q": "Was the extraction code the problem in our test?",
+        "options": [
+          "No; the rebuilt weights matched with a cosine of 0.99",
+          "Yes, it was buggy",
+          "It was never run",
+          "It deleted layers",
+          "It used the wrong dataset"
+        ],
+        "answer": 0,
+        "why": "The extractor was verified; the limit was rank."
+      },
+      {
+        "level": 3,
+        "q": "Why did the extracted adapters sound broken?",
+        "options": [
+          "A rank-128 truncation keeps more of some matrices than of others, giving a lopsided update",
+          "They were too large",
+          "They used fp8",
+          "They had no magnitudes",
+          "The audio was clipped"
+        ],
+        "answer": 0,
+        "why": "Over the whole model it kept about 26% of the change, unevenly between matrices."
+      }
+    ],
+    "quiz_reviewed": null
+  }
+]

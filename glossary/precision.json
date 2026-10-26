@@ -1,0 +1,184 @@
+[
+  {
+    "id": "bf16",
+    "term": "bf16",
+    "aliases": [
+      "bfloat16",
+      "16-bit",
+      "bf16 rounding",
+      "bf16 storage"
+    ],
+    "plain": "bf16 is a 16-bit way of storing numbers that keeps fp32's wide range but only about three significant digits, so very small changes to a large number can disappear.",
+    "ours": "With bf16 weights, a step smaller than roughly 0.2 to 0.4% of the weight is rounded to nothing. In a CPU test bf16 kept 29%, 64% and 92% of the intended weight change at learning rates of 3e-4, 1e-3 and 3e-3, so a higher learning rate can look better for a numerical reason. Schedule-Free's average is affected most. The FiLM trainer's default precision is bf16.",
+    "deeper": "The 0.2 to 0.4% figure is half the spacing between neighbouring bf16 numbers (derived from the format: 7 stored fraction bits). Newton-Schulz run in bf16 is probably fine, because rounding matters when small numbers are added to large ones (weight updates, averages), and the Muon post and other implementations do it; we have not tested it ourselves and a test that logs what is lost is on our list.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is bf16?",
+        "options": [
+          "A 16-bit number format with fp32's range but few significant digits",
+          "A type of optimizer",
+          "A file format for audio",
+          "A kind of loss",
+          "A learning rate schedule"
+        ],
+        "answer": 0,
+        "why": "It trades precision for memory and speed."
+      },
+      {
+        "level": 2,
+        "q": "A weight is 1.0 stored in bf16. A step of 0.001 (0.1%) is added. What is the likely result?",
+        "options": [
+          "The weight stays 1.0, the step is rounded away",
+          "The weight becomes 1.001",
+          "The weight doubles",
+          "NaN",
+          "The weight becomes 0"
+        ],
+        "answer": 0,
+        "why": "The step is smaller than about half the spacing between bf16 numbers near 1.0."
+      },
+      {
+        "level": 3,
+        "q": "Why can bf16 make a higher learning rate look better?",
+        "options": [
+          "Small steps are rounded away, so only a high rate changes anything",
+          "bf16 learns faster",
+          "High rates are always better",
+          "bf16 removes noise",
+          "It does not"
+        ],
+        "answer": 0,
+        "why": "The apparent gain is numerical, not a better optimizer."
+      },
+      {
+        "level": 3,
+        "q": "Is Newton-Schulz in bf16 tested in this guide?",
+        "options": [
+          "No; it is probably fine, per other implementations, but we have not tested it",
+          "Yes, it fails",
+          "Yes, it works perfectly",
+          "It is impossible",
+          "It is required"
+        ],
+        "answer": 0,
+        "why": "The guide says 'probably fine' and we plan to log what is lost."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "fp32",
+    "term": "fp32",
+    "aliases": [
+      "float32",
+      "32-bit",
+      "full precision"
+    ],
+    "plain": "fp32 is the standard 32-bit number format, with about seven significant digits, so even tiny weight changes survive.",
+    "ours": "Keep weights and optimizer state in fp32 if you can. In a FiLM adapter the key and value matrices moved 7 times further with fp32 state at equal loss than with bf16 state. Our July listening notes judged fp32 full fine-tunes better than bf16 or adapter-only ones. We have not compared fp32 and bf16 renders systematically by ear, so treat fp32 as safer numerically, not as automatically better to the ear.",
+    "deeper": "fp32 weights cost twice the memory of 16-bit and rule out the fast attention kernels used in some runs, so on a 16 GB card it is a real trade-off. The guide recommends it for the state that accumulates small steps (weights, averages) and accepts lower precision for the heavy matrix products.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is fp32?",
+        "options": [
+          "A 32-bit number format with about seven significant digits",
+          "A 16-bit format",
+          "A kind of data",
+          "An optimizer",
+          "A loss"
+        ],
+        "answer": 0,
+        "why": "It is the usual full-precision float."
+      },
+      {
+        "level": 2,
+        "q": "Why keep weights and optimizer state in fp32?",
+        "options": [
+          "Small steps survive instead of being rounded away",
+          "It is faster",
+          "It uses less memory",
+          "It removes noise",
+          "It is required by Muon"
+        ],
+        "answer": 0,
+        "why": "fp32 keeps small updates that bf16 would lose."
+      },
+      {
+        "level": 3,
+        "q": "Does the guide claim fp32 always sounds better?",
+        "options": [
+          "No; it is safer numerically, and we have not compared fp32 and bf16 systematically by ear",
+          "Yes, always",
+          "Yes, only for adapters",
+          "It never mentions listening",
+          "It says bf16 is always better"
+        ],
+        "answer": 0,
+        "why": "Numerically safer is not the same as better to the ear, and the guide says the by-ear comparison has not been done systematically."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "fp16-fp8",
+    "term": "fp16 and fp8",
+    "aliases": [
+      "fp16",
+      "fp8",
+      "float16",
+      "float8",
+      "16-bit float",
+      "8-bit float"
+    ],
+    "plain": "fp16 and fp8 are smaller number formats still: fp16 keeps more digits than bf16 but a narrow range, and fp8 keeps only two or three digits.",
+    "ours": "We have not used either for the optimizer state in these runs. The step-size figure in guide section 4 does not show their rounding limits; section 10 covers the bf16 case that matters for us. For comparison, the smallest step that survives rounding is about half the spacing of the format: roughly 0.025 to 0.05% for fp16, 0.2 to 0.4% for bf16 and 3 to 12% for the fp8 formats.",
+    "deeper": "These figures come from the formats' fraction bits (fp16 10, bf16 7, fp8 2 or 3) and are arithmetic, not measurements of our runs. fp16 overflows above about 65,000, so it needs loss scaling; fp8 is only used for the heaviest matrix products in some trainers.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "Which format keeps the most significant digits of the three, fp16, bf16 and fp8?",
+        "options": [
+          "fp16",
+          "bf16",
+          "fp8",
+          "They are equal",
+          "None of them"
+        ],
+        "answer": 0,
+        "why": "fp16 has 10 fraction bits, bf16 has 7, fp8 has 2 or 3."
+      },
+      {
+        "level": 2,
+        "q": "What is the main trade-off of fp16 compared with bf16?",
+        "options": [
+          "More digits but a narrow range",
+          "Fewer digits and a wide range",
+          "Wider range",
+          "No trade-off",
+          "It cannot store zero"
+        ],
+        "answer": 0,
+        "why": "fp16 overflows above about 65,000."
+      },
+      {
+        "level": 3,
+        "q": "Roughly what size of step survives in fp8 compared with the weight?",
+        "options": [
+          "A few percent or more",
+          "0.001%",
+          "0.1%",
+          "Any size",
+          "None"
+        ],
+        "answer": 0,
+        "why": "With only two or three fraction bits, steps below a few percent of the weight are rounded away."
+      }
+    ],
+    "quiz_reviewed": null
+  }
+]

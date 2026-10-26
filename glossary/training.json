@@ -1,0 +1,867 @@
+[
+  {
+    "id": "held-out-loss",
+    "term": "held-out loss",
+    "aliases": [
+      "held-out"
+    ],
+    "plain": "The held-out loss is the model's error measured on examples it never trained on, so it shows how well the model does on new data and not how well it memorised.",
+    "ours": "Our head trainer scores a fixed held-out set, so two runs are compared on identical items; for the noise-level split below we use the same crops and the same noise at ten fixed noise levels. Differences below about 0.01 are within run-to-run noise (the same recipe and seed gave 0.1802 and 0.1896). Our best head sits near 0.18.",
+    "deeper": "Splitting the held-out loss by noise level t shows that about half of it sits at t above 0.7, where the input is nearly pure noise and the optimizer barely matters. That is why optimizer comparisons differ by only a few percent and why the loss curves of different optimizers track each other closely. For LoRA and DoRA the guide advises choosing a checkpoint by listening, not by held-out loss alone.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is held-out loss measured on?",
+        "options": [
+          "Examples the model never trained on",
+          "The training data",
+          "Random numbers",
+          "The optimizer's settings",
+          "The audio files after rendering"
+        ],
+        "answer": 0,
+        "why": "Held-out data is kept aside so the score shows generalisation."
+      },
+      {
+        "level": 2,
+        "q": "The same recipe and seed gave 0.1802 and 0.1896. What does that tell you?",
+        "options": [
+          "Differences smaller than about 0.01 may be noise",
+          "Seeds do not matter",
+          "The first run is broken",
+          "The loss is wrong",
+          "Training failed"
+        ],
+        "answer": 0,
+        "why": "Repeating a run gives a spread, so smaller differences cannot be trusted."
+      },
+      {
+        "level": 3,
+        "q": "Why do different optimizers' loss curves track each other closely?",
+        "options": [
+          "About half the loss sits at high noise levels where the optimizer barely matters",
+          "They are secretly the same optimizer",
+          "The loss is clipped",
+          "All optimizers use the same learning rate",
+          "The data is tiny"
+        ],
+        "answer": 0,
+        "why": "At noise levels near 1 the input is almost pure noise, and most of the loss there does not depend on the optimizer."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "batch-size",
+    "term": "batch size",
+    "aliases": [
+      "batch sizes",
+      "batch",
+      "batches",
+      "effective batch",
+      "effective batch size"
+    ],
+    "plain": "The batch size is how many training examples are processed together before the weights are changed once.",
+    "ours": "Our LoRA and DoRA runs used batches of 1 to 16 and our full fine-tunes 1 to 8 (they are large models). The control heads were trained at effective batches of 8 up to 256; 'effective' means the size after accumulating gradients over several smaller batches. Batch 64 gave our best held-out loss.",
+    "deeper": "A small batch is a small sample of the data, so its gradient carries a lot of noise; a larger batch gives fewer, less noisy steps over the same data. Compare batch sizes at equal numbers of steps, not equal epochs, or you compare how many steps each had. The noise-limited batch size, called B_simple in the literature, estimates where noise stops being the main problem.",
+    "papers": [
+      {
+        "title": "An Empirical Model of Large-Batch Training (McCandlish et al.)",
+        "url": "https://arxiv.org/abs/1812.06162"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a batch?",
+        "options": [
+          "The group of examples used for one weight change",
+          "One epoch",
+          "One layer",
+          "The whole dataset",
+          "The model file"
+        ],
+        "answer": 0,
+        "why": "A batch is the sample used to compute one gradient."
+      },
+      {
+        "level": 2,
+        "q": "A batch of 4 gives a noisier gradient than a batch of 64 because...",
+        "options": [
+          "It samples fewer examples",
+          "It has fewer weights",
+          "It uses less memory",
+          "It trains for fewer epochs",
+          "It uses a different optimizer"
+        ],
+        "answer": 0,
+        "why": "A smaller sample gives a noisier estimate of the true gradient."
+      },
+      {
+        "level": 3,
+        "q": "In one sweep, batch 32 ran half as many steps as batch 16 in the same number of epochs. What should you do before comparing them?",
+        "options": [
+          "Compare at equal numbers of steps, or say you did not",
+          "Trust the epochs",
+          "Drop the larger batch",
+          "Double the learning rate",
+          "Ignore the loss"
+        ],
+        "answer": 0,
+        "why": "Otherwise the result mixes the batch-size effect with the step-count effect."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "gradient-accumulation",
+    "term": "gradient accumulation",
+    "aliases": [
+      "accumulation",
+      "accumulating gradients"
+    ],
+    "plain": "Gradient accumulation adds up the gradients of several small batches and changes the weights once, which gives the effect of a bigger batch without needing the memory for it.",
+    "ours": "Our heads are compute-bound on the GPU, so an epoch takes the same time at any effective batch. Two traps: in our Stable Audio 3 fine-tuning trainers the EMA of the weights updates on every small batch, not once per weight change, so accumulation shortens the EMA's memory measured in weight changes; and anything that compares consecutive gradients sees only the combined steps.",
+    "deeper": "For a loss that is a plain sum over examples, accumulation gives the same gradient as one large batch. It differs when the loss or a layer depends on the other examples in the batch (batch-dependent layers, losses that use in-batch negatives), when gradient clipping or normalisation is applied per small batch and not to the sum, and when a per-step statistic is measured.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does gradient accumulation do?",
+        "options": [
+          "Adds up gradients from several small batches before one weight change",
+          "Shrinks the gradients",
+          "Deletes old gradients",
+          "Doubles the learning rate",
+          "Skips the first batches"
+        ],
+        "answer": 0,
+        "why": "It builds a larger effective batch out of smaller ones."
+      },
+      {
+        "level": 2,
+        "q": "Is accumulation always identical to a true larger batch?",
+        "options": [
+          "No, not when layers or losses depend on the other examples in the batch",
+          "Yes, always",
+          "No, it is always worse",
+          "Yes, but only on CPU",
+          "No, because it uses a different optimizer"
+        ],
+        "answer": 0,
+        "why": "It matches for plain summed losses and differs for batch-dependent pieces."
+      },
+      {
+        "level": 3,
+        "q": "Our EMA updates on every small batch. What happens to its memory, measured in weight changes, when you accumulate more?",
+        "options": [
+          "It becomes shorter",
+          "It becomes longer",
+          "It stays the same",
+          "It stops",
+          "It doubles"
+        ],
+        "answer": 0,
+        "why": "With more small batches per weight change, the same per-batch decay covers fewer weight changes."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "ema",
+    "term": "EMA",
+    "aliases": [
+      "exponential moving average",
+      "EMA copy",
+      "EMA weights"
+    ],
+    "plain": "An EMA is a second, slowly updated copy of the weights that follows the training weights with a delay, smoothing out the noise of single steps.",
+    "ours": "A trainer can save both the live weights and the EMA copy. We once rendered an EMA by default that had barely moved from the starting model, so what we heard was mostly the starting model, not the fine-tune. In our Stable Audio 3 fine-tuning trainers the EMA updates on every small batch, not once per weight change, so accumulation changes how far back it looks.",
+    "deeper": "An EMA decay of 0.9999 means a half-life of about 6,931 updates. Moving to a different batch size needs a changed decay (the new decay is the old one raised to the ratio of batch sizes) to keep the same time span. A decay that is too long for a short run leaves the EMA close to its starting point. Several tools prefer the EMA copy when a checkpoint carries one, so check which copy your render script loads.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is an EMA copy of the weights?",
+        "options": [
+          "A slowly updated copy that follows the training weights with a delay",
+          "A backup of the dataset",
+          "A compressed model",
+          "The best checkpoint",
+          "A second optimizer"
+        ],
+        "answer": 0,
+        "why": "It is a smoothed average of the weights over recent updates."
+      },
+      {
+        "level": 2,
+        "q": "A run is short, and the EMA decay is far too long for it. What do you hear when rendering with the EMA weights?",
+        "options": [
+          "Mostly the starting model",
+          "The best possible model",
+          "Silence",
+          "A louder model",
+          "Noise only"
+        ],
+        "answer": 0,
+        "why": "A too-long EMA barely moves away from its start in a short run."
+      },
+      {
+        "level": 3,
+        "q": "An EMA decay of 0.9999 has a half-life of about...",
+        "options": [
+          "6,931 updates",
+          "10 updates",
+          "100 updates",
+          "1,000,000 updates",
+          "1 update"
+        ],
+        "answer": 0,
+        "why": "The half-life is ln 0.5 / ln 0.9999, about 6,931 updates."
+      },
+      {
+        "level": 3,
+        "q": "You switch to a bigger accumulated batch. Why might the EMA decay need changing?",
+        "options": [
+          "The EMA updates per small batch, so its time span in weight changes shifts",
+          "The EMA does not depend on batch size",
+          "The EMA turns off",
+          "The learning rate resets",
+          "The EMA doubles"
+        ],
+        "answer": 0,
+        "why": "Decay is a timescale in EMA updates, which are counted per small batch."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "warmup-cosine-decay",
+    "term": "warmup and cosine decay",
+    "aliases": [
+      "warmup",
+      "cosine decay",
+      "cosine schedule",
+      "cosine decay schedule",
+      "decaying schedule"
+    ],
+    "plain": "Warmup starts training with a small learning rate and raises it to full over the first few percent of the run; cosine decay then lowers it smoothly along a half-cosine curve toward zero.",
+    "ours": "The fine-tuning paper the guide cites uses cosine decay with 3% warmup. The guide's starting configuration uses warmup plus either Schedule-Free averaging or a decaying schedule, and avoids a constant learning rate. The weight-size check starts after warmup.",
+    "deeper": "Warmup protects the first steps, when the weights and the optimizer's averages are not yet settled. Decay lowers the step size late so the weights settle into a good place. Schedule-Free replaces the decay by averaging the weights.",
+    "papers": [
+      {
+        "title": "The Road Less Scheduled (Schedule-Free)",
+        "url": "https://arxiv.org/abs/2405.15682"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does warmup do?",
+        "options": [
+          "Starts with a small learning rate and raises it",
+          "Warms up the GPU",
+          "Loads the data",
+          "Shuffles the batches",
+          "Lowers the learning rate at the end"
+        ],
+        "answer": 0,
+        "why": "It ramps the learning rate up over the first few percent of the run."
+      },
+      {
+        "level": 2,
+        "q": "What does cosine decay do?",
+        "options": [
+          "Lowers the learning rate smoothly toward zero",
+          "Raises it",
+          "Keeps it constant",
+          "Randomises it",
+          "Doubles it every epoch"
+        ],
+        "answer": 0,
+        "why": "The learning rate follows a half-cosine down."
+      },
+      {
+        "level": 3,
+        "q": "Which method in this guide replaces a decaying schedule?",
+        "options": [
+          "Schedule-Free averaging",
+          "Gradient clipping",
+          "Weight decay",
+          "Momentum",
+          "NorMuon"
+        ],
+        "answer": 0,
+        "why": "Schedule-Free keeps the learning rate and averages the weights."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "gradient-clipping",
+    "term": "gradient clipping",
+    "aliases": [
+      "clipping",
+      "grad clip",
+      "clip"
+    ],
+    "plain": "Gradient clipping caps the overall size of the gradient at a set limit, so one unusually large batch cannot cause a huge step.",
+    "ours": "Our recent head runs used a clip of 1.0. In one full fine-tune, clipping at 1.0 did not change the pattern of loss spikes: 38% of steps still spiked above 5.",
+    "deeper": "Clipping rescales the whole gradient when its norm exceeds the limit, leaving its direction alone. It protects against single bad batches but does not fix a systematic problem such as the weights growing, and an optimizer that normalises the size of its update (Muon, sign steps) is already insensitive to the gradient's size.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does gradient clipping do?",
+        "options": [
+          "Caps the gradient's overall size at a limit",
+          "Deletes small gradients",
+          "Raises the learning rate",
+          "Skips the batch",
+          "Saves the checkpoint"
+        ],
+        "answer": 0,
+        "why": "It rescales a too-large gradient down to the limit."
+      },
+      {
+        "level": 2,
+        "q": "Did clipping at 1.0 fix the loss spikes in our full fine-tune?",
+        "options": [
+          "No, 38% of steps still spiked above 5",
+          "Yes, completely",
+          "It made them worse",
+          "It was not used",
+          "The guide does not say"
+        ],
+        "answer": 0,
+        "why": "The guide reports the spikes continued."
+      },
+      {
+        "level": 3,
+        "q": "Why is clipping less relevant for an optimizer that normalises its update size?",
+        "options": [
+          "The step size no longer depends on the gradient's size",
+          "Such optimizers have no gradient",
+          "They clip twice",
+          "They ignore the learning rate",
+          "They need larger gradients"
+        ],
+        "answer": 0,
+        "why": "If the step is already fixed in size, scaling the gradient changes nothing."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "nan",
+    "term": "NaN",
+    "aliases": [
+      "non-finite",
+      "not a number"
+    ],
+    "plain": "NaN means 'not a number': a value that has become undefined, usually from overflow or dividing zero by zero, and once it enters the weights everything computed from them is ruined.",
+    "ours": "In our runs NaN showed up in a head at epoch 13 (run B3) and in a DoRA run near step 6,900. Our head trainer now stops at the first non-finite loss. A check written as 'if the value is greater than X' cannot detect NaN, because any comparison with NaN is false; one of the optimizers we audited had exactly this bug.",
+    "deeper": "NaN rarely appears out of nowhere: weights or magnitudes usually grew, or crossed zero, for hundreds of steps before the loss turned NaN. That is why the guide logs weight size and update size per group, and checks that saved weights and test outputs are finite, both.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does NaN mean?",
+        "options": [
+          "Not a number, an undefined value",
+          "A normal zero",
+          "A very large number",
+          "A negative number",
+          "No answer yet"
+        ],
+        "answer": 0,
+        "why": "It is the result of an undefined operation such as 0 divided by 0."
+      },
+      {
+        "level": 2,
+        "q": "Why can a check 'loss > limit' miss a NaN loss?",
+        "options": [
+          "Any comparison with NaN is false",
+          "NaN is smaller than everything",
+          "NaN is a string",
+          "The limit is too high",
+          "NaN is zero"
+        ],
+        "answer": 0,
+        "why": "NaN is neither greater nor smaller than anything, so such guards never fire."
+      },
+      {
+        "level": 3,
+        "q": "What usually happens before a run's loss turns NaN?",
+        "options": [
+          "Weights or magnitudes grow or cross zero for a while",
+          "The loss is exactly zero",
+          "The data is deleted",
+          "The learning rate becomes negative",
+          "Nothing; it is sudden"
+        ],
+        "answer": 0,
+        "why": "The guide's failures all showed earlier warning signs in weight size or magnitudes."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "loss-spike",
+    "term": "loss spike",
+    "aliases": [
+      "loss spikes",
+      "spike count",
+      "spikes",
+      "median loss"
+    ],
+    "plain": "A loss spike is a step whose loss jumps far above the typical value; counting spikes and tracking the median shows trouble that an average hides.",
+    "ours": "In one full fine-tune the average loss in each logging bin fell from 405 to 84 and looked like convergence, while the median stayed at 2.5 against 0.79 for the reference run, and 38% of steps spiked above 5. Five matters because the reference run's median was 0.79, so 5 is more than six times a normal step.",
+    "deeper": "A mean is dragged by a few huge values, so it can fall steadily while most steps stay bad. The median shows the typical step, and the share of steps above a threshold shows how often things go wrong. Pick the threshold relative to the reference run's typical loss, not as an absolute number.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a loss spike?",
+        "options": [
+          "A step whose loss jumps far above the typical value",
+          "A very low loss",
+          "The first loss of the run",
+          "A saved checkpoint",
+          "The learning rate peak"
+        ],
+        "answer": 0,
+        "why": "It is an outlier in the loss."
+      },
+      {
+        "level": 2,
+        "q": "Why can the mean loss mislead?",
+        "options": [
+          "A few huge values can dominate it and hide that most steps are bad",
+          "Means are always wrong",
+          "It ignores spikes entirely",
+          "It is computed on test data",
+          "It cannot be negative"
+        ],
+        "answer": 0,
+        "why": "The mean was falling while the median stayed high."
+      },
+      {
+        "level": 3,
+        "q": "Why is a loss of 5 a lot in the example?",
+        "options": [
+          "The reference run's median was 0.79, so 5 is over six times typical",
+          "5 is always a lot",
+          "Because the batch was 5",
+          "Losses above 1 are impossible",
+          "Five is the learning rate"
+        ],
+        "answer": 0,
+        "why": "Spike thresholds make sense relative to the typical loss of a healthy run."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "logging-bin",
+    "term": "logging bin",
+    "aliases": [
+      "logging bins",
+      "bin"
+    ],
+    "plain": "A logging bin is a stretch of consecutive training steps whose losses are summarised into one logged point, so the log is a manageable curve and not one line per step.",
+    "ours": "The trainer's logging setting decides how long a bin is; the guide's example does not state the bin length. What matters is how the bin is summarised: the average of a bin can fall because of a few extreme steps, so the guide recommends logging the median and a count of spikes per bin as well.",
+    "deeper": "Larger bins smooth the curve and hide single steps; smaller bins show noise. The 'mean of each logging bin fell from 405 to 84' example is the average of every step in each stretch.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a logging bin?",
+        "options": [
+          "A group of consecutive steps summarised in one logged point",
+          "A folder of log files",
+          "A checkpoint",
+          "A batch of audio",
+          "A type of loss"
+        ],
+        "answer": 0,
+        "why": "It is a stretch of steps reduced to a single value."
+      },
+      {
+        "level": 2,
+        "q": "Who decides how long a bin is?",
+        "options": [
+          "The trainer's logging setting",
+          "The GPU",
+          "The data",
+          "The optimizer's learning rate",
+          "The listener"
+        ],
+        "answer": 0,
+        "why": "It is a trainer option; the guide does not state our bin length."
+      },
+      {
+        "level": 3,
+        "q": "Why log the median and the spike count per bin in addition to the mean?",
+        "options": [
+          "The mean can fall because of a few extreme steps",
+          "The mean is never logged",
+          "The median is faster",
+          "To save disk space",
+          "The mean is always wrong"
+        ],
+        "answer": 0,
+        "why": "The 405-to-84 mean looked like convergence while the median showed nothing had improved."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "weight-path",
+    "term": "path of the weights",
+    "aliases": [
+      "weight path",
+      "path efficiency",
+      "global norm"
+    ],
+    "plain": "The path of the weights is the route all the weights take through training; we measure how far they have moved from the start, how fast per step, and how straight the route is.",
+    "ours": "Path efficiency is the straight-line distance from the start divided by the total length of the route. It did not separate healthy from runaway DoRA runs on its own (runaways read 0.14 to 0.23, and one run that converged read 0.216). The global norm did: 99 to 114 for healthy runs against 4,085 to 12,189 for runaways. The speed per step helped as well.",
+    "deeper": "It is the same idea as a hiker's track: a meandering route (low efficiency) is not necessarily bad, but a fast, huge, lockstep move of every layer (high speed, huge norm) was the runaway signature in our DoRA runs.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does path efficiency measure?",
+        "options": [
+          "Straight-line distance moved divided by the length of the route",
+          "The learning rate",
+          "The batch time",
+          "The loss",
+          "The number of layers"
+        ],
+        "answer": 0,
+        "why": "A value of 1 would be a perfectly straight route."
+      },
+      {
+        "level": 2,
+        "q": "Did path efficiency alone tell healthy and runaway DoRA runs apart?",
+        "options": [
+          "No, a converged run read 0.216, inside the runaways' 0.14 to 0.23",
+          "Yes, perfectly",
+          "It was never measured",
+          "Only for biases",
+          "Only for full fine-tunes"
+        ],
+        "answer": 0,
+        "why": "The ranges overlapped, so it needed the global norm."
+      },
+      {
+        "level": 3,
+        "q": "Which measurement separated the healthy runs from the runaways in our DoRA runs?",
+        "options": [
+          "The global norm (99 to 114 against thousands)",
+          "The file size",
+          "The batch size",
+          "The epoch count",
+          "The dataset name"
+        ],
+        "answer": 0,
+        "why": "The runaways' global norm was thousands against about a hundred for healthy runs."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "convergence",
+    "term": "convergence",
+    "aliases": [
+      "converged",
+      "converge"
+    ],
+    "plain": "A run has converged when it stops improving in the way you care about; in generative audio the loss alone is a poor way to tell.",
+    "ours": "In latent-diffusion fine-tuning the loss often changes little while the model keeps getting better or worse to the ear. About half of the held-out loss sits at high noise levels and barely depends on the optimizer. On the larger set every curve was still falling at 10 epochs, and the setting that finished best led only from epoch 8 of 10, so short runs rank learning speed, not final quality. We choose checkpoints by listening.",
+    "deeper": "Convergence by the loss curve means the curve is flat; convergence to a good result needs a check that fits your data, and the guide adds stop rules (a non-finite loss, the held-out loss rising for several epochs) to end clearly bad runs early. We cannot prove a run has converged from the loss alone.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does it mean for a run to have converged?",
+        "options": [
+          "It has stopped improving in the way you care about",
+          "It reached the last epoch",
+          "The loss is zero",
+          "The weights are zero",
+          "It ran out of data"
+        ],
+        "answer": 0,
+        "why": "Reaching the end of the schedule does not mean convergence."
+      },
+      {
+        "level": 2,
+        "q": "Why is a flat loss a weak proof of convergence in latent diffusion?",
+        "options": [
+          "A large part of the loss sits at noise levels the model cannot change",
+          "Loss is always flat",
+          "The loss is clipped",
+          "The GPU averages it",
+          "The data is noise"
+        ],
+        "answer": 0,
+        "why": "Much of the loss is irreducible, so audible progress shows up as a small change."
+      },
+      {
+        "level": 3,
+        "q": "In one sweep the best setting led only from epoch 8 of 10. What does that say about short runs?",
+        "options": [
+          "They rank learning speed, not final quality",
+          "They are reliable",
+          "Epoch 8 is always best",
+          "The sweep was wrong",
+          "Only 10 epochs exist"
+        ],
+        "answer": 0,
+        "why": "Early rankings may reverse later."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "fine-tuning",
+    "term": "fine-tuning",
+    "aliases": [
+      "fine-tune",
+      "fine-tunes",
+      "fine-tuned",
+      "full fine-tune",
+      "full fine-tunes",
+      "full fine-tuning"
+    ],
+    "plain": "Fine-tuning continues training a model that is already trained, on a smaller set of data, to bend it toward a particular style or task.",
+    "ours": "Our fine-tunes of Stable Audio 3 are of two kinds: full fine-tunes, which change every weight of the model (a few runs, several failures), and LoRA or DoRA adapters, which train a small add-on while the original weights stay fixed. Full fine-tunes need a lot of memory; some optimizers, such as Lion, make a full fine-tune of Stable Audio Medium Base possible on a 16 GB card (reported by our team from its own runs; not documented in this guide).",
+    "deeper": "Two papers report that Muon brings no clear advantage over AdamW for full fine-tuning of Adam-pretrained models, and that LoRA reduces the gap. Switching to a different optimizer than the one used in pre-training also makes a fine-tune more sensitive to the learning rate and causes more forgetting.",
+    "papers": [
+      {
+        "title": "Can Muon Fine-tune Adam-Pretrained Models?",
+        "url": "https://arxiv.org/abs/2605.10468"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is fine-tuning?",
+        "options": [
+          "Continuing to train an already trained model on new data",
+          "Training from random weights",
+          "Compressing a model",
+          "Rendering audio",
+          "Choosing a learning rate"
+        ],
+        "answer": 0,
+        "why": "It starts from a trained model."
+      },
+      {
+        "level": 2,
+        "q": "What is the difference between a full fine-tune and a LoRA?",
+        "options": [
+          "A full fine-tune changes every weight; a LoRA trains a small add-on",
+          "None",
+          "A LoRA is slower",
+          "A full fine-tune uses less memory",
+          "A LoRA changes every weight"
+        ],
+        "answer": 0,
+        "why": "LoRA keeps the original weights fixed and learns a small correction."
+      },
+      {
+        "level": 3,
+        "q": "Switching the optimizer relative to pre-training does what, according to the paper the guide cites?",
+        "options": [
+          "Makes fine-tuning more sensitive to the learning rate and causes more forgetting",
+          "Removes the need for a learning rate",
+          "Always improves results",
+          "Has no effect",
+          "Doubles the model size"
+        ],
+        "answer": 0,
+        "why": "That is one of the paper's findings."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "pre-training",
+    "term": "pre-training",
+    "aliases": [
+      "pre-trained",
+      "pretrained",
+      "pre-train",
+      "pretraining"
+    ],
+    "plain": "Pre-training is the first, large training that gives a model its general ability, before any fine-tuning on a specific style or task.",
+    "ours": "Which optimizer pre-trained Stable Audio 3 is not stated in its report. The report says the post-training stage used Muon at a learning rate of 1e-5 on the attention and feed-forward matrices and AdamW at 1e-6 on the rest. A developer's unpublished remark, noted in our logs, is that Muon became available late in the project, so the base model is probably mostly AdamW-shaped; treat that as a pointer, not as a published fact.",
+    "deeper": "It matters because the optimizer that shaped the weights seems to matter for how well another optimizer can fine-tune them (the fine-tuning paper). Do not copy a learning rate from a from-scratch setup to a fine-tune.",
+    "papers": [
+      {
+        "title": "Stable Audio 3 report",
+        "url": "https://arxiv.org/abs/2605.17991"
+      },
+      {
+        "title": "Can Muon Fine-tune Adam-Pretrained Models?",
+        "url": "https://arxiv.org/abs/2605.10468"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is pre-training?",
+        "options": [
+          "The first large training that gives general ability",
+          "Training on the test set",
+          "Rendering clips",
+          "A short warmup",
+          "Fine-tuning on one song"
+        ],
+        "answer": 0,
+        "why": "Fine-tuning builds on it."
+      },
+      {
+        "level": 2,
+        "q": "Does the Stable Audio 3 report state which optimizer pre-trained it?",
+        "options": [
+          "No, it does not say",
+          "Yes, AdamW",
+          "Yes, Muon",
+          "Yes, Lion",
+          "Yes, Shampoo"
+        ],
+        "answer": 0,
+        "why": "The guide notes that the report is silent on this."
+      },
+      {
+        "level": 3,
+        "q": "How should the developer's remark about Muon arriving late be treated?",
+        "options": [
+          "As an unpublished pointer, not a published fact",
+          "As a proof",
+          "As false",
+          "As the report's conclusion",
+          "As irrelevant"
+        ],
+        "answer": 0,
+        "why": "The guide labels it a pointer from our notes."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "diffusion-model",
+    "term": "diffusion model",
+    "aliases": [
+      "diffusion",
+      "diffusion models",
+      "rectified flow"
+    ],
+    "plain": "A diffusion model generates by starting from noise and removing it step by step until a clean result remains, guided by what it learned during training.",
+    "ours": "Stable Audio 3 is a rectified-flow diffusion model: during training an example is mixed with noise by a randomly chosen amount t (0 for clean, 1 for pure noise) and the model learns to predict how to undo it. Our control heads are trained on the same kind of noisy latents at random noise levels, so the loss has a share at every noise level.",
+    "deeper": "That is why the held-out loss is split by noise level t: the same model is asked to do very different jobs at t near 0 (refine detail) and t near 1 (decide the layout). It also means the time (noise level) is an input to the network, which the time-embedding layers handle.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "How does a diffusion model generate?",
+        "options": [
+          "By removing noise from random noise step by step",
+          "By copying a training clip",
+          "By sorting the data",
+          "By adding more layers",
+          "By filtering audio"
+        ],
+        "answer": 0,
+        "why": "Generation is a gradual denoising."
+      },
+      {
+        "level": 2,
+        "q": "In rectified flow, what does t = 1 mean?",
+        "options": [
+          "Pure noise",
+          "Clean data",
+          "Half noise",
+          "The end of training",
+          "Zero weights"
+        ],
+        "answer": 0,
+        "why": "t runs from 0 (clean) to 1 (pure noise)."
+      },
+      {
+        "level": 3,
+        "q": "Why is the held-out loss split by noise level?",
+        "options": [
+          "The model does very different jobs at different noise levels",
+          "To save time",
+          "To hide NaN",
+          "Because t is the batch size",
+          "It is required by the GPU"
+        ],
+        "answer": 0,
+        "why": "Detail refinement at low t and layout at high t behave differently."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "latent",
+    "term": "latent",
+    "aliases": [
+      "latents",
+      "latent space",
+      "SAME latent"
+    ],
+    "plain": "A latent is a compressed internal representation of the audio: a grid of numbers much smaller than the waveform, which the model works on and a decoder turns back into sound.",
+    "ours": "Our models work on SAME latents: 256 channels, with one time step for every 4,096 audio samples (about 10.8 per second). The guide uses the standard deviation of generated latents as a health check: about 1.1 is healthy, and values from 1.3 up were the early stage of the drone.",
+    "deeper": "The latent is trained to carry musical information in a form that is nearly linear to read out (chroma and text are close to one linear map away). A decoder trained to tolerate small noise turns the latent back into audio, which is why steering and mixing in latent space decode cleanly.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a latent?",
+        "options": [
+          "A compressed internal representation of the audio",
+          "A type of loss",
+          "A learning rate",
+          "A batch",
+          "A file name"
+        ],
+        "answer": 0,
+        "why": "The model works on latents, not on raw waveforms."
+      },
+      {
+        "level": 2,
+        "q": "How many channels does a SAME latent have?",
+        "options": [
+          "256",
+          "12",
+          "384",
+          "4,096",
+          "1"
+        ],
+        "answer": 0,
+        "why": "256 channels, at about 10.8 time steps per second."
+      },
+      {
+        "level": 3,
+        "q": "What did a latent standard deviation of 1.3 or more indicate in the guide?",
+        "options": [
+          "The early stage of the drone from weight growth",
+          "A perfect model",
+          "A silent clip",
+          "A short clip",
+          "A low learning rate"
+        ],
+        "answer": 0,
+        "why": "Healthy is near 1.1; larger values warned of runaway growth."
+      }
+    ],
+    "quiz_reviewed": null
+  }
+]
