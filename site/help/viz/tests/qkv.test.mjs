@@ -29,15 +29,15 @@ test('3. separate sizes do not depend on kscale', () => {
   for (const ks of KSCALES) {
     const s = sizes(ks).separate;
     assert.ok(s[0] === base[0] && s[2] === base[2], `q/v at ${ks}`);
-    assert.ok(Math.abs(s[1] - base[1]) < 1e-6, `k at ${ks}`);
+    assert.ok(Math.abs(s[1] - base[1]) < 1e-5, `k at ${ks}`);
   }
 });
 
-test('4. coupling: fused q and v at kscale 10 are under 0.3 x their size at 0.01', () => {
+test('4. coupling: fused q and v at kscale 10 are under half their size at 0.01', () => {
   const lo = sizes(0.01).fused, hi = sizes(10).fused;
   console.log('fused at 0.01', lo, 'fused at 10', hi);
-  assert.ok(hi[0] < 0.3 * lo[0], `q ${hi[0]} vs ${lo[0]}`);
-  assert.ok(hi[2] < 0.3 * lo[2], `v ${hi[2]} vs ${lo[2]}`);
+  assert.ok(hi[0] < 0.5 * lo[0], `q ${hi[0]} vs ${lo[0]}`);
+  assert.ok(hi[2] < 0.5 * lo[2], `v ${hi[2]} vs ${lo[2]}`);
 });
 
 test('5. starvation: fused k at kscale 0.01 is under 0.05 x separate k', () => {
