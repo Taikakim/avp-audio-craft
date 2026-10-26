@@ -526,3 +526,88 @@ def test_last_question_button_leads_to_the_score(make_page, page_url, fixture_on
             "See your score" if k == len(qs) - 1 else "Next question")
         page.locator("#help-pane .hp-next").click()
     expect(page.locator("#help-pane .hp-score-line")).to_contain_text("3 of 3")
+
+
+# --------------------------------------------------------------------------- phone
+
+SWIPE = """([sel, dist]) => {
+  const t = document.querySelector(sel);
+  const touch = (y) => new Touch({ identifier: 1, target: t, clientX: 60, clientY: y });
+  const fire = (type, y, live) => t.dispatchEvent(new TouchEvent(type, {
+    bubbles: true, cancelable: true,
+    touches: live ? [touch(y)] : [], targetTouches: live ? [touch(y)] : [], changedTouches: [touch(y)] }));
+  fire('touchstart', 300, true);
+  fire('touchmove', 300 + dist / 2, true);
+  fire('touchmove', 300 + dist, true);
+  fire('touchend', 300 + dist, false);
+}"""
+
+
+def _no_scroll_lock(page):
+    assert page.evaluate("getComputedStyle(document.body).overflow") != "hidden"
+    assert page.evaluate("getComputedStyle(document.documentElement).overflow") != "hidden"
+    assert page.evaluate("getComputedStyle(document.body).paddingBottom") == "0px"
+    page.evaluate("window.scrollTo(0, 0)")
+    page.mouse.move(100, 300)
+    page.mouse.wheel(0, 300)
+    page.wait_for_function("window.scrollY > 0")                      # the article scrolls again
+
+
+@pytest.mark.parametrize("how", ["swipe", "button"])
+def test_phone_bottom_sheet_opens_above_the_term_and_leaves_no_scroll_lock(
+        make_page, page_url, quiz_term, how):
+    page = make_page((390, 800), touch=True)
+    load_page(page, page_url)
+    link = term_link(page, quiz_term, "last")        # on the fixture page this one is below the fold
+    link.tap()
+    pane = page.locator("#help-pane")
+    expect(pane).to_be_visible()
+    page.wait_for_timeout(350)                                        # let the 0.18s rise animation settle
+    box = pane.bounding_box()
+    assert abs(box["width"] - 390) <= 1
+    assert abs(box["height"] - 560) <= 6                              # about 70% of the screen
+    assert abs(box["y"] + box["height"] - 800) <= 1                   # glued to the bottom
+    assert page.evaluate("getComputedStyle(document.body).paddingRight") == "0px"
+    page.wait_for_function(                                           # the term is not hidden under the sheet
+        "sel => document.querySelectorAll(sel)[document.querySelectorAll(sel).length - 1]"
+        ".getBoundingClientRect().bottom <= 800 * 0.3 + 2",
+        arg=f'a.gl[data-term="{quiz_term}"]')
+    if how == "swipe":
+        page.evaluate(SWIPE, [".hp-head", 160])
+    else:
+        page.locator("#help-pane .hp-close").tap()
+    expect(pane).to_be_hidden()
+    assert page.evaluate("document.querySelector('#help-pane').style.transform") == ""
+    _no_scroll_lock(page)
+    assert link.evaluate("el => el === document.activeElement")
+
+
+def test_short_swipe_does_not_dismiss_and_the_sheet_snaps_back(make_page, page_url, quiz_term):
+    page = make_page((390, 800), touch=True)
+    load_page(page, page_url)
+    term_link(page, quiz_term).tap()
+    expect(page.locator("#help-pane")).to_be_visible()
+    page.evaluate(SWIPE, [".hp-head", 30])
+    expect(page.locator("#help-pane")).to_be_visible()
+    assert page.evaluate("document.querySelector('#help-pane').style.transform") == ""
+
+
+def test_phone_shows_the_full_screen_wording_and_escape_still_works(make_page, page_url, fixture_only):
+    page = make_page((390, 800), touch=True)
+    load_page(page, f"{page_url}#gl=ema")
+    expect(page.locator("#help-pane .hp-enlarge .hp-narrow")).to_be_visible()
+    expect(page.locator("#help-pane .hp-enlarge .hp-wide")).to_be_hidden()
+    page.locator("#help-pane .hp-enlarge").tap()
+    box = page.locator(".hp-overlay").bounding_box()
+    assert (round(box["width"]), round(box["height"])) == (390, 800)
+    page.keyboard.press("Escape")
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
+    _no_scroll_lock(page)
+
+
+def test_wide_layout_is_restored_after_the_phone_sheet_is_not_needed(make_page, page_url, quiz_term):
+    page = make_page((1280, 800))
+    open_via_click(page, page_url, quiz_term)
+    assert page.evaluate("getComputedStyle(document.body).paddingBottom") == "0px"
+    assert page.evaluate("getComputedStyle(document.querySelector('#help-pane .hp-grip')).display") == "none"

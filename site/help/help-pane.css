@@ -199,3 +199,35 @@ body.help-pane-open { padding-right: var(--hp-w); }
 .hp-wrong .hp-verdict { color: var(--hp-bad, #b3412e); }
 .hp-score-line { font-size: 16px; color: var(--ink, #2b3538); }
 .hp-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- phones: bottom sheet --------------------------------------------------------------------------------------- */
+@keyframes hp-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (max-width: 700px) {
+  body.help-pane-open { padding-right: 0; padding-bottom: 70vh; }   /* article end stays reachable; no scroll lock */
+  .hp-pane {
+    top: auto; left: 0; right: 0; bottom: 0;
+    width: auto;
+    height: 70vh;
+    border-left: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, .12);
+    animation: hp-rise .18s ease-out;
+  }
+  .hp-grip {
+    display: block;
+    position: absolute;
+    top: 4px; left: 50%;
+    width: 36px; height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--rule, #c9d2d0);
+  }
+  .hp-head { padding-top: 14px; }
+  .hp-viz .hp-wide { display: none; }
+  .hp-viz .hp-narrow { display: inline; }
+  .hp-reopen { bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hp-pane { animation: none; }
+}

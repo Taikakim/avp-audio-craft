@@ -399,8 +399,37 @@ class HelpPane {
     this.bodyEl.append(wrap);
   }
 
-  // STUB: Task 2.5 replaces this.
-  installSwipe() {}
+  // Swipe down on the header dismisses the bottom sheet. Only the header listens, so the pane body and the
+  // page keep their normal touch scrolling; nothing here locks page scroll.
+  installSwipe() {
+    const head = this.head;
+    const pane = this.pane;
+    let startY = 0;
+    let dy = 0;
+    let dragging = false;
+    head.addEventListener('touchstart', (e) => {
+      if (!isPhone() || e.touches.length !== 1) return;
+      startY = e.touches[0].clientY;
+      dy = 0;
+      dragging = true;
+      pane.style.transition = 'none';
+    }, { passive: true });
+    head.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      dy = Math.max(0, e.touches[0].clientY - startY);
+      pane.style.transform = `translateY(${dy}px)`;
+    }, { passive: true });
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      pane.style.transition = '';
+      pane.style.transform = '';
+      if (dy > 80) this.close();
+      dy = 0;
+    };
+    head.addEventListener('touchend', end);
+    head.addEventListener('touchcancel', end);
+  }
 
   destroyViz() {
     const v = this.viz;
