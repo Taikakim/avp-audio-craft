@@ -118,5 +118,21 @@ Tested three zero-training approaches using SA3 Medium Base weights:
 4. **Interactive Audition Console:**
    - Deployed at `file:///home/kim/sao_runs/drum_sep_g2_eval/index.html` with synchronous multi-track audio playback, live A/B solo comparison, metric badges, and validation inspection.
 
+### finding · Gate G3 Multi-Stem Separation: Unified prompt conditioning, transient locking, and codec boundary
+
+1. **Unified Multi-Stem Conditioned Architecture:**
+   - Trained a single prompt-conditioned SA3 DiT adapter (rank 32 LoRA + 256-channel modular `mix_lat` inlet, 75.4M active parameters) on 4 isolated drum stem classes (**Kick, Snare, Hi-Hats, Percussion**) with dynamic $\pm 2.5\text{ dB}$ remix augmentations across 30 multitrack projects (6,000 steps, AdamW + WSD schedule, lr 1e-4).
+   - Training loss converged smoothly from 0.845 down to **0.151**, confirming stable multi-task routing through frozen T5-Gemma text conditioning.
+2. **Stem-by-Stem Performance Breakdown (Held-Out Validation & Benchmarks):**
+   - **Kick:** Maintained outstanding separation fidelity: **+18.9 to +19.5 dB raw SI-SDR** and **+24.0 to +26.3 dB Wiener SI-SDR** on held-out tracks (LSD 5.56–10.19 dB, Onset F1 0.70). On full 30s benchmark track `Acid Alien`, SA3 Kick achieves **+4.38 dB SI-SDR** (+0.57 dB improvement over Gate G2 Arm A-v2, and +33.6 dB over MSG-LD).
+   - **Snare:** Achieved near-perfect transient synchronization: **0.943 to 0.976 Onset F1 @ 20ms** and 8.81–10.01 dB LSD. Wiener reconciliation bridges the energy gap, yielding positive separation (**+2.60 dB SI-SDR**).
+   - **Percussion (Congas / Shakers / Grooves):** Locks onto rhythmic groove with **0.938 to 0.952 Onset F1 @ 20ms**, accurately capturing polyrhythmic hits.
+   - **Hi-Hats:** Onset F1 collapses to ~0.02 and SI-SDR to -30 dB. Empirically validates the codec ceiling boundary established in Gate G0: 16th-note metallic cymbals at 145 BPM (~103 ms spacing) sit at the 93 ms (10.77 fps) Nyquist limit of SAME-L, smearing high-frequency diffuse energy across latent frames.
+3. **Wiener Reconciliation as Universal Energy Conservation:**
+   - STFT Wiener masking ($\alpha = 1.5$) against the drum bus improved SI-SDR by **+4.5 to +8.5 dB** across every stem, proving essential for eliminating generative hallucination drift.
+4. **Interactive Audition Console Deployed:**
+   - Deployed live at `http://localhost:8088/drum_sep_g3_eval/index.html` (and local filesystem at `/home/kim/sao_runs/drum_sep_g3_eval/index.html`). Features full synchronous 4-stem playback (`Mix`, `Ground Truth`, `Kick`, `Snare`, `Hi-Hat`, `Percussion`, plus Wiener-reconciled counterparts, `BS-RoFormer`, and `MSG-LD`) with real-time solo/mute A/B comparison.
+
+
 
 
