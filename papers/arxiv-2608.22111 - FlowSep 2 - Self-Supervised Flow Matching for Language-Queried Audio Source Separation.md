@@ -1,0 +1,27 @@
+# FlowSep 2: Self-Supervised Flow Matching for Language-Queried Audio Source Separation (2608.22111v2) — read by THE-FINN 2026-10-26
+
+Yi Yuan, Xubo Liu, Haohe Liu, Xiyuan Kang, Mark D. Plumbley, Wenwu Wang (University of Surrey; King's College London), v2 dated 25 Aug 2026. PDF: `arxiv-2608.22111 - FlowSep 2 - Self-Supervised Flow Matching for Language-Queried Audio Source Separation.pdf` (downloaded from arXiv 2026-10-26).
+**Read:** all 11 pages of main text (reference list skimmed). Demos: audio-agi.github.io/Flowsep2-demo/. No code or weights link in the paper.
+**Name clash:** our `control/scripts/sa3_flowsep.py` is a different, training-free method (FlowEdit / AUDEDIT difference-velocity editing on SA3). This paper's FlowSep is a trained separator.
+
+## What it contains
+- **Generative separation.** A rectified-flow DiT generates the TARGET source latent from noise, conditioned on the mixture latent (concatenated along channels with the noisy latent) and a FLAN-T5 text query. No masks.
+- **Stable Audio VAE** as the latent space (waveform VAE, ~320x compression; 10 s gives 512 x 128 latents). All audio mono 16 kHz.
+- **Self-Flow representation loss** (from the Self-Flow paper, their ref [33]). An EMA teacher sees a cleaner view (one flow time `max(la, lb)` for all tokens); the student sees a view where each token gets one of two flow times at random (Bernoulli). Loss `1 - cos` between an EARLIER student layer and a DEEPER teacher layer, added as `L_RFM + gamma * L_rep`. The plain flow loss still uses the normal uniformly noised view. No external encoder needed.
+- **Training:** 2.03M clips / 5,650 h (VGGSound, AudioCaps, AudioSetCaps, WavCaps), all general sound, no music training data. One A100-80GB, 4M steps, batch 8, AdamW 5e-5, 10k warmup. Main model FlowSep2-M = 16-layer DiT, 599M.
+- **Metrics:** reference-free or embedding-based, because generated output is not sample-aligned with the target, so SDR does not apply: FAD, CLAP (audio-text), CLAPA (audio-target), AudioBox PQ/CU, **SAJ** (SAM Audio Judge: recall, precision, faithfulness, overall, 1-5), and a 10-rater listening test (OVL, REL).
+- **Results.** Best on general-sound benchmarks: FAD AudioCaps 2.86 (FlowSep) -> 0.88, VGGSound 2.06 -> 1.32. **Music (MUSDB, zero-shot): SAM-Audio wins** (CLAPA 62.8 vs 58.5; SAJ 3.76 vs 3.39; OVL 4.44 vs 3.91). The authors attribute this to no music in training and list stem-level music data as future work.
+- **Ablations (Table V, depth 16 unless noted):**
+  - Objective: RFM beats DDPM everywhere (FAD AC 1.38 vs 1.92).
+  - Backbone: DiT beats UNet (FAD AC 1.38 vs 1.68).
+  - Representation: Self-Flow FAD AC 0.88 vs plain RFM 1.38; REPA (CLAP-aligned final layer, switched on after 500k steps) 0.99; RAE (AudioMAE latents + SemantiCodec decoder) 0.86 but slowest to converge. Self-Flow and REPA reach strong values in ~1-1.5M steps vs ~2M for plain RFM.
+  - Depth 12 / 16 / 24: FAD AC 1.09 / 0.88 / 0.84.
+
+## FOR US — is it useful?
+1. **As a separator for our music: no.** 16 kHz mono and no music training; it loses to SAM-Audio on MUSDB. Our BS-RoFormer SW stays the tool.
+2. **The design is the one that fits Kim's note** (2026-10-26: our stems need not be faithful or sum to the mix). A generative separator regenerates the stem instead of masking it, so it is not limited to what the mask lets through, and can rebuild the high end. The SA3 version (untested idea): fine-tune medium-base with the mixture latent as an extra input and the stem name as the text prompt, trained on `Goa_Separated` stem pairs and Kim's 40 studio multitracks. No architecture change is needed: medium-base already has a per-frame additive inlet for a SAME latent, the inpainting path (`local_add_cond_dim` = 257 in its `model_config.json`, i.e. 256 latent channels + 1 mask channel; `local_add_cond` in `stable_audio_3/models/dit.py`), trained by Stability with inpainting masks. Feeding the MIX latent through that inlet and training the output to be the stem reuses a pretrained path that already reads latents. Different from our training-free `sa3_flowsep.py` and from B14 (which conditions on a stem to generate a full mix; this goes the other way).
+3. **Self-Flow is a cheap add-on to any flow training we run.** We already keep an EMA; the extra cost is a second forward pass for the teacher and one cosine loss. Here it cut FAD by about a third and sped up convergence. Unverified on fine-tuning a pretrained model (this paper trains from scratch); the original Self-Flow paper is not in our papers folder.
+4. **SAJ (SAM Audio Judge)** is a reference-free separation-quality scorer (recall, precision, faithfulness, overall). That is the kind of non-intrusive metric the training-free iteration method (Zang et al. 2505.19534) needs to choose its blend ratio without ground truth. Availability and licence not checked.
+5. **SAM-Audio** (their ref [48]) is the strongest music separator in their tables and a separation foundation model with text, visual and time-span prompts; worth checking as a separator in its own right (weights, licence, sample rate not checked).
+- **Verdict:** not a tool for us, but three pieces are: the generative-separator design for an SA3 stem model, the Self-Flow loss, and SAJ as a judge. Not filed in EXPERIMENTS yet (Kim: wait for the other separation papers).
+- **Leads it cites, unchecked:** Self-Flow (ref [33]); SAM-Audio (ref [48]); REPA (Yu et al.); Representation Autoencoders (RAE); PromptSep.
