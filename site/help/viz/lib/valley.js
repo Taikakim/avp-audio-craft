@@ -1,10 +1,11 @@
 // Owner: WINTERMUTE (created 2026-10-26)
+// Last edited: WINTERMUTE 2026-10-26 -- valley a=2, lr 0.01, 300 steps: at lr 0.08 our measured late noise flung the ball to 100x the start loss
 // The maths behind the batch-noise animation: a 2-D loss valley, noisy minibatch gradients, optional momentum.
 import {
   mulberry32, makeGauss, CALIBRATION, sigmaForHalfBatchCosine, halfBatchCosine, minibatchNoiseStd,
 } from './noise.js';
 
-export const VALLEY = { a: 1, b: 8, start: [-2.6, 0.9], lr: 0.08, steps: 240, cloudSize: 24, beta: 0.9 };
+export const VALLEY = { a: 2, b: 8, start: [-2.6, 0.9], lr: 0.01, steps: 300, cloudSize: 24, beta: 0.9 };
 export const BATCHES = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
 export function loss([x, y]) { return 0.5 * (VALLEY.a * x * x + VALLEY.b * y * y); }
