@@ -40,7 +40,7 @@ export function mount(container, params = {}, help = {}) {
   injectStyle('vz-step-style', CSS);
   const colors = { accent: '#2b6cb0', fg: '#1a1a1a', muted: '#777', bg: '#fff', good: '#2f855a', bad: '#c53030', ...(help.colors || {}) };
   const reducedMotion = !!help.reducedMotion;
-  let scenario = SCENARIOS[params.scenario] ? params.scenario : 'steady';
+  let scenario = SCENARIOS[params.scenario] ? params.scenario : 'noisy';
   let dtype = PRECISIONS.includes(params.precision) ? params.precision : 'fp32';
   let sim = createSim(scenario);
   let last = null;
@@ -115,11 +115,12 @@ export function mount(container, params = {}, help = {}) {
       'Which wires are greyed is computed by rounding the weight and the weight plus the step to the chosen number format.',
     ],
     measured: [
-      `The two noise levels are set so that two half batches of 32 examples agree as often as in our runs: a cosine of ${CALIBRATION.early} early in training and ${CALIBRATION.late} late (${CALIBRATION.source}).`,
+      `The two noise levels are set so that two half batches of 32 examples agree as often as in our runs: a cosine of ${CALIBRATION.early} early in training and ${CALIBRATION.late} late (${CALIBRATION.source}). It is one number for the whole run, applied here to every weight.`,
+      'Steady has less noise than our runs, so AdamW sits nearer a full sign step (about 0.6 x the learning rate); the 0.2 to 0.4 the guide measured is what Noisy shows.',
       `The learning rate, ${LR}, is the best AdamW setting for our heads (Muon survival guide, section 4).`,
     ],
     illustrative: [
-      `The network is only ${ROWS} by ${COLS}; real matrices are hundreds wide. Muon's step is scaled by 0.2 x sqrt(larger side), so that it moves each weight about as far as AdamW does.`,
+      `The network is only ${ROWS} by ${COLS}; real matrices are hundreds wide. Muon's update is scaled so that its average (RMS) step is about 0.2 x the learning rate, the level the guide measured for AdamW under noise. On a toy 4 by 4 matrix the per-weight values differ from real 256-wide matrices, so compare the shapes of the curves, not the exact numbers.`,
       `The weights are random numbers of typical size ${WEIGHT_RMS} and do not change while the animation runs; the gradients are made up (a fixed pattern plus noise).`,
     ],
   });

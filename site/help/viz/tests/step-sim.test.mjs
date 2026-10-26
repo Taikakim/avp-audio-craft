@@ -34,3 +34,8 @@ test('gradient rises 100x: AdamW overshoots its usual step, Muon does not change
 });
 
 test('unknown scenario throws', () => assert.throws(() => createSim('nope')));
+
+test('steady pins AdamW near 0.6 x lr (the page explains why it exceeds the guide\'s 0.2-0.4)', () => {
+  const am = win(run('steady'), 100, 450, 'adamMean');
+  assert.ok(am > 0.5 && am < 0.7, `steady AdamW mean step ${am}`);
+});
