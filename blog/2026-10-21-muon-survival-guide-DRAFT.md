@@ -25,23 +25,34 @@ GPU, so we say where it is thin.
 ## Summary
 
 - Muon only replaces the optimizer for 2-D weight matrices. Everything else still needs a second optimizer, and how the
-  two are set up relative to each other caused most of our failures.
+  two are set up relative to each other caused most of our failures (sections 3 and 8).
 - A Muon learning rate and an AdamW learning rate work on different scales. Both set a change of weight per step, but
   the update they multiply has a different size: about 0.2 to 0.4 per weight for AdamW, and for Muon a size that depends
   on the matrix shape (1/16 for a 256-wide matrix). Without a rescale, the same number moves different parameter groups
-  by amounts that differ by a factor of 16 or more.
+  by amounts that differ by a factor of 16 or more (section 4).
 - Muon's step stays full size whatever the recent gradients were. AdamW also ignores the overall scale of the gradient,
   but it remembers the last ~1,000 steps and takes smaller steps when the gradients have been noisy or have just dropped.
   Under Muon, weights can grow every step while the loss looks normal, so weight decay and logging of weight size per
-  group are needed.
+  group are needed (section 5).
 - At batch 1 to 16 (our LoRA and full fine-tunes) the gradient is noisy, and several add-ons designed for large-batch
   training behaved differently for us or had no measurable effect. Our control heads at an effective batch of 64 were
-  already signal-dominated (section 6).
+  already signal-dominated (sections 6 and 8).
+- When fine-tuning a model that was pre-trained with Adam, two papers report that Muon brings no clear advantage for full
+  fine-tuning; LoRA reduces the difference. We also could not turn our full fine-tunes into usable low-rank adapters
+  (section 7).
+
+**About this guide.** It assumes you have trained a model with an optimizer such as AdamW or Prodigy, not that you know
+the mathematics behind it. Section 1 lists what we trained, so you can judge how far our results travel. Sections 2 and 3
+explain what Muon computes and which parameters it handles. Section 4 covers learning rates, where most of our failures
+began, and section 5 how weight size shows that a run is going wrong before the loss does. Section 6 covers batch size and
+gradient noise, and section 7 fine-tuning a model that was pre-trained with another optimizer, including LoRA and DoRA
+adapters. Section 8 lists every optimizer change we tried and what it did. Sections 9 and 10 cover listening to results
+and choosing a checkpoint, and number precision; section 11 gives a starting configuration and section 12 what we do not
+know. A few subjects come up in more than one place: weight size in sections 4 and 5, and gradient noise in section 6
+(what it is and how we measured it) and section 8 (which add-ons it affected).
 
 **How to read this.** Underlined terms open a side explanation, some with a short check. Each section can be read
 without them.
-- When fine-tuning a model that was pre-trained with Adam, two papers report that Muon brings no clear advantage for full
-  fine-tuning; LoRA reduces the difference.
 
 ## 1. What we trained
 
