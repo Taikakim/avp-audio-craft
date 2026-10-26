@@ -885,6 +885,71 @@ That is the question that decides whether the pianoroll UI should promise rhythm
   reach significance with a larger prompt set, the axis is orthogonal-but-useless and we stop mining MIDI
   for taste.
 
+### B14 — Audio-stem control through a DiT-initialised KV template (DiffSynth-Music port) — **POTENTIAL (Kim 2026-10-26)**
+
+**Source.** DiffSynth-Music, Duan/Gao/Zhang/Chen, arXiv 2609.12774 (`papers/Prospective Unchecked/2609.12774v1.pdf`,
+row in `papers/knowledge.md`; related: MuseTimbre 2609.30548, different authors, controls a frozen SA3 Medium
+through decoupled cross-attention). The paper: a copy of the backbone DiT (the "template", initialised from the DiT weights) reads the
+control audio's VAE latent; its per-block keys and values are concatenated with the generator's in self-attention.
+Control audio is clean, so the template runs once at the clean end of the flow and its KV cache is reused at every
+sampling step. Five controls (beats, vocals, accompaniment, prosody, 10 s reference) in three templates; backbone
+ACE-Step-1.5-XL-SFT frozen; ~60k private recordings; Demucs stems.
+
+**What is new against our own attempts.** Our control kit (`control/sa3_control/`) and B7 feed hand-made MIR curves
+or chroma through small fresh encoders into decoupled cross-attention or an additive inlet; B6 chroma melody turning
+was 0/12; B7's outcome is unknown (never pulled). B14 changes the input to the control AUDIO in the same SAME latent
+space, and the encoder to a copy of the DiT, which starts out reading that space.
+
+**What the paper does NOT give (so our design must decide):** training steps, lr, batch, compute; which blocks are
+injected; whether the template is trained fully; loss weighting; how CFG treats the control; quality at step 0.
+Concatenating KV into self-attention changes the softmax before any training, so it is NOT a zero-init no-op.
+Evaluation is circular (Demucs builds the control, Demucs re-separates the output to score it), single-control only,
+no listening test; baselines in its Table 1 receive no control, so their columns are chance levels. Its Cemgil and
+MuLan-A both read 0.8088, likely a typo.
+
+**SA3 fit.** medium-base DiT: 24 blocks, width 1536, 24 heads, 64 memory tokens, joint self-attention with RoPE plus
+text cross-attention (`stable_audio_3/models/transformer.py`). Time-aligned controls take the generation tokens' RoPE
+positions; a reference excerpt gets its own positions.
+
+**Data on hand.**
+- `Mantu/ai-music/Goa_Separated`: 4,470 full tracks with drums/bass/other/vocals stems + `.BEATS_GRID`/`.DOWNBEATS`/
+  `.ONSETS`; `latents_sa3` (5,401 crops) is encoded from it. Which separator made these stems is NOT confirmed; if it
+  was Demucs, re-separate drums with BS-RoFormer SW first (drum benchmark 2026-10-22: SW well ahead).
+- `Kosmos/latents/latents_goa_bigset`: 12,524 crops, latents only, no stems locally. Stems would need BS-RoFormer
+  separation of the goa_archive sources (`lumi/sbatch/goa_sep.sbatch`, ~30-60 s/track).
+- `UUID/aimusic_stems`: separated ai-music corpus (bass/drums/other/vocals m4a, 37 genre folders).
+- **Kim's clean studio stems:** `Mantu/avp-stems-original-classified`, 40 own tracks (48 GB), every stem classified
+  into kick/drums/bass/leads/... with `_classification.json` and per-category downmixes (`KICK_downmix.flac`,
+  `BASS_downmix.flac`). These are ground truth, not separations: the only clean bass we have (every separator fails
+  psytrance bass, F6 bake-off: BS-RoFormer 4-stem 0.00, SW 0.07, htdemucs_ft 0.44 against a 0.60 bar) and clean mono
+  leads for f0. Use them as the held-out evaluation set first, and as a fine-tune set second.
+
+**Plan, cheapest decisive step first.**
+- **Step 0 — training-free probe (~1 h of renders, local).** Frozen base DiT run once on the clean drum-stem latent;
+  its KV concatenated into the generator's self-attention at blocks 12-23 (W's layer-map prior), with a logit bias on
+  the control keys as a strength knob. Measure beat following and PQ/CE drop at 3-4 strengths. Positive: the base
+  already reads injected KV. Quality collapse: a gate is mandatory before any training.
+- **Step 1 — trained template, cheap form.** Template = frozen base + rank-64 DoRA (only the DoRA trains; a full
+  1.45B trainable copy with AdamW state does not fit 16 GB). A learnable per-block gate on the control logits,
+  initialised closed, so step 0 equals the base model. Same flow-matching loss as our recipes; control dropout for CFG.
+  T=256-512 crops, gradient checkpointing; local smoke, full run on LUMI if an allocation exists.
+  Watch the three silent killers from B7 (re-freeze, optimizer exclusion, adapter-wrapping a zero-init Linear) and
+  verify with a gain meter.
+- **Controls, in order:** (1) drum stem; (2) lead melody as a sine (f0 on `other` or on the studio `leads`, the
+  paper's envelope recipe, encoded by SAME), aimed at the melody wall where chroma failed; (3) optionally a click
+  track from `.BEATS_GRID`. Bass only from the studio stems.
+- **Later, only if Step 1 shows real gain:** same template, KV concatenation vs our decoupled cross-attention. That
+  settles the injection question B7 left open.
+
+**Eval (each item covers a gap in the paper).**
+- Control gain on held-out tracks: loss under true / shuffled (another track's stem) / no control, the B7 ablation
+  meter. **Kill criterion: no gain over shuffled control on held-out tracks.**
+- Break the circularity: controls built with BS-RoFormer, outputs scored with htdemucs and a different beat tracker
+  (beat F1 via mir_eval; melody = share of voiced frames within 50 cents). The studio stems give a non-separated check.
+- Quality: PQ/CE against base at matched prompts and seeds.
+- Variety (G2): seed spread under a fixed control, to catch collapse.
+- Listening: blind A/B with `eval/e3_blind_abc.py`, controlled vs uncontrolled, held-out stems.
+
 
 ## C. Soups, EMA, checkpoint selection
 
