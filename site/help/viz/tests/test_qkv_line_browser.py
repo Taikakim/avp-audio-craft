@@ -189,11 +189,11 @@ def test_keyboard_reaches_scene_buttons_and_slider_arrow(browser, base_url):
 def test_params_set_start_state_and_invalid_falls_back(browser, base_url):
     ctx, page, _ = open_page(browser, url(base_url, rm=True, params={"scene": "orth", "kscale": 0.1}))
     assert attr(page, "data-scene") == "orth"
-    assert +attr(page, "data-kscale") == 0.1
+    assert float(attr(page, "data-kscale")) == 0.1
     assert page.locator(".vz-qkv-orth").is_visible()
     ctx.close()
     ctx, page, _ = open_page(browser, url(base_url, rm=True, params={"kscale": 5, "mode": "x"}))
-    assert +attr(page, "data-kscale") == 1
+    assert float(attr(page, "data-kscale")) == 1
     assert attr(page, "data-mode") == "fused"
     assert attr(page, "data-scene") == "make"
     ctx.close()
