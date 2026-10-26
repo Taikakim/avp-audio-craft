@@ -89,7 +89,9 @@
       "2D weight matrix",
       "2D weight matrices",
       "weight matrices",
-      "weight matrix"
+      "weight matrix",
+      "m x n matrix",
+      "m x n"
     ],
     "plain": "A 2-D weight matrix is a table of weights with rows and columns; a layer multiplies its input by that table to produce its output.",
     "ours": "Most of a model's weights sit in such tables. A square matrix 256 wide in our heads holds 256 x 256 = 65,536 weights, and a square matrix 1,536 wide in Stable Audio 3 holds about 2.4 million. Biases and normalisation gains are different: they are plain lists of numbers (1-D), not tables.",

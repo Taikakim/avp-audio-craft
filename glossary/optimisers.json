@@ -281,5 +281,890 @@
       }
     ],
     "quiz_reviewed": "2026-10-26"
+  },
+  {
+    "id": "optimizer",
+    "term": "optimizer",
+    "aliases": [
+      "optimizers",
+      "optimiser",
+      "optimisers"
+    ],
+    "plain": "The optimizer is the rule that decides, after each batch, how much to change every weight, given the gradients the batch produced.",
+    "ours": "This guide compares AdamW, Muon and several variants of both, plus Lion. The optimizer we use for most heads is our own (a Muon-type optimizer built from published parts), and the guide says where a piece is a textbook implementation and where it is ours.",
+    "deeper": "The loss says how wrong the model is; the gradient says which way to change each weight to make it less wrong; the optimizer turns that into an actual change. Two optimizers given the same gradients can produce very different weights, which is why the choice behaves like a style choice as well as a speed choice (our notes, TRAINING F6).",
+    "papers": [
+      {
+        "title": "Decoupled Weight Decay Regularization (AdamW)",
+        "url": "https://arxiv.org/abs/1711.05101"
+      },
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does an optimizer do?",
+        "options": [
+          "It decides how to change the weights after each batch",
+          "It stores the training data",
+          "It measures the audio quality",
+          "It splits the data into batches",
+          "It decodes the latent"
+        ],
+        "answer": 0,
+        "why": "It turns gradients into weight changes."
+      },
+      {
+        "level": 2,
+        "q": "Two optimizers see exactly the same gradients. Will they change the weights in the same way?",
+        "options": [
+          "Not necessarily; the rule for using the gradients differs",
+          "Yes, always",
+          "Only at batch size 1",
+          "Only if the learning rate is zero",
+          "Only for biases"
+        ],
+        "answer": 0,
+        "why": "The gradient only says which way is downhill; each optimizer has its own rule for how far and how, so the results can differ a lot."
+      },
+      {
+        "level": 3,
+        "q": "According to our own training notes, which of these is a mistake to assume?",
+        "options": [
+          "That matched loss means two optimizers are interchangeable",
+          "That the optimizer changes the weights",
+          "That an optimizer needs gradients",
+          "That the learning rate matters",
+          "That Muon is an optimizer"
+        ],
+        "answer": 0,
+        "why": "Our listening notes found that optimizers with matched loss can sound different (TRAINING F6), so matched loss does not make them interchangeable."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "gradient",
+    "term": "gradient",
+    "aliases": [
+      "gradients"
+    ],
+    "plain": "For each weight, the gradient says which way and how strongly the loss would change if that weight were nudged; the optimizer steps the other way.",
+    "ours": "We compute it on a batch of examples. A batch of 1 to 16 is a small sample of the data, so its gradient is the true direction plus a lot of noise. In a matrix, a gradient is 'strong' along a direction when a large share of its size lies along that direction, and 'weak' when little does. Our momentum matrices were dominated by some strong directions, with a long tail of faint ones.",
+    "deeper": "The gradient is computed by backpropagation, one batch at a time. The noise level falls as the batch grows; our measurements of how much of a half-batch gradient agrees with the other half are in guide section 6. Gradient clipping caps its size so one huge value cannot cause a huge step.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a gradient tell the optimizer?",
+        "options": [
+          "Which way to nudge each weight to reduce the loss, and how strongly",
+          "The final answer of the model",
+          "How many batches remain",
+          "The learning rate",
+          "Which file to load"
+        ],
+        "answer": 0,
+        "why": "It is the local slope of the loss with respect to the weights."
+      },
+      {
+        "level": 2,
+        "q": "Why is a gradient from a batch of 4 noisy?",
+        "options": [
+          "It is computed on a small sample of the data",
+          "The model is broken",
+          "Small batches have no gradient",
+          "The learning rate is too low",
+          "The weights are frozen"
+        ],
+        "answer": 0,
+        "why": "Four examples are a small sample, so the gradient differs from the one the whole dataset would give."
+      },
+      {
+        "level": 3,
+        "q": "In a gradient matrix, what does 'strong along a direction' mean?",
+        "options": [
+          "A large share of the gradient's size lies along that direction",
+          "The direction has the largest learning rate",
+          "The direction is orthogonal",
+          "The direction is noise",
+          "The direction has zero weights"
+        ],
+        "answer": 0,
+        "why": "Strength is how much of the matrix is concentrated along one direction."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "learning-rate",
+    "term": "learning rate",
+    "aliases": [
+      "learning rates",
+      "lr"
+    ],
+    "plain": "The learning rate is the number that scales every step: the optimizer works out a direction and a size for the update, and the learning rate multiplies it.",
+    "ours": "Our best head setting with AdamW was a learning rate of 3e-4. Our original Muon recipe's best was 1e-2, and the rescaled recipe's best was 3e-3. The numbers differ because the optimizers' updates have different built-in sizes, not because one is 'stronger'. One learning rate shared across different parameter groups gave different step sizes in each.",
+    "deeper": "A learning rate is a scale, so the same number means different step sizes under different optimizers: about 0.2 to 0.4 of the learning rate per weight for AdamW, and a size set by the matrix shape for Muon (guide section 4). Training usually starts with a short warmup, then either decays the rate or uses Schedule-Free averaging. Too high a rate gives NaN or noisy runs; too low a rate learns too slowly.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does the learning rate do?",
+        "options": [
+          "It scales the size of every step",
+          "It picks the batch",
+          "It stores the weights",
+          "It measures the loss",
+          "It selects the data"
+        ],
+        "answer": 0,
+        "why": "Step = learning rate times the optimizer's update."
+      },
+      {
+        "level": 2,
+        "q": "Why can the same learning rate number be good for AdamW and bad for Muon?",
+        "options": [
+          "Their updates have different built-in sizes",
+          "Muon ignores the learning rate",
+          "AdamW has no learning rate",
+          "The numbers are in different units of time",
+          "It cannot be"
+        ],
+        "answer": 0,
+        "why": "Both multiply an update, but the update's own size differs, so the same number gives different steps."
+      },
+      {
+        "level": 2,
+        "q": "A run goes NaN soon after training starts at a high learning rate. What is the most likely cause?",
+        "options": [
+          "Steps were too large, so some values blew up",
+          "The learning rate was too low",
+          "There was too much data",
+          "The batch was too large",
+          "Weight decay was too high"
+        ],
+        "answer": 0,
+        "why": "Too-large steps can push weights or magnitudes out of range; the guide's runs B3 and the DoRA magnitude failures are examples."
+      },
+      {
+        "level": 3,
+        "q": "One shared learning rate is applied to the matrices and to the biases. What may go wrong under a sign step?",
+        "options": [
+          "The biases take much larger steps than the matrices",
+          "The matrices stop learning",
+          "The biases are ignored",
+          "Nothing, they move equally",
+          "The gradient is lost"
+        ],
+        "answer": 0,
+        "why": "A sign step moves each bias by the full learning rate, far more than Muon moves a matrix weight, so biases can run away first."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "adamw",
+    "term": "AdamW",
+    "aliases": [
+      "Adam",
+      "AdamW's"
+    ],
+    "plain": "AdamW is the standard optimizer: it gives each weight its own step size, based on how large and how steady that weight's recent gradients were, and it applies weight decay separately from the gradient.",
+    "ours": "We use it as the baseline and for the parts Muon cannot handle: biases, gains, magnitudes and other 1-D parameters. Adam and AdamW are two different optimizers that match only when weight decay is zero, so check which one a paper or a recipe means before comparing numbers.",
+    "deeper": "Adam keeps two running averages per weight: of the gradient, and of its square. The step is the first divided by the square root of the second, times the learning rate. Adam adds weight decay into the gradient, where it gets divided like everything else; AdamW applies decay directly to the weights, which behaves more predictably.",
+    "papers": [
+      {
+        "title": "Adam: A Method for Stochastic Optimization",
+        "url": "https://arxiv.org/abs/1412.6980"
+      },
+      {
+        "title": "Decoupled Weight Decay Regularization (AdamW)",
+        "url": "https://arxiv.org/abs/1711.05101"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is AdamW in one sentence?",
+        "options": [
+          "An optimizer that gives each weight its own step size from its recent gradients",
+          "A dataset",
+          "A type of loss",
+          "A learning rate schedule",
+          "A GPU feature"
+        ],
+        "answer": 0,
+        "why": "It is the standard per-weight adaptive optimizer."
+      },
+      {
+        "level": 2,
+        "q": "When are Adam and AdamW the same?",
+        "options": [
+          "When weight decay is zero",
+          "Always",
+          "Never",
+          "When the batch is 1",
+          "When the learning rate is 1"
+        ],
+        "answer": 0,
+        "why": "They differ only in how weight decay is applied, so with no decay they match."
+      },
+      {
+        "level": 3,
+        "q": "What is the difference in how they apply weight decay?",
+        "options": [
+          "Adam adds it into the gradient; AdamW applies it directly to the weights",
+          "AdamW has no weight decay",
+          "Adam applies it twice",
+          "They apply it to different data",
+          "There is none"
+        ],
+        "answer": 0,
+        "why": "In AdamW decay is decoupled from the adaptive scaling."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "muon",
+    "term": "Muon",
+    "aliases": [
+      "Muon's"
+    ],
+    "plain": "Muon is an optimizer for 2-D weight matrices: it averages the gradients, then replaces that average with a matrix whose directions are all about equally strong before stepping.",
+    "ours": "We use Muon-type optimizers for the matrices of our heads, with AdamW or a sign step for everything else. Muon is not one fixed recipe: the original post, Moonlight's rescaled version, and our own variant differ in step size and normalisation, which is why learning rates from one do not carry to another.",
+    "deeper": "Each step does three things for a matrix: momentum averaging, orthogonalisation with five Newton-Schulz iterations, and a step of size set by the learning rate and the matrix shape. The original post introduced it in December 2024 with results on CIFAR-10 and GPT-2-sized models. Whether it helps fine-tuning at all is an open question (guide section 7).",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      },
+      {
+        "title": "Moonlight: Muon is Scalable for LLM Training",
+        "url": "https://arxiv.org/abs/2502.16982"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What kind of parameters is Muon designed for?",
+        "options": [
+          "2-D weight matrices",
+          "Biases",
+          "Single numbers",
+          "Embeddings of large vocabularies",
+          "The learning rate"
+        ],
+        "answer": 0,
+        "why": "Muon works on whole matrices; other parameters go to a second optimizer."
+      },
+      {
+        "level": 2,
+        "q": "What are Muon's three steps?",
+        "options": [
+          "Average the gradients, orthogonalise the result, take a step",
+          "Clip, shuffle, save",
+          "Sort, sum, stop",
+          "Load, render, listen",
+          "Decay, warm up, stop"
+        ],
+        "answer": 0,
+        "why": "Momentum, orthogonalisation, step."
+      },
+      {
+        "level": 3,
+        "q": "Why can't you copy a Muon learning rate between the original recipe, Moonlight's version and ours?",
+        "options": [
+          "Their updates have different sizes",
+          "The learning rate is secret",
+          "Muon has no learning rate",
+          "They use different data",
+          "The batch is different"
+        ],
+        "answer": 0,
+        "why": "The step sizes differ by recipe, so the same number moves the weights differently."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "newton-schulz",
+    "term": "Newton-Schulz iteration",
+    "aliases": [
+      "Newton-Schulz iterations",
+      "Newton-Schulz steps",
+      "Newton-Schulz",
+      "NS5"
+    ],
+    "plain": "A Newton-Schulz iteration is a short, fixed calculation, built only from matrix multiplications, that pushes a matrix a little closer to its nearest orthogonal matrix; Muon repeats it five times.",
+    "ours": "Muon normalises the momentum matrix, then runs five rounds. After five rounds the strengths of the matrix's directions are between about 0.7 and 1.3, not exactly 1, and directions far weaker than the strongest are barely lifted. In the figure in guide section 2 the strongest ~100 directions end up between 0.7 and 1.2.",
+    "deeper": "Each round computes A = X times X-transpose, then X <- a X + (b A + c A squared) X with a, b, c = 3.4445, -4.7750, 2.0315. These numbers are chosen to bring the strengths near 1 quickly, not to converge exactly. It is used because it only needs matrix multiplications, which GPUs do well. Textbook: the Muon post; ours: the same five rounds.",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a Newton-Schulz iteration used for in Muon?",
+        "options": [
+          "To push the momentum matrix toward an orthogonal one",
+          "To compute the loss",
+          "To pick the batch",
+          "To save the checkpoint",
+          "To normalise audio"
+        ],
+        "answer": 0,
+        "why": "It approximates the orthogonal matrix with a few multiplications."
+      },
+      {
+        "level": 2,
+        "q": "Why does Muon use it instead of an exact calculation?",
+        "options": [
+          "It needs only matrix multiplications, which GPUs do fast",
+          "The exact one is wrong",
+          "It uses less data",
+          "It removes noise",
+          "It sets the learning rate"
+        ],
+        "answer": 0,
+        "why": "The exact decomposition is slow on GPUs; the iteration is fast and close enough."
+      },
+      {
+        "level": 3,
+        "q": "After five iterations, the matrix's strengths are...",
+        "options": [
+          "Between about 0.7 and 1.3",
+          "Exactly 1",
+          "All zero",
+          "Equal to the gradient",
+          "Between 10 and 100"
+        ],
+        "answer": 0,
+        "why": "The coefficients trade exactness for speed."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "singular-value",
+    "term": "singular value",
+    "aliases": [
+      "singular values",
+      "strength of a direction"
+    ],
+    "plain": "A singular value is the strength of one direction of a matrix: how much the matrix stretches an input that points along that direction.",
+    "ours": "Every matrix has as many singular values as its smaller side. In one of our heads the momentum of a 1024 x 256 matrix had 256 of them, the largest about 10,000 times the smallest. Muon tries to bring all of them to about 1.",
+    "deeper": "Writing a matrix as G = U S V-transpose, U and V hold the directions and S holds the singular values. The nearest orthogonal matrix is U V-transpose, which is G with every singular value replaced by 1. A singular value near zero means the matrix barely responds along that direction.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a singular value?",
+        "options": [
+          "The strength of one direction of a matrix",
+          "A single weight",
+          "The learning rate",
+          "The loss",
+          "The batch size"
+        ],
+        "answer": 0,
+        "why": "It says how much the matrix stretches along one direction."
+      },
+      {
+        "level": 2,
+        "q": "A 1024 x 256 matrix has how many singular values?",
+        "options": [
+          "256",
+          "1024",
+          "1280",
+          "262,144",
+          "1"
+        ],
+        "answer": 0,
+        "why": "A matrix has as many singular values as its smaller side."
+      },
+      {
+        "level": 3,
+        "q": "What does Muon do to a matrix's singular values?",
+        "options": [
+          "It moves them all toward 1",
+          "It deletes the smallest",
+          "It doubles the largest",
+          "It makes them negative",
+          "It sorts them"
+        ],
+        "answer": 0,
+        "why": "That is what makes the matrix orthogonal."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "directions",
+    "term": "directions",
+    "aliases": [
+      "weak directions",
+      "strong directions",
+      "strongest direction",
+      "weakest direction",
+      "strongest directions",
+      "weakest directions"
+    ],
+    "plain": "A matrix does not treat all inputs alike: it responds strongly to some directions of its input space and weakly to others, and those directions are what 'directions' means in this guide.",
+    "ours": "Picture a matrix as a machine that stretches some input directions a lot and others hardly at all. Muon keeps the gradient's directions but evens out how much the matrix moves along each. In our momentum matrices a few directions were hundreds or thousands of times stronger than the faintest ones.",
+    "deeper": "Technically these are the singular directions, which come in pairs (an input-side one and an output-side one), each with a singular value giving its strength. 'The gradient is strong along a direction' means that direction has a large singular value in the gradient matrix.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "In this guide, what is a 'direction' of a matrix?",
+        "options": [
+          "An input direction the matrix responds to, strongly or weakly",
+          "A compass heading",
+          "A file path",
+          "The order of the layers",
+          "The sign of a bias"
+        ],
+        "answer": 0,
+        "why": "A matrix stretches different input directions by different amounts."
+      },
+      {
+        "level": 2,
+        "q": "Muon gives faint directions a step of similar size to strong ones. Without that, which directions would dominate the update?",
+        "options": [
+          "The strongest gradient directions",
+          "The faintest",
+          "None",
+          "A random choice",
+          "The ones with the fewest weights"
+        ],
+        "answer": 0,
+        "why": "Raw gradient updates follow the strong directions."
+      },
+      {
+        "level": 3,
+        "q": "Directions come in pairs. What does each pair carry?",
+        "options": [
+          "An input side, an output side and a strength",
+          "A weight and a bias",
+          "A batch and a loss",
+          "A name and a number",
+          "A learning rate and a schedule"
+        ],
+        "answer": 0,
+        "why": "Each singular direction pairs an input vector, an output vector and a singular value."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "direction-rank",
+    "term": "direction rank",
+    "aliases": [
+      "direction rank axis"
+    ],
+    "plain": "Direction rank is the position of a direction when all of a matrix's directions are lined up from the strongest (rank 1) to the weakest.",
+    "ours": "It is the horizontal axis of the Newton-Schulz figure in guide section 2. The left of the plot is the strongest directions, the right is the faintest ones. The curve shows how strong each direction is before and after the five iterations.",
+    "deeper": "Plotting strength against rank, instead of a list of numbers, makes it easy to see how steeply the strengths fall (here by a factor of about 10,000) and how far five iterations lift the middle of the range but not the tail.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "In the figure, which direction has rank 1?",
+        "options": [
+          "The strongest",
+          "The weakest",
+          "The first one written in the file",
+          "The one with most noise",
+          "The shortest"
+        ],
+        "answer": 0,
+        "why": "Ranks run from strongest to weakest."
+      },
+      {
+        "level": 2,
+        "q": "What does a curve falling steeply along direction rank show?",
+        "options": [
+          "A few directions are much stronger than the rest",
+          "All directions are equal",
+          "The matrix is empty",
+          "The learning rate is high",
+          "Training has finished"
+        ],
+        "answer": 0,
+        "why": "A steep fall means a few dominant directions."
+      },
+      {
+        "level": 3,
+        "q": "After five Newton-Schulz iterations, which part of the curve is still low?",
+        "options": [
+          "The weakest directions at high rank",
+          "The strongest directions",
+          "The middle only",
+          "None of it",
+          "The first rank"
+        ],
+        "answer": 0,
+        "why": "The iteration does not lift directions far weaker than the strongest."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "weight-decay",
+    "term": "weight decay",
+    "aliases": [
+      "weight-decay"
+    ],
+    "plain": "Weight decay pulls every weight a little toward zero on each step, which stops the weights from growing without limit.",
+    "ours": "Our full fine-tune path once ran with a weight decay of zero. The weights grew, the latents the model produced grew with them, and the audible result was a drone under the music. AdamW runs with a decay of 0.01 on the same data stayed healthy. Moonlight uses 0.1 on the matrices and SF-NorMuon uses 0.05; none is applied to gains and biases.",
+    "deeper": "The pull per step is the learning rate times the decay setting. At the point where this pull balances the growth from the steps themselves, the weights stop growing; that balance is what 'rotational equilibrium' describes, and noise matters because random steps add up differently from consistent ones. We have not measured that balance on our heads. One paper, Muon-SW, reports that with a constant decay Muon's weight norm shrinks steadily and proposes scaling the decay with the learning rate; read it for the exact rule, because the guide summarises it in one sentence. Under Schedule-Free, where the learning rate does not decay, that scaling has no effect.",
+    "papers": [
+      {
+        "title": "Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks",
+        "url": "https://arxiv.org/abs/2305.17212"
+      },
+      {
+        "title": "Weight Decay may matter more than muP for Learning Rate Transfer in Practice",
+        "url": "https://arxiv.org/abs/2510.19093"
+      },
+      {
+        "title": "Scale Weight Decay and Train Better (Muon-SW)",
+        "url": "https://arxiv.org/abs/2607.23777"
+      },
+      {
+        "title": "Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization",
+        "url": "https://arxiv.org/abs/2606.16899"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does weight decay do?",
+        "options": [
+          "Pulls every weight slightly toward zero each step",
+          "Deletes the smallest weights",
+          "Doubles the learning rate",
+          "Decays the data",
+          "Adds noise"
+        ],
+        "answer": 0,
+        "why": "It shrinks the weights a little on every step."
+      },
+      {
+        "level": 2,
+        "q": "Why did a weight decay of zero cause a drone in our full fine-tunes?",
+        "options": [
+          "The weights and the latents the model produced kept growing",
+          "The weights became zero",
+          "The data was corrupted",
+          "The batch was too large",
+          "The learning rate was negative"
+        ],
+        "answer": 0,
+        "why": "Without decay the weights grew, and the output level grew with them."
+      },
+      {
+        "level": 3,
+        "q": "The pull toward zero per step is...",
+        "options": [
+          "The learning rate times the decay setting",
+          "The batch size",
+          "The number of layers",
+          "The loss",
+          "The gradient only"
+        ],
+        "answer": 0,
+        "why": "Decay is applied scaled by the learning rate."
+      },
+      {
+        "level": 3,
+        "q": "Does the guide say the best weight decay is known for our heads?",
+        "options": [
+          "No; it gives the published values and says what we saw without it",
+          "Yes, it is 0.1",
+          "Yes, it is 0",
+          "Yes, it is 1",
+          "It does not mention decay"
+        ],
+        "answer": 0,
+        "why": "It reports Moonlight's 0.1 and SF-NorMuon's 0.05 as published settings, not as tuned results for our heads."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "weight-norm",
+    "term": "weight norm",
+    "aliases": [
+      "weight size",
+      "norm of the weights"
+    ],
+    "plain": "The weight norm is a single number for the overall size of a group of weights; a steadily rising weight norm means the weights are growing.",
+    "ours": "The guide asks you to log the average size of the weights in each parameter group every few hundred steps. A group whose size doubles within an epoch after warmup needs attention: in every failure we describe, the weights grew before the loss showed a problem. Our head trainer can halve that group's learning rate automatically; the option is new and off by default.",
+    "deeper": "Weight growth can hide because the loss often stays normal while the weights grow: when a normalisation layer follows a matrix, the output depends on direction, not overall size, so growth changes the effective step size and eventually numerics before it changes the loss. 'Fixing the norm' is what Hyperball does; we found it is not a drop-in for adapters, because a matrix that starts at zero has norm zero and does not move.",
+    "papers": [
+      {
+        "title": "Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks",
+        "url": "https://arxiv.org/abs/2305.17212"
+      },
+      {
+        "title": "Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization",
+        "url": "https://arxiv.org/abs/2606.16899"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a rising weight norm mean?",
+        "options": [
+          "The weights are growing in overall size",
+          "The loss is falling",
+          "The batch is larger",
+          "The learning rate is decaying",
+          "The data is changing"
+        ],
+        "answer": 0,
+        "why": "The norm measures the overall size."
+      },
+      {
+        "level": 2,
+        "q": "Why log the weight size per group every few hundred steps?",
+        "options": [
+          "Growth shows up there before it shows up in the loss",
+          "The loss is never logged",
+          "It saves memory",
+          "It speeds up training",
+          "It is required by the GPU"
+        ],
+        "answer": 0,
+        "why": "In every failure the guide describes, the weights grew before the loss showed a problem."
+      },
+      {
+        "level": 3,
+        "q": "Why can the loss look normal while weights grow?",
+        "options": [
+          "A normalisation layer makes the output depend on direction, not overall size",
+          "Growth is not real",
+          "The loss is averaged",
+          "Gradients are zero",
+          "The data is small"
+        ],
+        "answer": 0,
+        "why": "The effect shows up later, as a shrinking effective step or numerical trouble."
+      },
+      {
+        "level": 3,
+        "q": "Why is Hyperball (fixing the norm) not a drop-in for adapters in our hands?",
+        "options": [
+          "A matrix that starts at zero has norm zero and never moves",
+          "It needs more memory",
+          "It forbids Muon",
+          "It is too slow",
+          "It removes the gradient"
+        ],
+        "answer": 0,
+        "why": "Adapters such as LoRA B start at zero, so a norm-fixing rule leaves them stuck at zero."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "schedule-free",
+    "term": "Schedule-Free",
+    "aliases": [
+      "Schedule-Free averaging"
+    ],
+    "plain": "Schedule-Free is a way of training without lowering the learning rate over time: it keeps a running average of the weights and uses that average as the result.",
+    "ours": "It was the largest single effect we measured on the heads: held-out loss 0.20 to 0.21 with it and 0.255 without, against 0.25 to 0.26 for AdamW (12,524 crops). It moves the weights quickly early, so epochs 2 to 4 can be the good ones when listening to a LoRA or DoRA. Its burn-in and averaging weight changed results by only 0.0005 to 0.006, which we treat as noise.",
+    "deeper": "Instead of a decaying schedule, it evaluates and saves the average of the weights instead of the latest weights. Because the learning rate does not decay, a rule that scales weight decay with the learning rate has no effect under it. Its average is also affected by bf16 rounding when the steps are small. Published: The Road Less Scheduled, SF-NorMuon (the spectral version), and ScheduleFree+.",
+    "papers": [
+      {
+        "title": "The Road Less Scheduled (Schedule-Free)",
+        "url": "https://arxiv.org/abs/2405.15682"
+      },
+      {
+        "title": "Anytime Training with Schedule-Free Spectral Optimization (SF-NorMuon)",
+        "url": "https://arxiv.org/abs/2605.23061"
+      },
+      {
+        "title": "ScheduleFree+",
+        "url": "https://arxiv.org/abs/2605.19095"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does Schedule-Free replace?",
+        "options": [
+          "The decaying learning-rate schedule",
+          "The optimizer",
+          "The data",
+          "The loss",
+          "The batch"
+        ],
+        "answer": 0,
+        "why": "It removes the need to schedule the learning rate downward."
+      },
+      {
+        "level": 2,
+        "q": "Which weights does a Schedule-Free run give you?",
+        "options": [
+          "A running average of the weights",
+          "The very first weights",
+          "The largest weights",
+          "The weights of one layer",
+          "Random weights"
+        ],
+        "answer": 0,
+        "why": "The saved model is the average, not the latest point."
+      },
+      {
+        "level": 3,
+        "q": "Why did the guide say epochs 2 to 4 may be the good ones with Schedule-Free?",
+        "options": [
+          "It moves the weights quickly early in training",
+          "It slows training down",
+          "It ignores the first epochs",
+          "It needs a warmup of 100 epochs",
+          "It prevents NaN"
+        ],
+        "answer": 0,
+        "why": "Fast early movement means useful checkpoints can come early."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "sign-step",
+    "term": "sign step",
+    "aliases": [
+      "sign steps",
+      "sign descent"
+    ],
+    "plain": "A sign step moves each parameter by exactly the learning rate, up or down depending only on the sign of its gradient, however large or small the gradient was.",
+    "ours": "Our own optimizer used a sign step for the 1-D parameters: each bias and gain moved by the full learning rate every step. That is why a shared learning rate made them take much larger steps than the matrices (about 1e-2 against 6e-4 per step in our original recipe), and why DoRA magnitudes, which started around 0.13 to 0.45, crossed zero.",
+    "deeper": "Lion is the best-known optimizer built on this idea. A fixed step is blind to the size of a parameter, so it is a poor fit for small positive values such as DoRA magnitudes: 592 of them reached zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update of the magnitudes fixed it. We have not checked whether that fix appears in the literature.",
+    "papers": [
+      {
+        "title": "Symbolic Discovery of Optimization Algorithms (Lion)",
+        "url": "https://arxiv.org/abs/2302.06675"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "How big is a sign step?",
+        "options": [
+          "Always the learning rate, whatever the gradient's size",
+          "Proportional to the gradient",
+          "Zero",
+          "Random",
+          "Proportional to the weight"
+        ],
+        "answer": 0,
+        "why": "Only the sign of the gradient is used."
+      },
+      {
+        "level": 2,
+        "q": "Why was a sign step risky for DoRA magnitudes starting at about 0.13 to 0.45?",
+        "options": [
+          "Fixed-size steps can push small positive numbers below zero",
+          "They grow too slowly",
+          "They have no gradient",
+          "They are huge",
+          "The sign is unknown"
+        ],
+        "answer": 0,
+        "why": "A step comparable to the value itself can cross zero."
+      },
+      {
+        "level": 3,
+        "q": "Which optimizer is best known for using the sign of the gradient?",
+        "options": [
+          "Lion",
+          "Muon",
+          "Schedule-Free",
+          "AdamW",
+          "Shampoo"
+        ],
+        "answer": 0,
+        "why": "Lion uses the sign of the momentum.",
+        "wrong": {
+          "1": "Muon orthogonalises the momentum matrix, which is not a sign step.",
+          "3": "AdamW divides by the root of the averaged squared gradient, which is not a sign step."
+        }
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "normuon",
+    "term": "NorMuon",
+    "aliases": [
+      "row normalisation",
+      "row normalisation step",
+      "row normalization",
+      "row-normalised",
+      "row normalised"
+    ],
+    "plain": "NorMuon is a Muon variant that rescales every row of the update to a similar size after orthogonalising, so no row moves much more than the others.",
+    "ours": "In our version, row normalisation cancels any overall size set before it, including the shape-based radius, so those settings have no effect while it is on. On wide matrices, including LoRA A, our variant steps 2 to 3.6 times larger than the reference implementation, and we have not traced why. We have no outcome test of it yet.",
+    "deeper": "After Newton-Schulz the rows of an orthogonalised matrix can still differ in size. NorMuon divides each row by a running estimate of its size. Because it fixes the scale itself, any scale applied earlier is erased. Textbook: the NorMuon paper; ours: a variant whose step size differs from it.",
+    "papers": [
+      {
+        "title": "NorMuon: Making Muon more efficient and scalable",
+        "url": "https://arxiv.org/abs/2510.05491"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does NorMuon do to the update?",
+        "options": [
+          "It rescales each row to a similar size",
+          "It deletes rows",
+          "It adds noise",
+          "It doubles the learning rate",
+          "It splits the matrix"
+        ],
+        "answer": 0,
+        "why": "Row normalisation evens out row sizes."
+      },
+      {
+        "level": 2,
+        "q": "Why does a shape-based radius have no effect while NorMuon is on in our optimizer?",
+        "options": [
+          "Row normalisation erases any overall size applied before it",
+          "The radius is negative",
+          "NorMuon ignores the matrix shape",
+          "The radius is stored elsewhere",
+          "It does, it is the main effect"
+        ],
+        "answer": 0,
+        "why": "The row normalisation sets the scale, so earlier scale choices vanish."
+      },
+      {
+        "level": 3,
+        "q": "What does the guide say about our NorMuon variant on wide matrices?",
+        "options": [
+          "It steps 2 to 3.6 times larger than the reference, and we have not traced why",
+          "It matches the reference exactly",
+          "It is slower",
+          "It was proven better",
+          "It was never used"
+        ],
+        "answer": 0,
+        "why": "That is the stated finding, with no explanation yet."
+      }
+    ],
+    "quiz_reviewed": null
   }
 ]
