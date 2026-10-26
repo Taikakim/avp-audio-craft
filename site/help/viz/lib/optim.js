@@ -81,3 +81,58 @@ export function singularValues(M) {
   const S = r >= c ? matmul(transpose(M), M) : matmul(M, transpose(M));
   return symmetricEigenvalues(S).map((e) => Math.sqrt(Math.max(e, 0))).sort((a, b) => b - a);
 }
+
+// ---------------------------------------------------------------- AdamW
+// state: null on the first call, else the `state` returned by the previous call.
+// opts.w: current weights, only needed when wd > 0 (decoupled weight decay).
+export function adamwStep(state, grad, opts = {}) {
+  const { lr = 1e-3, beta1 = 0.9, beta2 = 0.999, eps = 1e-8, wd = 0, w = null } = opts;
+  const [r, c] = shape(grad);
+  const prev = state ?? { t: 0, m: zeros(r, c), v: zeros(r, c) };
+  const t = prev.t + 1;
+  const m = map2(prev.m, grad, (m0, g) => beta1 * m0 + (1 - beta1) * g);
+  const v = map2(prev.v, grad, (v0, g) => beta2 * v0 + (1 - beta2) * g * g);
+  const c1 = 1 - Math.pow(beta1, t);
+  const c2 = 1 - Math.pow(beta2, t);
+  const update = m.map((row, i) => row.map((mi, j) => {
+    const adaptive = (mi / c1) / (Math.sqrt(v[i][j] / c2) + eps);
+    const decay = wd > 0 && w ? wd * w[i][j] : 0;
+    return lr * (adaptive + decay);
+  }));
+  return { update, state: { t, m, v } };
+}
+
+// ---------------------------------------------------------------- Newton-Schulz / Muon
+// Quintic iteration X <- a X + (b A + c A^2) X with A = X X^T. Frobenius-normalise first;
+// work on the wide orientation (rows <= cols) like the reference Muon code.
+export function newtonSchulz(M, iters = 5, coeffs = NS_COEFFS) {
+  const [a, b, c] = coeffs;
+  const [r, cc] = shape(M);
+  const tall = r > cc;
+  let X = scale(M, 1 / (frobenius(M) + 1e-7));
+  if (tall) X = transpose(X);
+  for (let k = 0; k < iters; k++) {
+    const A = matmul(X, transpose(X));
+    const B = add(scale(A, b), scale(matmul(A, A), c));
+    X = add(scale(X, a), matmul(B, X));
+  }
+  return tall ? transpose(X) : X;
+}
+export function newtonSchulz5(M) { return newtonSchulz(M, 5, NS_COEFFS); }
+
+// scaleMode: 'moonlight' = 0.2*sqrt(max(rows, cols)) (every matrix moves ~0.2*lr per weight, like AdamW);
+//            'keller'    = sqrt(max(1, rows/cols)) (original Muon code); 'none' = 1.
+export function muonScale(rows, cols, mode) {
+  if (mode === 'moonlight') return 0.2 * Math.sqrt(Math.max(rows, cols));
+  if (mode === 'keller') return Math.sqrt(Math.max(1, rows / cols));
+  return 1;
+}
+export function muonStep(state, grad, opts = {}) {
+  const { lr = 0.02, momentum = 0.95, scaleMode = 'moonlight' } = opts;
+  const [r, c] = shape(grad);
+  const prev = state ?? { buf: zeros(r, c) };
+  const buf = map2(prev.buf, grad, (b0, g) => momentum * b0 + g);
+  const o = newtonSchulz5(buf);
+  const update = scale(o, lr * muonScale(r, c, scaleMode));
+  return { update, state: { buf } };
+}
