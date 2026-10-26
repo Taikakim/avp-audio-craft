@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viz module fixture</title>
+<link rel="icon" href="data:,">
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 16px auto; max-width: 760px; background: #fff; color: #1a1a1a; }
+  #root { border: 1px solid #ccc; border-radius: 6px; min-height: 80px; }
+  #log { font: 12px monospace; color: #555; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<!-- Owner: WINTERMUTE (created 2026-10-26) -->
+<p>Fixture for one animation module: <code>dev.html?m=&lt;id&gt;[&amp;rm=1][&amp;p=&lt;json params&gt;]</code></p>
+<div id="root"></div>
+<pre id="log"></pre>
+<script type="module">
+  const q = new URLSearchParams(location.search);
+  const id = q.get('m') || '';
+  const log = (s) => { document.getElementById('log').textContent += s + '\n'; };
+  const help = {
+    colors: { accent: '#2b6cb0', fg: '#1a1a1a', muted: '#777777', bg: '#ffffff', good: '#2f855a', bad: '#c53030' },
+    openTerm: (t) => log('openTerm(' + t + ')'),
+    reducedMotion: q.get('rm') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches,
+  };
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    log('Give a module id, e.g. ?m=step-size');
+  } else {
+    try {
+      const mod = await import('./' + id + '.js');
+      const params = q.get('p') ? JSON.parse(q.get('p')) : {};
+      const handle = mod.mount(document.getElementById('root'), params, help);
+      window.__viz = handle;
+      document.body.dataset.mounted = '1';
+    } catch (e) {
+      log('mount failed: ' + e);
+      document.body.dataset.error = String(e);
+    }
+  }
+</script>
+</body>
+</html>
