@@ -1849,6 +1849,8 @@ CLEANUP: the junk outputs are the ones whose directory basename is a stem name �
 full_mix \) -prune` locates them; the real per-track outputs sit one level up.
 
 ### F6 — Fine-tune a KICK separator (BS-RoFormer) — **POTENTIAL (Kim 2026-10-07: "one day when we have the compute and tokens")**
+**2026-10-27: folded into F8** (kick target = F8 S3 stage b). The bass-capture evidence below is 7 of the 35 v7 clips; Kim: basslines do
+not universally miss, so F8 S0 measures the failure rate first.
 
 **Why.** The DJ mix v7 stem-transition plan (`docs/superpowers/specs/2026-10-07-dj-mix-v7-transitions-spec.md`) wants the kick
 to crossfade while bass and percussion are handled separately, but every separator we have (BS-RoFormer 4-stem, Demucs) stops
@@ -1878,6 +1880,65 @@ swept (outgoing LP / incoming HP, 16 kHz -> 60 Hz). (2) lengthen clips 2-3x with
 `decode_z0_clamped.py`), then 16-bar windows. (3) multi-band asymmetry on the full mix: percussion highs (> ~800-1000 Hz) first, kick lows last. (4) latent slerp of the overlaid
 parts (zero latent is not silence: validity-weighted) and the chroma head to blend pitch. **Kill criterion:** a stage is dropped when the owner's ear finds it no better than v7b plain.
 **Status 2026-10-07:** (1) built, synthetic tests pass, NOT yet run on real clips (the clip drive dropped off the bus at 14:11; remount needs root).
+
+### F8 — Separation upgrade series S0-S5 (measure first, then cheapest fix first) — **PLANNED (Kim 2026-10-27, THE-FINN plan; no owner yet)**
+
+**Why.** Stems feed DJ transitions (F7), controls (B14) and training data. **Kim's framing (2026-10-26/27):** stems need NOT be faithful to
+the source or sum to the mix, so we may duplicate content across stems to keep the high end; and **basslines do not universally miss**.
+The F6 bass-capture evidence is 7 of the 35 v7 mix clips (bass stem held ~0 % of the harmonic low band in 6, 20.7 % in one), one corpus,
+one metric. So the series starts by measuring how often and where separation fails before fixing anything.
+**Sources** (sidecars in `papers/`, rows in `papers/knowledge.md`): training-free multi-step separation 2505.19534; MIMO iterative
+separation 2609.07226 (code MIT, weights incl. a 10.6M 4-stem MIMO SCNet); SURF remix self-training 2606.04921; FlowSep 2 2608.22111.
+**Data.**
+- **Ground truth:** Kim's studio multitracks `Mantu/avp-stems-original-classified`, 40 tracks, per-category downmixes:
+  KICK 40, BASS 40, DRUMS 39, LEADS 37, PADS 35, ARP_KEYS 34, SFX 32, SPEECH 27, ACID 25 (`*_downmix.flac`), plus `full mix raw` files.
+  Map to separator stems as kick / bass / drums (non-kick) / other (acid + arp_keys + leads + pads + sfx) / vocals (speech).
+  Build eval mixtures as the SUM of the downmixes (exact by construction); whether `full mix raw` equals that sum (master
+  processing) is unverified. **Split once and freeze: 10 tracks eval-only forever, 30 for fine-tuning.** ACID is its own class here;
+  a 303 line in the low register is a likely source of "bass went to other".
+- **Real corpus:** `Mantu/ai-music/Goa_Separated` (4,470 tracks with 4 stems; separator not confirmed), the 35 v7 clips, and
+  `Kosmos/latents/latents_goa_bigset` sources (12,524 crops, no stems yet).
+
+**S0 — Failure census + benchmark (CPU and inference only; decides everything below).**
+- Separators: BS-RoFormer 4-stem, BS-RoFormer SW 6-stem, htdemucs_ft, released MIMO SCNet 4-stem (first check it runs on ROCm).
+- Sets: the 10 studio eval tracks; a stratified sample of ~60 `Goa_Separated` tracks (spread over year and the `.INFO` bass
+  descriptors, e.g. `onset_density_average_bass`, `harmonic_movement_bass`); the 35 v7 clips.
+- Metrics, per track, reported as distributions, not medians: bass capture (`eval/stem_bass_capture.py`); on the studio set also
+  per-stem SDR on 1 s segments (median) and **LPR** (energy in silent reference regions, e.g. kick in breakdowns), as in 2609.07226;
+  a high-end measure (stem vs truth energy above ~8 kHz) for Kim's high-end concern.
+- **Validate the capture metric first:** it splits the low band with HPSS, and short rolling-bass notes can read as percussive, so it
+  may under-count exactly the psytrance bass. Check capture against true bass SDR on the studio set before trusting it on the corpus.
+- Output: which separator wins per stem, what share of tracks fail (capture < 0.3) and what they have in common (bass type, era, acid
+  in the low register). **Decision:** if failures are rare, stop at S1/S2; if they cluster in a style, S3/S4 target that style.
+
+**S1 — Training-free iteration on the S0 winner (2505.19534).** Each step: K blends `r*mix + (1-r)*stem_estimate` (K = 5, r even in
+[0, 1]), separate each, keep the best; T = 1-3. First choose r by ORACLE SDR on the studio eval tracks (upper bound), then test
+non-intrusive proxies (bass capture, LPR, PQ, SAJ if obtainable) by how often they pick the oracle's r. Cost ~K x separation per
+target stem. **Pass:** proxy-selected r beats one-step on the studio eval set (SDR or LPR) and on Kim's ear for 5 tracks.
+
+**S2 — Non-faithful high-end restoration (Kim's note; pure DSP).** After separation, add the mix residual above a cutoff (try 6 /
+8 / 12 kHz) to EVERY stem that should carry air (drums, other), duplicating rather than splitting it; also compare against S1's r as
+a "clean vs full high end" knob. **Pass:** high-end measure closer to truth on the studio set without audible bleed in A/B.
+
+**S3 — MIMO SCNet fine-tune (2609.07226 repo).** Start from the released 10.6M MIMO SCNet weights; `inst_list`/`gather_list` for
+targets; `trainer.finetuning=true`. Stage (a): same 4 targets on the 30 studio training tracks with cross-track remixing
+(`aug_mix`), gain, phase flip and silent-stem dropout. Stage (b): 5 targets with kick split from drums (absorbs F6's kick goal; 3-way
+low band kick / bass / rest). Local GPU. Add `Goa_Separated` pseudo-stems only if S0 shows a domain gap. **Pass:** beats the S0
+winner on bass and drums on the 10 eval tracks and on the failing-style corpus tracks from S0.
+
+**S4 — Remix self-training on our corpus (SURF 2606.04921, regression first).** Only if S0 shows the real corpus failing far more than
+the studio set. Teacher = best of S0-S3. Remix teacher stems ROLE BY ROLE across tracks (drums of one + bass of another + other of a
+third; SURF itself treats sources as unlabelled), train with the Self-Remixing loss (estimates must sum back to the real mix, so the
+teacher's systematic error stays out of the target), mix in studio ground-truth batches. Needs large mixture batches (SURF's best
+B = 256). Cannot create a stem the teacher never produces.
+
+**S5 — SA3 generative separator (FlowSep 2 design) — POTENTIAL.** Fine-tune medium-base to generate a stem from the mix, the mix
+latent entering through the existing inpainting inlet (`local_add_cond_dim` 257 = latent + mask in `model_config.json`), stem name as
+prompt; optionally the Self-Flow loss. Generative output can rebuild the high end. Only after S0-S3, and its output also serves B14
+as stem data.
+
+**Order and cost.** S0 (hours, CPU + inference) -> S1 + S2 (inference / DSP) -> S3 (local fine-tune) -> S4 / S5 (training runs, gated
+on S0's result and compute). Owner unassigned: the mir / audio-feature lane is W's, the DJ pipeline G's (F6 note).
 
 ## G. Infra that gates experiments
 - LUMI allocation ends ~2026-08-22; scratch purge after → pull sanity16 + any ladders first. (A3)
