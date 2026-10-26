@@ -55,3 +55,4 @@ fine-tuning, pre-training, LoRA, DoRA, rank, embedding, diffusion model, latent,
 - CALIBRATION NOTE (W): the half-batch cosines (0.37 -> 0.08) are batch-64 measurements; the batch-noise widget must not present them as batch-16 noise.
 - Open question: KIM-TASKLIST 251 says the 60 extracted adapters have zero rendered cells while EXPERIMENTS.md:44 calls them
   "broken"; the blog paragraph rests on Kim's glitch report plus the reconstruction and spectrum checks, not on a canonical-clip board.
+- TERM MARKING (Kim 10-26): not an underline on every occurrence. Options he gave: ~20% lighter font, or underline the first occurrence only with all later ones still clickable. CONTINUITY recommends the second: first per SECTION underlined and focusable; later ones clickable, hover/focus-styled, out of the tab order (tabindex -1, no repeated screen-reader announcement); a lighter font risks failing 4.5:1 contrast, especially in dark mode. W to show the choice to Kim.
