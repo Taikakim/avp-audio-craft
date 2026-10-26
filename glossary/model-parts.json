@@ -165,5 +165,848 @@
       }
     ],
     "quiz_reviewed": null
+  },
+  {
+    "id": "layer",
+    "term": "layer",
+    "aliases": [
+      "layers"
+    ],
+    "plain": "A layer is one stage of the model: numbers go in, a fixed recipe with learned weights transforms them, and numbers come out to the next stage.",
+    "ours": "The control heads in this guide are stacks of 8 such stages (depth 8), 256 or 512 numbers wide. The Stable Audio 3 diffusion model stacks many more, each containing attention and feed-forward parts. Not every layer holds a 2-D matrix: a normalisation layer holds only short lists of numbers.",
+    "deeper": "Layers are applied in series: each one takes the previous one's output. That is why a change in an early layer shifts everything after it, and why step sizes are best judged per layer and not across the whole model.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a layer do?",
+        "options": [
+          "It transforms the numbers it receives and passes them on to the next stage",
+          "It stores the training data",
+          "It chooses the learning rate",
+          "It decides when training stops",
+          "It shuffles the batches"
+        ],
+        "answer": 0,
+        "why": "A layer is one transformation stage; stages are chained one after another."
+      },
+      {
+        "level": 2,
+        "q": "Layers are applied one after another. Why does that matter for training?",
+        "options": [
+          "A change in an early layer affects everything after it",
+          "Only the last layer is ever trained",
+          "Layers cannot share an optimizer",
+          "It makes the model smaller",
+          "It removes the need for a gradient"
+        ],
+        "answer": 0,
+        "why": "Because the output of one layer is the input of the next, an early change travels through all later layers."
+      },
+      {
+        "level": 2,
+        "q": "Does every layer hold a 2-D weight matrix?",
+        "options": [
+          "Yes, always",
+          "No, a normalisation layer holds only short lists of numbers",
+          "No, layers hold no weights at all",
+          "Only the last layer does",
+          "Only attention layers do"
+        ],
+        "answer": 1,
+        "why": "Matrix layers (attention, feed-forward) hold tables; normalisation layers hold 1-D lists (gains and biases)."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "hidden-layer",
+    "term": "hidden layer",
+    "aliases": [
+      "hidden layers",
+      "hidden matrix",
+      "hidden matrices"
+    ],
+    "plain": "A hidden layer is a layer in the middle of the model, between the part that takes the input in and the part that gives the answer out.",
+    "ours": "In our heads and in Stable Audio 3 the hidden layers are the repeated blocks of attention and feed-forward matrices. These are the matrices Muon is meant for. The first layer that reads the latent in and the last layer that writes the result are not hidden layers, so Muon's original recommendation leaves them to AdamW.",
+    "deeper": "The Muon post recommends Muon only for hidden layers and says that excluding the input and output layers came from experiments, not from theory. A 'hidden matrix' in this guide is a 2-D weight matrix inside such a layer.",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "Which part of a model is a hidden layer?",
+        "options": [
+          "A layer in the middle, between the input and output stages",
+          "The layer that reads the input",
+          "The layer that writes the final result",
+          "The training data",
+          "The loss function"
+        ],
+        "answer": 0,
+        "why": "Hidden layers sit between the input and output stages."
+      },
+      {
+        "level": 2,
+        "q": "The Muon post recommends Muon for which weights?",
+        "options": [
+          "Hidden-layer matrices only",
+          "All parameters, including biases",
+          "Only the output layer",
+          "Only the embeddings",
+          "None; it is only for biases"
+        ],
+        "answer": 0,
+        "why": "Muon is recommended for hidden-layer 2-D matrices; the rest goes to a second optimizer."
+      },
+      {
+        "level": 3,
+        "q": "Why is the exclusion of the input and output layers described as coming from experiments?",
+        "options": [
+          "The authors found it worked better but did not derive it from theory",
+          "It is a mathematical law",
+          "The GPU cannot handle those layers",
+          "Those layers have no weights",
+          "It was proven in the Moonlight paper"
+        ],
+        "answer": 0,
+        "why": "The guide says the post reports the rule as an experimental finding, so treat it as a recommendation, not a proof."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "embedding",
+    "term": "embedding",
+    "aliases": [
+      "embeddings"
+    ],
+    "plain": "An embedding is a lookup table that turns an index, such as a word or a code, into a list of numbers the model can work with.",
+    "ours": "A lookup table of this kind is updated only for the rows that appear in the current batch. The guide sends embeddings to the second optimizer, AdamW, and our reading is that other input projections should go there as well. Our time-embedding layers were handled as embeddings, which may not be right (see time-embedding layer).",
+    "deeper": "Why not treat an embedding table as a matrix for Muon? A table with a large vocabulary receives gradient only on the rows whose entries appeared in the batch, so the idea of evening out the strength of directions has little meaning and would also push rows nobody used. The Muon post recommends AdamW for embeddings. A small dense table whose rows are all used every step, such as four stem embeddings in parallel, is a different situation, and whether Muon would help there is untested; that is our guess, not a result.",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does an embedding do?",
+        "options": [
+          "It looks up a list of numbers for an index, such as a word or a code",
+          "It compresses the whole model",
+          "It chooses the learning rate",
+          "It stores the optimizer state",
+          "It measures the loss"
+        ],
+        "answer": 0,
+        "why": "An embedding maps an index to a vector."
+      },
+      {
+        "level": 2,
+        "q": "Which optimizer does the guide use for embeddings?",
+        "options": [
+          "The second optimizer, usually AdamW",
+          "Muon",
+          "None, they are frozen",
+          "Newton-Schulz",
+          "Lion only"
+        ],
+        "answer": 0,
+        "why": "The Muon post recommends leaving embeddings to AdamW."
+      },
+      {
+        "level": 3,
+        "q": "Why is a large embedding table a poor fit for Muon?",
+        "options": [
+          "Only the rows seen in a batch receive gradient, so evening out directions would also push unused rows",
+          "It has no weights",
+          "It is always 1-D",
+          "It is too small",
+          "It needs a bigger learning rate"
+        ],
+        "answer": 0,
+        "why": "A sparse gradient means most rows have nothing to say; orthogonalising would spread an update across rows nobody used."
+      },
+      {
+        "level": 3,
+        "q": "Four stem embeddings, all used at every step, form a small dense table. What does the guide say about using Muon there?",
+        "options": [
+          "It is untested; the reason to avoid Muon for large vocabularies may not apply",
+          "It is proven to work",
+          "It is proven not to work",
+          "It is impossible",
+          "It is required"
+        ],
+        "answer": 0,
+        "why": "The guide marks this as a guess; the sparsity reason does not apply, so the question is open."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "input-projection",
+    "term": "input projection",
+    "aliases": [
+      "input projections"
+    ],
+    "plain": "An input projection is the first matrix of a model: it converts the incoming numbers into the width the rest of the model works in.",
+    "ours": "Our heads read the 256-channel latent of the SAME autoencoder and project it to a model width of 256 to 512. The guide's reading is that such input projections should go to the second optimizer, like embeddings, though the Muon post only names embeddings explicitly.",
+    "deeper": "The rule that input and output layers stay on AdamW is an experimental recommendation, not a derivation. 'In our reading' in the guide marks that extension to input projections as ours.",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does an input projection do?",
+        "options": [
+          "It converts the incoming numbers to the width the model works in",
+          "It chooses the batch size",
+          "It decides the learning rate",
+          "It writes the final audio",
+          "It stores the data"
+        ],
+        "answer": 0,
+        "why": "It is the entry matrix that maps the input to the model's internal width."
+      },
+      {
+        "level": 2,
+        "q": "How many channels does a SAME latent have?",
+        "options": [
+          "256",
+          "12",
+          "384",
+          "4,096",
+          "1"
+        ],
+        "answer": 0,
+        "why": "SAME latents have 256 channels; our heads project them to a width of 256 to 512."
+      },
+      {
+        "level": 3,
+        "q": "Is the rule to leave input projections to AdamW established?",
+        "options": [
+          "No, it is our reading, extending the post's rule for embeddings",
+          "Yes, it was proven in the Muon post",
+          "Yes, by a theorem",
+          "No, the guide says to use Muon for them",
+          "It is not mentioned at all"
+        ],
+        "answer": 0,
+        "why": "The guide marks it as 'in our reading'."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "bias",
+    "term": "bias",
+    "aliases": [
+      "biases"
+    ],
+    "plain": "A bias is a list of numbers added to a layer's output, shifting it up or down by a fixed amount per channel.",
+    "ours": "Biases are 1-D lists, not tables, so Muon does not handle them; a second optimizer does. In our optimizer the sign step moved each bias by the full learning rate per step, which is why a shared learning rate failed in our run B3 while giving biases their own smaller rate (run B2) trained fine.",
+    "deeper": "Because a sign step moves every entry by the same amount regardless of its size, biases and gains took much larger steps than the matrices at the same learning rate: roughly 1e-2 against 6e-4 per step in our original recipe (guide section 4).",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a bias?",
+        "options": [
+          "A list of numbers added to a layer's output",
+          "A table of weights",
+          "The learning rate",
+          "A type of batch",
+          "The loss value"
+        ],
+        "answer": 0,
+        "why": "A bias shifts a layer's output per channel."
+      },
+      {
+        "level": 2,
+        "q": "Why does Muon not update biases?",
+        "options": [
+          "They are 1-D lists, and Muon needs 2-D matrices",
+          "They are always zero",
+          "They are too large",
+          "They are not weights",
+          "Muon does update them"
+        ],
+        "answer": 0,
+        "why": "Muon works on whole matrices; biases are lists, so another optimizer handles them.",
+        "wrong": {
+          "4": "The guide is explicit that biases go to a second optimizer."
+        }
+      },
+      {
+        "level": 3,
+        "q": "In our runs, why did a shared learning rate fail while separate rates for biases and gains worked?",
+        "options": [
+          "The sign step moved biases and gains much more per step than the matrices",
+          "Biases have no gradient",
+          "Matrices are 1-D",
+          "The shared rate was too small",
+          "Biases were frozen"
+        ],
+        "answer": 0,
+        "why": "At the same learning rate, a sign step takes far larger steps on biases and gains than Muon does on matrices, so they blew up first."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "normalisation-gain",
+    "term": "normalisation gain",
+    "aliases": [
+      "normalisation gains",
+      "normalization gain",
+      "normalization gains",
+      "norm gains"
+    ],
+    "plain": "A normalisation gain is a learned multiplier that rescales each channel after the layer has evened out its values, so the model can still choose how loud each channel should be.",
+    "ours": "Like biases, gains are 1-D lists. They went to the second optimizer, and in our optimizer they took the same large sign steps as biases, which is why they needed their own smaller learning rate in run B2.",
+    "deeper": "A normalisation layer first rescales values to a standard size and then the gain restores a learned scale. Because the layer is insensitive to the overall size of the matrix before it, a matrix can grow without changing the loss, which is part of why weight growth can go unnoticed (guide section 5).",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a normalisation gain do?",
+        "options": [
+          "It rescales each channel by a learned amount after normalising",
+          "It sets the batch size",
+          "It stores gradients",
+          "It deletes weights",
+          "It decides the learning rate"
+        ],
+        "answer": 0,
+        "why": "It is a per-channel learned multiplier."
+      },
+      {
+        "level": 2,
+        "q": "Why did gains need their own learning rate in our run B2?",
+        "options": [
+          "The shared rate gave them much larger steps than the matrices",
+          "They had no gradient",
+          "They are 2-D",
+          "They are frozen",
+          "They are not weights"
+        ],
+        "answer": 0,
+        "why": "The sign step moved them by the full learning rate per step."
+      },
+      {
+        "level": 3,
+        "q": "Why can a matrix before a normalisation layer grow without the loss changing?",
+        "options": [
+          "The normalisation removes the overall size, so only direction matters",
+          "The loss ignores the matrix",
+          "Growth is impossible",
+          "Normalisation doubles the loss",
+          "Gradients cancel"
+        ],
+        "answer": 0,
+        "why": "Normalisation makes the layer depend on direction, not overall size, so growth hides until numerics or the effective learning rate break."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "magnitude-vector",
+    "term": "magnitude vector",
+    "aliases": [
+      "magnitude vectors",
+      "DoRA magnitudes",
+      "magnitude parameters"
+    ],
+    "plain": "In DoRA, the magnitude vector holds one learned length per row of the adapted weight; the adapter's direction is learned separately.",
+    "ours": "Our DoRA magnitude entries started between 0.13 and 0.45. A fixed-size step (sign descent) pushed 592 of them to zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update, which scales each magnitude by a factor instead of adding to it, fixed the problem. We have not checked whether that fix appears in the literature.",
+    "deeper": "A length that crosses zero flips the direction of that row, which breaks the decomposition. AdamW's smaller steps (0.2 to 0.4 times the learning rate) cross zero more slowly, but moving small positive scalars to AdamW does not by itself guarantee they stay positive.",
+    "papers": [
+      {
+        "title": "DoRA: Weight-Decomposed Low-Rank Adaptation",
+        "url": "https://arxiv.org/abs/2402.09353"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does DoRA's magnitude vector hold?",
+        "options": [
+          "One learned length per row of the weight",
+          "The learning rate",
+          "The rank",
+          "The batch size",
+          "The loss"
+        ],
+        "answer": 0,
+        "why": "DoRA splits a weight into direction and per-row magnitude."
+      },
+      {
+        "level": 2,
+        "q": "What went wrong with the magnitudes in our run?",
+        "options": [
+          "A fixed-size step pushed hundreds of them to zero or below",
+          "They grew without limit",
+          "They were never updated",
+          "They became complex numbers",
+          "They were deleted"
+        ],
+        "answer": 0,
+        "why": "Sign descent took steps as large as the values themselves, crossing zero."
+      },
+      {
+        "level": 3,
+        "q": "Why did a multiplicative update help?",
+        "options": [
+          "It scales a value by a factor, so a positive value stays positive",
+          "It makes steps larger",
+          "It removes the learning rate",
+          "It adds noise",
+          "It skips the magnitudes"
+        ],
+        "answer": 0,
+        "why": "Multiplying by a positive factor cannot cross zero, unlike adding a fixed step."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "scalar",
+    "term": "scalar",
+    "aliases": [
+      "scalars"
+    ],
+    "plain": "A scalar is a parameter that is a single number, such as one learned overall scale, instead of a list or a table.",
+    "ours": "The guide groups scalars with the 1-D parameters that Muon cannot handle, so they go to the second optimizer. We did not list which scalars our heads contain; printing the parameter groups at start-up would show them.",
+    "deeper": "A scalar has no direction to even out, so the idea behind Muon does not apply. Fixed-size-step optimizers (sign, Lion) are scale-blind on small positive parameters, which is why a scalar or magnitude that must stay positive needs care.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a scalar parameter?",
+        "options": [
+          "A single learned number",
+          "A table of weights",
+          "A list of channels",
+          "A batch",
+          "A gradient"
+        ],
+        "answer": 0,
+        "why": "A scalar is one number."
+      },
+      {
+        "level": 2,
+        "q": "Which optimizer handles scalars in the guide's setup?",
+        "options": [
+          "The second optimizer, usually AdamW",
+          "Muon",
+          "Newton-Schulz",
+          "None",
+          "Schedule-Free only"
+        ],
+        "answer": 0,
+        "why": "Muon needs 2-D matrices, so scalars go elsewhere."
+      },
+      {
+        "level": 3,
+        "q": "Why does the idea behind Muon not apply to a scalar?",
+        "options": [
+          "There is no set of directions to even out",
+          "Scalars are too large",
+          "Scalars have no gradient",
+          "Scalars are always zero",
+          "Muon only works on audio"
+        ],
+        "answer": 0,
+        "why": "Muon evens out the strength of directions in a matrix. A single number has one value and no directions."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "attention-projection",
+    "term": "attention projection",
+    "aliases": [
+      "attention projections"
+    ],
+    "plain": "An attention projection is a matrix that converts each position's numbers into the query, key or value form that attention uses, or converts the attention result back.",
+    "ours": "Each attention block in our heads and in Stable Audio 3 has such matrices. Muon should treat the query, key and value matrices separately, but our trainers stored them as one stacked matrix (see fused matrix).",
+    "deeper": "The attention projections are the 2-D matrices inside the hidden layers, so they are among those Muon is meant for. The original paper on attention introduced the query, key and value construction.",
+    "papers": [
+      {
+        "title": "Attention Is All You Need",
+        "url": "https://arxiv.org/abs/1706.03762"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What do attention projections do?",
+        "options": [
+          "They convert the numbers into query, key or value form for attention",
+          "They store audio",
+          "They choose the learning rate",
+          "They compress the loss",
+          "They shuffle batches"
+        ],
+        "answer": 0,
+        "why": "They are the matrices that produce Q, K and V."
+      },
+      {
+        "level": 2,
+        "q": "Are attention projections 2-D matrices inside hidden layers?",
+        "options": [
+          "Yes",
+          "No, they are scalars",
+          "No, they are biases",
+          "No, they are embeddings",
+          "No, they are losses"
+        ],
+        "answer": 0,
+        "why": "They are the 2-D matrices Muon is intended for."
+      },
+      {
+        "level": 3,
+        "q": "Why does it matter if the query, key and value matrices are stored as one stacked matrix?",
+        "options": [
+          "Muon would orthogonalise the stack as one matrix, coupling three unrelated matrices",
+          "Attention stops working",
+          "The GPU runs out of memory",
+          "The loss becomes negative",
+          "The data order changes"
+        ],
+        "answer": 0,
+        "why": "The guide's point: the post reports splitting them works better, and our trainers did not split."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "qkv",
+    "term": "QKV",
+    "aliases": [
+      "Q, K and V",
+      "query, key and value",
+      "query/key/value"
+    ],
+    "plain": "QKV stands for query, key and value, the three versions of each position's numbers that attention uses: the query asks, the keys advertise what each position holds, and the values are what gets passed on.",
+    "ours": "Each attention block makes Q, K and V from its input with three matrices of the same size. Many models store those three matrices stacked as one tall matrix because it runs faster; that stacked form is the fused matrix.",
+    "deeper": "Attention scores how well each query matches each key, then mixes the values by those scores. Because the three matrices do different jobs, the Muon post reports that orthogonalising them separately works better than orthogonalising the stack.",
+    "papers": [
+      {
+        "title": "Attention Is All You Need",
+        "url": "https://arxiv.org/abs/1706.03762"
+      },
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does QKV stand for?",
+        "options": [
+          "Query, key and value",
+          "Quantity, kernel and variance",
+          "Quality, kind and volume",
+          "Queue, kick and velocity",
+          "Quantised key vector"
+        ],
+        "answer": 0,
+        "why": "Query, key, value."
+      },
+      {
+        "level": 2,
+        "q": "In attention, what does a query do?",
+        "options": [
+          "It asks which positions are relevant",
+          "It stores the output",
+          "It sets the learning rate",
+          "It normalises the batch",
+          "It deletes noise"
+        ],
+        "answer": 0,
+        "why": "The query is compared with the keys to find which values to use."
+      },
+      {
+        "level": 3,
+        "q": "Why does the Muon post split a stacked QKV matrix before orthogonalising?",
+        "options": [
+          "The three matrices do different jobs, and orthogonalising them separately worked better",
+          "The stack is too large for memory",
+          "It is required by Newton-Schulz",
+          "Stacks have no gradient",
+          "To make the model smaller"
+        ],
+        "answer": 0,
+        "why": "The post reports a better result when Q, K and V are handled separately."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "qkv-line",
+      "params": {}
+    }
+  },
+  {
+    "id": "fused-matrix",
+    "term": "fused matrix",
+    "aliases": [
+      "fused matrices",
+      "fused attention matrix",
+      "fused attention matrices"
+    ],
+    "plain": "A fused matrix is several matrices stacked into one bigger matrix so the GPU can do the work in a single step.",
+    "ours": "Our heads store query, key and value as one stacked matrix of shape [3d, d]. The optimizer's rule looked for a different parameter name, so the stack was orthogonalised as one matrix and not split into three. We do not know the effect yet.",
+    "deeper": "Fusing is a speed choice, not a mathematical one: the stacked and separate forms compute the same output. For Muon it matters, because orthogonalising the stack couples three unrelated matrices, so each one's step size depends on the others. Checking what your trainer does means printing the parameter groups at start-up.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a fused matrix?",
+        "options": [
+          "Several matrices stacked into one for speed",
+          "A matrix with all zeros",
+          "A broken matrix",
+          "A matrix of biases",
+          "A copy of the data"
+        ],
+        "answer": 0,
+        "why": "Fusing stacks matrices so one multiply does the work of several."
+      },
+      {
+        "level": 2,
+        "q": "Does fusing change what the layer computes?",
+        "options": [
+          "No, only how the work is organised",
+          "Yes, it halves the output",
+          "Yes, it doubles the output",
+          "Yes, it removes attention",
+          "Yes, it adds noise"
+        ],
+        "answer": 0,
+        "why": "The output is the same; fusing is a speed choice."
+      },
+      {
+        "level": 3,
+        "q": "Why does fusing matter for Muon?",
+        "options": [
+          "Orthogonalising the stack couples three unrelated matrices",
+          "It makes the matrix 1-D",
+          "It removes gradients",
+          "It breaks the GPU",
+          "It sets the learning rate"
+        ],
+        "answer": 0,
+        "why": "A stacked matrix is treated as one, so the weak parts are held to the strong part's scale."
+      },
+      {
+        "level": 3,
+        "q": "Did our heads split the fused attention matrix?",
+        "options": [
+          "No, the rule looked for a different name",
+          "Yes, always",
+          "Yes, into four parts",
+          "We never used attention",
+          "The guide does not say"
+        ],
+        "answer": 0,
+        "why": "The routing rule missed the name, so the stack stayed whole (guide section 3)."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "qkv-line",
+      "params": {}
+    }
+  },
+  {
+    "id": "adaln",
+    "term": "AdaLN",
+    "aliases": [
+      "AdaLN emitter",
+      "fused modulation layer",
+      "fused modulation layers",
+      "modulation layer",
+      "emitter"
+    ],
+    "plain": "AdaLN is a normalisation whose scale and shift are computed from outside information, such as how noisy the input is, instead of being fixed numbers; do not confuse it with AdamW, which is an optimizer.",
+    "ours": "In our heads a small matrix, the emitter, produces the scale and shift vectors for each block from the conditioning. 'Fused' means one matrix produces several of these vectors at once. Our trainer treated the emitter as an ordinary hidden matrix. The guide's reasoning is that, like fused QKV, it should be split into its parts; that is our reasoning, not a tested result.",
+    "deeper": "In diffusion transformers such as DiT, the block's normalisation is modulated by a vector derived from the noise level and other conditioning; the emitter is the matrix that produces it. Splitting its output into separate scale, shift and (in DiT) gate pieces before orthogonalising is analogous to splitting QKV.",
+    "papers": [
+      {
+        "title": "Scalable Diffusion Models with Transformers (DiT, introduces adaLN-Zero)",
+        "url": "https://arxiv.org/abs/2212.09748"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is AdaLN?",
+        "options": [
+          "A normalisation whose scale and shift come from conditioning information",
+          "An optimizer",
+          "A type of loss",
+          "A dataset",
+          "A learning-rate schedule"
+        ],
+        "answer": 0,
+        "why": "Adaptive layer normalisation. AdamW, with a similar name, is an optimizer."
+      },
+      {
+        "level": 2,
+        "q": "What is the emitter in this guide?",
+        "options": [
+          "The matrix that produces the scale and shift vectors",
+          "The GPU",
+          "The loss function",
+          "The dataset",
+          "The audio decoder"
+        ],
+        "answer": 0,
+        "why": "It emits the modulation vectors."
+      },
+      {
+        "level": 3,
+        "q": "Why does the guide suggest splitting the fused modulation layer?",
+        "options": [
+          "By analogy with fused QKV, and it is our reasoning, not a tested result",
+          "A theorem proves it",
+          "The Muon post tested it",
+          "It reduces memory",
+          "It removes noise"
+        ],
+        "answer": 0,
+        "why": "The guide says so explicitly: it is our reasoning."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "routing",
+      "params": {}
+    }
+  },
+  {
+    "id": "time-embedding",
+    "term": "time-embedding layer",
+    "aliases": [
+      "time-embedding layers",
+      "time embedding",
+      "time embeddings"
+    ],
+    "plain": "A time-embedding layer turns the diffusion time, meaning how noisy the input currently is, into a list of numbers the model can use.",
+    "ours": "Typically this is a small stack of dense matrices applied to a wave-shaped encoding of the time value; we have not checked every head's version. Our trainer classified these layers as embeddings and sent them to the second optimizer, although they are ordinary 2-D matrices. We do not know yet whether that matters.",
+    "deeper": "An embedding is a lookup table updated sparsely; a time-embedding layer is a dense layer that every sample passes through, so the sparsity reason for avoiding Muon does not apply to it. That is our reading and is untested.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What does a time-embedding layer encode?",
+        "options": [
+          "How noisy the input currently is",
+          "The song title",
+          "The batch size",
+          "The learning rate",
+          "The file name"
+        ],
+        "answer": 0,
+        "why": "In diffusion, time (the noise level) is an input to the model."
+      },
+      {
+        "level": 2,
+        "q": "Why might routing the time-embedding layers as embeddings be a mistake?",
+        "options": [
+          "They are dense 2-D matrices that every sample uses, unlike a sparse lookup table",
+          "They are scalars",
+          "They have no weights",
+          "They are 3-D",
+          "They are frozen"
+        ],
+        "answer": 0,
+        "why": "The reason embeddings avoid Muon, sparse updates, does not apply."
+      },
+      {
+        "level": 3,
+        "q": "Do we know whether that routing hurt?",
+        "options": [
+          "No; changing it is a new experiment",
+          "Yes, it ruined the runs",
+          "Yes, it made no difference",
+          "It cannot matter",
+          "The guide does not mention it"
+        ],
+        "answer": 0,
+        "why": "The guide says changing the routing is a new experiment, not a silent fix."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "parameter-group",
+    "term": "parameter group",
+    "aliases": [
+      "parameter groups"
+    ],
+    "plain": "A parameter group is a set of weights that share the same optimizer settings, such as the same learning rate and the same weight decay.",
+    "ours": "Our optimizer builds groups such as the 2-D matrices (Muon) and the biases, gains and other 1-D lists (a second optimizer). Printing the groups at start-up shows which parameter landed where. The guide watches the weight size of each group: a group whose size doubles within an epoch after warmup needs attention.",
+    "deeper": "Groups matter because one learning rate gives different step sizes in different groups (guide section 4), so routing mistakes such as an unsplit QKV matrix or a misclassified time-embedding layer show up as a parameter in the wrong group.",
+    "papers": [],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a parameter group?",
+        "options": [
+          "Weights that share optimizer settings",
+          "A group of users",
+          "A set of audio files",
+          "A batch",
+          "A loss term"
+        ],
+        "answer": 0,
+        "why": "Weights in one group use the same learning rate and decay."
+      },
+      {
+        "level": 2,
+        "q": "Why print the parameter groups at start-up?",
+        "options": [
+          "To see which parameters the optimizer treated as which kind",
+          "To save time",
+          "To reduce memory",
+          "To pick the batch",
+          "To lower the loss"
+        ],
+        "answer": 0,
+        "why": "Name-based rules can miss, so reading the list catches routing mistakes."
+      },
+      {
+        "level": 3,
+        "q": "What should you do if a group's weight size doubles within an epoch after warmup?",
+        "options": [
+          "Look at it: it may be growing out of control",
+          "Nothing, this is normal",
+          "Stop using that data",
+          "Delete the group",
+          "Double the learning rate"
+        ],
+        "answer": 0,
+        "why": "A fast-growing group can precede NaN while the loss still looks normal."
+      }
+    ],
+    "quiz_reviewed": null,
+    "viz": {
+      "module": "routing",
+      "params": {}
+    }
   }
 ]
