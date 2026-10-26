@@ -35,8 +35,9 @@ function freshQuiz() {
 }
 
 class HelpPane {
-  constructor(entries, vizBase) {
+  constructor(entries, vizBase, glossaryUrl) {
     this.entries = entries;
+    this.glossaryUrl = glossaryUrl;
     this.vizBase = vizBase;
     this.trail = [];          // [{id, mode: 'entry' | 'quiz', quiz: null | {...}}], this visit only, in memory
     this.isOpen = false;
@@ -103,7 +104,9 @@ class HelpPane {
   }
 
   onKey(e) {
-    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+    const tg = e.target;
+    if (tg instanceof Element && tg.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     if (this.overlay) { e.preventDefault(); this.closeOverlay(true); return; }
     if (this.isOpen) { e.preventDefault(); this.close(); }
   }
@@ -174,6 +177,11 @@ class HelpPane {
     this.bodyEl.replaceChildren();
     if (item.mode === 'quiz') this.renderQuiz(entry, item);
     else this.renderEntry(entry);
+    // C4 hrefs are relative to help/; make them absolute so new-tab, copy-link and long-press work from any page
+    this.bodyEl.querySelectorAll('a.gl').forEach((a) => {
+      const id = a.dataset.term;
+      if (id) a.href = new URL('glossary.html#' + id, this.glossaryUrl).href;
+    });
     this.bodyEl.scrollTop = 0;
     this.markSeen(item.id);
   }
@@ -205,11 +213,15 @@ class HelpPane {
       const ul = el('ul');
       for (const p of entry.papers) {
         const li = el('li');
-        const a = el('a', null, p.title);
-        a.href = p.url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        li.append(a);
+        if (/^https?:/i.test(p.url || '')) {
+          const a = el('a', null, p.title);
+          a.href = p.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          li.append(a);
+        } else {
+          li.append(el('span', null, p.title));      // not an http(s) link: show the title only
+        }
         ul.append(li);
       }
       s.append(ul);
@@ -508,7 +520,7 @@ async function start(scriptEl) {
     return;                                  // links stay plain links to glossary.html
   }
   if (!data || typeof data.entries !== 'object' || data.entries === null) return;
-  new HelpPane(data.entries, vizBase).install();
+  new HelpPane(data.entries, vizBase, glossaryUrl).install();
 }
 
 const scriptEl = document.querySelector('script[type="module"][data-glossary]');

@@ -709,3 +709,46 @@ def test_keyboard_only_path_open_quiz_answer_close(make_page, page_url, quiz_ter
     page.keyboard.press("Escape")
     expect(page.locator("#help-pane")).to_be_hidden()
     assert link.evaluate("el => el === document.activeElement")              # focus back on the term
+
+
+# --------------------------------------------------------------------------- fix round 1
+
+def test_in_pane_term_links_resolve_to_the_glossary_page(make_page, page_url, link_pair):
+    src, dst = link_pair
+    page = make_page()
+    load_page(page, f"{page_url}#gl={src}")
+    href = page.locator(f'#help-pane a.gl[data-term="{dst}"]').first.evaluate("a => a.href")
+    path = urlparse(href)
+    assert path.path.endswith("/help/glossary.html") and path.fragment == dst
+
+
+def test_paper_links_must_be_http_or_https(make_page, page_url, fixture_only):
+    import json
+    page = make_page()
+
+    def tweak(route):
+        resp = route.fetch()
+        data = json.loads(resp.text())
+        data["entries"]["ema"]["papers"] = [
+            {"title": "Evil", "url": "javascript:alert(1)"}, {"title": "Fine", "url": "https://example.org/x"}]
+        route.fulfill(response=resp, body=json.dumps(data))
+
+    page.route("**/glossary.json", tweak)
+    load_page(page, f"{page_url}#gl=ema")
+    expect(page.locator("#help-pane .hp-papers li")).to_have_count(2)
+    expect(page.locator("#help-pane .hp-papers a")).to_have_count(1)
+    expect(page.locator("#help-pane .hp-papers a")).to_have_text("Fine")
+    expect(page.locator("#help-pane .hp-papers li").first).to_have_text("Evil")
+
+
+def test_escape_inside_a_form_control_does_not_close_the_pane(make_page, page_url, quiz_term):
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    page.locator("#help-pane .hp-quiz-start").click()
+    radio = page.locator("#help-pane input[type=radio]").first
+    radio.focus()
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_visible()
+    page.locator("#hp-title").focus()
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
