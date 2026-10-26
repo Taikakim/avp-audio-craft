@@ -545,7 +545,7 @@ A section without playable clips ships as a stub only. *(Gap exposed by `latch_s
 **Generative source separation / editing (SA3).** Text-prompted "separation" on SA3
 `medium-base` (rectified flow). Two scripts in `control/scripts/`:
 `sa3_flowsep.py` = inversion-free **FlowEdit/AUDEDIT** (difference-velocity field,
-robust to high cfg, naturally anchored — the published SOTA-on-SA3 path);
+robust to high cfg, naturally anchored; AUDEDIT published it for SA3 *editing*, our use for separation is our own);
 `sa3_zerosep_rf.py` = true **RF-Solver** flow-inversion (Taylor reverse-Euler;
 near-transparent, round-trip rel-err 0.23) + an **η faithfulness controller** (pull
 predicted-clean `z0` toward the encoded mixture by η∈[0,1] for steps t≥τ; η=0
