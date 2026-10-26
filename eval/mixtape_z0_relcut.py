@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-21)
 # Last edited: GHOST-NOTE 2026-10-21 -- run_meta purpose as f-string (a % in it crashed the first run after all renders)
+# Last edited: GHOST-NOTE 2026-10-26 -- --extra-scales: add flat arms (e.g. x0.75, x0.65) to an existing run's cells.jsonl
 """mixtape_z0_relcut.py -- RELATIVE latent-norm cuts for the clips above std MIN_STD (default 1.7), follow-up to mixtape_z0_clamp (EXPERIMENTS M1).
 
 WHY (owner verdict 2026-10-21 on mixtape_clamp_1p7, relayed by W): the timbre shift is not on every clip, so the target should not be a fixed std cap but relative to how much it
@@ -21,6 +22,7 @@ GRID = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5]
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--device", default="cuda"); ap.add_argument("--min-std", type=float, default=1.7)
     ap.add_argument("--out-name", default="mixtape_z0_relcut_2026-10-21"); ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--extra-scales", default="", help="comma list, e.g. 0.75,0.65: add flat arms xS to the existing cells.jsonl and exit")
     a = ap.parse_args()
     out = f"/run/media/kim/Mantu/sa3_lora_runs/{a.out_name}"; os.makedirs(out, exist_ok=True)
     jl = f"{out}/cells.jsonl"; done = {json.loads(l)["id"] for l in open(jl)} if os.path.exists(jl) else set()
@@ -38,6 +40,18 @@ def main():
     def save(x, path):
         pk = float(np.abs(x).max()) or 1e-9
         sf.write(path, (x / pk * 0.8913 if pk > 1 else x).T, 44100)
+
+    if a.extra_scales:
+        scs = [float(v) for v in a.extra_scales.split(",")]; rows = [json.loads(l) for l in open(jl)]
+        for row in rows:
+            st = row["id"]; z = torch.from_numpy(np.load(M + st + ".z0.npy").astype(np.float32)); m0 = row["orig"]
+            for g in scs:
+                tag = f"x{g:g}"
+                if tag in row: continue
+                x = dec(z * g); mt = meters(x, 44100); save(x, f"{out}/{st}__{tag}.wav")
+                mt.update(scale=g, hf_drop_pct=round(100 * (1 - mt["hf_ratio"] / m0["hf_ratio"]), 1), std=round(row["z0_std"] * g, 3)); row[tag] = mt
+            print(st[:55], {f"x{g:g}": row[f"x{g:g}"]["hf_drop_pct"] for g in scs}, flush=True)
+        open(jl, "w").write("".join(json.dumps(r) + "\n" for r in rows)); print("RELCUT EXTRA DONE", flush=True); os._exit(0)
 
     n = 0
     for st, p in clips:

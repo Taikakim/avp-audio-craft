@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: GHOST-NOTE 2026-10-26 -- arms x0.75/x0.65 added
 # Last edited: GHOST-NOTE 2026-10-21 -- added relative-cut arms x0.92/x0.85/hf5/hf10/hf15 and letters to H
 # Owner: GHOST-NOTE (created 2026-10-20)
 # Last edited: WINTERMUTE 2026-10-20 — optional EVALS_ROOT / AAC_BITRATE env (192k publish copies; defaults unchanged)
@@ -18,7 +19,7 @@ rows = [json.loads(l) for l in open(f"{SRC}/cells.jsonl")]
 rows.sort(key=lambda r: -r["z0_std"])
 rnd = random.Random(20261020); clips = []
 for r in rows:
-    arms = [k for k in ("orig", "c1.6", "c1.5", "c1.4", "c1.15", "lim", "x0.92", "x0.85", "hf5", "hf10", "hf15") if k in r]
+    arms = [k for k in ("orig", "c1.6", "c1.5", "c1.4", "c1.15", "lim", "x0.92", "x0.85", "x0.75", "x0.65", "hf5", "hf10", "hf15") if k in r]
     rms = {k: float(np.sqrt((sf.read(f"{SRC}/{r['id']}__{k}.wav")[0] ** 2).mean())) for k in arms}; tgt = min(rms.values())  # loudness-matched to the quietest arm
     for k in arms:
         o = f"{OUT}/{r['id']}__{k}.m4a"
