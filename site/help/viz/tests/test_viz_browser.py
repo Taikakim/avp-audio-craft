@@ -106,3 +106,29 @@ def test_reduced_motion_starts_still_with_step_button(browser, base_url):
     page.click("button:has-text('Step')")
     assert int(page.get_attribute(".vz-step", "data-step")) > s0
     ctx.close()
+
+
+def test_reduced_motion_scenario_change_and_replay_draw_a_first_frame(browser, base_url):
+    ctx, page, _ = open_page(browser, f"{base_url}/viz/dev.html?m=step-size", reduced_motion="reduce")
+    page.click("button:has-text('Step')")
+    page.click("button:has-text('Step')")
+    assert int(page.get_attribute(".vz-step", "data-step")) > 1
+    page.click("button:has-text('Gradient drops 100x')")
+    assert page.get_attribute(".vz-step", "data-scenario") == "drop"
+    assert int(page.get_attribute(".vz-step", "data-step")) == 1          # a fresh run, first frame drawn
+    assert page.locator("line.wire").first.get_attribute("stroke-width") != "0"
+    page.click("button:has-text('Step')")
+    page.click("button:has-text('Replay')")
+    assert int(page.get_attribute(".vz-step", "data-step")) == 1
+    ctx.close()
+
+
+def test_legend_uses_swatches_not_colour_names_and_muon_hue_differs(browser, base_url):
+    ctx, page, _ = open_page(browser, f"{base_url}/viz/dev.html?m=step-size")
+    text = page.inner_text(".vz-step").lower()
+    for word in ("blue", "green", "teal", "purple", "violet", "red"):
+        assert word not in text.split(), word
+    assert page.locator(".vz-legend .vz-sw").count() == 2
+    sw = page.eval_on_selector_all(".vz-legend .vz-sw", "n => n.map(e => getComputedStyle(e).backgroundColor)")
+    assert sw[0] != sw[1]
+    ctx.close()

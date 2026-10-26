@@ -1,4 +1,5 @@
 /* Owner: WINTERMUTE (created 2026-10-26) */
+/* Last edited: WINTERMUTE 2026-10-26 -- dvh for the phone sheet, no body padding in print */
 /* Help pane. Reuses the tokens of site/edg3.css (--paper, --ink, --edge, ...) with the same values as fallbacks. */
 
 :root {
@@ -112,7 +113,7 @@ body.help-pane-open { padding-right: var(--hp-w); }
   right: 14px; bottom: 14px;
 }
 
-@media print { .hp-pane, .hp-reopen { display: none; } }
+@media print { .hp-pane, .hp-reopen { display: none; } body.help-pane-open { padding-right: 0; padding-bottom: 0; } }
 
 /* ---- entry layers ---------------------------------------------------------------------------------------- */
 .hp-text { margin: 0 0 12px; }
@@ -205,10 +206,12 @@ body.help-pane-open { padding-right: var(--hp-w); }
 
 @media (max-width: 700px) {
   body.help-pane-open { padding-right: 0; padding-bottom: 70vh; }   /* article end stays reachable; no scroll lock */
+  @supports (height: 70dvh) { body.help-pane-open { padding-bottom: 70dvh; } }
+  @supports (height: 70dvh) { .hp-pane { height: 70dvh; } }
   .hp-pane {
     top: auto; left: 0; right: 0; bottom: 0;
     width: auto;
-    height: 70vh;
+    height: 70vh;   /* dvh below, so a phone's collapsing toolbar does not hide the bottom of the sheet */
     border-left: 0;
     border-radius: 12px 12px 0 0;
     box-shadow: 0 -4px 18px rgba(0, 0, 0, .12);

@@ -129,7 +129,9 @@ term; quiz feedback is announced to screen readers (live region); the pane is a 
 
 **Interface:** `site/help/viz/<id>.js` exports `mount(container, params, help) -> { destroy() }`. `help` provides the site
 colours, `openTerm(id)`, and `reducedMotion` (true when the reader's system asks for less motion: start still, offer a step
-button). Modules pause when out of view and are destroyed when their entry closes.
+button). Modules pause when out of view and are destroyed when their entry closes. A module may only call
+`help.openTerm(id)` for ids that appear in its own entry's text, so the publish gate's `reachable()` set already covers it.
+Modules never name a colour in text; they draw swatches beside series names.
 
 **"What's real here" note, required in every module:** what is computed live, which numbers come from our runs (run
 named), and what is illustration only. Our numbers sit in a small table in the module with their source in a comment.

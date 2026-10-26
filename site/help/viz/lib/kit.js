@@ -1,5 +1,12 @@
 // Owner: WINTERMUTE (created 2026-10-26)
 // DOM helpers shared by the animation modules. Importing this file touches no DOM; only calls do.
+// Last edited: WINTERMUTE 2026-10-26 -- module rules below (colours, openTerm)
+//
+// Rules for every module:
+//  * Never name a colour in text ("the blue line"). The pane's colours differ from page to page; tell series apart with a
+//    swatch drawn beside the name (and by position or label), using the colours passed in help.colors.
+//  * A module may only call help.openTerm(id) for ids that appear in its own glossary entry's text, so the publish gate's
+//    reachable() set (which follows marked terms in the entry text) already covers every entry the module can open.
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 

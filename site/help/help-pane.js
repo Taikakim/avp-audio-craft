@@ -1,4 +1,5 @@
 // Owner: WINTERMUTE (created 2026-10-26)
+// Last edited: WINTERMUTE 2026-10-26 -- Tab stays inside the aria-modal enlarged-animation overlay
 // help-pane.js: docked help pane for glossary terms (spec 2026-10-26-help-pane-design.md, section 6).
 // Plain ES module, no dependencies. Reads <script type="module" data-glossary data-viz-base> (contract C3),
 // fetches glossary.json (C4) once, and loads animation modules (C5) on demand.
@@ -109,7 +110,20 @@ class HelpPane {
     this.open(id, a);
   }
 
+  trapTab(e) {
+    // the enlarged animation is aria-modal: Tab and Shift+Tab stay inside it
+    const box = this.overlay.overlay;
+    const items = [...box.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((n) => !n.disabled && !n.hidden && n.getClientRects().length > 0);
+    if (!items.length) { e.preventDefault(); return; }
+    const first = items[0], last = items[items.length - 1], at = document.activeElement;
+    if (!box.contains(at)) { e.preventDefault(); first.focus({ preventScroll: true }); }
+    else if (e.shiftKey && at === first) { e.preventDefault(); last.focus({ preventScroll: true }); }
+    else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus({ preventScroll: true }); }
+  }
+
   onKey(e) {
+    if (e.key === 'Tab' && this.overlay && !e.defaultPrevented) { this.trapTab(e); return; }
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
     const tg = e.target;
     if (tg instanceof Element && isTextEntry(tg)) return;     // Escape belongs to the field, not the pane

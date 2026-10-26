@@ -1,4 +1,5 @@
 // Owner: WINTERMUTE (created 2026-10-26)
+// Last edited: WINTERMUTE 2026-10-26 -- final review: legend swatches instead of colour names, distinct Muon hue, button contrast, reduced-motion redraw on scenario change
 // Animation module "step-size": AdamW (left) and Muon (right) on the same gradients; wire thickness = size of the step.
 import { survivesUpdate, ulp, DTYPES } from './lib/optim.js';
 import { CALIBRATION } from './lib/noise.js';
@@ -10,7 +11,9 @@ const CSS = `
 .vz-step .vz-controls{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:8px}
 .vz-step .vz-group{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .vz-step .vz-btn{font:inherit;color:var(--vz-fg);background:transparent;border:1px solid var(--vz-muted);border-radius:4px;padding:3px 9px;cursor:pointer}
-.vz-step .vz-btn[aria-pressed="true"]{background:var(--vz-accent);border-color:var(--vz-accent);color:var(--vz-bg)}
+.vz-step .vz-btn[aria-pressed="true"]{background:var(--vz-fg);border-color:var(--vz-accent);color:var(--vz-bg);box-shadow:inset 0 -3px 0 var(--vz-accent)}
+.vz-step .vz-sw{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.vz-step .vz-legend{display:flex;gap:14px;font-size:13px;margin:2px 0}
 .vz-step select{font:inherit;color:var(--vz-fg);background:var(--vz-bg);border:1px solid var(--vz-muted);border-radius:4px;padding:2px 4px}
 .vz-step .vz-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .vz-step .vz-panel h4{margin:0 0 2px;font-size:14px}
@@ -26,7 +29,7 @@ const CSS = `
 `;
 
 const SCENARIO_HELP = {
-  steady: 'The gradient keeps its size; the noise is what an early run has.',
+  steady: 'The gradient keeps its size; there is less noise than in our runs, so the steps stay close to full size.',
   noisy: 'The gradient keeps its size; the noise is what a late run has, so most of each gradient is noise.',
   drop: `At step ${STEP_AT} every gradient becomes 100 times smaller.`,
   rise: `At step ${STEP_AT} every gradient becomes 100 times larger.`,
@@ -38,7 +41,9 @@ const MAX_WIDTH = 9;
 
 export function mount(container, params = {}, help = {}) {
   injectStyle('vz-step-style', CSS);
-  const colors = { accent: '#2b6cb0', fg: '#1a1a1a', muted: '#777', bg: '#fff', good: '#2f855a', bad: '#c53030', ...(help.colors || {}) };
+  const colors = { accent: '#2b6cb0', fg: '#1a1a1a', muted: '#777', bg: '#fff', good: '#2f855a', bad: '#c53030', muon: '#6b3fa0', ...(help.colors || {}) };
+  // rule: the two optimisers are told apart by swatches next to their names (and by position); text never names a colour
+  // Muon gets its own hue, far from the pane colours (accent teal, good green, bad red).
   const reducedMotion = !!help.reducedMotion;
   let scenario = SCENARIOS[params.scenario] ? params.scenario : 'noisy';
   let dtype = PRECISIONS.includes(params.precision) ? params.precision : 'fp32';
@@ -72,6 +77,7 @@ export function mount(container, params = {}, help = {}) {
   root.append(controls, status);
 
   // ---- two networks
+  const swatch = (c) => el('span', { class: 'vz-sw', style: `background:${c}`, 'aria-hidden': 'true' });
   function makePanel(title, color) {
     const W = 220, H = 150, xi = 34, xo = 186;
     const yAt = (k) => 22 + k * 36;
@@ -88,11 +94,11 @@ export function mount(container, params = {}, help = {}) {
       s.append(svg('circle', { cx: xo, cy: yAt(k), r: 7, fill: colors.bg, stroke: colors.fg, 'stroke-width': 1.5 }));
     }
     const read = el('p', { class: 'vz-read' });
-    const panel = el('div', { class: 'vz-panel' }, [el('h4', { text: title }), s, read]);
+    const panel = el('div', { class: 'vz-panel' }, [el('h4', {}, [swatch(color), title]), s, read]);
     return { panel, wires, read };
   }
   const adamP = makePanel('AdamW', colors.accent);
-  const muonP = makePanel('Muon', colors.good);
+  const muonP = makePanel('Muon', colors.muon);
   const panels = el('div', { class: 'vz-panels' }, [adamP.panel, muonP.panel]);
   root.append(panels);
 
@@ -102,10 +108,13 @@ export function mount(container, params = {}, help = {}) {
   // ---- chart
   const chartBox = el('div');
   root.append(el('h4', { text: 'Typical step per weight, over time', style: 'margin:8px 0 2px;font-size:14px' }), chartBox);
+  root.append(el('div', { class: 'vz-legend' }, [
+    el('span', {}, [swatch(colors.accent), 'AdamW']), el('span', {}, [swatch(colors.muon), 'Muon']),
+  ]));
   const chart = lineChart(chartBox, {
-    series: [{ key: 'adam', color: colors.accent }, { key: 'muon', color: colors.good }],
+    series: [{ key: 'adam', color: colors.accent }, { key: 'muon', color: colors.muon }],
     xMax: TOTAL_STEPS, yMin: 0.003, yMax: 3, yLog: true, yTicks: [0.01, 0.1, 1],
-    xLabel: 'training steps (blue AdamW, green Muon)', yLabel: 'fraction of learning rate', fg: colors.fg, muted: colors.muted,
+    xLabel: 'training steps', yLabel: 'fraction of learning rate', fg: colors.fg, muted: colors.muted,
   });
   root.append(el('p', { class: 'vz-key', text: 'A step of 1 means the weight moves by the full learning rate; the scale is logarithmic.' }));
 
@@ -141,7 +150,7 @@ export function mount(container, params = {}, help = {}) {
     });
     return kept;
   }
-  adamP.color = colors.accent; muonP.color = colors.good;
+  adamP.color = colors.accent; muonP.color = colors.muon;
   function render(f) {
     const n = ROWS * COLS;
     const ka = paint(adamP, f.adamUpdate), km = paint(muonP, f.muonUpdate);
@@ -164,6 +173,7 @@ export function mount(container, params = {}, help = {}) {
     root.setAttribute('data-scenario', id);
     root.setAttribute('data-step', '0');
     handle.resume();
+    if (reducedMotion) advance(1);   // nothing runs by itself: draw a first frame for the new scenario
   }
   function advance(n) {
     for (let k = 0; k < n && !sim.done; k++) {
@@ -177,7 +187,6 @@ export function mount(container, params = {}, help = {}) {
   const handle = loop(root, ({ manual }) => advance(manual ? STEPS_PER_CLICK : STEPS_PER_FRAME), { reducedMotion, controls });
   updateKey();
   setScenario(scenario);
-  if (reducedMotion) advance(1);   // start still, but show a first frame
 
   return {
     destroy() {

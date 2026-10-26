@@ -31,7 +31,7 @@ export const CALIBRATION = {
   batch: 64,
   early: 0.37,
   late: 0.08,
-  source: 'EB64 half-batch gradient cosine, onset head, 2026-10-22',
+  source: 'EB64 half-batch gradient cosine, onset head, 2026-10-21',
 };
 
 export function randnMatrix(r, c, gauss) {

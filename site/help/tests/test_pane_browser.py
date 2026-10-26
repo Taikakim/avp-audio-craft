@@ -356,6 +356,16 @@ def test_enlarge_overlay_close_button(make_page, page_url, fixture_only):
     expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_be_visible()
 
 
+def test_tab_stays_inside_the_enlarged_overlay(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-enlarge").click()
+    for key in ("Tab", "Tab", "Tab", "Shift+Tab", "Shift+Tab", "Shift+Tab", "Shift+Tab"):
+        page.keyboard.press(key)
+        assert page.evaluate("document.querySelector('.hp-overlay').contains(document.activeElement)"), key
+    page.keyboard.press("Escape")
+
+
 @pytest.mark.parametrize("term", ["adamw", "lora"])    # adamw: mount() throws; lora: module file is missing (404)
 def test_failed_animation_shows_text_and_the_pane_keeps_working(make_page, page_url, entries, fixture_only, term):
     page = make_page()
