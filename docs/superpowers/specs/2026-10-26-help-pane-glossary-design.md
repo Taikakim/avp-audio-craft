@@ -50,8 +50,8 @@ fine-tuning, pre-training, LoRA, DoRA, rank, embedding, diffusion model, latent,
 ## Blog-draft fixes found while scoping (made or pending in the draft)
 - DONE 10-26: section 7 paragraph "Extracting an adapter from a full fine-tune did not work" (evidence: journal 2026-07-24,
   DISCOVERIES 'xft distillation: rank limit, not a bug').
-- PENDING (draft is W's lane; Kim asked, awaiting go): "units" -> "scale" for the learning-rate claim (Summary bullet,
-  section 4 heading); Summary bullet and section 5 sentence on step size; section 1 table batch column (control heads say
-  16-32 but section 6 trains 64/128/256 effective); "how to read this" paragraph after the Summary.
+- DONE 10-26 by W (SAO `6f4465c`): "units" -> "scale"; step-size sentences rewritten as memory/consistency, not gradient scale; section 1 batch column '8-256 effective' and the noise bullet scoped to batch 1-16; run-to-run noise now stated as ~0.01 (EB64 repeat 0.1802 vs 0.1896); "how to read this" paragraph added after the Summary.
+- CONSTRAINT (W): that paragraph says underlined terms open a side explanation, which is only true once the help pane ships; HOLD THE PUBLISH of the guide until then, or soften the sentence.
+- CALIBRATION NOTE (W): the half-batch cosines (0.37 -> 0.08) are batch-64 measurements; the batch-noise widget must not present them as batch-16 noise.
 - Open question: KIM-TASKLIST 251 says the 60 extracted adapters have zero rendered cells while EXPERIMENTS.md:44 calls them
   "broken"; the blog paragraph rests on Kim's glitch report plus the reconstruction and spectrum checks, not on a canonical-clip board.
