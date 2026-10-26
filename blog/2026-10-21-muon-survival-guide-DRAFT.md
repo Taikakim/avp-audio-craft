@@ -26,12 +26,20 @@ GPU, so we say where it is thin.
 
 - Muon only replaces the optimizer for 2-D weight matrices. Everything else still needs a second optimizer, and how the
   two are set up relative to each other caused most of our failures.
-- A Muon learning rate and an AdamW learning rate are in different units. Without a rescale, the same number moves
-  different parameter groups by amounts that differ by a factor of 16 or more.
-- Muon sets the step size from the learning rate, not from the gradient. Weights can grow every step while the loss
-  looks normal, so weight decay and logging of weight size per group are needed.
-- At small batch sizes the gradient is noisy, and several add-ons designed for large-batch training behaved differently
-  for us or had no measurable effect.
+- A Muon learning rate and an AdamW learning rate work on different scales. Both set a change of weight per step, but
+  the update they multiply has a different size: about 0.2 to 0.4 per weight for AdamW, and for Muon a size that depends
+  on the matrix shape (1/16 for a 256-wide matrix). Without a rescale, the same number moves different parameter groups
+  by amounts that differ by a factor of 16 or more.
+- Muon's step stays full size whatever the recent gradients were. AdamW also ignores the overall scale of the gradient,
+  but it remembers the last ~1,000 steps and takes smaller steps when the gradients have been noisy or have just dropped.
+  Under Muon, weights can grow every step while the loss looks normal, so weight decay and logging of weight size per
+  group are needed.
+- At batch 1 to 16 (our LoRA and full fine-tunes) the gradient is noisy, and several add-ons designed for large-batch
+  training behaved differently for us or had no measurable effect. Our control heads at an effective batch of 64 were
+  already signal-dominated (section 6).
+
+**How to read this.** Underlined terms open a side explanation, some with a short check. Each section can be read
+without them.
 - When fine-tuning a model that was pre-trained with Adam, two papers report that Muon brings no clear advantage for full
   fine-tuning; LoRA reduces the difference.
 
@@ -39,12 +47,13 @@ GPU, so we say where it is thin.
 
 | Job | Size | Data | Batch | Notes |
 |---|---|---|---|---|
-| Control heads, from scratch | 5-10 M parameters, width 256-512 | 5,401 or 12,524 crops of music latents | 16-32 | most of the controlled comparisons |
+| Control heads, from scratch | 5-10 M parameters, width 256-512 | 5,401 or 12,524 crops of music latents | 8-256 effective | most of the controlled comparisons |
 | LoRA / DoRA on Stable Audio 3 | rank 128-256 adapters | a few hundred to about 12,000 tracks or crops | 1-16 | listening tests, long runs |
 | Full fine-tunes of Stable Audio 3 | the whole diffusion model | a few hundred to about 12,000 tracks or crops | 1-8 | few runs, several failures |
 
 Almost every comparison below is a single run per setting. Repeating one head recipe gave held-out losses that differed
-by about 0.004, so we treat smaller differences as noise.
+by about 0.004; a later repeat of the batch-64 onset head (section 6), same seed and recipe, differed by 0.009 (0.1802
+and 0.1896). We treat differences below about 0.01 as noise.
 
 ## 2. What Muon computes
 
@@ -89,7 +98,7 @@ was treated as an ordinary hidden matrix, and the time-embedding layers were tre
 effect yet; changing the routing is a new experiment, not a silent fix. **Check what your trainer does:** print the
 parameter groups at start-up and read the list.
 
-## 4. Learning-rate units
+## 4. Learning-rate scale
 
 This is the main difference from AdamW, and it caused most of our failures.
 
@@ -106,7 +115,7 @@ produced three different step sizes:
 In numbers, per weight and per step: AdamW at its best setting for these heads (lr 3e-4) moves each weight by about
 0.6e-4 to 1.2e-4. Our Muon recipe at its best setting (lr 1e-2) moved the 256-wide matrices by about 6e-4, 5 to 10 times
 more than AdamW, and the biases and gains by 1e-2, 80 to 170 times more. So the learning-rate gap between the two
-optimizers (about 30x) is only partly a change of units: the matrices really took larger steps, and the biases and gains
+optimizers (about 30x) is only partly a change of scale: the matrices really took larger steps, and the biases and gains
 far larger ones.
 
 **What happened.** We trained the same head at lr 3e-2 twice. In run B2 the biases and gains had their own learning
@@ -149,8 +158,11 @@ heads (3e-3 for the air head, 1e-3 for the onset head), so we would start a new 
 
 ## 5. Weight size, weight decay, and how to see a run going wrong
 
-Muon's step size does not shrink when the gradient gets small. A matrix can grow every step while the loss looks
-normal. In each of the failures below, the weights grew before the loss showed a problem:
+Neither optimizer cares about the overall scale of the gradient: multiply every gradient by 100 and both take the same
+steps. The difference is memory. AdamW divides by a running average of squared gradients that remembers about 1,000
+steps, so after the gradients drop, or while they are mostly noise, its steps shrink for a while (with pure noise and
+momentum 0.9, to about 0.23 of full size). Muon's orthogonalised step is full size on every step, however the gradients
+have been behaving. A matrix can grow every step while the loss looks normal. In each of the failures below, the weights grew before the loss showed a problem:
 
 - B3 above: biases and gains grew about 170-fold over B2's at the same step before the loss became NaN.
 - A small head at lr 5e-2 with a separate rate for the biases: its matrices grew 15-fold in 460 steps, then NaN. Here
@@ -248,6 +260,8 @@ plus independent noise, that cosine is δ²/(1 + δ²), where δ is the half-bat
 times that ratio, and a momentum buffer with β = 0.9 another √((1 + β)/(1 − β)) ≈ 4.4. That puts the momentum's ratio
 between about 1.9 and 4.7: signal-dominated. The square-root rule assumes the update is noise-dominated, which here it is
 not, so it under-steps. For a noise-dominated update at β = 0.9, the half-batch cosine would have to be below about 0.006.
+So the noise argument at the start of this section applies to batches of 1 to 16, as in our LoRA and full fine-tunes; at
+an effective batch of 64 our heads were already past it.
 
 **What the held-out loss hides.** The optimizer comparisons in this guide differ by a few percent of held-out loss, and
 the curves track each other closely. Splitting the held-out loss by noise level t (the same crops and the same noise at
