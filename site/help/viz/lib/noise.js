@@ -59,3 +59,11 @@ export function sigmaForHalfBatchCosine(c, B = CALIBRATION.batch, gRms = 1) {
   const delta = Math.sqrt(c / (1 - c));
   return (gRms * Math.sqrt(B / 2)) / delta;
 }
+
+// The optimiser's own readout: root-mean-square of m / sqrt(v) over all elements
+// (about 1 for a clean signal, about sqrt((1-b)/(1+b)) = 0.23 for pure noise at beta 0.9).
+export function snrGate(m, v, eps = 1e-12) {
+  let s = 0, n = 0;
+  map2(m, v, (mi, vi) => { const r = mi / Math.sqrt(vi + eps); s += r * r; n++; return 0; });
+  return Math.sqrt(s / n);
+}
