@@ -79,3 +79,19 @@ Tested three zero-training approaches using SA3 Medium Base weights:
 - **Conclusion:** Unsupervised diffusion / inversion cannot isolate overlapping kit pieces; a trained mixture-conditioned adapter (Gate G2) is strictly necessary.
 - Deployed interactive Gate G1 audition console at `/home/kim/sao_runs/drum_sep_g1/listen/index.html`.
 
+### finding · Gate G2 Modular Inlet Freeze & Serialization Catch: Arm A vs Arm A-v2
+
+1. **The Modular Conditioning Freeze in `train_lora.py:887`:**
+   - In `train_lora.py`, line 887 previously checked `if args.mir_ctrl_pack:` to re-enable `requires_grad=True` on `modular_local_embeds` after `DiffusionCondTrainingWrapper` froze all base parameters.
+   - When training separation models via `--sep-data`, `args.mir_ctrl_pack` was None. Consequently, all 48 projection parameter tensors (33,067,008 parameters) of `modular_local_embeds` remained frozen at their zero-initialization throughout Arm A's 5,000 steps.
+   - The model trained exclusively through attention LoRA adapters (42.3M parameters) as a free-running generative kick prior (loss dropped from 0.829 to 0.101), but could not dynamically read or route information from the drum bus mixture latent inlet. Objective evaluation confirmed Arm A acted as an unconditioned hallucinator (-35.56 dB SI-SDR on held-out validation).
+2. **Checkpoint State Dict Exclusion in `diffusion.py:1218`:**
+   - In `DiffusionCondTrainingWrapper.on_save_checkpoint`, `checkpoint['state_dict']` was populated exclusively via `get_lora_state_dict()`. Because `modular_local_embeds` is an additive module rather than a LoRA parametrization, its weights were stripped from the saved `.ckpt` files (checkpoint size was only 485 MB vs 675 MB).
+3. **The Architectural Fix & Arm A-v2 Launch:**
+   - Updated `train_lora.py:887` to check `if args.mir_ctrl_pack or args.sep_data:`, restoring `requires_grad=True` across all 48 modular projection parameter tensors before optimizer configuration.
+   - Updated `diffusion.py` (`on_save_checkpoint` and `export_lora_safetensors`) to explicitly include `modular_local_embeds` in `checkpoint['state_dict']`, and added remapping in `on_load_checkpoint`.
+   - Launched Gate G2 Arm A-v2 (5,000 steps, rank 32, batch size 4, lr 1e-4) on discrete AMD Radeon RX 9070 XT with 75.4M active trainable parameters (42.3M LoRA + 33.1M modular projections).
+   - Early training dynamics show immediate architectural gains: step 49 loss dropped from 0.829 (Arm A) to **0.644** (Arm A-v2), and step 549 loss reached **0.144** (vs 0.160). Checkpoint `epoch=0-step=500.ckpt` saved (675 MB) and confirmed to contain 48 active, updated modular projection tensors.
+   - Built interactive audition console (`scripts/drum_sep/audition_console.py`) and wired fast FFT metric computation in `scripts/drum_sep/eval_separation.py` for comprehensive benchmarking against Studio Ground Truth, BS-RoFormer, MSG-LD, and Arm A.
+
+
