@@ -1,0 +1,169 @@
+[
+  {
+    "id": "weight",
+    "term": "weight",
+    "aliases": [
+      "weights"
+    ],
+    "plain": "A weight is one adjustable number inside the model; training changes millions of them a little at a time so that the model's output gets closer to what we want.",
+    "ours": "Our small control heads have 5 to 10 million weights, and the Stable Audio 3 medium model has about 1.4 billion. Every training step nudges nearly all of them by a tiny amount, and the optimizer decides how much. Do not confuse these with a guidance weight (how strongly a control head pushes during generation): that is a setting you choose, not a learned number.",
+    "deeper": "A step changes a weight by roughly the learning rate times a normalised update. For AdamW that is about 0.2 to 0.4 times the learning rate per weight (measured in the Moonlight paper). For Muon it depends on the matrix shape, about 1/16 of the learning rate for a 256-wide matrix (guide section 4). Weights are stored as floating-point numbers; in 16-bit bf16 a step smaller than roughly 0.2 to 0.4% of the weight rounds to nothing (guide section 10).",
+    "papers": [
+      {
+        "title": "Moonlight: Muon is Scalable for LLM Training",
+        "url": "https://arxiv.org/abs/2502.16982"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "What is a weight in a neural network?",
+        "options": [
+          "A number the training process adjusts",
+          "A number you choose before training starts",
+          "A piece of the training data",
+          "How much importance one training example gets",
+          "The size of the model file"
+        ],
+        "answer": 0,
+        "why": "Weights are the learned numbers. Training exists to adjust them. Settings you choose in advance, such as the learning rate, are called hyperparameters.",
+        "wrong": {
+          "1": "That describes a hyperparameter such as the learning rate. Weights are changed by training, not chosen by you."
+        }
+      },
+      {
+        "level": 1,
+        "q": "A control head has 5 million weights. After one training step, what has typically changed?",
+        "options": [
+          "Only one weight",
+          "The training data",
+          "Nearly all of the weights, each by a small amount",
+          "The number of weights",
+          "The architecture of the head"
+        ],
+        "answer": 2,
+        "why": "One step moves almost every weight a little. The data, the number of weights and the architecture stay fixed during training.",
+        "wrong": {
+          "0": "One step updates nearly all weights; each by a small amount."
+        }
+      },
+      {
+        "level": 2,
+        "q": "A guide says 'steer the head with guidance weight 512'. What does 'weight' mean there?",
+        "options": [
+          "The learned numbers inside the head",
+          "How strongly the head's output is pushed during generation, a setting chosen at generation time",
+          "The file size of the head",
+          "The number of training steps",
+          "The learning rate"
+        ],
+        "answer": 1,
+        "why": "A guidance weight is a generation-time setting for how hard the head pulls the sound. It is not one of the learned numbers, although the word is the same.",
+        "wrong": {
+          "0": "Those are the weights in the training sense. A guidance weight is chosen when you generate, not learned."
+        }
+      },
+      {
+        "level": 3,
+        "q": "In 16-bit bf16 storage, a step smaller than about 0.2% of a weight's size is rounded to nothing. A weight of 0.5 receives a step of 0.0005. What happens?",
+        "options": [
+          "The weight changes by exactly 0.0005",
+          "The step is lost and the weight stays the same",
+          "The weight doubles",
+          "The step is rounded up to 0.001",
+          "The training run stops with an error"
+        ],
+        "answer": 1,
+        "why": "0.0005 is 0.1% of 0.5, below the rounding limit, so the addition does nothing. This is why small learning rates need 32-bit weights or other care (guide section 10)."
+      }
+    ],
+    "quiz_reviewed": null
+  },
+  {
+    "id": "weight-matrix",
+    "term": "2-D weight matrix",
+    "aliases": [
+      "2-D weight matrices",
+      "2-D matrices",
+      "2-D matrix",
+      "2D weight matrix",
+      "2D weight matrices",
+      "weight matrices",
+      "weight matrix"
+    ],
+    "plain": "A 2-D weight matrix is a table of weights with rows and columns; a layer multiplies its input by that table to produce its output.",
+    "ours": "Most of a model's weights sit in such tables. A square matrix 256 wide in our heads holds 256 x 256 = 65,536 weights, and a square matrix 1,536 wide in Stable Audio 3 holds about 2.4 million. Biases and normalisation gains are different: they are plain lists of numbers (1-D), not tables.",
+    "deeper": "Muon is defined only for 2-D matrices, because it treats the table as one linear map and evens out the strength of its directions (see orthogonal matrix). Lists (1-D) go to a second optimizer, usually AdamW. A matrix can be tall, wide or square, and the shape sets Muon's step size: about 1/sqrt(larger side) per weight times the learning rate, before any rescaling. The reference Muon code multiplies tall matrices by an extra factor, which changes this.",
+    "papers": [
+      {
+        "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+        "url": "https://kellerjordan.github.io/posts/muon/"
+      },
+      {
+        "title": "Moonlight: Muon is Scalable for LLM Training",
+        "url": "https://arxiv.org/abs/2502.16982"
+      }
+    ],
+    "quiz": [
+      {
+        "level": 1,
+        "q": "Which of these is a 2-D weight matrix?",
+        "options": [
+          "A list of 256 bias values",
+          "The weights of a layer arranged in rows and columns",
+          "A single number",
+          "A table of the training data",
+          "A picture of the model"
+        ],
+        "answer": 1,
+        "why": "A 2-D matrix has rows and columns. A list of biases has one dimension, so Muon does not handle it."
+      },
+      {
+        "level": 1,
+        "q": "A square weight matrix is 256 wide. How many weights does it hold?",
+        "options": [
+          "256",
+          "512",
+          "65,536",
+          "16,777,216",
+          "1,024"
+        ],
+        "answer": 2,
+        "why": "Rows times columns: 256 x 256 = 65,536.",
+        "wrong": {
+          "3": "That is 256 cubed. A matrix has two dimensions, so square the width."
+        }
+      },
+      {
+        "level": 2,
+        "q": "In our setup, which parameters does Muon NOT update?",
+        "options": [
+          "The attention matrices",
+          "The feed-forward (MLP) matrices",
+          "The biases and normalisation gains, which are 1-D lists",
+          "The hidden-layer matrices",
+          "Every 2-D matrix"
+        ],
+        "answer": 2,
+        "why": "Muon is only defined for 2-D matrices. Biases and gains are lists, so a second optimizer, usually AdamW, handles them."
+      },
+      {
+        "level": 3,
+        "q": "Muon's step per weight is about 1/sqrt(larger side) times the learning rate. At the same learning rate, how does a 1024 x 256 matrix compare with a 256 x 256 one?",
+        "options": [
+          "Half as large per weight",
+          "The same",
+          "Twice as large",
+          "Four times as large",
+          "1,024 times smaller"
+        ],
+        "answer": 0,
+        "why": "The larger side is 1024 for the first (1/32) and 256 for the second (1/16), so its steps are half as large. The shape-dependence is why one learning rate gives different step sizes for different matrices.",
+        "wrong": {
+          "1": "The larger side differs (1024 against 256), and that sets the step."
+        }
+      }
+    ],
+    "quiz_reviewed": null
+  }
+]
