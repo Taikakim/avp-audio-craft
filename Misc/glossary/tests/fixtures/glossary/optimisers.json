@@ -1,0 +1,189 @@
+[
+ {
+  "id": "gradient-history",
+  "term": "gradient history",
+  "aliases": [
+   "gradient histories"
+  ],
+  "plain": "Gradient history is the record an optimizer keeps of the gradients it has seen recently, so that a step can depend on more than the latest batch.",
+  "ours": "AdamW keeps two running records for every weight: an average of recent gradients (about the last 10 steps) and an average of their squares (about the last 1,000 steps). Muon keeps one record per matrix, the momentum, which at our setting of 0.9 covers about the last 10 steps.",
+  "deeper": "A running average with factor beta remembers about 1/(1 - beta) steps: beta 0.9 is about 10, beta 0.999 is about 1,000. Two consequences for AdamW. After a sudden drop in gradient size, its squares-record still remembers the large gradients, so its steps shrink until the record catches up. Under pure noise, the average of the gradients partly cancels while the average of their squares does not, so its step falls to about sqrt((1 - beta)/(1 + beta)), which is 0.23 at beta 0.9. These are the textbook formulas applied to our settings; we have not logged them per matrix. Muon's step does not shrink in either case.",
+  "papers": [
+   {
+    "title": "Adam: A Method for Stochastic Optimization",
+    "url": "https://arxiv.org/abs/1412.6980"
+   },
+   {
+    "title": "Decoupled Weight Decay Regularization (AdamW)",
+    "url": "https://arxiv.org/abs/1711.05101"
+   },
+   {
+    "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+    "url": "https://kellerjordan.github.io/posts/muon/"
+   }
+  ],
+  "viz": {
+   "module": "step-size",
+   "params": {}
+  },
+  "quiz": [
+   {
+    "level": 1,
+    "q": "What does keeping a gradient history let an optimizer do?",
+    "options": [
+     "Make a step depend on recent gradients, not only on the latest batch",
+     "Store the training data",
+     "Skip training steps",
+     "Choose the learning rate",
+     "Compress the model"
+    ],
+    "answer": 0,
+    "why": "The history smooths and reshapes steps using what was seen over the last few steps."
+   },
+   {
+    "level": 2,
+    "q": "A running average uses factor 0.9. About how many recent steps does it effectively remember?",
+    "options": [
+     "2",
+     "10",
+     "90",
+     "1,000",
+     "10,000"
+    ],
+    "answer": 1,
+    "why": "The memory is about 1/(1 - 0.9) = 10 steps. A factor of 0.999 would give about 1,000.",
+    "wrong": {
+     "3": "1,000 steps belongs to a factor of 0.999, the usual setting for AdamW's squares-record."
+    }
+   },
+   {
+    "level": 2,
+    "q": "Gradients suddenly become 100 times smaller. AdamW's squares-record has a memory of about 1,000 steps. What happens to AdamW's steps?",
+    "options": [
+     "They stay exactly the same",
+     "They shrink for a while, until the record catches up",
+     "They grow 100 times",
+     "They stop for the rest of training",
+     "They double"
+    ],
+    "answer": 1,
+    "why": "The short average of gradients drops at once, but the long average of squares still remembers the big ones, so the ratio is small for roughly that long. Muon's step does not shrink.",
+    "wrong": {
+     "0": "That would be true if both records forgot at the same speed. The squares-record forgets slowly."
+    }
+   },
+   {
+    "level": 3,
+    "q": "Why do AdamW's steps get smaller when gradients are pure noise, even if their size has not changed?",
+    "options": [
+     "The learning rate is lowered automatically",
+     "Noise has no size",
+     "The average of noisy gradients partly cancels, while the average of their squares does not",
+     "AdamW ignores noisy batches",
+     "The weights are frozen"
+    ],
+    "answer": 2,
+    "why": "Random directions cancel when averaged, so the numerator shrinks, but squares are always positive and keep their size. At beta 0.9 the ratio falls to about 0.23.",
+    "wrong": {
+     "3": "AdamW does not detect noise; the shrinkage is a side effect of averaging."
+    }
+   }
+  ],
+  "quiz_reviewed": null
+ },
+ {
+  "id": "momentum",
+  "term": "momentum",
+  "aliases": [
+   "momentum buffer",
+   "momentum matrix"
+  ],
+  "plain": "Momentum is a running average of recent gradients that the optimizer steps along, so one noisy batch cannot push the weights far in a wrong direction.",
+  "ours": "Our optimizer uses a momentum of 0.9 by default, which averages over roughly the last 10 steps. At batch sizes of 1 to 16 it is what removes most of the noise. Muon takes the momentum of a whole matrix and evens out its directions (see orthogonal matrix) to make the step.",
+  "deeper": "With factor beta = 0.9 the buffer averages about 10 steps. If the gradient is a steady signal plus independent noise, averaging raises the signal-to-noise ratio by about sqrt((1 + beta)/(1 - beta)) = 4.4 compared with one step. That figure assumes the signal stays the same over the window; if it drifts, 4.4 is an upper bound. The cost is lag: when the right direction changes, momentum keeps pushing the old way for about 10 steps. We have not measured an effect on generalisation.",
+  "papers": [
+   {
+    "title": "Keller Jordan, Muon: An optimizer for hidden layers in neural networks",
+    "url": "https://kellerjordan.github.io/posts/muon/"
+   }
+  ],
+  "viz": {
+   "module": "batch-noise",
+   "params": {}
+  },
+  "quiz": [
+   {
+    "level": 1,
+    "q": "What does momentum do?",
+    "options": [
+     "It averages recent gradients, so a step follows the trend and not one noisy batch",
+     "It makes the learning rate bigger over time",
+     "It stores the best weights seen so far",
+     "It removes the smallest weights",
+     "It shuffles the data"
+    ],
+    "answer": 0,
+    "why": "Momentum is a running average of recent gradients. Steps follow that average."
+   },
+   {
+    "level": 2,
+    "q": "With momentum 0.9, one very large wrong gradient arrives once. How does its influence on later steps behave?",
+    "options": [
+     "It disappears immediately",
+     "It fades gradually over roughly 10 to 20 steps",
+     "It never fades",
+     "It doubles each step",
+     "It affects only the next step"
+    ],
+    "answer": 1,
+    "why": "Each step multiplies the old buffer by 0.9, so the large gradient fades over about 10 to 20 steps.",
+    "wrong": {
+     "0": "That would be no momentum at all; the buffer keeps a decaying share of the old value."
+    }
+   },
+   {
+    "level": 2,
+    "q": "Why does momentum matter more at batch 16 than at batch 256?",
+    "options": [
+     "Small batches give noisier gradients, and averaging removes noise",
+     "Small batches use more memory",
+     "Larger batches are slower",
+     "Momentum only works at small batch sizes",
+     "Small batches have no gradients"
+    ],
+    "answer": 0,
+    "why": "A small batch is a small sample of the data, so its gradient is the true direction plus a lot of noise. Averaging over about 10 steps removes much of it."
+   },
+   {
+    "level": 3,
+    "q": "At momentum 0.9, by about what factor does averaging improve the signal-to-noise ratio if the true gradient stays steady?",
+    "options": [
+     "1.1",
+     "2",
+     "4.4",
+     "10",
+     "100"
+    ],
+    "answer": 2,
+    "why": "The factor is sqrt((1 + 0.9)/(1 - 0.9)) = 4.4. It is an upper bound if the signal drifts within the window.",
+    "wrong": {
+     "3": "10 is the number of steps averaged. The signal-to-noise gain is its square-root-like factor, 4.4."
+    }
+   },
+   {
+    "level": 3,
+    "q": "What is a cost of momentum?",
+    "options": [
+     "It makes every step larger",
+     "It reacts late when the right direction changes",
+     "It increases the number of weights",
+     "It needs a larger batch",
+     "It removes the learning rate"
+    ],
+    "answer": 1,
+    "why": "The buffer remembers the old direction, so it lags for about 10 steps after a change."
+   }
+  ],
+  "quiz_reviewed": null
+ }
+]
