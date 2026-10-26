@@ -57,3 +57,25 @@ Benchmarked 3 BS-RoFormer checkpoints against dry studio multitracks (`Goddess G
 - **V6.1 DPO & Candidate Diversity:** DPO lowers single-draw MSS (6.10 -> 5.17) but degrades best-of-8 (3.27 -> 3.70) due to candidate distribution narrowing. Validated `mel_ssim_dist` as the primary ear-aligned metric (Spearman rho = +0.67 with Kim's ranks, p = 0.0004); Kuang wired `--select ssim` into `eval_real_stems_consensus_v6.py`.
 - **Refinement State Flush Fix:** Caught state leak in `refine_v6_stems_cpu.py`; patches now render with `flush_synth()`, winner's retrigger setting, and mid-channel scoring.
 - **SA3 Drum Separation Plan & Gate G0:** Reviewed `DRUM_SEPARATION_SA3_PLAN.md` and `scripts/drum_sep/codec_ceiling.py` (`feature/sa3-drum-sep`). Plan uses SA3 Medium Base (44.1 kHz SAME-L) with mixture-conditioned modular inlet or inpaint slot. Gate G0 checks if 93 ms SAME-L latent frames smear transient attacks (onset F1 at 20 ms >= 0.90, attack energy >= -3 dB). Untested on weights; ready to run once GPU yields from LatCH training.
+
+## 2026-10-26
+
+### finding · Gate G0 (SAME-L Codec Ceiling): Passed decisively on isolated drum multitrack stems
+
+Benchmarked SAME-L autoencoder (`same-l` 44.1 kHz, 93 ms / 4096-sample latent frame window) across 48 stereo stems over 6 tracks on AMD Radeon RX 9070 XT:
+- **Gate Criteria:** Onset F1 @ 20ms $\ge 0.90$, attack energy ratio $\ge -3.0\text{ dB}$.
+- **Kick Stems:** Onset F1 @ 20ms = **1.000** (precision 1.000, recall 1.000 across 2,429 onsets; attack ratio = **+0.07 dB**, SI-SDR = **27.0 dB**, LSD = **1.12 dB**).
+- **Hi-Hat Stems:** Onset F1 @ 20ms = **0.982 – 1.000** (attack ratio = **-0.08 to -0.19 dB**, SI-SDR = **18.7 to 20.9 dB**).
+- **Snare Stems:** Onset F1 @ 20ms = **0.990 – 1.000** (attack ratio = **+0.02 dB**, SI-SDR = **22.5 dB**).
+- **Latent Non-Additivity:** Reconstruct(sum(latents)) vs bus produces **34.15 dB LSD**, whereas sum(decode(latents)) vs bus is **7.92 dB LSD**. Confirms SAME-L autoencoder is highly non-linear in latent space: a linear sum of individual piece latents does not equal the latent of the acoustic mix. Validates that separation requires a trained generative mapping (Gate G2) rather than algebraic latent subtraction.
+- Deployed interactive Gate G0 audition console at `/home/kim/sao_runs/drum_sep_g0/listen/index.html`.
+
+### finding · Gate G1 (Zero-Training Baselines on SA3 Medium Base): Unsupervised separation fails, validating Gate G2 trained adapter
+
+Tested three zero-training approaches using SA3 Medium Base weights:
+1. **G1(a) Text-to-Audio Kit Prior:** Evaluated SA3 prompt sensitivity to solo kit pieces (`solo kick drum`, `acoustic snare drum`, `closed hi-hats 16th notes`, etc.). The base model cleanly generates isolated percussive transients (kicks with 25–93 onsets, punchy acoustic snares, offbeat hats, congas) confirming the generative prior knows isolated drum timbres intimately.
+2. **G1(b) SDEdit Drum Bus Isolation (noise levels 0.3, 0.5, 0.7):** Fails to isolate target elements from real drum buses. At noise level 0.3, prompt conditioning is largely ignored and the entire drum bus passes through. At noise levels 0.5 and 0.7, hallucinations occur while kick bleed severely corrupts hi-hat and snare outputs (SI-SDR drops to -18.4 to -31.8 dB on hats).
+3. **G1(c) Rectified Flow Inversion (ZeroSep-style ODE integration):** ODE inverted latent trajectory from the drum bus mixture fails to disentangle kit pieces. Hi-hat separation achieves -19.4 dB SI-SDR and snare achieves -4.8 dB SI-SDR due to persistent kick energy bleed throughout the entire spectrum.
+- **Conclusion:** Unsupervised diffusion / inversion cannot isolate overlapping kit pieces; a trained mixture-conditioned adapter (Gate G2) is strictly necessary.
+- Deployed interactive Gate G1 audition console at `/home/kim/sao_runs/drum_sep_g1/listen/index.html`.
+

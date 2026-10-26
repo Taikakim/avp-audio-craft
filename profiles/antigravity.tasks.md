@@ -4,6 +4,10 @@
 > Distinct from the journal (curated findings, links out) and WORKLOG.md (cross-repo
 > relevant only) — see `SPEC-agent-profiles-journals.md` §3a. Reverse-chronological.
 
+- [2026-10-26] SA3 Drum Separator Gates G0, G1, and G2 Dataset Pipeline:
+  - Gate G0 (SAME-L Codec Ceiling): Benchmark completed on 48 isolated stems. Kick Onset F1 @ 20ms = 1.000, attack ratio +0.07 dB, SI-SDR 27.0 dB. Hi-hat F1 = 0.982-1.000, Snare F1 = 0.990-1.000. Confirmed non-additivity in latent space (34.15 dB LSD). Deployed audition console at `/home/kim/sao_runs/drum_sep_g0/listen/index.html`.
+  - Gate G1 (Zero-Training Baselines): Tested solo kit priors, SDEdit across noise levels [0.3, 0.5, 0.7], and rectified flow inversion. SDEdit and flow inversion fail to isolate overlapping pieces (hats SI-SDR drops to -18 to -78 dB due to kick bleed), validating necessity of Gate G2 trained adapter. Deployed audition console at `/home/kim/sao_runs/drum_sep_g1/listen/index.html`.
+  - Gate G2 Pipeline Implementation: Authored `scripts/drum_sep/build_pairs.py` with SAME-L batch-encoding and remix augmentations (+-2.5 dB). Added `DrumSepDataset` in `stable_audio_3/data/dataset.py`. Wired `--sep-data` with `mix_lat` modular inlet on layers 12-23 via `install_mir_control` in `scripts/train_lora.py`. Implemented `scripts/drum_sep/eval_separation.py` for comprehensive evaluation.
 - [2026-10-23] External Review Analysis (Kuang V6.1 review, Surge oscillator fix, SA3 drum separator plan & Gate G0):
   - Fetched and reviewed collaborator commits across `stable-audio-tools` (`feature/v6-ablation`) and `stable-audio-3` (`feature/sa3-drum-sep`).
   - Reviewed Kuang's `V6_REVIEW.md` (§11): Surge Classic oscillator geometry confirmed (0.000 = symmetric square, no triangle); DPO sample spread collapse analysis; validated `mel_ssim_dist` correlation with Kim's ear ranks (rho = +0.67); inspected bugfix in `refine_v6_stems_cpu.py` (flushed synth render, retrigger lock, mid-channel scoring).
