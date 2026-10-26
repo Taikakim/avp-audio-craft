@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links; ![caption](assets/...) figures and audio players; referenced assets uploaded with the post
 # Last edited: WINTERMUTE 2026-10-26 -- _inline moved to glossary_lib (shared with the glossary entries), behaviour unchanged
+# Last edited: WINTERMUTE 2026-10-26 -- help pane: `help-pane: on` opt-in, glossary term marking, help/ bundle (dry-run root /tmp/blog_dryrun)
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -8,7 +9,7 @@ and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan b
   publish_blog.py            # render + push every blog/*.md (+ index)
   publish_blog.py --dry-run  # render to /tmp, print redaction check, push nothing
 """
-import sys, re, html, glob, argparse, subprocess, tempfile
+import sys, re, html, glob, argparse, subprocess, tempfile, shutil
 from pathlib import Path
 
 sys.path.insert(0, "/home/kim/Projects/SAO/Misc")
@@ -16,8 +17,25 @@ sys.path.insert(0, "/home/kim/bin")
 import build_site as bs                       # noqa: E402
 from mirror_dialogue import redact, HOST, KEY, DEST_DIR   # noqa: E402
 
+from glossary import mark as gmark                        # noqa: E402
+from glossary import build_page as gbuild                 # noqa: E402
+
 SAO = Path("/home/kim/Projects/SAO")
 BLOG_DIR = SAO / "blog"
+SITE_HELP = SAO / "site" / "help"                  # help-pane.js/.css, viz/ (tracks 2 and 3)
+DRYRUN_ROOT = Path("/tmp/blog_dryrun")             # contract C1 layout for local browser checks
+_HELP_IGNORE = ("tests", "test", "__pycache__", "node_modules", "*.test.js", "*.test.mjs", "package*.json", "dev.html")
+
+# contract C3: what a page with the help pane carries before </body>
+PANE_TAGS = ('<link rel="stylesheet" href="../help/help-pane.css">\n'
+             '<script type="module" src="../help/help-pane.js" data-glossary="../help/glossary.json" '
+             'data-viz-base="../help/viz/"></script>\n')
+
+
+def help_pane_on(md: str) -> bool:
+    """True when the draft's leading <!-- ... --> header comment has a line `help-pane: on`."""
+    m = re.match(r"\s*<!--(.*?)-->", md, flags=re.S)
+    return bool(m and re.search(r"^\s*help-pane:\s*on\s*$", m.group(1), flags=re.M | re.I))
 
 
 from glossary import glossary_lib as gl                   # noqa: E402  (Misc/ is on sys.path above)
@@ -128,12 +146,20 @@ def _slug(p: Path) -> str:
     return re.sub(r"-DRAFT$", "", p.stem)
 
 
-def render_post(p: Path):
+def render_post(p: Path, glossary=None):
+    """Render one draft. A draft with `help-pane: on` needs `glossary` (the loaded entries): its article
+    HTML gets every glossary term marked and the page carries the pane's CSS/JS tags (contracts C2, C3)."""
     md = p.read_text()
     title = _title(md, p.stem)
+    body = md_to_html(md)
+    pane = help_pane_on(md)
+    if pane:
+        if glossary is None:
+            raise ValueError(f"{p.name}: help-pane is on but no glossary was loaded")
+        body = gmark.mark(body, glossary)
     doc = bs.head(f"{title} — Vibe on The Edg3", css="../edg3.css")
     doc += bs.masthead("blog", "week in review")     # /files/blog/ is one level down -> keep ../ nav
-    doc += f'<article class="blog-post">\n{md_to_html(md)}\n</article>\n</div></body></html>'
+    doc += f'<article class="blog-post">\n{body}\n</article>\n</div>' + ("\n" + PANE_TAGS if pane else "") + '</body></html>'
     return redact(doc), title
 
 
@@ -209,21 +235,88 @@ LEAK = ["goa_archive", "Goa.PsyTrance", "Mantu", "Lehto", "/run/media", "/home/k
         "~/.cache", "~/evals_aac", "/scratch/project"]
 
 
+def _reset_dryrun(root: Path = None) -> None:
+    """Fresh dry-run root: blog/ plus edg3.css (contract C1). Only ever deletes a dir named blog_dryrun."""
+    root = root or DRYRUN_ROOT
+    if root.name != "blog_dryrun":
+        raise ValueError(f"refusing to reset {root}: not a blog_dryrun directory")
+    if root.exists():
+        shutil.rmtree(root)
+    (root / "blog").mkdir(parents=True)
+    shutil.copy(SAO / "site" / "edg3.css", root / "edg3.css")
+
+
+def build_help_dir(out: Path, glossary_dir, publish: bool, page_used_ids) -> None:
+    """Assemble the help/ directory: site/help/* files, then glossary.json + glossary.html.
+
+    page_used_ids: the entry ids the pane pages link. The quiz_reviewed rule applies to those and to
+    every entry reachable from them through the pane's own links. Exits (REFUSING) on any glossary
+    error and when glossary.html/json would leak a path or be altered by redact().
+    """
+    out = Path(out)
+    if SITE_HELP.is_dir():
+        shutil.copytree(SITE_HELP, out, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*_HELP_IGNORE))
+    viz_dir = SITE_HELP / "viz"
+    try:
+        entries = gl.load_glossary(glossary_dir)
+    except ValueError as exc:
+        sys.exit(f"REFUSING: glossary unreadable: {exc}")
+    errors, _ = gl.validate(entries, gbuild.known_viz(viz_dir), publish)
+    if errors:
+        sys.exit("REFUSING: glossary errors:\n  " + "\n  ".join(errors))
+    used = gbuild.reachable(page_used_ids, gbuild.compile_entries(entries))
+    errors, warnings = gbuild.build(glossary_dir, viz_dir, out, publish=publish, used_ids=used)
+    for w in warnings:
+        print(f"WARNING (glossary): {w}")
+    if errors:
+        sys.exit("REFUSING: glossary errors:\n  " + "\n  ".join(errors))
+    for name in ("glossary.html", "glossary.json"):
+        text = (out / name).read_text(encoding="utf-8")
+        leaks = sorted({L for L in LEAK if L in text})
+        if leaks or redact(text) != text:
+            sys.exit(f"REFUSING: help/{name} leaks {leaks or 'text that redact() would change'}")
+    print(f"help/: {len(used)} glossary entries used by the pane pages, glossary.json + glossary.html CLEAN")
+
+
+def _push_help(help_dir: Path) -> None:
+    """Ship help/ (pane files, viz modules, glossary) in one rsync, before any page that links it."""
+    r = subprocess.run(["ssh", "-o", "BatchMode=yes", "-i", KEY, HOST, f"mkdir -p {DEST_DIR}/help"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"HELP PUSH FAILED (mkdir): rc={r.returncode} {r.stderr.strip()[-300:]}")
+    r = subprocess.run(["rsync", "-az", "--chmod=D755,F644", "-e", f"ssh -o BatchMode=yes -i {KEY}",
+                        f"{help_dir}/", f"{HOST}:{DEST_DIR}/help/"], capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"HELP PUSH FAILED: rsync rc={r.returncode} {r.stderr.strip()[-300:]}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("files", nargs="*", help="specific blog .md files (default: all — use to "
                     "publish only approved drafts, not every draft in the folder)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--glossary-dir", default=str(SAO / "glossary"))
     a = ap.parse_args()
     drafts = ([Path(f) for f in a.files] if a.files
               else sorted(BLOG_DIR.glob("*.md"), reverse=True))
+    pane_drafts = [p for p in drafts if help_pane_on(p.read_text())]
+    glossary = None
+    if pane_drafts:
+        try:
+            glossary = gl.load_glossary(a.glossary_dir)
+        except ValueError as exc:
+            sys.exit(f"REFUSING: glossary unreadable: {exc}")
+    if a.dry_run:
+        _reset_dryrun()
     if not a.dry_run:                                 # ensure the /files/blog/ dir exists
         subprocess.run(["ssh", "-o", "BatchMode=yes", "-i", KEY, HOST,
                         f"mkdir -p {DEST_DIR}/blog"], check=False)
-    posts, pending = [], {}
+    posts, pending, page_used = [], {}, set()
     for p in drafts:
-        doc, title = render_post(p)
+        doc, title = render_post(p, glossary)
         slug = _slug(p)
+        if p in pane_drafts:
+            page_used |= gmark.used_ids(doc)
         leaks = sorted({L for L in LEAK if L in doc})
         print(f"{p.name} -> {slug}.html  ({len(doc)} B)  leaks={leaks or 'CLEAN'}")
         if leaks:
@@ -232,6 +325,11 @@ def main():
         pending[f"{slug}.html"] = doc
         if a.dry_run:
             Path(f"/tmp/blog_{slug}.html").write_text(doc)
+            (DRYRUN_ROOT / "blog" / f"{slug}.html").write_text(doc)
+    help_dir = None
+    if pane_drafts:                                   # validate + assemble help/ BEFORE anything is pushed
+        help_dir = (DRYRUN_ROOT / "help") if a.dry_run else Path(tempfile.mkdtemp(prefix="blog_help_"))
+        build_help_dir(help_dir, a.glossary_dir, publish=not a.dry_run, page_used_ids=page_used)
     # index = everything readable on the server, not just what this run rendered (see _live_slugs)
     live = _live_slugs()
     if live is None:
@@ -249,6 +347,7 @@ def main():
     idx = render_index(sorted(known.items()))
     if a.dry_run:
         Path("/tmp/blog_index.html").write_text(idx)
+        (DRYRUN_ROOT / "blog" / "index.html").write_text(idx)
         print(f"[dry-run] {len(posts)} posts rendered to /tmp/blog_*.html (nothing pushed)")
     assets = sorted({x for p in drafts for x in _assets_of(p.read_text())})
     missing = [x for x in assets if not (BLOG_DIR / x).is_file()]
@@ -256,8 +355,14 @@ def main():
         sys.exit(f"REFUSING: referenced assets missing locally: {missing}")
     print(f"assets: {len(assets)} referenced file(s)")
     if a.dry_run:
-        pass
+        for x in assets:                         # so audio/figures work in the local browser check
+            dest = DRYRUN_ROOT / "blog" / x
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(BLOG_DIR / x, dest)
+        print(f"[dry-run] browser root: {DRYRUN_ROOT}  (serve it; pages under blog/, help/ beside it)")
     else:
+        if help_dir is not None:
+            _push_help(help_dir)
         if assets:                               # only the files the published posts reference, one connection
             with tempfile.NamedTemporaryFile("w", suffix=".lst") as fl:
                 fl.write("\n".join(assets) + "\n"); fl.flush()
