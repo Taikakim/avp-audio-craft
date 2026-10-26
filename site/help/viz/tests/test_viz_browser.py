@@ -2,9 +2,9 @@
 """Browser smoke test for the step-size module. Run:
 /home/kim/Projects/mir/mir/bin/python -m pytest /home/kim/Projects/SAO/site/help/viz/tests/test_viz_browser.py
 """
-# Last edited: WINTERMUTE 2026-10-26 -- shared fixtures moved to conftest.py
+# Last edited: WINTERMUTE 2026-10-26 -- shared fixtures moved to conftest.py; review fixes: open_page imported from vizbrowser.py
 import pytest  # noqa: F401
-from conftest import open_page  # noqa: F401  (plain function, not a fixture)
+from vizbrowser import open_page
 
 
 def test_step_size_mounts_and_animates(browser, base_url):

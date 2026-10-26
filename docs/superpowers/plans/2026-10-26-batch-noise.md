@@ -23,7 +23,7 @@ Readouts, at the ball's current position:
 Ruling (WINTERMUTE): the spec labels only sizes below 64 as extrapolated; sizes above 64 come from the same model and get
 the same tag. Cost if wrong: one word on the page.
 
-Defaults: batch 8, momentum off, noise level late (our runs train at batch 1 to 16; the entry is about momentum, so the
+Defaults: batch 32, momentum off, noise level late (late-noise runs at batch 8 leave the chart in 23% of frames, at 16 in 6%, at 32 in 0.6%, over 20 seeds; the entry is about momentum, so the
 reader turns it on). `params` may override: `{batch: <one of the 9>, momentum: true|false, stage: 'early'|'late'}`;
 invalid values fall back to the defaults.
 
@@ -33,7 +33,7 @@ Pure functions, no DOM. Imports from `./noise.js` (`mulberry32`, `makeGauss`, `C
 `halfBatchCosine`, `minibatchNoiseStd`). Exports, exactly:
 
 ```js
-export const VALLEY = { a: 1, b: 8, start: [-2.6, 0.9], lr: 0.08, steps: 240, cloudSize: 24, beta: 0.9 };
+export const VALLEY = { a: 2, b: 8, start: [-2.6, 0.9], lr: 0.01, steps: 300, cloudSize: 24, beta: 0.9 };
 export const BATCHES = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 export function loss([x, y])            // 0.5 * (a x^2 + b y^2)
 export function grad([x, y])            // [a x, b y]

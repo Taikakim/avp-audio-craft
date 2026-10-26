@@ -3,11 +3,12 @@
 docs/superpowers/plans/2026-10-26-batch-noise.md. Run:
 /home/kim/Projects/mir/mir/bin/python -m pytest site/help/viz/tests/test_batch_noise_browser.py
 """
+# Last edited: WINTERMUTE 2026-10-26 -- review fixes (import from vizbrowser, default batch 32, restart/idle/real-note/tag/cosine tests)
 import json
 import re
 from urllib.parse import quote
 
-from conftest import open_page
+from vizbrowser import open_page
 
 ROOT = ".vz-noise"
 NUM = re.compile(r"-?\d+(?:\.\d+)?(?:e-?\d+)?", re.I)
@@ -148,7 +149,7 @@ def test_no_horizontal_overflow_at_360(browser, base_url):
 
 def test_keyboard_reaches_slider_and_arrow_steps_batch(browser, base_url):
     ctx, page, _ = open_page(browser, url(base_url))
-    assert attr(page, "data-batch") == "8"
+    assert attr(page, "data-batch") == "32"
     for _ in range(12):
         page.keyboard.press("Tab")
         if page.evaluate("document.activeElement && document.activeElement.id") == "vz-noise-batch":
@@ -156,7 +157,7 @@ def test_keyboard_reaches_slider_and_arrow_steps_batch(browser, base_url):
     else:
         raise AssertionError("Tab never reached #vz-noise-batch")
     page.keyboard.press("ArrowRight")
-    page.wait_for_function("document.querySelector('.vz-noise').dataset.batch === '16'")
+    page.wait_for_function("document.querySelector('.vz-noise').dataset.batch === '64'")
     ctx.close()
 
 
@@ -170,6 +171,71 @@ def test_params_set_start_state_and_invalid_falls_back(browser, base_url):
     assert page.locator("button:has-text('Momentum')").get_attribute("aria-pressed") == "true"
     ctx.close()
     ctx, page, _ = open_page(browser, url(base_url, rm=True, params={"batch": 5}))
-    assert attr(page, "data-batch") == "8"
+    assert attr(page, "data-batch") == "32"
     assert attr(page, "data-momentum") == "off" and attr(page, "data-stage") == "late"
+    ctx.close()
+
+
+def test_changing_controls_restarts_the_sim(browser, base_url):
+    ctx, page, _ = open_page(browser, url(base_url))
+    page.wait_for_function("+document.querySelector('.vz-noise').dataset.step > 5", timeout=3000)
+    # read data-step synchronously in the same task as the change, before any frame can advance the new sim
+    assert page.evaluate(
+        """() => { const s = document.querySelector('#vz-noise-batch'); s.value = '2';
+            s.dispatchEvent(new Event('input', {bubbles: true}));
+            return +document.querySelector('.vz-noise').dataset.step; }"""
+    ) == 0
+    page.wait_for_function("+document.querySelector('.vz-noise').dataset.step > 5", timeout=3000)
+    for label in ("Momentum", "Early in training"):
+        step = page.evaluate(
+            """(label) => { const b = [...document.querySelectorAll('.vz-noise button')].find(x => x.textContent.trim() === label);
+                b.click(); return +document.querySelector('.vz-noise').dataset.step; }""",
+            label,
+        )
+        assert step == 0, label
+        page.wait_for_function("+document.querySelector('.vz-noise').dataset.step > 5", timeout=3000)
+    ctx.close()
+
+
+def test_loop_goes_idle_when_the_run_ends(browser, base_url):
+    # 300 steps at about 60 fps is about 5 s; allow 8 s, then no frame may be outstanding.
+    ctx, page, _ = open_page(browser, url(base_url))
+    page.wait_for_function("+document.querySelector('.vz-noise').dataset.step >= 300", timeout=8000)
+    page.wait_for_timeout(200)
+    assert page.evaluate("window.__rafOutstanding.size") == 0
+    ctx.close()
+
+
+def test_tag_cosine_and_formatting(browser, base_url):
+    ctx, page, _ = open_page(browser, url(base_url, rm=True, params={"batch": 64}))
+    assert "at the starting point" in page.inner_text("#vz-noise-tag")
+    cos = page.inner_text("#vz-noise-cos")
+    assert "our runs" in page.inner_text(".vz-reads")
+    assert first_number(cos) > 0
+    set_slider(page, 0)
+    page.wait_for_function("document.querySelector('.vz-noise').dataset.batch === '1'")
+    assert "n/a" in page.inner_text("#vz-noise-cos")
+    # no readout ever prints 0.00 for a nonzero value
+    for i in range(9):
+        set_slider(page, i)
+        for sel in ("#vz-noise-snr", "#vz-noise-cos"):
+            assert not re.fullmatch(r"0\.00", page.inner_text(sel).strip())
+    ctx.close()
+
+
+def test_off_chart_path_is_split_and_flagged(browser, base_url):
+    ctx, page, _ = open_page(browser, url(base_url, params={"batch": 1}))
+    page.wait_for_function(
+        "document.querySelector('.vz-noise text.off-chart').getAttribute('visibility') === 'visible'", timeout=8000
+    )
+    assert "off the chart" in page.inner_text("#vz-noise-loss")
+    assert page.locator("svg.vz-valley polyline.path").count() >= 1
+    ctx.close()
+
+
+def test_real_note_numbers_come_from_the_model(browser, base_url):
+    ctx, page, _ = open_page(browser, url(base_url, rm=True))
+    note = page.inner_text(ROOT)
+    for needle in ("0.37", "0.08", "batch 64", "4.4"):
+        assert needle in note, needle
     ctx.close()

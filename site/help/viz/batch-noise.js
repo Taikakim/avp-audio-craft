@@ -1,4 +1,5 @@
 // Owner: WINTERMUTE (created 2026-10-26)
+// Last edited: WINTERMUTE 2026-10-26 -- review fixes (path split at off-chart points, default batch 32, one number formatter, honest tag/cosine rows, longer arrows)
 // Animation module "batch-noise": a ball rolls down a valley; one bold arrow is the true step direction, a cloud of thin arrows is
 // what 24 different minibatches of the chosen size would suggest. Used by the glossary entry "momentum".
 import { mulberry32, makeGauss, CALIBRATION } from './lib/noise.js';
@@ -41,17 +42,24 @@ const sx = (x) => CX + x * PX;
 const sy = (y) => CY - y * PX;
 const LEVELS = [0.2, 0.8, 2, 4.5, 8, 12];
 const STAGES = { early: 'Early in training', late: 'Late in training' };
-const MAX_ARROW = 110;                                   // pixels; longer arrows are cut to this
+const MAX_ARROW = 260;                                   // pixels; longer arrows are cut to this
 const g0 = Math.hypot(...grad(VALLEY.start));
-const ARROW_SCALE = (0.25 * W) / g0;                     // pixels per unit of gradient: start arrow = a quarter of the width
-const fmt = (v) => (v >= 10 ? v.toFixed(1) : v.toFixed(2));
+const ARROW_SCALE = (W / 3) / g0;                       // pixels per unit of gradient: start arrow = a third of the width
+const DEFAULT_BATCH = 32;                                // late-noise runs at this size leave the chart in under 1% of frames (8 does in 23%)
+const fmt = (v) => {                                     // one formatter for every readout; never prints 0.00 for a nonzero value
+  const a = Math.abs(v);
+  if (a === 0) return '0';
+  if (a >= 10) return v.toFixed(1);
+  if (a >= 0.1) return v.toFixed(2);
+  return v.toPrecision(2);
+};
 
 export function mount(container, params = {}, help = {}) {
   injectStyle('vz-noise-style', CSS);
   const colors = { accent: '#2b6cb0', fg: '#1a1a1a', muted: '#777', bg: '#fff', good: '#2f855a', bad: '#c53030', ...(help.colors || {}) };
   // rule: series are told apart by swatches beside their names; text never names a colour
   const reducedMotion = !!help.reducedMotion;
-  let batchIdx = BATCHES.includes(params.batch) ? BATCHES.indexOf(params.batch) : BATCHES.indexOf(8);
+  let batchIdx = BATCHES.includes(params.batch) ? BATCHES.indexOf(params.batch) : BATCHES.indexOf(DEFAULT_BATCH);
   let momentum = typeof params.momentum === 'boolean' ? params.momentum : false;
   let stage = params.stage === 'early' || params.stage === 'late' ? params.stage : 'late';
   let sim = null, gauss = null;
@@ -86,7 +94,7 @@ export function mount(container, params = {}, help = {}) {
   // ---- the valley
   const board = svg('svg', {
     class: 'vz-valley', viewBox: `0 0 ${W} ${H}`, role: 'img',
-    'aria-label': 'A valley seen from above with a ball rolling toward its lowest point. A bold arrow shows the true downhill direction; thin arrows show the directions that 24 random minibatches would suggest.',
+    'aria-label': `A valley seen from above with a ball rolling toward its lowest point. A bold arrow shows the true downhill direction; thin arrows show the directions that ${VALLEY.cloudSize} random minibatches would suggest.`,
   });
   const mk = (id, color) => svg('marker', { id, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse', markerUnits: 'strokeWidth' },
     [svg('path', { d: 'M0,0 L10,5 L0,10 z', fill: color })]);
@@ -99,8 +107,8 @@ export function mount(container, params = {}, help = {}) {
     class: 'noiseless', fill: 'none', stroke: colors.muted, 'stroke-width': 1.6, 'stroke-dasharray': '5 4',
     points: noiselessPath().map(([x, y]) => `${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' '),
   }));
-  const pathLine = svg('polyline', { class: 'path', fill: 'none', stroke: colors.fg, 'stroke-width': 1.8, 'stroke-linejoin': 'round', points: '' });
-  board.append(pathLine);
+  const pathGroup = svg('g', { class: 'path-group' });     // one polyline.path per run of on-chart points
+  board.append(pathGroup);
   const cloud = [];
   for (let i = 0; i < VALLEY.cloudSize; i++) {
     const ln = svg('line', { class: 'cloud', stroke: colors.muted, 'stroke-width': 1.1, 'stroke-opacity': 0.75, 'marker-end': 'url(#vz-noise-ah-cloud)', x1: 0, y1: 0, x2: 0, y2: 0 });
@@ -126,6 +134,7 @@ export function mount(container, params = {}, help = {}) {
   // ---- readouts
   const snrEl = el('b', { id: 'vz-noise-snr' });
   const cosEl = el('b', { id: 'vz-noise-cos' });
+  const cosWhy = el('span', { class: 'vz-why' });
   const msnrEl = el('b', { id: 'vz-noise-msnr' });
   const msnrRow = el('p', { hidden: true }, ['With momentum, at most: ', msnrEl, ' ',
     el('span', { class: 'vz-why', text: '(averaging helps this much only if the true direction holds still)' })]);
@@ -135,13 +144,13 @@ export function mount(container, params = {}, help = {}) {
     el('p', {}, ['Signal to noise of one minibatch gradient: ', snrEl, ' ',
       el('span', { class: 'vz-why', text: '(above 1, the real direction beats the noise)' })]),
     el('p', {}, ['Two half batches agree (cosine): ', cosEl, ' ',
-      el('span', { class: 'vz-why', text: '(1 = same direction, 0 = unrelated)' })]),
+      cosWhy]),
     msnrRow,
     el('p', {}, ['Height above the bottom of the valley (loss): ', lossEl, ' ',
       el('span', { class: 'vz-why', text: `(starts at ${fmt(loss(VALLEY.start))}; lower is better)` })]),
     el('p', {}, [tagEl]),
   ]));
-  root.append(el('p', { class: 'vz-key', text: 'Arrows point where each guess would move the ball. Arrows longer than the limit are cut short; the noise at small batches is much bigger than shown. With very small batches the noise can throw the ball off the chart.' }));
+  root.append(el('p', { class: 'vz-key', text: 'Arrows point where each guess would move the ball. Arrows that reach the limit are cut short, so the real ones are longer than drawn, and the noise at small batches is much bigger than shown. At late-training noise, small batches (below about 16) regularly throw the ball off the chart.' }));
 
   realNote(root, {
     live: [
@@ -168,6 +177,16 @@ export function mount(container, params = {}, help = {}) {
     ln.setAttribute('x2', (sx(x) + dx).toFixed(1)); ln.setAttribute('y2', (sy(y) + dy).toFixed(1));
   };
   let lastUsed = null;
+  function drawPath() {                              // the path is broken wherever the ball was off the plot, never drawn along the frame edge
+    const segs = [[]];
+    for (const q of sim.path) {
+      if (offChart(q)) { if (segs[segs.length - 1].length) segs.push([]); continue; }
+      segs[segs.length - 1].push(`${sx(q[0]).toFixed(1)},${sy(q[1]).toFixed(1)}`);
+    }
+    pathGroup.replaceChildren(...segs.map((pts) => svg('polyline', {
+      class: 'path', fill: 'none', stroke: colors.fg, 'stroke-width': 1.8, 'stroke-linejoin': 'round', points: pts.join(' '),
+    })));
+  }
   function render() {
     const [x, y] = clampPt(sim.pos);
     const away = offChart(sim.pos);
@@ -178,7 +197,7 @@ export function mount(container, params = {}, help = {}) {
     if (away) {
       offMark.setAttribute('x', String(W / 2)); offMark.setAttribute('y', '16');
     }
-    pathLine.setAttribute('points', sim.path.map((q) => { const [px, py] = clampPt(q); return `${sx(px).toFixed(1)},${sy(py).toFixed(1)}`; }).join(' '));
+    drawPath();
     const tg = grad(sim.pos);
     setArrow(trueLine, x, y, tg[0], tg[1]);
     const samples = sampleCloud(sim.pos, sim.sigma1, BATCHES[batchIdx], VALLEY.cloudSize, gauss);
@@ -187,11 +206,13 @@ export function mount(container, params = {}, help = {}) {
     else usedLine.setAttribute('visibility', 'hidden');
     const r = readouts(sim.pos, sim.sigma1, BATCHES[batchIdx], momentum ? VALLEY.beta : 0);
     snrEl.textContent = fmt(r.snr);
-    cosEl.textContent = r.halfCos.toFixed(2);
+    const B = BATCHES[batchIdx];
+    cosEl.textContent = B === 1 ? 'n/a (a batch of 1 cannot be split in two)' : fmt(r.halfCos);
+    cosWhy.textContent = B === 1 ? '' : `(1 = same direction, 0 = unrelated${r.measured ? `; our runs: ${CALIBRATION[stage]}` : ''})`;
     msnrEl.textContent = momentum && r.momentumSnr !== null ? fmt(r.momentumSnr) : '';
     msnrRow.hidden = !momentum;
-    lossEl.textContent = fmt(loss(sim.pos));
-    tagEl.textContent = r.measured ? 'measured at this batch size' : 'extrapolated with the noise model (1/sqrt(batch))';
+    lossEl.textContent = fmt(loss(sim.pos)) + (away ? ' (off the chart)' : '');
+    tagEl.textContent = r.measured ? 'noise level measured at this batch size, at the starting point' : 'extrapolated with the noise model (1/sqrt(batch))';
     root.setAttribute('data-step', String(sim.t));
   }
   function syncControls() {
