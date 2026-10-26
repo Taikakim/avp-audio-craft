@@ -30,6 +30,10 @@ function btn(cls, label) {
   return b;
 }
 
+function freshQuiz() {
+  return { i: 0, score: 0, stage: 'ask', chosen: null };
+}
+
 class HelpPane {
   constructor(entries, vizBase) {
     this.entries = entries;
@@ -278,11 +282,122 @@ class HelpPane {
     if (refocus && o.opener && o.opener.isConnected) o.opener.focus({ preventScroll: true });
   }
 
-  // STUB: Task 2.4 replaces this.
-  startQuiz() {}
+  // ---- quiz -----------------------------------------------------------------------------------------------
 
-  // STUB: Task 2.4 replaces this.
-  renderQuiz() {}
+  startQuiz() {
+    const t = this.top();
+    if (!t) return;
+    this.trail.push({ id: t.id, mode: 'quiz', quiz: freshQuiz() });   // Back pops this and shows the entry again
+    this.render();
+    this.syncHash();
+    this.focusFirst('.hp-progress');
+  }
+
+  focusFirst(selector) {
+    const n = this.bodyEl.querySelector(selector);
+    if (n) { n.tabIndex = -1; n.focus({ preventScroll: true }); }
+  }
+
+  renderQuiz(entry, item) {
+    const qs = entry.quiz;
+    const st = item.quiz;
+    const n = qs.length;
+    if (st.stage === 'done') { this.renderScore(n, st); return; }
+    const q = qs[st.i];
+    const wrap = el('div', 'hp-quiz');
+    wrap.append(el('p', 'hp-progress', `Question ${st.i + 1} of ${n}`));
+    if (st.stage === 'ask') {
+      const form = el('form', 'hp-q');
+      const fs = el('fieldset');
+      fs.append(rich('legend', 'hp-qtext', q.q));
+      q.options.forEach((opt, k) => {
+        const label = el('label', 'hp-opt');
+        const input = el('input');
+        input.type = 'radio';
+        input.name = 'hp-opt';
+        input.value = String(k);
+        label.append(input, rich('span', null, opt));
+        fs.append(label);
+      });
+      const submit = el('button', 'hp-answer', 'Check answer');
+      submit.type = 'submit';
+      submit.disabled = true;
+      form.addEventListener('change', () => { submit.disabled = !form.querySelector('input:checked'); });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const c = form.querySelector('input:checked');
+        if (c) this.answer(Number(c.value));
+      });
+      form.append(fs, submit);
+      wrap.append(form);
+    } else {
+      wrap.append(this.buildFeedback(q, st, n));
+    }
+    this.bodyEl.append(wrap);
+  }
+
+  buildFeedback(q, st, n) {
+    const right = st.chosen === q.answer;
+    const fb = el('div', 'hp-feedback ' + (right ? 'hp-right' : 'hp-wrong'));
+    fb.tabIndex = -1;
+    fb.append(rich('p', 'hp-qtext', q.q));
+    fb.append(el('p', 'hp-verdict', right ? 'Correct.' : 'Not quite.'));
+    if (!right) {
+      const note = q.wrong && q.wrong[String(st.chosen)];
+      if (note) fb.append(rich('p', 'hp-wrong-note', note));
+      const ra = el('p', 'hp-right-answer');
+      ra.append('The right answer: ', rich('span', null, q.options[q.answer]));
+      fb.append(ra);
+    }
+    fb.append(rich('p', 'hp-why', q.why));
+    const next = btn('hp-next', st.i + 1 >= n ? 'See your score' : 'Next question');
+    next.addEventListener('click', () => this.nextQuestion());
+    fb.append(next);
+    return fb;
+  }
+
+  answer(k) {
+    const item = this.top();
+    const q = this.entries[item.id].quiz[item.quiz.i];
+    item.quiz.chosen = k;
+    item.quiz.stage = 'feedback';
+    if (k === q.answer) item.quiz.score += 1;
+    this.render();
+    const fb = this.bodyEl.querySelector('.hp-feedback');
+    if (fb) {
+      // announce verdict, note, correct option and explanation (not the Next button) to screen readers
+      this.live.textContent = [...fb.querySelectorAll('.hp-verdict, .hp-wrong-note, .hp-right-answer, .hp-why')]
+        .map((n) => n.textContent.replace(/\s+/g, ' ').trim()).join(' ');
+      fb.focus({ preventScroll: true });
+    }
+  }
+
+  nextQuestion() {
+    const item = this.top();
+    const n = this.entries[item.id].quiz.length;
+    const st = item.quiz;
+    if (st.i + 1 >= n) st.stage = 'done';
+    else { st.i += 1; st.stage = 'ask'; st.chosen = null; }
+    this.render();
+    this.focusFirst(st.stage === 'done' ? '.hp-score-line' : '.hp-progress');
+  }
+
+  renderScore(n, st) {
+    const wrap = el('div', 'hp-quiz hp-done');
+    wrap.append(el('p', 'hp-score-line', `You got ${st.score} of ${n} right.`));
+    const again = btn('hp-again', 'Try again');
+    again.addEventListener('click', () => {
+      this.top().quiz = freshQuiz();
+      this.render();
+      this.focusFirst('.hp-progress');
+    });
+    const back = btn('hp-entry-back', 'Back to the entry');
+    back.addEventListener('click', () => this.back());
+    const row = el('div', 'hp-actions');
+    row.append(again, back);
+    wrap.append(row);
+    this.bodyEl.append(wrap);
+  }
 
   // STUB: Task 2.5 replaces this.
   installSwipe() {}

@@ -380,3 +380,149 @@ def test_leaving_an_entry_before_its_animation_loads_does_not_mount_it(make_page
     page.wait_for_timeout(900)
     assert [x for x in _viz_log(page) if x.startswith("mounted:")] == []
     expect(page.locator("[data-testid=fixture-viz]")).to_have_count(0)
+
+
+# --------------------------------------------------------------------------- quiz
+
+def _answer(page, q, choice):
+    """Select option `choice` on the current question, submit, return the feedback locator."""
+    radios = page.locator("#help-pane input[type=radio]")
+    expect(radios).to_have_count(5)
+    submit = page.locator("#help-pane .hp-answer")
+    expect(submit).to_be_disabled()                      # nothing chosen yet
+    radios.nth(choice).check()
+    expect(submit).to_be_enabled()
+    submit.click()
+    fb = page.locator("#help-pane .hp-feedback")
+    expect(fb).to_be_visible()
+    expect(radios).to_have_count(0)                      # the question was replaced by its feedback
+    return fb
+
+
+def _run_quiz(page, questions, wrong_on):
+    """Answer every question (wrong where index in wrong_on); return the number answered correctly."""
+    n, score = len(questions), 0
+    for k, q in enumerate(questions):
+        expect(page.locator("#help-pane .hp-progress")).to_have_text(f"Question {k + 1} of {n}")
+        right = k not in wrong_on
+        choice = q["answer"] if right else (q["answer"] + 1) % 5
+        fb = _answer(page, q, choice)
+        expect(fb.locator(".hp-why")).to_have_text(plain_text(q["why"]))
+        live = page.locator("#help-pane [aria-live='polite']")
+        if right:
+            score += 1
+            expect(fb).to_have_class(re.compile(r"\bhp-right\b"))
+            expect(fb.locator(".hp-verdict")).to_have_text("Correct.")
+            expect(fb.locator(".hp-wrong-note")).to_have_count(0)
+            expect(live).to_contain_text("Correct.")
+        else:
+            expect(fb).to_have_class(re.compile(r"\bhp-wrong\b"))
+            expect(fb.locator(".hp-verdict")).to_have_text("Not quite.")
+            note = (q.get("wrong") or {}).get(str(choice))
+            if note:
+                expect(fb.locator(".hp-wrong-note")).to_have_text(plain_text(note))
+            else:
+                expect(fb.locator(".hp-wrong-note")).to_have_count(0)
+            expect(fb.locator(".hp-right-answer")).to_contain_text(plain_text(q["options"][q["answer"]]))
+            expect(live).to_contain_text("Not quite.")
+        expect(live).to_contain_text(plain_text(q["why"])[:40])
+        assert page.evaluate("document.activeElement.classList.contains('hp-feedback')")   # focus follows the swap
+        page.locator("#help-pane .hp-next").click()
+    return score
+
+
+def test_quiz_full_run_with_score_try_again_and_back_to_entry(make_page, page_url, quiz_term, entries):
+    questions = entries[quiz_term]["quiz"]
+    n = len(questions)
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    expect(page.locator("#help-pane .hp-quiz-start")).to_contain_text(f"({n} question")
+    page.locator("#help-pane .hp-quiz-start").click()
+    assert page.evaluate("location.hash") == f"#gl={quiz_term}"
+    score = _run_quiz(page, questions, wrong_on={0})            # first wrong, the rest right
+    assert score == n - 1
+    expect(page.locator("#help-pane .hp-score-line")).to_contain_text(f"{score} of {n}")
+    page.locator("#help-pane .hp-again").click()                # Try again: back to question 1, score reset
+    expect(page.locator("#help-pane .hp-progress")).to_have_text(f"Question 1 of {n}")
+    score2 = _run_quiz(page, questions, wrong_on=set())
+    expect(page.locator("#help-pane .hp-score-line")).to_contain_text(f"{score2} of {n}")
+    assert score2 == n
+    page.locator("#help-pane .hp-entry-back").click()           # Back to the entry
+    expect(page.locator("#help-pane .hp-plain")).to_be_visible()
+    expect(page.locator("#help-pane .hp-quiz-start")).to_be_visible()
+    expect(page.locator("#help-pane .hp-back")).to_be_disabled()
+
+
+def test_quiz_all_wrong_scores_zero(make_page, page_url, quiz_term, entries):
+    questions = entries[quiz_term]["quiz"]
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    page.locator("#help-pane .hp-quiz-start").click()
+    score = _run_quiz(page, questions, wrong_on=set(range(len(questions))))
+    assert score == 0
+    expect(page.locator("#help-pane .hp-score-line")).to_contain_text(f"0 of {len(questions)}")
+
+
+def test_back_from_a_quiz_returns_to_its_entry(make_page, page_url, quiz_term, entries):
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    page.locator("#help-pane .hp-quiz-start").click()
+    expect(page.locator("#help-pane .hp-progress")).to_be_visible()
+    expect(page.locator("#help-pane .hp-back")).to_be_enabled()
+    page.locator("#help-pane .hp-back").click()
+    expect(page.locator("#help-pane .hp-plain")).to_have_text(plain_text(entries[quiz_term]["plain"]))
+    expect(page.locator("#help-pane .hp-progress")).to_have_count(0)
+
+
+def test_back_in_the_middle_of_a_quiz_returns_to_the_entry_and_a_new_quiz_starts_fresh(
+        make_page, page_url, quiz_term, entries):
+    questions = entries[quiz_term]["quiz"]
+    page = make_page()
+    open_via_click(page, page_url, quiz_term)
+    page.locator("#help-pane .hp-quiz-start").click()
+    _answer(page, questions[0], questions[0]["answer"])
+    page.locator("#help-pane .hp-back").click()
+    page.locator("#help-pane .hp-quiz-start").click()
+    expect(page.locator("#help-pane .hp-progress")).to_have_text(f"Question 1 of {len(questions)}")
+
+
+def test_a_term_inside_quiz_feedback_opens_its_entry_and_back_returns_to_the_feedback(
+        make_page, page_url, fixture_only, entries):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-quiz-start").click()
+    q = entries["ema"]["quiz"][0]
+    _answer(page, q, q["answer"])
+    page.locator('#help-pane .hp-feedback a.gl[data-term="momentum"]').click()
+    expect(page.locator("#hp-title")).to_have_text("momentum")
+    expect(page.locator("#help-pane .hp-plain")).to_be_visible()
+    page.locator("#help-pane .hp-back").click()
+    expect(page.locator("#hp-title")).to_have_text("EMA")
+    expect(page.locator("#help-pane .hp-feedback")).to_be_visible()      # quiz state kept in the trail
+
+
+def test_quiz_options_and_feedback_render_inline_markup(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=momentum")
+    page.locator("#help-pane .hp-quiz-start").click()
+    for _ in range(2):                                    # questions 1 and 2: pick any answer and continue
+        page.locator("#help-pane input[type=radio]").first.check()
+        page.locator("#help-pane .hp-answer").click()
+        page.locator("#help-pane .hp-next").click()
+    expect(page.locator("#help-pane .hp-opt code")).to_have_count(5)   # question 3 options are <code>
+    page.locator("#help-pane input[type=radio]").nth(2).check()
+    page.locator("#help-pane .hp-answer").click()
+    expect(page.locator("#help-pane .hp-verdict")).to_have_text("Correct.")
+
+
+def test_last_question_button_leads_to_the_score(make_page, page_url, fixture_only, entries):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-quiz-start").click()
+    qs = entries["ema"]["quiz"]
+    for k, q in enumerate(qs):
+        _answer(page, q, q["answer"])
+        expect(page.locator("#help-pane .hp-next")).to_have_text(
+            "See your score" if k == len(qs) - 1 else "Next question")
+        page.locator("#help-pane .hp-next").click()
+    expect(page.locator("#help-pane .hp-score-line")).to_contain_text("3 of 3")

@@ -170,3 +170,32 @@ body.help-pane-open { padding-right: var(--hp-w); }
 .hp-viz-big { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hp-viz-big .hp-viz-stage { flex: 1; min-height: 0; }
 .hp-viz-big .hp-enlarge { display: none; }
+
+/* ---- quiz ---------------------------------------------------------------------------------------------------- */
+.hp-progress { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--dim, #7a8a8e); }
+.hp-progress:focus, .hp-score-line:focus { outline: none; }
+.hp-q fieldset { border: 0; margin: 0 0 12px; padding: 0; min-width: 0; }
+.hp-qtext { padding: 0; margin: 0 0 10px; font-size: 14px; color: var(--ink, #2b3538); }
+.hp-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--rule-light, #e2e6e2);
+  background: #fff;
+  cursor: pointer;
+}
+.hp-opt:hover { border-color: var(--edge, #0f9e99); }
+.hp-opt input { margin-top: 4px; accent-color: var(--edge-ink, #0c807c); }
+.hp-opt:has(input:checked) { border-color: var(--edge-ink, #0c807c); background: var(--paper-dim, #f2f3ef); }
+.hp-pane .hp-answer, .hp-pane .hp-next, .hp-pane .hp-again, .hp-pane .hp-entry-back { padding: 6px 14px; }
+.hp-feedback { padding: 10px 12px; border-left: 4px solid var(--rule, #c9d2d0); background: #fff; }
+.hp-feedback.hp-right { border-left-color: var(--hp-good, #2e7d4f); }
+.hp-feedback.hp-wrong { border-left-color: var(--hp-bad, #b3412e); }
+.hp-feedback .hp-qtext { font-size: 12px; color: var(--dim, #7a8a8e); }
+.hp-verdict { font-weight: 600; font-size: 14px; }
+.hp-right .hp-verdict { color: var(--hp-good, #2e7d4f); }
+.hp-wrong .hp-verdict { color: var(--hp-bad, #b3412e); }
+.hp-score-line { font-size: 16px; color: var(--ink, #2b3538); }
+.hp-actions { display: flex; gap: 10px; flex-wrap: wrap; }
