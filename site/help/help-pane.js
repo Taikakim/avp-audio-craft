@@ -181,16 +181,108 @@ class HelpPane {
     });
   }
 
-  // STUB: Task 2.3 replaces this with the full three-layer layout.
   renderEntry(entry) {
-    this.bodyEl.append(rich('p', 'hp-plain', entry.plain));
+    const b = this.bodyEl;
+    b.append(rich('p', 'hp-plain', entry.plain));
+    if (entry.ours) {
+      const s = el('section', 'hp-ours');
+      s.append(el('h3', null, 'In our models'), rich('div', 'hp-text', entry.ours));
+      b.append(s);
+    }
+    if (entry.viz) b.append(this.buildViz(entry));
+    if (entry.deeper) {
+      const d = el('details', 'hp-deeper');
+      d.append(el('summary', null, 'Going deeper'), rich('div', 'hp-text', entry.deeper));
+      b.append(d);
+    }
+    if (entry.papers && entry.papers.length) {
+      const s = el('section', 'hp-papers');
+      s.append(el('h3', null, 'Papers'));
+      const ul = el('ul');
+      for (const p of entry.papers) {
+        const li = el('li');
+        const a = el('a', null, p.title);
+        a.href = p.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        li.append(a);
+        ul.append(li);
+      }
+      s.append(ul);
+      b.append(s);
+    }
+    if (entry.quiz && entry.quiz.length) {
+      const n = entry.quiz.length;
+      const q = btn('hp-quiz-start', `Check your understanding (${n} ${n === 1 ? 'question' : 'questions'})`);
+      q.addEventListener('click', () => this.startQuiz());
+      b.append(q);
+    }
+  }
+
+  // ---- animation ------------------------------------------------------------------------------------------
+
+  buildViz(entry) {
+    const token = this.token;
+    const wrap = el('div', 'hp-viz');
+    const stage = el('div', 'hp-viz-stage');
+    stage.append(el('p', 'hp-viz-note', 'Loading the animation...'));
+    const big = btn('hp-enlarge', null);
+    big.innerHTML = '<span class="hp-wide">Enlarge</span><span class="hp-narrow">Open full screen</span>';
+    big.addEventListener('click', () => this.enlarge(wrap, big));
+    wrap.append(stage, big);
+    this.mountViz(entry, stage, wrap, token);      // async; the import always resolves after wrap is attached
+    return wrap;
+  }
+
+  async mountViz(entry, stage, wrap, token) {
+    try {
+      const mod = await import(this.vizBase + entry.viz.module + '.js');
+      if (token !== this.token) return;            // the reader already left this entry
+      stage.replaceChildren();
+      const handle = mod.mount(stage, entry.viz.params || {}, this.helpApi());
+      this.viz = { handle, wrap };
+    } catch (err) {
+      if (token !== this.token) return;
+      stage.replaceChildren(el('p', 'hp-viz-note', 'Animation unavailable.'));
+      wrap.classList.add('hp-viz-failed');
+    }
+  }
+
+  enlarge(wrap, opener) {
+    if (this.overlay) return;
+    const overlay = el('div', 'hp-overlay');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Animation, enlarged');
+    const close = btn('hp-overlay-close', 'Close');
+    close.setAttribute('aria-label', 'Close the enlarged animation');
+    close.addEventListener('click', () => this.closeOverlay(true));
+    const marker = document.createComment('hp-viz-home');
+    wrap.before(marker);                            // remember where the animation lives
+    overlay.append(close, wrap);                    // move the live node: state and canvas survive
+    wrap.classList.add('hp-viz-big');
+    document.body.append(overlay);
+    this.overlay = { overlay, wrap, marker, opener };
+    close.focus({ preventScroll: true });
+    window.dispatchEvent(new Event('resize'));      // lets the module re-measure its container
+  }
+
+  closeOverlay(refocus) {
+    const o = this.overlay;
+    if (!o) return;
+    this.overlay = null;
+    o.wrap.classList.remove('hp-viz-big');
+    if (o.marker.parentNode) o.marker.replaceWith(o.wrap);   // back home (if the entry was not re-rendered)
+    o.overlay.remove();
+    window.dispatchEvent(new Event('resize'));
+    if (refocus && o.opener && o.opener.isConnected) o.opener.focus({ preventScroll: true });
   }
 
   // STUB: Task 2.4 replaces this.
-  renderQuiz() {}
+  startQuiz() {}
 
-  // STUB: Task 2.3 replaces this.
-  closeOverlay() {}
+  // STUB: Task 2.4 replaces this.
+  renderQuiz() {}
 
   // STUB: Task 2.5 replaces this.
   installSwipe() {}

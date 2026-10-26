@@ -241,3 +241,142 @@ def test_pane_header_is_not_styled_like_a_page_section_heading(make_page, page_u
     style = page.locator("#hp-title").evaluate(
         "e => { const s = getComputedStyle(e); return [s.textTransform, s.letterSpacing, s.borderBottomWidth]; }")
     assert style == ["none", "normal", "0px"]
+
+
+# --------------------------------------------------------------------------- entry layout
+
+LAYOUT_ORDER = ["hp-plain", "hp-ours", "hp-viz", "hp-deeper", "hp-papers", "hp-quiz-start"]
+
+
+def _layout(page):
+    return page.evaluate(
+        "[...document.querySelectorAll('#help-pane .hp-body > *')].map(n => n.className.split(' ')[0])")
+
+
+def test_entry_layout_follows_the_documented_order(make_page, page_url, viz_term):
+    page = make_page()
+    open_via_click(page, page_url, viz_term)
+    page.wait_for_timeout(200)
+    classes = _layout(page)
+    assert classes[0] == "hp-plain"
+    idx = [LAYOUT_ORDER.index(c) for c in classes]
+    assert idx == sorted(idx), classes
+
+
+def test_full_entry_has_every_layer_in_order(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    assert _layout(page) == LAYOUT_ORDER
+    assert page.evaluate("document.querySelector('#help-pane .hp-deeper').open") is False   # collapsed
+    expect(page.locator("#help-pane .hp-deeper summary")).to_have_text("Going deeper")
+    expect(page.locator("#help-pane .hp-ours h3")).to_have_text("In our models")
+    expect(page.locator("#help-pane .hp-quiz-start")).to_have_text("Check your understanding (3 questions)")
+    paper = page.locator("#help-pane .hp-papers a").first
+    assert paper.get_attribute("href") == "https://example.org/polyak"
+    assert paper.get_attribute("rel") == "noopener noreferrer"
+    page.locator("#help-pane .hp-deeper summary").click()
+    assert page.evaluate("document.querySelector('#help-pane .hp-deeper').open") is True
+
+
+def test_entry_without_optional_layers_shows_only_what_it_has(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=momentum")        # no viz
+    assert _layout(page) == ["hp-plain", "hp-ours", "hp-deeper", "hp-papers", "hp-quiz-start"]
+
+
+# --------------------------------------------------------------------------- animation modules (C5)
+
+def _viz_log(page):
+    return page.evaluate("window.__vizLog || []")
+
+
+def test_viz_module_is_mounted_with_params_and_help_object(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_be_visible()
+    mounted = [x for x in _viz_log(page) if x.startswith("mounted:")]
+    assert len(mounted) == 1
+    info = __import__("json").loads(mounted[0][len("mounted:"):])
+    assert info["params"] == {"decay": 0.999}
+    assert info["keys"] == ["colors", "openTerm", "reducedMotion"]
+    assert info["colorKeys"] == ["accent", "bad", "bg", "fg", "good", "muted"]
+    assert info["openTerm"] == "function" and info["reducedMotion"] == "boolean"
+
+
+def test_viz_is_destroyed_when_the_entry_changes_closes_or_the_quiz_opens(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    expect(page.locator("[data-testid=fixture-viz]")).to_be_visible()
+    page.locator("#fixture-open-term").click()            # help.openTerm('momentum') from inside the viz
+    expect(page.locator("#hp-title")).to_have_text("momentum")
+    assert _viz_log(page).count("destroyed") == 1
+    page.locator("#help-pane .hp-back").click()           # back to ema: a fresh mount
+    expect(page.locator("[data-testid=fixture-viz]")).to_be_visible()
+    assert len([x for x in _viz_log(page) if x.startswith("mounted:")]) == 2
+    page.locator("#help-pane .hp-quiz-start").click()     # leaving the entry for the quiz
+    expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_have_count(0)
+    assert _viz_log(page).count("destroyed") == 2
+
+
+def test_viz_is_destroyed_on_close(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    expect(page.locator("[data-testid=fixture-viz]")).to_be_visible()
+    page.keyboard.press("Escape")
+    assert _viz_log(page).count("destroyed") == 1
+
+
+def test_enlarge_moves_the_running_animation_to_a_full_page_overlay(make_page, page_url, fixture_only):
+    page = make_page((1280, 800))
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-enlarge").click()
+    overlay = page.locator(".hp-overlay")
+    expect(overlay).to_be_visible()
+    box = overlay.bounding_box()
+    assert (round(box["width"]), round(box["height"])) == (1280, 800)
+    expect(overlay.locator("[data-testid=fixture-viz]")).to_be_visible()
+    assert "destroyed" not in _viz_log(page)                  # moved, not remounted
+    page.keyboard.press("Escape")                              # first Escape closes only the overlay
+    expect(overlay).to_have_count(0)
+    expect(page.locator("#help-pane")).to_be_visible()
+    expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_be_visible()
+    assert "destroyed" not in _viz_log(page)
+    assert len([x for x in _viz_log(page) if x.startswith("mounted:")]) == 1
+    assert page.evaluate("document.activeElement.classList.contains('hp-enlarge')")
+    page.keyboard.press("Escape")                              # second Escape closes the pane
+    expect(page.locator("#help-pane")).to_be_hidden()
+
+
+def test_enlarge_overlay_close_button(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-enlarge").click()
+    page.locator(".hp-overlay .hp-overlay-close").click()
+    expect(page.locator(".hp-overlay")).to_have_count(0)
+    expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_be_visible()
+
+
+@pytest.mark.parametrize("term", ["adamw", "lora"])    # adamw: mount() throws; lora: module file is missing (404)
+def test_failed_animation_shows_text_and_the_pane_keeps_working(make_page, page_url, entries, fixture_only, term):
+    page = make_page()
+    load_page(page, f"{page_url}#gl={term}")
+    expect(page.locator("#help-pane .hp-plain")).to_have_text(plain_text(entries[term]["plain"]))
+    expect(page.locator("#help-pane .hp-viz-stage")).to_contain_text("Animation unavailable.")
+    expect(page.locator("[data-testid=half-built]")).to_have_count(0)      # partial DOM from a throwing mount is cleared
+    expect(page.locator("#help-pane .hp-enlarge")).to_be_hidden()
+    page.locator("#help-pane .hp-quiz-start").click()                       # pane still operable
+    expect(page.locator("#help-pane .hp-progress")).to_have_text(f"Question 1 of {len(entries[term]['quiz'])}")
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
+    expect(term_link(page, "momentum")).to_be_visible()                     # article untouched
+    assert page.hp_errors == []
+
+
+def test_leaving_an_entry_before_its_animation_loads_does_not_mount_it(make_page, page_url, fixture_only):
+    page = make_page()
+    page.route("**/viz/fixture-ok.js", lambda r: (page.wait_for_timeout(400), r.continue_()))
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-close").click()
+    page.wait_for_timeout(900)
+    assert [x for x in _viz_log(page) if x.startswith("mounted:")] == []
+    expect(page.locator("[data-testid=fixture-viz]")).to_have_count(0)
