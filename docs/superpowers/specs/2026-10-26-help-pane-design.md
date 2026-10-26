@@ -17,7 +17,7 @@ the whole site; the first page is the Muon survival guide (`blog/2026-10-21-muon
 | Question | Decision |
 |---|---|
 | What must exist before the Muon guide goes live | **Everything in the review**: the pane, all terms (~60) with reviewed quizzes, all six animations, the guide rewrite incl. the new EMA and DoRA-vs-full-fine-tune sections |
-| How often a term is marked | **Every occurrence** |
+| How often a term is marked | **First occurrence per section is a link; later ones are clickable spans** (changed 2026-10-26 on Kim's review: first per section) |
 | Quiz memory | **None**: nothing stored anywhere, quizzes reset on every visit |
 | Desktop layout | **Docked right column** (~40% on wide screens); the article narrows, nothing is covered |
 | Entry depth | **Three layers**: plain sentence / "In our models" / collapsed "Going deeper" |
@@ -42,7 +42,10 @@ the whole site; the first page is the Muon survival guide (`blog/2026-10-21-muon
 2. `Misc/glossary/build_page.py` validates every entry (section 5) and writes `glossary.html` (all entries, readable without
    JavaScript, one anchor per entry id) and a single compiled `glossary.json` (what the pane fetches).
 3. `Misc/publish_blog.py` renders the post as today, then calls `Misc/glossary/mark.py::mark(html, glossary)`, which turns
-   every occurrence of a term into `<a class="gl" data-term="<id>" href="glossary.html#<id>">`. A per-post switch turns
+   the first occurrence of each term per section into `<a class="gl" data-term="<id>" href="glossary.html#<id>">` and every
+   later occurrence in that section into `<span class="gl gl-rep" data-term="<id>">` (no href, not focusable). A section starts
+   at every h1-h6 and at the start of each `mark()` call; matching is by entry id, so aliases and plurals count as the same term;
+   `first_per_section=False` restores a link for every occurrence. (changed 2026-10-26 on Kim's review: first per section) A per-post switch turns
    the pane on; the post then includes `help-pane.css` and `help-pane.js`.
 4. Page, glossary files and `site/help/` files are uploaded together; the existing leak scan covers the glossary text too.
 
@@ -117,13 +120,15 @@ overlay); "Going deeper" (collapsed); paper links; "Check your understanding (n 
 - End: score ("3 of 4"), "Try again", "Back to the entry". Back from a quiz returns to its entry.
 - Nothing recorded, sent or stored.
 
-**Marked terms:** thin dotted underline in the site accent colour, solid on hover, no background. Terms opened during
-this visit get a fainter underline (page memory only, gone on reload).
+**Marked terms:** the first occurrence per section has a thin dotted underline in the site accent colour, solid on hover,
+no background. Later occurrences (`span.gl-rep`) have no underline, a pointer cursor and a dotted accent underline on hover,
+and open the same entry on click. Terms opened during this visit get a fainter underline (links) / fainter hover underline
+(spans); page memory only, gone on reload. (changed 2026-10-26 on Kim's review: first per section)
 
 **Phones:** a bottom sheet (~70% of the screen), dismissed by swiping down or the close button; animations open full-screen.
 
-**Accessibility:** terms are real links (tab-reachable); opening moves focus into the pane, closing returns it to the
-term; quiz feedback is announced to screen readers (live region); the pane is a labelled complementary region.
+**Accessibility:** first occurrences are real links (tab-reachable), later ones are plain clickable spans (out of the tab order, no repeated announcements); opening moves focus into the pane, closing returns it to the
+term (for a span: the first link of that term before it, else the reopen button); quiz feedback is announced to screen readers (live region); the pane is a labelled complementary region.
 
 ## 7. Animation modules
 
@@ -156,9 +161,9 @@ are done.
 entry shows the text with "animation unavailable"; a script error in the pane leaves the article untouched.
 
 **Tests**
-- Python (`Misc/glossary/tests/`): marker (every occurrence, longest match, skip zones, aliases, plurals, own-term rule),
+- Python (`Misc/glossary/tests/`): marker (first occurrence per section = link, later = span.gl-rep, heading resets, `first_per_section=False`, longest match, skip zones, aliases, plurals, own-term rule),
   one test per build error in section 5, glossary page build.
-- Browser (Playwright, on the built dry-run page): open/close, back history, full quiz run, deep link, no-JavaScript fallback,
+- Browser (Playwright, on the built dry-run page): span click opens the pane, spans never in the tab order, open/close, back history, full quiz run, deep link, no-JavaScript fallback,
   phone viewport, keyboard path.
 - Animations: numeric tests of the shared update maths; screenshot review of each module before Kim sees it.
 

@@ -3,6 +3,7 @@
 # Last edited: WINTERMUTE 2026-10-26 -- _inline moved to glossary_lib (shared with the glossary entries), behaviour unchanged
 # Last edited: WINTERMUTE 2026-10-26 -- help pane: `help-pane: on` opt-in, glossary term marking, help/ bundle (dry-run root /tmp/blog_dryrun)
 # Last edited: WINTERMUTE 2026-10-26 -- SAO root derived from file location (worktree-safe)
+# Last edited: WINTERMUTE 2026-10-26 -- re-insert own dir on sys.path after the mirror import so the worktree's glossary/ wins
 # Last edited: WINTERMUTE 2026-10-26 -- final review: own dir first on sys.path; leak-scan every shipped help/ text file; --publish compiles only reachable entries; redact refusal names the snippet
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
@@ -19,6 +20,7 @@ sys.path.insert(0, "/home/kim/bin")
 import build_site as bs                       # noqa: E402
 from mirror_dialogue import redact, HOST, KEY, DEST_DIR   # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))   # again: mirror_dialogue's import can put the main checkout's Misc/ first
 from glossary import mark as gmark                        # noqa: E402
 from glossary import build_page as gbuild                 # noqa: E402
 

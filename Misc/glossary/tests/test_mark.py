@@ -18,6 +18,10 @@ GL = [
 HREF = "../help/glossary.html"
 
 
+def rep(eid, text):
+    return f'<span class="gl gl-rep" data-term="{eid}">{text}</span>'
+
+
 def a(eid, text, href=HREF):
     return f'<a class="gl" data-term="{eid}" href="{href}#{eid}">{text}</a>'
 
@@ -45,7 +49,7 @@ def max_anchor_depth(html):
 
 
 def test_every_occurrence_is_marked_and_case_is_preserved():
-    out = mark("<p>Weight, then WEIGHT and weight again.</p>", GL)
+    out = mark("<p>Weight, then WEIGHT and weight again.</p>", GL, first_per_section=False)
     assert out == f"<p>{a('weight', 'Weight')}, then {a('weight', 'WEIGHT')} and {a('weight', 'weight')} again.</p>"
 
 
@@ -157,3 +161,51 @@ def test_unterminated_and_terminated_references_come_back_byte_identical():
         assert out == html
     assert mark("<p>AT&T weight</p>", GL) == f"<p>AT&T {a('weight', 'weight')}</p>"
     assert mark("<p>R&D &copy 2020 bias</p>", GL) == f"<p>R&D &copy 2020 {a('bias', 'bias')}</p>"
+
+
+# ---- first occurrence per section --------------------------------------------------------------------
+
+def test_second_occurrence_in_a_section_is_a_rep_span():
+    out = mark("<p>Weight, then WEIGHT.</p><p>And weight.</p>", GL)
+    assert out == f"<p>{a('weight', 'Weight')}, then {rep('weight', 'WEIGHT')}.</p><p>And {rep('weight', 'weight')}.</p>"
+    assert "href" not in rep("weight", "x") and "tabindex" not in out and "role=" not in out
+
+
+def test_heading_starts_a_new_section():
+    out = mark("<p>weight</p><h2>Title</h2><p>weight, weight</p><h3>Sub</h3><p>weight</p>", GL)
+    assert out == (f"<p>{a('weight', 'weight')}</p><h2>Title</h2><p>{a('weight', 'weight')}, {rep('weight', 'weight')}</p>"
+                   f"<h3>Sub</h3><p>{a('weight', 'weight')}</p>")
+
+
+def test_each_call_is_its_own_section():
+    assert mark("<p>bias</p>", GL) == mark("<p>bias</p>", GL) == f"<p>{a('bias', 'bias')}</p>"
+
+
+def test_alias_and_plural_count_as_the_main_term():
+    out = mark("<p>weight matrix, then weight matrices and matrices, matrix</p>", GL)
+    assert out == (f"<p>{a('weight-matrix', 'weight matrix')}, then {rep('weight-matrix', 'weight matrices')} and "
+                   f"{a('matrix', 'matrices')}, {rep('matrix', 'matrix')}</p>")
+    out = mark("<p>bias, biases</p>", GL)
+    assert out == f"<p>{a('bias', 'bias')}, {rep('bias', 'biases')}</p>"
+
+
+def test_skip_zones_still_skipped_and_do_not_use_up_the_link():
+    out = mark("<code>weight</code><a href='x'>weight</a><h2>weight</h2><p>weight</p>", GL)
+    assert out.count('data-term="weight"') == 1 and a("weight", "weight") in out and "gl-rep" not in out
+
+
+def test_used_ids_counts_spans():
+    out = mark("<p>weight</p><p>weight and bias</p>", GL)
+    assert used_ids(out) == {"weight", "bias"}
+    assert used_ids(rep("amp", "amp")) == {"amp"}
+    assert used_ids('<span class="other" data-term="weight">w</span>') == set()
+
+
+def test_first_per_section_false_links_everywhere():
+    out = mark("<p>weight weight</p><h2>t</h2><p>weight</p>", GL, first_per_section=False)
+    assert out.count('<a class="gl"') == 3 and "gl-rep" not in out
+
+
+def test_marking_marked_html_is_stable_with_spans():
+    out = mark("<p>weight and weight and bias</p>", GL)
+    assert mark(out, GL) == out

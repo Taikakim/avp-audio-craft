@@ -1,5 +1,6 @@
 /* Owner: WINTERMUTE (created 2026-10-26) */
 /* Last edited: WINTERMUTE 2026-10-26 -- dvh for the phone sheet, no body padding in print */
+/* Last edited: WINTERMUTE 2026-10-26 -- first occurrence per section is a link, later ones span.gl-rep */
 /* Help pane. Reuses the tokens of site/edg3.css (--paper, --ink, --edge, ...) with the same values as fallbacks. */
 
 :root {
@@ -22,6 +23,20 @@ a.gl:hover { text-decoration-style: solid; }
 a.gl.gl-seen { text-decoration-color: var(--rule, #c9d2d0); }
 @supports (color: color-mix(in srgb, red 50%, transparent)) {
   a.gl.gl-seen { text-decoration-color: color-mix(in srgb, var(--edge, #0f9e99) 35%, transparent); }
+}
+
+/* later occurrences of a term in a section: clickable spans, no underline until hovered */
+.gl-rep { cursor: pointer; }
+.gl-rep:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--edge, #0f9e99);
+  text-underline-offset: 3px;
+}
+.gl-rep.gl-seen:hover { text-decoration-color: var(--rule, #c9d2d0); }
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .gl-rep.gl-seen:hover { text-decoration-color: color-mix(in srgb, var(--edge, #0f9e99) 35%, transparent); }
 }
 
 /* ---- docked column ------------------------------------------------------------------------------------- */
