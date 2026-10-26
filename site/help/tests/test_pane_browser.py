@@ -611,3 +611,101 @@ def test_wide_layout_is_restored_after_the_phone_sheet_is_not_needed(make_page, 
     open_via_click(page, page_url, quiz_term)
     assert page.evaluate("getComputedStyle(document.body).paddingBottom") == "0px"
     assert page.evaluate("getComputedStyle(document.querySelector('#help-pane .hp-grip')).display") == "none"
+
+# --------------------------------------------------------------------------- privacy and network guards
+
+STORAGE_GUARD = """
+(() => {
+  const touches = (window.__storageTouches = []);
+  const block = (name) => ({ configurable: true, get() { touches.push(name); throw new DOMException('blocked ' + name, 'SecurityError'); } });
+  for (const n of ['localStorage', 'sessionStorage', 'indexedDB']) {
+    try { Object.defineProperty(window, n, block(n)); } catch (e) { touches.push('guard-failed:' + n); }
+  }
+  try {
+    Object.defineProperty(Document.prototype, 'cookie', {
+      configurable: true,
+      get() { touches.push('cookie:get'); return ''; },
+      set(v) { touches.push('cookie:set'); },
+    });
+  } catch (e) { touches.push('guard-failed:cookie'); }
+})();
+"""
+
+
+def test_the_pane_never_touches_browser_storage(make_page, page_url, quiz_term, entries):
+    page = make_page(init_script=STORAGE_GUARD)
+    load_page(page, page_url)
+    # prove the guard works (these reads are ours, then the log is cleared)
+    page.evaluate("try { localStorage } catch (e) {} try { document.cookie } catch (e) {}")
+    assert page.evaluate("window.__storageTouches.length") >= 2
+    assert not any(t.startswith("guard-failed") for t in page.evaluate("window.__storageTouches"))
+    page.evaluate("window.__storageTouches.length = 0")
+    # a complete session: open, enlarge if any, quiz with a wrong and a right answer, history, close, reopen
+    term_link(page, quiz_term).click()
+    questions = entries[quiz_term]["quiz"]
+    page.locator("#help-pane .hp-quiz-start").click()
+    _answer(page, questions[0], (questions[0]["answer"] + 1) % 5)
+    page.locator("#help-pane .hp-next").click()
+    page.locator("#help-pane .hp-back").click()
+    page.locator("#help-pane .hp-close").click()
+    page.locator(".hp-reopen").click()
+    page.keyboard.press("Escape")
+    assert page.evaluate("window.__storageTouches") == []
+    assert page.hp_errors == []
+
+
+def test_the_only_requests_after_load_are_viz_modules(make_page, page_url, viz_term, quiz_term, entries):
+    page = make_page()
+    load_page(page, page_url)
+    requests = []
+    page.on("request", lambda r: requests.append(r.url))
+    for t in dict.fromkeys([viz_term, quiz_term]):
+        term_link(page, t).click()
+        page.wait_for_timeout(250)
+        page.locator("#help-pane .hp-quiz-start").click()
+        first = entries[t]["quiz"][0]
+        _answer(page, first, first["answer"])
+        page.locator("#help-pane .hp-close").click()
+    for u in requests:
+        parsed = urlparse(u)
+        if parsed.scheme not in ("http", "https"):
+            continue
+        assert parsed.path.startswith("/help/viz/"), f"unexpected request after load: {u}"
+        assert parsed.path.endswith(".js"), u
+
+
+# --------------------------------------------------------------------------- keyboard-only path
+
+def _tab_until(page, predicate_js, limit=60):
+    for _ in range(limit):
+        if page.evaluate(predicate_js):
+            return
+        page.keyboard.press("Tab")
+    raise AssertionError(f"never reached: {predicate_js}")
+
+
+def test_keyboard_only_path_open_quiz_answer_close(make_page, page_url, quiz_term, entries):
+    questions = entries[quiz_term]["quiz"]
+    page = make_page()
+    load_page(page, page_url)
+    link = term_link(page, quiz_term)
+    link.focus()
+    page.keyboard.press("Enter")                                             # a term is a real, tab-reachable link
+    expect(page.locator("#help-pane")).to_be_visible()
+    assert page.evaluate("!!document.activeElement.closest('#help-pane')")   # focus moved into the pane
+    _tab_until(page, "document.activeElement.classList.contains('hp-quiz-start')")
+    page.keyboard.press("Enter")
+    expect(page.locator("#help-pane .hp-progress")).to_be_visible()
+    _tab_until(page, "document.activeElement.type === 'radio'")
+    page.keyboard.press("Space")                                             # chooses the focused option
+    _tab_until(page, "document.activeElement.classList.contains('hp-answer')")
+    page.keyboard.press("Enter")
+    expect(page.locator("#help-pane .hp-feedback")).to_be_visible()
+    assert page.evaluate("document.activeElement.classList.contains('hp-feedback')")
+    _tab_until(page, "document.activeElement.classList.contains('hp-next')")
+    page.keyboard.press("Enter")
+    if len(questions) > 1:
+        expect(page.locator("#help-pane .hp-progress")).to_have_text(f"Question 2 of {len(questions)}")
+    page.keyboard.press("Escape")
+    expect(page.locator("#help-pane")).to_be_hidden()
+    assert link.evaluate("el => el === document.activeElement")              # focus back on the term

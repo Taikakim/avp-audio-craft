@@ -2,7 +2,7 @@
 // help-pane.js: docked help pane for glossary terms (spec 2026-10-26-help-pane-design.md, section 6).
 // Plain ES module, no dependencies. Reads <script type="module" data-glossary data-viz-base> (contract C3),
 // fetches glossary.json (C4) once, and loads animation modules (C5) on demand.
-// It stores nothing (no localStorage, cookies, IndexedDB) and sends nothing except those two kinds of fetch.
+// It uses no browser storage of any kind and sends nothing except those two kinds of fetch.
 // If glossary.json cannot be loaded, or this script throws, no click handler exists and the links keep
 // navigating to glossary.html: reading is never blocked.
 
