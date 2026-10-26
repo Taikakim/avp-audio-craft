@@ -344,7 +344,7 @@
         "why": "Our listening notes found that optimizers with matched loss can sound different (TRAINING F6), so matched loss does not make them interchangeable."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "gradient",
@@ -397,7 +397,7 @@
         "why": "Strength is how much of the matrix is concentrated along one direction."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "learning-rate",
@@ -464,7 +464,7 @@
         "why": "A sign step moves each bias by the full learning rate, far more than Muon moves a matrix weight, so biases can run away first."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "adamw",
@@ -527,7 +527,7 @@
         "why": "In AdamW decay is decoupled from the adaptive scaling."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "muon",
@@ -589,7 +589,7 @@
         "why": "The step sizes differ by recipe, so the same number moves the weights differently."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "newton-schulz",
@@ -650,7 +650,7 @@
         "why": "The coefficients trade exactness for speed."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "singular-value",
@@ -704,7 +704,7 @@
         "why": "That is what makes the matrix orthogonal."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "directions",
@@ -762,7 +762,7 @@
         "why": "Each singular direction pairs an input vector, an output vector and a singular value."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "direction-rank",
@@ -815,7 +815,7 @@
         "why": "The iteration does not lift directions far weaker than the strongest."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "weight-decay",
@@ -898,7 +898,7 @@
         "why": "It reports Moonlight's 0.1 and SF-NorMuon's 0.05 as published settings, not as tuned results for our heads."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "weight-norm",
@@ -974,7 +974,7 @@
         "why": "Adapters such as LoRA B start at zero, so a norm-fixing rule leaves them stuck at zero."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "schedule-free",
@@ -1040,7 +1040,7 @@
         "why": "Fast early movement means useful checkpoints can come early."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "sign-step",
@@ -1103,7 +1103,7 @@
         }
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "normuon",
@@ -1165,6 +1165,6 @@
         "why": "That is the stated finding, with no explanation yet."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   }
 ]

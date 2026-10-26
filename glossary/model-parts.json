@@ -219,7 +219,7 @@
         "why": "Matrix layers (attention, feed-forward) hold tables; normalisation layers hold 1-D lists (gains and biases)."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "hidden-layer",
@@ -279,7 +279,7 @@
         "why": "The guide says the post reports the rule as an experimental finding, so treat it as a recommendation, not a proof."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "embedding",
@@ -350,7 +350,7 @@
         "why": "The guide marks this as a guess; the sparsity reason does not apply, so the question is open."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "input-projection",
@@ -408,7 +408,7 @@
         "why": "The guide marks it as 'in our reading'."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "bias",
@@ -464,7 +464,7 @@
         "why": "At the same learning rate, a sign step takes far larger steps on biases and gains than Muon does on matrices, so they blew up first."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "normalisation-gain",
@@ -520,7 +520,7 @@
         "why": "Normalisation makes the layer depend on direction, not overall size, so growth hides until numerics or the effective learning rate break."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "magnitude-vector",
@@ -580,7 +580,7 @@
         "why": "Multiplying by a positive factor cannot cross zero, unlike adding a fixed step."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "scalar",
@@ -633,7 +633,7 @@
         "why": "Muon evens out the strength of directions in a matrix. A single number has one value and no directions."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "attention-projection",
@@ -691,7 +691,7 @@
         "why": "The guide's point: the post reports splitting them works better, and our trainers did not split."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "qkv",
@@ -755,7 +755,7 @@
         "why": "The post reports a better result when Q, K and V are handled separately."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "qkv-line",
       "params": {}
@@ -827,7 +827,7 @@
         "why": "The routing rule missed the name, so the stack stayed whole (guide section 3)."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "qkv-line",
       "params": {}
@@ -893,7 +893,7 @@
         "why": "The guide says so explicitly: it is our reasoning."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "routing",
       "params": {}
@@ -952,7 +952,7 @@
         "why": "The guide says changing the routing is a new experiment, not a silent fix."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "parameter-group",
@@ -1005,7 +1005,7 @@
         "why": "A fast-growing group can precede NaN while the loss still looks normal."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "routing",
       "params": {}
