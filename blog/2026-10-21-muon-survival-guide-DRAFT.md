@@ -309,6 +309,17 @@ Two observations from our own LoRA and DoRA runs:
   so a crossing is slower there, but moving small positive scalars to AdamW does not by itself guarantee they stay
   positive.
 
+**Extracting an adapter from a full fine-tune did not work.** We tried to distil full fine-tunes of Stable Audio 3 into
+LoRA and DoRA adapters (ranks up to 128) with a truncated singular value decomposition of the weight change: 60 adapters
+from 10 full fine-tunes. All of them glitched when rendered. The extraction itself was correct: rebuilding the weights from
+the saved adapter tensors matched the full fine-tune with a cosine of 0.99, and DoRA's magnitudes came out exact. The cause
+is rank. The weight change of a full fine-tune is close to full rank: the rank needed to hold 90% of its energy was a median
+of about 750 to 1,110 per matrix in 1,536-wide layers. A rank-128 adapter kept about 26% of the energy over the whole model
+and between 40% and 68% in the attention matrices. An adapter that keeps more of some matrices than of others is
+lopsided, and it sounded broken. About 1,000 would be needed for 90% overall, so no useful adapter rank exists for these
+fine-tunes. Adapters trained directly at low rank do not have this problem, because training finds a low-rank change that
+works as a whole. This is one family of fine-tunes and one extraction method; we did not try choosing the rank per matrix.
+
 ## 8. Every optimizer change we tried
 
 Results are single runs unless stated; differences under 0.004 on the heads are noise. "Head" means the from-scratch
