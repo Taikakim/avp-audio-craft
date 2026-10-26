@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Last edited: WINTERMUTE 2026-10-21 -- [text](https://...) links; ![caption](assets/...) figures and audio players; referenced assets uploaded with the post
+# Last edited: WINTERMUTE 2026-10-26 -- _inline moved to glossary_lib (shared with the glossary entries), behaviour unchanged
 """Publish blog/*.md drafts to aavepyora /files/blog/ — a new public surface (Kim 2026-07-30,
 "the blog is good to go"). Reuses build_site's masthead/head + edg3.css so it matches the site,
 and the dialogue mirror's HARDENED redact() as a belt-and-suspenders leak-scan before ship.
@@ -19,14 +20,9 @@ SAO = Path("/home/kim/Projects/SAO")
 BLOG_DIR = SAO / "blog"
 
 
-def _inline(t: str) -> str:
-    t = html.escape(t)
-    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
-    # [text](https://...) links; http(s) only, so a relative or local path in a draft stays visible text
-    t = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2">\1</a>', t)
-    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
-    t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)
-    return t
+from glossary import glossary_lib as gl                   # noqa: E402  (Misc/ is on sys.path above)
+
+_inline = gl.inline        # one inline renderer for posts and glossary entries (moved to glossary_lib 2026-10-26)
 
 
 # media must live under blog/assets/ (relative, no "..") so a post can only reference files the publisher uploads
