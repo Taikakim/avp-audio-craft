@@ -638,7 +638,7 @@
       "full fine-tuning"
     ],
     "plain": "Fine-tuning continues training a model that is already trained, on a smaller set of data, to bend it toward a particular style or task.",
-    "ours": "Our fine-tunes of Stable Audio 3 are of two kinds: full fine-tunes, which change every weight of the model (a few runs, several failures), and LoRA or DoRA adapters, which train a small add-on while the original weights stay fixed. Full fine-tunes need a lot of memory; some optimizers, such as Lion, make a full fine-tune of Stable Audio Medium Base possible on a 16 GB card (reported by our team from its own runs; not documented in this guide).",
+    "ours": "Our fine-tunes of Stable Audio 3 are of two kinds: full fine-tunes, which change every weight of the model (a few runs, several failures), and LoRA or DoRA adapters, which train a small add-on while the original weights stay fixed. Full fine-tunes need a lot of memory. In a memory test (GHOST-NOTE journal, 2026-09-07), LionSR, a bf16 Lion with stochastic rounding, fits a full fine-tune of Medium Base on a 16 GB card where AdamW runs out of memory at 15.13 GiB. We have not trained a Lion full fine-tune to completion; every Lion run that trained was an adapter.",
     "deeper": "Two papers report that Muon brings no clear advantage over AdamW for full fine-tuning of Adam-pretrained models, and that LoRA reduces the gap. Switching to a different optimizer than the one used in pre-training also makes a fine-tune more sensitive to the learning rate and causes more forgetting.",
     "papers": [
       {

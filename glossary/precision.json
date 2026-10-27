@@ -77,7 +77,7 @@
       "full precision"
     ],
     "plain": "fp32 is the standard 32-bit number format, with about seven significant digits, so even tiny weight changes survive.",
-    "ours": "Keep weights and optimizer state in fp32 if you can. In a FiLM adapter the key and value matrices moved 7 times further with fp32 state at equal loss than with bf16 state. Our July listening notes judged fp32 full fine-tunes better than bf16 or adapter-only ones. We have not compared fp32 and bf16 renders systematically by ear, so treat fp32 as safer numerically, not as automatically better to the ear.",
+    "ours": "Keep weights and optimizer state in fp32 if you can. In a FiLM adapter the key and value matrices moved 7 times further with fp32 state at equal loss than with bf16 state. One preliminary listen (2026-07-20) favoured fp32 over a matched bf16 twin. One later listen of full fine-tunes (2026-10-16 drone sweep) favoured bf16, but that comparison is confounded by epoch and EMA weighting. We have not compared fp32 and bf16 renders systematically by ear, so treat fp32 as safer numerically, not as automatically better to the ear.",
     "deeper": "fp32 weights cost twice the memory of 16-bit and rule out the fast attention kernels used in some runs, so on a 16 GB card it is a real trade-off. The guide recommends it for the state that accumulates small steps (weights, averages) and accepts lower precision for the heavy matrix products.",
     "papers": [],
     "quiz": [
