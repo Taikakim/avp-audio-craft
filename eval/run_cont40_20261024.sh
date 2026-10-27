@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-24)
 # Next stage after latch_opt_grid_d.html (2026-10-24): continue MuonG, Muon512 and KS512 from their epoch-20 resume states to
 # 40 epochs (the plan when they were launched: "train initially for 20 epochs, save the states for continuing"). Cheapest first:
@@ -30,7 +31,7 @@ COMMON="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/l
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --depth 8 --epochs 40 --grad-clip 1.0 --lr-watchdog 2
   --log-grad-noise 10 --save-best-only --save-every-epoch --save-resume --step-log --layer-log 20 --flight-recorder
   --stop-val-ratio 0 --stop-rising-epochs 0"
-MUON="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+MUON="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --mod-ns-dtype fp32 --mod-warmup-epochs 0.68 --mod-radial-brake 0.8 --log-opt-groups --lr 9e-4"
 
 cont() {   # name, train args...

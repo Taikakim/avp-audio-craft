@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner OK'd 2026-10-16: "the decorrelation test should be interesting". Bass head, the B2 recipe (modular+SF, lr 1e-2, d512 dp8, 10 epochs, EMA 1 ep, every epoch saved) plus a DeCov-style penalty on the
 # head's final hidden features (--decorr-lambda): D1 lambda 10, D2 lambda 100 (lambda 0.1/1 were dropped: the raw penalty is only ~0.007 at epoch 1, so they would not move the loss). B2 is the control (same seed/recipe, lambda 0). Judged by the cross-talk meter (eval/latch_crosstalk.py, CT_BASS = the bass
@@ -9,7 +10,7 @@ OUT=/run/media/kim/Mantu/latch_sweep/bass_decorr_2026-10-16
 PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT
-COMMON="--feature rms_energy_bass --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --grad-clip 1.0 --ema-halflife-epochs 1 --ema-extra-halflife-epochs 0.25 --epochs 10 --depth 8 --dim 512 --batch-size 8 --grad-accum 4 --lr 1e-2 --wandb --wandb-project sa3-latch-bass-decorr --log-every 20 --layer-every 100"
+COMMON="--feature rms_energy_bass --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --grad-clip 1.0 --ema-halflife-epochs 1 --ema-extra-halflife-epochs 0.25 --epochs 10 --depth 8 --dim 512 --batch-size 8 --grad-accum 4 --lr 1e-2 --wandb --wandb-project sa3-latch-bass-decorr --log-every 20 --layer-every 100"
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
 "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 lock() { until "$SAO/Misc/gpu_guard.sh" acquire GHOST-NOTE $$ >/dev/null 2>&1; do sleep 120; done; }

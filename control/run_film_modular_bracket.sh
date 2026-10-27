@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-15)
 # FiLM density adapter retrained under the ModularOptimizer: LR bracket (EXPERIMENTS E12, project direction 2026-10-15).
 # The shipped FiLM (onset_Fusion_lr1e-4_randomcrop, FusionOpt lr 1e-4, 54k steps) is the reference. TRAINING.md D4: an lr
@@ -33,7 +34,7 @@ trap '"$SAO/Misc/gpu_guard.sh" release WINTERMUTE >/dev/null 2>&1' EXIT
 LAT=$(for p in /run/media/kim/Kosmos/latents/latents_sa3 /home/kim/Projects/latents_sa3; do [ -d "$p" ] && { echo "$p"; break; }; done)
 [ -n "$LAT" ] || { echo "latents_sa3 not found"; exit 2; }
 COMMON=(--encoded-dirs "$LAT" --model medium-base --precision bf16
-        --crop-frames 512 --random-crop --batch 1 --optimizer modular --mod-whitening shampoo --ema 0.999
+        --crop-frames 512 --random-crop --batch 1 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --ema 0.999
         --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal
         --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256
         --cfg-dropout 0.1 --num-workers 4 --seed 42 --no-export-onnx-on-finish)

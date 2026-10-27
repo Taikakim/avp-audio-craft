@@ -1,6 +1,7 @@
 #!/bin/bash
 # Owner: WINTERMUTE (created 2026-10-16)
 # Last edited: WINTERMUTE 2026-10-17 -- copied from time_film_optimizers.sh for test plan section T (KUANG C-series flags)
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # time_film_t_section.sh -- modular-opt test plan section T: per-update cost of the C-series speed/precision options on the FiLM trainer.
 # T1 today | T2 --mod-ns-dtype bf16 | T3 --mod-state-dtype fp32 | T4 both | T5 T4 + --mod-ns-batch. 400 steps each, ~25 min.
 # No GPU lock of its own: run from eval/run_kuang_plan_stream.sh, which holds it.
@@ -22,11 +23,11 @@ cat > "$OUT/run_meta.json" <<EOF
 EOF
 COMMON="--encoded-dirs /run/media/kim/Kosmos/latents/latents_sa3 --model medium-base --precision bf16 --crop-frames 512 --random-crop --batch 1 --warmup-steps 50 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256 --cfg-dropout 0.1 --num-workers 4 --seed 42 --no-export-onnx-on-finish --steps 400 --save-every 100000 --log-every 20"
 ARMS=(
-"T1_today|--optimizer modular --mod-whitening shampoo --lr 1e-3"
-"T2_ns_bf16|--optimizer modular --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16"
-"T3_state_fp32|--optimizer modular --mod-whitening shampoo --lr 1e-3 --mod-state-dtype fp32"
-"T4_ns_bf16_state_fp32|--optimizer modular --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16 --mod-state-dtype fp32"
-"T5_T4_ns_batch|--optimizer modular --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16 --mod-state-dtype fp32 --mod-ns-batch"
+"T1_today|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3"
+"T2_ns_bf16|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16"
+"T3_state_fp32|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3 --mod-state-dtype fp32"
+"T4_ns_bf16_state_fp32|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16 --mod-state-dtype fp32"
+"T5_T4_ns_batch|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3 --mod-ns-dtype bf16 --mod-state-dtype fp32 --mod-ns-batch"
 )
 for a in "${ARMS[@]}"; do
   name=${a%%|*}; rest=${a#*|}

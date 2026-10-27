@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-21)
 # run_air_unit_lr1e2.sh -- does the unit-matched recipe widen the usable lr range, or only re-express it?
 # AIR_U3 (lr 3e-3) moved the matrices 0.2 x 3e-3 = 6e-4 per weight, the same as the old recipe at lr 1e-2 (lr/16), so it
@@ -25,7 +26,7 @@ done
 d="$OUT/AIR_U10"
 if [ ! -f "$d/DONE" ]; then
   mkdir -p "$d"; echo "$(date +%H:%M) AIR_U10"
-  ( cd /tmp && "$LPY" "$TRAIN" --optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam \
+  ( cd /tmp && "$LPY" "$TRAIN" --optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam \
       --mod-scalar-sf-beta 0.95 --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups \
       --feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 \
       --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --max-steps 4000 --epochs 25 \

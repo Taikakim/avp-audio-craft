@@ -1,6 +1,7 @@
 #!/bin/bash
 # Owner: WINTERMUTE (created 2026-10-20)
 # Last edited: WINTERMUTE 2026-10-21 — P1 falls back to the last _epN.pt (P1 was skipped: no _best.pt is written)
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # run_kuang_plan_p.sh -- test plan section P (docs/modular-opt-test-plan-2026-10-17.md) on its own, after P0 crashed at step 0 inside
 # the stream (momentum_spectra: svdvals on the zero initial momentum; fixed in stable-audio-tools 1f5c58d). Same P0/P1 commands as
 # eval/run_kuang_plan_stream.sh; the crashed attempt is kept as P0_E05_anchor_crash1. Exit codes are captured on their own line (the
@@ -28,7 +29,7 @@ if [ ! -f "$POUT/P0_E05_anchor/DONE" ]; then
   echo "$(date +%H:%M) P0: LatCH anchor with optimizer state"
   ( cd /tmp && "$LPY" "$SAO/stable-audio-3/scripts/latch/train_latch.py" --feature onset_per_beat_ts \
       --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath --epochs 20 --val-frac 0.05 --val-seed 0 \
-      --seed 0 --standardize --num-workers 16 --optimizer modular --mod-whitening shampoo --lr 1e-2 --mod-warmup 500 --batch-size 16 \
+      --seed 0 --standardize --num-workers 16 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-2 --mod-warmup 500 --batch-size 16 \
       --mod-radial-brake 0.8 --mod-escape-velocity --depth 8 \
       --save-opt-state --log-mom-spectra 200 --log-grad-noise 50 --log-opt-groups \
       --save-dir "$POUT/P0_E05_anchor" > "$POUT/P0_E05_anchor/train.log" 2>&1 )

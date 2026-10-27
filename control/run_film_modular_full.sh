@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-16)
 # EXPERIMENTS E12 stage 2: the FiLM onset-density adapter under the ModularOptimizer at the full shipped length (54000 steps).
 #   bash control/run_film_modular_full.sh <lr>
@@ -36,7 +37,7 @@ cat > "$DIR/run_meta.json" <<EOF
  "result": null, "kim_feedback": null}
 EOF
 "$PY" sa3_control/train.py --encoded-dirs /run/media/kim/Kosmos/latents/latents_sa3 --model medium-base --precision bf16 \
-    --crop-frames 512 --random-crop --batch 1 --optimizer modular --mod-whitening shampoo --ema 0.999 \
+    --crop-frames 512 --random-crop --batch 1 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --ema 0.999 \
     --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal \
     --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256 \
     --cfg-dropout 0.1 --num-workers 4 --seed 42 --no-export-onnx-on-finish \

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-21)
 # run_unit_matched.sh -- one lr that means the same per-element step for every parameter group, plus guards
 # (decided 2026-10-21 ~09:30, replacing the slow-lr / cosine arms):
@@ -25,7 +26,7 @@ until vram_free && KIND=batch NOTE="WINTERMUTE unit-matched LatCH arms: air 3e-3
 done
 trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired"
-UNITS="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+UNITS="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups"
 ONSET="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --epochs 20 --standardize --num-workers 16 --mod-warmup 500 --batch-size 16

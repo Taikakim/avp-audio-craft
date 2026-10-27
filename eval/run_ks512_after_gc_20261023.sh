@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-23)
 # Activation-checkpointing speed test before KS512 (request 2026-10-23). Width 512 at T=4096 ran out of memory at micro-batch
 # 32 and 16, so Muon512 trains at 8 x 8 (2.70 s/step). --grad-ckpt (train_latch.py, CPU A/B weight diff 0.0) should let
@@ -33,7 +34,7 @@ echo "$(date +%H:%M) GPU acquired for the grad-ckpt test + KS512"
 COMMON="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --depth 8 --grad-clip 1.0 --lr-watchdog 2
   --log-grad-noise 10 --save-best-only --stop-val-ratio 0 --stop-rising-epochs 0"
-MUON="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+MUON="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --mod-ns-dtype fp32 --mod-warmup-epochs 0.68 --mod-radial-brake 0.8 --lr 9e-4 --dim 512"
 KS="--optimizer kl_soap --lr 1.82e-4 --warmup-epochs 0.68 --cosine-epochs 0 40 --dim 512"
 

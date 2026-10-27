@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-25)
 # The best LatCH onset head (Muon_b64 = batch_sweep_20261021/EB64, best val 0.1802) retrained on 20% of the big set, three arms:
 #   F20    20% of latents_goa_bigset's train tracks (seeded, whole tracks), lr 1e-3 (the EB64 recipe otherwise)
@@ -28,7 +29,7 @@ until vram_free && KIND=batch NOTE="WINTERMUTE LatCH onset head on 20% of the bi
 trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired"
 
-BASE="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+BASE="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups
   --feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --mod-warmup-epochs 0.68

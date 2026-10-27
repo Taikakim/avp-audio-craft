@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-22)
 # Night queue after run_overnight_dpo_batch_20261021.sh (LatCH onset_per_beat head, goa_bigset, same split/seed as
 # batch_sweep_20261021/EB64). Three questions, cheapest first; GPU must be free again by DEADLINE for a steering session.
@@ -32,7 +33,7 @@ echo "$(date +%H:%M) GPU acquired; deadline $(date -d @"$DEADLINE" +%H:%M)"
 ONSET="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --depth 8 --batch-size 32 --grad-accum 2
   --grad-clip 1.0 --lr-watchdog 2 --log-grad-noise 10 --save-best-only"
-MOD="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+MOD="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --log-opt-groups --mod-warmup-epochs 0.68 --mod-radial-brake 0.8 --mod-ns-dtype fp32"
 
 arm() {   # name, minutes expected, purpose, train args...

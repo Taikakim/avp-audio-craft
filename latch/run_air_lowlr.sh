@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # NOTE 2026-10-15: b8 x accum4 (same effective batch 32): b16 x2 at d512 OOM-ed (A2b died in epoch 2 with 14.8 GB allocated). A2c = the A2 recipe re-run (replaces the OOM-ed A2b) so EMA 0.5 / EMA 2 / online come from one trajectory.
 # Lower-lr bracket for the air head (Kim 2026-10-15: "run the lower-lr bracket too"): the A2 recipe (d512 depth 8, 1000 steps, warmup 0.25 ep, damping from ep 1, radial brake 0.8, EMA half-life 0.5 ep)
@@ -10,7 +11,7 @@ PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 until [ -f /tmp/air_followup.done ]; do sleep 120; done
-COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-radial-brake 0.8 --batch-size 8 --grad-accum 4 --max-steps 1000 --epochs 10 --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --ema-halflife-epochs 0.5 --ema-extra-halflife-epochs 2 --dim 512 --depth 8"
+COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-radial-brake 0.8 --batch-size 8 --grad-accum 4 --max-steps 1000 --epochs 10 --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --ema-halflife-epochs 0.5 --ema-extra-halflife-epochs 2 --dim 512 --depth 8"
 ARMS=("A2c_d512_lr1e-2_b8x4|$COMMON --lr 1e-2" "L2_d512_lr2e-3|$COMMON --lr 2e-3" "L5_d512_lr5e-3|$COMMON --lr 5e-3")
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
 "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-17)
 # run_kuang_plan_stream.sh -- the self-running part of docs/modular-opt-test-plan-2026-10-17.md, in the plan's order:
 #   T  (control/time_film_t_section.sh: bf16 NS / fp32 optimizer state / batched NS, 5 x 400 FiLM steps, ~25 min)
@@ -45,7 +46,7 @@ cat > "$AOUT/run_meta.json" <<EOF
  "reading": "6000 steps is too short for a density response (production FiLM: spread 0.2 at its own step 5400), so read loss, opt_groups.jsonl (per-group relative update) and grad_noise.jsonl; density only on a later long run",
  "dataset": "latents_sa3 (Kosmos), goa corpus, no augmentation", "result": null, "kim_feedback": null}
 EOF
-COMMON="--encoded-dirs /run/media/kim/Kosmos/latents/latents_sa3 --model medium-base --precision bf16 --crop-frames 512 --random-crop --batch 1 --optimizer modular --mod-whitening shampoo --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256 --cfg-dropout 0.1 --num-workers 4 --no-export-onnx-on-finish --steps 6000 --save-every 2000 --mod-state-dtype fp32 --log-opt-groups"
+COMMON="--encoded-dirs /run/media/kim/Kosmos/latents/latents_sa3 --model medium-base --precision bf16 --crop-frames 512 --random-crop --batch 1 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --warmup-steps 300 --no-checkpoint --no-preencode-text --timestep-sampler logit_normal --control-mode scalar --scalar-field onset_density --control-dim 768 --n-tokens 256 --cfg-dropout 0.1 --num-workers 4 --no-export-onnx-on-finish --steps 6000 --save-every 2000 --mod-state-dtype fp32 --log-opt-groups"
 ARMS=(
 "A4_fp32state_lr3e-4|--lr 3e-4 --seed 42 --log-grad-noise 50"
 "A5_fp32state_lr1e-3|--lr 1e-3 --seed 42 --log-grad-noise 50"
@@ -79,7 +80,7 @@ EOF
 if [ ! -f "$POUT/P0_E05_anchor/DONE" ]; then
   ( cd /tmp && "$LPY" "$SAO/stable-audio-3/scripts/latch/train_latch.py" --feature onset_per_beat_ts \
       --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath --epochs 20 --val-frac 0.05 --val-seed 0 \
-      --seed 0 --standardize --num-workers 16 --optimizer modular --mod-whitening shampoo --lr 1e-2 --mod-warmup 500 --batch-size 16 \
+      --seed 0 --standardize --num-workers 16 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-2 --mod-warmup 500 --batch-size 16 \
       --mod-radial-brake 0.8 --mod-escape-velocity --depth 8 \
       --save-opt-state --log-mom-spectra 200 --log-grad-noise 50 --log-opt-groups \
       --save-dir "$POUT/P0_E05_anchor" > "$POUT/P0_E05_anchor/train.log" 2>&1 ) && touch "$POUT/P0_E05_anchor/DONE"

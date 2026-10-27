@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-23)
 # Last edited: WINTERMUTE 2026-10-23 -- MB/ACC env override; OOM retry halves the micro-batch
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Second listening pass on latch_opt_grid_c.html (2026-10-23): KL-SOAP sounded about as good as Muon or better, AdEMAMix more
 # transient but less smooth, AdaGC cleaner. This queue, after eval/run_cont_20261023.sh (KSc075 + its eval) releases the GPU:
 #   1 soups (CPU): Muon_b64 + KSc075 50/50, Muon_b64 + KSc 50/50, Muon_b64 + KSc075 + AWcG 1/3 each, Gaussian epoch soups of
@@ -53,7 +54,7 @@ COMMON="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/l
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --depth 8 --epochs 20 --grad-clip 1.0 --lr-watchdog 2
   --log-grad-noise 10 --save-best-only --save-every-epoch --save-resume --step-log --layer-log 20 --flight-recorder
   --stop-val-ratio 0 --stop-rising-epochs 0"
-MUON="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+MUON="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --mod-ns-dtype fp32 --mod-warmup-epochs 0.68 --mod-radial-brake 0.8 --log-opt-groups --lr 9e-4"
 
 arm() {   # name, purpose, train args...

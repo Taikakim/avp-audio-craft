@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-21)
 # run_kuang_plan_slow.sh -- "are we going too fast?" (decided 2026-10-21 ~08:45, replaces B4/B7/B6 of run_kuang_plan_b_day2.sh).
 # Evidence for the question: P1 probes at ep5/10/20 show the leading momentum directions oscillating (too much step), the air head
@@ -25,7 +26,7 @@ done
 trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired"
 COMMON="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
-  --val-frac 0.05 --val-seed 0 --seed 0 --epochs 40 --standardize --num-workers 16 --optimizer modular --mod-whitening shampoo
+  --val-frac 0.05 --val-seed 0 --seed 0 --epochs 40 --standardize --num-workers 16 --optimizer modular --allow-uniform-lr --mod-whitening shampoo
   --mod-warmup 500 --batch-size 16 --mod-radial-brake 0.8 --mod-escape-velocity --depth 8
   --log-grad-noise 50 --log-opt-groups --save-best-only"
 ARMS=(

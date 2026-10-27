@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-16)
 # time_film_optimizers.sh -- why does the modular-optimizer FiLM train at 2.29 steps/s when the shipped FusionOpt FiLM (June) ran ~3.2?
 # Same trainer, data and adapter, 400 steps per arm, only the optimizer path changes. train.py --step-times records every step
@@ -41,12 +42,12 @@ ARMS=(
 "F1_fusion_ema_acc2|--optimizer fusion --lr 1e-4"
 "A1_adamw|--optimizer adamw --lr 1e-4"
 "L1_lion|--optimizer lion --lr 1e-5"
-"M1_modular_full|--optimizer modular --mod-whitening shampoo --lr 1e-3"
-"M2_modular_nowhiten|--optimizer modular --mod-whitening none --lr 1e-3"
-"M3_modular_soap|--optimizer modular --mod-whitening soap --lr 1e-3"
-"M4_modular_no_normuon|--optimizer modular --mod-whitening shampoo --no-mod-normuon --lr 1e-3"
-"M5_modular_no_sf|--optimizer modular --mod-whitening shampoo --no-mod-sf --lr 1e-3"
-"M6_modular_no_ema|--optimizer modular --mod-whitening shampoo --ema 0 --lr 1e-3"
+"M1_modular_full|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-3"
+"M2_modular_nowhiten|--optimizer modular --allow-uniform-lr --mod-whitening none --lr 1e-3"
+"M3_modular_soap|--optimizer modular --allow-uniform-lr --mod-whitening soap --lr 1e-3"
+"M4_modular_no_normuon|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --no-mod-normuon --lr 1e-3"
+"M5_modular_no_sf|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --no-mod-sf --lr 1e-3"
+"M6_modular_no_ema|--optimizer modular --allow-uniform-lr --mod-whitening shampoo --ema 0 --lr 1e-3"
 )
 for a in "${ARMS[@]}"; do
   name=${a%%|*}; rest=${a#*|}

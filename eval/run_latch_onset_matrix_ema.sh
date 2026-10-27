@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-15)
 # run_latch_onset_matrix_ema.sh -- wait for the GPU, retrain the Phase E E04 onset head WITH EMA (+ online weights saved
 # every epoch, one trajectory), then render the alpha 0-1 target x gain matrix with both weight sets, encode, score, release.
@@ -26,7 +27,7 @@ if [ ! -f "$BEST" ]; then
     # E04 recipe verbatim (phaseE/SUMMARY.tsv) + EMA half-life 0.5 epoch (the air A2 setting) + online weights per epoch
     "$PY" stable-audio-3/scripts/latch/train_latch.py --feature onset_per_beat_ts \
         --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath --epochs 20 --val-frac 0.05 \
-        --val-seed 0 --seed 0 --standardize --num-workers 16 --optimizer modular --mod-whitening shampoo --lr 1e-2 \
+        --val-seed 0 --seed 0 --standardize --num-workers 16 --optimizer modular --allow-uniform-lr --mod-whitening shampoo --lr 1e-2 \
         --mod-warmup 500 --batch-size 32 --mod-radial-brake 0.8 --mod-escape-velocity \
         --ema-halflife-epochs 0.5 --save-online --save-every-epoch --save-best-only \
         --save-dir "$HEAD_DIR" --run-name E04ema_b32_ep20 > "$HEAD_DIR/train.log" 2>&1

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-15)
 # Overnight air-RMS head runs at 4x the bracket length (4000 optimizer steps = 25 epochs of 160), Kim 2026-10-15: keep the lr>=5e-2 runs (which DIVERGED in epoch 1: loss 0.81 vs 0.076,
 # then Shampoo's eigh failed on the NaN covariance) in check with the untapped damping, a doubled minibatch, or a halved Schedule-Free-unchecked window. Schedules are in EPOCHS so they scale with the
@@ -12,7 +13,7 @@ export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 until [ -f /tmp/air_chain.done ]; do sleep 60; done
 "$SAO/eval/forge/dev_server.sh" stop > /dev/null 2>&1
 COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --max-steps 4000 --epochs 25 --save-every-epoch"
-MOD="--optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 2 --cosine-epochs 17.5 25"
+MOD="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 2 --cosine-epochs 17.5 25"
 ARMS=(
 "O1_d256_lr5e-2_clip_late2|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 5e-2 --dim 256 --depth 8 --batch-size 16 --grad-accum 2"
 "O2_d256_lr1e-1_clip_late2_3ema|$MOD --mod-late-from-epochs 2 --grad-clip 1.0 --lr 1e-1 --dim 256 --depth 8 --batch-size 16 --grad-accum 2 --ema-extra-halflife-epochs 1 4"

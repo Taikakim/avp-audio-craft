@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-16)
 # Owner's ask (2026-10-16): "our LRs have been quite high ... try 1e-3 and 1e-4 for something we know steers well like the bass or mid head. Log interesting things, EMA at maybe one epoch
 # length, save every checkpoint." Bass head, modular trainer + Schedule-Free, d512 depth 8, constant lr after 1 epoch warmup, 10 epochs, grad clip 1.0.
@@ -11,7 +12,7 @@ PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 WANDB_MODE=offline WANDB_DIR=$OUT
 until [ -f /tmp/air_slow.done ]; do sleep 120; done
-COMMON="--feature rms_energy_bass --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --grad-clip 1.0 --ema-halflife-epochs 1 --ema-extra-halflife-epochs 0.25 --epochs 10 --depth 8 --dim 512 --batch-size 8 --grad-accum 4 --wandb --wandb-project sa3-latch-bass-lr --log-every 20 --layer-every 100"
+COMMON="--feature rms_energy_bass --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --save-every-epoch --save-online --optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 1 --mod-radial-brake 0.8 --grad-clip 1.0 --ema-halflife-epochs 1 --ema-extra-halflife-epochs 0.25 --epochs 10 --depth 8 --dim 512 --batch-size 8 --grad-accum 4 --wandb --wandb-project sa3-latch-bass-lr --log-every 20 --layer-every 100"
 ARMS=(
 "B3_bass_d512_lr1e-3|$COMMON --lr 1e-3"
 "B4_bass_d512_lr1e-4|$COMMON --lr 1e-4"

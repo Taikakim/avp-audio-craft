@@ -2,6 +2,7 @@
 # Owner: WINTERMUTE (created 2026-10-24)
 # Last edited: WINTERMUTE 2026-10-24 -- render epoch by epoch with the ringing cut (gain 256, ring >= 0.5, two consecutive epochs)
 # Last edited: WINTERMUTE 2026-10-24 -- the ringing check runs DURING training (train_latch.py --epoch-hook eval/epoch_ring_hook.sh) and stops the run
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Muon_b64 epoch by epoch (listening pass on latch_opt_grid_biggoa.html, 2026-10-24): Muon_b64 already sounds spectral at gain 512
 # and is suspected to learn little after epoch 10-15, while its val kept falling to epoch 27. Its run (batch_sweep_20261021/EB64)
 # saved only the best epoch, so:
@@ -35,7 +36,7 @@ trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired"
 
 # 2 retrain: eval/run_batch_sweep.sh's UNITS + ONSET with LR=1e-3, NS=fp32 (bf16 was not 10% faster), EB64 = 32 x 2; + every epoch
-UNITS="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+UNITS="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups --lr 1e-3"
 ONSET="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --mod-warmup-epochs 0.68

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: WINTERMUTE (created 2026-10-21)
 # run_batch_sweep.sh -- effective batch 64 / 128 / 256 on the unit-matched onset recipe (decided 2026-10-21 ~09:45).
 # Why: Muon sets every singular value of the step to 1, so at batch 16 the noise directions get a full-size step;
@@ -35,7 +36,7 @@ LR=1e-3
 [ -n "$v3" ] && { [ -z "$v1" ] || awk -v a="$v3" -v b="$v1" 'BEGIN{exit !(a < b)}'; } && LR=3e-3
 echo "$(date +%H:%M) lr $LR (ON_U1 ${v1:-NA}, ON_U3 ${v3:-NA})"
 
-UNITS="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+UNITS="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups --lr $LR"
 ONSET="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --mod-warmup-epochs 0.68

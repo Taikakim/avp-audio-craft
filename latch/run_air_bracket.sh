@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # Owner: GHOST-NOTE (created 2026-10-14)
 # Air-RMS head bracket (Kim 2026-10-14): the production rms_energy_air head (AdamW, 20 ep) glitches at the large guidance weights and changes content.
 # Retrain under the modular optimiser: Shampoo whitening, Schedule-Free, Muon on every 2-D tensor, overtraining-aware wd, warmup 0.25 ep, radial-brake damping
@@ -10,7 +11,7 @@ PY=$SAO/.venv-rocm10-amd/bin/python
 TRAIN=$SAO/stable-audio-3/scripts/latch/train_latch.py
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0
 COMMON="--feature rms_energy_air --latent-dir /run/media/kim/Kosmos/latents/latents_sa3 --val-frac 0.05 --val-seed 0 --val-group-by relpath --seed 0 --standardize --num-workers 8 --loss smooth_l1 --batch-size 16 --grad-accum 2 --max-steps 1000 --epochs 10 --save-every-epoch"
-MOD="--optimizer modular --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 0.5"
+MOD="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-muon-all --mod-wd-overtraining --mod-warmup-epochs 0.25 --mod-late-from-epochs 1 --mod-radial-brake 0.8 --ema-halflife-epochs 0.5"
 mkdir -p "$OUT"; touch "$OUT/SUMMARY.tsv"; cd /tmp || exit 1
 ARMS=(
 "A1_d512dp8_lr1e-1|$MOD --lr 1e-1 --dim 512 --depth 8"

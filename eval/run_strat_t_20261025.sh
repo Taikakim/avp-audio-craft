@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Owner: WINTERMUTE (created 2026-10-25)
 # Last edited: WINTERMUTE 2026-10-25 -- free-card check ignores processes under 1 GiB VRAM (LibreOffice blocked the queue)
+# Last edited: CONTINUITY 2026-10-27 -- --allow-uniform-lr added to the modular launch (ModularOptimizer now refuses one lr for matrices and 1-D parameters unless told; docs/TRAINING.md D34)
 # E14 first arm: stratified training t on the LatCH onset head (Muon_b64 recipe), against EB64 / EB64r.
 #   1 waits for the Granite caption pass (eval/granite_local_pass.py, GPU lock holder) to finish and the card to be free
 #   2 trains ST64 = eval/run_eb64_epochs_20261024.sh's EB64r recipe (seed 0, micro-batch 32 x 2, 40 epochs) with
@@ -27,7 +28,7 @@ until vram_free && KIND=batch NOTE="WINTERMUTE LatCH onset head, stratified-t ar
 trap 'Misc/gpu_guard.sh release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date +%H:%M) GPU acquired"
 
-UNITS="--optimizer modular --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
+UNITS="--optimizer modular --allow-uniform-lr --mod-whitening shampoo --mod-update-scale rms0.2 --mod-scalar-opt adam --mod-scalar-sf-beta 0.95
   --lr-watchdog 2 --grad-clip 1.0 --log-opt-groups --lr 1e-3"
 ONSET="--feature onset_per_beat_ts --latent-dir /run/media/kim/Kosmos/latents/latents_goa_bigset --val-group-by relpath
   --val-frac 0.05 --val-seed 0 --seed 0 --standardize --num-workers 16 --mod-warmup-epochs 0.68
