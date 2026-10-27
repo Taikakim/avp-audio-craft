@@ -580,7 +580,7 @@
         "why": "Multiplying by a positive factor cannot cross zero, unlike adding a fixed step. Whether it fixes the run is untested: our retry stopped at step 1,268."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "scalar",
