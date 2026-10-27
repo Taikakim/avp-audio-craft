@@ -15,8 +15,8 @@ a memory test; a bf16 Lion with stochastic rounding fitted, and so did one of ou
 
 **2. By ear, early verdicts favoured full fine-tunes in fp32, but the comparison is mixed up.**
 In July, listening judged fp32 full fine-tunes better than bf16 and than adapter-only runs, and said that higher adapter rank helped. That
-verdict is preliminary and mixes three differences (precision, adapter against full, and rank), and it was made before we settled on 15
-epochs as the usual goal. It is a lead, not a measurement.
+verdict is preliminary and mixes three differences (precision, adapter against full, and rank), and it comes from the 8-epoch era, whose verdicts our
+later notes say should be re-read. It is a lead, not a measurement.
 
 **3. The automatic scores point the other way on one dataset, and nowhere on the other.**
 Over a campaign of about 265 runs (810 checkpoints), the scores we use as a stand-in for the ear (a perceptual-quality score that agreed
@@ -38,7 +38,7 @@ The last row is the learning-rate scale point again: the numbers are not interch
 **5. The optimizer changes the sound, not just the loss.**
 Lion fine-tunes were judged fine but stylistically distinct from AdamW and our own optimizer, so a matched loss does not make two models
 interchangeable. For full fine-tunes, our own optimizer at a very low learning rate (5e-6) produced the clips we liked best in the one ladder we
-ran; with AdamW from scratch at lr 1e-4 a resumed run developed a discontinuity (the data order was not restored on resume).
+ran; a resumed AdamW run at lr 1e-4 developed a discontinuity (the data order was not restored on resume), so we reran it uninterrupted.
 
 **6. Turning a full fine-tune into an adapter did not work.** See the section on adapter extraction: the weight change of our full
 fine-tunes is close to full rank, and a rank-128 adapter kept about 26% of it.
