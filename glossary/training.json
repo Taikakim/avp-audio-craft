@@ -50,7 +50,7 @@
         "why": "At noise levels near 1 the input is almost pure noise, and most of the loss there does not depend on the optimizer."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "batch-size",
@@ -112,7 +112,7 @@
         "why": "Otherwise the result mixes the batch-size effect with the step-count effect."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "gradient-accumulation",
@@ -166,7 +166,7 @@
         "why": "With more small batches per weight change, the same per-batch decay covers fewer weight changes."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "ema",
@@ -234,7 +234,7 @@
         "why": "Decay is a timescale in EMA updates, which are counted per small batch."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "warmup-cosine-decay",
@@ -296,7 +296,7 @@
         "why": "Schedule-Free keeps the learning rate and averages the weights."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "gradient-clipping",
@@ -351,7 +351,7 @@
         "why": "If the step is already fixed in size, scaling the gradient changes nothing."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "nan",
@@ -405,7 +405,7 @@
         "why": "The guide's failures all showed earlier warning signs in weight size or magnitudes."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "loss-spike",
@@ -461,7 +461,7 @@
         "why": "Spike thresholds make sense relative to the typical loss of a healthy run."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "logging-bin",
@@ -515,7 +515,7 @@
         "why": "The 405-to-84 mean looked like convergence while the median showed nothing had improved."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "weight-path",
@@ -570,7 +570,7 @@
         "why": "The runaways' global norm was thousands against about a hundred for healthy runs."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "convergence",
@@ -624,7 +624,7 @@
         "why": "Early rankings may reverse later."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "fine-tuning",
@@ -687,7 +687,7 @@
         "why": "That is one of the paper's findings."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "pre-training",
@@ -752,7 +752,7 @@
         "why": "The guide labels it a pointer from our notes."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "diffusion-model",
@@ -807,7 +807,7 @@
         "why": "Detail refinement at low t and layout at high t behave differently."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "latent",
@@ -862,6 +862,6 @@
         "why": "Healthy is near 1.1; larger values warned of runaway growth."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   }
 ]

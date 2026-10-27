@@ -72,7 +72,7 @@
         "why": "Memory goes mostly to gradients and optimizer state for trainable weights."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "dora",
@@ -130,7 +130,7 @@
         "why": "The magnitude is exact, but the direction can hold only rank-r of the change."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "rank",
@@ -196,7 +196,7 @@
         "why": "Direct training balances all matrices; truncation keeps more of some than others."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "lora-rank",
       "params": {}
@@ -272,7 +272,7 @@
         "why": "The guide cites LoRA+ for AdamW and warns against reading it as Muon-specific."
       }
     ],
-    "quiz_reviewed": null,
+    "quiz_reviewed": "2026-10-27",
     "viz": {
       "module": "lora-a-rotation",
       "params": {}
@@ -334,6 +334,6 @@
         "why": "Over the whole model it kept about 26% of the change, unevenly between matrices."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   }
 ]

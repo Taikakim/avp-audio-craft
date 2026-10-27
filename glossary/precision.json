@@ -66,7 +66,7 @@
         "why": "The guide says 'probably fine' and we plan to log what is lost."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "fp32",
@@ -121,7 +121,7 @@
         "why": "Numerically safer is not the same as better to the ear, and the guide says the by-ear comparison has not been done systematically."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   },
   {
     "id": "fp16-fp8",
@@ -179,6 +179,6 @@
         "why": "With only two or three fraction bits, steps below a few percent of the weight are rounded away."
       }
     ],
-    "quiz_reviewed": null
+    "quiz_reviewed": "2026-10-27"
   }
 ]
