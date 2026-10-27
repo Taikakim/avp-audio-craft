@@ -17,7 +17,7 @@ def run(shape, steps=30):
     # ours: single spectral group, whitening none, no SF, no brake
     lin=torch.nn.Linear(shape[1],shape[0],bias=False); lin.weight.data=W0.clone()
     groups=build_modular_param_groups(lin, default_whitening='none', spectral_wd=0.0, spectral_all=True)
-    opt=ModularOptimizer(groups, lr=1.0, normuon=True, schedule_free=False, warmup_steps=0, beta1=0.95)
+    opt=ModularOptimizer(groups, lr=1.0, normuon=True, schedule_free=False, warmup_steps=0, beta1=0.95, strict_group_lrs=False)
     mine=[]
     for g in grads:
         lin.weight.grad=g.clone(); before=lin.weight.data.clone(); opt.step(); mine.append((before-lin.weight.data).clone())

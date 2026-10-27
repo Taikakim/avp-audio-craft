@@ -474,6 +474,8 @@ future renderer needs, e.g. "must load the EMA weights").
 
 **Full flag-by-flag manual for `train_lora_modular.py`, with recipes and the after-run analysis commands: `docs/train_lora_modular.md`.**
 
+**Since 2026-10-27 the modular optimizer refuses ONE learning rate for the matrices and the 1-D parameters (biases, gains, DoRA magnitudes).** A launch that uses `--optimizer modular` (`train_lora_modular.py`, `latch/train_latch.py`, `sa3_control/train.py`) must give the 1-D group its own rate (`--modular-sign-lr` in `train_lora_modular.py`, `--mod-sign-lr` in the other two) or pass `--allow-uniform-lr` to accept a shared one knowingly; otherwise it stops at start-up with a message that names these options (`docs/TRAINING.md` D34).
+
 **Local `train_lora_modular.py` does this for you (since 2026-09-22):** it writes
 `<output-dir>/<name>/run_meta.json` at launch. Pass `--purpose '...' --hypothesis '...'` (and
 optionally `--run-notes '...'`); on a terminal it ASKS if you leave them out, unattended it records

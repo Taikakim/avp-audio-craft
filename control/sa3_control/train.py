@@ -341,6 +341,8 @@ def main():
     ap.add_argument("--mod-sign-lr", type=float, default=None,
                     help="--optimizer modular: lr of the sign (or adam) group; default --lr")
     ap.add_argument("--mod-sign-wd", type=float, default=0.0)
+    ap.add_argument("--allow-uniform-lr", action="store_true",
+                    help="--optimizer modular: accept ONE learning rate for the spectral and the 1-D groups (default: refuse; the sign step moves a bias by the full lr, a matrix weight by ~lr/sqrt(max dim); give --mod-sign-lr instead, TRAINING.md D34)")
     ap.add_argument("--mod-scalar-opt", choices=["sign", "adam"], default="sign",
                     help="--optimizer modular: sign-routed parameters by sign descent (historical) or element-wise Adam")
     ap.add_argument("--mod-scalar-sf-beta", type=float, default=None)
@@ -715,7 +717,8 @@ def main():
                                state_dtype=args.mod_state_dtype, ns_dtype=args.mod_ns_dtype,
                                beta1=args.mod_momentum, sf_beta=args.mod_sf_beta,
                                normuon_mode=args.mod_normuon_mode, update_scale=args.mod_update_scale,
-                               normuon_after_unwhiten=args.mod_normuon_after_unwhiten, ns_batch=args.mod_ns_batch)
+                               normuon_after_unwhiten=args.mod_normuon_after_unwhiten, ns_batch=args.mod_ns_batch,
+                               strict_group_lrs=not args.allow_uniform_lr)
         _sf = bool(opt.uses_sf_averaging)
         if _sf:
             opt.train()
