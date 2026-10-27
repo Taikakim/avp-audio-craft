@@ -227,3 +227,33 @@ def test_note_states_measured_numbers_and_interpolation(browser, base_url):
     assert "89.5%" in text
     assert "interpolated" in text.lower()
     ctx.close()
+
+
+# KUANG 2026-10-27: the slider repeated under the three panels, and the June rank-ladder clips (enlarged view only)
+def test_bottom_slider_mirrors_the_top(browser, base_url):
+    ctx, page, errors = open_page(browser, url(base_url))
+    assert page.locator(f"{ROOT} input[type=range]").count() == 2
+    page.evaluate(
+        """() => { const s = document.querySelector('#vz-rank-r2'); s.value = '7';
+            s.dispatchEvent(new Event('input', {bubbles: true})); }"""
+    )
+    page.wait_for_function("parseInt(document.querySelector('.vz-rank').dataset.rank) === 1536", timeout=3000)
+    assert page.eval_on_selector("#vz-rank-r", "s => s.value") == "7"
+    assert page.inner_text("#vz-rank-r2-out") == "1536"
+    set_slider(page, 1)
+    page.wait_for_function("parseInt(document.querySelector('.vz-rank').dataset.rank) === 32", timeout=3000)
+    assert page.eval_on_selector("#vz-rank-r2", "s => s.value") == "1"
+    assert errors == []
+    ctx.close()
+
+
+def test_rank_clips_show_only_in_the_enlarged_view(browser, base_url):
+    ctx, page, _ = open_page(browser, url(base_url))
+    assert page.eval_on_selector(".vz-rank .vz-clips", "c => getComputedStyle(c).display") == "none"
+    page.evaluate("() => document.getElementById('root').classList.add('hp-viz-big')")   # what the pane's Enlarge adds
+    assert page.eval_on_selector(".vz-rank .vz-clips", "c => getComputedStyle(c).display") == "block"
+    srcs = page.eval_on_selector_all(".vz-rank .vz-clips audio", "as => as.map(a => a.getAttribute('src'))")
+    assert len(srcs) == 12
+    assert all("/evals/riffer/clips_dora_aac/" in s and s.endswith("_seed1234.m4a") for s in srcs)
+    assert page.eval_on_selector_all(".vz-rank .vz-clips audio", "as => as.every(a => a.preload === 'none')")
+    ctx.close()

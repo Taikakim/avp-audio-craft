@@ -1,4 +1,6 @@
 // Owner: WINTERMUTE (created 2026-10-26)
+// Last edited: KUANG 2026-10-27 -- the enlarged overlay owns a history entry: browser Back (or the phone's back gesture)
+//   closes it instead of leaving the page, and Close / Escape go through that entry so none is left behind
 // Last edited: WINTERMUTE 2026-10-26 -- Tab stays inside the aria-modal enlarged-animation overlay
 // Last edited: WINTERMUTE 2026-10-26 -- first occurrence per section is a link, later ones span.gl-rep
 // help-pane.js: docked help pane for glossary terms (spec 2026-10-26-help-pane-design.md, section 6).
@@ -95,6 +97,7 @@ class HelpPane {
     document.addEventListener('click', (e) => this.onDocClick(e));
     document.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('hashchange', () => this.openFromHash(false));
+    window.addEventListener('popstate', () => this.onPop());
     this.installSwipe();
     this.openFromHash(true);
   }
@@ -128,7 +131,7 @@ class HelpPane {
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
     const tg = e.target;
     if (tg instanceof Element && isTextEntry(tg)) return;     // Escape belongs to the field, not the pane
-    if (this.overlay) { e.preventDefault(); this.closeOverlay(true); return; }
+    if (this.overlay) { e.preventDefault(); this.requestCloseOverlay(true); return; }
     if (this.isOpen) { e.preventDefault(); this.close(); }
   }
 
@@ -312,21 +315,63 @@ class HelpPane {
     overlay.setAttribute('aria-label', 'Animation, enlarged');
     const close = btn('hp-overlay-close', 'Close');
     close.setAttribute('aria-label', 'Close the enlarged animation');
-    close.addEventListener('click', () => this.closeOverlay(true));
+    close.addEventListener('click', () => this.requestCloseOverlay(true));
     const marker = document.createComment('hp-viz-home');
     wrap.before(marker);                            // remember where the animation lives
     overlay.append(close, wrap);                    // move the live node: state and canvas survive
     wrap.classList.add('hp-viz-big');
     document.body.append(overlay);
-    this.overlay = { overlay, wrap, marker, opener };
+    this.overlay = { overlay, wrap, marker, opener, token: null, closing: false };
+    // The overlay looks like a new screen, so Back must close it, not leave the page: give it its own history entry
+    // (same URL; the token tells our entry from a stale one reached with Forward).
+    try {
+      const token = String(Date.now()) + Math.random().toString(36).slice(2);
+      history.pushState({ ...(history.state || {}), hpOverlay: token }, '', location.href);
+      this.overlay.token = token;
+    } catch (_) { /* no history API: Close and Escape still work */ }
     close.focus({ preventScroll: true });
     window.dispatchEvent(new Event('resize'));      // lets the module re-measure its container
+  }
+
+  ownsHistory(o) {
+    return !!(o && o.token && history.state && history.state.hpOverlay === o.token);
+  }
+
+  // Close and Escape: step back over the overlay's own history entry; popstate (onPop) then closes it, so the reader's
+  // history is the same as before Enlarge. Without an entry, close directly.
+  requestCloseOverlay(refocus) {
+    const o = this.overlay;
+    if (!o || o.closing) return;
+    if (this.ownsHistory(o)) {
+      o.closing = true;
+      o.refocus = refocus;
+      history.back();
+      return;
+    }
+    this.closeOverlay(refocus);
+  }
+
+  onPop() {
+    const o = this.overlay;
+    if (!o || !o.token || this.ownsHistory(o)) return;    // not ours, or still on our entry
+    o.token = null;                                       // the entry is gone: closeOverlay must not touch history
+    this.closeOverlay(o.closing ? o.refocus : true);
   }
 
   closeOverlay(refocus) {
     const o = this.overlay;
     if (!o) return;
     this.overlay = null;
+    // Closed some other way (the entry re-rendered, the pane closed) while our entry is still current: strip the marker
+    // so the entry is an ordinary one. It stays as a duplicate of the page (one Back press that changes nothing), which
+    // is safer than an asynchronous history.back() racing the pane's own hash updates.
+    if (this.ownsHistory(o)) {
+      try {
+        const st = { ...history.state };
+        delete st.hpOverlay;
+        history.replaceState(Object.keys(st).length ? st : null, '', location.href);
+      } catch (_) { /* ignore */ }
+    }
     o.wrap.classList.remove('hp-viz-big');
     if (o.marker.parentNode) o.marker.replaceWith(o.wrap);   // back home (if the entry was not re-rendered)
     o.overlay.remove();
