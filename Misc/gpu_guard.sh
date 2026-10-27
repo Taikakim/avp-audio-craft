@@ -18,11 +18,12 @@ ACTION="${1:-}"; HANDLE="${2:-WINTERMUTE}"; MYPID="${3:-$$}"
 SAO=/home/kim/Projects/SAO
 OURS=$SAO/.gpu.lock
 FOREIGN=/tmp/gpu.lock
-MIN_VRAM=$((512*1024*1024))     # ignore trivial/idle contexts; a real job holds far more
+TARGET_GPU="${TARGET_GPU:-0}"       # target discrete GPU 0 by default; set TARGET_GPU=all to check all
+MIN_VRAM=$((512*1024*1024))         # ignore trivial/idle contexts; a real job holds far more
 
 foreign_gpu_pids() {
-  rocm-smi --showpids 2>/dev/null | awk -v min="$MIN_VRAM" '
-    $1 ~ /^[0-9]+$/ && $4+0 > min { print $1 }'
+  rocm-smi --showpids 2>/dev/null | awk -v min="$MIN_VRAM" -v target="$TARGET_GPU" '
+    $1 ~ /^[0-9]+$/ && $4+0 > min && ($3 ~ target || target == "all") { print $1 }'
 }
 
 case "$ACTION" in
@@ -56,7 +57,7 @@ case "$ACTION" in
     # server rather than a batch job (Kim 2026-08-27: keep the lock EXCLUSIVE, make
     # the holder ASKABLE).
     echo "[gpu_guard] rocm-smi (ground truth):"
-    rocm-smi --showpids 2>/dev/null | awk '$1 ~ /^[0-9]+$/ && $4+0 > 0 {printf "  pid %s  %s bytes\n", $1, $4}'
+    rocm-smi --showpids 2>/dev/null | awk '$1 ~ /^[0-9]+$/ && $4+0 > 0 {printf "  pid %s (gpu %s)  %s bytes\n", $1, $3, $4}'
     echo "[gpu_guard] announced holders:"
     python3 "$SAO/Misc/filelock.py" gpu-who "$OURS" --handle "${HANDLE:-query}"
     ;;

@@ -148,6 +148,8 @@ def _mirror_holder():
         txt = Path(GPU_MIRROR_PATH).read_text()
     except OSError:
         return None
+    if not txt.strip():
+        return None
     toks = txt.split()
     handle = toks[0] if toks else ""
     m = re.search(r"pid=(\d+)", txt)
