@@ -270,6 +270,7 @@ measure the EMA horizon and report it as learning. Run these three in order and 
 real number instead of impressions. All tooling is committed and self-validating.
 
 ### 1. Deconvolve the checkpoints (CPU only, no GPU lock)
+**DONE 2026-10-27 18:46-18:49 (CONTINUITY, at Kim's go):** five files in `$R/deconv/` (steps 4000-12000, 8.5 GB). Every validate line improved: raw EMA vs deconvolved error 0.694 -> 0.345 (step 4000), 0.673 -> 0.269 (6000), 0.643 -> 0.234 (8000), 0.588 -> 0.196 (10000), 0.559 -> 0.168 (12000). The early steps are the least accurate. What these are: a windowed average of the online weights over the 2000 steps before each save, not the endpoint. Steps 2 and 3 below are still open. Log: `~/sao_runs/morph_deconv_20261027.log`.
 RUN — one block, from `/home/kim/Projects/SAO`:
 ```
 R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && for S in 4000 6000 8000 10000 12000; do P=$((S-2000)); .venv/bin/python eval/ema_deconv_ckpt.py --ckpt $R/riffer_step$S.pt --prev $R/riffer_step$P.pt --out $R/deconv/riffer_step$S.pt --report; done
