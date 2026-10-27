@@ -1,4 +1,5 @@
 // Owner: WINTERMUTE (created 2026-10-27)
+// Last edited: WINTERMUTE 2026-10-27 -- integration: no per-lane labels (crowded at 360 px), code names in notes as <code>
 // Animation module "routing": our optimizer sends each parameter to a group by its NAME. Shows the real rules (lib/routing.js, a port
 // of the trainer's routing.py) applied to the real parameter names of one of our heads, and again to the names the rules expect.
 // Used by the glossary entries "adaln" and "parameter-group".
@@ -83,7 +84,6 @@ const noteFor = (id) => ({
   qkv: NOTES.qkv, adaln: NOTES.adaln, time1: NOTES.time, time2: NOTES.time, input: NOTES.input,
   biases: NOTES.oneD, 'final-norm': NOTES.oneD, output: NOTES.output,
 }[id] || NOTES.other);
-const LANE_LABELS = { 3: ['Q', 'K', 'V'], 6: ['1', '2', '3', '4', '5', '6'] };
 const PIECES = 'shift, scale, gate, shift, scale, gate';
 
 const DUR = 2600;                                // ms for one dot to cross the wire
@@ -274,13 +274,8 @@ export function mount(container, params = {}, help = {}) {
         ln.upd.setAttribute('data-step', R.step === null ? '' : String(R.step));
         if (R.step === null) { ln.upd.setAttribute('fill', 'none'); ln.upd.setAttribute('stroke', col); ln.upd.setAttribute('stroke-width', 1.5); }
         else { ln.upd.setAttribute('fill', col); ln.upd.setAttribute('stroke', 'none'); }
-        const labels = LANE_LABELS[R.blocks];
-        if (labels) {
-          const lx = R.blocks > 3 ? 1 + (k % 2) * 8 : 2;
-          ln.label.setAttribute('x', String(lx));
-          ln.label.setAttribute('y', (y0 + off).toFixed(1));
-          ln.label.textContent = labels[k];
-        } else ln.label.textContent = '';
+        // no per-lane labels: the row already names its pieces, and the labels crowded the wire start at 360 px
+        ln.label.textContent = '';
       });
     }
   }
@@ -324,7 +319,8 @@ export function mount(container, params = {}, help = {}) {
       : selected === 'adaln' ? `${R.blocks} (${PIECES})` : `${R.blocks} (Q, K, V)`;
     detailEl.append(el('p', { text: `Blocks: ${blockText}` }));
     detailEl.append(el('p', { text: R.step === null ? 'Step per weight at lr 1e-2: not worked out in the guide' : `Step per weight at lr 1e-2: ${fmtStep(R.step)}` }));
-    detailEl.append(el('p', { text: noteFor(selected) }));
+    // `name` in a note is a code name: render it as <code>, never show the backticks
+    detailEl.append(el('p', {}, noteFor(selected).split('`').map((s, i) => (i % 2 ? el('code', { text: s }) : s))));
   }
   function select(id) {
     if (id === selected) return;
