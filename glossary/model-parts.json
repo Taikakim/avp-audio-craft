@@ -531,7 +531,7 @@
       "magnitude parameters"
     ],
     "plain": "In DoRA, the magnitude vector holds one learned length per row of the adapted weight; the adapter's direction is learned separately.",
-    "ours": "Our DoRA magnitude entries started between 0.13 and 0.45. A fixed-size step (sign descent) pushed 592 of them to zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update, which scales each magnitude by a factor instead of adding to it, fixed the problem. We have not checked whether that fix appears in the literature.",
+    "ours": "Our DoRA magnitude entries started between 0.13 and 0.45. A fixed-size step (sign descent) pushed 592 of them to zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update, which scales each magnitude by a factor instead of adding to it, cannot cross zero and was proposed as the fix; our retry stopped at step 1,268, so it is untested. We have not checked whether the idea appears in the literature.",
     "deeper": "A length that crosses zero flips the direction of that row, which breaks the decomposition. AdamW's smaller steps (0.2 to 0.4 times the learning rate) cross zero more slowly, but moving small positive scalars to AdamW does not by itself guarantee they stay positive.",
     "papers": [
       {
@@ -568,7 +568,7 @@
       },
       {
         "level": 3,
-        "q": "Why did a multiplicative update help?",
+        "q": "Why should a multiplicative update avoid zero crossings?",
         "options": [
           "It scales a value by a factor, so a positive value stays positive",
           "It makes steps larger",
@@ -577,10 +577,10 @@
           "It skips the magnitudes"
         ],
         "answer": 0,
-        "why": "Multiplying by a positive factor cannot cross zero, unlike adding a fixed step."
+        "why": "Multiplying by a positive factor cannot cross zero, unlike adding a fixed step. Whether it fixes the run is untested: our retry stopped at step 1,268."
       }
     ],
-    "quiz_reviewed": "2026-10-27"
+    "quiz_reviewed": null
   },
   {
     "id": "scalar",

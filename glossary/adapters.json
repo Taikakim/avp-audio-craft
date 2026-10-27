@@ -81,7 +81,7 @@
       "DoRAs"
     ],
     "plain": "DoRA splits each adapted weight into a direction and a length per row, learns the direction with a LoRA-style add-on, and learns the lengths separately as a magnitude vector.",
-    "ours": "We trained DoRAs on Stable Audio 3. The magnitude vector is a list of small positive numbers (0.13 to 0.45 at the start), which made it fragile: a fixed-size step pushed 592 of them to zero or below, and a multiplicative update fixed it. Extracting a DoRA from a full fine-tune did not work either: the magnitudes came out exact but the direction stayed truncated.",
+    "ours": "We trained DoRAs on Stable Audio 3. The magnitude vector is a list of small positive numbers (0.13 to 0.45 at the start), which made it fragile: a fixed-size step pushed 592 of them to zero or below, and a multiplicative update, which cannot cross zero, was proposed as the fix; our retry stopped at step 1,268, so it is untested. Extracting a DoRA from a full fine-tune did not work either: the magnitudes came out exact but the direction stayed truncated.",
     "deeper": "Splitting direction from length gives the adapter a cheap way to change a row's size without changing where it points, which tends to make it behave more like a full fine-tune. The cost is the extra 1-D parameters, which Muon cannot handle and which need their own optimizer and learning rate.",
     "papers": [
       {

@@ -1051,7 +1051,7 @@
     ],
     "plain": "A sign step moves each parameter by exactly the learning rate, up or down depending only on the sign of its gradient, however large or small the gradient was.",
     "ours": "Our own optimizer used a sign step for the 1-D parameters: each bias and gain moved by the full learning rate every step. That is why a shared learning rate made them take much larger steps than the matrices (about 1e-2 against 6e-4 per step in our original recipe), and why DoRA magnitudes, which started around 0.13 to 0.45, crossed zero.",
-    "deeper": "Lion is the best-known optimizer built on this idea. A fixed step is blind to the size of a parameter, so it is a poor fit for small positive values such as DoRA magnitudes: 592 of them reached zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update of the magnitudes fixed it. We have not checked whether that fix appears in the literature.",
+    "deeper": "Lion is the best-known optimizer built on this idea. A fixed step is blind to the size of a parameter, so it is a poor fit for small positive values such as DoRA magnitudes: 592 of them reached zero or below by step 6,340, and the run became NaN near step 6,900. A multiplicative update of the magnitudes is the proposed fix; our retry stopped at step 1,268, so it is untested. We have not checked whether the idea appears in the literature.",
     "papers": [
       {
         "title": "Symbolic Discovery of Optimization Algorithms (Lion)",
