@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shortlist Mix Marker</title>
+<style>
+:root{--bg:#f3f1ee;--ink:#1d2024;--mute:#6a6f77;--card:#fff;--line:#d9d5cf;--bad:#b3261e;--badbg:#fbe9e7;--tr:#8a4b00;--trbg:#fff1d6;--acc:#1f5d6b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171a;--ink:#ecebe8;--mute:#9aa0a8;--card:#1d2226;--line:#33393f;--bad:#ff8a80;--badbg:#3a1f1d;--tr:#ffc46b;--trbg:#3a2e14;--acc:#7cc6d6}}
+:root[data-theme="dark"]{--bg:#14171a;--ink:#ecebe8;--mute:#9aa0a8;--card:#1d2226;--line:#33393f;--bad:#ff8a80;--badbg:#3a1f1d;--tr:#ffc46b;--trbg:#3a2e14;--acc:#7cc6d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px;padding-block:20px 40px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;margin:0;letter-spacing:.01em}
+.sub{color:var(--mute);font-size:14px;margin:2px 0 0}
+.now{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.now .k{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.now .t{font-size:22px;font-weight:650;margin:2px 0 2px;font-variant-numeric:tabular-nums}
+.now .id{font-size:12px;color:var(--mute);overflow-wrap:anywhere}
+audio{width:100%;margin-top:10px}
+.big{display:flex;flex-direction:column;gap:12px}
+button.mark{width:100%;min-height:96px;font:inherit;font-size:20px;font-weight:700;border-radius:12px;border:2px solid;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.mark:active{transform:scale(.985)}
+button.mark:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+#bTrack{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+#bTrans{background:var(--trbg);color:var(--tr);border-color:var(--tr)}
+.ack{min-height:22px;font-size:14px;color:var(--acc);text-align:center}
+.log{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 14px}
+.log h2{font-size:14px;margin:8px 0;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.row:first-of-type{border-top:0}
+.row .w{flex:1;min-width:0}
+.row .w small{display:block;color:var(--mute);overflow-wrap:anywhere}
+.row b.tag{font-size:12px;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.tag.t{background:var(--badbg);color:var(--bad)}.tag.x{background:var(--trbg);color:var(--tr)}
+.row button{min-height:44px;min-width:44px;font:inherit;background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px}
+.foot{font-size:13px;color:var(--mute)}
+.foot button{font:inherit;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.status{font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+ <header>
+  <h1>Shortlist Mix Marker</h1>
+  <p class="sub">17 original clips, 4 s equal-power crossfades, level-matched. Marks are saved on this page, not in the browser.</p>
+ </header>
+
+ <section class="now" aria-live="polite">
+  <div class="k">Now playing</div>
+  <div class="t" id="nowT">Track 1 / 17</div>
+  <div class="id" id="nowId"></div>
+  <audio id="au" controls preload="auto" src="__MIX_URL__"></audio>
+ </section>
+
+ <section class="big">
+  <button class="mark" id="bTrack" type="button">This track sounds bad</button>
+  <button class="mark" id="bTrans" type="button">The previous transition was bad</button>
+  <div class="ack" id="ack"></div>
+ </section>
+
+ <section class="log">
+  <h2>Marks <span id="cnt"></span></h2>
+  <div id="list"></div>
+ </section>
+
+ <p class="status" id="st">Saving: checking…</p>
+ <p class="foot"><button id="copy" type="button">Copy marks as text</button></p>
+</main>
+
+<script>
+const CUES = __CUES__;
+const au = document.getElementById('au');
+const $ = id => document.getElementById(id);
+let marks = [];          // newest last
+let dbc = null;
+
+function cueAt(t){ let k = 0; for (let i = 0; i < CUES.length; i++) if (t >= CUES[i].start) k = i; return k; }
+function fmt(t){ const m = Math.floor(t/60), s = Math.floor(t%60); return m + ':' + String(s).padStart(2,'0'); }
+function short(id){ return id.replace(/__cfg\d+__w100/,'').replace(/__st8__d48$/,'').replace(/__d48$/,''); }
+
+function renderNow(){
+  const k = cueAt(au.currentTime || 0), c = CUES[k];
+  $('nowT').textContent = 'Track ' + c.i + ' / ' + CUES.length + ' · ' + fmt(au.currentTime || 0);
+  $('nowId').textContent = short(c.id);
+}
+function renderList(){
+  $('cnt').textContent = '(' + marks.length + ')';
+  const box = $('list'); box.textContent = '';
+  if (!marks.length){ const p = document.createElement('div'); p.className = 'row'; p.textContent = 'No marks yet.'; box.appendChild(p); return; }
+  marks.slice().reverse().forEach(m => {
+    const r = document.createElement('div'); r.className = 'row';
+    const tag = document.createElement('b'); tag.className = 'tag ' + (m.kind === 'track' ? 't' : 'x');
+    tag.textContent = m.kind === 'track' ? 'track' : 'transition';
+    const w = document.createElement('div'); w.className = 'w';
+    const a = document.createElement('div');
+    a.textContent = m.kind === 'track' ? ('Track ' + m.track) : ('Track ' + (m.track - 1) + ' → ' + m.track);
+    const s = document.createElement('small'); s.textContent = fmt(m.t) + ' · ' + short(m.id);
+    w.append(a, s);
+    const d = document.createElement('button'); d.type = 'button'; d.textContent = '✕'; d.setAttribute('aria-label', 'Remove mark');
+    d.onclick = () => removeMark(m);
+    r.append(tag, w, d); box.appendChild(r);
+  });
+}
+function ack(msg){ $('ack').textContent = msg; clearTimeout(ack.t); ack.t = setTimeout(() => $('ack').textContent = '', 2500); }
+
+async function addMark(kind){
+  const t = au.currentTime || 0, k = cueAt(t), c = CUES[k];
+  let track = c.i, id = c.id;
+  if (kind === 'transition'){
+    if (k === 0){ ack('No transition before track 1 yet.'); return; }
+  }
+  const m = { key: Date.now().toString(36) + Math.random().toString(36).slice(2,6), kind, track, id, t: Math.round(t*10)/10, ts: new Date().toISOString() };
+  marks.push(m); renderList();
+  ack(kind === 'track' ? 'Marked track ' + track : 'Marked transition ' + (track-1) + ' → ' + track);
+  if (navigator.vibrate) try { navigator.vibrate(30); } catch(e){}
+  if (dbc){ try { await dbc.doc('marks/' + m.key).set(m); setSt('Saved ' + marks.length + ' mark(s) on the page.'); } catch(e){ setSt('Could not save: ' + (e && e.code || e) + '. Marks are only in this view until it works.', true); } }
+}
+async function removeMark(m){
+  marks = marks.filter(x => x.key !== m.key); renderList();
+  if (dbc){ try { await dbc.doc('marks/' + m.key).delete(); } catch(e){ setSt('Could not remove: ' + (e && e.code || e), true); } }
+}
+function setSt(s, bad){ $('st').textContent = s; $('st').style.color = bad ? 'var(--bad)' : ''; }
+
+$('bTrack').onclick = () => addMark('track');
+$('bTrans').onclick = () => addMark('transition');
+au.addEventListener('timeupdate', renderNow);
+au.addEventListener('seeked', renderNow);
+$('copy').onclick = async () => {
+  const txt = marks.map(m => (m.kind === 'track' ? 'BAD TRACK ' + m.track : 'BAD TRANSITION ' + (m.track-1) + '->' + m.track) + ' @' + fmt(m.t) + ' ' + m.id).join('\n') || 'no marks';
+  try { await navigator.clipboard.writeText(txt); ack('Copied.'); } catch(e){ ack('Copy blocked by the browser.'); }
+};
+
+function rowsOf(snap){
+  if (Array.isArray(snap)) return snap.map(d => (d && d.data) ? d.data() : d);
+  if (snap && snap.docs) return snap.docs.map(d => d.data ? d.data() : d);
+  const out = []; if (snap && snap.forEach) snap.forEach(d => out.push(d.data ? d.data() : d)); return out;
+}
+(async () => {
+  renderNow(); renderList();
+  let db = null;
+  try { db = await (window.claude && window.claude.use ? window.claude.use('db') : null); } catch(e){}
+  if (!db){ setSt('Saving is unavailable in this view; marks stay only until you leave.', true); return; }
+  dbc = db;
+  setSt('Saved on the page.');
+  try {
+    db.collection('marks').onSnapshot(snap => {
+      const rows = rowsOf(snap).filter(r => r && r.key);
+      const seen = new Set(rows.map(r => r.key));
+      marks = rows.sort((a,b) => (a.ts < b.ts ? -1 : 1));
+      renderList();
+    });
+  } catch(e){ setSt('Saved on the page (live list unavailable).'); }
+})();
+</script>
+</body>
+</html>
