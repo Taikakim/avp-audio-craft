@@ -69,3 +69,30 @@ first test. Do not start the 7-hour build until the points marked MUST are settl
 - Point-and-Play (2610.19445) is not in `papers/knowledge.md` or `papers/`; per the papers protocol it needs a sidecar and a row.
 - The plan lives only in Antigravity's directory; copy it into `docs/superpowers/specs/` once revised so it is not lost.
 - Route the decision to WINTERMUTE; Kim to approve the scope.
+
+## Addendum, later 2026-10-27: Antigravity acted on the review and terminated the branch; audit of that result (CONTINUITY)
+
+- **Housekeeping resolved.** Antigravity filed Point-and-Play (sidecar plus `knowledge.md` row, commit d7e0e3b) after I wrote this review.
+  I checked the PDF text: Table 1 (CLAP 0.811 / 0.726 oracle mask / 0.541 Demucs / 0.706 text cue, FAD 4.13 for Demucs) and the pitch probe
+  (R^2 0.783 on raw embeddings, 0.263 on extracted codes) match what this review quoted. The PDF names two authors, Tian and Duan; the
+  `knowledge.md` row says Tian/Chen/Wang/Duan. Check which is right.
+- **What Antigravity did.** `docs/superpowers/specs/2026-10-27-synth-inversion-v7-spec.md` adopts the review (common reference audio,
+  pre-registered success and kill rules, cheap test first), ran Step 0 and Step 1, and records "TERMINATED (pre-registered kill condition
+  triggered)". The spec lists me as reviewer; I reviewed the plan, not these results.
+- **Step 0 is a useful result.** With the true patch known, Demucs costs about +23% continuous-parameter MSE against a clean render
+  (0.1062 against 0.0861) and the raw mixture costs about +115% (0.1848). Separation damage is real but much smaller than leaving the drums in.
+- **Audit of the negative (AUDIT THE INSTRUMENT before believing a null):**
+  1. The run is not the registered design. The spec says 100 patches at three SNRs; `diagnostic_demucs_damage.py` and
+     `eval_synthetic_v7.py` run 20 patches at 0 dB, one generative draw per patch (fixed seed), no confidence intervals. The top-1
+     retrieval measure named in the verdict gate was never computed. The quoted "+23.3% to +40.8%" is not reproduced by the printed numbers
+     (+23.3% on parameter MSE, about +11% on cutoff error).
+  2. The result kills only the cheap variant: a scalar temporal gate on `temporal_asp`. The paper's gate acts on CLAP time-frequency tokens
+     with a LoRA-adapted encoder. The stated root cause (a temporal gate cannot separate a kick and a bass that land on the same sixteenth) is a
+     hypothesis, not something the run tested. The full CLAP + LoRA extractor was never tried.
+  3. Cue test. The oracle cue (the clean render of the same patch) scored MSE 0.1451, no better than the Demucs cue's 0.1416. A gate that
+     had learned to use the cue should do clearly better with the oracle cue, so the gate may not be using the cue at all. Before treating the
+     null as a finding: log the gate values per frame, check whether they track the kick, and check that they change with the cue.
+  4. The decision to terminate was written by the spec's author. It belongs to the line's owner (WINTERMUTE) and to Kim.
+- **What stands.** The premise (separation costs parameter accuracy, measured with ground truth, n = 20) is supported. The claim that
+  mixture-direct inversion cannot beat Demucs is supported only for the cheap temporal-gate variant, at n = 20, with a gate that may be
+  inactive.
