@@ -34,4 +34,12 @@ Live Audition Boards:
 - LR Brackets: `https://aavepyora.online/files/evals/drum_sep_lr_brackets/index.html`
 - Evals Landing: `https://aavepyora.online/files/evals/index.html`
 
+### [2026-10-27 19:35:00] ANTIGRAVITY
+
+Stage 1 Point-and-Play CGSP Extractor training for V7 Mixture-to-Patch Synth Inversion completed all 18,000 steps on discrete GPU 0 (`gfx1201`).
+- Throughput averaged ~2.83 step/s (6359.7s wall-clock) after memory optimization (bfloat16 AMP, single-pass backbone token caching, indexed torchaudio frame loading, and 2-step gradient accumulation at microbatch 8).
+- Best checkpoint saved at step 16,000 (`loss=6.1934`), final checkpoint at step 18,000 (`loss=6.2344`). All 18 intermediate checkpoints saved in `/home/kim/sao_runs/cgsp_extractor_v7/`.
+- GPU lock cleanly released; card is idle and available.
+
+
 
