@@ -1,0 +1,433 @@
+{
+ "_about": "Generated 2026-10-27 by WINTERMUTE: stable-audio-tools build_modular_param_groups (default arguments) run on a LatCH head (dim 256, depth 2, t_injection adaln_zero), once with the real parameter names (ours) and once with the names renamed as in rename (expected_names).",
+ "params": [
+  [
+   "latent_proj.weight",
+   [
+    256,
+    64
+   ]
+  ],
+  [
+   "latent_proj.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "t_embedder.mlp.0.weight",
+   [
+    256,
+    256
+   ]
+  ],
+  [
+   "t_embedder.mlp.0.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "t_embedder.mlp.2.weight",
+   [
+    256,
+    256
+   ]
+  ],
+  [
+   "t_embedder.mlp.2.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "blocks.0.attn.qkv.weight",
+   [
+    768,
+    256
+   ]
+  ],
+  [
+   "blocks.0.attn.proj.weight",
+   [
+    256,
+    256
+   ]
+  ],
+  [
+   "blocks.0.attn.proj.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "blocks.0.mlp.0.weight",
+   [
+    1024,
+    256
+   ]
+  ],
+  [
+   "blocks.0.mlp.0.bias",
+   [
+    1024
+   ]
+  ],
+  [
+   "blocks.0.mlp.2.weight",
+   [
+    256,
+    1024
+   ]
+  ],
+  [
+   "blocks.0.mlp.2.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "blocks.0.adaLN_mod.1.weight",
+   [
+    1536,
+    256
+   ]
+  ],
+  [
+   "blocks.0.adaLN_mod.1.bias",
+   [
+    1536
+   ]
+  ],
+  [
+   "blocks.1.attn.qkv.weight",
+   [
+    768,
+    256
+   ]
+  ],
+  [
+   "blocks.1.attn.proj.weight",
+   [
+    256,
+    256
+   ]
+  ],
+  [
+   "blocks.1.attn.proj.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "blocks.1.mlp.0.weight",
+   [
+    1024,
+    256
+   ]
+  ],
+  [
+   "blocks.1.mlp.0.bias",
+   [
+    1024
+   ]
+  ],
+  [
+   "blocks.1.mlp.2.weight",
+   [
+    256,
+    1024
+   ]
+  ],
+  [
+   "blocks.1.mlp.2.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "blocks.1.adaLN_mod.1.weight",
+   [
+    1536,
+    256
+   ]
+  ],
+  [
+   "blocks.1.adaLN_mod.1.bias",
+   [
+    1536
+   ]
+  ],
+  [
+   "norm_final.weight",
+   [
+    256
+   ]
+  ],
+  [
+   "norm_final.bias",
+   [
+    256
+   ]
+  ],
+  [
+   "out_proj.weight",
+   [
+    1,
+    256
+   ]
+  ],
+  [
+   "out_proj.bias",
+   [
+    1
+   ]
+  ]
+ ],
+ "rename": [
+  [
+   ".attn.qkv.",
+   ".attn.to_qkv."
+  ],
+  [
+   ".attn.proj.",
+   ".attn.to_out."
+  ],
+  [
+   ".adaLN_mod.",
+   ".modulation."
+  ],
+  [
+   "t_embedder.mlp.",
+   "time_mlp."
+  ]
+ ],
+ "ours": {
+  "latent_proj.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.attn.qkv.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.attn.proj.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.mlp.0.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.mlp.2.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.adaLN_mod.1.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.attn.qkv.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.attn.proj.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.mlp.0.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.mlp.2.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.adaLN_mod.1.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "t_embedder.mlp.0.weight": {
+   "group": "colnorm",
+   "blocks": 1
+  },
+  "t_embedder.mlp.2.weight": {
+   "group": "colnorm",
+   "blocks": 1
+  },
+  "latent_proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "t_embedder.mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "t_embedder.mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.attn.proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.adaLN_mod.1.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.attn.proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.adaLN_mod.1.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "norm_final.weight": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "norm_final.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "out_proj.weight": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "out_proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  }
+ },
+ "expected_names": {
+  "latent_proj.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "time_mlp.0.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "time_mlp.2.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.attn.to_qkv.weight": {
+   "group": "spectral",
+   "blocks": 3
+  },
+  "blocks.0.attn.to_out.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.mlp.0.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.0.mlp.2.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.attn.to_qkv.weight": {
+   "group": "spectral",
+   "blocks": 3
+  },
+  "blocks.1.attn.to_out.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.mlp.0.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "blocks.1.mlp.2.weight": {
+   "group": "spectral",
+   "blocks": 1
+  },
+  "latent_proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "time_mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "time_mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.attn.to_out.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.0.modulation.1.weight": {
+   "group": "sign",
+   "blocks": 6
+  },
+  "blocks.0.modulation.1.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.attn.to_out.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.mlp.0.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.mlp.2.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "blocks.1.modulation.1.weight": {
+   "group": "sign",
+   "blocks": 6
+  },
+  "blocks.1.modulation.1.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "norm_final.weight": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "norm_final.bias": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "out_proj.weight": {
+   "group": "sign",
+   "blocks": 1
+  },
+  "out_proj.bias": {
+   "group": "sign",
+   "blocks": 1
+  }
+ }
+}
