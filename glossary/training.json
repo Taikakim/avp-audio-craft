@@ -177,7 +177,7 @@
       "EMA weights"
     ],
     "plain": "An EMA is a second, slowly updated copy of the weights that follows the training weights with a delay, smoothing out the noise of single steps.",
-    "ours": "A trainer can save both the live weights and the EMA copy. We once rendered an EMA by default that had barely moved from the starting model, so what we heard was mostly the starting model, not the fine-tune. In our Stable Audio 3 fine-tuning trainers the EMA updates on every small batch, not once per weight change, so accumulation changes how far back it looks.",
+    "ours": "A trainer can save both the live weights and the EMA copy. We once rendered an EMA by default that had barely moved from the starting model, so what we heard was mostly the starting model, not the fine-tune. Our Stable Audio 3 trainers keep an EMA only for full fine-tunes (LoRA and DoRA runs switch it off). In those trainers the EMA updates on every small batch, not once per weight change, so accumulation changes how far back it looks.",
     "deeper": "An EMA decay of 0.9999 means a half-life of about 6,931 updates. Moving to a different batch size needs a changed decay (the new decay is the old one raised to the ratio of batch sizes) to keep the same time span. A decay that is too long for a short run leaves the EMA close to its starting point. Several tools prefer the EMA copy when a checkpoint carries one, so check which copy your render script loads.",
     "papers": [],
     "quiz": [
