@@ -841,3 +841,43 @@ def test_span_focus_returns_to_the_nearest_preceding_link_not_the_first_on_the_p
     page.keyboard.press("Escape")
     expect(page.locator("#help-pane")).to_be_hidden()
     assert page.evaluate("document.activeElement && document.activeElement.id") == "late-link"
+
+
+# KUANG 2026-10-27: the overlay owns a history entry (browser Back closes it, not the page) and its stage scrolls
+def test_browser_back_closes_the_overlay_and_stays_on_the_page(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    url0 = page.evaluate("location.href")
+    n0 = page.evaluate("history.length")
+    page.locator("#help-pane .hp-enlarge").click()
+    expect(page.locator(".hp-overlay")).to_be_visible()
+    assert page.evaluate("history.length") == n0 + 1
+    page.evaluate("history.back()")
+    expect(page.locator(".hp-overlay")).to_have_count(0)
+    assert page.evaluate("location.href") == url0
+    expect(page.locator("#help-pane")).to_be_visible()
+    expect(page.locator("#help-pane [data-testid=fixture-viz]")).to_be_visible()
+    assert "destroyed" not in _viz_log(page)
+
+
+def test_overlay_close_and_escape_leave_no_overlay_entry(make_page, page_url, fixture_only):
+    page = make_page()
+    load_page(page, f"{page_url}#gl=ema")
+    for how in ("button", "escape"):
+        page.locator("#help-pane .hp-enlarge").click()
+        expect(page.locator(".hp-overlay")).to_be_visible()
+        if how == "button":
+            page.locator(".hp-overlay .hp-overlay-close").click()
+        else:
+            page.keyboard.press("Escape")
+        expect(page.locator(".hp-overlay")).to_have_count(0)
+        assert page.evaluate("!(history.state && history.state.hpOverlay)"), how
+        assert page.evaluate("location.hash") == "#gl=ema", how
+    expect(page.locator("#help-pane")).to_be_visible()
+
+
+def test_enlarged_stage_scrolls(make_page, page_url, fixture_only):
+    page = make_page((1280, 800))
+    load_page(page, f"{page_url}#gl=ema")
+    page.locator("#help-pane .hp-enlarge").click()
+    assert page.eval_on_selector(".hp-overlay .hp-viz-stage", "s => getComputedStyle(s).overflowY") == "auto"
