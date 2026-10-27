@@ -2,6 +2,8 @@
 // Animation module "lora-rank": a rank slider (16 to 1536) and a DoRA button. Part 1 draws the adapter as a bottleneck and counts
 // its numbers; part 2 plots how much of a full fine-tune's change a uniform rank keeps (our measured points); part 3 shows a 12 x 12
 // toy change, its rank-k part and what is missing, with DoRA's row-length dials. Used by the glossary entry "rank". Maths in lib/lora.js.
+// Last edited: KUANG 2026-10-27 -- the rank slider repeated under the three panels (synced), so the example can be watched
+//   while sliding; in the enlarged view only, clips of the June 2026 rank ladder (same recipe at rank 16 / 64 / 128)
 import {
   LORA, RANKS, MEASURED, energyAt, adapterParams, fullParams, toyRank, makeToy, truncate, rowLengths,
 } from './lib/lora.js';
@@ -35,6 +37,17 @@ const CSS = `
 .vz-rank .vz-real dt{font-weight:600;margin-top:4px}
 .vz-rank .vz-real dd{margin:0}
 .vz-rank .vz-real p{margin:2px 0}
+.vz-rank .vz-controls-bottom{margin:10px 0 4px}
+.vz-rank .vz-clips{display:none;margin-top:12px;border-top:1px solid var(--vz-muted);padding-top:8px}
+.hp-viz-big .vz-rank .vz-clips{display:block}
+.vz-rank .vz-clips-hint{font-size:12px;color:var(--vz-muted);margin:6px 0 0}
+.hp-viz-big .vz-rank .vz-clips-hint{display:none}
+.vz-rank .vz-clips h4{margin:0 0 4px;font-size:14px}
+.vz-rank .vz-clips p{margin:2px 0 6px;font-size:13px}
+.vz-rank .vz-clip-prompt{font-size:12px;color:var(--vz-muted);margin:10px 0 2px}
+.vz-rank .vz-clip-row{display:flex;flex-wrap:wrap;gap:6px 14px}
+.vz-rank .vz-clip{display:flex;flex-direction:column;gap:2px;font-size:12px;flex:1 1 180px;min-width:0}
+.vz-rank .vz-clip audio{width:100%;height:32px}
 `;
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
@@ -43,6 +56,25 @@ const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const SLIDE_MS = 300, DORA_MS = 400;
 const N = LORA.toy, CELLS = N * N;
 const U0 = Math.log2(RANKS[0]), U1 = Math.log2(RANKS[RANKS.length - 1]);
+
+// June 2026 rank ladder, published with every checkpoint on evals/riffer/dora_results.html: DoRA adapters on Stable Audio 3,
+// one recipe and corpus, three ranks (AdamW), plus rank 128 with Fusion v1. All clips: same prompt and seed, same step (4,050,
+// the end of the third epoch; every run has 1,350 steps per epoch). Paths are relative to this file: help/viz/ -> evals/riffer/.
+const LADDER_DIR = new URL('../../evals/riffer/', import.meta.url);
+const LADDER = {
+  seed: 1234,
+  prompts: [
+    ['p0', 'aggressive upbeat goa trance'],
+    ['p1', 'energetic acid techno, 130 BPM, driving analog bassline, crisp drum machine'],
+    ['p2', 'psytrance, 140 bpm'],
+  ],
+  arms: [
+    { label: 'rank 16', tag: 'vjnnndnu_epoch2-step4050' },
+    { label: 'rank 64', tag: 'i8nygj4y_epoch2-step4050' },
+    { label: 'rank 128', tag: 'dq0egegi_epoch2-step4050' },
+    { label: 'rank 128, Fusion v1', tag: 'mqe3ne49_epoch2-step4050' },
+  ],
+};
 
 function parseColor(c) {
   const s = String(c).trim();
@@ -216,6 +248,56 @@ export function mount(container, params = {}, help = {}) {
   const rowsEl = el('p', { id: 'vz-rank-rows' });
   root.append(el('div', { class: 'vz-reads' }, [toyEl, rowsEl]));
 
+  // the same slider again under the three panels: sliding at the top hides the example below the fold
+  const slider2 = el('input', {
+    id: 'vz-rank-r2', type: 'range', min: 0, max: RANKS.length - 1, step: 1,
+    'aria-label': 'Rank (the same slider, repeated under the example)',
+  });
+  slider2.value = String(ridx);
+  const out2 = el('output', { id: 'vz-rank-r2-out', for: 'vz-rank-r2' });
+  slider2.addEventListener('input', () => { ridx = Number(slider2.value); setTargets(true); handle.resume(); });
+  root.append(el('div', { class: 'vz-controls vz-controls-bottom' }, [
+    el('div', { class: 'vz-slider' }, [el('label', { for: 'vz-rank-r2', text: 'Rank' }), slider2, out2]),
+  ]));
+
+  // ================= heard: the June rank ladder (shown only when the help pane enlarges the animation)
+  const audios = [];
+  const clips = el('section', { class: 'vz-clips', 'aria-label': 'Clips: the same recipe at three ranks' });
+  clips.append(
+    el('h4', { text: 'Heard: the same recipe at rank 16, 64 and 128 (June 2026)' }),
+    el('p', { text: 'DoRA adapters on Stable Audio 3, trained on the same goa trance data with the same recipe (AdamW), '
+      + 'differing only in rank. Each row is one prompt and one seed after the same 4,050 training steps (three epochs). '
+      + 'The last column is rank 128 trained with Fusion v1 at twice the learning rate.' }),
+    el('p', { class: 'vz-why', text: 'These runs are from June 2026, with the trainer of that time. It had problems fixed '
+      + 'since, among them unconstrained weight growth under Schedule-Free averaging, so the clips show what rank did in '
+      + 'that setting. They are not indicative of what the current modular optimiser (Fusion v2) produces.' }),
+  );
+  LADDER.prompts.forEach(([pid, prompt], pi) => {
+    clips.append(el('p', { class: 'vz-clip-prompt', text: `Prompt ${pi + 1}: “${prompt}”` }));
+    const row = el('div', { class: 'vz-clip-row' });
+    for (const arm of LADDER.arms) {
+      const a = el('audio', {
+        controls: true, preload: 'none',
+        src: new URL(`clips_dora_aac/${arm.tag}__${pid}_seed${LADDER.seed}.m4a`, LADDER_DIR).href,
+        'aria-label': `${arm.label}, prompt ${pi + 1}`,
+      });
+      audios.push(a);
+      row.append(el('div', { class: 'vz-clip' }, [el('span', { text: arm.label }), a]));
+    }
+    clips.append(row);
+  });
+  clips.append(el('p', {}, [
+    'Every checkpoint, both seeds and the measured distances: ',
+    el('a', { href: new URL('dora_results.html', LADDER_DIR).href, target: '_blank', rel: 'noopener', text: 'DoRA auditions' }),
+    '.',
+  ]));
+  clips.addEventListener('play', (e) => { for (const a of audios) if (a !== e.target) a.pause(); }, true);   // one at a time
+  root.append(el('p', { class: 'vz-clips-hint', text: 'Enlarge the animation to hear the same recipe trained at rank 16, 64 and 128.' }));
+  root.append(clips);
+  // the help pane fires resize when it enlarges or shrinks the animation: stop any clip when the clips are hidden again
+  const onResize = () => { if (!root.closest('.hp-viz-big')) for (const a of audios) a.pause(); };
+  window.addEventListener('resize', onResize);
+
   realNote(root, {
     live: [
       'The parameter counts, from the rank and the layer width.',
@@ -293,6 +375,9 @@ export function mount(container, params = {}, help = {}) {
     keptTitle.textContent = `Kept at rank ${k}`;
     out.textContent = String(r);
     slider.setAttribute('aria-valuetext', `rank ${r}`);
+    slider.value = String(ridx); slider2.value = String(ridx);          // keep both sliders on the same rank
+    out2.textContent = String(r);
+    slider2.setAttribute('aria-valuetext', `rank ${r}`);
     root.setAttribute('data-rank', String(r));
     root.setAttribute('data-toyrank', String(k));
     mid.setAttribute('data-r', String(r));
@@ -363,6 +448,8 @@ export function mount(container, params = {}, help = {}) {
 
   return {
     destroy() {
+      window.removeEventListener('resize', onResize);
+      for (const a of audios) a.pause();
       handle.destroy();
       root.remove();
     },

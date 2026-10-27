@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Last edited: WINTERMUTE 2026-10-27 -- Fusion v2 link removed: it pointed at a private repository (404 for readers, exposes its name) -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimisers — Vibe on The Edg3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="edg3.css">
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead compact">
+  <p class="over">VIBE&nbsp;ON&nbsp;THE</p>
+  <pre class="figlet"><a href="index.html" style="color:inherit">█▀▀▀ █▀▀▄ █▀▀▀ ▀▀▀█
+█▀▀  █  █ █ ▀█  ▀▀█
+█▄▄▄ █▄▄▀ █▄▄█ ▄▄▄█</a></pre>
+  <nav class="mainnav">
+    <a href="index.html">index</a>
+    <a href="dialogue.html">dialogue</a>
+    <a href="blog/">blog</a>
+    <a href="index.html#constructs">constructs</a>
+    <a href="artifacts.html">artifacts</a>
+    <a href="evals/">evals</a>
+    <a href="evals/paper_verdicts.html">papers</a>
+    <a href="reference.html">reference</a>
+    <span class="status">deliverable · public domain (v1)</span>
+  </nav>
+</header>
+
+<h1>Optimisers</h1>
+<p class="lede">Two generations of one optimiser, both called <strong>Fusion</strong>, because each is a fusion of
+published methods. <strong>Fusion v1</strong> (<code>FusionOpt</code>) is the packaged, public-domain one.
+<strong>Fusion v2</strong> is its modular rebuild (<code>ModularOptimizer</code> in the code). It trains the
+project's recent control heads for Stable Audio 3.</p>
+<p class="dim">The components are well-cited; the composition, and what we measured about it, is ours.</p>
+
+<h2><span class="mark">§</span> Lineage</h2>
+<table class="listing">
+  <tr><th>generation</th><th>what it is</th></tr>
+  <tr>
+    <td>Fusion v1 · <code>FusionOpt</code><br><span class="dim">June 2026</span></td>
+    <td>One optimiser that composes six published methods: Muon, NorMuon, Schedule-Free, MONA, KL-Shampoo and
+    ScheduleFree+. You pick components from a set. Later additions: a norm freeze (<code>hyperball</code>), an
+    in-optimiser decay schedule, an SNR gate, a Prodigy-style step-size autoscale and cautious masking.</td>
+  </tr>
+  <tr>
+    <td>Fusion v2 · modular<br><span class="dim">from September 2026</span></td>
+    <td>The same ideas rebuilt as a staged pipeline. Every parameter gets a role, every role its own geometry, and
+    every stage can be switched on or off per parameter group. The reason: in v1 it was hard to tell which piece
+    carried a result, and an audit later found some components inert in runs that had been credited to them. v2
+    makes each piece separately measurable.</td>
+  </tr>
+</table>
+
+<h2><span class="mark">§</span> Coming from AdamW (or plain Muon)</h2>
+<p>The long version, with every change we tried, figures and audio, is
+<a href="blog/2026-10-21-muon-survival-guide.html">Muon and derivatives: a DIY survival guide</a>.
+The points that matter most when you switch:</p>
+<ul>
+  <li><strong>Muon only replaces the optimiser for hidden 2-D matrices.</strong> Embeddings, the output layer, biases,
+  gains and DoRA magnitudes still need a second optimiser, and how the two are set up relative to each other caused most
+  of our failures. Print the parameter groups at start-up and read them; name-based rules miss.</li>
+  <li><strong>One learning rate, three step sizes.</strong> An AdamW step moves each weight by about 0.2–0.4 × lr. An
+  orthogonalised Muon step moves it by about lr / √max(m, n), which is 1/16 of lr for a 256-wide matrix. A sign step on
+  biases moves it by the full lr. Rescale the Muon update to AdamW size (update RMS 0.2 × lr); after that, our heads wanted
+  1e-3 to 3e-3.</li>
+  <li><strong>Muon never slows down by itself.</strong> AdamW's steps shrink while the gradients are noisy. Muon's step
+  is full size every time, so weights can grow while the loss looks normal. Use weight decay on the matrices and log
+  weight size per group: full fine-tunes without decay drifted into a drone.</li>
+  <li><strong>No constant learning rate on its own.</strong> Warm up, then use Schedule-Free or a decaying
+  schedule.</li>
+  <li><strong>Keep weights and optimiser state in fp32.</strong> bf16 storage rounds small steps away; Newton–Schulz
+  itself is fine in bf16.</li>
+  <li><strong>Fine-tuning an AdamW-trained model:</strong> published work finds no clear gain from Muon for full
+  fine-tuning, and LoRA narrows the mismatch. Small batches are mostly noise: use an effective batch of 16 or more
+  (64 was best on our heads).</li>
+</ul>
+
+<h2><span class="mark">§</span> Fusion v2: the pipeline</h2>
+<p>Each step is a norm-constrained steepest-descent step, computed in six stages:</p>
+<table class="listing">
+  <tr><th>stage</th><th>what it does</th></tr>
+  <tr><td>1 · momentum</td><td>accumulates the gradient, in the original basis or a rotated one</td></tr>
+  <tr><td>2 · whitening <span class="dim">(optional)</span></td><td>Shampoo (KL-Shampoo) or rotated-SOAP preconditioner
+  factors, pushed on a stack (Mousse-style, with a bottleneck)</td></tr>
+  <tr><td>3 · solve</td><td>the role's linear minimisation oracle: <em>spectral</em> (Newton–Schulz orthogonalisation,
+  cubic, quintic or Polar Express) with NorMuon per-neuron row scaling; <em>sign</em>; or <em>column-norm</em></td></tr>
+  <tr><td>4 · unwhitening</td><td>pops the stack: the exact pullback into the parameters' own metric</td></tr>
+  <tr><td>5 · step-size control <span class="dim">(optional)</span></td><td>Prodigy-style escape velocity, SNR gate</td></tr>
+  <tr><td>6 · apply</td><td>learning rate, radius scaling max(1, √(d<sub>out</sub>/d<sub>in</sub>)), weight decay,
+  Schedule-Free averaging (with a ScheduleFree+ burn-in), warmup, radial brake</td></tr>
+</table>
+
+<p><strong>Routing</strong> is a sign–spectral–sign sandwich:</p>
+<ul>
+  <li>embeddings get column-norm steps;</li>
+  <li>hidden attention and MLP matrices get spectral steps, with fused QKV and adaLN emitters split into their
+  blocks first;</li>
+  <li>output layers, adaLN emitters, gains and biases get sign steps, or optionally an Adam group.</li>
+</ul>
+
+<p><strong>Added in October 2026,</strong> each default-off and bit-identical to the old step when off:</p>
+<ul>
+  <li>fp32 optimiser state for bf16 weights;</li>
+  <li>a NorMuon variant matching Microsoft's dion;</li>
+  <li>an Adam-matched update size (RMS 0.2 × lr);</li>
+  <li>NorMuon after unwhitening;</li>
+  <li>bf16 and batched Newton–Schulz;</li>
+  <li>multiplicative DoRA magnitude steps, so a magnitude cannot cross zero.</li>
+</ul>
+<p>It also carries instruments: a half-batch gradient-noise meter, momentum spectra and direction agreement.</p>
+<pre class="figlet" style="font-size:.8rem;text-align:left;color:var(--fg)">groups = build_modular_param_groups(model)    # role routing
+optimizer = ModularOptimizer(
+    groups, lr=1e-3,
+    normuon=True, schedule_free=True,           # the core, as in v1's SF-NorMuon
+    state_dtype="fp32",                         # keep the step when weights are bf16
+)</pre>
+
+<h2><span class="mark">§</span> Fusion v2: results</h2>
+<p class="dim">Scope: measured on one task, the LatCH onset head. That is a ~6 M-parameter transformer (d256),
+trained from scratch on ~12 k latent crops for 40 epochs, which guides Stable Audio 3's rhythm. Read the results as
+a strong prior for small models trained from scratch, and a hypothesis anywhere else.</p>
+<table class="listing">
+  <tr><th>arm (batch 64)</th><th>held-out loss ↓</th></tr>
+  <tr><td>Fusion v2: Muon-family + Schedule-Free + EMA</td><td><strong>0.1802</strong> (repeat run 0.1896)</td></tr>
+  <tr><td>AdEMAMix, continued 20 epochs from its best</td><td>0.1894</td></tr>
+  <tr><td>AdamW, cosine to zero over 40 epochs</td><td>0.2002</td></tr>
+  <tr><td>AdamW, constant 3e-4</td><td>0.2080 (swings 0.21–0.29)</td></tr>
+  <tr><td>AdamW, cosine + AdaGC</td><td>0.2511 (stopped at epoch 12)</td></tr>
+</table>
+<ul>
+  <li><strong>Noise first.</strong> A repeat of the same recipe moves the result by about 0.01 (≈ 5 %). The top
+  arms tie within that; AdamW does not.</li>
+  <li><strong>The mean hides where optimisers differ.</strong> Split by diffusion noise level, at low noise
+  (t ≤ 0.45) AdamW is 25–39 % worse than Fusion v2. At high noise (t &gt; 0.7, about half the loss) the arms differ
+  by only 4–8 %.</li>
+  <li><strong>It steers widest.</strong> The Fusion v2 head moves the generated rhythm from 2.9 to 12.1 onsets per
+  second at guidance gain 512, the widest range of any head so far.</li>
+</ul>
+
+<h2><span class="mark">§</span> What we learned</h2>
+<table class="listing">
+  <tr><th>finding</th><th>what it means</th></tr>
+  <tr><td>bf16 storage eats the step</td><td>bf16 storage kept only 29 % of the fp32 update at lr 3e-4 (64 % at 1e-3),
+  and some layers stopped moving while the loss looked fine. Keep optimiser state in fp32 when weights are bf16.</td></tr>
+  <tr><td>the 1-D group sets the ceiling</td><td>Gains and biases move a full lr per element, matrices about
+  lr/√d<sub>in</sub>. lr 3e-2 diverged until the sign group was capped at 2e-3. Give 1-D parameters their own
+  small lr.</td></tr>
+  <tr><td>batch above 64</td><td>Scale lr linearly, not by √batch: the momentum was signal-dominated on every
+  matrix.</td></tr>
+  <tr><td>switching optimisers mid-run</td><td>A fresh AdamW on a trained head moves every weight by about lr at
+  step 1. Without warmup, held-out loss jumped from 0.180 to 0.338 and never recovered: use warmup and a low
+  lr.</td></tr>
+  <tr><td>not worth it here</td><td>noise-based Muon variants (NAMO, HTMuon, the SNR gate, MONA), since no matrix was
+  noise-dominated at our batch sizes; whitening on top of Newton–Schulz; AdaGC; stratified timesteps; larger
+  steps along the momentum directions.</td></tr>
+</table>
+
+<h2><span class="mark">§</span> Fusion v1: FusionOpt</h2>
+<table class="listing">
+  <tr><th>component</th><th>mechanism</th></tr>
+  <tr><td>Muon</td><td>spectral orthogonalisation of the update (Newton–Schulz)</td></tr>
+  <tr><td>NorMuon</td><td>per-neuron row scaling on top of the orthogonalised step</td></tr>
+  <tr><td>Schedule-Free</td><td>averaged iterates: no learning-rate schedule to tune</td></tr>
+  <tr><td>MONA</td><td>curvature-aware momentum</td></tr>
+  <tr><td>KL-Shampoo</td><td>Kronecker-factored preconditioner</td></tr>
+  <tr><td>ScheduleFree+</td><td>Polyak step-size selection</td></tr>
+  <tr><td>TimeConditioningCache</td><td>caches adaLN-zero time embeddings for faster diffusion inference</td></tr>
+</table>
+<p>The load-bearing subset is <strong>SF-NorMuon</strong>, <code>{ns5, normuon, sf}</code> at <code>bf16</code>.
+Empirically it captures ~95 % of the full composition's quality lift at ~50 % of the wall-clock cost, on
+small-to-medium DiT-style models with adaLN-zero conditioning. Fusion v2's core is the same three pieces.</p>
+<pre class="figlet" style="font-size:.8rem;text-align:left;color:var(--fg)">optimizer = FusionOpt(
+    params=build_fusion_param_groups(model),
+    lr=3e-4,
+    components={"ns5", "normuon", "sf"},   # SF-NorMuon
+    hot_dtype="bf16",                       # NOT fp16: NS5 overflows
+)</pre>
+<p>The sharpest v1 result: <strong>FusionCC</strong>, a run that put a learned onset meter inside the training
+gradient, moved onset-control correlation from <strong>.584 to .880</strong> (bootstrap CI clear of zero). It
+broke the sparse-rhythm floor that every other head had hit.</p>
+<table class="listing">
+  <tr><th>✓ helps</th><th>✗ no / unclear</th></tr>
+  <tr><td>transformer-style 2-D weight matrices (qkv, projections, MLPs ≥ 128×128)</td>
+      <td>pure conv nets: spectral methods are matrix-aware, not built for 4-D kernels</td></tr>
+  <tr><td>adaLN-zero conditioning</td><td>very small networks (&lt; 1 M params), where overhead may dominate</td></tr>
+  <tr><td>mid-range scales, ~5 M – 10 B params</td><td>workloads where per-element adaptivity beats spectral geometry</td></tr>
+</table>
+
+<h2><span class="mark">§</span> Get it</h2>
+<ul>
+  <li><strong>Fusion v1:</strong> <a href="https://github.com/Taikakim/fusion-optimiser">github.com/Taikakim/fusion-optimiser</a>.
+  Public domain (CC0 1.0), <code>torch &gt;= 2.2</code>, no other runtime dependencies. It ships
+  <code>docs/best_practices.md</code> and <code>docs/open_questions.md</code>. An option-by-option manual covering
+  both generations is on the <a href="https://github.com/Taikakim/fusion-optimiser/blob/docs/manual/docs/MANUAL.md"><code>docs/manual</code></a>
+  branch (draft).</li>
+  <li><strong>Fusion v2:</strong> not packaged or published yet; the source lives in our private training
+  repository.</li>
+</ul>
+<p class="dim">Research code: these numbers are evidence for our workload, not a guarantee for yours.</p>
+
+<footer class="colophon">
+  <span>aavepyora.online</span>
+  <span>·</span>
+  <span>Fusion v1: CC0 1.0, public domain</span>
+  <span>·</span>
+  <span><a href="https://github.com/Taikakim/fusion-optimiser">source on GitHub</a></span>
+  <span style="margin-left:auto"><span class="edge">▮</span> the iron that shapes the rest</span>
+</footer>
+
+</div>
+</body>
+</html>
