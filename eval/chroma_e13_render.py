@@ -28,8 +28,10 @@ import os
 os.environ.setdefault("FLASH_ATTENTION_TRITON_AMD_ENABLE", "FALSE")
 os.environ.setdefault("PYTORCH_TUNABLEOP_ENABLED", "0")
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")   # first run OOMed at 12.9 GiB after 142 clips
 
 import argparse
+import gc
 import json
 import shutil
 import subprocess
@@ -89,7 +91,10 @@ def prompt_text(pid):
 
 
 def clip_name(head, pid, tid, gain, seed):
-    return f"base__{pid}__s{seed}.m4a" if gain == 0 else f"{head}__{pid}__{tid}__g{gain}__s{seed}.m4a"
+    # base0 = the guided sampler at gain 0. The first baselines ("base__", 2026-10-28 02:27) came from generate() with no
+    # LatCH config, which takes the model's default sampler, a different render: 4 of 12 scored Audiobox CE ~3 where every
+    # steered render of the same prompt and seed scored 6-7, even at gain 512. They are kept on disk but no longer used.
+    return f"base0__{pid}__s{seed}.m4a" if gain == 0 else f"{head}__{pid}__{tid}__g{gain}__s{seed}.m4a"
 
 
 def measure(wav_np, tid, n_frames):
@@ -136,7 +141,7 @@ def plan(stage, picked):
 
 def pick(cells):
     """Top N_PICK retrained weight sets from the screen by mean d_fcos (bass+mid)/2 against the same-seed baseline."""
-    base = {(c["prompt"], c["seed"]): c for c in cells if c["gain"] == 0}
+    base = {(c["prompt"], c["seed"]): c for c in cells if c["gain"] == 0 and c["clip"].startswith("base0__")}
     score, zfail, n = defaultdict(list), defaultdict(int), defaultdict(int)
     for c in cells:
         if c["gain"] != 2048 or c["head"] == "prod" or c["target"] not in SCREEN["targets"]:
@@ -181,7 +186,7 @@ def write_meta(extra):
     meta_p.write_text(json.dumps(meta, indent=1))
 
 
-def run(stages):
+def run(stages, ladder_heads=None):
     import torch
     from stable_audio_3 import StableAudioModel
     from sa3_control.audio_io import save_audio
@@ -199,7 +204,10 @@ def run(stages):
     log = open(OUT / "cells.jsonl", "a")
     picked = []
     for stage in stages:
-        if stage == "ladder":
+        if stage == "ladder" and ladder_heads:
+            picked = ladder_heads
+            print(f"[e13] ladder heads (given): prod + {picked}", flush=True)
+        elif stage == "ladder":
             picked, table = pick(cells)
             (OUT / "screen_ranking.json").write_text(json.dumps({"picked": picked, "table": table}, indent=1))
             print(f"[e13] screen ranking (head, mean d_fcos, z fails, n): {table[:8]}", flush=True)
@@ -215,10 +223,12 @@ def run(stages):
             name = clip_name(h, pid, tid, g, s)
             t0 = time.time()
             gen = dict(prompt=prompt_text(pid), duration=DURATION_SEC, steps=STEPS, cfg_scale=CFG, seed=s)
-            if g > 0:
-                gen["latch_configs"] = [{"model_path": str(hp[h]), "target_raw": build_target_raw(384, target_spec(tid), n_frames),
-                                         "weight": 1.0, "loss_type": "cosine"}]
-                gen["latch_hparams"] = {"rho": float(g), "mu": float(g)}
+            # gain 0 still goes through the guided sampler (production head, rho = mu = 0), so the baseline is the same
+            # render minus the steering; see clip_name.
+            gen["latch_configs"] = [{"model_path": str(hp[h or "prod"]),
+                                     "target_raw": build_target_raw(384, target_spec(tid or "C"), n_frames),
+                                     "weight": 1.0, "loss_type": "cosine"}]
+            gen["latch_hparams"] = {"rho": float(g), "mu": float(g)}
             sink = []
             audio = model.generate(latents_sink=sink, **gen)
             z = sink[-1].float()
@@ -238,16 +248,21 @@ def run(stages):
             done.add(name)
             log.write(json.dumps(cell) + "\n")
             log.flush()
+            del audio, sink, z, wav, gen
+            gc.collect()
+            torch.cuda.empty_cache()
             if i % 25 == 0:
                 rate = (time.time() - t_stage) / (i + 1)
-                print(f"[e13] {stage} {i + 1}/{len(todo)} {name} {cell['elapsed']}s, ~{rate * (len(todo) - i - 1) / 60:.0f} min left",
-                      flush=True)
+                print(f"[e13] {stage} {i + 1}/{len(todo)} {name} {cell['elapsed']}s, ~{rate * (len(todo) - i - 1) / 60:.0f} min left, "
+                      f"GPU allocated {torch.cuda.memory_allocated() / 2**30:.2f} GiB", flush=True)
     write_meta({"status": "rendered", "clips": len(cells)})
 
 
 def main():
     ap = argparse.ArgumentParser(description="EXPERIMENTS E13 chroma head screen + gain ladder")
     ap.add_argument("--stages", default="screen,ladder")
+    ap.add_argument("--ladder-heads", default=None,
+                    help="comma-separated head ids for the ladder instead of the screen's top 3 (a second ladder, resumable)")
     ap.add_argument("--dry", action="store_true", help="CPU: check heads exist, print the plan sizes, build every target")
     a = ap.parse_args()
     if a.dry:
@@ -262,7 +277,7 @@ def main():
         fake = np.random.default_rng(0).standard_normal((2, int(DURATION_SEC * sc.SAME_SR))).astype(np.float32) * 0.1
         print("measure ok", list(measure(fake, None, n_frames)))
         return
-    run(a.stages.split(","))
+    run(a.stages.split(","), a.ladder_heads.split(",") if a.ladder_heads else None)
 
 
 if __name__ == "__main__":

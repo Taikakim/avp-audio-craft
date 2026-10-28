@@ -37,7 +37,7 @@ def main():
     base = {}
     for c in cells:
         c["metrics"] = rows.get(str(OUT / c["clip"]))
-        if c["gain"] == 0:
+        if c["gain"] == 0 and c["clip"].startswith("base0__"):     # guided sampler at gain 0; see chroma_e13_render.clip_name
             base[(c["prompt"], c["seed"])] = c
     missing = sum(1 for c in cells if c["metrics"] is None)
     if missing:
@@ -81,9 +81,12 @@ def main():
         lines.append(f"{r['head']:22s} {r['n']:3d} {r['fails']:4d} {r['bass_fcos']:+10.4f} {r['mid_fcos']:+9.4f} "
                      f"{r['bass_hit']:+10.4f} {r['mid_hit']:+9.4f}")
     # ladder
+    # a ladder cell at gain 2048 with a screen target and seed has the screen clip's name, so it was rendered once, in the
+    # screen; count every cell of a ladder head, whichever stage rendered it
+    ladder_heads = {c["head"] for c in steered if c["stage"] == "ladder"}
     lad = defaultdict(list)
     for c in steered:
-        if c["stage"] == "ladder":
+        if c["head"] in ladder_heads:
             lad[(c["head"], c["gain"])].append(c)
     heads = sorted({h for h, _ in lad}, key=lambda h: (h != "prod", h))
     gains = sorted({g for _, g in lad})
@@ -114,7 +117,7 @@ def main():
                  + ", ".join(f"{h} {g}" for h, g in report["ceiling"].items()))
     # paired vs prod
     key = lambda c: (c["prompt"], c["target"], c["seed"], c["gain"])  # noqa: E731
-    prod = {key(c): c for c in steered if c["stage"] == "ladder" and c["head"] == "prod"}
+    prod = {key(c): c for c in steered if c["head"] == "prod"}
     report["paired"] = []
     lines.append("\nPAIRED vs the production head, same prompt/target/seed/gain, both gate-clean: mean diff of d_cos (bass+mid)/2, win share")
     for h in heads:

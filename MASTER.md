@@ -988,6 +988,13 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   **Loudness fix:** `latch_hparams={"guide_anchor": 1.2}` caps the latent's std after every step at its healthy per-sigma level and returns
   those renders to the unguided loudness; the per-edit `guide_rescale` does NOT (the inflation builds in the model's later steps, not in
   the edits). The anchor does not repair early-window content damage (gate fails unchanged). EXPERIMENTS E5.
+- **An "unguided" LatCH baseline must go through the GUIDED sampler at gain 0, not `generate()` without `latch_configs` (W, 2026-10-28).**
+  With no LatCH config, `StableAudioModel.generate()` takes `sample_diffusion` (batch CFG, CFG rescale, APG); with one it takes
+  `_latch_guided_generate`. Same prompt and seed, different render: in E13, 4 of 12 such baselines scored Audiobox CE ~3 while every
+  steered render of the same prompt + seed scored 6-7 even at gain 512, which made the gate fail a third of all clips and turned the
+  production chroma head's low-gain effect negative. Render the baseline with the same head attached and `latch_hparams` rho = mu = 0
+  (`eval/chroma_e13_render.py`). **Probably affected, not re-checked:** `eval/chroma_steer_render.py` (the 07-19 extended chroma set,
+  gain-0 cells have no config) and any other LatCH eval whose gain-0 cell omits the config.
 - **SA3-medium LatCH guidance needs gain ≈ 48–96**, not the SAO-Small default of 8 (SAME-L's
   256-d latent is ~10× less gain-sensitive). At gain 8 heads steer the right way with ~2%
   authority — `corr=1.0` is a *mirage* (rank-corr ≠ magnitude); judge by spread. Probe R²

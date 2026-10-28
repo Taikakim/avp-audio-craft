@@ -1678,6 +1678,28 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   `evals_aac/control_runs/chroma_e13_20261028/report.txt`. medium-base, 20 s, 24 steps, cfg 7 (the 07-19 extended-set settings),
   not the June all-C sweep's exact prompts, whose render script was not found; the production head is re-rendered here, so the
   comparison is within this run.
+- **RESULT (W, 2026-10-28 04:57; 1,752 clips + 12 unguided; `report.txt` in the run dir; page files/evals/chroma_e13.html).** Change in
+  frame-wise cos to the target vs the unguided render, mid band (bass in brackets), mean over 3 prompts x 4 targets x 4 seeds:
+
+  | head | 512 | 1024 | 2048 | 4096 | 8192 | gate fails (of 48) |
+  |---|---|---|---|---|---|---|
+  | production | +0.014 (+0.007) | +0.033 | +0.075 (+0.030) | +0.133 | +0.189 (+0.062) | 0 at every gain |
+  | C3 lr 1e-3 ep10 EMA | +0.152 (+0.053) | +0.232 | +0.300 (+0.092) | +0.354 | +0.384 (+0.127) | 0 up to 3072, 1-2 above (CE drift) |
+  | C3 ep20 EMA | +0.144 | +0.219 | +0.292 | +0.345 | +0.373 (+0.141) | 0-1 |
+  | C2 lr 1e-2 ep15 online | +0.139 | +0.211 | +0.279 | +0.334 | +0.366 | 0-1 |
+
+  (1) **The retrained head steers far more at every gain:** at gain 512 it moves the chroma about as far as the production head at
+  6144-8192, and it beats production on every paired clip (win share 0.98-1.00, 46-48 gate-clean pairs per gain). Kill condition
+  NOT met. (2) **Best weight set: C3 (lr 1e-3) epoch 10;** EMA, short EMA and online are interchangeable (within 0.003). **Held-out
+  val loss did not predict steering:** C2 has the best val (0.0843) but steers a little less than C3 (0.0973); C4 (lr 1e-4, val
+  0.160) steers less than production. (3) **Strongest-class hit (mid) peaks at gain 3072-4096 (~0.24) and falls slightly above**,
+  while cos keeps rising, so past ~4096 the chroma gets closer in shape without more frames landing on the right note. (4) **No
+  disintegration:** the gate flags 0-2 of 48 clips per gain, all Audiobox CE drift, none whitening / buzz / latent level.
+  (5) **Baseline confound found and fixed during the run:** generate() with no LatCH config takes `sample_diffusion` (CFG rescale, APG),
+  a different render from the guided sampler at gain 0; 4 of 12 such baselines scored CE ~3 against 6-7 for every steered clip of the
+  same prompt + seed, and the production head read NEGATIVE at gain 512. The numbers above use baselines rendered through the guided
+  sampler at gain 0 (`base0__`); MASTER section 5 has the gotcha. Not yet heard: the page carries the unaudited mark. Next, once
+  listened: if it sounds right, promote C3 ep10 to `latch_weights_sa3_medium/` (the production head stays as the reference).
 
 ### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
 - **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file

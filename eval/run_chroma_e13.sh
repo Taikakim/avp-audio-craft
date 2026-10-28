@@ -15,9 +15,14 @@ until KIND=batch NOTE="E13 chroma head eval, ~3 h" "$SAO/Misc/gpu_guard.sh" acqu
 trap '"$SAO/Misc/gpu_guard.sh" release WINTERMUTE >/dev/null 2>&1' EXIT
 echo "$(date '+%F %T') GPU acquired"
 cd /tmp || exit 1
-"$SAO/.venv/bin/python" "$SAO/eval/chroma_e13_render.py"
-rc=$?
-echo "$(date '+%F %T') render rc=$rc"
+# resumable: retry up to 5 times (the first attempt OOMed after 142 clips, 2026-10-28)
+for attempt in 1 2 3 4 5; do
+  "$SAO/.venv/bin/python" "$SAO/eval/chroma_e13_render.py" "$@"
+  rc=$?
+  echo "$(date '+%F %T') render attempt $attempt rc=$rc"
+  [ $rc -eq 0 ] && break
+  sleep 60
+done
 "$MIRPY" "$SAO/control/sa3_control/clip_metrics.py" --roots control_runs/chroma_e13_20261028 --workers 12
 echo "$(date '+%F %T') texture metrics rc=$?"
 "$MIRPY" "$SAO/control/sa3_control/clip_metrics_audiobox.py" --roots control_runs --pattern chroma_e13_20261028
