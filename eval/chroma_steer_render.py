@@ -51,7 +51,7 @@ sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
 
 import chroma_steer_targets as T  # noqa: E402
 from sa3_control.chroma_guided_generator import (  # noqa: E402
-    chord_to_chroma, parse_progression, ChromaSchedule)
+    chord_to_chroma, chord_root, parse_progression, ChromaSchedule)
 from harmonic import same_chroma as sc  # noqa: E402
 
 HEADS_DIR = SAO / "stable-audio-3" / "latch_weights_sa3_medium"
@@ -87,9 +87,17 @@ def build_target_raw(dim: int, target_spec: dict, n_frames: int) -> np.ndarray:
         return c12
     if dim == 384:
         out = np.empty((3, 128, n_frames), dtype=np.float32)
+        # bass root from the CHORD, not argmax: a triad's chord tones tie, and argmax took the lowest
+        # pitch class (F# -> C#, A -> C#). Fixed 2026-10-28 (CONTINUITY, found by EXPERIMENTS E21).
+        if target_spec["kind"] == "static":
+            root_static = chord_root(target_spec["chord"])
+            sch = None
+        else:
+            root_static, sch = None, ChromaSchedule(parse_progression(target_spec["prog"]), fps=FPS, blend_sec=1.0)
         for f in range(n_frames):
             mel12 = c12[:, f]
-            bass_root = int(np.argmax(mel12))
+            r = root_static if sch is None else sch.root_at(f / FPS)
+            bass_root = int(r) if r is not None else int(np.argmax(mel12))
             tgt = sc.make_steering_target(1, mel12, bass_root=bass_root,
                                           bass_gain=1.0, mid_gain=1.0, air_gain=0.3)
             out[:, :, f] = tgt[:, :, 0]

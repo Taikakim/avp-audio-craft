@@ -176,6 +176,27 @@ def chord_to_chroma(name: str, *, sharpness: float = 1.0,
     return vec.astype(np.float32)
 
 
+def chord_root(name: str, *, key: Optional[str] = None) -> Optional[int]:
+    """Root pitch class (0-11, C=0) of a chord spec in the forms ``chord_to_chroma`` accepts.
+
+    Note-name chords and roman degrees give their root; a raw pc-set ('0,4,7') gives its FIRST
+    listed pitch class (the convention: list the root first). None if nothing parses.
+    Added 2026-10-28 (CONTINUITY): the 384-d steering target used argmax over the 12-d chroma as
+    the bass root, and a triad's three chord tones tie at 1.0, so argmax returned the LOWEST pitch
+    class, not the root (F# -> C#, A -> C#)."""
+    name = (name or "").strip()
+    toks = name.replace(",", " ").split()
+    if toks and all(tok.lstrip("-").isdigit() for tok in toks):
+        return int(toks[0]) % 12
+    deg = _resolve_degree(name, key) if key else None
+    if deg is not None:
+        return deg[0]
+    if not name:
+        return None
+    root_tok = name[:2] if (len(name) >= 2 and name[1] in ("#", "b", "B")) else name[:1]
+    return _root_to_pc(root_tok)
+
+
 def parse_progression(arg: str) -> "str | list[tuple[float, str]]":
     """'0:Am|32:F|64:C|96:G' -> [(0.0,'Am'),(32.0,'F'),(64.0,'C'),(96.0,'G')].
 
@@ -254,6 +275,11 @@ class ChromaSchedule:
         self._standardize = bool(meta.get("standardized"))
         self._std_mean = float(meta.get("std_mean", 0.0))
         self._std_std = float(meta.get("std_std", 1.0)) or 1.0
+
+    def root_at(self, t_sec: float) -> Optional[int]:
+        """Root pitch class of the chord active at ``t_sec`` (step, no blend)."""
+        i = int(np.searchsorted(self._times, float(t_sec), side="right") - 1)
+        return chord_root(self.progression[max(i, 0)][1], key=self.key)
 
     def chroma_at(self, t_sec: float) -> np.ndarray:
         """The (12,) chroma active at absolute time ``t_sec`` (unstandardized).
