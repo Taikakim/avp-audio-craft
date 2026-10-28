@@ -10,6 +10,7 @@
 //     "Kone mixtape" page's four phone buttons: flag = bright | punch (about the clip under the playhead) or
 //     sync | unfit (about the transition that last played); t = seconds into the mix; clip_idx / trans_idx are
 //     indices into that mix's timelines.json (-1 = unknown, e.g. an older version with no timeline).
+//     2026-10-28: flag also bad_track | bad_transition (the mixtape MARK page) and unmark (+ mark = the key it cancels).
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
 //   GET  (anything else)          write_only:true, no data
 //
@@ -182,17 +183,23 @@ if ($method === 'POST') {
                 'model_b' => $model_b, 'ckpt_b' => $ckpt_b, 'cfg_b' => (float)$in['cfg_b'], 'w_b' => (float)$in['w_b'], 'file_b' => $file_b,
                 'choice' => $choice, 'source' => $source];
     } elseif ($type === 'mixflag') {
+        // 2026-10-28 (W, for G's mixtape MARK page): + bad_track / bad_transition, and 'unmark' = the listener took
+        // a mark back (the page's x button). Records are never deleted: an unmark is appended and names the mark it
+        // cancels by the client's mark key (pattern-checked). mark is optional for the older flags.
         $flag = (string)($in['flag'] ?? '');
         $mix = (string)($in['mix'] ?? ''); $variant = (string)($in['variant'] ?? ''); $clip = (string)($in['clip'] ?? '');
-        if (!in_array($flag, ['bright', 'punch', 'sync', 'unfit'], true) || !valid_file($mix) || !valid_file($variant)
+        $mark = (string)($in['mark'] ?? '');
+        if (!in_array($flag, ['bright', 'punch', 'sync', 'unfit', 'bad_track', 'bad_transition', 'unmark'], true)
+            || !valid_file($mix) || !valid_file($variant)
             || ($clip !== '' && !valid_file($clip))
+            || ($mark !== '' && !preg_match('/^[a-z0-9]{1,24}$/', $mark)) || ($flag === 'unmark' && $mark === '')
             || !valid_num($in['t'] ?? null, 0, 36000)
             || !valid_num($in['clip_idx'] ?? null, -1, 2000) || !valid_num($in['trans_idx'] ?? null, -1, 2000)) {
             http_response_code(400); echo json_encode(['error' => 'invalid mixflag payload']); exit;
         }
         $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'mixflag', 'mix' => $mix, 'variant' => $variant,
                 'flag' => $flag, 't' => round((float)$in['t'], 1), 'clip' => $clip,
-                'clip_idx' => (int)$in['clip_idx'], 'trans_idx' => (int)$in['trans_idx'], 'source' => $source];
+                'clip_idx' => (int)$in['clip_idx'], 'trans_idx' => (int)$in['trans_idx'], 'mark' => $mark, 'source' => $source];
     } else {
         http_response_code(400); echo json_encode(['error' => 'unknown type']); exit;
     }
