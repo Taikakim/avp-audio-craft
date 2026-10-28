@@ -11,6 +11,8 @@
 //     sync | unfit (about the transition that last played); t = seconds into the mix; clip_idx / trans_idx are
 //     indices into that mix's timelines.json (-1 = unknown, e.g. an older version with no timeline).
 //     2026-10-28: flag also bad_track | bad_transition (the mixtape MARK page) and unmark (+ mark = the key it cancels).
+//   POST {type:'mixpick', action: add|remove, model, ckpt, prompt_id, cfg, w, native, file, source}   (2026-10-28, the DoRA
+//     table's cassette button: tag a clip for the long mixtape; the full recipe is joined from the render manifest by file)
 //   GET  ?export=1&key=<TOKEN>   ALL ratings — KIM-ONLY review/rebuild key
 //   GET  (anything else)          write_only:true, no data
 //
@@ -200,6 +202,22 @@ if ($method === 'POST') {
         $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'mixflag', 'mix' => $mix, 'variant' => $variant,
                 'flag' => $flag, 't' => round((float)$in['t'], 1), 'clip' => $clip,
                 'clip_idx' => (int)$in['clip_idx'], 'trans_idx' => (int)$in['trans_idx'], 'mark' => $mark, 'source' => $source];
+    } elseif ($type === 'mixpick') {
+        // 2026-10-28 (W, Kim's ask): the cassette button on the DoRA table tags a clip for the long mixtape. Only the clip's
+        // identity is stored (file + the cell that resolved to it); the full render recipe (prompt text, seed, sampler, steps,
+        // length, checkpoint) is joined later from the render manifest by file, so the record cannot drift from the render.
+        // action add | remove (remove = untag; appended, never deleted).
+        $action = (string)($in['action'] ?? 'add');
+        $model = clean_str($in['model'] ?? '', $MAX_STR);
+        $ckpt  = clean_str($in['ckpt'] ?? '', $MAX_STR);
+        $file  = (string)($in['file'] ?? '');
+        if (!in_array($action, ['add', 'remove'], true) || $model === '' || $ckpt === '' || !valid_file($file)
+            || !valid_num($in['cfg'] ?? null, 0, 100) || !valid_num($in['w'] ?? null, 0, 100)) {
+            http_response_code(400); echo json_encode(['error' => 'invalid mixpick payload']); exit;
+        }
+        $rec = ['ts' => time(), 'iso' => gmdate('c'), 'type' => 'mixpick', 'action' => $action,
+                'model' => $model, 'ckpt' => $ckpt, 'prompt_id' => $prompt_id, 'cfg' => (float)$in['cfg'], 'w' => (float)$in['w'],
+                'native' => !empty($in['native']), 'file' => $file, 'source' => $source];
     } else {
         http_response_code(400); echo json_encode(['error' => 'unknown type']); exit;
     }

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Last edited: WINTERMUTE 2026-10-28 -- cassette (mixtape pick) button per row -> ratings.php type 'mixpick'
 """
 build_dora_table_page.py -- interactive web page over the DoRA hyperparameter x metric table
 (Kim 2026-07-22: "prepare a web page with the same content but interactive ordering by different
@@ -391,6 +392,8 @@ tbody tr.degraded td{background:#2a1416;color:#c77}
 tbody tr.degraded td.model{color:#e88}
 .pinbox{margin:0 5px 0 0;vertical-align:middle;cursor:pointer}
 .degbox{margin:0 0 0 5px;vertical-align:middle;cursor:pointer;accent-color:#e55}
+.cassbtn{margin:0 0 0 6px;vertical-align:middle;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px;border:1px solid #444;border-radius:4px;background:none;color:#888;opacity:.6}
+.cassbtn:hover{opacity:1}.cassbtn.on{color:#fc6;border-color:#fc6;opacity:1;background:#3a2e14}.cassbtn.err{color:#e55;border-color:#e55}
 tbody tr.nomatch{opacity:.35}
 tbody tr.approx{opacity:.72}   /* plays a nearest-match clip, NOT dead -- see markAvailability */
 tbody tr.playing td{background:#183226 !important}tbody tr.playing td.model{background:#1c3c2c !important;color:#9fe}
@@ -586,6 +589,32 @@ const DEG_KEY='dora_table_degraded_v1';
 let degraded;
 try{const s=localStorage.getItem(DEG_KEY);degraded=new Set(s?JSON.parse(s):[]);}catch(e){degraded=new Set();}
 function saveDegraded(){try{localStorage.setItem(DEG_KEY,JSON.stringify([...degraded]));}catch(e){}}
+// MIXTAPE PICKS (W 2026-10-28, Kim: "one more button per row ... a cassette icon, which would then save the information for
+// that track to be used in the mixtape"). The cassette tags the clip the row resolves to at the current prompt/cfg/weight
+// picker (the same resolution as clicking the row, native swap included) and POSTs it to /files/ratings.php as
+// type 'mixpick' -- the server copy is the record. The full recipe (prompt text, seed, sampler, steps, length) is joined
+// from the render manifest by file when the mix is built. The local set below only remembers which buttons to light.
+const MIX_KEY='dora_table_mixpicks_v1';
+let mixpicks;try{mixpicks=new Set(JSON.parse(localStorage.getItem(MIX_KEY)||'[]'));}catch(e){mixpicks=new Set();}
+function saveMixpicks(){try{localStorage.setItem(MIX_KEY,JSON.stringify([...mixpicks]));}catch(e){}}
+function rowHit(model,ckpt){
+ if(!cellIndex)return null;
+ const {pid,cfg,w}=currentSel(model);
+ const hit=resolveCell(modelKey(model),ckpt,pid,cfg,w);if(!hit)return null;
+ const sw=nativeSwap(hit,ckpt);return {hit,file:sw.file,native:sw.file!==hit.file||hit.native};}
+async function toggleMixpick(btn,model,ckpt){
+ const rh=rowHit(model,ckpt);
+ if(!rh){btn.classList.add('err');btn.title='no clip rendered for this row at the current picker';return;}
+ const on=!mixpicks.has(rh.file);
+ const body={type:'mixpick',action:on?'add':'remove',model:rh.hit.mkey,ckpt:String(ckpt),prompt_id:rh.hit.pid,
+  cfg:rh.hit.cfg,w:rh.hit.w,native:rh.native,file:rh.file,source:'dora_table'};
+ btn.classList.remove('err');
+ try{const r=await fetch('/files/ratings.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(r.status);}
+ catch(e){btn.classList.add('err');btn.title='not saved ('+e.message+'), try again';return;}
+ if(on)mixpicks.add(rh.file);else mixpicks.delete(rh.file);saveMixpicks();
+ btn.classList.toggle('on',on);
+ btn.title=(on?'in the mixtape: ':'removed from the mixtape: ')+rh.hit.pid+' cfg'+rh.hit.cfg+' w'+rh.hit.w+(rh.native?' (native length)':'')+' -- click to '+(on?'remove':'add again');}
 
 // NAMED PRESETS (Kim 2026-09-29: "this set could be saved as a check-boxed preset, and a
 // button added ... to save/remove the row from the list of favourites, which can be selected
@@ -657,7 +686,14 @@ function render(){
      const k=rowKey(r);
      if(db.checked){degraded.add(k);pinned.delete(k);savePins();}else degraded.delete(k);
      saveDegraded();render();});
-    td.appendChild(db);}
+    td.appendChild(db);
+    const cb=document.createElement('button');cb.type='button';cb.className='cassbtn';cb.textContent='\u{1F4FC}';
+    const rh0=rowHit(r.model,r.ckpt);
+    if(rh0&&mixpicks.has(rh0.file))cb.classList.add('on');
+    cb.title=(rh0&&mixpicks.has(rh0.file)?'in the mixtape -- click to remove':'add this clip (at the current prompt / cfg / weight picker) to the mixtape');
+    cb.setAttribute('aria-label','mixtape');
+    cb.addEventListener('click',ev=>{ev.stopPropagation();toggleMixpick(cb,r.model,r.ckpt);});
+    td.appendChild(cb);}
    else{if(typeof v!=='number')td.className='txt';td.textContent=nfmt(c,v);}
    const h=heat(c,v);if(h)td.style.cssText=h;tr.appendChild(td);}
   const htd=document.createElement('td');htd.className='hytd';
@@ -832,7 +868,12 @@ function markAvailability(){
   const nat=any&&g.native?'native-length only — no 20s grid render for this checkpoint':'';
   tr.title=any?[nat,hasPrompt?'':'no clip at this prompt — clicking plays the nearest available cell']
                  .filter(Boolean).join(' · ')
-              :'no clip rendered for this model/checkpoint at any setting';});}
+              :'no clip rendered for this model/checkpoint at any setting';
+  // the cassette lights for the clip THIS row resolves to at the current picker (re-checked on every picker change)
+  const cb=tr.querySelector('.cassbtn');
+  if(cb){const rh=any?rowHit(tr.dataset.model,tr.dataset.ckpt):null;const on=!!(rh&&mixpicks.has(rh.file));
+   cb.classList.toggle('on',on);cb.classList.remove('err');
+   cb.title=on?'in the mixtape -- click to remove':'add this clip (at the current prompt / cfg / weight picker) to the mixtape';}});}
 function markPlaying(){
  document.querySelectorAll('#body tr.playing').forEach(x=>x.classList.remove('playing'));
  annotateAvailabilityMarkers();
