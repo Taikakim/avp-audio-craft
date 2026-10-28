@@ -1935,6 +1935,7 @@ swept (outgoing LP / incoming HP, 16 kHz -> 60 Hz). (2) lengthen clips 2-3x with
 `decode_z0_clamped.py`), then 16-bar windows. (3) multi-band asymmetry on the full mix: percussion highs (> ~800-1000 Hz) first, kick lows last. (4) latent slerp of the overlaid
 parts (zero latent is not silence: validity-weighted) and the chroma head to blend pitch. **Kill criterion:** a stage is dropped when the owner's ear finds it no better than v7b plain.
 **Status 2026-10-07:** (1) built, synthetic tests pass, NOT yet run on real clips (the clip drive dropped off the bus at 14:11; remount needs root).
+**Status 2026-10-28:** (1)+(2) run on 17 shortlist originals: 3x forward outpaint, BS-RoFormer stems, kick-grid tempo + kick-onset phase alignment, band-swap, 16-bar windows -> `Mantu/sa3_lora_runs/mixtape_mix17_v7c_len3x`, 26.4 min; marks collected on the phone page (aavepyora files/evals/mixtape_mark). Not yet heard; extended clips decoded without the z0 clamp (probably hot).
 
 ### F8 — Separation upgrade series S0-S5 (measure first, then cheapest fix first) — **PLANNED (Kim 2026-10-27, THE-FINN plan; no owner yet)**
 
