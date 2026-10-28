@@ -1708,7 +1708,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   `latch/run_chroma_size.sh`, 12 epochs each, every epoch saved: **S0** the onset recipe exactly (d256 depth 8, lr 1e-2, b16); **S1** the
   C3 recipe at d512 depth 12; **S2** C3 at d768 depth 8 (S1/S2 micro-batch 4 x 8 accumulation = the same effective 32: d768 at
   micro-batch 8 ran out of memory on the 16 GB card, as did d768 depth 12, which is therefore not an arm). All arms log
-  `--log-grad-noise-t 100` (new, stable-audio-3 `b7ef06f` on `wintermute/latch-gn-by-t`): every 100 steps, 5 flow-time bins x two
+  `--log-grad-noise-t 100` (new, stable-audio-3 `b7ef06f`, now in `feature/sa3-drum-sep` via merge `8c44075`; the temporary branch and worktree were removed 2026-10-28): every 100 steps, 5 flow-time bins x two
   half-batch gradients -> per part (each block's attn / mlp / adaLN_mod, plus input, time embedder, output) cos, noise ratio and
   B_simple, in `grad_noise_by_t.jsonl`; plus the pooled meter every 100 steps, `--step-log`, `--layer-log 50`, val by t. Smoke readings
   at step 0-15: pooled half-batch cos 0.5-0.9, highest at t 0.8-1.0 (most noise) in 4 of 5 readings. Eval after training: the E13
