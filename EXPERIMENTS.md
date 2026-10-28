@@ -1700,6 +1700,20 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   same prompt + seed, and the production head read NEGATIVE at gain 512. The numbers above use baselines rendered through the guided
   sampler at gain 0 (`base0__`); MASTER section 5 has the gotcha. Not yet heard: the page carries the unaudited mark. Next, once
   listened: if it sounds right, promote C3 ep10 to `latch_weights_sa3_medium/` (the production head stays as the reference).
+- **E13b — onset recipe, bigger / deeper heads, gradient noise by t and part — RUNNING 2026-10-28 07:33 (W; Kim asked 2026-10-28).**
+  Kim's questions: was the best onset-head recipe used (no: the E13 arms used G's bass recipe: Shampoo, Muon on all 2-D, radial brake,
+  wd-overtraining, batch 8 x 4; the onset winner is modular lr 1e-2 + 500 warmup, batch 16, depth 8), might chroma need a bigger or deeper
+  head (E13 was already d512 depth 8 vs production d256 depth 4), and was gradient noise measured by timestep and model part (no: the
+  half-batch meter, `--log-grad-noise`, exists since 10-21 but is off by default, 2-D only and pooled over t; the E13 arms predate it).
+  `latch/run_chroma_size.sh`, 12 epochs each, every epoch saved: **S0** the onset recipe exactly (d256 depth 8, lr 1e-2, b16); **S1** the
+  C3 recipe at d512 depth 12; **S2** C3 at d768 depth 8 (S1/S2 micro-batch 4 x 8 accumulation = the same effective 32: d768 at
+  micro-batch 8 ran out of memory on the 16 GB card, as did d768 depth 12, which is therefore not an arm). All arms log
+  `--log-grad-noise-t 100` (new, stable-audio-3 `b7ef06f` on `wintermute/latch-gn-by-t`): every 100 steps, 5 flow-time bins x two
+  half-batch gradients -> per part (each block's attn / mlp / adaLN_mod, plus input, time embedder, output) cos, noise ratio and
+  B_simple, in `grad_noise_by_t.jsonl`; plus the pooled meter every 100 steps, `--step-log`, `--layer-log 50`, val by t. Smoke readings
+  at step 0-15: pooled half-batch cos 0.5-0.9, highest at t 0.8-1.0 (most noise) in 4 of 5 readings. Eval after training: the E13
+  screen (gain 2048, + 512) of each arm's epochs against C3 ep10 and production, same baselines. Output
+  `Mantu/latch_sweep/chroma_size_2026-10-28/`.
 
 ### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
 - **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file
