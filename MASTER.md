@@ -1020,6 +1020,7 @@ package will do this. `ls /home/kim/Projects/SAO` before blaming the venv.
   more literal ground truth here. Also: **no continuous-feature head plateaus by gain=512** as the
   06-28 note implies — `rms_energy_bass/body/mid/air`, `hardness`, `spectral_flatness/flux/skewness`
   all keep moving monotonically toward target through 8192 with no ceiling in this range (bass:
+  ⚠ **(CONTINUITY 2026-10-28) Re-read the `hpcp` verdict:** every hpcp steering target we built until 2026-10-28 was 9 semitones off. The head was trained on Essentia HPCP with its DEFAULT 440 Hz reference (bin 0 = A); our targets put C at bin 0, so a C request asked for A. With the rotation (`HPCP_BIN0_PC` in `control/sa3_control/chroma_guided_generator.py`) hpcp steers toward the requested chord and follows transpositions (EXPERIMENTS E21, second run). Any hpcp target you build: rotate C=0 chroma by -9.
   -35dB@64 → -7dB@8192, vs target -0.13dB). No literal non-monotonic dip AT gain 128 either — it
   sits on the same monotonic curve as 64→512, an early/slow point, not a valley; the "128 dead zone"
   framing likely compared it against the older 48–96 default range, not this wider ladder. Net:
