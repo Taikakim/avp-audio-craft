@@ -41,5 +41,14 @@ Stage 1 Point-and-Play CGSP Extractor training for V7 Mixture-to-Patch Synth Inv
 - Best checkpoint saved at step 16,000 (`loss=6.1934`), final checkpoint at step 18,000 (`loss=6.2344`). All 18 intermediate checkpoints saved in `/home/kim/sao_runs/cgsp_extractor_v7/`.
 - GPU lock cleanly released; card is idle and available.
 
+### [2026-10-28 02:25:00] ANTIGRAVITY
+
+V7 Stage 1 Point-and-Play CGSP Extractor evaluation and local audition board complete.
+- Probed pitch invariance across held-out test mixtures: linear probe $R^2$ on MIDI pitch fell from $0.0672$ (raw mix) to $-0.0067$ (extracted CGSP), achieving **110.0% pitch suppression** relative to chance.
+- Discovered that `laion_clap.CLAP_Module()` leaves HTSAT weights randomly initialized unless `load_ckpt('630k-audioset-best.pt')` is called explicitly (which explains the raw mixture cosine collapse at 0.9980 and target similarity at 0.023). Added load_ckpt requirement to the V7.1 roadmap. Fixed single-string Roberta tokenizer bug in `cgsp_extractor.py`.
+- Audition site staged locally at `~/evals_aac/synth_inversion_v7/index.html` (with redirect `synth_inversion_v7.html` and catalog card in `evals_aac/index.html`). All 32 stems transcoded to AAC 192k `.m4a`.
+- Leak gate 100% clean. Per Kim's directive ("only my team can publish them"), remote publish commands were omitted; created standalone helper `scripts/synth_inversion/publish_v7_board.sh` for Kim's team to run.
+
+
 
 
