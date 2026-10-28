@@ -257,6 +257,13 @@ GPU either way — a call, not a task.
 
 *Ready-to-execute blocks, newest first. Move to "Recently done" with the outcome once run.*
 
+## LISTEN: chroma transposition page, E21 (C, 2026-10-28)
+**WHAT / WHY** — EXPERIMENTS E21: does chroma steering follow a transposed chord? Fixing two target bugs on the way showed every earlier hpcp steering result asked for a chord 9 semitones off. After the fix the numbers say hpcp lands on the chord and follows transpositions; same_chroma steers the right way but weakly. Only your ear can say whether hpcp at gain 512 or 2048 sounds musical.
+**RUN** — open `e21_transposition.html` on the site once W has published it (local copy: `~/evals_aac/e21_transposition.html`, needs the clip folder beside it). Section 2 hpcp table: compare unguided against the four chords per prompt.
+**TAKES** — 10-20 minutes of listening.
+**VERIFY** — the page shows 84/84 for the bungee control and no dead clips.
+**REPORT BACK** — one line per head: does the chord change audibly, is the music intact, which gain. I write it into the run's `kim_feedback`.
+
 _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
 
 ---
