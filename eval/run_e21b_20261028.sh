@@ -9,7 +9,12 @@ OUT=/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028
 LOG=/home/kim/sao_runs/e21b_20261028.log
 exec >>"$LOG" 2>&1
 export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE ROCR_VISIBLE_DEVICES=0 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
-until KIND=batch NOTE="CONTINUITY E21b: own :8056 + 238 chroma renders (~2 h)" Misc/gpu_guard.sh acquire CONTINUITY $$ >/dev/null 2>&1; do sleep 60; done
+# free = no process holds >= 1 GiB of VRAM (W's E18 rule), AND nobody holds a plain `flock /tmp/gpu.lock` (a 2026-10-28 grain_sim job
+# took the card that way and the guard could not see it), AND the team guard lets us in.
+vram_free() { ! rocm-smi --showpids 2>/dev/null | awk '/^[0-9]+[[:space:]]/ && $4 >= 1073741824 {f=1} END {exit !f}'; }
+flock_free() { flock -n /tmp/gpu.lock true 2>/dev/null; }
+until vram_free && flock_free && KIND=batch NOTE="CONTINUITY E21b: own :8056 + 238 chroma renders (~2 h)" \
+      Misc/gpu_guard.sh acquire CONTINUITY $$ >/dev/null 2>&1; do sleep 60; done
 SRV=
 cleanup() { [ -n "$SRV" ] && kill "$SRV" 2>/dev/null; Misc/gpu_guard.sh release CONTINUITY >/dev/null 2>&1; }
 trap cleanup EXIT
