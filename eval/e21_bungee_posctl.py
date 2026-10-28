@@ -4,12 +4,17 @@
 bungee (never sox), so the E21 meter must report the shift. Run with the mir pitch venv:
   /home/kim/Projects/mir/pitch_venv/bin/python eval/e21_bungee_posctl.py
 """
+import argparse
 from pathlib import Path
 import numpy as np, soundfile as sf
 from bungee_python import bungee as B
 
-OUT = Path("/run/media/kim/Mantu/sa3_control_runs/e21_transposition_probe_20261028")
-for src in sorted(OUT.glob("e21__*__k0__g2048__*.wav")):
+ap = argparse.ArgumentParser()
+ap.add_argument("--out", default="/run/media/kim/Mantu/sa3_control_runs/e21_transposition_probe_20261028")
+ap.add_argument("--glob", default="e21__*__k0__g2048__*.wav", help="the k=0 renders to shift")
+a = ap.parse_args()
+OUT = Path(a.out)
+for src in sorted(OUT.glob(a.glob)):
     x, sr = sf.read(src, always_2d=True)
     for k in (3, 6, 9):
         dst = OUT / f"posctl__{src.stem}__k{k}.wav"
