@@ -82,6 +82,13 @@ _DEGREE_OFFSETS = {
 }
 
 
+# The hpcp LatCH head was trained on Essentia HPCP with its DEFAULT referenceFrequency (440 Hz), so its bin 0 is A (pitch
+# class 9), not C. Every chroma vector in this module is C=0, so anything handed to the hpcp head must be rotated by
+# np.roll(v, -HPCP_BIN0_PC) (hpcp bin i = pitch class (i + 9) % 12). Verified 2026-10-28: a C-E-G chord lands in HPCP bins
+# 3/7/10, and without the rotation a C request steered every canonical prompt to A (EXPERIMENTS E21). CONTINUITY.
+HPCP_BIN0_PC = 9
+
+
 def _root_to_pc(token: str) -> Optional[int]:
     """'C', 'F#', 'Bb' -> pitch class; None if not a note name."""
     t = token.strip()
@@ -458,6 +465,7 @@ class ChromaGuidedGenerator:
 
         target = self.schedule.target(self._t_emitted_sec, n_frames,
                                       device=device, dtype=torch.float32)
+        target = torch.roll(target, shifts=-HPCP_BIN0_PC, dims=1)   # C=0 chroma -> the hpcp head's A=0 bins
 
         guides = [{
             "head": self.head,

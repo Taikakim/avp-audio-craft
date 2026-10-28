@@ -51,7 +51,7 @@ sys.path.insert(0, "/home/kim/Projects/mir-same-chroma/src")
 
 import chroma_steer_targets as T  # noqa: E402
 from sa3_control.chroma_guided_generator import (  # noqa: E402
-    chord_to_chroma, chord_root, parse_progression, ChromaSchedule)
+    HPCP_BIN0_PC, chord_to_chroma, chord_root, parse_progression, ChromaSchedule)
 from harmonic import same_chroma as sc  # noqa: E402
 
 HEADS_DIR = SAO / "stable-audio-3" / "latch_weights_sa3_medium"
@@ -84,7 +84,10 @@ def build_target_raw(dim: int, target_spec: dict, n_frames: int) -> np.ndarray:
     """(dim, n_frames) raw target for the head. dim=12 -> hpcp; dim=384 -> 3-band SAME."""
     c12 = _chroma12_per_frame(target_spec, n_frames)                   # (12, n_frames)
     if dim == 12:
-        return c12
+        # The hpcp head was trained on Essentia HPCP with its DEFAULT referenceFrequency 440 Hz, so its bin 0 is A, not C
+        # (a C-E-G chord lands in bins 3/7/10; checked 2026-10-28). Our chroma is C=0, so rotate: hpcp_bin i = pc (i + 9) % 12.
+        # Without this a C request steered toward A (EXPERIMENTS E21: every prompt landed on A for a C target). CONTINUITY.
+        return np.roll(c12, -HPCP_BIN0_PC, axis=0)
     if dim == 384:
         out = np.empty((3, 128, n_frames), dtype=np.float32)
         # bass root from the CHORD, not argmax: a triad's chord tones tie, and argmax took the lowest
