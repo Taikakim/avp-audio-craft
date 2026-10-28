@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Owner: GHOST-NOTE (created 2026-10-28)
-"""Glue used for the 17-original v7c mix (EXPERIMENTS F7 step 2): part 1 = madmom downbeats of the 3x-extended clips (db17.py), part 2 = BPM order, stem symlinks in order, per-clip entry/exit bounds (prep.py). Run order: eval/mixtape_lengthen_only.py -> eval/mixtape_v7_separate.py -> part 1 -> part 2 -> eval/render_v7_smoketest.py --band-swap --no-generate --assemble-mix --tempo-source kicks --phase-mode kicks --tempo-plan --w-bars 16 --clips 0:17. Paths were /tmp/m17/*; kept here verbatim as two blocks."""
+# Last edited: GHOST-NOTE 2026-10-28 -- content guard (per-second RMS, drops clips with >2 s below -45 dB or < 60 s unbroken content from the start)
+"""Glue used for the 17-original v7c mix (EXPERIMENTS F7 step 2): part 1 = madmom downbeats of the 3x-extended clips (db17.py), part 2 = content guard + BPM order + stem symlinks + per-clip entry/exit bounds (prep.py). Run order: eval/mixtape_lengthen_only.py -> eval/mixtape_v7_separate.py -> part 1 -> part 2 -> eval/render_v7_smoketest.py --band-swap --clash-aware --no-generate --assemble-mix --tempo-source kicks --phase-mode kicks --tempo-plan --w-bars 16 --clips 0:N. Paths were /tmp/m17/*."""
 
 # ===== part 1: db17.py =====
 import json, sys, soundfile as sf
@@ -24,6 +25,25 @@ rows = []
 for i, c in enumerate(O):
     d = DB[c["id"]]; rows.append(dict(c, old=i, bpm=float(dsp.fit_bpm(d)), n_db=len(d)))
 rows.sort(key=lambda r: r["bpm"])
+
+# ---- content guard (owner ask 2026-10-28): per-second RMS on every extended clip; a clip must have content from its entry to its exit
+# (> 2 s below -45 dB in that span = unusable) and at least MIN_RUN s of unbroken content from the start. Prints the list.
+FLOOR_DB, MAX_BAD_S, MIN_RUN_S = -45.0, 2, 60
+def content_report(path, start, end):
+    x, sr = sf.read(path, dtype="float32", always_2d=True); m = x.mean(1); n = len(m) // sr
+    db = np.array([20 * np.log10(np.sqrt((m[i * sr:(i + 1) * sr] ** 2).mean()) + 1e-9) for i in range(n)])
+    low = db < FLOOR_DB
+    run = int(np.argmax(low)) if low.any() else n          # unbroken content from t=0
+    bad_in_span = int(low[int(start):int(end)].sum())
+    return run, bad_in_span
+keep, dropped = [], []
+for r in rows:
+    run, bad = content_report(r["path"], 0.0, 1e9)
+    (dropped if (bad > MAX_BAD_S or run < MIN_RUN_S) else keep).append((r, run, bad))
+for r, run, bad in dropped:
+    print(f"GUARD DROP {r['id'][:60]}: {bad} s below {FLOOR_DB:.0f} dB, unbroken content {run} s")
+print(f"GUARD: kept {len(keep)} of {len(rows)}")
+rows = [r for r, _, _ in keep]
 print([round(r["bpm"], 1) for r in rows])
 os.makedirs("/tmp/m17/stems_ordered", exist_ok=True)
 bounds = {}
