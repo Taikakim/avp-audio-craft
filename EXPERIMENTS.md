@@ -1714,6 +1714,31 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   at step 0-15: pooled half-batch cos 0.5-0.9, highest at t 0.8-1.0 (most noise) in 4 of 5 readings. Eval after training: the E13
   screen (gain 2048, + 512) of each arm's epochs against C3 ep10 and production, same baselines. Output
   `Mantu/latch_sweep/chroma_size_2026-10-28/`.
+- **E13b RESULT (W, 2026-10-28 10:38).** Held-out val (best): S0 onset recipe **0.0933**, S1 d512 depth 12 0.1031, S2 d768 depth 8 0.1029
+  (E13 C3: 0.0973). Steering, change in mid-band cos vs the guided gain-0 render, 3 prompts x 2 targets x 2 seeds, gate fails 0 everywhere:
+
+  | head | gain 512 | gain 2048 | hit (mid) 2048 |
+  |---|---|---|---|
+  | C3 ep10 (E13 winner, d512 depth 8) | +0.141 | +0.282 | +0.191 |
+  | S1 d512 depth 12, ep10 / ep12 | +0.140 / +0.142 | +0.282 / +0.281 | +0.193 / +0.209 |
+  | S2 d768 depth 8, ep12 | +0.132 | +0.270 | +0.151 |
+  | S0 onset recipe d256 depth 8, ep12 | +0.135 | +0.265 | +0.138 |
+  | production | +0.015 | +0.086 | +0.042 |
+
+  (1) **Neither more depth nor more width steers further:** depth 12 ties depth 8, width 768 is slightly behind. (2) **The onset recipe
+  is close but not better** (-0.006 / -0.017 against C3, and fewer frames on the right note), although it has the best val loss of all:
+  val loss keeps failing to predict steering (E13: C2 best val, steers less). All of these are 9-17x production at gain 512; the gaps
+  between them are ~0.01 on 12 clips, so the ranking inside the group is weak. C3 ep10 stays the candidate. (3) **Every arm reaches its
+  level by epoch 8;** epoch 4 is clearly short (S0 ep4 +0.088, S1/S2 ep4 +0.05).
+  **Gradient noise by t and part (S0 = the only arm with a usable probe: half-batch 8; S1/S2 probed half-batches of 2 because their
+  micro-batch was 4, too noisy to read, late readings even go negative).** Half-batch gradient cosine, whole head, t bins 0-0.2 ... 0.8-1.0
+  (t=0 clean latent): early 0.56 0.58 0.60 0.66 0.64; mid 0.19 0.20 0.20 0.26 0.42; late **0.10 0.12 0.11 0.17 0.40**. B_simple (median,
+  samples): early 3-7, late **42-50 for t < 0.6**, 14-22 above. Read: after the first third the batch-16 step is mostly noise, and most
+  at LOW t (near-clean latents), where the noise scale is ~3x the batch; at high t the gradient is 3-4x more coherent. By part, late,
+  t < 0.6: attention and MLP 0.06-0.09, adaLN 0.09-0.11, input 0.16-0.21, output / final norm 0.23-0.28, so the transformer body is the
+  noisiest. Untested consequences: a larger effective batch (~48) late in training, or lr decay late, and/or sampling t toward the high
+  end, should cost nothing in steering and may help; one seed, one recipe. **Probe fix needed:** `_gn_by_t` uses the step's LAST
+  micro-batch, so with accumulation its halves are tiny; it should pool the step's micro-batches (or draw a separate probe batch of >= 16).
 
 ### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
 - **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file
