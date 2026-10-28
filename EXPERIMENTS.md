@@ -1656,7 +1656,7 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   drift, gate). Runner `control/run_film_modular_bracket.sh` (queued behind GHOST-NOTE's air queue, `/tmp/air_nosf.done`), outputs
   `Mantu2/sa3_control_runs/film_modular_bracket_20261015/`. Kill: all arms diverge or show no density response at 6000 steps.
 
-### E13 — same_chroma LatCH head retrained under the ModularOptimizer — **QUEUED 2026-10-16 (W)**
+### E13 — same_chroma LatCH head retrained under the ModularOptimizer — **TRAINED 2026-10-16/17; EVAL QUEUED 2026-10-28 (W)**
 - **Why:** listening 2026-10-16 on the 06-25 all-C sweep (`riffer-evals/clips/chroma_steer/`, sidecar now carries the verdict): the production
   head steers, transparently (pad chords change their notes), most audibly at gain 2048, so higher gain may pay. Production head = AdamW,
   EMA 0.999, depth 4, 20 ep, train-loss selected (the E3 caveat).
@@ -1667,6 +1667,17 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
 - **Still to build:** an epoch sweep for chroma (all-C / progression targets via `eval/chroma_steer_render.py`), with the gain ladder
   extended above 2048 (3072, 4096, 6144) for both the production head and the retrained arms, through the disintegration gate.
 - **Kill:** no arm beats the production head's C-dominance at equal gain, or every arm's extra range fails the gate.
+- **Training result (read 2026-10-28):** all three arms finished (rc 0). Best held-out val: C2 lr 1e-2 **0.0843** (still falling at
+  epoch 20), C3 1e-3 0.0973, C4 1e-4 0.1604. Only epochs 5/10/15/20 were kept, each as EMA 1 ep, EMA 0.25 ep and online (SF average).
+- **Eval, built and queued 2026-10-28 02:25 (W, GPU granted for the night):** `eval/chroma_e13_render.py` via `eval/run_chroma_e13.sh`
+  (waits for the GPU lock). Screen: all 36 retrained weight sets + the production head at gain 2048, prompts goa / guitar / piano,
+  targets hold C and key-lift C -> Eb -> F#, 2 seeds (450 clips). Ladder: production + the 3 best from the screen at gains
+  512-8192, 4 targets (C, Am, key-lift, Am-F-C-G), 4 seeds (1356 clips). Metric: change vs the same-seed unguided render in
+  frame-wise cos and strongest-class hit, bass and mid bands (follows a progression, not just its mean), then the
+  disintegration gate (texture + Audiobox from clip_metrics.db + latent level). Report `eval/chroma_e13_report.py` ->
+  `evals_aac/control_runs/chroma_e13_20261028/report.txt`. medium-base, 20 s, 24 steps, cfg 7 (the 07-19 extended-set settings),
+  not the June all-C sweep's exact prompts, whose render script was not found; the production head is re-rendered here, so the
+  comparison is within this run.
 
 ### E14 — Batch engineering: composition and ordering of minibatches for the control heads — **PLANNED 2026-10-21 (CONTINUITY, asked by Kim); REGISTERED ONLY, not scheduled**
 - **Why:** the LatCH trainer batches iid (`random_split`, `DataLoader(shuffle=True, drop_last=True)`); nothing in DISCOVERIES, knowledge.md or this file
