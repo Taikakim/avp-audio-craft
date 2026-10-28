@@ -1,0 +1,12 @@
+{
+  "mean_mse_clean": 0.08309320881962776,
+  "mean_mse_demucs": 0.09304791800677777,
+  "mean_mse_oracle": 0.09620963707566262,
+  "mean_mse_mix": 0.1045219849795103,
+  "recovery_ratio_pct": -31.761007110739353,
+  "mean_cutoff_clean": 0.19355053789913654,
+  "mean_cutoff_demucs": 0.19466997757554055,
+  "mean_cutoff_oracle": 0.2121444631367922,
+  "mean_cutoff_mix": 0.2545238006860018,
+  "verdict": "INCONCLUSIVE / FAILED (Damage is driven by other factors: bleed, phase, or high bands)"
+}

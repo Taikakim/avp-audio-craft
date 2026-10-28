@@ -1,0 +1,382 @@
+[
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Auringon kanssa warm sunrise trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 132,
+    "sub_bass_to_kick_db": -2.85,
+    "mean_sub_kick_rms": 0.04076,
+    "mean_sub_bass_rms": 0.02936,
+    "mean_body_bass_rms": 0.04331,
+    "body_masking_pct": 38.8
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Commodore Shiva impulse tracker soft adventure trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 146,
+    "sub_bass_to_kick_db": -10.17,
+    "mean_sub_kick_rms": 0.10337,
+    "mean_sub_bass_rms": 0.03204,
+    "mean_body_bass_rms": 0.02611,
+    "body_masking_pct": 6.8
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Dance of Tomorrow driving rhythmic hypnotic  goatrance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 186,
+    "sub_bass_to_kick_db": 6.53,
+    "mean_sub_kick_rms": 0.04701,
+    "mean_sub_bass_rms": 0.09969,
+    "mean_body_bass_rms": 0.08566,
+    "body_masking_pct": 71.5
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Goddess Guerrilla  goa morning bright energetic trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 123,
+    "sub_bass_to_kick_db": 2.65,
+    "mean_sub_kick_rms": 0.1476,
+    "mean_sub_bass_rms": 0.20022,
+    "mean_body_bass_rms": 0.07918,
+    "body_masking_pct": 0.0
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Kaikki-Alla driving upbeat energetic atmospheric lush melodic eclectic goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 338,
+    "sub_bass_to_kick_db": 3.28,
+    "mean_sub_kick_rms": 0.05922,
+    "mean_sub_bass_rms": 0.08638,
+    "mean_body_bass_rms": 0.08864,
+    "body_masking_pct": 11.3
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Kaleidoscillator colourful electronic eclectic dance music",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 142,
+    "sub_bass_to_kick_db": 8.51,
+    "mean_sub_kick_rms": 0.06551,
+    "mean_sub_bass_rms": 0.17446,
+    "mean_body_bass_rms": 0.08201,
+    "body_masking_pct": 61.9
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - K\u00e4\u00e4pi\u00f6saaren Salaisuus electro upbeat electro trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 164,
+    "sub_bass_to_kick_db": -3.67,
+    "mean_sub_kick_rms": 0.17116,
+    "mean_sub_bass_rms": 0.11213,
+    "mean_body_bass_rms": 0.06823,
+    "body_masking_pct": 0.0
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Unessael\u00e4m\u00e4 euphoric driving trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 115,
+    "sub_bass_to_kick_db": -4.62,
+    "mean_sub_kick_rms": 0.09903,
+    "mean_sub_bass_rms": 0.05819,
+    "mean_body_bass_rms": 0.04718,
+    "body_masking_pct": 24.6
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Unissa kaukana maa dreamy laid back psychedelic dance music",
+    "genre": "Modern Psytrance",
+    "num_kicks_analyzed": 118,
+    "sub_bass_to_kick_db": 6.18,
+    "mean_sub_kick_rms": 0.06963,
+    "mean_sub_bass_rms": 0.14184,
+    "mean_body_bass_rms": 0.11548,
+    "body_masking_pct": 41.8
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - Vapausvoima energetic epic  furious  freedom power trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 154,
+    "sub_bass_to_kick_db": 0.86,
+    "mean_sub_kick_rms": 0.06735,
+    "mean_sub_bass_rms": 0.07433,
+    "mean_body_bass_rms": 0.09763,
+    "body_masking_pct": 57.5
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - kev\u00e4thuuto upbeat happy positive offbeat trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 135,
+    "sub_bass_to_kick_db": -16.27,
+    "mean_sub_kick_rms": 0.11481,
+    "mean_sub_bass_rms": 0.01764,
+    "mean_body_bass_rms": 0.01473,
+    "body_masking_pct": 58.7
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4 - zarjaz beats! upbeat energetic videogame scifi disco electro trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 242,
+    "sub_bass_to_kick_db": -4.07,
+    "mean_sub_kick_rms": 0.10796,
+    "mean_sub_bass_rms": 0.06758,
+    "mean_body_bass_rms": 0.09008,
+    "body_masking_pct": 16.6
+  },
+  {
+    "song": "Aavepy\u00f6r\u00e4- I Sing of Dancing Stars straightforward bold synthesizer trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 267,
+    "sub_bass_to_kick_db": -12.89,
+    "mean_sub_kick_rms": 0.1829,
+    "mean_sub_bass_rms": 0.04149,
+    "mean_body_bass_rms": 0.14759,
+    "body_masking_pct": 26.5
+  },
+  {
+    "song": "Kadonneet maat - Kadonneet maat  beautiful intricate atmospheric fantasy downtempo music",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 29,
+    "sub_bass_to_kick_db": -108.21,
+    "mean_sub_kick_rms": 0.51458,
+    "mean_sub_bass_rms": 0.0,
+    "mean_body_bass_rms": 0.0,
+    "body_masking_pct": 0.0
+  },
+  {
+    "song": "Kadonneet maat - Kiteet organic abstract insect crystal techno",
+    "genre": "Techno",
+    "num_kicks_analyzed": 136,
+    "sub_bass_to_kick_db": -90.41,
+    "mean_sub_kick_rms": 0.06631,
+    "mean_sub_bass_rms": 0.0,
+    "mean_body_bass_rms": 0.0,
+    "body_masking_pct": 0.0
+  },
+  {
+    "song": "Kadonneet maat - Lumilla winter organic cinematic adventure techno synth music",
+    "genre": "Techno",
+    "num_kicks_analyzed": 320,
+    "sub_bass_to_kick_db": -93.08,
+    "mean_sub_kick_rms": 0.09019,
+    "mean_sub_bass_rms": 0.0,
+    "mean_body_bass_rms": 0.0,
+    "body_masking_pct": 88.3
+  },
+  {
+    "song": "Kadonneet maat - Ruoste organic techno",
+    "genre": "Techno",
+    "num_kicks_analyzed": 195,
+    "sub_bass_to_kick_db": -14.89,
+    "mean_sub_kick_rms": 0.08834,
+    "mean_sub_bass_rms": 0.01591,
+    "mean_body_bass_rms": 0.0297,
+    "body_masking_pct": 66.8
+  },
+  {
+    "song": "Summamutikka - Acid Alien aggressive powerful psychedelic melodic goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 142,
+    "sub_bass_to_kick_db": 3.86,
+    "mean_sub_kick_rms": 0.05297,
+    "mean_sub_bass_rms": 0.08258,
+    "mean_body_bass_rms": 0.15288,
+    "body_masking_pct": 33.7
+  },
+  {
+    "song": "Summamutikka - Black Moon psychedelic goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 383,
+    "sub_bass_to_kick_db": -1.13,
+    "mean_sub_kick_rms": 0.09774,
+    "mean_sub_bass_rms": 0.08583,
+    "mean_body_bass_rms": 0.08646,
+    "body_masking_pct": 46.4
+  },
+  {
+    "song": "Summamutikka - Increase The Dose or Drop The Poison driving groovy upbeat goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 148,
+    "sub_bass_to_kick_db": 1.32,
+    "mean_sub_kick_rms": 0.07171,
+    "mean_sub_bass_rms": 0.08346,
+    "mean_body_bass_rms": 0.07755,
+    "body_masking_pct": 48.2
+  },
+  {
+    "song": "Summamutikka - Just Before Sundown melodic acid trance goa oldschool",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 143,
+    "sub_bass_to_kick_db": 0.04,
+    "mean_sub_kick_rms": 0.06015,
+    "mean_sub_bass_rms": 0.0604,
+    "mean_body_bass_rms": 0.05896,
+    "body_masking_pct": 64.4
+  },
+  {
+    "song": "Summamutikka - Lohik\u00e4\u00e4rmelaulu - furious goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 270,
+    "sub_bass_to_kick_db": -9.58,
+    "mean_sub_kick_rms": 0.1605,
+    "mean_sub_bass_rms": 0.0533,
+    "mean_body_bass_rms": 0.07258,
+    "body_masking_pct": 34.8
+  },
+  {
+    "song": "Summamutikka - Naidenie Flowers furious oldschool goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 137,
+    "sub_bass_to_kick_db": -6.26,
+    "mean_sub_kick_rms": 0.05033,
+    "mean_sub_bass_rms": 0.02448,
+    "mean_body_bass_rms": 0.02065,
+    "body_masking_pct": 90.4
+  },
+  {
+    "song": "Summamutikka - Stellar Nomad oldschool goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 338,
+    "sub_bass_to_kick_db": -3.98,
+    "mean_sub_kick_rms": 0.11886,
+    "mean_sub_bass_rms": 0.07515,
+    "mean_body_bass_rms": 0.11953,
+    "body_masking_pct": 4.8
+  },
+  {
+    "song": "Summamutikka - Strange Future 143 BPM",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 503,
+    "sub_bass_to_kick_db": -9.36,
+    "mean_sub_kick_rms": 0.13106,
+    "mean_sub_bass_rms": 0.04463,
+    "mean_body_bass_rms": 0.13142,
+    "body_masking_pct": 0.1
+  },
+  {
+    "song": "Summamutikka - Two Suns in Phrygia",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 482,
+    "sub_bass_to_kick_db": -6.56,
+    "mean_sub_kick_rms": 0.14112,
+    "mean_sub_bass_rms": 0.06628,
+    "mean_body_bass_rms": 0.09855,
+    "body_masking_pct": 73.9
+  },
+  {
+    "song": "aavepyora - evensong c sharp dorian 135 BPM eclectic melodic psytrance",
+    "genre": "Modern Psytrance",
+    "num_kicks_analyzed": 219,
+    "sub_bass_to_kick_db": -2.12,
+    "mean_sub_kick_rms": 0.19845,
+    "mean_sub_bass_rms": 0.15542,
+    "mean_body_bass_rms": 0.08971,
+    "body_masking_pct": 32.6
+  },
+  {
+    "song": "aavepy\u00f6r\u00e4 - light in darkness a minor 116 BPM adventure trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 353,
+    "sub_bass_to_kick_db": 2.04,
+    "mean_sub_kick_rms": 0.09865,
+    "mean_sub_bass_rms": 0.12477,
+    "mean_body_bass_rms": 0.08339,
+    "body_masking_pct": 51.5
+  },
+  {
+    "song": "aavepy\u00f6r\u00e4 - oboe f sharp minor 128 BPM epic suomisoundi",
+    "genre": "Suomisoundi",
+    "num_kicks_analyzed": 380,
+    "sub_bass_to_kick_db": -4.0,
+    "mean_sub_kick_rms": 0.08729,
+    "mean_sub_bass_rms": 0.05505,
+    "mean_body_bass_rms": 0.0717,
+    "body_masking_pct": 42.4
+  },
+  {
+    "song": "aavepy\u00f6r\u00e4 - silicon gate $d404 G dorian 153 BPM chiptune suomisoundi",
+    "genre": "Suomisoundi",
+    "num_kicks_analyzed": 306,
+    "sub_bass_to_kick_db": -8.29,
+    "mean_sub_kick_rms": 0.1005,
+    "mean_sub_bass_rms": 0.0387,
+    "mean_body_bass_rms": 0.19226,
+    "body_masking_pct": 0.0
+  },
+  {
+    "song": "aavepy\u00f6r\u00e4 - stay pure 142 blissful suomisoundi",
+    "genre": "Suomisoundi",
+    "num_kicks_analyzed": 404,
+    "sub_bass_to_kick_db": -2.81,
+    "mean_sub_kick_rms": 0.09429,
+    "mean_sub_bass_rms": 0.06821,
+    "mean_body_bass_rms": 0.1005,
+    "body_masking_pct": 15.5
+  },
+  {
+    "song": "summamutikka  - bongoo 138 BPM driving psychedelic trance",
+    "genre": "Modern Psytrance",
+    "num_kicks_analyzed": 542,
+    "sub_bass_to_kick_db": -6.87,
+    "mean_sub_kick_rms": 0.28899,
+    "mean_sub_bass_rms": 0.13097,
+    "mean_body_bass_rms": 0.14086,
+    "body_masking_pct": 4.7
+  },
+  {
+    "song": "summamutikka - astral protection 138  BPM 1996 style goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 481,
+    "sub_bass_to_kick_db": -10.13,
+    "mean_sub_kick_rms": 0.15746,
+    "mean_sub_bass_rms": 0.04903,
+    "mean_body_bass_rms": 0.0721,
+    "body_masking_pct": 70.5
+  },
+  {
+    "song": "summamutikka - dawn tribe 116 BPM epic nostalgic goa",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 484,
+    "sub_bass_to_kick_db": -8.17,
+    "mean_sub_kick_rms": 0.1408,
+    "mean_sub_bass_rms": 0.05495,
+    "mean_body_bass_rms": 0.07699,
+    "body_masking_pct": 9.8
+  },
+  {
+    "song": "summamutikka - etherpilot 145 bpm uk style acidic goa",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 240,
+    "sub_bass_to_kick_db": -12.77,
+    "mean_sub_kick_rms": 0.2568,
+    "mean_sub_bass_rms": 0.05903,
+    "mean_body_bass_rms": 0.02296,
+    "body_masking_pct": 91.0
+  },
+  {
+    "song": "summamutikka - lingua sama heavy goa trance",
+    "genre": "Old-School Goa",
+    "num_kicks_analyzed": 135,
+    "sub_bass_to_kick_db": -1.89,
+    "mean_sub_kick_rms": 0.13098,
+    "mean_sub_bass_rms": 0.10531,
+    "mean_body_bass_rms": 0.1896,
+    "body_masking_pct": 24.4
+  },
+  {
+    "song": "summamutikka - psyykkinen kaaos 137 aussie psy",
+    "genre": "Modern Psytrance",
+    "num_kicks_analyzed": 300,
+    "sub_bass_to_kick_db": -9.75,
+    "mean_sub_kick_rms": 0.14694,
+    "mean_sub_bass_rms": 0.0478,
+    "mean_body_bass_rms": 0.07442,
+    "body_masking_pct": 9.4
+  },
+  {
+    "song": "summamutikka - xenharmonic 145 BPM microtonal forest trance",
+    "genre": "Melodic / Other",
+    "num_kicks_analyzed": 502,
+    "sub_bass_to_kick_db": -10.68,
+    "mean_sub_kick_rms": 0.11681,
+    "mean_sub_bass_rms": 0.03414,
+    "mean_body_bass_rms": 0.09208,
+    "body_masking_pct": 14.8
+  }
+]
