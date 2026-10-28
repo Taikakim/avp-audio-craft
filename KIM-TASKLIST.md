@@ -295,6 +295,7 @@ REPORT BACK: that count.
 ROLLBACK: `rm $R/clips/*deconv*` — the original EMA clips are untouched and differently named.
 
 ### 3. Transcribe + score both weight sets (GPU then CPU)
+**RUN 2026-10-28 (CONTINUITY), NO RESULT: the instrument failed.** Transcription of all 200 clips finished; the block's `--renders $R/clips` finds nothing (the tool globs `<renders>/*/*.json`, so pass `--renders $R`), and it needs the mir venv (pretty_midi). With both fixed: 170 cells scored, but the extractor FAILS its own positive control (reference audio vs its own fed stream 0.073, n = 56), so the A/B numbers measure the pipeline, not the conditioner, and are not reported. The tool's own instruction: reproduce f0_other (stem-separated melodic line, as build_morph_streams did) instead of a transcription skyline, via mir stem separation + f0 on the renders. Output `eval/morph_contour_ab_D17.json` is the failed-gate record.
 RUN:
 ```
 cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && Misc/gpu_guard.sh acquire KIM $$ && FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/hook_eval_renders.py --wavs "$R/clips/*.wav" --out $R/hook.jsonl --midi-dir eval/morph_midi; Misc/gpu_guard.sh release KIM; .venv/bin/python eval/morph_contour_ab.py --renders $R/clips --midi eval/morph_midi --out eval/morph_contour_ab_D17.json

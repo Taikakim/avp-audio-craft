@@ -1,0 +1,1532 @@
+[
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.2922465208747515,
+  "foreign": 0.05699138502319417,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.32341269841269843,
+  "foreign": 0.06349206349206349,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.07341269841269842,
+  "foreign": 0.166005291005291,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09090909090909091,
+  "foreign": 0.10454545454545455,
+  "n_frames": 440
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07370517928286853,
+  "foreign": 0.14209827357237717,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.057539682539682536,
+  "foreign": 0.11904761904761904,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.0873015873015873,
+  "foreign": 0.10978835978835978,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.08134920634920635,
+  "foreign": 0.083994708994709,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.05952380952380952,
+  "foreign": 0.10449735449735449,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.1073558648111332,
+  "foreign": 0.07554671968190854,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.18452380952380953,
+  "foreign": 0.03505291005291005,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.23412698412698413,
+  "foreign": 0.08664021164021164,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.07157057654075547,
+  "foreign": 0.10934393638170974,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.0536779324055666,
+  "foreign": 0.12789927104042412,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.06772908366533864,
+  "foreign": 0.12682602921646746,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.08548707753479125,
+  "foreign": 0.09078860172299537,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.08333333333333333,
+  "foreign": 0.09193121693121693,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07952286282306163,
+  "foreign": 0.1027170311464546,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.06547619047619048,
+  "foreign": 0.11507936507936509,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.05357142857142857,
+  "foreign": 0.13293650793650794,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08548707753479125,
+  "foreign": 0.04705102717031146,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.1840277777777778,
+  "foreign": 0.04398148148148148,
+  "n_frames": 288
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.34291581108829566,
+  "foreign": 0.061601642710472276,
+  "n_frames": 487
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.3359840954274354,
+  "foreign": 0.06693174287607687,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.042735042735042736,
+  "foreign": 0.09116809116809116,
+  "n_frames": 234
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08565737051792828,
+  "foreign": 0.12815405046480743,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.06565656565656566,
+  "foreign": 0.07828282828282829,
+  "n_frames": 396
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.08829568788501027,
+  "foreign": 0.13483915126625598,
+  "n_frames": 487
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.09722222222222222,
+  "foreign": 0.13955026455026456,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.02880658436213992,
+  "foreign": 0.16255144032921812,
+  "n_frames": 486
+ },
+ {
+  "arm": "morph_L3_deconv_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.04771371769383698,
+  "foreign": 0.12591119946984758,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.24254473161033796,
+  "foreign": 0.039761431411530816,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.0967741935483871,
+  "foreign": 0.0913978494623656,
+  "n_frames": 62
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.2653061224489796,
+  "foreign": 0.08027210884353742,
+  "n_frames": 490
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.0720164609053498,
+  "foreign": 0.12277091906721536,
+  "n_frames": 486
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.06557377049180328,
+  "foreign": 0.09904371584699453,
+  "n_frames": 488
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08548707753479125,
+  "foreign": 0.1371769383697813,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.092,
+  "foreign": 0.12333333333333334,
+  "n_frames": 500
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09381237524950099,
+  "foreign": 0.1443779108449767,
+  "n_frames": 501
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.10714285714285714,
+  "foreign": 0.1111111111111111,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.02385685884691849,
+  "foreign": 0.16302186878727634,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.02771362586605081,
+  "foreign": 0.16166281755196305,
+  "n_frames": 433
+ },
+ {
+  "arm": "morph_L3_deconv_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.047619047619047616,
+  "foreign": 0.1302910052910053,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.2976190476190476,
+  "foreign": 0.06746031746031746,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.2727272727272727,
+  "foreign": 0.030303030303030304,
+  "n_frames": 88
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.3392857142857143,
+  "foreign": 0.06084656084656085,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.07341269841269842,
+  "foreign": 0.1388888888888889,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.10454545454545454,
+  "foreign": 0.125,
+  "n_frames": 440
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.06374501992031872,
+  "foreign": 0.15139442231075698,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.04365079365079365,
+  "foreign": 0.08465608465608465,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07341269841269842,
+  "foreign": 0.09986772486772487,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.029197080291970802,
+  "foreign": 0.1565287915652879,
+  "n_frames": 411
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.057539682539682536,
+  "foreign": 0.083994708994709,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.1073558648111332,
+  "foreign": 0.07554671968190854,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.18452380952380953,
+  "foreign": 0.03505291005291005,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.23412698412698413,
+  "foreign": 0.08664021164021164,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.07157057654075547,
+  "foreign": 0.10934393638170974,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.0536779324055666,
+  "foreign": 0.12789927104042412,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.06772908366533864,
+  "foreign": 0.12682602921646746,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.08548707753479125,
+  "foreign": 0.09078860172299537,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.08333333333333333,
+  "foreign": 0.09193121693121693,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07952286282306163,
+  "foreign": 0.1027170311464546,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.031746031746031744,
+  "foreign": 0.12764550264550265,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.05357142857142857,
+  "foreign": 0.13293650793650794,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08548707753479125,
+  "foreign": 0.04705102717031146,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.19791666666666666,
+  "foreign": 0.04398148148148148,
+  "n_frames": 288
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.34291581108829566,
+  "foreign": 0.061601642710472276,
+  "n_frames": 487
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.3379721669980119,
+  "foreign": 0.06693174287607687,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.04700854700854701,
+  "foreign": 0.09259259259259259,
+  "n_frames": 234
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07768924302788845,
+  "foreign": 0.13479415670650732,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.12878787878787878,
+  "foreign": 0.11700336700336701,
+  "n_frames": 396
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09240246406570841,
+  "foreign": 0.1375770020533881,
+  "n_frames": 487
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.09325396825396826,
+  "foreign": 0.1402116402116402,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.02404809619238477,
+  "foreign": 0.15831663326653306,
+  "n_frames": 499
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.03002309468822171,
+  "foreign": 0.14549653579676675,
+  "n_frames": 433
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.041666666666666664,
+  "foreign": 0.1164021164021164,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.23694779116465864,
+  "foreign": 0.08299866131191433,
+  "n_frames": 498
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.0975609756097561,
+  "foreign": 0.0,
+  "n_frames": 41
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.2693877551020408,
+  "foreign": 0.09047619047619047,
+  "n_frames": 490
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.11522633744855967,
+  "foreign": 0.12551440329218105,
+  "n_frames": 486
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.053169734151329244,
+  "foreign": 0.1083844580777096,
+  "n_frames": 489
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08151093439363817,
+  "foreign": 0.12988734261100066,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.12,
+  "foreign": 0.116,
+  "n_frames": 500
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09381237524950099,
+  "foreign": 0.1443779108449767,
+  "n_frames": 501
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.11507936507936507,
+  "foreign": 0.12169312169312169,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.025157232704402517,
+  "foreign": 0.16212438853948288,
+  "n_frames": 477
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.028056112224448898,
+  "foreign": 0.13760855043420173,
+  "n_frames": 499
+ },
+ {
+  "arm": "morph_L3_deconvclamp_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.05555555555555555,
+  "foreign": 0.11970899470899471,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.2837301587301587,
+  "foreign": 0.0582010582010582,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.31137724550898205,
+  "foreign": 0.05921490352628077,
+  "n_frames": 501
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.29959514170040485,
+  "foreign": 0.06275303643724697,
+  "n_frames": 494
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.07554671968190854,
+  "foreign": 0.14910536779324057,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.06958250497017893,
+  "foreign": 0.145791915175613,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07581967213114754,
+  "foreign": 0.14344262295081966,
+  "n_frames": 488
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.09879032258064516,
+  "foreign": 0.13709677419354838,
+  "n_frames": 496
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.10483870967741936,
+  "foreign": 0.135752688172043,
+  "n_frames": 496
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07661290322580645,
+  "foreign": 0.14247311827956988,
+  "n_frames": 496
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.015873015873015872,
+  "foreign": 0.17063492063492064,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step10000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.03643724696356275,
+  "foreign": 0.15856950067476383,
+  "n_frames": 494
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step12000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.1782178217821782,
+  "foreign": 0.039603960396039604,
+  "n_frames": 202
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step12000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.05106382978723404,
+  "foreign": 0.07659574468085106,
+  "n_frames": 235
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step12000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09494949494949495,
+  "foreign": 0.14545454545454545,
+  "n_frames": 495
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step12000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.02912621359223301,
+  "foreign": 0.09223300970873786,
+  "n_frames": 206
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step12000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.024242424242424242,
+  "foreign": 0.16902356902356902,
+  "n_frames": 495
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.29365079365079366,
+  "foreign": 0.06746031746031746,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.3134920634920635,
+  "foreign": 0.056216931216931214,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.3492063492063492,
+  "foreign": 0.05952380952380952,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.3394683026584867,
+  "foreign": 0.06203135650988412,
+  "n_frames": 489
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.0851063829787234,
+  "foreign": 0.0,
+  "n_frames": 47
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.3115079365079365,
+  "foreign": 0.07275132275132275,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.0775347912524851,
+  "foreign": 0.145791915175613,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.07554671968190854,
+  "foreign": 0.14844267726971502,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.07539682539682539,
+  "foreign": 0.15542328042328044,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.06944444444444445,
+  "foreign": 0.14153439153439154,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.07777777777777778,
+  "foreign": 0.1577777777777778,
+  "n_frames": 450
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.06841046277665996,
+  "foreign": 0.1448692152917505,
+  "n_frames": 497
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.05630026809651475,
+  "foreign": 0.0679177837354781,
+  "n_frames": 373
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.08333333333333333,
+  "foreign": 0.14417989417989419,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.09343936381709742,
+  "foreign": 0.1418157720344599,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08042895442359249,
+  "foreign": 0.09294012511170688,
+  "n_frames": 373
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.09523809523809523,
+  "foreign": 0.07539682539682539,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.06444444444444444,
+  "foreign": 0.14148148148148149,
+  "n_frames": 450
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.07341269841269842,
+  "foreign": 0.1554232804232804,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step2000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.06547619047619048,
+  "foreign": 0.06878306878306878,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.21626984126984128,
+  "foreign": 0.07076719576719576,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.3353174603174603,
+  "foreign": 0.05952380952380953,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.33111111111111113,
+  "foreign": 0.06666666666666667,
+  "n_frames": 450
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.3075313807531381,
+  "foreign": 0.06276150627615062,
+  "n_frames": 478
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.3353174603174603,
+  "foreign": 0.06349206349206349,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.30753968253968256,
+  "foreign": 0.05952380952380953,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.05976095617529881,
+  "foreign": 0.09760956175298806,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.07952286282306163,
+  "foreign": 0.12789927104042412,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.07,
+  "foreign": 0.15,
+  "n_frames": 500
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.07867494824016563,
+  "foreign": 0.14078674948240164,
+  "n_frames": 483
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.0697211155378486,
+  "foreign": 0.1454183266932271,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 8.0,
+  "own": 0.04838709677419355,
+  "foreign": 0.0793010752688172,
+  "n_frames": 248
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.11530815109343936,
+  "foreign": 0.09211398277004638,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.042316258351893093,
+  "foreign": 0.08611729769858946,
+  "n_frames": 449
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.11345646437994723,
+  "foreign": 0.1187335092348285,
+  "n_frames": 379
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 3.0,
+  "own": 0.10858585858585859,
+  "foreign": 0.12205387205387204,
+  "n_frames": 396
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.12121212121212122,
+  "foreign": 0.12542087542087543,
+  "n_frames": 396
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.09343936381709742,
+  "foreign": 0.14446653412856197,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 8.0,
+  "own": 0.02390438247011952,
+  "foreign": 0.09296148738379814,
+  "n_frames": 251
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.017857142857142856,
+  "foreign": 0.10515873015873016,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 4.0,
+  "own": 0.02666666666666667,
+  "foreign": 0.16814814814814816,
+  "n_frames": 450
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 6.0,
+  "own": 0.023809523809523808,
+  "foreign": 0.17129629629629628,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 8.0,
+  "own": 0.025157232704402517,
+  "foreign": 0.1530398322851153,
+  "n_frames": 477
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step4000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07157057654075547,
+  "foreign": 0.14380384360503645,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.15674603174603174,
+  "foreign": 0.04563492063492063,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.19047619047619047,
+  "foreign": 0.05026455026455026,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.250996015936255,
+  "foreign": 0.07038512616201859,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.096,
+  "foreign": 0.08066666666666666,
+  "n_frames": 500
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.1172962226640159,
+  "foreign": 0.06693174287607687,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.07028112449799197,
+  "foreign": 0.09236947791164658,
+  "n_frames": 498
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.10756972111553785,
+  "foreign": 0.0856573705179283,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09523809523809523,
+  "foreign": 0.08928571428571429,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08366533864541832,
+  "foreign": 0.07503320053120849,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.09542743538767395,
+  "foreign": 0.09609012591119948,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step6000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.09722222222222222,
+  "foreign": 0.057539682539682536,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.2155688622754491,
+  "foreign": 0.04391217564870259,
+  "n_frames": 501
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.25760649087221094,
+  "foreign": 0.056795131845841784,
+  "n_frames": 493
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "000600",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.3273809523809524,
+  "foreign": 0.05026455026455026,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.09438775510204081,
+  "foreign": 0.08928571428571427,
+  "n_frames": 392
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.07653061224489796,
+  "foreign": 0.11139455782312925,
+  "n_frames": 392
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "001213",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.11133200795228629,
+  "foreign": 0.14380384360503645,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 1.0,
+  "own": 0.10317460317460317,
+  "foreign": 0.11640211640211641,
+  "n_frames": 504
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.08565737051792828,
+  "foreign": 0.13545816733067728,
+  "n_frames": 502
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "002881",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.08946322067594434,
+  "foreign": 0.11994698475811796,
+  "n_frames": 503
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": 2.0,
+  "own": 0.048,
+  "foreign": 0.128,
+  "n_frames": 500
+ },
+ {
+  "arm": "morph_L3_lion_r128_bs32_step8000",
+  "stem": "003865",
+  "vocab": 15,
+  "gain": null,
+  "own": 0.03621730382293763,
+  "foreign": 0.10194500335345405,
+  "n_frames": 497
+ }
+]
