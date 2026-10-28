@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: GHOST-NOTE 2026-10-29 -- stem_stage_master (per-stem staging: synths first, drums next, kick/bass last)
 # Last edited: GHOST-NOTE 2026-10-28 -- clash_free_handover + bandswap_master(handover=, swap_sec=): hand the kick/bass over only once the kick grids stop clashing, via a moving-crossover filter swap (owner direction)
 # Last edited: GHOST-NOTE 2026-10-13 -- tv_stretch_plan / bungee_stretch_schedule (time-varying stretch)
 # Last edited: GHOST-NOTE 2026-10-13 -- kick_grid_shift (onset-based phase alignment, +-1/2 beat)
@@ -673,6 +674,64 @@ def bandswap_master(a, b, downs, bar, sr=44100, handover_frac=0.8, handover_sec=
     out[:, :nb] = m[:, :nb] * gin + a64[:, :nb] * gout
     out[:, L - nb:] = m[:, L - nb:] * gout + b64[:, L - nb:] * gin
     return out.astype(np.float32), h
+
+
+def stem_stage_master(a_st, b_st, downs, bar, per_bar_ms, sr=44100, tol_ms=15.0, other_bars=2, drum_bars=4, swap_sec=None,
+                      edge_sec=0.1, split_fc=150.0):
+    """Per-stem staging (owner 2026-10-28/29, after the hats of two tracks clashed in the v7c full-mix sweep): every stem of A and B
+    moves across on its OWN schedule, each an equal-power crossfade. a_st / b_st: dict of (C, L) windows with keys drums, bass, other,
+    vocals, residual (residual = clip - sum of stems, so the sum of all five IS the clip).
+      synths (other + vocals + residual, above 150 Hz): `other_bars` bars, finished one bar before the drums start;
+      drums (above 150 Hz: hats, snares, kick clicks): `drum_bars` bars from `ds` = the first A downbeat after the last RUN of clashing
+        bars (clash_free_handover, not before 45 % of the window; clash to the end -> five bars before the end), so B's hats never
+        arrive on top of a grid they do not share;
+      bass stem above 150 Hz: with the low hand-over;
+      everything below 150 Hz (kick, bass), taken from the FULL clip, last: handed over on the first downbeat after the drums have
+        finished, through the moving-crossover filter swap of bandswap_master (`swap_sec`, default 2 beats).
+    Highs/lows are split by subtraction, so with every weight on A the master is A's clip exactly. Returns (master, info)."""
+    names = ("drums", "bass", "other", "vocals", "residual")
+    L = a_st["drums"].shape[-1]
+    nb = min(int(edge_sec * sr), L // 2)
+    lp = lambda x: sosfilt(lr4_sos(split_fc, "low", sr), np.asarray(x, dtype=np.float64), axis=-1)   # noqa: E731
+    A = {n: np.asarray(a_st[n], dtype=np.float64) for n in names}
+    B = {n: np.asarray(b_st[n], dtype=np.float64) for n in names}
+    a_full, b_full = sum(A.values()), sum(B.values())
+    downs = np.asarray(downs, dtype=np.float64)
+    ds = clash_free_handover(per_bar_ms, downs, bar, L, tol_ms, min_frac=0.45)
+    if ds is None:
+        ds = int(L - 5 * bar)
+    ds = int(max(ds, 3 * bar))
+    d0, d1 = ds, int(min(ds + drum_bars * bar, L - nb - 1))
+    o1 = ds - bar
+    o0 = o1 - other_bars * bar
+    cand = downs[downs >= d1]
+    h = int(cand[0]) if len(cand) else d1
+    swap = int((swap_sec if swap_sec else 2 * bar / 4 / sr) * sr)
+    h = int(min(h, L - nb - swap))
+    k = np.arange(L, dtype=np.float64)
+
+    def w_b(t0, t1):
+        return np.sin(np.clip((k - t0) / max(t1 - t0, 1), 0.0, 1.0) * np.pi / 2)
+
+    def mix(stem, t0, t1):
+        wb = w_b(t0, t1)
+        hi = lambda x: x - lp(x)   # noqa: E731
+        return hi(A[stem]) * np.sqrt(1 - wb ** 2) + hi(B[stem]) * wb
+
+    a_low, b_low = lp(a_full), lp(b_full)
+    fsw = lambda n: 20.0 * (240.0 / 20.0) ** np.clip((np.asarray(n, dtype=np.float64) - h) / swap, 0.0, 1.0)   # noqa: E731
+    low_mix = np.where(k < h, a_low, tv_filter(a_low, fsw, "high", sr) + tv_filter(b_low, fsw, "low", sr))
+    low_mix = np.where(k > h + swap, b_low, low_mix)
+    m = low_mix + mix("drums", d0, d1) + mix("bass", h - int(0.02 * sr), h + int(0.02 * sr))
+    for n in ("other", "vocals", "residual"):
+        m = m + mix(n, o0, o1)
+    out = m.copy()
+    gin, gout = np.sin(np.linspace(0, np.pi / 2, nb)), np.cos(np.linspace(0, np.pi / 2, nb))
+    out[:, :nb] = m[:, :nb] * gin + a_full[:, :nb] * gout
+    out[:, L - nb:] = m[:, L - nb:] * gout + b_full[:, L - nb:] * gin
+    info = dict(other=(int(o0), int(o1)), drums=(int(d0), int(d1)), lows=int(h), swap_samples=int(swap),
+                clash_to_end=bool(clash_free_handover(per_bar_ms, downs, bar, L, tol_ms, min_frac=0.45) is None))
+    return out.astype(np.float32), info
 
 
 def kick_grid_shift(a_seg, b_seg, beat_samples, sr=44100, span=0.5):

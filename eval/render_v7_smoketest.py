@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: GHOST-NOTE 2026-10-29 -- --stem-stage (per-stem staging: synths ~2 bars, drums ~4 bars after the clash, kick/bass last)
 # Last edited: GHOST-NOTE 2026-10-28 -- --clash-aware (band-swap hand-over only after the kick grids stop clashing, filter swap)
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
@@ -109,6 +110,9 @@ def parse_args(argv=None):
     ap.add_argument("--clash-aware", action="store_true",
                     help="with --band-swap: the incoming kick/bass waits until the per-bar kick offsets stop clashing (|offset| > --clash-tol-ms), "
                          "then arrives through a moving-crossover filter swap (--swap-beats) instead of a 40 ms level blend")
+    ap.add_argument("--stem-stage", action="store_true",
+                    help="with --band-swap: per-stem staging instead of the full-mix sweep: synths over 2 bars, drums over 4 bars starting after the "
+                         "kick-grid clash, kick/bass (from the full clip) last through the filter swap")
     ap.add_argument("--clash-tol-ms", type=float, default=15.0)
     ap.add_argument("--swap-beats", type=float, default=2.0, help="length of the filter swap, in beats")
     ap.add_argument("--dump-ab", type=float, default=0.0, metavar="BARS",
@@ -823,7 +827,13 @@ def main(argv=None):
             a_full = sum(win(sA, n_, a_lo) for n_ in STEM_NAMES)
             b_full = sum(win(sB, n_, b_lo) for n_ in STEM_NAMES)
             downs_w = np.asarray(dbA_eff, dtype=float) * SR - a_lo
-            if args.clash_aware:
+            if args.stem_stage:
+                a_win = {n_: win(sA, n_, a_lo) for n_ in STEM_NAMES}
+                b_win = {n_: win(sB, n_, b_lo) for n_ in STEM_NAMES}
+                master, info_ = dsp.stem_stage_master(a_win, b_win, downs_w, bar, per_bar, SR, args.clash_tol_ms, swap_sec=args.swap_beats * bar / 4 / SR)
+                h_ = info_["lows"]
+                rec["stem_stage"] = info_
+            elif args.clash_aware:
                 h_req = dsp.clash_free_handover(per_bar, downs_w, bar, L, args.clash_tol_ms)
                 if h_req is None:
                     h_req = L        # the clash runs to the window end: the lows stay with A until the edge blend (clamped in the master)
