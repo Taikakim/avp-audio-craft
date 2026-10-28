@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Last edited: GHOST-NOTE 2026-10-28 -- --clash-aware (band-swap hand-over only after the kick grids stop clashing, filter swap)
 # Last edited: GHOST-NOTE 2026-10-12 -- --local-tempo (window-local kick tempo, opt-in)
 # Last edited: GHOST-NOTE 2026-10-13 -- --tempo-plan (both clips to a shared tempo, ramps in quiet bars; the owner's design) + window fitted into both clips
 # Last edited: GHOST-NOTE 2026-10-13 -- --tv-stretch (time-varying stretch of the outgoing clip for named transitions)
@@ -105,6 +106,11 @@ def parse_args(argv=None):
                     help="v7c master instead of the per-stem recipe: low band (<150 Hz) one clip at a time, handed over late on A's "
                          "downbeat nearest 80 %% of the window; the rest swept (A low-passed, B high-passed, one crossover "
                          "16 kHz -> 60 Hz); B ramped in over the first bar. Plain (no generation); writes ..._bandswap.wav")
+    ap.add_argument("--clash-aware", action="store_true",
+                    help="with --band-swap: the incoming kick/bass waits until the per-bar kick offsets stop clashing (|offset| > --clash-tol-ms), "
+                         "then arrives through a moving-crossover filter swap (--swap-beats) instead of a 40 ms level blend")
+    ap.add_argument("--clash-tol-ms", type=float, default=15.0)
+    ap.add_argument("--swap-beats", type=float, default=2.0, help="length of the filter swap, in beats")
     ap.add_argument("--dump-ab", type=float, default=0.0, metavar="BARS",
                     help="also write, per transition, A and B as separate files on ONE time base (the window plus BARS bars each "
                          "side; silence where a clip has no audio) for overlaying in a DAW: ab_<i>_{A,B}_{full,drums,bass}.wav. "
@@ -817,7 +823,14 @@ def main(argv=None):
             a_full = sum(win(sA, n_, a_lo) for n_ in STEM_NAMES)
             b_full = sum(win(sB, n_, b_lo) for n_ in STEM_NAMES)
             downs_w = np.asarray(dbA_eff, dtype=float) * SR - a_lo
-            master, h_ = dsp.bandswap_master(a_full, b_full, downs_w, bar, SR)
+            if args.clash_aware:
+                h_req = dsp.clash_free_handover(per_bar, downs_w, bar, L, args.clash_tol_ms)
+                if h_req is None:
+                    h_req = L        # the clash runs to the window end: the lows stay with A until the edge blend (clamped in the master)
+                rec["clash_handover_req_frac"] = round(h_req / L, 3)
+                master, h_ = dsp.bandswap_master(a_full, b_full, downs_w, bar, SR, handover=h_req, swap_sec=args.swap_beats * bar / 4 / SR)
+            else:
+                master, h_ = dsp.bandswap_master(a_full, b_full, downs_w, bar, SR)
             name = out_dir / f"v7_smoke_trans_FAST_{i}_bandswap.wav"
             sf.write(str(name), master.T, SR, subtype="FLOAT")
             rec["bandswap_handover_sample"], rec["bandswap_handover_frac"] = int(h_), round(h_ / L, 3)
