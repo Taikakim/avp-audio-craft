@@ -81,6 +81,21 @@ def main():
         lines.append(f"{r['head']:22s} {r['n']:3d} {r['fails']:4d} {r['bass_fcos']:+10.4f} {r['mid_fcos']:+9.4f} "
                      f"{r['bass_hit']:+10.4f} {r['mid_hit']:+9.4f}")
     # ladder
+    # E13b size / recipe arms: gains 512 and 2048 on the screen's targets and seeds, with production and C3 ep10 on the same cells
+    sz = defaultdict(list)
+    for c in steered:
+        if (c["head"][:2] in ("S0", "S1", "S2") or c["head"] in ("prod", "C3_ep10_ema1")) and c["gain"] in (512, 2048) \
+                and c["target"] in ("C", "keylift") and c["seed"] in (1234, 5678):
+            sz[(c["head"], c["gain"])].append(c)
+    if any(h[:2] in ("S0", "S1", "S2") for h, _ in sz):
+        report["size"] = []
+        lines.append("\nE13b SIZE / RECIPE ARMS (3 prompts x 2 targets x 2 seeds = 12 clips per cell)")
+        lines.append(f"{'head':22s} {'gain':>5s} {'n':>3s} {'fail':>4s} {'d_cos bass':>10s} {'d_cos mid':>9s} {'d_hit mid':>9s}")
+        for (h, g), cs in sorted(sz.items(), key=lambda kv: (kv[0][1], -st.mean(c["d"]["mid_fcos"] for c in kv[1]))):
+            r = {"head": h, "gain": g, "n": len(cs), "fails": sum(c["bad"] for c in cs),
+                 **{k: mean([c["d"][k] for c in cs]) for k in ("bass_fcos", "mid_fcos", "mid_hit")}}
+            report["size"].append(r)
+            lines.append(f"{h:22s} {g:5d} {r['n']:3d} {r['fails']:4d} {r['bass_fcos']:+10.4f} {r['mid_fcos']:+9.4f} {r['mid_hit']:+9.4f}")
     # a ladder cell at gain 2048 with a screen target and seed has the screen clip's name, so it was rendered once, in the
     # screen; count every cell of a ladder head, whichever stage rendered it
     ladder_heads = {c["head"] for c in steered if c["stage"] == "ladder"}

@@ -82,6 +82,17 @@ def heads():
     return out
 
 
+# E13b (latch/run_chroma_size.sh): onset recipe and bigger / deeper heads, EMA 1 ep only (E13: EMA, short EMA and online steer alike)
+SIZE_DIR = Path("/run/media/kim/Mantu/latch_sweep/chroma_size_2026-10-28")
+SIZE_ARMS = {"S0": "S0_onset_recipe_d256_L8", "S1": "S1_c3_d512_L12", "S2": "S2_c3_d768_L8"}
+SIZE_EPOCHS = (4, 8, 10, 12)
+SIZE_SCREEN = {"gains": [512, 2048], "targets": ["C", "keylift"], "seeds": [1234, 5678]}
+
+
+def size_heads():
+    return {f"{arm}_ep{ep}": SIZE_DIR / d / f"latch_sa3_same_chroma_ep{ep}.pt" for arm, d in SIZE_ARMS.items() for ep in SIZE_EPOCHS}
+
+
 def target_spec(tid):
     return next(t for t in T.TARGETS if t["id"] == tid)
 
@@ -131,8 +142,8 @@ def load_cells():
 
 def plan(stage, picked):
     """[(head, pid, tid, gain, seed)] for a stage; baselines (gain 0) once per prompt x seed."""
-    cfg = SCREEN if stage == "screen" else LADDER
-    hs = list(heads()) if stage == "screen" else ["prod"] + picked
+    cfg = {"screen": SCREEN, "size": SIZE_SCREEN}.get(stage, LADDER)
+    hs = {"screen": list(heads()), "size": list(size_heads()) + ["prod", "C3_ep10_ema1"]}.get(stage, ["prod"] + picked)
     cells = [(None, p, None, 0, s) for p in PROMPTS for s in cfg["seeds"]]
     cells += [(h, p, t, g, s) for h in hs for p in PROMPTS for t in cfg["targets"] for s in cfg["seeds"]
               for g in cfg["gains"]]
@@ -195,6 +206,8 @@ def run(stages, ladder_heads=None):
     write_meta({"status": "running"})
     n_frames = int(round(DURATION_SEC * FPS))
     hp = heads()
+    if "size" in stages:
+        hp.update(size_heads())
     missing = [h for h, p in hp.items() if not Path(p).exists()]
     if missing:
         sys.exit(f"missing heads: {missing}")
