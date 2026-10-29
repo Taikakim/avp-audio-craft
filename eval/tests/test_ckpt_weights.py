@@ -90,6 +90,8 @@ def test_control_adapter_sf_plus_ema_without_state_online_is_flagged(tmp_path):
 def test_control_adapter_resume_exact_restarts_the_shadow(tmp_path):
     src = _riffer(tmp_path, name="riffer_step4000.pt", step=4000)
     p = _riffer(tmp_path, args={"resume_exact": str(src)}, state_online={"adapter.0.w": torch.zeros(2)})
+    old = ckpt_weights.RESUME_EMA_FIX_TS - 86400          # saved before WINTERMUTE's a1335a0 fix
+    os.utime(p, (old, old))
     r = ckpt_weights.weight_report(p)
     assert r["ema"]["updates"] == (12000 - 4000) // 8
     assert "forgot" in r["ema"]["start_point"]
@@ -133,3 +135,10 @@ def test_production_style_head_without_feature_stats_is_a_latch_head(tmp_path):
                 "std_mean": 0.0, "epoch": 30}, p)
     r = ckpt_weights.weight_report(p)
     assert r["family"] == "latch_head" and r["weight_sets"][0]["name"] == "online"
+
+
+def test_control_adapter_resume_exact_after_the_fix_keeps_the_history(tmp_path):
+    src = _riffer(tmp_path, name="riffer_step4000.pt", step=4000)
+    p = _riffer(tmp_path, args={"resume_exact": str(src)})       # mtime = now, after a1335a0
+    r = ckpt_weights.weight_report(p)
+    assert r["ema"]["updates"] == 12000 // 8 and "forgot" not in r["ema"]["start_point"]

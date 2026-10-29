@@ -258,6 +258,7 @@ GPU either way — a call, not a task.
 *Ready-to-execute blocks, newest first. Move to "Recently done" with the outcome once run.*
 
 ## LISTEN: chroma transposition page, E21 (C, 2026-10-28)
+**UPDATED 2026-10-29 (C):** the page now also carries E21c: the same_chroma head retrained in E13 follows the transposed chord at gain 2048 for every prompt (42/42, like hpcp), while the production same_chroma head barely moves even at 8192. Two new listening tables in section 2 (production same_chroma at 4096/8192, E13 head at 512/2048); listen for whether the E13 head at 2048 sounds as clean as hpcp. Needs W to republish.
 **WHAT / WHY** — EXPERIMENTS E21: does chroma steering follow a transposed chord? Fixing two target bugs on the way showed every earlier hpcp steering result asked for a chord 9 semitones off. After the fix the numbers say hpcp lands on the chord and follows transpositions; same_chroma steers the right way but weakly. Only your ear can say whether hpcp at gain 512 or 2048 sounds musical.
 **RUN** — open `e21_transposition.html` on the site once W has published it (local copy: `~/evals_aac/e21_transposition.html`, needs the clip folder beside it). Section 2 hpcp table: compare unguided against the four chords per prompt.
 **TAKES** — 10-20 minutes of listening.

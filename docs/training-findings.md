@@ -431,14 +431,14 @@ goa3_avp_r256_2026-09-23}`, each with `run_meta.json`. Stats: `checkpoint-stats/
       (`recipe.notes`) added to both `_nodas_231123` and `_overnight`'s `run_meta.json` (a fresh
       file for `_overnight`, which had none) recording the diagnosis and pointing at `_231801` as
       the arm that actually works.
-22. **Control trainer: `--resume-exact` restarts the EMA shadow at the zero-init adapter (CONTINUITY, 2026-10-29, read
-    from code, not yet hit in a run we know of).** *Symptom it would cause:* an exact-resumed control-adapter run whose `state`
+22. **Control trainer: `--resume-exact` restarted the EMA shadow at the zero-init adapter (CONTINUITY, 2026-10-29, read
+    from code; FIXED the same morning by WINTERMUTE, `a1335a0`; affects exact-resumed runs saved before it).** *Symptom it would cause:* an exact-resumed control-adapter run whose `state`
     (the EMA, what every sa3_control loader renders) is mostly the zero-init adapter again right after the resume, so the
     ladder looks like it lost ground at the resume point. *Cause:* `control/sa3_control/train.py` builds `EMA(params, args.ema)`
     (~L771) BEFORE the `--resume-exact` block loads `model_train` (~L782), and the shadow is never restored (it is not even saved;
     the resume dict carries `model_train` + `opt` + `step`). The step counter resumes, the EMA history does not. *Evidence:* code
-    order; `eval/ckpt_weights.py` flags such files in `ema.start_point`. *Fix (handed to WINTERMUTE, trainer owner):* after the
-    resume load, seed `ema.shadow` from the checkpoint's `state` (which IS the EMA at save time, except the pre-2026-10-16
+    order; `eval/ckpt_weights.py` flags such files (saved before the fix) in `ema.start_point`. *Fix: DONE by WINTERMUTE, `a1335a0`
+    (2026-10-29 10:13):* after the resume load, seed `ema.shadow` from the checkpoint's `state` (which IS the EMA at save time, except the pre-2026-10-16
     Schedule-Free + EMA saves where `state` is the SF average). Related horizon fact for this trainer: `step` counts MICROBATCHES
     and the EMA updates once per optimizer step, so U = step // grad_accum (D17 step 12000, accum 8 -> 1500 updates, 22% still
     the zero-init start at decay 0.999).

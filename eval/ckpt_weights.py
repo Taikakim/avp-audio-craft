@@ -45,6 +45,7 @@ ONLINE_PREFIXES = ("diffusion.model.", "model.")
 LIGHTNING_DEFAULT_BETA = 0.9999          # train_lora --ema-beta default
 LIGHTNING_DEFAULT_EMA_WARMUP = 100       # train_lora --ema-warmup-steps: hard copies, not decays
 CONVERGED_HALFLIVES = 3.0                # sa3-training skill: R 3..10 is the useful range
+RESUME_EMA_FIX_TS = 1793261596.0          # 2026-10-29 10:13 EET, WINTERMUTE a1335a0: exact resume keeps the EMA
 _INIT_KEY = re.compile(r"(init_state_ckpt|init_from|init_ckpt|warm_?start|base_state_ckpt|resume_exact|^resume$)", re.I)
 _INIT_LOG = re.compile(r"\[init\] full-FT warm-start from (\S+)")
 
@@ -276,12 +277,13 @@ def _control(path: Path, ck: dict, out: dict) -> None:
         start_step, start_point = 0, "the zero-init adapter (fresh run)"
         if a.get("resume"):
             start_point = "the --resume warm-start weights"
-        if a.get("resume_exact"):
-            # The EMA is built BEFORE --resume-exact loads (train.py ~L771 vs ~L782), so the shadow
-            # restarts from the fresh zero-init adapter at start_step and the pre-resume history is lost.
+        if a.get("resume_exact") and path.stat().st_mtime < RESUME_EMA_FIX_TS:
+            # Before a1335a0 the EMA was built BEFORE --resume-exact loaded (train.py ~L771 vs ~L782), so
+            # the shadow restarted from the fresh zero-init adapter at start_step and the pre-resume history
+            # was lost. Files written after the fix continue the saved EMA, so the default count applies.
             start_step = _resume_step(a["resume_exact"])
-            start_point = ("the zero-init adapter again: the EMA is created before --resume-exact loads, "
-                           "so the shadow restarted at the resume point and forgot the run so far")
+            start_point = ("the zero-init adapter again: saved before the 2026-10-29 fix (a1335a0), when "
+                           "--resume-exact restarted the EMA shadow and forgot the run so far")
             if start_step is None:
                 out["errors"].append("resume_exact source unreadable; EMA update count assumes step 0")
                 start_step = 0
