@@ -1,5 +1,6 @@
 # Last edited: WINTERMUTE 2026-10-15 -- state_online (online/SF-averaged weights) saved beside the EMA state, periodic + final (TRAINING.md D6)
 # Last edited: WINTERMUTE 2026-10-16 -- EMA no longer overwritten by the SF opt.eval() at save time ("state" = EMA when --ema > 0)
+# Last edited: WINTERMUTE 2026-10-29 -- --resume-exact seeds the EMA shadow from the checkpoint's saved EMA (was: restarted from zero-init)
 # Last edited: WINTERMUTE 2026-10-16 -- --step-times TSV (per-micro-batch GPU-synced wall time + startup) for the optimizer timing bracket
 """Train the audio-reference (riffer) control adapter on pre-encoded SA3 latents.
 
@@ -779,7 +780,25 @@ def main():
         if "opt" not in _ck:
             raise SystemExit(f"--resume-exact: {args.resume_exact} has no optimizer state "
                              "(saved before opt-state support); use --resume for warm-start instead.")
+        # EMA continuity (CONTINUITY 2026-10-29): `ema` was built above from the fresh (zero-init) adapter, so an exact
+        # resume used to restart the shadow and lose the run's EMA history. When the saved run had EMA on, its "state" IS
+        # the EMA at save time (since the 2026-10-16 fix; SF + EMA checkpoints saved before that hold the SF average
+        # there instead): load it, copy the params into the shadow, then load the train-mode iterate on top.
+        _src_ema = float((_ck.get("args") or {}).get("ema") or 0.0)
+        if ema is not None and _src_ema > 0 and "model_train" in _ck:
+            load_adapter_state(_ck["state"], wrappers, cond_enc)
+            with torch.no_grad():
+                for s, p in zip(ema.shadow, ema.params):
+                    s.copy_(p.detach().float())
+            print(f"[resume-exact] EMA shadow seeded from the checkpoint's saved EMA (source decay {_src_ema})", flush=True)
+        elif ema is not None:
+            print("[resume-exact] WARNING: the checkpoint carries no separate EMA copy (source run without --ema, or no "
+                  "model_train); the EMA shadow restarts from the resumed weights", flush=True)
         load_adapter_state(_ck.get("model_train", _ck["state"]), wrappers, cond_enc)   # train-mode (y) iterate
+        if ema is not None and not (_src_ema > 0 and "model_train" in _ck):
+            with torch.no_grad():
+                for s, p in zip(ema.shadow, ema.params):
+                    s.copy_(p.detach().float())
         opt.load_state_dict(_ck["opt"])
         start_step = int(_ck.get("step", 0))
         if "torch_rng" in _ck:
