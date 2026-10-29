@@ -548,6 +548,12 @@ music are NEVER published** — goa-corpus checkpoints/adapters stay private reg
 quality. (3) **Publishable models come from legal datasets compiled later**, once parameters/
 recipes are validated on the research corpus — a task of its own (first instance: the avp
 own-music CC dataset spec, `mir/docs/superpowers/specs/2026-07-09-avp-dataset-release-design.md`).
+**First public release (Kim, 2026-10-29):** the Latent Forge GUI v1 ships heads (chroma, onset,
+hardness, RMS) RE-TRAINED on the **AVP augmented set** (`Kosmos/latents/latents_avp`, 2,393 crops
+with `.TIMESERIES.npz` targets), using the recipes validated on goa. Permissively licensed music gets
+added to the corpus over time. The goa-trained heads stay private. Note: the Lehto
+`latents_avp_aug10` "copy" is 960 symlinks, all dangling since the 10-15 Kosmos move (they point at
+`Kosmos/latents_avp/`), so it is not a backup.
 
 **REQUIRED — eval pages must present clips as clickable same-playhead audio cells.** *(2026-06-29)* A
 results section that shows only numbers (metrics, correlations) is incomplete and cannot substitute for
