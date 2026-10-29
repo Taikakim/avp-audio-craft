@@ -14,6 +14,9 @@ SCORE (CPU): output SAME chroma folded to 12 (bass, mid). Equivariance: best rot
 prompt/head/gain) equals k (chance 1/12). Steering: cos to own target minus unguided, against the same for the other three
 triads (specificity). Positive control: k=0 renders pitch-shifted with bungee (eval/e21_bungee_posctl.py --out OUT).
 RUN: eval/run_e21b_20261028.sh (owns the GPU lock, starts and stops :8056, renders, positive control, score, page).
+FOLLOW-UPS (2026-10-29): --out DIR, --head NAME=PATH@G1,G2 (repeatable; replaces the default two heads), --base-from DIR (reuse the
+unguided renders of an earlier run with the same prompts/seeds/settings instead of re-rendering them), --purpose TEXT (run_meta).
+Defaults reproduce the 10-28 run exactly. E21c driver: eval/run_e21c_20261029.sh.
 """
 import argparse, json, os, shutil, sys, time
 import numpy as np
@@ -26,9 +29,18 @@ OUT = "/run/media/kim/Mantu/sa3_control_runs/e21b_transposition_canon_20261028"
 SERVER = "http://127.0.0.1:8056"
 FT = ("/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/lumi_runs/runs/subloss_k24/subloss_k24_biggoa_t512_bf16_s1/"
       "epoch=63-step=12480.ckpt")
-HEADS = {"hpcp": ("latch_sa3_hpcp_best.pt", 12), "same_chroma": ("latch_sa3_same_chroma_best.pt", 384)}
-KEYS = {0: "C", 3: "Eb", 6: "F#", 9: "A"}
 GAINS = (512, 2048)
+HEADS = {"hpcp": ("latch_sa3_hpcp_best.pt", 12, GAINS), "same_chroma": ("latch_sa3_same_chroma_best.pt", 384, GAINS)}
+KEYS = {0: "C", 3: "Eb", 6: "F#", 9: "A"}
+BASE_FROM = None
+PURPOSE = None
+
+
+def parse_head(spec):
+    """NAME=PATH@G1,G2 -> (NAME, (PATH, dim, gains)); dim 12 for hpcp heads, else the 384-d SAME chroma."""
+    name, rest = spec.split("=", 1)
+    path, gains = rest.rsplit("@", 1)
+    return name, (path, 12 if "hpcp" in name else 384, tuple(int(g) for g in gains.split(",")))
 DUR, STEPS, CFG = 20.0, 50, 7.0
 
 
@@ -45,9 +57,9 @@ def cells():
     out = []
     for p in prompts():
         out.append(dict(id=cid(p["id"]), pid=p["id"], seed=int(p["seed"]), head=None))
-        for h in HEADS:
+        for h, (_, _, gains) in HEADS.items():
             for k in KEYS:
-                for g in GAINS:
+                for g in gains:
                     out.append(dict(id=cid(p["id"], h, k, g), pid=p["id"], seed=int(p["seed"]), head=h, k=k, gain=g))
     return out
 
@@ -56,9 +68,9 @@ def payload(c, text, n_frames):
     p = {"prompt": text, "duration": DUR, "steps": STEPS, "cfg_scale": CFG, "seed": c["seed"], "sampler_type": "euler",
          "apg_scale": 1.0, "dora": {"ckpt_path": FT, "strength": 1.0}}
     if c["head"]:
-        fn, dim = HEADS[c["head"]]
+        fn, dim, _ = HEADS[c["head"]]
         raw = CSR.build_target_raw(dim, {"id": KEYS[c["k"]], "kind": "static", "chord": KEYS[c["k"]]}, n_frames)
-        p["latch"] = [{"path": str(CSR.HEADS_DIR / fn), "gain": float(c["gain"]), "start_pct": 0.0, "end_pct": 1.0,
+        p["latch"] = [{"path": fn if os.path.isabs(fn) else str(CSR.HEADS_DIR / fn), "gain": float(c["gain"]), "start_pct": 0.0, "end_pct": 1.0,
                        "loss_type": "cosine", "target_raw": raw.astype(float).round(5).tolist()}]
     return p
 
@@ -76,18 +88,29 @@ def render(dry=False):
         for c in todo[:3]:
             print(c["id"], json.dumps(payload(c, text[c["pid"]], n_frames))[:300])
         return
+    if BASE_FROM:
+        for c in list(todo):
+            src = f"{BASE_FROM}/{c['id']}.wav"
+            if c["head"] is None and os.path.exists(src):
+                shutil.copyfile(src, f"{OUT}/{c['id']}.wav")
+                c.update(secs=0.0, warnings=[], copied_from=BASE_FROM)
+                with open(jl, "a") as f:
+                    f.write(json.dumps(c) + "\n")
+                todo.remove(c)
+        print(f"[e21b] unguided renders reused from {BASE_FROM}; {len(todo)} left to render", flush=True)
     if not os.path.exists(f"{OUT}/run_meta.json"):
         json.dump({"run": os.path.basename(OUT), "created": time.strftime("%Y-%m-%d %H:%M"), "owner": "CONTINUITY",
-                   "purpose": "EXPERIMENTS E21 second run (Kim 2026-10-28): transposition equivariance of the hpcp and same_chroma "
-                              "LatCH heads on the 14 canonical matrix prompts, with the onset leg's best settings, after fixing the "
-                              "same_chroma bass-root bug.",
+                   "purpose": PURPOSE or ("EXPERIMENTS E21 second run (Kim 2026-10-28): transposition equivariance of the hpcp "
+                              "and same_chroma LatCH heads on the 14 canonical matrix prompts, with the onset leg's best "
+                              "settings, after fixing the same_chroma bass-root bug."),
                    "hypothesis": "If a head steers pitch class, the output chroma for a target moved by k semitones is the k=0 output "
                                  "rotated by k, and moves more toward its own triad than toward the others.",
                    "kill": "Hits near the bungee positive control and positive specificity => equivariant, no regulariser; close E21.",
                    "recipe": {"finetune": "goa DoRA finetune (subloss_k24 biggoa t512, epoch 63), strength 1.0", "sampler": "euler",
                               "steps": STEPS, "cfg": CFG, "apg": 1.0, "duration": DUR, "latch_window": [0.0, 1.0],
-                              "guide_schedule": "alpha (default)", "gains": list(GAINS), "loss": "cosine", "keys": KEYS,
-                              "heads": {h: v[0] for h, v in HEADS.items()}, "prompts": "model_matrix_gen.build_prompts(3,3)"},
+                              "guide_schedule": "alpha (default)", "loss": "cosine", "keys": KEYS,
+                              "heads": {h: {"path": v[0], "gains": list(v[2])} for h, v in HEADS.items()},
+                              "unguided_from": BASE_FROM, "prompts": "model_matrix_gen.build_prompts(3,3)"},
                    "status": "running", "result": None, "kim_feedback": None,
                    "script": "eval/e21b_transposition_server.py"}, open(f"{OUT}/run_meta.json", "w"), indent=1)
     for c in todo:
@@ -130,8 +153,8 @@ def score():
     rot = lambda a, b: int(np.argmax([float(np.roll(a, r) @ b) for r in range(12)]))
     pids = sorted({r["pid"] for r in rows})
     summary, per_prompt = {}, {}
-    for h in HEADS:
-        for g in GAINS:
+    for h, (_, _, gains) in HEADS.items():
+        for g in gains:
             for band in ("bass", "mid"):
                 hits = n = 0; own = []; other = []
                 for pid in pids:
@@ -170,5 +193,12 @@ def score():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["render", "score", "dry"])
+    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--head", action="append", default=None, help="NAME=PATH@G1,G2 (repeatable; replaces the defaults)")
+    ap.add_argument("--base-from", default=None, help="dir holding <pid>__base.wav renders to reuse")
+    ap.add_argument("--purpose", default=None)
     a = ap.parse_args()
+    OUT, BASE_FROM, PURPOSE = a.out, a.base_from, a.purpose
+    if a.head:
+        HEADS = dict(parse_head(h) for h in a.head)
     {"render": render, "score": score, "dry": lambda: render(dry=True)}[a.mode]()
