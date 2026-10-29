@@ -1701,8 +1701,13 @@ positive control for (a) — Phase E's gate passed because nothing changed, so a
   (5) **Baseline confound found and fixed during the run:** generate() with no LatCH config takes `sample_diffusion` (CFG rescale, APG),
   a different render from the guided sampler at gain 0; 4 of 12 such baselines scored CE ~3 against 6-7 for every steered clip of the
   same prompt + seed, and the production head read NEGATIVE at gain 512. The numbers above use baselines rendered through the guided
-  sampler at gain 0 (`base0__`); MASTER section 5 has the gotcha. Not yet heard: the page carries the unaudited mark. Next, once
-  listened: if it sounds right, promote C3 ep10 to `latch_weights_sa3_medium/` (the production head stays as the reference).
+  sampler at gain 0 (`base0__`); MASTER section 5 has the gotcha.
+  (6) **Listening verdict (Kim, 2026-10-29 on files/evals/chroma_e13.html):** "The retrained new ones sound pretty promising...
+  (E13 Modular Retrained Head, 384-d) follows the chords in a really beautiful and transparent way, it's almost unbelievable.
+  Listen: hpcp (Production Head, 12-d) is not bad either, some of the chords change the content more, but the timbre is really
+  close to the retrain. I can't tell by ear how accurate these are." Weak sound and noise bursts on goa s5678 diagnosed: the E13 render
+  ran on raw untuned `medium-base` at only 24 steps with prompt "goa", lacking the biggoa finetune DoRA used in E21b/c and E22 at 50 steps.
+  Next requested: test with curated checkpoints (from `cleaned_checkpoints.txt`), sweep CFG, steps, sigma schedule, and guidance weights.
 - **E13b — onset recipe, bigger / deeper heads, gradient noise by t and part — RUNNING 2026-10-28 07:33 (W; Kim asked 2026-10-28).**
   Kim's questions: was the best onset-head recipe used (no: the E13 arms used G's bass recipe: Shampoo, Muon on all 2-D, radial brake,
   wd-overtraining, batch 8 x 4; the onset winner is modular lr 1e-2 + 500 warmup, batch 16, depth 8), might chroma need a bigger or deeper
