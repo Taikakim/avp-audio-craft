@@ -268,7 +268,7 @@ _(none queued yet — see `RUNBOOK.md` for the standing operations.)_
 
 ---
 
-## MORPH A/B — the measurement that decides the lane (C, 2026-09-11)
+## MORPH A/B — the measurement that decides the lane (C, 2026-09-11) — DONE 2026-10-29: null, see step 3
 
 **WHY:** D17/D18 both rendered EMA weights whose shadow started at the ZERO-INIT adapter —
 77.9% zero-init at step2000, 22.3% at step12000. The dilution shrinks monotonically with step,
@@ -302,6 +302,7 @@ REPORT BACK: that count.
 ROLLBACK: `rm $R/clips/*deconv*` — the original EMA clips are untouched and differently named.
 
 ### 3. Transcribe + score both weight sets (GPU then CPU)
+**DONE 2026-10-29 (CONTINUITY): NO DETECTABLE CONTOUR FOLLOWING, measured with an instrument that passes its positive control.** `eval/morph_f0_contour_ab.py` (Demucs `other` stem -> Melodia -> pitch-curve correlation with the fed stem's curve; reference clips r +0.43 own vs -0.07 foreign). Renders: own - foreign +0.0001 (74/144), conditioned - null +0.023 (73/144); deconvolved weights no better than EMA. Detail: EXPERIMENTS D17. Rerun (cached f0, ~1 min): `cd /home/kim/Projects/SAO && R=/run/media/kim/9a410a1d-a4a8-4faf-8298-bcaa2576ea9d/sa3_control_runs/morph_L3_lion_r128_bs32_2026-09-09 && /home/kim/Projects/mir/mir/bin/python eval/morph_f0_contour_ab.py --renders $R/clips --out $R/morph_f0_contour_ab.json`. What remains for Kim: whether to listen to the deconvclamp step8000 g2.0 clips (the only cell that followed, 4/4, likely noise) before the lane is parked.
 **RUN 2026-10-28 (CONTINUITY), NO RESULT: the instrument failed.** Transcription of all 200 clips finished; the block's `--renders $R/clips` finds nothing (the tool globs `<renders>/*/*.json`, so pass `--renders $R`), and it needs the mir venv (pretty_midi). With both fixed: 170 cells scored, but the extractor FAILS its own positive control (reference audio vs its own fed stream 0.073, n = 56), so the A/B numbers measure the pipeline, not the conditioner, and are not reported. The tool's own instruction: reproduce f0_other (stem-separated melodic line, as build_morph_streams did) instead of a transcription skyline, via mir stem separation + f0 on the renders. Output `eval/morph_contour_ab_D17.json` is the failed-gate record.
 RUN:
 ```
