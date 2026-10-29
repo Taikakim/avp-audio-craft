@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14171a">
+<title>Mix Transition Compare</title>
+<!-- WINTERMUTE 2026-10-29. Three renders of the same 16-track shortlist mix (identical cue times and length): bass hand-over only,
+     stem staging, masked-inpaint staging. All three are fetched up front (blob URLs), played in sync with only the selected one
+     audible, so switching is instant and keeps the playhead; drift is corrected every 0.5 s. If the browser refuses parallel
+     playback, it falls back to pause / seek / play on switch. Marks go to /files/ratings.php as type 'mixflag' with the variant
+     of the mix that was audible. Saved playback position is a per-viewer convenience only (localStorage). -->
+<style>
+:root{--bg:#14171a;--ink:#ecebe8;--mute:#9aa0a8;--card:#1d2226;--line:#33393f;--bad:#ff8a80;--badbg:#4a1f1c;--tr:#ffc46b;--trbg:#43340f;--acc:#7cc6d6;--sel:#1f3a40}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f1ee;--ink:#1d2024;--mute:#5f646b;--card:#fff;--line:#d9d5cf;--bad:#9e1f18;--badbg:#fbe0dc;--tr:#7a4200;--trbg:#ffe9c2;--acc:#1f5d6b;--sel:#d8eef2}}
+:root[data-theme="light"]{--bg:#f3f1ee;--ink:#1d2024;--mute:#5f646b;--card:#fff;--line:#d9d5cf;--bad:#9e1f18;--badbg:#fbe0dc;--tr:#7a4200;--trbg:#ffe9c2;--acc:#1f5d6b;--sel:#d8eef2}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:max(10px,env(safe-area-inset-top)) 16px max(12px,env(safe-area-inset-bottom));-webkit-user-select:none;user-select:none}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:10px;min-height:100%}
+h1{font-size:15px;margin:0;color:var(--mute);font-weight:600}
+.row1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.now{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.id{font-size:12px;color:var(--mute);overflow-wrap:anywhere;min-height:16px}
+.load{font-size:13px;color:var(--mute)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar>div{height:100%;width:0;background:var(--acc);transition:width .2s}
+.mixes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.mixbtn{min-height:76px;border-radius:14px;border:2px solid var(--line);background:var(--card);cursor:pointer;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.mixbtn b{font-size:22px}.mixbtn span{font-size:12px;color:var(--mute);text-align:center;line-height:1.2}
+.mixbtn[aria-pressed="true"]{border-color:var(--acc);background:var(--sel)}
+.mixbtn:disabled{opacity:.4}
+.transport{display:flex;gap:8px;align-items:center}
+.transport button{min-height:56px;min-width:56px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:22px;cursor:pointer}
+#play{flex:1;font-size:20px;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--acc);height:28px}
+.times{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.big{flex:1;display:flex;flex-direction:column;gap:10px;min-height:38vh}
+button.mark{flex:1;width:100%;font-size:26px;font-weight:800;line-height:1.15;border-radius:18px;border:3px solid;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+button.mark .ico{font-size:40px;line-height:1}
+button.mark:active,.mixbtn:active{transform:scale(.985)}
+button:focus-visible{outline:4px solid var(--acc);outline-offset:3px}
+#bTrack{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+#bTrans{background:var(--trbg);color:var(--tr);border-color:var(--tr)}
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .45s ease-out;z-index:9}
+#flash.on{opacity:.85;transition:none}
+#flash .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#fff;text-align:center;padding:20px}
+.status{font-size:13px;color:var(--mute);min-height:18px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 12px}
+summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--mute);font-size:14px}
+.mrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.mrow .w{flex:1;min-width:0}.mrow .w small{display:block;color:var(--mute);overflow-wrap:anywhere}
+.mrow button,.foot button{min-height:44px;min-width:44px;border:1px solid var(--line);background:none;border-radius:8px;padding:0 12px;cursor:pointer}
+.foot{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0}
+.help{font-size:13px;color:var(--mute);line-height:1.45}
+</style>
+</head>
+<body>
+<main>
+ <div class="row1"><h1>Shortlist mix · compare transitions</h1><div class="now" id="nowT">–</div></div>
+ <div class="id" id="nowId"></div>
+ <div class="load" id="loadTxt">Loading the three mixes…</div>
+ <div class="bar"><div id="loadBar"></div></div>
+
+ <div class="mixes" role="group" aria-label="Which mix is audible">
+  <button class="mixbtn" type="button" data-i="0" aria-pressed="true" disabled><b>A</b><span>Bass hand-over</span></button>
+  <button class="mixbtn" type="button" data-i="1" aria-pressed="false" disabled><b>B</b><span>Stem staging</span></button>
+  <button class="mixbtn" type="button" data-i="2" aria-pressed="false" disabled><b>C</b><span>Inpainted</span></button>
+ </div>
+
+ <div class="transport">
+  <button id="back" type="button" aria-label="Back 10 seconds">↺</button>
+  <button id="play" type="button" disabled>▶ Play</button>
+  <button id="fwd" type="button" aria-label="Forward 10 seconds">↻</button>
+ </div>
+ <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Position in the mix">
+ <div class="times"><span id="tCur">0:00</span><span id="tDur">–</span></div>
+ <div class="status" id="st"></div>
+
+ <section class="big">
+  <button class="mark" id="bTrack" type="button" aria-label="This track sounds bad"><span class="ico" aria-hidden="true">✕</span>This track<br>sounds bad</button>
+  <button class="mark" id="bTrans" type="button" aria-label="The previous transition was bad"><span class="ico" aria-hidden="true">⇤</span>Previous transition<br>was bad</button>
+ </section>
+
+ <details>
+  <summary>Marks this visit <span id="cnt">&nbsp;(0)</span></summary>
+  <div id="list"></div>
+  <div class="foot"><button id="copy" type="button">Copy marks as text</button><button id="restart" type="button">Back to 0:00</button></div>
+ </details>
+ <details>
+  <summary>What the three mixes are</summary>
+  <div class="help">The same 16 shortlist clips in the same order and timing, each extended 3x, kick-grid aligned. Only the transitions differ.<br>
+  <b>A, bass hand-over:</b> a 150 Hz band split; the kick and bass hand over once the kick grids stop clashing, the rest is swept.<br>
+  <b>B, stem staging:</b> synths cross over 2 bars, then drums over 4 bars, then kick and bass last (plain crossfades of the stems).<br>
+  <b>C, inpainted:</b> the middle 4 bars of the drum crossfade and 2 bars of the synth crossfade are regenerated by the model; kick and bass from the stems.<br>
+  Switching keeps the playhead. Keys: 1 2 3 switch, space play/pause, arrows ±10 s. Marks record which mix was audible.</div>
+ </details>
+</main>
+<div id="flash"><div class="msg" id="flashMsg"></div></div>
+
+<script>
+const ENDPOINT = '/files/ratings.php';
+const MIX = 'shortlist_mix';
+const SRC = [
+  { dir: '../mixtape_mark/', name: 'A' },
+  { dir: '../mixtape_mark_stage/', name: 'B' },
+  { dir: '../mixtape_mark_inpaint/', name: 'C' },
+];
+const $ = id => document.getElementById(id);
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+                set(k, v){ try { localStorage.setItem(k, v); } catch(e){} } };
+const POS_KEY = 'mixcompare.pos.v1';
+let CUES = [], variants = ['', '', ''], au = [], active = 0, parallel = true, playing = false, marks = [];
+
+const fmt = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); };
+const short = id => id.replace(/__cfg\d+__w100/, '').replace(/__st8__d48$/, '').replace(/__d48$/, '');
+const cueAt = t => { let k = 0; for (let i = 0; i < CUES.length; i++) if (t >= CUES[i].start) k = i; return k; };
+const cur = () => au[active];
+function setSt(s, bad){ $('st').textContent = s; $('st').style.color = bad ? 'var(--bad)' : ''; }
+function flash(color, msg){ const f = $('flash'); f.style.background = color; $('flashMsg').textContent = msg;
+  f.classList.add('on'); clearTimeout(flash.t); flash.t = setTimeout(() => f.classList.remove('on'), 650); }
+
+// ---- loading: fetch each mix fully (progress), then an <audio> per mix on a blob URL
+async function fetchBlob(url, onProgress){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' ' + r.status);
+  const total = +r.headers.get('content-length') || 0, reader = r.body.getReader(), parts = [];
+  let got = 0;
+  for (;;){ const { done, value } = await reader.read(); if (done) break; parts.push(value); got += value.length; onProgress(got, total); }
+  return new Blob(parts, { type: 'audio/mp4' });
+}
+async function load(){
+  const cues = await Promise.all(SRC.map(s => fetch(s.dir + 'cues.json', { cache: 'no-cache' }).then(r => r.json())));
+  CUES = cues[0].cues; variants = cues.map(j => String(j.variant || '').replace(/[^A-Za-z0-9._-]/g, ''));
+  const got = [0, 0, 0], tot = [1, 1, 1];
+  const prog = () => { const g = got.reduce((a, b) => a + b, 0), t = tot.reduce((a, b) => a + b, 0);
+    $('loadBar').style.width = (100 * g / t).toFixed(1) + '%'; $('loadTxt').textContent = 'Loading the three mixes… ' + (g / 1048576).toFixed(0) + ' / ' + (t / 1048576).toFixed(0) + ' MB'; };
+  const blobs = await Promise.all(SRC.map((s, i) => fetchBlob(s.dir + 'mix.mp4', (g, t) => { got[i] = g; tot[i] = t || tot[i]; prog(); })));
+  au = blobs.map(b => { const a = new Audio(); a.preload = 'auto'; a.src = URL.createObjectURL(b); a.muted = true; return a; });
+  au[active].muted = false;
+  await Promise.all(au.map(a => a.readyState >= 1 ? 0 : new Promise(res => a.addEventListener('loadedmetadata', res, { once: true }))));
+  $('loadTxt').textContent = 'All three mixes loaded. ' + CUES.length + ' tracks.';
+  $('tDur').textContent = fmt(au[0].duration);
+  document.querySelectorAll('.mixbtn').forEach(b => b.disabled = false); $('play').disabled = false;
+  const saved = parseFloat(store.get(POS_KEY));
+  if (saved > 1 && saved < au[0].duration - 5){ au.forEach(a => a.currentTime = saved); setSt('Resumed at ' + fmt(saved) + '. Press play.'); }
+  au.forEach((a, i) => a.addEventListener('ended', () => { if (i === active) { playing = false; au.forEach(x => x.pause()); renderTransport(); } }));
+  cur().addEventListener('timeupdate', tick);
+  render();
+  if ('mediaSession' in navigator){
+    navigator.mediaSession.metadata = new MediaMetadata({ title: 'Shortlist mix: compare transitions', artist: 'aavepyora evals' });
+    navigator.mediaSession.setActionHandler('play', () => setPlaying(true));
+    navigator.mediaSession.setActionHandler('pause', () => setPlaying(false));
+  }
+}
+
+// ---- playback: all three run together (only the active one audible); fallback = seek-switch
+async function setPlaying(on){
+  if (!au.length) return;
+  playing = on;
+  if (!on){ au.forEach(a => a.pause()); savePos(true); renderTransport(); return; }
+  const t = cur().currentTime;
+  if (parallel){
+    try { au.forEach(a => { if (Math.abs(a.currentTime - t) > 0.05) a.currentTime = t; });
+          await Promise.all(au.map(a => a.play())); }
+    catch(e){ parallel = false; au.forEach((a, i) => { if (i !== active) a.pause(); });
+              setSt('This browser plays one mix at a time: switching will jump to the same moment instead of crossfading live.'); }
+  }
+  if (!parallel) try { await cur().play(); } catch(e){ playing = false; setSt('Press play to start (the browser blocked autoplay).', true); }
+  keepAwake(); renderTransport();
+}
+function switchTo(i){
+  if (i === active || !au.length) return;
+  const from = cur(), t = from.currentTime;
+  from.removeEventListener('timeupdate', tick);
+  active = i; const to = cur();
+  if (Math.abs(to.currentTime - t) > 0.03) to.currentTime = t;
+  to.muted = false; from.muted = true;
+  if (!parallel){ from.pause(); if (playing) to.play().catch(() => {}); }
+  to.addEventListener('timeupdate', tick);
+  if (navigator.vibrate) try { navigator.vibrate(20); } catch(e){}
+  render();
+}
+// keep the silent copies on the audible one's clock
+setInterval(() => {
+  if (!parallel || !playing || !au.length) return;
+  const t = cur().currentTime;
+  au.forEach((a, i) => { if (i !== active && Math.abs(a.currentTime - t) > 0.04) a.currentTime = t; });
+}, 500);
+
+function tick(){ renderNow(); savePos(false); }
+let lastSave = 0;
+function savePos(force){ const n = Date.now(); if (force || n - lastSave > 2000){ lastSave = n; if (au.length && cur().currentTime > 1) store.set(POS_KEY, String(cur().currentTime)); } }
+function seekTo(t){ if (!au.length) return; t = Math.min(Math.max(0, t), cur().duration - 0.2); au.forEach(a => a.currentTime = t); renderNow(); savePos(true); }
+
+// ---- rendering
+function renderNow(){
+  if (!CUES.length || !au.length) return;
+  const t = cur().currentTime, c = CUES[cueAt(t)];
+  $('nowT').textContent = c.i + '/' + CUES.length + ' · ' + fmt(t);
+  $('nowId').textContent = SRC[active].name + ' · ' + short(c.id);
+  $('tCur').textContent = fmt(t);
+  if (!seeking) $('seek').value = Math.round(1000 * t / (cur().duration || 1));
+}
+function renderTransport(){ $('play').textContent = playing ? '❚❚ Pause' : '▶ Play'; }
+function render(){
+  document.querySelectorAll('.mixbtn').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === active)));
+  renderNow(); renderTransport();
+}
+function renderList(){
+  $('cnt').textContent = ' (' + marks.length + ')';
+  const box = $('list'); box.textContent = '';
+  marks.slice().reverse().forEach(m => {
+    const r = document.createElement('div'); r.className = 'mrow';
+    const w = document.createElement('div'); w.className = 'w';
+    const a = document.createElement('div');
+    a.textContent = SRC[m.mixIdx].name + ': ' + (m.kind === 'track' ? 'track ' + m.track + ' bad' : 'transition into ' + m.track + ' bad');
+    const s = document.createElement('small'); s.textContent = fmt(m.t) + ' · ' + short(m.id) + (m.saved ? '' : ' · NOT SAVED');
+    w.append(a, s);
+    const d = document.createElement('button'); d.type = 'button'; d.textContent = '✕'; d.setAttribute('aria-label', 'Remove mark');
+    d.onclick = () => removeMark(m);
+    r.append(w, d); box.appendChild(r);
+  });
+}
+
+// ---- marks
+async function post(flag, m, tries = 4){
+  const body = { type: 'mixflag', source: 'mixtape_compare', mix: MIX, variant: variants[m.mixIdx], flag, mark: m.key, t: m.t,
+                 clip: m.id, clip_idx: m.k, trans_idx: m.kind === 'transition' ? m.k - 1 : -1 };
+  for (let i = 0; i < tries; i++){
+    try { const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true });
+          if (r.ok) return true; if (r.status !== 429) return false; } catch(e){}
+    await new Promise(res => setTimeout(res, 500 * (i + 1)));
+  }
+  return false;
+}
+async function addMark(kind){
+  if (!au.length) return;
+  const t = cur().currentTime, k = cueAt(t), c = CUES[k];
+  if (kind === 'transition' && k === 0){ flash('#555', 'No transition yet'); return; }
+  const m = { key: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind, k, track: c.i, id: c.id,
+              t: Math.round(t * 10) / 10, mixIdx: active, saved: false };
+  marks.push(m); renderList();
+  if (navigator.vibrate) try { navigator.vibrate(kind === 'track' ? [60] : [40, 60, 40]); } catch(e){}
+  flash(kind === 'track' ? '#c62828' : '#b26a00', SRC[active].name + ': ' + (kind === 'track' ? 'track ' + c.i : 'transition into ' + c.i) + ' marked');
+  m.saved = await post(kind === 'track' ? 'bad_track' : 'bad_transition', m);
+  renderList();
+  if (!m.saved){ if (navigator.vibrate) try { navigator.vibrate([200, 100, 200, 100, 200]); } catch(e){}
+                 setSt('Last mark NOT saved (no connection?). It is in the list below; copy it later.', true); }
+  else setSt('Saved ' + marks.filter(x => x.saved).length + ' mark(s) on the server.');
+}
+async function removeMark(m){
+  marks = marks.filter(x => x.key !== m.key); renderList();
+  if (m.saved && !(await post('unmark', m))) setSt('Could not record the removal on the server.', true);
+}
+
+// ---- wake lock
+let wake = null;
+async function keepAwake(){ try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !wake){
+  wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch(e){} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') savePos(true); else if (playing) keepAwake(); });
+window.addEventListener('pagehide', () => savePos(true));
+
+// ---- controls
+document.querySelectorAll('.mixbtn').forEach(b => b.addEventListener('click', () => switchTo(+b.dataset.i)));
+$('play').onclick = () => setPlaying(!playing);
+$('back').onclick = () => seekTo(cur().currentTime - 10);
+$('fwd').onclick = () => seekTo(cur().currentTime + 10);
+let seeking = false;
+$('seek').addEventListener('input', () => { seeking = true; $('tCur').textContent = fmt($('seek').value / 1000 * (au.length ? cur().duration : 0)); });
+$('seek').addEventListener('change', () => { seeking = false; if (au.length) seekTo($('seek').value / 1000 * cur().duration); });
+$('bTrack').onclick = () => addMark('track');
+$('bTrans').onclick = () => addMark('transition');
+$('restart').onclick = () => seekTo(0);
+$('copy').onclick = async () => {
+  const txt = marks.map(m => SRC[m.mixIdx].name + ' ' + variants[m.mixIdx] + ' ' + (m.kind === 'track' ? 'BAD TRACK ' + m.track : 'BAD TRANSITION ' + (m.track - 1) + '->' + m.track) + ' @' + fmt(m.t) + ' ' + m.id).join('\n') || 'no marks';
+  try { await navigator.clipboard.writeText(txt); setSt('Copied.'); } catch(e){ setSt('Copy blocked by the browser.', true); }
+};
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.key !== ' ') return;
+  if (e.key >= '1' && e.key <= '3'){ switchTo(+e.key - 1); e.preventDefault(); }
+  else if (e.key === ' '){ setPlaying(!playing); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft'){ seekTo(cur().currentTime - 10); e.preventDefault(); }
+  else if (e.key === 'ArrowRight'){ seekTo(cur().currentTime + 10); e.preventDefault(); }
+});
+
+renderList();
+load().catch(e => { $('loadTxt').textContent = 'Could not load the mixes: ' + e.message; setSt('Reload the page to try again.', true); });
+</script>
+</body>
+</html>
