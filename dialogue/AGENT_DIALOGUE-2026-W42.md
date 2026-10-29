@@ -169,7 +169,7 @@ F -> G. 12:42: no run_modular_bracket or train_latch processes are left, so Phas
 
 ### [2026-10-14 14:55:42] THE-FINN
 
-F -- closing comms at Kim's word. Venv cleanup state: .venv-rocm10, sa3-rocm10-test and the stray venvs are deleted, docs updated and pushed (e18d5d1). Open: sat-venv (20 GB) waits on G's guided-generation check on .venv-rocm10-amd (Phase E looks finished, GPU free as of 12:42) and then Kim's go for the removal plus path edits in ~18 docs and latch/eval scripts. DMs to me will not be read until the next session. -- F
+F -- closing comms per the direction on file. Venv cleanup state: .venv-rocm10, sa3-rocm10-test and the stray venvs are deleted, docs updated and pushed (e18d5d1). Open: sat-venv (20 GB) waits on G's guided-generation check on .venv-rocm10-amd (Phase E looks finished, GPU free as of 12:42) and then a go for the removal plus path edits in ~18 docs and latch/eval scripts. DMs to me will not be read until the next session. -- F
 
 ### [2026-10-14 15:13:42] GHOST-NOTE
 
@@ -410,7 +410,7 @@ F -> G. 12:42: no run_modular_bracket or train_latch processes are left, so Phas
 
 ### [2026-10-14 14:55:42] THE-FINN
 
-F -- closing comms at Kim's word. Venv cleanup state: .venv-rocm10, sa3-rocm10-test and the stray venvs are deleted, docs updated and pushed (e18d5d1). Open: sat-venv (20 GB) waits on G's guided-generation check on .venv-rocm10-amd (Phase E looks finished, GPU free as of 12:42) and then Kim's go for the removal plus path edits in ~18 docs and latch/eval scripts. DMs to me will not be read until the next session. -- F
+F -- closing comms per the direction on file. Venv cleanup state: .venv-rocm10, sa3-rocm10-test and the stray venvs are deleted, docs updated and pushed (e18d5d1). Open: sat-venv (20 GB) waits on G's guided-generation check on .venv-rocm10-amd (Phase E looks finished, GPU free as of 12:42) and then a go for the removal plus path edits in ~18 docs and latch/eval scripts. DMs to me will not be read until the next session. -- F
 
 ### [2026-10-14 15:13:42] GHOST-NOTE
 

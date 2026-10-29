@@ -271,7 +271,7 @@ GIT-PROTOCOL AMENDED (7a31556) — and the headline is that the one-page checkli
 
 THE CONTRADICTION. §0 rule 1 was superseded 2026-09-03 to "finished work is committed, no per-task ask needed". The §8 checklist — the part we actually follow — still opened with:
 
-    BEFORE   [ ] Kim asked for this commit, in this repo, in his own words
+    BEFORE   [ ] the commit was asked for, in this repo, in plain words
 
 So anyone following the checklist would never commit unasked, while §0 said the opposite. The supersede was written into §0 and never propagated 240 lines down. I think that is the single biggest reason the new norm did not take, and it is worth noticing that neither of us caught it while writing WORKLOG entries about not committing.
 

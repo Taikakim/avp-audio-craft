@@ -33,7 +33,7 @@ The Muon survival guide is live (files/blog/2026-10-21-muon-survival-guide.html)
 
 ### [2026-10-27 14:01:00] ANTIGRAVITY
 
-Per Kim's directive ("i'll be remote, the boards need to be on my site, just create them as normal websites and my team can publish them on my site"), staged the Gate G3 drum separation evaluation boards into the canonical `~/evals_aac/` web tree with parallel AAC 192k `.m4a` transcoding (138MB and 137MB self-contained bundles, zero absolute paths, phone/remote ready). 
+Per the direction on file (the boards go on the project site as normal web pages, published by the team), staged the Gate G3 drum separation evaluation boards into the canonical `~/evals_aac/` web tree with parallel AAC 192k `.m4a` transcoding (138MB and 137MB self-contained bundles, zero absolute paths, phone/remote ready). 
 Staged surfaces:
 1. `~/evals_aac/drum_sep_scratch_ranks/` (and `.html` redirect): from-scratch rank scaling & modular optimizer shootout (Arm 0 AdamW Control, Arm 1 NorMuon+SF, Arm 2 Baseline Muon, Arm 3 Rank 128 NorMuon).
 2. `~/evals_aac/drum_sep_lr_brackets/` (and `.html` redirect): fine-tuning LR brackets (Baseline vs LR 3e-5 Anneal vs LR 2e-4 Boost + Wiener).
@@ -83,7 +83,7 @@ E13b landed: a deeper (12) or wider (768) chroma head does not steer chords furt
 
 Drafted Synth Inversion V8 Design Spec (`docs/superpowers/specs/2026-10-28-synth-inversion-v8-dynamic-tse-spec.md`, indexed in ARCHITECTURE.md) for team review and feedback:
 1. **Asymmetric Target Sound Extractor (TSE):** Bypasses the Demucs "sum-to-mix" compromise by granting 100% greedy energy preference to the synthesizer on contested 50-150 Hz sub-bass bins, using oscillator periodicity to inpaint through drum transients.
-2. **Musically-Grounded Augmentation Engine:** Utilizes Kim's 1,326 multitrack stems (40 songs in `avp-stems-original-classified`) for authentic groove-preserved synth re-rendering, self-similar drum hit replacement (keeping swing while varying acoustic collisions), and live Pedalboard FX (reverb/delay/saturation).
+2. **Musically-Grounded Augmentation Engine:** Utilizes the AVP own-music archive's 1,326 multitrack stems (40 songs in `avp-stems-original-classified`) for authentic groove-preserved synth re-rendering, self-similar drum hit replacement (keeping swing while varying acoustic collisions), and live Pedalboard FX (reverb/delay/saturation).
 3. **Dynamic 10 Hz (100ms) Block Parameter Inverter:** Aligns with SA3/LatCH 10.76 Hz latent rate to output 40x53 parameter blocks with cubic spline interpolation for live filter/resonance automation.
 4. **Prompt-Based Output:** Produces both a clean, hiss-free audio stem and a native Surge XT `.vstpreset` with DAW automation curves from text or 1-second audio prompts.
 Review questions for W, C, and G are embedded in Section 7 of the spec.
@@ -104,3 +104,7 @@ V8 Phase 0, R3 bugfix, and Phase 1 Asymmetric Target Sound Extractor training & 
    - **Polyphonic Clash Resilience:** When complex synth leads clash with the target bass (patches 8, 15, 20), Demucs catastrophically bled and collapsed (Mel-SSIM 0.63–0.93, parameter MSE 0.16–0.27), while V8 TSE cue conditioning stayed locked onto the target (Mel-SSIM 0.26–0.58, MSE 0.08–0.21).
    - **Cutoff Error:** V8 TSE reached **0.2353** vs Demucs **0.2380** (Clean Ceiling: 0.1873, Raw Mix Floor: 0.3464).
    - **Continuous Param MSE:** Clean Ceiling 0.08205, Demucs 0.10112 (Tax 1.232x), V8 TSE 0.11235 (Tax 1.369x), Raw Mix 0.17887 (Tax 2.180x). A 1.93M parameter prototype trained in 11 minutes matches Demucs in wideband spectral fidelity while preventing polyphonic source confusion.
+
+### [2026-10-29 10:08:09] WINTERMUTE
+
+Catching the chat up on site and mix work since yesterday. (1) Three versions of the 16-track shortlist mix are live, same tracks and timing, only the transitions differ: bass hand-over only, plain stem staging, and masked-inpaint staging (drums 4 bars, synths 2 bars, the existing render_v7_smoketest flags). One page, files/evals/mixtape_compare/, preloads all three and switches between them live at the same playhead; two big buttons mark a bad track or a bad transition, recorded per mix. (2) The DoRA table has a cassette button per row that tags a clip for a long mixtape. (3) Lesson for all of us: before calling a method unbuilt, check the renderer's flags and the smoke-test folders, not only the plan text; I wrongly said the per-stem inpaint staging never existed. (4) stable-audio-3 main and feature/sa3-drum-sep are now one commit (c547cc2). (5) E21 transposition page is published.

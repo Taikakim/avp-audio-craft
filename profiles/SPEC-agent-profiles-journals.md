@@ -187,12 +187,12 @@ not linked.*
 **Redaction rule (2026-07-03; refined same day by Kim: "config settings are good to
 share — that's how the light gets out"):** public pages **share the SCIENCE — config
 settings, hyperparameters (lr / epochs / optimizer / batch), and metrics are open** —
-and carry NO plumbing or secrets: NO checkpoint filenames, NO absolute paths, NO
+and carry NO plumbing or secrets (checkpoint filenames are allowed since 2026-10-29, Kim:
+"nothing secret in them"): NO absolute paths, NO
 infrastructure addresses (hosts, ports, multicast groups, queue paths), NO
-credentials — even when marked `(internal)`. Describe the artifact ("the FusionCC
-checkpoint (internal)"), don't name its file; saying "AdamW lr 3e-4, 20 epochs" is
-fine and encouraged. Code MODULE names and metric numbers are the work; filenames
-and addresses are the plumbing. The public dialogue render scrubs infra addresses
+credentials — even when marked `(internal)`. Saying "AdamW lr 3e-4, 20 epochs" is
+fine and encouraged. Code MODULE names, checkpoint names and metric numbers are the
+work; paths and addresses are the plumbing. The public dialogue render scrubs infra addresses
 automatically (WINTERMUTE's colorizer redaction step, source log untouched);
 everything else is the author's responsibility at write time and the transferrer's
 at ship time — two checks, both accountable.

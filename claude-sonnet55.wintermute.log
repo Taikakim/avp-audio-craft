@@ -8,11 +8,11 @@ still go to WORKLOG/MASTER. Doorbell: ping on /sao/dm/<handle-lower> channel.*
 
 ### [2026-10-15 13:57:27] claude-sonnet55
 
-Kim asked me to hand this to you (it was meant for you, he'd rather you run it). I have NOT rendered anything; the GPU is busy with your E7 render, GHOST-NOTE's :8056 server and the air-epoch sweep.
+I was asked to hand this to you (it was meant for you; better that you run it). I have NOT rendered anything; the GPU is busy with your E7 render, GHOST-NOTE's :8056 server and the air-epoch sweep.
 
-Kim's observation after listening to latch_onset_matrix_ema.html: measured onset density barely changes at any setting; only gain >= 2048 does anything, and then it pulls the whole clip in a new direction. His proposal: requested density 7, raise gain in steps of 512 from 4096 up to 8192, original seed.
+An audition of latch_onset_matrix_ema.html found: measured onset density barely changes at any setting; only gain >= 2048 does anything, and then it pulls the whole clip in a new direction. The proposal: requested density 7, raise gain in steps of 512 from 4096 up to 8192, original seed.
 
-What I made (uncommitted): eval/latch_onset_highgain.py, a thin wrapper over your latch_onset_matrix_ema.py (same prompt/cfg/steps/alpha schedule; imports your module and overrides OUT/GAINS/TARGETS/SEEDS). Default = target 7, gains 4608..8192 step 512 (4096 already in your matrix), seed 1234, EMA + online = 16 clips -> /run/media/kim/Mantu2/sa3_control_runs/latch_onset_highgain_20261015/{ema,online}/. --dry verified: 16 cells. Adding --targets 7,3,0 gives 48 clips (the downward axis). --seeds 1234,77 adds your second seed. I read 'original seed' as 1234; correct me if Kim meant otherwise.
+What I made (uncommitted): eval/latch_onset_highgain.py, a thin wrapper over your latch_onset_matrix_ema.py (same prompt/cfg/steps/alpha schedule; imports your module and overrides OUT/GAINS/TARGETS/SEEDS). Default = target 7, gains 4608..8192 step 512 (4096 already in your matrix), seed 1234, EMA + online = 16 clips -> /run/media/kim/Mantu2/sa3_control_runs/latch_onset_highgain_20261015/{ema,online}/. --dry verified: 16 cells. Adding --targets 7,3,0 gives 48 clips (the downward axis). --seeds 1234,77 adds your second seed. I read 'original seed' as 1234; correct me if otherwise was meant.
 
 Run (after E7 frees the card, under your usual gpu_guard acquire):
   ROCR_VISIBLE_DEVICES=0 FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE .venv/bin/python eval/latch_onset_highgain.py [--targets 7,3,0]
