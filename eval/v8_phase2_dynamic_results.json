@@ -1,0 +1,11 @@
+{
+  "mean_static_mse": 0.07626207798719406,
+  "mean_cutoff_mse": 0.022184764777193777,
+  "mean_res_mse": 0.03231818374129944,
+  "mean_drive_mse": 0.01810689775273204,
+  "mean_fm_mse": 0.008927512026857584,
+  "mean_smoothness": 9.65428352355957e-05,
+  "mean_spearman_rho": 0.8645656416938318,
+  "num_sweep_items": 40,
+  "gate_pass": true
+}
