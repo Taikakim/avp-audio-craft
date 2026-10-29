@@ -112,7 +112,7 @@ def main():
             badge = '<div class="cell-sub">base</div>'
 
         disp = label if label else (f"g{gain}" if gain > 0 else "unguided")
-        return f'''<button class="cell play-btn" data-clip="{fn}" data-sub="{SUB}">
+        return f'''<button class="cell play-btn" data-clip="{fn}" data-sub="{SUB}" onclick="play('{fn}')">
             <div class="cell-title">{disp}</div>
             {badge}
         </button>'''
@@ -202,10 +202,43 @@ body {{
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding: 24px 20px 140px 20px;
+  padding: 0 0 140px 0;
   line-height: 1.5;
 }}
-.wrap {{ max-width: 1300px; margin: 0 auto; }}
+#bar {{
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(22, 27, 34, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}}
+#bar_pp {{
+  background: #21262d;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--accent);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}}
+#bar_pp:hover {{ background: #30363d; border-color: var(--accent); }}
+#np {{ color: #f0f6fc; font-family: monospace; font-size: 0.82rem; }}
+.muted {{ color: var(--text-dim); }}
+.bar-right {{ margin-left: auto; font-size: 0.78rem; color: var(--text-dim); }}
+
+.wrap {{ max-width: 1300px; margin: 0 auto; padding: 24px 20px 0 20px; }}
 a.back-nav {{ color: var(--accent); text-decoration: none; font-size: 0.9rem; margin-bottom: 12px; display: inline-block; }}
 a.back-nav:hover {{ text-decoration: underline; }}
 h1 {{ font-size: 1.8rem; font-weight: 600; margin-bottom: 8px; color: #f0f6fc; }}
@@ -247,11 +280,11 @@ button.cell:hover {{
   border-color: var(--accent);
   color: #fff;
 }}
-button.cell.active {{
-  background: rgba(88,166,255,0.18);
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 0 10px rgba(88,166,255,0.3);
+button.cell.active, button.cell.playing {{
+  background: rgba(63, 185, 80, 0.22) !important;
+  border-color: #3fb950 !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(63, 185, 80, 0.4);
 }}
 .cell-title {{ font-size: 0.82rem; font-weight: 600; }}
 .cell-sub {{ font-size: 0.72rem; color: var(--accent-green); margin-top: 2px; font-family: monospace; }}
@@ -261,6 +294,15 @@ button.cell.active {{
 </style>
 </head>
 <body>
+<div id="bar">
+  <button id="bar_pp" title="Play / Pause (Space)">&#9654;</button>
+  <span style="font-size:12px;color:var(--text-dim)">&#9654; <b id="np">Click any cell to audition</b></span>
+  <span id="pos" class="muted" style="font-size:12px"></span>
+  <span class="bar-right muted">Synchronized playhead · Space: play/pause · Esc: stop</span>
+</div>
+
+<audio id="au_el" preload="auto"></audio>
+
 <div class="wrap">
   <a href="index.html" class="back-nav">← Back to Master Catalog</a>
   <h1>Chroma Steering: Retrained Head on AVP Augmented Dataset</h1>
@@ -348,6 +390,130 @@ button.cell.active {{
 
 <script>
 window.CLIPS_DATA = {json.dumps(clips)};
+
+const au = document.getElementById('au_el');
+const np = document.getElementById('np');
+const pos = document.getElementById('pos');
+const barPp = document.getElementById('bar_pp');
+let curClip = null;
+
+function resolveAudioSrc(fn) {{
+  const p = window.location.pathname || '';
+  if (p.endsWith('/chroma_avp_matrix/index.html') || p.endsWith('/chroma_avp_matrix/')) {{
+    return fn;
+  }}
+  return '{SUB}/' + fn;
+}}
+
+function updateActiveMarks() {{
+  document.querySelectorAll('button.cell').forEach(b => {{
+    if (curClip && b.dataset.clip === curClip) {{
+      b.classList.add('active', 'playing');
+    }} else {{
+      b.classList.remove('active', 'playing');
+    }}
+  }});
+  if (barPp) {{
+    barPp.innerHTML = (au && !au.paused) ? '&#9208;' : '&#9654;';
+  }}
+}}
+
+au.addEventListener('timeupdate', () => {{
+  if (!curClip) {{
+    pos.textContent = '';
+    return;
+  }}
+  const t = au.currentTime.toFixed(1);
+  const d = (au.duration && isFinite(au.duration)) ? au.duration.toFixed(1) : '20.0';
+  pos.textContent = `· ${{t}}s / ${{d}}s`;
+}});
+
+au.addEventListener('play', updateActiveMarks);
+au.addEventListener('pause', updateActiveMarks);
+au.addEventListener('ended', () => {{
+  curClip = null;
+  updateActiveMarks();
+  np.textContent = 'finished';
+  pos.textContent = '';
+}});
+
+function play(fn) {{
+  const clip = window.CLIPS_DATA[fn];
+  if (!clip) {{
+    console.warn('Clip not found:', fn);
+    return;
+  }}
+  if (curClip === fn) {{
+    if (au.paused) {{
+      au.play();
+    }} else {{
+      au.pause();
+      curClip = null;
+      updateActiveMarks();
+      np.textContent = 'paused';
+    }}
+    return;
+  }}
+  const resumePos = (curClip !== null && !au.paused) ? au.currentTime : 0;
+  curClip = fn;
+  updateActiveMarks();
+
+  const src = resolveAudioSrc(fn);
+  np.textContent = `${{fn}} [${{clip.head}} | ${{clip.target || 'base'}} | g${{clip.gain}}]`;
+  au.src = src;
+
+  const onReady = () => {{
+    try {{
+      if (resumePos > 0) {{
+        au.currentTime = Math.min(resumePos, (au.duration || 20) - 0.05);
+      }}
+    }} catch(e) {{}}
+    au.play().catch(err => {{
+      console.error('Play error on', src, err);
+      np.textContent = `Error playing: ${{err.message}}`;
+    }});
+  }};
+
+  if (au.readyState >= 1) {{
+    onReady();
+  }} else {{
+    au.addEventListener('loadedmetadata', onReady, {{ once: true }});
+  }}
+
+  if (window.noteSet) {{
+    window.noteSet({{ model: clip.head, clip: fn }});
+  }}
+}}
+
+if (barPp) {{
+  barPp.addEventListener('click', () => {{
+    if (!au.src) return;
+    au.paused ? au.play() : au.pause();
+  }});
+}}
+
+window.addEventListener('keydown', (e) => {{
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') {{
+    e.preventDefault();
+    if (!au.src) return;
+    au.paused ? au.play() : au.pause();
+  }} else if (e.code === 'Escape') {{
+    au.pause();
+    curClip = null;
+    updateActiveMarks();
+    np.textContent = 'stopped';
+  }}
+}});
+
+document.addEventListener('DOMContentLoaded', () => {{
+  document.querySelectorAll('button.cell.play-btn').forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      const fn = btn.dataset.clip;
+      if (fn) play(fn);
+    }});
+  }});
+}});
 </script>
 </body>
 </html>
