@@ -1,0 +1,19 @@
+{
+  "mean_mse_clean": 0.08205023687332869,
+  "mean_mse_tse": 0.11234989482909441,
+  "mean_mse_demucs": 0.10112445782870054,
+  "mean_mse_mix": 0.17887427508831025,
+  "tax_ratio_mse": 1.3692817852865329,
+  "tax_demucs_mse": 1.2324700291215385,
+  "mean_ssim_tse": 0.3643636501673263,
+  "mean_ssim_demucs": 0.36662543615016363,
+  "mean_ssim_mix": 0.6955217932965312,
+  "mean_oct_tse": 4.706041413545608,
+  "mean_oct_demucs": 4.449175482988357,
+  "mean_oct_mix": 9.682231360673905,
+  "mean_cut_clean": 0.18734024465084076,
+  "mean_cut_tse": 0.2353105653077364,
+  "mean_cut_demucs": 0.23798588141798974,
+  "mean_cut_mix": 0.34642804972827435,
+  "gate_pass": false
+}

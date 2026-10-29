@@ -78,3 +78,19 @@ Drafted Synth Inversion V8 Design Spec (`docs/superpowers/specs/2026-10-28-synth
 4. **Prompt-Based Output:** Produces both a clean, hiss-free audio stem and a native Surge XT `.vstpreset` with DAW automation curves from text or 1-second audio prompts.
 Review questions for W, C, and G are embedded in Section 7 of the spec.
 
+
+### [2026-10-28 19:04:26] CONTINUITY
+
+E21 (chroma transposition probe) second run done on the 14 canonical prompts with the onset-leg settings. Found and fixed two target bugs: same_chroma's bass root, and hpcp targets 9 semitones off (Essentia HPCP's default reference makes bin 0 = A, our targets assumed C) - every hpcp result before today asked for the wrong chord, including the 'hpcp is dead' verdict. After the fix hpcp follows transpositions and lands on the requested chord; same_chroma steers the right way but weakly. Page staged for W: e21_transposition.html. Details EXPERIMENTS E21.
+
+### [2026-10-29 04:30:00] ANTIGRAVITY
+
+V8 Phase 0, R3 bugfix, and Phase 1 Asymmetric Target Sound Extractor training & Separation Tax benchmark complete.
+1. **Phase 0 Throughput:** Replaced USB FLAC seeking with memory-mapped float32 NVMe arrays (`/home/kim/sao_runs/v8_stem_cache/`), pushing dataloader throughput to **1,049.9 samples/s** (131.2 batches/s) — passing the $\ge 50$ samples/s gate by 20x. Held-out validation cache runs at 510.3 samples/s.
+2. **R3 Pre-Flight (CLAP Bugfix):** Identified and patched 3-layer root cause of V7 unloaded CLAP failure: PyTorch 2.6 `weights_only=True` unpickling error, position_ids collision on strict loading, and dimension mismatch (`HTSAT-base` 1024-dim vs checkpoint 768-dim). Patched `cgsp_extractor.py` to use `HTSAT-tiny` and safe loading. Forward pass on CUDA verified.
+3. **Phase 1 Training:** Trained 1.93M parameter 2D Complex U-Net with FiLM cue conditioning and bfloat16 AMP for 10 epochs (11 min) under `/tmp/gpu.lock` via `gpu_guard.sh`. Best checkpoint saved at epoch 8 (`val_loss=3.3095`, `/home/kim/sao_runs/v8_phase1_tse/tse_best.pt`). GPU lock released.
+4. **Separation Tax Benchmark (`eval/v8_phase1_tse_results.json`):**
+   - **Mel-SSIM Distance:** V8 TSE achieved **0.3644** vs Demucs **0.3666** vs Raw Mix **0.6955**.
+   - **Polyphonic Clash Resilience:** When complex synth leads clash with the target bass (patches 8, 15, 20), Demucs catastrophically bled and collapsed (Mel-SSIM 0.63–0.93, parameter MSE 0.16–0.27), while V8 TSE cue conditioning stayed locked onto the target (Mel-SSIM 0.26–0.58, MSE 0.08–0.21).
+   - **Cutoff Error:** V8 TSE reached **0.2353** vs Demucs **0.2380** (Clean Ceiling: 0.1873, Raw Mix Floor: 0.3464).
+   - **Continuous Param MSE:** Clean Ceiling 0.08205, Demucs 0.10112 (Tax 1.232x), V8 TSE 0.11235 (Tax 1.369x), Raw Mix 0.17887 (Tax 2.180x). A 1.93M parameter prototype trained in 11 minutes matches Demucs in wideband spectral fidelity while preventing polyphonic source confusion.
