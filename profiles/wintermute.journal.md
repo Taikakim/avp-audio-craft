@@ -1138,3 +1138,29 @@ target reads them as HF-deficient and would push generations brighter).
   agree with the momentum and one held-out set descends along it, but the other two rise from the first grid point. Overshoot,
   catch-up, overshoot: too much step on the leading ranks, not too little. B8 SAMuon-lite not warranted at any of the three points.
   Sets are 64 crops each; a bigger rerun would sharpen ep10. `latch_sweep/kuang_plan_P_20261017/run_meta.json` (P1_mid).
+
+### finding · the chroma head retrained under ModularOptimizer steers ~10x further per gain (2026-10-28, EXPERIMENTS E13)
+- C3 (lr 1e-3, d512 depth 8) epoch 10: mid-band frame cos toward the target +0.15 at gain 512 vs production +0.014 (production needs
+  6144-8192 to get there); wins 46-48 of 48 paired clips at every gain; disintegration gate 0-2 of 48 per gain (CE drift only).
+  EMA / short EMA / online are interchangeable. Held-out val loss did NOT predict steering (C2 best val, steers slightly less).
+  Page files/evals/chroma_e13.html; `evals_aac/control_runs/chroma_e13_20261028/report.txt`. Unheard.
+
+### lesson · a gain-0 LatCH baseline must go through the guided sampler (2026-10-28)
+- `generate()` without `latch_configs` takes `sample_diffusion` (CFG rescale, APG), a different render from the guided sampler at
+  rho = mu = 0; 4 of 12 such baselines scored CE ~3 vs 6-7 for every steered clip of the same prompt + seed, failing a third of the
+  gate and flipping the production head's low-gain sign. MASTER section 5; `eval/chroma_e13_render.py` (base0__).
+
+### negative · deeper / wider chroma heads and the onset recipe do not beat C3 ep10 (2026-10-28, E13b)
+- depth 12 ties depth 8 (+0.282 at 2048), width 768 slightly behind (+0.270), the onset recipe (d256 depth 8, lr 1e-2, b16) +0.265
+  despite the best val (0.0933). Every arm reaches its level by epoch 8.
+
+### finding · gradient noise by flow time and part: late in training the head's step is mostly noise at low t (2026-10-28)
+- New `train_latch --log-grad-noise-t` (stable-audio-3 8c44075). Onset-recipe arm, half-batch 8: whole-head half-batch cosine early
+  0.56-0.66, late 0.10-0.12 for t < 0.6 and 0.40 at t > 0.8; B_simple 42-50 samples at low t vs batch 16; attention/MLP noisiest
+  (0.06-0.09 late), output/final norm least (0.23-0.28). One seed, one recipe. The probe uses the step's last micro-batch, so with
+  accumulation (micro 4) its halves are 2 items and unreadable: needs pooling. EXPERIMENTS E13b.
+
+### lesson · the per-stem inpaint transitions already existed; check the flags before calling something unbuilt (2026-10-28)
+- I told the listener the 2-bar synth / 4-bar drum staging was never built; it is `render_v7_smoketest.py --drum-inpaint-bars /
+  --other-inpaint-bars` (Oct 8-9, Antigravity + Kuang), with an earlier ear verdict in the Antigravity journal. I had read F7's
+  plan text, not the renderer's flags or the smoke dirs. Rebuilt as the third candidate (v7c_inpaint_d4o2).
