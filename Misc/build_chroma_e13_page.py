@@ -29,37 +29,64 @@ HEAD_LABEL = {"prod": "production head (AdamW, depth 4)",
               "C3_ep10_ema025": "retrained, lr 1e-3, epoch 10 (short EMA)",
               "C3_ep10_online": "retrained, lr 1e-3, epoch 10 (online)",
               "C3_ep20_ema1": "retrained, lr 1e-3, epoch 20 (EMA)",
-              "C2_ep15_online": "retrained, lr 1e-2, epoch 15 (online)"}
-COLS = [("base", 0), ("prod", 2048), ("prod", 8192), ("C3_ep10_ema1", 512), ("C3_ep10_ema1", 1024), ("C3_ep10_ema1", 2048),
-        ("C3_ep10_ema1", 8192), ("C3_ep20_ema1", 2048), ("C2_ep15_online", 2048)]
+              "C2_ep15_online": "retrained, lr 1e-2, epoch 15 (online)",
+              "S0_ep12": "onset-head recipe (d256 depth 8, lr 1e-2, batch 16), epoch 12",
+              "S1_ep12": "deeper: d512 depth 12, lr 1e-3, epoch 12",
+              "S2_ep12": "wider: d768 depth 8, lr 1e-3, epoch 12"}
+MODE_LABEL = {"": "", "~contrast": " · contrast target", "~sharp": " · sharp target", "~normal": ""}
 SEEDS = (1234, 5678)
+# Each section: listening rows (prompt x target x seed) x columns (head, gain, target mode); the first column is the unsteered render.
+SECTIONS = [
+    {"title": "2 · Listen: retrained vs production", "targets": list(TARGET_LABEL),
+     "note": "Each row is one prompt, target and seed; the first button is the same render with no steering. Button label = change in mid-band chroma match.",
+     "cols": [("base", 0, ""), ("prod", 2048, ""), ("prod", 8192, ""), ("C3_ep10_ema1", 512, ""), ("C3_ep10_ema1", 1024, ""),
+              ("C3_ep10_ema1", 2048, ""), ("C3_ep10_ema1", 8192, ""), ("C3_ep20_ema1", 2048, ""), ("C2_ep15_online", 2048, "")]},
+    {"title": "3 · Listen: other recipes and sizes (E13b)", "targets": ["C", "keylift"],
+     "note": "Same comparison for the heads trained afterwards: the onset-head recipe, a deeper head (12 blocks) and a wider one (768). None steered further than the retrained head of section 2.",
+     "cols": [("base", 0, ""), ("C3_ep10_ema1", 512, ""), ("C3_ep10_ema1", 2048, ""), ("S0_ep12", 512, ""), ("S0_ep12", 2048, ""),
+              ("S1_ep12", 512, ""), ("S1_ep12", 2048, ""), ("S2_ep12", 512, ""), ("S2_ep12", 2048, "")]},
+    {"title": "4 · Listen: exaggerated targets and higher gain (E13x)", "targets": ["C", "keylift"],
+     "note": "The retrained head pushed harder. The loss is cosine, so a target can only push harder by changing shape: 'contrast' removes each frame's mean (the guide also pushes the other notes down), 'sharp' squares it first (concentrated on the strongest notes). Gains up to 32768. Every clip is still scored against the plain chord.",
+     "cols": [("base", 0, ""), ("C3_ep10_ema1", 8192, ""), ("C3_ep10_ema1", 16384, "~normal"), ("C3_ep10_ema1", 32768, "~normal"),
+              ("C3_ep10_ema1", 2048, "~contrast"), ("C3_ep10_ema1", 8192, "~contrast"), ("C3_ep10_ema1", 32768, "~contrast"),
+              ("C3_ep10_ema1", 2048, "~sharp"), ("C3_ep10_ema1", 8192, "~sharp"), ("C3_ep10_ema1", 32768, "~sharp"),
+              ("prod", 32768, "~sharp")]},
+]
 
 rows = [json.loads(l) for l in open(f"{SRC}/cells.jsonl") if l.strip()]
 rep = json.load(open(f"{SRC}/report.json"))
 meta = json.load(open(f"{SRC}/run_meta.json"))
 base = {(c["prompt"], c["seed"]): c for c in rows if c["gain"] == 0 and c["clip"].startswith("base0__")}
+by = {(r["head"], r["prompt"], r["target"], r["seed"], r["gain"]): r for r in rows if r["gain"] > 0}
 os.makedirs(os.path.join(STAGE, SUB), exist_ok=True)
-clips, groups = {}, []
-for p in PROMPT_LABEL:
-    for t in TARGET_LABEL:
-        for s in SEEDS:
-            b = base[(p, s)]
-            groups.append([p, t, s])
-            for h, g in COLS:
-                c = b if h == "base" else next((r for r in rows if r["head"] == h and r["prompt"] == p and r["target"] == t
-                                                and r["seed"] == s and r["gain"] == g), None)
-                if c is None:
-                    continue
-                m, mb = c["m"][t], b["m"][t]
-                cid = f"{p}__{t}__s{s}__{h}__g{g}"
-                dst = os.path.join(STAGE, SUB, c["clip"])
-                if not os.path.exists(dst):
-                    shutil.copy2(os.path.join(SRC, c["clip"]), dst)
-                clips[cid] = {"f": f"{SUB}/{c['clip']}", "head": h, "gain": g,
-                              "dmid": round(m["mid"]["fcos"] - mb["mid"]["fcos"], 3) if h != "base" else None,
-                              "dbass": round(m["bass"]["fcos"] - mb["bass"]["fcos"], 3) if h != "base" else None}
-DATA = json.dumps({"prompt_label": PROMPT_LABEL, "target_label": TARGET_LABEL, "head_label": HEAD_LABEL, "cols": COLS,
-                   "groups": groups, "clips": clips, "ladder": rep["ladder"], "paired": rep["paired"]})
+clips, sections = {}, []
+for sec in SECTIONS:
+    groups, cols = [], []
+    for h, g, mode in sec["cols"]:
+        if h == "base" or any((h, p, t + mode, s, g) in by for p in PROMPT_LABEL for t in sec["targets"] for s in SEEDS):
+            cols.append([h, g, mode, "no steering" if h == "base" else HEAD_LABEL.get(h, h) + "<br>gain " + str(g) + MODE_LABEL[mode]])
+    for p in PROMPT_LABEL:
+        for t in sec["targets"]:
+            for s in SEEDS:
+                b = base[(p, s)]
+                groups.append([p, t, s])
+                for h, g, mode, _ in cols:
+                    c = b if h == "base" else by.get((h, p, t + mode, s, g))
+                    if c is None:
+                        continue
+                    cid = f"{p}__{t}{mode}__s{s}__{h}__g{g}"
+                    dst = os.path.join(STAGE, SUB, c["clip"])
+                    if not os.path.exists(dst):
+                        shutil.copy2(os.path.join(SRC, c["clip"]), dst)
+                    m, mb = c["m"][t + mode] if h != "base" else None, b["m"][t]
+                    clips[cid] = {"f": f"{SUB}/{c['clip']}", "head": h, "gain": g, "mode": mode,
+                                  "dmid": round(m["mid"]["fcos"] - mb["mid"]["fcos"], 3) if m else None,
+                                  "dbass": round(m["bass"]["fcos"] - mb["bass"]["fcos"], 3) if m else None}
+    if len(cols) > 1:
+        sections.append({"title": sec["title"], "note": sec["note"], "cols": cols, "groups": groups})
+DATA = json.dumps({"prompt_label": PROMPT_LABEL, "target_label": TARGET_LABEL, "head_label": HEAD_LABEL, "sections": sections,
+                   "clips": clips, "ladder": rep["ladder"], "paired": rep["paired"], "size": rep.get("size", []),
+                   "exag": rep.get("exag", [])})
 
 T = r"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Chroma Head Retrain</title><style>
 body{font:13px system-ui;margin:0;background:#0e0e10;color:#e0e0e0}
@@ -90,7 +117,7 @@ function mark(){document.querySelectorAll('.b.play').forEach(e=>e.classList.remo
 function play(id){const c=D.clips[id];if(cur===id){au.pause();cur=null;mark();npx.textContent='stopped';return;}
  if(window.noteSet)noteSet({model:'chroma_e13',ckpt:'',clip:id});
  const pos=(cur!==null&&!au.paused)?au.currentTime:0;cur=id;mark();
- npx.textContent=id.split('__').slice(0,3).join(' · ')+' — '+(c.head==='base'?'no steering':D.head_label[c.head]+', gain '+c.gain);au.src=c.f;
+ npx.textContent=id.split('__').slice(0,3).join(' · ')+' — '+(c.head==='base'?'no steering':(D.head_label[c.head]||c.head)+', gain '+c.gain+(c.mode?' '+c.mode.slice(1)+' target':''));au.src=c.f;
  const go=()=>{try{au.currentTime=Math.min(pos,(au.duration||1e9)-0.05);}catch(e){}au.play();};
  if(au.readyState>=1)go();else au.addEventListener('loadedmetadata',go,{once:true});}
 const f=(v,d)=>v==null?'–':(v>=0?'+':'')+Number(v).toFixed(d);
@@ -101,12 +128,24 @@ h+='<table><tr><th>head</th>'+gains.map(g=>`<th>gain ${g}<br>mid · bass · fail
 heads.forEach(hd=>{h+=`<tr><td class=l>${D.head_label[hd]||hd}</td>`+gains.map(g=>{const r=D.ladder.find(x=>x.head===hd&&x.gain===g);
  return r?`<td class=num><b>${f(r.mid_fcos,3)}</b> · ${f(r.bass_fcos,3)} · ${r.fails}/${r.n}</td>`:'<td>–</td>';}).join('')+'</tr>';});
 h+='</table>';
-h+='<h2>2 · Listen</h2><div class=muted>Each row is one prompt, target and seed; the first button is the same render with no steering. Button label = change in mid-band chroma match.</div>';
-Object.keys(D.prompt_label).forEach(p=>{h+=`<h3>${D.prompt_label[p]}</h3><table><tr><th>target · seed</th>`+
- D.cols.map(([hd,g])=>`<th>${hd==='base'?'no steering':(D.head_label[hd]||hd)+'<br>gain '+g}</th>`).join('')+'</tr>';
- D.groups.filter(x=>x[0]===p).forEach(([pp,t,s])=>{h+=`<tr><td class=l>${D.target_label[t]} · s${s}</td>`+
-  D.cols.map(([hd,g])=>{const id=`${pp}__${t}__s${s}__${hd}__g${g}`;return `<td>${btn(id,hd==='base'?'▶':f(D.clips[id]?.dmid,2))}</td>`;}).join('')+'</tr>';});
- h+='</table>';});
+if(D.size.length){
+ h+='<h2>1b · Other recipes and sizes (E13b)</h2><div class=muted>3 prompts × hold C / key-lift × 2 seeds (12 clips per cell); change vs the unguided render, mid · bass · fails</div>';
+ const sh=[...new Set(D.size.map(r=>r.head))].sort();
+ h+='<table><tr><th>head</th><th>gain 512</th><th>gain 2048</th></tr>'+sh.map(hd=>`<tr><td class=l>${D.head_label[hd]||hd}</td>`+[512,2048].map(g=>{const r=D.size.find(x=>x.head===hd&&x.gain===g);
+  return r?`<td class=num><b>${f(r.mid_fcos,3)}</b> · ${f(r.bass_fcos,3)} · ${r.fails}/${r.n}</td>`:'<td>–</td>';}).join('')+'</tr>').join('')+'</table>';}
+if(D.exag.length){
+ h+='<h2>1c · Exaggerated targets and higher gain (E13x)</h2><div class=muted>same 12 clips per cell; every clip scored against the plain chord. mid · bass · fails (top gate reason)</div>';
+ const eg=[...new Set(D.exag.map(r=>r.gain))].sort((a,b)=>a-b);const keys=[...new Set(D.exag.map(r=>r.head+'|'+r.mode))];
+ h+='<table><tr><th>head · target shape</th>'+eg.map(g=>`<th>gain ${g}</th>`).join('')+'</tr>'+keys.map(k=>{const [hd,md]=k.split('|');
+  return `<tr><td class=l>${D.head_label[hd]||hd} · <b>${md}</b></td>`+eg.map(g=>{const r=D.exag.find(x=>x.head===hd&&x.mode===md&&x.gain===g);
+   const why=r&&r.fails?Object.entries(r.reasons).sort((a,b)=>b[1]-a[1])[0][0]:'';
+   return r?`<td class=num><b>${f(r.mid_fcos,3)}</b> · ${f(r.bass_fcos,3)} · ${r.fails}/${r.n}${why?' <span class=muted>'+why+'</span>':''}</td>`:'<td>–</td>';}).join('')+'</tr>';}).join('')+'</table>';}
+D.sections.forEach(S=>{h+=`<h2>${S.title}</h2><div class=muted>${S.note}</div>`;
+ Object.keys(D.prompt_label).forEach(p=>{h+=`<h3>${D.prompt_label[p]}</h3><table><tr><th>target · seed</th>`+
+  S.cols.map(c=>`<th>${c[3]}</th>`).join('')+'</tr>';
+  S.groups.filter(x=>x[0]===p).forEach(([pp,t,s])=>{h+=`<tr><td class=l>${D.target_label[t]} · s${s}</td>`+
+   S.cols.map(([hd,g,md])=>{const id=`${pp}__${t}${md}__s${s}__${hd}__g${g}`;return `<td>${btn(id,hd==='base'?'▶':f(D.clips[id]?.dmid,2))}</td>`;}).join('')+'</tr>';});
+  h+='</table>';});});
 document.getElementById('out').innerHTML=h;
 </script>
 __NOTES__

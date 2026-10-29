@@ -45,7 +45,7 @@ def main():
 
     def delta(c):
         b = base[(c["prompt"], c["seed"])]
-        m, mb = c["m"][c["target"]], b["m"][c["target"]]
+        m, mb = c["m"][c["target"]], b["m"][c["target"].split("~")[0]]   # E13x targets: scored against the plain chord
         return {k: m[band][f] - mb[band][f] for band in ("bass", "mid") for f in ("fcos", "hit")
                 for k in [f"{band}_{f}"]}
 
@@ -101,7 +101,7 @@ def main():
     ladder_heads = {c["head"] for c in steered if c["stage"] == "ladder"}
     lad = defaultdict(list)
     for c in steered:
-        if c["head"] in ladder_heads:
+        if c["head"] in ladder_heads and "~" not in c["target"]:
             lad[(c["head"], c["gain"])].append(c)
     heads = sorted({h for h, _ in lad}, key=lambda h: (h != "prod", h))
     gains = sorted({g for _, g in lad})
@@ -132,7 +132,7 @@ def main():
                  + ", ".join(f"{h} {g}" for h, g in report["ceiling"].items()))
     # paired vs prod
     key = lambda c: (c["prompt"], c["target"], c["seed"], c["gain"])  # noqa: E731
-    prod = {key(c): c for c in steered if c["head"] == "prod"}
+    prod = {key(c): c for c in steered if c["head"] == "prod" and "~" not in c["target"]}
     report["paired"] = []
     lines.append("\nPAIRED vs the production head, same prompt/target/seed/gain, both gate-clean: mean diff of d_cos (bass+mid)/2, win share")
     for h in heads:
@@ -148,6 +148,29 @@ def main():
                 win = sum(d > 0 for d in diffs) / len(diffs)
                 report["paired"].append({"head": h, "gain": g, "n": len(diffs), "mean_diff": mean(diffs), "win": round(win, 3)})
                 lines.append(f"{h:22s} {g:5d} n={len(diffs):3d} diff {mean(diffs):+.4f} win {win:.2f}")
+    # E13x: exaggerated target shapes and gains up to 32768 (C and keylift, seeds 1234/5678, 3 prompts = 12 clips per cell);
+    # plain targets at 2048-8192 come from the ladder cells on the same targets and seeds, so each mode has a full curve
+    ex = defaultdict(list)
+    for c in steered:
+        if c["head"] in ("C3_ep10_ema1", "prod") and c["target"].split("~")[0] in ("C", "keylift") and c["seed"] in (1234, 5678):
+            mode = c["target"].split("~")[1] if "~" in c["target"] else "normal"
+            ex[(c["head"], mode, c["gain"])].append(c)
+    if any(m != "normal" for _, m, _ in ex):
+        report["exag"] = []
+        lines.append("\nE13x EXAGGERATED TARGETS (contrast = per-frame mean removed; sharp = squared then mean removed), 12 clips per cell")
+        lines.append(f"{'head':14s} {'mode':9s} {'gain':>6s} {'n':>3s} {'fail':>4s} {'d_cos bass':>10s} {'d_cos mid':>9s} {'d_hit mid':>9s}  top reasons")
+        for (h, mode, g), cs in sorted(ex.items(), key=lambda kv: (kv[0][0] != "C3_ep10_ema1", kv[0][1], kv[0][2])):
+            if g < 512:
+                continue
+            reasons = defaultdict(int)
+            for c in cs:
+                for w in c["why"]:
+                    reasons[w.split("(")[0]] += 1
+            r = {"head": h, "mode": mode, "gain": g, "n": len(cs), "fails": sum(c["bad"] for c in cs), "reasons": dict(reasons),
+                 **{k: mean([c["d"][k] for c in cs]) for k in ("bass_fcos", "mid_fcos", "mid_hit")}}
+            report["exag"].append(r)
+            top = ", ".join(f"{k} {v}" for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])[:3])
+            lines.append(f"{h:14s} {mode:9s} {g:6d} {r['n']:3d} {r['fails']:4d} {r['bass_fcos']:+10.4f} {r['mid_fcos']:+9.4f} {r['mid_hit']:+9.4f}  {top}")
     txt = "\n".join(lines)
     (OUT / "report.txt").write_text(txt + "\n")
     (OUT / "report.json").write_text(json.dumps(report, indent=1))

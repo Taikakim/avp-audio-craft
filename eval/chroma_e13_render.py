@@ -93,8 +93,32 @@ def size_heads():
     return {f"{arm}_ep{ep}": SIZE_DIR / d / f"latch_sa3_same_chroma_ep{ep}.pt" for arm, d in SIZE_ARMS.items() for ep in SIZE_EPOCHS}
 
 
+# E13x (2026-10-29): exaggerated targets and higher gain. The loss is cosine, so scaling a target changes nothing; only its
+# SHAPE can push harder. A target id "C~contrast" = the C target with each frame's mean removed (the guide then also pushes the
+# off-chord bins DOWN); "~sharp" = squared, then mean removed (concentrated on the strongest bins). "~normal" = unchanged.
+# Measured against the plain chord (the musical goal), i.e. the part before "~".
+EXAG_MODES = ("normal", "contrast", "sharp")
+EXAG = {"heads": ["C3_ep10_ema1", "prod"], "targets": ["C", "keylift"], "seeds": [1234, 5678],
+        "gains_by_mode": {"normal": [16384, 32768], "contrast": [2048, 4096, 8192, 16384, 32768],
+                          "sharp": [2048, 4096, 8192, 16384, 32768]}}
+
+
+def base_tid(tid):
+    return tid.split("~")[0]
+
+
 def target_spec(tid):
-    return next(t for t in T.TARGETS if t["id"] == tid)
+    return next(t for t in T.TARGETS if t["id"] == base_tid(tid))
+
+
+def build_target(tid, n_frames):
+    raw = build_target_raw(384, target_spec(tid), n_frames)
+    mode = tid.split("~")[1] if "~" in tid else "normal"
+    if mode == "sharp":
+        raw = raw ** 2
+    if mode in ("contrast", "sharp"):
+        raw = raw - raw.mean(axis=0, keepdims=True)
+    return raw.astype(np.float32)
 
 
 def prompt_text(pid):
@@ -142,6 +166,11 @@ def load_cells():
 
 def plan(stage, picked):
     """[(head, pid, tid, gain, seed)] for a stage; baselines (gain 0) once per prompt x seed."""
+    if stage == "exag":
+        cells = [(None, p, None, 0, s) for p in PROMPTS for s in EXAG["seeds"]]
+        cells += [(h, p, f"{t}~{m}", g, s) for h in EXAG["heads"] for m, gs in EXAG["gains_by_mode"].items() for g in gs
+                  for p in PROMPTS for t in EXAG["targets"] for s in EXAG["seeds"]]
+        return cells
     cfg = {"screen": SCREEN, "size": SIZE_SCREEN}.get(stage, LADDER)
     hs = {"screen": list(heads()), "size": list(size_heads()) + ["prod", "C3_ep10_ema1"]}.get(stage, ["prod"] + picked)
     cells = [(None, p, None, 0, s) for p in PROMPTS for s in cfg["seeds"]]
@@ -239,7 +268,7 @@ def run(stages, ladder_heads=None):
             # gain 0 still goes through the guided sampler (production head, rho = mu = 0), so the baseline is the same
             # render minus the steering; see clip_name.
             gen["latch_configs"] = [{"model_path": str(hp[h or "prod"]),
-                                     "target_raw": build_target_raw(384, target_spec(tid or "C"), n_frames),
+                                     "target_raw": build_target(tid or "C", n_frames),
                                      "weight": 1.0, "loss_type": "cosine"}]
             gen["latch_hparams"] = {"rho": float(g), "mu": float(g)}
             sink = []
