@@ -96,7 +96,9 @@ def _probe_zip(path: Path, kind: str) -> dict:
 
     lora_a = _LORA_A_KEY.findall(raw)
     has_control_mode = b"control_mode" in raw
-    has_latch = b"out_proj" in raw and b"feature_stats" in raw
+    # LatCH heads: newer ones pickle feature_stats; the production *_best.pt heads (2026-06..08)
+    # carry only feature_name + std_mean, and read as "unknown" without the second test.
+    has_latch = b"out_proj" in raw and (b"feature_stats" in raw or b"feature_name" in raw)
 
     if has_control_mode:
         out["family"] = "control_adapter"
