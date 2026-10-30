@@ -178,6 +178,42 @@ def main():
                 <td>{kl_comb}</td>
             </tr>''')
 
+    # Section 0: gain ladder (built from the gains present in the data)
+    HEAD_LABEL = {"goa_e13": "Goa E13", "avp_aug": "AVP only", "goa_avp": "Goa+AVP"}
+    TGT_LABEL = {"i-VI-III-VII": "Am → F → C → G", "C": "C major", "keylift": "C → Eb → F#", "Am": "A minor"}
+    ladder_gains = sorted({c["gain"] for c in raw_cells if c["gain"] > 0})
+    ladder_html = []
+    for tid in ["i-VI-III-VII", "C", "keylift"]:
+        if not any(c["target"] == tid and c["gain"] > 2048 for c in raw_cells):
+            continue
+        rows = []
+        for pid, ptitle in pids:
+            for s in seeds:
+                for hi, hid in enumerate(HEAD_LABEL):
+                    cells_html = "".join(
+                        f"<td>{render_btn(hid, tid, g, pid, s, f'g{g}')}</td>" for g in ladder_gains)
+                    first = (f'<td class="p-cell" rowspan="3"><strong>{ptitle}</strong><br>'
+                             f'<span class="meta">seed {s}</span></td>'
+                             f'<td rowspan="3">{render_btn("base", "", 0, pid, s, "Base (g0)")}</td>') if hi == 0 else ""
+                    rows.append(f'<tr>{first}<td><strong>{HEAD_LABEL[hid]}</strong></td>{cells_html}</tr>')
+        head_cols = "".join(f"<th>g{g}</th>" for g in ladder_gains)
+        ladder_html.append(f'''<h3 style="margin:18px 0 8px">{TGT_LABEL[tid]}</h3>
+    <table class="matrix"><thead><tr><th>Prompt &amp; Seed</th><th>Unguided</th><th>Head</th>{head_cols}</tr></thead>
+    <tbody>{"".join(rows)}</tbody></table>''')
+
+    # Measured lift summary: mean Δ mid-band chroma cosine / Δ hit vs same-seed unguided
+    lift_rows = []
+    for hid in HEAD_LABEL:
+        tds = []
+        for g in ladder_gains:
+            dm = [clips[c["fn"]]["dmid"] for c in raw_cells
+                  if c["head"] == hid and c["gain"] == g and clips[c["fn"]]["dmid"] is not None]
+            tds.append(f"<td>{sum(dm) / len(dm):+.3f} <span class='meta'>(n={len(dm)})</span></td>" if dm else "<td class='meta'>—</td>")
+        lift_rows.append(f"<tr><td><strong>{HEAD_LABEL[hid]}</strong></td>{''.join(tds)}</tr>")
+    lift_table = (f'<table class="matrix"><thead><tr><th>Head</th>'
+                  f'{"".join(f"<th>g{g}</th>" for g in ladder_gains)}</tr></thead>'
+                  f'<tbody>{"".join(lift_rows)}</tbody></table>')
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -318,11 +354,22 @@ button.cell.active, button.cell.playing {{
     <div class="badge"><strong>Audio:</strong> 256 kbps AAC (SAME 44.1 kHz)</div>
   </div>
 
+  <!-- SECTION 0 -->
+  <div class="section">
+    <h2>0. Gain Ladder: how hard each head actually steers</h2>
+    <p class="desc">
+      Same seed, same prompt, one head per row, gain rising left to right. At g512/g2048 the guidance is real but mild (and the AVP-only head pushes roughly half as hard per unit gain), so the higher rungs are where chord changes should become clearly audible. Table below: mean Δ mid-band chroma cosine vs the same-seed unguided clip, over all targets/prompts/seeds rendered at that gain.
+      Every clip from g4096 up was decoded twice and checked for a matching result (guard against the GPU decode glitch that caused the 0:12 noise burst on the old Goa s5678 baseline, now replaced with a clean decode).
+    </p>
+    {lift_table}
+    {"".join(ladder_html)}
+  </div>
+
   <!-- SECTION 1 -->
   <div class="section">
     <h2>1. Progression Tracking: Am → F → C → G (Classic 4-Chord Turn)</h2>
     <p class="desc">
-      Comparing how each head guides the generation across a dynamic chord sequence. Gain 512 provides transparent coloration, while gain 2048 establishes firm harmonic leadership.
+      Comparing how each head guides the generation across a dynamic chord sequence at the original two rungs (g512 mild, g2048 moderate).
     </p>
     <table class="matrix">
       <thead>

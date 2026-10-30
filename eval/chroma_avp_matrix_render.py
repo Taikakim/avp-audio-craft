@@ -111,14 +111,19 @@ def free_gb(path):
     return shutil.disk_usage(path).free / 2**30
 
 
-def build_plan():
-    """Build the test matrix cells."""
+def build_plan(heads=("goa_e13", "avp_aug", "goa_avp"), targets=None, gains=None,
+               seeds=None, extra=()):
+    """Build the test matrix cells. `extra` = iterable of (head, gain) pairs added
+    on top of the full heads x gains grid (used for gain-matching the weaker head)."""
+    targets = targets or TARGET_IDS
+    gains = gains or GAINS
+    seeds = seeds or SEEDS
     cells = []
     seen = set()
 
     # 1. Unguided baselines (gain=0)
     for pid in PROMPTS:
-        for seed in SEEDS:
+        for seed in seeds:
             k = ("base", "", 0, pid, seed)
             if k not in seen:
                 seen.add(k)
@@ -128,20 +133,20 @@ def build_plan():
                     "sched": "alpha", "fn": clip_name("base", "", 0, pid, seed)
                 })
 
-    # 2. Guided cells across the 3 heads
-    for hid in ["goa_e13", "avp_aug", "goa_avp"]:
-        for tid in TARGET_IDS:
-            for gain in GAINS:
-                for pid in PROMPTS:
-                    for seed in SEEDS:
-                        k = (hid, tid, gain, pid, seed)
-                        if k not in seen:
-                            seen.add(k)
-                            cells.append({
-                                "head": hid, "target": tid, "gain": gain,
-                                "prompt_id": pid, "seed": seed, "cfg": 7.0, "steps": 50,
-                                "sched": "alpha", "fn": clip_name(hid, tid, gain, pid, seed)
-                            })
+    # 2. Guided cells across the heads (full grid + extra (head, gain) pairs)
+    combos = [(h, g) for h in heads for g in gains] + [tuple(x) for x in extra]
+    for hid, gain in combos:
+        for tid in targets:
+            for pid in PROMPTS:
+                for seed in seeds:
+                    k = (hid, tid, gain, pid, seed)
+                    if k not in seen:
+                        seen.add(k)
+                        cells.append({
+                            "head": hid, "target": tid, "gain": gain,
+                            "prompt_id": pid, "seed": seed, "cfg": 7.0, "steps": 50,
+                            "sched": "alpha", "fn": clip_name(hid, tid, gain, pid, seed)
+                        })
     return cells
 
 
@@ -168,16 +173,26 @@ def resolve_head_path(hid):
     raise FileNotFoundError(f"Cannot resolve checkpoint for {hid} at {path}")
 
 
+def _csv(s, cast=str):
+    return [cast(x) for x in s.split(",") if x.strip()] if s else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--gains", default="", help="comma list, default 512,2048")
+    ap.add_argument("--targets", default="", help="comma list, default all TARGET_IDS")
+    ap.add_argument("--seeds", default="", help="comma list, default 5678,1234")
+    ap.add_argument("--extra", default="", help="extra head:gain pairs, e.g. avp_aug:16384")
     args = ap.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
     AAC_DIR.mkdir(parents=True, exist_ok=True)
 
-    plan = build_plan()
+    extra = [(p.split(":")[0], int(p.split(":")[1])) for p in _csv(args.extra) or []]
+    plan = build_plan(targets=_csv(args.targets), gains=_csv(args.gains, int),
+                      seeds=_csv(args.seeds, int), extra=extra)
     db = load_cells_db()
     print(f"[matrix] Total plan: {len(plan)} cells; already measured: {len(db)}")
 
@@ -217,6 +232,32 @@ def main():
     targets_raw = {
         tid: build_target(tid, n_frames) for tid in TARGET_IDS
     }
+
+    pt = model.model.pretransform
+    dec_dtype = next(pt.parameters()).dtype
+
+    def decode(z):
+        with torch.no_grad():
+            return pt.decode(z.to("cuda", dec_dtype)).float().cpu()
+
+    # Warm-up: the FIRST GPU decode in a fresh process was unreliable (noise burst at
+    # 12-14 s on avpm__base__p_goa__s5678, once a constant full-scale signal), while a
+    # CPU fp32 decode of the same latent was clean. Burn two throwaway decodes.
+    print("[matrix] Warm-up decodes ...", flush=True)
+    for _ in range(2):
+        decode(torch.randn(1, 256, 282) * 0.8)
+
+    def checked_decode(z, wav_first):
+        """Decode z again; if the two decodes disagree, decode until two agree."""
+        cands = [wav_first]
+        for attempt in range(3):
+            w = decode(z)
+            for prev in cands:
+                n = min(prev.shape[-1], w.shape[-1])
+                if torch.isfinite(w).all() and torch.allclose(prev[..., :n], w[..., :n], atol=5e-2, rtol=0):
+                    return w, attempt
+            cands.append(w)
+        raise RuntimeError("VAE decode never reproduced itself in 4 attempts")
 
     for i, c in enumerate(todo):
         if free_gb(OUT) < MIN_FREE_GB:
@@ -266,14 +307,17 @@ def main():
         dt = time.time() - t0
         z = sink[-1].float() if sink else None
 
-        wav = audio[0].float().cpu()
+        wav, redecodes = checked_decode(z, audio[0:1].float().cpu())
+        wav = wav[0]
+        if redecodes:
+            print(f" [decode mismatch, fixed after {redecodes + 1} re-decodes]", end="", flush=True)
         wav_tmp = OUT / fn.replace(".m4a", ".wav")
         save_audio(str(wav_tmp), wav, sc.SAME_SR)
 
         # AAC encode
         aac_path = AAC_DIR / fn
         cmd = [
-            "ffmpeg", "-y", "-loglevel", "error",
+            "ffmpeg", "-nostdin", "-y", "-loglevel", "error",
             "-i", str(wav_tmp),
             "-c:a", "aac", "-b:a", "256k",
             str(aac_path),
