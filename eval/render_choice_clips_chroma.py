@@ -97,7 +97,13 @@ def main():
         ("base", None, 0.0),
         ("C", targets["C"], 2048.0),
         ("Eb", targets["Eb"], 2048.0),
-        ("Aliens", targets["Aliens"], 2048.0)
+        ("Aliens", targets["Aliens"], 2048.0),
+        ("C_g1024", targets["C"], 1024.0),
+        ("C_g3072", targets["C"], 3072.0),
+        ("Eb_g1024", targets["Eb"], 1024.0),
+        ("Eb_g3072", targets["Eb"], 3072.0),
+        ("Aliens_g1024", targets["Aliens"], 1024.0),
+        ("Aliens_g3072", targets["Aliens"], 3072.0),
     ]
 
     manifest_entries = []

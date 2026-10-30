@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """build_choice_clips_page.py -- builds the interactive comparison dashboard for
-the 29 choice clips under 4 conditions:
-1. Base (gain 0)
-2. C major triad (gain 2048)
-3. Eb major triad (gain 2048)
-4. Total Eclipse - Aliens HQ excerpt (gain 2048)
+the 29 choice clips across Base (g0) and 3 targets (C Major, Eb Major, Aliens HQ)
+at three guidance weight ladders:
+  - 0.5x (gain 1024)
+  - 1.0x (gain 2048)
+  - 1.5x (gain 3072)
 
 Reads manifest from /home/kim/evals_aac/choice_clips_chroma/choice_clips_manifest.json
 and generates /home/kim/evals_aac/choice_clips_chroma.html
@@ -13,10 +13,17 @@ import json, os, sys
 from pathlib import Path
 
 AAC_DIR = Path("/home/kim/evals_aac/choice_clips_chroma")
-MANIFEST_FILE = AAC_DIR / "choice_clips_manifest.json"
 OUT_HTML = Path("/home/kim/evals_aac/choice_clips_chroma.html")
-
 PLAN_ITEMS_FILE = Path("/home/kim/.gemini/antigravity/brain/62fc5213-e94b-4c13-86bf-69147f02f03c/scratch/render_plan_items.json")
+
+def btn(stem, label, idx, cond, sublabel=""):
+    exists = (AAC_DIR / stem).exists()
+    status_cls = "ready" if exists else "pending"
+    title_attr = f'title="{stem}"'
+    sub_span = f'<span class="sub">{sublabel}</span>' if sublabel else ''
+    return f"""<button class="play-btn {status_cls}" onclick="playAudio('{stem}', this, {idx}, '{cond}')" {title_attr}>
+        <span class="icon">&#9654;</span> <span class="lbl">{label}</span>{sub_span}
+    </button>"""
 
 def main():
     if not PLAN_ITEMS_FILE.exists():
@@ -26,7 +33,6 @@ def main():
     with open(PLAN_ITEMS_FILE) as f:
         items = json.load(f)
 
-    # Group by row_idx
     rows_html = []
     for item in items:
         idx = item['idx']
@@ -40,15 +46,18 @@ def main():
         
         # Audio file stems
         base_stem = f"choice_{idx:02d}__{model}__{ckpt}__base__s{seed}.m4a"
-        c_stem = f"choice_{idx:02d}__{model}__{ckpt}__C__s{seed}.m4a"
-        eb_stem = f"choice_{idx:02d}__{model}__{ckpt}__Eb__s{seed}.m4a"
-        aliens_stem = f"choice_{idx:02d}__{model}__{ckpt}__Aliens__s{seed}.m4a"
-
-        # Check existence
-        b_exists = (AAC_DIR / base_stem).exists()
-        c_exists = (AAC_DIR / c_stem).exists()
-        eb_exists = (AAC_DIR / eb_stem).exists()
-        a_exists = (AAC_DIR / aliens_stem).exists()
+        
+        c_1024 = f"choice_{idx:02d}__{model}__{ckpt}__C_g1024__s{seed}.m4a"
+        c_2048 = f"choice_{idx:02d}__{model}__{ckpt}__C__s{seed}.m4a"
+        c_3072 = f"choice_{idx:02d}__{model}__{ckpt}__C_g3072__s{seed}.m4a"
+        
+        eb_1024 = f"choice_{idx:02d}__{model}__{ckpt}__Eb_g1024__s{seed}.m4a"
+        eb_2048 = f"choice_{idx:02d}__{model}__{ckpt}__Eb__s{seed}.m4a"
+        eb_3072 = f"choice_{idx:02d}__{model}__{ckpt}__Eb_g3072__s{seed}.m4a"
+        
+        aliens_1024 = f"choice_{idx:02d}__{model}__{ckpt}__Aliens_g1024__s{seed}.m4a"
+        aliens_2048 = f"choice_{idx:02d}__{model}__{ckpt}__Aliens__s{seed}.m4a"
+        aliens_3072 = f"choice_{idx:02d}__{model}__{ckpt}__Aliens_g3072__s{seed}.m4a"
 
         rows_html.append(f"""
         <tr class="clip-row" id="row-{idx}">
@@ -64,19 +73,37 @@ def main():
                 <div class="prompt-text" title="{prompt}">{prompt}</div>
             </td>
             <td class="audio-cell">
-                <div class="btn-group">
-                    <button class="play-btn {'ready' if b_exists else 'pending'}" onclick="playAudio('{base_stem}', this, {idx}, 'base')">
-                        <span class="icon">&#9654;</span> Base (g0)
-                    </button>
-                    <button class="play-btn {'ready' if c_exists else 'pending'}" onclick="playAudio('{c_stem}', this, {idx}, 'C')">
-                        <span class="icon">&#9654;</span> C Major (g2048)
-                    </button>
-                    <button class="play-btn {'ready' if eb_exists else 'pending'}" onclick="playAudio('{eb_stem}', this, {idx}, 'Eb')">
-                        <span class="icon">&#9654;</span> Eb Major (g2048)
-                    </button>
-                    <button class="play-btn {'ready' if a_exists else 'pending'}" onclick="playAudio('{aliens_stem}', this, {idx}, 'Aliens')">
-                        <span class="icon">&#9654;</span> Aliens HQ (g2048)
-                    </button>
+                <div class="target-grid">
+                    <div class="target-row base-row">
+                        <span class="target-tag base-tag">Unguided</span>
+                        <div class="btn-ladder">
+                            {btn(base_stem, 'Base (g0)', idx, 'base')}
+                        </div>
+                    </div>
+                    <div class="target-row">
+                        <span class="target-tag">C Major</span>
+                        <div class="btn-ladder">
+                            {btn(c_1024, '0.5x', idx, 'C_1024', 'g1024')}
+                            {btn(c_2048, '1.0x', idx, 'C_2048', 'g2048')}
+                            {btn(c_3072, '1.5x', idx, 'C_3072', 'g3072')}
+                        </div>
+                    </div>
+                    <div class="target-row">
+                        <span class="target-tag">Eb Major</span>
+                        <div class="btn-ladder">
+                            {btn(eb_1024, '0.5x', idx, 'Eb_1024', 'g1024')}
+                            {btn(eb_2048, '1.0x', idx, 'Eb_2048', 'g2048')}
+                            {btn(eb_3072, '1.5x', idx, 'Eb_3072', 'g3072')}
+                        </div>
+                    </div>
+                    <div class="target-row">
+                        <span class="target-tag">Aliens HQ</span>
+                        <div class="btn-ladder">
+                            {btn(aliens_1024, '0.5x', idx, 'Aliens_1024', 'g1024')}
+                            {btn(aliens_2048, '1.0x', idx, 'Aliens_2048', 'g2048')}
+                            {btn(aliens_3072, '1.5x', idx, 'Aliens_3072', 'g3072')}
+                        </div>
+                    </div>
                 </div>
             </td>
         </tr>
@@ -87,7 +114,7 @@ def main():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choice Clips Chroma Guidance Matrix (29 Rows × 4 Conditions)</title>
+    <title>Curated Choice Clips Chroma Guidance Matrix (29 Models × 10 Conditions)</title>
     <style>
         :root {{
             --bg: #0d1117;
@@ -184,7 +211,7 @@ def main():
             border-bottom: 1px solid var(--border);
         }}
         .matrix-table td {{
-            padding: 14px 16px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
             vertical-align: middle;
         }}
@@ -199,7 +226,7 @@ def main():
             text-align: center;
         }}
         .meta-cell {{
-            width: 48%;
+            width: 44%;
         }}
         .model-title {{
             color: var(--text-bright);
@@ -230,27 +257,62 @@ def main():
             overflow: hidden;
         }}
         .audio-cell {{
-            width: 48%;
+            width: 52%;
         }}
-        .btn-group {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .target-grid {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }}
+        .target-row {{
+            display: flex;
+            align-items: center;
             gap: 8px;
+            background: #10141a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 8px;
+        }}
+        .target-row.base-row {{
+            background: #161f2c;
+            border-color: #213547;
+        }}
+        .target-tag {{
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-bright);
+            width: 72px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        .target-tag.base-tag {{
+            color: var(--accent);
+        }}
+        .btn-ladder {{
+            display: flex;
+            gap: 6px;
+            flex-grow: 1;
         }}
         .play-btn {{
             background: #21262d;
             border: 1px solid var(--border);
             color: var(--text);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
             font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
+            flex: 1;
             transition: all 0.15s ease;
+        }}
+        .play-btn .sub {{
+            font-size: 9px;
+            color: var(--text-muted);
         }}
         .play-btn.ready:hover {{
             background: #30363d;
@@ -263,8 +325,11 @@ def main():
             font-weight: bold;
             border-color: var(--accent) !important;
         }}
+        .play-btn.active .sub {{
+            color: #000 !important;
+        }}
         .play-btn.pending {{
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
             border-style: dashed;
         }}
@@ -276,8 +341,8 @@ def main():
 <body>
     <div class="header">
         <h1>Curated Choice Clips Chroma Guidance Matrix</h1>
-        <p><strong>Audition Set:</strong> 29 Choice Models &times; 4 Conditions (Base g0, C Major g2048, Eb Major g2048, Aliens HQ g2048)</p>
-        <p><strong>Steering Head:</strong> <code>same_chroma_e13</code> (C3, lr 1e-3, ep10, latch_sa3_same_chroma_ep10.pt, weight 2048)</p>
+        <p><strong>Audition Set:</strong> 29 Choice Models &times; 10 Conditions (Base g0 + C Major, Eb Major, Aliens HQ at 0.5x [g1024], 1.0x [g2048], 1.5x [g3072])</p>
+        <p><strong>Steering Head:</strong> <code>same_chroma_e13</code> (C3, lr 1e-3, ep10, latch_sa3_same_chroma_ep10.pt)</p>
         <p><strong>Audio Spec:</strong> 20.0s (280 frames), 24-step Euler, exact original seeds & prompts, 256k AAC.</p>
     </div>
 
@@ -299,7 +364,7 @@ def main():
             <tr>
                 <th>#</th>
                 <th>Model, Recipe & Prompt Metadata</th>
-                <th>Audio Conditions (Click to Play / Compare in Place)</th>
+                <th>Audio Conditions & Guidance Ladders (0.5x g1024 · 1.0x g2048 · 1.5x g3072)</th>
             </tr>
         </thead>
         <tbody>
